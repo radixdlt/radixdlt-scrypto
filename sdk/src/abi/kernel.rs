@@ -19,9 +19,9 @@ pub const GET_COMPONENT_INFO: u32 = 0x11;
 pub const GET_COMPONENT_STATE: u32 = 0x12;
 /// Update component state
 pub const PUT_COMPONENT_STATE: u32 = 0x13;
-/// Retrieve an entry from component storage
+/// TODO: Retrieve an entry from component storage
 pub const GET_COMPONENT_STORAGE: u32 = 0x14;
-/// Insert a key-value pair into component storage
+/// TODO: Insert a key-value pair into component storage
 pub const PUT_COMPONENT_STORAGE: u32 = 0x15;
 
 /// Create a new resource
@@ -34,38 +34,42 @@ pub const MINT_TOKENS: u32 = 0x22;
 pub const COMBINE_TOKENS: u32 = 0x23;
 /// Split tokens
 pub const SPLIT_TOKENS: u32 = 0x24;
+/// TODO: Obtain an immutable reference to tokens
+pub const BORROW_TOKENS: u32 = 0x25;
+/// TODO: Return a reference to tokens
+pub const RETURN_TOKENS: u32 = 0x26;
 /// Mint badges
-pub const MINT_BADGES: u32 = 0x25;
+pub const MINT_BADGES: u32 = 0x27;
 /// Combine badges
-pub const COMBINE_BADGES: u32 = 0x26;
+pub const COMBINE_BADGES: u32 = 0x28;
 /// Split Badges
-pub const SPLIT_BADGES: u32 = 0x27;
+pub const SPLIT_BADGES: u32 = 0x29;
 /// Obtain an immutable reference to badges
-pub const BORROW_BADGES: u32 = 0x28;
-/// Return an immutable reference to badges
-pub const RETURN_BADGES: u32 = 0x29;
+pub const BORROW_BADGES: u32 = 0x2a;
+/// Return an reference to badges
+pub const RETURN_BADGES: u32 = 0x2b;
 /// Get token amount
-pub const GET_TOKENS_AMOUNT: u32 = 0x2A;
+pub const GET_TOKENS_AMOUNT: u32 = 0x2c;
 /// Get token resource address
-pub const GET_TOKENS_RESOURCE: u32 = 0x2B;
+pub const GET_TOKENS_RESOURCE: u32 = 0x2d;
 /// Get badge amount
-pub const GET_BADGES_AMOUNT: u32 = 0x2C;
+pub const GET_BADGES_AMOUNT: u32 = 0x2e;
 /// Get badge resource address
-pub const GET_BADGES_RESOURCE: u32 = 0x2D;
+pub const GET_BADGES_RESOURCE: u32 = 0x2f;
 
 /// Withdraw tokens from an account
-pub const WITHDRAW_TOKENS: u32 = 0x30;
+pub const WITHDRAW_TOKENS: u32 = 0x40;
 /// Deposit tokens into an account
-pub const DEPOSIT_TOKENS: u32 = 0x31;
+pub const DEPOSIT_TOKENS: u32 = 0x41;
 /// Withdraw badges from an account
-pub const WITHDRAW_BADGES: u32 = 0x32;
+pub const WITHDRAW_BADGES: u32 = 0x42;
 /// Deposit badges into an account
-pub const DEPOSIT_BADGES: u32 = 0x33;
+pub const DEPOSIT_BADGES: u32 = 0x43;
 
 /// Log a message
-pub const EMIT_LOG: u32 = 0x40;
+pub const EMIT_LOG: u32 = 0x50;
 /// Retrieve context address
-pub const GET_CONTEXT_ADDRESS: u32 = 0x41;
+pub const GET_CONTEXT_ADDRESS: u32 = 0x51;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ComponentInfo {
@@ -230,6 +234,24 @@ pub struct SplitTokensInput {
 pub struct SplitTokensOutput {
     pub tokens: RID,
 }
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct BorrowTokensInput {
+    pub tokens: RID,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct BorrowTokensOutput {
+    pub reference: RID,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ReturnTokensInput {
+    pub reference: RID,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ReturnTokensOutput {}
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct MintBadgesInput {
