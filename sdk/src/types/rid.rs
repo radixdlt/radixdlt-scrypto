@@ -1,89 +1,100 @@
 extern crate alloc;
-use alloc::format;
 use alloc::string::String;
-use alloc::string::ToString;
-use alloc::vec::Vec;
-use core::fmt;
 
 use serde::{Deserialize, Serialize};
 
-pub const RID_TOKENS: u8 = 0;
-pub const RID_BADGES: u8 = 1;
-pub const RID_BADGES_REF: u8 = 2;
+/// Remote object type
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum ObjectType {
+    /// A token bucket
+    Tokens,
 
-/// Remote object ID
-#[derive(Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
-#[serde(from = "String")]
-#[serde(into = "String")]
+    /// A reference to a token bucket
+    TokensRef,
+
+    /// A badge bucket
+    Badges,
+
+    /// A reference to a badge bucket
+    BadgesRef,
+}
+
+/// Represents a remote object, maintained by runtime
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct RID {
-    kind: u8,
-    id: u64,
-}
-
-impl From<&str> for RID {
-    fn from(s: &str) -> Self {
-        let tokens: Vec<&str> = s.split("-").collect();
-        Self {
-            kind: tokens[1].parse::<u8>().unwrap(),
-            id: tokens[2].parse::<u64>().unwrap(),
-        }
-    }
-}
-
-impl From<String> for RID {
-    fn from(s: String) -> Self {
-        s.as_str().into()
-    }
-}
-
-impl Into<String> for RID {
-    fn into(self) -> String {
-        format!("R-{}-{}", self.kind, self.id)
-    }
-}
-
-impl ToString for RID {
-    fn to_string(&self) -> String {
-        self.clone().into()
-    }
-}
-
-impl fmt::Debug for RID {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.to_string())
-    }
+    kind: ObjectType,
+    id: String,
 }
 
 impl RID {
-    pub fn new(kind: u8, id: u64) -> Self {
+    /// Creates a new RID
+    pub fn new(kind: ObjectType, id: String) -> Self {
         Self { kind, id }
     }
 
-    pub fn next(&self) -> Self {
-        Self::new(self.kind, self.id + 1)
+    /// Gets the next RID
+    pub fn next(&self, f: fn(&String) -> String) -> Self {
+        Self::new(self.kind, f(&self.id))
     }
 
+    /// Gets the borrowed form of this RID
     pub fn to_borrowed(&self) -> Self {
-        assert_eq!(self.kind, RID_BADGES);
+        assert!(
+            self.kind() == ObjectType::Tokens || self.kind() == ObjectType::Badges,
+            "Can't borrow from non-reference type"
+        );
+
         Self {
-            kind: RID_BADGES_REF,
-            id: self.id,
+            kind: if self.kind() == ObjectType::Tokens {
+                ObjectType::TokensRef
+            } else {
+                ObjectType::BadgesRef
+            },
+            id: self.id.clone(),
         }
     }
 
+    /// Gets the owned form of this RID
     pub fn to_owned(&self) -> Self {
-        assert_eq!(self.kind, RID_BADGES_REF);
+        assert!(
+            self.kind() == ObjectType::TokensRef || self.kind() == ObjectType::BadgesRef,
+            "Already an owned type"
+        );
+
         Self {
-            kind: RID_BADGES,
-            id: self.id,
+            kind: if self.kind() == ObjectType::TokensRef {
+                ObjectType::Tokens
+            } else {
+                ObjectType::Badges
+            },
+            id: self.id.clone(),
         }
     }
 
-    pub fn kind(&self) -> u8 {
+    /// Gets the object type
+    pub fn kind(&self) -> ObjectType {
         self.kind
     }
 
-    pub fn id(&self) -> u64 {
-        self.id
+    /// Get the resource bucket id
+    pub fn id(&self) -> &String {
+        &self.id
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    extern crate alloc;
+    use alloc::string::ToString;
+
+    use crate::types::*;
+
+    #[test]
+    fn test_basics() {
+        let rid = RID::new(ObjectType::Tokens, "awesome-bucket-id".to_string());
+        let rid2 = rid.next(|_| "new-bucket-id".to_string());
+        let rid3 = rid2.to_borrowed();
+        assert_eq!(rid3.kind(), ObjectType::TokensRef);
+        assert_eq!(rid3.id(), "new-bucket-id");
     }
 }

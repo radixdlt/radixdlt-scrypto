@@ -18,7 +18,7 @@ impl From<RID> for Tokens {
 
 impl Into<RID> for Tokens {
     fn into(self) -> RID {
-        self.rid
+        self.rid.clone()
     }
 }
 
@@ -35,15 +35,15 @@ impl Tokens {
 
     pub fn put(&mut self, other: Self) {
         let input = CombineTokensInput {
-            tokens: self.rid,
-            other: other.rid,
+            tokens: self.rid.clone(),
+            other: other.rid.clone(),
         };
         let _: CombineTokensOutput = call_kernel!(COMBINE_TOKENS, input);
     }
 
     pub fn take(&mut self, amount: U256) -> Self {
         let input = SplitTokensInput {
-            tokens: self.rid,
+            tokens: self.rid.clone(),
             amount,
         };
         let output: SplitTokensOutput = call_kernel!(SPLIT_TOKENS, input);
@@ -52,14 +52,18 @@ impl Tokens {
     }
 
     pub fn amount(&self) -> U256 {
-        let input = GetTokensAmountInput { tokens: self.rid };
+        let input = GetTokensAmountInput {
+            tokens: self.rid.clone(),
+        };
         let output: GetTokensAmountOutput = call_kernel!(GET_TOKENS_AMOUNT, input);
 
         output.amount
     }
 
     pub fn resource(&self) -> Resource {
-        let input = GetTokensResourceInput { tokens: self.rid };
+        let input = GetTokensResourceInput {
+            tokens: self.rid.clone(),
+        };
         let output: GetTokensResourceOutput = call_kernel!(GET_TOKENS_RESOURCE, input);
 
         output.resource.into()

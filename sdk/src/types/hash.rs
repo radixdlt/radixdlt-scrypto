@@ -9,6 +9,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::utils::*;
 
+/// Represents a 32-byte hash digest
 #[derive(Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(from = "String")]
 #[serde(into = "String")]
@@ -17,6 +18,7 @@ pub struct Hash {
 }
 
 impl Hash {
+    /// Decode a hash from its hex representation
     pub fn from_hex(hex: &str) -> Result<Self, String> {
         let data = from_hex_string(hex)?;
         Ok(Self {
@@ -26,6 +28,7 @@ impl Hash {
         })
     }
 
+    /// Create a hash struct from a slice
     pub fn from_slice(slice: &[u8]) -> Result<Self, String> {
         Ok(Self {
             raw: slice
@@ -34,6 +37,7 @@ impl Hash {
         })
     }
 
+    /// Obtains a slice reference to this hash struct
     pub fn as_slice(&self) -> &[u8] {
         &self.raw
     }

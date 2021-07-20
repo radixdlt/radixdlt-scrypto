@@ -18,7 +18,7 @@ impl From<RID> for Badges {
 
 impl Into<RID> for Badges {
     fn into(self) -> RID {
-        self.rid
+        self.rid.clone()
     }
 }
 
@@ -37,15 +37,15 @@ impl Badges {
 
     pub fn put(&mut self, other: Self) {
         let input = CombineBadgesInput {
-            badges: self.rid,
-            other: other.rid,
+            badges: self.rid.clone(),
+            other: other.rid.clone(),
         };
         let _: CombineBadgesOutput = call_kernel!(COMBINE_BADGES, input);
     }
 
     pub fn take(&mut self, amount: U256) -> Self {
         let input = SplitBadgesInput {
-            badges: self.rid,
+            badges: self.rid.clone(),
             amount,
         };
         let output: SplitBadgesOutput = call_kernel!(SPLIT_BADGES, input);
@@ -54,21 +54,27 @@ impl Badges {
     }
 
     pub fn borrow(&self) -> BadgesRef {
-        let input = BorrowBadgesInput { badges: self.rid };
+        let input = BorrowBadgesInput {
+            badges: self.rid.clone(),
+        };
         let output: BorrowBadgesOutput = call_kernel!(BORROW_BADGES, input);
 
         output.reference.into()
     }
 
     pub fn amount(&self) -> U256 {
-        let input = GetBadgesAmountInput { badges: self.rid };
+        let input = GetBadgesAmountInput {
+            badges: self.rid.clone(),
+        };
         let output: GetBadgesAmountOutput = call_kernel!(GET_BADGES_AMOUNT, input);
 
         output.amount
     }
 
     pub fn resource(&self) -> Resource {
-        let input = GetBadgesResourceInput { badges: self.rid };
+        let input = GetBadgesResourceInput {
+            badges: self.rid.clone(),
+        };
         let output: GetBadgesResourceOutput = call_kernel!(GET_BADGES_RESOURCE, input);
 
         output.resource.into()
