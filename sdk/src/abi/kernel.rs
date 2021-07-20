@@ -19,6 +19,10 @@ pub const GET_COMPONENT_INFO: u32 = 0x11;
 pub const GET_COMPONENT_STATE: u32 = 0x12;
 /// Update component state
 pub const PUT_COMPONENT_STATE: u32 = 0x13;
+/// Retrieve an entry from component storage
+pub const GET_COMPONENT_STORAGE: u32 = 0x14;
+/// Insert a key-value pair into component storage
+pub const PUT_COMPONENT_STORAGE: u32 = 0x15;
 
 /// Create a new resource
 pub const CREATE_RESOURCE: u32 = 0x20;
@@ -150,6 +154,27 @@ pub struct PutComponentStateInput {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct PutComponentStateOutput {}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct GetComponentStorageInput {
+    pub component: Address,
+    pub key: Vec<u8>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct GetComponentStorageOutput {
+    pub value: Option<Vec<u8>>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct PutComponentStorageInput {
+    pub component: Address,
+    pub key: Vec<u8>,
+    pub value: Vec<u8>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct PutComponentStorageOutput {}
 
 //=========
 // resource
