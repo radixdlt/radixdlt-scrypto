@@ -1,35 +1,53 @@
 use crate::abi::*;
 use crate::*;
 
-pub struct Logger {}
-
 extern crate alloc;
 use alloc::string::String;
 use alloc::string::ToString;
 
+pub enum LogLevel {
+    Error,
+    Warn,
+    Info,
+    Debug,
+    Trace,
+}
+
+pub struct Logger {}
+
 impl Logger {
-    pub fn log(level: String, message: String) {
-        let input = EmitLogInput { level, message };
+    pub fn log(level: LogLevel, message: String) {
+        let s = match level {
+            LogLevel::Error => "ERROR",
+            LogLevel::Warn => "WARN",
+            LogLevel::Info => "INFO",
+            LogLevel::Debug => "DEBUG",
+            LogLevel::Trace => "TRACE",
+        };
+        let input = EmitLogInput {
+            level: s.to_string(),
+            message,
+        };
         let _: EmitLogOutput = call_kernel!(EMIT_LOG, input);
     }
 
     pub fn trace(message: String) {
-        Self::log("TRACE".to_string(), message);
+        Self::log(LogLevel::Trace, message);
     }
 
     pub fn debug(message: String) {
-        Self::log("DEBUG".to_string(), message);
+        Self::log(LogLevel::Debug, message);
     }
 
     pub fn info(message: String) {
-        Self::log("INFO".to_string(), message);
+        Self::log(LogLevel::Info, message);
     }
 
     pub fn warn(message: String) {
-        Self::log("WARN".to_string(), message);
+        Self::log(LogLevel::Warn, message);
     }
 
     pub fn error(message: String) {
-        Self::log("ERROR".to_string(), message);
+        Self::log(LogLevel::Error, message);
     }
 }

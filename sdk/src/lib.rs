@@ -15,5 +15,5 @@ pub mod library;
 pub mod macros;
 /// Scrypto primitive types.
 pub mod types;
-/// Utility functions, e.g., hashing and hex decoding.
+/// Utility functions, such as hashing and hex decoding.
 pub mod utils;
