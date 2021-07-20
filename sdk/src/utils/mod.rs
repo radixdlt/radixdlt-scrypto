@@ -1,5 +1,5 @@
-mod hash;
 mod hex;
+mod sha;
 
-pub use hash::sha256;
 pub use hex::*;
+pub use sha::*;
