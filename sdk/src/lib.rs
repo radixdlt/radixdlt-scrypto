@@ -7,7 +7,7 @@ pub mod abi;
 pub mod buffer;
 /// Scrypto higher level abstraction.
 pub mod constructs;
-/// A module that handles system invocation.
+/// A module that facilitates system calls.
 pub mod kernel;
 /// A library of common routines.
 pub mod library;

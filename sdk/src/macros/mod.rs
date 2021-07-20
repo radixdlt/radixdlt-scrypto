@@ -3,7 +3,7 @@ macro_rules! call_kernel {
     ($operation: expr, $input: expr) => {
         unsafe {
             // 1. serialize the input
-            let input_bytes = crate::buffer::radix_encode(&$input);
+            let input_bytes = crate::buffer::bincode_encode(&$input);
 
             // 2. make a kernel call
             let output_ptr =
@@ -14,7 +14,7 @@ macro_rules! call_kernel {
             crate::kernel::radix_free(output_ptr);
 
             // 4. deserialize the output
-            let output = crate::buffer::radix_decode(&output_bytes);
+            let output = crate::buffer::bincode_decode(&output_bytes);
             output
         }
     };
@@ -26,7 +26,7 @@ macro_rules! call_blueprint {
         {
             extern crate alloc;
             let rtn = crate::constructs::Blueprint::call(&$blueprint, $component, $method, alloc::vec::Vec::new());
-            crate::buffer::radix_decode_value::<$rtn_type>(&rtn)
+            crate::buffer::radix_decode::<$rtn_type>(&rtn)
         }
     };
 
@@ -34,9 +34,9 @@ macro_rules! call_blueprint {
         {
             extern crate alloc;
             let mut args = alloc::vec::Vec::new();
-            $(args.push(crate::buffer::radix_encode_value(&$args));)+
+            $(args.push(crate::buffer::radix_encode(&$args));)+
             let rtn = crate::constructs::Blueprint::call(&$blueprint, $component, $method, args);
-            crate::buffer::radix_decode_value::<$rtn_type>(&rtn)
+            crate::buffer::radix_decode::<$rtn_type>(&rtn)
         }
     };
 }
@@ -47,7 +47,7 @@ macro_rules! call_component {
         {
             extern crate alloc;
             let rtn = crate::constructs::Component::call(&$component, $method, alloc::vec::Vec::new());
-            crate::buffer::radix_decode_value::<$rtn_type>(&rtn)
+            crate::buffer::radix_decode::<$rtn_type>(&rtn)
         }
     };
 
@@ -55,9 +55,9 @@ macro_rules! call_component {
         {
             extern crate alloc;
             let mut args = alloc::vec::Vec::new();
-            $(args.push(crate::buffer::radix_encode_value(&$args));)+
+            $(args.push(crate::buffer::radix_encode(&$args));)+
             let rtn = crate::constructs::Component::call(&$component, $method, args);
-            crate::buffer::radix_decode_value::<$rtn_type>(&rtn)
+            crate::buffer::radix_decode::<$rtn_type>(&rtn)
         }
     };
 }

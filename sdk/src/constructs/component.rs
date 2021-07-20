@@ -26,7 +26,7 @@ impl Component {
     pub fn new<T: Serialize>(kind: &str, state: T) -> Self {
         let input = CreateComponentInput {
             kind: kind.to_string(),
-            state: radix_encode_value(&state),
+            state: radix_encode(&state),
         };
         let output: CreateComponentOutput = call_kernel!(CREATE_COMPONENT, input);
 
@@ -37,7 +37,7 @@ impl Component {
         let data = self.get_info();
 
         let mut args_buf = Vec::new();
-        args_buf.push(radix_encode_value(&self));
+        args_buf.push(radix_encode(&self));
         args_buf.extend(args);
 
         let input = CallBlueprintInput {
@@ -74,13 +74,13 @@ impl Component {
         };
         let output: GetComponentStateOutput = call_kernel!(GET_COMPONENT_STATE, input);
 
-        radix_decode_value(&output.state)
+        radix_decode(&output.state)
     }
 
     pub fn put_state<T: Serialize>(&self, state: T) {
         let input = PutComponentStateInput {
             component: self.address.clone(),
-            state: radix_encode_value(&state),
+            state: radix_encode(&state),
         };
         let _: PutComponentStateOutput = call_kernel!(PUT_COMPONENT_STATE, input);
     }

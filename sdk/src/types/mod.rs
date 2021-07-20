@@ -11,7 +11,9 @@ pub use hash::*;
 pub use rid::*;
 pub use u256::*;
 
-/// A recursive, schemaless value used for exchange.
+/// A value that encloses data and resources, used for communication between components.
+///
+/// For now, it's a JSON value but will be replaced with Radix data format.
 pub type Value = serde_json::Value;
 
 /// The serialized form of a `Value`.

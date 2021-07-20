@@ -1,5 +1,4 @@
 extern crate alloc;
-use alloc::str;
 use alloc::vec::Vec;
 
 use bincode_core::{deserialize, serialize, BufferWriterError, CoreWrite, DefaultOptions};
@@ -34,43 +33,49 @@ impl CoreWrite for GrowableBufferWriter {
     }
 }
 
-pub fn radix_encode<T: Serialize>(v: &T) -> Vec<u8> {
+/// Encodes a value into byte array, using Bincode.
+pub fn bincode_encode<T: Serialize>(v: &T) -> Vec<u8> {
     let mut writer = GrowableBufferWriter::new();
     let options = DefaultOptions::new();
     serialize(v, &mut writer, options).unwrap();
     writer.buffer
 }
 
-pub fn radix_decode<'de, T: Deserialize<'de>>(buf: &'de [u8]) -> T {
+/// Decodes a value from a byte buffer, using Bincode.
+pub fn bincode_decode<'de, T: Deserialize<'de>>(buf: &'de [u8]) -> T {
     let options = DefaultOptions::new();
     deserialize(buf, options).unwrap()
 }
 
-pub fn radix_encode_value<T: Serialize>(v: &T) -> Vec<u8> {
-    let buf = serde_json::to_string(v).unwrap();
-    radix_encode(&buf.into_bytes())
+/// Encodes a value into byte array, using Radix data format.
+pub fn radix_encode<T: Serialize>(v: &T) -> Vec<u8> {
+    serde_json::to_vec(v).unwrap()
 }
 
-pub fn radix_decode_value<'de, T: Deserialize<'de>>(buf: &'de [u8]) -> T {
-    let buf = str::from_utf8(radix_decode(buf)).unwrap();
-    serde_json::from_str(&buf).unwrap()
+/// Decodes a value from a byte buffer, using Radix data format.
+pub fn radix_decode<'de, T: Deserialize<'de>>(buf: &'de [u8]) -> T {
+    serde_json::from_slice(buf).unwrap()
 }
 
 #[cfg(test)]
 mod tests {
-
     extern crate alloc;
+    use alloc::string::String;
     use alloc::string::ToString;
+
+    use crate::abi::*;
+    use crate::buffer::*;
+    use crate::types::*;
 
     #[test]
     fn test_serialization() {
-        let obj = crate::abi::EmitLogInput {
-            level: "TRACE".to_string(),
-            message: "Hello, world!".to_string(),
+        let obj = PutComponentStateInput {
+            component: Address::System,
+            state: radix_encode(&"test".to_string()),
         };
-        let bin = crate::buffer::radix_encode(&obj);
-        let obj2 = crate::buffer::radix_decode::<crate::abi::EmitLogInput>(&bin);
-        let bin2 = crate::buffer::radix_encode(&obj2);
-        assert_eq!(bin, bin2);
+        let encoded = crate::buffer::bincode_encode(&obj);
+        let decoded = crate::buffer::bincode_decode::<PutComponentStateInput>(&encoded);
+        assert_eq!(decoded.component, Address::System);
+        assert_eq!(radix_decode::<String>(&decoded.state), "test");
     }
 }
