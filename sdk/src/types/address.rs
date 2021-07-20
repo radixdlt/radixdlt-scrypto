@@ -28,19 +28,19 @@ impl Address {
 
     pub fn resource(hash: [u8; 26]) -> Self {
         let mut buf = String::from("0x03");
-        buf.push_str(encode_hex(&hash).as_str());
+        buf.push_str(to_hex_string(&hash).as_str());
         buf.into()
     }
 
     pub fn component(hash: [u8; 32]) -> Self {
         let mut buf = String::from("0x05");
-        buf.push_str(encode_hex(&hash).as_str());
+        buf.push_str(to_hex_string(&hash).as_str());
         buf.into()
     }
 
     pub fn blueprint(hash: [u8; 32]) -> Self {
         let mut buf = String::from("0x06");
-        buf.push_str(encode_hex(&hash).as_str());
+        buf.push_str(to_hex_string(&hash).as_str());
         buf.into()
     }
 }
