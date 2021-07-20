@@ -4,16 +4,16 @@ use core::mem::forget;
 use core::ptr::copy;
 
 extern "C" {
-    /// Kernel entrance
+    /// Entrance to radix kernel.
     pub fn radix_kernel(operation: u32, input_ptr: *const u8, input_len: usize) -> *mut u8;
 }
 
-/// Allocate a chunk of memory that is not tracked by ownership system
-///
-/// Structure:
-/// +----------------+-------------+
-/// | length (usize) | data ([u8]) |
-/// +----------------+-------------+
+//================
+// Note that there is already an API for accessing global allocator, but it requires nightly build atm.
+// See: https://doc.rust-lang.org/nightly/std/alloc/trait.Allocator.html
+//================
+
+/// Allocates a chunk of memory that is not tracked by Rust ownership system.
 #[no_mangle]
 pub extern "C" fn radix_alloc(length: usize) -> *mut u8 {
     unsafe {
@@ -26,7 +26,7 @@ pub extern "C" fn radix_alloc(length: usize) -> *mut u8 {
     }
 }
 
-/// Measure the size of an allocated memory chunk
+/// Measures the length of an allocated memory.
 #[no_mangle]
 pub extern "C" fn radix_measure(ptr: *mut u8) -> usize {
     unsafe {
@@ -36,7 +36,7 @@ pub extern "C" fn radix_measure(ptr: *mut u8) -> usize {
     }
 }
 
-/// Release an allocated memory chunk
+/// Frees an allocated memory chunk.
 #[no_mangle]
 pub extern "C" fn radix_free(ptr: *mut u8) {
     unsafe {
@@ -53,5 +53,35 @@ pub fn radix_copy(ptr: *mut u8) -> Vec<u8> {
         copy(ptr, buf.as_mut_ptr(), length);
         buf.set_len(length);
         buf
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::kernel::*;
+
+    #[test]
+    fn test_memory_allocation() {
+        let msg = "hello".as_bytes();
+        let size = msg.len();
+
+        // Test allocating memory
+        let mut ptr = radix_alloc(size);
+        assert_eq!(radix_measure(ptr), size);
+
+        // Test copying memory
+        unsafe {
+            core::ptr::copy(msg.as_ptr(), ptr, size);
+        }
+        let copied = radix_copy(ptr);
+        assert_eq!(copied, msg);
+
+        // Ensure no memory leak
+        for _ in 0..10 {
+            radix_free(ptr);
+            let ptr2 = radix_alloc(size);
+            assert_eq!(ptr2, ptr);
+            ptr = ptr2;
+        }
     }
 }
