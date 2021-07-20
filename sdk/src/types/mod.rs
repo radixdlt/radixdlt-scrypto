@@ -11,10 +11,10 @@ pub use hash::*;
 pub use rid::*;
 pub use u256::*;
 
-/// A recursive schemaless value representation
+/// A recursive, schemaless value used for exchange.
 pub type Value = serde_json::Value;
 
-/// The serialized form of `Value`
+/// The serialized form of a `Value`.
 pub type SerializedValue = Vec<u8>;
 
 #[cfg(test)]

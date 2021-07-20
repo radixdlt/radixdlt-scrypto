@@ -2,7 +2,7 @@ use sha2::{Digest, Sha256};
 
 use crate::types::*;
 
-/// Computes the SHA-256 digest of a message
+/// Computes the SHA-256 digest of a message.
 pub fn sha256<T: AsRef<[u8]>>(data: T) -> Hash {
     let mut instance = Sha256::new();
     instance.update(data);
@@ -11,7 +11,7 @@ pub fn sha256<T: AsRef<[u8]>>(data: T) -> Hash {
     Hash::from_slice(&result).unwrap()
 }
 
-/// Computes the double SHA-256 digest of a message
+/// Computes the double SHA-256 digest of a message.
 pub fn sha256_twice<T: AsRef<[u8]>>(data: T) -> Hash {
     sha256(sha256(data).as_slice())
 }

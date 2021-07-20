@@ -4,7 +4,7 @@ use alloc::string::String;
 use alloc::vec::Vec;
 
 /// Encodes `data` as hex string using lowercase characters.
-pub fn to_hex_string<T: AsRef<[u8]>>(data: T) -> String {
+pub fn hex_encode<T: AsRef<[u8]>>(data: T) -> String {
     let mut buf = String::new();
 
     for b in data.as_ref() {
@@ -23,7 +23,7 @@ pub fn to_hex_string<T: AsRef<[u8]>>(data: T) -> String {
 }
 
 /// Decode a hex string into a byte vector.
-pub fn from_hex_string(hex: &str) -> Result<Vec<u8>, String> {
+pub fn hex_decode(hex: &str) -> Result<Vec<u8>, String> {
     if hex.len() % 2 != 0 {
         Err(format!("Odd hex string length: {}", hex.len()))
     } else {
@@ -45,23 +45,23 @@ mod tests {
     extern crate alloc;
     use alloc::vec;
 
-    use crate::utils::{from_hex_string, to_hex_string};
+    use crate::utils::{hex_decode, hex_encode};
 
     #[test]
-    fn test_to_hex_string() {
+    fn test_hex_encode() {
         let input = vec![5, 15, 250];
-        assert_eq!("050ffa", to_hex_string(&input));
+        assert_eq!("050ffa", hex_encode(&input));
     }
 
     #[test]
-    fn test_from_hex_string_success() {
-        assert!(from_hex_string("123").is_err());
-        assert!(from_hex_string("1cxx").is_err());
+    fn test_hex_decode_success() {
+        assert!(hex_decode("123").is_err());
+        assert!(hex_decode("1cxx").is_err());
     }
 
     #[test]
-    fn test_from_hex_string_failure() {
+    fn test_hex_decode_failure() {
         let input = "050ffa";
-        assert_eq!(vec![5, 15, 250], from_hex_string(input).unwrap());
+        assert_eq!(vec![5, 15, 250], hex_decode(input).unwrap());
     }
 }

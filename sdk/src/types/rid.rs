@@ -3,23 +3,23 @@ use alloc::string::String;
 
 use serde::{Deserialize, Serialize};
 
-/// Resource type
+/// Resource type.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum ResourceType {
-    /// A token bucket
+    /// A token bucket.
     Tokens,
 
-    /// A reference to a token bucket
+    /// A reference to a token bucket.
     TokensRef,
 
-    /// A badge bucket
+    /// A badge bucket.
     Badges,
 
-    /// A reference to a badge bucket
+    /// A reference to a badge bucket.
     BadgesRef,
 }
 
-/// Represents a resource maintained by runtime
+/// Represents a resource maintained by runtime.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct RID {
     kind: ResourceType,
@@ -27,17 +27,17 @@ pub struct RID {
 }
 
 impl RID {
-    /// Creates a new RID
+    /// Creates a new RID.
     pub fn new(kind: ResourceType, id: String) -> Self {
         Self { kind, id }
     }
 
-    /// Gets the next RID
+    /// Gets the next RID.
     pub fn next(&self, f: fn(&String) -> String) -> Self {
         Self::new(self.kind, f(&self.id))
     }
 
-    /// Gets the borrowed form of this RID
+    /// Gets the borrowed form of this RID.
     pub fn to_borrowed(&self) -> Self {
         assert!(
             self.kind() == ResourceType::Tokens || self.kind() == ResourceType::Badges,
@@ -54,7 +54,7 @@ impl RID {
         }
     }
 
-    /// Gets the owned form of this RID
+    /// Gets the owned form of this RID.
     pub fn to_owned(&self) -> Self {
         assert!(
             self.kind() == ResourceType::TokensRef || self.kind() == ResourceType::BadgesRef,
@@ -71,12 +71,12 @@ impl RID {
         }
     }
 
-    /// Gets the object type
+    /// Gets the resource type.
     pub fn kind(&self) -> ResourceType {
         self.kind
     }
 
-    /// Get the resource bucket id
+    /// Gets the resource bucket id.
     pub fn id(&self) -> &String {
         &self.id
     }

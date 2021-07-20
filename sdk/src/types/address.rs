@@ -10,28 +10,34 @@ use serde::{Deserialize, Serialize};
 
 use crate::utils::*;
 
-/// Represents an address
+/// Represents an address.
 #[derive(Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(from = "String")]
 #[serde(into = "String")]
 pub enum Address {
+    /// System address.
     System,
 
+    /// Radix native token address.
     RadixToken,
 
+    /// Resource address.
     Resource([u8; 26]),
 
+    /// Public key account.
     Account([u8; 33]),
 
+    /// Published Scrypto blueprint.
     Blueprint([u8; 26]),
 
+    /// Instantiated Scrypto component.
     Component([u8; 26]),
 }
 
 impl Address {
-    /// Decode an address from its hex representation
+    /// Decode an address from its hex representation.
     pub fn from_hex(hex: &str) -> Result<Self, String> {
-        let bytes = from_hex_string(hex)?;
+        let bytes = hex_decode(hex)?;
 
         let e = format!("Invalid address: {}", hex);
         if bytes.len() >= 1 {
@@ -52,34 +58,28 @@ impl Address {
     }
 }
 
+macro_rules! push {
+    ($buf: expr, $kind: expr) => {{
+        $buf.push($kind);
+    }};
+    ($buf: expr, $kind: expr, $id: expr) => {{
+        $buf.push($kind);
+        $buf.extend($id);
+    }};
+}
+
 impl ToString for Address {
     fn to_string(&self) -> String {
         let mut buf = vec![];
         match self {
-            Self::System => {
-                buf.push(0x00);
-            }
-            Self::RadixToken => {
-                buf.push(0x01);
-            }
-            Self::Resource(d) => {
-                buf.push(0x03);
-                buf.extend(d);
-            }
-            Self::Account(d) => {
-                buf.push(0x04);
-                buf.extend(d);
-            }
-            Self::Blueprint(d) => {
-                buf.push(0x05);
-                buf.extend(d);
-            }
-            Self::Component(d) => {
-                buf.push(0x06);
-                buf.extend(d);
-            }
+            Self::System => push!(buf, 0x00),
+            Self::RadixToken => push!(buf, 0x01),
+            Self::Resource(d) => push!(buf, 0x03, d),
+            Self::Account(d) => push!(buf, 0x04, d),
+            Self::Blueprint(d) => push!(buf, 0x05, d),
+            Self::Component(d) => push!(buf, 0x06, d),
         }
-        to_hex_string(buf)
+        hex_encode(buf)
     }
 }
 
