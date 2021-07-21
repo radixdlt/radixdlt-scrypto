@@ -1,4 +1,4 @@
-name: Build and test
+name: CI
 
 on: [pull_request]
 
@@ -7,6 +7,7 @@ env:
 
 jobs:
   build:
+    name: Build and test
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
