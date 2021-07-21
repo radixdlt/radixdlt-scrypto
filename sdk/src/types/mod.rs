@@ -41,7 +41,7 @@ mod tests {
         let t = Test {
             address: "040377bac8066e51cd0d6b320c338d5abbcdbcca25572b6b3eee9443eafc92106bba".into(),
             hash: "374c00efbe61f645a8b35d7746e106afa7422877e5d607975b6018e0a1aa6bf0".into(),
-            rid: RID::new(ResourceType::Badges, "id".to_string()),
+            rid: RID::new(ResourceKind::Badges, "id".to_string()),
             value: 1000.into(),
         };
         let expected = "{\"address\":\"040377bac8066e51cd0d6b320c338d5abbcdbcca25572b6b3eee9443eafc92106bba\",\"hash\":\"374c00efbe61f645a8b35d7746e106afa7422877e5d607975b6018e0a1aa6bf0\",\"rid\":{\"kind\":\"Badges\",\"id\":\"id\"},\"value\":\"1000\"}";

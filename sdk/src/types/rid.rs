@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 
 /// Resource type.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
-pub enum ResourceType {
+pub enum ResourceKind {
     /// A token bucket.
     Tokens,
 
@@ -22,13 +22,13 @@ pub enum ResourceType {
 /// Represents a resource maintained by runtime.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct RID {
-    kind: ResourceType,
+    kind: ResourceKind,
     id: String,
 }
 
 impl RID {
     /// Creates a new RID.
-    pub fn new(kind: ResourceType, id: String) -> Self {
+    pub fn new(kind: ResourceKind, id: String) -> Self {
         Self { kind, id }
     }
 
@@ -40,15 +40,15 @@ impl RID {
     /// Gets the borrowed form of this RID.
     pub fn to_borrowed(&self) -> Self {
         assert!(
-            self.kind() == ResourceType::Tokens || self.kind() == ResourceType::Badges,
+            self.kind() == ResourceKind::Tokens || self.kind() == ResourceKind::Badges,
             "Can't borrow from non-reference type"
         );
 
         Self {
-            kind: if self.kind() == ResourceType::Tokens {
-                ResourceType::TokensRef
+            kind: if self.kind() == ResourceKind::Tokens {
+                ResourceKind::TokensRef
             } else {
-                ResourceType::BadgesRef
+                ResourceKind::BadgesRef
             },
             id: self.id.clone(),
         }
@@ -57,22 +57,22 @@ impl RID {
     /// Gets the owned form of this RID.
     pub fn to_owned(&self) -> Self {
         assert!(
-            self.kind() == ResourceType::TokensRef || self.kind() == ResourceType::BadgesRef,
+            self.kind() == ResourceKind::TokensRef || self.kind() == ResourceKind::BadgesRef,
             "Already an owned type"
         );
 
         Self {
-            kind: if self.kind() == ResourceType::TokensRef {
-                ResourceType::Tokens
+            kind: if self.kind() == ResourceKind::TokensRef {
+                ResourceKind::Tokens
             } else {
-                ResourceType::Badges
+                ResourceKind::Badges
             },
             id: self.id.clone(),
         }
     }
 
     /// Gets the resource type.
-    pub fn kind(&self) -> ResourceType {
+    pub fn kind(&self) -> ResourceKind {
         self.kind
     }
 
@@ -91,10 +91,10 @@ mod tests {
 
     #[test]
     fn test_basics() {
-        let rid = RID::new(ResourceType::Tokens, "awesome-bucket-id".to_string());
+        let rid = RID::new(ResourceKind::Tokens, "awesome-bucket-id".to_string());
         let rid2 = rid.next(|_| "new-bucket-id".to_string());
         let rid3 = rid2.to_borrowed();
-        assert_eq!(rid3.kind(), ResourceType::TokensRef);
+        assert_eq!(rid3.kind(), ResourceKind::TokensRef);
         assert_eq!(rid3.id(), "new-bucket-id");
     }
 }
