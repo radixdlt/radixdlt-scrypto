@@ -24,7 +24,7 @@ macro_rules! call_kernel {
 /// Call a method of a blueprint.
 #[macro_export]
 macro_rules! call_blueprint {
-    ($rtn_type: ty, $blueprint: expr, $component: expr, $method: expr) => {
+    ($rtn_type: ty, $blueprint: expr, $component: expr, $method: expr $(,)?) => {
         {
             extern crate alloc;
             let rtn = crate::constructs::Blueprint::call(&$blueprint, $component, $method, alloc::vec::Vec::new());
@@ -32,7 +32,7 @@ macro_rules! call_blueprint {
         }
     };
 
-    ($rtn_type: ty, $blueprint: expr, $component: expr, $method: expr, $($args: expr),+) => {
+    ($rtn_type: ty, $blueprint: expr, $component: expr, $method: expr, $($args: expr),+ $(,)?) => {
         {
             extern crate alloc;
             let mut args = alloc::vec::Vec::new();
@@ -46,7 +46,7 @@ macro_rules! call_blueprint {
 /// Call a method of a component.
 #[macro_export]
 macro_rules! call_component {
-    ($rtn_type: ty, $component: expr, $method: expr) => {
+    ($rtn_type: ty, $component: expr, $method: expr $(,)?) => {
         {
             extern crate alloc;
             let rtn = crate::constructs::Component::call(&$component, $method, alloc::vec::Vec::new());
@@ -54,7 +54,7 @@ macro_rules! call_component {
         }
     };
 
-    ($rtn_type: ty, $component: expr, $method: expr, $($args: expr),+) => {
+    ($rtn_type: ty, $component: expr, $method: expr, $($args: expr),+ $(,)?) => {
         {
             extern crate alloc;
             let mut args = alloc::vec::Vec::new();
