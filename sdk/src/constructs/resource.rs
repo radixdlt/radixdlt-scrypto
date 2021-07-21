@@ -7,6 +7,7 @@ use crate::abi::*;
 use crate::types::*;
 use crate::*;
 
+/// A primitive piece of state which has a single owner, and behaves like a physical object.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Resource {
     address: Address,

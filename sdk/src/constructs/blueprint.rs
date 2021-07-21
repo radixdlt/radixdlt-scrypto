@@ -8,6 +8,7 @@ use crate::abi::*;
 use crate::types::*;
 use crate::*;
 
+/// A piece of code that defines the structure and methods of components.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Blueprint {
     address: Address,

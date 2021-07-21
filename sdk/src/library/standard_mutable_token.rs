@@ -2,6 +2,7 @@ use crate::constructs::*;
 use crate::library::*;
 use crate::types::*;
 
+/// A utility structure for creating a standard mutable token.
 pub struct StandardMutableToken {}
 
 impl StandardMutableToken {

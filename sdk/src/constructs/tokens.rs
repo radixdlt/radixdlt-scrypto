@@ -5,6 +5,7 @@ use crate::*;
 
 use serde::{Deserialize, Serialize};
 
+/// A bucket that holds token resource.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Tokens {
     rid: RID,

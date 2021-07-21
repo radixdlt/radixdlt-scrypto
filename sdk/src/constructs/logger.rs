@@ -5,6 +5,7 @@ extern crate alloc;
 use alloc::string::String;
 use alloc::string::ToString;
 
+/// Represents the severity of a log message.
 pub enum LogLevel {
     Error,
     Warn,
@@ -13,6 +14,7 @@ pub enum LogLevel {
     Trace,
 }
 
+/// A logger for dumping messages.
 pub struct Logger {}
 
 impl Logger {

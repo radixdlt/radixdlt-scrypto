@@ -4,6 +4,7 @@ use crate::abi::*;
 use crate::constructs::*;
 use crate::types::*;
 
+/// An account holds tokens and badges.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Account {
     address: Address,

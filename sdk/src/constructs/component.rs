@@ -11,6 +11,7 @@ use crate::constructs::*;
 use crate::types::*;
 use crate::*;
 
+/// A self-executing program that holds resources and exposed actions to other entities.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Component {
     address: Address,

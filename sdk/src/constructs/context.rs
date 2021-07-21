@@ -2,6 +2,7 @@ use crate::abi::*;
 use crate::types::*;
 use crate::*;
 
+/// The execution context.
 pub struct Context {}
 
 impl Context {

@@ -5,6 +5,7 @@ use crate::constructs::*;
 use crate::types::*;
 use crate::*;
 
+/// A bucket that holds badge resource.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Badges {
     rid: RID,

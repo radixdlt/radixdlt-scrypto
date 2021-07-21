@@ -1,6 +1,7 @@
 use crate::constructs::*;
 use crate::types::*;
 
+/// A utility structure for creating a standard token.
 pub struct StandardToken {}
 
 impl StandardToken {

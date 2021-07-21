@@ -5,6 +5,7 @@ use crate::constructs::*;
 use crate::types::*;
 use crate::*;
 
+/// A borrowed reference to a `Badges` bucket.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct BadgesRef {
     rid: RID,

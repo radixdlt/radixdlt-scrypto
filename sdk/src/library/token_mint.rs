@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 use crate::constructs::*;
 use crate::types::*;
 
+/// An abstraction of token minting logic.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct TokenMint {
     out_of_circulation: Tokens,

@@ -7,6 +7,7 @@ mod context;
 mod logger;
 mod resource;
 mod tokens;
+mod tokens_ref;
 
 pub use account::Account;
 pub use badges::Badges;
@@ -18,3 +19,4 @@ pub use logger::LogLevel;
 pub use logger::Logger;
 pub use resource::Resource;
 pub use tokens::Tokens;
+pub use tokens_ref::TokensRef;
