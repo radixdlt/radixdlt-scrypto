@@ -1,0 +1,21 @@
+name: Build and test
+
+on: [pull_request]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Build SDK
+      run: cargo build --verbose
+      working-directory: sdk
+    - name: Run SDK tests
+      run: cargo test --verbose
+      working-directory: sdk
+    - name: Run SDK tests (no_std)
+      run: cargo test --verbose --no-default-features --features alloc
+      working-directory: sdk
