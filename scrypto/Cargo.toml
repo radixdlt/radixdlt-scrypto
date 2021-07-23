@@ -21,6 +21,7 @@ scrypto-macros = { version = "0.1", path = "../scrypto-macros" }
 
 [features]
 default = [ "std" ]
-compiler = [ ]
 std = [ "serde/std", "serde_json/std", "bincode_core/std", "scrypto-derive/std" ]
 alloc = [ "serde/alloc", "serde_json/alloc", "bincode_core/alloc", "scrypto-derive/alloc" ]
+derive = [ ]
+macros = [ ]

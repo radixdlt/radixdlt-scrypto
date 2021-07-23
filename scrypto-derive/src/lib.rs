@@ -11,7 +11,7 @@ pub fn component(_input: TokenStream) -> TokenStream {
 
 /// Imports the ABI of a component.
 #[proc_macro]
-pub fn import_abi(_input: TokenStream) -> TokenStream {
+pub fn import(_input: TokenStream) -> TokenStream {
     let output = quote! {};
 
     output.into()
