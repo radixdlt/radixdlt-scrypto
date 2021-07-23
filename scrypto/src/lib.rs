@@ -11,8 +11,6 @@ pub mod constructs;
 pub mod kernel;
 /// A library of common routines.
 pub mod library;
-#[doc(hidden)]
-pub mod macros;
 /// Scrypto primitive types.
 pub mod types;
 /// Utility functions, such as hashing and hex decoding.

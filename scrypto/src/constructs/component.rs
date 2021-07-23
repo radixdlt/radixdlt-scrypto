@@ -9,7 +9,7 @@ use crate::abi::*;
 use crate::buffer::*;
 use crate::constructs::*;
 use crate::types::*;
-use crate::*;
+use crate::utils::*;
 
 /// A self-executing program that holds resources and exposed actions to other entities.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -29,7 +29,7 @@ impl Component {
             kind: kind.to_string(),
             state: radix_encode(&state),
         };
-        let output: CreateComponentOutput = call_kernel!(CREATE_COMPONENT, input);
+        let output: CreateComponentOutput = syscall(CREATE_COMPONENT, input);
 
         Self::from(output.component)
     }
@@ -47,7 +47,7 @@ impl Component {
             method: method.to_string(),
             args: args_buf,
         };
-        let output: CallBlueprintOutput = call_kernel!(CALL_BLUEPRINT, input);
+        let output: CallBlueprintOutput = syscall(CALL_BLUEPRINT, input);
 
         output.rtn
     }
@@ -56,7 +56,7 @@ impl Component {
         let input = GetComponentInfoInput {
             component: self.address.clone(),
         };
-        let output: GetComponentInfoOutput = call_kernel!(GET_COMPONENT_INFO, input);
+        let output: GetComponentInfoOutput = syscall(GET_COMPONENT_INFO, input);
 
         output.result.unwrap()
     }
@@ -73,7 +73,7 @@ impl Component {
         let input = GetComponentStateInput {
             component: self.address.clone(),
         };
-        let output: GetComponentStateOutput = call_kernel!(GET_COMPONENT_STATE, input);
+        let output: GetComponentStateOutput = syscall(GET_COMPONENT_STATE, input);
 
         radix_decode(&output.state)
     }
@@ -83,7 +83,7 @@ impl Component {
             component: self.address.clone(),
             state: radix_encode(&state),
         };
-        let _: PutComponentStateOutput = call_kernel!(PUT_COMPONENT_STATE, input);
+        let _: PutComponentStateOutput = syscall(PUT_COMPONENT_STATE, input);
     }
 
     pub fn address(&self) -> Address {

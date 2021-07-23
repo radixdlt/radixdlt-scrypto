@@ -4,18 +4,18 @@ macro_rules! call_kernel {
     ($operation: expr, $input: expr) => {
         unsafe {
             // 1. serialize the input
-            let input_bytes = crate::buffer::bincode_encode(&$input);
+            let input_bytes = scrypto::buffer::bincode_encode(&$input);
 
             // 2. make a kernel call
             let output_ptr =
-                crate::kernel::radix_kernel($operation, input_bytes.as_ptr(), input_bytes.len());
+                scrypto::kernel::radix_kernel($operation, input_bytes.as_ptr(), input_bytes.len());
 
             // 3. copy and release the buffer (allocated by kernel)
-            let output_bytes = crate::kernel::radix_copy(output_ptr);
-            crate::kernel::radix_free(output_ptr);
+            let output_bytes = scrypto::kernel::radix_copy(output_ptr);
+            scrypto::kernel::radix_free(output_ptr);
 
             // 4. deserialize the output
-            let output = crate::buffer::bincode_decode(&output_bytes);
+            let output = scrypto::buffer::bincode_decode(&output_bytes);
             output
         }
     };
@@ -27,8 +27,8 @@ macro_rules! call_blueprint {
     ($rtn_type: ty, $blueprint: expr, $component: expr, $method: expr $(,)?) => {
         {
             extern crate alloc;
-            let rtn = crate::constructs::Blueprint::call(&$blueprint, $component, $method, alloc::vec::Vec::new());
-            crate::buffer::radix_decode::<$rtn_type>(&rtn)
+            let rtn = scrypto::constructs::Blueprint::call(&$blueprint, $component, $method, alloc::vec::Vec::new());
+            scrypto::buffer::radix_decode::<$rtn_type>(&rtn)
         }
     };
 
@@ -36,9 +36,9 @@ macro_rules! call_blueprint {
         {
             extern crate alloc;
             let mut args = alloc::vec::Vec::new();
-            $(args.push(crate::buffer::radix_encode(&$args));)+
-            let rtn = crate::constructs::Blueprint::call(&$blueprint, $component, $method, args);
-            crate::buffer::radix_decode::<$rtn_type>(&rtn)
+            $(args.push(scrypto::buffer::radix_encode(&$args));)+
+            let rtn = scrypto::constructs::Blueprint::call(&$blueprint, $component, $method, args);
+            scrypto::buffer::radix_decode::<$rtn_type>(&rtn)
         }
     };
 }
@@ -49,8 +49,8 @@ macro_rules! call_component {
     ($rtn_type: ty, $component: expr, $method: expr $(,)?) => {
         {
             extern crate alloc;
-            let rtn = crate::constructs::Component::call(&$component, $method, alloc::vec::Vec::new());
-            crate::buffer::radix_decode::<$rtn_type>(&rtn)
+            let rtn = scrypto::constructs::Component::call(&$component, $method, alloc::vec::Vec::new());
+            scrypto::buffer::radix_decode::<$rtn_type>(&rtn)
         }
     };
 
@@ -58,9 +58,9 @@ macro_rules! call_component {
         {
             extern crate alloc;
             let mut args = alloc::vec::Vec::new();
-            $(args.push(crate::buffer::radix_encode(&$args));)+
-            let rtn = crate::constructs::Component::call(&$component, $method, args);
-            crate::buffer::radix_decode::<$rtn_type>(&rtn)
+            $(args.push(scrypto::buffer::radix_encode(&$args));)+
+            let rtn = scrypto::constructs::Component::call(&$component, $method, args);
+            scrypto::buffer::radix_decode::<$rtn_type>(&rtn)
         }
     };
 }
@@ -70,7 +70,7 @@ macro_rules! call_component {
 macro_rules! error {
     ($($args: expr),+) => {
         extern crate alloc;
-        crate::constructs::Logger::log(crate::constructs::LogLevel::Error, alloc::format!($($args),+));
+        scrypto::constructs::Logger::log(scrypto::constructs::LogLevel::Error, alloc::format!($($args),+));
     };
 }
 
@@ -79,7 +79,7 @@ macro_rules! error {
 macro_rules! warn {
     ($($args: expr),+) => {
         extern crate alloc;
-        crate::constructs::Logger::log(crate::constructs::LogLevel::Warn, alloc::format!($($args),+));
+        scrypto::constructs::Logger::log(scrypto::constructs::LogLevel::Warn, alloc::format!($($args),+));
     };
 }
 
@@ -88,7 +88,7 @@ macro_rules! warn {
 macro_rules! info {
     ($($args: expr),+) => {
         extern crate alloc;
-        crate::constructs::Logger::log(crate::constructs::LogLevel::Info, alloc::format!($($args),+));
+        scrypto::constructs::Logger::log(scrypto::constructs::LogLevel::Info, alloc::format!($($args),+));
     };
 }
 
@@ -97,7 +97,7 @@ macro_rules! info {
 macro_rules! debug {
     ($($args: expr),+) => {
         extern crate alloc;
-        crate::constructs::Logger::log(crate::constructs::LogLevel::Debug, alloc::format!($($args),+));
+        scrypto::constructs::Logger::log(scrypto::constructs::LogLevel::Debug, alloc::format!($($args),+));
     };
 }
 
@@ -106,7 +106,7 @@ macro_rules! debug {
 macro_rules! trace {
     ($($args: expr),+) => {
         extern crate alloc;
-        crate::constructs::Logger::log(crate::constructs::LogLevel::Trace, alloc::format!($($args),+));
+        scrypto::constructs::Logger::log(scrypto::constructs::LogLevel::Trace, alloc::format!($($args),+));
     };
 }
 
@@ -115,9 +115,9 @@ mod tests {
     extern crate alloc;
     use alloc::vec::Vec;
 
-    use crate::abi::*;
-    use crate::buffer::*;
-    use crate::kernel::*;
+    use scrypto::abi::*;
+    use scrypto::buffer::*;
+    use scrypto::kernel::*;
 
     #[no_mangle]
     pub extern "C" fn radix_kernel(_op: u32, input_ptr: *const u8, input_len: usize) -> *mut u8 {

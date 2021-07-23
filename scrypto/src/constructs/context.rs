@@ -1,6 +1,6 @@
 use crate::abi::*;
 use crate::types::*;
-use crate::*;
+use crate::utils::*;
 
 /// The execution context.
 pub struct Context {}
@@ -8,7 +8,7 @@ pub struct Context {}
 impl Context {
     pub fn address() -> Address {
         let input = GetContextAddressInput {};
-        let output: GetContextAddressOutput = call_kernel!(GET_CONTEXT_ADDRESS, input);
+        let output: GetContextAddressOutput = syscall(GET_CONTEXT_ADDRESS, input);
         output.address
     }
 }

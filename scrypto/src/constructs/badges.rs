@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use crate::abi::*;
 use crate::constructs::*;
 use crate::types::*;
-use crate::*;
+use crate::utils::*;
 
 /// A bucket that holds badge resource.
 #[derive(Debug, Serialize, Deserialize)]
@@ -31,7 +31,7 @@ impl Badges {
             amount,
             resource: resource.address(),
         };
-        let output: MintBadgesOutput = call_kernel!(MINT_BADGES, input);
+        let output: MintBadgesOutput = syscall(MINT_BADGES, input);
 
         output.badges.into()
     }
@@ -41,7 +41,7 @@ impl Badges {
             badges: self.rid.clone(),
             other: other.rid.clone(),
         };
-        let _: CombineBadgesOutput = call_kernel!(COMBINE_BADGES, input);
+        let _: CombineBadgesOutput = syscall(COMBINE_BADGES, input);
     }
 
     pub fn take(&mut self, amount: U256) -> Self {
@@ -49,7 +49,7 @@ impl Badges {
             badges: self.rid.clone(),
             amount,
         };
-        let output: SplitBadgesOutput = call_kernel!(SPLIT_BADGES, input);
+        let output: SplitBadgesOutput = syscall(SPLIT_BADGES, input);
 
         output.badges.into()
     }
@@ -58,7 +58,7 @@ impl Badges {
         let input = BorrowBadgesInput {
             badges: self.rid.clone(),
         };
-        let output: BorrowBadgesOutput = call_kernel!(BORROW_BADGES, input);
+        let output: BorrowBadgesOutput = syscall(BORROW_BADGES, input);
 
         output.reference.into()
     }
@@ -67,7 +67,7 @@ impl Badges {
         let input = GetBadgesAmountInput {
             badges: self.rid.clone(),
         };
-        let output: GetBadgesAmountOutput = call_kernel!(GET_BADGES_AMOUNT, input);
+        let output: GetBadgesAmountOutput = syscall(GET_BADGES_AMOUNT, input);
 
         output.amount
     }
@@ -76,7 +76,7 @@ impl Badges {
         let input = GetBadgesResourceInput {
             badges: self.rid.clone(),
         };
-        let output: GetBadgesResourceOutput = call_kernel!(GET_BADGES_RESOURCE, input);
+        let output: GetBadgesResourceOutput = syscall(GET_BADGES_RESOURCE, input);
 
         output.resource.into()
     }

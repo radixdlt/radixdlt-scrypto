@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 use crate::abi::*;
 use crate::constructs::*;
 use crate::types::*;
+use crate::utils::*;
 
 /// An account holds tokens and badges.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -23,7 +24,7 @@ impl Account {
             amount,
             resource: resource.address(),
         };
-        let output: WithdrawTokensOutput = crate::call_kernel!(WITHDRAW_TOKENS, input);
+        let output: WithdrawTokensOutput = syscall(WITHDRAW_TOKENS, input);
 
         output.tokens.into()
     }
@@ -33,7 +34,7 @@ impl Account {
             account: self.address.clone(),
             tokens: tokens.into(),
         };
-        let _: DepositTokensOutput = crate::call_kernel!(DEPOSIT_TOKENS, input);
+        let _: DepositTokensOutput = syscall(DEPOSIT_TOKENS, input);
     }
 
     pub fn withdraw_badges(&mut self, amount: U256, resource: &Resource) -> Badges {
@@ -42,7 +43,7 @@ impl Account {
             amount,
             resource: resource.address(),
         };
-        let output: WithdrawBadgesOutput = crate::call_kernel!(WITHDRAW_BADGES, input);
+        let output: WithdrawBadgesOutput = syscall(WITHDRAW_BADGES, input);
 
         output.badges.into()
     }
@@ -52,7 +53,7 @@ impl Account {
             account: self.address.clone(),
             badges: badges.into(),
         };
-        let _: DepositBadgesOutput = crate::call_kernel!(DEPOSIT_BADGES, input);
+        let _: DepositBadgesOutput = syscall(DEPOSIT_BADGES, input);
     }
 
     pub fn address(&self) -> Address {

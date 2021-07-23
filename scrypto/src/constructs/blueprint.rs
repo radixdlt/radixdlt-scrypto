@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::abi::*;
 use crate::types::*;
-use crate::*;
+use crate::utils::*;
 
 /// A piece of code that defines the structure and methods of components.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -25,7 +25,7 @@ impl Blueprint {
         let input = PublishBlueprintInput {
             code: code.to_vec(),
         };
-        let output: PublishBlueprintOutput = crate::call_kernel!(PUBLISH_BLUEPRINT, input);
+        let output: PublishBlueprintOutput = syscall(PUBLISH_BLUEPRINT, input);
 
         Self::from(output.blueprint)
     }
@@ -42,7 +42,7 @@ impl Blueprint {
             method: method.to_string(),
             args,
         };
-        let output: CallBlueprintOutput = call_kernel!(CALL_BLUEPRINT, input);
+        let output: CallBlueprintOutput = syscall(CALL_BLUEPRINT, input);
 
         output.rtn
     }

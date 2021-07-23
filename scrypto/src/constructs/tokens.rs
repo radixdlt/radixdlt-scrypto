@@ -1,7 +1,7 @@
 use crate::abi::*;
 use crate::constructs::*;
 use crate::types::*;
-use crate::*;
+use crate::utils::*;
 
 use serde::{Deserialize, Serialize};
 
@@ -29,7 +29,7 @@ impl Tokens {
             amount,
             resource: resource.address(),
         };
-        let output: MintTokensOutput = call_kernel!(MINT_TOKENS, input);
+        let output: MintTokensOutput = syscall(MINT_TOKENS, input);
 
         output.tokens.into()
     }
@@ -39,7 +39,7 @@ impl Tokens {
             tokens: self.rid.clone(),
             other: other.rid.clone(),
         };
-        let _: CombineTokensOutput = call_kernel!(COMBINE_TOKENS, input);
+        let _: CombineTokensOutput = syscall(COMBINE_TOKENS, input);
     }
 
     pub fn take(&mut self, amount: U256) -> Self {
@@ -47,7 +47,7 @@ impl Tokens {
             tokens: self.rid.clone(),
             amount,
         };
-        let output: SplitTokensOutput = call_kernel!(SPLIT_TOKENS, input);
+        let output: SplitTokensOutput = syscall(SPLIT_TOKENS, input);
 
         output.tokens.into()
     }
@@ -56,7 +56,7 @@ impl Tokens {
         let input = GetTokensAmountInput {
             tokens: self.rid.clone(),
         };
-        let output: GetTokensAmountOutput = call_kernel!(GET_TOKENS_AMOUNT, input);
+        let output: GetTokensAmountOutput = syscall(GET_TOKENS_AMOUNT, input);
 
         output.amount
     }
@@ -65,7 +65,7 @@ impl Tokens {
         let input = GetTokensResourceInput {
             tokens: self.rid.clone(),
         };
-        let output: GetTokensResourceOutput = call_kernel!(GET_TOKENS_RESOURCE, input);
+        let output: GetTokensResourceOutput = syscall(GET_TOKENS_RESOURCE, input);
 
         output.resource.into()
     }

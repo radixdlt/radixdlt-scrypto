@@ -1,5 +1,5 @@
 use crate::abi::*;
-use crate::*;
+use crate::utils::*;
 
 extern crate alloc;
 use alloc::string::String;
@@ -30,7 +30,7 @@ impl Logger {
             level: s.to_string(),
             message,
         };
-        let _: EmitLogOutput = call_kernel!(EMIT_LOG, input);
+        let _: EmitLogOutput = syscall(EMIT_LOG, input);
     }
 
     pub fn trace(message: String) {

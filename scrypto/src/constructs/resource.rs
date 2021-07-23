@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::abi::*;
 use crate::types::*;
-use crate::*;
+use crate::utils::*;
 
 /// A primitive piece of state which has a single owner, and behaves like a physical object.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -40,7 +40,7 @@ impl Resource {
                 supply,
             },
         };
-        let output: CreateResourceOutput = call_kernel!(CREATE_RESOURCE, input);
+        let output: CreateResourceOutput = syscall(CREATE_RESOURCE, input);
 
         Resource::from(output.resource)
     }
@@ -49,7 +49,7 @@ impl Resource {
         let input = GetResourceInfoInput {
             resource: self.address.clone(),
         };
-        let output: GetResourceInfoOutput = call_kernel!(GET_RESOURCE_INFO, input);
+        let output: GetResourceInfoOutput = syscall(GET_RESOURCE_INFO, input);
 
         output.result.unwrap()
     }

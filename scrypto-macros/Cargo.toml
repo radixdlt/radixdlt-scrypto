@@ -1,0 +1,12 @@
+[package]
+name = "scrypto-macros"
+version = "0.1.0"
+edition = "2018"
+
+[dev-dependencies]
+scrypto = { version = "0.1", path = "../scrypto", default-features = false }
+
+[features]
+default = [ "std" ]
+std = [ "scrypto/std" ]
+alloc = [ "scrypto/alloc" ]
