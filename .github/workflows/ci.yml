@@ -6,7 +6,7 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  build:
+  test-stdlib:
     name: Test standard library
     runs-on: ubuntu-latest
     steps:
@@ -17,7 +17,7 @@ jobs:
     - name: Run tests (no_std)
       run: cargo test --verbose --no-default-features --features alloc
       working-directory: scrypto
-  build:
+  test-macros:
     name: Test macros
     runs-on: ubuntu-latest
     steps:
