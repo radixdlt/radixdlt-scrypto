@@ -1,26 +1,3 @@
-/// Call a system function in the Radix kernel.
-#[macro_export]
-macro_rules! call_kernel {
-    ($operation: expr, $input: expr) => {
-        unsafe {
-            // 1. serialize the input
-            let input_bytes = scrypto::buffer::bincode_encode(&$input);
-
-            // 2. make a kernel call
-            let output_ptr =
-                scrypto::kernel::radix_kernel($operation, input_bytes.as_ptr(), input_bytes.len());
-
-            // 3. copy and release the buffer (allocated by kernel)
-            let output_bytes = scrypto::kernel::radix_copy(output_ptr);
-            scrypto::kernel::radix_free(output_ptr);
-
-            // 4. deserialize the output
-            let output = scrypto::buffer::bincode_decode(&output_bytes);
-            output
-        }
-    };
-}
-
 /// Call a method of a blueprint.
 #[macro_export]
 macro_rules! call_blueprint {
