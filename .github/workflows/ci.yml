@@ -7,16 +7,13 @@ env:
 
 jobs:
   build:
-    name: Build and test
+    name: Unit tests
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - name: Build SDK
-      run: cargo build --verbose
-      working-directory: sdk
-    - name: Run SDK tests
+    - name: Run tests
       run: cargo test --verbose
-      working-directory: sdk
-    - name: Run SDK tests (no_std)
+      working-directory: scrypto
+    - name: Run tests (no_std)
       run: cargo test --verbose --no-default-features --features alloc
-      working-directory: sdk
+      working-directory: scrypto
