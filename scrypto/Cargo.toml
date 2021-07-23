@@ -13,9 +13,14 @@ bincode_core = { git = "https://github.com/bincode-org/bincode-core.git", defaul
 uint = { version = "0.9", default-features = false }
 
 # SHA256
-sha2 = { version="0.9", default-features = false }
+sha2 = { version = "0.9", default-features = false }
+
+# Compiler support
+scrypto-derive = { version = "0.1", path = "../scrypto-derive", default-features = false }
+scrypto-macros = { version = "0.1", path = "../scrypto-macros" }
 
 [features]
-default = ["std"]
-std = ["serde/std", "serde_json/std", "bincode_core/std"]
-alloc = ["serde/alloc", "serde_json/alloc", "bincode_core/alloc"]
+default = [ "std" ]
+compiler = [ ]
+std = [ "serde/std", "serde_json/std", "bincode_core/std", "scrypto-derive/std" ]
+alloc = [ "serde/alloc", "serde_json/alloc", "bincode_core/alloc", "scrypto-derive/alloc" ]

@@ -28,3 +28,14 @@ jobs:
     - name: Run tests (no_std)
       run: cargo test --verbose --no-default-features --features alloc
       working-directory: scrypto-macros
+  integration:
+    name: Run integration tests
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Run tests
+      run: cargo test --verbose
+      working-directory: scrypto-tests
+    - name: Run tests (no_std)
+      run: cargo test --verbose --no-default-features --features alloc
+      working-directory: scrypto-tests

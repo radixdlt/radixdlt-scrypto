@@ -15,3 +15,15 @@ pub mod library;
 pub mod types;
 /// Utility functions, such as hashing and hex decoding.
 pub mod utils;
+
+// Re-export scrypto derive and macros.
+
+#[allow(unused_imports)]
+#[macro_use]
+extern crate scrypto_derive;
+pub use scrypto_derive::*;
+
+#[allow(unused_imports)]
+#[macro_use]
+extern crate scrypto_macros;
+pub use scrypto_macros::*;
