@@ -2,6 +2,8 @@
 
 set -e
 
+cd "$(dirname "$0")"
+
 echo "Testing with std"
 (cd scrypto; cargo test)
 (cd scrypto-tests; cargo test)
