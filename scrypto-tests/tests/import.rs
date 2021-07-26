@@ -1,7 +1,7 @@
 use scrypto::kernel::radix_alloc;
 use scrypto_derive::import;
 
-// base directory: `scrypt-derive`
+// base directory: `scrypto-derive`
 import! { "../scrypto-tests/tests/abi.json" }
 
 #[test]

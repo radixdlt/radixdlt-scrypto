@@ -22,7 +22,7 @@ pub fn handle_import(input: TokenStream) -> TokenStream {
     let path_lit = parse_macro_input!(input as LitStr);
     let path = path_lit.value();
     let abi_str = fs::read_to_string(path).expect("Unable to load Abi");
-    let abi: abi::ABI = serde_json::from_str(abi_str.as_str()).expect("Unable to parse Abi");
+    let abi: abi::Blueprint = serde_json::from_str(abi_str.as_str()).expect("Unable to parse Abi");
     trace!("ABI: {:?}", abi);
 
     let mut structures: Vec<ItemStruct> = vec![];

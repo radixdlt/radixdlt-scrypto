@@ -4,7 +4,7 @@ use alloc::collections::BTreeMap;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct ABI {
+pub struct Blueprint {
     pub version: String,
     pub metadata: Metadata,
     pub components: Vec<Component>,
