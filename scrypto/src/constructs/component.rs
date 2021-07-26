@@ -5,11 +5,10 @@ use alloc::vec::Vec;
 
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
-use crate::abi::*;
 use crate::buffer::*;
 use crate::constructs::*;
+use crate::kernel::*;
 use crate::types::*;
-use crate::utils::*;
 
 /// A self-executing program that holds resources and exposed actions to other entities.
 #[derive(Debug, Clone, Serialize, Deserialize)]

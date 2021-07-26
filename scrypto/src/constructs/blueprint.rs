@@ -4,9 +4,8 @@ use alloc::vec::Vec;
 
 use serde::{Deserialize, Serialize};
 
-use crate::abi::*;
+use crate::kernel::*;
 use crate::types::*;
-use crate::utils::*;
 
 /// A piece of code that defines the structure and methods of components.
 #[derive(Debug, Clone, Serialize, Deserialize)]

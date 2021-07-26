@@ -1,13 +1,13 @@
 // Turn on `no_std`
 #![cfg_attr(not(feature = "std"), no_std)]
 
-/// Defines system function and component call protocol.
+/// Scrypto component ABI.
 pub mod abi;
-/// A module that handles buffer encoding and decoding.
+/// A module that handles serialization and de-serialization.
 pub mod buffer;
 /// Scrypto higher level abstraction.
 pub mod constructs;
-/// A module that facilitates system calls.
+/// A module that defines system functions and system call entrance.
 pub mod kernel;
 /// A library of common routines.
 pub mod library;

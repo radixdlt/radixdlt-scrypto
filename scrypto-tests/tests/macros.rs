@@ -1,10 +1,9 @@
 extern crate alloc;
 use alloc::vec::Vec;
 
-use scrypto::abi::*;
 use scrypto::buffer::{bincode_decode, bincode_encode};
 use scrypto::constructs::{Blueprint, Component};
-use scrypto::kernel::radix_alloc;
+use scrypto::kernel::*;
 use scrypto::types::Address;
 use scrypto::*;
 

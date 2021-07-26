@@ -3,9 +3,8 @@ use alloc::string::ToString;
 
 use serde::{Deserialize, Serialize};
 
-use crate::abi::*;
+use crate::kernel::*;
 use crate::types::*;
-use crate::utils::*;
 
 /// A primitive piece of state which has a single owner, and behaves like a physical object.
 #[derive(Debug, Clone, Serialize, Deserialize)]

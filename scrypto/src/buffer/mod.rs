@@ -63,8 +63,8 @@ mod tests {
     use alloc::string::String;
     use alloc::string::ToString;
 
-    use crate::abi::*;
     use crate::buffer::*;
+    use crate::kernel::*;
     use crate::types::*;
 
     #[test]
