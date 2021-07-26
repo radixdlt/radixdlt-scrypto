@@ -4,7 +4,8 @@ version = "0.1.0"
 edition = "2018"
 
 [dependencies]
-scrypto = { version = "0.1", path = "../scrypto", default-features = false, features = ["macros", "derive"] }
+scrypto = { version = "0.1", path = "../scrypto", default-features = false }
+scrypto-derive = { version = "0.1", path = "../scrypto-derive", default-features = false, features = [ "trace" ] }
 serde = { version = "1.0", default-features = false, features = ["derive"] }
 
 [features]
