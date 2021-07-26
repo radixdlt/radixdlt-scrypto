@@ -1,58 +1,48 @@
 {
-    "version": "1.0",
-    "metadata": {
-        "version": "0.1.0",
-        "author": "Yulong Wu <yulong@radixdlt.com>",
-        "url": "https://github.com/radixdlt/radixdlt-scrypto"
-    },
-    "components": [
+    "name": "Sample",
+    "methods": [
         {
-            "name": "Sample",
-            "methods": [
+            "name": "calculate_volume",
+            "inputs": [
                 {
-                    "name": "calculate_volume",
-                    "inputs": [
-                        {
-                            "type": "SelfRef"
+                    "type": "SelfRef"
+                },
+                {
+                    "type": "Object",
+                    "name": "Floor",
+                    "attributes": {
+                        "x": {
+                            "type": "U32"
                         },
-                        {
-                            "type": "Object",
-                            "name": "Floor",
-                            "attributes": {
-                                "x": {
-                                    "type": "U32"
-                                },
-                                "y": {
-                                    "type": "U32"
-                                }
-                            }
-                        },
-                        {
-                            "type": "Array",
-                            "elements": [
-                                {
-                                    "type": "U8"
-                                },
-                                {
-                                    "type": "U16"
-                                }
-                            ]
-                        },
-                        {
-                            "type": "Vec",
-                            "element": {
-                                "type": "String"
-                            }
-                        },
-                        {
+                        "y": {
                             "type": "U32"
                         }
-                    ],
-                    "output": {
-                        "type": "U32"
                     }
+                },
+                {
+                    "type": "Array",
+                    "elements": [
+                        {
+                            "type": "U8"
+                        },
+                        {
+                            "type": "U16"
+                        }
+                    ]
+                },
+                {
+                    "type": "Vec",
+                    "element": {
+                        "type": "String"
+                    }
+                },
+                {
+                    "type": "U32"
                 }
-            ]
+            ],
+            "output": {
+                "type": "U32"
+            }
         }
     ]
 }

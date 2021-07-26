@@ -4,20 +4,6 @@ use alloc::collections::BTreeMap;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct Blueprint {
-    pub version: String,
-    pub metadata: Metadata,
-    pub components: Vec<Component>,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct Metadata {
-    pub version: String,
-    pub author: String,
-    pub url: String,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
 pub struct Component {
     pub name: String,
     pub methods: Vec<Method>,

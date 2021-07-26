@@ -21,66 +21,65 @@ pub fn handle_import(input: TokenStream) -> TokenStream {
 
     let path_lit = parse_macro_input!(input as LitStr);
     let path = path_lit.value();
-    let abi_str = fs::read_to_string(path).expect("Unable to load Abi");
-    let abi: abi::Blueprint = serde_json::from_str(abi_str.as_str()).expect("Unable to parse Abi");
-    trace!("ABI: {:?}", abi);
+    let abi = fs::read_to_string(path).expect("Unable to load Abi");
+    let component: abi::Component =
+        serde_json::from_str(abi.as_str()).expect("Unable to parse Abi");
+    trace!("ABI: {:?}", component);
 
     let mut structures: Vec<ItemStruct> = vec![];
     let mut implementations: Vec<ItemImpl> = vec![];
 
-    for component in &abi.components {
-        let ident = Ident::new(component.name.as_str(), span);
+    let ident = Ident::new(component.name.as_str(), span);
 
-        let structure: ItemStruct = parse_quote! {
-            pub struct #ident {
-                address: scrypto::types::Address
-            }
-        };
-
-        let mut functions = Vec::<ItemFn>::new();
-        functions.push(parse_quote! {
-            pub fn from_address(address: scrypto::types::Address) -> Self {
-                Self {
-                    address
-                }
-            }
-        });
-
-        for method in &component.methods {
-            let func_indent = Ident::new(method.name.as_str(), span);
-            let mut func_inputs = Punctuated::<FnArg, Comma>::new();
-            for (i, input) in method.inputs.iter().enumerate() {
-                match input {
-                    abi::Type::SelfRef => func_inputs.push(parse_quote! { &self }),
-                    abi::Type::SelfMut => func_inputs.push(parse_quote! { &mut self }),
-                    _ => {
-                        let ident = format_ident!("arg{}", i);
-                        let (new_type, new_structures) = get_native_type(input);
-                        func_inputs.push(parse_quote! { #ident: #new_type });
-                        structures.extend(new_structures);
-                    }
-                }
-                if i < method.inputs.len() - 1 {
-                    func_inputs.push_punct(Comma(span));
-                }
-            }
-            let (func_output, new_structures) = get_native_type(&method.output);
-            structures.extend(new_structures);
-
-            functions.push(parse_quote! {
-                pub fn #func_indent(#func_inputs) -> #func_output {
-                    todo!()
-                }
-            });
+    let structure: ItemStruct = parse_quote! {
+        pub struct #ident {
+            address: scrypto::types::Address
         }
+    };
 
-        structures.push(structure);
-        implementations.push(parse_quote! {
-            impl #ident {
-                #(#functions)*
+    let mut functions = Vec::<ItemFn>::new();
+    functions.push(parse_quote! {
+        pub fn from_address(address: scrypto::types::Address) -> Self {
+            Self {
+                address
+            }
+        }
+    });
+
+    for method in &component.methods {
+        let func_indent = Ident::new(method.name.as_str(), span);
+        let mut func_inputs = Punctuated::<FnArg, Comma>::new();
+        for (i, input) in method.inputs.iter().enumerate() {
+            match input {
+                abi::Type::SelfRef => func_inputs.push(parse_quote! { &self }),
+                abi::Type::SelfMut => func_inputs.push(parse_quote! { &mut self }),
+                _ => {
+                    let ident = format_ident!("arg{}", i);
+                    let (new_type, new_structures) = get_native_type(input);
+                    func_inputs.push(parse_quote! { #ident: #new_type });
+                    structures.extend(new_structures);
+                }
+            }
+            if i < method.inputs.len() - 1 {
+                func_inputs.push_punct(Comma(span));
+            }
+        }
+        let (func_output, new_structures) = get_native_type(&method.output);
+        structures.extend(new_structures);
+
+        functions.push(parse_quote! {
+            pub fn #func_indent(#func_inputs) -> #func_output {
+                todo!()
             }
         });
     }
+
+    structures.push(structure);
+    implementations.push(parse_quote! {
+        impl #ident {
+            #(#functions)*
+        }
+    });
 
     let output = quote! {
          #(#structures)*
