@@ -108,7 +108,7 @@ fn get_native_type(ty: &abi::Type) -> (Type, Vec<ItemStruct>) {
         abi::Type::I16 => parse_quote! { i16 },
         abi::Type::I32 => parse_quote! { i32 },
         abi::Type::I64 => parse_quote! { i64 },
-        abi::Type::I128 => parse_quote! { u128 },
+        abi::Type::I128 => parse_quote! { i128 },
         abi::Type::U8 => parse_quote! { u8 },
         abi::Type::U16 => parse_quote! { u16 },
         abi::Type::U32 => parse_quote! { u32 },
