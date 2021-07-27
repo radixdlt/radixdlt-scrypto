@@ -72,6 +72,13 @@ macro_rules! tuple_impl {
 tuple_impl! { A }
 tuple_impl! { A B }
 tuple_impl! { A B C }
+tuple_impl! { A B C D }
+tuple_impl! { A B C D E }
+tuple_impl! { A B C D E F }
+tuple_impl! { A B C D E F G }
+tuple_impl! { A B C D E F G H }
+tuple_impl! { A B C D E F G H I }
+tuple_impl! { A B C D E F G H I J }
 
 #[cfg(test)]
 mod tests {
