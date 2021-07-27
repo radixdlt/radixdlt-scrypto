@@ -3,12 +3,11 @@
     "methods": [
         {
             "name": "calculate_volume",
+            "kind": "Stateful",
+            "mutability": "Immutable",
             "inputs": [
                 {
-                    "type": "SelfRef"
-                },
-                {
-                    "type": "Object",
+                    "type": "Struct",
                     "name": "Floor",
                     "attributes": {
                         "x": {
@@ -20,7 +19,7 @@
                     }
                 },
                 {
-                    "type": "Array",
+                    "type": "Tuple",
                     "elements": [
                         {
                             "type": "U8"
@@ -31,8 +30,8 @@
                     ]
                 },
                 {
-                    "type": "Vec",
-                    "element": {
+                    "type": "Array",
+                    "base": {
                         "type": "String"
                     }
                 },

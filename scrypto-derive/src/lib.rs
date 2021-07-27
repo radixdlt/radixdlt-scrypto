@@ -1,4 +1,3 @@
-mod abi;
 mod ast;
 mod component;
 mod import;

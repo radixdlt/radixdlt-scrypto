@@ -7,7 +7,7 @@ use syn::punctuated::Punctuated;
 use syn::token::Comma;
 use syn::*;
 
-use crate::abi;
+use scrypto_abi as abi;
 
 macro_rules! trace {
     ($($arg:expr),*) => {{
@@ -49,10 +49,17 @@ pub fn handle_import(input: TokenStream) -> TokenStream {
     for method in &component.methods {
         let func_indent = Ident::new(method.name.as_str(), span);
         let mut func_inputs = Punctuated::<FnArg, Comma>::new();
+
+        match method.kind {
+            abi::MethodKind::Stateful => match method.mutability {
+                abi::Mutability::Immutable => func_inputs.push(parse_quote! { &self }),
+                abi::Mutability::Mutable => func_inputs.push(parse_quote! { &mut self }),
+            },
+            _ => {}
+        }
+
         for (i, input) in method.inputs.iter().enumerate() {
             match input {
-                abi::Type::SelfRef => func_inputs.push(parse_quote! { &self }),
-                abi::Type::SelfMut => func_inputs.push(parse_quote! { &mut self }),
                 _ => {
                     let ident = format_ident!("arg{}", i);
                     let (new_type, new_structures) = get_native_type(input);
@@ -95,14 +102,26 @@ fn get_native_type(ty: &abi::Type) -> (Type, Vec<ItemStruct>) {
     let mut structures = Vec::<ItemStruct>::new();
 
     let t: Type = match ty {
-        abi::Type::SelfMut | abi::Type::SelfRef => {
-            panic!("Unexpected type: {:?}", ty);
-        }
+        abi::Type::Void => parse_quote! { () },
+        abi::Type::Bool => parse_quote! { bool },
+        abi::Type::I8 => parse_quote! { i8 },
+        abi::Type::I16 => parse_quote! { i16 },
+        abi::Type::I32 => parse_quote! { i32 },
+        abi::Type::I64 => parse_quote! { i64 },
+        abi::Type::I128 => parse_quote! { u128 },
         abi::Type::U8 => parse_quote! { u8 },
         abi::Type::U16 => parse_quote! { u16 },
         abi::Type::U32 => parse_quote! { u32 },
+        abi::Type::U64 => parse_quote! { u64 },
+        abi::Type::U128 => parse_quote! { u128 },
         abi::Type::String => parse_quote! { String },
-        abi::Type::Object { name, attributes } => {
+        abi::Type::Option { value } => {
+            let (new_type, new_structures) = get_native_type(value);
+            structures.extend(new_structures);
+
+            parse_quote! { Option<#new_type> }
+        }
+        abi::Type::Struct { name, attributes } => {
             let ident = Ident::new(name.as_str(), Span::call_site());
 
             let attrs: Vec<Ident> = attributes
@@ -124,7 +143,7 @@ fn get_native_type(ty: &abi::Type) -> (Type, Vec<ItemStruct>) {
 
             parse_quote! { #ident }
         }
-        abi::Type::Array { elements } => {
+        abi::Type::Tuple { elements } => {
             let mut types: Vec<Type> = vec![];
 
             for element in elements {
@@ -135,8 +154,8 @@ fn get_native_type(ty: &abi::Type) -> (Type, Vec<ItemStruct>) {
 
             parse_quote! { ( #(#types),* ) }
         }
-        abi::Type::Vec { element } => {
-            let (new_type, new_structures) = get_native_type(element);
+        abi::Type::Array { base } => {
+            let (new_type, new_structures) = get_native_type(base);
             structures.extend(new_structures);
 
             parse_quote! { Vec<#new_type> }
