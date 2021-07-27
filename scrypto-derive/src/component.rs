@@ -7,6 +7,7 @@ use syn::token::Comma;
 use syn::*;
 
 use crate::ast;
+use crate::utils::*;
 
 macro_rules! trace {
     ($($arg:expr),*) => {{
@@ -87,7 +88,8 @@ pub fn handle_component(input: TokenStream) -> TokenStream {
         }
     };
 
-    trace!("Auto-generated code:\n\n{}\n", output);
+    print_compiled_code("component!", &output);
+
     output.into()
 }
 

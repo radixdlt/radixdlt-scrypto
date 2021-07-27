@@ -7,6 +7,7 @@ use syn::punctuated::Punctuated;
 use syn::token::Comma;
 use syn::*;
 
+use crate::utils::*;
 use scrypto_abi as abi;
 
 macro_rules! trace {
@@ -94,7 +95,8 @@ pub fn handle_import(input: TokenStream) -> TokenStream {
          #(#implementations)*
     };
 
-    trace!("Auto-generated code:\n\n{}\n", output);
+    print_compiled_code("import!", &output);
+
     output.into()
 }
 

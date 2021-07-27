@@ -1,6 +1,8 @@
 mod ast;
 mod component;
+mod describe;
 mod import;
+mod utils;
 
 use proc_macro::TokenStream;
 
@@ -14,4 +16,10 @@ pub fn component(input: TokenStream) -> TokenStream {
 #[proc_macro]
 pub fn import(input: TokenStream) -> TokenStream {
     import::handle_import(input)
+}
+
+/// Describe a struct or enum
+#[proc_macro_derive(Describe)]
+pub fn describe(input: TokenStream) -> TokenStream {
+    describe::handle_describe(input)
 }
