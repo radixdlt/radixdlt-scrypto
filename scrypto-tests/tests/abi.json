@@ -37,6 +37,31 @@
                 },
                 {
                     "type": "U32"
+                },
+                {
+                    "type": "Enum",
+                    "name": "Hello",
+                    "variants": {
+                        "A": {
+                            "type": "Named",
+                            "fields": {
+                                "x": {
+                                    "type": "U32"
+                                }
+                            }
+                        },
+                        "B": {
+                            "type": "Unnamed",
+                            "fields": [
+                                {
+                                    "type": "U32"
+                                }
+                            ]
+                        },
+                        "C": {
+                            "type": "Unit"
+                        }
+                    }
                 }
             ],
             "output": {

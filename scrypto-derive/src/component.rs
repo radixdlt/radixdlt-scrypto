@@ -108,7 +108,7 @@ fn generate_dispatcher(com_ident: &Ident, items: &Vec<ImplItem>) -> (Vec<Expr>, 
                     let fn_name = &m.sig.ident.to_string();
                     let fn_ident = &m.sig.ident;
 
-                    trace!("[1] Generating the argument loading statements");
+                    trace!("[1] Generating argument loading statements");
                     let mut args: Vec<Expr> = vec![];
                     let mut stmts: Vec<Stmt> = vec![];
                     let mut get_state: Option<Stmt> = None;

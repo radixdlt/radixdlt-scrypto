@@ -33,6 +33,8 @@ pub enum Mutability {
     Mutable,
 }
 
+// We use internally tagged enum representation for readability.
+// See https://serde.rs/enum-representations.html
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "type")]
 pub enum Type {
@@ -77,4 +79,20 @@ pub enum Type {
         name: String,
         attributes: BTreeMap<String, Type>,
     },
+
+    /* enum */
+    Enum {
+        name: String,
+        variants: BTreeMap<String, Fields>,
+    },
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(tag = "type")]
+pub enum Fields {
+    Named { fields: BTreeMap<String, Type> },
+
+    Unnamed { fields: Vec<Type> },
+
+    Unit,
 }

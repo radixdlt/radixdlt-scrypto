@@ -27,16 +27,19 @@ pub fn handle_import(input: TokenStream) -> TokenStream {
         serde_json::from_str(abi.as_str()).expect("Unable to parse Abi");
     trace!("ABI: {:?}", component);
 
-    let mut structures: Vec<ItemStruct> = vec![];
+    let mut items: Vec<Item> = vec![];
     let mut implementations: Vec<ItemImpl> = vec![];
 
     let ident = Ident::new(component.name.as_str(), span);
+    trace!("Ident: {}", quote! { #ident });
 
-    let structure: ItemStruct = parse_quote! {
+    let structure: Item = parse_quote! {
         pub struct #ident {
             address: scrypto::types::Address
         }
     };
+    trace!("Structure: {}", quote! { #structure });
+    items.push(structure);
 
     let mut functions = Vec::<ItemFn>::new();
     functions.push(parse_quote! {
@@ -48,6 +51,8 @@ pub fn handle_import(input: TokenStream) -> TokenStream {
     });
 
     for method in &component.methods {
+        trace!("Processing method: {:?}", method);
+
         let func_indent = Ident::new(method.name.as_str(), span);
         let mut func_inputs = Punctuated::<FnArg, Comma>::new();
 
@@ -63,17 +68,17 @@ pub fn handle_import(input: TokenStream) -> TokenStream {
             match input {
                 _ => {
                     let ident = format_ident!("arg{}", i);
-                    let (new_type, new_structures) = get_native_type(input);
+                    let (new_type, new_items) = get_native_type(input);
                     func_inputs.push(parse_quote! { #ident: #new_type });
-                    structures.extend(new_structures);
+                    items.extend(new_items);
                 }
             }
             if i < method.inputs.len() - 1 {
                 func_inputs.push_punct(Comma(span));
             }
         }
-        let (func_output, new_structures) = get_native_type(&method.output);
-        structures.extend(new_structures);
+        let (func_output, new_items) = get_native_type(&method.output);
+        items.extend(new_items);
 
         functions.push(parse_quote! {
             pub fn #func_indent(#func_inputs) -> #func_output {
@@ -82,15 +87,16 @@ pub fn handle_import(input: TokenStream) -> TokenStream {
         });
     }
 
-    structures.push(structure);
-    implementations.push(parse_quote! {
+    let implementation = parse_quote! {
         impl #ident {
             #(#functions)*
         }
-    });
+    };
+    trace!("Implementation: {}", quote! { #implementation });
+    implementations.push(implementation);
 
     let output = quote! {
-         #(#structures)*
+         #(#items)*
 
          #(#implementations)*
     };
@@ -100,8 +106,8 @@ pub fn handle_import(input: TokenStream) -> TokenStream {
     output.into()
 }
 
-fn get_native_type(ty: &abi::Type) -> (Type, Vec<ItemStruct>) {
-    let mut structures = Vec::<ItemStruct>::new();
+fn get_native_type(ty: &abi::Type) -> (Type, Vec<Item>) {
+    let mut items = Vec::<Item>::new();
 
     let t: Type = match ty {
         abi::Type::Void => parse_quote! { () },
@@ -118,13 +124,13 @@ fn get_native_type(ty: &abi::Type) -> (Type, Vec<ItemStruct>) {
         abi::Type::U128 => parse_quote! { u128 },
         abi::Type::String => parse_quote! { String },
         abi::Type::Option { value } => {
-            let (new_type, new_structures) = get_native_type(value);
-            structures.extend(new_structures);
+            let (new_type, new_items) = get_native_type(value);
+            items.extend(new_items);
 
             parse_quote! { Option<#new_type> }
         }
         abi::Type::Struct { name, attributes } => {
-            let ident = Ident::new(name.as_str(), Span::call_site());
+            let ident = format_ident!("{}", name);
 
             let attrs: Vec<Ident> = attributes
                 .keys()
@@ -132,11 +138,11 @@ fn get_native_type(ty: &abi::Type) -> (Type, Vec<ItemStruct>) {
                 .collect();
             let mut types: Vec<Type> = vec![];
             for v in attributes.values() {
-                let (new_type, new_structures) = get_native_type(v);
+                let (new_type, new_items) = get_native_type(v);
                 types.push(new_type);
-                structures.extend(new_structures);
+                items.extend(new_items);
             }
-            structures.push(parse_quote! {
+            items.push(parse_quote! {
                 #[derive(Debug, serde::Serialize, serde::Deserialize)]
                 pub struct #ident {
                     #( pub #attrs : #types, )*
@@ -149,20 +155,75 @@ fn get_native_type(ty: &abi::Type) -> (Type, Vec<ItemStruct>) {
             let mut types: Vec<Type> = vec![];
 
             for element in elements {
-                let (new_type, new_structures) = get_native_type(element);
+                let (new_type, new_items) = get_native_type(element);
                 types.push(new_type);
-                structures.extend(new_structures);
+                items.extend(new_items);
             }
 
             parse_quote! { ( #(#types),* ) }
         }
         abi::Type::Array { base } => {
-            let (new_type, new_structures) = get_native_type(base);
-            structures.extend(new_structures);
+            let (new_type, new_items) = get_native_type(base);
+            items.extend(new_items);
 
             parse_quote! { Vec<#new_type> }
         }
+        abi::Type::Enum { name, variants } => {
+            let ident = format_ident!("{}", name);
+            let mut native_variants = Vec::<Variant>::new();
+
+            for (v_name, v_fields) in variants {
+                let v_ident = format_ident!("{}", v_name);
+
+                match v_fields {
+                    abi::Fields::Named { fields } => {
+                        trace!("Debug 1");
+                        let mut names: Vec<Ident> = vec![];
+                        let mut types: Vec<Type> = vec![];
+                        for (n, v) in fields {
+                            names.push(format_ident!("{}", n));
+                            let (new_type, new_items) = get_native_type(v);
+                            types.push(new_type);
+                            items.extend(new_items);
+                        }
+                        native_variants.push(parse_quote! {
+                            #v_ident {
+                                #(#names: #types),*
+                            }
+                        });
+                        trace!("Debug 2");
+                    }
+                    abi::Fields::Unnamed { fields } => {
+                        trace!("Debug 3");
+                        let mut types: Vec<Type> = vec![];
+                        for v in fields {
+                            let (new_type, new_items) = get_native_type(v);
+                            types.push(new_type);
+                            items.extend(new_items);
+                        }
+                        native_variants.push(parse_quote! {
+                            #v_ident ( #(#types),* )
+                        });
+                        trace!("Debug 4");
+                    }
+                    abi::Fields::Unit => {
+                        native_variants.push(parse_quote! {
+                            #v_ident
+                        });
+                    }
+                };
+            }
+
+            items.push(parse_quote! {
+                #[derive(Debug, serde::Serialize, serde::Deserialize)]
+                pub enum #ident {
+                    #( #native_variants ),*
+                }
+            });
+
+            parse_quote! { #ident }
+        }
     };
 
-    (t, structures)
+    (t, items)
 }

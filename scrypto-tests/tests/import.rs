@@ -13,8 +13,9 @@ fn test_import_from_abi() {
     let arg2 = (1u8, 2u16);
     let arg3 = Vec::<String>::new();
     let arg4 = 5;
+    let arg5 = Hello::A { x: 1 };
 
-    let _rtn = instance.calculate_volume(arg1, arg2, arg3, arg4);
+    let _rtn = instance.calculate_volume(arg1, arg2, arg3, arg4, arg5);
 }
 
 #[no_mangle]
