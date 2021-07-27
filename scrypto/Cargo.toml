@@ -22,8 +22,8 @@ scrypto-abi = { version = "0.1", path = "../scrypto-abi", default-features = fal
 scrypto-derive = { version = "0.1", path = "../scrypto-derive", default-features = false, optional = true }
 
 [features]
-default = [ "std" ]
-std = [ "serde/std", "serde_json/std", "bincode_core/std", "scrypto-derive/std" ]
-alloc = [ "serde/alloc", "serde_json/alloc", "bincode_core/alloc", "scrypto-derive/alloc" ]
-abi = [ "scrypto-abi" ]
-derive = [ "scrypto-derive" ]
+default = ["std"]
+std = ["serde/std", "serde_json/std", "bincode_core/std", "scrypto-derive/std"]
+alloc = ["serde/alloc", "serde_json/alloc", "bincode_core/alloc", "scrypto-derive/alloc"]
+abi = ["scrypto-abi"]
+derive = ["scrypto-derive"]
