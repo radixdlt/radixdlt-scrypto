@@ -15,11 +15,15 @@ uint = { version = "0.9", default-features = false }
 # SHA256
 sha2 = { version = "0.9", default-features = false }
 
-# Compiler support
+# Scrypto ABI
+scrypto-abi = { version = "0.1", path = "../scrypto-abi", default-features = false, optional = true }
+
+# Scrypto Derive
 scrypto-derive = { version = "0.1", path = "../scrypto-derive", default-features = false, optional = true }
 
 [features]
 default = [ "std" ]
 std = [ "serde/std", "serde_json/std", "bincode_core/std", "scrypto-derive/std" ]
 alloc = [ "serde/alloc", "serde_json/alloc", "bincode_core/alloc", "scrypto-derive/alloc" ]
+abi = [ "scrypto-abi" ]
 derive = [ "scrypto-derive" ]

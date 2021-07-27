@@ -1,8 +1,6 @@
 // Turn on `no_std`
 #![cfg_attr(not(feature = "std"), no_std)]
 
-/// Scrypto component ABI.
-pub mod abi;
 /// A module that handles serialization and de-serialization.
 pub mod buffer;
 /// Scrypto higher level abstraction.
@@ -16,7 +14,13 @@ pub mod types;
 /// Utility functions, such as hashing and hex decoding.
 pub mod utils;
 
-// Re-export scrypto derive.
+// Re-export Scrypto ABI.
+#[cfg(feature = "abi")]
+pub mod abi {
+    pub use scrypto_abi::*;
+}
+
+// Re-export Scrypto derive.
 #[cfg(feature = "derive")]
 #[allow(unused_imports)]
 #[macro_use]

@@ -4,7 +4,7 @@ use alloc::string::String;
 use alloc::vec;
 use alloc::vec::Vec;
 
-use crate::abi::*;
+use crate::*;
 
 /// Describe a data format
 pub trait Describe {
@@ -81,8 +81,8 @@ mod tests {
     use alloc::string::ToString;
     use alloc::vec;
 
-    use crate::abi;
-    use crate::abi::Describe;
+    use crate as abi;
+    use abi::Describe;
 
     #[allow(dead_code)]
     struct X {
