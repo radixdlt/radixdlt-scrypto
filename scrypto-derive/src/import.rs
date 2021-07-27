@@ -129,25 +129,29 @@ fn get_native_type(ty: &abi::Type) -> (Type, Vec<Item>) {
 
             parse_quote! { Option<#new_type> }
         }
-        abi::Type::Struct { name, attributes } => {
+        abi::Type::Struct { name, fields } => {
             let ident = format_ident!("{}", name);
 
-            let attrs: Vec<Ident> = attributes
-                .keys()
-                .map(|k| Ident::new(k.as_str(), Span::call_site()))
-                .collect();
-            let mut types: Vec<Type> = vec![];
-            for v in attributes.values() {
-                let (new_type, new_items) = get_native_type(v);
-                types.push(new_type);
-                items.extend(new_items);
-            }
-            items.push(parse_quote! {
-                #[derive(Debug, serde::Serialize, serde::Deserialize)]
-                pub struct #ident {
-                    #( pub #attrs : #types, )*
+            match fields {
+                abi::Fields::Named { fields } => {
+                    let names: Vec<Ident> = fields.keys().map(|k| format_ident!("{}", k)).collect();
+                    let mut types: Vec<Type> = vec![];
+                    for v in fields.values() {
+                        let (new_type, new_items) = get_native_type(v);
+                        types.push(new_type);
+                        items.extend(new_items);
+                    }
+                    items.push(parse_quote! {
+                        #[derive(Debug, serde::Serialize, serde::Deserialize)]
+                        pub struct #ident {
+                            #( pub #names : #types, )*
+                        }
+                    });
                 }
-            });
+                _ => {
+                    todo!("Add support for non-named fields")
+                }
+            }
 
             parse_quote! { #ident }
         }
@@ -177,7 +181,6 @@ fn get_native_type(ty: &abi::Type) -> (Type, Vec<Item>) {
 
                 match v_fields {
                     abi::Fields::Named { fields } => {
-                        trace!("Debug 1");
                         let mut names: Vec<Ident> = vec![];
                         let mut types: Vec<Type> = vec![];
                         for (n, v) in fields {
@@ -191,10 +194,8 @@ fn get_native_type(ty: &abi::Type) -> (Type, Vec<Item>) {
                                 #(#names: #types),*
                             }
                         });
-                        trace!("Debug 2");
                     }
                     abi::Fields::Unnamed { fields } => {
-                        trace!("Debug 3");
                         let mut types: Vec<Type> = vec![];
                         for v in fields {
                             let (new_type, new_items) = get_native_type(v);
@@ -204,7 +205,6 @@ fn get_native_type(ty: &abi::Type) -> (Type, Vec<Item>) {
                         native_variants.push(parse_quote! {
                             #v_ident ( #(#types),* )
                         });
-                        trace!("Debug 4");
                     }
                     abi::Fields::Unit => {
                         native_variants.push(parse_quote! {

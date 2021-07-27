@@ -100,14 +100,14 @@ mod tests {
 
     impl abi::Describe for X {
         fn describe() -> abi::Type {
-            let mut attributes = BTreeMap::new();
-            attributes.insert("a".to_string(), u32::describe());
-            attributes.insert("b".to_string(), String::describe());
-            attributes.insert("c".to_string(), <(u8, u16)>::describe());
+            let mut fields = BTreeMap::new();
+            fields.insert("a".to_string(), u32::describe());
+            fields.insert("b".to_string(), String::describe());
+            fields.insert("c".to_string(), <(u8, u16)>::describe());
 
             abi::Type::Struct {
                 name: "Y".to_string(),
-                attributes,
+                fields: abi::Fields::Named { fields },
             }
         }
     }

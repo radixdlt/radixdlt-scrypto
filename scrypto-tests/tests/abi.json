@@ -9,12 +9,15 @@
                 {
                     "type": "Struct",
                     "name": "Floor",
-                    "attributes": {
-                        "x": {
-                            "type": "U32"
-                        },
-                        "y": {
-                            "type": "U32"
+                    "fields": {
+                        "type": "Named",
+                        "fields": {
+                            "x": {
+                                "type": "U32"
+                            },
+                            "y": {
+                                "type": "U32"
+                            }
                         }
                     }
                 },

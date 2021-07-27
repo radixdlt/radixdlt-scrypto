@@ -77,7 +77,7 @@ pub enum Type {
     /* struct */
     Struct {
         name: String,
-        attributes: BTreeMap<String, Type>,
+        fields: Fields,
     },
 
     /* enum */
