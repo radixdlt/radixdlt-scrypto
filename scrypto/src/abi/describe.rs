@@ -46,18 +46,14 @@ impl<T: Describe> Describe for Option<T> {
 impl<T: Describe> Describe for [T] {
     fn describe() -> Type {
         let ty = T::describe();
-        Type::Array {
-            base: Box::new(ty),
-        }
+        Type::Array { base: Box::new(ty) }
     }
 }
 
 impl<T: Describe> Describe for Vec<T> {
     fn describe() -> Type {
         let ty = T::describe();
-        Type::Array {
-            base: Box::new(ty),
-        }
+        Type::Array { base: Box::new(ty) }
     }
 }
 
@@ -132,12 +128,16 @@ mod tests {
             methods: vec![
                 abi::Method {
                     name: "new".to_string(),
+                    kind: abi::MethodKind::Functional,
+                    mutability: abi::Mutability::Immutable,
                     inputs: vec![],
                     output: X::describe(),
                 },
                 abi::Method {
                     name: "add".to_string(),
-                    inputs: vec![abi::Type::SelfRef, u32::describe(), u32::describe()],
+                    kind: abi::MethodKind::Stateful,
+                    mutability: abi::Mutability::Immutable,
+                    inputs: vec![u32::describe(), u32::describe()],
                     output: u32::describe(),
                 },
             ],

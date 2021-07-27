@@ -11,3 +11,5 @@ echo "Testing with std"
 echo "Testing with no_std"
 (cd scrypto; cargo test --no-default-features --features alloc)
 (cd scrypto-tests; cargo test --no-default-features --features alloc)
+
+echo "Congrats! All tests passed."

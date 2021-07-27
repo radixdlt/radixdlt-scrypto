@@ -7,12 +7,12 @@ use serde::{Deserialize, Serialize};
 use crate::types::*;
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct ComponentInput {
+pub struct CallInput {
     pub method: String,
     pub args: Vec<SerializedValue>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct ComponentOutput {
+pub struct CallOutput {
     pub rtn: SerializedValue,
 }

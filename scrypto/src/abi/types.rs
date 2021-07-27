@@ -15,17 +15,29 @@ pub struct Component {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Method {
     pub name: String,
+    pub kind: MethodKind,
+    pub mutability: Mutability,
     pub inputs: Vec<Type>,
     pub output: Type,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+pub enum MethodKind {
+    Functional,
+    Stateful,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub enum Mutability {
+    Immutable,
+    Mutable,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "type")]
 pub enum Type {
-    /* special types: unit, &self, &mut self */
+    /* unit */
     Void,
-    SelfRef,
-    SelfMut,
 
     /* boolean */
     Bool,
@@ -42,7 +54,7 @@ pub enum Type {
     U64,
     U128,
 
-    /* string, &str */
+    /* String, &str */
     String,
 
     /* Option<T> */
@@ -50,12 +62,12 @@ pub enum Type {
         value: Box<Type>,
     },
 
-    /* [u8] */
+    /* [T] */
     Array {
         base: Box<Type>,
     },
 
-    /* (a, b, c) */
+    /* (A, B, C) */
     Tuple {
         elements: Vec<Type>,
     },

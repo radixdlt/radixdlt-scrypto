@@ -1,7 +1,7 @@
-mod component;
+mod call;
 mod describe;
 mod types;
 
-pub use component::*;
+pub use call::*;
 pub use describe::*;
 pub use types::*;

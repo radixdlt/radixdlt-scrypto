@@ -61,7 +61,7 @@ pub fn handle_component(input: TokenStream) -> TokenStream {
             scrypto::kernel::radix_free(input_ptr);
 
             // deserialize the input
-            let input = scrypto::buffer::radix_decode::<scrypto::abi::ComponentInput>(
+            let input = scrypto::buffer::radix_decode::<scrypto::abi::CallInput>(
                 &input_bytes,
             );
 
@@ -75,7 +75,7 @@ pub fn handle_component(input: TokenStream) -> TokenStream {
             }
 
             // serialize the output
-            let output = scrypto::abi::ComponentOutput { rtn };
+            let output = scrypto::abi::CallOutput { rtn };
             let output_bytes = scrypto::buffer::bincode_encode(&output);
 
             // return the output wrapped in a radix-style buffer
