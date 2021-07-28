@@ -12,9 +12,11 @@ macro_rules! trace {
 }
 
 pub fn handle_describe(input: TokenStream) -> TokenStream {
+    trace!("handle_describe() starts");
+
     let DeriveInput { ident, data, .. } = parse_macro_input!(input);
     let ident_str = ident.to_string();
-    trace!("Describing {:?}", &ident);
+    trace!("Describing: {}", ident);
 
     let output = match data {
         Data::Struct(s) => match s.fields {
@@ -151,6 +153,7 @@ pub fn handle_describe(input: TokenStream) -> TokenStream {
             panic!("Union is not supported!")
         }
     };
+    trace!("handle_derive() finishes");
 
     print_compiled_code("#[derive(Describe)]", &output);
 

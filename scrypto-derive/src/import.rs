@@ -18,6 +18,7 @@ macro_rules! trace {
 }
 
 pub fn handle_import(input: TokenStream) -> TokenStream {
+    trace!("handle_import() starts");
     let span = Span::call_site();
 
     let path_lit = parse_macro_input!(input as LitStr);
@@ -31,14 +32,13 @@ pub fn handle_import(input: TokenStream) -> TokenStream {
     let mut implementations: Vec<ItemImpl> = vec![];
 
     let ident = Ident::new(component.name.as_str(), span);
-    trace!("Ident: {}", quote! { #ident });
+    trace!("Component name: {}", quote! { #ident });
 
     let structure: Item = parse_quote! {
         pub struct #ident {
             address: scrypto::types::Address
         }
     };
-    trace!("Structure: {}", quote! { #structure });
     items.push(structure);
 
     let mut functions = Vec::<ItemFn>::new();
@@ -100,6 +100,7 @@ pub fn handle_import(input: TokenStream) -> TokenStream {
 
          #(#implementations)*
     };
+    trace!("handle_import() finishes");
 
     print_compiled_code("import!", &output);
 

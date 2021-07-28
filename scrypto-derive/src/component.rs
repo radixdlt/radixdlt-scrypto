@@ -17,6 +17,8 @@ macro_rules! trace {
 }
 
 pub fn handle_component(input: TokenStream) -> TokenStream {
+    trace!("handle_component() begins");
+
     // parse component struct and impl
     let com = parse_macro_input!(input as ast::Component);
     let com_strut = &com.structure;
@@ -24,17 +26,17 @@ pub fn handle_component(input: TokenStream) -> TokenStream {
     let com_ident = &com_strut.ident;
     let com_items = &com_impl.items;
     let com_name = com_ident.to_string();
-    trace!("Component name: {}", com_ident);
+    trace!("Processing component: {}", com_name);
 
-    // Generate dispatcher function
+    trace!("Generating dispatcher function...");
     let dispatcher_ident = format_ident!("{}_main", com_ident);
     let (arm_guards, arm_bodies) = generate_dispatcher(&com_ident, com_items);
 
-    // Generate abi function
+    trace!("Generating ABI function...");
     let abi_ident = format_ident!("{}_abi", com_ident);
     let abi_methods = generate_abi(&com_name, com_items);
 
-    // Generate stub structure
+    trace!("Generating stubs...");
     let stub_ident = format_ident!("{}Stub", com_ident);
     let stub_items = generate_stub(&com_ident, com_items);
 
@@ -116,9 +118,9 @@ pub fn handle_component(input: TokenStream) -> TokenStream {
             }
         }
     };
+    trace!("handle_component() finishes");
 
     print_compiled_code("component!", &output);
-
     output.into()
 }
 
@@ -129,7 +131,7 @@ fn generate_dispatcher(com_ident: &Ident, items: &Vec<ImplItem>) -> (Vec<Expr>, 
     let mut arm_bodies = Vec::<Expr>::new();
 
     for item in items {
-        trace!("Processing: {}", quote! {#item});
+        trace!("Processing function: {}", quote! { #item });
 
         match item {
             ImplItem::Method(ref m) => match &m.vis {
@@ -137,7 +139,7 @@ fn generate_dispatcher(com_ident: &Ident, items: &Vec<ImplItem>) -> (Vec<Expr>, 
                     let fn_name = &m.sig.ident.to_string();
                     let fn_ident = &m.sig.ident;
 
-                    trace!("[1] Generating argument loading statements");
+                    trace!("[1] Generating argument loading statements...");
                     let mut args: Vec<Expr> = vec![];
                     let mut stmts: Vec<Stmt> = vec![];
                     let mut get_state: Option<Stmt> = None;
@@ -188,7 +190,7 @@ fn generate_dispatcher(com_ident: &Ident, items: &Vec<ImplItem>) -> (Vec<Expr>, 
                         i += 1;
                     }
 
-                    trace!("[2] Generating the invoking statement");
+                    trace!("[2] Generating function call statement...");
                     // load state if needed
                     if get_state.is_some() {
                         trace!("Stmt: {}", quote! { #get_state });
@@ -208,7 +210,7 @@ fn generate_dispatcher(com_ident: &Ident, items: &Vec<ImplItem>) -> (Vec<Expr>, 
                         stmts.push(put_state.unwrap());
                     }
 
-                    trace!("[3] Generating match arm");
+                    trace!("[3] Generating match arm...");
                     arm_guards.push(parse_quote! { #fn_name });
                     arm_bodies.push(Expr::Block(ExprBlock {
                         attrs: vec![],
@@ -235,7 +237,7 @@ fn generate_abi(comp_name: &str, items: &Vec<ImplItem>) -> Vec<Expr> {
     let mut functions = Vec::<Expr>::new();
 
     for item in items {
-        trace!("Processing: {}", quote! {#item});
+        trace!("Processing function: {}", quote! { #item });
         match item {
             ImplItem::Method(ref m) => match &m.vis {
                 Visibility::Public(_) => {
@@ -303,7 +305,7 @@ fn generate_stub(com_ident: &Ident, items: &Vec<ImplItem>) -> Vec<Item> {
     let mut stubs: Vec<Item> = vec![];
 
     for item in items {
-        trace!("Processing: {}", quote! {#item});
+        trace!("Processing function: {}", quote! { #item });
         match item {
             ImplItem::Method(ref m) => match &m.vis {
                 Visibility::Public(_) => {
@@ -321,7 +323,7 @@ fn generate_stub(com_ident: &Ident, items: &Vec<ImplItem>) -> Vec<Item> {
                             _ => {}
                         }
                     }
-                    trace!("Is static function?: {}", is_static);
+                    trace!("Static: {}", is_static);
 
                     let com_name = com_ident.to_string();
                     let method_ident = &m.sig.ident;
