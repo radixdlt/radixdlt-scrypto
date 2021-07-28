@@ -1,6 +1,10 @@
 use scrypto::abi::Describe;
 use scrypto::Describe;
 
+mod utils;
+use serde_json::json;
+use utils::json_eq;
+
 #[derive(Describe)]
 pub struct TestStructNamed {
     pub state: u32,
@@ -21,30 +25,82 @@ pub enum TestEnum {
 
 #[test]
 fn test_describe_struct() {
-    let abi1 = TestStructNamed::describe();
-    assert_eq!(
-        "{\"type\":\"Struct\",\"name\":\"TestStructNamed\",\"fields\":{\"type\":\"Named\",\"fields\":{\"state\":{\"type\":\"U32\"}}}}", 
-        serde_json::to_string(&abi1).unwrap()
+    json_eq(
+        json!({
+          "type": "Struct",
+          "name": "TestStructNamed",
+          "fields": {
+            "type": "Named",
+            "fields": {
+              "state": {
+                "type": "U32"
+              }
+            }
+          }
+        }),
+        TestStructNamed::describe(),
     );
 
-    let abi2 = TestStructUnnamed::describe();
-    assert_eq!(
-        "{\"type\":\"Struct\",\"name\":\"TestStructUnnamed\",\"fields\":{\"type\":\"Unnamed\",\"fields\":[{\"type\":\"U32\"}]}}", 
-        serde_json::to_string(&abi2).unwrap()
+    json_eq(
+        json!({
+          "type": "Struct",
+          "name": "TestStructUnnamed",
+          "fields": {
+            "type": "Unnamed",
+            "fields": [
+              {
+                "type": "U32"
+              }
+            ]
+          }
+        }),
+        TestStructUnnamed::describe(),
     );
 
-    let abi3 = TestStructUnit::describe();
-    assert_eq!(
-        "{\"type\":\"Struct\",\"name\":\"TestStructUnit\",\"fields\":{\"type\":\"Named\",\"fields\":{}}}",
-        serde_json::to_string(&abi3).unwrap()
+    json_eq(
+        json!({
+          "type": "Struct",
+          "name": "TestStructUnit",
+          "fields": {
+            "type": "Named",
+            "fields": {}
+          }
+        }),
+        TestStructUnit::describe(),
     );
 }
 
 #[test]
 fn test_describe_enum() {
-    let abi1 = TestEnum::describe();
-    assert_eq!(
-        "{\"type\":\"Enum\",\"name\":\"TestEnum\",\"variants\":{\"A\":{\"type\":\"Unit\"},\"B\":{\"type\":\"Unnamed\",\"fields\":[{\"type\":\"U32\"}]},\"C\":{\"type\":\"Named\",\"fields\":{\"x\":{\"type\":\"U32\"},\"y\":{\"type\":\"U32\"}}}}}",
-        serde_json::to_string(&abi1).unwrap()
+    json_eq(
+        json!({
+          "type": "Enum",
+          "name": "TestEnum",
+          "variants": {
+            "A": {
+              "type": "Unit"
+            },
+            "B": {
+              "type": "Unnamed",
+              "fields": [
+                {
+                  "type": "U32"
+                }
+              ]
+            },
+            "C": {
+              "type": "Named",
+              "fields": {
+                "x": {
+                  "type": "U32"
+                },
+                "y": {
+                  "type": "U32"
+                }
+              }
+            }
+          }
+        }),
+        TestEnum::describe(),
     );
 }

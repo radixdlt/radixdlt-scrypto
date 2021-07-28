@@ -1,6 +1,10 @@
 use scrypto::component;
 use scrypto::kernel::*;
 
+mod utils;
+use serde_json::json;
+use utils::json_eq;
+
 component! {
     struct Simple {
         state: u32,
@@ -37,9 +41,53 @@ fn test_simple_component_abi() {
     let abi = radix_copy(ptr);
     radix_free(ptr);
 
-    assert_eq!(
-        "{\"name\":\"Simple\",\"methods\":[{\"name\":\"new\",\"kind\":\"Functional\",\"mutability\":\"Immutable\",\"inputs\":[],\"output\":{\"type\":\"Struct\",\"name\":\"Simple\",\"fields\":{\"type\":\"Named\",\"fields\":{\"state\":{\"type\":\"U32\"}}}}},{\"name\":\"get_state\",\"kind\":\"Stateful\",\"mutability\":\"Immutable\",\"inputs\":[],\"output\":{\"type\":\"U32\"}},{\"name\":\"set_state\",\"kind\":\"Stateful\",\"mutability\":\"Mutable\",\"inputs\":[{\"type\":\"U32\"}],\"output\":{\"type\":\"Unit\"}}]}", 
-        String::from_utf8(abi).unwrap()
+    json_eq(
+        json!({
+          "name": "Simple",
+          "methods": [
+            {
+              "name": "new",
+              "kind": "Functional",
+              "mutability": "Immutable",
+              "inputs": [],
+              "output": {
+                "type": "Struct",
+                "name": "Simple",
+                "fields": {
+                  "type": "Named",
+                  "fields": {
+                    "state": {
+                      "type": "U32"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "name": "get_state",
+              "kind": "Stateful",
+              "mutability": "Immutable",
+              "inputs": [],
+              "output": {
+                "type": "U32"
+              }
+            },
+            {
+              "name": "set_state",
+              "kind": "Stateful",
+              "mutability": "Mutable",
+              "inputs": [
+                {
+                  "type": "U32"
+                }
+              ],
+              "output": {
+                "type": "Unit"
+              }
+            }
+          ]
+        }),
+        serde_json::from_slice::<scrypto::abi::Component>(&abi).unwrap(),
     );
 }
 

@@ -83,56 +83,54 @@ tuple_impl! { A B C D E F G H I J }
 
 #[cfg(test)]
 mod tests {
-    extern crate alloc;
-    use alloc::string::String;
-
     use serde::Serialize;
+    use serde_json::{json, Value};
 
     use crate as abi;
     use abi::Describe;
 
-    fn assert_json<T: Serialize>(expected: &str, value: T) {
-        let json = serde_json::to_string(&value).unwrap();
-        assert_eq!(expected, json);
+    pub fn json_eq<T: Serialize>(expected: Value, actual: T) {
+        let actual_json = serde_json::to_value(&actual).unwrap();
+        assert_eq!(expected, actual_json);
     }
 
     #[test]
     pub fn test_basic_types() {
-        assert_json("{\"type\":\"Bool\"}", bool::describe());
-        assert_json("{\"type\":\"I8\"}", i8::describe());
-        assert_json("{\"type\":\"I16\"}", i16::describe());
-        assert_json("{\"type\":\"I32\"}", i32::describe());
-        assert_json("{\"type\":\"I64\"}", i64::describe());
-        assert_json("{\"type\":\"I128\"}", i128::describe());
-        assert_json("{\"type\":\"U8\"}", u8::describe());
-        assert_json("{\"type\":\"U16\"}", u16::describe());
-        assert_json("{\"type\":\"U32\"}", u32::describe());
-        assert_json("{\"type\":\"U64\"}", u64::describe());
-        assert_json("{\"type\":\"U128\"}", u128::describe());
-        assert_json("{\"type\":\"String\"}", str::describe());
-        assert_json("{\"type\":\"String\"}", String::describe());
+        json_eq(json!({"type":"Bool"}), bool::describe());
+        json_eq(json!({"type":"I8"}), i8::describe());
+        json_eq(json!({"type":"I16"}), i16::describe());
+        json_eq(json!({"type":"I32"}), i32::describe());
+        json_eq(json!({"type":"I64"}), i64::describe());
+        json_eq(json!({"type":"I128"}), i128::describe());
+        json_eq(json!({"type":"U8"}), u8::describe());
+        json_eq(json!({"type":"U16"}), u16::describe());
+        json_eq(json!({"type":"U32"}), u32::describe());
+        json_eq(json!({"type":"U64"}), u64::describe());
+        json_eq(json!({"type":"U128"}), u128::describe());
+        json_eq(json!({"type":"String"}), str::describe());
+        json_eq(json!({"type":"String"}), String::describe());
     }
 
     #[test]
     pub fn test_option() {
-        assert_json(
-            "{\"type\":\"Option\",\"value\":{\"type\":\"String\"}}",
+        json_eq(
+            json!({"type":"Option","value":{"type":"String"}}),
             Option::<String>::describe(),
         );
     }
 
     #[test]
     pub fn test_array() {
-        assert_json(
-            "{\"type\":\"Array\",\"base\":{\"type\":\"U8\"}}",
+        json_eq(
+            json!({"type":"Array","base":{"type":"U8"}}),
             <[u8]>::describe(),
         );
     }
 
     #[test]
     pub fn test_tuple() {
-        assert_json(
-            "{\"type\":\"Tuple\",\"elements\":[{\"type\":\"U8\"},{\"type\":\"U128\"}]}",
+        json_eq(
+            json!({"type":"Tuple","elements":[{"type":"U8"},{"type":"U128"}]}),
             <(u8, u128)>::describe(),
         );
     }

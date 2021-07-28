@@ -36,7 +36,7 @@ pub fn handle_describe(input: TokenStream) -> TokenStream {
                             use scrypto::abi::{self, Describe};
 
                             let mut fields = BTreeMap::new();
-                            #(fields.insert(#names.to_string(), #types::describe());)*
+                            #(fields.insert(#names.to_string(), <#types>::describe());)*
 
                             abi::Type::Struct {
                                 name: #ident_str.to_string(),
@@ -58,7 +58,7 @@ pub fn handle_describe(input: TokenStream) -> TokenStream {
                             use scrypto::abi::{self, Describe};
 
                             let mut fields = Vec::new();
-                            #(fields.push(#types::describe());)*
+                            #(fields.push(<#types>::describe());)*
 
                             abi::Type::Struct {
                                 name: #ident_str.to_string(),
@@ -98,7 +98,7 @@ pub fn handle_describe(input: TokenStream) -> TokenStream {
                         quote! {
                             {
                                 let mut fields = BTreeMap::new();
-                                #(fields.insert(#names.to_string(), #types::describe());)*
+                                #(fields.insert(#names.to_string(), <#types>::describe());)*
                                 abi::Fields::Named {
                                     fields,
                                 }
@@ -110,7 +110,7 @@ pub fn handle_describe(input: TokenStream) -> TokenStream {
                         quote! {
                             {
                                 let mut fields = Vec::new();
-                                #(fields.push(#types::describe());)*
+                                #(fields.push(<#types>::describe());)*
                                 abi::Fields::Unnamed {
                                     fields,
                                 }
