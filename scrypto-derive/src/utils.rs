@@ -24,10 +24,10 @@ pub fn print_compiled_code<S: ToString>(kind: &str, code: S) {
             let formatted =
                 fs::read_to_string(path.clone()).expect("Unable to open formatted code");
             println!(
-                "{}\n{}:\n{}\n{}\n",
-                "=".repeat(kind.len()),
+                "{}\n{}\n{}\n{}\n",
+                "-".repeat(kind.len()),
                 kind,
-                "=".repeat(kind.len()),
+                "-".repeat(kind.len()),
                 formatted
             );
             fs::remove_file(path).unwrap();

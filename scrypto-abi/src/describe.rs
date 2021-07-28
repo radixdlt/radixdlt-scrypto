@@ -32,6 +32,7 @@ describe_basic_type!(u16, Type::U16);
 describe_basic_type!(u32, Type::U32);
 describe_basic_type!(u64, Type::U64);
 describe_basic_type!(u128, Type::U128);
+describe_basic_type!(str, Type::String);
 describe_basic_type!(String, Type::String);
 
 impl<T: Describe> Describe for Option<T> {
@@ -83,80 +84,56 @@ tuple_impl! { A B C D E F G H I J }
 #[cfg(test)]
 mod tests {
     extern crate alloc;
-    use alloc::collections::BTreeMap;
     use alloc::string::String;
-    use alloc::string::ToString;
-    use alloc::vec;
+
+    use serde::Serialize;
 
     use crate as abi;
     use abi::Describe;
 
-    #[allow(dead_code)]
-    struct X {
-        a: u32,
-        b: String,
-        c: (u8, u16),
-    }
-
-    impl abi::Describe for X {
-        fn describe() -> abi::Type {
-            let mut fields = BTreeMap::new();
-            fields.insert("a".to_string(), u32::describe());
-            fields.insert("b".to_string(), String::describe());
-            fields.insert("c".to_string(), <(u8, u16)>::describe());
-
-            abi::Type::Struct {
-                name: "Y".to_string(),
-                fields: abi::Fields::Named { fields },
-            }
-        }
-    }
-
-    impl X {
-        #[allow(dead_code)]
-        pub fn new() -> Self {
-            Self {
-                a: 0,
-                b: "hello".to_string(),
-                c: (1, 2),
-            }
-        }
-
-        #[allow(dead_code)]
-        pub fn add(&self, a: u32, b: u32) -> u32 {
-            a + b
-        }
-    }
-
-    #[allow(non_snake_case)]
-    pub fn X_abi() -> abi::Component {
-        abi::Component {
-            name: "X".to_string(),
-            methods: vec![
-                abi::Method {
-                    name: "new".to_string(),
-                    kind: abi::MethodKind::Functional,
-                    mutability: abi::Mutability::Immutable,
-                    inputs: vec![],
-                    output: X::describe(),
-                },
-                abi::Method {
-                    name: "add".to_string(),
-                    kind: abi::MethodKind::Stateful,
-                    mutability: abi::Mutability::Immutable,
-                    inputs: vec![u32::describe(), u32::describe()],
-                    output: u32::describe(),
-                },
-            ],
-        }
+    fn assert_json<T: Serialize>(expected: &str, value: T) {
+        let json = serde_json::to_string(&value).unwrap();
+        assert_eq!(expected, json);
     }
 
     #[test]
-    pub fn test_abi_describe() {
-        #[allow(unused_variables)]
-        let json = serde_json::to_string_pretty(&X_abi()).unwrap();
+    pub fn test_basic_types() {
+        assert_json("{\"type\":\"Bool\"}", bool::describe());
+        assert_json("{\"type\":\"I8\"}", i8::describe());
+        assert_json("{\"type\":\"I16\"}", i16::describe());
+        assert_json("{\"type\":\"I32\"}", i32::describe());
+        assert_json("{\"type\":\"I64\"}", i64::describe());
+        assert_json("{\"type\":\"I128\"}", i128::describe());
+        assert_json("{\"type\":\"U8\"}", u8::describe());
+        assert_json("{\"type\":\"U16\"}", u16::describe());
+        assert_json("{\"type\":\"U32\"}", u32::describe());
+        assert_json("{\"type\":\"U64\"}", u64::describe());
+        assert_json("{\"type\":\"U128\"}", u128::describe());
+        assert_json("{\"type\":\"String\"}", str::describe());
+        assert_json("{\"type\":\"String\"}", String::describe());
+    }
 
-        #[cfg(feature = "std")]
-        println!("{}", json);
+    #[test]
+    pub fn test_option() {
+        assert_json(
+            "{\"type\":\"Option\",\"value\":{\"type\":\"String\"}}",
+            Option::<String>::describe(),
+        );
+    }
+
+    #[test]
+    pub fn test_array() {
+        assert_json(
+            "{\"type\":\"Array\",\"base\":{\"type\":\"U8\"}}",
+            <[u8]>::describe(),
+        );
+    }
+
+    #[test]
+    pub fn test_tuple() {
+        assert_json(
+            "{\"type\":\"Tuple\",\"elements\":[{\"type\":\"U8\"},{\"type\":\"U128\"}]}",
+            <(u8, u128)>::describe(),
+        );
     }
 }
