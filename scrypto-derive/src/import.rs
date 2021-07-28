@@ -110,7 +110,7 @@ fn get_native_type(ty: &abi::Type) -> (Type, Vec<Item>) {
     let mut items = Vec::<Item>::new();
 
     let t: Type = match ty {
-        abi::Type::Void => parse_quote! { () },
+        abi::Type::Unit => parse_quote! { () },
         abi::Type::Bool => parse_quote! { bool },
         abi::Type::I8 => parse_quote! { i8 },
         abi::Type::I16 => parse_quote! { i16 },

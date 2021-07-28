@@ -39,7 +39,7 @@ pub enum Mutability {
 #[serde(tag = "type")]
 pub enum Type {
     /* unit */
-    Void,
+    Unit,
 
     /* boolean */
     Bool,
