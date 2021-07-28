@@ -23,18 +23,23 @@ pub fn handle_component(input: TokenStream) -> TokenStream {
     let com_impl = &com.implementation;
     let com_ident = &com_strut.ident;
     let com_items = &com_impl.items;
+    let com_name = com_ident.to_string();
     trace!("Component name: {}", com_ident);
 
     // Generate dispatcher function
     let dispatcher_ident = format_ident!("{}_main", com_ident);
     let (arm_guards, arm_bodies) = generate_dispatcher(&com_ident, com_items);
 
+    // Generate abi function
+    let abi_ident = format_ident!("{}_abi", com_ident);
+    let abi_methods = generate_abi(&com_name, com_items);
+
     // Generate stub structure
     let stub_ident = format_ident!("{}Stub", com_ident);
     let stub_items = generate_stub(&com_ident, com_items);
 
     let output = quote! {
-        #[derive(Debug, serde::Serialize, serde::Deserialize)]
+        #[derive(Debug, scrypto::Describe, serde::Serialize, serde::Deserialize)]
         pub #com_strut
 
         impl #com_ident {
@@ -86,6 +91,30 @@ pub fn handle_component(input: TokenStream) -> TokenStream {
                 ptr
             }
         }
+
+        #[no_mangle]
+        pub extern "C" fn #abi_ident() -> *mut u8 {
+            extern crate alloc;
+            use alloc::string::ToString;
+            use scrypto::abi::{self, Describe};
+
+            let output = abi::Component {
+                name: #com_name.to_string(),
+                methods: vec![
+                    #(#abi_methods),*
+                ],
+            };
+
+            // serialize the output
+            let output_bytes = scrypto::buffer::radix_encode(&output);
+
+            // return the output wrapped in a radix-style buffer
+            unsafe {
+                let ptr = scrypto::kernel::radix_alloc(output_bytes.len());
+                std::ptr::copy(output_bytes.as_ptr(), ptr, output_bytes.len());
+                ptr
+            }
+        }
     };
 
     print_compiled_code("component!", &output);
@@ -120,7 +149,7 @@ fn generate_dispatcher(com_ident: &Ident, items: &Vec<ImplItem>) -> (Vec<Expr>, 
                             FnArg::Receiver(ref r) => {
                                 // Check receiver type and mutability
                                 if r.reference.is_none() {
-                                    panic!("Function input `self` is not supported. Consider replace it with &self.");
+                                    panic!("Function input `self` is not supported. Consider replacing it with &self.");
                                 }
                                 let mutability = r.mutability;
 
@@ -201,6 +230,74 @@ fn generate_dispatcher(com_ident: &Ident, items: &Vec<ImplItem>) -> (Vec<Expr>, 
     (arm_guards, arm_bodies)
 }
 
+// Parses function items of an `Impl` and returns ABI of functions.
+fn generate_abi(comp_name: &str, items: &Vec<ImplItem>) -> Vec<Expr> {
+    let mut functions = Vec::<Expr>::new();
+
+    for item in items {
+        trace!("Processing: {}", quote! {#item});
+        match item {
+            ImplItem::Method(ref m) => match &m.vis {
+                Visibility::Public(_) => {
+                    let name = m.sig.ident.to_string();
+                    let mut kind = quote! { scrypto::abi::MethodKind::Functional };
+                    let mut mutability = quote! { scrypto::abi::Mutability::Immutable };
+                    let mut inputs = vec![];
+                    for input in &m.sig.inputs {
+                        match input {
+                            FnArg::Receiver(ref r) => {
+                                // Check receiver type and mutability
+                                if r.reference.is_none() {
+                                    panic!("Function input `self` is not supported. Consider replacing it with &self.");
+                                }
+                                kind = quote! { scrypto::abi::MethodKind::Stateful };
+
+                                if r.mutability.is_some() {
+                                    mutability = quote! { scrypto::abi::Mutability::Mutable };
+                                }
+                            }
+                            FnArg::Typed(ref t) => {
+                                let ty = replace_self_with(&t.ty, comp_name);
+                                inputs.push(quote! {
+                                    #ty::describe()
+                                });
+                            }
+                        }
+                    }
+
+                    let output = match &m.sig.output {
+                        ReturnType::Default => quote! {
+                            scrypto::abi::Type::Unit
+                        },
+                        ReturnType::Type(_, t) => {
+                            let ty = replace_self_with(t, comp_name);
+                            quote! {
+                                #ty::describe()
+                            }
+                        }
+                    };
+
+                    functions.push(parse_quote! {
+                        scrypto::abi::Method {
+                            name: #name.to_string(),
+                            kind: #kind,
+                            mutability: #mutability,
+                            inputs: vec![#(#inputs),*],
+                            output: #output,
+                        }
+                    });
+                }
+                _ => {}
+            },
+            _ => {
+                panic!("Non-method impl items are not supported!")
+            }
+        };
+    }
+
+    functions
+}
+
 // Parses function items in an `Impl` and generates stubs for compile-time check.
 fn generate_stub(com_ident: &Ident, items: &Vec<ImplItem>) -> Vec<Item> {
     let mut stubs: Vec<Item> = vec![];
@@ -217,7 +314,7 @@ fn generate_stub(com_ident: &Ident, items: &Vec<ImplItem>) -> Vec<Item> {
                             FnArg::Receiver(ref r) => {
                                 // Check receiver type and mutability
                                 if r.reference.is_none() {
-                                    panic!("Function input `self` is not supported. Consider replace it with &self.");
+                                    panic!("Function input `self` is not supported. Consider replacing it with &self.");
                                 }
                                 is_static = false;
                             }
@@ -291,4 +388,19 @@ fn generate_stub(com_ident: &Ident, items: &Vec<ImplItem>) -> Vec<Item> {
     }
 
     stubs
+}
+
+fn replace_self_with(t: &Type, name: &str) -> Type {
+    match t {
+        Type::Path(tp) => {
+            let mut tp2 = tp.clone();
+            tp2.path.segments.iter_mut().for_each(|s| {
+                if s.ident.to_string() == "Self" {
+                    s.ident = format_ident!("{}", name)
+                }
+            });
+            Type::Path(tp2)
+        }
+        _ => t.clone(),
+    }
 }

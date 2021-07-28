@@ -1,5 +1,5 @@
-use scrypto::kernel::radix_alloc;
-use scrypto_derive::component;
+use scrypto::component;
+use scrypto::kernel::*;
 
 component! {
     struct Simple {
@@ -29,6 +29,18 @@ fn test_simple_component() {
     let mut stub = SimpleStub::from_address("".into());
     let x = stub.get_state();
     stub.set_state(x + 1);
+}
+
+#[test]
+fn test_simple_component_abi() {
+    let ptr = Simple_abi();
+    let abi = radix_copy(ptr);
+    radix_free(ptr);
+
+    assert_eq!(
+        "{\"name\":\"Simple\",\"methods\":[{\"name\":\"new\",\"kind\":\"Functional\",\"mutability\":\"Immutable\",\"inputs\":[],\"output\":{\"type\":\"Struct\",\"name\":\"Simple\",\"fields\":{\"type\":\"Named\",\"fields\":{\"state\":{\"type\":\"U32\"}}}}},{\"name\":\"get_state\",\"kind\":\"Stateful\",\"mutability\":\"Immutable\",\"inputs\":[],\"output\":{\"type\":\"U32\"}},{\"name\":\"set_state\",\"kind\":\"Stateful\",\"mutability\":\"Mutable\",\"inputs\":[{\"type\":\"U32\"}],\"output\":{\"type\":\"Unit\"}}]}", 
+        String::from_utf8(abi).unwrap()
+    );
 }
 
 #[no_mangle]
