@@ -1,5 +1,4 @@
-use proc_macro::TokenStream;
-use proc_macro2::{Ident, Span};
+use proc_macro2::{Ident, Span, TokenStream};
 use quote::{format_ident, quote};
 use syn::punctuated::Punctuated;
 use syn::token::Brace;
@@ -20,7 +19,7 @@ pub fn handle_component(input: TokenStream) -> TokenStream {
     trace!("handle_component() begins");
 
     // parse component struct and impl
-    let com = parse_macro_input!(input as ast::Component);
+    let com: ast::Component = parse2(input).expect("Unable to parse input");
     let com_strut = &com.structure;
     let com_impl = &com.implementation;
     let com_ident = &com_strut.ident;

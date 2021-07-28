@@ -1,4 +1,4 @@
-use proc_macro::{self, TokenStream};
+use proc_macro2::TokenStream;
 use quote::quote;
 use syn::*;
 
@@ -14,7 +14,7 @@ macro_rules! trace {
 pub fn handle_describe(input: TokenStream) -> TokenStream {
     trace!("handle_describe() starts");
 
-    let DeriveInput { ident, data, .. } = parse_macro_input!(input);
+    let DeriveInput { ident, data, .. } = parse2(input).expect("Unable to parse input");
     let ident_str = ident.to_string();
     trace!("Describing: {}", ident);
 

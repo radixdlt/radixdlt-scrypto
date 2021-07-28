@@ -1,7 +1,6 @@
 use std::fs;
 
-use proc_macro::TokenStream;
-use proc_macro2::{Ident, Span};
+use proc_macro2::{Ident, Span, TokenStream};
 use quote::{format_ident, quote};
 use syn::punctuated::Punctuated;
 use syn::token::Comma;
@@ -21,7 +20,7 @@ pub fn handle_import(input: TokenStream) -> TokenStream {
     trace!("handle_import() starts");
     let span = Span::call_site();
 
-    let path_lit = parse_macro_input!(input as LitStr);
+    let path_lit: LitStr = parse2(input).expect("Unable to parse input");
     let path = path_lit.value();
     let abi = fs::read_to_string(path).expect("Unable to load Abi");
     let component: abi::Component =
