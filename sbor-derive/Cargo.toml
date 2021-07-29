@@ -10,5 +10,7 @@ proc-macro = true
 proc-macro2 = "1.0"
 syn = { version = "1.0", features = ["full", "extra-traits"] }
 quote = "1.0"
+uuid = { version = "0.8", features = ["v4"] }
 
 [features]
+trace = []

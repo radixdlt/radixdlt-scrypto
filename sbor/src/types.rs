@@ -7,11 +7,8 @@ use alloc::vec::Vec;
 #[cfg(feature = "json")]
 use serde::{Deserialize, Serialize};
 
+#[cfg_attr(feature = "json", derive(Serialize, Deserialize), serde(tag = "type"))]
 #[derive(Debug, PartialEq)]
-#[cfg(feature = "json")]
-#[derive(Serialize, Deserialize)]
-#[cfg(feature = "json")]
-#[serde(tag = "type")]
 pub enum Type {
     /* unit */
     Unit,
@@ -62,11 +59,8 @@ pub enum Type {
     },
 }
 
+#[cfg_attr(feature = "json", derive(Serialize, Deserialize), serde(tag = "type"))]
 #[derive(Debug, PartialEq)]
-#[cfg(feature = "json")]
-#[derive(Serialize, Deserialize)]
-#[cfg(feature = "json")]
-#[serde(tag = "type")]
 pub enum Fields {
     Named { fields: BTreeMap<String, Type> },
 
