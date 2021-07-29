@@ -2,8 +2,6 @@ use proc_macro2::TokenStream;
 use quote::quote;
 use syn::*;
 
-use crate::utils::*;
-
 macro_rules! trace {
     ($($arg:expr),*) => {{
         #[cfg(feature = "trace")]
@@ -155,7 +153,8 @@ pub fn handle_describe(input: TokenStream) -> TokenStream {
     };
     trace!("handle_derive() finishes");
 
-    print_compiled_code("#[derive(Describe)]", &output);
+    #[cfg(feature = "trace")]
+    crate::utils::print_compiled_code("#[derive(Describe)]", &output);
 
     output.into()
 }

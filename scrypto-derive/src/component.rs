@@ -6,7 +6,6 @@ use syn::token::Comma;
 use syn::*;
 
 use crate::ast;
-use crate::utils::*;
 
 macro_rules! trace {
     ($($arg:expr),*) => {{
@@ -119,7 +118,9 @@ pub fn handle_component(input: TokenStream) -> TokenStream {
     };
     trace!("handle_component() finishes");
 
-    print_compiled_code("component!", &output);
+    #[cfg(feature = "trace")]
+    crate::utils::print_compiled_code("component!", &output);
+
     output.into()
 }
 
