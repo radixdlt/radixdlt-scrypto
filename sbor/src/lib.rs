@@ -1,12 +1,12 @@
 mod decode;
 mod describe;
 mod encode;
-mod types;
+mod model;
 
 pub use decode::*;
 pub use describe::*;
 pub use encode::*;
-pub use types::*;
+pub use model::*;
 
 // Re-export sbor derive.
 #[cfg(feature = "derive")]

@@ -13,7 +13,7 @@ Serde and its supported data formats was a good start, but didn't meet all our r
 
 ## Design Objectives
 
-- **Typed**: Supports basic Rust types, e.g. structs and enums.
-- **Schemaless**: Data can be decoded without a schema.
-- **Fully specified**: Comes with full specification and reference implementation.
-- **Fast**: De-/serialization needs to be fast.
+- **Rust native**: Should support most, if not all, rust types with 1:1 mapping.
+- **Schemaless**: Data should encode both type and value; schema is not required for decoding.
+- **Fully specified**: Should come with full specification and reference implementation.
+- **Fast**: De-/serialization should be fast.

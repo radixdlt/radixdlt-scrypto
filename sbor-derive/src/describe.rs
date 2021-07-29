@@ -40,7 +40,7 @@ pub fn handle_describe(input: TokenStream) -> TokenStream {
 
                             sbor::Type::Struct {
                                 name: #ident_str.to_string(),
-                                fields: sbor::Fields::Named { fields },
+                                fields: sbor::FieldTypes::Named { fields },
                             }
                         }
                     }
@@ -62,7 +62,7 @@ pub fn handle_describe(input: TokenStream) -> TokenStream {
 
                             sbor::Type::Struct {
                                 name: #ident_str.to_string(),
-                                fields: sbor::Fields::Unnamed { fields },
+                                fields: sbor::FieldTypes::Unnamed { fields },
                             }
                         }
                     }
@@ -74,7 +74,7 @@ pub fn handle_describe(input: TokenStream) -> TokenStream {
                         fn describe() -> sbor::Type {
                             sbor::Type::Struct {
                                 name: #ident_str.to_string(),
-                                fields: sbor::Fields::Unit,
+                                fields: sbor::FieldTypes::Unit,
                             }
                         }
                     }
@@ -99,7 +99,7 @@ pub fn handle_describe(input: TokenStream) -> TokenStream {
                             {
                                 let mut fields = BTreeMap::new();
                                 #(fields.insert(#names.to_string(), <#types>::describe());)*
-                                sbor::Fields::Named {
+                                sbor::FieldTypes::Named {
                                     fields,
                                 }
                             }
@@ -111,7 +111,7 @@ pub fn handle_describe(input: TokenStream) -> TokenStream {
                             {
                                 let mut fields = Vec::new();
                                 #(fields.push(<#types>::describe());)*
-                                sbor::Fields::Unnamed {
+                                sbor::FieldTypes::Unnamed {
                                     fields,
                                 }
                             }
@@ -120,7 +120,7 @@ pub fn handle_describe(input: TokenStream) -> TokenStream {
                     syn::Fields::Unit => {
                         quote! {
                             {
-                                sbor::Fields::Unit
+                                sbor::FieldTypes::Unit
                             }
                         }
                     }
