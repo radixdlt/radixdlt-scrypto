@@ -15,21 +15,20 @@ pub struct Component {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Method {
     pub name: String,
-    pub kind: MethodKind,
     pub mutability: Mutability,
     pub inputs: Vec<Type>,
     pub output: Type,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub enum MethodKind {
-    Functional,
-    Stateful,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
 pub enum Mutability {
+    /// A stateless method does not require an instantiated component.
+    Stateless,
+
+    /// An immutable function only reads component state.
     Immutable,
+
+    /// An mutable function may write into component state.
     Mutable,
 }
 

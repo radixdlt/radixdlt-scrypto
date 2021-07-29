@@ -55,11 +55,9 @@ pub fn handle_import(input: TokenStream) -> TokenStream {
         let func_indent = Ident::new(method.name.as_str(), span);
         let mut func_inputs = Punctuated::<FnArg, Comma>::new();
 
-        match method.kind {
-            abi::MethodKind::Stateful => match method.mutability {
-                abi::Mutability::Immutable => func_inputs.push(parse_quote! { &self }),
-                abi::Mutability::Mutable => func_inputs.push(parse_quote! { &mut self }),
-            },
+        match method.mutability {
+            abi::Mutability::Immutable => func_inputs.push(parse_quote! { &self }),
+            abi::Mutability::Mutable => func_inputs.push(parse_quote! { &mut self }),
             _ => {}
         }
 

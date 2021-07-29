@@ -241,8 +241,7 @@ fn generate_abi(comp_name: &str, items: &Vec<ImplItem>) -> Vec<Expr> {
             ImplItem::Method(ref m) => match &m.vis {
                 Visibility::Public(_) => {
                     let name = m.sig.ident.to_string();
-                    let mut kind = quote! { scrypto::abi::MethodKind::Functional };
-                    let mut mutability = quote! { scrypto::abi::Mutability::Immutable };
+                    let mut mutability = quote! { scrypto::abi::Mutability::Stateless };
                     let mut inputs = vec![];
                     for input in &m.sig.inputs {
                         match input {
@@ -251,10 +250,11 @@ fn generate_abi(comp_name: &str, items: &Vec<ImplItem>) -> Vec<Expr> {
                                 if r.reference.is_none() {
                                     panic!("Function input `self` is not supported. Consider replacing it with &self.");
                                 }
-                                kind = quote! { scrypto::abi::MethodKind::Stateful };
 
                                 if r.mutability.is_some() {
                                     mutability = quote! { scrypto::abi::Mutability::Mutable };
+                                } else {
+                                    mutability = quote! { scrypto::abi::Mutability::Immutable };
                                 }
                             }
                             FnArg::Typed(ref t) => {
@@ -281,7 +281,6 @@ fn generate_abi(comp_name: &str, items: &Vec<ImplItem>) -> Vec<Expr> {
                     functions.push(parse_quote! {
                         scrypto::abi::Method {
                             name: #name.to_string(),
-                            kind: #kind,
                             mutability: #mutability,
                             inputs: vec![#(#inputs),*],
                             output: #output,

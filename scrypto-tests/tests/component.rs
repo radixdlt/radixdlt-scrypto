@@ -47,8 +47,7 @@ fn test_simple_component_abi() {
           "methods": [
             {
               "name": "new",
-              "kind": "Functional",
-              "mutability": "Immutable",
+              "mutability": "Stateless",
               "inputs": [],
               "output": {
                 "type": "Struct",
@@ -65,7 +64,6 @@ fn test_simple_component_abi() {
             },
             {
               "name": "get_state",
-              "kind": "Stateful",
               "mutability": "Immutable",
               "inputs": [],
               "output": {
@@ -74,7 +72,6 @@ fn test_simple_component_abi() {
             },
             {
               "name": "set_state",
-              "kind": "Stateful",
               "mutability": "Mutable",
               "inputs": [
                 {

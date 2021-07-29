@@ -3,7 +3,6 @@
     "methods": [
         {
             "name": "calculate_volume",
-            "kind": "Stateful",
             "mutability": "Immutable",
             "inputs": [
                 {

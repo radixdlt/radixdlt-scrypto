@@ -22,7 +22,7 @@ impl StandardMutableToken {
         // "Mint" our desired initial supply
         let initial_tokens = token_mint.mint(initial_supply);
 
-        // Return our functional TokenMint, as well as the initial supply of tokens
+        // Return our Stateless TokenMint, as well as the initial supply of tokens
         return (token_mint, initial_tokens);
     }
 }
