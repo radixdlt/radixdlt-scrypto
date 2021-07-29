@@ -25,10 +25,10 @@ pub enum Mutability {
     /// A stateless method does not require an instantiated component.
     Stateless,
 
-    /// An immutable function only reads component state.
+    /// An immutable method only reads component state.
     Immutable,
 
-    /// An mutable function may write into component state.
+    /// An mutable method may write into component state.
     Mutable,
 }
 
