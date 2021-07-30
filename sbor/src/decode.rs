@@ -1,7 +1,13 @@
 use crate::*;
 
 pub trait Decode<'de>: Sized {
-    fn decode(decoder: &Decoder<'de>) -> Result<Self, String>;
+    fn decode(decoder: &mut Decoder<'de>) -> Result<Self, String>;
+}
+
+impl<'de> Decode<'de> for u32 {
+    fn decode(decoder: &mut Decoder<'de>) -> Result<Self, String> {
+        decoder.decode_u32()
+    }
 }
 
 pub struct Decoder<'de> {
@@ -65,7 +71,7 @@ impl<'de> Decoder<'de> {
         let n = self.read_type(TYPE_OPTION, 1)?;
 
         match n[0] {
-            1 => Ok(Some(T::decode(&self)?)),
+            1 => Ok(Some(T::decode(self)?)),
             0 => Ok(None),
             _ => Err(format!("Invalid option value: {}", n[0])),
         }
@@ -77,7 +83,7 @@ impl<'de> Decoder<'de> {
 
         let mut result = Vec::<T>::new();
         for _ in 0..len {
-            result.push(T::decode(&self)?);
+            result.push(T::decode(self)?);
         }
         Ok(result)
     }
@@ -94,16 +100,16 @@ impl<'de> Decoder<'de> {
             ));
         }
 
-        let result = (A::decode(&self)?, B::decode(&self)?);
+        let result = (A::decode(self)?, B::decode(self)?);
         Ok(result)
     }
 
     pub fn decode_struct<T: Decode<'de>>(&mut self) -> Result<T, String> {
-        T::decode(&self)
+        T::decode(self)
     }
 
     pub fn decode_enum<T: Decode<'de>>(&mut self) -> Result<T, String> {
-        T::decode(&self)
+        T::decode(self)
     }
 
     fn as_u16(slice: &[u8]) -> u16 {
@@ -133,5 +139,49 @@ impl<'de> Decoder<'de> {
         let slice = &self.input[self.offset..self.offset + n];
         self.offset += n;
         Ok(slice)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Decoder;
+
+    #[test]
+    pub fn test_encoding() {
+        let bytes = vec![
+            0, // unit
+            1, 1, // bool
+            2, 1, // i8
+            3, 0, 1, // i16
+            4, 0, 0, 0, 1, // i32
+            5, 0, 0, 0, 0, 0, 0, 0, 1, // i64
+            6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, // i128
+            7, 1, // u8
+            8, 0, 1, // u16
+            9, 0, 0, 0, 1, // u32
+            10, 0, 0, 0, 0, 0, 0, 0, 1, // u64
+            11, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, // u128
+            12, 0, 5, 104, 101, 108, 108, 111, // String
+            13, 1, 9, 0, 0, 0, 1, // option
+            14, 0, 3, 9, 0, 0, 0, 1, 9, 0, 0, 0, 2, 9, 0, 0, 0, 3, // vector
+            15, 0, 2, 9, 0, 0, 0, 1, 9, 0, 0, 0, 2, // tuple
+        ];
+        let mut dec = Decoder::new(&bytes);
+        dec.decode_unit().unwrap();
+        assert_eq!(true, dec.decode_bool().unwrap());
+        assert_eq!(1, dec.decode_i8().unwrap());
+        assert_eq!(1, dec.decode_i16().unwrap());
+        assert_eq!(1, dec.decode_i32().unwrap());
+        assert_eq!(1, dec.decode_i64().unwrap());
+        assert_eq!(1, dec.decode_i128().unwrap());
+        assert_eq!(1, dec.decode_u8().unwrap());
+        assert_eq!(1, dec.decode_u16().unwrap());
+        assert_eq!(1, dec.decode_u32().unwrap());
+        assert_eq!(1, dec.decode_u64().unwrap());
+        assert_eq!(1, dec.decode_u128().unwrap());
+        assert_eq!("hello", dec.decode_string().unwrap());
+        assert_eq!(Some(1u32), dec.decode_option().unwrap());
+        assert_eq!(vec![1u32, 2u32, 3u32], dec.decode_vec().unwrap());
+        assert_eq!((1u32, 2u32), dec.decode_tuple().unwrap());
     }
 }

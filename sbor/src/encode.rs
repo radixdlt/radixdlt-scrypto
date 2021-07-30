@@ -7,6 +7,14 @@ pub trait Encode {
     fn encode(&self, encoder: &mut Encoder);
 }
 
+impl Encode for u32 {
+    fn encode(&self, encoder: &mut Encoder) {
+        encoder.encode_u32(*self);
+    }
+}
+
+// TODO add impl for another types
+
 pub struct Encoder {
     buf: Vec<u8>,
 }
@@ -45,17 +53,17 @@ impl Encoder {
     encode_int!(encode_u64, TYPE_U64, u64);
     encode_int!(encode_u128, TYPE_U128, u128);
 
-    pub fn encode_string(&mut self, value: String) {
+    pub fn encode_string(&mut self, value: &String) {
         self.buf.push(TYPE_STRING);
         self.buf.extend(&(value.len() as u16).to_be_bytes());
         self.buf.extend(value.as_bytes());
     }
 
-    pub fn encode_option<T: Encode>(&mut self, value: Option<T>) {
+    pub fn encode_option<T: Encode>(&mut self, value: &Option<T>) {
         self.buf.push(TYPE_OPTION);
         match value {
             Some(v) => {
-                self.buf.push(0);
+                self.buf.push(1);
                 v.encode(self);
             }
             None => {
@@ -64,7 +72,7 @@ impl Encoder {
         }
     }
 
-    pub fn encode_vec<T: Encode>(&mut self, value: Vec<T>) {
+    pub fn encode_vec<T: Encode>(&mut self, value: &Vec<T>) {
         self.buf.push(TYPE_VEC);
         self.buf.extend(&(value.len() as u16).to_be_bytes());
         for v in value {
@@ -73,7 +81,7 @@ impl Encoder {
     }
 
     // TODO expand to different lengths
-    pub fn encode_tuple<A: Encode, B: Encode>(&mut self, value: (A, B)) {
+    pub fn encode_tuple<A: Encode, B: Encode>(&mut self, value: &(A, B)) {
         self.buf.push(TYPE_TUPLE);
         self.buf.extend(&2u16.to_be_bytes());
 
@@ -81,11 +89,11 @@ impl Encoder {
         value.1.encode(self);
     }
 
-    pub fn encode_struct<T: Encode>(&mut self, value: T) {
+    pub fn encode_struct<T: Encode>(&mut self, value: &T) {
         value.encode(self);
     }
 
-    pub fn encode_enum<T: Encode>(&mut self, value: T) {
+    pub fn encode_enum<T: Encode>(&mut self, value: &T) {
         value.encode(self);
     }
 }
@@ -93,5 +101,57 @@ impl Encoder {
 impl Into<Vec<u8>> for Encoder {
     fn into(self) -> Vec<u8> {
         self.buf
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    extern crate alloc;
+    use alloc::string::ToString;
+
+    use super::Encoder;
+
+    #[test]
+    pub fn test_encoding() {
+        let mut enc = Encoder::new();
+        enc.encode_unit();
+        enc.encode_bool(true);
+        enc.encode_i8(1);
+        enc.encode_i16(1);
+        enc.encode_i32(1);
+        enc.encode_i64(1);
+        enc.encode_i128(1);
+        enc.encode_u8(1);
+        enc.encode_u16(1);
+        enc.encode_u32(1);
+        enc.encode_u64(1);
+        enc.encode_u128(1);
+        enc.encode_string(&"hello".to_string());
+        enc.encode_option(&Some(1u32));
+        enc.encode_vec(&vec![1u32, 2u32, 3u32]);
+        enc.encode_tuple(&(1u32, 2u32));
+
+        let bytes: Vec<u8> = enc.into();
+        assert_eq!(
+            vec![
+                0, // unit
+                1, 1, // bool
+                2, 1, // i8
+                3, 0, 1, // i16
+                4, 0, 0, 0, 1, // i32
+                5, 0, 0, 0, 0, 0, 0, 0, 1, // i64
+                6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, // i128
+                7, 1, // u8
+                8, 0, 1, // u16
+                9, 0, 0, 0, 1, // u32
+                10, 0, 0, 0, 0, 0, 0, 0, 1, // u64
+                11, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, // u128
+                12, 0, 5, 104, 101, 108, 108, 111, // String
+                13, 1, 9, 0, 0, 0, 1, // option
+                14, 0, 3, 9, 0, 0, 0, 1, 9, 0, 0, 0, 2, 9, 0, 0, 0, 3, // vector
+                15, 0, 2, 9, 0, 0, 0, 1, 9, 0, 0, 0, 2 // tuple
+            ],
+            bytes
+        );
     }
 }
