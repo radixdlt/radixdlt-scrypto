@@ -4,9 +4,49 @@ pub trait Decode<'de>: Sized {
     fn decode(decoder: &mut Decoder<'de>) -> Result<Self, String>;
 }
 
-impl<'de> Decode<'de> for u32 {
+macro_rules! decode_basic_type {
+    ($type:ident, $method:ident) => {
+        impl<'de> Decode<'de> for $type {
+            fn decode(decoder: &mut Decoder<'de>) -> Result<Self, String> {
+                decoder.$method()
+            }
+        }
+    };
+}
+
+decode_basic_type!(bool, decode_bool);
+decode_basic_type!(i8, decode_i8);
+decode_basic_type!(i16, decode_i16);
+decode_basic_type!(i32, decode_i32);
+decode_basic_type!(i64, decode_i64);
+decode_basic_type!(i128, decode_i128);
+decode_basic_type!(u8, decode_u8);
+decode_basic_type!(u16, decode_u16);
+decode_basic_type!(u32, decode_u32);
+decode_basic_type!(u64, decode_u64);
+decode_basic_type!(u128, decode_u128);
+
+impl<'de> Decode<'de> for String {
     fn decode(decoder: &mut Decoder<'de>) -> Result<Self, String> {
-        decoder.decode_u32()
+        decoder.decode_string()
+    }
+}
+
+impl<'de, T: Decode<'de>> Decode<'de> for Option<T> {
+    fn decode(decoder: &mut Decoder<'de>) -> Result<Self, String> {
+        decoder.decode_option()
+    }
+}
+
+impl<'de, T: Decode<'de>, const N: usize> Decode<'de> for [T; N] {
+    fn decode(decoder: &mut Decoder<'de>) -> Result<Self, String> {
+        decoder.decode_array()
+    }
+}
+
+impl<'de, T: Decode<'de>> Decode<'de> for Vec<T> {
+    fn decode(decoder: &mut Decoder<'de>) -> Result<Self, String> {
+        decoder.decode_vec()
     }
 }
 
@@ -132,8 +172,9 @@ impl<'de> Decoder<'de> {
     }
 
     fn as_u16(slice: &[u8]) -> u16 {
-        assert!(slice.len() >= 2);
-        ((slice[0] as u16) << 8) + (slice[1] as u16) // big endian
+        let mut bytes = [0u8; 2];
+        bytes.copy_from_slice(&slice[0..2]);
+        u16::from_be_bytes(bytes)
     }
 
     fn read_type(&mut self, ty: u8, n: usize) -> Result<&'de [u8], String> {
@@ -166,7 +207,7 @@ mod tests {
     use super::Decoder;
 
     #[test]
-    pub fn test_encoding() {
+    pub fn test_decoding() {
         let bytes = vec![
             0, // unit
             1, 1, // bool
