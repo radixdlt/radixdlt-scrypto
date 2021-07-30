@@ -21,10 +21,11 @@ pub const TYPE_U64: u8 = 10;
 pub const TYPE_U128: u8 = 11;
 pub const TYPE_STRING: u8 = 12;
 pub const TYPE_OPTION: u8 = 13;
-pub const TYPE_VEC: u8 = 14;
-pub const TYPE_TUPLE: u8 = 15;
-pub const TYPE_STRUCT: u8 = 16;
-pub const TYPE_ENUM: u8 = 17;
+pub const TYPE_ARRAY: u8 = 14;
+pub const TYPE_VEC: u8 = 15;
+pub const TYPE_TUPLE: u8 = 16;
+pub const TYPE_STRUCT: u8 = 17;
+pub const TYPE_ENUM: u8 = 18;
 
 #[cfg_attr(feature = "json", derive(Serialize, Deserialize), serde(tag = "type"))]
 #[derive(Debug, PartialEq)]
@@ -48,6 +49,10 @@ pub enum Type {
 
     Option {
         value: Box<Type>,
+    },
+
+    Array {
+        base: Box<Type>,
     },
 
     Vec {
@@ -100,6 +105,8 @@ pub enum Value {
     String(String),
 
     Option(Option<Box<Value>>),
+
+    Array(Vec<Value>),
 
     Vec(Vec<Value>),
 

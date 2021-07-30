@@ -7,13 +7,53 @@ pub trait Encode {
     fn encode(&self, encoder: &mut Encoder);
 }
 
-impl Encode for u32 {
+macro_rules! encode_basic_type {
+    ($type:ident, $method:ident) => {
+        impl Encode for $type {
+            fn encode(&self, encoder: &mut Encoder) {
+                encoder.$method(*self);
+            }
+        }
+    };
+}
+
+encode_basic_type!(bool, encode_bool);
+encode_basic_type!(i8, encode_i8);
+encode_basic_type!(i16, encode_i16);
+encode_basic_type!(i32, encode_i32);
+encode_basic_type!(i64, encode_i64);
+encode_basic_type!(i128, encode_i128);
+encode_basic_type!(u8, encode_u8);
+encode_basic_type!(u16, encode_u16);
+encode_basic_type!(u32, encode_u32);
+encode_basic_type!(u64, encode_u64);
+encode_basic_type!(u128, encode_u128);
+
+impl Encode for String {
     fn encode(&self, encoder: &mut Encoder) {
-        encoder.encode_u32(*self);
+        encoder.encode_string(self);
     }
 }
 
-// TODO add impl for another types
+impl<T: Encode> Encode for Option<T> {
+    fn encode(&self, encoder: &mut Encoder) {
+        encoder.encode_option(self);
+    }
+}
+
+impl<T: Encode, const N: usize> Encode for [T; N] {
+    fn encode(&self, encoder: &mut Encoder) {
+        encoder.encode_array(self);
+    }
+}
+
+impl<T: Encode> Encode for Vec<T> {
+    fn encode(&self, encoder: &mut Encoder) {
+        encoder.encode_vec(self);
+    }
+}
+
+// TODO impl for tuples
 
 pub struct Encoder {
     buf: Vec<u8>,
@@ -69,6 +109,14 @@ impl Encoder {
             None => {
                 self.buf.push(0);
             }
+        }
+    }
+
+    pub fn encode_array<T: Encode>(&mut self, value: &[T]) {
+        self.buf.push(TYPE_ARRAY);
+        self.buf.extend(&(value.len() as u16).to_be_bytes());
+        for v in value {
+            v.encode(self);
         }
     }
 
@@ -128,6 +176,7 @@ mod tests {
         enc.encode_u128(1);
         enc.encode_string(&"hello".to_string());
         enc.encode_option(&Some(1u32));
+        enc.encode_array(&[1u32, 2u32, 3u32]);
         enc.encode_vec(&vec![1u32, 2u32, 3u32]);
         enc.encode_tuple(&(1u32, 2u32));
 
@@ -148,8 +197,9 @@ mod tests {
                 11, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, // u128
                 12, 0, 5, 104, 101, 108, 108, 111, // String
                 13, 1, 9, 0, 0, 0, 1, // option
-                14, 0, 3, 9, 0, 0, 0, 1, 9, 0, 0, 0, 2, 9, 0, 0, 0, 3, // vector
-                15, 0, 2, 9, 0, 0, 0, 1, 9, 0, 0, 0, 2 // tuple
+                14, 0, 3, 9, 0, 0, 0, 1, 9, 0, 0, 0, 2, 9, 0, 0, 0, 3, // array
+                15, 0, 3, 9, 0, 0, 0, 1, 9, 0, 0, 0, 2, 9, 0, 0, 0, 3, // vector
+                16, 0, 2, 9, 0, 0, 0, 1, 9, 0, 0, 0, 2 // tuple
             ],
             bytes
         );

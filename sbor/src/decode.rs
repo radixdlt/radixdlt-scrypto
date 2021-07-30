@@ -77,9 +77,28 @@ impl<'de> Decoder<'de> {
         }
     }
 
+    pub fn decode_array<T: Decode<'de>, const N: usize>(&mut self) -> Result<[T; N], String> {
+        let n = self.read_type(TYPE_ARRAY, 2)?;
+        let len = Self::as_u16(n) as usize;
+        if len != N {
+            return Err(format!(
+                "Invalid array length: expected = {}, actual = {}",
+                N, len
+            ));
+        }
+
+        let mut x = core::mem::MaybeUninit::<[T; N]>::uninit();
+        let x_arr = unsafe { &mut *x.as_mut_ptr() };
+        for i in 0..len {
+            x_arr[i] = T::decode(self)?;
+        }
+        let arr = unsafe { x.assume_init() };
+        Ok(arr)
+    }
+
     pub fn decode_vec<T: Decode<'de>>(&mut self) -> Result<Vec<T>, String> {
         let n = self.read_type(TYPE_VEC, 2)?;
-        let len = Self::as_u16(n);
+        let len = Self::as_u16(n) as usize;
 
         let mut result = Vec::<T>::new();
         for _ in 0..len {
@@ -163,8 +182,9 @@ mod tests {
             11, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, // u128
             12, 0, 5, 104, 101, 108, 108, 111, // String
             13, 1, 9, 0, 0, 0, 1, // option
-            14, 0, 3, 9, 0, 0, 0, 1, 9, 0, 0, 0, 2, 9, 0, 0, 0, 3, // vector
-            15, 0, 2, 9, 0, 0, 0, 1, 9, 0, 0, 0, 2, // tuple
+            14, 0, 3, 9, 0, 0, 0, 1, 9, 0, 0, 0, 2, 9, 0, 0, 0, 3, // array
+            15, 0, 3, 9, 0, 0, 0, 1, 9, 0, 0, 0, 2, 9, 0, 0, 0, 3, // vector
+            16, 0, 2, 9, 0, 0, 0, 1, 9, 0, 0, 0, 2, // tuple
         ];
         let mut dec = Decoder::new(&bytes);
         dec.decode_unit().unwrap();
@@ -181,6 +201,7 @@ mod tests {
         assert_eq!(1, dec.decode_u128().unwrap());
         assert_eq!("hello", dec.decode_string().unwrap());
         assert_eq!(Some(1u32), dec.decode_option().unwrap());
+        assert_eq!([1u32, 2u32, 3u32], dec.decode_array().unwrap());
         assert_eq!(vec![1u32, 2u32, 3u32], dec.decode_vec().unwrap());
         assert_eq!((1u32, 2u32), dec.decode_tuple().unwrap());
     }

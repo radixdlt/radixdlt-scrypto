@@ -46,7 +46,7 @@ impl<T: Describe> Describe for Option<T> {
 impl<T: Describe> Describe for [T] {
     fn describe() -> Type {
         let ty = T::describe();
-        Type::Vec { base: Box::new(ty) }
+        Type::Array { base: Box::new(ty) }
     }
 }
 
@@ -116,7 +116,7 @@ mod tests {
     #[test]
     pub fn test_array() {
         assert_eq!(
-            Type::Vec {
+            Type::Array {
                 base: Box::new(Type::U8)
             },
             <[u8]>::describe(),

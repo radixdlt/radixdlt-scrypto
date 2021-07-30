@@ -7,6 +7,7 @@ edition = "2018"
 serde = { version = "1.0", default-features = false, optional = true }
 serde_json = { version = "1.0", default-features = false, optional = true }
 sbor-derive = { version = "0.1", path = "../sbor-derive", default-features = false, optional = true }
+generic-array = "0.14.4"
 
 [features]
 default = []
