@@ -32,7 +32,6 @@ describe_basic_type!(u16, Type::U16);
 describe_basic_type!(u32, Type::U32);
 describe_basic_type!(u64, Type::U64);
 describe_basic_type!(u128, Type::U128);
-describe_basic_type!(str, Type::String);
 describe_basic_type!(String, Type::String);
 
 impl<T: Describe> Describe for Option<T> {
@@ -47,14 +46,14 @@ impl<T: Describe> Describe for Option<T> {
 impl<T: Describe> Describe for [T] {
     fn describe() -> Type {
         let ty = T::describe();
-        Type::Array { base: Box::new(ty) }
+        Type::Vec { base: Box::new(ty) }
     }
 }
 
 impl<T: Describe> Describe for Vec<T> {
     fn describe() -> Type {
         let ty = T::describe();
-        Type::Array { base: Box::new(ty) }
+        Type::Vec { base: Box::new(ty) }
     }
 }
 
@@ -101,7 +100,6 @@ mod tests {
         assert_eq!(Type::U32, u32::describe());
         assert_eq!(Type::U64, u64::describe());
         assert_eq!(Type::U128, u128::describe());
-        assert_eq!(Type::String, str::describe());
         assert_eq!(Type::String, String::describe());
     }
 
@@ -118,7 +116,7 @@ mod tests {
     #[test]
     pub fn test_array() {
         assert_eq!(
-            Type::Array {
+            Type::Vec {
                 base: Box::new(Type::U8)
             },
             <[u8]>::describe(),

@@ -21,7 +21,7 @@ pub const TYPE_U64: u8 = 10;
 pub const TYPE_U128: u8 = 11;
 pub const TYPE_STRING: u8 = 12;
 pub const TYPE_OPTION: u8 = 13;
-pub const TYPE_ARRAY: u8 = 14;
+pub const TYPE_VEC: u8 = 14;
 pub const TYPE_TUPLE: u8 = 15;
 pub const TYPE_STRUCT: u8 = 16;
 pub const TYPE_ENUM: u8 = 17;
@@ -50,7 +50,7 @@ pub enum Type {
         value: Box<Type>,
     },
 
-    Array {
+    Vec {
         base: Box<Type>,
     },
 
@@ -101,7 +101,7 @@ pub enum Value {
 
     Option(Option<Box<Value>>),
 
-    Array(Vec<Value>),
+    Vec(Vec<Value>),
 
     Tuple(Vec<Value>),
 
