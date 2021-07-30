@@ -40,8 +40,10 @@ pub fn handle_encode(input: TokenStream) -> TokenStream {
 
                             encoder.encode_type(sbor::TYPE_FIELDS_NAMED);
                             encoder.encode_len(#n);
-                            #(#names.to_string().encode(encoder);)*
-                            #(self.#idents.encode(encoder);)*
+                            #(
+                                #names.to_string().encode(encoder);
+                                self.#idents.encode(encoder);
+                            )*
                         }
                     }
                 }
@@ -95,24 +97,25 @@ pub fn handle_encode(input: TokenStream) -> TokenStream {
                                 .expect("All fields must be named")
                                 .to_string()
                         });
-                        let idents: Vec<_> =
-                            named.iter().map(|f| f.ident.clone().unwrap()).collect();
-                        let idents2 = idents.clone();
+                        let idents = named.iter().map(|f| &f.ident);
+                        let idents2 = named.iter().map(|f| &f.ident);
                         let n = named.len();
                         quote! {
                             Self::#v_id {#(#idents),*} => {
                                 encoder.encode_string(&#v_name.to_string());
                                 encoder.encode_type(sbor::TYPE_FIELDS_NAMED);
                                 encoder.encode_len(#n);
-                                #(encoder.encode_string(&#names.to_string());)*
-                                #(#idents2.encode(encoder);)*
+                                #(
+                                    encoder.encode_string(&#names.to_string());
+                                    #idents2.encode(encoder);
+                                )*
                             }
                         }
                     }
                     syn::Fields::Unnamed(FieldsUnnamed { unnamed, .. }) => {
                         let n = unnamed.len() as usize;
-                        let args: Vec<_> = (0..n).map(|i| format_ident!("a{}", i)).collect();
-                        let args2 = args.clone();
+                        let args = (0..n).map(|i| format_ident!("a{}", i));
+                        let args2 = (0..n).map(|i| format_ident!("a{}", i));
                         quote! {
                             Self::#v_id (#(#args),*) => {
                                 encoder.encode_string(&#v_name.to_string());
@@ -156,6 +159,9 @@ pub fn handle_encode(input: TokenStream) -> TokenStream {
     };
     trace!("handle_derive() finishes");
 
+    #[cfg(feature = "trace")]
+    crate::utils::print_compiled_code("Encode", &output);
+
     output.into()
 }
 
@@ -165,20 +171,17 @@ mod tests {
     use alloc::str::FromStr;
     use proc_macro2::TokenStream;
 
-    use crate::encode::handle_encode;
-    use crate::utils::print_compiled_code;
+    use super::handle_encode;
 
     #[test]
     fn test_encode_struct() {
         let input = TokenStream::from_str("struct Test {a: u32}").unwrap();
-        let output = handle_encode(input);
-        print_compiled_code("test_encode()", output);
+        handle_encode(input);
     }
 
     #[test]
     fn test_encode_enum() {
         let input = TokenStream::from_str("enum Test {A, B (u32), C {x: u8}}").unwrap();
-        let output = handle_encode(input);
-        print_compiled_code("test_encode_enum()", output);
+        handle_encode(input);
     }
 }

@@ -153,6 +153,9 @@ pub fn handle_describe(input: TokenStream) -> TokenStream {
     };
     trace!("handle_derive() finishes");
 
+    #[cfg(feature = "trace")]
+    crate::utils::print_compiled_code("Describe", &output);
+
     output.into()
 }
 
@@ -162,20 +165,17 @@ mod tests {
     use alloc::str::FromStr;
     use proc_macro2::TokenStream;
 
-    use crate::describe::handle_describe;
-    use crate::utils::print_compiled_code;
+    use super::handle_describe;
 
     #[test]
     fn test_describe_struct() {
         let input = TokenStream::from_str("struct Test {a: u32}").unwrap();
-        let output = handle_describe(input);
-        print_compiled_code("test_describe_struct()", output);
+        handle_describe(input);
     }
 
     #[test]
     fn test_describe_enum() {
         let input = TokenStream::from_str("enum Test {A, B (u32), C {x: u8}}").unwrap();
-        let output = handle_describe(input);
-        print_compiled_code("test_describe_enum()", output);
+        handle_describe(input);
     }
 }

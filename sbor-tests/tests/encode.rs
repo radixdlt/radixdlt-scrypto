@@ -45,7 +45,7 @@ fn test_encode_struct() {
             12, 0, 17, 84, 101, 115, 116, 83, 116, 114, 117, 99, 116, 85, 110, 110, 97, 109, 101, 100, // struct name
             20,  // fields type
             0, 1, // number of fields
-            9, 0, 0, 0, 3,  // field value #1
+            9, 0, 0, 0, 3,  // field value #0
 
             17, // struct #c
             12, 0, 14, 84, 101, 115, 116, 83, 116, 114, 117, 99, 116, 85, 110, 105, 116, // struct name
@@ -88,8 +88,8 @@ fn test_encode_enum() {
             19, // variant fields type
             0, 2, // number of fields
             12, 0, 1, 120, // field name #0
-            12, 0, 1, 121, // field name #1
             9, 0, 0, 0, 2, // field value #0
+            12, 0, 1, 121, // field name #1
             9, 0, 0, 0, 3  // field value #1
         ],
         bytes

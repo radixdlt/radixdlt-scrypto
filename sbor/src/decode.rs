@@ -58,8 +58,8 @@ pub struct Decoder<'de> {
 macro_rules! decode_int {
     ($method:ident, $sbor_type:expr, $native_type:ty, $n:expr) => {
         pub fn $method(&mut self) -> Result<$native_type, String> {
-            self.read_type_and_check($sbor_type)?;
-            let slice = self.read($n)?;
+            self.decode_type_and_check($sbor_type)?;
+            let slice = self.decode($n)?;
             let mut bytes = [0u8; $n];
             bytes.copy_from_slice(&slice[..]);
             Ok(<$native_type>::from_be_bytes(bytes))
@@ -76,7 +76,7 @@ impl<'de> Decoder<'de> {
         self.input.len() - self.offset
     }
 
-    pub fn read(&mut self, n: usize) -> Result<&'de [u8], String> {
+    pub fn decode(&mut self, n: usize) -> Result<&'de [u8], String> {
         if self.remaining_bytes() < n {
             return Err(format!(
                 "Buffer underflow: required = {}, remaining_bytes = {}",
@@ -89,12 +89,12 @@ impl<'de> Decoder<'de> {
         Ok(slice)
     }
 
-    pub fn read_type(&mut self) -> Result<u8, String> {
-        Ok(self.read(1)?[0])
+    pub fn decode_type(&mut self) -> Result<u8, String> {
+        Ok(self.decode(1)?[0])
     }
 
-    pub fn read_type_and_check(&mut self, expected: u8) -> Result<(), String> {
-        let ty = self.read_type()?;
+    pub fn decode_type_and_check(&mut self, expected: u8) -> Result<(), String> {
+        let ty = self.decode_type()?;
         if ty != expected {
             return Err(format!(
                 "Unexpected type: expected = {}, actual = {}",
@@ -104,20 +104,20 @@ impl<'de> Decoder<'de> {
         Ok(())
     }
 
-    pub fn read_len(&mut self) -> Result<usize, String> {
+    pub fn decode_len(&mut self) -> Result<usize, String> {
         let mut bytes = [0u8; 2];
-        bytes.copy_from_slice(&self.read(2)?[..]);
+        bytes.copy_from_slice(&self.decode(2)?[..]);
         Ok(u16::from_be_bytes(bytes) as usize)
     }
 
     pub fn decode_unit(&mut self) -> Result<(), String> {
-        self.read_type_and_check(TYPE_UNIT)?;
+        self.decode_type_and_check(TYPE_UNIT)?;
         Ok(())
     }
 
     pub fn decode_bool(&mut self) -> Result<bool, String> {
-        self.read_type_and_check(TYPE_BOOL)?;
-        let slice = self.read(1)?;
+        self.decode_type_and_check(TYPE_BOOL)?;
+        let slice = self.decode(1)?;
         if slice[0] != 0 && slice[0] != 1 {
             Err(format!("Invalid boolean value: {}", slice[0]))
         } else {
@@ -137,16 +137,16 @@ impl<'de> Decoder<'de> {
     decode_int!(decode_u128, TYPE_U128, u128, 16);
 
     pub fn decode_string(&mut self) -> Result<String, String> {
-        self.read_type_and_check(TYPE_STRING)?;
-        let len = self.read_len()?;
-        let slice = self.read(len)?;
+        self.decode_type_and_check(TYPE_STRING)?;
+        let len = self.decode_len()?;
+        let slice = self.decode(len)?;
         let s = String::from_utf8(slice.to_vec()).map_err(|_| "Invalid utf-8");
         Ok(s?)
     }
 
     pub fn decode_option<T: Decode<'de>>(&mut self) -> Result<Option<T>, String> {
-        self.read_type_and_check(TYPE_OPTION)?;
-        let slice = self.read(1)?;
+        self.decode_type_and_check(TYPE_OPTION)?;
+        let slice = self.decode(1)?;
 
         match slice[0] {
             1 => Ok(Some(T::decode(self)?)),
@@ -156,8 +156,8 @@ impl<'de> Decoder<'de> {
     }
 
     pub fn decode_array<T: Decode<'de>, const N: usize>(&mut self) -> Result<[T; N], String> {
-        self.read_type_and_check(TYPE_ARRAY)?;
-        let len = self.read_len()?;
+        self.decode_type_and_check(TYPE_ARRAY)?;
+        let len = self.decode_len()?;
         if len != N {
             return Err(format!(
                 "Invalid array length: expected = {}, actual = {}",
@@ -175,8 +175,8 @@ impl<'de> Decoder<'de> {
     }
 
     pub fn decode_vec<T: Decode<'de>>(&mut self) -> Result<Vec<T>, String> {
-        self.read_type_and_check(TYPE_VEC)?;
-        let len = self.read_len()?;
+        self.decode_type_and_check(TYPE_VEC)?;
+        let len = self.decode_len()?;
 
         let mut result = Vec::<T>::new();
         for _ in 0..len {
@@ -187,8 +187,8 @@ impl<'de> Decoder<'de> {
 
     // TODO expand to different lengths
     pub fn decode_tuple<A: Decode<'de>, B: Decode<'de>>(&mut self) -> Result<(A, B), String> {
-        self.read_type_and_check(TYPE_TUPLE)?;
-        let len = self.read_len()?;
+        self.decode_type_and_check(TYPE_TUPLE)?;
+        let len = self.decode_len()?;
 
         if len != 2 {
             return Err(format!(

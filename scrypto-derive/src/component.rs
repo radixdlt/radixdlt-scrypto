@@ -405,3 +405,11 @@ fn replace_self_with(t: &Type, name: &str) -> Type {
         _ => t.clone(),
     }
 }
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn it_works() {
+        println!("TODO: Tests are possible with proc_macro2!");
+    }
+}
