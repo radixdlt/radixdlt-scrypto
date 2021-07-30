@@ -13,7 +13,7 @@ pub struct TestStructNamed {
 pub struct TestStructUnnamed(u32);
 
 #[derive(Describe)]
-pub struct TestStructUnit {}
+pub struct TestStructUnit;
 
 #[derive(Describe)]
 pub enum TestEnum {
@@ -61,8 +61,7 @@ fn test_describe_struct() {
           "type": "Struct",
           "name": "TestStructUnit",
           "fields": {
-            "type": "Named",
-            "fields": {}
+            "type": "Unit"
           }
         }),
         TestStructUnit::describe(),

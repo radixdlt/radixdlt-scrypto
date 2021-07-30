@@ -26,6 +26,9 @@ pub const TYPE_VEC: u8 = 15;
 pub const TYPE_TUPLE: u8 = 16;
 pub const TYPE_STRUCT: u8 = 17;
 pub const TYPE_ENUM: u8 = 18;
+pub const TYPE_FIELDS_NAMED: u8 = 19;
+pub const TYPE_FIELDS_UNNAMED: u8 = 20;
+pub const TYPE_FIELDS_UNIT: u8 = 21;
 
 #[cfg_attr(feature = "json", derive(Serialize, Deserialize), serde(tag = "type"))]
 #[derive(Debug, PartialEq)]

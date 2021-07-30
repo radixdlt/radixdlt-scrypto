@@ -73,12 +73,20 @@ impl Encoder {
         Self { buf: Vec::new() }
     }
 
+    pub fn encode_type(&mut self, ty: u8) {
+        self.buf.push(ty);
+    }
+
+    pub fn encode_len(&mut self, len: usize) {
+        self.buf.extend(&(len as u16).to_be_bytes());
+    }
+
     pub fn encode_unit(&mut self) {
-        self.buf.push(TYPE_UNIT);
+        self.encode_type(TYPE_UNIT);
     }
 
     pub fn encode_bool(&mut self, value: bool) {
-        self.buf.push(TYPE_BOOL);
+        self.encode_type(TYPE_BOOL);
         self.buf.push(if value { 1u8 } else { 0u8 });
     }
 
@@ -94,13 +102,13 @@ impl Encoder {
     encode_int!(encode_u128, TYPE_U128, u128);
 
     pub fn encode_string(&mut self, value: &String) {
-        self.buf.push(TYPE_STRING);
-        self.buf.extend(&(value.len() as u16).to_be_bytes());
+        self.encode_type(TYPE_STRING);
+        self.encode_len(value.len());
         self.buf.extend(value.as_bytes());
     }
 
     pub fn encode_option<T: Encode>(&mut self, value: &Option<T>) {
-        self.buf.push(TYPE_OPTION);
+        self.encode_type(TYPE_OPTION);
         match value {
             Some(v) => {
                 self.buf.push(1);
@@ -113,16 +121,16 @@ impl Encoder {
     }
 
     pub fn encode_array<T: Encode>(&mut self, value: &[T]) {
-        self.buf.push(TYPE_ARRAY);
-        self.buf.extend(&(value.len() as u16).to_be_bytes());
+        self.encode_type(TYPE_ARRAY);
+        self.encode_len(value.len());
         for v in value {
             v.encode(self);
         }
     }
 
     pub fn encode_vec<T: Encode>(&mut self, value: &Vec<T>) {
-        self.buf.push(TYPE_VEC);
-        self.buf.extend(&(value.len() as u16).to_be_bytes());
+        self.encode_type(TYPE_VEC);
+        self.encode_len(value.len());
         for v in value {
             v.encode(self);
         }
@@ -130,8 +138,8 @@ impl Encoder {
 
     // TODO expand to different lengths
     pub fn encode_tuple<A: Encode, B: Encode>(&mut self, value: &(A, B)) {
-        self.buf.push(TYPE_TUPLE);
-        self.buf.extend(&2u16.to_be_bytes());
+        self.encode_type(TYPE_TUPLE);
+        self.encode_len(2);
 
         value.0.encode(self);
         value.1.encode(self);

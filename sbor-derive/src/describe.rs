@@ -166,9 +166,16 @@ mod tests {
     use crate::utils::print_compiled_code;
 
     #[test]
-    fn test_describe() {
+    fn test_describe_struct() {
         let input = TokenStream::from_str("struct Test {a: u32}").unwrap();
         let output = handle_describe(input);
-        print_compiled_code("test_describe()", output);
+        print_compiled_code("test_describe_struct()", output);
+    }
+
+    #[test]
+    fn test_describe_enum() {
+        let input = TokenStream::from_str("enum Test {A, B (u32), C {x: u8}}").unwrap();
+        let output = handle_describe(input);
+        print_compiled_code("test_describe_enum()", output);
     }
 }
