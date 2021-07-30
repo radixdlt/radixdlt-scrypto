@@ -30,8 +30,8 @@ pub fn handle_decode(input: TokenStream) -> TokenStream {
                 let types = named.iter().map(|f| &f.ty);
 
                 quote! {
-                    impl<'de> sbor::Decode<'de> for #ident {
-                        fn decode(decoder: &mut Decoder<'de>) -> Result<Self, String> {
+                    impl sbor::Decode for #ident {
+                        fn decode<'de>(decoder: &'de mut sbor::Decoder) -> Result<Self, String> {
                             extern crate alloc;
                             use alloc::string::ToString;
                             use sbor::{self, Decode};
@@ -80,8 +80,8 @@ pub fn handle_decode(input: TokenStream) -> TokenStream {
                 let types = unnamed.iter().map(|f| &f.ty);
 
                 quote! {
-                    impl<'de> sbor::Decode<'de> for #ident {
-                        fn decode(decoder: &mut Decoder<'de>) -> Result<Self, String> {
+                    impl sbor::Decode for #ident {
+                        fn decode<'de>(decoder: &'de mut sbor::Decoder) -> Result<Self, String> {
                             extern crate alloc;
                             use alloc::string::ToString;
                             use alloc::vec::Vec;
@@ -117,8 +117,8 @@ pub fn handle_decode(input: TokenStream) -> TokenStream {
             }
             syn::Fields::Unit => {
                 quote! {
-                    impl<'de> sbor::Decode<'de> for #ident {
-                        fn decode(decoder: &mut Decoder<'de>) -> Result<Self, String> {
+                    impl sbor::Decode for #ident {
+                        fn decode<'de>(decoder: &'de mut sbor::Decoder) -> Result<Self, String> {
                             extern crate alloc;
                             use alloc::string::ToString;
 
@@ -218,8 +218,8 @@ pub fn handle_decode(input: TokenStream) -> TokenStream {
             });
 
             quote! {
-                impl<'de> sbor::Decode<'de> for #ident {
-                    fn decode(decoder: &mut Decoder<'de>) -> Result<Self, String> {
+                impl sbor::Decode for #ident {
+                    fn decode<'de>(decoder: &'de mut sbor::Decoder) -> Result<Self, String> {
                         extern crate alloc;
                         use alloc::string::ToString;
                         use sbor::{self, Decode};

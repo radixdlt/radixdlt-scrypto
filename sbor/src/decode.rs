@@ -1,13 +1,13 @@
 use crate::*;
 
-pub trait Decode<'de>: Sized {
-    fn decode(decoder: &mut Decoder<'de>) -> Result<Self, String>;
+pub trait Decode: Sized {
+    fn decode<'de>(decoder: &mut Decoder<'de>) -> Result<Self, String>;
 }
 
 macro_rules! decode_basic_type {
     ($type:ident, $method:ident) => {
-        impl<'de> Decode<'de> for $type {
-            fn decode(decoder: &mut Decoder<'de>) -> Result<Self, String> {
+        impl Decode for $type {
+            fn decode<'de>(decoder: &mut Decoder<'de>) -> Result<Self, String> {
                 decoder.$method()
             }
         }
@@ -26,26 +26,26 @@ decode_basic_type!(u32, decode_u32);
 decode_basic_type!(u64, decode_u64);
 decode_basic_type!(u128, decode_u128);
 
-impl<'de> Decode<'de> for String {
-    fn decode(decoder: &mut Decoder<'de>) -> Result<Self, String> {
+impl Decode for String {
+    fn decode<'de>(decoder: &mut Decoder<'de>) -> Result<Self, String> {
         decoder.decode_string()
     }
 }
 
-impl<'de, T: Decode<'de>> Decode<'de> for Option<T> {
-    fn decode(decoder: &mut Decoder<'de>) -> Result<Self, String> {
+impl<T: Decode> Decode for Option<T> {
+    fn decode<'de>(decoder: &mut Decoder<'de>) -> Result<Self, String> {
         decoder.decode_option()
     }
 }
 
-impl<'de, T: Decode<'de>, const N: usize> Decode<'de> for [T; N] {
-    fn decode(decoder: &mut Decoder<'de>) -> Result<Self, String> {
+impl<T: Decode, const N: usize> Decode for [T; N] {
+    fn decode<'de>(decoder: &mut Decoder<'de>) -> Result<Self, String> {
         decoder.decode_array()
     }
 }
 
-impl<'de, T: Decode<'de>> Decode<'de> for Vec<T> {
-    fn decode(decoder: &mut Decoder<'de>) -> Result<Self, String> {
+impl<T: Decode> Decode for Vec<T> {
+    fn decode<'de>(decoder: &mut Decoder<'de>) -> Result<Self, String> {
         decoder.decode_vec()
     }
 }
@@ -144,7 +144,7 @@ impl<'de> Decoder<'de> {
         Ok(s?)
     }
 
-    pub fn decode_option<T: Decode<'de>>(&mut self) -> Result<Option<T>, String> {
+    pub fn decode_option<T: Decode>(&mut self) -> Result<Option<T>, String> {
         self.decode_type_and_check(TYPE_OPTION)?;
         let slice = self.decode(1)?;
 
@@ -155,7 +155,7 @@ impl<'de> Decoder<'de> {
         }
     }
 
-    pub fn decode_array<T: Decode<'de>, const N: usize>(&mut self) -> Result<[T; N], String> {
+    pub fn decode_array<T: Decode, const N: usize>(&mut self) -> Result<[T; N], String> {
         self.decode_type_and_check(TYPE_ARRAY)?;
         let len = self.decode_len()?;
         if len != N {
@@ -174,7 +174,7 @@ impl<'de> Decoder<'de> {
         Ok(arr)
     }
 
-    pub fn decode_vec<T: Decode<'de>>(&mut self) -> Result<Vec<T>, String> {
+    pub fn decode_vec<T: Decode>(&mut self) -> Result<Vec<T>, String> {
         self.decode_type_and_check(TYPE_VEC)?;
         let len = self.decode_len()?;
 
@@ -186,7 +186,7 @@ impl<'de> Decoder<'de> {
     }
 
     // TODO expand to different lengths
-    pub fn decode_tuple<A: Decode<'de>, B: Decode<'de>>(&mut self) -> Result<(A, B), String> {
+    pub fn decode_tuple<A: Decode, B: Decode>(&mut self) -> Result<(A, B), String> {
         self.decode_type_and_check(TYPE_TUPLE)?;
         let len = self.decode_len()?;
 
@@ -201,11 +201,11 @@ impl<'de> Decoder<'de> {
         Ok(result)
     }
 
-    pub fn decode_struct<T: Decode<'de>>(&mut self) -> Result<T, String> {
+    pub fn decode_struct<T: Decode>(&mut self) -> Result<T, String> {
         T::decode(self)
     }
 
-    pub fn decode_enum<T: Decode<'de>>(&mut self) -> Result<T, String> {
+    pub fn decode_enum<T: Decode>(&mut self) -> Result<T, String> {
         T::decode(self)
     }
 }
