@@ -156,6 +156,10 @@ impl<'de> Decoder<'de> {
         Ok(u16::from_le_bytes(bytes) as usize)
     }
 
+    pub fn decode_index(&mut self) -> Result<usize, String> {
+        Ok(self.decode(1)?[0] as usize)
+    }
+
     pub fn decode_unit(&mut self) -> Result<(), String> {
         self.check_type(TYPE_UNIT)?;
         Ok(())
@@ -192,12 +196,12 @@ impl<'de> Decoder<'de> {
 
     pub fn decode_option<T: Decode>(&mut self) -> Result<Option<T>, String> {
         self.check_type(TYPE_OPTION)?;
-        let slice = self.decode(1)?;
+        let index = self.decode_index()?;
 
-        match slice[0] {
-            1 => Ok(Some(T::decode(self)?)),
+        match index {
             0 => Ok(None),
-            _ => Err(format!("Invalid option value: {}", slice[0])),
+            1 => Ok(Some(T::decode(self)?)),
+            _ => Err(format!("Invalid option index: {}", index)),
         }
     }
 
@@ -279,7 +283,7 @@ mod tests {
             13, 1, 9, 1, 0, 0, 0, // option
             14, 3, 0, 9, 1, 0, 0, 0, 9, 2, 0, 0, 0, 9, 3, 0, 0, 0, // array
             15, 3, 0, 9, 1, 0, 0, 0, 9, 2, 0, 0, 0, 9, 3, 0, 0, 0, // vector
-            16, 2, 0, 9, 1, 0, 0, 0, 9, 2, 0, 0, 0 // tuple
+            16, 2, 0, 9, 1, 0, 0, 0, 9, 2, 0, 0, 0, // tuple
         ];
         let mut dec = Decoder::new(&bytes);
         dec.decode_unit().unwrap();
@@ -318,9 +322,9 @@ mod tests {
             1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // u128
             5, 0, 104, 101, 108, 108, 111, // string
             1, 1, 0, 0, 0, // option
-            3, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, // array 
+            3, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, // array
             3, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, // vector
-            2, 0, 1, 0, 0, 0, 2, 0, 0, 0 // tuple
+            2, 0, 1, 0, 0, 0, 2, 0, 0, 0, // tuple
         ];
         let mut dec = Decoder::new_no_schema(&bytes);
         dec.decode_unit().unwrap();

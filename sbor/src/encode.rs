@@ -102,6 +102,10 @@ impl Encoder {
         self.buf.extend(&(len as u16).to_le_bytes());
     }
 
+    pub fn encode_index(&mut self, len: usize) {
+        self.buf.push(len as u8);
+    }
+
     pub fn encode_unit(&mut self) {
         self.encode_type(TYPE_UNIT);
     }
@@ -135,12 +139,12 @@ impl Encoder {
     pub fn encode_option<T: Encode>(&mut self, value: &Option<T>) {
         self.encode_type(TYPE_OPTION);
         match value {
-            Some(v) => {
-                self.buf.push(1);
-                v.encode(self);
-            }
             None => {
-                self.buf.push(0);
+                self.encode_index(0);
+            }
+            Some(v) => {
+                self.encode_index(1);
+                v.encode(self);
             }
         }
     }
@@ -276,7 +280,7 @@ mod tests {
                 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // u128
                 5, 0, 104, 101, 108, 108, 111, // string
                 1, 1, 0, 0, 0, // option
-                3, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, // array 
+                3, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, // array
                 3, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, // vector
                 2, 0, 1, 0, 0, 0, 2, 0, 0, 0 // tuple
             ],

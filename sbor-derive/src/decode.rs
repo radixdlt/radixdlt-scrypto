@@ -88,7 +88,7 @@ pub fn handle_decode(input: TokenStream) -> TokenStream {
             }
         },
         Data::Enum(DataEnum { variants, .. }) => {
-            let match_arms = variants.iter().map(|v| {
+            let match_arms = variants.iter().enumerate().map(|(v_ith, v)| {
                 let v_id = &v.ident;
                 let v_name = v_id.to_string();
                 match &v.fields {
@@ -103,7 +103,8 @@ pub fn handle_decode(input: TokenStream) -> TokenStream {
                         let types = named.iter().map(|f| &f.ty);
                         let n = named.len();
                         quote! {
-                            #v_name => {
+                            #v_ith => {
+                                decoder.check_name(#v_name)?;
                                 decoder.check_type(sbor::TYPE_FIELDS_NAMED)?;
                                 decoder.check_len(#n)?;
 
@@ -120,7 +121,8 @@ pub fn handle_decode(input: TokenStream) -> TokenStream {
                         let n = unnamed.len() as usize;
                         let types = unnamed.iter().map(|f| &f.ty);
                         quote! {
-                            #v_name => {
+                            #v_ith => {
+                                decoder.check_name(#v_name)?;
                                 decoder.check_type(sbor::TYPE_FIELDS_UNNAMED)?;
                                 decoder.check_len(#n)?;
 
@@ -132,7 +134,8 @@ pub fn handle_decode(input: TokenStream) -> TokenStream {
                     }
                     syn::Fields::Unit => {
                         quote! {
-                            #v_name => {
+                            #v_ith => {
+                                decoder.check_name(#v_name)?;
                                 decoder.check_type(sbor::TYPE_FIELDS_UNIT)?;
                                 Ok(Self::#v_id)
                             }
@@ -149,10 +152,10 @@ pub fn handle_decode(input: TokenStream) -> TokenStream {
                         decoder.check_type(sbor::TYPE_ENUM)?;
                         decoder.check_name(#ident_str)?;
 
-                        let variant_name = decoder.decode_string()?;
-                        match variant_name.as_str() {
+                        let index = decoder.decode_index()?;
+                        match index {
                             #(#match_arms,)*
-                            _ => Err(format!("Unknown variant: {}", variant_name)),
+                            _ => Err(format!("Unknown enum index: {}", index)),
                         }
                     }
                 }

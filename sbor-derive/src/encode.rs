@@ -78,7 +78,7 @@ pub fn handle_encode(input: TokenStream) -> TokenStream {
             }
         },
         Data::Enum(DataEnum { variants, .. }) => {
-            let match_arms = variants.iter().map(|v| {
+            let match_arms = variants.iter().enumerate().map(|(v_ith, v)| {
                 let v_id = &v.ident;
                 let v_name = v_id.to_string();
                 match &v.fields {
@@ -94,7 +94,8 @@ pub fn handle_encode(input: TokenStream) -> TokenStream {
                         let n = named.len();
                         quote! {
                             Self::#v_id {#(#idents),*} => {
-                                encoder.encode_str(#v_name);
+                                encoder.encode_index(#v_ith);
+                                encoder.encode_name(#v_name);
                                 encoder.encode_type(sbor::TYPE_FIELDS_NAMED);
                                 encoder.encode_len(#n);
                                 #(
@@ -110,7 +111,8 @@ pub fn handle_encode(input: TokenStream) -> TokenStream {
                         let args2 = (0..n).map(|i| format_ident!("a{}", i));
                         quote! {
                             Self::#v_id (#(#args),*) => {
-                                encoder.encode_str(#v_name);
+                                encoder.encode_index(#v_ith);
+                                encoder.encode_name(#v_name);
                                 encoder.encode_type(sbor::TYPE_FIELDS_UNNAMED);
                                 encoder.encode_len(#n);
                                 #(#args2.encode(encoder);)*
@@ -120,7 +122,8 @@ pub fn handle_encode(input: TokenStream) -> TokenStream {
                     syn::Fields::Unit => {
                         quote! {
                             Self::#v_id => {
-                                encoder.encode_str(#v_name);
+                                encoder.encode_index(#v_ith);
+                                encoder.encode_name(#v_name);
                                 encoder.encode_type(sbor::TYPE_FIELDS_UNIT);
                             }
                         }
