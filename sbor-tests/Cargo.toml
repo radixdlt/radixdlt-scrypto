@@ -7,8 +7,9 @@ edition = "2018"
 sbor = { version = "0.1", path = "../sbor", default-features = false, features = ["derive", "trace", "json"] }
 serde = { version = "1.0", default-features = false, features = ["derive"] }
 serde_json = { version = "1.0", default-features = false }
+bincode_core = { version = "0.1", git = "https://github.com/bincode-org/bincode-core.git", default-features = false }
 
 [features]
 default = ["std"]
-std = ["serde/std", "serde_json/std", "sbor/std"]
-alloc = ["serde/alloc", "serde_json/alloc", "sbor/alloc"]
+std = ["serde/std", "serde_json/std", "bincode_core/std", "sbor/std"]
+alloc = ["serde/alloc", "serde_json/alloc", "bincode_core/alloc", "sbor/alloc"]

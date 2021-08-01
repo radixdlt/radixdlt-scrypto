@@ -70,7 +70,7 @@ macro_rules! encode_int {
 
 impl Encoder {
     pub fn new() -> Self {
-        Self { buf: Vec::new() }
+        Self { buf: Vec::with_capacity(128) }
     }
 
     pub fn encode_type(&mut self, ty: u8) {
