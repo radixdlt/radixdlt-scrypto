@@ -34,12 +34,12 @@ pub fn handle_encode(input: TokenStream) -> TokenStream {
                             use sbor::{self, Encode};
 
                             encoder.encode_type(sbor::TYPE_STRUCT);
-                            encoder.encode_str(#ident_str);
+                            encoder.encode_name(#ident_str);
 
                             encoder.encode_type(sbor::TYPE_FIELDS_NAMED);
                             encoder.encode_len(#n);
                             #(
-                                encoder.encode_str(#names);
+                                encoder.encode_name(#names);
                                 self.#idents.encode(encoder);
                             )*
                         }
@@ -56,7 +56,7 @@ pub fn handle_encode(input: TokenStream) -> TokenStream {
                             use sbor::{self, Encode};
 
                             encoder.encode_type(sbor::TYPE_STRUCT);
-                            encoder.encode_str(#ident_str);
+                            encoder.encode_name(#ident_str);
 
                             encoder.encode_type(sbor::TYPE_FIELDS_UNNAMED);
                             encoder.encode_len(#n);
@@ -70,7 +70,7 @@ pub fn handle_encode(input: TokenStream) -> TokenStream {
                     impl sbor::Encode for #ident {
                         fn encode(&self, encoder: &mut sbor::Encoder) {
                             encoder.encode_type(sbor::TYPE_STRUCT);
-                            encoder.encode_str(#ident_str);
+                            encoder.encode_name(#ident_str);
                             encoder.encode_type(sbor::TYPE_FIELDS_UNIT);
                         }
                     }
@@ -98,7 +98,7 @@ pub fn handle_encode(input: TokenStream) -> TokenStream {
                                 encoder.encode_type(sbor::TYPE_FIELDS_NAMED);
                                 encoder.encode_len(#n);
                                 #(
-                                    encoder.encode_str(#names);
+                                    encoder.encode_name(#names);
                                     #idents2.encode(encoder);
                                 )*
                             }
@@ -134,7 +134,7 @@ pub fn handle_encode(input: TokenStream) -> TokenStream {
                         use sbor::{self, Encode};
 
                         encoder.encode_type(sbor::TYPE_ENUM);
-                        encoder.encode_str(#ident_str);
+                        encoder.encode_name(#ident_str);
 
                         match self {
                             #(#match_arms),*

@@ -34,38 +34,15 @@ pub fn handle_decode(input: TokenStream) -> TokenStream {
                         fn decode<'de>(decoder: &'de mut sbor::Decoder) -> Result<Self, String> {
                             use sbor::{self, Decode};
 
-                            decoder.decode_type_and_check(sbor::TYPE_STRUCT)?;
-                            let name = decoder.decode_string()?;
-                            let expected = #ident_str;
-                            if name.as_str() != expected {
-                                return Err(format!(
-                                    "Unexpected struct name: expected = {}, actual = {}",
-                                    expected,
-                                    name
-                                ));
-                            }
+                            decoder.check_type(sbor::TYPE_STRUCT)?;
+                            decoder.check_name(#ident_str)?;
 
-                            decoder.decode_type_and_check(sbor::TYPE_FIELDS_NAMED)?;
-                            let n = decoder.decode_len()?;
-                            if n != #n {
-                                return Err(format!(
-                                    "Unexpected number of fields: expected = {}, actual = {}",
-                                    #n,
-                                    n
-                                ));
-                            }
+                            decoder.check_type(sbor::TYPE_FIELDS_NAMED)?;
+                            decoder.check_len(#n)?;
 
                             Ok(Self {
                                 #(#idents: {
-                                    let name = decoder.decode_string()?;
-                                    let expected = #names;
-                                    if name.as_str() != expected {
-                                        return Err(format!(
-                                            "Unexpected struct field: expected = {}, actual = {}",
-                                            expected,
-                                            name
-                                        ));
-                                    }
+                                    decoder.check_name(#names)?;
                                     <#types>::decode(decoder)?
                                 }),*
                             })
@@ -82,26 +59,11 @@ pub fn handle_decode(input: TokenStream) -> TokenStream {
                         fn decode<'de>(decoder: &'de mut sbor::Decoder) -> Result<Self, String> {
                             use sbor::{self, Decode};
 
-                            decoder.decode_type_and_check(sbor::TYPE_STRUCT)?;
-                            let name = decoder.decode_string()?;
-                            let expected = #ident_str;
-                            if name.as_str() != expected {
-                                return Err(format!(
-                                    "Unexpected struct name: expected = {}, actual = {}",
-                                    expected,
-                                    name
-                                ));
-                            }
+                            decoder.check_type(sbor::TYPE_STRUCT)?;
+                            decoder.check_name(#ident_str)?;
 
-                            decoder.decode_type_and_check(sbor::TYPE_FIELDS_UNNAMED)?;
-                            let n = decoder.decode_len()?;
-                            if n != #n {
-                                return Err(format!(
-                                    "Unexpected number of fields: expected = {}, actual = {}",
-                                    #n,
-                                    n
-                                ));
-                            }
+                            decoder.check_type(sbor::TYPE_FIELDS_UNNAMED)?;
+                            decoder.check_len(#n)?;
 
                             Ok(Self (
                                 #(<#types>::decode(decoder)?),*
@@ -114,18 +76,10 @@ pub fn handle_decode(input: TokenStream) -> TokenStream {
                 quote! {
                     impl sbor::Decode for #ident {
                         fn decode<'de>(decoder: &'de mut sbor::Decoder) -> Result<Self, String> {
-                            decoder.decode_type_and_check(sbor::TYPE_STRUCT)?;
-                            let name = decoder.decode_string()?;
-                            let expected = #ident_str;
-                            if name.as_str() != expected {
-                                return Err(format!(
-                                    "Unexpected struct name: expected = {}, actual = {}",
-                                    expected,
-                                    name
-                                ));
-                            }
+                            decoder.check_type(sbor::TYPE_STRUCT)?;
+                            decoder.check_name(#ident_str)?;
 
-                            decoder.decode_type_and_check(sbor::TYPE_FIELDS_UNIT)?;
+                            decoder.check_type(sbor::TYPE_FIELDS_UNIT)?;
 
                             Ok(Self {})
                         }
@@ -150,27 +104,12 @@ pub fn handle_decode(input: TokenStream) -> TokenStream {
                         let n = named.len();
                         quote! {
                             #v_name => {
-                                decoder.decode_type_and_check(sbor::TYPE_FIELDS_NAMED)?;
-                                let n = decoder.decode_len()?;
-                                if n != #n {
-                                    return Err(format!(
-                                        "Unexpected number of fields: expected = {}, actual = {}",
-                                        #n,
-                                        n
-                                    ));
-                                }
+                                decoder.check_type(sbor::TYPE_FIELDS_NAMED)?;
+                                decoder.check_len(#n)?;
 
                                 Ok(Self::#v_id {
                                     #(#idents: {
-                                        let name = decoder.decode_string()?;
-                                        let expected = #names;
-                                        if name.as_str() != expected {
-                                            return Err(format!(
-                                                "Unexpected struct field: expected = {}, actual = {}",
-                                                expected,
-                                                name
-                                            ));
-                                        }
+                                        decoder.check_name(#names)?;
                                         <#types>::decode(decoder)?
                                     }),*
                                 })
@@ -182,15 +121,8 @@ pub fn handle_decode(input: TokenStream) -> TokenStream {
                         let types = unnamed.iter().map(|f| &f.ty);
                         quote! {
                             #v_name => {
-                                decoder.decode_type_and_check(sbor::TYPE_FIELDS_UNNAMED)?;
-                                let n = decoder.decode_len()?;
-                                if n != #n {
-                                    return Err(format!(
-                                        "Unexpected number of fields: expected = {}, actual = {}",
-                                        #n,
-                                        n
-                                    ));
-                                }
+                                decoder.check_type(sbor::TYPE_FIELDS_UNNAMED)?;
+                                decoder.check_len(#n)?;
 
                                 Ok(Self::#v_id (
                                     #(<#types>::decode(decoder)?),*
@@ -201,7 +133,7 @@ pub fn handle_decode(input: TokenStream) -> TokenStream {
                     syn::Fields::Unit => {
                         quote! {
                             #v_name => {
-                                decoder.decode_type_and_check(sbor::TYPE_FIELDS_UNIT)?;
+                                decoder.check_type(sbor::TYPE_FIELDS_UNIT)?;
                                 Ok(Self::#v_id)
                             }
                         }
@@ -214,16 +146,8 @@ pub fn handle_decode(input: TokenStream) -> TokenStream {
                     fn decode<'de>(decoder: &'de mut sbor::Decoder) -> Result<Self, String> {
                         use sbor::{self, Decode};
 
-                        decoder.decode_type_and_check(sbor::TYPE_ENUM)?;
-                        let name = decoder.decode_string()?;
-                        let expected = #ident_str;
-                        if name.as_str() != expected {
-                            return Err(format!(
-                                "Unexpected enum name: expected = {}, actual = {}",
-                                expected,
-                                name
-                            ));
-                        }
+                        decoder.check_type(sbor::TYPE_ENUM)?;
+                        decoder.check_name(#ident_str)?;
 
                         let variant_name = decoder.decode_string()?;
                         match variant_name.as_str() {

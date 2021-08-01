@@ -2,7 +2,9 @@
 extern crate test;
 use test::Bencher;
 
-use sbor::{sbor_decode, sbor_encode, Decode, Encode};
+use sbor::{
+    sbor_decode, sbor_decode_no_schema, sbor_encode, sbor_encode_no_schema, Decode, Encode,
+};
 use serde::{Deserialize, Serialize};
 
 mod helper;
@@ -42,17 +44,24 @@ macro_rules! encode {
     };
 }
 
-encode!(enc_small_sbor, 10, 10, sbor_encode);
-encode!(enc_median_sbor, 100, 100, sbor_encode);
-encode!(enc_large_sbor, 1000, 1000, sbor_encode);
+encode!(encode_small_sbor, 10, 10, sbor_encode);
+encode!(encode_median_sbor, 100, 100, sbor_encode);
+encode!(encode_large_sbor, 1000, 1000, sbor_encode);
 
-encode!(enc_small_bincode, 10, 10, bincode_encode);
-encode!(enc_median_bincode, 100, 100, bincode_encode);
-encode!(enc_large_bincode, 1000, 1000, bincode_encode);
+#[rustfmt::skip]
+encode!(encode_small_sbor_no_schema, 10, 10, sbor_encode_no_schema);
+#[rustfmt::skip]
+encode!(encode_median_sbor_no_schema, 100, 100, sbor_encode_no_schema);
+#[rustfmt::skip]
+encode!(encode_large_sbor_no_schema, 1000, 1000, sbor_encode_no_schema);
 
-encode!(enc_small_json, 10, 10, json_encode);
-encode!(enc_median_json, 100, 100, json_encode);
-encode!(enc_large_json, 1000, 1000, json_encode);
+encode!(encode_small_bincode, 10, 10, bincode_encode);
+encode!(encode_median_bincode, 100, 100, bincode_encode);
+encode!(encode_large_bincode, 1000, 1000, bincode_encode);
+
+encode!(encode_small_json, 10, 10, json_encode);
+encode!(encode_median_json, 100, 100, json_encode);
+encode!(encode_large_json, 1000, 1000, json_encode);
 
 macro_rules! decode {
     ($name:ident, $str_len:expr, $vec_len:expr, $enc:expr, $dec:expr) => {
@@ -68,20 +77,24 @@ macro_rules! decode {
     };
 }
 
-decode!(dec_small_sbor, 10, 10, sbor_encode, sbor_decode);
-decode!(dec_median_sbor, 100, 100, sbor_encode, sbor_decode);
-decode!(dec_large_sbor, 1000, 1000, sbor_encode, sbor_decode);
+decode!(decode_small_sbor, 10, 10, sbor_encode, sbor_decode);
+decode!(decode_median_sbor, 100, 100, sbor_encode, sbor_decode);
+decode!(decode_large_sbor, 1000, 1000, sbor_encode, sbor_decode);
 
-decode!(dec_small_bincode, 10, 10, bincode_encode, bincode_decode);
-decode!(dec_median_bincode, 100, 100, bincode_encode, bincode_decode);
-decode!(
-    dec_large_bincode,
-    1000,
-    1000,
-    bincode_encode,
-    bincode_decode
-);
+#[rustfmt::skip]
+decode!(decode_small_sbor_no_schema, 10, 10, sbor_encode_no_schema, sbor_decode_no_schema);
+#[rustfmt::skip]
+decode!(decode_median_sbor_no_schema, 100, 100, sbor_encode_no_schema, sbor_decode_no_schema);
+#[rustfmt::skip]
+decode!(decode_large_sbor_no_schema, 1000, 1000, sbor_encode_no_schema, sbor_decode_no_schema);
 
-decode!(dec_small_json, 10, 10, json_encode, json_decode);
-decode!(dec_median_json, 100, 100, json_encode, json_decode);
-decode!(dec_large_json, 1000, 1000, json_encode, json_decode);
+#[rustfmt::skip]
+decode!(decode_small_bincode, 10, 10, bincode_encode, bincode_decode);
+#[rustfmt::skip]
+decode!(decode_median_bincode, 100, 100, bincode_encode, bincode_decode);
+#[rustfmt::skip]
+decode!(decode_large_bincode, 1000, 1000, bincode_encode, bincode_decode);
+
+decode!(decode_small_json, 10, 10, json_encode, json_decode);
+decode!(decode_median_json, 100, 100, json_encode, json_decode);
+decode!(decode_large_json, 1000, 1000, json_encode, json_decode);

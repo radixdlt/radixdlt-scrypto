@@ -53,12 +53,13 @@ impl<T: Decode> Decode for Vec<T> {
 pub struct Decoder<'de> {
     input: &'de [u8],
     offset: usize,
+    with_schema: bool,
 }
 
 macro_rules! decode_int {
     ($method:ident, $sbor_type:expr, $native_type:ty, $n:expr) => {
         pub fn $method(&mut self) -> Result<$native_type, String> {
-            self.decode_type_and_check($sbor_type)?;
+            self.check_type($sbor_type)?;
             let slice = self.decode($n)?;
             let mut bytes = [0u8; $n];
             bytes.copy_from_slice(&slice[..]);
@@ -69,11 +70,67 @@ macro_rules! decode_int {
 
 impl<'de> Decoder<'de> {
     pub fn new(input: &'de [u8]) -> Self {
-        Self { input, offset: 0 }
+        Self {
+            input,
+            offset: 0,
+            with_schema: true,
+        }
+    }
+
+    pub fn new_no_schema(input: &'de [u8]) -> Self {
+        Self {
+            input,
+            offset: 0,
+            with_schema: false,
+        }
     }
 
     pub fn remaining_bytes(&self) -> usize {
         self.input.len() - self.offset
+    }
+
+    pub fn check_type(&mut self, expected: u8) -> Result<(), String> {
+        if self.with_schema {
+            let ty = self.decode_type()?;
+            if ty != expected {
+                return Err(format!(
+                    "Unexpected type: expected = {}, actual = {}",
+                    expected, ty
+                ));
+            }
+        }
+
+        Ok(())
+    }
+
+    pub fn check_name(&mut self, expected: &str) -> Result<(), String> {
+        if self.with_schema {
+            self.check_type(TYPE_STRING)?;
+            self.check_len(expected.len())?;
+
+            let slice = self.decode(expected.len())?;
+            if slice != expected.as_bytes() {
+                return Err(format!(
+                    "Unexpected name: expected = {}, actual = {}",
+                    expected,
+                    String::from_utf8(slice.to_vec()).unwrap_or("<unknown>".to_string())
+                ));
+            }
+        }
+
+        Ok(())
+    }
+
+    pub fn check_len(&mut self, expected: usize) -> Result<(), String> {
+        let len = self.decode_len()?;
+        if len != expected {
+            return Err(format!(
+                "Unexpected length: expected = {}, actual = {}",
+                expected, len
+            ));
+        }
+
+        Ok(())
     }
 
     pub fn decode(&mut self, n: usize) -> Result<&'de [u8], String> {
@@ -93,17 +150,6 @@ impl<'de> Decoder<'de> {
         Ok(self.decode(1)?[0])
     }
 
-    pub fn decode_type_and_check(&mut self, expected: u8) -> Result<(), String> {
-        let ty = self.decode_type()?;
-        if ty != expected {
-            return Err(format!(
-                "Unexpected type: expected = {}, actual = {}",
-                expected, ty
-            ));
-        }
-        Ok(())
-    }
-
     pub fn decode_len(&mut self) -> Result<usize, String> {
         let mut bytes = [0u8; 2];
         bytes.copy_from_slice(&self.decode(2)?[..]);
@@ -111,12 +157,12 @@ impl<'de> Decoder<'de> {
     }
 
     pub fn decode_unit(&mut self) -> Result<(), String> {
-        self.decode_type_and_check(TYPE_UNIT)?;
+        self.check_type(TYPE_UNIT)?;
         Ok(())
     }
 
     pub fn decode_bool(&mut self) -> Result<bool, String> {
-        self.decode_type_and_check(TYPE_BOOL)?;
+        self.check_type(TYPE_BOOL)?;
         let slice = self.decode(1)?;
         if slice[0] != 0 && slice[0] != 1 {
             Err(format!("Invalid boolean value: {}", slice[0]))
@@ -137,7 +183,7 @@ impl<'de> Decoder<'de> {
     decode_int!(decode_u128, TYPE_U128, u128, 16);
 
     pub fn decode_string(&mut self) -> Result<String, String> {
-        self.decode_type_and_check(TYPE_STRING)?;
+        self.check_type(TYPE_STRING)?;
         let len = self.decode_len()?;
         let slice = self.decode(len)?;
         let s = String::from_utf8(slice.to_vec()).map_err(|_| "Invalid utf-8");
@@ -145,7 +191,7 @@ impl<'de> Decoder<'de> {
     }
 
     pub fn decode_option<T: Decode>(&mut self) -> Result<Option<T>, String> {
-        self.decode_type_and_check(TYPE_OPTION)?;
+        self.check_type(TYPE_OPTION)?;
         let slice = self.decode(1)?;
 
         match slice[0] {
@@ -156,7 +202,7 @@ impl<'de> Decoder<'de> {
     }
 
     pub fn decode_array<T: Decode, const N: usize>(&mut self) -> Result<[T; N], String> {
-        self.decode_type_and_check(TYPE_ARRAY)?;
+        self.check_type(TYPE_ARRAY)?;
         let len = self.decode_len()?;
         if len != N {
             return Err(format!(
@@ -175,7 +221,7 @@ impl<'de> Decoder<'de> {
     }
 
     pub fn decode_vec<T: Decode>(&mut self) -> Result<Vec<T>, String> {
-        self.decode_type_and_check(TYPE_VEC)?;
+        self.check_type(TYPE_VEC)?;
         let len = self.decode_len()?;
 
         let mut result = Vec::<T>::new();
@@ -187,7 +233,7 @@ impl<'de> Decoder<'de> {
 
     // TODO expand to different lengths
     pub fn decode_tuple<A: Decode, B: Decode>(&mut self) -> Result<(A, B), String> {
-        self.decode_type_and_check(TYPE_TUPLE)?;
+        self.check_type(TYPE_TUPLE)?;
         let len = self.decode_len()?;
 
         if len != 2 {
@@ -236,6 +282,47 @@ mod tests {
             16, 0, 2, 9, 0, 0, 0, 1, 9, 0, 0, 0, 2, // tuple
         ];
         let mut dec = Decoder::new(&bytes);
+        dec.decode_unit().unwrap();
+        assert_eq!(true, dec.decode_bool().unwrap());
+        assert_eq!(1, dec.decode_i8().unwrap());
+        assert_eq!(1, dec.decode_i16().unwrap());
+        assert_eq!(1, dec.decode_i32().unwrap());
+        assert_eq!(1, dec.decode_i64().unwrap());
+        assert_eq!(1, dec.decode_i128().unwrap());
+        assert_eq!(1, dec.decode_u8().unwrap());
+        assert_eq!(1, dec.decode_u16().unwrap());
+        assert_eq!(1, dec.decode_u32().unwrap());
+        assert_eq!(1, dec.decode_u64().unwrap());
+        assert_eq!(1, dec.decode_u128().unwrap());
+        assert_eq!("hello", dec.decode_string().unwrap());
+        assert_eq!(Some(1u32), dec.decode_option().unwrap());
+        assert_eq!([1u32, 2u32, 3u32], dec.decode_array().unwrap());
+        assert_eq!(vec![1u32, 2u32, 3u32], dec.decode_vec().unwrap());
+        assert_eq!((1u32, 2u32), dec.decode_tuple().unwrap());
+    }
+
+    #[test]
+    pub fn test_decoding_no_schema() {
+        let bytes = vec![
+            // unit
+            1, // bool
+            1, // i8
+            0, 1, // i16
+            0, 0, 0, 1, // i32
+            0, 0, 0, 0, 0, 0, 0, 1, // i64
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, // i128
+            1, // u8
+            0, 1, // u16
+            0, 0, 0, 1, // u32
+            0, 0, 0, 0, 0, 0, 0, 1, // u64
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, // u128
+            0, 5, 104, 101, 108, 108, 111, // String
+            1, 0, 0, 0, 1, // option
+            0, 3, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3, // array
+            0, 3, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3, // vector
+            0, 2, 0, 0, 0, 1, 0, 0, 0, 2, // tuple
+        ];
+        let mut dec = Decoder::new_no_schema(&bytes);
         dec.decode_unit().unwrap();
         assert_eq!(true, dec.decode_bool().unwrap());
         assert_eq!(1, dec.decode_i8().unwrap());

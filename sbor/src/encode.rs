@@ -57,12 +57,13 @@ impl<T: Encode> Encode for Vec<T> {
 
 pub struct Encoder {
     buf: Vec<u8>,
+    with_schema: bool,
 }
 
 macro_rules! encode_int {
     ($method:ident, $sbor_type:expr, $native_type:ty) => {
         pub fn $method(&mut self, value: $native_type) {
-            self.buf.push($sbor_type);
+            self.encode_type($sbor_type);
             self.buf.extend(&value.to_be_bytes());
         }
     };
@@ -70,11 +71,31 @@ macro_rules! encode_int {
 
 impl Encoder {
     pub fn new() -> Self {
-        Self { buf: Vec::with_capacity(256) }
+        Self {
+            buf: Vec::with_capacity(256),
+            with_schema: true,
+        }
+    }
+
+    pub fn new_no_schema() -> Self {
+        Self {
+            buf: Vec::with_capacity(256),
+            with_schema: false,
+        }
     }
 
     pub fn encode_type(&mut self, ty: u8) {
-        self.buf.push(ty);
+        if self.with_schema {
+            self.buf.push(ty);
+        }
+    }
+
+    pub fn encode_name(&mut self, value: &str) {
+        if self.with_schema {
+            self.encode_type(TYPE_STRING);
+            self.encode_len(value.len());
+            self.buf.extend(value.as_bytes());
+        }
     }
 
     pub fn encode_len(&mut self, len: usize) {
@@ -108,9 +129,7 @@ impl Encoder {
     }
 
     pub fn encode_string(&mut self, value: &String) {
-        self.encode_type(TYPE_STRING);
-        self.encode_len(value.len());
-        self.buf.extend(value.as_bytes());
+        self.encode_str(value.as_str());
     }
 
     pub fn encode_option<T: Encode>(&mut self, value: &Option<T>) {
@@ -214,6 +233,52 @@ mod tests {
                 14, 0, 3, 9, 0, 0, 0, 1, 9, 0, 0, 0, 2, 9, 0, 0, 0, 3, // array
                 15, 0, 3, 9, 0, 0, 0, 1, 9, 0, 0, 0, 2, 9, 0, 0, 0, 3, // vector
                 16, 0, 2, 9, 0, 0, 0, 1, 9, 0, 0, 0, 2 // tuple
+            ],
+            bytes
+        );
+    }
+
+    #[test]
+    pub fn test_encoding_no_schema() {
+        let mut enc = Encoder::new_no_schema();
+        enc.encode_unit();
+        enc.encode_bool(true);
+        enc.encode_i8(1);
+        enc.encode_i16(1);
+        enc.encode_i32(1);
+        enc.encode_i64(1);
+        enc.encode_i128(1);
+        enc.encode_u8(1);
+        enc.encode_u16(1);
+        enc.encode_u32(1);
+        enc.encode_u64(1);
+        enc.encode_u128(1);
+        enc.encode_string(&"hello".to_string());
+        enc.encode_option(&Some(1u32));
+        enc.encode_array(&[1u32, 2u32, 3u32]);
+        enc.encode_vec(&vec![1u32, 2u32, 3u32]);
+        enc.encode_tuple(&(1u32, 2u32));
+
+        let bytes: Vec<u8> = enc.into();
+        assert_eq!(
+            vec![
+                // unit
+                1, // bool
+                1, // i8
+                0, 1, // i16
+                0, 0, 0, 1, // i32
+                0, 0, 0, 0, 0, 0, 0, 1, // i64
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, // i128
+                1, // u8
+                0, 1, // u16
+                0, 0, 0, 1, // u32
+                0, 0, 0, 0, 0, 0, 0, 1, // u64
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, // u128
+                0, 5, 104, 101, 108, 108, 111, // String
+                1, 0, 0, 0, 1, // option
+                0, 3, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3, // array
+                0, 3, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3, // vector
+                0, 2, 0, 0, 0, 1, 0, 0, 0, 2 // tuple
             ],
             bytes
         );
