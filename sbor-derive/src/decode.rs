@@ -32,14 +32,12 @@ pub fn handle_decode(input: TokenStream) -> TokenStream {
                 quote! {
                     impl sbor::Decode for #ident {
                         fn decode<'de>(decoder: &'de mut sbor::Decoder) -> Result<Self, String> {
-                            extern crate alloc;
-                            use alloc::string::ToString;
                             use sbor::{self, Decode};
 
                             decoder.decode_type_and_check(sbor::TYPE_STRUCT)?;
                             let name = decoder.decode_string()?;
-                            let expected = #ident_str.to_string();
-                            if name != expected {
+                            let expected = #ident_str;
+                            if name.as_str() != expected {
                                 return Err(format!(
                                     "Unexpected struct name: expected = {}, actual = {}",
                                     expected,
@@ -60,8 +58,8 @@ pub fn handle_decode(input: TokenStream) -> TokenStream {
                             Ok(Self {
                                 #(#idents: {
                                     let name = decoder.decode_string()?;
-                                    let expected = #names.to_string();
-                                    if name != expected {
+                                    let expected = #names;
+                                    if name.as_str() != expected {
                                         return Err(format!(
                                             "Unexpected struct field: expected = {}, actual = {}",
                                             expected,
@@ -82,15 +80,12 @@ pub fn handle_decode(input: TokenStream) -> TokenStream {
                 quote! {
                     impl sbor::Decode for #ident {
                         fn decode<'de>(decoder: &'de mut sbor::Decoder) -> Result<Self, String> {
-                            extern crate alloc;
-                            use alloc::string::ToString;
-                            use alloc::vec::Vec;
                             use sbor::{self, Decode};
 
                             decoder.decode_type_and_check(sbor::TYPE_STRUCT)?;
                             let name = decoder.decode_string()?;
-                            let expected = #ident_str.to_string();
-                            if name != expected {
+                            let expected = #ident_str;
+                            if name.as_str() != expected {
                                 return Err(format!(
                                     "Unexpected struct name: expected = {}, actual = {}",
                                     expected,
@@ -119,13 +114,10 @@ pub fn handle_decode(input: TokenStream) -> TokenStream {
                 quote! {
                     impl sbor::Decode for #ident {
                         fn decode<'de>(decoder: &'de mut sbor::Decoder) -> Result<Self, String> {
-                            extern crate alloc;
-                            use alloc::string::ToString;
-
                             decoder.decode_type_and_check(sbor::TYPE_STRUCT)?;
                             let name = decoder.decode_string()?;
-                            let expected = #ident_str.to_string();
-                            if name != expected {
+                            let expected = #ident_str;
+                            if name.as_str() != expected {
                                 return Err(format!(
                                     "Unexpected struct name: expected = {}, actual = {}",
                                     expected,
@@ -171,8 +163,8 @@ pub fn handle_decode(input: TokenStream) -> TokenStream {
                                 Ok(Self::#v_id {
                                     #(#idents: {
                                         let name = decoder.decode_string()?;
-                                        let expected = #names.to_string();
-                                        if name != expected {
+                                        let expected = #names;
+                                        if name.as_str() != expected {
                                             return Err(format!(
                                                 "Unexpected struct field: expected = {}, actual = {}",
                                                 expected,
@@ -220,14 +212,12 @@ pub fn handle_decode(input: TokenStream) -> TokenStream {
             quote! {
                 impl sbor::Decode for #ident {
                     fn decode<'de>(decoder: &'de mut sbor::Decoder) -> Result<Self, String> {
-                        extern crate alloc;
-                        use alloc::string::ToString;
                         use sbor::{self, Decode};
 
                         decoder.decode_type_and_check(sbor::TYPE_ENUM)?;
                         let name = decoder.decode_string()?;
-                        let expected = #ident_str.to_string();
-                        if name != expected {
+                        let expected = #ident_str;
+                        if name.as_str() != expected {
                             return Err(format!(
                                 "Unexpected enum name: expected = {}, actual = {}",
                                 expected,

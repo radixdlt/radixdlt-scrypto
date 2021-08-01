@@ -70,7 +70,7 @@ macro_rules! encode_int {
 
 impl Encoder {
     pub fn new() -> Self {
-        Self { buf: Vec::with_capacity(128) }
+        Self { buf: Vec::with_capacity(256) }
     }
 
     pub fn encode_type(&mut self, ty: u8) {
@@ -100,6 +100,12 @@ impl Encoder {
     encode_int!(encode_u32, TYPE_U32, u32);
     encode_int!(encode_u64, TYPE_U64, u64);
     encode_int!(encode_u128, TYPE_U128, u128);
+
+    pub fn encode_str(&mut self, value: &str) {
+        self.encode_type(TYPE_STRING);
+        self.encode_len(value.len());
+        self.buf.extend(value.as_bytes());
+    }
 
     pub fn encode_string(&mut self, value: &String) {
         self.encode_type(TYPE_STRING);

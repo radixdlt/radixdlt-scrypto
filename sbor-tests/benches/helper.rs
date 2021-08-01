@@ -8,7 +8,7 @@ struct GrowableBufferWriter {
 impl GrowableBufferWriter {
     pub fn new() -> Self {
         Self {
-            buffer: Vec::<u8>::with_capacity(128),
+            buffer: Vec::<u8>::with_capacity(256),
         }
     }
 }
@@ -39,7 +39,17 @@ pub fn bincode_encode<T: Serialize>(v: &T) -> Vec<u8> {
 }
 
 /// Decodes a value from a byte buffer, using Bincode.
-pub fn bincode_decode<'de, T: Deserialize<'de>>(buf: &'de [u8]) -> T {
+pub fn bincode_decode<'de, T: Deserialize<'de>>(buf: &'de [u8]) -> Result<T, String> {
     let options = DefaultOptions::new();
-    deserialize(buf, options).unwrap()
+    deserialize(buf, options).map_err(|e| e.to_string())
+}
+
+/// Encodes a value into byte array, using JSON.
+pub fn json_encode<T: Serialize>(v: &T) -> Vec<u8> {
+    serde_json::to_vec(v).unwrap()
+}
+
+/// Decodes a value from a byte buffer, using JSON.
+pub fn json_decode<'de, T: Deserialize<'de>>(buf: &'de [u8]) -> Result<T, String> {
+    serde_json::from_slice(buf).map_err(|e| e.to_string())
 }

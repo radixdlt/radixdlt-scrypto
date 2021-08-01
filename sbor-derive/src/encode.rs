@@ -31,17 +31,15 @@ pub fn handle_encode(input: TokenStream) -> TokenStream {
                 quote! {
                     impl sbor::Encode for #ident {
                         fn encode(&self, encoder: &mut sbor::Encoder) {
-                            extern crate alloc;
-                            use alloc::string::ToString;
                             use sbor::{self, Encode};
 
                             encoder.encode_type(sbor::TYPE_STRUCT);
-                            encoder.encode_string(&#ident_str.to_string());
+                            encoder.encode_str(#ident_str);
 
                             encoder.encode_type(sbor::TYPE_FIELDS_NAMED);
                             encoder.encode_len(#n);
                             #(
-                                #names.to_string().encode(encoder);
+                                encoder.encode_str(#names);
                                 self.#idents.encode(encoder);
                             )*
                         }
@@ -55,13 +53,10 @@ pub fn handle_encode(input: TokenStream) -> TokenStream {
                 quote! {
                     impl sbor::Encode for #ident {
                         fn encode(&self, encoder: &mut sbor::Encoder) {
-                            extern crate alloc;
-                            use alloc::string::ToString;
-                            use alloc::vec::Vec;
                             use sbor::{self, Encode};
 
                             encoder.encode_type(sbor::TYPE_STRUCT);
-                            encoder.encode_string(&#ident_str.to_string());
+                            encoder.encode_str(#ident_str);
 
                             encoder.encode_type(sbor::TYPE_FIELDS_UNNAMED);
                             encoder.encode_len(#n);
@@ -74,11 +69,8 @@ pub fn handle_encode(input: TokenStream) -> TokenStream {
                 quote! {
                     impl sbor::Encode for #ident {
                         fn encode(&self, encoder: &mut sbor::Encoder) {
-                            extern crate alloc;
-                            use alloc::string::ToString;
-
                             encoder.encode_type(sbor::TYPE_STRUCT);
-                            encoder.encode_string(&#ident_str.to_string());
+                            encoder.encode_str(#ident_str);
                             encoder.encode_type(sbor::TYPE_FIELDS_UNIT);
                         }
                     }
@@ -102,11 +94,11 @@ pub fn handle_encode(input: TokenStream) -> TokenStream {
                         let n = named.len();
                         quote! {
                             Self::#v_id {#(#idents),*} => {
-                                encoder.encode_string(&#v_name.to_string());
+                                encoder.encode_str(#v_name);
                                 encoder.encode_type(sbor::TYPE_FIELDS_NAMED);
                                 encoder.encode_len(#n);
                                 #(
-                                    encoder.encode_string(&#names.to_string());
+                                    encoder.encode_str(#names);
                                     #idents2.encode(encoder);
                                 )*
                             }
@@ -118,7 +110,7 @@ pub fn handle_encode(input: TokenStream) -> TokenStream {
                         let args2 = (0..n).map(|i| format_ident!("a{}", i));
                         quote! {
                             Self::#v_id (#(#args),*) => {
-                                encoder.encode_string(&#v_name.to_string());
+                                encoder.encode_str(#v_name);
                                 encoder.encode_type(sbor::TYPE_FIELDS_UNNAMED);
                                 encoder.encode_len(#n);
                                 #(#args2.encode(encoder);)*
@@ -128,7 +120,7 @@ pub fn handle_encode(input: TokenStream) -> TokenStream {
                     syn::Fields::Unit => {
                         quote! {
                             Self::#v_id => {
-                                encoder.encode_string(&#v_name.to_string());
+                                encoder.encode_str(#v_name);
                                 encoder.encode_type(sbor::TYPE_FIELDS_UNIT);
                             }
                         }
@@ -139,12 +131,10 @@ pub fn handle_encode(input: TokenStream) -> TokenStream {
             quote! {
                 impl sbor::Encode for #ident {
                     fn encode(&self, encoder: &mut sbor::Encoder) {
-                        extern crate alloc;
-                        use alloc::string::ToString;
                         use sbor::{self, Encode};
 
                         encoder.encode_type(sbor::TYPE_ENUM);
-                        encoder.encode_string(&#ident_str.to_string());
+                        encoder.encode_str(#ident_str);
 
                         match self {
                             #(#match_arms),*
