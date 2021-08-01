@@ -60,7 +60,7 @@ macro_rules! decode_int {
     ($method:ident, $sbor_type:expr, $native_type:ty, $n:expr) => {
         pub fn $method(&mut self) -> Result<$native_type, String> {
             self.check_type($sbor_type)?;
-            let slice = self.decode($n)?;
+            let slice = self.read_n_bytes($n)?;
             let mut bytes = [0u8; $n];
             bytes.copy_from_slice(&slice[..]);
             Ok(<$native_type>::from_le_bytes(bytes))
@@ -89,6 +89,32 @@ impl<'de> Decoder<'de> {
         self.input.len() - self.offset
     }
 
+    pub fn require_bytes(&self, n: usize) -> Result<(), String> {
+        if self.remaining_bytes() < n {
+            Err(format!(
+                "Buffer underflow: required = {}, remaining_bytes = {}",
+                n,
+                self.remaining_bytes()
+            ))
+        } else {
+            Ok(())
+        }
+    }
+
+    pub fn read_one_byte(&mut self) -> Result<u8, String> {
+        self.require_bytes(1)?;
+        let result = self.input[self.offset];
+        self.offset += 1;
+        Ok(result)
+    }
+
+    pub fn read_n_bytes(&mut self, n: usize) -> Result<&'de [u8], String> {
+        self.require_bytes(n)?;
+        let slice = &self.input[self.offset..self.offset + n];
+        self.offset += n;
+        Ok(slice)
+    }
+
     pub fn check_type(&mut self, expected: u8) -> Result<(), String> {
         if self.with_schema {
             let ty = self.decode_type()?;
@@ -108,7 +134,7 @@ impl<'de> Decoder<'de> {
             self.check_type(TYPE_STRING)?;
             self.check_len(expected.len())?;
 
-            let slice = self.decode(expected.len())?;
+            let slice = self.read_n_bytes(expected.len())?;
             if slice != expected.as_bytes() {
                 return Err(format!(
                     "Unexpected name: expected = {}, actual = {}",
@@ -133,31 +159,18 @@ impl<'de> Decoder<'de> {
         Ok(())
     }
 
-    pub fn decode(&mut self, n: usize) -> Result<&'de [u8], String> {
-        if self.remaining_bytes() < n {
-            return Err(format!(
-                "Buffer underflow: required = {}, remaining_bytes = {}",
-                n,
-                self.remaining_bytes()
-            ));
-        }
-        let slice = &self.input[self.offset..self.offset + n];
-        self.offset += n;
-        Ok(slice)
-    }
-
     pub fn decode_type(&mut self) -> Result<u8, String> {
-        Ok(self.decode(1)?[0])
+        self.read_one_byte()
     }
 
     pub fn decode_len(&mut self) -> Result<usize, String> {
         let mut bytes = [0u8; 2];
-        bytes.copy_from_slice(&self.decode(2)?[..]);
+        bytes.copy_from_slice(&self.read_n_bytes(2)?[..]);
         Ok(u16::from_le_bytes(bytes) as usize)
     }
 
     pub fn decode_index(&mut self) -> Result<usize, String> {
-        Ok(self.decode(1)?[0] as usize)
+        Ok(self.read_one_byte()? as usize)
     }
 
     pub fn decode_unit(&mut self) -> Result<(), String> {
@@ -167,20 +180,30 @@ impl<'de> Decoder<'de> {
 
     pub fn decode_bool(&mut self) -> Result<bool, String> {
         self.check_type(TYPE_BOOL)?;
-        let slice = self.decode(1)?;
-        if slice[0] != 0 && slice[0] != 1 {
-            Err(format!("Invalid boolean value: {}", slice[0]))
-        } else {
-            Ok(slice[0] == 1)
+        let value = self.read_one_byte()?;
+        match value {
+            0 => Ok(false),
+            1 => Ok(true),
+            _ => Err(format!("Invalid boolean value: {}", value)),
         }
     }
 
-    decode_int!(decode_i8, TYPE_I8, i8, 1);
+    pub fn decode_i8(&mut self) -> Result<i8, String> {
+        self.check_type(TYPE_I8)?;
+        let value = self.read_one_byte()?;
+        Ok(value as i8)
+    }
+
+    pub fn decode_u8(&mut self) -> Result<u8, String> {
+        self.check_type(TYPE_U8)?;
+        let value = self.read_one_byte()?;
+        Ok(value)
+    }
+
     decode_int!(decode_i16, TYPE_I16, i16, 2);
     decode_int!(decode_i32, TYPE_I32, i32, 4);
     decode_int!(decode_i64, TYPE_I64, i64, 8);
     decode_int!(decode_i128, TYPE_I128, i128, 16);
-    decode_int!(decode_u8, TYPE_U8, u8, 1);
     decode_int!(decode_u16, TYPE_U16, u16, 2);
     decode_int!(decode_u32, TYPE_U32, u32, 4);
     decode_int!(decode_u64, TYPE_U64, u64, 8);
@@ -189,7 +212,7 @@ impl<'de> Decoder<'de> {
     pub fn decode_string(&mut self) -> Result<String, String> {
         self.check_type(TYPE_STRING)?;
         let len = self.decode_len()?;
-        let slice = self.decode(len)?;
+        let slice = self.read_n_bytes(len)?;
         let s = String::from_utf8(slice.to_vec()).map_err(|_| "Invalid utf-8");
         Ok(s?)
     }
@@ -216,19 +239,18 @@ impl<'de> Decoder<'de> {
         }
 
         let mut x = core::mem::MaybeUninit::<[T; N]>::uninit();
-        let x_arr = unsafe { &mut *x.as_mut_ptr() };
+        let arr = unsafe { &mut *x.as_mut_ptr() };
         for i in 0..len {
-            x_arr[i] = T::decode(self)?;
+            arr[i] = T::decode(self)?;
         }
-        let arr = unsafe { x.assume_init() };
-        Ok(arr)
+        Ok(unsafe { x.assume_init() })
     }
 
     pub fn decode_vec<T: Decode>(&mut self) -> Result<Vec<T>, String> {
         self.check_type(TYPE_VEC)?;
         let len = self.decode_len()?;
 
-        let mut result = Vec::<T>::new();
+        let mut result = Vec::<T>::with_capacity(len); // Lengths are u16, so it's safe to pre-allocate.
         for _ in 0..len {
             result.push(T::decode(self)?);
         }

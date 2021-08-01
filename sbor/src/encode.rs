@@ -115,12 +115,20 @@ impl Encoder {
         self.buf.push(if value { 1u8 } else { 0u8 });
     }
 
-    encode_int!(encode_i8, TYPE_I8, i8);
+    pub fn encode_i8(&mut self, value: i8) {
+        self.encode_type(TYPE_I8);
+        self.buf.push(value as u8);
+    }
+
+    pub fn encode_u8(&mut self, value: u8) {
+        self.encode_type(TYPE_U8);
+        self.buf.push(value);
+    }
+
     encode_int!(encode_i16, TYPE_I16, i16);
     encode_int!(encode_i32, TYPE_I32, i32);
     encode_int!(encode_i64, TYPE_I64, i64);
     encode_int!(encode_i128, TYPE_I128, i128);
-    encode_int!(encode_u8, TYPE_U8, u8);
     encode_int!(encode_u16, TYPE_U16, u16);
     encode_int!(encode_u32, TYPE_U32, u32);
     encode_int!(encode_u64, TYPE_U64, u64);

@@ -56,29 +56,29 @@ fn test_decode_enum() {
     #[rustfmt::skip]
     let bytes = vec![
         18, // enum type
-            12, 8, 0, 84, 101, 115, 116, 69, 110, 117, 109, // enum name
-            0, // enum index
-            12, 1, 0, 65, // variant name
-            19, // fields type
-            2, 0,  // number of fields
-            12, 1, 0, 120, // field name
-            9, 2, 0, 0, 0, // field value
-            12, 1, 0, 121,  // field name
-            9, 3, 0, 0, 0,  // field value
+        12, 8, 0, 84, 101, 115, 116, 69, 110, 117, 109, // enum name
+        0, // enum index
+        12, 1, 0, 65, // variant name
+        19, // fields type
+        2, 0,  // number of fields
+        12, 1, 0, 120, // field name
+        9, 2, 0, 0, 0, // field value
+        12, 1, 0, 121,  // field name
+        9, 3, 0, 0, 0,  // field value
 
-            18, // enum type
-            12, 8, 0, 84, 101, 115, 116, 69, 110, 117, 109, // enum name
-            1,  // enum index
-            12, 1, 0, 66, // variant name
-            20, // fields type
-            1, 0, // number of fields
-            9, 1, 0, 0, 0, // field value
-            
-            18, // enum type
-            12, 8, 0, 84, 101, 115, 116, 69, 110, 117, 109, // enum name
-            2,  // enum index
-            12, 1, 0, 67, // variant name
-            21  // fields type
+        18, // enum type
+        12, 8, 0, 84, 101, 115, 116, 69, 110, 117, 109, // enum name
+        1,  // enum index
+        12, 1, 0, 66, // variant name
+        20, // fields type
+        1, 0, // number of fields
+        9, 1, 0, 0, 0, // field value
+        
+        18, // enum type
+        12, 8, 0, 84, 101, 115, 116, 69, 110, 117, 109, // enum name
+        2,  // enum index
+        12, 1, 0, 67, // variant name
+        21  // fields type
     ];
 
     let mut decoder = Decoder::new(&bytes);
