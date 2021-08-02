@@ -50,10 +50,10 @@ encode!(encode_small_sbor, 10, sbor_encode);
 encode!(encode_median_sbor, 100, sbor_encode);
 encode!(encode_large_sbor, 1000, sbor_encode);
 
-encode!(encode_tiny_sbor_no_schema, 1, sbor_encode_no_schema);
-encode!(encode_small_sbor_no_schema, 10, sbor_encode_no_schema);
-encode!(encode_median_sbor_no_schema, 100, sbor_encode_no_schema);
-encode!(encode_large_sbor_no_schema, 1000, sbor_encode_no_schema);
+encode!(encode_tiny_sbor_no_metadata, 1, sbor_encode_no_metadata);
+encode!(encode_small_sbor_no_metadata, 10, sbor_encode_no_metadata);
+encode!(encode_median_sbor_no_metadata, 100, sbor_encode_no_metadata);
+encode!(encode_large_sbor_no_metadata, 1000, sbor_encode_no_metadata);
 
 encode!(encode_tiny_json, 1, json_encode);
 encode!(encode_small_json, 10, json_encode);
@@ -84,13 +84,13 @@ decode!(decode_median_sbor, 100, sbor_encode, sbor_decode);
 decode!(decode_large_sbor, 1000, sbor_encode, sbor_decode);
 
 #[rustfmt::skip]
-decode!(decode_tiny_sbor_no_schema, 1, sbor_encode_no_schema, sbor_decode_no_schema);
+decode!(decode_tiny_sbor_no_metadata, 1, sbor_encode_no_metadata, sbor_decode_no_metadata);
 #[rustfmt::skip]
-decode!(decode_small_sbor_no_schema, 10, sbor_encode_no_schema, sbor_decode_no_schema);
+decode!(decode_small_sbor_no_metadata, 10, sbor_encode_no_metadata, sbor_decode_no_metadata);
 #[rustfmt::skip]
-decode!(decode_median_sbor_no_schema, 100, sbor_encode_no_schema, sbor_decode_no_schema);
+decode!(decode_median_sbor_no_metadata, 100, sbor_encode_no_metadata, sbor_decode_no_metadata);
 #[rustfmt::skip]
-decode!(decode_large_sbor_no_schema, 1000, sbor_encode_no_schema, sbor_decode_no_schema);
+decode!(decode_large_sbor_no_metadata, 1000, sbor_encode_no_metadata, sbor_decode_no_metadata);
 
 decode!(decode_tiny_json, 1, json_encode, json_decode);
 decode!(decode_small_json, 10, json_encode, json_decode);
@@ -110,11 +110,11 @@ benchmark_group!(
     encode_large_sbor,
 );
 benchmark_group!(
-    encode_sbor_no_schema,
-    encode_tiny_sbor_no_schema,
-    encode_small_sbor_no_schema,
-    encode_median_sbor_no_schema,
-    encode_large_sbor_no_schema,
+    encode_sbor_no_metadata,
+    encode_tiny_sbor_no_metadata,
+    encode_small_sbor_no_metadata,
+    encode_median_sbor_no_metadata,
+    encode_large_sbor_no_metadata,
 );
 benchmark_group!(
     encode_json,
@@ -138,11 +138,11 @@ benchmark_group!(
     decode_large_sbor,
 );
 benchmark_group!(
-    decode_sbor_no_schema,
-    decode_tiny_sbor_no_schema,
-    decode_small_sbor_no_schema,
-    decode_median_sbor_no_schema,
-    decode_large_sbor_no_schema,
+    decode_sbor_no_metadata,
+    decode_tiny_sbor_no_metadata,
+    decode_small_sbor_no_metadata,
+    decode_median_sbor_no_metadata,
+    decode_large_sbor_no_metadata,
 );
 benchmark_group!(
     decode_json,
@@ -160,11 +160,11 @@ benchmark_group!(
 );
 benchmark_main!(
     encode_sbor,
-    encode_sbor_no_schema,
+    encode_sbor_no_metadata,
     encode_json,
     encode_bincode,
     decode_sbor,
-    decode_sbor_no_schema,
+    decode_sbor_no_metadata,
     decode_json,
     decode_bincode
 );

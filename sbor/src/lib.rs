@@ -19,13 +19,13 @@ pub fn sbor_decode<'de, T: Decode>(buf: &'de [u8]) -> Result<T, String> {
     T::decode(&mut dec)
 }
 
-pub fn sbor_encode_no_schema<T: Encode>(v: &T) -> Vec<u8> {
+pub fn sbor_encode_no_metadata<T: Encode>(v: &T) -> Vec<u8> {
     let mut enc = Encoder::no_metadata();
     v.encode(&mut enc);
     enc.into()
 }
 
-pub fn sbor_decode_no_schema<'de, T: Decode>(buf: &'de [u8]) -> Result<T, String> {
+pub fn sbor_decode_no_metadata<'de, T: Decode>(buf: &'de [u8]) -> Result<T, String> {
     let mut dec = Decoder::no_metadata(buf);
     T::decode(&mut dec)
 }

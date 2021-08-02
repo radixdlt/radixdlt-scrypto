@@ -364,7 +364,7 @@ mod tests {
     }
 
     #[test]
-    pub fn test_decoding_no_schema() {
+    pub fn test_decoding_no_metadata() {
         let bytes = vec![
             // unit
             1, // bool

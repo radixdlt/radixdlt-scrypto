@@ -298,7 +298,7 @@ mod tests {
     }
 
     #[test]
-    pub fn test_encoding_no_schema() {
+    pub fn test_encoding_no_metadata() {
         let mut enc = Encoder::no_metadata();
         ().encode(&mut enc);
         true.encode(&mut enc);
