@@ -106,7 +106,7 @@ pub fn handle_component(input: TokenStream) -> TokenStream {
             };
 
             // serialize the output
-            let output_bytes = serde_json::to_vec(&output).unwrap();
+            let output_bytes = scrypto::buffer::radix_encode(&output);
 
             // return the output wrapped in a radix-style buffer
             unsafe {

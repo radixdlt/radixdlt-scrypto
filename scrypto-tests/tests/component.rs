@@ -38,8 +38,9 @@ fn test_simple_component() {
 #[test]
 fn test_simple_component_abi() {
     let ptr = Simple_abi();
-    let abi = radix_copy(ptr);
+    let bytes = radix_copy(ptr);
     radix_free(ptr);
+    let abi: scrypto::abi::Component = radix_decode(&bytes);
 
     json_eq(
         json!({
@@ -84,7 +85,7 @@ fn test_simple_component_abi() {
             }
           ]
         }),
-        serde_json::from_slice::<scrypto::abi::Component>(&abi).unwrap(),
+        abi,
     );
 }
 

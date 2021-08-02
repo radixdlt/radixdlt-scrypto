@@ -6,8 +6,6 @@ use sbor::*;
 #[cfg(feature = "json")]
 use serde::{Deserialize, Serialize};
 
-// TODO: how can we represent component ABI using SBOR?
-
 #[cfg_attr(feature = "json", derive(Serialize, Deserialize))]
 #[derive(Debug, Encode, Decode)]
 pub struct Component {
