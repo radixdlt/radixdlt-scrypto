@@ -2,169 +2,126 @@
 extern crate bencher;
 use bencher::Bencher;
 
-use sbor::*;
-use serde::*;
-mod helper;
-use helper::*;
+mod adapter;
+mod data;
 
-#[derive(Encode, Decode, Serialize, Deserialize)]
-pub enum TestEnum {
-    A,
-    B(u32),
-    C { x: u32, y: u32 },
+fn encode_twitter_json(b: &mut Bencher) {
+    let t = data::get_twitter_dataset();
+    b.iter(|| adapter::json_encode(&t));
 }
 
-#[derive(Encode, Decode, Serialize, Deserialize)]
-pub struct TestStruct {
-    number: u64,
-    string: String,
-    vector1: Vec<u8>,
-    vector2: Vec<u16>,
-    enumeration: TestEnum,
+fn encode_twitter_bincode(b: &mut Bencher) {
+    let t = data::get_twitter_dataset();
+    b.iter(|| adapter::bincode_encode(&t));
 }
 
-fn make_struct(repeat: usize) -> TestStruct {
-    TestStruct {
-        number: 12345678901234567890,
-        string: "hello".repeat(repeat).to_owned(),
-        vector1: vec![123u8; repeat],
-        vector2: vec![12345u16; repeat],
-        enumeration: TestEnum::C {
-            x: 1234567890,
-            y: 1234567890,
-        },
-    }
+fn encode_twitter_sbor(b: &mut Bencher) {
+    let t = data::get_twitter_dataset();
+    b.iter(|| sbor::sbor_encode(&t));
 }
 
-macro_rules! encode {
-    ($name:ident, $repeat:expr, $enc:expr) => {
-        fn $name(b: &mut Bencher) {
-            let t = make_struct($repeat);
-            b.iter(|| $enc(&t));
-        }
-    };
+fn encode_twitter_sbor_no_metadata(b: &mut Bencher) {
+    let t = data::get_twitter_dataset();
+    b.iter(|| sbor::sbor_encode_no_metadata(&t));
 }
 
-encode!(encode_tiny_sbor, 1, sbor_encode);
-encode!(encode_small_sbor, 10, sbor_encode);
-encode!(encode_median_sbor, 100, sbor_encode);
-encode!(encode_large_sbor, 1000, sbor_encode);
-
-encode!(encode_tiny_sbor_no_metadata, 1, sbor_encode_no_metadata);
-encode!(encode_small_sbor_no_metadata, 10, sbor_encode_no_metadata);
-encode!(encode_median_sbor_no_metadata, 100, sbor_encode_no_metadata);
-encode!(encode_large_sbor_no_metadata, 1000, sbor_encode_no_metadata);
-
-encode!(encode_tiny_json, 1, json_encode);
-encode!(encode_small_json, 10, json_encode);
-encode!(encode_median_json, 100, json_encode);
-encode!(encode_large_json, 1000, json_encode);
-
-encode!(encode_tiny_bincode, 1, bincode_encode);
-encode!(encode_small_bincode, 10, bincode_encode);
-encode!(encode_median_bincode, 100, bincode_encode);
-encode!(encode_large_bincode, 1000, bincode_encode);
-
-macro_rules! decode {
-    ($name:ident, $repeat:expr, $enc:expr, $dec:expr) => {
-        fn $name(b: &mut Bencher) {
-            let t = make_struct($repeat);
-            let bytes = $enc(&t);
-            b.iter(|| {
-                let x: TestStruct = $dec(&bytes).unwrap();
-                x
-            });
-        }
-    };
+fn decode_twitter_json(b: &mut Bencher) {
+    let t = data::get_twitter_dataset();
+    let bytes = adapter::json_encode(&t);
+    b.iter(|| adapter::json_decode::<data::twitter::Twitter>(&bytes));
 }
 
-decode!(decode_tiny_sbor, 1, sbor_encode, sbor_decode);
-decode!(decode_small_sbor, 10, sbor_encode, sbor_decode);
-decode!(decode_median_sbor, 100, sbor_encode, sbor_decode);
-decode!(decode_large_sbor, 1000, sbor_encode, sbor_decode);
+fn decode_twitter_bincode(b: &mut Bencher) {
+    let t = data::get_twitter_dataset();
+    let bytes = adapter::bincode_encode(&t);
+    b.iter(|| adapter::bincode_decode::<data::twitter::Twitter>(&bytes));
+}
 
-#[rustfmt::skip]
-decode!(decode_tiny_sbor_no_metadata, 1, sbor_encode_no_metadata, sbor_decode_no_metadata);
-#[rustfmt::skip]
-decode!(decode_small_sbor_no_metadata, 10, sbor_encode_no_metadata, sbor_decode_no_metadata);
-#[rustfmt::skip]
-decode!(decode_median_sbor_no_metadata, 100, sbor_encode_no_metadata, sbor_decode_no_metadata);
-#[rustfmt::skip]
-decode!(decode_large_sbor_no_metadata, 1000, sbor_encode_no_metadata, sbor_decode_no_metadata);
+fn decode_twitter_sbor(b: &mut Bencher) {
+    let t = data::get_twitter_dataset();
+    let bytes = sbor::sbor_encode(&t);
+    b.iter(|| sbor::sbor_decode::<data::twitter::Twitter>(&bytes));
+}
 
-decode!(decode_tiny_json, 1, json_encode, json_decode);
-decode!(decode_small_json, 10, json_encode, json_decode);
-decode!(decode_median_json, 100, json_encode, json_decode);
-decode!(decode_large_json, 1000, json_encode, json_decode);
+fn decode_twitter_sbor_no_metadata(b: &mut Bencher) {
+    let t = data::get_twitter_dataset();
+    let bytes = sbor::sbor_encode_no_metadata(&t);
+    b.iter(|| sbor::sbor_decode_no_metadata::<data::twitter::Twitter>(&bytes));
+}
 
-decode!(decode_tiny_bincode, 1, bincode_encode, bincode_decode);
-decode!(decode_small_bincode, 10, bincode_encode, bincode_decode);
-decode!(decode_median_bincode, 100, bincode_encode, bincode_decode);
-decode!(decode_large_bincode, 1000, bincode_encode, bincode_decode);
+const SIMPLE_REAPT: usize = 32;
+
+fn encode_simple_json(b: &mut Bencher) {
+    let t = data::get_simple_dataset(SIMPLE_REAPT);
+    b.iter(|| adapter::json_encode(&t));
+}
+
+fn encode_simple_bincode(b: &mut Bencher) {
+    let t = data::get_simple_dataset(SIMPLE_REAPT);
+    b.iter(|| adapter::bincode_encode(&t));
+}
+
+fn encode_simple_sbor(b: &mut Bencher) {
+    let t = data::get_simple_dataset(SIMPLE_REAPT);
+    b.iter(|| sbor::sbor_encode(&t));
+}
+
+fn encode_simple_sbor_no_metadata(b: &mut Bencher) {
+    let t = data::get_simple_dataset(SIMPLE_REAPT);
+    b.iter(|| sbor::sbor_encode_no_metadata(&t));
+}
+
+fn decode_simple_json(b: &mut Bencher) {
+    let t = data::get_simple_dataset(SIMPLE_REAPT);
+    let bytes = adapter::json_encode(&t);
+    b.iter(|| adapter::json_decode::<data::simple::SimpleStruct>(&bytes));
+}
+
+fn decode_simple_bincode(b: &mut Bencher) {
+    let t = data::get_simple_dataset(SIMPLE_REAPT);
+    let bytes = adapter::bincode_encode(&t);
+    b.iter(|| adapter::bincode_decode::<data::simple::SimpleStruct>(&bytes));
+}
+
+fn decode_simple_sbor(b: &mut Bencher) {
+    let t = data::get_simple_dataset(SIMPLE_REAPT);
+    let bytes = sbor::sbor_encode(&t);
+    b.iter(|| sbor::sbor_decode::<data::simple::SimpleStruct>(&bytes));
+}
+
+fn decode_simple_sbor_no_metadata(b: &mut Bencher) {
+    let t = data::get_simple_dataset(SIMPLE_REAPT);
+    let bytes = sbor::sbor_encode_no_metadata(&t);
+    b.iter(|| sbor::sbor_decode_no_metadata::<data::simple::SimpleStruct>(&bytes));
+}
 
 benchmark_group!(
-    encode_sbor,
-    encode_tiny_sbor,
-    encode_small_sbor,
-    encode_median_sbor,
-    encode_large_sbor,
+    encode_twitter,
+    encode_twitter_json,
+    encode_twitter_bincode,
+    encode_twitter_sbor,
+    encode_twitter_sbor_no_metadata
+);
+
+benchmark_group!(
+    decode_twitter,
+    decode_twitter_json,
+    decode_twitter_bincode,
+    decode_twitter_sbor,
+    decode_twitter_sbor_no_metadata
 );
 benchmark_group!(
-    encode_sbor_no_metadata,
-    encode_tiny_sbor_no_metadata,
-    encode_small_sbor_no_metadata,
-    encode_median_sbor_no_metadata,
-    encode_large_sbor_no_metadata,
+    encode_simple,
+    encode_simple_json,
+    encode_simple_bincode,
+    encode_simple_sbor,
+    encode_simple_sbor_no_metadata
 );
 benchmark_group!(
-    encode_json,
-    encode_tiny_json,
-    encode_small_json,
-    encode_median_json,
-    encode_large_json,
+    decode_simple,
+    decode_simple_json,
+    decode_simple_bincode,
+    decode_simple_sbor,
+    decode_simple_sbor_no_metadata
 );
-benchmark_group!(
-    encode_bincode,
-    encode_tiny_bincode,
-    encode_small_bincode,
-    encode_median_bincode,
-    encode_large_bincode,
-);
-benchmark_group!(
-    decode_sbor,
-    decode_tiny_sbor,
-    decode_small_sbor,
-    decode_median_sbor,
-    decode_large_sbor,
-);
-benchmark_group!(
-    decode_sbor_no_metadata,
-    decode_tiny_sbor_no_metadata,
-    decode_small_sbor_no_metadata,
-    decode_median_sbor_no_metadata,
-    decode_large_sbor_no_metadata,
-);
-benchmark_group!(
-    decode_json,
-    decode_tiny_json,
-    decode_small_json,
-    decode_median_json,
-    decode_large_json,
-);
-benchmark_group!(
-    decode_bincode,
-    decode_tiny_bincode,
-    decode_small_bincode,
-    decode_median_bincode,
-    decode_large_bincode
-);
-benchmark_main!(
-    encode_sbor,
-    encode_sbor_no_metadata,
-    encode_json,
-    encode_bincode,
-    decode_sbor,
-    decode_sbor_no_metadata,
-    decode_json,
-    decode_bincode
-);
+benchmark_main!(encode_twitter, decode_twitter, encode_simple, decode_simple);
