@@ -231,21 +231,33 @@ impl<T: Encode> Encode for Vec<T> {
     }
 }
 
-// TODO expand to different lengths
-impl<A: Encode, B: Encode> Encode for (A, B) {
-    #[inline]
-    fn encode_value(&self, encoder: &mut Encoder) {
-        encoder.write_len(2);
+macro_rules! encode_tuple {
+    ($n:tt $($idx:tt $name:ident)+) => {
+        impl<$($name: Encode),+> Encode for ($($name,)+) {
+            #[inline]
+            fn encode_value(&self, encoder: &mut Encoder) {
+                encoder.write_len($n);
 
-        self.0.encode(encoder);
-        self.1.encode(encoder);
-    }
+                $(self.$idx.encode(encoder);)+
+            }
 
-    #[inline]
-    fn sbor_type() -> u8 {
-        TYPE_TUPLE
-    }
+            #[inline]
+            fn sbor_type() -> u8 {
+                TYPE_TUPLE
+            }
+        }
+    };
 }
+
+encode_tuple! { 2 0 A 1 B }
+encode_tuple! { 3 0 A 1 B 2 C }
+encode_tuple! { 4 0 A 1 B 2 C 3 D }
+encode_tuple! { 5 0 A 1 B 2 C 3 D 4 E }
+encode_tuple! { 6 0 A 1 B 2 C 3 D 4 E 5 F }
+encode_tuple! { 7 0 A 1 B 2 C 3 D 4 E 5 F 6 G }
+encode_tuple! { 8 0 A 1 B 2 C 3 D 4 E 5 F 6 G 7 H }
+encode_tuple! { 9 0 A 1 B 2 C 3 D 4 E 5 F 6 G 7 H 8 I }
+encode_tuple! { 10 0 A 1 B 2 C 3 D 4 E 5 F 6 G 7 H 8 I 9 J }
 
 #[cfg(test)]
 mod tests {

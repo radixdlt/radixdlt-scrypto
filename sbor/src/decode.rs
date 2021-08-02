@@ -292,28 +292,40 @@ impl<T: Decode> Decode for Vec<T> {
     }
 }
 
-// TODO expand to different lengths
-impl<A: Decode, B: Decode> Decode for (A, B) {
-    #[inline]
-    fn decode_value<'de>(decoder: &mut Decoder<'de>) -> Result<Self, String> {
-        let len = decoder.read_len()?;
+macro_rules! decode_tuple {
+    ($n:tt $($idx:tt $name:ident)+) => {
+        impl<$($name: Decode),+> Decode for ($($name,)+) {
+            #[inline]
+            fn decode_value<'de>(decoder: &mut Decoder<'de>) -> Result<Self, String> {
+                let len = decoder.read_len()?;
 
-        if len != 2 {
-            return Err(format!(
-                "Invalid tuple length: expected = {}, actual = {}",
-                2, len
-            ));
+                if len != $n {
+                    return Err(format!(
+                        "Invalid tuple length: expected = {}, actual = {}",
+                        $n, len
+                    ));
+                }
+
+                Ok(($($name::decode(decoder)?),+))
+            }
+
+            #[inline]
+            fn sbor_type() -> u8 {
+                TYPE_TUPLE
+            }
         }
-
-        let result = (A::decode(decoder)?, B::decode(decoder)?);
-        Ok(result)
-    }
-
-    #[inline]
-    fn sbor_type() -> u8 {
-        TYPE_TUPLE
-    }
+    };
 }
+
+decode_tuple! { 2 0 A 1 B }
+decode_tuple! { 3 0 A 1 B 2 C }
+decode_tuple! { 4 0 A 1 B 2 C 3 D }
+decode_tuple! { 5 0 A 1 B 2 C 3 D 4 E }
+decode_tuple! { 6 0 A 1 B 2 C 3 D 4 E 5 F }
+decode_tuple! { 7 0 A 1 B 2 C 3 D 4 E 5 F 6 G }
+decode_tuple! { 8 0 A 1 B 2 C 3 D 4 E 5 F 6 G 7 H }
+decode_tuple! { 9 0 A 1 B 2 C 3 D 4 E 5 F 6 G 7 H 8 I }
+decode_tuple! { 10 0 A 1 B 2 C 3 D 4 E 5 F 6 G 7 H 8 I 9 J }
 
 #[cfg(test)]
 mod tests {

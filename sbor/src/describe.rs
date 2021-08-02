@@ -57,7 +57,7 @@ impl<T: Describe> Describe for Vec<T> {
     }
 }
 
-macro_rules! tuple_impl {
+macro_rules! describe_tuple {
     ($($name:ident)+) => {
         impl<$($name: Describe),+> Describe for ($($name,)+) {
             fn describe() -> Type {
@@ -69,16 +69,15 @@ macro_rules! tuple_impl {
     };
 }
 
-tuple_impl! { A }
-tuple_impl! { A B }
-tuple_impl! { A B C }
-tuple_impl! { A B C D }
-tuple_impl! { A B C D E }
-tuple_impl! { A B C D E F }
-tuple_impl! { A B C D E F G }
-tuple_impl! { A B C D E F G H }
-tuple_impl! { A B C D E F G H I }
-tuple_impl! { A B C D E F G H I J }
+describe_tuple! { A B }
+describe_tuple! { A B C }
+describe_tuple! { A B C D }
+describe_tuple! { A B C D E }
+describe_tuple! { A B C D E F }
+describe_tuple! { A B C D E F G }
+describe_tuple! { A B C D E F G H }
+describe_tuple! { A B C D E F G H I }
+describe_tuple! { A B C D E F G H I J }
 
 #[cfg(test)]
 mod tests {
