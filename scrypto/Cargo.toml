@@ -20,7 +20,7 @@ scrypto-abi = { version = "0.1", path = "../scrypto-abi", default-features = fal
 scrypto-derive = { version = "0.1", path = "../scrypto-derive", default-features = false, optional = true }
 
 [features]
-default = ["std", "derive"]
+default = ["std", "abi", "derive"]
 
 # You can use either `std` or `alloc`, depnding on your environment
 std = ["sbor/std", "scrypto-derive/std"]

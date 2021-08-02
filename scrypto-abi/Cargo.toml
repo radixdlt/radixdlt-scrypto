@@ -6,8 +6,9 @@ edition = "2018"
 [dependencies]
 serde = { version = "1.0", default-features = false, features = ["derive"] }
 serde_json = { version = "1.0", default-features = false }
+sbor = { version = "0.1", path = "../sbor", default-features = false, features = ["derive", "json"] }
 
 [features]
 default = ["std"]
-std = ["serde/std", "serde_json/std"]
-alloc = ["serde/alloc", "serde_json/alloc"]
+std = ["serde/std", "serde_json/std", "sbor/std"]
+alloc = ["serde/alloc", "serde_json/alloc", "sbor/alloc"]

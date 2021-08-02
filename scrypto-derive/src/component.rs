@@ -39,14 +39,14 @@ pub fn handle_component(input: TokenStream) -> TokenStream {
     let stub_items = generate_stub(&com_ident, com_items);
 
     let output = quote! {
-        #[derive(Debug, scrypto::Describe, serde::Serialize, serde::Deserialize)]
+        #[derive(Debug, sbor::Encode, sbor::Decode, sbor::Describe)]
         pub #com_strut
 
         impl #com_ident {
             #(#com_items)*
         }
 
-        #[derive(Debug, serde::Serialize, serde::Deserialize)]
+        #[derive(Debug, sbor::Encode, sbor::Decode)]
         pub struct #stub_ident {
             component: scrypto::constructs::Component,
         }
@@ -63,8 +63,8 @@ pub fn handle_component(input: TokenStream) -> TokenStream {
         #[no_mangle]
         pub extern "C" fn #dispatcher_ident(input_ptr: *mut u8) -> *mut u8 {
             // copy and release
-            let input_bytes = scrypto::kernel::radix_copy(input_ptr);
-            scrypto::kernel::radix_free(input_ptr);
+            let input_bytes = scrypto::buffer::radix_copy(input_ptr);
+            scrypto::buffer::radix_free(input_ptr);
 
             // deserialize the input
             let input = scrypto::buffer::radix_decode::<scrypto::abi::CallInput>(
@@ -82,11 +82,11 @@ pub fn handle_component(input: TokenStream) -> TokenStream {
 
             // serialize the output
             let output = scrypto::abi::CallOutput { rtn };
-            let output_bytes = scrypto::buffer::bincode_encode(&output);
+            let output_bytes = scrypto::buffer::radix_encode(&output);
 
             // return the output wrapped in a radix-style buffer
             unsafe {
-                let ptr = scrypto::kernel::radix_alloc(output_bytes.len());
+                let ptr = scrypto::buffer::radix_alloc(output_bytes.len());
                 std::ptr::copy(output_bytes.as_ptr(), ptr, output_bytes.len());
                 ptr
             }
@@ -96,9 +96,9 @@ pub fn handle_component(input: TokenStream) -> TokenStream {
         pub extern "C" fn #abi_ident() -> *mut u8 {
             extern crate alloc;
             use alloc::string::ToString;
-            use scrypto::abi::{self, Describe};
+            use sbor::{self, Describe};
 
-            let output = abi::Component {
+            let output = scrypto::abi::Component {
                 name: #com_name.to_string(),
                 methods: vec![
                     #(#abi_methods),*
@@ -106,11 +106,11 @@ pub fn handle_component(input: TokenStream) -> TokenStream {
             };
 
             // serialize the output
-            let output_bytes = scrypto::buffer::radix_encode(&output);
+            let output_bytes = serde_json::to_vec(&output).unwrap();
 
             // return the output wrapped in a radix-style buffer
             unsafe {
-                let ptr = scrypto::kernel::radix_alloc(output_bytes.len());
+                let ptr = scrypto::buffer::radix_alloc(output_bytes.len());
                 std::ptr::copy(output_bytes.as_ptr(), ptr, output_bytes.len());
                 ptr
             }
@@ -172,7 +172,7 @@ fn generate_dispatcher(com_ident: &Ident, items: &Vec<ImplItem>) -> (Vec<Expr>, 
                                 // Generate a `Stmt` for writing back component state
                                 if mutability.is_some() {
                                     put_state = Some(parse_quote! {
-                                        #arg.put_state(&state);
+                                        #arg.put_state(state);
                                     });
                                 }
                             }
@@ -269,7 +269,7 @@ fn generate_abi(comp_name: &str, items: &Vec<ImplItem>) -> Vec<Expr> {
 
                     let output = match &m.sig.output {
                         ReturnType::Default => quote! {
-                            scrypto::abi::Type::Unit
+                            sbor::Type::Unit
                         },
                         ReturnType::Type(_, t) => {
                             let ty = replace_self_with(t, comp_name);

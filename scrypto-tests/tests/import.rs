@@ -1,5 +1,5 @@
+use scrypto::buffer::radix_alloc;
 use scrypto::import;
-use scrypto::kernel::radix_alloc;
 
 // base directory: `scrypto-derive`
 import! { "../scrypto-tests/tests/abi.json" }
@@ -19,6 +19,6 @@ fn test_import_from_abi() {
 }
 
 #[no_mangle]
-pub extern "C" fn radix_kernel(_op: u32, _input_ptr: *const u8, _input_len: usize) -> *mut u8 {
+pub extern "C" fn kernel_main(_op: u32, _input_ptr: *const u8, _input_len: usize) -> *mut u8 {
     radix_alloc(0)
 }

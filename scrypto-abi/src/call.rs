@@ -2,15 +2,15 @@ extern crate alloc;
 use alloc::string::String;
 use alloc::vec::Vec;
 
-use serde::{Deserialize, Serialize};
+use sbor::{Decode, Encode};
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Encode, Decode)]
 pub struct CallInput {
     pub method: String,
     pub args: Vec<Vec<u8>>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Encode, Decode)]
 pub struct CallOutput {
     pub rtn: Vec<u8>,
 }

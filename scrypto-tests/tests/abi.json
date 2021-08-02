@@ -32,7 +32,7 @@
                     ]
                 },
                 {
-                    "type": "Array",
+                    "type": "Vec",
                     "base": {
                         "type": "String"
                     }
