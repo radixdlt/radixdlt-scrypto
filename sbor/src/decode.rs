@@ -1,12 +1,34 @@
+extern crate alloc;
+use alloc::string::String;
+
+use alloc::string::ToString;
+
 use crate::*;
 
+#[derive(Debug)]
+pub enum DecodeError {
+    Underflow { required: usize, remaining: usize },
+
+    InvalidType { expected: u8, actual: u8 },
+
+    InvalidName { expected: String, actual: String },
+
+    InvalidLength { expected: usize, actual: usize },
+
+    InvalidIndex(u8),
+
+    InvalidBool(u8),
+
+    InvalidUtf8,
+}
+
 pub trait Decode: Sized {
-    fn decode<'de>(decoder: &mut Decoder<'de>) -> Result<Self, String> {
+    fn decode<'de>(decoder: &mut Decoder<'de>) -> Result<Self, DecodeError> {
         decoder.check_type(Self::sbor_type())?;
         Self::decode_value(decoder)
     }
 
-    fn decode_value<'de>(decoder: &mut Decoder<'de>) -> Result<Self, String>;
+    fn decode_value<'de>(decoder: &mut Decoder<'de>) -> Result<Self, DecodeError>;
 
     fn sbor_type() -> u8;
 }
@@ -40,20 +62,19 @@ impl<'de> Decoder<'de> {
     }
 
     #[inline(always)]
-    pub fn require(&self, n: usize) -> Result<(), String> {
+    pub fn require(&self, n: usize) -> Result<(), DecodeError> {
         if self.remaining() < n {
-            Err(format!(
-                "Buffer underflow: required = {}, remaining = {}",
-                n,
-                self.remaining()
-            ))
+            Err(DecodeError::Underflow {
+                required: n,
+                remaining: self.remaining(),
+            })
         } else {
             Ok(())
         }
     }
 
     #[inline(always)]
-    pub fn read_u8(&mut self) -> Result<u8, String> {
+    pub fn read_u8(&mut self) -> Result<u8, DecodeError> {
         self.require(1)?;
         let result = self.input[self.offset];
         self.offset += 1;
@@ -61,7 +82,7 @@ impl<'de> Decoder<'de> {
     }
 
     #[inline(always)]
-    pub fn read_bytes(&mut self, n: usize) -> Result<&'de [u8], String> {
+    pub fn read_bytes(&mut self, n: usize) -> Result<&'de [u8], DecodeError> {
         self.require(n)?;
         let slice = &self.input[self.offset..self.offset + n];
         self.offset += n;
@@ -69,31 +90,31 @@ impl<'de> Decoder<'de> {
     }
 
     #[inline(always)]
-    pub fn read_type(&mut self) -> Result<u8, String> {
+    pub fn read_type(&mut self) -> Result<u8, DecodeError> {
         self.read_u8()
     }
 
     #[inline(always)]
-    pub fn read_len(&mut self) -> Result<usize, String> {
+    pub fn read_len(&mut self) -> Result<usize, DecodeError> {
         let mut bytes = [0u8; 2];
         bytes.copy_from_slice(&self.read_bytes(2)?[..]);
         Ok(u16::from_le_bytes(bytes) as usize)
     }
 
     #[inline(always)]
-    pub fn read_index(&mut self) -> Result<usize, String> {
-        Ok(self.read_u8()? as usize)
+    pub fn read_index(&mut self) -> Result<u8, DecodeError> {
+        self.read_u8()
     }
 
     #[inline(always)]
-    pub fn check_type(&mut self, expected: u8) -> Result<(), String> {
+    pub fn check_type(&mut self, expected: u8) -> Result<(), DecodeError> {
         if self.with_metadata {
             let ty = self.read_type()?;
             if ty != expected {
-                return Err(format!(
-                    "Unexpected type: expected = {}, actual = {}",
-                    expected, ty
-                ));
+                return Err(DecodeError::InvalidType {
+                    expected,
+                    actual: ty,
+                });
             }
         }
 
@@ -101,18 +122,17 @@ impl<'de> Decoder<'de> {
     }
 
     #[inline(always)]
-    pub fn check_name(&mut self, expected: &str) -> Result<(), String> {
+    pub fn check_name(&mut self, expected: &str) -> Result<(), DecodeError> {
         if self.with_metadata {
             self.check_type(TYPE_STRING)?;
             self.check_len(expected.len())?;
 
             let slice = self.read_bytes(expected.len())?;
             if slice != expected.as_bytes() {
-                return Err(format!(
-                    "Unexpected name: expected = {}, actual = {}",
-                    expected,
-                    String::from_utf8(slice.to_vec()).unwrap_or("<unknown>".to_string())
-                ));
+                return Err(DecodeError::InvalidName {
+                    expected: expected.to_string(),
+                    actual: String::from_utf8(slice.to_vec()).unwrap_or("<unknown>".to_string()),
+                });
             }
         }
 
@@ -120,13 +140,13 @@ impl<'de> Decoder<'de> {
     }
 
     #[inline(always)]
-    pub fn check_len(&mut self, expected: usize) -> Result<(), String> {
+    pub fn check_len(&mut self, expected: usize) -> Result<(), DecodeError> {
         let len = self.read_len()?;
         if len != expected {
-            return Err(format!(
-                "Unexpected length: expected = {}, actual = {}",
-                expected, len
-            ));
+            return Err(DecodeError::InvalidLength {
+                expected,
+                actual: len,
+            });
         }
 
         Ok(())
@@ -139,7 +159,7 @@ impl<'de> Decoder<'de> {
 
 impl Decode for () {
     #[inline]
-    fn decode_value<'de>(_decoder: &mut Decoder<'de>) -> Result<Self, String> {
+    fn decode_value<'de>(_decoder: &mut Decoder<'de>) -> Result<Self, DecodeError> {
         Ok(())
     }
 
@@ -151,12 +171,12 @@ impl Decode for () {
 
 impl Decode for bool {
     #[inline]
-    fn decode_value<'de>(decoder: &mut Decoder<'de>) -> Result<Self, String> {
+    fn decode_value<'de>(decoder: &mut Decoder<'de>) -> Result<Self, DecodeError> {
         let value = decoder.read_u8()?;
         match value {
             0 => Ok(false),
             1 => Ok(true),
-            _ => Err(format!("Invalid boolean value: {}", value)),
+            _ => Err(DecodeError::InvalidBool(value)),
         }
     }
 
@@ -168,7 +188,7 @@ impl Decode for bool {
 
 impl Decode for i8 {
     #[inline]
-    fn decode_value<'de>(decoder: &mut Decoder<'de>) -> Result<Self, String> {
+    fn decode_value<'de>(decoder: &mut Decoder<'de>) -> Result<Self, DecodeError> {
         let value = decoder.read_u8()?;
         Ok(value as i8)
     }
@@ -181,7 +201,7 @@ impl Decode for i8 {
 
 impl Decode for u8 {
     #[inline]
-    fn decode_value<'de>(decoder: &mut Decoder<'de>) -> Result<Self, String> {
+    fn decode_value<'de>(decoder: &mut Decoder<'de>) -> Result<Self, DecodeError> {
         let value = decoder.read_u8()?;
         Ok(value)
     }
@@ -196,7 +216,7 @@ macro_rules! decode_basic_type {
     ($type:ident, $sbor_type:ident, $n:expr) => {
         impl Decode for $type {
             #[inline]
-            fn decode_value<'de>(decoder: &mut Decoder<'de>) -> Result<Self, String> {
+            fn decode_value<'de>(decoder: &mut Decoder<'de>) -> Result<Self, DecodeError> {
                 let slice = decoder.read_bytes($n)?;
                 let mut bytes = [0u8; $n];
                 bytes.copy_from_slice(&slice[..]);
@@ -222,10 +242,10 @@ decode_basic_type!(u128, TYPE_U128, 16);
 
 impl Decode for String {
     #[inline]
-    fn decode_value<'de>(decoder: &mut Decoder<'de>) -> Result<Self, String> {
+    fn decode_value<'de>(decoder: &mut Decoder<'de>) -> Result<Self, DecodeError> {
         let len = decoder.read_len()?;
         let slice = decoder.read_bytes(len)?;
-        let s = String::from_utf8(slice.to_vec()).map_err(|_| "Invalid utf-8");
+        let s = String::from_utf8(slice.to_vec()).map_err(|_| DecodeError::InvalidUtf8);
         Ok(s?)
     }
 
@@ -237,13 +257,13 @@ impl Decode for String {
 
 impl<T: Decode> Decode for Option<T> {
     #[inline]
-    fn decode_value<'de>(decoder: &mut Decoder<'de>) -> Result<Self, String> {
+    fn decode_value<'de>(decoder: &mut Decoder<'de>) -> Result<Self, DecodeError> {
         let index = decoder.read_index()?;
 
         match index {
             0 => Ok(None),
             1 => Ok(Some(T::decode(decoder)?)),
-            _ => Err(format!("Invalid option index: {}", index)),
+            _ => Err(DecodeError::InvalidIndex(index)),
         }
     }
 
@@ -255,7 +275,7 @@ impl<T: Decode> Decode for Option<T> {
 
 impl<T: Decode, const N: usize> Decode for [T; N] {
     #[inline]
-    fn decode_value<'de>(decoder: &mut Decoder<'de>) -> Result<Self, String> {
+    fn decode_value<'de>(decoder: &mut Decoder<'de>) -> Result<Self, DecodeError> {
         decoder.check_len(N)?;
         decoder.check_type(T::sbor_type())?;
 
@@ -275,7 +295,7 @@ impl<T: Decode, const N: usize> Decode for [T; N] {
 
 impl<T: Decode> Decode for Vec<T> {
     #[inline]
-    fn decode_value<'de>(decoder: &mut Decoder<'de>) -> Result<Self, String> {
+    fn decode_value<'de>(decoder: &mut Decoder<'de>) -> Result<Self, DecodeError> {
         let len = decoder.read_len()?;
         decoder.check_type(T::sbor_type())?;
 
@@ -296,14 +316,11 @@ macro_rules! decode_tuple {
     ($n:tt $($idx:tt $name:ident)+) => {
         impl<$($name: Decode),+> Decode for ($($name,)+) {
             #[inline]
-            fn decode_value<'de>(decoder: &mut Decoder<'de>) -> Result<Self, String> {
+            fn decode_value<'de>(decoder: &mut Decoder<'de>) -> Result<Self, DecodeError> {
                 let len = decoder.read_len()?;
 
                 if len != $n {
-                    return Err(format!(
-                        "Invalid tuple length: expected = {}, actual = {}",
-                        $n, len
-                    ));
+                    return Err(DecodeError::InvalidLength{expected: $n, actual: len });
                 }
 
                 Ok(($($name::decode(decoder)?),+))

@@ -56,6 +56,7 @@ pub enum Type {
 
     Array {
         base: Box<Type>,
+        // TODO add length here
     },
 
     Vec {

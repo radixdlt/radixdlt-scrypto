@@ -31,7 +31,7 @@ pub fn handle_decode(input: TokenStream) -> TokenStream {
 
                 quote! {
                     impl sbor::Decode for #ident {
-                        fn decode_value<'de>(decoder: &'de mut sbor::Decoder) -> Result<Self, String> {
+                        fn decode_value<'de>(decoder: &'de mut sbor::Decoder) -> Result<Self, sbor::DecodeError> {
                             use sbor::{self, Decode};
 
                             decoder.check_name(#ident_str)?;
@@ -58,7 +58,7 @@ pub fn handle_decode(input: TokenStream) -> TokenStream {
 
                 quote! {
                     impl sbor::Decode for #ident {
-                        fn decode_value<'de>(decoder: &'de mut sbor::Decoder) -> Result<Self, String> {
+                        fn decode_value<'de>(decoder: &'de mut sbor::Decoder) -> Result<Self, sbor::DecodeError> {
                             use sbor::{self, Decode};
 
                             decoder.check_name(#ident_str)?;
@@ -79,7 +79,7 @@ pub fn handle_decode(input: TokenStream) -> TokenStream {
             syn::Fields::Unit => {
                 quote! {
                     impl sbor::Decode for #ident {
-                        fn decode_value<'de>(decoder: &'de mut sbor::Decoder) -> Result<Self, String> {
+                        fn decode_value<'de>(decoder: &'de mut sbor::Decoder) -> Result<Self, sbor::DecodeError> {
                             decoder.check_name(#ident_str)?;
                             decoder.check_type(sbor::TYPE_FIELDS_UNIT)?;
 
@@ -94,9 +94,10 @@ pub fn handle_decode(input: TokenStream) -> TokenStream {
             }
         },
         Data::Enum(DataEnum { variants, .. }) => {
-            let match_arms = variants.iter().enumerate().map(|(v_ith, v)| {
+            let match_arms = variants.iter().enumerate().map(|(i, v)| {
                 let v_id = &v.ident;
                 let v_name = v_id.to_string();
+                let v_ith = i as u8;
                 match &v.fields {
                     syn::Fields::Named(FieldsNamed { named, .. }) => {
                         let names = named.iter().map(|f| {
@@ -153,14 +154,14 @@ pub fn handle_decode(input: TokenStream) -> TokenStream {
             quote! {
                 impl sbor::Decode for #ident {
                     #[inline]
-                    fn decode_value<'de>(decoder: &'de mut sbor::Decoder) -> Result<Self, String> {
+                    fn decode_value<'de>(decoder: &'de mut sbor::Decoder) -> Result<Self, sbor::DecodeError> {
                         use sbor::{self, Decode};
 
                         decoder.check_name(#ident_str)?;
                         let index = decoder.read_index()?;
                         match index {
                             #(#match_arms,)*
-                            _ => Err(format!("Unknown enum index: {}", index)),
+                            _ => Err(sbor::DecodeError::InvalidIndex(index)),
                         }
                     }
 
