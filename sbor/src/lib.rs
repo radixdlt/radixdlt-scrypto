@@ -9,24 +9,24 @@ pub use encode::*;
 pub use model::*;
 
 pub fn sbor_encode<T: Encode>(v: &T) -> Vec<u8> {
-    let mut enc = Encoder::new();
+    let mut enc = Encoder::with_metadata();
     v.encode(&mut enc);
     enc.into()
 }
 
 pub fn sbor_decode<'de, T: Decode>(buf: &'de [u8]) -> Result<T, String> {
-    let mut dec = Decoder::new(buf);
+    let mut dec = Decoder::with_metadata(buf);
     T::decode(&mut dec)
 }
 
 pub fn sbor_encode_no_schema<T: Encode>(v: &T) -> Vec<u8> {
-    let mut enc = Encoder::new_no_schema();
+    let mut enc = Encoder::no_metadata();
     v.encode(&mut enc);
     enc.into()
 }
 
 pub fn sbor_decode_no_schema<'de, T: Decode>(buf: &'de [u8]) -> Result<T, String> {
-    let mut dec = Decoder::new_no_schema(buf);
+    let mut dec = Decoder::no_metadata(buf);
     T::decode(&mut dec)
 }
 

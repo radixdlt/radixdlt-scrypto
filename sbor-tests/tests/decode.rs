@@ -41,7 +41,7 @@ fn test_decode_struct() {
         21 // fields type
     ];
 
-    let mut decoder = Decoder::new(&bytes);
+    let mut decoder = Decoder::with_metadata(&bytes);
     let a = TestStructNamed::decode(&mut decoder).unwrap();
     let b = TestStructUnnamed::decode(&mut decoder).unwrap();
     let c = TestStructUnit::decode(&mut decoder).unwrap();
@@ -81,7 +81,7 @@ fn test_decode_enum() {
         21  // fields type
     ];
 
-    let mut decoder = Decoder::new(&bytes);
+    let mut decoder = Decoder::with_metadata(&bytes);
     let a = TestEnum::decode(&mut decoder).unwrap();
     let b = TestEnum::decode(&mut decoder).unwrap();
     let c = TestEnum::decode(&mut decoder).unwrap();

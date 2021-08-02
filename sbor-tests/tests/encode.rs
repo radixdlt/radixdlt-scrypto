@@ -25,7 +25,7 @@ fn test_encode_struct() {
     let b = TestStructUnnamed(3);
     let c = TestStructUnit {};
 
-    let mut encoder = Encoder::new();
+    let mut encoder = Encoder::with_metadata();
     a.encode(&mut encoder);
     b.encode(&mut encoder);
     c.encode(&mut encoder);
@@ -61,7 +61,7 @@ fn test_encode_enum() {
     let b = TestEnum::B(1);
     let c = TestEnum::C;
 
-    let mut encoder = Encoder::new();
+    let mut encoder = Encoder::with_metadata();
     a.encode(&mut encoder);
     b.encode(&mut encoder);
     c.encode(&mut encoder);

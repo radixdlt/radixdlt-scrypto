@@ -1,30 +1,37 @@
 use crate::*;
 
 pub trait Decode: Sized {
-    fn decode<'de>(decoder: &mut Decoder<'de>) -> Result<Self, String>;
+    fn decode<'de>(decoder: &mut Decoder<'de>) -> Result<Self, String> {
+        decoder.check_type(Self::sbor_type())?;
+        Self::decode_value(decoder)
+    }
+
+    fn decode_value<'de>(decoder: &mut Decoder<'de>) -> Result<Self, String>;
+
+    fn sbor_type() -> u8;
 }
 
 pub struct Decoder<'de> {
     input: &'de [u8],
     offset: usize,
-    with_schema: bool,
+    with_metadata: bool,
 }
 
 impl<'de> Decoder<'de> {
-    pub fn new(input: &'de [u8]) -> Self {
+    pub fn new(input: &'de [u8], with_metadata: bool) -> Self {
         Self {
             input,
             offset: 0,
-            with_schema: true,
+            with_metadata,
         }
     }
 
-    pub fn new_no_schema(input: &'de [u8]) -> Self {
-        Self {
-            input,
-            offset: 0,
-            with_schema: false,
-        }
+    pub fn with_metadata(input: &'de [u8]) -> Self {
+        Self::new(input, true)
+    }
+
+    pub fn no_metadata(input: &'de [u8]) -> Self {
+        Self::new(input, false)
     }
 
     #[inline(always)]
@@ -80,7 +87,7 @@ impl<'de> Decoder<'de> {
 
     #[inline(always)]
     pub fn check_type(&mut self, expected: u8) -> Result<(), String> {
-        if self.with_schema {
+        if self.with_metadata {
             let ty = self.read_type()?;
             if ty != expected {
                 return Err(format!(
@@ -95,7 +102,7 @@ impl<'de> Decoder<'de> {
 
     #[inline(always)]
     pub fn check_name(&mut self, expected: &str) -> Result<(), String> {
-        if self.with_schema {
+        if self.with_metadata {
             self.check_type(TYPE_STRING)?;
             self.check_len(expected.len())?;
 
@@ -126,18 +133,25 @@ impl<'de> Decoder<'de> {
     }
 }
 
-// implementation for basic types
+// Implementation for basic types:
+// - We keep one flat implementation per type, i.e., the `decode()` function;
+// - Everything else is inlined.
 
 impl Decode for () {
-    fn decode<'de>(decoder: &mut Decoder<'de>) -> Result<Self, String> {
-        decoder.check_type(TYPE_UNIT)?;
+    #[inline]
+    fn decode_value<'de>(_decoder: &mut Decoder<'de>) -> Result<Self, String> {
         Ok(())
+    }
+
+    #[inline]
+    fn sbor_type() -> u8 {
+        TYPE_UNIT
     }
 }
 
 impl Decode for bool {
-    fn decode<'de>(decoder: &mut Decoder<'de>) -> Result<Self, String> {
-        decoder.check_type(TYPE_BOOL)?;
+    #[inline]
+    fn decode_value<'de>(decoder: &mut Decoder<'de>) -> Result<Self, String> {
         let value = decoder.read_u8()?;
         match value {
             0 => Ok(false),
@@ -145,33 +159,53 @@ impl Decode for bool {
             _ => Err(format!("Invalid boolean value: {}", value)),
         }
     }
+
+    #[inline]
+    fn sbor_type() -> u8 {
+        TYPE_BOOL
+    }
 }
 
 impl Decode for i8 {
-    fn decode<'de>(decoder: &mut Decoder<'de>) -> Result<Self, String> {
-        decoder.check_type(TYPE_I8)?;
+    #[inline]
+    fn decode_value<'de>(decoder: &mut Decoder<'de>) -> Result<Self, String> {
         let value = decoder.read_u8()?;
         Ok(value as i8)
+    }
+
+    #[inline]
+    fn sbor_type() -> u8 {
+        TYPE_I8
     }
 }
 
 impl Decode for u8 {
-    fn decode<'de>(decoder: &mut Decoder<'de>) -> Result<Self, String> {
-        decoder.check_type(TYPE_U8)?;
+    #[inline]
+    fn decode_value<'de>(decoder: &mut Decoder<'de>) -> Result<Self, String> {
         let value = decoder.read_u8()?;
         Ok(value)
+    }
+
+    #[inline]
+    fn sbor_type() -> u8 {
+        TYPE_U8
     }
 }
 
 macro_rules! decode_basic_type {
     ($type:ident, $sbor_type:ident, $n:expr) => {
         impl Decode for $type {
-            fn decode<'de>(decoder: &mut Decoder<'de>) -> Result<Self, String> {
-                decoder.check_type($sbor_type)?;
+            #[inline]
+            fn decode_value<'de>(decoder: &mut Decoder<'de>) -> Result<Self, String> {
                 let slice = decoder.read_bytes($n)?;
                 let mut bytes = [0u8; $n];
                 bytes.copy_from_slice(&slice[..]);
                 Ok(<$type>::from_le_bytes(bytes))
+            }
+
+            #[inline]
+            fn sbor_type() -> u8 {
+                $sbor_type
             }
         }
     };
@@ -187,18 +221,23 @@ decode_basic_type!(u64, TYPE_U64, 8);
 decode_basic_type!(u128, TYPE_U128, 16);
 
 impl Decode for String {
-    fn decode<'de>(decoder: &mut Decoder<'de>) -> Result<Self, String> {
-        decoder.check_type(TYPE_STRING)?;
+    #[inline]
+    fn decode_value<'de>(decoder: &mut Decoder<'de>) -> Result<Self, String> {
         let len = decoder.read_len()?;
         let slice = decoder.read_bytes(len)?;
         let s = String::from_utf8(slice.to_vec()).map_err(|_| "Invalid utf-8");
         Ok(s?)
     }
+
+    #[inline]
+    fn sbor_type() -> u8 {
+        TYPE_STRING
+    }
 }
 
 impl<T: Decode> Decode for Option<T> {
-    fn decode<'de>(decoder: &mut Decoder<'de>) -> Result<Self, String> {
-        decoder.check_type(TYPE_OPTION)?;
+    #[inline]
+    fn decode_value<'de>(decoder: &mut Decoder<'de>) -> Result<Self, String> {
         let index = decoder.read_index()?;
 
         match index {
@@ -207,11 +246,16 @@ impl<T: Decode> Decode for Option<T> {
             _ => Err(format!("Invalid option index: {}", index)),
         }
     }
+
+    #[inline]
+    fn sbor_type() -> u8 {
+        TYPE_OPTION
+    }
 }
 
 impl<T: Decode, const N: usize> Decode for [T; N] {
-    fn decode<'de>(decoder: &mut Decoder<'de>) -> Result<Self, String> {
-        decoder.check_type(TYPE_ARRAY)?;
+    #[inline]
+    fn decode_value<'de>(decoder: &mut Decoder<'de>) -> Result<Self, String> {
         let len = decoder.read_len()?;
         if len != N {
             return Err(format!(
@@ -227,11 +271,16 @@ impl<T: Decode, const N: usize> Decode for [T; N] {
         }
         Ok(unsafe { x.assume_init() })
     }
+
+    #[inline]
+    fn sbor_type() -> u8 {
+        TYPE_ARRAY
+    }
 }
 
 impl<T: Decode> Decode for Vec<T> {
-    fn decode<'de>(decoder: &mut Decoder<'de>) -> Result<Self, String> {
-        decoder.check_type(TYPE_VEC)?;
+    #[inline]
+    fn decode_value<'de>(decoder: &mut Decoder<'de>) -> Result<Self, String> {
         let len = decoder.read_len()?;
 
         let mut result = Vec::<T>::with_capacity(len); // Lengths are u16, so it's safe to pre-allocate.
@@ -240,12 +289,17 @@ impl<T: Decode> Decode for Vec<T> {
         }
         Ok(result)
     }
+
+    #[inline]
+    fn sbor_type() -> u8 {
+        TYPE_VEC
+    }
 }
 
 // TODO expand to different lengths
 impl<A: Decode, B: Decode> Decode for (A, B) {
-    fn decode<'de>(decoder: &mut Decoder<'de>) -> Result<Self, String> {
-        decoder.check_type(TYPE_TUPLE)?;
+    #[inline]
+    fn decode_value<'de>(decoder: &mut Decoder<'de>) -> Result<Self, String> {
         let len = decoder.read_len()?;
 
         if len != 2 {
@@ -257,6 +311,11 @@ impl<A: Decode, B: Decode> Decode for (A, B) {
 
         let result = (A::decode(decoder)?, B::decode(decoder)?);
         Ok(result)
+    }
+
+    #[inline]
+    fn sbor_type() -> u8 {
+        TYPE_TUPLE
     }
 }
 
@@ -285,7 +344,7 @@ mod tests {
             15, 3, 0, 9, 1, 0, 0, 0, 9, 2, 0, 0, 0, 9, 3, 0, 0, 0, // vector
             16, 2, 0, 9, 1, 0, 0, 0, 9, 2, 0, 0, 0, // tuple
         ];
-        let mut dec = Decoder::new(&bytes);
+        let mut dec = Decoder::with_metadata(&bytes);
         <()>::decode(&mut dec).unwrap();
         assert_eq!(true, <bool>::decode(&mut dec).unwrap());
         assert_eq!(1, <i8>::decode(&mut dec).unwrap());
@@ -329,7 +388,7 @@ mod tests {
             3, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, // vector
             2, 0, 1, 0, 0, 0, 2, 0, 0, 0, // tuple
         ];
-        let mut dec = Decoder::new_no_schema(&bytes);
+        let mut dec = Decoder::no_metadata(&bytes);
         <()>::decode(&mut dec).unwrap();
         assert_eq!(true, <bool>::decode(&mut dec).unwrap());
         assert_eq!(1, <i8>::decode(&mut dec).unwrap());

@@ -4,39 +4,47 @@ use alloc::vec::Vec;
 use crate::*;
 
 pub trait Encode {
-    fn encode(&self, encoder: &mut Encoder);
+    fn encode(&self, encoder: &mut Encoder) {
+        encoder.write_type(Self::sbor_type());
+        self.encode_value(encoder);
+    }
+
+    fn encode_value(&self, encoder: &mut Encoder);
+
+    fn sbor_type() -> u8;
 }
 
 pub struct Encoder {
     buf: Vec<u8>,
-    with_schema: bool,
+    with_metadata: bool,
 }
 
 impl Encoder {
-    pub fn new() -> Self {
+    pub fn new(capacity: usize, with_metadata: bool) -> Self {
         Self {
-            buf: Vec::with_capacity(256),
-            with_schema: true,
+            buf: Vec::with_capacity(capacity),
+            with_metadata,
         }
     }
 
-    pub fn new_no_schema() -> Self {
-        Self {
-            buf: Vec::with_capacity(256),
-            with_schema: false,
-        }
+    pub fn with_metadata() -> Self {
+        Self::new(256, true)
+    }
+
+    pub fn no_metadata() -> Self {
+        Self::new(256, false)
     }
 
     #[inline(always)]
     pub fn write_type(&mut self, ty: u8) {
-        if self.with_schema {
+        if self.with_metadata {
             self.buf.push(ty);
         }
     }
 
     #[inline(always)]
     pub fn write_name(&mut self, value: &str) {
-        if self.with_schema {
+        if self.with_metadata {
             self.write_type(TYPE_STRING);
             self.write_len(value.len());
             self.buf.extend(value.as_bytes());
@@ -70,41 +78,67 @@ impl Into<Vec<u8>> for Encoder {
     }
 }
 
-// implementation for basic types
+// Implementation for basic types:
+// - We keep one flat implementation per type, i.e., the `encode()` function;
+// - Everything else is inlined.
 
 impl Encode for () {
-    fn encode(&self, encoder: &mut Encoder) {
-        encoder.write_type(TYPE_UNIT);
+    #[inline]
+    fn encode_value(&self, _encoder: &mut Encoder) {}
+
+    #[inline]
+    fn sbor_type() -> u8 {
+        TYPE_UNIT
     }
 }
 
 impl Encode for bool {
-    fn encode(&self, encoder: &mut Encoder) {
-        encoder.write_type(TYPE_BOOL);
+    #[inline]
+    fn encode_value(&self, encoder: &mut Encoder) {
         encoder.write_u8(if *self { 1u8 } else { 0u8 })
+    }
+
+    #[inline]
+    fn sbor_type() -> u8 {
+        TYPE_BOOL
     }
 }
 
 impl Encode for i8 {
-    fn encode(&self, encoder: &mut Encoder) {
-        encoder.write_type(TYPE_I8);
+    #[inline]
+    fn encode_value(&self, encoder: &mut Encoder) {
         encoder.write_u8(*self as u8);
+    }
+
+    #[inline]
+    fn sbor_type() -> u8 {
+        TYPE_I8
     }
 }
 
 impl Encode for u8 {
-    fn encode(&self, encoder: &mut Encoder) {
-        encoder.write_type(TYPE_U8);
+    #[inline]
+    fn encode_value(&self, encoder: &mut Encoder) {
         encoder.write_u8(*self);
+    }
+
+    #[inline]
+    fn sbor_type() -> u8 {
+        TYPE_U8
     }
 }
 
 macro_rules! encode_basic_type {
     ($type:ident, $sbor_type:ident) => {
         impl Encode for $type {
-            fn encode(&self, encoder: &mut Encoder) {
-                encoder.write_type($sbor_type);
+            #[inline]
+            fn encode_value(&self, encoder: &mut Encoder) {
                 encoder.write_slice(&(*self).to_le_bytes());
+            }
+
+            #[inline]
+            fn sbor_type() -> u8 {
+                $sbor_type
             }
         }
     };
@@ -120,24 +154,34 @@ encode_basic_type!(u64, TYPE_U64);
 encode_basic_type!(u128, TYPE_U128);
 
 impl Encode for str {
-    fn encode(&self, encoder: &mut Encoder) {
-        encoder.write_type(TYPE_STRING);
+    #[inline]
+    fn encode_value(&self, encoder: &mut Encoder) {
         encoder.write_len(self.len());
         encoder.write_slice(self.as_bytes());
+    }
+
+    #[inline]
+    fn sbor_type() -> u8 {
+        TYPE_STRING
     }
 }
 
 impl Encode for String {
-    fn encode(&self, encoder: &mut Encoder) {
-        encoder.write_type(TYPE_STRING);
+    #[inline]
+    fn encode_value(&self, encoder: &mut Encoder) {
         encoder.write_len(self.len());
         encoder.write_slice(self.as_bytes());
+    }
+
+    #[inline]
+    fn sbor_type() -> u8 {
+        TYPE_STRING
     }
 }
 
 impl<T: Encode> Encode for Option<T> {
-    fn encode(&self, encoder: &mut Encoder) {
-        encoder.write_type(TYPE_OPTION);
+    #[inline]
+    fn encode_value(&self, encoder: &mut Encoder) {
         match self {
             None => {
                 encoder.write_index(0);
@@ -148,36 +192,56 @@ impl<T: Encode> Encode for Option<T> {
             }
         }
     }
+
+    #[inline]
+    fn sbor_type() -> u8 {
+        TYPE_OPTION
+    }
 }
 
 impl<T: Encode, const N: usize> Encode for [T; N] {
-    fn encode(&self, encoder: &mut Encoder) {
-        encoder.write_type(TYPE_ARRAY);
+    #[inline]
+    fn encode_value(&self, encoder: &mut Encoder) {
         encoder.write_len(self.len());
         for v in self {
             v.encode(encoder);
         }
     }
+
+    #[inline]
+    fn sbor_type() -> u8 {
+        TYPE_ARRAY
+    }
 }
 
 impl<T: Encode> Encode for Vec<T> {
-    fn encode(&self, encoder: &mut Encoder) {
-        encoder.write_type(TYPE_VEC);
+    #[inline]
+    fn encode_value(&self, encoder: &mut Encoder) {
         encoder.write_len(self.len());
         for v in self {
             v.encode(encoder);
         }
+    }
+
+    #[inline]
+    fn sbor_type() -> u8 {
+        TYPE_VEC
     }
 }
 
 // TODO expand to different lengths
 impl<A: Encode, B: Encode> Encode for (A, B) {
-    fn encode(&self, encoder: &mut Encoder) {
-        encoder.write_type(TYPE_TUPLE);
+    #[inline]
+    fn encode_value(&self, encoder: &mut Encoder) {
         encoder.write_len(2);
 
         self.0.encode(encoder);
         self.1.encode(encoder);
+    }
+
+    #[inline]
+    fn sbor_type() -> u8 {
+        TYPE_TUPLE
     }
 }
 
@@ -187,7 +251,7 @@ mod tests {
 
     #[test]
     pub fn test_encoding() {
-        let mut enc = Encoder::new();
+        let mut enc = Encoder::with_metadata();
         ().encode(&mut enc);
         true.encode(&mut enc);
         1i8.encode(&mut enc);
@@ -233,7 +297,7 @@ mod tests {
 
     #[test]
     pub fn test_encoding_no_schema() {
-        let mut enc = Encoder::new_no_schema();
+        let mut enc = Encoder::no_metadata();
         ().encode(&mut enc);
         true.encode(&mut enc);
         1i8.encode(&mut enc);

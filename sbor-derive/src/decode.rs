@@ -31,12 +31,10 @@ pub fn handle_decode(input: TokenStream) -> TokenStream {
 
                 quote! {
                     impl sbor::Decode for #ident {
-                        fn decode<'de>(decoder: &'de mut sbor::Decoder) -> Result<Self, String> {
+                        fn decode_value<'de>(decoder: &'de mut sbor::Decoder) -> Result<Self, String> {
                             use sbor::{self, Decode};
 
-                            decoder.check_type(sbor::TYPE_STRUCT)?;
                             decoder.check_name(#ident_str)?;
-
                             decoder.check_type(sbor::TYPE_FIELDS_NAMED)?;
                             decoder.check_len(#n)?;
 
@@ -47,6 +45,10 @@ pub fn handle_decode(input: TokenStream) -> TokenStream {
                                 }),*
                             })
                         }
+
+                        fn sbor_type() -> u8 {
+                            sbor::TYPE_STRUCT
+                        }
                     }
                 }
             }
@@ -56,12 +58,10 @@ pub fn handle_decode(input: TokenStream) -> TokenStream {
 
                 quote! {
                     impl sbor::Decode for #ident {
-                        fn decode<'de>(decoder: &'de mut sbor::Decoder) -> Result<Self, String> {
+                        fn decode_value<'de>(decoder: &'de mut sbor::Decoder) -> Result<Self, String> {
                             use sbor::{self, Decode};
 
-                            decoder.check_type(sbor::TYPE_STRUCT)?;
                             decoder.check_name(#ident_str)?;
-
                             decoder.check_type(sbor::TYPE_FIELDS_UNNAMED)?;
                             decoder.check_len(#n)?;
 
@@ -69,19 +69,25 @@ pub fn handle_decode(input: TokenStream) -> TokenStream {
                                 #(<#types>::decode(decoder)?),*
                             ))
                         }
+
+                        fn sbor_type() -> u8 {
+                            sbor::TYPE_STRUCT
+                        }
                     }
                 }
             }
             syn::Fields::Unit => {
                 quote! {
                     impl sbor::Decode for #ident {
-                        fn decode<'de>(decoder: &'de mut sbor::Decoder) -> Result<Self, String> {
-                            decoder.check_type(sbor::TYPE_STRUCT)?;
+                        fn decode_value<'de>(decoder: &'de mut sbor::Decoder) -> Result<Self, String> {
                             decoder.check_name(#ident_str)?;
-
                             decoder.check_type(sbor::TYPE_FIELDS_UNIT)?;
 
                             Ok(Self {})
+                        }
+
+                        fn sbor_type() -> u8 {
+                            sbor::TYPE_STRUCT
                         }
                     }
                 }
@@ -146,17 +152,21 @@ pub fn handle_decode(input: TokenStream) -> TokenStream {
 
             quote! {
                 impl sbor::Decode for #ident {
-                    fn decode<'de>(decoder: &'de mut sbor::Decoder) -> Result<Self, String> {
+                    #[inline]
+                    fn decode_value<'de>(decoder: &'de mut sbor::Decoder) -> Result<Self, String> {
                         use sbor::{self, Decode};
 
-                        decoder.check_type(sbor::TYPE_ENUM)?;
                         decoder.check_name(#ident_str)?;
-
                         let index = decoder.read_index()?;
                         match index {
                             #(#match_arms,)*
                             _ => Err(format!("Unknown enum index: {}", index)),
                         }
+                    }
+
+                    #[inline]
+                    fn sbor_type() -> u8 {
+                        sbor::TYPE_ENUM
                     }
                 }
             }
