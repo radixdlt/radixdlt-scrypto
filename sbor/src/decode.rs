@@ -1,6 +1,6 @@
 extern crate alloc;
+use alloc::collections::BTreeMap;
 use alloc::string::String;
-
 use alloc::string::ToString;
 
 use crate::*;
@@ -344,8 +344,44 @@ decode_tuple! { 8 0 A 1 B 2 C 3 D 4 E 5 F 6 G 7 H }
 decode_tuple! { 9 0 A 1 B 2 C 3 D 4 E 5 F 6 G 7 H 8 I }
 decode_tuple! { 10 0 A 1 B 2 C 3 D 4 E 5 F 6 G 7 H 8 I 9 J }
 
+impl<K: Decode + Ord + core::hash::Hash, V: Decode> Decode for BTreeMap<K, V> {
+    #[inline]
+    fn decode_value<'de>(decoder: &mut Decoder<'de>) -> Result<Self, DecodeError> {
+        let len = decoder.read_len()?;
+        decoder.check_type(K::sbor_type())?;
+        decoder.check_type(V::sbor_type())?;
+
+        let mut map = BTreeMap::new();
+        for _ in 0..len {
+            map.insert(K::decode_value(decoder)?, V::decode_value(decoder)?);
+        }
+        Ok(map)
+    }
+
+    #[inline]
+    fn sbor_type() -> u8 {
+        TYPE_B_TREE_MAP
+    }
+}
+
+impl<T: Decode> Decode for Box<T> {
+    #[inline]
+    fn decode_value<'de>(decoder: &mut Decoder<'de>) -> Result<Self, DecodeError> {
+        let v = T::decode(decoder)?;
+        Ok(Box::new(v))
+    }
+
+    #[inline]
+    fn sbor_type() -> u8 {
+        TYPE_BOX
+    }
+}
+
 #[cfg(test)]
 mod tests {
+    extern crate alloc;
+    use alloc::collections::BTreeMap;
+
     use super::{Decode, Decoder};
 
     #[test]
@@ -368,6 +404,8 @@ mod tests {
             14, 3, 0, 9, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, // array
             15, 3, 0, 9, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, // vector
             16, 2, 0, 9, 1, 0, 0, 0, 9, 2, 0, 0, 0, // tuple
+            22, 2, 0, 7, 7, 1, 2, 3, 4, // b tree map
+            23, 7, 1, // box
         ];
         let mut dec = Decoder::with_metadata(&bytes);
         <()>::decode(&mut dec).unwrap();
@@ -390,6 +428,11 @@ mod tests {
             <Vec<u32>>::decode(&mut dec).unwrap()
         );
         assert_eq!((1u32, 2u32), <(u32, u32)>::decode(&mut dec).unwrap());
+        let mut map = BTreeMap::<u8, u8>::new();
+        map.insert(1, 2);
+        map.insert(3, 4);
+        assert_eq!(map, <BTreeMap<u8, u8>>::decode(&mut dec).unwrap());
+        assert_eq!(Box::new(1u8), <Box<u8>>::decode(&mut dec).unwrap());
     }
 
     #[test]
@@ -412,6 +455,8 @@ mod tests {
             3, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, // array
             3, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, // vector
             2, 0, 1, 0, 0, 0, 2, 0, 0, 0, // tuple
+            2, 0, 1, 2, 3, 4, // b tree map
+            1, // option
         ];
         let mut dec = Decoder::no_metadata(&bytes);
         <()>::decode(&mut dec).unwrap();
@@ -434,5 +479,10 @@ mod tests {
             <Vec<u32>>::decode(&mut dec).unwrap()
         );
         assert_eq!((1u32, 2u32), <(u32, u32)>::decode(&mut dec).unwrap());
+        let mut map = BTreeMap::<u8, u8>::new();
+        map.insert(1, 2);
+        map.insert(3, 4);
+        assert_eq!(map, <BTreeMap<u8, u8>>::decode(&mut dec).unwrap());
+        assert_eq!(Box::new(1u8), <Box<u8>>::decode(&mut dec).unwrap());
     }
 }

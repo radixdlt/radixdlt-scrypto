@@ -1,9 +1,9 @@
 // Turn on `no_std`
 #![cfg_attr(not(feature = "std"), no_std)]
 
-/// Scrypto data encoding/decoding scheme and memory allocation.
+/// Scrypto data encoding/decoding and memory allocation scheme.
 pub mod buffer;
-/// Scrypto higher level abstraction.
+/// Scrypto high level abstraction.
 pub mod constructs;
 /// Kernel APIs and helper functions.
 pub mod kernel;
@@ -14,6 +14,7 @@ pub mod utils;
 
 // Re-export Scrypto ABI.
 #[cfg(feature = "abi")]
+/// Scrypto component ABI.
 pub mod abi {
     pub use scrypto_abi::*;
 }
@@ -24,6 +25,7 @@ pub mod abi {
 #[macro_use]
 extern crate scrypto_derive;
 #[cfg(feature = "derive")]
+#[doc(hidden)]
 pub use scrypto_derive::*;
 
 /// Call a method of a blueprint.

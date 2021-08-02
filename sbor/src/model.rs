@@ -7,6 +7,8 @@ use alloc::vec::Vec;
 #[cfg(feature = "json")]
 use serde::{Deserialize, Serialize};
 
+use crate::sbor::{self, Decode, Encode};
+
 pub const TYPE_UNIT: u8 = 0;
 pub const TYPE_BOOL: u8 = 1;
 pub const TYPE_I8: u8 = 2;
@@ -29,9 +31,11 @@ pub const TYPE_ENUM: u8 = 18;
 pub const TYPE_FIELDS_NAMED: u8 = 19;
 pub const TYPE_FIELDS_UNNAMED: u8 = 20;
 pub const TYPE_FIELDS_UNIT: u8 = 21;
+pub const TYPE_B_TREE_MAP: u8 = 22;
+pub const TYPE_BOX: u8 = 23;
 
 #[cfg_attr(feature = "json", derive(Serialize, Deserialize), serde(tag = "type"))]
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Decode, Encode)]
 pub enum Type {
     Unit,
 
@@ -79,7 +83,7 @@ pub enum Type {
 }
 
 #[cfg_attr(feature = "json", derive(Serialize, Deserialize), serde(tag = "type"))]
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Decode, Encode)]
 pub enum FieldTypes {
     Named { fields: BTreeMap<String, Type> },
 
@@ -88,7 +92,6 @@ pub enum FieldTypes {
     Unit,
 }
 
-#[cfg_attr(feature = "json", derive(Serialize, Deserialize), serde(tag = "type"))]
 #[derive(Debug, PartialEq)]
 pub enum Value {
     Unit,
@@ -127,7 +130,6 @@ pub enum Value {
     },
 }
 
-#[cfg_attr(feature = "json", derive(Serialize, Deserialize), serde(tag = "type"))]
 #[derive(Debug, PartialEq)]
 pub enum FieldValues {
     Named { fields: BTreeMap<String, Value> },

@@ -30,10 +30,9 @@ pub fn sbor_decode_no_metadata<'de, T: Decode>(buf: &'de [u8]) -> Result<T, Deco
     T::decode(&mut dec)
 }
 
-// Re-export sbor derive.
-#[cfg(feature = "derive")]
-#[allow(unused_imports)]
-#[macro_use]
 extern crate sbor_derive;
-#[cfg(feature = "derive")]
 pub use sbor_derive::*;
+
+// So that I can ues the macros within this crate.
+// See: https://users.rust-lang.org/t/how-can-i-use-my-derive-macro-from-the-crate-that-declares-the-trait/60502
+extern crate self as sbor;

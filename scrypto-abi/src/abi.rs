@@ -2,18 +2,21 @@ extern crate alloc;
 use alloc::string::String;
 use alloc::vec::Vec;
 
-use sbor::Type;
+use sbor::*;
+#[cfg(feature = "json")]
 use serde::{Deserialize, Serialize};
 
 // TODO: how can we represent component ABI using SBOR?
 
-#[derive(Debug, Serialize, Deserialize)]
+#[cfg_attr(feature = "json", derive(Serialize, Deserialize))]
+#[derive(Debug, Encode, Decode)]
 pub struct Component {
     pub name: String,
     pub methods: Vec<Method>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[cfg_attr(feature = "json", derive(Serialize, Deserialize))]
+#[derive(Debug, Encode, Decode)]
 pub struct Method {
     pub name: String,
     pub mutability: Mutability,
@@ -21,7 +24,8 @@ pub struct Method {
     pub output: Type,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[cfg_attr(feature = "json", derive(Serialize, Deserialize))]
+#[derive(Debug, Encode, Decode)]
 pub enum Mutability {
     /// A stateless method does not require an instantiated component.
     Stateless,

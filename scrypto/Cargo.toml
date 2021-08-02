@@ -11,7 +11,7 @@ uint = { version = "0.9", default-features = false }
 sha2 = { version = "0.9", default-features = false }
 
 # Serialization
-sbor = { version = "0.1", path = "../sbor", default-features = false, features = ["derive"] }
+sbor = { version = "0.1", path = "../sbor", default-features = false }
 
 # Scrypto ABI
 scrypto-abi = { version = "0.1", path = "../scrypto-abi", default-features = false, optional = true }
