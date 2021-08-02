@@ -4,16 +4,14 @@ version = "0.1.0"
 edition = "2018"
 
 [dependencies]
-# Serialization
-serde = { version = "1.0", default-features = false, features = ["derive"] }
-serde_json = { version = "1.0", default-features = false }
-bincode_core = { git = "https://github.com/bincode-org/bincode-core.git", default-features = false }
-
 # Uint256
 uint = { version = "0.9", default-features = false }
 
 # SHA256
 sha2 = { version = "0.9", default-features = false }
+
+# Serialization
+sbor = { version = "0.1", path = "../sbor", default-features = false, features = ["derive"] }
 
 # Scrypto ABI
 scrypto-abi = { version = "0.1", path = "../scrypto-abi", default-features = false, optional = true }
@@ -22,9 +20,17 @@ scrypto-abi = { version = "0.1", path = "../scrypto-abi", default-features = fal
 scrypto-derive = { version = "0.1", path = "../scrypto-derive", default-features = false, optional = true }
 
 [features]
-default = ["std"]
-std = ["serde/std", "serde_json/std", "bincode_core/std", "scrypto-derive/std"]
-alloc = ["serde/alloc", "serde_json/alloc", "bincode_core/alloc", "scrypto-derive/alloc"]
+default = ["std", "derive"]
+
+# You can use either `std` or `alloc`, depnding on your environment
+std = ["sbor/std", "scrypto-derive/std"]
+alloc = ["sbor/alloc", "scrypto-derive/alloc"]
+
+# Turn on this feature to enable component ABI.
 abi = ["scrypto-abi"]
+
+# Turn on this feature to enable component derive.
 derive = ["scrypto-derive"]
+
+# Turn on this feature to enable tracing.
 trace = ["scrypto-derive/trace"]

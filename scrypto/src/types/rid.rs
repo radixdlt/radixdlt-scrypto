@@ -1,10 +1,10 @@
 extern crate alloc;
 use alloc::string::String;
 
-use serde::{Deserialize, Serialize};
+use sbor::{Decode, Encode};
 
 /// Resource type.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Encode, Decode)]
 pub enum ResourceKind {
     /// A token bucket.
     Tokens,
@@ -20,7 +20,7 @@ pub enum ResourceKind {
 }
 
 /// Represents a resource maintained by runtime.
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Encode, Decode)]
 pub struct RID {
     kind: ResourceKind,
     id: String,

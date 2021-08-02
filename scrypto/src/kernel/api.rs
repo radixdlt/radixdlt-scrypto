@@ -2,9 +2,14 @@ extern crate alloc;
 use alloc::string::String;
 use alloc::vec::Vec;
 
-use serde::{Deserialize, Serialize};
+use sbor::{Decode, Encode};
 
 use crate::types::*;
+
+extern "C" {
+    /// Entrance to Radix kernel.
+    pub fn kernel_main(op: u32, input_ptr: *const u8, input_len: usize) -> *mut u8;
+}
 
 /// Publish a new blueprint
 pub const PUBLISH_BLUEPRINT: u32 = 0x00;
@@ -71,13 +76,13 @@ pub const EMIT_LOG: u32 = 0x50;
 /// Retrieve context address
 pub const GET_CONTEXT_ADDRESS: u32 = 0x51;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Encode, Decode)]
 pub struct ComponentInfo {
     pub blueprint: Address,
     pub kind: String,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Encode, Decode)]
 pub struct ResourceInfo {
     pub symbol: String,
     pub name: String,
@@ -92,17 +97,17 @@ pub struct ResourceInfo {
 // blueprint
 //==========
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Encode, Decode)]
 pub struct PublishBlueprintInput {
     pub code: Vec<u8>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Encode, Decode)]
 pub struct PublishBlueprintOutput {
     pub blueprint: Address,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Encode, Decode)]
 pub struct CallBlueprintInput {
     pub blueprint: Address,
     pub component: String,
@@ -110,7 +115,7 @@ pub struct CallBlueprintInput {
     pub args: Vec<SerializedValue>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Encode, Decode)]
 pub struct CallBlueprintOutput {
     pub rtn: SerializedValue,
 }
@@ -119,225 +124,225 @@ pub struct CallBlueprintOutput {
 // component
 //==========
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Encode, Decode)]
 pub struct CreateComponentInput {
     pub kind: String,
     pub state: SerializedValue,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Encode, Decode)]
 pub struct CreateComponentOutput {
     pub component: Address,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Encode, Decode)]
 pub struct GetComponentInfoInput {
     pub component: Address,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Encode, Decode)]
 pub struct GetComponentInfoOutput {
     pub result: Option<ComponentInfo>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Encode, Decode)]
 pub struct GetComponentStateInput {
     pub component: Address,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Encode, Decode)]
 pub struct GetComponentStateOutput {
     pub state: SerializedValue,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Encode, Decode)]
 pub struct PutComponentStateInput {
     pub component: Address,
     pub state: SerializedValue,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Encode, Decode)]
 pub struct PutComponentStateOutput {}
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Encode, Decode)]
 pub struct GetComponentStorageInput {
     pub component: Address,
     pub key: Vec<u8>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Encode, Decode)]
 pub struct GetComponentStorageOutput {
     pub value: Option<Vec<u8>>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Encode, Decode)]
 pub struct PutComponentStorageInput {
     pub component: Address,
     pub key: Vec<u8>,
     pub value: Vec<u8>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Encode, Decode)]
 pub struct PutComponentStorageOutput {}
 
 //=========
 // resource
 //=========
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Encode, Decode)]
 pub struct CreateResourceInput {
     pub info: ResourceInfo,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Encode, Decode)]
 pub struct CreateResourceOutput {
     pub resource: Address,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Encode, Decode)]
 pub struct GetResourceInfoInput {
     pub resource: Address,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Encode, Decode)]
 pub struct GetResourceInfoOutput {
     pub result: Option<ResourceInfo>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Encode, Decode)]
 pub struct MintTokensInput {
     pub amount: U256,
     pub resource: Address,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Encode, Decode)]
 pub struct MintTokensOutput {
     pub tokens: RID,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Encode, Decode)]
 pub struct CombineTokensInput {
     pub tokens: RID,
     pub other: RID,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Encode, Decode)]
 pub struct CombineTokensOutput {}
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Encode, Decode)]
 pub struct SplitTokensInput {
     pub tokens: RID,
     pub amount: U256,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Encode, Decode)]
 pub struct SplitTokensOutput {
     pub tokens: RID,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Encode, Decode)]
 pub struct BorrowTokensInput {
     pub tokens: RID,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Encode, Decode)]
 pub struct BorrowTokensOutput {
     pub reference: RID,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Encode, Decode)]
 pub struct ReturnTokensInput {
     pub reference: RID,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Encode, Decode)]
 pub struct ReturnTokensOutput {}
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Encode, Decode)]
 pub struct MintBadgesInput {
     pub amount: U256,
     pub resource: Address,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Encode, Decode)]
 pub struct MintBadgesOutput {
     pub badges: RID,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Encode, Decode)]
 pub struct CombineBadgesInput {
     pub badges: RID,
     pub other: RID,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Encode, Decode)]
 pub struct CombineBadgesOutput {}
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Encode, Decode)]
 pub struct SplitBadgesInput {
     pub badges: RID,
     pub amount: U256,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Encode, Decode)]
 pub struct SplitBadgesOutput {
     pub badges: RID,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Encode, Decode)]
 pub struct BorrowBadgesInput {
     pub badges: RID,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Encode, Decode)]
 pub struct BorrowBadgesOutput {
     pub reference: RID,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Encode, Decode)]
 pub struct ReturnBadgesInput {
     pub reference: RID,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Encode, Decode)]
 pub struct ReturnBadgesOutput {}
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Encode, Decode)]
 pub struct GetTokensAmountInput {
     pub tokens: RID,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Encode, Decode)]
 pub struct GetTokensAmountOutput {
     pub amount: U256,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Encode, Decode)]
 pub struct GetTokensResourceInput {
     pub tokens: RID,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Encode, Decode)]
 pub struct GetTokensResourceOutput {
     pub resource: Address,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Encode, Decode)]
 pub struct GetBadgesAmountInput {
     pub badges: RID,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Encode, Decode)]
 pub struct GetBadgesAmountOutput {
     pub amount: U256,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Encode, Decode)]
 pub struct GetBadgesResourceInput {
     pub badges: RID,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Encode, Decode)]
 pub struct GetBadgesResourceOutput {
     pub resource: Address,
 }
@@ -346,65 +351,65 @@ pub struct GetBadgesResourceOutput {
 // account
 //========
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Encode, Decode)]
 pub struct WithdrawTokensInput {
     pub account: Address,
     pub amount: U256,
     pub resource: Address,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Encode, Decode)]
 pub struct WithdrawTokensOutput {
     pub tokens: RID,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Encode, Decode)]
 pub struct DepositTokensInput {
     pub account: Address,
     pub tokens: RID,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Encode, Decode)]
 pub struct DepositTokensOutput {}
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Encode, Decode)]
 pub struct WithdrawBadgesInput {
     pub account: Address,
     pub amount: U256,
     pub resource: Address,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Encode, Decode)]
 pub struct WithdrawBadgesOutput {
     pub badges: RID,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Encode, Decode)]
 pub struct DepositBadgesInput {
     pub account: Address,
     pub badges: RID,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Encode, Decode)]
 pub struct DepositBadgesOutput {}
 
 //=======
 // others
 //=======
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Encode, Decode)]
 pub struct EmitLogInput {
     pub level: String,
     pub message: String,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Encode, Decode)]
 pub struct EmitLogOutput {}
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Encode, Decode)]
 pub struct GetContextAddressInput {}
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Encode, Decode)]
 pub struct GetContextAddressOutput {
     pub address: Address,
 }

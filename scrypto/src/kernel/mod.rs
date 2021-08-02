@@ -1,7 +1,5 @@
 mod api;
-mod mem;
-mod syscall;
+mod call;
 
 pub use api::*;
-pub use mem::*;
-pub use syscall::*;
+pub use call::*;

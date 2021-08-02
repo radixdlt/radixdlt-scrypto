@@ -1,13 +1,13 @@
 extern crate alloc;
 use alloc::string::ToString;
 
-use serde::{Deserialize, Serialize};
+use sbor::{Decode, Encode};
 
 use crate::kernel::*;
 use crate::types::*;
 
 /// A primitive piece of state which has a single owner, and behaves like a physical object.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Encode, Decode)]
 pub struct Resource {
     address: Address,
 }
@@ -39,7 +39,7 @@ impl Resource {
                 supply,
             },
         };
-        let output: CreateResourceOutput = syscall(CREATE_RESOURCE, input);
+        let output: CreateResourceOutput = call_kernel(CREATE_RESOURCE, input);
 
         Resource::from(output.resource)
     }
@@ -48,7 +48,7 @@ impl Resource {
         let input = GetResourceInfoInput {
             resource: self.address.clone(),
         };
-        let output: GetResourceInfoOutput = syscall(GET_RESOURCE_INFO, input);
+        let output: GetResourceInfoOutput = call_kernel(GET_RESOURCE_INFO, input);
 
         output.result.unwrap()
     }

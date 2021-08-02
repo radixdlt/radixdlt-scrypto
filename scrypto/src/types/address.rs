@@ -6,14 +6,12 @@ use alloc::vec;
 use core::convert::TryInto;
 use core::fmt;
 
-use serde::{Deserialize, Serialize};
+use sbor::{Decode, Encode};
 
 use crate::utils::*;
 
 /// Represents an address.
-#[derive(Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
-#[serde(from = "String")]
-#[serde(into = "String")]
+#[derive(Clone, PartialEq, Eq, Hash, Encode, Decode)]
 pub enum Address {
     /// System address.
     System,

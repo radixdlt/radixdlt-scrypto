@@ -1,11 +1,11 @@
-use serde::{Deserialize, Serialize};
+use sbor::{Decode, Encode};
 
 use crate::constructs::*;
 use crate::kernel::*;
 use crate::types::*;
 
 /// A borrowed reference to a `Badges` bucket.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Encode, Decode)]
 pub struct BadgesRef {
     rid: RID,
 }
@@ -21,7 +21,7 @@ impl BadgesRef {
         let input = GetBadgesAmountInput {
             badges: self.rid.clone(),
         };
-        let output: GetBadgesAmountOutput = syscall(GET_BADGES_AMOUNT, input);
+        let output: GetBadgesAmountOutput = call_kernel(GET_BADGES_AMOUNT, input);
 
         output.amount
     }
@@ -30,7 +30,7 @@ impl BadgesRef {
         let input = GetBadgesResourceInput {
             badges: self.rid.clone(),
         };
-        let output: GetBadgesResourceOutput = syscall(GET_BADGES_RESOURCE, input);
+        let output: GetBadgesResourceOutput = call_kernel(GET_BADGES_RESOURCE, input);
 
         output.resource.into()
     }
@@ -39,6 +39,6 @@ impl BadgesRef {
         let input = ReturnBadgesInput {
             reference: self.rid.clone(),
         };
-        let _: ReturnBadgesOutput = syscall(RETURN_BADGES, input);
+        let _: ReturnBadgesOutput = call_kernel(RETURN_BADGES, input);
     }
 }

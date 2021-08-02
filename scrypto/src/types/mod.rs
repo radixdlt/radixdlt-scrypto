@@ -14,7 +14,7 @@ pub use u256::*;
 /// A value that encloses data and resources, used for communication between components.
 ///
 /// For now, it's a JSON value but will be replaced with Radix data format.
-pub type Value = serde_json::Value;
+pub type Value = sbor::Value;
 
 /// The serialized form of a `Value`.
 pub type SerializedValue = Vec<u8>;
@@ -24,11 +24,12 @@ mod tests {
     extern crate alloc;
     use alloc::string::ToString;
 
-    use serde::{Deserialize, Serialize};
+    use sbor::{Decode, Encode};
 
+    use crate::buffer::*;
     use crate::types::*;
 
-    #[derive(Debug, Serialize, Deserialize)]
+    #[derive(Debug, Encode, Decode)]
     struct Test {
         address: Address,
         hash: Hash,
@@ -38,13 +39,15 @@ mod tests {
 
     #[test]
     fn test_from_to_string() {
-        let t = Test {
+        let obj = Test {
             address: "040377bac8066e51cd0d6b320c338d5abbcdbcca25572b6b3eee9443eafc92106bba".into(),
             hash: "374c00efbe61f645a8b35d7746e106afa7422877e5d607975b6018e0a1aa6bf0".into(),
             rid: RID::new(ResourceKind::Badges, "id".to_string()),
             value: 1000.into(),
         };
-        let expected = "{\"address\":\"040377bac8066e51cd0d6b320c338d5abbcdbcca25572b6b3eee9443eafc92106bba\",\"hash\":\"374c00efbe61f645a8b35d7746e106afa7422877e5d607975b6018e0a1aa6bf0\",\"rid\":{\"kind\":\"Badges\",\"id\":\"id\"},\"value\":\"1000\"}";
-        assert_eq!(serde_json::to_string(&t).unwrap(), expected);
+        let bytes = radix_encode(&obj);
+        let obj2: Test = radix_decode(&bytes);
+        let bytes2 = radix_encode(&obj2);
+        assert_eq!(bytes, bytes2);
     }
 }

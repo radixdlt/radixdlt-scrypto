@@ -1,14 +1,12 @@
 // Turn on `no_std`
 #![cfg_attr(not(feature = "std"), no_std)]
 
-/// A module that handles serialization and de-serialization.
+/// Scrypto data encoding/decoding scheme and memory allocation.
 pub mod buffer;
 /// Scrypto higher level abstraction.
 pub mod constructs;
-/// A module that defines system functions and system call entrance.
+/// Kernel APIs and helper functions.
 pub mod kernel;
-/// A library of common routines.
-pub mod library;
 /// Scrypto primitive types.
 pub mod types;
 /// Utility functions, such as hashing and hex decoding.

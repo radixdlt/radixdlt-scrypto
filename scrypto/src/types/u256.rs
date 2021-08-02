@@ -2,13 +2,11 @@ extern crate alloc;
 use alloc::string::String;
 use alloc::string::ToString;
 
-use serde::{Deserialize, Serialize};
+use sbor::{Decode, Encode};
 use uint::construct_uint;
 
 construct_uint! {
-    #[derive(Serialize, Deserialize)]
-    #[serde(from = "String")]
-    #[serde(into = "String")]
+    #[derive(Encode, Decode)]
     pub struct U256(8);
 }
 

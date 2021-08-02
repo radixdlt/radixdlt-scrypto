@@ -1,8 +1,8 @@
-use crate::kernel::*;
-
 extern crate alloc;
 use alloc::string::String;
 use alloc::string::ToString;
+
+use crate::kernel::*;
 
 /// Represents the severity of a log message.
 pub enum LogLevel {
@@ -29,7 +29,7 @@ impl Logger {
             level: s.to_string(),
             message,
         };
-        let _: EmitLogOutput = syscall(EMIT_LOG, input);
+        let _: EmitLogOutput = call_kernel(EMIT_LOG, input);
     }
 
     pub fn trace(message: String) {

@@ -3,7 +3,7 @@ use alloc::string::String;
 use alloc::string::ToString;
 use alloc::vec::Vec;
 
-use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use sbor::{Decode, Encode};
 
 use crate::buffer::*;
 use crate::constructs::*;
@@ -11,7 +11,7 @@ use crate::kernel::*;
 use crate::types::*;
 
 /// A self-executing program that holds resources and exposed actions to other entities.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Encode, Decode)]
 pub struct Component {
     address: Address,
 }
@@ -23,12 +23,12 @@ impl From<Address> for Component {
 }
 
 impl Component {
-    pub fn new<T: Serialize>(kind: &str, state: T) -> Self {
+    pub fn new<T: Encode>(kind: &str, state: T) -> Self {
         let input = CreateComponentInput {
             kind: kind.to_string(),
             state: radix_encode(&state),
         };
-        let output: CreateComponentOutput = syscall(CREATE_COMPONENT, input);
+        let output: CreateComponentOutput = call_kernel(CREATE_COMPONENT, input);
 
         Self::from(output.component)
     }
@@ -37,7 +37,7 @@ impl Component {
         let data = self.get_info();
 
         let mut args_buf = Vec::new();
-        args_buf.push(radix_encode(&self));
+        args_buf.push(radix_encode(self));
         args_buf.extend(args);
 
         let input = CallBlueprintInput {
@@ -46,7 +46,7 @@ impl Component {
             method: method.to_string(),
             args: args_buf,
         };
-        let output: CallBlueprintOutput = syscall(CALL_BLUEPRINT, input);
+        let output: CallBlueprintOutput = call_kernel(CALL_BLUEPRINT, input);
 
         output.rtn
     }
@@ -55,7 +55,7 @@ impl Component {
         let input = GetComponentInfoInput {
             component: self.address.clone(),
         };
-        let output: GetComponentInfoOutput = syscall(GET_COMPONENT_INFO, input);
+        let output: GetComponentInfoOutput = call_kernel(GET_COMPONENT_INFO, input);
 
         output.result.unwrap()
     }
@@ -68,21 +68,21 @@ impl Component {
         self.get_info().kind
     }
 
-    pub fn get_state<T: DeserializeOwned>(&self) -> T {
+    pub fn get_state<T: Decode>(&self) -> T {
         let input = GetComponentStateInput {
             component: self.address.clone(),
         };
-        let output: GetComponentStateOutput = syscall(GET_COMPONENT_STATE, input);
+        let output: GetComponentStateOutput = call_kernel(GET_COMPONENT_STATE, input);
 
         radix_decode(&output.state)
     }
 
-    pub fn put_state<T: Serialize>(&self, state: T) {
+    pub fn put_state<T: Encode>(&self, state: T) {
         let input = PutComponentStateInput {
             component: self.address.clone(),
             state: radix_encode(&state),
         };
-        let _: PutComponentStateOutput = syscall(PUT_COMPONENT_STATE, input);
+        let _: PutComponentStateOutput = call_kernel(PUT_COMPONENT_STATE, input);
     }
 
     pub fn address(&self) -> Address {

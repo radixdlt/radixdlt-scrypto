@@ -3,11 +3,6 @@ use alloc::vec::Vec;
 use core::mem::forget;
 use core::ptr::copy;
 
-extern "C" {
-    /// Entrance to radix kernel.
-    pub fn radix_kernel(op: u32, input_ptr: *const u8, input_len: usize) -> *mut u8;
-}
-
 //================
 // Note that there is already an API for accessing global allocator, but it requires nightly build atm.
 // See: https://doc.rust-lang.org/nightly/std/alloc/trait.Allocator.html
@@ -61,7 +56,7 @@ pub extern "C" fn radix_free(ptr: *mut u8) {
 
 #[cfg(test)]
 mod tests {
-    use crate::kernel::*;
+    use super::*;
 
     #[test]
     fn test_memory_allocation() {

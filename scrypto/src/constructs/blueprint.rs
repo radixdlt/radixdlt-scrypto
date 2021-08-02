@@ -2,13 +2,13 @@ extern crate alloc;
 use alloc::string::ToString;
 use alloc::vec::Vec;
 
-use serde::{Deserialize, Serialize};
+use sbor::{Decode, Encode};
 
 use crate::kernel::*;
 use crate::types::*;
 
 /// A piece of code that defines the structure and methods of components.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Encode, Decode)]
 pub struct Blueprint {
     address: Address,
 }
@@ -24,7 +24,7 @@ impl Blueprint {
         let input = PublishBlueprintInput {
             code: code.to_vec(),
         };
-        let output: PublishBlueprintOutput = syscall(PUBLISH_BLUEPRINT, input);
+        let output: PublishBlueprintOutput = call_kernel(PUBLISH_BLUEPRINT, input);
 
         Self::from(output.blueprint)
     }
@@ -41,7 +41,7 @@ impl Blueprint {
             method: method.to_string(),
             args,
         };
-        let output: CallBlueprintOutput = syscall(CALL_BLUEPRINT, input);
+        let output: CallBlueprintOutput = call_kernel(CALL_BLUEPRINT, input);
 
         output.rtn
     }

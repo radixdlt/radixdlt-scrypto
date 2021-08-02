@@ -5,14 +5,12 @@ use alloc::string::ToString;
 use core::convert::TryInto;
 use core::fmt;
 
-use serde::{Deserialize, Serialize};
+use sbor::{Decode, Encode};
 
 use crate::utils::*;
 
 /// Represents a 32-byte hash digest.
-#[derive(Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
-#[serde(from = "String")]
-#[serde(into = "String")]
+#[derive(Clone, PartialEq, Eq, Hash, Encode, Decode)]
 pub struct Hash {
     raw: [u8; 32],
 }

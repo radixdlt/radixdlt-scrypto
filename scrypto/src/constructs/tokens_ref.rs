@@ -1,11 +1,11 @@
-use serde::{Deserialize, Serialize};
+use sbor::{Decode, Encode};
 
 use crate::constructs::*;
 use crate::kernel::*;
 use crate::types::*;
 
 /// A borrowed reference to a `Tokens` bucket.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Encode, Decode)]
 pub struct TokensRef {
     rid: RID,
 }
@@ -21,7 +21,7 @@ impl TokensRef {
         let input = GetTokensAmountInput {
             tokens: self.rid.clone(),
         };
-        let output: GetTokensAmountOutput = syscall(GET_TOKENS_AMOUNT, input);
+        let output: GetTokensAmountOutput = call_kernel(GET_TOKENS_AMOUNT, input);
 
         output.amount
     }
@@ -30,7 +30,7 @@ impl TokensRef {
         let input = GetTokensResourceInput {
             tokens: self.rid.clone(),
         };
-        let output: GetTokensResourceOutput = syscall(GET_TOKENS_RESOURCE, input);
+        let output: GetTokensResourceOutput = call_kernel(GET_TOKENS_RESOURCE, input);
 
         output.resource.into()
     }
@@ -39,6 +39,6 @@ impl TokensRef {
         let input = ReturnTokensInput {
             reference: self.rid.clone(),
         };
-        let _: ReturnTokensOutput = syscall(RETURN_TOKENS, input);
+        let _: ReturnTokensOutput = call_kernel(RETURN_TOKENS, input);
     }
 }
