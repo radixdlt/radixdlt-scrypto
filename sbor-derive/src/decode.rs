@@ -152,7 +152,7 @@ pub fn handle_decode(input: TokenStream) -> TokenStream {
                         decoder.check_type(sbor::TYPE_ENUM)?;
                         decoder.check_name(#ident_str)?;
 
-                        let index = decoder.decode_index()?;
+                        let index = decoder.read_index()?;
                         match index {
                             #(#match_arms,)*
                             _ => Err(format!("Unknown enum index: {}", index)),

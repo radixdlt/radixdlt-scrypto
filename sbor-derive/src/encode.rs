@@ -33,13 +33,13 @@ pub fn handle_encode(input: TokenStream) -> TokenStream {
                         fn encode(&self, encoder: &mut sbor::Encoder) {
                             use sbor::{self, Encode};
 
-                            encoder.encode_type(sbor::TYPE_STRUCT);
-                            encoder.encode_name(#ident_str);
+                            encoder.write_type(sbor::TYPE_STRUCT);
+                            encoder.write_name(#ident_str);
 
-                            encoder.encode_type(sbor::TYPE_FIELDS_NAMED);
-                            encoder.encode_len(#n);
+                            encoder.write_type(sbor::TYPE_FIELDS_NAMED);
+                            encoder.write_len(#n);
                             #(
-                                encoder.encode_name(#names);
+                                encoder.write_name(#names);
                                 self.#idents.encode(encoder);
                             )*
                         }
@@ -55,11 +55,11 @@ pub fn handle_encode(input: TokenStream) -> TokenStream {
                         fn encode(&self, encoder: &mut sbor::Encoder) {
                             use sbor::{self, Encode};
 
-                            encoder.encode_type(sbor::TYPE_STRUCT);
-                            encoder.encode_name(#ident_str);
+                            encoder.write_type(sbor::TYPE_STRUCT);
+                            encoder.write_name(#ident_str);
 
-                            encoder.encode_type(sbor::TYPE_FIELDS_UNNAMED);
-                            encoder.encode_len(#n);
+                            encoder.write_type(sbor::TYPE_FIELDS_UNNAMED);
+                            encoder.write_len(#n);
                             #(self.#ith.encode(encoder);)*
                         }
                     }
@@ -69,9 +69,9 @@ pub fn handle_encode(input: TokenStream) -> TokenStream {
                 quote! {
                     impl sbor::Encode for #ident {
                         fn encode(&self, encoder: &mut sbor::Encoder) {
-                            encoder.encode_type(sbor::TYPE_STRUCT);
-                            encoder.encode_name(#ident_str);
-                            encoder.encode_type(sbor::TYPE_FIELDS_UNIT);
+                            encoder.write_type(sbor::TYPE_STRUCT);
+                            encoder.write_name(#ident_str);
+                            encoder.write_type(sbor::TYPE_FIELDS_UNIT);
                         }
                     }
                 }
@@ -94,12 +94,12 @@ pub fn handle_encode(input: TokenStream) -> TokenStream {
                         let n = named.len();
                         quote! {
                             Self::#v_id {#(#idents),*} => {
-                                encoder.encode_index(#v_ith);
-                                encoder.encode_name(#v_name);
-                                encoder.encode_type(sbor::TYPE_FIELDS_NAMED);
-                                encoder.encode_len(#n);
+                                encoder.write_index(#v_ith);
+                                encoder.write_name(#v_name);
+                                encoder.write_type(sbor::TYPE_FIELDS_NAMED);
+                                encoder.write_len(#n);
                                 #(
-                                    encoder.encode_name(#names);
+                                    encoder.write_name(#names);
                                     #idents2.encode(encoder);
                                 )*
                             }
@@ -111,10 +111,10 @@ pub fn handle_encode(input: TokenStream) -> TokenStream {
                         let args2 = (0..n).map(|i| format_ident!("a{}", i));
                         quote! {
                             Self::#v_id (#(#args),*) => {
-                                encoder.encode_index(#v_ith);
-                                encoder.encode_name(#v_name);
-                                encoder.encode_type(sbor::TYPE_FIELDS_UNNAMED);
-                                encoder.encode_len(#n);
+                                encoder.write_index(#v_ith);
+                                encoder.write_name(#v_name);
+                                encoder.write_type(sbor::TYPE_FIELDS_UNNAMED);
+                                encoder.write_len(#n);
                                 #(#args2.encode(encoder);)*
                             }
                         }
@@ -122,9 +122,9 @@ pub fn handle_encode(input: TokenStream) -> TokenStream {
                     syn::Fields::Unit => {
                         quote! {
                             Self::#v_id => {
-                                encoder.encode_index(#v_ith);
-                                encoder.encode_name(#v_name);
-                                encoder.encode_type(sbor::TYPE_FIELDS_UNIT);
+                                encoder.write_index(#v_ith);
+                                encoder.write_name(#v_name);
+                                encoder.write_type(sbor::TYPE_FIELDS_UNIT);
                             }
                         }
                     }
@@ -136,8 +136,8 @@ pub fn handle_encode(input: TokenStream) -> TokenStream {
                     fn encode(&self, encoder: &mut sbor::Encoder) {
                         use sbor::{self, Encode};
 
-                        encoder.encode_type(sbor::TYPE_ENUM);
-                        encoder.encode_name(#ident_str);
+                        encoder.write_type(sbor::TYPE_ENUM);
+                        encoder.write_name(#ident_str);
 
                         match self {
                             #(#match_arms),*
