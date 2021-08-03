@@ -1,9 +1,11 @@
-#![cfg_attr(not(test), no_main)]
+// There is no main function in Scrypto.
+#![no_main]
+
 use scrypto::*;
 
 component! {
     struct Greeting {
-        counter: u32
+        counter:  u32
     }
 
     impl Greeting {

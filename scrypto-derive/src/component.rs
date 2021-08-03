@@ -92,6 +92,7 @@ pub fn handle_component(input: TokenStream) -> TokenStream {
         pub extern "C" fn #abi_ident() -> *mut u8 {
             extern crate alloc;
             use alloc::string::ToString;
+            use alloc::vec;
             use sbor::{self, Describe};
 
             let output = scrypto::abi::Component {
@@ -476,6 +477,7 @@ mod tests {
                 pub extern "C" fn Test_abi() -> *mut u8 {
                     extern crate alloc;
                     use alloc::string::ToString;
+                    use alloc::vec;
                     use sbor::{self, Describe};
                     let output = scrypto::abi::Component {
                         name: "Test".to_string(),

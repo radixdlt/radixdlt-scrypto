@@ -18,4 +18,8 @@ echo "Testing with no_std"
 (cd scrypto; cargo test --no-default-features --features alloc)
 (cd scrypto-tests; cargo test --no-default-features --features alloc)
 
+echo "Testing examples"
+(cd examples/helloworld; cargo build --target wasm32-unknown-unknown)
+(cd examples/no_std; cargo build --target wasm32-unknown-unknown)
+
 echo "Congrats! All tests passed."
