@@ -36,14 +36,14 @@ impl Encoder {
         Self::new(256, false)
     }
 
-    #[inline(always)]
+    #[inline]
     pub fn write_type(&mut self, ty: u8) {
         if self.with_metadata {
             self.buf.push(ty);
         }
     }
 
-    #[inline(always)]
+    #[inline]
     pub fn write_name(&mut self, value: &str) {
         if self.with_metadata {
             self.write_type(TYPE_STRING);
@@ -52,22 +52,22 @@ impl Encoder {
         }
     }
 
-    #[inline(always)]
+    #[inline]
     pub fn write_len(&mut self, len: usize) {
         self.buf.extend(&(len as u16).to_le_bytes());
     }
 
-    #[inline(always)]
+    #[inline]
     pub fn write_index(&mut self, len: usize) {
         self.buf.push(len as u8);
     }
 
-    #[inline(always)]
+    #[inline]
     pub fn write_u8(&mut self, len: u8) {
         self.buf.push(len as u8);
     }
 
-    #[inline(always)]
+    #[inline]
     pub fn write_slice(&mut self, slice: &[u8]) {
         self.buf.extend(slice);
     }

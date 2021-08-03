@@ -58,12 +58,12 @@ impl<'de> Decoder<'de> {
         Self::new(input, false)
     }
 
-    #[inline(always)]
+    #[inline]
     pub fn remaining(&self) -> usize {
         self.input.len() - self.offset
     }
 
-    #[inline(always)]
+    #[inline]
     pub fn require(&self, n: usize) -> Result<(), DecodeError> {
         if self.remaining() < n {
             Err(DecodeError::Underflow {
@@ -75,7 +75,7 @@ impl<'de> Decoder<'de> {
         }
     }
 
-    #[inline(always)]
+    #[inline]
     pub fn read_u8(&mut self) -> Result<u8, DecodeError> {
         self.require(1)?;
         let result = self.input[self.offset];
@@ -83,7 +83,7 @@ impl<'de> Decoder<'de> {
         Ok(result)
     }
 
-    #[inline(always)]
+    #[inline]
     pub fn read_bytes(&mut self, n: usize) -> Result<&'de [u8], DecodeError> {
         self.require(n)?;
         let slice = &self.input[self.offset..self.offset + n];
@@ -91,24 +91,24 @@ impl<'de> Decoder<'de> {
         Ok(slice)
     }
 
-    #[inline(always)]
+    #[inline]
     pub fn read_type(&mut self) -> Result<u8, DecodeError> {
         self.read_u8()
     }
 
-    #[inline(always)]
+    #[inline]
     pub fn read_len(&mut self) -> Result<usize, DecodeError> {
         let mut bytes = [0u8; 2];
         bytes.copy_from_slice(&self.read_bytes(2)?[..]);
         Ok(u16::from_le_bytes(bytes) as usize)
     }
 
-    #[inline(always)]
+    #[inline]
     pub fn read_index(&mut self) -> Result<u8, DecodeError> {
         self.read_u8()
     }
 
-    #[inline(always)]
+    #[inline]
     pub fn check_type(&mut self, expected: u8) -> Result<(), DecodeError> {
         if self.with_metadata {
             let ty = self.read_type()?;
@@ -123,7 +123,7 @@ impl<'de> Decoder<'de> {
         Ok(())
     }
 
-    #[inline(always)]
+    #[inline]
     pub fn check_name(&mut self, expected: &str) -> Result<(), DecodeError> {
         if self.with_metadata {
             self.check_type(TYPE_STRING)?;
@@ -141,7 +141,7 @@ impl<'de> Decoder<'de> {
         Ok(())
     }
 
-    #[inline(always)]
+    #[inline]
     pub fn check_len(&mut self, expected: usize) -> Result<(), DecodeError> {
         let len = self.read_len()?;
         if len != expected {
