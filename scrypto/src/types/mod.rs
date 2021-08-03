@@ -45,9 +45,9 @@ mod tests {
             rid: RID::new(ResourceKind::Badges, "id".to_string()),
             value: 1000.into(),
         };
-        let bytes = radix_encode(&obj);
-        let obj2: Test = radix_decode(&bytes);
-        let bytes2 = radix_encode(&obj2);
+        let bytes = scrypto_encode(&obj);
+        let obj2: Test = scrypto_decode(&bytes);
+        let bytes2 = scrypto_encode(&obj2);
         assert_eq!(bytes, bytes2);
     }
 }

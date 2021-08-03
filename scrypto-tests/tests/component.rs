@@ -43,9 +43,9 @@ fn test_simple_component() {
 #[test]
 fn test_simple_component_abi() {
     let ptr = Simple_abi();
-    let bytes = radix_copy(ptr);
-    radix_free(ptr);
-    let abi: scrypto::abi::Component = radix_decode(&bytes);
+    let bytes = scrypto_copy(ptr);
+    scrypto_free(ptr);
+    let abi: scrypto::abi::Component = scrypto_decode(&bytes);
 
     json_eq(
         json!({
@@ -96,5 +96,5 @@ fn test_simple_component_abi() {
 
 #[no_mangle]
 pub extern "C" fn kernel_main(_op: u32, _input_ptr: *const u8, _input_len: usize) -> *mut u8 {
-    radix_alloc(0)
+    scrypto_alloc(0)
 }

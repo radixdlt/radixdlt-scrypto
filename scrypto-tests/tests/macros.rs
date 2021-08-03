@@ -4,7 +4,7 @@ extern crate alloc;
 use alloc::string::ToString;
 use alloc::vec::Vec;
 
-use scrypto::buffer::{radix_alloc, radix_decode, radix_encode};
+use scrypto::buffer::{scrypto_alloc, scrypto_decode, scrypto_encode};
 use scrypto::constructs::{Blueprint, Component};
 use scrypto::kernel::*;
 use scrypto::types::Address;
@@ -28,25 +28,25 @@ pub extern "C" fn kernel_main(op: u32, input_ptr: *const u8, input_len: usize) -
 
     match op {
         EMIT_LOG => {
-            let input: EmitLogInput = radix_decode(&input_bytes);
+            let input: EmitLogInput = scrypto_decode(&input_bytes);
             assert_eq!(input.message, LOG_MESSAGE);
 
             let output = EmitLogOutput {};
-            output_bytes = radix_encode(&output);
+            output_bytes = scrypto_encode(&output);
         }
         CALL_BLUEPRINT => {
-            let input: CallBlueprintInput = radix_decode(&input_bytes);
+            let input: CallBlueprintInput = scrypto_decode(&input_bytes);
             assert_eq!(input.blueprint, Address::from(BLUEPRINT_ADDRESS));
             assert_eq!(input.component, COMPONENT_NAME);
             assert_eq!(input.method, COMPONENT_METHOD);
 
             let output = CallBlueprintOutput {
-                rtn: radix_encode(&RETURN),
+                rtn: scrypto_encode(&RETURN),
             };
-            output_bytes = radix_encode(&output);
+            output_bytes = scrypto_encode(&output);
         }
         GET_COMPONENT_INFO => {
-            let input: GetComponentInfoInput = radix_decode(&input_bytes);
+            let input: GetComponentInfoInput = scrypto_decode(&input_bytes);
             assert_eq!(input.component, Address::from(COMPONENT_ADDRESS));
 
             let output = GetComponentInfoOutput {
@@ -55,12 +55,12 @@ pub extern "C" fn kernel_main(op: u32, input_ptr: *const u8, input_len: usize) -
                     kind: COMPONENT_NAME.to_string(),
                 }),
             };
-            output_bytes = radix_encode(&output);
+            output_bytes = scrypto_encode(&output);
         }
         _ => panic!("Unexpected operation: {}", op),
     }
 
-    let output_ptr = radix_alloc(output_bytes.len());
+    let output_ptr = scrypto_alloc(output_bytes.len());
     unsafe {
         core::ptr::copy(output_bytes.as_ptr(), output_ptr, output_bytes.len());
     }

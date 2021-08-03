@@ -4,7 +4,7 @@ extern crate alloc;
 use alloc::string::String;
 use alloc::vec::Vec;
 
-use scrypto::buffer::radix_alloc;
+use scrypto::buffer::scrypto_alloc;
 use scrypto::import;
 
 // base directory: `scrypto-derive`
@@ -26,5 +26,5 @@ fn test_import_from_abi() {
 
 #[no_mangle]
 pub extern "C" fn kernel_main(_op: u32, _input_ptr: *const u8, _input_len: usize) -> *mut u8 {
-    radix_alloc(0)
+    scrypto_alloc(0)
 }

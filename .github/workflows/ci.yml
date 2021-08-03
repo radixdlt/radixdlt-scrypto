@@ -50,3 +50,11 @@ jobs:
     - name: Run tests (no_std)
       run: cargo test --verbose --no-default-features --features alloc
       working-directory: scrypto-tests
+  scrypto-examples:
+    name: Run examples
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Run tests in helloworld
+      run: cargo test --verbose
+      working-directory: examples/helloworld

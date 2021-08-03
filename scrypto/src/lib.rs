@@ -31,7 +31,7 @@ macro_rules! call_blueprint {
         {
             extern crate alloc;
             let rtn = scrypto::constructs::Blueprint::call(&$blueprint, $component, $method, alloc::vec::Vec::new());
-            scrypto::buffer::radix_decode::<$rtn_type>(&rtn)
+            scrypto::buffer::scrypto_decode::<$rtn_type>(&rtn)
         }
     };
 
@@ -39,9 +39,9 @@ macro_rules! call_blueprint {
         {
             extern crate alloc;
             let mut args = alloc::vec::Vec::new();
-            $(args.push(scrypto::buffer::radix_encode(&$args));)+
+            $(args.push(scrypto::buffer::scrypto_encode(&$args));)+
             let rtn = scrypto::constructs::Blueprint::call(&$blueprint, $component, $method, args);
-            scrypto::buffer::radix_decode::<$rtn_type>(&rtn)
+            scrypto::buffer::scrypto_decode::<$rtn_type>(&rtn)
         }
     };
 }
@@ -53,7 +53,7 @@ macro_rules! call_component {
         {
             extern crate alloc;
             let rtn = scrypto::constructs::Component::call(&$component, $method, alloc::vec::Vec::new());
-            scrypto::buffer::radix_decode::<$rtn_type>(&rtn)
+            scrypto::buffer::scrypto_decode::<$rtn_type>(&rtn)
         }
     };
 
@@ -61,9 +61,9 @@ macro_rules! call_component {
         {
             extern crate alloc;
             let mut args = alloc::vec::Vec::new();
-            $(args.push(scrypto::buffer::radix_encode(&$args));)+
+            $(args.push(scrypto::buffer::scrypto_encode(&$args));)+
             let rtn = scrypto::constructs::Component::call(&$component, $method, args);
-            scrypto::buffer::radix_decode::<$rtn_type>(&rtn)
+            scrypto::buffer::scrypto_decode::<$rtn_type>(&rtn)
         }
     };
 }

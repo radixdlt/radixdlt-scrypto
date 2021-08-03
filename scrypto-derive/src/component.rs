@@ -63,11 +63,11 @@ pub fn handle_component(input: TokenStream) -> TokenStream {
         #[no_mangle]
         pub extern "C" fn #dispatcher_ident(input_ptr: *mut u8) -> *mut u8 {
             // copy and release
-            let input_bytes = scrypto::buffer::radix_copy(input_ptr);
-            scrypto::buffer::radix_free(input_ptr);
+            let input_bytes = scrypto::buffer::scrypto_copy(input_ptr);
+            scrypto::buffer::scrypto_free(input_ptr);
 
             // deserialize the input
-            let input = scrypto::buffer::radix_decode::<scrypto::abi::CallInput>(
+            let input = scrypto::buffer::scrypto_decode::<scrypto::abi::CallInput>(
                 &input_bytes,
             );
 
@@ -82,11 +82,11 @@ pub fn handle_component(input: TokenStream) -> TokenStream {
 
             // serialize the output
             let output = scrypto::abi::CallOutput { rtn };
-            let output_bytes = scrypto::buffer::radix_encode(&output);
+            let output_bytes = scrypto::buffer::scrypto_encode(&output);
 
             // return the output wrapped in a radix-style buffer
             unsafe {
-                let ptr = scrypto::buffer::radix_alloc(output_bytes.len());
+                let ptr = scrypto::buffer::scrypto_alloc(output_bytes.len());
                 core::ptr::copy(output_bytes.as_ptr(), ptr, output_bytes.len());
                 ptr
             }
@@ -106,11 +106,11 @@ pub fn handle_component(input: TokenStream) -> TokenStream {
             };
 
             // serialize the output
-            let output_bytes = scrypto::buffer::radix_encode(&output);
+            let output_bytes = scrypto::buffer::scrypto_encode(&output);
 
             // return the output wrapped in a radix-style buffer
             unsafe {
-                let ptr = scrypto::buffer::radix_alloc(output_bytes.len());
+                let ptr = scrypto::buffer::scrypto_alloc(output_bytes.len());
                 core::ptr::copy(output_bytes.as_ptr(), ptr, output_bytes.len());
                 ptr
             }
@@ -157,7 +157,7 @@ fn generate_dispatcher(com_ident: &Ident, items: &Vec<ImplItem>) -> (Vec<Expr>, 
 
                                 // Generate an `Arg` and a loading `Stmt` for the i-th argument
                                 let stmt: Stmt = parse_quote! {
-                                    let #arg = scrypto::buffer::radix_decode::<scrypto::constructs::Component>(&input.args[#i]);
+                                    let #arg = scrypto::buffer::scrypto_decode::<scrypto::constructs::Component>(&input.args[#i]);
                                 };
                                 trace!("Stmt: {}", quote! { #stmt });
                                 args.push(parse_quote! { & #mutability state });
@@ -180,7 +180,7 @@ fn generate_dispatcher(com_ident: &Ident, items: &Vec<ImplItem>) -> (Vec<Expr>, 
                                 // Generate an `Arg` and a loading `Stmt` for the i-th argument
                                 let ty = &t.ty;
                                 let stmt: Stmt = parse_quote! {
-                                    let #arg = scrypto::buffer::radix_decode::<#ty>(&input.args[#i]);
+                                    let #arg = scrypto::buffer::scrypto_decode::<#ty>(&input.args[#i]);
                                 };
                                 trace!("Stmt: {}", quote! { #stmt });
                                 args.push(parse_quote! { #arg });
@@ -198,7 +198,7 @@ fn generate_dispatcher(com_ident: &Ident, items: &Vec<ImplItem>) -> (Vec<Expr>, 
                     }
                     // invoke the function
                     let stmt: Stmt = parse_quote! {
-                        rtn = scrypto::buffer::radix_encode(
+                        rtn = scrypto::buffer::scrypto_encode(
                             &#com_ident::#fn_ident(#(#args),*)
                         );
                     };
