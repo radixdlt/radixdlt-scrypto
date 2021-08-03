@@ -11,10 +11,10 @@ proc-macro2 = { version = "1.0" }
 syn = { version = "1.0", features = ["full", "extra-traits"] }
 quote = { version = "1.0" }
 uuid = { version = "0.8", features = ["v4"] }
-serde = { version = "1.0", features = ["derive"] }
-serde_json = { version = "1.0" }
-sbor = { version = "0.1", path = "../sbor", features = ["json", "std"] }
-scrypto-abi = { version = "0.1", path = "../scrypto-abi", features = ["json", "std"] }
+serde = { version = "1.0", default-features = false, features = ["derive", "alloc"] }
+serde_json = { version = "1.0", default-features = false, features = ["alloc"] }
+sbor = { version = "0.1", path = "../sbor", default-features = false, features = ["json", "alloc"] }
+scrypto-abi = { version = "0.1", path = "../scrypto-abi", default-features = false, features = ["json", "alloc"] }
 
 [features]
 trace = []
