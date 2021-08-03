@@ -82,6 +82,8 @@ describe_tuple! { A B C D E F G H I J }
 #[cfg(test)]
 mod tests {
     extern crate alloc;
+    use alloc::boxed::Box;
+    use alloc::string::String;
     use alloc::vec;
 
     use crate::*;

@@ -1,7 +1,14 @@
+#![cfg_attr(not(feature = "std"), no_std)]
+
 mod decode;
 mod describe;
 mod encode;
 mod model;
+
+extern crate alloc;
+use alloc::boxed::Box;
+use alloc::string::String;
+use alloc::vec::Vec;
 
 pub use decode::*;
 pub use describe::*;
@@ -33,6 +40,6 @@ pub fn sbor_decode_no_metadata<'de, T: Decode>(buf: &'de [u8]) -> Result<T, Deco
 extern crate sbor_derive;
 pub use sbor_derive::*;
 
-// So that I can ues the macros within this crate.
+// This is to make derives work within this crate.
 // See: https://users.rust-lang.org/t/how-can-i-use-my-derive-macro-from-the-crate-that-declares-the-trait/60502
 extern crate self as sbor;

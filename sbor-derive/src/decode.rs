@@ -186,11 +186,9 @@ pub fn handle_decode(input: TokenStream) -> TokenStream {
 
 #[cfg(test)]
 mod tests {
-    extern crate alloc;
-    use alloc::str::FromStr;
+    use super::*;
     use proc_macro2::TokenStream;
-
-    use super::handle_decode;
+    use std::str::FromStr;
 
     #[test]
     fn test_decode_struct() {

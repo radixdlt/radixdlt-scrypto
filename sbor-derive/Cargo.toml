@@ -7,12 +7,10 @@ edition = "2018"
 proc-macro = true
 
 [dependencies]
-proc-macro2 = "1.0"
+proc-macro2 = { version = "1.0" }
 syn = { version = "1.0", features = ["full", "extra-traits"] }
-quote = "1.0"
+quote = { version = "1.0" }
 uuid = { version = "0.8", features = ["v4"] }
 
 [features]
-std = []
-alloc = []
 trace = []

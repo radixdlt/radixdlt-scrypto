@@ -4,27 +4,18 @@ version = "0.1.0"
 edition = "2018"
 
 [dependencies]
-# Uint256
 uint = { version = "0.9", default-features = false }
-
-# SHA256
 sha2 = { version = "0.9", default-features = false }
-
-# Serialization
 sbor = { version = "0.1", path = "../sbor", default-features = false }
-
-# Scrypto ABI
 scrypto-abi = { version = "0.1", path = "../scrypto-abi", default-features = false, optional = true }
-
-# Scrypto Derive
 scrypto-derive = { version = "0.1", path = "../scrypto-derive", default-features = false, optional = true }
 
 [features]
 default = ["std", "abi", "derive"]
 
 # You can use either `std` or `alloc`, depnding on your environment
-std = ["sbor/std", "scrypto-derive/std"]
-alloc = ["sbor/alloc", "scrypto-derive/alloc"]
+std = ["sbor/std", "scrypto-abi/std"]
+alloc = ["sbor/alloc", "scrypto-abi/alloc"]
 
 # Turn on this feature to enable component ABI.
 abi = ["scrypto-abi"]
@@ -34,3 +25,6 @@ derive = ["scrypto-derive"]
 
 # Turn on this feature to enable tracing.
 trace = ["scrypto-derive/trace"]
+
+# Enable json annotation
+json = ["sbor/json", "scrypto-abi/json"]

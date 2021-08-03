@@ -1,4 +1,3 @@
-// Turn on `no_std`
 #![cfg_attr(not(feature = "std"), no_std)]
 
 /// Scrypto data encoding/decoding and memory allocation scheme.
@@ -21,11 +20,8 @@ pub mod abi {
 
 // Re-export Scrypto derive.
 #[cfg(feature = "derive")]
-#[allow(unused_imports)]
-#[macro_use]
 extern crate scrypto_derive;
 #[cfg(feature = "derive")]
-#[doc(hidden)]
 pub use scrypto_derive::*;
 
 /// Call a method of a blueprint.

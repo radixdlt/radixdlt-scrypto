@@ -294,7 +294,10 @@ impl<T: Encode> Encode for Box<T> {
 #[cfg(test)]
 mod tests {
     extern crate alloc;
+    use alloc::boxed::Box;
     use alloc::collections::BTreeMap;
+    use alloc::vec;
+    use alloc::vec::Vec;
 
     use super::{Encode, Encoder};
 

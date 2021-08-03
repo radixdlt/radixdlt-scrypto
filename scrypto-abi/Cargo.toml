@@ -4,14 +4,13 @@ version = "0.1.0"
 edition = "2018"
 
 [dependencies]
-sbor = { version = "0.1", path = "../sbor" }
+sbor = { version = "0.1", path = "../sbor", default-features = false }
 serde = { version = "1.0", default-features = false, optional = true }
-serde_json = { version = "1.0", default-features = false, optional = true }
 
 [features]
 default = []
 
-# For JSON annotations, enable either `["json", "std"]` or `["json", "alloc"]`.
-json = ["serde", "serde_json", "serde/derive", "sbor/json"]
-std = ["serde/std", "serde_json/std"]
-alloc = ["serde/alloc", "serde_json/alloc"]
+# Enable serde annotations by `["json", "std"]` or `["json", "alloc"]`
+json = ["serde", "sbor/json"]
+std = ["serde/std"]
+alloc = ["serde/alloc"]

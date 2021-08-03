@@ -87,7 +87,7 @@ pub fn handle_component(input: TokenStream) -> TokenStream {
             // return the output wrapped in a radix-style buffer
             unsafe {
                 let ptr = scrypto::buffer::radix_alloc(output_bytes.len());
-                std::ptr::copy(output_bytes.as_ptr(), ptr, output_bytes.len());
+                core::ptr::copy(output_bytes.as_ptr(), ptr, output_bytes.len());
                 ptr
             }
         }
@@ -111,7 +111,7 @@ pub fn handle_component(input: TokenStream) -> TokenStream {
             // return the output wrapped in a radix-style buffer
             unsafe {
                 let ptr = scrypto::buffer::radix_alloc(output_bytes.len());
-                std::ptr::copy(output_bytes.as_ptr(), ptr, output_bytes.len());
+                core::ptr::copy(output_bytes.as_ptr(), ptr, output_bytes.len());
                 ptr
             }
         }
@@ -409,7 +409,7 @@ fn replace_self_with(t: &Type, name: &str) -> Type {
 #[cfg(test)]
 mod tests {
     #[test]
-    fn it_works() {
-        println!("TODO: Tests are possible with proc_macro2!");
+    fn test_component() {
+        println!("TODO: add tests");
     }
 }

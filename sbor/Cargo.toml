@@ -6,16 +6,14 @@ edition = "2018"
 [dependencies]
 sbor-derive = { version = "0.1", path = "../sbor-derive" }
 serde = { version = "1.0", default-features = false, optional = true }
-serde_json = { version = "1.0", default-features = false, optional = true }
 
 [features]
 default = []
 
-# Enable this feature to turn on tracing.
+# Enable tracing
 trace = ["sbor-derive/trace"]
 
-# For JSON annotations, enable either `["json", "std"]` or `["json", "alloc"]`.
-json = ["serde", "serde_json", "serde/derive"]
-std = ["serde/std", "serde_json/std"]
-alloc = ["serde/alloc", "serde_json/alloc"]
-
+# Enable serde annotations by `["json", "std"]` or `["json", "alloc"]`
+json = ["serde", "serde/derive"]
+std = ["serde/std"]
+alloc = ["serde/alloc"]

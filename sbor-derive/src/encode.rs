@@ -169,11 +169,9 @@ pub fn handle_encode(input: TokenStream) -> TokenStream {
 
 #[cfg(test)]
 mod tests {
-    extern crate alloc;
-    use alloc::str::FromStr;
+    use super::*;
     use proc_macro2::TokenStream;
-
-    use super::handle_encode;
+    use std::str::FromStr;
 
     #[test]
     fn test_encode_struct() {

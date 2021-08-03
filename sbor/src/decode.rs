@@ -1,7 +1,9 @@
 extern crate alloc;
+use alloc::boxed::Box;
 use alloc::collections::BTreeMap;
 use alloc::string::String;
 use alloc::string::ToString;
+use alloc::vec::Vec;
 
 use crate::*;
 
@@ -380,7 +382,11 @@ impl<T: Decode> Decode for Box<T> {
 #[cfg(test)]
 mod tests {
     extern crate alloc;
+    use alloc::boxed::Box;
     use alloc::collections::BTreeMap;
+    use alloc::string::String;
+    use alloc::vec;
+    use alloc::vec::Vec;
 
     use super::{Decode, Decoder};
 

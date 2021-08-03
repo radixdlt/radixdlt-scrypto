@@ -6,30 +6,19 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  test-stdlib:
-    name: Test standard library
+  sbor-unit-tests:
+    name: Run SBOR unit tests
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
     - name: Run tests
       run: cargo test --verbose
-      working-directory: scrypto
+      working-directory: sbor
     - name: Run tests (no_std)
-      run: cargo test --verbose --no-default-features --features alloc
-      working-directory: scrypto
-  test-abi:
-    name: Test ABI
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v2
-    - name: Run tests
-      run: cargo test --verbose
-      working-directory: scrypto-abi
-    - name: Run tests (no_std)
-      run: cargo test --verbose --no-default-features --features alloc
-      working-directory: scrypto-abi
-  test-sbor:
-    name: Test SBOR
+      run: cargo test --verbose --no-default-features --features json,alloc
+      working-directory: sbor
+  sbor-integration-tests:
+    name: Run SBOR integration tests
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
@@ -39,8 +28,19 @@ jobs:
     - name: Run tests (no_std)
       run: cargo test --verbose --no-default-features --features alloc
       working-directory: sbor-tests
-  integration:
-    name: Run integration tests
+  scrypto-unit-tests:
+    name: Run Scrypto unit tests
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Run tests
+      run: cargo test --verbose
+      working-directory: scrypto
+    - name: Run tests (no_std)
+      run: cargo test --verbose --no-default-features --features alloc
+      working-directory: scrypto
+  scrypto-integration-tests:
+    name: Run Scrypto integration tests
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2

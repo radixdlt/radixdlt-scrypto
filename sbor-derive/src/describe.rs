@@ -72,6 +72,9 @@ pub fn handle_describe(input: TokenStream) -> TokenStream {
                 quote! {
                     impl sbor::Describe for #ident {
                         fn describe() -> sbor::Type {
+                            extern crate alloc;
+                            use alloc::string::ToString;
+
                             sbor::Type::Struct {
                                 name: #ident_str.to_string(),
                                 fields: sbor::FieldTypes::Unit,
@@ -161,11 +164,9 @@ pub fn handle_describe(input: TokenStream) -> TokenStream {
 
 #[cfg(test)]
 mod tests {
-    extern crate alloc;
-    use alloc::str::FromStr;
+    use super::*;
     use proc_macro2::TokenStream;
-
-    use super::handle_describe;
+    use std::str::FromStr;
 
     #[test]
     fn test_describe_struct() {

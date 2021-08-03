@@ -226,3 +226,11 @@ fn get_native_type(ty: &sbor::Type) -> (Type, Vec<Item>) {
 
     (t, items)
 }
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn test_import() {
+        println!("TODO: add tests");
+    }
+}

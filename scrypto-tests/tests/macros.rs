@@ -1,4 +1,7 @@
+#![cfg_attr(not(feature = "std"), no_std)]
+
 extern crate alloc;
+use alloc::string::ToString;
 use alloc::vec::Vec;
 
 use scrypto::buffer::{radix_alloc, radix_decode, radix_encode};
