@@ -202,8 +202,8 @@ impl<T: Encode> Encode for Option<T> {
 impl<T: Encode, const N: usize> Encode for [T; N] {
     #[inline]
     fn encode_value(&self, encoder: &mut Encoder) {
-        encoder.write_len(self.len());
         encoder.write_type(T::sbor_type());
+        encoder.write_len(self.len());
         for v in self {
             v.encode_value(encoder);
         }
@@ -218,8 +218,8 @@ impl<T: Encode, const N: usize> Encode for [T; N] {
 impl<T: Encode> Encode for Vec<T> {
     #[inline]
     fn encode_value(&self, encoder: &mut Encoder) {
-        encoder.write_len(self.len());
         encoder.write_type(T::sbor_type());
+        encoder.write_len(self.len());
         for v in self {
             v.encode_value(encoder);
         }
@@ -343,8 +343,8 @@ mod tests {
                 11, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // u128
                 12, 5, 0, 104, 101, 108, 108, 111, // string
                 13, 1, 9, 1, 0, 0, 0, // option
-                14, 3, 0, 9, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, // array
-                15, 3, 0, 9, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, // vector
+                14, 9, 3, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, // array
+                15, 9, 3, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, // vector
                 16, 2, 0, 9, 1, 0, 0, 0, 9, 2, 0, 0, 0, // tuple
                 22, 2, 0, 7, 7, 1, 2, 3, 4, // b tree map
                 23, 7, 1, // box

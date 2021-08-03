@@ -43,10 +43,13 @@ impl<T: Describe> Describe for Option<T> {
     }
 }
 
-impl<T: Describe> Describe for [T] {
+impl<T: Describe, const N: usize> Describe for [T; N] {
     fn describe() -> Type {
         let ty = T::describe();
-        Type::Array { base: Box::new(ty) }
+        Type::Array {
+            base: Box::new(ty),
+            length: N as u16,
+        }
     }
 }
 
@@ -118,9 +121,10 @@ mod tests {
     pub fn test_array() {
         assert_eq!(
             Type::Array {
-                base: Box::new(Type::U8)
+                base: Box::new(Type::U8),
+                length: 3,
             },
-            <[u8]>::describe(),
+            <[u8; 3]>::describe(),
         );
     }
 

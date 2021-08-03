@@ -2,6 +2,7 @@
 
 extern crate alloc;
 use alloc::string::String;
+use alloc::string::ToString;
 use alloc::vec::Vec;
 
 use scrypto::buffer::scrypto_alloc;
@@ -20,8 +21,9 @@ fn test_import_from_abi() {
     let arg3 = Vec::<String>::new();
     let arg4 = 5;
     let arg5 = Hello::A { x: 1 };
+    let arg6 = ["a".to_string(), "b".to_string()];
 
-    let _rtn = instance.calculate_volume(arg1, arg2, arg3, arg4, arg5);
+    let _rtn = instance.calculate_volume(arg1, arg2, arg3, arg4, arg5, arg6);
 }
 
 #[no_mangle]

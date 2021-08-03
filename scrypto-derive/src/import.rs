@@ -162,8 +162,12 @@ fn get_native_type(ty: &sbor::Type) -> (Type, Vec<Item>) {
 
             parse_quote! { ( #(#types),* ) }
         }
-        sbor::Type::Array { .. } => {
-            todo!("Add support for [T]");
+        sbor::Type::Array { base, length } => {
+            let (new_type, new_items) = get_native_type(base);
+            items.extend(new_items);
+
+            let n = *length as usize;
+            parse_quote! { [#new_type; #n] }
         }
         sbor::Type::Vec { base } => {
             let (new_type, new_items) = get_native_type(base);

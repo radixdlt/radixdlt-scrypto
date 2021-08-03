@@ -64,6 +64,13 @@
                             "type": "Unit"
                         }
                     }
+                },
+                {
+                    "type": "Array",
+                    "base": {
+                        "type": "String"
+                    },
+                    "length": 2
                 }
             ],
             "output": {

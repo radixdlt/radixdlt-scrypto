@@ -277,8 +277,8 @@ impl<T: Decode> Decode for Option<T> {
 impl<T: Decode, const N: usize> Decode for [T; N] {
     #[inline]
     fn decode_value<'de>(decoder: &mut Decoder<'de>) -> Result<Self, DecodeError> {
-        decoder.check_len(N)?;
         decoder.check_type(T::sbor_type())?;
+        decoder.check_len(N)?;
 
         let mut x = core::mem::MaybeUninit::<[T; N]>::uninit();
         let arr = unsafe { &mut *x.as_mut_ptr() };
@@ -297,8 +297,8 @@ impl<T: Decode, const N: usize> Decode for [T; N] {
 impl<T: Decode> Decode for Vec<T> {
     #[inline]
     fn decode_value<'de>(decoder: &mut Decoder<'de>) -> Result<Self, DecodeError> {
-        let len = decoder.read_len()?;
         decoder.check_type(T::sbor_type())?;
+        let len = decoder.read_len()?;
 
         let mut result = Vec::<T>::with_capacity(len); // Lengths are u16, so it's safe to pre-allocate.
         for _ in 0..len {
@@ -406,8 +406,8 @@ mod tests {
             11, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // u128
             12, 5, 0, 104, 101, 108, 108, 111, // string
             13, 1, 9, 1, 0, 0, 0, // option
-            14, 3, 0, 9, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, // array
-            15, 3, 0, 9, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, // vector
+            14, 9, 3, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, // array
+            15, 9, 3, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, // vector
             16, 2, 0, 9, 1, 0, 0, 0, 9, 2, 0, 0, 0, // tuple
             22, 2, 0, 7, 7, 1, 2, 3, 4, // b tree map
             23, 7, 1, // box
