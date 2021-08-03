@@ -407,7 +407,7 @@ mod tests {
     use super::*;
     use proc_macro2::TokenStream;
 
-    fn code_eq(a: TokenStream, b: TokenStream) {
+    fn assert_code_eq(a: TokenStream, b: TokenStream) {
         assert_eq!(a.to_string(), b.to_string());
     }
 
@@ -419,7 +419,7 @@ mod tests {
         .unwrap();
         let output = handle_component(input);
 
-        code_eq(
+        assert_code_eq(
             output,
             quote! {
                 #[derive(Debug, sbor :: Encode, sbor :: Decode, sbor :: Describe)]

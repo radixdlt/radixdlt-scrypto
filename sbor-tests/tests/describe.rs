@@ -4,10 +4,8 @@ extern crate alloc;
 use alloc::vec;
 
 use sbor::Describe;
-use serde_json::json;
-
-mod utils;
-use utils::json_eq;
+use serde::Serialize;
+use serde_json::{json, Value};
 
 #[derive(Describe)]
 pub struct TestStructNamed {
@@ -27,9 +25,15 @@ pub enum TestEnum {
     C { x: u32, y: u32 },
 }
 
+pub fn assert_json_eq<T: Serialize>(actual: T, expected: Value) {
+    let actual_json = serde_json::to_value(&actual).unwrap();
+    assert_eq!(actual_json, expected);
+}
+
 #[test]
 fn test_describe_struct() {
-    json_eq(
+    assert_json_eq(
+        TestStructNamed::describe(),
         json!({
           "type": "Struct",
           "name": "TestStructNamed",
@@ -42,10 +46,10 @@ fn test_describe_struct() {
             }
           }
         }),
-        TestStructNamed::describe(),
     );
 
-    json_eq(
+    assert_json_eq(
+        TestStructUnnamed::describe(),
         json!({
           "type": "Struct",
           "name": "TestStructUnnamed",
@@ -58,10 +62,10 @@ fn test_describe_struct() {
             ]
           }
         }),
-        TestStructUnnamed::describe(),
     );
 
-    json_eq(
+    assert_json_eq(
+        TestStructUnit::describe(),
         json!({
           "type": "Struct",
           "name": "TestStructUnit",
@@ -69,13 +73,13 @@ fn test_describe_struct() {
             "type": "Unit"
           }
         }),
-        TestStructUnit::describe(),
     );
 }
 
 #[test]
 fn test_describe_enum() {
-    json_eq(
+    assert_json_eq(
+        TestEnum::describe(),
         json!({
           "type": "Enum",
           "name": "TestEnum",
@@ -104,6 +108,5 @@ fn test_describe_enum() {
             }
           }
         }),
-        TestEnum::describe(),
     );
 }

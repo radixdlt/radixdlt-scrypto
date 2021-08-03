@@ -170,7 +170,7 @@ mod tests {
     use super::*;
     use proc_macro2::TokenStream;
 
-    fn code_eq(a: TokenStream, b: TokenStream) {
+    fn assert_code_eq(a: TokenStream, b: TokenStream) {
         assert_eq!(a.to_string(), b.to_string());
     }
 
@@ -179,7 +179,7 @@ mod tests {
         let input = TokenStream::from_str("struct Test {a: u32}").unwrap();
         let output = handle_describe(input);
 
-        code_eq(
+        assert_code_eq(
             output,
             quote! {
                 impl sbor::Describe for Test {
@@ -205,7 +205,7 @@ mod tests {
         let input = TokenStream::from_str("enum Test {A, B (u32), C {x: u8}}").unwrap();
         let output = handle_describe(input);
 
-        code_eq(
+        assert_code_eq(
             output,
             quote! {
                 impl sbor::Describe for Test {

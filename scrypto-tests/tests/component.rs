@@ -5,10 +5,8 @@ use alloc::vec;
 
 use scrypto::buffer::*;
 use scrypto::component;
-
-mod utils;
-use serde_json::json;
-use utils::json_eq;
+use serde::Serialize;
+use serde_json::{json, Value};
 
 component! {
     struct Simple {
@@ -32,6 +30,11 @@ component! {
     }
 }
 
+pub fn assert_json_eq<T: Serialize>(actual: T, expected: Value) {
+    let actual_json = serde_json::to_value(&actual).unwrap();
+    assert_eq!(actual_json, expected);
+}
+
 #[test]
 #[should_panic] // asserts it compiles
 fn test_simple_component() {
@@ -47,7 +50,8 @@ fn test_simple_component_abi() {
     scrypto_free(ptr);
     let abi: scrypto::abi::Component = scrypto_decode(&bytes);
 
-    json_eq(
+    assert_json_eq(
+        abi,
         json!({
           "name": "Simple",
           "methods": [
@@ -90,7 +94,6 @@ fn test_simple_component_abi() {
             }
           ]
         }),
-        abi,
     );
 }
 
