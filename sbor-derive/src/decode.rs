@@ -186,14 +186,43 @@ pub fn handle_decode(input: TokenStream) -> TokenStream {
 
 #[cfg(test)]
 mod tests {
+    extern crate alloc;
+    use alloc::str::FromStr;
+
     use super::*;
     use proc_macro2::TokenStream;
-    use std::str::FromStr;
+
+    fn code_eq(a: TokenStream, b: TokenStream) {
+        assert_eq!(a.to_string(), b.to_string());
+    }
 
     #[test]
     fn test_decode_struct() {
         let input = TokenStream::from_str("struct Test {a: u32}").unwrap();
-        handle_decode(input);
+        let output = handle_decode(input);
+
+        code_eq(
+            output,
+            quote! {
+                impl sbor::Decode for Test {
+                    fn decode_value<'de>(decoder: &'de mut sbor::Decoder) -> Result<Self, sbor::DecodeError> {
+                        use sbor::{self, Decode};
+                        decoder.check_name("Test")?;
+                        decoder.check_type(sbor::TYPE_FIELDS_NAMED)?;
+                        decoder.check_len(1usize)?;
+                        Ok(Self {
+                            a: {
+                                decoder.check_name("a")?;
+                                <u32>::decode(decoder)?
+                            }
+                        })
+                    }
+                    fn sbor_type() -> u8 {
+                        sbor::TYPE_STRUCT
+                    }
+                }
+            },
+        );
     }
 
     #[test]

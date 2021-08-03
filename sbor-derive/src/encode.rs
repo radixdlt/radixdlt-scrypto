@@ -145,7 +145,7 @@ pub fn handle_encode(input: TokenStream) -> TokenStream {
 
                         encoder.write_name(#ident_str);
                         match self {
-                            #(#match_arms),*
+                            #(#match_arms)*
                         }
                     }
 
@@ -169,19 +169,81 @@ pub fn handle_encode(input: TokenStream) -> TokenStream {
 
 #[cfg(test)]
 mod tests {
+    extern crate alloc;
+    use alloc::str::FromStr;
+
     use super::*;
     use proc_macro2::TokenStream;
-    use std::str::FromStr;
+
+    fn code_eq(a: TokenStream, b: TokenStream) {
+        assert_eq!(a.to_string(), b.to_string());
+    }
 
     #[test]
     fn test_encode_struct() {
         let input = TokenStream::from_str("struct Test {a: u32}").unwrap();
-        handle_encode(input);
+        let output = handle_encode(input);
+
+        code_eq(
+            output,
+            quote! {
+                impl sbor::Encode for Test {
+                    fn encode_value(&self, encoder: &mut sbor::Encoder) {
+                        use sbor::{self, Encode};
+                        encoder.write_name("Test");
+                        encoder.write_type(sbor::TYPE_FIELDS_NAMED);
+                        encoder.write_len(1usize);
+                        encoder.write_name("a");
+                        self.a.encode(encoder);
+                    }
+                    fn sbor_type() -> u8 {
+                        sbor::TYPE_STRUCT
+                    }
+                }
+            },
+        );
     }
 
     #[test]
     fn test_encode_enum() {
         let input = TokenStream::from_str("enum Test {A, B (u32), C {x: u8}}").unwrap();
-        handle_encode(input);
+        let output = handle_encode(input);
+
+        code_eq(
+            output,
+            quote! {
+                impl sbor::Encode for Test {
+                    fn encode_value(&self, encoder: &mut sbor::Encoder) {
+                        use sbor::{self, Encode};
+                        encoder.write_name("Test");
+                        match self {
+                            Self::A => {
+                                encoder.write_index(0usize);
+                                encoder.write_name("A");
+                                encoder.write_type(sbor::TYPE_FIELDS_UNIT);
+                            }
+                            Self::B(a0) => {
+                                encoder.write_index(1usize);
+                                encoder.write_name("B");
+                                encoder.write_type(sbor::TYPE_FIELDS_UNNAMED);
+                                encoder.write_len(1usize);
+                                a0.encode(encoder);
+                            }
+                            Self::C { x } => {
+                                encoder.write_index(2usize);
+                                encoder.write_name("C");
+                                encoder.write_type(sbor::TYPE_FIELDS_NAMED);
+                                encoder.write_len(1usize);
+                                encoder.write_name("x");
+                                x.encode(encoder);
+                            }
+                        }
+                    }
+                    fn sbor_type() -> u8 {
+                        sbor::TYPE_ENUM
+                    }
+                }
+            },
+        );
     }
 }
