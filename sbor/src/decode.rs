@@ -126,7 +126,6 @@ impl<'de> Decoder<'de> {
     #[inline]
     pub fn check_name(&mut self, expected: &str) -> Result<(), DecodeError> {
         if self.with_metadata {
-            self.check_type(TYPE_STRING)?;
             self.check_len(expected.len())?;
 
             let slice = self.read_bytes(expected.len())?;

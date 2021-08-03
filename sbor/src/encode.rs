@@ -46,7 +46,6 @@ impl Encoder {
     #[inline]
     pub fn write_name(&mut self, value: &str) {
         if self.with_metadata {
-            self.write_type(TYPE_STRING);
             self.write_len(value.len());
             self.buf.extend(value.as_bytes());
         }
