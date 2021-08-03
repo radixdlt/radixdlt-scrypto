@@ -74,6 +74,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
+    - name: Add wasm target
+      run: rustup target add wasm32-unknown-unknown
     - name: Build helloworld
       run: cargo build --target wasm32-unknown-unknown
       working-directory: examples/helloworld
