@@ -4,7 +4,7 @@ extern crate alloc;
 use alloc::string::ToString;
 use alloc::vec::Vec;
 
-use scrypto::buffer::{scrypto_alloc, scrypto_decode, scrypto_encode};
+use scrypto::buffer::{scrypto_alloc_init, scrypto_decode, scrypto_encode};
 use scrypto::constructs::{Blueprint, Component};
 use scrypto::kernel::*;
 use scrypto::types::Address;
@@ -60,11 +60,7 @@ pub extern "C" fn kernel_main(op: u32, input_ptr: *const u8, input_len: usize) -
         _ => panic!("Unexpected operation: {}", op),
     }
 
-    let output_ptr = scrypto_alloc(output_bytes.len());
-    unsafe {
-        core::ptr::copy(output_bytes.as_ptr(), output_ptr, output_bytes.len());
-    }
-    output_ptr
+    scrypto_alloc_init(&output_bytes)
 }
 
 #[test]

@@ -85,11 +85,7 @@ pub fn handle_component(input: TokenStream) -> TokenStream {
             let output_bytes = scrypto::buffer::scrypto_encode(&output);
 
             // return the output wrapped in a radix-style buffer
-            unsafe {
-                let ptr = scrypto::buffer::scrypto_alloc(output_bytes.len());
-                core::ptr::copy(output_bytes.as_ptr(), ptr, output_bytes.len());
-                ptr
-            }
+            scrypto::buffer::scrypto_alloc_init(&output_bytes)
         }
 
         #[no_mangle]
@@ -109,11 +105,7 @@ pub fn handle_component(input: TokenStream) -> TokenStream {
             let output_bytes = scrypto::buffer::scrypto_encode(&output);
 
             // return the output wrapped in a radix-style buffer
-            unsafe {
-                let ptr = scrypto::buffer::scrypto_alloc(output_bytes.len());
-                core::ptr::copy(output_bytes.as_ptr(), ptr, output_bytes.len());
-                ptr
-            }
+            scrypto::buffer::scrypto_alloc_init(&output_bytes)
         }
     };
     trace!("handle_component() finishes");
@@ -408,8 +400,96 @@ fn replace_self_with(t: &Type, name: &str) -> Type {
 
 #[cfg(test)]
 mod tests {
+    extern crate alloc;
+    use alloc::str::FromStr;
+
+    use super::*;
+    use proc_macro2::TokenStream;
+
+    fn code_eq(a: TokenStream, b: TokenStream) {
+        assert_eq!(a.to_string(), b.to_string());
+    }
+
     #[test]
     fn test_component() {
-        println!("TODO: add tests");
+        let input = TokenStream::from_str(
+            "struct Test {a: u32} impl Test { pub fn x(&self) -> u32 { self.a } }",
+        )
+        .unwrap();
+        let output = handle_component(input);
+
+        code_eq(
+            output,
+            quote! {
+                #[derive(Debug, sbor :: Encode, sbor :: Decode, sbor :: Describe)]
+                pub struct Test {
+                    a: u32
+                }
+
+                impl Test {
+                    pub fn x(&self) -> u32 {
+                        self.a
+                    }
+                }
+
+                #[derive(Debug, sbor :: Encode, sbor :: Decode)]
+                pub struct TestStub {
+                    component: scrypto::constructs::Component,
+                }
+
+                impl TestStub {
+                    pub fn from_address(address: scrypto::types::Address) -> Self {
+                        Self {
+                            component: address.into()
+                        }
+                    }
+                    #[allow(dead_code)]
+                    pub fn x(&self) -> u32 {
+                        scrypto::call_component!(u32, self.component, "x",)
+                    }
+                }
+
+                #[no_mangle]
+                pub extern "C" fn Test_main(input_ptr: *mut u8) -> *mut u8 {
+                    let input_bytes = scrypto::buffer::scrypto_copy(input_ptr);
+                    scrypto::buffer::scrypto_free(input_ptr);
+                    let input = scrypto::buffer::scrypto_decode::<scrypto::abi::CallInput>(&input_bytes,);
+                    let rtn;
+                    match input.method.as_str() {
+                        "x" => {
+                            let arg0 = scrypto::buffer::scrypto_decode::<scrypto::constructs::Component>(
+                                &input.args[0usize]
+                            );
+                            let state: Test = arg0.get_state();
+                            rtn = scrypto::buffer::scrypto_encode(&Test::x(&state));
+                        },
+                        _ => {
+                            panic!("Method not found: name = {}", input.method)
+                        }
+                    }
+                    let output = scrypto::abi::CallOutput { rtn };
+                    let output_bytes = scrypto::buffer::scrypto_encode(&output);
+                    scrypto::buffer::scrypto_alloc_init(&output_bytes)
+                }
+
+                #[no_mangle]
+                pub extern "C" fn Test_abi() -> *mut u8 {
+                    extern crate alloc;
+                    use alloc::string::ToString;
+                    use sbor::{self, Describe};
+                    let output = scrypto::abi::Component {
+                        name: "Test".to_string(),
+                        methods: vec![scrypto::abi::Method {
+                            name: "x".to_string(),
+                            mutability: scrypto::abi::Mutability::Immutable,
+                            inputs: vec![],
+                            output: u32::describe(),
+                        }],
+                    };
+                    let output_bytes = scrypto::buffer::scrypto_encode(&output);
+                    scrypto::buffer::scrypto_alloc_init(&output_bytes)
+                }
+            },
+        );
     }
 }

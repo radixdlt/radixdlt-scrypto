@@ -3,12 +3,16 @@ use alloc::vec::Vec;
 use core::mem::forget;
 use core::ptr::copy;
 
-//================
-// Note that there is already an API for accessing global allocator, but it requires nightly build atm.
-// See: https://doc.rust-lang.org/nightly/std/alloc/trait.Allocator.html
-//================
-
 const WORD: usize = core::mem::size_of::<usize>();
+
+/// Allocates a chunk of memory initialized with the given slice.
+pub fn scrypto_alloc_init(value: &[u8]) -> *mut u8 {
+    unsafe {
+        let ptr = scrypto_alloc(value.len());
+        copy(value.as_ptr(), ptr, value.len());
+        ptr
+    }
+}
 
 /// Allocates a chunk of memory that is not tracked by Rust ownership system.
 #[no_mangle]

@@ -161,7 +161,7 @@ pub fn handle_decode(input: TokenStream) -> TokenStream {
                         let index = decoder.read_index()?;
                         match index {
                             #(#match_arms,)*
-                            _ => Err(sbor::DecodeError::InvalidIndex(index)),
+                            _ => Err(sbor::DecodeError::InvalidIndex(index))
                         }
                     }
 
@@ -228,6 +228,49 @@ mod tests {
     #[test]
     fn test_decode_enum() {
         let input = TokenStream::from_str("enum Test {A, B (u32), C {x: u8}}").unwrap();
-        handle_decode(input);
+        let output = handle_decode(input);
+
+        code_eq(
+            output,
+            quote! {
+                impl sbor::Decode for Test {
+                    #[inline]
+                    fn decode_value<'de>(decoder: &'de mut sbor::Decoder) -> Result<Self, sbor::DecodeError> {
+                        use sbor::{self, Decode};
+                        decoder.check_name("Test")?;
+                        let index = decoder.read_index()?;
+                        match index {
+                            0u8 => {
+                                decoder.check_name("A")?;
+                                decoder.check_type(sbor::TYPE_FIELDS_UNIT)?;
+                                Ok(Self::A)
+                            },
+                            1u8 => {
+                                decoder.check_name("B")?;
+                                decoder.check_type(sbor::TYPE_FIELDS_UNNAMED)?;
+                                decoder.check_len(1usize)?;
+                                Ok(Self::B(<u32>::decode(decoder)?))
+                            },
+                            2u8 => {
+                                decoder.check_name("C")?;
+                                decoder.check_type(sbor::TYPE_FIELDS_NAMED)?;
+                                decoder.check_len(1usize)?;
+                                Ok(Self::C {
+                                    x: {
+                                        decoder.check_name("x")?;
+                                        <u8>::decode(decoder)?
+                                    }
+                                })
+                            },
+                            _ => Err(sbor::DecodeError::InvalidIndex(index))
+                        }
+                    }
+                    #[inline]
+                    fn sbor_type() -> u8 {
+                        sbor::TYPE_ENUM
+                    }
+                }
+            },
+        );
     }
 }
