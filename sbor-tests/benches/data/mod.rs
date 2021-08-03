@@ -1,10 +1,4 @@
 pub mod simple;
-pub mod twitter;
-
-pub fn get_twitter_dataset() -> twitter::Twitter {
-    let bytes = include_bytes!("twitter.json");
-    serde_json::from_slice(bytes).unwrap()
-}
 
 pub fn get_simple_dataset(repeat: usize) -> simple::SimpleStruct {
     simple::SimpleStruct {
