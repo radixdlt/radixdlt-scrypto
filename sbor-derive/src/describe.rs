@@ -29,18 +29,18 @@ pub fn handle_describe(input: TokenStream) -> TokenStream {
 
                 quote! {
                     impl sbor::Describe for #ident {
-                        fn describe() -> sbor::Type {
+                        fn describe() -> sbor::types::Type {
                             extern crate alloc;
-                            use alloc::collections::BTreeMap;
+                            use alloc::vec::Vec;
                             use alloc::string::ToString;
                             use sbor::{self, Describe};
 
-                            let mut fields = BTreeMap::new();
-                            #(fields.insert(#names.to_string(), <#types>::describe());)*
+                            let mut named = Vec::new();
+                            #(named.push((#names.to_string(), <#types>::describe()));)*
 
-                            sbor::Type::Struct {
+                            sbor::types::Type::Struct {
                                 name: #ident_str.to_string(),
-                                fields: sbor::FieldTypes::Named { fields },
+                                fields: sbor::types::Fields::Named { named },
                             }
                         }
                     }
@@ -51,18 +51,18 @@ pub fn handle_describe(input: TokenStream) -> TokenStream {
 
                 quote! {
                     impl sbor::Describe for #ident {
-                        fn describe() -> sbor::Type {
+                        fn describe() -> sbor::types::Type {
                             extern crate alloc;
                             use alloc::string::ToString;
                             use alloc::vec::Vec;
                             use sbor::{self, Describe};
 
-                            let mut fields = Vec::new();
-                            #(fields.push(<#types>::describe());)*
+                            let mut unnamed = Vec::new();
+                            #(unnamed.push(<#types>::describe());)*
 
-                            sbor::Type::Struct {
+                            sbor::types::Type::Struct {
                                 name: #ident_str.to_string(),
-                                fields: sbor::FieldTypes::Unnamed { fields },
+                                fields: sbor::types::Fields::Unnamed { unnamed },
                             }
                         }
                     }
@@ -71,13 +71,13 @@ pub fn handle_describe(input: TokenStream) -> TokenStream {
             syn::Fields::Unit => {
                 quote! {
                     impl sbor::Describe for #ident {
-                        fn describe() -> sbor::Type {
+                        fn describe() -> sbor::types::Type {
                             extern crate alloc;
                             use alloc::string::ToString;
 
-                            sbor::Type::Struct {
+                            sbor::types::Type::Struct {
                                 name: #ident_str.to_string(),
-                                fields: sbor::FieldTypes::Unit,
+                                fields: sbor::types::Fields::Unit,
                             }
                         }
                     }
@@ -86,7 +86,7 @@ pub fn handle_describe(input: TokenStream) -> TokenStream {
         },
         Data::Enum(DataEnum { variants, .. }) => {
             let names = variants.iter().map(|v| v.ident.to_string());
-            let types = variants.iter().map(|v| {
+            let fields = variants.iter().map(|v| {
                 let f = &v.fields;
 
                 match f {
@@ -100,10 +100,10 @@ pub fn handle_describe(input: TokenStream) -> TokenStream {
                         let types = named.iter().map(|f| &f.ty);
                         quote! {
                             {
-                                let mut fields = BTreeMap::new();
-                                #(fields.insert(#names.to_string(), <#types>::describe());)*
-                                sbor::FieldTypes::Named {
-                                    fields
+                                let mut named = Vec::new();
+                                #(named.push((#names.to_string(), <#types>::describe()));)*
+                                sbor::types::Fields::Named {
+                                    named
                                 }
                             }
                         }
@@ -112,10 +112,10 @@ pub fn handle_describe(input: TokenStream) -> TokenStream {
                         let types = unnamed.iter().map(|f| &f.ty);
                         quote! {
                             {
-                                let mut fields = Vec::new();
-                                #(fields.push(<#types>::describe());)*
-                                sbor::FieldTypes::Unnamed {
-                                    fields
+                                let mut unnamed = Vec::new();
+                                #(unnamed.push(<#types>::describe());)*
+                                sbor::types::Fields::Unnamed {
+                                    unnamed
                                 }
                             }
                         }
@@ -123,7 +123,7 @@ pub fn handle_describe(input: TokenStream) -> TokenStream {
                     syn::Fields::Unit => {
                         quote! {
                             {
-                                sbor::FieldTypes::Unit
+                                sbor::types::Fields::Unit
                             }
                         }
                     }
@@ -132,17 +132,19 @@ pub fn handle_describe(input: TokenStream) -> TokenStream {
 
             quote! {
                 impl sbor::Describe for #ident {
-                    fn describe() -> sbor::Type {
+                    fn describe() -> sbor::types::Type {
                         extern crate alloc;
-                        use alloc::collections::BTreeMap;
                         use alloc::string::ToString;
                         use alloc::vec::Vec;
                         use sbor::{self, Describe};
 
-                        let mut variants = BTreeMap::new();
-                        #(variants.insert(#names.to_string(), #types);)*
+                        let mut variants = Vec::new();
+                        #(variants.push(sbor::types::Variant {
+                            name: #names.to_string(),
+                            fields: #fields
+                        });)*
 
-                        sbor::Type::Enum {
+                        sbor::types::Type::Enum {
                             name: #ident_str.to_string(),
                             variants,
                         }
@@ -183,16 +185,16 @@ mod tests {
             output,
             quote! {
                 impl sbor::Describe for Test {
-                    fn describe() -> sbor::Type {
+                    fn describe() -> sbor::types::Type {
                         extern crate alloc;
-                        use alloc::collections::BTreeMap;
+                        use alloc::vec::Vec;
                         use alloc::string::ToString;
                         use sbor::{self, Describe};
-                        let mut fields = BTreeMap::new();
-                        fields.insert("a".to_string(), <u32>::describe());
-                        sbor::Type::Struct {
+                        let mut named = Vec::new();
+                        named.push(("a".to_string(), <u32>::describe()));
+                        sbor::types::Type::Struct {
                             name: "Test".to_string(),
-                            fields: sbor::FieldTypes::Named { fields },
+                            fields: sbor::types::Fields::Named { named },
                         }
                     }
                 }
@@ -209,25 +211,33 @@ mod tests {
             output,
             quote! {
                 impl sbor::Describe for Test {
-                    fn describe() -> sbor::Type {
+                    fn describe() -> sbor::types::Type {
                         extern crate alloc;
-                        use alloc::collections::BTreeMap;
                         use alloc::string::ToString;
                         use alloc::vec::Vec;
                         use sbor::{self, Describe};
-                        let mut variants = BTreeMap::new();
-                        variants.insert("A".to_string(), { sbor::FieldTypes::Unit });
-                        variants.insert("B".to_string(), {
-                            let mut fields = Vec::new();
-                            fields.push(<u32>::describe());
-                            sbor::FieldTypes::Unnamed { fields }
+                        let mut variants = Vec::new();
+                        variants.push(sbor::types::Variant {
+                            name: "A".to_string(),
+                            fields: { sbor::types::Fields::Unit }
                         });
-                        variants.insert("C".to_string(), {
-                            let mut fields = BTreeMap::new();
-                            fields.insert("x".to_string(), <u8>::describe());
-                            sbor::FieldTypes::Named { fields }
+                        variants.push(sbor::types::Variant {
+                            name: "B".to_string(),
+                            fields: {
+                                let mut unnamed = Vec::new();
+                                unnamed.push(<u32>::describe());
+                                sbor::types::Fields::Unnamed { unnamed }
+                            }
                         });
-                        sbor::Type::Enum {
+                        variants.push(sbor::types::Variant {
+                            name: "C".to_string(),
+                            fields: {
+                                let mut named = Vec::new();
+                                named.push(("x".to_string(), <u8>::describe()));
+                                sbor::types::Fields::Named { named }
+                            }
+                        });
+                        sbor::types::Type::Enum {
                             name: "Test".to_string(),
                             variants,
                         }

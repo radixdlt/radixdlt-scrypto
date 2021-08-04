@@ -29,12 +29,7 @@ impl Blueprint {
         Self::from(output.blueprint)
     }
 
-    pub fn call(
-        &self,
-        component: &str,
-        method: &str,
-        args: Vec<SerializedValue>,
-    ) -> SerializedValue {
+    pub fn call(&self, component: &str, method: &str, args: Vec<Vec<u8>>) -> Vec<u8> {
         let input = CallBlueprintInput {
             blueprint: self.address,
             component: component.to_string(),

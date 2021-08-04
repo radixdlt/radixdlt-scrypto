@@ -1,12 +1,15 @@
 extern crate alloc;
+use alloc::boxed::Box;
 use alloc::collections::BTreeMap;
 use alloc::collections::BTreeSet;
+use alloc::string::String;
 use alloc::vec::Vec;
 use hashbrown::HashMap;
 use hashbrown::HashSet;
 
-use crate::*;
+use crate::constants::*;
 
+/// A data structure that can be serialized into a byte array using SBOR.
 pub trait Encode {
     fn encode(&self, encoder: &mut Encoder) {
         encoder.write_type(Self::sbor_type());
@@ -18,6 +21,7 @@ pub trait Encode {
     fn sbor_type() -> u8;
 }
 
+/// An `Encoder` abstracts the logic for writing core types into a byte buffer.
 pub struct Encoder {
     buf: Vec<u8>,
     with_metadata: bool,

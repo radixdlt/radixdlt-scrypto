@@ -9,8 +9,9 @@ use core::hash::Hash;
 use hashbrown::HashMap;
 use hashbrown::HashSet;
 
-use crate::*;
+use crate::constants::*;
 
+/// Represents an error ocurred during decoding.
 #[derive(Debug)]
 pub enum DecodeError {
     Underflow { required: usize, remaining: usize },
@@ -30,6 +31,7 @@ pub enum DecodeError {
     NotAllBytesUsed(usize),
 }
 
+/// A data structure that can be decoded from a byte array using SBOR.
 pub trait Decode: Sized {
     fn decode<'de>(decoder: &mut Decoder<'de>) -> Result<Self, DecodeError> {
         decoder.check_type(Self::sbor_type())?;
@@ -41,6 +43,7 @@ pub trait Decode: Sized {
     fn sbor_type() -> u8;
 }
 
+/// An `Decoder` abstracts the logic for reading and checking core types from a slice.
 pub struct Decoder<'de> {
     input: &'de [u8],
     offset: usize,

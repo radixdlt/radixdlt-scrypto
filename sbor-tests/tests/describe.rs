@@ -5,7 +5,7 @@ use alloc::vec;
 
 use sbor::Describe;
 use serde::Serialize;
-use serde_json::{json, Value};
+use serde_json::{json, to_value, Value};
 
 #[derive(Describe)]
 pub struct TestStructNamed {
@@ -25,9 +25,8 @@ pub enum TestEnum {
     C { x: u32, y: u32 },
 }
 
-pub fn assert_json_eq<T: Serialize>(actual: T, expected: Value) {
-    let actual_json = serde_json::to_value(&actual).unwrap();
-    assert_eq!(actual_json, expected);
+fn assert_json_eq<T: Serialize>(actual: T, expected: Value) {
+    assert_eq!(to_value(&actual).unwrap(), expected);
 }
 
 #[test]
@@ -39,11 +38,14 @@ fn test_describe_struct() {
           "name": "TestStructNamed",
           "fields": {
             "type": "Named",
-            "fields": {
-              "state": {
-                "type": "U32"
-              }
-            }
+            "named": [
+              [
+                "state",
+                {
+                  "type": "U32"
+                }
+              ]
+            ]
           }
         }),
     );
@@ -55,7 +57,7 @@ fn test_describe_struct() {
           "name": "TestStructUnnamed",
           "fields": {
             "type": "Unnamed",
-            "fields": [
+            "unnamed": [
               {
                 "type": "U32"
               }
@@ -83,30 +85,45 @@ fn test_describe_enum() {
         json!({
           "type": "Enum",
           "name": "TestEnum",
-          "variants": {
-            "A": {
-              "type": "Unit"
-            },
-            "B": {
-              "type": "Unnamed",
-              "fields": [
-                {
-                  "type": "U32"
-                }
-              ]
-            },
-            "C": {
-              "type": "Named",
+          "variants": [
+            {
+              "name": "A",
               "fields": {
-                "x": {
-                  "type": "U32"
-                },
-                "y": {
-                  "type": "U32"
-                }
+                "type": "Unit"
+              }
+            },
+            {
+              "name": "B",
+              "fields": {
+                "type": "Unnamed",
+                "unnamed": [
+                  {
+                    "type": "U32"
+                  }
+                ]
+              }
+            },
+            {
+              "name": "C",
+              "fields": {
+                "type": "Named",
+                "named": [
+                  [
+                    "x",
+                    {
+                      "type": "U32"
+                    }
+                  ],
+                  [
+                    "y",
+                    {
+                      "type": "U32"
+                    }
+                  ]
+                ]
               }
             }
-          }
+          ]
         }),
     );
 }

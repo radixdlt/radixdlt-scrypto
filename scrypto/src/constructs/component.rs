@@ -33,7 +33,7 @@ impl Component {
         Self::from(output.component)
     }
 
-    pub fn call(&self, method: &str, args: Vec<SerializedValue>) -> SerializedValue {
+    pub fn call(&self, method: &str, args: Vec<Vec<u8>>) -> Vec<u8> {
         let data = self.get_info();
 
         let mut args_buf = Vec::new();

@@ -6,7 +6,7 @@ use alloc::vec;
 use scrypto::buffer::*;
 use scrypto::component;
 use serde::Serialize;
-use serde_json::{json, Value};
+use serde_json::{json, to_value, Value};
 
 component! {
     struct Simple {
@@ -30,9 +30,8 @@ component! {
     }
 }
 
-pub fn assert_json_eq<T: Serialize>(actual: T, expected: Value) {
-    let actual_json = serde_json::to_value(&actual).unwrap();
-    assert_eq!(actual_json, expected);
+fn assert_json_eq<T: Serialize>(actual: T, expected: Value) {
+    assert_eq!(to_value(&actual).unwrap(), expected);
 }
 
 #[test]
@@ -64,11 +63,14 @@ fn test_simple_component_abi() {
                 "name": "Simple",
                 "fields": {
                   "type": "Named",
-                  "fields": {
-                    "state": {
-                      "type": "U32"
-                    }
-                  }
+                  "named": [
+                    [
+                      "state",
+                      {
+                        "type": "U32"
+                      }
+                    ]
+                  ]
                 }
               }
             },

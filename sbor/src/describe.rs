@@ -8,9 +8,9 @@ use alloc::vec::Vec;
 use hashbrown::HashMap;
 use hashbrown::HashSet;
 
-use crate::*;
+use crate::types::*;
 
-/// Describe this type
+/// A data structure that can be described using SBOR types.
 pub trait Describe {
     fn describe() -> Type;
 }
@@ -144,6 +144,7 @@ mod tests {
     use alloc::string::String;
     use alloc::vec;
 
+    use crate::types::*;
     use crate::*;
 
     #[test]

@@ -10,14 +10,20 @@
                     "name": "Floor",
                     "fields": {
                         "type": "Named",
-                        "fields": {
-                            "x": {
-                                "type": "U32"
-                            },
-                            "y": {
-                                "type": "U32"
-                            }
-                        }
+                        "named": [
+                            [
+                                "x",
+                                {
+                                    "type": "U32"
+                                }
+                            ],
+                            [
+                                "y",
+                                {
+                                    "type": "U32"
+                                }
+                            ]
+                        ]
                     }
                 },
                 {
@@ -43,27 +49,39 @@
                 {
                     "type": "Enum",
                     "name": "Hello",
-                    "variants": {
-                        "A": {
-                            "type": "Named",
+                    "variants": [
+                        {
+                            "name": "A",
                             "fields": {
-                                "x": {
-                                    "type": "U32"
-                                }
+                                "type": "Named",
+                                "named": [
+                                    [
+                                        "x",
+                                        {
+                                            "type": "U32"
+                                        }
+                                    ]
+                                ]
                             }
                         },
-                        "B": {
-                            "type": "Unnamed",
-                            "fields": [
-                                {
-                                    "type": "U32"
-                                }
-                            ]
+                        {
+                            "name": "B",
+                            "fields": {
+                                "type": "Unnamed",
+                                "unnamed": [
+                                    {
+                                        "type": "U32"
+                                    }
+                                ]
+                            }
                         },
-                        "C": {
-                            "type": "Unit"
+                        {
+                            "name": "C",
+                            "fields": {
+                                "type": "Unit"
+                            }
                         }
-                    }
+                    ]
                 },
                 {
                     "type": "Array",

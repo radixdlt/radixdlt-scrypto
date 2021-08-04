@@ -112,12 +112,12 @@ pub struct CallBlueprintInput {
     pub blueprint: Address,
     pub component: String,
     pub method: String,
-    pub args: Vec<SerializedValue>,
+    pub args: Vec<Vec<u8>>,
 }
 
 #[derive(Debug, Encode, Decode)]
 pub struct CallBlueprintOutput {
-    pub rtn: SerializedValue,
+    pub rtn: Vec<u8>,
 }
 
 //==========
@@ -127,7 +127,7 @@ pub struct CallBlueprintOutput {
 #[derive(Debug, Encode, Decode)]
 pub struct CreateComponentInput {
     pub kind: String,
-    pub state: SerializedValue,
+    pub state: Vec<u8>,
 }
 
 #[derive(Debug, Encode, Decode)]
@@ -152,13 +152,13 @@ pub struct GetComponentStateInput {
 
 #[derive(Debug, Encode, Decode)]
 pub struct GetComponentStateOutput {
-    pub state: SerializedValue,
+    pub state: Vec<u8>,
 }
 
 #[derive(Debug, Encode, Decode)]
 pub struct PutComponentStateInput {
     pub component: Address,
-    pub state: SerializedValue,
+    pub state: Vec<u8>,
 }
 
 #[derive(Debug, Encode, Decode)]

@@ -102,43 +102,44 @@ pub fn handle_import(input: TokenStream) -> TokenStream {
     output.into()
 }
 
-fn get_native_type(ty: &sbor::Type) -> (Type, Vec<Item>) {
+fn get_native_type(ty: &sbor::types::Type) -> (Type, Vec<Item>) {
     let mut items = Vec::<Item>::new();
 
     let t: Type = match ty {
-        sbor::Type::Unit => parse_quote! { () },
-        sbor::Type::Bool => parse_quote! { bool },
-        sbor::Type::I8 => parse_quote! { i8 },
-        sbor::Type::I16 => parse_quote! { i16 },
-        sbor::Type::I32 => parse_quote! { i32 },
-        sbor::Type::I64 => parse_quote! { i64 },
-        sbor::Type::I128 => parse_quote! { i128 },
-        sbor::Type::U8 => parse_quote! { u8 },
-        sbor::Type::U16 => parse_quote! { u16 },
-        sbor::Type::U32 => parse_quote! { u32 },
-        sbor::Type::U64 => parse_quote! { u64 },
-        sbor::Type::U128 => parse_quote! { u128 },
-        sbor::Type::String => parse_quote! { String },
-        sbor::Type::Option { value } => {
+        sbor::types::Type::Unit => parse_quote! { () },
+        sbor::types::Type::Bool => parse_quote! { bool },
+        sbor::types::Type::I8 => parse_quote! { i8 },
+        sbor::types::Type::I16 => parse_quote! { i16 },
+        sbor::types::Type::I32 => parse_quote! { i32 },
+        sbor::types::Type::I64 => parse_quote! { i64 },
+        sbor::types::Type::I128 => parse_quote! { i128 },
+        sbor::types::Type::U8 => parse_quote! { u8 },
+        sbor::types::Type::U16 => parse_quote! { u16 },
+        sbor::types::Type::U32 => parse_quote! { u32 },
+        sbor::types::Type::U64 => parse_quote! { u64 },
+        sbor::types::Type::U128 => parse_quote! { u128 },
+        sbor::types::Type::String => parse_quote! { String },
+        sbor::types::Type::Option { value } => {
             let (new_type, new_items) = get_native_type(value);
             items.extend(new_items);
 
             parse_quote! { Option<#new_type> }
         }
-        sbor::Type::Box { value } => {
+        sbor::types::Type::Box { value } => {
             let (new_type, new_items) = get_native_type(value);
             items.extend(new_items);
 
             parse_quote! { Box<#new_type> }
         }
-        sbor::Type::Struct { name, fields } => {
+        sbor::types::Type::Struct { name, fields } => {
             let ident = format_ident!("{}", name);
 
             match fields {
-                sbor::FieldTypes::Named { fields } => {
-                    let names: Vec<Ident> = fields.keys().map(|k| format_ident!("{}", k)).collect();
+                sbor::types::Fields::Named { named } => {
+                    let names: Vec<Ident> =
+                        named.iter().map(|k| format_ident!("{}", k.0)).collect();
                     let mut types: Vec<Type> = vec![];
-                    for v in fields.values() {
+                    for (_, v) in named {
                         let (new_type, new_items) = get_native_type(v);
                         types.push(new_type);
                         items.extend(new_items);
@@ -157,7 +158,7 @@ fn get_native_type(ty: &sbor::Type) -> (Type, Vec<Item>) {
 
             parse_quote! { #ident }
         }
-        sbor::Type::Tuple { elements } => {
+        sbor::types::Type::Tuple { elements } => {
             let mut types: Vec<Type> = vec![];
 
             for element in elements {
@@ -168,27 +169,27 @@ fn get_native_type(ty: &sbor::Type) -> (Type, Vec<Item>) {
 
             parse_quote! { ( #(#types),* ) }
         }
-        sbor::Type::Array { element, length } => {
+        sbor::types::Type::Array { element, length } => {
             let (new_type, new_items) = get_native_type(element);
             items.extend(new_items);
 
             let n = *length as usize;
             parse_quote! { [#new_type; #n] }
         }
-        sbor::Type::Enum { name, variants } => {
+        sbor::types::Type::Enum { name, variants } => {
             let ident = format_ident!("{}", name);
             let mut native_variants = Vec::<Variant>::new();
 
-            for (v_name, v_fields) in variants {
-                let v_ident = format_ident!("{}", v_name);
+            for variant in variants {
+                let v_ident = format_ident!("{}", variant.name);
 
-                match v_fields {
-                    sbor::FieldTypes::Named { fields } => {
+                match &variant.fields {
+                    sbor::types::Fields::Named { named } => {
                         let mut names: Vec<Ident> = vec![];
                         let mut types: Vec<Type> = vec![];
-                        for (n, v) in fields {
+                        for (n, v) in named {
                             names.push(format_ident!("{}", n));
-                            let (new_type, new_items) = get_native_type(v);
+                            let (new_type, new_items) = get_native_type(&v);
                             types.push(new_type);
                             items.extend(new_items);
                         }
@@ -198,10 +199,10 @@ fn get_native_type(ty: &sbor::Type) -> (Type, Vec<Item>) {
                             }
                         });
                     }
-                    sbor::FieldTypes::Unnamed { fields } => {
+                    sbor::types::Fields::Unnamed { unnamed } => {
                         let mut types: Vec<Type> = vec![];
-                        for v in fields {
-                            let (new_type, new_items) = get_native_type(v);
+                        for v in unnamed {
+                            let (new_type, new_items) = get_native_type(&v);
                             types.push(new_type);
                             items.extend(new_items);
                         }
@@ -209,7 +210,7 @@ fn get_native_type(ty: &sbor::Type) -> (Type, Vec<Item>) {
                             #v_ident ( #(#types),* )
                         });
                     }
-                    sbor::FieldTypes::Unit => {
+                    sbor::types::Fields::Unit => {
                         native_variants.push(parse_quote! {
                             #v_ident
                         });
@@ -226,19 +227,19 @@ fn get_native_type(ty: &sbor::Type) -> (Type, Vec<Item>) {
 
             parse_quote! { #ident }
         }
-        sbor::Type::Vec { element } => {
+        sbor::types::Type::Vec { element } => {
             let (new_type, new_items) = get_native_type(element);
             items.extend(new_items);
 
             parse_quote! { Vec<#new_type> }
         }
-        sbor::Type::TreeSet { element } => {
+        sbor::types::Type::TreeSet { element } => {
             let (new_type, new_items) = get_native_type(element);
             items.extend(new_items);
 
             parse_quote! { BTreeSet<#new_type> }
         }
-        sbor::Type::TreeMap { key, value } => {
+        sbor::types::Type::TreeMap { key, value } => {
             let (key_type, new_items) = get_native_type(key);
             items.extend(new_items);
             let (value_type, new_items) = get_native_type(value);
@@ -246,13 +247,13 @@ fn get_native_type(ty: &sbor::Type) -> (Type, Vec<Item>) {
 
             parse_quote! { BTreeMap<#key_type, #value_type> }
         }
-        sbor::Type::HashSet { element } => {
+        sbor::types::Type::HashSet { element } => {
             let (new_type, new_items) = get_native_type(element);
             items.extend(new_items);
 
             parse_quote! { HashSet<#new_type> }
         }
-        sbor::Type::HashMap { key, value } => {
+        sbor::types::Type::HashMap { key, value } => {
             let (key_type, new_items) = get_native_type(key);
             items.extend(new_items);
             let (value_type, new_items) = get_native_type(value);

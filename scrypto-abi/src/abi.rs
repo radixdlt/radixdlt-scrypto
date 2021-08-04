@@ -2,6 +2,7 @@ extern crate alloc;
 use alloc::string::String;
 use alloc::vec::Vec;
 
+use sbor::types::*;
 use sbor::*;
 #[cfg(feature = "json")]
 use serde::{Deserialize, Serialize};

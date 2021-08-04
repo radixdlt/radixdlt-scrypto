@@ -1,6 +1,3 @@
-extern crate alloc;
-use alloc::vec::Vec;
-
 mod address;
 mod hash;
 mod rid;
@@ -10,14 +7,6 @@ pub use address::*;
 pub use hash::*;
 pub use rid::*;
 pub use u256::*;
-
-/// A value that encloses data and resources, used for communication between components.
-///
-/// For now, it's a JSON value but will be replaced with Radix data format.
-pub type Value = sbor::Value;
-
-/// The serialized form of a `Value`.
-pub type SerializedValue = Vec<u8>;
 
 #[cfg(test)]
 mod tests {
