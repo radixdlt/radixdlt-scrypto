@@ -6,6 +6,7 @@ edition = "2018"
 [dependencies]
 sbor-derive = { version = "0.1", path = "../sbor-derive" }
 serde = { version = "1.0", default-features = false, optional = true }
+hashbrown = { version = "0.11" } # no_std HashMap and HashSet
 
 [features]
 default = []

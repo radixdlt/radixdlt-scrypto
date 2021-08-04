@@ -2,6 +2,8 @@ extern crate alloc;
 use alloc::collections::BTreeMap;
 use alloc::collections::BTreeSet;
 use alloc::vec::Vec;
+use hashbrown::HashMap;
+use hashbrown::HashSet;
 
 use crate::*;
 
@@ -272,7 +274,7 @@ impl<T: Encode> Encode for Vec<T> {
     }
 }
 
-impl<T: Encode + Ord> Encode for BTreeSet<T> {
+impl<T: Encode> Encode for BTreeSet<T> {
     #[inline]
     fn encode_value(&self, encoder: &mut Encoder) {
         encoder.write_type(T::sbor_type());
@@ -284,11 +286,11 @@ impl<T: Encode + Ord> Encode for BTreeSet<T> {
 
     #[inline]
     fn sbor_type() -> u8 {
-        TYPE_SET
+        TYPE_TREE_SET
     }
 }
 
-impl<K: Encode + Ord, V: Encode> Encode for BTreeMap<K, V> {
+impl<K: Encode, V: Encode> Encode for BTreeMap<K, V> {
     #[inline]
     fn encode_value(&self, encoder: &mut Encoder) {
         encoder.write_len(self.len());
@@ -303,7 +305,42 @@ impl<K: Encode + Ord, V: Encode> Encode for BTreeMap<K, V> {
 
     #[inline]
     fn sbor_type() -> u8 {
-        TYPE_MAP
+        TYPE_TREE_MAP
+    }
+}
+
+impl<T: Encode> Encode for HashSet<T> {
+    #[inline]
+    fn encode_value(&self, encoder: &mut Encoder) {
+        encoder.write_type(T::sbor_type());
+        encoder.write_len(self.len());
+        for v in self {
+            v.encode_value(encoder);
+        }
+    }
+
+    #[inline]
+    fn sbor_type() -> u8 {
+        TYPE_HASH_SET
+    }
+}
+
+impl<K: Encode, V: Encode> Encode for HashMap<K, V> {
+    #[inline]
+    fn encode_value(&self, encoder: &mut Encoder) {
+        encoder.write_len(self.len());
+        encoder.write_type(K::sbor_type());
+        encoder.write_type(V::sbor_type());
+
+        for (k, v) in self {
+            k.encode_value(encoder);
+            v.encode_value(encoder);
+        }
+    }
+
+    #[inline]
+    fn sbor_type() -> u8 {
+        TYPE_HASH_MAP
     }
 }
 

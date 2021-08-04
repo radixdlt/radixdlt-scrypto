@@ -232,19 +232,33 @@ fn get_native_type(ty: &sbor::Type) -> (Type, Vec<Item>) {
 
             parse_quote! { Vec<#new_type> }
         }
-        sbor::Type::Set { element } => {
+        sbor::Type::TreeSet { element } => {
             let (new_type, new_items) = get_native_type(element);
             items.extend(new_items);
 
             parse_quote! { BTreeSet<#new_type> }
         }
-        sbor::Type::Map { key, value } => {
+        sbor::Type::TreeMap { key, value } => {
             let (key_type, new_items) = get_native_type(key);
             items.extend(new_items);
             let (value_type, new_items) = get_native_type(value);
             items.extend(new_items);
 
             parse_quote! { BTreeMap<#key_type, #value_type> }
+        }
+        sbor::Type::HashSet { element } => {
+            let (new_type, new_items) = get_native_type(element);
+            items.extend(new_items);
+
+            parse_quote! { HashSet<#new_type> }
+        }
+        sbor::Type::HashMap { key, value } => {
+            let (key_type, new_items) = get_native_type(key);
+            items.extend(new_items);
+            let (value_type, new_items) = get_native_type(value);
+            items.extend(new_items);
+
+            parse_quote! { HashMap<#key_type, #value_type> }
         }
     };
 

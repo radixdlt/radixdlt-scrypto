@@ -36,8 +36,10 @@ pub const TYPE_FIELDS_UNNAMED: u8 = 0x17;
 pub const TYPE_FIELDS_UNIT: u8 = 0x18;
 // collections
 pub const TYPE_VEC: u8 = 0x20;
-pub const TYPE_SET: u8 = 0x21;
-pub const TYPE_MAP: u8 = 0x22;
+pub const TYPE_TREE_SET: u8 = 0x21;
+pub const TYPE_TREE_MAP: u8 = 0x22;
+pub const TYPE_HASH_SET: u8 = 0x23;
+pub const TYPE_HASH_MAP: u8 = 0x24;
 
 // Internally tagged representation for readability
 // See: https://serde.rs/enum-representations.html
@@ -89,11 +91,20 @@ pub enum Type {
         element: Box<Type>,
     },
 
-    Set {
+    TreeSet {
         element: Box<Type>,
     },
 
-    Map {
+    TreeMap {
+        key: Box<Type>,
+        value: Box<Type>,
+    },
+
+    HashSet {
+        element: Box<Type>,
+    },
+
+    HashMap {
         key: Box<Type>,
         value: Box<Type>,
     },
@@ -139,9 +150,13 @@ pub enum Value {
 
     Vec(Vec<Value>),
 
-    Set(BTreeSet<Value>),
+    TreeSet(BTreeSet<Value>),
 
-    Map(BTreeMap<String, FieldValues>),
+    TreeMap(BTreeMap<String, FieldValues>),
+
+    HashSet(BTreeSet<Value>),
+
+    HashMap(BTreeMap<String, FieldValues>),
 }
 
 #[derive(Debug, PartialEq)]

@@ -5,6 +5,8 @@ use alloc::collections::BTreeSet;
 use alloc::string::String;
 use alloc::vec;
 use alloc::vec::Vec;
+use hashbrown::HashMap;
+use hashbrown::HashSet;
 
 use crate::*;
 
@@ -98,7 +100,7 @@ impl<T: Describe> Describe for Vec<T> {
 impl<T: Describe> Describe for BTreeSet<T> {
     fn describe() -> Type {
         let ty = T::describe();
-        Type::Set {
+        Type::TreeSet {
             element: Box::new(ty),
         }
     }
@@ -108,7 +110,27 @@ impl<K: Describe, V: Describe> Describe for BTreeMap<K, V> {
     fn describe() -> Type {
         let k = K::describe();
         let v = V::describe();
-        Type::Map {
+        Type::TreeMap {
+            key: Box::new(k),
+            value: Box::new(v),
+        }
+    }
+}
+
+impl<T: Describe> Describe for HashSet<T> {
+    fn describe() -> Type {
+        let ty = T::describe();
+        Type::HashSet {
+            element: Box::new(ty),
+        }
+    }
+}
+
+impl<K: Describe, V: Describe> Describe for HashMap<K, V> {
+    fn describe() -> Type {
+        let k = K::describe();
+        let v = V::describe();
+        Type::HashMap {
             key: Box::new(k),
             value: Box::new(v),
         }

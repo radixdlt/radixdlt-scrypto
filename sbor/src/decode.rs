@@ -5,6 +5,9 @@ use alloc::collections::BTreeSet;
 use alloc::string::String;
 use alloc::string::ToString;
 use alloc::vec::Vec;
+use core::hash::Hash;
+use hashbrown::HashMap;
+use hashbrown::HashSet;
 
 use crate::*;
 
@@ -386,7 +389,7 @@ impl<T: Decode + Ord> Decode for BTreeSet<T> {
 
     #[inline]
     fn sbor_type() -> u8 {
-        TYPE_SET
+        TYPE_TREE_SET
     }
 }
 
@@ -406,7 +409,46 @@ impl<K: Decode + Ord, V: Decode> Decode for BTreeMap<K, V> {
 
     #[inline]
     fn sbor_type() -> u8 {
-        TYPE_MAP
+        TYPE_TREE_MAP
+    }
+}
+
+impl<T: Decode + Hash + Eq> Decode for HashSet<T> {
+    #[inline]
+    fn decode_value<'de>(decoder: &mut Decoder<'de>) -> Result<Self, DecodeError> {
+        decoder.check_type(T::sbor_type())?;
+        let len = decoder.read_len()?;
+
+        let mut result = HashSet::new(); // Lengths are u16, so it's safe to pre-allocate.
+        for _ in 0..len {
+            result.insert(T::decode_value(decoder)?);
+        }
+        Ok(result)
+    }
+
+    #[inline]
+    fn sbor_type() -> u8 {
+        TYPE_TREE_SET
+    }
+}
+
+impl<K: Decode + Hash + Eq, V: Decode> Decode for HashMap<K, V> {
+    #[inline]
+    fn decode_value<'de>(decoder: &mut Decoder<'de>) -> Result<Self, DecodeError> {
+        let len = decoder.read_len()?;
+        decoder.check_type(K::sbor_type())?;
+        decoder.check_type(V::sbor_type())?;
+
+        let mut map = HashMap::new();
+        for _ in 0..len {
+            map.insert(K::decode_value(decoder)?, V::decode_value(decoder)?);
+        }
+        Ok(map)
+    }
+
+    #[inline]
+    fn sbor_type() -> u8 {
+        TYPE_TREE_MAP
     }
 }
 
