@@ -17,11 +17,11 @@ impl From<Address> for Account {
 }
 
 impl Account {
-    pub fn withdraw_tokens(&mut self, amount: U256, resource: &Resource) -> Tokens {
+    pub fn withdraw_tokens(&mut self, amount: U256, resource: Address) -> Tokens {
         let input = WithdrawTokensInput {
             account: self.address,
             amount,
-            resource: resource.address(),
+            resource,
         };
         let output: WithdrawTokensOutput = call_kernel(WITHDRAW_TOKENS, input);
 
@@ -36,11 +36,11 @@ impl Account {
         let _: DepositTokensOutput = call_kernel(DEPOSIT_TOKENS, input);
     }
 
-    pub fn withdraw_badges(&mut self, amount: U256, resource: &Resource) -> Badges {
+    pub fn withdraw_badges(&mut self, amount: U256, resource: Address) -> Badges {
         let input = WithdrawBadgesInput {
             account: self.address,
             amount,
-            resource: resource.address(),
+            resource,
         };
         let output: WithdrawBadgesOutput = call_kernel(WITHDRAW_BADGES, input);
 

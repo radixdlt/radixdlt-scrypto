@@ -23,11 +23,8 @@ impl Into<RID> for Tokens {
 }
 
 impl Tokens {
-    pub fn new(amount: U256, resource: &Resource) -> Self {
-        let input = MintTokensInput {
-            amount,
-            resource: resource.address(),
-        };
+    pub fn new(amount: U256, resource: Address) -> Self {
+        let input = MintTokensInput { amount, resource };
         let output: MintTokensOutput = call_kernel(MINT_TOKENS, input);
 
         output.tokens.into()

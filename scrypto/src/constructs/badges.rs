@@ -23,13 +23,10 @@ impl Into<RID> for Badges {
 }
 
 impl Badges {
-    pub fn new(amount: U256, resource: &Resource) -> Self {
+    pub fn new(amount: U256, resource: Address) -> Self {
         assert!(amount >= U256::one());
 
-        let input = MintBadgesInput {
-            amount,
-            resource: resource.address(),
-        };
+        let input = MintBadgesInput { amount, resource };
         let output: MintBadgesOutput = call_kernel(MINT_BADGES, input);
 
         output.badges.into()
