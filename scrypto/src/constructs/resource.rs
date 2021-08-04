@@ -46,7 +46,7 @@ impl Resource {
 
     pub fn get_info(&self) -> ResourceInfo {
         let input = GetResourceInfoInput {
-            resource: self.address.clone(),
+            resource: self.address,
         };
         let output: GetResourceInfoOutput = call_kernel(GET_RESOURCE_INFO, input);
 
@@ -54,6 +54,6 @@ impl Resource {
     }
 
     pub fn address(&self) -> Address {
-        self.address.clone()
+        self.address
     }
 }

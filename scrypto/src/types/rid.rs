@@ -1,11 +1,10 @@
-extern crate alloc;
-use alloc::string::String;
-
 use sbor::{Decode, Encode};
 
-/// Resource type.
+use crate::types::Hash;
+
+/// Resource bucket type.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Encode, Decode)]
-pub enum ResourceKind {
+pub enum BucketKind {
     /// A token bucket.
     Tokens,
 
@@ -19,82 +18,81 @@ pub enum ResourceKind {
     BadgesRef,
 }
 
+/// Resource bucket id.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Encode, Decode)]
+pub enum BucketId {
+    Transient(u32),
+
+    Persisted(Hash, u32),
+}
+
 /// Represents a resource maintained by runtime.
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Encode, Decode)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Encode, Decode)]
 pub struct RID {
-    kind: ResourceKind,
-    id: String,
+    kind: BucketKind,
+    id: BucketId,
 }
 
 impl RID {
     /// Creates a new RID.
-    pub fn new(kind: ResourceKind, id: String) -> Self {
+    pub fn new(kind: BucketKind, id: BucketId) -> Self {
         Self { kind, id }
-    }
-
-    /// Gets the next RID.
-    pub fn next(&self, f: fn(&String) -> String) -> Self {
-        Self::new(self.kind, f(&self.id))
     }
 
     /// Gets the borrowed form of this RID.
     pub fn to_borrowed(&self) -> Self {
         assert!(
-            self.kind() == ResourceKind::Tokens || self.kind() == ResourceKind::Badges,
+            self.kind() == BucketKind::Tokens || self.kind() == BucketKind::Badges,
             "Can't borrow from non-reference type"
         );
 
         Self {
-            kind: if self.kind() == ResourceKind::Tokens {
-                ResourceKind::TokensRef
+            kind: if self.kind() == BucketKind::Tokens {
+                BucketKind::TokensRef
             } else {
-                ResourceKind::BadgesRef
+                BucketKind::BadgesRef
             },
-            id: self.id.clone(),
+            id: self.id,
         }
     }
 
     /// Gets the owned form of this RID.
     pub fn to_owned(&self) -> Self {
         assert!(
-            self.kind() == ResourceKind::TokensRef || self.kind() == ResourceKind::BadgesRef,
+            self.kind() == BucketKind::TokensRef || self.kind() == BucketKind::BadgesRef,
             "Already an owned type"
         );
 
         Self {
-            kind: if self.kind() == ResourceKind::TokensRef {
-                ResourceKind::Tokens
+            kind: if self.kind() == BucketKind::TokensRef {
+                BucketKind::Tokens
             } else {
-                ResourceKind::Badges
+                BucketKind::Badges
             },
-            id: self.id.clone(),
+            id: self.id,
         }
     }
 
     /// Gets the resource type.
-    pub fn kind(&self) -> ResourceKind {
+    pub fn kind(&self) -> BucketKind {
         self.kind
     }
 
     /// Gets the resource bucket id.
-    pub fn id(&self) -> &String {
-        &self.id
+    pub fn id(&self) -> BucketId {
+        self.id
     }
 }
 
 #[cfg(test)]
 mod tests {
-    extern crate alloc;
-    use alloc::string::ToString;
-
-    use crate::types::*;
+    use super::*;
 
     #[test]
     fn test_basics() {
-        let rid = RID::new(ResourceKind::Tokens, "awesome-bucket-id".to_string());
-        let rid2 = rid.next(|_| "new-bucket-id".to_string());
-        let rid3 = rid2.to_borrowed();
-        assert_eq!(rid3.kind(), ResourceKind::TokensRef);
-        assert_eq!(rid3.id(), "new-bucket-id");
+        let rid = RID::new(BucketKind::Tokens, BucketId::Transient(5));
+        let rid2 = rid.to_borrowed();
+        assert_eq!(rid2.kind(), BucketKind::TokensRef);
+        assert_eq!(rid2.id(), BucketId::Transient(5));
     }
 }

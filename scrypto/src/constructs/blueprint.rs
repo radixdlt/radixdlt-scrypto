@@ -36,7 +36,7 @@ impl Blueprint {
         args: Vec<SerializedValue>,
     ) -> SerializedValue {
         let input = CallBlueprintInput {
-            blueprint: self.address.clone(),
+            blueprint: self.address,
             component: component.to_string(),
             method: method.to_string(),
             args,
@@ -47,6 +47,6 @@ impl Blueprint {
     }
 
     pub fn address(&self) -> Address {
-        self.address.clone()
+        self.address
     }
 }

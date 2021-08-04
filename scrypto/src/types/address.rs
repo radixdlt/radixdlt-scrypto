@@ -11,7 +11,7 @@ use sbor::{Decode, Encode};
 use crate::utils::*;
 
 /// Represents an address.
-#[derive(Clone, PartialEq, Eq, Hash, Encode, Decode)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Encode, Decode)]
 pub enum Address {
     /// System address.
     System,
@@ -66,6 +66,12 @@ macro_rules! push {
     }};
 }
 
+impl<T: AsRef<str>> From<T> for Address {
+    fn from(s: T) -> Self {
+        Self::from_hex(s.as_ref()).unwrap()
+    }
+}
+
 impl ToString for Address {
     fn to_string(&self) -> String {
         let mut buf = vec![];
@@ -81,24 +87,6 @@ impl ToString for Address {
     }
 }
 
-impl From<&str> for Address {
-    fn from(s: &str) -> Self {
-        Self::from_hex(s).unwrap()
-    }
-}
-
-impl From<String> for Address {
-    fn from(s: String) -> Self {
-        Self::from_hex(s.as_str()).unwrap()
-    }
-}
-
-impl Into<String> for Address {
-    fn into(self) -> String {
-        self.to_string()
-    }
-}
-
 impl fmt::Debug for Address {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.to_string())
@@ -110,12 +98,12 @@ mod tests {
     extern crate alloc;
     use alloc::string::ToString;
 
-    use crate::types::Address;
+    use super::*;
 
     #[test]
     fn test_from_to_string() {
         let s = "040377bac8066e51cd0d6b320c338d5abbcdbcca25572b6b3eee9443eafc92106bba";
-        let h: Address = s.into();
-        assert_eq!(h.to_string(), s);
+        let a: Address = s.into();
+        assert_eq!(a.to_string(), s);
     }
 }

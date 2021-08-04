@@ -53,7 +53,7 @@ impl Component {
 
     pub fn get_info(&self) -> ComponentInfo {
         let input = GetComponentInfoInput {
-            component: self.address.clone(),
+            component: self.address,
         };
         let output: GetComponentInfoOutput = call_kernel(GET_COMPONENT_INFO, input);
 
@@ -70,7 +70,7 @@ impl Component {
 
     pub fn get_state<T: Decode>(&self) -> T {
         let input = GetComponentStateInput {
-            component: self.address.clone(),
+            component: self.address,
         };
         let output: GetComponentStateOutput = call_kernel(GET_COMPONENT_STATE, input);
 
@@ -79,13 +79,13 @@ impl Component {
 
     pub fn put_state<T: Encode>(&self, state: T) {
         let input = PutComponentStateInput {
-            component: self.address.clone(),
+            component: self.address,
             state: scrypto_encode(&state),
         };
         let _: PutComponentStateOutput = call_kernel(PUT_COMPONENT_STATE, input);
     }
 
     pub fn address(&self) -> Address {
-        self.address.clone()
+        self.address
     }
 }

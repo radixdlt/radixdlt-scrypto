@@ -10,7 +10,7 @@ use sbor::{Decode, Encode};
 use crate::utils::*;
 
 /// Represents a 32-byte hash digest.
-#[derive(Clone, PartialEq, Eq, Hash, Encode, Decode)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Encode, Decode)]
 pub struct Hash {
     raw: [u8; 32],
 }
@@ -41,21 +41,9 @@ impl Hash {
     }
 }
 
-impl From<&str> for Hash {
-    fn from(s: &str) -> Self {
-        Hash::from_hex(s).unwrap()
-    }
-}
-
-impl From<String> for Hash {
-    fn from(s: String) -> Self {
-        Hash::from_hex(s.as_str()).unwrap()
-    }
-}
-
-impl Into<String> for Hash {
-    fn into(self) -> String {
-        hex_encode(self.as_slice())
+impl<T: AsRef<str>> From<T> for Hash {
+    fn from(s: T) -> Self {
+        Hash::from_hex(s.as_ref()).unwrap()
     }
 }
 

@@ -18,18 +18,14 @@ impl From<RID> for TokensRef {
 
 impl TokensRef {
     pub fn amount(&self) -> U256 {
-        let input = GetTokensAmountInput {
-            tokens: self.rid.clone(),
-        };
+        let input = GetTokensAmountInput { tokens: self.rid };
         let output: GetTokensAmountOutput = call_kernel(GET_TOKENS_AMOUNT, input);
 
         output.amount
     }
 
     pub fn resource(&self) -> Resource {
-        let input = GetTokensResourceInput {
-            tokens: self.rid.clone(),
-        };
+        let input = GetTokensResourceInput { tokens: self.rid };
         let output: GetTokensResourceOutput = call_kernel(GET_TOKENS_RESOURCE, input);
 
         output.resource.into()
@@ -37,7 +33,7 @@ impl TokensRef {
 
     pub fn destroy(self) {
         let input = ReturnTokensInput {
-            reference: self.rid.clone(),
+            reference: self.rid,
         };
         let _: ReturnTokensOutput = call_kernel(RETURN_TOKENS, input);
     }

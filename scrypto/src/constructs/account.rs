@@ -19,7 +19,7 @@ impl From<Address> for Account {
 impl Account {
     pub fn withdraw_tokens(&mut self, amount: U256, resource: &Resource) -> Tokens {
         let input = WithdrawTokensInput {
-            account: self.address.clone(),
+            account: self.address,
             amount,
             resource: resource.address(),
         };
@@ -30,7 +30,7 @@ impl Account {
 
     pub fn deposit_tokens(&mut self, tokens: Tokens) {
         let input = DepositTokensInput {
-            account: self.address.clone(),
+            account: self.address,
             tokens: tokens.into(),
         };
         let _: DepositTokensOutput = call_kernel(DEPOSIT_TOKENS, input);
@@ -38,7 +38,7 @@ impl Account {
 
     pub fn withdraw_badges(&mut self, amount: U256, resource: &Resource) -> Badges {
         let input = WithdrawBadgesInput {
-            account: self.address.clone(),
+            account: self.address,
             amount,
             resource: resource.address(),
         };
@@ -49,13 +49,13 @@ impl Account {
 
     pub fn deposit_badges(&mut self, badges: Badges) {
         let input = DepositBadgesInput {
-            account: self.address.clone(),
+            account: self.address,
             badges: badges.into(),
         };
         let _: DepositBadgesOutput = call_kernel(DEPOSIT_BADGES, input);
     }
 
     pub fn address(&self) -> Address {
-        self.address.clone()
+        self.address
     }
 }

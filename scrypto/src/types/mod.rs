@@ -21,9 +21,6 @@ pub type SerializedValue = Vec<u8>;
 
 #[cfg(test)]
 mod tests {
-    extern crate alloc;
-    use alloc::string::ToString;
-
     use sbor::{Decode, Encode};
 
     use crate::buffer::*;
@@ -42,7 +39,7 @@ mod tests {
         let obj = Test {
             address: "040377bac8066e51cd0d6b320c338d5abbcdbcca25572b6b3eee9443eafc92106bba".into(),
             hash: "374c00efbe61f645a8b35d7746e106afa7422877e5d607975b6018e0a1aa6bf0".into(),
-            rid: RID::new(ResourceKind::Badges, "id".to_string()),
+            rid: RID::new(BucketKind::Badges, BucketId::Transient(5)),
             value: 1000.into(),
         };
         let bytes = scrypto_encode(&obj);
