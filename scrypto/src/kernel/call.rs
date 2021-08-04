@@ -8,7 +8,7 @@ pub fn call_kernel<T: Encode, V: Decode>(op: u32, input: T) -> V {
     let input_bytes = scrypto_encode(&input);
 
     // 2. make a kernel call
-    let output_ptr = unsafe { kernel_main(op, input_bytes.as_ptr(), input_bytes.len()) };
+    let output_ptr = unsafe { kernel(op, input_bytes.as_ptr(), input_bytes.len()) };
 
     // 3. copy and release the buffer (allocated by kernel)
     let output_bytes = scrypto_copy(output_ptr);

@@ -100,6 +100,6 @@ fn test_simple_component_abi() {
 }
 
 #[no_mangle]
-pub extern "C" fn kernel_main(_op: u32, _input_ptr: *const u8, _input_len: usize) -> *mut u8 {
+pub extern "C" fn kernel(_op: u32, _input_ptr: *const u8, _input_len: usize) -> *mut u8 {
     scrypto_alloc(0)
 }

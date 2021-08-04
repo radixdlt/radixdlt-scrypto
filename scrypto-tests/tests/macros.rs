@@ -18,7 +18,7 @@ const COMPONENT_METHOD: &'static str = "method";
 const RETURN: i32 = 5;
 
 #[no_mangle]
-pub extern "C" fn kernel_main(op: u32, input_ptr: *const u8, input_len: usize) -> *mut u8 {
+pub extern "C" fn kernel(op: u32, input_ptr: *const u8, input_len: usize) -> *mut u8 {
     let mut input_bytes = Vec::<u8>::with_capacity(input_len);
     unsafe {
         core::ptr::copy(input_ptr, input_bytes.as_mut_ptr(), input_len);

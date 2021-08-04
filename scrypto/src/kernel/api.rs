@@ -8,7 +8,7 @@ use crate::types::*;
 
 extern "C" {
     /// Entrance to Radix kernel.
-    pub fn kernel_main(op: u32, input_ptr: *const u8, input_len: usize) -> *mut u8;
+    pub fn kernel(op: u32, input_ptr: *const u8, input_len: usize) -> *mut u8;
 }
 
 /// Publish a new blueprint
