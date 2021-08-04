@@ -1,5 +1,6 @@
 extern crate alloc;
 use alloc::collections::BTreeMap;
+use alloc::collections::BTreeSet;
 use alloc::vec::Vec;
 
 use crate::*;
@@ -199,6 +200,18 @@ impl<T: Encode> Encode for Option<T> {
     }
 }
 
+impl<T: Encode> Encode for Box<T> {
+    #[inline]
+    fn encode_value(&self, encoder: &mut Encoder) {
+        self.as_ref().encode(encoder);
+    }
+
+    #[inline]
+    fn sbor_type() -> u8 {
+        TYPE_BOX
+    }
+}
+
 impl<T: Encode, const N: usize> Encode for [T; N] {
     #[inline]
     fn encode_value(&self, encoder: &mut Encoder) {
@@ -212,22 +225,6 @@ impl<T: Encode, const N: usize> Encode for [T; N] {
     #[inline]
     fn sbor_type() -> u8 {
         TYPE_ARRAY
-    }
-}
-
-impl<T: Encode> Encode for Vec<T> {
-    #[inline]
-    fn encode_value(&self, encoder: &mut Encoder) {
-        encoder.write_type(T::sbor_type());
-        encoder.write_len(self.len());
-        for v in self {
-            v.encode_value(encoder);
-        }
-    }
-
-    #[inline]
-    fn sbor_type() -> u8 {
-        TYPE_VEC
     }
 }
 
@@ -259,7 +256,39 @@ encode_tuple! { 8 0 A 1 B 2 C 3 D 4 E 5 F 6 G 7 H }
 encode_tuple! { 9 0 A 1 B 2 C 3 D 4 E 5 F 6 G 7 H 8 I }
 encode_tuple! { 10 0 A 1 B 2 C 3 D 4 E 5 F 6 G 7 H 8 I 9 J }
 
-impl<K: Encode, V: Encode> Encode for BTreeMap<K, V> {
+impl<T: Encode> Encode for Vec<T> {
+    #[inline]
+    fn encode_value(&self, encoder: &mut Encoder) {
+        encoder.write_type(T::sbor_type());
+        encoder.write_len(self.len());
+        for v in self {
+            v.encode_value(encoder);
+        }
+    }
+
+    #[inline]
+    fn sbor_type() -> u8 {
+        TYPE_VEC
+    }
+}
+
+impl<T: Encode + Ord> Encode for BTreeSet<T> {
+    #[inline]
+    fn encode_value(&self, encoder: &mut Encoder) {
+        encoder.write_type(T::sbor_type());
+        encoder.write_len(self.len());
+        for v in self {
+            v.encode_value(encoder);
+        }
+    }
+
+    #[inline]
+    fn sbor_type() -> u8 {
+        TYPE_SET
+    }
+}
+
+impl<K: Encode + Ord, V: Encode> Encode for BTreeMap<K, V> {
     #[inline]
     fn encode_value(&self, encoder: &mut Encoder) {
         encoder.write_len(self.len());
@@ -274,19 +303,7 @@ impl<K: Encode, V: Encode> Encode for BTreeMap<K, V> {
 
     #[inline]
     fn sbor_type() -> u8 {
-        TYPE_B_TREE_MAP
-    }
-}
-
-impl<T: Encode> Encode for Box<T> {
-    #[inline]
-    fn encode_value(&self, encoder: &mut Encoder) {
-        self.as_ref().encode(encoder);
-    }
-
-    #[inline]
-    fn sbor_type() -> u8 {
-        TYPE_BOX
+        TYPE_MAP
     }
 }
 
@@ -295,36 +312,47 @@ mod tests {
     extern crate alloc;
     use alloc::boxed::Box;
     use alloc::collections::BTreeMap;
+    use alloc::collections::BTreeSet;
     use alloc::vec;
     use alloc::vec::Vec;
 
     use super::{Encode, Encoder};
 
-    #[test]
-    pub fn test_encoding() {
-        let mut enc = Encoder::with_metadata();
-        ().encode(&mut enc);
-        true.encode(&mut enc);
-        1i8.encode(&mut enc);
-        1i16.encode(&mut enc);
-        1i32.encode(&mut enc);
-        1i64.encode(&mut enc);
-        1i128.encode(&mut enc);
-        1u8.encode(&mut enc);
-        1u16.encode(&mut enc);
-        1u32.encode(&mut enc);
-        1u64.encode(&mut enc);
-        1u128.encode(&mut enc);
-        "hello".encode(&mut enc);
-        Some(1u32).encode(&mut enc);
-        [1u32, 2u32, 3u32].encode(&mut enc);
-        vec![1u32, 2u32, 3u32].encode(&mut enc);
-        (1u32, 2u32).encode(&mut enc);
+    fn do_encoding(enc: &mut Encoder) {
+        ().encode(enc);
+        true.encode(enc);
+        1i8.encode(enc);
+        1i16.encode(enc);
+        1i32.encode(enc);
+        1i64.encode(enc);
+        1i128.encode(enc);
+        1u8.encode(enc);
+        1u16.encode(enc);
+        1u32.encode(enc);
+        1u64.encode(enc);
+        1u128.encode(enc);
+        "hello".encode(enc);
+
+        Some(1u32).encode(enc);
+        Box::new(1u32).encode(enc);
+        [1u32, 2u32, 3u32].encode(enc);
+        (1u32, 2u32).encode(enc);
+
+        vec![1u32, 2u32, 3u32].encode(enc);
+        let mut set = BTreeSet::<u8>::new();
+        set.insert(1);
+        set.insert(2);
+        set.encode(enc);
         let mut map = BTreeMap::<u8, u8>::new();
         map.insert(1, 2);
         map.insert(3, 4);
-        map.encode(&mut enc);
-        Box::new(1u8).encode(&mut enc);
+        map.encode(enc);
+    }
+
+    #[test]
+    pub fn test_encoding() {
+        let mut enc = Encoder::with_metadata();
+        do_encoding(&mut enc);
 
         let bytes: Vec<u8> = enc.into();
         assert_eq!(
@@ -342,12 +370,13 @@ mod tests {
                 10, 1, 0, 0, 0, 0, 0, 0, 0, // u64
                 11, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // u128
                 12, 5, 0, 104, 101, 108, 108, 111, // string
-                13, 1, 9, 1, 0, 0, 0, // option
-                14, 9, 3, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, // array
-                15, 9, 3, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, // vector
-                16, 2, 0, 9, 1, 0, 0, 0, 9, 2, 0, 0, 0, // tuple
-                22, 2, 0, 7, 7, 1, 2, 3, 4, // b tree map
-                23, 7, 1, // box
+                16, 1, 9, 1, 0, 0, 0, // option
+                17, 9, 1, 0, 0, 0, // box
+                18, 9, 3, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, // array
+                19, 2, 0, 9, 1, 0, 0, 0, 9, 2, 0, 0, 0, // tuple
+                32, 9, 3, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, // vec
+                33, 7, 2, 0, 1, 2, // set
+                34, 2, 0, 7, 7, 1, 2, 3, 4 // map
             ],
             bytes
         );
@@ -356,28 +385,7 @@ mod tests {
     #[test]
     pub fn test_encoding_no_metadata() {
         let mut enc = Encoder::no_metadata();
-        ().encode(&mut enc);
-        true.encode(&mut enc);
-        1i8.encode(&mut enc);
-        1i16.encode(&mut enc);
-        1i32.encode(&mut enc);
-        1i64.encode(&mut enc);
-        1i128.encode(&mut enc);
-        1u8.encode(&mut enc);
-        1u16.encode(&mut enc);
-        1u32.encode(&mut enc);
-        1u64.encode(&mut enc);
-        1u128.encode(&mut enc);
-        "hello".encode(&mut enc);
-        Some(1u32).encode(&mut enc);
-        [1u32, 2u32, 3u32].encode(&mut enc);
-        vec![1u32, 2u32, 3u32].encode(&mut enc);
-        (1u32, 2u32).encode(&mut enc);
-        let mut map = BTreeMap::<u8, u8>::new();
-        map.insert(1, 2);
-        map.insert(3, 4);
-        map.encode(&mut enc);
-        Box::new(1u8).encode(&mut enc);
+        do_encoding(&mut enc);
 
         let bytes: Vec<u8> = enc.into();
         assert_eq!(
@@ -396,11 +404,12 @@ mod tests {
                 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // u128
                 5, 0, 104, 101, 108, 108, 111, // string
                 1, 1, 0, 0, 0, // option
+                1, 0, 0, 0, // box
                 3, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, // array
-                3, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, // vector
                 2, 0, 1, 0, 0, 0, 2, 0, 0, 0, // tuple
-                2, 0, 1, 2, 3, 4, // b tree map
-                1  // option
+                3, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, // vec
+                2, 0, 1, 2, // set
+                2, 0, 1, 2, 3, 4 // map
             ],
             bytes
         );

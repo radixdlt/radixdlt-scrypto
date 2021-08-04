@@ -125,6 +125,12 @@ fn get_native_type(ty: &sbor::Type) -> (Type, Vec<Item>) {
 
             parse_quote! { Option<#new_type> }
         }
+        sbor::Type::Box { value } => {
+            let (new_type, new_items) = get_native_type(value);
+            items.extend(new_items);
+
+            parse_quote! { Box<#new_type> }
+        }
         sbor::Type::Struct { name, fields } => {
             let ident = format_ident!("{}", name);
 
@@ -162,18 +168,12 @@ fn get_native_type(ty: &sbor::Type) -> (Type, Vec<Item>) {
 
             parse_quote! { ( #(#types),* ) }
         }
-        sbor::Type::Array { base, length } => {
-            let (new_type, new_items) = get_native_type(base);
+        sbor::Type::Array { element, length } => {
+            let (new_type, new_items) = get_native_type(element);
             items.extend(new_items);
 
             let n = *length as usize;
             parse_quote! { [#new_type; #n] }
-        }
-        sbor::Type::Vec { base } => {
-            let (new_type, new_items) = get_native_type(base);
-            items.extend(new_items);
-
-            parse_quote! { Vec<#new_type> }
         }
         sbor::Type::Enum { name, variants } => {
             let ident = format_ident!("{}", name);
@@ -225,6 +225,26 @@ fn get_native_type(ty: &sbor::Type) -> (Type, Vec<Item>) {
             });
 
             parse_quote! { #ident }
+        }
+        sbor::Type::Vec { element } => {
+            let (new_type, new_items) = get_native_type(element);
+            items.extend(new_items);
+
+            parse_quote! { Vec<#new_type> }
+        }
+        sbor::Type::Set { element } => {
+            let (new_type, new_items) = get_native_type(element);
+            items.extend(new_items);
+
+            parse_quote! { BTreeSet<#new_type> }
+        }
+        sbor::Type::Map { key, value } => {
+            let (key_type, new_items) = get_native_type(key);
+            items.extend(new_items);
+            let (value_type, new_items) = get_native_type(value);
+            items.extend(new_items);
+
+            parse_quote! { BTreeMap<#key_type, #value_type> }
         }
     };
 

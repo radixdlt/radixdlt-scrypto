@@ -1,5 +1,7 @@
 extern crate alloc;
 use alloc::boxed::Box;
+use alloc::collections::BTreeMap;
+use alloc::collections::BTreeSet;
 use alloc::string::String;
 use alloc::vec;
 use alloc::vec::Vec;
@@ -43,20 +45,22 @@ impl<T: Describe> Describe for Option<T> {
     }
 }
 
-impl<T: Describe, const N: usize> Describe for [T; N] {
+impl<T: Describe> Describe for Box<T> {
     fn describe() -> Type {
         let ty = T::describe();
-        Type::Array {
-            base: Box::new(ty),
-            length: N as u16,
+        Type::Box {
+            value: Box::new(ty),
         }
     }
 }
 
-impl<T: Describe> Describe for Vec<T> {
+impl<T: Describe, const N: usize> Describe for [T; N] {
     fn describe() -> Type {
         let ty = T::describe();
-        Type::Vec { base: Box::new(ty) }
+        Type::Array {
+            element: Box::new(ty),
+            length: N as u16,
+        }
     }
 }
 
@@ -81,6 +85,35 @@ describe_tuple! { A B C D E F G }
 describe_tuple! { A B C D E F G H }
 describe_tuple! { A B C D E F G H I }
 describe_tuple! { A B C D E F G H I J }
+
+impl<T: Describe> Describe for Vec<T> {
+    fn describe() -> Type {
+        let ty = T::describe();
+        Type::Vec {
+            element: Box::new(ty),
+        }
+    }
+}
+
+impl<T: Describe> Describe for BTreeSet<T> {
+    fn describe() -> Type {
+        let ty = T::describe();
+        Type::Set {
+            element: Box::new(ty),
+        }
+    }
+}
+
+impl<K: Describe, V: Describe> Describe for BTreeMap<K, V> {
+    fn describe() -> Type {
+        let k = K::describe();
+        let v = V::describe();
+        Type::Map {
+            key: Box::new(k),
+            value: Box::new(v),
+        }
+    }
+}
 
 #[cfg(test)]
 mod tests {
@@ -121,7 +154,7 @@ mod tests {
     pub fn test_array() {
         assert_eq!(
             Type::Array {
-                base: Box::new(Type::U8),
+                element: Box::new(Type::U8),
                 length: 3,
             },
             <[u8; 3]>::describe(),

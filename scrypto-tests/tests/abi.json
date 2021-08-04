@@ -33,7 +33,7 @@
                 },
                 {
                     "type": "Vec",
-                    "base": {
+                    "element": {
                         "type": "String"
                     }
                 },
@@ -67,7 +67,7 @@
                 },
                 {
                     "type": "Array",
-                    "base": {
+                    "element": {
                         "type": "String"
                     },
                     "length": 2

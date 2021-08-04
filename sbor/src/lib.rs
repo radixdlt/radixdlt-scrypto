@@ -23,7 +23,9 @@ pub fn sbor_encode<T: Encode>(v: &T) -> Vec<u8> {
 
 pub fn sbor_decode<'de, T: Decode>(buf: &'de [u8]) -> Result<T, DecodeError> {
     let mut dec = Decoder::with_metadata(buf);
-    T::decode(&mut dec)
+    let v = T::decode(&mut dec);
+    dec.check_end()?;
+    v
 }
 
 pub fn sbor_encode_no_metadata<T: Encode>(v: &T) -> Vec<u8> {
@@ -34,7 +36,9 @@ pub fn sbor_encode_no_metadata<T: Encode>(v: &T) -> Vec<u8> {
 
 pub fn sbor_decode_no_metadata<'de, T: Decode>(buf: &'de [u8]) -> Result<T, DecodeError> {
     let mut dec = Decoder::no_metadata(buf);
-    T::decode(&mut dec)
+    let v = T::decode(&mut dec);
+    dec.check_end()?;
+    v
 }
 
 extern crate sbor_derive;

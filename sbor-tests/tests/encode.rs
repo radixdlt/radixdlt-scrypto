@@ -40,22 +40,22 @@ fn test_encode_struct() {
     #[rustfmt::skip]
     assert_eq!(
         vec![
-            17, // struct type
+            20, // struct type
             15, 0, 84, 101, 115, 116, 83, 116, 114, 117, 99, 116, 78, 97, 109, 101, 100, // struct name
-            19, // fields type
+            22, // fields type
             1, 0, // number of fields
             5, 0, 115, 116, 97, 116, 101, // field name
             9, 3, 0, 0, 0, // field value
             
-            17,  // struct type
+            20,  // struct type
             17, 0, 84, 101, 115, 116, 83, 116, 114, 117, 99, 116, 85, 110, 110, 97, 109, 101, 100, // struct name
-            20,  // fields type
+            23,  // fields type
             1, 0,  // number of fields
             9, 3, 0, 0, 0,  // field value
             
-            17, // struct type
+            20, // struct type
             14, 0, 84, 101, 115, 116, 83, 116, 114, 117, 99, 116, 85, 110, 105, 116, // struct name
-            21 // fields type
+            24 // fields type
         ],
         bytes
     );
@@ -76,30 +76,30 @@ fn test_encode_enum() {
     #[rustfmt::skip]
     assert_eq!(
         vec![
-            18, // enum type
+            21, // enum type
             8, 0, 84, 101, 115, 116, 69, 110, 117, 109, // enum name
             0, // enum index
             1, 0, 65, // variant name
-            19, // fields type
+            22, // fields type
             2, 0,  // number of fields
             1, 0, 120, // field name
             9, 2, 0, 0, 0, // field value
             1, 0, 121,  // field name
             9, 3, 0, 0, 0,  // field value
 
-            18, // enum type
+            21, // enum type
             8, 0, 84, 101, 115, 116, 69, 110, 117, 109, // enum name
             1,  // enum index
             1, 0, 66, // variant name
-            20, // fields type
+            23, // fields type
             1, 0, // number of fields
             9, 1, 0, 0, 0, // field value
             
-            18, // enum type
+            21, // enum type
             8, 0, 84, 101, 115, 116, 69, 110, 117, 109, // enum name
             2,  // enum index
             1, 0, 67, // variant name
-            21  // fields type
+            24  // fields type
         ],
         bytes
     );
