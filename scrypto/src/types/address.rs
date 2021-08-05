@@ -3,6 +3,7 @@ use alloc::format;
 use alloc::string::String;
 use alloc::string::ToString;
 use alloc::vec;
+use alloc::vec::Vec;
 use core::convert::TryInto;
 use core::fmt;
 
@@ -72,8 +73,8 @@ impl<T: AsRef<str>> From<T> for Address {
     }
 }
 
-impl ToString for Address {
-    fn to_string(&self) -> String {
+impl Into<Vec<u8>> for Address {
+    fn into(self) -> Vec<u8> {
         let mut buf = vec![];
         match self {
             Self::System => push!(buf, 0x00),
@@ -83,7 +84,14 @@ impl ToString for Address {
             Self::Blueprint(d) => push!(buf, 0x05, d),
             Self::Component(d) => push!(buf, 0x06, d),
         }
-        hex_encode(buf)
+        buf
+    }
+}
+
+impl ToString for Address {
+    fn to_string(&self) -> String {
+        let bytes: Vec<u8> = self.clone().into();
+        hex_encode(bytes)
     }
 }
 

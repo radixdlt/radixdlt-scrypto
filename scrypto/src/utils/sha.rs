@@ -13,7 +13,7 @@ pub fn sha256<T: AsRef<[u8]>>(data: T) -> Hash {
 
 /// Computes the double SHA-256 digest of a message.
 pub fn sha256_twice<T: AsRef<[u8]>>(data: T) -> Hash {
-    sha256(sha256(data).as_slice())
+    sha256(sha256(data))
 }
 
 #[cfg(test)]

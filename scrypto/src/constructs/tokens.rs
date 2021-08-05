@@ -7,18 +7,18 @@ use sbor::{Decode, Encode};
 /// A bucket that holds token resource.
 #[derive(Debug, Encode, Decode)]
 pub struct Tokens {
-    rid: RID,
+    bid: BID,
 }
 
-impl From<RID> for Tokens {
-    fn from(rid: RID) -> Self {
-        Self { rid }
+impl From<BID> for Tokens {
+    fn from(bid: BID) -> Self {
+        Self { bid }
     }
 }
 
-impl Into<RID> for Tokens {
-    fn into(self) -> RID {
-        self.rid
+impl Into<BID> for Tokens {
+    fn into(self) -> BID {
+        self.bid
     }
 }
 
@@ -32,15 +32,15 @@ impl Tokens {
 
     pub fn put(&mut self, other: Self) {
         let input = CombineTokensInput {
-            tokens: self.rid,
-            other: other.rid,
+            tokens: self.bid,
+            other: other.bid,
         };
         let _: CombineTokensOutput = call_kernel(COMBINE_TOKENS, input);
     }
 
     pub fn take(&mut self, amount: U256) -> Self {
         let input = SplitTokensInput {
-            tokens: self.rid,
+            tokens: self.bid,
             amount,
         };
         let output: SplitTokensOutput = call_kernel(SPLIT_TOKENS, input);
@@ -49,14 +49,14 @@ impl Tokens {
     }
 
     pub fn amount(&self) -> U256 {
-        let input = GetTokensAmountInput { tokens: self.rid };
+        let input = GetTokensAmountInput { tokens: self.bid };
         let output: GetTokensAmountOutput = call_kernel(GET_TOKENS_AMOUNT, input);
 
         output.amount
     }
 
     pub fn resource(&self) -> Resource {
-        let input = GetTokensResourceInput { tokens: self.rid };
+        let input = GetTokensResourceInput { tokens: self.bid };
         let output: GetTokensResourceOutput = call_kernel(GET_TOKENS_RESOURCE, input);
 
         output.resource.into()

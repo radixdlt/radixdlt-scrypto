@@ -28,18 +28,18 @@ pub enum BucketId {
 
 /// Represents a resource maintained by runtime.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Encode, Decode)]
-pub struct RID {
+pub struct BID {
     kind: BucketKind,
     id: BucketId,
 }
 
-impl RID {
-    /// Creates a new RID.
+impl BID {
+    /// Creates a new BID.
     pub fn new(kind: BucketKind, id: BucketId) -> Self {
         Self { kind, id }
     }
 
-    /// Gets the borrowed form of this RID.
+    /// Gets the borrowed form of this BID.
     pub fn to_borrowed(&self) -> Self {
         assert!(
             self.kind() == BucketKind::Tokens || self.kind() == BucketKind::Badges,
@@ -56,7 +56,7 @@ impl RID {
         }
     }
 
-    /// Gets the owned form of this RID.
+    /// Gets the owned form of this BID.
     pub fn to_owned(&self) -> Self {
         assert!(
             self.kind() == BucketKind::TokensRef || self.kind() == BucketKind::BadgesRef,
@@ -90,9 +90,9 @@ mod tests {
 
     #[test]
     fn test_basics() {
-        let rid = RID::new(BucketKind::Tokens, BucketId::Transient(5));
-        let rid2 = rid.to_borrowed();
-        assert_eq!(rid2.kind(), BucketKind::TokensRef);
-        assert_eq!(rid2.id(), BucketId::Transient(5));
+        let bid = BID::new(BucketKind::Tokens, BucketId::Transient(5));
+        let bid2 = bid.to_borrowed();
+        assert_eq!(bid2.kind(), BucketKind::TokensRef);
+        assert_eq!(bid2.id(), BucketId::Transient(5));
     }
 }

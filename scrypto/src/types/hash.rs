@@ -35,9 +35,11 @@ impl Hash {
         })
     }
 
-    /// Obtains a slice reference to this struct.
-    pub fn as_slice(&self) -> &[u8] {
-        &self.raw
+    /// Returns the first 26 bytes.
+    pub fn lower_26_bytes(&self) -> [u8; 26] {
+        let mut result = [0u8; 26];
+        result.copy_from_slice(&self.raw[6..32]);
+        result
     }
 }
 
@@ -47,9 +49,15 @@ impl<T: AsRef<str>> From<T> for Hash {
     }
 }
 
+impl AsRef<[u8]> for Hash {
+    fn as_ref(&self) -> &[u8] {
+        &self.raw
+    }
+}
+
 impl ToString for Hash {
     fn to_string(&self) -> String {
-        hex_encode(self.as_slice())
+        hex_encode(self.as_ref())
     }
 }
 

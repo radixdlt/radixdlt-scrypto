@@ -1,11 +1,11 @@
 mod address;
+mod bid;
 mod hash;
-mod rid;
 mod u256;
 
 pub use address::*;
+pub use bid::*;
 pub use hash::*;
-pub use rid::*;
 pub use u256::*;
 
 #[cfg(test)]
@@ -19,7 +19,7 @@ mod tests {
     struct Test {
         address: Address,
         hash: Hash,
-        rid: RID,
+        bid: BID,
         value: U256,
     }
 
@@ -28,7 +28,7 @@ mod tests {
         let obj = Test {
             address: "040377bac8066e51cd0d6b320c338d5abbcdbcca25572b6b3eee9443eafc92106bba".into(),
             hash: "374c00efbe61f645a8b35d7746e106afa7422877e5d607975b6018e0a1aa6bf0".into(),
-            rid: RID::new(BucketKind::Badges, BucketId::Transient(5)),
+            bid: BID::new(BucketKind::Badges, BucketId::Transient(5)),
             value: 1000.into(),
         };
         let bytes = scrypto_encode(&obj);

@@ -217,13 +217,13 @@ pub struct MintTokensInput {
 
 #[derive(Debug, Encode, Decode)]
 pub struct MintTokensOutput {
-    pub tokens: RID,
+    pub tokens: BID,
 }
 
 #[derive(Debug, Encode, Decode)]
 pub struct CombineTokensInput {
-    pub tokens: RID,
-    pub other: RID,
+    pub tokens: BID,
+    pub other: BID,
 }
 
 #[derive(Debug, Encode, Decode)]
@@ -231,28 +231,28 @@ pub struct CombineTokensOutput {}
 
 #[derive(Debug, Encode, Decode)]
 pub struct SplitTokensInput {
-    pub tokens: RID,
+    pub tokens: BID,
     pub amount: U256,
 }
 
 #[derive(Debug, Encode, Decode)]
 pub struct SplitTokensOutput {
-    pub tokens: RID,
+    pub tokens: BID,
 }
 
 #[derive(Debug, Encode, Decode)]
 pub struct BorrowTokensInput {
-    pub tokens: RID,
+    pub tokens: BID,
 }
 
 #[derive(Debug, Encode, Decode)]
 pub struct BorrowTokensOutput {
-    pub reference: RID,
+    pub reference: BID,
 }
 
 #[derive(Debug, Encode, Decode)]
 pub struct ReturnTokensInput {
-    pub reference: RID,
+    pub reference: BID,
 }
 
 #[derive(Debug, Encode, Decode)]
@@ -266,13 +266,13 @@ pub struct MintBadgesInput {
 
 #[derive(Debug, Encode, Decode)]
 pub struct MintBadgesOutput {
-    pub badges: RID,
+    pub badges: BID,
 }
 
 #[derive(Debug, Encode, Decode)]
 pub struct CombineBadgesInput {
-    pub badges: RID,
-    pub other: RID,
+    pub badges: BID,
+    pub other: BID,
 }
 
 #[derive(Debug, Encode, Decode)]
@@ -280,28 +280,28 @@ pub struct CombineBadgesOutput {}
 
 #[derive(Debug, Encode, Decode)]
 pub struct SplitBadgesInput {
-    pub badges: RID,
+    pub badges: BID,
     pub amount: U256,
 }
 
 #[derive(Debug, Encode, Decode)]
 pub struct SplitBadgesOutput {
-    pub badges: RID,
+    pub badges: BID,
 }
 
 #[derive(Debug, Encode, Decode)]
 pub struct BorrowBadgesInput {
-    pub badges: RID,
+    pub badges: BID,
 }
 
 #[derive(Debug, Encode, Decode)]
 pub struct BorrowBadgesOutput {
-    pub reference: RID,
+    pub reference: BID,
 }
 
 #[derive(Debug, Encode, Decode)]
 pub struct ReturnBadgesInput {
-    pub reference: RID,
+    pub reference: BID,
 }
 
 #[derive(Debug, Encode, Decode)]
@@ -309,7 +309,7 @@ pub struct ReturnBadgesOutput {}
 
 #[derive(Debug, Encode, Decode)]
 pub struct GetTokensAmountInput {
-    pub tokens: RID,
+    pub tokens: BID,
 }
 
 #[derive(Debug, Encode, Decode)]
@@ -319,7 +319,7 @@ pub struct GetTokensAmountOutput {
 
 #[derive(Debug, Encode, Decode)]
 pub struct GetTokensResourceInput {
-    pub tokens: RID,
+    pub tokens: BID,
 }
 
 #[derive(Debug, Encode, Decode)]
@@ -329,7 +329,7 @@ pub struct GetTokensResourceOutput {
 
 #[derive(Debug, Encode, Decode)]
 pub struct GetBadgesAmountInput {
-    pub badges: RID,
+    pub badges: BID,
 }
 
 #[derive(Debug, Encode, Decode)]
@@ -339,7 +339,7 @@ pub struct GetBadgesAmountOutput {
 
 #[derive(Debug, Encode, Decode)]
 pub struct GetBadgesResourceInput {
-    pub badges: RID,
+    pub badges: BID,
 }
 
 #[derive(Debug, Encode, Decode)]
@@ -360,13 +360,13 @@ pub struct WithdrawTokensInput {
 
 #[derive(Debug, Encode, Decode)]
 pub struct WithdrawTokensOutput {
-    pub tokens: RID,
+    pub tokens: BID,
 }
 
 #[derive(Debug, Encode, Decode)]
 pub struct DepositTokensInput {
     pub account: Address,
-    pub tokens: RID,
+    pub tokens: BID,
 }
 
 #[derive(Debug, Encode, Decode)]
@@ -381,13 +381,13 @@ pub struct WithdrawBadgesInput {
 
 #[derive(Debug, Encode, Decode)]
 pub struct WithdrawBadgesOutput {
-    pub badges: RID,
+    pub badges: BID,
 }
 
 #[derive(Debug, Encode, Decode)]
 pub struct DepositBadgesInput {
     pub account: Address,
-    pub badges: RID,
+    pub badges: BID,
 }
 
 #[derive(Debug, Encode, Decode)]
