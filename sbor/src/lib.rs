@@ -21,14 +21,14 @@ pub use encode::{Encode, Encoder};
 pub use parse::sbor_parse;
 
 /// Encode a `T` into byte array.
-pub fn sbor_encode<T: Encode>(v: &T) -> Vec<u8> {
+pub fn sbor_encode_with_metadata<T: Encode>(v: &T) -> Vec<u8> {
     let mut enc = Encoder::with_metadata();
     v.encode(&mut enc);
     enc.into()
 }
 
 /// Decode an instance of `T` from a slice.
-pub fn sbor_decode<'de, T: Decode>(buf: &'de [u8]) -> Result<T, DecodeError> {
+pub fn sbor_decode_with_metadata<'de, T: Decode>(buf: &'de [u8]) -> Result<T, DecodeError> {
     let mut dec = Decoder::with_metadata(buf);
     let v = T::decode(&mut dec);
     dec.check_end()?;

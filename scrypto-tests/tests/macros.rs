@@ -52,7 +52,7 @@ pub extern "C" fn kernel(op: u32, input_ptr: *const u8, input_len: usize) -> *mu
             let output = GetComponentInfoOutput {
                 result: Some(ComponentInfo {
                     blueprint: Address::from(BLUEPRINT_ADDRESS),
-                    kind: COMPONENT_NAME.to_string(),
+                    name: COMPONENT_NAME.to_string(),
                 }),
             };
             output_bytes = scrypto_encode(&output);

@@ -23,9 +23,9 @@ impl From<Address> for Component {
 }
 
 impl Component {
-    pub fn new<T: Encode>(kind: &str, state: T) -> Self {
+    pub fn new<T: Encode>(name: &str, state: T) -> Self {
         let input = CreateComponentInput {
-            kind: kind.to_string(),
+            name: name.to_string(),
             state: scrypto_encode(&state),
         };
         let output: CreateComponentOutput = call_kernel(CREATE_COMPONENT, input);
@@ -42,7 +42,7 @@ impl Component {
 
         let input = CallBlueprintInput {
             blueprint: data.blueprint,
-            component: data.kind,
+            component: data.name,
             method: method.to_string(),
             args: args_buf,
         };
@@ -64,8 +64,8 @@ impl Component {
         self.get_info().blueprint.into()
     }
 
-    pub fn get_kind(&self) -> String {
-        self.get_info().kind
+    pub fn get_name(&self) -> String {
+        self.get_info().name
     }
 
     pub fn get_state<T: Decode>(&self) -> T {

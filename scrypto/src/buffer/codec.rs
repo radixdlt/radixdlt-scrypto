@@ -3,14 +3,14 @@ use alloc::vec::Vec;
 
 use sbor::*;
 
-/// Encodes a value into byte array.
+/// Encodes a data structure into byte array.
 pub fn scrypto_encode<T: Encode>(v: &T) -> Vec<u8> {
-    sbor::sbor_encode(v)
+    sbor::sbor_encode_with_metadata(v)
 }
 
-/// Decodes a value from a slice.
+/// Decodes an instance of `T` from a slice.
 pub fn scrypto_decode<'de, T: Decode>(buf: &'de [u8]) -> T {
-    sbor::sbor_decode(buf).unwrap()
+    sbor::sbor_decode_with_metadata(buf).unwrap()
 }
 
 #[cfg(test)]

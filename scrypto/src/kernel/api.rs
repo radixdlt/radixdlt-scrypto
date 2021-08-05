@@ -76,13 +76,13 @@ pub const EMIT_LOG: u32 = 0x50;
 /// Retrieve context address
 pub const GET_CONTEXT_ADDRESS: u32 = 0x51;
 
-#[derive(Debug, Encode, Decode)]
+#[derive(Debug, Clone, Encode, Decode)]
 pub struct ComponentInfo {
     pub blueprint: Address,
-    pub kind: String,
+    pub name: String,
 }
 
-#[derive(Debug, Encode, Decode)]
+#[derive(Debug, Clone, Encode, Decode)]
 pub struct ResourceInfo {
     pub symbol: String,
     pub name: String,
@@ -126,7 +126,7 @@ pub struct CallBlueprintOutput {
 
 #[derive(Debug, Encode, Decode)]
 pub struct CreateComponentInput {
-    pub kind: String,
+    pub name: String,
     pub state: Vec<u8>,
 }
 
