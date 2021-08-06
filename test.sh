@@ -11,6 +11,7 @@ echo "Testing with std"
 (cd scrypto; cargo test)
 (cd scrypto-derive; cargo test)
 (cd scrypto-tests; cargo test)
+(cd radix-engine; cargo test)
 
 echo "Testing with no_std"
 (cd sbor; cargo test --no-default-features --features json,alloc)
@@ -19,7 +20,7 @@ echo "Testing with no_std"
 (cd scrypto-tests; cargo test --no-default-features --features alloc)
 
 echo "Testing examples"
-(cd examples/helloworld; cargo build --target wasm32-unknown-unknown)
-(cd examples/no_std; cargo build --target wasm32-unknown-unknown)
+(cd examples/helloworld; cargo build --target wasm32-unknown-unknown --release)
+(cd examples/no_std; cargo build --target wasm32-unknown-unknown  --release)
 
 echo "Congrats! All tests passed."
