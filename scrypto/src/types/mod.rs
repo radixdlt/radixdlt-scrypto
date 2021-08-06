@@ -32,7 +32,7 @@ mod tests {
             value: 1000.into(),
         };
         let bytes = scrypto_encode(&obj);
-        let obj2: Test = scrypto_decode(&bytes);
+        let obj2: Test = scrypto_decode(&bytes).unwrap();
         let bytes2 = scrypto_encode(&obj2);
         assert_eq!(bytes, bytes2);
     }

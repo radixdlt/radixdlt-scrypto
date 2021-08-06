@@ -31,7 +31,7 @@ macro_rules! call_blueprint {
         {
             extern crate alloc;
             let rtn = scrypto::constructs::Blueprint::call(&$blueprint, $component, $method, alloc::vec::Vec::new());
-            scrypto::buffer::scrypto_decode::<$rtn_type>(&rtn)
+            scrypto::buffer::scrypto_decode::<$rtn_type>(&rtn).unwrap()
         }
     };
 
@@ -41,7 +41,7 @@ macro_rules! call_blueprint {
             let mut args = alloc::vec::Vec::new();
             $(args.push(scrypto::buffer::scrypto_encode(&$args));)+
             let rtn = scrypto::constructs::Blueprint::call(&$blueprint, $component, $method, args);
-            scrypto::buffer::scrypto_decode::<$rtn_type>(&rtn)
+            scrypto::buffer::scrypto_decode::<$rtn_type>(&rtn).unwrap()
         }
     };
 }
@@ -53,7 +53,7 @@ macro_rules! call_component {
         {
             extern crate alloc;
             let rtn = scrypto::constructs::Component::call(&$component, $method, alloc::vec::Vec::new());
-            scrypto::buffer::scrypto_decode::<$rtn_type>(&rtn)
+            scrypto::buffer::scrypto_decode::<$rtn_type>(&rtn).unwrap()
         }
     };
 
@@ -63,7 +63,7 @@ macro_rules! call_component {
             let mut args = alloc::vec::Vec::new();
             $(args.push(scrypto::buffer::scrypto_encode(&$args));)+
             let rtn = scrypto::constructs::Component::call(&$component, $method, args);
-            scrypto::buffer::scrypto_decode::<$rtn_type>(&rtn)
+            scrypto::buffer::scrypto_decode::<$rtn_type>(&rtn).unwrap()
         }
     };
 }
@@ -73,7 +73,7 @@ macro_rules! call_component {
 macro_rules! error {
     ($($args: expr),+) => {{
         extern crate alloc;
-        scrypto::constructs::Logger::log(scrypto::constructs::LogLevel::Error, alloc::format!($($args),+));
+        scrypto::constructs::Logger::log(scrypto::constructs::Level::Error, alloc::format!($($args),+));
     }};
 }
 
@@ -82,7 +82,7 @@ macro_rules! error {
 macro_rules! warn {
     ($($args: expr),+) => {{
         extern crate alloc;
-        scrypto::constructs::Logger::log(scrypto::constructs::LogLevel::Warn, alloc::format!($($args),+));
+        scrypto::constructs::Logger::log(scrypto::constructs::Level::Warn, alloc::format!($($args),+));
     }};
 }
 
@@ -91,7 +91,7 @@ macro_rules! warn {
 macro_rules! info {
     ($($args: expr),+) => {{
         extern crate alloc;
-        scrypto::constructs::Logger::log(scrypto::constructs::LogLevel::Info, alloc::format!($($args),+));
+        scrypto::constructs::Logger::log(scrypto::constructs::Level::Info, alloc::format!($($args),+));
     }};
 }
 
@@ -100,7 +100,7 @@ macro_rules! info {
 macro_rules! debug {
     ($($args: expr),+) => {{
         extern crate alloc;
-        scrypto::constructs::Logger::log(scrypto::constructs::LogLevel::Debug, alloc::format!($($args),+));
+        scrypto::constructs::Logger::log(scrypto::constructs::Level::Debug, alloc::format!($($args),+));
     }};
 }
 
@@ -109,6 +109,6 @@ macro_rules! debug {
 macro_rules! trace {
     ($($args: expr),+) => {{
         extern crate alloc;
-        scrypto::constructs::Logger::log(scrypto::constructs::LogLevel::Trace, alloc::format!($($args),+));
+        scrypto::constructs::Logger::log(scrypto::constructs::Level::Trace, alloc::format!($($args),+));
     }};
 }

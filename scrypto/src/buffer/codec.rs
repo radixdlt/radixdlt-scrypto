@@ -9,8 +9,8 @@ pub fn scrypto_encode<T: Encode>(v: &T) -> Vec<u8> {
 }
 
 /// Decodes an instance of `T` from a slice.
-pub fn scrypto_decode<'de, T: Decode>(buf: &'de [u8]) -> T {
-    sbor::sbor_decode_with_metadata(buf).unwrap()
+pub fn scrypto_decode<'de, T: Decode>(buf: &'de [u8]) -> Result<T, DecodeError> {
+    sbor::sbor_decode_with_metadata(buf)
 }
 
 #[cfg(test)]
@@ -30,8 +30,8 @@ mod tests {
             state: scrypto_encode(&"test".to_string()),
         };
         let encoded = crate::buffer::scrypto_encode(&obj);
-        let decoded = crate::buffer::scrypto_decode::<PutComponentStateInput>(&encoded);
+        let decoded = crate::buffer::scrypto_decode::<PutComponentStateInput>(&encoded).unwrap();
         assert_eq!(decoded.component, Address::System);
-        assert_eq!(scrypto_decode::<String>(&decoded.state), "test");
+        assert_eq!(scrypto_decode::<String>(&decoded.state).unwrap(), "test");
     }
 }

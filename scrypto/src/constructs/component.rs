@@ -74,7 +74,7 @@ impl Component {
         };
         let output: GetComponentStateOutput = call_kernel(GET_COMPONENT_STATE, input);
 
-        scrypto_decode(&output.state)
+        scrypto_decode(&output.state).unwrap()
     }
 
     pub fn put_state<T: Encode>(&self, state: T) {

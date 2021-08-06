@@ -5,7 +5,7 @@ use alloc::string::ToString;
 use crate::kernel::*;
 
 /// Represents the severity of a log message.
-pub enum LogLevel {
+pub enum Level {
     Error,
     Warn,
     Info,
@@ -17,13 +17,13 @@ pub enum LogLevel {
 pub struct Logger {}
 
 impl Logger {
-    pub fn log(level: LogLevel, message: String) {
+    pub fn log(level: Level, message: String) {
         let s = match level {
-            LogLevel::Error => "ERROR",
-            LogLevel::Warn => "WARN",
-            LogLevel::Info => "INFO",
-            LogLevel::Debug => "DEBUG",
-            LogLevel::Trace => "TRACE",
+            Level::Error => "ERROR",
+            Level::Warn => "WARN",
+            Level::Info => "INFO",
+            Level::Debug => "DEBUG",
+            Level::Trace => "TRACE",
         };
         let input = EmitLogInput {
             level: s.to_string(),
@@ -33,22 +33,22 @@ impl Logger {
     }
 
     pub fn trace(message: String) {
-        Self::log(LogLevel::Trace, message);
+        Self::log(Level::Trace, message);
     }
 
     pub fn debug(message: String) {
-        Self::log(LogLevel::Debug, message);
+        Self::log(Level::Debug, message);
     }
 
     pub fn info(message: String) {
-        Self::log(LogLevel::Info, message);
+        Self::log(Level::Info, message);
     }
 
     pub fn warn(message: String) {
-        Self::log(LogLevel::Warn, message);
+        Self::log(Level::Warn, message);
     }
 
     pub fn error(message: String) {
-        Self::log(LogLevel::Error, message);
+        Self::log(Level::Error, message);
     }
 }

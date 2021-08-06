@@ -61,31 +61,25 @@ pub fn handle_component(input: TokenStream) -> TokenStream {
         }
 
         #[no_mangle]
-        pub extern "C" fn #dispatcher_ident(input_ptr: *mut u8) -> *mut u8 {
-            // copy and release
-            let input_bytes = scrypto::buffer::scrypto_copy(input_ptr);
-            scrypto::buffer::scrypto_free(input_ptr);
-
-            // deserialize the input
-            let input = scrypto::buffer::scrypto_decode::<scrypto::abi::CallInput>(
-                &input_bytes,
+        pub extern "C" fn #dispatcher_ident() -> *mut u8 {
+            // Retrieve call data
+            let calldata: scrypto::kernel::GetCallDataOutput = scrypto::kernel::call_kernel(
+                scrypto::kernel::GET_CALL_DATA,
+                scrypto::kernel::GetCallDataInput {},
             );
 
-            // invoke the method
+            // Dispatch the call
             let rtn;
-            match input.method.as_str() {
-                #( #arm_guards => #arm_bodies, )*
+            match calldata.method.as_str() {
+                #( #arm_guards => #arm_bodies )*
                 _ => {
-                    panic!("Method not found: name = {}", input.method)
+                    panic!("Method not found: name = {}", calldata.method)
                 }
             }
 
-            // serialize the output
-            let output = scrypto::abi::CallOutput { rtn };
-            let output_bytes = scrypto::buffer::scrypto_encode(&output);
-
-            // return the output wrapped in a radix-style buffer
-            scrypto::buffer::scrypto_alloc_init(&output_bytes)
+            // Return
+            let rtn_bytes = scrypto::buffer::scrypto_encode(&rtn);
+            scrypto::buffer::scrypto_alloc_init(&rtn_bytes)
         }
 
         #[no_mangle]
@@ -150,7 +144,7 @@ fn generate_dispatcher(com_ident: &Ident, items: &Vec<ImplItem>) -> (Vec<Expr>, 
 
                                 // Generate an `Arg` and a loading `Stmt` for the i-th argument
                                 let stmt: Stmt = parse_quote! {
-                                    let #arg = scrypto::buffer::scrypto_decode::<scrypto::constructs::Component>(&input.args[#i]);
+                                    let #arg = scrypto::buffer::scrypto_decode::<scrypto::constructs::Component>(&calldata.args[#i]).unwrap();
                                 };
                                 trace!("Stmt: {}", quote! { #stmt });
                                 args.push(parse_quote! { & #mutability state });
@@ -173,7 +167,7 @@ fn generate_dispatcher(com_ident: &Ident, items: &Vec<ImplItem>) -> (Vec<Expr>, 
                                 // Generate an `Arg` and a loading `Stmt` for the i-th argument
                                 let ty = &t.ty;
                                 let stmt: Stmt = parse_quote! {
-                                    let #arg = scrypto::buffer::scrypto_decode::<#ty>(&input.args[#i]);
+                                    let #arg = scrypto::buffer::scrypto_decode::<#ty>(&calldata.args[#i]).unwrap();
                                 };
                                 trace!("Stmt: {}", quote! { #stmt });
                                 args.push(parse_quote! { #arg });
@@ -451,26 +445,27 @@ mod tests {
                 }
 
                 #[no_mangle]
-                pub extern "C" fn Test_main(input_ptr: *mut u8) -> *mut u8 {
-                    let input_bytes = scrypto::buffer::scrypto_copy(input_ptr);
-                    scrypto::buffer::scrypto_free(input_ptr);
-                    let input = scrypto::buffer::scrypto_decode::<scrypto::abi::CallInput>(&input_bytes,);
+                pub extern "C" fn Test_main() -> *mut u8 {
+                    let calldata: scrypto::kernel::GetCallDataOutput = scrypto::kernel::call_kernel(
+                        scrypto::kernel::GET_CALL_DATA,
+                        scrypto::kernel::GetCallDataInput {},
+                    );
                     let rtn;
-                    match input.method.as_str() {
+                    match calldata.method.as_str() {
                         "x" => {
                             let arg0 = scrypto::buffer::scrypto_decode::<scrypto::constructs::Component>(
-                                &input.args[0usize]
-                            );
+                                &calldata.args[0usize]
+                            )
+                            .unwrap();
                             let state: Test = arg0.get_state();
                             rtn = scrypto::buffer::scrypto_encode(&Test::x(&state));
-                        },
+                        }
                         _ => {
-                            panic!("Method not found: name = {}", input.method)
+                            panic!("Method not found: name = {}", calldata.method)
                         }
                     }
-                    let output = scrypto::abi::CallOutput { rtn };
-                    let output_bytes = scrypto::buffer::scrypto_encode(&output);
-                    scrypto::buffer::scrypto_alloc_init(&output_bytes)
+                    let rtn_bytes = scrypto::buffer::scrypto_encode(&rtn);
+                    scrypto::buffer::scrypto_alloc_init(&rtn_bytes)
                 }
 
                 #[no_mangle]

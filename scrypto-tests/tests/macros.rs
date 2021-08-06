@@ -28,14 +28,14 @@ pub extern "C" fn kernel(op: u32, input_ptr: *const u8, input_len: usize) -> *mu
 
     match op {
         EMIT_LOG => {
-            let input: EmitLogInput = scrypto_decode(&input_bytes);
+            let input: EmitLogInput = scrypto_decode(&input_bytes).unwrap();
             assert_eq!(input.message, LOG_MESSAGE);
 
             let output = EmitLogOutput {};
             output_bytes = scrypto_encode(&output);
         }
         CALL_BLUEPRINT => {
-            let input: CallBlueprintInput = scrypto_decode(&input_bytes);
+            let input: CallBlueprintInput = scrypto_decode(&input_bytes).unwrap();
             assert_eq!(input.blueprint, Address::from(BLUEPRINT_ADDRESS));
             assert_eq!(input.component, COMPONENT_NAME);
             assert_eq!(input.method, COMPONENT_METHOD);
@@ -46,7 +46,7 @@ pub extern "C" fn kernel(op: u32, input_ptr: *const u8, input_len: usize) -> *mu
             output_bytes = scrypto_encode(&output);
         }
         GET_COMPONENT_INFO => {
-            let input: GetComponentInfoInput = scrypto_decode(&input_bytes);
+            let input: GetComponentInfoInput = scrypto_decode(&input_bytes).unwrap();
             assert_eq!(input.component, Address::from(COMPONENT_ADDRESS));
 
             let output = GetComponentInfoOutput {

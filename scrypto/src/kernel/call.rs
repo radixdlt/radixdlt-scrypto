@@ -15,5 +15,5 @@ pub fn call_kernel<T: Encode, V: Decode>(op: u32, input: T) -> V {
     scrypto_free(output_ptr);
 
     // 4. deserialize the output
-    scrypto_decode(&output_bytes)
+    scrypto_decode(&output_bytes).unwrap()
 }

@@ -75,6 +75,8 @@ pub const DEPOSIT_BADGES: u32 = 0x43;
 pub const EMIT_LOG: u32 = 0x50;
 /// Retrieve context address
 pub const GET_CONTEXT_ADDRESS: u32 = 0x51;
+/// Retrieve the call data
+pub const GET_CALL_DATA: u32 = 0x52;
 
 #[derive(Debug, Clone, Encode, Decode)]
 pub struct ComponentInfo {
@@ -412,4 +414,13 @@ pub struct GetContextAddressInput {}
 #[derive(Debug, Encode, Decode)]
 pub struct GetContextAddressOutput {
     pub address: Address,
+}
+
+#[derive(Debug, Encode, Decode)]
+pub struct GetCallDataInput {}
+
+#[derive(Debug, Encode, Decode)]
+pub struct GetCallDataOutput {
+    pub method: String,
+    pub args: Vec<Vec<u8>>,
 }
