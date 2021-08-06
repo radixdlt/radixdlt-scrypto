@@ -1,6 +1,8 @@
+use std::fmt;
 use std::time::Instant;
 
 use hashbrown::HashMap;
+use sbor::*;
 use scrypto::buffer::*;
 use scrypto::kernel::*;
 use scrypto::types::*;
@@ -12,14 +14,26 @@ use crate::model::*;
 
 #[derive(Debug)]
 pub enum RuntimeError {
-    InterpretationError(Error),
-
-    NoBlueprintReturn,
+    ExecutionError(Error),
 
     MemoryCopyError(Error),
 
-    InvalidBlueprintReturn,
+    NoValidBlueprintReturn,
+
+    InvalidOpCode(u32),
+
+    InvalidRequest,
+
+    UnknownHostFunction(usize),
 }
+
+impl fmt::Display for RuntimeError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
+impl HostError for RuntimeError {}
 
 pub struct Process<'a, L: Ledger> {
     context: &'a mut TransactionContext<L>,
@@ -65,7 +79,7 @@ impl<'a, L: Ledger> Process<'a, L> {
         let func = format!("{}_{}", self.component, "main");
         let result = self.module.invoke_export(func.as_str(), &[], self);
 
-        let output = result.map_err(|e| RuntimeError::InterpretationError(e))?;
+        let output = result.map_err(|e| RuntimeError::ExecutionError(e))?;
         match output {
             Some(RuntimeValue::I32(ptr)) => {
                 let buf = self
@@ -79,7 +93,7 @@ impl<'a, L: Ledger> Process<'a, L> {
                     .map_err(|e| RuntimeError::MemoryCopyError(e))?;
                 Ok(bytes)
             }
-            _ => Err(RuntimeError::InvalidBlueprintReturn),
+            _ => Err(RuntimeError::NoValidBlueprintReturn),
         }
     }
 
@@ -109,134 +123,200 @@ impl<'a, L: Ledger> Process<'a, L> {
         }
     }
 
-    pub fn publish_blueprint(&self, input: PublishBlueprintInput) -> PublishBlueprintOutput {
+    pub fn publish_blueprint(
+        &mut self,
+        input: PublishBlueprintInput,
+    ) -> Result<PublishBlueprintOutput, RuntimeError> {
         todo!()
     }
 
-    pub fn call_blueprint(&mut self, input: CallBlueprintInput) -> CallBlueprintOutput {
+    pub fn call_blueprint(
+        &mut self,
+        input: CallBlueprintInput,
+    ) -> Result<CallBlueprintOutput, RuntimeError> {
         todo!()
     }
 
-    pub fn create_component(&mut self, input: CreateComponentInput) -> CreateComponentOutput {
+    pub fn create_component(
+        &mut self,
+        input: CreateComponentInput,
+    ) -> Result<CreateComponentOutput, RuntimeError> {
         todo!()
     }
 
-    pub fn get_component_info(&self, input: GetComponentInfoInput) -> GetComponentInfoOutput {
+    pub fn get_component_info(
+        &mut self,
+        input: GetComponentInfoInput,
+    ) -> Result<GetComponentInfoOutput, RuntimeError> {
         todo!()
     }
 
     pub fn get_component_state(
         &mut self,
         input: GetComponentStateInput,
-    ) -> GetComponentStateOutput {
+    ) -> Result<GetComponentStateOutput, RuntimeError> {
         todo!()
     }
 
     pub fn put_component_state(
         &mut self,
         input: PutComponentStateInput,
-    ) -> PutComponentStateOutput {
+    ) -> Result<PutComponentStateOutput, RuntimeError> {
         todo!()
     }
 
-    pub fn create_resource(&self, input: CreateResourceInput) -> CreateResourceOutput {
+    pub fn create_resource(
+        &mut self,
+        input: CreateResourceInput,
+    ) -> Result<CreateResourceOutput, RuntimeError> {
         todo!()
     }
 
-    pub fn get_resource_info(&self, input: GetResourceInfoInput) -> GetResourceInfoOutput {
+    pub fn get_resource_info(
+        &mut self,
+        input: GetResourceInfoInput,
+    ) -> Result<GetResourceInfoOutput, RuntimeError> {
         todo!()
     }
 
-    pub fn mint_tokens(&mut self, input: MintTokensInput) -> MintTokensOutput {
+    pub fn mint_tokens(
+        &mut self,
+        input: MintTokensInput,
+    ) -> Result<MintTokensOutput, RuntimeError> {
         todo!()
     }
 
-    pub fn combine_tokens(&mut self, input: CombineTokensInput) -> CombineTokensOutput {
+    pub fn combine_tokens(
+        &mut self,
+        input: CombineTokensInput,
+    ) -> Result<CombineTokensOutput, RuntimeError> {
         todo!()
     }
 
-    pub fn split_tokens(&mut self, input: SplitTokensInput) -> SplitTokensOutput {
+    pub fn split_tokens(
+        &mut self,
+        input: SplitTokensInput,
+    ) -> Result<SplitTokensOutput, RuntimeError> {
         todo!()
     }
 
-    pub fn mint_badges(&mut self, input: MintBadgesInput) -> MintBadgesOutput {
+    pub fn mint_badges(
+        &mut self,
+        input: MintBadgesInput,
+    ) -> Result<MintBadgesOutput, RuntimeError> {
         todo!()
     }
 
-    pub fn combine_badges(&mut self, input: CombineBadgesInput) -> CombineBadgesOutput {
+    pub fn combine_badges(
+        &mut self,
+        input: CombineBadgesInput,
+    ) -> Result<CombineBadgesOutput, RuntimeError> {
         todo!()
     }
 
-    pub fn split_badges(&mut self, input: SplitBadgesInput) -> SplitBadgesOutput {
+    pub fn split_badges(
+        &mut self,
+        input: SplitBadgesInput,
+    ) -> Result<SplitBadgesOutput, RuntimeError> {
         todo!()
     }
 
-    pub fn borrow_badges(&mut self, input: BorrowBadgesInput) -> BorrowBadgesOutput {
+    pub fn borrow_badges(
+        &mut self,
+        input: BorrowBadgesInput,
+    ) -> Result<BorrowBadgesOutput, RuntimeError> {
         todo!()
     }
 
-    pub fn return_badges(&mut self, input: ReturnBadgesInput) -> ReturnBadgesOutput {
+    pub fn return_badges(
+        &mut self,
+        input: ReturnBadgesInput,
+    ) -> Result<ReturnBadgesOutput, RuntimeError> {
         todo!()
     }
 
-    pub fn get_tokens_amount(&mut self, input: GetTokensAmountInput) -> GetTokensAmountOutput {
+    pub fn get_tokens_amount(
+        &mut self,
+        input: GetTokensAmountInput,
+    ) -> Result<GetTokensAmountOutput, RuntimeError> {
         todo!()
     }
 
     pub fn get_tokens_resource(
         &mut self,
         input: GetTokensResourceInput,
-    ) -> GetTokensResourceOutput {
+    ) -> Result<GetTokensResourceOutput, RuntimeError> {
         todo!()
     }
 
-    pub fn get_badges_amount(&mut self, input: GetBadgesAmountInput) -> GetBadgesAmountOutput {
+    pub fn get_badges_amount(
+        &mut self,
+        input: GetBadgesAmountInput,
+    ) -> Result<GetBadgesAmountOutput, RuntimeError> {
         todo!()
     }
 
     pub fn get_badges_resource(
         &mut self,
         input: GetBadgesResourceInput,
-    ) -> GetBadgesResourceOutput {
+    ) -> Result<GetBadgesResourceOutput, RuntimeError> {
         todo!()
     }
 
-    pub fn withdraw_tokens(&mut self, input: WithdrawTokensInput) -> WithdrawTokensOutput {
+    pub fn withdraw_tokens(
+        &mut self,
+        input: WithdrawTokensInput,
+    ) -> Result<WithdrawTokensOutput, RuntimeError> {
         todo!()
     }
 
-    pub fn deposit_tokens(&mut self, input: DepositTokensInput) -> DepositTokensOutput {
+    pub fn deposit_tokens(
+        &mut self,
+        input: DepositTokensInput,
+    ) -> Result<DepositTokensOutput, RuntimeError> {
         todo!()
     }
 
-    pub fn withdraw_badges(&mut self, input: WithdrawBadgesInput) -> WithdrawBadgesOutput {
+    pub fn withdraw_badges(
+        &mut self,
+        input: WithdrawBadgesInput,
+    ) -> Result<WithdrawBadgesOutput, RuntimeError> {
         todo!()
     }
 
-    pub fn deposit_badges(&mut self, input: DepositBadgesInput) -> DepositBadgesOutput {
+    pub fn deposit_badges(
+        &mut self,
+        input: DepositBadgesInput,
+    ) -> Result<DepositBadgesOutput, RuntimeError> {
         todo!()
     }
 
-    pub fn emit_log(&self, input: EmitLogInput) -> EmitLogOutput {
+    pub fn emit_log(&mut self, input: EmitLogInput) -> Result<EmitLogOutput, RuntimeError> {
         self.log_user(input.level.into(), input.message);
 
-        EmitLogOutput {}
+        Ok(EmitLogOutput {})
     }
 
-    pub fn get_context_address(&self, _input: GetContextAddressInput) -> GetContextAddressOutput {
-        GetContextAddressOutput {
+    pub fn get_context_address(
+        &mut self,
+        _input: GetContextAddressInput,
+    ) -> Result<GetContextAddressOutput, RuntimeError> {
+        Ok(GetContextAddressOutput {
             address: self.blueprint,
-        }
+        })
     }
 
-    pub fn get_call_data(&self, _input: GetCallDataInput) -> GetCallDataOutput {
-        GetCallDataOutput {
+    pub fn get_call_data(
+        &mut self,
+        _input: GetCallDataInput,
+    ) -> Result<GetCallDataOutput, RuntimeError> {
+        Ok(GetCallDataOutput {
             method: self.method.clone(),
             args: self.args.clone(),
-        }
+        })
     }
 
-    fn send_bytes(&self, bytes: &[u8]) -> u32 {
+    fn send_bytes(&mut self, bytes: &[u8]) -> u32 {
         let result = self.module.invoke_export(
             "scrypto_alloc",
             &[RuntimeValue::I32((bytes.len()) as i32)],
@@ -251,27 +331,35 @@ impl<'a, L: Ledger> Process<'a, L> {
             _ => panic!("Failed to allocate memory in process"),
         }
     }
-}
 
-macro_rules! handle_operation {
-    ($input_t: ident, $output_t: ident, $args: expr, $externals: expr, $handler: expr, $trace: expr) => {{
+    fn trap(error: RuntimeError) -> Trap {
+        Trap::new(TrapKind::Host(Box::new(error)))
+    }
+
+    fn handle<I: Decode + fmt::Debug, O: Encode + fmt::Debug>(
+        &mut self,
+        args: RuntimeArgs,
+        handler: fn(&mut Self, input: I) -> Result<O, RuntimeError>,
+        trace: bool,
+    ) -> Result<Option<RuntimeValue>, Trap> {
         let now = Instant::now();
-        let input_ptr: u32 = $args.nth_checked(1)?;
-        let input_len: u32 = $args.nth_checked(2)?;
-        let input_bytes = $externals
+        let input_ptr: u32 = args.nth_checked(1)?;
+        let input_len: u32 = args.nth_checked(2)?;
+        let input_bytes = self
             .memory
             .get(input_ptr, input_len as usize)
-            .unwrap();
-        let input: $input_t = scrypto_decode(&input_bytes).unwrap();
-        if $trace {
-            $externals.log_kernel(Level::Trace, format!("{:?}", input));
+            .map_err(|e| Trap::new(TrapKind::MemoryAccessOutOfBounds))?;
+        let input: I =
+            scrypto_decode(&input_bytes).map_err(|e| Self::trap(RuntimeError::InvalidRequest))?;
+        if trace {
+            self.log_kernel(Level::Trace, format!("{:?}", input));
         }
 
-        let output: $output_t = $handler($externals, input);
+        let output: O = handler(self, input).map_err(|e| Self::trap(e))?;
         let output_bytes = scrypto_encode(&output);
-        let output_ptr = $externals.send_bytes(&output_bytes);
-        if $trace {
-            $externals.log_kernel(
+        let output_ptr = self.send_bytes(&output_bytes);
+        if trace {
+            self.log_kernel(
                 Level::Trace,
                 format!(
                     "output = {:?}, time = {} ms",
@@ -282,7 +370,7 @@ macro_rules! handle_operation {
         }
 
         Ok(Some(RuntimeValue::I32(output_ptr as i32)))
-    }};
+    }
 }
 
 impl<'a, T: Ledger> Externals for Process<'a, T> {
@@ -295,280 +383,37 @@ impl<'a, T: Ledger> Externals for Process<'a, T> {
             KERNEL => {
                 let operation: u32 = args.nth_checked(0)?;
                 match operation {
-                    PUBLISH_BLUEPRINT => {
-                        handle_operation!(
-                            PublishBlueprintInput,
-                            PublishBlueprintOutput,
-                            args,
-                            self,
-                            Process::publish_blueprint,
-                            false
-                        )
-                    }
-                    CALL_BLUEPRINT => {
-                        handle_operation!(
-                            CallBlueprintInput,
-                            CallBlueprintOutput,
-                            args,
-                            self,
-                            Process::call_blueprint,
-                            true
-                        )
-                    }
-                    CREATE_COMPONENT => {
-                        handle_operation!(
-                            CreateComponentInput,
-                            CreateComponentOutput,
-                            args,
-                            self,
-                            Process::create_component,
-                            true
-                        )
-                    }
-                    GET_COMPONENT_INFO => {
-                        handle_operation!(
-                            GetComponentInfoInput,
-                            GetComponentInfoOutput,
-                            args,
-                            self,
-                            Process::get_component_info,
-                            true
-                        )
-                    }
-                    GET_COMPONENT_STATE => {
-                        handle_operation!(
-                            GetComponentStateInput,
-                            GetComponentStateOutput,
-                            args,
-                            self,
-                            Process::get_component_state,
-                            true
-                        )
-                    }
-                    PUT_COMPONENT_STATE => {
-                        handle_operation!(
-                            PutComponentStateInput,
-                            PutComponentStateOutput,
-                            args,
-                            self,
-                            Process::put_component_state,
-                            true
-                        )
-                    }
-                    CREATE_RESOURCE => {
-                        handle_operation!(
-                            CreateResourceInput,
-                            CreateResourceOutput,
-                            args,
-                            self,
-                            Process::create_resource,
-                            true
-                        )
-                    }
-                    GET_RESOURCE_INFO => {
-                        handle_operation!(
-                            GetResourceInfoInput,
-                            GetResourceInfoOutput,
-                            args,
-                            self,
-                            Process::get_resource_info,
-                            true
-                        )
-                    }
-                    MINT_TOKENS => {
-                        handle_operation!(
-                            MintTokensInput,
-                            MintTokensOutput,
-                            args,
-                            self,
-                            Process::mint_tokens,
-                            true
-                        )
-                    }
-                    COMBINE_TOKENS => {
-                        handle_operation!(
-                            CombineTokensInput,
-                            CombineTokensOutput,
-                            args,
-                            self,
-                            Process::combine_tokens,
-                            true
-                        )
-                    }
-                    SPLIT_TOKENS => {
-                        handle_operation!(
-                            SplitTokensInput,
-                            SplitTokensOutput,
-                            args,
-                            self,
-                            Process::split_tokens,
-                            true
-                        )
-                    }
-                    MINT_BADGES => {
-                        handle_operation!(
-                            MintBadgesInput,
-                            MintBadgesOutput,
-                            args,
-                            self,
-                            Process::mint_badges,
-                            true
-                        )
-                    }
-                    COMBINE_BADGES => {
-                        handle_operation!(
-                            CombineBadgesInput,
-                            CombineBadgesOutput,
-                            args,
-                            self,
-                            Process::combine_badges,
-                            true
-                        )
-                    }
-                    SPLIT_BADGES => {
-                        handle_operation!(
-                            SplitBadgesInput,
-                            SplitBadgesOutput,
-                            args,
-                            self,
-                            Process::split_badges,
-                            true
-                        )
-                    }
-                    BORROW_BADGES => {
-                        handle_operation!(
-                            BorrowBadgesInput,
-                            BorrowBadgesOutput,
-                            args,
-                            self,
-                            Process::borrow_badges,
-                            true
-                        )
-                    }
-                    RETURN_BADGES => {
-                        handle_operation!(
-                            ReturnBadgesInput,
-                            ReturnBadgesOutput,
-                            args,
-                            self,
-                            Process::return_badges,
-                            true
-                        )
-                    }
-                    GET_TOKENS_AMOUNT => {
-                        handle_operation!(
-                            GetTokensAmountInput,
-                            GetTokensAmountOutput,
-                            args,
-                            self,
-                            Process::get_tokens_amount,
-                            true
-                        )
-                    }
-                    GET_TOKENS_RESOURCE => {
-                        handle_operation!(
-                            GetTokensResourceInput,
-                            GetTokensResourceOutput,
-                            args,
-                            self,
-                            Process::get_tokens_resource,
-                            true
-                        )
-                    }
-                    GET_BADGES_AMOUNT => {
-                        handle_operation!(
-                            GetBadgesAmountInput,
-                            GetBadgesAmountOutput,
-                            args,
-                            self,
-                            Process::get_badges_amount,
-                            true
-                        )
-                    }
-                    GET_BADGES_RESOURCE => {
-                        handle_operation!(
-                            GetBadgesResourceInput,
-                            GetBadgesResourceOutput,
-                            args,
-                            self,
-                            Process::get_badges_resource,
-                            true
-                        )
-                    }
-                    WITHDRAW_TOKENS => {
-                        handle_operation!(
-                            WithdrawTokensInput,
-                            WithdrawTokensOutput,
-                            args,
-                            self,
-                            Process::withdraw_tokens,
-                            true
-                        )
-                    }
-                    DEPOSIT_TOKENS => {
-                        handle_operation!(
-                            DepositTokensInput,
-                            DepositTokensOutput,
-                            args,
-                            self,
-                            Process::deposit_tokens,
-                            true
-                        )
-                    }
-                    WITHDRAW_BADGES => {
-                        handle_operation!(
-                            WithdrawBadgesInput,
-                            WithdrawBadgesOutput,
-                            args,
-                            self,
-                            Process::withdraw_badges,
-                            true
-                        )
-                    }
-                    DEPOSIT_BADGES => {
-                        handle_operation!(
-                            DepositBadgesInput,
-                            DepositBadgesOutput,
-                            args,
-                            self,
-                            Process::deposit_badges,
-                            true
-                        )
-                    }
-                    EMIT_LOG => {
-                        handle_operation!(
-                            EmitLogInput,
-                            EmitLogOutput,
-                            args,
-                            self,
-                            Process::emit_log,
-                            false
-                        )
-                    }
-                    GET_CONTEXT_ADDRESS => {
-                        handle_operation!(
-                            GetContextAddressInput,
-                            GetContextAddressOutput,
-                            args,
-                            self,
-                            Process::get_context_address,
-                            true
-                        )
-                    }
-                    GET_CALL_DATA => {
-                        handle_operation!(
-                            GetCallDataInput,
-                            GetCallDataOutput,
-                            args,
-                            self,
-                            Process::get_call_data,
-                            true
-                        )
-                    }
-                    _ => panic!("Unknown operation {}", operation),
+                    PUBLISH_BLUEPRINT => self.handle(args, Process::publish_blueprint, false),
+                    CALL_BLUEPRINT => self.handle(args, Process::call_blueprint, true),
+                    CREATE_COMPONENT => self.handle(args, Process::create_component, true),
+                    GET_COMPONENT_INFO => self.handle(args, Process::get_component_info, true),
+                    GET_COMPONENT_STATE => self.handle(args, Process::get_component_state, true),
+                    PUT_COMPONENT_STATE => self.handle(args, Process::put_component_state, true),
+                    CREATE_RESOURCE => self.handle(args, Process::create_resource, true),
+                    GET_RESOURCE_INFO => self.handle(args, Process::get_resource_info, true),
+                    MINT_TOKENS => self.handle(args, Process::mint_tokens, true),
+                    COMBINE_TOKENS => self.handle(args, Process::combine_tokens, true),
+                    SPLIT_TOKENS => self.handle(args, Process::split_tokens, true),
+                    MINT_BADGES => self.handle(args, Process::mint_badges, true),
+                    COMBINE_BADGES => self.handle(args, Process::combine_badges, true),
+                    SPLIT_BADGES => self.handle(args, Process::split_badges, true),
+                    BORROW_BADGES => self.handle(args, Process::borrow_badges, true),
+                    RETURN_BADGES => self.handle(args, Process::return_badges, true),
+                    GET_TOKENS_AMOUNT => self.handle(args, Process::get_tokens_amount, true),
+                    GET_TOKENS_RESOURCE => self.handle(args, Process::get_tokens_resource, true),
+                    GET_BADGES_AMOUNT => self.handle(args, Process::get_badges_amount, true),
+                    GET_BADGES_RESOURCE => self.handle(args, Process::get_badges_resource, true),
+                    WITHDRAW_TOKENS => self.handle(args, Process::withdraw_tokens, true),
+                    DEPOSIT_TOKENS => self.handle(args, Process::deposit_tokens, true),
+                    WITHDRAW_BADGES => self.handle(args, Process::withdraw_badges, true),
+                    DEPOSIT_BADGES => self.handle(args, Process::deposit_badges, true),
+                    EMIT_LOG => self.handle(args, Process::emit_log, false),
+                    GET_CONTEXT_ADDRESS => self.handle(args, Process::get_context_address, true),
+                    GET_CALL_DATA => self.handle(args, Process::get_call_data, true),
+                    _ => Err(Self::trap(RuntimeError::InvalidOpCode(operation))),
                 }
             }
-            _ => panic!("Unimplemented function at {}", index),
+            _ => Err(Self::trap(RuntimeError::UnknownHostFunction(index))),
         }
     }
 }

@@ -111,8 +111,8 @@ impl<T: Ledger> TransactionContext<T> {
         Address::Resource(hash.lower_26_bytes())
     }
 
-    pub fn new_bid(&mut self, kind: BucketKind) -> BID {
+    pub fn new_bid(&mut self) -> BID {
         self.bucket_counter += 1;
-        BID::new(kind, BucketId::Transient(self.bucket_counter - 1))
+        BID::Transient(self.bucket_counter - 1)
     }
 }
