@@ -1,5 +1,4 @@
 extern crate alloc;
-use alloc::format;
 use alloc::string::String;
 use alloc::string::ToString;
 use core::convert::TryInto;
@@ -15,27 +14,28 @@ pub struct Hash {
     raw: [u8; 32],
 }
 
+#[derive(Debug)]
+pub enum DecodeHashError {
+    InvalidHex(DecodeHexError),
+    InvalidLength,
+}
+
 impl Hash {
+    pub fn new(raw: [u8; 32]) -> Self {
+        Self { raw }
+    }
+
     /// Decode a hash from its hex representation.
-    pub fn from_hex(hex: &str) -> Result<Self, String> {
-        let data = hex_decode(hex)?;
+    pub fn from_hex(hex: &str) -> Result<Self, DecodeHashError> {
+        let data = hex_decode(hex).map_err(|e| DecodeHashError::InvalidHex(e))?;
         Ok(Self {
             raw: data
                 .try_into()
-                .map_err(|_| format!("Unable to parse hash from hex: {}", hex))?,
+                .map_err(|_| DecodeHashError::InvalidLength)?,
         })
     }
 
-    /// Create hash struct from a slice.
-    pub fn from_slice(slice: &[u8]) -> Result<Self, String> {
-        Ok(Self {
-            raw: slice
-                .try_into()
-                .map_err(|_| "Unable to parse hash from slice".to_string())?,
-        })
-    }
-
-    /// Returns the first 26 bytes.
+    /// Returns the lower 26 bytes.
     pub fn lower_26_bytes(&self) -> [u8; 26] {
         let mut result = [0u8; 26];
         result.copy_from_slice(&self.raw[6..32]);

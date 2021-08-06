@@ -79,7 +79,7 @@ pub fn handle_component(input: TokenStream) -> TokenStream {
 
             // Return
             let rtn_bytes = scrypto::buffer::scrypto_encode(&rtn);
-            scrypto::buffer::scrypto_alloc_init(&rtn_bytes)
+            scrypto::buffer::scrypto_wrap(&rtn_bytes)
         }
 
         #[no_mangle]
@@ -100,7 +100,7 @@ pub fn handle_component(input: TokenStream) -> TokenStream {
             let output_bytes = scrypto::buffer::scrypto_encode(&output);
 
             // return the output wrapped in a radix-style buffer
-            scrypto::buffer::scrypto_alloc_init(&output_bytes)
+            scrypto::buffer::scrypto_wrap(&output_bytes)
         }
     };
     trace!("handle_component() finishes");
@@ -465,7 +465,7 @@ mod tests {
                         }
                     }
                     let rtn_bytes = scrypto::buffer::scrypto_encode(&rtn);
-                    scrypto::buffer::scrypto_alloc_init(&rtn_bytes)
+                    scrypto::buffer::scrypto_wrap(&rtn_bytes)
                 }
 
                 #[no_mangle]
@@ -484,7 +484,7 @@ mod tests {
                         }],
                     };
                     let output_bytes = scrypto::buffer::scrypto_encode(&output);
-                    scrypto::buffer::scrypto_alloc_init(&output_bytes)
+                    scrypto::buffer::scrypto_wrap(&output_bytes)
                 }
             },
         );

@@ -8,7 +8,7 @@ pub fn sha256<T: AsRef<[u8]>>(data: T) -> Hash {
     instance.update(data);
     let result = instance.finalize();
 
-    Hash::from_slice(&result).unwrap()
+    Hash::new(result.into())
 }
 
 /// Computes the double SHA-256 digest of a message.

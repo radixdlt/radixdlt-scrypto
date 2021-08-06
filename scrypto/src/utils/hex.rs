@@ -1,7 +1,12 @@
 extern crate alloc;
-use alloc::format;
 use alloc::string::String;
 use alloc::vec::Vec;
+
+#[derive(Debug)]
+pub enum DecodeHexError {
+    InvalidCharacter,
+    InvalidLength,
+}
 
 /// Encodes `data` as hex string using lowercase characters.
 pub fn hex_encode<T: AsRef<[u8]>>(data: T) -> String {
@@ -23,15 +28,15 @@ pub fn hex_encode<T: AsRef<[u8]>>(data: T) -> String {
 }
 
 /// Decode a hex string into a byte vector.
-pub fn hex_decode(hex: &str) -> Result<Vec<u8>, String> {
+pub fn hex_decode(hex: &str) -> Result<Vec<u8>, DecodeHexError> {
     if hex.len() % 2 != 0 {
-        Err(format!("Odd hex string length: {}", hex.len()))
+        Err(DecodeHexError::InvalidLength)
     } else {
         let mut buf = Vec::<u8>::new();
         for i in (0..hex.len()).step_by(2) {
             let r = u8::from_str_radix(&hex[i..i + 2], 16);
             if r.is_err() {
-                return Err(format!("Invalid hex chars: 0x{}", &hex[i..i + 2]));
+                return Err(DecodeHexError::InvalidCharacter);
             } else {
                 buf.push(r.unwrap());
             }

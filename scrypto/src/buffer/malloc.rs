@@ -5,15 +5,6 @@ use core::ptr::copy;
 
 const WORD: usize = core::mem::size_of::<usize>();
 
-/// Allocates a chunk of memory initialized with the given slice.
-pub fn scrypto_alloc_init(value: &[u8]) -> *mut u8 {
-    unsafe {
-        let ptr = scrypto_alloc(value.len());
-        copy(value.as_ptr(), ptr, value.len());
-        ptr
-    }
-}
-
 /// Allocates a chunk of memory that is not tracked by Rust ownership system.
 #[no_mangle]
 pub extern "C" fn scrypto_alloc(length: usize) -> *mut u8 {
@@ -24,17 +15,6 @@ pub extern "C" fn scrypto_alloc(length: usize) -> *mut u8 {
 
         copy(length.to_le_bytes().as_ptr(), ptr, WORD);
         ptr.offset(WORD as isize)
-    }
-}
-
-/// Makes a copy of the memory chunk
-pub fn scrypto_copy(ptr: *const u8) -> Vec<u8> {
-    unsafe {
-        let length = scrypto_measure(ptr);
-        let mut buf = Vec::with_capacity(length);
-        copy(ptr, buf.as_mut_ptr(), length);
-        buf.set_len(length);
-        buf
     }
 }
 
@@ -51,10 +31,25 @@ pub extern "C" fn scrypto_measure(ptr: *const u8) -> usize {
 /// Frees an allocated memory chunk.
 #[no_mangle]
 pub extern "C" fn scrypto_free(ptr: *mut u8) {
+    scrypto_consume(ptr, |_| {});
+}
+
+/// Wraps a byte array into a memory chunk.
+pub fn scrypto_wrap(value: &[u8]) -> *mut u8 {
+    unsafe {
+        let ptr = scrypto_alloc(value.len());
+        copy(value.as_ptr(), ptr, value.len());
+        ptr
+    }
+}
+
+/// Consumes a memory chunk.
+pub fn scrypto_consume<T>(ptr: *mut u8, f: fn(slice: &[u8]) -> T) -> T {
     unsafe {
         let length = scrypto_measure(ptr);
-        let _drop_me =
+        let bytes =
             Vec::<u8>::from_raw_parts(ptr.offset(-(WORD as isize)), WORD + length, WORD + length);
+        f(&bytes[WORD..])
     }
 }
 
@@ -68,20 +63,14 @@ mod tests {
         let size = msg.len();
 
         // Test allocating memory
-        let mut ptr = scrypto_alloc(size);
+        let ptr = scrypto_alloc(size);
         assert_eq!(scrypto_measure(ptr), size);
-
-        // Test copying memory
-        unsafe {
-            core::ptr::copy(msg.as_ptr(), ptr, size);
-        }
-        let copied = scrypto_copy(ptr);
-        assert_eq!(copied, msg);
+        scrypto_free(ptr);
 
         // Ensure no memory leak
         for _ in 0..1000 {
+            let ptr = scrypto_alloc(100_000_000);
             scrypto_free(ptr);
-            ptr = scrypto_alloc(100_000_000);
         }
     }
 }

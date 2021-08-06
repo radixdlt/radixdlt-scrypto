@@ -2,97 +2,10 @@ use sbor::{Decode, Encode};
 
 use crate::types::Hash;
 
-/// Resource bucket type.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Encode, Decode)]
-pub enum BucketKind {
-    /// A token bucket.
-    Tokens,
-
-    /// A reference to a token bucket.
-    TokensRef,
-
-    /// A badge bucket.
-    Badges,
-
-    /// A reference to a badge bucket.
-    BadgesRef,
-}
-
 /// Resource bucket id.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Encode, Decode)]
-pub enum BucketId {
+pub enum BID {
     Transient(u32),
 
     Persisted(Hash, u32),
-}
-
-/// Represents a resource maintained by runtime.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Encode, Decode)]
-pub struct BID {
-    kind: BucketKind,
-    id: BucketId,
-}
-
-impl BID {
-    /// Creates a new BID.
-    pub fn new(kind: BucketKind, id: BucketId) -> Self {
-        Self { kind, id }
-    }
-
-    /// Gets the borrowed form of this BID.
-    pub fn to_borrowed(&self) -> Self {
-        assert!(
-            self.kind() == BucketKind::Tokens || self.kind() == BucketKind::Badges,
-            "Can't borrow from non-reference type"
-        );
-
-        Self {
-            kind: if self.kind() == BucketKind::Tokens {
-                BucketKind::TokensRef
-            } else {
-                BucketKind::BadgesRef
-            },
-            id: self.id,
-        }
-    }
-
-    /// Gets the owned form of this BID.
-    pub fn to_owned(&self) -> Self {
-        assert!(
-            self.kind() == BucketKind::TokensRef || self.kind() == BucketKind::BadgesRef,
-            "Already an owned type"
-        );
-
-        Self {
-            kind: if self.kind() == BucketKind::TokensRef {
-                BucketKind::Tokens
-            } else {
-                BucketKind::Badges
-            },
-            id: self.id,
-        }
-    }
-
-    /// Gets the resource type.
-    pub fn kind(&self) -> BucketKind {
-        self.kind
-    }
-
-    /// Gets the resource bucket id.
-    pub fn id(&self) -> BucketId {
-        self.id
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_basics() {
-        let bid = BID::new(BucketKind::Tokens, BucketId::Transient(5));
-        let bid2 = bid.to_borrowed();
-        assert_eq!(bid2.kind(), BucketKind::TokensRef);
-        assert_eq!(bid2.id(), BucketId::Transient(5));
-    }
 }

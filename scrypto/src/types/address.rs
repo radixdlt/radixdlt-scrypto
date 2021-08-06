@@ -1,5 +1,4 @@
 extern crate alloc;
-use alloc::format;
 use alloc::string::String;
 use alloc::string::ToString;
 use alloc::vec;
@@ -33,26 +32,37 @@ pub enum Address {
     Component([u8; 26]),
 }
 
+#[derive(Debug)]
+pub enum DecodeAddressError {
+    InvalidHex(DecodeHexError),
+    InvalidLength,
+    InvalidType(u8),
+}
+
 impl Address {
     /// Decode an address from its hex representation.
-    pub fn from_hex(hex: &str) -> Result<Self, String> {
-        let bytes = hex_decode(hex)?;
+    pub fn from_hex(hex: &str) -> Result<Self, DecodeAddressError> {
+        let bytes = hex_decode(hex).map_err(|e| DecodeAddressError::InvalidHex(e))?;
 
-        let e = format!("Invalid address: {}", hex);
+        let invalid_len = DecodeAddressError::InvalidLength;
         if bytes.len() >= 1 {
             let kind = bytes[0];
             let data = &bytes[1..bytes.len()];
             match kind {
                 0x00 => Ok(Address::System),
                 0x01 => Ok(Address::RadixToken),
-                0x03 => Ok(Address::Resource(data.try_into().map_err(|_| e)?)),
-                0x04 => Ok(Address::Account(data.try_into().map_err(|_| e)?)),
-                0x05 => Ok(Address::Blueprint(data.try_into().map_err(|_| e)?)),
-                0x06 => Ok(Address::Component(data.try_into().map_err(|_| e)?)),
-                _ => Err(e),
+                0x03 => Ok(Address::Resource(data.try_into().map_err(|_| invalid_len)?)),
+                0x04 => Ok(Address::Account(data.try_into().map_err(|_| invalid_len)?)),
+                0x05 => Ok(Address::Blueprint(
+                    data.try_into().map_err(|_| invalid_len)?,
+                )),
+                0x06 => Ok(Address::Component(
+                    data.try_into().map_err(|_| invalid_len)?,
+                )),
+                _ => Err(DecodeAddressError::InvalidType(kind)),
             }
         } else {
-            Err(e)
+            Err(invalid_len)
         }
     }
 }

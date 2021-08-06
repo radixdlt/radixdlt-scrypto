@@ -45,9 +45,7 @@ fn test_simple_component() {
 #[test]
 fn test_simple_component_abi() {
     let ptr = Simple_abi();
-    let bytes = scrypto_copy(ptr);
-    scrypto_free(ptr);
-    let abi: scrypto::abi::Component = scrypto_decode(&bytes).unwrap();
+    let abi: scrypto::abi::Component = scrypto_consume(ptr, |slice| scrypto_decode(slice).unwrap());
 
     assert_json_eq(
         abi,
