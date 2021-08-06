@@ -34,6 +34,10 @@ impl Component {
         &self.state
     }
 
+    pub fn set_state(&mut self, new_state: Vec<u8>) {
+        self.state = new_state;
+    }
+
     pub fn buckets(&mut self) -> &mut HashMap<BID, Bucket> {
         self.buckets()
     }

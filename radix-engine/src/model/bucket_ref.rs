@@ -4,11 +4,11 @@ use scrypto::types::*;
 pub struct BucketRef {
     amount: U256,
     resource: Address,
-    count: u32,
+    count: usize,
 }
 
 impl BucketRef {
-    pub fn new(amount: U256, resource: Address, count: u32) -> Self {
+    pub fn new(amount: U256, resource: Address, count: usize) -> Self {
         Self {
             amount,
             resource,
@@ -16,13 +16,15 @@ impl BucketRef {
         }
     }
 
-    pub fn increase_count(&mut self) {
+    pub fn increase_count(&mut self) -> usize {
         self.count += 1;
+        self.count
     }
 
-    pub fn decrease_count(&mut self) {
+    pub fn decrease_count(&mut self) -> usize {
         assert!(self.count() > 0, "Reference count can't go negative");
         self.count -= 1;
+        self.count
     }
 
     pub fn amount(&self) -> U256 {
@@ -33,7 +35,7 @@ impl BucketRef {
         self.resource
     }
 
-    pub fn count(&self) -> u32 {
+    pub fn count(&self) -> usize {
         self.count
     }
 }

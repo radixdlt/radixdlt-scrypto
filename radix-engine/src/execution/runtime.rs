@@ -7,8 +7,9 @@ use crate::execution::*;
 use crate::ledger::*;
 use crate::model::*;
 
-/// Transaction execution context.
-pub struct TransactionContext<T> {
+/// Represents the transaction execution runtime, one per transaction.
+/// A runtime is shared by a chain of processes, created during the execution of the transaction.
+pub struct Runtime<T> {
     tx_hash: Hash,
     ledger: T,
     logger: Logger,
@@ -18,9 +19,10 @@ pub struct TransactionContext<T> {
     components: HashMap<Address, Component>,
     accounts: HashMap<Address, Account>,
     resources: HashMap<Address, ResourceInfo>,
+    // TODO track updates
 }
 
-impl<T: Ledger> TransactionContext<T> {
+impl<T: Ledger> Runtime<T> {
     pub fn new(tx_hash: Hash, ledger: T, logger: Logger) -> Self {
         Self {
             tx_hash,
@@ -35,13 +37,6 @@ impl<T: Ledger> TransactionContext<T> {
         }
     }
 
-    pub fn tx_hash(&self) -> Hash {
-        self.tx_hash
-    }
-
-    pub fn ledger(&self) -> &T {
-        &self.ledger
-    }
     pub fn logger(&self) -> &Logger {
         &self.logger
     }
@@ -54,41 +49,68 @@ impl<T: Ledger> TransactionContext<T> {
         match self.ledger.get_blueprint(address) {
             Some(blueprint) => {
                 self.blueprints.insert(address, blueprint);
-                self.blueprints().get(&address)
+                self.blueprints.get(&address)
             }
             None => None,
         }
     }
 
-    pub fn blueprints(&self) -> &HashMap<Address, Vec<u8>> {
-        &self.blueprints
+    pub fn put_blueprint(&mut self, address: Address, blueprint: Vec<u8>) {
+        self.blueprints.insert(address, blueprint);
     }
 
-    pub fn blueprints_mut(&mut self) -> &mut HashMap<Address, Vec<u8>> {
-        &mut self.blueprints
+    pub fn get_component(&mut self, address: Address) -> Option<&mut Component> {
+        if self.components.contains_key(&address) {
+            return self.components.get_mut(&address);
+        }
+
+        match self.ledger.get_component(address) {
+            Some(component) => {
+                self.components.insert(address, component);
+                self.components.get_mut(&address)
+            }
+            None => None,
+        }
     }
 
-    pub fn components(&self) -> &HashMap<Address, Component> {
-        &self.components
-    }
-    pub fn components_mut(&mut self) -> &mut HashMap<Address, Component> {
-        &mut self.components
+    pub fn put_component(&mut self, address: Address, component: Component) {
+        self.components.insert(address, component);
     }
 
-    pub fn accounts(&self) -> &HashMap<Address, Account> {
-        &self.accounts
+    pub fn get_account(&mut self, address: Address) -> Option<&mut Account> {
+        if self.accounts.contains_key(&address) {
+            return self.accounts.get_mut(&address);
+        }
+
+        match self.ledger.get_account(address) {
+            Some(account) => {
+                self.accounts.insert(address, account);
+                self.accounts.get_mut(&address)
+            }
+            None => None,
+        }
     }
 
-    pub fn accounts_mut(&mut self) -> &mut HashMap<Address, Account> {
-        &mut self.accounts
+    pub fn put_account(&mut self, address: Address, account: Account) {
+        self.accounts.insert(address, account);
     }
 
-    pub fn resources(&self) -> &HashMap<Address, ResourceInfo> {
-        &self.resources
+    pub fn get_resource(&mut self, address: Address) -> Option<&ResourceInfo> {
+        if self.resources.contains_key(&address) {
+            return self.resources.get(&address);
+        }
+
+        match self.ledger.get_resource(address) {
+            Some(resource) => {
+                self.resources.insert(address, resource);
+                self.resources.get(&address)
+            }
+            None => None,
+        }
     }
 
-    pub fn resources_mut(&mut self) -> &mut HashMap<Address, ResourceInfo> {
-        &mut self.resources
+    pub fn put_resource(&mut self, address: Address, resource: ResourceInfo) {
+        self.resources.insert(address, resource);
     }
 
     pub fn new_blueprint_address(&mut self, code: &[u8]) -> Address {
