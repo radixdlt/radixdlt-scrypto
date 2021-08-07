@@ -260,6 +260,30 @@ decode_basic_type!(u32, TYPE_U32, 4);
 decode_basic_type!(u64, TYPE_U64, 8);
 decode_basic_type!(u128, TYPE_U128, 16);
 
+impl Decode for isize {
+    #[inline]
+    fn decode_value<'de>(decoder: &mut Decoder<'de>) -> Result<Self, DecodeError> {
+        i32::decode_value(decoder).map(|i| i as isize)
+    }
+
+    #[inline]
+    fn sbor_type() -> u8 {
+        i32::sbor_type()
+    }
+}
+
+impl Decode for usize {
+    #[inline]
+    fn decode_value<'de>(decoder: &mut Decoder<'de>) -> Result<Self, DecodeError> {
+        u32::decode_value(decoder).map(|i| i as usize)
+    }
+
+    #[inline]
+    fn sbor_type() -> u8 {
+        u32::sbor_type()
+    }
+}
+
 impl Decode for String {
     #[inline]
     fn decode_value<'de>(decoder: &mut Decoder<'de>) -> Result<Self, DecodeError> {

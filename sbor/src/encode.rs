@@ -160,6 +160,30 @@ encode_basic_type!(u32, TYPE_U32);
 encode_basic_type!(u64, TYPE_U64);
 encode_basic_type!(u128, TYPE_U128);
 
+impl Encode for isize {
+    #[inline]
+    fn encode_value(&self, encoder: &mut Encoder) {
+        (*self as i32).encode_value(encoder);
+    }
+
+    #[inline]
+    fn sbor_type() -> u8 {
+        i32::sbor_type()
+    }
+}
+
+impl Encode for usize {
+    #[inline]
+    fn encode_value(&self, encoder: &mut Encoder) {
+        (*self as u32).encode_value(encoder);
+    }
+
+    #[inline]
+    fn sbor_type() -> u8 {
+        u32::sbor_type()
+    }
+}
+
 impl Encode for str {
     #[inline]
     fn encode_value(&self, encoder: &mut Encoder) {
@@ -176,13 +200,12 @@ impl Encode for str {
 impl Encode for String {
     #[inline]
     fn encode_value(&self, encoder: &mut Encoder) {
-        encoder.write_len(self.len());
-        encoder.write_slice(self.as_bytes());
+        self.as_str().encode_value(encoder);
     }
 
     #[inline]
     fn sbor_type() -> u8 {
-        TYPE_STRING
+        str::sbor_type()
     }
 }
 
