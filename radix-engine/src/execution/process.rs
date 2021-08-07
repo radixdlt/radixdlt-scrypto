@@ -13,51 +13,6 @@ use crate::execution::*;
 use crate::ledger::*;
 use crate::model::*;
 
-#[derive(Debug)]
-pub enum RuntimeError {
-    ExecutionError(Error),
-
-    MemoryAccessError(Error),
-
-    NoValidBlueprintReturn,
-
-    InvalidOpCode(u32),
-
-    InvalidRequest(DecodeError),
-
-    UnknownHostFunction(usize),
-
-    UnableToAllocateMemory,
-
-    ResourceLeak(Vec<BID>),
-
-    BlueprintAlreadyExists(Address),
-
-    ComponentAlreadyExists(Address),
-
-    ResourceAlreadyExists(Address),
-
-    ComponentNotFound(Address),
-
-    ResourceNotFound(Address),
-
-    ImmutableResource,
-
-    NotAuthorizedToMint,
-
-    BucketNotFound,
-
-    BucketRefNotFound,
-}
-
-impl fmt::Display for RuntimeError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:?}", self)
-    }
-}
-
-impl HostError for RuntimeError {}
-
 pub struct Process<'a, L: Ledger> {
     runtime: &'a mut Runtime<L>,
     module: &'a ModuleRef,
@@ -101,18 +56,18 @@ impl<'a, L: Ledger> Process<'a, L> {
     }
 
     /// Start this process by invoking the component main method.
-    pub fn run(&mut self) -> Result<Vec<u8>, RuntimeError> {
+    pub fn run(&mut self) -> Result<Vec<u8>, ExecutionError> {
         let now = Instant::now();
 
         let func = format!("{}_{}", self.component, "main");
         self.info(format!("Invoking {}", func));
         let result = self.module.invoke_export(func.as_str(), &[], self);
-        let output = match result.map_err(|e| RuntimeError::ExecutionError(e))? {
+        let output = match result.map_err(|e| ExecutionError::RuntimeError(e))? {
             Some(RuntimeValue::I32(ptr)) => {
                 self.finalize()?;
                 self.read_bytes(ptr)
             }
-            _ => Err(RuntimeError::NoValidBlueprintReturn),
+            _ => Err(ExecutionError::NoValidBlueprintReturn),
         };
 
         self.info(format!("Time elapsed: {} ms", now.elapsed().as_millis()));
@@ -122,11 +77,11 @@ impl<'a, L: Ledger> Process<'a, L> {
     pub fn publish_blueprint(
         &mut self,
         input: PublishBlueprintInput,
-    ) -> Result<PublishBlueprintOutput, RuntimeError> {
+    ) -> Result<PublishBlueprintOutput, ExecutionError> {
         let address = self.runtime.new_blueprint_address(&input.code);
 
         match self.runtime.get_blueprint(address) {
-            Some(_) => Err(RuntimeError::BlueprintAlreadyExists(address)),
+            Some(_) => Err(ExecutionError::BlueprintAlreadyExists(address)),
             _ => {
                 self.debug(format!(
                     "New blueprint: address = {:?}, code length = {:?}",
@@ -143,18 +98,18 @@ impl<'a, L: Ledger> Process<'a, L> {
     pub fn call_blueprint(
         &mut self,
         _input: CallBlueprintInput,
-    ) -> Result<CallBlueprintOutput, RuntimeError> {
+    ) -> Result<CallBlueprintOutput, ExecutionError> {
         todo!()
     }
 
     pub fn create_component(
         &mut self,
         input: CreateComponentInput,
-    ) -> Result<CreateComponentOutput, RuntimeError> {
+    ) -> Result<CreateComponentOutput, ExecutionError> {
         let address = self.runtime.new_component_address();
 
         match self.runtime.get_component(address) {
-            Some(_) => Err(RuntimeError::ComponentAlreadyExists(address)),
+            Some(_) => Err(ExecutionError::ComponentAlreadyExists(address)),
             _ => {
                 // TODO: move resources to the component
 
@@ -173,7 +128,7 @@ impl<'a, L: Ledger> Process<'a, L> {
     pub fn get_component_info(
         &mut self,
         input: GetComponentInfoInput,
-    ) -> Result<GetComponentInfoOutput, RuntimeError> {
+    ) -> Result<GetComponentInfoOutput, ExecutionError> {
         let result = self
             .runtime
             .get_component(input.component)
@@ -187,11 +142,11 @@ impl<'a, L: Ledger> Process<'a, L> {
     pub fn get_component_state(
         &mut self,
         input: GetComponentStateInput,
-    ) -> Result<GetComponentStateOutput, RuntimeError> {
+    ) -> Result<GetComponentStateOutput, ExecutionError> {
         let component = self
             .runtime
             .get_component(input.component)
-            .ok_or(RuntimeError::ComponentNotFound(input.component))?;
+            .ok_or(ExecutionError::ComponentNotFound(input.component))?;
 
         let state = component.state();
 
@@ -205,11 +160,11 @@ impl<'a, L: Ledger> Process<'a, L> {
     pub fn put_component_state(
         &mut self,
         input: PutComponentStateInput,
-    ) -> Result<PutComponentStateOutput, RuntimeError> {
-        let mut component = self
+    ) -> Result<PutComponentStateOutput, ExecutionError> {
+        let component = self
             .runtime
             .get_component(input.component)
-            .ok_or(RuntimeError::ComponentNotFound(input.component))?;
+            .ok_or(ExecutionError::ComponentNotFound(input.component))?;
 
         component.set_state(input.state);
         // TODO: deposit resource recursively.
@@ -220,13 +175,13 @@ impl<'a, L: Ledger> Process<'a, L> {
     pub fn create_resource(
         &mut self,
         input: CreateResourceInput,
-    ) -> Result<CreateResourceOutput, RuntimeError> {
+    ) -> Result<CreateResourceOutput, ExecutionError> {
         let address = self
             .runtime
             .new_resource_address(self.blueprint, input.info.symbol.as_str());
 
         if self.runtime.get_resource(address).is_some() {
-            return Err(RuntimeError::ResourceAlreadyExists(address));
+            return Err(ExecutionError::ResourceAlreadyExists(address));
         } else {
             self.debug(format!("New resource: {:?}", address));
 
@@ -238,7 +193,7 @@ impl<'a, L: Ledger> Process<'a, L> {
     pub fn get_resource_info(
         &mut self,
         input: GetResourceInfoInput,
-    ) -> Result<GetResourceInfoOutput, RuntimeError> {
+    ) -> Result<GetResourceInfoOutput, ExecutionError> {
         Ok(GetResourceInfoOutput {
             result: self.runtime.get_resource(input.resource).map(Clone::clone),
         })
@@ -247,16 +202,16 @@ impl<'a, L: Ledger> Process<'a, L> {
     pub fn mint_tokens(
         &mut self,
         input: MintTokensInput,
-    ) -> Result<MintTokensOutput, RuntimeError> {
+    ) -> Result<MintTokensOutput, ExecutionError> {
         let resource = self
             .runtime
             .get_resource(input.resource)
-            .ok_or(RuntimeError::ResourceNotFound(input.resource))?;
+            .ok_or(ExecutionError::ResourceNotFound(input.resource))?;
 
         if resource.minter.is_none() {
-            Err(RuntimeError::ImmutableResource)
+            Err(ExecutionError::ImmutableResource)
         } else if resource.minter != Some(self.blueprint) {
-            Err(RuntimeError::NotAuthorizedToMint)
+            Err(ExecutionError::NotAuthorizedToMint)
         } else {
             let bucket = Bucket::new(input.amount, input.resource);
             let bid = self.runtime.new_bid();
@@ -268,16 +223,17 @@ impl<'a, L: Ledger> Process<'a, L> {
     pub fn combine_tokens(
         &mut self,
         input: CombineTokensInput,
-    ) -> Result<CombineTokensOutput, RuntimeError> {
+    ) -> Result<CombineTokensOutput, ExecutionError> {
         let other = self
             .buckets
             .remove(&input.other)
-            .ok_or(RuntimeError::BucketNotFound)?;
+            .ok_or(ExecutionError::BucketNotFound)?;
         let one = self
             .buckets
             .get_mut(&input.tokens)
-            .ok_or(RuntimeError::BucketNotFound)?;
-        one.put(other);
+            .ok_or(ExecutionError::BucketNotFound)?;
+        one.put(other)
+            .map_err(|e| ExecutionError::BucketOperationError(e))?;
 
         Ok(CombineTokensOutput {})
     }
@@ -285,12 +241,14 @@ impl<'a, L: Ledger> Process<'a, L> {
     pub fn split_tokens(
         &mut self,
         input: SplitTokensInput,
-    ) -> Result<SplitTokensOutput, RuntimeError> {
+    ) -> Result<SplitTokensOutput, ExecutionError> {
         let bucket = self
             .buckets
             .get_mut(&input.tokens)
-            .ok_or(RuntimeError::BucketNotFound)?;
-        let taken = bucket.take(input.amount);
+            .ok_or(ExecutionError::BucketNotFound)?;
+        let taken = bucket
+            .take(input.amount)
+            .map_err(|e| ExecutionError::BucketOperationError(e))?;
         let bid = self.runtime.new_bid();
         self.buckets.insert(bid, taken);
         Ok(SplitTokensOutput { tokens: bid })
@@ -299,7 +257,7 @@ impl<'a, L: Ledger> Process<'a, L> {
     pub fn borrow_tokens(
         &mut self,
         input: BorrowTokensInput,
-    ) -> Result<BorrowTokensOutput, RuntimeError> {
+    ) -> Result<BorrowTokensOutput, ExecutionError> {
         let bid = input.tokens;
         self.debug(format!("Borrowing {:?}", bid));
 
@@ -316,7 +274,7 @@ impl<'a, L: Ledger> Process<'a, L> {
                 let bucket = self
                     .buckets
                     .remove(&bid)
-                    .ok_or(RuntimeError::BucketNotFound)?;
+                    .ok_or(ExecutionError::BucketNotFound)?;
                 self.buckets_borrowed.insert(
                     bid,
                     BucketRef::new(bucket.amount(), bucket.resource().clone(), 1),
@@ -331,16 +289,19 @@ impl<'a, L: Ledger> Process<'a, L> {
     pub fn return_tokens(
         &mut self,
         input: ReturnTokensInput,
-    ) -> Result<ReturnTokensOutput, RuntimeError> {
+    ) -> Result<ReturnTokensOutput, ExecutionError> {
         let bid = input.reference;
         self.debug(format!("Returning: {:?}", bid));
 
         let bucket = self
             .buckets_borrowed
             .get_mut(&bid)
-            .ok_or(RuntimeError::BucketRefNotFound)?;
+            .ok_or(ExecutionError::BucketRefNotFound)?;
 
-        if bucket.decrease_count() == 0 {
+        let new_count = bucket
+            .decrease_count()
+            .map_err(|e| ExecutionError::BucketOperationError(e))?;
+        if new_count == 0 {
             self.buckets_borrowed.remove(&bid);
 
             if let Some(b) = self.buckets_lent.remove(&bid) {
@@ -354,7 +315,7 @@ impl<'a, L: Ledger> Process<'a, L> {
     pub fn mint_badges(
         &mut self,
         input: MintBadgesInput,
-    ) -> Result<MintBadgesOutput, RuntimeError> {
+    ) -> Result<MintBadgesOutput, ExecutionError> {
         self.mint_tokens(MintTokensInput {
             amount: input.amount,
             resource: input.resource,
@@ -365,7 +326,7 @@ impl<'a, L: Ledger> Process<'a, L> {
     pub fn combine_badges(
         &mut self,
         input: CombineBadgesInput,
-    ) -> Result<CombineBadgesOutput, RuntimeError> {
+    ) -> Result<CombineBadgesOutput, ExecutionError> {
         self.combine_tokens(CombineTokensInput {
             tokens: input.badges,
             other: input.other,
@@ -376,7 +337,7 @@ impl<'a, L: Ledger> Process<'a, L> {
     pub fn split_badges(
         &mut self,
         input: SplitBadgesInput,
-    ) -> Result<SplitBadgesOutput, RuntimeError> {
+    ) -> Result<SplitBadgesOutput, ExecutionError> {
         self.split_tokens(SplitTokensInput {
             tokens: input.badges,
             amount: input.amount,
@@ -387,7 +348,7 @@ impl<'a, L: Ledger> Process<'a, L> {
     pub fn borrow_badges(
         &mut self,
         input: BorrowBadgesInput,
-    ) -> Result<BorrowBadgesOutput, RuntimeError> {
+    ) -> Result<BorrowBadgesOutput, ExecutionError> {
         self.borrow_tokens(BorrowTokensInput {
             tokens: input.badges,
         })
@@ -399,7 +360,7 @@ impl<'a, L: Ledger> Process<'a, L> {
     pub fn return_badges(
         &mut self,
         input: ReturnBadgesInput,
-    ) -> Result<ReturnBadgesOutput, RuntimeError> {
+    ) -> Result<ReturnBadgesOutput, ExecutionError> {
         self.return_tokens(ReturnTokensInput {
             reference: input.reference,
         })
@@ -409,60 +370,60 @@ impl<'a, L: Ledger> Process<'a, L> {
     pub fn get_tokens_amount(
         &mut self,
         input: GetTokensAmountInput,
-    ) -> Result<GetTokensAmountOutput, RuntimeError> {
+    ) -> Result<GetTokensAmountOutput, ExecutionError> {
         todo!()
     }
 
     pub fn get_tokens_resource(
         &mut self,
         input: GetTokensResourceInput,
-    ) -> Result<GetTokensResourceOutput, RuntimeError> {
+    ) -> Result<GetTokensResourceOutput, ExecutionError> {
         todo!()
     }
 
     pub fn get_badges_amount(
         &mut self,
         input: GetBadgesAmountInput,
-    ) -> Result<GetBadgesAmountOutput, RuntimeError> {
+    ) -> Result<GetBadgesAmountOutput, ExecutionError> {
         todo!()
     }
 
     pub fn get_badges_resource(
         &mut self,
         input: GetBadgesResourceInput,
-    ) -> Result<GetBadgesResourceOutput, RuntimeError> {
+    ) -> Result<GetBadgesResourceOutput, ExecutionError> {
         todo!()
     }
 
     pub fn withdraw_tokens(
         &mut self,
         input: WithdrawTokensInput,
-    ) -> Result<WithdrawTokensOutput, RuntimeError> {
+    ) -> Result<WithdrawTokensOutput, ExecutionError> {
         todo!()
     }
 
     pub fn deposit_tokens(
         &mut self,
         input: DepositTokensInput,
-    ) -> Result<DepositTokensOutput, RuntimeError> {
+    ) -> Result<DepositTokensOutput, ExecutionError> {
         todo!()
     }
 
     pub fn withdraw_badges(
         &mut self,
         input: WithdrawBadgesInput,
-    ) -> Result<WithdrawBadgesOutput, RuntimeError> {
+    ) -> Result<WithdrawBadgesOutput, ExecutionError> {
         todo!()
     }
 
     pub fn deposit_badges(
         &mut self,
         input: DepositBadgesInput,
-    ) -> Result<DepositBadgesOutput, RuntimeError> {
+    ) -> Result<DepositBadgesOutput, ExecutionError> {
         todo!()
     }
 
-    pub fn emit_log(&mut self, input: EmitLogInput) -> Result<EmitLogOutput, RuntimeError> {
+    pub fn emit_log(&mut self, input: EmitLogInput) -> Result<EmitLogOutput, ExecutionError> {
         self.runtime.log(input.level, input.message);
 
         Ok(EmitLogOutput {})
@@ -471,7 +432,7 @@ impl<'a, L: Ledger> Process<'a, L> {
     pub fn get_context_address(
         &mut self,
         _input: GetContextAddressInput,
-    ) -> Result<GetContextAddressOutput, RuntimeError> {
+    ) -> Result<GetContextAddressOutput, ExecutionError> {
         Ok(GetContextAddressOutput {
             address: self.blueprint,
         })
@@ -480,7 +441,7 @@ impl<'a, L: Ledger> Process<'a, L> {
     pub fn get_call_data(
         &mut self,
         _input: GetCallDataInput,
-    ) -> Result<GetCallDataOutput, RuntimeError> {
+    ) -> Result<GetCallDataOutput, ExecutionError> {
         Ok(GetCallDataOutput {
             method: self.method.clone(),
             args: self.args.clone(),
@@ -488,7 +449,7 @@ impl<'a, L: Ledger> Process<'a, L> {
     }
 
     /// Finalize this process.
-    fn finalize(&self) -> Result<(), RuntimeError> {
+    fn finalize(&self) -> Result<(), ExecutionError> {
         let mut buckets = vec![];
 
         for (bid, bucket) in &self.buckets {
@@ -510,12 +471,12 @@ impl<'a, L: Ledger> Process<'a, L> {
         if buckets.is_empty() {
             Ok(())
         } else {
-            Err(RuntimeError::ResourceLeak(buckets))
+            Err(ExecutionError::ResourceLeak(buckets))
         }
     }
 
     /// Send a byte array to this process.
-    fn send_bytes(&mut self, bytes: &[u8]) -> Result<i32, RuntimeError> {
+    fn send_bytes(&mut self, bytes: &[u8]) -> Result<i32, ExecutionError> {
         let result = self.module.invoke_export(
             "scrypto_alloc",
             &[RuntimeValue::I32((bytes.len()) as i32)],
@@ -531,20 +492,20 @@ impl<'a, L: Ledger> Process<'a, L> {
             _ => {}
         }
 
-        Err(RuntimeError::UnableToAllocateMemory)
+        Err(ExecutionError::UnableToAllocateMemory)
     }
 
     /// Read a length-prefixed byte array from this process.
-    fn read_bytes(&mut self, ptr: i32) -> Result<Vec<u8>, RuntimeError> {
+    fn read_bytes(&mut self, ptr: i32) -> Result<Vec<u8>, ExecutionError> {
         let a = self
             .memory
             .get((ptr - 4) as u32, 4)
-            .map_err(|e| RuntimeError::MemoryAccessError(e))?;
+            .map_err(|e| ExecutionError::MemoryAccessError(e))?;
         let len = u32::from_le_bytes([a[0], a[1], a[2], a[3]]);
 
         self.memory
             .get(ptr as u32, len as usize)
-            .map_err(|e| RuntimeError::MemoryAccessError(e))
+            .map_err(|e| ExecutionError::MemoryAccessError(e))
     }
 
     /// Log a message to console.
@@ -586,7 +547,7 @@ impl<'a, L: Ledger> Process<'a, L> {
     fn handle<I: Decode + fmt::Debug, O: Encode + fmt::Debug>(
         &mut self,
         args: RuntimeArgs,
-        handler: fn(&mut Self, input: I) -> Result<O, RuntimeError>,
+        handler: fn(&mut Self, input: I) -> Result<O, ExecutionError>,
         trace: bool,
     ) -> Result<Option<RuntimeValue>, Trap> {
         let now = Instant::now();
@@ -595,9 +556,9 @@ impl<'a, L: Ledger> Process<'a, L> {
         let input_bytes = self
             .memory
             .get(input_ptr, input_len as usize)
-            .map_err(|e| Trap::from(RuntimeError::MemoryAccessError(e)))?;
+            .map_err(|e| Trap::from(ExecutionError::MemoryAccessError(e)))?;
         let input: I = scrypto_decode(&input_bytes)
-            .map_err(|e| Trap::from(RuntimeError::InvalidRequest(e)))?;
+            .map_err(|e| Trap::from(ExecutionError::InvalidRequest(e)))?;
         if trace {
             self.trace(format!("input = {:?}", input));
         }
@@ -656,10 +617,10 @@ impl<'a, T: Ledger> Externals for Process<'a, T> {
                     EMIT_LOG => self.handle(args, Process::emit_log, false),
                     GET_CONTEXT_ADDRESS => self.handle(args, Process::get_context_address, true),
                     GET_CALL_DATA => self.handle(args, Process::get_call_data, true),
-                    _ => Err(RuntimeError::InvalidOpCode(operation).into()),
+                    _ => Err(ExecutionError::InvalidOpCode(operation).into()),
                 }
             }
-            _ => Err(RuntimeError::UnknownHostFunction(index).into()),
+            _ => Err(ExecutionError::UnknownHostFunction(index).into()),
         }
     }
 }

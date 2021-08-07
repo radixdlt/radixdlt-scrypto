@@ -1,9 +1,7 @@
 use hashbrown::HashMap;
-use scrypto::kernel::*;
 use scrypto::types::*;
 use scrypto::utils::*;
 
-use crate::execution::*;
 use crate::ledger::*;
 use crate::model::*;
 

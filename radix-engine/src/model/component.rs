@@ -1,15 +1,11 @@
-use hashbrown::HashMap;
 use sbor::*;
 use scrypto::types::*;
-
-use crate::model::*;
 
 #[derive(Debug, Clone, Encode, Decode)]
 pub struct Component {
     blueprint: Address,
     name: String,
     state: Vec<u8>,
-    buckets: HashMap<BID, Bucket>,
 }
 
 impl Component {
@@ -18,7 +14,6 @@ impl Component {
             blueprint,
             name,
             state,
-            buckets: HashMap::new(),
         }
     }
 
@@ -36,9 +31,5 @@ impl Component {
 
     pub fn set_state(&mut self, new_state: Vec<u8>) {
         self.state = new_state;
-    }
-
-    pub fn buckets(&mut self) -> &mut HashMap<BID, Bucket> {
-        self.buckets()
     }
 }
