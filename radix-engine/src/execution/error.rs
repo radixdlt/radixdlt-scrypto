@@ -7,8 +7,16 @@ use wasmi::*;
 use crate::model::*;
 
 #[derive(Debug)]
-pub enum ExecutionError {
-    RuntimeError(Error),
+pub enum RuntimeError {
+    InvalidModule(Error),
+
+    UnableToInstantiate(Error),
+
+    HasStartFunction,
+
+    NoValidMemoryExport,
+
+    InvokeError(Error),
 
     MemoryAccessError(Error),
 
@@ -42,13 +50,13 @@ pub enum ExecutionError {
 
     BucketRefNotFound,
 
-    BucketOperationError(BucketError),
+    AccountingError(BucketError),
 }
 
-impl fmt::Display for ExecutionError {
+impl fmt::Display for RuntimeError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}", self)
     }
 }
 
-impl HostError for ExecutionError {}
+impl HostError for RuntimeError {}

@@ -2,32 +2,21 @@ use wasmi::*;
 
 use crate::execution::*;
 
-#[derive(Debug)]
-pub enum ValidationError {
-    InvalidModule(Error),
-
-    InstantiateError(Error),
-
-    HasStartFunction,
-
-    NoValidMemoryExport,
+pub fn load_module(code: &[u8]) -> Result<Module, RuntimeError> {
+    Module::from_buffer(code).map_err(|e| RuntimeError::InvalidModule(e))
 }
 
-pub fn load_module(code: &[u8]) -> Result<Module, ValidationError> {
-    Module::from_buffer(code).map_err(|e| ValidationError::InvalidModule(e))
-}
-
-pub fn instantiate_module(module: &Module) -> Result<(ModuleRef, MemoryRef), ValidationError> {
+pub fn instantiate_module(module: &Module) -> Result<(ModuleRef, MemoryRef), RuntimeError> {
     // Instantiate
     let not_started = ModuleInstance::new(
         module,
         &ImportsBuilder::new().with_resolver("env", &EnvModuleResolver),
     )
-    .map_err(|e| ValidationError::InstantiateError(e))?;
+    .map_err(|e| RuntimeError::UnableToInstantiate(e))?;
 
     // Check start function
     if not_started.has_start() {
-        return Err(ValidationError::HasStartFunction);
+        return Err(RuntimeError::HasStartFunction);
     }
     let module_ref = not_started.assert_no_start();
 
@@ -35,6 +24,6 @@ pub fn instantiate_module(module: &Module) -> Result<(ModuleRef, MemoryRef), Val
     if let Some(ExternVal::Memory(memory)) = module_ref.export_by_name("memory") {
         Ok((module_ref, memory.to_owned()))
     } else {
-        Err(ValidationError::NoValidMemoryExport)
+        Err(RuntimeError::NoValidMemoryExport)
     }
 }

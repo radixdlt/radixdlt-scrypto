@@ -57,23 +57,23 @@ impl FileBasedLedger {
 }
 
 impl Ledger for FileBasedLedger {
-    fn get_blueprint(&self, address: Address) -> Option<Vec<u8>> {
-        Self::read(self.get_path(BLUEPRINTS, address.to_string(), ".wasm"))
+    fn get_blueprint(&self, address: Address) -> Option<Blueprint> {
+        Self::read(self.get_path(BLUEPRINTS, address.to_string(), ".wasm")).map(Blueprint::new)
     }
 
-    fn put_blueprint(&mut self, address: Address, blueprint: Vec<u8>) {
+    fn put_blueprint(&mut self, address: Address, blueprint: Blueprint) {
         Self::write(
             self.get_path(BLUEPRINTS, address.to_string(), ".wasm"),
-            blueprint,
+            blueprint.code(),
         )
     }
 
-    fn get_resource(&self, address: Address) -> Option<ResourceInfo> {
+    fn get_resource(&self, address: Address) -> Option<Resource> {
         Self::read(self.get_path(RESOURCES, address.to_string(), ".json"))
             .map(|v| scrypto_decode(v.as_ref()).unwrap())
     }
 
-    fn put_resource(&mut self, address: Address, info: ResourceInfo) {
+    fn put_resource(&mut self, address: Address, info: Resource) {
         Self::write(
             self.get_path(RESOURCES, address.to_string(), ".json"),
             scrypto_encode(&info),

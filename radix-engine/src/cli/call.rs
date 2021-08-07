@@ -60,8 +60,9 @@ pub fn handle_call<'a>(matches: &ArgMatches<'a>) {
 
     let code = runtime
         .get_blueprint(blueprint)
-        .expect("Blueprint not found");
-    let module = load_module(&code).unwrap();
+        .expect("Blueprint not found")
+        .code();
+    let module = load_module(code).unwrap();
     let (module_ref, memory_ref) = instantiate_module(&module).unwrap();
     let mut process = Process::new(
         &mut runtime,

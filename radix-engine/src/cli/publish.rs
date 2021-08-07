@@ -7,6 +7,7 @@ use scrypto::utils::*;
 
 use crate::cli::get_root_dir;
 use crate::ledger::*;
+use crate::model::*;
 
 const ARG_FILE: &'static str = "FILE";
 
@@ -32,7 +33,7 @@ pub fn handle_publish<'a>(args: &ArgMatches<'a>) {
         println!("Blueprint already exists: {}", address.to_string());
     } else {
         // TODO check wasm file
-        ledger.put_blueprint(address, code);
+        ledger.put_blueprint(address, Blueprint::new(code));
         println!("New blueprint: {}", address.to_string());
     }
 }

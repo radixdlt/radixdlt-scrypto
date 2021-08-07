@@ -5,26 +5,26 @@ use crate::ledger::*;
 use crate::model::*;
 
 pub struct InMemoryLedger {
-    blueprints: HashMap<Address, Vec<u8>>,
+    blueprints: HashMap<Address, Blueprint>,
     components: HashMap<Address, Component>,
     accounts: HashMap<Address, Account>,
-    resources: HashMap<Address, ResourceInfo>,
+    resources: HashMap<Address, Resource>,
 }
 
 impl Ledger for InMemoryLedger {
-    fn get_blueprint(&self, address: Address) -> Option<Vec<u8>> {
+    fn get_blueprint(&self, address: Address) -> Option<Blueprint> {
         self.blueprints.get(&address).map(Clone::clone)
     }
 
-    fn put_blueprint(&mut self, address: Address, blueprint: Vec<u8>) {
+    fn put_blueprint(&mut self, address: Address, blueprint: Blueprint) {
         self.blueprints.insert(address, blueprint);
     }
 
-    fn get_resource(&self, address: Address) -> Option<ResourceInfo> {
+    fn get_resource(&self, address: Address) -> Option<Resource> {
         self.resources.get(&address).map(Clone::clone)
     }
 
-    fn put_resource(&mut self, address: Address, info: ResourceInfo) {
+    fn put_resource(&mut self, address: Address, info: Resource) {
         self.resources.insert(address, info);
     }
 

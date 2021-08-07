@@ -49,18 +49,13 @@ impl Bucket {
 
 #[derive(Debug, Clone, Encode, Decode)]
 pub struct BucketRef {
-    amount: U256,
-    resource: Address,
+    bucket: Bucket,
     count: usize,
 }
 
 impl BucketRef {
-    pub fn new(amount: U256, resource: Address, count: usize) -> Self {
-        Self {
-            amount,
-            resource,
-            count,
-        }
+    pub fn new(bucket: Bucket, count: usize) -> Self {
+        Self { bucket, count }
     }
 
     pub fn increase_count(&mut self) -> usize {
@@ -77,12 +72,8 @@ impl BucketRef {
         }
     }
 
-    pub fn amount(&self) -> U256 {
-        self.amount
-    }
-
-    pub fn resource(&self) -> Address {
-        self.resource
+    pub fn bucket(&self) -> &Bucket {
+        &self.bucket
     }
 
     pub fn count(&self) -> usize {
