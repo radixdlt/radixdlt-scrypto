@@ -59,20 +59,11 @@ pub enum Type {
         element: Box<Type>,
     },
 
-    TreeSet {
+    Set {
         element: Box<Type>,
     },
 
-    TreeMap {
-        key: Box<Type>,
-        value: Box<Type>,
-    },
-
-    HashSet {
-        element: Box<Type>,
-    },
-
-    HashMap {
+    Map {
         key: Box<Type>,
         value: Box<Type>,
     },

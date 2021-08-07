@@ -102,45 +102,37 @@ impl<T: Describe> Describe for Vec<T> {
     }
 }
 
-impl<T: Describe> Describe for BTreeSet<T> {
-    fn describe() -> Type {
-        let ty = T::describe();
-        Type::TreeSet {
-            element: Box::new(ty),
+macro_rules! describe_set {
+    ($type:ident) => {
+        impl<T: Describe> Describe for $type<T> {
+            fn describe() -> Type {
+                let ty = T::describe();
+                Type::Set {
+                    element: Box::new(ty),
+                }
+            }
         }
-    }
+    };
 }
+describe_set!(BTreeSet);
+describe_set!(HashSet);
 
-impl<K: Describe, V: Describe> Describe for BTreeMap<K, V> {
-    fn describe() -> Type {
-        let k = K::describe();
-        let v = V::describe();
-        Type::TreeMap {
-            key: Box::new(k),
-            value: Box::new(v),
+macro_rules! describe_map {
+    ($type:ident) => {
+        impl<K: Describe, V: Describe> Describe for $type<K, V> {
+            fn describe() -> Type {
+                let k = K::describe();
+                let v = V::describe();
+                Type::Map {
+                    key: Box::new(k),
+                    value: Box::new(v),
+                }
+            }
         }
-    }
+    };
 }
-
-impl<T: Describe> Describe for HashSet<T> {
-    fn describe() -> Type {
-        let ty = T::describe();
-        Type::HashSet {
-            element: Box::new(ty),
-        }
-    }
-}
-
-impl<K: Describe, V: Describe> Describe for HashMap<K, V> {
-    fn describe() -> Type {
-        let k = K::describe();
-        let v = V::describe();
-        Type::HashMap {
-            key: Box::new(k),
-            value: Box::new(v),
-        }
-    }
-}
+describe_map!(BTreeMap);
+describe_map!(HashMap);
 
 #[cfg(test)]
 mod tests {
