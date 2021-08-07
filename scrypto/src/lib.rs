@@ -73,7 +73,7 @@ macro_rules! call_component {
 macro_rules! error {
     ($($args: expr),+) => {{
         extern crate alloc;
-        scrypto::constructs::Logger::log(scrypto::constructs::Level::Error, alloc::format!($($args),+));
+        scrypto::constructs::Logger::log(scrypto::types::Level::Error, alloc::format!($($args),+));
     }};
 }
 
@@ -82,7 +82,7 @@ macro_rules! error {
 macro_rules! warn {
     ($($args: expr),+) => {{
         extern crate alloc;
-        scrypto::constructs::Logger::log(scrypto::constructs::Level::Warn, alloc::format!($($args),+));
+        scrypto::constructs::Logger::log(scrypto::types::Level::Warn, alloc::format!($($args),+));
     }};
 }
 
@@ -91,7 +91,7 @@ macro_rules! warn {
 macro_rules! info {
     ($($args: expr),+) => {{
         extern crate alloc;
-        scrypto::constructs::Logger::log(scrypto::constructs::Level::Info, alloc::format!($($args),+));
+        scrypto::constructs::Logger::log(scrypto::types::Level::Info, alloc::format!($($args),+));
     }};
 }
 
@@ -100,7 +100,7 @@ macro_rules! info {
 macro_rules! debug {
     ($($args: expr),+) => {{
         extern crate alloc;
-        scrypto::constructs::Logger::log(scrypto::constructs::Level::Debug, alloc::format!($($args),+));
+        scrypto::constructs::Logger::log(scrypto::types::Level::Debug, alloc::format!($($args),+));
     }};
 }
 
@@ -109,6 +109,6 @@ macro_rules! debug {
 macro_rules! trace {
     ($($args: expr),+) => {{
         extern crate alloc;
-        scrypto::constructs::Logger::log(scrypto::constructs::Level::Trace, alloc::format!($($args),+));
+        scrypto::constructs::Logger::log(scrypto::types::Level::Trace, alloc::format!($($args),+));
     }};
 }

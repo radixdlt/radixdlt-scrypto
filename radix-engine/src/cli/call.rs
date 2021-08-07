@@ -56,8 +56,7 @@ pub fn handle_call<'a>(matches: &ArgMatches<'a>) {
 
     let tx_hash = sha256(Uuid::new_v4().to_string());
     let ledger = FileBasedLedger::new(get_root_dir());
-    let logger = Logger::new(Level::Trace);
-    let mut runtime = Runtime::new(tx_hash, ledger, logger);
+    let mut runtime = Runtime::new(tx_hash, ledger);
 
     let code = runtime
         .get_blueprint(blueprint)

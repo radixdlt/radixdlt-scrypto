@@ -1,34 +1,15 @@
 extern crate alloc;
 use alloc::string::String;
-use alloc::string::ToString;
 
 use crate::kernel::*;
-
-/// Represents the severity of a log message.
-pub enum Level {
-    Error,
-    Warn,
-    Info,
-    Debug,
-    Trace,
-}
+use crate::types::*;
 
 /// A logger for dumping messages.
 pub struct Logger {}
 
 impl Logger {
     pub fn log(level: Level, message: String) {
-        let s = match level {
-            Level::Error => "ERROR",
-            Level::Warn => "WARN",
-            Level::Info => "INFO",
-            Level::Debug => "DEBUG",
-            Level::Trace => "TRACE",
-        };
-        let input = EmitLogInput {
-            level: s.to_string(),
-            message,
-        };
+        let input = EmitLogInput { level, message };
         let _: EmitLogOutput = call_kernel(EMIT_LOG, input);
     }
 

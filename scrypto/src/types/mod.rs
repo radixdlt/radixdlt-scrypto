@@ -8,6 +8,34 @@ pub use bid::*;
 pub use hash::*;
 pub use u256::*;
 
+use sbor::*;
+
+#[derive(Debug, Clone, Encode, Decode)]
+pub struct ComponentInfo {
+    pub blueprint: Address,
+    pub name: String,
+}
+
+#[derive(Debug, Clone, Encode, Decode)]
+pub struct ResourceInfo {
+    pub symbol: String,
+    pub name: String,
+    pub description: String,
+    pub url: String,
+    pub icon_url: String,
+    pub minter: Option<Address>,
+    pub supply: Option<U256>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Encode, Decode)]
+pub enum Level {
+    Error = 0,
+    Warn,
+    Info,
+    Debug,
+    Trace,
+}
+
 #[cfg(test)]
 mod tests {
     use sbor::{Decode, Encode};

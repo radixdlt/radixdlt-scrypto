@@ -12,33 +12,33 @@ use crate::model::*;
 pub struct Runtime<T> {
     tx_hash: Hash,
     ledger: T,
-    logger: Logger,
     component_counter: u32,
     bucket_counter: u32,
     blueprints: HashMap<Address, Vec<u8>>,
     components: HashMap<Address, Component>,
     accounts: HashMap<Address, Account>,
     resources: HashMap<Address, ResourceInfo>,
+    logs: Vec<(Level, String)>,
     // TODO track updates
 }
 
 impl<T: Ledger> Runtime<T> {
-    pub fn new(tx_hash: Hash, ledger: T, logger: Logger) -> Self {
+    pub fn new(tx_hash: Hash, ledger: T) -> Self {
         Self {
             tx_hash,
             ledger,
-            logger,
             component_counter: 0,
             bucket_counter: 0,
             blueprints: HashMap::new(),
             components: HashMap::new(),
             accounts: HashMap::new(),
             resources: HashMap::new(),
+            logs: Vec::new(),
         }
     }
 
-    pub fn logger(&self) -> &Logger {
-        &self.logger
+    pub fn log(&mut self, level: Level, message: String) {
+        self.logs.push((level, message));
     }
 
     pub fn get_blueprint(&mut self, address: Address) -> Option<&Vec<u8>> {

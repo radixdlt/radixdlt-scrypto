@@ -78,23 +78,6 @@ pub const GET_CONTEXT_ADDRESS: u32 = 0x51;
 /// Retrieve the call data
 pub const GET_CALL_DATA: u32 = 0x52;
 
-#[derive(Debug, Clone, Encode, Decode)]
-pub struct ComponentInfo {
-    pub blueprint: Address,
-    pub name: String,
-}
-
-#[derive(Debug, Clone, Encode, Decode)]
-pub struct ResourceInfo {
-    pub symbol: String,
-    pub name: String,
-    pub description: String,
-    pub url: String,
-    pub icon_url: String,
-    pub minter: Option<Address>,
-    pub supply: Option<U256>,
-}
-
 //==========
 // blueprint
 //==========
@@ -401,7 +384,7 @@ pub struct DepositBadgesOutput {}
 
 #[derive(Debug, Encode, Decode)]
 pub struct EmitLogInput {
-    pub level: String,
+    pub level: Level,
     pub message: String,
 }
 

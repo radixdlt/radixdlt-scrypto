@@ -1,6 +1,7 @@
 use std::fmt;
 use std::time::Instant;
 
+use colored::*;
 use hashbrown::HashMap;
 use sbor::*;
 use scrypto::buffer::*;
@@ -104,7 +105,7 @@ impl<'a, L: Ledger> Process<'a, L> {
         let now = Instant::now();
 
         let func = format!("{}_{}", self.component, "main");
-        self.log(Level::Info, format!("Invoking {}", func));
+        self.info(format!("Invoking {}", func));
         let result = self.module.invoke_export(func.as_str(), &[], self);
         let output = match result.map_err(|e| RuntimeError::ExecutionError(e))? {
             Some(RuntimeValue::I32(ptr)) => {
@@ -114,18 +115,8 @@ impl<'a, L: Ledger> Process<'a, L> {
             _ => Err(RuntimeError::NoValidBlueprintReturn),
         };
 
-        self.log(
-            Level::Info,
-            format!("Time elapsed: {} ms", now.elapsed().as_millis()),
-        );
+        self.info(format!("Time elapsed: {} ms", now.elapsed().as_millis()));
         output
-    }
-
-    /// Log a message.
-    pub fn log<S: ToString>(&self, level: Level, msg: S) {
-        self.runtime
-            .logger()
-            .log(self.depth, level, msg.to_string());
     }
 
     pub fn publish_blueprint(
@@ -137,14 +128,11 @@ impl<'a, L: Ledger> Process<'a, L> {
         match self.runtime.get_blueprint(address) {
             Some(_) => Err(RuntimeError::BlueprintAlreadyExists(address)),
             _ => {
-                self.log(
-                    Level::Debug,
-                    format!(
-                        "New blueprint: address = {:?}, code length = {:?}",
-                        address,
-                        input.code.len()
-                    ),
-                );
+                self.debug(format!(
+                    "New blueprint: address = {:?}, code length = {:?}",
+                    address,
+                    input.code.len()
+                ));
                 self.runtime.put_blueprint(address, input.code);
 
                 Ok(PublishBlueprintOutput { blueprint: address })
@@ -170,13 +158,10 @@ impl<'a, L: Ledger> Process<'a, L> {
             _ => {
                 // TODO: move resources to the component
 
-                self.log(
-                    Level::Debug,
-                    format!(
-                        "New component: address = {:?}, name = {:?}, state = {:?}",
-                        address, input.name, input.state
-                    ),
-                );
+                self.debug(format!(
+                    "New component: address = {:?}, name = {:?}, state = {:?}",
+                    address, input.name, input.state
+                ));
                 let component = Component::new(self.blueprint, input.name, input.state);
                 self.runtime.put_component(address, component);
 
@@ -243,7 +228,7 @@ impl<'a, L: Ledger> Process<'a, L> {
         if self.runtime.get_resource(address).is_some() {
             return Err(RuntimeError::ResourceAlreadyExists(address));
         } else {
-            self.log(Level::Debug, format!("New resource: {:?}", address));
+            self.debug(format!("New resource: {:?}", address));
 
             self.runtime.put_resource(address, input.info);
         }
@@ -316,7 +301,7 @@ impl<'a, L: Ledger> Process<'a, L> {
         input: BorrowTokensInput,
     ) -> Result<BorrowTokensOutput, RuntimeError> {
         let bid = input.tokens;
-        self.log(Level::Debug, format!("Borrowing {:?}", bid));
+        self.debug(format!("Borrowing {:?}", bid));
 
         match self.buckets_lent.get_mut(&bid) {
             Some(reference) => {
@@ -348,7 +333,7 @@ impl<'a, L: Ledger> Process<'a, L> {
         input: ReturnTokensInput,
     ) -> Result<ReturnTokensOutput, RuntimeError> {
         let bid = input.reference;
-        self.log(Level::Debug, format!("Returning: {:?}", bid));
+        self.debug(format!("Returning: {:?}", bid));
 
         let bucket = self
             .buckets_borrowed
@@ -478,7 +463,7 @@ impl<'a, L: Ledger> Process<'a, L> {
     }
 
     pub fn emit_log(&mut self, input: EmitLogInput) -> Result<EmitLogOutput, RuntimeError> {
-        self.log(input.level.into(), input.message);
+        self.runtime.log(input.level, input.message);
 
         Ok(EmitLogOutput {})
     }
@@ -508,23 +493,17 @@ impl<'a, L: Ledger> Process<'a, L> {
 
         for (bid, bucket) in &self.buckets {
             if bucket.amount() != U256::zero() {
-                self.log(
-                    Level::Error,
-                    format!("Burning bucket: {:?} {:?}", bid, bucket),
-                );
+                self.error(format!("Burning bucket: {:?} {:?}", bid, bucket));
                 buckets.push(*bid);
             }
         }
         for (bid, bucket) in &self.buckets_lent {
-            self.log(Level::Error, format!("Bucket lent: {:?} {:?}", bid, bucket));
+            self.error(format!("Bucket lent: {:?} {:?}", bid, bucket));
             buckets.push(*bid);
         }
 
         for (bid, bucket_ref) in &self.buckets_borrowed {
-            self.log(
-                Level::Error,
-                format!("Bucket lent: {:?} {:?}", bid, bucket_ref),
-            );
+            self.error(format!("Bucket lent: {:?} {:?}", bid, bucket_ref));
             buckets.push(*bid);
         }
 
@@ -568,6 +547,41 @@ impl<'a, L: Ledger> Process<'a, L> {
             .map_err(|e| RuntimeError::MemoryAccessError(e))
     }
 
+    /// Log a message to console.
+    fn log(&self, level: Level, msg: String) {
+        if (level as u32) <= (level as u32) {
+            let (l, m) = match level {
+                Level::Error => ("ERROR".red(), msg.to_string().red()),
+                Level::Warn => ("WARN".yellow(), msg.to_string().yellow()),
+                Level::Info => ("INFO".green(), msg.to_string().green()),
+                Level::Debug => ("DEBUG".cyan(), msg.to_string().cyan()),
+                Level::Trace => ("TRACE".normal(), msg.to_string().normal()),
+            };
+
+            println!("{}[{:5}] {}", "  ".repeat(self.depth), l, m);
+        }
+    }
+
+    fn error<T: ToString>(&self, msg: T) {
+        self.log(Level::Error, msg.to_string());
+    }
+
+    fn warn<T: ToString>(&self, msg: T) {
+        self.log(Level::Warn, msg.to_string());
+    }
+
+    fn info<T: ToString>(&self, msg: T) {
+        self.log(Level::Info, msg.to_string());
+    }
+
+    fn trace<T: ToString>(&self, msg: T) {
+        self.log(Level::Trace, msg.to_string());
+    }
+
+    fn debug<T: ToString>(&self, msg: T) {
+        self.log(Level::Debug, msg.to_string());
+    }
+
     /// Handle a kernel call.
     fn handle<I: Decode + fmt::Debug, O: Encode + fmt::Debug>(
         &mut self,
@@ -585,21 +599,18 @@ impl<'a, L: Ledger> Process<'a, L> {
         let input: I = scrypto_decode(&input_bytes)
             .map_err(|e| Trap::from(RuntimeError::InvalidRequest(e)))?;
         if trace {
-            self.log(Level::Trace, format!("input = {:?}", input));
+            self.trace(format!("input = {:?}", input));
         }
 
         let output: O = handler(self, input).map_err(Trap::from)?;
         let output_bytes = scrypto_encode(&output);
         let output_ptr = self.send_bytes(&output_bytes).map_err(Trap::from)?;
         if trace {
-            self.log(
-                Level::Trace,
-                format!(
-                    "output = {:?}, time = {} ms",
-                    output,
-                    now.elapsed().as_millis()
-                ),
-            );
+            self.trace(format!(
+                "output = {:?}, time = {} ms",
+                output,
+                now.elapsed().as_millis()
+            ));
         }
 
         Ok(Some(RuntimeValue::I32(output_ptr)))

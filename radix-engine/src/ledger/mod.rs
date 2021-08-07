@@ -4,7 +4,6 @@ mod memory;
 pub use file::FileBasedLedger;
 pub use memory::InMemoryLedger;
 
-use scrypto::kernel::ResourceInfo;
 use scrypto::types::*;
 
 use crate::model::*;
