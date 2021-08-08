@@ -8,6 +8,8 @@ use crate::model::*;
 
 #[derive(Debug)]
 pub enum RuntimeError {
+    BlueprintNotFound,
+
     InvalidModule(Error),
 
     UnableToInstantiate(Error),
@@ -51,6 +53,8 @@ pub enum RuntimeError {
     BucketRefNotFound,
 
     AccountingError(BucketError),
+
+    UnauthorizedToWithdraw,
 }
 
 impl fmt::Display for RuntimeError {

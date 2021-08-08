@@ -113,16 +113,20 @@ impl<'a, L: Ledger> Process<'a, L> {
         match self.runtime.get_component(address) {
             Some(_) => Err(RuntimeError::ComponentAlreadyExists(address)),
             _ => {
-                // TODO: move resources to the component
-
                 self.debug(format!(
                     "New component: address = {:?}, name = {:?}, state = {:?}",
                     address, input.name, input.state
                 ));
-                let component = Component::new(self.blueprint, input.name, input.state);
+
+                // TODO: change transient buckets to physical buckets
+                let new_state = input.state;
+                let component = Component::new(self.blueprint, input.name, new_state.clone());
                 self.runtime.put_component(address, component);
 
-                Ok(CreateComponentOutput { component: address })
+                Ok(CreateComponentOutput {
+                    component: address,
+                    new_state,
+                })
             }
         }
     }
@@ -152,8 +156,6 @@ impl<'a, L: Ledger> Process<'a, L> {
 
         let state = component.state();
 
-        // TODO: withdraw resource recursively.
-
         Ok(GetComponentStateOutput {
             state: state.to_owned(),
         })
@@ -168,10 +170,11 @@ impl<'a, L: Ledger> Process<'a, L> {
             .get_component_mut(input.component)
             .ok_or(RuntimeError::ComponentNotFound(input.component))?;
 
-        component.set_state(input.state);
-        // TODO: deposit resource recursively.
+        // TODO: convert transient buckets to physical buckets.
+        let new_state = input.state;
+        component.set_state(new_state.clone());
 
-        Ok(PutComponentStateOutput {})
+        Ok(PutComponentStateOutput { new_state })
     }
 
     pub fn create_resource(
@@ -436,7 +439,14 @@ impl<'a, L: Ledger> Process<'a, L> {
         &mut self,
         input: WithdrawTokensInput,
     ) -> Result<WithdrawTokensOutput, RuntimeError> {
-        let account = self.runtime.get_account_mut(input.account);
+        if input.account != self.blueprint {
+            return Err(RuntimeError::UnauthorizedToWithdraw);
+        }
+
+        let account = match self.runtime.get_account_mut(input.account) {
+            Some(acc) => acc,
+            None => self.runtime.put_account(input.account, Account::new()),
+        };
 
         let bucket = account
             .withdraw(input.amount, input.resource)
@@ -455,7 +465,12 @@ impl<'a, L: Ledger> Process<'a, L> {
             .buckets
             .remove(&input.tokens)
             .ok_or(RuntimeError::BucketNotFound)?;
-        let account = self.runtime.get_account_mut(input.account);
+
+        let account = match self.runtime.get_account_mut(input.account) {
+            Some(acc) => acc,
+            None => self.runtime.put_account(input.account, Account::new()),
+        };
+
         account
             .deposit(bucket)
             .map_err(|e| RuntimeError::AccountingError(e))?;

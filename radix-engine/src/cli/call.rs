@@ -58,23 +58,30 @@ pub fn handle_call<'a>(matches: &ArgMatches<'a>) {
     let ledger = FileBasedLedger::new(get_root_dir());
     let mut runtime = Runtime::new(tx_hash, ledger);
 
-    let code = runtime
-        .get_blueprint(blueprint)
-        .expect("Blueprint not found")
-        .code();
-    let module = load_module(code).unwrap();
-    let (module_ref, memory_ref) = instantiate_module(&module).unwrap();
-    let mut process = Process::new(
-        &mut runtime,
-        &module_ref,
-        &memory_ref,
-        blueprint,
-        component.to_string(),
-        method.to_string(),
-        args,
-        0,
-    );
+    let output = match runtime.get_blueprint(blueprint) {
+        Some(b) => {
+            let module = load_module(b.code()).unwrap();
+            let (module_ref, memory_ref) = instantiate_module(&module).unwrap();
+            let mut process = Process::new(
+                &mut runtime,
+                &module_ref,
+                &memory_ref,
+                blueprint,
+                component.to_string(),
+                method.to_string(),
+                args,
+                0,
+            );
+            process.run()
+        }
+        None => Err(RuntimeError::BlueprintNotFound),
+    };
 
-    let output = process.run();
+    if output.is_ok() {
+        runtime.flush();
+    }
+
+    println!("----");
     println!("Output: {:?}", output);
+    println!("----");
 }

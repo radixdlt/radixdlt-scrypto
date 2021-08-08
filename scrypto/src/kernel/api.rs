@@ -118,6 +118,7 @@ pub struct CreateComponentInput {
 #[derive(Debug, Encode, Decode)]
 pub struct CreateComponentOutput {
     pub component: Address,
+    pub new_state: Vec<u8>,
 }
 
 #[derive(Debug, Encode, Decode)]
@@ -147,7 +148,9 @@ pub struct PutComponentStateInput {
 }
 
 #[derive(Debug, Encode, Decode)]
-pub struct PutComponentStateOutput {}
+pub struct PutComponentStateOutput {
+    pub new_state: Vec<u8>,
+}
 
 #[derive(Debug, Encode, Decode)]
 pub struct GetComponentStorageInput {

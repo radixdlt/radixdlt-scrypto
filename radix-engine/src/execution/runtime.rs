@@ -1,4 +1,4 @@
-use hashbrown::HashMap;
+use hashbrown::{HashMap, HashSet};
 use scrypto::types::*;
 use scrypto::utils::*;
 
@@ -7,17 +7,20 @@ use crate::model::*;
 
 /// Represents the transaction execution runtime, one per transaction.
 /// A runtime is shared by a chain of processes, created during the execution of the transaction.
-pub struct Runtime<T> {
+pub struct Runtime<T: Ledger> {
     tx_hash: Hash,
     ledger: T,
     component_counter: u32,
     bucket_counter: u32,
+    logs: Vec<(Level, String)>,
     blueprints: HashMap<Address, Blueprint>,
     components: HashMap<Address, Component>,
     accounts: HashMap<Address, Account>,
     resources: HashMap<Address, Resource>,
-    logs: Vec<(Level, String)>,
-    // TODO track updates
+    updated_blueprints: HashSet<Address>,
+    updated_components: HashSet<Address>,
+    updated_accounts: HashSet<Address>,
+    updated_resources: HashSet<Address>,
 }
 
 impl<T: Ledger> Runtime<T> {
@@ -27,11 +30,15 @@ impl<T: Ledger> Runtime<T> {
             ledger,
             component_counter: 0,
             bucket_counter: 0,
+            logs: Vec::new(),
             blueprints: HashMap::new(),
             components: HashMap::new(),
             accounts: HashMap::new(),
             resources: HashMap::new(),
-            logs: Vec::new(),
+            updated_blueprints: HashSet::new(),
+            updated_components: HashSet::new(),
+            updated_accounts: HashSet::new(),
+            updated_resources: HashSet::new(),
         }
     }
 
@@ -56,6 +63,8 @@ impl<T: Ledger> Runtime<T> {
     /// Returns a mutable reference to a blueprint, if exists.
     #[allow(dead_code)]
     pub fn get_blueprint_mut(&mut self, address: Address) -> Option<&mut Blueprint> {
+        self.updated_blueprints.insert(address);
+
         if self.blueprints.contains_key(&address) {
             return self.blueprints.get_mut(&address);
         }
@@ -69,8 +78,11 @@ impl<T: Ledger> Runtime<T> {
     }
 
     /// Inserts a new blueprint.
-    pub fn put_blueprint(&mut self, address: Address, blueprint: Blueprint) {
+    pub fn put_blueprint(&mut self, address: Address, blueprint: Blueprint) -> &mut Blueprint {
+        self.updated_blueprints.insert(address);
+
         self.blueprints.insert(address, blueprint);
+        self.blueprints.get_mut(&address).unwrap()
     }
 
     /// Returns an immutable reference to a component, if exists.
@@ -88,6 +100,8 @@ impl<T: Ledger> Runtime<T> {
     }
     /// Returns a mutable reference to a component, if exists.
     pub fn get_component_mut(&mut self, address: Address) -> Option<&mut Component> {
+        self.updated_components.insert(address);
+
         if self.components.contains_key(&address) {
             return self.components.get_mut(&address);
         }
@@ -101,29 +115,48 @@ impl<T: Ledger> Runtime<T> {
     }
 
     /// Inserts a new component.
-    pub fn put_component(&mut self, address: Address, component: Component) {
+    pub fn put_component(&mut self, address: Address, component: Component) -> &mut Component {
+        self.updated_components.insert(address);
+
         self.components.insert(address, component);
+        self.components.get_mut(&address).unwrap()
     }
 
-    /// Returns an immutable reference to an account.
+    /// Returns an immutable reference to a account, if exists.
     #[allow(dead_code)]
-    pub fn get_account(&mut self, address: Address) -> &Account {
+    pub fn get_account(&mut self, address: Address) -> Option<&Account> {
         if self.accounts.contains_key(&address) {
-            return self.accounts.get(&address).unwrap();
+            return self.accounts.get(&address);
         }
 
-        let account = self.ledger.get_account(address).unwrap_or(Account::new());
-        self.accounts.insert(address, account);
-        self.accounts.get(&address).unwrap()
+        if let Some(account) = self.ledger.get_account(address) {
+            self.accounts.insert(address, account);
+            self.accounts.get(&address)
+        } else {
+            None
+        }
     }
 
-    /// Returns a mutable reference to an account.
-    pub fn get_account_mut(&mut self, address: Address) -> &mut Account {
+    /// Returns a mutable reference to a account, if exists.
+    pub fn get_account_mut(&mut self, address: Address) -> Option<&mut Account> {
+        self.updated_accounts.insert(address);
+
         if self.accounts.contains_key(&address) {
-            return self.accounts.get_mut(&address).unwrap();
+            return self.accounts.get_mut(&address);
         }
 
-        let account = self.ledger.get_account(address).unwrap_or(Account::new());
+        if let Some(account) = self.ledger.get_account(address) {
+            self.accounts.insert(address, account);
+            self.accounts.get_mut(&address)
+        } else {
+            None
+        }
+    }
+
+    /// Inserts a new account.
+    pub fn put_account(&mut self, address: Address, account: Account) -> &mut Account {
+        self.updated_accounts.insert(address);
+
         self.accounts.insert(address, account);
         self.accounts.get_mut(&address).unwrap()
     }
@@ -145,6 +178,8 @@ impl<T: Ledger> Runtime<T> {
     /// Returns a mutable reference to a resource, if exists.
     #[allow(dead_code)]
     pub fn get_resource_mut(&mut self, address: Address) -> Option<&mut Resource> {
+        self.updated_resources.insert(address);
+
         if self.resources.contains_key(&address) {
             return self.resources.get_mut(&address);
         }
@@ -159,6 +194,8 @@ impl<T: Ledger> Runtime<T> {
 
     /// Inserts a new resource.
     pub fn put_resource(&mut self, address: Address, resource: Resource) {
+        self.updated_resources.insert(address);
+
         self.resources.insert(address, resource);
     }
 
@@ -189,5 +226,36 @@ impl<T: Ledger> Runtime<T> {
     pub fn new_bid(&mut self) -> BID {
         self.bucket_counter += 1;
         BID::Transient(self.bucket_counter - 1)
+    }
+
+    /// Flush changes to ledger.
+    pub fn flush(&mut self) {
+        let mut addresses = self.updated_blueprints.clone();
+        for address in addresses {
+            println!("Updating: {:?}", address);
+            self.ledger
+                .put_blueprint(address, self.blueprints.get(&address).unwrap().clone());
+        }
+
+        addresses = self.updated_components.clone();
+        for address in addresses {
+            println!("Updating: {:?}", address);
+            self.ledger
+                .put_component(address, self.components.get(&address).unwrap().clone());
+        }
+
+        addresses = self.updated_accounts.clone();
+        for address in addresses {
+            println!("Updating: {:?}", address);
+            self.ledger
+                .put_account(address, self.accounts.get(&address).unwrap().clone());
+        }
+
+        addresses = self.updated_resources.clone();
+        for address in addresses {
+            println!("Updating: {:?}", address);
+            self.ledger
+                .put_resource(address, self.resources.get(&address).unwrap().clone());
+        }
     }
 }
