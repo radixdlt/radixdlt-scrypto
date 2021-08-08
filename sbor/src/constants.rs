@@ -24,5 +24,7 @@ pub const TYPE_FIELDS_UNNAMED: u8 = 0x17;
 pub const TYPE_FIELDS_UNIT: u8 = 0x18;
 // collections
 pub const TYPE_VEC: u8 = 0x20;
-pub const TYPE_SET: u8 = 0x21;
-pub const TYPE_MAP: u8 = 0x22;
+pub const TYPE_TREE_SET: u8 = 0x21;
+pub const TYPE_TREE_MAP: u8 = 0x22;
+pub const TYPE_HASH_SET: u8 = 0x23;
+pub const TYPE_HASH_MAP: u8 = 0x24;

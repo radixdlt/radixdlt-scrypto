@@ -9,8 +9,6 @@ pub use hash::*;
 pub use u256::*;
 
 use sbor::*;
-extern crate alloc;
-use alloc::string::String;
 
 #[derive(Debug, Clone, Encode, Decode)]
 pub struct ComponentInfo {
