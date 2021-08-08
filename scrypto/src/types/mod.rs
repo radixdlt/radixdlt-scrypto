@@ -8,6 +8,9 @@ pub use bid::*;
 pub use hash::*;
 pub use u256::*;
 
+extern crate alloc;
+use alloc::string::String;
+
 use sbor::*;
 
 #[derive(Debug, Clone, Encode, Decode)]

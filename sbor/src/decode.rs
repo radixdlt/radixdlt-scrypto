@@ -232,7 +232,7 @@ impl Decode for u8 {
     }
 }
 
-macro_rules! decode_basic_type {
+macro_rules! decode_int {
     ($type:ident, $sbor_type:ident, $n:expr) => {
         impl Decode for $type {
             #[inline]
@@ -251,14 +251,14 @@ macro_rules! decode_basic_type {
     };
 }
 
-decode_basic_type!(i16, TYPE_I16, 2);
-decode_basic_type!(i32, TYPE_I32, 4);
-decode_basic_type!(i64, TYPE_I64, 8);
-decode_basic_type!(i128, TYPE_I128, 16);
-decode_basic_type!(u16, TYPE_U16, 2);
-decode_basic_type!(u32, TYPE_U32, 4);
-decode_basic_type!(u64, TYPE_U64, 8);
-decode_basic_type!(u128, TYPE_U128, 16);
+decode_int!(i16, TYPE_I16, 2);
+decode_int!(i32, TYPE_I32, 4);
+decode_int!(i64, TYPE_I64, 8);
+decode_int!(i128, TYPE_I128, 16);
+decode_int!(u16, TYPE_U16, 2);
+decode_int!(u32, TYPE_U32, 4);
+decode_int!(u64, TYPE_U64, 8);
+decode_int!(u128, TYPE_U128, 16);
 
 impl Decode for isize {
     #[inline]
@@ -407,7 +407,7 @@ impl<T: Decode + Ord> Decode for BTreeSet<T> {
         decoder.check_type(T::sbor_type())?;
         let len = decoder.read_len()?;
 
-        let mut result = BTreeSet::new(); // Lengths are u16, so it's safe to pre-allocate.
+        let mut result = BTreeSet::new();
         for _ in 0..len {
             result.insert(T::decode_value(decoder)?);
         }
@@ -446,7 +446,7 @@ impl<T: Decode + Hash + Eq> Decode for HashSet<T> {
         decoder.check_type(T::sbor_type())?;
         let len = decoder.read_len()?;
 
-        let mut result = HashSet::new(); // Lengths are u16, so it's safe to pre-allocate.
+        let mut result = HashSet::new();
         for _ in 0..len {
             result.insert(T::decode_value(decoder)?);
         }

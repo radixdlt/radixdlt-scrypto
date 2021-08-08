@@ -7,7 +7,7 @@ use alloc::vec::Vec;
 use scrypto::buffer::{scrypto_decode, scrypto_encode, scrypto_wrap};
 use scrypto::constructs::{Blueprint, Component};
 use scrypto::kernel::*;
-use scrypto::types::Address;
+use scrypto::types::*;
 use scrypto::*;
 
 const LOG_MESSAGE: &'static str = "Hello, Radix!";

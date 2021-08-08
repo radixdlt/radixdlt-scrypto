@@ -135,7 +135,7 @@ impl Encode for u8 {
     }
 }
 
-macro_rules! encode_basic_type {
+macro_rules! encode_int {
     ($type:ident, $sbor_type:ident) => {
         impl Encode for $type {
             #[inline]
@@ -151,14 +151,14 @@ macro_rules! encode_basic_type {
     };
 }
 
-encode_basic_type!(i16, TYPE_I16);
-encode_basic_type!(i32, TYPE_I32);
-encode_basic_type!(i64, TYPE_I64);
-encode_basic_type!(i128, TYPE_I128);
-encode_basic_type!(u16, TYPE_U16);
-encode_basic_type!(u32, TYPE_U32);
-encode_basic_type!(u64, TYPE_U64);
-encode_basic_type!(u128, TYPE_U128);
+encode_int!(i16, TYPE_I16);
+encode_int!(i32, TYPE_I32);
+encode_int!(i64, TYPE_I64);
+encode_int!(i128, TYPE_I128);
+encode_int!(u16, TYPE_U16);
+encode_int!(u32, TYPE_U32);
+encode_int!(u64, TYPE_U64);
+encode_int!(u128, TYPE_U128);
 
 impl Encode for isize {
     #[inline]
