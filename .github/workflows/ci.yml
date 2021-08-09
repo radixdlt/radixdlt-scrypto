@@ -84,3 +84,13 @@ jobs:
     - name: Build no_std
       run: cargo build --target wasm32-unknown-unknown
       working-directory: examples/no_std
+  radix-engine:
+    name: Run Radix Engine tests
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Add wasm target
+      run: rustup target add wasm32-unknown-unknown
+    - name: Run tests
+      run: cargo test --verbose
+      working-directory: radix-engine
