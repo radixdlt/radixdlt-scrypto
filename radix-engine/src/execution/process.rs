@@ -56,21 +56,32 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
     /// Start this process by invoking the component main method.
     pub fn run(&mut self) -> Result<Vec<u8>, RuntimeError> {
         let now = Instant::now();
+        self.info(format!(
+            "CALL started: blueprint = {:?}, component = {:?}, method = {:?}, args = {:?}",
+            self.blueprint, self.component, self.method, self.args
+        ));
 
         let func = format!("{}_{}", self.component, "main");
-        self.info(format!("Invoking {}", func));
+        let result = self.invoke(func);
 
+        self.info(format!(
+            "CALL finished: time elapsed = {} ms, result = {:?}",
+            now.elapsed().as_millis(),
+            result
+        ));
+        result
+    }
+
+    pub fn invoke(&mut self, func: String) -> Result<Vec<u8>, RuntimeError> {
         let invoke_res = self.module.invoke_export(func.as_str(), &[], self);
-        let output = match invoke_res.map_err(|e| RuntimeError::InvokeError(e))? {
+
+        match invoke_res.map_err(|e| RuntimeError::InvokeError(e))? {
             Some(RuntimeValue::I32(ptr)) => {
                 self.finalize()?;
                 self.read_bytes(ptr)
             }
             _ => Err(RuntimeError::NoValidBlueprintReturn),
-        };
-
-        self.info(format!("Time elapsed: {} ms", now.elapsed().as_millis()));
-        output
+        }
     }
 
     pub fn publish_blueprint(
@@ -97,9 +108,28 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
 
     pub fn call_blueprint(
         &mut self,
-        _input: CallBlueprintInput,
+        input: CallBlueprintInput,
     ) -> Result<CallBlueprintOutput, RuntimeError> {
-        todo!()
+        // load the code
+        let (module, memory) = self
+            .runtime
+            .load_module(input.blueprint)
+            .ok_or(RuntimeError::BlueprintNotFound(input.blueprint))?;
+
+        let mut process = Process::new(
+            self.runtime,
+            input.blueprint,
+            input.component,
+            input.method,
+            input.args,
+            self.depth + 1,
+            &module,
+            &memory,
+        );
+
+        let result = process.run();
+
+        Ok(CallBlueprintOutput { rtn: result? })
     }
 
     pub fn create_component(
@@ -617,7 +647,7 @@ impl<'m, 'rt, 'le, T: Ledger> Externals for Process<'m, 'rt, 'le, T> {
                     WITHDRAW => self.handle(args, Process::withdraw, true),
                     DEPOSIT => self.handle(args, Process::deposit, true),
 
-                    EMIT_LOG => self.handle(args, Process::emit_log, false),
+                    EMIT_LOG => self.handle(args, Process::emit_log, true),
                     GET_CONTEXT_ADDRESS => self.handle(args, Process::get_context_address, true),
                     GET_CALL_DATA => self.handle(args, Process::get_call_data, true),
                     _ => Err(RuntimeError::InvalidOpCode(operation).into()),

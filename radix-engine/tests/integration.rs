@@ -60,37 +60,50 @@ fn call<T: Ledger>(
         &module,
         &memory,
     );
-    process.run()
+    let result = process.run();
+    if result.is_ok() {
+        runtime.flush();
+    }
+    result
 }
 
-fn build_publish_call(
+fn one_shot<T: Ledger>(
+    ledger: &mut T,
     path: &str,
     component: &str,
     method: &str,
     args: Vec<Vec<u8>>,
 ) -> Result<Vec<u8>, RuntimeError> {
-    let mut ledger = InMemoryLedger::new();
     build(path);
-    let blueprint = publish(&mut ledger, path);
-    call(&mut ledger, blueprint, component, method, args)
+    let blueprint = publish(ledger, path);
+    call(ledger, blueprint, component, method, args)
 }
 
 #[test]
 fn test_greeting() {
-    let output = build_publish_call("./tests/source", "Greeting", "new", vec![]);
+    let mut ledger = InMemoryLedger::new();
+    let output = one_shot(&mut ledger, "./tests/source", "Greeting", "new", vec![]);
     assert!(output.is_ok())
 }
 
 #[test]
 fn test_blueprint() {
-    let output = build_publish_call("./tests/source", "Greeting", "new", vec![]);
-    assert!(output.is_ok());
-    let address: Address = scrypto_decode(&output.unwrap()).unwrap();
-
-    let output2 = build_publish_call(
+    let mut ledger = InMemoryLedger::new();
+    let output = one_shot(
+        &mut ledger,
         "./tests/source",
         "BlueprintTest",
         "publish",
+        vec![],
+    );
+    assert!(output.is_ok());
+    let address: Address = scrypto_decode(&output.unwrap()).unwrap();
+
+    let output2 = one_shot(
+        &mut ledger,
+        "./tests/source",
+        "BlueprintTest",
+        "invoke",
         vec![scrypto_encode(&address)],
     );
     assert!(output2.is_ok());

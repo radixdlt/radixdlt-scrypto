@@ -8,8 +8,6 @@ use crate::model::*;
 
 #[derive(Debug)]
 pub enum RuntimeError {
-    BlueprintNotFound,
-
     InvalidModule(Error),
 
     UnableToInstantiate(Error),
@@ -39,6 +37,8 @@ pub enum RuntimeError {
     ComponentAlreadyExists(Address),
 
     ResourceAlreadyExists(Address),
+
+    BlueprintNotFound(Address),
 
     ComponentNotFound(Address),
 
