@@ -3,7 +3,6 @@ use std::fs::File;
 use std::io::prelude::*;
 use std::path::{Path, PathBuf};
 
-use scrypto::buffer::*;
 use scrypto::types::*;
 
 use crate::ledger::*;
@@ -18,6 +17,8 @@ const COMPONENTS: &'static str = "components";
 const ACCOUNTS: &'static str = "accounts";
 const RESOURCES: &'static str = "resources";
 const BUCKETS: &'static str = "buckets";
+
+const FILE_EXT: &'static str = "sbor";
 
 impl FileBasedLedger {
     pub fn new(root: PathBuf) -> Self {
@@ -55,65 +56,70 @@ impl FileBasedLedger {
             None
         }
     }
+
+    pub fn encode<T: sbor::Encode>(v: &T) -> Vec<u8> {
+        sbor::sbor_encode_with_metadata(v)
+    }
+
+    pub fn decode<'de, T: sbor::Decode>(bytes: Vec<u8>) -> T {
+        sbor::sbor_decode_with_metadata(&bytes).unwrap()
+    }
 }
 
 impl Ledger for FileBasedLedger {
     fn get_blueprint(&self, address: Address) -> Option<Blueprint> {
-        Self::read(self.get_path(BLUEPRINTS, address.to_string(), ".wasm")).map(Blueprint::new)
+        Self::read(self.get_path(BLUEPRINTS, address.to_string(), FILE_EXT)).map(Blueprint::new)
     }
 
     fn put_blueprint(&mut self, address: Address, blueprint: Blueprint) {
         Self::write(
-            self.get_path(BLUEPRINTS, address.to_string(), ".wasm"),
+            self.get_path(BLUEPRINTS, address.to_string(), FILE_EXT),
             blueprint.code(),
         )
     }
 
     fn get_resource(&self, address: Address) -> Option<Resource> {
-        Self::read(self.get_path(RESOURCES, address.to_string(), ".json"))
-            .map(|v| scrypto_decode(v.as_ref()).unwrap())
+        Self::read(self.get_path(RESOURCES, address.to_string(), FILE_EXT)).map(|v| Self::decode(v))
     }
 
-    fn put_resource(&mut self, address: Address, info: Resource) {
+    fn put_resource(&mut self, address: Address, resource: Resource) {
         Self::write(
-            self.get_path(RESOURCES, address.to_string(), ".json"),
-            scrypto_encode(&info),
+            self.get_path(RESOURCES, address.to_string(), FILE_EXT),
+            Self::encode(&resource),
         )
     }
 
     fn get_component(&self, address: Address) -> Option<Component> {
-        Self::read(self.get_path(COMPONENTS, address.to_string(), ".json"))
-            .map(|v| scrypto_decode(v.as_ref()).unwrap())
+        Self::read(self.get_path(COMPONENTS, address.to_string(), FILE_EXT))
+            .map(|v| Self::decode(v))
     }
 
     fn put_component(&mut self, address: Address, component: Component) {
         Self::write(
-            self.get_path(COMPONENTS, address.to_string(), ".json"),
-            scrypto_encode(&component),
+            self.get_path(COMPONENTS, address.to_string(), FILE_EXT),
+            Self::encode(&component),
         )
     }
 
     fn get_account(&self, address: Address) -> Option<Account> {
-        Self::read(self.get_path(ACCOUNTS, address.to_string(), ".json"))
-            .map(|v| scrypto_decode(v.as_ref()).unwrap())
+        Self::read(self.get_path(ACCOUNTS, address.to_string(), FILE_EXT)).map(|v| Self::decode(v))
     }
 
     fn put_account(&mut self, address: Address, account: Account) {
         Self::write(
-            self.get_path(ACCOUNTS, address.to_string(), ".json"),
-            scrypto_encode(&account),
+            self.get_path(ACCOUNTS, address.to_string(), FILE_EXT),
+            Self::encode(&account),
         )
     }
 
     fn get_bucket(&self, bid: BID) -> Option<Bucket> {
-        Self::read(self.get_path(BUCKETS, bid.to_string(), ".json"))
-            .map(|v| scrypto_decode(v.as_ref()).unwrap())
+        Self::read(self.get_path(BUCKETS, bid.to_string(), FILE_EXT)).map(|v| Self::decode(v))
     }
 
     fn put_bucket(&mut self, bid: BID, bucket: Bucket) {
         Self::write(
-            self.get_path(BUCKETS, bid.to_string(), ".json"),
-            scrypto_encode(&bucket),
+            self.get_path(BUCKETS, bid.to_string(), FILE_EXT),
+            Self::encode(&bucket),
         )
     }
 }

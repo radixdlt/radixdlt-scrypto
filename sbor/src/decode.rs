@@ -12,7 +12,7 @@ use hashbrown::HashSet;
 use crate::constants::*;
 
 /// Represents an error ocurred during decoding.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum DecodeError {
     Underflow { required: usize, remaining: usize },
 

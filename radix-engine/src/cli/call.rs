@@ -55,28 +55,21 @@ pub fn handle_call<'a>(matches: &ArgMatches<'a>) {
     println!("----");
 
     let tx_hash = sha256(Uuid::new_v4().to_string());
-    let ledger = FileBasedLedger::new(get_root_dir());
-    let mut runtime = Runtime::new(tx_hash, ledger);
+    let mut ledger = FileBasedLedger::new(get_root_dir());
+    let mut runtime = Runtime::new(tx_hash, &mut ledger);
+    let (module, memory) = runtime.load_module(blueprint).expect("Blueprint not found");
 
-    let output = match runtime.get_blueprint(blueprint) {
-        Some(b) => {
-            let module = load_module(b.code()).unwrap();
-            let (module_ref, memory_ref) = instantiate_module(&module).unwrap();
-            let mut process = Process::new(
-                &mut runtime,
-                &module_ref,
-                &memory_ref,
-                blueprint,
-                component.to_string(),
-                method.to_string(),
-                args,
-                0,
-            );
-            process.run()
-        }
-        None => Err(RuntimeError::BlueprintNotFound),
-    };
-
+    let mut process = Process::new(
+        &mut runtime,
+        blueprint,
+        component.to_string(),
+        method.to_string(),
+        args,
+        0,
+        &module,
+        &memory,
+    );
+    let output = process.run();
     if output.is_ok() {
         runtime.flush();
     }

@@ -13,42 +13,40 @@ use crate::execution::*;
 use crate::ledger::*;
 use crate::model::*;
 
-pub struct Process<'a, L: Ledger> {
-    runtime: &'a mut Runtime<L>,
-    module: &'a ModuleRef,
-    memory: &'a MemoryRef,
+pub struct Process<'m, 'rt, 'le, L: Ledger> {
+    runtime: &'rt mut Runtime<'le, L>,
     blueprint: Address,
     component: String,
     method: String,
     args: Vec<Vec<u8>>,
     depth: usize,
+    module: &'m ModuleRef,
+    memory: &'m MemoryRef,
     buckets: HashMap<BID, Bucket>,
     buckets_lent: HashMap<BID, Bucket>,
     buckets_borrowed: HashMap<BID, BucketRef>,
 }
 
-impl<'a, L: Ledger> Process<'a, L> {
+impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
     pub fn new(
-        runtime: &'a mut Runtime<L>,
-        module: &'a ModuleRef,
-        memory: &'a MemoryRef,
+        runtime: &'rt mut Runtime<'le, L>,
         blueprint: Address,
         component: String,
         method: String,
         args: Vec<Vec<u8>>,
         depth: usize,
+        module: &'m ModuleRef,
+        memory: &'m MemoryRef,
     ) -> Self {
-        // TODO: Move all resources passed by args into this process
-
         Self {
             runtime,
-            module,
-            memory,
             blueprint,
             component,
             method,
             args,
             depth,
+            module,
+            memory,
             buckets: HashMap::new(),
             buckets_lent: HashMap::new(),
             buckets_borrowed: HashMap::new(),
@@ -84,6 +82,7 @@ impl<'a, L: Ledger> Process<'a, L> {
         if self.runtime.get_blueprint(address).is_some() {
             return Err(RuntimeError::BlueprintAlreadyExists(address));
         }
+        load_module(&input.code)?;
 
         self.debug(format!(
             "New blueprint: address = {:?}, code length = {:?}",
@@ -586,7 +585,7 @@ impl<'a, L: Ledger> Process<'a, L> {
     }
 }
 
-impl<'a, T: Ledger> Externals for Process<'a, T> {
+impl<'m, 'rt, 'le, T: Ledger> Externals for Process<'m, 'rt, 'le, T> {
     fn invoke_index(
         &mut self,
         index: usize,

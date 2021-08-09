@@ -1,15 +1,17 @@
 use hashbrown::{HashMap, HashSet};
 use scrypto::types::*;
 use scrypto::utils::*;
+use wasmi::*;
 
+use crate::execution::*;
 use crate::ledger::*;
 use crate::model::*;
 
 /// Represents the transaction execution runtime, one per transaction.
 /// A runtime is shared by a chain of processes, created during the execution of the transaction.
-pub struct Runtime<T: Ledger> {
+pub struct Runtime<'le, T: Ledger> {
     tx_hash: Hash,
-    ledger: T,
+    ledger: &'le mut T,
     component_counter: u32,
     bucket_counter: u32,
     logs: Vec<(Level, String)>,
@@ -25,8 +27,8 @@ pub struct Runtime<T: Ledger> {
     updated_buckets: HashSet<BID>,
 }
 
-impl<T: Ledger> Runtime<T> {
-    pub fn new(tx_hash: Hash, ledger: T) -> Self {
+impl<'le, T: Ledger> Runtime<'le, T> {
+    pub fn new(tx_hash: Hash, ledger: &'le mut T) -> Self {
         Self {
             tx_hash,
             ledger,
@@ -48,6 +50,12 @@ impl<T: Ledger> Runtime<T> {
 
     pub fn log(&mut self, level: Level, message: String) {
         self.logs.push((level, message));
+    }
+
+    pub fn load_module(&mut self, address: Address) -> Option<(ModuleRef, MemoryRef)> {
+        self.get_blueprint(address).map(|blueprint| {
+            load_module(blueprint.code()).expect("All blueprint should be loadable")
+        })
     }
 
     /// Returns an immutable reference to a blueprint, if exists.
@@ -277,35 +285,30 @@ impl<T: Ledger> Runtime<T> {
     pub fn flush(&mut self) {
         let mut addresses = self.updated_blueprints.clone();
         for address in addresses {
-            println!("Updating: {:?}", address);
             self.ledger
                 .put_blueprint(address, self.blueprints.get(&address).unwrap().clone());
         }
 
         addresses = self.updated_components.clone();
         for address in addresses {
-            println!("Updating: {:?}", address);
             self.ledger
                 .put_component(address, self.components.get(&address).unwrap().clone());
         }
 
         addresses = self.updated_accounts.clone();
         for address in addresses {
-            println!("Updating: {:?}", address);
             self.ledger
                 .put_account(address, self.accounts.get(&address).unwrap().clone());
         }
 
         addresses = self.updated_resources.clone();
         for address in addresses {
-            println!("Updating: {:?}", address);
             self.ledger
                 .put_resource(address, self.resources.get(&address).unwrap().clone());
         }
 
         let buckets = self.updated_buckets.clone();
         for bucket in buckets {
-            println!("Updating: {:?}", bucket);
             self.ledger
                 .put_bucket(bucket, self.buckets.get(&bucket).unwrap().clone());
         }

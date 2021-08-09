@@ -31,18 +31,20 @@ pub use scrypto_derive::*;
 macro_rules! call_blueprint {
     ($rtn_type: ty, $blueprint: expr, $component: expr, $method: expr $(,)?) => {
         {
+            let blueprint = scrypto::constructs::Blueprint::from($blueprint);
             extern crate alloc;
-            let rtn = scrypto::constructs::Blueprint::call(&$blueprint, $component, $method, alloc::vec::Vec::new());
+            let rtn = blueprint.call($component, $method, alloc::vec::Vec::new());
             scrypto::buffer::scrypto_decode::<$rtn_type>(&rtn).unwrap()
         }
     };
 
     ($rtn_type: ty, $blueprint: expr, $component: expr, $method: expr, $($args: expr),+ $(,)?) => {
         {
+            let blueprint = scrypto::constructs::Blueprint::from($blueprint);
             extern crate alloc;
             let mut args = alloc::vec::Vec::new();
             $(args.push(scrypto::buffer::scrypto_encode(&$args));)+
-            let rtn = scrypto::constructs::Blueprint::call(&$blueprint, $component, $method, args);
+            let rtn = blueprint.call($component, $method, args);
             scrypto::buffer::scrypto_decode::<$rtn_type>(&rtn).unwrap()
         }
     };
@@ -53,18 +55,20 @@ macro_rules! call_blueprint {
 macro_rules! call_component {
     ($rtn_type: ty, $component: expr, $method: expr $(,)?) => {
         {
+            let component = scrypto::constructs::Component::from($component);
             extern crate alloc;
-            let rtn = scrypto::constructs::Component::call(&$component, $method, alloc::vec::Vec::new());
+            let rtn = component.call($method, alloc::vec::Vec::new());
             scrypto::buffer::scrypto_decode::<$rtn_type>(&rtn).unwrap()
         }
     };
 
     ($rtn_type: ty, $component: expr, $method: expr, $($args: expr),+ $(,)?) => {
         {
+            let component = scrypto::constructs::Component::from($component);
             extern crate alloc;
             let mut args = alloc::vec::Vec::new();
             $(args.push(scrypto::buffer::scrypto_encode(&$args));)+
-            let rtn = scrypto::constructs::Component::call(&$component, $method, args);
+            let rtn = component.call($method, args);
             scrypto::buffer::scrypto_decode::<$rtn_type>(&rtn).unwrap()
         }
     };

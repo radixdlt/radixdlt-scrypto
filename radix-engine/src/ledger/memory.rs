@@ -12,6 +12,18 @@ pub struct InMemoryLedger {
     buckets: HashMap<BID, Bucket>,
 }
 
+impl InMemoryLedger {
+    pub fn new() -> Self {
+        Self {
+            blueprints: HashMap::new(),
+            components: HashMap::new(),
+            accounts: HashMap::new(),
+            resources: HashMap::new(),
+            buckets: HashMap::new(),
+        }
+    }
+}
+
 impl Ledger for InMemoryLedger {
     fn get_blueprint(&self, address: Address) -> Option<Blueprint> {
         self.blueprints.get(&address).map(Clone::clone)

@@ -1,8 +1,5 @@
-mod cli;
-mod execution;
-mod ledger;
-mod model;
+use radix_engine;
 
 fn main() {
-    cli::run();
+    radix_engine::cli::run()
 }

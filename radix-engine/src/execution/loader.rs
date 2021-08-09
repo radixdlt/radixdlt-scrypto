@@ -2,14 +2,13 @@ use wasmi::*;
 
 use crate::execution::*;
 
-pub fn load_module(code: &[u8]) -> Result<Module, RuntimeError> {
-    Module::from_buffer(code).map_err(|e| RuntimeError::InvalidModule(e))
-}
+pub fn load_module(code: &[u8]) -> Result<(ModuleRef, MemoryRef), RuntimeError> {
+    // Parse
+    let parsed = Module::from_buffer(code).map_err(|e| RuntimeError::InvalidModule(e))?;
 
-pub fn instantiate_module(module: &Module) -> Result<(ModuleRef, MemoryRef), RuntimeError> {
     // Instantiate
     let not_started = ModuleInstance::new(
-        module,
+        &parsed,
         &ImportsBuilder::new().with_resolver("env", &EnvModuleResolver),
     )
     .map_err(|e| RuntimeError::UnableToInstantiate(e))?;

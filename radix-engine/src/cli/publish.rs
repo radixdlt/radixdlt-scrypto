@@ -2,10 +2,11 @@ use std::fs;
 use std::path::PathBuf;
 
 use clap::{crate_version, App, Arg, ArgMatches, SubCommand};
-use scrypto::types::*;
 use scrypto::utils::*;
+use uuid::Uuid;
 
 use crate::cli::get_root_dir;
+use crate::execution::*;
 use crate::ledger::*;
 use crate::model::*;
 
@@ -26,14 +27,18 @@ pub fn handle_publish<'a>(args: &ArgMatches<'a>) {
     let file = args.value_of(ARG_FILE).unwrap();
     let code =
         fs::read(PathBuf::from(file)).expect(format!("Unable to load file: {}", file).as_str());
-    let address = Address::Blueprint(sha256_twice(&code).lower_26_bytes());
 
+    let tx_hash = sha256(Uuid::new_v4().to_string());
     let mut ledger = FileBasedLedger::new(get_root_dir());
-    if ledger.get_blueprint(address).is_some() {
-        println!("Blueprint already exists: {}", address.to_string());
+    let mut runtime = Runtime::new(tx_hash, &mut ledger);
+
+    let address = runtime.new_blueprint_address(&code);
+    if runtime.get_blueprint(address).is_some() {
+        println!("{}", address.to_string());
     } else {
-        // TODO check wasm file
-        ledger.put_blueprint(address, Blueprint::new(code));
-        println!("New blueprint: {}", address.to_string());
+        load_module(&code).unwrap();
+        runtime.put_blueprint(address, Blueprint::new(code));
+        runtime.flush();
+        println!("{}", address.to_string());
     }
 }

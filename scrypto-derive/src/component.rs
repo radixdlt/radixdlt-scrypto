@@ -48,13 +48,13 @@ pub fn handle_component(input: TokenStream) -> TokenStream {
 
         #[derive(Debug)]
         pub struct #stub_ident {
-            component: scrypto::constructs::Component,
+            component: scrypto::types::Address,
         }
 
         impl #stub_ident {
             // need to reserve kw `from_address`
             pub fn from_address(address: scrypto::types::Address) -> Self {
-                Self { component: address.into() }
+                Self { component: address }
             }
 
             #(#stub_items)*
@@ -319,7 +319,7 @@ fn generate_stub(com_ident: &Ident, items: &Vec<ImplItem>) -> Vec<Item> {
 
                     // Generate argument list
                     let blueprint_arg: Option<Punctuated<FnArg, Comma>> = match is_static {
-                        true => Some(parse_quote! { blueprint: &scrypto::constructs::Blueprint, }),
+                        true => Some(parse_quote! { __blueprint__: scrypto::types::Address, }),
                         false => None,
                     };
                     let mut other_args = Punctuated::<Pat, Comma>::new();
@@ -340,13 +340,13 @@ fn generate_stub(com_ident: &Ident, items: &Vec<ImplItem>) -> Vec<Item> {
                             ReturnType::Default => parse_quote! {
                                 #[allow(dead_code)]
                                 pub fn #method_ident(#blueprint_arg #method_inputs) {
-                                    scrypto::call_blueprint!((), blueprint, #com_name, #method_name, #other_args)
+                                    scrypto::call_blueprint!((), __blueprint__, #com_name, #method_name, #other_args)
                                 }
                             },
                             ReturnType::Type(_, t) => parse_quote! {
                                 #[allow(dead_code)]
                                 pub fn #method_ident(#blueprint_arg #method_inputs) -> #t {
-                                    scrypto::call_blueprint!(#t, blueprint, #com_name, #method_name, #other_args)
+                                    scrypto::call_blueprint!(#t, __blueprint__, #com_name, #method_name, #other_args)
                                 }
                             },
                         },
@@ -429,13 +429,13 @@ mod tests {
 
                 #[derive(Debug)]
                 pub struct TestStub {
-                    component: scrypto::constructs::Component,
+                    component: scrypto::types::Address,
                 }
 
                 impl TestStub {
                     pub fn from_address(address: scrypto::types::Address) -> Self {
                         Self {
-                            component: address.into()
+                            component: address
                         }
                     }
                     #[allow(dead_code)]
