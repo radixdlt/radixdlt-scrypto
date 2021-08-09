@@ -6,6 +6,7 @@ use alloc::string::String;
 use alloc::string::ToString;
 use alloc::vec::Vec;
 use core::hash::Hash;
+use core::ptr::copy;
 use hashbrown::HashMap;
 use hashbrown::HashSet;
 
@@ -107,9 +108,9 @@ impl<'de> Decoder<'de> {
 
     #[inline]
     pub fn read_len(&mut self) -> Result<usize, DecodeError> {
-        let mut bytes = [0u8; 2];
-        bytes.copy_from_slice(&self.read_bytes(2)?[..]);
-        Ok(u16::from_le_bytes(bytes) as usize)
+        let mut bytes = [0u8; 4];
+        bytes.copy_from_slice(&self.read_bytes(4)?[..]);
+        Ok(u32::from_le_bytes(bytes) as usize)
     }
 
     #[inline]
@@ -388,11 +389,21 @@ impl<T: Decode> Decode for Vec<T> {
         decoder.check_type(T::sbor_type())?;
         let len = decoder.read_len()?;
 
-        let mut result = Vec::<T>::with_capacity(len); // Lengths are u16, so it's safe to pre-allocate.
-        for _ in 0..len {
-            result.push(T::decode_value(decoder)?);
+        if Self::sbor_type() == TYPE_U8 {
+            let slice = decoder.read_bytes(len)?; // length is checked here
+            let mut result = Vec::<T>::with_capacity(len);
+            unsafe {
+                copy(slice.as_ptr(), result.as_mut_ptr() as *mut u8, slice.len());
+                result.set_len(slice.len());
+            }
+            Ok(result)
+        } else {
+            let mut result = Vec::<T>::with_capacity(if len <= 1024 { len } else { 1024 });
+            for _ in 0..len {
+                result.push(T::decode_value(decoder)?);
+            }
+            Ok(result)
         }
-        Ok(result)
     }
 
     #[inline]
@@ -537,14 +548,14 @@ mod tests {
             9, 1, 0, 0, 0, // u32
             10, 1, 0, 0, 0, 0, 0, 0, 0, // u64
             11, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // u128
-            12, 5, 0, 104, 101, 108, 108, 111, // string
+            12, 5, 0, 0, 0, 104, 101, 108, 108, 111, // string
             16, 1, 9, 1, 0, 0, 0, // option
             17, 9, 1, 0, 0, 0, // box
-            18, 9, 3, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, // array
-            19, 2, 0, 9, 1, 0, 0, 0, 9, 2, 0, 0, 0, // tuple
-            32, 9, 3, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, // vec
-            33, 7, 2, 0, 1, 2, // set
-            34, 2, 0, 7, 7, 1, 2, 3, 4, // map
+            18, 9, 3, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, // array
+            19, 2, 0, 0, 0, 9, 1, 0, 0, 0, 9, 2, 0, 0, 0, // tuple
+            32, 9, 3, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, // vec
+            33, 7, 2, 0, 0, 0, 1, 2, // set
+            34, 2, 0, 0, 0, 7, 7, 1, 2, 3, 4, // map
         ];
         let mut dec = Decoder::with_metadata(&bytes);
         assert_decoding(&mut dec);
@@ -565,14 +576,14 @@ mod tests {
             1, 0, 0, 0, // u32
             1, 0, 0, 0, 0, 0, 0, 0, // u64
             1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // u128
-            5, 0, 104, 101, 108, 108, 111, // string
+            5, 0, 0, 0, 104, 101, 108, 108, 111, // string
             1, 1, 0, 0, 0, // option
             1, 0, 0, 0, // box
-            3, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, // array
-            2, 0, 1, 0, 0, 0, 2, 0, 0, 0, // tuple
-            3, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, // vec
-            2, 0, 1, 2, // set
-            2, 0, 1, 2, 3, 4, // map
+            3, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, // array
+            2, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, // tuple
+            3, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, // vec
+            2, 0, 0, 0, 1, 2, // set
+            2, 0, 0, 0, 1, 2, 3, 4, // map
         ];
         let mut dec = Decoder::no_metadata(&bytes);
         assert_decoding(&mut dec);

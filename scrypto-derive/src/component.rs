@@ -78,8 +78,7 @@ pub fn handle_component(input: TokenStream) -> TokenStream {
             }
 
             // Return
-            let rtn_bytes = scrypto::buffer::scrypto_encode(&rtn);
-            scrypto::buffer::scrypto_wrap(&rtn_bytes)
+            scrypto::buffer::scrypto_wrap(&rtn)
         }
 
         #[no_mangle]
@@ -464,8 +463,7 @@ mod tests {
                             panic!("Method not found: name = {}", calldata.method)
                         }
                     }
-                    let rtn_bytes = scrypto::buffer::scrypto_encode(&rtn);
-                    scrypto::buffer::scrypto_wrap(&rtn_bytes)
+                    scrypto::buffer::scrypto_wrap(&rtn)
                 }
 
                 #[no_mangle]

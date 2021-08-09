@@ -9,8 +9,7 @@ component! {
     impl BlueprintTest {
 
         pub fn publish() -> Address {
-            // the hello world example
-            Blueprint::new(include_bytes!("test.wasm"))
+            Blueprint::new(include_bytes!("helloworld.wasm"))
         }
 
         pub fn invoke(blueprint: Address) -> Address {

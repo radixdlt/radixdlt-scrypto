@@ -42,13 +42,13 @@ fn test_encode_struct() {
         vec![
             20, // struct type
             22, // fields type
-            1, 0, // number of fields
-            5, 0, 115, 116, 97, 116, 101, // field name
+            1, 0, 0, 0, // number of fields
+            5, 0, 0, 0, 115, 116, 97, 116, 101, // field name
             9, 3, 0, 0, 0, // field value
             
             20,  // struct type
             23,  // fields type
-            1, 0,  // number of fields
+            1, 0, 0, 0,  // number of fields
             9, 3, 0, 0, 0,  // field value
             
             20, // struct type
@@ -75,24 +75,24 @@ fn test_encode_enum() {
         vec![
             21, // enum type
             0, // enum index
-            1, 0, 65, // variant name
+            1, 0, 0, 0, 65, // variant name
             22, // fields type
-            2, 0,  // number of fields
-            1, 0, 120, // field name
+            2, 0, 0, 0,  // number of fields
+            1, 0, 0, 0, 120, // field name
             9, 2, 0, 0, 0, // field value
-            1, 0, 121,  // field name
+            1, 0, 0, 0, 121,  // field name
             9, 3, 0, 0, 0,  // field value
 
             21, // enum type
             1,  // enum index
-            1, 0, 66, // variant name
+            1, 0, 0, 0, 66, // variant name
             23, // fields type
-            1, 0, // number of fields
+            1, 0, 0, 0, // number of fields
             9, 1, 0, 0, 0, // field value
             
             21, // enum type
             2,  // enum index
-            1, 0, 67, // variant name
+            1, 0, 0, 0, 67, // variant name
             24  // fields type
         ],
         bytes

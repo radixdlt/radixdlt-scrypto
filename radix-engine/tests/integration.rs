@@ -1,6 +1,7 @@
 use std::fs;
 use std::process::Command;
 
+use scrypto::buffer::*;
 use scrypto::types::*;
 use scrypto::utils::*;
 use uuid::Uuid;
@@ -78,4 +79,19 @@ fn build_publish_call(
 fn test_greeting() {
     let output = build_publish_call("./tests/source", "Greeting", "new", vec![]);
     assert!(output.is_ok())
+}
+
+#[test]
+fn test_blueprint() {
+    let output = build_publish_call("./tests/source", "Greeting", "new", vec![]);
+    assert!(output.is_ok());
+    let address: Address = scrypto_decode(&output.unwrap()).unwrap();
+
+    let output2 = build_publish_call(
+        "./tests/source",
+        "BlueprintTest",
+        "publish",
+        vec![scrypto_encode(&address)],
+    );
+    assert!(output2.is_ok());
 }

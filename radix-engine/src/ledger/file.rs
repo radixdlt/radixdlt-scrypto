@@ -68,13 +68,14 @@ impl FileBasedLedger {
 
 impl Ledger for FileBasedLedger {
     fn get_blueprint(&self, address: Address) -> Option<Blueprint> {
-        Self::read(self.get_path(BLUEPRINTS, address.to_string(), FILE_EXT)).map(Blueprint::new)
+        Self::read(self.get_path(BLUEPRINTS, address.to_string(), FILE_EXT))
+            .map(|v| Self::decode(v))
     }
 
     fn put_blueprint(&mut self, address: Address, blueprint: Blueprint) {
         Self::write(
             self.get_path(BLUEPRINTS, address.to_string(), FILE_EXT),
-            blueprint.code(),
+            Self::encode(&blueprint),
         )
     }
 
