@@ -2,6 +2,7 @@ extern crate alloc;
 use alloc::string::ToString;
 
 use crate::kernel::*;
+use crate::resource::*;
 use crate::types::*;
 
 /// A primitive piece of state which has a single owner, and behaves like a physical object.
@@ -49,6 +50,26 @@ impl Resource {
         let output: GetResourceInfoOutput = call_kernel(GET_RESOURCE_INFO, input);
 
         output.result.unwrap()
+    }
+
+    fn mint(&self, amount: U256) -> BID {
+        assert!(amount >= U256::one());
+
+        let input = MintResourceInput {
+            resource: self.address,
+            amount,
+        };
+        let output: MintResourceOutput = call_kernel(MINT_RESOURCE, input);
+
+        output.bucket
+    }
+
+    pub fn mint_tokens(&self, amount: U256) -> Tokens {
+        self.mint(amount).into()
+    }
+
+    pub fn mint_badges(&self, amount: U256) -> Badges {
+        self.mint(amount).into()
     }
 
     pub fn address(&self) -> Address {

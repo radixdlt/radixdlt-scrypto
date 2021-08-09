@@ -17,23 +17,23 @@ impl From<BID> for BadgesRef {
 
 impl BadgesRef {
     pub fn amount(&self) -> U256 {
-        let input = GetBadgesAmountInput { badges: self.bid };
-        let output: GetBadgesAmountOutput = call_kernel(GET_BADGES_AMOUNT, input);
+        let input = GetBucketAmountInput { bucket: self.bid };
+        let output: GetBucketAmountOutput = call_kernel(GET_BUCKET_AMOUNT, input);
 
         output.amount
     }
 
     pub fn resource(&self) -> Address {
-        let input = GetBadgesResourceInput { badges: self.bid };
-        let output: GetBadgesResourceOutput = call_kernel(GET_BADGES_RESOURCE, input);
+        let input = GetBucketResourceInput { bucket: self.bid };
+        let output: GetBucketResourceOutput = call_kernel(GET_BUCKET_RESOURCE, input);
 
         output.resource
     }
 
     pub fn destroy(self) {
-        let input = ReturnBadgesInput {
+        let input = ReturnBucketInput {
             reference: self.bid,
         };
-        let _: ReturnBadgesOutput = call_kernel(RETURN_BADGES, input);
+        let _: ReturnBucketOutput = call_kernel(RETURN_BUCKET, input);
     }
 }

@@ -33,43 +33,26 @@ pub const PUT_COMPONENT_STORAGE: u32 = 0x15;
 pub const CREATE_RESOURCE: u32 = 0x20;
 /// Retrieve resource data
 pub const GET_RESOURCE_INFO: u32 = 0x21;
-/// Mint tokens
-pub const MINT_TOKENS: u32 = 0x22;
-/// Combine tokens
-pub const COMBINE_TOKENS: u32 = 0x23;
-/// Split tokens
-pub const SPLIT_TOKENS: u32 = 0x24;
-/// TODO: Obtain an immutable reference to tokens
-pub const BORROW_TOKENS: u32 = 0x25;
-/// TODO: Return a reference to tokens
-pub const RETURN_TOKENS: u32 = 0x26;
-/// Mint badges
-pub const MINT_BADGES: u32 = 0x27;
-/// Combine badges
-pub const COMBINE_BADGES: u32 = 0x28;
-/// Split Badges
-pub const SPLIT_BADGES: u32 = 0x29;
-/// Obtain an immutable reference to badges
-pub const BORROW_BADGES: u32 = 0x2a;
-/// Return an reference to badges
-pub const RETURN_BADGES: u32 = 0x2b;
-/// Get token amount
-pub const GET_TOKENS_AMOUNT: u32 = 0x2c;
-/// Get token resource address
-pub const GET_TOKENS_RESOURCE: u32 = 0x2d;
-/// Get badge amount
-pub const GET_BADGES_AMOUNT: u32 = 0x2e;
-/// Get badge resource address
-pub const GET_BADGES_RESOURCE: u32 = 0x2f;
+/// Mint resource
+pub const MINT_RESOURCE: u32 = 0x22;
 
-/// Withdraw tokens from an account
-pub const WITHDRAW_TOKENS: u32 = 0x40;
-/// Deposit tokens into an account
-pub const DEPOSIT_TOKENS: u32 = 0x41;
-/// Withdraw badges from an account
-pub const WITHDRAW_BADGES: u32 = 0x42;
-/// Deposit badges into an account
-pub const DEPOSIT_BADGES: u32 = 0x43;
+/// Combine buckets
+pub const COMBINE_BUCKETS: u32 = 0x30;
+/// Split a bucket
+pub const SPLIT_BUCKET: u32 = 0x31;
+/// Obtain an immutable reference to a bucket
+pub const BORROW_BUCKET: u32 = 0x32;
+/// Return a bucket reference
+pub const RETURN_BUCKET: u32 = 0x33;
+/// Get bucket resource amount
+pub const GET_BUCKET_AMOUNT: u32 = 0x34;
+/// Get bucket resource address
+pub const GET_BUCKET_RESOURCE: u32 = 0x35;
+
+/// Withdraw from an account
+pub const WITHDRAW: u32 = 0x40;
+/// Deposit into an account
+pub const DEPOSIT: u32 = 0x41;
 
 /// Log a message
 pub const EMIT_LOG: u32 = 0x50;
@@ -195,140 +178,71 @@ pub struct GetResourceInfoOutput {
 }
 
 #[derive(Debug, Encode, Decode)]
-pub struct MintTokensInput {
-    pub amount: U256,
+pub struct MintResourceInput {
     pub resource: Address,
+    pub amount: U256,
 }
 
 #[derive(Debug, Encode, Decode)]
-pub struct MintTokensOutput {
-    pub tokens: BID,
+pub struct MintResourceOutput {
+    pub bucket: BID,
 }
 
 #[derive(Debug, Encode, Decode)]
-pub struct CombineTokensInput {
-    pub tokens: BID,
+pub struct CombineBucketsInput {
+    pub bucket: BID,
     pub other: BID,
 }
 
 #[derive(Debug, Encode, Decode)]
-pub struct CombineTokensOutput {}
+pub struct CombineBucketsOutput {}
 
 #[derive(Debug, Encode, Decode)]
-pub struct SplitTokensInput {
-    pub tokens: BID,
+pub struct SplitBucketInput {
+    pub bucket: BID,
     pub amount: U256,
 }
 
 #[derive(Debug, Encode, Decode)]
-pub struct SplitTokensOutput {
-    pub tokens: BID,
+pub struct SplitBucketOutput {
+    pub bucket: BID,
 }
 
 #[derive(Debug, Encode, Decode)]
-pub struct BorrowTokensInput {
-    pub tokens: BID,
+pub struct BorrowBucketInput {
+    pub bucket: BID,
 }
 
 #[derive(Debug, Encode, Decode)]
-pub struct BorrowTokensOutput {
+pub struct BorrowBucketOutput {
     pub reference: BID,
 }
 
 #[derive(Debug, Encode, Decode)]
-pub struct ReturnTokensInput {
+pub struct ReturnBucketInput {
     pub reference: BID,
 }
 
 #[derive(Debug, Encode, Decode)]
-pub struct ReturnTokensOutput {}
+pub struct ReturnBucketOutput {}
 
 #[derive(Debug, Encode, Decode)]
-pub struct MintBadgesInput {
-    pub amount: U256,
-    pub resource: Address,
+pub struct GetBucketAmountInput {
+    pub bucket: BID,
 }
 
 #[derive(Debug, Encode, Decode)]
-pub struct MintBadgesOutput {
-    pub badges: BID,
-}
-
-#[derive(Debug, Encode, Decode)]
-pub struct CombineBadgesInput {
-    pub badges: BID,
-    pub other: BID,
-}
-
-#[derive(Debug, Encode, Decode)]
-pub struct CombineBadgesOutput {}
-
-#[derive(Debug, Encode, Decode)]
-pub struct SplitBadgesInput {
-    pub badges: BID,
+pub struct GetBucketAmountOutput {
     pub amount: U256,
 }
 
 #[derive(Debug, Encode, Decode)]
-pub struct SplitBadgesOutput {
-    pub badges: BID,
+pub struct GetBucketResourceInput {
+    pub bucket: BID,
 }
 
 #[derive(Debug, Encode, Decode)]
-pub struct BorrowBadgesInput {
-    pub badges: BID,
-}
-
-#[derive(Debug, Encode, Decode)]
-pub struct BorrowBadgesOutput {
-    pub reference: BID,
-}
-
-#[derive(Debug, Encode, Decode)]
-pub struct ReturnBadgesInput {
-    pub reference: BID,
-}
-
-#[derive(Debug, Encode, Decode)]
-pub struct ReturnBadgesOutput {}
-
-#[derive(Debug, Encode, Decode)]
-pub struct GetTokensAmountInput {
-    pub tokens: BID,
-}
-
-#[derive(Debug, Encode, Decode)]
-pub struct GetTokensAmountOutput {
-    pub amount: U256,
-}
-
-#[derive(Debug, Encode, Decode)]
-pub struct GetTokensResourceInput {
-    pub tokens: BID,
-}
-
-#[derive(Debug, Encode, Decode)]
-pub struct GetTokensResourceOutput {
-    pub resource: Address,
-}
-
-#[derive(Debug, Encode, Decode)]
-pub struct GetBadgesAmountInput {
-    pub badges: BID,
-}
-
-#[derive(Debug, Encode, Decode)]
-pub struct GetBadgesAmountOutput {
-    pub amount: U256,
-}
-
-#[derive(Debug, Encode, Decode)]
-pub struct GetBadgesResourceInput {
-    pub badges: BID,
-}
-
-#[derive(Debug, Encode, Decode)]
-pub struct GetBadgesResourceOutput {
+pub struct GetBucketResourceOutput {
     pub resource: Address,
 }
 
@@ -337,46 +251,25 @@ pub struct GetBadgesResourceOutput {
 //========
 
 #[derive(Debug, Encode, Decode)]
-pub struct WithdrawTokensInput {
+pub struct WithdrawInput {
     pub account: Address,
     pub amount: U256,
     pub resource: Address,
 }
 
 #[derive(Debug, Encode, Decode)]
-pub struct WithdrawTokensOutput {
-    pub tokens: BID,
+pub struct WithdrawOutput {
+    pub bucket: BID,
 }
 
 #[derive(Debug, Encode, Decode)]
-pub struct DepositTokensInput {
+pub struct DepositInput {
     pub account: Address,
-    pub tokens: BID,
+    pub bucket: BID,
 }
 
 #[derive(Debug, Encode, Decode)]
-pub struct DepositTokensOutput {}
-
-#[derive(Debug, Encode, Decode)]
-pub struct WithdrawBadgesInput {
-    pub account: Address,
-    pub amount: U256,
-    pub resource: Address,
-}
-
-#[derive(Debug, Encode, Decode)]
-pub struct WithdrawBadgesOutput {
-    pub badges: BID,
-}
-
-#[derive(Debug, Encode, Decode)]
-pub struct DepositBadgesInput {
-    pub account: Address,
-    pub badges: BID,
-}
-
-#[derive(Debug, Encode, Decode)]
-pub struct DepositBadgesOutput {}
+pub struct DepositOutput {}
 
 //=======
 // others

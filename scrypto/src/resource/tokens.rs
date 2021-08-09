@@ -22,41 +22,34 @@ impl Into<BID> for Tokens {
 }
 
 impl Tokens {
-    pub fn new(amount: U256, resource: Address) -> Self {
-        let input = MintTokensInput { amount, resource };
-        let output: MintTokensOutput = call_kernel(MINT_TOKENS, input);
-
-        output.tokens.into()
-    }
-
     pub fn put(&mut self, other: Self) {
-        let input = CombineTokensInput {
-            tokens: self.bid,
+        let input = CombineBucketsInput {
+            bucket: self.bid,
             other: other.bid,
         };
-        let _: CombineTokensOutput = call_kernel(COMBINE_TOKENS, input);
+        let _: CombineBucketsOutput = call_kernel(COMBINE_BUCKETS, input);
     }
 
     pub fn take(&mut self, amount: U256) -> Self {
-        let input = SplitTokensInput {
-            tokens: self.bid,
+        let input = SplitBucketInput {
+            bucket: self.bid,
             amount,
         };
-        let output: SplitTokensOutput = call_kernel(SPLIT_TOKENS, input);
+        let output: SplitBucketOutput = call_kernel(SPLIT_BUCKET, input);
 
-        output.tokens.into()
+        output.bucket.into()
     }
 
     pub fn amount(&self) -> U256 {
-        let input = GetTokensAmountInput { tokens: self.bid };
-        let output: GetTokensAmountOutput = call_kernel(GET_TOKENS_AMOUNT, input);
+        let input = GetBucketAmountInput { bucket: self.bid };
+        let output: GetBucketAmountOutput = call_kernel(GET_BUCKET_AMOUNT, input);
 
         output.amount
     }
 
     pub fn resource(&self) -> Address {
-        let input = GetTokensResourceInput { tokens: self.bid };
-        let output: GetTokensResourceOutput = call_kernel(GET_TOKENS_RESOURCE, input);
+        let input = GetBucketResourceInput { bucket: self.bid };
+        let output: GetBucketResourceOutput = call_kernel(GET_BUCKET_RESOURCE, input);
 
         output.resource
     }

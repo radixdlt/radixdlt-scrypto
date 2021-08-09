@@ -203,10 +203,10 @@ impl<'a, L: Ledger> Process<'a, L> {
         })
     }
 
-    pub fn mint_tokens(
+    pub fn mint_resource(
         &mut self,
-        input: MintTokensInput,
-    ) -> Result<MintTokensOutput, RuntimeError> {
+        input: MintResourceInput,
+    ) -> Result<MintResourceOutput, RuntimeError> {
         let resource = self
             .runtime
             .get_resource(input.resource)
@@ -221,49 +221,49 @@ impl<'a, L: Ledger> Process<'a, L> {
             let bucket = Bucket::new(input.amount, input.resource);
             let bid = self.runtime.new_transient_bid();
             self.buckets.insert(bid, bucket);
-            Ok(MintTokensOutput { tokens: bid })
+            Ok(MintResourceOutput { bucket: bid })
         }
     }
 
-    pub fn combine_tokens(
+    pub fn combine_buckets(
         &mut self,
-        input: CombineTokensInput,
-    ) -> Result<CombineTokensOutput, RuntimeError> {
+        input: CombineBucketsInput,
+    ) -> Result<CombineBucketsOutput, RuntimeError> {
         let other = self
             .buckets
             .remove(&input.other)
             .ok_or(RuntimeError::BucketNotFound)?;
         let one = self
             .buckets
-            .get_mut(&input.tokens)
+            .get_mut(&input.bucket)
             .ok_or(RuntimeError::BucketNotFound)?;
         one.put(other)
             .map_err(|e| RuntimeError::AccountingError(e))?;
 
-        Ok(CombineTokensOutput {})
+        Ok(CombineBucketsOutput {})
     }
 
-    pub fn split_tokens(
+    pub fn split_bucket(
         &mut self,
-        input: SplitTokensInput,
-    ) -> Result<SplitTokensOutput, RuntimeError> {
+        input: SplitBucketInput,
+    ) -> Result<SplitBucketOutput, RuntimeError> {
         let bucket = self
             .buckets
-            .get_mut(&input.tokens)
+            .get_mut(&input.bucket)
             .ok_or(RuntimeError::BucketNotFound)?;
-        let taken = bucket
+        let new_bucket = bucket
             .take(input.amount)
             .map_err(|e| RuntimeError::AccountingError(e))?;
-        let bid = self.runtime.new_transient_bid();
-        self.buckets.insert(bid, taken);
-        Ok(SplitTokensOutput { tokens: bid })
+        let new_bid = self.runtime.new_transient_bid();
+        self.buckets.insert(new_bid, new_bucket);
+        Ok(SplitBucketOutput { bucket: new_bid })
     }
 
-    pub fn borrow_tokens(
+    pub fn borrow_bucket(
         &mut self,
-        input: BorrowTokensInput,
-    ) -> Result<BorrowTokensOutput, RuntimeError> {
-        let bid = input.tokens;
+        input: BorrowBucketInput,
+    ) -> Result<BorrowBucketOutput, RuntimeError> {
+        let bid = input.bucket;
         self.debug(format!("Borrowing {:?}", bid));
 
         match self.buckets_lent.get_mut(&bid) {
@@ -286,13 +286,13 @@ impl<'a, L: Ledger> Process<'a, L> {
             }
         }
 
-        Ok(BorrowTokensOutput { reference: bid })
+        Ok(BorrowBucketOutput { reference: bid })
     }
 
-    pub fn return_tokens(
+    pub fn return_bucket(
         &mut self,
-        input: ReturnTokensInput,
-    ) -> Result<ReturnTokensOutput, RuntimeError> {
+        input: ReturnBucketInput,
+    ) -> Result<ReturnBucketOutput, RuntimeError> {
         let bid = input.reference;
         self.debug(format!("Returning: {:?}", bid));
 
@@ -312,128 +312,48 @@ impl<'a, L: Ledger> Process<'a, L> {
             }
         }
 
-        Ok(ReturnTokensOutput {})
+        Ok(ReturnBucketOutput {})
     }
 
-    pub fn mint_badges(
+    pub fn get_bucket_amount(
         &mut self,
-        input: MintBadgesInput,
-    ) -> Result<MintBadgesOutput, RuntimeError> {
-        self.mint_tokens(MintTokensInput {
-            amount: input.amount,
-            resource: input.resource,
-        })
-        .map(|o| MintBadgesOutput { badges: o.tokens })
-    }
-
-    pub fn combine_badges(
-        &mut self,
-        input: CombineBadgesInput,
-    ) -> Result<CombineBadgesOutput, RuntimeError> {
-        self.combine_tokens(CombineTokensInput {
-            tokens: input.badges,
-            other: input.other,
-        })
-        .map(|_| CombineBadgesOutput {})
-    }
-
-    pub fn split_badges(
-        &mut self,
-        input: SplitBadgesInput,
-    ) -> Result<SplitBadgesOutput, RuntimeError> {
-        self.split_tokens(SplitTokensInput {
-            tokens: input.badges,
-            amount: input.amount,
-        })
-        .map(|o| SplitBadgesOutput { badges: o.tokens })
-    }
-
-    pub fn borrow_badges(
-        &mut self,
-        input: BorrowBadgesInput,
-    ) -> Result<BorrowBadgesOutput, RuntimeError> {
-        self.borrow_tokens(BorrowTokensInput {
-            tokens: input.badges,
-        })
-        .map(|o| BorrowBadgesOutput {
-            reference: o.reference,
-        })
-    }
-
-    pub fn return_badges(
-        &mut self,
-        input: ReturnBadgesInput,
-    ) -> Result<ReturnBadgesOutput, RuntimeError> {
-        self.return_tokens(ReturnTokensInput {
-            reference: input.reference,
-        })
-        .map(|_| ReturnBadgesOutput {})
-    }
-
-    pub fn get_tokens_amount(
-        &mut self,
-        input: GetTokensAmountInput,
-    ) -> Result<GetTokensAmountOutput, RuntimeError> {
+        input: GetBucketAmountInput,
+    ) -> Result<GetBucketAmountOutput, RuntimeError> {
         let bucket = self
             .buckets
-            .get(&input.tokens)
-            .or(self.buckets_lent.get(&input.tokens))
+            .get(&input.bucket)
+            .or(self.buckets_lent.get(&input.bucket))
             .or(self
                 .buckets_borrowed
-                .get(&input.tokens)
+                .get(&input.bucket)
                 .map(BucketRef::bucket))
             .ok_or(RuntimeError::BucketNotFound)?;
 
-        Ok(GetTokensAmountOutput {
+        Ok(GetBucketAmountOutput {
             amount: bucket.amount(),
         })
     }
 
-    pub fn get_tokens_resource(
+    pub fn get_bucket_resource(
         &mut self,
-        input: GetTokensResourceInput,
-    ) -> Result<GetTokensResourceOutput, RuntimeError> {
+        input: GetBucketResourceInput,
+    ) -> Result<GetBucketResourceOutput, RuntimeError> {
         let bucket = self
             .buckets
-            .get(&input.tokens)
-            .or(self.buckets_lent.get(&input.tokens))
+            .get(&input.bucket)
+            .or(self.buckets_lent.get(&input.bucket))
             .or(self
                 .buckets_borrowed
-                .get(&input.tokens)
+                .get(&input.bucket)
                 .map(BucketRef::bucket))
             .ok_or(RuntimeError::BucketNotFound)?;
 
-        Ok(GetTokensResourceOutput {
+        Ok(GetBucketResourceOutput {
             resource: bucket.resource(),
         })
     }
 
-    pub fn get_badges_amount(
-        &mut self,
-        input: GetBadgesAmountInput,
-    ) -> Result<GetBadgesAmountOutput, RuntimeError> {
-        self.get_tokens_amount(GetTokensAmountInput {
-            tokens: input.badges,
-        })
-        .map(|o| GetBadgesAmountOutput { amount: o.amount })
-    }
-
-    pub fn get_badges_resource(
-        &mut self,
-        input: GetBadgesResourceInput,
-    ) -> Result<GetBadgesResourceOutput, RuntimeError> {
-        self.get_tokens_resource(GetTokensResourceInput {
-            tokens: input.badges,
-        })
-        .map(|o| GetBadgesResourceOutput {
-            resource: o.resource,
-        })
-    }
-
-    pub fn withdraw_tokens(
-        &mut self,
-        input: WithdrawTokensInput,
-    ) -> Result<WithdrawTokensOutput, RuntimeError> {
+    pub fn withdraw(&mut self, input: WithdrawInput) -> Result<WithdrawOutput, RuntimeError> {
         if input.account != self.blueprint {
             return Err(RuntimeError::UnauthorizedToWithdraw);
         }
@@ -469,16 +389,13 @@ impl<'a, L: Ledger> Process<'a, L> {
         let new_bid = self.runtime.new_transient_bid();
         self.buckets.insert(new_bid, new_bucket);
 
-        Ok(WithdrawTokensOutput { tokens: new_bid })
+        Ok(WithdrawOutput { bucket: new_bid })
     }
 
-    pub fn deposit_tokens(
-        &mut self,
-        input: DepositTokensInput,
-    ) -> Result<DepositTokensOutput, RuntimeError> {
-        let tokens = self
+    pub fn deposit(&mut self, input: DepositInput) -> Result<DepositOutput, RuntimeError> {
+        let to_deposit = self
             .buckets
-            .remove(&input.tokens)
+            .remove(&input.bucket)
             .ok_or(RuntimeError::BucketNotFound)?;
 
         // find the account
@@ -488,15 +405,15 @@ impl<'a, L: Ledger> Process<'a, L> {
         let account = self.runtime.get_account(input.account).unwrap();
 
         // look up the bucket
-        let bid = match account.get_bucket(tokens.resource()) {
+        let bid = match account.get_bucket(to_deposit.resource()) {
             Some(bid) => *bid,
             None => {
                 let bid = self.runtime.new_persisted_bid();
                 self.runtime
-                    .put_bucket(bid, Bucket::new(U256::zero(), tokens.resource()));
+                    .put_bucket(bid, Bucket::new(U256::zero(), to_deposit.resource()));
 
                 let acc = self.runtime.get_account_mut(input.account).unwrap();
-                acc.insert_bucket(tokens.resource(), bid);
+                acc.insert_bucket(to_deposit.resource(), bid);
 
                 bid
             }
@@ -507,33 +424,10 @@ impl<'a, L: Ledger> Process<'a, L> {
             .expect("The bucket should exist");
 
         bucket
-            .put(tokens)
+            .put(to_deposit)
             .map_err(|e| RuntimeError::AccountingError(e))?;
 
-        Ok(DepositTokensOutput {})
-    }
-
-    pub fn withdraw_badges(
-        &mut self,
-        input: WithdrawBadgesInput,
-    ) -> Result<WithdrawBadgesOutput, RuntimeError> {
-        self.withdraw_tokens(WithdrawTokensInput {
-            account: input.account,
-            amount: input.amount,
-            resource: input.resource,
-        })
-        .map(|o| WithdrawBadgesOutput { badges: o.tokens })
-    }
-
-    pub fn deposit_badges(
-        &mut self,
-        input: DepositBadgesInput,
-    ) -> Result<DepositBadgesOutput, RuntimeError> {
-        self.deposit_tokens(DepositTokensInput {
-            account: input.account,
-            tokens: input.badges,
-        })
-        .map(|_| DepositBadgesOutput {})
+        Ok(DepositOutput {})
     }
 
     pub fn emit_log(&mut self, input: EmitLogInput) -> Result<EmitLogOutput, RuntimeError> {
@@ -704,30 +598,26 @@ impl<'a, T: Ledger> Externals for Process<'a, T> {
                 match operation {
                     PUBLISH_BLUEPRINT => self.handle(args, Process::publish_blueprint, false),
                     CALL_BLUEPRINT => self.handle(args, Process::call_blueprint, true),
+
                     CREATE_COMPONENT => self.handle(args, Process::create_component, true),
                     GET_COMPONENT_INFO => self.handle(args, Process::get_component_info, true),
                     GET_COMPONENT_STATE => self.handle(args, Process::get_component_state, true),
                     PUT_COMPONENT_STATE => self.handle(args, Process::put_component_state, true),
+
                     CREATE_RESOURCE => self.handle(args, Process::create_resource, true),
                     GET_RESOURCE_INFO => self.handle(args, Process::get_resource_info, true),
-                    MINT_TOKENS => self.handle(args, Process::mint_tokens, true),
-                    COMBINE_TOKENS => self.handle(args, Process::combine_tokens, true),
-                    SPLIT_TOKENS => self.handle(args, Process::split_tokens, true),
-                    BORROW_TOKENS => self.handle(args, Process::borrow_tokens, true),
-                    RETURN_TOKENS => self.handle(args, Process::return_tokens, true),
-                    MINT_BADGES => self.handle(args, Process::mint_badges, true),
-                    COMBINE_BADGES => self.handle(args, Process::combine_badges, true),
-                    SPLIT_BADGES => self.handle(args, Process::split_badges, true),
-                    BORROW_BADGES => self.handle(args, Process::borrow_badges, true),
-                    RETURN_BADGES => self.handle(args, Process::return_badges, true),
-                    GET_TOKENS_AMOUNT => self.handle(args, Process::get_tokens_amount, true),
-                    GET_TOKENS_RESOURCE => self.handle(args, Process::get_tokens_resource, true),
-                    GET_BADGES_AMOUNT => self.handle(args, Process::get_badges_amount, true),
-                    GET_BADGES_RESOURCE => self.handle(args, Process::get_badges_resource, true),
-                    WITHDRAW_TOKENS => self.handle(args, Process::withdraw_tokens, true),
-                    DEPOSIT_TOKENS => self.handle(args, Process::deposit_tokens, true),
-                    WITHDRAW_BADGES => self.handle(args, Process::withdraw_badges, true),
-                    DEPOSIT_BADGES => self.handle(args, Process::deposit_badges, true),
+                    MINT_RESOURCE => self.handle(args, Process::mint_resource, true),
+
+                    COMBINE_BUCKETS => self.handle(args, Process::combine_buckets, true),
+                    SPLIT_BUCKET => self.handle(args, Process::split_bucket, true),
+                    BORROW_BUCKET => self.handle(args, Process::borrow_bucket, true),
+                    RETURN_BUCKET => self.handle(args, Process::return_bucket, true),
+                    GET_BUCKET_AMOUNT => self.handle(args, Process::get_bucket_amount, true),
+                    GET_BUCKET_RESOURCE => self.handle(args, Process::get_bucket_resource, true),
+
+                    WITHDRAW => self.handle(args, Process::withdraw, true),
+                    DEPOSIT => self.handle(args, Process::deposit, true),
+
                     EMIT_LOG => self.handle(args, Process::emit_log, false),
                     GET_CONTEXT_ADDRESS => self.handle(args, Process::get_context_address, true),
                     GET_CALL_DATA => self.handle(args, Process::get_call_data, true),

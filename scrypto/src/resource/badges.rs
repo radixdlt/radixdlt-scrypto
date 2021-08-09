@@ -23,50 +23,41 @@ impl Into<BID> for Badges {
 }
 
 impl Badges {
-    pub fn new(amount: U256, resource: Address) -> Self {
-        assert!(amount >= U256::one());
-
-        let input = MintBadgesInput { amount, resource };
-        let output: MintBadgesOutput = call_kernel(MINT_BADGES, input);
-
-        output.badges.into()
-    }
-
     pub fn put(&mut self, other: Self) {
-        let input = CombineBadgesInput {
-            badges: self.bid,
+        let input = CombineBucketsInput {
+            bucket: self.bid,
             other: other.bid,
         };
-        let _: CombineBadgesOutput = call_kernel(COMBINE_BADGES, input);
+        let _: CombineBucketsOutput = call_kernel(COMBINE_BUCKETS, input);
     }
 
     pub fn take(&mut self, amount: U256) -> Self {
-        let input = SplitBadgesInput {
-            badges: self.bid,
+        let input = SplitBucketInput {
+            bucket: self.bid,
             amount,
         };
-        let output: SplitBadgesOutput = call_kernel(SPLIT_BADGES, input);
+        let output: SplitBucketOutput = call_kernel(SPLIT_BUCKET, input);
 
-        output.badges.into()
+        output.bucket.into()
     }
 
     pub fn borrow(&self) -> BadgesRef {
-        let input = BorrowBadgesInput { badges: self.bid };
-        let output: BorrowBadgesOutput = call_kernel(BORROW_BADGES, input);
+        let input = BorrowBucketInput { bucket: self.bid };
+        let output: BorrowBucketOutput = call_kernel(BORROW_BUCKET, input);
 
         output.reference.into()
     }
 
     pub fn amount(&self) -> U256 {
-        let input = GetBadgesAmountInput { badges: self.bid };
-        let output: GetBadgesAmountOutput = call_kernel(GET_BADGES_AMOUNT, input);
+        let input = GetBucketAmountInput { bucket: self.bid };
+        let output: GetBucketAmountOutput = call_kernel(GET_BUCKET_AMOUNT, input);
 
         output.amount
     }
 
     pub fn resource(&self) -> Address {
-        let input = GetBadgesResourceInput { badges: self.bid };
-        let output: GetBadgesResourceOutput = call_kernel(GET_BADGES_RESOURCE, input);
+        let input = GetBucketResourceInput { bucket: self.bid };
+        let output: GetBucketResourceOutput = call_kernel(GET_BUCKET_RESOURCE, input);
 
         output.resource
     }
