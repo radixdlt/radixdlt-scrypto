@@ -1,4 +1,4 @@
-use clap::{App, Arg, ArgMatches, SubCommand};
+use clap::{crate_version, App, Arg, ArgMatches, SubCommand};
 use scrypto::types::*;
 use scrypto::utils::*;
 use uuid::Uuid;
@@ -15,7 +15,7 @@ const ARG_ARGS: &'static str = "ARGS";
 pub fn prepare_call<'a, 'b>() -> App<'a, 'b> {
     SubCommand::with_name("call")
         .about("Call into a blueprint.")
-        .version("1.0")
+        .version(crate_version!())
         .arg(
             Arg::with_name(ARG_BLUEPRINT)
                 .help("Specify the blueprint address.")

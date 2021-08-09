@@ -2,6 +2,7 @@ use crate::kernel::*;
 use crate::types::*;
 
 /// The execution context.
+#[derive(Debug)]
 pub struct Context {}
 
 impl Context {

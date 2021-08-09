@@ -36,10 +36,12 @@ impl Component {
         self.state = new_state;
     }
 
+    #[allow(dead_code)]
     pub fn has_bucket(&self, bid: BID) -> bool {
         self.buckets.contains(&bid)
     }
 
+    #[allow(dead_code)]
     pub fn insert_bucket(&mut self, bid: BID) {
         assert!(bid.is_persisted());
 

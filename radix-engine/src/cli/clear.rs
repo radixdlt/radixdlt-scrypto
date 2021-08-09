@@ -1,13 +1,13 @@
 use std::fs::remove_dir_all;
 
-use clap::{App, ArgMatches, SubCommand};
+use clap::{crate_version, App, ArgMatches, SubCommand};
 
 use crate::cli::get_root_dir;
 
 pub fn prepare_clear<'a, 'b>() -> App<'a, 'b> {
     SubCommand::with_name("clear")
         .about("Clear ledger state.")
-        .version("1.0")
+        .version(crate_version!())
 }
 
 pub fn handle_clear<'a>(_args: &ArgMatches<'a>) {

@@ -5,6 +5,7 @@ use crate::kernel::*;
 use crate::types::*;
 
 /// A logger for dumping messages.
+#[derive(Debug)]
 pub struct Logger {}
 
 impl Logger {

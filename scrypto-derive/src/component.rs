@@ -46,7 +46,7 @@ pub fn handle_component(input: TokenStream) -> TokenStream {
             #(#com_items)*
         }
 
-        #[derive(Debug, sbor::Encode, sbor::Decode)]
+        #[derive(Debug)]
         pub struct #stub_ident {
             component: scrypto::constructs::Component,
         }
@@ -427,7 +427,7 @@ mod tests {
                     }
                 }
 
-                #[derive(Debug, sbor :: Encode, sbor :: Decode)]
+                #[derive(Debug)]
                 pub struct TestStub {
                     component: scrypto::constructs::Component,
                 }

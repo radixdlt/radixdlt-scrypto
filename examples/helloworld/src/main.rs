@@ -1,6 +1,8 @@
 // There is no main function in Scrypto.
 #![no_main]
 
+use scrypto::constructs::*;
+use scrypto::types::*;
 use scrypto::*;
 
 component! {
@@ -9,10 +11,10 @@ component! {
     }
 
     impl Greeting {
-        pub fn new() -> Self {
-            Self {
+        pub fn new() -> Address {
+            Component::new("Greeting", Self {
                 counter: 0
-            }
+            })
         }
 
         pub fn say_hello(&mut self) -> String {

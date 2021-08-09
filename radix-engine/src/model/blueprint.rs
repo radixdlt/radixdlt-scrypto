@@ -1,6 +1,6 @@
 use sbor::*;
 
-#[derive(Debug, Clone, Encode, Decode)]
+#[derive(Debug, Clone, Describe, Encode, Decode)]
 pub struct Blueprint {
     code: Vec<u8>,
 }

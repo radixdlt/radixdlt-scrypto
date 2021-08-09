@@ -6,7 +6,6 @@ use alloc::vec::Vec;
 use sbor::{Decode, Encode};
 
 use crate::buffer::*;
-use crate::constructs::*;
 use crate::kernel::*;
 use crate::types::*;
 
@@ -23,14 +22,14 @@ impl From<Address> for Component {
 }
 
 impl Component {
-    pub fn new<T: Encode>(name: &str, state: T) -> Self {
+    pub fn new<T: Encode>(name: &str, state: T) -> Address {
         let input = CreateComponentInput {
             name: name.to_string(),
             state: scrypto_encode(&state),
         };
         let output: CreateComponentOutput = call_kernel(CREATE_COMPONENT, input);
 
-        Self::from(output.component)
+        output.component
     }
 
     pub fn call(&self, method: &str, args: Vec<Vec<u8>>) -> Vec<u8> {
@@ -60,8 +59,8 @@ impl Component {
         output.result.unwrap()
     }
 
-    pub fn get_blueprint(&self) -> Blueprint {
-        self.get_info().blueprint.into()
+    pub fn get_blueprint(&self) -> Address {
+        self.get_info().blueprint
     }
 
     pub fn get_name(&self) -> String {

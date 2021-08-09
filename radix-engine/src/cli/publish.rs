@@ -1,7 +1,7 @@
 use std::fs;
 use std::path::PathBuf;
 
-use clap::{App, Arg, ArgMatches, SubCommand};
+use clap::{crate_version, App, Arg, ArgMatches, SubCommand};
 use scrypto::types::*;
 use scrypto::utils::*;
 
@@ -14,7 +14,7 @@ const ARG_FILE: &'static str = "FILE";
 pub fn prepare_publish<'a, 'b>() -> App<'a, 'b> {
     SubCommand::with_name("publish")
         .about("Publish a new blueprint.")
-        .version("1.0")
+        .version(crate_version!())
         .arg(
             Arg::with_name(ARG_FILE)
                 .help("Specify the .wasm file to publish.")

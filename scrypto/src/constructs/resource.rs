@@ -25,7 +25,7 @@ impl Resource {
         icon_url: &str,
         minter: Option<Address>,
         supply: Option<U256>,
-    ) -> Resource {
+    ) -> Address {
         let input = CreateResourceInput {
             info: ResourceInfo {
                 symbol: symbol.to_string(),
@@ -39,7 +39,7 @@ impl Resource {
         };
         let output: CreateResourceOutput = call_kernel(CREATE_RESOURCE, input);
 
-        Resource::from(output.resource)
+        output.resource
     }
 
     pub fn get_info(&self) -> ResourceInfo {

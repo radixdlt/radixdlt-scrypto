@@ -5,6 +5,8 @@ use alloc::vec;
 
 use scrypto::buffer::*;
 use scrypto::component;
+use scrypto::constructs::*;
+use scrypto::types::*;
 use serde::Serialize;
 use serde_json::{json, to_value, Value};
 
@@ -14,10 +16,10 @@ component! {
     }
 
     impl Simple {
-        pub fn new() -> Self {
-            Self {
+        pub fn new() -> Address {
+            Component::new("Simple", Self {
                 state: 0
-            }
+            })
         }
 
         pub fn get_state(&self) -> u32 {
@@ -57,19 +59,82 @@ fn test_simple_component_abi() {
               "mutability": "Stateless",
               "inputs": [],
               "output": {
-                "type": "Struct",
-                "name": "Simple",
-                "fields": {
-                  "type": "Named",
-                  "named": [
-                    [
-                      "state",
-                      {
-                        "type": "U32"
-                      }
-                    ]
-                  ]
-                }
+                "type": "Enum",
+                "name": "Address",
+                "variants": [
+                  {
+                    "name": "System",
+                    "fields": {
+                      "type": "Unit"
+                    }
+                  },
+                  {
+                    "name": "RadixToken",
+                    "fields": {
+                      "type": "Unit"
+                    }
+                  },
+                  {
+                    "name": "Resource",
+                    "fields": {
+                      "type": "Unnamed",
+                      "unnamed": [
+                        {
+                          "type": "Array",
+                          "element": {
+                            "type": "U8"
+                          },
+                          "length": 26
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "name": "Account",
+                    "fields": {
+                      "type": "Unnamed",
+                      "unnamed": [
+                        {
+                          "type": "Array",
+                          "element": {
+                            "type": "U8"
+                          },
+                          "length": 33
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "name": "Blueprint",
+                    "fields": {
+                      "type": "Unnamed",
+                      "unnamed": [
+                        {
+                          "type": "Array",
+                          "element": {
+                            "type": "U8"
+                          },
+                          "length": 26
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "name": "Component",
+                    "fields": {
+                      "type": "Unnamed",
+                      "unnamed": [
+                        {
+                          "type": "Array",
+                          "element": {
+                            "type": "U8"
+                          },
+                          "length": 26
+                        }
+                      ]
+                    }
+                  }
+                ]
               }
             },
             {
