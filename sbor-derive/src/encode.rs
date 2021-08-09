@@ -13,7 +13,6 @@ pub fn handle_encode(input: TokenStream) -> TokenStream {
     trace!("handle_encode() starts");
 
     let DeriveInput { ident, data, .. } = parse2(input).expect("Unable to parse input");
-    let ident_str = ident.to_string();
     trace!("Encoding: {}", ident);
 
     let output = match data {
@@ -33,7 +32,6 @@ pub fn handle_encode(input: TokenStream) -> TokenStream {
                         fn encode_value(&self, encoder: &mut sbor::Encoder) {
                             use sbor::{self, Encode};
 
-                            encoder.write_name(#ident_str);
                             encoder.write_type(sbor::constants::TYPE_FIELDS_NAMED);
                             encoder.write_len(#n);
                             #(
@@ -57,7 +55,6 @@ pub fn handle_encode(input: TokenStream) -> TokenStream {
                         fn encode_value(&self, encoder: &mut sbor::Encoder) {
                             use sbor::{self, Encode};
 
-                            encoder.write_name(#ident_str);
                             encoder.write_type(sbor::constants::TYPE_FIELDS_UNNAMED);
                             encoder.write_len(#n);
                             #(self.#ith.encode(encoder);)*
@@ -73,7 +70,6 @@ pub fn handle_encode(input: TokenStream) -> TokenStream {
                 quote! {
                     impl sbor::Encode for #ident {
                         fn encode_value(&self, encoder: &mut sbor::Encoder) {
-                            encoder.write_name(#ident_str);
                             encoder.write_type(sbor::constants::TYPE_FIELDS_UNIT);
                         }
 
@@ -143,7 +139,6 @@ pub fn handle_encode(input: TokenStream) -> TokenStream {
                     fn encode_value(&self, encoder: &mut sbor::Encoder) {
                         use sbor::{self, Encode};
 
-                        encoder.write_name(#ident_str);
                         match self {
                             #(#match_arms)*
                         }
@@ -190,7 +185,6 @@ mod tests {
                 impl sbor::Encode for Test {
                     fn encode_value(&self, encoder: &mut sbor::Encoder) {
                         use sbor::{self, Encode};
-                        encoder.write_name("Test");
                         encoder.write_type(sbor::constants::TYPE_FIELDS_NAMED);
                         encoder.write_len(1usize);
                         encoder.write_name("a");
@@ -215,7 +209,6 @@ mod tests {
                 impl sbor::Encode for Test {
                     fn encode_value(&self, encoder: &mut sbor::Encoder) {
                         use sbor::{self, Encode};
-                        encoder.write_name("Test");
                         match self {
                             Self::A => {
                                 encoder.write_index(0usize);

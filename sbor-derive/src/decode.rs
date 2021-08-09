@@ -13,7 +13,6 @@ pub fn handle_decode(input: TokenStream) -> TokenStream {
     trace!("handle_decode() starts");
 
     let DeriveInput { ident, data, .. } = parse2(input).expect("Unable to parse input");
-    let ident_str = ident.to_string();
     trace!("Decoding: {}", ident);
 
     let output = match data {
@@ -34,7 +33,6 @@ pub fn handle_decode(input: TokenStream) -> TokenStream {
                         fn decode_value<'de>(decoder: &'de mut sbor::Decoder) -> Result<Self, sbor::DecodeError> {
                             use sbor::{self, Decode};
 
-                            decoder.check_name(#ident_str)?;
                             decoder.check_type(sbor::constants::TYPE_FIELDS_NAMED)?;
                             decoder.check_len(#n)?;
 
@@ -61,7 +59,6 @@ pub fn handle_decode(input: TokenStream) -> TokenStream {
                         fn decode_value<'de>(decoder: &'de mut sbor::Decoder) -> Result<Self, sbor::DecodeError> {
                             use sbor::{self, Decode};
 
-                            decoder.check_name(#ident_str)?;
                             decoder.check_type(sbor::constants::TYPE_FIELDS_UNNAMED)?;
                             decoder.check_len(#n)?;
 
@@ -80,7 +77,6 @@ pub fn handle_decode(input: TokenStream) -> TokenStream {
                 quote! {
                     impl sbor::Decode for #ident {
                         fn decode_value<'de>(decoder: &'de mut sbor::Decoder) -> Result<Self, sbor::DecodeError> {
-                            decoder.check_name(#ident_str)?;
                             decoder.check_type(sbor::constants::TYPE_FIELDS_UNIT)?;
 
                             Ok(Self {})
@@ -157,7 +153,6 @@ pub fn handle_decode(input: TokenStream) -> TokenStream {
                     fn decode_value<'de>(decoder: &'de mut sbor::Decoder) -> Result<Self, sbor::DecodeError> {
                         use sbor::{self, Decode};
 
-                        decoder.check_name(#ident_str)?;
                         let index = decoder.read_index()?;
                         match index {
                             #(#match_arms,)*
@@ -207,7 +202,6 @@ mod tests {
                 impl sbor::Decode for Test {
                     fn decode_value<'de>(decoder: &'de mut sbor::Decoder) -> Result<Self, sbor::DecodeError> {
                         use sbor::{self, Decode};
-                        decoder.check_name("Test")?;
                         decoder.check_type(sbor::constants::TYPE_FIELDS_NAMED)?;
                         decoder.check_len(1usize)?;
                         Ok(Self {
@@ -237,7 +231,6 @@ mod tests {
                     #[inline]
                     fn decode_value<'de>(decoder: &'de mut sbor::Decoder) -> Result<Self, sbor::DecodeError> {
                         use sbor::{self, Decode};
-                        decoder.check_name("Test")?;
                         let index = decoder.read_index()?;
                         match index {
                             0u8 => {

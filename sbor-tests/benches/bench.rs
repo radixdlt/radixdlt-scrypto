@@ -42,7 +42,7 @@ fn decode_simple_bincode(b: &mut Bencher) {
 fn decode_simple_sbor(b: &mut Bencher) {
     let t = data::get_simple_dataset(SIMPLE_REAPT);
     let bytes = sbor::sbor_encode_with_metadata(&t);
-    b.iter(|| sbor::sbor_decode::<data::simple::SimpleStruct>(&bytes));
+    b.iter(|| sbor::sbor_decode_with_metadata::<data::simple::SimpleStruct>(&bytes));
 }
 
 fn decode_simple_sbor_no_metadata(b: &mut Bencher) {
