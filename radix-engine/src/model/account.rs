@@ -2,11 +2,9 @@ use hashbrown::HashMap;
 use sbor::*;
 use scrypto::types::*;
 
-use crate::model::*;
-
 #[derive(Debug, Clone, Encode, Decode)]
 pub struct Account {
-    buckets: HashMap<Address, Bucket>,
+    buckets: HashMap<Address, BID>,
 }
 
 impl Account {
@@ -16,19 +14,13 @@ impl Account {
         }
     }
 
-    pub fn withdraw(&mut self, amount: U256, resource: Address) -> Result<Bucket, BucketError> {
-        self.buckets
-            .get_mut(&resource)
-            .ok_or(BucketError::InsufficientBalance)?
-            .take(amount)
+    pub fn get_bucket(&self, resource: Address) -> Option<&BID> {
+        self.buckets.get(&resource)
     }
 
-    pub fn deposit(&mut self, bucket: Bucket) -> Result<(), BucketError> {
-        let resource = bucket.resource();
+    pub fn insert_bucket(&mut self, resource: Address, bid: BID) {
+        assert!(bid.is_persisted());
 
-        self.buckets
-            .entry(resource)
-            .or_insert(Bucket::new(U256::zero(), resource))
-            .put(bucket)
+        self.buckets.insert(resource, bid);
     }
 }

@@ -81,20 +81,19 @@ impl<'a, L: Ledger> Process<'a, L> {
     ) -> Result<PublishBlueprintOutput, RuntimeError> {
         let address = self.runtime.new_blueprint_address(&input.code);
 
-        match self.runtime.get_blueprint(address) {
-            Some(_) => Err(RuntimeError::BlueprintAlreadyExists(address)),
-            _ => {
-                self.debug(format!(
-                    "New blueprint: address = {:?}, code length = {:?}",
-                    address,
-                    input.code.len()
-                ));
-                self.runtime
-                    .put_blueprint(address, Blueprint::new(input.code));
-
-                Ok(PublishBlueprintOutput { blueprint: address })
-            }
+        if self.runtime.get_blueprint(address).is_some() {
+            return Err(RuntimeError::BlueprintAlreadyExists(address));
         }
+
+        self.debug(format!(
+            "New blueprint: address = {:?}, code length = {:?}",
+            address,
+            input.code.len()
+        ));
+        self.runtime
+            .put_blueprint(address, Blueprint::new(input.code));
+
+        Ok(PublishBlueprintOutput { blueprint: address })
     }
 
     pub fn call_blueprint(
@@ -110,25 +109,24 @@ impl<'a, L: Ledger> Process<'a, L> {
     ) -> Result<CreateComponentOutput, RuntimeError> {
         let address = self.runtime.new_component_address();
 
-        match self.runtime.get_component(address) {
-            Some(_) => Err(RuntimeError::ComponentAlreadyExists(address)),
-            _ => {
-                self.debug(format!(
-                    "New component: address = {:?}, name = {:?}, state = {:?}",
-                    address, input.name, input.state
-                ));
-
-                // TODO: change transient buckets to physical buckets
-                let new_state = input.state;
-                let component = Component::new(self.blueprint, input.name, new_state.clone());
-                self.runtime.put_component(address, component);
-
-                Ok(CreateComponentOutput {
-                    component: address,
-                    new_state,
-                })
-            }
+        if self.runtime.get_component(address).is_some() {
+            return Err(RuntimeError::ComponentAlreadyExists(address));
         }
+
+        self.debug(format!(
+            "New component: address = {:?}, name = {:?}, state = {:?}",
+            address, input.name, input.state
+        ));
+
+        // TODO: change transient buckets to physical buckets
+        let new_state = input.state;
+        let component = Component::new(self.blueprint, input.name, new_state.clone());
+        self.runtime.put_component(address, component);
+
+        Ok(CreateComponentOutput {
+            component: address,
+            new_state,
+        })
     }
 
     pub fn get_component_info(
@@ -224,7 +222,7 @@ impl<'a, L: Ledger> Process<'a, L> {
             Err(RuntimeError::NotAuthorizedToMint)
         } else {
             let bucket = Bucket::new(input.amount, input.resource);
-            let bid = self.runtime.new_bid();
+            let bid = self.runtime.new_transient_bid();
             self.buckets.insert(bid, bucket);
             Ok(MintTokensOutput { tokens: bid })
         }
@@ -259,7 +257,7 @@ impl<'a, L: Ledger> Process<'a, L> {
         let taken = bucket
             .take(input.amount)
             .map_err(|e| RuntimeError::AccountingError(e))?;
-        let bid = self.runtime.new_bid();
+        let bid = self.runtime.new_transient_bid();
         self.buckets.insert(bid, taken);
         Ok(SplitTokensOutput { tokens: bid })
     }
@@ -443,36 +441,76 @@ impl<'a, L: Ledger> Process<'a, L> {
             return Err(RuntimeError::UnauthorizedToWithdraw);
         }
 
-        let account = match self.runtime.get_account_mut(input.account) {
-            Some(acc) => acc,
-            None => self.runtime.put_account(input.account, Account::new()),
+        // find the account
+        if self.runtime.get_account(input.account).is_none() {
+            self.runtime.put_account(input.account, Account::new());
         };
+        let account = self.runtime.get_account(input.account).unwrap();
 
-        let bucket = account
-            .withdraw(input.amount, input.resource)
+        // look up the bucket
+        let bid = match account.get_bucket(input.resource) {
+            Some(bid) => *bid,
+            None => {
+                let bid = self.runtime.new_persisted_bid();
+                self.runtime
+                    .put_bucket(bid, Bucket::new(U256::zero(), input.resource));
+
+                let acc = self.runtime.get_account_mut(input.account).unwrap();
+                acc.insert_bucket(input.resource, bid);
+
+                bid
+            }
+        };
+        let bucket = self
+            .runtime
+            .get_bucket_mut(bid)
+            .expect("The bucket should exist");
+
+        let new_bucket = bucket
+            .take(input.amount)
             .map_err(|e| RuntimeError::AccountingError(e))?;
-        let bid = self.runtime.new_bid();
-        self.buckets.insert(bid, bucket);
+        let new_bid = self.runtime.new_transient_bid();
+        self.buckets.insert(new_bid, new_bucket);
 
-        Ok(WithdrawTokensOutput { tokens: bid })
+        Ok(WithdrawTokensOutput { tokens: new_bid })
     }
 
     pub fn deposit_tokens(
         &mut self,
         input: DepositTokensInput,
     ) -> Result<DepositTokensOutput, RuntimeError> {
-        let bucket = self
+        let tokens = self
             .buckets
             .remove(&input.tokens)
             .ok_or(RuntimeError::BucketNotFound)?;
 
-        let account = match self.runtime.get_account_mut(input.account) {
-            Some(acc) => acc,
-            None => self.runtime.put_account(input.account, Account::new()),
+        // find the account
+        if self.runtime.get_account(input.account).is_none() {
+            self.runtime.put_account(input.account, Account::new());
         };
+        let account = self.runtime.get_account(input.account).unwrap();
 
-        account
-            .deposit(bucket)
+        // look up the bucket
+        let bid = match account.get_bucket(tokens.resource()) {
+            Some(bid) => *bid,
+            None => {
+                let bid = self.runtime.new_persisted_bid();
+                self.runtime
+                    .put_bucket(bid, Bucket::new(U256::zero(), tokens.resource()));
+
+                let acc = self.runtime.get_account_mut(input.account).unwrap();
+                acc.insert_bucket(tokens.resource(), bid);
+
+                bid
+            }
+        };
+        let bucket = self
+            .runtime
+            .get_bucket_mut(bid)
+            .expect("The bucket should exist");
+
+        bucket
+            .put(tokens)
             .map_err(|e| RuntimeError::AccountingError(e))?;
 
         Ok(DepositTokensOutput {})

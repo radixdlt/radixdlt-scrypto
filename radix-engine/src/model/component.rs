@@ -1,3 +1,4 @@
+use hashbrown::HashSet;
 use sbor::*;
 use scrypto::types::*;
 
@@ -6,6 +7,7 @@ pub struct Component {
     blueprint: Address,
     name: String,
     state: Vec<u8>,
+    buckets: HashSet<BID>,
 }
 
 impl Component {
@@ -14,6 +16,7 @@ impl Component {
             blueprint,
             name,
             state,
+            buckets: HashSet::new(),
         }
     }
 
@@ -31,5 +34,15 @@ impl Component {
 
     pub fn set_state(&mut self, new_state: Vec<u8>) {
         self.state = new_state;
+    }
+
+    pub fn has_bucket(&self, bid: BID) -> bool {
+        self.buckets.contains(&bid)
+    }
+
+    pub fn insert_bucket(&mut self, bid: BID) {
+        assert!(bid.is_persisted());
+
+        self.buckets.insert(bid);
     }
 }

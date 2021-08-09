@@ -9,6 +9,7 @@ pub struct InMemoryLedger {
     components: HashMap<Address, Component>,
     accounts: HashMap<Address, Account>,
     resources: HashMap<Address, Resource>,
+    buckets: HashMap<BID, Bucket>,
 }
 
 impl Ledger for InMemoryLedger {
@@ -42,5 +43,13 @@ impl Ledger for InMemoryLedger {
 
     fn put_account(&mut self, address: Address, account: Account) {
         self.accounts.insert(address, account);
+    }
+
+    fn get_bucket(&self, bid: BID) -> Option<Bucket> {
+        self.buckets.get(&bid).map(Clone::clone)
+    }
+
+    fn put_bucket(&mut self, bid: BID, bucket: Bucket) {
+        self.buckets.insert(bid, bucket);
     }
 }

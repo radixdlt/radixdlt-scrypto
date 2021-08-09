@@ -17,6 +17,7 @@ const BLUEPRINTS: &'static str = "blueprints";
 const COMPONENTS: &'static str = "components";
 const ACCOUNTS: &'static str = "accounts";
 const RESOURCES: &'static str = "resources";
+const BUCKETS: &'static str = "buckets";
 
 impl FileBasedLedger {
     pub fn new(root: PathBuf) -> Self {
@@ -101,6 +102,18 @@ impl Ledger for FileBasedLedger {
         Self::write(
             self.get_path(ACCOUNTS, address.to_string(), ".json"),
             scrypto_encode(&account),
+        )
+    }
+
+    fn get_bucket(&self, bid: BID) -> Option<Bucket> {
+        Self::read(self.get_path(BUCKETS, bid.to_string(), ".json"))
+            .map(|v| scrypto_decode(v.as_ref()).unwrap())
+    }
+
+    fn put_bucket(&mut self, bid: BID, bucket: Bucket) {
+        Self::write(
+            self.get_path(BUCKETS, bid.to_string(), ".json"),
+            scrypto_encode(&bucket),
         )
     }
 }

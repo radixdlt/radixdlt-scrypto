@@ -17,10 +17,12 @@ pub struct Runtime<T: Ledger> {
     components: HashMap<Address, Component>,
     accounts: HashMap<Address, Account>,
     resources: HashMap<Address, Resource>,
+    buckets: HashMap<BID, Bucket>,
     updated_blueprints: HashSet<Address>,
     updated_components: HashSet<Address>,
     updated_accounts: HashSet<Address>,
     updated_resources: HashSet<Address>,
+    updated_buckets: HashSet<BID>,
 }
 
 impl<T: Ledger> Runtime<T> {
@@ -35,10 +37,12 @@ impl<T: Ledger> Runtime<T> {
             components: HashMap::new(),
             accounts: HashMap::new(),
             resources: HashMap::new(),
+            buckets: HashMap::new(),
             updated_blueprints: HashSet::new(),
             updated_components: HashSet::new(),
             updated_accounts: HashSet::new(),
             updated_resources: HashSet::new(),
+            updated_buckets: HashSet::new(),
         }
     }
 
@@ -78,11 +82,10 @@ impl<T: Ledger> Runtime<T> {
     }
 
     /// Inserts a new blueprint.
-    pub fn put_blueprint(&mut self, address: Address, blueprint: Blueprint) -> &mut Blueprint {
+    pub fn put_blueprint(&mut self, address: Address, blueprint: Blueprint) {
         self.updated_blueprints.insert(address);
 
         self.blueprints.insert(address, blueprint);
-        self.blueprints.get_mut(&address).unwrap()
     }
 
     /// Returns an immutable reference to a component, if exists.
@@ -115,11 +118,10 @@ impl<T: Ledger> Runtime<T> {
     }
 
     /// Inserts a new component.
-    pub fn put_component(&mut self, address: Address, component: Component) -> &mut Component {
+    pub fn put_component(&mut self, address: Address, component: Component) {
         self.updated_components.insert(address);
 
         self.components.insert(address, component);
-        self.components.get_mut(&address).unwrap()
     }
 
     /// Returns an immutable reference to a account, if exists.
@@ -154,11 +156,10 @@ impl<T: Ledger> Runtime<T> {
     }
 
     /// Inserts a new account.
-    pub fn put_account(&mut self, address: Address, account: Account) -> &mut Account {
+    pub fn put_account(&mut self, address: Address, account: Account) {
         self.updated_accounts.insert(address);
 
         self.accounts.insert(address, account);
-        self.accounts.get_mut(&address).unwrap()
     }
 
     /// Returns an immutable reference to a resource, if exists.
@@ -199,7 +200,45 @@ impl<T: Ledger> Runtime<T> {
         self.resources.insert(address, resource);
     }
 
-    /// Creates a new blueprint address.
+    /// Returns an immutable reference to a bucket, if exists.
+    #[allow(dead_code)]
+    pub fn get_bucket(&mut self, bid: BID) -> Option<&Bucket> {
+        if self.buckets.contains_key(&bid) {
+            return self.buckets.get(&bid);
+        }
+
+        if let Some(bucket) = self.ledger.get_bucket(bid) {
+            self.buckets.insert(bid, bucket);
+            self.buckets.get(&bid)
+        } else {
+            None
+        }
+    }
+
+    /// Returns a mutable reference to a bucket, if exists.
+    pub fn get_bucket_mut(&mut self, bid: BID) -> Option<&mut Bucket> {
+        self.updated_buckets.insert(bid);
+
+        if self.buckets.contains_key(&bid) {
+            return self.buckets.get_mut(&bid);
+        }
+
+        if let Some(bucket) = self.ledger.get_bucket(bid) {
+            self.buckets.insert(bid, bucket);
+            self.buckets.get_mut(&bid)
+        } else {
+            None
+        }
+    }
+
+    /// Inserts a new bucket.
+    pub fn put_bucket(&mut self, bid: BID, bucket: Bucket) {
+        self.updated_buckets.insert(bid);
+
+        self.buckets.insert(bid, bucket);
+    }
+
+    /// Creates a new blueprint bid.
     pub fn new_blueprint_address(&mut self, code: &[u8]) -> Address {
         Address::Blueprint(sha256_twice(code).lower_26_bytes())
     }
@@ -223,9 +262,15 @@ impl<T: Ledger> Runtime<T> {
     }
 
     /// Creates a new transient bucket id.
-    pub fn new_bid(&mut self) -> BID {
+    pub fn new_transient_bid(&mut self) -> BID {
         self.bucket_counter += 1;
         BID::Transient(self.bucket_counter - 1)
+    }
+
+    /// Creates a new persisted bucket id.
+    pub fn new_persisted_bid(&mut self) -> BID {
+        self.bucket_counter += 1;
+        BID::Persisted(self.tx_hash, self.bucket_counter - 1)
     }
 
     /// Flush changes to ledger.
@@ -256,6 +301,13 @@ impl<T: Ledger> Runtime<T> {
             println!("Updating: {:?}", address);
             self.ledger
                 .put_resource(address, self.resources.get(&address).unwrap().clone());
+        }
+
+        let buckets = self.updated_buckets.clone();
+        for bucket in buckets {
+            println!("Updating: {:?}", bucket);
+            self.ledger
+                .put_bucket(bucket, self.buckets.get(&bucket).unwrap().clone());
         }
     }
 }

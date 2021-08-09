@@ -41,6 +41,11 @@ impl Hash {
         result.copy_from_slice(&self.raw[6..32]);
         result
     }
+
+    /// Obtain a slice of this hash.
+    pub fn slice(&self) -> &[u8] {
+        &self.raw
+    }
 }
 
 impl<T: AsRef<str>> From<T> for Hash {

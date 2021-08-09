@@ -24,4 +24,10 @@ pub trait Ledger {
     fn get_account(&self, address: Address) -> Option<Account>;
 
     fn put_account(&mut self, address: Address, account: Account);
+
+    // For now, we always read/write everything in a resource bucket.
+
+    fn get_bucket(&self, bid: BID) -> Option<Bucket>;
+
+    fn put_bucket(&mut self, bid: BID, bucket: Bucket);
 }
