@@ -2,13 +2,13 @@ extern crate alloc;
 use alloc::string::ToString;
 use alloc::vec::Vec;
 
-use sbor::{Decode, Encode};
+use sbor::{Decode, Describe, Encode};
 
 use crate::kernel::*;
 use crate::types::*;
 
 /// A piece of code that defines the structure and methods of components.
-#[derive(Debug, Clone, Encode, Decode)]
+#[derive(Debug, Clone, Describe, Encode, Decode)]
 pub struct Blueprint {
     address: Address,
 }

@@ -1,15 +1,15 @@
 extern crate alloc;
-use alloc::vec::Vec;
-use alloc::string::ToString;
 use alloc::string::String;
+use alloc::string::ToString;
+use alloc::vec::Vec;
 
-use sbor::{Decode, Encode};
+use sbor::{Decode, Describe, Encode};
 
 use crate::types::Hash;
 use crate::utils::hex_encode;
 
 /// Resource bucket id.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Encode, Decode)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Describe, Encode, Decode)]
 pub enum BID {
     Transient(u32),
 

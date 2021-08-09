@@ -1,11 +1,10 @@
-use crate::constructs::*;
 use crate::kernel::*;
 use crate::types::*;
 
-use sbor::{Decode, Encode};
+use sbor::{Decode, Describe, Encode};
 
 /// A bucket that holds token resource.
-#[derive(Debug, Encode, Decode)]
+#[derive(Debug, Describe, Encode, Decode)]
 pub struct Tokens {
     bid: BID,
 }
@@ -55,14 +54,10 @@ impl Tokens {
         output.amount
     }
 
-    pub fn resource(&self) -> Resource {
+    pub fn resource(&self) -> Address {
         let input = GetTokensResourceInput { tokens: self.bid };
         let output: GetTokensResourceOutput = call_kernel(GET_TOKENS_RESOURCE, input);
 
-        output.resource.into()
-    }
-
-    pub fn address(&self) -> Address {
-        self.resource().address()
+        output.resource
     }
 }

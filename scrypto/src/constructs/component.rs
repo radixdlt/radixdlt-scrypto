@@ -11,7 +11,7 @@ use crate::kernel::*;
 use crate::types::*;
 
 /// A self-executing program that holds resources and exposed actions to other entities.
-#[derive(Debug, Clone, Encode, Decode)]
+#[derive(Debug)]
 pub struct Component {
     address: Address,
 }
@@ -37,7 +37,7 @@ impl Component {
         let data = self.get_info();
 
         let mut args_buf = Vec::new();
-        args_buf.push(scrypto_encode(self));
+        args_buf.push(scrypto_encode(&self.address));
         args_buf.extend(args);
 
         let input = CallBlueprintInput {

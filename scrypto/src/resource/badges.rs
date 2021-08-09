@@ -1,11 +1,11 @@
-use sbor::{Decode, Encode};
+use sbor::{Decode, Describe, Encode};
 
-use crate::constructs::*;
 use crate::kernel::*;
+use crate::resource::*;
 use crate::types::*;
 
 /// A bucket that holds badge resource.
-#[derive(Debug, Encode, Decode)]
+#[derive(Debug, Describe, Encode, Decode)]
 pub struct Badges {
     bid: BID,
 }
@@ -64,14 +64,10 @@ impl Badges {
         output.amount
     }
 
-    pub fn resource(&self) -> Resource {
+    pub fn resource(&self) -> Address {
         let input = GetBadgesResourceInput { badges: self.bid };
         let output: GetBadgesResourceOutput = call_kernel(GET_BADGES_RESOURCE, input);
 
-        output.resource.into()
-    }
-
-    pub fn address(&self) -> Address {
-        self.resource().address()
+        output.resource
     }
 }

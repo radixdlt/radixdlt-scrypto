@@ -144,7 +144,7 @@ fn generate_dispatcher(com_ident: &Ident, items: &Vec<ImplItem>) -> (Vec<Expr>, 
 
                                 // Generate an `Arg` and a loading `Stmt` for the i-th argument
                                 let stmt: Stmt = parse_quote! {
-                                    let #arg = scrypto::buffer::scrypto_decode::<scrypto::constructs::Component>(&calldata.args[#i]).unwrap();
+                                    let #arg = scrypto::constructs::Component::from(scrypto::buffer::scrypto_decode::<scrypto::types::Address>(&calldata.args[#i]).unwrap());
                                 };
                                 trace!("Stmt: {}", quote! { #stmt });
                                 args.push(parse_quote! { & #mutability state });
@@ -453,10 +453,10 @@ mod tests {
                     let rtn;
                     match calldata.method.as_str() {
                         "x" => {
-                            let arg0 = scrypto::buffer::scrypto_decode::<scrypto::constructs::Component>(
+                            let arg0 = scrypto::constructs::Component::from(scrypto::buffer::scrypto_decode::<scrypto::types::Address>(
                                 &calldata.args[0usize]
                             )
-                            .unwrap();
+                            .unwrap());
                             let state: Test = arg0.get_state();
                             rtn = scrypto::buffer::scrypto_encode(&Test::x(&state));
                         }

@@ -6,12 +6,12 @@ use alloc::vec::Vec;
 use core::convert::TryInto;
 use core::fmt;
 
-use sbor::{Decode, Encode};
+use sbor::{Decode, Describe, Encode};
 
 use crate::utils::*;
 
 /// Represents an address.
-#[derive(Clone, Copy, PartialEq, Eq, Hash, Encode, Decode)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Describe, Encode, Decode)]
 pub enum Address {
     /// System address.
     System,

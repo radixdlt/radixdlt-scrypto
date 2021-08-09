@@ -1,11 +1,10 @@
-use sbor::{Decode, Encode};
+use sbor::{Decode, Describe, Encode};
 
-use crate::constructs::*;
 use crate::kernel::*;
 use crate::types::*;
 
 /// A borrowed reference to a `Tokens` bucket.
-#[derive(Debug, Encode, Decode)]
+#[derive(Debug, Describe, Encode, Decode)]
 pub struct TokensRef {
     bid: BID,
 }
@@ -24,11 +23,11 @@ impl TokensRef {
         output.amount
     }
 
-    pub fn resource(&self) -> Resource {
+    pub fn resource(&self) -> Address {
         let input = GetTokensResourceInput { tokens: self.bid };
         let output: GetTokensResourceOutput = call_kernel(GET_TOKENS_RESOURCE, input);
 
-        output.resource.into()
+        output.resource
     }
 
     pub fn destroy(self) {

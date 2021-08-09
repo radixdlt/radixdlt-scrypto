@@ -120,13 +120,10 @@ impl<'a, L: Ledger> Process<'a, L> {
 
         // TODO: change transient buckets to physical buckets
         let new_state = input.state;
-        let component = Component::new(self.blueprint, input.name, new_state.clone());
+        let component = Component::new(self.blueprint, input.name, new_state);
         self.runtime.put_component(address, component);
 
-        Ok(CreateComponentOutput {
-            component: address,
-            new_state,
-        })
+        Ok(CreateComponentOutput { component: address })
     }
 
     pub fn get_component_info(
@@ -170,9 +167,9 @@ impl<'a, L: Ledger> Process<'a, L> {
 
         // TODO: convert transient buckets to physical buckets.
         let new_state = input.state;
-        component.set_state(new_state.clone());
+        component.set_state(new_state);
 
-        Ok(PutComponentStateOutput { new_state })
+        Ok(PutComponentStateOutput {})
     }
 
     pub fn create_resource(

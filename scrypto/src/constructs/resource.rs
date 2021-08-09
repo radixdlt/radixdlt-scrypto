@@ -1,13 +1,11 @@
 extern crate alloc;
 use alloc::string::ToString;
 
-use sbor::{Decode, Encode};
-
 use crate::kernel::*;
 use crate::types::*;
 
 /// A primitive piece of state which has a single owner, and behaves like a physical object.
-#[derive(Debug, Clone, Encode, Decode)]
+#[derive(Debug)]
 pub struct Resource {
     address: Address,
 }

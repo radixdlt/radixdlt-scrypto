@@ -13,13 +13,13 @@ use alloc::string::String;
 
 use sbor::*;
 
-#[derive(Debug, Clone, Encode, Decode)]
+#[derive(Debug, Clone, Describe, Encode, Decode)]
 pub struct ComponentInfo {
     pub blueprint: Address,
     pub name: String,
 }
 
-#[derive(Debug, Clone, Encode, Decode)]
+#[derive(Debug, Clone, Describe, Encode, Decode)]
 pub struct ResourceInfo {
     pub symbol: String,
     pub name: String,
@@ -30,7 +30,7 @@ pub struct ResourceInfo {
     pub supply: Option<U256>,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Encode, Decode)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Describe, Encode, Decode)]
 pub enum Level {
     Error = 0,
     Warn,

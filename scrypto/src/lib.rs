@@ -6,6 +6,8 @@ pub mod buffer;
 pub mod constructs;
 /// Kernel APIs and helper functions.
 pub mod kernel;
+/// Scrypto resource containers and references.
+pub mod resource;
 /// Scrypto primitive types.
 pub mod types;
 /// Utility functions, such as hashing and hex decoding.

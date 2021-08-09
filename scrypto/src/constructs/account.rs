@@ -1,11 +1,9 @@
-use sbor::{Decode, Encode};
-
-use crate::constructs::*;
 use crate::kernel::*;
+use crate::resource::*;
 use crate::types::*;
 
 /// An account holds tokens and badges.
-#[derive(Debug, Clone, Encode, Decode)]
+#[derive(Debug)]
 pub struct Account {
     address: Address,
 }

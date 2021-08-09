@@ -1,7 +1,7 @@
-use sbor::{Decode, Encode};
+use sbor::{Decode, Describe, Encode};
 use uint::construct_uint;
 
 construct_uint! {
-    #[derive(Encode, Decode)]
+    #[derive(Describe, Encode, Decode)]
     pub struct U256(8);
 }

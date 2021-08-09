@@ -4,12 +4,12 @@ use alloc::string::ToString;
 use core::convert::TryInto;
 use core::fmt;
 
-use sbor::{Decode, Encode};
+use sbor::{Decode, Describe, Encode};
 
 use crate::utils::*;
 
 /// Represents a 32-byte hash digest.
-#[derive(Clone, Copy, PartialEq, Eq, Hash, Encode, Decode)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Describe, Encode, Decode)]
 pub struct Hash {
     raw: [u8; 32],
 }
