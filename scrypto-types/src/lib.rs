@@ -7,9 +7,11 @@ compile_error!("Feature `std` and `alloc` can't be enabled at the same time.");
 
 mod address;
 mod bid;
-mod dependencies;
 mod h256;
 mod u256;
+
+// A facade around all Rust types scrypto uses from `std` or `core + alloc`.
+pub mod rust;
 
 pub use address::{Address, DecodeAddressError};
 pub use bid::BID;

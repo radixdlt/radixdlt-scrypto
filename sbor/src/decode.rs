@@ -1,15 +1,14 @@
-extern crate alloc;
-use alloc::boxed::Box;
-use alloc::string::String;
-use alloc::string::ToString;
-use core::hash::Hash;
-use core::ptr::copy;
-
 #[cfg(any(feature = "scrypto_std", feature = "scrypto_alloc"))]
-use scrypto_types::*;
+use scrypto_types::{Address, BID, H256, U256};
 
 use crate::collections::*;
 use crate::constants::*;
+use crate::rust::boxed::Box;
+use crate::rust::hash::Hash;
+use crate::rust::mem::MaybeUninit;
+use crate::rust::ptr::copy;
+use crate::rust::string::String;
+use crate::rust::string::ToString;
 
 /// Represents an error ocurred during decoding.
 #[derive(Debug, Clone)]
@@ -338,7 +337,7 @@ impl<T: Decode, const N: usize> Decode for [T; N] {
         decoder.check_type(T::sbor_type())?;
         decoder.check_len(N)?;
 
-        let mut x = core::mem::MaybeUninit::<[T; N]>::uninit();
+        let mut x = MaybeUninit::<[T; N]>::uninit();
         let arr = unsafe { &mut *x.as_mut_ptr() };
         for i in 0..N {
             arr[i] = T::decode_value(decoder)?;
@@ -555,13 +554,11 @@ impl Decode for BID {
 
 #[cfg(test)]
 mod tests {
-    extern crate alloc;
-    use alloc::boxed::Box;
-    use alloc::string::String;
-    use alloc::vec;
+    use crate::collections::*;
+    use crate::rust::boxed::Box;
+    use crate::rust::string::String;
 
     use super::{Decode, Decoder};
-    use crate::collections::*;
 
     fn assert_decoding(dec: &mut Decoder) {
         <()>::decode(dec).unwrap();

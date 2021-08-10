@@ -1,7 +1,6 @@
-extern crate alloc;
-use alloc::vec::Vec;
-
 use sbor::*;
+
+use crate::types::rust::vec::Vec;
 
 /// Encodes a data structure into byte array.
 pub fn scrypto_encode<T: Encode>(v: &T) -> Vec<u8> {

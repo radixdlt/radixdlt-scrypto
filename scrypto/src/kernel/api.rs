@@ -1,9 +1,7 @@
-extern crate alloc;
-use alloc::string::String;
-use alloc::vec::Vec;
-
 use sbor::{Decode, Encode};
 
+use crate::types::rust::string::String;
+use crate::types::rust::vec::Vec;
 use crate::types::*;
 
 extern "C" {

@@ -1,12 +1,10 @@
-extern crate alloc;
-use alloc::boxed::Box;
-use alloc::string::String;
-
 #[cfg(any(feature = "scrypto_std", feature = "scrypto_alloc"))]
-use scrypto_types::*;
+use scrypto_types::{Address, BID, H256, U256};
 
 use crate::collections::*;
 use crate::constants::*;
+use crate::rust::boxed::Box;
+use crate::rust::string::String;
 
 /// A data structure that can be serialized into a byte array using SBOR.
 pub trait Encode {
@@ -430,12 +428,10 @@ impl Encode for BID {
 
 #[cfg(test)]
 mod tests {
-    extern crate alloc;
-    use alloc::boxed::Box;
-    use alloc::vec;
+    use crate::collections::*;
+    use crate::rust::boxed::Box;
 
     use super::{Encode, Encoder};
-    use crate::collections::*;
 
     fn do_encoding(enc: &mut Encoder) {
         ().encode(enc);

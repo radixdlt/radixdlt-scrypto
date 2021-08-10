@@ -1,11 +1,11 @@
-extern crate alloc;
-use alloc::boxed::Box;
-use alloc::string::String;
-use alloc::vec::Vec;
-
-use crate::sbor::{self, Decode, Encode};
 #[cfg(any(feature = "json_std", feature = "json_alloc"))]
 use serde::{Deserialize, Serialize};
+
+use crate::sbor::{self, Decode, Encode};
+
+use crate::collections::*;
+use crate::rust::boxed::Box;
+use crate::rust::string::String;
 
 // Internally tagged representation for readability
 // See: https://serde.rs/enum-representations.html

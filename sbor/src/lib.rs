@@ -18,14 +18,14 @@ mod decode;
 mod describe;
 mod encode;
 mod parse;
-
-extern crate alloc;
-use alloc::vec::Vec;
+mod rust;
 
 pub use decode::{Decode, DecodeError, Decoder};
 pub use describe::Describe;
 pub use encode::{Encode, Encoder};
 pub use parse::sbor_parse;
+
+use crate::collections::*;
 
 /// Encode a `T` into byte array.
 pub fn sbor_encode_with_metadata<T: Encode>(v: &T) -> Vec<u8> {

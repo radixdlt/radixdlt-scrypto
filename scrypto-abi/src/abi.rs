@@ -1,9 +1,12 @@
+#[cfg(feature = "alloc")]
 extern crate alloc;
-use alloc::string::String;
+#[cfg(feature = "alloc")]
+pub use alloc::string::String;
+#[cfg(feature = "alloc")]
+pub use alloc::vec::Vec;
 
-use sbor::collections::*;
 use sbor::types::*;
-use sbor::*;
+use sbor::{Decode, Encode};
 #[cfg(any(feature = "json_std", feature = "json_alloc"))]
 use serde::{Deserialize, Serialize};
 

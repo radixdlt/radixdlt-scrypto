@@ -1,7 +1,6 @@
-extern crate alloc;
-use alloc::vec::Vec;
-use core::mem::forget;
-use core::ptr::copy;
+use crate::types::rust::mem::forget;
+use crate::types::rust::ptr::copy;
+use crate::types::rust::vec::Vec;
 
 const WORD: usize = core::mem::size_of::<usize>();
 

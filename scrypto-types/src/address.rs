@@ -1,4 +1,8 @@
-use crate::dependencies::*;
+use crate::rust::fmt;
+use crate::rust::string::String;
+use crate::rust::string::ToString;
+use crate::rust::vec;
+use crate::rust::vec::Vec;
 
 /// Represents an address.
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
@@ -114,7 +118,7 @@ impl fmt::Debug for Address {
 
 #[cfg(test)]
 mod tests {
-    use crate::dependencies::*;
+    use crate::rust::string::ToString;
     use crate::*;
 
     #[test]

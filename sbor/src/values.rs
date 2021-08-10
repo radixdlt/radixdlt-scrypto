@@ -1,9 +1,8 @@
-extern crate alloc;
-use alloc::boxed::Box;
-use alloc::string::String;
-use alloc::vec::Vec;
-
 use crate::sbor::{self, Decode, Encode};
+
+use crate::collections::*;
+use crate::rust::boxed::Box;
+use crate::rust::string::String;
 
 /// Represents a SBOR data value.
 #[derive(Debug, Clone, PartialEq, Eq, Decode, Encode)]

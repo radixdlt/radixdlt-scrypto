@@ -1,12 +1,9 @@
-extern crate alloc;
-use alloc::boxed::Box;
-use alloc::string::String;
-use alloc::vec;
-
 #[cfg(any(feature = "scrypto_std", feature = "scrypto_alloc"))]
-use scrypto_types::*;
+use scrypto_types::{Address, BID, H256, U256};
 
 use crate::collections::*;
+use crate::rust::boxed::Box;
+use crate::rust::string::String;
 use crate::types::*;
 
 /// A data structure that can be described using SBOR types.
@@ -152,10 +149,9 @@ impl<K: Describe, V: Describe> Describe for HashMap<K, V> {
 
 #[cfg(test)]
 mod tests {
-    extern crate alloc;
-    use alloc::boxed::Box;
-    use alloc::string::String;
-    use alloc::vec;
+    use crate::collections::*;
+    use crate::rust::boxed::Box;
+    use crate::rust::string::String;
 
     use crate::types::*;
     use crate::*;

@@ -1,0 +1,23 @@
+#[cfg(feature = "alloc")]
+extern crate alloc;
+#[cfg(feature = "alloc")]
+pub use alloc::boxed;
+#[cfg(feature = "alloc")]
+pub use alloc::string;
+#[cfg(feature = "alloc")]
+pub use core::hash;
+#[cfg(feature = "alloc")]
+pub use core::mem;
+#[cfg(feature = "alloc")]
+pub use core::ptr;
+
+#[cfg(not(feature = "alloc"))]
+pub use std::boxed;
+#[cfg(not(feature = "alloc"))]
+pub use std::hash;
+#[cfg(not(feature = "alloc"))]
+pub use std::mem;
+#[cfg(not(feature = "alloc"))]
+pub use std::ptr;
+#[cfg(not(feature = "alloc"))]
+pub use std::string;

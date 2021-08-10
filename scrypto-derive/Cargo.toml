@@ -28,7 +28,15 @@ scrypto-abi = { version = "0.1", path = "../scrypto-abi", default-features = fal
 # - https://github.com/rust-lang/cargo/issues/7915
 #
 default = ["std"]
-std = ["serde/std", "serde_json/std", "sbor/std", "sbor/json_std", "scrypto-abi/std", "scrypto-abi/json_std"]
-alloc = ["serde/alloc", "serde_json/alloc", "sbor/alloc", "sbor/json_alloc", "scrypto-abi/alloc", "scrypto-abi/json_alloc"]
+std = [
+    "serde/std", "serde_json/std", 
+    "sbor/std", "sbor/scrypto_std", "sbor/json_std", 
+    "scrypto-abi/std", "scrypto-abi/json_std"
+]
+alloc = [
+    "serde/alloc", "serde_json/alloc", 
+    "sbor/alloc", "sbor/scrypto_alloc", "sbor/json_alloc", 
+    "scrypto-abi/alloc", "scrypto-abi/json_alloc"
+]
 
 trace = []

@@ -1,12 +1,10 @@
-extern crate alloc;
-use alloc::string::String;
-use alloc::string::ToString;
-use alloc::vec::Vec;
-
 use sbor::{Decode, Encode};
 
 use crate::buffer::*;
 use crate::kernel::*;
+use crate::types::rust::string::String;
+use crate::types::rust::string::ToString;
+use crate::types::rust::vec::Vec;
 use crate::types::*;
 
 /// A self-executing program that holds resources and exposed actions to other entities.

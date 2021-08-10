@@ -1,8 +1,6 @@
-extern crate alloc;
-use alloc::string::ToString;
-use alloc::vec::Vec;
-
 use crate::kernel::*;
+use crate::types::rust::string::ToString;
+use crate::types::rust::vec::Vec;
 use crate::types::*;
 
 /// A piece of code that defines the structure and methods of components.

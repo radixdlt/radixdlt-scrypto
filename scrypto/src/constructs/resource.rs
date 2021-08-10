@@ -1,8 +1,6 @@
-extern crate alloc;
-use alloc::string::ToString;
-
 use crate::kernel::*;
 use crate::resource::*;
+use crate::types::rust::string::ToString;
 use crate::types::*;
 
 /// A primitive piece of state which has a single owner, and behaves like a physical object.

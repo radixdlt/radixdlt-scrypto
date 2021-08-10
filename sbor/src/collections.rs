@@ -1,7 +1,11 @@
 #[cfg(feature = "alloc")]
+extern crate alloc;
+#[cfg(feature = "alloc")]
 pub use alloc::collections::BTreeMap;
 #[cfg(feature = "alloc")]
 pub use alloc::collections::BTreeSet;
+#[cfg(feature = "alloc")]
+pub use alloc::vec;
 #[cfg(feature = "alloc")]
 pub use alloc::vec::Vec;
 #[cfg(feature = "alloc")]
@@ -17,5 +21,7 @@ pub use std::collections::BTreeSet;
 pub use std::collections::HashMap;
 #[cfg(not(feature = "alloc"))]
 pub use std::collections::HashSet;
+#[cfg(not(feature = "alloc"))]
+pub use std::vec;
 #[cfg(not(feature = "alloc"))]
 pub use std::vec::Vec;

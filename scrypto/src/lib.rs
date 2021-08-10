@@ -34,8 +34,7 @@ macro_rules! call_blueprint {
     ($rtn_type: ty, $blueprint: expr, $component: expr, $method: expr $(,)?) => {
         {
             let blueprint = scrypto::constructs::Blueprint::from($blueprint);
-            extern crate alloc;
-            let rtn = blueprint.call($component, $method, alloc::vec::Vec::new());
+            let rtn = blueprint.call($component, $method, scrypto::types::rust::vec::Vec::new());
             scrypto::buffer::scrypto_decode::<$rtn_type>(&rtn).unwrap()
         }
     };
@@ -43,8 +42,7 @@ macro_rules! call_blueprint {
     ($rtn_type: ty, $blueprint: expr, $component: expr, $method: expr, $($args: expr),+ $(,)?) => {
         {
             let blueprint = scrypto::constructs::Blueprint::from($blueprint);
-            extern crate alloc;
-            let mut args = alloc::vec::Vec::new();
+            let mut args = scrypto::types::rust::vec::Vec::new();
             $(args.push(scrypto::buffer::scrypto_encode(&$args));)+
             let rtn = blueprint.call($component, $method, args);
             scrypto::buffer::scrypto_decode::<$rtn_type>(&rtn).unwrap()
@@ -58,8 +56,7 @@ macro_rules! call_component {
     ($rtn_type: ty, $component: expr, $method: expr $(,)?) => {
         {
             let component = scrypto::constructs::Component::from($component);
-            extern crate alloc;
-            let rtn = component.call($method, alloc::vec::Vec::new());
+            let rtn = component.call($method, scrypto::types::rust::vec::Vec::new());
             scrypto::buffer::scrypto_decode::<$rtn_type>(&rtn).unwrap()
         }
     };
@@ -67,8 +64,7 @@ macro_rules! call_component {
     ($rtn_type: ty, $component: expr, $method: expr, $($args: expr),+ $(,)?) => {
         {
             let component = scrypto::constructs::Component::from($component);
-            extern crate alloc;
-            let mut args = alloc::vec::Vec::new();
+            let mut args = scrypto::types::rust::vec::Vec::new();
             $(args.push(scrypto::buffer::scrypto_encode(&$args));)+
             let rtn = component.call($method, args);
             scrypto::buffer::scrypto_decode::<$rtn_type>(&rtn).unwrap()
@@ -80,8 +76,7 @@ macro_rules! call_component {
 #[macro_export]
 macro_rules! error {
     ($($args: expr),+) => {{
-        extern crate alloc;
-        scrypto::constructs::Logger::log(scrypto::kernel::Level::Error, alloc::format!($($args),+));
+        scrypto::constructs::Logger::log(scrypto::kernel::Level::Error, scrypto::types::rust::format!($($args),+));
     }};
 }
 
@@ -89,8 +84,7 @@ macro_rules! error {
 #[macro_export]
 macro_rules! warn {
     ($($args: expr),+) => {{
-        extern crate alloc;
-        scrypto::constructs::Logger::log(scrypto::kernel::Level::Warn, alloc::format!($($args),+));
+        scrypto::constructs::Logger::log(scrypto::kernel::Level::Warn, scrypto::types::rust::format!($($args),+));
     }};
 }
 
@@ -98,8 +92,7 @@ macro_rules! warn {
 #[macro_export]
 macro_rules! info {
     ($($args: expr),+) => {{
-        extern crate alloc;
-        scrypto::constructs::Logger::log(scrypto::kernel::Level::Info, alloc::format!($($args),+));
+        scrypto::constructs::Logger::log(scrypto::kernel::Level::Info, scrypto::types::rust::format!($($args),+));
     }};
 }
 
@@ -107,8 +100,7 @@ macro_rules! info {
 #[macro_export]
 macro_rules! debug {
     ($($args: expr),+) => {{
-        extern crate alloc;
-        scrypto::constructs::Logger::log(scrypto::kernel::Level::Debug, alloc::format!($($args),+));
+        scrypto::constructs::Logger::log(scrypto::kernel::Level::Debug, scrypto::types::rust::format!($($args),+));
     }};
 }
 
@@ -116,7 +108,6 @@ macro_rules! debug {
 #[macro_export]
 macro_rules! trace {
     ($($args: expr),+) => {{
-        extern crate alloc;
-        scrypto::constructs::Logger::log(scrypto::kernel::Level::Trace, alloc::format!($($args),+));
+        scrypto::constructs::Logger::log(scrypto::kernel::Level::Trace, scrypto::types::rust::format!($($args),+));
     }};
 }

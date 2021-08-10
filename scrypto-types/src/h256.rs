@@ -1,4 +1,7 @@
-use crate::dependencies::*;
+use crate::rust::convert::TryInto;
+use crate::rust::fmt;
+use crate::rust::string::String;
+use crate::rust::string::ToString;
 
 /// Represents a 32-byte hash digest.
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
@@ -71,7 +74,7 @@ impl fmt::Debug for H256 {
 
 #[cfg(test)]
 mod tests {
-    use crate::dependencies::*;
+    use crate::rust::string::ToString;
     use crate::*;
 
     #[test]
