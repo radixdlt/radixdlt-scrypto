@@ -11,9 +11,9 @@ use radix_engine::execution::*;
 use radix_engine::ledger::*;
 use radix_engine::model::*;
 
-fn build(path: &str) {
+fn build(name: &str) {
     Command::new("cargo")
-        .current_dir(path)
+        .current_dir(format!("./tests/{}", name))
         .args(["build", "--target", "wasm32-unknown-unknown", "--release"])
         .spawn()
         .unwrap()
@@ -21,10 +21,10 @@ fn build(path: &str) {
         .unwrap();
 }
 
-fn publish<T: Ledger>(ledger: &mut T, path: &str) -> Address {
+fn publish<T: Ledger>(ledger: &mut T, name: &str) -> Address {
     let code = fs::read(format!(
-        "{}/target/wasm32-unknown-unknown/release/source.wasm",
-        path
+        "./tests/{}/target/wasm32-unknown-unknown/release/{}.wasm",
+        name, name
     ))
     .unwrap();
 
@@ -82,7 +82,7 @@ fn one_shot<T: Ledger>(
 #[test]
 fn test_greeting() {
     let mut ledger = InMemoryLedger::new();
-    let output = one_shot(&mut ledger, "./tests/source", "Greeting", "new", vec![]);
+    let output = one_shot(&mut ledger, "everything", "Greeting", "new", vec![]);
     assert!(output.is_ok())
 }
 
@@ -91,7 +91,7 @@ fn test_blueprint() {
     let mut ledger = InMemoryLedger::new();
     let output = one_shot(
         &mut ledger,
-        "./tests/source",
+        "everything",
         "BlueprintTest",
         "publish",
         vec![],
@@ -101,7 +101,7 @@ fn test_blueprint() {
 
     let output2 = one_shot(
         &mut ledger,
-        "./tests/source",
+        "everything",
         "BlueprintTest",
         "invoke",
         vec![scrypto_encode(&address)],

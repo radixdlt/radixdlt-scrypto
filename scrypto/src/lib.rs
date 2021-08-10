@@ -26,7 +26,7 @@ pub mod utils;
 
 // Re-export Scrypto derive.
 extern crate scrypto_derive;
-pub use scrypto_derive::{component, import};
+pub use scrypto_derive::*;
 
 /// Call a method of a blueprint.
 #[macro_export]

@@ -18,7 +18,7 @@ scrypto-abi = { version = "0.1", path = "../scrypto-abi", default-features = fal
 
 [features]
 # Currenlty, dependencies of procedrual macros are imported to host crates. This may accidentally 
-# enable unwanted features of host dependencies, i.e. `serde`, `serde_json`, `sbor`å and `scrypto-abi`.
+# enable unwanted features of host dependencies, i.e. `serde`, `serde_json`, `sbor` and `scrypto-abi`.
 # 
 # To work around with it, we've added features `std` and `alloc` for `scrypto-derive`, even
 # though it only works under `std` environment.
