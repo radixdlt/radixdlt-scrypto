@@ -1,0 +1,27 @@
+#[cfg(feature = "alloc")]
+extern crate alloc;
+#[cfg(feature = "alloc")]
+pub use alloc::string::String;
+#[cfg(feature = "alloc")]
+pub use alloc::string::ToString;
+#[cfg(feature = "alloc")]
+pub use alloc::vec;
+#[cfg(feature = "alloc")]
+pub use alloc::vec::Vec;
+#[cfg(feature = "alloc")]
+pub use core::convert::TryInto;
+#[cfg(feature = "alloc")]
+pub use core::fmt;
+
+#[cfg(not(feature = "alloc"))]
+pub use std::convert::TryInto;
+#[cfg(not(feature = "alloc"))]
+pub use std::fmt;
+#[cfg(not(feature = "alloc"))]
+pub use std::string::String;
+#[cfg(not(feature = "alloc"))]
+pub use std::string::ToString;
+#[cfg(not(feature = "alloc"))]
+pub use std::vec;
+#[cfg(not(feature = "alloc"))]
+pub use std::vec::Vec;
