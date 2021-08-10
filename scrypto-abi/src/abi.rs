@@ -1,7 +1,7 @@
 extern crate alloc;
 use alloc::string::String;
-use alloc::vec::Vec;
 
+use sbor::collections::*;
 use sbor::types::*;
 use sbor::*;
 #[cfg(any(feature = "json_std", feature = "json_alloc"))]
@@ -11,7 +11,7 @@ use serde::{Deserialize, Serialize};
     any(feature = "json_std", feature = "json_alloc"),
     derive(Serialize, Deserialize)
 )]
-#[derive(Debug, Encode, Decode)]
+#[derive(Debug, Clone, Encode, Decode)]
 pub struct Component {
     pub name: String,
     pub methods: Vec<Method>,
@@ -21,7 +21,7 @@ pub struct Component {
     any(feature = "json_std", feature = "json_alloc"),
     derive(Serialize, Deserialize)
 )]
-#[derive(Debug, Encode, Decode)]
+#[derive(Debug, Clone, Encode, Decode)]
 pub struct Method {
     pub name: String,
     pub mutability: Mutability,
@@ -33,7 +33,7 @@ pub struct Method {
     any(feature = "json_std", feature = "json_alloc"),
     derive(Serialize, Deserialize)
 )]
-#[derive(Debug, Encode, Decode)]
+#[derive(Debug, Clone, Encode, Decode)]
 pub enum Mutability {
     /// A stateless method does not require an instantiated component.
     Stateless,

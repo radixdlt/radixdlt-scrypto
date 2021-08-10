@@ -6,7 +6,7 @@ pub struct H256 {
     raw: [u8; 32],
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum DecodeH256Error {
     InvalidHex(hex::FromHexError),
     InvalidLength,

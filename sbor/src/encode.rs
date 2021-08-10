@@ -347,7 +347,7 @@ impl<T: Encode> Encode for HashSet<T> {
 
     #[inline]
     fn sbor_type() -> u8 {
-        TYPE_H256_SET
+        TYPE_HASH_SET
     }
 }
 
@@ -366,7 +366,7 @@ impl<K: Encode, V: Encode> Encode for HashMap<K, V> {
 
     #[inline]
     fn sbor_type() -> u8 {
-        TYPE_H256_MAP
+        TYPE_HASH_MAP
     }
 }
 

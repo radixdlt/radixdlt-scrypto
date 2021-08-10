@@ -7,7 +7,7 @@ pub struct Bucket {
     resource: Address,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Encode, Decode)]
+#[derive(Debug, Clone)]
 pub enum BucketError {
     MismatchingResourceType,
     InsufficientBalance,

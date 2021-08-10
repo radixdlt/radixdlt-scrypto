@@ -9,7 +9,7 @@ pub enum BID {
     Persisted(H256, u32),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum DecodeBIDError {
     InvalidHex(hex::FromHexError),
     InvalidLength,

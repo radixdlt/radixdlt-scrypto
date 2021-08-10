@@ -6,7 +6,7 @@ use alloc::vec::Vec;
 use crate::sbor::{self, Decode, Encode};
 
 /// Represents a SBOR data value.
-#[derive(Debug, PartialEq, Eq, Decode, Encode)]
+#[derive(Debug, Clone, PartialEq, Eq, Decode, Encode)]
 pub enum Value {
     Unit,
     Bool(bool),
@@ -46,14 +46,14 @@ pub enum Value {
 }
 
 /// Represents a enum variant.
-#[derive(Debug, PartialEq, Eq, Decode, Encode)]
+#[derive(Debug, Clone, PartialEq, Eq, Decode, Encode)]
 pub struct Variant {
     pub name: String,
     pub fields: Fields,
 }
 
 /// Represents struct fields.
-#[derive(Debug, PartialEq, Eq, Decode, Encode)]
+#[derive(Debug, Clone, PartialEq, Eq, Decode, Encode)]
 pub enum Fields {
     Named { named: Vec<(String, Value)> },
 

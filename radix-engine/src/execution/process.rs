@@ -546,17 +546,15 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
 
     /// Log a message to console.
     fn log(&self, level: Level, msg: String) {
-        if (level as u32) <= (level as u32) {
-            let (l, m) = match level {
-                Level::Error => ("ERROR".red(), msg.to_string().red()),
-                Level::Warn => ("WARN".yellow(), msg.to_string().yellow()),
-                Level::Info => ("INFO".green(), msg.to_string().green()),
-                Level::Debug => ("DEBUG".cyan(), msg.to_string().cyan()),
-                Level::Trace => ("TRACE".normal(), msg.to_string().normal()),
-            };
+        let (l, m) = match level {
+            Level::Error => ("ERROR".red(), msg.to_string().red()),
+            Level::Warn => ("WARN".yellow(), msg.to_string().yellow()),
+            Level::Info => ("INFO".green(), msg.to_string().green()),
+            Level::Debug => ("DEBUG".cyan(), msg.to_string().cyan()),
+            Level::Trace => ("TRACE".normal(), msg.to_string().normal()),
+        };
 
-            println!("{}[{:5}] {}", "  ".repeat(self.depth), l, m);
-        }
+        println!("{}[{:5}] {}", "  ".repeat(self.depth), l, m);
     }
 
     fn error<T: ToString>(&self, msg: T) {

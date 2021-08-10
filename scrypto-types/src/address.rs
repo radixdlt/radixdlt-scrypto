@@ -22,7 +22,7 @@ pub enum Address {
     Component([u8; 26]),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum DecodeAddressError {
     InvalidHex(hex::FromHexError),
     InvalidLength,

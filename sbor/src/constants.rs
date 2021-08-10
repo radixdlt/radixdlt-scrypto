@@ -26,8 +26,8 @@ pub const TYPE_FIELDS_UNIT: u8 = 0x18;
 pub const TYPE_VEC: u8 = 0x20;
 pub const TYPE_TREE_SET: u8 = 0x21;
 pub const TYPE_TREE_MAP: u8 = 0x22;
-pub const TYPE_H256_SET: u8 = 0x23;
-pub const TYPE_H256_MAP: u8 = 0x24;
+pub const TYPE_HASH_SET: u8 = 0x23;
+pub const TYPE_HASH_MAP: u8 = 0x24;
 // scrypto types
 pub const TYPE_H256: u8 = 0x30;
 pub const TYPE_U256: u8 = 0x31;

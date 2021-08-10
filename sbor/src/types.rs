@@ -16,7 +16,7 @@ use serde::{Deserialize, Serialize};
     derive(Serialize, Deserialize),
     serde(tag = "type")
 )]
-#[derive(Debug, PartialEq, Eq, Decode, Encode)]
+#[derive(Debug, Clone, PartialEq, Eq, Decode, Encode)]
 pub enum Type {
     Unit,
     Bool,
@@ -95,7 +95,7 @@ pub enum Type {
     any(feature = "json_std", feature = "json_alloc"),
     derive(Serialize, Deserialize)
 )]
-#[derive(Debug, PartialEq, Eq, Decode, Encode)]
+#[derive(Debug, Clone, PartialEq, Eq, Decode, Encode)]
 pub struct Variant {
     pub name: String,
     pub fields: Fields,
@@ -107,7 +107,7 @@ pub struct Variant {
     derive(Serialize, Deserialize),
     serde(tag = "type")
 )]
-#[derive(Debug, PartialEq, Eq, Decode, Encode)]
+#[derive(Debug, Clone, PartialEq, Eq, Decode, Encode)]
 pub enum Fields {
     Named { named: Vec<(String, Type)> },
 
