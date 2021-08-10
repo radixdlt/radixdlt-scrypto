@@ -4,14 +4,18 @@ use alloc::string::String;
 use alloc::vec::Vec;
 
 use crate::sbor::{self, Decode, Encode};
-#[cfg(feature = "json")]
+#[cfg(any(feature = "json_std", feature = "json_alloc"))]
 use serde::{Deserialize, Serialize};
 
 // Internally tagged representation for readability
 // See: https://serde.rs/enum-representations.html
 
 /// Represents a SBOR data type.
-#[cfg_attr(feature = "json", derive(Serialize, Deserialize), serde(tag = "type"))]
+#[cfg_attr(
+    any(feature = "json_std", feature = "json_alloc"),
+    derive(Serialize, Deserialize),
+    serde(tag = "type")
+)]
 #[derive(Debug, PartialEq, Eq, Decode, Encode)]
 pub enum Type {
     Unit,
@@ -76,10 +80,21 @@ pub enum Type {
         key: Box<Type>,
         value: Box<Type>,
     },
+
+    H256,
+
+    U256,
+
+    Address,
+
+    BID,
 }
 
 /// Represents the type info of an enum variant.
-#[cfg_attr(feature = "json", derive(Serialize, Deserialize))]
+#[cfg_attr(
+    any(feature = "json_std", feature = "json_alloc"),
+    derive(Serialize, Deserialize)
+)]
 #[derive(Debug, PartialEq, Eq, Decode, Encode)]
 pub struct Variant {
     pub name: String,
@@ -87,7 +102,11 @@ pub struct Variant {
 }
 
 /// Represents the type info of struct fields.
-#[cfg_attr(feature = "json", derive(Serialize, Deserialize), serde(tag = "type"))]
+#[cfg_attr(
+    any(feature = "json_std", feature = "json_alloc"),
+    derive(Serialize, Deserialize),
+    serde(tag = "type")
+)]
 #[derive(Debug, PartialEq, Eq, Decode, Encode)]
 pub enum Fields {
     Named { named: Vec<(String, Type)> },

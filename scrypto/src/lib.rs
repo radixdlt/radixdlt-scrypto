@@ -1,5 +1,14 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
+#[cfg(not(any(feature = "std", feature = "alloc")))]
+compile_error!("Either feature `std` or `alloc` must be enabled for this crate.");
+#[cfg(all(feature = "std", feature = "alloc"))]
+compile_error!("Feature `std` and `alloc` can't be enabled at the same time.");
+
+/// Scrypto component ABI.
+pub mod abi {
+    pub use scrypto_abi::*;
+}
 /// Scrypto data encoding/decoding and memory allocation scheme.
 pub mod buffer;
 /// Scrypto high level abstraction.
@@ -9,22 +18,15 @@ pub mod kernel;
 /// Scrypto resource containers and references.
 pub mod resource;
 /// Scrypto primitive types.
-pub mod types;
+pub mod types {
+    pub use scrypto_types::*;
+}
 /// Utility functions, such as hashing and hex decoding.
 pub mod utils;
 
-// Re-export Scrypto ABI.
-#[cfg(feature = "abi")]
-/// Scrypto component ABI.
-pub mod abi {
-    pub use scrypto_abi::*;
-}
-
 // Re-export Scrypto derive.
-#[cfg(feature = "derive")]
 extern crate scrypto_derive;
-#[cfg(feature = "derive")]
-pub use scrypto_derive::*;
+pub use scrypto_derive::{component, import};
 
 /// Call a method of a blueprint.
 #[macro_export]
@@ -79,7 +81,7 @@ macro_rules! call_component {
 macro_rules! error {
     ($($args: expr),+) => {{
         extern crate alloc;
-        scrypto::constructs::Logger::log(scrypto::types::Level::Error, alloc::format!($($args),+));
+        scrypto::constructs::Logger::log(scrypto::kernel::Level::Error, alloc::format!($($args),+));
     }};
 }
 
@@ -88,7 +90,7 @@ macro_rules! error {
 macro_rules! warn {
     ($($args: expr),+) => {{
         extern crate alloc;
-        scrypto::constructs::Logger::log(scrypto::types::Level::Warn, alloc::format!($($args),+));
+        scrypto::constructs::Logger::log(scrypto::kernel::Level::Warn, alloc::format!($($args),+));
     }};
 }
 
@@ -97,7 +99,7 @@ macro_rules! warn {
 macro_rules! info {
     ($($args: expr),+) => {{
         extern crate alloc;
-        scrypto::constructs::Logger::log(scrypto::types::Level::Info, alloc::format!($($args),+));
+        scrypto::constructs::Logger::log(scrypto::kernel::Level::Info, alloc::format!($($args),+));
     }};
 }
 
@@ -106,7 +108,7 @@ macro_rules! info {
 macro_rules! debug {
     ($($args: expr),+) => {{
         extern crate alloc;
-        scrypto::constructs::Logger::log(scrypto::types::Level::Debug, alloc::format!($($args),+));
+        scrypto::constructs::Logger::log(scrypto::kernel::Level::Debug, alloc::format!($($args),+));
     }};
 }
 
@@ -115,6 +117,6 @@ macro_rules! debug {
 macro_rules! trace {
     ($($args: expr),+) => {{
         extern crate alloc;
-        scrypto::constructs::Logger::log(scrypto::types::Level::Trace, alloc::format!($($args),+));
+        scrypto::constructs::Logger::log(scrypto::kernel::Level::Trace, alloc::format!($($args),+));
     }};
 }

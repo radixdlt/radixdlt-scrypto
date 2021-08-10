@@ -1,12 +1,11 @@
 extern crate alloc;
 use alloc::boxed::Box;
-use alloc::collections::BTreeMap;
-use alloc::collections::BTreeSet;
 use alloc::string::String;
-use alloc::vec::Vec;
-use hashbrown::HashMap;
-use hashbrown::HashSet;
 
+#[cfg(any(feature = "scrypto_std", feature = "scrypto_alloc"))]
+use scrypto_types::*;
+
+use crate::collections::*;
 use crate::constants::*;
 
 /// A data structure that can be serialized into a byte array using SBOR.
@@ -348,7 +347,7 @@ impl<T: Encode> Encode for HashSet<T> {
 
     #[inline]
     fn sbor_type() -> u8 {
-        TYPE_HASH_SET
+        TYPE_H256_SET
     }
 }
 
@@ -367,7 +366,65 @@ impl<K: Encode, V: Encode> Encode for HashMap<K, V> {
 
     #[inline]
     fn sbor_type() -> u8 {
-        TYPE_HASH_MAP
+        TYPE_H256_MAP
+    }
+}
+
+#[cfg(any(feature = "scrypto_std", feature = "scrypto_alloc"))]
+impl Encode for H256 {
+    #[inline]
+    fn encode_value(&self, encoder: &mut Encoder) {
+        let slice = self.as_ref();
+        encoder.write_slice(slice);
+    }
+
+    #[inline]
+    fn sbor_type() -> u8 {
+        TYPE_H256
+    }
+}
+
+#[cfg(any(feature = "scrypto_std", feature = "scrypto_alloc"))]
+impl Encode for U256 {
+    #[inline]
+    fn encode_value(&self, encoder: &mut Encoder) {
+        let mut bytes = [0u8; 32];
+        self.to_little_endian(&mut bytes);
+        encoder.write_slice(&bytes);
+    }
+
+    #[inline]
+    fn sbor_type() -> u8 {
+        TYPE_U256
+    }
+}
+#[cfg(any(feature = "scrypto_std", feature = "scrypto_alloc"))]
+impl Encode for Address {
+    #[inline]
+    fn encode_value(&self, encoder: &mut Encoder) {
+        let bytes: Vec<u8> = self.clone().into();
+        encoder.write_len(bytes.len());
+        encoder.write_slice(&bytes);
+    }
+
+    #[inline]
+    fn sbor_type() -> u8 {
+        TYPE_ADDRESS
+    }
+}
+
+#[cfg(any(feature = "scrypto_std", feature = "scrypto_alloc"))]
+impl Encode for BID {
+    #[inline]
+    fn encode_value(&self, encoder: &mut Encoder) {
+        let bytes: Vec<u8> = self.clone().into();
+        encoder.write_len(bytes.len());
+        encoder.write_slice(&bytes);
+    }
+
+    #[inline]
+    fn sbor_type() -> u8 {
+        TYPE_BID
     }
 }
 
@@ -375,12 +432,10 @@ impl<K: Encode, V: Encode> Encode for HashMap<K, V> {
 mod tests {
     extern crate alloc;
     use alloc::boxed::Box;
-    use alloc::collections::BTreeMap;
-    use alloc::collections::BTreeSet;
     use alloc::vec;
-    use alloc::vec::Vec;
 
     use super::{Encode, Encoder};
+    use crate::collections::*;
 
     fn do_encoding(enc: &mut Encoder) {
         ().encode(enc);

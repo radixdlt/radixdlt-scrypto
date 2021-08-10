@@ -4,17 +4,23 @@ use alloc::vec::Vec;
 
 use sbor::types::*;
 use sbor::*;
-#[cfg(feature = "json")]
+#[cfg(any(feature = "json_std", feature = "json_alloc"))]
 use serde::{Deserialize, Serialize};
 
-#[cfg_attr(feature = "json", derive(Serialize, Deserialize))]
+#[cfg_attr(
+    any(feature = "json_std", feature = "json_alloc"),
+    derive(Serialize, Deserialize)
+)]
 #[derive(Debug, Encode, Decode)]
 pub struct Component {
     pub name: String,
     pub methods: Vec<Method>,
 }
 
-#[cfg_attr(feature = "json", derive(Serialize, Deserialize))]
+#[cfg_attr(
+    any(feature = "json_std", feature = "json_alloc"),
+    derive(Serialize, Deserialize)
+)]
 #[derive(Debug, Encode, Decode)]
 pub struct Method {
     pub name: String,
@@ -23,7 +29,10 @@ pub struct Method {
     pub output: Type,
 }
 
-#[cfg_attr(feature = "json", derive(Serialize, Deserialize))]
+#[cfg_attr(
+    any(feature = "json_std", feature = "json_alloc"),
+    derive(Serialize, Deserialize)
+)]
 #[derive(Debug, Encode, Decode)]
 pub enum Mutability {
     /// A stateless method does not require an instantiated component.

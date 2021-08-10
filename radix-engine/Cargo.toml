@@ -1,18 +1,18 @@
 [package]
 name = "radix-engine"
 version = "0.1.0"
-authors = ["Yulong Wu <yulong@radixdlt.com>"]
 edition = "2018"
 
 [dependencies]
 scrypto = { version = "0.1", path = "../scrypto" }
-sbor = { version = "0.1", path = "../sbor" }
+sbor = { version = "0.1", path = "../sbor", features = ["scrypto_std"] }
 clap = { version = "2.33" }
 wasmi = { version = "0.9" }
 dirs = { version = "3.0" }
 colored = { version = "2.0" }
 hashbrown = { version = "0.11" }
 uuid = { version = "0.8", features = ["v4"] }
+hex = { version = "0.4" }
 
 [[bin]]
 name = "radix_engine"

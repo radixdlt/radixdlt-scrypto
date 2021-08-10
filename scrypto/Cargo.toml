@@ -7,24 +7,20 @@ edition = "2018"
 uint = { version = "0.9", default-features = false }
 sha2 = { version = "0.9", default-features = false }
 sbor = { version = "0.1", path = "../sbor", default-features = false }
-scrypto-abi = { version = "0.1", path = "../scrypto-abi", default-features = false, optional = true }
-scrypto-derive = { version = "0.1", path = "../scrypto-derive", default-features = false, optional = true }
+scrypto-abi = { version = "0.1", path = "../scrypto-abi", default-features = false }
+scrypto-derive = { version = "0.1", path = "../scrypto-derive", default-features = false }
+scrypto-types = { version = "0.1", path = "../scrypto-types", default-features = false }
 
 [features]
-default = ["std", "abi", "derive"]
-
-# You can use either `std` or `alloc`, depnding on your environment
-std = ["sbor/std", "scrypto-abi/std"]
-alloc = ["sbor/alloc", "scrypto-abi/alloc"]
-
-# Turn on this feature to enable component ABI.
-abi = ["scrypto-abi"]
-
-# Turn on this feature to enable component derive.
-derive = ["scrypto-derive"]
+# You should enable either `std` or `alloc`
+default = ["std"]
+std = ["sbor/std", "sbor/scrypto_std", "scrypto-abi/std", "scrypto-derive/std", "scrypto-types/std"]
+alloc = ["sbor/alloc", "sbor/scrypto_alloc", "scrypto-abi/alloc", "scrypto-derive/alloc", "scrypto-types/alloc"]
 
 # Turn on this feature to enable tracing.
-trace = ["scrypto-derive/trace"]
+trace = ["sbor/trace", "scrypto-derive/trace"]
 
-# Enable json annotation
-json = ["sbor/json", "scrypto-abi/json"]
+# Enable serde annotations by either `json_std` or `json_alloc`.
+# TODO: use weak depedency feature once it's stablized, https://github.com/rust-lang/cargo/issues/8832 
+json_std = ["sbor/json_std", "scrypto-abi/json_std"]
+json_alloc = ["sbor/json_alloc", "scrypto-abi/json_alloc"]

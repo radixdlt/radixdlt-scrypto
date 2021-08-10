@@ -43,7 +43,7 @@ pub fn handle_call<'a>(matches: &ArgMatches<'a>) {
     let component = matches.value_of(ARG_COMPONENT).unwrap();
     let method = matches.value_of(ARG_METHOD).unwrap();
     let args = if let Some(x) = matches.values_of(ARG_ARGS) {
-        x.map(|a| hex_decode(a).unwrap()).collect()
+        x.map(|a| hex::decode(a).unwrap()).collect()
     } else {
         Vec::new()
     };

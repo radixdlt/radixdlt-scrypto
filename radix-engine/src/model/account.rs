@@ -1,4 +1,4 @@
-use hashbrown::HashMap;
+use sbor::collections::*;
 use sbor::*;
 use scrypto::types::*;
 

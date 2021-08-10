@@ -1,5 +1,5 @@
 use sbor::*;
-use scrypto::types::*;
+use scrypto::kernel::*;
 
 #[derive(Debug, Clone, Encode, Decode)]
 pub struct Resource {

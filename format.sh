@@ -1,5 +1,6 @@
 #!/bin/bash
 
+set -x
 set -e
 
 cd "$(dirname "$0")"
@@ -11,8 +12,9 @@ cd "$(dirname "$0")"
 (cd scrypto-abi; cargo fmt)
 (cd scrypto-derive; cargo fmt)
 (cd scrypto-tests; cargo fmt)
+(cd scrypto-types; cargo fmt)
+(cd radix-engine; cargo fmt)
 (cd examples/helloworld; cargo fmt)
 (cd examples/no_std; cargo fmt)
-(cd radix-engine; cargo fmt)
 
 echo "All packages have been formatted."

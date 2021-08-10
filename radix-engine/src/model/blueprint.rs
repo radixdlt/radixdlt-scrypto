@@ -1,3 +1,4 @@
+use sbor::collections::*;
 use sbor::*;
 
 #[derive(Debug, Clone, Describe, Encode, Decode)]

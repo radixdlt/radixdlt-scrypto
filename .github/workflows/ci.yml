@@ -15,14 +15,9 @@ jobs:
       run: cargo test --verbose
       working-directory: sbor
     - name: Run tests (no_std)
-      run: cargo test --verbose --no-default-features --features json,alloc
+      run: cargo test --verbose --no-default-features --features alloc
       working-directory: sbor
-  sbor-derive-tests:
-    name: Run SBOR derive tests
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v2
-    - name: Run tests
+    - name: Run derive tests
       run: cargo test --verbose
       working-directory: sbor-derive
   sbor-integration-tests:
@@ -36,9 +31,6 @@ jobs:
     - name: Run tests (no_std)
       run: cargo test --verbose --no-default-features --features alloc
       working-directory: sbor-tests
-    - name: Run derive tests
-      run: cargo test --verbose
-      working-directory: sbor-derive
   scrypto-unit-tests:
     name: Run Scrypto unit tests
     runs-on: ubuntu-latest
@@ -50,14 +42,15 @@ jobs:
     - name: Run tests (no_std)
       run: cargo test --verbose --no-default-features --features alloc
       working-directory: scrypto
-  scrypto-derive-tests:
-    name: Run Scrypto derive tests
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v2
-    - name: Run tests
+    - name: Run abi tests
+      run: cargo test --verbose
+      working-directory: scrypto-abi
+    - name: Run derive tests
       run: cargo test --verbose
       working-directory: scrypto-derive
+    - name: Run types tests
+      run: cargo test --verbose
+      working-directory: scrypto-types
   scrypto-integration-tests:
     name: Run Scrypto integration tests
     runs-on: ubuntu-latest

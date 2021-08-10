@@ -1,13 +1,12 @@
 extern crate alloc;
 use alloc::boxed::Box;
-use alloc::collections::BTreeMap;
-use alloc::collections::BTreeSet;
 use alloc::string::String;
 use alloc::vec;
-use alloc::vec::Vec;
-use hashbrown::HashMap;
-use hashbrown::HashSet;
 
+#[cfg(any(feature = "scrypto_std", feature = "scrypto_alloc"))]
+use scrypto_types::*;
+
+use crate::collections::*;
 use crate::types::*;
 
 /// A data structure that can be described using SBOR types.
@@ -42,6 +41,15 @@ describe_basic_type!(usize, Type::U32);
 
 describe_basic_type!(str, Type::String);
 describe_basic_type!(String, Type::String);
+
+#[cfg(any(feature = "scrypto_std", feature = "scrypto_alloc"))]
+describe_basic_type!(H256, Type::H256);
+#[cfg(any(feature = "scrypto_std", feature = "scrypto_alloc"))]
+describe_basic_type!(U256, Type::U256);
+#[cfg(any(feature = "scrypto_std", feature = "scrypto_alloc"))]
+describe_basic_type!(Address, Type::Address);
+#[cfg(any(feature = "scrypto_std", feature = "scrypto_alloc"))]
+describe_basic_type!(BID, Type::BID);
 
 impl<T: Describe> Describe for Option<T> {
     fn describe() -> Type {

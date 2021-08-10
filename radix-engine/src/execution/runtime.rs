@@ -1,4 +1,5 @@
 use hashbrown::{HashMap, HashSet};
+use scrypto::kernel::Level;
 use scrypto::types::*;
 use scrypto::utils::*;
 use wasmi::*;
@@ -10,7 +11,7 @@ use crate::model::*;
 /// Represents the transaction execution runtime, one per transaction.
 /// A runtime is shared by a chain of processes, created during the execution of the transaction.
 pub struct Runtime<'le, T: Ledger> {
-    tx_hash: Hash,
+    tx_hash: H256,
     ledger: &'le mut T,
     component_counter: u32,
     bucket_counter: u32,
@@ -28,7 +29,7 @@ pub struct Runtime<'le, T: Ledger> {
 }
 
 impl<'le, T: Ledger> Runtime<'le, T> {
-    pub fn new(tx_hash: Hash, ledger: &'le mut T) -> Self {
+    pub fn new(tx_hash: H256, ledger: &'le mut T) -> Self {
         Self {
             tx_hash,
             ledger,

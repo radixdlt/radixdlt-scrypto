@@ -2,7 +2,6 @@ extern crate alloc;
 use alloc::string::String;
 
 use crate::kernel::*;
-use crate::types::*;
 
 /// A logger for dumping messages.
 #[derive(Debug)]

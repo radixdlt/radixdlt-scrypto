@@ -11,6 +11,6 @@ codegen-units = 1   # Reduce number of codegen units to increase optimizations.
 panic = 'abort'     # Abort on panic.
 
 [dependencies]
-sbor = { path = "../../sbor" }
-scrypto = { path = "../../scrypto", default-features = false, features = ["alloc", "abi", "derive"] }
+sbor = { path = "../../sbor", default-features = false, features = ["alloc"] }
+scrypto = { path = "../../scrypto", default-features = false, features = ["alloc"] }
 wee_alloc = { version = "0.4", default-features = false }

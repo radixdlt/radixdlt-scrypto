@@ -5,16 +5,25 @@ edition = "2018"
 
 [dependencies]
 sbor-derive = { version = "0.1", path = "../sbor-derive" }
+hashbrown = { version = "0.11", optional = true } 
+scrypto-types = { version = "0.1", path = "../scrypto-types", default-features = false, optional = true }
 serde = { version = "1.0", default-features = false, optional = true }
-hashbrown = { version = "0.11" } # no_std HashMap and HashSet
 
 [features]
-default = []
+# You should enable either `std` or `alloc`
+default = ["std"]
+std = []
+alloc = ["hashbrown"]
 
 # Enable tracing
 trace = ["sbor-derive/trace"]
 
-# Enable serde annotations by `["json", "std"]` or `["json", "alloc"]`
-json = ["serde", "serde/derive"]
-std = ["serde/std"]
-alloc = ["serde/alloc"]
+# Eanble scrypto types
+# TODO: use weak depedency feature once it's stablized, https://github.com/rust-lang/cargo/issues/8832 
+scrypto_std = ["scrypto-types/std"]
+scrypto_alloc = ["scrypto-types/alloc"]
+
+# Enable serde annotations by either `json_std` or `json_alloc`.
+# TODO: use weak depedency feature once it's stablized, https://github.com/rust-lang/cargo/issues/8832 
+json_std = ["serde", "serde/std", "serde/derive"]
+json_alloc = ["serde", "serde/alloc", "serde/derive"]

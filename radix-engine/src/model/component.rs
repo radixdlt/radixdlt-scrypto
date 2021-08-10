@@ -1,4 +1,4 @@
-use hashbrown::HashSet;
+use sbor::collections::*;
 use sbor::*;
 use scrypto::types::*;
 
