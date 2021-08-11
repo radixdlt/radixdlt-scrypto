@@ -15,14 +15,20 @@ impl From<Address> for Blueprint {
     }
 }
 
+impl Into<Address> for Blueprint {
+    fn into(self) -> Address {
+        self.address
+    }
+}
+
 impl Blueprint {
-    pub fn new(code: &[u8]) -> Address {
+    pub fn new(code: &[u8]) -> Self {
         let input = PublishBlueprintInput {
             code: code.to_vec(),
         };
         let output: PublishBlueprintOutput = call_kernel(PUBLISH_BLUEPRINT, input);
 
-        output.blueprint
+        output.blueprint.into()
     }
 
     pub fn call(&self, component: &str, method: &str, args: Vec<Vec<u8>>) -> Vec<u8> {

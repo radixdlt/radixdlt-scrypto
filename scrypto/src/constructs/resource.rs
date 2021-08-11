@@ -15,6 +15,12 @@ impl From<Address> for Resource {
     }
 }
 
+impl Into<Address> for Resource {
+    fn into(self) -> Address {
+        self.address
+    }
+}
+
 impl Resource {
     pub fn new(
         symbol: &str,
@@ -24,7 +30,7 @@ impl Resource {
         icon_url: &str,
         minter: Option<Address>,
         supply: Option<U256>,
-    ) -> Address {
+    ) -> Self {
         let input = CreateResourceInput {
             info: ResourceInfo {
                 symbol: symbol.to_string(),
@@ -38,7 +44,7 @@ impl Resource {
         };
         let output: CreateResourceOutput = call_kernel(CREATE_RESOURCE, input);
 
-        output.resource
+        output.resource.into()
     }
 
     pub fn get_info(&self) -> ResourceInfo {

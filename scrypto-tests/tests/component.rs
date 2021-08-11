@@ -17,7 +17,7 @@ component! {
         pub fn new() -> Address {
             Component::new("Simple", Self {
                 state: 0
-            })
+            }).into()
         }
 
         pub fn get_state(&self) -> u32 {

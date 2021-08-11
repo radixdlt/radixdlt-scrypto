@@ -19,15 +19,21 @@ impl From<Address> for Component {
     }
 }
 
+impl Into<Address> for Component {
+    fn into(self) -> Address {
+        self.address
+    }
+}
+
 impl Component {
-    pub fn new<T: Encode>(name: &str, state: T) -> Address {
+    pub fn new<T: Encode>(name: &str, state: T) -> Self {
         let input = CreateComponentInput {
             name: name.to_string(),
             state: scrypto_encode(&state),
         };
         let output: CreateComponentOutput = call_kernel(CREATE_COMPONENT, input);
 
-        output.component
+        output.component.into()
     }
 
     pub fn call(&self, method: &str, args: Vec<Vec<u8>>) -> Vec<u8> {

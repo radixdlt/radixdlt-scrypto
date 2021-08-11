@@ -14,6 +14,12 @@ impl From<Address> for Account {
     }
 }
 
+impl Into<Address> for Account {
+    fn into(self) -> Address {
+        self.address
+    }
+}
+
 impl Account {
     fn withdraw(&mut self, amount: U256, resource: Address) -> BID {
         let input = WithdrawInput {

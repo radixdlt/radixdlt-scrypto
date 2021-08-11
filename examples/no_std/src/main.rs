@@ -34,7 +34,7 @@ component! {
         pub fn new() -> Address {
             Component::new("Greeting", Self {
                 counter: 0
-            })
+            }).into()
         }
 
         pub fn say_hello(&mut self) -> String {
