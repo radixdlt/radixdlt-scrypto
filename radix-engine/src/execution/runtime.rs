@@ -9,13 +9,13 @@ use crate::ledger::*;
 use crate::model::*;
 
 /// Abstracts the execution state for a transaction.
-/// 
+///
 /// It manages all data reads from ledger and temporarily holds all state updates.
 /// The `flush` method should be call to write all updates into ledger.
-/// 
+///
 /// A runtime is shared by a chain of processes, created during the life time
 /// of a transaction.
-/// 
+///
 pub struct Runtime<'le, T: Ledger> {
     tx_hash: H256,
     ledger: &'le mut T,

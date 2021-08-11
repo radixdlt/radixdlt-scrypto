@@ -11,19 +11,15 @@ pub mod collections;
 pub mod constants;
 /// SBOR type system.
 pub mod types;
-/// SBOR value system.
-pub mod values;
 
 mod decode;
 mod describe;
 mod encode;
-mod parse;
 mod rust;
 
 pub use decode::{Decode, DecodeError, Decoder};
 pub use describe::Describe;
 pub use encode::{Encode, Encoder};
-pub use parse::sbor_parse;
 
 use crate::collections::*;
 

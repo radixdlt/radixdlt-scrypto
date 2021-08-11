@@ -56,6 +56,8 @@ pub enum RuntimeError {
     AccountingError(BucketError),
 
     UnauthorizedToWithdraw,
+
+    InvalidData(DecodeError),
 }
 
 impl fmt::Display for RuntimeError {
@@ -65,3 +67,9 @@ impl fmt::Display for RuntimeError {
 }
 
 impl HostError for RuntimeError {}
+
+impl RuntimeError {
+    pub fn invalid_data(e: DecodeError) -> RuntimeError {
+        RuntimeError::InvalidData(e)
+    }
+}

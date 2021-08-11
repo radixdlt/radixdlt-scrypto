@@ -114,6 +114,14 @@ impl<'de> Decoder<'de> {
     }
 
     #[inline]
+    pub fn read_name(&mut self) -> Result<String, DecodeError> {
+        let len = self.read_len()?;
+        let slice = self.read_bytes(len)?;
+        let name = String::from_utf8(slice.to_vec()).map_err(|_| DecodeError::InvalidUtf8)?;
+        Ok(name)
+    }
+
+    #[inline]
     pub fn read_index(&mut self) -> Result<u8, DecodeError> {
         self.read_u8()
     }
@@ -136,13 +144,11 @@ impl<'de> Decoder<'de> {
     #[inline]
     pub fn check_name(&mut self, expected: &str) -> Result<(), DecodeError> {
         if self.with_metadata {
-            self.check_len(expected.len())?;
-
-            let slice = self.read_bytes(expected.len())?;
-            if slice != expected.as_bytes() {
+            let name = self.read_name()?;
+            if name.as_str() != expected {
                 return Err(DecodeError::InvalidName {
                     expected: expected.to_string(),
-                    actual: String::from_utf8(slice.to_vec()).unwrap_or("<unknown>".to_string()),
+                    actual: name,
                 });
             }
         }
