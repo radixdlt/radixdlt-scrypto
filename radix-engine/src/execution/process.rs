@@ -149,6 +149,7 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
         ));
 
         let new_state = self.persist_buckets(input.state)?;
+        self.trace(format!("Transformed: {:?}", new_state));
         let component = Component::new(self.blueprint, input.name, new_state);
         self.runtime.put_component(address, component);
 
@@ -190,6 +191,7 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
         input: PutComponentStateInput,
     ) -> Result<PutComponentStateOutput, RuntimeError> {
         let new_state = self.persist_buckets(input.state)?;
+        self.trace(format!("Transformed: {:?}", new_state));
 
         let component = self
             .runtime
@@ -527,19 +529,19 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
         let ty = ty_known.unwrap_or(dec.read_type().map_err(RuntimeError::invalid_data)?);
 
         match ty {
-            constants::TYPE_UNIT => self.dte::<()>(ty_known, dec, enc, |_, v| Ok(v)),
-            constants::TYPE_BOOL => self.dte::<bool>(ty_known, dec, enc, |_, v| Ok(v)),
-            constants::TYPE_I8 => self.dte::<i8>(ty_known, dec, enc, |_, v| Ok(v)),
-            constants::TYPE_I16 => self.dte::<i16>(ty_known, dec, enc, |_, v| Ok(v)),
-            constants::TYPE_I32 => self.dte::<i32>(ty_known, dec, enc, |_, v| Ok(v)),
-            constants::TYPE_I64 => self.dte::<i64>(ty_known, dec, enc, |_, v| Ok(v)),
-            constants::TYPE_I128 => self.dte::<i128>(ty_known, dec, enc, |_, v| Ok(v)),
-            constants::TYPE_U8 => self.dte::<u8>(ty_known, dec, enc, |_, v| Ok(v)),
-            constants::TYPE_U16 => self.dte::<u16>(ty_known, dec, enc, |_, v| Ok(v)),
-            constants::TYPE_U32 => self.dte::<u32>(ty_known, dec, enc, |_, v| Ok(v)),
-            constants::TYPE_U64 => self.dte::<u64>(ty_known, dec, enc, |_, v| Ok(v)),
-            constants::TYPE_U128 => self.dte::<u128>(ty_known, dec, enc, |_, v| Ok(v)),
-            constants::TYPE_STRING => self.dte::<String>(ty_known, dec, enc, |_, v| Ok(v)),
+            constants::TYPE_UNIT => self.dte::<()>(Some(ty), dec, enc, |_, v| Ok(v)),
+            constants::TYPE_BOOL => self.dte::<bool>(Some(ty), dec, enc, |_, v| Ok(v)),
+            constants::TYPE_I8 => self.dte::<i8>(Some(ty), dec, enc, |_, v| Ok(v)),
+            constants::TYPE_I16 => self.dte::<i16>(Some(ty), dec, enc, |_, v| Ok(v)),
+            constants::TYPE_I32 => self.dte::<i32>(Some(ty), dec, enc, |_, v| Ok(v)),
+            constants::TYPE_I64 => self.dte::<i64>(Some(ty), dec, enc, |_, v| Ok(v)),
+            constants::TYPE_I128 => self.dte::<i128>(Some(ty), dec, enc, |_, v| Ok(v)),
+            constants::TYPE_U8 => self.dte::<u8>(Some(ty), dec, enc, |_, v| Ok(v)),
+            constants::TYPE_U16 => self.dte::<u16>(Some(ty), dec, enc, |_, v| Ok(v)),
+            constants::TYPE_U32 => self.dte::<u32>(Some(ty), dec, enc, |_, v| Ok(v)),
+            constants::TYPE_U64 => self.dte::<u64>(Some(ty), dec, enc, |_, v| Ok(v)),
+            constants::TYPE_U128 => self.dte::<u128>(Some(ty), dec, enc, |_, v| Ok(v)),
+            constants::TYPE_STRING => self.dte::<String>(Some(ty), dec, enc, |_, v| Ok(v)),
             constants::TYPE_OPTION => {
                 if ty_known.is_none() {
                     enc.write_type(ty);
@@ -658,10 +660,10 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
                 todo!()
             }
             // scrypto types
-            constants::TYPE_H256 => self.dte::<H256>(ty_known, dec, enc, |_, v| Ok(v)),
-            constants::TYPE_U256 => self.dte::<U256>(ty_known, dec, enc, |_, v| Ok(v)),
-            constants::TYPE_ADDRESS => self.dte::<Address>(ty_known, dec, enc, |_, v| Ok(v)),
-            constants::TYPE_BID => self.dte::<BID>(ty_known, dec, enc, Self::convert_bucket),
+            constants::TYPE_H256 => self.dte::<H256>(Some(ty), dec, enc, |_, v| Ok(v)),
+            constants::TYPE_U256 => self.dte::<U256>(Some(ty), dec, enc, |_, v| Ok(v)),
+            constants::TYPE_ADDRESS => self.dte::<Address>(Some(ty), dec, enc, |_, v| Ok(v)),
+            constants::TYPE_BID => self.dte::<BID>(Some(ty), dec, enc, Self::convert_bucket),
             _ => Err(RuntimeError::InvalidData(DecodeError::InvalidType {
                 expected: 0xff,
                 actual: ty,
@@ -670,7 +672,7 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
     }
 
     /// Decode, transform and encode
-    fn dte<T: Decode + Encode>(
+    fn dte<T: Decode + Encode + std::fmt::Debug>(
         &mut self,
         ty_known: Option<u8>,
         dec: &mut Decoder,
