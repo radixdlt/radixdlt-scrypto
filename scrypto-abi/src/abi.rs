@@ -10,6 +10,7 @@ use sbor::{Decode, Encode};
 #[cfg(any(feature = "json_std", feature = "json_alloc"))]
 use serde::{Deserialize, Serialize};
 
+/// Represents the ABI of a component.
 #[cfg_attr(
     any(feature = "json_std", feature = "json_alloc"),
     derive(Serialize, Deserialize)
@@ -20,6 +21,7 @@ pub struct Component {
     pub methods: Vec<Method>,
 }
 
+/// Represents a method of a component.
 #[cfg_attr(
     any(feature = "json_std", feature = "json_alloc"),
     derive(Serialize, Deserialize)
@@ -32,6 +34,7 @@ pub struct Method {
     pub output: Type,
 }
 
+/// Represents method state mutability.
 #[cfg_attr(
     any(feature = "json_std", feature = "json_alloc"),
     derive(Serialize, Deserialize)

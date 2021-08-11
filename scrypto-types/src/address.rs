@@ -26,6 +26,7 @@ pub enum Address {
     Component([u8; 26]),
 }
 
+/// Represents an error when decoding an address.
 #[derive(Debug, Clone)]
 pub enum DecodeAddressError {
     InvalidHex(hex::FromHexError),

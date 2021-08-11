@@ -1,6 +1,7 @@
 use sbor::collections::*;
 use sbor::*;
 
+/// A blueprint is a piece of code published on-chain.
 #[derive(Debug, Clone, Describe, Encode, Decode)]
 pub struct Blueprint {
     code: Vec<u8>,

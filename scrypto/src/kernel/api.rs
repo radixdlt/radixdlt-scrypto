@@ -76,6 +76,7 @@ pub struct ResourceInfo {
     pub supply: Option<U256>,
 }
 
+/// Represents a logging level.
 #[derive(Debug, Clone, Encode, Decode)]
 pub enum Level {
     Error = 0,

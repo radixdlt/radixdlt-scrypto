@@ -8,6 +8,7 @@ use scrypto::types::*;
 use crate::ledger::*;
 use crate::model::*;
 
+/// A file-based ledger that stores substates in a folder.
 pub struct FileBasedLedger {
     root: PathBuf,
 }

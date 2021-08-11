@@ -12,6 +12,7 @@ pub use utils::get_root_dir;
 
 use clap::{crate_version, App};
 
+/// Runs Radix Engine CLI.
 pub fn run() {
     let matches = App::new("Radix Engine")
         .about("Build fast, reward everyone, and scale without friction")

@@ -13,6 +13,7 @@ use crate::execution::*;
 use crate::ledger::*;
 use crate::model::*;
 
+/// A runnable blueprint instance.
 pub struct Process<'m, 'rt, 'le, L: Ledger> {
     runtime: &'rt mut Runtime<'le, L>,
     blueprint: Address,

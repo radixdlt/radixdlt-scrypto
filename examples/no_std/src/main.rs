@@ -19,11 +19,9 @@ static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 // Scrypto code starts here //
 //============================
 
-extern crate alloc;
-use alloc::string::String;
-use alloc::string::ToString;
-
 use scrypto::constructs::*;
+use scrypto::types::rust::string::String;
+use scrypto::types::rust::string::ToString;
 use scrypto::types::*;
 use scrypto::*;
 

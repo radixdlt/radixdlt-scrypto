@@ -3,6 +3,7 @@ use sbor::*;
 use crate::buffer::*;
 use crate::kernel::*;
 
+/// Utility function for making a kernel call.
 pub fn call_kernel<T: Encode, V: Decode>(op: u32, input: T) -> V {
     // 1. serialize the input
     let input_bytes = scrypto_encode(&input);

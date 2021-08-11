@@ -12,6 +12,7 @@ use crate::model::*;
 
 const ARG_FILE: &'static str = "FILE";
 
+/// Prepares a subcommand that handles `publish`.
 pub fn prepare_publish<'a, 'b>() -> App<'a, 'b> {
     SubCommand::with_name("publish")
         .about("Publish a new blueprint.")
@@ -23,6 +24,7 @@ pub fn prepare_publish<'a, 'b>() -> App<'a, 'b> {
         )
 }
 
+/// Processes a `publish` command.
 pub fn handle_publish<'a>(args: &ArgMatches<'a>) {
     let file = args.value_of(ARG_FILE).unwrap();
     let code =

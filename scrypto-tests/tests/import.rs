@@ -1,12 +1,10 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-extern crate alloc;
-use alloc::string::String;
-use alloc::string::ToString;
-use alloc::vec::Vec;
-
 use scrypto::buffer::scrypto_alloc;
 use scrypto::import;
+use scrypto::types::rust::string::String;
+use scrypto::types::rust::string::ToString;
+use scrypto::types::rust::vec::Vec;
 
 // base directory: `scrypto-derive`
 import! { "../scrypto-tests/tests/abi.json" }

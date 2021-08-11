@@ -21,7 +21,7 @@ pub mod resource;
 pub mod types {
     pub use scrypto_types::*;
 }
-/// Utility functions, such as hashing and hex decoding.
+/// Utility functions, such as hashing and signature validation.
 pub mod utils;
 
 // Re-export Scrypto derive.

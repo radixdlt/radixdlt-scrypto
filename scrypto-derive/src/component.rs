@@ -83,9 +83,8 @@ pub fn handle_component(input: TokenStream) -> TokenStream {
 
         #[no_mangle]
         pub extern "C" fn #abi_ident() -> *mut u8 {
-            extern crate alloc;
-            use alloc::string::ToString;
-            use alloc::vec;
+            use scrypto::types::rust::string::ToString;
+            use scrypto::types::rust::vec;
             use sbor::{self, Describe};
 
             let output = scrypto::abi::Component {
@@ -394,11 +393,10 @@ fn replace_self_with(t: &Type, name: &str) -> Type {
 
 #[cfg(test)]
 mod tests {
-    extern crate alloc;
-    use alloc::str::FromStr;
+    use proc_macro2::TokenStream;
+    use std::str::FromStr;
 
     use super::*;
-    use proc_macro2::TokenStream;
 
     fn assert_code_eq(a: TokenStream, b: TokenStream) {
         assert_eq!(a.to_string(), b.to_string());
@@ -468,9 +466,8 @@ mod tests {
 
                 #[no_mangle]
                 pub extern "C" fn Test_abi() -> *mut u8 {
-                    extern crate alloc;
-                    use alloc::string::ToString;
-                    use alloc::vec;
+                    use scrypto::types::rust::string::ToString;
+                    use scrypto::types::rust::vec;
                     use sbor::{self, Describe};
                     let output = scrypto::abi::Component {
                         name: "Test".to_string(),

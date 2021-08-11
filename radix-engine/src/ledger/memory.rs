@@ -4,6 +4,7 @@ use scrypto::types::*;
 use crate::ledger::*;
 use crate::model::*;
 
+/// An in-memory ledger stores all substates in host memory.
 pub struct InMemoryLedger {
     blueprints: HashMap<Address, Blueprint>,
     components: HashMap<Address, Component>,

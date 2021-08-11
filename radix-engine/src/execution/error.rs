@@ -6,6 +6,7 @@ use wasmi::*;
 
 use crate::model::*;
 
+/// Represents an error occurred during transaction execution.
 #[derive(Debug)]
 pub enum RuntimeError {
     InvalidModule(Error),

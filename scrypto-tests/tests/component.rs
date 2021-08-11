@@ -1,11 +1,9 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-extern crate alloc;
-use alloc::vec;
-
 use scrypto::buffer::*;
 use scrypto::component;
 use scrypto::constructs::*;
+use scrypto::types::rust::vec;
 use scrypto::types::*;
 use serde::Serialize;
 use serde_json::{json, to_value, Value};

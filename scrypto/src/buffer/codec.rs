@@ -14,12 +14,10 @@ pub fn scrypto_decode<'de, T: Decode>(buf: &'de [u8]) -> Result<T, DecodeError> 
 
 #[cfg(test)]
 mod tests {
-    extern crate alloc;
-    use alloc::string::String;
-    use alloc::string::ToString;
-
     use crate::buffer::*;
     use crate::kernel::*;
+    use crate::types::rust::string::String;
+    use crate::types::rust::string::ToString;
     use crate::types::*;
 
     #[test]

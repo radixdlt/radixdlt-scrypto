@@ -12,6 +12,7 @@ const ARG_COMPONENT: &'static str = "COMPONENT";
 const ARG_METHOD: &'static str = "METHOD";
 const ARG_ARGS: &'static str = "ARGS";
 
+/// Prepares a subcommand that handles `call`.
 pub fn prepare_call<'a, 'b>() -> App<'a, 'b> {
     SubCommand::with_name("call")
         .about("Call into a blueprint.")
@@ -38,6 +39,7 @@ pub fn prepare_call<'a, 'b>() -> App<'a, 'b> {
         )
 }
 
+/// Processes a `call` command.
 pub fn handle_call<'a>(matches: &ArgMatches<'a>) {
     let blueprint: Address = matches.value_of(ARG_BLUEPRINT).unwrap().into();
     let component = matches.value_of(ARG_COMPONENT).unwrap();

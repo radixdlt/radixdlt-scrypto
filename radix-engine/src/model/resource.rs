@@ -1,6 +1,7 @@
 use sbor::*;
 use scrypto::kernel::*;
 
+/// Represents a resource created.
 #[derive(Debug, Clone, Encode, Decode)]
 pub struct Resource {
     info: ResourceInfo,

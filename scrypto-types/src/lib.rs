@@ -10,7 +10,7 @@ mod bid;
 mod h256;
 mod u256;
 
-// A facade around all Rust types scrypto uses from `std` or `core + alloc`.
+/// A facade around all Rust types scrypto uses from `std` or `core + alloc`.
 pub mod rust;
 
 pub use address::{Address, DecodeAddressError};

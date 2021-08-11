@@ -2,6 +2,7 @@ use sbor::collections::*;
 use sbor::*;
 use scrypto::types::*;
 
+/// An instantiated component, owned by a blueprint.
 #[derive(Debug, Clone, Encode, Decode)]
 pub struct Component {
     blueprint: Address,

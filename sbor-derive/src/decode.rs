@@ -181,11 +181,10 @@ pub fn handle_decode(input: TokenStream) -> TokenStream {
 
 #[cfg(test)]
 mod tests {
-    extern crate alloc;
-    use alloc::str::FromStr;
+    use proc_macro2::TokenStream;
+    use std::str::FromStr;
 
     use super::*;
-    use proc_macro2::TokenStream;
 
     fn assert_code_eq(a: TokenStream, b: TokenStream) {
         assert_eq!(a.to_string(), b.to_string());

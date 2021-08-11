@@ -8,6 +8,7 @@ use scrypto::types::*;
 
 use crate::model::*;
 
+/// A ledger stores all the transactions and substates.
 pub trait Ledger {
     fn get_blueprint(&self, address: Address) -> Option<Blueprint>;
 

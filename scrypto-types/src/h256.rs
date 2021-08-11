@@ -9,6 +9,7 @@ pub struct H256 {
     raw: [u8; 32],
 }
 
+/// Represents an error when decoding a H256.
 #[derive(Debug, Clone)]
 pub enum DecodeH256Error {
     InvalidHex(hex::FromHexError),

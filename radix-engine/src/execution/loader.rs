@@ -2,6 +2,7 @@ use wasmi::*;
 
 use crate::execution::*;
 
+/// Validate and instantiate a WASM module.
 pub fn load_module(code: &[u8]) -> Result<(ModuleRef, MemoryRef), RuntimeError> {
     // Parse
     let parsed = Module::from_buffer(code).map_err(|e| RuntimeError::InvalidModule(e))?;

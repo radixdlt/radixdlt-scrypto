@@ -1,7 +1,9 @@
 use wasmi::*;
 
+/// Kernel entrance function index.
 pub const KERNEL: usize = 0;
 
+/// Decides the symbols available in the `env` module.
 pub struct EnvModuleResolver;
 
 impl ModuleImportResolver for EnvModuleResolver {

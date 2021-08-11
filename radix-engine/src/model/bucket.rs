@@ -1,12 +1,14 @@
 use sbor::*;
 use scrypto::types::*;
 
+/// A bucket represents a certain amount of resource.
 #[derive(Debug, Clone, Encode, Decode)]
 pub struct Bucket {
     amount: U256,
     resource: Address,
 }
 
+/// Represents an error when accessing a bucket.
 #[derive(Debug, Clone)]
 pub enum BucketError {
     MismatchingResourceType,
@@ -47,6 +49,7 @@ impl Bucket {
     }
 }
 
+/// Represents a reference to a bucket.
 #[derive(Debug, Clone, Encode, Decode)]
 pub struct BucketRef {
     bucket: Bucket,
