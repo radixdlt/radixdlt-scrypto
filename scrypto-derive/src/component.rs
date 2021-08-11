@@ -18,7 +18,12 @@ pub fn handle_component(input: TokenStream) -> TokenStream {
     trace!("handle_component() begins");
 
     // parse component struct and impl
-    let com: ast::Component = parse2(input).expect("Unable to parse input");
+    let result: Result<ast::Component> = parse2(input);
+    if result.is_err() {
+        return result.err().unwrap().to_compile_error().into();
+    }
+    let com = result.ok().unwrap();
+
     let com_strut = &com.structure;
     let com_impl = &com.implementation;
     let com_ident = &com_strut.ident;
