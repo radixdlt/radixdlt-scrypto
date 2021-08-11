@@ -1,4 +1,4 @@
-use sbor::{Decode, Encode};
+use sbor::{Describe, Decode, Encode};
 
 use crate::types::rust::string::String;
 use crate::types::rust::vec::Vec;
@@ -59,13 +59,13 @@ pub const GET_CONTEXT_ADDRESS: u32 = 0x51;
 /// Retrieve the call data
 pub const GET_CALL_DATA: u32 = 0x52;
 
-#[derive(Debug, Clone, Encode, Decode)]
+#[derive(Debug, Clone, Describe, Encode, Decode)]
 pub struct ComponentInfo {
     pub blueprint: Address,
     pub name: String,
 }
 
-#[derive(Debug, Clone, Encode, Decode)]
+#[derive(Debug, Clone, Describe, Encode, Decode)]
 pub struct ResourceInfo {
     pub symbol: String,
     pub name: String,
@@ -77,7 +77,7 @@ pub struct ResourceInfo {
 }
 
 /// Represents a logging level.
-#[derive(Debug, Clone, Encode, Decode)]
+#[derive(Debug, Clone, Describe, Encode, Decode)]
 pub enum Level {
     Error = 0,
     Warn,
