@@ -1,4 +1,4 @@
-use sbor::{Describe, Decode, Encode};
+use sbor::{Decode, Describe, Encode};
 
 use crate::types::rust::string::String;
 use crate::types::rust::vec::Vec;

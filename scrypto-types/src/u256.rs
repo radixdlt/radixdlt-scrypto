@@ -1,5 +1,5 @@
 use uint::construct_uint;
 
 construct_uint! {
-    pub struct U256(8);
+    pub struct U256(4);
 }
