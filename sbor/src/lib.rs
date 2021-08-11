@@ -33,9 +33,9 @@ pub fn sbor_encode_with_metadata<T: Encode>(v: &T) -> Vec<u8> {
 /// Decode an instance of `T` from a slice.
 pub fn sbor_decode_with_metadata<'de, T: Decode>(buf: &'de [u8]) -> Result<T, DecodeError> {
     let mut dec = Decoder::with_metadata(buf);
-    let v = T::decode(&mut dec);
+    let v = T::decode(&mut dec)?;
     dec.check_end()?;
-    v
+    Ok(v)
 }
 
 /// Encode a `T` into byte array, with metadata stripped.
@@ -48,9 +48,9 @@ pub fn sbor_encode_no_metadata<T: Encode>(v: &T) -> Vec<u8> {
 /// Decode an instance of `T` from a slice which contains no metadata.
 pub fn sbor_decode_no_metadata<'de, T: Decode>(buf: &'de [u8]) -> Result<T, DecodeError> {
     let mut dec = Decoder::no_metadata(buf);
-    let v = T::decode(&mut dec);
+    let v = T::decode(&mut dec)?;
     dec.check_end()?;
-    v
+    Ok(v)
 }
 
 // Re-export derives

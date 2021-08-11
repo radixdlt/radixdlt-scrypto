@@ -108,3 +108,44 @@ fn test_blueprint() {
     );
     assert!(output2.is_ok());
 }
+
+#[test]
+fn test_component() {
+    let mut ledger = InMemoryLedger::new();
+    let output = one_shot(
+        &mut ledger,
+        "everything",
+        "ComponentTest",
+        "create_component",
+        vec![],
+    );
+    assert!(output.is_ok());
+    let address: Address = scrypto_decode(&output.unwrap()).unwrap();
+
+    let output2 = one_shot(
+        &mut ledger,
+        "everything",
+        "ComponentTest",
+        "get_component_info",
+        vec![scrypto_encode(&address)],
+    );
+    assert!(output2.is_ok());
+
+    let output3 = one_shot(
+        &mut ledger,
+        "everything",
+        "ComponentTest",
+        "get_component_state",
+        vec![scrypto_encode(&address)],
+    );
+    assert!(output3.is_ok());
+
+    let output4 = one_shot(
+        &mut ledger,
+        "everything",
+        "ComponentTest",
+        "put_component_state",
+        vec![scrypto_encode(&address)],
+    );
+    assert!(output4.is_ok());
+}

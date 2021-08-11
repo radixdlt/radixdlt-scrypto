@@ -143,13 +143,12 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
             return Err(RuntimeError::ComponentAlreadyExists(address));
         }
 
+        let new_state = self.persist_buckets(&input.state)?;
         self.debug(format!(
-            "New component: address = {:?}, name = {:?}, state = {:?}",
-            address, input.name, input.state
+            "New component: address = {:?}, name = {:?}, state = {:?}, new_state = {:?}",
+            address, input.name, input.state, new_state
         ));
 
-        let new_state = self.persist_buckets(input.state)?;
-        self.trace(format!("Transformed: {:?}", new_state));
         let component = Component::new(self.blueprint, input.name, new_state);
         self.runtime.put_component(address, component);
 
@@ -190,7 +189,7 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
         &mut self,
         input: PutComponentStateInput,
     ) -> Result<PutComponentStateOutput, RuntimeError> {
-        let new_state = self.persist_buckets(input.state)?;
+        let new_state = self.persist_buckets(&input.state)?;
         self.trace(format!("Transformed: {:?}", new_state));
 
         let component = self
@@ -249,6 +248,8 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
         } else if resource.minter != Some(self.blueprint) {
             Err(RuntimeError::NotAuthorizedToMint)
         } else {
+            // TODO: how to keep track of token supply
+
             let bucket = Bucket::new(input.amount, input.resource);
             let bid = self.runtime.new_transient_bid();
             self.buckets.insert(bid, bucket);
@@ -504,8 +505,8 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
         })
     }
 
-    fn persist_buckets(&mut self, state: Vec<u8>) -> Result<Vec<u8>, RuntimeError> {
-        let mut decoder = Decoder::with_metadata(&state);
+    fn persist_buckets(&mut self, state: &Vec<u8>) -> Result<Vec<u8>, RuntimeError> {
+        let mut decoder = Decoder::with_metadata(state);
         let mut encoder = Encoder::with_metadata();
 
         self.traverse_sbor(None, &mut decoder, &mut encoder)?;
@@ -522,28 +523,28 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
     // TODO: stack overflow
     fn traverse_sbor(
         &mut self,
-        ty_known: Option<u8>,
+        ty_from_ctx: Option<u8>,
         dec: &mut Decoder,
         enc: &mut Encoder,
     ) -> Result<(), RuntimeError> {
-        let ty = ty_known.unwrap_or(dec.read_type().map_err(RuntimeError::invalid_data)?);
+        let ty = ty_from_ctx.unwrap_or(dec.read_type().map_err(RuntimeError::invalid_data)?);
 
         match ty {
-            constants::TYPE_UNIT => self.dte::<()>(Some(ty), dec, enc, |_, v| Ok(v)),
-            constants::TYPE_BOOL => self.dte::<bool>(Some(ty), dec, enc, |_, v| Ok(v)),
-            constants::TYPE_I8 => self.dte::<i8>(Some(ty), dec, enc, |_, v| Ok(v)),
-            constants::TYPE_I16 => self.dte::<i16>(Some(ty), dec, enc, |_, v| Ok(v)),
-            constants::TYPE_I32 => self.dte::<i32>(Some(ty), dec, enc, |_, v| Ok(v)),
-            constants::TYPE_I64 => self.dte::<i64>(Some(ty), dec, enc, |_, v| Ok(v)),
-            constants::TYPE_I128 => self.dte::<i128>(Some(ty), dec, enc, |_, v| Ok(v)),
-            constants::TYPE_U8 => self.dte::<u8>(Some(ty), dec, enc, |_, v| Ok(v)),
-            constants::TYPE_U16 => self.dte::<u16>(Some(ty), dec, enc, |_, v| Ok(v)),
-            constants::TYPE_U32 => self.dte::<u32>(Some(ty), dec, enc, |_, v| Ok(v)),
-            constants::TYPE_U64 => self.dte::<u64>(Some(ty), dec, enc, |_, v| Ok(v)),
-            constants::TYPE_U128 => self.dte::<u128>(Some(ty), dec, enc, |_, v| Ok(v)),
-            constants::TYPE_STRING => self.dte::<String>(Some(ty), dec, enc, |_, v| Ok(v)),
+            constants::TYPE_UNIT => self.dte::<()>(ty_from_ctx, ty, dec, enc, |_, v| Ok(v)),
+            constants::TYPE_BOOL => self.dte::<bool>(ty_from_ctx, ty, dec, enc, |_, v| Ok(v)),
+            constants::TYPE_I8 => self.dte::<i8>(ty_from_ctx, ty, dec, enc, |_, v| Ok(v)),
+            constants::TYPE_I16 => self.dte::<i16>(ty_from_ctx, ty, dec, enc, |_, v| Ok(v)),
+            constants::TYPE_I32 => self.dte::<i32>(ty_from_ctx, ty, dec, enc, |_, v| Ok(v)),
+            constants::TYPE_I64 => self.dte::<i64>(ty_from_ctx, ty, dec, enc, |_, v| Ok(v)),
+            constants::TYPE_I128 => self.dte::<i128>(ty_from_ctx, ty, dec, enc, |_, v| Ok(v)),
+            constants::TYPE_U8 => self.dte::<u8>(ty_from_ctx, ty, dec, enc, |_, v| Ok(v)),
+            constants::TYPE_U16 => self.dte::<u16>(ty_from_ctx, ty, dec, enc, |_, v| Ok(v)),
+            constants::TYPE_U32 => self.dte::<u32>(ty_from_ctx, ty, dec, enc, |_, v| Ok(v)),
+            constants::TYPE_U64 => self.dte::<u64>(ty_from_ctx, ty, dec, enc, |_, v| Ok(v)),
+            constants::TYPE_U128 => self.dte::<u128>(ty_from_ctx, ty, dec, enc, |_, v| Ok(v)),
+            constants::TYPE_STRING => self.dte::<String>(ty_from_ctx, ty, dec, enc, |_, v| Ok(v)),
             constants::TYPE_OPTION => {
-                if ty_known.is_none() {
+                if ty_from_ctx.is_none() {
                     enc.write_type(ty);
                 }
                 // index
@@ -557,14 +558,14 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
                 }
             }
             constants::TYPE_BOX => {
-                if ty_known.is_none() {
+                if ty_from_ctx.is_none() {
                     enc.write_type(ty);
                 }
                 // value
                 self.traverse_sbor(None, dec, enc)
             }
             constants::TYPE_ARRAY => {
-                if ty_known.is_none() {
+                if ty_from_ctx.is_none() {
                     enc.write_type(ty);
                 }
                 // element type
@@ -580,7 +581,7 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
                 Ok(())
             }
             constants::TYPE_TUPLE => {
-                if ty_known.is_none() {
+                if ty_from_ctx.is_none() {
                     enc.write_type(ty);
                 }
                 //length
@@ -593,14 +594,14 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
                 Ok(())
             }
             constants::TYPE_STRUCT => {
-                if ty_known.is_none() {
+                if ty_from_ctx.is_none() {
                     enc.write_type(ty);
                 }
                 // fields
                 self.traverse_sbor(None, dec, enc)
             }
             constants::TYPE_ENUM => {
-                if ty_known.is_none() {
+                if ty_from_ctx.is_none() {
                     enc.write_type(ty);
                 }
                 // index
@@ -613,7 +614,7 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
                 self.traverse_sbor(None, dec, enc)
             }
             constants::TYPE_FIELDS_NAMED => {
-                if ty_known.is_none() {
+                if ty_from_ctx.is_none() {
                     enc.write_type(ty);
                 }
                 //length
@@ -630,7 +631,7 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
                 Ok(())
             }
             constants::TYPE_FIELDS_UNNAMED => {
-                if ty_known.is_none() {
+                if ty_from_ctx.is_none() {
                     enc.write_type(ty);
                 }
                 //length
@@ -644,7 +645,7 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
                 Ok(())
             }
             constants::TYPE_FIELDS_UNIT => {
-                if ty_known.is_none() {
+                if ty_from_ctx.is_none() {
                     enc.write_type(ty);
                 }
                 Ok(())
@@ -660,10 +661,10 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
                 todo!()
             }
             // scrypto types
-            constants::TYPE_H256 => self.dte::<H256>(Some(ty), dec, enc, |_, v| Ok(v)),
-            constants::TYPE_U256 => self.dte::<U256>(Some(ty), dec, enc, |_, v| Ok(v)),
-            constants::TYPE_ADDRESS => self.dte::<Address>(Some(ty), dec, enc, |_, v| Ok(v)),
-            constants::TYPE_BID => self.dte::<BID>(Some(ty), dec, enc, Self::convert_bucket),
+            constants::TYPE_H256 => self.dte::<H256>(ty_from_ctx, ty, dec, enc, |_, v| Ok(v)),
+            constants::TYPE_U256 => self.dte::<U256>(ty_from_ctx, ty, dec, enc, |_, v| Ok(v)),
+            constants::TYPE_ADDRESS => self.dte::<Address>(ty_from_ctx, ty, dec, enc, |_, v| Ok(v)),
+            constants::TYPE_BID => self.dte::<BID>(ty_from_ctx, ty, dec, enc, Self::convert_bucket),
             _ => Err(RuntimeError::InvalidData(DecodeError::InvalidType {
                 expected: 0xff,
                 actual: ty,
@@ -674,20 +675,22 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
     /// Decode, transform and encode
     fn dte<T: Decode + Encode + std::fmt::Debug>(
         &mut self,
-        ty_known: Option<u8>,
+        ty_from_ctx: Option<u8>,
+        ty: u8,
         dec: &mut Decoder,
         enc: &mut Encoder,
         transform: fn(&mut Self, T) -> Result<T, RuntimeError>,
     ) -> Result<(), RuntimeError> {
-        if ty_known.is_some() {
-            transform(
-                self,
-                T::decode_value(dec).map_err(RuntimeError::invalid_data)?,
-            )?
-            .encode_value(enc);
-        } else {
-            transform(self, T::decode(dec).map_err(RuntimeError::invalid_data)?)?.encode(enc);
+        if ty_from_ctx.is_none() {
+            enc.write_type(ty);
         }
+
+        transform(
+            self,
+            T::decode_value(dec).map_err(RuntimeError::invalid_data)?,
+        )?
+        .encode_value(enc);
+
         Ok(())
     }
 
@@ -700,6 +703,7 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
                 .ok_or(RuntimeError::BucketNotFound)?;
             let new_bid = self.runtime.new_persisted_bid();
             self.runtime.put_bucket(new_bid, bucket);
+            self.debug(format!("Converting {:?} to {:?}", bid, new_bid));
             Ok(new_bid)
         } else {
             Ok(bid)

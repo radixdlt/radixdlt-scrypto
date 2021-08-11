@@ -4,5 +4,8 @@
 /// Testing the hello world component.
 pub mod greeting;
 
-/// Testing blueprint publishing and invoking.
+/// Testing blueprint related APIs.
 pub mod blueprint;
+
+/// Testing component related APIs.
+pub mod component;
