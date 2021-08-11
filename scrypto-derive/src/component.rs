@@ -251,7 +251,7 @@ fn generate_abi(comp_name: &str, items: &Vec<ImplItem>) -> Vec<Expr> {
                             FnArg::Typed(ref t) => {
                                 let ty = replace_self_with(&t.ty, comp_name);
                                 inputs.push(quote! {
-                                    #ty::describe()
+                                    <#ty>::describe()
                                 });
                             }
                         }
@@ -264,7 +264,7 @@ fn generate_abi(comp_name: &str, items: &Vec<ImplItem>) -> Vec<Expr> {
                         ReturnType::Type(_, t) => {
                             let ty = replace_self_with(t, comp_name);
                             quote! {
-                                #ty::describe()
+                                <#ty>::describe()
                             }
                         }
                     };
@@ -480,7 +480,7 @@ mod tests {
                             name: "x".to_string(),
                             mutability: scrypto::abi::Mutability::Immutable,
                             inputs: vec![],
-                            output: u32::describe(),
+                            output: <u32>::describe(),
                         }],
                     };
                     let output_bytes = scrypto::buffer::scrypto_encode(&output);

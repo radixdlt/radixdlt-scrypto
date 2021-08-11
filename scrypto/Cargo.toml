@@ -18,7 +18,7 @@ std = ["sbor/std", "sbor/scrypto_std", "scrypto-abi/std", "scrypto-derive/std", 
 alloc = ["sbor/alloc", "sbor/scrypto_alloc", "scrypto-abi/alloc", "scrypto-derive/alloc", "scrypto-types/alloc"]
 
 # Turn on this feature to enable tracing.
-trace = ["sbor/trace", "scrypto-derive/trace"]
+trace = ["scrypto-derive/trace"]
 
 # Enable serde annotations by either `json_std` or `json_alloc`.
 # TODO: use weak depedency feature once it's stablized, https://github.com/rust-lang/cargo/issues/8832 
