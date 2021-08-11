@@ -553,26 +553,30 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
         enc: &mut Encoder,
         transform: fn(&mut Self, BID) -> Result<BID, RuntimeError>,
     ) -> Result<(), RuntimeError> {
-        let ty = ty_from_ctx.unwrap_or(dec.read_type().map_err(RuntimeError::invalid_data)?);
+        let ty = match ty_from_ctx {
+            Some(t) => t,
+            None => {
+                let t = dec.read_type().map_err(RuntimeError::invalid_data)?;
+                enc.write_type(t);
+                t
+            }
+        };
 
         match ty {
-            constants::TYPE_UNIT => self.dte::<()>(ty_from_ctx, ty, dec, enc, |_, v| Ok(v)),
-            constants::TYPE_BOOL => self.dte::<bool>(ty_from_ctx, ty, dec, enc, |_, v| Ok(v)),
-            constants::TYPE_I8 => self.dte::<i8>(ty_from_ctx, ty, dec, enc, |_, v| Ok(v)),
-            constants::TYPE_I16 => self.dte::<i16>(ty_from_ctx, ty, dec, enc, |_, v| Ok(v)),
-            constants::TYPE_I32 => self.dte::<i32>(ty_from_ctx, ty, dec, enc, |_, v| Ok(v)),
-            constants::TYPE_I64 => self.dte::<i64>(ty_from_ctx, ty, dec, enc, |_, v| Ok(v)),
-            constants::TYPE_I128 => self.dte::<i128>(ty_from_ctx, ty, dec, enc, |_, v| Ok(v)),
-            constants::TYPE_U8 => self.dte::<u8>(ty_from_ctx, ty, dec, enc, |_, v| Ok(v)),
-            constants::TYPE_U16 => self.dte::<u16>(ty_from_ctx, ty, dec, enc, |_, v| Ok(v)),
-            constants::TYPE_U32 => self.dte::<u32>(ty_from_ctx, ty, dec, enc, |_, v| Ok(v)),
-            constants::TYPE_U64 => self.dte::<u64>(ty_from_ctx, ty, dec, enc, |_, v| Ok(v)),
-            constants::TYPE_U128 => self.dte::<u128>(ty_from_ctx, ty, dec, enc, |_, v| Ok(v)),
-            constants::TYPE_STRING => self.dte::<String>(ty_from_ctx, ty, dec, enc, |_, v| Ok(v)),
+            constants::TYPE_UNIT => self.dte::<()>(dec, enc, |_, v| Ok(v)),
+            constants::TYPE_BOOL => self.dte::<bool>(dec, enc, |_, v| Ok(v)),
+            constants::TYPE_I8 => self.dte::<i8>(dec, enc, |_, v| Ok(v)),
+            constants::TYPE_I16 => self.dte::<i16>(dec, enc, |_, v| Ok(v)),
+            constants::TYPE_I32 => self.dte::<i32>(dec, enc, |_, v| Ok(v)),
+            constants::TYPE_I64 => self.dte::<i64>(dec, enc, |_, v| Ok(v)),
+            constants::TYPE_I128 => self.dte::<i128>(dec, enc, |_, v| Ok(v)),
+            constants::TYPE_U8 => self.dte::<u8>(dec, enc, |_, v| Ok(v)),
+            constants::TYPE_U16 => self.dte::<u16>(dec, enc, |_, v| Ok(v)),
+            constants::TYPE_U32 => self.dte::<u32>(dec, enc, |_, v| Ok(v)),
+            constants::TYPE_U64 => self.dte::<u64>(dec, enc, |_, v| Ok(v)),
+            constants::TYPE_U128 => self.dte::<u128>(dec, enc, |_, v| Ok(v)),
+            constants::TYPE_STRING => self.dte::<String>(dec, enc, |_, v| Ok(v)),
             constants::TYPE_OPTION => {
-                if ty_from_ctx.is_none() {
-                    enc.write_type(ty);
-                }
                 // index
                 let index = dec.read_index().map_err(RuntimeError::invalid_data)?;
                 enc.write_index(index as usize);
@@ -584,16 +588,10 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
                 }
             }
             constants::TYPE_BOX => {
-                if ty_from_ctx.is_none() {
-                    enc.write_type(ty);
-                }
                 // value
                 self.traverse_sbor(None, dec, enc, transform)
             }
             constants::TYPE_ARRAY => {
-                if ty_from_ctx.is_none() {
-                    enc.write_type(ty);
-                }
                 // element type
                 let ele_ty = dec.read_type().map_err(RuntimeError::invalid_data)?;
                 enc.write_type(ele_ty);
@@ -607,9 +605,6 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
                 Ok(())
             }
             constants::TYPE_TUPLE => {
-                if ty_from_ctx.is_none() {
-                    enc.write_type(ty);
-                }
                 //length
                 let len = dec.read_len().map_err(RuntimeError::invalid_data)?;
                 enc.write_len(len);
@@ -620,16 +615,10 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
                 Ok(())
             }
             constants::TYPE_STRUCT => {
-                if ty_from_ctx.is_none() {
-                    enc.write_type(ty);
-                }
                 // fields
                 self.traverse_sbor(None, dec, enc, transform)
             }
             constants::TYPE_ENUM => {
-                if ty_from_ctx.is_none() {
-                    enc.write_type(ty);
-                }
                 // index
                 let index = dec.read_index().map_err(RuntimeError::invalid_data)?;
                 enc.write_index(index as usize);
@@ -640,9 +629,6 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
                 self.traverse_sbor(None, dec, enc, transform)
             }
             constants::TYPE_FIELDS_NAMED => {
-                if ty_from_ctx.is_none() {
-                    enc.write_type(ty);
-                }
                 //length
                 let len = dec.read_len().map_err(RuntimeError::invalid_data)?;
                 enc.write_len(len);
@@ -657,9 +643,6 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
                 Ok(())
             }
             constants::TYPE_FIELDS_UNNAMED => {
-                if ty_from_ctx.is_none() {
-                    enc.write_type(ty);
-                }
                 //length
                 let len = dec.read_len().map_err(RuntimeError::invalid_data)?;
                 enc.write_len(len);
@@ -670,12 +653,7 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
                 }
                 Ok(())
             }
-            constants::TYPE_FIELDS_UNIT => {
-                if ty_from_ctx.is_none() {
-                    enc.write_type(ty);
-                }
-                Ok(())
-            }
+            constants::TYPE_FIELDS_UNIT => Ok(()),
             // collections
             constants::TYPE_VEC => {
                 todo!()
@@ -687,10 +665,10 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
                 todo!()
             }
             // scrypto types
-            constants::TYPE_H256 => self.dte::<H256>(ty_from_ctx, ty, dec, enc, |_, v| Ok(v)),
-            constants::TYPE_U256 => self.dte::<U256>(ty_from_ctx, ty, dec, enc, |_, v| Ok(v)),
-            constants::TYPE_ADDRESS => self.dte::<Address>(ty_from_ctx, ty, dec, enc, |_, v| Ok(v)),
-            constants::TYPE_BID => self.dte::<BID>(ty_from_ctx, ty, dec, enc, transform),
+            constants::TYPE_H256 => self.dte::<H256>(dec, enc, |_, v| Ok(v)),
+            constants::TYPE_U256 => self.dte::<U256>(dec, enc, |_, v| Ok(v)),
+            constants::TYPE_ADDRESS => self.dte::<Address>(dec, enc, |_, v| Ok(v)),
+            constants::TYPE_BID => self.dte::<BID>(dec, enc, transform),
             _ => Err(RuntimeError::InvalidData(DecodeError::InvalidType {
                 expected: 0xff,
                 actual: ty,
@@ -699,18 +677,13 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
     }
 
     /// Decode, transform and encode
+    #[inline]
     fn dte<T: Decode + Encode + std::fmt::Debug>(
         &mut self,
-        ty_from_ctx: Option<u8>,
-        ty: u8,
         dec: &mut Decoder,
         enc: &mut Encoder,
         transform: fn(&mut Self, T) -> Result<T, RuntimeError>,
     ) -> Result<(), RuntimeError> {
-        if ty_from_ctx.is_none() {
-            enc.write_type(ty);
-        }
-
         transform(
             self,
             T::decode_value(dec).map_err(RuntimeError::invalid_data)?,
