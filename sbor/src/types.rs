@@ -81,12 +81,16 @@ pub enum Type {
         value: Box<Type>,
     },
 
+    #[cfg(any(feature = "scrypto_std", feature = "scrypto_alloc"))]
     H256,
 
+    #[cfg(any(feature = "scrypto_std", feature = "scrypto_alloc"))]
     U256,
 
+    #[cfg(any(feature = "scrypto_std", feature = "scrypto_alloc"))]
     Address,
 
+    #[cfg(any(feature = "scrypto_std", feature = "scrypto_alloc"))]
     BID,
 }
 

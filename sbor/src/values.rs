@@ -1,4 +1,6 @@
 use crate::sbor::{self, Decode, Encode};
+#[cfg(any(feature = "scrypto_std", feature = "scrypto_alloc"))]
+use scrypto_types::{Address, BID, H256, U256};
 
 use crate::collections::*;
 use crate::rust::boxed::Box;
@@ -42,6 +44,18 @@ pub enum Value {
     HashSet(Vec<Value>),
 
     HashMap(Vec<(Value, Value)>),
+
+    #[cfg(any(feature = "scrypto_std", feature = "scrypto_alloc"))]
+    H256(H256),
+
+    #[cfg(any(feature = "scrypto_std", feature = "scrypto_alloc"))]
+    U256(U256),
+
+    #[cfg(any(feature = "scrypto_std", feature = "scrypto_alloc"))]
+    Address(Address),
+
+    #[cfg(any(feature = "scrypto_std", feature = "scrypto_alloc"))]
+    BID(BID),
 }
 
 /// Represents a enum variant.
