@@ -1,6 +1,7 @@
 use crate::rust::string::String;
 use crate::rust::string::ToString;
 use crate::rust::vec::Vec;
+use crate::utils::*;
 use crate::H256;
 
 /// Resource bucket id.
@@ -11,21 +12,12 @@ pub enum BID {
     Persisted(H256, u32),
 }
 
+/// Represents an error when decoding a BID.
 #[derive(Debug, Clone)]
 pub enum DecodeBIDError {
     InvalidHex(hex::FromHexError),
     InvalidLength,
     InvalidType(u8),
-}
-
-fn from_slice<const N: usize>(slice: &[u8]) -> Result<[u8; N], DecodeBIDError> {
-    if slice.len() == N {
-        let mut bytes = [0u8; N];
-        bytes.copy_from_slice(&slice[0..N]);
-        Ok(bytes)
-    } else {
-        Err(DecodeBIDError::InvalidLength)
-    }
 }
 
 impl BID {
@@ -44,12 +36,16 @@ impl BID {
             let kind = bytes[0];
             let data = &bytes[1..bytes.len()];
             match kind {
-                0x00 => Ok(BID::Transient(u32::from_le_bytes(from_slice(data)?))),
+                0x00 => Ok(BID::Transient(u32::from_le_bytes(
+                    copy_u8_array(data).map_err(|_| invalid_len)?,
+                ))),
                 0x01 => {
                     if data.len() == 32 + 4 {
                         Ok(BID::Persisted(
                             H256::from_slice(&data[0..32]).unwrap(),
-                            u32::from_le_bytes(from_slice(&data[32..])?),
+                            u32::from_le_bytes(
+                                copy_u8_array(&data[32..]).map_err(|_| invalid_len)?,
+                            ),
                         ))
                     } else {
                         Err(invalid_len)

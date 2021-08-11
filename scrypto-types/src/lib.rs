@@ -9,6 +9,7 @@ mod address;
 mod bid;
 mod h256;
 mod u256;
+mod utils;
 
 /// A facade around all Rust types scrypto uses from `std` or `core + alloc`.
 pub mod rust;

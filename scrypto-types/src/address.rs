@@ -3,6 +3,7 @@ use crate::rust::string::String;
 use crate::rust::string::ToString;
 use crate::rust::vec;
 use crate::rust::vec::Vec;
+use crate::utils::*;
 
 /// Represents an address.
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
@@ -34,16 +35,6 @@ pub enum DecodeAddressError {
     InvalidType(u8),
 }
 
-fn from_slice<const N: usize>(slice: &[u8]) -> Result<[u8; N], DecodeAddressError> {
-    if slice.len() == N {
-        let mut bytes = [0u8; N];
-        bytes.copy_from_slice(&slice[0..N]);
-        Ok(bytes)
-    } else {
-        Err(DecodeAddressError::InvalidLength)
-    }
-}
-
 impl Address {
     /// Decode an address from its hex representation.
     pub fn from_hex(hex: &str) -> Result<Self, DecodeAddressError> {
@@ -61,10 +52,18 @@ impl Address {
             match kind {
                 0x00 => Ok(Address::System),
                 0x01 => Ok(Address::RadixToken),
-                0x03 => Ok(Address::Resource(from_slice(data)?)),
-                0x04 => Ok(Address::Account(from_slice(data)?)),
-                0x05 => Ok(Address::Blueprint(from_slice(data)?)),
-                0x06 => Ok(Address::Component(from_slice(data)?)),
+                0x03 => Ok(Address::Resource(
+                    copy_u8_array(data).map_err(|_| invalid_len)?,
+                )),
+                0x04 => Ok(Address::Account(
+                    copy_u8_array(data).map_err(|_| invalid_len)?,
+                )),
+                0x05 => Ok(Address::Blueprint(
+                    copy_u8_array(data).map_err(|_| invalid_len)?,
+                )),
+                0x06 => Ok(Address::Component(
+                    copy_u8_array(data).map_err(|_| invalid_len)?,
+                )),
                 _ => Err(DecodeAddressError::InvalidType(kind)),
             }
         } else {

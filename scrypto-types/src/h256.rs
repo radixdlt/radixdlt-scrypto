@@ -1,7 +1,7 @@
-use crate::rust::convert::TryInto;
 use crate::rust::fmt;
 use crate::rust::string::String;
 use crate::rust::string::ToString;
+use crate::utils::*;
 
 /// Represents a 32-byte hash digest.
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
@@ -28,11 +28,9 @@ impl H256 {
     }
 
     /// Decode a hash from a slice.
-    pub fn from_slice(bytes: &[u8]) -> Result<Self, DecodeH256Error> {
+    pub fn from_slice(slice: &[u8]) -> Result<Self, DecodeH256Error> {
         Ok(Self {
-            raw: bytes
-                .try_into()
-                .map_err(|_| DecodeH256Error::InvalidLength)?,
+            raw: copy_u8_array(slice).map_err(|_| DecodeH256Error::InvalidLength)?,
         })
     }
 
