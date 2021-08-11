@@ -2,7 +2,7 @@ use std::fmt;
 use std::time::Instant;
 
 use colored::*;
-use hashbrown::HashMap;
+use sbor::collections::*;
 use sbor::*;
 use scrypto::buffer::*;
 use scrypto::kernel::*;
@@ -26,6 +26,7 @@ pub struct Process<'m, 'rt, 'le, L: Ledger> {
     buckets: HashMap<BID, Bucket>,
     buckets_lent: HashMap<BID, Bucket>,
     buckets_borrowed: HashMap<BID, BucketRef>,
+    buckets_moving: HashMap<BID, Bucket>,
 }
 
 impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
@@ -38,6 +39,7 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
         depth: usize,
         module: &'m ModuleRef,
         memory: &'m MemoryRef,
+        buckets: HashMap<BID, Bucket>,
     ) -> Self {
         Self {
             runtime,
@@ -48,9 +50,10 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
             depth,
             module,
             memory,
-            buckets: HashMap::new(),
+            buckets,
             buckets_lent: HashMap::new(),
             buckets_borrowed: HashMap::new(),
+            buckets_moving: HashMap::new(),
         }
     }
 
@@ -78,8 +81,10 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
 
         match invoke_res.map_err(|e| RuntimeError::InvokeError(e))? {
             Some(RuntimeValue::I32(ptr)) => {
+                let bytes = self.read_bytes(ptr)?;
+                self.process_sbor_data(&bytes, Self::remove_transient_reject_persisted)?;
                 self.finalize()?;
-                self.read_bytes(ptr)
+                Ok(bytes)
             }
             _ => Err(RuntimeError::NoValidBlueprintReturn),
         }
@@ -117,6 +122,14 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
             .load_module(input.blueprint)
             .ok_or(RuntimeError::BlueprintNotFound(input.blueprint))?;
 
+        // remove resources
+        for arg in &input.args {
+            self.process_sbor_data(arg, Self::remove_transient_reject_persisted)?;
+        }
+        let buckets_out = self.buckets_moving.clone();
+        self.buckets_moving.clear();
+
+        // create a process
         let mut process = Process::new(
             self.runtime,
             input.blueprint,
@@ -126,9 +139,16 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
             self.depth + 1,
             &module,
             &memory,
+            buckets_out,
         );
 
+        // run!
         let result = process.run();
+
+        // collect resources
+        let buckets_in = process.buckets_moving.clone();
+        process.buckets_moving.clear();
+        self.buckets.extend(buckets_in);
 
         Ok(CallBlueprintOutput { rtn: result? })
     }
@@ -143,9 +163,9 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
             return Err(RuntimeError::ComponentAlreadyExists(address));
         }
 
-        let new_state = self.persist_buckets(&input.state)?;
+        let new_state = self.process_sbor_data(&input.state, Self::transient_to_persist)?;
         self.debug(format!(
-            "New component: address = {:?}, name = {:?}, state = {:?}, new_state = {:?}",
+            "New component: address = {:?}, name = {:?}, state = {:?}, transformed_state = {:?}",
             address, input.name, input.state, new_state
         ));
 
@@ -189,7 +209,7 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
         &mut self,
         input: PutComponentStateInput,
     ) -> Result<PutComponentStateOutput, RuntimeError> {
-        let new_state = self.persist_buckets(&input.state)?;
+        let new_state = self.process_sbor_data(&input.state, Self::transient_to_persist)?;
         self.trace(format!("Transformed: {:?}", new_state));
 
         let component = self
@@ -505,13 +525,18 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
         })
     }
 
-    fn persist_buckets(&mut self, state: &Vec<u8>) -> Result<Vec<u8>, RuntimeError> {
+    fn process_sbor_data(
+        &mut self,
+        state: &Vec<u8>,
+        transform: fn(&mut Self, BID) -> Result<BID, RuntimeError>,
+    ) -> Result<Vec<u8>, RuntimeError> {
         let mut decoder = Decoder::with_metadata(state);
         let mut encoder = Encoder::with_metadata();
 
-        self.traverse_sbor(None, &mut decoder, &mut encoder)?;
+        self.traverse_sbor(None, &mut decoder, &mut encoder, transform)?;
 
         if decoder.remaining() > 0 {
+            // We expect a single SBOR value
             Err(RuntimeError::InvalidData(DecodeError::NotAllBytesUsed(
                 decoder.remaining(),
             )))
@@ -526,6 +551,7 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
         ty_from_ctx: Option<u8>,
         dec: &mut Decoder,
         enc: &mut Encoder,
+        transform: fn(&mut Self, BID) -> Result<BID, RuntimeError>,
     ) -> Result<(), RuntimeError> {
         let ty = ty_from_ctx.unwrap_or(dec.read_type().map_err(RuntimeError::invalid_data)?);
 
@@ -553,7 +579,7 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
                 // optional value
                 match index {
                     0 => Ok(()),
-                    1 => self.traverse_sbor(None, dec, enc),
+                    1 => self.traverse_sbor(None, dec, enc, transform),
                     _ => Err(RuntimeError::invalid_data(DecodeError::InvalidIndex(index))),
                 }
             }
@@ -562,7 +588,7 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
                     enc.write_type(ty);
                 }
                 // value
-                self.traverse_sbor(None, dec, enc)
+                self.traverse_sbor(None, dec, enc, transform)
             }
             constants::TYPE_ARRAY => {
                 if ty_from_ctx.is_none() {
@@ -576,7 +602,7 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
                 enc.write_len(len);
                 // values
                 for _ in 0..len {
-                    self.traverse_sbor(Some(ele_ty), dec, enc)?;
+                    self.traverse_sbor(Some(ele_ty), dec, enc, transform)?;
                 }
                 Ok(())
             }
@@ -589,7 +615,7 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
                 enc.write_len(len);
                 // values
                 for _ in 0..len {
-                    self.traverse_sbor(None, dec, enc)?;
+                    self.traverse_sbor(None, dec, enc, transform)?;
                 }
                 Ok(())
             }
@@ -598,7 +624,7 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
                     enc.write_type(ty);
                 }
                 // fields
-                self.traverse_sbor(None, dec, enc)
+                self.traverse_sbor(None, dec, enc, transform)
             }
             constants::TYPE_ENUM => {
                 if ty_from_ctx.is_none() {
@@ -611,7 +637,7 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
                 let name = dec.read_name().map_err(RuntimeError::invalid_data)?;
                 enc.write_name(name.as_str());
                 // fields
-                self.traverse_sbor(None, dec, enc)
+                self.traverse_sbor(None, dec, enc, transform)
             }
             constants::TYPE_FIELDS_NAMED => {
                 if ty_from_ctx.is_none() {
@@ -626,7 +652,7 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
                     let name = dec.read_name().map_err(RuntimeError::invalid_data)?;
                     enc.write_name(name.as_str());
                     // value
-                    self.traverse_sbor(None, dec, enc)?;
+                    self.traverse_sbor(None, dec, enc, transform)?;
                 }
                 Ok(())
             }
@@ -640,7 +666,7 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
                 // named fields
                 for _ in 0..len {
                     // value
-                    self.traverse_sbor(None, dec, enc)?;
+                    self.traverse_sbor(None, dec, enc, transform)?;
                 }
                 Ok(())
             }
@@ -664,7 +690,7 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
             constants::TYPE_H256 => self.dte::<H256>(ty_from_ctx, ty, dec, enc, |_, v| Ok(v)),
             constants::TYPE_U256 => self.dte::<U256>(ty_from_ctx, ty, dec, enc, |_, v| Ok(v)),
             constants::TYPE_ADDRESS => self.dte::<Address>(ty_from_ctx, ty, dec, enc, |_, v| Ok(v)),
-            constants::TYPE_BID => self.dte::<BID>(ty_from_ctx, ty, dec, enc, Self::convert_bucket),
+            constants::TYPE_BID => self.dte::<BID>(ty_from_ctx, ty, dec, enc, transform),
             _ => Err(RuntimeError::InvalidData(DecodeError::InvalidType {
                 expected: 0xff,
                 actual: ty,
@@ -694,8 +720,8 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
         Ok(())
     }
 
-    /// Convert transient bucket to persisted
-    fn convert_bucket(&mut self, bid: BID) -> Result<BID, RuntimeError> {
+    /// Convert transient buckets to persisted buckets
+    fn transient_to_persist(&mut self, bid: BID) -> Result<BID, RuntimeError> {
         if bid.is_transient() {
             let bucket = self
                 .buckets
@@ -707,6 +733,20 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
             Ok(new_bid)
         } else {
             Ok(bid)
+        }
+    }
+
+    /// Remove transient buckets from this process, and reject persisted buckets.
+    fn remove_transient_reject_persisted(&mut self, bid: BID) -> Result<BID, RuntimeError> {
+        if bid.is_transient() {
+            let bucket = self
+                .buckets
+                .remove(&bid)
+                .ok_or(RuntimeError::BucketNotFound)?;
+            self.buckets_moving.insert(bid, bucket);
+            Ok(bid)
+        } else {
+            Err(RuntimeError::PersistedBucketCantBeMoved)
         }
     }
 

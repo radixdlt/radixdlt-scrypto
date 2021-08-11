@@ -1,4 +1,5 @@
 use clap::{crate_version, App, Arg, ArgMatches, SubCommand};
+use sbor::collections::*;
 use scrypto::types::*;
 use scrypto::utils::*;
 use uuid::Uuid;
@@ -70,6 +71,7 @@ pub fn handle_call<'a>(matches: &ArgMatches<'a>) {
         0,
         &module,
         &memory,
+        HashMap::new(),
     );
     let output = process.run();
     if output.is_ok() {

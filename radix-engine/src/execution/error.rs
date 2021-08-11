@@ -58,6 +58,8 @@ pub enum RuntimeError {
     UnauthorizedToWithdraw,
 
     InvalidData(DecodeError),
+
+    PersistedBucketCantBeMoved,
 }
 
 impl fmt::Display for RuntimeError {

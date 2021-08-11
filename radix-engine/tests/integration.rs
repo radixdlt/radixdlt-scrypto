@@ -1,6 +1,7 @@
 use std::fs;
 use std::process::Command;
 
+use sbor::collections::*;
 use scrypto::buffer::*;
 use scrypto::types::*;
 use scrypto::utils::*;
@@ -59,6 +60,7 @@ fn call<T: Ledger>(
         0,
         &module,
         &memory,
+        HashMap::new(),
     );
     let result = process.run();
     if result.is_ok() {

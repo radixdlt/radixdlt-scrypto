@@ -1,4 +1,4 @@
-use hashbrown::{HashMap, HashSet};
+use sbor::collections::*;
 use scrypto::kernel::Level;
 use scrypto::types::*;
 use scrypto::utils::*;
