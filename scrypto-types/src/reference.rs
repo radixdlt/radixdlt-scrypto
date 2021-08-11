@@ -17,9 +17,20 @@ pub enum DecodeReferenceError {
     InvalidHex(hex::FromHexError),
     InvalidLength,
     InvalidType(u8),
+    InvalidBID,
 }
- 
+
 impl Reference {
+    /// Create an immutable reference.
+    pub fn immutable(bid: BID) -> Self {
+        Self::Immutable(bid)
+    }
+
+    /// Create a mutable reference.
+    pub fn mutable(bid: BID) -> Self {
+        Self::Mutable(bid)
+    }
+
     /// Decode Reference from its hex representation.
     pub fn from_hex(hex: &str) -> Result<Self, DecodeReferenceError> {
         let bytes = hex::decode(hex).map_err(|e| DecodeReferenceError::InvalidHex(e))?;
@@ -33,8 +44,12 @@ impl Reference {
             let kind = bytes[0];
             let data = &bytes[1..bytes.len()];
             match kind {
-                0x00 => Ok(Reference::Immutable(BID::from_slice(data))),
-                0x01 =>Ok(Reference::Mutable(BID::from_slice(data)))
+                0x00 => Ok(Reference::Immutable(
+                    BID::from_slice(data).map_err(|_| DecodeReferenceError::InvalidBID)?,
+                )),
+                0x01 => Ok(Reference::Mutable(
+                    BID::from_slice(data).map_err(|_| DecodeReferenceError::InvalidBID)?,
+                )),
                 _ => Err(DecodeReferenceError::InvalidType(kind)),
             }
         } else {
@@ -66,11 +81,11 @@ impl Into<Vec<u8>> for Reference {
         match self {
             Self::Immutable(bid) => {
                 buf.push(0u8);
-                buf.extend(bid.into());
+                buf.extend(Into::<Vec<u8>>::into(bid));
             }
             Self::Mutable(bid) => {
                 buf.push(1u8);
-                buf.extend(bid.into());
+                buf.extend(Into::<Vec<u8>>::into(bid));
             }
         }
         buf

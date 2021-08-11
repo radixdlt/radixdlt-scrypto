@@ -1,5 +1,5 @@
 #[cfg(any(feature = "scrypto_std", feature = "scrypto_alloc"))]
-use scrypto_types::{Address, BID, H256, U256};
+use scrypto_types::{Address, Reference, BID, H256, U256};
 
 use crate::collections::*;
 use crate::constants::*;
@@ -555,6 +555,22 @@ impl Decode for BID {
     #[inline]
     fn sbor_type() -> u8 {
         TYPE_BID
+    }
+}
+
+#[cfg(any(feature = "scrypto_std", feature = "scrypto_alloc"))]
+impl Decode for Reference {
+    #[inline]
+    fn decode_value<'de>(decoder: &mut Decoder<'de>) -> Result<Self, DecodeError> {
+        let len = decoder.read_len()?;
+        let slice = decoder.read_bytes(len)?;
+
+        Reference::from_slice(slice).map_err(|_| DecodeError::InvalidScryptoData(TYPE_REFERENCE))
+    }
+
+    #[inline]
+    fn sbor_type() -> u8 {
+        TYPE_REFERENCE
     }
 }
 

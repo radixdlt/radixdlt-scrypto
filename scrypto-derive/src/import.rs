@@ -123,6 +123,7 @@ fn get_native_type(ty: &sbor::types::Type) -> (Type, Vec<Item>) {
         sbor::types::Type::U256 => parse_quote! { scrypto::types::U256 },
         sbor::types::Type::Address => parse_quote! { scrypto::types::Address },
         sbor::types::Type::BID => parse_quote! { scrypto::types::BID },
+        sbor::types::Type::Reference => parse_quote! { scrypto::types::Reference },
         sbor::types::Type::Option { value } => {
             let (new_type, new_items) = get_native_type(value);
             items.extend(new_items);

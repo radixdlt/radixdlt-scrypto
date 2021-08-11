@@ -8,6 +8,7 @@ compile_error!("Feature `std` and `alloc` can't be enabled at the same time.");
 mod address;
 mod bid;
 mod h256;
+mod reference;
 mod u256;
 mod utils;
 
@@ -17,4 +18,5 @@ pub mod rust;
 pub use address::{Address, DecodeAddressError};
 pub use bid::BID;
 pub use h256::{DecodeH256Error, H256};
+pub use reference::Reference;
 pub use u256::U256;

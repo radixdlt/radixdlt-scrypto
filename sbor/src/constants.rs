@@ -33,3 +33,4 @@ pub const TYPE_H256: u8 = 0x30;
 pub const TYPE_U256: u8 = 0x31;
 pub const TYPE_ADDRESS: u8 = 0x32;
 pub const TYPE_BID: u8 = 0x33;
+pub const TYPE_REFERENCE: u8 = 0x34;
