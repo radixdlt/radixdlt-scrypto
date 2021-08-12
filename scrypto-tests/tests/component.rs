@@ -35,14 +35,6 @@ fn assert_json_eq<T: Serialize>(actual: T, expected: Value) {
 }
 
 #[test]
-#[should_panic] // asserts it compiles
-fn test_simple_component() {
-    let mut stub = SimpleStub::from_address("".into());
-    let x = stub.get_state();
-    stub.set_state(x + 1);
-}
-
-#[test]
 fn test_simple_component_abi() {
     let ptr = Simple_abi();
     let abi: scrypto::abi::Component = scrypto_consume(ptr, |slice| scrypto_decode(slice).unwrap());

@@ -14,7 +14,7 @@ macro_rules! trace {
     }};
 }
 
-pub fn handle_component(input: TokenStream) -> TokenStream {
+pub fn handle_component(input: TokenStream, output_abi: bool, output_stub: bool) -> TokenStream {
     trace!("handle_component() begins");
 
     // parse component struct and impl
@@ -30,41 +30,19 @@ pub fn handle_component(input: TokenStream) -> TokenStream {
     let com_items = &com_impl.items;
     let com_name = com_ident.to_string();
     trace!("Processing component: {}", com_name);
-
-    trace!("Generating dispatcher function...");
-    let dispatcher_ident = format_ident!("{}_main", com_ident);
-    let (arm_guards, arm_bodies) = generate_dispatcher(&com_ident, com_items);
-
-    trace!("Generating ABI function...");
-    let abi_ident = format_ident!("{}_abi", com_ident);
-    let abi_methods = generate_abi(&com_name, com_items);
-
-    trace!("Generating stubs...");
-    let stub_ident = format_ident!("{}Stub", com_ident);
-    let stub_items = generate_stub(&com_ident, com_items);
-
-    let output = quote! {
+    let generated_component = quote! {
         #[derive(Debug, sbor::Encode, sbor::Decode, sbor::Describe)]
         pub #com_strut
 
         impl #com_ident {
             #(#com_items)*
         }
+    };
 
-        #[derive(Debug)]
-        pub struct #stub_ident {
-            component: scrypto::types::Address,
-        }
-
-        impl #stub_ident {
-            // need to reserve kw `from_address`
-            pub fn from_address(address: scrypto::types::Address) -> Self {
-                Self { component: address }
-            }
-
-            #(#stub_items)*
-        }
-
+    trace!("Generating dispatcher function...");
+    let dispatcher_ident = format_ident!("{}_main", com_ident);
+    let (arm_guards, arm_bodies) = generate_dispatcher(&com_ident, com_items);
+    let generated_dispatcher = quote! {
         #[no_mangle]
         pub extern "C" fn #dispatcher_ident() -> *mut u8 {
             // Retrieve call data
@@ -85,7 +63,12 @@ pub fn handle_component(input: TokenStream) -> TokenStream {
             // Return
             scrypto::buffer::scrypto_wrap(&rtn)
         }
+    };
 
+    trace!("Generating ABI function...");
+    let abi_ident = format_ident!("{}_abi", com_ident);
+    let abi_methods = generate_abi(&com_name, com_items);
+    let generated_abi = quote! {
         #[no_mangle]
         pub extern "C" fn #abi_ident() -> *mut u8 {
             use scrypto::types::rust::string::ToString;
@@ -105,6 +88,37 @@ pub fn handle_component(input: TokenStream) -> TokenStream {
             // return the output wrapped in a radix-style buffer
             scrypto::buffer::scrypto_wrap(&output_bytes)
         }
+    };
+
+    trace!("Generating stubs...");
+    let stub_ident = format_ident!("{}Stub", com_ident);
+    let stub_items = generate_stub(&com_ident, com_items);
+    let generated_stub = quote! {
+        #[derive(Debug)]
+        pub struct #stub_ident {
+            component: scrypto::types::Address,
+        }
+
+        impl #stub_ident {
+            // need to reserve kw `from_address`
+            pub fn from_address(address: scrypto::types::Address) -> Self {
+                Self { component: address }
+            }
+
+            #(#stub_items)*
+        }
+    };
+
+    let opt_abi = output_abi.then(|| generated_abi);
+    let opt_stub = output_stub.then(|| generated_stub);
+    let output = quote! {
+        #generated_component
+
+        #generated_dispatcher
+
+        #opt_abi
+
+        #opt_stub
     };
     trace!("handle_component() finishes");
 
@@ -413,7 +427,7 @@ mod tests {
             "struct Test {a: u32} impl Test { pub fn x(&self) -> u32 { self.a } }",
         )
         .unwrap();
-        let output = handle_component(input);
+        let output = handle_component(input, true, true);
 
         assert_code_eq(
             output,
@@ -426,23 +440,6 @@ mod tests {
                 impl Test {
                     pub fn x(&self) -> u32 {
                         self.a
-                    }
-                }
-
-                #[derive(Debug)]
-                pub struct TestStub {
-                    component: scrypto::types::Address,
-                }
-
-                impl TestStub {
-                    pub fn from_address(address: scrypto::types::Address) -> Self {
-                        Self {
-                            component: address
-                        }
-                    }
-                    #[allow(dead_code)]
-                    pub fn x(&self) -> u32 {
-                        scrypto::call_component!(u32, self.component, "x",)
                     }
                 }
 
@@ -485,6 +482,23 @@ mod tests {
                     };
                     let output_bytes = scrypto::buffer::scrypto_encode(&output);
                     scrypto::buffer::scrypto_wrap(&output_bytes)
+                }
+
+                #[derive(Debug)]
+                pub struct TestStub {
+                    component: scrypto::types::Address,
+                }
+
+                impl TestStub {
+                    pub fn from_address(address: scrypto::types::Address) -> Self {
+                        Self {
+                            component: address
+                        }
+                    }
+                    #[allow(dead_code)]
+                    pub fn x(&self) -> u32 {
+                        scrypto::call_component!(u32, self.component, "x",)
+                    }
                 }
             },
         );

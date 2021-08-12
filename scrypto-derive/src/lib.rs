@@ -8,7 +8,7 @@ use proc_macro::TokenStream;
 /// Define a new component.
 #[proc_macro]
 pub fn component(input: TokenStream) -> TokenStream {
-    let output = component::handle_component(proc_macro2::TokenStream::from(input));
+    let output = component::handle_component(proc_macro2::TokenStream::from(input), true, false);
     TokenStream::from(output)
 }
 
