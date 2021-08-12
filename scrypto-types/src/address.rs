@@ -18,7 +18,7 @@ pub enum Address {
     Resource([u8; 26]),
 
     /// Public key account.
-    Account([u8; 33]),
+    PublicKey([u8; 33]),
 
     /// Published Scrypto blueprint.
     Blueprint([u8; 26]),
@@ -55,7 +55,7 @@ impl Address {
                 0x03 => Ok(Address::Resource(
                     copy_u8_array(data).map_err(|_| invalid_len)?,
                 )),
-                0x04 => Ok(Address::Account(
+                0x04 => Ok(Address::PublicKey(
                     copy_u8_array(data).map_err(|_| invalid_len)?,
                 )),
                 0x05 => Ok(Address::Blueprint(
@@ -95,7 +95,7 @@ impl Into<Vec<u8>> for Address {
             Self::System => push!(buf, 0x00),
             Self::RadixToken => push!(buf, 0x01),
             Self::Resource(d) => push!(buf, 0x03, d),
-            Self::Account(d) => push!(buf, 0x04, d),
+            Self::PublicKey(d) => push!(buf, 0x04, d),
             Self::Blueprint(d) => push!(buf, 0x05, d),
             Self::Component(d) => push!(buf, 0x06, d),
         }

@@ -36,7 +36,7 @@ pub fn handle_show<'a>(matches: &ArgMatches<'a>) {
                 }
             }
         }
-        Address::Account(_) => {
+        Address::PublicKey(_) => {
             let account = ledger.get_account(address);
             match account {
                 Some(_) => {
@@ -67,6 +67,7 @@ pub fn handle_show<'a>(matches: &ArgMatches<'a>) {
                 Some(c) => {
                     println!("Component: {}", address.to_string());
                     println!("State: {:02x?}", c.state());
+                    show_owning_resources(&ledger, address)
                 }
                 None => {
                     println!("Component not found");

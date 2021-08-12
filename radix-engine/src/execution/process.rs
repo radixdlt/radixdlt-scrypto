@@ -377,28 +377,36 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
     }
 
     pub fn get_amount(&mut self, input: GetAmountInput) -> Result<GetAmountOutput, RuntimeError> {
-        let bucket = self
+        let bid = input.bucket;
+        let amount = self
             .buckets
-            .get(&input.bucket)
+            .get(&bid)
+            .map(|b| b.amount())
+            .or(self
+                .buckets_borrowed
+                .get(&bid)
+                .map(|x| x.borrow().bucket().amount()))
             .ok_or(RuntimeError::BucketNotFound)?;
 
-        Ok(GetAmountOutput {
-            amount: bucket.amount(),
-        })
+        Ok(GetAmountOutput { amount })
     }
 
     pub fn get_resource(
         &mut self,
         input: GetResourceInput,
     ) -> Result<GetResourceOutput, RuntimeError> {
-        let bucket = self
+        let bid = input.bucket;
+        let resource = self
             .buckets
-            .get(&input.bucket)
+            .get(&bid)
+            .map(|b| b.resource())
+            .or(self
+                .buckets_borrowed
+                .get(&bid)
+                .map(|x| x.borrow().bucket().resource()))
             .ok_or(RuntimeError::BucketNotFound)?;
 
-        Ok(GetResourceOutput {
-            resource: bucket.resource(),
-        })
+        Ok(GetResourceOutput { resource })
     }
 
     pub fn borrow_immutable(
@@ -490,15 +498,29 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
     }
 
     pub fn withdraw(&mut self, input: WithdrawInput) -> Result<WithdrawOutput, RuntimeError> {
-        if input.account != self.blueprint {
-            return Err(RuntimeError::UnauthorizedToWithdraw);
+        let address = input.account;
+        match address {
+            Address::Blueprint(_) => {
+                if input.account != self.blueprint {
+                    return Err(RuntimeError::UnauthorizedToWithdraw);
+                }
+            }
+            Address::Component(_) => {
+                let component = self.runtime.get_component(address);
+                if component.is_none() || component.unwrap().blueprint() != self.blueprint {
+                    return Err(RuntimeError::UnauthorizedToWithdraw);
+                }
+            }
+            _ => {
+                return Err(RuntimeError::UnauthorizedToWithdraw);
+            }
         }
 
         // find the account
-        if self.runtime.get_account(input.account).is_none() {
-            self.runtime.put_account(input.account, Account::new());
+        if self.runtime.get_account(address).is_none() {
+            self.runtime.put_account(address, Account::new());
         };
-        let account = self.runtime.get_account(input.account).unwrap();
+        let account = self.runtime.get_account(address).unwrap();
 
         // look up the bucket
         let bid = match account.get_bucket(input.resource) {
@@ -508,7 +530,7 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
                 self.runtime
                     .put_bucket(bid, Bucket::new(U256::zero(), input.resource));
 
-                let acc = self.runtime.get_account_mut(input.account).unwrap();
+                let acc = self.runtime.get_account_mut(address).unwrap();
                 acc.insert_bucket(input.resource, bid);
 
                 bid
@@ -529,16 +551,17 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
     }
 
     pub fn deposit(&mut self, input: DepositInput) -> Result<DepositOutput, RuntimeError> {
+        let address = input.account;
         let to_deposit = self
             .buckets
             .remove(&input.bucket)
             .ok_or(RuntimeError::BucketNotFound)?;
 
         // find the account
-        if self.runtime.get_account(input.account).is_none() {
-            self.runtime.put_account(input.account, Account::new());
+        if self.runtime.get_account(address).is_none() {
+            self.runtime.put_account(address, Account::new());
         };
-        let account = self.runtime.get_account(input.account).unwrap();
+        let account = self.runtime.get_account(address).unwrap();
 
         // look up the bucket
         let bid = match account.get_bucket(to_deposit.resource()) {
@@ -548,7 +571,7 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
                 self.runtime
                     .put_bucket(bid, Bucket::new(U256::zero(), to_deposit.resource()));
 
-                let acc = self.runtime.get_account_mut(input.account).unwrap();
+                let acc = self.runtime.get_account_mut(address).unwrap();
                 acc.insert_bucket(to_deposit.resource(), bid);
 
                 bid
