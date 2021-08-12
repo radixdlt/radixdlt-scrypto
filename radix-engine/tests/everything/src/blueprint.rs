@@ -7,7 +7,6 @@ component! {
     }
 
     impl BlueprintTest {
-
         pub fn publish() -> Address {
             Blueprint::new(include_bytes!("helloworld.wasm")).into()
         }

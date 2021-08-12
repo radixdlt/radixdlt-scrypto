@@ -16,7 +16,7 @@ const ARG_ARGS: &'static str = "ARGS";
 /// Prepares a subcommand that handles `call`.
 pub fn prepare_call<'a, 'b>() -> App<'a, 'b> {
     SubCommand::with_name("call")
-        .about("Call into a blueprint.")
+        .about("Call a blueprint.")
         .version(crate_version!())
         .arg(
             Arg::with_name(ARG_BLUEPRINT)
@@ -51,10 +51,10 @@ pub fn handle_call<'a>(matches: &ArgMatches<'a>) {
         Vec::new()
     };
     println!("----");
-    println!("Blueprint: {:?}", blueprint);
+    println!("Blueprint: {}", blueprint.to_string());
     println!("Component: {}", component);
     println!("Method: {}", method);
-    println!("Arguments: {:?}", args);
+    println!("Arguments: {:02x?}", args);
     println!("----");
 
     let tx_hash = sha256(Uuid::new_v4().to_string());
@@ -80,6 +80,6 @@ pub fn handle_call<'a>(matches: &ArgMatches<'a>) {
     }
 
     println!("----");
-    println!("Output: {:?}", output);
+    println!("Output: {:02x?}", output);
     println!("----");
 }

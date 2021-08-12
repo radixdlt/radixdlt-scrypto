@@ -1,3 +1,4 @@
+use crate::utils::*;
 use scrypto::constructs::*;
 use scrypto::kernel::*;
 use scrypto::resource::*;
@@ -13,7 +14,8 @@ component! {
 
     impl ComponentTest {
         pub fn create_component() -> Address {
-            let (resource, tokens) = Self::mint_tokens();
+            let resource = create_tokens("c1", 100);
+            let  tokens  =  mint_tokens(resource, 100);
 
            Component::new("ComponentTest", Self {
                resource: resource,
@@ -39,24 +41,6 @@ component! {
 
             // Update data
             self.secret = "New secret".to_owned();
-        }
-
-        pub fn mint_tokens() -> (Address, Tokens) {
-            let owner = Context::address();
-            info!("Owner address: {:?}", owner);
-
-            let resource = Resource::new(
-                "symbol",
-                "name",
-                "description",
-                "url",
-                "icon_url",
-                Some(owner),
-                Some(U256::from(1000))
-            );
-            let tokens = resource.mint_tokens(U256::from(500));
-
-            (resource.into(), tokens)
         }
     }
 }

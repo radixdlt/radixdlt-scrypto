@@ -16,7 +16,7 @@ component! {
 
         pub fn say_hello(&mut self) -> String {
             self.counter += 1;
-            "hello".to_string()
+            "hello".to_owned()
         }
     }
 }

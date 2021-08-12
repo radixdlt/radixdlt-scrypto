@@ -156,33 +156,11 @@ fn test_component() {
 #[test]
 fn test_resource() {
     let mut ledger = InMemoryLedger::new();
-    let output = one_shot(
-        &mut ledger,
-        "everything",
-        "ResourceTest",
-        "create_tokens",
-        vec![],
-    );
+    let output = one_shot(&mut ledger, "everything", "ResourceTest", "create", vec![]);
     assert!(output.is_ok());
-    let address: Address = scrypto_decode(&output.unwrap()).unwrap();
 
-    let output2 = one_shot(
-        &mut ledger,
-        "everything",
-        "ResourceTest",
-        "get_url",
-        vec![scrypto_encode(&address)],
-    );
+    let output2 = one_shot(&mut ledger, "everything", "ResourceTest", "query", vec![]);
     assert!(output2.is_ok());
-
-    let output3 = one_shot(
-        &mut ledger,
-        "everything",
-        "ResourceTest",
-        "mint_tokens",
-        vec![scrypto_encode(&address)],
-    );
-    assert!(output3.is_ok());
 }
 
 #[test]

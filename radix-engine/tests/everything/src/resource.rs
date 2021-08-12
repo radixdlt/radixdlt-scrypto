@@ -1,3 +1,4 @@
+use crate::utils::*;
 use scrypto::constructs::*;
 use scrypto::resource::*;
 use scrypto::types::*;
@@ -11,27 +12,14 @@ component! {
     }
 
     impl ResourceTest {
-        pub fn create_tokens() -> Address {
-            let resource = Resource::new(
-                "symbol",
-                "name",
-                "description",
-                "url",
-                "icon_url",
-                Some(Context::address()),
-                Some(U256::from(1000))
-            );
-            resource.into()
+        pub fn create() -> Tokens {
+           let resource = create_tokens("r1", 100);
+           mint_tokens(resource, 100)
         }
 
-        pub fn get_url(address: Address) -> String {
-            let resource: Resource = address.into();
+        pub fn query() -> String {
+            let resource: Resource = create_tokens("r2", 100).into();
             resource.get_info().url
-        }
-
-        pub fn mint_tokens(address: Address) -> Tokens {
-            let resource: Resource = address.into();
-            resource.mint_tokens(U256::from(100))
         }
     }
 }

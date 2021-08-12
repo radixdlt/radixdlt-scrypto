@@ -24,4 +24,8 @@ impl Account {
 
         self.buckets.insert(resource, bid);
     }
+
+    pub fn buckets(&self) -> &HashMap<Address, BID> {
+        &self.buckets
+    }
 }

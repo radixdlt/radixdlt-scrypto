@@ -35,12 +35,10 @@ pub fn handle_publish<'a>(args: &ArgMatches<'a>) {
     let mut runtime = Runtime::new(tx_hash, &mut ledger);
 
     let address = runtime.new_blueprint_address(&code);
-    if runtime.get_blueprint(address).is_some() {
-        println!("{}", address.to_string());
-    } else {
+    if runtime.get_blueprint(address).is_none() {
         load_module(&code).unwrap();
         runtime.put_blueprint(address, Blueprint::new(code));
         runtime.flush();
-        println!("{}", address.to_string());
     }
+    println!("Blueprint: {}", address.to_string());
 }
