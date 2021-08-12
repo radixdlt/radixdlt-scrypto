@@ -21,7 +21,7 @@ impl Into<Address> for Account {
 }
 
 impl Account {
-    fn withdraw(&mut self, amount: U256, resource: Address) -> BID {
+    fn withdraw(&self, amount: U256, resource: Address) -> BID {
         let input = WithdrawInput {
             account: self.address,
             amount,
@@ -32,7 +32,7 @@ impl Account {
         output.bucket
     }
 
-    fn deposit(&mut self, bucket: BID) {
+    fn deposit(&self, bucket: BID) {
         let input = DepositInput {
             account: self.address,
             bucket: bucket,
@@ -40,19 +40,19 @@ impl Account {
         let _: DepositOutput = call_kernel(DEPOSIT, input);
     }
 
-    pub fn withdraw_tokens(&mut self, amount: U256, resource: Address) -> Tokens {
+    pub fn withdraw_tokens(&self, amount: U256, resource: Address) -> Tokens {
         self.withdraw(amount, resource).into()
     }
 
-    pub fn deposit_tokens(&mut self, tokens: Tokens) {
+    pub fn deposit_tokens(&self, tokens: Tokens) {
         self.deposit(tokens.into());
     }
 
-    pub fn withdraw_badges(&mut self, amount: U256, resource: Address) -> Badges {
+    pub fn withdraw_badges(&self, amount: U256, resource: Address) -> Badges {
         self.withdraw(amount, resource).into()
     }
 
-    pub fn deposit_badges(&mut self, badges: Badges) {
+    pub fn deposit_badges(&self, badges: Badges) {
         self.deposit(badges.into());
     }
 

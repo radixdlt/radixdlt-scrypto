@@ -152,3 +152,64 @@ fn test_component() {
     );
     assert!(output4.is_ok());
 }
+
+#[test]
+fn test_resource() {
+    let mut ledger = InMemoryLedger::new();
+    let output = one_shot(
+        &mut ledger,
+        "everything",
+        "ResourceTest",
+        "create_tokens",
+        vec![],
+    );
+    assert!(output.is_ok());
+    let address: Address = scrypto_decode(&output.unwrap()).unwrap();
+
+    let output2 = one_shot(
+        &mut ledger,
+        "everything",
+        "ResourceTest",
+        "get_url",
+        vec![scrypto_encode(&address)],
+    );
+    assert!(output2.is_ok());
+
+    let output3 = one_shot(
+        &mut ledger,
+        "everything",
+        "ResourceTest",
+        "mint_tokens",
+        vec![scrypto_encode(&address)],
+    );
+    assert!(output3.is_ok());
+}
+
+#[test]
+fn test_bucket() {
+    let mut ledger = InMemoryLedger::new();
+    let output = one_shot(&mut ledger, "everything", "BucketTest", "combine", vec![]);
+    assert!(output.is_ok());
+
+    let output2 = one_shot(&mut ledger, "everything", "BucketTest", "split", vec![]);
+    assert!(output2.is_ok());
+
+    let output3 = one_shot(&mut ledger, "everything", "BucketTest", "borrow", vec![]);
+    assert!(output3.is_ok());
+
+    let output4 = one_shot(&mut ledger, "everything", "BucketTest", "query", vec![]);
+    assert!(output4.is_ok());
+}
+
+#[test]
+fn test_account() {
+    let mut ledger = InMemoryLedger::new();
+    let output = one_shot(
+        &mut ledger,
+        "everything",
+        "AccountTest",
+        "deposit_and_withdraw",
+        vec![],
+    );
+    assert!(output.is_ok());
+}

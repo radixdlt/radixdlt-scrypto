@@ -1,3 +1,4 @@
+use std::cell::RefCell;
 use std::fmt;
 use std::rc::Rc;
 use std::time::Instant;
@@ -25,10 +26,10 @@ pub struct Process<'m, 'rt, 'le, L: Ledger> {
     module: &'m ModuleRef,
     memory: &'m MemoryRef,
     buckets: HashMap<BID, Bucket>,
-    buckets_borrowed: HashMap<BID, Rc<BucketBorrowed>>,
+    buckets_borrowed: HashMap<BID, Rc<RefCell<BucketBorrowed>>>,
     buckets_moving: HashMap<BID, Bucket>,
-    references: HashMap<RID, Rc<BucketBorrowed>>, // TODO: support mutable borrow; support persisted bucket borrow
-    references_moving: HashMap<RID, Rc<BucketBorrowed>>,
+    references: HashMap<RID, Rc<RefCell<BucketBorrowed>>>, // TODO: support mutable borrow; support persisted bucket borrow
+    references_moving: HashMap<RID, Rc<RefCell<BucketBorrowed>>>,
 }
 
 impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
@@ -42,7 +43,7 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
         module: &'m ModuleRef,
         memory: &'m MemoryRef,
         buckets: HashMap<BID, Bucket>,
-        references: HashMap<RID, Rc<BucketBorrowed>>,
+        references: HashMap<RID, Rc<RefCell<BucketBorrowed>>>,
     ) -> Self {
         Self {
             runtime,
@@ -387,18 +388,18 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
         match self.buckets_borrowed.get_mut(&bid) {
             Some(bucket) => {
                 // re-borrow
-                Rc::get_mut(bucket).unwrap().brw();
+                bucket.borrow_mut().brw();
                 self.references.insert(rid, bucket.clone());
             }
             None => {
                 // first time borrow
-                let bucket = Rc::new(BucketBorrowed::new(
+                let bucket = Rc::new(RefCell::new(BucketBorrowed::new(
                     bid,
                     self.buckets
                         .remove(&bid)
                         .ok_or(RuntimeError::BucketNotFound)?,
                     1, // once
-                ));
+                )));
                 self.references.insert(rid, bucket.clone());
                 self.buckets_borrowed.insert(bid, bucket);
             }
@@ -417,20 +418,20 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
         };
         self.debug(format!("Returning: rid = {:?}", rid));
 
-        let mut bucket = self
+        let bucket = self
             .references
             .remove(&rid)
             .ok_or(RuntimeError::ReferenceNotFound)?;
+        self.debug(format!("Bucket: {:?}", bucket));
 
-        let new_count = Rc::get_mut(&mut bucket)
-            .unwrap()
+        let new_count = bucket
+            .borrow_mut()
             .rtn()
             .map_err(|e| RuntimeError::AccountingError(e))?;
         if new_count == 0 {
-            if let Some(bucket) = self.buckets_borrowed.remove(&bucket.bid()) {
-                let unwrapped = Rc::try_unwrap(bucket).unwrap();
-                self.buckets.insert(unwrapped.bid(), unwrapped.into());
-            }
+            let b = bucket.borrow();
+            self.buckets_borrowed.remove(&b.bid());
+            self.buckets.insert(b.bid(), b.bucket().clone());
         }
 
         Ok(ReturnReferenceOutput {})
@@ -446,7 +447,7 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
             .ok_or(RuntimeError::ReferenceNotFound)?;
 
         Ok(GetAmountRefOutput {
-            amount: reference.bucket().amount(),
+            amount: reference.borrow().bucket().amount(),
         })
     }
 
@@ -460,7 +461,7 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
             .ok_or(RuntimeError::ReferenceNotFound)?;
 
         Ok(GetResourceRefOutput {
-            resource: reference.bucket().resource(),
+            resource: reference.borrow().bucket().resource(),
         })
     }
 
