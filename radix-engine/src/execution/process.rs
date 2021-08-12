@@ -1,4 +1,5 @@
 use std::fmt;
+use std::rc::Rc;
 use std::time::Instant;
 
 use colored::*;
@@ -24,10 +25,10 @@ pub struct Process<'m, 'rt, 'le, L: Ledger> {
     module: &'m ModuleRef,
     memory: &'m MemoryRef,
     buckets: HashMap<BID, Bucket>,
-    buckets_borrowed: HashMap<BID, Bucket>,
+    buckets_borrowed: HashMap<BID, Rc<BucketBorrowed>>,
     buckets_moving: HashMap<BID, Bucket>,
-    references: HashMap<Reference, BucketRef>,
-    references_moving: HashMap<Reference, BucketRef>, // TODO: allow reference cross-component move
+    references: HashMap<Reference, Rc<BucketBorrowed>>, // TODO: support mutable borrow; support persisted bucket borrow
+    references_moving: HashMap<Reference, Rc<BucketBorrowed>>,
 }
 
 impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
@@ -41,7 +42,7 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
         module: &'m ModuleRef,
         memory: &'m MemoryRef,
         buckets: HashMap<BID, Bucket>,
-        references: HashMap<Reference, BucketRef>,
+        references: HashMap<Reference, Rc<BucketBorrowed>>,
     ) -> Self {
         Self {
             runtime,
@@ -85,7 +86,11 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
         match invoke_res.map_err(|e| RuntimeError::InvokeError(e))? {
             Some(RuntimeValue::I32(ptr)) => {
                 let bytes = self.read_bytes(ptr)?;
-                self.process_sbor_data(&bytes, Self::remove_transient_reject_persisted)?;
+                self.process_sbor_data(
+                    &bytes,
+                    Self::move_transient_reject_persisted,
+                    Self::move_references,
+                )?;
                 self.finalize()?;
                 Ok(bytes)
             }
@@ -125,9 +130,13 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
             .load_module(input.blueprint)
             .ok_or(RuntimeError::BlueprintNotFound(input.blueprint))?;
 
-        // remove resources
+        // move buckets and references
         for arg in &input.args {
-            self.process_sbor_data(arg, Self::remove_transient_reject_persisted)?;
+            self.process_sbor_data(
+                arg,
+                Self::move_transient_reject_persisted,
+                Self::move_references,
+            )?;
         }
         let buckets_out = self.buckets_moving.clone();
         self.buckets_moving.clear();
@@ -151,12 +160,11 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
         // run!
         let result = process.run();
 
-        // collect resources
-        let buckets_in = process.buckets_moving.clone();
+        // collect buckets and references
+        self.buckets.extend(process.buckets_moving.clone());
         process.buckets_moving.clear();
-        self.buckets.extend(buckets_in);
-
-        // TODO: merge incoming references.
+        self.references.extend(process.references_moving.clone());
+        process.references_moving.clear();
 
         Ok(CallBlueprintOutput { rtn: result? })
     }
@@ -171,7 +179,11 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
             return Err(RuntimeError::ComponentAlreadyExists(address));
         }
 
-        let new_state = self.process_sbor_data(&input.state, Self::transient_to_persist)?;
+        let new_state = self.process_sbor_data(
+            &input.state,
+            Self::convert_transient_to_persist,
+            Self::reject_references,
+        )?;
         self.debug(format!(
             "New component: address = {:?}, name = {:?}, state = {:?}, transformed_state = {:?}",
             address, input.name, input.state, new_state
@@ -217,7 +229,11 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
         &mut self,
         input: PutComponentStateInput,
     ) -> Result<PutComponentStateOutput, RuntimeError> {
-        let new_state = self.process_sbor_data(&input.state, Self::transient_to_persist)?;
+        let new_state = self.process_sbor_data(
+            &input.state,
+            Self::convert_transient_to_persist,
+            Self::reject_references,
+        )?;
         self.trace(format!("Transformed: {:?}", new_state));
 
         let component = self
@@ -335,125 +351,116 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
         Ok(SplitBucketOutput { bucket: new_bid })
     }
 
-    pub fn borrow_bucket(
-        &mut self,
-        input: BorrowBucketInput,
-    ) -> Result<BorrowBucketOutput, RuntimeError> {
-        // TODO: how to borrow persisted bucket?
-
-        let bid = input.bucket;
-        let reference = Reference::immutable(bid);
-        self.debug(format!("Borrowing {:?}", bid));
-
-        match self.buckets_borrowed.get_mut(&bid) {
-            Some(bucket) => {
-                // re-borrow
-                self.references
-                    .entry(reference)
-                    .or_insert(BucketRef::new(bucket.clone(), 0))
-                    .increase_count();
-            }
-            None => {
-                // first time borrow
-                let bucket = self
-                    .buckets
-                    .remove(&bid)
-                    .ok_or(RuntimeError::BucketNotFound)?;
-                self.references
-                    .insert(reference, BucketRef::new(bucket.clone(), 1));
-                self.buckets_borrowed.insert(bid, bucket);
-            }
-        }
-
-        Ok(BorrowBucketOutput { reference })
-    }
-
-    pub fn return_bucket(
-        &mut self,
-        input: ReturnBucketInput,
-    ) -> Result<ReturnBucketOutput, RuntimeError> {
-        let reference = input.reference;
-        let bid = match reference {
-            Reference::Immutable(b) => b,
-            Reference::Mutable(_) => {
-                todo!()
-            }
-        };
-        self.debug(format!("Returning: {:?}", reference));
-
-        let bucket = self
-            .references
-            .get_mut(&reference)
-            .ok_or(RuntimeError::ReferenceNotFound)?;
-
-        let new_count = bucket
-            .decrease_count()
-            .map_err(|e| RuntimeError::AccountingError(e))?;
-        if new_count == 0 {
-            self.references.remove(&reference);
-
-            if let Some(b) = self.buckets_borrowed.remove(&bid) {
-                self.buckets.insert(bid, b);
-            }
-        }
-
-        Ok(ReturnBucketOutput {})
-    }
-
-    pub fn get_bucket_amount(
-        &mut self,
-        input: GetBucketAmountInput,
-    ) -> Result<GetBucketAmountOutput, RuntimeError> {
+    pub fn get_amount(&mut self, input: GetAmountInput) -> Result<GetAmountOutput, RuntimeError> {
         let bucket = self
             .buckets
             .get(&input.bucket)
-            .or(self.buckets_borrowed.get(&input.bucket))
             .ok_or(RuntimeError::BucketNotFound)?;
 
-        Ok(GetBucketAmountOutput {
+        Ok(GetAmountOutput {
             amount: bucket.amount(),
         })
     }
 
-    pub fn get_bucket_resource(
+    pub fn get_resource(
         &mut self,
-        input: GetBucketResourceInput,
-    ) -> Result<GetBucketResourceOutput, RuntimeError> {
+        input: GetResourceInput,
+    ) -> Result<GetResourceOutput, RuntimeError> {
         let bucket = self
             .buckets
             .get(&input.bucket)
-            .or(self.buckets_borrowed.get(&input.bucket))
             .ok_or(RuntimeError::BucketNotFound)?;
 
-        Ok(GetBucketResourceOutput {
+        Ok(GetResourceOutput {
             resource: bucket.resource(),
         })
     }
 
-    pub fn get_reference_amount(
+    pub fn borrow_immutable(
         &mut self,
-        input: GetReferenceAmountInput,
-    ) -> Result<GetReferenceAmountOutput, RuntimeError> {
+        input: BorrowImmutableInput,
+    ) -> Result<BorrowImmutableOutput, RuntimeError> {
+        // TODO: how to borrow persisted bucket?
+
+        let bid = input.bucket;
+        let rid =  self.runtime.new_immutable_rid();
+        self.debug(format!("Borrowing: bid =  {:?}, rid = {:?}", bid, rid));
+
+        match self.buckets_borrowed.get_mut(&bid) {
+            Some(bucket) => {
+                // re-borrow
+                Rc::get_mut(bucket).unwrap().brw();
+                self.references.insert(rid, bucket.clone());
+            }
+            None => {
+                // first time borrow
+                let bucket = Rc::new(BucketBorrowed::new(
+                    bid,
+                    self.buckets
+                        .remove(&bid)
+                        .ok_or(RuntimeError::BucketNotFound)?,
+                    1, // once
+                ));
+                self.references.insert(rid, bucket.clone());
+                self.buckets_borrowed.insert(bid, bucket);
+            }
+        }
+
+        Ok(BorrowImmutableOutput { reference: rid })
+    }
+
+    pub fn return_reference(
+        &mut self,
+        input: ReturnReferenceInput,
+    ) -> Result<ReturnReferenceOutput, RuntimeError> {
+        let rid = input.reference;
+        if rid.is_mutable() {
+            todo!()
+        };
+        self.debug(format!("Returning: rid = {:?}", rid));
+
+        let mut bucket = self
+            .references
+            .remove(&rid)
+            .ok_or(RuntimeError::ReferenceNotFound)?;
+
+        let new_count = Rc::get_mut(&mut bucket)
+            .unwrap()
+            .rtn()
+            .map_err(|e| RuntimeError::AccountingError(e))?;
+        if new_count == 0 {
+            if let Some(bucket) = self.buckets_borrowed.remove(&bucket.bid()) {
+                self.buckets.insert(bucket.bid(), bucket.bucket().clone());
+            }
+        }
+
+        Ok(ReturnReferenceOutput {})
+    }
+
+    pub fn get_amount_ref(
+        &mut self,
+        input: GetAmountRefInput,
+    ) -> Result<GetAmountRefOutput, RuntimeError> {
         let reference = self
             .references
             .get(&input.reference)
             .ok_or(RuntimeError::ReferenceNotFound)?;
 
-        Ok(GetReferenceAmountOutput {
+        Ok(GetAmountRefOutput {
             amount: reference.bucket().amount(),
         })
     }
 
-    pub fn get_reference_resource(
+    pub fn get_resource_ref(
         &mut self,
-        input: GetReferenceResourceInput,
-    ) -> Result<GetReferenceResourceOutput, RuntimeError> {
+        input: GetResourceRefInput,
+    ) -> Result<GetResourceRefOutput, RuntimeError> {
         let reference = self
             .references
             .get(&input.reference)
             .ok_or(RuntimeError::ReferenceNotFound)?;
 
-        Ok(GetReferenceResourceOutput {
+        Ok(GetResourceRefOutput {
             resource: reference.bucket().resource(),
         })
     }
@@ -563,12 +570,13 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
     fn process_sbor_data(
         &mut self,
         state: &Vec<u8>,
-        transform: fn(&mut Self, BID) -> Result<BID, RuntimeError>,
+        bid_handler: fn(&mut Self, BID) -> Result<BID, RuntimeError>,
+        ref_handler: fn(&mut Self, Reference) -> Result<Reference, RuntimeError>,
     ) -> Result<Vec<u8>, RuntimeError> {
         let mut decoder = Decoder::with_metadata(state);
         let mut encoder = Encoder::with_metadata();
 
-        self.traverse_sbor(None, &mut decoder, &mut encoder, transform)?;
+        self.traverse_sbor(None, &mut decoder, &mut encoder, bid_handler, ref_handler)?;
 
         if decoder.remaining() > 0 {
             // We expect a single SBOR value
@@ -586,7 +594,8 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
         ty_from_ctx: Option<u8>,
         dec: &mut Decoder,
         enc: &mut Encoder,
-        transform: fn(&mut Self, BID) -> Result<BID, RuntimeError>,
+        bid_handler: fn(&mut Self, BID) -> Result<BID, RuntimeError>,
+        ref_handler: fn(&mut Self, Reference) -> Result<Reference, RuntimeError>,
     ) -> Result<(), RuntimeError> {
         let ty = match ty_from_ctx {
             Some(t) => t,
@@ -618,13 +627,13 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
                 // optional value
                 match index {
                     0 => Ok(()),
-                    1 => self.traverse_sbor(None, dec, enc, transform),
+                    1 => self.traverse_sbor(None, dec, enc, bid_handler, ref_handler),
                     _ => Err(RuntimeError::invalid_data(DecodeError::InvalidIndex(index))),
                 }
             }
             constants::TYPE_BOX => {
                 // value
-                self.traverse_sbor(None, dec, enc, transform)
+                self.traverse_sbor(None, dec, enc, bid_handler, ref_handler)
             }
             constants::TYPE_ARRAY => {
                 // element type
@@ -635,7 +644,7 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
                 enc.write_len(len);
                 // values
                 for _ in 0..len {
-                    self.traverse_sbor(Some(ele_ty), dec, enc, transform)?;
+                    self.traverse_sbor(Some(ele_ty), dec, enc, bid_handler, ref_handler)?;
                 }
                 Ok(())
             }
@@ -645,13 +654,13 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
                 enc.write_len(len);
                 // values
                 for _ in 0..len {
-                    self.traverse_sbor(None, dec, enc, transform)?;
+                    self.traverse_sbor(None, dec, enc, bid_handler, ref_handler)?;
                 }
                 Ok(())
             }
             constants::TYPE_STRUCT => {
                 // fields
-                self.traverse_sbor(None, dec, enc, transform)
+                self.traverse_sbor(None, dec, enc, bid_handler, ref_handler)
             }
             constants::TYPE_ENUM => {
                 // index
@@ -661,7 +670,7 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
                 let name = dec.read_name().map_err(RuntimeError::invalid_data)?;
                 enc.write_name(name.as_str());
                 // fields
-                self.traverse_sbor(None, dec, enc, transform)
+                self.traverse_sbor(None, dec, enc, bid_handler, ref_handler)
             }
             constants::TYPE_FIELDS_NAMED => {
                 //length
@@ -673,7 +682,7 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
                     let name = dec.read_name().map_err(RuntimeError::invalid_data)?;
                     enc.write_name(name.as_str());
                     // value
-                    self.traverse_sbor(None, dec, enc, transform)?;
+                    self.traverse_sbor(None, dec, enc, bid_handler, ref_handler)?;
                 }
                 Ok(())
             }
@@ -684,7 +693,7 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
                 // named fields
                 for _ in 0..len {
                     // value
-                    self.traverse_sbor(None, dec, enc, transform)?;
+                    self.traverse_sbor(None, dec, enc, bid_handler, ref_handler)?;
                 }
                 Ok(())
             }
@@ -703,8 +712,8 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
             constants::TYPE_H256 => self.dte::<H256>(dec, enc, |_, v| Ok(v)),
             constants::TYPE_U256 => self.dte::<U256>(dec, enc, |_, v| Ok(v)),
             constants::TYPE_ADDRESS => self.dte::<Address>(dec, enc, |_, v| Ok(v)),
-            constants::TYPE_BID => self.dte::<BID>(dec, enc, transform),
-            constants::TYPE_REFERENCE => self.dte::<Reference>(dec, enc, |_, v| Ok(v)),
+            constants::TYPE_BID => self.dte::<BID>(dec, enc, bid_handler),
+            constants::TYPE_REFERENCE => self.dte::<Reference>(dec, enc, ref_handler),
             _ => Err(RuntimeError::InvalidData(DecodeError::InvalidType {
                 expected: 0xff,
                 actual: ty,
@@ -730,7 +739,7 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
     }
 
     /// Convert transient buckets to persisted buckets
-    fn transient_to_persist(&mut self, bid: BID) -> Result<BID, RuntimeError> {
+    fn convert_transient_to_persist(&mut self, bid: BID) -> Result<BID, RuntimeError> {
         if bid.is_transient() {
             let bucket = self
                 .buckets
@@ -746,7 +755,7 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
     }
 
     /// Remove transient buckets from this process, and reject persisted buckets.
-    fn remove_transient_reject_persisted(&mut self, bid: BID) -> Result<BID, RuntimeError> {
+    fn move_transient_reject_persisted(&mut self, bid: BID) -> Result<BID, RuntimeError> {
         if bid.is_transient() {
             let bucket = self
                 .buckets
@@ -757,6 +766,21 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
         } else {
             Err(RuntimeError::PersistedBucketCantBeMoved)
         }
+    }
+
+    /// Remove transient buckets from this process, and reject persisted buckets.
+    fn move_references(&mut self, reference: Reference) -> Result<Reference, RuntimeError> {
+        let bucket_ref = self
+            .references
+            .remove(&reference)
+            .ok_or(RuntimeError::BucketNotFound)?;
+        self.references_moving.insert(reference, bucket_ref);
+        Ok(reference)
+    }
+
+    /// Remove transient buckets from this process, and reject persisted buckets.
+    fn reject_references(&mut self, _: Reference) -> Result<Reference, RuntimeError> {
+        Err(RuntimeError::ReferenceNotAllowed)
     }
 
     /// Finalize this process.
@@ -916,14 +940,12 @@ impl<'m, 'rt, 'le, T: Ledger> Externals for Process<'m, 'rt, 'le, T> {
 
                     COMBINE_BUCKETS => self.handle(args, Process::combine_buckets, true),
                     SPLIT_BUCKET => self.handle(args, Process::split_bucket, true),
-                    BORROW_BUCKET => self.handle(args, Process::borrow_bucket, true),
-                    RETURN_BUCKET => self.handle(args, Process::return_bucket, true),
-                    GET_BUCKET_AMOUNT => self.handle(args, Process::get_bucket_amount, true),
-                    GET_BUCKET_RESOURCE => self.handle(args, Process::get_bucket_resource, true),
-                    GET_REFERENCE_AMOUNT => self.handle(args, Process::get_reference_amount, true),
-                    GET_REFERENCE_RESOURCE => {
-                        self.handle(args, Process::get_reference_resource, true)
-                    }
+                    GET_AMOUNT => self.handle(args, Process::get_amount, true),
+                    GET_RESOURCE => self.handle(args, Process::get_resource, true),
+                    BORROW_IMMUTABLE => self.handle(args, Process::borrow_immutable, true),
+                    RETURN_REFERENCE => self.handle(args, Process::return_reference, true),
+                    GET_AMOUNT_REF => self.handle(args, Process::get_amount_ref, true),
+                    GET_RESOURCE_REF => self.handle(args, Process::get_resource_ref, true),
 
                     WITHDRAW => self.handle(args, Process::withdraw, true),
                     DEPOSIT => self.handle(args, Process::deposit, true),

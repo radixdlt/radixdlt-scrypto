@@ -38,18 +38,20 @@ pub const MINT_RESOURCE: u32 = 0x22;
 pub const COMBINE_BUCKETS: u32 = 0x30;
 /// Split a bucket
 pub const SPLIT_BUCKET: u32 = 0x31;
-/// Obtain an immutable reference to a bucket
-pub const BORROW_BUCKET: u32 = 0x32;
-/// Return a bucket reference
-pub const RETURN_BUCKET: u32 = 0x33;
 /// Get bucket resource amount
-pub const GET_BUCKET_AMOUNT: u32 = 0x34;
+pub const GET_AMOUNT: u32 = 0x32;
 /// Get bucket resource address
-pub const GET_BUCKET_RESOURCE: u32 = 0x35;
+pub const GET_RESOURCE: u32 = 0x33;
+/// Obtain an immutable reference to a bucket
+pub const BORROW_IMMUTABLE: u32 = 0x34;
+/// (TODO) Obtain a mutable reference to a bucket
+pub const BORROW_MUTABLE: u32 = 0x35;
+/// Drop a reference
+pub const RETURN_REFERENCE: u32 = 0x36;
 /// Get the resource amount behind a reference
-pub const GET_REFERENCE_AMOUNT: u32 = 0x36;
+pub const GET_AMOUNT_REF: u32 = 0x37;
 /// Get the resource address behind a reference
-pub const GET_REFERENCE_RESOURCE: u32 = 0x36;
+pub const GET_RESOURCE_REF: u32 = 0x38;
 
 /// Withdraw from an account
 pub const WITHDRAW: u32 = 0x40;
@@ -238,62 +240,73 @@ pub struct SplitBucketOutput {
 }
 
 #[derive(Debug, Clone, Encode, Decode)]
-pub struct BorrowBucketInput {
+pub struct GetAmountInput {
     pub bucket: BID,
 }
 
 #[derive(Debug, Clone, Encode, Decode)]
-pub struct BorrowBucketOutput {
-    pub reference: Reference,
-}
-
-#[derive(Debug, Clone, Encode, Decode)]
-pub struct ReturnBucketInput {
-    pub reference: Reference,
-}
-
-#[derive(Debug, Clone, Encode, Decode)]
-pub struct ReturnBucketOutput {}
-
-#[derive(Debug, Clone, Encode, Decode)]
-pub struct GetBucketAmountInput {
-    pub bucket: BID,
-}
-
-#[derive(Debug, Clone, Encode, Decode)]
-pub struct GetBucketAmountOutput {
+pub struct GetAmountOutput {
     pub amount: U256,
 }
 
 #[derive(Debug, Clone, Encode, Decode)]
-pub struct GetBucketResourceInput {
+pub struct GetResourceInput {
     pub bucket: BID,
 }
 
 #[derive(Debug, Clone, Encode, Decode)]
-pub struct GetBucketResourceOutput {
+pub struct GetResourceOutput {
     pub resource: Address,
 }
 
 #[derive(Debug, Clone, Encode, Decode)]
-pub struct GetReferenceAmountInput {
+pub struct BorrowImmutableInput {
+    pub bucket: BID,
+}
+
+#[derive(Debug, Clone, Encode, Decode)]
+pub struct BorrowImmutableOutput {
     pub reference: Reference,
 }
 
 #[derive(Debug, Clone, Encode, Decode)]
-pub struct GetReferenceAmountOutput {
+pub struct BorrowMutableInput {
+    pub bucket: BID,
+}
+
+#[derive(Debug, Clone, Encode, Decode)]
+pub struct BorrowMutableOutput {
+    pub reference: Reference,
+}
+
+#[derive(Debug, Clone, Encode, Decode)]
+pub struct ReturnReferenceInput {
+    pub reference: Reference,
+}
+
+#[derive(Debug, Clone, Encode, Decode)]
+pub struct ReturnReferenceOutput {}
+
+#[derive(Debug, Clone, Encode, Decode)]
+pub struct GetAmountRefInput {
+    pub reference: Reference,
+}
+
+#[derive(Debug, Clone, Encode, Decode)]
+pub struct GetAmountRefOutput {
     pub amount: U256,
 }
 
 #[derive(Debug, Clone, Encode, Decode)]
-pub struct GetReferenceResourceInput {
+pub struct GetResourceRefInput {
     pub reference: Reference,
 }
 
 #[derive(Debug, Clone, Encode, Decode)]
-pub struct GetReferenceResourceOutput {
+pub struct GetResourceRefOutput {
     pub resource: Address,
 }
+
 //========
 // account
 //========

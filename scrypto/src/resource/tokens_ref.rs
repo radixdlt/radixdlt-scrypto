@@ -17,27 +17,27 @@ impl From<Reference> for TokensRef {
 
 impl TokensRef {
     pub fn amount(&self) -> U256 {
-        let input = GetReferenceAmountInput {
+        let input = GetAmountRefInput {
             reference: self.reference,
         };
-        let output: GetReferenceAmountOutput = call_kernel(GET_REFERENCE_AMOUNT, input);
+        let output: GetAmountRefOutput = call_kernel(GET_AMOUNT_REF, input);
 
         output.amount
     }
 
     pub fn resource(&self) -> Address {
-        let input = GetReferenceResourceInput {
+        let input = GetResourceRefInput {
             reference: self.reference,
         };
-        let output: GetReferenceResourceOutput = call_kernel(GET_REFERENCE_RESOURCE, input);
+        let output: GetResourceRefOutput = call_kernel(GET_RESOURCE_REF, input);
 
         output.resource
     }
 
     pub fn destroy(self) {
-        let input = ReturnBucketInput {
+        let input = ReturnReferenceInput {
             reference: self.reference,
         };
-        let _: ReturnBucketOutput = call_kernel(RETURN_BUCKET, input);
+        let _: ReturnReferenceOutput = call_kernel(RETURN_REFERENCE, input);
     }
 }

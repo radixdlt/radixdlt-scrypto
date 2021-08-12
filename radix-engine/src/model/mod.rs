@@ -6,6 +6,6 @@ mod resource;
 
 pub use account::Account;
 pub use blueprint::Blueprint;
-pub use bucket::{Bucket, BucketError, BucketRef};
+pub use bucket::{Bucket, BucketBorrowed, BucketError};
 pub use component::Component;
 pub use resource::Resource;

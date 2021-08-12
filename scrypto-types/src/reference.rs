@@ -1,14 +1,14 @@
 use crate::rust::string::String;
 use crate::rust::string::ToString;
 use crate::rust::vec::Vec;
-use crate::BID;
+use crate::utils::*;
 
 /// Reference to a bucket.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Reference {
-    Immutable(BID),
+    Immutable(u32),
 
-    Mutable(BID),
+    Mutable(u32),
 }
 
 /// Represents an error when decoding a reference.
@@ -17,20 +17,9 @@ pub enum DecodeReferenceError {
     InvalidHex(hex::FromHexError),
     InvalidLength,
     InvalidType(u8),
-    InvalidBID,
 }
 
 impl Reference {
-    /// Create an immutable reference.
-    pub fn immutable(bid: BID) -> Self {
-        Self::Immutable(bid)
-    }
-
-    /// Create a mutable reference.
-    pub fn mutable(bid: BID) -> Self {
-        Self::Mutable(bid)
-    }
-
     /// Decode Reference from its hex representation.
     pub fn from_hex(hex: &str) -> Result<Self, DecodeReferenceError> {
         let bytes = hex::decode(hex).map_err(|e| DecodeReferenceError::InvalidHex(e))?;
@@ -40,16 +29,16 @@ impl Reference {
 
     /// Decode Reference from a slice.
     pub fn from_slice(bytes: &[u8]) -> Result<Self, DecodeReferenceError> {
-        if bytes.len() >= 1 {
+        if bytes.len() == 1 + 4 {
             let kind = bytes[0];
             let data = &bytes[1..bytes.len()];
             match kind {
-                0x00 => Ok(Reference::Immutable(
-                    BID::from_slice(data).map_err(|_| DecodeReferenceError::InvalidBID)?,
-                )),
-                0x01 => Ok(Reference::Mutable(
-                    BID::from_slice(data).map_err(|_| DecodeReferenceError::InvalidBID)?,
-                )),
+                0x00 => Ok(Reference::Immutable(u32::from_le_bytes(
+                    copy_u8_array(data).unwrap(),
+                ))),
+                0x01 => Ok(Reference::Mutable(u32::from_le_bytes(
+                    copy_u8_array(data).unwrap(),
+                ))),
                 _ => Err(DecodeReferenceError::InvalidType(kind)),
             }
         } else {
@@ -79,13 +68,13 @@ impl Into<Vec<u8>> for Reference {
     fn into(self) -> Vec<u8> {
         let mut buf = Vec::new();
         match self {
-            Self::Immutable(bid) => {
+            Self::Immutable(id) => {
                 buf.push(0u8);
-                buf.extend(Into::<Vec<u8>>::into(bid));
+                buf.extend(id.to_le_bytes());
             }
-            Self::Mutable(bid) => {
+            Self::Mutable(id) => {
                 buf.push(1u8);
-                buf.extend(Into::<Vec<u8>>::into(bid));
+                buf.extend(id.to_le_bytes());
             }
         }
         buf
@@ -106,7 +95,7 @@ mod tests {
 
     #[test]
     fn test_from_to_string() {
-        let s = "0101f4cb57e4c4cd9d6564823eee427779d022d4f5f601791484a97837e6ffcf4cba01000000";
+        let s = "0011223344";
         let a: Reference = s.into();
         assert_eq!(a.to_string(), s);
     }

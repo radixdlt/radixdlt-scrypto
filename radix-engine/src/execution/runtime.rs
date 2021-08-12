@@ -19,8 +19,7 @@ use crate::model::*;
 pub struct Runtime<'le, T: Ledger> {
     tx_hash: H256,
     ledger: &'le mut T,
-    component_counter: u32,
-    bucket_counter: u32,
+    counter: u32,
     logs: Vec<(Level, String)>,
     blueprints: HashMap<Address, Blueprint>,
     components: HashMap<Address, Component>,
@@ -39,8 +38,7 @@ impl<'le, T: Ledger> Runtime<'le, T> {
         Self {
             tx_hash,
             ledger,
-            component_counter: 0,
-            bucket_counter: 0,
+            counter: 0,
             logs: Vec::new(),
             blueprints: HashMap::new(),
             components: HashMap::new(),
@@ -261,7 +259,7 @@ impl<'le, T: Ledger> Runtime<'le, T> {
     /// Creates a new component address.
     pub fn new_component_address(&mut self) -> Address {
         let mut data = self.tx_hash.as_ref().to_vec();
-        data.extend(self.component_counter.to_le_bytes());
+        data.extend(self.counter.to_le_bytes());
 
         let hash = sha256_twice(data);
         Address::Component(hash.lower_26_bytes())
@@ -278,14 +276,20 @@ impl<'le, T: Ledger> Runtime<'le, T> {
 
     /// Creates a new transient bucket id.
     pub fn new_transient_bid(&mut self) -> BID {
-        self.bucket_counter += 1;
-        BID::Transient(self.bucket_counter - 1)
+        self.counter += 1;
+        BID::Transient(self.counter - 1)
     }
 
     /// Creates a new persisted bucket id.
     pub fn new_persisted_bid(&mut self) -> BID {
-        self.bucket_counter += 1;
-        BID::Persisted(self.tx_hash, self.bucket_counter - 1)
+        self.counter += 1;
+        BID::Persisted(self.tx_hash, self.counter - 1)
+    }
+
+    /// Creates a new persisted bucket id.
+    pub fn new_immutable_rid(&mut self) -> Reference {
+        self.counter += 1;
+        Reference::Immutable(self.counter)
     }
 
     /// Flush changes to ledger.

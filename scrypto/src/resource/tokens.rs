@@ -41,15 +41,15 @@ impl Tokens {
     }
 
     pub fn amount(&self) -> U256 {
-        let input = GetBucketAmountInput { bucket: self.bid };
-        let output: GetBucketAmountOutput = call_kernel(GET_BUCKET_AMOUNT, input);
+        let input = GetAmountInput { bucket: self.bid };
+        let output: GetAmountOutput = call_kernel(GET_AMOUNT, input);
 
         output.amount
     }
 
     pub fn resource(&self) -> Address {
-        let input = GetBucketResourceInput { bucket: self.bid };
-        let output: GetBucketResourceOutput = call_kernel(GET_BUCKET_RESOURCE, input);
+        let input = GetResourceInput { bucket: self.bid };
+        let output: GetResourceOutput = call_kernel(GET_RESOURCE, input);
 
         output.resource
     }

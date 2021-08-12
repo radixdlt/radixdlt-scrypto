@@ -49,25 +49,25 @@ impl Bucket {
     }
 }
 
-/// Represents a reference to a bucket.
-#[derive(Debug, Clone, Encode, Decode)]
-pub struct BucketRef {
+/// Contain a borrowed bucket and record the number of references out.
+#[derive(Debug)]
+pub struct BucketBorrowed {
+    bid: BID,
     bucket: Bucket,
     count: usize,
 }
 
-impl BucketRef {
-    pub fn new(bucket: Bucket, count: usize) -> Self {
-        Self { bucket, count }
+impl BucketBorrowed {
+    pub fn new(bid: BID, bucket: Bucket, count: usize) -> Self {
+        Self { bid, bucket, count }
     }
 
-    pub fn increase_count(&mut self) -> usize {
+    pub fn brw(&mut self) {
         self.count += 1;
-        self.count
     }
 
-    pub fn decrease_count(&mut self) -> Result<usize, BucketError> {
-        if self.count() <= 0 {
+    pub fn rtn(&mut self) -> Result<usize, BucketError> {
+        if self.ref_count() <= 0 {
             Err(BucketError::ReferenceCountUnderflow)
         } else {
             self.count -= 1;
@@ -75,11 +75,15 @@ impl BucketRef {
         }
     }
 
+    pub fn bid(&self) -> BID {
+        self.bid
+    }
+
     pub fn bucket(&self) -> &Bucket {
         &self.bucket
     }
 
-    pub fn count(&self) -> usize {
+    pub fn ref_count(&self) -> usize {
         self.count
     }
 }

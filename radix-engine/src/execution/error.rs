@@ -60,6 +60,8 @@ pub enum RuntimeError {
     InvalidData(DecodeError),
 
     PersistedBucketCantBeMoved,
+
+    ReferenceNotAllowed,
 }
 
 impl fmt::Display for RuntimeError {
