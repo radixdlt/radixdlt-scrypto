@@ -31,7 +31,7 @@ pub enum RuntimeError {
 
     UnableToAllocateMemory,
 
-    ResourceLeak(Vec<BID>, Vec<Reference>),
+    ResourceLeak(Vec<BID>, Vec<RID>),
 
     BlueprintAlreadyExists(Address),
 

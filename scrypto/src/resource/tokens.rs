@@ -1,4 +1,5 @@
 use crate::kernel::*;
+use crate::resource::*;
 use crate::types::*;
 
 use sbor::{Decode, Describe, Encode};
@@ -38,6 +39,13 @@ impl Tokens {
         let output: SplitBucketOutput = call_kernel(SPLIT_BUCKET, input);
 
         output.bucket.into()
+    }
+
+    pub fn borrow(&self) -> TokensRef {
+        let input = BorrowImmutableInput { bucket: self.bid };
+        let output: BorrowImmutableOutput = call_kernel(BORROW_IMMUTABLE, input);
+
+        output.reference.into()
     }
 
     pub fn amount(&self) -> U256 {

@@ -87,3 +87,9 @@ impl BucketBorrowed {
         self.count
     }
 }
+
+impl Into<Bucket> for BucketBorrowed {
+    fn into(self) -> Bucket {
+        self.bucket
+    }
+}

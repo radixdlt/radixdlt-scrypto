@@ -94,7 +94,7 @@ pub enum Type {
     BID,
 
     #[cfg(any(feature = "scrypto_std", feature = "scrypto_alloc"))]
-    Reference,
+    RID,
 }
 
 /// Represents the type info of an enum variant.

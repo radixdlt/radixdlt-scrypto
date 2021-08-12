@@ -1,5 +1,5 @@
 #[cfg(any(feature = "scrypto_std", feature = "scrypto_alloc"))]
-use scrypto_types::{Address, Reference, BID, H256, U256};
+use scrypto_types::{Address, BID, H256, RID, U256};
 
 use crate::collections::*;
 use crate::rust::boxed::Box;
@@ -48,7 +48,7 @@ describe_basic_type!(Address, Type::Address);
 #[cfg(any(feature = "scrypto_std", feature = "scrypto_alloc"))]
 describe_basic_type!(BID, Type::BID);
 #[cfg(any(feature = "scrypto_std", feature = "scrypto_alloc"))]
-describe_basic_type!(Reference, Type::Reference);
+describe_basic_type!(RID, Type::RID);
 
 impl<T: Describe> Describe for Option<T> {
     fn describe() -> Type {

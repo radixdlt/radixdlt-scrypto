@@ -1,5 +1,5 @@
 #[cfg(any(feature = "scrypto_std", feature = "scrypto_alloc"))]
-use scrypto_types::{Address, Reference, BID, H256, U256};
+use scrypto_types::{Address, BID, H256, RID, U256};
 
 use crate::collections::*;
 use crate::constants::*;
@@ -427,7 +427,7 @@ impl Encode for BID {
 }
 
 #[cfg(any(feature = "scrypto_std", feature = "scrypto_alloc"))]
-impl Encode for Reference {
+impl Encode for RID {
     #[inline]
     fn encode_value(&self, encoder: &mut Encoder) {
         let bytes: Vec<u8> = self.clone().into();
@@ -437,7 +437,7 @@ impl Encode for Reference {
 
     #[inline]
     fn sbor_type() -> u8 {
-        TYPE_REFERENCE
+        TYPE_RID
     }
 }
 

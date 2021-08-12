@@ -1,6 +1,8 @@
 #[cfg(feature = "alloc")]
 extern crate alloc;
 #[cfg(feature = "alloc")]
+pub use alloc::borrow;
+#[cfg(feature = "alloc")]
 pub use alloc::format;
 #[cfg(feature = "alloc")]
 pub use alloc::str;
@@ -17,6 +19,8 @@ pub use core::mem;
 #[cfg(feature = "alloc")]
 pub use core::ptr;
 
+#[cfg(not(feature = "alloc"))]
+pub use std::borrow;
 #[cfg(not(feature = "alloc"))]
 pub use std::convert;
 #[cfg(not(feature = "alloc"))]

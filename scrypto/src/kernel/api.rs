@@ -266,7 +266,7 @@ pub struct BorrowImmutableInput {
 
 #[derive(Debug, Clone, Encode, Decode)]
 pub struct BorrowImmutableOutput {
-    pub reference: Reference,
+    pub reference: RID,
 }
 
 #[derive(Debug, Clone, Encode, Decode)]
@@ -276,12 +276,12 @@ pub struct BorrowMutableInput {
 
 #[derive(Debug, Clone, Encode, Decode)]
 pub struct BorrowMutableOutput {
-    pub reference: Reference,
+    pub reference: RID,
 }
 
 #[derive(Debug, Clone, Encode, Decode)]
 pub struct ReturnReferenceInput {
-    pub reference: Reference,
+    pub reference: RID,
 }
 
 #[derive(Debug, Clone, Encode, Decode)]
@@ -289,7 +289,7 @@ pub struct ReturnReferenceOutput {}
 
 #[derive(Debug, Clone, Encode, Decode)]
 pub struct GetAmountRefInput {
-    pub reference: Reference,
+    pub reference: RID,
 }
 
 #[derive(Debug, Clone, Encode, Decode)]
@@ -299,7 +299,7 @@ pub struct GetAmountRefOutput {
 
 #[derive(Debug, Clone, Encode, Decode)]
 pub struct GetResourceRefInput {
-    pub reference: Reference,
+    pub reference: RID,
 }
 
 #[derive(Debug, Clone, Encode, Decode)]

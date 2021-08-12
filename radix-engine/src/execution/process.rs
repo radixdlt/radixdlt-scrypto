@@ -27,8 +27,8 @@ pub struct Process<'m, 'rt, 'le, L: Ledger> {
     buckets: HashMap<BID, Bucket>,
     buckets_borrowed: HashMap<BID, Rc<BucketBorrowed>>,
     buckets_moving: HashMap<BID, Bucket>,
-    references: HashMap<Reference, Rc<BucketBorrowed>>, // TODO: support mutable borrow; support persisted bucket borrow
-    references_moving: HashMap<Reference, Rc<BucketBorrowed>>,
+    references: HashMap<RID, Rc<BucketBorrowed>>, // TODO: support mutable borrow; support persisted bucket borrow
+    references_moving: HashMap<RID, Rc<BucketBorrowed>>,
 }
 
 impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
@@ -42,7 +42,7 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
         module: &'m ModuleRef,
         memory: &'m MemoryRef,
         buckets: HashMap<BID, Bucket>,
-        references: HashMap<Reference, Rc<BucketBorrowed>>,
+        references: HashMap<RID, Rc<BucketBorrowed>>,
     ) -> Self {
         Self {
             runtime,
@@ -380,10 +380,8 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
         &mut self,
         input: BorrowImmutableInput,
     ) -> Result<BorrowImmutableOutput, RuntimeError> {
-        // TODO: how to borrow persisted bucket?
-
         let bid = input.bucket;
-        let rid =  self.runtime.new_immutable_rid();
+        let rid = self.runtime.new_immutable_rid();
         self.debug(format!("Borrowing: bid =  {:?}, rid = {:?}", bid, rid));
 
         match self.buckets_borrowed.get_mut(&bid) {
@@ -430,7 +428,8 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
             .map_err(|e| RuntimeError::AccountingError(e))?;
         if new_count == 0 {
             if let Some(bucket) = self.buckets_borrowed.remove(&bucket.bid()) {
-                self.buckets.insert(bucket.bid(), bucket.bucket().clone());
+                let unwrapped = Rc::try_unwrap(bucket).unwrap();
+                self.buckets.insert(unwrapped.bid(), unwrapped.into());
             }
         }
 
@@ -571,12 +570,12 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
         &mut self,
         state: &Vec<u8>,
         bid_handler: fn(&mut Self, BID) -> Result<BID, RuntimeError>,
-        ref_handler: fn(&mut Self, Reference) -> Result<Reference, RuntimeError>,
+        rid_handler: fn(&mut Self, RID) -> Result<RID, RuntimeError>,
     ) -> Result<Vec<u8>, RuntimeError> {
         let mut decoder = Decoder::with_metadata(state);
         let mut encoder = Encoder::with_metadata();
 
-        self.traverse_sbor(None, &mut decoder, &mut encoder, bid_handler, ref_handler)?;
+        self.traverse_sbor(None, &mut decoder, &mut encoder, bid_handler, rid_handler)?;
 
         if decoder.remaining() > 0 {
             // We expect a single SBOR value
@@ -595,7 +594,7 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
         dec: &mut Decoder,
         enc: &mut Encoder,
         bid_handler: fn(&mut Self, BID) -> Result<BID, RuntimeError>,
-        ref_handler: fn(&mut Self, Reference) -> Result<Reference, RuntimeError>,
+        rid_handler: fn(&mut Self, RID) -> Result<RID, RuntimeError>,
     ) -> Result<(), RuntimeError> {
         let ty = match ty_from_ctx {
             Some(t) => t,
@@ -627,13 +626,13 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
                 // optional value
                 match index {
                     0 => Ok(()),
-                    1 => self.traverse_sbor(None, dec, enc, bid_handler, ref_handler),
+                    1 => self.traverse_sbor(None, dec, enc, bid_handler, rid_handler),
                     _ => Err(RuntimeError::invalid_data(DecodeError::InvalidIndex(index))),
                 }
             }
             constants::TYPE_BOX => {
                 // value
-                self.traverse_sbor(None, dec, enc, bid_handler, ref_handler)
+                self.traverse_sbor(None, dec, enc, bid_handler, rid_handler)
             }
             constants::TYPE_ARRAY => {
                 // element type
@@ -644,7 +643,7 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
                 enc.write_len(len);
                 // values
                 for _ in 0..len {
-                    self.traverse_sbor(Some(ele_ty), dec, enc, bid_handler, ref_handler)?;
+                    self.traverse_sbor(Some(ele_ty), dec, enc, bid_handler, rid_handler)?;
                 }
                 Ok(())
             }
@@ -654,13 +653,13 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
                 enc.write_len(len);
                 // values
                 for _ in 0..len {
-                    self.traverse_sbor(None, dec, enc, bid_handler, ref_handler)?;
+                    self.traverse_sbor(None, dec, enc, bid_handler, rid_handler)?;
                 }
                 Ok(())
             }
             constants::TYPE_STRUCT => {
                 // fields
-                self.traverse_sbor(None, dec, enc, bid_handler, ref_handler)
+                self.traverse_sbor(None, dec, enc, bid_handler, rid_handler)
             }
             constants::TYPE_ENUM => {
                 // index
@@ -670,7 +669,7 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
                 let name = dec.read_name().map_err(RuntimeError::invalid_data)?;
                 enc.write_name(name.as_str());
                 // fields
-                self.traverse_sbor(None, dec, enc, bid_handler, ref_handler)
+                self.traverse_sbor(None, dec, enc, bid_handler, rid_handler)
             }
             constants::TYPE_FIELDS_NAMED => {
                 //length
@@ -682,7 +681,7 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
                     let name = dec.read_name().map_err(RuntimeError::invalid_data)?;
                     enc.write_name(name.as_str());
                     // value
-                    self.traverse_sbor(None, dec, enc, bid_handler, ref_handler)?;
+                    self.traverse_sbor(None, dec, enc, bid_handler, rid_handler)?;
                 }
                 Ok(())
             }
@@ -693,7 +692,7 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
                 // named fields
                 for _ in 0..len {
                     // value
-                    self.traverse_sbor(None, dec, enc, bid_handler, ref_handler)?;
+                    self.traverse_sbor(None, dec, enc, bid_handler, rid_handler)?;
                 }
                 Ok(())
             }
@@ -713,7 +712,7 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
             constants::TYPE_U256 => self.dte::<U256>(dec, enc, |_, v| Ok(v)),
             constants::TYPE_ADDRESS => self.dte::<Address>(dec, enc, |_, v| Ok(v)),
             constants::TYPE_BID => self.dte::<BID>(dec, enc, bid_handler),
-            constants::TYPE_REFERENCE => self.dte::<Reference>(dec, enc, ref_handler),
+            constants::TYPE_RID => self.dte::<RID>(dec, enc, rid_handler),
             _ => Err(RuntimeError::InvalidData(DecodeError::InvalidType {
                 expected: 0xff,
                 actual: ty,
@@ -769,17 +768,17 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
     }
 
     /// Remove transient buckets from this process, and reject persisted buckets.
-    fn move_references(&mut self, reference: Reference) -> Result<Reference, RuntimeError> {
+    fn move_references(&mut self, rid: RID) -> Result<RID, RuntimeError> {
         let bucket_ref = self
             .references
-            .remove(&reference)
+            .remove(&rid)
             .ok_or(RuntimeError::BucketNotFound)?;
-        self.references_moving.insert(reference, bucket_ref);
-        Ok(reference)
+        self.references_moving.insert(rid, bucket_ref);
+        Ok(rid)
     }
 
     /// Remove transient buckets from this process, and reject persisted buckets.
-    fn reject_references(&mut self, _: Reference) -> Result<Reference, RuntimeError> {
+    fn reject_references(&mut self, _: RID) -> Result<RID, RuntimeError> {
         Err(RuntimeError::ReferenceNotAllowed)
     }
 

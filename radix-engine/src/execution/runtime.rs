@@ -287,9 +287,9 @@ impl<'le, T: Ledger> Runtime<'le, T> {
     }
 
     /// Creates a new persisted bucket id.
-    pub fn new_immutable_rid(&mut self) -> Reference {
+    pub fn new_immutable_rid(&mut self) -> RID {
         self.counter += 1;
-        Reference::Immutable(self.counter)
+        RID::Immutable(self.counter)
     }
 
     /// Flush changes to ledger.
