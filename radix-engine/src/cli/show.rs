@@ -28,7 +28,7 @@ pub fn handle_show<'a>(matches: &ArgMatches<'a>) {
             let resource = ledger.get_resource(address);
             match resource {
                 Some(r) => {
-                    println!("Blueprint: {}", address.to_string());
+                    println!("Resource: {}", address.to_string());
                     println!("Info: {:02x?}", r.info());
                 }
                 None => {
@@ -37,20 +37,11 @@ pub fn handle_show<'a>(matches: &ArgMatches<'a>) {
             }
         }
         Address::Account(_) => {
-            let resource = ledger.get_account(address);
-            match resource {
-                Some(a) => {
+            let account = ledger.get_account(address);
+            match account {
+                Some(_) => {
                     println!("Account: {}", address.to_string());
-                    for (resource, bid) in a.buckets() {
-                        println!(
-                            "Owned resource: address = {:?}, balance = {}",
-                            resource,
-                            ledger
-                                .get_bucket(*bid)
-                                .map(|b| b.amount())
-                                .unwrap_or(U256::zero())
-                        )
-                    }
+                    show_owning_resources(&ledger, address)
                 }
                 None => {
                     println!("Account not found");
@@ -58,20 +49,47 @@ pub fn handle_show<'a>(matches: &ArgMatches<'a>) {
             }
         }
         Address::Blueprint(_) => {
-            let resource = ledger.get_blueprint(address);
-            match resource {
-                Some(r) => {
+            let blueprint = ledger.get_blueprint(address);
+            match blueprint {
+                Some(b) => {
                     println!("Blueprint: {}", address.to_string());
-                    println!("Code size: {} bytes", r.code().len());
+                    println!("Code size: {} bytes", b.code().len());
+                    show_owning_resources(&ledger, address);
                 }
                 None => {
                     println!("Blueprint not found");
                 }
             }
         }
-        Address::Component(_) => {}
+        Address::Component(_) => {
+            let component = ledger.get_component(address);
+            match component {
+                Some(c) => {
+                    println!("Component: {}", address.to_string());
+                    println!("State: {:02x?}", c.state());
+                }
+                None => {
+                    println!("Component not found");
+                }
+            }
+        }
         _ => {
             println!("No info available");
+        }
+    }
+}
+
+fn show_owning_resources<T: Ledger>(ledger: &T, address: Address) {
+    if let Some(account) = ledger.get_account(address) {
+        for (resource, bid) in account.buckets() {
+            println!(
+                "Owns resource: address = {}, balance = {}",
+                resource.to_string(),
+                ledger
+                    .get_bucket(*bid)
+                    .map(|b| b.amount())
+                    .unwrap_or(U256::zero())
+            )
         }
     }
 }

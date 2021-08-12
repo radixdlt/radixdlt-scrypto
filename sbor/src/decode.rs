@@ -472,7 +472,7 @@ impl<T: Decode + Hash + Eq> Decode for HashSet<T> {
 
     #[inline]
     fn sbor_type() -> u8 {
-        TYPE_TREE_SET
+        TYPE_HASH_SET
     }
 }
 
@@ -492,7 +492,7 @@ impl<K: Decode + Hash + Eq, V: Decode> Decode for HashMap<K, V> {
 
     #[inline]
     fn sbor_type() -> u8 {
-        TYPE_TREE_MAP
+        TYPE_HASH_MAP
     }
 }
 
