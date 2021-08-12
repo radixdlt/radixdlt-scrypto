@@ -590,16 +590,16 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
     }
 
     pub fn emit_log(&mut self, input: EmitLogInput) -> Result<EmitLogOutput, RuntimeError> {
-        self.runtime.log(input.level, input.message);
+        self.runtime.add_log(input.level, input.message);
 
         Ok(EmitLogOutput {})
     }
 
-    pub fn get_context_address(
+    pub fn get_blueprint_address(
         &mut self,
-        _input: GetContextAddressInput,
-    ) -> Result<GetContextAddressOutput, RuntimeError> {
-        Ok(GetContextAddressOutput {
+        _input: GetBlueprintAddressInput,
+    ) -> Result<GetBlueprintAddressOutput, RuntimeError> {
+        Ok(GetBlueprintAddressOutput {
             address: self.blueprint,
         })
     }
@@ -611,6 +611,15 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
         Ok(GetCallDataOutput {
             method: self.method.clone(),
             args: self.args.clone(),
+        })
+    }
+
+    pub fn get_transaction_hash(
+        &mut self,
+        _input: GetTransactionHashInput,
+    ) -> Result<GetTransactionHashOutput, RuntimeError> {
+        Ok(GetTransactionHashOutput {
+            tx_hash: self.runtime.tx_hash(),
         })
     }
 
@@ -978,8 +987,11 @@ impl<'m, 'rt, 'le, T: Ledger> Externals for Process<'m, 'rt, 'le, T> {
                     DEPOSIT => self.handle(args, Process::deposit, true),
 
                     EMIT_LOG => self.handle(args, Process::emit_log, true),
-                    GET_CONTEXT_ADDRESS => self.handle(args, Process::get_context_address, true),
+                    GET_BLUEPRINT_ADDRESS => {
+                        self.handle(args, Process::get_blueprint_address, true)
+                    }
                     GET_CALL_DATA => self.handle(args, Process::get_call_data, true),
+                    GET_TRANSACTION_HASH => self.handle(args, Process::get_transaction_hash, true),
                     _ => Err(RuntimeError::InvalidOpCode(operation).into()),
                 }
             }

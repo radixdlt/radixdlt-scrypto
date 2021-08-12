@@ -9,7 +9,7 @@ pub fn create_tokens(symbol: &str, supply: u32) -> Address {
         "description",
         "url",
         "icon_url",
-        Some(Context::address()),
+        Some(Context::blueprint_address()),
         Some(U256::from(supply)),
     );
     resource.into()

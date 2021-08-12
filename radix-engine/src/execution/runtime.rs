@@ -53,10 +53,22 @@ impl<'le, T: Ledger> Runtime<'le, T> {
         }
     }
 
-    pub fn log(&mut self, level: Level, message: String) {
+    /// Returns the transaction hash.
+    pub fn tx_hash(&self) -> H256 {
+        self.tx_hash
+    }
+
+    /// Returns the logs collected.
+    pub fn logs(&self) -> &Vec<(Level, String)> {
+        &self.logs
+    }
+
+    /// Adds a log message.
+    pub fn add_log(&mut self, level: Level, message: String) {
         self.logs.push((level, message));
     }
 
+    /// Loads a module.
     pub fn load_module(&mut self, address: Address) -> Option<(ModuleRef, MemoryRef)> {
         self.get_blueprint(address).map(|blueprint| {
             load_module(blueprint.code()).expect("All blueprint should be loadable")

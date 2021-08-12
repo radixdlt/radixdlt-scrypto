@@ -61,9 +61,11 @@ pub const DEPOSIT: u32 = 0x41;
 /// Log a message
 pub const EMIT_LOG: u32 = 0x50;
 /// Retrieve context address
-pub const GET_CONTEXT_ADDRESS: u32 = 0x51;
+pub const GET_BLUEPRINT_ADDRESS: u32 = 0x51;
 /// Retrieve the call data
 pub const GET_CALL_DATA: u32 = 0x52;
+/// Retrieve the call data
+pub const GET_TRANSACTION_HASH: u32 = 0x53;
 
 #[derive(Debug, Clone, Describe, Encode, Decode)]
 pub struct ComponentInfo {
@@ -346,10 +348,10 @@ pub struct EmitLogInput {
 pub struct EmitLogOutput {}
 
 #[derive(Debug, Clone, Encode, Decode)]
-pub struct GetContextAddressInput {}
+pub struct GetBlueprintAddressInput {}
 
 #[derive(Debug, Clone, Encode, Decode)]
-pub struct GetContextAddressOutput {
+pub struct GetBlueprintAddressOutput {
     pub address: Address,
 }
 
@@ -360,4 +362,12 @@ pub struct GetCallDataInput {}
 pub struct GetCallDataOutput {
     pub method: String,
     pub args: Vec<Vec<u8>>,
+}
+
+#[derive(Debug, Clone, Encode, Decode)]
+pub struct GetTransactionHashInput {}
+
+#[derive(Debug, Clone, Encode, Decode)]
+pub struct GetTransactionHashOutput {
+    pub tx_hash: H256,
 }

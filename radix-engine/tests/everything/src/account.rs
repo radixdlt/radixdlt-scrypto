@@ -13,7 +13,7 @@ component! {
             let resource =  create_tokens("a1", 100);
             let tokens =  mint_tokens(resource, 100);
 
-            let account = Account::from(Context::address());
+            let account = Account::from(Context::blueprint_address());
             account.deposit_tokens(tokens);
             account.withdraw_tokens(U256::from(10), resource)
         }
