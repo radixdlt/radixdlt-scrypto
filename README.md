@@ -16,23 +16,23 @@ rustup target add wasm32-unknown-unknown
 ```
 cargo build --target wasm32-unknown-unknown --release
 ```
-4. Navigate to Radix Engine and publish our blueprint
+4. Switch to the `radix-engine` folder and publish your blueprint
 ```
-cargo run -- publish /path/to/<project_name>/target/wasm32-unknown-unknown/release/<project_name>.wasm
+cargo run -- publish /path/to/<project_name>.wasm
 ```
 5. Invoke a method of the blueprint
 ```
-cargo run -- call <blueprint_address> <component_name> <method_name> <arg>...
+cargo run -- call <blueprint_address> <component_name> <method_name> <args>...
 ```
 
 ## Project Layout
 
 ![](./assets/crate-dependencies.svg)
 
-- `sbor`: Scrypto Binary Object Representation (SBOR), format for all data exchanges.
+- `sbor`: Scrypto Binary Object Representation (SBOR), the data format for Scrypto.
 - `sbor-derive`: SBOR derives for Rust `struct` and `enum`.
 - `scrypto`: Scrypto standard library.
-- `scrypto-abi`: Scrypto JSON-compatible component ABI.
+- `scrypto-abi`: Scrypto JSON-exportable component ABI.
 - `scrypto-types`: Scrypto primitive types.
-- `scrypto-derive`: Scrypto derives for creating and importing components.
+- `scrypto-derive`: Derives for creating and importing Scrypto components.
 - `radix-engine`: Radix Engine, the Scrypto execution layer.
