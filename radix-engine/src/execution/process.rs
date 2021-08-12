@@ -15,6 +15,24 @@ use crate::execution::*;
 use crate::ledger::*;
 use crate::model::*;
 
+macro_rules! trace {
+    ($self:ident, $($args: expr),+) => {
+        $self.log(Level::Trace, format!($($args),+));
+    };
+}
+
+macro_rules! info {
+    ($self:ident, $($args: expr),+) => {
+        $self.log(Level::Info, format!($($args),+));
+    };
+}
+
+macro_rules! warn {
+    ($self:ident, $($args: expr),+) => {
+        $self.log(Level::Warn, format!($($args),+));
+    };
+}
+
 /// A runnable blueprint instance.
 pub struct Process<'m, 'rt, 'le, L: Ledger> {
     runtime: &'rt mut Runtime<'le, L>,
@@ -65,19 +83,24 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
     /// Start this process by invoking the component main method.
     pub fn run(&mut self) -> Result<Vec<u8>, RuntimeError> {
         let now = Instant::now();
-        self.info(format!(
-            "CALL started: blueprint = {:?}, component = {:?}, method = {:?}, args = {:?}",
-            self.blueprint, self.component, self.method, self.args
-        ));
+        info!(
+            self,
+            "CALL started: blueprint = {:02x?}, component = {}, method = {}, args = {:02x?}",
+            self.blueprint,
+            self.component,
+            self.method,
+            self.args
+        );
 
         let func = format!("{}_{}", self.component, "main");
         let result = self.invoke(func);
 
-        self.info(format!(
-            "CALL finished: time elapsed = {} ms, result = {:?}",
+        info!(
+            self,
+            "CALL finished: time elapsed = {} ms, result = {:02x?}",
             now.elapsed().as_millis(),
             result
-        ));
+        );
         result
     }
 
@@ -110,11 +133,12 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
         }
         load_module(&input.code)?;
 
-        self.debug(format!(
-            "New blueprint: address = {:?}, code length = {:?}",
+        trace!(
+            self,
+            "New blueprint: address = {:02x?}, code length = {}",
             address,
             input.code.len()
-        ));
+        );
         self.runtime
             .put_blueprint(address, Blueprint::new(input.code));
 
@@ -185,10 +209,10 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
             Self::convert_transient_to_persist,
             Self::reject_references,
         )?;
-        self.debug(format!(
-            "New component: address = {:?}, name = {:?}, state = {:?}, transformed_state = {:?}",
+        trace!(self,
+            "New component: address = {:02x?}, name = {}, state = {:02x?}, transformed_state = {:02x?}",
             address, input.name, input.state, new_state
-        ));
+        );
 
         let component = Component::new(self.blueprint, input.name, new_state);
         self.runtime.put_component(address, component);
@@ -235,7 +259,7 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
             Self::convert_transient_to_persist,
             Self::reject_references,
         )?;
-        self.trace(format!("Transformed: {:?}", new_state));
+        trace!(self, "Transformed: {:02x?}", new_state);
 
         let component = self
             .runtime
@@ -258,7 +282,7 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
         if self.runtime.get_resource(address).is_some() {
             return Err(RuntimeError::ResourceAlreadyExists(address));
         } else {
-            self.debug(format!("New resource: {:?}", address));
+            trace!(self, "New resource: {:02x?}", address);
 
             self.runtime
                 .put_resource(address, Resource::new(input.info));
@@ -383,7 +407,7 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
     ) -> Result<BorrowImmutableOutput, RuntimeError> {
         let bid = input.bucket;
         let rid = self.runtime.new_immutable_rid();
-        self.debug(format!("Borrowing: bid =  {:?}, rid = {:?}", bid, rid));
+        trace!(self, "Borrowing: bid =  {:02x?}, rid = {:02x?}", bid, rid);
 
         match self.buckets_borrowed.get_mut(&bid) {
             Some(bucket) => {
@@ -416,13 +440,13 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
         if rid.is_mutable() {
             todo!()
         };
-        self.debug(format!("Returning: rid = {:?}", rid));
+        trace!(self, "Returning: rid = {:02x?}", rid);
 
         let bucket = self
             .references
             .remove(&rid)
             .ok_or(RuntimeError::ReferenceNotFound)?;
-        self.debug(format!("Bucket: {:?}", bucket));
+        trace!(self, "Bucket: {:02x?}", bucket);
 
         let new_count = bucket
             .borrow_mut()
@@ -747,7 +771,7 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
                 .ok_or(RuntimeError::BucketNotFound)?;
             let new_bid = self.runtime.new_persisted_bid();
             self.runtime.put_bucket(new_bid, bucket);
-            self.debug(format!("Converting {:?} to {:?}", bid, new_bid));
+            trace!(self, "Converting {:02x?} to {:02x?}", bid, new_bid);
             Ok(new_bid)
         } else {
             Ok(bid)
@@ -790,20 +814,20 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
 
         for (bid, bucket) in &self.buckets {
             if bucket.amount() != U256::zero() {
-                self.error(format!("Burning bucket: {:?} {:?}", bid, bucket));
+                warn!(self, "Burning bucket: {:02x?} {:02x?}", bid, bucket);
                 buckets.push(*bid);
             }
         }
         for (bid, bucket) in &self.buckets_borrowed {
-            self.error(format!("Bucket borrowed out: {:?} {:?}", bid, bucket));
+            warn!(self, "Bucket borrowed out: {:02x?} {:02x?}", bid, bucket);
             buckets.push(*bid);
         }
 
         for (reference, bucket_ref) in &self.references {
-            self.error(format!(
-                "Hanging reference: {:?} {:?}",
-                reference, bucket_ref
-            ));
+            warn!(
+                self,
+                "Hanging reference: {:02x?} {:02x?}", reference, bucket_ref
+            );
             references.push(*reference);
         }
 
@@ -860,27 +884,6 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
         println!("{}[{:5}] {}", "  ".repeat(self.depth), l, m);
     }
 
-    fn error<T: ToString>(&self, msg: T) {
-        self.log(Level::Error, msg.to_string());
-    }
-
-    #[allow(dead_code)]
-    fn warn<T: ToString>(&self, msg: T) {
-        self.log(Level::Warn, msg.to_string());
-    }
-
-    fn info<T: ToString>(&self, msg: T) {
-        self.log(Level::Info, msg.to_string());
-    }
-
-    fn trace<T: ToString>(&self, msg: T) {
-        self.log(Level::Trace, msg.to_string());
-    }
-
-    fn debug<T: ToString>(&self, msg: T) {
-        self.log(Level::Debug, msg.to_string());
-    }
-
     /// Handle a kernel call.
     fn handle<I: Decode + fmt::Debug, O: Encode + fmt::Debug>(
         &mut self,
@@ -898,18 +901,19 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
         let input: I = scrypto_decode(&input_bytes)
             .map_err(|e| Trap::from(RuntimeError::InvalidRequest(e)))?;
         if trace {
-            self.trace(format!("input = {:?}", input));
+            trace!(self, "input = {:02x?}", input);
         }
 
         let output: O = handler(self, input).map_err(Trap::from)?;
         let output_bytes = scrypto_encode(&output);
         let output_ptr = self.send_bytes(&output_bytes).map_err(Trap::from)?;
         if trace {
-            self.trace(format!(
-                "output = {:?}, time = {} ms",
+            trace!(
+                self,
+                "output = {:02x?}, time = {} ms",
                 output,
                 now.elapsed().as_millis()
-            ));
+            );
         }
 
         Ok(Some(RuntimeValue::I32(output_ptr)))
