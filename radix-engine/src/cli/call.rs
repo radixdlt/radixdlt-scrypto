@@ -72,6 +72,7 @@ pub fn handle_call<'a>(matches: &ArgMatches<'a>) {
         &module,
         &memory,
         HashMap::new(),
+        HashMap::new(),
     );
     let output = process.run();
     if output.is_ok() {

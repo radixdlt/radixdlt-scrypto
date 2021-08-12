@@ -46,6 +46,10 @@ pub const RETURN_BUCKET: u32 = 0x33;
 pub const GET_BUCKET_AMOUNT: u32 = 0x34;
 /// Get bucket resource address
 pub const GET_BUCKET_RESOURCE: u32 = 0x35;
+/// Get the resource amount behind a reference
+pub const GET_REFERENCE_AMOUNT: u32 = 0x36;
+/// Get the resource address behind a reference
+pub const GET_REFERENCE_RESOURCE: u32 = 0x36;
 
 /// Withdraw from an account
 pub const WITHDRAW: u32 = 0x40;
@@ -240,12 +244,12 @@ pub struct BorrowBucketInput {
 
 #[derive(Debug, Clone, Encode, Decode)]
 pub struct BorrowBucketOutput {
-    pub reference: BID,
+    pub reference: Reference,
 }
 
 #[derive(Debug, Clone, Encode, Decode)]
 pub struct ReturnBucketInput {
-    pub reference: BID,
+    pub reference: Reference,
 }
 
 #[derive(Debug, Clone, Encode, Decode)]
@@ -271,6 +275,25 @@ pub struct GetBucketResourceOutput {
     pub resource: Address,
 }
 
+#[derive(Debug, Clone, Encode, Decode)]
+pub struct GetReferenceAmountInput {
+    pub reference: Reference,
+}
+
+#[derive(Debug, Clone, Encode, Decode)]
+pub struct GetReferenceAmountOutput {
+    pub amount: U256,
+}
+
+#[derive(Debug, Clone, Encode, Decode)]
+pub struct GetReferenceResourceInput {
+    pub reference: Reference,
+}
+
+#[derive(Debug, Clone, Encode, Decode)]
+pub struct GetReferenceResourceOutput {
+    pub resource: Address,
+}
 //========
 // account
 //========

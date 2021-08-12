@@ -24,9 +24,10 @@ pub struct Process<'m, 'rt, 'le, L: Ledger> {
     module: &'m ModuleRef,
     memory: &'m MemoryRef,
     buckets: HashMap<BID, Bucket>,
-    buckets_lent: HashMap<BID, Bucket>,
-    buckets_borrowed: HashMap<BID, BucketRef>,
+    buckets_borrowed: HashMap<BID, Bucket>,
     buckets_moving: HashMap<BID, Bucket>,
+    references: HashMap<Reference, BucketRef>,
+    references_moving: HashMap<Reference, BucketRef>, // TODO: allow reference cross-component move
 }
 
 impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
@@ -40,6 +41,7 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
         module: &'m ModuleRef,
         memory: &'m MemoryRef,
         buckets: HashMap<BID, Bucket>,
+        references: HashMap<Reference, BucketRef>,
     ) -> Self {
         Self {
             runtime,
@@ -51,9 +53,10 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
             module,
             memory,
             buckets,
-            buckets_lent: HashMap::new(),
             buckets_borrowed: HashMap::new(),
             buckets_moving: HashMap::new(),
+            references,
+            references_moving: HashMap::new(),
         }
     }
 
@@ -128,6 +131,8 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
         }
         let buckets_out = self.buckets_moving.clone();
         self.buckets_moving.clear();
+        let references_out = self.references_moving.clone();
+        self.references_moving.clear();
 
         // create a process
         let mut process = Process::new(
@@ -140,6 +145,7 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
             &module,
             &memory,
             buckets_out,
+            references_out,
         );
 
         // run!
@@ -149,6 +155,8 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
         let buckets_in = process.buckets_moving.clone();
         process.buckets_moving.clear();
         self.buckets.extend(buckets_in);
+
+        // TODO: merge incoming references.
 
         Ok(CallBlueprintOutput { rtn: result? })
     }
@@ -334,13 +342,14 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
         // TODO: how to borrow persisted bucket?
 
         let bid = input.bucket;
+        let reference = Reference::immutable(bid);
         self.debug(format!("Borrowing {:?}", bid));
 
-        match self.buckets_lent.get_mut(&bid) {
+        match self.buckets_borrowed.get_mut(&bid) {
             Some(bucket) => {
                 // re-borrow
-                self.buckets_borrowed
-                    .entry(bid)
+                self.references
+                    .entry(reference)
                     .or_insert(BucketRef::new(bucket.clone(), 0))
                     .increase_count();
             }
@@ -350,34 +359,40 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
                     .buckets
                     .remove(&bid)
                     .ok_or(RuntimeError::BucketNotFound)?;
-                self.buckets_borrowed
-                    .insert(bid, BucketRef::new(bucket.clone(), 1));
-                self.buckets_lent.insert(bid, bucket);
+                self.references
+                    .insert(reference, BucketRef::new(bucket.clone(), 1));
+                self.buckets_borrowed.insert(bid, bucket);
             }
         }
 
-        Ok(BorrowBucketOutput { reference: bid })
+        Ok(BorrowBucketOutput { reference })
     }
 
     pub fn return_bucket(
         &mut self,
         input: ReturnBucketInput,
     ) -> Result<ReturnBucketOutput, RuntimeError> {
-        let bid = input.reference;
-        self.debug(format!("Returning: {:?}", bid));
+        let reference = input.reference;
+        let bid = match reference {
+            Reference::Immutable(b) => b,
+            Reference::Mutable(_) => {
+                todo!()
+            }
+        };
+        self.debug(format!("Returning: {:?}", reference));
 
         let bucket = self
-            .buckets_borrowed
-            .get_mut(&bid)
-            .ok_or(RuntimeError::BucketRefNotFound)?;
+            .references
+            .get_mut(&reference)
+            .ok_or(RuntimeError::ReferenceNotFound)?;
 
         let new_count = bucket
             .decrease_count()
             .map_err(|e| RuntimeError::AccountingError(e))?;
         if new_count == 0 {
-            self.buckets_borrowed.remove(&bid);
+            self.references.remove(&reference);
 
-            if let Some(b) = self.buckets_lent.remove(&bid) {
+            if let Some(b) = self.buckets_borrowed.remove(&bid) {
                 self.buckets.insert(bid, b);
             }
         }
@@ -392,11 +407,7 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
         let bucket = self
             .buckets
             .get(&input.bucket)
-            .or(self.buckets_lent.get(&input.bucket))
-            .or(self
-                .buckets_borrowed
-                .get(&input.bucket)
-                .map(BucketRef::bucket))
+            .or(self.buckets_borrowed.get(&input.bucket))
             .ok_or(RuntimeError::BucketNotFound)?;
 
         Ok(GetBucketAmountOutput {
@@ -411,15 +422,39 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
         let bucket = self
             .buckets
             .get(&input.bucket)
-            .or(self.buckets_lent.get(&input.bucket))
-            .or(self
-                .buckets_borrowed
-                .get(&input.bucket)
-                .map(BucketRef::bucket))
+            .or(self.buckets_borrowed.get(&input.bucket))
             .ok_or(RuntimeError::BucketNotFound)?;
 
         Ok(GetBucketResourceOutput {
             resource: bucket.resource(),
+        })
+    }
+
+    pub fn get_reference_amount(
+        &mut self,
+        input: GetReferenceAmountInput,
+    ) -> Result<GetReferenceAmountOutput, RuntimeError> {
+        let reference = self
+            .references
+            .get(&input.reference)
+            .ok_or(RuntimeError::ReferenceNotFound)?;
+
+        Ok(GetReferenceAmountOutput {
+            amount: reference.bucket().amount(),
+        })
+    }
+
+    pub fn get_reference_resource(
+        &mut self,
+        input: GetReferenceResourceInput,
+    ) -> Result<GetReferenceResourceOutput, RuntimeError> {
+        let reference = self
+            .references
+            .get(&input.reference)
+            .ok_or(RuntimeError::ReferenceNotFound)?;
+
+        Ok(GetReferenceResourceOutput {
+            resource: reference.bucket().resource(),
         })
     }
 
@@ -669,6 +704,7 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
             constants::TYPE_U256 => self.dte::<U256>(dec, enc, |_, v| Ok(v)),
             constants::TYPE_ADDRESS => self.dte::<Address>(dec, enc, |_, v| Ok(v)),
             constants::TYPE_BID => self.dte::<BID>(dec, enc, transform),
+            constants::TYPE_REFERENCE => self.dte::<Reference>(dec, enc, |_, v| Ok(v)),
             _ => Err(RuntimeError::InvalidData(DecodeError::InvalidType {
                 expected: 0xff,
                 actual: ty,
@@ -726,6 +762,7 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
     /// Finalize this process.
     fn finalize(&self) -> Result<(), RuntimeError> {
         let mut buckets = vec![];
+        let mut references = vec![];
 
         for (bid, bucket) in &self.buckets {
             if bucket.amount() != U256::zero() {
@@ -733,20 +770,23 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
                 buckets.push(*bid);
             }
         }
-        for (bid, bucket) in &self.buckets_lent {
-            self.error(format!("Bucket lent: {:?} {:?}", bid, bucket));
+        for (bid, bucket) in &self.buckets_borrowed {
+            self.error(format!("Bucket borrowed out: {:?} {:?}", bid, bucket));
             buckets.push(*bid);
         }
 
-        for (bid, bucket_ref) in &self.buckets_borrowed {
-            self.error(format!("Bucket lent: {:?} {:?}", bid, bucket_ref));
-            buckets.push(*bid);
+        for (reference, bucket_ref) in &self.references {
+            self.error(format!(
+                "Hanging reference: {:?} {:?}",
+                reference, bucket_ref
+            ));
+            references.push(*reference);
         }
 
-        if buckets.is_empty() {
+        if buckets.is_empty() && references.is_empty() {
             Ok(())
         } else {
-            Err(RuntimeError::ResourceLeak(buckets))
+            Err(RuntimeError::ResourceLeak(buckets, references))
         }
     }
 
@@ -880,6 +920,10 @@ impl<'m, 'rt, 'le, T: Ledger> Externals for Process<'m, 'rt, 'le, T> {
                     RETURN_BUCKET => self.handle(args, Process::return_bucket, true),
                     GET_BUCKET_AMOUNT => self.handle(args, Process::get_bucket_amount, true),
                     GET_BUCKET_RESOURCE => self.handle(args, Process::get_bucket_resource, true),
+                    GET_REFERENCE_AMOUNT => self.handle(args, Process::get_reference_amount, true),
+                    GET_REFERENCE_RESOURCE => {
+                        self.handle(args, Process::get_reference_resource, true)
+                    }
 
                     WITHDRAW => self.handle(args, Process::withdraw, true),
                     DEPOSIT => self.handle(args, Process::deposit, true),

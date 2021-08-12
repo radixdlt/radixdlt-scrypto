@@ -61,6 +61,7 @@ fn call<T: Ledger>(
         &module,
         &memory,
         HashMap::new(),
+        HashMap::new(),
     );
     let result = process.run();
     if result.is_ok() {

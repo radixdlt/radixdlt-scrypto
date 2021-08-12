@@ -31,7 +31,7 @@ pub enum RuntimeError {
 
     UnableToAllocateMemory,
 
-    ResourceLeak(Vec<BID>),
+    ResourceLeak(Vec<BID>, Vec<Reference>),
 
     BlueprintAlreadyExists(Address),
 
@@ -51,7 +51,7 @@ pub enum RuntimeError {
 
     BucketNotFound,
 
-    BucketRefNotFound,
+    ReferenceNotFound,
 
     AccountingError(BucketError),
 
