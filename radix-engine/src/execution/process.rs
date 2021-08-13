@@ -949,7 +949,7 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
         let input: I = scrypto_decode(&input_bytes)
             .map_err(|e| Trap::from(RuntimeError::InvalidRequest(e)))?;
         if trace {
-            trace!(self, "input = {:02x?}", input);
+            trace!(self, "{:02x?}", input);
         }
 
         let output: O = handler(self, input).map_err(Trap::from)?;
@@ -958,7 +958,7 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
         if trace {
             trace!(
                 self,
-                "output = {:02x?}, time = {} ms",
+                "{:02x?}, processing time = {} ms",
                 output,
                 now.elapsed().as_millis()
             );

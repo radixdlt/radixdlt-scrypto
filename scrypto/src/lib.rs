@@ -30,17 +30,17 @@ pub use scrypto_derive::*;
 
 /// Invokes a blueprint method.
 ///
-/// The first argument is the expected return type of the invoked method. It can
+/// The first parameter is the expected return type of the invoked method. It can
 /// be a unit type `()` or any other type with trait `sbor::Decode`.
 ///
-/// The second argument is the component name.
+/// The second parameter is the component name.
 ///
-/// The third arguments are the method name.
+/// The third parameter is the method name.
 ///
-/// The fourth argument is the *component address* if you're calling a method with
-/// receiver type `&self` or `&mut self`; otherwise, it should be a *blueprint address*.
+/// The fourth parameter is the *component address* if you're calling a method with
+/// receiver type `&self` or `&mut self`; otherwise, it should be the *blueprint address*.
 ///
-/// Additional arguments are the arguments, of types with trait `sbor::Encode`.
+/// Following parameters are the arguments, of trait `sbor::Encode`, to pass.
 ///
 /// # Example
 ///

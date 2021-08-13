@@ -101,7 +101,7 @@ pub fn handle_invoke<'a>(matches: &ArgMatches<'a>) {
     }
 
     println!("----");
-    println!("Logs:");
+    println!("Number of Logs: {}", runtime.logs().len());
     for (level, msg) in runtime.logs() {
         let (l, m) = match level {
             Level::Error => ("ERROR".red(), msg.red()),

@@ -9,14 +9,12 @@ component! {
     impl MoveTest {
 
         pub fn receive_bucket(&self, t: Tokens) {
-            info!("a");
-            info!("Received bucket: address = {}, amount = {}", t.amount(), t.resource());
-            info!("b");
+            info!("Received bucket: address = {}, amount = {}", t.resource(), t.amount());
             Account::from(Context::blueprint_address()).deposit_tokens(t);
         }
 
         pub fn receive_reference(&self, t: TokensRef) {
-            info!("Received reference: address = {}, amount = {}", t.amount(), t.resource());
+            info!("Received reference: address = {}, amount = {}", t.resource(), t.amount());
             t.destroy();
         }
 
