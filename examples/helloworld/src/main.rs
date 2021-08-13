@@ -17,9 +17,9 @@ component! {
             }).into()
         }
 
-        pub fn say_hello(&mut self) -> String {
+        pub fn say_hello(&mut self) {
+            info!("Hello, {}th visitor!", self.counter);
             self.counter += 1;
-            "hello".to_owned()
         }
     }
 }

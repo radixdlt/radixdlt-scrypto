@@ -20,8 +20,6 @@ static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 //============================
 
 use scrypto::constructs::*;
-use scrypto::types::rust::borrow::ToOwned;
-use scrypto::types::rust::string::String;
 use scrypto::types::*;
 use scrypto::*;
 
@@ -37,9 +35,9 @@ component! {
             }).into()
         }
 
-        pub fn say_hello(&mut self) -> String {
+        pub fn say_hello(&mut self) {
+            info!("Hello, {}th visitor!", self.counter);
             self.counter += 1;
-            "hello".to_owned()
         }
     }
 }
