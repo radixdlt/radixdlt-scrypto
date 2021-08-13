@@ -340,17 +340,16 @@ fn generate_stub(com_ident: &Ident, items: &Vec<ImplItem>) -> Vec<Item> {
                         true => Some(parse_quote! { __blueprint__: scrypto::types::Address, }),
                         false => None,
                     };
-                    let mut other_args = Punctuated::<Pat, Comma>::new();
+                    let mut other_args = Vec::new();
                     for a in &m.sig.inputs {
                         match a {
                             FnArg::Receiver(_) => {}
-                            FnArg::Typed(p) => {
-                                other_args.push(*p.pat.clone());
-                                other_args.push_punct(Comma(Span::call_site()));
+                            FnArg::Typed(t) => {
+                                other_args.push(&t.pat);
                             }
                         }
                     }
-                    trace!("Args: {}", quote! { #blueprint_arg, #other_args });
+                    trace!("Args: {}", quote! { #blueprint_arg #(,#other_args)* });
 
                     // Generate blueprint/component call
                     let stub: Item = match is_static {
@@ -358,13 +357,16 @@ fn generate_stub(com_ident: &Ident, items: &Vec<ImplItem>) -> Vec<Item> {
                             ReturnType::Default => parse_quote! {
                                 #[allow(dead_code)]
                                 pub fn #method_ident(#blueprint_arg #method_inputs) {
-                                    scrypto::call!((), #com_name, #method_name, __blueprint__, #other_args)
+                                    scrypto::call!((), #com_name, #method_name, __blueprint__ #(,#other_args)*)
                                 }
                             },
-                            ReturnType::Type(_, t) => parse_quote! {
-                                #[allow(dead_code)]
-                                pub fn #method_ident(#blueprint_arg #method_inputs) -> #t {
-                                    scrypto::call!(#t, #com_name, #method_name, __blueprint__, #other_args)
+                            ReturnType::Type(_, t) => {
+                                let ty = replace_self_with(&t, &com_name);
+                                parse_quote! {
+                                    #[allow(dead_code)]
+                                    pub fn #method_ident(#blueprint_arg #method_inputs) -> #ty {
+                                        scrypto::call!(#ty, #com_name, #method_name, __blueprint__ #(,#other_args)*)
+                                    }
                                 }
                             },
                         },
@@ -372,13 +374,16 @@ fn generate_stub(com_ident: &Ident, items: &Vec<ImplItem>) -> Vec<Item> {
                             ReturnType::Default => parse_quote! {
                                 #[allow(dead_code)]
                                 pub fn #method_ident(#method_inputs) {
-                                    scrypto::call!((), #com_name, #method_name, self.component, #other_args)
+                                    scrypto::call!((), #com_name, #method_name, self.component #(,#other_args)*)
                                 }
                             },
-                            ReturnType::Type(_, t) => parse_quote! {
-                                #[allow(dead_code)]
-                                pub fn #method_ident(#method_inputs) -> #t {
-                                    scrypto::call!(#t, #com_name, #method_name, self.component, #other_args)
+                            ReturnType::Type(_, t) => {
+                                let ty = replace_self_with(&t, &com_name);
+                                parse_quote! {
+                                    #[allow(dead_code)]
+                                    pub fn #method_ident(#method_inputs) -> #ty {
+                                        scrypto::call!(#ty, #com_name, #method_name, self.component #(,#other_args)*)
+                                    }
                                 }
                             },
                         },
@@ -494,7 +499,7 @@ mod tests {
                     }
                     #[allow(dead_code)]
                     pub fn x(&self) -> u32 {
-                        scrypto::call!(u32, "Test", "x", self.component,)
+                        scrypto::call!(u32, "Test", "x", self.component)
                     }
                 }
             },
