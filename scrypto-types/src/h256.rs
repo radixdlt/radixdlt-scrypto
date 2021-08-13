@@ -1,6 +1,4 @@
 use crate::rust::fmt;
-use crate::rust::string::String;
-use crate::rust::string::ToString;
 use crate::utils::*;
 
 /// Represents a 32-byte hash digest.
@@ -59,15 +57,15 @@ impl AsRef<[u8]> for H256 {
     }
 }
 
-impl ToString for H256 {
-    fn to_string(&self) -> String {
-        hex::encode(self.as_ref())
+impl fmt::Debug for H256 {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", hex::encode(self))
     }
 }
 
-impl fmt::Debug for H256 {
+impl fmt::Display for H256 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.to_string())
+        write!(f, "{}", hex::encode(self))
     }
 }
 

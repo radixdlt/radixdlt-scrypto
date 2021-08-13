@@ -56,7 +56,8 @@ pub fn handle_component(input: TokenStream, output_abi: bool, output_stub: bool)
             match calldata.method.as_str() {
                 #( #arm_guards => #arm_bodies )*
                 _ => {
-                    panic!("Method not found: name = {}", calldata.method)
+                    scrypto::error!("Method not found: {}", calldata.method);
+                    panic!();
                 }
             }
 
@@ -460,7 +461,8 @@ mod tests {
                             rtn = scrypto::buffer::scrypto_encode(&Test::x(&state));
                         }
                         _ => {
-                            panic!("Method not found: name = {}", calldata.method)
+                            scrypto::error!("Method not found: {}", calldata.method);
+                            panic!();
                         }
                     }
                     scrypto::buffer::scrypto_wrap(&rtn)

@@ -1,9 +1,9 @@
 use crate::rust::fmt;
-use crate::rust::string::String;
-use crate::rust::string::ToString;
 use crate::rust::vec;
 use crate::rust::vec::Vec;
 use crate::utils::*;
+
+// TODO: store the full raw bytes to avoid copying, see H256.
 
 /// Represents an address.
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
@@ -103,16 +103,17 @@ impl Into<Vec<u8>> for Address {
     }
 }
 
-impl ToString for Address {
-    fn to_string(&self) -> String {
+impl fmt::Debug for Address {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let bytes: Vec<u8> = self.clone().into();
-        hex::encode(bytes)
+        write!(f, "{}", hex::encode(bytes))
     }
 }
 
-impl fmt::Debug for Address {
+impl fmt::Display for Address {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.to_string())
+        let bytes: Vec<u8> = self.clone().into();
+        write!(f, "{}", hex::encode(bytes))
     }
 }
 

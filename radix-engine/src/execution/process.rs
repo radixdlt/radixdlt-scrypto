@@ -85,9 +85,10 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
         let now = Instant::now();
         info!(
             self,
-            "CALL started: blueprint = {:02x?}, function = {}, args = {:02x?}",
+            "CALL started: blueprint = {:02x?}, function = {}, method = {}, args = {:02x?}",
             self.blueprint,
             self.blueprint_func,
+            self.method,
             self.args
         );
 
@@ -188,6 +189,25 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
         process.buckets_moving.clear();
         self.references.extend(process.references_moving.clone());
         process.references_moving.clear();
+
+        // check borrowed buckets
+        let bids: Vec<BID> = self
+            .buckets_borrowed
+            .values()
+            .filter(|v| v.borrow().ref_count() == 0)
+            .map(|v| v.borrow().bid())
+            .collect();
+        for bid in bids {
+            trace!(self, "Moving {:02x?} to un-borrowed state", bid);
+            let bucket = self
+                .buckets_borrowed
+                .remove(&bid)
+                .unwrap()
+                .borrow()
+                .bucket()
+                .clone();
+            self.buckets.insert(bid, bucket);
+        }
 
         Ok(CallBlueprintOutput { rtn: result? })
     }
@@ -446,22 +466,21 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
         if rid.is_mutable() {
             todo!()
         };
-        trace!(self, "Returning: rid = {:02x?}", rid);
-
         let bucket = self
             .references
             .remove(&rid)
             .ok_or(RuntimeError::ReferenceNotFound)?;
-        trace!(self, "Bucket: {:02x?}", bucket);
+        trace!(self, "Returning {:02x?}: {:02x?}", rid, bucket);
 
         let new_count = bucket
             .borrow_mut()
             .rtn()
             .map_err(|e| RuntimeError::AccountingError(e))?;
         if new_count == 0 {
-            let b = bucket.borrow();
-            self.buckets_borrowed.remove(&b.bid());
-            self.buckets.insert(b.bid(), b.bucket().clone());
+            if let Some(b) = self.buckets_borrowed.remove(&bucket.borrow().bid()) {
+                self.buckets
+                    .insert(b.borrow().bid(), b.borrow().bucket().clone());
+            }
         }
 
         Ok(ReturnReferenceOutput {})
@@ -812,6 +831,7 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
                 .buckets
                 .remove(&bid)
                 .ok_or(RuntimeError::BucketNotFound)?;
+            trace!(self, "Moving {:02x?}: {:02x?}", bid, bucket);
             self.buckets_moving.insert(bid, bucket);
             Ok(bid)
         } else {
@@ -825,6 +845,7 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
             .references
             .remove(&rid)
             .ok_or(RuntimeError::BucketNotFound)?;
+        trace!(self, "Moving {:02x?}: {:02x?}", rid, bucket_ref);
         self.references_moving.insert(rid, bucket_ref);
         Ok(rid)
     }

@@ -191,3 +191,23 @@ fn test_account() {
     );
     assert!(output.is_ok());
 }
+
+#[test]
+fn test_move_bucket() {
+    let mut ledger = InMemoryLedger::new();
+    let output = one_shot(&mut ledger, "everything", "MoveTest", "move_bucket", vec![]);
+    assert!(output.is_ok());
+}
+
+#[test]
+fn test_move_reference() {
+    let mut ledger = InMemoryLedger::new();
+    let output = one_shot(
+        &mut ledger,
+        "everything",
+        "MoveTest",
+        "move_reference",
+        vec![],
+    );
+    assert!(output.is_ok());
+}
