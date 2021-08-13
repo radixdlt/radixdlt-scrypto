@@ -25,7 +25,7 @@ component! {
             let tokens =  mint_tokens(resource, 100);
             let component = Component::new("MoveTest", MoveTest {});
 
-            call_component!((), component, "receive_bucket", tokens);
+            call!((), "MoveTest", "receive_bucket", component.address(), tokens);
         }
 
         pub fn move_reference() {
@@ -33,7 +33,7 @@ component! {
             let tokens =  mint_tokens(resource, 100);
             let component = Component::new("MoveTest", MoveTest {});
 
-            call_component!((), component, "receive_reference", tokens.borrow());
+            call!((), "MoveTest", "receive_reference", component.address(), tokens.borrow());
 
             // I still own the tokens
             Account::from(Context::blueprint_address()).deposit_tokens(tokens);

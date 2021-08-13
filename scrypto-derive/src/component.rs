@@ -358,13 +358,13 @@ fn generate_stub(com_ident: &Ident, items: &Vec<ImplItem>) -> Vec<Item> {
                             ReturnType::Default => parse_quote! {
                                 #[allow(dead_code)]
                                 pub fn #method_ident(#blueprint_arg #method_inputs) {
-                                    scrypto::call_blueprint!((), __blueprint__, #com_name, #method_name, #other_args)
+                                    scrypto::call!((), #com_name, #method_name, __blueprint__, #other_args)
                                 }
                             },
                             ReturnType::Type(_, t) => parse_quote! {
                                 #[allow(dead_code)]
                                 pub fn #method_ident(#blueprint_arg #method_inputs) -> #t {
-                                    scrypto::call_blueprint!(#t, __blueprint__, #com_name, #method_name, #other_args)
+                                    scrypto::call!(#t, #com_name, #method_name, __blueprint__, #other_args)
                                 }
                             },
                         },
@@ -372,13 +372,13 @@ fn generate_stub(com_ident: &Ident, items: &Vec<ImplItem>) -> Vec<Item> {
                             ReturnType::Default => parse_quote! {
                                 #[allow(dead_code)]
                                 pub fn #method_ident(#method_inputs) {
-                                    scrypto::call_component!((), self.component, #method_name, #other_args)
+                                    scrypto::call!((), #com_name, #method_name, self.component, #other_args)
                                 }
                             },
                             ReturnType::Type(_, t) => parse_quote! {
                                 #[allow(dead_code)]
                                 pub fn #method_ident(#method_inputs) -> #t {
-                                    scrypto::call_component!(#t, self.component, #method_name, #other_args)
+                                    scrypto::call!(#t, #com_name, #method_name, self.component, #other_args)
                                 }
                             },
                         },
@@ -437,13 +437,11 @@ mod tests {
                 pub struct Test {
                     a: u32
                 }
-
                 impl Test {
                     pub fn x(&self) -> u32 {
                         self.a
                     }
                 }
-
                 #[no_mangle]
                 pub extern "C" fn Test_main() -> *mut u8 {
                     let calldata: scrypto::kernel::GetCallDataOutput = scrypto::kernel::call_kernel(
@@ -453,10 +451,10 @@ mod tests {
                     let rtn;
                     match calldata.method.as_str() {
                         "x" => {
-                            let arg0 = scrypto::constructs::Component::from(scrypto::buffer::scrypto_decode::<scrypto::types::Address>(
-                                &calldata.args[0usize]
-                            )
-                            .unwrap());
+                            let arg0 = scrypto::constructs::Component::from(
+                                scrypto::buffer::scrypto_decode::<scrypto::types::Address>(&calldata.args[0usize])
+                                    .unwrap()
+                            );
                             let state: Test = arg0.get_state();
                             rtn = scrypto::buffer::scrypto_encode(&Test::x(&state));
                         }
@@ -467,7 +465,6 @@ mod tests {
                     }
                     scrypto::buffer::scrypto_wrap(&rtn)
                 }
-
                 #[no_mangle]
                 pub extern "C" fn Test_abi() -> *mut u8 {
                     use scrypto::types::rust::string::ToString;
@@ -485,12 +482,10 @@ mod tests {
                     let output_bytes = scrypto::buffer::scrypto_encode(&output);
                     scrypto::buffer::scrypto_wrap(&output_bytes)
                 }
-
                 #[derive(Debug)]
                 pub struct TestStub {
                     component: scrypto::types::Address,
                 }
-
                 impl TestStub {
                     pub fn from_address(address: scrypto::types::Address) -> Self {
                         Self {
@@ -499,7 +494,7 @@ mod tests {
                     }
                     #[allow(dead_code)]
                     pub fn x(&self) -> u32 {
-                        scrypto::call_component!(u32, self.component, "x",)
+                        scrypto::call!(u32, "Test", "x", self.component,)
                     }
                 }
             },

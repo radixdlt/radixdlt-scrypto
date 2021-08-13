@@ -12,7 +12,7 @@ component! {
         }
 
         pub fn invoke(blueprint: Address) -> Address {
-            call_blueprint!(Address, blueprint, "Greeting", "new")
+            call!(Address, "Greeting", "new", blueprint)
         }
     }
 }

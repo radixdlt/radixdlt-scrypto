@@ -12,7 +12,7 @@ const LOG_MESSAGE: &'static str = "Hello, Radix!";
 const BLUEPRINT_ADDRESS: &'static str = "050377bac8066e51cd0d6b320c338d5abbcdbcca25572b6b3eee94";
 const COMPONENT_ADDRESS: &'static str = "06c46576324df8c76f6d83611974e8d26a12fe648280c19974c979";
 const COMPONENT_NAME: &'static str = "ComponentName";
-const COMPONENT_METHOD: &'static str = "method";
+const METHOD_NAME: &'static str = "method";
 const RETURN: i32 = 5;
 
 #[no_mangle]
@@ -36,7 +36,7 @@ pub extern "C" fn kernel(op: u32, input_ptr: *const u8, input_len: usize) -> *mu
             let input: CallBlueprintInput = scrypto_decode(&input_bytes).unwrap();
             assert_eq!(input.blueprint, Address::from(BLUEPRINT_ADDRESS));
             assert_eq!(input.component, COMPONENT_NAME);
-            assert_eq!(input.method, COMPONENT_METHOD);
+            assert_eq!(input.method, METHOD_NAME);
 
             let output = CallBlueprintOutput {
                 rtn: scrypto_encode(&RETURN),
@@ -73,13 +73,13 @@ fn test_logging() {
 #[test]
 fn test_call_blueprint() {
     let blueprint = Blueprint::from(Address::from(BLUEPRINT_ADDRESS));
-    let rtn = call_blueprint!(i32, blueprint, COMPONENT_NAME, COMPONENT_METHOD, 123);
+    let rtn = call!(i32, COMPONENT_NAME, METHOD_NAME, blueprint, 123);
     assert_eq!(rtn, RETURN);
 }
 
 #[test]
 fn test_call_component() {
     let component = Component::from(Address::from(COMPONENT_ADDRESS));
-    let rtn = call_component!(i32, component, COMPONENT_METHOD, 456);
+    let rtn = call!(i32, COMPONENT_NAME, METHOD_NAME, component, 456);
     assert_eq!(rtn, RETURN);
 }

@@ -28,46 +28,73 @@ pub mod utils;
 extern crate scrypto_derive;
 pub use scrypto_derive::*;
 
-/// Call a method of a blueprint.
+/// Invokes a blueprint method.
+///
+/// The first argument is the expected return type of the invoked method. It can
+/// be a unit type `()` or any other type with trait `sbor::Decode`.
+///
+/// The second argument is the component name.
+///
+/// The third arguments are the method name.
+///
+/// The fourth argument is the *component address* if you're calling a method with
+/// receiver type `&self` or `&mut self`; otherwise, it should be a *blueprint address*.
+///
+/// Additional arguments are the arguments, of types with trait `sbor::Encode`.
+///
+/// # Example
+///
+/// ```no_run
+/// use scrypto::call;
+/// use scrypto::types::Address;
+///
+/// /// Invoke a method with no return.
+/// call!((), "Greeting", "say_hello", Address::from("06fc7287c4b2eb144df50e6b596631d4add864937e18aad5ff6e76"));
+///
+/// /// Invoke a method with argument `5` and expect a return of `i32`.
+/// let rtn = call!(i32, "Counter", "add", Address::from("06fc7287c4b2eb144df50e6b596631d4add864937e18aad5ff6e76"), 5);
+/// ```
+///
 #[macro_export]
-macro_rules! call_blueprint {
-    ($rtn_type: ty, $blueprint: expr, $component: expr, $method: expr $(,)?) => {
+macro_rules! call {
+    ($return_type: ty, $component: expr, $method: expr, $address: expr) => {
         {
-            let blueprint = scrypto::constructs::Blueprint::from($blueprint);
-            let rtn = blueprint.call($component, $method, scrypto::types::rust::vec::Vec::new());
-            scrypto::buffer::scrypto_decode::<$rtn_type>(&rtn).unwrap()
+            // Convert into `Address`
+            let addr: scrypto::types::Address = $address.into();
+
+            // Prepare arguments
+            let mut args = scrypto::types::rust::vec::Vec::new();
+
+            // Invoke the method
+            let rtn = if addr.is_blueprint() {
+                scrypto::constructs::Blueprint::from(addr).call($component, $method, args)
+            } else {
+                scrypto::constructs::Component::from(addr).call($method, args)
+            };
+
+            // Decode the return
+            scrypto::buffer::scrypto_decode::<$return_type>(&rtn).unwrap()
         }
     };
 
-    ($rtn_type: ty, $blueprint: expr, $component: expr, $method: expr, $($args: expr),+ $(,)?) => {
+    ($return_type: ty, $component: expr, $method: expr, $address: expr, $($args: expr),+) => {
         {
-            let blueprint = scrypto::constructs::Blueprint::from($blueprint);
+            // Convert into `Address`
+            let addr: scrypto::types::Address = $address.into();
+
+            // Prepare arguments
             let mut args = scrypto::types::rust::vec::Vec::new();
             $(args.push(scrypto::buffer::scrypto_encode(&$args));)+
-            let rtn = blueprint.call($component, $method, args);
-            scrypto::buffer::scrypto_decode::<$rtn_type>(&rtn).unwrap()
-        }
-    };
-}
 
-/// Call a method of a component.
-#[macro_export]
-macro_rules! call_component {
-    ($rtn_type: ty, $component: expr, $method: expr $(,)?) => {
-        {
-            let component = scrypto::constructs::Component::from($component);
-            let rtn = component.call($method, scrypto::types::rust::vec::Vec::new());
-            scrypto::buffer::scrypto_decode::<$rtn_type>(&rtn).unwrap()
-        }
-    };
+            // Invoke the method
+            let rtn = if addr.is_blueprint() {
+                scrypto::constructs::Blueprint::from(addr).call($component, $method, args)
+            } else {
+                scrypto::constructs::Component::from(addr).call($method, args)
+            };
 
-    ($rtn_type: ty, $component: expr, $method: expr, $($args: expr),+ $(,)?) => {
-        {
-            let component = scrypto::constructs::Component::from($component);
-            let mut args = scrypto::types::rust::vec::Vec::new();
-            $(args.push(scrypto::buffer::scrypto_encode(&$args));)+
-            let rtn = component.call($method, args);
-            scrypto::buffer::scrypto_decode::<$rtn_type>(&rtn).unwrap()
+            // Decode the return
+            scrypto::buffer::scrypto_decode::<$return_type>(&rtn).unwrap()
         }
     };
 }

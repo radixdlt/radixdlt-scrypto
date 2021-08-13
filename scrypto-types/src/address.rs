@@ -70,6 +70,20 @@ impl Address {
             Err(invalid_len)
         }
     }
+
+    pub fn is_blueprint(&self) -> bool {
+        match self {
+            Address::Blueprint(_) => true,
+            _ => false,
+        }
+    }
+
+    pub fn is_component(&self) -> bool {
+        match self {
+            Address::Component(_) => true,
+            _ => false,
+        }
+    }
 }
 
 impl<T: AsRef<str>> From<T> for Address {
