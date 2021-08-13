@@ -5,17 +5,17 @@ use clap::{crate_version, App, Arg, ArgMatches, SubCommand};
 use scrypto::utils::*;
 use uuid::Uuid;
 
-use crate::cli::get_root_dir;
+use crate::cli::*;
 use crate::execution::*;
 use crate::ledger::*;
 use crate::model::*;
 
 const ARG_FILE: &'static str = "FILE";
 
-/// Prepares a subcommand that handles `publish`.
-pub fn prepare_publish<'a, 'b>() -> App<'a, 'b> {
-    SubCommand::with_name("publish")
-        .about("Publish a new blueprint.")
+/// Constructs a `publish` subcommand.
+pub fn make_publish_cmd<'a, 'b>() -> App<'a, 'b> {
+    SubCommand::with_name(CMD_PUBLISH)
+        .about("Publishes a new blueprint.")
         .version(crate_version!())
         .arg(
             Arg::with_name(ARG_FILE)
@@ -24,9 +24,9 @@ pub fn prepare_publish<'a, 'b>() -> App<'a, 'b> {
         )
 }
 
-/// Processes a `publish` command.
-pub fn handle_publish<'a>(args: &ArgMatches<'a>) {
-    let file = args.value_of(ARG_FILE).unwrap();
+/// Handles a `publish` request.
+pub fn handle_publish<'a>(matches: &ArgMatches<'a>) {
+    let file = matches.value_of(ARG_FILE).unwrap();
     let code =
         fs::read(PathBuf::from(file)).expect(format!("Unable to load file: {}", file).as_str());
 

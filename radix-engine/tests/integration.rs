@@ -54,7 +54,7 @@ fn call<T: Ledger>(
     let mut process = Process::new(
         &mut runtime,
         blueprint,
-        component.to_string(),
+        format!("{}_main", component.to_string()),
         method.to_string(),
         args,
         0,

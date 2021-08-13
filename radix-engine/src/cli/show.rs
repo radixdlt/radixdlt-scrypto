@@ -1,15 +1,15 @@
 use clap::{crate_version, App, Arg, ArgMatches, SubCommand};
 use scrypto::types::*;
 
-use crate::cli::utils::*;
+use crate::cli::*;
 use crate::ledger::*;
 
 const ARG_ADDRESS: &'static str = "ADDRESS";
 
-/// Prepares a subcommand that handles `show`.
-pub fn prepare_show<'a, 'b>() -> App<'a, 'b> {
-    SubCommand::with_name("show")
-        .about("Show info about an address.")
+/// Constructs a `show` subcommand.
+pub fn make_show_cmd<'a, 'b>() -> App<'a, 'b> {
+    SubCommand::with_name(CMD_SHOW)
+        .about("Show the conent of an address.")
         .version(crate_version!())
         .arg(
             Arg::with_name(ARG_ADDRESS)
@@ -18,7 +18,7 @@ pub fn prepare_show<'a, 'b>() -> App<'a, 'b> {
         )
 }
 
-/// Processes a `show` command.
+/// Handles a `show` request.
 pub fn handle_show<'a>(matches: &ArgMatches<'a>) {
     let address: Address = matches.value_of(ARG_ADDRESS).unwrap().into();
 

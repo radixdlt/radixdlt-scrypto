@@ -37,7 +37,7 @@ macro_rules! warn {
 pub struct Process<'m, 'rt, 'le, L: Ledger> {
     runtime: &'rt mut Runtime<'le, L>,
     blueprint: Address,
-    component: String,
+    blueprint_func: String,
     method: String,
     args: Vec<Vec<u8>>,
     depth: usize,
@@ -54,7 +54,7 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
     pub fn new(
         runtime: &'rt mut Runtime<'le, L>,
         blueprint: Address,
-        component: String,
+        blueprint_func: String,
         method: String,
         args: Vec<Vec<u8>>,
         depth: usize,
@@ -66,7 +66,7 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
         Self {
             runtime,
             blueprint,
-            component,
+            blueprint_func,
             method,
             args,
             depth,
@@ -85,15 +85,13 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
         let now = Instant::now();
         info!(
             self,
-            "CALL started: blueprint = {:02x?}, component = {}, method = {}, args = {:02x?}",
+            "CALL started: blueprint = {:02x?}, function = {}, args = {:02x?}",
             self.blueprint,
-            self.component,
-            self.method,
+            self.blueprint_func,
             self.args
         );
 
-        let func = format!("{}_{}", self.component, "main");
-        let result = self.invoke(func);
+        let result = self.invoke(self.blueprint_func.clone());
 
         info!(
             self,
@@ -172,7 +170,7 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
         let mut process = Process::new(
             self.runtime,
             input.blueprint,
-            input.component,
+            format!("{}_main", input.component),
             input.method,
             input.args,
             self.depth + 1,
@@ -691,7 +689,7 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
                 // value
                 self.traverse_sbor(None, dec, enc, bid_handler, rid_handler)
             }
-            constants::TYPE_ARRAY => {
+            constants::TYPE_ARRAY | constants::TYPE_VEC => {
                 // element type
                 let ele_ty = dec.read_type().map_err(RuntimeError::invalid_data)?;
                 enc.write_type(ele_ty);
@@ -755,9 +753,6 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
             }
             constants::TYPE_FIELDS_UNIT => Ok(()),
             // collections
-            constants::TYPE_VEC => {
-                todo!()
-            }
             constants::TYPE_TREE_SET | constants::TYPE_HASH_SET => {
                 todo!()
             }

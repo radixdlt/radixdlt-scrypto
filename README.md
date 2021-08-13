@@ -22,7 +22,11 @@ cargo run -- publish /path/to/<project_name>.wasm
 ```
 5. Invoke a method of the blueprint
 ```
-cargo run -- call <blueprint_address> <component_name> <method_name> <args>...
+cargo run -- invoke <blueprint_address> <component_name> <method_name> <args>...
+```
+6. For any other commands, run
+```
+cargo run -- help
 ```
 
 ## Project Layout

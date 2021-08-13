@@ -4,8 +4,9 @@ version = "0.1.0"
 edition = "2018"
 
 [dependencies]
-scrypto = { version = "0.1", path = "../scrypto" }
+scrypto = { version = "0.1", path = "../scrypto", features = ["json_std"] }
 sbor = { version = "0.1", path = "../sbor", features = ["scrypto_std"] }
+serde_json = { version = "1.0" }
 clap = { version = "2.33" }
 wasmi = { version = "0.9" }
 dirs = { version = "3.0" }

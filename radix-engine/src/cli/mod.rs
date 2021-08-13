@@ -1,33 +1,46 @@
-mod call;
-mod clear;
+mod export_abi;
+mod invoke;
+mod invoke_component;
 mod publish;
+mod reset;
 mod show;
 mod utils;
 
-pub use call::{handle_call, prepare_call};
-pub use clear::{handle_clear, prepare_clear};
-pub use publish::{handle_publish, prepare_publish};
-pub use show::{handle_show, prepare_show};
-pub use utils::get_root_dir;
+const CMD_EXPORT_ABI: &'static str = "export-abi";
+const CMD_INVOKE: &'static str = "invoke";
+const CMD_INVOKE_COMPONENT: &'static str = "invoke-component";
+const CMD_PUBLISH: &'static str = "publish";
+const CMD_RESET: &'static str = "reset";
+const CMD_SHOW: &'static str = "show";
 
-use clap::{crate_version, App};
+pub use export_abi::*;
+pub use invoke::*;
+pub use invoke_component::*;
+pub use publish::*;
+pub use reset::*;
+pub use show::*;
+pub use utils::*;
 
 /// Runs Radix Engine CLI.
 pub fn run() {
-    let matches = App::new("Radix Engine")
+    let matches = clap::App::new("Radix Engine")
         .about("Build fast, reward everyone, and scale without friction")
-        .version(crate_version!())
-        .subcommand(prepare_show())
-        .subcommand(prepare_publish())
-        .subcommand(prepare_call())
-        .subcommand(prepare_clear())
+        .version(clap::crate_version!())
+        .subcommand(make_export_abi_cmd())
+        .subcommand(make_invoke_cmd())
+        .subcommand(make_invoke_component_cmd())
+        .subcommand(make_publish_cmd())
+        .subcommand(make_reset_cmd())
+        .subcommand(make_show_cmd())
         .get_matches();
 
     match matches.subcommand() {
-        ("show", Some(m)) => handle_show(m),
-        ("publish", Some(m)) => handle_publish(m),
-        ("call", Some(m)) => handle_call(m),
-        ("clear", Some(m)) => handle_clear(m),
+        (CMD_EXPORT_ABI, Some(m)) => handle_export_abi(m),
+        (CMD_INVOKE, Some(m)) => handle_invoke(m),
+        (CMD_INVOKE_COMPONENT, Some(m)) => handle_invoke_component(m),
+        (CMD_PUBLISH, Some(m)) => handle_publish(m),
+        (CMD_RESET, Some(m)) => handle_reset(m),
+        (CMD_SHOW, Some(m)) => handle_show(m),
         _ => {}
     }
 }
