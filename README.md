@@ -1,5 +1,7 @@
 # Scrypto
 
+[![CI](https://github.com/radixdlt/radixdlt-scrypto/actions/workflows/ci.yml/badge.svg)](https://github.com/radixdlt/radixdlt-scrypto/actions/workflows/ci.yml)
+
 Language for building DeFi apps on Radix.
 
 ## Get Started
