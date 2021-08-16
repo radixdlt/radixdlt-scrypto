@@ -1,7 +1,7 @@
 #[cfg(any(feature = "json_std", feature = "json_alloc"))]
 use serde::{Deserialize, Serialize};
 
-use crate::sbor::{self, Decode, Encode};
+use crate::sbor::{Decode, Encode};
 
 use crate::collections::*;
 use crate::rust::boxed::Box;

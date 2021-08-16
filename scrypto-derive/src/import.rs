@@ -35,14 +35,14 @@ pub fn handle_import(input: TokenStream) -> TokenStream {
 
     let structure: Item = parse_quote! {
         pub struct #ident {
-            address: scrypto::types::Address
+            address: ::scrypto::types::Address
         }
     };
     items.push(structure);
 
     let mut functions = Vec::<ItemFn>::new();
     functions.push(parse_quote! {
-        pub fn from_address(address: scrypto::types::Address) -> Self {
+        pub fn from_address(address: ::scrypto::types::Address) -> Self {
             Self {
                 address
             }
@@ -68,7 +68,7 @@ pub fn handle_import(input: TokenStream) -> TokenStream {
                 address_stmt = parse_quote! { let address = self.address; };
             }
             scrypto_abi::Mutability::Stateless => {
-                address_stmt = parse_quote! { let address = scrypto::types::Address::from_hex(#blueprint_address).unwrap(); };
+                address_stmt = parse_quote! { let address = ::scrypto::types::Address::from_hex(#blueprint_address).unwrap(); };
             }
         }
 
@@ -92,7 +92,7 @@ pub fn handle_import(input: TokenStream) -> TokenStream {
         functions.push(parse_quote! {
             pub fn #func_indent(#func_inputs) -> #func_output {
                 #address_stmt
-                scrypto::call!(#func_output, #component_name, #method_name, address #(, #func_args)*)
+                ::scrypto::call!(#func_output, #component_name, #method_name, address #(, #func_args)*)
             }
         });
     }
@@ -135,11 +135,11 @@ fn get_native_type(ty: &sbor::types::Type) -> (Type, Vec<Item>) {
         sbor::types::Type::U64 => parse_quote! { u64 },
         sbor::types::Type::U128 => parse_quote! { u128 },
         sbor::types::Type::String => parse_quote! { String },
-        sbor::types::Type::H256 => parse_quote! { scrypto::types::H256 },
-        sbor::types::Type::U256 => parse_quote! { scrypto::types::U256 },
-        sbor::types::Type::Address => parse_quote! { scrypto::types::Address },
-        sbor::types::Type::BID => parse_quote! { scrypto::types::BID },
-        sbor::types::Type::RID => parse_quote! { scrypto::types::RID },
+        sbor::types::Type::H256 => parse_quote! { ::scrypto::types::H256 },
+        sbor::types::Type::U256 => parse_quote! { ::scrypto::types::U256 },
+        sbor::types::Type::Address => parse_quote! { ::scrypto::types::Address },
+        sbor::types::Type::BID => parse_quote! { ::scrypto::types::BID },
+        sbor::types::Type::RID => parse_quote! { ::scrypto::types::RID },
         sbor::types::Type::Option { value } => {
             let (new_type, new_items) = get_native_type(value);
             items.extend(new_items);
@@ -166,7 +166,7 @@ fn get_native_type(ty: &sbor::types::Type) -> (Type, Vec<Item>) {
                         items.extend(new_items);
                     }
                     items.push(parse_quote! {
-                        #[derive(Debug, sbor::Encode, sbor::Decode)]
+                        #[derive(Debug, ::sbor::Encode, ::sbor::Decode)]
                         pub struct #ident {
                             #( pub #names : #types, )*
                         }
@@ -240,7 +240,7 @@ fn get_native_type(ty: &sbor::types::Type) -> (Type, Vec<Item>) {
             }
 
             items.push(parse_quote! {
-                #[derive(Debug, sbor::Encode, sbor::Decode)]
+                #[derive(Debug, ::sbor::Encode, ::sbor::Decode)]
                 pub enum #ident {
                     #( #native_variants ),*
                 }
@@ -316,21 +316,21 @@ mod tests {
             output,
             quote! {
                 pub struct Sample {
-                    address: scrypto::types::Address
+                    address: ::scrypto::types::Address
                 }
-                #[derive(Debug, sbor::Encode, sbor::Decode)]
+                #[derive(Debug, ::sbor::Encode, ::sbor::Decode)]
                 pub struct Floor {
                     pub x: u32,
                     pub y: u32,
                 }
-                #[derive(Debug, sbor::Encode, sbor::Decode)]
+                #[derive(Debug, ::sbor::Encode, ::sbor::Decode)]
                 pub enum Hello {
                     A { x: u32 },
                     B(u32),
                     C
                 }
                 impl Sample {
-                    pub fn from_address(address: scrypto::types::Address) -> Self {
+                    pub fn from_address(address: ::scrypto::types::Address) -> Self {
                         Self { address }
                     }
                     pub fn calculate_volume(
@@ -343,7 +343,7 @@ mod tests {
                         arg5: [String; 2usize]
                     ) -> u32 {
                         let address = self.address;
-                        scrypto::call!(
+                        ::scrypto::call!(
                             u32,
                             "Sample",
                             "calculate_volume",
@@ -371,18 +371,18 @@ mod tests {
             output,
             quote! {
                 pub struct Sample {
-                    address: scrypto::types::Address
+                    address: ::scrypto::types::Address
                 }
                 impl Sample {
-                    pub fn from_address(address: scrypto::types::Address) -> Self {
+                    pub fn from_address(address: ::scrypto::types::Address) -> Self {
                         Self { address }
                     }
                     pub fn stateless_func() -> u32 {
-                        let address = scrypto::types::Address::from_hex(
+                        let address = ::scrypto::types::Address::from_hex(
                             "056967d3d49213394892980af59be76e9b3e7cc4cb78237460d0c7"
                         )
                         .unwrap();
-                        scrypto::call!(u32, "Sample", "stateless_func", address)
+                        ::scrypto::call!(u32, "Sample", "stateless_func", address)
                     }
                 }
             },
@@ -399,18 +399,18 @@ mod tests {
             output,
             quote! {
                 pub struct Sample {
-                    address: scrypto::types::Address
+                    address: ::scrypto::types::Address
                 }
                 impl Sample {
-                    pub fn from_address(address: scrypto::types::Address) -> Self {
+                    pub fn from_address(address: ::scrypto::types::Address) -> Self {
                         Self { address }
                     }
                     pub fn test_system_types(arg0: ::scrypto::resource::Tokens) -> ::scrypto::resource::BadgesRef {
-                        let address = scrypto::types::Address::from_hex(
+                        let address = ::scrypto::types::Address::from_hex(
                             "056967d3d49213394892980af59be76e9b3e7cc4cb78237460d0c7"
                         )
                         .unwrap();
-                        scrypto::call!(
+                        ::scrypto::call!(
                             ::scrypto::resource::BadgesRef,
                             "Sample",
                             "test_system_types",

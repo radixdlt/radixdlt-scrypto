@@ -31,7 +31,7 @@ pub fn handle_component(input: TokenStream, output_abi: bool, output_stub: bool)
     let com_name = com_ident.to_string();
     trace!("Processing component: {}", com_name);
     let generated_component = quote! {
-        #[derive(Debug, sbor::Encode, sbor::Decode, sbor::Describe)]
+        #[derive(Debug, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
         pub #com_strut
 
         impl #com_ident {
@@ -46,9 +46,9 @@ pub fn handle_component(input: TokenStream, output_abi: bool, output_stub: bool)
         #[no_mangle]
         pub extern "C" fn #dispatcher_ident() -> *mut u8 {
             // Retrieve call data
-            let calldata: scrypto::kernel::GetCallDataOutput = scrypto::kernel::call_kernel(
-                scrypto::kernel::GET_CALL_DATA,
-                scrypto::kernel::GetCallDataInput {},
+            let calldata: ::scrypto::kernel::GetCallDataOutput = ::scrypto::kernel::call_kernel(
+                ::scrypto::kernel::GET_CALL_DATA,
+                ::scrypto::kernel::GetCallDataInput {},
             );
 
             // Dispatch the call
@@ -56,13 +56,13 @@ pub fn handle_component(input: TokenStream, output_abi: bool, output_stub: bool)
             match calldata.method.as_str() {
                 #( #arm_guards => #arm_bodies )*
                 _ => {
-                    scrypto::error!("Method not found: {}", calldata.method);
+                    ::scrypto::error!("Method not found: {}", calldata.method);
                     panic!();
                 }
             }
 
             // Return
-            scrypto::buffer::scrypto_wrap(&rtn)
+            ::scrypto::buffer::scrypto_wrap(&rtn)
         }
     };
 
@@ -72,12 +72,12 @@ pub fn handle_component(input: TokenStream, output_abi: bool, output_stub: bool)
     let generated_abi = quote! {
         #[no_mangle]
         pub extern "C" fn #abi_ident() -> *mut u8 {
-            use scrypto::constructs::Context;
-            use scrypto::types::rust::string::ToString;
-            use scrypto::types::rust::vec;
-            use sbor::{self, Describe};
+            use ::scrypto::constructs::Context;
+            use ::scrypto::types::rust::string::ToString;
+            use ::scrypto::types::rust::vec;
+            use ::sbor::{self, Describe};
 
-            let output = scrypto::abi::Component {
+            let output = ::scrypto::abi::Component {
                 blueprint: Context::blueprint_address().to_string(),
                 name: #com_name.to_string(),
                 methods: vec![
@@ -86,10 +86,10 @@ pub fn handle_component(input: TokenStream, output_abi: bool, output_stub: bool)
             };
 
             // serialize the output
-            let output_bytes = scrypto::buffer::scrypto_encode(&output);
+            let output_bytes = ::scrypto::buffer::scrypto_encode(&output);
 
             // return the output wrapped in a radix-style buffer
-            scrypto::buffer::scrypto_wrap(&output_bytes)
+            ::scrypto::buffer::scrypto_wrap(&output_bytes)
         }
     };
 
@@ -99,12 +99,12 @@ pub fn handle_component(input: TokenStream, output_abi: bool, output_stub: bool)
     let generated_stub = quote! {
         #[derive(Debug)]
         pub struct #stub_ident {
-            component: scrypto::types::Address,
+            component: ::scrypto::types::Address,
         }
 
         impl #stub_ident {
             // need to reserve kw `from_address`
-            pub fn from_address(address: scrypto::types::Address) -> Self {
+            pub fn from_address(address: ::scrypto::types::Address) -> Self {
                 Self { component: address }
             }
 
@@ -164,7 +164,7 @@ fn generate_dispatcher(com_ident: &Ident, items: &Vec<ImplItem>) -> (Vec<Expr>, 
 
                                 // Generate an `Arg` and a loading `Stmt` for the i-th argument
                                 let stmt: Stmt = parse_quote! {
-                                    let #arg = scrypto::constructs::Component::from(scrypto::buffer::scrypto_decode::<scrypto::types::Address>(&calldata.args[#i]).unwrap());
+                                    let #arg = ::scrypto::constructs::Component::from(::scrypto::buffer::scrypto_decode::<::scrypto::types::Address>(&calldata.args[#i]).unwrap());
                                 };
                                 trace!("Stmt: {}", quote! { #stmt });
                                 args.push(parse_quote! { & #mutability state });
@@ -187,7 +187,7 @@ fn generate_dispatcher(com_ident: &Ident, items: &Vec<ImplItem>) -> (Vec<Expr>, 
                                 // Generate an `Arg` and a loading `Stmt` for the i-th argument
                                 let ty = &t.ty;
                                 let stmt: Stmt = parse_quote! {
-                                    let #arg = scrypto::buffer::scrypto_decode::<#ty>(&calldata.args[#i]).unwrap();
+                                    let #arg = ::scrypto::buffer::scrypto_decode::<#ty>(&calldata.args[#i]).unwrap();
                                 };
                                 trace!("Stmt: {}", quote! { #stmt });
                                 args.push(parse_quote! { #arg });
@@ -205,7 +205,7 @@ fn generate_dispatcher(com_ident: &Ident, items: &Vec<ImplItem>) -> (Vec<Expr>, 
                     }
                     // invoke the function
                     let stmt: Stmt = parse_quote! {
-                        rtn = scrypto::buffer::scrypto_encode(
+                        rtn = ::scrypto::buffer::scrypto_encode(
                             &#com_ident::#fn_ident(#(#args),*)
                         );
                     };
@@ -249,7 +249,7 @@ fn generate_abi(comp_name: &str, items: &Vec<ImplItem>) -> Vec<Expr> {
             ImplItem::Method(ref m) => match &m.vis {
                 Visibility::Public(_) => {
                     let name = m.sig.ident.to_string();
-                    let mut mutability = quote! { scrypto::abi::Mutability::Stateless };
+                    let mut mutability = quote! { ::scrypto::abi::Mutability::Stateless };
                     let mut inputs = vec![];
                     for input in &m.sig.inputs {
                         match input {
@@ -260,9 +260,9 @@ fn generate_abi(comp_name: &str, items: &Vec<ImplItem>) -> Vec<Expr> {
                                 }
 
                                 if r.mutability.is_some() {
-                                    mutability = quote! { scrypto::abi::Mutability::Mutable };
+                                    mutability = quote! { ::scrypto::abi::Mutability::Mutable };
                                 } else {
-                                    mutability = quote! { scrypto::abi::Mutability::Immutable };
+                                    mutability = quote! { ::scrypto::abi::Mutability::Immutable };
                                 }
                             }
                             FnArg::Typed(ref t) => {
@@ -276,7 +276,7 @@ fn generate_abi(comp_name: &str, items: &Vec<ImplItem>) -> Vec<Expr> {
 
                     let output = match &m.sig.output {
                         ReturnType::Default => quote! {
-                            sbor::types::Type::Unit
+                            ::sbor::types::Type::Unit
                         },
                         ReturnType::Type(_, t) => {
                             let ty = replace_self_with(t, comp_name);
@@ -287,7 +287,7 @@ fn generate_abi(comp_name: &str, items: &Vec<ImplItem>) -> Vec<Expr> {
                     };
 
                     functions.push(parse_quote! {
-                        scrypto::abi::Method {
+                        ::scrypto::abi::Method {
                             name: #name.to_string(),
                             mutability: #mutability,
                             inputs: vec![#(#inputs),*],
@@ -339,7 +339,7 @@ fn generate_stub(com_ident: &Ident, items: &Vec<ImplItem>) -> Vec<Item> {
 
                     // Generate argument list
                     let blueprint_arg: Option<Punctuated<FnArg, Comma>> = match is_static {
-                        true => Some(parse_quote! { __blueprint__: scrypto::types::Address, }),
+                        true => Some(parse_quote! { __blueprint__: ::scrypto::types::Address, }),
                         false => None,
                     };
                     let mut other_args = Vec::new();
@@ -359,7 +359,7 @@ fn generate_stub(com_ident: &Ident, items: &Vec<ImplItem>) -> Vec<Item> {
                             ReturnType::Default => parse_quote! {
                                 #[allow(dead_code)]
                                 pub fn #method_ident(#blueprint_arg #method_inputs) {
-                                    scrypto::call!((), #com_name, #method_name, __blueprint__ #(,#other_args)*)
+                                    ::scrypto::call!((), #com_name, #method_name, __blueprint__ #(,#other_args)*)
                                 }
                             },
                             ReturnType::Type(_, t) => {
@@ -367,7 +367,7 @@ fn generate_stub(com_ident: &Ident, items: &Vec<ImplItem>) -> Vec<Item> {
                                 parse_quote! {
                                     #[allow(dead_code)]
                                     pub fn #method_ident(#blueprint_arg #method_inputs) -> #ty {
-                                        scrypto::call!(#ty, #com_name, #method_name, __blueprint__ #(,#other_args)*)
+                                        ::scrypto::call!(#ty, #com_name, #method_name, __blueprint__ #(,#other_args)*)
                                     }
                                 }
                             }
@@ -376,7 +376,7 @@ fn generate_stub(com_ident: &Ident, items: &Vec<ImplItem>) -> Vec<Item> {
                             ReturnType::Default => parse_quote! {
                                 #[allow(dead_code)]
                                 pub fn #method_ident(#method_inputs) {
-                                    scrypto::call!((), #com_name, #method_name, self.component #(,#other_args)*)
+                                    ::scrypto::call!((), #com_name, #method_name, self.component #(,#other_args)*)
                                 }
                             },
                             ReturnType::Type(_, t) => {
@@ -384,7 +384,7 @@ fn generate_stub(com_ident: &Ident, items: &Vec<ImplItem>) -> Vec<Item> {
                                 parse_quote! {
                                     #[allow(dead_code)]
                                     pub fn #method_ident(#method_inputs) -> #ty {
-                                        scrypto::call!(#ty, #com_name, #method_name, self.component #(,#other_args)*)
+                                        ::scrypto::call!(#ty, #com_name, #method_name, self.component #(,#other_args)*)
                                     }
                                 }
                             }
@@ -440,7 +440,7 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                #[derive(Debug, sbor :: Encode, sbor :: Decode, sbor :: Describe)]
+                #[derive(Debug, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
                 pub struct Test {
                     a: u32
                 }
@@ -451,59 +451,59 @@ mod tests {
                 }
                 #[no_mangle]
                 pub extern "C" fn Test_main() -> *mut u8 {
-                    let calldata: scrypto::kernel::GetCallDataOutput = scrypto::kernel::call_kernel(
-                        scrypto::kernel::GET_CALL_DATA,
-                        scrypto::kernel::GetCallDataInput {},
+                    let calldata: ::scrypto::kernel::GetCallDataOutput = ::scrypto::kernel::call_kernel(
+                        ::scrypto::kernel::GET_CALL_DATA,
+                        ::scrypto::kernel::GetCallDataInput {},
                     );
                     let rtn;
                     match calldata.method.as_str() {
                         "x" => {
-                            let arg0 = scrypto::constructs::Component::from(
-                                scrypto::buffer::scrypto_decode::<scrypto::types::Address>(&calldata.args[0usize])
+                            let arg0 = ::scrypto::constructs::Component::from(
+                                ::scrypto::buffer::scrypto_decode::<::scrypto::types::Address>(&calldata.args[0usize])
                                     .unwrap()
                             );
                             let state: Test = arg0.get_state();
-                            rtn = scrypto::buffer::scrypto_encode(&Test::x(&state));
+                            rtn = ::scrypto::buffer::scrypto_encode(&Test::x(&state));
                         }
                         _ => {
-                            scrypto::error!("Method not found: {}", calldata.method);
+                            ::scrypto::error!("Method not found: {}", calldata.method);
                             panic!();
                         }
                     }
-                    scrypto::buffer::scrypto_wrap(&rtn)
+                    ::scrypto::buffer::scrypto_wrap(&rtn)
                 }
                 #[no_mangle]
                 pub extern "C" fn Test_abi() -> *mut u8 {
-                    use scrypto::constructs::Context;
-                    use scrypto::types::rust::string::ToString;
-                    use scrypto::types::rust::vec;
-                    use sbor::{self, Describe};
-                    let output = scrypto::abi::Component {
+                    use ::scrypto::constructs::Context;
+                    use ::scrypto::types::rust::string::ToString;
+                    use ::scrypto::types::rust::vec;
+                    use ::sbor::{self, Describe};
+                    let output = ::scrypto::abi::Component {
                         blueprint: Context::blueprint_address().to_string(),
                         name: "Test".to_string(),
-                        methods: vec![scrypto::abi::Method {
+                        methods: vec![::scrypto::abi::Method {
                             name: "x".to_string(),
-                            mutability: scrypto::abi::Mutability::Immutable,
+                            mutability: ::scrypto::abi::Mutability::Immutable,
                             inputs: vec![],
                             output: <u32>::describe(),
                         }],
                     };
-                    let output_bytes = scrypto::buffer::scrypto_encode(&output);
-                    scrypto::buffer::scrypto_wrap(&output_bytes)
+                    let output_bytes = ::scrypto::buffer::scrypto_encode(&output);
+                    ::scrypto::buffer::scrypto_wrap(&output_bytes)
                 }
                 #[derive(Debug)]
                 pub struct TestStub {
-                    component: scrypto::types::Address,
+                    component: ::scrypto::types::Address,
                 }
                 impl TestStub {
-                    pub fn from_address(address: scrypto::types::Address) -> Self {
+                    pub fn from_address(address: ::scrypto::types::Address) -> Self {
                         Self {
                             component: address
                         }
                     }
                     #[allow(dead_code)]
                     pub fn x(&self) -> u32 {
-                        scrypto::call!(u32, "Test", "x", self.component)
+                        ::scrypto::call!(u32, "Test", "x", self.component)
                     }
                 }
             },

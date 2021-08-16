@@ -28,11 +28,11 @@ pub fn handle_encode(input: TokenStream) -> TokenStream {
                 let idents = named.iter().map(|f| &f.ident);
 
                 quote! {
-                    impl sbor::Encode for #ident {
-                        fn encode_value(&self, encoder: &mut sbor::Encoder) {
-                            use sbor::{self, Encode};
+                    impl ::sbor::Encode for #ident {
+                        fn encode_value(&self, encoder: &mut ::sbor::Encoder) {
+                            use ::sbor::{self, Encode};
 
-                            encoder.write_type(sbor::constants::TYPE_FIELDS_NAMED);
+                            encoder.write_type(::sbor::constants::TYPE_FIELDS_NAMED);
                             encoder.write_len(#n);
                             #(
                                 encoder.write_name(#names);
@@ -41,7 +41,7 @@ pub fn handle_encode(input: TokenStream) -> TokenStream {
                         }
 
                         fn sbor_type() -> u8 {
-                            sbor::constants::TYPE_STRUCT
+                            ::sbor::constants::TYPE_STRUCT
                         }
                     }
                 }
@@ -51,30 +51,30 @@ pub fn handle_encode(input: TokenStream) -> TokenStream {
                 let ith = (0..n).map(|i| Index::from(i));
 
                 quote! {
-                    impl sbor::Encode for #ident {
-                        fn encode_value(&self, encoder: &mut sbor::Encoder) {
-                            use sbor::{self, Encode};
+                    impl ::sbor::Encode for #ident {
+                        fn encode_value(&self, encoder: &mut ::sbor::Encoder) {
+                            use ::sbor::{self, Encode};
 
-                            encoder.write_type(sbor::constants::TYPE_FIELDS_UNNAMED);
+                            encoder.write_type(::sbor::constants::TYPE_FIELDS_UNNAMED);
                             encoder.write_len(#n);
                             #(self.#ith.encode(encoder);)*
                         }
 
                         fn sbor_type() -> u8 {
-                            sbor::constants::TYPE_STRUCT
+                            ::sbor::constants::TYPE_STRUCT
                         }
                     }
                 }
             }
             syn::Fields::Unit => {
                 quote! {
-                    impl sbor::Encode for #ident {
-                        fn encode_value(&self, encoder: &mut sbor::Encoder) {
-                            encoder.write_type(sbor::constants::TYPE_FIELDS_UNIT);
+                    impl ::sbor::Encode for #ident {
+                        fn encode_value(&self, encoder: &mut ::sbor::Encoder) {
+                            encoder.write_type(::sbor::constants::TYPE_FIELDS_UNIT);
                         }
 
                         fn sbor_type() -> u8 {
-                            sbor::constants::TYPE_STRUCT
+                            ::sbor::constants::TYPE_STRUCT
                         }
                     }
                 }
@@ -99,7 +99,7 @@ pub fn handle_encode(input: TokenStream) -> TokenStream {
                             Self::#v_id {#(#idents),*} => {
                                 encoder.write_index(#v_ith);
                                 encoder.write_name(#v_name);
-                                encoder.write_type(sbor::constants::TYPE_FIELDS_NAMED);
+                                encoder.write_type(::sbor::constants::TYPE_FIELDS_NAMED);
                                 encoder.write_len(#n);
                                 #(
                                     encoder.write_name(#names);
@@ -116,7 +116,7 @@ pub fn handle_encode(input: TokenStream) -> TokenStream {
                             Self::#v_id (#(#args),*) => {
                                 encoder.write_index(#v_ith);
                                 encoder.write_name(#v_name);
-                                encoder.write_type(sbor::constants::TYPE_FIELDS_UNNAMED);
+                                encoder.write_type(::sbor::constants::TYPE_FIELDS_UNNAMED);
                                 encoder.write_len(#n);
                                 #(#args2.encode(encoder);)*
                             }
@@ -127,7 +127,7 @@ pub fn handle_encode(input: TokenStream) -> TokenStream {
                             Self::#v_id => {
                                 encoder.write_index(#v_ith);
                                 encoder.write_name(#v_name);
-                                encoder.write_type(sbor::constants::TYPE_FIELDS_UNIT);
+                                encoder.write_type(::sbor::constants::TYPE_FIELDS_UNIT);
                             }
                         }
                     }
@@ -135,9 +135,9 @@ pub fn handle_encode(input: TokenStream) -> TokenStream {
             });
 
             quote! {
-                impl sbor::Encode for #ident {
-                    fn encode_value(&self, encoder: &mut sbor::Encoder) {
-                        use sbor::{self, Encode};
+                impl ::sbor::Encode for #ident {
+                    fn encode_value(&self, encoder: &mut ::sbor::Encoder) {
+                        use ::sbor::{self, Encode};
 
                         match self {
                             #(#match_arms)*
@@ -145,7 +145,7 @@ pub fn handle_encode(input: TokenStream) -> TokenStream {
                     }
 
                     fn sbor_type() -> u8 {
-                        sbor::constants::TYPE_ENUM
+                        ::sbor::constants::TYPE_ENUM
                     }
                 }
             }
@@ -182,16 +182,16 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                impl sbor::Encode for Test {
-                    fn encode_value(&self, encoder: &mut sbor::Encoder) {
-                        use sbor::{self, Encode};
-                        encoder.write_type(sbor::constants::TYPE_FIELDS_NAMED);
+                impl ::sbor::Encode for Test {
+                    fn encode_value(&self, encoder: &mut ::sbor::Encoder) {
+                        use ::sbor::{self, Encode};
+                        encoder.write_type(::sbor::constants::TYPE_FIELDS_NAMED);
                         encoder.write_len(1usize);
                         encoder.write_name("a");
                         self.a.encode(encoder);
                     }
                     fn sbor_type() -> u8 {
-                        sbor::constants::TYPE_STRUCT
+                        ::sbor::constants::TYPE_STRUCT
                     }
                 }
             },
@@ -206,26 +206,26 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                impl sbor::Encode for Test {
-                    fn encode_value(&self, encoder: &mut sbor::Encoder) {
-                        use sbor::{self, Encode};
+                impl ::sbor::Encode for Test {
+                    fn encode_value(&self, encoder: &mut ::sbor::Encoder) {
+                        use ::sbor::{self, Encode};
                         match self {
                             Self::A => {
                                 encoder.write_index(0usize);
                                 encoder.write_name("A");
-                                encoder.write_type(sbor::constants::TYPE_FIELDS_UNIT);
+                                encoder.write_type(::sbor::constants::TYPE_FIELDS_UNIT);
                             }
                             Self::B(a0) => {
                                 encoder.write_index(1usize);
                                 encoder.write_name("B");
-                                encoder.write_type(sbor::constants::TYPE_FIELDS_UNNAMED);
+                                encoder.write_type(::sbor::constants::TYPE_FIELDS_UNNAMED);
                                 encoder.write_len(1usize);
                                 a0.encode(encoder);
                             }
                             Self::C { x } => {
                                 encoder.write_index(2usize);
                                 encoder.write_name("C");
-                                encoder.write_type(sbor::constants::TYPE_FIELDS_NAMED);
+                                encoder.write_type(::sbor::constants::TYPE_FIELDS_NAMED);
                                 encoder.write_len(1usize);
                                 encoder.write_name("x");
                                 x.encode(encoder);
@@ -233,7 +233,7 @@ mod tests {
                         }
                     }
                     fn sbor_type() -> u8 {
-                        sbor::constants::TYPE_ENUM
+                        ::sbor::constants::TYPE_ENUM
                     }
                 }
             },
