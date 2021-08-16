@@ -27,7 +27,9 @@ pub fn handle_import(input: TokenStream) -> TokenStream {
     let mut items: Vec<Item> = vec![];
     let mut implementations: Vec<ItemImpl> = vec![];
 
-    let ident = Ident::new(component.name.as_str(), span);
+    let blueprint_address = component.blueprint;
+    let component_name = component.name;
+    let ident = Ident::new(component_name.as_str(), span);
     trace!("Component name: {}", quote! { #ident });
 
     let structure: Item = parse_quote! {
@@ -49,13 +51,24 @@ pub fn handle_import(input: TokenStream) -> TokenStream {
     for method in &component.methods {
         trace!("Processing method: {:?}", method);
 
-        let func_indent = Ident::new(method.name.as_str(), span);
+        let method_name = &method.name;
+        let func_indent = Ident::new(method_name.as_str(), span);
         let mut func_inputs = Punctuated::<FnArg, Comma>::new();
+        let mut func_args = Vec::<Ident>::new();
 
+        let address_stmt: syn::Stmt;
         match method.mutability {
-            scrypto_abi::Mutability::Immutable => func_inputs.push(parse_quote! { &self }),
-            scrypto_abi::Mutability::Mutable => func_inputs.push(parse_quote! { &mut self }),
-            _ => {}
+            scrypto_abi::Mutability::Immutable => {
+                func_inputs.push(parse_quote! { &self });
+                address_stmt = parse_quote! { let address = self.address; };
+            }
+            scrypto_abi::Mutability::Mutable => {
+                func_inputs.push(parse_quote! { &mut self });
+                address_stmt = parse_quote! { let address = self.address; };
+            }
+            scrypto_abi::Mutability::Stateless => {
+                address_stmt = parse_quote! { let address = scrypto::types::Address::from_hex(#blueprint_address).unwrap(); };
+            }
         }
 
         for (i, input) in method.inputs.iter().enumerate() {
@@ -63,6 +76,7 @@ pub fn handle_import(input: TokenStream) -> TokenStream {
                 _ => {
                     let ident = format_ident!("arg{}", i);
                     let (new_type, new_items) = get_native_type(input);
+                    func_args.push(parse_quote! { #ident });
                     func_inputs.push(parse_quote! { #ident: #new_type });
                     items.extend(new_items);
                 }
@@ -76,7 +90,8 @@ pub fn handle_import(input: TokenStream) -> TokenStream {
 
         functions.push(parse_quote! {
             pub fn #func_indent(#func_inputs) -> #func_output {
-                todo!()
+                #address_stmt
+                scrypto::call!(#func_output, #component_name, #method_name, address #(, #func_args)*)
             }
         });
     }
@@ -150,7 +165,7 @@ fn get_native_type(ty: &sbor::types::Type) -> (Type, Vec<Item>) {
                         items.extend(new_items);
                     }
                     items.push(parse_quote! {
-                        #[derive(Debug, serde::Serialize, serde::Deserialize)]
+                        #[derive(Debug, sbor::Encode, sbor::Decode)]
                         pub struct #ident {
                             #( pub #names : #types, )*
                         }
@@ -224,7 +239,7 @@ fn get_native_type(ty: &sbor::types::Type) -> (Type, Vec<Item>) {
             }
 
             items.push(parse_quote! {
-                #[derive(Debug, serde::Serialize, serde::Deserialize)]
+                #[derive(Debug, sbor::Encode, sbor::Decode)]
                 pub enum #ident {
                     #( #native_variants ),*
                 }
@@ -269,4 +284,77 @@ fn get_native_type(ty: &sbor::types::Type) -> (Type, Vec<Item>) {
     };
 
     (t, items)
+}
+
+#[cfg(test)]
+mod tests {
+    use proc_macro2::TokenStream;
+    use std::str::FromStr;
+
+    use super::*;
+
+    fn assert_code_eq(a: TokenStream, b: TokenStream) {
+        assert_eq!(a.to_string(), b.to_string());
+    }
+
+    #[test]
+    fn test_import() {
+        let input = TokenStream::from_str("\"../scrypto-tests/tests/abi.json\"").unwrap();
+        let output = handle_import(input);
+
+        assert_code_eq(
+            output,
+            quote! {
+                pub struct Sample {
+                    address: scrypto::types::Address
+                }
+                #[derive(Debug, sbor::Encode, sbor::Decode)]
+                pub struct Floor {
+                    pub x: u32,
+                    pub y: u32,
+                }
+                #[derive(Debug, sbor::Encode, sbor::Decode)]
+                pub enum Hello {
+                    A { x: u32 },
+                    B(u32),
+                    C
+                }
+                impl Sample {
+                    pub fn from_address(address: scrypto::types::Address) -> Self {
+                        Self { address }
+                    }
+                    pub fn stateless_func() -> u32 {
+                        let address = scrypto::types::Address::from_hex(
+                            "056967d3d49213394892980af59be76e9b3e7cc4cb78237460d0c7"
+                        )
+                        .unwrap();
+                        scrypto::call!(u32, "Sample", "stateless_func", address)
+                    }
+                    pub fn calculate_volume(
+                        &self,
+                        arg0: Floor,
+                        arg1: (u8, u16),
+                        arg2: Vec<String>,
+                        arg3: u32,
+                        arg4: Hello,
+                        arg5: [String; 2usize]
+                    ) -> u32 {
+                        let address = self.address;
+                        scrypto::call!(
+                            u32,
+                            "Sample",
+                            "calculate_volume",
+                            address,
+                            arg0,
+                            arg1,
+                            arg2,
+                            arg3,
+                            arg4,
+                            arg5
+                        )
+                    }
+                }
+            },
+        );
+    }
 }

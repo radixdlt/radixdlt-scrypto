@@ -72,11 +72,13 @@ pub fn handle_component(input: TokenStream, output_abi: bool, output_stub: bool)
     let generated_abi = quote! {
         #[no_mangle]
         pub extern "C" fn #abi_ident() -> *mut u8 {
+            use scrypto::constructs::Context;
             use scrypto::types::rust::string::ToString;
             use scrypto::types::rust::vec;
             use sbor::{self, Describe};
 
             let output = scrypto::abi::Component {
+                blueprint: Context::blueprint_address().to_string(),
                 name: #com_name.to_string(),
                 methods: vec![
                     #(#abi_methods),*
@@ -368,7 +370,7 @@ fn generate_stub(com_ident: &Ident, items: &Vec<ImplItem>) -> Vec<Item> {
                                         scrypto::call!(#ty, #com_name, #method_name, __blueprint__ #(,#other_args)*)
                                     }
                                 }
-                            },
+                            }
                         },
                         false => match rtn_type {
                             ReturnType::Default => parse_quote! {
@@ -385,7 +387,7 @@ fn generate_stub(com_ident: &Ident, items: &Vec<ImplItem>) -> Vec<Item> {
                                         scrypto::call!(#ty, #com_name, #method_name, self.component #(,#other_args)*)
                                     }
                                 }
-                            },
+                            }
                         },
                     };
                     trace!("Stub: {}", quote! { #stub });
@@ -472,10 +474,12 @@ mod tests {
                 }
                 #[no_mangle]
                 pub extern "C" fn Test_abi() -> *mut u8 {
+                    use scrypto::constructs::Context;
                     use scrypto::types::rust::string::ToString;
                     use scrypto::types::rust::vec;
                     use sbor::{self, Describe};
                     let output = scrypto::abi::Component {
+                        blueprint: Context::blueprint_address().to_string(),
                         name: "Test".to_string(),
                         methods: vec![scrypto::abi::Method {
                             name: "x".to_string(),
