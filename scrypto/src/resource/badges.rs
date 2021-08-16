@@ -1,13 +1,22 @@
-use sbor::{Decode, Describe, Encode};
+use sbor::{types::*, Decode, Describe, Encode};
 
 use crate::kernel::*;
 use crate::resource::*;
+use crate::types::rust::borrow::ToOwned;
 use crate::types::*;
 
 /// A bucket that holds badge resource.
-#[derive(Debug, Describe, Encode, Decode)]
+#[derive(Debug, Encode, Decode)]
 pub struct Badges {
     bid: BID,
+}
+
+impl Describe for Badges {
+    fn describe() -> Type {
+        Type::SystemType {
+            name: "::scrypto::resource::badges::Badges".to_owned(),
+        }
+    }
 }
 
 impl From<BID> for Badges {

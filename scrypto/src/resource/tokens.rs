@@ -1,13 +1,22 @@
+use sbor::{types::*, Decode, Describe, Encode};
+
 use crate::kernel::*;
 use crate::resource::*;
+use crate::types::rust::borrow::ToOwned;
 use crate::types::*;
 
-use sbor::{Decode, Describe, Encode};
-
 /// A bucket that holds token resource.
-#[derive(Debug, Describe, Encode, Decode)]
+#[derive(Debug, Encode, Decode)]
 pub struct Tokens {
     bid: BID,
+}
+
+impl Describe for Tokens {
+    fn describe() -> Type {
+        Type::SystemType {
+            name: "::scrypto::resource::badges::Tokens".to_owned(),
+        }
+    }
 }
 
 impl From<BID> for Tokens {

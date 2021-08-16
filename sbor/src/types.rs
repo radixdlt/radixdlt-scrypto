@@ -95,6 +95,10 @@ pub enum Type {
 
     #[cfg(any(feature = "scrypto_std", feature = "scrypto_alloc"))]
     RID,
+
+    SystemType {
+        name: String,
+    },
 }
 
 /// Represents the type info of an enum variant.

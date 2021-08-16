@@ -1,4 +1,5 @@
 use std::fs;
+use std::str::FromStr;
 
 use proc_macro2::{Ident, Span, TokenStream};
 use quote::{format_ident, quote};
@@ -281,6 +282,15 @@ fn get_native_type(ty: &sbor::types::Type) -> (Type, Vec<Item>) {
 
             parse_quote! { HashMap<#key_type, #value_type> }
         }
+        sbor::types::Type::SystemType { name } => {
+            if !name.starts_with("::scrypto::") {
+                panic!("Invalid system type: {}", name);
+            }
+
+            let path = TokenStream::from_str(name.as_str())
+                .expect(format!("Invalid system type: {}", name).as_str());
+            parse_quote! { #path }
+        }
     };
 
     (t, items)
@@ -298,8 +308,8 @@ mod tests {
     }
 
     #[test]
-    fn test_import() {
-        let input = TokenStream::from_str("\"../scrypto-tests/tests/abi.json\"").unwrap();
+    fn test_import_stateful() {
+        let input = TokenStream::from_str("\"../scrypto-derive/tests/abi_stateful.json\"").unwrap();
         let output = handle_import(input);
 
         assert_code_eq(
@@ -323,13 +333,6 @@ mod tests {
                     pub fn from_address(address: scrypto::types::Address) -> Self {
                         Self { address }
                     }
-                    pub fn stateless_func() -> u32 {
-                        let address = scrypto::types::Address::from_hex(
-                            "056967d3d49213394892980af59be76e9b3e7cc4cb78237460d0c7"
-                        )
-                        .unwrap();
-                        scrypto::call!(u32, "Sample", "stateless_func", address)
-                    }
                     pub fn calculate_volume(
                         &self,
                         arg0: Floor,
@@ -351,6 +354,68 @@ mod tests {
                             arg3,
                             arg4,
                             arg5
+                        )
+                    }
+                }
+            },
+        );
+    }
+
+    #[test]
+    fn test_import_stateless() {
+        let input =
+            TokenStream::from_str("\"../scrypto-derive/tests/abi_stateless.json\"").unwrap();
+        let output = handle_import(input);
+
+        assert_code_eq(
+            output,
+            quote! {
+                pub struct Sample {
+                    address: scrypto::types::Address
+                }
+                impl Sample {
+                    pub fn from_address(address: scrypto::types::Address) -> Self {
+                        Self { address }
+                    }
+                    pub fn stateless_func() -> u32 {
+                        let address = scrypto::types::Address::from_hex(
+                            "056967d3d49213394892980af59be76e9b3e7cc4cb78237460d0c7"
+                        )
+                        .unwrap();
+                        scrypto::call!(u32, "Sample", "stateless_func", address)
+                    }
+                }
+            },
+        );
+    }
+
+    #[test]
+    fn test_import_system_types() {
+        let input =
+            TokenStream::from_str("\"../scrypto-derive/tests/abi_system_types.json\"").unwrap();
+        let output = handle_import(input);
+
+        assert_code_eq(
+            output,
+            quote! {
+                pub struct Sample {
+                    address: scrypto::types::Address
+                }
+                impl Sample {
+                    pub fn from_address(address: scrypto::types::Address) -> Self {
+                        Self { address }
+                    }
+                    pub fn test_system_types(arg0: ::scrypto::resource::Tokens) -> ::scrypto::resource::BadgesRef {
+                        let address = scrypto::types::Address::from_hex(
+                            "056967d3d49213394892980af59be76e9b3e7cc4cb78237460d0c7"
+                        )
+                        .unwrap();
+                        scrypto::call!(
+                            ::scrypto::resource::BadgesRef,
+                            "Sample",
+                            "test_system_types",
+                            address,
+                            arg0
                         )
                     }
                 }

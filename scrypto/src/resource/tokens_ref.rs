@@ -1,12 +1,21 @@
-use sbor::{Decode, Describe, Encode};
+use sbor::{types::*, Decode, Describe, Encode};
 
 use crate::kernel::*;
+use crate::types::rust::borrow::ToOwned;
 use crate::types::*;
 
 /// A borrowed rid to a `Tokens` bucket.
-#[derive(Debug, Describe, Encode, Decode)]
+#[derive(Debug, Encode, Decode)]
 pub struct TokensRef {
     rid: RID,
+}
+
+impl Describe for TokensRef {
+    fn describe() -> Type {
+        Type::SystemType {
+            name: "::scrypto::resource::badges::TokensRef".to_owned(),
+        }
+    }
 }
 
 impl From<RID> for TokensRef {

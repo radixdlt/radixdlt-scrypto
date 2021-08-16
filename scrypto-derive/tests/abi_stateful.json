@@ -3,14 +3,6 @@
     "name": "Sample",
     "methods": [
         {
-            "name": "stateless_func",
-            "mutability": "Stateless",
-            "inputs": [],
-            "output": {
-                "type": "U32"
-            }
-        },
-        {
             "name": "calculate_volume",
             "mutability": "Immutable",
             "inputs": [
@@ -102,20 +94,6 @@
             ],
             "output": {
                 "type": "U32"
-            }
-        },
-        {
-            "name": "test_system_types",
-            "mutability": "Stateless",
-            "inputs": [
-                {
-                    "type": "SystemType",
-                    "name": "::scrypto::resource::Tokens"
-                }
-            ],
-            "output": {
-                "type": "SystemType",
-                "name": "::scrypto::resource::BadgesRef"
             }
         }
     ]
