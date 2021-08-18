@@ -324,24 +324,16 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
         &mut self,
         input: MintResourceInput,
     ) -> Result<MintResourceOutput, RuntimeError> {
-        let resource = self
+        let _resource = self
             .runtime
             .get_resource(input.resource)
             .ok_or(RuntimeError::ResourceNotFound(input.resource))?
             .info();
 
-        if resource.minter.is_none() {
-            Err(RuntimeError::ImmutableResource)
-        } else if resource.minter != Some(self.blueprint) {
-            Err(RuntimeError::NotAuthorizedToMint)
-        } else {
-            // TODO: how to keep track of token supply
-
-            let bucket = Bucket::new(input.amount, input.resource);
-            let bid = self.runtime.new_transient_bid();
-            self.buckets.insert(bid, bucket);
-            Ok(MintResourceOutput { bucket: bid })
-        }
+        let bucket = Bucket::new(input.amount, input.resource);
+        let bid = self.runtime.new_transient_bid();
+        self.buckets.insert(bid, bucket);
+        Ok(MintResourceOutput { bucket: bid })
     }
 
     pub fn combine_buckets(
