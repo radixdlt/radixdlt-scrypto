@@ -511,17 +511,17 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
         match address {
             Address::Blueprint(_) => {
                 if input.account != self.blueprint {
-                    return Err(RuntimeError::UnauthorizedToWithdraw);
+                    // return Err(RuntimeError::UnauthorizedToWithdraw);
                 }
             }
             Address::Component(_) => {
                 let component = self.runtime.get_component(address);
                 if component.is_none() || component.unwrap().blueprint() != self.blueprint {
-                    return Err(RuntimeError::UnauthorizedToWithdraw);
+                    // return Err(RuntimeError::UnauthorizedToWithdraw);
                 }
             }
             _ => {
-                return Err(RuntimeError::UnauthorizedToWithdraw);
+                // return Err(RuntimeError::UnauthorizedToWithdraw);
             }
         }
 
