@@ -29,7 +29,7 @@ pub fn handle_describe(input: TokenStream) -> TokenStream {
 
                 quote! {
                     impl ::sbor::Describe for #ident {
-                        fn describe() -> ::sbor::types::Type {
+                        fn describe() -> ::sbor::model::Type {
                             extern crate alloc;
                             use alloc::vec::Vec;
                             use alloc::string::ToString;
@@ -38,9 +38,9 @@ pub fn handle_describe(input: TokenStream) -> TokenStream {
                             let mut named = Vec::new();
                             #(named.push((#names.to_string(), <#types>::describe()));)*
 
-                            ::sbor::types::Type::Struct {
+                            ::sbor::model::Type::Struct {
                                 name: #ident_str.to_string(),
-                                fields: ::sbor::types::Fields::Named { named },
+                                fields: ::sbor::model::Fields::Named { named },
                             }
                         }
                     }
@@ -51,7 +51,7 @@ pub fn handle_describe(input: TokenStream) -> TokenStream {
 
                 quote! {
                     impl ::sbor::Describe for #ident {
-                        fn describe() -> ::sbor::types::Type {
+                        fn describe() -> ::sbor::model::Type {
                             extern crate alloc;
                             use alloc::string::ToString;
                             use alloc::vec::Vec;
@@ -60,9 +60,9 @@ pub fn handle_describe(input: TokenStream) -> TokenStream {
                             let mut unnamed = Vec::new();
                             #(unnamed.push(<#types>::describe());)*
 
-                            ::sbor::types::Type::Struct {
+                            ::sbor::model::Type::Struct {
                                 name: #ident_str.to_string(),
-                                fields: ::sbor::types::Fields::Unnamed { unnamed },
+                                fields: ::sbor::model::Fields::Unnamed { unnamed },
                             }
                         }
                     }
@@ -71,13 +71,13 @@ pub fn handle_describe(input: TokenStream) -> TokenStream {
             syn::Fields::Unit => {
                 quote! {
                     impl ::sbor::Describe for #ident {
-                        fn describe() -> ::sbor::types::Type {
+                        fn describe() -> ::sbor::model::Type {
                             extern crate alloc;
                             use alloc::string::ToString;
 
-                            ::sbor::types::Type::Struct {
+                            ::sbor::model::Type::Struct {
                                 name: #ident_str.to_string(),
-                                fields: ::sbor::types::Fields::Unit,
+                                fields: ::sbor::model::Fields::Unit,
                             }
                         }
                     }
@@ -102,7 +102,7 @@ pub fn handle_describe(input: TokenStream) -> TokenStream {
                             {
                                 let mut named = Vec::new();
                                 #(named.push((#names.to_string(), <#types>::describe()));)*
-                                ::sbor::types::Fields::Named {
+                                ::sbor::model::Fields::Named {
                                     named
                                 }
                             }
@@ -114,7 +114,7 @@ pub fn handle_describe(input: TokenStream) -> TokenStream {
                             {
                                 let mut unnamed = Vec::new();
                                 #(unnamed.push(<#types>::describe());)*
-                                ::sbor::types::Fields::Unnamed {
+                                ::sbor::model::Fields::Unnamed {
                                     unnamed
                                 }
                             }
@@ -123,7 +123,7 @@ pub fn handle_describe(input: TokenStream) -> TokenStream {
                     syn::Fields::Unit => {
                         quote! {
                             {
-                                ::sbor::types::Fields::Unit
+                                ::sbor::model::Fields::Unit
                             }
                         }
                     }
@@ -132,19 +132,19 @@ pub fn handle_describe(input: TokenStream) -> TokenStream {
 
             quote! {
                 impl ::sbor::Describe for #ident {
-                    fn describe() -> ::sbor::types::Type {
+                    fn describe() -> ::sbor::model::Type {
                         extern crate alloc;
                         use alloc::string::ToString;
                         use alloc::vec::Vec;
                         use ::sbor::{self, Describe};
 
                         let mut variants = Vec::new();
-                        #(variants.push(::sbor::types::Variant {
+                        #(variants.push(::sbor::model::Variant {
                             name: #names.to_string(),
                             fields: #fields
                         });)*
 
-                        ::sbor::types::Type::Enum {
+                        ::sbor::model::Type::Enum {
                             name: #ident_str.to_string(),
                             variants,
                         }
@@ -185,16 +185,16 @@ mod tests {
             output,
             quote! {
                 impl ::sbor::Describe for Test {
-                    fn describe() -> ::sbor::types::Type {
+                    fn describe() -> ::sbor::model::Type {
                         extern crate alloc;
                         use alloc::vec::Vec;
                         use alloc::string::ToString;
                         use ::sbor::{self, Describe};
                         let mut named = Vec::new();
                         named.push(("a".to_string(), <u32>::describe()));
-                        ::sbor::types::Type::Struct {
+                        ::sbor::model::Type::Struct {
                             name: "Test".to_string(),
-                            fields: ::sbor::types::Fields::Named { named },
+                            fields: ::sbor::model::Fields::Named { named },
                         }
                     }
                 }
@@ -211,33 +211,33 @@ mod tests {
             output,
             quote! {
                 impl ::sbor::Describe for Test {
-                    fn describe() -> ::sbor::types::Type {
+                    fn describe() -> ::sbor::model::Type {
                         extern crate alloc;
                         use alloc::string::ToString;
                         use alloc::vec::Vec;
                         use ::sbor::{self, Describe};
                         let mut variants = Vec::new();
-                        variants.push(::sbor::types::Variant {
+                        variants.push(::sbor::model::Variant {
                             name: "A".to_string(),
-                            fields: { ::sbor::types::Fields::Unit }
+                            fields: { ::sbor::model::Fields::Unit }
                         });
-                        variants.push(::sbor::types::Variant {
+                        variants.push(::sbor::model::Variant {
                             name: "B".to_string(),
                             fields: {
                                 let mut unnamed = Vec::new();
                                 unnamed.push(<u32>::describe());
-                                ::sbor::types::Fields::Unnamed { unnamed }
+                                ::sbor::model::Fields::Unnamed { unnamed }
                             }
                         });
-                        variants.push(::sbor::types::Variant {
+                        variants.push(::sbor::model::Variant {
                             name: "C".to_string(),
                             fields: {
                                 let mut named = Vec::new();
                                 named.push(("x".to_string(), <u8>::describe()));
-                                ::sbor::types::Fields::Named { named }
+                                ::sbor::model::Fields::Named { named }
                             }
                         });
-                        ::sbor::types::Type::Enum {
+                        ::sbor::model::Type::Enum {
                             name: "Test".to_string(),
                             variants,
                         }

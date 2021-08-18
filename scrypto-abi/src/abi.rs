@@ -5,7 +5,7 @@ pub use alloc::string::String;
 #[cfg(feature = "alloc")]
 pub use alloc::vec::Vec;
 
-use sbor::types::*;
+use sbor::model::*;
 use sbor::{Decode, Encode};
 #[cfg(any(feature = "json_std", feature = "json_alloc"))]
 use serde::{Deserialize, Serialize};

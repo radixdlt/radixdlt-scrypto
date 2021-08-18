@@ -1,4 +1,5 @@
-use sbor::{types::*, Decode, Describe, Encode};
+use sbor::model::*;
+use sbor::{Decode, Describe, Encode};
 
 use crate::kernel::*;
 use crate::resource::*;

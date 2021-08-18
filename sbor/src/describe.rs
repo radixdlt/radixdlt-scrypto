@@ -2,9 +2,9 @@
 use scrypto_types::{Address, BID, H256, RID, U256};
 
 use crate::collections::*;
+use crate::model::*;
 use crate::rust::boxed::Box;
 use crate::rust::string::String;
-use crate::types::*;
 
 /// A data structure that can be described using SBOR types.
 pub trait Describe {
@@ -155,7 +155,7 @@ mod tests {
     use crate::rust::boxed::Box;
     use crate::rust::string::String;
 
-    use crate::types::*;
+    use crate::model::*;
     use crate::*;
 
     #[test]

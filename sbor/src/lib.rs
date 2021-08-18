@@ -9,8 +9,8 @@ compile_error!("Feature `std` and `alloc` can't be enabled at the same time.");
 pub mod collections;
 /// SBOR constants.
 pub mod constants;
-/// SBOR type system.
-pub mod types;
+/// SBOR data model.
+pub mod model;
 
 mod decode;
 mod describe;

@@ -276,7 +276,7 @@ fn generate_abi(comp_name: &str, items: &Vec<ImplItem>) -> Vec<Expr> {
 
                     let output = match &m.sig.output {
                         ReturnType::Default => quote! {
-                            ::sbor::types::Type::Unit
+                            ::sbor::model::Type::Unit
                         },
                         ReturnType::Type(_, t) => {
                             let ty = replace_self_with(t, comp_name);
