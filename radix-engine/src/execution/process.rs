@@ -4,10 +4,10 @@ use std::rc::Rc;
 use std::time::Instant;
 
 use colored::*;
-use sbor::collections::*;
 use sbor::*;
 use scrypto::buffer::*;
 use scrypto::kernel::*;
+use scrypto::types::rust::collections::*;
 use scrypto::types::*;
 use wasmi::*;
 

@@ -1,14 +1,15 @@
 #[cfg(any(feature = "scrypto_std", feature = "scrypto_alloc"))]
 use scrypto_types::{Address, BID, H256, RID, U256};
 
-use crate::collections::*;
 use crate::constants::*;
 use crate::rust::boxed::Box;
+use crate::rust::collections::*;
 use crate::rust::hash::Hash;
 use crate::rust::mem::MaybeUninit;
 use crate::rust::ptr::copy;
 use crate::rust::string::String;
 use crate::rust::string::ToString;
+use crate::rust::vec::Vec;
 
 /// Represents an error ocurred during decoding.
 #[derive(Debug, Clone)]
@@ -576,9 +577,11 @@ impl Decode for RID {
 
 #[cfg(test)]
 mod tests {
-    use crate::collections::*;
     use crate::rust::boxed::Box;
+    use crate::rust::collections::*;
     use crate::rust::string::String;
+    use crate::rust::vec;
+    use crate::rust::vec::Vec;
 
     use super::{Decode, Decoder};
 

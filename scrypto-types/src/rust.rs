@@ -37,3 +37,26 @@ pub use std::str;
 pub use std::string;
 #[cfg(not(feature = "alloc"))]
 pub use std::vec;
+
+pub mod collections {
+    #[cfg(feature = "alloc")]
+    extern crate alloc;
+
+    #[cfg(feature = "alloc")]
+    pub use alloc::collections::BTreeMap;
+    #[cfg(feature = "alloc")]
+    pub use alloc::collections::BTreeSet;
+    #[cfg(feature = "alloc")]
+    pub use hashbrown::HashMap;
+    #[cfg(feature = "alloc")]
+    pub use hashbrown::HashSet;
+
+    #[cfg(not(feature = "alloc"))]
+    pub use std::collections::BTreeMap;
+    #[cfg(not(feature = "alloc"))]
+    pub use std::collections::BTreeSet;
+    #[cfg(not(feature = "alloc"))]
+    pub use std::collections::HashMap;
+    #[cfg(not(feature = "alloc"))]
+    pub use std::collections::HashSet;
+}

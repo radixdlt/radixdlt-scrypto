@@ -3,9 +3,9 @@ use serde::{Deserialize, Serialize};
 
 use crate::sbor::{Decode, Encode};
 
-use crate::collections::*;
 use crate::rust::boxed::Box;
 use crate::rust::string::String;
+use crate::rust::vec::Vec;
 
 // Internally tagged representation for readability
 // See: https://serde.rs/enum-representations.html
@@ -96,6 +96,7 @@ pub enum Type {
     #[cfg(any(feature = "scrypto_std", feature = "scrypto_alloc"))]
     RID,
 
+    #[cfg(any(feature = "scrypto_std", feature = "scrypto_alloc"))]
     SystemType {
         name: String,
     },

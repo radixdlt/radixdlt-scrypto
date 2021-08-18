@@ -1,5 +1,5 @@
-use sbor::collections::*;
 use sbor::*;
+use scrypto::types::rust::vec::Vec;
 
 /// A blueprint is a piece of code published on-chain.
 #[derive(Debug, Clone, Describe, Encode, Decode)]

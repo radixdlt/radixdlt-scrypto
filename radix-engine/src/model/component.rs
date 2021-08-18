@@ -1,5 +1,5 @@
-use sbor::collections::*;
 use sbor::*;
+use scrypto::types::rust::collections::*;
 use scrypto::types::*;
 
 /// An instantiated component, owned by a blueprint.

@@ -1,10 +1,12 @@
 #[cfg(any(feature = "scrypto_std", feature = "scrypto_alloc"))]
 use scrypto_types::{Address, BID, H256, RID, U256};
 
-use crate::collections::*;
 use crate::model::*;
 use crate::rust::boxed::Box;
+use crate::rust::collections::*;
 use crate::rust::string::String;
+use crate::rust::vec;
+use crate::rust::vec::Vec;
 
 /// A data structure that can be described using SBOR types.
 pub trait Describe {
@@ -151,9 +153,9 @@ impl<K: Describe, V: Describe> Describe for HashMap<K, V> {
 
 #[cfg(test)]
 mod tests {
-    use crate::collections::*;
     use crate::rust::boxed::Box;
     use crate::rust::string::String;
+    use crate::rust::vec;
 
     use crate::model::*;
     use crate::*;

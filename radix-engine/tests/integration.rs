@@ -1,8 +1,8 @@
 use std::fs;
 use std::process::Command;
 
-use sbor::collections::*;
 use scrypto::buffer::*;
+use scrypto::types::rust::collections::*;
 use scrypto::types::*;
 use scrypto::utils::*;
 use uuid::Uuid;

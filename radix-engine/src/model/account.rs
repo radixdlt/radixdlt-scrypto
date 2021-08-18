@@ -1,5 +1,5 @@
-use sbor::collections::*;
 use sbor::*;
+use scrypto::types::rust::collections::*;
 use scrypto::types::*;
 
 /// An account accounts for the buckets owned by a blueprint, component and public-key account.

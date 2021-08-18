@@ -1,7 +1,7 @@
 use clap::{crate_version, App, Arg, ArgMatches, SubCommand};
-use sbor::collections::*;
 use scrypto::abi;
 use scrypto::buffer::*;
+use scrypto::types::rust::collections::*;
 use scrypto::types::*;
 use scrypto::utils::*;
 
