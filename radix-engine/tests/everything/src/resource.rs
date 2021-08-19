@@ -12,13 +12,17 @@ component! {
     }
 
     impl ResourceTest {
-        pub fn create() -> Tokens {
-           let resource = create_tokens("r1", 100);
+        pub fn create_mutable() -> Tokens {
+           let resource = create_mutable_tokens("r1", Context::blueprint_address());
            mint_tokens(resource, 100)
         }
 
+        pub fn create_immutable() -> Tokens {
+           create_immutable_tokens("r2", 100.into())
+        }
+
         pub fn query() -> String {
-            let resource: Resource = create_tokens("r2", 100).into();
+            let resource: Resource = create_mutable_tokens("r3", Context::blueprint_address()).into();
             resource.get_info().url
         }
     }

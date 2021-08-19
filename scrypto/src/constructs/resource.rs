@@ -22,29 +22,52 @@ impl Into<Address> for Resource {
 }
 
 impl Resource {
-    pub fn new(
+    pub fn new_mutable(
         symbol: &str,
         name: &str,
         description: &str,
         url: &str,
         icon_url: &str,
-        minter: Option<Address>,
-        supply: Option<U256>,
+        minter: Address,
     ) -> Self {
-        let input = CreateResourceInput {
+        let input = CreateMutableResourceInput {
             info: ResourceInfo {
                 symbol: symbol.to_string(),
                 name: name.to_string(),
                 description: description.to_string(),
                 url: url.to_string(),
                 icon_url: icon_url.to_string(),
-                minter,
-                supply,
+                minter: Some(minter),
+                supply: None,
             },
         };
-        let output: CreateResourceOutput = call_kernel(CREATE_RESOURCE, input);
+        let output: CreateMutableResourceOutput = call_kernel(CREATE_MUTABLE_RESOURCE, input);
 
         output.resource.into()
+    }
+
+    pub fn new_immutable(
+        symbol: &str,
+        name: &str,
+        description: &str,
+        url: &str,
+        icon_url: &str,
+        supply: U256,
+    ) -> (Self, Tokens) {
+        let input = CreateImmutableResourceInput {
+            info: ResourceInfo {
+                symbol: symbol.to_string(),
+                name: name.to_string(),
+                description: description.to_string(),
+                url: url.to_string(),
+                icon_url: icon_url.to_string(),
+                minter: None,
+                supply: Some(supply),
+            },
+        };
+        let output: CreateImmutableResourceOutput = call_kernel(CREATE_IMMUTABLE_RESOURCE, input);
+
+        (output.resource.into(), output.bucket.into())
     }
 
     pub fn get_info(&self) -> ResourceInfo {

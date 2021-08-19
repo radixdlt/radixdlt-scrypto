@@ -14,7 +14,7 @@ component! {
 
     impl ComponentTest {
         pub fn create_component() -> Address {
-            let resource = create_tokens("c1", 100);
+            let resource = create_mutable_tokens("c1", Context::blueprint_address());
             let  tokens  =  mint_tokens(resource, 100);
 
            Component::new("ComponentTest", Self {

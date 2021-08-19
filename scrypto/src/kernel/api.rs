@@ -28,11 +28,13 @@ pub const GET_COMPONENT_STORAGE: u32 = 0x14;
 pub const PUT_COMPONENT_STORAGE: u32 = 0x15;
 
 /// Create a new resource
-pub const CREATE_RESOURCE: u32 = 0x20;
+pub const CREATE_MUTABLE_RESOURCE: u32 = 0x20;
+/// Mint immutable resource
+pub const CREATE_IMMUTABLE_RESOURCE: u32 = 0x21;
 /// Retrieve resource data
-pub const GET_RESOURCE_INFO: u32 = 0x21;
+pub const GET_RESOURCE_INFO: u32 = 0x22;
 /// Mint resource
-pub const MINT_RESOURCE: u32 = 0x22;
+pub const MINT_RESOURCE: u32 = 0x23;
 
 /// Combine buckets
 pub const COMBINE_BUCKETS: u32 = 0x30;
@@ -191,13 +193,24 @@ pub struct PutComponentStorageOutput {}
 //=========
 
 #[derive(Debug, Clone, Encode, Decode)]
-pub struct CreateResourceInput {
+pub struct CreateMutableResourceInput {
     pub info: ResourceInfo,
 }
 
 #[derive(Debug, Clone, Encode, Decode)]
-pub struct CreateResourceOutput {
+pub struct CreateMutableResourceOutput {
     pub resource: Address,
+}
+
+#[derive(Debug, Clone, Encode, Decode)]
+pub struct CreateImmutableResourceInput {
+    pub info: ResourceInfo,
+}
+
+#[derive(Debug, Clone, Encode, Decode)]
+pub struct CreateImmutableResourceOutput {
+    pub resource: Address,
+    pub bucket: BID,
 }
 
 #[derive(Debug, Clone, Encode, Decode)]

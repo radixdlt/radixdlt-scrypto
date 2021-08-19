@@ -19,7 +19,7 @@ component! {
         }
 
         pub fn move_bucket() {
-            let resource =  create_tokens("m1", 100);
+            let resource =  create_mutable_tokens("m1", Context::blueprint_address());
             let tokens =  mint_tokens(resource, 100);
             let component = Component::new("MoveTest", MoveTest {});
 
@@ -27,7 +27,7 @@ component! {
         }
 
         pub fn move_reference() {
-            let resource =  create_tokens("m2", 100);
+            let resource =  create_mutable_tokens("m2", Context::blueprint_address());
             let tokens =  mint_tokens(resource, 100);
             let component = Component::new("MoveTest", MoveTest {});
 

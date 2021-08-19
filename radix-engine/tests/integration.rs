@@ -156,11 +156,14 @@ fn test_component() {
 #[test]
 fn test_resource() {
     let mut ledger = InMemoryLedger::new();
-    let output = one_shot(&mut ledger, "everything", "ResourceTest", "create", vec![]);
+    let output = one_shot(&mut ledger, "everything", "ResourceTest", "create_mutable", vec![]);
     assert!(output.is_ok());
 
-    let output2 = one_shot(&mut ledger, "everything", "ResourceTest", "query", vec![]);
+    let output2 = one_shot(&mut ledger, "everything", "ResourceTest", "create_immutable", vec![]);
     assert!(output2.is_ok());
+
+    let output3 = one_shot(&mut ledger, "everything", "ResourceTest", "query", vec![]);
+    assert!(output3.is_ok());
 }
 
 #[test]

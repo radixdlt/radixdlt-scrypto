@@ -10,7 +10,7 @@ component! {
     impl AccountTest {
 
         pub fn deposit_and_withdraw() -> Tokens {
-            let resource =  create_tokens("a1", 100);
+            let resource =  create_mutable_tokens("a1", Context::blueprint_address());
             let tokens =  mint_tokens(resource, 100);
 
             let account = Account::from(Context::blueprint_address());

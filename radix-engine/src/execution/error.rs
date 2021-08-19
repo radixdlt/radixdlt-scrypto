@@ -39,6 +39,8 @@ pub enum RuntimeError {
 
     ResourceAlreadyExists(Address),
 
+    InvalidResourceParameter,
+
     BlueprintNotFound(Address),
 
     ComponentNotFound(Address),

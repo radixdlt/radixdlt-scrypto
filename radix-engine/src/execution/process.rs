@@ -289,10 +289,14 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
         Ok(PutComponentStateOutput {})
     }
 
-    pub fn create_resource(
+    pub fn create_mutable_resource(
         &mut self,
-        input: CreateResourceInput,
-    ) -> Result<CreateResourceOutput, RuntimeError> {
+        input: CreateMutableResourceInput,
+    ) -> Result<CreateMutableResourceOutput, RuntimeError> {
+        if input.info.minter.is_none() || input.info.supply.is_some() {
+            return Err(RuntimeError::InvalidResourceParameter);
+        }
+
         let address = self
             .runtime
             .new_resource_address(self.blueprint, input.info.symbol.as_str());
@@ -305,7 +309,39 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
             self.runtime
                 .put_resource(address, Resource::new(input.info));
         }
-        Ok(CreateResourceOutput { resource: address })
+        Ok(CreateMutableResourceOutput { resource: address })
+    }
+
+    pub fn create_immutable_resource(
+        &mut self,
+        input: CreateImmutableResourceInput,
+    ) -> Result<CreateImmutableResourceOutput, RuntimeError> {
+        if input.info.minter.is_some() || input.info.supply.is_none() {
+            return Err(RuntimeError::InvalidResourceParameter);
+        }
+        let supply = input.info.supply.clone().unwrap();
+
+        let address = self
+            .runtime
+            .new_resource_address(self.blueprint, input.info.symbol.as_str());
+
+        if self.runtime.get_resource(address).is_some() {
+            return Err(RuntimeError::ResourceAlreadyExists(address));
+        } else {
+            trace!(self, "New resource: {:02x?}", address);
+
+            self.runtime
+                .put_resource(address, Resource::new(input.info));
+        }
+
+        let bucket = Bucket::new(supply, address);
+        let bid = self.runtime.new_transient_bid();
+        self.buckets.insert(bid, bucket);
+
+        Ok(CreateImmutableResourceOutput {
+            resource: address,
+            bucket: bid,
+        })
     }
 
     pub fn get_resource_info(
@@ -978,7 +1014,12 @@ impl<'m, 'rt, 'le, T: Ledger> Externals for Process<'m, 'rt, 'le, T> {
                     GET_COMPONENT_STATE => self.handle(args, Process::get_component_state, true),
                     PUT_COMPONENT_STATE => self.handle(args, Process::put_component_state, true),
 
-                    CREATE_RESOURCE => self.handle(args, Process::create_resource, true),
+                    CREATE_MUTABLE_RESOURCE => {
+                        self.handle(args, Process::create_mutable_resource, true)
+                    }
+                    CREATE_IMMUTABLE_RESOURCE => {
+                        self.handle(args, Process::create_immutable_resource, true)
+                    }
                     GET_RESOURCE_INFO => self.handle(args, Process::get_resource_info, true),
                     MINT_RESOURCE => self.handle(args, Process::mint_resource, true),
 
