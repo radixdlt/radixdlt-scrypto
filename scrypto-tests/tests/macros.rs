@@ -73,13 +73,12 @@ fn test_logging() {
 #[test]
 fn test_call_blueprint() {
     let blueprint = Blueprint::from(Address::from(BLUEPRINT_ADDRESS));
-    let rtn = call!(i32, COMPONENT_NAME, METHOD_NAME, blueprint, 123);
+    let rtn: i32 = blueprint.invoke(COMPONENT_NAME, METHOD_NAME, args!(123));
     assert_eq!(rtn, RETURN);
 }
 
 #[test]
 fn test_call_component() {
     let component = Component::from(Address::from(COMPONENT_ADDRESS));
-    let rtn = call!(i32, COMPONENT_NAME, METHOD_NAME, component, 456);
-    assert_eq!(rtn, RETURN);
+    component.invoke::<i32>(METHOD_NAME, args!(456));
 }

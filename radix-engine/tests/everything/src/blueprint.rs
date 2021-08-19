@@ -12,7 +12,8 @@ component! {
         }
 
         pub fn invoke(blueprint: Address) -> Address {
-            call!(Address, "Greeting", "new", blueprint)
+            let b = Blueprint::from(blueprint);
+            b.invoke("Greeting", "new", args!())
         }
     }
 }

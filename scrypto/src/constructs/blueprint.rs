@@ -1,7 +1,9 @@
+use crate::buffer::*;
 use crate::kernel::*;
 use crate::types::rust::string::ToString;
 use crate::types::rust::vec::Vec;
 use crate::types::*;
+use sbor::*;
 
 /// A piece of code that defines the structure and methods of components.
 #[derive(Debug)]
@@ -31,7 +33,7 @@ impl Blueprint {
         output.blueprint.into()
     }
 
-    pub fn call(&self, component: &str, method: &str, args: Vec<Vec<u8>>) -> Vec<u8> {
+    pub fn invoke<T: Decode>(&self, component: &str, method: &str, args: Vec<Vec<u8>>) -> T {
         let input = CallBlueprintInput {
             blueprint: self.address,
             component: component.to_string(),
@@ -40,7 +42,7 @@ impl Blueprint {
         };
         let output: CallBlueprintOutput = call_kernel(CALL_BLUEPRINT, input);
 
-        output.rtn
+        scrypto_decode(&output.rtn).unwrap()
     }
 
     pub fn address(&self) -> Address {

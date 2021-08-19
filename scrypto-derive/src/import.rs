@@ -57,21 +57,6 @@ pub fn handle_import(input: TokenStream) -> TokenStream {
         let mut func_inputs = Punctuated::<FnArg, Comma>::new();
         let mut func_args = Vec::<Ident>::new();
 
-        let address_stmt: syn::Stmt;
-        match method.mutability {
-            scrypto_abi::Mutability::Immutable => {
-                func_inputs.push(parse_quote! { &self });
-                address_stmt = parse_quote! { let address = self.address; };
-            }
-            scrypto_abi::Mutability::Mutable => {
-                func_inputs.push(parse_quote! { &mut self });
-                address_stmt = parse_quote! { let address = self.address; };
-            }
-            scrypto_abi::Mutability::Stateless => {
-                address_stmt = parse_quote! { let address = ::scrypto::types::Address::from_hex(#blueprint_address).unwrap(); };
-            }
-        }
-
         for (i, input) in method.inputs.iter().enumerate() {
             match input {
                 _ => {
@@ -89,12 +74,34 @@ pub fn handle_import(input: TokenStream) -> TokenStream {
         let (func_output, new_items) = get_native_type(&method.output);
         items.extend(new_items);
 
-        functions.push(parse_quote! {
-            pub fn #func_indent(#func_inputs) -> #func_output {
-                #address_stmt
-                ::scrypto::call!(#func_output, #component_name, #method_name, address #(, #func_args)*)
+        let func = match method.mutability {
+            scrypto_abi::Mutability::Immutable => {
+                parse_quote! {
+                    pub fn #func_indent(&self, #func_inputs) -> #func_output {
+                        let component = ::scrypto::constructs::Component::from(self.address);
+                        component.invoke(#method_name, ::scrypto::args!(#(#func_args),*))
+                    }
+                }
             }
-        });
+            scrypto_abi::Mutability::Mutable => {
+                parse_quote! {
+                    pub fn #func_indent(&mut self, #func_inputs) -> #func_output {
+                        let component = ::scrypto::constructs::Component::from(self.address);
+                        component.invoke(#method_name, ::scrypto::args!(#(#func_args),*))
+                    }
+                }
+            }
+            scrypto_abi::Mutability::Stateless => {
+                parse_quote! {
+                    pub fn #func_indent(#func_inputs) -> #func_output {
+                        let address = ::scrypto::types::Address::from_hex(#blueprint_address).unwrap();
+                        let blueprint = ::scrypto::constructs::Blueprint::from(address);
+                        blueprint.invoke(#component_name, #method_name, ::scrypto::args!(#(#func_args),*))
+                    }
+                }
+            }
+        };
+        functions.push(func);
     }
 
     let implementation = parse_quote! {
@@ -342,18 +349,10 @@ mod tests {
                         arg4: Hello,
                         arg5: [String; 2usize]
                     ) -> u32 {
-                        let address = self.address;
-                        ::scrypto::call!(
-                            u32,
-                            "Sample",
+                        let component = ::scrypto::constructs::Component::from(self.address);
+                        component.invoke(
                             "calculate_volume",
-                            address,
-                            arg0,
-                            arg1,
-                            arg2,
-                            arg3,
-                            arg4,
-                            arg5
+                            ::scrypto::args!(arg0, arg1, arg2, arg3, arg4, arg5)
                         )
                     }
                 }
@@ -382,7 +381,8 @@ mod tests {
                             "056967d3d49213394892980af59be76e9b3e7cc4cb78237460d0c7"
                         )
                         .unwrap();
-                        ::scrypto::call!(u32, "Sample", "stateless_func", address)
+                        let blueprint = ::scrypto::constructs::Blueprint::from(address);
+                        blueprint.invoke("Sample", "stateless_func", ::scrypto::args!())
                     }
                 }
             },
@@ -410,13 +410,8 @@ mod tests {
                             "056967d3d49213394892980af59be76e9b3e7cc4cb78237460d0c7"
                         )
                         .unwrap();
-                        ::scrypto::call!(
-                            ::scrypto::resource::BadgesRef,
-                            "Sample",
-                            "test_system_types",
-                            address,
-                            arg0
-                        )
+                        let blueprint = ::scrypto::constructs::Blueprint::from(address);
+                        blueprint.invoke("Sample", "test_system_types", ::scrypto::args!(arg0))
                     }
                 }
             },

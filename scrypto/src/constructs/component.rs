@@ -36,7 +36,7 @@ impl Component {
         output.component.into()
     }
 
-    pub fn call(&self, method: &str, args: Vec<Vec<u8>>) -> Vec<u8> {
+    pub fn invoke<T: Decode>(&self, method: &str, args: Vec<Vec<u8>>) -> T {
         let data = self.get_info();
 
         let mut args_buf = Vec::new();
@@ -51,7 +51,7 @@ impl Component {
         };
         let output: CallBlueprintOutput = call_kernel(CALL_BLUEPRINT, input);
 
-        output.rtn
+        scrypto_decode(&output.rtn).unwrap()
     }
 
     pub fn get_info(&self) -> ComponentInfo {
