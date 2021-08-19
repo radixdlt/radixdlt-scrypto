@@ -18,7 +18,7 @@ rustup target add wasm32-unknown-unknown
 ```
 cargo build --target wasm32-unknown-unknown --release
 ```
-4. Switch to the `radix-engine` folder and publish your blueprint
+4. Switch to the `simulator` folder and publish your blueprint
 ```
 cargo run -- publish /path/to/<project_name>.wasm
 ```

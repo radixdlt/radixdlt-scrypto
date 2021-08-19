@@ -5,10 +5,10 @@ use clap::{crate_version, App, Arg, ArgMatches, SubCommand};
 use scrypto::utils::*;
 use uuid::Uuid;
 
-use crate::cli::*;
-use crate::execution::*;
-use crate::ledger::*;
-use crate::model::*;
+use crate::*;
+use radix_engine::execution::*;
+use radix_engine::ledger::*;
+use radix_engine::model::*;
 
 const ARG_FILE: &'static str = "FILE";
 
@@ -31,7 +31,7 @@ pub fn handle_publish<'a>(matches: &ArgMatches<'a>) {
         fs::read(PathBuf::from(file)).expect(format!("Unable to load file: {}", file).as_str());
 
     let tx_hash = sha256(Uuid::new_v4().to_string());
-    let mut ledger = FileBasedLedger::new(get_root_dir());
+    let mut ledger = FileBasedLedger::new(get_data_dir());
     let mut runtime = Runtime::new(tx_hash, &mut ledger);
 
     let address = runtime.new_blueprint_address();

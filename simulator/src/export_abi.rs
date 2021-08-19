@@ -1,13 +1,13 @@
 use clap::{crate_version, App, Arg, ArgMatches, SubCommand};
+use radix_engine::execution::*;
+use radix_engine::ledger::*;
 use scrypto::abi;
 use scrypto::buffer::*;
 use scrypto::types::rust::collections::*;
 use scrypto::types::*;
 use scrypto::utils::*;
 
-use crate::cli::*;
-use crate::execution::*;
-use crate::ledger::*;
+use crate::*;
 
 const ARG_BLUEPRINT: &'static str = "BLUEPRINT";
 const ARG_COMPONENT: &'static str = "COMPONENT";
@@ -42,7 +42,7 @@ pub fn handle_export_abi<'a>(matches: &ArgMatches<'a>) {
     let mut ledger = InMemoryLedger::new();
     ledger.put_blueprint(
         blueprint,
-        FileBasedLedger::new(get_root_dir())
+        FileBasedLedger::new(get_data_dir())
             .get_blueprint(blueprint)
             .expect("Blueprint not found"),
     );

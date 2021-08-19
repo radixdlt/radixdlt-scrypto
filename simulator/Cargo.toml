@@ -1,12 +1,16 @@
 [package]
-name = "radix-engine"
+name = "simulator"
 version = "0.1.0"
 edition = "2018"
 
 [dependencies]
+radix-engine = { version = "0.1", path = "../radix-engine" }
 scrypto = { version = "0.1", path = "../scrypto", features = ["json_std"] }
 sbor = { version = "0.1", path = "../sbor", features = ["scrypto_std"] }
-wasmi = { version = "0.9" }
+serde_json = { version = "1.0" }
+clap = { version = "2.33" }
+dirs = { version = "3.0" }
 colored = { version = "2.0" }
 uuid = { version = "0.8", features = ["v4"] }
 hex = { version = "0.4" }
+

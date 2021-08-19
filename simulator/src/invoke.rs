@@ -1,5 +1,7 @@
 use clap::{crate_version, App, Arg, ArgMatches, SubCommand};
 use colored::*;
+use radix_engine::execution::*;
+use radix_engine::ledger::*;
 use scrypto::buffer::*;
 use scrypto::kernel::*;
 use scrypto::types::rust::collections::*;
@@ -7,9 +9,7 @@ use scrypto::types::*;
 use scrypto::utils::*;
 use uuid::Uuid;
 
-use crate::cli::*;
-use crate::execution::*;
-use crate::ledger::*;
+use crate::*;
 
 const ARG_COMPONENT_NAME: &'static str = "COMPONENT_NAME";
 const ARG_METHOD_NAME: &'static str = "METHOD_NAME";
@@ -54,7 +54,7 @@ pub fn handle_invoke<'a>(matches: &ArgMatches<'a>) {
     let mut args = Vec::new();
 
     let tx_hash = sha256(Uuid::new_v4().to_string());
-    let mut ledger = FileBasedLedger::new(get_root_dir());
+    let mut ledger = FileBasedLedger::new(get_data_dir());
     let mut runtime = Runtime::new(tx_hash, &mut ledger);
 
     // Check whether it's functional or stateful.

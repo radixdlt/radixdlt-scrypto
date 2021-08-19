@@ -2,7 +2,7 @@ use std::fs::remove_dir_all;
 
 use clap::{crate_version, App, ArgMatches, SubCommand};
 
-use crate::cli::*;
+use crate::*;
 
 /// Constructs a `reset` subcommand.
 pub fn make_reset_cmd<'a, 'b>() -> App<'a, 'b> {
@@ -13,7 +13,7 @@ pub fn make_reset_cmd<'a, 'b>() -> App<'a, 'b> {
 
 /// Handles a `reset` request.
 pub fn handle_reset<'a>(_matches: &ArgMatches<'a>) {
-    let file = get_root_dir();
+    let file = get_data_dir();
     if file.exists() {
         remove_dir_all(file).unwrap();
     }

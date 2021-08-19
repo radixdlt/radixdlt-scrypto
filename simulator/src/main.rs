@@ -18,8 +18,7 @@ pub use reset::*;
 pub use show::*;
 pub use utils::*;
 
-/// Runs Radix Engine CLI.
-pub fn run() {
+pub fn main() {
     let matches = clap::App::new("Radix Engine")
         .about("Build fast, reward everyone, and scale without friction")
         .version(clap::crate_version!())

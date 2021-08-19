@@ -1,4 +1,4 @@
-use hashbrown::HashMap;
+use scrypto::types::rust::collections::HashMap;
 use scrypto::types::*;
 
 use crate::ledger::*;

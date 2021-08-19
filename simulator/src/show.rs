@@ -1,8 +1,8 @@
 use clap::{crate_version, App, Arg, ArgMatches, SubCommand};
 use scrypto::types::*;
 
-use crate::cli::*;
-use crate::ledger::*;
+use crate::*;
+use radix_engine::ledger::*;
 
 const ARG_ADDRESS: &'static str = "ADDRESS";
 
@@ -22,7 +22,7 @@ pub fn make_show_cmd<'a, 'b>() -> App<'a, 'b> {
 pub fn handle_show<'a>(matches: &ArgMatches<'a>) {
     let address: Address = matches.value_of(ARG_ADDRESS).unwrap().into();
 
-    let ledger = FileBasedLedger::new(get_root_dir());
+    let ledger = FileBasedLedger::new(get_data_dir());
     match address {
         Address::Resource(_) => {
             let resource = ledger.get_resource(address);
