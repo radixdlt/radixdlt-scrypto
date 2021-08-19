@@ -22,11 +22,15 @@ cargo build --target wasm32-unknown-unknown --release
 ```
 cargo run -- publish /path/to/<project_name>.wasm
 ```
-5. Invoke a method of the blueprint
+5. To invoke a blueprint method, run
 ```
-cargo run -- invoke <component_name> <method_name> <address> <args>...
+cargo run -- invoke-blueprint <blueprint_address> <component_name> <method> <args>...
 ```
-6. For any other commands, run
+6. To invoke a component method, run
+```
+cargo run -- invoke-component <component_address> <method> <args>...
+```
+7. For any other command, run
 ```
 cargo run -- help
 ```

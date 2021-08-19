@@ -2,7 +2,6 @@ use clap::{crate_version, App, Arg, ArgMatches, SubCommand};
 use colored::*;
 use radix_engine::execution::*;
 use radix_engine::ledger::*;
-use scrypto::buffer::*;
 use scrypto::kernel::*;
 use scrypto::types::rust::collections::*;
 use scrypto::types::*;
@@ -12,30 +11,28 @@ use uuid::Uuid;
 use crate::*;
 
 const ARG_COMPONENT_NAME: &'static str = "COMPONENT_NAME";
-const ARG_METHOD_NAME: &'static str = "METHOD_NAME";
+const ARG_METHOD: &'static str = "METHOD";
 const ARG_ADDRESS: &'static str = "ADDRESS";
 const ARG_ARGS: &'static str = "ARGS";
 
-/// Constructs a `invoke` subcommand.
-pub fn make_invoke_cmd<'a, 'b>() -> App<'a, 'b> {
-    SubCommand::with_name(CMD_INVOKE)
-        .about("Invokes a method.")
+/// Constructs a `invoke-blueprint` subcommand.
+pub fn make_invoke_blueprint_cmd<'a, 'b>() -> App<'a, 'b> {
+    SubCommand::with_name(CMD_INVOKE_BLUEPRINT)
+        .about("Invokes a blueprint method.")
         .version(crate_version!())
+        .arg(
+            Arg::with_name(ARG_ADDRESS)
+                .help("Specify the blueprint address.")
+                .required(true),
+        )
         .arg(
             Arg::with_name(ARG_COMPONENT_NAME)
                 .help("Specify the component name.")
                 .required(true),
         )
         .arg(
-            Arg::with_name(ARG_METHOD_NAME)
+            Arg::with_name(ARG_METHOD)
                 .help("Specify the method name.")
-                .required(true),
-        )
-        .arg(
-            Arg::with_name(ARG_ADDRESS)
-                .help(
-                    "Specify the blueprint address if functional, otherwise the component address.",
-                )
                 .required(true),
         )
         .arg(
@@ -45,40 +42,23 @@ pub fn make_invoke_cmd<'a, 'b>() -> App<'a, 'b> {
         )
 }
 
-/// Handles a `invoke` request.
-pub fn handle_invoke<'a>(matches: &ArgMatches<'a>) {
+/// Handles a `invoke-blueprint` request.
+pub fn handle_invoke_blueprint<'a>(matches: &ArgMatches<'a>) {
     let component_name = matches.value_of(ARG_COMPONENT_NAME).unwrap();
-    let method_name = matches.value_of(ARG_METHOD_NAME).unwrap();
-    let address: Address = matches.value_of(ARG_ADDRESS).unwrap().into();
-    let blueprint;
+    let method = matches.value_of(ARG_METHOD).unwrap();
+    let blueprint: Address = matches.value_of(ARG_ADDRESS).unwrap().into();
     let mut args = Vec::new();
-
-    let tx_hash = sha256(Uuid::new_v4().to_string());
-    let mut ledger = FileBasedLedger::new(get_data_dir());
-    let mut runtime = Runtime::new(tx_hash, &mut ledger);
-
-    // Check whether it's functional or stateful.
-    match address {
-        Address::Component(_) => {
-            let component = runtime.get_component(address).expect("Component not found");
-            blueprint = component.blueprint();
-            args.push(scrypto_encode(&address)); // self
-        }
-        Address::Blueprint(_) => {
-            blueprint = address;
-        }
-        _ => {
-            panic!("Invalid address: {}", address);
-        }
-    }
     if let Some(x) = matches.values_of(ARG_ARGS) {
         x.for_each(|a| args.push(hex::decode(a).unwrap()));
     }
 
+    let tx_hash = sha256(Uuid::new_v4().to_string());
+    let mut ledger = FileBasedLedger::new(get_data_dir());
+    let mut runtime = Runtime::new(tx_hash, &mut ledger);
     println!("----");
     println!("Blueprint: {}", blueprint);
     println!("Component: {}", component_name);
-    println!("Method: {}", method_name);
+    println!("Method: {}", method);
     println!("Arguments: {:02x?}", args);
     println!("----");
 
@@ -87,7 +67,7 @@ pub fn handle_invoke<'a>(matches: &ArgMatches<'a>) {
         &mut runtime,
         blueprint,
         format!("{}_main", component_name),
-        method_name.to_owned(),
+        method.to_owned(),
         args,
         0,
         &module,
