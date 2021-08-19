@@ -1,8 +1,6 @@
 use proc_macro2::{Ident, Span, TokenStream};
 use quote::{format_ident, quote};
-use syn::punctuated::Punctuated;
 use syn::token::Brace;
-use syn::token::Comma;
 use syn::*;
 
 use crate::ast;
@@ -14,7 +12,7 @@ macro_rules! trace {
     }};
 }
 
-pub fn handle_component(input: TokenStream, output_abi: bool, output_stub: bool) -> TokenStream {
+pub fn handle_component(input: TokenStream, output_abi: bool) -> TokenStream {
     trace!("handle_component() begins");
 
     // parse component struct and impl
@@ -93,35 +91,13 @@ pub fn handle_component(input: TokenStream, output_abi: bool, output_stub: bool)
         }
     };
 
-    trace!("Generating stubs...");
-    let stub_ident = format_ident!("{}Stub", com_ident);
-    let stub_items = generate_stub(&com_ident, com_items);
-    let generated_stub = quote! {
-        #[derive(Debug)]
-        pub struct #stub_ident {
-            component: ::scrypto::types::Address,
-        }
-
-        impl #stub_ident {
-            // need to reserve kw `from_address`
-            pub fn from_address(address: ::scrypto::types::Address) -> Self {
-                Self { component: address }
-            }
-
-            #(#stub_items)*
-        }
-    };
-
     let opt_abi = output_abi.then(|| generated_abi);
-    let opt_stub = output_stub.then(|| generated_stub);
     let output = quote! {
         #generated_component
 
         #generated_dispatcher
 
         #opt_abi
-
-        #opt_stub
     };
     trace!("handle_component() finishes");
 
@@ -306,103 +282,6 @@ fn generate_abi(comp_name: &str, items: &Vec<ImplItem>) -> Vec<Expr> {
     functions
 }
 
-// Parses function items in an `Impl` and generates stubs for compile-time check.
-fn generate_stub(com_ident: &Ident, items: &Vec<ImplItem>) -> Vec<Item> {
-    let mut stubs: Vec<Item> = vec![];
-
-    for item in items {
-        trace!("Processing function: {}", quote! { #item });
-        match item {
-            ImplItem::Method(ref m) => match &m.vis {
-                Visibility::Public(_) => {
-                    // Check if this is a static method
-                    let mut is_static = true;
-                    for input in &m.sig.inputs {
-                        match input {
-                            FnArg::Receiver(ref r) => {
-                                // Check receiver type and mutability
-                                if r.reference.is_none() {
-                                    panic!("Function input `self` is not supported. Consider replacing it with &self.");
-                                }
-                                is_static = false;
-                            }
-                            _ => {}
-                        }
-                    }
-                    trace!("Static: {}", is_static);
-
-                    let com_name = com_ident.to_string();
-                    let method_ident = &m.sig.ident;
-                    let method_name = method_ident.to_string();
-                    let method_inputs = &m.sig.inputs;
-                    let rtn_type = &m.sig.output;
-
-                    // Generate argument list
-                    let blueprint_arg: Option<Punctuated<FnArg, Comma>> = match is_static {
-                        true => Some(parse_quote! { __blueprint__: ::scrypto::types::Address, }),
-                        false => None,
-                    };
-                    let mut other_args = Vec::new();
-                    for a in &m.sig.inputs {
-                        match a {
-                            FnArg::Receiver(_) => {}
-                            FnArg::Typed(t) => {
-                                other_args.push(&t.pat);
-                            }
-                        }
-                    }
-                    trace!("Args: {}", quote! { #blueprint_arg #(,#other_args)* });
-
-                    // Generate blueprint/component call
-                    let stub: Item = match is_static {
-                        true => match rtn_type {
-                            ReturnType::Default => parse_quote! {
-                                #[allow(dead_code)]
-                                pub fn #method_ident(#blueprint_arg #method_inputs) {
-                                    ::scrypto::constructs::Blueprint::from(__blueprint__).call(#com_name, #method_name, ::scrypto::args!(#(#other_args),*))
-                                }
-                            },
-                            ReturnType::Type(_, t) => {
-                                let ty = replace_self_with(&t, &com_name);
-                                parse_quote! {
-                                    #[allow(dead_code)]
-                                    pub fn #method_ident(#blueprint_arg #method_inputs) -> #ty {
-                                        ::scrypto::constructs::Blueprint::from(__blueprint__).call(#com_name, #method_name, ::scrypto::args!(#(#other_args),*))
-                                    }
-                                }
-                            }
-                        },
-                        false => match rtn_type {
-                            ReturnType::Default => parse_quote! {
-                                #[allow(dead_code)]
-                                pub fn #method_ident(#method_inputs) {
-                                    ::scrypto::constructs::Component::from(self.component).call(#method_name, ::scrypto::args!(#(#other_args),*))
-                                }
-                            },
-                            ReturnType::Type(_, t) => {
-                                let ty = replace_self_with(&t, &com_name);
-                                parse_quote! {
-                                    #[allow(dead_code)]
-                                    pub fn #method_ident(#method_inputs) -> #ty {
-                                        ::scrypto::constructs::Component::from(self.component).call(#method_name, ::scrypto::args!(#(#other_args),*))
-                                    }
-                                }
-                            }
-                        },
-                    };
-                    trace!("Stub: {}", quote! { #stub });
-
-                    stubs.push(stub);
-                }
-                _ => {}
-            },
-            _ => {}
-        };
-    }
-
-    stubs
-}
-
 fn replace_self_with(t: &Type, name: &str) -> Type {
     match t {
         Type::Path(tp) => {
@@ -435,7 +314,7 @@ mod tests {
             "struct Test {a: u32} impl Test { pub fn x(&self) -> u32 { self.a } }",
         )
         .unwrap();
-        let output = handle_component(input, true, true);
+        let output = handle_component(input, true);
 
         assert_code_eq(
             output,
@@ -492,19 +371,6 @@ mod tests {
                     };
                     let output_bytes = ::scrypto::buffer::scrypto_encode(&output);
                     ::scrypto::buffer::scrypto_wrap(&output_bytes)
-                }
-                #[derive(Debug)]
-                pub struct TestStub {
-                    component: ::scrypto::types::Address,
-                }
-                impl TestStub {
-                    pub fn from_address(address: ::scrypto::types::Address) -> Self {
-                        Self { component: address }
-                    }
-                    #[allow(dead_code)]
-                    pub fn x(&self) -> u32 {
-                        ::scrypto::constructs::Component::from(self.component).call("x", ::scrypto::args!())
-                    }
                 }
             },
         );
