@@ -32,7 +32,7 @@ fn publish<T: Ledger>(ledger: &mut T, name: &str) -> Address {
     let tx_hash = sha256(Uuid::new_v4().to_string());
     let mut runtime = Runtime::new(tx_hash, ledger);
 
-    let address = runtime.new_blueprint_address(&code);
+    let address = runtime.new_blueprint_address();
     load_module(&code).unwrap();
     runtime.put_blueprint(address, Blueprint::new(code));
     runtime.flush();
@@ -156,10 +156,22 @@ fn test_component() {
 #[test]
 fn test_resource() {
     let mut ledger = InMemoryLedger::new();
-    let output = one_shot(&mut ledger, "everything", "ResourceTest", "create_mutable", vec![]);
+    let output = one_shot(
+        &mut ledger,
+        "everything",
+        "ResourceTest",
+        "create_mutable",
+        vec![],
+    );
     assert!(output.is_ok());
 
-    let output2 = one_shot(&mut ledger, "everything", "ResourceTest", "create_immutable", vec![]);
+    let output2 = one_shot(
+        &mut ledger,
+        "everything",
+        "ResourceTest",
+        "create_immutable",
+        vec![],
+    );
     assert!(output2.is_ok());
 
     let output3 = one_shot(&mut ledger, "everything", "ResourceTest", "query", vec![]);

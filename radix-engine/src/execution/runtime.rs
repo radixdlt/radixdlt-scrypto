@@ -264,8 +264,12 @@ impl<'le, T: Ledger> Runtime<'le, T> {
     }
 
     /// Creates a new blueprint bid.
-    pub fn new_blueprint_address(&mut self, code: &[u8]) -> Address {
-        Address::Blueprint(sha256_twice(code).lower_26_bytes())
+    pub fn new_blueprint_address(&mut self) -> Address {
+        let mut data = self.tx_hash.as_ref().to_vec();
+        data.extend(self.counter.to_le_bytes());
+
+        let hash = sha256_twice(data);
+        Address::Blueprint(hash.lower_26_bytes())
     }
 
     /// Creates a new component address.
@@ -278,8 +282,8 @@ impl<'le, T: Ledger> Runtime<'le, T> {
     }
 
     /// Creates a new resource address.
-    pub fn new_resource_address(&self, owner: Address, symbol: &str) -> Address {
-        let mut data: Vec<u8> = owner.into();
+    pub fn new_resource_address(&self, creator: Address, symbol: &str) -> Address {
+        let mut data: Vec<u8> = creator.into();
         data.extend(symbol.as_bytes());
 
         let hash = sha256_twice(data);

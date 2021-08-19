@@ -125,7 +125,7 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
         &mut self,
         input: PublishBlueprintInput,
     ) -> Result<PublishBlueprintOutput, RuntimeError> {
-        let address = self.runtime.new_blueprint_address(&input.code);
+        let address = self.runtime.new_blueprint_address();
 
         if self.runtime.get_blueprint(address).is_some() {
             return Err(RuntimeError::BlueprintAlreadyExists(address));

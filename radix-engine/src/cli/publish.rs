@@ -34,7 +34,7 @@ pub fn handle_publish<'a>(matches: &ArgMatches<'a>) {
     let mut ledger = FileBasedLedger::new(get_root_dir());
     let mut runtime = Runtime::new(tx_hash, &mut ledger);
 
-    let address = runtime.new_blueprint_address(&code);
+    let address = runtime.new_blueprint_address();
     if runtime.get_blueprint(address).is_none() {
         load_module(&code).unwrap();
         runtime.put_blueprint(address, Blueprint::new(code));
