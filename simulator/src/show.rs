@@ -24,12 +24,22 @@ pub fn handle_show<'a>(matches: &ArgMatches<'a>) {
 
     let ledger = FileBasedLedger::new(get_data_dir());
     match address {
-        Address::Resource(_) => {
+        Address::System => {
+            println!("Radix system address");
+        }
+        Address::Resource(_) | Address::RadixToken => {
             let resource = ledger.get_resource(address);
             match resource {
                 Some(r) => {
+                    let info = r.info();
                     println!("Resource: {}", address.to_string());
-                    println!("Info: {:02x?}", r.info());
+                    println!("Symbol: {}", info.symbol);
+                    println!("Name: {}", info.name);
+                    println!("Description: {}", info.description);
+                    println!("URL: {}", info.url);
+                    println!("Icon URL: {}", info.icon_url);
+                    println!("Minter: {:?}", info.minter);
+                    println!("supply: {:?}", info.supply);
                 }
                 None => {
                     println!("Resource not found");
@@ -73,9 +83,6 @@ pub fn handle_show<'a>(matches: &ArgMatches<'a>) {
                     println!("Component not found");
                 }
             }
-        }
-        _ => {
-            println!("No info available");
         }
     }
 }

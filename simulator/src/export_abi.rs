@@ -12,7 +12,7 @@ use crate::*;
 const ARG_BLUEPRINT: &'static str = "BLUEPRINT";
 const ARG_COMPONENT: &'static str = "COMPONENT";
 
-/// Constructs a `export_abi` subcommand.
+/// Constructs a `export-abi` subcommand.
 pub fn make_export_abi_cmd<'a, 'b>() -> App<'a, 'b> {
     SubCommand::with_name(CMD_EXPORT_ABI)
         .about("Exports the ABI of a component.")
@@ -29,7 +29,7 @@ pub fn make_export_abi_cmd<'a, 'b>() -> App<'a, 'b> {
         )
 }
 
-/// Handles a `export_abi` request.
+/// Handles a `export-abi` request.
 pub fn handle_export_abi<'a>(matches: &ArgMatches<'a>) {
     let blueprint: Address = matches.value_of(ARG_BLUEPRINT).unwrap().into();
     let component = matches.value_of(ARG_COMPONENT).unwrap();

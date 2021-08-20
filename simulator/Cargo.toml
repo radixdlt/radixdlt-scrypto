@@ -13,4 +13,5 @@ dirs = { version = "3.0" }
 colored = { version = "2.0" }
 uuid = { version = "0.8", features = ["v4"] }
 hex = { version = "0.4" }
+rand = { version = "0.8" }
 
