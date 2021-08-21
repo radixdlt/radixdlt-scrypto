@@ -18,7 +18,7 @@ blueprint! {
         pub fn new() -> Component {
             Self {
                 state: 0
-            }.into()
+            }.instantiate()
         }
 
         pub fn get_state(&self) -> u32 {

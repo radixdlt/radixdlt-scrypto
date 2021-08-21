@@ -30,7 +30,7 @@ use proc_macro::TokenStream;
 ///         pub fn new() -> Component {
 ///             Self {
 ///                 count: 0
-///             }.into()
+///             }.instantiate()
 ///         }
 ///
 ///         pub fn get_and_incr(&mut self) -> u32 {

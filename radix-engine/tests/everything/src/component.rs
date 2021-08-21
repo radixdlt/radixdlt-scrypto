@@ -21,7 +21,7 @@ blueprint! {
                 resource: resource,
                 tokens: tokens,
                 secret: "abc".to_owned(),
-            }.into();
+            }.instantiate();
 
             component.address()
         }

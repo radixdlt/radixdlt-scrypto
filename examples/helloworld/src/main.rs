@@ -13,7 +13,7 @@ blueprint! {
         pub fn new() -> Component {
             Self {
                 counter: 0
-            }.into()
+            }.instantiate()
         }
 
         pub fn say_hello(&mut self) {

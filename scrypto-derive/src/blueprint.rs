@@ -43,8 +43,8 @@ pub fn handle_blueprint(input: TokenStream, output_abi: bool) -> TokenStream {
             }
         }
 
-        impl Into<::scrypto::constructs::Component> for #bp_ident {
-            fn into(self) -> ::scrypto::constructs::Component {
+        impl #bp_ident {
+            fn instantiate(self) -> ::scrypto::constructs::Component {
                 ::scrypto::constructs::Component::new(self)
             }
         }
@@ -362,8 +362,8 @@ mod tests {
                         "Test"
                     }
                 }
-                impl Into<::scrypto::constructs::Component> for Test {
-                    fn into(self) -> ::scrypto::constructs::Component {
+                impl Test {
+                    fn instantiate(self) -> ::scrypto::constructs::Component {
                         ::scrypto::constructs::Component::new(self)
                     }
                 }
