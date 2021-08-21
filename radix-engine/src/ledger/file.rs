@@ -13,7 +13,7 @@ pub struct FileBasedLedger {
     root: PathBuf,
 }
 
-const BLUEPRINTS: &'static str = "blueprints";
+const PACKAGES: &'static str = "packages";
 const COMPONENTS: &'static str = "components";
 const ACCOUNTS: &'static str = "accounts";
 const RESOURCES: &'static str = "resources";
@@ -68,15 +68,14 @@ impl FileBasedLedger {
 }
 
 impl Ledger for FileBasedLedger {
-    fn get_blueprint(&self, address: Address) -> Option<Blueprint> {
-        Self::read(self.get_path(BLUEPRINTS, address.to_string(), FILE_EXT))
-            .map(|v| Self::decode(v))
+    fn get_package(&self, address: Address) -> Option<Package> {
+        Self::read(self.get_path(PACKAGES, address.to_string(), FILE_EXT)).map(|v| Self::decode(v))
     }
 
-    fn put_blueprint(&mut self, address: Address, blueprint: Blueprint) {
+    fn put_package(&mut self, address: Address, package: Package) {
         Self::write(
-            self.get_path(BLUEPRINTS, address.to_string(), FILE_EXT),
-            Self::encode(&blueprint),
+            self.get_path(PACKAGES, address.to_string(), FILE_EXT),
+            Self::encode(&package),
         )
     }
 

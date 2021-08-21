@@ -10,9 +10,9 @@ use crate::model::*;
 
 /// A ledger stores all the transactions and substates.
 pub trait Ledger {
-    fn get_blueprint(&self, address: Address) -> Option<Blueprint>;
+    fn get_package(&self, address: Address) -> Option<Package>;
 
-    fn put_blueprint(&mut self, address: Address, blueprint: Blueprint);
+    fn put_package(&mut self, address: Address, package: Package);
 
     fn get_resource(&self, address: Address) -> Option<Resource>;
 

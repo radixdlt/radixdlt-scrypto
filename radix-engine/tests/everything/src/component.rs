@@ -5,7 +5,7 @@ use scrypto::resource::*;
 use scrypto::types::*;
 use scrypto::*;
 
-component! {
+blueprint! {
     struct ComponentTest {
         resource: Address,
         tokens: Tokens,
@@ -14,8 +14,8 @@ component! {
 
     impl ComponentTest {
         pub fn create_component() -> Address {
-            let resource = create_mutable_tokens("c1", Context::blueprint_address());
-            let  tokens  =  mint_tokens(resource, 100);
+            let resource = create_mutable_tokens("c1", Context::package_address());
+            let tokens  =  mint_tokens(resource, 100);
 
            Component::new("ComponentTest", Self {
                resource: resource,

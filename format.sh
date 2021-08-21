@@ -16,5 +16,6 @@ cd "$(dirname "$0")"
 (cd radix-engine; cargo fmt)
 (cd examples/helloworld; cargo fmt)
 (cd examples/no_std; cargo fmt)
+(cd simulator; cargo fmt)
 
 echo "All packages have been formatted."

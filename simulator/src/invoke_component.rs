@@ -11,7 +11,7 @@ use uuid::Uuid;
 
 use crate::*;
 
-const ARG_ADDRESS: &'static str = "ADDRESS";
+const ARG_COMPONENT: &'static str = "COMPONENT";
 const ARG_METHOD: &'static str = "METHOD";
 const ARG_ARGS: &'static str = "ARGS";
 
@@ -21,7 +21,7 @@ pub fn make_invoke_component_cmd<'a, 'b>() -> App<'a, 'b> {
         .about("Invokes a component method.")
         .version(crate_version!())
         .arg(
-            Arg::with_name(ARG_ADDRESS)
+            Arg::with_name(ARG_COMPONENT)
                 .help("Specify the component address.")
                 .required(true),
         )
@@ -39,10 +39,10 @@ pub fn make_invoke_component_cmd<'a, 'b>() -> App<'a, 'b> {
 
 /// Handles a `invoke-component` request.
 pub fn handle_invoke_component<'a>(matches: &ArgMatches<'a>) {
+    let address: Address = matches.value_of(ARG_COMPONENT).unwrap().into();
     let method = matches.value_of(ARG_METHOD).unwrap();
-    let address: Address = matches.value_of(ARG_ADDRESS).unwrap().into();
+    let package;
     let blueprint;
-    let component_name;
     let mut args = Vec::new();
 
     let tx_hash = sha256(Uuid::new_v4().to_string());
@@ -50,25 +50,24 @@ pub fn handle_invoke_component<'a>(matches: &ArgMatches<'a>) {
     let mut runtime = Runtime::new(tx_hash, &mut ledger);
 
     let component = runtime.get_component(address).expect("Component not found");
-    blueprint = component.blueprint();
-    component_name = component.name().to_owned();
+    package = component.package();
+    blueprint = component.name().to_owned();
     args.push(scrypto_encode(&address)); // self
     if let Some(x) = matches.values_of(ARG_ARGS) {
         x.for_each(|a| args.push(hex::decode(a).unwrap()));
     }
 
     println!("----");
-    println!("Blueprint: {}", blueprint);
-    println!("Component: {}", component_name);
+    println!("Component: {}", address);
     println!("Method: {}", method);
     println!("Arguments: {:02x?}", args);
     println!("----");
 
-    let (module, memory) = runtime.load_module(blueprint).expect("Blueprint not found");
+    let (module, memory) = runtime.load_module(package).expect("Package not found");
     let mut process = Process::new(
         &mut runtime,
-        blueprint,
-        format!("{}_main", component_name),
+        package,
+        format!("{}_main", blueprint),
         method.to_owned(),
         args,
         0,

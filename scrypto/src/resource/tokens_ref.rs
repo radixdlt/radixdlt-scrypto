@@ -45,9 +45,9 @@ impl TokensRef {
     }
 
     pub fn destroy(self) {
-        let input = ReturnReferenceInput {
+        let input = DropReferenceInput {
             reference: self.rid,
         };
-        let _: ReturnReferenceOutput = call_kernel(RETURN_REFERENCE, input);
+        let _: DropReferenceOutput = call_kernel(DROP_REFERENCE, input);
     }
 }

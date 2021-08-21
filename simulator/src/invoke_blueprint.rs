@@ -10,29 +10,29 @@ use uuid::Uuid;
 
 use crate::*;
 
-const ARG_COMPONENT_NAME: &'static str = "COMPONENT_NAME";
-const ARG_METHOD: &'static str = "METHOD";
-const ARG_ADDRESS: &'static str = "ADDRESS";
+const ARG_PACKAGE: &'static str = "PACKAGE";
+const ARG_BLUEPRINT: &'static str = "BLUEPRINT";
+const ARG_FUNCTION: &'static str = "FUNCTION";
 const ARG_ARGS: &'static str = "ARGS";
 
 /// Constructs a `invoke-blueprint` subcommand.
 pub fn make_invoke_blueprint_cmd<'a, 'b>() -> App<'a, 'b> {
     SubCommand::with_name(CMD_INVOKE_BLUEPRINT)
-        .about("Invokes a blueprint method.")
+        .about("Invokes a blueprint function.")
         .version(crate_version!())
         .arg(
-            Arg::with_name(ARG_ADDRESS)
-                .help("Specify the blueprint address.")
+            Arg::with_name(ARG_PACKAGE)
+                .help("Specify the package address.")
                 .required(true),
         )
         .arg(
-            Arg::with_name(ARG_COMPONENT_NAME)
-                .help("Specify the component name.")
+            Arg::with_name(ARG_BLUEPRINT)
+                .help("Specify the blueprint name.")
                 .required(true),
         )
         .arg(
-            Arg::with_name(ARG_METHOD)
-                .help("Specify the method name.")
+            Arg::with_name(ARG_FUNCTION)
+                .help("Specify the function name.")
                 .required(true),
         )
         .arg(
@@ -44,9 +44,9 @@ pub fn make_invoke_blueprint_cmd<'a, 'b>() -> App<'a, 'b> {
 
 /// Handles a `invoke-blueprint` request.
 pub fn handle_invoke_blueprint<'a>(matches: &ArgMatches<'a>) {
-    let component_name = matches.value_of(ARG_COMPONENT_NAME).unwrap();
-    let method = matches.value_of(ARG_METHOD).unwrap();
-    let blueprint: Address = matches.value_of(ARG_ADDRESS).unwrap().into();
+    let package: Address = matches.value_of(ARG_PACKAGE).unwrap().into();
+    let blueprint = matches.value_of(ARG_BLUEPRINT).unwrap();
+    let function = matches.value_of(ARG_FUNCTION).unwrap();
     let mut args = Vec::new();
     if let Some(x) = matches.values_of(ARG_ARGS) {
         x.for_each(|a| args.push(hex::decode(a).unwrap()));
@@ -56,18 +56,18 @@ pub fn handle_invoke_blueprint<'a>(matches: &ArgMatches<'a>) {
     let mut ledger = FileBasedLedger::new(get_data_dir());
     let mut runtime = Runtime::new(tx_hash, &mut ledger);
     println!("----");
+    println!("Package: {}", package);
     println!("Blueprint: {}", blueprint);
-    println!("Component: {}", component_name);
-    println!("Method: {}", method);
+    println!("Function: {}", function);
     println!("Arguments: {:02x?}", args);
     println!("----");
 
-    let (module, memory) = runtime.load_module(blueprint).expect("Blueprint not found");
+    let (module, memory) = runtime.load_module(package).expect("Package not found");
     let mut process = Process::new(
         &mut runtime,
-        blueprint,
-        format!("{}_main", component_name),
-        method.to_owned(),
+        package,
+        format!("{}_main", blueprint),
+        function.to_owned(),
         args,
         0,
         &module,

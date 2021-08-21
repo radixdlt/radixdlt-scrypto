@@ -30,7 +30,7 @@ impl Resource {
         icon_url: &str,
         minter: Address,
     ) -> Self {
-        let input = CreateMutableResourceInput {
+        let input = CreateResourceMutableInput {
             info: ResourceInfo {
                 symbol: symbol.to_string(),
                 name: name.to_string(),
@@ -41,7 +41,7 @@ impl Resource {
                 supply: None,
             },
         };
-        let output: CreateMutableResourceOutput = call_kernel(CREATE_MUTABLE_RESOURCE, input);
+        let output: CreateResourceMutableOutput = call_kernel(CREATE_RESOURCE_MUTABLE, input);
 
         output.resource.into()
     }
@@ -54,7 +54,7 @@ impl Resource {
         icon_url: &str,
         supply: U256,
     ) -> (Self, Tokens) {
-        let input = CreateImmutableResourceInput {
+        let input = CreateResourceFixedInput {
             info: ResourceInfo {
                 symbol: symbol.to_string(),
                 name: name.to_string(),
@@ -65,7 +65,7 @@ impl Resource {
                 supply: Some(supply),
             },
         };
-        let output: CreateImmutableResourceOutput = call_kernel(CREATE_IMMUTABLE_RESOURCE, input);
+        let output: CreateResourceFixedOutput = call_kernel(CREATE_RESOURCE_FIXED, input);
 
         (output.resource.into(), output.bucket.into())
     }

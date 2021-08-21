@@ -23,7 +23,7 @@ use scrypto::constructs::*;
 use scrypto::types::*;
 use scrypto::*;
 
-component! {
+blueprint! {
     struct Greeting {
         counter: u32
     }

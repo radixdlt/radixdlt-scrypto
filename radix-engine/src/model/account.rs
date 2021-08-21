@@ -2,7 +2,7 @@ use sbor::*;
 use scrypto::types::rust::collections::*;
 use scrypto::types::*;
 
-/// An account accounts for the buckets owned by a blueprint, component and public-key account.
+/// An account accounts for buckets owned by a package, component or public key.
 #[derive(Debug, Clone, Encode, Decode)]
 pub struct Account {
     buckets: HashMap<Address, BID>,

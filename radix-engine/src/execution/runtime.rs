@@ -21,12 +21,12 @@ pub struct Runtime<'le, T: Ledger> {
     ledger: &'le mut T,
     counter: u32,
     logs: Vec<(Level, String)>,
-    blueprints: HashMap<Address, Blueprint>,
+    packages: HashMap<Address, Package>,
     components: HashMap<Address, Component>,
     accounts: HashMap<Address, Account>,
     resources: HashMap<Address, Resource>,
     buckets: HashMap<BID, Bucket>,
-    updated_blueprints: HashSet<Address>,
+    updated_packages: HashSet<Address>,
     updated_components: HashSet<Address>,
     updated_accounts: HashSet<Address>,
     updated_resources: HashSet<Address>,
@@ -40,12 +40,12 @@ impl<'le, T: Ledger> Runtime<'le, T> {
             ledger,
             counter: 0,
             logs: Vec::new(),
-            blueprints: HashMap::new(),
+            packages: HashMap::new(),
             components: HashMap::new(),
             accounts: HashMap::new(),
             resources: HashMap::new(),
             buckets: HashMap::new(),
-            updated_blueprints: HashSet::new(),
+            updated_packages: HashSet::new(),
             updated_components: HashSet::new(),
             updated_accounts: HashSet::new(),
             updated_resources: HashSet::new(),
@@ -70,47 +70,46 @@ impl<'le, T: Ledger> Runtime<'le, T> {
 
     /// Loads a module.
     pub fn load_module(&mut self, address: Address) -> Option<(ModuleRef, MemoryRef)> {
-        self.get_blueprint(address).map(|blueprint| {
-            load_module(blueprint.code()).expect("All blueprint should be loadable")
-        })
+        self.get_package(address)
+            .map(|package| load_module(package.code()).expect("All package should be loadable"))
     }
 
-    /// Returns an immutable reference to a blueprint, if exists.
-    pub fn get_blueprint(&mut self, address: Address) -> Option<&Blueprint> {
-        if self.blueprints.contains_key(&address) {
-            return self.blueprints.get(&address);
+    /// Returns an immutable reference to a package, if exists.
+    pub fn get_package(&mut self, address: Address) -> Option<&Package> {
+        if self.packages.contains_key(&address) {
+            return self.packages.get(&address);
         }
 
-        if let Some(blueprint) = self.ledger.get_blueprint(address) {
-            self.blueprints.insert(address, blueprint);
-            self.blueprints.get(&address)
+        if let Some(package) = self.ledger.get_package(address) {
+            self.packages.insert(address, package);
+            self.packages.get(&address)
         } else {
             None
         }
     }
 
-    /// Returns a mutable reference to a blueprint, if exists.
+    /// Returns a mutable reference to a package, if exists.
     #[allow(dead_code)]
-    pub fn get_blueprint_mut(&mut self, address: Address) -> Option<&mut Blueprint> {
-        self.updated_blueprints.insert(address);
+    pub fn get_package_mut(&mut self, address: Address) -> Option<&mut Package> {
+        self.updated_packages.insert(address);
 
-        if self.blueprints.contains_key(&address) {
-            return self.blueprints.get_mut(&address);
+        if self.packages.contains_key(&address) {
+            return self.packages.get_mut(&address);
         }
 
-        if let Some(blueprint) = self.ledger.get_blueprint(address) {
-            self.blueprints.insert(address, blueprint);
-            self.blueprints.get_mut(&address)
+        if let Some(package) = self.ledger.get_package(address) {
+            self.packages.insert(address, package);
+            self.packages.get_mut(&address)
         } else {
             None
         }
     }
 
-    /// Inserts a new blueprint.
-    pub fn put_blueprint(&mut self, address: Address, blueprint: Blueprint) {
-        self.updated_blueprints.insert(address);
+    /// Inserts a new package.
+    pub fn put_package(&mut self, address: Address, package: Package) {
+        self.updated_packages.insert(address);
 
-        self.blueprints.insert(address, blueprint);
+        self.packages.insert(address, package);
     }
 
     /// Returns an immutable reference to a component, if exists.
@@ -263,13 +262,13 @@ impl<'le, T: Ledger> Runtime<'le, T> {
         self.buckets.insert(bid, bucket);
     }
 
-    /// Creates a new blueprint bid.
-    pub fn new_blueprint_address(&mut self) -> Address {
+    /// Creates a new package bid.
+    pub fn new_package_address(&mut self) -> Address {
         let mut data = self.tx_hash.as_ref().to_vec();
         data.extend(self.counter.to_le_bytes());
 
         let hash = sha256_twice(data);
-        Address::Blueprint(hash.lower_26_bytes())
+        Address::Package(hash.lower_26_bytes())
     }
 
     /// Creates a new component address.
@@ -310,10 +309,10 @@ impl<'le, T: Ledger> Runtime<'le, T> {
 
     /// Flush changes to ledger.
     pub fn flush(&mut self) {
-        let mut addresses = self.updated_blueprints.clone();
+        let mut addresses = self.updated_packages.clone();
         for address in addresses {
             self.ledger
-                .put_blueprint(address, self.blueprints.get(&address).unwrap().clone());
+                .put_package(address, self.packages.get(&address).unwrap().clone());
         }
 
         addresses = self.updated_components.clone();

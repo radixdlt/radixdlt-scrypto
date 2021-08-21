@@ -9,9 +9,10 @@ use scrypto::types::*;
 use scrypto::*;
 
 const LOG_MESSAGE: &'static str = "Hello, Radix!";
-const BLUEPRINT_ADDRESS: &'static str = "050377bac8066e51cd0d6b320c338d5abbcdbcca25572b6b3eee94";
+const PACKAGE_ADDRESS: &'static str = "050377bac8066e51cd0d6b320c338d5abbcdbcca25572b6b3eee94";
 const COMPONENT_ADDRESS: &'static str = "06c46576324df8c76f6d83611974e8d26a12fe648280c19974c979";
-const COMPONENT_NAME: &'static str = "ComponentName";
+const BLUEPRINT_NAME: &'static str = "BlueprintName";
+const FUNCTION_NAME: &'static str = "function";
 const METHOD_NAME: &'static str = "method";
 const RETURN: i32 = 5;
 
@@ -34,11 +35,21 @@ pub extern "C" fn kernel(op: u32, input_ptr: *const u8, input_len: usize) -> *mu
         }
         CALL_BLUEPRINT => {
             let input: CallBlueprintInput = scrypto_decode(&input_bytes).unwrap();
-            assert_eq!(input.blueprint, Address::from(BLUEPRINT_ADDRESS));
-            assert_eq!(input.component, COMPONENT_NAME);
-            assert_eq!(input.method, METHOD_NAME);
+            assert_eq!(input.package, Address::from(PACKAGE_ADDRESS));
+            assert_eq!(input.name, BLUEPRINT_NAME);
+            assert_eq!(input.function, FUNCTION_NAME);
 
             let output = CallBlueprintOutput {
+                rtn: scrypto_encode(&RETURN),
+            };
+            output_bytes = scrypto_encode(&output);
+        }
+        CALL_COMPONENT => {
+            let input: CallComponentInput = scrypto_decode(&input_bytes).unwrap();
+            assert_eq!(input.component, Address::from(COMPONENT_ADDRESS));
+            assert_eq!(input.method, METHOD_NAME);
+
+            let output = CallComponentOutput {
                 rtn: scrypto_encode(&RETURN),
             };
             output_bytes = scrypto_encode(&output);
@@ -49,8 +60,8 @@ pub extern "C" fn kernel(op: u32, input_ptr: *const u8, input_len: usize) -> *mu
 
             let output = GetComponentInfoOutput {
                 result: Some(ComponentInfo {
-                    blueprint: Address::from(BLUEPRINT_ADDRESS),
-                    name: COMPONENT_NAME.to_string(),
+                    package: Address::from(PACKAGE_ADDRESS),
+                    name: BLUEPRINT_NAME.to_string(),
                 }),
             };
             output_bytes = scrypto_encode(&output);
@@ -72,8 +83,8 @@ fn test_logging() {
 
 #[test]
 fn test_call_blueprint() {
-    let blueprint = Blueprint::from(Address::from(BLUEPRINT_ADDRESS));
-    let rtn: i32 = blueprint.invoke(COMPONENT_NAME, METHOD_NAME, args!(123));
+    let blueprint = Blueprint::from(Address::from(PACKAGE_ADDRESS), BLUEPRINT_NAME);
+    let rtn: i32 = blueprint.invoke(FUNCTION_NAME, args!(123));
     assert_eq!(rtn, RETURN);
 }
 

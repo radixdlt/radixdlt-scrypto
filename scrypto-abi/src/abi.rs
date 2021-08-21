@@ -10,19 +10,32 @@ use sbor::{Decode, Encode};
 #[cfg(any(feature = "json_std", feature = "json_alloc"))]
 use serde::{Deserialize, Serialize};
 
-/// Represents a component.
+/// Represents a blueprint.
 #[cfg_attr(
     any(feature = "json_std", feature = "json_alloc"),
     derive(Serialize, Deserialize)
 )]
 #[derive(Debug, Clone, Encode, Decode)]
-pub struct Component {
-    pub blueprint: String,
+pub struct Blueprint {
+    pub package: String,
     pub name: String,
+    pub functions: Vec<Function>,
     pub methods: Vec<Method>,
 }
 
-/// Represents a method of a component.
+/// Represents a function.
+#[cfg_attr(
+    any(feature = "json_std", feature = "json_alloc"),
+    derive(Serialize, Deserialize)
+)]
+#[derive(Debug, Clone, Encode, Decode)]
+pub struct Function {
+    pub name: String,
+    pub inputs: Vec<Type>,
+    pub output: Type,
+}
+
+/// Represents a method.
 #[cfg_attr(
     any(feature = "json_std", feature = "json_alloc"),
     derive(Serialize, Deserialize)
@@ -42,12 +55,9 @@ pub struct Method {
 )]
 #[derive(Debug, Clone, Encode, Decode)]
 pub enum Mutability {
-    /// A stateless method does not require an instantiated component.
-    Stateless,
-
-    /// An immutable method only reads component state.
+    /// An immutable method requires an immutable reference to component state.
     Immutable,
 
-    /// An mutable method may write into component state.
+    /// A mutable method requires a mutable reference to component state.
     Mutable,
 }

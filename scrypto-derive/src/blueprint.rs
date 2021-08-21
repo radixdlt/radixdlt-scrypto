@@ -12,34 +12,35 @@ macro_rules! trace {
     }};
 }
 
-pub fn handle_component(input: TokenStream, output_abi: bool) -> TokenStream {
-    trace!("handle_component() begins");
+pub fn handle_blueprint(input: TokenStream, output_abi: bool) -> TokenStream {
+    trace!("handle_blueprint() begins");
 
-    // parse component struct and impl
-    let result: Result<ast::Component> = parse2(input);
+    // parse blueprint struct and impl
+    let result: Result<ast::Blueprint> = parse2(input);
     if result.is_err() {
         return result.err().unwrap().to_compile_error().into();
     }
-    let com = result.ok().unwrap();
 
-    let com_strut = &com.structure;
-    let com_impl = &com.implementation;
-    let com_ident = &com_strut.ident;
-    let com_items = &com_impl.items;
-    let com_name = com_ident.to_string();
-    trace!("Processing component: {}", com_name);
-    let generated_component = quote! {
+    let bp = result.ok().unwrap();
+    let bp_strut = &bp.structure;
+    let bp_impl = &bp.implementation;
+    let bp_ident = &bp_strut.ident;
+    let bp_items = &bp_impl.items;
+    let bp_name = bp_ident.to_string();
+
+    trace!("Processing blueprint: {}", bp_name);
+    let generated_blueprint = quote! {
         #[derive(Debug, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
-        pub #com_strut
+        pub #bp_strut
 
-        impl #com_ident {
-            #(#com_items)*
+        impl #bp_ident {
+            #(#bp_items)*
         }
     };
 
     trace!("Generating dispatcher function...");
-    let dispatcher_ident = format_ident!("{}_main", com_ident);
-    let (arm_guards, arm_bodies) = generate_dispatcher(&com_ident, com_items);
+    let dispatcher_ident = format_ident!("{}_main", bp_ident);
+    let (arm_guards, arm_bodies) = generate_dispatcher(&bp_ident, bp_items);
     let generated_dispatcher = quote! {
         #[no_mangle]
         pub extern "C" fn #dispatcher_ident() -> *mut u8 {
@@ -65,8 +66,8 @@ pub fn handle_component(input: TokenStream, output_abi: bool) -> TokenStream {
     };
 
     trace!("Generating ABI function...");
-    let abi_ident = format_ident!("{}_abi", com_ident);
-    let abi_methods = generate_abi(&com_name, com_items);
+    let abi_ident = format_ident!("{}_abi", bp_ident);
+    let (abi_functions, abi_methods) = generate_abi(&bp_name, bp_items);
     let generated_abi = quote! {
         #[no_mangle]
         pub extern "C" fn #abi_ident() -> *mut u8 {
@@ -75,9 +76,12 @@ pub fn handle_component(input: TokenStream, output_abi: bool) -> TokenStream {
             use scrypto::types::rust::string::ToString;
             use scrypto::types::rust::vec;
 
-            let output = ::scrypto::abi::Component {
-                blueprint: Context::blueprint_address().to_string(),
-                name: #com_name.to_string(),
+            let output = ::scrypto::abi::Blueprint {
+                package: Context::package_address().to_string(),
+                name: #bp_name.to_string(),
+                functions: vec![
+                    #(#abi_functions),*
+                ],
                 methods: vec![
                     #(#abi_methods),*
                 ],
@@ -91,25 +95,25 @@ pub fn handle_component(input: TokenStream, output_abi: bool) -> TokenStream {
         }
     };
 
-    let opt_abi = output_abi.then(|| generated_abi);
+    let optional_abi = output_abi.then(|| generated_abi);
     let output = quote! {
-        #generated_component
+        #generated_blueprint
 
         #generated_dispatcher
 
-        #opt_abi
+        #optional_abi
     };
-    trace!("handle_component() finishes");
+    trace!("handle_blueprint() finishes");
 
     #[cfg(feature = "trace")]
-    crate::utils::print_compiled_code("component!", &output);
+    crate::utils::print_compiled_code("blueprint!", &output);
 
     output.into()
 }
 
 // Parses function items in an `Impl` and returns the arm guards and bodies
 // used for invocation matching.
-fn generate_dispatcher(com_ident: &Ident, items: &Vec<ImplItem>) -> (Vec<Expr>, Vec<Expr>) {
+fn generate_dispatcher(bp_ident: &Ident, items: &Vec<ImplItem>) -> (Vec<Expr>, Vec<Expr>) {
     let mut arm_guards = Vec::<Expr>::new();
     let mut arm_bodies = Vec::<Expr>::new();
 
@@ -149,7 +153,7 @@ fn generate_dispatcher(com_ident: &Ident, items: &Vec<ImplItem>) -> (Vec<Expr>, 
                                 // Generate a `Stmt` for loading the component state
                                 assert!(get_state.is_none(), "Can have at most 1 self reference");
                                 get_state = Some(parse_quote! {
-                                    let #mutability state: #com_ident = #arg.get_state();
+                                    let #mutability state: #bp_ident = #arg.get_state();
                                 });
 
                                 // Generate a `Stmt` for writing back component state
@@ -182,7 +186,7 @@ fn generate_dispatcher(com_ident: &Ident, items: &Vec<ImplItem>) -> (Vec<Expr>, 
                     // invoke the function
                     let stmt: Stmt = parse_quote! {
                         rtn = ::scrypto::buffer::scrypto_encode(
-                            &#com_ident::#fn_ident(#(#args),*)
+                            &#bp_ident::#fn_ident(#(#args),*)
                         );
                     };
                     trace!("Stmt: {}", quote! { #stmt });
@@ -216,16 +220,17 @@ fn generate_dispatcher(com_ident: &Ident, items: &Vec<ImplItem>) -> (Vec<Expr>, 
 }
 
 // Parses function items of an `Impl` and returns ABI of functions.
-fn generate_abi(comp_name: &str, items: &Vec<ImplItem>) -> Vec<Expr> {
+fn generate_abi(bp_name: &str, items: &Vec<ImplItem>) -> (Vec<Expr>, Vec<Expr>) {
     let mut functions = Vec::<Expr>::new();
+    let mut methods = Vec::<Expr>::new();
 
     for item in items {
-        trace!("Processing function: {}", quote! { #item });
+        trace!("Processing item: {}", quote! { #item });
         match item {
             ImplItem::Method(ref m) => match &m.vis {
                 Visibility::Public(_) => {
                     let name = m.sig.ident.to_string();
-                    let mut mutability = quote! { ::scrypto::abi::Mutability::Stateless };
+                    let mut mutability = None;
                     let mut inputs = vec![];
                     for input in &m.sig.inputs {
                         match input {
@@ -236,13 +241,15 @@ fn generate_abi(comp_name: &str, items: &Vec<ImplItem>) -> Vec<Expr> {
                                 }
 
                                 if r.mutability.is_some() {
-                                    mutability = quote! { ::scrypto::abi::Mutability::Mutable };
+                                    mutability =
+                                        Some(quote! { ::scrypto::abi::Mutability::Mutable });
                                 } else {
-                                    mutability = quote! { ::scrypto::abi::Mutability::Immutable };
+                                    mutability =
+                                        Some(quote! { ::scrypto::abi::Mutability::Immutable });
                                 }
                             }
                             FnArg::Typed(ref t) => {
-                                let ty = replace_self_with(&t.ty, comp_name);
+                                let ty = replace_self_with(&t.ty, bp_name);
                                 inputs.push(quote! {
                                     <#ty>::describe()
                                 });
@@ -255,21 +262,31 @@ fn generate_abi(comp_name: &str, items: &Vec<ImplItem>) -> Vec<Expr> {
                             ::sbor::model::Type::Unit
                         },
                         ReturnType::Type(_, t) => {
-                            let ty = replace_self_with(t, comp_name);
+                            let ty = replace_self_with(t, bp_name);
                             quote! {
                                 <#ty>::describe()
                             }
                         }
                     };
 
-                    functions.push(parse_quote! {
-                        ::scrypto::abi::Method {
-                            name: #name.to_string(),
-                            mutability: #mutability,
-                            inputs: vec![#(#inputs),*],
-                            output: #output,
-                        }
-                    });
+                    if mutability.is_none() {
+                        functions.push(parse_quote! {
+                            ::scrypto::abi::Function {
+                                name: #name.to_string(),
+                                inputs: vec![#(#inputs),*],
+                                output: #output,
+                            }
+                        });
+                    } else {
+                        methods.push(parse_quote! {
+                            ::scrypto::abi::Method {
+                                name: #name.to_string(),
+                                mutability: #mutability,
+                                inputs: vec![#(#inputs),*],
+                                output: #output,
+                            }
+                        });
+                    }
                 }
                 _ => {}
             },
@@ -279,7 +296,7 @@ fn generate_abi(comp_name: &str, items: &Vec<ImplItem>) -> Vec<Expr> {
         };
     }
 
-    functions
+    (functions, methods)
 }
 
 fn replace_self_with(t: &Type, name: &str) -> Type {
@@ -309,12 +326,12 @@ mod tests {
     }
 
     #[test]
-    fn test_component() {
+    fn test_blueprint() {
         let input = TokenStream::from_str(
             "struct Test {a: u32} impl Test { pub fn x(&self) -> u32 { self.a } }",
         )
         .unwrap();
-        let output = handle_component(input, true);
+        let output = handle_blueprint(input, true);
 
         assert_code_eq(
             output,
@@ -359,9 +376,10 @@ mod tests {
                     use scrypto::constructs::Context;
                     use scrypto::types::rust::string::ToString;
                     use scrypto::types::rust::vec;
-                    let output = ::scrypto::abi::Component {
-                        blueprint: Context::blueprint_address().to_string(),
+                    let output = ::scrypto::abi::Blueprint {
+                        package: Context::package_address().to_string(),
                         name: "Test".to_string(),
+                        functions: vec![],
                         methods: vec![::scrypto::abi::Method {
                             name: "x".to_string(),
                             mutability: ::scrypto::abi::Mutability::Immutable,

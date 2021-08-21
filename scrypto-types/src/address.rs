@@ -20,8 +20,8 @@ pub enum Address {
     /// Public key account.
     PublicKey([u8; 33]),
 
-    /// Published Scrypto blueprint.
-    Blueprint([u8; 26]),
+    /// Published Scrypto package.
+    Package([u8; 26]),
 
     /// Instantiated Scrypto component.
     Component([u8; 26]),
@@ -58,7 +58,7 @@ impl Address {
                 0x04 => Ok(Address::PublicKey(
                     copy_u8_array(data).map_err(|_| invalid_len)?,
                 )),
-                0x05 => Ok(Address::Blueprint(
+                0x05 => Ok(Address::Package(
                     copy_u8_array(data).map_err(|_| invalid_len)?,
                 )),
                 0x06 => Ok(Address::Component(
@@ -68,20 +68,6 @@ impl Address {
             }
         } else {
             Err(invalid_len)
-        }
-    }
-
-    pub fn is_blueprint(&self) -> bool {
-        match self {
-            Address::Blueprint(_) => true,
-            _ => false,
-        }
-    }
-
-    pub fn is_component(&self) -> bool {
-        match self {
-            Address::Component(_) => true,
-            _ => false,
         }
     }
 }
@@ -110,7 +96,7 @@ impl Into<Vec<u8>> for Address {
             Self::RadixToken => push!(buf, 0x01),
             Self::Resource(d) => push!(buf, 0x03, d),
             Self::PublicKey(d) => push!(buf, 0x04, d),
-            Self::Blueprint(d) => push!(buf, 0x05, d),
+            Self::Package(d) => push!(buf, 0x05, d),
             Self::Component(d) => push!(buf, 0x06, d),
         }
         buf

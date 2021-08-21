@@ -4,7 +4,7 @@ use scrypto::resource::*;
 use scrypto::types::*;
 use scrypto::*;
 
-component! {
+blueprint! {
     struct ResourceTest {
         resource: Address,
         tokens: Tokens,
@@ -13,7 +13,7 @@ component! {
 
     impl ResourceTest {
         pub fn create_mutable() -> Tokens {
-           let resource = create_mutable_tokens("r1", Context::blueprint_address());
+           let resource = create_mutable_tokens("r1", Context::package_address());
            mint_tokens(resource, 100)
         }
 
@@ -22,7 +22,7 @@ component! {
         }
 
         pub fn query() -> String {
-            let resource: Resource = create_mutable_tokens("r3", Context::blueprint_address()).into();
+            let resource: Resource = create_mutable_tokens("r3", Context::package_address()).into();
             resource.get_info().url
         }
     }

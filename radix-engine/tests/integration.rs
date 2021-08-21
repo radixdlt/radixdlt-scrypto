@@ -32,9 +32,9 @@ fn publish<T: Ledger>(ledger: &mut T, name: &str) -> Address {
     let tx_hash = sha256(Uuid::new_v4().to_string());
     let mut runtime = Runtime::new(tx_hash, ledger);
 
-    let address = runtime.new_blueprint_address();
+    let address = runtime.new_package_address();
     load_module(&code).unwrap();
-    runtime.put_blueprint(address, Blueprint::new(code));
+    runtime.put_package(address, Package::new(code));
     runtime.flush();
 
     address
@@ -42,19 +42,19 @@ fn publish<T: Ledger>(ledger: &mut T, name: &str) -> Address {
 
 fn call<T: Ledger>(
     ledger: &mut T,
-    blueprint: Address,
-    component: &str,
+    package: Address,
+    blueprint: &str,
     method: &str,
     args: Vec<Vec<u8>>,
 ) -> Result<Vec<u8>, RuntimeError> {
     let tx_hash = sha256(Uuid::new_v4().to_string());
     let mut runtime = Runtime::new(tx_hash, ledger);
-    let (module, memory) = runtime.load_module(blueprint).expect("Blueprint not found");
+    let (module, memory) = runtime.load_module(package).expect("Package not found");
 
     let mut process = Process::new(
         &mut runtime,
-        blueprint,
-        format!("{}_main", component.to_string()),
+        package,
+        format!("{}_main", blueprint.to_string()),
         method.to_string(),
         args,
         0,
@@ -73,13 +73,13 @@ fn call<T: Ledger>(
 fn one_shot<T: Ledger>(
     ledger: &mut T,
     path: &str,
-    component: &str,
+    blueprint: &str,
     method: &str,
     args: Vec<Vec<u8>>,
 ) -> Result<Vec<u8>, RuntimeError> {
     build(path);
-    let blueprint = publish(ledger, path);
-    call(ledger, blueprint, component, method, args)
+    let package = publish(ledger, path);
+    call(ledger, package, blueprint, method, args)
 }
 
 #[test]

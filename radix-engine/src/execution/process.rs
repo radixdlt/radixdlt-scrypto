@@ -33,11 +33,11 @@ macro_rules! warn {
     };
 }
 
-/// A runnable blueprint instance.
+/// A running process
 pub struct Process<'m, 'rt, 'le, L: Ledger> {
     runtime: &'rt mut Runtime<'le, L>,
-    blueprint: Address,
-    blueprint_func: String,
+    package: Address,
+    blueprint: String,
     method: String,
     args: Vec<Vec<u8>>,
     depth: usize,
@@ -53,8 +53,8 @@ pub struct Process<'m, 'rt, 'le, L: Ledger> {
 impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
     pub fn new(
         runtime: &'rt mut Runtime<'le, L>,
-        blueprint: Address,
-        blueprint_func: String,
+        package: Address,
+        blueprint: String,
         method: String,
         args: Vec<Vec<u8>>,
         depth: usize,
@@ -65,8 +65,8 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
     ) -> Self {
         Self {
             runtime,
+            package,
             blueprint,
-            blueprint_func,
             method,
             args,
             depth,
@@ -80,19 +80,19 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
         }
     }
 
-    /// Start this process by invoking the component main method.
+    /// Start this process by invoking the main method.
     pub fn run(&mut self) -> Result<Vec<u8>, RuntimeError> {
         let now = Instant::now();
         info!(
             self,
-            "CALL started: blueprint = {:02x?}, function = {}, method = {}, args = {:02x?}",
+            "CALL started: package = {}, blueprint = {}, method = {}, args = {:02x?}",
+            self.package,
             self.blueprint,
-            self.blueprint_func,
             self.method,
             self.args
         );
 
-        let result = self.invoke(self.blueprint_func.clone());
+        let result = self.invoke(self.blueprint.clone());
 
         info!(
             self,
@@ -117,45 +117,47 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
                 self.finalize()?;
                 Ok(bytes)
             }
-            _ => Err(RuntimeError::NoValidBlueprintReturn),
+            _ => Err(RuntimeError::NoValidReturn),
         }
     }
 
-    pub fn publish_blueprint(
+    pub fn publish_package(
         &mut self,
-        input: PublishBlueprintInput,
-    ) -> Result<PublishBlueprintOutput, RuntimeError> {
-        let address = self.runtime.new_blueprint_address();
+        input: PublishPackageInput,
+    ) -> Result<PublishPackageOutput, RuntimeError> {
+        let address = self.runtime.new_package_address();
 
-        if self.runtime.get_blueprint(address).is_some() {
-            return Err(RuntimeError::BlueprintAlreadyExists(address));
+        if self.runtime.get_package(address).is_some() {
+            return Err(RuntimeError::PackageAlreadyExists(address));
         }
         load_module(&input.code)?;
 
         trace!(
             self,
-            "New blueprint: address = {:02x?}, code length = {}",
+            "New package: address = {:02x?}, code length = {}",
             address,
             input.code.len()
         );
-        self.runtime
-            .put_blueprint(address, Blueprint::new(input.code));
+        self.runtime.put_package(address, Package::new(input.code));
 
-        Ok(PublishBlueprintOutput { blueprint: address })
+        Ok(PublishPackageOutput { package: address })
     }
 
-    pub fn call_blueprint(
+    pub fn call(
         &mut self,
-        input: CallBlueprintInput,
-    ) -> Result<CallBlueprintOutput, RuntimeError> {
+        package: Address,
+        blueprint: String,
+        method: String,
+        args: Vec<Vec<u8>>,
+    ) -> Result<Vec<u8>, RuntimeError> {
         // load the code
         let (module, memory) = self
             .runtime
-            .load_module(input.blueprint)
-            .ok_or(RuntimeError::BlueprintNotFound(input.blueprint))?;
+            .load_module(package)
+            .ok_or(RuntimeError::PackageNotFound(package))?;
 
         // move buckets and references
-        for arg in &input.args {
+        for arg in &args {
             self.process_sbor_data(
                 arg,
                 Self::move_transient_reject_persisted,
@@ -170,10 +172,10 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
         // create a process
         let mut process = Process::new(
             self.runtime,
-            input.blueprint,
-            format!("{}_main", input.component),
-            input.method,
-            input.args,
+            package,
+            format!("{}_main", blueprint),
+            method,
+            args,
             self.depth + 1,
             &module,
             &memory,
@@ -209,7 +211,37 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
             self.buckets.insert(bid, bucket);
         }
 
-        Ok(CallBlueprintOutput { rtn: result? })
+        result
+    }
+
+    pub fn call_blueprint(
+        &mut self,
+        input: CallBlueprintInput,
+    ) -> Result<CallBlueprintOutput, RuntimeError> {
+        self.call(input.package, input.name, input.function, input.args)
+            .map(|rtn| CallBlueprintOutput { rtn })
+    }
+
+    pub fn call_component(
+        &mut self,
+        input: CallComponentInput,
+    ) -> Result<CallComponentOutput, RuntimeError> {
+        let component = self
+            .runtime
+            .get_component(input.component)
+            .ok_or(RuntimeError::ComponentNotFound(input.component))?
+            .clone();
+
+        let mut args = input.args;
+        args.insert(0, scrypto_encode(&input.component));
+
+        self.call(
+            component.package(),
+            component.name().to_owned(),
+            input.method,
+            args,
+        )
+        .map(|rtn| CallComponentOutput { rtn })
     }
 
     pub fn create_component(
@@ -227,12 +259,14 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
             Self::convert_transient_to_persist,
             Self::reject_references,
         )?;
-        trace!(self,
-            "New component: address = {:02x?}, name = {}, state = {:02x?}, transformed_state = {:02x?}",
-            address, input.name, input.state, new_state
+        trace!(
+            self,
+            "New component: address = {:02x?}, state = {:02x?}",
+            address,
+            new_state
         );
 
-        let component = Component::new(self.blueprint, input.name, new_state);
+        let component = Component::new(self.package, input.name, new_state);
         self.runtime.put_component(address, component);
 
         Ok(CreateComponentOutput { component: address })
@@ -246,7 +280,7 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
             .runtime
             .get_component(input.component)
             .map(|c| ComponentInfo {
-                blueprint: c.blueprint().clone(),
+                package: c.package().clone(),
                 name: c.name().to_string(),
             });
         Ok(GetComponentInfoOutput { result })
@@ -289,17 +323,17 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
         Ok(PutComponentStateOutput {})
     }
 
-    pub fn create_mutable_resource(
+    pub fn create_resource_mutable(
         &mut self,
-        input: CreateMutableResourceInput,
-    ) -> Result<CreateMutableResourceOutput, RuntimeError> {
+        input: CreateResourceMutableInput,
+    ) -> Result<CreateResourceMutableOutput, RuntimeError> {
         if input.info.minter.is_none() || input.info.supply.is_some() {
             return Err(RuntimeError::InvalidResourceParameter);
         }
 
         let address = self
             .runtime
-            .new_resource_address(self.blueprint, input.info.symbol.as_str());
+            .new_resource_address(self.package, input.info.symbol.as_str());
 
         if self.runtime.get_resource(address).is_some() {
             return Err(RuntimeError::ResourceAlreadyExists(address));
@@ -309,13 +343,13 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
             self.runtime
                 .put_resource(address, Resource::new(input.info));
         }
-        Ok(CreateMutableResourceOutput { resource: address })
+        Ok(CreateResourceMutableOutput { resource: address })
     }
 
-    pub fn create_immutable_resource(
+    pub fn create_resource_fixed(
         &mut self,
-        input: CreateImmutableResourceInput,
-    ) -> Result<CreateImmutableResourceOutput, RuntimeError> {
+        input: CreateResourceFixedInput,
+    ) -> Result<CreateResourceFixedOutput, RuntimeError> {
         if input.info.minter.is_some() || input.info.supply.is_none() {
             return Err(RuntimeError::InvalidResourceParameter);
         }
@@ -323,7 +357,7 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
 
         let address = self
             .runtime
-            .new_resource_address(self.blueprint, input.info.symbol.as_str());
+            .new_resource_address(self.package, input.info.symbol.as_str());
 
         if self.runtime.get_resource(address).is_some() {
             return Err(RuntimeError::ResourceAlreadyExists(address));
@@ -338,7 +372,7 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
         let bid = self.runtime.new_transient_bid();
         self.buckets.insert(bid, bucket);
 
-        Ok(CreateImmutableResourceOutput {
+        Ok(CreateResourceFixedOutput {
             resource: address,
             bucket: bid,
         })
@@ -486,10 +520,10 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
         Ok(BorrowImmutableOutput { reference: rid })
     }
 
-    pub fn return_reference(
+    pub fn drop_reference(
         &mut self,
-        input: ReturnReferenceInput,
-    ) -> Result<ReturnReferenceOutput, RuntimeError> {
+        input: DropReferenceInput,
+    ) -> Result<DropReferenceOutput, RuntimeError> {
         let rid = input.reference;
         if rid.is_mutable() {
             todo!()
@@ -511,7 +545,7 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
             }
         }
 
-        Ok(ReturnReferenceOutput {})
+        Ok(DropReferenceOutput {})
     }
 
     pub fn get_amount_ref(
@@ -545,14 +579,14 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
     pub fn withdraw(&mut self, input: WithdrawInput) -> Result<WithdrawOutput, RuntimeError> {
         let address = input.account;
         match address {
-            Address::Blueprint(_) => {
-                if input.account != self.blueprint {
+            Address::Package(_) => {
+                if input.account != self.package {
                     // return Err(RuntimeError::UnauthorizedToWithdraw);
                 }
             }
             Address::Component(_) => {
                 let component = self.runtime.get_component(address);
-                if component.is_none() || component.unwrap().blueprint() != self.blueprint {
+                if component.is_none() || component.unwrap().package() != self.package {
                     // return Err(RuntimeError::UnauthorizedToWithdraw);
                 }
             }
@@ -640,12 +674,12 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
         Ok(EmitLogOutput {})
     }
 
-    pub fn get_blueprint_address(
+    pub fn get_package_address(
         &mut self,
-        _input: GetBlueprintAddressInput,
-    ) -> Result<GetBlueprintAddressOutput, RuntimeError> {
-        Ok(GetBlueprintAddressOutput {
-            address: self.blueprint,
+        _input: GetPackageAddressInput,
+    ) -> Result<GetPackageAddressOutput, RuntimeError> {
+        Ok(GetPackageAddressOutput {
+            address: self.package,
         })
     }
 
@@ -1006,19 +1040,20 @@ impl<'m, 'rt, 'le, T: Ledger> Externals for Process<'m, 'rt, 'le, T> {
             KERNEL => {
                 let operation: u32 = args.nth_checked(0)?;
                 match operation {
-                    PUBLISH_BLUEPRINT => self.handle(args, Process::publish_blueprint, false),
+                    PUBLISH_PACKAGE => self.handle(args, Process::publish_package, false),
                     CALL_BLUEPRINT => self.handle(args, Process::call_blueprint, true),
+                    CALL_COMPONENT => self.handle(args, Process::call_component, true),
 
                     CREATE_COMPONENT => self.handle(args, Process::create_component, true),
                     GET_COMPONENT_INFO => self.handle(args, Process::get_component_info, true),
                     GET_COMPONENT_STATE => self.handle(args, Process::get_component_state, true),
                     PUT_COMPONENT_STATE => self.handle(args, Process::put_component_state, true),
 
-                    CREATE_MUTABLE_RESOURCE => {
-                        self.handle(args, Process::create_mutable_resource, true)
+                    CREATE_RESOURCE_MUTABLE => {
+                        self.handle(args, Process::create_resource_mutable, true)
                     }
-                    CREATE_IMMUTABLE_RESOURCE => {
-                        self.handle(args, Process::create_immutable_resource, true)
+                    CREATE_RESOURCE_FIXED => {
+                        self.handle(args, Process::create_resource_fixed, true)
                     }
                     GET_RESOURCE_INFO => self.handle(args, Process::get_resource_info, true),
                     MINT_RESOURCE => self.handle(args, Process::mint_resource, true),
@@ -1028,7 +1063,7 @@ impl<'m, 'rt, 'le, T: Ledger> Externals for Process<'m, 'rt, 'le, T> {
                     GET_AMOUNT => self.handle(args, Process::get_amount, true),
                     GET_RESOURCE => self.handle(args, Process::get_resource, true),
                     BORROW_IMMUTABLE => self.handle(args, Process::borrow_immutable, true),
-                    RETURN_REFERENCE => self.handle(args, Process::return_reference, true),
+                    DROP_REFERENCE => self.handle(args, Process::drop_reference, true),
                     GET_AMOUNT_REF => self.handle(args, Process::get_amount_ref, true),
                     GET_RESOURCE_REF => self.handle(args, Process::get_resource_ref, true),
 
@@ -1036,9 +1071,7 @@ impl<'m, 'rt, 'le, T: Ledger> Externals for Process<'m, 'rt, 'le, T> {
                     DEPOSIT => self.handle(args, Process::deposit, true),
 
                     EMIT_LOG => self.handle(args, Process::emit_log, true),
-                    GET_BLUEPRINT_ADDRESS => {
-                        self.handle(args, Process::get_blueprint_address, true)
-                    }
+                    GET_PACKAGE_ADDRESS => self.handle(args, Process::get_package_address, true),
                     GET_CALL_DATA => self.handle(args, Process::get_call_data, true),
                     GET_TRANSACTION_HASH => self.handle(args, Process::get_transaction_hash, true),
                     _ => Err(RuntimeError::InvalidOpCode(operation).into()),

@@ -2,27 +2,27 @@ use sbor::*;
 use scrypto::types::rust::collections::*;
 use scrypto::types::*;
 
-/// An instantiated component, owned by a blueprint.
+/// A component is an instance of blueprint.
 #[derive(Debug, Clone, Encode, Decode)]
 pub struct Component {
-    blueprint: Address,
+    package: Address,
     name: String,
     state: Vec<u8>,
     buckets: HashSet<BID>,
 }
 
 impl Component {
-    pub fn new(blueprint: Address, name: String, state: Vec<u8>) -> Self {
+    pub fn new(package: Address, name: String, state: Vec<u8>) -> Self {
         Self {
-            blueprint,
+            package,
             name,
             state,
             buckets: HashSet::new(),
         }
     }
 
-    pub fn blueprint(&self) -> Address {
-        self.blueprint
+    pub fn package(&self) -> Address {
+        self.package
     }
 
     pub fn name(&self) -> &str {

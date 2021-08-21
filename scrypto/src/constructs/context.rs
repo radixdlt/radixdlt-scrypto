@@ -6,9 +6,9 @@ use crate::types::*;
 pub struct Context {}
 
 impl Context {
-    pub fn blueprint_address() -> Address {
-        let input = GetBlueprintAddressInput {};
-        let output: GetBlueprintAddressOutput = call_kernel(GET_BLUEPRINT_ADDRESS, input);
+    pub fn package_address() -> Address {
+        let input = GetPackageAddressInput {};
+        let output: GetPackageAddressOutput = call_kernel(GET_PACKAGE_ADDRESS, input);
         output.address
     }
 

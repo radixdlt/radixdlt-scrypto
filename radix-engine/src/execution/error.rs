@@ -21,7 +21,7 @@ pub enum RuntimeError {
 
     MemoryAccessError(Error),
 
-    NoValidBlueprintReturn,
+    NoValidReturn,
 
     InvalidOpCode(u32),
 
@@ -33,7 +33,7 @@ pub enum RuntimeError {
 
     ResourceLeak(Vec<BID>, Vec<RID>),
 
-    BlueprintAlreadyExists(Address),
+    PackageAlreadyExists(Address),
 
     ComponentAlreadyExists(Address),
 
@@ -41,7 +41,7 @@ pub enum RuntimeError {
 
     InvalidResourceParameter,
 
-    BlueprintNotFound(Address),
+    PackageNotFound(Address),
 
     ComponentNotFound(Address),
 

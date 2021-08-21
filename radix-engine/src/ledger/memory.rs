@@ -6,7 +6,7 @@ use crate::model::*;
 
 /// An in-memory ledger stores all substates in host memory.
 pub struct InMemoryLedger {
-    blueprints: HashMap<Address, Blueprint>,
+    packages: HashMap<Address, Package>,
     components: HashMap<Address, Component>,
     accounts: HashMap<Address, Account>,
     resources: HashMap<Address, Resource>,
@@ -16,7 +16,7 @@ pub struct InMemoryLedger {
 impl InMemoryLedger {
     pub fn new() -> Self {
         Self {
-            blueprints: HashMap::new(),
+            packages: HashMap::new(),
             components: HashMap::new(),
             accounts: HashMap::new(),
             resources: HashMap::new(),
@@ -26,12 +26,12 @@ impl InMemoryLedger {
 }
 
 impl Ledger for InMemoryLedger {
-    fn get_blueprint(&self, address: Address) -> Option<Blueprint> {
-        self.blueprints.get(&address).map(Clone::clone)
+    fn get_package(&self, address: Address) -> Option<Package> {
+        self.packages.get(&address).map(Clone::clone)
     }
 
-    fn put_blueprint(&mut self, address: Address, blueprint: Blueprint) {
-        self.blueprints.insert(address, blueprint);
+    fn put_package(&mut self, address: Address, package: Package) {
+        self.packages.insert(address, package);
     }
 
     fn get_resource(&self, address: Address) -> Option<Resource> {

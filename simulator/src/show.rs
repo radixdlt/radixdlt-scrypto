@@ -58,16 +58,16 @@ pub fn handle_show<'a>(matches: &ArgMatches<'a>) {
                 }
             }
         }
-        Address::Blueprint(_) => {
-            let blueprint = ledger.get_blueprint(address);
-            match blueprint {
+        Address::Package(_) => {
+            let package = ledger.get_package(address);
+            match package {
                 Some(b) => {
-                    println!("Blueprint: {}", address.to_string());
+                    println!("Package: {}", address.to_string());
                     println!("Code size: {} bytes", b.code().len());
                     show_owning_resources(&ledger, address);
                 }
                 None => {
-                    println!("Blueprint not found");
+                    println!("Package not found");
                 }
             }
         }

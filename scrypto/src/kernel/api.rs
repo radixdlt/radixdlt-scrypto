@@ -9,14 +9,16 @@ extern "C" {
     pub fn kernel(op: u32, input_ptr: *const u8, input_len: usize) -> *mut u8;
 }
 
-/// Publish a new blueprint
-pub const PUBLISH_BLUEPRINT: u32 = 0x00;
+/// Publish a new package
+pub const PUBLISH_PACKAGE: u32 = 0x00;
 /// Invoke a blueprint
 pub const CALL_BLUEPRINT: u32 = 0x01;
+/// Invoke a component
+pub const CALL_COMPONENT: u32 = 0x02;
 
 /// Create a new component
 pub const CREATE_COMPONENT: u32 = 0x10;
-/// Retrieve component data
+/// Retrieve component information
 pub const GET_COMPONENT_INFO: u32 = 0x11;
 /// Retrieve component state
 pub const GET_COMPONENT_STATE: u32 = 0x12;
@@ -27,11 +29,11 @@ pub const GET_COMPONENT_STORAGE: u32 = 0x14;
 /// TODO: Insert a key-value pair into component storage
 pub const PUT_COMPONENT_STORAGE: u32 = 0x15;
 
-/// Create a new resource
-pub const CREATE_MUTABLE_RESOURCE: u32 = 0x20;
-/// Mint immutable resource
-pub const CREATE_IMMUTABLE_RESOURCE: u32 = 0x21;
-/// Retrieve resource data
+/// Create a new resource with mutable supply
+pub const CREATE_RESOURCE_MUTABLE: u32 = 0x20;
+/// Create a new resource with fixed supply
+pub const CREATE_RESOURCE_FIXED: u32 = 0x21;
+/// Retrieve resource information
 pub const GET_RESOURCE_INFO: u32 = 0x22;
 /// Mint resource
 pub const MINT_RESOURCE: u32 = 0x23;
@@ -46,10 +48,10 @@ pub const GET_AMOUNT: u32 = 0x32;
 pub const GET_RESOURCE: u32 = 0x33;
 /// Obtain an immutable reference to a bucket
 pub const BORROW_IMMUTABLE: u32 = 0x34;
-/// (TODO) Obtain a mutable reference to a bucket
+/// TODO: Obtain a mutable reference to a bucket
 pub const BORROW_MUTABLE: u32 = 0x35;
 /// Drop a reference
-pub const RETURN_REFERENCE: u32 = 0x36;
+pub const DROP_REFERENCE: u32 = 0x36;
 /// Get the resource amount behind a reference
 pub const GET_AMOUNT_REF: u32 = 0x37;
 /// Get the resource address behind a reference
@@ -62,16 +64,16 @@ pub const DEPOSIT: u32 = 0x41;
 
 /// Log a message
 pub const EMIT_LOG: u32 = 0x50;
-/// Retrieve context address
-pub const GET_BLUEPRINT_ADDRESS: u32 = 0x51;
-/// Retrieve the call data
+/// Retrieve context package address
+pub const GET_PACKAGE_ADDRESS: u32 = 0x51;
+/// Retrieve call data
 pub const GET_CALL_DATA: u32 = 0x52;
-/// Retrieve the call data
+/// Retrieve transaction hash
 pub const GET_TRANSACTION_HASH: u32 = 0x53;
 
 #[derive(Debug, Clone, Describe, Encode, Decode)]
 pub struct ComponentInfo {
-    pub blueprint: Address,
+    pub package: Address,
     pub name: String,
 }
 
@@ -97,29 +99,41 @@ pub enum Level {
 }
 
 //==========
-// blueprint
+// code
 //==========
 
 #[derive(Debug, Clone, Encode, Decode)]
-pub struct PublishBlueprintInput {
+pub struct PublishPackageInput {
     pub code: Vec<u8>,
 }
 
 #[derive(Debug, Clone, Encode, Decode)]
-pub struct PublishBlueprintOutput {
-    pub blueprint: Address,
+pub struct PublishPackageOutput {
+    pub package: Address,
 }
 
 #[derive(Debug, Clone, Encode, Decode)]
 pub struct CallBlueprintInput {
-    pub blueprint: Address,
-    pub component: String,
-    pub method: String,
+    pub package: Address,
+    pub name: String,
+    pub function: String,
     pub args: Vec<Vec<u8>>,
 }
 
 #[derive(Debug, Clone, Encode, Decode)]
 pub struct CallBlueprintOutput {
+    pub rtn: Vec<u8>,
+}
+
+#[derive(Debug, Clone, Encode, Decode)]
+pub struct CallComponentInput {
+    pub component: Address,
+    pub method: String,
+    pub args: Vec<Vec<u8>>,
+}
+
+#[derive(Debug, Clone, Encode, Decode)]
+pub struct CallComponentOutput {
     pub rtn: Vec<u8>,
 }
 
@@ -193,22 +207,22 @@ pub struct PutComponentStorageOutput {}
 //=========
 
 #[derive(Debug, Clone, Encode, Decode)]
-pub struct CreateMutableResourceInput {
+pub struct CreateResourceMutableInput {
     pub info: ResourceInfo,
 }
 
 #[derive(Debug, Clone, Encode, Decode)]
-pub struct CreateMutableResourceOutput {
+pub struct CreateResourceMutableOutput {
     pub resource: Address,
 }
 
 #[derive(Debug, Clone, Encode, Decode)]
-pub struct CreateImmutableResourceInput {
+pub struct CreateResourceFixedInput {
     pub info: ResourceInfo,
 }
 
 #[derive(Debug, Clone, Encode, Decode)]
-pub struct CreateImmutableResourceOutput {
+pub struct CreateResourceFixedOutput {
     pub resource: Address,
     pub bucket: BID,
 }
@@ -295,12 +309,12 @@ pub struct BorrowMutableOutput {
 }
 
 #[derive(Debug, Clone, Encode, Decode)]
-pub struct ReturnReferenceInput {
+pub struct DropReferenceInput {
     pub reference: RID,
 }
 
 #[derive(Debug, Clone, Encode, Decode)]
-pub struct ReturnReferenceOutput {}
+pub struct DropReferenceOutput {}
 
 #[derive(Debug, Clone, Encode, Decode)]
 pub struct GetAmountRefInput {
@@ -361,10 +375,10 @@ pub struct EmitLogInput {
 pub struct EmitLogOutput {}
 
 #[derive(Debug, Clone, Encode, Decode)]
-pub struct GetBlueprintAddressInput {}
+pub struct GetPackageAddressInput {}
 
 #[derive(Debug, Clone, Encode, Decode)]
-pub struct GetBlueprintAddressOutput {
+pub struct GetPackageAddressOutput {
     pub address: Address,
 }
 

@@ -14,6 +14,7 @@ echo "Testing with std"
 (cd scrypto-tests; cargo test)
 (cd scrypto-types; cargo test)
 (cd radix-engine; cargo test)
+(cd simulator; cargo run -- help)
 
 echo "Testing with no_std"
 (cd sbor; cargo test --no-default-features --features alloc)

@@ -1,8 +1,8 @@
 use sbor::{Decode, Encode};
 
 use crate::buffer::*;
+use crate::constructs::*;
 use crate::kernel::*;
-use crate::types::rust::string::String;
 use crate::types::rust::string::ToString;
 use crate::types::rust::vec::Vec;
 use crate::types::*;
@@ -37,19 +37,12 @@ impl Component {
     }
 
     pub fn invoke<T: Decode>(&self, method: &str, args: Vec<Vec<u8>>) -> T {
-        let data = self.get_info();
-
-        let mut args_buf = Vec::new();
-        args_buf.push(scrypto_encode(&self.address));
-        args_buf.extend(args);
-
-        let input = CallBlueprintInput {
-            blueprint: data.blueprint,
-            component: data.name,
+        let input = CallComponentInput {
+            component: self.address,
             method: method.to_string(),
-            args: args_buf,
+            args,
         };
-        let output: CallBlueprintOutput = call_kernel(CALL_BLUEPRINT, input);
+        let output: CallComponentOutput = call_kernel(CALL_COMPONENT, input);
 
         scrypto_decode(&output.rtn).unwrap()
     }
@@ -63,12 +56,9 @@ impl Component {
         output.result.unwrap()
     }
 
-    pub fn get_blueprint(&self) -> Address {
-        self.get_info().blueprint
-    }
-
-    pub fn get_name(&self) -> String {
-        self.get_info().name
+    pub fn get_blueprint(&self) -> Blueprint {
+        let info = self.get_info();
+        Blueprint::from(info.package, info.name.as_str())
     }
 
     pub fn get_state<T: Decode>(&self) -> T {

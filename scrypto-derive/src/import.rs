@@ -7,6 +7,8 @@ use syn::punctuated::Punctuated;
 use syn::token::Comma;
 use syn::*;
 
+use scrypto_abi as abi;
+
 macro_rules! trace {
     ($($arg:expr),*) => {{
         #[cfg(feature = "trace")]
@@ -18,20 +20,21 @@ pub fn handle_import(input: TokenStream) -> TokenStream {
     trace!("handle_import() starts");
     let span = Span::call_site();
 
-    let path_lit: LitStr = parse2(input).expect("Unable to parse input");
-    let path = path_lit.value();
-    let abi = fs::read_to_string(path).expect("Unable to load Abi");
-    let component: scrypto_abi::Component =
-        serde_json::from_str(abi.as_str()).expect("Unable to parse Abi");
-    trace!("ABI: {:?}", component);
+    let path = parse2::<LitStr>(input)
+        .expect("Unable to parse input")
+        .value();
+    let content = fs::read_to_string(path).expect("Unable to load ABI");
+    let blueprint: abi::Blueprint =
+        serde_json::from_str(content.as_str()).expect("Unable to parse ABI");
+    trace!("ABI: {:?}", blueprint);
 
     let mut items: Vec<Item> = vec![];
     let mut implementations: Vec<ItemImpl> = vec![];
 
-    let blueprint_address = component.blueprint;
-    let component_name = component.name;
-    let ident = Ident::new(component_name.as_str(), span);
-    trace!("Component name: {}", quote! { #ident });
+    let package = blueprint.package;
+    let name = blueprint.name;
+    let ident = Ident::new(name.as_str(), span);
+    trace!("Blueprint name: {}", quote! { #ident });
 
     let structure: Item = parse_quote! {
         pub struct #ident {
@@ -49,15 +52,15 @@ pub fn handle_import(input: TokenStream) -> TokenStream {
         }
     });
 
-    for method in &component.methods {
-        trace!("Processing method: {:?}", method);
+    for function in &blueprint.functions {
+        trace!("Processing function: {:?}", function);
 
-        let method_name = &method.name;
-        let func_indent = Ident::new(method_name.as_str(), span);
+        let func_name = &function.name;
+        let func_indent = Ident::new(func_name.as_str(), span);
         let mut func_inputs = Punctuated::<FnArg, Comma>::new();
         let mut func_args = Vec::<Ident>::new();
 
-        for (i, input) in method.inputs.iter().enumerate() {
+        for (i, input) in function.inputs.iter().enumerate() {
             match input {
                 _ => {
                     let ident = format_ident!("arg{}", i);
@@ -67,41 +70,66 @@ pub fn handle_import(input: TokenStream) -> TokenStream {
                     items.extend(new_items);
                 }
             }
-            if i < method.inputs.len() - 1 {
+            if i < function.inputs.len() - 1 {
                 func_inputs.push_punct(Comma(span));
             }
         }
-        let (func_output, new_items) = get_native_type(&method.output);
+        let (func_output, new_items) = get_native_type(&function.output);
         items.extend(new_items);
 
-        let func = match method.mutability {
-            scrypto_abi::Mutability::Immutable => {
+        functions.push(parse_quote! {
+            pub fn #func_indent(#func_inputs) -> #func_output {
+                let package = ::scrypto::types::Address::from_hex(#package).unwrap();
+                let blueprint = ::scrypto::constructs::Blueprint::from(package, #name);
+                blueprint.invoke(#func_name, ::scrypto::args!(#(#func_args),*))
+            }
+        });
+    }
+
+    for method in &blueprint.methods {
+        trace!("Processing method: {:?}", method);
+
+        let method_name = &method.name;
+        let method_indent = Ident::new(method_name.as_str(), span);
+        let mut method_inputs = Punctuated::<FnArg, Comma>::new();
+        let mut method_args = Vec::<Ident>::new();
+
+        for (i, input) in method.inputs.iter().enumerate() {
+            match input {
+                _ => {
+                    let ident = format_ident!("arg{}", i);
+                    let (new_type, new_items) = get_native_type(input);
+                    method_args.push(parse_quote! { #ident });
+                    method_inputs.push(parse_quote! { #ident: #new_type });
+                    items.extend(new_items);
+                }
+            }
+            if i < method.inputs.len() - 1 {
+                method_inputs.push_punct(Comma(span));
+            }
+        }
+        let (method_output, new_items) = get_native_type(&method.output);
+        items.extend(new_items);
+
+        let m = match method.mutability {
+            abi::Mutability::Immutable => {
                 parse_quote! {
-                    pub fn #func_indent(&self, #func_inputs) -> #func_output {
+                    pub fn #method_indent(&self, #method_inputs) -> #method_output {
                         let component = ::scrypto::constructs::Component::from(self.address);
-                        component.invoke(#method_name, ::scrypto::args!(#(#func_args),*))
+                        component.invoke(#method_name, ::scrypto::args!(#(#method_args),*))
                     }
                 }
             }
-            scrypto_abi::Mutability::Mutable => {
+            abi::Mutability::Mutable => {
                 parse_quote! {
-                    pub fn #func_indent(&mut self, #func_inputs) -> #func_output {
+                    pub fn #method_indent(&mut self, #method_inputs) -> #method_output {
                         let component = ::scrypto::constructs::Component::from(self.address);
-                        component.invoke(#method_name, ::scrypto::args!(#(#func_args),*))
-                    }
-                }
-            }
-            scrypto_abi::Mutability::Stateless => {
-                parse_quote! {
-                    pub fn #func_indent(#func_inputs) -> #func_output {
-                        let address = ::scrypto::types::Address::from_hex(#blueprint_address).unwrap();
-                        let blueprint = ::scrypto::constructs::Blueprint::from(address);
-                        blueprint.invoke(#component_name, #method_name, ::scrypto::args!(#(#func_args),*))
+                        component.invoke(#method_name, ::scrypto::args!(#(#method_args),*))
                     }
                 }
             }
         };
-        functions.push(func);
+        functions.push(m);
     }
 
     let implementation = parse_quote! {
@@ -377,12 +405,12 @@ mod tests {
                         Self { address }
                     }
                     pub fn stateless_func() -> u32 {
-                        let address = ::scrypto::types::Address::from_hex(
+                        let package = ::scrypto::types::Address::from_hex(
                             "056967d3d49213394892980af59be76e9b3e7cc4cb78237460d0c7"
                         )
                         .unwrap();
-                        let blueprint = ::scrypto::constructs::Blueprint::from(address);
-                        blueprint.invoke("Sample", "stateless_func", ::scrypto::args!())
+                        let blueprint = ::scrypto::constructs::Blueprint::from(package, "Sample");
+                        blueprint.invoke("stateless_func", ::scrypto::args!())
                     }
                 }
             },
@@ -406,12 +434,12 @@ mod tests {
                         Self { address }
                     }
                     pub fn test_system_types(arg0: ::scrypto::resource::Tokens) -> ::scrypto::resource::BadgesRef {
-                        let address = ::scrypto::types::Address::from_hex(
+                        let package = ::scrypto::types::Address::from_hex(
                             "056967d3d49213394892980af59be76e9b3e7cc4cb78237460d0c7"
                         )
                         .unwrap();
-                        let blueprint = ::scrypto::constructs::Blueprint::from(address);
-                        blueprint.invoke("Sample", "test_system_types", ::scrypto::args!(arg0))
+                        let blueprint = ::scrypto::constructs::Blueprint::from(package, "Sample");
+                        blueprint.invoke("test_system_types", ::scrypto::args!(arg0))
                     }
                 }
             },
