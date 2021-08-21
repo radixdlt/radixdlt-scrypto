@@ -15,7 +15,7 @@ pub struct Badges {
 impl Describe for Badges {
     fn describe() -> Type {
         Type::SystemType {
-            name: "::scrypto::resource::badges::Badges".to_owned(),
+            name: "::scrypto::resource::Badges".to_owned(),
         }
     }
 }

@@ -15,7 +15,7 @@ pub struct Tokens {
 impl Describe for Tokens {
     fn describe() -> Type {
         Type::SystemType {
-            name: "::scrypto::resource::badges::Tokens".to_owned(),
+            name: "::scrypto::resource::Tokens".to_owned(),
         }
     }
 }

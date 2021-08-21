@@ -17,6 +17,8 @@ pub mod constructs;
 pub mod kernel;
 /// Scrypto resource containers and references.
 pub mod resource;
+/// Scrypto traits.
+pub mod traits;
 /// Scrypto primitive types.
 pub mod types {
     pub use scrypto_types::*;

@@ -27,10 +27,10 @@ use proc_macro::TokenStream;
 ///     }
 ///
 ///     impl Counter {
-///         pub fn new() -> Address {
-///             Component::new("Counter", Self {
+///         pub fn new() -> Component {
+///             Self {
 ///                 count: 0
-///             }).into()
+///             }.into()
 ///         }
 ///
 ///         pub fn get_and_incr(&mut self) -> u32 {

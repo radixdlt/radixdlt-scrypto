@@ -1,16 +1,26 @@
-use sbor::{Decode, Encode};
+use sbor::model::*;
+use sbor::{Decode, Describe, Encode};
 
 use crate::buffer::*;
 use crate::constructs::*;
 use crate::kernel::*;
+use crate::types::rust::borrow::ToOwned;
 use crate::types::rust::string::ToString;
 use crate::types::rust::vec::Vec;
 use crate::types::*;
 
 /// A self-executing program that holds resources and exposed actions to other entities.
-#[derive(Debug)]
+#[derive(Debug, Encode, Decode)]
 pub struct Component {
     address: Address,
+}
+
+impl Describe for Component {
+    fn describe() -> Type {
+        Type::SystemType {
+            name: "::scrypto::constructs::Component".to_owned(),
+        }
+    }
 }
 
 impl From<Address> for Component {
@@ -26,9 +36,9 @@ impl Into<Address> for Component {
 }
 
 impl Component {
-    pub fn new<T: Encode>(name: &str, state: T) -> Self {
+    pub fn new<T: Encode + crate::traits::Blueprint>(state: T) -> Self {
         let input = CreateComponentInput {
-            name: name.to_string(),
+            name: state.name().to_string(),
             state: scrypto_encode(&state),
         };
         let output: CreateComponentOutput = call_kernel(CREATE_COMPONENT, input);

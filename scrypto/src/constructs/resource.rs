@@ -1,12 +1,24 @@
+use sbor::model::*;
+use sbor::{Decode, Describe, Encode};
+
 use crate::kernel::*;
 use crate::resource::*;
+use crate::types::rust::borrow::ToOwned;
 use crate::types::rust::string::ToString;
 use crate::types::*;
 
 /// A primitive piece of state which has a single owner, and behaves like a physical object.
-#[derive(Debug)]
+#[derive(Debug, Encode, Decode)]
 pub struct Resource {
     address: Address,
+}
+
+impl Describe for Resource {
+    fn describe() -> Type {
+        Type::SystemType {
+            name: "::scrypto::constructs::Resource".to_owned(),
+        }
+    }
 }
 
 impl From<Address> for Resource {

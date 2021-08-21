@@ -17,11 +17,13 @@ blueprint! {
             let resource = create_mutable_tokens("c1", Context::package_address());
             let tokens  =  mint_tokens(resource, 100);
 
-           Component::new("ComponentTest", Self {
-               resource: resource,
-               tokens: tokens,
-               secret: "abc".to_owned(),
-           }).into()
+            let component: Component = Self {
+                resource: resource,
+                tokens: tokens,
+                secret: "abc".to_owned(),
+            }.into();
+
+            component.address()
         }
 
         pub fn get_component_info(address: Address) -> ComponentInfo {

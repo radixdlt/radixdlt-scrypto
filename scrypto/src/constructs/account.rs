@@ -1,11 +1,23 @@
+use sbor::model::*;
+use sbor::{Decode, Describe, Encode};
+
 use crate::kernel::*;
 use crate::resource::*;
+use crate::types::rust::borrow::ToOwned;
 use crate::types::*;
 
 /// An account holds tokens and badges.
-#[derive(Debug)]
+#[derive(Debug, Encode, Decode)]
 pub struct Account {
     address: Address,
+}
+
+impl Describe for Account {
+    fn describe() -> Type {
+        Type::SystemType {
+            name: "::scrypto::constructs::Account".to_owned(),
+        }
+    }
 }
 
 impl From<Address> for Account {

@@ -36,6 +36,18 @@ pub fn handle_blueprint(input: TokenStream, output_abi: bool) -> TokenStream {
         impl #bp_ident {
             #(#bp_items)*
         }
+
+        impl ::scrypto::traits::Blueprint for #bp_ident {
+            fn name(&self) -> &str {
+                #bp_name
+            }
+        }
+
+        impl Into<::scrypto::constructs::Component> for #bp_ident {
+            fn into(self) -> ::scrypto::constructs::Component {
+                ::scrypto::constructs::Component::new(self)
+            }
+        }
     };
 
     trace!("Generating dispatcher function...");
@@ -343,6 +355,16 @@ mod tests {
                 impl Test {
                     pub fn x(&self) -> u32 {
                         self.a
+                    }
+                }
+                impl ::scrypto::traits::Blueprint for Test {
+                    fn name(&self) -> &str {
+                        "Test"
+                    }
+                }
+                impl Into<::scrypto::constructs::Component> for Test {
+                    fn into(self) -> ::scrypto::constructs::Component {
+                        ::scrypto::constructs::Component::new(self)
                     }
                 }
                 #[no_mangle]

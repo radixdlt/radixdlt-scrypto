@@ -15,10 +15,10 @@ blueprint! {
     }
 
     impl Simple {
-        pub fn new() -> Address {
-            Component::new("Simple", Self {
+        pub fn new() -> Component {
+            Self {
                 state: 0
-            }).into()
+            }.into()
         }
 
         pub fn get_state(&self) -> u32 {
@@ -50,7 +50,8 @@ fn test_simple_abi() {
               "name": "new",
               "inputs": [],
               "output": {
-                "type": "Address"
+                "type": "SystemType",
+                "name": "::scrypto::constructs::Component"
               }
             }
           ],

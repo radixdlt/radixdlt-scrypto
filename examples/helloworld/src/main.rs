@@ -2,7 +2,6 @@
 #![no_main]
 
 use scrypto::constructs::*;
-use scrypto::types::*;
 use scrypto::*;
 
 blueprint! {
@@ -11,10 +10,10 @@ blueprint! {
     }
 
     impl Greeting {
-        pub fn new() -> Address {
-            Component::new("Greeting", Self {
+        pub fn new() -> Component {
+            Self {
                 counter: 0
-            }).into()
+            }.into()
         }
 
         pub fn say_hello(&mut self) {
