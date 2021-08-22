@@ -1,5 +1,5 @@
 use sbor::*;
-use scrypto::kernel::*;
+use scrypto::types::*;
 
 /// Represents a resource created.
 #[derive(Debug, Clone, Encode, Decode)]

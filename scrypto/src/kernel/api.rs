@@ -1,4 +1,4 @@
-use sbor::{Decode, Describe, Encode};
+use sbor::{Decode, Encode};
 
 use crate::types::rust::string::String;
 use crate::types::rust::vec::Vec;
@@ -70,33 +70,6 @@ pub const GET_PACKAGE_ADDRESS: u32 = 0x51;
 pub const GET_CALL_DATA: u32 = 0x52;
 /// Retrieve transaction hash
 pub const GET_TRANSACTION_HASH: u32 = 0x53;
-
-#[derive(Debug, Clone, Describe, Encode, Decode)]
-pub struct ComponentInfo {
-    pub package: Address,
-    pub name: String,
-}
-
-#[derive(Debug, Clone, Describe, Encode, Decode)]
-pub struct ResourceInfo {
-    pub symbol: String,
-    pub name: String,
-    pub description: String,
-    pub url: String,
-    pub icon_url: String,
-    pub minter: Option<Address>,
-    pub supply: Option<U256>,
-}
-
-/// Represents a logging level.
-#[derive(Debug, Clone, Describe, Encode, Decode)]
-pub enum Level {
-    Error = 0,
-    Warn,
-    Info,
-    Debug,
-    Trace,
-}
 
 //==========
 // code

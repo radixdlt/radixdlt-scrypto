@@ -1,4 +1,4 @@
-use scrypto::kernel::Level;
+use scrypto::types::Level;
 use scrypto::types::rust::collections::*;
 use scrypto::types::*;
 use scrypto::utils::*;

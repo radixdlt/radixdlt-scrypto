@@ -3,7 +3,6 @@ use colored::*;
 use radix_engine::execution::*;
 use radix_engine::ledger::*;
 use scrypto::buffer::*;
-use scrypto::kernel::*;
 use scrypto::types::rust::collections::*;
 use scrypto::types::*;
 use scrypto::utils::*;

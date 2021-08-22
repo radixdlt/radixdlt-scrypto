@@ -19,10 +19,8 @@ pub mod kernel;
 pub mod resource;
 /// Scrypto traits.
 pub mod traits;
-/// Scrypto primitive types.
-pub mod types {
-    pub use scrypto_types::*;
-}
+/// Scrypto primitive and common types.
+pub mod types;
 /// Utility functions, such as hashing and signature validation.
 pub mod utils;
 
@@ -46,7 +44,7 @@ macro_rules! args {
 #[macro_export]
 macro_rules! error {
     ($($args: expr),+) => {{
-        scrypto::constructs::Logger::log(scrypto::kernel::Level::Error, scrypto::types::rust::format!($($args),+));
+        scrypto::constructs::Logger::log(scrypto::types::Level::Error, scrypto::types::rust::format!($($args),+));
     }};
 }
 
@@ -54,7 +52,7 @@ macro_rules! error {
 #[macro_export]
 macro_rules! warn {
     ($($args: expr),+) => {{
-        scrypto::constructs::Logger::log(scrypto::kernel::Level::Warn, scrypto::types::rust::format!($($args),+));
+        scrypto::constructs::Logger::log(scrypto::types::Level::Warn, scrypto::types::rust::format!($($args),+));
     }};
 }
 
@@ -62,7 +60,7 @@ macro_rules! warn {
 #[macro_export]
 macro_rules! info {
     ($($args: expr),+) => {{
-        scrypto::constructs::Logger::log(scrypto::kernel::Level::Info, scrypto::types::rust::format!($($args),+));
+        scrypto::constructs::Logger::log(scrypto::types::Level::Info, scrypto::types::rust::format!($($args),+));
     }};
 }
 
@@ -70,7 +68,7 @@ macro_rules! info {
 #[macro_export]
 macro_rules! debug {
     ($($args: expr),+) => {{
-        scrypto::constructs::Logger::log(scrypto::kernel::Level::Debug, scrypto::types::rust::format!($($args),+));
+        scrypto::constructs::Logger::log(scrypto::types::Level::Debug, scrypto::types::rust::format!($($args),+));
     }};
 }
 
@@ -78,6 +76,6 @@ macro_rules! debug {
 #[macro_export]
 macro_rules! trace {
     ($($args: expr),+) => {{
-        scrypto::constructs::Logger::log(scrypto::kernel::Level::Trace, scrypto::types::rust::format!($($args),+));
+        scrypto::constructs::Logger::log(scrypto::types::Level::Trace, scrypto::types::rust::format!($($args),+));
     }};
 }
