@@ -11,32 +11,32 @@ blueprint! {
 
         pub fn combine() -> Tokens {
             let resource = create_mutable_tokens("b1", Context::package_address());
-            let mut a = mint_tokens(resource, 50);
-            let b = mint_tokens(resource, 50);
+            let mut tokens1 = mint_tokens(resource, 50);
+            let tokens2 = mint_tokens(resource, 50);
 
-            a.put(b);
-            a
+            tokens1.put(tokens2);
+            tokens1
         }
 
         pub fn split()  -> (Tokens, Tokens) {
             let resource = create_mutable_tokens("b2", Context::package_address());
-            let mut a = mint_tokens(resource, 100);
-            let b = a.take(U256::from(5));
-            (a, b)
+            let mut tokens1 = mint_tokens(resource, 100);
+            let tokens2 = tokens1.take(U256::from(5));
+            (tokens1, tokens2)
         }
 
         pub fn borrow() -> Tokens {
             let resource = create_mutable_tokens("b3", Context::package_address());
-            let a = mint_tokens(resource, 100);
-            let r = a.borrow();
-            r.destroy();
-            a
+            let tokens = mint_tokens(resource, 100);
+            let reference = tokens.borrow();
+            reference.destroy();
+            tokens
         }
 
         pub fn query() -> (U256, Address, Tokens) {
             let resource = create_mutable_tokens("b4", Context::package_address());
-            let a = mint_tokens(resource, 100);
-            (a.amount(), a.resource(), a)
+            let tokens = mint_tokens(resource, 100);
+            (tokens.amount(), tokens.resource(), tokens)
         }
     }
 }

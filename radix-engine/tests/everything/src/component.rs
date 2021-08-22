@@ -17,13 +17,11 @@ blueprint! {
             let resource = create_mutable_tokens("c1", Context::package_address());
             let tokens  =  mint_tokens(resource, 100);
 
-            let component: Component = Self {
+            Self {
                 resource: resource,
                 tokens: tokens,
-                secret: "abc".to_owned(),
-            }.instantiate();
-
-            component.address()
+                secret: "Secret".to_owned(),
+            }.instantiate().into()
         }
 
         pub fn get_component_info(address: Address) -> ComponentInfo {
@@ -38,10 +36,10 @@ blueprint! {
             let resource: Resource = self.resource.clone().into();
             let tokens = resource.mint_tokens(U256::from(100));
 
-            // Add some tokens
+            // Receive resource
             self.tokens.put(tokens);
 
-            // Update data
+            // Update state
             self.secret = "New secret".to_owned();
         }
     }

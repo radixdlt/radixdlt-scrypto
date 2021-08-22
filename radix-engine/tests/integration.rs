@@ -40,6 +40,11 @@ fn publish<T: Ledger>(ledger: &mut T, name: &str) -> Address {
     address
 }
 
+fn build_and_publish<T: Ledger>(ledger: &mut T, name: &str) -> Address {
+    build(name);
+    publish(ledger, name)
+}
+
 fn call<T: Ledger>(
     ledger: &mut T,
     package: Address,
@@ -70,54 +75,47 @@ fn call<T: Ledger>(
     result
 }
 
-fn one_shot<T: Ledger>(
-    ledger: &mut T,
-    path: &str,
-    blueprint: &str,
-    method: &str,
-    args: Vec<Vec<u8>>,
-) -> Result<Vec<u8>, RuntimeError> {
-    build(path);
-    let package = publish(ledger, path);
-    call(ledger, package, blueprint, method, args)
-}
-
 #[test]
 fn test_greeting() {
     let mut ledger = InMemoryLedger::new();
-    let output = one_shot(&mut ledger, "everything", "Greeting", "new", vec![]);
+    let package = build_and_publish(&mut ledger, "everything");
+
+    let output = call(&mut ledger, package, "Greeting", "new", vec![]);
     assert!(output.is_ok())
+}
+
+#[test]
+fn test_package() {
+    let mut ledger = InMemoryLedger::new();
+    let package = build_and_publish(&mut ledger, "everything");
+
+    let output = call(&mut ledger, package, "PackageTest", "publish", vec![]);
+    assert!(output.is_ok());
 }
 
 #[test]
 fn test_blueprint() {
     let mut ledger = InMemoryLedger::new();
-    let output = one_shot(
+    let package = build_and_publish(&mut ledger, "everything");
+
+    let output = call(
         &mut ledger,
-        "everything",
+        package,
         "BlueprintTest",
-        "publish",
+        "invoke_blueprint",
         vec![],
     );
     assert!(output.is_ok());
-    let address: Address = scrypto_decode(&output.unwrap()).unwrap();
-
-    let output2 = one_shot(
-        &mut ledger,
-        "everything",
-        "BlueprintTest",
-        "invoke",
-        vec![scrypto_encode(&address)],
-    );
-    assert!(output2.is_ok());
 }
 
 #[test]
 fn test_component() {
     let mut ledger = InMemoryLedger::new();
-    let output = one_shot(
+    let package = build_and_publish(&mut ledger, "everything");
+
+    let output = call(
         &mut ledger,
-        "everything",
+        package,
         "ComponentTest",
         "create_component",
         vec![],
@@ -125,27 +123,27 @@ fn test_component() {
     assert!(output.is_ok());
     let address: Address = scrypto_decode(&output.unwrap()).unwrap();
 
-    let output2 = one_shot(
+    let output2 = call(
         &mut ledger,
-        "everything",
+        package,
         "ComponentTest",
         "get_component_info",
         vec![scrypto_encode(&address)],
     );
     assert!(output2.is_ok());
 
-    let output3 = one_shot(
+    let output3 = call(
         &mut ledger,
-        "everything",
+        package,
         "ComponentTest",
         "get_component_state",
         vec![scrypto_encode(&address)],
     );
     assert!(output3.is_ok());
 
-    let output4 = one_shot(
+    let output4 = call(
         &mut ledger,
-        "everything",
+        package,
         "ComponentTest",
         "put_component_state",
         vec![scrypto_encode(&address)],
@@ -156,50 +154,50 @@ fn test_component() {
 #[test]
 fn test_resource() {
     let mut ledger = InMemoryLedger::new();
-    let output = one_shot(
+    let package = build_and_publish(&mut ledger, "everything");
+
+    let output = call(
         &mut ledger,
-        "everything",
+        package,
         "ResourceTest",
         "create_mutable",
         vec![],
     );
     assert!(output.is_ok());
 
-    let output2 = one_shot(
-        &mut ledger,
-        "everything",
-        "ResourceTest",
-        "create_immutable",
-        vec![],
-    );
+    let output2 = call(&mut ledger, package, "ResourceTest", "create_fixed", vec![]);
     assert!(output2.is_ok());
 
-    let output3 = one_shot(&mut ledger, "everything", "ResourceTest", "query", vec![]);
+    let output3 = call(&mut ledger, package, "ResourceTest", "query", vec![]);
     assert!(output3.is_ok());
 }
 
 #[test]
 fn test_bucket() {
     let mut ledger = InMemoryLedger::new();
-    let output = one_shot(&mut ledger, "everything", "BucketTest", "combine", vec![]);
+    let package = build_and_publish(&mut ledger, "everything");
+
+    let output = call(&mut ledger, package, "BucketTest", "combine", vec![]);
     assert!(output.is_ok());
 
-    let output2 = one_shot(&mut ledger, "everything", "BucketTest", "split", vec![]);
+    let output2 = call(&mut ledger, package, "BucketTest", "split", vec![]);
     assert!(output2.is_ok());
 
-    let output3 = one_shot(&mut ledger, "everything", "BucketTest", "borrow", vec![]);
+    let output3 = call(&mut ledger, package, "BucketTest", "borrow", vec![]);
     assert!(output3.is_ok());
 
-    let output4 = one_shot(&mut ledger, "everything", "BucketTest", "query", vec![]);
+    let output4 = call(&mut ledger, package, "BucketTest", "query", vec![]);
     assert!(output4.is_ok());
 }
 
 #[test]
 fn test_account() {
     let mut ledger = InMemoryLedger::new();
-    let output = one_shot(
+    let package = build_and_publish(&mut ledger, "everything");
+
+    let output = call(
         &mut ledger,
-        "everything",
+        package,
         "AccountTest",
         "deposit_and_withdraw",
         vec![],
@@ -210,19 +208,17 @@ fn test_account() {
 #[test]
 fn test_move_bucket() {
     let mut ledger = InMemoryLedger::new();
-    let output = one_shot(&mut ledger, "everything", "MoveTest", "move_bucket", vec![]);
+    let package = build_and_publish(&mut ledger, "everything");
+
+    let output = call(&mut ledger, package, "MoveTest", "move_bucket", vec![]);
     assert!(output.is_ok());
 }
 
 #[test]
 fn test_move_reference() {
     let mut ledger = InMemoryLedger::new();
-    let output = one_shot(
-        &mut ledger,
-        "everything",
-        "MoveTest",
-        "move_reference",
-        vec![],
-    );
+    let package = build_and_publish(&mut ledger, "everything");
+
+    let output = call(&mut ledger, package, "MoveTest", "move_reference", vec![]);
     assert!(output.is_ok());
 }

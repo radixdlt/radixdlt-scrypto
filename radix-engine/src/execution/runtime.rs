@@ -8,10 +8,10 @@ use crate::execution::*;
 use crate::ledger::*;
 use crate::model::*;
 
-/// Abstracts the execution state for a transaction.
+/// Runtime is an abstraction layer over the execution state for a transaction.
 ///
-/// It manages all data reads from ledger and temporarily holds all state updates.
-/// The `flush` method should be call to write all updates into ledger.
+/// It serves as a proxy to the ledger state and keeps track of all state updates.
+/// The `flush` method should be invoked to write all updates into ledger.
 ///
 /// A runtime is shared by a chain of processes, created during the life time
 /// of a transaction.
@@ -58,7 +58,7 @@ impl<'le, T: Ledger> Runtime<'le, T> {
         self.tx_hash
     }
 
-    /// Returns the logs collected.
+    /// Returns the logs collected so far.
     pub fn logs(&self) -> &Vec<(Level, String)> {
         &self.logs
     }
@@ -148,7 +148,7 @@ impl<'le, T: Ledger> Runtime<'le, T> {
         self.components.insert(address, component);
     }
 
-    /// Returns an immutable reference to a account, if exists.
+    /// Returns an immutable reference to an account, if exists.
     #[allow(dead_code)]
     pub fn get_account(&mut self, address: Address) -> Option<&Account> {
         if self.accounts.contains_key(&address) {
@@ -163,7 +163,7 @@ impl<'le, T: Ledger> Runtime<'le, T> {
         }
     }
 
-    /// Returns a mutable reference to a account, if exists.
+    /// Returns a mutable reference to an account, if exists.
     pub fn get_account_mut(&mut self, address: Address) -> Option<&mut Account> {
         self.updated_accounts.insert(address);
 

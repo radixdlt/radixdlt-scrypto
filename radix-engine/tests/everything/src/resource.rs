@@ -1,5 +1,6 @@
 use crate::utils::*;
 use scrypto::constructs::*;
+use scrypto::kernel::*;
 use scrypto::resource::*;
 use scrypto::types::*;
 use scrypto::*;
@@ -17,13 +18,13 @@ blueprint! {
            mint_tokens(resource, 100)
         }
 
-        pub fn create_immutable() -> Tokens {
-           create_immutable_tokens("r2", 100.into())
+        pub fn create_fixed() -> Tokens {
+           create_fixed_tokens("r2", 100.into())
         }
 
-        pub fn query() -> String {
-            let resource: Resource = create_mutable_tokens("r3", Context::package_address()).into();
-            resource.get_info().url
+        pub fn query() -> ResourceInfo {
+            let resource = create_mutable_tokens("r3", Context::package_address());
+            Resource::from(resource).get_info()
         }
     }
 }

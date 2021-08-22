@@ -7,13 +7,10 @@ blueprint! {
     }
 
     impl BlueprintTest {
-        pub fn publish() -> Address {
-            Package::new(include_bytes!("helloworld.wasm")).into()
-        }
-
-        pub fn invoke(package: Address) -> Address {
-            let b = Blueprint::from(package, "Greeting");
-            b.invoke("new", args!())
+        pub fn invoke_blueprint() -> Address {
+            let package = Package::new(include_bytes!("helloworld.wasm"));
+            let blueprint = Blueprint::from(package.into(), "Greeting");
+            blueprint.invoke("new", args!())
         }
     }
 }

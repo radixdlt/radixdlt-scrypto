@@ -1,7 +1,7 @@
 use sbor::*;
 use scrypto::types::*;
 
-/// A bucket represents a certain amount of resource.
+/// A bucket is a resource container.
 #[derive(Debug, Clone, Encode, Decode)]
 pub struct Bucket {
     amount: U256,

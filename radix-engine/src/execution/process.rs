@@ -46,7 +46,7 @@ pub struct Process<'m, 'rt, 'le, L: Ledger> {
     buckets: HashMap<BID, Bucket>,
     buckets_borrowed: HashMap<BID, Rc<RefCell<BucketBorrowed>>>,
     buckets_moving: HashMap<BID, Bucket>,
-    references: HashMap<RID, Rc<RefCell<BucketBorrowed>>>, // TODO: support mutable borrow; support persisted bucket borrow
+    references: HashMap<RID, Rc<RefCell<BucketBorrowed>>>, // TODO: support persisted bucket borrow
     references_moving: HashMap<RID, Rc<RefCell<BucketBorrowed>>>,
 }
 
@@ -201,14 +201,9 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
             .collect();
         for bid in bids {
             trace!(self, "Moving {:02x?} to un-borrowed state", bid);
-            let bucket = self
-                .buckets_borrowed
-                .remove(&bid)
-                .unwrap()
-                .borrow()
-                .bucket()
-                .clone();
-            self.buckets.insert(bid, bucket);
+            let bucket_rc = self.buckets_borrowed.remove(&bid).unwrap();
+            let bucket = Rc::try_unwrap(bucket_rc).unwrap().into_inner();
+            self.buckets.insert(bid, bucket.into());
         }
 
         result
@@ -327,21 +322,21 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
         &mut self,
         input: CreateResourceMutableInput,
     ) -> Result<CreateResourceMutableOutput, RuntimeError> {
-        if input.info.minter.is_none() || input.info.supply.is_some() {
+        let info = input.info;
+        if info.minter.is_none() || info.supply.is_some() {
             return Err(RuntimeError::InvalidResourceParameter);
         }
 
         let address = self
             .runtime
-            .new_resource_address(self.package, input.info.symbol.as_str());
+            .new_resource_address(self.package, info.symbol.as_str());
 
         if self.runtime.get_resource(address).is_some() {
             return Err(RuntimeError::ResourceAlreadyExists(address));
         } else {
             trace!(self, "New resource: {:02x?}", address);
 
-            self.runtime
-                .put_resource(address, Resource::new(input.info));
+            self.runtime.put_resource(address, Resource::new(info));
         }
         Ok(CreateResourceMutableOutput { resource: address })
     }
@@ -350,22 +345,22 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
         &mut self,
         input: CreateResourceFixedInput,
     ) -> Result<CreateResourceFixedOutput, RuntimeError> {
-        if input.info.minter.is_some() || input.info.supply.is_none() {
+        let info = input.info;
+        if info.minter.is_some() || info.supply.is_none() {
             return Err(RuntimeError::InvalidResourceParameter);
         }
-        let supply = input.info.supply.clone().unwrap();
+        let supply = info.supply.clone().unwrap();
 
         let address = self
             .runtime
-            .new_resource_address(self.package, input.info.symbol.as_str());
+            .new_resource_address(self.package, info.symbol.as_str());
 
         if self.runtime.get_resource(address).is_some() {
             return Err(RuntimeError::ResourceAlreadyExists(address));
         } else {
             trace!(self, "New resource: {:02x?}", address);
 
-            self.runtime
-                .put_resource(address, Resource::new(input.info));
+            self.runtime.put_resource(address, Resource::new(info));
         }
 
         let bucket = Bucket::new(supply, address);
@@ -394,11 +389,33 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
         &mut self,
         input: MintResourceInput,
     ) -> Result<MintResourceOutput, RuntimeError> {
-        let _resource = self
+        let resource = self
             .runtime
             .get_resource(input.resource)
             .ok_or(RuntimeError::ResourceNotFound(input.resource))?
             .info();
+
+        match resource.minter {
+            Some(address) => {
+                let authorized = match address {
+                    Address::Package(_) => address == self.package,
+                    Address::Component(_) => {
+                        self.runtime
+                            .get_component(address)
+                            .ok_or(RuntimeError::ComponentNotFound(address))?
+                            .package()
+                            == self.package
+                    }
+                    _ => false,
+                };
+                if !authorized {
+                    return Err(RuntimeError::UnauthorizedToMint);
+                }
+            }
+            _ => {
+                return Err(RuntimeError::FixedResourceMintNotAllowed);
+            }
+        }
 
         let bucket = Bucket::new(input.amount, input.resource);
         let bid = self.runtime.new_transient_bid();
@@ -578,21 +595,20 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
 
     pub fn withdraw(&mut self, input: WithdrawInput) -> Result<WithdrawOutput, RuntimeError> {
         let address = input.account;
-        match address {
-            Address::Package(_) => {
-                if input.account != self.package {
-                    // return Err(RuntimeError::UnauthorizedToWithdraw);
-                }
-            }
+
+        let authorized = match address {
+            Address::Package(_) => address == self.package,
             Address::Component(_) => {
-                let component = self.runtime.get_component(address);
-                if component.is_none() || component.unwrap().package() != self.package {
-                    // return Err(RuntimeError::UnauthorizedToWithdraw);
-                }
+                self.runtime
+                    .get_component(address)
+                    .ok_or(RuntimeError::ComponentNotFound(address))?
+                    .package()
+                    == self.package
             }
-            _ => {
-                // return Err(RuntimeError::UnauthorizedToWithdraw);
-            }
+            _ => false,
+        };
+        if !authorized {
+            return Err(RuntimeError::UnauthorizedToWithdraw);
         }
 
         // find the account
@@ -715,9 +731,9 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
 
         if decoder.remaining() > 0 {
             // We expect a single SBOR value
-            Err(RuntimeError::InvalidData(DecodeError::NotAllBytesUsed(
-                decoder.remaining(),
-            )))
+            Err(RuntimeError::InvalidSborValue(
+                DecodeError::NotAllBytesUsed(decoder.remaining()),
+            ))
         } else {
             Ok(encoder.into())
         }
@@ -735,7 +751,7 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
         let ty = match ty_from_ctx {
             Some(t) => t,
             None => {
-                let t = dec.read_type().map_err(RuntimeError::invalid_data)?;
+                let t = dec.read_type().map_err(RuntimeError::invalid_sbor_data)?;
                 enc.write_type(t);
                 t
             }
@@ -757,13 +773,15 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
             constants::TYPE_STRING => self.dte::<String>(dec, enc, |_, v| Ok(v)),
             constants::TYPE_OPTION => {
                 // index
-                let index = dec.read_index().map_err(RuntimeError::invalid_data)?;
+                let index = dec.read_index().map_err(RuntimeError::invalid_sbor_data)?;
                 enc.write_index(index as usize);
                 // optional value
                 match index {
                     0 => Ok(()),
                     1 => self.traverse_sbor(None, dec, enc, bid_handler, rid_handler),
-                    _ => Err(RuntimeError::invalid_data(DecodeError::InvalidIndex(index))),
+                    _ => Err(RuntimeError::invalid_sbor_data(DecodeError::InvalidIndex(
+                        index,
+                    ))),
                 }
             }
             constants::TYPE_BOX => {
@@ -772,10 +790,10 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
             }
             constants::TYPE_ARRAY | constants::TYPE_VEC => {
                 // element type
-                let ele_ty = dec.read_type().map_err(RuntimeError::invalid_data)?;
+                let ele_ty = dec.read_type().map_err(RuntimeError::invalid_sbor_data)?;
                 enc.write_type(ele_ty);
                 // length
-                let len = dec.read_len().map_err(RuntimeError::invalid_data)?;
+                let len = dec.read_len().map_err(RuntimeError::invalid_sbor_data)?;
                 enc.write_len(len);
                 // values
                 for _ in 0..len {
@@ -785,7 +803,7 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
             }
             constants::TYPE_TUPLE => {
                 //length
-                let len = dec.read_len().map_err(RuntimeError::invalid_data)?;
+                let len = dec.read_len().map_err(RuntimeError::invalid_sbor_data)?;
                 enc.write_len(len);
                 // values
                 for _ in 0..len {
@@ -799,22 +817,22 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
             }
             constants::TYPE_ENUM => {
                 // index
-                let index = dec.read_index().map_err(RuntimeError::invalid_data)?;
+                let index = dec.read_index().map_err(RuntimeError::invalid_sbor_data)?;
                 enc.write_index(index as usize);
                 // name
-                let name = dec.read_name().map_err(RuntimeError::invalid_data)?;
+                let name = dec.read_name().map_err(RuntimeError::invalid_sbor_data)?;
                 enc.write_name(name.as_str());
                 // fields
                 self.traverse_sbor(None, dec, enc, bid_handler, rid_handler)
             }
             constants::TYPE_FIELDS_NAMED => {
                 //length
-                let len = dec.read_len().map_err(RuntimeError::invalid_data)?;
+                let len = dec.read_len().map_err(RuntimeError::invalid_sbor_data)?;
                 enc.write_len(len);
                 // named fields
                 for _ in 0..len {
                     // name
-                    let name = dec.read_name().map_err(RuntimeError::invalid_data)?;
+                    let name = dec.read_name().map_err(RuntimeError::invalid_sbor_data)?;
                     enc.write_name(name.as_str());
                     // value
                     self.traverse_sbor(None, dec, enc, bid_handler, rid_handler)?;
@@ -823,7 +841,7 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
             }
             constants::TYPE_FIELDS_UNNAMED => {
                 //length
-                let len = dec.read_len().map_err(RuntimeError::invalid_data)?;
+                let len = dec.read_len().map_err(RuntimeError::invalid_sbor_data)?;
                 enc.write_len(len);
                 // named fields
                 for _ in 0..len {
@@ -846,7 +864,7 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
             constants::TYPE_ADDRESS => self.dte::<Address>(dec, enc, |_, v| Ok(v)),
             constants::TYPE_BID => self.dte::<BID>(dec, enc, bid_handler),
             constants::TYPE_RID => self.dte::<RID>(dec, enc, rid_handler),
-            _ => Err(RuntimeError::InvalidData(DecodeError::InvalidType {
+            _ => Err(RuntimeError::InvalidSborValue(DecodeError::InvalidType {
                 expected: 0xff,
                 actual: ty,
             })),
@@ -863,7 +881,7 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
     ) -> Result<(), RuntimeError> {
         transform(
             self,
-            T::decode_value(dec).map_err(RuntimeError::invalid_data)?,
+            T::decode_value(dec).map_err(RuntimeError::invalid_sbor_data)?,
         )?
         .encode_value(enc);
 
@@ -897,7 +915,7 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
             self.buckets_moving.insert(bid, bucket);
             Ok(bid)
         } else {
-            Err(RuntimeError::PersistedBucketCantBeMoved)
+            Err(RuntimeError::PersistedBucketMoveNotAllowed)
         }
     }
 
@@ -932,7 +950,6 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
             warn!(self, "Bucket borrowed out: {:02x?} {:02x?}", bid, bucket);
             buckets.push(*bid);
         }
-
         for (reference, bucket_ref) in &self.references {
             warn!(
                 self,
@@ -1037,7 +1054,7 @@ impl<'m, 'rt, 'le, T: Ledger> Externals for Process<'m, 'rt, 'le, T> {
         args: RuntimeArgs,
     ) -> Result<Option<RuntimeValue>, Trap> {
         match index {
-            KERNEL => {
+            KERNEL_INDEX => {
                 let operation: u32 = args.nth_checked(0)?;
                 match operation {
                     PUBLISH_PACKAGE => self.handle(args, Process::publish_package, false),

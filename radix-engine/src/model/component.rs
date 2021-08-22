@@ -1,5 +1,4 @@
 use sbor::*;
-use scrypto::types::rust::collections::*;
 use scrypto::types::*;
 
 /// A component is an instance of blueprint.
@@ -8,7 +7,6 @@ pub struct Component {
     package: Address,
     name: String,
     state: Vec<u8>,
-    buckets: HashSet<BID>,
 }
 
 impl Component {
@@ -17,7 +15,6 @@ impl Component {
             package,
             name,
             state,
-            buckets: HashSet::new(),
         }
     }
 
@@ -35,17 +32,5 @@ impl Component {
 
     pub fn set_state(&mut self, new_state: Vec<u8>) {
         self.state = new_state;
-    }
-
-    #[allow(dead_code)]
-    pub fn has_bucket(&self, bid: BID) -> bool {
-        self.buckets.contains(&bid)
-    }
-
-    #[allow(dead_code)]
-    pub fn insert_bucket(&mut self, bid: BID) {
-        assert!(bid.is_persisted());
-
-        self.buckets.insert(bid);
     }
 }

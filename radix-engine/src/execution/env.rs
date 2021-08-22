@@ -1,15 +1,17 @@
 use wasmi::*;
 
 /// Kernel entrance function index.
-pub const KERNEL: usize = 0;
+pub const KERNEL_INDEX: usize = 0;
+/// Kernel entrance function name.
+pub const KERNEL_NAME: &'static str = "kernel";
 
-/// Decides the symbols available in the `env` module.
+/// Decides what symbols are available in the `env` module.
 pub struct EnvModuleResolver;
 
 impl ModuleImportResolver for EnvModuleResolver {
     fn resolve_func(&self, field_name: &str, signature: &Signature) -> Result<FuncRef, Error> {
         match field_name {
-            "kernel" => {
+            KERNEL_NAME => {
                 if signature.params() != [ValueType::I32, ValueType::I32, ValueType::I32]
                     || signature.return_type() != Some(ValueType::I32)
                 {
@@ -17,7 +19,7 @@ impl ModuleImportResolver for EnvModuleResolver {
                         "Function signature does not match".into(),
                     ));
                 }
-                Ok(FuncInstance::alloc_host(signature.clone(), KERNEL))
+                Ok(FuncInstance::alloc_host(signature.clone(), KERNEL_INDEX))
             }
             _ => Err(Error::Instantiation(format!(
                 "Export {} not found",

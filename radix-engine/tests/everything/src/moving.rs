@@ -21,7 +21,7 @@ blueprint! {
         pub fn move_bucket() {
             let resource =  create_mutable_tokens("m1", Context::package_address());
             let tokens =  mint_tokens(resource, 100);
-            let component: Component = MoveTest {}.instantiate();
+            let component = MoveTest {}.instantiate();
 
             component.invoke::<()>("receive_bucket", args!(tokens));
         }
@@ -29,11 +29,11 @@ blueprint! {
         pub fn move_reference() {
             let resource =  create_mutable_tokens("m2", Context::package_address());
             let tokens =  mint_tokens(resource, 100);
-            let component: Component = MoveTest {}.instantiate();
+            let component = MoveTest {}.instantiate();
 
             component.invoke::<()>("receive_reference", args!(tokens.borrow()));
 
-            // I still own the tokens
+            // The sender still owns the tokens
             Account::from(Context::package_address()).deposit_tokens(tokens);
         }
     }

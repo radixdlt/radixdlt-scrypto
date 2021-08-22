@@ -22,7 +22,7 @@ cargo build --target wasm32-unknown-unknown --release
 ```
 cargo run -- new-account
 ```
-5. TO publish your package, run
+5. To publish your package, run
 ```
 cargo run -- publish-package /path/to/your/package
 ```

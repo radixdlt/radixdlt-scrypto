@@ -7,11 +7,11 @@ pub fn create_mutable_tokens(symbol: &str, minter: Address) -> Address {
     resource.into()
 }
 
-pub fn create_immutable_tokens(symbol: &str, supply: U256) -> Tokens {
+pub fn create_fixed_tokens(symbol: &str, supply: U256) -> Tokens {
     Resource::new_fixed(symbol, "name", "description", "url", "icon_url", supply).1
 }
 
-pub fn mint_tokens(address: Address, amount: u32) -> Tokens {
-    let resource: Resource = address.into();
+pub fn mint_tokens(resource: Address, amount: u32) -> Tokens {
+    let resource = Resource::from(resource);
     resource.mint_tokens(U256::from(amount))
 }

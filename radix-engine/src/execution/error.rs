@@ -13,7 +13,9 @@ pub enum RuntimeError {
 
     UnableToInstantiate(Error),
 
-    HasStartFunction,
+    StartFunctionNotAllowed,
+
+    FloatingPointNotAllowed,
 
     NoValidMemoryExport,
 
@@ -47,9 +49,9 @@ pub enum RuntimeError {
 
     ResourceNotFound(Address),
 
-    ImmutableResource,
+    FixedResourceMintNotAllowed,
 
-    NotAuthorizedToMint,
+    UnauthorizedToMint,
 
     BucketNotFound,
 
@@ -59,9 +61,9 @@ pub enum RuntimeError {
 
     UnauthorizedToWithdraw,
 
-    InvalidData(DecodeError),
+    InvalidSborValue(DecodeError),
 
-    PersistedBucketCantBeMoved,
+    PersistedBucketMoveNotAllowed,
 
     ReferenceNotAllowed,
 }
@@ -75,7 +77,7 @@ impl fmt::Display for RuntimeError {
 impl HostError for RuntimeError {}
 
 impl RuntimeError {
-    pub fn invalid_data(e: DecodeError) -> RuntimeError {
-        RuntimeError::InvalidData(e)
+    pub fn invalid_sbor_data(e: DecodeError) -> RuntimeError {
+        RuntimeError::InvalidSborValue(e)
     }
 }
