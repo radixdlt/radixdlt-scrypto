@@ -8,7 +8,7 @@ pub fn create_mutable_tokens(symbol: &str, minter: Address) -> Address {
 }
 
 pub fn create_immutable_tokens(symbol: &str, supply: U256) -> Tokens {
-    Resource::new_immutable(symbol, "name", "description", "url", "icon_url", supply).1
+    Resource::new_fixed(symbol, "name", "description", "url", "icon_url", supply).1
 }
 
 pub fn mint_tokens(address: Address, amount: u32) -> Tokens {

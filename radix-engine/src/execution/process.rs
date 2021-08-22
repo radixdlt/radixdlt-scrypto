@@ -494,7 +494,7 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
         input: BorrowImmutableInput,
     ) -> Result<BorrowImmutableOutput, RuntimeError> {
         let bid = input.bucket;
-        let rid = self.runtime.new_immutable_rid();
+        let rid = self.runtime.new_fixed_rid();
         trace!(self, "Borrowing: bid =  {:02x?}, rid = {:02x?}", bid, rid);
 
         match self.buckets_borrowed.get_mut(&bid) {

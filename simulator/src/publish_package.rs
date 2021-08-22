@@ -12,20 +12,20 @@ use radix_engine::model::*;
 
 const ARG_PATH: &'static str = "PATH";
 
-/// Constructs a `publish` subcommand.
-pub fn make_publish_cmd<'a, 'b>() -> App<'a, 'b> {
-    SubCommand::with_name(CMD_PUBLISH)
+/// Constructs a `publish-package` subcommand.
+pub fn make_publish_package_cmd<'a, 'b>() -> App<'a, 'b> {
+    SubCommand::with_name(CMD_PUBLISH_PACKAGE)
         .about("Publishes a package.")
         .version(crate_version!())
         .arg(
             Arg::with_name(ARG_PATH)
-                .help("Specify the the path to your project.")
+                .help("Specify the the path to your package.")
                 .required(true),
         )
 }
 
-/// Handles a `publish` request.
-pub fn handle_publish<'a>(matches: &ArgMatches<'a>) {
+/// Handles a `publish-package` request.
+pub fn handle_publish_package<'a>(matches: &ArgMatches<'a>) {
     let path = matches.value_of(ARG_PATH).unwrap();
     let mut buf = PathBuf::from(path);
     let package_name = buf.file_name().unwrap().to_owned();

@@ -58,7 +58,7 @@ impl Resource {
         output.resource.into()
     }
 
-    pub fn new_immutable(
+    pub fn new_fixed(
         symbol: &str,
         name: &str,
         description: &str,

@@ -87,3 +87,11 @@ jobs:
     - name: Run tests
       run: cargo test --verbose
       working-directory: radix-engine
+  simulator:
+    name: Build simulator
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Build
+      run: cargo run -- help
+      working-directory: simulator

@@ -302,7 +302,7 @@ impl<'le, T: Ledger> Runtime<'le, T> {
     }
 
     /// Creates a new persisted bucket id.
-    pub fn new_immutable_rid(&mut self) -> RID {
+    pub fn new_fixed_rid(&mut self) -> RID {
         self.counter += 1;
         RID::Immutable(self.counter)
     }

@@ -18,19 +18,23 @@ rustup target add wasm32-unknown-unknown
 ```
 cargo build --target wasm32-unknown-unknown --release
 ```
-4. Switch to the `simulator` folder and publish your package
+4. Switch to the `simulator` folder and create a new account
 ```
-cargo run -- publish /path/to/your/package
+cargo run -- new-account
 ```
-5. To invoke a blueprint function, run
+5. TO publish your package, run
+```
+cargo run -- publish-package /path/to/your/package
+```
+6. To invoke a blueprint function, run
 ```
 cargo run -- invoke-blueprint <package_address> <blueprint> <function> <args>...
 ```
-6. To invoke a component method, run
+7. To invoke a component method, run
 ```
 cargo run -- invoke-component <component_address> <method> <args>...
 ```
-7. For instructions on other commands, run
+8. For instructions on other commands, run
 ```
 cargo run -- help
 ```
