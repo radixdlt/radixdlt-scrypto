@@ -25,9 +25,9 @@ cargo install --path .
 
 1. Create a new package by copying one from [the examples](./examples), and then build
 ```
-cargo build --target wasm32-unknown-unknown --release
+cargo build --release
 ```
-2. To create a new account (the first account will be used as the default account), run
+2. To create a new account, run
 ```
 rev2 new-account
 ```
