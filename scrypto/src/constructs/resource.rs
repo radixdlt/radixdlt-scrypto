@@ -58,14 +58,14 @@ impl Resource {
         output.resource.into()
     }
 
-    pub fn new_fixed(
+    pub fn new_fixed_tokens(
         symbol: &str,
         name: &str,
         description: &str,
         url: &str,
         icon_url: &str,
         supply: U256,
-    ) -> (Self, Tokens) {
+    ) -> Tokens {
         let input = CreateResourceFixedInput {
             info: ResourceInfo {
                 symbol: symbol.to_string(),
@@ -79,7 +79,31 @@ impl Resource {
         };
         let output: CreateResourceFixedOutput = call_kernel(CREATE_RESOURCE_FIXED, input);
 
-        (output.resource.into(), output.bucket.into())
+        output.bucket.into()
+    }
+
+    pub fn new_fixed_badges(
+        symbol: &str,
+        name: &str,
+        description: &str,
+        url: &str,
+        icon_url: &str,
+        supply: U256,
+    ) -> Badges {
+        let input = CreateResourceFixedInput {
+            info: ResourceInfo {
+                symbol: symbol.to_string(),
+                name: name.to_string(),
+                description: description.to_string(),
+                url: url.to_string(),
+                icon_url: icon_url.to_string(),
+                minter: None,
+                supply: Some(supply),
+            },
+        };
+        let output: CreateResourceFixedOutput = call_kernel(CREATE_RESOURCE_FIXED, input);
+
+        output.bucket.into()
     }
 
     pub fn get_info(&self) -> ResourceInfo {

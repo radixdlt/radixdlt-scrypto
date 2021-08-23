@@ -38,24 +38,26 @@ pub const GET_RESOURCE_INFO: u32 = 0x22;
 /// Mint resource
 pub const MINT_RESOURCE: u32 = 0x23;
 
+/// Creates a new empty bucket
+pub const NEW_EMPTY_BUCKET: u32 = 0x30;
 /// Combine buckets
-pub const COMBINE_BUCKETS: u32 = 0x30;
+pub const COMBINE_BUCKETS: u32 = 0x31;
 /// Split a bucket
-pub const SPLIT_BUCKET: u32 = 0x31;
+pub const SPLIT_BUCKET: u32 = 0x32;
 /// Get bucket resource amount
-pub const GET_AMOUNT: u32 = 0x32;
+pub const GET_AMOUNT: u32 = 0x33;
 /// Get bucket resource address
-pub const GET_RESOURCE: u32 = 0x33;
+pub const GET_RESOURCE: u32 = 0x34;
 /// Obtain an immutable reference to a bucket
-pub const BORROW_IMMUTABLE: u32 = 0x34;
+pub const BORROW_IMMUTABLE: u32 = 0x35;
 /// TODO: Obtain a mutable reference to a bucket
-pub const BORROW_MUTABLE: u32 = 0x35;
+pub const BORROW_MUTABLE: u32 = 0x36;
 /// Drop a reference
-pub const DROP_REFERENCE: u32 = 0x36;
+pub const DROP_REFERENCE: u32 = 0x37;
 /// Get the resource amount behind a reference
-pub const GET_AMOUNT_REF: u32 = 0x37;
+pub const GET_AMOUNT_REF: u32 = 0x38;
 /// Get the resource address behind a reference
-pub const GET_RESOURCE_REF: u32 = 0x38;
+pub const GET_RESOURCE_REF: u32 = 0x39;
 
 /// Withdraw from an account
 pub const WITHDRAW: u32 = 0x40;
@@ -218,6 +220,16 @@ pub struct MintResourceInput {
 
 #[derive(Debug, Clone, Encode, Decode)]
 pub struct MintResourceOutput {
+    pub bucket: BID,
+}
+
+#[derive(Debug, Clone, Encode, Decode)]
+pub struct NewEmptyBucketInput {
+    pub resource: Address,
+}
+
+#[derive(Debug, Clone, Encode, Decode)]
+pub struct NewEmptyBucketOutput {
     pub bucket: BID,
 }
 
