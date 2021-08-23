@@ -10,7 +10,7 @@ extern "C" {
 }
 
 /// Publish a new package
-pub const PUBLISH_PACKAGE: u32 = 0x00;
+pub const PUBLISH: u32 = 0x00;
 /// Invoke a blueprint
 pub const CALL_BLUEPRINT: u32 = 0x01;
 /// Invoke a component

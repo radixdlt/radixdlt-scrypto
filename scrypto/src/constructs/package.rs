@@ -37,7 +37,7 @@ impl Package {
         let input = PublishPackageInput {
             code: code.to_vec(),
         };
-        let output: PublishPackageOutput = call_kernel(PUBLISH_PACKAGE, input);
+        let output: PublishPackageOutput = call_kernel(PUBLISH, input);
 
         output.package.into()
     }

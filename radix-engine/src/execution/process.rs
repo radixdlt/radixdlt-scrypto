@@ -121,7 +121,7 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
         }
     }
 
-    pub fn publish_package(
+    pub fn publish(
         &mut self,
         input: PublishPackageInput,
     ) -> Result<PublishPackageOutput, RuntimeError> {
@@ -1057,7 +1057,7 @@ impl<'m, 'rt, 'le, T: Ledger> Externals for Process<'m, 'rt, 'le, T> {
             KERNEL_INDEX => {
                 let operation: u32 = args.nth_checked(0)?;
                 match operation {
-                    PUBLISH_PACKAGE => self.handle(args, Process::publish_package, false),
+                    PUBLISH => self.handle(args, Process::publish, false),
                     CALL_BLUEPRINT => self.handle(args, Process::call_blueprint, true),
                     CALL_COMPONENT => self.handle(args, Process::call_component, true),
 

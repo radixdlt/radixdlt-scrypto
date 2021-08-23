@@ -42,7 +42,7 @@ rev2 new-account
 ```
 3. To publish your package, run
 ```
-rev2 publish-package /path/to/your/package
+rev2 publish /path/to/your/package
 ```
 4. To invoke a blueprint function, run
 ```
