@@ -26,8 +26,8 @@ rustup target add wasm32-unknown-unknown
 3. Install Radix Engine simulator
 ```
 git clone git@github.com:radixdlt/radixdlt-scrypto.git
-cd radixdlt-scrypto/simulator
-cargo install --path .
+cd radixdlt-scrypto
+cargo install --path ./simulator
 ```
 
 ## Getting Started
