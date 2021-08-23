@@ -4,6 +4,15 @@
 
 Language for building DeFi apps on Radix.
 
+## Terminology
+
+- **Package**: A collection of blueprints, built and published as a single unit.
+- **Blueprint**: A template that describes the common behavior and state of its instances.
+- **Component** An instance of a blueprint, which lives in the persistent state and may own resources.
+- **Function**: A set of statements to perform a specific task.
+- **Method**: A function attached to a component.
+- **Resource**: A primitive state which can only be created once and moved.
+
 ## Installation
 
 1. Install Rust
