@@ -27,7 +27,7 @@ pub fn make_publish_package_cmd<'a, 'b>() -> App<'a, 'b> {
 /// Handles a `publish-package` request.
 pub fn handle_publish_package<'a>(matches: &ArgMatches<'a>) {
     let path = matches.value_of(ARG_PATH).unwrap();
-    let mut buf = PathBuf::from(path);
+    let mut buf = PathBuf::from(path).canonicalize().unwrap();
     let package_name = buf.file_name().unwrap().to_owned();
     buf.push("target");
     buf.push("wasm32-unknown-unknown");
