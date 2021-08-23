@@ -4,7 +4,7 @@
 
 Language for building DeFi apps on Radix.
 
-## Get Started
+## Installation
 
 1. Install Rust
 ```
@@ -14,29 +14,38 @@ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 ```
 rustup target add wasm32-unknown-unknown
 ```
-3. Create a new package by copying from [the examples](./examples) and build
+3. Install Radix Engine simulator
+```
+git clone git@github.com:radixdlt/radixdlt-scrypto.git
+cd radixdlt-scrypto/simulator
+cargo install --path .
+```
+
+## Getting Started
+
+1. Create a new package by copying one from [the examples](./examples), and then build
 ```
 cargo build --target wasm32-unknown-unknown --release
 ```
-4. Switch to the `simulator` folder and create a new account
+2. To create a new account (the first account will be used as the default account), run
 ```
-cargo run -- new-account
+rev2 new-account
 ```
-5. To publish your package, run
+3. To publish your package, run
 ```
-cargo run -- publish-package /path/to/your/package
+rev2 publish-package /path/to/your/package
 ```
-6. To invoke a blueprint function, run
+4. To invoke a blueprint function, run
 ```
-cargo run -- invoke-blueprint <package_address> <blueprint> <function> <args>...
+rev2 invoke-blueprint <package_address> <blueprint> <function> <args>...
 ```
-7. To invoke a component method, run
+5. To invoke a component method, run
 ```
-cargo run -- invoke-component <component_address> <method> <args>...
+rev2 invoke-component <component_address> <method> <args>...
 ```
-8. For instructions on other commands, run
+6. For instructions on other commands, run
 ```
-cargo run -- help
+rev2 help
 ```
 
 ## Project Layout

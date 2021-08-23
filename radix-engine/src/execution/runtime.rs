@@ -1,5 +1,5 @@
-use scrypto::types::Level;
 use scrypto::types::rust::collections::*;
+use scrypto::types::Level;
 use scrypto::types::*;
 use scrypto::utils::*;
 use wasmi::*;

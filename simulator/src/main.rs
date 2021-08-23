@@ -25,7 +25,7 @@ pub use show::*;
 pub use utils::*;
 
 pub fn main() {
-    let matches = clap::App::new("Radix Engine")
+    let matches = clap::App::new("Radix Engine Simulator")
         .about("Build fast, reward everyone, and scale without friction")
         .version(clap::crate_version!())
         .subcommand(make_export_abi_cmd())

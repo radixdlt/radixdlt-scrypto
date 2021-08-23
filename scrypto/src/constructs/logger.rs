@@ -1,6 +1,6 @@
 use crate::kernel::*;
-use crate::types::*;
 use crate::types::rust::string::String;
+use crate::types::*;
 
 /// A logger for dumping messages.
 #[derive(Debug)]
