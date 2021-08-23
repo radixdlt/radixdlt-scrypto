@@ -1,9 +1,9 @@
 use proc_macro2::{Ident, Span, TokenStream};
 use quote::{format_ident, quote};
+use syn::parse::{Parse, ParseStream};
 use syn::token::Brace;
-use syn::*;
 
-use crate::ast;
+use syn::*;
 
 macro_rules! trace {
     ($($arg:expr),*) => {{
@@ -12,108 +12,134 @@ macro_rules! trace {
     }};
 }
 
+enum Item {
+    Struct(ItemStruct),
+    Impl(ItemImpl),
+}
+
+impl Parse for Item {
+    fn parse(input: ParseStream) -> Result<Self> {
+        let lookahead = input.lookahead1();
+        if lookahead.peek(Token![struct]) {
+            input.parse().map(Item::Struct)
+        } else if lookahead.peek(Token![impl]) {
+            input.parse().map(Item::Impl)
+        } else {
+            Err(lookahead.error())
+        }
+    }
+}
+
 pub fn handle_blueprint(input: TokenStream, output_abi: bool) -> TokenStream {
     trace!("handle_blueprint() begins");
 
     // parse blueprint struct and impl
-    let result: Result<ast::Blueprint> = parse2(input);
+    let result: Result<Item> = parse2(input);
     if result.is_err() {
         return result.err().unwrap().to_compile_error().into();
     }
 
-    let bp = result.ok().unwrap();
-    let bp_strut = &bp.structure;
-    let bp_impl = &bp.implementation;
-    let bp_ident = &bp_strut.ident;
-    let bp_items = &bp_impl.items;
-    let bp_name = bp_ident.to_string();
+    let output = match result.unwrap() {
+        Item::Struct(structure) => {
+            let bp_strut = &structure;
+            let bp_ident = &structure.ident;
+            let bp_name = bp_ident.to_string();
 
-    trace!("Processing blueprint: {}", bp_name);
-    let generated_blueprint = quote! {
-        #[derive(Debug, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
-        pub #bp_strut
+            trace!("Processing blueprint: {}", bp_name);
+            quote! {
+                #[derive(Debug, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
+                pub #bp_strut
 
-        impl #bp_ident {
-            #(#bp_items)*
-        }
+                impl ::scrypto::traits::Blueprint for #bp_ident {
+                    fn name(&self) -> &str {
+                        #bp_name
+                    }
+                }
 
-        impl ::scrypto::traits::Blueprint for #bp_ident {
-            fn name(&self) -> &str {
-                #bp_name
-            }
-        }
-
-        impl #bp_ident {
-            fn instantiate(self) -> ::scrypto::constructs::Component {
-                ::scrypto::constructs::Component::new(self)
-            }
-        }
-    };
-
-    trace!("Generating dispatcher function...");
-    let dispatcher_ident = format_ident!("{}_main", bp_ident);
-    let (arm_guards, arm_bodies) = generate_dispatcher(&bp_ident, bp_items);
-    let generated_dispatcher = quote! {
-        #[no_mangle]
-        pub extern "C" fn #dispatcher_ident() -> *mut u8 {
-            // Retrieve call data
-            let calldata: ::scrypto::kernel::GetCallDataOutput = ::scrypto::kernel::call_kernel(
-                ::scrypto::kernel::GET_CALL_DATA,
-                ::scrypto::kernel::GetCallDataInput {},
-            );
-
-            // Dispatch the call
-            let rtn;
-            match calldata.function.as_str() {
-                #( #arm_guards => #arm_bodies )*
-                _ => {
-                    ::scrypto::error!("Function not found: {}", calldata.function);
-                    panic!();
+                impl #bp_ident {
+                    fn instantiate(self) -> ::scrypto::constructs::Component {
+                        ::scrypto::constructs::Component::new(self)
+                    }
                 }
             }
-
-            // Return
-            ::scrypto::buffer::scrypto_wrap(&rtn)
         }
-    };
+        Item::Impl(implementation) => {
+            let bp_impl = &implementation;
+            let bp_ident = match *implementation.self_ty {
+                Type::Path(ref p) => p.path.get_ident().unwrap(),
+                _ => panic!("Unsupported self type: {:?}", implementation.self_ty),
+            };
+            let bp_items = &bp_impl.items;
+            let bp_name = bp_ident.to_string();
 
-    trace!("Generating ABI function...");
-    let abi_ident = format_ident!("{}_abi", bp_ident);
-    let (abi_functions, abi_methods) = generate_abi(&bp_name, bp_items);
-    let generated_abi = quote! {
-        #[no_mangle]
-        pub extern "C" fn #abi_ident() -> *mut u8 {
-            use sbor::{self, Describe};
-            use scrypto::constructs::Context;
-            use scrypto::types::rust::string::ToString;
-            use scrypto::types::rust::vec;
+            trace!("Generating dispatcher function...");
+            let dispatcher_ident = format_ident!("{}_main", bp_ident);
+            let (arm_guards, arm_bodies) = generate_dispatcher(&bp_ident, bp_items);
+            let generated_dispatcher = quote! {
+                impl #bp_ident {
+                    #(#bp_items)*
+                }
 
-            let output = ::scrypto::abi::Blueprint {
-                package: Context::package_address().to_string(),
-                name: #bp_name.to_string(),
-                functions: vec![
-                    #(#abi_functions),*
-                ],
-                methods: vec![
-                    #(#abi_methods),*
-                ],
+                #[no_mangle]
+                pub extern "C" fn #dispatcher_ident() -> *mut u8 {
+                    // Retrieve call data
+                    let calldata: ::scrypto::kernel::GetCallDataOutput = ::scrypto::kernel::call_kernel(
+                        ::scrypto::kernel::GET_CALL_DATA,
+                        ::scrypto::kernel::GetCallDataInput {},
+                    );
+
+                    // Dispatch the call
+                    let rtn;
+                    match calldata.function.as_str() {
+                        #( #arm_guards => #arm_bodies )*
+                        _ => {
+                            ::scrypto::error!("Function not found: {}", calldata.function);
+                            panic!();
+                        }
+                    }
+
+                    // Return
+                    ::scrypto::buffer::scrypto_wrap(&rtn)
+                }
             };
 
-            // serialize the output
-            let output_bytes = ::scrypto::buffer::scrypto_encode(&output);
+            trace!("Generating ABI function...");
+            let abi_ident = format_ident!("{}_abi", bp_ident);
+            let (abi_functions, abi_methods) = generate_abi(&bp_name, bp_items);
+            let generated_abi = quote! {
+                #[no_mangle]
+                pub extern "C" fn #abi_ident() -> *mut u8 {
+                    use sbor::{self, Describe};
+                    use scrypto::constructs::Context;
+                    use scrypto::types::rust::string::ToString;
+                    use scrypto::types::rust::vec;
 
-            // return the output wrapped in a radix-style buffer
-            ::scrypto::buffer::scrypto_wrap(&output_bytes)
+                    let output = ::scrypto::abi::Blueprint {
+                        package: Context::package_address().to_string(),
+                        name: #bp_name.to_string(),
+                        functions: vec![
+                            #(#abi_functions),*
+                        ],
+                        methods: vec![
+                            #(#abi_methods),*
+                        ],
+                    };
+
+                    // serialize the output
+                    let output_bytes = ::scrypto::buffer::scrypto_encode(&output);
+
+                    // return the output wrapped in a radix-style buffer
+                    ::scrypto::buffer::scrypto_wrap(&output_bytes)
+                }
+            };
+
+            let optional_abi = output_abi.then(|| generated_abi);
+            quote! {
+                #generated_dispatcher
+
+                #optional_abi
+            }
         }
-    };
-
-    let optional_abi = output_abi.then(|| generated_abi);
-    let output = quote! {
-        #generated_blueprint
-
-        #generated_dispatcher
-
-        #optional_abi
     };
     trace!("handle_blueprint() finishes");
 
@@ -338,11 +364,8 @@ mod tests {
     }
 
     #[test]
-    fn test_blueprint() {
-        let input = TokenStream::from_str(
-            "struct Test {a: u32} impl Test { pub fn x(&self) -> u32 { self.a } }",
-        )
-        .unwrap();
+    fn test_blueprint_on_struct() {
+        let input = TokenStream::from_str("struct Test {a: u32}").unwrap();
         let output = handle_blueprint(input, true);
 
         assert_code_eq(
@@ -352,11 +375,6 @@ mod tests {
                 pub struct Test {
                     a: u32
                 }
-                impl Test {
-                    pub fn x(&self) -> u32 {
-                        self.a
-                    }
-                }
                 impl ::scrypto::traits::Blueprint for Test {
                     fn name(&self) -> &str {
                         "Test"
@@ -365,6 +383,24 @@ mod tests {
                 impl Test {
                     fn instantiate(self) -> ::scrypto::constructs::Component {
                         ::scrypto::constructs::Component::new(self)
+                    }
+                }
+            },
+        );
+    }
+
+    #[test]
+    fn test_blueprint_on_impl() {
+        let input =
+            TokenStream::from_str("impl Test { pub fn x(&self) -> u32 { self.a } }").unwrap();
+        let output = handle_blueprint(input, true);
+
+        assert_code_eq(
+            output,
+            quote! {
+                impl Test {
+                    pub fn x(&self) -> u32 {
+                        self.a
                     }
                 }
                 #[no_mangle]

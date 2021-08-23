@@ -22,21 +22,19 @@ static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 use scrypto::constructs::*;
 use scrypto::*;
 
-blueprint! {
-    struct Greeting {
-        counter: u32
+#[blueprint]
+struct Greeting {
+    counter: u32,
+}
+
+#[blueprint]
+impl Greeting {
+    pub fn new() -> Component {
+        Self { counter: 0 }.instantiate()
     }
 
-    impl Greeting {
-        pub fn new() -> Component {
-            Self {
-                counter: 0
-            }.instantiate()
-        }
-
-        pub fn say_hello(&mut self) {
-            info!("Hello, {}th visitor!", self.counter);
-            self.counter += 1;
-        }
+    pub fn say_hello(&mut self) {
+        info!("Hello, {}th visitor!", self.counter);
+        self.counter += 1;
     }
 }

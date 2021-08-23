@@ -9,25 +9,23 @@ use scrypto::*;
 use serde::Serialize;
 use serde_json::{json, to_value, Value};
 
-blueprint! {
-    struct Simple {
-        state: u32,
+#[blueprint]
+struct Simple {
+    state: u32,
+}
+
+#[blueprint]
+impl Simple {
+    pub fn new() -> Component {
+        Self { state: 0 }.instantiate()
     }
 
-    impl Simple {
-        pub fn new() -> Component {
-            Self {
-                state: 0
-            }.instantiate()
-        }
+    pub fn get_state(&self) -> u32 {
+        self.state
+    }
 
-        pub fn get_state(&self) -> u32 {
-            self.state
-        }
-
-        pub fn set_state(&mut self, new_state: u32) {
-            self.state = new_state;
-        }
+    pub fn set_state(&mut self, new_state: u32) {
+        self.state = new_state;
     }
 }
 

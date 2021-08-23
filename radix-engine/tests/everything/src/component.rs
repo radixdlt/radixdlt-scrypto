@@ -4,42 +4,44 @@ use scrypto::resource::*;
 use scrypto::types::*;
 use scrypto::*;
 
-blueprint! {
-    struct ComponentTest {
-        resource: Address,
-        tokens: Tokens,
-        secret: String,
+#[blueprint]
+struct ComponentTest {
+    resource: Address,
+    tokens: Tokens,
+    secret: String,
+}
+
+#[blueprint]
+impl ComponentTest {
+    pub fn create_component() -> Address {
+        let resource = create_mutable_tokens("c1", Context::package_address());
+        let tokens = mint_tokens(resource, 100);
+
+        Self {
+            resource: resource,
+            tokens: tokens,
+            secret: "Secret".to_owned(),
+        }
+        .instantiate()
+        .into()
     }
 
-    impl ComponentTest {
-        pub fn create_component() -> Address {
-            let resource = create_mutable_tokens("c1", Context::package_address());
-            let tokens  =  mint_tokens(resource, 100);
+    pub fn get_component_info(address: Address) -> ComponentInfo {
+        Component::from(address).get_info()
+    }
 
-            Self {
-                resource: resource,
-                tokens: tokens,
-                secret: "Secret".to_owned(),
-            }.instantiate().into()
-        }
+    pub fn get_component_state(&self) -> String {
+        self.secret.clone()
+    }
 
-        pub fn get_component_info(address: Address) -> ComponentInfo {
-            Component::from(address).get_info()
-        }
+    pub fn put_component_state(&mut self) {
+        let resource: Resource = self.resource.clone().into();
+        let tokens = resource.mint_tokens(U256::from(100));
 
-        pub fn get_component_state(&self) -> String {
-            self.secret.clone()
-        }
+        // Receive resource
+        self.tokens.put(tokens);
 
-        pub fn put_component_state(&mut self)  {
-            let resource: Resource = self.resource.clone().into();
-            let tokens = resource.mint_tokens(U256::from(100));
-
-            // Receive resource
-            self.tokens.put(tokens);
-
-            // Update state
-            self.secret = "New secret".to_owned();
-        }
+        // Update state
+        self.secret = "New secret".to_owned();
     }
 }
