@@ -95,7 +95,7 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
             self.args
         );
 
-        let result = self.invoke(self.blueprint.clone());
+        let result = self.run_func(self.blueprint.clone());
 
         info!(
             self,
@@ -106,7 +106,7 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
         result
     }
 
-    pub fn invoke(&mut self, func: String) -> Result<Vec<u8>, RuntimeError> {
+    pub fn run_func(&mut self, func: String) -> Result<Vec<u8>, RuntimeError> {
         let invoke_res = self.module.invoke_export(func.as_str(), &[], self);
 
         match invoke_res.map_err(|e| RuntimeError::InvokeError(e))? {
@@ -1015,15 +1015,17 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
 
     /// Log a message to console.
     fn log(&self, level: Level, msg: String) {
-        let (l, m) = match level {
-            Level::Error => ("ERROR".red(), msg.to_string().red()),
-            Level::Warn => ("WARN".yellow(), msg.to_string().yellow()),
-            Level::Info => ("INFO".green(), msg.to_string().green()),
-            Level::Debug => ("DEBUG".cyan(), msg.to_string().cyan()),
-            Level::Trace => ("TRACE".normal(), msg.to_string().normal()),
-        };
+        if self.trace {
+            let (l, m) = match level {
+                Level::Error => ("ERROR".red(), msg.to_string().red()),
+                Level::Warn => ("WARN".yellow(), msg.to_string().yellow()),
+                Level::Info => ("INFO".green(), msg.to_string().green()),
+                Level::Debug => ("DEBUG".cyan(), msg.to_string().cyan()),
+                Level::Trace => ("TRACE".normal(), msg.to_string().normal()),
+            };
 
-        println!("{}[{:5}] {}", "  ".repeat(self.depth), l, m);
+            println!("{}[{:5}] {}", "  ".repeat(self.depth), l, m);
+        }
     }
 
     /// Handle a kernel call.

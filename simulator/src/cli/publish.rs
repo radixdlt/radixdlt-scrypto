@@ -43,7 +43,6 @@ pub fn handle_publish<'a>(matches: &ArgMatches<'a>) {
             .next()
             .unwrap()
     };
-    println!("Publishing: {}", file.to_str().unwrap());
     let code = fs::read(&file).expect(format!("Unable to load file: {:?}", file).as_str());
 
     let tx_hash = sha256(Uuid::new_v4().to_string());

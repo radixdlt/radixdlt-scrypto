@@ -28,21 +28,15 @@ pub fn make_export_abi_cmd<'a, 'b>() -> App<'a, 'b> {
 pub fn handle_export_abi<'a>(matches: &ArgMatches<'a>) {
     let package: Address = matches.value_of(ARG_PACKAGE).unwrap().into();
     let blueprint = matches.value_of(ARG_BLUEPRINT).unwrap();
-    println!("----");
-    println!("Package: {}", package.to_string());
-    println!("Blueprint: {}", blueprint);
-    println!("----");
 
     let result = get_abi(package, blueprint, true);
 
-    println!("----");
     match result {
+        Err(e) => {
+            println!("Error: {}", e);
+        }
         Ok(abi) => {
             println!("{}", serde_json::to_string_pretty(&abi).unwrap());
         }
-        Err(error) => {
-            println!("Failed to export ABI: {}", error);
-        }
     }
-    println!("----");
 }

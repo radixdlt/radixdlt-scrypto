@@ -51,7 +51,7 @@ pub fn handle_show<'a>(matches: &ArgMatches<'a>) {
             let account = ledger.get_account(address);
             match account {
                 Some(_) => {
-                    println!("Account: {}", address.to_string());
+                    println!("Public key: {}", address.to_string());
                     show_owning_resources(&ledger, address)
                 }
                 None => {

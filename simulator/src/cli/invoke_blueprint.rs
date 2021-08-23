@@ -1,5 +1,4 @@
 use clap::{crate_version, App, Arg, ArgMatches, SubCommand};
-use colored::*;
 use scrypto::types::*;
 
 use crate::cli::*;
@@ -47,21 +46,15 @@ pub fn handle_invoke_blueprint<'a>(matches: &ArgMatches<'a>) {
         x.for_each(|a| args.push(hex::decode(a).unwrap()));
     }
 
-    let (output, logs) = invoke(package, blueprint, function, args, true);
+    let result = invoke_blueprint(package, blueprint, function, &args, false);
 
-    println!("----");
-    println!("Number of Logs: {}", logs.len());
-    for (level, msg) in logs {
-        let (l, m) = match level {
-            Level::Error => ("ERROR".red(), msg.red()),
-            Level::Warn => ("WARN".yellow(), msg.yellow()),
-            Level::Info => ("INFO".green(), msg.green()),
-            Level::Debug => ("DEBUG".cyan(), msg.cyan()),
-            Level::Trace => ("TRACE".normal(), msg.normal()),
-        };
-
-        println!("[{:5}] {}", l, m);
+    match result {
+        Err(e) => {
+            println!("Error: {}", e);
+        }
+        Ok(r) => {
+            println!("Result: {:02x?}", r.result);
+            print_logs(&r.logs);
+        }
     }
-    println!("Output: {:02x?}", output);
-    println!("----");
 }
