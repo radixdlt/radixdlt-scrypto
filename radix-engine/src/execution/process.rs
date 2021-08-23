@@ -35,10 +35,11 @@ macro_rules! warn {
 
 /// A running process
 pub struct Process<'m, 'rt, 'le, L: Ledger> {
+    trace: bool,
     runtime: &'rt mut Runtime<'le, L>,
     package: Address,
     blueprint: String,
-    method: String,
+    function: String,
     args: Vec<Vec<u8>>,
     depth: usize,
     module: &'m ModuleRef,
@@ -52,10 +53,11 @@ pub struct Process<'m, 'rt, 'le, L: Ledger> {
 
 impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
     pub fn new(
+        trace: bool,
         runtime: &'rt mut Runtime<'le, L>,
         package: Address,
         blueprint: String,
-        method: String,
+        function: String,
         args: Vec<Vec<u8>>,
         depth: usize,
         module: &'m ModuleRef,
@@ -64,10 +66,11 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
         references: HashMap<RID, Rc<RefCell<BucketBorrowed>>>,
     ) -> Self {
         Self {
+            trace,
             runtime,
             package,
             blueprint,
-            method,
+            function,
             args,
             depth,
             module,
@@ -80,15 +83,15 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
         }
     }
 
-    /// Start this process by invoking the main method.
+    /// Start this process by invoking the main function.
     pub fn run(&mut self) -> Result<Vec<u8>, RuntimeError> {
         let now = Instant::now();
         info!(
             self,
-            "CALL started: package = {}, blueprint = {}, method = {}, args = {:02x?}",
+            "CALL started: package = {}, blueprint = {}, function = {}, args = {:02x?}",
             self.package,
             self.blueprint,
-            self.method,
+            self.function,
             self.args
         );
 
@@ -147,7 +150,7 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
         &mut self,
         package: Address,
         blueprint: String,
-        method: String,
+        function: String,
         args: Vec<Vec<u8>>,
     ) -> Result<Vec<u8>, RuntimeError> {
         // load the code
@@ -171,10 +174,11 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
 
         // create a process
         let mut process = Process::new(
+            self.trace,
             self.runtime,
             package,
             format!("{}_main", blueprint),
-            method,
+            function,
             args,
             self.depth + 1,
             &module,
@@ -715,7 +719,7 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
         _input: GetCallDataInput,
     ) -> Result<GetCallDataOutput, RuntimeError> {
         Ok(GetCallDataOutput {
-            method: self.method.clone(),
+            function: self.function.clone(),
             args: self.args.clone(),
         })
     }

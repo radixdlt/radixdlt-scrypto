@@ -1,13 +1,8 @@
 use clap::{crate_version, App, Arg, ArgMatches, SubCommand};
-use radix_engine::execution::*;
-use radix_engine::ledger::*;
-use scrypto::abi;
-use scrypto::buffer::*;
-use scrypto::types::rust::collections::*;
 use scrypto::types::*;
-use scrypto::utils::*;
 
-use crate::*;
+use crate::cli::*;
+use crate::invoke::*;
 
 const ARG_PACKAGE: &'static str = "PACKAGE";
 const ARG_BLUEPRINT: &'static str = "BLUEPRINT";
@@ -38,40 +33,12 @@ pub fn handle_export_abi<'a>(matches: &ArgMatches<'a>) {
     println!("Blueprint: {}", blueprint);
     println!("----");
 
-    let tx_hash = sha256("");
-    let mut ledger = InMemoryLedger::new();
-    ledger.put_package(
-        package,
-        FileBasedLedger::new(get_data_dir())
-            .get_package(package)
-            .expect("Package not found"),
-    );
-    let mut runtime = Runtime::new(tx_hash, &mut ledger);
-    let (module, memory) = runtime.load_module(package).unwrap();
-
-    let mut process = Process::new(
-        &mut runtime,
-        package,
-        format!("{}_abi", blueprint),
-        String::new(),
-        vec![],
-        0,
-        &module,
-        &memory,
-        HashMap::new(),
-        HashMap::new(),
-    );
-    let output = process.run();
-    if output.is_ok() {
-        runtime.flush();
-    }
+    let result = get_abi(package, blueprint, true);
 
     println!("----");
-    match output {
-        Ok(bytes) => {
-            let abi: abi::Blueprint = scrypto_decode(&bytes).unwrap();
-            let json = serde_json::to_string_pretty(&abi).unwrap();
-            println!("{}", json);
+    match result {
+        Ok(abi) => {
+            println!("{}", serde_json::to_string_pretty(&abi).unwrap());
         }
         Err(error) => {
             println!("Failed to export ABI: {}", error);

@@ -4,13 +4,14 @@ use std::fs::read_dir;
 use std::path::PathBuf;
 
 use clap::{crate_version, App, Arg, ArgMatches, SubCommand};
-use scrypto::utils::*;
-use uuid::Uuid;
-
-use crate::*;
 use radix_engine::execution::*;
 use radix_engine::ledger::*;
 use radix_engine::model::*;
+use scrypto::utils::*;
+use uuid::Uuid;
+
+use crate::cli::*;
+use crate::ledger::*;
 
 const ARG_PATH: &'static str = "PATH";
 
@@ -35,8 +36,8 @@ pub fn handle_publish<'a>(matches: &ArgMatches<'a>) {
         path.push("target");
         path.push("wasm32-unknown-unknown");
         path.push("release");
-        read_dir(path)
-            .unwrap()
+        read_dir(&path)
+            .expect(format!("Failed to read dir: {:?}", &path).as_str())
             .map(|e| e.unwrap().path())
             .filter(|p| p.extension() == Some(OsStr::new("wasm")))
             .next()

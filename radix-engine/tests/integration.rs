@@ -57,6 +57,7 @@ fn call<T: Ledger>(
     let (module, memory) = runtime.load_module(package).expect("Package not found");
 
     let mut process = Process::new(
+        true,
         &mut runtime,
         package,
         format!("{}_main", blueprint.to_string()),

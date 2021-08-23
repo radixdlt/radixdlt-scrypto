@@ -372,7 +372,7 @@ pub struct GetCallDataInput {}
 
 #[derive(Debug, Clone, Encode, Decode)]
 pub struct GetCallDataOutput {
-    pub method: String,
+    pub function: String,
     pub args: Vec<Vec<u8>>,
 }
 

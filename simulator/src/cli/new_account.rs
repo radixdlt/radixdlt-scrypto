@@ -7,7 +7,8 @@ use scrypto::types::*;
 use scrypto::utils::*;
 use uuid::Uuid;
 
-use crate::*;
+use crate::cli::*;
+use crate::ledger::*;
 
 /// Constructs a `new-account` subcommand.
 pub fn make_new_account_cmd<'a, 'b>() -> App<'a, 'b> {

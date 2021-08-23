@@ -34,9 +34,7 @@ impl Into<BID> for Badges {
 
 impl Badges {
     pub fn new_empty(resource: Address) -> Badges {
-        let input = NewEmptyBucketInput {
-            resource,
-        };
+        let input = NewEmptyBucketInput { resource };
         let output: NewEmptyBucketOutput = call_kernel(NEW_EMPTY_BUCKET, input);
 
         output.bucket.into()

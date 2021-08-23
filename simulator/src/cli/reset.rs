@@ -2,7 +2,8 @@ use std::fs::remove_dir_all;
 
 use clap::{crate_version, App, ArgMatches, SubCommand};
 
-use crate::*;
+use crate::cli::*;
+use crate::ledger::*;
 
 /// Constructs a `reset` subcommand.
 pub fn make_reset_cmd<'a, 'b>() -> App<'a, 'b> {

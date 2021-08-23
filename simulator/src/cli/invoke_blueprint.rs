@@ -1,13 +1,9 @@
 use clap::{crate_version, App, Arg, ArgMatches, SubCommand};
 use colored::*;
-use radix_engine::execution::*;
-use radix_engine::ledger::*;
-use scrypto::types::rust::collections::*;
 use scrypto::types::*;
-use scrypto::utils::*;
-use uuid::Uuid;
 
-use crate::*;
+use crate::cli::*;
+use crate::invoke::*;
 
 const ARG_PACKAGE: &'static str = "PACKAGE";
 const ARG_BLUEPRINT: &'static str = "BLUEPRINT";
@@ -51,37 +47,11 @@ pub fn handle_invoke_blueprint<'a>(matches: &ArgMatches<'a>) {
         x.for_each(|a| args.push(hex::decode(a).unwrap()));
     }
 
-    let tx_hash = sha256(Uuid::new_v4().to_string());
-    let mut ledger = FileBasedLedger::new(get_data_dir());
-    let mut runtime = Runtime::new(tx_hash, &mut ledger);
-    println!("----");
-    println!("Package: {}", package);
-    println!("Blueprint: {}", blueprint);
-    println!("Function: {}", function);
-    println!("Arguments: {:02x?}", args);
-    println!("----");
-
-    let (module, memory) = runtime.load_module(package).expect("Package not found");
-    let mut process = Process::new(
-        &mut runtime,
-        package,
-        format!("{}_main", blueprint),
-        function.to_owned(),
-        args,
-        0,
-        &module,
-        &memory,
-        HashMap::new(),
-        HashMap::new(),
-    );
-    let output = process.run();
-    if output.is_ok() {
-        runtime.flush();
-    }
+    let (output, logs) = invoke(package, blueprint, function, args, true);
 
     println!("----");
-    println!("Number of Logs: {}", runtime.logs().len());
-    for (level, msg) in runtime.logs() {
+    println!("Number of Logs: {}", logs.len());
+    for (level, msg) in logs {
         let (l, m) = match level {
             Level::Error => ("ERROR".red(), msg.red()),
             Level::Warn => ("WARN".yellow(), msg.yellow()),

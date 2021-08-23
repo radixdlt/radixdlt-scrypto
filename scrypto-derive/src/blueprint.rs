@@ -64,10 +64,10 @@ pub fn handle_blueprint(input: TokenStream, output_abi: bool) -> TokenStream {
 
             // Dispatch the call
             let rtn;
-            match calldata.method.as_str() {
+            match calldata.function.as_str() {
                 #( #arm_guards => #arm_bodies )*
                 _ => {
-                    ::scrypto::error!("Method not found: {}", calldata.method);
+                    ::scrypto::error!("Function not found: {}", calldata.function);
                     panic!();
                 }
             }
@@ -374,7 +374,7 @@ mod tests {
                         ::scrypto::kernel::GetCallDataInput {},
                     );
                     let rtn;
-                    match calldata.method.as_str() {
+                    match calldata.function.as_str() {
                         "x" => {
                             let arg0 = ::scrypto::constructs::Component::from(
                                 ::scrypto::buffer::scrypto_decode::<::scrypto::types::Address>(
@@ -386,7 +386,7 @@ mod tests {
                             rtn = ::scrypto::buffer::scrypto_encode(&Test::x(&state));
                         }
                         _ => {
-                            ::scrypto::error!("Method not found: {}", calldata.method);
+                            ::scrypto::error!("Function not found: {}", calldata.function);
                             panic!();
                         }
                     }
