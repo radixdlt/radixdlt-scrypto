@@ -2,7 +2,6 @@ use std::fs;
 use std::process::Command;
 
 use scrypto::buffer::*;
-use scrypto::types::rust::collections::*;
 use scrypto::types::*;
 use scrypto::utils::*;
 use uuid::Uuid;
@@ -49,27 +48,16 @@ fn call<T: Ledger>(
     ledger: &mut T,
     package: Address,
     blueprint: &str,
-    method: &str,
+    function: &str,
     args: Vec<Vec<u8>>,
 ) -> Result<Vec<u8>, RuntimeError> {
     let tx_hash = sha256(Uuid::new_v4().to_string());
     let mut runtime = Runtime::new(tx_hash, ledger);
-    let (module, memory) = runtime.load_module(package).expect("Package not found");
 
-    let mut process = Process::new(
-        true,
-        &mut runtime,
-        package,
-        format!("{}_main", blueprint.to_string()),
-        method.to_string(),
-        args,
-        0,
-        &module,
-        &memory,
-        HashMap::new(),
-        HashMap::new(),
-    );
-    let result = process.run();
+    let mut process = Process::new(0, true, &mut runtime);
+    let result = process.run(package, blueprint.to_owned(), function.to_owned(), args);
+    process.finalize()?;
+
     if result.is_ok() {
         runtime.flush();
     }

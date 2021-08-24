@@ -16,111 +16,271 @@ use crate::ledger::*;
 use crate::model::*;
 
 macro_rules! trace {
-    ($self:ident, $($args: expr),+) => {
-        $self.log(Level::Trace, format!($($args),+));
+    ($proc:expr, $($args: expr),+) => {
+        $proc.log(Level::Trace, format!($($args),+));
     };
 }
 
 macro_rules! info {
-    ($self:ident, $($args: expr),+) => {
-        $self.log(Level::Info, format!($($args),+));
+    ($proc:expr, $($args: expr),+) => {
+        $proc.log(Level::Info, format!($($args),+));
     };
 }
 
 macro_rules! warn {
-    ($self:ident, $($args: expr),+) => {
-        $self.log(Level::Warn, format!($($args),+));
+    ($proc:expr, $($args: expr),+) => {
+        $proc.log(Level::Warn, format!($($args),+));
     };
 }
 
-/// A running process
-pub struct Process<'m, 'rt, 'le, L: Ledger> {
+/// A runnable process
+pub struct Process<'rt, 'le, L: Ledger> {
+    depth: usize,
     trace: bool,
     runtime: &'rt mut Runtime<'le, L>,
-    package: Address,
-    blueprint: String,
-    function: String,
-    args: Vec<Vec<u8>>,
-    depth: usize,
-    module: &'m ModuleRef,
-    memory: &'m MemoryRef,
     buckets: HashMap<BID, Bucket>,
-    buckets_borrowed: HashMap<BID, Rc<RefCell<BucketBorrowed>>>,
-    buckets_moving: HashMap<BID, Bucket>,
-    references: HashMap<RID, Rc<RefCell<BucketBorrowed>>>, // TODO: support persisted bucket borrow
-    references_moving: HashMap<RID, Rc<RefCell<BucketBorrowed>>>,
+    references: HashMap<RID, Rc<RefCell<BucketBorrowed>>>,
+    locked_buckets: HashMap<BID, Rc<RefCell<BucketBorrowed>>>,
+    moving_buckets: HashMap<BID, Bucket>,
+    moving_references: HashMap<RID, Rc<RefCell<BucketBorrowed>>>,
+    vm: Option<VM>,
 }
 
-impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
-    pub fn new(
-        trace: bool,
-        runtime: &'rt mut Runtime<'le, L>,
+pub struct VM {
+    package: Address,
+    function: String,
+    args: Vec<Vec<u8>>,
+    module: ModuleRef,
+    memory: MemoryRef,
+}
+
+impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
+    /// Create a new process which is yet started.
+    pub fn new(depth: usize, trace: bool, runtime: &'rt mut Runtime<'le, L>) -> Self {
+        Self {
+            depth,
+            trace,
+            runtime,
+            buckets: HashMap::new(),
+            references: HashMap::new(),
+            locked_buckets: HashMap::new(),
+            moving_buckets: HashMap::new(),
+            moving_references: HashMap::new(),
+            vm: None,
+        }
+    }
+
+    /// Put resources into this process's treasury.
+    pub fn put_resources(
+        &mut self,
+        buckets: HashMap<BID, Bucket>,
+        references: HashMap<RID, Rc<RefCell<BucketBorrowed>>>,
+    ) {
+        self.buckets.extend(buckets);
+        self.references.extend(references);
+    }
+
+    /// Take resources from this process.
+    pub fn take_resources(
+        &mut self,
+    ) -> (
+        HashMap<BID, Bucket>,
+        HashMap<RID, Rc<RefCell<BucketBorrowed>>>,
+    ) {
+        let buckets = self.moving_buckets.clone();
+        let references = self.moving_references.clone();
+        self.moving_buckets.clear();
+        self.moving_references.clear();
+        (buckets, references)
+    }
+
+    /// Run the specified function within this process.
+    pub fn run(
+        &mut self,
         package: Address,
         blueprint: String,
         function: String,
         args: Vec<Vec<u8>>,
-        depth: usize,
-        module: &'m ModuleRef,
-        memory: &'m MemoryRef,
-        buckets: HashMap<BID, Bucket>,
-        references: HashMap<RID, Rc<RefCell<BucketBorrowed>>>,
-    ) -> Self {
-        Self {
-            trace,
-            runtime,
-            package,
-            blueprint,
-            function,
-            args,
-            depth,
-            module,
-            memory,
-            buckets,
-            buckets_borrowed: HashMap::new(),
-            buckets_moving: HashMap::new(),
-            references,
-            references_moving: HashMap::new(),
-        }
-    }
-
-    /// Start this process by invoking the main function.
-    pub fn run(&mut self) -> Result<Vec<u8>, RuntimeError> {
+    ) -> Result<Vec<u8>, RuntimeError> {
         let now = Instant::now();
         info!(
             self,
-            "CALL started: package = {}, blueprint = {}, function = {}, args = {:02x?}",
-            self.package,
-            self.blueprint,
-            self.function,
-            self.args
+            "Run started: package = {}, blueprint = {}, function = {}",
+            package,
+            blueprint,
+            function
         );
 
-        let result = self.run_func(self.blueprint.clone());
+        // Load the code
+        let (module, memory) = self
+            .runtime
+            .load_module(package)
+            .ok_or(RuntimeError::PackageNotFound(package))?;
+        let vm = VM {
+            package,
+            function,
+            args,
+            module: module.clone(),
+            memory: memory.clone(),
+        };
+        assert!(self.vm.is_none(), "Each process can run at most once.");
+        self.vm = Some(vm);
 
-        info!(
-            self,
-            "CALL finished: time elapsed = {} ms, result = {:02x?}",
-            now.elapsed().as_millis(),
-            result
-        );
-        result
-    }
+        // run the main function
+        let return_value = module
+            .invoke_export(format!("{}_main", blueprint).as_str(), &[], self)
+            .map_err(|e| RuntimeError::InvokeError(e))?
+            .ok_or(RuntimeError::NoReturnValue)?;
 
-    pub fn run_func(&mut self, func: String) -> Result<Vec<u8>, RuntimeError> {
-        let invoke_res = self.module.invoke_export(func.as_str(), &[], self);
-
-        match invoke_res.map_err(|e| RuntimeError::InvokeError(e))? {
-            Some(RuntimeValue::I32(ptr)) => {
+        // move resources based on return data
+        let output = match return_value {
+            RuntimeValue::I32(ptr) => {
                 let bytes = self.read_bytes(ptr)?;
-                self.process_sbor_data(
+                self.transform_sbor_data(
                     &bytes,
                     Self::move_transient_reject_persisted,
                     Self::move_references,
                 )?;
-                self.finalize()?;
-                Ok(bytes)
+                bytes
             }
-            _ => Err(RuntimeError::NoValidReturn),
+            _ => {
+                return Err(RuntimeError::InvalidReturnType);
+            }
+        };
+
+        info!(
+            self,
+            "Run finished: time elapsed = {} ms",
+            now.elapsed().as_millis()
+        );
+
+        Ok(output)
+    }
+
+    /// Call a blueprint or component.
+    pub fn call(
+        &mut self,
+        package: Address,
+        blueprint: String,
+        function: String,
+        args: Vec<Vec<u8>>,
+    ) -> Result<Vec<u8>, RuntimeError> {
+        // move resources
+        for arg in &args {
+            self.transform_sbor_data(
+                arg,
+                Self::move_transient_reject_persisted,
+                Self::move_references,
+            )?;
+        }
+        let (buckets_out, references_out) = self.take_resources();
+        let mut process = Process::new(self.depth + 1, self.trace, self.runtime);
+        process.put_resources(buckets_out, references_out);
+
+        // run the function and finalize
+        let result = process.run(package, blueprint, function, args);
+        process.finalize()?;
+
+        // move resources
+        let (buckets_in, references_in) = process.take_resources();
+        self.put_resources(buckets_in, references_in);
+
+        // scan locked buckets for some might have been unlocked by child processes
+        let bids: Vec<BID> = self
+            .locked_buckets
+            .values()
+            .filter(|v| v.borrow().ref_count() == 0)
+            .map(|v| v.borrow().bid())
+            .collect();
+        for bid in bids {
+            trace!(self, "Moving {:02x?} to unlocked_buckets state", bid);
+            let bucket_rc = self.locked_buckets.remove(&bid).unwrap();
+            let bucket = Rc::try_unwrap(bucket_rc).unwrap().into_inner();
+            self.buckets.insert(bid, bucket.into());
+        }
+
+        result
+    }
+
+    /// Return the package address
+    pub fn package(&self) -> Result<Address, RuntimeError> {
+        self.vm
+            .as_ref()
+            .ok_or(RuntimeError::VmNotStarted)
+            .map(|vm| vm.package)
+    }
+
+    /// Return the function name
+    pub fn function(&self) -> Result<String, RuntimeError> {
+        self.vm
+            .as_ref()
+            .ok_or(RuntimeError::VmNotStarted)
+            .map(|vm| vm.function.clone())
+    }
+
+    /// Return the function name
+    pub fn args(&self) -> Result<Vec<Vec<u8>>, RuntimeError> {
+        self.vm
+            .as_ref()
+            .ok_or(RuntimeError::VmNotStarted)
+            .map(|vm| vm.args.clone())
+    }
+
+    /// Return the module reference
+    pub fn module(&self) -> Result<ModuleRef, RuntimeError> {
+        self.vm
+            .as_ref()
+            .ok_or(RuntimeError::VmNotStarted)
+            .map(|vm| vm.module.clone())
+    }
+
+    /// Return the memory reference
+    pub fn memory(&self) -> Result<MemoryRef, RuntimeError> {
+        self.vm
+            .as_ref()
+            .ok_or(RuntimeError::VmNotStarted)
+            .map(|vm| vm.memory.clone())
+    }
+
+    /// Finalize this process.
+    pub fn finalize(&self) -> Result<(), RuntimeError> {
+        let mut buckets = vec![];
+        let mut references = vec![];
+
+        for (bid, bucket) in &self.buckets {
+            if bucket.amount() != U256::zero() {
+                warn!(self, "Pending bucket: {:02x?} {:02x?}", bid, bucket);
+                buckets.push(*bid);
+            }
+        }
+        for (bid, bucket) in &self.locked_buckets {
+            warn!(self, "Pending locked bucket: {:02x?} {:02x?}", bid, bucket);
+            buckets.push(*bid);
+        }
+        for (rid, bucket_ref) in &self.references {
+            warn!(self, "Pending reference: {:02x?} {:02x?}", rid, bucket_ref);
+            references.push(*rid);
+        }
+
+        if buckets.is_empty() && references.is_empty() {
+            Ok(())
+        } else {
+            Err(RuntimeError::ResourceLeak(buckets, references))
+        }
+    }
+
+    /// Log a message to console.
+    pub fn log(&self, level: Level, msg: String) {
+        if self.trace {
+            let (l, m) = match level {
+                Level::Error => ("ERROR".red(), msg.to_string().red()),
+                Level::Warn => ("WARN".yellow(), msg.to_string().yellow()),
+                Level::Info => ("INFO".green(), msg.to_string().green()),
+                Level::Debug => ("DEBUG".cyan(), msg.to_string().cyan()),
+                Level::Trace => ("TRACE".normal(), msg.to_string().normal()),
+            };
+
+            println!("{}[{:5}] {}", "  ".repeat(self.depth), l, m);
         }
     }
 
@@ -146,79 +306,13 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
         Ok(PublishPackageOutput { package: address })
     }
 
-    pub fn call(
-        &mut self,
-        package: Address,
-        blueprint: String,
-        function: String,
-        args: Vec<Vec<u8>>,
-    ) -> Result<Vec<u8>, RuntimeError> {
-        // load the code
-        let (module, memory) = self
-            .runtime
-            .load_module(package)
-            .ok_or(RuntimeError::PackageNotFound(package))?;
-
-        // move buckets and references
-        for arg in &args {
-            self.process_sbor_data(
-                arg,
-                Self::move_transient_reject_persisted,
-                Self::move_references,
-            )?;
-        }
-        let buckets_out = self.buckets_moving.clone();
-        self.buckets_moving.clear();
-        let references_out = self.references_moving.clone();
-        self.references_moving.clear();
-
-        // create a process
-        let mut process = Process::new(
-            self.trace,
-            self.runtime,
-            package,
-            format!("{}_main", blueprint),
-            function,
-            args,
-            self.depth + 1,
-            &module,
-            &memory,
-            buckets_out,
-            references_out,
-        );
-
-        // run!
-        let result = process.run();
-
-        // collect buckets and references
-        self.buckets.extend(process.buckets_moving.clone());
-        process.buckets_moving.clear();
-        self.references.extend(process.references_moving.clone());
-        process.references_moving.clear();
-
-        // check borrowed buckets
-        let bids: Vec<BID> = self
-            .buckets_borrowed
-            .values()
-            .filter(|v| v.borrow().ref_count() == 0)
-            .map(|v| v.borrow().bid())
-            .collect();
-        for bid in bids {
-            trace!(self, "Moving {:02x?} to un-borrowed state", bid);
-            let bucket_rc = self.buckets_borrowed.remove(&bid).unwrap();
-            let bucket = Rc::try_unwrap(bucket_rc).unwrap().into_inner();
-            self.buckets.insert(bid, bucket.into());
-        }
-
-        result
-    }
-
     pub fn call_blueprint(
         &mut self,
         input: CallBlueprintInput,
     ) -> Result<CallBlueprintOutput, RuntimeError> {
-        self.call(input.package, input.name, input.function, input.args)
-            .map(|rtn| CallBlueprintOutput { rtn })
+        let output = self.call(input.package, input.name, input.function, input.args);
+
+        Ok(CallBlueprintOutput { rtn: output? })
     }
 
     pub fn call_component(
@@ -230,17 +324,15 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
             .get_component(input.component)
             .ok_or(RuntimeError::ComponentNotFound(input.component))?
             .clone();
-
+        let package = component.package();
+        let blueprint = component.name().to_owned();
+        let function = input.method;
         let mut args = input.args;
         args.insert(0, scrypto_encode(&input.component));
 
-        self.call(
-            component.package(),
-            component.name().to_owned(),
-            input.method,
-            args,
-        )
-        .map(|rtn| CallComponentOutput { rtn })
+        let output = self.call(package, blueprint, function, args);
+
+        Ok(CallComponentOutput { rtn: output? })
     }
 
     pub fn create_component(
@@ -253,7 +345,7 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
             return Err(RuntimeError::ComponentAlreadyExists(address));
         }
 
-        let new_state = self.process_sbor_data(
+        let new_state = self.transform_sbor_data(
             &input.state,
             Self::convert_transient_to_persist,
             Self::reject_references,
@@ -265,7 +357,7 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
             new_state
         );
 
-        let component = Component::new(self.package, input.name, new_state);
+        let component = Component::new(self.package()?, input.name, new_state);
         self.runtime.put_component(address, component);
 
         Ok(CreateComponentOutput { component: address })
@@ -305,7 +397,7 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
         &mut self,
         input: PutComponentStateInput,
     ) -> Result<PutComponentStateOutput, RuntimeError> {
-        let new_state = self.process_sbor_data(
+        let new_state = self.transform_sbor_data(
             &input.state,
             Self::convert_transient_to_persist,
             Self::reject_references,
@@ -333,7 +425,7 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
 
         let address = self
             .runtime
-            .new_resource_address(self.package, info.symbol.as_str());
+            .new_resource_address(self.package()?, info.symbol.as_str());
 
         if self.runtime.get_resource(address).is_some() {
             return Err(RuntimeError::ResourceAlreadyExists(address));
@@ -357,7 +449,7 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
 
         let address = self
             .runtime
-            .new_resource_address(self.package, info.symbol.as_str());
+            .new_resource_address(self.package()?, info.symbol.as_str());
 
         if self.runtime.get_resource(address).is_some() {
             return Err(RuntimeError::ResourceAlreadyExists(address));
@@ -402,13 +494,13 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
         match resource.minter {
             Some(address) => {
                 let authorized = match address {
-                    Address::Package(_) => address == self.package,
+                    Address::Package(_) => address == self.package()?,
                     Address::Component(_) => {
                         self.runtime
                             .get_component(address)
                             .ok_or(RuntimeError::ComponentNotFound(address))?
                             .package()
-                            == self.package
+                            == self.package()?
                     }
                     _ => false,
                 };
@@ -495,7 +587,7 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
             .get(&bid)
             .map(|b| b.amount())
             .or(self
-                .buckets_borrowed
+                .locked_buckets
                 .get(&bid)
                 .map(|x| x.borrow().bucket().amount()))
             .ok_or(RuntimeError::BucketNotFound)?;
@@ -513,7 +605,7 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
             .get(&bid)
             .map(|b| b.resource())
             .or(self
-                .buckets_borrowed
+                .locked_buckets
                 .get(&bid)
                 .map(|x| x.borrow().bucket().resource()))
             .ok_or(RuntimeError::BucketNotFound)?;
@@ -529,7 +621,7 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
         let rid = self.runtime.new_fixed_rid();
         trace!(self, "Borrowing: bid =  {:02x?}, rid = {:02x?}", bid, rid);
 
-        match self.buckets_borrowed.get_mut(&bid) {
+        match self.locked_buckets.get_mut(&bid) {
             Some(bucket) => {
                 // re-borrow
                 bucket.borrow_mut().brw();
@@ -545,7 +637,7 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
                     1, // once
                 )));
                 self.references.insert(rid, bucket.clone());
-                self.buckets_borrowed.insert(bid, bucket);
+                self.locked_buckets.insert(bid, bucket);
             }
         }
 
@@ -571,7 +663,7 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
             .rtn()
             .map_err(|e| RuntimeError::AccountingError(e))?;
         if new_count == 0 {
-            if let Some(b) = self.buckets_borrowed.remove(&bucket.borrow().bid()) {
+            if let Some(b) = self.locked_buckets.remove(&bucket.borrow().bid()) {
                 self.buckets
                     .insert(b.borrow().bid(), b.borrow().bucket().clone());
             }
@@ -612,13 +704,13 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
         let address = input.account;
 
         let authorized = match address {
-            Address::Package(_) => address == self.package,
+            Address::Package(_) => address == self.package()?,
             Address::Component(_) => {
                 self.runtime
                     .get_component(address)
                     .ok_or(RuntimeError::ComponentNotFound(address))?
                     .package()
-                    == self.package
+                    == self.package()?
             }
             _ => false,
         };
@@ -710,7 +802,7 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
         _input: GetPackageAddressInput,
     ) -> Result<GetPackageAddressOutput, RuntimeError> {
         Ok(GetPackageAddressOutput {
-            address: self.package,
+            address: self.package()?,
         })
     }
 
@@ -719,8 +811,8 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
         _input: GetCallDataInput,
     ) -> Result<GetCallDataOutput, RuntimeError> {
         Ok(GetCallDataOutput {
-            function: self.function.clone(),
-            args: self.args.clone(),
+            function: self.function()?,
+            args: self.args()?,
         })
     }
 
@@ -733,135 +825,133 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
         })
     }
 
-    fn process_sbor_data(
+    /// Transform SBOR data by applying function on BID and RID.
+    fn transform_sbor_data(
         &mut self,
-        state: &Vec<u8>,
-        bid_handler: fn(&mut Self, BID) -> Result<BID, RuntimeError>,
-        rid_handler: fn(&mut Self, RID) -> Result<RID, RuntimeError>,
+        data: &Vec<u8>,
+        bid_fn: fn(&mut Self, BID) -> Result<BID, RuntimeError>,
+        rid_fn: fn(&mut Self, RID) -> Result<RID, RuntimeError>,
     ) -> Result<Vec<u8>, RuntimeError> {
-        let mut decoder = Decoder::with_metadata(state);
+        let mut decoder = Decoder::with_metadata(data);
         let mut encoder = Encoder::with_metadata();
 
-        self.traverse_sbor(None, &mut decoder, &mut encoder, bid_handler, rid_handler)?;
+        self.traverse(None, &mut decoder, &mut encoder, bid_fn, rid_fn)?;
 
         if decoder.remaining() > 0 {
-            // We expect a single SBOR value
-            Err(RuntimeError::InvalidSborValue(
-                DecodeError::NotAllBytesUsed(decoder.remaining()),
-            ))
+            Err(RuntimeError::InvalidData(DecodeError::NotAllBytesUsed(
+                decoder.remaining(),
+            )))
         } else {
             Ok(encoder.into())
         }
     }
 
-    // TODO: stack overflow
-    fn traverse_sbor(
+    /// Traverse SBOR data. TODO: stack overflow
+    fn traverse(
         &mut self,
         ty_from_ctx: Option<u8>,
         dec: &mut Decoder,
         enc: &mut Encoder,
-        bid_handler: fn(&mut Self, BID) -> Result<BID, RuntimeError>,
-        rid_handler: fn(&mut Self, RID) -> Result<RID, RuntimeError>,
+        bid_fn: fn(&mut Self, BID) -> Result<BID, RuntimeError>,
+        rid_fn: fn(&mut Self, RID) -> Result<RID, RuntimeError>,
     ) -> Result<(), RuntimeError> {
         let ty = match ty_from_ctx {
             Some(t) => t,
             None => {
-                let t = dec.read_type().map_err(RuntimeError::invalid_sbor_data)?;
+                let t = dec.read_type().map_err(|e| RuntimeError::InvalidData(e))?;
                 enc.write_type(t);
                 t
             }
         };
 
         match ty {
-            constants::TYPE_UNIT => self.dte::<()>(dec, enc, |_, v| Ok(v)),
-            constants::TYPE_BOOL => self.dte::<bool>(dec, enc, |_, v| Ok(v)),
-            constants::TYPE_I8 => self.dte::<i8>(dec, enc, |_, v| Ok(v)),
-            constants::TYPE_I16 => self.dte::<i16>(dec, enc, |_, v| Ok(v)),
-            constants::TYPE_I32 => self.dte::<i32>(dec, enc, |_, v| Ok(v)),
-            constants::TYPE_I64 => self.dte::<i64>(dec, enc, |_, v| Ok(v)),
-            constants::TYPE_I128 => self.dte::<i128>(dec, enc, |_, v| Ok(v)),
-            constants::TYPE_U8 => self.dte::<u8>(dec, enc, |_, v| Ok(v)),
-            constants::TYPE_U16 => self.dte::<u16>(dec, enc, |_, v| Ok(v)),
-            constants::TYPE_U32 => self.dte::<u32>(dec, enc, |_, v| Ok(v)),
-            constants::TYPE_U64 => self.dte::<u64>(dec, enc, |_, v| Ok(v)),
-            constants::TYPE_U128 => self.dte::<u128>(dec, enc, |_, v| Ok(v)),
-            constants::TYPE_STRING => self.dte::<String>(dec, enc, |_, v| Ok(v)),
+            constants::TYPE_UNIT => self.transform::<()>(dec, enc, |_, v| Ok(v)),
+            constants::TYPE_BOOL => self.transform::<bool>(dec, enc, |_, v| Ok(v)),
+            constants::TYPE_I8 => self.transform::<i8>(dec, enc, |_, v| Ok(v)),
+            constants::TYPE_I16 => self.transform::<i16>(dec, enc, |_, v| Ok(v)),
+            constants::TYPE_I32 => self.transform::<i32>(dec, enc, |_, v| Ok(v)),
+            constants::TYPE_I64 => self.transform::<i64>(dec, enc, |_, v| Ok(v)),
+            constants::TYPE_I128 => self.transform::<i128>(dec, enc, |_, v| Ok(v)),
+            constants::TYPE_U8 => self.transform::<u8>(dec, enc, |_, v| Ok(v)),
+            constants::TYPE_U16 => self.transform::<u16>(dec, enc, |_, v| Ok(v)),
+            constants::TYPE_U32 => self.transform::<u32>(dec, enc, |_, v| Ok(v)),
+            constants::TYPE_U64 => self.transform::<u64>(dec, enc, |_, v| Ok(v)),
+            constants::TYPE_U128 => self.transform::<u128>(dec, enc, |_, v| Ok(v)),
+            constants::TYPE_STRING => self.transform::<String>(dec, enc, |_, v| Ok(v)),
             constants::TYPE_OPTION => {
                 // index
-                let index = dec.read_index().map_err(RuntimeError::invalid_sbor_data)?;
+                let index = dec.read_index().map_err(|e| RuntimeError::InvalidData(e))?;
                 enc.write_index(index as usize);
                 // optional value
                 match index {
                     0 => Ok(()),
-                    1 => self.traverse_sbor(None, dec, enc, bid_handler, rid_handler),
-                    _ => Err(RuntimeError::invalid_sbor_data(DecodeError::InvalidIndex(
-                        index,
-                    ))),
+                    1 => self.traverse(None, dec, enc, bid_fn, rid_fn),
+                    _ => Err(RuntimeError::InvalidData(DecodeError::InvalidIndex(index))),
                 }
             }
             constants::TYPE_BOX => {
                 // value
-                self.traverse_sbor(None, dec, enc, bid_handler, rid_handler)
+                self.traverse(None, dec, enc, bid_fn, rid_fn)
             }
             constants::TYPE_ARRAY | constants::TYPE_VEC => {
                 // element type
-                let ele_ty = dec.read_type().map_err(RuntimeError::invalid_sbor_data)?;
+                let ele_ty = dec.read_type().map_err(|e| RuntimeError::InvalidData(e))?;
                 enc.write_type(ele_ty);
                 // length
-                let len = dec.read_len().map_err(RuntimeError::invalid_sbor_data)?;
+                let len = dec.read_len().map_err(|e| RuntimeError::InvalidData(e))?;
                 enc.write_len(len);
                 // values
                 for _ in 0..len {
-                    self.traverse_sbor(Some(ele_ty), dec, enc, bid_handler, rid_handler)?;
+                    self.traverse(Some(ele_ty), dec, enc, bid_fn, rid_fn)?;
                 }
                 Ok(())
             }
             constants::TYPE_TUPLE => {
                 //length
-                let len = dec.read_len().map_err(RuntimeError::invalid_sbor_data)?;
+                let len = dec.read_len().map_err(|e| RuntimeError::InvalidData(e))?;
                 enc.write_len(len);
                 // values
                 for _ in 0..len {
-                    self.traverse_sbor(None, dec, enc, bid_handler, rid_handler)?;
+                    self.traverse(None, dec, enc, bid_fn, rid_fn)?;
                 }
                 Ok(())
             }
             constants::TYPE_STRUCT => {
                 // fields
-                self.traverse_sbor(None, dec, enc, bid_handler, rid_handler)
+                self.traverse(None, dec, enc, bid_fn, rid_fn)
             }
             constants::TYPE_ENUM => {
                 // index
-                let index = dec.read_index().map_err(RuntimeError::invalid_sbor_data)?;
+                let index = dec.read_index().map_err(|e| RuntimeError::InvalidData(e))?;
                 enc.write_index(index as usize);
                 // name
-                let name = dec.read_name().map_err(RuntimeError::invalid_sbor_data)?;
+                let name = dec.read_name().map_err(|e| RuntimeError::InvalidData(e))?;
                 enc.write_name(name.as_str());
                 // fields
-                self.traverse_sbor(None, dec, enc, bid_handler, rid_handler)
+                self.traverse(None, dec, enc, bid_fn, rid_fn)
             }
             constants::TYPE_FIELDS_NAMED => {
                 //length
-                let len = dec.read_len().map_err(RuntimeError::invalid_sbor_data)?;
+                let len = dec.read_len().map_err(|e| RuntimeError::InvalidData(e))?;
                 enc.write_len(len);
                 // named fields
                 for _ in 0..len {
                     // name
-                    let name = dec.read_name().map_err(RuntimeError::invalid_sbor_data)?;
+                    let name = dec.read_name().map_err(|e| RuntimeError::InvalidData(e))?;
                     enc.write_name(name.as_str());
                     // value
-                    self.traverse_sbor(None, dec, enc, bid_handler, rid_handler)?;
+                    self.traverse(None, dec, enc, bid_fn, rid_fn)?;
                 }
                 Ok(())
             }
             constants::TYPE_FIELDS_UNNAMED => {
                 //length
-                let len = dec.read_len().map_err(RuntimeError::invalid_sbor_data)?;
+                let len = dec.read_len().map_err(|e| RuntimeError::InvalidData(e))?;
                 enc.write_len(len);
                 // named fields
                 for _ in 0..len {
                     // value
-                    self.traverse_sbor(None, dec, enc, bid_handler, rid_handler)?;
+                    self.traverse(None, dec, enc, bid_fn, rid_fn)?;
                 }
                 Ok(())
             }
@@ -874,21 +964,21 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
                 todo!()
             }
             // scrypto types
-            constants::TYPE_H256 => self.dte::<H256>(dec, enc, |_, v| Ok(v)),
-            constants::TYPE_U256 => self.dte::<U256>(dec, enc, |_, v| Ok(v)),
-            constants::TYPE_ADDRESS => self.dte::<Address>(dec, enc, |_, v| Ok(v)),
-            constants::TYPE_BID => self.dte::<BID>(dec, enc, bid_handler),
-            constants::TYPE_RID => self.dte::<RID>(dec, enc, rid_handler),
-            _ => Err(RuntimeError::InvalidSborValue(DecodeError::InvalidType {
+            constants::TYPE_H256 => self.transform::<H256>(dec, enc, |_, v| Ok(v)),
+            constants::TYPE_U256 => self.transform::<U256>(dec, enc, |_, v| Ok(v)),
+            constants::TYPE_ADDRESS => self.transform::<Address>(dec, enc, |_, v| Ok(v)),
+            constants::TYPE_BID => self.transform::<BID>(dec, enc, bid_fn),
+            constants::TYPE_RID => self.transform::<RID>(dec, enc, rid_fn),
+            _ => Err(RuntimeError::InvalidData(DecodeError::InvalidType {
                 expected: 0xff,
                 actual: ty,
             })),
         }
     }
 
-    /// Decode, transform and encode
+    /// Apply the transform function.
     #[inline]
-    fn dte<T: Decode + Encode + std::fmt::Debug>(
+    fn transform<T: Decode + Encode + std::fmt::Debug>(
         &mut self,
         dec: &mut Decoder,
         enc: &mut Encoder,
@@ -896,7 +986,7 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
     ) -> Result<(), RuntimeError> {
         transform(
             self,
-            T::decode_value(dec).map_err(RuntimeError::invalid_sbor_data)?,
+            T::decode_value(dec).map_err(|e| RuntimeError::InvalidData(e))?,
         )?
         .encode_value(enc);
 
@@ -927,7 +1017,7 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
                 .remove(&bid)
                 .ok_or(RuntimeError::BucketNotFound)?;
             trace!(self, "Moving {:02x?}: {:02x?}", bid, bucket);
-            self.buckets_moving.insert(bid, bucket);
+            self.moving_buckets.insert(bid, bucket);
             Ok(bid)
         } else {
             Err(RuntimeError::PersistedBucketMoveNotAllowed)
@@ -941,7 +1031,7 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
             .remove(&rid)
             .ok_or(RuntimeError::BucketNotFound)?;
         trace!(self, "Moving {:02x?}: {:02x?}", rid, bucket_ref);
-        self.references_moving.insert(rid, bucket_ref);
+        self.moving_references.insert(rid, bucket_ref);
         Ok(rid)
     }
 
@@ -950,39 +1040,9 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
         Err(RuntimeError::ReferenceNotAllowed)
     }
 
-    /// Finalize this process.
-    fn finalize(&self) -> Result<(), RuntimeError> {
-        let mut buckets = vec![];
-        let mut references = vec![];
-
-        for (bid, bucket) in &self.buckets {
-            if bucket.amount() != U256::zero() {
-                warn!(self, "Burning bucket: {:02x?} {:02x?}", bid, bucket);
-                buckets.push(*bid);
-            }
-        }
-        for (bid, bucket) in &self.buckets_borrowed {
-            warn!(self, "Bucket borrowed out: {:02x?} {:02x?}", bid, bucket);
-            buckets.push(*bid);
-        }
-        for (reference, bucket_ref) in &self.references {
-            warn!(
-                self,
-                "Hanging reference: {:02x?} {:02x?}", reference, bucket_ref
-            );
-            references.push(*reference);
-        }
-
-        if buckets.is_empty() && references.is_empty() {
-            Ok(())
-        } else {
-            Err(RuntimeError::ResourceLeak(buckets, references))
-        }
-    }
-
-    /// Send a byte array to this process.
+    /// Send a byte array to wasm instance.
     fn send_bytes(&mut self, bytes: &[u8]) -> Result<i32, RuntimeError> {
-        let result = self.module.invoke_export(
+        let result = self.module()?.invoke_export(
             "scrypto_alloc",
             &[RuntimeValue::I32((bytes.len()) as i32)],
             &mut NopExternals,
@@ -990,7 +1050,7 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
 
         match result {
             Ok(Some(RuntimeValue::I32(ptr))) => {
-                if self.memory.set(ptr as u32, bytes).is_ok() {
+                if self.memory()?.set(ptr as u32, bytes).is_ok() {
                     return Ok(ptr);
                 }
             }
@@ -1000,32 +1060,17 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
         Err(RuntimeError::UnableToAllocateMemory)
     }
 
-    /// Read a length-prefixed byte array from this process.
+    /// Read a byte array from wasm instance.
     fn read_bytes(&mut self, ptr: i32) -> Result<Vec<u8>, RuntimeError> {
         let a = self
-            .memory
+            .memory()?
             .get((ptr - 4) as u32, 4)
             .map_err(|e| RuntimeError::MemoryAccessError(e))?;
         let len = u32::from_le_bytes([a[0], a[1], a[2], a[3]]);
 
-        self.memory
+        self.memory()?
             .get(ptr as u32, len as usize)
             .map_err(|e| RuntimeError::MemoryAccessError(e))
-    }
-
-    /// Log a message to console.
-    fn log(&self, level: Level, msg: String) {
-        if self.trace {
-            let (l, m) = match level {
-                Level::Error => ("ERROR".red(), msg.to_string().red()),
-                Level::Warn => ("WARN".yellow(), msg.to_string().yellow()),
-                Level::Info => ("INFO".green(), msg.to_string().green()),
-                Level::Debug => ("DEBUG".cyan(), msg.to_string().cyan()),
-                Level::Trace => ("TRACE".normal(), msg.to_string().normal()),
-            };
-
-            println!("{}[{:5}] {}", "  ".repeat(self.depth), l, m);
-        }
     }
 
     /// Handle a kernel call.
@@ -1039,7 +1084,7 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
         let input_ptr: u32 = args.nth_checked(1)?;
         let input_len: u32 = args.nth_checked(2)?;
         let input_bytes = self
-            .memory
+            .memory()?
             .get(input_ptr, input_len as usize)
             .map_err(|e| Trap::from(RuntimeError::MemoryAccessError(e)))?;
         let input: I = scrypto_decode(&input_bytes)
@@ -1064,7 +1109,7 @@ impl<'m, 'rt, 'le, L: Ledger> Process<'m, 'rt, 'le, L> {
     }
 }
 
-impl<'m, 'rt, 'le, T: Ledger> Externals for Process<'m, 'rt, 'le, T> {
+impl<'rt, 'le, L: Ledger> Externals for Process<'rt, 'le, L> {
     fn invoke_index(
         &mut self,
         index: usize,

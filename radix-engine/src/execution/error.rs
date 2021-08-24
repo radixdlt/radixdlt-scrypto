@@ -23,11 +23,15 @@ pub enum RuntimeError {
 
     MemoryAccessError(Error),
 
-    NoValidReturn,
+    NoReturnValue,
+
+    InvalidReturnType,
 
     InvalidOpCode(u32),
 
     InvalidRequest(DecodeError),
+
+    InvalidData(DecodeError),
 
     UnknownHostFunction(usize),
 
@@ -61,11 +65,11 @@ pub enum RuntimeError {
 
     UnauthorizedToWithdraw,
 
-    InvalidSborValue(DecodeError),
-
     PersistedBucketMoveNotAllowed,
 
     ReferenceNotAllowed,
+
+    VmNotStarted,
 }
 
 impl fmt::Display for RuntimeError {
@@ -75,9 +79,3 @@ impl fmt::Display for RuntimeError {
 }
 
 impl HostError for RuntimeError {}
-
-impl RuntimeError {
-    pub fn invalid_sbor_data(e: DecodeError) -> RuntimeError {
-        RuntimeError::InvalidSborValue(e)
-    }
-}

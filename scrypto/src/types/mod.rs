@@ -4,12 +4,14 @@ use scrypto_types::rust::string::String;
 // Re-export primitive types
 pub use scrypto_types::*;
 
+/// Information about a component.
 #[derive(Debug, Clone, Describe, Encode, Decode)]
 pub struct ComponentInfo {
     pub package: Address,
     pub name: String,
 }
 
+/// Information about a resource.
 #[derive(Debug, Clone, Describe, Encode, Decode)]
 pub struct ResourceInfo {
     pub symbol: String,
