@@ -90,7 +90,7 @@ pub fn handle_blueprint(input: TokenStream, output_abi: bool) -> TokenStream {
 
             let output = ::scrypto::abi::Blueprint {
                 package: Context::package_address().to_string(),
-                name: #bp_name.to_string(),
+                blueprint: #bp_name.to_string(),
                 functions: vec![
                     #(#abi_functions),*
                 ],
@@ -400,7 +400,7 @@ mod tests {
                     use scrypto::types::rust::vec;
                     let output = ::scrypto::abi::Blueprint {
                         package: Context::package_address().to_string(),
-                        name: "Test".to_string(),
+                        blueprint: "Test".to_string(),
                         functions: vec![],
                         methods: vec![::scrypto::abi::Method {
                             name: "x".to_string(),

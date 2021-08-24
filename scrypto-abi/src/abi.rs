@@ -18,7 +18,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Encode, Decode)]
 pub struct Blueprint {
     pub package: String,
-    pub name: String,
+    pub blueprint: String,
     pub functions: Vec<Function>,
     pub methods: Vec<Method>,
 }

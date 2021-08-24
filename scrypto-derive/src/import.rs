@@ -32,9 +32,9 @@ pub fn handle_import(input: TokenStream) -> TokenStream {
     let mut implementations: Vec<ItemImpl> = vec![];
 
     let package = blueprint.package;
-    let name = blueprint.name;
+    let name = blueprint.blueprint;
     let ident = Ident::new(name.as_str(), span);
-    trace!("Blueprint name: {}", quote! { #ident });
+    trace!("Blueprint: {}", quote! { #ident });
 
     let structure: Item = parse_quote! {
         pub struct #ident {

@@ -15,7 +15,7 @@ blueprint! {
     impl GumballMachine {
         pub fn new() -> Component {
             Self {
-                gumballs: Resource::new_fixed_tokens(
+                gumballs: Resource::new_fixed(
                     "gum",
                     "Gumball",
                     "The best gumball in the world.",
