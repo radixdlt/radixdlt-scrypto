@@ -11,7 +11,7 @@ use crate::model::*;
 /// Runtime is an abstraction layer over the execution state for a transaction.
 ///
 /// It serves as a proxy to the ledger state and keeps track of all state updates.
-/// The `flush` method should be invoked to write all updates into ledger.
+/// The `flush` method should be called to write all updates into ledger.
 ///
 /// A runtime is shared by a chain of processes, created during the life time
 /// of a transaction.

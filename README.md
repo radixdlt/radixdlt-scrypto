@@ -44,13 +44,13 @@ rev2 new-account
 ```
 rev2 publish /path/to/your/package
 ```
-4. To invoke a blueprint function, run
+4. To call a blueprint, run
 ```
-rev2 invoke-blueprint <package_address> <blueprint> <function> <args>...
+rev2 call-blueprint <package_address> <blueprint> <function> <args>...
 ```
-5. To invoke a component method, run
+5. To call a component, run
 ```
-rev2 invoke-component <component_address> <method> <args>...
+rev2 call-component <component_address> <method> <args>...
 ```
 6. For instructions on other commands, run
 ```

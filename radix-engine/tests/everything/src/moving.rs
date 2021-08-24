@@ -23,7 +23,7 @@ blueprint! {
             let tokens =  mint_tokens(resource, 100);
             let component = MoveTest {}.instantiate();
 
-            component.invoke::<()>("receive_bucket", args!(tokens));
+            component.call::<()>("receive_bucket", args!(tokens));
         }
 
         pub fn move_reference() {
@@ -31,7 +31,7 @@ blueprint! {
             let tokens =  mint_tokens(resource, 100);
             let component = MoveTest {}.instantiate();
 
-            component.invoke::<()>("receive_reference", args!(tokens.borrow()));
+            component.call::<()>("receive_reference", args!(tokens.borrow()));
 
             // The sender still owns the tokens
             Account::from(Context::package_address()).deposit_tokens(tokens);

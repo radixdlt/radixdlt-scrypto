@@ -81,7 +81,7 @@ pub fn handle_import(input: TokenStream) -> TokenStream {
             pub fn #func_indent(#func_inputs) -> #func_output {
                 let package = ::scrypto::types::Address::from_hex(#package).unwrap();
                 let blueprint = ::scrypto::constructs::Blueprint::from(package, #name);
-                blueprint.invoke(#func_name, ::scrypto::args!(#(#func_args),*))
+                blueprint.call(#func_name, ::scrypto::args!(#(#func_args),*))
             }
         });
     }
@@ -116,7 +116,7 @@ pub fn handle_import(input: TokenStream) -> TokenStream {
                 parse_quote! {
                     pub fn #method_indent(&self, #method_inputs) -> #method_output {
                         let component = ::scrypto::constructs::Component::from(self.address);
-                        component.invoke(#method_name, ::scrypto::args!(#(#method_args),*))
+                        component.call(#method_name, ::scrypto::args!(#(#method_args),*))
                     }
                 }
             }
@@ -124,7 +124,7 @@ pub fn handle_import(input: TokenStream) -> TokenStream {
                 parse_quote! {
                     pub fn #method_indent(&mut self, #method_inputs) -> #method_output {
                         let component = ::scrypto::constructs::Component::from(self.address);
-                        component.invoke(#method_name, ::scrypto::args!(#(#method_args),*))
+                        component.call(#method_name, ::scrypto::args!(#(#method_args),*))
                     }
                 }
             }
@@ -378,7 +378,7 @@ mod tests {
                         arg5: [String; 2usize]
                     ) -> u32 {
                         let component = ::scrypto::constructs::Component::from(self.address);
-                        component.invoke(
+                        component.call(
                             "calculate_volume",
                             ::scrypto::args!(arg0, arg1, arg2, arg3, arg4, arg5)
                         )
@@ -410,7 +410,7 @@ mod tests {
                         )
                         .unwrap();
                         let blueprint = ::scrypto::constructs::Blueprint::from(package, "Sample");
-                        blueprint.invoke("stateless_func", ::scrypto::args!())
+                        blueprint.call("stateless_func", ::scrypto::args!())
                     }
                 }
             },
@@ -439,7 +439,7 @@ mod tests {
                         )
                         .unwrap();
                         let blueprint = ::scrypto::constructs::Blueprint::from(package, "Sample");
-                        blueprint.invoke("test_system_types", ::scrypto::args!(arg0))
+                        blueprint.call("test_system_types", ::scrypto::args!(arg0))
                     }
                 }
             },

@@ -8,7 +8,7 @@ pub use scrypto_types::*;
 #[derive(Debug, Clone, Describe, Encode, Decode)]
 pub struct ComponentInfo {
     pub package: Address,
-    pub name: String,
+    pub blueprint: String,
 }
 
 /// Information about a resource.

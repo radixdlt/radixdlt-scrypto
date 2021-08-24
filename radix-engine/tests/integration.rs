@@ -96,7 +96,7 @@ fn test_blueprint() {
         &mut ledger,
         package,
         "BlueprintTest",
-        "invoke_blueprint",
+        "call_blueprint",
         vec![],
     );
     assert!(output.is_ok());

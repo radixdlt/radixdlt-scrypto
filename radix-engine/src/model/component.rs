@@ -5,15 +5,15 @@ use scrypto::types::*;
 #[derive(Debug, Clone, Encode, Decode)]
 pub struct Component {
     package: Address,
-    name: String,
+    blueprint: String,
     state: Vec<u8>,
 }
 
 impl Component {
-    pub fn new(package: Address, name: String, state: Vec<u8>) -> Self {
+    pub fn new(package: Address, blueprint: String, state: Vec<u8>) -> Self {
         Self {
             package,
-            name,
+            blueprint,
             state,
         }
     }
@@ -22,8 +22,8 @@ impl Component {
         self.package
     }
 
-    pub fn name(&self) -> &str {
-        &self.name
+    pub fn blueprint(&self) -> &str {
+        &self.blueprint
     }
 
     pub fn state(&self) -> &[u8] {

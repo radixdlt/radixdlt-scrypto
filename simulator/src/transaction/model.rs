@@ -16,14 +16,14 @@ pub enum Action {
         resource: Address,
     },
 
-    InvokeBlueprint {
+    CallBlueprint {
         package: Address,
         blueprint: String,
         function: String,
         args: Vec<Vec<u8>>,
     },
 
-    InvokeComponent {
+    CallComponent {
         component: Address,
         method: String,
         args: Vec<Vec<u8>>,
@@ -40,6 +40,7 @@ pub enum Action {
 #[derive(Debug)]
 pub struct TransactionReceipt {
     pub transaction: Transaction,
+    pub success: bool,
     pub results: Vec<Result<Vec<u8>, RuntimeError>>,
     pub logs: Vec<(Level, String)>,
 }

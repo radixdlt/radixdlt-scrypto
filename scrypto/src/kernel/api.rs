@@ -11,9 +11,9 @@ extern "C" {
 
 /// Publish a new package
 pub const PUBLISH: u32 = 0x00;
-/// Invoke a blueprint
+/// Call a blueprint
 pub const CALL_BLUEPRINT: u32 = 0x01;
-/// Invoke a component
+/// Call a component
 pub const CALL_COMPONENT: u32 = 0x02;
 
 /// Create a new component
@@ -90,7 +90,7 @@ pub struct PublishPackageOutput {
 #[derive(Debug, Clone, Encode, Decode)]
 pub struct CallBlueprintInput {
     pub package: Address,
-    pub name: String,
+    pub blueprint: String,
     pub function: String,
     pub args: Vec<Vec<u8>>,
 }
@@ -118,7 +118,7 @@ pub struct CallComponentOutput {
 
 #[derive(Debug, Clone, Encode, Decode)]
 pub struct CreateComponentInput {
-    pub name: String,
+    pub blueprint: String,
     pub state: Vec<u8>,
 }
 

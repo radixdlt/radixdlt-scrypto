@@ -124,9 +124,9 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         self.vm = Some(vm);
 
         // run the main function
-        let invoke_result = module.invoke_export(export.as_str(), &[], self);
-        trace!(self, "Invoke result: {:?}", invoke_result);
-        let return_value = invoke_result
+        let invoke_res = module.invoke_export(export.as_str(), &[], self);
+        trace!(self, "Invoke result: {:?}", invoke_res);
+        let return_value = invoke_res
             .map_err(|e| RuntimeError::InvokeError(e))?
             .ok_or(RuntimeError::NoReturnValue)?;
 
@@ -155,22 +155,14 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         Ok(output)
     }
 
-    /// Call a blueprint function.
-    pub fn call_function(
+    /// Call a function.
+    pub fn call(
         &mut self,
         package: Address,
-        blueprint: String,
+        export: String,
         function: String,
         args: Vec<Vec<u8>>,
     ) -> Result<Vec<u8>, RuntimeError> {
-        trace!(
-            self,
-            "Calling function: package = {}, blueprint = {}, function = {}, args = {:02x?}",
-            package,
-            blueprint,
-            function,
-            args
-        );
         // move resources
         for arg in &args {
             self.transform_sbor_data(
@@ -184,7 +176,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         process.put_resources(buckets_out, references_out);
 
         // run the function and finalize
-        let result = process.run(package, format!("{}_main", blueprint), function, args);
+        let result = process.run(package, export, function, args);
         process.finalize()?;
 
         // move resources
@@ -208,6 +200,26 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         result
     }
 
+    /// Call a blueprint function.
+    pub fn call_function(
+        &mut self,
+        package: Address,
+        blueprint: String,
+        function: String,
+        args: Vec<Vec<u8>>,
+    ) -> Result<Vec<u8>, RuntimeError> {
+        trace!(
+            self,
+            "Calling function: package = {}, blueprint = {}, function = {}, args = {:02x?}",
+            package,
+            blueprint,
+            function,
+            args
+        );
+
+        self.call(package, format!("{}_main", blueprint), function, args)
+    }
+
     /// Call a component method.
     pub fn call_method(
         &mut self,
@@ -215,6 +227,14 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         method: String,
         mut args: Vec<Vec<u8>>,
     ) -> Result<Vec<u8>, RuntimeError> {
+        trace!(
+            self,
+            "Calling method: component = {}, method = {}, args = {:02x?}",
+            component,
+            method,
+            args
+        );
+
         let info = self
             .runtime
             .get_component(component)
@@ -222,7 +242,12 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
             .clone();
         args.insert(0, scrypto_encode(&component));
 
-        self.call_function(info.package(), info.name().to_owned(), method, args)
+        self.call(
+            info.package(),
+            format!("{}_main", info.blueprint()),
+            method,
+            args,
+        )
     }
 
     /// Return the package address
@@ -333,7 +358,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         &mut self,
         input: CallBlueprintInput,
     ) -> Result<CallBlueprintOutput, RuntimeError> {
-        let output = self.call_function(input.package, input.name, input.function, input.args);
+        let output = self.call_function(input.package, input.blueprint, input.function, input.args);
 
         Ok(CallBlueprintOutput { rtn: output? })
     }
@@ -369,7 +394,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
             new_state
         );
 
-        let component = Component::new(self.package()?, input.name, new_state);
+        let component = Component::new(self.package()?, input.blueprint, new_state);
         self.runtime.put_component(address, component);
 
         Ok(CreateComponentOutput { component: address })
@@ -384,7 +409,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
             .get_component(input.component)
             .map(|c| ComponentInfo {
                 package: c.package().clone(),
-                name: c.name().to_string(),
+                blueprint: c.blueprint().to_string(),
             });
         Ok(GetComponentInfoOutput { result })
     }

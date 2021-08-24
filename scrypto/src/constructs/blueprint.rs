@@ -32,10 +32,10 @@ impl Blueprint {
         }
     }
 
-    pub fn invoke<T: Decode>(&self, function: &str, args: Vec<Vec<u8>>) -> T {
+    pub fn call<T: Decode>(&self, function: &str, args: Vec<Vec<u8>>) -> T {
         let input = CallBlueprintInput {
             package: self.package,
-            name: self.name.clone(),
+            blueprint: self.name.clone(),
             function: function.to_string(),
             args,
         };

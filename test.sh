@@ -25,7 +25,8 @@ echo "Testing with no_std"
 (cd scrypto-tests; cargo test --no-default-features --features alloc)
 
 echo "Testing examples"
-(cd examples/helloworld; cargo build --target wasm32-unknown-unknown --release)
-(cd examples/no_std; cargo build --target wasm32-unknown-unknown  --release)
+(cd examples/helloworld; cargo build --release)
+(cd examples/no_std; cargo build --release)
+(cd examples/gumball-machine; cargo build --release)
 
 echo "Congrats! All tests passed."

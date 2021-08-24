@@ -38,7 +38,7 @@ impl Into<Address> for Component {
 impl Component {
     pub fn new<T: Encode + crate::traits::Blueprint>(state: T) -> Self {
         let input = CreateComponentInput {
-            name: state.name().to_string(),
+            blueprint: state.name().to_string(),
             state: scrypto_encode(&state),
         };
         let output: CreateComponentOutput = call_kernel(CREATE_COMPONENT, input);
@@ -46,7 +46,7 @@ impl Component {
         output.component.into()
     }
 
-    pub fn invoke<T: Decode>(&self, method: &str, args: Vec<Vec<u8>>) -> T {
+    pub fn call<T: Decode>(&self, method: &str, args: Vec<Vec<u8>>) -> T {
         let input = CallComponentInput {
             component: self.address,
             method: method.to_string(),
@@ -68,7 +68,7 @@ impl Component {
 
     pub fn get_blueprint(&self) -> Blueprint {
         let info = self.get_info();
-        Blueprint::from(info.package, info.name.as_str())
+        Blueprint::from(info.package, info.blueprint.as_str())
     }
 
     pub fn get_state<T: Decode>(&self) -> T {

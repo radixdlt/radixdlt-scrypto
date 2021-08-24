@@ -36,7 +36,7 @@ pub extern "C" fn kernel(op: u32, input_ptr: *const u8, input_len: usize) -> *mu
         CALL_BLUEPRINT => {
             let input: CallBlueprintInput = scrypto_decode(&input_bytes).unwrap();
             assert_eq!(input.package, Address::from(PACKAGE_ADDRESS));
-            assert_eq!(input.name, BLUEPRINT_NAME);
+            assert_eq!(input.blueprint, BLUEPRINT_NAME);
             assert_eq!(input.function, FUNCTION_NAME);
 
             let output = CallBlueprintOutput {
@@ -61,7 +61,7 @@ pub extern "C" fn kernel(op: u32, input_ptr: *const u8, input_len: usize) -> *mu
             let output = GetComponentInfoOutput {
                 result: Some(ComponentInfo {
                     package: Address::from(PACKAGE_ADDRESS),
-                    name: BLUEPRINT_NAME.to_string(),
+                    blueprint: BLUEPRINT_NAME.to_string(),
                 }),
             };
             output_bytes = scrypto_encode(&output);
@@ -84,12 +84,12 @@ fn test_logging() {
 #[test]
 fn test_call_blueprint() {
     let blueprint = Blueprint::from(Address::from(PACKAGE_ADDRESS), BLUEPRINT_NAME);
-    let rtn: i32 = blueprint.invoke(FUNCTION_NAME, args!(123));
+    let rtn: i32 = blueprint.call(FUNCTION_NAME, args!(123));
     assert_eq!(rtn, RETURN);
 }
 
 #[test]
 fn test_call_component() {
     let component = Component::from(Address::from(COMPONENT_ADDRESS));
-    component.invoke::<i32>(METHOD_NAME, args!(456));
+    component.call::<i32>(METHOD_NAME, args!(456));
 }

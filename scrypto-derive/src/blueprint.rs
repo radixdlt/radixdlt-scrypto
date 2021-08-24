@@ -195,7 +195,7 @@ fn generate_dispatcher(bp_ident: &Ident, items: &Vec<ImplItem>) -> (Vec<Expr>, V
                         trace!("Stmt: {}", quote! { #get_state });
                         stmts.push(get_state.unwrap());
                     }
-                    // invoke the function
+                    // call the function
                     let stmt: Stmt = parse_quote! {
                         rtn = ::scrypto::buffer::scrypto_encode(
                             &#bp_ident::#fn_ident(#(#args),*)

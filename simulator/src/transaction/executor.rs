@@ -16,9 +16,10 @@ pub fn execute(
 
     let mut process = Process::new(0, trace, &mut runtime);
     let mut results = vec![];
+    let mut success = true;
     for action in transaction.actions.clone() {
         match action {
-            Action::InvokeBlueprint {
+            Action::CallBlueprint {
                 package,
                 blueprint,
                 function,
@@ -26,7 +27,7 @@ pub fn execute(
             } => {
                 results.push(process.call_function(package, blueprint, function, args));
             }
-            Action::InvokeComponent {
+            Action::CallComponent {
                 component,
                 method,
                 args,
@@ -37,16 +38,25 @@ pub fn execute(
                 todo!()
             }
         }
+
+        if let Some(Err(_)) = results.last() {
+            success = false;
+            break;
+        }
     }
 
-    process
-        .finalize()
-        .map_err(|e| TransactionError::FinalizationError(e))?;
+    // finalize and flush if success
+    if success {
+        process
+            .finalize()
+            .map_err(|e| TransactionError::FinalizationError(e))?;
 
-    runtime.flush();
+        runtime.flush();
+    }
 
     Ok(TransactionReceipt {
         transaction,
+        success,
         results,
         logs: runtime.logs().to_owned(),
     })
