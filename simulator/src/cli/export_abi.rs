@@ -2,7 +2,7 @@ use clap::{crate_version, App, Arg, ArgMatches, SubCommand};
 use scrypto::types::*;
 
 use crate::cli::*;
-use crate::invoke::*;
+use crate::transaction::*;
 
 const ARG_PACKAGE: &'static str = "PACKAGE";
 const ARG_BLUEPRINT: &'static str = "BLUEPRINT";
@@ -33,7 +33,7 @@ pub fn handle_export_abi<'a>(matches: &ArgMatches<'a>) {
 
     match result {
         Err(e) => {
-            println!("Error: {}", e);
+            println!("Error: {:?}", e);
         }
         Ok(abi) => {
             println!("{}", serde_json::to_string_pretty(&abi).unwrap());

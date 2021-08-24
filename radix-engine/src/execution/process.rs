@@ -98,17 +98,14 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
     pub fn run(
         &mut self,
         package: Address,
-        blueprint: String,
+        export: String,
         function: String,
         args: Vec<Vec<u8>>,
     ) -> Result<Vec<u8>, RuntimeError> {
         let now = Instant::now();
         info!(
             self,
-            "Run started: package = {}, blueprint = {}, function = {}",
-            package,
-            blueprint,
-            function
+            "Run started: package = {}, export = {}", package, export
         );
 
         // Load the code
@@ -127,8 +124,9 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         self.vm = Some(vm);
 
         // run the main function
-        let return_value = module
-            .invoke_export(format!("{}_main", blueprint).as_str(), &[], self)
+        let invoke_result = module.invoke_export(export.as_str(), &[], self);
+        trace!(self, "Invoke result: {:?}", invoke_result);
+        let return_value = invoke_result
             .map_err(|e| RuntimeError::InvokeError(e))?
             .ok_or(RuntimeError::NoReturnValue)?;
 
@@ -157,7 +155,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         Ok(output)
     }
 
-    /// Call a blueprint or component.
+    /// Call a blueprint function.
     pub fn call(
         &mut self,
         package: Address,
@@ -178,7 +176,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         process.put_resources(buckets_out, references_out);
 
         // run the function and finalize
-        let result = process.run(package, blueprint, function, args);
+        let result = process.run(package, format!("{}_main", blueprint), function, args);
         process.finalize()?;
 
         // move resources
@@ -200,6 +198,23 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         }
 
         result
+    }
+
+    /// Call a component method.
+    pub fn call2(
+        &mut self,
+        component: Address,
+        method: String,
+        mut args: Vec<Vec<u8>>,
+    ) -> Result<Vec<u8>, RuntimeError> {
+        let info = self
+            .runtime
+            .get_component(component)
+            .ok_or(RuntimeError::ComponentNotFound(component))?
+            .clone();
+        args.insert(0, scrypto_encode(&component));
+
+        self.call(info.package(), info.name().to_owned(), method, args)
     }
 
     /// Return the package address
@@ -319,18 +334,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         &mut self,
         input: CallComponentInput,
     ) -> Result<CallComponentOutput, RuntimeError> {
-        let component = self
-            .runtime
-            .get_component(input.component)
-            .ok_or(RuntimeError::ComponentNotFound(input.component))?
-            .clone();
-        let package = component.package();
-        let blueprint = component.name().to_owned();
-        let function = input.method;
-        let mut args = input.args;
-        args.insert(0, scrypto_encode(&input.component));
-
-        let output = self.call(package, blueprint, function, args);
+        let output = self.call2(input.component, input.method, input.args);
 
         Ok(CallComponentOutput { rtn: output? })
     }
@@ -1119,41 +1123,39 @@ impl<'rt, 'le, L: Ledger> Externals for Process<'rt, 'le, L> {
             KERNEL_INDEX => {
                 let operation: u32 = args.nth_checked(0)?;
                 match operation {
-                    PUBLISH => self.handle(args, Process::publish, false),
-                    CALL_BLUEPRINT => self.handle(args, Process::call_blueprint, true),
-                    CALL_COMPONENT => self.handle(args, Process::call_component, true),
+                    PUBLISH => self.handle(args, Self::publish, false),
+                    CALL_BLUEPRINT => self.handle(args, Self::call_blueprint, true),
+                    CALL_COMPONENT => self.handle(args, Self::call_component, true),
 
-                    CREATE_COMPONENT => self.handle(args, Process::create_component, true),
-                    GET_COMPONENT_INFO => self.handle(args, Process::get_component_info, true),
-                    GET_COMPONENT_STATE => self.handle(args, Process::get_component_state, true),
-                    PUT_COMPONENT_STATE => self.handle(args, Process::put_component_state, true),
+                    CREATE_COMPONENT => self.handle(args, Self::create_component, true),
+                    GET_COMPONENT_INFO => self.handle(args, Self::get_component_info, true),
+                    GET_COMPONENT_STATE => self.handle(args, Self::get_component_state, true),
+                    PUT_COMPONENT_STATE => self.handle(args, Self::put_component_state, true),
 
                     CREATE_RESOURCE_MUTABLE => {
-                        self.handle(args, Process::create_resource_mutable, true)
+                        self.handle(args, Self::create_resource_mutable, true)
                     }
-                    CREATE_RESOURCE_FIXED => {
-                        self.handle(args, Process::create_resource_fixed, true)
-                    }
-                    GET_RESOURCE_INFO => self.handle(args, Process::get_resource_info, true),
-                    MINT_RESOURCE => self.handle(args, Process::mint_resource, true),
+                    CREATE_RESOURCE_FIXED => self.handle(args, Self::create_resource_fixed, true),
+                    GET_RESOURCE_INFO => self.handle(args, Self::get_resource_info, true),
+                    MINT_RESOURCE => self.handle(args, Self::mint_resource, true),
 
-                    NEW_EMPTY_BUCKET => self.handle(args, Process::new_empty_bucket, true),
-                    COMBINE_BUCKETS => self.handle(args, Process::combine_buckets, true),
-                    SPLIT_BUCKET => self.handle(args, Process::split_bucket, true),
-                    GET_AMOUNT => self.handle(args, Process::get_amount, true),
-                    GET_RESOURCE => self.handle(args, Process::get_resource, true),
-                    BORROW_IMMUTABLE => self.handle(args, Process::borrow_immutable, true),
-                    DROP_REFERENCE => self.handle(args, Process::drop_reference, true),
-                    GET_AMOUNT_REF => self.handle(args, Process::get_amount_ref, true),
-                    GET_RESOURCE_REF => self.handle(args, Process::get_resource_ref, true),
+                    NEW_EMPTY_BUCKET => self.handle(args, Self::new_empty_bucket, true),
+                    COMBINE_BUCKETS => self.handle(args, Self::combine_buckets, true),
+                    SPLIT_BUCKET => self.handle(args, Self::split_bucket, true),
+                    GET_AMOUNT => self.handle(args, Self::get_amount, true),
+                    GET_RESOURCE => self.handle(args, Self::get_resource, true),
+                    BORROW_IMMUTABLE => self.handle(args, Self::borrow_immutable, true),
+                    DROP_REFERENCE => self.handle(args, Self::drop_reference, true),
+                    GET_AMOUNT_REF => self.handle(args, Self::get_amount_ref, true),
+                    GET_RESOURCE_REF => self.handle(args, Self::get_resource_ref, true),
 
-                    WITHDRAW => self.handle(args, Process::withdraw, true),
-                    DEPOSIT => self.handle(args, Process::deposit, true),
+                    WITHDRAW => self.handle(args, Self::withdraw, true),
+                    DEPOSIT => self.handle(args, Self::deposit, true),
 
-                    EMIT_LOG => self.handle(args, Process::emit_log, true),
-                    GET_PACKAGE_ADDRESS => self.handle(args, Process::get_package_address, true),
-                    GET_CALL_DATA => self.handle(args, Process::get_call_data, true),
-                    GET_TRANSACTION_HASH => self.handle(args, Process::get_transaction_hash, true),
+                    EMIT_LOG => self.handle(args, Self::emit_log, true),
+                    GET_PACKAGE_ADDRESS => self.handle(args, Self::get_package_address, true),
+                    GET_CALL_DATA => self.handle(args, Self::get_call_data, true),
+                    GET_TRANSACTION_HASH => self.handle(args, Self::get_transaction_hash, true),
                     _ => Err(RuntimeError::InvalidOpCode(operation).into()),
                 }
             }

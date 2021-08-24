@@ -2,7 +2,7 @@ use clap::{crate_version, App, Arg, ArgMatches, SubCommand};
 use scrypto::types::*;
 
 use crate::cli::*;
-use crate::invoke::*;
+use crate::transaction::*;
 
 const ARG_PACKAGE: &'static str = "PACKAGE";
 const ARG_BLUEPRINT: &'static str = "BLUEPRINT";
@@ -39,22 +39,30 @@ pub fn make_invoke_blueprint_cmd<'a, 'b>() -> App<'a, 'b> {
 /// Handles a `invoke-blueprint` request.
 pub fn handle_invoke_blueprint<'a>(matches: &ArgMatches<'a>) {
     let package: Address = matches.value_of(ARG_PACKAGE).unwrap().into();
-    let blueprint = matches.value_of(ARG_BLUEPRINT).unwrap();
-    let function = matches.value_of(ARG_FUNCTION).unwrap();
+    let blueprint = matches.value_of(ARG_BLUEPRINT).unwrap().to_owned();
+    let function = matches.value_of(ARG_FUNCTION).unwrap().to_owned();
     let mut args = Vec::new();
     if let Some(x) = matches.values_of(ARG_ARGS) {
         x.for_each(|a| args.push(hex::decode(a).unwrap()));
     }
 
-    let result = invoke_blueprint(package, blueprint, function, &args, false);
+    let transaction = Transaction {
+        actions: vec![Action::InvokeBlueprint {
+            package,
+            blueprint,
+            function,
+            args,
+        }],
+    };
+
+    let result = execute(transaction, true);
 
     match result {
         Err(e) => {
-            println!("Error: {}", e);
+            println!("Error: {:?}", e);
         }
         Ok(r) => {
-            println!("Result: {:02x?}", r.result);
-            print_logs(&r.logs);
+            print_receipt(r);
         }
     }
 }

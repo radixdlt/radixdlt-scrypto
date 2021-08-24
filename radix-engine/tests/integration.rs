@@ -55,7 +55,12 @@ fn call<T: Ledger>(
     let mut runtime = Runtime::new(tx_hash, ledger);
 
     let mut process = Process::new(0, true, &mut runtime);
-    let result = process.run(package, blueprint.to_owned(), function.to_owned(), args);
+    let result = process.run(
+        package,
+        format!("{}_main", blueprint),
+        function.to_owned(),
+        args,
+    );
     process.finalize()?;
 
     if result.is_ok() {
