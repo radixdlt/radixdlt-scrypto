@@ -4,8 +4,8 @@ use scrypto::types::*;
 use crate::transaction::*;
 
 pub fn print_receipt(receipt: TransactionReceipt) {
-    for i in 0..receipt.transaction.actions.len() {
-        println!("Action: {:?}", receipt.transaction.actions[i]);
+    for (i, action) in receipt.transaction.actions.iter().enumerate() {
+        println!("Action: {:?}", action);
         match receipt.results.get(i) {
             Some(r) => {
                 println!("Result: {:02x?}", r);
@@ -24,6 +24,6 @@ pub fn print_receipt(receipt: TransactionReceipt) {
             Level::Debug => ("DEBUG".cyan(), msg.cyan()),
             Level::Trace => ("TRACE".normal(), msg.normal()),
         };
-        println!("  [{:5}] {}", l, m);
+        println!("[{:5}] {}", l, m);
     }
 }

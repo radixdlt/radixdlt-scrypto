@@ -24,14 +24,14 @@ pub fn execute(
                 function,
                 args,
             } => {
-                results.push(process.call(package, blueprint, function, args));
+                results.push(process.call_function(package, blueprint, function, args));
             }
             Action::InvokeComponent {
                 component,
                 method,
                 args,
             } => {
-                results.push(process.call2(component, method, args));
+                results.push(process.call_method(component, method, args));
             }
             _ => {
                 todo!()

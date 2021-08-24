@@ -156,13 +156,21 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
     }
 
     /// Call a blueprint function.
-    pub fn call(
+    pub fn call_function(
         &mut self,
         package: Address,
         blueprint: String,
         function: String,
         args: Vec<Vec<u8>>,
     ) -> Result<Vec<u8>, RuntimeError> {
+        trace!(
+            self,
+            "Calling function: package = {}, blueprint = {}, function = {}, args = {:02x?}",
+            package,
+            blueprint,
+            function,
+            args
+        );
         // move resources
         for arg in &args {
             self.transform_sbor_data(
@@ -201,7 +209,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
     }
 
     /// Call a component method.
-    pub fn call2(
+    pub fn call_method(
         &mut self,
         component: Address,
         method: String,
@@ -214,7 +222,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
             .clone();
         args.insert(0, scrypto_encode(&component));
 
-        self.call(info.package(), info.name().to_owned(), method, args)
+        self.call_function(info.package(), info.name().to_owned(), method, args)
     }
 
     /// Return the package address
@@ -325,7 +333,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         &mut self,
         input: CallBlueprintInput,
     ) -> Result<CallBlueprintOutput, RuntimeError> {
-        let output = self.call(input.package, input.name, input.function, input.args);
+        let output = self.call_function(input.package, input.name, input.function, input.args);
 
         Ok(CallBlueprintOutput { rtn: output? })
     }
@@ -334,7 +342,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         &mut self,
         input: CallComponentInput,
     ) -> Result<CallComponentOutput, RuntimeError> {
-        let output = self.call2(input.component, input.method, input.args);
+        let output = self.call_method(input.component, input.method, input.args);
 
         Ok(CallComponentOutput { rtn: output? })
     }
