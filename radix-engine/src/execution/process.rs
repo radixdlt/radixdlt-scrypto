@@ -106,6 +106,8 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         function: String,
         args: Vec<Vec<u8>>,
     ) -> Result<Vec<u8>, RuntimeError> {
+        #[cfg(not(feature = "alloc"))]
+        let now = std::time::Instant::now();
         info!(
             self,
             "Run started: package = {}, export = {}", package, export
@@ -149,6 +151,13 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
             }
         };
 
+        #[cfg(not(feature = "alloc"))]
+        info!(
+            self,
+            "Run finished: time elapsed = {} ms",
+            now.elapsed().as_millis()
+        );
+        #[cfg(feature = "alloc")]
         info!(self, "Run finished");
 
         Ok(output)
