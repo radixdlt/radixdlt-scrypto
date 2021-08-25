@@ -67,7 +67,6 @@ pub fn handle_blueprint(input: TokenStream, output_abi: bool) -> TokenStream {
             match calldata.function.as_str() {
                 #( #arm_guards => #arm_bodies )*
                 _ => {
-                    ::scrypto::error!("Function not found: {}", calldata.function);
                     panic!();
                 }
             }
@@ -83,10 +82,10 @@ pub fn handle_blueprint(input: TokenStream, output_abi: bool) -> TokenStream {
     let generated_abi = quote! {
         #[no_mangle]
         pub extern "C" fn #abi_ident() -> *mut u8 {
-            use sbor::{self, Describe};
-            use scrypto::constructs::Context;
-            use scrypto::rust::string::ToString;
-            use scrypto::rust::vec;
+            use ::sbor::{self, Describe};
+            use ::scrypto::constructs::Context;
+            use ::scrypto::rust::string::ToString;
+            use ::scrypto::rust::vec;
 
             let output = ::scrypto::abi::Blueprint {
                 package: Context::package_address().to_string(),
@@ -156,7 +155,7 @@ fn generate_dispatcher(bp_ident: &Ident, items: &Vec<ImplItem>) -> (Vec<Expr>, V
 
                                 // Generate an `Arg` and a loading `Stmt` for the i-th argument
                                 let stmt: Stmt = parse_quote! {
-                                    let #arg = ::scrypto::constructs::Component::from(::scrypto::buffer::scrypto_decode::<::scrypto::types::Address>(&calldata.args[#i]).unwrap());
+                                    let #arg = ::scrypto::constructs::Component::from(::scrypto::utils::unwrap_or_panic(::scrypto::buffer::scrypto_decode::<::scrypto::types::Address>(&calldata.args[#i])));
                                 };
                                 trace!("Stmt: {}", quote! { #stmt });
                                 args.push(parse_quote! { & #mutability state });
@@ -179,7 +178,7 @@ fn generate_dispatcher(bp_ident: &Ident, items: &Vec<ImplItem>) -> (Vec<Expr>, V
                                 // Generate an `Arg` and a loading `Stmt` for the i-th argument
                                 let ty = &t.ty;
                                 let stmt: Stmt = parse_quote! {
-                                    let #arg = ::scrypto::buffer::scrypto_decode::<#ty>(&calldata.args[#i]).unwrap();
+                                    let #arg = ::scrypto::utils::unwrap_or_panic(::scrypto::buffer::scrypto_decode::<#ty>(&calldata.args[#i]));
                                 };
                                 trace!("Stmt: {}", quote! { #stmt });
                                 args.push(parse_quote! { #arg });
@@ -376,17 +375,14 @@ mod tests {
                     let rtn;
                     match calldata.function.as_str() {
                         "x" => {
-                            let arg0 = ::scrypto::constructs::Component::from(
+                            let arg0 = ::scrypto::constructs::Component::from(::scrypto::utils::unwrap_or_panic(
                                 ::scrypto::buffer::scrypto_decode::<::scrypto::types::Address>(
                                     &calldata.args[0usize]
-                                )
-                                .unwrap()
-                            );
+                            )));
                             let state: Test = arg0.get_state();
                             rtn = ::scrypto::buffer::scrypto_encode(&Test::x(&state));
                         }
                         _ => {
-                            ::scrypto::error!("Function not found: {}", calldata.function);
                             panic!();
                         }
                     }
@@ -394,10 +390,10 @@ mod tests {
                 }
                 #[no_mangle]
                 pub extern "C" fn Test_abi() -> *mut u8 {
-                    use sbor::{self, Describe};
-                    use scrypto::constructs::Context;
-                    use scrypto::rust::string::ToString;
-                    use scrypto::rust::vec;
+                    use ::sbor::{self, Describe};
+                    use ::scrypto::constructs::Context;
+                    use ::scrypto::rust::string::ToString;
+                    use ::scrypto::rust::vec;
                     let output = ::scrypto::abi::Blueprint {
                         package: Context::package_address().to_string(),
                         blueprint: "Test".to_string(),

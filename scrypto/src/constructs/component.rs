@@ -8,6 +8,7 @@ use crate::rust::borrow::ToOwned;
 use crate::rust::string::ToString;
 use crate::rust::vec::Vec;
 use crate::types::*;
+use crate::utils::*;
 
 /// A self-executing program that holds resources and exposed actions to other entities.
 #[derive(Debug, Encode, Decode)]
@@ -54,7 +55,7 @@ impl Component {
         };
         let output: CallComponentOutput = call_kernel(CALL_COMPONENT, input);
 
-        scrypto_decode(&output.rtn).unwrap()
+        unwrap_or_panic(scrypto_decode(&output.rtn))
     }
 
     pub fn get_info(&self) -> ComponentInfo {
@@ -80,7 +81,7 @@ impl Component {
         };
         let output: GetComponentStateOutput = call_kernel(GET_COMPONENT_STATE, input);
 
-        scrypto_decode(&output.state).unwrap()
+        unwrap_or_panic(scrypto_decode(&output.state))
     }
 
     pub fn put_state<T: Encode>(&self, state: T) {

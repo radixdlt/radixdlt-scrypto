@@ -369,7 +369,7 @@ pub struct DepositOutput {}
 
 #[derive(Debug, Clone, Encode, Decode)]
 pub struct EmitLogInput {
-    pub level: String,
+    pub level: u8,
     pub message: String,
 }
 

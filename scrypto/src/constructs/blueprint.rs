@@ -8,6 +8,7 @@ use crate::rust::string::String;
 use crate::rust::string::ToString;
 use crate::rust::vec::Vec;
 use crate::types::*;
+use crate::utils::*;
 
 /// A piece of code that defines the structure and methods of components.
 #[derive(Debug, Encode, Decode)]
@@ -41,7 +42,7 @@ impl Blueprint {
         };
         let output: CallBlueprintOutput = call_kernel(CALL_BLUEPRINT, input);
 
-        scrypto_decode(&output.rtn).unwrap()
+        unwrap_or_panic(scrypto_decode(&output.rtn))
     }
 
     pub fn package(&self) -> Address {

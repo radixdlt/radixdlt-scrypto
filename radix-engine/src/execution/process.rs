@@ -856,12 +856,12 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
     }
 
     pub fn emit_log(&mut self, input: EmitLogInput) -> Result<EmitLogOutput, RuntimeError> {
-        let level = match input.level.as_str() {
-            "ERROR" => Ok(Level::Error),
-            "WARN" => Ok(Level::Warn),
-            "INFO" => Ok(Level::Info),
-            "DEBUG" => Ok(Level::Debug),
-            "TRACE" => Ok(Level::Trace),
+        let level = match input.level {
+            0 => Ok(Level::Error),
+            1 => Ok(Level::Warn),
+            2 => Ok(Level::Info),
+            3 => Ok(Level::Debug),
+            4 => Ok(Level::Trace),
             _ => Err(RuntimeError::InvalidLogLevel),
         };
 

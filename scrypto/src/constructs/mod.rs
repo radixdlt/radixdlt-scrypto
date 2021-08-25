@@ -40,7 +40,7 @@ pub struct ResourceInfo {
 /// Represents a logging level.
 #[derive(Debug, Clone, Describe, Encode, Decode)]
 pub enum Level {
-    Error,
+    Error = 0,
     Warn,
     Info,
     Debug,

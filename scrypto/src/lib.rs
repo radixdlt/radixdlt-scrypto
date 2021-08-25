@@ -37,7 +37,7 @@ pub use scrypto_derive::*;
 macro_rules! args {
     ($($args: expr),*) => {
         {
-            let mut args = scrypto::rust::vec::Vec::new();
+            let mut args = ::scrypto::rust::vec::Vec::new();
             $(args.push(scrypto::buffer::scrypto_encode(&$args));)*
             args
         }
@@ -48,7 +48,7 @@ macro_rules! args {
 #[macro_export]
 macro_rules! error {
     ($($args: expr),+) => {{
-        scrypto::constructs::Logger::log(scrypto::constructs::Level::Error, scrypto::rust::format!($($args),+));
+        ::scrypto::constructs::Logger::log(scrypto::constructs::Level::Error, ::scrypto::rust::format!($($args),+));
     }};
 }
 
@@ -56,7 +56,7 @@ macro_rules! error {
 #[macro_export]
 macro_rules! warn {
     ($($args: expr),+) => {{
-        scrypto::constructs::Logger::log(scrypto::constructs::Level::Warn, scrypto::rust::format!($($args),+));
+        ::scrypto::constructs::Logger::log(scrypto::constructs::Level::Warn, ::scrypto::rust::format!($($args),+));
     }};
 }
 
@@ -64,7 +64,7 @@ macro_rules! warn {
 #[macro_export]
 macro_rules! info {
     ($($args: expr),+) => {{
-        scrypto::constructs::Logger::log(scrypto::constructs::Level::Info, scrypto::rust::format!($($args),+));
+        ::scrypto::constructs::Logger::log(scrypto::constructs::Level::Info, ::scrypto::rust::format!($($args),+));
     }};
 }
 
@@ -72,7 +72,7 @@ macro_rules! info {
 #[macro_export]
 macro_rules! debug {
     ($($args: expr),+) => {{
-        scrypto::constructs::Logger::log(scrypto::constructs::Level::Debug, scrypto::rust::format!($($args),+));
+        ::scrypto::constructs::Logger::log(scrypto::constructs::Level::Debug, ::scrypto::rust::format!($($args),+));
     }};
 }
 
@@ -80,6 +80,6 @@ macro_rules! debug {
 #[macro_export]
 macro_rules! trace {
     ($($args: expr),+) => {{
-        scrypto::constructs::Logger::log(scrypto::constructs::Level::Trace, scrypto::rust::format!($($args),+));
+        ::scrypto::constructs::Logger::log(scrypto::constructs::Level::Trace, ::scrypto::rust::format!($($args),+));
     }};
 }
