@@ -401,7 +401,7 @@ impl Encode for U256 {
 impl Encode for Address {
     #[inline]
     fn encode_value(&self, encoder: &mut Encoder) {
-        let bytes: Vec<u8> = self.clone().into();
+        let bytes: Vec<u8> = self.to_vec();
         encoder.write_len(bytes.len());
         encoder.write_slice(&bytes);
     }
@@ -416,7 +416,7 @@ impl Encode for Address {
 impl Encode for BID {
     #[inline]
     fn encode_value(&self, encoder: &mut Encoder) {
-        let bytes: Vec<u8> = self.clone().into();
+        let bytes: Vec<u8> = self.to_vec();
         encoder.write_len(bytes.len());
         encoder.write_slice(&bytes);
     }
@@ -431,7 +431,7 @@ impl Encode for BID {
 impl Encode for RID {
     #[inline]
     fn encode_value(&self, encoder: &mut Encoder) {
-        let bytes: Vec<u8> = self.clone().into();
+        let bytes: Vec<u8> = self.to_vec();
         encoder.write_len(bytes.len());
         encoder.write_slice(&bytes);
     }

@@ -283,7 +283,7 @@ impl<'le, T: Ledger> Runtime<'le, T> {
 
     /// Creates a new resource address.
     pub fn new_resource_address(&self, creator: Address, symbol: &str) -> Address {
-        let mut data: Vec<u8> = creator.into();
+        let mut data: Vec<u8> = creator.to_vec();
         data.extend(symbol.as_bytes());
 
         let hash = sha256_twice(data);

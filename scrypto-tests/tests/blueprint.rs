@@ -3,6 +3,7 @@
 use scrypto::buffer::*;
 use scrypto::constructs::*;
 use scrypto::kernel::*;
+use scrypto::rust::str::FromStr;
 use scrypto::rust::vec;
 use scrypto::types::*;
 use scrypto::*;
@@ -84,7 +85,7 @@ fn test_simple_abi() {
 #[no_mangle]
 pub extern "C" fn kernel(_op: u32, _input_ptr: *const u8, _input_len: usize) -> *mut u8 {
     let response = GetPackageAddressOutput {
-        address: Address::from_hex("056967d3d49213394892980af59be76e9b3e7cc4cb78237460d0c7")
+        address: Address::from_str("056967d3d49213394892980af59be76e9b3e7cc4cb78237460d0c7")
             .unwrap(),
     };
     scrypto_wrap(&scrypto_encode(&response))

@@ -79,7 +79,7 @@ pub fn handle_import(input: TokenStream) -> TokenStream {
 
         functions.push(parse_quote! {
             pub fn #func_indent(#func_inputs) -> #func_output {
-                let package = ::scrypto::types::Address::from_hex(#package).unwrap();
+                let package = ::scrypto::types::Address::from_str(#package).unwrap();
                 let blueprint = ::scrypto::constructs::Blueprint::from(package, #name);
                 blueprint.call(#func_name, ::scrypto::args!(#(#func_args),*))
             }
@@ -405,7 +405,7 @@ mod tests {
                         Self { address }
                     }
                     pub fn stateless_func() -> u32 {
-                        let package = ::scrypto::types::Address::from_hex(
+                        let package = ::scrypto::types::Address::from_str(
                             "056967d3d49213394892980af59be76e9b3e7cc4cb78237460d0c7"
                         )
                         .unwrap();
@@ -434,7 +434,7 @@ mod tests {
                         Self { address }
                     }
                     pub fn test_system_types(arg0: ::scrypto::resource::Tokens) -> ::scrypto::resource::BadgesRef {
-                        let package = ::scrypto::types::Address::from_hex(
+                        let package = ::scrypto::types::Address::from_str(
                             "056967d3d49213394892980af59be76e9b3e7cc4cb78237460d0c7"
                         )
                         .unwrap();

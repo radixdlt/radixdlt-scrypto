@@ -1,4 +1,6 @@
 #[cfg(any(feature = "scrypto_std", feature = "scrypto_alloc"))]
+use crate::rust::convert::TryFrom;
+#[cfg(any(feature = "scrypto_std", feature = "scrypto_alloc"))]
 use scrypto_types::primitives::{Address, BID, H256, RID, U256};
 
 use crate::constants::*;
@@ -503,7 +505,7 @@ impl Decode for H256 {
     fn decode_value<'de>(decoder: &mut Decoder<'de>) -> Result<Self, DecodeError> {
         let slice = decoder.read_bytes(32)?;
 
-        H256::from_slice(slice).map_err(|_| DecodeError::InvalidScryptoData(TYPE_H256))
+        H256::try_from(slice).map_err(|_| DecodeError::InvalidScryptoData(TYPE_H256))
     }
 
     #[inline]
@@ -534,7 +536,7 @@ impl Decode for Address {
         let len = decoder.read_len()?;
         let slice = decoder.read_bytes(len)?;
 
-        Address::from_slice(slice).map_err(|_| DecodeError::InvalidScryptoData(TYPE_ADDRESS))
+        Address::try_from(slice).map_err(|_| DecodeError::InvalidScryptoData(TYPE_ADDRESS))
     }
 
     #[inline]
@@ -550,7 +552,7 @@ impl Decode for BID {
         let len = decoder.read_len()?;
         let slice = decoder.read_bytes(len)?;
 
-        BID::from_slice(slice).map_err(|_| DecodeError::InvalidScryptoData(TYPE_BID))
+        BID::try_from(slice).map_err(|_| DecodeError::InvalidScryptoData(TYPE_BID))
     }
 
     #[inline]
@@ -566,7 +568,7 @@ impl Decode for RID {
         let len = decoder.read_len()?;
         let slice = decoder.read_bytes(len)?;
 
-        RID::from_slice(slice).map_err(|_| DecodeError::InvalidScryptoData(TYPE_RID))
+        RID::try_from(slice).map_err(|_| DecodeError::InvalidScryptoData(TYPE_RID))
     }
 
     #[inline]

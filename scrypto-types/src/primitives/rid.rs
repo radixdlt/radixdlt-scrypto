@@ -1,48 +1,29 @@
 use crate::primitives::*;
-use crate::rust::string::String;
-use crate::rust::string::ToString;
+use crate::rust::convert::TryFrom;
+use crate::rust::fmt;
+use crate::rust::str::FromStr;
 use crate::rust::vec::Vec;
 
 /// Reference to a bucket.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub enum RID {
     Immutable(u32),
 
     Mutable(u32),
 }
 
-/// Represents an error when decoding a reference.
+/// Represents an error when parsing RID.
 #[derive(Debug, Clone)]
-pub enum DecodeRIDError {
+pub enum ParseRIDError {
     InvalidHex(hex::FromHexError),
-    InvalidLength,
-    InvalidType(u8),
+    InvalidLength(usize),
 }
 
 impl RID {
-    /// Decode Reference from its hex representation.
-    pub fn from_hex(hex: &str) -> Result<Self, DecodeRIDError> {
-        let bytes = hex::decode(hex).map_err(|e| DecodeRIDError::InvalidHex(e))?;
-
-        Self::from_slice(&bytes)
-    }
-
-    /// Decode Reference from a slice.
-    pub fn from_slice(bytes: &[u8]) -> Result<Self, DecodeRIDError> {
-        if bytes.len() == 1 + 4 {
-            let kind = bytes[0];
-            let data = &bytes[1..bytes.len()];
-            match kind {
-                0x00 => Ok(RID::Immutable(u32::from_le_bytes(
-                    copy_u8_array(data).unwrap(),
-                ))),
-                0x01 => Ok(RID::Mutable(u32::from_le_bytes(
-                    copy_u8_array(data).unwrap(),
-                ))),
-                _ => Err(DecodeRIDError::InvalidType(kind)),
-            }
-        } else {
-            Err(DecodeRIDError::InvalidLength)
+    pub fn is_mutable(&self) -> bool {
+        match self {
+            Self::Mutable(_) => true,
+            _ => false,
         }
     }
 
@@ -50,41 +31,52 @@ impl RID {
         !self.is_mutable()
     }
 
-    pub fn is_mutable(&self) -> bool {
+    pub fn to_vec(&self) -> Vec<u8> {
         match self {
-            Self::Mutable(_) => true,
-            _ => false,
+            Self::Immutable(id) => combine2(0, &id.to_le_bytes()),
+            Self::Mutable(id) => combine2(1, &id.to_le_bytes()),
         }
     }
 }
 
-impl<T: AsRef<str>> From<T> for RID {
-    fn from(s: T) -> Self {
-        Self::from_hex(s.as_ref()).unwrap()
+impl FromStr for RID {
+    type Err = ParseRIDError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let bytes = hex::decode(s).map_err(|e| ParseRIDError::InvalidHex(e))?;
+        Self::try_from(bytes.as_slice())
     }
 }
 
-impl Into<Vec<u8>> for RID {
-    fn into(self) -> Vec<u8> {
-        let mut buf = Vec::new();
-        match self {
-            Self::Immutable(id) => {
-                buf.push(0u8);
-                buf.extend(id.to_le_bytes());
-            }
-            Self::Mutable(id) => {
-                buf.push(1u8);
-                buf.extend(id.to_le_bytes());
-            }
+impl TryFrom<&[u8]> for RID {
+    type Error = ParseRIDError;
+
+    fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
+        match (slice.get(0), slice.len()) {
+            (Some(0), 5) => Ok(RID::Immutable(u32::from_le_bytes(copy_u8_array(
+                &slice[1..],
+            )))),
+            (Some(1), 5) => Ok(RID::Mutable(u32::from_le_bytes(copy_u8_array(&slice[1..])))),
+            (_, len) => Err(ParseRIDError::InvalidLength(len)),
         }
-        buf
     }
 }
 
-impl ToString for RID {
-    fn to_string(&self) -> String {
-        let buf: Vec<u8> = self.clone().into();
-        hex::encode(buf)
+impl From<&str> for RID {
+    fn from(s: &str) -> Self {
+        Self::try_from(s).unwrap()
+    }
+}
+
+impl fmt::Debug for RID {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", hex::encode(self.to_vec()))
+    }
+}
+
+impl fmt::Display for RID {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", hex::encode(self.to_vec()))
     }
 }
 
@@ -95,8 +87,8 @@ mod tests {
 
     #[test]
     fn test_from_to_string() {
-        let s = "0011223344";
-        let a: RID = s.into();
+        let s = "0100000001";
+        let a = RID::from_str(s).unwrap();
         assert_eq!(a.to_string(), s);
     }
 }

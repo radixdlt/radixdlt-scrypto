@@ -1,59 +1,68 @@
 use crate::primitives::*;
+use crate::rust::convert::TryFrom;
 use crate::rust::fmt;
+use crate::rust::str::FromStr;
 
 /// Represents a 32-byte hash digest.
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
-pub struct H256 {
-    raw: [u8; 32],
-}
+pub struct H256(pub [u8; 32]);
 
-/// Represents an error when decoding a H256.
+/// Represents an error when parsing H256.
 #[derive(Debug, Clone)]
-pub enum DecodeH256Error {
+pub enum ParseH256Error {
     InvalidHex(hex::FromHexError),
-    InvalidLength,
+    InvalidLength(usize),
 }
 
 impl H256 {
-    pub fn new(raw: [u8; 32]) -> Self {
-        Self { raw }
-    }
-
-    /// Decode a hash from its hex representation.
-    pub fn from_hex(hex: &str) -> Result<Self, DecodeH256Error> {
-        let data = hex::decode(hex).map_err(|e| DecodeH256Error::InvalidHex(e))?;
-        Self::from_slice(&data)
-    }
-
-    /// Decode a hash from a slice.
-    pub fn from_slice(slice: &[u8]) -> Result<Self, DecodeH256Error> {
-        Ok(Self {
-            raw: copy_u8_array(slice).map_err(|_| DecodeH256Error::InvalidLength)?,
-        })
-    }
-
     /// Returns the lower 26 bytes.
     pub fn lower_26_bytes(&self) -> [u8; 26] {
         let mut result = [0u8; 26];
-        result.copy_from_slice(&self.raw[6..32]);
+        result.copy_from_slice(&self.0[6..32]);
         result
     }
 
-    /// Obtain a slice of this hash.
-    pub fn slice(&self) -> &[u8] {
-        &self.raw
+    pub fn to_vec(&self) -> Vec<u8> {
+        self.0.to_vec()
     }
 }
 
-impl<T: AsRef<str>> From<T> for H256 {
-    fn from(s: T) -> Self {
-        H256::from_hex(s.as_ref()).unwrap()
+impl FromStr for H256 {
+    type Err = ParseH256Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let bytes = hex::decode(s).map_err(|e| ParseH256Error::InvalidHex(e))?;
+        Self::try_from(bytes.as_slice())
+    }
+}
+
+impl TryFrom<&[u8]> for H256 {
+    type Error = ParseH256Error;
+
+    fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
+        if slice.len() != 32 {
+            Err(ParseH256Error::InvalidLength(slice.len()))
+        } else {
+            Ok(H256(copy_u8_array(&slice)))
+        }
+    }
+}
+
+impl From<&str> for H256 {
+    fn from(s: &str) -> Self {
+        Self::try_from(s).unwrap()
+    }
+}
+
+impl Into<Vec<u8>> for H256 {
+    fn into(self) -> Vec<u8> {
+        self.0.to_vec()
     }
 }
 
 impl AsRef<[u8]> for H256 {
     fn as_ref(&self) -> &[u8] {
-        &self.raw
+        &self.0
     }
 }
 
@@ -77,7 +86,7 @@ mod tests {
     #[test]
     fn test_from_to_string() {
         let s = "b177968c9c68877dc8d33e25759183c556379daa45a4d78a2b91c70133c873ca";
-        let h: H256 = s.into();
+        let h = H256::from_str(s).unwrap();
         assert_eq!(h.to_string(), s);
     }
 }

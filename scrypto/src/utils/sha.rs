@@ -8,7 +8,7 @@ pub fn sha256<T: AsRef<[u8]>>(data: T) -> H256 {
     instance.update(data);
     let result = instance.finalize();
 
-    H256::new(result.into())
+    H256(result.into())
 }
 
 /// Computes the double SHA-256 digest of a message.
@@ -18,6 +18,7 @@ pub fn sha256_twice<T: AsRef<[u8]>>(data: T) -> H256 {
 
 #[cfg(test)]
 mod tests {
+    use crate::rust::str::FromStr;
     use crate::types::*;
     use crate::utils::*;
 
@@ -27,7 +28,7 @@ mod tests {
         let hash = sha256_twice(data);
         assert_eq!(
             hash,
-            H256::from_hex("fd6be8b4b12276857ac1b63594bf38c01327bd6e8ae0eb4b0c6e253563cc8cc7")
+            H256::from_str("fd6be8b4b12276857ac1b63594bf38c01327bd6e8ae0eb4b0c6e253563cc8cc7")
                 .unwrap()
         );
     }
