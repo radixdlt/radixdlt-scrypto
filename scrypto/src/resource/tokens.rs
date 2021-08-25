@@ -3,7 +3,7 @@ use sbor::{Decode, Describe, Encode};
 
 use crate::kernel::*;
 use crate::resource::*;
-use crate::types::rust::borrow::ToOwned;
+use crate::rust::borrow::ToOwned;
 use crate::types::*;
 
 /// A bucket that holds token resource.

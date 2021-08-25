@@ -5,10 +5,6 @@ compile_error!("Either feature `std` or `alloc` must be enabled for this crate."
 #[cfg(all(feature = "std", feature = "alloc"))]
 compile_error!("Feature `std` and `alloc` can't be enabled at the same time.");
 
-/// Scrypto blueprint ABI.
-pub mod abi {
-    pub use scrypto_abi::*;
-}
 /// Scrypto data encoding/decoding and memory allocation scheme.
 pub mod buffer;
 /// Scrypto high level abstraction.
@@ -19,10 +15,18 @@ pub mod kernel;
 pub mod resource;
 /// Scrypto traits.
 pub mod traits;
-/// Scrypto primitive and common types.
-pub mod types;
 /// Utility functions, such as hashing and signature validation.
 pub mod utils;
+
+/// Scrypto blueprint ABI.
+pub mod abi {
+    pub use scrypto_abi::*;
+}
+/// Scrypto primitive types.
+pub mod types {
+    pub use scrypto_types::primitives::*;
+}
+pub use scrypto_types::rust;
 
 // Re-export Scrypto derive.
 extern crate scrypto_derive;
@@ -33,7 +37,7 @@ pub use scrypto_derive::*;
 macro_rules! args {
     ($($args: expr),*) => {
         {
-            let mut args = scrypto::types::rust::vec::Vec::new();
+            let mut args = scrypto::rust::vec::Vec::new();
             $(args.push(scrypto::buffer::scrypto_encode(&$args));)*
             args
         }
@@ -44,7 +48,7 @@ macro_rules! args {
 #[macro_export]
 macro_rules! error {
     ($($args: expr),+) => {{
-        scrypto::constructs::Logger::log(scrypto::types::Level::Error, scrypto::types::rust::format!($($args),+));
+        scrypto::constructs::Logger::log(scrypto::constructs::Level::Error, scrypto::rust::format!($($args),+));
     }};
 }
 
@@ -52,7 +56,7 @@ macro_rules! error {
 #[macro_export]
 macro_rules! warn {
     ($($args: expr),+) => {{
-        scrypto::constructs::Logger::log(scrypto::types::Level::Warn, scrypto::types::rust::format!($($args),+));
+        scrypto::constructs::Logger::log(scrypto::constructs::Level::Warn, scrypto::rust::format!($($args),+));
     }};
 }
 
@@ -60,7 +64,7 @@ macro_rules! warn {
 #[macro_export]
 macro_rules! info {
     ($($args: expr),+) => {{
-        scrypto::constructs::Logger::log(scrypto::types::Level::Info, scrypto::types::rust::format!($($args),+));
+        scrypto::constructs::Logger::log(scrypto::constructs::Level::Info, scrypto::rust::format!($($args),+));
     }};
 }
 
@@ -68,7 +72,7 @@ macro_rules! info {
 #[macro_export]
 macro_rules! debug {
     ($($args: expr),+) => {{
-        scrypto::constructs::Logger::log(scrypto::types::Level::Debug, scrypto::types::rust::format!($($args),+));
+        scrypto::constructs::Logger::log(scrypto::constructs::Level::Debug, scrypto::rust::format!($($args),+));
     }};
 }
 
@@ -76,6 +80,6 @@ macro_rules! debug {
 #[macro_export]
 macro_rules! trace {
     ($($args: expr),+) => {{
-        scrypto::constructs::Logger::log(scrypto::types::Level::Trace, scrypto::types::rust::format!($($args),+));
+        scrypto::constructs::Logger::log(scrypto::constructs::Level::Trace, scrypto::rust::format!($($args),+));
     }};
 }

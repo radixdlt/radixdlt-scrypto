@@ -46,6 +46,7 @@ pub use std::string;
 #[cfg(not(feature = "alloc"))]
 pub use std::vec;
 
+/// Collection types.
 pub mod collections {
     #[cfg(feature = "alloc")]
     extern crate alloc;

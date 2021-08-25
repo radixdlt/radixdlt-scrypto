@@ -5,18 +5,7 @@ compile_error!("Either feature `std` or `alloc` must be enabled for this crate."
 #[cfg(all(feature = "std", feature = "alloc"))]
 compile_error!("Feature `std` and `alloc` can't be enabled at the same time.");
 
-mod address;
-mod bid;
-mod h256;
-mod rid;
-mod u256;
-mod utils;
-
-/// A facade around all Rust types scrypto uses from `std` or `core + alloc`.
+/// Scrypto primitive types.
+pub mod primitives;
+/// A facade to Rust standard types.
 pub mod rust;
-
-pub use address::{Address, DecodeAddressError};
-pub use bid::BID;
-pub use h256::{DecodeH256Error, H256};
-pub use rid::RID;
-pub use u256::U256;

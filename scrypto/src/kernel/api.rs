@@ -1,7 +1,7 @@
 use sbor::{Decode, Encode};
 
-use crate::types::rust::string::String;
-use crate::types::rust::vec::Vec;
+use crate::rust::string::String;
+use crate::rust::vec::Vec;
 use crate::types::*;
 
 extern "C" {
@@ -134,7 +134,8 @@ pub struct GetComponentInfoInput {
 
 #[derive(Debug, Clone, Encode, Decode)]
 pub struct GetComponentInfoOutput {
-    pub result: Option<ComponentInfo>,
+    pub package: Address,
+    pub blueprint: String,
 }
 
 #[derive(Debug, Clone, Encode, Decode)]
@@ -183,7 +184,12 @@ pub struct PutComponentStorageOutput {}
 
 #[derive(Debug, Clone, Encode, Decode)]
 pub struct CreateResourceMutableInput {
-    pub info: ResourceInfo,
+    pub symbol: String,
+    pub name: String,
+    pub description: String,
+    pub url: String,
+    pub icon_url: String,
+    pub minter: Address,
 }
 
 #[derive(Debug, Clone, Encode, Decode)]
@@ -193,7 +199,12 @@ pub struct CreateResourceMutableOutput {
 
 #[derive(Debug, Clone, Encode, Decode)]
 pub struct CreateResourceFixedInput {
-    pub info: ResourceInfo,
+    pub symbol: String,
+    pub name: String,
+    pub description: String,
+    pub url: String,
+    pub icon_url: String,
+    pub supply: U256,
 }
 
 #[derive(Debug, Clone, Encode, Decode)]
@@ -209,7 +220,13 @@ pub struct GetResourceInfoInput {
 
 #[derive(Debug, Clone, Encode, Decode)]
 pub struct GetResourceInfoOutput {
-    pub result: Option<ResourceInfo>,
+    pub symbol: String,
+    pub name: String,
+    pub description: String,
+    pub url: String,
+    pub icon_url: String,
+    pub minter: Option<Address>,
+    pub supply: Option<U256>,
 }
 
 #[derive(Debug, Clone, Encode, Decode)]
@@ -352,7 +369,7 @@ pub struct DepositOutput {}
 
 #[derive(Debug, Clone, Encode, Decode)]
 pub struct EmitLogInput {
-    pub level: Level,
+    pub level: String,
     pub message: String,
 }
 

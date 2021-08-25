@@ -1,6 +1,6 @@
-use crate::types::rust::mem::forget;
-use crate::types::rust::ptr::copy;
-use crate::types::rust::vec::Vec;
+use crate::rust::mem::forget;
+use crate::rust::ptr::copy;
+use crate::rust::vec::Vec;
 
 const WORD: usize = core::mem::size_of::<usize>();
 

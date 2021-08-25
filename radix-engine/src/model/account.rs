@@ -1,5 +1,5 @@
 use sbor::*;
-use scrypto::types::rust::collections::*;
+use scrypto::rust::collections::*;
 use scrypto::types::*;
 
 /// An account accounts for buckets owned by a package, component or public key.

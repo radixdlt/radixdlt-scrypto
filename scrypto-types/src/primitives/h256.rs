@@ -1,5 +1,5 @@
+use crate::primitives::*;
 use crate::rust::fmt;
-use crate::utils::*;
 
 /// Represents a 32-byte hash digest.
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
@@ -71,8 +71,8 @@ impl fmt::Display for H256 {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
     use crate::rust::string::ToString;
-    use crate::*;
 
     #[test]
     fn test_from_to_string() {

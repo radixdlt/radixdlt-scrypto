@@ -1,7 +1,7 @@
+use crate::primitives::*;
 use crate::rust::fmt;
 use crate::rust::vec;
 use crate::rust::vec::Vec;
-use crate::utils::*;
 
 // TODO: store the full raw bytes to avoid copying, see H256.
 
@@ -119,8 +119,8 @@ impl fmt::Display for Address {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
     use crate::rust::string::ToString;
-    use crate::*;
 
     #[test]
     fn test_from_to_string() {

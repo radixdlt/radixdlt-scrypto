@@ -3,10 +3,10 @@ use sbor::{Decode, Describe, Encode};
 
 use crate::buffer::*;
 use crate::kernel::*;
-use crate::types::rust::borrow::ToOwned;
-use crate::types::rust::string::String;
-use crate::types::rust::string::ToString;
-use crate::types::rust::vec::Vec;
+use crate::rust::borrow::ToOwned;
+use crate::rust::string::String;
+use crate::rust::string::ToString;
+use crate::rust::vec::Vec;
 use crate::types::*;
 
 /// A piece of code that defines the structure and methods of components.

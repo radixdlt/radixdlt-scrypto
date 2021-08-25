@@ -23,7 +23,7 @@ pub fn handle_new_account<'a>(_matches: &ArgMatches<'a>) {
     let mut runtime = Runtime::new(tx_hash, &mut ledger);
 
     if runtime.get_resource(Address::RadixToken).is_none() {
-        let xrd = Resource::new(ResourceInfo {
+        let xrd = Resource {
             symbol: "xrd".to_owned(),
             name: "Radix".to_owned(),
             description: "The Radix Public Network's native token, used to pay the network's required transaction fees and to secure the network through staking to its validator nodes.".to_owned(),
@@ -31,7 +31,7 @@ pub fn handle_new_account<'a>(_matches: &ArgMatches<'a>) {
             icon_url: "https://assets.radixdlt.com/icons/icon-xrd-32x32.png".to_owned(),
             minter: Some(Address::System),
             supply: None,
-        });
+        };
         runtime.put_resource(Address::RadixToken, xrd);
     }
 

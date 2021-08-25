@@ -2,16 +2,16 @@ use colored::*;
 use sbor::*;
 use scrypto::buffer::*;
 use scrypto::kernel::*;
-use scrypto::types::rust::borrow::ToOwned;
-use scrypto::types::rust::cell::RefCell;
-use scrypto::types::rust::collections::*;
-use scrypto::types::rust::fmt;
-use scrypto::types::rust::format;
-use scrypto::types::rust::rc::Rc;
-use scrypto::types::rust::string::String;
-use scrypto::types::rust::string::ToString;
-use scrypto::types::rust::vec;
-use scrypto::types::rust::vec::Vec;
+use scrypto::rust::borrow::ToOwned;
+use scrypto::rust::cell::RefCell;
+use scrypto::rust::collections::*;
+use scrypto::rust::fmt;
+use scrypto::rust::format;
+use scrypto::rust::rc::Rc;
+use scrypto::rust::string::String;
+use scrypto::rust::string::ToString;
+use scrypto::rust::vec;
+use scrypto::rust::vec::Vec;
 use scrypto::types::*;
 use wasmi::*;
 
@@ -405,14 +405,14 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         &mut self,
         input: GetComponentInfoInput,
     ) -> Result<GetComponentInfoOutput, RuntimeError> {
-        let result = self
+        let component = self
             .runtime
             .get_component(input.component)
-            .map(|c| ComponentInfo {
-                package: c.package().clone(),
-                blueprint: c.blueprint().to_string(),
-            });
-        Ok(GetComponentInfoOutput { result })
+            .ok_or(RuntimeError::ComponentNotFound(input.component))?;
+        Ok(GetComponentInfoOutput {
+            package: component.package(),
+            blueprint: component.blueprint().to_owned(),
+        })
     }
 
     pub fn get_component_state(
@@ -456,21 +456,26 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         &mut self,
         input: CreateResourceMutableInput,
     ) -> Result<CreateResourceMutableOutput, RuntimeError> {
-        let info = input.info;
-        if info.minter.is_none() || info.supply.is_some() {
-            return Err(RuntimeError::InvalidResourceParameter);
-        }
+        let resource = Resource {
+            symbol: input.symbol,
+            name: input.name,
+            description: input.description,
+            url: input.url,
+            icon_url: input.icon_url,
+            minter: Some(input.minter),
+            supply: None,
+        };
 
         let address = self
             .runtime
-            .new_resource_address(self.package()?, info.symbol.as_str());
+            .new_resource_address(self.package()?, resource.symbol.as_str());
 
         if self.runtime.get_resource(address).is_some() {
             return Err(RuntimeError::ResourceAlreadyExists(address));
         } else {
             trace!(self, "New resource: {:02x?}", address);
 
-            self.runtime.put_resource(address, Resource::new(info));
+            self.runtime.put_resource(address, resource);
         }
         Ok(CreateResourceMutableOutput { resource: address })
     }
@@ -479,25 +484,29 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         &mut self,
         input: CreateResourceFixedInput,
     ) -> Result<CreateResourceFixedOutput, RuntimeError> {
-        let info = input.info;
-        if info.minter.is_some() || info.supply.is_none() {
-            return Err(RuntimeError::InvalidResourceParameter);
-        }
-        let supply = info.supply.clone().unwrap();
+        let resource = Resource {
+            symbol: input.symbol,
+            name: input.name,
+            description: input.description,
+            url: input.url,
+            icon_url: input.icon_url,
+            minter: None,
+            supply: Some(input.supply.clone()),
+        };
 
         let address = self
             .runtime
-            .new_resource_address(self.package()?, info.symbol.as_str());
+            .new_resource_address(self.package()?, resource.symbol.as_str());
 
         if self.runtime.get_resource(address).is_some() {
             return Err(RuntimeError::ResourceAlreadyExists(address));
         } else {
             trace!(self, "New resource: {:02x?}", address);
 
-            self.runtime.put_resource(address, Resource::new(info));
+            self.runtime.put_resource(address, resource);
         }
 
-        let bucket = Bucket::new(supply, address);
+        let bucket = Bucket::new(input.supply, address);
         let bid = self.runtime.new_transient_bid();
         self.buckets.insert(bid, bucket);
 
@@ -511,11 +520,20 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         &mut self,
         input: GetResourceInfoInput,
     ) -> Result<GetResourceInfoOutput, RuntimeError> {
+        let resource = self
+            .runtime
+            .get_resource(input.resource)
+            .ok_or(RuntimeError::ResourceNotFound(input.resource))?
+            .clone();
+
         Ok(GetResourceInfoOutput {
-            result: self
-                .runtime
-                .get_resource(input.resource)
-                .map(|r| r.info().clone()),
+            symbol: resource.symbol,
+            name: resource.name,
+            description: resource.description,
+            url: resource.url,
+            icon_url: resource.icon_url,
+            minter: resource.minter,
+            supply: resource.supply,
         })
     }
 
@@ -526,8 +544,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         let resource = self
             .runtime
             .get_resource(input.resource)
-            .ok_or(RuntimeError::ResourceNotFound(input.resource))?
-            .info();
+            .ok_or(RuntimeError::ResourceNotFound(input.resource))?;
 
         match resource.minter {
             Some(address) => {
@@ -830,7 +847,16 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
     }
 
     pub fn emit_log(&mut self, input: EmitLogInput) -> Result<EmitLogOutput, RuntimeError> {
-        self.runtime.add_log(input.level, input.message);
+        let level = match input.level.as_str() {
+            "ERROR" => Ok(Level::Error),
+            "WARN" => Ok(Level::Warn),
+            "INFO" => Ok(Level::Info),
+            "DEBUG" => Ok(Level::Debug),
+            "TRACE" => Ok(Level::Trace),
+            _ => Err(RuntimeError::InvalidLogLevel),
+        };
+
+        self.runtime.add_log(level?, input.message);
 
         Ok(EmitLogOutput {})
     }
@@ -1016,7 +1042,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
 
     /// Apply the transform function.
     #[inline]
-    fn transform<T: Decode + Encode + scrypto::types::rust::fmt::Debug>(
+    fn transform<T: Decode + Encode + scrypto::rust::fmt::Debug>(
         &mut self,
         dec: &mut Decoder,
         enc: &mut Encoder,

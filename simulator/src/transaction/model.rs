@@ -1,4 +1,5 @@
 use radix_engine::execution::*;
+use radix_engine::model::Level;
 use sbor::DecodeError;
 use scrypto::types::*;
 

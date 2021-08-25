@@ -1,6 +1,6 @@
 use sbor::*;
-use scrypto::types::rust::fmt;
-use scrypto::types::rust::vec::Vec;
+use scrypto::rust::fmt;
+use scrypto::rust::vec::Vec;
 use scrypto::types::*;
 use wasmi::*;
 
@@ -45,8 +45,6 @@ pub enum RuntimeError {
 
     ResourceAlreadyExists(Address),
 
-    InvalidResourceParameter,
-
     PackageNotFound(Address),
 
     ComponentNotFound(Address),
@@ -70,6 +68,8 @@ pub enum RuntimeError {
     ReferenceNotAllowed,
 
     VmNotStarted,
+
+    InvalidLogLevel,
 }
 
 impl fmt::Display for RuntimeError {

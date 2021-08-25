@@ -3,8 +3,8 @@
 use scrypto::buffer::{scrypto_decode, scrypto_encode, scrypto_wrap};
 use scrypto::constructs::{Blueprint, Component};
 use scrypto::kernel::*;
-use scrypto::types::rust::string::ToString;
-use scrypto::types::rust::vec::Vec;
+use scrypto::rust::string::ToString;
+use scrypto::rust::vec::Vec;
 use scrypto::types::*;
 use scrypto::*;
 
@@ -59,10 +59,8 @@ pub extern "C" fn kernel(op: u32, input_ptr: *const u8, input_len: usize) -> *mu
             assert_eq!(input.component, Address::from(COMPONENT_ADDRESS));
 
             let output = GetComponentInfoOutput {
-                result: Some(ComponentInfo {
-                    package: Address::from(PACKAGE_ADDRESS),
-                    blueprint: BLUEPRINT_NAME.to_string(),
-                }),
+                package: Address::from(PACKAGE_ADDRESS),
+                blueprint: BLUEPRINT_NAME.to_string(),
             };
             output_bytes = scrypto_encode(&output);
         }

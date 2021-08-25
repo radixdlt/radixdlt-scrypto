@@ -1,5 +1,5 @@
 use sbor::*;
-use scrypto::types::rust::vec::Vec;
+use scrypto::rust::vec::Vec;
 
 /// A package is a piece of code published on-chain.
 #[derive(Debug, Clone, Describe, Encode, Decode)]

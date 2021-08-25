@@ -32,15 +32,14 @@ pub fn handle_show<'a>(matches: &ArgMatches<'a>) {
             let resource = ledger.get_resource(address);
             match resource {
                 Some(r) => {
-                    let info = r.info();
                     println!("Resource: {}", address.to_string());
-                    println!("Symbol: {}", info.symbol);
-                    println!("Name: {}", info.name);
-                    println!("Description: {}", info.description);
-                    println!("URL: {}", info.url);
-                    println!("Icon URL: {}", info.icon_url);
-                    println!("Minter: {:?}", info.minter);
-                    println!("supply: {:?}", info.supply);
+                    println!("Symbol: {}", r.symbol);
+                    println!("Name: {}", r.name);
+                    println!("Description: {}", r.description);
+                    println!("URL: {}", r.url);
+                    println!("Icon URL: {}", r.icon_url);
+                    println!("Minter: {:?}", r.minter);
+                    println!("supply: {:?}", r.supply);
                 }
                 None => {
                     println!("Resource not found");

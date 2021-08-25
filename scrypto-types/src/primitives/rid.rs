@@ -1,7 +1,7 @@
+use crate::primitives::*;
 use crate::rust::string::String;
 use crate::rust::string::ToString;
 use crate::rust::vec::Vec;
-use crate::utils::*;
 
 /// Reference to a bucket.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -90,8 +90,8 @@ impl ToString for RID {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
     use crate::rust::string::ToString;
-    use crate::*;
 
     #[test]
     fn test_from_to_string() {

@@ -3,7 +3,7 @@ use sbor::{Decode, Describe, Encode};
 
 use crate::constructs::*;
 use crate::kernel::*;
-use crate::types::rust::borrow::ToOwned;
+use crate::rust::borrow::ToOwned;
 use crate::types::*;
 
 /// A package consists of blueprints.

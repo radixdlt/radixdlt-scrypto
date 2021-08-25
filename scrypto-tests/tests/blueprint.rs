@@ -3,7 +3,7 @@
 use scrypto::buffer::*;
 use scrypto::constructs::*;
 use scrypto::kernel::*;
-use scrypto::types::rust::vec;
+use scrypto::rust::vec;
 use scrypto::types::*;
 use scrypto::*;
 use serde::Serialize;

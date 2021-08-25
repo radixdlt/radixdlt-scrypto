@@ -2,7 +2,7 @@ use sbor::model::*;
 use sbor::{Decode, Describe, Encode};
 
 use crate::kernel::*;
-use crate::types::rust::borrow::ToOwned;
+use crate::rust::borrow::ToOwned;
 use crate::types::*;
 
 /// A borrowed rid to a `Badges` bucket.

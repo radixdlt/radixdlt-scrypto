@@ -2,9 +2,9 @@
 
 use scrypto::buffer::scrypto_alloc;
 use scrypto::import;
-use scrypto::types::rust::string::String;
-use scrypto::types::rust::string::ToString;
-use scrypto::types::rust::vec::Vec;
+use scrypto::rust::string::String;
+use scrypto::rust::string::ToString;
+use scrypto::rust::vec::Vec;
 
 // base directory: `scrypto-derive`
 import! { "../scrypto-tests/tests/abi.json" }

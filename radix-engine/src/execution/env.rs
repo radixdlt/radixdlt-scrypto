@@ -1,4 +1,4 @@
-use scrypto::types::rust::format;
+use scrypto::rust::format;
 use wasmi::*;
 
 /// Kernel entrance function index.

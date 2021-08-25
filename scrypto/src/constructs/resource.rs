@@ -1,10 +1,11 @@
 use sbor::model::*;
 use sbor::{Decode, Describe, Encode};
 
+use crate::constructs::*;
 use crate::kernel::*;
 use crate::resource::*;
-use crate::types::rust::borrow::ToOwned;
-use crate::types::rust::string::ToString;
+use crate::rust::borrow::ToOwned;
+use crate::rust::string::ToString;
 use crate::types::*;
 
 /// A primitive piece of state which has a single owner, and behaves like a physical object.
@@ -43,15 +44,12 @@ impl Resource {
         minter: Address,
     ) -> Self {
         let input = CreateResourceMutableInput {
-            info: ResourceInfo {
-                symbol: symbol.to_string(),
-                name: name.to_string(),
-                description: description.to_string(),
-                url: url.to_string(),
-                icon_url: icon_url.to_string(),
-                minter: Some(minter),
-                supply: None,
-            },
+            symbol: symbol.to_string(),
+            name: name.to_string(),
+            description: description.to_string(),
+            url: url.to_string(),
+            icon_url: icon_url.to_string(),
+            minter,
         };
         let output: CreateResourceMutableOutput = call_kernel(CREATE_RESOURCE_MUTABLE, input);
 
@@ -67,15 +65,12 @@ impl Resource {
         supply: U256,
     ) -> T {
         let input = CreateResourceFixedInput {
-            info: ResourceInfo {
-                symbol: symbol.to_string(),
-                name: name.to_string(),
-                description: description.to_string(),
-                url: url.to_string(),
-                icon_url: icon_url.to_string(),
-                minter: None,
-                supply: Some(supply),
-            },
+            symbol: symbol.to_string(),
+            name: name.to_string(),
+            description: description.to_string(),
+            url: url.to_string(),
+            icon_url: icon_url.to_string(),
+            supply,
         };
         let output: CreateResourceFixedOutput = call_kernel(CREATE_RESOURCE_FIXED, input);
 
@@ -88,7 +83,15 @@ impl Resource {
         };
         let output: GetResourceInfoOutput = call_kernel(GET_RESOURCE_INFO, input);
 
-        output.result.unwrap()
+        ResourceInfo {
+            symbol: output.symbol,
+            name: output.name,
+            description: output.description,
+            url: output.url,
+            icon_url: output.icon_url,
+            minter: output.minter,
+            supply: output.supply,
+        }
     }
 
     fn mint(&self, amount: U256) -> BID {

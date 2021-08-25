@@ -57,6 +57,6 @@ pub fn execute(
         transaction,
         success,
         results,
-        logs: runtime.logs().to_owned(),
+        logs: runtime.logs().clone(),
     })
 }

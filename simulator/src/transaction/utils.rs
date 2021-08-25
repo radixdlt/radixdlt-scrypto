@@ -1,5 +1,5 @@
 use colored::*;
-use scrypto::types::*;
+use radix_engine::model::Level;
 
 use crate::transaction::*;
 

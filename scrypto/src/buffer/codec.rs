@@ -1,6 +1,6 @@
 use sbor::*;
 
-use crate::types::rust::vec::Vec;
+use crate::rust::vec::Vec;
 
 /// Encodes a data structure into byte array.
 pub fn scrypto_encode<T: Encode>(v: &T) -> Vec<u8> {
@@ -19,9 +19,9 @@ mod tests {
     use crate::buffer::*;
     use crate::kernel::*;
     use crate::resource::*;
-    use crate::types::rust::string::String;
-    use crate::types::rust::string::ToString;
-    use crate::types::rust::vec;
+    use crate::rust::string::String;
+    use crate::rust::string::ToString;
+    use crate::rust::vec;
     use crate::types::*;
 
     #[test]

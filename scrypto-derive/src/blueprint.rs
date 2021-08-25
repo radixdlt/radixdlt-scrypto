@@ -85,8 +85,8 @@ pub fn handle_blueprint(input: TokenStream, output_abi: bool) -> TokenStream {
         pub extern "C" fn #abi_ident() -> *mut u8 {
             use sbor::{self, Describe};
             use scrypto::constructs::Context;
-            use scrypto::types::rust::string::ToString;
-            use scrypto::types::rust::vec;
+            use scrypto::rust::string::ToString;
+            use scrypto::rust::vec;
 
             let output = ::scrypto::abi::Blueprint {
                 package: Context::package_address().to_string(),
@@ -396,8 +396,8 @@ mod tests {
                 pub extern "C" fn Test_abi() -> *mut u8 {
                     use sbor::{self, Describe};
                     use scrypto::constructs::Context;
-                    use scrypto::types::rust::string::ToString;
-                    use scrypto::types::rust::vec;
+                    use scrypto::rust::string::ToString;
+                    use scrypto::rust::vec;
                     let output = ::scrypto::abi::Blueprint {
                         package: Context::package_address().to_string(),
                         blueprint: "Test".to_string(),

@@ -1,8 +1,7 @@
+use crate::primitives::*;
 use crate::rust::string::String;
 use crate::rust::string::ToString;
 use crate::rust::vec::Vec;
-use crate::utils::*;
-use crate::H256;
 
 /// Resource bucket id.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -103,8 +102,8 @@ impl ToString for BID {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
     use crate::rust::string::ToString;
-    use crate::*;
 
     #[test]
     fn test_from_to_string() {

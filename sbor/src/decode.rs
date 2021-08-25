@@ -1,5 +1,5 @@
 #[cfg(any(feature = "scrypto_std", feature = "scrypto_alloc"))]
-use scrypto_types::{Address, BID, H256, RID, U256};
+use scrypto_types::primitives::{Address, BID, H256, RID, U256};
 
 use crate::constants::*;
 use crate::rust::boxed::Box;

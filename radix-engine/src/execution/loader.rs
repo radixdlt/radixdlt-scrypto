@@ -1,4 +1,4 @@
-use scrypto::types::rust::borrow::ToOwned;
+use scrypto::rust::borrow::ToOwned;
 use wasmi::*;
 
 use crate::execution::*;

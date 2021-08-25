@@ -4,9 +4,9 @@ use sbor::{Decode, Describe, Encode};
 use crate::buffer::*;
 use crate::constructs::*;
 use crate::kernel::*;
-use crate::types::rust::borrow::ToOwned;
-use crate::types::rust::string::ToString;
-use crate::types::rust::vec::Vec;
+use crate::rust::borrow::ToOwned;
+use crate::rust::string::ToString;
+use crate::rust::vec::Vec;
 use crate::types::*;
 
 /// A self-executing program that holds resources and exposed actions to other entities.
@@ -63,7 +63,10 @@ impl Component {
         };
         let output: GetComponentInfoOutput = call_kernel(GET_COMPONENT_INFO, input);
 
-        output.result.unwrap()
+        ComponentInfo {
+            package: output.package,
+            blueprint: output.blueprint,
+        }
     }
 
     pub fn get_blueprint(&self) -> Blueprint {
