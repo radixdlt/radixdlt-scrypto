@@ -23,6 +23,7 @@ echo "Testing with no_std"
 (cd scrypto-abi; cargo test --no-default-features --features alloc)
 (cd scrypto-types; cargo test --no-default-features --features alloc)
 (cd scrypto-tests; cargo test --no-default-features --features alloc)
+(cd radix-engine; cargo test --no-default-features --features alloc)
 
 echo "Testing examples"
 (cd examples/helloworld; cargo build --release)

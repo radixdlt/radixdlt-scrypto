@@ -87,6 +87,9 @@ jobs:
     - name: Run tests
       run: cargo test --verbose
       working-directory: radix-engine
+    - name: Run tests (no_std)
+      run: cargo test --verbose --no-default-features --features alloc
+      working-directory: radix-engine
   simulator:
     name: Build simulator
     runs-on: ubuntu-latest

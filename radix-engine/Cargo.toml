@@ -4,9 +4,14 @@ version = "0.1.0"
 edition = "2018"
 
 [dependencies]
-scrypto = { version = "0.1", path = "../scrypto", features = ["json_std"] }
-sbor = { version = "0.1", path = "../sbor", features = ["scrypto_std"] }
-wasmi = { version = "0.9" }
-colored = { version = "2.0" }
-uuid = { version = "0.8", features = ["v4"] }
-hex = { version = "0.4" }
+sbor = { version = "0.1", path = "../sbor", default-features = false }
+scrypto = { version = "0.1", path = "../scrypto", default-features = false}
+wasmi = { version = "0.9", default-features = false }
+colored = { version = "2.0", default-features = false }
+uuid = { version = "0.8", default-features = false, features = ["v4"] }
+
+[features]
+# You should enable either `std` or `alloc`
+default = ["std"]
+std = ["sbor/std", "sbor/scrypto_std", "scrypto/std", "wasmi/std"]
+alloc = ["sbor/alloc", "sbor/scrypto_alloc", "scrypto/alloc", "wasmi/core"]

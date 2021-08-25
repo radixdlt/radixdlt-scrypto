@@ -4,12 +4,12 @@ use crate::types::rust::vec::Vec;
 
 /// Encodes a data structure into byte array.
 pub fn scrypto_encode<T: Encode>(v: &T) -> Vec<u8> {
-    sbor::sbor_encode_with_metadata(v)
+    sbor::encode_with_metadata(v)
 }
 
 /// Decodes an instance of `T` from a slice.
 pub fn scrypto_decode<'de, T: Decode>(buf: &'de [u8]) -> Result<T, DecodeError> {
-    sbor::sbor_decode_with_metadata(buf)
+    sbor::decode_with_metadata(buf)
 }
 
 #[cfg(test)]

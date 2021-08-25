@@ -1,6 +1,6 @@
-use std::fmt;
-
 use sbor::*;
+use scrypto::types::rust::fmt;
+use scrypto::types::rust::vec::Vec;
 use scrypto::types::*;
 use wasmi::*;
 

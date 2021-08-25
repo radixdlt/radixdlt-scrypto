@@ -1,4 +1,6 @@
 use sbor::*;
+use scrypto::types::rust::string::String;
+use scrypto::types::rust::vec::Vec;
 use scrypto::types::*;
 
 /// A component is an instance of blueprint.

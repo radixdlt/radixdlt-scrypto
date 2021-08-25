@@ -1,13 +1,17 @@
-use std::cell::RefCell;
-use std::fmt;
-use std::rc::Rc;
-use std::time::Instant;
-
 use colored::*;
 use sbor::*;
 use scrypto::buffer::*;
 use scrypto::kernel::*;
+use scrypto::types::rust::borrow::ToOwned;
+use scrypto::types::rust::cell::RefCell;
 use scrypto::types::rust::collections::*;
+use scrypto::types::rust::fmt;
+use scrypto::types::rust::format;
+use scrypto::types::rust::rc::Rc;
+use scrypto::types::rust::string::String;
+use scrypto::types::rust::string::ToString;
+use scrypto::types::rust::vec;
+use scrypto::types::rust::vec::Vec;
 use scrypto::types::*;
 use wasmi::*;
 
@@ -102,7 +106,6 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         function: String,
         args: Vec<Vec<u8>>,
     ) -> Result<Vec<u8>, RuntimeError> {
-        let now = Instant::now();
         info!(
             self,
             "Run started: package = {}, export = {}", package, export
@@ -146,11 +149,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
             }
         };
 
-        info!(
-            self,
-            "Run finished: time elapsed = {} ms",
-            now.elapsed().as_millis()
-        );
+        info!(self, "Run finished");
 
         Ok(output)
     }
@@ -318,6 +317,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
     }
 
     /// Log a message to console.
+    #[allow(unused_variables)]
     pub fn log(&self, level: Level, msg: String) {
         if self.trace {
             let (l, m) = match level {
@@ -328,6 +328,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
                 Level::Trace => ("TRACE".normal(), msg.to_string().normal()),
             };
 
+            #[cfg(not(feature = "alloc"))]
             println!("{}[{:5}] {}", "  ".repeat(self.depth), l, m);
         }
     }
@@ -1015,7 +1016,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
 
     /// Apply the transform function.
     #[inline]
-    fn transform<T: Decode + Encode + std::fmt::Debug>(
+    fn transform<T: Decode + Encode + scrypto::types::rust::fmt::Debug>(
         &mut self,
         dec: &mut Decoder,
         enc: &mut Encoder,
@@ -1117,7 +1118,6 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         handler: fn(&mut Self, input: I) -> Result<O, RuntimeError>,
         trace: bool,
     ) -> Result<Option<RuntimeValue>, Trap> {
-        let now = Instant::now();
         let input_ptr: u32 = args.nth_checked(1)?;
         let input_len: u32 = args.nth_checked(2)?;
         let input_bytes = self
@@ -1134,12 +1134,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         let output_bytes = scrypto_encode(&output);
         let output_ptr = self.send_bytes(&output_bytes).map_err(Trap::from)?;
         if trace {
-            trace!(
-                self,
-                "{:02x?}, processing time = {} ms",
-                output,
-                now.elapsed().as_millis()
-            );
+            trace!(self, "{:02x?}", output);
         }
 
         Ok(Some(RuntimeValue::I32(output_ptr)))

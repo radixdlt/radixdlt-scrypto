@@ -3,10 +3,9 @@ use std::fs::File;
 use std::io::prelude::*;
 use std::path::{Path, PathBuf};
 
+use radix_engine::ledger::*;
+use radix_engine::model::*;
 use scrypto::types::*;
-
-use crate::ledger::*;
-use crate::model::*;
 
 /// A file-based ledger that stores substates in a folder.
 pub struct FileBasedLedger {
@@ -59,11 +58,11 @@ impl FileBasedLedger {
     }
 
     pub fn encode<T: sbor::Encode>(v: &T) -> Vec<u8> {
-        sbor::sbor_encode_with_metadata(v)
+        sbor::encode_with_metadata(v)
     }
 
     pub fn decode<'de, T: sbor::Decode>(bytes: Vec<u8>) -> T {
-        sbor::sbor_decode_with_metadata(&bytes).unwrap()
+        sbor::decode_with_metadata(&bytes).unwrap()
     }
 }
 

@@ -1,4 +1,6 @@
 use scrypto::types::rust::collections::*;
+use scrypto::types::rust::string::String;
+use scrypto::types::rust::vec::Vec;
 use scrypto::types::Level;
 use scrypto::types::*;
 use scrypto::utils::*;
