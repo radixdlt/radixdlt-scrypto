@@ -1,4 +1,3 @@
-use colored::*;
 use radix_engine::execution::*;
 use radix_engine::model::*;
 use scrypto::rust::collections::*;

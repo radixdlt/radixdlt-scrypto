@@ -1,10 +1,7 @@
 use scrypto::abi;
 use scrypto::buffer::*;
-use scrypto::rust::collections::*;
 use scrypto::types::*;
-use std::fs;
 
-use crate::cli::*;
 use crate::transaction::*;
 
 /// Construct a CALL_FUNCTION transaction.
