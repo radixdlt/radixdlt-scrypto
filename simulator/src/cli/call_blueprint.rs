@@ -47,7 +47,7 @@ pub fn handle_call_blueprint<'a>(matches: &ArgMatches<'a>) {
     }
 
     let transaction = Transaction {
-        actions: vec![Action::CallBlueprint {
+        instructions: vec![Instruction::InvokeFunction {
             package,
             blueprint,
             function,
@@ -55,14 +55,6 @@ pub fn handle_call_blueprint<'a>(matches: &ArgMatches<'a>) {
         }],
     };
 
-    let result = execute(transaction, true);
-
-    match result {
-        Err(e) => {
-            println!("Error: {:?}", e);
-        }
-        Ok(r) => {
-            print_receipt(r);
-        }
-    }
+    let receipt = execute(transaction, true);
+    print_receipt(receipt);
 }

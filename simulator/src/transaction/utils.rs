@@ -1,11 +1,11 @@
 use colored::*;
-use radix_engine::model::Level;
+use radix_engine::model::*;
 
 use crate::transaction::*;
 
 pub fn print_receipt(receipt: TransactionReceipt) {
-    for (i, action) in receipt.transaction.actions.iter().enumerate() {
-        println!("Action: {:?}", action);
+    for (i, action) in receipt.transaction.instructions.iter().enumerate() {
+        println!("Instruction: {:?}", action);
         match receipt.results.get(i) {
             Some(r) => {
                 println!("Result: {:02x?}", r);

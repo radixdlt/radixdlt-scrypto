@@ -40,21 +40,13 @@ pub fn handle_call_component<'a>(matches: &ArgMatches<'a>) {
     }
 
     let transaction = Transaction {
-        actions: vec![Action::CallComponent {
+        instructions: vec![Instruction::InvokeMethod {
             component,
             method,
             args,
         }],
     };
 
-    let result = execute(transaction, true);
-
-    match result {
-        Err(e) => {
-            println!("Error: {:?}", e);
-        }
-        Ok(r) => {
-            print_receipt(r);
-        }
-    }
+    let receipt = execute(transaction, true);
+    print_receipt(receipt);
 }

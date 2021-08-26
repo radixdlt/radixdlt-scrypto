@@ -29,7 +29,7 @@ pub fn handle_export_abi<'a>(matches: &ArgMatches<'a>) {
     let package: Address = matches.value_of(ARG_PACKAGE).unwrap().into();
     let blueprint = matches.value_of(ARG_BLUEPRINT).unwrap();
 
-    let result = get_abi(package, blueprint, true);
+    let result = export_abi(package, blueprint, true);
 
     match result {
         Err(e) => {
