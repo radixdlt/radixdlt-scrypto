@@ -11,6 +11,8 @@ pub mod buffer;
 pub mod constructs;
 /// Kernel APIs and helper functions.
 pub mod kernel;
+/// The prelude of Scrypto library.
+pub mod prelude;
 /// Scrypto resource containers and references.
 pub mod resource;
 /// Scrypto traits.
