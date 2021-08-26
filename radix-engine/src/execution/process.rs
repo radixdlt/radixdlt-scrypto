@@ -170,7 +170,6 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
             module: module.clone(),
             memory: memory.clone(),
         };
-        assert!(self.vm.is_none(), "Each process can run at most once.");
         self.vm = Some(vm);
 
         // run the main function

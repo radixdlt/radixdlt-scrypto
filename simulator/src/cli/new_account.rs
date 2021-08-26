@@ -1,7 +1,8 @@
 use clap::{crate_version, App, ArgMatches, SubCommand};
 use radix_engine::execution::*;
 use radix_engine::model::*;
-use rand::RngCore;
+use scrypto::buffer::*;
+use scrypto::rust::collections::*;
 use scrypto::types::*;
 use scrypto::utils::*;
 use uuid::Uuid;
@@ -22,6 +23,7 @@ pub fn handle_new_account<'a>(_matches: &ArgMatches<'a>) {
     let mut ledger = FileBasedLedger::new(get_data_dir());
     let mut runtime = Runtime::new(tx_hash, &mut ledger);
 
+    // create XRD native token
     if runtime.get_resource(Address::RadixToken).is_none() {
         let xrd = Resource {
             symbol: "xrd".to_owned(),
@@ -35,23 +37,44 @@ pub fn handle_new_account<'a>(_matches: &ArgMatches<'a>) {
         runtime.put_resource(Address::RadixToken, xrd);
     }
 
-    // mocked key pair
-    let mut data = [0u8; 33];
-    rand::thread_rng().fill_bytes(&mut data);
-    let address = Address::PublicKey(data);
+    // publish smart account blueprint
+    let package = Address::Package([0u8; 26]);
+    if runtime.get_package(package).is_none() {
+        runtime.put_package(
+            package,
+            Package::new(include_bytes!("account.wasm").to_vec()),
+        );
+    }
+    // create new account
+    let mut process = Process::new(0, false, &mut runtime);
+    let output = process
+        .target_function(package, "Account", "new".to_owned(), Vec::new())
+        .and_then(|target| process.run(target))
+        .unwrap();
+    process.finalize().unwrap();
+    let component: Address = scrypto_decode(&output).unwrap();
 
-    // account
-    let mut account = Account::new();
-    let bid = runtime.new_persisted_bid();
-    account.insert_bucket(Address::RadixToken, bid);
-    runtime.put_account(address, account);
-
-    // bucket
+    // allocate free XRD
+    let mut buckets = HashMap::new();
+    let bid = runtime.new_transient_bid();
     let bucket = Bucket::new(1_000_000.into(), Address::RadixToken);
-    runtime.put_bucket(bid, bucket);
+    buckets.insert(bid, bucket);
+
+    // deposit
+    let mut process2 = Process::new(0, false, &mut runtime);
+    process2.put_resources(buckets, HashMap::new());
+    process2
+        .target_method(
+            component,
+            "deposit_tokens".to_owned(),
+            vec![scrypto_encode(&bid)],
+        )
+        .and_then(|target| process2.run(target))
+        .unwrap();
+    process2.finalize().unwrap();
 
     // flush
     runtime.flush();
 
-    println!("New account: {}", address);
+    println!("New account: {}", component);
 }
