@@ -4,19 +4,19 @@ use radix_engine::model::*;
 use crate::transaction::*;
 
 pub fn print_receipt(receipt: TransactionReceipt) {
-    for (i, action) in receipt.transaction.instructions.iter().enumerate() {
-        println!("Instruction #{}: {:?}", i, action);
-        match receipt.results.get(i) {
-            Some(r) => {
-                println!("Result: {:02x?}", r);
-            }
-            None => {
-                println!("Skipped");
-            }
-        }
-        println!();
+    println!("{}", "Instructions:".bold());
+    for inst in receipt.transaction.instructions {
+        println!("|- {:?}", inst);
     }
+    println!();
 
+    println!("{}", "Results:".bold());
+    for result in receipt.results {
+        println!("|- {:02x?}", result);
+    }
+    println!();
+
+    println!("{}", "Logs:".bold());
     for (level, msg) in receipt.logs {
         let (l, m) = match level {
             Level::Error => ("ERROR".red(), msg.red()),
@@ -25,6 +25,7 @@ pub fn print_receipt(receipt: TransactionReceipt) {
             Level::Debug => ("DEBUG".cyan(), msg.cyan()),
             Level::Trace => ("TRACE".normal(), msg.normal()),
         };
-        println!("[{:5}] {}", l, m);
+        println!("|- [{:5}] {}", l, m);
     }
+    println!();
 }
