@@ -9,11 +9,11 @@ blueprint! {
     }
 
     impl Account {
-        pub fn new() -> Account {
+        pub fn new() -> Component {
             Account {
                 tokens: HashMap::new(),
                 badges: HashMap::new(),
-            }
+            }.instantiate()
         }
 
         /// Deposit tokens into this account

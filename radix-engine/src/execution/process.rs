@@ -1045,10 +1045,37 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
             constants::TYPE_FIELDS_UNIT => Ok(()),
             // collections
             constants::TYPE_TREE_SET | constants::TYPE_HASH_SET => {
-                todo!()
+                // element type
+                let ele_ty = dec.read_type().map_err(|e| RuntimeError::InvalidData(e))?;
+                enc.write_type(ele_ty);
+                // length
+                let len = dec.read_len().map_err(|e| RuntimeError::InvalidData(e))?;
+                enc.write_len(len);
+                // elements
+                for _ in 0..len {
+                    // value
+                    self.traverse(Some(ele_ty), dec, enc, bid_fn, rid_fn)?;
+                }
+                Ok(())
             }
             constants::TYPE_TREE_MAP | constants::TYPE_HASH_MAP => {
-                todo!()
+                // length
+                let len = dec.read_len().map_err(|e| RuntimeError::InvalidData(e))?;
+                enc.write_len(len);
+                // key type
+                let key_ty = dec.read_type().map_err(|e| RuntimeError::InvalidData(e))?;
+                enc.write_type(key_ty);
+                // value type
+                let value_ty = dec.read_type().map_err(|e| RuntimeError::InvalidData(e))?;
+                enc.write_type(value_ty);
+                // elements
+                for _ in 0..len {
+                    // key
+                    self.traverse(Some(key_ty), dec, enc, bid_fn, rid_fn)?;
+                    // value
+                    self.traverse(Some(value_ty), dec, enc, bid_fn, rid_fn)?;
+                }
+                Ok(())
             }
             // scrypto types
             constants::TYPE_H256 => self.transform::<H256>(dec, enc, |_, v| Ok(v)),

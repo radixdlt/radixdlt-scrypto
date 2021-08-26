@@ -103,7 +103,12 @@ pub fn parse_system_type(
                 (Some(a), Some(r)) => {
                     let bid = bid_alloc.alloc()?;
                     buckets.insert(bid, Bucket::new(a, r));
-                    Ok(scrypto_encode(&bid))
+
+                    if name == "::scrypto::resource::Tokens" {
+                        Ok(scrypto_encode(&scrypto::resource::Tokens::from(bid)))
+                    } else {
+                        Ok(scrypto_encode(&scrypto::resource::Badges::from(bid)))
+                    }
                 }
                 _ => Err(ParseArgError::UnableToParse(i, ty.clone(), arg.to_owned())),
             }
