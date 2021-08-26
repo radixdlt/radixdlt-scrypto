@@ -50,7 +50,7 @@ impl TryFrom<&[u8]> for H256 {
 
 impl From<&str> for H256 {
     fn from(s: &str) -> Self {
-        Self::try_from(s).unwrap()
+        Self::from_str(s).unwrap()
     }
 }
 

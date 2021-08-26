@@ -67,7 +67,7 @@ impl TryFrom<&[u8]> for BID {
 
 impl From<&str> for BID {
     fn from(s: &str) -> Self {
-        Self::try_from(s).unwrap()
+        Self::from_str(s).unwrap()
     }
 }
 

@@ -73,7 +73,7 @@ impl TryFrom<&[u8]> for Address {
 
 impl From<&str> for Address {
     fn from(s: &str) -> Self {
-        Self::try_from(s).unwrap()
+        Self::from_str(s).unwrap()
     }
 }
 
