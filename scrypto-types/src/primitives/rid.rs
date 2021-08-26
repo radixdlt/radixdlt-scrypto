@@ -68,6 +68,12 @@ impl From<&str> for RID {
     }
 }
 
+impl From<String> for RID {
+    fn from(s: String) -> Self {
+        Self::from_str(&s).unwrap()
+    }
+}
+
 impl fmt::Debug for RID {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", hex::encode(self.to_vec()))

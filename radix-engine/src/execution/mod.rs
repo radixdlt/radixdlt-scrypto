@@ -8,4 +8,4 @@ pub use env::{EnvModuleResolver, KERNEL_INDEX, KERNEL_NAME};
 pub use error::RuntimeError;
 pub use loader::load_module;
 pub use process::Process;
-pub use runtime::Runtime;
+pub use runtime::{AddressAllocator, Runtime};

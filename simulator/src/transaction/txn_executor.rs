@@ -21,6 +21,7 @@ pub fn execute(transaction: Transaction, trace: bool) -> TransactionReceipt {
     for inst in transaction.instructions.clone() {
         let res = match inst {
             Instruction::ReserveBuckets { n } => {
+                // TODO check if this is the first instruction
                 for _ in 0..n {
                     reserved_bids.push(runtime.new_transient_bid());
                 }

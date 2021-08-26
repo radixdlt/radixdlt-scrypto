@@ -5,7 +5,6 @@ use scrypto::buffer::*;
 use scrypto::rust::collections::*;
 use scrypto::types::*;
 use scrypto::utils::*;
-use std::fs;
 use uuid::Uuid;
 
 use crate::cli::*;
@@ -46,6 +45,7 @@ pub fn handle_new_account<'a>(_matches: &ArgMatches<'a>) {
             Package::new(include_bytes!("account.wasm").to_vec()),
         );
     }
+
     // create new account
     let mut process = Process::new(0, false, &mut runtime);
     let output = process
@@ -82,12 +82,7 @@ pub fn handle_new_account<'a>(_matches: &ArgMatches<'a>) {
     // set as default config if not set
     let path = get_config_json();
     if !path.exists() {
-        let mut config = HashMap::<String, String>::new();
-        config.insert(
-            CONFIG_DEFAULT_ACCOUNT.to_owned(),
-            component.address().to_string(),
-        );
-        fs::write(path, serde_json::to_string_pretty(&config).unwrap()).unwrap();
-        println!("No default account configured. Set the above account as default.")
+        set_config(CONFIG_DEFAULT_ACCOUNT, &component.address().to_string());
+        println!("Not default account configured. The above account will be used as the default account.")
     }
 }

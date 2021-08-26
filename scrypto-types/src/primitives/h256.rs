@@ -54,6 +54,12 @@ impl From<&str> for H256 {
     }
 }
 
+impl From<String> for H256 {
+    fn from(s: String) -> Self {
+        Self::from_str(&s).unwrap()
+    }
+}
+
 impl Into<Vec<u8>> for H256 {
     fn into(self) -> Vec<u8> {
         self.0.to_vec()

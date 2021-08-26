@@ -71,6 +71,12 @@ impl From<&str> for BID {
     }
 }
 
+impl From<String> for BID {
+    fn from(s: String) -> Self {
+        Self::from_str(&s).unwrap()
+    }
+}
+
 impl fmt::Debug for BID {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", hex::encode(self.to_vec()))

@@ -1,6 +1,5 @@
 use clap::{crate_version, App, Arg, ArgMatches, SubCommand};
 use scrypto::rust::collections::*;
-use scrypto::types::*;
 use std::fs;
 
 use crate::cli::*;
@@ -8,15 +7,28 @@ use crate::ledger::*;
 
 pub const CONFIG_DEFAULT_ACCOUNT: &'static str = "default.account";
 
-pub fn get_default_account() -> Address {
+pub fn get_configs() -> HashMap<String, String> {
     let path = get_config_json();
-    let config: HashMap<String, String> =
-        serde_json::from_str(&fs::read_to_string(path).unwrap()).unwrap();
-    config
-        .get(CONFIG_DEFAULT_ACCOUNT)
-        .expect("Default account not set")
-        .as_str()
-        .into()
+    if path.exists() {
+        serde_json::from_str(&fs::read_to_string(path).unwrap()).unwrap()
+    } else {
+        HashMap::new()
+    }
+}
+
+pub fn set_configs(config: HashMap<String, String>) {
+    let path = get_config_json();
+    fs::write(path, serde_json::to_string_pretty(&config).unwrap()).unwrap();
+}
+
+pub fn get_config(key: &str) -> Option<String> {
+    get_configs().get(key).map(ToOwned::to_owned)
+}
+
+pub fn set_config(key: &str, value: &str) {
+    let mut configs = get_configs();
+    configs.insert(key.to_owned(), value.to_owned());
+    set_configs(configs);
 }
 
 const ARG_NAME: &'static str = "NAME";
@@ -41,17 +53,10 @@ pub fn make_config_cmd<'a, 'b>() -> App<'a, 'b> {
 
 /// Handles a `config` request.
 pub fn handle_config<'a>(matches: &ArgMatches<'a>) {
-    let name = matches.value_of(ARG_NAME).unwrap().to_owned();
-    let value = matches.value_of(ARG_VALUE).unwrap().to_owned();
+    let name = matches.value_of(ARG_NAME).unwrap();
+    let value = matches.value_of(ARG_VALUE).unwrap();
 
-    let path = get_config_json();
-    let mut config = if path.exists() {
-        serde_json::from_str(fs::read_to_string(&path).unwrap().as_str()).unwrap()
-    } else {
-        HashMap::<String, String>::new()
-    };
-    config.insert(name, value);
-    fs::write(path, serde_json::to_string_pretty(&config).unwrap()).unwrap();
+    set_config(name, value);
 
-    println!("{}", serde_json::to_string_pretty(&config).unwrap());
+    println!("{}", serde_json::to_string_pretty(&get_configs()).unwrap());
 }

@@ -77,6 +77,12 @@ impl From<&str> for Address {
     }
 }
 
+impl From<String> for Address {
+    fn from(s: String) -> Self {
+        Self::from_str(&s).unwrap()
+    }
+}
+
 impl fmt::Debug for Address {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", hex::encode(self.to_vec()))

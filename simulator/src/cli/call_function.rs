@@ -46,14 +46,21 @@ pub fn handle_call_function<'a>(matches: &ArgMatches<'a>) {
         x.for_each(|a| args.push(a));
     }
 
-    let acc = get_default_account();
-    match construct_call_function_txn(acc, package, blueprint, function, &args, false) {
-        Ok(txn) => {
-            let receipt = execute(txn, false);
-            print_receipt(receipt);
+    match get_config(CONFIG_DEFAULT_ACCOUNT) {
+        Some(a) => {
+            let account: Address = a.as_str().into();
+            match construct_call_function_txn(account, package, blueprint, function, &args, false) {
+                Ok(txn) => {
+                    let receipt = execute(txn, false);
+                    print_receipt(receipt);
+                }
+                Err(e) => {
+                    println!("Failed to construct transaction: {:?}", e);
+                }
+            }
         }
-        Err(e) => {
-            println!("Failed to construct transaction: {:?}", e);
+        None => {
+            println!("Default account not set. Try to run `rev2 new-account` first.");
         }
     }
 }

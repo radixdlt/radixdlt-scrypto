@@ -1,3 +1,4 @@
+use radix_engine::execution::*;
 use radix_engine::model::*;
 use sbor::model::*;
 use sbor::*;
@@ -11,45 +12,12 @@ use scrypto::types::*;
 
 use crate::transaction::*;
 
-/// BID pre-allocator.
-pub struct BidAllocator {
-    bids: HashMap<BID, u8>,
-}
-
-impl BidAllocator {
-    pub fn new() -> Self {
-        Self {
-            bids: HashMap::new(),
-        }
-    }
-
-    pub fn alloc(&mut self) -> Result<BID, ParseArgError> {
-        let n = self.len();
-        if n == u8::MAX {
-            return Err(ParseArgError::BucketLimitReached);
-        }
-
-        let bid = BID::Transient(n.into());
-        self.bids.insert(bid, n);
-
-        Ok(bid)
-    }
-
-    pub fn offset(&self, bid: BID) -> Option<u8> {
-        self.bids.get(&bid).map(Clone::clone)
-    }
-
-    pub fn len(&self) -> u8 {
-        self.bids.len() as u8
-    }
-}
-
 /// Parse arguments based on function ABI.
 pub fn parse_args(
     types: &Vec<Type>,
     args: &Vec<&str>,
-    bid_alloc: &mut BidAllocator,
-) -> Result<(Vec<Vec<u8>>, HashMap<BID, Bucket>, HashMap<BID, Bucket>), ParseArgError> {
+    alloc: &mut AddressAllocator,
+) -> Result<(Vec<Vec<u8>>, HashMap<u8, Bucket>, HashMap<u8, Bucket>), ParseArgError> {
     let mut result = Vec::new();
     let mut tokens = HashMap::new();
     let mut badges = HashMap::new();
@@ -76,7 +44,7 @@ pub fn parse_args(
             Type::Address => parse_basic::<Address>(i, t, arg),
             Type::U256 => parse_u256(i, t, arg),
             Type::SystemType { name } => {
-                parse_system_type(i, t, arg, name, bid_alloc, &mut tokens, &mut badges)
+                parse_system_type(i, t, arg, name, alloc, &mut tokens, &mut badges)
             }
             _ => Err(ParseArgError::UnsupportedType(i, t.clone())),
         };
@@ -92,9 +60,9 @@ pub fn parse_system_type(
     ty: &Type,
     arg: &str,
     name: &str,
-    bid_alloc: &mut BidAllocator,
-    tokens: &mut HashMap<BID, Bucket>,
-    badges: &mut HashMap<BID, Bucket>,
+    alloc: &mut AddressAllocator,
+    tokens: &mut HashMap<u8, Bucket>,
+    badges: &mut HashMap<u8, Bucket>,
 ) -> Result<Vec<u8>, ParseArgError> {
     match name {
         "::scrypto::resource::Tokens" | "::scrypto::resource::Badges" => {
@@ -103,12 +71,17 @@ pub fn parse_system_type(
             let resource = split.next().and_then(|v| Address::try_from(v).ok());
             match (amount, resource) {
                 (Some(a), Some(r)) => {
-                    let bid = bid_alloc.alloc()?;
+                    let n = alloc.count();
+                    if n >= 255 {
+                        return Err(ParseArgError::BucketLimitReached);
+                    }
+
+                    let bid = alloc.new_transient_bid();
                     if name == "::scrypto::resource::Tokens" {
-                        tokens.insert(bid, Bucket::new(a, r));
+                        tokens.insert(n as u8, Bucket::new(a, r));
                         Ok(scrypto_encode(&scrypto::resource::Tokens::from(bid)))
                     } else {
-                        badges.insert(bid, Bucket::new(a, r));
+                        badges.insert(n as u8, Bucket::new(a, r));
                         Ok(scrypto_encode(&scrypto::resource::Badges::from(bid)))
                     }
                 }

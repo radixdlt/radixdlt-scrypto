@@ -1,8 +1,34 @@
+use radix_engine::execution::*;
+use radix_engine::model::*;
 use scrypto::abi;
 use scrypto::buffer::*;
+use scrypto::rust::collections::*;
 use scrypto::types::*;
 
 use crate::transaction::*;
+
+fn withdraw(
+    insts: &mut Vec<Instruction>,
+    buckets: &HashMap<u8, Bucket>,
+    account: Address,
+    method: &str,
+) {
+    for (offset, bucket) in buckets {
+        insts.push(Instruction::CallMethod {
+            component: account,
+            method: method.to_owned(),
+            args: vec![
+                scrypto_encode(&bucket.amount()),
+                scrypto_encode(&bucket.resource()),
+            ],
+        });
+        insts.push(Instruction::NewBucket {
+            offset: *offset,
+            amount: bucket.amount(),
+            resource: bucket.resource(),
+        });
+    }
+}
 
 /// Construct a CALL_FUNCTION transaction.
 pub fn construct_call_function_txn(
@@ -14,38 +40,15 @@ pub fn construct_call_function_txn(
     trace: bool,
 ) -> Result<Transaction, TxnConstructionError> {
     let func = get_function_abi(package, blueprint, function, trace)?;
-    let mut allocator = BidAllocator::new();
-    match parse_args(&func.inputs, args, &mut allocator) {
+    let mut alloc = AddressAllocator::new();
+    match parse_args(&func.inputs, args, &mut alloc) {
         Ok((new_args, tokens, badges)) => {
             let mut v = vec![];
-            v.push(Instruction::ReserveBuckets { n: allocator.len() });
-            for (bid, bucket) in tokens {
-                v.push(Instruction::CallMethod {
-                    component: account,
-                    method: "withdraw_tokens".to_owned(),
-                    args: vec![
-                        scrypto_encode(&bucket.amount()),
-                        scrypto_encode(&bucket.resource()),
-                    ],
-                });
-                v.push(Instruction::NewBucket {
-                    offset: allocator.offset(bid).unwrap(),
-                    amount: bucket.amount(),
-                    resource: bucket.resource(),
-                });
-            }
-            for (bid, t) in badges {
-                v.push(Instruction::CallMethod {
-                    component: account,
-                    method: "withdraw_badges".to_owned(),
-                    args: vec![scrypto_encode(&t.amount())],
-                });
-                v.push(Instruction::NewBucket {
-                    offset: allocator.offset(bid).unwrap(),
-                    amount: t.amount(),
-                    resource: t.resource(),
-                });
-            }
+            v.push(Instruction::ReserveBuckets {
+                n: alloc.count() as u8,
+            });
+            withdraw(&mut v, &tokens, account, "withdraw_tokens");
+            withdraw(&mut v, &badges, account, "withdraw_badges");
             v.push(Instruction::CallFunction {
                 package,
                 blueprint: blueprint.to_owned(),
@@ -68,41 +71,15 @@ pub fn construct_call_method_txn(
     trace: bool,
 ) -> Result<Transaction, TxnConstructionError> {
     let meth = get_method_abi(component, method, trace)?;
-    let mut allocator = BidAllocator::new();
-    match parse_args(&meth.inputs, args, &mut allocator) {
+    let mut alloc = AddressAllocator::new();
+    match parse_args(&meth.inputs, args, &mut alloc) {
         Ok((new_args, tokens, badges)) => {
             let mut v = vec![];
-            v.push(Instruction::ReserveBuckets { n: allocator.len() });
-            for (bid, bucket) in tokens {
-                v.push(Instruction::CallMethod {
-                    component: account,
-                    method: "withdraw_tokens".to_owned(),
-                    args: vec![
-                        scrypto_encode(&bucket.amount()),
-                        scrypto_encode(&bucket.resource()),
-                    ],
-                });
-                v.push(Instruction::NewBucket {
-                    offset: allocator.offset(bid).unwrap(),
-                    amount: bucket.amount(),
-                    resource: bucket.resource(),
-                });
-            }
-            for (bid, bucket) in badges {
-                v.push(Instruction::CallMethod {
-                    component: account,
-                    method: "withdraw_badges".to_owned(),
-                    args: vec![
-                        scrypto_encode(&bucket.amount()),
-                        scrypto_encode(&bucket.resource()),
-                    ],
-                });
-                v.push(Instruction::NewBucket {
-                    offset: allocator.offset(bid).unwrap(),
-                    amount: bucket.amount(),
-                    resource: bucket.resource(),
-                });
-            }
+            v.push(Instruction::ReserveBuckets {
+                n: alloc.count() as u8,
+            });
+            withdraw(&mut v, &tokens, account, "withdraw_tokens");
+            withdraw(&mut v, &badges, account, "withdraw_badges");
             v.push(Instruction::CallMethod {
                 component,
                 method: method.to_owned(),
