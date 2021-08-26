@@ -34,26 +34,26 @@ pub extern "C" fn kernel(op: u32, input_ptr: *const u8, input_len: usize) -> *mu
             let output = EmitLogOutput {};
             output_bytes = scrypto_encode(&output);
         }
-        CALL_BLUEPRINT => {
-            let input: CallBlueprintInput = scrypto_decode(&input_bytes).unwrap();
+        CALL_FUNCTION => {
+            let input: CallFunctionInput = scrypto_decode(&input_bytes).unwrap();
             assert_eq!(input.package, Address::from_str(PACKAGE_ADDRESS).unwrap());
             assert_eq!(input.blueprint, BLUEPRINT_NAME);
             assert_eq!(input.function, FUNCTION_NAME);
 
-            let output = CallBlueprintOutput {
+            let output = CallFunctionOutput {
                 rtn: scrypto_encode(&RETURN),
             };
             output_bytes = scrypto_encode(&output);
         }
-        CALL_COMPONENT => {
-            let input: CallComponentInput = scrypto_decode(&input_bytes).unwrap();
+        CALL_METHOD => {
+            let input: CallMethodInput = scrypto_decode(&input_bytes).unwrap();
             assert_eq!(
                 input.component,
                 Address::from_str(COMPONENT_ADDRESS).unwrap()
             );
             assert_eq!(input.method, METHOD_NAME);
 
-            let output = CallComponentOutput {
+            let output = CallMethodOutput {
                 rtn: scrypto_encode(&RETURN),
             };
             output_bytes = scrypto_encode(&output);
@@ -87,14 +87,14 @@ fn test_logging() {
 }
 
 #[test]
-fn test_call_blueprint() {
+fn test_call_function() {
     let blueprint = Blueprint::from(Address::from_str(PACKAGE_ADDRESS).unwrap(), BLUEPRINT_NAME);
     let rtn: i32 = blueprint.call(FUNCTION_NAME, args!(123));
     assert_eq!(rtn, RETURN);
 }
 
 #[test]
-fn test_call_component() {
+fn test_call_method() {
     let component = Component::from(Address::from_str(COMPONENT_ADDRESS).unwrap());
     component.call::<i32>(METHOD_NAME, args!(456));
 }

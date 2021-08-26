@@ -48,12 +48,12 @@ impl Component {
     }
 
     pub fn call<T: Decode>(&self, method: &str, args: Vec<Vec<u8>>) -> T {
-        let input = CallComponentInput {
+        let input = CallMethodInput {
             component: self.address,
             method: method.to_string(),
             args,
         };
-        let output: CallComponentOutput = call_kernel(CALL_COMPONENT, input);
+        let output: CallMethodOutput = call_kernel(CALL_METHOD, input);
 
         unwrap_or_panic(scrypto_decode(&output.rtn))
     }

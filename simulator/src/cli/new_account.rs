@@ -12,7 +12,7 @@ use crate::ledger::*;
 /// Constructs a `new-account` subcommand.
 pub fn make_new_account_cmd<'a, 'b>() -> App<'a, 'b> {
     SubCommand::with_name(CMD_NEW_ACCOUNT)
-        .about("Creates an account.")
+        .about("Creates an account")
         .version(crate_version!())
 }
 

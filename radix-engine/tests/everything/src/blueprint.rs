@@ -6,7 +6,7 @@ blueprint! {
     }
 
     impl BlueprintTest {
-        pub fn call_blueprint() -> Component {
+        pub fn call_function() -> Component {
             let package = Package::new(include_bytes!("helloworld.wasm"));
             let blueprint = Blueprint::from(package.into(), "Greeting");
             blueprint.call("new", args!())

@@ -34,13 +34,13 @@ impl Blueprint {
     }
 
     pub fn call<T: Decode>(&self, function: &str, args: Vec<Vec<u8>>) -> T {
-        let input = CallBlueprintInput {
+        let input = CallFunctionInput {
             package: self.package,
             blueprint: self.name.clone(),
             function: function.to_string(),
             args,
         };
-        let output: CallBlueprintOutput = call_kernel(CALL_BLUEPRINT, input);
+        let output: CallFunctionOutput = call_kernel(CALL_FUNCTION, input);
 
         unwrap_or_panic(scrypto_decode(&output.rtn))
     }

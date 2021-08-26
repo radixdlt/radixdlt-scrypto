@@ -163,7 +163,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         Ok(output)
     }
 
-    /// Call a function.
+    /// Call a function/method.
     pub fn call(
         &mut self,
         package: Address,
@@ -206,56 +206,6 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         }
 
         result
-    }
-
-    /// Call a blueprint function.
-    pub fn call_function(
-        &mut self,
-        package: Address,
-        blueprint: String,
-        function: String,
-        args: Vec<Vec<u8>>,
-    ) -> Result<Vec<u8>, RuntimeError> {
-        trace!(
-            self,
-            "Calling function: package = {}, blueprint = {}, function = {}, args = {:02x?}",
-            package,
-            blueprint,
-            function,
-            args
-        );
-
-        self.call(package, format!("{}_main", blueprint), function, args)
-    }
-
-    /// Call a component method.
-    pub fn call_method(
-        &mut self,
-        component: Address,
-        method: String,
-        mut args: Vec<Vec<u8>>,
-    ) -> Result<Vec<u8>, RuntimeError> {
-        trace!(
-            self,
-            "Calling method: component = {}, method = {}, args = {:02x?}",
-            component,
-            method,
-            args
-        );
-
-        let info = self
-            .runtime
-            .get_component(component)
-            .ok_or(RuntimeError::ComponentNotFound(component))?
-            .clone();
-        args.insert(0, scrypto_encode(&component));
-
-        self.call(
-            info.package(),
-            format!("{}_main", info.blueprint()),
-            method,
-            args,
-        )
     }
 
     /// Return the package address
@@ -364,22 +314,58 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         Ok(PublishPackageOutput { package: address })
     }
 
-    pub fn call_blueprint(
+    pub fn call_function(
         &mut self,
-        input: CallBlueprintInput,
-    ) -> Result<CallBlueprintOutput, RuntimeError> {
-        let output = self.call_function(input.package, input.blueprint, input.function, input.args);
+        input: CallFunctionInput,
+    ) -> Result<CallFunctionOutput, RuntimeError> {
+        trace!(
+            self,
+            "Calling function: package = {}, blueprint = {}, function = {}, args = {:02x?}",
+            input.package,
+            input.blueprint,
+            input.function,
+            input.args
+        );
 
-        Ok(CallBlueprintOutput { rtn: output? })
+        let result = self.call(
+            input.package,
+            format!("{}_main", input.blueprint),
+            input.function,
+            input.args,
+        );
+
+        Ok(CallFunctionOutput { rtn: result? })
     }
 
-    pub fn call_component(
+    pub fn call_method(
         &mut self,
-        input: CallComponentInput,
-    ) -> Result<CallComponentOutput, RuntimeError> {
-        let output = self.call_method(input.component, input.method, input.args);
+        input: CallMethodInput,
+    ) -> Result<CallMethodOutput, RuntimeError> {
+        trace!(
+            self,
+            "Calling method: component = {}, method = {}, args = {:02x?}",
+            input.component,
+            input.method,
+            input.args
+        );
 
-        Ok(CallComponentOutput { rtn: output? })
+        let com = self
+            .runtime
+            .get_component(input.component)
+            .ok_or(RuntimeError::ComponentNotFound(input.component))?
+            .clone();
+
+        let mut self_args = input.args.clone();
+        self_args.insert(0, scrypto_encode(&input.component));
+
+        let result = self.call(
+            com.package(),
+            format!("{}_main", com.blueprint()),
+            input.method,
+            self_args,
+        );
+
+        Ok(CallMethodOutput { rtn: result? })
     }
 
     pub fn create_component(
@@ -1187,8 +1173,8 @@ impl<'rt, 'le, L: Ledger> Externals for Process<'rt, 'le, L> {
                 let operation: u32 = args.nth_checked(0)?;
                 match operation {
                     PUBLISH => self.handle(args, Self::publish, false),
-                    CALL_BLUEPRINT => self.handle(args, Self::call_blueprint, true),
-                    CALL_COMPONENT => self.handle(args, Self::call_component, true),
+                    CALL_FUNCTION => self.handle(args, Self::call_function, true),
+                    CALL_METHOD => self.handle(args, Self::call_method, true),
 
                     CREATE_COMPONENT => self.handle(args, Self::create_component, true),
                     GET_COMPONENT_INFO => self.handle(args, Self::get_component_info, true),

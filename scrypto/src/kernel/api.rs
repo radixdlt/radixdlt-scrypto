@@ -9,12 +9,12 @@ extern "C" {
     pub fn kernel(op: u32, input_ptr: *const u8, input_len: usize) -> *mut u8;
 }
 
-/// Publish a new package
+/// Publish a code package
 pub const PUBLISH: u32 = 0x00;
-/// Call a blueprint
-pub const CALL_BLUEPRINT: u32 = 0x01;
-/// Call a component
-pub const CALL_COMPONENT: u32 = 0x02;
+/// Call a function
+pub const CALL_FUNCTION: u32 = 0x01;
+/// Call a method
+pub const CALL_METHOD: u32 = 0x02;
 
 /// Create a new component
 pub const CREATE_COMPONENT: u32 = 0x10;
@@ -88,7 +88,7 @@ pub struct PublishPackageOutput {
 }
 
 #[derive(Debug, Clone, Encode, Decode)]
-pub struct CallBlueprintInput {
+pub struct CallFunctionInput {
     pub package: Address,
     pub blueprint: String,
     pub function: String,
@@ -96,19 +96,19 @@ pub struct CallBlueprintInput {
 }
 
 #[derive(Debug, Clone, Encode, Decode)]
-pub struct CallBlueprintOutput {
+pub struct CallFunctionOutput {
     pub rtn: Vec<u8>,
 }
 
 #[derive(Debug, Clone, Encode, Decode)]
-pub struct CallComponentInput {
+pub struct CallMethodInput {
     pub component: Address,
     pub method: String,
     pub args: Vec<Vec<u8>>,
 }
 
 #[derive(Debug, Clone, Encode, Decode)]
-pub struct CallComponentOutput {
+pub struct CallMethodOutput {
     pub rtn: Vec<u8>,
 }
 

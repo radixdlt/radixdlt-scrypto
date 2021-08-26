@@ -10,7 +10,7 @@ const ARG_ADDRESS: &'static str = "ADDRESS";
 /// Constructs a `show` subcommand.
 pub fn make_show_cmd<'a, 'b>() -> App<'a, 'b> {
     SubCommand::with_name(CMD_SHOW)
-        .about("Shows the content of an address.")
+        .about("Shows the content of an address")
         .version(crate_version!())
         .arg(
             Arg::with_name(ARG_ADDRESS)

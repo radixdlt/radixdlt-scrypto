@@ -8,10 +8,10 @@ const ARG_COMPONENT: &'static str = "COMPONENT";
 const ARG_METHOD: &'static str = "METHOD";
 const ARG_ARGS: &'static str = "ARGS";
 
-/// Constructs a `call-component` subcommand.
-pub fn make_call_component_cmd<'a, 'b>() -> App<'a, 'b> {
-    SubCommand::with_name(CMD_CALL_COMPONENT)
-        .about("Calls a component method.")
+/// Constructs a `call-method` subcommand.
+pub fn make_call_method_cmd<'a, 'b>() -> App<'a, 'b> {
+    SubCommand::with_name(CMD_CALL_METHOD)
+        .about("Calls a method")
         .version(crate_version!())
         .arg(
             Arg::with_name(ARG_COMPONENT)
@@ -30,8 +30,8 @@ pub fn make_call_component_cmd<'a, 'b>() -> App<'a, 'b> {
         )
 }
 
-/// Handles a `call-component` request.
-pub fn handle_call_component<'a>(matches: &ArgMatches<'a>) {
+/// Handles a `call-method` request.
+pub fn handle_call_method<'a>(matches: &ArgMatches<'a>) {
     let component: Address = matches.value_of(ARG_COMPONENT).unwrap().into();
     let method = matches.value_of(ARG_METHOD).unwrap().to_owned();
     let mut args = Vec::new();
@@ -40,7 +40,7 @@ pub fn handle_call_component<'a>(matches: &ArgMatches<'a>) {
     }
 
     let transaction = Transaction {
-        instructions: vec![Instruction::InvokeMethod {
+        instructions: vec![Instruction::CallMethod {
             component,
             method,
             args,

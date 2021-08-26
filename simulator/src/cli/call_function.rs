@@ -9,10 +9,10 @@ const ARG_BLUEPRINT: &'static str = "BLUEPRINT";
 const ARG_FUNCTION: &'static str = "FUNCTION";
 const ARG_ARGS: &'static str = "ARGS";
 
-/// Constructs a `call-blueprint` subcommand.
-pub fn make_call_blueprint_cmd<'a, 'b>() -> App<'a, 'b> {
-    SubCommand::with_name(CMD_CALL_BLUEPRINT)
-        .about("Calls a blueprint function.")
+/// Constructs a `call-function` subcommand.
+pub fn make_call_function_cmd<'a, 'b>() -> App<'a, 'b> {
+    SubCommand::with_name(CMD_CALL_FUNCTION)
+        .about("Calls a function")
         .version(crate_version!())
         .arg(
             Arg::with_name(ARG_PACKAGE)
@@ -36,8 +36,8 @@ pub fn make_call_blueprint_cmd<'a, 'b>() -> App<'a, 'b> {
         )
 }
 
-/// Handles a `call-blueprint` request.
-pub fn handle_call_blueprint<'a>(matches: &ArgMatches<'a>) {
+/// Handles a `call-function` request.
+pub fn handle_call_function<'a>(matches: &ArgMatches<'a>) {
     let package: Address = matches.value_of(ARG_PACKAGE).unwrap().into();
     let blueprint = matches.value_of(ARG_BLUEPRINT).unwrap().to_owned();
     let function = matches.value_of(ARG_FUNCTION).unwrap().to_owned();
@@ -47,7 +47,7 @@ pub fn handle_call_blueprint<'a>(matches: &ArgMatches<'a>) {
     }
 
     let transaction = Transaction {
-        instructions: vec![Instruction::InvokeFunction {
+        instructions: vec![Instruction::CallFunction {
             package,
             blueprint,
             function,

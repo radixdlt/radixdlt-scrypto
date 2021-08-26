@@ -17,7 +17,7 @@ const ARG_PATH: &'static str = "PATH";
 /// Constructs a `publish` subcommand.
 pub fn make_publish_cmd<'a, 'b>() -> App<'a, 'b> {
     SubCommand::with_name(CMD_PUBLISH)
-        .about("Publishes a package.")
+        .about("Publishes a package")
         .version(crate_version!())
         .arg(
             Arg::with_name(ARG_PATH)

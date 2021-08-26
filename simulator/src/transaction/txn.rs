@@ -22,16 +22,16 @@ pub enum Instruction {
         resource: Address,
     },
 
-    /// Invoke a function.
-    InvokeFunction {
+    /// Call a function.
+    CallFunction {
         package: Address,
         blueprint: String,
         function: String,
         args: Vec<Vec<u8>>,
     },
 
-    /// Invoke a method.
-    InvokeMethod {
+    /// Call a method.
+    CallMethod {
         component: Address,
         method: String,
         args: Vec<Vec<u8>>,

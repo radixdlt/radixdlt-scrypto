@@ -41,7 +41,7 @@ pub fn execute(transaction: Transaction, trace: bool) -> TransactionReceipt {
                     )),
                 None => Err(RuntimeError::BucketNotFound),
             },
-            Instruction::InvokeFunction {
+            Instruction::CallFunction {
                 package,
                 blueprint,
                 function,
@@ -66,7 +66,7 @@ pub fn execute(transaction: Transaction, trace: bool) -> TransactionReceipt {
                 }
                 result
             }
-            Instruction::InvokeMethod { .. } => {
+            Instruction::CallMethod { .. } => {
                 todo!()
             }
         };
