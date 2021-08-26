@@ -5,6 +5,7 @@ use scrypto::buffer::*;
 use scrypto::rust::collections::*;
 use scrypto::types::*;
 use scrypto::utils::*;
+use std::fs;
 use uuid::Uuid;
 
 use crate::cli::*;
@@ -61,7 +62,7 @@ pub fn handle_new_account<'a>(_matches: &ArgMatches<'a>) {
     buckets.insert(bid, bucket);
 
     // deposit
-    let mut process2 = Process::new(0, true, &mut runtime);
+    let mut process2 = Process::new(0, false, &mut runtime);
     process2.put_resources(buckets, HashMap::new());
     process2
         .target_method(
@@ -77,4 +78,16 @@ pub fn handle_new_account<'a>(_matches: &ArgMatches<'a>) {
     runtime.flush();
 
     println!("New account: {}", component.address());
+
+    // set as default config if not set
+    let path = get_config_json();
+    if !path.exists() {
+        let mut config = HashMap::<String, String>::new();
+        config.insert(
+            CONFIG_DEFAULT_ACCOUNT.to_owned(),
+            component.address().to_string(),
+        );
+        fs::write(path, serde_json::to_string_pretty(&config).unwrap()).unwrap();
+        println!("No default account configured. Set the above account as default.")
+    }
 }

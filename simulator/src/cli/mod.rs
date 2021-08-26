@@ -1,5 +1,6 @@
 mod call_function;
 mod call_method;
+mod config;
 mod export_abi;
 mod new_account;
 mod publish;
@@ -12,10 +13,12 @@ const CMD_CALL_METHOD: &'static str = "call-method";
 const CMD_NEW_ACCOUNT: &'static str = "new-account";
 const CMD_PUBLISH: &'static str = "publish";
 const CMD_RESET: &'static str = "reset";
+const CMD_CONFIG: &'static str = "config";
 const CMD_SHOW: &'static str = "show";
 
 pub use call_function::*;
 pub use call_method::*;
+pub use config::*;
 pub use export_abi::*;
 pub use new_account::*;
 pub use publish::*;
@@ -36,6 +39,7 @@ where
         .subcommand(make_new_account_cmd())
         .subcommand(make_publish_cmd())
         .subcommand(make_reset_cmd())
+        .subcommand(make_config_cmd())
         .subcommand(make_show_cmd())
         .get_matches_from(itr);
 
@@ -46,6 +50,7 @@ where
         (CMD_NEW_ACCOUNT, Some(m)) => handle_new_account(m),
         (CMD_PUBLISH, Some(m)) => handle_publish(m),
         (CMD_RESET, Some(m)) => handle_reset(m),
+        (CMD_CONFIG, Some(m)) => handle_config(m),
         (CMD_SHOW, Some(m)) => handle_show(m),
         _ => {}
     }

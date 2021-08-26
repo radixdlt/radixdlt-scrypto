@@ -11,7 +11,7 @@ const ARG_ARGS: &'static str = "ARGS";
 /// Constructs a `call-method` subcommand.
 pub fn make_call_method_cmd<'a, 'b>() -> App<'a, 'b> {
     SubCommand::with_name(CMD_CALL_METHOD)
-        .about("Calls a method")
+        .about("Calls a component method")
         .version(crate_version!())
         .arg(
             Arg::with_name(ARG_COMPONENT)

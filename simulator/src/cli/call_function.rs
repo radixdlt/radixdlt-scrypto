@@ -12,7 +12,7 @@ const ARG_ARGS: &'static str = "ARGS";
 /// Constructs a `call-function` subcommand.
 pub fn make_call_function_cmd<'a, 'b>() -> App<'a, 'b> {
     SubCommand::with_name(CMD_CALL_FUNCTION)
-        .about("Calls a function")
+        .about("Calls a blueprint function")
         .version(crate_version!())
         .arg(
             Arg::with_name(ARG_PACKAGE)
