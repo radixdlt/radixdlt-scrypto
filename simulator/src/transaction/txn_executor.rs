@@ -1,3 +1,4 @@
+use colored::*;
 use radix_engine::execution::*;
 use radix_engine::model::*;
 use scrypto::rust::collections::*;
@@ -26,19 +27,26 @@ pub fn execute(transaction: Transaction, trace: bool) -> TransactionReceipt {
                 }
                 Ok(vec![])
             }
-            Instruction::PrepareBucket {
+            Instruction::NewBucket {
                 offset,
                 amount,
                 resource,
             } => match reserved_bids.get(offset as usize) {
-                Some(bid) => collected_resources
-                    .get_mut(&resource)
-                    .and_then(|b| b.take(amount).ok())
-                    .and_then(|b| prepared_buckets.insert(bid.clone(), b))
-                    .map(|_| vec![])
-                    .ok_or(RuntimeError::AccountingError(
-                        BucketError::InsufficientBalance,
-                    )),
+                Some(bid) => {
+                    let bucket = collected_resources
+                        .get_mut(&resource)
+                        .and_then(|b| b.take(amount).ok());
+
+                    match bucket {
+                        Some(b) => {
+                            prepared_buckets.insert(bid.clone(), b);
+                            Ok(vec![])
+                        }
+                        None => Err(RuntimeError::AccountingError(
+                            BucketError::InsufficientBalance,
+                        )),
+                    }
+                }
                 None => Err(RuntimeError::BucketNotFound),
             },
             Instruction::CallFunction {
@@ -98,6 +106,23 @@ pub fn execute(transaction: Transaction, trace: bool) -> TransactionReceipt {
                         result
                     })
             }
+            Instruction::Finalize => {
+                // TODO check if this is the last instruction
+                let mut success = true;
+                for (_, bucket) in &collected_resources {
+                    if bucket.amount() > 0.into() {
+                        if trace {
+                            println!("Resource leak: {:?}", bucket);
+                        }
+                        success = false;
+                    }
+                }
+                if success {
+                    Ok(vec![])
+                } else {
+                    Err(RuntimeError::ResourceLeak)
+                }
+            }
         };
 
         if res.is_ok() {
@@ -109,6 +134,7 @@ pub fn execute(transaction: Transaction, trace: bool) -> TransactionReceipt {
         }
     }
 
+    // flush state updates
     if success {
         runtime.flush();
     }

@@ -46,9 +46,16 @@ pub fn handle_call_function<'a>(matches: &ArgMatches<'a>) {
         x.for_each(|a| args.push(a));
     }
 
-    match construct_call_function_txn(package, blueprint, function, &args, false) {
+    match construct_call_function_txn(
+        get_default_account(),
+        package,
+        blueprint,
+        function,
+        &args,
+        false,
+    ) {
         Ok(txn) => {
-            let receipt = execute(txn, true);
+            let receipt = execute(txn, false);
             print_receipt(receipt);
         }
         Err(e) => {

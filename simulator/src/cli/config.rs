@@ -1,11 +1,23 @@
 use clap::{crate_version, App, Arg, ArgMatches, SubCommand};
 use scrypto::rust::collections::*;
+use scrypto::types::*;
 use std::fs;
 
 use crate::cli::*;
 use crate::ledger::*;
 
 pub const CONFIG_DEFAULT_ACCOUNT: &'static str = "default.account";
+
+pub fn get_default_account() -> Address {
+    let path = get_config_json();
+    let config: HashMap<String, String> =
+        serde_json::from_str(&fs::read_to_string(path).unwrap()).unwrap();
+    config
+        .get(CONFIG_DEFAULT_ACCOUNT)
+        .expect("Default account not set")
+        .as_str()
+        .into()
+}
 
 const ARG_NAME: &'static str = "NAME";
 const ARG_VALUE: &'static str = "VALUE";

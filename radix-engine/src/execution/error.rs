@@ -1,6 +1,5 @@
 use sbor::*;
 use scrypto::rust::fmt;
-use scrypto::rust::vec::Vec;
 use scrypto::types::*;
 use wasmi::*;
 
@@ -37,7 +36,7 @@ pub enum RuntimeError {
 
     UnableToAllocateMemory,
 
-    ResourceLeak(Vec<BID>, Vec<RID>),
+    ResourceLeak,
 
     PackageAlreadyExists(Address),
 

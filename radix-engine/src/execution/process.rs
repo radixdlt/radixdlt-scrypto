@@ -10,7 +10,6 @@ use scrypto::rust::format;
 use scrypto::rust::rc::Rc;
 use scrypto::rust::string::String;
 use scrypto::rust::string::ToString;
-use scrypto::rust::vec;
 use scrypto::rust::vec::Vec;
 use scrypto::types::*;
 use wasmi::*;
@@ -288,28 +287,27 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
 
     /// Finalize this process.
     pub fn finalize(&self) -> Result<(), RuntimeError> {
-        let mut buckets = vec![];
-        let mut references = vec![];
+        let mut success = true;
 
         for (bid, bucket) in &self.buckets {
             if bucket.amount() != U256::zero() {
                 warn!(self, "Pending bucket: {:02x?} {:02x?}", bid, bucket);
-                buckets.push(*bid);
+                success = false;
             }
         }
         for (bid, bucket) in &self.locked_buckets {
             warn!(self, "Pending locked bucket: {:02x?} {:02x?}", bid, bucket);
-            buckets.push(*bid);
+            success = false;
         }
         for (rid, bucket_ref) in &self.references {
             warn!(self, "Pending reference: {:02x?} {:02x?}", rid, bucket_ref);
-            references.push(*rid);
+            success = false;
         }
 
-        if buckets.is_empty() && references.is_empty() {
+        if success {
             Ok(())
         } else {
-            Err(RuntimeError::ResourceLeak(buckets, references))
+            Err(RuntimeError::ResourceLeak)
         }
     }
 

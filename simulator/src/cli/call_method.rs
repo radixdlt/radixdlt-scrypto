@@ -39,7 +39,7 @@ pub fn handle_call_method<'a>(matches: &ArgMatches<'a>) {
         x.for_each(|a| args.push(a));
     }
 
-    match construct_call_method_txn(component, method, &args, false) {
+    match construct_call_method_txn(get_default_account(), component, method, &args, false) {
         Ok(txn) => {
             let receipt = execute(txn, true);
             print_receipt(receipt);

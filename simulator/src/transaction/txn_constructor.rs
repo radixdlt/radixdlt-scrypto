@@ -1,10 +1,15 @@
 use scrypto::abi;
+use scrypto::buffer::*;
+use scrypto::rust::collections::*;
 use scrypto::types::*;
+use std::fs;
 
+use crate::cli::*;
 use crate::transaction::*;
 
 /// Construct a CALL_FUNCTION transaction.
 pub fn construct_call_function_txn(
+    account: Address,
     package: Address,
     blueprint: &str,
     function: &str,
@@ -14,14 +19,34 @@ pub fn construct_call_function_txn(
     let func = get_function_abi(package, blueprint, function, trace)?;
     let mut allocator = BidAllocator::new();
     match parse_args(&func.inputs, args, &mut allocator) {
-        Ok((new_args, buckets)) => {
+        Ok((new_args, tokens, badges)) => {
             let mut v = vec![];
             v.push(Instruction::ReserveBuckets { n: allocator.len() });
-            for (bid, bucket) in buckets {
-                v.push(Instruction::PrepareBucket {
+            for (bid, bucket) in tokens {
+                v.push(Instruction::CallMethod {
+                    component: account,
+                    method: "withdraw_tokens".to_owned(),
+                    args: vec![
+                        scrypto_encode(&bucket.amount()),
+                        scrypto_encode(&bucket.resource()),
+                    ],
+                });
+                v.push(Instruction::NewBucket {
                     offset: allocator.offset(bid).unwrap(),
                     amount: bucket.amount(),
                     resource: bucket.resource(),
+                });
+            }
+            for (bid, t) in badges {
+                v.push(Instruction::CallMethod {
+                    component: account,
+                    method: "withdraw_badges".to_owned(),
+                    args: vec![scrypto_encode(&t.amount())],
+                });
+                v.push(Instruction::NewBucket {
+                    offset: allocator.offset(bid).unwrap(),
+                    amount: t.amount(),
+                    resource: t.resource(),
                 });
             }
             v.push(Instruction::CallFunction {
@@ -30,6 +55,7 @@ pub fn construct_call_function_txn(
                 function: function.to_owned(),
                 args: new_args,
             });
+            v.push(Instruction::Finalize);
             Ok(Transaction { instructions: v })
         }
         Err(e) => Err(TxnConstructionError::InvalidArguments(e)),
@@ -38,6 +64,7 @@ pub fn construct_call_function_txn(
 
 /// Construct a CALL_METHOD transaction.
 pub fn construct_call_method_txn(
+    account: Address,
     component: Address,
     method: &str,
     args: &Vec<&str>,
@@ -46,11 +73,34 @@ pub fn construct_call_method_txn(
     let meth = get_method_abi(component, method, trace)?;
     let mut allocator = BidAllocator::new();
     match parse_args(&meth.inputs, args, &mut allocator) {
-        Ok((new_args, buckets)) => {
+        Ok((new_args, tokens, badges)) => {
             let mut v = vec![];
             v.push(Instruction::ReserveBuckets { n: allocator.len() });
-            for (bid, bucket) in buckets {
-                v.push(Instruction::PrepareBucket {
+            for (bid, bucket) in tokens {
+                v.push(Instruction::CallMethod {
+                    component: account,
+                    method: "withdraw_tokens".to_owned(),
+                    args: vec![
+                        scrypto_encode(&bucket.amount()),
+                        scrypto_encode(&bucket.resource()),
+                    ],
+                });
+                v.push(Instruction::NewBucket {
+                    offset: allocator.offset(bid).unwrap(),
+                    amount: bucket.amount(),
+                    resource: bucket.resource(),
+                });
+            }
+            for (bid, bucket) in badges {
+                v.push(Instruction::CallMethod {
+                    component: account,
+                    method: "withdraw_badges".to_owned(),
+                    args: vec![
+                        scrypto_encode(&bucket.amount()),
+                        scrypto_encode(&bucket.resource()),
+                    ],
+                });
+                v.push(Instruction::NewBucket {
                     offset: allocator.offset(bid).unwrap(),
                     amount: bucket.amount(),
                     resource: bucket.resource(),
@@ -61,6 +111,7 @@ pub fn construct_call_method_txn(
                 method: method.to_owned(),
                 args: new_args,
             });
+            v.push(Instruction::Finalize);
             Ok(Transaction { instructions: v })
         }
         Err(e) => Err(TxnConstructionError::InvalidArguments(e)),

@@ -49,9 +49,10 @@ pub fn parse_args(
     types: &Vec<Type>,
     args: &Vec<&str>,
     bid_alloc: &mut BidAllocator,
-) -> Result<(Vec<Vec<u8>>, HashMap<BID, Bucket>), ParseArgError> {
+) -> Result<(Vec<Vec<u8>>, HashMap<BID, Bucket>, HashMap<BID, Bucket>), ParseArgError> {
     let mut result = Vec::new();
-    let mut buckets = HashMap::new();
+    let mut tokens = HashMap::new();
+    let mut badges = HashMap::new();
 
     for (i, t) in types.iter().enumerate() {
         let arg = args
@@ -75,14 +76,14 @@ pub fn parse_args(
             Type::Address => parse_basic::<Address>(i, t, arg),
             Type::U256 => parse_u256(i, t, arg),
             Type::SystemType { name } => {
-                parse_system_type(i, t, arg, name, bid_alloc, &mut buckets)
+                parse_system_type(i, t, arg, name, bid_alloc, &mut tokens, &mut badges)
             }
             _ => Err(ParseArgError::UnsupportedType(i, t.clone())),
         };
         result.push(res?);
     }
 
-    Ok((result, buckets))
+    Ok((result, tokens, badges))
 }
 
 /// Parse system package and pre-allocate the buckets.
@@ -92,7 +93,8 @@ pub fn parse_system_type(
     arg: &str,
     name: &str,
     bid_alloc: &mut BidAllocator,
-    buckets: &mut HashMap<BID, Bucket>,
+    tokens: &mut HashMap<BID, Bucket>,
+    badges: &mut HashMap<BID, Bucket>,
 ) -> Result<Vec<u8>, ParseArgError> {
     match name {
         "::scrypto::resource::Tokens" | "::scrypto::resource::Badges" => {
@@ -102,11 +104,11 @@ pub fn parse_system_type(
             match (amount, resource) {
                 (Some(a), Some(r)) => {
                     let bid = bid_alloc.alloc()?;
-                    buckets.insert(bid, Bucket::new(a, r));
-
                     if name == "::scrypto::resource::Tokens" {
+                        tokens.insert(bid, Bucket::new(a, r));
                         Ok(scrypto_encode(&scrypto::resource::Tokens::from(bid)))
                     } else {
+                        badges.insert(bid, Bucket::new(a, r));
                         Ok(scrypto_encode(&scrypto::resource::Badges::from(bid)))
                     }
                 }

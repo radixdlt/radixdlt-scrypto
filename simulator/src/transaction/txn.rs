@@ -13,10 +13,12 @@ pub struct Transaction {
 #[derive(Debug, Clone, Encode, Decode)]
 pub enum Instruction {
     /// Reserve `n` buckets upfront.
-    ReserveBuckets { n: u8 },
+    ReserveBuckets {
+        n: u8,
+    },
 
     /// Create a bucket to be used for function call.
-    PrepareBucket {
+    NewBucket {
         offset: u8,
         amount: U256,
         resource: Address,
@@ -36,6 +38,8 @@ pub enum Instruction {
         method: String,
         args: Vec<Vec<u8>>,
     },
+
+    Finalize,
 }
 
 #[derive(Debug)]
