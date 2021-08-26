@@ -50,10 +50,16 @@ pub struct Process<'rt, 'le, L: Ledger> {
     vm: Option<VM>,
 }
 
-pub struct VM {
+#[derive(Debug, Clone)]
+pub struct Target {
     package: Address,
+    export: String,
     function: String,
     args: Vec<Vec<u8>>,
+}
+
+pub struct VM {
+    target: Target,
     module: ModuleRef,
     memory: MemoryRef,
 }
@@ -72,6 +78,53 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
             moving_references: HashMap::new(),
             vm: None,
         }
+    }
+
+    pub fn target_function(
+        &mut self,
+        package: Address,
+        blueprint: &str,
+        function: String,
+        args: Vec<Vec<u8>>,
+    ) -> Result<Target, RuntimeError> {
+        Ok(Target {
+            package,
+            export: format!("{}_main", blueprint),
+            function,
+            args,
+        })
+    }
+
+    pub fn target_method(
+        &mut self,
+        component: Address,
+        method: String,
+        args: Vec<Vec<u8>>,
+    ) -> Result<Target, RuntimeError> {
+        let com = self
+            .runtime
+            .get_component(component)
+            .ok_or(RuntimeError::ComponentNotFound(component))?
+            .clone();
+
+        let mut self_args = Vec::new();
+        self_args.push(scrypto_encode(&component));
+        self_args.extend(args);
+
+        self.target_function(com.package(), com.blueprint(), method, self_args)
+    }
+
+    pub fn target_abi(
+        &mut self,
+        package: Address,
+        blueprint: &str,
+    ) -> Result<Target, RuntimeError> {
+        Ok(Target {
+            package,
+            export: format!("{}_abi", blueprint),
+            function: String::new(),
+            args: Vec::new(),
+        })
     }
 
     /// Put resources into this process's treasury.
@@ -98,30 +151,22 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         (buckets, references)
     }
 
-    /// Run the specified function within this process.
-    pub fn run(
-        &mut self,
-        package: Address,
-        export: String,
-        function: String,
-        args: Vec<Vec<u8>>,
-    ) -> Result<Vec<u8>, RuntimeError> {
+    /// Run the specified export with this process.
+    pub fn run(&mut self, target: Target) -> Result<Vec<u8>, RuntimeError> {
         #[cfg(not(feature = "alloc"))]
         let now = std::time::Instant::now();
         info!(
             self,
-            "Run started: package = {}, export = {}", package, export
+            "Run started: package = {}, export = {}", target.package, target.export
         );
 
         // Load the code
         let (module, memory) = self
             .runtime
-            .load_module(package)
-            .ok_or(RuntimeError::PackageNotFound(package))?;
+            .load_module(target.package)
+            .ok_or(RuntimeError::PackageNotFound(target.package))?;
         let vm = VM {
-            package,
-            function,
-            args,
+            target: target.clone(),
             module: module.clone(),
             memory: memory.clone(),
         };
@@ -129,7 +174,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         self.vm = Some(vm);
 
         // run the main function
-        let invoke_res = module.invoke_export(export.as_str(), &[], self);
+        let invoke_res = module.invoke_export(target.export.as_str(), &[], self);
         trace!(self, "Invoke result: {:?}", invoke_res);
         let return_value = invoke_res
             .map_err(|e| RuntimeError::InvokeError(e))?
@@ -164,15 +209,9 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
     }
 
     /// Call a function/method.
-    pub fn call(
-        &mut self,
-        package: Address,
-        export: String,
-        function: String,
-        args: Vec<Vec<u8>>,
-    ) -> Result<Vec<u8>, RuntimeError> {
+    pub fn call(&mut self, target: Target) -> Result<Vec<u8>, RuntimeError> {
         // move resources
-        for arg in &args {
+        for arg in &target.args {
             self.transform_sbor_data(
                 arg,
                 Self::move_transient_reject_persisted,
@@ -184,7 +223,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         process.put_resources(buckets_out, references_out);
 
         // run the function and finalize
-        let result = process.run(package, export, function, args);
+        let result = process.run(target);
         process.finalize()?;
 
         // move resources
@@ -213,7 +252,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         self.vm
             .as_ref()
             .ok_or(RuntimeError::VmNotStarted)
-            .map(|vm| vm.package)
+            .map(|vm| vm.target.package)
     }
 
     /// Return the function name
@@ -221,7 +260,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         self.vm
             .as_ref()
             .ok_or(RuntimeError::VmNotStarted)
-            .map(|vm| vm.function.clone())
+            .map(|vm| vm.target.function.clone())
     }
 
     /// Return the function name
@@ -229,7 +268,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         self.vm
             .as_ref()
             .ok_or(RuntimeError::VmNotStarted)
-            .map(|vm| vm.args.clone())
+            .map(|vm| vm.target.args.clone())
     }
 
     /// Return the module reference
@@ -320,20 +359,22 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
     ) -> Result<CallFunctionOutput, RuntimeError> {
         trace!(
             self,
-            "Calling function: package = {}, blueprint = {}, function = {}, args = {:02x?}",
+            "CALL started: package = {}, blueprint = {}, function = {}, args = {:02x?}",
             input.package,
             input.blueprint,
             input.function,
             input.args
         );
 
-        let result = self.call(
+        let target = self.target_function(
             input.package,
-            format!("{}_main", input.blueprint),
+            input.blueprint.as_str(),
             input.function,
             input.args,
-        );
+        )?;
+        let result = self.call(target);
 
+        trace!(self, "CALL finished");
         Ok(CallFunctionOutput { rtn: result? })
     }
 
@@ -343,28 +384,16 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
     ) -> Result<CallMethodOutput, RuntimeError> {
         trace!(
             self,
-            "Calling method: component = {}, method = {}, args = {:02x?}",
+            "CALL started: component = {}, method = {}, args = {:02x?}",
             input.component,
             input.method,
             input.args
         );
 
-        let com = self
-            .runtime
-            .get_component(input.component)
-            .ok_or(RuntimeError::ComponentNotFound(input.component))?
-            .clone();
+        let target = self.target_method(input.component, input.method, input.args)?;
+        let result = self.call(target);
 
-        let mut self_args = input.args.clone();
-        self_args.insert(0, scrypto_encode(&input.component));
-
-        let result = self.call(
-            com.package(),
-            format!("{}_main", com.blueprint()),
-            input.method,
-            self_args,
-        );
-
+        trace!(self, "CALL finished");
         Ok(CallMethodOutput { rtn: result? })
     }
 

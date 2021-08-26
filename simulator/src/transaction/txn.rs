@@ -17,7 +17,7 @@ pub enum Instruction {
 
     /// Create a bucket to be used for function call.
     PrepareBucket {
-        id: u8,
+        offset: u8,
         amount: U256,
         resource: Address,
     },
@@ -41,6 +41,7 @@ pub enum Instruction {
 #[derive(Debug)]
 pub struct TransactionReceipt {
     pub transaction: Transaction,
+    pub success: bool,
     pub results: Vec<Result<Vec<u8>, RuntimeError>>,
     pub logs: Vec<(Level, String)>,
 }

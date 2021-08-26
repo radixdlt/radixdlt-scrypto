@@ -5,7 +5,7 @@ use crate::transaction::*;
 
 pub fn print_receipt(receipt: TransactionReceipt) {
     for (i, action) in receipt.transaction.instructions.iter().enumerate() {
-        println!("Instruction: {:?}", action);
+        println!("Instruction #{}: {:?}", i, action);
         match receipt.results.get(i) {
             Some(r) => {
                 println!("Result: {:02x?}", r);
@@ -14,6 +14,7 @@ pub fn print_receipt(receipt: TransactionReceipt) {
                 println!("Skipped");
             }
         }
+        println!();
     }
 
     for (level, msg) in receipt.logs {

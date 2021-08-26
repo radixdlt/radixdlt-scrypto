@@ -6,7 +6,6 @@ use scrypto::types::*;
 use scrypto::utils::*;
 
 use crate::ledger::*;
-use crate::transaction::*;
 
 /// Export the ABI of a blueprint.
 pub fn export_abi(
@@ -28,7 +27,8 @@ pub fn export_abi(
 
     // Start a process and run abi generator
     let mut process = Process::new(0, trace, &mut runtime);
-    let result = process.run(package, format!("{}_abi", blueprint), String::new(), vec![]);
+    let target = process.target_abi(package, blueprint)?;
+    let result = process.run(target);
 
     // Parse ABI
     scrypto_decode::<abi::Blueprint>(&result?).map_err(|e| RuntimeError::InvalidData(e))

@@ -1,8 +1,6 @@
 use radix_engine::execution::*;
 use sbor::model::Type;
-use sbor::DecodeError;
 use scrypto::rust::fmt;
-use scrypto::types::*;
 
 /// Represents an error when parsing arguments.
 #[derive(Debug)]
@@ -13,19 +11,16 @@ pub enum ParseArgError {
     /// The argument is of unsupported type.
     UnsupportedType(usize, Type),
 
-    /// Failed to parse argument
+    /// Failed to parse argument.
     UnableToParse(usize, Type, String),
+
+    /// Bucket limit reached.
+    BucketLimitReached,
 }
 
 /// Represents an error when construction a transaction.
 #[derive(Debug)]
 pub enum TxnConstructionError {
-    /// The given packet does not exist.
-    PackageNotFound(Address),
-
-    /// The given component does not exist.
-    ComponentNotFound(Address),
-
     /// The given blueprint function does not exist.
     FunctionNotFound(String),
 
@@ -37,9 +32,6 @@ pub enum TxnConstructionError {
 
     /// Failed to export the blueprint ABI.
     FailedToExportAbi(RuntimeError),
-
-    /// Failed to parse the ABI returned.
-    FailedToParseAbi(DecodeError),
 }
 
 impl fmt::Display for ParseArgError {
@@ -59,6 +51,7 @@ impl fmt::Display for ParseArgError {
                 ty,
                 arg
             ),
+            Self::BucketLimitReached => "Bucket limit reached".to_owned(),
         };
 
         f.write_str(msg.as_str())

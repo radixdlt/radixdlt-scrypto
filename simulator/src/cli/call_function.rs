@@ -39,22 +39,20 @@ pub fn make_call_function_cmd<'a, 'b>() -> App<'a, 'b> {
 /// Handles a `call-function` request.
 pub fn handle_call_function<'a>(matches: &ArgMatches<'a>) {
     let package: Address = matches.value_of(ARG_PACKAGE).unwrap().into();
-    let blueprint = matches.value_of(ARG_BLUEPRINT).unwrap().to_owned();
-    let function = matches.value_of(ARG_FUNCTION).unwrap().to_owned();
+    let blueprint = matches.value_of(ARG_BLUEPRINT).unwrap();
+    let function = matches.value_of(ARG_FUNCTION).unwrap();
     let mut args = Vec::new();
     if let Some(x) = matches.values_of(ARG_ARGS) {
-        x.for_each(|a| args.push(hex::decode(a).unwrap()));
+        x.for_each(|a| args.push(a));
     }
 
-    let transaction = Transaction {
-        instructions: vec![Instruction::CallFunction {
-            package,
-            blueprint,
-            function,
-            args,
-        }],
-    };
-
-    let receipt = execute(transaction, true);
-    print_receipt(receipt);
+    match construct_call_function_txn(package, blueprint, function, &args, false) {
+        Ok(txn) => {
+            let receipt = execute(txn, true);
+            print_receipt(receipt);
+        }
+        Err(e) => {
+            println!("Failed to construct transaction: {:?}", e);
+        }
+    }
 }

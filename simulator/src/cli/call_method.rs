@@ -33,20 +33,19 @@ pub fn make_call_method_cmd<'a, 'b>() -> App<'a, 'b> {
 /// Handles a `call-method` request.
 pub fn handle_call_method<'a>(matches: &ArgMatches<'a>) {
     let component: Address = matches.value_of(ARG_COMPONENT).unwrap().into();
-    let method = matches.value_of(ARG_METHOD).unwrap().to_owned();
+    let method = matches.value_of(ARG_METHOD).unwrap();
     let mut args = Vec::new();
     if let Some(x) = matches.values_of(ARG_ARGS) {
-        x.for_each(|a| args.push(hex::decode(a).unwrap()));
+        x.for_each(|a| args.push(a));
     }
 
-    let transaction = Transaction {
-        instructions: vec![Instruction::CallMethod {
-            component,
-            method,
-            args,
-        }],
-    };
-
-    let receipt = execute(transaction, true);
-    print_receipt(receipt);
+    match construct_call_method_txn(component, method, &args, false) {
+        Ok(txn) => {
+            let receipt = execute(txn, true);
+            print_receipt(receipt);
+        }
+        Err(e) => {
+            println!("Failed to construct transaction: {:?}", e);
+        }
+    }
 }
