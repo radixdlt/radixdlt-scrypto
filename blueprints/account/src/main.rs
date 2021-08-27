@@ -16,7 +16,43 @@ blueprint! {
             .into()
         }
 
-        /// Deposit tokens into this account
+        /// Publish a code package.
+        pub fn publish_package(&self, code: Vec<u8>) -> Address {
+            let package = Package::new(&code);
+            package.into()
+        }
+
+        /// Create a resource with mutable supply.
+        pub fn create_resource_mutable(
+            &self,
+            symbol: String,
+            name: String,
+            description: String,
+            url: String,
+            icon_url: String,
+            minter: Address,
+        ) -> Address {
+            let resource = Resource::new_mutable( &symbol, &name, &description, &url, &icon_url, minter);
+            resource.into()
+        }
+
+        /// Create a resource with fixed supply.
+        pub fn create_resource_fixed(
+            &mut self,
+            symbol: String,
+            name: String,
+            description: String,
+            url: String,
+            icon_url: String,
+            supply: U256,
+        ) -> Address {
+            let tokens: Tokens = Resource::new_fixed(&symbol, &name, &description, &url, &icon_url, supply);
+            let address = tokens.resource();
+            self.deposit_tokens(tokens);
+            address
+        }
+
+        /// Deposit bucket into this account
         pub fn deposit_bucket(&mut self, bucket: BID) {
             let resource = bucket.resource();
             self.resources
