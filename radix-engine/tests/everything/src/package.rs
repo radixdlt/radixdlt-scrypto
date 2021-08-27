@@ -8,7 +8,7 @@ blueprint! {
 
     impl PackageTest {
         pub fn publish() -> Address {
-            Package::new(include_bytes!("helloworld.wasm")).into()
+            Package::new(include_bytes!("../../helloworld.wasm")).into()
         }
     }
 }

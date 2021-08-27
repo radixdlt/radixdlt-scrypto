@@ -1,11 +1,11 @@
 use sbor::model::*;
 use sbor::{Decode, Describe, Encode};
 
-use crate::kernel::*;
+use crate::resource::*;
 use crate::rust::borrow::ToOwned;
 use crate::types::*;
 
-/// A borrowed rid to a `Badges` bucket.
+/// A reference to a `Badges` bucket.
 #[derive(Debug, Encode, Decode)]
 pub struct BadgesRef {
     rid: RID,
@@ -26,28 +26,19 @@ impl From<RID> for BadgesRef {
 }
 
 impl BadgesRef {
-    pub fn amount(&self) -> U256 {
-        let input = GetAmountRefInput {
-            reference: self.rid,
-        };
-        let output: GetAmountRefOutput = call_kernel(GET_AMOUNT_REF, input);
+    pub fn check(&self, resource: Address) {
+        assert!(self.resource() == resource && self.amount() >= 1.into());
+    }
 
-        output.amount
+    pub fn amount(&self) -> U256 {
+        self.rid.amount()
     }
 
     pub fn resource(&self) -> Address {
-        let input = GetResourceRefInput {
-            reference: self.rid,
-        };
-        let output: GetResourceRefOutput = call_kernel(GET_RESOURCE_REF, input);
-
-        output.resource
+        self.rid.resource()
     }
 
     pub fn destroy(self) {
-        let input = DropReferenceInput {
-            reference: self.rid,
-        };
-        let _: DropReferenceOutput = call_kernel(DROP_REFERENCE, input);
+        self.rid.destroy()
     }
 }

@@ -96,5 +96,5 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: Build
-      run: cargo run -- help
+      run: bash ./tests/simple.sh
       working-directory: simulator

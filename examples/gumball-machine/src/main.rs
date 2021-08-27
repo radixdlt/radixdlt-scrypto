@@ -13,8 +13,8 @@ blueprint! {
     }
     
     impl GumballMachine {
-        pub fn new() -> Component {
-            Self {
+        pub fn new() -> Address {
+            let component = Self {
                 gumballs: Resource::new_fixed(
                     "gum",
                     "Gumball",
@@ -25,7 +25,10 @@ blueprint! {
                 ),
                 collected_xrd: Tokens::new_empty(Address::RadixToken),
             }
-            .instantiate()
+            .instantiate();
+
+            info!("New gumball machine: {}", component.address());
+            component.into()
         }
     
         pub fn get_gumball(&mut self, payment: Tokens) -> Tokens {

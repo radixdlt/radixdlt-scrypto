@@ -2,7 +2,6 @@ use radix_engine::execution::*;
 use radix_engine::ledger::*;
 use radix_engine::model::*;
 use scrypto::buffer::*;
-use scrypto::resource::*;
 use scrypto::rust::collections::*;
 use scrypto::types::*;
 use scrypto::utils::*;
@@ -130,7 +129,7 @@ pub fn execute(transaction: Transaction, trace: bool) -> TransactionReceipt {
                         let target = process.target_method(
                             component,
                             method.clone(),
-                            vec![scrypto_encode(&Tokens::from(bid))],
+                            vec![scrypto_encode(&bid)],
                         );
                         result = target.and_then(|target| {
                             call(&mut process, target, &mut moving_buckets, None)

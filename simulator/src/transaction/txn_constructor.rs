@@ -91,7 +91,7 @@ pub fn construct_call_method_txn(
             });
             v.push(Instruction::DepositAll {
                 component: account,
-                method: "deposit_tokens".to_owned(),
+                method: "deposit_bucket".to_owned(),
             });
             v.push(Instruction::Finalize);
             Ok(Transaction { instructions: v })

@@ -53,7 +53,7 @@ pub fn handle_new_account<'a>(_matches: &ArgMatches<'a>) {
         .and_then(|target| process.run(target))
         .unwrap();
     process.finalize().unwrap();
-    let component: scrypto::constructs::Component = scrypto_decode(&output).unwrap();
+    let component: Address = scrypto_decode(&output).unwrap();
 
     // allocate free XRD
     let mut buckets = HashMap::new();
@@ -66,9 +66,9 @@ pub fn handle_new_account<'a>(_matches: &ArgMatches<'a>) {
     process2.put_resources(buckets, HashMap::new());
     process2
         .target_method(
-            component.address(),
-            "deposit_tokens".to_owned(),
-            vec![scrypto_encode(&scrypto::resource::Tokens::from(bid))],
+            component,
+            "deposit_bucket".to_owned(),
+            vec![scrypto_encode(&bid)],
         )
         .and_then(|target| process2.run(target))
         .unwrap();
@@ -77,11 +77,11 @@ pub fn handle_new_account<'a>(_matches: &ArgMatches<'a>) {
     // flush
     runtime.flush();
 
-    println!("New account: {}", component.address());
+    println!("New account: {}", component);
 
     // set as default config if not set
     if get_config(CONFIG_DEFAULT_ACCOUNT).is_none() {
-        set_config(CONFIG_DEFAULT_ACCOUNT, &component.address().to_string());
+        set_config(CONFIG_DEFAULT_ACCOUNT, &component.to_string());
         println!(
             "No default account configured. The above account will be used as the default account."
         )

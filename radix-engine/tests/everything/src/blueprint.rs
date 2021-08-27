@@ -1,4 +1,5 @@
 use scrypto::constructs::*;
+use scrypto::types::*;
 use scrypto::*;
 
 blueprint! {
@@ -6,8 +7,8 @@ blueprint! {
     }
 
     impl BlueprintTest {
-        pub fn call_function() -> Component {
-            let package = Package::new(include_bytes!("helloworld.wasm"));
+        pub fn call_function() -> Address {
+            let package = Package::new(include_bytes!("../../helloworld.wasm"));
             let blueprint = Blueprint::from(package.into(), "Greeting");
             blueprint.call("new", args!())
         }

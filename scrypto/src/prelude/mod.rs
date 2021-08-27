@@ -8,9 +8,9 @@ pub use crate::constructs::{Account, Blueprint, Component, Context, Logger, Pack
 
 pub use crate::kernel::call_kernel;
 
-pub use crate::resource::{Badges, BadgesRef, Tokens, TokensRef};
+pub use crate::resource::{Badges, BadgesRef, Bucket, BucketRef, Tokens, TokensRef};
 
-pub use crate::types::{Address, H256, U256};
+pub use crate::types::{Address, BID, H256, RID, U256};
 
 pub use crate::rust::borrow::ToOwned;
 pub use crate::rust::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
