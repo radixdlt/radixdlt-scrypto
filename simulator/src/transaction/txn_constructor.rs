@@ -55,6 +55,10 @@ pub fn construct_call_function_txn(
                 function: function.to_owned(),
                 args: new_args,
             });
+            v.push(Instruction::DepositAll {
+                component: account,
+                method: "deposit_tokens".to_owned(),
+            });
             v.push(Instruction::Finalize);
             Ok(Transaction { instructions: v })
         }
@@ -84,6 +88,10 @@ pub fn construct_call_method_txn(
                 component,
                 method: method.to_owned(),
                 args: new_args,
+            });
+            v.push(Instruction::DepositAll {
+                component: account,
+                method: "deposit_tokens".to_owned(),
             });
             v.push(Instruction::Finalize);
             Ok(Transaction { instructions: v })

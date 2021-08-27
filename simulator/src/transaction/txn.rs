@@ -39,6 +39,12 @@ pub enum Instruction {
         args: Vec<Vec<u8>>,
     },
 
+    /// Pass all remaining resources to a component.
+    DepositAll {
+        component: Address,
+        method: String,
+    },
+
     Finalize,
 }
 

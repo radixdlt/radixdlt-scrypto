@@ -7,5 +7,5 @@ mod runtime;
 pub use env::{EnvModuleResolver, KERNEL_INDEX, KERNEL_NAME};
 pub use error::RuntimeError;
 pub use loader::load_module;
-pub use process::Process;
+pub use process::{Target, Process};
 pub use runtime::{AddressAllocator, Runtime};

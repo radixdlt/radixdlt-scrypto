@@ -80,9 +80,10 @@ pub fn handle_new_account<'a>(_matches: &ArgMatches<'a>) {
     println!("New account: {}", component.address());
 
     // set as default config if not set
-    let path = get_config_json();
-    if !path.exists() {
+    if get_config(CONFIG_DEFAULT_ACCOUNT).is_none() {
         set_config(CONFIG_DEFAULT_ACCOUNT, &component.address().to_string());
-        println!("Not default account configured. The above account will be used as the default account.")
+        println!(
+            "No default account configured. The above account will be used as the default account."
+        )
     }
 }

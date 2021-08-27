@@ -69,6 +69,8 @@ pub enum RuntimeError {
     VmNotStarted,
 
     InvalidLogLevel,
+
+    UnexpectedResourceReturn,
 }
 
 impl fmt::Display for RuntimeError {
