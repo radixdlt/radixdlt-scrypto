@@ -27,6 +27,7 @@ rustup target add wasm32-unknown-unknown
 ```
 git clone git@github.com:radixdlt/radixdlt-scrypto.git
 cd radixdlt-scrypto
+# git checkout <branch>
 cargo install --path ./simulator
 ```
 
