@@ -1,3 +1,4 @@
+use lru::LruCache;
 use scrypto::rust::collections::*;
 use scrypto::rust::string::String;
 use scrypto::rust::vec::Vec;
@@ -85,6 +86,7 @@ pub struct Runtime<'le, T: Ledger> {
     updated_accounts: HashSet<Address>,
     updated_resources: HashSet<Address>,
     updated_buckets: HashSet<BID>,
+    cache: LruCache<Address, Module>,
 }
 
 impl<'le, T: Ledger> Runtime<'le, T> {
@@ -104,6 +106,7 @@ impl<'le, T: Ledger> Runtime<'le, T> {
             updated_accounts: HashSet::new(),
             updated_resources: HashSet::new(),
             updated_buckets: HashSet::new(),
+            cache: LruCache::new(1024),
         }
     }
 
@@ -124,8 +127,19 @@ impl<'le, T: Ledger> Runtime<'le, T> {
 
     /// Loads a module.
     pub fn load_module(&mut self, address: Address) -> Option<(ModuleRef, MemoryRef)> {
-        self.get_package(address)
-            .map(|package| load_module(package.code()).expect("All package should be loadable"))
+        match self.get_package(address).map(Clone::clone) {
+            Some(p) => {
+                if let Some(m) = self.cache.get(&address) {
+                    Some(instantiate_module(m).unwrap())
+                } else {
+                    let module = parse_module(p.code()).unwrap();
+                    let inst = instantiate_module(&module).unwrap();
+                    self.cache.put(address, module);
+                    Some(inst)
+                }
+            }
+            None => None,
+        }
     }
 
     /// Returns an immutable reference to a package, if exists.

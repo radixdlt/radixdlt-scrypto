@@ -5,16 +5,18 @@ set -e
 
 cd "$(dirname "$0")/.."
 
+rev2="cargo run --release --"
+
 # Set up environment
-cargo run -- reset
-cargo run -- new-account
+$rev2 reset
+$rev2 new-account
 
 # Test helloworld
-package=`cargo run -- publish tests/helloworld.wasm | tee /dev/tty | awk '/New package/ {print $NF}'`
-component=`cargo run -- call-function $package Greeting new | tee /dev/tty | awk '/New component:/ {print $NF}'`
-cargo run -- call-method $component say_hello
+package=`$rev2 publish tests/helloworld.wasm | tee /dev/tty | awk '/New package/ {print $NF}'`
+component=`$rev2 call-function $package Greeting new | tee /dev/tty | awk '/New component:/ {print $NF}'`
+$rev2 call-method $component say_hello
 
 # Test gumball machine
-package=`cargo run -- publish tests/gumball-machine.wasm | tee /dev/tty | awk '/New package/ {print $NF}'`
-component=`cargo run -- call-function $package GumballMachine new | tee /dev/tty | awk '/New gumball machine:/ {print $NF}'`
-cargo run -- call-method $component get_gumball 1:01
+package=`$rev2 publish tests/gumball-machine.wasm | tee /dev/tty | awk '/New package/ {print $NF}'`
+component=`$rev2 call-function $package GumballMachine new | tee /dev/tty | awk '/New gumball machine:/ {print $NF}'`
+$rev2 call-method $component get_gumball 1:01

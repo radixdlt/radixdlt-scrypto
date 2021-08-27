@@ -1,5 +1,7 @@
-// There is no main function in Scrypto.
 #![no_main]
+
+#[global_allocator]
+static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
 use scrypto::prelude::*;
 

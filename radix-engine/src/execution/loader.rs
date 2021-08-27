@@ -3,10 +3,35 @@ use wasmi::*;
 
 use crate::execution::*;
 
-/// Validate and instantiate a WASM module.
-pub fn load_module(code: &[u8]) -> Result<(ModuleRef, MemoryRef), RuntimeError> {
+/// Parse a WASM module.
+pub fn parse_module(code: &[u8]) -> Result<Module, RuntimeError> {
+    Module::from_buffer(code).map_err(|e| RuntimeError::InvalidModule(e))
+}
+
+/// Instance a WASM module.
+pub fn instantiate_module(module: &Module) -> Result<(ModuleRef, MemoryRef), RuntimeError> {
+    // Instantiate
+    let instance = ModuleInstance::new(
+        module,
+        &ImportsBuilder::new().with_resolver("env", &EnvModuleResolver),
+    )
+    .map_err(|e| RuntimeError::UnableToInstantiate(e))?
+    .assert_no_start();
+
+    // Find memory export
+    if let Some(ExternVal::Memory(memory)) = instance.export_by_name("memory") {
+        Ok((instance, memory.to_owned()))
+    } else {
+        Err(RuntimeError::NoValidMemoryExport)
+    }
+}
+
+/// Validate a WASM module.
+pub fn validate_module(code: &[u8]) -> Result<(), RuntimeError> {
     // Parse
-    let parsed = Module::from_buffer(code).map_err(|e| RuntimeError::InvalidModule(e))?;
+    let parsed = parse_module(code)?;
+
+    // check floating point
     parsed
         .deny_floating_point()
         .map_err(|_| RuntimeError::FloatingPointNotAllowed)?;
@@ -22,11 +47,11 @@ pub fn load_module(code: &[u8]) -> Result<(ModuleRef, MemoryRef), RuntimeError> 
     if instance.has_start() {
         return Err(RuntimeError::StartFunctionNotAllowed);
     }
-    let module_ref = instance.assert_no_start();
+    let module = instance.assert_no_start();
 
     // Check memory export
-    if let Some(ExternVal::Memory(memory)) = module_ref.export_by_name("memory") {
-        Ok((module_ref, memory.to_owned()))
+    if let Some(ExternVal::Memory(_)) = module.export_by_name("memory") {
+        Ok(())
     } else {
         Err(RuntimeError::NoValidMemoryExport)
     }

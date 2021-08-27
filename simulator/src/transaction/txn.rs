@@ -52,6 +52,7 @@ pub enum Instruction {
 pub struct TransactionReceipt {
     pub transaction: Transaction,
     pub success: bool,
+    pub execution_time: u128,
     pub results: Vec<Result<Vec<u8>, RuntimeError>>,
     pub logs: Vec<(Level, String)>,
 }

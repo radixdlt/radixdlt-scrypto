@@ -36,5 +36,10 @@ pub fn print_receipt(receipt: TransactionReceipt) {
         };
         println!("|- [{:5}] {}", l, m);
     }
-    println!();
+
+    println!(
+        "\n{} {} ms\n",
+        "Execution Time:".bold().green(),
+        receipt.execution_time
+    );
 }

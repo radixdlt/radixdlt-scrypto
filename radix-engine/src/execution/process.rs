@@ -337,7 +337,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         if self.runtime.get_package(address).is_some() {
             return Err(RuntimeError::PackageAlreadyExists(address));
         }
-        load_module(&input.code)?;
+        validate_module(&input.code)?;
 
         trace!(
             self,

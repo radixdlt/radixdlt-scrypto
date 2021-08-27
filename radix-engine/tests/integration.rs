@@ -32,7 +32,7 @@ fn publish<T: Ledger>(ledger: &mut T, name: &str) -> Address {
     let mut runtime = Runtime::new(tx_hash, ledger);
 
     let address = runtime.new_package_address();
-    load_module(&code).unwrap();
+    validate_module(&code).unwrap();
     runtime.put_package(address, Package::new(code));
     runtime.flush();
 

@@ -1,5 +1,8 @@
 #![no_main]
 
+#[global_allocator]
+static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
+
 use scrypto::prelude::*;
 
 blueprint! {
@@ -59,6 +62,13 @@ blueprint! {
                 .entry(resource)
                 .or_insert(BID::new_empty(resource))
                 .put(bucket);
+        }
+
+        /// Deposit buckets into this account
+        pub fn deposit_buckets(&mut self, buckets: Vec<BID>) {
+            for bucket in buckets {
+                self.deposit_bucket(bucket);
+            }
         }
 
         /// Deposit tokens into this account

@@ -1,3 +1,5 @@
+use std::time::Instant;
+
 use radix_engine::execution::*;
 use radix_engine::ledger::*;
 use radix_engine::model::*;
@@ -48,6 +50,7 @@ pub fn execute<T: Ledger>(
     transaction: Transaction,
     trace: bool,
 ) -> TransactionReceipt {
+    let now = Instant::now();
     let tx_hash = sha256(Uuid::new_v4().to_string());
     let mut runtime = Runtime::new(tx_hash, ledger);
 
@@ -121,28 +124,22 @@ pub fn execute<T: Ledger>(
                 })
             }
             Instruction::DepositAll { component, method } => {
-                let mut result = Ok(vec![]);
+                let mut buckets = vec![];
                 for (_, bucket) in resource_collector.iter_mut() {
                     if bucket.amount() > 0.into() {
                         let bid = runtime.new_transient_bid();
+                        buckets.push(bid);
                         moving_buckets.insert(bid, bucket.take(bucket.amount()).unwrap());
-
-                        let mut process = Process::new(0, trace, &mut runtime);
-                        let target = process.target_method(
-                            component,
-                            method.clone(),
-                            vec![scrypto_encode(&bid)],
-                        );
-                        result = target.and_then(|target| {
-                            call(&mut process, target, &mut moving_buckets, None)
-                        });
-
-                        if result.is_err() {
-                            break;
-                        }
                     }
                 }
-                result
+
+                let mut process = Process::new(0, trace, &mut runtime);
+                let target = process.target_method(
+                    component,
+                    method.clone(),
+                    vec![scrypto_encode(&buckets)],
+                );
+                target.and_then(|target| call(&mut process, target, &mut moving_buckets, None))
             }
             Instruction::Finalize => {
                 // TODO check if this is the last instruction
@@ -180,6 +177,7 @@ pub fn execute<T: Ledger>(
     TransactionReceipt {
         transaction,
         success,
+        execution_time: now.elapsed().as_millis(),
         results,
         logs: runtime.logs().clone(),
     }

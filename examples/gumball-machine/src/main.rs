@@ -1,10 +1,9 @@
-// There is no main function in Scrypto.
 #![no_main]
 
-use scrypto::constructs::*;
-use scrypto::resource::*;
-use scrypto::types::*;
-use scrypto::*;
+#[global_allocator]
+static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
+
+use scrypto::prelude::*;
 
 blueprint! {
     struct GumballMachine {

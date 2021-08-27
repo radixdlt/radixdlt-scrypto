@@ -38,6 +38,7 @@ pub fn handle_publish<'a>(matches: &ArgMatches<'a>) -> Result<(), Error> {
         path
     };
     let code = fs::read(&file).map_err(|e| Error::IOError(e))?;
+    validate_module(&code).map_err(|e| Error::ExecutionError(e))?;
 
     match get_config(CONF_DEFAULT_ACCOUNT)? {
         Some(a) => {

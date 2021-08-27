@@ -26,6 +26,7 @@ echo "Testing with no_std"
 (cd radix-engine; cargo test --no-default-features --features alloc)
 
 echo "Testing examples"
+(cd blueprints/account; cargo build --release)
 (cd examples/helloworld; cargo build --release)
 (cd examples/no_std; cargo build --release)
 (cd examples/gumball-machine; cargo build --release)
