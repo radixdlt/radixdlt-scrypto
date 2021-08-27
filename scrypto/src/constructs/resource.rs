@@ -3,7 +3,6 @@ use sbor::{Decode, Describe, Encode};
 
 use crate::constructs::*;
 use crate::kernel::*;
-use crate::resource::*;
 use crate::rust::borrow::ToOwned;
 use crate::rust::string::ToString;
 use crate::types::*;
@@ -94,7 +93,7 @@ impl Resource {
         }
     }
 
-    fn mint(&self, amount: U256) -> BID {
+    pub fn mint<T: From<BID>>(&self, amount: U256) -> T {
         assert!(amount >= U256::one());
 
         let input = MintResourceInput {
@@ -103,15 +102,7 @@ impl Resource {
         };
         let output: MintResourceOutput = call_kernel(MINT_RESOURCE, input);
 
-        output.bucket
-    }
-
-    pub fn mint_tokens(&self, amount: U256) -> Tokens {
-        self.mint(amount).into()
-    }
-
-    pub fn mint_badges(&self, amount: U256) -> Badges {
-        self.mint(amount).into()
+        output.bucket.into()
     }
 
     pub fn address(&self) -> Address {

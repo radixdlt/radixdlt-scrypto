@@ -32,8 +32,7 @@ blueprint! {
         }
 
         pub fn put_component_state(&mut self)  {
-            let resource: Resource = self.resource.clone().into();
-            let tokens = resource.mint_tokens(U256::from(100));
+            let tokens = mint_tokens(self.resource, 100);
 
             // Receive resource
             self.tokens.put(tokens);

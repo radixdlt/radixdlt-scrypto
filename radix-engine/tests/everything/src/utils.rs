@@ -13,5 +13,5 @@ pub fn create_fixed_tokens(symbol: &str, supply: U256) -> Tokens {
 
 pub fn mint_tokens(resource: Address, amount: u32) -> Tokens {
     let resource = Resource::from(resource);
-    resource.mint_tokens(U256::from(amount))
+    resource.mint(U256::from(amount))
 }

@@ -2,6 +2,7 @@ use crate::primitives::*;
 use crate::rust::convert::TryFrom;
 use crate::rust::fmt;
 use crate::rust::str::FromStr;
+use crate::rust::string::String;
 use crate::rust::vec::Vec;
 
 /// Represents an address.
