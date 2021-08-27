@@ -7,7 +7,6 @@ use scrypto::types::*;
 use scrypto::utils::*;
 use uuid::Uuid;
 
-use crate::ledger::*;
 use crate::transaction::*;
 
 fn call<L: Ledger>(
@@ -44,10 +43,13 @@ fn call<L: Ledger>(
     result
 }
 
-pub fn execute(transaction: Transaction, trace: bool) -> TransactionReceipt {
+pub fn execute<T: Ledger>(
+    ledger: &mut T,
+    transaction: Transaction,
+    trace: bool,
+) -> TransactionReceipt {
     let tx_hash = sha256(Uuid::new_v4().to_string());
-    let mut ledger = FileBasedLedger::new(get_data_dir());
-    let mut runtime = Runtime::new(tx_hash, &mut ledger);
+    let mut runtime = Runtime::new(tx_hash, ledger);
 
     let mut reserved_bids = vec![];
     let mut resource_collector = HashMap::<Address, Bucket>::new();

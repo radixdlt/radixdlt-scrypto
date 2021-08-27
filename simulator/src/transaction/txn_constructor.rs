@@ -1,4 +1,5 @@
 use radix_engine::execution::*;
+use radix_engine::ledger::*;
 use radix_engine::model::*;
 use scrypto::abi;
 use scrypto::buffer::*;
@@ -8,13 +9,13 @@ use scrypto::types::*;
 use crate::transaction::*;
 
 fn withdraw(
-    insts: &mut Vec<Instruction>,
+    instructions: &mut Vec<Instruction>,
     buckets: &HashMap<u8, Bucket>,
     account: Address,
     method: &str,
 ) {
     for (offset, bucket) in buckets {
-        insts.push(Instruction::CallMethod {
+        instructions.push(Instruction::CallMethod {
             component: account,
             method: method.to_owned(),
             args: vec![
@@ -22,7 +23,7 @@ fn withdraw(
                 scrypto_encode(&bucket.resource()),
             ],
         });
-        insts.push(Instruction::NewBucket {
+        instructions.push(Instruction::NewBucket {
             offset: *offset,
             amount: bucket.amount(),
             resource: bucket.resource(),
@@ -31,7 +32,8 @@ fn withdraw(
 }
 
 /// Construct a CALL_FUNCTION transaction.
-pub fn construct_call_function_txn(
+pub fn construct_call_function_txn<T: Ledger>(
+    ledger: &mut T,
     account: Address,
     package: Address,
     blueprint: &str,
@@ -39,7 +41,7 @@ pub fn construct_call_function_txn(
     args: &Vec<&str>,
     trace: bool,
 ) -> Result<Transaction, TxnConstructionError> {
-    let func = get_function_abi(package, blueprint, function, trace)?;
+    let func = get_function_abi(ledger, package, blueprint, function, trace)?;
     let mut alloc = AddressAllocator::new();
     match parse_args(&func.inputs, args, &mut alloc) {
         Ok((new_args, tokens, badges)) => {
@@ -67,14 +69,15 @@ pub fn construct_call_function_txn(
 }
 
 /// Construct a CALL_METHOD transaction.
-pub fn construct_call_method_txn(
+pub fn construct_call_method_txn<T: Ledger>(
+    ledger: &mut T,
     account: Address,
     component: Address,
     method: &str,
     args: &Vec<&str>,
     trace: bool,
 ) -> Result<Transaction, TxnConstructionError> {
-    let meth = get_method_abi(component, method, trace)?;
+    let meth = get_method_abi(ledger, component, method, trace)?;
     let mut alloc = AddressAllocator::new();
     match parse_args(&meth.inputs, args, &mut alloc) {
         Ok((new_args, tokens, badges)) => {
@@ -101,13 +104,14 @@ pub fn construct_call_method_txn(
 }
 
 /// Returns the ABI of a function.
-pub fn get_function_abi(
+pub fn get_function_abi<T: Ledger>(
+    ledger: &mut T,
     package: Address,
     blueprint: &str,
     function: &str,
     trace: bool,
 ) -> Result<abi::Function, TxnConstructionError> {
-    export_abi(package, blueprint, trace)
+    export_abi(ledger, package, blueprint, trace)
         .map_err(|e| TxnConstructionError::FailedToExportAbi(e))?
         .functions
         .iter()
@@ -118,12 +122,13 @@ pub fn get_function_abi(
 }
 
 /// Returns the ABI of a method.
-pub fn get_method_abi(
+pub fn get_method_abi<T: Ledger>(
+    ledger: &mut T,
     component: Address,
     method: &str,
     trace: bool,
 ) -> Result<abi::Method, TxnConstructionError> {
-    export_abi_by_component(component, trace)
+    export_abi_by_component(ledger, component, trace)
         .map_err(|e| TxnConstructionError::FailedToExportAbi(e))?
         .methods
         .iter()

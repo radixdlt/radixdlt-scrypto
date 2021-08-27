@@ -5,22 +5,21 @@ use scrypto::buffer::*;
 use scrypto::types::*;
 use scrypto::utils::*;
 
-use crate::ledger::*;
-
 /// Export the ABI of a blueprint.
-pub fn export_abi(
+pub fn export_abi<T: Ledger>(
+    ledger: &mut T,
     package: Address,
     blueprint: &str,
     trace: bool,
 ) -> Result<abi::Blueprint, RuntimeError> {
     let tx_hash = sha256(""); // fixed tx hash for determinism
-    let mut ledger = InMemoryLedger::new();
-    let mut runtime = Runtime::new(tx_hash, &mut ledger);
+    let mut mem_ledger = InMemoryLedger::new(); // empty ledger for determinism
+    let mut runtime = Runtime::new(tx_hash, &mut mem_ledger);
 
     // Load package code from file system
     runtime.put_package(
         package,
-        FileBasedLedger::new(get_data_dir())
+        ledger
             .get_package(package)
             .ok_or(RuntimeError::PackageNotFound(package))?,
     );
@@ -35,13 +34,14 @@ pub fn export_abi(
 }
 
 /// Export the ABI of the blueprint of which the given component is instantiated.
-pub fn export_abi_by_component(
+pub fn export_abi_by_component<T: Ledger>(
+    ledger: &mut T,
     component: Address,
     trace: bool,
 ) -> Result<abi::Blueprint, RuntimeError> {
-    let com = FileBasedLedger::new(get_data_dir())
+    let com = ledger
         .get_component(component)
         .ok_or(RuntimeError::ComponentNotFound(component))?;
 
-    export_abi(com.package(), com.blueprint(), trace)
+    export_abi(ledger, com.package(), com.blueprint(), trace)
 }

@@ -5,7 +5,7 @@ use crate::transaction::*;
 
 pub fn print_receipt(receipt: TransactionReceipt) {
     println!(
-        "{} {}",
+        "\n{} {}",
         "Transaction Status:".bold().green(),
         if receipt.success {
             "SUCCESS".blue()
@@ -36,4 +36,5 @@ pub fn print_receipt(receipt: TransactionReceipt) {
         };
         println!("|- [{:5}] {}", l, m);
     }
+    println!();
 }

@@ -25,35 +25,38 @@ pub fn make_call_method_cmd<'a, 'b>() -> App<'a, 'b> {
         )
         .arg(
             Arg::with_name(ARG_ARGS)
-                .help("Specify the arguments, in hex.")
+                .help("Specify the arguments, e.g. `123`, `hello` or `1000:01`.")
                 .multiple(true),
         )
 }
 
 /// Handles a `call-method` request.
-pub fn handle_call_method<'a>(matches: &ArgMatches<'a>) {
-    let component: Address = matches.value_of(ARG_COMPONENT).unwrap().into();
-    let method = matches.value_of(ARG_METHOD).unwrap();
+pub fn handle_call_method<'a>(matches: &ArgMatches<'a>) -> Result<(), Error> {
+    let component: Address = matches
+        .value_of(ARG_COMPONENT)
+        .ok_or(Error::MissingArgument(ARG_COMPONENT.to_owned()))?
+        .into();
+    let method = matches
+        .value_of(ARG_METHOD)
+        .ok_or(Error::MissingArgument(ARG_METHOD.to_owned()))?;
     let mut args = Vec::new();
     if let Some(x) = matches.values_of(ARG_ARGS) {
         x.for_each(|a| args.push(a));
     }
 
-    match get_config(CONFIG_DEFAULT_ACCOUNT) {
+    match get_config(CONF_DEFAULT_ACCOUNT)? {
         Some(a) => {
             let account: Address = a.as_str().into();
-            match construct_call_method_txn(account, component, method, &args, false) {
+            let mut ledger = FileBasedLedger::new(get_data_dir()?);
+            match construct_call_method_txn(&mut ledger, account, component, method, &args, false) {
                 Ok(txn) => {
-                    let receipt = execute(txn, false);
+                    let receipt = execute(&mut ledger, txn, false);
                     print_receipt(receipt);
+                    Ok(())
                 }
-                Err(e) => {
-                    println!("Failed to construct transaction: {:?}", e);
-                }
+                Err(e) => Err(Error::ConstructionErr(e)),
             }
         }
-        None => {
-            println!("Default account not set. Try to run `rev2 new-account` first.");
-        }
+        None => Err(Error::NoDefaultAccount),
     }
 }

@@ -1,36 +1,46 @@
-mod call_function;
-mod call_method;
+mod cargo;
+mod cmd_call_function;
+mod cmd_call_method;
+mod cmd_config;
+mod cmd_export_abi;
+mod cmd_new_account;
+mod cmd_publish;
+mod cmd_reset;
+mod cmd_show;
 mod config;
-mod export_abi;
-mod new_account;
-mod publish;
-mod reset;
-mod show;
+mod error;
+mod ledger;
 
-const CMD_EXPORT_ABI: &'static str = "export-abi";
-const CMD_CALL_FUNCTION: &'static str = "call-function";
-const CMD_CALL_METHOD: &'static str = "call-method";
-const CMD_NEW_ACCOUNT: &'static str = "new-account";
-const CMD_PUBLISH: &'static str = "publish";
-const CMD_RESET: &'static str = "reset";
-const CMD_CONFIG: &'static str = "config";
-const CMD_SHOW: &'static str = "show";
-
-pub use call_function::*;
-pub use call_method::*;
+pub use cargo::*;
+pub use cmd_call_function::*;
+pub use cmd_call_method::*;
+pub use cmd_config::*;
+pub use cmd_export_abi::*;
+pub use cmd_new_account::*;
+pub use cmd_publish::*;
+pub use cmd_reset::*;
+pub use cmd_show::*;
 pub use config::*;
-pub use export_abi::*;
-pub use new_account::*;
-pub use publish::*;
-pub use reset::*;
-pub use show::*;
+pub use error::*;
+pub use ledger::*;
 
-pub fn run<I, T>(itr: I)
+pub const CONF_DEFAULT_ACCOUNT: &'static str = "default.account";
+
+pub const CMD_EXPORT_ABI: &'static str = "export-abi";
+pub const CMD_CALL_FUNCTION: &'static str = "call-function";
+pub const CMD_CALL_METHOD: &'static str = "call-method";
+pub const CMD_NEW_ACCOUNT: &'static str = "new-account";
+pub const CMD_PUBLISH: &'static str = "publish";
+pub const CMD_RESET: &'static str = "reset";
+pub const CMD_CONFIG: &'static str = "config";
+pub const CMD_SHOW: &'static str = "show";
+
+pub fn run<I, T>(args: I) -> Result<(), Error>
 where
     I: IntoIterator<Item = T>,
     T: Into<std::ffi::OsString> + Clone,
 {
-    let matches = clap::App::new("Radix Engine Simulator")
+    let mut app = clap::App::new("Radix Engine Simulator")
         .about("Build fast, reward everyone, and scale without friction")
         .version(clap::crate_version!())
         .subcommand(make_export_abi_cmd())
@@ -40,8 +50,8 @@ where
         .subcommand(make_publish_cmd())
         .subcommand(make_reset_cmd())
         .subcommand(make_config_cmd())
-        .subcommand(make_show_cmd())
-        .get_matches_from(itr);
+        .subcommand(make_show_cmd());
+    let matches = app.clone().get_matches_from(args);
 
     match matches.subcommand() {
         (CMD_EXPORT_ABI, Some(m)) => handle_export_abi(m),
@@ -52,6 +62,9 @@ where
         (CMD_RESET, Some(m)) => handle_reset(m),
         (CMD_CONFIG, Some(m)) => handle_config(m),
         (CMD_SHOW, Some(m)) => handle_show(m),
-        _ => {}
+        _ => {
+            app.print_long_help().unwrap();
+            Err(Error::MissingSubCommand)
+        }
     }
 }

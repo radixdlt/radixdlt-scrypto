@@ -3,7 +3,6 @@ use radix_engine::ledger::*;
 use scrypto::types::*;
 
 use crate::cli::*;
-use crate::ledger::*;
 
 const ARG_ADDRESS: &'static str = "ADDRESS";
 
@@ -20,10 +19,13 @@ pub fn make_show_cmd<'a, 'b>() -> App<'a, 'b> {
 }
 
 /// Handles a `show` request.
-pub fn handle_show<'a>(matches: &ArgMatches<'a>) {
-    let address: Address = matches.value_of(ARG_ADDRESS).unwrap().into();
+pub fn handle_show<'a>(matches: &ArgMatches<'a>) -> Result<(), Error> {
+    let address: Address = matches
+        .value_of(ARG_ADDRESS)
+        .ok_or(Error::MissingArgument(ARG_ADDRESS.to_owned()))?
+        .into();
 
-    let ledger = FileBasedLedger::new(get_data_dir());
+    let ledger = FileBasedLedger::new(get_data_dir()?);
     match address {
         Address::System => {
             println!("Radix system address");
@@ -85,6 +87,7 @@ pub fn handle_show<'a>(matches: &ArgMatches<'a>) {
             }
         }
     }
+    Ok(())
 }
 
 fn show_owning_resources<T: Ledger>(ledger: &T, address: Address) {

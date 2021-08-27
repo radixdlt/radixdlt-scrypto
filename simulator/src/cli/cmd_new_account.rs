@@ -8,7 +8,6 @@ use scrypto::utils::*;
 use uuid::Uuid;
 
 use crate::cli::*;
-use crate::ledger::*;
 
 /// Constructs a `new-account` subcommand.
 pub fn make_new_account_cmd<'a, 'b>() -> App<'a, 'b> {
@@ -18,9 +17,9 @@ pub fn make_new_account_cmd<'a, 'b>() -> App<'a, 'b> {
 }
 
 /// Handles a `new-account` request.
-pub fn handle_new_account<'a>(_matches: &ArgMatches<'a>) {
+pub fn handle_new_account<'a>(_matches: &ArgMatches<'a>) -> Result<(), Error> {
     let tx_hash = sha256(Uuid::new_v4().to_string());
-    let mut ledger = FileBasedLedger::new(get_data_dir());
+    let mut ledger = FileBasedLedger::new(get_data_dir()?);
     let mut runtime = Runtime::new(tx_hash, &mut ledger);
 
     // create XRD native token
@@ -51,9 +50,9 @@ pub fn handle_new_account<'a>(_matches: &ArgMatches<'a>) {
     let output = process
         .target_function(package, "Account", "new".to_owned(), Vec::new())
         .and_then(|target| process.run(target))
-        .unwrap();
-    process.finalize().unwrap();
-    let component: Address = scrypto_decode(&output).unwrap();
+        .map_err(|e| Error::ExecutionError(e))?;
+    process.finalize().map_err(|e| Error::ExecutionError(e))?;
+    let component: Address = scrypto_decode(&output).map_err(|e| Error::DataError(e))?;
 
     // allocate free XRD
     let mut buckets = HashMap::new();
@@ -71,19 +70,20 @@ pub fn handle_new_account<'a>(_matches: &ArgMatches<'a>) {
             vec![scrypto_encode(&bid)],
         )
         .and_then(|target| process2.run(target))
-        .unwrap();
-    process2.finalize().unwrap();
+        .map_err(|e| Error::ExecutionError(e))?;
+    process2.finalize().map_err(|e| Error::ExecutionError(e))?;
 
     // flush
     runtime.flush();
-
     println!("New account: {}", component);
 
     // set as default config if not set
-    if get_config(CONFIG_DEFAULT_ACCOUNT).is_none() {
-        set_config(CONFIG_DEFAULT_ACCOUNT, &component.to_string());
+    if get_config(CONF_DEFAULT_ACCOUNT)?.is_none() {
+        set_config(CONF_DEFAULT_ACCOUNT, &component.to_string())?;
         println!(
             "No default account configured. The above account will be used as the default account."
         )
     }
+
+    Ok(())
 }

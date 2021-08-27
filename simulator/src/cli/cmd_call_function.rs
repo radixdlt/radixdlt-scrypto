@@ -31,36 +31,49 @@ pub fn make_call_function_cmd<'a, 'b>() -> App<'a, 'b> {
         )
         .arg(
             Arg::with_name(ARG_ARGS)
-                .help("Specify the arguments, in hex.")
+                .help("Specify the arguments, e.g. `123`, `hello` or `1000:01`.")
                 .multiple(true),
         )
 }
 
 /// Handles a `call-function` request.
-pub fn handle_call_function<'a>(matches: &ArgMatches<'a>) {
-    let package: Address = matches.value_of(ARG_PACKAGE).unwrap().into();
-    let blueprint = matches.value_of(ARG_BLUEPRINT).unwrap();
-    let function = matches.value_of(ARG_FUNCTION).unwrap();
+pub fn handle_call_function<'a>(matches: &ArgMatches<'a>) -> Result<(), Error> {
+    let package: Address = matches
+        .value_of(ARG_PACKAGE)
+        .ok_or(Error::MissingArgument(ARG_PACKAGE.to_owned()))?
+        .into();
+    let blueprint = matches
+        .value_of(ARG_BLUEPRINT)
+        .ok_or(Error::MissingArgument(ARG_BLUEPRINT.to_owned()))?;
+    let function = matches
+        .value_of(ARG_FUNCTION)
+        .ok_or(Error::MissingArgument(ARG_FUNCTION.to_owned()))?;
     let mut args = Vec::new();
     if let Some(x) = matches.values_of(ARG_ARGS) {
         x.for_each(|a| args.push(a));
     }
 
-    match get_config(CONFIG_DEFAULT_ACCOUNT) {
+    match get_config(CONF_DEFAULT_ACCOUNT)? {
         Some(a) => {
             let account: Address = a.as_str().into();
-            match construct_call_function_txn(account, package, blueprint, function, &args, false) {
+            let mut ledger = FileBasedLedger::new(get_data_dir()?);
+            match construct_call_function_txn(
+                &mut ledger,
+                account,
+                package,
+                blueprint,
+                function,
+                &args,
+                false,
+            ) {
                 Ok(txn) => {
-                    let receipt = execute(txn, false);
+                    let receipt = execute(&mut ledger, txn, false);
                     print_receipt(receipt);
+                    Ok(())
                 }
-                Err(e) => {
-                    println!("Failed to construct transaction: {:?}", e);
-                }
+                Err(e) => Err(Error::ConstructionErr(e)),
             }
         }
-        None => {
-            println!("Default account not set. Try to run `rev2 new-account` first.");
-        }
+        None => Err(Error::NoDefaultAccount),
     }
 }

@@ -22,6 +22,15 @@ const FILE_EXT: &'static str = "sbor";
 
 impl FileBasedLedger {
     pub fn new(root: PathBuf) -> Self {
+        for folder in [PACKAGES, COMPONENTS, ACCOUNTS, RESOURCES, BUCKETS] {
+            let mut path = root.clone();
+            path.push(folder);
+            if !path.exists() {
+                fs::create_dir_all(&path)
+                    .expect(format!("Failed to create dir: {:?}", path).as_str());
+            }
+        }
+
         Self { root }
     }
 
@@ -35,11 +44,6 @@ impl FileBasedLedger {
 
     fn write<P: AsRef<Path>, T: AsRef<[u8]>>(path: P, value: T) {
         let p = path.as_ref();
-
-        p.parent().map(|par| {
-            fs::create_dir_all(par)
-                .expect(format!("Failed to create directory: {:?}", par).as_str())
-        });
 
         File::create(p)
             .expect(format!("Failed to create file: {:?}", p).as_str())
