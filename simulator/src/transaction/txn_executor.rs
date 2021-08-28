@@ -25,18 +25,22 @@ fn call<L: Ledger>(
     let result = process.run(target);
 
     // move resources
+    let (buckets, references) = process.take_resources();
     match resource_collector {
         Some(collector) => {
-            for bucket in process.take_resources().0.values() {
+            for bucket in buckets.values() {
                 collector
                     .entry(bucket.resource())
                     .or_insert(Bucket::new(0.into(), bucket.resource()))
                     .put(bucket.clone())
                     .unwrap();
             }
+            if !references.is_empty() {
+                return Err(RuntimeError::UnexpectedResourceReturn);
+            }
         }
         None => {
-            if !process.take_resources().0.is_empty() {
+            if !buckets.is_empty() || !references.is_empty() {
                 return Err(RuntimeError::UnexpectedResourceReturn);
             }
         }
@@ -133,13 +137,17 @@ pub fn execute<T: Ledger>(
                     }
                 }
 
-                let mut process = Process::new(0, trace, &mut runtime);
-                let target = process.target_method(
-                    component,
-                    method.clone(),
-                    vec![scrypto_encode(&buckets)],
-                );
-                target.and_then(|target| call(&mut process, target, &mut moving_buckets, None))
+                if !buckets.is_empty() {
+                    let mut process = Process::new(0, trace, &mut runtime);
+                    let target = process.target_method(
+                        component,
+                        method.clone(),
+                        vec![scrypto_encode(&buckets)],
+                    );
+                    target.and_then(|target| call(&mut process, target, &mut moving_buckets, None))
+                } else {
+                    Ok(vec![])
+                }
             }
             Instruction::Finalize => {
                 // TODO check if this is the last instruction
