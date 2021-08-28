@@ -40,7 +40,8 @@ where
     I: IntoIterator<Item = T>,
     T: Into<std::ffi::OsString> + Clone,
 {
-    let mut app = clap::App::new("Radix Engine Simulator")
+    let app = clap::App::new("Radix Engine Simulator")
+        .name("rev2")
         .about("Build fast, reward everyone, and scale without friction")
         .version(clap::crate_version!())
         .subcommand(make_export_abi_cmd())
@@ -51,7 +52,7 @@ where
         .subcommand(make_reset_cmd())
         .subcommand(make_config_cmd())
         .subcommand(make_show_cmd());
-    let matches = app.clone().get_matches_from(args);
+    let matches = app.get_matches_from(args);
 
     match matches.subcommand() {
         (CMD_EXPORT_ABI, Some(m)) => handle_export_abi(m),
@@ -62,9 +63,6 @@ where
         (CMD_RESET, Some(m)) => handle_reset(m),
         (CMD_CONFIG, Some(m)) => handle_config(m),
         (CMD_SHOW, Some(m)) => handle_show(m),
-        _ => {
-            app.print_long_help().unwrap();
-            Err(Error::MissingSubCommand)
-        }
+        _ => Err(Error::MissingSubCommand),
     }
 }

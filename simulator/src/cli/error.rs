@@ -32,11 +32,11 @@ pub enum Error {
 pub enum BuildPackageError {
     NotCargoPackage,
 
-    FailedToReadCargoToml,
+    FailedToParseCargoToml(cargo_toml::Error),
 
-    FailedToParseCargoToml,
+    MissingPackageInCargoToml,
 
-    FailedToRunCargo,
+    FailedToRunCargo(io::Error),
 
-    FailedToWaitCargo,
+    FailedToWaitCargo(io::Error),
 }
