@@ -1,22 +1,13 @@
-use sbor::model::*;
-use sbor::{Decode, Describe, Encode};
+use sbor::{model::Type, *};
 
 use crate::resource::*;
 use crate::rust::borrow::ToOwned;
 use crate::types::*;
 
 /// A bucket that holds tokens.
-#[derive(Debug, Encode, Decode)]
+#[derive(Debug)]
 pub struct Tokens {
     bid: BID,
-}
-
-impl Describe for Tokens {
-    fn describe() -> Type {
-        Type::SystemType {
-            name: "::scrypto::resource::Tokens".to_owned(),
-        }
-    }
 }
 
 impl From<BID> for Tokens {
@@ -58,5 +49,38 @@ impl Tokens {
 
     pub fn resource(&self) -> Address {
         self.bid.resource()
+    }
+}
+
+impl Encode for Tokens {
+    #[inline]
+    fn encode_value(&self, encoder: &mut Encoder) {
+        self.bid.encode_value(encoder);
+    }
+
+    #[inline]
+    fn sbor_type() -> u8 {
+        SCRYPTO_TYPE_TOKENS
+    }
+}
+
+impl Decode for Tokens {
+    #[inline]
+    fn decode_value<'de>(decoder: &mut Decoder<'de>) -> Result<Self, DecodeError> {
+        let bid = BID::decode_value(decoder)?;
+        Ok(bid.into())
+    }
+
+    #[inline]
+    fn sbor_type() -> u8 {
+        SCRYPTO_TYPE_TOKENS
+    }
+}
+
+impl Describe for Tokens {
+    fn describe() -> Type {
+        Type::Custom {
+            name: "Tokens".to_owned(),
+        }
     }
 }

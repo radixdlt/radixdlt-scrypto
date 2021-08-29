@@ -4,6 +4,12 @@ mod h256;
 mod rid;
 mod u256;
 
+pub const SCRYPTO_TYPE_U256: u8 = 0x80;
+pub const SCRYPTO_TYPE_ADDRESS: u8 = 0x81;
+pub const SCRYPTO_TYPE_H256: u8 = 0x82;
+pub const SCRYPTO_TYPE_BID: u8 = 0x83;
+pub const SCRYPTO_TYPE_RID: u8 = 0x84;
+
 pub use address::{Address, ParseAddressError};
 pub use bid::BID;
 pub use h256::{ParseH256Error, H256};

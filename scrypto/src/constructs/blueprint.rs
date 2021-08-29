@@ -1,5 +1,4 @@
-use sbor::model::*;
-use sbor::{Decode, Describe, Encode};
+use sbor::Decode;
 
 use crate::buffer::*;
 use crate::kernel::*;
@@ -11,18 +10,10 @@ use crate::types::*;
 use crate::utils::*;
 
 /// A piece of code that defines the structure and methods of components.
-#[derive(Debug, Encode, Decode)]
+#[derive(Debug)]
 pub struct Blueprint {
     package: Address,
     name: String,
-}
-
-impl Describe for Blueprint {
-    fn describe() -> Type {
-        Type::SystemType {
-            name: "::scrypto::constructs::Blueprint".to_owned(),
-        }
-    }
 }
 
 impl Blueprint {

@@ -6,7 +6,7 @@ edition = "2018"
 [dependencies]
 radix-engine = { version = "0.1", path = "../radix-engine" }
 scrypto = { version = "0.1", path = "../scrypto", features = ["json_std"] }
-sbor = { version = "0.1", path = "../sbor", features = ["scrypto_std"] }
+sbor = { version = "0.1", path = "../sbor" }
 serde_json = { version = "1.0" }
 clap = { version = "2.33" }
 dirs = { version = "3.0" }

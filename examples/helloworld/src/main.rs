@@ -1,8 +1,5 @@
 #![no_main]
 
-#[global_allocator]
-static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
-
 use scrypto::prelude::*;
 
 blueprint! {
@@ -15,8 +12,9 @@ blueprint! {
             let component = Self {
                 cnt: 0
             }.instantiate();
-            debug!("New component: {}", component.address());
-            component.into()
+
+            debug!("New component: {}", component);
+            component
         }
 
         pub fn say_hello(&mut self) {

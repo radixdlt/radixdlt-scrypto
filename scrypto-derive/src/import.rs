@@ -1,5 +1,4 @@
 use std::fs;
-use std::str::FromStr;
 
 use proc_macro2::{Ident, Span, TokenStream};
 use quote::{format_ident, quote};
@@ -170,11 +169,6 @@ fn get_native_type(ty: &sbor::model::Type) -> (Type, Vec<Item>) {
         sbor::model::Type::U64 => parse_quote! { u64 },
         sbor::model::Type::U128 => parse_quote! { u128 },
         sbor::model::Type::String => parse_quote! { String },
-        sbor::model::Type::H256 => parse_quote! { ::scrypto::types::H256 },
-        sbor::model::Type::U256 => parse_quote! { ::scrypto::types::U256 },
-        sbor::model::Type::Address => parse_quote! { ::scrypto::types::Address },
-        sbor::model::Type::BID => parse_quote! { ::scrypto::types::BID },
-        sbor::model::Type::RID => parse_quote! { ::scrypto::types::RID },
         sbor::model::Type::Option { value } => {
             let (new_type, new_items) = get_native_type(value);
             items.extend(new_items);
@@ -317,15 +311,18 @@ fn get_native_type(ty: &sbor::model::Type) -> (Type, Vec<Item>) {
 
             parse_quote! { HashMap<#key_type, #value_type> }
         }
-        sbor::model::Type::SystemType { name } => {
-            if !name.starts_with("::scrypto::") {
-                panic!("Invalid system type: {}", name);
-            }
-
-            let path = TokenStream::from_str(name.as_str())
-                .expect(format!("Invalid system type: {}", name).as_str());
-            parse_quote! { #path }
-        }
+        sbor::model::Type::Custom { name } => match name.as_str() {
+            "U256" => parse_quote! { ::scrypto::types::U256 },
+            "Address" => parse_quote! { ::scrypto::types::Address },
+            "H256" => parse_quote! { ::scrypto::types::H256 },
+            "BID" => parse_quote! { ::scrypto::types::BID },
+            "RID" => parse_quote! { ::scrypto::types::RID },
+            "Tokens" => parse_quote! { ::scrypto::resource::Tokens },
+            "TokensRef" => parse_quote! { ::scrypto::resource::TokensRef },
+            "Badges" => parse_quote! { ::scrypto::resource::Badges },
+            "BadgesRef" => parse_quote! { ::scrypto::resource::BadgesRef },
+            _ => panic!("Invalid custom type: {}", name),
+        },
     };
 
     (t, items)
@@ -418,9 +415,9 @@ mod tests {
     }
 
     #[test]
-    fn test_import_system_types() {
+    fn test_import_custom_types() {
         let input =
-            TokenStream::from_str("\"../scrypto-derive/tests/abi_system_types.json\"").unwrap();
+            TokenStream::from_str("\"../scrypto-derive/tests/abi_custom_types.json\"").unwrap();
         let output = handle_import(input);
 
         assert_code_eq(
@@ -433,13 +430,13 @@ mod tests {
                     pub fn from_address(address: ::scrypto::types::Address) -> Self {
                         Self { address }
                     }
-                    pub fn test_system_types(arg0: ::scrypto::resource::Tokens) -> ::scrypto::resource::BadgesRef {
+                    pub fn test_custom_types(arg0: ::scrypto::resource::Tokens) -> ::scrypto::resource::BadgesRef {
                         let package = ::scrypto::types::Address::from_str(
                             "056967d3d49213394892980af59be76e9b3e7cc4cb78237460d0c7"
                         )
                         .unwrap();
                         let blueprint = ::scrypto::constructs::Blueprint::from(package, "Sample");
-                        blueprint.call("test_system_types", ::scrypto::args!(arg0))
+                        blueprint.call("test_custom_types", ::scrypto::args!(arg0))
                     }
                 }
             },

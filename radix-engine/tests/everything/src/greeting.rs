@@ -1,4 +1,4 @@
-use scrypto::constructs::*;
+use scrypto::types::*;
 use scrypto::*;
 
 blueprint! {
@@ -7,7 +7,7 @@ blueprint! {
     }
 
     impl Greeting {
-        pub fn new() -> Component {
+        pub fn new() -> Address {
             Self {
                 counter: 0
             }.instantiate()

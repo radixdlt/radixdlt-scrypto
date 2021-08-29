@@ -5,7 +5,7 @@ compile_error!("Either feature `std` or `alloc` must be enabled for this crate."
 #[cfg(all(feature = "std", feature = "alloc"))]
 compile_error!("Feature `std` and `alloc` can't be enabled at the same time.");
 
-/// Scrypto primitive types.
-pub mod primitives;
 /// A facade to Rust standard types.
 pub mod rust;
+/// Scrypto primitive types.
+pub mod types;

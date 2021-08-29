@@ -40,11 +40,8 @@ pub fn parse_args(
             Type::U64 => parse_basic::<u64>(i, t, arg),
             Type::U128 => parse_basic::<u128>(i, t, arg),
             Type::String => parse_basic::<String>(i, t, arg),
-            Type::H256 => parse_basic::<H256>(i, t, arg),
-            Type::Address => parse_basic::<Address>(i, t, arg),
-            Type::U256 => parse_u256(i, t, arg),
-            Type::SystemType { name } => {
-                parse_system_type(i, t, arg, name, alloc, &mut tokens, &mut badges)
+            Type::Custom { name } => {
+                parse_custom_type(i, t, arg, name, alloc, &mut tokens, &mut badges)
             }
             _ => Err(ParseArgError::UnsupportedType(i, t.clone())),
         };
@@ -55,7 +52,7 @@ pub fn parse_args(
 }
 
 /// Parse system package and pre-allocate the buckets.
-pub fn parse_system_type(
+pub fn parse_custom_type(
     i: usize,
     ty: &Type,
     arg: &str,
@@ -65,7 +62,10 @@ pub fn parse_system_type(
     badges: &mut HashMap<u8, Bucket>,
 ) -> Result<Vec<u8>, ParseArgError> {
     match name {
-        "::scrypto::resource::Tokens" | "::scrypto::resource::Badges" => {
+        "U256" => parse_u256(i, ty, arg),
+        "Address" => parse_basic::<Address>(i, ty, arg),
+        "H256" => parse_basic::<H256>(i, ty, arg),
+        "Tokens" | "Badges" => {
             let mut split = arg.split(":");
             let amount = split.next().and_then(|v| U256::from_dec_str(v).ok());
             let resource = split.next().and_then(|v| Address::try_from(v).ok());
@@ -77,7 +77,7 @@ pub fn parse_system_type(
                     }
 
                     let bid = alloc.new_transient_bid();
-                    if name == "::scrypto::resource::Tokens" {
+                    if name == "Tokens" {
                         tokens.insert(n as u8, Bucket::new(a, r));
                         Ok(scrypto_encode(&scrypto::resource::Tokens::from(bid)))
                     } else {

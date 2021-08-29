@@ -24,11 +24,7 @@ pub mod utils;
 pub mod abi {
     pub use scrypto_abi::*;
 }
-/// Scrypto primitive types.
-pub mod types {
-    pub use scrypto_types::primitives::*;
-}
-pub use scrypto_types::rust;
+pub use scrypto_types::*;
 
 // Re-export Scrypto derive.
 extern crate scrypto_derive;

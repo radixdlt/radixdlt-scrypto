@@ -13,4 +13,3 @@ panic = 'abort'     # Abort on panic.
 [dependencies]
 sbor = { path = "../../sbor" }
 scrypto = { path = "../../scrypto" }
-wee_alloc = { version = "0.4" }

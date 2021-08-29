@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2018"
 
 [dependencies]
+sbor = { path = "../sbor", optional = true, default-features = false } 
 hex = { version = "0.4", default-features = false }
 uint = { version = "0.9", default-features = false }
 hashbrown = { version = "0.11", optional = true } 
@@ -11,5 +12,5 @@ hashbrown = { version = "0.11", optional = true }
 [features]
 # You should enable either `std` or `alloc`
 default = ["std"]
-std = ["hex/std", "uint/std"]
-alloc = ["hex/alloc", "hashbrown"]
+std = ["hex/std", "uint/std", "sbor/std"]
+alloc = ["hex/alloc", "hashbrown", "sbor/alloc"]

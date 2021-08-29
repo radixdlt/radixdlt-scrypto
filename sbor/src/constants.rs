@@ -1,4 +1,4 @@
-// primitives
+// types
 pub const TYPE_UNIT: u8 = 0x00;
 pub const TYPE_BOOL: u8 = 0x01;
 pub const TYPE_I8: u8 = 0x02;
@@ -28,9 +28,5 @@ pub const TYPE_TREE_SET: u8 = 0x21;
 pub const TYPE_TREE_MAP: u8 = 0x22;
 pub const TYPE_HASH_SET: u8 = 0x23;
 pub const TYPE_HASH_MAP: u8 = 0x24;
-// scrypto types
-pub const TYPE_H256: u8 = 0x30;
-pub const TYPE_U256: u8 = 0x31;
-pub const TYPE_ADDRESS: u8 = 0x32;
-pub const TYPE_BID: u8 = 0x33;
-pub const TYPE_RID: u8 = 0x34;
+// custom types start from 0x80 and values are encoded as `len + data`
+pub const CUSTOM_TYPE_START: u8 = 0x80;

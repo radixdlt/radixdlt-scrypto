@@ -60,13 +60,13 @@ pub const GET_AMOUNT_REF: u32 = 0x38;
 pub const GET_RESOURCE_REF: u32 = 0x39;
 
 /// Log a message
-pub const EMIT_LOG: u32 = 0x50;
+pub const EMIT_LOG: u32 = 0x40;
 /// Retrieve context package address
-pub const GET_PACKAGE_ADDRESS: u32 = 0x51;
+pub const GET_PACKAGE_ADDRESS: u32 = 0x41;
 /// Retrieve call data
-pub const GET_CALL_DATA: u32 = 0x52;
+pub const GET_CALL_DATA: u32 = 0x42;
 /// Retrieve transaction hash
-pub const GET_TRANSACTION_HASH: u32 = 0x53;
+pub const GET_TRANSACTION_HASH: u32 = 0x43;
 
 //==========
 // code

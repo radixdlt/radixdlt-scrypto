@@ -14,5 +14,5 @@ lru = { version = "0.6" }
 [features]
 # You should enable either `std` or `alloc`
 default = ["std"]
-std = ["sbor/std", "sbor/scrypto_std", "scrypto/std", "wasmi/std"]
-alloc = ["sbor/alloc", "sbor/scrypto_alloc", "scrypto/alloc", "wasmi/core"]
+std = ["sbor/std", "scrypto/std", "wasmi/std"]
+alloc = ["sbor/alloc", "scrypto/alloc", "wasmi/core"]

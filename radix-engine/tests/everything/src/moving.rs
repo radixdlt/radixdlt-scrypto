@@ -24,9 +24,9 @@ blueprint! {
         pub fn move_bucket() {
             let resource =  create_mutable_tokens("m1", Context::package_address());
             let tokens =  mint_tokens(resource, 100);
-            let component = MoveTest {
+            let component: Component = MoveTest {
                 tokens: Vec::new()
-            }.instantiate();
+            }.instantiate().into();
 
             component.call::<()>("receive_bucket", args!(tokens));
         }
@@ -34,9 +34,9 @@ blueprint! {
         pub fn move_reference() -> Tokens {
             let resource =  create_mutable_tokens("m2", Context::package_address());
             let tokens =  mint_tokens(resource, 100);
-            let component = MoveTest {
+            let component: Component = MoveTest {
                 tokens: Vec::new()
-            }.instantiate();
+            }.instantiate().into();
 
             component.call::<()>("receive_reference", args!(tokens.borrow()));
 

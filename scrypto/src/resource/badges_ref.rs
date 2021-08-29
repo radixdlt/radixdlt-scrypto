@@ -1,20 +1,44 @@
-use sbor::model::*;
-use sbor::{Decode, Describe, Encode};
+use sbor::{model::Type, *};
 
 use crate::resource::*;
 use crate::rust::borrow::ToOwned;
 use crate::types::*;
 
 /// A reference to a `Badges` bucket.
-#[derive(Debug, Encode, Decode)]
+#[derive(Debug)]
 pub struct BadgesRef {
     rid: RID,
 }
 
+impl Encode for BadgesRef {
+    #[inline]
+    fn encode_value(&self, encoder: &mut Encoder) {
+        self.rid.encode_value(encoder);
+    }
+
+    #[inline]
+    fn sbor_type() -> u8 {
+        SCRYPTO_TYPE_BADGES_REF
+    }
+}
+
+impl Decode for BadgesRef {
+    #[inline]
+    fn decode_value<'de>(decoder: &mut Decoder<'de>) -> Result<Self, DecodeError> {
+        let rid = RID::decode_value(decoder)?;
+        Ok(rid.into())
+    }
+
+    #[inline]
+    fn sbor_type() -> u8 {
+        SCRYPTO_TYPE_BADGES_REF
+    }
+}
+
 impl Describe for BadgesRef {
     fn describe() -> Type {
-        Type::SystemType {
-            name: "::scrypto::resource::BadgesRef".to_owned(),
+        Type::Custom {
+            name: "BadgesRef".to_owned(),
         }
     }
 }

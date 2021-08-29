@@ -17,9 +17,7 @@ use proc_macro::TokenStream;
 ///
 /// # Example
 /// ```ignore
-/// use scrypto::constructs::*;
-/// use scrypto::types::*;
-/// use scrypto::*;
+/// use scrypto::prelude::*;
 ///
 /// blueprint! {
 ///     struct Counter {
@@ -27,7 +25,7 @@ use proc_macro::TokenStream;
 ///     }
 ///
 ///     impl Counter {
-///         pub fn new() -> Component {
+///         pub fn new() -> Address {
 ///             Self {
 ///                 count: 0
 ///             }.instantiate()
@@ -54,7 +52,7 @@ pub fn blueprint(input: TokenStream) -> TokenStream {
 ///
 /// # Example
 /// ```ignore
-/// use scrypto::*;
+/// use scrypto::prelude::*;
 ///
 /// import! { "/path/to/abi.json" };
 /// ```

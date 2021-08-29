@@ -1,9 +1,12 @@
-use crate::primitives::*;
+use sbor::{model::Type, *};
+
+use crate::rust::borrow::ToOwned;
 use crate::rust::convert::TryFrom;
 use crate::rust::fmt;
 use crate::rust::str::FromStr;
 use crate::rust::string::String;
 use crate::rust::vec::Vec;
+use crate::types::*;
 
 /// Reference to a bucket.
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
@@ -84,6 +87,42 @@ impl fmt::Debug for RID {
 impl fmt::Display for RID {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", hex::encode(self.to_vec()))
+    }
+}
+
+impl Encode for RID {
+    #[inline]
+    fn encode_value(&self, encoder: &mut Encoder) {
+        let bytes = self.to_vec();
+        encoder.write_len(bytes.len());
+        encoder.write_slice(&bytes);
+    }
+
+    #[inline]
+    fn sbor_type() -> u8 {
+        SCRYPTO_TYPE_RID
+    }
+}
+
+impl Decode for RID {
+    #[inline]
+    fn decode_value<'de>(decoder: &mut Decoder<'de>) -> Result<Self, DecodeError> {
+        let len = decoder.read_len()?;
+        let slice = decoder.read_bytes(len)?;
+        Self::try_from(slice).map_err(|_| DecodeError::InvalidCustomData(SCRYPTO_TYPE_RID))
+    }
+
+    #[inline]
+    fn sbor_type() -> u8 {
+        SCRYPTO_TYPE_RID
+    }
+}
+
+impl Describe for RID {
+    fn describe() -> Type {
+        Type::Custom {
+            name: "RID".to_owned(),
+        }
     }
 }
 

@@ -2,6 +2,9 @@ use colored::*;
 use sbor::*;
 use scrypto::buffer::*;
 use scrypto::kernel::*;
+use scrypto::resource::{
+    SCRYPTO_TYPE_BADGES, SCRYPTO_TYPE_BADGES_REF, SCRYPTO_TYPE_TOKENS, SCRYPTO_TYPE_TOKENS_REF,
+};
 use scrypto::rust::borrow::ToOwned;
 use scrypto::rust::cell::RefCell;
 use scrypto::rust::collections::*;
@@ -997,11 +1000,15 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
                 Ok(())
             }
             // scrypto types
-            constants::TYPE_H256 => self.transform::<H256>(dec, enc, |_, v| Ok(v)),
-            constants::TYPE_U256 => self.transform::<U256>(dec, enc, |_, v| Ok(v)),
-            constants::TYPE_ADDRESS => self.transform::<Address>(dec, enc, |_, v| Ok(v)),
-            constants::TYPE_BID => self.transform::<BID>(dec, enc, bid_fn),
-            constants::TYPE_RID => self.transform::<RID>(dec, enc, rid_fn),
+            SCRYPTO_TYPE_U256 => self.transform::<U256>(dec, enc, |_, v| Ok(v)),
+            SCRYPTO_TYPE_ADDRESS => self.transform::<Address>(dec, enc, |_, v| Ok(v)),
+            SCRYPTO_TYPE_H256 => self.transform::<H256>(dec, enc, |_, v| Ok(v)),
+            SCRYPTO_TYPE_BID => self.transform::<BID>(dec, enc, bid_fn),
+            SCRYPTO_TYPE_RID => self.transform::<RID>(dec, enc, rid_fn),
+            SCRYPTO_TYPE_TOKENS => self.transform::<BID>(dec, enc, bid_fn),
+            SCRYPTO_TYPE_TOKENS_REF => self.transform::<RID>(dec, enc, rid_fn),
+            SCRYPTO_TYPE_BADGES => self.transform::<BID>(dec, enc, bid_fn),
+            SCRYPTO_TYPE_BADGES_REF => self.transform::<RID>(dec, enc, rid_fn),
             _ => Err(RuntimeError::InvalidData(DecodeError::InvalidType {
                 expected: 0xff,
                 actual: ty,
@@ -1029,7 +1036,6 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
     /// Convert transient buckets to persisted buckets
     fn convert_transient_to_persist(&mut self, bid: BID) -> Result<BID, RuntimeError> {
         let package = self.package()?;
-
         if bid.is_transient() {
             let bucket = self
                 .buckets

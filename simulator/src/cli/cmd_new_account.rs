@@ -41,7 +41,7 @@ pub fn handle_new_account<'a>(_matches: &ArgMatches<'a>) -> Result<(), Error> {
     if runtime.get_package(package).is_none() {
         runtime.put_package(
             package,
-            Package::new(include_bytes!("../account.wasm").to_vec()),
+            Package::new(include_bytes!("../../../assets/account.wasm").to_vec()),
         );
     }
 

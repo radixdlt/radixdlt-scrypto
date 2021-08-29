@@ -1,6 +1,3 @@
-#[cfg(any(feature = "scrypto_std", feature = "scrypto_alloc"))]
-use scrypto_types::primitives::{Address, BID, H256, RID, U256};
-
 use crate::constants::*;
 use crate::rust::boxed::Box;
 use crate::rust::collections::*;
@@ -366,79 +363,6 @@ impl<K: Encode, V: Encode> Encode for HashMap<K, V> {
     #[inline]
     fn sbor_type() -> u8 {
         TYPE_HASH_MAP
-    }
-}
-
-#[cfg(any(feature = "scrypto_std", feature = "scrypto_alloc"))]
-impl Encode for H256 {
-    #[inline]
-    fn encode_value(&self, encoder: &mut Encoder) {
-        let slice = self.as_ref();
-        encoder.write_slice(slice);
-    }
-
-    #[inline]
-    fn sbor_type() -> u8 {
-        TYPE_H256
-    }
-}
-
-#[cfg(any(feature = "scrypto_std", feature = "scrypto_alloc"))]
-impl Encode for U256 {
-    #[inline]
-    fn encode_value(&self, encoder: &mut Encoder) {
-        let mut bytes = [0u8; 32];
-        self.to_little_endian(&mut bytes);
-        encoder.write_slice(&bytes);
-    }
-
-    #[inline]
-    fn sbor_type() -> u8 {
-        TYPE_U256
-    }
-}
-#[cfg(any(feature = "scrypto_std", feature = "scrypto_alloc"))]
-impl Encode for Address {
-    #[inline]
-    fn encode_value(&self, encoder: &mut Encoder) {
-        let bytes: Vec<u8> = self.to_vec();
-        encoder.write_len(bytes.len());
-        encoder.write_slice(&bytes);
-    }
-
-    #[inline]
-    fn sbor_type() -> u8 {
-        TYPE_ADDRESS
-    }
-}
-
-#[cfg(any(feature = "scrypto_std", feature = "scrypto_alloc"))]
-impl Encode for BID {
-    #[inline]
-    fn encode_value(&self, encoder: &mut Encoder) {
-        let bytes: Vec<u8> = self.to_vec();
-        encoder.write_len(bytes.len());
-        encoder.write_slice(&bytes);
-    }
-
-    #[inline]
-    fn sbor_type() -> u8 {
-        TYPE_BID
-    }
-}
-
-#[cfg(any(feature = "scrypto_std", feature = "scrypto_alloc"))]
-impl Encode for RID {
-    #[inline]
-    fn encode_value(&self, encoder: &mut Encoder) {
-        let bytes: Vec<u8> = self.to_vec();
-        encoder.write_len(bytes.len());
-        encoder.write_slice(&bytes);
-    }
-
-    #[inline]
-    fn sbor_type() -> u8 {
-        TYPE_RID
     }
 }
 

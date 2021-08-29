@@ -20,7 +20,7 @@ blueprint! {
                 resource: resource,
                 tokens: tokens,
                 secret: "Secret".to_owned(),
-            }.instantiate().into()
+            }.instantiate()
         }
 
         pub fn get_component_info(address: Address) -> ComponentInfo {

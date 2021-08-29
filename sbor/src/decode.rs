@@ -1,8 +1,3 @@
-#[cfg(any(feature = "scrypto_std", feature = "scrypto_alloc"))]
-use crate::rust::convert::TryFrom;
-#[cfg(any(feature = "scrypto_std", feature = "scrypto_alloc"))]
-use scrypto_types::primitives::{Address, BID, H256, RID, U256};
-
 use crate::constants::*;
 use crate::rust::boxed::Box;
 use crate::rust::collections::*;
@@ -32,7 +27,7 @@ pub enum DecodeError {
 
     NotAllBytesUsed(usize),
 
-    InvalidScryptoData(u8),
+    InvalidCustomData(u8),
 }
 
 /// A data structure that can be decoded from a byte array using SBOR.
@@ -496,84 +491,6 @@ impl<K: Decode + Hash + Eq, V: Decode> Decode for HashMap<K, V> {
     #[inline]
     fn sbor_type() -> u8 {
         TYPE_HASH_MAP
-    }
-}
-
-#[cfg(any(feature = "scrypto_std", feature = "scrypto_alloc"))]
-impl Decode for H256 {
-    #[inline]
-    fn decode_value<'de>(decoder: &mut Decoder<'de>) -> Result<Self, DecodeError> {
-        let slice = decoder.read_bytes(32)?;
-
-        H256::try_from(slice).map_err(|_| DecodeError::InvalidScryptoData(TYPE_H256))
-    }
-
-    #[inline]
-    fn sbor_type() -> u8 {
-        TYPE_H256
-    }
-}
-
-#[cfg(any(feature = "scrypto_std", feature = "scrypto_alloc"))]
-impl Decode for U256 {
-    #[inline]
-    fn decode_value<'de>(decoder: &mut Decoder<'de>) -> Result<Self, DecodeError> {
-        let slice = decoder.read_bytes(32)?;
-
-        Ok(U256::from_little_endian(slice))
-    }
-
-    #[inline]
-    fn sbor_type() -> u8 {
-        TYPE_U256
-    }
-}
-
-#[cfg(any(feature = "scrypto_std", feature = "scrypto_alloc"))]
-impl Decode for Address {
-    #[inline]
-    fn decode_value<'de>(decoder: &mut Decoder<'de>) -> Result<Self, DecodeError> {
-        let len = decoder.read_len()?;
-        let slice = decoder.read_bytes(len)?;
-
-        Address::try_from(slice).map_err(|_| DecodeError::InvalidScryptoData(TYPE_ADDRESS))
-    }
-
-    #[inline]
-    fn sbor_type() -> u8 {
-        TYPE_ADDRESS
-    }
-}
-
-#[cfg(any(feature = "scrypto_std", feature = "scrypto_alloc"))]
-impl Decode for BID {
-    #[inline]
-    fn decode_value<'de>(decoder: &mut Decoder<'de>) -> Result<Self, DecodeError> {
-        let len = decoder.read_len()?;
-        let slice = decoder.read_bytes(len)?;
-
-        BID::try_from(slice).map_err(|_| DecodeError::InvalidScryptoData(TYPE_BID))
-    }
-
-    #[inline]
-    fn sbor_type() -> u8 {
-        TYPE_BID
-    }
-}
-
-#[cfg(any(feature = "scrypto_std", feature = "scrypto_alloc"))]
-impl Decode for RID {
-    #[inline]
-    fn decode_value<'de>(decoder: &mut Decoder<'de>) -> Result<Self, DecodeError> {
-        let len = decoder.read_len()?;
-        let slice = decoder.read_bytes(len)?;
-
-        RID::try_from(slice).map_err(|_| DecodeError::InvalidScryptoData(TYPE_RID))
-    }
-
-    #[inline]
-    fn sbor_type() -> u8 {
-        TYPE_RID
     }
 }
 

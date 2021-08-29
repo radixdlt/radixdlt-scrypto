@@ -1,8 +1,5 @@
 #![no_main]
 
-#[global_allocator]
-static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
-
 use scrypto::prelude::*;
 
 blueprint! {
@@ -16,7 +13,6 @@ blueprint! {
                 resources: HashMap::new(),
             }
             .instantiate()
-            .into()
         }
 
         /// Publish a code package.

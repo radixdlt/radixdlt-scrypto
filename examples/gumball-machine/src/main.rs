@@ -1,8 +1,5 @@
 #![no_main]
 
-#[global_allocator]
-static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
-
 use scrypto::prelude::*;
 
 blueprint! {
@@ -26,8 +23,8 @@ blueprint! {
             }
             .instantiate();
 
-            info!("New gumball machine: {}", component.address());
-            component.into()
+            info!("New gumball machine: {}", component);
+            component
         }
 
         pub fn get_gumball(&mut self, payment: Tokens) -> Tokens {

@@ -7,7 +7,7 @@ use crate::rust::boxed::Box;
 use crate::rust::string::String;
 use crate::rust::vec::Vec;
 
-// Internally tagged representation for readability
+// For enum, we use internally tagged representation for readability.
 // See: https://serde.rs/enum-representations.html
 
 /// Represents a SBOR data type.
@@ -81,23 +81,7 @@ pub enum Type {
         value: Box<Type>,
     },
 
-    #[cfg(any(feature = "scrypto_std", feature = "scrypto_alloc"))]
-    H256,
-
-    #[cfg(any(feature = "scrypto_std", feature = "scrypto_alloc"))]
-    U256,
-
-    #[cfg(any(feature = "scrypto_std", feature = "scrypto_alloc"))]
-    Address,
-
-    #[cfg(any(feature = "scrypto_std", feature = "scrypto_alloc"))]
-    BID,
-
-    #[cfg(any(feature = "scrypto_std", feature = "scrypto_alloc"))]
-    RID,
-
-    #[cfg(any(feature = "scrypto_std", feature = "scrypto_alloc"))]
-    SystemType {
+    Custom {
         name: String,
     },
 }

@@ -14,8 +14,8 @@ scrypto-types = { version = "0.1", path = "../scrypto-types", default-features =
 [features]
 # You should enable either `std` or `alloc`
 default = ["std"]
-std = ["sbor/std", "sbor/scrypto_std", "scrypto-abi/std", "scrypto-derive/std", "scrypto-types/std"]
-alloc = ["sbor/alloc", "sbor/scrypto_alloc", "scrypto-abi/alloc", "scrypto-derive/alloc", "scrypto-types/alloc"]
+std = ["sbor/std", "scrypto-abi/std", "scrypto-derive/std", "scrypto-types/std"]
+alloc = ["sbor/alloc", "scrypto-abi/alloc", "scrypto-derive/alloc", "scrypto-types/alloc"]
 
 # Turn on this feature to enable tracing.
 trace = ["scrypto-derive/trace"]

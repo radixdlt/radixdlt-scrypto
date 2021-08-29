@@ -1,9 +1,12 @@
-use crate::primitives::*;
+use sbor::{model::Type, *};
+
+use crate::rust::borrow::ToOwned;
 use crate::rust::convert::TryFrom;
 use crate::rust::fmt;
 use crate::rust::str::FromStr;
 use crate::rust::string::String;
 use crate::rust::vec::Vec;
+use crate::types::*;
 
 /// Represents an address.
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
@@ -93,6 +96,42 @@ impl fmt::Debug for Address {
 impl fmt::Display for Address {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", hex::encode(self.to_vec()))
+    }
+}
+
+impl Encode for Address {
+    #[inline]
+    fn encode_value(&self, encoder: &mut Encoder) {
+        let bytes = self.to_vec();
+        encoder.write_len(bytes.len());
+        encoder.write_slice(&bytes);
+    }
+
+    #[inline]
+    fn sbor_type() -> u8 {
+        SCRYPTO_TYPE_ADDRESS
+    }
+}
+
+impl Decode for Address {
+    #[inline]
+    fn decode_value<'de>(decoder: &mut Decoder<'de>) -> Result<Self, DecodeError> {
+        let len = decoder.read_len()?;
+        let slice = decoder.read_bytes(len)?;
+        Self::try_from(slice).map_err(|_| DecodeError::InvalidCustomData(SCRYPTO_TYPE_ADDRESS))
+    }
+
+    #[inline]
+    fn sbor_type() -> u8 {
+        SCRYPTO_TYPE_ADDRESS
+    }
+}
+
+impl Describe for Address {
+    fn describe() -> Type {
+        Type::Custom {
+            name: "Address".to_owned(),
+        }
     }
 }
 

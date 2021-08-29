@@ -1,22 +1,13 @@
-use sbor::model::*;
-use sbor::{Decode, Describe, Encode};
+use sbor::{model::Type, *};
 
 use crate::resource::*;
 use crate::rust::borrow::ToOwned;
 use crate::types::*;
 
 /// A bucket that holds badges.
-#[derive(Debug, Encode, Decode)]
+#[derive(Debug)]
 pub struct Badges {
     bid: BID,
-}
-
-impl Describe for Badges {
-    fn describe() -> Type {
-        Type::SystemType {
-            name: "::scrypto::resource::Badges".to_owned(),
-        }
-    }
 }
 
 impl From<BID> for Badges {
@@ -48,7 +39,7 @@ impl Badges {
         self.bid.take(amount).into()
     }
 
-    pub fn borrow(&self) -> TokensRef {
+    pub fn borrow(&self) -> BadgesRef {
         self.bid.borrow().into()
     }
 
@@ -58,5 +49,38 @@ impl Badges {
 
     pub fn resource(&self) -> Address {
         self.bid.resource()
+    }
+}
+
+impl Encode for Badges {
+    #[inline]
+    fn encode_value(&self, encoder: &mut Encoder) {
+        self.bid.encode_value(encoder);
+    }
+
+    #[inline]
+    fn sbor_type() -> u8 {
+        SCRYPTO_TYPE_BADGES
+    }
+}
+
+impl Decode for Badges {
+    #[inline]
+    fn decode_value<'de>(decoder: &mut Decoder<'de>) -> Result<Self, DecodeError> {
+        let bid = BID::decode_value(decoder)?;
+        Ok(bid.into())
+    }
+
+    #[inline]
+    fn sbor_type() -> u8 {
+        SCRYPTO_TYPE_BADGES
+    }
+}
+
+impl Describe for Badges {
+    fn describe() -> Type {
+        Type::Custom {
+            name: "Badges".to_owned(),
+        }
     }
 }

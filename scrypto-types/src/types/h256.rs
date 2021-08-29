@@ -1,8 +1,11 @@
-use crate::primitives::*;
+use sbor::{model::Type, *};
+
+use crate::rust::borrow::ToOwned;
 use crate::rust::convert::TryFrom;
 use crate::rust::fmt;
 use crate::rust::str::FromStr;
 use crate::rust::string::String;
+use crate::types::*;
 
 /// Represents a 32-byte hash digest.
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
@@ -82,6 +85,42 @@ impl fmt::Debug for H256 {
 impl fmt::Display for H256 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", hex::encode(self))
+    }
+}
+
+impl Encode for H256 {
+    #[inline]
+    fn encode_value(&self, encoder: &mut Encoder) {
+        let bytes = self.as_ref();
+        encoder.write_len(bytes.len());
+        encoder.write_slice(&bytes);
+    }
+
+    #[inline]
+    fn sbor_type() -> u8 {
+        SCRYPTO_TYPE_H256
+    }
+}
+
+impl Decode for H256 {
+    #[inline]
+    fn decode_value<'de>(decoder: &mut Decoder<'de>) -> Result<Self, DecodeError> {
+        let len = decoder.read_len()?;
+        let slice = decoder.read_bytes(len)?;
+        Self::try_from(slice).map_err(|_| DecodeError::InvalidCustomData(SCRYPTO_TYPE_H256))
+    }
+
+    #[inline]
+    fn sbor_type() -> u8 {
+        SCRYPTO_TYPE_H256
+    }
+}
+
+impl Describe for H256 {
+    fn describe() -> Type {
+        Type::Custom {
+            name: "H256".to_owned(),
+        }
     }
 }
 

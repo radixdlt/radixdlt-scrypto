@@ -1,7 +1,6 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use scrypto::buffer::*;
-use scrypto::constructs::*;
 use scrypto::kernel::*;
 use scrypto::rust::str::FromStr;
 use scrypto::rust::vec;
@@ -16,7 +15,7 @@ blueprint! {
     }
 
     impl Simple {
-        pub fn new() -> Component {
+        pub fn new() -> Address {
             Self {
                 state: 0
             }.instantiate()
@@ -51,8 +50,8 @@ fn test_simple_abi() {
               "name": "new",
               "inputs": [],
               "output": {
-                "type": "SystemType",
-                "name": "::scrypto::constructs::Component"
+                "type": "Custom",
+                "name": "Address"
               }
             }
           ],

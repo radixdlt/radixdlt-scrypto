@@ -10,16 +10,16 @@
             }
         },
         {
-            "name": "test_system_types",
+            "name": "test_custom_types",
             "inputs": [
                 {
-                    "type": "SystemType",
-                    "name": "::scrypto::resource::Tokens"
+                    "type": "Custom",
+                    "name": "Tokens"
                 }
             ],
             "output": {
-                "type": "SystemType",
-                "name": "::scrypto::resource::BadgesRef"
+                "type": "Custom",
+                "name": "BadgesRef"
             }
         }
     ],
