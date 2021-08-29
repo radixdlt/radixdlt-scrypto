@@ -42,10 +42,10 @@ pub struct Process<'rt, 'le, L: Ledger> {
     trace: bool,
     runtime: &'rt mut Runtime<'le, L>,
     buckets: HashMap<BID, Bucket>,
-    references: HashMap<RID, Rc<RefCell<BucketBorrowed>>>,
-    locked_buckets: HashMap<BID, Rc<RefCell<BucketBorrowed>>>,
+    references: HashMap<RID, Rc<RefCell<LockedBucket>>>,
+    locked_buckets: HashMap<BID, Rc<RefCell<LockedBucket>>>,
     moving_buckets: HashMap<BID, Bucket>,
-    moving_references: HashMap<RID, Rc<RefCell<BucketBorrowed>>>,
+    moving_references: HashMap<RID, Rc<RefCell<LockedBucket>>>,
     vm: Option<VM>,
 }
 
@@ -130,7 +130,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
     pub fn put_resources(
         &mut self,
         buckets: HashMap<BID, Bucket>,
-        references: HashMap<RID, Rc<RefCell<BucketBorrowed>>>,
+        references: HashMap<RID, Rc<RefCell<LockedBucket>>>,
     ) {
         self.buckets.extend(buckets);
         self.references.extend(references);
@@ -141,7 +141,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         &mut self,
     ) -> (
         HashMap<BID, Bucket>,
-        HashMap<RID, Rc<RefCell<BucketBorrowed>>>,
+        HashMap<RID, Rc<RefCell<LockedBucket>>>,
     ) {
         let buckets = self.moving_buckets.clone();
         let references = self.moving_references.clone();
@@ -232,8 +232,8 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         let bids: Vec<BID> = self
             .locked_buckets
             .values()
-            .filter(|v| v.borrow().ref_count() == 0)
-            .map(|v| v.borrow().bid())
+            .filter(|v| v.borrow().borrow_cnt() == 0)
+            .map(|v| v.borrow().bucket_id())
             .collect();
         for bid in bids {
             trace!(self, "Moving {:02x?} to unlocked_buckets state", bid);
@@ -610,25 +610,35 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         &mut self,
         input: CombineBucketsInput,
     ) -> Result<CombineBucketsOutput, RuntimeError> {
-        // The other bucket needs to be a transient bucket
-        let other = self
-            .buckets
-            .remove(&input.other)
-            .ok_or(RuntimeError::BucketNotFound)?;
+        let package = self.package()?;
 
-        let bucket = if input.bucket.is_persisted() {
+        let other = if input.other.is_persisted() {
+            let bucket = self
+                .runtime
+                .get_bucket_mut(input.other)
+                .ok_or(RuntimeError::BucketNotFound)?;
+            bucket
+                .take(bucket.amount(), package)
+                .map_err(|e| RuntimeError::AccountingError(e))?
+        } else {
+            self.buckets
+                .remove(&input.other)
+                .ok_or(RuntimeError::BucketNotFound)?
+        };
+
+        if input.bucket.is_persisted() {
             self.runtime
                 .get_bucket_mut(input.bucket)
                 .ok_or(RuntimeError::BucketNotFound)?
+                .put(other, package)
+                .map_err(|e| RuntimeError::AccountingError(e))?;
         } else {
             self.buckets
                 .get_mut(&input.bucket)
                 .ok_or(RuntimeError::BucketNotFound)?
-        };
-
-        bucket
-            .put(other)
-            .map_err(|e| RuntimeError::AccountingError(e))?;
+                .put(other)
+                .map_err(|e| RuntimeError::AccountingError(e))?;
+        }
 
         Ok(CombineBucketsOutput {})
     }
@@ -637,19 +647,21 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         &mut self,
         input: SplitBucketInput,
     ) -> Result<SplitBucketOutput, RuntimeError> {
-        let bucket = if input.bucket.is_persisted() {
+        let package = self.package()?;
+
+        let new_bucket = if input.bucket.is_persisted() {
             self.runtime
                 .get_bucket_mut(input.bucket)
                 .ok_or(RuntimeError::BucketNotFound)?
+                .take(input.amount, package)
+                .map_err(|e| RuntimeError::AccountingError(e))?
         } else {
             self.buckets
                 .get_mut(&input.bucket)
                 .ok_or(RuntimeError::BucketNotFound)?
+                .take(input.amount)
+                .map_err(|e| RuntimeError::AccountingError(e))?
         };
-
-        let new_bucket = bucket
-            .take(input.amount)
-            .map_err(|e| RuntimeError::AccountingError(e))?;
         let new_bid = self.runtime.new_transient_bid();
         self.buckets.insert(new_bid, new_bucket);
 
@@ -705,7 +717,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
             }
             None => {
                 // first time borrow
-                let bucket = Rc::new(RefCell::new(BucketBorrowed::new(
+                let bucket = Rc::new(RefCell::new(LockedBucket::new(
                     bid,
                     self.buckets
                         .remove(&bid)
@@ -739,9 +751,9 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
             .rtn()
             .map_err(|e| RuntimeError::AccountingError(e))?;
         if new_count == 0 {
-            if let Some(b) = self.locked_buckets.remove(&bucket.borrow().bid()) {
+            if let Some(b) = self.locked_buckets.remove(&bucket.borrow().bucket_id()) {
                 self.buckets
-                    .insert(b.borrow().bid(), b.borrow().bucket().clone());
+                    .insert(b.borrow().bucket_id(), b.borrow().bucket().clone());
             }
         }
 
@@ -774,97 +786,6 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         Ok(GetResourceRefOutput {
             resource: reference.borrow().bucket().resource(),
         })
-    }
-
-    pub fn withdraw(&mut self, input: WithdrawInput) -> Result<WithdrawOutput, RuntimeError> {
-        let address = input.account;
-
-        let authorized = match address {
-            Address::Package(_) => address == self.package()?,
-            Address::Component(_) => {
-                self.runtime
-                    .get_component(address)
-                    .ok_or(RuntimeError::ComponentNotFound(address))?
-                    .package()
-                    == self.package()?
-            }
-            _ => false,
-        };
-        if !authorized {
-            return Err(RuntimeError::UnauthorizedToWithdraw);
-        }
-
-        // find the account
-        if self.runtime.get_account(address).is_none() {
-            self.runtime.put_account(address, Account::new());
-        };
-        let account = self.runtime.get_account(address).unwrap();
-
-        // look up the bucket
-        let bid = match account.get_bucket(input.resource) {
-            Some(bid) => *bid,
-            None => {
-                let bid = self.runtime.new_persisted_bid();
-                self.runtime
-                    .put_bucket(bid, Bucket::new(U256::zero(), input.resource));
-
-                let acc = self.runtime.get_account_mut(address).unwrap();
-                acc.insert_bucket(input.resource, bid);
-
-                bid
-            }
-        };
-        let bucket = self
-            .runtime
-            .get_bucket_mut(bid)
-            .expect("The bucket should exist");
-
-        let new_bucket = bucket
-            .take(input.amount)
-            .map_err(|e| RuntimeError::AccountingError(e))?;
-        let new_bid = self.runtime.new_transient_bid();
-        self.buckets.insert(new_bid, new_bucket);
-
-        Ok(WithdrawOutput { bucket: new_bid })
-    }
-
-    pub fn deposit(&mut self, input: DepositInput) -> Result<DepositOutput, RuntimeError> {
-        let address = input.account;
-        let to_deposit = self
-            .buckets
-            .remove(&input.bucket)
-            .ok_or(RuntimeError::BucketNotFound)?;
-
-        // find the account
-        if self.runtime.get_account(address).is_none() {
-            self.runtime.put_account(address, Account::new());
-        };
-        let account = self.runtime.get_account(address).unwrap();
-
-        // look up the bucket
-        let bid = match account.get_bucket(to_deposit.resource()) {
-            Some(bid) => *bid,
-            None => {
-                let bid = self.runtime.new_persisted_bid();
-                self.runtime
-                    .put_bucket(bid, Bucket::new(U256::zero(), to_deposit.resource()));
-
-                let acc = self.runtime.get_account_mut(address).unwrap();
-                acc.insert_bucket(to_deposit.resource(), bid);
-
-                bid
-            }
-        };
-        let bucket = self
-            .runtime
-            .get_bucket_mut(bid)
-            .expect("The bucket should exist");
-
-        bucket
-            .put(to_deposit)
-            .map_err(|e| RuntimeError::AccountingError(e))?;
-
-        Ok(DepositOutput {})
     }
 
     pub fn emit_log(&mut self, input: EmitLogInput) -> Result<EmitLogOutput, RuntimeError> {
@@ -1107,13 +1028,16 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
 
     /// Convert transient buckets to persisted buckets
     fn convert_transient_to_persist(&mut self, bid: BID) -> Result<BID, RuntimeError> {
+        let package = self.package()?;
+
         if bid.is_transient() {
             let bucket = self
                 .buckets
                 .remove(&bid)
                 .ok_or(RuntimeError::BucketNotFound)?;
             let new_bid = self.runtime.new_persisted_bid();
-            self.runtime.put_bucket(new_bid, bucket);
+            self.runtime
+                .put_bucket(new_bid, PersistedBucket::new(bucket, package));
             trace!(self, "Converting {:02x?} to {:02x?}", bid, new_bid);
             Ok(new_bid)
         } else {
@@ -1250,9 +1174,6 @@ impl<'rt, 'le, L: Ledger> Externals for Process<'rt, 'le, L> {
                     DROP_REFERENCE => self.handle(args, Self::drop_reference, true),
                     GET_AMOUNT_REF => self.handle(args, Self::get_amount_ref, true),
                     GET_RESOURCE_REF => self.handle(args, Self::get_resource_ref, true),
-
-                    WITHDRAW => self.handle(args, Self::withdraw, true),
-                    DEPOSIT => self.handle(args, Self::deposit, true),
 
                     EMIT_LOG => self.handle(args, Self::emit_log, true),
                     GET_PACKAGE_ADDRESS => self.handle(args, Self::get_package_address, true),

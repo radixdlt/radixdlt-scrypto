@@ -8,9 +8,8 @@ use crate::model::*;
 pub struct InMemoryLedger {
     packages: HashMap<Address, Package>,
     components: HashMap<Address, Component>,
-    accounts: HashMap<Address, Account>,
     resources: HashMap<Address, Resource>,
-    buckets: HashMap<BID, Bucket>,
+    buckets: HashMap<BID, PersistedBucket>,
 }
 
 impl InMemoryLedger {
@@ -18,7 +17,6 @@ impl InMemoryLedger {
         Self {
             packages: HashMap::new(),
             components: HashMap::new(),
-            accounts: HashMap::new(),
             resources: HashMap::new(),
             buckets: HashMap::new(),
         }
@@ -50,19 +48,11 @@ impl Ledger for InMemoryLedger {
         self.components.insert(address, component);
     }
 
-    fn get_account(&self, address: Address) -> Option<Account> {
-        self.accounts.get(&address).map(Clone::clone)
-    }
-
-    fn put_account(&mut self, address: Address, account: Account) {
-        self.accounts.insert(address, account);
-    }
-
-    fn get_bucket(&self, bid: BID) -> Option<Bucket> {
+    fn get_bucket(&self, bid: BID) -> Option<PersistedBucket> {
         self.buckets.get(&bid).map(Clone::clone)
     }
 
-    fn put_bucket(&mut self, bid: BID, bucket: Bucket) {
+    fn put_bucket(&mut self, bid: BID, bucket: PersistedBucket) {
         self.buckets.insert(bid, bucket);
     }
 }

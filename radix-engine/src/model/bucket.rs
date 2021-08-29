@@ -1,19 +1,36 @@
 use sbor::*;
 use scrypto::types::*;
 
-/// A bucket is a resource container.
-#[derive(Debug, Clone, Encode, Decode)]
-pub struct Bucket {
-    amount: U256,
-    resource: Address,
-}
-
 /// Represents an error when accessing a bucket.
 #[derive(Debug, Clone)]
 pub enum BucketError {
     MismatchingResourceType,
     InsufficientBalance,
     ReferenceCountUnderflow,
+    UnauthorizedAccess,
+}
+
+/// A bucket is a container that holds resources.
+#[derive(Debug, Clone, Encode, Decode)]
+pub struct Bucket {
+    amount: U256,
+    resource: Address,
+}
+
+/// When a bucket gets borrowed, it becomes unlocked immediately
+/// until all references have been dropped.
+#[derive(Debug, Clone, Encode, Decode)]
+pub struct LockedBucket {
+    bucket_id: BID,
+    bucket: Bucket,
+    borrow_cnt: usize,
+}
+
+/// A persisted bucket is stored permanently on ledger state.
+#[derive(Debug, Clone, Encode, Decode)]
+pub struct PersistedBucket {
+    bucket: Bucket,
+    owner: Address,
 }
 
 impl Bucket {
@@ -49,47 +66,73 @@ impl Bucket {
     }
 }
 
-/// Contain a borrowed bucket and record the number of references out.
-#[derive(Debug)]
-pub struct BucketBorrowed {
-    bid: BID,
-    bucket: Bucket,
-    count: usize,
-}
-
-impl BucketBorrowed {
-    pub fn new(bid: BID, bucket: Bucket, count: usize) -> Self {
-        Self { bid, bucket, count }
-    }
-
-    pub fn brw(&mut self) {
-        self.count += 1;
-    }
-
-    pub fn rtn(&mut self) -> Result<usize, BucketError> {
-        if self.ref_count() <= 0 {
-            Err(BucketError::ReferenceCountUnderflow)
-        } else {
-            self.count -= 1;
-            Ok(self.count)
+impl LockedBucket {
+    pub fn new(bucket_id: BID, bucket: Bucket, borrow_cnt: usize) -> Self {
+        Self {
+            bucket_id,
+            bucket,
+            borrow_cnt,
         }
     }
 
-    pub fn bid(&self) -> BID {
-        self.bid
+    pub fn brw(&mut self) {
+        self.borrow_cnt += 1;
+    }
+
+    pub fn rtn(&mut self) -> Result<usize, BucketError> {
+        if self.borrow_cnt() <= 0 {
+            Err(BucketError::ReferenceCountUnderflow)
+        } else {
+            self.borrow_cnt -= 1;
+            Ok(self.borrow_cnt)
+        }
+    }
+
+    pub fn bucket_id(&self) -> BID {
+        self.bucket_id
     }
 
     pub fn bucket(&self) -> &Bucket {
         &self.bucket
     }
 
-    pub fn ref_count(&self) -> usize {
-        self.count
+    pub fn borrow_cnt(&self) -> usize {
+        self.borrow_cnt
     }
 }
 
-impl Into<Bucket> for BucketBorrowed {
+impl Into<Bucket> for LockedBucket {
     fn into(self) -> Bucket {
         self.bucket
+    }
+}
+
+impl PersistedBucket {
+    pub fn new(bucket: Bucket, owner: Address) -> Self {
+        Self { bucket, owner }
+    }
+
+    pub fn put(&mut self, other: Bucket, requester: Address) -> Result<(), BucketError> {
+        if requester == self.owner {
+            self.bucket.put(other)
+        } else {
+            Err(BucketError::UnauthorizedAccess)
+        }
+    }
+
+    pub fn take(&mut self, amount: U256, requester: Address) -> Result<Bucket, BucketError> {
+        if requester == self.owner {
+            self.bucket.take(amount)
+        } else {
+            Err(BucketError::UnauthorizedAccess)
+        }
+    }
+
+    pub fn amount(&self) -> U256 {
+        self.bucket.amount()
+    }
+
+    pub fn resource(&self) -> Address {
+        self.bucket.resource()
     }
 }

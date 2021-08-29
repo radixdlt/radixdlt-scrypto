@@ -14,7 +14,6 @@ pub struct FileBasedLedger {
 
 const PACKAGES: &'static str = "packages";
 const COMPONENTS: &'static str = "components";
-const ACCOUNTS: &'static str = "accounts";
 const RESOURCES: &'static str = "resources";
 const BUCKETS: &'static str = "buckets";
 
@@ -22,7 +21,7 @@ const FILE_EXT: &'static str = "sbor";
 
 impl FileBasedLedger {
     pub fn new(root: PathBuf) -> Self {
-        for folder in [PACKAGES, COMPONENTS, ACCOUNTS, RESOURCES, BUCKETS] {
+        for folder in [PACKAGES, COMPONENTS, RESOURCES, BUCKETS] {
             let mut path = root.clone();
             path.push(folder);
             if !path.exists() {
@@ -105,22 +104,11 @@ impl Ledger for FileBasedLedger {
         )
     }
 
-    fn get_account(&self, address: Address) -> Option<Account> {
-        Self::read(self.get_path(ACCOUNTS, address.to_string(), FILE_EXT)).map(|v| Self::decode(v))
-    }
-
-    fn put_account(&mut self, address: Address, account: Account) {
-        Self::write(
-            self.get_path(ACCOUNTS, address.to_string(), FILE_EXT),
-            Self::encode(&account),
-        )
-    }
-
-    fn get_bucket(&self, bid: BID) -> Option<Bucket> {
+    fn get_bucket(&self, bid: BID) -> Option<PersistedBucket> {
         Self::read(self.get_path(BUCKETS, bid.to_string(), FILE_EXT)).map(|v| Self::decode(v))
     }
 
-    fn put_bucket(&mut self, bid: BID, bucket: Bucket) {
+    fn put_bucket(&mut self, bid: BID, bucket: PersistedBucket) {
         Self::write(
             self.get_path(BUCKETS, bid.to_string(), FILE_EXT),
             Self::encode(&bucket),

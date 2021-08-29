@@ -59,11 +59,6 @@ pub const GET_AMOUNT_REF: u32 = 0x38;
 /// Get the resource address behind a reference
 pub const GET_RESOURCE_REF: u32 = 0x39;
 
-/// Withdraw from an account
-pub const WITHDRAW: u32 = 0x40;
-/// Deposit into an account
-pub const DEPOSIT: u32 = 0x41;
-
 /// Log a message
 pub const EMIT_LOG: u32 = 0x50;
 /// Retrieve context package address
@@ -337,31 +332,6 @@ pub struct GetResourceRefInput {
 pub struct GetResourceRefOutput {
     pub resource: Address,
 }
-
-//========
-// account
-//========
-
-#[derive(Debug, Clone, Encode, Decode)]
-pub struct WithdrawInput {
-    pub account: Address,
-    pub amount: U256,
-    pub resource: Address,
-}
-
-#[derive(Debug, Clone, Encode, Decode)]
-pub struct WithdrawOutput {
-    pub bucket: BID,
-}
-
-#[derive(Debug, Clone, Encode, Decode)]
-pub struct DepositInput {
-    pub account: Address,
-    pub bucket: BID,
-}
-
-#[derive(Debug, Clone, Encode, Decode)]
-pub struct DepositOutput {}
 
 //=======
 // others

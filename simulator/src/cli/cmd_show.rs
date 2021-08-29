@@ -49,16 +49,7 @@ pub fn handle_show<'a>(matches: &ArgMatches<'a>) -> Result<(), Error> {
             }
         }
         Address::PublicKey(_) => {
-            let account = ledger.get_account(address);
-            match account {
-                Some(_) => {
-                    println!("Public key: {}", address.to_string());
-                    show_owning_resources(&ledger, address)
-                }
-                None => {
-                    println!("Account not found");
-                }
-            }
+            println!("Public key: {}", address.to_string());
         }
         Address::Package(_) => {
             let package = ledger.get_package(address);
@@ -66,7 +57,6 @@ pub fn handle_show<'a>(matches: &ArgMatches<'a>) -> Result<(), Error> {
                 Some(b) => {
                     println!("Package: {}", address.to_string());
                     println!("Code size: {} bytes", b.code().len());
-                    show_owning_resources(&ledger, address);
                 }
                 None => {
                     println!("Package not found");
@@ -79,7 +69,6 @@ pub fn handle_show<'a>(matches: &ArgMatches<'a>) -> Result<(), Error> {
                 Some(c) => {
                     println!("Component: {}", address.to_string());
                     println!("State: {:02x?}", c.state());
-                    show_owning_resources(&ledger, address)
                 }
                 None => {
                     println!("Component not found");
@@ -88,19 +77,4 @@ pub fn handle_show<'a>(matches: &ArgMatches<'a>) -> Result<(), Error> {
         }
     }
     Ok(())
-}
-
-fn show_owning_resources<T: Ledger>(ledger: &T, address: Address) {
-    if let Some(account) = ledger.get_account(address) {
-        for (resource, bid) in account.buckets() {
-            println!(
-                "Owns resource: address = {}, balance = {}",
-                resource.to_string(),
-                ledger
-                    .get_bucket(*bid)
-                    .map(|b| b.amount())
-                    .unwrap_or(U256::zero())
-            )
-        }
-    }
 }

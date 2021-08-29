@@ -78,15 +78,13 @@ pub struct Runtime<'le, T: Ledger> {
     logs: Vec<(Level, String)>,
     packages: HashMap<Address, Package>,
     components: HashMap<Address, Component>,
-    accounts: HashMap<Address, Account>,
     resources: HashMap<Address, Resource>,
-    buckets: HashMap<BID, Bucket>,
+    buckets: HashMap<BID, PersistedBucket>,
     updated_packages: HashSet<Address>,
     updated_components: HashSet<Address>,
-    updated_accounts: HashSet<Address>,
     updated_resources: HashSet<Address>,
     updated_buckets: HashSet<BID>,
-    cache: LruCache<Address, Module>,
+    cache: LruCache<Address, Module>, // TODO: move to ledger level
 }
 
 impl<'le, T: Ledger> Runtime<'le, T> {
@@ -98,12 +96,10 @@ impl<'le, T: Ledger> Runtime<'le, T> {
             logs: Vec::new(),
             packages: HashMap::new(),
             components: HashMap::new(),
-            accounts: HashMap::new(),
             resources: HashMap::new(),
             buckets: HashMap::new(),
             updated_packages: HashSet::new(),
             updated_components: HashSet::new(),
-            updated_accounts: HashSet::new(),
             updated_resources: HashSet::new(),
             updated_buckets: HashSet::new(),
             cache: LruCache::new(1024),
@@ -216,44 +212,6 @@ impl<'le, T: Ledger> Runtime<'le, T> {
         self.components.insert(address, component);
     }
 
-    /// Returns an immutable reference to an account, if exists.
-    #[allow(dead_code)]
-    pub fn get_account(&mut self, address: Address) -> Option<&Account> {
-        if self.accounts.contains_key(&address) {
-            return self.accounts.get(&address);
-        }
-
-        if let Some(account) = self.ledger.get_account(address) {
-            self.accounts.insert(address, account);
-            self.accounts.get(&address)
-        } else {
-            None
-        }
-    }
-
-    /// Returns a mutable reference to an account, if exists.
-    pub fn get_account_mut(&mut self, address: Address) -> Option<&mut Account> {
-        self.updated_accounts.insert(address);
-
-        if self.accounts.contains_key(&address) {
-            return self.accounts.get_mut(&address);
-        }
-
-        if let Some(account) = self.ledger.get_account(address) {
-            self.accounts.insert(address, account);
-            self.accounts.get_mut(&address)
-        } else {
-            None
-        }
-    }
-
-    /// Inserts a new account.
-    pub fn put_account(&mut self, address: Address, account: Account) {
-        self.updated_accounts.insert(address);
-
-        self.accounts.insert(address, account);
-    }
-
     /// Returns an immutable reference to a resource, if exists.
     pub fn get_resource(&mut self, address: Address) -> Option<&Resource> {
         if self.resources.contains_key(&address) {
@@ -294,7 +252,7 @@ impl<'le, T: Ledger> Runtime<'le, T> {
 
     /// Returns an immutable reference to a bucket, if exists.
     #[allow(dead_code)]
-    pub fn get_bucket(&mut self, bid: BID) -> Option<&Bucket> {
+    pub fn get_bucket(&mut self, bid: BID) -> Option<&PersistedBucket> {
         if self.buckets.contains_key(&bid) {
             return self.buckets.get(&bid);
         }
@@ -308,7 +266,7 @@ impl<'le, T: Ledger> Runtime<'le, T> {
     }
 
     /// Returns a mutable reference to a bucket, if exists.
-    pub fn get_bucket_mut(&mut self, bid: BID) -> Option<&mut Bucket> {
+    pub fn get_bucket_mut(&mut self, bid: BID) -> Option<&mut PersistedBucket> {
         self.updated_buckets.insert(bid);
 
         if self.buckets.contains_key(&bid) {
@@ -324,7 +282,7 @@ impl<'le, T: Ledger> Runtime<'le, T> {
     }
 
     /// Inserts a new bucket.
-    pub fn put_bucket(&mut self, bid: BID, bucket: Bucket) {
+    pub fn put_bucket(&mut self, bid: BID, bucket: PersistedBucket) {
         self.updated_buckets.insert(bid);
 
         self.buckets.insert(bid, bucket);
@@ -372,12 +330,6 @@ impl<'le, T: Ledger> Runtime<'le, T> {
         for address in addresses {
             self.ledger
                 .put_component(address, self.components.get(&address).unwrap().clone());
-        }
-
-        addresses = self.updated_accounts.clone();
-        for address in addresses {
-            self.ledger
-                .put_account(address, self.accounts.get(&address).unwrap().clone());
         }
 
         addresses = self.updated_resources.clone();

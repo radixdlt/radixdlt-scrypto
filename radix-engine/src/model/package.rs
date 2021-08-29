@@ -2,7 +2,7 @@ use sbor::*;
 use scrypto::rust::vec::Vec;
 
 /// A package is a piece of code published on-chain.
-#[derive(Debug, Clone, Describe, Encode, Decode)]
+#[derive(Debug, Clone, Encode, Decode)]
 pub struct Package {
     code: Vec<u8>,
 }

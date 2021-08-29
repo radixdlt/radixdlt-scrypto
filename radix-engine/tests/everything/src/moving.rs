@@ -1,16 +1,19 @@
 use crate::utils::*;
 use scrypto::constructs::*;
 use scrypto::resource::*;
+use scrypto::rust::vec::Vec;
 use scrypto::*;
 
 blueprint! {
-    struct MoveTest;
+    struct MoveTest {
+        tokens: Vec<Tokens>
+    }
 
     impl MoveTest {
 
-        pub fn receive_bucket(&self, t: Tokens) {
+        pub fn receive_bucket(&mut self, t: Tokens) {
             info!("Received bucket: address = {}, amount = {}", t.resource(), t.amount());
-            Account::from(Context::package_address()).deposit_tokens(t);
+            self.tokens.push(t);
         }
 
         pub fn receive_reference(&self, t: TokensRef) {
@@ -21,20 +24,24 @@ blueprint! {
         pub fn move_bucket() {
             let resource =  create_mutable_tokens("m1", Context::package_address());
             let tokens =  mint_tokens(resource, 100);
-            let component = MoveTest {}.instantiate();
+            let component = MoveTest {
+                tokens: Vec::new()
+            }.instantiate();
 
             component.call::<()>("receive_bucket", args!(tokens));
         }
 
-        pub fn move_reference() {
+        pub fn move_reference() -> Tokens {
             let resource =  create_mutable_tokens("m2", Context::package_address());
             let tokens =  mint_tokens(resource, 100);
-            let component = MoveTest {}.instantiate();
+            let component = MoveTest {
+                tokens: Vec::new()
+            }.instantiate();
 
             component.call::<()>("receive_reference", args!(tokens.borrow()));
 
-            // The sender still owns the tokens
-            Account::from(Context::package_address()).deposit_tokens(tokens);
+            // The package still owns the tokens
+            tokens
         }
     }
 }

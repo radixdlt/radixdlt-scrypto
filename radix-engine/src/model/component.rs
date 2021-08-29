@@ -1,4 +1,5 @@
 use sbor::*;
+use scrypto::rust::collections::*;
 use scrypto::rust::string::String;
 use scrypto::rust::vec::Vec;
 use scrypto::types::*;
@@ -9,6 +10,7 @@ pub struct Component {
     package: Address,
     blueprint: String,
     state: Vec<u8>,
+    map: HashMap<Vec<u8>, Vec<u8>>,
 }
 
 impl Component {
@@ -17,6 +19,7 @@ impl Component {
             package,
             blueprint,
             state,
+            map: HashMap::new(),
         }
     }
 
@@ -34,5 +37,13 @@ impl Component {
 
     pub fn set_state(&mut self, new_state: Vec<u8>) {
         self.state = new_state;
+    }
+
+    pub fn map_entry(&mut self, key: &Vec<u8>) -> Option<&Vec<u8>> {
+        self.map.get(key)
+    }
+
+    pub fn set_map_entry(&mut self, key: Vec<u8>, value: Vec<u8>) {
+        self.map.insert(key, value);
     }
 }

@@ -181,21 +181,6 @@ fn test_bucket() {
 }
 
 #[test]
-fn test_account() {
-    let mut ledger = InMemoryLedger::new();
-    let package = build_and_publish(&mut ledger, "everything");
-
-    let output = call(
-        &mut ledger,
-        package,
-        "AccountTest",
-        "deposit_and_withdraw",
-        vec![],
-    );
-    assert!(output.is_ok());
-}
-
-#[test]
 fn test_move_bucket() {
     let mut ledger = InMemoryLedger::new();
     let package = build_and_publish(&mut ledger, "everything");
