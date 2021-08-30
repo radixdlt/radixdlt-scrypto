@@ -1,8 +1,6 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-extern crate alloc;
-use alloc::vec;
-
+use sbor::rust::vec;
 use sbor::Decode;
 use sbor::Decoder;
 

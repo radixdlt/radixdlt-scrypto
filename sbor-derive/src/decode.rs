@@ -2,6 +2,8 @@ use proc_macro2::TokenStream;
 use quote::quote;
 use syn::*;
 
+use crate::utils::*;
+
 macro_rules! trace {
     ($($arg:expr),*) => {{
         #[cfg(feature = "trace")]
@@ -18,29 +20,34 @@ pub fn handle_decode(input: TokenStream) -> TokenStream {
     let output = match data {
         Data::Struct(s) => match s.fields {
             syn::Fields::Named(FieldsNamed { named, .. }) => {
-                let n = named.len();
-                let names = named.iter().map(|f| {
+                // ns: not skipped
+                let ns: Vec<&Field> = named.iter().filter(|f| !is_skipped(f)).collect();
+                let ns_n = Index::from(ns.len());
+                let ns_ids = ns.iter().map(|f| &f.ident);
+                let ns_names = ns.iter().map(|f| {
                     f.ident
                         .clone()
                         .expect("All fields must be named")
                         .to_string()
                 });
-                let idents = named.iter().map(|f| &f.ident);
-                let types = named.iter().map(|f| &f.ty);
-
+                let ns_types = ns.iter().map(|f| &f.ty);
+                let s: Vec<&Field> = named.iter().filter(|f| is_skipped(f)).collect();
+                let s_ids = s.iter().map(|f| &f.ident);
+                let s_types = s.iter().map(|f| &f.ty);
                 quote! {
                     impl ::sbor::Decode for #ident {
                         fn decode_value<'de>(decoder: &'de mut ::sbor::Decoder) -> Result<Self, ::sbor::DecodeError> {
                             use ::sbor::{self, Decode};
 
                             decoder.check_type(::sbor::constants::TYPE_FIELDS_NAMED)?;
-                            decoder.check_len(#n)?;
+                            decoder.check_len(#ns_n)?;
 
                             Ok(Self {
-                                #(#idents: {
-                                    decoder.check_name(#names)?;
-                                    <#types>::decode(decoder)?
-                                }),*
+                                #(#ns_ids: {
+                                    decoder.check_name(#ns_names)?;
+                                    <#ns_types>::decode(decoder)?
+                                },)*
+                                #(#s_ids: <#s_types>::default()),*
                             })
                         }
 
@@ -51,19 +58,26 @@ pub fn handle_decode(input: TokenStream) -> TokenStream {
                 }
             }
             syn::Fields::Unnamed(FieldsUnnamed { unnamed, .. }) => {
-                let n = unnamed.len();
-                let types = unnamed.iter().map(|f| &f.ty);
-
+                let mut all_exprs = Vec::<Expr>::new();
+                for f in &unnamed {
+                    let ty = &f.ty;
+                    if is_skipped(f) {
+                        all_exprs.push(parse_quote! {<#ty>::default()})
+                    } else {
+                        all_exprs.push(parse_quote! {<#ty>::decode(decoder)?})
+                    }
+                }
+                let ns_n = Index::from(unnamed.iter().filter(|f| !is_skipped(f)).count());
                 quote! {
                     impl ::sbor::Decode for #ident {
                         fn decode_value<'de>(decoder: &'de mut ::sbor::Decoder) -> Result<Self, ::sbor::DecodeError> {
                             use ::sbor::{self, Decode};
 
                             decoder.check_type(::sbor::constants::TYPE_FIELDS_UNNAMED)?;
-                            decoder.check_len(#n)?;
+                            decoder.check_len(#ns_n)?;
 
                             Ok(Self (
-                                #(<#types>::decode(decoder)?),*
+                                #(#all_exprs,)*
                             ))
                         }
 
@@ -96,41 +110,54 @@ pub fn handle_decode(input: TokenStream) -> TokenStream {
                 let v_ith = i as u8;
                 match &v.fields {
                     syn::Fields::Named(FieldsNamed { named, .. }) => {
-                        let names = named.iter().map(|f| {
+                        let ns: Vec<&Field> = named.iter().filter(|f| !is_skipped(f)).collect();
+                        let ns_n = Index::from(ns.len());
+                        let ns_ids = ns.iter().map(|f| &f.ident);
+                        let ns_names = ns.iter().map(|f| {
                             f.ident
                                 .clone()
                                 .expect("All fields must be named")
                                 .to_string()
                         });
-                        let idents = named.iter().map(|f| &f.ident);
-                        let types = named.iter().map(|f| &f.ty);
-                        let n = named.len();
+                        let ns_types = ns.iter().map(|f| &f.ty);
+                        let s: Vec<&Field> = named.iter().filter(|f| is_skipped(f)).collect();
+                        let s_ids = s.iter().map(|f| &f.ident);
+                        let s_types = s.iter().map(|f| &f.ty);
                         quote! {
                             #v_ith => {
                                 decoder.check_name(#v_name)?;
                                 decoder.check_type(::sbor::constants::TYPE_FIELDS_NAMED)?;
-                                decoder.check_len(#n)?;
+                                decoder.check_len(#ns_n)?;
 
                                 Ok(Self::#v_id {
-                                    #(#idents: {
-                                        decoder.check_name(#names)?;
-                                        <#types>::decode(decoder)?
-                                    }),*
+                                    #(#ns_ids: {
+                                        decoder.check_name(#ns_names)?;
+                                        <#ns_types>::decode(decoder)?
+                                    },)*
+                                    #(#s_ids: <#s_types>::default(),)*
                                 })
                             }
                         }
                     }
                     syn::Fields::Unnamed(FieldsUnnamed { unnamed, .. }) => {
-                        let n = unnamed.len() as usize;
-                        let types = unnamed.iter().map(|f| &f.ty);
+                        let mut all_exprs = Vec::<Expr>::new();
+                        for f in unnamed {
+                            let ty = &f.ty;
+                            if is_skipped(f) {
+                                all_exprs.push(parse_quote! {<#ty>::default()})
+                            } else {
+                                all_exprs.push(parse_quote! {<#ty>::decode(decoder)?})
+                            }
+                        }
+                        let ns_n = Index::from(unnamed.iter().filter(|f| !is_skipped(f)).count());
                         quote! {
                             #v_ith => {
                                 decoder.check_name(#v_name)?;
                                 decoder.check_type(::sbor::constants::TYPE_FIELDS_UNNAMED)?;
-                                decoder.check_len(#n)?;
+                                decoder.check_len(#ns_n)?;
 
                                 Ok(Self::#v_id (
-                                    #(<#types>::decode(decoder)?),*
+                                    #(#all_exprs),*
                                 ))
                             }
                         }
@@ -202,12 +229,12 @@ mod tests {
                     fn decode_value<'de>(decoder: &'de mut ::sbor::Decoder) -> Result<Self, ::sbor::DecodeError> {
                         use ::sbor::{self, Decode};
                         decoder.check_type(::sbor::constants::TYPE_FIELDS_NAMED)?;
-                        decoder.check_len(1usize)?;
+                        decoder.check_len(1)?;
                         Ok(Self {
                             a: {
                                 decoder.check_name("a")?;
                                 <u32>::decode(decoder)?
-                            }
+                            },
                         })
                     }
                     fn sbor_type() -> u8 {
@@ -240,18 +267,18 @@ mod tests {
                             1u8 => {
                                 decoder.check_name("B")?;
                                 decoder.check_type(::sbor::constants::TYPE_FIELDS_UNNAMED)?;
-                                decoder.check_len(1usize)?;
+                                decoder.check_len(1)?;
                                 Ok(Self::B(<u32>::decode(decoder)?))
                             },
                             2u8 => {
                                 decoder.check_name("C")?;
                                 decoder.check_type(::sbor::constants::TYPE_FIELDS_NAMED)?;
-                                decoder.check_len(1usize)?;
+                                decoder.check_len(1)?;
                                 Ok(Self::C {
                                     x: {
                                         decoder.check_name("x")?;
                                         <u8>::decode(decoder)?
-                                    }
+                                    },
                                 })
                             },
                             _ => Err(::sbor::DecodeError::InvalidIndex(index))

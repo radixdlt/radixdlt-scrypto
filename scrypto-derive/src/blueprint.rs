@@ -38,7 +38,7 @@ pub fn handle_blueprint(input: TokenStream, output_abi: bool) -> TokenStream {
         }
 
         impl ::scrypto::traits::Blueprint for #bp_ident {
-            fn name(&self) -> &str {
+            fn name() -> &'static str {
                 #bp_name
             }
         }
@@ -46,6 +46,10 @@ pub fn handle_blueprint(input: TokenStream, output_abi: bool) -> TokenStream {
         impl #bp_ident {
             fn instantiate(self) -> ::scrypto::types::Address {
                 ::scrypto::constructs::Component::new(self).address()
+            }
+
+            fn address(&self) -> ::scrypto::types::Address {
+                todo!()
             }
         }
     };
@@ -357,13 +361,16 @@ mod tests {
                     }
                 }
                 impl ::scrypto::traits::Blueprint for Test {
-                    fn name(&self) -> &str {
+                    fn name() -> &'static str {
                         "Test"
                     }
                 }
                 impl Test {
                     fn instantiate(self) -> ::scrypto::types::Address {
                         ::scrypto::constructs::Component::new(self).address()
+                    }
+                    fn address(&self) -> ::scrypto::types::Address {
+                        todo!()
                     }
                 }
                 #[no_mangle]

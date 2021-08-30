@@ -2,6 +2,8 @@ use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 use syn::*;
 
+use crate::utils::*;
+
 macro_rules! trace {
     ($($arg:expr),*) => {{
         #[cfg(feature = "trace")]
@@ -18,25 +20,26 @@ pub fn handle_encode(input: TokenStream) -> TokenStream {
     let output = match data {
         Data::Struct(s) => match s.fields {
             syn::Fields::Named(FieldsNamed { named, .. }) => {
-                let n = named.len();
-                let names = named.iter().map(|f| {
+                // ns: not skipped
+                let ns: Vec<&Field> = named.iter().filter(|f| !is_skipped(f)).collect();
+                let ns_n = Index::from(ns.len());
+                let ns_ids = ns.iter().map(|f| &f.ident);
+                let ns_names = ns.iter().map(|f| {
                     f.ident
                         .clone()
                         .expect("All fields must be named")
                         .to_string()
                 });
-                let idents = named.iter().map(|f| &f.ident);
-
                 quote! {
                     impl ::sbor::Encode for #ident {
                         fn encode_value(&self, encoder: &mut ::sbor::Encoder) {
                             use ::sbor::{self, Encode};
 
                             encoder.write_type(::sbor::constants::TYPE_FIELDS_NAMED);
-                            encoder.write_len(#n);
+                            encoder.write_len(#ns_n);
                             #(
-                                encoder.write_name(#names);
-                                self.#idents.encode(encoder);
+                                encoder.write_name(#ns_names);
+                                self.#ns_ids.encode(encoder);
                             )*
                         }
 
@@ -47,17 +50,21 @@ pub fn handle_encode(input: TokenStream) -> TokenStream {
                 }
             }
             syn::Fields::Unnamed(FieldsUnnamed { unnamed, .. }) => {
-                let n = unnamed.len();
-                let ith = (0..n).map(|i| Index::from(i));
-
+                let mut ns_idx = Vec::new();
+                for (i, f) in unnamed.iter().enumerate() {
+                    if !is_skipped(f) {
+                        ns_idx.push(Index::from(i));
+                    }
+                }
+                let ns_n = Index::from(ns_idx.len());
                 quote! {
                     impl ::sbor::Encode for #ident {
                         fn encode_value(&self, encoder: &mut ::sbor::Encoder) {
                             use ::sbor::{self, Encode};
 
                             encoder.write_type(::sbor::constants::TYPE_FIELDS_UNNAMED);
-                            encoder.write_len(#n);
-                            #(self.#ith.encode(encoder);)*
+                            encoder.write_len(#ns_n);
+                            #(self.#ns_idx.encode(encoder);)*
                         }
 
                         fn sbor_type() -> u8 {
@@ -86,39 +93,45 @@ pub fn handle_encode(input: TokenStream) -> TokenStream {
                 let v_name = v_id.to_string();
                 match &v.fields {
                     syn::Fields::Named(FieldsNamed { named, .. }) => {
-                        let names = named.iter().map(|f| {
+                        let ns: Vec<&Field> = named.iter().filter(|f| !is_skipped(f)).collect();
+                        let ns_ids = ns.iter().map(|f| &f.ident);
+                        let ns_ids2 = ns.iter().map(|f| &f.ident);
+                        let ns_n = Index::from(ns.len());
+                        let ns_names = ns.iter().map(|f| {
                             f.ident
                                 .clone()
                                 .expect("All fields must be named")
                                 .to_string()
                         });
-                        let idents = named.iter().map(|f| &f.ident);
-                        let idents2 = named.iter().map(|f| &f.ident);
-                        let n = named.len();
                         quote! {
-                            Self::#v_id {#(#idents),*} => {
+                            Self::#v_id {#(#ns_ids,)* ..} => {
                                 encoder.write_index(#v_ith);
                                 encoder.write_name(#v_name);
                                 encoder.write_type(::sbor::constants::TYPE_FIELDS_NAMED);
-                                encoder.write_len(#n);
+                                encoder.write_len(#ns_n);
                                 #(
-                                    encoder.write_name(#names);
-                                    #idents2.encode(encoder);
+                                    encoder.write_name(#ns_names);
+                                    #ns_ids2.encode(encoder);
                                 )*
                             }
                         }
                     }
                     syn::Fields::Unnamed(FieldsUnnamed { unnamed, .. }) => {
-                        let n = unnamed.len() as usize;
-                        let args = (0..n).map(|i| format_ident!("a{}", i));
-                        let args2 = (0..n).map(|i| format_ident!("a{}", i));
+                        let all_args = (0..unnamed.len()).map(|i| format_ident!("a{}", i));
+                        let mut ns_args = Vec::<Ident>::new();
+                        for (i, f) in unnamed.iter().enumerate() {
+                            if !is_skipped(f) {
+                                ns_args.push(format_ident!("a{}", i));
+                            }
+                        }
+                        let ns_n = Index::from(ns_args.len());
                         quote! {
-                            Self::#v_id (#(#args),*) => {
+                            Self::#v_id (#(#all_args),*) => {
                                 encoder.write_index(#v_ith);
                                 encoder.write_name(#v_name);
                                 encoder.write_type(::sbor::constants::TYPE_FIELDS_UNNAMED);
-                                encoder.write_len(#n);
-                                #(#args2.encode(encoder);)*
+                                encoder.write_len(#ns_n);
+                                #(#ns_args.encode(encoder);)*
                             }
                         }
                     }
@@ -164,11 +177,10 @@ pub fn handle_encode(input: TokenStream) -> TokenStream {
 
 #[cfg(test)]
 mod tests {
-    extern crate alloc;
-    use alloc::str::FromStr;
+    use proc_macro2::TokenStream;
+    use std::str::FromStr;
 
     use super::*;
-    use proc_macro2::TokenStream;
 
     fn assert_code_eq(a: TokenStream, b: TokenStream) {
         assert_eq!(a.to_string(), b.to_string());
@@ -186,7 +198,7 @@ mod tests {
                     fn encode_value(&self, encoder: &mut ::sbor::Encoder) {
                         use ::sbor::{self, Encode};
                         encoder.write_type(::sbor::constants::TYPE_FIELDS_NAMED);
-                        encoder.write_len(1usize);
+                        encoder.write_len(1);
                         encoder.write_name("a");
                         self.a.encode(encoder);
                     }
@@ -219,14 +231,14 @@ mod tests {
                                 encoder.write_index(1usize);
                                 encoder.write_name("B");
                                 encoder.write_type(::sbor::constants::TYPE_FIELDS_UNNAMED);
-                                encoder.write_len(1usize);
+                                encoder.write_len(1);
                                 a0.encode(encoder);
                             }
-                            Self::C { x } => {
+                            Self::C { x, .. } => {
                                 encoder.write_index(2usize);
                                 encoder.write_name("C");
                                 encoder.write_type(::sbor::constants::TYPE_FIELDS_NAMED);
-                                encoder.write_len(1usize);
+                                encoder.write_len(1);
                                 encoder.write_name("x");
                                 x.encode(encoder);
                             }

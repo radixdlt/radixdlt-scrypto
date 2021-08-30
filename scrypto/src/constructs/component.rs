@@ -27,7 +27,7 @@ impl Into<Address> for Component {
 impl Component {
     pub fn new<T: Encode + crate::traits::Blueprint>(state: T) -> Self {
         let input = CreateComponentInput {
-            blueprint: state.name().to_string(),
+            blueprint: T::name().to_string(),
             state: scrypto_encode(&state),
         };
         let output: CreateComponentOutput = call_kernel(CREATE_COMPONENT, input);
