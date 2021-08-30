@@ -1,7 +1,28 @@
 use colored::*;
 use radix_engine::model::*;
+use std::iter;
 
 use crate::transaction::*;
+
+pub trait IdentifyLast: Iterator + Sized {
+    fn identify_last(self) -> Iter<Self>;
+}
+
+impl<I: Iterator> IdentifyLast for I {
+    fn identify_last(self) -> Iter<Self> {
+        Iter(self.peekable())
+    }
+}
+
+pub struct Iter<I: Iterator>(iter::Peekable<I>);
+
+impl<I: Iterator> Iterator for Iter<I> {
+    type Item = (bool, I::Item);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.0.next().map(|e| (self.0.peek().is_none(), e))
+    }
+}
 
 pub fn print_receipt(receipt: TransactionReceipt) {
     println!(
@@ -16,17 +37,17 @@ pub fn print_receipt(receipt: TransactionReceipt) {
     );
 
     println!("\n{}", "Instructions:".bold().green());
-    for inst in receipt.transaction.instructions {
-        println!("|- {:02x?}", inst);
+    for (last, inst) in receipt.transaction.instructions.iter().identify_last() {
+        println!("{} {:02x?}", prefix(last), inst);
     }
 
     println!("\n{}", "Results:".bold().green());
-    for result in receipt.results {
-        println!("|- {:02x?}", result);
+    for (last, result) in receipt.results.iter().identify_last() {
+        println!("{} {:02x?}", prefix(last), result);
     }
 
     println!("\n{}", "Logs:".bold().green());
-    for (level, msg) in receipt.logs {
+    for (last, (level, msg)) in receipt.logs.iter().identify_last() {
         let (l, m) = match level {
             Level::Error => ("ERROR".red(), msg.red()),
             Level::Warn => ("WARN".yellow(), msg.yellow()),
@@ -34,7 +55,7 @@ pub fn print_receipt(receipt: TransactionReceipt) {
             Level::Debug => ("DEBUG".cyan(), msg.cyan()),
             Level::Trace => ("TRACE".normal(), msg.normal()),
         };
-        println!("|- [{:5}] {}", l, m);
+        println!("{} [{:5}] {}", prefix(last), l, m);
     }
 
     println!(
@@ -42,4 +63,12 @@ pub fn print_receipt(receipt: TransactionReceipt) {
         "Execution Time:".bold().green(),
         receipt.execution_time
     );
+}
+
+fn prefix(last: bool) -> &'static str {
+    if last {
+        "└─"
+    } else {
+        "├─"
+    }
 }
