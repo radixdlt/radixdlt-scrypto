@@ -474,6 +474,47 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         Ok(PutComponentStateOutput {})
     }
 
+    pub fn get_component_map_entry(
+        &mut self,
+        input: GetComponentMapEntryInput,
+    ) -> Result<GetComponentMapEntryOutput, RuntimeError> {
+        let component = self
+            .runtime
+            .get_component(input.component)
+            .ok_or(RuntimeError::ComponentNotFound(input.component))?;
+
+        Ok(GetComponentMapEntryOutput {
+            value: component.map_entry(&input.key).map(Clone::clone),
+        })
+    }
+
+    pub fn put_component_map_entry(
+        &mut self,
+        input: PutComponentMapEntryInput,
+    ) -> Result<PutComponentMapEntryOutput, RuntimeError> {
+        let new_key = self.transform_sbor_data(
+            &input.key,
+            Self::convert_transient_to_persist,
+            Self::reject_references,
+        )?;
+        trace!(self, "Transformed key: {:02x?}", new_key);
+        let new_value = self.transform_sbor_data(
+            &input.value,
+            Self::convert_transient_to_persist,
+            Self::reject_references,
+        )?;
+        trace!(self, "Transformed value: {:02x?}", new_value);
+
+        let component = self
+            .runtime
+            .get_component_mut(input.component)
+            .ok_or(RuntimeError::ComponentNotFound(input.component))?;
+
+        component.set_map_entry(new_key, new_value);
+
+        Ok(PutComponentMapEntryOutput {})
+    }
+
     pub fn create_resource_mutable(
         &mut self,
         input: CreateResourceMutableInput,
@@ -1161,6 +1202,12 @@ impl<'rt, 'le, L: Ledger> Externals for Process<'rt, 'le, L> {
                     GET_COMPONENT_INFO => self.handle(args, Self::get_component_info, true),
                     GET_COMPONENT_STATE => self.handle(args, Self::get_component_state, true),
                     PUT_COMPONENT_STATE => self.handle(args, Self::put_component_state, true),
+                    GET_COMPONENT_MAP_ENTRY => {
+                        self.handle(args, Self::get_component_map_entry, true)
+                    }
+                    PUT_COMPONENT_MAP_ENTRY => {
+                        self.handle(args, Self::put_component_map_entry, true)
+                    }
 
                     CREATE_RESOURCE_MUTABLE => {
                         self.handle(args, Self::create_resource_mutable, true)

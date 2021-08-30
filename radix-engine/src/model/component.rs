@@ -39,7 +39,7 @@ impl Component {
         self.state = new_state;
     }
 
-    pub fn map_entry(&mut self, key: &Vec<u8>) -> Option<&Vec<u8>> {
+    pub fn map_entry(&self, key: &Vec<u8>) -> Option<&Vec<u8>> {
         self.map.get(key)
     }
 

@@ -179,7 +179,7 @@ impl Encode for usize {
     }
 }
 
-impl Encode for str {
+impl Encode for &str {
     #[inline]
     fn encode_value(&self, encoder: &mut Encoder) {
         encoder.write_len(self.len());
@@ -200,7 +200,7 @@ impl Encode for String {
 
     #[inline]
     fn sbor_type() -> u8 {
-        str::sbor_type()
+        TYPE_STRING
     }
 }
 

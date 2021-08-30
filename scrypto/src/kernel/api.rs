@@ -24,10 +24,10 @@ pub const GET_COMPONENT_INFO: u32 = 0x11;
 pub const GET_COMPONENT_STATE: u32 = 0x12;
 /// Update component state
 pub const PUT_COMPONENT_STATE: u32 = 0x13;
-/// TODO: Retrieve an entry from component storage
-pub const GET_COMPONENT_STORAGE: u32 = 0x14;
-/// TODO: Insert a key-value pair into component storage
-pub const PUT_COMPONENT_STORAGE: u32 = 0x15;
+/// Retrieve an entry from component's map storage
+pub const GET_COMPONENT_MAP_ENTRY: u32 = 0x14;
+/// Insert a key-value pair into component's map storage
+pub const PUT_COMPONENT_MAP_ENTRY: u32 = 0x15;
 
 /// Create a new resource with mutable supply
 pub const CREATE_RESOURCE_MUTABLE: u32 = 0x20;
@@ -153,25 +153,25 @@ pub struct PutComponentStateInput {
 pub struct PutComponentStateOutput {}
 
 #[derive(Debug, Clone, Encode, Decode)]
-pub struct GetComponentStorageInput {
+pub struct GetComponentMapEntryInput {
     pub component: Address,
     pub key: Vec<u8>,
 }
 
 #[derive(Debug, Clone, Encode, Decode)]
-pub struct GetComponentStorageOutput {
+pub struct GetComponentMapEntryOutput {
     pub value: Option<Vec<u8>>,
 }
 
 #[derive(Debug, Clone, Encode, Decode)]
-pub struct PutComponentStorageInput {
+pub struct PutComponentMapEntryInput {
     pub component: Address,
     pub key: Vec<u8>,
     pub value: Vec<u8>,
 }
 
 #[derive(Debug, Clone, Encode, Decode)]
-pub struct PutComponentStorageOutput {}
+pub struct PutComponentMapEntryOutput {}
 
 //=========
 // resource

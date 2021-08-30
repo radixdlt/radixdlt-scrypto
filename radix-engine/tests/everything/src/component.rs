@@ -40,5 +40,17 @@ blueprint! {
             // Update state
             self.secret = "New secret".to_owned();
         }
+
+        pub fn test_component_map(&self) -> Option<String> {
+            let address = Self {
+                resource: Address::RadixToken,
+                tokens: Tokens::new_empty(Address::RadixToken),
+                secret: "Secret".to_owned(),
+            }.instantiate();
+            let component = Component::from(address);
+
+            component.put_map_entry("hello", "world");
+            component.get_map_entry("hello")
+        }
     }
 }

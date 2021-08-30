@@ -139,6 +139,19 @@ fn test_component() {
         vec![scrypto_encode(&address)],
     );
     assert!(output4.is_ok());
+
+    let output5 = call(
+        &mut ledger,
+        package,
+        "ComponentTest",
+        "test_component_map",
+        vec![scrypto_encode(&address)],
+    );
+    assert!(output5.is_ok());
+    assert_eq!(
+        Some("world".to_owned()),
+        scrypto_decode(&output5.unwrap()).unwrap()
+    )
 }
 
 #[test]

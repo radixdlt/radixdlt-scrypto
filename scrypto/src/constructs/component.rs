@@ -80,6 +80,25 @@ impl Component {
         let _: PutComponentStateOutput = call_kernel(PUT_COMPONENT_STATE, input);
     }
 
+    pub fn get_map_entry<K: Encode, V: Decode>(&self, key: K) -> Option<V> {
+        let input = GetComponentMapEntryInput {
+            component: self.address,
+            key: scrypto_encode(&key),
+        };
+        let output: GetComponentMapEntryOutput = call_kernel(GET_COMPONENT_MAP_ENTRY, input);
+
+        output.value.map(|v| unwrap_or_panic(scrypto_decode(&v)))
+    }
+
+    pub fn put_map_entry<K: Encode, V: Encode>(&self, key: K, value: V) {
+        let input = PutComponentMapEntryInput {
+            component: self.address,
+            key: scrypto_encode(&key),
+            value: scrypto_encode(&value),
+        };
+        let _: PutComponentMapEntryOutput = call_kernel(PUT_COMPONENT_MAP_ENTRY, input);
+    }
+
     pub fn address(&self) -> Address {
         self.address
     }
