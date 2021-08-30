@@ -1,5 +1,6 @@
 use sbor::{model::Type, *};
 
+use crate::constants::*;
 use crate::resource::*;
 use crate::rust::borrow::ToOwned;
 use crate::types::*;
@@ -80,7 +81,7 @@ impl Decode for Badges {
 impl Describe for Badges {
     fn describe() -> Type {
         Type::Custom {
-            name: "Badges".to_owned(),
+            name: SCRYPTO_NAME_BADGES.to_owned(),
         }
     }
 }

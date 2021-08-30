@@ -2,8 +2,8 @@ use sbor::{model::Type, *};
 
 use uint::construct_uint;
 
+use crate::constants::*;
 use crate::rust::borrow::ToOwned;
-use crate::types::*;
 
 construct_uint! {
     pub struct U256(4);
@@ -45,7 +45,7 @@ impl Decode for U256 {
 impl Describe for U256 {
     fn describe() -> Type {
         Type::Custom {
-            name: "U256".to_owned(),
+            name: SCRYPTO_NAME_U256.to_owned(),
         }
     }
 }

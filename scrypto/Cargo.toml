@@ -6,16 +6,17 @@ edition = "2018"
 [dependencies]
 uint = { version = "0.9", default-features = false }
 sha2 = { version = "0.9", default-features = false }
+hex = { version = "0.4", default-features = false }
+hashbrown = { version = "0.11", optional = true } 
 sbor = { version = "0.1", path = "../sbor", default-features = false }
 scrypto-abi = { version = "0.1", path = "../scrypto-abi", default-features = false }
 scrypto-derive = { version = "0.1", path = "../scrypto-derive", default-features = false }
-scrypto-types = { version = "0.1", path = "../scrypto-types", default-features = false }
 
 [features]
 # You should enable either `std` or `alloc`
 default = ["std"]
-std = ["sbor/std", "scrypto-abi/std", "scrypto-derive/std", "scrypto-types/std"]
-alloc = ["sbor/alloc", "scrypto-abi/alloc", "scrypto-derive/alloc", "scrypto-types/alloc"]
+std = ["hex/std", "sbor/std", "scrypto-abi/std", "scrypto-derive/std"]
+alloc = ["hashbrown", "hex/alloc", "sbor/alloc", "scrypto-abi/alloc", "scrypto-derive/alloc"]
 
 # Turn on this feature to enable tracing.
 trace = ["scrypto-derive/trace"]

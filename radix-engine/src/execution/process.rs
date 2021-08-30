@@ -1,10 +1,8 @@
 use colored::*;
 use sbor::*;
 use scrypto::buffer::*;
+use scrypto::constants::*;
 use scrypto::kernel::*;
-use scrypto::resource::{
-    SCRYPTO_TYPE_BADGES, SCRYPTO_TYPE_BADGES_REF, SCRYPTO_TYPE_TOKENS, SCRYPTO_TYPE_TOKENS_REF,
-};
 use scrypto::rust::borrow::ToOwned;
 use scrypto::rust::cell::RefCell;
 use scrypto::rust::collections::*;

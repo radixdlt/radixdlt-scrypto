@@ -1,5 +1,6 @@
 use sbor::{model::Type, *};
 
+use crate::constants::*;
 use crate::resource::*;
 use crate::rust::borrow::ToOwned;
 use crate::types::*;
@@ -80,7 +81,7 @@ impl Decode for Tokens {
 impl Describe for Tokens {
     fn describe() -> Type {
         Type::Custom {
-            name: "Tokens".to_owned(),
+            name: SCRYPTO_NAME_TOKENS.to_owned(),
         }
     }
 }

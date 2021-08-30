@@ -3,6 +3,7 @@ use radix_engine::model::*;
 use sbor::model::*;
 use sbor::*;
 use scrypto::buffer::*;
+use scrypto::constants::*;
 use scrypto::rust::collections::*;
 use scrypto::rust::convert::TryFrom;
 use scrypto::rust::fmt;
@@ -62,10 +63,10 @@ pub fn parse_custom_type(
     badges: &mut HashMap<u8, Bucket>,
 ) -> Result<Vec<u8>, ParseArgError> {
     match name {
-        "U256" => parse_u256(i, ty, arg),
-        "Address" => parse_basic::<Address>(i, ty, arg),
-        "H256" => parse_basic::<H256>(i, ty, arg),
-        "Tokens" | "Badges" => {
+        SCRYPTO_NAME_U256 => parse_u256(i, ty, arg),
+        SCRYPTO_NAME_ADDRESS => parse_basic::<Address>(i, ty, arg),
+        SCRYPTO_NAME_H256 => parse_basic::<H256>(i, ty, arg),
+        SCRYPTO_NAME_TOKENS | SCRYPTO_NAME_BADGES => {
             let mut split = arg.split(":");
             let amount = split.next().and_then(|v| U256::from_dec_str(v).ok());
             let resource = split.next().and_then(|v| Address::try_from(v).ok());

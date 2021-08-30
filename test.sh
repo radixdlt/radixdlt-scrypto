@@ -40,7 +40,6 @@ echo "Testing with std..."
 (cd scrypto; cargo test)
 (cd scrypto-derive; cargo test)
 (cd scrypto-tests; cargo test)
-(cd scrypto-types; cargo test)
 (cd radix-engine; cargo test)
 (cd simulator; bash ./tests/run.sh)
 
@@ -49,7 +48,6 @@ echo "Testing with no_std..."
 (cd sbor-tests; cargo test --no-default-features --features alloc)
 (cd scrypto; cargo test --no-default-features --features alloc)
 (cd scrypto-abi; cargo test --no-default-features --features alloc)
-(cd scrypto-types; cargo test --no-default-features --features alloc)
 (cd scrypto-tests; cargo test --no-default-features --features alloc)
 (cd radix-engine; cargo test --no-default-features --features alloc)
 

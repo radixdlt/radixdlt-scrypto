@@ -1,5 +1,6 @@
 use sbor::{model::Type, *};
 
+use crate::constants::*;
 use crate::rust::borrow::ToOwned;
 use crate::rust::convert::TryFrom;
 use crate::rust::fmt;
@@ -8,92 +9,89 @@ use crate::rust::string::String;
 use crate::rust::vec::Vec;
 use crate::types::*;
 
-/// Resource bucket id.
+/// Reference to a bucket.
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
-pub enum BID {
-    Transient(u32),
+pub enum RID {
+    Immutable(u32),
 
-    Persisted(H256, u32),
+    Mutable(u32),
 }
 
-/// Represents an error when parsing BID.
+/// Represents an error when parsing RID.
 #[derive(Debug, Clone)]
-pub enum ParseBIDError {
+pub enum ParseRIDError {
     InvalidHex(hex::FromHexError),
     InvalidLength(usize),
 }
 
-impl BID {
-    pub fn is_transient(&self) -> bool {
+impl RID {
+    pub fn is_mutable(&self) -> bool {
         match self {
-            Self::Transient(_) => true,
+            Self::Mutable(_) => true,
             _ => false,
         }
     }
 
-    pub fn is_persisted(&self) -> bool {
-        !self.is_transient()
+    pub fn is_immutable(&self) -> bool {
+        !self.is_mutable()
     }
 
     pub fn to_vec(&self) -> Vec<u8> {
         match self {
-            Self::Transient(id) => combine2(0, &id.to_le_bytes()),
-            Self::Persisted(hash, id) => combine3(1, hash.as_ref(), &id.to_le_bytes()),
+            Self::Immutable(id) => combine2(0, &id.to_le_bytes()),
+            Self::Mutable(id) => combine2(1, &id.to_le_bytes()),
         }
     }
 }
 
-impl FromStr for BID {
-    type Err = ParseBIDError;
+impl FromStr for RID {
+    type Err = ParseRIDError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let bytes = hex::decode(s).map_err(|e| ParseBIDError::InvalidHex(e))?;
+        let bytes = hex::decode(s).map_err(|e| ParseRIDError::InvalidHex(e))?;
         Self::try_from(bytes.as_slice())
     }
 }
 
-impl TryFrom<&[u8]> for BID {
-    type Error = ParseBIDError;
+impl TryFrom<&[u8]> for RID {
+    type Error = ParseRIDError;
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
         match (slice.get(0), slice.len()) {
-            (Some(0), 5) => Ok(BID::Transient(u32::from_le_bytes(copy_u8_array(
+            (Some(0), 5) => Ok(RID::Immutable(u32::from_le_bytes(copy_u8_array(
                 &slice[1..],
             )))),
-            (Some(1), 37) => Ok(BID::Persisted(
-                H256(copy_u8_array(&slice[1..33])),
-                u32::from_le_bytes(copy_u8_array(&slice[33..])),
-            )),
-            (_, len) => Err(ParseBIDError::InvalidLength(len)),
+            (Some(1), 5) => Ok(RID::Mutable(u32::from_le_bytes(copy_u8_array(&slice[1..])))),
+            (_, len) => Err(ParseRIDError::InvalidLength(len)),
         }
     }
 }
 
-impl From<&str> for BID {
+impl From<&str> for RID {
     fn from(s: &str) -> Self {
         Self::from_str(s).unwrap()
     }
 }
 
-impl From<String> for BID {
+impl From<String> for RID {
     fn from(s: String) -> Self {
         Self::from_str(&s).unwrap()
     }
 }
 
-impl fmt::Debug for BID {
+impl fmt::Debug for RID {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", hex::encode(self.to_vec()))
     }
 }
 
-impl fmt::Display for BID {
+impl fmt::Display for RID {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", hex::encode(self.to_vec()))
     }
 }
 
-impl Encode for BID {
+impl Encode for RID {
     #[inline]
     fn encode_value(&self, encoder: &mut Encoder) {
         let bytes = self.to_vec();
@@ -103,28 +101,28 @@ impl Encode for BID {
 
     #[inline]
     fn sbor_type() -> u8 {
-        SCRYPTO_TYPE_BID
+        SCRYPTO_TYPE_RID
     }
 }
 
-impl Decode for BID {
+impl Decode for RID {
     #[inline]
     fn decode_value<'de>(decoder: &mut Decoder<'de>) -> Result<Self, DecodeError> {
         let len = decoder.read_len()?;
         let slice = decoder.read_bytes(len)?;
-        Self::try_from(slice).map_err(|_| DecodeError::InvalidCustomData(SCRYPTO_TYPE_BID))
+        Self::try_from(slice).map_err(|_| DecodeError::InvalidCustomData(SCRYPTO_TYPE_RID))
     }
 
     #[inline]
     fn sbor_type() -> u8 {
-        SCRYPTO_TYPE_BID
+        SCRYPTO_TYPE_RID
     }
 }
 
-impl Describe for BID {
+impl Describe for RID {
     fn describe() -> Type {
         Type::Custom {
-            name: "BID".to_owned(),
+            name: SCRYPTO_NAME_RID.to_owned(),
         }
     }
 }
@@ -136,8 +134,8 @@ mod tests {
 
     #[test]
     fn test_from_to_string() {
-        let s = "01f4cb57e4c4cd9d6564823eee427779d022d4f5f601791484a97837e6ffcf4cba01000000";
-        let a = BID::from_str(s).unwrap();
+        let s = "0100000001";
+        let a = RID::from_str(s).unwrap();
         assert_eq!(a.to_string(), s);
     }
 }

@@ -1,5 +1,6 @@
 use sbor::{model::Type, *};
 
+use crate::constants::*;
 use crate::rust::borrow::ToOwned;
 use crate::rust::convert::TryFrom;
 use crate::rust::fmt;
@@ -130,7 +131,7 @@ impl Decode for Address {
 impl Describe for Address {
     fn describe() -> Type {
         Type::Custom {
-            name: "Address".to_owned(),
+            name: SCRYPTO_NAME_ADDRESS.to_owned(),
         }
     }
 }

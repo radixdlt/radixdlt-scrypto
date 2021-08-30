@@ -1,5 +1,6 @@
 use sbor::{model::Type, *};
 
+use crate::constants::*;
 use crate::rust::borrow::ToOwned;
 use crate::rust::convert::TryFrom;
 use crate::rust::fmt;
@@ -119,7 +120,7 @@ impl Decode for H256 {
 impl Describe for H256 {
     fn describe() -> Type {
         Type::Custom {
-            name: "H256".to_owned(),
+            name: SCRYPTO_NAME_H256.to_owned(),
         }
     }
 }

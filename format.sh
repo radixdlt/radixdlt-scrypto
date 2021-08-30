@@ -12,7 +12,6 @@ cd "$(dirname "$0")"
 (cd scrypto-abi; cargo fmt)
 (cd scrypto-derive; cargo fmt)
 (cd scrypto-tests; cargo fmt)
-(cd scrypto-types; cargo fmt)
 (cd radix-engine; cargo fmt)
 (cd blueprints/account; cargo fmt)
 (cd examples/gumball-machine; cargo fmt)

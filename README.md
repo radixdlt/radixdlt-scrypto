@@ -60,12 +60,10 @@ rev2 help
 
 ## Project Layout
 
-![](./assets/crate-dependencies.svg)
-
 - `sbor`: Scrypto Binary Object Representation (SBOR), the data format for Scrypto.
 - `sbor-derive`: SBOR derives for Rust `struct` and `enum`.
 - `scrypto`: Scrypto standard library.
 - `scrypto-abi`: Scrypto JSON-exportable blueprint ABI.
-- `scrypto-types`: Scrypto primitive types.
 - `scrypto-derive`: Derives for creating and importing Scrypto blueprints.
 - `radix-engine`: Radix Engine, the Scrypto execution layer.
+- `simulator`: Simulate ledger environment locally and run Scrypto code.

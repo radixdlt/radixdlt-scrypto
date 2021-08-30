@@ -48,9 +48,6 @@ jobs:
     - name: Run derive tests
       run: cargo test --verbose
       working-directory: scrypto-derive
-    - name: Run types tests
-      run: cargo test --verbose
-      working-directory: scrypto-types
   scrypto-integration-tests:
     name: Run Scrypto integration tests
     runs-on: ubuntu-latest

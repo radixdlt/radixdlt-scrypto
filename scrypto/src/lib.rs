@@ -7,6 +7,8 @@ compile_error!("Feature `std` and `alloc` can't be enabled at the same time.");
 
 /// Scrypto data encoding/decoding and memory allocation scheme.
 pub mod buffer;
+/// Scrypto constants.
+pub mod constants;
 /// Scrypto high level abstraction.
 pub mod constructs;
 /// Kernel APIs and helper functions.
@@ -15,16 +17,19 @@ pub mod kernel;
 pub mod prelude;
 /// Scrypto resource containers and references.
 pub mod resource;
+/// A facade to Rust standard types.
+pub mod rust;
 /// Scrypto traits.
 pub mod traits;
-/// Utility functions, such as hashing and signature validation.
+/// Scrypto primitive types.
+pub mod types;
+/// Utility functions, like crypto algorithms.
 pub mod utils;
 
 /// Scrypto blueprint ABI.
 pub mod abi {
     pub use scrypto_abi::*;
 }
-pub use scrypto_types::*;
 
 // Re-export Scrypto derive.
 extern crate scrypto_derive;
