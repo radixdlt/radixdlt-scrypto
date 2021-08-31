@@ -62,11 +62,11 @@ impl FileBasedLedger {
     }
 
     pub fn encode<T: sbor::Encode>(v: &T) -> Vec<u8> {
-        sbor::encode_with_metadata(Vec::with_capacity(512), v)
+        sbor::encode_with_type(Vec::with_capacity(512), v)
     }
 
     pub fn decode<'de, T: sbor::Decode>(bytes: Vec<u8>) -> T {
-        sbor::decode_with_metadata(&bytes).unwrap()
+        sbor::decode_with_type(&bytes).unwrap()
     }
 }
 

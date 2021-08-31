@@ -109,7 +109,7 @@ impl Encode for Address {
     }
 
     #[inline]
-    fn sbor_type() -> u8 {
+    fn type_id() -> u8 {
         SCRYPTO_TYPE_ADDRESS
     }
 }
@@ -123,7 +123,7 @@ impl Decode for Address {
     }
 
     #[inline]
-    fn sbor_type() -> u8 {
+    fn type_id() -> u8 {
         SCRYPTO_TYPE_ADDRESS
     }
 }

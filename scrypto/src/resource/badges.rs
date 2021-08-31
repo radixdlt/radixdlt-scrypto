@@ -60,7 +60,7 @@ impl Encode for Badges {
     }
 
     #[inline]
-    fn sbor_type() -> u8 {
+    fn type_id() -> u8 {
         SCRYPTO_TYPE_BADGES
     }
 }
@@ -73,7 +73,7 @@ impl Decode for Badges {
     }
 
     #[inline]
-    fn sbor_type() -> u8 {
+    fn type_id() -> u8 {
         SCRYPTO_TYPE_BADGES
     }
 }

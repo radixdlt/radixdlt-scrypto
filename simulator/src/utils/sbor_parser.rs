@@ -4,7 +4,7 @@ use scrypto::resource::*;
 use scrypto::types::*;
 
 pub fn parse_sbor_data(data: &[u8]) -> Result<String, DecodeError> {
-    let mut decoder = Decoder::with_metadata(data);
+    let mut decoder = Decoder::with_type(data);
     let result = traverse(None, &mut decoder);
     if decoder.remaining() > 0 {
         Err(DecodeError::NotAllBytesUsed(decoder.remaining()))
@@ -75,23 +75,16 @@ fn traverse(ty_known: Option<u8>, dec: &mut Decoder) -> Result<String, DecodeErr
             Ok(buf)
         }
         constants::TYPE_STRUCT => {
-            // TODO: we need name
-            // struct name
-            let name = dec.read_name()?;
             // fields
             let fields = traverse(None, dec)?;
-            Ok(format!("{} {}", name, fields))
+            Ok(fields)
         }
         constants::TYPE_ENUM => {
-            // enum name
-            let name = dec.read_name()?;
             // index
-            let _index = dec.read_index()?;
-            // variant name
-            let v_name = dec.read_name()?;
+            let index = dec.read_index()?;
             // fields
-            let v_fields = traverse(None, dec)?;
-            Ok(format!("{}::{} {}", name, v_name, v_fields))
+            let fields = traverse(None, dec)?;
+            Ok(format!("#{} {}", index, fields))
         }
         constants::TYPE_FIELDS_NAMED => {
             //length
@@ -102,11 +95,9 @@ fn traverse(ty_known: Option<u8>, dec: &mut Decoder) -> Result<String, DecodeErr
                 if i != 0 {
                     buf.push_str(", ");
                 }
-                // name
-                let name = dec.read_name()?;
                 // value
                 let value = traverse(None, dec)?;
-                buf.push_str(format!("\"{}\": {}", name, value).as_str());
+                buf.push_str(format!("#{}: {}", i, value).as_str());
             }
             buf.push_str(" }");
             Ok(buf)

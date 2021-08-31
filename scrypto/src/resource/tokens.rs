@@ -60,7 +60,7 @@ impl Encode for Tokens {
     }
 
     #[inline]
-    fn sbor_type() -> u8 {
+    fn type_id() -> u8 {
         SCRYPTO_TYPE_TOKENS
     }
 }
@@ -73,7 +73,7 @@ impl Decode for Tokens {
     }
 
     #[inline]
-    fn sbor_type() -> u8 {
+    fn type_id() -> u8 {
         SCRYPTO_TYPE_TOKENS
     }
 }

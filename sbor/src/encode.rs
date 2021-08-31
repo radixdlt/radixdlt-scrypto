@@ -7,46 +7,38 @@ use crate::rust::vec::Vec;
 /// A data structure that can be serialized into a byte array using SBOR.
 pub trait Encode {
     fn encode(&self, encoder: &mut Encoder) {
-        encoder.write_type(Self::sbor_type());
+        encoder.write_type(Self::type_id());
         self.encode_value(encoder);
     }
 
     fn encode_value(&self, encoder: &mut Encoder);
 
-    fn sbor_type() -> u8;
+    fn type_id() -> u8;
 }
 
 /// An `Encoder` abstracts the logic for writing core types into a byte buffer.
 pub struct Encoder {
     buf: Vec<u8>,
-    with_metadata: bool,
+    with_type: bool,
 }
 
 impl Encoder {
-    pub fn new(buf: Vec<u8>, with_metadata: bool) -> Self {
-        Self { buf, with_metadata }
+    pub fn new(buf: Vec<u8>, with_type: bool) -> Self {
+        Self { buf, with_type }
     }
 
-    pub fn with_metadata(buf: Vec<u8>) -> Self {
+    pub fn with_type(buf: Vec<u8>) -> Self {
         Self::new(buf, true)
     }
 
-    pub fn no_metadata(buf: Vec<u8>) -> Self {
+    pub fn no_type(buf: Vec<u8>) -> Self {
         Self::new(buf, false)
     }
 
     #[inline]
     pub fn write_type(&mut self, ty: u8) {
-        if self.with_metadata {
+        if self.with_type {
             self.buf.push(ty);
-        }
-    }
-
-    #[inline]
-    pub fn write_name(&mut self, value: &str) {
-        if self.with_metadata {
-            self.write_len(value.len());
-            self.buf.extend(value.as_bytes());
         }
     }
 
@@ -86,7 +78,7 @@ impl Encode for () {
     fn encode_value(&self, _encoder: &mut Encoder) {}
 
     #[inline]
-    fn sbor_type() -> u8 {
+    fn type_id() -> u8 {
         TYPE_UNIT
     }
 }
@@ -98,7 +90,7 @@ impl Encode for bool {
     }
 
     #[inline]
-    fn sbor_type() -> u8 {
+    fn type_id() -> u8 {
         TYPE_BOOL
     }
 }
@@ -110,7 +102,7 @@ impl Encode for i8 {
     }
 
     #[inline]
-    fn sbor_type() -> u8 {
+    fn type_id() -> u8 {
         TYPE_I8
     }
 }
@@ -122,13 +114,13 @@ impl Encode for u8 {
     }
 
     #[inline]
-    fn sbor_type() -> u8 {
+    fn type_id() -> u8 {
         TYPE_U8
     }
 }
 
 macro_rules! encode_int {
-    ($type:ident, $sbor_type:ident) => {
+    ($type:ident, $type_id:ident) => {
         impl Encode for $type {
             #[inline]
             fn encode_value(&self, encoder: &mut Encoder) {
@@ -136,8 +128,8 @@ macro_rules! encode_int {
             }
 
             #[inline]
-            fn sbor_type() -> u8 {
-                $sbor_type
+            fn type_id() -> u8 {
+                $type_id
             }
         }
     };
@@ -159,8 +151,8 @@ impl Encode for isize {
     }
 
     #[inline]
-    fn sbor_type() -> u8 {
-        i32::sbor_type()
+    fn type_id() -> u8 {
+        i32::type_id()
     }
 }
 
@@ -171,8 +163,8 @@ impl Encode for usize {
     }
 
     #[inline]
-    fn sbor_type() -> u8 {
-        u32::sbor_type()
+    fn type_id() -> u8 {
+        u32::type_id()
     }
 }
 
@@ -184,7 +176,7 @@ impl Encode for str {
     }
 
     #[inline]
-    fn sbor_type() -> u8 {
+    fn type_id() -> u8 {
         TYPE_STRING
     }
 }
@@ -196,7 +188,7 @@ impl Encode for String {
     }
 
     #[inline]
-    fn sbor_type() -> u8 {
+    fn type_id() -> u8 {
         TYPE_STRING
     }
 }
@@ -216,7 +208,7 @@ impl<T: Encode> Encode for Option<T> {
     }
 
     #[inline]
-    fn sbor_type() -> u8 {
+    fn type_id() -> u8 {
         TYPE_OPTION
     }
 }
@@ -228,7 +220,7 @@ impl<T: Encode> Encode for Box<T> {
     }
 
     #[inline]
-    fn sbor_type() -> u8 {
+    fn type_id() -> u8 {
         TYPE_BOX
     }
 }
@@ -236,7 +228,7 @@ impl<T: Encode> Encode for Box<T> {
 impl<T: Encode, const N: usize> Encode for [T; N] {
     #[inline]
     fn encode_value(&self, encoder: &mut Encoder) {
-        encoder.write_type(T::sbor_type());
+        encoder.write_type(T::type_id());
         encoder.write_len(self.len());
         for v in self {
             v.encode_value(encoder);
@@ -244,7 +236,7 @@ impl<T: Encode, const N: usize> Encode for [T; N] {
     }
 
     #[inline]
-    fn sbor_type() -> u8 {
+    fn type_id() -> u8 {
         TYPE_ARRAY
     }
 }
@@ -260,7 +252,7 @@ macro_rules! encode_tuple {
             }
 
             #[inline]
-            fn sbor_type() -> u8 {
+            fn type_id() -> u8 {
                 TYPE_TUPLE
             }
         }
@@ -280,7 +272,7 @@ encode_tuple! { 10 0 A 1 B 2 C 3 D 4 E 5 F 6 G 7 H 8 I 9 J }
 impl<T: Encode> Encode for Vec<T> {
     #[inline]
     fn encode_value(&self, encoder: &mut Encoder) {
-        encoder.write_type(T::sbor_type());
+        encoder.write_type(T::type_id());
         encoder.write_len(self.len());
         for v in self {
             v.encode_value(encoder);
@@ -288,7 +280,7 @@ impl<T: Encode> Encode for Vec<T> {
     }
 
     #[inline]
-    fn sbor_type() -> u8 {
+    fn type_id() -> u8 {
         TYPE_VEC
     }
 }
@@ -296,7 +288,7 @@ impl<T: Encode> Encode for Vec<T> {
 impl<T: Encode> Encode for BTreeSet<T> {
     #[inline]
     fn encode_value(&self, encoder: &mut Encoder) {
-        encoder.write_type(T::sbor_type());
+        encoder.write_type(T::type_id());
         encoder.write_len(self.len());
         for v in self {
             v.encode_value(encoder);
@@ -304,7 +296,7 @@ impl<T: Encode> Encode for BTreeSet<T> {
     }
 
     #[inline]
-    fn sbor_type() -> u8 {
+    fn type_id() -> u8 {
         TYPE_TREE_SET
     }
 }
@@ -313,8 +305,8 @@ impl<K: Encode, V: Encode> Encode for BTreeMap<K, V> {
     #[inline]
     fn encode_value(&self, encoder: &mut Encoder) {
         encoder.write_len(self.len());
-        encoder.write_type(K::sbor_type());
-        encoder.write_type(V::sbor_type());
+        encoder.write_type(K::type_id());
+        encoder.write_type(V::type_id());
 
         for (k, v) in self {
             k.encode_value(encoder);
@@ -323,7 +315,7 @@ impl<K: Encode, V: Encode> Encode for BTreeMap<K, V> {
     }
 
     #[inline]
-    fn sbor_type() -> u8 {
+    fn type_id() -> u8 {
         TYPE_TREE_MAP
     }
 }
@@ -331,7 +323,7 @@ impl<K: Encode, V: Encode> Encode for BTreeMap<K, V> {
 impl<T: Encode> Encode for HashSet<T> {
     #[inline]
     fn encode_value(&self, encoder: &mut Encoder) {
-        encoder.write_type(T::sbor_type());
+        encoder.write_type(T::type_id());
         encoder.write_len(self.len());
         for v in self {
             v.encode_value(encoder);
@@ -339,7 +331,7 @@ impl<T: Encode> Encode for HashSet<T> {
     }
 
     #[inline]
-    fn sbor_type() -> u8 {
+    fn type_id() -> u8 {
         TYPE_HASH_SET
     }
 }
@@ -348,8 +340,8 @@ impl<K: Encode, V: Encode> Encode for HashMap<K, V> {
     #[inline]
     fn encode_value(&self, encoder: &mut Encoder) {
         encoder.write_len(self.len());
-        encoder.write_type(K::sbor_type());
-        encoder.write_type(V::sbor_type());
+        encoder.write_type(K::type_id());
+        encoder.write_type(V::type_id());
 
         for (k, v) in self {
             k.encode_value(encoder);
@@ -358,7 +350,7 @@ impl<K: Encode, V: Encode> Encode for HashMap<K, V> {
     }
 
     #[inline]
-    fn sbor_type() -> u8 {
+    fn type_id() -> u8 {
         TYPE_HASH_MAP
     }
 }
@@ -405,7 +397,7 @@ mod tests {
 
     #[test]
     pub fn test_encoding() {
-        let mut enc = Encoder::with_metadata(Vec::with_capacity(512));
+        let mut enc = Encoder::with_type(Vec::with_capacity(512));
         do_encoding(&mut enc);
 
         let bytes: Vec<u8> = enc.into();
@@ -437,8 +429,8 @@ mod tests {
     }
 
     #[test]
-    pub fn test_encoding_no_metadata() {
-        let mut enc = Encoder::no_metadata(Vec::with_capacity(512));
+    pub fn test_encoding_no_type() {
+        let mut enc = Encoder::no_type(Vec::with_capacity(512));
         do_encoding(&mut enc);
 
         let bytes: Vec<u8> = enc.into();

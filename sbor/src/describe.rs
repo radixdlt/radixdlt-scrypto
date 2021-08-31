@@ -120,10 +120,10 @@ pub trait Describe {
 }
 
 macro_rules! describe_basic_type {
-    ($type:ident, $sbor_type:expr) => {
+    ($type:ident, $type_id:expr) => {
         impl Describe for $type {
             fn describe() -> Type {
-                $sbor_type
+                $type_id
             }
         }
     };

@@ -4,7 +4,7 @@ use crate::rust::vec::Vec;
 
 /// Encodes a data structure into byte array.
 pub fn scrypto_encode<T: Encode + ?Sized>(v: &T) -> Vec<u8> {
-    sbor::encode_with_metadata(Vec::with_capacity(512), v)
+    sbor::encode_with_type(Vec::with_capacity(512), v)
 }
 
 /// Encodes a data structure into byte array, which will be consumed by kernel.
@@ -14,7 +14,7 @@ pub fn scrypto_encode_for_host<T: Encode + ?Sized>(v: &T) -> Vec<u8> {
     buf.extend(&[0u8; 4]);
 
     // encode the data structure
-    buf = sbor::encode_with_metadata(buf, v);
+    buf = sbor::encode_with_type(buf, v);
 
     // update the length field
     let len = (buf.len() - 4) as u32;
@@ -25,7 +25,7 @@ pub fn scrypto_encode_for_host<T: Encode + ?Sized>(v: &T) -> Vec<u8> {
 
 /// Decodes an instance of `T` from a slice.
 pub fn scrypto_decode<'de, T: Decode>(buf: &'de [u8]) -> Result<T, DecodeError> {
-    sbor::decode_with_metadata(buf)
+    sbor::decode_with_type(buf)
 }
 
 #[cfg(test)]

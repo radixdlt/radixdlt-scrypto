@@ -48,7 +48,7 @@ impl Encode for TokensRef {
     }
 
     #[inline]
-    fn sbor_type() -> u8 {
+    fn type_id() -> u8 {
         SCRYPTO_TYPE_TOKENS_REF
     }
 }
@@ -61,7 +61,7 @@ impl Decode for TokensRef {
     }
 
     #[inline]
-    fn sbor_type() -> u8 {
+    fn type_id() -> u8 {
         SCRYPTO_TYPE_TOKENS_REF
     }
 }

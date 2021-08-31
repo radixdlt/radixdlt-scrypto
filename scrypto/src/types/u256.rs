@@ -19,7 +19,7 @@ impl Encode for U256 {
     }
 
     #[inline]
-    fn sbor_type() -> u8 {
+    fn type_id() -> u8 {
         SCRYPTO_TYPE_U256
     }
 }
@@ -37,7 +37,7 @@ impl Decode for U256 {
     }
 
     #[inline]
-    fn sbor_type() -> u8 {
+    fn type_id() -> u8 {
         SCRYPTO_TYPE_U256
     }
 }

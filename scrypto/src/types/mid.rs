@@ -86,7 +86,7 @@ impl Encode for MID {
     }
 
     #[inline]
-    fn sbor_type() -> u8 {
+    fn type_id() -> u8 {
         SCRYPTO_TYPE_MID
     }
 }
@@ -100,7 +100,7 @@ impl Decode for MID {
     }
 
     #[inline]
-    fn sbor_type() -> u8 {
+    fn type_id() -> u8 {
         SCRYPTO_TYPE_MID
     }
 }

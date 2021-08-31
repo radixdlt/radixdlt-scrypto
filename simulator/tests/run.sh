@@ -20,3 +20,6 @@ $rev2 call-method $component say_hello
 package=`$rev2 publish ../assets/gumball-machine.wasm | tee /dev/tty | awk '/New package/ {print $NF}'`
 component=`$rev2 call-function $package GumballMachine new | tee /dev/tty | awk '/New gumball machine:/ {print $NF}'`
 $rev2 call-method $component get_gumball 1:01
+
+# Show state
+$rev2 show $component

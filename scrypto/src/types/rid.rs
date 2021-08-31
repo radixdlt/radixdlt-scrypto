@@ -100,7 +100,7 @@ impl Encode for RID {
     }
 
     #[inline]
-    fn sbor_type() -> u8 {
+    fn type_id() -> u8 {
         SCRYPTO_TYPE_RID
     }
 }
@@ -114,7 +114,7 @@ impl Decode for RID {
     }
 
     #[inline]
-    fn sbor_type() -> u8 {
+    fn type_id() -> u8 {
         SCRYPTO_TYPE_RID
     }
 }

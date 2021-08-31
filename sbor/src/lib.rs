@@ -23,30 +23,30 @@ pub use encode::{Encode, Encoder};
 use crate::rust::vec::Vec;
 
 /// Encode a `T` into byte array.
-pub fn encode_with_metadata<T: Encode + ?Sized>(buf: Vec<u8>, v: &T) -> Vec<u8> {
-    let mut enc = Encoder::with_metadata(buf);
+pub fn encode_with_type<T: Encode + ?Sized>(buf: Vec<u8>, v: &T) -> Vec<u8> {
+    let mut enc = Encoder::with_type(buf);
     v.encode(&mut enc);
     enc.into()
 }
 
-/// Encode a `T` into byte array, with metadata stripped.
-pub fn encode_no_metadata<T: Encode + ?Sized>(buf: Vec<u8>, v: &T) -> Vec<u8> {
-    let mut enc = Encoder::no_metadata(buf);
+/// Encode a `T` into byte array with no type info.
+pub fn encode_no_type<T: Encode + ?Sized>(buf: Vec<u8>, v: &T) -> Vec<u8> {
+    let mut enc = Encoder::no_type(buf);
     v.encode(&mut enc);
     enc.into()
 }
 
 /// Decode an instance of `T` from a slice.
-pub fn decode_with_metadata<'de, T: Decode>(buf: &'de [u8]) -> Result<T, DecodeError> {
-    let mut dec = Decoder::with_metadata(buf);
+pub fn decode_with_type<'de, T: Decode>(buf: &'de [u8]) -> Result<T, DecodeError> {
+    let mut dec = Decoder::with_type(buf);
     let v = T::decode(&mut dec)?;
     dec.check_end()?;
     Ok(v)
 }
 
-/// Decode an instance of `T` from a slice which contains no metadata.
-pub fn decode_no_metadata<'de, T: Decode>(buf: &'de [u8]) -> Result<T, DecodeError> {
-    let mut dec = Decoder::no_metadata(buf);
+/// Decode an instance of `T` from a slice with no type info.
+pub fn decode_no_type<'de, T: Decode>(buf: &'de [u8]) -> Result<T, DecodeError> {
+    let mut dec = Decoder::no_type(buf);
     let v = T::decode(&mut dec)?;
     dec.check_end()?;
     Ok(v)

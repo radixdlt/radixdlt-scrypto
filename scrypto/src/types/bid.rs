@@ -103,7 +103,7 @@ impl Encode for BID {
     }
 
     #[inline]
-    fn sbor_type() -> u8 {
+    fn type_id() -> u8 {
         SCRYPTO_TYPE_BID
     }
 }
@@ -117,7 +117,7 @@ impl Decode for BID {
     }
 
     #[inline]
-    fn sbor_type() -> u8 {
+    fn type_id() -> u8 {
         SCRYPTO_TYPE_BID
     }
 }

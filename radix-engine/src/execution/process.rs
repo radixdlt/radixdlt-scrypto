@@ -892,8 +892,8 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         bid_fn: fn(&mut Self, BID) -> Result<BID, RuntimeError>,
         rid_fn: fn(&mut Self, RID) -> Result<RID, RuntimeError>,
     ) -> Result<Vec<u8>, RuntimeError> {
-        let mut decoder = Decoder::with_metadata(data);
-        let mut encoder = Encoder::with_metadata(Vec::with_capacity(512));
+        let mut decoder = Decoder::with_type(data);
+        let mut encoder = Encoder::with_type(Vec::with_capacity(512));
 
         self.traverse(None, &mut decoder, &mut encoder, bid_fn, rid_fn)?;
 
@@ -977,22 +977,13 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
                 Ok(())
             }
             constants::TYPE_STRUCT => {
-                // struct name
-                let name = dec.read_name().map_err(|e| RuntimeError::InvalidData(e))?;
-                enc.write_name(name.as_str());
                 // fields
                 self.traverse(None, dec, enc, bid_fn, rid_fn)
             }
             constants::TYPE_ENUM => {
-                // enum name
-                let name = dec.read_name().map_err(|e| RuntimeError::InvalidData(e))?;
-                enc.write_name(name.as_str());
                 // variant index
                 let index = dec.read_index().map_err(|e| RuntimeError::InvalidData(e))?;
                 enc.write_index(index as usize);
-                // variant name
-                let v_name = dec.read_name().map_err(|e| RuntimeError::InvalidData(e))?;
-                enc.write_name(v_name.as_str());
                 // variant fields
                 self.traverse(None, dec, enc, bid_fn, rid_fn)
             }
@@ -1002,9 +993,6 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
                 enc.write_len(len);
                 // named fields
                 for _ in 0..len {
-                    // name
-                    let name = dec.read_name().map_err(|e| RuntimeError::InvalidData(e))?;
-                    enc.write_name(name.as_str());
                     // value
                     self.traverse(None, dec, enc, bid_fn, rid_fn)?;
                 }
