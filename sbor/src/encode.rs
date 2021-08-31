@@ -23,19 +23,16 @@ pub struct Encoder {
 }
 
 impl Encoder {
-    pub fn new(capacity: usize, with_metadata: bool) -> Self {
-        Self {
-            buf: Vec::with_capacity(capacity),
-            with_metadata,
-        }
+    pub fn new(buf: Vec<u8>, with_metadata: bool) -> Self {
+        Self { buf, with_metadata }
     }
 
-    pub fn with_metadata() -> Self {
-        Self::new(256, true)
+    pub fn with_metadata(buf: Vec<u8>) -> Self {
+        Self::new(buf, true)
     }
 
-    pub fn no_metadata() -> Self {
-        Self::new(256, false)
+    pub fn no_metadata(buf: Vec<u8>) -> Self {
+        Self::new(buf, false)
     }
 
     #[inline]
@@ -408,7 +405,7 @@ mod tests {
 
     #[test]
     pub fn test_encoding() {
-        let mut enc = Encoder::with_metadata();
+        let mut enc = Encoder::with_metadata(Vec::with_capacity(512));
         do_encoding(&mut enc);
 
         let bytes: Vec<u8> = enc.into();
@@ -441,7 +438,7 @@ mod tests {
 
     #[test]
     pub fn test_encoding_no_metadata() {
-        let mut enc = Encoder::no_metadata();
+        let mut enc = Encoder::no_metadata(Vec::with_capacity(512));
         do_encoding(&mut enc);
 
         let bytes: Vec<u8> = enc.into();

@@ -87,5 +87,5 @@ pub extern "C" fn kernel(_op: u32, _input_ptr: *const u8, _input_len: usize) -> 
         address: Address::from_str("056967d3d49213394892980af59be76e9b3e7cc4cb78237460d0c7")
             .unwrap(),
     };
-    scrypto_wrap(&scrypto_encode(&response))
+    scrypto_wrap(scrypto_encode_for_host(&response))
 }

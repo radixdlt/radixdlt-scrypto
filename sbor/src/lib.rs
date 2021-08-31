@@ -23,8 +23,15 @@ pub use encode::{Encode, Encoder};
 use crate::rust::vec::Vec;
 
 /// Encode a `T` into byte array.
-pub fn encode_with_metadata<T: Encode>(v: &T) -> Vec<u8> {
-    let mut enc = Encoder::with_metadata();
+pub fn encode_with_metadata<T: Encode>(buf: Vec<u8>, v: &T) -> Vec<u8> {
+    let mut enc = Encoder::with_metadata(buf);
+    v.encode(&mut enc);
+    enc.into()
+}
+
+/// Encode a `T` into byte array, with metadata stripped.
+pub fn encode_no_metadata<T: Encode>(buf: Vec<u8>, v: &T) -> Vec<u8> {
+    let mut enc = Encoder::no_metadata(buf);
     v.encode(&mut enc);
     enc.into()
 }
@@ -35,13 +42,6 @@ pub fn decode_with_metadata<'de, T: Decode>(buf: &'de [u8]) -> Result<T, DecodeE
     let v = T::decode(&mut dec)?;
     dec.check_end()?;
     Ok(v)
-}
-
-/// Encode a `T` into byte array, with metadata stripped.
-pub fn encode_no_metadata<T: Encode>(v: &T) -> Vec<u8> {
-    let mut enc = Encoder::no_metadata();
-    v.encode(&mut enc);
-    enc.into()
 }
 
 /// Decode an instance of `T` from a slice which contains no metadata.

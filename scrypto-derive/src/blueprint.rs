@@ -76,7 +76,7 @@ pub fn handle_blueprint(input: TokenStream, output_abi: bool) -> TokenStream {
             }
 
             // Return
-            ::scrypto::buffer::scrypto_wrap(&rtn)
+            ::scrypto::buffer::scrypto_wrap(rtn)
         }
     };
 
@@ -103,10 +103,10 @@ pub fn handle_blueprint(input: TokenStream, output_abi: bool) -> TokenStream {
             };
 
             // serialize the output
-            let output_bytes = ::scrypto::buffer::scrypto_encode(&output);
+            let output_bytes = ::scrypto::buffer::scrypto_encode_for_host(&output);
 
             // return the output wrapped in a radix-style buffer
-            ::scrypto::buffer::scrypto_wrap(&output_bytes)
+            ::scrypto::buffer::scrypto_wrap(output_bytes)
         }
     };
 
@@ -200,7 +200,7 @@ fn generate_dispatcher(bp_ident: &Ident, items: &Vec<ImplItem>) -> (Vec<Expr>, V
                     }
                     // call the function
                     let stmt: Stmt = parse_quote! {
-                        rtn = ::scrypto::buffer::scrypto_encode(
+                        rtn = ::scrypto::buffer::scrypto_encode_for_host(
                             &#bp_ident::#fn_ident(#(#args),*)
                         );
                     };
@@ -387,13 +387,13 @@ mod tests {
                                     &calldata.args[0usize]
                             )));
                             let state: Test = arg0.get_state();
-                            rtn = ::scrypto::buffer::scrypto_encode(&Test::x(&state));
+                            rtn = ::scrypto::buffer::scrypto_encode_for_host(&Test::x(&state));
                         }
                         _ => {
                             panic!();
                         }
                     }
-                    ::scrypto::buffer::scrypto_wrap(&rtn)
+                    ::scrypto::buffer::scrypto_wrap(rtn)
                 }
                 #[no_mangle]
                 pub extern "C" fn Test_abi() -> *mut u8 {
@@ -412,8 +412,8 @@ mod tests {
                             output: <u32>::describe(),
                         }],
                     };
-                    let output_bytes = ::scrypto::buffer::scrypto_encode(&output);
-                    ::scrypto::buffer::scrypto_wrap(&output_bytes)
+                    let output_bytes = ::scrypto::buffer::scrypto_encode_for_host(&output);
+                    ::scrypto::buffer::scrypto_wrap(output_bytes)
                 }
             },
         );

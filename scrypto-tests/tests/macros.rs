@@ -1,6 +1,6 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use scrypto::buffer::{scrypto_decode, scrypto_encode, scrypto_wrap};
+use scrypto::buffer::*;
 use scrypto::constructs::{Blueprint, Component};
 use scrypto::kernel::*;
 use scrypto::rust::str::FromStr;
@@ -32,7 +32,7 @@ pub extern "C" fn kernel(op: u32, input_ptr: *const u8, input_len: usize) -> *mu
             assert_eq!(input.message, LOG_MESSAGE);
 
             let output = EmitLogOutput {};
-            output_bytes = scrypto_encode(&output);
+            output_bytes = scrypto_encode_for_host(&output);
         }
         CALL_FUNCTION => {
             let input: CallFunctionInput = scrypto_decode(&input_bytes).unwrap();
@@ -43,7 +43,7 @@ pub extern "C" fn kernel(op: u32, input_ptr: *const u8, input_len: usize) -> *mu
             let output = CallFunctionOutput {
                 rtn: scrypto_encode(&RETURN),
             };
-            output_bytes = scrypto_encode(&output);
+            output_bytes = scrypto_encode_for_host(&output);
         }
         CALL_METHOD => {
             let input: CallMethodInput = scrypto_decode(&input_bytes).unwrap();
@@ -56,7 +56,7 @@ pub extern "C" fn kernel(op: u32, input_ptr: *const u8, input_len: usize) -> *mu
             let output = CallMethodOutput {
                 rtn: scrypto_encode(&RETURN),
             };
-            output_bytes = scrypto_encode(&output);
+            output_bytes = scrypto_encode_for_host(&output);
         }
         GET_COMPONENT_INFO => {
             let input: GetComponentInfoInput = scrypto_decode(&input_bytes).unwrap();
@@ -69,12 +69,12 @@ pub extern "C" fn kernel(op: u32, input_ptr: *const u8, input_len: usize) -> *mu
                 package: Address::from_str(PACKAGE_ADDRESS).unwrap(),
                 blueprint: BLUEPRINT_NAME.to_string(),
             };
-            output_bytes = scrypto_encode(&output);
+            output_bytes = scrypto_encode_for_host(&output);
         }
         _ => panic!("Unexpected operation: {}", op),
     }
 
-    scrypto_wrap(&output_bytes)
+    scrypto_wrap(output_bytes)
 }
 
 #[test]

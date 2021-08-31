@@ -881,7 +881,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         rid_fn: fn(&mut Self, RID) -> Result<RID, RuntimeError>,
     ) -> Result<Vec<u8>, RuntimeError> {
         let mut decoder = Decoder::with_metadata(data);
-        let mut encoder = Encoder::with_metadata();
+        let mut encoder = Encoder::with_metadata(Vec::with_capacity(512));
 
         self.traverse(None, &mut decoder, &mut encoder, bid_fn, rid_fn)?;
 
@@ -1131,7 +1131,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
 
         match result {
             Ok(Some(RuntimeValue::I32(ptr))) => {
-                if self.memory()?.set(ptr as u32, bytes).is_ok() {
+                if self.memory()?.set((ptr + 4) as u32, bytes).is_ok() {
                     return Ok(ptr);
                 }
             }
@@ -1143,15 +1143,29 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
 
     /// Read a byte array from wasm instance.
     fn read_bytes(&mut self, ptr: i32) -> Result<Vec<u8>, RuntimeError> {
+        // read length
         let a = self
             .memory()?
-            .get((ptr - 4) as u32, 4)
+            .get(ptr as u32, 4)
             .map_err(|e| RuntimeError::MemoryAccessError(e))?;
         let len = u32::from_le_bytes([a[0], a[1], a[2], a[3]]);
 
-        self.memory()?
-            .get(ptr as u32, len as usize)
-            .map_err(|e| RuntimeError::MemoryAccessError(e))
+        // read data
+        let data = self
+            .memory()?
+            .get((ptr + 4) as u32, len as usize)
+            .map_err(|e| RuntimeError::MemoryAccessError(e))?;
+
+        // free the buffer
+        self.module()?
+            .invoke_export(
+                "scrypto_free",
+                &[RuntimeValue::I32(ptr as i32)],
+                &mut NopExternals,
+            )
+            .map_err(|e| RuntimeError::MemoryAccessError(e))?;
+
+        Ok(data)
     }
 
     /// Handle a kernel call.
