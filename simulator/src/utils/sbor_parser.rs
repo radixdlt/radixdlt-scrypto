@@ -76,18 +76,22 @@ fn traverse(ty_known: Option<u8>, dec: &mut Decoder) -> Result<String, DecodeErr
         }
         constants::TYPE_STRUCT => {
             // TODO: we need name
-            // fields
-            let fields = traverse(None, dec)?;
-            Ok(format!("{}", fields))
-        }
-        constants::TYPE_ENUM => {
-            // index
-            let _index = dec.read_index()?;
-            // name
+            // struct name
             let name = dec.read_name()?;
             // fields
             let fields = traverse(None, dec)?;
-            Ok(format!("{}{}", name, fields))
+            Ok(format!("{} {}", name, fields))
+        }
+        constants::TYPE_ENUM => {
+            // enum name
+            let name = dec.read_name()?;
+            // index
+            let _index = dec.read_index()?;
+            // variant name
+            let v_name = dec.read_name()?;
+            // fields
+            let v_fields = traverse(None, dec)?;
+            Ok(format!("{}::{} {}", name, v_name, v_fields))
         }
         constants::TYPE_FIELDS_NAMED => {
             //length

@@ -31,6 +31,9 @@ jobs:
     - name: Run tests (no_std)
       run: cargo test --verbose --no-default-features --features alloc
       working-directory: sbor-tests
+    - name: Run bench
+      run: cargo bench --verbose
+      working-directory: sbor-tests
   scrypto-unit-tests:
     name: Run Scrypto unit tests
     runs-on: ubuntu-latest

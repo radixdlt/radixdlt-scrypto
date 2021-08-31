@@ -19,12 +19,12 @@ fn encode_simple_bincode(b: &mut Bencher) {
 
 fn encode_simple_sbor(b: &mut Bencher) {
     let t = data::get_simple_dataset(SIMPLE_REAPT);
-    b.iter(|| sbor::encode_with_metadata(&t));
+    b.iter(|| sbor::encode_with_metadata(Vec::with_capacity(512), &t));
 }
 
 fn encode_simple_sbor_no_metadata(b: &mut Bencher) {
     let t = data::get_simple_dataset(SIMPLE_REAPT);
-    b.iter(|| sbor::encode_no_metadata(&t));
+    b.iter(|| sbor::encode_no_metadata(Vec::with_capacity(512), &t));
 }
 
 fn decode_simple_json(b: &mut Bencher) {
@@ -41,13 +41,13 @@ fn decode_simple_bincode(b: &mut Bencher) {
 
 fn decode_simple_sbor(b: &mut Bencher) {
     let t = data::get_simple_dataset(SIMPLE_REAPT);
-    let bytes = sbor::encode_with_metadata(&t);
+    let bytes = sbor::encode_with_metadata(Vec::with_capacity(512), &t);
     b.iter(|| sbor::decode_with_metadata::<data::simple::SimpleStruct>(&bytes));
 }
 
 fn decode_simple_sbor_no_metadata(b: &mut Bencher) {
     let t = data::get_simple_dataset(SIMPLE_REAPT);
-    let bytes = sbor::encode_no_metadata(&t);
+    let bytes = sbor::encode_no_metadata(Vec::with_capacity(512), &t);
     b.iter(|| sbor::decode_no_metadata::<data::simple::SimpleStruct>(&bytes));
 }
 

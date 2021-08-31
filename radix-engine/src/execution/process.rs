@@ -977,17 +977,23 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
                 Ok(())
             }
             constants::TYPE_STRUCT => {
+                // struct name
+                let name = dec.read_name().map_err(|e| RuntimeError::InvalidData(e))?;
+                enc.write_name(name.as_str());
                 // fields
                 self.traverse(None, dec, enc, bid_fn, rid_fn)
             }
             constants::TYPE_ENUM => {
-                // index
-                let index = dec.read_index().map_err(|e| RuntimeError::InvalidData(e))?;
-                enc.write_index(index as usize);
-                // name
+                // enum name
                 let name = dec.read_name().map_err(|e| RuntimeError::InvalidData(e))?;
                 enc.write_name(name.as_str());
-                // fields
+                // variant index
+                let index = dec.read_index().map_err(|e| RuntimeError::InvalidData(e))?;
+                enc.write_index(index as usize);
+                // variant name
+                let v_name = dec.read_name().map_err(|e| RuntimeError::InvalidData(e))?;
+                enc.write_name(v_name.as_str());
+                // variant fields
                 self.traverse(None, dec, enc, bid_fn, rid_fn)
             }
             constants::TYPE_FIELDS_NAMED => {

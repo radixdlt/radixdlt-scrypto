@@ -51,17 +51,20 @@ fn test_struct() {
     assert_eq!(
         vec![
           20, // struct type
+          15, 0, 0, 0, 84, 101, 115, 116, 83, 116, 114, 117, 99, 116, 78, 97, 109, 101, 100, // struct name
           22, // fields type
           1, 0, 0, 0, // number of fields
           1, 0, 0, 0, 121, // field name
           9, 2, 0, 0, 0, // field value
           
           20,  // struct type
+          17, 0, 0, 0, 84, 101, 115, 116, 83, 116, 114, 117, 99, 116, 85, 110, 110, 97, 109, 101, 100, // struct name
           23,  // fields type
           1, 0, 0, 0,  // number of fields
           9, 4, 0, 0, 0,  // field value
           
           20, // struct type
+          14, 0, 0, 0, 84, 101, 115, 116, 83, 116, 114, 117, 99, 116, 85, 110, 105, 116, // struct name
           24 // fields type
         ],
         bytes
@@ -137,6 +140,7 @@ fn test_enum() {
     assert_eq!(
         vec![
             21, // enum type
+            8, 0, 0, 0, 84, 101, 115, 116, 69, 110, 117, 109, // enum name
             0, // enum index
             1, 0, 0, 0, 65, // variant name
             22, // fields type
@@ -145,6 +149,7 @@ fn test_enum() {
             9, 2, 0, 0, 0, // field value
 
             21, // enum type
+            8, 0, 0, 0, 84, 101, 115, 116, 69, 110, 117, 109, // enum name
             1,  // enum index
             1, 0, 0, 0, 66, // variant name
             23, // fields type
@@ -152,6 +157,7 @@ fn test_enum() {
             9, 4, 0, 0, 0, // field value
             
             21, // enum type
+            8, 0, 0, 0, 84, 101, 115, 116, 69, 110, 117, 109, // enum name
             2,  // enum index
             1, 0, 0, 0, 67, // variant name
             24  // fields type
