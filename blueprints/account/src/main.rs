@@ -4,13 +4,13 @@ use scrypto::prelude::*;
 
 blueprint! {
     struct Account {
-        resources: HashMap<Address, BID>,
+        resources: Map,
     }
 
     impl Account {
         pub fn new() -> Address {
             Account {
-                resources: HashMap::new(),
+                resources: Map::new(),
             }
             .instantiate()
         }
@@ -51,56 +51,52 @@ blueprint! {
             address
         }
 
-        /// Deposit bucket into this account
-        pub fn deposit_bucket(&mut self, bucket: BID) {
+        /// Deposit resources into this account
+        pub fn deposit(&mut self, bucket: BID) {
             let resource = bucket.resource();
-            self.resources
-                .entry(resource)
-                .or_insert(BID::new_empty(resource))
-                .put(bucket);
+            match self.resources.get::<Address, BID>(&resource) {
+                Some(b) => {
+                    b.put(bucket);
+                }
+                None => {
+                    let b = BID::new_empty(resource);
+                    b.put(bucket);
+                    self.resources.insert(resource, b);
+                }
+            }
+        }
+
+        /// Withdraw resources from this account
+        pub fn withdraw(&mut self, amount: U256, resource: Address) -> BID {
+            let bucket = self.resources.get::<Address, BID>(&resource).unwrap();
+            bucket.take(amount)
         }
 
         /// Deposit buckets into this account
         pub fn deposit_buckets(&mut self, buckets: Vec<BID>) {
             for bucket in buckets {
-                self.deposit_bucket(bucket);
+                self.deposit(bucket);
             }
         }
 
         /// Deposit tokens into this account
         pub fn deposit_tokens(&mut self, tokens: Tokens) {
-            let resource = tokens.resource();
-            self.resources
-                .entry(resource)
-                .or_insert(BID::new_empty(resource))
-                .put(tokens.into());
+            self.deposit(tokens.into());
         }
 
         /// Deposit badges into this account
         pub fn deposit_badges(&mut self, badges: Badges) {
-            let resource = badges.resource();
-            self.resources
-                .entry(resource)
-                .or_insert(BID::new_empty(resource))
-                .put(badges.into());
+            self.deposit(badges.into());
         }
 
         /// Withdraw tokens from this account
         pub fn withdraw_tokens(&mut self, amount: U256, resource: Address) -> Tokens {
-            self.resources
-                .get_mut(&resource)
-                .unwrap()
-                .take(amount)
-                .into()
+          self.withdraw(amount, resource).into()
         }
 
         /// Withdraw badges from this account
         pub fn withdraw_badges(&mut self, amount: U256, resource: Address) -> Badges {
-            self.resources
-                .get_mut(&resource)
-                .unwrap()
-                .take(amount)
-                .into()
+            self.withdraw(amount, resource).into()
         }
     }
 }

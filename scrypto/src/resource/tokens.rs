@@ -32,11 +32,11 @@ impl Tokens {
         BID::new_empty(resource).into()
     }
 
-    pub fn put(&mut self, other: Self) {
+    pub fn put(&self, other: Self) {
         self.bid.put(other.bid);
     }
 
-    pub fn take(&mut self, amount: U256) -> Self {
+    pub fn take(&self, amount: U256) -> Self {
         self.bid.take(amount).into()
     }
 

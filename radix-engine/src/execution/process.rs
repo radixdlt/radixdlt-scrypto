@@ -1054,7 +1054,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
             SCRYPTO_TYPE_U256 => self.transform::<U256>(dec, enc, |_, v| Ok(v)),
             SCRYPTO_TYPE_ADDRESS => self.transform::<Address>(dec, enc, |_, v| Ok(v)),
             SCRYPTO_TYPE_H256 => self.transform::<H256>(dec, enc, |_, v| Ok(v)),
-            SCRYPTO_TYPE_MID => self.transform::<H256>(dec, enc, |_, v| Ok(v)),
+            SCRYPTO_TYPE_MID => self.transform::<MID>(dec, enc, |_, v| Ok(v)),
             SCRYPTO_TYPE_BID => self.transform::<BID>(dec, enc, bid_fn),
             SCRYPTO_TYPE_RID => self.transform::<RID>(dec, enc, rid_fn),
             SCRYPTO_TYPE_TOKENS => self.transform::<BID>(dec, enc, bid_fn),

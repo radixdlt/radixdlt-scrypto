@@ -5,9 +5,9 @@ use crate::types::*;
 pub trait Bucket<T: BucketRef> {
     fn new_empty(resource: Address) -> Self;
 
-    fn put(&mut self, other: Self);
+    fn put(&self, other: Self);
 
-    fn take(&mut self, amount: U256) -> Self;
+    fn take(&self, amount: U256) -> Self;
 
     fn amount(&self) -> U256;
 
@@ -24,7 +24,7 @@ impl Bucket<RID> for BID {
         output.bucket
     }
 
-    fn put(&mut self, other: Self) {
+    fn put(&self, other: Self) {
         let input = CombineBucketsInput {
             bucket: *self,
             other: other,
@@ -32,7 +32,7 @@ impl Bucket<RID> for BID {
         let _: CombineBucketsOutput = call_kernel(COMBINE_BUCKETS, input);
     }
 
-    fn take(&mut self, amount: U256) -> Self {
+    fn take(&self, amount: U256) -> Self {
         let input = SplitBucketInput {
             bucket: *self,
             amount,

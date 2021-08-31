@@ -30,17 +30,17 @@ impl Map {
         output.map.into()
     }
 
-    pub fn get_entry<K: Encode, V: Decode>(&self, key: K) -> Option<V> {
+    pub fn get<K: Encode + ?Sized, V: Decode>(&self, key: &K) -> Option<V> {
         let input = GetMapEntryInput {
             map: self.mid,
-            key: scrypto_encode(&key),
+            key: scrypto_encode(key),
         };
         let output: GetMapEntryOutput = call_kernel(GET_MAP_ENTRY, input);
 
         output.value.map(|v| unwrap_or_panic(scrypto_decode(&v)))
     }
 
-    pub fn put_entry<K: Encode, V: Encode>(&self, key: K, value: V) {
+    pub fn insert<K: Encode, V: Encode>(&self, key: K, value: V) {
         let input = PutMapEntryInput {
             map: self.mid,
             key: scrypto_encode(&key),

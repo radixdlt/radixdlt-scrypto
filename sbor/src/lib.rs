@@ -23,14 +23,14 @@ pub use encode::{Encode, Encoder};
 use crate::rust::vec::Vec;
 
 /// Encode a `T` into byte array.
-pub fn encode_with_metadata<T: Encode>(buf: Vec<u8>, v: &T) -> Vec<u8> {
+pub fn encode_with_metadata<T: Encode + ?Sized>(buf: Vec<u8>, v: &T) -> Vec<u8> {
     let mut enc = Encoder::with_metadata(buf);
     v.encode(&mut enc);
     enc.into()
 }
 
 /// Encode a `T` into byte array, with metadata stripped.
-pub fn encode_no_metadata<T: Encode>(buf: Vec<u8>, v: &T) -> Vec<u8> {
+pub fn encode_no_metadata<T: Encode + ?Sized>(buf: Vec<u8>, v: &T) -> Vec<u8> {
     let mut enc = Encoder::no_metadata(buf);
     v.encode(&mut enc);
     enc.into()

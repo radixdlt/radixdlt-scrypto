@@ -323,10 +323,10 @@ impl<'le, T: Ledger> Runtime<'le, T> {
                 .put_component(address, self.components.get(&address).unwrap().clone());
         }
 
-        let maps = self.updated_components.clone();
+        let maps = self.updated_maps.clone();
         for mid in maps {
             self.ledger
-                .put_component(mid, self.components.get(&mid).unwrap().clone());
+                .put_map(mid, self.maps.get(&mid).unwrap().clone());
         }
 
         addresses = self.updated_resources.clone();

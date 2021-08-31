@@ -64,11 +64,7 @@ pub fn handle_new_account<'a>(_matches: &ArgMatches<'a>) -> Result<(), Error> {
     let mut process2 = Process::new(0, false, &mut runtime);
     process2.put_resources(buckets, HashMap::new());
     process2
-        .target_method(
-            component,
-            "deposit_bucket".to_owned(),
-            vec![scrypto_encode(&bid)],
-        )
+        .target_method(component, "deposit".to_owned(), vec![scrypto_encode(&bid)])
         .and_then(|target| process2.run(target))
         .map_err(|e| Error::ExecutionError(e))?;
     process2.finalize().map_err(|e| Error::ExecutionError(e))?;

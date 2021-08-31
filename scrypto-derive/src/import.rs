@@ -317,6 +317,7 @@ fn get_native_type(ty: &sbor::model::Type) -> (Type, Vec<Item>) {
             "H256" => parse_quote! { ::scrypto::types::H256 },
             "BID" => parse_quote! { ::scrypto::types::BID },
             "RID" => parse_quote! { ::scrypto::types::RID },
+            "MID" => parse_quote! { ::scrypto::types::MID },
             "Tokens" => parse_quote! { ::scrypto::resource::Tokens },
             "TokensRef" => parse_quote! { ::scrypto::resource::TokensRef },
             "Badges" => parse_quote! { ::scrypto::resource::Badges },

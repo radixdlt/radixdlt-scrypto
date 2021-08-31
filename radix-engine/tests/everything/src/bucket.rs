@@ -11,7 +11,7 @@ blueprint! {
 
         pub fn combine() -> Tokens {
             let resource = create_mutable_tokens("b1", Context::package_address());
-            let mut tokens1 = mint_tokens(resource, 50);
+            let tokens1 = mint_tokens(resource, 50);
             let tokens2 = mint_tokens(resource, 50);
 
             tokens1.put(tokens2);
@@ -20,7 +20,7 @@ blueprint! {
 
         pub fn split()  -> (Tokens, Tokens) {
             let resource = create_mutable_tokens("b2", Context::package_address());
-            let mut tokens1 = mint_tokens(resource, 100);
+            let tokens1 = mint_tokens(resource, 100);
             let tokens2 = tokens1.take(U256::from(5));
             (tokens1, tokens2)
         }
