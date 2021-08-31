@@ -50,6 +50,12 @@ impl From<RID> for BadgesRef {
     }
 }
 
+impl Into<RID> for BadgesRef {
+    fn into(self) -> RID {
+        self.rid
+    }
+}
+
 impl BadgesRef {
     pub fn check(&self, resource: Address) {
         assert!(self.resource() == resource && self.amount() >= 1.into());

@@ -17,6 +17,12 @@ impl From<RID> for TokensRef {
     }
 }
 
+impl Into<RID> for TokensRef {
+    fn into(self) -> RID {
+        self.rid
+    }
+}
+
 impl TokensRef {
     pub fn check(&self, resource: Address) {
         assert!(self.resource() == resource);

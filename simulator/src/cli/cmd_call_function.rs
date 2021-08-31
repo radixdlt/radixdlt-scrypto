@@ -3,6 +3,7 @@ use scrypto::types::*;
 
 use crate::cli::*;
 use crate::transaction::*;
+use crate::utils::*;
 
 const ARG_PACKAGE: &'static str = "PACKAGE";
 const ARG_BLUEPRINT: &'static str = "BLUEPRINT";
@@ -68,7 +69,7 @@ pub fn handle_call_function<'a>(matches: &ArgMatches<'a>) -> Result<(), Error> {
             ) {
                 Ok(txn) => {
                     let receipt = execute(&mut ledger, txn, false);
-                    print_receipt(receipt);
+                    dump_receipt(receipt);
                     Ok(())
                 }
                 Err(e) => Err(Error::ConstructionErr(e)),

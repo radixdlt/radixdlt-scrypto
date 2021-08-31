@@ -24,7 +24,7 @@ impl<I: Iterator> Iterator for Iter<I> {
     }
 }
 
-pub fn print_receipt(receipt: TransactionReceipt) {
+pub fn dump_receipt(receipt: TransactionReceipt) {
     println!(
         "\n{} {}",
         "Transaction Status:".bold().green(),

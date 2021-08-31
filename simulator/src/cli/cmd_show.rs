@@ -1,8 +1,10 @@
 use clap::{crate_version, App, Arg, ArgMatches, SubCommand};
+use colored::*;
 use radix_engine::ledger::*;
 use scrypto::types::*;
 
 use crate::cli::*;
+use crate::utils::*;
 
 const ARG_ADDRESS: &'static str = "ADDRESS";
 
@@ -34,32 +36,32 @@ pub fn handle_show<'a>(matches: &ArgMatches<'a>) -> Result<(), Error> {
             let resource = ledger.get_resource(address);
             match resource {
                 Some(r) => {
-                    println!("Resource: {}", address.to_string());
-                    println!("Symbol: {}", r.symbol);
-                    println!("Name: {}", r.name);
-                    println!("Description: {}", r.description);
-                    println!("URL: {}", r.url);
-                    println!("Icon URL: {}", r.icon_url);
-                    println!("Minter: {:?}", r.minter);
-                    println!("supply: {:?}", r.supply);
+                    println!("{}: {}", "Resource".green().bold(), address.to_string());
+                    println!("{}: {}", "Symbol".green().bold(), r.symbol);
+                    println!("{}: {}", "Name".green().bold(), r.name);
+                    println!("{}: {}", "Description".green().bold(), r.description);
+                    println!("{}: {}", "URL".green().bold(), r.url);
+                    println!("{}: {}", "Icon URL".green().bold(), r.icon_url);
+                    println!("{}: {:?}", "Minter".green().bold(), r.minter);
+                    println!("{}: {:?}", "supply".green().bold(), r.supply);
                 }
                 None => {
-                    println!("Resource not found");
+                    println!("{}", "Resource not found".red());
                 }
             }
         }
         Address::PublicKey(_) => {
-            println!("Public key: {}", address.to_string());
+            println!("{}: {}", "Public key".green().bold(), address.to_string());
         }
         Address::Package(_) => {
             let package = ledger.get_package(address);
             match package {
                 Some(b) => {
-                    println!("Package: {}", address.to_string());
-                    println!("Code size: {} bytes", b.code().len());
+                    println!("{}: {}", "Package".green().bold(), address.to_string());
+                    println!("{}: {} bytes", "Code size".green().bold(), b.code().len());
                 }
                 None => {
-                    println!("Package not found");
+                    println!("{}", "Package not found".red());
                 }
             }
         }
@@ -67,11 +69,16 @@ pub fn handle_show<'a>(matches: &ArgMatches<'a>) -> Result<(), Error> {
             let component = ledger.get_component(address);
             match component {
                 Some(c) => {
-                    println!("Component: {}", address.to_string());
-                    println!("State: {:02x?}", c.state());
+                    println!("{}: {}", "Component".green().bold(), address.to_string());
+                    println!("{}: {:02x?}", "Raw state".green().bold(), c.state());
+                    println!(
+                        "{}: {}",
+                        "Parsed state".green().bold(),
+                        parse_sbor_data(c.state()).unwrap()
+                    );
                 }
                 None => {
-                    println!("Component not found");
+                    println!("{}", "Component not found".red());
                 }
             }
         }
