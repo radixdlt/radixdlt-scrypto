@@ -1,6 +1,5 @@
 use radix_engine::execution::*;
 use radix_engine::model::*;
-use sbor::model::*;
 use sbor::*;
 use scrypto::buffer::*;
 use scrypto::constants::*;

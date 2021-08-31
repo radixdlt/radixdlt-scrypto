@@ -1,4 +1,4 @@
-use sbor::{model::Type, *};
+use sbor::{describe::Type, *};
 
 use crate::constants::*;
 use crate::rust::borrow::ToOwned;

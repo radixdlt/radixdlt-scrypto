@@ -7,17 +7,17 @@ compile_error!("Feature `std` and `alloc` can't be enabled at the same time.");
 
 /// SBOR constants, like type id.
 pub mod constants;
-/// SBOR data model.
-pub mod model;
+/// SBOR decoding
+pub mod decode;
+/// SBOR type describing.
+pub mod describe;
+/// SBOR encoding
+pub mod encode;
 /// Facade to Rust types.
 pub mod rust;
 
-mod decode;
-mod describe;
-mod encode;
-
 pub use decode::{Decode, DecodeError, Decoder};
-pub use describe::Describe;
+pub use describe::{Describe, Fields, Type, Variant};
 pub use encode::{Encode, Encoder};
 
 use crate::rust::vec::Vec;

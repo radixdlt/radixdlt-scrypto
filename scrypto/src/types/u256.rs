@@ -1,4 +1,4 @@
-use sbor::{model::Type, *};
+use sbor::{describe::Type, *};
 
 use uint::construct_uint;
 

@@ -82,7 +82,7 @@ pub fn handle_blueprint(input: TokenStream, output_abi: bool) -> TokenStream {
     let generated_abi = quote! {
         #[no_mangle]
         pub extern "C" fn #abi_ident() -> *mut u8 {
-            use ::sbor::{self, Describe};
+            use ::sbor::Describe;
             use ::scrypto::constructs::Context;
             use ::scrypto::rust::string::ToString;
             use ::scrypto::rust::vec;
@@ -270,7 +270,7 @@ fn generate_abi(bp_name: &str, items: &Vec<ImplItem>) -> (Vec<Expr>, Vec<Expr>) 
 
                     let output = match &m.sig.output {
                         ReturnType::Default => quote! {
-                            ::sbor::model::Type::Unit
+                            ::sbor::describe::Type::Unit
                         },
                         ReturnType::Type(_, t) => {
                             let ty = replace_self_with(t, bp_name);
@@ -390,7 +390,7 @@ mod tests {
                 }
                 #[no_mangle]
                 pub extern "C" fn Test_abi() -> *mut u8 {
-                    use ::sbor::{self, Describe};
+                    use ::sbor::Describe;
                     use ::scrypto::constructs::Context;
                     use ::scrypto::rust::string::ToString;
                     use ::scrypto::rust::vec;

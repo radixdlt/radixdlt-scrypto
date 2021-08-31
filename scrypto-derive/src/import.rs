@@ -6,6 +6,7 @@ use syn::punctuated::Punctuated;
 use syn::token::Comma;
 use syn::*;
 
+use sbor::describe as des;
 use scrypto_abi as abi;
 
 macro_rules! trace {
@@ -152,40 +153,40 @@ pub fn handle_import(input: TokenStream) -> TokenStream {
     output.into()
 }
 
-fn get_native_type(ty: &sbor::model::Type) -> (Type, Vec<Item>) {
+fn get_native_type(ty: &des::Type) -> (Type, Vec<Item>) {
     let mut items = Vec::<Item>::new();
 
     let t: Type = match ty {
-        sbor::model::Type::Unit => parse_quote! { () },
-        sbor::model::Type::Bool => parse_quote! { bool },
-        sbor::model::Type::I8 => parse_quote! { i8 },
-        sbor::model::Type::I16 => parse_quote! { i16 },
-        sbor::model::Type::I32 => parse_quote! { i32 },
-        sbor::model::Type::I64 => parse_quote! { i64 },
-        sbor::model::Type::I128 => parse_quote! { i128 },
-        sbor::model::Type::U8 => parse_quote! { u8 },
-        sbor::model::Type::U16 => parse_quote! { u16 },
-        sbor::model::Type::U32 => parse_quote! { u32 },
-        sbor::model::Type::U64 => parse_quote! { u64 },
-        sbor::model::Type::U128 => parse_quote! { u128 },
-        sbor::model::Type::String => parse_quote! { String },
-        sbor::model::Type::Option { value } => {
+        des::Type::Unit => parse_quote! { () },
+        des::Type::Bool => parse_quote! { bool },
+        des::Type::I8 => parse_quote! { i8 },
+        des::Type::I16 => parse_quote! { i16 },
+        des::Type::I32 => parse_quote! { i32 },
+        des::Type::I64 => parse_quote! { i64 },
+        des::Type::I128 => parse_quote! { i128 },
+        des::Type::U8 => parse_quote! { u8 },
+        des::Type::U16 => parse_quote! { u16 },
+        des::Type::U32 => parse_quote! { u32 },
+        des::Type::U64 => parse_quote! { u64 },
+        des::Type::U128 => parse_quote! { u128 },
+        des::Type::String => parse_quote! { String },
+        des::Type::Option { value } => {
             let (new_type, new_items) = get_native_type(value);
             items.extend(new_items);
 
             parse_quote! { Option<#new_type> }
         }
-        sbor::model::Type::Box { value } => {
+        des::Type::Box { value } => {
             let (new_type, new_items) = get_native_type(value);
             items.extend(new_items);
 
             parse_quote! { Box<#new_type> }
         }
-        sbor::model::Type::Struct { name, fields } => {
+        des::Type::Struct { name, fields } => {
             let ident = format_ident!("{}", name);
 
             match fields {
-                sbor::model::Fields::Named { named } => {
+                des::Fields::Named { named } => {
                     let names: Vec<Ident> =
                         named.iter().map(|k| format_ident!("{}", k.0)).collect();
                     let mut types: Vec<Type> = vec![];
@@ -208,7 +209,7 @@ fn get_native_type(ty: &sbor::model::Type) -> (Type, Vec<Item>) {
 
             parse_quote! { #ident }
         }
-        sbor::model::Type::Tuple { elements } => {
+        des::Type::Tuple { elements } => {
             let mut types: Vec<Type> = vec![];
 
             for element in elements {
@@ -219,14 +220,14 @@ fn get_native_type(ty: &sbor::model::Type) -> (Type, Vec<Item>) {
 
             parse_quote! { ( #(#types),* ) }
         }
-        sbor::model::Type::Array { element, length } => {
+        des::Type::Array { element, length } => {
             let (new_type, new_items) = get_native_type(element);
             items.extend(new_items);
 
             let n = *length as usize;
             parse_quote! { [#new_type; #n] }
         }
-        sbor::model::Type::Enum { name, variants } => {
+        des::Type::Enum { name, variants } => {
             let ident = format_ident!("{}", name);
             let mut native_variants = Vec::<Variant>::new();
 
@@ -234,7 +235,7 @@ fn get_native_type(ty: &sbor::model::Type) -> (Type, Vec<Item>) {
                 let v_ident = format_ident!("{}", variant.name);
 
                 match &variant.fields {
-                    sbor::model::Fields::Named { named } => {
+                    des::Fields::Named { named } => {
                         let mut names: Vec<Ident> = vec![];
                         let mut types: Vec<Type> = vec![];
                         for (n, v) in named {
@@ -249,7 +250,7 @@ fn get_native_type(ty: &sbor::model::Type) -> (Type, Vec<Item>) {
                             }
                         });
                     }
-                    sbor::model::Fields::Unnamed { unnamed } => {
+                    des::Fields::Unnamed { unnamed } => {
                         let mut types: Vec<Type> = vec![];
                         for v in unnamed {
                             let (new_type, new_items) = get_native_type(&v);
@@ -260,7 +261,7 @@ fn get_native_type(ty: &sbor::model::Type) -> (Type, Vec<Item>) {
                             #v_ident ( #(#types),* )
                         });
                     }
-                    sbor::model::Fields::Unit => {
+                    des::Fields::Unit => {
                         native_variants.push(parse_quote! {
                             #v_ident
                         });
@@ -277,19 +278,19 @@ fn get_native_type(ty: &sbor::model::Type) -> (Type, Vec<Item>) {
 
             parse_quote! { #ident }
         }
-        sbor::model::Type::Vec { element } => {
+        des::Type::Vec { element } => {
             let (new_type, new_items) = get_native_type(element);
             items.extend(new_items);
 
             parse_quote! { Vec<#new_type> }
         }
-        sbor::model::Type::TreeSet { element } => {
+        des::Type::TreeSet { element } => {
             let (new_type, new_items) = get_native_type(element);
             items.extend(new_items);
 
             parse_quote! { BTreeSet<#new_type> }
         }
-        sbor::model::Type::TreeMap { key, value } => {
+        des::Type::TreeMap { key, value } => {
             let (key_type, new_items) = get_native_type(key);
             items.extend(new_items);
             let (value_type, new_items) = get_native_type(value);
@@ -297,13 +298,13 @@ fn get_native_type(ty: &sbor::model::Type) -> (Type, Vec<Item>) {
 
             parse_quote! { BTreeMap<#key_type, #value_type> }
         }
-        sbor::model::Type::HashSet { element } => {
+        des::Type::HashSet { element } => {
             let (new_type, new_items) = get_native_type(element);
             items.extend(new_items);
 
             parse_quote! { HashSet<#new_type> }
         }
-        sbor::model::Type::HashMap { key, value } => {
+        des::Type::HashMap { key, value } => {
             let (key_type, new_items) = get_native_type(key);
             items.extend(new_items);
             let (value_type, new_items) = get_native_type(value);
@@ -311,7 +312,7 @@ fn get_native_type(ty: &sbor::model::Type) -> (Type, Vec<Item>) {
 
             parse_quote! { HashMap<#key_type, #value_type> }
         }
-        sbor::model::Type::Custom { name } => match name.as_str() {
+        des::Type::Custom { name } => match name.as_str() {
             "U256" => parse_quote! { ::scrypto::types::U256 },
             "Address" => parse_quote! { ::scrypto::types::Address },
             "H256" => parse_quote! { ::scrypto::types::H256 },

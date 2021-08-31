@@ -1,5 +1,5 @@
 use radix_engine::execution::*;
-use sbor::model::Type;
+use sbor::describe::Type;
 use scrypto::rust::fmt;
 
 /// Represents an error when parsing arguments.
