@@ -474,24 +474,36 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         Ok(PutComponentStateOutput {})
     }
 
-    pub fn get_component_map_entry(
-        &mut self,
-        input: GetComponentMapEntryInput,
-    ) -> Result<GetComponentMapEntryOutput, RuntimeError> {
-        let component = self
-            .runtime
-            .get_component(input.component)
-            .ok_or(RuntimeError::ComponentNotFound(input.component))?;
+    pub fn create_map(&mut self, _input: CreateMapInput) -> Result<CreateMapOutput, RuntimeError> {
+        let mid = self.runtime.new_mid();
 
-        Ok(GetComponentMapEntryOutput {
-            value: component.map_entry(&input.key).map(Clone::clone),
+        self.runtime.put_map(mid, Map::new());
+
+        Ok(CreateMapOutput { map: mid })
+    }
+
+    pub fn get_map_entry(
+        &mut self,
+        input: GetMapEntryInput,
+    ) -> Result<GetMapEntryOutput, RuntimeError> {
+        // TODO: authentication
+
+        let map = self
+            .runtime
+            .get_map(input.map)
+            .ok_or(RuntimeError::MapNotFound(input.map))?;
+
+        Ok(GetMapEntryOutput {
+            value: map.get_entry(&input.key).map(Clone::clone),
         })
     }
 
-    pub fn put_component_map_entry(
+    pub fn put_map_entry(
         &mut self,
-        input: PutComponentMapEntryInput,
-    ) -> Result<PutComponentMapEntryOutput, RuntimeError> {
+        input: PutMapEntryInput,
+    ) -> Result<PutMapEntryOutput, RuntimeError> {
+        // TODO: authentication
+
         let new_key = self.transform_sbor_data(
             &input.key,
             Self::convert_transient_to_persist,
@@ -505,14 +517,14 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         )?;
         trace!(self, "Transformed value: {:02x?}", new_value);
 
-        let component = self
+        let map = self
             .runtime
-            .get_component_mut(input.component)
-            .ok_or(RuntimeError::ComponentNotFound(input.component))?;
+            .get_map_mut(input.map)
+            .ok_or(RuntimeError::MapNotFound(input.map))?;
 
-        component.set_map_entry(new_key, new_value);
+        map.set_entry(new_key, new_value);
 
-        Ok(PutComponentMapEntryOutput {})
+        Ok(PutMapEntryOutput {})
     }
 
     pub fn create_resource_mutable(
@@ -1042,6 +1054,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
             SCRYPTO_TYPE_U256 => self.transform::<U256>(dec, enc, |_, v| Ok(v)),
             SCRYPTO_TYPE_ADDRESS => self.transform::<Address>(dec, enc, |_, v| Ok(v)),
             SCRYPTO_TYPE_H256 => self.transform::<H256>(dec, enc, |_, v| Ok(v)),
+            SCRYPTO_TYPE_MID => self.transform::<H256>(dec, enc, |_, v| Ok(v)),
             SCRYPTO_TYPE_BID => self.transform::<BID>(dec, enc, bid_fn),
             SCRYPTO_TYPE_RID => self.transform::<RID>(dec, enc, rid_fn),
             SCRYPTO_TYPE_TOKENS => self.transform::<BID>(dec, enc, bid_fn),
@@ -1216,12 +1229,10 @@ impl<'rt, 'le, L: Ledger> Externals for Process<'rt, 'le, L> {
                     GET_COMPONENT_INFO => self.handle(args, Self::get_component_info, true),
                     GET_COMPONENT_STATE => self.handle(args, Self::get_component_state, true),
                     PUT_COMPONENT_STATE => self.handle(args, Self::put_component_state, true),
-                    GET_COMPONENT_MAP_ENTRY => {
-                        self.handle(args, Self::get_component_map_entry, true)
-                    }
-                    PUT_COMPONENT_MAP_ENTRY => {
-                        self.handle(args, Self::put_component_map_entry, true)
-                    }
+
+                    CREATE_MAP => self.handle(args, Self::create_map, true),
+                    GET_MAP_ENTRY => self.handle(args, Self::get_map_entry, true),
+                    PUT_MAP_ENTRY => self.handle(args, Self::put_map_entry, true),
 
                     CREATE_RESOURCE_MUTABLE => {
                         self.handle(args, Self::create_resource_mutable, true)

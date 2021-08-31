@@ -53,4 +53,9 @@ impl AddressAllocator {
         self.count += 1;
         RID::Immutable(self.count)
     }
+
+    pub fn new_mid(&mut self, tx_hash: H256) -> MID {
+        self.count += 1;
+        MID(tx_hash, self.count - 1)
+    }
 }

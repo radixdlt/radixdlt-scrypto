@@ -139,18 +139,18 @@ fn test_component() {
         vec![scrypto_encode(&address)],
     );
     assert!(output4.is_ok());
+}
 
-    let output5 = call(
-        &mut ledger,
-        package,
-        "ComponentTest",
-        "test_component_map",
-        vec![scrypto_encode(&address)],
-    );
-    assert!(output5.is_ok());
+#[test]
+fn test_map() {
+    let mut ledger = InMemoryLedger::new();
+    let package = build_and_publish(&mut ledger, "everything");
+
+    let output = call(&mut ledger, package, "MapTest", "test_map", vec![]);
+    assert!(output.is_ok());
     assert_eq!(
         Some("world".to_owned()),
-        scrypto_decode(&output5.unwrap()).unwrap()
+        scrypto_decode(&output.unwrap()).unwrap()
     )
 }
 

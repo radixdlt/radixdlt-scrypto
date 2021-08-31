@@ -24,10 +24,12 @@ pub struct Runtime<'le, T: Ledger> {
     logs: Vec<(Level, String)>,
     packages: HashMap<Address, Package>,
     components: HashMap<Address, Component>,
+    maps: HashMap<MID, Map>,
     resources: HashMap<Address, Resource>,
     buckets: HashMap<BID, PersistedBucket>,
     updated_packages: HashSet<Address>,
     updated_components: HashSet<Address>,
+    updated_maps: HashSet<MID>,
     updated_resources: HashSet<Address>,
     updated_buckets: HashSet<BID>,
     cache: LruCache<Address, Module>, // TODO: move to ledger level
@@ -42,10 +44,12 @@ impl<'le, T: Ledger> Runtime<'le, T> {
             logs: Vec::new(),
             packages: HashMap::new(),
             components: HashMap::new(),
+            maps: HashMap::new(),
             resources: HashMap::new(),
             buckets: HashMap::new(),
             updated_packages: HashSet::new(),
             updated_components: HashSet::new(),
+            updated_maps: HashSet::new(),
             updated_resources: HashSet::new(),
             updated_buckets: HashSet::new(),
             cache: LruCache::new(1024),
@@ -158,6 +162,42 @@ impl<'le, T: Ledger> Runtime<'le, T> {
         self.components.insert(address, component);
     }
 
+    /// Returns an immutable reference to a map, if exists.
+    pub fn get_map(&mut self, mid: MID) -> Option<&Map> {
+        if self.maps.contains_key(&mid) {
+            return self.maps.get(&mid);
+        }
+
+        if let Some(map) = self.ledger.get_map(mid) {
+            self.maps.insert(mid, map);
+            self.maps.get(&mid)
+        } else {
+            None
+        }
+    }
+    /// Returns a mutable reference to a map, if exists.
+    pub fn get_map_mut(&mut self, mid: MID) -> Option<&mut Map> {
+        self.updated_maps.insert(mid);
+
+        if self.maps.contains_key(&mid) {
+            return self.maps.get_mut(&mid);
+        }
+
+        if let Some(map) = self.ledger.get_map(mid) {
+            self.maps.insert(mid, map);
+            self.maps.get_mut(&mid)
+        } else {
+            None
+        }
+    }
+
+    /// Inserts a new map.
+    pub fn put_map(&mut self, mid: MID, map: Map) {
+        self.updated_maps.insert(mid);
+
+        self.maps.insert(mid, map);
+    }
+
     /// Returns an immutable reference to a resource, if exists.
     pub fn get_resource(&mut self, address: Address) -> Option<&Resource> {
         if self.resources.contains_key(&address) {
@@ -264,6 +304,11 @@ impl<'le, T: Ledger> Runtime<'le, T> {
         self.alloc.new_fixed_rid()
     }
 
+    /// Creates a new map id.
+    pub fn new_mid(&mut self) -> MID {
+        self.alloc.new_mid(self.tx_hash())
+    }
+
     /// Flush changes to ledger.
     pub fn flush(&mut self) {
         let mut addresses = self.updated_packages.clone();
@@ -276,6 +321,12 @@ impl<'le, T: Ledger> Runtime<'le, T> {
         for address in addresses {
             self.ledger
                 .put_component(address, self.components.get(&address).unwrap().clone());
+        }
+
+        let maps = self.updated_components.clone();
+        for mid in maps {
+            self.ledger
+                .put_component(mid, self.components.get(&mid).unwrap().clone());
         }
 
         addresses = self.updated_resources.clone();

@@ -2,6 +2,7 @@ mod blueprint;
 mod component;
 mod context;
 mod logger;
+mod map;
 mod package;
 mod resource;
 
@@ -9,6 +10,7 @@ pub use blueprint::Blueprint;
 pub use component::Component;
 pub use context::Context;
 pub use logger::Logger;
+pub use map::Map;
 pub use package::Package;
 pub use resource::Resource;
 

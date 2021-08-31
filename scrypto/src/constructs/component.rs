@@ -1,3 +1,5 @@
+use sbor::*;
+
 use crate::buffer::*;
 use crate::constructs::*;
 use crate::kernel::*;
@@ -7,7 +9,7 @@ use crate::types::*;
 use crate::utils::*;
 
 /// A self-executing program that holds resources and exposed actions to other entities.
-#[derive(Debug)]
+#[derive(Debug, Encode, Decode, Describe)]
 pub struct Component {
     address: Address,
 }
@@ -78,25 +80,6 @@ impl Component {
             state: scrypto_encode(&state),
         };
         let _: PutComponentStateOutput = call_kernel(PUT_COMPONENT_STATE, input);
-    }
-
-    pub fn get_map_entry<K: Encode, V: Decode>(&self, key: K) -> Option<V> {
-        let input = GetComponentMapEntryInput {
-            component: self.address,
-            key: scrypto_encode(&key),
-        };
-        let output: GetComponentMapEntryOutput = call_kernel(GET_COMPONENT_MAP_ENTRY, input);
-
-        output.value.map(|v| unwrap_or_panic(scrypto_decode(&v)))
-    }
-
-    pub fn put_map_entry<K: Encode, V: Encode>(&self, key: K, value: V) {
-        let input = PutComponentMapEntryInput {
-            component: self.address,
-            key: scrypto_encode(&key),
-            value: scrypto_encode(&value),
-        };
-        let _: PutComponentMapEntryOutput = call_kernel(PUT_COMPONENT_MAP_ENTRY, input);
     }
 
     pub fn address(&self) -> Address {

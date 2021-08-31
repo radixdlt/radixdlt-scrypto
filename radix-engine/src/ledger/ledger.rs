@@ -16,6 +16,10 @@ pub trait Ledger {
 
     fn put_component(&mut self, address: Address, component: Component);
 
+    fn get_map(&self, mid: MID) -> Option<Map>;
+
+    fn put_map(&mut self, mid: MID, map: Map);
+
     // For now, we always read/write everything in a resource bucket.
 
     fn get_bucket(&self, bid: BID) -> Option<PersistedBucket>;

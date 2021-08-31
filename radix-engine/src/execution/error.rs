@@ -48,6 +48,8 @@ pub enum RuntimeError {
 
     ComponentNotFound(Address),
 
+    MapNotFound(MID),
+
     ResourceNotFound(Address),
 
     FixedResourceMintNotAllowed,

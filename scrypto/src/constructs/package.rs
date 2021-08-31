@@ -1,9 +1,11 @@
+use sbor::*;
+
 use crate::constructs::*;
 use crate::kernel::*;
 use crate::types::*;
 
 /// A package consists of blueprints.
-#[derive(Debug)]
+#[derive(Debug, Encode, Decode, Describe)]
 pub struct Package {
     address: Address,
 }

@@ -1,4 +1,4 @@
-use sbor::Decode;
+use sbor::*;
 
 use crate::buffer::*;
 use crate::kernel::*;
@@ -10,7 +10,7 @@ use crate::types::*;
 use crate::utils::*;
 
 /// A piece of code that defines the structure and methods of components.
-#[derive(Debug)]
+#[derive(Debug, Encode, Decode, Describe)]
 pub struct Blueprint {
     package: Address,
     name: String,
