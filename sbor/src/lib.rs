@@ -13,6 +13,8 @@ pub mod decode;
 pub mod describe;
 /// SBOR encoding
 pub mod encode;
+/// SBOR parsing.
+pub mod parse;
 /// Facade to Rust types.
 pub mod rust;
 
@@ -37,7 +39,7 @@ pub fn encode_no_type<T: Encode + ?Sized>(buf: Vec<u8>, v: &T) -> Vec<u8> {
 }
 
 /// Decode an instance of `T` from a slice.
-pub fn decode_with_type<'de, T: Decode>(buf: &'de [u8]) -> Result<T, DecodeError> {
+pub fn decode_with_type<T: Decode>(buf: &[u8]) -> Result<T, DecodeError> {
     let mut dec = Decoder::with_type(buf);
     let v = T::decode(&mut dec)?;
     dec.check_end()?;
@@ -45,12 +47,14 @@ pub fn decode_with_type<'de, T: Decode>(buf: &'de [u8]) -> Result<T, DecodeError
 }
 
 /// Decode an instance of `T` from a slice with no type info.
-pub fn decode_no_type<'de, T: Decode>(buf: &'de [u8]) -> Result<T, DecodeError> {
+pub fn decode_no_type<T: Decode>(buf: &[u8]) -> Result<T, DecodeError> {
     let mut dec = Decoder::no_type(buf);
     let v = T::decode(&mut dec)?;
     dec.check_end()?;
     Ok(v)
 }
+
+pub use parse::parse_any;
 
 // Re-export derives
 extern crate sbor_derive;
