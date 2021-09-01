@@ -70,6 +70,7 @@ pub fn handle_show<'a>(matches: &ArgMatches<'a>) -> Result<(), Error> {
             match component {
                 Some(c) => {
                     println!("{}: {}", "Component".green().bold(), address.to_string());
+                    println!("{}: {}, {}", "Blueprint".green().bold(), c.package(), c.blueprint());
                     println!("{}: {:02x?}", "Raw state".green().bold(), c.state());
                     println!(
                         "{}: {}",

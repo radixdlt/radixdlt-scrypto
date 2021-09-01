@@ -1,15 +1,17 @@
-use sbor::*;
+use sbor::{describe::Type, *};
 
 use crate::buffer::*;
+use crate::constants::*;
 use crate::constructs::*;
 use crate::kernel::*;
+use crate::rust::borrow::ToOwned;
 use crate::rust::string::ToString;
 use crate::rust::vec::Vec;
 use crate::types::*;
 use crate::utils::*;
 
 /// A self-executing program that holds resources and exposed actions to other entities.
-#[derive(Debug, Encode, Decode, Describe)]
+#[derive(Debug, Encode, Decode)]
 pub struct Component {
     address: Address,
 }
@@ -84,5 +86,13 @@ impl Component {
 
     pub fn address(&self) -> Address {
         self.address
+    }
+}
+
+impl Describe for Component {
+    fn describe() -> Type {
+        Type::Custom {
+            name: SCRYPTO_NAME_COMPONENT.to_owned(),
+        }
     }
 }

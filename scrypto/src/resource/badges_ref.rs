@@ -6,40 +6,9 @@ use crate::rust::borrow::ToOwned;
 use crate::types::*;
 
 /// A reference to a `Badges` bucket.
-#[derive(Debug)]
+#[derive(Debug, Encode, Decode)]
 pub struct BadgesRef {
     rid: RID,
-}
-
-impl Encode for BadgesRef {
-    fn encode_value(&self, encoder: &mut Encoder) {
-        self.rid.encode_value(encoder);
-    }
-
-    #[inline]
-    fn type_id() -> u8 {
-        SCRYPTO_TYPE_BADGES_REF
-    }
-}
-
-impl Decode for BadgesRef {
-    fn decode_value<'de>(decoder: &mut Decoder<'de>) -> Result<Self, DecodeError> {
-        let rid = RID::decode_value(decoder)?;
-        Ok(rid.into())
-    }
-
-    #[inline]
-    fn type_id() -> u8 {
-        SCRYPTO_TYPE_BADGES_REF
-    }
-}
-
-impl Describe for BadgesRef {
-    fn describe() -> Type {
-        Type::Custom {
-            name: SCRYPTO_NAME_BADGES_REF.to_owned(),
-        }
-    }
 }
 
 impl From<RID> for BadgesRef {
@@ -69,5 +38,13 @@ impl BadgesRef {
 
     pub fn destroy(self) {
         self.rid.destroy()
+    }
+}
+
+impl Describe for BadgesRef {
+    fn describe() -> Type {
+        Type::Custom {
+            name: SCRYPTO_NAME_BADGES_REF.to_owned(),
+        }
     }
 }

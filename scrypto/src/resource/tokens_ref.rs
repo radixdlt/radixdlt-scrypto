@@ -6,7 +6,7 @@ use crate::rust::borrow::ToOwned;
 use crate::types::*;
 
 /// A reference to a `Tokens` bucket.
-#[derive(Debug)]
+#[derive(Debug, Encode, Decode)]
 pub struct TokensRef {
     rid: RID,
 }
@@ -38,29 +38,6 @@ impl TokensRef {
 
     pub fn destroy(self) {
         self.rid.destroy()
-    }
-}
-
-impl Encode for TokensRef {
-    fn encode_value(&self, encoder: &mut Encoder) {
-        self.rid.encode_value(encoder);
-    }
-
-    #[inline]
-    fn type_id() -> u8 {
-        SCRYPTO_TYPE_TOKENS_REF
-    }
-}
-
-impl Decode for TokensRef {
-    fn decode_value<'de>(decoder: &mut Decoder<'de>) -> Result<Self, DecodeError> {
-        let rid = RID::decode_value(decoder)?;
-        Ok(rid.into())
-    }
-
-    #[inline]
-    fn type_id() -> u8 {
-        SCRYPTO_TYPE_TOKENS_REF
     }
 }
 

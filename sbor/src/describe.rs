@@ -248,11 +248,10 @@ impl<K: Describe, V: Describe> Describe for HashMap<K, V> {
 
 #[cfg(test)]
 mod tests {
+    use crate::describe::*;
     use crate::rust::boxed::Box;
     use crate::rust::string::String;
     use crate::rust::vec;
-
-    use crate::*;
 
     #[test]
     pub fn test_basic_types() {

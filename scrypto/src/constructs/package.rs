@@ -1,11 +1,13 @@
-use sbor::*;
+use sbor::{describe::Type, *};
 
+use crate::constants::*;
 use crate::constructs::*;
 use crate::kernel::*;
+use crate::rust::borrow::ToOwned;
 use crate::types::*;
 
 /// A package consists of blueprints.
-#[derive(Debug, Encode, Decode, Describe)]
+#[derive(Debug, Encode, Decode)]
 pub struct Package {
     address: Address,
 }
@@ -38,5 +40,13 @@ impl Package {
 
     pub fn address(&self) -> Address {
         self.address
+    }
+}
+
+impl Describe for Package {
+    fn describe() -> Type {
+        Type::Custom {
+            name: SCRYPTO_NAME_PACKAGE.to_owned(),
+        }
     }
 }

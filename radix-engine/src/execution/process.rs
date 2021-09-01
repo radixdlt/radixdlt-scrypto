@@ -1048,10 +1048,6 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
             SCRYPTO_TYPE_MID => self.transform::<MID>(dec, enc, |_, v| Ok(v)),
             SCRYPTO_TYPE_BID => self.transform::<BID>(dec, enc, bid_fn),
             SCRYPTO_TYPE_RID => self.transform::<RID>(dec, enc, rid_fn),
-            SCRYPTO_TYPE_TOKENS => self.transform::<BID>(dec, enc, bid_fn),
-            SCRYPTO_TYPE_TOKENS_REF => self.transform::<RID>(dec, enc, rid_fn),
-            SCRYPTO_TYPE_BADGES => self.transform::<BID>(dec, enc, bid_fn),
-            SCRYPTO_TYPE_BADGES_REF => self.transform::<RID>(dec, enc, rid_fn),
             _ => Err(RuntimeError::InvalidData(DecodeError::InvalidType {
                 expected: 0xff,
                 actual: ty,

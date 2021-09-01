@@ -1,11 +1,13 @@
-use sbor::*;
+use sbor::{describe::Type, *};
 
 use crate::buffer::*;
+use crate::constants::*;
 use crate::kernel::*;
+use crate::rust::borrow::ToOwned;
 use crate::types::*;
 use crate::utils::*;
 
-#[derive(Debug, Encode, Decode, Describe)]
+#[derive(Debug, Encode, Decode)]
 pub struct Map {
     mid: MID,
 }
@@ -51,5 +53,13 @@ impl Map {
 
     pub fn mid(&self) -> MID {
         self.mid
+    }
+}
+
+impl Describe for Map {
+    fn describe() -> Type {
+        Type::Custom {
+            name: SCRYPTO_NAME_MAP.to_owned(),
+        }
     }
 }

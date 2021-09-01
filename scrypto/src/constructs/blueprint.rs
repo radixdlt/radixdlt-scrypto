@@ -1,6 +1,7 @@
-use sbor::*;
+use sbor::{describe::Type, *};
 
 use crate::buffer::*;
+use crate::constants::*;
 use crate::kernel::*;
 use crate::rust::borrow::ToOwned;
 use crate::rust::string::String;
@@ -10,7 +11,7 @@ use crate::types::*;
 use crate::utils::*;
 
 /// A piece of code that defines the structure and methods of components.
-#[derive(Debug, Encode, Decode, Describe)]
+#[derive(Debug, Encode, Decode)]
 pub struct Blueprint {
     package: Address,
     name: String,
@@ -42,5 +43,13 @@ impl Blueprint {
 
     pub fn name(&self) -> &str {
         &self.name
+    }
+}
+
+impl Describe for Blueprint {
+    fn describe() -> Type {
+        Type::Custom {
+            name: SCRYPTO_NAME_BLUEPRINT.to_owned(),
+        }
     }
 }

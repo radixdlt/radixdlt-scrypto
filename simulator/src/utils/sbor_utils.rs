@@ -37,11 +37,11 @@ fn traverse(value: &Value) -> Result<String, DecodeError> {
         Value::Struct(fields) => Ok(format!("Struct {}", traverse_fields(fields)?)),
         Value::Enum(index, fields) => Ok(format!("Enum::{} {}", index, traverse_fields(fields)?)),
         // collections
-        Value::Vec(elements) => traverse_vec(elements.iter(), "Vec {", "}"),
-        Value::TreeSet(elements) => traverse_vec(elements.iter(), "TreeSet {", "}"),
-        Value::HashSet(elements) => traverse_vec(elements.iter(), "HashSet {", "}"),
-        Value::TreeMap(elements) => traverse_map(elements.iter(), "TreeMap {", "}"),
-        Value::HashMap(elements) => traverse_map(elements.iter(), "HashMap {", "}"),
+        Value::Vec(elements) => traverse_vec(elements.iter(), "Vec { ", " }"),
+        Value::TreeSet(elements) => traverse_vec(elements.iter(), "TreeSet { ", " }"),
+        Value::HashSet(elements) => traverse_vec(elements.iter(), "HashSet { ", " }"),
+        Value::TreeMap(elements) => traverse_map(elements.iter(), "TreeMap { ", " }"),
+        Value::HashMap(elements) => traverse_map(elements.iter(), "HashMap { ", " }"),
         Value::Custom(ty, data) => match *ty {
             SCRYPTO_TYPE_U256 => Ok(<U256>::from_little_endian(data).to_string()),
             SCRYPTO_TYPE_ADDRESS => Ok(<Address>::try_from(data.as_slice())
@@ -69,8 +69,8 @@ fn traverse(value: &Value) -> Result<String, DecodeError> {
 
 fn traverse_fields(fields: &Fields) -> Result<String, DecodeError> {
     match fields {
-        Fields::Named(named) => traverse_vec(named.iter(), "{", "}"),
-        Fields::Unnamed(unnamed) => traverse_vec(unnamed.iter(), "(", ")"),
+        Fields::Named(named) => traverse_vec(named.iter(), "{ ", " }"),
+        Fields::Unnamed(unnamed) => traverse_vec(unnamed.iter(), "( ", " )"),
         Fields::Unit => Ok(String::from("()")),
     }
 }
