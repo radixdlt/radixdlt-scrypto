@@ -1,32 +1,12 @@
 use colored::*;
 use radix_engine::model::*;
-use std::iter;
 
 use crate::transaction::*;
-
-pub trait IdentifyLast: Iterator + Sized {
-    fn identify_last(self) -> Iter<Self>;
-}
-
-impl<I: Iterator> IdentifyLast for I {
-    fn identify_last(self) -> Iter<Self> {
-        Iter(self.peekable())
-    }
-}
-
-pub struct Iter<I: Iterator>(iter::Peekable<I>);
-
-impl<I: Iterator> Iterator for Iter<I> {
-    type Item = (bool, I::Item);
-
-    fn next(&mut self) -> Option<Self::Item> {
-        self.0.next().map(|e| (self.0.peek().is_none(), e))
-    }
-}
+use crate::utils::*;
 
 pub fn dump_receipt(receipt: TransactionReceipt) {
     println!(
-        "\n{} {}",
+        "{} {}\n",
         "Transaction Status:".bold().green(),
         if receipt.success {
             "SUCCESS".blue()
@@ -36,17 +16,19 @@ pub fn dump_receipt(receipt: TransactionReceipt) {
         .bold()
     );
 
-    println!("\n{}", "Instructions:".bold().green());
+    println!("{}", "Instructions:".bold().green());
     for (last, inst) in receipt.transaction.instructions.iter().identify_last() {
-        println!("{} {:02x?}", prefix(last), inst);
+        println!("{} {:02x?}", item_prefix(last), inst);
     }
+    println!();
 
-    println!("\n{}", "Results:".bold().green());
+    println!("{}", "Results:".bold().green());
     for (last, result) in receipt.results.iter().identify_last() {
-        println!("{} {:02x?}", prefix(last), result);
+        println!("{} {:02x?}", item_prefix(last), result);
     }
+    println!();
 
-    println!("\n{}", "Logs:".bold().green());
+    println!("{}", "Logs:".bold().green());
     for (last, (level, msg)) in receipt.logs.iter().identify_last() {
         let (l, m) = match level {
             Level::Error => ("ERROR".red(), msg.red()),
@@ -55,20 +37,13 @@ pub fn dump_receipt(receipt: TransactionReceipt) {
             Level::Debug => ("DEBUG".cyan(), msg.cyan()),
             Level::Trace => ("TRACE".normal(), msg.normal()),
         };
-        println!("{} [{:5}] {}", prefix(last), l, m);
+        println!("{} [{:5}] {}", item_prefix(last), l, m);
     }
+    println!();
 
     println!(
-        "\n{} {} ms\n",
+        "{} {} ms\n",
         "Execution Time:".bold().green(),
         receipt.execution_time
     );
-}
-
-fn prefix(last: bool) -> &'static str {
-    if last {
-        "└─"
-    } else {
-        "├─"
-    }
 }

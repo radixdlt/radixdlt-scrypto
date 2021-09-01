@@ -15,6 +15,25 @@ blueprint! {
             .instantiate()
         }
 
+        fn deposit(&mut self, bucket: BID) {
+            let resource = bucket.resource();
+            match self.resources.get::<Address, BID>(&resource) {
+                Some(b) => {
+                    b.put(bucket);
+                }
+                None => {
+                    let b = BID::new_empty(resource);
+                    b.put(bucket);
+                    self.resources.insert(resource, b);
+                }
+            }
+        }
+
+        fn withdraw(&mut self, amount: U256, resource: Address) -> BID {
+            let bucket = self.resources.get::<Address, BID>(&resource).unwrap();
+            bucket.take(amount)
+        }
+
         /// Publish a code package.
         pub fn publish_package(&self, code: Vec<u8>) -> Address {
             let package = Package::new(&code);
@@ -49,27 +68,6 @@ blueprint! {
             let address = tokens.resource();
             self.deposit_tokens(tokens);
             address
-        }
-
-        /// Deposit resources into this account
-        pub fn deposit(&mut self, bucket: BID) {
-            let resource = bucket.resource();
-            match self.resources.get::<Address, BID>(&resource) {
-                Some(b) => {
-                    b.put(bucket);
-                }
-                None => {
-                    let b = BID::new_empty(resource);
-                    b.put(bucket);
-                    self.resources.insert(resource, b);
-                }
-            }
-        }
-
-        /// Withdraw resources from this account
-        pub fn withdraw(&mut self, amount: U256, resource: Address) -> BID {
-            let bucket = self.resources.get::<Address, BID>(&resource).unwrap();
-            bucket.take(amount)
         }
 
         /// Deposit buckets into this account

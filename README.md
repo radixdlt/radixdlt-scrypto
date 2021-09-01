@@ -53,9 +53,9 @@ rev2 call-function <package_address> <blueprint> <function> <args>...
 ```
 rev2 call-method <component_address> <method> <args>...
 ```
-6. For instructions on other commands, run
+6. For show the content of an address, run
 ```
-rev2 help
+rev2 show <address>
 ```
 
 ## Project Layout

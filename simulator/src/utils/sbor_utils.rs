@@ -1,3 +1,5 @@
+use radix_engine::ledger::*;
+use radix_engine::model::*;
 use sbor::parse::*;
 use sbor::*;
 use scrypto::constants::*;
@@ -5,13 +7,20 @@ use scrypto::rust::borrow::Borrow;
 use scrypto::rust::convert::TryFrom;
 use scrypto::types::*;
 
-pub fn format_sbor(data: &[u8]) -> Result<(String, Vec<BID>), DecodeError> {
+pub fn format_sbor<L: Ledger>(
+    data: &[u8],
+    ledger: &L,
+    res: &mut Vec<Bucket>,
+) -> Result<String, DecodeError> {
     let value = parse_any(data)?;
-    let mut acc = Vec::new();
-    Ok((traverse(&value, &mut acc)?, acc))
+    fmt_value(&value, ledger, res)
 }
 
-fn traverse(value: &Value, acc: &mut Vec<BID>) -> Result<String, DecodeError> {
+fn fmt_value<L: Ledger>(
+    value: &Value,
+    le: &L,
+    res: &mut Vec<Bucket>,
+) -> Result<String, DecodeError> {
     match value {
         // basic types
         Value::Unit => Ok(String::from("()")),
@@ -29,92 +38,129 @@ fn traverse(value: &Value, acc: &mut Vec<BID>) -> Result<String, DecodeError> {
         Value::String(v) => Ok(v.to_string()),
         // rust types
         Value::Option(v) => match v {
-            Some(x) => Ok(format!("Some({})", traverse(x.borrow(), acc)?)),
+            Some(x) => Ok(format!("Some({})", fmt_value(x.borrow(), le, res)?)),
             None => Ok(String::from("None")),
         },
-        Value::Box(v) => Ok(format!("Box({})", traverse(v.borrow(), acc)?)),
-        Value::Array(elements) => traverse_vec(elements.iter(), "[", "]", acc),
-        Value::Tuple(elements) => traverse_vec(elements.iter(), "(", ")", acc),
-        Value::Struct(fields) => Ok(format!("Struct {}", traverse_fields(fields, acc)?)),
+        Value::Box(v) => Ok(format!("Box({})", fmt_value(v.borrow(), le, res)?)),
+        Value::Array(elements) => fmt_vec(elements.iter(), "[", "]", le, res),
+        Value::Tuple(elements) => fmt_vec(elements.iter(), "(", ")", le, res),
+        Value::Struct(fields) => Ok(format!("Struct {}", fmt_fields(fields, le, res)?)),
         Value::Enum(index, fields) => {
-            Ok(format!("Enum::{} {}", index, traverse_fields(fields, acc)?))
+            Ok(format!("Enum::{} {}", index, fmt_fields(fields, le, res)?))
         }
         // collections
-        Value::Vec(elements) => traverse_vec(elements.iter(), "Vec { ", " }", acc),
-        Value::TreeSet(elements) => traverse_vec(elements.iter(), "TreeSet { ", " }", acc),
-        Value::HashSet(elements) => traverse_vec(elements.iter(), "HashSet { ", " }", acc),
-        Value::TreeMap(elements) => traverse_map(elements.iter(), "TreeMap { ", " }", acc),
-        Value::HashMap(elements) => traverse_map(elements.iter(), "HashMap { ", " }", acc),
-        Value::Custom(ty, data) => match *ty {
-            SCRYPTO_TYPE_U256 => Ok(<U256>::from_little_endian(data).to_string()),
-            SCRYPTO_TYPE_ADDRESS => traverse_scrypto::<Address>("Address", ty, data),
-            SCRYPTO_TYPE_H256 => traverse_scrypto::<H256>("H256", ty, data),
-            SCRYPTO_TYPE_MID => traverse_scrypto::<MID>("MID", ty, data),
-            SCRYPTO_TYPE_BID => traverse_scrypto::<BID>("BID", ty, data).and_then(|s| {
-                acc.push(BID::try_from(data.as_slice()).unwrap());
-                Ok(s)
-            }),
-            SCRYPTO_TYPE_RID => traverse_scrypto::<RID>("RID", ty, data),
-            _ => Err(DecodeError::InvalidType {
-                expected: 0xff,
-                actual: *ty,
-            }),
-        },
+        Value::Vec(elements) => fmt_vec(elements.iter(), "Vec { ", " }", le, res),
+        Value::TreeSet(elements) => fmt_vec(elements.iter(), "TreeSet { ", " }", le, res),
+        Value::HashSet(elements) => fmt_vec(elements.iter(), "HashSet { ", " }", le, res),
+        Value::TreeMap(elements) => fmt_map(elements.iter(), "TreeMap { ", " }", le, res),
+        Value::HashMap(elements) => fmt_map(elements.iter(), "HashMap { ", " }", le, res),
+        Value::Custom(ty, data) => fmt_custom(*ty, data, le, res),
     }
 }
 
-fn traverse_fields(fields: &Fields, acc: &mut Vec<BID>) -> Result<String, DecodeError> {
+fn fmt_fields<L: Ledger>(
+    fields: &Fields,
+    le: &L,
+    res: &mut Vec<Bucket>,
+) -> Result<String, DecodeError> {
     match fields {
-        Fields::Named(named) => traverse_vec(named.iter(), "{ ", " }", acc),
-        Fields::Unnamed(unnamed) => traverse_vec(unnamed.iter(), "( ", " )", acc),
+        Fields::Named(named) => fmt_vec(named.iter(), "{ ", " }", le, res),
+        Fields::Unnamed(unnamed) => fmt_vec(unnamed.iter(), "( ", " )", le, res),
         Fields::Unit => Ok(String::from("()")),
     }
 }
 
-fn traverse_vec<'a, I: Iterator<Item = &'a Value>>(
+fn fmt_vec<'a, I: Iterator<Item = &'a Value>, L: Ledger>(
     itr: I,
     begin: &str,
     end: &str,
-    acc: &mut Vec<BID>,
+    le: &L,
+    res: &mut Vec<Bucket>,
 ) -> Result<String, DecodeError> {
     let mut buf = String::from(begin);
     for (i, x) in itr.enumerate() {
         if i != 0 {
             buf.push_str(", ");
         }
-        buf.push_str(traverse(x, acc)?.as_str());
+        buf.push_str(fmt_value(x, le, res)?.as_str());
     }
     buf.push_str(end);
     Ok(buf)
 }
 
-fn traverse_map<'a, I: Iterator<Item = &'a (Value, Value)>>(
+fn fmt_map<'a, I: Iterator<Item = &'a (Value, Value)>, L: Ledger>(
     itr: I,
     begin: &str,
     end: &str,
-    acc: &mut Vec<BID>,
+    le: &L,
+    res: &mut Vec<Bucket>,
 ) -> Result<String, DecodeError> {
     let mut buf = String::from(begin);
     for (i, x) in itr.enumerate() {
         if i != 0 {
             buf.push_str(", ");
         }
-        buf.push_str(format!("{}: {}", traverse(&x.0, acc)?, traverse(&x.1, acc)?).as_str());
+        buf.push_str(
+            format!(
+                "{} => {}",
+                fmt_value(&x.0, le, res)?,
+                fmt_value(&x.1, le, res)?
+            )
+            .as_str(),
+        );
     }
     buf.push_str(end);
     Ok(buf)
 }
 
-fn traverse_scrypto<'a, T: TryFrom<&'a [u8]> + ToString>(
-    name: &str,
-    ty: &u8,
+fn fmt_custom<L: Ledger>(
+    ty: u8,
+    data: &[u8],
+    le: &L,
+    res: &mut Vec<Bucket>,
+) -> Result<String, DecodeError> {
+    match ty {
+        SCRYPTO_TYPE_U256 => Ok(<U256>::from_little_endian(data).to_string()),
+        SCRYPTO_TYPE_ADDRESS => Ok(format!("Address ({})", decode_custom::<Address>(ty, data)?)),
+        SCRYPTO_TYPE_H256 => Ok(format!("H256 ({})", decode_custom::<Address>(ty, data)?)),
+        SCRYPTO_TYPE_MID => {
+            let mid = decode_custom::<MID>(ty, data)?;
+            let map = le.get_map(mid).ok_or(DecodeError::InvalidCustomData(ty))?;
+            let mut buf = String::from("s");
+            for (i, (k, v)) in map.map.iter().enumerate() {
+                if i != 0 {
+                    buf.push_str(", ");
+                }
+                buf.push_str(format_sbor(&k, le, res)?.as_str());
+                buf.push_str(" => ");
+                buf.push_str(format_sbor(&v, le, res)?.as_str());
+            }
+            Ok(format!("Map {{ mid: {}, entries: [{}] }}", mid, buf))
+        }
+        SCRYPTO_TYPE_RID => Ok(format!("RID ({})", decode_custom::<Address>(ty, data)?)),
+        SCRYPTO_TYPE_BID => {
+            let bid = decode_custom::<BID>(ty, data)?;
+            let bucket = le
+                .get_bucket(bid)
+                .ok_or(DecodeError::InvalidCustomData(ty))?;
+            res.push(Bucket::new(bucket.amount(), bucket.resource()));
+            Ok(format!(
+                "Bucket {{ bid: {}, amount: {}, resource: {} }}",
+                bid,
+                bucket.amount(),
+                bucket.resource()
+            ))
+        }
+        _ => Err(DecodeError::InvalidType {
+            expected: 0xff,
+            actual: ty,
+        }),
+    }
+}
+
+fn decode_custom<'a, T: TryFrom<&'a [u8]> + ToString>(
+    ty: u8,
     slice: &'a [u8],
-) -> Result<String, DecodeError> {
-    Ok(format!(
-        "{}({})",
-        name,
-        <T>::try_from(slice)
-            .map_err(|_| DecodeError::InvalidCustomData(*ty))?
-            .to_string()
-    ))
+) -> Result<T, DecodeError> {
+    <T>::try_from(slice).map_err(|_| DecodeError::InvalidCustomData(ty))
 }

@@ -4,7 +4,7 @@ use scrypto::rust::vec::Vec;
 
 #[derive(Debug, Clone, Encode, Decode)]
 pub struct Map {
-    map: HashMap<Vec<u8>, Vec<u8>>,
+    pub map: HashMap<Vec<u8>, Vec<u8>>,
 }
 
 impl Map {

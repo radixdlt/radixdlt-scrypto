@@ -69,26 +69,35 @@ pub fn handle_show<'a>(matches: &ArgMatches<'a>) -> Result<(), Error> {
             let component = ledger.get_component(address);
             match component {
                 Some(c) => {
-                    println!("{}: {}", "Component".green().bold(), address.to_string());
+                    println!("{}: {}\n", "Component".green().bold(), address.to_string());
+
                     println!(
-                        "{}: {}, {}",
+                        "{}: {}::{}\n",
                         "Blueprint".green().bold(),
                         c.package(),
                         c.blueprint()
                     );
-                    println!("{}: {:02x?}", "State".green().bold(), c.state());
-                    let (fmt, bids) = format_sbor(c.state()).map_err(|e| Error::DataError(e))?;
-                    println!("{}: {}", "State parsed".green().bold(), fmt);
-                    for bid in bids {
-                        let bucket = ledger.get_bucket(bid).unwrap();
+
+                    println!("{}: {:02x?}\n", "State".green().bold(), c.state());
+
+                    let mut res = Vec::new();
+                    println!(
+                        "{}: {}\n",
+                        "State parsed".green().bold(),
+                        format_sbor(c.state(), &ledger, &mut res)
+                            .map_err(|e| Error::DataError(e))?
+                    );
+
+                    println!("{}:", "Resources".green().bold());
+                    for (last, b) in res.iter().identify_last() {
                         println!(
-                            "{}: id = {}, amount = {}, resource = {}",
-                            "Bucket".green().bold(),
-                            bid,
-                            bucket.amount(),
-                            bucket.resource()
-                        )
+                            "{} {{ amount: {}, resource: {} }}",
+                            item_prefix(last),
+                            b.amount(),
+                            b.resource(),
+                        );
                     }
+                    println!();
                 }
                 None => {
                     println!("{}", "Component not found".red());
