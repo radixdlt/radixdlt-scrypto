@@ -10,7 +10,6 @@ construct_uint! {
 }
 
 impl Encode for U256 {
-    #[inline]
     fn encode_value(&self, encoder: &mut Encoder) {
         let mut bytes = [0u8; 32];
         self.to_little_endian(&mut bytes);
@@ -25,7 +24,6 @@ impl Encode for U256 {
 }
 
 impl Decode for U256 {
-    #[inline]
     fn decode_value<'de>(decoder: &mut Decoder<'de>) -> Result<Self, DecodeError> {
         let len = decoder.read_len()?;
         let slice = decoder.read_bytes(len)?;

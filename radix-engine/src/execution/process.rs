@@ -897,13 +897,10 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
 
         self.traverse(None, &mut decoder, &mut encoder, bid_fn, rid_fn)?;
 
-        if decoder.remaining() > 0 {
-            Err(RuntimeError::InvalidData(DecodeError::NotAllBytesUsed(
-                decoder.remaining(),
-            )))
-        } else {
-            Ok(encoder.into())
-        }
+        decoder
+            .check_end()
+            .map_err(|e| RuntimeError::InvalidData(e))?;
+        Ok(encoder.into())
     }
 
     /// Traverse SBOR data. TODO: stack overflow
@@ -940,8 +937,8 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
             constants::TYPE_STRING => self.transform::<String>(dec, enc, |_, v| Ok(v)),
             constants::TYPE_OPTION => {
                 // index
-                let index = dec.read_index().map_err(|e| RuntimeError::InvalidData(e))?;
-                enc.write_index(index as usize);
+                let index = dec.read_u8().map_err(|e| RuntimeError::InvalidData(e))?;
+                enc.write_u8(index);
                 // optional value
                 match index {
                     0 => Ok(()),
@@ -982,8 +979,8 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
             }
             constants::TYPE_ENUM => {
                 // variant index
-                let index = dec.read_index().map_err(|e| RuntimeError::InvalidData(e))?;
-                enc.write_index(index as usize);
+                let index = dec.read_u8().map_err(|e| RuntimeError::InvalidData(e))?;
+                enc.write_u8(index);
                 // variant fields
                 self.traverse(None, dec, enc, bid_fn, rid_fn)
             }
@@ -1063,7 +1060,6 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
     }
 
     /// Apply the transform function.
-    #[inline]
     fn transform<T: Decode + Encode + scrypto::rust::fmt::Debug>(
         &mut self,
         dec: &mut Decoder,

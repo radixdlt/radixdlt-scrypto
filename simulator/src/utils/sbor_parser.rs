@@ -6,11 +6,8 @@ use scrypto::types::*;
 pub fn parse_sbor_data(data: &[u8]) -> Result<String, DecodeError> {
     let mut decoder = Decoder::with_type(data);
     let result = traverse(None, &mut decoder);
-    if decoder.remaining() > 0 {
-        Err(DecodeError::NotAllBytesUsed(decoder.remaining()))
-    } else {
-        result
-    }
+    decoder.check_end()?;
+    result
 }
 
 fn traverse(ty_known: Option<u8>, dec: &mut Decoder) -> Result<String, DecodeError> {
@@ -35,7 +32,7 @@ fn traverse(ty_known: Option<u8>, dec: &mut Decoder) -> Result<String, DecodeErr
         constants::TYPE_STRING => Ok(format!("\"{}\"", <String>::decode_value(dec)?)),
         constants::TYPE_OPTION => {
             // index
-            let index = dec.read_index()?;
+            let index = dec.read_u8()?;
             // optional value
             match index {
                 0 => Ok("None".to_owned()),
@@ -81,7 +78,7 @@ fn traverse(ty_known: Option<u8>, dec: &mut Decoder) -> Result<String, DecodeErr
         }
         constants::TYPE_ENUM => {
             // index
-            let index = dec.read_index()?;
+            let index = dec.read_u8()?;
             // fields
             let fields = traverse(None, dec)?;
             Ok(format!("#{} {}", index, fields))

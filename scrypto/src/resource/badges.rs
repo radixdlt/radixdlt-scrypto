@@ -54,7 +54,6 @@ impl Badges {
 }
 
 impl Encode for Badges {
-    #[inline]
     fn encode_value(&self, encoder: &mut Encoder) {
         self.bid.encode_value(encoder);
     }
@@ -66,7 +65,6 @@ impl Encode for Badges {
 }
 
 impl Decode for Badges {
-    #[inline]
     fn decode_value<'de>(decoder: &mut Decoder<'de>) -> Result<Self, DecodeError> {
         let bid = BID::decode_value(decoder)?;
         Ok(bid.into())

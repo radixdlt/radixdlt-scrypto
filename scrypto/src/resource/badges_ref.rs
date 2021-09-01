@@ -12,7 +12,6 @@ pub struct BadgesRef {
 }
 
 impl Encode for BadgesRef {
-    #[inline]
     fn encode_value(&self, encoder: &mut Encoder) {
         self.rid.encode_value(encoder);
     }
@@ -24,7 +23,6 @@ impl Encode for BadgesRef {
 }
 
 impl Decode for BadgesRef {
-    #[inline]
     fn decode_value<'de>(decoder: &mut Decoder<'de>) -> Result<Self, DecodeError> {
         let rid = RID::decode_value(decoder)?;
         Ok(rid.into())

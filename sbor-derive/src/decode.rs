@@ -39,7 +39,7 @@ pub fn handle_decode(input: TokenStream) -> TokenStream {
                                 #(#s_ids: <#s_types>::default()),*
                             })
                         }
-
+                        #[inline]
                         fn type_id() -> u8 {
                             ::sbor::constants::TYPE_STRUCT
                         }
@@ -67,7 +67,7 @@ pub fn handle_decode(input: TokenStream) -> TokenStream {
                                 #(#all_exprs,)*
                             ))
                         }
-
+                        #[inline]
                         fn type_id() -> u8 {
                             ::sbor::constants::TYPE_STRUCT
                         }
@@ -81,7 +81,7 @@ pub fn handle_decode(input: TokenStream) -> TokenStream {
                             decoder.check_type(::sbor::constants::TYPE_FIELDS_UNIT)?;
                             Ok(Self {})
                         }
-
+                        #[inline]
                         fn type_id() -> u8 {
                             ::sbor::constants::TYPE_STRUCT
                         }
@@ -153,13 +153,12 @@ pub fn handle_decode(input: TokenStream) -> TokenStream {
                     fn decode_value<'de>(decoder: &'de mut ::sbor::Decoder) -> Result<Self, ::sbor::DecodeError> {
                         use ::sbor::{self, Decode};
 
-                        let index = decoder.read_index()?;
+                        let index = decoder.read_u8()?;
                         match index {
                             #(#match_arms,)*
                             _ => Err(::sbor::DecodeError::InvalidIndex(index))
                         }
                     }
-
                     #[inline]
                     fn type_id() -> u8 {
                         ::sbor::constants::TYPE_ENUM
@@ -207,6 +206,7 @@ mod tests {
                             a: <u32>::decode(decoder)?,
                         })
                     }
+                    #[inline]
                     fn type_id() -> u8 {
                         ::sbor::constants::TYPE_STRUCT
                     }
@@ -227,7 +227,7 @@ mod tests {
                     #[inline]
                     fn decode_value<'de>(decoder: &'de mut ::sbor::Decoder) -> Result<Self, ::sbor::DecodeError> {
                         use ::sbor::{self, Decode};
-                        let index = decoder.read_index()?;
+                        let index = decoder.read_u8()?;
                         match index {
                             0u8 => {
                                 decoder.check_type(::sbor::constants::TYPE_FIELDS_UNIT)?;

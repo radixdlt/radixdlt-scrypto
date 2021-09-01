@@ -90,7 +90,6 @@ impl fmt::Display for H256 {
 }
 
 impl Encode for H256 {
-    #[inline]
     fn encode_value(&self, encoder: &mut Encoder) {
         let bytes = self.as_ref();
         encoder.write_len(bytes.len());
@@ -104,7 +103,6 @@ impl Encode for H256 {
 }
 
 impl Decode for H256 {
-    #[inline]
     fn decode_value<'de>(decoder: &mut Decoder<'de>) -> Result<Self, DecodeError> {
         let len = decoder.read_len()?;
         let slice = decoder.read_bytes(len)?;

@@ -42,7 +42,6 @@ impl TokensRef {
 }
 
 impl Encode for TokensRef {
-    #[inline]
     fn encode_value(&self, encoder: &mut Encoder) {
         self.rid.encode_value(encoder);
     }
@@ -54,7 +53,6 @@ impl Encode for TokensRef {
 }
 
 impl Decode for TokensRef {
-    #[inline]
     fn decode_value<'de>(decoder: &mut Decoder<'de>) -> Result<Self, DecodeError> {
         let rid = RID::decode_value(decoder)?;
         Ok(rid.into())

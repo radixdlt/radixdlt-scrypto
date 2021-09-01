@@ -92,7 +92,6 @@ impl fmt::Display for RID {
 }
 
 impl Encode for RID {
-    #[inline]
     fn encode_value(&self, encoder: &mut Encoder) {
         let bytes = self.to_vec();
         encoder.write_len(bytes.len());
@@ -106,7 +105,6 @@ impl Encode for RID {
 }
 
 impl Decode for RID {
-    #[inline]
     fn decode_value<'de>(decoder: &mut Decoder<'de>) -> Result<Self, DecodeError> {
         let len = decoder.read_len()?;
         let slice = decoder.read_bytes(len)?;

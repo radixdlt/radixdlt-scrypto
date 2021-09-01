@@ -95,7 +95,6 @@ impl fmt::Display for BID {
 }
 
 impl Encode for BID {
-    #[inline]
     fn encode_value(&self, encoder: &mut Encoder) {
         let bytes = self.to_vec();
         encoder.write_len(bytes.len());
@@ -109,7 +108,6 @@ impl Encode for BID {
 }
 
 impl Decode for BID {
-    #[inline]
     fn decode_value<'de>(decoder: &mut Decoder<'de>) -> Result<Self, DecodeError> {
         let len = decoder.read_len()?;
         let slice = decoder.read_bytes(len)?;

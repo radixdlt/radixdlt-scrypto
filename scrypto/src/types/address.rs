@@ -101,7 +101,6 @@ impl fmt::Display for Address {
 }
 
 impl Encode for Address {
-    #[inline]
     fn encode_value(&self, encoder: &mut Encoder) {
         let bytes = self.to_vec();
         encoder.write_len(bytes.len());
@@ -115,7 +114,6 @@ impl Encode for Address {
 }
 
 impl Decode for Address {
-    #[inline]
     fn decode_value<'de>(decoder: &mut Decoder<'de>) -> Result<Self, DecodeError> {
         let len = decoder.read_len()?;
         let slice = decoder.read_bytes(len)?;
