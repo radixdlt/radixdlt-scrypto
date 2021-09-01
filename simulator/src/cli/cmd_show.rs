@@ -70,13 +70,25 @@ pub fn handle_show<'a>(matches: &ArgMatches<'a>) -> Result<(), Error> {
             match component {
                 Some(c) => {
                     println!("{}: {}", "Component".green().bold(), address.to_string());
-                    println!("{}: {}, {}", "Blueprint".green().bold(), c.package(), c.blueprint());
-                    println!("{}: {:02x?}", "Raw state".green().bold(), c.state());
                     println!(
-                        "{}: {}",
-                        "Parsed state".green().bold(),
-                        format_sbor(c.state()).map_err(|e| Error::DataError(e))?
+                        "{}: {}, {}",
+                        "Blueprint".green().bold(),
+                        c.package(),
+                        c.blueprint()
                     );
+                    println!("{}: {:02x?}", "State".green().bold(), c.state());
+                    let (fmt, bids) = format_sbor(c.state()).map_err(|e| Error::DataError(e))?;
+                    println!("{}: {}", "State parsed".green().bold(), fmt);
+                    for bid in bids {
+                        let bucket = ledger.get_bucket(bid).unwrap();
+                        println!(
+                            "{}: id = {}, amount = {}, resource = {}",
+                            "Bucket".green().bold(),
+                            bid,
+                            bucket.amount(),
+                            bucket.resource()
+                        )
+                    }
                 }
                 None => {
                     println!("{}", "Component not found".red());
