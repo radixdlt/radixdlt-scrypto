@@ -43,7 +43,8 @@ pub fn handle_call_function<'a>(matches: &ArgMatches<'a>) -> Result<(), Error> {
     let package: Address = matches
         .value_of(ARG_PACKAGE)
         .ok_or(Error::MissingArgument(ARG_PACKAGE.to_owned()))?
-        .into();
+        .parse()
+        .map_err(|e| Error::InvalidAddress(e))?;
     let blueprint = matches
         .value_of(ARG_BLUEPRINT)
         .ok_or(Error::MissingArgument(ARG_BLUEPRINT.to_owned()))?;
@@ -57,7 +58,7 @@ pub fn handle_call_function<'a>(matches: &ArgMatches<'a>) -> Result<(), Error> {
 
     match get_config(CONF_DEFAULT_ACCOUNT)? {
         Some(a) => {
-            let account: Address = a.as_str().into();
+            let account: Address = a.as_str().parse().map_err(|e| Error::InvalidAddress(e))?;
             let mut ledger = FileBasedLedger::new(get_data_dir()?);
             match build_call_function(
                 &mut ledger,

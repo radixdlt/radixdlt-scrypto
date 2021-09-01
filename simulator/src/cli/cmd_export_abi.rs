@@ -30,7 +30,8 @@ pub fn handle_export_abi<'a>(matches: &ArgMatches<'a>) -> Result<(), Error> {
     let package: Address = matches
         .value_of(ARG_PACKAGE)
         .ok_or(Error::MissingArgument(ARG_PACKAGE.to_owned()))?
-        .into();
+        .parse()
+        .map_err(|e| Error::InvalidAddress(e))?;
     let blueprint = matches
         .value_of(ARG_BLUEPRINT)
         .ok_or(Error::MissingArgument(ARG_BLUEPRINT.to_owned()))?;

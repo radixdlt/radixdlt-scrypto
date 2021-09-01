@@ -5,7 +5,6 @@ use crate::rust::borrow::ToOwned;
 use crate::rust::convert::TryFrom;
 use crate::rust::fmt;
 use crate::rust::str::FromStr;
-use crate::rust::string::String;
 use crate::rust::vec::Vec;
 use crate::types::*;
 
@@ -64,18 +63,6 @@ impl TryFrom<&[u8]> for RID {
             (Some(1), 5) => Ok(RID::Mutable(u32::from_le_bytes(copy_u8_array(&slice[1..])))),
             (_, len) => Err(ParseRIDError::InvalidLength(len)),
         }
-    }
-}
-
-impl From<&str> for RID {
-    fn from(s: &str) -> Self {
-        Self::from_str(s).unwrap()
-    }
-}
-
-impl From<String> for RID {
-    fn from(s: String) -> Self {
-        Self::from_str(&s).unwrap()
     }
 }
 

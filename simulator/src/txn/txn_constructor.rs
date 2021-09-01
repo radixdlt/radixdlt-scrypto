@@ -7,7 +7,6 @@ use scrypto::abi;
 use scrypto::buffer::*;
 use scrypto::constants::*;
 use scrypto::rust::collections::*;
-use scrypto::rust::convert::TryFrom;
 use scrypto::rust::fmt;
 use scrypto::rust::str::FromStr;
 use scrypto::rust::vec::Vec;
@@ -196,7 +195,7 @@ fn handle_custom_ty(
         SCRYPTO_NAME_TOKENS | SCRYPTO_NAME_BADGES => {
             let mut split = arg.split(":");
             let amount = split.next().and_then(|v| U256::from_dec_str(v).ok());
-            let resource = split.next().and_then(|v| Address::try_from(v).ok());
+            let resource = split.next().and_then(|v| v.parse::<Address>().ok());
             match (amount, resource) {
                 (Some(a), Some(r)) => {
                     let n = alloc.count();

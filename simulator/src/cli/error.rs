@@ -2,6 +2,7 @@ pub use std::io;
 
 pub use radix_engine::execution::*;
 pub use sbor::*;
+pub use scrypto::types::*;
 
 use crate::txn::*;
 use crate::utils::*;
@@ -15,6 +16,8 @@ pub enum Error {
     MissingSubCommand,
 
     MissingArgument(String),
+
+    InvalidAddress(ParseAddressError),
 
     IOError(io::Error),
 

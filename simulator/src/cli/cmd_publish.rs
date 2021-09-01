@@ -44,7 +44,7 @@ pub fn handle_publish<'a>(matches: &ArgMatches<'a>) -> Result<(), Error> {
 
     match get_config(CONF_DEFAULT_ACCOUNT)? {
         Some(a) => {
-            let account: Address = a.as_str().into();
+            let account: Address = a.as_str().parse().map_err(|e| Error::InvalidAddress(e))?;
             let tx_hash = sha256(Uuid::new_v4().to_string());
             let mut ledger = FileBasedLedger::new(get_data_dir()?);
             let mut runtime = Runtime::new(tx_hash, &mut ledger);

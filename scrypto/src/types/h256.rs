@@ -5,7 +5,6 @@ use crate::rust::borrow::ToOwned;
 use crate::rust::convert::TryFrom;
 use crate::rust::fmt;
 use crate::rust::str::FromStr;
-use crate::rust::string::String;
 use crate::types::*;
 
 /// Represents a 32-byte hash digest.
@@ -50,18 +49,6 @@ impl TryFrom<&[u8]> for H256 {
         } else {
             Ok(H256(copy_u8_array(&slice)))
         }
-    }
-}
-
-impl From<&str> for H256 {
-    fn from(s: &str) -> Self {
-        Self::from_str(s).unwrap()
-    }
-}
-
-impl From<String> for H256 {
-    fn from(s: String) -> Self {
-        Self::from_str(&s).unwrap()
     }
 }
 

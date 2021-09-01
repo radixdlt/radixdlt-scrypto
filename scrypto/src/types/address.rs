@@ -5,7 +5,6 @@ use crate::rust::borrow::ToOwned;
 use crate::rust::convert::TryFrom;
 use crate::rust::fmt;
 use crate::rust::str::FromStr;
-use crate::rust::string::String;
 use crate::rust::vec::Vec;
 use crate::types::*;
 
@@ -73,18 +72,6 @@ impl TryFrom<&[u8]> for Address {
             (Some(6), 27) => Ok(Address::Component(copy_u8_array(&slice[1..]))),
             (_, len) => Err(ParseAddressError::InvalidLength(len)),
         }
-    }
-}
-
-impl From<&str> for Address {
-    fn from(s: &str) -> Self {
-        Self::from_str(s).unwrap()
-    }
-}
-
-impl From<String> for Address {
-    fn from(s: String) -> Self {
-        Self::from_str(&s).unwrap()
     }
 }
 

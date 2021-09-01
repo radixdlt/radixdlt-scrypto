@@ -5,7 +5,6 @@ use crate::rust::borrow::ToOwned;
 use crate::rust::convert::TryFrom;
 use crate::rust::fmt;
 use crate::rust::str::FromStr;
-use crate::rust::string::String;
 use crate::rust::vec::Vec;
 use crate::types::*;
 
@@ -67,18 +66,6 @@ impl TryFrom<&[u8]> for BID {
             )),
             (_, len) => Err(ParseBIDError::InvalidLength(len)),
         }
-    }
-}
-
-impl From<&str> for BID {
-    fn from(s: &str) -> Self {
-        Self::from_str(s).unwrap()
-    }
-}
-
-impl From<String> for BID {
-    fn from(s: String) -> Self {
-        Self::from_str(&s).unwrap()
     }
 }
 

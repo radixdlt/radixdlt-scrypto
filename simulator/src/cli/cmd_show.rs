@@ -25,7 +25,8 @@ pub fn handle_show<'a>(matches: &ArgMatches<'a>) -> Result<(), Error> {
     let address: Address = matches
         .value_of(ARG_ADDRESS)
         .ok_or(Error::MissingArgument(ARG_ADDRESS.to_owned()))?
-        .into();
+        .parse()
+        .map_err(|e| Error::InvalidAddress(e))?;
 
     let ledger = FileBasedLedger::new(get_data_dir()?);
     match address {

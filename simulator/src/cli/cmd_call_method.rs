@@ -37,7 +37,8 @@ pub fn handle_call_method<'a>(matches: &ArgMatches<'a>) -> Result<(), Error> {
     let component: Address = matches
         .value_of(ARG_COMPONENT)
         .ok_or(Error::MissingArgument(ARG_COMPONENT.to_owned()))?
-        .into();
+        .parse()
+        .map_err(|e| Error::InvalidAddress(e))?;
     let method = matches
         .value_of(ARG_METHOD)
         .ok_or(Error::MissingArgument(ARG_METHOD.to_owned()))?;
@@ -48,7 +49,7 @@ pub fn handle_call_method<'a>(matches: &ArgMatches<'a>) -> Result<(), Error> {
 
     match get_config(CONF_DEFAULT_ACCOUNT)? {
         Some(a) => {
-            let account: Address = a.as_str().into();
+            let account: Address = a.as_str().parse().map_err(|e| Error::InvalidAddress(e))?;
             let mut ledger = FileBasedLedger::new(get_data_dir()?);
             match build_call_method(&mut ledger, account, component, method, &args, false) {
                 Ok(txn) => {
