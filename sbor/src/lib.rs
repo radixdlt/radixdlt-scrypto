@@ -19,8 +19,9 @@ pub mod parse;
 pub mod rust;
 
 pub use decode::{Decode, DecodeError, Decoder};
-pub use describe::{Describe, Fields, Type, Variant};
+pub use describe::Describe;
 pub use encode::{Encode, Encoder};
+pub use parse::parse_any;
 
 use crate::rust::vec::Vec;
 
@@ -53,8 +54,6 @@ pub fn decode_no_type<T: Decode>(buf: &[u8]) -> Result<T, DecodeError> {
     dec.check_end()?;
     Ok(v)
 }
-
-pub use parse::parse_any;
 
 // Re-export derives
 extern crate sbor_derive;

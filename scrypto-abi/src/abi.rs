@@ -8,7 +8,8 @@ pub use alloc::vec::Vec;
 #[cfg(any(feature = "serde_std", feature = "serde_alloc"))]
 use serde::{Deserialize, Serialize};
 
-use sbor::*;
+use sbor::describe::*;
+use sbor::{Decode, Encode};
 
 /// Represents a blueprint.
 #[cfg_attr(

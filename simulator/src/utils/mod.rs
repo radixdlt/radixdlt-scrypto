@@ -1,5 +1,5 @@
-mod receipt_dumper;
-mod sbor_parser;
+mod receipt_utils;
+mod sbor_utils;
 
-pub use receipt_dumper::dump_receipt;
-pub use sbor_parser::parse_sbor_data;
+pub use receipt_utils::dump_receipt;
+pub use sbor_utils::format_sbor;

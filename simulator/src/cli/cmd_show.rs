@@ -74,7 +74,7 @@ pub fn handle_show<'a>(matches: &ArgMatches<'a>) -> Result<(), Error> {
                     println!(
                         "{}: {}",
                         "Parsed state".green().bold(),
-                        parse_sbor_data(c.state()).unwrap()
+                        format_sbor(c.state()).map_err(|e| Error::DataError(e))?
                     );
                 }
                 None => {
