@@ -13,10 +13,10 @@ pub fn format_sbor<L: Ledger>(
     res: &mut Vec<Bucket>,
 ) -> Result<String, DecodeError> {
     let value = parse_any(data)?;
-    fmt_value(&value, ledger, res)
+    format_value(&value, ledger, res)
 }
 
-fn fmt_value<L: Ledger>(
+pub fn format_value<L: Ledger>(
     value: &Value,
     le: &L,
     res: &mut Vec<Bucket>,
@@ -38,39 +38,41 @@ fn fmt_value<L: Ledger>(
         Value::String(v) => Ok(v.to_string()),
         // rust types
         Value::Option(v) => match v {
-            Some(x) => Ok(format!("Some({})", fmt_value(x.borrow(), le, res)?)),
+            Some(x) => Ok(format!("Some({})", format_value(x.borrow(), le, res)?)),
             None => Ok(String::from("None")),
         },
-        Value::Box(v) => Ok(format!("Box({})", fmt_value(v.borrow(), le, res)?)),
-        Value::Array(elements) => fmt_vec(elements.iter(), "[", "]", le, res),
-        Value::Tuple(elements) => fmt_vec(elements.iter(), "(", ")", le, res),
-        Value::Struct(fields) => Ok(format!("Struct {}", fmt_fields(fields, le, res)?)),
-        Value::Enum(index, fields) => {
-            Ok(format!("Enum::{} {}", index, fmt_fields(fields, le, res)?))
-        }
+        Value::Box(v) => Ok(format!("Box({})", format_value(v.borrow(), le, res)?)),
+        Value::Array(elements) => format_vec(elements.iter(), "[", "]", le, res),
+        Value::Tuple(elements) => format_vec(elements.iter(), "(", ")", le, res),
+        Value::Struct(fields) => Ok(format!("Struct {}", format_fields(fields, le, res)?)),
+        Value::Enum(index, fields) => Ok(format!(
+            "Enum::{} {}",
+            index,
+            format_fields(fields, le, res)?
+        )),
         // collections
-        Value::Vec(elements) => fmt_vec(elements.iter(), "Vec { ", " }", le, res),
-        Value::TreeSet(elements) => fmt_vec(elements.iter(), "TreeSet { ", " }", le, res),
-        Value::HashSet(elements) => fmt_vec(elements.iter(), "HashSet { ", " }", le, res),
-        Value::TreeMap(elements) => fmt_map(elements.iter(), "TreeMap { ", " }", le, res),
-        Value::HashMap(elements) => fmt_map(elements.iter(), "HashMap { ", " }", le, res),
-        Value::Custom(ty, data) => fmt_custom(*ty, data, le, res),
+        Value::Vec(elements) => format_vec(elements.iter(), "Vec { ", " }", le, res),
+        Value::TreeSet(elements) => format_vec(elements.iter(), "TreeSet { ", " }", le, res),
+        Value::HashSet(elements) => format_vec(elements.iter(), "HashSet { ", " }", le, res),
+        Value::TreeMap(elements) => format_map(elements.iter(), "TreeMap { ", " }", le, res),
+        Value::HashMap(elements) => format_map(elements.iter(), "HashMap { ", " }", le, res),
+        Value::Custom(ty, data) => format_custom(*ty, data, le, res),
     }
 }
 
-fn fmt_fields<L: Ledger>(
+pub fn format_fields<L: Ledger>(
     fields: &Fields,
     le: &L,
     res: &mut Vec<Bucket>,
 ) -> Result<String, DecodeError> {
     match fields {
-        Fields::Named(named) => fmt_vec(named.iter(), "{ ", " }", le, res),
-        Fields::Unnamed(unnamed) => fmt_vec(unnamed.iter(), "( ", " )", le, res),
+        Fields::Named(named) => format_vec(named.iter(), "{ ", " }", le, res),
+        Fields::Unnamed(unnamed) => format_vec(unnamed.iter(), "( ", " )", le, res),
         Fields::Unit => Ok(String::from("()")),
     }
 }
 
-fn fmt_vec<'a, I: Iterator<Item = &'a Value>, L: Ledger>(
+pub fn format_vec<'a, I: Iterator<Item = &'a Value>, L: Ledger>(
     itr: I,
     begin: &str,
     end: &str,
@@ -82,13 +84,13 @@ fn fmt_vec<'a, I: Iterator<Item = &'a Value>, L: Ledger>(
         if i != 0 {
             buf.push_str(", ");
         }
-        buf.push_str(fmt_value(x, le, res)?.as_str());
+        buf.push_str(format_value(x, le, res)?.as_str());
     }
     buf.push_str(end);
     Ok(buf)
 }
 
-fn fmt_map<'a, I: Iterator<Item = &'a (Value, Value)>, L: Ledger>(
+pub fn format_map<'a, I: Iterator<Item = &'a (Value, Value)>, L: Ledger>(
     itr: I,
     begin: &str,
     end: &str,
@@ -103,8 +105,8 @@ fn fmt_map<'a, I: Iterator<Item = &'a (Value, Value)>, L: Ledger>(
         buf.push_str(
             format!(
                 "{} => {}",
-                fmt_value(&x.0, le, res)?,
-                fmt_value(&x.1, le, res)?
+                format_value(&x.0, le, res)?,
+                format_value(&x.1, le, res)?
             )
             .as_str(),
         );
@@ -113,7 +115,7 @@ fn fmt_map<'a, I: Iterator<Item = &'a (Value, Value)>, L: Ledger>(
     Ok(buf)
 }
 
-fn fmt_custom<L: Ledger>(
+pub fn format_custom<L: Ledger>(
     ty: u8,
     data: &[u8],
     le: &L,
@@ -121,10 +123,17 @@ fn fmt_custom<L: Ledger>(
 ) -> Result<String, DecodeError> {
     match ty {
         SCRYPTO_TYPE_U256 => Ok(<U256>::from_little_endian(data).to_string()),
-        SCRYPTO_TYPE_ADDRESS => Ok(format!("Address ({})", decode_custom::<Address>(ty, data)?)),
-        SCRYPTO_TYPE_H256 => Ok(format!("H256 ({})", decode_custom::<Address>(ty, data)?)),
+        SCRYPTO_TYPE_ADDRESS => {
+            let address =
+                Address::try_from(data).map_err(|_| DecodeError::InvalidCustomData(ty))?;
+            Ok(format!("Address ({})", address))
+        }
+        SCRYPTO_TYPE_H256 => {
+            let h256 = H256::try_from(data).map_err(|_| DecodeError::InvalidCustomData(ty))?;
+            Ok(format!("H256 ({})", h256))
+        }
         SCRYPTO_TYPE_MID => {
-            let mid = decode_custom::<MID>(ty, data)?;
+            let mid = MID::try_from(data).map_err(|_| DecodeError::InvalidCustomData(ty))?;
             let map = le.get_map(mid).ok_or(DecodeError::InvalidCustomData(ty))?;
             let mut buf = String::from("s");
             for (i, (k, v)) in map.map.iter().enumerate() {
@@ -137,9 +146,8 @@ fn fmt_custom<L: Ledger>(
             }
             Ok(format!("Map {{ mid: {}, entries: [{}] }}", mid, buf))
         }
-        SCRYPTO_TYPE_RID => Ok(format!("RID ({})", decode_custom::<Address>(ty, data)?)),
         SCRYPTO_TYPE_BID => {
-            let bid = decode_custom::<BID>(ty, data)?;
+            let bid = BID::try_from(data).map_err(|_| DecodeError::InvalidCustomData(ty))?;
             let bucket = le
                 .get_bucket(bid)
                 .ok_or(DecodeError::InvalidCustomData(ty))?;
@@ -151,16 +159,13 @@ fn fmt_custom<L: Ledger>(
                 bucket.resource()
             ))
         }
+        SCRYPTO_TYPE_RID => {
+            let rid = RID::try_from(data).map_err(|_| DecodeError::InvalidCustomData(ty))?;
+            Ok(format!("RID ({})", rid))
+        }
         _ => Err(DecodeError::InvalidType {
             expected: 0xff,
             actual: ty,
         }),
     }
-}
-
-fn decode_custom<'a, T: TryFrom<&'a [u8]> + ToString>(
-    ty: u8,
-    slice: &'a [u8],
-) -> Result<T, DecodeError> {
-    <T>::try_from(slice).map_err(|_| DecodeError::InvalidCustomData(ty))
 }

@@ -4,7 +4,7 @@ use scrypto::rust::fmt;
 
 /// Represents an error when parsing arguments.
 #[derive(Debug)]
-pub enum ParseArgError {
+pub enum BuildArgError {
     /// The argument is not provided.
     MissingArgument(usize, Type),
 
@@ -20,7 +20,7 @@ pub enum ParseArgError {
 
 /// Represents an error when construction a transaction.
 #[derive(Debug)]
-pub enum TxnConstructionError {
+pub enum BuildTxnError {
     /// The given blueprint function does not exist.
     FunctionNotFound(String),
 
@@ -28,13 +28,13 @@ pub enum TxnConstructionError {
     MethodNotFound(String),
 
     /// The provided arguments do not match ABI.
-    InvalidArguments(ParseArgError),
+    ArgConstructionError(BuildArgError),
 
     /// Failed to export the blueprint ABI.
     FailedToExportAbi(RuntimeError),
 }
 
-impl fmt::Display for ParseArgError {
+impl fmt::Display for BuildArgError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let msg = match self {
             Self::MissingArgument(i, ty) => {

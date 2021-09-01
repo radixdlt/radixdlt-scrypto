@@ -9,45 +9,7 @@ use scrypto::types::*;
 use scrypto::utils::*;
 use uuid::Uuid;
 
-use crate::transaction::*;
-
-fn call<L: Ledger>(
-    process: &mut Process<L>,
-    target: Target,
-    buckets: &mut HashMap<BID, Bucket>,
-    resource_collector: Option<&mut HashMap<Address, Bucket>>,
-) -> Result<Vec<u8>, RuntimeError> {
-    // move resources
-    process.put_resources(buckets.clone(), HashMap::new());
-    buckets.clear();
-
-    // run
-    let result = process.run(target);
-
-    // move resources
-    let (buckets, references) = process.take_resources();
-    match resource_collector {
-        Some(collector) => {
-            for bucket in buckets.values() {
-                collector
-                    .entry(bucket.resource())
-                    .or_insert(Bucket::new(0.into(), bucket.resource()))
-                    .put(bucket.clone())
-                    .unwrap();
-            }
-            if !references.is_empty() {
-                return Err(RuntimeError::UnexpectedResourceReturn);
-            }
-        }
-        None => {
-            if !buckets.is_empty() || !references.is_empty() {
-                return Err(RuntimeError::UnexpectedResourceReturn);
-            }
-        }
-    }
-
-    result
-}
+use crate::txn::*;
 
 pub fn execute<T: Ledger>(
     ledger: &mut T,
@@ -189,4 +151,42 @@ pub fn execute<T: Ledger>(
         results,
         logs: runtime.logs().clone(),
     }
+}
+
+fn call<L: Ledger>(
+    process: &mut Process<L>,
+    target: Target,
+    buckets: &mut HashMap<BID, Bucket>,
+    resource_collector: Option<&mut HashMap<Address, Bucket>>,
+) -> Result<Vec<u8>, RuntimeError> {
+    // move resources
+    process.put_resources(buckets.clone(), HashMap::new());
+    buckets.clear();
+
+    // run
+    let result = process.run(target);
+
+    // move resources
+    let (buckets, references) = process.take_resources();
+    match resource_collector {
+        Some(collector) => {
+            for bucket in buckets.values() {
+                collector
+                    .entry(bucket.resource())
+                    .or_insert(Bucket::new(0.into(), bucket.resource()))
+                    .put(bucket.clone())
+                    .unwrap();
+            }
+            if !references.is_empty() {
+                return Err(RuntimeError::UnexpectedResourceReturn);
+            }
+        }
+        None => {
+            if !buckets.is_empty() || !references.is_empty() {
+                return Err(RuntimeError::UnexpectedResourceReturn);
+            }
+        }
+    }
+
+    result
 }

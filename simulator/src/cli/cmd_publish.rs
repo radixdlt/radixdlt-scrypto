@@ -10,6 +10,8 @@ use scrypto::utils::*;
 use uuid::Uuid;
 
 use crate::cli::*;
+use crate::ledger::*;
+use crate::utils::*;
 
 const ARG_PATH: &'static str = "PATH";
 
@@ -33,7 +35,7 @@ pub fn handle_publish<'a>(matches: &ArgMatches<'a>) -> Result<(), Error> {
             .ok_or(Error::MissingArgument(ARG_PATH.to_owned()))?,
     );
     let file = if path.extension() != Some(OsStr::new("wasm")) {
-        build_cargo_package(path).map_err(|e| Error::BuildError(e))?
+        build_package(path).map_err(|e| Error::BuildError(e))?
     } else {
         path
     };

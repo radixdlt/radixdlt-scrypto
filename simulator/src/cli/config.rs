@@ -21,6 +21,7 @@ pub fn get_config_json() -> Result<PathBuf, Error> {
     Ok(path.with_extension("json"))
 }
 
+/// Returns all CLI configurations.
 pub fn get_configs() -> Result<HashMap<String, String>, Error> {
     let path = get_config_json()?;
     if path.exists() {
@@ -33,6 +34,7 @@ pub fn get_configs() -> Result<HashMap<String, String>, Error> {
     }
 }
 
+/// Overwrites CLI configurations.
 pub fn set_configs(config: HashMap<String, String>) -> Result<(), Error> {
     let path = get_config_json()?;
     fs::write(
@@ -42,10 +44,12 @@ pub fn set_configs(config: HashMap<String, String>) -> Result<(), Error> {
     .map_err(|e| Error::IOError(e))
 }
 
+/// Retrieves a configuration.
 pub fn get_config(key: &str) -> Result<Option<String>, Error> {
     Ok(get_configs()?.get(key).map(ToOwned::to_owned))
 }
 
+/// Sets a configuration.
 pub fn set_config(key: &str, value: &str) -> Result<(), Error> {
     let mut configs = get_configs()?;
     configs.insert(key.to_owned(), value.to_owned());

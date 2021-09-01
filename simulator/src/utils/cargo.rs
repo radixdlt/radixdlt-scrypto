@@ -1,9 +1,21 @@
+use std::io;
 use std::path::PathBuf;
 use std::process::Command;
 
-use crate::cli::*;
+#[derive(Debug)]
+pub enum BuildPackageError {
+    NotCargoPackage,
 
-pub fn build_cargo_package(mut path: PathBuf) -> Result<PathBuf, BuildPackageError> {
+    FailedToParseCargoToml(cargo_toml::Error),
+
+    MissingPackageInCargoToml,
+
+    FailedToRunCargo(io::Error),
+
+    FailedToWaitCargo(io::Error),
+}
+
+pub fn build_package(mut path: PathBuf) -> Result<PathBuf, BuildPackageError> {
     let mut cargo = path.clone();
     cargo.push("Cargo.toml");
 

@@ -1,7 +1,9 @@
-mod iter_utils;
-mod receipt_utils;
-mod sbor_utils;
+mod cargo;
+mod dumper;
+mod formatter;
+mod iter;
 
-pub use iter_utils::{item_prefix, IdentifyLast, Iter};
-pub use receipt_utils::dump_receipt;
-pub use sbor_utils::format_sbor;
+pub use cargo::{build_package, BuildPackageError};
+pub use dumper::{dump_component, dump_package, dump_receipt, dump_resource};
+pub use formatter::*;
+pub use iter::{list_item_prefix, IdentifyLast, Iter};

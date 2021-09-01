@@ -20,7 +20,7 @@ impl<I: Iterator> Iterator for Iter<I> {
     }
 }
 
-pub fn item_prefix(last: bool) -> &'static str {
+pub fn list_item_prefix(last: bool) -> &'static str {
     if last {
         "└─"
     } else {

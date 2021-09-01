@@ -2,7 +2,8 @@ use clap::{crate_version, App, Arg, ArgMatches, SubCommand};
 use scrypto::types::*;
 
 use crate::cli::*;
-use crate::transaction::*;
+use crate::ledger::*;
+use crate::txn::*;
 use crate::utils::*;
 
 const ARG_PACKAGE: &'static str = "PACKAGE";
@@ -58,7 +59,7 @@ pub fn handle_call_function<'a>(matches: &ArgMatches<'a>) -> Result<(), Error> {
         Some(a) => {
             let account: Address = a.as_str().into();
             let mut ledger = FileBasedLedger::new(get_data_dir()?);
-            match construct_call_function_txn(
+            match build_call_function(
                 &mut ledger,
                 account,
                 package,

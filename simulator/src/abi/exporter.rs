@@ -33,7 +33,7 @@ pub fn export_abi<T: Ledger>(
     scrypto_decode::<abi::Blueprint>(&result?).map_err(|e| RuntimeError::InvalidData(e))
 }
 
-/// Export the ABI of the blueprint of which the given component is instantiated.
+/// Export the ABI of the blueprint of a component.
 pub fn export_abi_by_component<T: Ledger>(
     ledger: &mut T,
     component: Address,

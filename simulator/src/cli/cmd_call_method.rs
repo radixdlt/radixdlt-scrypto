@@ -2,7 +2,8 @@ use clap::{crate_version, App, Arg, ArgMatches, SubCommand};
 use scrypto::types::*;
 
 use crate::cli::*;
-use crate::transaction::*;
+use crate::ledger::*;
+use crate::txn::*;
 use crate::utils::*;
 
 const ARG_COMPONENT: &'static str = "COMPONENT";
@@ -49,7 +50,7 @@ pub fn handle_call_method<'a>(matches: &ArgMatches<'a>) -> Result<(), Error> {
         Some(a) => {
             let account: Address = a.as_str().into();
             let mut ledger = FileBasedLedger::new(get_data_dir()?);
-            match construct_call_method_txn(&mut ledger, account, component, method, &args, false) {
+            match build_call_method(&mut ledger, account, component, method, &args, false) {
                 Ok(txn) => {
                     let receipt = execute(&mut ledger, txn, false);
                     dump_receipt(receipt);

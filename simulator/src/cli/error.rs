@@ -3,7 +3,8 @@ pub use std::io;
 pub use radix_engine::execution::*;
 pub use sbor::*;
 
-use crate::transaction::*;
+use crate::txn::*;
+use crate::utils::*;
 
 #[derive(Debug)]
 pub enum Error {
@@ -21,22 +22,9 @@ pub enum Error {
 
     BuildError(BuildPackageError),
 
-    ConstructionErr(TxnConstructionError),
+    ConstructionErr(BuildTxnError),
 
     ExecutionError(RuntimeError),
 
     DataError(DecodeError),
-}
-
-#[derive(Debug)]
-pub enum BuildPackageError {
-    NotCargoPackage,
-
-    FailedToParseCargoToml(cargo_toml::Error),
-
-    MissingPackageInCargoToml,
-
-    FailedToRunCargo(io::Error),
-
-    FailedToWaitCargo(io::Error),
 }
