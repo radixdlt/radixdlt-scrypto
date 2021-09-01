@@ -82,7 +82,7 @@ pub fn handle_new_account<'a>(_matches: &ArgMatches<'a>) -> Result<(), Error> {
     if get_config(CONF_DEFAULT_ACCOUNT)?.is_none() {
         set_config(CONF_DEFAULT_ACCOUNT, &component.to_string())?;
         println!(
-            "No default account configured. The above account will be used as the default account."
+            "No default account configured. This account will be used as the default account."
         )
     }
 

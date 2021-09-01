@@ -37,7 +37,7 @@ pub fn handle_export_abi<'a>(matches: &ArgMatches<'a>) -> Result<(), Error> {
         .ok_or(Error::MissingArgument(ARG_BLUEPRINT.to_owned()))?;
 
     let mut ledger = FileBasedLedger::new(get_data_dir()?);
-    let result = export_abi(&mut ledger, package, blueprint, true);
+    let result = export_abi(&mut ledger, package, blueprint, false);
 
     match result {
         Err(e) => Err(Error::ExecutionError(e)),
