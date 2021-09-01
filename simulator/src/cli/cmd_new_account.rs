@@ -1,4 +1,4 @@
-use clap::{crate_version, App, ArgMatches, SubCommand};
+use clap::{crate_version, App, Arg, ArgMatches, SubCommand};
 use radix_engine::execution::*;
 use radix_engine::model::*;
 use scrypto::buffer::*;
@@ -10,15 +10,25 @@ use uuid::Uuid;
 use crate::cli::*;
 use crate::ledger::*;
 
+const ARG_TRACE: &'static str = "TRACE";
+
 /// Constructs a `new-account` subcommand.
 pub fn make_new_account_cmd<'a, 'b>() -> App<'a, 'b> {
     SubCommand::with_name(CMD_NEW_ACCOUNT)
         .about("Creates an account")
         .version(crate_version!())
+        .arg(
+            Arg::with_name(ARG_TRACE)
+                .short("t")
+                .long("trace")
+                .help("Turns on tracing."),
+        )
 }
 
 /// Handles a `new-account` request.
-pub fn handle_new_account<'a>(_matches: &ArgMatches<'a>) -> Result<(), Error> {
+pub fn handle_new_account<'a>(matches: &ArgMatches<'a>) -> Result<(), Error> {
+    let trace = matches.is_present(ARG_TRACE);
+
     let tx_hash = sha256(Uuid::new_v4().to_string());
     let mut ledger = FileBasedLedger::new(get_data_dir()?);
     let mut runtime = Runtime::new(tx_hash, &mut ledger);
@@ -47,7 +57,7 @@ pub fn handle_new_account<'a>(_matches: &ArgMatches<'a>) -> Result<(), Error> {
     }
 
     // create new account
-    let mut process = Process::new(0, false, &mut runtime);
+    let mut process = Process::new(0, trace, &mut runtime);
     let output = process
         .target_function(package, "Account", "new".to_owned(), Vec::new())
         .and_then(|target| process.run(target))
@@ -62,7 +72,7 @@ pub fn handle_new_account<'a>(_matches: &ArgMatches<'a>) -> Result<(), Error> {
     buckets.insert(bid, bucket);
 
     // deposit
-    let mut process2 = Process::new(0, false, &mut runtime);
+    let mut process2 = Process::new(0, trace, &mut runtime);
     process2.put_resources(buckets, HashMap::new());
     process2
         .target_method(
@@ -81,9 +91,7 @@ pub fn handle_new_account<'a>(_matches: &ArgMatches<'a>) -> Result<(), Error> {
     // set as default config if not set
     if get_config(CONF_DEFAULT_ACCOUNT)?.is_none() {
         set_config(CONF_DEFAULT_ACCOUNT, &component.to_string())?;
-        println!(
-            "No default account configured. This account will be used as the default account."
-        )
+        println!("No default account configured. This account will be used as the default account.")
     }
 
     Ok(())

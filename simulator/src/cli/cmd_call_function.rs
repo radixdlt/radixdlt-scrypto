@@ -6,6 +6,7 @@ use crate::ledger::*;
 use crate::txn::*;
 use crate::utils::*;
 
+const ARG_TRACE: &'static str = "TRACE";
 const ARG_PACKAGE: &'static str = "PACKAGE";
 const ARG_BLUEPRINT: &'static str = "BLUEPRINT";
 const ARG_FUNCTION: &'static str = "FUNCTION";
@@ -16,6 +17,12 @@ pub fn make_call_function_cmd<'a, 'b>() -> App<'a, 'b> {
     SubCommand::with_name(CMD_CALL_FUNCTION)
         .about("Calls a blueprint function")
         .version(crate_version!())
+        .arg(
+            Arg::with_name(ARG_TRACE)
+                .short("t")
+                .long("trace")
+                .help("Turns on tracing."),
+        )
         .arg(
             Arg::with_name(ARG_PACKAGE)
                 .help("Specify the package address.")
@@ -40,6 +47,7 @@ pub fn make_call_function_cmd<'a, 'b>() -> App<'a, 'b> {
 
 /// Handles a `call-function` request.
 pub fn handle_call_function<'a>(matches: &ArgMatches<'a>) -> Result<(), Error> {
+    let trace = matches.is_present(ARG_TRACE);
     let package: Address = matches
         .value_of(ARG_PACKAGE)
         .ok_or(Error::MissingArgument(ARG_PACKAGE.to_owned()))?
@@ -67,10 +75,10 @@ pub fn handle_call_function<'a>(matches: &ArgMatches<'a>) -> Result<(), Error> {
                 blueprint,
                 function,
                 &args,
-                false,
+                trace,
             ) {
                 Ok(txn) => {
-                    let receipt = execute(&mut ledger, txn, false);
+                    let receipt = execute(&mut ledger, txn, trace);
                     dump_receipt(receipt);
                     Ok(())
                 }

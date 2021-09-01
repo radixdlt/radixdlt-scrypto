@@ -237,7 +237,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
             .map(|v| v.borrow().bucket_id())
             .collect();
         for bid in bids {
-            trace!(self, "Moving {:02x?} to unlocked_buckets state", bid);
+            trace!(self, "Moving {:?} to unlocked_buckets state", bid);
             let bucket_rc = self.locked_buckets.remove(&bid).unwrap();
             let bucket = Rc::try_unwrap(bucket_rc).unwrap().into_inner();
             self.buckets.insert(bid, bucket.into());
@@ -292,16 +292,16 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
 
         for (bid, bucket) in &self.buckets {
             if bucket.amount() != U256::zero() {
-                warn!(self, "Pending bucket: {:02x?} {:02x?}", bid, bucket);
+                warn!(self, "Pending bucket: {:?} {:?}", bid, bucket);
                 success = false;
             }
         }
         for (bid, bucket) in &self.locked_buckets {
-            warn!(self, "Pending locked bucket: {:02x?} {:02x?}", bid, bucket);
+            warn!(self, "Pending locked bucket: {:?} {:?}", bid, bucket);
             success = false;
         }
         for (rid, bucket_ref) in &self.references {
-            warn!(self, "Pending reference: {:02x?} {:02x?}", rid, bucket_ref);
+            warn!(self, "Pending reference: {:?} {:?}", rid, bucket_ref);
             success = false;
         }
 
@@ -342,7 +342,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
 
         trace!(
             self,
-            "New package: address = {:02x?}, code length = {}",
+            "New package: address = {:?}, code length = {}",
             address,
             input.code.len()
         );
@@ -357,7 +357,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
     ) -> Result<CallFunctionOutput, RuntimeError> {
         trace!(
             self,
-            "CALL started: package = {}, blueprint = {}, function = {}, args = {:02x?}",
+            "CALL started: package = {}, blueprint = {}, function = {}, args = {:?}",
             input.package,
             input.blueprint,
             input.function,
@@ -382,7 +382,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
     ) -> Result<CallMethodOutput, RuntimeError> {
         trace!(
             self,
-            "CALL started: component = {}, method = {}, args = {:02x?}",
+            "CALL started: component = {}, method = {}, args = {:?}",
             input.component,
             input.method,
             input.args
@@ -412,7 +412,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         )?;
         trace!(
             self,
-            "New component: address = {:02x?}, state = {:02x?}",
+            "New component: address = {:?}, state = {:?}",
             address,
             new_state
         );
@@ -462,7 +462,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
             Self::convert_transient_to_persist,
             Self::reject_references,
         )?;
-        trace!(self, "Transformed: {:02x?}", new_state);
+        trace!(self, "Transformed: {:?}", new_state);
 
         let component = self
             .runtime
@@ -509,13 +509,13 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
             Self::convert_transient_to_persist,
             Self::reject_references,
         )?;
-        trace!(self, "Transformed key: {:02x?}", new_key);
+        trace!(self, "Transformed key: {:?}", new_key);
         let new_value = self.transform_sbor_data(
             &input.value,
             Self::convert_transient_to_persist,
             Self::reject_references,
         )?;
-        trace!(self, "Transformed value: {:02x?}", new_value);
+        trace!(self, "Transformed value: {:?}", new_value);
 
         let map = self
             .runtime
@@ -548,7 +548,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         if self.runtime.get_resource(address).is_some() {
             return Err(RuntimeError::ResourceAlreadyExists(address));
         } else {
-            trace!(self, "New resource: {:02x?}", address);
+            trace!(self, "New resource: {:?}", address);
 
             self.runtime.put_resource(address, resource);
         }
@@ -576,7 +576,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         if self.runtime.get_resource(address).is_some() {
             return Err(RuntimeError::ResourceAlreadyExists(address));
         } else {
-            trace!(self, "New resource: {:02x?}", address);
+            trace!(self, "New resource: {:?}", address);
 
             self.runtime.put_resource(address, resource);
         }
@@ -761,7 +761,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
     ) -> Result<BorrowImmutableOutput, RuntimeError> {
         let bid = input.bucket;
         let rid = self.runtime.new_fixed_rid();
-        trace!(self, "Borrowing: bid =  {:02x?}, rid = {:02x?}", bid, rid);
+        trace!(self, "Borrowing: bid =  {:?}, rid = {:?}", bid, rid);
 
         match self.locked_buckets.get_mut(&bid) {
             Some(bucket) => {
@@ -798,7 +798,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
             .references
             .remove(&rid)
             .ok_or(RuntimeError::ReferenceNotFound)?;
-        trace!(self, "Returning {:02x?}: {:02x?}", rid, bucket);
+        trace!(self, "Returning {:?}: {:?}", rid, bucket);
 
         let new_count = bucket
             .borrow_mut()
@@ -1082,7 +1082,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
             let new_bid = self.runtime.new_persisted_bid();
             self.runtime
                 .put_bucket(new_bid, PersistedBucket::new(bucket, package));
-            trace!(self, "Converting {:02x?} to {:02x?}", bid, new_bid);
+            trace!(self, "Converting {:?} to {:?}", bid, new_bid);
             Ok(new_bid)
         } else {
             Ok(bid)
@@ -1096,7 +1096,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
                 .buckets
                 .remove(&bid)
                 .ok_or(RuntimeError::BucketNotFound)?;
-            trace!(self, "Moving {:02x?}: {:02x?}", bid, bucket);
+            trace!(self, "Moving {:?}: {:?}", bid, bucket);
             self.moving_buckets.insert(bid, bucket);
             Ok(bid)
         } else {
@@ -1110,7 +1110,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
             .references
             .remove(&rid)
             .ok_or(RuntimeError::BucketNotFound)?;
-        trace!(self, "Moving {:02x?}: {:02x?}", rid, bucket_ref);
+        trace!(self, "Moving {:?}: {:?}", rid, bucket_ref);
         self.moving_references.insert(rid, bucket_ref);
         Ok(rid)
     }
@@ -1183,14 +1183,14 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         let input: I = scrypto_decode(&input_bytes)
             .map_err(|e| Trap::from(RuntimeError::InvalidRequest(e)))?;
         if trace {
-            trace!(self, "{:02x?}", input);
+            trace!(self, "{:?}", input);
         }
 
         let output: O = handler(self, input).map_err(Trap::from)?;
         let output_bytes = scrypto_encode(&output);
         let output_ptr = self.send_bytes(&output_bytes).map_err(Trap::from)?;
         if trace {
-            trace!(self, "{:02x?}", output);
+            trace!(self, "{:?}", output);
         }
 
         Ok(Some(RuntimeValue::I32(output_ptr)))

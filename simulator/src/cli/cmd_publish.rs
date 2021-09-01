@@ -13,6 +13,7 @@ use crate::cli::*;
 use crate::ledger::*;
 use crate::utils::*;
 
+const ARG_TRACE: &'static str = "TRACE";
 const ARG_PATH: &'static str = "PATH";
 
 /// Constructs a `publish` subcommand.
@@ -20,6 +21,12 @@ pub fn make_publish_cmd<'a, 'b>() -> App<'a, 'b> {
     SubCommand::with_name(CMD_PUBLISH)
         .about("Publishes a package")
         .version(crate_version!())
+        .arg(
+            Arg::with_name(ARG_TRACE)
+                .short("t")
+                .long("trace")
+                .help("Turns on tracing."),
+        )
         .arg(
             Arg::with_name(ARG_PATH)
                 .help("Specify the the path to a Scrypto package or a .wasm file.")
@@ -29,6 +36,7 @@ pub fn make_publish_cmd<'a, 'b>() -> App<'a, 'b> {
 
 /// Handles a `publish` request.
 pub fn handle_publish<'a>(matches: &ArgMatches<'a>) -> Result<(), Error> {
+    let trace = matches.is_present(ARG_TRACE);
     let path = PathBuf::from(
         matches
             .value_of(ARG_PATH)
@@ -49,7 +57,7 @@ pub fn handle_publish<'a>(matches: &ArgMatches<'a>) -> Result<(), Error> {
             let mut ledger = FileBasedLedger::new(get_data_dir()?);
             let mut runtime = Runtime::new(tx_hash, &mut ledger);
 
-            let mut process = Process::new(0, false, &mut runtime);
+            let mut process = Process::new(0, trace, &mut runtime);
             let output = process
                 .target_method(
                     account,

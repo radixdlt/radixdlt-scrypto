@@ -32,7 +32,7 @@ pub fn dump_component<T: Ledger>(address: Address, ledger: &T) {
                 c.blueprint()
             );
 
-            println!("{}: {:02x?}", "State".green().bold(), c.state());
+            println!("{}: {:?}", "State".green().bold(), c.state());
 
             let mut res = Vec::new();
             println!(
@@ -91,12 +91,12 @@ pub fn dump_receipt(receipt: TransactionReceipt) {
 
     println!("{}", "Instructions:".bold().green());
     for (last, inst) in receipt.transaction.instructions.iter().identify_last() {
-        println!("{} {:02x?}", list_item_prefix(last), inst);
+        println!("{} {:?}", list_item_prefix(last), inst);
     }
 
     println!("{}", "Results:".bold().green());
     for (last, result) in receipt.results.iter().identify_last() {
-        println!("{} {:02x?}", list_item_prefix(last), result);
+        println!("{} {:?}", list_item_prefix(last), result);
     }
 
     println!("{}", "Logs:".bold().green());

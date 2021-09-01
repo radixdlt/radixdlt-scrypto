@@ -53,7 +53,7 @@ rev2 call-function <package_address> <blueprint> <function> <args>...
 ```
 rev2 call-method <component_address> <method> <args>...
 ```
-6. For show the content of an address, run
+6. To show the content of an address, run
 ```
 rev2 show <address>
 ```
