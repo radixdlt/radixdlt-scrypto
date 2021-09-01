@@ -182,7 +182,7 @@ fn test_parse_to_json() {
                 ]
               },
               {
-                "type": "Map",
+                "type": "HashMap",
                 "elements": [
                   [
                     {

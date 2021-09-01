@@ -47,7 +47,13 @@ pub enum Value {
 
     Vec { elements: Vec<Value> },
 
-    Map { elements: Vec<(Value, Value)> },
+    TreeSet { elements: Vec<Value> },
+
+    TreeMap { elements: Vec<(Value, Value)> },
+
+    HashSet { elements: Vec<Value> },
+
+    HashMap { elements: Vec<(Value, Value)> },
 
     Custom { ty: u8, data: Vec<u8> },
 }
@@ -179,6 +185,22 @@ fn traverse(ty_known: Option<u8>, dec: &mut Decoder) -> Result<Value, DecodeErro
             }
             Ok(Value::Vec { elements })
         }
+        constants::TYPE_TREE_SET | constants::TYPE_HASH_SET => {
+            // element type
+            let ele_ty = dec.read_type()?;
+            // length
+            let len = dec.read_len()?;
+            // values
+            let mut elements = Vec::new();
+            for _ in 0..len {
+                elements.push(traverse(Some(ele_ty), dec)?);
+            }
+            if ty == constants::TYPE_TREE_SET {
+                Ok(Value::TreeSet { elements })
+            } else {
+                Ok(Value::HashSet { elements })
+            }
+        }
         constants::TYPE_TREE_MAP | constants::TYPE_HASH_MAP => {
             // length
             let len = dec.read_len()?;
@@ -191,7 +213,11 @@ fn traverse(ty_known: Option<u8>, dec: &mut Decoder) -> Result<Value, DecodeErro
             for _ in 0..len {
                 elements.push((traverse(Some(key_ty), dec)?, traverse(Some(value_ty), dec)?));
             }
-            Ok(Value::Map { elements })
+            if ty == constants::TYPE_TREE_MAP {
+                Ok(Value::TreeMap { elements })
+            } else {
+                Ok(Value::HashMap { elements })
+            }
         }
         // scrypto types
         _ => {
@@ -289,13 +315,23 @@ mod tests {
         t: TestEnum,
         u: TestEnum,
         v: Vec<u32>,
-        w: HashMap<u32, u32>,
+        w: BTreeSet<u32>,
+        x: HashSet<u32>,
+        y: BTreeMap<u32, u32>,
+        z: HashMap<u32, u32>,
     }
 
     #[test]
     pub fn test_parse_normal() {
-        let mut map = HashMap::new();
-        map.insert(1, 2);
+        let mut set1 = BTreeSet::new();
+        set1.insert(1);
+        let mut set2 = HashSet::new();
+        set2.insert(2);
+        let mut map1 = BTreeMap::new();
+        map1.insert(1, 2);
+        let mut map2 = HashMap::new();
+        map2.insert(1, 2);
+
         let data = TestData {
             a: (),
             b: true,
@@ -319,7 +355,10 @@ mod tests {
             t: TestEnum::B(2),
             u: TestEnum::C,
             v: vec![1, 2],
-            w: map,
+            w: set1,
+            x: set2,
+            y: map1,
+            z: map2,
         };
         let bytes = encode_with_type(Vec::new(), &data);
         let value = parse_any(&bytes).unwrap();
@@ -387,7 +426,16 @@ mod tests {
                         Value::Vec {
                             elements: vec![Value::U32 { value: 1 }, Value::U32 { value: 2 },]
                         },
-                        Value::Map {
+                        Value::TreeSet {
+                            elements: vec![Value::U32 { value: 1 }]
+                        },
+                        Value::HashSet {
+                            elements: vec![Value::U32 { value: 2 }]
+                        },
+                        Value::TreeMap {
+                            elements: vec![(Value::U32 { value: 1 }, Value::U32 { value: 2 }),]
+                        },
+                        Value::HashMap {
                             elements: vec![(Value::U32 { value: 1 }, Value::U32 { value: 2 }),]
                         }
                     ]
