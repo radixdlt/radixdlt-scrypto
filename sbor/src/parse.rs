@@ -1,4 +1,4 @@
-#[cfg(any(feature = "json_std", feature = "json_alloc"))]
+#[cfg(any(feature = "serde_std", feature = "serde_alloc"))]
 use serde::{Deserialize, Serialize};
 
 use crate::sbor::{Decode, Encode};
@@ -13,7 +13,7 @@ use crate::*;
 
 /// Represents a SBOR value.
 #[cfg_attr(
-    any(feature = "json_std", feature = "json_alloc"),
+    any(feature = "serde_std", feature = "serde_alloc"),
     derive(Serialize, Deserialize),
     serde(tag = "type")
 )]
@@ -53,7 +53,7 @@ pub enum Value {
 }
 
 #[cfg_attr(
-    any(feature = "json_std", feature = "json_alloc"),
+    any(feature = "serde_std", feature = "serde_alloc"),
     derive(Serialize, Deserialize),
     serde(tag = "type")
 )]

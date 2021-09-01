@@ -1,4 +1,4 @@
-#[cfg(any(feature = "json_std", feature = "json_alloc"))]
+#[cfg(any(feature = "serde_std", feature = "serde_alloc"))]
 use serde::{Deserialize, Serialize};
 
 use crate::sbor::{Decode, Encode};
@@ -14,7 +14,7 @@ use crate::rust::vec::Vec;
 
 /// Represents a SBOR data type.
 #[cfg_attr(
-    any(feature = "json_std", feature = "json_alloc"),
+    any(feature = "serde_std", feature = "serde_alloc"),
     derive(Serialize, Deserialize),
     serde(tag = "type")
 )]
@@ -90,7 +90,7 @@ pub enum Type {
 
 /// Represents the type info of an enum variant.
 #[cfg_attr(
-    any(feature = "json_std", feature = "json_alloc"),
+    any(feature = "serde_std", feature = "serde_alloc"),
     derive(Serialize, Deserialize)
 )]
 #[derive(Debug, Clone, PartialEq, Eq, Decode, Encode)]
@@ -101,7 +101,7 @@ pub struct Variant {
 
 /// Represents the type info of struct fields.
 #[cfg_attr(
-    any(feature = "json_std", feature = "json_alloc"),
+    any(feature = "serde_std", feature = "serde_alloc"),
     derive(Serialize, Deserialize),
     serde(tag = "type")
 )]

@@ -5,14 +5,14 @@ pub use alloc::string::String;
 #[cfg(feature = "alloc")]
 pub use alloc::vec::Vec;
 
-#[cfg(any(feature = "json_std", feature = "json_alloc"))]
+#[cfg(any(feature = "serde_std", feature = "serde_alloc"))]
 use serde::{Deserialize, Serialize};
 
 use sbor::*;
 
 /// Represents a blueprint.
 #[cfg_attr(
-    any(feature = "json_std", feature = "json_alloc"),
+    any(feature = "serde_std", feature = "serde_alloc"),
     derive(Serialize, Deserialize)
 )]
 #[derive(Debug, Clone, Encode, Decode)]
@@ -25,7 +25,7 @@ pub struct Blueprint {
 
 /// Represents a function.
 #[cfg_attr(
-    any(feature = "json_std", feature = "json_alloc"),
+    any(feature = "serde_std", feature = "serde_alloc"),
     derive(Serialize, Deserialize)
 )]
 #[derive(Debug, Clone, Encode, Decode)]
@@ -37,7 +37,7 @@ pub struct Function {
 
 /// Represents a method.
 #[cfg_attr(
-    any(feature = "json_std", feature = "json_alloc"),
+    any(feature = "serde_std", feature = "serde_alloc"),
     derive(Serialize, Deserialize)
 )]
 #[derive(Debug, Clone, Encode, Decode)]
@@ -50,7 +50,7 @@ pub struct Method {
 
 /// Represents the state mutability of a method.
 #[cfg_attr(
-    any(feature = "json_std", feature = "json_alloc"),
+    any(feature = "serde_std", feature = "serde_alloc"),
     derive(Serialize, Deserialize)
 )]
 #[derive(Debug, Clone, Encode, Decode)]

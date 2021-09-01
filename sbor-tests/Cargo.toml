@@ -18,5 +18,5 @@ harness = false
 
 [features]
 default = ["std"]
-std = ["serde/std", "serde_json/std", "bincode_core/std", "sbor/std", "sbor/json_std"]
-alloc = ["serde/alloc", "serde_json/alloc", "bincode_core/alloc", "sbor/alloc", "sbor/json_alloc"]
+std = ["serde/std", "serde_json/std", "bincode_core/std", "sbor/std", "sbor/serde_std"]
+alloc = ["serde/alloc", "serde_json/alloc", "bincode_core/alloc", "sbor/alloc", "sbor/serde_alloc"]

@@ -17,7 +17,7 @@ alloc = ["hashbrown"]
 # Enable tracing
 trace = ["sbor-derive/trace"]
 
-# Enable serde annotations by either `json_std` or `json_alloc`.
+# Enable serde annotations by either `serde_std` or `serde_alloc`.
 # TODO: use weak depedency feature once it's stablized, https://github.com/rust-lang/cargo/issues/8832 
-json_std = ["serde", "serde/std", "serde/derive"]
-json_alloc = ["serde", "serde/alloc", "serde/derive"]
+serde_std = ["serde", "serde/std", "serde/derive"]
+serde_alloc = ["serde", "serde/alloc", "serde/derive"]
