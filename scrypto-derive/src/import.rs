@@ -1,5 +1,3 @@
-use std::fs;
-
 use proc_macro2::{Ident, Span, TokenStream};
 use quote::{format_ident, quote};
 use syn::punctuated::Punctuated;
@@ -20,10 +18,9 @@ pub fn handle_import(input: TokenStream) -> TokenStream {
     trace!("handle_import() starts");
     let span = Span::call_site();
 
-    let path = parse2::<LitStr>(input)
+    let content = parse2::<LitStr>(input)
         .expect("Unable to parse input")
         .value();
-    let content = fs::read_to_string(path).expect("Unable to load ABI");
     let blueprint: abi::Blueprint =
         serde_json::from_str(content.as_str()).expect("Unable to parse ABI");
     trace!("ABI: {:?}", blueprint);
@@ -79,7 +76,9 @@ pub fn handle_import(input: TokenStream) -> TokenStream {
 
         functions.push(parse_quote! {
             pub fn #func_indent(#func_inputs) -> #func_output {
-                let package = ::scrypto::types::Address::from_str(#package).unwrap();
+                let package = ::scrypto::utils::unwrap_or_panic(
+                    ::scrypto::types::Address::from_str(#package)
+                );
                 let blueprint = ::scrypto::constructs::Blueprint::from(package, #name);
                 blueprint.call(#func_name, ::scrypto::args!(#(#func_args),*))
             }
@@ -353,120 +352,4 @@ fn get_native_type(ty: &des::Type) -> (Type, Vec<Item>) {
     };
 
     (t, items)
-}
-
-#[cfg(test)]
-mod tests {
-    use proc_macro2::TokenStream;
-    use std::str::FromStr;
-
-    use super::*;
-
-    fn assert_code_eq(a: TokenStream, b: TokenStream) {
-        assert_eq!(a.to_string(), b.to_string());
-    }
-
-    #[test]
-    fn test_import_stateful() {
-        let input = TokenStream::from_str("\"../scrypto-derive/tests/abi_stateful.json\"").unwrap();
-        let output = handle_import(input);
-
-        assert_code_eq(
-            output,
-            quote! {
-                pub struct Sample {
-                    address: ::scrypto::types::Address
-                }
-                #[derive(Debug, ::sbor::Encode, ::sbor::Decode)]
-                pub struct Floor {
-                    pub x: u32,
-                    pub y: u32,
-                }
-                #[derive(Debug, ::sbor::Encode, ::sbor::Decode)]
-                pub enum Hello {
-                    A { x: u32 },
-                    B(u32),
-                    C
-                }
-                impl Sample {
-                    pub fn at(address: ::scrypto::types::Address) -> Self {
-                        Self { address }
-                    }
-                    pub fn calculate_volume(
-                        &self,
-                        arg0: Floor,
-                        arg1: (u8, u16),
-                        arg2: Vec<String>,
-                        arg3: u32,
-                        arg4: Hello,
-                        arg5: [String; 2usize]
-                    ) -> u32 {
-                        let component = ::scrypto::constructs::Component::from(self.address);
-                        component.call(
-                            "calculate_volume",
-                            ::scrypto::args!(arg0, arg1, arg2, arg3, arg4, arg5)
-                        )
-                    }
-                }
-            },
-        );
-    }
-
-    #[test]
-    fn test_import_stateless() {
-        let input =
-            TokenStream::from_str("\"../scrypto-derive/tests/abi_stateless.json\"").unwrap();
-        let output = handle_import(input);
-
-        assert_code_eq(
-            output,
-            quote! {
-                pub struct Sample {
-                    address: ::scrypto::types::Address
-                }
-                impl Sample {
-                    pub fn at(address: ::scrypto::types::Address) -> Self {
-                        Self { address }
-                    }
-                    pub fn stateless_func() -> u32 {
-                        let package = ::scrypto::types::Address::from_str(
-                            "056967d3d49213394892980af59be76e9b3e7cc4cb78237460d0c7"
-                        )
-                        .unwrap();
-                        let blueprint = ::scrypto::constructs::Blueprint::from(package, "Sample");
-                        blueprint.call("stateless_func", ::scrypto::args!())
-                    }
-                }
-            },
-        );
-    }
-
-    #[test]
-    fn test_import_custom_types() {
-        let input =
-            TokenStream::from_str("\"../scrypto-derive/tests/abi_custom_types.json\"").unwrap();
-        let output = handle_import(input);
-
-        assert_code_eq(
-            output,
-            quote! {
-                pub struct Sample {
-                    address: ::scrypto::types::Address
-                }
-                impl Sample {
-                    pub fn at(address: ::scrypto::types::Address) -> Self {
-                        Self { address }
-                    }
-                    pub fn test_custom_types(arg0: ::scrypto::resource::Tokens) -> ::scrypto::resource::BadgesRef {
-                        let package = ::scrypto::types::Address::from_str(
-                            "056967d3d49213394892980af59be76e9b3e7cc4cb78237460d0c7"
-                        )
-                        .unwrap();
-                        let blueprint = ::scrypto::constructs::Blueprint::from(package, "Sample");
-                        blueprint.call("test_custom_types", ::scrypto::args!(arg0))
-                    }
-                }
-            },
-        );
-    }
 }

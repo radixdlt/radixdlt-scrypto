@@ -9,7 +9,132 @@ use scrypto::rust::vec::Vec;
 use scrypto::types::*;
 
 // base directory: `scrypto-derive`
-import! { "../scrypto-tests/tests/abi.json" }
+import! {
+r#"
+{
+    "package": "056967d3d49213394892980af59be76e9b3e7cc4cb78237460d0c7",
+    "blueprint": "Sample",
+    "functions": [
+        {
+            "name": "stateless_func",
+            "inputs": [],
+            "output": {
+                "type": "U32"
+            }
+        },
+        {
+            "name": "test_custom_types",
+            "inputs": [
+                {
+                    "type": "Custom",
+                    "name": "scrypto::Tokens"
+                }
+            ],
+            "output": {
+                "type": "Custom",
+                "name": "scrypto::BadgesRef"
+            }
+        }
+    ],
+    "methods": [
+        {
+            "name": "calculate_volume",
+            "mutability": "Immutable",
+            "inputs": [
+                {
+                    "type": "Struct",
+                    "name": "Floor",
+                    "fields": {
+                        "type": "Named",
+                        "named": [
+                            [
+                                "x",
+                                {
+                                    "type": "U32"
+                                }
+                            ],
+                            [
+                                "y",
+                                {
+                                    "type": "U32"
+                                }
+                            ]
+                        ]
+                    }
+                },
+                {
+                    "type": "Tuple",
+                    "elements": [
+                        {
+                            "type": "U8"
+                        },
+                        {
+                            "type": "U16"
+                        }
+                    ]
+                },
+                {
+                    "type": "Vec",
+                    "element": {
+                        "type": "String"
+                    }
+                },
+                {
+                    "type": "U32"
+                },
+                {
+                    "type": "Enum",
+                    "name": "Hello",
+                    "variants": [
+                        {
+                            "name": "A",
+                            "fields": {
+                                "type": "Named",
+                                "named": [
+                                    [
+                                        "x",
+                                        {
+                                            "type": "U32"
+                                        }
+                                    ]
+                                ]
+                            }
+                        },
+                        {
+                            "name": "B",
+                            "fields": {
+                                "type": "Unnamed",
+                                "unnamed": [
+                                    {
+                                        "type": "U32"
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "name": "C",
+                            "fields": {
+                                "type": "Unit"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "type": "Array",
+                    "element": {
+                        "type": "String"
+                    },
+                    "length": 2
+                }
+            ],
+            "output": {
+                "type": "U32"
+            }
+        }
+    ]
+}
+"#
+}
 
 #[test]
 #[should_panic] // asserts it compiles

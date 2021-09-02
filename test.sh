@@ -27,6 +27,7 @@ echo "Building examples..."
 (cd examples/helloworld; cargo build --release)
 (cd examples/no_std; cargo build --release)
 (cd examples/gumball-machine; cargo build --release)
+(cd examples/vendor; cargo build --release)
 
 echo "Testing simulator..."
 (cd simulator; bash ./tests/run.sh)
