@@ -339,7 +339,7 @@ impl<T: Decode> Decode for Vec<T> {
         decoder.check_type(T::type_id())?;
         let len = decoder.read_len()?;
 
-        if Self::type_id() == TYPE_U8 {
+        if T::type_id() == TYPE_U8 || T::type_id() == TYPE_I8 {
             let slice = decoder.read_bytes(len)?; // length is checked here
             let mut result = Vec::<T>::with_capacity(len);
             unsafe {
