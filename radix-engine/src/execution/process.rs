@@ -477,7 +477,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
     pub fn create_map(&mut self, _input: CreateMapInput) -> Result<CreateMapOutput, RuntimeError> {
         let mid = self.runtime.new_mid();
 
-        self.runtime.put_map(mid, Map::new());
+        self.runtime.put_map(mid, Map::new(self.package()?));
 
         Ok(CreateMapOutput { map: mid })
     }
@@ -486,12 +486,15 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         &mut self,
         input: GetMapEntryInput,
     ) -> Result<GetMapEntryOutput, RuntimeError> {
-        // TODO: authentication
+        let package = self.package()?;
 
         let map = self
             .runtime
             .get_map(input.map)
             .ok_or(RuntimeError::MapNotFound(input.map))?;
+        if package != map.owner() {
+            return Err(RuntimeError::UnauthorizedAccess);
+        }
 
         Ok(GetMapEntryOutput {
             value: map.get_entry(&input.key).map(Clone::clone),
@@ -502,7 +505,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         &mut self,
         input: PutMapEntryInput,
     ) -> Result<PutMapEntryOutput, RuntimeError> {
-        // TODO: authentication
+        let package = self.package()?;
 
         let new_key = self.transform_sbor_data(
             &input.key,
@@ -521,6 +524,9 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
             .runtime
             .get_map_mut(input.map)
             .ok_or(RuntimeError::MapNotFound(input.map))?;
+        if package != map.owner() {
+            return Err(RuntimeError::UnauthorizedAccess);
+        }
 
         map.set_entry(new_key, new_value);
 

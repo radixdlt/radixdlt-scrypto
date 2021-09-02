@@ -1,17 +1,24 @@
 use sbor::*;
 use scrypto::rust::collections::*;
 use scrypto::rust::vec::Vec;
+use scrypto::types::Address;
 
 #[derive(Debug, Clone, Encode, Decode)]
 pub struct Map {
+    pub owner: Address,
     pub map: HashMap<Vec<u8>, Vec<u8>>,
 }
 
 impl Map {
-    pub fn new() -> Self {
+    pub fn new(owner: Address) -> Self {
         Self {
+            owner,
             map: HashMap::new(),
         }
+    }
+
+    pub fn owner(&self) -> Address {
+        self.owner
     }
 
     pub fn get_entry(&self, key: &Vec<u8>) -> Option<&Vec<u8>> {

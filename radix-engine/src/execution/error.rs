@@ -73,6 +73,8 @@ pub enum RuntimeError {
     InvalidLogLevel,
 
     UnexpectedResourceReturn,
+
+    UnauthorizedAccess,
 }
 
 impl fmt::Display for RuntimeError {
