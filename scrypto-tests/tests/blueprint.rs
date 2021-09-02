@@ -51,7 +51,7 @@ fn test_simple_abi() {
               "inputs": [],
               "output": {
                 "type": "Custom",
-                "name": "Address"
+                "name": "scrypto::Address"
               }
             }
           ],

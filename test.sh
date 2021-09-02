@@ -13,7 +13,6 @@ echo "Testing with std..."
 (cd scrypto-derive; cargo test)
 (cd scrypto-tests; cargo test)
 (cd radix-engine; cargo test)
-(cd simulator; bash ./tests/run.sh)
 
 echo "Testing with no_std..."
 (cd sbor; cargo test --no-default-features --features alloc)
@@ -28,5 +27,8 @@ echo "Building examples..."
 (cd examples/helloworld; cargo build --release)
 (cd examples/no_std; cargo build --release)
 (cd examples/gumball-machine; cargo build --release)
+
+echo "Testing simulator..."
+(cd simulator; bash ./tests/run.sh)
 
 echo "Congrats! All tests passed."

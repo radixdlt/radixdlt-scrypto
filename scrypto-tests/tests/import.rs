@@ -14,7 +14,7 @@ import! { "../scrypto-tests/tests/abi.json" }
 #[test]
 #[should_panic] // asserts it compiles
 fn test_import_from_abi() {
-    let instance = Sample::from_address(Address::from_str("").unwrap());
+    let instance = Sample::at(Address::from_str("").unwrap());
 
     let arg1 = Floor { x: 5, y: 12 };
     let arg2 = (1u8, 2u16);

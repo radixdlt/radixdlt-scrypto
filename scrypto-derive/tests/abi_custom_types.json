@@ -9,12 +9,12 @@
             "inputs": [
                 {
                     "type": "Custom",
-                    "name": "Tokens"
+                    "name": "scrypto::Tokens"
                 }
             ],
             "output": {
                 "type": "Custom",
-                "name": "BadgesRef"
+                "name": "scrypto::BadgesRef"
             }
         }
     ]

@@ -45,7 +45,7 @@ pub fn handle_import(input: TokenStream) -> TokenStream {
 
     let mut functions = Vec::<ItemFn>::new();
     functions.push(parse_quote! {
-        pub fn from_address(address: ::scrypto::types::Address) -> Self {
+        pub fn at(address: ::scrypto::types::Address) -> Self {
             Self {
                 address
             }
@@ -202,8 +202,25 @@ fn get_native_type(ty: &des::Type) -> (Type, Vec<Item>) {
                         }
                     });
                 }
-                _ => {
-                    todo!("Add support for non-named fields")
+                des::Fields::Unnamed { unnamed } => {
+                    let mut types: Vec<Type> = vec![];
+                    for v in unnamed {
+                        let (new_type, new_items) = get_native_type(v);
+                        types.push(new_type);
+                        items.extend(new_items);
+                    }
+                    items.push(parse_quote! {
+                        #[derive(Debug, ::sbor::Encode, ::sbor::Decode)]
+                        pub struct #ident (
+                            #( pub #types ),*
+                        )
+                    });
+                }
+                des::Fields::Unit => {
+                    items.push(parse_quote! {
+                        #[derive(Debug, ::sbor::Encode, ::sbor::Decode)]
+                        pub struct #ident;
+                    });
                 }
             }
 
@@ -313,16 +330,24 @@ fn get_native_type(ty: &des::Type) -> (Type, Vec<Item>) {
             parse_quote! { HashMap<#key_type, #value_type> }
         }
         des::Type::Custom { name } => match name.as_str() {
-            "U256" => parse_quote! { ::scrypto::types::U256 },
-            "Address" => parse_quote! { ::scrypto::types::Address },
-            "H256" => parse_quote! { ::scrypto::types::H256 },
-            "BID" => parse_quote! { ::scrypto::types::BID },
-            "RID" => parse_quote! { ::scrypto::types::RID },
-            "MID" => parse_quote! { ::scrypto::types::MID },
-            "Tokens" => parse_quote! { ::scrypto::resource::Tokens },
-            "TokensRef" => parse_quote! { ::scrypto::resource::TokensRef },
-            "Badges" => parse_quote! { ::scrypto::resource::Badges },
-            "BadgesRef" => parse_quote! { ::scrypto::resource::BadgesRef },
+            "scrypto::U256" => parse_quote! { ::scrypto::types::U256 },
+            "scrypto::Address" => parse_quote! { ::scrypto::types::Address },
+            "scrypto::H256" => parse_quote! { ::scrypto::types::H256 },
+            "scrypto::BID" => parse_quote! { ::scrypto::types::BID },
+            "scrypto::RID" => parse_quote! { ::scrypto::types::RID },
+            "scrypto::MID" => parse_quote! { ::scrypto::types::MID },
+
+            "scrypto::Tokens" => parse_quote! { ::scrypto::resource::Tokens },
+            "scrypto::TokensRef" => parse_quote! { ::scrypto::resource::TokensRef },
+            "scrypto::Badges" => parse_quote! { ::scrypto::resource::Badges },
+            "scrypto::BadgesRef" => parse_quote! { ::scrypto::resource::BadgesRef },
+
+            "scrypto::Package" => parse_quote! { ::scrypto::constructs::Package },
+            "scrypto::Blueprint" => parse_quote! { ::scrypto::constructs::Blueprint },
+            "scrypto::Component" => parse_quote! { ::scrypto::constructs::Component },
+            "scrypto::Resource" => parse_quote! { ::scrypto::constructs::Resource },
+            "scrypto::Map" => parse_quote! { ::scrypto::constructs::Map },
+
             _ => panic!("Invalid custom type: {}", name),
         },
     };
@@ -364,7 +389,7 @@ mod tests {
                     C
                 }
                 impl Sample {
-                    pub fn from_address(address: ::scrypto::types::Address) -> Self {
+                    pub fn at(address: ::scrypto::types::Address) -> Self {
                         Self { address }
                     }
                     pub fn calculate_volume(
@@ -400,7 +425,7 @@ mod tests {
                     address: ::scrypto::types::Address
                 }
                 impl Sample {
-                    pub fn from_address(address: ::scrypto::types::Address) -> Self {
+                    pub fn at(address: ::scrypto::types::Address) -> Self {
                         Self { address }
                     }
                     pub fn stateless_func() -> u32 {
@@ -429,7 +454,7 @@ mod tests {
                     address: ::scrypto::types::Address
                 }
                 impl Sample {
-                    pub fn from_address(address: ::scrypto::types::Address) -> Self {
+                    pub fn at(address: ::scrypto::types::Address) -> Self {
                         Self { address }
                     }
                     pub fn test_custom_types(arg0: ::scrypto::resource::Tokens) -> ::scrypto::resource::BadgesRef {
