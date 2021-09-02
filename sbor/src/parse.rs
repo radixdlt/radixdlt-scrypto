@@ -22,7 +22,7 @@ pub enum Value {
 
     Box(Box<Value>),
 
-    Array(Vec<Value>),
+    Array(u8, Vec<Value>),
 
     Tuple(Vec<Value>),
 
@@ -30,15 +30,15 @@ pub enum Value {
 
     Enum(u8, Fields),
 
-    Vec(Vec<Value>),
+    Vec(u8, Vec<Value>),
 
-    TreeSet(Vec<Value>),
+    TreeSet(u8, Vec<Value>),
 
-    TreeMap(Vec<(Value, Value)>),
+    TreeMap(u8, u8, Vec<(Value, Value)>),
 
-    HashSet(Vec<Value>),
+    HashSet(u8, Vec<Value>),
 
-    HashMap(Vec<(Value, Value)>),
+    HashMap(u8, u8, Vec<(Value, Value)>),
 
     Custom(u8, Vec<u8>),
 }
@@ -52,6 +52,170 @@ pub enum Fields {
     Unit,
 }
 
+pub fn write_any(ty_ctx: Option<u8>, value: &Value, enc: &mut Encoder) {
+    match value {
+        // basic types
+        Value::Unit => write_basic(ty_ctx, constants::TYPE_UNIT, &(), enc),
+        Value::Bool(v) => write_basic(ty_ctx, constants::TYPE_BOOL, v, enc),
+        Value::I8(v) => write_basic(ty_ctx, constants::TYPE_I8, v, enc),
+        Value::I16(v) => write_basic(ty_ctx, constants::TYPE_I16, v, enc),
+        Value::I32(v) => write_basic(ty_ctx, constants::TYPE_I32, v, enc),
+        Value::I64(v) => write_basic(ty_ctx, constants::TYPE_I64, v, enc),
+        Value::I128(v) => write_basic(ty_ctx, constants::TYPE_I128, v, enc),
+        Value::U8(v) => write_basic(ty_ctx, constants::TYPE_U8, v, enc),
+        Value::U16(v) => write_basic(ty_ctx, constants::TYPE_U16, v, enc),
+        Value::U32(v) => write_basic(ty_ctx, constants::TYPE_U32, v, enc),
+        Value::U64(v) => write_basic(ty_ctx, constants::TYPE_U64, v, enc),
+        Value::U128(v) => write_basic(ty_ctx, constants::TYPE_U128, v, enc),
+        Value::String(v) => write_basic(ty_ctx, constants::TYPE_STRING, v, enc),
+        // rust types
+        Value::Option(v) => {
+            if ty_ctx.is_none() {
+                enc.write_type(constants::TYPE_OPTION);
+            }
+            match v {
+                Some(x) => {
+                    enc.write_u8(1);
+                    write_any(None, x, enc);
+                }
+                None => {
+                    enc.write_u8(0);
+                }
+            }
+        }
+        Value::Box(v) => {
+            if ty_ctx.is_none() {
+                enc.write_type(constants::TYPE_BOX);
+            }
+            write_any(None, v, enc);
+        }
+        Value::Array(ty, elements) => {
+            if ty_ctx.is_none() {
+                enc.write_type(constants::TYPE_ARRAY);
+            }
+            enc.write_type(*ty);
+            enc.write_len(elements.len());
+            for e in elements {
+                write_any(Some(*ty), e, enc);
+            }
+        }
+        Value::Tuple(elements) => {
+            if ty_ctx.is_none() {
+                enc.write_type(constants::TYPE_TUPLE);
+            }
+            enc.write_len(elements.len());
+            for e in elements {
+                write_any(None, e, enc);
+            }
+        }
+        Value::Struct(fields) => {
+            if ty_ctx.is_none() {
+                enc.write_type(constants::TYPE_STRUCT);
+            }
+            write_fields(fields, enc);
+        }
+        Value::Enum(index, fields) => {
+            if ty_ctx.is_none() {
+                enc.write_type(constants::TYPE_ENUM);
+            }
+            enc.write_u8(*index);
+            write_fields(fields, enc);
+        }
+        // collections
+        Value::Vec(ty, elements) => {
+            if ty_ctx.is_none() {
+                enc.write_type(constants::TYPE_VEC);
+            }
+            enc.write_type(*ty);
+            enc.write_len(elements.len());
+            for e in elements {
+                write_any(Some(*ty), e, enc);
+            }
+        }
+        Value::TreeSet(ty, elements) => {
+            if ty_ctx.is_none() {
+                enc.write_type(constants::TYPE_TREE_SET);
+            }
+            enc.write_type(*ty);
+            enc.write_len(elements.len());
+            for e in elements {
+                write_any(Some(*ty), e, enc);
+            }
+        }
+        Value::HashSet(ty, elements) => {
+            if ty_ctx.is_none() {
+                enc.write_type(constants::TYPE_HASH_SET);
+            }
+            enc.write_type(*ty);
+            enc.write_len(elements.len());
+            for e in elements {
+                write_any(Some(*ty), e, enc);
+            }
+        }
+        Value::TreeMap(ty_k, ty_v, elements) => {
+            if ty_ctx.is_none() {
+                enc.write_type(constants::TYPE_TREE_MAP);
+            }
+            enc.write_type(*ty_k);
+            enc.write_type(*ty_v);
+            enc.write_len(elements.len());
+            for (k, v) in elements {
+                write_any(Some(*ty_k), k, enc);
+                write_any(Some(*ty_v), v, enc);
+            }
+        }
+        Value::HashMap(ty_k, ty_v, elements) => {
+            if ty_ctx.is_none() {
+                enc.write_type(constants::TYPE_HASH_MAP);
+            }
+            enc.write_type(*ty_k);
+            enc.write_type(*ty_v);
+            enc.write_len(elements.len());
+            for (k, v) in elements {
+                write_any(Some(*ty_k), k, enc);
+                write_any(Some(*ty_v), v, enc);
+            }
+        }
+        // custom types
+        Value::Custom(ty, data) => {
+            if ty_ctx.is_none() {
+                enc.write_type(*ty);
+            }
+            enc.write_len(data.len());
+            enc.write_slice(data);
+        }
+    }
+}
+
+pub fn write_fields(fields: &Fields, enc: &mut Encoder) {
+    match fields {
+        Fields::Named(named) => {
+            enc.write_type(constants::TYPE_FIELDS_NAMED);
+            enc.write_len(named.len());
+            for e in named {
+                write_any(None, e, enc);
+            }
+        }
+        Fields::Unnamed(unnamed) => {
+            enc.write_type(constants::TYPE_FIELDS_UNNAMED);
+            enc.write_len(unnamed.len());
+            for e in unnamed {
+                write_any(None, e, enc);
+            }
+        }
+        Fields::Unit => {
+            enc.write_type(constants::TYPE_FIELDS_UNIT);
+        }
+    }
+}
+
+fn write_basic<T: Encode>(ty_ctx: Option<u8>, t: u8, v: &T, enc: &mut Encoder) {
+    if ty_ctx.is_none() {
+        enc.write_type(t);
+    }
+    <T>::encode_value(v, enc);
+}
+
 /// Parses any SBOR data.
 pub fn parse_any(data: &[u8]) -> Result<Value, DecodeError> {
     let mut decoder = Decoder::with_type(data);
@@ -60,8 +224,8 @@ pub fn parse_any(data: &[u8]) -> Result<Value, DecodeError> {
     result
 }
 
-fn traverse(ty_known: Option<u8>, dec: &mut Decoder) -> Result<Value, DecodeError> {
-    let ty = match ty_known {
+fn traverse(ty_ctx: Option<u8>, dec: &mut Decoder) -> Result<Value, DecodeError> {
+    let ty = match ty_ctx {
         Some(t) => t,
         None => dec.read_type()?,
     };
@@ -101,7 +265,7 @@ fn traverse(ty_known: Option<u8>, dec: &mut Decoder) -> Result<Value, DecodeErro
             for _ in 0..len {
                 elements.push(traverse(Some(ele_ty), dec)?);
             }
-            Ok(Value::Array(elements))
+            Ok(Value::Array(ele_ty, elements))
         }
         constants::TYPE_TUPLE => {
             //length
@@ -135,7 +299,7 @@ fn traverse(ty_known: Option<u8>, dec: &mut Decoder) -> Result<Value, DecodeErro
             for _ in 0..len {
                 elements.push(traverse(Some(ele_ty), dec)?);
             }
-            Ok(Value::Vec(elements))
+            Ok(Value::Vec(ele_ty, elements))
         }
         constants::TYPE_TREE_SET | constants::TYPE_HASH_SET => {
             // element type
@@ -148,27 +312,27 @@ fn traverse(ty_known: Option<u8>, dec: &mut Decoder) -> Result<Value, DecodeErro
                 elements.push(traverse(Some(ele_ty), dec)?);
             }
             if ty == constants::TYPE_TREE_SET {
-                Ok(Value::TreeSet(elements))
+                Ok(Value::TreeSet(ele_ty, elements))
             } else {
-                Ok(Value::HashSet(elements))
+                Ok(Value::HashSet(ele_ty, elements))
             }
         }
         constants::TYPE_TREE_MAP | constants::TYPE_HASH_MAP => {
-            // length
-            let len = dec.read_len()?;
             // key type
             let key_ty = dec.read_type()?;
             // value type
             let value_ty = dec.read_type()?;
+            // length
+            let len = dec.read_len()?;
             // elements
             let mut elements = Vec::new();
             for _ in 0..len {
                 elements.push((traverse(Some(key_ty), dec)?, traverse(Some(value_ty), dec)?));
             }
             if ty == constants::TYPE_TREE_MAP {
-                Ok(Value::TreeMap(elements))
+                Ok(Value::TreeMap(key_ty, value_ty, elements))
             } else {
-                Ok(Value::HashMap(elements))
+                Ok(Value::HashMap(key_ty, value_ty, elements))
             }
         }
         _ => {
@@ -328,20 +492,36 @@ mod tests {
                 Value::String(String::from("abc")),
                 Value::Option(Some(Box::new(Value::U32(1)))),
                 Value::Box(Box::new(Value::U32(1))),
-                Value::Array(vec![Value::U32(1), Value::U32(2), Value::U32(3),]),
+                Value::Array(
+                    constants::TYPE_U32,
+                    vec![Value::U32(1), Value::U32(2), Value::U32(3),]
+                ),
                 Value::Tuple(vec![Value::U32(1), Value::U32(2),]),
                 Value::Struct(Fields::Named(vec![Value::U32(1)])),
                 Value::Enum(0, Fields::Named(vec![Value::U32(1)])),
                 Value::Enum(1, Fields::Unnamed(vec![Value::U32(2)])),
                 Value::Enum(2, Fields::Unit),
-                Value::Vec(vec![Value::U32(1), Value::U32(2),]),
-                Value::TreeSet(vec![Value::U32(1)]),
-                Value::HashSet(vec![Value::U32(2)]),
-                Value::TreeMap(vec![(Value::U32(1), Value::U32(2)),]),
-                Value::HashMap(vec![(Value::U32(1), Value::U32(2)),])
+                Value::Vec(constants::TYPE_U32, vec![Value::U32(1), Value::U32(2),]),
+                Value::TreeSet(constants::TYPE_U32, vec![Value::U32(1)]),
+                Value::HashSet(constants::TYPE_U32, vec![Value::U32(2)]),
+                Value::TreeMap(
+                    constants::TYPE_U32,
+                    constants::TYPE_U32,
+                    vec![(Value::U32(1), Value::U32(2)),]
+                ),
+                Value::HashMap(
+                    constants::TYPE_U32,
+                    constants::TYPE_U32,
+                    vec![(Value::U32(1), Value::U32(2)),]
+                )
             ])),
             value
         );
+
+        let mut enc = Encoder::with_type(Vec::new());
+        write_any(None, &value, &mut enc);
+        let bytes2: Vec<u8> = enc.into();
+        assert_eq!(bytes2, bytes);
     }
 
     #[test]

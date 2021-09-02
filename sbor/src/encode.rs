@@ -277,10 +277,9 @@ impl<T: Encode> Encode for BTreeSet<T> {
 
 impl<K: Encode, V: Encode> Encode for BTreeMap<K, V> {
     fn encode_value(&self, encoder: &mut Encoder) {
-        encoder.write_len(self.len());
         encoder.write_type(K::type_id());
         encoder.write_type(V::type_id());
-
+        encoder.write_len(self.len());
         for (k, v) in self {
             k.encode_value(encoder);
             v.encode_value(encoder);
@@ -310,10 +309,9 @@ impl<T: Encode> Encode for HashSet<T> {
 
 impl<K: Encode, V: Encode> Encode for HashMap<K, V> {
     fn encode_value(&self, encoder: &mut Encoder) {
-        encoder.write_len(self.len());
         encoder.write_type(K::type_id());
         encoder.write_type(V::type_id());
-
+        encoder.write_len(self.len());
         for (k, v) in self {
             k.encode_value(encoder);
             v.encode_value(encoder);
@@ -393,7 +391,7 @@ mod tests {
                 19, 2, 0, 0, 0, 9, 1, 0, 0, 0, 9, 2, 0, 0, 0, // tuple
                 32, 9, 3, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, // vec
                 33, 7, 2, 0, 0, 0, 1, 2, // set
-                34, 2, 0, 0, 0, 7, 7, 1, 2, 3, 4 // map
+                34, 7, 7, 2, 0, 0, 0, 1, 2, 3, 4 // map
             ],
             bytes
         );

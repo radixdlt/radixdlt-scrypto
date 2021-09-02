@@ -42,7 +42,7 @@ pub fn format_value<L: Ledger>(
             None => Ok(String::from("None")),
         },
         Value::Box(v) => Ok(format!("Box({})", format_value(v.borrow(), le, res)?)),
-        Value::Array(elements) => format_vec(elements.iter(), "[", "]", le, res),
+        Value::Array(_, elements) => format_vec(elements.iter(), "[", "]", le, res),
         Value::Tuple(elements) => format_vec(elements.iter(), "(", ")", le, res),
         Value::Struct(fields) => Ok(format!("Struct {}", format_fields(fields, le, res)?)),
         Value::Enum(index, fields) => Ok(format!(
@@ -51,11 +51,12 @@ pub fn format_value<L: Ledger>(
             format_fields(fields, le, res)?
         )),
         // collections
-        Value::Vec(elements) => format_vec(elements.iter(), "Vec { ", " }", le, res),
-        Value::TreeSet(elements) => format_vec(elements.iter(), "TreeSet { ", " }", le, res),
-        Value::HashSet(elements) => format_vec(elements.iter(), "HashSet { ", " }", le, res),
-        Value::TreeMap(elements) => format_map(elements.iter(), "TreeMap { ", " }", le, res),
-        Value::HashMap(elements) => format_map(elements.iter(), "HashMap { ", " }", le, res),
+        Value::Vec(_, elements) => format_vec(elements.iter(), "Vec { ", " }", le, res),
+        Value::TreeSet(_, elements) => format_vec(elements.iter(), "TreeSet { ", " }", le, res),
+        Value::HashSet(_, elements) => format_vec(elements.iter(), "HashSet { ", " }", le, res),
+        Value::TreeMap(_, _, elements) => format_map(elements.iter(), "TreeMap { ", " }", le, res),
+        Value::HashMap(_, _, elements) => format_map(elements.iter(), "HashMap { ", " }", le, res),
+        // custom types
         Value::Custom(ty, data) => format_custom(*ty, data, le, res),
     }
 }

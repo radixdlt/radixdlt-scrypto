@@ -912,13 +912,13 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
     /// Traverse SBOR data. TODO: stack overflow
     fn traverse(
         &mut self,
-        ty_from_ctx: Option<u8>,
+        ty_ctx: Option<u8>,
         dec: &mut Decoder,
         enc: &mut Encoder,
         bid_fn: fn(&mut Self, BID) -> Result<BID, RuntimeError>,
         rid_fn: fn(&mut Self, RID) -> Result<RID, RuntimeError>,
     ) -> Result<(), RuntimeError> {
-        let ty = match ty_from_ctx {
+        let ty = match ty_ctx {
             Some(t) => t,
             None => {
                 let t = dec.read_type().map_err(|e| RuntimeError::InvalidData(e))?;
@@ -1029,15 +1029,15 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
                 Ok(())
             }
             constants::TYPE_TREE_MAP | constants::TYPE_HASH_MAP => {
-                // length
-                let len = dec.read_len().map_err(|e| RuntimeError::InvalidData(e))?;
-                enc.write_len(len);
                 // key type
                 let key_ty = dec.read_type().map_err(|e| RuntimeError::InvalidData(e))?;
                 enc.write_type(key_ty);
                 // value type
                 let value_ty = dec.read_type().map_err(|e| RuntimeError::InvalidData(e))?;
                 enc.write_type(value_ty);
+                // length
+                let len = dec.read_len().map_err(|e| RuntimeError::InvalidData(e))?;
+                enc.write_len(len);
                 // elements
                 for _ in 0..len {
                     // key

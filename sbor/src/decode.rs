@@ -382,10 +382,9 @@ impl<T: Decode + Ord> Decode for BTreeSet<T> {
 
 impl<K: Decode + Ord, V: Decode> Decode for BTreeMap<K, V> {
     fn decode_value<'de>(decoder: &mut Decoder<'de>) -> Result<Self, DecodeError> {
-        let len = decoder.read_len()?;
         decoder.check_type(K::type_id())?;
         decoder.check_type(V::type_id())?;
-
+        let len = decoder.read_len()?;
         let mut map = BTreeMap::new();
         for _ in 0..len {
             map.insert(K::decode_value(decoder)?, V::decode_value(decoder)?);
@@ -419,10 +418,9 @@ impl<T: Decode + Hash + Eq> Decode for HashSet<T> {
 
 impl<K: Decode + Hash + Eq, V: Decode> Decode for HashMap<K, V> {
     fn decode_value<'de>(decoder: &mut Decoder<'de>) -> Result<Self, DecodeError> {
-        let len = decoder.read_len()?;
         decoder.check_type(K::type_id())?;
         decoder.check_type(V::type_id())?;
-
+        let len = decoder.read_len()?;
         let mut map = HashMap::new();
         for _ in 0..len {
             map.insert(K::decode_value(decoder)?, V::decode_value(decoder)?);
@@ -499,7 +497,7 @@ mod tests {
             19, 2, 0, 0, 0, 9, 1, 0, 0, 0, 9, 2, 0, 0, 0, // tuple
             32, 9, 3, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, // vec
             33, 7, 2, 0, 0, 0, 1, 2, // set
-            34, 2, 0, 0, 0, 7, 7, 1, 2, 3, 4, // map
+            34, 7, 7, 2, 0, 0, 0, 1, 2, 3, 4, // map
         ];
         let mut dec = Decoder::with_type(&bytes);
         assert_decoding(&mut dec);
