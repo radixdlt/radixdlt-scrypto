@@ -4,6 +4,8 @@ use std::path::PathBuf;
 
 use clap::{crate_version, App, Arg, ArgMatches, SubCommand};
 use radix_engine::execution::*;
+use radix_engine::ledger::*;
+use radix_engine::model::*;
 use scrypto::buffer::*;
 use scrypto::types::*;
 use scrypto::utils::*;
@@ -15,6 +17,7 @@ use crate::utils::*;
 
 const ARG_TRACE: &'static str = "TRACE";
 const ARG_PATH: &'static str = "PATH";
+const ARG_ADDRESS: &'static str = "ADDRESS";
 
 /// Constructs a `publish` subcommand.
 pub fn make_publish_cmd<'a, 'b>() -> App<'a, 'b> {
@@ -31,6 +34,13 @@ pub fn make_publish_cmd<'a, 'b>() -> App<'a, 'b> {
             Arg::with_name(ARG_PATH)
                 .help("Specify the the path to a Scrypto package or a .wasm file.")
                 .required(true),
+        )
+        .arg(
+            Arg::with_name(ARG_ADDRESS)
+                .long("address")
+                .takes_value(true)
+                .help("Specify the address to overwrite.")
+                .required(false),
         )
 }
 
@@ -49,6 +59,14 @@ pub fn handle_publish<'a>(matches: &ArgMatches<'a>) -> Result<(), Error> {
     };
     let code = fs::read(&file).map_err(|e| Error::IOError(e))?;
     validate_module(&code).map_err(|e| Error::ExecutionError(e))?;
+
+    if let Some(a) = matches.value_of(ARG_ADDRESS) {
+        let address: Address = a.parse().map_err(|e| Error::InvalidAddress(e))?;
+        let mut ledger = FileBasedLedger::new(get_data_dir()?);
+        ledger.put_package(address, Package::new(code));
+        println!("New package: {}", address);
+        return Ok(());
+    }
 
     match get_config(CONF_DEFAULT_ACCOUNT)? {
         Some(a) => {
