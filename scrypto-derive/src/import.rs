@@ -110,22 +110,10 @@ pub fn handle_import(input: TokenStream) -> TokenStream {
         let (method_output, new_items) = get_native_type(&method.output);
         items.extend(new_items);
 
-        let m = match method.mutability {
-            abi::Mutability::Immutable => {
-                parse_quote! {
-                    pub fn #method_indent(&self, #method_inputs) -> #method_output {
-                        let component = ::scrypto::constructs::Component::from(self.address);
-                        component.call(#method_name, ::scrypto::args!(#(#method_args),*))
-                    }
-                }
-            }
-            abi::Mutability::Mutable => {
-                parse_quote! {
-                    pub fn #method_indent(&mut self, #method_inputs) -> #method_output {
-                        let component = ::scrypto::constructs::Component::from(self.address);
-                        component.call(#method_name, ::scrypto::args!(#(#method_args),*))
-                    }
-                }
+        let m = parse_quote! {
+            pub fn #method_indent(&self, #method_inputs) -> #method_output {
+                let component = ::scrypto::constructs::Component::from(self.address);
+                component.call(#method_name, ::scrypto::args!(#(#method_args),*))
             }
         };
         functions.push(m);
