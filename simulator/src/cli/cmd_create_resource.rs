@@ -94,7 +94,9 @@ pub fn handle_create_resource<'a>(matches: &ArgMatches<'a>) -> Result<(), Error>
         .value_of(ARG_MINTER)
         .and_then(|v| v.parse::<Address>().ok());
     if !(supply.is_some() ^ minter.is_some()) {
-        return Err(Error::MissingArgument("supply or minter".to_owned()));
+        return Err(Error::MissingArgument(
+            "Either supply or minter must be set".to_owned(),
+        ));
     }
 
     match get_config(CONF_DEFAULT_ACCOUNT)? {
@@ -127,8 +129,10 @@ pub fn handle_create_resource<'a>(matches: &ArgMatches<'a>) -> Result<(), Error>
                     ],
                 )
                 .and_then(|target| process.run(target))
-                .map_err(|e| Error::ExecutionError(e))?;
-            process.finalize().map_err(|e| Error::ExecutionError(e))?;
+                .map_err(|e| Error::TxnExecutionError(e))?;
+            process
+                .finalize()
+                .map_err(|e| Error::TxnExecutionError(e))?;
             let resource: Address = scrypto_decode(&output).map_err(|e| Error::DataError(e))?;
 
             runtime.flush();

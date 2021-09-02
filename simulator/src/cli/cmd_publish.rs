@@ -58,7 +58,7 @@ pub fn handle_publish<'a>(matches: &ArgMatches<'a>) -> Result<(), Error> {
         path
     };
     let code = fs::read(&file).map_err(|e| Error::IOError(e))?;
-    validate_module(&code).map_err(|e| Error::ExecutionError(e))?;
+    validate_module(&code).map_err(|e| Error::TxnExecutionError(e))?;
 
     if let Some(a) = matches.value_of(ARG_ADDRESS) {
         let address: Address = a.parse().map_err(|e| Error::InvalidAddress(e))?;
@@ -83,8 +83,10 @@ pub fn handle_publish<'a>(matches: &ArgMatches<'a>) -> Result<(), Error> {
                     vec![scrypto_encode(&code)],
                 )
                 .and_then(|target| process.run(target))
-                .map_err(|e| Error::ExecutionError(e))?;
-            process.finalize().map_err(|e| Error::ExecutionError(e))?;
+                .map_err(|e| Error::TxnExecutionError(e))?;
+            process
+                .finalize()
+                .map_err(|e| Error::TxnExecutionError(e))?;
             let package: Address = scrypto_decode(&output).map_err(|e| Error::DataError(e))?;
 
             runtime.flush();

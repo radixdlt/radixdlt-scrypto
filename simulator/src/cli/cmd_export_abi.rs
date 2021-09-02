@@ -48,7 +48,7 @@ pub fn handle_export_abi<'a>(matches: &ArgMatches<'a>) -> Result<(), Error> {
     let result = export_abi(&mut ledger, package, blueprint, trace);
 
     match result {
-        Err(e) => Err(Error::ExecutionError(e)),
+        Err(e) => Err(Error::TxnExecutionError(e)),
         Ok(abi) => {
             println!(
                 "{}",

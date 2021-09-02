@@ -136,7 +136,7 @@ pub fn format_custom<L: Ledger>(
         SCRYPTO_TYPE_MID => {
             let mid = MID::try_from(data).map_err(|_| DecodeError::InvalidCustomData(ty))?;
             let map = le.get_map(mid).ok_or(DecodeError::InvalidCustomData(ty))?;
-            let mut buf = String::from("s");
+            let mut buf = String::new();
             for (i, (k, v)) in map.map.iter().enumerate() {
                 if i != 0 {
                     buf.push_str(", ");

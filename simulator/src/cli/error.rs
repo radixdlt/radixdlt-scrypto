@@ -25,9 +25,9 @@ pub enum Error {
 
     BuildError(BuildPackageError),
 
-    ConstructionErr(BuildTxnError),
+    TxnConstructionErr(BuildTxnError),
 
-    ExecutionError(RuntimeError),
+    TxnExecutionError(RuntimeError),
 
     DataError(DecodeError),
 }

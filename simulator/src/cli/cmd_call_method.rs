@@ -34,7 +34,7 @@ pub fn make_call_method_cmd<'a, 'b>() -> App<'a, 'b> {
         )
         .arg(
             Arg::with_name(ARG_ARGS)
-                .help("Specify the arguments, e.g. `123`, `hello` or `1000:01`.")
+                .help("Specify the arguments, e.g. `123`, `hello` or `amount,resource`.")
                 .multiple(true),
         )
 }
@@ -65,7 +65,7 @@ pub fn handle_call_method<'a>(matches: &ArgMatches<'a>) -> Result<(), Error> {
                     dump_receipt(receipt);
                     Ok(())
                 }
-                Err(e) => Err(Error::ConstructionErr(e)),
+                Err(e) => Err(Error::TxnConstructionErr(e)),
             }
         }
         None => Err(Error::NoDefaultAccount),

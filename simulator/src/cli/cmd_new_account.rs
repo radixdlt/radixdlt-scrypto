@@ -61,8 +61,10 @@ pub fn handle_new_account<'a>(matches: &ArgMatches<'a>) -> Result<(), Error> {
     let output = process
         .target_function(package, "Account", "new".to_owned(), Vec::new())
         .and_then(|target| process.run(target))
-        .map_err(|e| Error::ExecutionError(e))?;
-    process.finalize().map_err(|e| Error::ExecutionError(e))?;
+        .map_err(|e| Error::TxnExecutionError(e))?;
+    process
+        .finalize()
+        .map_err(|e| Error::TxnExecutionError(e))?;
     let component: Address = scrypto_decode(&output).map_err(|e| Error::DataError(e))?;
 
     // allocate free XRD
@@ -81,8 +83,10 @@ pub fn handle_new_account<'a>(matches: &ArgMatches<'a>) -> Result<(), Error> {
             vec![scrypto_encode(&vec![bid])],
         )
         .and_then(|target| process2.run(target))
-        .map_err(|e| Error::ExecutionError(e))?;
-    process2.finalize().map_err(|e| Error::ExecutionError(e))?;
+        .map_err(|e| Error::TxnExecutionError(e))?;
+    process2
+        .finalize()
+        .map_err(|e| Error::TxnExecutionError(e))?;
 
     // flush
     runtime.flush();
@@ -91,7 +95,7 @@ pub fn handle_new_account<'a>(matches: &ArgMatches<'a>) -> Result<(), Error> {
     // set as default config if not set
     if get_config(CONF_DEFAULT_ACCOUNT)?.is_none() {
         set_config(CONF_DEFAULT_ACCOUNT, &component.to_string())?;
-        println!("No default account configured. This account will be used as the default account.")
+        println!("No default account configured. This will be used as the default account.")
     }
 
     Ok(())
