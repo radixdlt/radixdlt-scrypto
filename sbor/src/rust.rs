@@ -8,6 +8,8 @@ pub use alloc::string;
 #[cfg(feature = "alloc")]
 pub use alloc::vec;
 #[cfg(feature = "alloc")]
+pub use core::borrow;
+#[cfg(feature = "alloc")]
 pub use core::convert;
 #[cfg(feature = "alloc")]
 pub use core::hash;
@@ -16,6 +18,8 @@ pub use core::mem;
 #[cfg(feature = "alloc")]
 pub use core::ptr;
 
+#[cfg(not(feature = "alloc"))]
+pub use std::borrow;
 #[cfg(not(feature = "alloc"))]
 pub use std::boxed;
 #[cfg(not(feature = "alloc"))]

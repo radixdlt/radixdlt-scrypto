@@ -37,8 +37,8 @@ pub fn format_value<L: Ledger>(
         Value::U128(v) => Ok(v.to_string()),
         Value::String(v) => Ok(v.to_string()),
         // rust types
-        Value::Option(v) => match v {
-            Some(x) => Ok(format!("Some({})", format_value(x.borrow(), le, res)?)),
+        Value::Option(v) => match v.borrow() {
+            Some(x) => Ok(format!("Some({})", format_value(x, le, res)?)),
             None => Ok(String::from("None")),
         },
         Value::Box(v) => Ok(format!("Box({})", format_value(v.borrow(), le, res)?)),

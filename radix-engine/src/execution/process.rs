@@ -1,4 +1,6 @@
 use colored::*;
+use sbor::parse::*;
+use sbor::rust::boxed::Box;
 use sbor::*;
 use scrypto::buffer::*;
 use scrypto::constants::*;
@@ -6,6 +8,7 @@ use scrypto::kernel::*;
 use scrypto::rust::borrow::ToOwned;
 use scrypto::rust::cell::RefCell;
 use scrypto::rust::collections::*;
+use scrypto::rust::convert::TryFrom;
 use scrypto::rust::fmt;
 use scrypto::rust::format;
 use scrypto::rust::rc::Rc;
@@ -144,10 +147,8 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         HashMap<BID, Bucket>,
         HashMap<RID, Rc<RefCell<LockedBucket>>>,
     ) {
-        let buckets = self.moving_buckets.clone();
-        let references = self.moving_references.clone();
-        self.moving_buckets.clear();
-        self.moving_references.clear();
+        let buckets = self.moving_buckets.drain().collect();
+        let references = self.moving_references.drain().collect();
         (buckets, references)
     }
 
@@ -183,7 +184,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         let output = match return_value {
             RuntimeValue::I32(ptr) => {
                 let bytes = self.read_bytes(ptr)?;
-                self.transform_sbor_data(
+                self.transform_data(
                     &bytes,
                     Self::move_transient_reject_persisted,
                     Self::move_references,
@@ -211,7 +212,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
     pub fn call(&mut self, target: Target) -> Result<Vec<u8>, RuntimeError> {
         // move resources
         for arg in &target.args {
-            self.transform_sbor_data(
+            self.transform_data(
                 arg,
                 Self::move_transient_reject_persisted,
                 Self::move_references,
@@ -405,7 +406,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
             return Err(RuntimeError::ComponentAlreadyExists(address));
         }
 
-        let new_state = self.transform_sbor_data(
+        let new_state = self.transform_data(
             &input.state,
             Self::convert_transient_to_persist,
             Self::reject_references,
@@ -457,7 +458,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         &mut self,
         input: PutComponentStateInput,
     ) -> Result<PutComponentStateOutput, RuntimeError> {
-        let new_state = self.transform_sbor_data(
+        let new_state = self.transform_data(
             &input.state,
             Self::convert_transient_to_persist,
             Self::reject_references,
@@ -507,13 +508,13 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
     ) -> Result<PutMapEntryOutput, RuntimeError> {
         let package = self.package()?;
 
-        let new_key = self.transform_sbor_data(
+        let new_key = self.transform_data(
             &input.key,
             Self::convert_transient_to_persist,
             Self::reject_references,
         )?;
         trace!(self, "Transformed key: {:?}", new_key);
-        let new_value = self.transform_sbor_data(
+        let new_value = self.transform_data(
             &input.value,
             Self::convert_transient_to_persist,
             Self::reject_references,
@@ -892,189 +893,136 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
     }
 
     /// Transform SBOR data by applying function on BID and RID.
-    fn transform_sbor_data(
+    fn transform_data(
         &mut self,
         data: &Vec<u8>,
-        bid_fn: fn(&mut Self, BID) -> Result<BID, RuntimeError>,
-        rid_fn: fn(&mut Self, RID) -> Result<RID, RuntimeError>,
+        bf: fn(&mut Self, BID) -> Result<BID, RuntimeError>,
+        rf: fn(&mut Self, RID) -> Result<RID, RuntimeError>,
     ) -> Result<Vec<u8>, RuntimeError> {
-        let mut decoder = Decoder::with_type(data);
-        let mut encoder = Encoder::with_type(Vec::with_capacity(512));
+        let value = parse_any(data).map_err(|e| RuntimeError::InvalidData(e))?;
+        let transformed = self.trans(value, bf, rf)?;
 
-        self.traverse(None, &mut decoder, &mut encoder, bid_fn, rid_fn)?;
-
-        decoder
-            .check_end()
-            .map_err(|e| RuntimeError::InvalidData(e))?;
+        let mut encoder = Encoder::with_type(Vec::with_capacity(data.len() + 512));
+        write_any(None, &transformed, &mut encoder);
         Ok(encoder.into())
     }
 
-    /// Traverse SBOR data. TODO: stack overflow
-    fn traverse(
+    /// Transform SBOR value. TODO: stack overflow
+    fn trans(
         &mut self,
-        ty_ctx: Option<u8>,
-        dec: &mut Decoder,
-        enc: &mut Encoder,
-        bid_fn: fn(&mut Self, BID) -> Result<BID, RuntimeError>,
-        rid_fn: fn(&mut Self, RID) -> Result<RID, RuntimeError>,
-    ) -> Result<(), RuntimeError> {
-        let ty = match ty_ctx {
-            Some(t) => t,
-            None => {
-                let t = dec.read_type().map_err(|e| RuntimeError::InvalidData(e))?;
-                enc.write_type(t);
-                t
+        v: Value,
+        bf: fn(&mut Self, BID) -> Result<BID, RuntimeError>,
+        rf: fn(&mut Self, RID) -> Result<RID, RuntimeError>,
+    ) -> Result<Value, RuntimeError> {
+        match v {
+            // basic types
+            Value::Unit
+            | Value::Bool(_)
+            | Value::I8(_)
+            | Value::I16(_)
+            | Value::I32(_)
+            | Value::I64(_)
+            | Value::I128(_)
+            | Value::U8(_)
+            | Value::U16(_)
+            | Value::U32(_)
+            | Value::U64(_)
+            | Value::U128(_)
+            | Value::String(_) => Ok(v),
+            // rust types
+            Value::Option(x) => match *x {
+                Some(value) => Ok(Value::Option(Box::new(Some(self.trans(value, bf, rf)?)))),
+                None => Ok(Value::Option(Box::new(None))),
+            },
+            Value::Box(value) => Ok(Value::Box(Box::new(self.trans(*value, bf, rf)?))),
+            Value::Array(ty, values) => Ok(Value::Array(ty, self.trans_vec(values, bf, rf)?)),
+            Value::Tuple(values) => Ok(Value::Tuple(self.trans_vec(values, bf, rf)?)),
+            Value::Struct(fields) => Ok(Value::Struct(self.trans_fields(fields, bf, rf)?)),
+            Value::Enum(index, fields) => {
+                Ok(Value::Enum(index, self.trans_fields(fields, bf, rf)?))
             }
-        };
-
-        match ty {
-            constants::TYPE_UNIT => self.transform::<()>(dec, enc, |_, v| Ok(v)),
-            constants::TYPE_BOOL => self.transform::<bool>(dec, enc, |_, v| Ok(v)),
-            constants::TYPE_I8 => self.transform::<i8>(dec, enc, |_, v| Ok(v)),
-            constants::TYPE_I16 => self.transform::<i16>(dec, enc, |_, v| Ok(v)),
-            constants::TYPE_I32 => self.transform::<i32>(dec, enc, |_, v| Ok(v)),
-            constants::TYPE_I64 => self.transform::<i64>(dec, enc, |_, v| Ok(v)),
-            constants::TYPE_I128 => self.transform::<i128>(dec, enc, |_, v| Ok(v)),
-            constants::TYPE_U8 => self.transform::<u8>(dec, enc, |_, v| Ok(v)),
-            constants::TYPE_U16 => self.transform::<u16>(dec, enc, |_, v| Ok(v)),
-            constants::TYPE_U32 => self.transform::<u32>(dec, enc, |_, v| Ok(v)),
-            constants::TYPE_U64 => self.transform::<u64>(dec, enc, |_, v| Ok(v)),
-            constants::TYPE_U128 => self.transform::<u128>(dec, enc, |_, v| Ok(v)),
-            constants::TYPE_STRING => self.transform::<String>(dec, enc, |_, v| Ok(v)),
-            constants::TYPE_OPTION => {
-                // index
-                let index = dec.read_u8().map_err(|e| RuntimeError::InvalidData(e))?;
-                enc.write_u8(index);
-                // optional value
-                match index {
-                    0 => Ok(()),
-                    1 => self.traverse(None, dec, enc, bid_fn, rid_fn),
-                    _ => Err(RuntimeError::InvalidData(DecodeError::InvalidIndex(index))),
-                }
-            }
-            constants::TYPE_BOX => {
-                // value
-                self.traverse(None, dec, enc, bid_fn, rid_fn)
-            }
-            constants::TYPE_ARRAY | constants::TYPE_VEC => {
-                // element type
-                let ele_ty = dec.read_type().map_err(|e| RuntimeError::InvalidData(e))?;
-                enc.write_type(ele_ty);
-                // length
-                let len = dec.read_len().map_err(|e| RuntimeError::InvalidData(e))?;
-                enc.write_len(len);
-                // values
-                for _ in 0..len {
-                    self.traverse(Some(ele_ty), dec, enc, bid_fn, rid_fn)?;
-                }
-                Ok(())
-            }
-            constants::TYPE_TUPLE => {
-                //length
-                let len = dec.read_len().map_err(|e| RuntimeError::InvalidData(e))?;
-                enc.write_len(len);
-                // values
-                for _ in 0..len {
-                    self.traverse(None, dec, enc, bid_fn, rid_fn)?;
-                }
-                Ok(())
-            }
-            constants::TYPE_STRUCT => {
-                // fields
-                self.traverse(None, dec, enc, bid_fn, rid_fn)
-            }
-            constants::TYPE_ENUM => {
-                // variant index
-                let index = dec.read_u8().map_err(|e| RuntimeError::InvalidData(e))?;
-                enc.write_u8(index);
-                // variant fields
-                self.traverse(None, dec, enc, bid_fn, rid_fn)
-            }
-            constants::TYPE_FIELDS_NAMED => {
-                //length
-                let len = dec.read_len().map_err(|e| RuntimeError::InvalidData(e))?;
-                enc.write_len(len);
-                // named fields
-                for _ in 0..len {
-                    // value
-                    self.traverse(None, dec, enc, bid_fn, rid_fn)?;
-                }
-                Ok(())
-            }
-            constants::TYPE_FIELDS_UNNAMED => {
-                //length
-                let len = dec.read_len().map_err(|e| RuntimeError::InvalidData(e))?;
-                enc.write_len(len);
-                // named fields
-                for _ in 0..len {
-                    // value
-                    self.traverse(None, dec, enc, bid_fn, rid_fn)?;
-                }
-                Ok(())
-            }
-            constants::TYPE_FIELDS_UNIT => Ok(()),
             // collections
-            constants::TYPE_TREE_SET | constants::TYPE_HASH_SET => {
-                // element type
-                let ele_ty = dec.read_type().map_err(|e| RuntimeError::InvalidData(e))?;
-                enc.write_type(ele_ty);
-                // length
-                let len = dec.read_len().map_err(|e| RuntimeError::InvalidData(e))?;
-                enc.write_len(len);
-                // elements
-                for _ in 0..len {
-                    // value
-                    self.traverse(Some(ele_ty), dec, enc, bid_fn, rid_fn)?;
-                }
-                Ok(())
+            Value::Vec(ty, values) => Ok(Value::Vec(ty, self.trans_vec(values, bf, rf)?)),
+            Value::TreeSet(ty, values) => Ok(Value::TreeSet(ty, self.trans_vec(values, bf, rf)?)),
+            Value::HashSet(ty, values) => Ok(Value::HashSet(ty, self.trans_vec(values, bf, rf)?)),
+            Value::TreeMap(ty_k, ty_v, values) => {
+                Ok(Value::TreeMap(ty_k, ty_v, self.trans_map(values, bf, rf)?))
             }
-            constants::TYPE_TREE_MAP | constants::TYPE_HASH_MAP => {
-                // key type
-                let key_ty = dec.read_type().map_err(|e| RuntimeError::InvalidData(e))?;
-                enc.write_type(key_ty);
-                // value type
-                let value_ty = dec.read_type().map_err(|e| RuntimeError::InvalidData(e))?;
-                enc.write_type(value_ty);
-                // length
-                let len = dec.read_len().map_err(|e| RuntimeError::InvalidData(e))?;
-                enc.write_len(len);
-                // elements
-                for _ in 0..len {
-                    // key
-                    self.traverse(Some(key_ty), dec, enc, bid_fn, rid_fn)?;
-                    // value
-                    self.traverse(Some(value_ty), dec, enc, bid_fn, rid_fn)?;
-                }
-                Ok(())
+            Value::HashMap(ty_k, ty_v, values) => {
+                Ok(Value::HashMap(ty_k, ty_v, self.trans_map(values, bf, rf)?))
             }
-            // scrypto types
-            SCRYPTO_TYPE_U256 => self.transform::<U256>(dec, enc, |_, v| Ok(v)),
-            SCRYPTO_TYPE_ADDRESS => self.transform::<Address>(dec, enc, |_, v| Ok(v)),
-            SCRYPTO_TYPE_H256 => self.transform::<H256>(dec, enc, |_, v| Ok(v)),
-            SCRYPTO_TYPE_MID => self.transform::<MID>(dec, enc, |_, v| Ok(v)),
-            SCRYPTO_TYPE_BID => self.transform::<BID>(dec, enc, bid_fn),
-            SCRYPTO_TYPE_RID => self.transform::<RID>(dec, enc, rid_fn),
-            _ => Err(RuntimeError::InvalidData(DecodeError::InvalidType {
-                expected: 0xff,
-                actual: ty,
-            })),
+            // custom types
+            Value::Custom(ty, data) => self.trans_custom(ty, data, bf, rf),
         }
     }
 
-    /// Apply the transform function.
-    fn transform<T: Decode + Encode + scrypto::rust::fmt::Debug>(
+    fn trans_fields(
         &mut self,
-        dec: &mut Decoder,
-        enc: &mut Encoder,
-        transform: fn(&mut Self, T) -> Result<T, RuntimeError>,
-    ) -> Result<(), RuntimeError> {
-        transform(
-            self,
-            T::decode_value(dec).map_err(|e| RuntimeError::InvalidData(e))?,
-        )?
-        .encode_value(enc);
+        fields: Fields,
+        bf: fn(&mut Self, BID) -> Result<BID, RuntimeError>,
+        rf: fn(&mut Self, RID) -> Result<RID, RuntimeError>,
+    ) -> Result<Fields, RuntimeError> {
+        match fields {
+            Fields::Named(named) => Ok(Fields::Named(self.trans_vec(named, bf, rf)?)),
+            Fields::Unnamed(unnamed) => Ok(Fields::Unnamed(self.trans_vec(unnamed, bf, rf)?)),
+            Fields::Unit => Ok(Fields::Unit),
+        }
+    }
 
-        Ok(())
+    fn trans_vec(
+        &mut self,
+        values: Vec<Value>,
+        bf: fn(&mut Self, BID) -> Result<BID, RuntimeError>,
+        rf: fn(&mut Self, RID) -> Result<RID, RuntimeError>,
+    ) -> Result<Vec<Value>, RuntimeError> {
+        let mut result = Vec::new();
+        for e in values {
+            result.push(self.trans(e, bf, rf)?);
+        }
+        Ok(result)
+    }
+
+    fn trans_map(
+        &mut self,
+        values: Vec<(Value, Value)>,
+        bf: fn(&mut Self, BID) -> Result<BID, RuntimeError>,
+        rf: fn(&mut Self, RID) -> Result<RID, RuntimeError>,
+    ) -> Result<Vec<(Value, Value)>, RuntimeError> {
+        let mut result = Vec::new();
+        for (k, v) in values {
+            result.push((self.trans(k, bf, rf)?, self.trans(v, bf, rf)?));
+        }
+        Ok(result)
+    }
+
+    fn trans_custom(
+        &mut self,
+        ty: u8,
+        data: Vec<u8>,
+        bf: fn(&mut Self, BID) -> Result<BID, RuntimeError>,
+        rf: fn(&mut Self, RID) -> Result<RID, RuntimeError>,
+    ) -> Result<Value, RuntimeError> {
+        match ty {
+            SCRYPTO_TYPE_BID => {
+                let bid = bf(
+                    self,
+                    BID::try_from(data.as_slice()).map_err(|_| {
+                        RuntimeError::InvalidData(DecodeError::InvalidCustomData(ty))
+                    })?,
+                )?;
+                Ok(Value::Custom(ty, bid.to_vec()))
+            }
+            SCRYPTO_TYPE_RID => {
+                let rid = rf(
+                    self,
+                    RID::try_from(data.as_slice()).map_err(|_| {
+                        RuntimeError::InvalidData(DecodeError::InvalidCustomData(ty))
+                    })?,
+                )?;
+                Ok(Value::Custom(ty, rid.to_vec()))
+            }
+            _ => Ok(Value::Custom(ty, data)),
+        }
     }
 
     /// Convert transient buckets to persisted buckets

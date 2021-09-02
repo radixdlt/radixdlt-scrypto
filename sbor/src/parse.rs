@@ -1,3 +1,4 @@
+use crate::rust::borrow::Borrow;
 use crate::rust::boxed::Box;
 use crate::rust::string::String;
 use crate::*;
@@ -18,7 +19,7 @@ pub enum Value {
     U128(u128),
     String(String),
 
-    Option(Option<Box<Value>>),
+    Option(Box<Option<Value>>),
 
     Box(Box<Value>),
 
@@ -73,7 +74,7 @@ pub fn write_any(ty_ctx: Option<u8>, value: &Value, enc: &mut Encoder) {
             if ty_ctx.is_none() {
                 enc.write_type(constants::TYPE_OPTION);
             }
-            match v {
+            match v.borrow() {
                 Some(x) => {
                     enc.write_u8(1);
                     write_any(None, x, enc);
@@ -249,8 +250,8 @@ fn traverse(ty_ctx: Option<u8>, dec: &mut Decoder) -> Result<Value, DecodeError>
             let index = dec.read_u8()?;
             // optional value
             match index {
-                0 => Ok(Value::Option(None)),
-                1 => Ok(Value::Option(Some(Box::new(traverse(None, dec)?)))),
+                0 => Ok(Value::Option(Box::new(None))),
+                1 => Ok(Value::Option(Box::new(Some(traverse(None, dec)?)))),
                 _ => Err(DecodeError::InvalidIndex(index)),
             }
         }
@@ -490,7 +491,7 @@ mod tests {
                 Value::U64(9),
                 Value::U128(10),
                 Value::String(String::from("abc")),
-                Value::Option(Some(Box::new(Value::U32(1)))),
+                Value::Option(Box::new(Some(Value::U32(1)))),
                 Value::Box(Box::new(Value::U32(1))),
                 Value::Array(
                     constants::TYPE_U32,
