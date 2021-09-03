@@ -28,9 +28,6 @@ blueprint! {
         }
 
         pub fn get_gumball(&mut self, payment: Tokens) -> Tokens {
-            // make sure they sent in XRD
-            assert!(payment.resource() == Address::RadixToken, "Need to pay in XRD");
-
             // make sure they sent us exactly 1 XRD
             assert!(payment.amount() == 1.into(), "Wrong amount of XRD sent");
 

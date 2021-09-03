@@ -53,8 +53,8 @@ blueprint! {
         }
 
         pub fn get_gumball(&self, payment: Tokens) -> Tokens {
-            let m = GumballMachine::at(self.machine);
-            m.get_gumball(payment)
+            let component = GumballMachine::at(self.machine);
+            component.get_gumball(payment)
         }
     }
 }

@@ -73,7 +73,7 @@ jobs:
       run: rustup +nightly target add wasm32-unknown-unknown
     - name: Build account
       run: cargo build --release
-      working-directory: blueprints/account
+      working-directory: examples/account
     - name: Build helloworld
       run: cargo build --release
       working-directory: examples/helloworld

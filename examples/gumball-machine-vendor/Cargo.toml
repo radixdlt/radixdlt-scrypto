@@ -1,5 +1,5 @@
 [package]
-name = "vendor"
+name = "gumball-machine-vendor"
 version = "0.1.0"
 authors = ["Yulong Wu <yulong@radixdlt.com>"]
 edition = "2018"

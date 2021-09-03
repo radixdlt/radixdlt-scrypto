@@ -54,7 +54,40 @@ pub fn blueprint(input: TokenStream) -> TokenStream {
 /// ```ignore
 /// use scrypto::prelude::*;
 ///
-/// import! { "/path/to/abi.json" };
+/// import! {
+/// r#"
+/// {
+///     "package": "05a405d3129b61e86c51c3168d553d2ffd7a3f0bd2f66b5a3e9876",
+///     "blueprint": "GumballMachine",
+///     "functions": [
+///         {
+///             "name": "new",
+///             "inputs": [],
+///             "output": {
+///                 "type": "Custom",
+///                 "name": "scrypto::Address"
+///             }
+///         }
+///     ],
+///     "methods": [
+///         {
+///             "name": "get_gumball",
+///             "mutability": "Mutable",
+///             "inputs": [
+///                 {
+///                     "type": "Custom",
+///                     "name": "scrypto::Tokens"
+///                 }
+///             ],
+///             "output": {
+///                 "type": "Custom",
+///                 "name": "scrypto::Tokens"
+///             }
+///         }
+///     ]
+/// }
+/// "#
+/// }
 /// ```
 #[proc_macro]
 pub fn import(input: TokenStream) -> TokenStream {

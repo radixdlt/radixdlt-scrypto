@@ -13,11 +13,11 @@ cd "$(dirname "$0")"
 (cd scrypto-derive; cargo fmt)
 (cd scrypto-tests; cargo fmt)
 (cd radix-engine; cargo fmt)
-(cd blueprints/account; cargo fmt)
+(cd examples/account; cargo fmt)
 (cd examples/helloworld; cargo fmt)
 (cd examples/no_std; cargo fmt)
 (cd examples/gumball-machine; cargo fmt)
-(cd examples/vendor; cargo fmt)
+(cd examples/gumball-machine-vendor; cargo fmt)
 (cd simulator; cargo fmt)
 
 echo "All packages have been formatted."

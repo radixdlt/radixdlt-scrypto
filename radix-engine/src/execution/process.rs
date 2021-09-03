@@ -223,7 +223,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         process.put_resources(buckets_out, references_out);
 
         // run the function and finalize
-        let result = process.run(target);
+        let result = process.run(target)?;
         process.finalize()?;
 
         // move resources
@@ -244,7 +244,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
             self.buckets.insert(bid, bucket.into());
         }
 
-        result
+        Ok(result)
     }
 
     /// Return the package address
