@@ -9,12 +9,12 @@ use crate::execution::*;
 use crate::ledger::*;
 use crate::model::*;
 
-/// Runtime is an abstraction layer over the execution state for a transaction.
+/// Runtime is an abstraction to the execution state of a transaction.
 ///
-/// It serves as a proxy to the ledger state and keeps track of all state updates.
-/// The `flush` method should be called to write all updates into ledger.
+/// It acts as the facade of ledger state and keeps track of all temporary state updates,
+/// util the `flush()` method is called.
 ///
-/// A runtime is shared by a chain of processes, created during the life time
+/// Typically, a runtime is shared by a series of processes, created during the life time
 /// of a transaction.
 ///
 pub struct Runtime<'le, T: Ledger> {
@@ -299,9 +299,9 @@ impl<'le, T: Ledger> Runtime<'le, T> {
         self.alloc.new_persisted_bid(self.tx_hash())
     }
 
-    /// Creates a new persisted bucket id.
-    pub fn new_fixed_rid(&mut self) -> RID {
-        self.alloc.new_fixed_rid()
+    /// Creates a new reference id.
+    pub fn new_rid(&mut self) -> RID {
+        self.alloc.new_rid()
     }
 
     /// Creates a new map id.
@@ -311,32 +311,27 @@ impl<'le, T: Ledger> Runtime<'le, T> {
 
     /// Flush changes to ledger.
     pub fn flush(&mut self) {
-        let mut addresses = self.updated_packages.clone();
-        for address in addresses {
+        for address in self.updated_packages.clone() {
             self.ledger
                 .put_package(address, self.packages.get(&address).unwrap().clone());
         }
 
-        addresses = self.updated_components.clone();
-        for address in addresses {
+        for address in self.updated_components.clone() {
             self.ledger
                 .put_component(address, self.components.get(&address).unwrap().clone());
         }
 
-        let maps = self.updated_maps.clone();
-        for mid in maps {
+        for mid in self.updated_maps.clone() {
             self.ledger
                 .put_map(mid, self.maps.get(&mid).unwrap().clone());
         }
 
-        addresses = self.updated_resources.clone();
-        for address in addresses {
+        for address in self.updated_resources.clone() {
             self.ledger
                 .put_resource(address, self.resources.get(&address).unwrap().clone());
         }
 
-        let buckets = self.updated_buckets.clone();
-        for bucket in buckets {
+        for bucket in self.updated_buckets.clone() {
             self.ledger
                 .put_bucket(bucket, self.buckets.get(&bucket).unwrap().clone());
         }

@@ -2,6 +2,7 @@ use crate::kernel::*;
 use crate::resource::*;
 use crate::types::*;
 
+/// Represents a basket of resources.
 pub trait Bucket<T: BucketRef> {
     fn new_empty(resource: Address) -> Self;
 

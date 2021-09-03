@@ -1,6 +1,7 @@
 use crate::kernel::*;
 use crate::types::*;
 
+/// Represents a reference to a bucket.
 pub trait BucketRef {
     fn amount(&self) -> U256;
 

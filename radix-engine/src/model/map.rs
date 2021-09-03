@@ -3,6 +3,7 @@ use scrypto::rust::collections::*;
 use scrypto::rust::vec::Vec;
 use scrypto::types::Address;
 
+/// A key-value storage.
 #[derive(Debug, Clone, Encode, Decode)]
 pub struct Map {
     pub owner: Address,

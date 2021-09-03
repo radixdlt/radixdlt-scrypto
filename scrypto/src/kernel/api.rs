@@ -5,7 +5,7 @@ use crate::rust::vec::Vec;
 use crate::types::*;
 
 extern "C" {
-    /// Entrance to Radix kernel.
+    /// Entrance to Radix Engine.
     pub fn kernel(op: u32, input_ptr: *const u8, input_len: usize) -> *mut u8;
 }
 

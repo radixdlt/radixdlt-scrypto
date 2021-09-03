@@ -7,6 +7,7 @@ use crate::rust::borrow::ToOwned;
 use crate::types::*;
 use crate::utils::*;
 
+/// A scalable key-value storage.
 #[derive(Debug, Encode, Decode)]
 pub struct Map {
     mid: MID,

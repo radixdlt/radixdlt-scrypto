@@ -428,10 +428,16 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         &mut self,
         input: GetComponentInfoInput,
     ) -> Result<GetComponentInfoOutput, RuntimeError> {
+        let package = self.package()?;
+
         let component = self
             .runtime
             .get_component(input.component)
             .ok_or(RuntimeError::ComponentNotFound(input.component))?;
+        if package != component.package() {
+            return Err(RuntimeError::UnauthorizedAccess);
+        }
+
         Ok(GetComponentInfoOutput {
             package: component.package(),
             blueprint: component.blueprint().to_owned(),
@@ -442,10 +448,15 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         &mut self,
         input: GetComponentStateInput,
     ) -> Result<GetComponentStateOutput, RuntimeError> {
+        let package = self.package()?;
+
         let component = self
             .runtime
             .get_component(input.component)
             .ok_or(RuntimeError::ComponentNotFound(input.component))?;
+        if package != component.package() {
+            return Err(RuntimeError::UnauthorizedAccess);
+        }
 
         let state = component.state();
 
@@ -458,6 +469,8 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         &mut self,
         input: PutComponentStateInput,
     ) -> Result<PutComponentStateOutput, RuntimeError> {
+        let package = self.package()?;
+
         let new_state = self.transform_data(
             &input.state,
             Self::convert_transient_to_persist,
@@ -469,6 +482,9 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
             .runtime
             .get_component_mut(input.component)
             .ok_or(RuntimeError::ComponentNotFound(input.component))?;
+        if package != component.package() {
+            return Err(RuntimeError::UnauthorizedAccess);
+        }
 
         component.set_state(new_state);
 
@@ -767,7 +783,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         input: BorrowImmutableInput,
     ) -> Result<BorrowImmutableOutput, RuntimeError> {
         let bid = input.bucket;
-        let rid = self.runtime.new_fixed_rid();
+        let rid = self.runtime.new_rid();
         trace!(self, "Borrowing: bid =  {:?}, rid = {:?}", bid, rid);
 
         match self.locked_buckets.get_mut(&bid) {

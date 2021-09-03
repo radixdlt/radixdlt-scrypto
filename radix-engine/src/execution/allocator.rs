@@ -2,6 +2,8 @@ use scrypto::rust::vec::Vec;
 use scrypto::types::*;
 use scrypto::utils::*;
 
+/// An address allocator defines how new addresses and identifiers
+/// are generated.
 pub struct AddressAllocator {
     count: u32,
 }
@@ -49,7 +51,7 @@ impl AddressAllocator {
         BID::Persisted(tx_hash, self.count - 1)
     }
 
-    pub fn new_fixed_rid(&mut self) -> RID {
+    pub fn new_rid(&mut self) -> RID {
         self.count += 1;
         RID::Immutable(self.count)
     }
