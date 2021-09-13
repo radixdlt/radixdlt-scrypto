@@ -34,14 +34,13 @@ pub fn print_compiled_code<S: ToString>(kind: &str, code: S) {
 pub fn is_skipped(f: &syn::Field) -> bool {
     let mut skipped = false;
     for att in &f.attrs {
-        if att.path.is_ident("sbor") {
-            if att
+        if att.path.is_ident("sbor")
+            && att
                 .parse_args::<syn::Path>()
                 .map(|p| p.is_ident("skip"))
                 .unwrap_or(false)
-            {
-                skipped = true;
-            }
+        {
+            skipped = true;
         }
     }
     skipped

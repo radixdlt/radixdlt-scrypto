@@ -17,9 +17,9 @@ impl From<BID> for Badges {
     }
 }
 
-impl Into<BID> for Badges {
-    fn into(self) -> BID {
-        self.bid
+impl From<Badges> for BID {
+    fn from(a: Badges) -> BID {
+        a.bid
     }
 }
 

@@ -6,10 +6,10 @@ use crate::ledger::*;
 use crate::txn::*;
 use crate::utils::*;
 
-const ARG_TRACE: &'static str = "TRACE";
-const ARG_COMPONENT: &'static str = "COMPONENT";
-const ARG_METHOD: &'static str = "METHOD";
-const ARG_ARGS: &'static str = "ARGS";
+const ARG_TRACE: &str = "TRACE";
+const ARG_COMPONENT: &str = "COMPONENT";
+const ARG_METHOD: &str = "METHOD";
+const ARG_ARGS: &str = "ARGS";
 
 /// Constructs a `call-method` subcommand.
 pub fn make_call_method_cmd<'a, 'b>() -> App<'a, 'b> {

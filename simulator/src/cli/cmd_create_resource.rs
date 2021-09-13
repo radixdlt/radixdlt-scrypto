@@ -8,14 +8,14 @@ use uuid::Uuid;
 use crate::cli::*;
 use crate::ledger::*;
 
-const ARG_TRACE: &'static str = "TRACE";
-const ARG_SYMBOL: &'static str = "SYMBOL";
-const ARG_NAME: &'static str = "NAME";
-const ARG_DESCRIPTION: &'static str = "DESCRIPTION";
-const ARG_URL: &'static str = "URL";
-const ARG_ICON_URL: &'static str = "ICON_URL";
-const ARG_SUPPLY: &'static str = "SUPPLY";
-const ARG_MINTER: &'static str = "MINTER";
+const ARG_TRACE: &str = "TRACE";
+const ARG_SYMBOL: &str = "SYMBOL";
+const ARG_NAME: &str = "NAME";
+const ARG_DESCRIPTION: &str = "DESCRIPTION";
+const ARG_URL: &str = "URL";
+const ARG_ICON_URL: &str = "ICON_URL";
+const ARG_SUPPLY: &str = "SUPPLY";
+const ARG_MINTER: &str = "MINTER";
 
 /// Constructs a `create-resource` subcommand.
 pub fn make_create_resource_cmd<'a, 'b>() -> App<'a, 'b> {

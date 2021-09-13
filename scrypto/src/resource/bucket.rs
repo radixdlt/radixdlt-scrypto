@@ -28,7 +28,7 @@ impl Bucket<RID> for BID {
     fn put(&self, other: Self) {
         let input = CombineBucketsInput {
             bucket: *self,
-            other: other,
+            other,
         };
         let _: CombineBucketsOutput = call_kernel(COMBINE_BUCKETS, input);
     }

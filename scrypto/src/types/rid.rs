@@ -25,14 +25,11 @@ pub enum ParseRIDError {
 
 impl RID {
     pub fn is_mutable(&self) -> bool {
-        match self {
-            Self::Mutable(_) => true,
-            _ => false,
-        }
+        matches!(self, Self::Mutable(_))
     }
 
     pub fn is_immutable(&self) -> bool {
-        !self.is_mutable()
+        matches!(self, Self::Immutable(_))
     }
 
     pub fn to_vec(&self) -> Vec<u8> {
@@ -47,7 +44,7 @@ impl FromStr for RID {
     type Err = ParseRIDError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let bytes = hex::decode(s).map_err(|e| ParseRIDError::InvalidHex(e))?;
+        let bytes = hex::decode(s).map_err(ParseRIDError::InvalidHex)?;
         Self::try_from(bytes.as_slice())
     }
 }
@@ -92,7 +89,7 @@ impl Encode for RID {
 }
 
 impl Decode for RID {
-    fn decode_value<'de>(decoder: &mut Decoder<'de>) -> Result<Self, DecodeError> {
+    fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
         let len = decoder.read_len()?;
         let slice = decoder.read_bytes(len)?;
         Self::try_from(slice).map_err(|_| DecodeError::InvalidCustomData(SCRYPTO_TYPE_RID))

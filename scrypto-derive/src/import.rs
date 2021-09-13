@@ -58,15 +58,12 @@ pub fn handle_import(input: TokenStream) -> TokenStream {
         let mut func_args = Vec::<Ident>::new();
 
         for (i, input) in function.inputs.iter().enumerate() {
-            match input {
-                _ => {
-                    let ident = format_ident!("arg{}", i);
-                    let (new_type, new_items) = get_native_type(input);
-                    func_args.push(parse_quote! { #ident });
-                    func_inputs.push(parse_quote! { #ident: #new_type });
-                    items.extend(new_items);
-                }
-            }
+            let ident = format_ident!("arg{}", i);
+            let (new_type, new_items) = get_native_type(input);
+            func_args.push(parse_quote! { #ident });
+            func_inputs.push(parse_quote! { #ident: #new_type });
+            items.extend(new_items);
+
             if i < function.inputs.len() - 1 {
                 func_inputs.push_punct(Comma(span));
             }
@@ -94,15 +91,12 @@ pub fn handle_import(input: TokenStream) -> TokenStream {
         let mut method_args = Vec::<Ident>::new();
 
         for (i, input) in method.inputs.iter().enumerate() {
-            match input {
-                _ => {
-                    let ident = format_ident!("arg{}", i);
-                    let (new_type, new_items) = get_native_type(input);
-                    method_args.push(parse_quote! { #ident });
-                    method_inputs.push(parse_quote! { #ident: #new_type });
-                    items.extend(new_items);
-                }
-            }
+            let ident = format_ident!("arg{}", i);
+            let (new_type, new_items) = get_native_type(input);
+            method_args.push(parse_quote! { #ident });
+            method_inputs.push(parse_quote! { #ident: #new_type });
+            items.extend(new_items);
+
             if i < method.inputs.len() - 1 {
                 method_inputs.push_punct(Comma(span));
             }
@@ -137,7 +131,7 @@ pub fn handle_import(input: TokenStream) -> TokenStream {
     #[cfg(feature = "trace")]
     crate::utils::print_compiled_code("import!", &output);
 
-    output.into()
+    output
 }
 
 fn get_native_type(ty: &des::Type) -> (Type, Vec<Item>) {
@@ -244,7 +238,7 @@ fn get_native_type(ty: &des::Type) -> (Type, Vec<Item>) {
                         let mut types: Vec<Type> = vec![];
                         for (n, v) in named {
                             names.push(format_ident!("{}", n));
-                            let (new_type, new_items) = get_native_type(&v);
+                            let (new_type, new_items) = get_native_type(v);
                             types.push(new_type);
                             items.extend(new_items);
                         }
@@ -257,7 +251,7 @@ fn get_native_type(ty: &des::Type) -> (Type, Vec<Item>) {
                     des::Fields::Unnamed { unnamed } => {
                         let mut types: Vec<Type> = vec![];
                         for v in unnamed {
-                            let (new_type, new_items) = get_native_type(&v);
+                            let (new_type, new_items) = get_native_type(v);
                             types.push(new_type);
                             items.extend(new_items);
                         }

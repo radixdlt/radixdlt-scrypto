@@ -170,7 +170,7 @@ pub fn handle_describe(input: TokenStream) -> TokenStream {
     #[cfg(feature = "trace")]
     crate::utils::print_compiled_code("Describe", &output);
 
-    output.into()
+    output
 }
 
 #[cfg(test)]

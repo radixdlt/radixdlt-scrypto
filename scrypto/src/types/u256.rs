@@ -24,7 +24,7 @@ impl Encode for U256 {
 }
 
 impl Decode for U256 {
-    fn decode_value<'de>(decoder: &mut Decoder<'de>) -> Result<Self, DecodeError> {
+    fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
         let len = decoder.read_len()?;
         let slice = decoder.read_bytes(len)?;
         if len == 32 {

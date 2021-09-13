@@ -19,9 +19,9 @@ impl From<MID> for Map {
     }
 }
 
-impl Into<MID> for Map {
-    fn into(self) -> MID {
-        self.mid
+impl From<Map> for MID {
+    fn from(a: Map) -> MID {
+        a.mid
     }
 }
 
@@ -54,6 +54,12 @@ impl Map {
 
     pub fn mid(&self) -> MID {
         self.mid
+    }
+}
+
+impl Default for Map {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

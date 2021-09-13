@@ -25,14 +25,11 @@ pub enum ParseBIDError {
 
 impl BID {
     pub fn is_transient(&self) -> bool {
-        match self {
-            Self::Transient(_) => true,
-            _ => false,
-        }
+        matches!(self, Self::Transient(_))
     }
 
     pub fn is_persisted(&self) -> bool {
-        !self.is_transient()
+        matches!(self, Self::Persisted(..))
     }
 
     pub fn to_vec(&self) -> Vec<u8> {
@@ -47,7 +44,7 @@ impl FromStr for BID {
     type Err = ParseBIDError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let bytes = hex::decode(s).map_err(|e| ParseBIDError::InvalidHex(e))?;
+        let bytes = hex::decode(s).map_err(ParseBIDError::InvalidHex)?;
         Self::try_from(bytes.as_slice())
     }
 }
@@ -95,7 +92,7 @@ impl Encode for BID {
 }
 
 impl Decode for BID {
-    fn decode_value<'de>(decoder: &mut Decoder<'de>) -> Result<Self, DecodeError> {
+    fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
         let len = decoder.read_len()?;
         let slice = decoder.read_bytes(len)?;
         Self::try_from(slice).map_err(|_| DecodeError::InvalidCustomData(SCRYPTO_TYPE_BID))

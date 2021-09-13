@@ -22,9 +22,9 @@ impl From<Address> for Component {
     }
 }
 
-impl Into<Address> for Component {
-    fn into(self) -> Address {
-        self.address
+impl From<Component> for Address {
+    fn from(a: Component) -> Address {
+        a.address
     }
 }
 

@@ -1,5 +1,5 @@
-mod ledger;
 mod memory;
+mod traits;
 
-pub use ledger::Ledger;
 pub use memory::InMemoryLedger;
+pub use traits::Ledger;

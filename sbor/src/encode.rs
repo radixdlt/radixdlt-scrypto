@@ -55,9 +55,9 @@ impl Encoder {
     }
 }
 
-impl Into<Vec<u8>> for Encoder {
-    fn into(self) -> Vec<u8> {
-        self.buf
+impl From<Encoder> for Vec<u8> {
+    fn from(a: Encoder) -> Vec<u8> {
+        a.buf
     }
 }
 

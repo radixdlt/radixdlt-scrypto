@@ -15,9 +15,9 @@ use crate::cli::*;
 use crate::ledger::*;
 use crate::utils::*;
 
-const ARG_TRACE: &'static str = "TRACE";
-const ARG_PATH: &'static str = "PATH";
-const ARG_ADDRESS: &'static str = "ADDRESS";
+const ARG_TRACE: &str = "TRACE";
+const ARG_PATH: &str = "PATH";
+const ARG_ADDRESS: &str = "ADDRESS";
 
 /// Constructs a `publish` subcommand.
 pub fn make_publish_cmd<'a, 'b>() -> App<'a, 'b> {

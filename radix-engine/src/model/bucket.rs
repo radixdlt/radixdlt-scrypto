@@ -23,7 +23,6 @@ pub struct Bucket {
 pub struct LockedBucket {
     bucket_id: BID,
     bucket: Bucket,
-    borrow_cnt: usize,
 }
 
 /// A persisted bucket is stored permanently on ledger state.
@@ -67,25 +66,8 @@ impl Bucket {
 }
 
 impl LockedBucket {
-    pub fn new(bucket_id: BID, bucket: Bucket, borrow_cnt: usize) -> Self {
-        Self {
-            bucket_id,
-            bucket,
-            borrow_cnt,
-        }
-    }
-
-    pub fn brw(&mut self) {
-        self.borrow_cnt += 1;
-    }
-
-    pub fn rtn(&mut self) -> Result<usize, BucketError> {
-        if self.borrow_cnt() <= 0 {
-            Err(BucketError::ReferenceCountUnderflow)
-        } else {
-            self.borrow_cnt -= 1;
-            Ok(self.borrow_cnt)
-        }
+    pub fn new(bucket_id: BID, bucket: Bucket) -> Self {
+        Self { bucket_id, bucket }
     }
 
     pub fn bucket_id(&self) -> BID {
@@ -95,15 +77,11 @@ impl LockedBucket {
     pub fn bucket(&self) -> &Bucket {
         &self.bucket
     }
-
-    pub fn borrow_cnt(&self) -> usize {
-        self.borrow_cnt
-    }
 }
 
-impl Into<Bucket> for LockedBucket {
-    fn into(self) -> Bucket {
-        self.bucket
+impl From<LockedBucket> for Bucket {
+    fn from(b: LockedBucket) -> Self {
+        b.bucket
     }
 }
 

@@ -19,9 +19,9 @@ impl From<Address> for Resource {
     }
 }
 
-impl Into<Address> for Resource {
-    fn into(self) -> Address {
-        self.address
+impl From<Resource> for Address {
+    fn from(a: Resource) -> Address {
+        a.address
     }
 }
 

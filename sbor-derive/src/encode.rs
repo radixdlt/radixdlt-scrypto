@@ -153,7 +153,7 @@ pub fn handle_encode(input: TokenStream) -> TokenStream {
     #[cfg(feature = "trace")]
     crate::utils::print_compiled_code("Encode", &output);
 
-    output.into()
+    output
 }
 
 #[cfg(test)]

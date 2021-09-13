@@ -6,11 +6,11 @@ use crate::ledger::*;
 use crate::txn::*;
 use crate::utils::*;
 
-const ARG_TRACE: &'static str = "TRACE";
-const ARG_PACKAGE: &'static str = "PACKAGE";
-const ARG_BLUEPRINT: &'static str = "BLUEPRINT";
-const ARG_FUNCTION: &'static str = "FUNCTION";
-const ARG_ARGS: &'static str = "ARGS";
+const ARG_TRACE: &str = "TRACE";
+const ARG_PACKAGE: &str = "PACKAGE";
+const ARG_BLUEPRINT: &str = "BLUEPRINT";
+const ARG_FUNCTION: &str = "FUNCTION";
+const ARG_ARGS: &str = "ARGS";
 
 /// Constructs a `call-function` subcommand.
 pub fn make_call_function_cmd<'a, 'b>() -> App<'a, 'b> {

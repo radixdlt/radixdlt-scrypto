@@ -1,11 +1,10 @@
-use scrypto::rust::borrow::ToOwned;
 use wasmi::*;
 
 use crate::execution::*;
 
 /// Parse a WASM module.
 pub fn parse_module(code: &[u8]) -> Result<Module, RuntimeError> {
-    Module::from_buffer(code).map_err(|e| RuntimeError::InvalidModule(e))
+    Module::from_buffer(code).map_err(RuntimeError::InvalidModule)
 }
 
 /// Instance a WASM module.
@@ -15,12 +14,12 @@ pub fn instantiate_module(module: &Module) -> Result<(ModuleRef, MemoryRef), Run
         module,
         &ImportsBuilder::new().with_resolver("env", &EnvModuleResolver),
     )
-    .map_err(|e| RuntimeError::UnableToInstantiate(e))?
+    .map_err(RuntimeError::UnableToInstantiate)?
     .assert_no_start();
 
     // Find memory export
     if let Some(ExternVal::Memory(memory)) = instance.export_by_name("memory") {
-        Ok((instance, memory.to_owned()))
+        Ok((instance, memory))
     } else {
         Err(RuntimeError::NoValidMemoryExport)
     }
@@ -41,7 +40,7 @@ pub fn validate_module(code: &[u8]) -> Result<(), RuntimeError> {
         &parsed,
         &ImportsBuilder::new().with_resolver("env", &EnvModuleResolver),
     )
-    .map_err(|e| RuntimeError::UnableToInstantiate(e))?;
+    .map_err(RuntimeError::UnableToInstantiate)?;
 
     // Check start function
     if instance.has_start() {

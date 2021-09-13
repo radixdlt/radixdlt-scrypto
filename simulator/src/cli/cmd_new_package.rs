@@ -4,7 +4,7 @@ use std::path::*;
 
 use crate::cli::*;
 
-const ARG_NAME: &'static str = "NAME";
+const ARG_NAME: &str = "NAME";
 
 /// Constructs a `new-package` subcommand.
 pub fn make_new_package_cmd<'a, 'b>() -> App<'a, 'b> {

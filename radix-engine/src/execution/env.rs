@@ -4,7 +4,7 @@ use wasmi::*;
 /// Kernel entrance function index.
 pub const KERNEL_INDEX: usize = 0;
 /// Kernel entrance function name.
-pub const KERNEL_NAME: &'static str = "kernel";
+pub const KERNEL_NAME: &str = "kernel";
 
 /// Decides what symbols are available in the `env` module.
 pub struct EnvModuleResolver;

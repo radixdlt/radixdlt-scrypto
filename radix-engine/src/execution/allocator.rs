@@ -61,3 +61,9 @@ impl AddressAllocator {
         MID(tx_hash, self.count - 1)
     }
 }
+
+impl Default for AddressAllocator {
+    fn default() -> Self {
+        Self::new()
+    }
+}

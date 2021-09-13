@@ -6,14 +6,13 @@ use scrypto::buffer::*;
 use scrypto::constants::*;
 use scrypto::kernel::*;
 use scrypto::rust::borrow::ToOwned;
-use scrypto::rust::cell::RefCell;
 use scrypto::rust::collections::*;
 use scrypto::rust::convert::TryFrom;
 use scrypto::rust::fmt;
 use scrypto::rust::format;
 use scrypto::rust::rc::Rc;
 use scrypto::rust::string::String;
-use scrypto::rust::string::ToString;
+use scrypto::rust::vec;
 use scrypto::rust::vec::Vec;
 use scrypto::types::*;
 use wasmi::*;
@@ -46,10 +45,10 @@ pub struct Process<'rt, 'le, L: Ledger> {
     trace: bool,
     runtime: &'rt mut Runtime<'le, L>,
     buckets: HashMap<BID, Bucket>,
-    references: HashMap<RID, Rc<RefCell<LockedBucket>>>,
-    locked_buckets: HashMap<BID, Rc<RefCell<LockedBucket>>>,
+    references: HashMap<RID, Rc<LockedBucket>>,
+    locked_buckets: HashMap<BID, Rc<LockedBucket>>,
     moving_buckets: HashMap<BID, Bucket>,
-    moving_references: HashMap<RID, Rc<RefCell<LockedBucket>>>,
+    moving_references: HashMap<RID, Rc<LockedBucket>>,
     vm: Option<VM>,
 }
 
@@ -110,8 +109,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
             .ok_or(RuntimeError::ComponentNotFound(component))?
             .clone();
 
-        let mut self_args = Vec::new();
-        self_args.push(scrypto_encode(&component));
+        let mut self_args = vec![scrypto_encode(&component)];
         self_args.extend(args);
 
         self.target_function(com.package(), com.blueprint(), method, self_args)
@@ -134,19 +132,14 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
     pub fn put_resources(
         &mut self,
         buckets: HashMap<BID, Bucket>,
-        references: HashMap<RID, Rc<RefCell<LockedBucket>>>,
+        references: HashMap<RID, Rc<LockedBucket>>,
     ) {
         self.buckets.extend(buckets);
         self.references.extend(references);
     }
 
     /// Take resources from this process.
-    pub fn take_resources(
-        &mut self,
-    ) -> (
-        HashMap<BID, Bucket>,
-        HashMap<RID, Rc<RefCell<LockedBucket>>>,
-    ) {
+    pub fn take_resources(&mut self) -> (HashMap<BID, Bucket>, HashMap<RID, Rc<LockedBucket>>) {
         let buckets = self.moving_buckets.drain().collect();
         let references = self.moving_references.drain().collect();
         (buckets, references)
@@ -169,7 +162,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         let vm = VM {
             target: target.clone(),
             module: module.clone(),
-            memory: memory.clone(),
+            memory,
         };
         self.vm = Some(vm);
 
@@ -177,7 +170,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         let invoke_res = module.invoke_export(target.export.as_str(), &[], self);
         trace!(self, "Invoke result: {:?}", invoke_res);
         let return_value = invoke_res
-            .map_err(|e| RuntimeError::InvokeError(e))?
+            .map_err(RuntimeError::InvokeError)?
             .ok_or(RuntimeError::NoReturnValue)?;
 
         // move resources based on return data
@@ -234,13 +227,13 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         let bids: Vec<BID> = self
             .locked_buckets
             .values()
-            .filter(|v| v.borrow().borrow_cnt() == 0)
-            .map(|v| v.borrow().bucket_id())
+            .filter(|v| Rc::strong_count(v) == 1)
+            .map(|v| v.bucket_id())
             .collect();
         for bid in bids {
             trace!(self, "Moving {:?} to unlocked_buckets state", bid);
             let bucket_rc = self.locked_buckets.remove(&bid).unwrap();
-            let bucket = Rc::try_unwrap(bucket_rc).unwrap().into_inner();
+            let bucket = Rc::try_unwrap(bucket_rc).unwrap();
             self.buckets.insert(bid, bucket.into());
         }
 
@@ -318,11 +311,11 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
     pub fn log(&self, level: Level, msg: String) {
         if self.trace {
             let (l, m) = match level {
-                Level::Error => ("ERROR".red(), msg.to_string().red()),
-                Level::Warn => ("WARN".yellow(), msg.to_string().yellow()),
-                Level::Info => ("INFO".green(), msg.to_string().green()),
-                Level::Debug => ("DEBUG".cyan(), msg.to_string().cyan()),
-                Level::Trace => ("TRACE".normal(), msg.to_string().normal()),
+                Level::Error => ("ERROR".red(), msg.red()),
+                Level::Warn => ("WARN".yellow(), msg.yellow()),
+                Level::Info => ("INFO".green(), msg.green()),
+                Level::Debug => ("DEBUG".cyan(), msg.cyan()),
+                Level::Trace => ("TRACE".normal(), msg.normal()),
             };
 
             #[cfg(not(feature = "alloc"))]
@@ -514,7 +507,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         }
 
         Ok(GetMapEntryOutput {
-            value: map.get_entry(&input.key).map(Clone::clone),
+            value: map.get_entry(&input.key).map(|e| e.to_vec()),
         })
     }
 
@@ -589,7 +582,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
             url: input.url,
             icon_url: input.icon_url,
             minter: None,
-            supply: Some(input.supply.clone()),
+            supply: Some(input.supply),
         };
 
         let address = self
@@ -696,7 +689,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
                 .ok_or(RuntimeError::BucketNotFound)?;
             bucket
                 .take(bucket.amount(), package)
-                .map_err(|e| RuntimeError::AccountingError(e))?
+                .map_err(RuntimeError::AccountingError)?
         } else {
             self.buckets
                 .remove(&input.other)
@@ -708,13 +701,13 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
                 .get_bucket_mut(input.bucket)
                 .ok_or(RuntimeError::BucketNotFound)?
                 .put(other, package)
-                .map_err(|e| RuntimeError::AccountingError(e))?;
+                .map_err(RuntimeError::AccountingError)?;
         } else {
             self.buckets
                 .get_mut(&input.bucket)
                 .ok_or(RuntimeError::BucketNotFound)?
                 .put(other)
-                .map_err(|e| RuntimeError::AccountingError(e))?;
+                .map_err(RuntimeError::AccountingError)?;
         }
 
         Ok(CombineBucketsOutput {})
@@ -731,13 +724,13 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
                 .get_bucket_mut(input.bucket)
                 .ok_or(RuntimeError::BucketNotFound)?
                 .take(input.amount, package)
-                .map_err(|e| RuntimeError::AccountingError(e))?
+                .map_err(RuntimeError::AccountingError)?
         } else {
             self.buckets
                 .get_mut(&input.bucket)
                 .ok_or(RuntimeError::BucketNotFound)?
                 .take(input.amount)
-                .map_err(|e| RuntimeError::AccountingError(e))?
+                .map_err(RuntimeError::AccountingError)?
         };
         let new_bid = self.runtime.new_transient_bid();
         self.buckets.insert(new_bid, new_bucket);
@@ -751,10 +744,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
             .buckets
             .get(&bid)
             .map(|b| b.amount())
-            .or(self
-                .locked_buckets
-                .get(&bid)
-                .map(|x| x.borrow().bucket().amount()))
+            .or_else(|| self.locked_buckets.get(&bid).map(|x| x.bucket().amount()))
             .ok_or(RuntimeError::BucketNotFound)?;
 
         Ok(GetAmountOutput { amount })
@@ -769,10 +759,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
             .buckets
             .get(&bid)
             .map(|b| b.resource())
-            .or(self
-                .locked_buckets
-                .get(&bid)
-                .map(|x| x.borrow().bucket().resource()))
+            .or_else(|| self.locked_buckets.get(&bid).map(|x| x.bucket().resource()))
             .ok_or(RuntimeError::BucketNotFound)?;
 
         Ok(GetResourceOutput { resource })
@@ -787,20 +774,18 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         trace!(self, "Borrowing: bid =  {:?}, rid = {:?}", bid, rid);
 
         match self.locked_buckets.get_mut(&bid) {
-            Some(bucket) => {
+            Some(bucket_rc) => {
                 // re-borrow
-                bucket.borrow_mut().brw();
-                self.references.insert(rid, bucket.clone());
+                self.references.insert(rid, bucket_rc.clone());
             }
             None => {
                 // first time borrow
-                let bucket = Rc::new(RefCell::new(LockedBucket::new(
+                let bucket = Rc::new(LockedBucket::new(
                     bid,
                     self.buckets
                         .remove(&bid)
                         .ok_or(RuntimeError::BucketNotFound)?,
-                    1, // once
-                )));
+                ));
                 self.references.insert(rid, bucket.clone());
                 self.locked_buckets.insert(bid, bucket);
             }
@@ -817,20 +802,19 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         if rid.is_mutable() {
             todo!()
         };
-        let bucket = self
-            .references
-            .remove(&rid)
-            .ok_or(RuntimeError::ReferenceNotFound)?;
-        trace!(self, "Returning {:?}: {:?}", rid, bucket);
 
-        let new_count = bucket
-            .borrow_mut()
-            .rtn()
-            .map_err(|e| RuntimeError::AccountingError(e))?;
-        if new_count == 0 {
-            if let Some(b) = self.locked_buckets.remove(&bucket.borrow().bucket_id()) {
-                self.buckets
-                    .insert(b.borrow().bucket_id(), b.borrow().bucket().clone());
+        let (count, bid) = {
+            let bucket = self
+                .references
+                .remove(&rid)
+                .ok_or(RuntimeError::ReferenceNotFound)?;
+            trace!(self, "Returning {:?}: {:?}", rid, bucket);
+            (Rc::strong_count(&bucket) - 1, bucket.bucket_id())
+        };
+
+        if count == 1 {
+            if let Some(b) = self.locked_buckets.remove(&bid) {
+                self.buckets.insert(bid, Rc::try_unwrap(b).unwrap().into());
             }
         }
 
@@ -847,7 +831,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
             .ok_or(RuntimeError::ReferenceNotFound)?;
 
         Ok(GetAmountRefOutput {
-            amount: reference.borrow().bucket().amount(),
+            amount: reference.bucket().amount(),
         })
     }
 
@@ -861,7 +845,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
             .ok_or(RuntimeError::ReferenceNotFound)?;
 
         Ok(GetResourceRefOutput {
-            resource: reference.borrow().bucket().resource(),
+            resource: reference.bucket().resource(),
         })
     }
 
@@ -911,11 +895,11 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
     /// Transform SBOR data by applying function on BID and RID.
     fn transform_data(
         &mut self,
-        data: &Vec<u8>,
+        data: &[u8],
         bf: fn(&mut Self, BID) -> Result<BID, RuntimeError>,
         rf: fn(&mut Self, RID) -> Result<RID, RuntimeError>,
     ) -> Result<Vec<u8>, RuntimeError> {
-        let value = parse_any(data).map_err(|e| RuntimeError::InvalidData(e))?;
+        let value = parse_any(data).map_err(RuntimeError::InvalidData)?;
         let transformed = self.trans(value, bf, rf)?;
 
         let mut encoder = Encoder::with_type(Vec::with_capacity(data.len() + 512));
@@ -1098,13 +1082,10 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
             &mut NopExternals,
         );
 
-        match result {
-            Ok(Some(RuntimeValue::I32(ptr))) => {
-                if self.memory()?.set((ptr + 4) as u32, bytes).is_ok() {
-                    return Ok(ptr);
-                }
+        if let Ok(Some(RuntimeValue::I32(ptr))) = result {
+            if self.memory()?.set((ptr + 4) as u32, bytes).is_ok() {
+                return Ok(ptr);
             }
-            _ => {}
         }
 
         Err(RuntimeError::UnableToAllocateMemory)
@@ -1116,14 +1097,14 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         let a = self
             .memory()?
             .get(ptr as u32, 4)
-            .map_err(|e| RuntimeError::MemoryAccessError(e))?;
+            .map_err(RuntimeError::MemoryAccessError)?;
         let len = u32::from_le_bytes([a[0], a[1], a[2], a[3]]);
 
         // read data
         let data = self
             .memory()?
             .get((ptr + 4) as u32, len as usize)
-            .map_err(|e| RuntimeError::MemoryAccessError(e))?;
+            .map_err(RuntimeError::MemoryAccessError)?;
 
         // free the buffer
         self.module()?
@@ -1132,7 +1113,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
                 &[RuntimeValue::I32(ptr as i32)],
                 &mut NopExternals,
             )
-            .map_err(|e| RuntimeError::MemoryAccessError(e))?;
+            .map_err(RuntimeError::MemoryAccessError)?;
 
         Ok(data)
     }

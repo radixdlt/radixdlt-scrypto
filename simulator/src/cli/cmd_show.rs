@@ -6,7 +6,7 @@ use crate::cli::*;
 use crate::ledger::*;
 use crate::utils::*;
 
-const ARG_ADDRESS: &'static str = "ADDRESS";
+const ARG_ADDRESS: &str = "ADDRESS";
 
 /// Constructs a `show` subcommand.
 pub fn make_show_cmd<'a, 'b>() -> App<'a, 'b> {

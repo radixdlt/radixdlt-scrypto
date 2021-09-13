@@ -24,18 +24,18 @@ pub use cmd_show::*;
 pub use config::*;
 pub use error::*;
 
-pub const CONF_DEFAULT_ACCOUNT: &'static str = "default.account";
+pub const CONF_DEFAULT_ACCOUNT: &str = "default.account";
 
-pub const CMD_EXPORT_ABI: &'static str = "export-abi";
-pub const CMD_CALL_FUNCTION: &'static str = "call-function";
-pub const CMD_CALL_METHOD: &'static str = "call-method";
-pub const CMD_CREATE_RESOURCE: &'static str = "create-resource";
-pub const CMD_NEW_ACCOUNT: &'static str = "new-account";
-pub const CMD_NEW_PACKAGE: &'static str = "new-package";
-pub const CMD_PUBLISH: &'static str = "publish";
-pub const CMD_RESET: &'static str = "reset";
-pub const CMD_CONFIG: &'static str = "config";
-pub const CMD_SHOW: &'static str = "show";
+pub const CMD_EXPORT_ABI: &str = "export-abi";
+pub const CMD_CALL_FUNCTION: &str = "call-function";
+pub const CMD_CALL_METHOD: &str = "call-method";
+pub const CMD_CREATE_RESOURCE: &str = "create-resource";
+pub const CMD_NEW_ACCOUNT: &str = "new-account";
+pub const CMD_NEW_PACKAGE: &str = "new-package";
+pub const CMD_PUBLISH: &str = "publish";
+pub const CMD_RESET: &str = "reset";
+pub const CMD_CONFIG: &str = "config";
+pub const CMD_SHOW: &str = "show";
 
 pub fn run<I, T>(args: I) -> Result<(), Error>
 where

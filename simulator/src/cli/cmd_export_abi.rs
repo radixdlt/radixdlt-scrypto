@@ -5,9 +5,9 @@ use crate::abi::*;
 use crate::cli::*;
 use crate::ledger::*;
 
-const ARG_TRACE: &'static str = "TRACE";
-const ARG_PACKAGE: &'static str = "PACKAGE";
-const ARG_BLUEPRINT: &'static str = "BLUEPRINT";
+const ARG_TRACE: &str = "TRACE";
+const ARG_PACKAGE: &str = "PACKAGE";
+const ARG_BLUEPRINT: &str = "BLUEPRINT";
 
 /// Constructs a `export-abi` subcommand.
 pub fn make_export_abi_cmd<'a, 'b>() -> App<'a, 'b> {

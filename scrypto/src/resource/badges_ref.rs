@@ -17,9 +17,9 @@ impl From<RID> for BadgesRef {
     }
 }
 
-impl Into<RID> for BadgesRef {
-    fn into(self) -> RID {
-        self.rid
+impl From<BadgesRef> for RID {
+    fn from(a: BadgesRef) -> RID {
+        a.rid
     }
 }
 

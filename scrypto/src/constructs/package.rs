@@ -18,9 +18,9 @@ impl From<Address> for Package {
     }
 }
 
-impl Into<Address> for Package {
-    fn into(self) -> Address {
-        self.address
+impl From<Package> for Address {
+    fn from(a: Package) -> Address {
+        a.address
     }
 }
 

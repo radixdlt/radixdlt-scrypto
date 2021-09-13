@@ -10,7 +10,7 @@ use uuid::Uuid;
 use crate::cli::*;
 use crate::ledger::*;
 
-const ARG_TRACE: &'static str = "TRACE";
+const ARG_TRACE: &str = "TRACE";
 
 /// Constructs a `new-account` subcommand.
 pub fn make_new_account_cmd<'a, 'b>() -> App<'a, 'b> {

@@ -13,9 +13,7 @@ pub fn call_kernel<T: Encode, V: Decode>(op: u32, input: T) -> V {
     let output_ptr = unsafe { kernel(op, input_bytes.as_ptr(), input_bytes.len()) };
 
     // 3. deserialize the output
-    let output = scrypto_consume(output_ptr, |slice| {
+    scrypto_consume(output_ptr, |slice| {
         unwrap_or_panic(scrypto_decode::<V>(slice))
-    });
-
-    output
+    })
 }

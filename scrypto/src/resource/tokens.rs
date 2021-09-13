@@ -17,9 +17,9 @@ impl From<BID> for Tokens {
     }
 }
 
-impl Into<BID> for Tokens {
-    fn into(self) -> BID {
-        self.bid
+impl From<Tokens> for BID {
+    fn from(a: Tokens) -> BID {
+        a.bid
     }
 }
 

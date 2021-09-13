@@ -24,7 +24,7 @@ pub fn scrypto_encode_for_host<T: Encode + ?Sized>(v: &T) -> Vec<u8> {
 }
 
 /// Decodes an instance of `T` from a slice.
-pub fn scrypto_decode<'de, T: Decode>(buf: &'de [u8]) -> Result<T, DecodeError> {
+pub fn scrypto_decode<T: Decode>(buf: &[u8]) -> Result<T, DecodeError> {
     sbor::decode_with_type(buf)
 }
 

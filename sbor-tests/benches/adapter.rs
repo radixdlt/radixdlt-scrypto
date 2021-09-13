@@ -37,7 +37,7 @@ pub fn bincode_encode<T: Serialize>(v: &T) -> Vec<u8> {
     writer.buffer
 }
 
-pub fn bincode_decode<'de, T: Deserialize<'de>>(buf: &'de [u8]) -> Result<T, String> {
+pub fn bincode_decode<'de, T: Deserialize>(buf: &'de [u8]) -> Result<T, String> {
     let options = DefaultOptions::new();
     deserialize(buf, options).map_err(|e| e.to_string())
 }
@@ -46,6 +46,6 @@ pub fn json_encode<T: Serialize>(v: &T) -> Vec<u8> {
     serde_json::to_vec(v).unwrap()
 }
 
-pub fn json_decode<'de, T: Deserialize<'de>>(buf: &'de [u8]) -> Result<T, String> {
+pub fn json_decode<'de, T: Deserialize>(buf: &'de [u8]) -> Result<T, String> {
     serde_json::from_slice(buf).map_err(|e| e.to_string())
 }

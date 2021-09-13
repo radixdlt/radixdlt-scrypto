@@ -32,12 +32,12 @@ pub enum DecodeError {
 /// A data structure that can be decoded from a byte array using SBOR.
 pub trait Decode: Sized {
     #[inline]
-    fn decode<'de>(decoder: &mut Decoder<'de>) -> Result<Self, DecodeError> {
+    fn decode(decoder: &mut Decoder) -> Result<Self, DecodeError> {
         decoder.check_type(Self::type_id())?;
         Self::decode_value(decoder)
     }
 
-    fn decode_value<'de>(decoder: &mut Decoder<'de>) -> Result<Self, DecodeError>;
+    fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError>;
 
     fn type_id() -> u8;
 }
@@ -88,7 +88,7 @@ impl<'de> Decoder<'de> {
 
     pub fn read_len(&mut self) -> Result<usize, DecodeError> {
         let mut bytes = [0u8; 4];
-        bytes.copy_from_slice(&self.read_bytes(4)?[..]);
+        bytes.copy_from_slice(self.read_bytes(4)?);
         Ok(u32::from_le_bytes(bytes) as usize)
     }
 
@@ -143,7 +143,7 @@ impl<'de> Decoder<'de> {
 }
 
 impl Decode for () {
-    fn decode_value<'de>(_decoder: &mut Decoder<'de>) -> Result<Self, DecodeError> {
+    fn decode_value(_decoder: &mut Decoder) -> Result<Self, DecodeError> {
         Ok(())
     }
 
@@ -154,7 +154,7 @@ impl Decode for () {
 }
 
 impl Decode for bool {
-    fn decode_value<'de>(decoder: &mut Decoder<'de>) -> Result<Self, DecodeError> {
+    fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
         let value = decoder.read_u8()?;
         match value {
             0 => Ok(false),
@@ -170,7 +170,7 @@ impl Decode for bool {
 }
 
 impl Decode for i8 {
-    fn decode_value<'de>(decoder: &mut Decoder<'de>) -> Result<Self, DecodeError> {
+    fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
         let value = decoder.read_u8()?;
         Ok(value as i8)
     }
@@ -182,7 +182,7 @@ impl Decode for i8 {
 }
 
 impl Decode for u8 {
-    fn decode_value<'de>(decoder: &mut Decoder<'de>) -> Result<Self, DecodeError> {
+    fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
         let value = decoder.read_u8()?;
         Ok(value)
     }
@@ -196,7 +196,7 @@ impl Decode for u8 {
 macro_rules! decode_int {
     ($type:ident, $type_id:ident, $n:expr) => {
         impl Decode for $type {
-            fn decode_value<'de>(decoder: &mut Decoder<'de>) -> Result<Self, DecodeError> {
+            fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
                 let slice = decoder.read_bytes($n)?;
                 let mut bytes = [0u8; $n];
                 bytes.copy_from_slice(&slice[..]);
@@ -221,7 +221,7 @@ decode_int!(u64, TYPE_U64, 8);
 decode_int!(u128, TYPE_U128, 16);
 
 impl Decode for isize {
-    fn decode_value<'de>(decoder: &mut Decoder<'de>) -> Result<Self, DecodeError> {
+    fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
         i32::decode_value(decoder).map(|i| i as isize)
     }
 
@@ -232,7 +232,7 @@ impl Decode for isize {
 }
 
 impl Decode for usize {
-    fn decode_value<'de>(decoder: &mut Decoder<'de>) -> Result<Self, DecodeError> {
+    fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
         u32::decode_value(decoder).map(|i| i as usize)
     }
 
@@ -243,11 +243,10 @@ impl Decode for usize {
 }
 
 impl Decode for String {
-    fn decode_value<'de>(decoder: &mut Decoder<'de>) -> Result<Self, DecodeError> {
+    fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
         let len = decoder.read_len()?;
         let slice = decoder.read_bytes(len)?;
-        let s = String::from_utf8(slice.to_vec()).map_err(|_| DecodeError::InvalidUtf8);
-        Ok(s?)
+        String::from_utf8(slice.to_vec()).map_err(|_| DecodeError::InvalidUtf8)
     }
 
     #[inline]
@@ -257,7 +256,7 @@ impl Decode for String {
 }
 
 impl<T: Decode> Decode for Option<T> {
-    fn decode_value<'de>(decoder: &mut Decoder<'de>) -> Result<Self, DecodeError> {
+    fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
         let index = decoder.read_u8()?;
 
         match index {
@@ -274,7 +273,7 @@ impl<T: Decode> Decode for Option<T> {
 }
 
 impl<T: Decode> Decode for Box<T> {
-    fn decode_value<'de>(decoder: &mut Decoder<'de>) -> Result<Self, DecodeError> {
+    fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
         let v = T::decode(decoder)?;
         Ok(Box::new(v))
     }
@@ -286,14 +285,14 @@ impl<T: Decode> Decode for Box<T> {
 }
 
 impl<T: Decode, const N: usize> Decode for [T; N] {
-    fn decode_value<'de>(decoder: &mut Decoder<'de>) -> Result<Self, DecodeError> {
+    fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
         decoder.check_type(T::type_id())?;
         decoder.check_len(N)?;
 
         let mut x = MaybeUninit::<[T; N]>::uninit();
         let arr = unsafe { &mut *x.as_mut_ptr() };
-        for i in 0..N {
-            arr[i] = T::decode_value(decoder)?;
+        for itr in arr.iter_mut() {
+            *itr = T::decode_value(decoder)?;
         }
         Ok(unsafe { x.assume_init() })
     }
@@ -307,7 +306,7 @@ impl<T: Decode, const N: usize> Decode for [T; N] {
 macro_rules! decode_tuple {
     ($n:tt $($idx:tt $name:ident)+) => {
         impl<$($name: Decode),+> Decode for ($($name,)+) {
-                    fn decode_value<'de>(decoder: &mut Decoder<'de>) -> Result<Self, DecodeError> {
+                    fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
                 let len = decoder.read_len()?;
 
                 if len != $n {
@@ -335,7 +334,7 @@ decode_tuple! { 9 0 A 1 B 2 C 3 D 4 E 5 F 6 G 7 H 8 I }
 decode_tuple! { 10 0 A 1 B 2 C 3 D 4 E 5 F 6 G 7 H 8 I 9 J }
 
 impl<T: Decode> Decode for Vec<T> {
-    fn decode_value<'de>(decoder: &mut Decoder<'de>) -> Result<Self, DecodeError> {
+    fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
         decoder.check_type(T::type_id())?;
         let len = decoder.read_len()?;
 
@@ -363,7 +362,7 @@ impl<T: Decode> Decode for Vec<T> {
 }
 
 impl<T: Decode + Ord> Decode for BTreeSet<T> {
-    fn decode_value<'de>(decoder: &mut Decoder<'de>) -> Result<Self, DecodeError> {
+    fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
         decoder.check_type(T::type_id())?;
         let len = decoder.read_len()?;
 
@@ -381,7 +380,7 @@ impl<T: Decode + Ord> Decode for BTreeSet<T> {
 }
 
 impl<K: Decode + Ord, V: Decode> Decode for BTreeMap<K, V> {
-    fn decode_value<'de>(decoder: &mut Decoder<'de>) -> Result<Self, DecodeError> {
+    fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
         decoder.check_type(K::type_id())?;
         decoder.check_type(V::type_id())?;
         let len = decoder.read_len()?;
@@ -399,7 +398,7 @@ impl<K: Decode + Ord, V: Decode> Decode for BTreeMap<K, V> {
 }
 
 impl<T: Decode + Hash + Eq> Decode for HashSet<T> {
-    fn decode_value<'de>(decoder: &mut Decoder<'de>) -> Result<Self, DecodeError> {
+    fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
         decoder.check_type(T::type_id())?;
         let len = decoder.read_len()?;
 
@@ -417,7 +416,7 @@ impl<T: Decode + Hash + Eq> Decode for HashSet<T> {
 }
 
 impl<K: Decode + Hash + Eq, V: Decode> Decode for HashMap<K, V> {
-    fn decode_value<'de>(decoder: &mut Decoder<'de>) -> Result<Self, DecodeError> {
+    fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
         decoder.check_type(K::type_id())?;
         decoder.check_type(V::type_id())?;
         let len = decoder.read_len()?;

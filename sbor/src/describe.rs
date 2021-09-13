@@ -179,9 +179,7 @@ macro_rules! describe_tuple {
     ($($name:ident)+) => {
         impl<$($name: Describe),+> Describe for ($($name,)+) {
             fn describe() -> Type {
-                let mut elements = vec!();
-                $(elements.push($name::describe());)+
-                Type::Tuple { elements }
+                Type::Tuple { elements: vec![ $($name::describe(),)* ] }
             }
         }
     };

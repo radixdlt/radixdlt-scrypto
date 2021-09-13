@@ -25,6 +25,12 @@ impl InMemoryLedger {
     }
 }
 
+impl Default for InMemoryLedger {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Ledger for InMemoryLedger {
     fn get_package(&self, address: Address) -> Option<Package> {
         self.packages.get(&address).map(Clone::clone)

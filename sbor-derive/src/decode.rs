@@ -30,7 +30,7 @@ pub fn handle_decode(input: TokenStream) -> TokenStream {
                 let s_types = s.iter().map(|f| &f.ty);
                 quote! {
                     impl ::sbor::Decode for #ident {
-                        fn decode_value<'de>(decoder: &'de mut ::sbor::Decoder) -> Result<Self, ::sbor::DecodeError> {
+                        fn decode_value(decoder: &mut ::sbor::Decoder) -> Result<Self, ::sbor::DecodeError> {
                             use ::sbor::{self, Decode};
                             decoder.check_type(::sbor::constants::TYPE_FIELDS_NAMED)?;
                             decoder.check_len(#ns_n)?;
@@ -59,7 +59,7 @@ pub fn handle_decode(input: TokenStream) -> TokenStream {
                 let ns_n = Index::from(unnamed.iter().filter(|f| !is_skipped(f)).count());
                 quote! {
                     impl ::sbor::Decode for #ident {
-                        fn decode_value<'de>(decoder: &'de mut ::sbor::Decoder) -> Result<Self, ::sbor::DecodeError> {
+                        fn decode_value(decoder: &mut ::sbor::Decoder) -> Result<Self, ::sbor::DecodeError> {
                             use ::sbor::{self, Decode};
                             decoder.check_type(::sbor::constants::TYPE_FIELDS_UNNAMED)?;
                             decoder.check_len(#ns_n)?;
@@ -77,7 +77,7 @@ pub fn handle_decode(input: TokenStream) -> TokenStream {
             syn::Fields::Unit => {
                 quote! {
                     impl ::sbor::Decode for #ident {
-                        fn decode_value<'de>(decoder: &'de mut ::sbor::Decoder) -> Result<Self, ::sbor::DecodeError> {
+                        fn decode_value(decoder: &mut ::sbor::Decoder) -> Result<Self, ::sbor::DecodeError> {
                             decoder.check_type(::sbor::constants::TYPE_FIELDS_UNIT)?;
                             Ok(Self {})
                         }
@@ -150,7 +150,7 @@ pub fn handle_decode(input: TokenStream) -> TokenStream {
             quote! {
                 impl ::sbor::Decode for #ident {
                     #[inline]
-                    fn decode_value<'de>(decoder: &'de mut ::sbor::Decoder) -> Result<Self, ::sbor::DecodeError> {
+                    fn decode_value(decoder: &mut ::sbor::Decoder) -> Result<Self, ::sbor::DecodeError> {
                         use ::sbor::{self, Decode};
 
                         let index = decoder.read_u8()?;
@@ -175,7 +175,7 @@ pub fn handle_decode(input: TokenStream) -> TokenStream {
     #[cfg(feature = "trace")]
     crate::utils::print_compiled_code("Decode", &output);
 
-    output.into()
+    output
 }
 
 #[cfg(test)]
@@ -198,7 +198,7 @@ mod tests {
             output,
             quote! {
                 impl ::sbor::Decode for Test {
-                    fn decode_value<'de>(decoder: &'de mut ::sbor::Decoder) -> Result<Self, ::sbor::DecodeError> {
+                    fn decode_value(decoder: &mut ::sbor::Decoder) -> Result<Self, ::sbor::DecodeError> {
                         use ::sbor::{self, Decode};
                         decoder.check_type(::sbor::constants::TYPE_FIELDS_NAMED)?;
                         decoder.check_len(1)?;
@@ -225,7 +225,7 @@ mod tests {
             quote! {
                 impl ::sbor::Decode for Test {
                     #[inline]
-                    fn decode_value<'de>(decoder: &'de mut ::sbor::Decoder) -> Result<Self, ::sbor::DecodeError> {
+                    fn decode_value(decoder: &mut ::sbor::Decoder) -> Result<Self, ::sbor::DecodeError> {
                         use ::sbor::{self, Decode};
                         let index = decoder.read_u8()?;
                         match index {

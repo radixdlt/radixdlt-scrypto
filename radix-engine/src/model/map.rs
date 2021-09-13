@@ -22,8 +22,8 @@ impl Map {
         self.owner
     }
 
-    pub fn get_entry(&self, key: &Vec<u8>) -> Option<&Vec<u8>> {
-        self.map.get(key)
+    pub fn get_entry(&self, key: &[u8]) -> Option<&[u8]> {
+        self.map.get(key).map(|e| e.as_slice())
     }
 
     pub fn set_entry(&mut self, key: Vec<u8>, value: Vec<u8>) {

@@ -25,14 +25,14 @@ fn copy_u8_array<const N: usize>(slice: &[u8]) -> [u8; N] {
 }
 
 fn combine2(ty: u8, bytes: &[u8]) -> Vec<u8> {
-    let mut v = Vec::new();
+    let mut v = Vec::with_capacity(1 + bytes.len());
     v.push(ty);
     v.extend(bytes);
     v
 }
 
 fn combine3(ty: u8, bytes: &[u8], bytes2: &[u8]) -> Vec<u8> {
-    let mut v = Vec::new();
+    let mut v = Vec::with_capacity(1 + bytes.len() + bytes2.len());
     v.push(ty);
     v.extend(bytes);
     v.extend(bytes2);

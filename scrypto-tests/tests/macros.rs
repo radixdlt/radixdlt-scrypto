@@ -9,12 +9,12 @@ use scrypto::rust::vec::Vec;
 use scrypto::types::*;
 use scrypto::*;
 
-const LOG_MESSAGE: &'static str = "Hello, Radix!";
-const PACKAGE_ADDRESS: &'static str = "050377bac8066e51cd0d6b320c338d5abbcdbcca25572b6b3eee94";
-const COMPONENT_ADDRESS: &'static str = "06c46576324df8c76f6d83611974e8d26a12fe648280c19974c979";
-const BLUEPRINT_NAME: &'static str = "BlueprintName";
-const FUNCTION_NAME: &'static str = "function";
-const METHOD_NAME: &'static str = "method";
+const LOG_MESSAGE: &str = "Hello, Radix!";
+const PACKAGE_ADDRESS: &str = "050377bac8066e51cd0d6b320c338d5abbcdbcca25572b6b3eee94";
+const COMPONENT_ADDRESS: &str = "06c46576324df8c76f6d83611974e8d26a12fe648280c19974c979";
+const BLUEPRINT_NAME: &str = "BlueprintName";
+const FUNCTION_NAME: &str = "function";
+const METHOD_NAME: &str = "method";
 const RETURN: i32 = 5;
 
 #[no_mangle]

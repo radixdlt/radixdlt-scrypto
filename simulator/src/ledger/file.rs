@@ -12,13 +12,13 @@ pub struct FileBasedLedger {
     root: PathBuf,
 }
 
-const PACKAGES: &'static str = "packages";
-const COMPONENTS: &'static str = "components";
-const MAPS: &'static str = "maps";
-const RESOURCES: &'static str = "resources";
-const BUCKETS: &'static str = "buckets";
+const PACKAGES: &str = "packages";
+const COMPONENTS: &str = "components";
+const MAPS: &str = "maps";
+const RESOURCES: &str = "resources";
+const BUCKETS: &str = "buckets";
 
-const FILE_EXT: &'static str = "sbor";
+const FILE_EXT: &str = "sbor";
 
 impl FileBasedLedger {
     pub fn new(root: PathBuf) -> Self {

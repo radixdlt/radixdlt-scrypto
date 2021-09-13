@@ -33,7 +33,7 @@ impl FromStr for MID {
     type Err = ParseMIDError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let bytes = hex::decode(s).map_err(|e| ParseMIDError::InvalidHex(e))?;
+        let bytes = hex::decode(s).map_err(ParseMIDError::InvalidHex)?;
         Self::try_from(bytes.as_slice())
     }
 }
@@ -91,7 +91,7 @@ impl Encode for MID {
 }
 
 impl Decode for MID {
-    fn decode_value<'de>(decoder: &mut Decoder<'de>) -> Result<Self, DecodeError> {
+    fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
         let len = decoder.read_len()?;
         let slice = decoder.read_bytes(len)?;
         Self::try_from(slice).map_err(|_| DecodeError::InvalidCustomData(SCRYPTO_TYPE_MID))

@@ -17,9 +17,9 @@ impl From<RID> for TokensRef {
     }
 }
 
-impl Into<RID> for TokensRef {
-    fn into(self) -> RID {
-        self.rid
+impl From<TokensRef> for RID {
+    fn from(a: TokensRef) -> RID {
+        a.rid
     }
 }
 

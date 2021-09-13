@@ -2,8 +2,8 @@ use clap::{crate_version, App, Arg, ArgMatches, SubCommand};
 
 use crate::cli::*;
 
-const ARG_NAME: &'static str = "NAME";
-const ARG_VALUE: &'static str = "VALUE";
+const ARG_NAME: &str = "NAME";
+const ARG_VALUE: &str = "VALUE";
 
 /// Constructs a `config` subcommand.
 pub fn make_config_cmd<'a, 'b>() -> App<'a, 'b> {

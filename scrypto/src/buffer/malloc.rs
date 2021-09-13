@@ -3,6 +3,7 @@ use crate::rust::ptr::copy;
 use crate::rust::vec::Vec;
 
 /// Allocates a chunk of memory that is not tracked by Rust ownership system.
+#[allow(clippy::not_unsafe_ptr_arg_deref)]
 #[no_mangle]
 pub extern "C" fn scrypto_alloc(len: u32) -> *mut u8 {
     let cap = (len + 4) as usize;
@@ -24,6 +25,7 @@ pub fn scrypto_wrap(mut buf: Vec<u8>) -> *mut u8 {
 }
 
 /// Consumes a memory chunk.
+#[allow(clippy::not_unsafe_ptr_arg_deref)]
 pub fn scrypto_consume<T>(ptr: *mut u8, f: fn(slice: &[u8]) -> T) -> T {
     unsafe {
         let mut len = [0u8; 4];
