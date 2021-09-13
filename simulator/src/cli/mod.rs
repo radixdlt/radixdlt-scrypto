@@ -4,6 +4,7 @@ mod cmd_config;
 mod cmd_create_resource;
 mod cmd_export_abi;
 mod cmd_new_account;
+mod cmd_new_package;
 mod cmd_publish;
 mod cmd_reset;
 mod cmd_show;
@@ -16,6 +17,7 @@ pub use cmd_config::*;
 pub use cmd_create_resource::*;
 pub use cmd_export_abi::*;
 pub use cmd_new_account::*;
+pub use cmd_new_package::*;
 pub use cmd_publish::*;
 pub use cmd_reset::*;
 pub use cmd_show::*;
@@ -29,6 +31,7 @@ pub const CMD_CALL_FUNCTION: &'static str = "call-function";
 pub const CMD_CALL_METHOD: &'static str = "call-method";
 pub const CMD_CREATE_RESOURCE: &'static str = "create-resource";
 pub const CMD_NEW_ACCOUNT: &'static str = "new-account";
+pub const CMD_NEW_PACKAGE: &'static str = "new-package";
 pub const CMD_PUBLISH: &'static str = "publish";
 pub const CMD_RESET: &'static str = "reset";
 pub const CMD_CONFIG: &'static str = "config";
@@ -48,6 +51,7 @@ where
         .subcommand(make_call_method_cmd())
         .subcommand(make_create_resource_cmd())
         .subcommand(make_new_account_cmd())
+        .subcommand(make_new_package_cmd())
         .subcommand(make_publish_cmd())
         .subcommand(make_reset_cmd())
         .subcommand(make_config_cmd())
@@ -60,6 +64,7 @@ where
         (CMD_CALL_METHOD, Some(m)) => handle_call_method(m),
         (CMD_CREATE_RESOURCE, Some(m)) => handle_create_resource(m),
         (CMD_NEW_ACCOUNT, Some(m)) => handle_new_account(m),
+        (CMD_NEW_PACKAGE, Some(m)) => handle_new_package(m),
         (CMD_PUBLISH, Some(m)) => handle_publish(m),
         (CMD_RESET, Some(m)) => handle_reset(m),
         (CMD_CONFIG, Some(m)) => handle_config(m),

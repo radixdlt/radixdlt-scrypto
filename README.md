@@ -33,27 +33,41 @@ cargo install --path ./simulator
 
 ## Getting Started
 
-1. Create a new package by copying one from [the examples](./examples), and then build
-```
-cargo build --release
-```
-2. To create a new account, run
+### Setting Up Workspace
+
+1. Create a new account:
 ```
 rev2 new-account
 ```
-3. To publish your package, run
+2. Create a new package:
+```
+rev2 new-package <package_name>
+```
+
+### Writing Scrypto Code
+
+After setting up your workspace, check out the source file `<package>/src/main.rs` and start writing your own blueprint.
+
+To build locally, run:
+```
+cargo build --release
+```
+
+### Playing with Radix Engine
+
+- To publish your package, run
 ```
 rev2 publish /path/to/your/package
 ```
-4. To call a function, run
+- To call a function, run
 ```
 rev2 call-function <package_address> <blueprint> <function> <args>...
 ```
-5. To call a method, run
+- To call a method, run
 ```
 rev2 call-method <component_address> <method> <args>...
 ```
-6. To show the content of an address, run
+- To show the content of an address, run
 ```
 rev2 show <address>
 ```

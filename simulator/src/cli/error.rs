@@ -30,4 +30,6 @@ pub enum Error {
     TxnExecutionError(RuntimeError),
 
     DataError(DecodeError),
+
+    PackageAlreadyExists,
 }
