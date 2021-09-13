@@ -1,0 +1,3 @@
+[alias]
+build-scrypto = "build --release --target wasm32-unknown-unknown"
+test-scrypto = "test --release"

@@ -48,9 +48,13 @@ rev2 new-package <package_name>
 
 After setting up your workspace, check out the source file `<package>/src/main.rs` and start writing your own blueprint.
 
-To build locally, run:
+To build your package, run:
 ```
-cargo build --release
+cargo build-scrypto
+```
+To test, run:
+```
+cargo test-scrypto
 ```
 
 ### Playing with Radix Engine

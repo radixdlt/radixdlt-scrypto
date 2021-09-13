@@ -41,8 +41,8 @@ pub fn handle_new_package<'a>(matches: &ArgMatches<'a>) -> Result<(), Error> {
         .map_err(|e| Error::IOError(e))?;
 
         fs::write(
-            PathBuf::from(format!("{}/.cargo/config", name)),
-            include_str!("../../../assets/template/package/.cargo/config"),
+            PathBuf::from(format!("{}/.cargo/config.toml", name)),
+            include_str!("../../../assets/template/package/.cargo/config.toml"),
         )
         .map_err(|e| Error::IOError(e))?;
 

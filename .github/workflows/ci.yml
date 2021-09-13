@@ -72,13 +72,13 @@ jobs:
     - name: Add wasm target (nightly)
       run: rustup +nightly target add wasm32-unknown-unknown
     - name: Build account
-      run: cargo build --release
+      run: cargo build-scrypto
       working-directory: examples/account
     - name: Build helloworld
-      run: cargo build --release
+      run: cargo build-scrypto
       working-directory: examples/helloworld
     - name: Build no_std
-      run: cargo build --release
+      run: cargo build-scrypto
       working-directory: examples/no_std
   radix-engine:
     name: Run Radix Engine tests
