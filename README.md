@@ -46,7 +46,7 @@ rev2 new-package <package_name>
 
 ### Writing Scrypto Code
 
-After setting up your workspace, check out the source file `<package>/src/main.rs` and start writing your own blueprint.
+After setting up your workspace, check out the source file `<package>/src/lib.rs` and start writing your own blueprint.
 
 To build your package, run:
 ```
