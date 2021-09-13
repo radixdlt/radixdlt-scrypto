@@ -47,8 +47,8 @@ pub fn handle_new_package<'a>(matches: &ArgMatches<'a>) -> Result<(), Error> {
         .map_err(|e| Error::IOError(e))?;
 
         fs::write(
-            PathBuf::from(format!("{}/src/main.rs", name)),
-            include_str!("../../../assets/template/package/src/main.rs"),
+            PathBuf::from(format!("{}/src/lib.rs", name)),
+            include_str!("../../../assets/template/package/src/lib.rs"),
         )
         .map_err(|e| Error::IOError(e))?;
 

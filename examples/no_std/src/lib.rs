@@ -1,5 +1,3 @@
-// There is no main function in Scrypto.
-#![no_main]
 // Disable linking to std.
 #![no_std]
 // Use default alloc error handler, i.e. to panic, and enable core intrinsics.

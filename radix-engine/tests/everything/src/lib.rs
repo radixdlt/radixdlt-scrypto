@@ -1,5 +1,3 @@
-#![no_main]
-
 pub mod blueprint;
 pub mod bucket;
 pub mod component;

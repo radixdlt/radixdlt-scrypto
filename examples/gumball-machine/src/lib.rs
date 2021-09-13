@@ -1,5 +1,3 @@
-#![no_main]
-
 use scrypto::prelude::*;
 
 blueprint! {

@@ -9,6 +9,9 @@ lto = true          # Enable Link Time Optimization.
 codegen-units = 1   # Reduce number of codegen units to increase optimizations.
 panic = 'abort'     # Abort on panic.
 
+[lib]
+crate-type = ["cdylib"]
+
 [dependencies]
 sbor = { path = "${scrypto_home}/sbor" }
 scrypto = { path = "${scrypto_home}/scrypto" }
