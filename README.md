@@ -36,31 +36,37 @@ cargo install --path ./simulator
 
 ## Getting Started
 
-### Setting Up Workspace
-
-1. Create a new account:
-```
-rev2 new-account
-```
-2. Create a new package:
-```
-rev2 new-package <package_name>
-```
-
 ### Writing Scrypto Code
 
-After setting up your workspace, check out the source file `<package>/src/lib.rs` and start writing your own blueprint.
-
-To build and test your package, run:
+1. Start by creating a new package:
 ```
-rev2 build && rev2 test
+scrypto new-package <package_name>
+```
+2. Check out the new package created under your current directory and start writing Scrypto code. 
+  - Source code is within `src/lib.rs`;
+  - Test code is within `tests/lib.rs`.
+3. Build your package:
+```
+scrypto build
+```
+4. Run tests:
+```
+scrypto test
 ```
 
 ### Playing with Radix Engine
 
+- To create a new account, run
+```
+rev2 new-account
+```
 - To publish your package, run
 ```
 rev2 publish /path/to/your/package
+```
+- To export the ABI of a published package, run
+```
+rev2 export-abi <package_address> <blueprint>
 ```
 - To call a function, run
 ```

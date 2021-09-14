@@ -1,25 +1,28 @@
+use std::ffi::OsStr;
 use std::io;
+use std::path::Path;
 use std::path::PathBuf;
 use std::process::Command;
 use std::process::ExitStatus;
 
 #[derive(Debug)]
-pub enum BuildPackageError {
+pub enum CargoExecutionError {
     NotCargoPackage,
 
-    FailedToParseCargoToml(cargo_toml::Error),
+    InvalidCargoToml(cargo_toml::Error),
 
-    MissingPackageInCargoToml,
+    MissingPackageName,
 
     FailedToRunCargo(io::Error),
 
     FailedToBuild(ExitStatus),
+
+    FailedToTest(ExitStatus),
 }
 
-pub fn build_package(mut path: PathBuf) -> Result<PathBuf, BuildPackageError> {
-    let mut cargo = path.clone();
+pub fn build_package<P: AsRef<Path>>(path: P) -> Result<PathBuf, CargoExecutionError> {
+    let mut cargo = path.as_ref().to_owned();
     cargo.push("Cargo.toml");
-
     if cargo.exists() {
         let status = Command::new("cargo")
             .arg("build")
@@ -29,24 +32,52 @@ pub fn build_package(mut path: PathBuf) -> Result<PathBuf, BuildPackageError> {
             .arg("--manifest-path")
             .arg(cargo.canonicalize().unwrap().to_str().unwrap())
             .status()
-            .map_err(|e| BuildPackageError::FailedToRunCargo(e))?;
+            .map_err(|e| CargoExecutionError::FailedToRunCargo(e))?;
         if !status.success() {
-            return Err(BuildPackageError::FailedToBuild(status));
+            return Err(CargoExecutionError::FailedToBuild(status));
         }
 
         let manifest = cargo_toml::Manifest::from_path(cargo)
-            .map_err(|e| BuildPackageError::FailedToParseCargoToml(e))?;
-        path.push("target");
-        path.push("wasm32-unknown-unknown");
-        path.push("release");
-        path.push(
+            .map_err(|e| CargoExecutionError::InvalidCargoToml(e))?;
+
+        let mut bin = path.as_ref().to_owned();
+        bin.push("target");
+        bin.push("wasm32-unknown-unknown");
+        bin.push("release");
+        bin.push(
             manifest
                 .package
-                .ok_or(BuildPackageError::MissingPackageInCargoToml)?
+                .ok_or(CargoExecutionError::MissingPackageName)?
                 .name,
         );
-        Ok(path.with_extension("wasm"))
+        Ok(bin.with_extension("wasm"))
     } else {
-        Err(BuildPackageError::NotCargoPackage)
+        Err(CargoExecutionError::NotCargoPackage)
+    }
+}
+
+pub fn test_package<P: AsRef<Path>, I, S>(path: P, args: I) -> Result<(), CargoExecutionError>
+where
+    I: IntoIterator<Item = S>,
+    S: AsRef<OsStr>,
+{
+    build_package(&path)?;
+
+    let mut cargo = path.as_ref().to_owned();
+    cargo.push("Cargo.toml");
+    if cargo.exists() {
+        let status = Command::new("cargo")
+            .arg("test")
+            .arg("--manifest-path")
+            .arg(cargo.canonicalize().unwrap().to_str().unwrap())
+            .args(args)
+            .status()
+            .map_err(|e| CargoExecutionError::FailedToRunCargo(e))?;
+        if !status.success() {
+            return Err(CargoExecutionError::FailedToTest(status));
+        }
+        Ok(())
+    } else {
+        Err(CargoExecutionError::NotCargoPackage)
     }
 }

@@ -1,6 +1,6 @@
 use clap::{crate_version, App, Arg, ArgMatches, SubCommand};
 
-use crate::cli::*;
+use crate::rev2::*;
 
 const ARG_NAME: &str = "NAME";
 const ARG_VALUE: &str = "VALUE";

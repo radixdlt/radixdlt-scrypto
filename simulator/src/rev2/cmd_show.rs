@@ -2,8 +2,8 @@ use clap::{crate_version, App, Arg, ArgMatches, SubCommand};
 use colored::*;
 use scrypto::types::*;
 
-use crate::cli::*;
 use crate::ledger::*;
+use crate::rev2::*;
 use crate::utils::*;
 
 const ARG_ADDRESS: &str = "ADDRESS";

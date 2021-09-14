@@ -23,13 +23,11 @@ pub enum Error {
 
     JSONError(serde_json::Error),
 
-    BuildError(BuildPackageError),
+    CargoError(CargoExecutionError),
 
     TxnConstructionErr(BuildTxnError),
 
     TxnExecutionError(RuntimeError),
 
     DataError(DecodeError),
-
-    PackageAlreadyExists,
 }

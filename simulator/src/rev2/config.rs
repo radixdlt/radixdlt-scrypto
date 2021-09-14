@@ -2,7 +2,7 @@ use scrypto::rust::collections::*;
 use std::fs;
 use std::path::PathBuf;
 
-use crate::cli::*;
+use crate::rev2::*;
 
 /// Returns the data directory.
 pub fn get_data_dir() -> Result<PathBuf, Error> {

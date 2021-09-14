@@ -2,7 +2,7 @@ use clap::{crate_version, App, Arg, ArgMatches, SubCommand};
 use std::fs;
 use std::path::*;
 
-use crate::cli::*;
+use crate::scrypto::*;
 
 const ARG_NAME: &str = "NAME";
 
@@ -13,8 +13,6 @@ pub fn make_new_package_cmd<'a, 'b>() -> App<'a, 'b> {
         .version(crate_version!())
         .arg(
             Arg::with_name(ARG_NAME)
-                .long("name")
-                .takes_value(true)
                 .help("Specifies the package name.")
                 .required(true),
         )
@@ -22,7 +20,9 @@ pub fn make_new_package_cmd<'a, 'b>() -> App<'a, 'b> {
 
 /// Handles a `new-package` request.
 pub fn handle_new_package<'a>(matches: &ArgMatches<'a>) -> Result<(), Error> {
-    let name = matches.value_of(ARG_NAME).unwrap();
+    let name = matches
+        .value_of(ARG_NAME)
+        .ok_or(Error::MissingArgument(ARG_NAME.to_owned()))?;
     let simulator_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let scrypto_dir = simulator_dir.parent().unwrap().to_string_lossy();
 

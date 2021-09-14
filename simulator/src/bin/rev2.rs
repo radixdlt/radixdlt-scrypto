@@ -1,5 +1,5 @@
-use simulator::cli;
+use simulator::rev2;
 
-pub fn main() -> Result<(), cli::Error> {
-    cli::run(std::env::args())
+pub fn main() -> Result<(), rev2::Error> {
+    rev2::run(std::env::args())
 }

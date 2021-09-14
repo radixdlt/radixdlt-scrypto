@@ -5,7 +5,7 @@ set -e
 
 cd "$(dirname "$0")/.."
 
-rev2="cargo run --release --"
+rev2="cargo run --bin rev2 --release --"
 
 # Set up environment
 $rev2 reset

@@ -11,8 +11,8 @@ use scrypto::types::*;
 use scrypto::utils::*;
 use uuid::Uuid;
 
-use crate::cli::*;
 use crate::ledger::*;
+use crate::rev2::*;
 use crate::utils::*;
 
 const ARG_TRACE: &str = "TRACE";
@@ -53,7 +53,7 @@ pub fn handle_publish<'a>(matches: &ArgMatches<'a>) -> Result<(), Error> {
             .ok_or(Error::MissingArgument(ARG_PATH.to_owned()))?,
     );
     let file = if path.extension() != Some(OsStr::new("wasm")) {
-        build_package(path).map_err(|e| Error::BuildError(e))?
+        build_package(path).map_err(|e| Error::CargoError(e))?
     } else {
         path
     };

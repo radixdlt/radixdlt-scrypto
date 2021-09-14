@@ -2,8 +2,8 @@ use clap::{crate_version, App, Arg, ArgMatches, SubCommand};
 use scrypto::types::*;
 
 use crate::abi::*;
-use crate::cli::*;
 use crate::ledger::*;
+use crate::rev2::*;
 
 const ARG_TRACE: &str = "TRACE";
 const ARG_PACKAGE: &str = "PACKAGE";

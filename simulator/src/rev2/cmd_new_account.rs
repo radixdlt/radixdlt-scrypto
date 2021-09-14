@@ -7,8 +7,8 @@ use scrypto::types::*;
 use scrypto::utils::*;
 use uuid::Uuid;
 
-use crate::cli::*;
 use crate::ledger::*;
+use crate::rev2::*;
 
 const ARG_TRACE: &str = "TRACE";
 
