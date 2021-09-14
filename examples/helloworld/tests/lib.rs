@@ -9,7 +9,7 @@ fn test_greeting() {
     // Publish this package.
     let package = engine.publish(package_code!()).unwrap();
 
-    // Invoke the new function.
+    // Invoke the `new` function.
     let component = engine
         .call_function::<Address>(package, "Greeting", "new", args!())
         .unwrap();

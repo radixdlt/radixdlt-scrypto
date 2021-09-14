@@ -93,11 +93,6 @@ jobs:
     - name: Run tests (no_std)
       run: cargo test --verbose --no-default-features --features alloc
       working-directory: radix-engine
-  simulator:
-    name: Run simulator tests
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v2
-    - name: Build
+    - name: Run simulator
       run: bash ./tests/run.sh
       working-directory: simulator

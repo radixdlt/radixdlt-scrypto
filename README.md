@@ -23,7 +23,7 @@ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 ```
 source $HOME/.cargo/env
 ```
-3. Install WebAssembly toolchain
+3. Add WebAssembly target
 ```
 rustup target add wasm32-unknown-unknown
 ```
@@ -42,7 +42,7 @@ cargo install --path ./simulator
 ```
 scrypto new-package <package_name>
 ```
-2. Check out the new package created under your current directory and start writing Scrypto code. 
+2. Check out the new package under your current directory and start writing Scrypto code. 
   - Source code is within `src/lib.rs`;
   - Test code is within `tests/lib.rs`.
 3. Build your package:
