@@ -1,6 +1,7 @@
 use std::io;
 use std::path::PathBuf;
 use std::process::Command;
+use std::process::ExitStatus;
 
 #[derive(Debug)]
 pub enum BuildPackageError {
@@ -12,7 +13,7 @@ pub enum BuildPackageError {
 
     FailedToRunCargo(io::Error),
 
-    FailedToWaitCargo(io::Error),
+    FailedToBuild(ExitStatus),
 }
 
 pub fn build_package(mut path: PathBuf) -> Result<PathBuf, BuildPackageError> {
@@ -20,17 +21,18 @@ pub fn build_package(mut path: PathBuf) -> Result<PathBuf, BuildPackageError> {
     cargo.push("Cargo.toml");
 
     if cargo.exists() {
-        Command::new("cargo")
+        let status = Command::new("cargo")
             .arg("build")
             .arg("--target")
             .arg("wasm32-unknown-unknown")
             .arg("--release")
             .arg("--manifest-path")
             .arg(cargo.canonicalize().unwrap().to_str().unwrap())
-            .spawn()
-            .map_err(|e| BuildPackageError::FailedToRunCargo(e))?
-            .wait()
-            .map_err(|e| BuildPackageError::FailedToWaitCargo(e))?;
+            .status()
+            .map_err(|e| BuildPackageError::FailedToRunCargo(e))?;
+        if !status.success() {
+            return Err(BuildPackageError::FailedToBuild(status));
+        }
 
         let manifest = cargo_toml::Manifest::from_path(cargo)
             .map_err(|e| BuildPackageError::FailedToParseCargoToml(e))?;
