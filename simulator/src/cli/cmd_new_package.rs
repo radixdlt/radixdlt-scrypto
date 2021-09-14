@@ -29,8 +29,8 @@ pub fn handle_new_package<'a>(matches: &ArgMatches<'a>) -> Result<(), Error> {
     if PathBuf::from(name).exists() {
         Err(Error::PackageAlreadyExists)
     } else {
-        fs::create_dir_all(format!("{}/.cargo", name)).map_err(|e| Error::IOError(e))?;
         fs::create_dir_all(format!("{}/src", name)).map_err(|e| Error::IOError(e))?;
+        fs::create_dir_all(format!("{}/tests", name)).map_err(|e| Error::IOError(e))?;
 
         fs::write(
             PathBuf::from(format!("{}/Cargo.toml", name)),
@@ -41,14 +41,14 @@ pub fn handle_new_package<'a>(matches: &ArgMatches<'a>) -> Result<(), Error> {
         .map_err(|e| Error::IOError(e))?;
 
         fs::write(
-            PathBuf::from(format!("{}/.cargo/config.toml", name)),
-            include_str!("../../../assets/template/package/.cargo/config.toml"),
+            PathBuf::from(format!("{}/src/lib.rs", name)),
+            include_str!("../../../assets/template/package/src/lib.rs"),
         )
         .map_err(|e| Error::IOError(e))?;
 
         fs::write(
-            PathBuf::from(format!("{}/src/lib.rs", name)),
-            include_str!("../../../assets/template/package/src/lib.rs"),
+            PathBuf::from(format!("{}/tests/lib.rs", name)),
+            include_str!("../../../assets/template/package/tests/lib.rs"),
         )
         .map_err(|e| Error::IOError(e))?;
 

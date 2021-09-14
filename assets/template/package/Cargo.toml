@@ -15,3 +15,6 @@ crate-type = ["cdylib"]
 [dependencies]
 sbor = { path = "${scrypto_home}/sbor" }
 scrypto = { path = "${scrypto_home}/scrypto" }
+
+[dev-dependencies]
+radix-engine = { path = "${scrypto_home}/radix-engine" }

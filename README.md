@@ -53,7 +53,7 @@ After setting up your workspace, check out the source file `<package>/src/lib.rs
 
 To build and test your package, run:
 ```
-cargo build-scrypto && cargo test-scrypto
+rev2 build && rev2 test
 ```
 
 ### Playing with Radix Engine

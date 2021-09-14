@@ -2,42 +2,6 @@ use radix_engine::engine::InMemoryRadixEngine;
 use scrypto::prelude::*;
 
 #[test]
-fn test_greeting() {
-    let mut engine = InMemoryRadixEngine::new(true);
-    let package = engine
-        .publish(package_code!("./everything", "everything"))
-        .unwrap();
-
-    engine
-        .call_function::<Address>(package, "Greeting", "new", args!())
-        .unwrap();
-}
-
-#[test]
-fn test_package() {
-    let mut engine = InMemoryRadixEngine::new(true);
-    let package = engine
-        .publish(package_code!("./everything", "everything"))
-        .unwrap();
-
-    engine
-        .call_function::<Address>(package, "PackageTest", "publish", args!())
-        .unwrap();
-}
-
-#[test]
-fn test_blueprint() {
-    let mut engine = InMemoryRadixEngine::new(true);
-    let package = engine
-        .publish(package_code!("./everything", "everything"))
-        .unwrap();
-
-    engine
-        .call_function::<Address>(package, "BlueprintTest", "call_function", args!())
-        .unwrap();
-}
-
-#[test]
 fn test_component() {
     let mut engine = InMemoryRadixEngine::new(true);
     let package = engine
@@ -119,7 +83,7 @@ fn test_bucket() {
 }
 
 #[test]
-fn test_move_bucket() {
+fn test_move_resource() {
     let mut engine = InMemoryRadixEngine::new(true);
     let package = engine
         .publish(package_code!("./everything", "everything"))
@@ -127,14 +91,6 @@ fn test_move_bucket() {
 
     engine
         .call_function::<()>(package, "MoveTest", "move_bucket", args!())
-        .unwrap();
-}
-
-#[test]
-fn test_move_reference() {
-    let mut engine = InMemoryRadixEngine::new(true);
-    let package = engine
-        .publish(package_code!("./everything", "everything"))
         .unwrap();
 
     engine

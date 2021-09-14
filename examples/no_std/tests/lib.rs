@@ -3,27 +3,20 @@ use scrypto::prelude::*;
 
 #[test]
 fn test_greeting() {
-    // Create an in-memory radix engine
+    // Create an in-memory Radix Engine.
     let mut engine = InMemoryRadixEngine::new(true);
 
-    // Publish this package
+    // Publish this package.
     let package = engine.publish(package_code!()).unwrap();
-    println!("Package address: {}", package);
 
-    // Invoke function `Greeting::new`
+    // Invoke the new function.
     let component = engine
         .call_function::<Address>(package, "Greeting", "new", args!())
         .unwrap();
-    println!("Component address: {}", component);
 
-    // Invoke method `Greeting::say_hello`
-    engine
-        .call_method::<()>(component, "say_hello", args!())
+    // Invoke the `say_hello` function.
+    let rtn = engine
+        .call_method::<u32>(component, "say_hello", args!())
         .unwrap();
-
-    // Invoke method `Greeting::get_count`
-    let count = engine
-        .call_method::<u32>(component, "get_count", args!())
-        .unwrap();
-    assert_eq!(1, count);
+    assert_eq!(1, rtn);
 }

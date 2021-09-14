@@ -6,11 +6,11 @@ set -e
 cd "$(dirname "$0")"
 
 echo "Building packages..."
-(cd examples/account; cargo build-scrypto)
-(cd examples/helloworld; cargo build-scrypto)
-(cd examples/no_std; cargo build-scrypto)
-(cd examples/gumball-machine; cargo build-scrypto)
-(cd examples/gumball-machine-vendor; cargo build-scrypto)
+(cd examples/account; cargo build --target wasm32-unknown-unknown --release)
+(cd examples/helloworld; cargo build --target wasm32-unknown-unknown --release)
+(cd examples/no_std; cargo build --target wasm32-unknown-unknown --release)
+(cd examples/gumball-machine; cargo build --target wasm32-unknown-unknown --release)
+(cd examples/gumball-machine-vendor; cargo build --target wasm32-unknown-unknown --release)
 
 echo "Publishing assets..."
 wasm-opt \

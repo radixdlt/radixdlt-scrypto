@@ -15,9 +15,10 @@ blueprint! {
             component
         }
 
-        pub fn say_hello(&mut self) {
+        pub fn say_hello(&mut self) -> u32 {
             info!("Hello, visitor #{}.", self.count);
             self.count += 1;
+            self.count
         }
     }
 }
