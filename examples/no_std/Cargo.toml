@@ -16,4 +16,7 @@ crate-type = ["cdylib"]
 [dependencies]
 sbor = { path = "../../sbor", default-features = false, features = ["alloc"] }
 scrypto = { path = "../../scrypto", default-features = false, features = ["alloc"] }
-wee_alloc = { version = "0.4" }
+wee_alloc = { version = "0.4", default-features = false }
+
+[dev-dependencies]
+radix-engine = { path = "../../radix-engine", default-features = false, features = ["alloc"] }

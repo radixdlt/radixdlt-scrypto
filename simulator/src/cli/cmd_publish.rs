@@ -77,7 +77,7 @@ pub fn handle_publish<'a>(matches: &ArgMatches<'a>) -> Result<(), Error> {
 
             let mut process = Process::new(0, trace, &mut runtime);
             let output = process
-                .target_method(
+                .prepare_call_method(
                     account,
                     "publish_package".to_owned(),
                     vec![scrypto_encode(&code)],

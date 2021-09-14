@@ -63,7 +63,8 @@ pub fn execute<T: Ledger>(
                 args,
             } => {
                 let mut process = Process::new(0, trace, &mut runtime);
-                let target = process.target_function(package, blueprint.as_str(), function, args);
+                let target =
+                    process.prepare_call_function(package, blueprint.as_str(), function, args);
                 target.and_then(|target| {
                     call(
                         &mut process,
@@ -79,7 +80,7 @@ pub fn execute<T: Ledger>(
                 args,
             } => {
                 let mut process = Process::new(0, trace, &mut runtime);
-                let target = process.target_method(component, method, args);
+                let target = process.prepare_call_method(component, method, args);
                 target.and_then(|target| {
                     call(
                         &mut process,
@@ -101,7 +102,7 @@ pub fn execute<T: Ledger>(
 
                 if !buckets.is_empty() {
                     let mut process = Process::new(0, trace, &mut runtime);
-                    let target = process.target_method(
+                    let target = process.prepare_call_method(
                         component,
                         method.clone(),
                         vec![scrypto_encode(&buckets)],

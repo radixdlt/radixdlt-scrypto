@@ -26,7 +26,7 @@ pub fn export_abi<T: Ledger>(
 
     // Start a process and run abi generator
     let mut process = Process::new(0, trace, &mut runtime);
-    let target = process.target_abi(package, blueprint)?;
+    let target = process.prepare_call_abi(package, blueprint)?;
     let result = process.run(target);
 
     // Parse ABI

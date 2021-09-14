@@ -86,3 +86,24 @@ macro_rules! trace {
         ::scrypto::constructs::Logger::log(scrypto::constructs::Level::Trace, ::scrypto::rust::format!($($args),+));
     }};
 }
+
+/// Returns the code of the current package.
+#[macro_export]
+macro_rules! package_code {
+    () => {
+        include_bytes!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/target/wasm32-unknown-unknown/release/",
+            env!("CARGO_PKG_NAME"),
+            ".wasm"
+        ))
+    };
+    ($package_dir: expr, $package_name: expr) => {
+        include_bytes!(concat!(
+            $package_dir,
+            "/target/wasm32-unknown-unknown/release/",
+            $package_name,
+            ".wasm"
+        ))
+    };
+}

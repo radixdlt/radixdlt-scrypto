@@ -1,10 +1,13 @@
-pub use crate::{debug, error, info, trace, warn};
+pub use crate::{args, debug, error, info, package_code, trace, warn};
 
 pub use crate::{blueprint, import};
 
 pub use crate::buffer::{scrypto_decode, scrypto_encode};
 
-pub use crate::constructs::{Blueprint, Component, Context, Logger, Map, Package, Resource};
+pub use crate::constructs::{
+    Blueprint, Component, ComponentInfo, Context, Level, Logger, Map, Package, Resource,
+    ResourceInfo,
+};
 
 pub use crate::kernel::call_kernel;
 

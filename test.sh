@@ -8,7 +8,7 @@ cd "$(dirname "$0")"
 echo "Testing with std..."
 (cd sbor; cargo test)
 (cd sbor-derive; cargo test)
-(cd sbor-tests; cargo test)
+(cd sbor-tests; cargo test; cargo bench)
 (cd scrypto; cargo test)
 (cd scrypto-derive; cargo test)
 (cd scrypto-tests; cargo test)
@@ -23,11 +23,11 @@ echo "Testing with no_std..."
 (cd radix-engine; cargo test --no-default-features --features alloc)
 
 echo "Building examples..."
-(cd examples/account; cargo build-scrypto)
-(cd examples/helloworld; cargo build-scrypto)
-(cd examples/no_std; cargo build-scrypto)
-(cd examples/gumball-machine; cargo build-scrypto)
-(cd examples/gumball-machine-vendor; cargo build-scrypto)
+(cd examples/account; cargo build-scrypto; cargo test-scrypto)
+(cd examples/helloworld; cargo build-scrypto; cargo test-scrypto)
+(cd examples/no_std; cargo build-scrypto; cargo test-scrypto)
+(cd examples/gumball-machine; cargo build-scrypto; cargo test-scrypto)
+(cd examples/gumball-machine-vendor; cargo build-scrypto; cargo test-scrypto)
 
 echo "Testing simulator..."
 (cd simulator; bash ./tests/run.sh)

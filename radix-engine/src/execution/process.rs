@@ -52,6 +52,7 @@ pub struct Process<'rt, 'le, L: Ledger> {
     vm: Option<VM>,
 }
 
+/// The target function to be invoked.
 #[derive(Debug, Clone)]
 pub struct Target {
     package: Address,
@@ -60,6 +61,7 @@ pub struct Target {
     args: Vec<Vec<u8>>,
 }
 
+/// Represents a VM instance.
 pub struct VM {
     target: Target,
     module: ModuleRef,
@@ -82,7 +84,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         }
     }
 
-    pub fn target_function(
+    pub fn prepare_call_function(
         &mut self,
         package: Address,
         blueprint: &str,
@@ -97,7 +99,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         })
     }
 
-    pub fn target_method(
+    pub fn prepare_call_method(
         &mut self,
         component: Address,
         method: String,
@@ -112,10 +114,10 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         let mut self_args = vec![scrypto_encode(&component)];
         self_args.extend(args);
 
-        self.target_function(com.package(), com.blueprint(), method, self_args)
+        self.prepare_call_function(com.package(), com.blueprint(), method, self_args)
     }
 
-    pub fn target_abi(
+    pub fn prepare_call_abi(
         &mut self,
         package: Address,
         blueprint: &str,
@@ -358,7 +360,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
             input.args
         );
 
-        let target = self.target_function(
+        let target = self.prepare_call_function(
             input.package,
             input.blueprint.as_str(),
             input.function,
@@ -382,7 +384,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
             input.args
         );
 
-        let target = self.target_method(input.component, input.method, input.args)?;
+        let target = self.prepare_call_method(input.component, input.method, input.args)?;
         let result = self.call(target);
 
         trace!(self, "CALL finished");

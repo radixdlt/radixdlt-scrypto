@@ -1,212 +1,143 @@
-use std::fs;
-use std::process::Command;
-
-use scrypto::buffer::*;
-use scrypto::types::*;
-use scrypto::utils::*;
-use uuid::Uuid;
-
-extern crate radix_engine;
-use radix_engine::execution::*;
-use radix_engine::ledger::*;
-use radix_engine::model::*;
-
-fn build(name: &str) {
-    Command::new("cargo")
-        .current_dir(format!("./tests/{}", name))
-        .args(["build", "--target", "wasm32-unknown-unknown", "--release"])
-        .spawn()
-        .unwrap()
-        .wait()
-        .unwrap();
-}
-
-fn publish<T: Ledger>(ledger: &mut T, name: &str) -> Address {
-    let code = fs::read(format!(
-        "./tests/{}/target/wasm32-unknown-unknown/release/{}.wasm",
-        name, name
-    ))
-    .unwrap();
-
-    let tx_hash = sha256(Uuid::new_v4().to_string());
-    let mut runtime = Runtime::new(tx_hash, ledger);
-
-    let address = runtime.new_package_address();
-    validate_module(&code).unwrap();
-    runtime.put_package(address, Package::new(code));
-    runtime.flush();
-
-    address
-}
-
-fn build_and_publish<T: Ledger>(ledger: &mut T, name: &str) -> Address {
-    build(name);
-    publish(ledger, name)
-}
-
-fn call<T: Ledger>(
-    ledger: &mut T,
-    package: Address,
-    blueprint: &str,
-    function: &str,
-    args: Vec<Vec<u8>>,
-) -> Result<Vec<u8>, RuntimeError> {
-    let tx_hash = sha256(Uuid::new_v4().to_string());
-    let mut runtime = Runtime::new(tx_hash, ledger);
-
-    let mut process = Process::new(0, true, &mut runtime);
-    let target = process.target_function(package, blueprint, function.to_owned(), args)?;
-    let result = process.run(target);
-    process.finalize()?;
-
-    if result.is_ok() {
-        runtime.flush();
-    }
-    result
-}
+use radix_engine::engine::InMemoryRadixEngine;
+use scrypto::prelude::*;
 
 #[test]
 fn test_greeting() {
-    let mut ledger = InMemoryLedger::new();
-    let package = build_and_publish(&mut ledger, "everything");
+    let mut engine = InMemoryRadixEngine::new(true);
+    let package = engine
+        .publish(package_code!("./everything", "everything"))
+        .unwrap();
 
-    let output = call(&mut ledger, package, "Greeting", "new", vec![]);
-    assert!(output.is_ok())
+    engine
+        .call_function::<Address>(package, "Greeting", "new", args!())
+        .unwrap();
 }
 
 #[test]
 fn test_package() {
-    let mut ledger = InMemoryLedger::new();
-    let package = build_and_publish(&mut ledger, "everything");
+    let mut engine = InMemoryRadixEngine::new(true);
+    let package = engine
+        .publish(package_code!("./everything", "everything"))
+        .unwrap();
 
-    let output = call(&mut ledger, package, "PackageTest", "publish", vec![]);
-    assert!(output.is_ok());
+    engine
+        .call_function::<Address>(package, "PackageTest", "publish", args!())
+        .unwrap();
 }
 
 #[test]
 fn test_blueprint() {
-    let mut ledger = InMemoryLedger::new();
-    let package = build_and_publish(&mut ledger, "everything");
+    let mut engine = InMemoryRadixEngine::new(true);
+    let package = engine
+        .publish(package_code!("./everything", "everything"))
+        .unwrap();
 
-    let output = call(
-        &mut ledger,
-        package,
-        "BlueprintTest",
-        "call_function",
-        vec![],
-    );
-    assert!(output.is_ok());
+    engine
+        .call_function::<Address>(package, "BlueprintTest", "call_function", args!())
+        .unwrap();
 }
 
 #[test]
 fn test_component() {
-    let mut ledger = InMemoryLedger::new();
-    let package = build_and_publish(&mut ledger, "everything");
+    let mut engine = InMemoryRadixEngine::new(true);
+    let package = engine
+        .publish(package_code!("./everything", "everything"))
+        .unwrap();
 
-    let output = call(
-        &mut ledger,
-        package,
-        "ComponentTest",
-        "create_component",
-        vec![],
-    );
-    assert!(output.is_ok());
-    let address: Address = scrypto_decode(&output.unwrap()).unwrap();
+    let component = engine
+        .call_function::<Address>(package, "ComponentTest", "create_component", args!())
+        .unwrap();
 
-    let output2 = call(
-        &mut ledger,
-        package,
-        "ComponentTest",
-        "get_component_info",
-        vec![scrypto_encode(&address)],
-    );
-    assert!(output2.is_ok());
+    engine
+        .call_method::<ComponentInfo>(component, "get_component_info", args!())
+        .unwrap();
 
-    let output3 = call(
-        &mut ledger,
-        package,
-        "ComponentTest",
-        "get_component_state",
-        vec![scrypto_encode(&address)],
-    );
-    assert!(output3.is_ok());
+    engine
+        .call_method::<String>(component, "get_component_state", args!())
+        .unwrap();
 
-    let output4 = call(
-        &mut ledger,
-        package,
-        "ComponentTest",
-        "put_component_state",
-        vec![scrypto_encode(&address)],
-    );
-    assert!(output4.is_ok());
+    engine
+        .call_method::<()>(component, "put_component_state", args!())
+        .unwrap();
 }
 
 #[test]
 fn test_map() {
-    let mut ledger = InMemoryLedger::new();
-    let package = build_and_publish(&mut ledger, "everything");
+    let mut engine = InMemoryRadixEngine::new(true);
+    let package = engine
+        .publish(package_code!("./everything", "everything"))
+        .unwrap();
 
-    let output = call(&mut ledger, package, "MapTest", "test_map", vec![]);
-    assert!(output.is_ok());
-    assert_eq!(
-        Some("world".to_owned()),
-        scrypto_decode(&output.unwrap()).unwrap()
-    )
+    let result = engine
+        .call_function::<Option<String>>(package, "MapTest", "test_map", args!())
+        .unwrap();
+    assert_eq!(Some("world".to_owned()), result)
 }
 
 #[test]
 fn test_resource() {
-    let mut ledger = InMemoryLedger::new();
-    let package = build_and_publish(&mut ledger, "everything");
+    let mut engine = InMemoryRadixEngine::new(true);
+    let package = engine
+        .publish(package_code!("./everything", "everything"))
+        .unwrap();
 
-    let output = call(
-        &mut ledger,
-        package,
-        "ResourceTest",
-        "create_mutable",
-        vec![],
-    );
-    assert!(output.is_ok());
+    engine
+        .call_function::<Tokens>(package, "ResourceTest", "create_mutable", args!())
+        .unwrap();
 
-    let output2 = call(&mut ledger, package, "ResourceTest", "create_fixed", vec![]);
-    assert!(output2.is_ok());
+    engine
+        .call_function::<Tokens>(package, "ResourceTest", "create_fixed", args!())
+        .unwrap();
 
-    let output3 = call(&mut ledger, package, "ResourceTest", "query", vec![]);
-    assert!(output3.is_ok());
+    engine
+        .call_function::<ResourceInfo>(package, "ResourceTest", "query", args!())
+        .unwrap();
 }
 
 #[test]
 fn test_bucket() {
-    let mut ledger = InMemoryLedger::new();
-    let package = build_and_publish(&mut ledger, "everything");
+    let mut engine = InMemoryRadixEngine::new(true);
+    let package = engine
+        .publish(package_code!("./everything", "everything"))
+        .unwrap();
 
-    let output = call(&mut ledger, package, "BucketTest", "combine", vec![]);
-    assert!(output.is_ok());
+    engine
+        .call_function::<Tokens>(package, "BucketTest", "combine", args!())
+        .unwrap();
 
-    let output2 = call(&mut ledger, package, "BucketTest", "split", vec![]);
-    assert!(output2.is_ok());
+    engine
+        .call_function::<(Tokens, Tokens)>(package, "BucketTest", "split", args!())
+        .unwrap();
 
-    let output3 = call(&mut ledger, package, "BucketTest", "borrow", vec![]);
-    assert!(output3.is_ok());
+    engine
+        .call_function::<Tokens>(package, "BucketTest", "borrow", args!())
+        .unwrap();
 
-    let output4 = call(&mut ledger, package, "BucketTest", "query", vec![]);
-    assert!(output4.is_ok());
+    engine
+        .call_function::<(U256, Address, Tokens)>(package, "BucketTest", "query", args!())
+        .unwrap();
 }
 
 #[test]
 fn test_move_bucket() {
-    let mut ledger = InMemoryLedger::new();
-    let package = build_and_publish(&mut ledger, "everything");
+    let mut engine = InMemoryRadixEngine::new(true);
+    let package = engine
+        .publish(package_code!("./everything", "everything"))
+        .unwrap();
 
-    let output = call(&mut ledger, package, "MoveTest", "move_bucket", vec![]);
-    assert!(output.is_ok());
+    engine
+        .call_function::<()>(package, "MoveTest", "move_bucket", args!())
+        .unwrap();
 }
 
 #[test]
 fn test_move_reference() {
-    let mut ledger = InMemoryLedger::new();
-    let package = build_and_publish(&mut ledger, "everything");
+    let mut engine = InMemoryRadixEngine::new(true);
+    let package = engine
+        .publish(package_code!("./everything", "everything"))
+        .unwrap();
 
-    let output = call(&mut ledger, package, "MoveTest", "move_reference", vec![]);
-    assert!(output.is_ok());
+    engine
+        .call_function::<Tokens>(package, "MoveTest", "move_reference", args!())
+        .unwrap();
 }

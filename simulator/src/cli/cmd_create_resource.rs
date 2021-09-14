@@ -108,7 +108,7 @@ pub fn handle_create_resource<'a>(matches: &ArgMatches<'a>) -> Result<(), Error>
 
             let mut process = Process::new(0, trace, &mut runtime);
             let output = process
-                .target_method(
+                .prepare_call_method(
                     account,
                     if supply.is_some() {
                         "create_resource_fixed".to_owned()

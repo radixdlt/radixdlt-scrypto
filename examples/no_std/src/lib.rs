@@ -1,15 +1,17 @@
 // Disable linking to std.
-#![no_std]
+#![cfg_attr(not(test), no_std)]
 // Use default alloc error handler, i.e. to panic, and enable core intrinsics.
-#![feature(default_alloc_error_handler, core_intrinsics)]
+#![cfg_attr(not(test), feature(default_alloc_error_handler, core_intrinsics))]
 
 // Abort when panicking.
+#[cfg(not(test))]
 #[panic_handler]
 pub fn panic(_: &core::panic::PanicInfo) -> ! {
     core::intrinsics::abort();
 }
 
 // Use WeeAlloc as our global heap allocator.
+#[cfg(not(test))]
 #[global_allocator]
 static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
@@ -37,6 +39,10 @@ blueprint! {
         pub fn say_hello(&mut self) {
             info!("Hello, visitor #{}.", self.count);
             self.count += 1;
+        }
+
+        pub fn get_count(&self) -> u32 {
+            self.count
         }
     }
 }

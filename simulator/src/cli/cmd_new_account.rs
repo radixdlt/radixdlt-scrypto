@@ -59,7 +59,7 @@ pub fn handle_new_account<'a>(matches: &ArgMatches<'a>) -> Result<(), Error> {
     // create new account
     let mut process = Process::new(0, trace, &mut runtime);
     let output = process
-        .target_function(package, "Account", "new".to_owned(), Vec::new())
+        .prepare_call_function(package, "Account", "new".to_owned(), Vec::new())
         .and_then(|target| process.run(target))
         .map_err(|e| Error::TxnExecutionError(e))?;
     process
@@ -77,7 +77,7 @@ pub fn handle_new_account<'a>(matches: &ArgMatches<'a>) -> Result<(), Error> {
     let mut process2 = Process::new(0, trace, &mut runtime);
     process2.put_resources(buckets, HashMap::new());
     process2
-        .target_method(
+        .prepare_call_method(
             component,
             "deposit_buckets".to_owned(),
             vec![scrypto_encode(&vec![bid])],
