@@ -8,7 +8,6 @@ sbor = { version = "0.1", path = "../sbor", default-features = false }
 scrypto = { version = "0.1", path = "../scrypto", default-features = false}
 wasmi = { version = "0.9", default-features = false }
 colored = { version = "2.0", default-features = false }
-uuid = { version = "0.8", default-features = false, features = ["v4"] }
 lru = { version = "0.6" }
 
 [features]

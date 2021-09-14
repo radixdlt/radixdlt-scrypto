@@ -19,15 +19,18 @@ Language for building DeFi apps on Radix.
 ```
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 ```
-2. Install WebAssembly toolchain
+2. Enable `cargo` in the current shell:
+```
+source $HOME/.cargo/env
+```
+3. Install WebAssembly toolchain
 ```
 rustup target add wasm32-unknown-unknown
 ```
-3. Install Radix Engine simulator
+4. Install Radix Engine simulator
 ```
 git clone git@github.com:radixdlt/radixdlt-scrypto.git
 cd radixdlt-scrypto
-# git checkout <branch>
 cargo install --path ./simulator
 ```
 
@@ -48,13 +51,9 @@ rev2 new-package <package_name>
 
 After setting up your workspace, check out the source file `<package>/src/lib.rs` and start writing your own blueprint.
 
-To build your package, run:
+To build and test your package, run:
 ```
-cargo build-scrypto
-```
-To test, run:
-```
-cargo test-scrypto
+cargo build-scrypto && cargo test-scrypto
 ```
 
 ### Playing with Radix Engine
