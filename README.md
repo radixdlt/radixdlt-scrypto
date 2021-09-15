@@ -33,16 +33,23 @@ git clone git@github.com:radixdlt/radixdlt-scrypto.git
 cd radixdlt-scrypto
 cargo install --path ./simulator
 ```
+5. (Optional) Open Scrypto reference documentation for later use
+```
+./doc.sh
+```
+
+Note: For preview release, do not delete or move the repository after installation. It will be used when resolving dependencies of Scrypto packages.
 
 ## Getting Started
 
 ### Writing Scrypto Code
 
-1. Start by creating a new package:
+1. Start by creating a new package and switch to it:
 ```
 scrypto new-package <package_name>
+cd <package_name>
 ```
-2. Check out the new package under your current directory and start writing Scrypto code. 
+2. Check out the files under your current directory:
   - Source code is within `src/lib.rs`;
   - Test code is within `tests/lib.rs`.
 3. Build your package:
@@ -53,6 +60,8 @@ scrypto build
 ```
 scrypto test
 ```
+
+You can now start coding your ideas!
 
 ### Playing with Radix Engine
 
@@ -66,11 +75,11 @@ rev2 publish /path/to/your/package
 ```
 - To export the ABI of a published package, run
 ```
-rev2 export-abi <package_address> <blueprint>
+rev2 export-abi <package_address> <blueprint_name>
 ```
 - To call a function, run
 ```
-rev2 call-function <package_address> <blueprint> <function> <args>...
+rev2 call-function <package_address> <blueprint_name> <function> <args>...
 ```
 - To call a method, run
 ```
