@@ -148,7 +148,7 @@ pub fn execute<T: Ledger>(
         execution_time: now.elapsed().as_millis(),
         results,
         logs: runtime.logs().clone(),
-        addresses: runtime.new_addresses().to_vec(),
+        new_addresses: runtime.new_addresses().to_vec(),
     }
 }
 

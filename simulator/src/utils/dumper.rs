@@ -99,7 +99,7 @@ pub fn dump_receipt(receipt: TransactionReceipt) {
         println!("{} {:?}", list_item_prefix(last), result);
     }
 
-    println!("{}", "Logs:".bold().green());
+    println!("{} {}", "Logs:".bold().green(), receipt.logs.len());
     for (last, (level, msg)) in receipt.logs.iter().identify_last() {
         let (l, m) = match level {
             Level::Error => ("ERROR".red(), msg.red()),
@@ -109,6 +109,21 @@ pub fn dump_receipt(receipt: TransactionReceipt) {
             Level::Trace => ("TRACE".normal(), msg.normal()),
         };
         println!("{} [{:5}] {}", list_item_prefix(last), l, m);
+    }
+
+    println!(
+        "{} {}",
+        "New Addresses:".bold().green(),
+        receipt.new_addresses.len()
+    );
+    for (last, address) in receipt.new_addresses.iter().identify_last() {
+        let ty = match address {
+            Address::Package(_) => "Package",
+            Address::Component(_) => "Component",
+            Address::Resource(_) => "Resource",
+            _ => "Other",
+        };
+        println!("{} {}: {}", list_item_prefix(last), ty, address);
     }
 
     println!(

@@ -42,12 +42,10 @@ blueprint! {
 
     impl Vendor {
         pub fn new() -> Address {
-            let component = Self {
+            Self {
                 machine: GumballMachine::new()
-            }.instantiate();
-
-            info!("New vendor: {}", component);
-            component
+            }
+            .instantiate()
         }
 
         pub fn get_gumball(&self, payment: Tokens) -> Tokens {

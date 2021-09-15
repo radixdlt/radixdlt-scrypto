@@ -55,5 +55,5 @@ pub struct TransactionReceipt {
     pub execution_time: u128,
     pub results: Vec<Result<Vec<u8>, RuntimeError>>,
     pub logs: Vec<(Level, String)>,
-    pub addresses: Vec<Address>,
+    pub new_addresses: Vec<Address>,
 }

@@ -1,4 +1,3 @@
-use scrypto::rust::vec::Vec;
 use scrypto::types::*;
 use scrypto::utils::*;
 

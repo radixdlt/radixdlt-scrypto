@@ -559,7 +559,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
             supply: None,
         };
 
-        let address = self.runtime.new_resource_address(self.package()?);
+        let address = self.runtime.new_resource_address();
 
         if self.runtime.get_resource(address).is_some() {
             return Err(RuntimeError::ResourceAlreadyExists(address));
@@ -585,7 +585,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
             supply: Some(input.supply),
         };
 
-        let address = self.runtime.new_resource_address(self.package()?);
+        let address = self.runtime.new_resource_address();
 
         if self.runtime.get_resource(address).is_some() {
             return Err(RuntimeError::ResourceAlreadyExists(address));

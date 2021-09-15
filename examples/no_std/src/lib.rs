@@ -28,12 +28,10 @@ blueprint! {
 
     impl Greeting {
         pub fn new() -> Address {
-            let component = Self {
+            Self {
                 count: 0
-            }.instantiate();
-
-            debug!("New component: {}", component);
-            component
+            }
+            .instantiate()
         }
 
         pub fn say_hello(&mut self) -> u32 {
