@@ -17,8 +17,8 @@ const ARG_ICON_URL: &str = "ICON_URL";
 const ARG_SUPPLY: &str = "SUPPLY";
 const ARG_MINTER: &str = "MINTER";
 
-/// Constructs a `create-resource` subcommand.
-pub fn make_create_resource_cmd<'a, 'b>() -> App<'a, 'b> {
+/// Constructs a `new-resource` subcommand.
+pub fn make_new_resource_cmd<'a, 'b>() -> App<'a, 'b> {
     SubCommand::with_name(CMD_CREATE_RESOURCE)
         .about("Create a resource")
         .version(crate_version!())
@@ -79,8 +79,8 @@ pub fn make_create_resource_cmd<'a, 'b>() -> App<'a, 'b> {
         )
 }
 
-/// Handles a `create-resource` request.
-pub fn handle_create_resource(matches: &ArgMatches) -> Result<(), Error> {
+/// Handles a `new-resource` request.
+pub fn handle_new_resource(matches: &ArgMatches) -> Result<(), Error> {
     let trace = matches.is_present(ARG_TRACE);
     let symbol = matches.value_of(ARG_SYMBOL).unwrap_or("");
     let name = matches.value_of(ARG_NAME).unwrap_or("");
@@ -111,9 +111,9 @@ pub fn handle_create_resource(matches: &ArgMatches) -> Result<(), Error> {
                 .prepare_call_method(
                     account,
                     if supply.is_some() {
-                        "create_resource_fixed".to_owned()
+                        "new_resource_fixed".to_owned()
                     } else {
-                        "create_resource_mutable".to_owned()
+                        "new_resource_mutable".to_owned()
                     },
                     vec![
                         scrypto_encode(symbol),

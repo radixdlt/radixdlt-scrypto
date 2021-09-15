@@ -39,7 +39,7 @@ blueprint! {
         }
 
         /// Create a resource with mutable supply.
-        pub fn create_resource_mutable(
+        pub fn new_resource_mutable(
             &self,
             symbol: String,
             name: String,
@@ -53,7 +53,7 @@ blueprint! {
         }
 
         /// Create a resource with fixed supply.
-        pub fn create_resource_fixed(
+        pub fn new_resource_fixed(
             &mut self,
             symbol: String,
             name: String,

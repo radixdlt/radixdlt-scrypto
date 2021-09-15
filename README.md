@@ -69,11 +69,11 @@ You can now start coding your ideas!
 |---|---|
 | To create new account | ``` rev2 new-account ``` |
 | To change default account | ``` rev2 config default.account <account_address> ``` |
-| To create fixed-supply resource | ``` rev2 create-resource --symbol <symbol> --supply <amount> ``` |
-| To publish a package | ``` rev2 publish /path/to/your/package ``` |
-| To export the ABI of a blueprint | ``` rev2 export-abi <package_address> <blueprint_name> ``` |
+| To create fixed-supply resource | ``` rev2 new-resource --symbol <symbol> --supply <amount> ``` |
+| To publish a package | ``` rev2 publish <package_root_dir> ``` |
 | To call a function | ``` rev2 call-function <package_address> <blueprint_name> <function> <args> ``` |
 | To call a method | ``` rev2 call-method <component_address> <method> <args> ``` |
+| To export the ABI of a blueprint | ``` rev2 export-abi <package_address> <blueprint_name> ``` |
 | To show info about an address | ``` rev2 show <address> ``` |
 
 ## Project Layout
