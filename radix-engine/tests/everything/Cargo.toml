@@ -3,6 +3,13 @@ name = "everything"
 version = "0.1.0"
 edition = "2018"
 
+[dependencies]
+sbor = { path = "../../../sbor" }
+scrypto = { path = "../../../scrypto" }
+
+[dev-dependencies]
+radix-engine = { path = "../../../radix-engine" }
+
 [profile.release]
 opt-level = 's'     # Optimize for size.
 lto = true          # Enable Link Time Optimization.
@@ -11,7 +18,4 @@ panic = 'abort'     # Abort on panic.
 
 [lib]
 crate-type = ["cdylib"]
-
-[dependencies]
-sbor = { path = "../../../sbor" }
-scrypto = { path = "../../../scrypto" }
+name = "out"

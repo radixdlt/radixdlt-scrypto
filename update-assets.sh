@@ -17,25 +17,25 @@ wasm-opt \
   -Os -g \
   --strip-debug --strip-dwarf --strip-producers \
   -o ./assets/account.wasm \
-  ./examples/account/target/wasm32-unknown-unknown/release/account.wasm
+  ./examples/account/target/wasm32-unknown-unknown/release/out.wasm
 wasm-opt \
   -Os -g \
   --strip-debug --strip-dwarf --strip-producers \
   -o ./assets/helloworld.wasm \
-  ./examples/helloworld/target/wasm32-unknown-unknown/release/helloworld.wasm
+  ./examples/helloworld/target/wasm32-unknown-unknown/release/out.wasm
 wasm-opt \
   -Os -g \
   --strip-debug --strip-dwarf --strip-producers \
   -o ./assets/no_std.wasm \
-  ./examples/no_std/target/wasm32-unknown-unknown/release/no_std.wasm
+  ./examples/no_std/target/wasm32-unknown-unknown/release/out.wasm
 wasm-opt \
   -Os -g \
   --strip-debug --strip-dwarf --strip-producers \
   -o ./assets/gumball-machine.wasm \
-  ./examples/gumball-machine/target/wasm32-unknown-unknown/release/gumball-machine.wasm
+  ./examples/gumball-machine/target/wasm32-unknown-unknown/release/out.wasm
 wasm-opt \
   -Os -g \
   --strip-debug --strip-dwarf --strip-producers \
   -o ./assets/gumball-machine-vendor.wasm \
-  ./examples/gumball-machine-vendor/target/wasm32-unknown-unknown/release/gumball-machine-vendor.wasm
+  ./examples/gumball-machine-vendor/target/wasm32-unknown-unknown/release/out.wasm
 echo "Done!"

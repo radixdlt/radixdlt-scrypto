@@ -93,17 +93,13 @@ macro_rules! package_code {
     () => {
         include_bytes!(concat!(
             env!("CARGO_MANIFEST_DIR"),
-            "/target/wasm32-unknown-unknown/release/",
-            env!("CARGO_PKG_NAME"),
-            ".wasm"
+            "/target/wasm32-unknown-unknown/release/out.wasm"
         ))
     };
-    ($package_dir: expr, $package_name: expr) => {
+    ($package_dir: expr) => {
         include_bytes!(concat!(
             $package_dir,
-            "/target/wasm32-unknown-unknown/release/",
-            $package_name,
-            ".wasm"
+            "/target/wasm32-unknown-unknown/release/out.wasm"
         ))
     };
 }

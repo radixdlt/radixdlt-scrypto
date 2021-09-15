@@ -4,9 +4,7 @@ use scrypto::prelude::*;
 #[test]
 fn test_component() {
     let mut engine = InMemoryRadixEngine::new(true);
-    let package = engine
-        .publish(package_code!("./everything", "everything"))
-        .unwrap();
+    let package = engine.publish(package_code!("./everything")).unwrap();
 
     let component = engine
         .call_function::<Address>(package, "ComponentTest", "create_component", args!())
@@ -28,9 +26,7 @@ fn test_component() {
 #[test]
 fn test_map() {
     let mut engine = InMemoryRadixEngine::new(true);
-    let package = engine
-        .publish(package_code!("./everything", "everything"))
-        .unwrap();
+    let package = engine.publish(package_code!("./everything")).unwrap();
 
     let result = engine
         .call_function::<Option<String>>(package, "MapTest", "test_map", args!())
@@ -41,9 +37,7 @@ fn test_map() {
 #[test]
 fn test_resource() {
     let mut engine = InMemoryRadixEngine::new(true);
-    let package = engine
-        .publish(package_code!("./everything", "everything"))
-        .unwrap();
+    let package = engine.publish(package_code!("./everything")).unwrap();
 
     engine
         .call_function::<Tokens>(package, "ResourceTest", "create_mutable", args!())
@@ -61,9 +55,7 @@ fn test_resource() {
 #[test]
 fn test_bucket() {
     let mut engine = InMemoryRadixEngine::new(true);
-    let package = engine
-        .publish(package_code!("./everything", "everything"))
-        .unwrap();
+    let package = engine.publish(package_code!("./everything")).unwrap();
 
     engine
         .call_function::<Tokens>(package, "BucketTest", "combine", args!())
@@ -85,9 +77,7 @@ fn test_bucket() {
 #[test]
 fn test_move_resource() {
     let mut engine = InMemoryRadixEngine::new(true);
-    let package = engine
-        .publish(package_code!("./everything", "everything"))
-        .unwrap();
+    let package = engine.publish(package_code!("./everything")).unwrap();
 
     engine
         .call_function::<()>(package, "MoveTest", "move_bucket", args!())

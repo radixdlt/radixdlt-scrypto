@@ -1,8 +1,15 @@
 [package]
 name = "no_std"
 version = "0.1.0"
-authors = ["Yulong Wu <yulong@radixdlt.com>"]
 edition = "2018"
+
+[dependencies]
+sbor = { path = "../../sbor", default-features = false, features = ["alloc"] }
+scrypto = { path = "../../scrypto", default-features = false, features = ["alloc"] }
+wee_alloc = { version = "0.4", default-features = false }
+
+[dev-dependencies]
+radix-engine = { path = "../../radix-engine", default-features = false, features = ["alloc"] }
 
 [profile.release]
 opt-level = 's'     # Optimize for size.
@@ -12,11 +19,4 @@ panic = 'abort'     # Abort on panic.
 
 [lib]
 crate-type = ["cdylib"]
-
-[dependencies]
-sbor = { path = "../../sbor", default-features = false, features = ["alloc"] }
-scrypto = { path = "../../scrypto", default-features = false, features = ["alloc"] }
-wee_alloc = { version = "0.4", default-features = false }
-
-[dev-dependencies]
-radix-engine = { path = "../../radix-engine", default-features = false, features = ["alloc"] }
+name = "out"

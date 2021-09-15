@@ -9,8 +9,6 @@ use std::process::ExitStatus;
 pub enum CargoExecutionError {
     NotCargoPackage,
 
-    InvalidCargoToml(cargo_toml::Error),
-
     MissingPackageName,
 
     FailedToRunCargo(io::Error),
@@ -37,19 +35,11 @@ pub fn build_package<P: AsRef<Path>>(path: P) -> Result<PathBuf, CargoExecutionE
             return Err(CargoExecutionError::FailedToBuild(status));
         }
 
-        let manifest = cargo_toml::Manifest::from_path(cargo)
-            .map_err(CargoExecutionError::InvalidCargoToml)?;
-
         let mut bin = path.as_ref().to_owned();
         bin.push("target");
         bin.push("wasm32-unknown-unknown");
         bin.push("release");
-        bin.push(
-            manifest
-                .package
-                .ok_or(CargoExecutionError::MissingPackageName)?
-                .name,
-        );
+        bin.push("out");
         Ok(bin.with_extension("wasm"))
     } else {
         Err(CargoExecutionError::NotCargoPackage)
