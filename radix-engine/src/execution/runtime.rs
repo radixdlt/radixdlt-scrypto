@@ -32,6 +32,7 @@ pub struct Runtime<'le, T: Ledger> {
     updated_maps: HashSet<MID>,
     updated_resources: HashSet<Address>,
     updated_buckets: HashSet<BID>,
+    new_addresses: Vec<Address>,
     cache: LruCache<Address, Module>, // TODO: move to ledger level
 }
 
@@ -52,6 +53,7 @@ impl<'le, T: Ledger> Runtime<'le, T> {
             updated_maps: HashSet::new(),
             updated_resources: HashSet::new(),
             updated_buckets: HashSet::new(),
+            new_addresses: Vec::new(),
             cache: LruCache::new(1024),
         }
     }
@@ -64,6 +66,11 @@ impl<'le, T: Ledger> Runtime<'le, T> {
     /// Returns the logs collected so far.
     pub fn logs(&self) -> &Vec<(Level, String)> {
         &self.logs
+    }
+
+    /// Returns new addresses created so far.
+    pub fn new_addresses(&self) -> &[Address] {
+        &self.new_addresses
     }
 
     /// Adds a log message.
@@ -276,17 +283,23 @@ impl<'le, T: Ledger> Runtime<'le, T> {
 
     /// Creates a new package bid.
     pub fn new_package_address(&mut self) -> Address {
-        self.alloc.new_package_address(self.tx_hash())
+        let address = self.alloc.new_package_address(self.tx_hash());
+        self.new_addresses.push(address);
+        address
     }
 
     /// Creates a new component address.
     pub fn new_component_address(&mut self) -> Address {
-        self.alloc.new_component_address(self.tx_hash())
+        let address = self.alloc.new_component_address(self.tx_hash());
+        self.new_addresses.push(address);
+        address
     }
 
     /// Creates a new resource address.
-    pub fn new_resource_address(&self, creator: Address, symbol: &str) -> Address {
-        self.alloc.new_resource_address(creator, symbol)
+    pub fn new_resource_address(&mut self) -> Address {
+        let address = self.alloc.new_resource_address(self.tx_hash());
+        self.new_addresses.push(address);
+        address
     }
 
     /// Creates a new transient bucket id.

@@ -33,9 +33,9 @@ impl AddressAllocator {
         Address::Component(hash.lower_26_bytes())
     }
 
-    pub fn new_resource_address(&self, creator: Address, symbol: &str) -> Address {
-        let mut data: Vec<u8> = creator.to_vec();
-        data.extend(symbol.as_bytes());
+    pub fn new_resource_address(&self, tx_hash: H256) -> Address {
+        let mut data = tx_hash.as_ref().to_vec();
+        data.extend(self.count.to_le_bytes());
 
         let hash = sha256_twice(data);
         Address::Resource(hash.lower_26_bytes())
