@@ -663,7 +663,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         Ok(MintResourceOutput { bucket: bid })
     }
 
-    pub fn new_empty_bucket(
+    pub fn new_bucket(
         &mut self,
         input: NewEmptyBucketInput,
     ) -> Result<NewEmptyBucketOutput, RuntimeError> {
@@ -1176,7 +1176,7 @@ impl<'rt, 'le, L: Ledger> Externals for Process<'rt, 'le, L> {
                     GET_RESOURCE_INFO => self.handle(args, Self::get_resource_info, true),
                     MINT_RESOURCE => self.handle(args, Self::mint_resource, true),
 
-                    NEW_EMPTY_BUCKET => self.handle(args, Self::new_empty_bucket, true),
+                    NEW_EMPTY_BUCKET => self.handle(args, Self::new_bucket, true),
                     COMBINE_BUCKETS => self.handle(args, Self::combine_buckets, true),
                     SPLIT_BUCKET => self.handle(args, Self::split_bucket, true),
                     GET_AMOUNT => self.handle(args, Self::get_amount, true),

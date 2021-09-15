@@ -17,7 +17,7 @@ blueprint! {
                     "https://www.example.com/icon.png",
                     100.into(),
                 ),
-                collected_xrd: Tokens::new_empty(Address::RadixToken),
+                collected_xrd: Tokens::new(Address::RadixToken),
             }
             .instantiate()
         }

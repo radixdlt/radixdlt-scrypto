@@ -28,8 +28,8 @@ impl Tokens {
         assert!(self.resource() == resource);
     }
 
-    pub fn new_empty(resource: Address) -> Self {
-        BID::new_empty(resource).into()
+    pub fn new(resource: Address) -> Self {
+        BID::new(resource).into()
     }
 
     pub fn put(&self, other: Self) {

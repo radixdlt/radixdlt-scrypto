@@ -4,7 +4,7 @@ use crate::types::*;
 
 /// Represents a basket of resources.
 pub trait Bucket<T: BucketRef> {
-    fn new_empty(resource: Address) -> Self;
+    fn new(resource: Address) -> Self;
 
     fn put(&self, other: Self);
 
@@ -18,7 +18,7 @@ pub trait Bucket<T: BucketRef> {
 }
 
 impl Bucket<RID> for BID {
-    fn new_empty(resource: Address) -> Self {
+    fn new(resource: Address) -> Self {
         let input = NewEmptyBucketInput { resource };
         let output: NewEmptyBucketOutput = call_kernel(NEW_EMPTY_BUCKET, input);
 

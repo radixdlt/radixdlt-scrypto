@@ -20,7 +20,7 @@ blueprint! {
                     b.put(bucket);
                 }
                 None => {
-                    let b = BID::new_empty(resource);
+                    let b = BID::new(resource);
                     b.put(bucket);
                     self.resources.insert(resource, b);
                 }
