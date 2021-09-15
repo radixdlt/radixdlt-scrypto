@@ -38,7 +38,7 @@ cargo install --path ./simulator
 ./doc.sh
 ```
 
-Note: For preview release, do not delete or move the repository after installation. It will be used when resolving dependencies of Scrypto packages.
+**Note:** For preview release, do not delete or move the repository after installation. It will be used when resolving dependencies of Scrypto packages.
 
 ## Getting Started
 
@@ -61,8 +61,6 @@ scrypto build
 scrypto test
 ```
 
-You can now start coding your ideas!
-
 ### Playing with Radix Engine
 
 | Action | Command |
@@ -75,6 +73,8 @@ You can now start coding your ideas!
 | To call a method | ``` rev2 call-method <component_address> <method> <args> ``` |
 | To export the ABI of a blueprint | ``` rev2 export-abi <package_address> <blueprint_name> ``` |
 | To show info about an address | ``` rev2 show <address> ``` |
+
+**Note:** The commands above will use the default account as transaction sender.
 
 ## Project Layout
 

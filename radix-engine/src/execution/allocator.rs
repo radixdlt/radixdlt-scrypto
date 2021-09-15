@@ -19,6 +19,7 @@ impl AddressAllocator {
     pub fn new_package_address(&mut self, tx_hash: H256) -> Address {
         let mut data = tx_hash.as_ref().to_vec();
         data.extend(self.count.to_le_bytes());
+        self.count += 1;
 
         let hash = sha256_twice(data);
         Address::Package(hash.lower_26_bytes())
@@ -27,14 +28,16 @@ impl AddressAllocator {
     pub fn new_component_address(&mut self, tx_hash: H256) -> Address {
         let mut data = tx_hash.as_ref().to_vec();
         data.extend(self.count.to_le_bytes());
+        self.count += 1;
 
         let hash = sha256_twice(data);
         Address::Component(hash.lower_26_bytes())
     }
 
-    pub fn new_resource_address(&self, tx_hash: H256) -> Address {
+    pub fn new_resource_address(&mut self, tx_hash: H256) -> Address {
         let mut data = tx_hash.as_ref().to_vec();
         data.extend(self.count.to_le_bytes());
+        self.count += 1;
 
         let hash = sha256_twice(data);
         Address::Resource(hash.lower_26_bytes())
