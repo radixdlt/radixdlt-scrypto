@@ -65,30 +65,16 @@ You can now start coding your ideas!
 
 ### Playing with Radix Engine
 
-- To create a new account, run
-```
-rev2 new-account
-```
-- To publish your package, run
-```
-rev2 publish /path/to/your/package
-```
-- To export the ABI of a published package, run
-```
-rev2 export-abi <package_address> <blueprint_name>
-```
-- To call a function, run
-```
-rev2 call-function <package_address> <blueprint_name> <function> <args>...
-```
-- To call a method, run
-```
-rev2 call-method <component_address> <method> <args>...
-```
-- To show the content of an address, run
-```
-rev2 show <address>
-```
+| Action | Command |
+|---|---|
+| To create new account | ``` rev2 new-account ``` |
+| To change default account | ``` rev2 config default.account <account_address> ``` |
+| To create fixed-supply resource | ``` rev2 create-resource --symbol <symbol> --supply <amount> ``` |
+| To publish a package | ``` rev2 publish /path/to/your/package ``` |
+| To export the ABI of a blueprint | ``` rev2 export-abi <package_address> <blueprint_name> ``` |
+| To call a function | ``` rev2 call-function <package_address> <blueprint_name> <function> <args> ``` |
+| To call a method | ``` rev2 call-method <component_address> <method> <args> ``` |
+| To show info about an address | ``` rev2 show <address> ``` |
 
 ## Project Layout
 
