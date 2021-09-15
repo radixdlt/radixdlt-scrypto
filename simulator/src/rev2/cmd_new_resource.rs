@@ -20,7 +20,7 @@ const ARG_MINTER: &str = "MINTER";
 /// Constructs a `new-resource` subcommand.
 pub fn make_new_resource_cmd<'a, 'b>() -> App<'a, 'b> {
     SubCommand::with_name(CMD_CREATE_RESOURCE)
-        .about("Create a resource")
+        .about("Creates a new resource")
         .version(crate_version!())
         .arg(
             Arg::with_name(ARG_TRACE)

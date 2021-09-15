@@ -44,7 +44,7 @@ cargo install --path ./simulator
 
 ### Writing Scrypto Code
 
-1. Start by creating a new package and switch to it:
+1. Start by creating a new package:
 ```
 scrypto new-package <package_name>
 cd <package_name>
@@ -65,10 +65,10 @@ scrypto test
 
 | Action | Command |
 |---|---|
-| To create new account | ``` rev2 new-account ``` |
-| To change default account | ``` rev2 config default.account <account_address> ``` |
+| To create an account | ``` rev2 new-account ``` |
+| To change default account | ``` rev2 set-default-account <account_address> ``` |
 | To create fixed-supply resource | ``` rev2 new-resource --symbol <symbol> --supply <amount> ``` |
-| To publish a package | ``` rev2 publish <package_root_dir> ``` |
+| To publish a package | ``` rev2 publish <package_dir_or_wasm_file> ``` |
 | To call a function | ``` rev2 call-function <package_address> <blueprint_name> <function> <args> ``` |
 | To call a method | ``` rev2 call-method <component_address> <method> <args> ``` |
 | To export the ABI of a blueprint | ``` rev2 export-abi <package_address> <blueprint_name> ``` |
