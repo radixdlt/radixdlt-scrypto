@@ -19,18 +19,18 @@ pub fn make_new_package_cmd<'a, 'b>() -> App<'a, 'b> {
 }
 
 /// Handles a `new-package` request.
-pub fn handle_new_package<'a>(matches: &ArgMatches<'a>) -> Result<(), Error> {
+pub fn handle_new_package(matches: &ArgMatches) -> Result<(), Error> {
     let name = matches
         .value_of(ARG_NAME)
-        .ok_or(Error::MissingArgument(ARG_NAME.to_owned()))?;
+        .ok_or_else(|| Error::MissingArgument(ARG_NAME.to_owned()))?;
     let simulator_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let scrypto_dir = simulator_dir.parent().unwrap().to_string_lossy();
 
     if PathBuf::from(name).exists() {
         Err(Error::PackageAlreadyExists)
     } else {
-        fs::create_dir_all(format!("{}/src", name)).map_err(|e| Error::IOError(e))?;
-        fs::create_dir_all(format!("{}/tests", name)).map_err(|e| Error::IOError(e))?;
+        fs::create_dir_all(format!("{}/src", name)).map_err(Error::IOError)?;
+        fs::create_dir_all(format!("{}/tests", name)).map_err(Error::IOError)?;
 
         fs::write(
             PathBuf::from(format!("{}/Cargo.toml", name)),
@@ -38,19 +38,19 @@ pub fn handle_new_package<'a>(matches: &ArgMatches<'a>) -> Result<(), Error> {
                 .replace("${package_name}", name)
                 .replace("${scrypto_home}", &scrypto_dir),
         )
-        .map_err(|e| Error::IOError(e))?;
+        .map_err(Error::IOError)?;
 
         fs::write(
             PathBuf::from(format!("{}/src/lib.rs", name)),
             include_str!("../../../assets/template/package/src/lib.rs"),
         )
-        .map_err(|e| Error::IOError(e))?;
+        .map_err(Error::IOError)?;
 
         fs::write(
             PathBuf::from(format!("{}/tests/lib.rs", name)),
             include_str!("../../../assets/template/package/tests/lib.rs"),
         )
-        .map_err(|e| Error::IOError(e))?;
+        .map_err(Error::IOError)?;
 
         Ok(())
     }

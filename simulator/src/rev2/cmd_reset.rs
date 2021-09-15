@@ -11,9 +11,9 @@ pub fn make_reset_cmd<'a, 'b>() -> App<'a, 'b> {
 }
 
 /// Handles a `reset` request.
-pub fn handle_reset<'a>(_matches: &ArgMatches<'a>) -> Result<(), Error> {
+pub fn handle_reset(_matches: &ArgMatches) -> Result<(), Error> {
     let dir = get_data_dir()?;
-    remove_dir_all(dir).map_err(|e| Error::IOError(e))?;
+    remove_dir_all(dir).map_err(Error::IOError)?;
     println!("Data directory deleted.");
     Ok(())
 }

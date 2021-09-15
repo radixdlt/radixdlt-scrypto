@@ -39,7 +39,7 @@ pub fn dump_component<T: Ledger>(address: Address, ledger: &T) {
                 "{}: {}",
                 "State Parsed".green().bold(),
                 format_sbor(c.state(), ledger, &mut res)
-                    .unwrap_or("Failed to parse data".to_owned())
+                    .unwrap_or_else(|_| "Failed to parse data".to_owned())
             );
 
             println!("{}:", "Resources".green().bold());

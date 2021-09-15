@@ -33,16 +33,16 @@ pub fn make_export_abi_cmd<'a, 'b>() -> App<'a, 'b> {
 }
 
 /// Handles a `export-abi` request.
-pub fn handle_export_abi<'a>(matches: &ArgMatches<'a>) -> Result<(), Error> {
+pub fn handle_export_abi(matches: &ArgMatches) -> Result<(), Error> {
     let trace = matches.is_present(ARG_TRACE);
     let package: Address = matches
         .value_of(ARG_PACKAGE)
-        .ok_or(Error::MissingArgument(ARG_PACKAGE.to_owned()))?
+        .ok_or_else(|| Error::MissingArgument(ARG_PACKAGE.to_owned()))?
         .parse()
-        .map_err(|e| Error::InvalidAddress(e))?;
+        .map_err(Error::InvalidAddress)?;
     let blueprint = matches
         .value_of(ARG_BLUEPRINT)
-        .ok_or(Error::MissingArgument(ARG_BLUEPRINT.to_owned()))?;
+        .ok_or_else(|| Error::MissingArgument(ARG_BLUEPRINT.to_owned()))?;
 
     let mut ledger = FileBasedLedger::new(get_data_dir()?);
     let result = export_abi(&mut ledger, package, blueprint, trace);
@@ -52,7 +52,7 @@ pub fn handle_export_abi<'a>(matches: &ArgMatches<'a>) -> Result<(), Error> {
         Ok(abi) => {
             println!(
                 "{}",
-                serde_json::to_string_pretty(&abi).map_err(|e| Error::JSONError(e))?
+                serde_json::to_string_pretty(&abi).map_err(Error::JSONError)?
             );
             Ok(())
         }

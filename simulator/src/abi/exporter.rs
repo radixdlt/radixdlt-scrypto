@@ -30,7 +30,7 @@ pub fn export_abi<T: Ledger>(
     let result = process.run(target);
 
     // Parse ABI
-    scrypto_decode::<abi::Blueprint>(&result?).map_err(|e| RuntimeError::InvalidData(e))
+    scrypto_decode::<abi::Blueprint>(&result?).map_err(RuntimeError::InvalidData)
 }
 
 /// Export the ABI of the blueprint of a component.

@@ -141,9 +141,9 @@ pub fn format_custom<L: Ledger>(
                 if i != 0 {
                     buf.push_str(", ");
                 }
-                buf.push_str(format_sbor(&k, le, res)?.as_str());
+                buf.push_str(format_sbor(k, le, res)?.as_str());
                 buf.push_str(" => ");
-                buf.push_str(format_sbor(&v, le, res)?.as_str());
+                buf.push_str(format_sbor(v, le, res)?.as_str());
             }
             Ok(format!("Map {{ mid: {}, entries: [{}] }}", mid, buf))
         }

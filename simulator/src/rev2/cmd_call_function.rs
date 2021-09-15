@@ -46,19 +46,19 @@ pub fn make_call_function_cmd<'a, 'b>() -> App<'a, 'b> {
 }
 
 /// Handles a `call-function` request.
-pub fn handle_call_function<'a>(matches: &ArgMatches<'a>) -> Result<(), Error> {
+pub fn handle_call_function(matches: &ArgMatches) -> Result<(), Error> {
     let trace = matches.is_present(ARG_TRACE);
     let package: Address = matches
         .value_of(ARG_PACKAGE)
-        .ok_or(Error::MissingArgument(ARG_PACKAGE.to_owned()))?
+        .ok_or_else(|| Error::MissingArgument(ARG_PACKAGE.to_owned()))?
         .parse()
-        .map_err(|e| Error::InvalidAddress(e))?;
+        .map_err(Error::InvalidAddress)?;
     let blueprint = matches
         .value_of(ARG_BLUEPRINT)
-        .ok_or(Error::MissingArgument(ARG_BLUEPRINT.to_owned()))?;
+        .ok_or_else(|| Error::MissingArgument(ARG_BLUEPRINT.to_owned()))?;
     let function = matches
         .value_of(ARG_FUNCTION)
-        .ok_or(Error::MissingArgument(ARG_FUNCTION.to_owned()))?;
+        .ok_or_else(|| Error::MissingArgument(ARG_FUNCTION.to_owned()))?;
     let mut args = Vec::new();
     if let Some(x) = matches.values_of(ARG_ARGS) {
         x.for_each(|a| args.push(a));
@@ -66,7 +66,7 @@ pub fn handle_call_function<'a>(matches: &ArgMatches<'a>) -> Result<(), Error> {
 
     match get_config(CONF_DEFAULT_ACCOUNT)? {
         Some(a) => {
-            let account: Address = a.as_str().parse().map_err(|e| Error::InvalidAddress(e))?;
+            let account: Address = a.as_str().parse().map_err(Error::InvalidAddress)?;
             let mut ledger = FileBasedLedger::new(get_data_dir()?);
             match build_call_function(
                 &mut ledger,

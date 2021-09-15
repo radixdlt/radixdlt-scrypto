@@ -35,16 +35,15 @@ pub fn handle_describe(input: TokenStream) -> TokenStream {
                 quote! {
                     impl ::sbor::Describe for #ident {
                         fn describe() -> ::sbor::describe::Type {
-                            use ::sbor::rust::vec::Vec;
                             use ::sbor::rust::string::ToString;
+                            use ::sbor::rust::vec;
                             use ::sbor::Describe;
-
-                            let mut named = Vec::new();
-                            #(named.push((#names.to_string(), <#types>::describe()));)*
 
                             ::sbor::describe::Type::Struct {
                                 name: #ident_str.to_string(),
-                                fields: ::sbor::describe::Fields::Named { named },
+                                fields: ::sbor::describe::Fields::Named {
+                                    named: vec![#((#names.to_string(), <#types>::describe())),*]
+                                },
                             }
                         }
                     }
@@ -59,15 +58,14 @@ pub fn handle_describe(input: TokenStream) -> TokenStream {
                     impl ::sbor::Describe for #ident {
                         fn describe() -> ::sbor::describe::Type {
                             use ::sbor::rust::string::ToString;
-                            use ::sbor::rust::vec::Vec;
+                            use ::sbor::rust::vec;
                             use ::sbor::Describe;
-
-                            let mut unnamed = Vec::new();
-                            #(unnamed.push(<#types>::describe());)*
 
                             ::sbor::describe::Type::Struct {
                                 name: #ident_str.to_string(),
-                                fields: ::sbor::describe::Fields::Unnamed { unnamed },
+                                fields: ::sbor::describe::Fields::Unnamed {
+                                    unnamed: vec![#(<#types>::describe()),*]
+                                },
                             }
                         }
                     }
@@ -107,10 +105,8 @@ pub fn handle_describe(input: TokenStream) -> TokenStream {
 
                         quote! {
                             {
-                                let mut named = Vec::new();
-                                #(named.push((#names.to_string(), <#types>::describe()));)*
                                 ::sbor::describe::Fields::Named {
-                                    named
+                                    named: vec![#((#names.to_string(), <#types>::describe())),*]
                                 }
                             }
                         }
@@ -122,10 +118,8 @@ pub fn handle_describe(input: TokenStream) -> TokenStream {
 
                         quote! {
                             {
-                                let mut unnamed = Vec::new();
-                                #(unnamed.push(<#types>::describe());)*
                                 ::sbor::describe::Fields::Unnamed {
-                                    unnamed
+                                    unnamed: vec![#(<#types>::describe()),*]
                                 }
                             }
                         }
@@ -144,18 +138,17 @@ pub fn handle_describe(input: TokenStream) -> TokenStream {
                 impl ::sbor::Describe for #ident {
                     fn describe() -> ::sbor::describe::Type {
                         use ::sbor::rust::string::ToString;
-                        use ::sbor::rust::vec::Vec;
+                        use ::sbor::rust::vec;
                         use ::sbor::Describe;
-
-                        let mut variants = Vec::new();
-                        #(variants.push(::sbor::describe::Variant {
-                            name: #names.to_string(),
-                            fields: #fields
-                        });)*
 
                         ::sbor::describe::Type::Enum {
                             name: #ident_str.to_string(),
-                            variants,
+                            variants: vec![
+                                #(::sbor::describe::Variant {
+                                    name: #names.to_string(),
+                                    fields: #fields
+                                }),*
+                            ]
                         }
                     }
                 }
@@ -194,14 +187,15 @@ mod tests {
             quote! {
                 impl ::sbor::Describe for Test {
                     fn describe() -> ::sbor::describe::Type {
-                        use ::sbor::rust::vec::Vec;
                         use ::sbor::rust::string::ToString;
+                        use ::sbor::rust::vec;
                         use ::sbor::Describe;
-                        let mut named = Vec::new();
-                        named.push(("a".to_string(), <u32>::describe()));
+
                         ::sbor::describe::Type::Struct {
                             name: "Test".to_string(),
-                            fields: ::sbor::describe::Fields::Named { named },
+                            fields: ::sbor::describe::Fields::Named {
+                                named: vec![("a".to_string(), <u32>::describe())]
+                            },
                         }
                     }
                 }
@@ -220,32 +214,29 @@ mod tests {
                 impl ::sbor::Describe for Test {
                     fn describe() -> ::sbor::describe::Type {
                         use ::sbor::rust::string::ToString;
-                        use ::sbor::rust::vec::Vec;
+                        use ::sbor::rust::vec;
                         use ::sbor::Describe;
-                        let mut variants = Vec::new();
-                        variants.push(::sbor::describe::Variant {
-                            name: "A".to_string(),
-                            fields: { ::sbor::describe::Fields::Unit }
-                        });
-                        variants.push(::sbor::describe::Variant {
-                            name: "B".to_string(),
-                            fields: {
-                                let mut unnamed = Vec::new();
-                                unnamed.push(<u32>::describe());
-                                ::sbor::describe::Fields::Unnamed { unnamed }
-                            }
-                        });
-                        variants.push(::sbor::describe::Variant {
-                            name: "C".to_string(),
-                            fields: {
-                                let mut named = Vec::new();
-                                named.push(("x".to_string(), <u8>::describe()));
-                                ::sbor::describe::Fields::Named { named }
-                            }
-                        });
+
                         ::sbor::describe::Type::Enum {
                             name: "Test".to_string(),
-                            variants,
+                            variants: vec![
+                                ::sbor::describe::Variant {
+                                    name: "A".to_string(),
+                                    fields: { ::sbor::describe::Fields::Unit }
+                                },
+                                ::sbor::describe::Variant {
+                                    name: "B".to_string(),
+                                    fields: {
+                                        ::sbor::describe::Fields::Unnamed { unnamed: vec![<u32>::describe()] }
+                                    }
+                                },
+                                ::sbor::describe::Variant {
+                                    name: "C".to_string(),
+                                    fields: {
+                                        ::sbor::describe::Fields::Named { named: vec![("x".to_string(), <u8>::describe())] }
+                                    }
+                                }
+                            ]
                         }
                     }
                 }
@@ -263,13 +254,13 @@ mod tests {
             quote! {
                 impl ::sbor::Describe for Test {
                     fn describe() -> ::sbor::describe::Type {
-                        use ::sbor::rust::vec::Vec;
                         use ::sbor::rust::string::ToString;
+                        use ::sbor::rust::vec;
                         use ::sbor::Describe;
-                        let mut named = Vec::new();
+
                         ::sbor::describe::Type::Struct {
                             name: "Test".to_string(),
-                            fields: ::sbor::describe::Fields::Named { named },
+                            fields: ::sbor::describe::Fields::Named { named: vec![] },
                         }
                     }
                 }
@@ -290,30 +281,29 @@ mod tests {
                 impl ::sbor::Describe for Test {
                     fn describe() -> ::sbor::describe::Type {
                         use ::sbor::rust::string::ToString;
-                        use ::sbor::rust::vec::Vec;
+                        use ::sbor::rust::vec;
                         use ::sbor::Describe;
-                        let mut variants = Vec::new();
-                        variants.push(::sbor::describe::Variant {
-                            name: "A".to_string(),
-                            fields: { ::sbor::describe::Fields::Unit }
-                        });
-                        variants.push(::sbor::describe::Variant {
-                            name: "B".to_string(),
-                            fields: {
-                                let mut unnamed = Vec::new();
-                                ::sbor::describe::Fields::Unnamed { unnamed }
-                            }
-                        });
-                        variants.push(::sbor::describe::Variant {
-                            name: "C".to_string(),
-                            fields: {
-                                let mut named = Vec::new();
-                                ::sbor::describe::Fields::Named { named }
-                            }
-                        });
+
                         ::sbor::describe::Type::Enum {
                             name: "Test".to_string(),
-                            variants,
+                            variants: vec![
+                                ::sbor::describe::Variant {
+                                    name: "A".to_string(),
+                                    fields: { ::sbor::describe::Fields::Unit }
+                                },
+                                ::sbor::describe::Variant {
+                                    name: "B".to_string(),
+                                    fields: {
+                                        ::sbor::describe::Fields::Unnamed { unnamed: vec![] }
+                                    }
+                                },
+                                ::sbor::describe::Variant {
+                                    name: "C".to_string(),
+                                    fields: {
+                                        ::sbor::describe::Fields::Named { named: vec![] }
+                                    }
+                                }
+                            ]
                         }
                     }
                 }

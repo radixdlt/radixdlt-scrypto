@@ -21,12 +21,12 @@ pub fn make_show_cmd<'a, 'b>() -> App<'a, 'b> {
 }
 
 /// Handles a `show` request.
-pub fn handle_show<'a>(matches: &ArgMatches<'a>) -> Result<(), Error> {
+pub fn handle_show(matches: &ArgMatches) -> Result<(), Error> {
     let address: Address = matches
         .value_of(ARG_ADDRESS)
-        .ok_or(Error::MissingArgument(ARG_ADDRESS.to_owned()))?
+        .ok_or_else(|| Error::MissingArgument(ARG_ADDRESS.to_owned()))?
         .parse()
-        .map_err(|e| Error::InvalidAddress(e))?;
+        .map_err(Error::InvalidAddress)?;
 
     let ledger = FileBasedLedger::new(get_data_dir()?);
     match address {

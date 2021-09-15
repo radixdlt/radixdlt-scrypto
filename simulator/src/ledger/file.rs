@@ -27,7 +27,7 @@ impl FileBasedLedger {
             path.push(folder);
             if !path.exists() {
                 fs::create_dir_all(&path)
-                    .expect(format!("Failed to create dir: {:?}", path).as_str());
+                    .unwrap_or_else(|_| panic!("Failed to create dir: {:?}", path));
             }
         }
 
@@ -46,16 +46,16 @@ impl FileBasedLedger {
         let p = path.as_ref();
 
         File::create(p)
-            .expect(format!("Failed to create file: {:?}", p).as_str())
+            .unwrap_or_else(|_| panic!("Failed to create file: {:?}", p))
             .write_all(value.as_ref())
-            .expect(format!("Failed to write file: {:?}", p).as_str());
+            .unwrap_or_else(|_| panic!("Failed to write file: {:?}", p));
     }
 
     fn read<P: AsRef<Path>>(path: P) -> Option<Vec<u8>> {
         let p = path.as_ref();
 
         if p.exists() {
-            Some(fs::read(p).expect(format!("Failed to read file: {:?}", p).as_str()))
+            Some(fs::read(p).unwrap_or_else(|_| panic!("Failed to read file: {:?}", p)))
         } else {
             None
         }
@@ -65,14 +65,14 @@ impl FileBasedLedger {
         sbor::encode_with_type(Vec::with_capacity(512), v)
     }
 
-    pub fn decode<'de, T: sbor::Decode>(bytes: Vec<u8>) -> T {
+    pub fn decode<T: sbor::Decode>(bytes: Vec<u8>) -> T {
         sbor::decode_with_type(&bytes).unwrap()
     }
 }
 
 impl Ledger for FileBasedLedger {
     fn get_package(&self, address: Address) -> Option<Package> {
-        Self::read(self.get_path(PACKAGES, address.to_string(), FILE_EXT)).map(|v| Self::decode(v))
+        Self::read(self.get_path(PACKAGES, address.to_string(), FILE_EXT)).map(Self::decode)
     }
 
     fn put_package(&mut self, address: Address, package: Package) {
@@ -83,7 +83,7 @@ impl Ledger for FileBasedLedger {
     }
 
     fn get_resource(&self, address: Address) -> Option<Resource> {
-        Self::read(self.get_path(RESOURCES, address.to_string(), FILE_EXT)).map(|v| Self::decode(v))
+        Self::read(self.get_path(RESOURCES, address.to_string(), FILE_EXT)).map(Self::decode)
     }
 
     fn put_resource(&mut self, address: Address, resource: Resource) {
@@ -94,8 +94,7 @@ impl Ledger for FileBasedLedger {
     }
 
     fn get_component(&self, address: Address) -> Option<Component> {
-        Self::read(self.get_path(COMPONENTS, address.to_string(), FILE_EXT))
-            .map(|v| Self::decode(v))
+        Self::read(self.get_path(COMPONENTS, address.to_string(), FILE_EXT)).map(Self::decode)
     }
 
     fn put_component(&mut self, address: Address, component: Component) {
@@ -106,7 +105,7 @@ impl Ledger for FileBasedLedger {
     }
 
     fn get_map(&self, mid: MID) -> Option<Map> {
-        Self::read(self.get_path(MAPS, mid.to_string(), FILE_EXT)).map(|v| Self::decode(v))
+        Self::read(self.get_path(MAPS, mid.to_string(), FILE_EXT)).map(Self::decode)
     }
 
     fn put_map(&mut self, mid: MID, map: Map) {
@@ -117,7 +116,7 @@ impl Ledger for FileBasedLedger {
     }
 
     fn get_bucket(&self, bid: BID) -> Option<PersistedBucket> {
-        Self::read(self.get_path(BUCKETS, bid.to_string(), FILE_EXT)).map(|v| Self::decode(v))
+        Self::read(self.get_path(BUCKETS, bid.to_string(), FILE_EXT)).map(Self::decode)
     }
 
     fn put_bucket(&mut self, bid: BID, bucket: PersistedBucket) {

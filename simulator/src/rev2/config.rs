@@ -9,7 +9,7 @@ pub fn get_data_dir() -> Result<PathBuf, Error> {
     let mut path = dirs::home_dir().ok_or(Error::NoHomeFolder)?;
     path.push(".radix-engine-simulator");
     if !path.exists() {
-        std::fs::create_dir_all(&path).map_err(|e| Error::IOError(e))?;
+        std::fs::create_dir_all(&path).map_err(Error::IOError)?;
     }
     Ok(path)
 }
@@ -26,8 +26,8 @@ pub fn get_configs() -> Result<HashMap<String, String>, Error> {
     let path = get_config_json()?;
     if path.exists() {
         Ok(
-            serde_json::from_str(&fs::read_to_string(path).map_err(|e| Error::IOError(e))?)
-                .map_err(|e| Error::JSONError(e))?,
+            serde_json::from_str(&fs::read_to_string(path).map_err(Error::IOError)?)
+                .map_err(Error::JSONError)?,
         )
     } else {
         Ok(HashMap::new())
@@ -39,9 +39,9 @@ pub fn set_configs(config: HashMap<String, String>) -> Result<(), Error> {
     let path = get_config_json()?;
     fs::write(
         path,
-        serde_json::to_string_pretty(&config).map_err(|e| Error::JSONError(e))?,
+        serde_json::to_string_pretty(&config).map_err(Error::JSONError)?,
     )
-    .map_err(|e| Error::IOError(e))
+    .map_err(Error::IOError)
 }
 
 /// Retrieves a configuration.

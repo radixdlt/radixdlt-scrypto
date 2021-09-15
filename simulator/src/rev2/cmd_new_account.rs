@@ -26,7 +26,7 @@ pub fn make_new_account_cmd<'a, 'b>() -> App<'a, 'b> {
 }
 
 /// Handles a `new-account` request.
-pub fn handle_new_account<'a>(matches: &ArgMatches<'a>) -> Result<(), Error> {
+pub fn handle_new_account(matches: &ArgMatches) -> Result<(), Error> {
     let trace = matches.is_present(ARG_TRACE);
 
     let tx_hash = sha256(Uuid::new_v4().to_string());
@@ -61,11 +61,9 @@ pub fn handle_new_account<'a>(matches: &ArgMatches<'a>) -> Result<(), Error> {
     let output = process
         .prepare_call_function(package, "Account", "new".to_owned(), Vec::new())
         .and_then(|target| process.run(target))
-        .map_err(|e| Error::TxnExecutionError(e))?;
-    process
-        .finalize()
-        .map_err(|e| Error::TxnExecutionError(e))?;
-    let component: Address = scrypto_decode(&output).map_err(|e| Error::DataError(e))?;
+        .map_err(Error::TxnExecutionError)?;
+    process.finalize().map_err(Error::TxnExecutionError)?;
+    let component: Address = scrypto_decode(&output).map_err(Error::DataError)?;
 
     // allocate free XRD
     let mut buckets = HashMap::new();
@@ -83,10 +81,8 @@ pub fn handle_new_account<'a>(matches: &ArgMatches<'a>) -> Result<(), Error> {
             vec![scrypto_encode(&vec![bid])],
         )
         .and_then(|target| process2.run(target))
-        .map_err(|e| Error::TxnExecutionError(e))?;
-    process2
-        .finalize()
-        .map_err(|e| Error::TxnExecutionError(e))?;
+        .map_err(Error::TxnExecutionError)?;
+    process2.finalize().map_err(Error::TxnExecutionError)?;
 
     // flush
     runtime.flush();

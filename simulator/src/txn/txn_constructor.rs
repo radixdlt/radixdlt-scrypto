@@ -22,24 +22,27 @@ pub fn build_call_function<T: Ledger>(
     package: Address,
     blueprint: &str,
     function: &str,
-    args: &Vec<&str>,
+    args: &[&str],
     trace: bool,
 ) -> Result<Transaction, BuildTxnError> {
     let func = get_function_abi(ledger, package, blueprint, function, trace)?;
     let mut alloc = AddressAllocator::new();
     match prepare_args(&func.inputs, args, &mut alloc) {
-        Ok((new_args, tokens, badges)) => {
-            let mut v = vec![];
-            v.push(Instruction::ReserveBuckets {
+        Ok(ParseArgsOutput {
+            result,
+            tokens,
+            badges,
+        }) => {
+            let mut v = vec![Instruction::ReserveBuckets {
                 n: alloc.count() as u8,
-            });
+            }];
             prepare_buckets(&mut v, &tokens, account, "withdraw_tokens");
             prepare_buckets(&mut v, &badges, account, "withdraw_badges");
             v.push(Instruction::CallFunction {
                 package,
                 blueprint: blueprint.to_owned(),
                 function: function.to_owned(),
-                args: new_args,
+                args: result,
             });
             v.push(Instruction::DepositAll {
                 component: account,
@@ -58,23 +61,26 @@ pub fn build_call_method<T: Ledger>(
     account: Address,
     component: Address,
     method: &str,
-    args: &Vec<&str>,
+    args: &[&str],
     trace: bool,
 ) -> Result<Transaction, BuildTxnError> {
     let meth = get_method_abi(ledger, component, method, trace)?;
     let mut alloc = AddressAllocator::new();
     match prepare_args(&meth.inputs, args, &mut alloc) {
-        Ok((new_args, tokens, badges)) => {
-            let mut v = vec![];
-            v.push(Instruction::ReserveBuckets {
+        Ok(ParseArgsOutput {
+            result,
+            tokens,
+            badges,
+        }) => {
+            let mut v = vec![Instruction::ReserveBuckets {
                 n: alloc.count() as u8,
-            });
+            }];
             prepare_buckets(&mut v, &tokens, account, "withdraw_tokens");
             prepare_buckets(&mut v, &badges, account, "withdraw_badges");
             v.push(Instruction::CallMethod {
                 component,
                 method: method.to_owned(),
-                args: new_args,
+                args: result,
             });
             v.push(Instruction::DepositAll {
                 component: account,
@@ -95,13 +101,12 @@ fn get_function_abi<T: Ledger>(
     trace: bool,
 ) -> Result<abi::Function, BuildTxnError> {
     export_abi(ledger, package, blueprint, trace)
-        .map_err(|e| BuildTxnError::FailedToExportAbi(e))?
+        .map_err(BuildTxnError::FailedToExportAbi)?
         .functions
         .iter()
-        .filter(|f| f.name == function)
-        .nth(0)
+        .find(|f| f.name == function)
         .map(Clone::clone)
-        .ok_or(BuildTxnError::FunctionNotFound(function.to_owned()))
+        .ok_or_else(|| BuildTxnError::FunctionNotFound(function.to_owned()))
 }
 
 fn get_method_abi<T: Ledger>(
@@ -111,29 +116,33 @@ fn get_method_abi<T: Ledger>(
     trace: bool,
 ) -> Result<abi::Method, BuildTxnError> {
     export_abi_by_component(ledger, component, trace)
-        .map_err(|e| BuildTxnError::FailedToExportAbi(e))?
+        .map_err(BuildTxnError::FailedToExportAbi)?
         .methods
         .iter()
-        .filter(|m| m.name == method)
-        .nth(0)
+        .find(|m| m.name == method)
         .map(Clone::clone)
-        .ok_or(BuildTxnError::MethodNotFound(method.to_owned()))
+        .ok_or_else(|| BuildTxnError::MethodNotFound(method.to_owned()))
+}
+
+struct ParseArgsOutput {
+    result: Vec<Vec<u8>>,
+    tokens: HashMap<u8, Bucket>,
+    badges: HashMap<u8, Bucket>,
 }
 
 fn prepare_args(
-    types: &Vec<Type>,
-    args: &Vec<&str>,
+    types: &[Type],
+    args: &[&str],
     alloc: &mut AddressAllocator,
-) -> Result<(Vec<Vec<u8>>, HashMap<u8, Bucket>, HashMap<u8, Bucket>), BuildArgError> {
+) -> Result<ParseArgsOutput, BuildArgError> {
     let mut result = Vec::new();
     let mut tokens = HashMap::new();
     let mut badges = HashMap::new();
 
     for (i, t) in types.iter().enumerate() {
-        let arg = args
+        let arg = *(args
             .get(i)
-            .ok_or(BuildArgError::MissingArgument(i, t.clone()))?
-            .clone();
+            .ok_or_else(|| BuildArgError::MissingArgument(i, t.clone()))?);
         let res = match t {
             Type::Bool => handle_basic_ty::<bool>(i, t, arg),
             Type::I8 => handle_basic_ty::<i8>(i, t, arg),
@@ -155,7 +164,11 @@ fn prepare_args(
         result.push(res?);
     }
 
-    Ok((result, tokens, badges))
+    Ok(ParseArgsOutput {
+        result,
+        tokens,
+        badges,
+    })
 }
 
 fn handle_basic_ty<T>(i: usize, ty: &Type, arg: &str) -> Result<Vec<u8>, BuildArgError>
@@ -193,7 +206,7 @@ fn handle_custom_ty(
             Ok(scrypto_encode(&value))
         }
         SCRYPTO_NAME_TOKENS | SCRYPTO_NAME_BADGES => {
-            let mut split = arg.split(",");
+            let mut split = arg.split(',');
             let amount = split.next().and_then(|v| U256::from_dec_str(v.trim()).ok());
             let resource = split.next().and_then(|v| v.trim().parse::<Address>().ok());
             match (amount, resource) {

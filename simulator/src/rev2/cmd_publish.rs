@@ -45,23 +45,23 @@ pub fn make_publish_cmd<'a, 'b>() -> App<'a, 'b> {
 }
 
 /// Handles a `publish` request.
-pub fn handle_publish<'a>(matches: &ArgMatches<'a>) -> Result<(), Error> {
+pub fn handle_publish(matches: &ArgMatches) -> Result<(), Error> {
     let trace = matches.is_present(ARG_TRACE);
     let path = PathBuf::from(
         matches
             .value_of(ARG_PATH)
-            .ok_or(Error::MissingArgument(ARG_PATH.to_owned()))?,
+            .ok_or_else(|| Error::MissingArgument(ARG_PATH.to_owned()))?,
     );
     let file = if path.extension() != Some(OsStr::new("wasm")) {
-        build_package(path).map_err(|e| Error::CargoError(e))?
+        build_package(path).map_err(Error::CargoError)?
     } else {
         path
     };
-    let code = fs::read(&file).map_err(|e| Error::IOError(e))?;
-    validate_module(&code).map_err(|e| Error::TxnExecutionError(e))?;
+    let code = fs::read(&file).map_err(Error::IOError)?;
+    validate_module(&code).map_err(Error::TxnExecutionError)?;
 
     if let Some(a) = matches.value_of(ARG_ADDRESS) {
-        let address: Address = a.parse().map_err(|e| Error::InvalidAddress(e))?;
+        let address: Address = a.parse().map_err(Error::InvalidAddress)?;
         let mut ledger = FileBasedLedger::new(get_data_dir()?);
         ledger.put_package(address, Package::new(code));
         println!("New package: {}", address);
@@ -70,7 +70,7 @@ pub fn handle_publish<'a>(matches: &ArgMatches<'a>) -> Result<(), Error> {
 
     match get_config(CONF_DEFAULT_ACCOUNT)? {
         Some(a) => {
-            let account: Address = a.as_str().parse().map_err(|e| Error::InvalidAddress(e))?;
+            let account: Address = a.as_str().parse().map_err(Error::InvalidAddress)?;
             let tx_hash = sha256(Uuid::new_v4().to_string());
             let mut ledger = FileBasedLedger::new(get_data_dir()?);
             let mut runtime = Runtime::new(tx_hash, &mut ledger);
@@ -83,11 +83,9 @@ pub fn handle_publish<'a>(matches: &ArgMatches<'a>) -> Result<(), Error> {
                     vec![scrypto_encode(&code)],
                 )
                 .and_then(|target| process.run(target))
-                .map_err(|e| Error::TxnExecutionError(e))?;
-            process
-                .finalize()
-                .map_err(|e| Error::TxnExecutionError(e))?;
-            let package: Address = scrypto_decode(&output).map_err(|e| Error::DataError(e))?;
+                .map_err(Error::TxnExecutionError)?;
+            process.finalize().map_err(Error::TxnExecutionError)?;
+            let package: Address = scrypto_decode(&output).map_err(Error::DataError)?;
 
             runtime.flush();
             println!("New package: {}", package);

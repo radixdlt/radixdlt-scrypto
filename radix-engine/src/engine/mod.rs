@@ -70,7 +70,7 @@ impl InMemoryRadixEngine {
         match result {
             Ok(bytes) => {
                 runtime.flush();
-                Ok(scrypto_decode(&bytes).map_err(|e| RuntimeError::InvalidData(e))?)
+                Ok(scrypto_decode(&bytes).map_err(RuntimeError::InvalidData)?)
             }
             Err(e) => Err(e),
         }
@@ -92,7 +92,7 @@ impl InMemoryRadixEngine {
         match result {
             Ok(bytes) => {
                 runtime.flush();
-                Ok(scrypto_decode(&bytes).map_err(|e| RuntimeError::InvalidData(e))?)
+                Ok(scrypto_decode(&bytes).map_err(RuntimeError::InvalidData)?)
             }
             Err(e) => Err(e),
         }

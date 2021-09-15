@@ -32,13 +32,13 @@ pub fn build_package<P: AsRef<Path>>(path: P) -> Result<PathBuf, CargoExecutionE
             .arg("--manifest-path")
             .arg(cargo.canonicalize().unwrap().to_str().unwrap())
             .status()
-            .map_err(|e| CargoExecutionError::FailedToRunCargo(e))?;
+            .map_err(CargoExecutionError::FailedToRunCargo)?;
         if !status.success() {
             return Err(CargoExecutionError::FailedToBuild(status));
         }
 
         let manifest = cargo_toml::Manifest::from_path(cargo)
-            .map_err(|e| CargoExecutionError::InvalidCargoToml(e))?;
+            .map_err(CargoExecutionError::InvalidCargoToml)?;
 
         let mut bin = path.as_ref().to_owned();
         bin.push("target");
@@ -72,7 +72,7 @@ where
             .arg(cargo.canonicalize().unwrap().to_str().unwrap())
             .args(args)
             .status()
-            .map_err(|e| CargoExecutionError::FailedToRunCargo(e))?;
+            .map_err(CargoExecutionError::FailedToRunCargo)?;
         if !status.success() {
             return Err(CargoExecutionError::FailedToTest(status));
         }

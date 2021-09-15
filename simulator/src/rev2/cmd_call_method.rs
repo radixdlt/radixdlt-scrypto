@@ -40,16 +40,16 @@ pub fn make_call_method_cmd<'a, 'b>() -> App<'a, 'b> {
 }
 
 /// Handles a `call-method` request.
-pub fn handle_call_method<'a>(matches: &ArgMatches<'a>) -> Result<(), Error> {
+pub fn handle_call_method(matches: &ArgMatches) -> Result<(), Error> {
     let trace = matches.is_present(ARG_TRACE);
     let component: Address = matches
         .value_of(ARG_COMPONENT)
-        .ok_or(Error::MissingArgument(ARG_COMPONENT.to_owned()))?
+        .ok_or_else(|| Error::MissingArgument(ARG_COMPONENT.to_owned()))?
         .parse()
-        .map_err(|e| Error::InvalidAddress(e))?;
+        .map_err(Error::InvalidAddress)?;
     let method = matches
         .value_of(ARG_METHOD)
-        .ok_or(Error::MissingArgument(ARG_METHOD.to_owned()))?;
+        .ok_or_else(|| Error::MissingArgument(ARG_METHOD.to_owned()))?;
     let mut args = Vec::new();
     if let Some(x) = matches.values_of(ARG_ARGS) {
         x.for_each(|a| args.push(a));
@@ -57,7 +57,7 @@ pub fn handle_call_method<'a>(matches: &ArgMatches<'a>) -> Result<(), Error> {
 
     match get_config(CONF_DEFAULT_ACCOUNT)? {
         Some(a) => {
-            let account: Address = a.as_str().parse().map_err(|e| Error::InvalidAddress(e))?;
+            let account: Address = a.as_str().parse().map_err(Error::InvalidAddress)?;
             let mut ledger = FileBasedLedger::new(get_data_dir()?);
             match build_call_method(&mut ledger, account, component, method, &args, trace) {
                 Ok(txn) => {

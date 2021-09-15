@@ -46,7 +46,7 @@ pub fn execute<T: Ledger>(
 
                     match bucket {
                         Some(b) => {
-                            moving_buckets.insert(bid.clone(), b);
+                            moving_buckets.insert(*bid, b);
                             Ok(vec![])
                         }
                         None => Err(RuntimeError::AccountingError(
@@ -115,7 +115,7 @@ pub fn execute<T: Ledger>(
             Instruction::Finalize => {
                 // TODO check if this is the last instruction
                 let mut success = true;
-                for (_, bucket) in &resource_collector {
+                for bucket in resource_collector.values() {
                     if bucket.amount() > 0.into() {
                         if trace {
                             println!("Resource leak: {:?}", bucket);
@@ -130,11 +130,8 @@ pub fn execute<T: Ledger>(
                 }
             }
         };
-
-        if res.is_ok() {
-            results.push(res);
-        } else {
-            results.push(res);
+        results.push(res);
+        if results.last().unwrap().is_err() {
             success = false;
             break;
         }
@@ -174,7 +171,7 @@ fn call<L: Ledger>(
             for bucket in buckets.values() {
                 collector
                     .entry(bucket.resource())
-                    .or_insert(Bucket::new(0.into(), bucket.resource()))
+                    .or_insert_with(|| Bucket::new(0.into(), bucket.resource()))
                     .put(bucket.clone())
                     .unwrap();
             }

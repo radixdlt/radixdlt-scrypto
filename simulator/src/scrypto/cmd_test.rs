@@ -18,7 +18,7 @@ pub fn make_test_cmd<'a, 'b>() -> App<'a, 'b> {
 }
 
 /// Handles a `test` request.
-pub fn handle_test<'a>(matches: &ArgMatches<'a>) -> Result<(), Error> {
+pub fn handle_test(matches: &ArgMatches) -> Result<(), Error> {
     let mut args = Vec::new();
     if let Some(x) = matches.values_of(ARG_ARGS) {
         x.for_each(|a| args.push(a));

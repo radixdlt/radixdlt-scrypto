@@ -23,19 +23,19 @@ pub fn make_config_cmd<'a, 'b>() -> App<'a, 'b> {
 }
 
 /// Handles a `config` request.
-pub fn handle_config<'a>(matches: &ArgMatches<'a>) -> Result<(), Error> {
+pub fn handle_config(matches: &ArgMatches) -> Result<(), Error> {
     let name = matches
         .value_of(ARG_NAME)
-        .ok_or(Error::MissingArgument(ARG_NAME.to_owned()))?;
+        .ok_or_else(|| Error::MissingArgument(ARG_NAME.to_owned()))?;
     let value = matches
         .value_of(ARG_VALUE)
-        .ok_or(Error::MissingArgument(ARG_VALUE.to_owned()))?;
+        .ok_or_else(|| Error::MissingArgument(ARG_VALUE.to_owned()))?;
 
     set_config(name, value)?;
 
     println!(
         "{}",
-        serde_json::to_string_pretty(&get_configs()?).map_err(|e| Error::JSONError(e))?
+        serde_json::to_string_pretty(&get_configs()?).map_err(Error::JSONError)?
     );
     Ok(())
 }

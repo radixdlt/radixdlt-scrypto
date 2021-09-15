@@ -80,7 +80,7 @@ pub fn make_create_resource_cmd<'a, 'b>() -> App<'a, 'b> {
 }
 
 /// Handles a `create-resource` request.
-pub fn handle_create_resource<'a>(matches: &ArgMatches<'a>) -> Result<(), Error> {
+pub fn handle_create_resource(matches: &ArgMatches) -> Result<(), Error> {
     let trace = matches.is_present(ARG_TRACE);
     let symbol = matches.value_of(ARG_SYMBOL).unwrap_or("");
     let name = matches.value_of(ARG_NAME).unwrap_or("");
@@ -101,7 +101,7 @@ pub fn handle_create_resource<'a>(matches: &ArgMatches<'a>) -> Result<(), Error>
 
     match get_config(CONF_DEFAULT_ACCOUNT)? {
         Some(a) => {
-            let account: Address = a.as_str().parse().map_err(|e| Error::InvalidAddress(e))?;
+            let account: Address = a.as_str().parse().map_err(Error::InvalidAddress)?;
             let tx_hash = sha256(Uuid::new_v4().to_string());
             let mut ledger = FileBasedLedger::new(get_data_dir()?);
             let mut runtime = Runtime::new(tx_hash, &mut ledger);
@@ -129,11 +129,9 @@ pub fn handle_create_resource<'a>(matches: &ArgMatches<'a>) -> Result<(), Error>
                     ],
                 )
                 .and_then(|target| process.run(target))
-                .map_err(|e| Error::TxnExecutionError(e))?;
-            process
-                .finalize()
-                .map_err(|e| Error::TxnExecutionError(e))?;
-            let resource: Address = scrypto_decode(&output).map_err(|e| Error::DataError(e))?;
+                .map_err(Error::TxnExecutionError)?;
+            process.finalize().map_err(Error::TxnExecutionError)?;
+            let resource: Address = scrypto_decode(&output).map_err(Error::DataError)?;
 
             runtime.flush();
             println!("New resource: {}", resource);
