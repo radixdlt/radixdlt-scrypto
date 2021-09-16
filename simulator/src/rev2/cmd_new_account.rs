@@ -48,7 +48,7 @@ pub fn handle_new_account(matches: &ArgMatches) -> Result<(), Error> {
     }
 
     // publish smart account blueprint
-    let package = Address::Package([0u8; 26]);
+    let package = Address::Package([1u8; 26]);
     if runtime.get_package(package).is_none() {
         runtime.put_package(
             package,
