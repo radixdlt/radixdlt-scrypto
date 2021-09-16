@@ -85,3 +85,4 @@ scrypto test
 - `scrypto-derive`: Derives for creating and importing Scrypto blueprints.
 - `radix-engine`: Radix Engine, the Scrypto execution layer.
 - `simulator`: Simulate ledger environment locally and run Scrypto code.
+- `examples`: Example Scrypto code.
