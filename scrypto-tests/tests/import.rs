@@ -1,6 +1,5 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use scrypto::buffer::scrypto_alloc;
 use scrypto::import;
 use scrypto::rust::str::FromStr;
 use scrypto::rust::string::String;
@@ -148,10 +147,5 @@ fn test_import_from_abi() {
     let arg5 = Hello::A { x: 1 };
     let arg6 = ["a".to_string(), "b".to_string()];
 
-    let _rtn = instance.calculate_volume(arg1, arg2, arg3, arg4, arg5, arg6);
-}
-
-#[no_mangle]
-pub extern "C" fn kernel(_op: u32, _input_ptr: *const u8, _input_len: usize) -> *mut u8 {
-    scrypto_alloc(0)
+    instance.calculate_volume(arg1, arg2, arg3, arg4, arg5, arg6);
 }

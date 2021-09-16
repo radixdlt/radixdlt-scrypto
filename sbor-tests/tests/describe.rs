@@ -32,46 +32,46 @@ fn test_describe_struct() {
     assert_json_eq(
         TestStructNamed::describe(),
         json!({
-          "type": "Struct",
-          "name": "TestStructNamed",
-          "fields": {
-            "type": "Named",
-            "named": [
-              [
-                "state",
-                {
-                  "type": "U32"
-                }
-              ]
-            ]
-          }
+            "type": "Struct",
+            "name": "TestStructNamed",
+            "fields": {
+                "type": "Named",
+                "named": [
+                    [
+                        "state",
+                        {
+                            "type": "U32"
+                        }
+                    ]
+                ]
+            }
         }),
     );
 
     assert_json_eq(
         TestStructUnnamed::describe(),
         json!({
-          "type": "Struct",
-          "name": "TestStructUnnamed",
-          "fields": {
-            "type": "Unnamed",
-            "unnamed": [
-              {
-                "type": "U32"
-              }
-            ]
-          }
+            "type": "Struct",
+            "name": "TestStructUnnamed",
+            "fields": {
+                "type": "Unnamed",
+                "unnamed": [
+                    {
+                        "type": "U32"
+                    }
+                ]
+            }
         }),
     );
 
     assert_json_eq(
         TestStructUnit::describe(),
         json!({
-          "type": "Struct",
-          "name": "TestStructUnit",
-          "fields": {
-            "type": "Unit"
-          }
+            "type": "Struct",
+            "name": "TestStructUnit",
+            "fields": {
+                "type": "Unit"
+            }
         }),
     );
 }
@@ -81,47 +81,47 @@ fn test_describe_enum() {
     assert_json_eq(
         TestEnum::describe(),
         json!({
-          "type": "Enum",
-          "name": "TestEnum",
-          "variants": [
-            {
-              "name": "A",
-              "fields": {
-                "type": "Unit"
-              }
-            },
-            {
-              "name": "B",
-              "fields": {
-                "type": "Unnamed",
-                "unnamed": [
-                  {
-                    "type": "U32"
-                  }
-                ]
-              }
-            },
-            {
-              "name": "C",
-              "fields": {
-                "type": "Named",
-                "named": [
-                  [
-                    "x",
-                    {
-                      "type": "U32"
+            "type": "Enum",
+            "name": "TestEnum",
+            "variants": [
+                {
+                    "name": "A",
+                    "fields": {
+                        "type": "Unit"
                     }
-                  ],
-                  [
-                    "y",
-                    {
-                      "type": "U32"
+                },
+                {
+                    "name": "B",
+                    "fields": {
+                        "type": "Unnamed",
+                        "unnamed": [
+                            {
+                                "type": "U32"
+                            }
+                        ]
                     }
-                  ]
-                ]
-              }
-            }
-          ]
+                },
+                {
+                    "name": "C",
+                    "fields": {
+                        "type": "Named",
+                        "named": [
+                            [
+                                "x",
+                                {
+                                    "type": "U32"
+                                }
+                            ],
+                            [
+                                "y",
+                                {
+                                    "type": "U32"
+                                }
+                            ]
+                        ]
+                    }
+                }
+            ]
         }),
     );
 }

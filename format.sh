@@ -13,6 +13,7 @@ cd "$(dirname "$0")"
 (cd scrypto-derive; cargo fmt)
 (cd scrypto-tests; cargo fmt)
 (cd radix-engine; cargo fmt)
+(cd radix-engine/tests/everything; cargo fmt)
 (cd examples/account; cargo fmt)
 (cd examples/helloworld; cargo fmt)
 (cd examples/no_std; cargo fmt)

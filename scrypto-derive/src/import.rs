@@ -73,7 +73,7 @@ pub fn handle_import(input: TokenStream) -> TokenStream {
 
         functions.push(parse_quote! {
             pub fn #func_indent(#func_inputs) -> #func_output {
-                let package = ::scrypto::utils::unwrap_or_panic(
+                let package = ::scrypto::utils::unwrap_light(
                     ::scrypto::types::Address::from_str(#package)
                 );
                 let blueprint = ::scrypto::constructs::Blueprint::from(package, #name);

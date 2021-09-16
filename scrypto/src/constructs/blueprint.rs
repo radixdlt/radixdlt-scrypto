@@ -34,7 +34,7 @@ impl Blueprint {
         };
         let output: CallFunctionOutput = call_kernel(CALL_FUNCTION, input);
 
-        unwrap_or_panic(scrypto_decode(&output.rtn))
+        unwrap_light(scrypto_decode(&output.rtn))
     }
 
     pub fn package(&self) -> Address {

@@ -8,7 +8,7 @@ cd "$(dirname "$0")"
 echo "Testing with std..."
 (cd sbor; cargo test)
 (cd sbor-derive; cargo test)
-(cd sbor-tests; cargo test; cargo bench)
+(cd sbor-tests; cargo test)
 (cd scrypto; cargo test)
 (cd scrypto-derive; cargo test)
 (cd scrypto-tests; cargo test)
@@ -29,7 +29,10 @@ echo "Building examples..."
 (cd examples/gumball-machine; cargo build --target wasm32-unknown-unknown --release; cargo test)
 (cd examples/gumball-machine-vendor; cargo build --target wasm32-unknown-unknown --release; cargo test)
 
-echo "Testing simulator..."
+echo "Running simulator..."
 (cd simulator; bash ./tests/run.sh)
+
+echo "Running benchmark..."
+(cd sbor-tests; cargo bench)
 
 echo "Congrats! All tests passed."

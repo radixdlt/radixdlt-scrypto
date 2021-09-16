@@ -83,23 +83,17 @@ pub fn handle_blueprint(input: TokenStream, output_abi: bool) -> TokenStream {
         #[no_mangle]
         pub extern "C" fn #abi_ident() -> *mut u8 {
             use ::sbor::Describe;
-            use ::scrypto::constructs::Context;
+            use ::scrypto::abi::{Function, Method};
             use ::scrypto::rust::string::ToString;
             use ::scrypto::rust::vec;
+            use ::scrypto::rust::vec::Vec;
 
-            let output = ::scrypto::abi::Blueprint {
-                package: Context::package_address().to_string(),
-                blueprint: #bp_name.to_string(),
-                functions: vec![
-                    #(#abi_functions),*
-                ],
-                methods: vec![
-                    #(#abi_methods),*
-                ],
-            };
+            let functions: Vec<Function> = vec![ #(#abi_functions),* ];
+            let methods: Vec<Method> = vec![ #(#abi_methods),* ];
+            let output = (functions, methods);
 
             // serialize the output
-            let output_bytes = ::scrypto::buffer::scrypto_encode_for_host(&output);
+            let output_bytes = ::scrypto::buffer::scrypto_encode_for_kernel(&output);
 
             // return the output wrapped in a radix-style buffer
             ::scrypto::buffer::scrypto_wrap(output_bytes)
@@ -153,7 +147,11 @@ fn generate_dispatcher(bp_ident: &Ident, items: &[ImplItem]) -> (Vec<Expr>, Vec<
 
                             // Generate an `Arg` and a loading `Stmt` for the i-th argument
                             let stmt: Stmt = parse_quote! {
-                                let #arg = ::scrypto::constructs::Component::from(::scrypto::utils::unwrap_or_panic(::scrypto::buffer::scrypto_decode::<::scrypto::types::Address>(&calldata.args[#i])));
+                                let #arg = ::scrypto::constructs::Component::from(
+                                    ::scrypto::utils::unwrap_light(
+                                        ::scrypto::buffer::scrypto_decode::<::scrypto::types::Address>(&calldata.args[#i])
+                                    )
+                                );
                             };
                             trace!("Stmt: {}", quote! { #stmt });
                             args.push(parse_quote! { & #mutability state });
@@ -176,7 +174,9 @@ fn generate_dispatcher(bp_ident: &Ident, items: &[ImplItem]) -> (Vec<Expr>, Vec<
                             // Generate an `Arg` and a loading `Stmt` for the i-th argument
                             let ty = &t.ty;
                             let stmt: Stmt = parse_quote! {
-                                let #arg = ::scrypto::utils::unwrap_or_panic(::scrypto::buffer::scrypto_decode::<#ty>(&calldata.args[#i]));
+                                let #arg = ::scrypto::utils::unwrap_light(
+                                    ::scrypto::buffer::scrypto_decode::<#ty>(&calldata.args[#i])
+                                );
                             };
                             trace!("Stmt: {}", quote! { #stmt });
                             args.push(parse_quote! { #arg });
@@ -193,7 +193,7 @@ fn generate_dispatcher(bp_ident: &Ident, items: &[ImplItem]) -> (Vec<Expr>, Vec<
                 }
                 // call the function
                 let stmt: Stmt = parse_quote! {
-                    rtn = ::scrypto::buffer::scrypto_encode_for_host(
+                    rtn = ::scrypto::buffer::scrypto_encode_for_kernel(
                         &#bp_ident::#fn_ident(#(#args),*)
                     );
                 };
@@ -368,12 +368,12 @@ mod tests {
                     let rtn;
                     match calldata.function.as_str() {
                         "x" => {
-                            let arg0 = ::scrypto::constructs::Component::from(::scrypto::utils::unwrap_or_panic(
+                            let arg0 = ::scrypto::constructs::Component::from(::scrypto::utils::unwrap_light(
                                 ::scrypto::buffer::scrypto_decode::<::scrypto::types::Address>(
                                     &calldata.args[0usize]
                             )));
                             let state: Test = arg0.get_state();
-                            rtn = ::scrypto::buffer::scrypto_encode_for_host(&Test::x(&state));
+                            rtn = ::scrypto::buffer::scrypto_encode_for_kernel(&Test::x(&state));
                         }
                         _ => {
                             panic!();
@@ -384,21 +384,19 @@ mod tests {
                 #[no_mangle]
                 pub extern "C" fn Test_abi() -> *mut u8 {
                     use ::sbor::Describe;
-                    use ::scrypto::constructs::Context;
+                    use ::scrypto::abi::{Function, Method};
                     use ::scrypto::rust::string::ToString;
                     use ::scrypto::rust::vec;
-                    let output = ::scrypto::abi::Blueprint {
-                        package: Context::package_address().to_string(),
-                        blueprint: "Test".to_string(),
-                        functions: vec![],
-                        methods: vec![::scrypto::abi::Method {
-                            name: "x".to_string(),
-                            mutability: ::scrypto::abi::Mutability::Immutable,
-                            inputs: vec![],
-                            output: <u32>::describe(),
-                        }],
-                    };
-                    let output_bytes = ::scrypto::buffer::scrypto_encode_for_host(&output);
+                    use ::scrypto::rust::vec::Vec;
+                    let functions: Vec<Function> = vec![];
+                    let methods: Vec<Method> = vec![::scrypto::abi::Method {
+                        name: "x".to_string(),
+                        mutability: ::scrypto::abi::Mutability::Immutable,
+                        inputs: vec![],
+                        output: <u32>::describe(),
+                    }];
+                    let output = (functions, methods);
+                    let output_bytes = ::scrypto::buffer::scrypto_encode_for_kernel(&output);
                     ::scrypto::buffer::scrypto_wrap(output_bytes)
                 }
             },

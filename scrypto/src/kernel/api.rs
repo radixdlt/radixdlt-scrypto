@@ -4,6 +4,7 @@ use crate::rust::string::String;
 use crate::rust::vec::Vec;
 use crate::types::*;
 
+#[cfg(target_arch = "wasm32")]
 extern "C" {
     /// Entrance to Radix Engine.
     pub fn kernel(op: u32, input_ptr: *const u8, input_len: usize) -> *mut u8;

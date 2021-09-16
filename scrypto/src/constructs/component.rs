@@ -47,7 +47,7 @@ impl Component {
         };
         let output: CallMethodOutput = call_kernel(CALL_METHOD, input);
 
-        unwrap_or_panic(scrypto_decode(&output.rtn))
+        unwrap_light(scrypto_decode(&output.rtn))
     }
 
     pub fn get_info(&self) -> ComponentInfo {
@@ -73,7 +73,7 @@ impl Component {
         };
         let output: GetComponentStateOutput = call_kernel(GET_COMPONENT_STATE, input);
 
-        unwrap_or_panic(scrypto_decode(&output.state))
+        unwrap_light(scrypto_decode(&output.state))
     }
 
     pub fn put_state<T: Encode>(&self, state: T) {

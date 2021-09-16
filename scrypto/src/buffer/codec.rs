@@ -8,7 +8,7 @@ pub fn scrypto_encode<T: Encode + ?Sized>(v: &T) -> Vec<u8> {
 }
 
 /// Encodes a data structure into byte array, which will be consumed by kernel.
-pub fn scrypto_encode_for_host<T: Encode + ?Sized>(v: &T) -> Vec<u8> {
+pub fn scrypto_encode_for_kernel<T: Encode + ?Sized>(v: &T) -> Vec<u8> {
     // create a buffer and pre-append with length (0).
     let mut buf = Vec::with_capacity(512);
     buf.extend(&[0u8; 4]);
@@ -53,8 +53,8 @@ mod tests {
     }
 
     #[test]
-    fn test_encode_for_host() {
-        let encoded = crate::buffer::scrypto_encode_for_host("abc");
+    fn test_encode_for_kernel() {
+        let encoded = crate::buffer::scrypto_encode_for_kernel("abc");
         assert_eq!(vec![8, 0, 0, 0, 12, 3, 0, 0, 0, 97, 98, 99], encoded);
     }
 

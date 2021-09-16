@@ -40,7 +40,7 @@ impl Map {
         };
         let output: GetMapEntryOutput = call_kernel(GET_MAP_ENTRY, input);
 
-        output.value.map(|v| unwrap_or_panic(scrypto_decode(&v)))
+        output.value.map(|v| unwrap_light(scrypto_decode(&v)))
     }
 
     pub fn insert<K: Encode, V: Encode>(&self, key: K, value: V) {

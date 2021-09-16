@@ -3,17 +3,13 @@ use crate::rust::ptr::copy;
 use crate::rust::vec::Vec;
 
 /// Allocates a chunk of memory that is not tracked by Rust ownership system.
-#[allow(clippy::not_unsafe_ptr_arg_deref)]
 #[no_mangle]
-pub extern "C" fn scrypto_alloc(len: u32) -> *mut u8 {
+pub unsafe extern "C" fn scrypto_alloc(len: u32) -> *mut u8 {
     let cap = (len + 4) as usize;
     let mut buf = Vec::<u8>::with_capacity(cap);
     let ptr = buf.as_mut_ptr();
     forget(buf);
-
-    unsafe {
-        copy(len.to_le_bytes().as_ptr(), ptr, 4);
-    }
+    copy(len.to_le_bytes().as_ptr(), ptr, 4);
     ptr
 }
 
@@ -25,21 +21,18 @@ pub fn scrypto_wrap(mut buf: Vec<u8>) -> *mut u8 {
 }
 
 /// Consumes a memory chunk.
-#[allow(clippy::not_unsafe_ptr_arg_deref)]
-pub fn scrypto_consume<T>(ptr: *mut u8, f: fn(slice: &[u8]) -> T) -> T {
-    unsafe {
-        let mut len = [0u8; 4];
-        copy(ptr, len.as_mut_ptr(), 4);
+pub unsafe fn scrypto_consume<T>(ptr: *mut u8, f: fn(slice: &[u8]) -> T) -> T {
+    let mut len = [0u8; 4];
+    copy(ptr, len.as_mut_ptr(), 4);
 
-        let cap = (u32::from_le_bytes(len) + 4) as usize;
-        let buf = Vec::<u8>::from_raw_parts(ptr, cap, cap);
-        f(&buf[4..])
-    }
+    let cap = (u32::from_le_bytes(len) + 4) as usize;
+    let buf = Vec::<u8>::from_raw_parts(ptr, cap, cap);
+    f(&buf[4..])
 }
 
 /// Frees an allocated memory.
 #[no_mangle]
-pub extern "C" fn scrypto_free(ptr: *mut u8) {
+pub unsafe extern "C" fn scrypto_free(ptr: *mut u8) {
     scrypto_consume(ptr, |_| {});
 }
 
@@ -52,14 +45,16 @@ mod tests {
         let msg = "hello".as_bytes();
         let size = msg.len();
 
-        // Test allocating memory
-        let ptr = scrypto_alloc(size as u32);
-        scrypto_free(ptr);
-
-        // Ensure no memory leak
-        for _ in 0..1000 {
-            let ptr = scrypto_alloc(100_000_000);
+        unsafe {
+            // Test allocating memory
+            let ptr = scrypto_alloc(size as u32);
             scrypto_free(ptr);
+
+            // Ensure no memory leak
+            for _ in 0..1000 {
+                let ptr = scrypto_alloc(100_000_000);
+                scrypto_free(ptr);
+            }
         }
     }
 }
