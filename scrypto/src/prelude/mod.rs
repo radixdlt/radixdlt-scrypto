@@ -5,8 +5,8 @@ pub use crate::{blueprint, import};
 pub use crate::buffer::{scrypto_decode, scrypto_encode};
 
 pub use crate::constructs::{
-    Blueprint, Component, ComponentInfo, Context, Level, Logger, Map, Package, Resource,
-    ResourceInfo,
+    Blueprint, Component, ComponentInfo, Context, Level, Logger, Package, Resource, ResourceInfo,
+    Storage,
 };
 
 pub use crate::kernel::call_kernel;

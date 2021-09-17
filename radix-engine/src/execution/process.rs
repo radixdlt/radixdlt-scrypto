@@ -486,37 +486,40 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         Ok(PutComponentStateOutput {})
     }
 
-    pub fn create_map(&mut self, _input: CreateMapInput) -> Result<CreateMapOutput, RuntimeError> {
-        let mid = self.runtime.new_mid();
+    pub fn create_storage(
+        &mut self,
+        _input: CreateStorageInput,
+    ) -> Result<CreateStorageOutput, RuntimeError> {
+        let sid = self.runtime.new_sid();
 
-        self.runtime.put_map(mid, Map::new(self.package()?));
+        self.runtime.put_storage(sid, Storage::new(self.package()?));
 
-        Ok(CreateMapOutput { map: mid })
+        Ok(CreateStorageOutput { storage: sid })
     }
 
-    pub fn get_map_entry(
+    pub fn get_storage_entry(
         &mut self,
-        input: GetMapEntryInput,
-    ) -> Result<GetMapEntryOutput, RuntimeError> {
+        input: GetStorageEntryInput,
+    ) -> Result<GetStorageEntryOutput, RuntimeError> {
         let package = self.package()?;
 
-        let map = self
+        let storage = self
             .runtime
-            .get_map(input.map)
-            .ok_or(RuntimeError::MapNotFound(input.map))?;
-        if package != map.owner() {
+            .get_storage(input.storage)
+            .ok_or(RuntimeError::StorageNotFound(input.storage))?;
+        if package != storage.owner() {
             return Err(RuntimeError::UnauthorizedAccess);
         }
 
-        Ok(GetMapEntryOutput {
-            value: map.get_entry(&input.key).map(|e| e.to_vec()),
+        Ok(GetStorageEntryOutput {
+            value: storage.get_entry(&input.key).map(|e| e.to_vec()),
         })
     }
 
-    pub fn put_map_entry(
+    pub fn put_storage_entry(
         &mut self,
-        input: PutMapEntryInput,
-    ) -> Result<PutMapEntryOutput, RuntimeError> {
+        input: PutStorageEntryInput,
+    ) -> Result<PutStorageEntryOutput, RuntimeError> {
         let package = self.package()?;
 
         let new_key = self.transform_data(
@@ -532,17 +535,17 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         )?;
         trace!(self, "Transformed value: {:?}", new_value);
 
-        let map = self
+        let storage = self
             .runtime
-            .get_map_mut(input.map)
-            .ok_or(RuntimeError::MapNotFound(input.map))?;
-        if package != map.owner() {
+            .get_storage_mut(input.storage)
+            .ok_or(RuntimeError::StorageNotFound(input.storage))?;
+        if package != storage.owner() {
             return Err(RuntimeError::UnauthorizedAccess);
         }
 
-        map.set_entry(new_key, new_value);
+        storage.set_entry(new_key, new_value);
 
-        Ok(PutMapEntryOutput {})
+        Ok(PutStorageEntryOutput {})
     }
 
     pub fn create_resource_mutable(
@@ -1165,9 +1168,9 @@ impl<'rt, 'le, L: Ledger> Externals for Process<'rt, 'le, L> {
                     GET_COMPONENT_STATE => self.handle(args, Self::get_component_state, true),
                     PUT_COMPONENT_STATE => self.handle(args, Self::put_component_state, true),
 
-                    CREATE_MAP => self.handle(args, Self::create_map, true),
-                    GET_MAP_ENTRY => self.handle(args, Self::get_map_entry, true),
-                    PUT_MAP_ENTRY => self.handle(args, Self::put_map_entry, true),
+                    CREATE_STORAGE => self.handle(args, Self::create_storage, true),
+                    GET_STORAGE_ENTRY => self.handle(args, Self::get_storage_entry, true),
+                    PUT_STORAGE_ENTRY => self.handle(args, Self::put_storage_entry, true),
 
                     CREATE_RESOURCE_MUTABLE => {
                         self.handle(args, Self::create_resource_mutable, true)

@@ -14,7 +14,7 @@ pub struct FileBasedLedger {
 
 const PACKAGES: &str = "packages";
 const COMPONENTS: &str = "components";
-const MAPS: &str = "maps";
+const STORAGES: &str = "storages";
 const RESOURCES: &str = "resources";
 const BUCKETS: &str = "buckets";
 
@@ -22,7 +22,7 @@ const FILE_EXT: &str = "sbor";
 
 impl FileBasedLedger {
     pub fn new(root: PathBuf) -> Self {
-        for folder in [PACKAGES, COMPONENTS, MAPS, RESOURCES, BUCKETS] {
+        for folder in [PACKAGES, COMPONENTS, STORAGES, RESOURCES, BUCKETS] {
             let mut path = root.clone();
             path.push(folder);
             if !path.exists() {
@@ -104,14 +104,14 @@ impl Ledger for FileBasedLedger {
         )
     }
 
-    fn get_map(&self, mid: MID) -> Option<Map> {
-        Self::read(self.get_path(MAPS, mid.to_string(), FILE_EXT)).map(Self::decode)
+    fn get_storage(&self, sid: SID) -> Option<Storage> {
+        Self::read(self.get_path(STORAGES, sid.to_string(), FILE_EXT)).map(Self::decode)
     }
 
-    fn put_map(&mut self, mid: MID, map: Map) {
+    fn put_storage(&mut self, sid: SID, storage: Storage) {
         Self::write(
-            self.get_path(MAPS, mid.to_string(), FILE_EXT),
-            Self::encode(&map),
+            self.get_path(STORAGES, sid.to_string(), FILE_EXT),
+            Self::encode(&storage),
         )
     }
 

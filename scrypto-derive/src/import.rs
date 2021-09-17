@@ -316,7 +316,7 @@ fn get_native_type(ty: &des::Type) -> (Type, Vec<Item>) {
             "scrypto::H256" => parse_quote! { ::scrypto::types::H256 },
             "scrypto::BID" => parse_quote! { ::scrypto::types::BID },
             "scrypto::RID" => parse_quote! { ::scrypto::types::RID },
-            "scrypto::MID" => parse_quote! { ::scrypto::types::MID },
+            "scrypto::SID" => parse_quote! { ::scrypto::types::SID },
 
             "scrypto::Tokens" => parse_quote! { ::scrypto::resource::Tokens },
             "scrypto::TokensRef" => parse_quote! { ::scrypto::resource::TokensRef },

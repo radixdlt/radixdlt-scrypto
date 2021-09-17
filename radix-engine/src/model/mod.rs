@@ -1,14 +1,14 @@
 mod bucket;
 mod component;
-mod map;
 mod package;
 mod resource;
+mod storage;
 
 pub use bucket::{Bucket, BucketError, LockedBucket, PersistedBucket};
 pub use component::Component;
-pub use map::Map;
 pub use package::Package;
 pub use resource::Resource;
+pub use storage::Storage;
 
 /// Represents a log level
 #[derive(Debug, Clone)]

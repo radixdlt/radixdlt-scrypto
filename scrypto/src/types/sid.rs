@@ -11,16 +11,16 @@ use crate::types::*;
 
 /// Resource bucket id.
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
-pub struct MID(pub H256, pub u32);
+pub struct SID(pub H256, pub u32);
 
-/// Represents an error when parsing MID.
+/// Represents an error when parsing SID.
 #[derive(Debug, Clone)]
-pub enum ParseMIDError {
+pub enum ParseSIDError {
     InvalidHex(hex::FromHexError),
     InvalidLength(usize),
 }
 
-impl MID {
+impl SID {
     pub fn to_vec(&self) -> Vec<u8> {
         let mut vec = Vec::with_capacity(36);
         vec.extend(self.0.as_ref());
@@ -29,21 +29,21 @@ impl MID {
     }
 }
 
-impl FromStr for MID {
-    type Err = ParseMIDError;
+impl FromStr for SID {
+    type Err = ParseSIDError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let bytes = hex::decode(s).map_err(ParseMIDError::InvalidHex)?;
+        let bytes = hex::decode(s).map_err(ParseSIDError::InvalidHex)?;
         Self::try_from(bytes.as_slice())
     }
 }
 
-impl TryFrom<&[u8]> for MID {
-    type Error = ParseMIDError;
+impl TryFrom<&[u8]> for SID {
+    type Error = ParseSIDError;
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
         if slice.len() != 36 {
-            Err(ParseMIDError::InvalidLength(slice.len()))
+            Err(ParseSIDError::InvalidLength(slice.len()))
         } else {
             Ok(Self(
                 H256(copy_u8_array(&slice[..32])),
@@ -53,31 +53,31 @@ impl TryFrom<&[u8]> for MID {
     }
 }
 
-impl From<&str> for MID {
+impl From<&str> for SID {
     fn from(s: &str) -> Self {
         Self::from_str(s).unwrap()
     }
 }
 
-impl From<String> for MID {
+impl From<String> for SID {
     fn from(s: String) -> Self {
         Self::from_str(&s).unwrap()
     }
 }
 
-impl fmt::Debug for MID {
+impl fmt::Debug for SID {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", hex::encode(self.to_vec()))
     }
 }
 
-impl fmt::Display for MID {
+impl fmt::Display for SID {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", hex::encode(self.to_vec()))
     }
 }
 
-impl Encode for MID {
+impl Encode for SID {
     fn encode_value(&self, encoder: &mut Encoder) {
         let bytes = self.to_vec();
         encoder.write_len(bytes.len());
@@ -86,27 +86,27 @@ impl Encode for MID {
 
     #[inline]
     fn type_id() -> u8 {
-        SCRYPTO_TYPE_MID
+        SCRYPTO_TYPE_SID
     }
 }
 
-impl Decode for MID {
+impl Decode for SID {
     fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
         let len = decoder.read_len()?;
         let slice = decoder.read_bytes(len)?;
-        Self::try_from(slice).map_err(|_| DecodeError::InvalidCustomData(SCRYPTO_TYPE_MID))
+        Self::try_from(slice).map_err(|_| DecodeError::InvalidCustomData(SCRYPTO_TYPE_SID))
     }
 
     #[inline]
     fn type_id() -> u8 {
-        SCRYPTO_TYPE_MID
+        SCRYPTO_TYPE_SID
     }
 }
 
-impl Describe for MID {
+impl Describe for SID {
     fn describe() -> Type {
         Type::Custom {
-            name: SCRYPTO_NAME_MID.to_owned(),
+            name: SCRYPTO_NAME_SID.to_owned(),
         }
     }
 }
@@ -119,7 +119,7 @@ mod tests {
     #[test]
     fn test_from_to_string() {
         let s = "f4cb57e4c4cd9d6564823eee427779d022d4f5f601791484a97837e6ffcf4cba01000000";
-        let a = MID::from_str(s).unwrap();
+        let a = SID::from_str(s).unwrap();
         assert_eq!(a.to_string(), s);
     }
 }

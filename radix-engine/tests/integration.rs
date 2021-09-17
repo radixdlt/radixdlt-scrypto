@@ -24,12 +24,12 @@ fn test_component() {
 }
 
 #[test]
-fn test_map() {
+fn test_storage() {
     let mut engine = InMemoryRadixEngine::new(true);
     let package = engine.publish(package_code!("./everything")).unwrap();
 
     let result = engine
-        .call_function::<Option<String>>(package, "MapTest", "test_map", args!())
+        .call_function::<Option<String>>(package, "StorageTest", "test_storage", args!())
         .unwrap();
     assert_eq!(Some("world".to_owned()), result)
 }

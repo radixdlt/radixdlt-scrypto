@@ -24,12 +24,12 @@ pub struct Runtime<'le, T: Ledger> {
     logs: Vec<(Level, String)>,
     packages: HashMap<Address, Package>,
     components: HashMap<Address, Component>,
-    maps: HashMap<MID, Map>,
+    storages: HashMap<SID, Storage>,
     resources: HashMap<Address, Resource>,
     buckets: HashMap<BID, PersistedBucket>,
     updated_packages: HashSet<Address>,
     updated_components: HashSet<Address>,
-    updated_maps: HashSet<MID>,
+    updated_storages: HashSet<SID>,
     updated_resources: HashSet<Address>,
     updated_buckets: HashSet<BID>,
     new_addresses: Vec<Address>,
@@ -45,12 +45,12 @@ impl<'le, T: Ledger> Runtime<'le, T> {
             logs: Vec::new(),
             packages: HashMap::new(),
             components: HashMap::new(),
-            maps: HashMap::new(),
+            storages: HashMap::new(),
             resources: HashMap::new(),
             buckets: HashMap::new(),
             updated_packages: HashSet::new(),
             updated_components: HashSet::new(),
-            updated_maps: HashSet::new(),
+            updated_storages: HashSet::new(),
             updated_resources: HashSet::new(),
             updated_buckets: HashSet::new(),
             new_addresses: Vec::new(),
@@ -170,39 +170,39 @@ impl<'le, T: Ledger> Runtime<'le, T> {
     }
 
     /// Returns an immutable reference to a map, if exists.
-    pub fn get_map(&mut self, mid: MID) -> Option<&Map> {
-        if self.maps.contains_key(&mid) {
-            return self.maps.get(&mid);
+    pub fn get_storage(&mut self, sid: SID) -> Option<&Storage> {
+        if self.storages.contains_key(&sid) {
+            return self.storages.get(&sid);
         }
 
-        if let Some(map) = self.ledger.get_map(mid) {
-            self.maps.insert(mid, map);
-            self.maps.get(&mid)
+        if let Some(storage) = self.ledger.get_storage(sid) {
+            self.storages.insert(sid, storage);
+            self.storages.get(&sid)
         } else {
             None
         }
     }
     /// Returns a mutable reference to a map, if exists.
-    pub fn get_map_mut(&mut self, mid: MID) -> Option<&mut Map> {
-        self.updated_maps.insert(mid);
+    pub fn get_storage_mut(&mut self, sid: SID) -> Option<&mut Storage> {
+        self.updated_storages.insert(sid);
 
-        if self.maps.contains_key(&mid) {
-            return self.maps.get_mut(&mid);
+        if self.storages.contains_key(&sid) {
+            return self.storages.get_mut(&sid);
         }
 
-        if let Some(map) = self.ledger.get_map(mid) {
-            self.maps.insert(mid, map);
-            self.maps.get_mut(&mid)
+        if let Some(storage) = self.ledger.get_storage(sid) {
+            self.storages.insert(sid, storage);
+            self.storages.get_mut(&sid)
         } else {
             None
         }
     }
 
     /// Inserts a new map.
-    pub fn put_map(&mut self, mid: MID, map: Map) {
-        self.updated_maps.insert(mid);
+    pub fn put_storage(&mut self, sid: SID, storage: Storage) {
+        self.updated_storages.insert(sid);
 
-        self.maps.insert(mid, map);
+        self.storages.insert(sid, storage);
     }
 
     /// Returns an immutable reference to a resource, if exists.
@@ -318,8 +318,8 @@ impl<'le, T: Ledger> Runtime<'le, T> {
     }
 
     /// Creates a new map id.
-    pub fn new_mid(&mut self) -> MID {
-        self.alloc.new_mid(self.tx_hash())
+    pub fn new_sid(&mut self) -> SID {
+        self.alloc.new_sid(self.tx_hash())
     }
 
     /// Flush changes to ledger.
@@ -334,9 +334,9 @@ impl<'le, T: Ledger> Runtime<'le, T> {
                 .put_component(address, self.components.get(&address).unwrap().clone());
         }
 
-        for mid in self.updated_maps.clone() {
+        for sid in self.updated_storages.clone() {
             self.ledger
-                .put_map(mid, self.maps.get(&mid).unwrap().clone());
+                .put_storage(sid, self.storages.get(&sid).unwrap().clone());
         }
 
         for address in self.updated_resources.clone() {

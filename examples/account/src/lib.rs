@@ -2,13 +2,13 @@ use scrypto::prelude::*;
 
 blueprint! {
     struct Account {
-        resources: Map,
+        resources: Storage,
     }
 
     impl Account {
         pub fn new() -> Address {
             Account {
-                resources: Map::new(),
+                resources: Storage::new(),
             }
             .instantiate()
         }

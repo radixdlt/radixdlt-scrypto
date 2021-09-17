@@ -5,16 +5,16 @@ use scrypto::types::Address;
 
 /// A key-value storage.
 #[derive(Debug, Clone, Encode, Decode)]
-pub struct Map {
+pub struct Storage {
     pub owner: Address,
-    pub map: HashMap<Vec<u8>, Vec<u8>>,
+    pub storage: HashMap<Vec<u8>, Vec<u8>>,
 }
 
-impl Map {
+impl Storage {
     pub fn new(owner: Address) -> Self {
         Self {
             owner,
-            map: HashMap::new(),
+            storage: HashMap::new(),
         }
     }
 
@@ -23,10 +23,10 @@ impl Map {
     }
 
     pub fn get_entry(&self, key: &[u8]) -> Option<&[u8]> {
-        self.map.get(key).map(|e| e.as_slice())
+        self.storage.get(key).map(|e| e.as_slice())
     }
 
     pub fn set_entry(&mut self, key: Vec<u8>, value: Vec<u8>) {
-        self.map.insert(key, value);
+        self.storage.insert(key, value);
     }
 }

@@ -26,12 +26,12 @@ pub const GET_COMPONENT_STATE: u32 = 0x12;
 /// Update component state
 pub const PUT_COMPONENT_STATE: u32 = 0x13;
 
-/// Create a new map
-pub const CREATE_MAP: u32 = 0x14;
-/// Retrieve an entry from a map
-pub const GET_MAP_ENTRY: u32 = 0x15;
-/// Insert a key-value pair into a map
-pub const PUT_MAP_ENTRY: u32 = 0x16;
+/// Create a new storage
+pub const CREATE_STORAGE: u32 = 0x14;
+/// Retrieve an entry from a storage
+pub const GET_STORAGE_ENTRY: u32 = 0x15;
+/// Insert a key-value pair into a storage
+pub const PUT_STORAGE_ENTRY: u32 = 0x16;
 
 /// Create a new resource with mutable supply
 pub const CREATE_RESOURCE_MUTABLE: u32 = 0x20;
@@ -157,37 +157,37 @@ pub struct PutComponentStateInput {
 pub struct PutComponentStateOutput {}
 
 //==========
-// map
+// Storage
 //==========
 
 #[derive(Debug, Clone, Encode, Decode)]
-pub struct CreateMapInput {}
+pub struct CreateStorageInput {}
 
 #[derive(Debug, Clone, Encode, Decode)]
-pub struct CreateMapOutput {
-    pub map: MID,
+pub struct CreateStorageOutput {
+    pub storage: SID,
 }
 
 #[derive(Debug, Clone, Encode, Decode)]
-pub struct GetMapEntryInput {
-    pub map: MID,
+pub struct GetStorageEntryInput {
+    pub storage: SID,
     pub key: Vec<u8>,
 }
 
 #[derive(Debug, Clone, Encode, Decode)]
-pub struct GetMapEntryOutput {
+pub struct GetStorageEntryOutput {
     pub value: Option<Vec<u8>>,
 }
 
 #[derive(Debug, Clone, Encode, Decode)]
-pub struct PutMapEntryInput {
-    pub map: MID,
+pub struct PutStorageEntryInput {
+    pub storage: SID,
     pub key: Vec<u8>,
     pub value: Vec<u8>,
 }
 
 #[derive(Debug, Clone, Encode, Decode)]
-pub struct PutMapEntryOutput {}
+pub struct PutStorageEntryOutput {}
 
 //=========
 // resource
