@@ -14,7 +14,7 @@ blueprint! {
     impl ComponentTest {
         pub fn create_component() -> Address {
             let resource = create_mutable("c1", Context::package_address());
-            let bucket =  mint_bucket(resource, 100);
+            let bucket =  mint_resource(resource, 100);
 
             Self {
                 resource: resource,
@@ -32,7 +32,7 @@ blueprint! {
         }
 
         pub fn put_component_state(&mut self)  {
-            let bucket = mint_bucket(self.resource, 100);
+            let bucket = mint_resource(self.resource, 100);
 
             // Receive resource
             self.bucket.put(bucket);

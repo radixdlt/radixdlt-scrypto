@@ -14,7 +14,7 @@ pub fn create_fixed(symbol: &str, supply: U256) -> Bucket {
         .create_fixed(supply)
 }
 
-pub fn mint_bucket(resource: Address, amount: u32) -> Bucket {
+pub fn mint_resource(resource: Address, amount: u32) -> Bucket {
     let resource = Resource::from(resource);
     resource.mint(U256::from(amount))
 }

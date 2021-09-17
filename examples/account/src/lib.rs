@@ -36,7 +36,7 @@ blueprint! {
             supply: U256,
         ) -> Address {
             let bucket = Resource::new_fixed(metadata, supply);
-            let address = Bucket::resource(&bucket);
+            let address = bucket.resource();
             self.deposit(bucket);
             address
         }

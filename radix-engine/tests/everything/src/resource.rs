@@ -14,7 +14,7 @@ blueprint! {
     impl ResourceTest {
         pub fn create_mutable() -> Bucket {
            let resource = create_mutable("r1", Context::package_address());
-           mint_bucket(resource, 100)
+           mint_resource(resource, 100)
         }
 
         pub fn create_fixed() -> Bucket {

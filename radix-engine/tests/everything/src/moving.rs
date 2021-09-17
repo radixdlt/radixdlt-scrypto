@@ -23,7 +23,7 @@ blueprint! {
 
         pub fn move_bucket() {
             let resource =  create_mutable("m1", Context::package_address());
-            let bucket =  mint_bucket(resource, 100);
+            let bucket =  mint_resource(resource, 100);
             let component: Component = MoveTest {
                 bucket: Vec::new()
             }.instantiate().into();
@@ -33,7 +33,7 @@ blueprint! {
 
         pub fn move_reference() -> Bucket {
             let resource =  create_mutable("m2", Context::package_address());
-            let bucket =  mint_bucket(resource, 100);
+            let bucket =  mint_resource(resource, 100);
             let component: Component = MoveTest {
                 bucket: Vec::new()
             }.instantiate().into();
