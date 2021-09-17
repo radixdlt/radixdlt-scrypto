@@ -27,6 +27,8 @@ pub enum DecodeError {
     NotAllBytesUsed(usize),
 
     InvalidCustomData(u8),
+
+    DuplicateEntry,
 }
 
 /// A data structure that can be decoded from a byte array using SBOR.
@@ -368,7 +370,9 @@ impl<T: Decode + Ord> Decode for BTreeSet<T> {
 
         let mut result = BTreeSet::new();
         for _ in 0..len {
-            result.insert(T::decode_value(decoder)?);
+            if !result.insert(T::decode_value(decoder)?) {
+                return Err(DecodeError::DuplicateEntry);
+            }
         }
         Ok(result)
     }
@@ -386,7 +390,12 @@ impl<K: Decode + Ord, V: Decode> Decode for BTreeMap<K, V> {
         let len = decoder.read_len()?;
         let mut map = BTreeMap::new();
         for _ in 0..len {
-            map.insert(K::decode_value(decoder)?, V::decode_value(decoder)?);
+            if map
+                .insert(K::decode_value(decoder)?, V::decode_value(decoder)?)
+                .is_some()
+            {
+                return Err(DecodeError::DuplicateEntry);
+            }
         }
         Ok(map)
     }
@@ -404,7 +413,9 @@ impl<T: Decode + Hash + Eq> Decode for HashSet<T> {
 
         let mut result = HashSet::new();
         for _ in 0..len {
-            result.insert(T::decode_value(decoder)?);
+            if !result.insert(T::decode_value(decoder)?) {
+                return Err(DecodeError::DuplicateEntry);
+            }
         }
         Ok(result)
     }
@@ -422,7 +433,12 @@ impl<K: Decode + Hash + Eq, V: Decode> Decode for HashMap<K, V> {
         let len = decoder.read_len()?;
         let mut map = HashMap::new();
         for _ in 0..len {
-            map.insert(K::decode_value(decoder)?, V::decode_value(decoder)?);
+            if map
+                .insert(K::decode_value(decoder)?, V::decode_value(decoder)?)
+                .is_some()
+            {
+                return Err(DecodeError::DuplicateEntry);
+            }
         }
         Ok(map)
     }
