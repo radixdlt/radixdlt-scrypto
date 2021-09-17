@@ -5,11 +5,14 @@ set -e
 
 cd "$(dirname "$0")/.."
 
-rev2="cargo run --bin rev2 --release --"
+rev2="cargo run --bin rev2 --"
 
 # Set up environment
 $rev2 reset
-$rev2 new-account
+account=`$rev2 new-account | tee /dev/tty | awk '/New account: / {print $NF}'`
+$rev2 new-tokens-fixed 7
+resource=`$rev2 new-tokens-mutable $account | tee /dev/tty | awk '/New token resource: / {print $NF}'`
+$rev2 mint-resource 666 $resource
 
 # Test helloworld
 package=`$rev2 publish ../assets/helloworld.wasm | tee /dev/tty | awk '/New package/ {print $NF}'`
@@ -27,3 +30,4 @@ $rev2 export-abi $package GumballMachine
 # Show state
 $rev2 show $package
 $rev2 show $component
+$rev2 show $account

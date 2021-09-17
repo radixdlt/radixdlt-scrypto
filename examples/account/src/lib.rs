@@ -13,63 +13,46 @@ blueprint! {
             .instantiate()
         }
 
-        fn deposit(&mut self, bucket: BID) {
-            let resource = bucket.resource();
-            match self.resources.get::<Address, BID>(&resource) {
-                Some(b) => {
-                    b.put(bucket);
-                }
-                None => {
-                    let b = BID::new(resource);
-                    b.put(bucket);
-                    self.resources.insert(resource, b);
-                }
-            }
-        }
+        //===================
+        // public methods //
+        //===================
 
-        fn withdraw(&mut self, amount: U256, resource: Address) -> BID {
-            let bucket = self.resources.get::<Address, BID>(&resource).unwrap();
-            bucket.take(amount)
-        }
-
-        /// Publish a code package.
+        /// Publishes a package from this account.
         pub fn publish_package(&self, code: Vec<u8>) -> Address {
             let package = Package::new(&code);
             package.into()
         }
 
-        /// Create a resource with mutable supply.
+        /// Creates a resource with mutable supply.
         pub fn new_resource_mutable(
             &self,
-            symbol: String,
-            name: String,
-            description: String,
-            url: String,
-            icon_url: String,
+            metadata: HashMap<String, String>,
             minter: Address,
         ) -> Address {
-            let resource = Resource::new_mutable( &symbol, &name, &description, &url, &icon_url, minter);
+            let resource = Resource::new_mutable( metadata, minter);
             resource.into()
         }
 
-        /// Create a resource with fixed supply.
+        /// Creates a resource with fixed supply, which will be deposited into this account.
         pub fn new_resource_fixed(
             &mut self,
-            symbol: String,
-            name: String,
-            description: String,
-            url: String,
-            icon_url: String,
+            metadata: HashMap<String, String>,
             supply: U256,
         ) -> Address {
-            let tokens: Tokens = Resource::new_fixed(&symbol, &name, &description, &url, &icon_url, supply);
-            let address = tokens.resource();
-            self.deposit_tokens(tokens);
+            let bucket: BID = Resource::new_fixed(metadata, supply);
+            let address = Bucket::resource(&bucket);
+            self.deposit(bucket);
             address
         }
 
-        /// Deposit buckets into this account
-        pub fn deposit_buckets(&mut self, buckets: Vec<BID>) {
+        /// Mint resources and deposit it into this account.
+        pub fn mint_resource(&mut self, amount: U256, resource: Address)  {
+            let bucket: BID = Resource::from(resource).mint(amount);
+            self.deposit(bucket);
+        }
+
+        /// Deposit a collection of buckets into this account
+        pub fn deposit_all(&mut self, buckets: Vec<BID>) {
             for bucket in buckets {
                 self.deposit(bucket);
             }
@@ -93,6 +76,29 @@ blueprint! {
         /// Withdraw badges from this account
         pub fn withdraw_badges(&mut self, amount: U256, resource: Address) -> Badges {
             self.withdraw(amount, resource).into()
+        }
+
+        //===================
+        // private methods //
+        //===================
+
+        fn deposit(&mut self, bucket: BID) {
+            let resource = bucket.resource();
+            match self.resources.get::<Address, BID>(&resource) {
+                Some(b) => {
+                    b.put(bucket);
+                }
+                None => {
+                    let b = BID::new(resource);
+                    b.put(bucket);
+                    self.resources.insert(resource, b);
+                }
+            }
+        }
+
+        fn withdraw(&mut self, amount: U256, resource: Address) -> BID {
+            let bucket = self.resources.get::<Address, BID>(&resource).unwrap();
+            bucket.take(amount)
         }
     }
 }

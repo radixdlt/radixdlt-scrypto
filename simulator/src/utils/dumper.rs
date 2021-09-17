@@ -62,12 +62,9 @@ pub fn dump_resource<T: Ledger>(address: Address, ledger: &T) {
     let resource = ledger.get_resource(address);
     match resource {
         Some(r) => {
-            println!("{}: {}", "Resource".green().bold(), address.to_string());
-            println!("{}: {}", "Symbol".green().bold(), r.symbol);
-            println!("{}: {}", "Name".green().bold(), r.name);
-            println!("{}: {}", "Description".green().bold(), r.description);
-            println!("{}: {}", "URL".green().bold(), r.url);
-            println!("{}: {}", "Icon URL".green().bold(), r.icon_url);
+            for (k, v) in r.metadata {
+                println!("{}: {}", k.green().bold(), v);
+            }
             println!("{}: {:?}", "Minter".green().bold(), r.minter);
             println!("{}: {:?}", "supply".green().bold(), r.supply);
         }

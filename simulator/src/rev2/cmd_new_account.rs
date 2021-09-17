@@ -35,12 +35,13 @@ pub fn handle_new_account(matches: &ArgMatches) -> Result<(), Error> {
 
     // create XRD native token
     if runtime.get_resource(Address::RadixToken).is_none() {
+        let mut metadata = HashMap::new();
+        metadata.insert("symbol".to_owned(), "xrd".to_owned());
+        metadata.insert("name".to_owned(), "Radix".to_owned());
+        metadata.insert("description".to_owned(), "The Radix Public Network's native token, used to pay the network's required transaction fees and to secure the network through staking to its validator nodes.".to_owned());
+        metadata.insert("url".to_owned(), "https://tokens.radixdlt.com".to_owned());
         let xrd = Resource {
-            symbol: "xrd".to_owned(),
-            name: "Radix".to_owned(),
-            description: "The Radix Public Network's native token, used to pay the network's required transaction fees and to secure the network through staking to its validator nodes.".to_owned(),
-            url: "https://tokens.radixdlt.com".to_owned(),
-            icon_url: "https://assets.radixdlt.com/icons/icon-xrd-32x32.png".to_owned(),
+            metadata,
             minter: Some(Address::System),
             supply: None,
         };
@@ -77,7 +78,7 @@ pub fn handle_new_account(matches: &ArgMatches) -> Result<(), Error> {
     process2
         .prepare_call_method(
             component,
-            "deposit_buckets".to_owned(),
+            "deposit_all".to_owned(),
             vec![scrypto_encode(&vec![bid])],
         )
         .and_then(|target| process2.run(target))

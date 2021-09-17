@@ -1,14 +1,17 @@
-use scrypto::constructs::*;
 use scrypto::resource::*;
 use scrypto::types::*;
 
 pub fn create_mutable_tokens(symbol: &str, minter: Address) -> Address {
-    let resource = Resource::new_mutable(symbol, "name", "description", "url", "icon_url", minter);
-    resource.into()
+    ResourceBuilder::new()
+        .symbol(symbol)
+        .create_tokens_mutable(minter)
+        .into()
 }
 
 pub fn create_fixed_tokens(symbol: &str, supply: U256) -> Tokens {
-    Resource::new_fixed(symbol, "name", "description", "url", "icon_url", supply)
+    ResourceBuilder::new()
+        .symbol(symbol)
+        .create_tokens_fixed(supply)
 }
 
 pub fn mint_tokens(resource: Address, amount: u32) -> Tokens {

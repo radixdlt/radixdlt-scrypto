@@ -24,10 +24,6 @@ impl From<Tokens> for BID {
 }
 
 impl Tokens {
-    pub fn check(&self, resource: Address) {
-        assert!(self.resource() == resource);
-    }
-
     pub fn new(resource: Address) -> Self {
         BID::new(resource).into()
     }
