@@ -36,8 +36,8 @@ impl Badges {
         self.bid.put(other.bid);
     }
 
-    pub fn take(&self, amount: U256) -> Self {
-        self.bid.take(amount).into()
+    pub fn take<A: Into<U256>>(&self, amount: A) -> Self {
+        self.bid.take(amount.into()).into()
     }
 
     pub fn borrow(&self) -> BadgesRef {
