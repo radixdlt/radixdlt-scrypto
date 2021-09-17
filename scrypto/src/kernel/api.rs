@@ -44,7 +44,7 @@ pub const GET_RESOURCE_INFO: u32 = 0x22;
 pub const MINT_RESOURCE: u32 = 0x23;
 
 /// Creates a new empty bucket
-pub const NEW_EMPTY_BUCKET: u32 = 0x30;
+pub const CREATE_EMPTY_BUCKET: u32 = 0x30;
 /// Combine buckets
 pub const COMBINE_BUCKETS: u32 = 0x31;
 /// Split a bucket
@@ -240,12 +240,12 @@ pub struct MintResourceOutput {
 }
 
 #[derive(Debug, Clone, Encode, Decode)]
-pub struct NewEmptyBucketInput {
+pub struct CreateEmptyBucketInput {
     pub resource: Address,
 }
 
 #[derive(Debug, Clone, Encode, Decode)]
-pub struct NewEmptyBucketOutput {
+pub struct CreateEmptyBucketOutput {
     pub bucket: BID,
 }
 

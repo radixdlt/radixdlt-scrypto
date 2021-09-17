@@ -653,13 +653,13 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
 
     pub fn new_bucket(
         &mut self,
-        input: NewEmptyBucketInput,
-    ) -> Result<NewEmptyBucketOutput, RuntimeError> {
+        input: CreateEmptyBucketInput,
+    ) -> Result<CreateEmptyBucketOutput, RuntimeError> {
         let new_bucket = Bucket::new(U256::zero(), input.resource);
         let new_bid = self.runtime.new_transient_bid();
         self.buckets.insert(new_bid, new_bucket);
 
-        Ok(NewEmptyBucketOutput { bucket: new_bid })
+        Ok(CreateEmptyBucketOutput { bucket: new_bid })
     }
 
     pub fn combine_buckets(
@@ -1164,7 +1164,7 @@ impl<'rt, 'le, L: Ledger> Externals for Process<'rt, 'le, L> {
                     GET_RESOURCE_INFO => self.handle(args, Self::get_resource_info, true),
                     MINT_RESOURCE => self.handle(args, Self::mint_resource, true),
 
-                    NEW_EMPTY_BUCKET => self.handle(args, Self::new_bucket, true),
+                    CREATE_EMPTY_BUCKET => self.handle(args, Self::new_bucket, true),
                     COMBINE_BUCKETS => self.handle(args, Self::combine_buckets, true),
                     SPLIT_BUCKET => self.handle(args, Self::split_bucket, true),
                     GET_AMOUNT => self.handle(args, Self::get_amount, true),
