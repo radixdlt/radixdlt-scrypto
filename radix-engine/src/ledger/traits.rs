@@ -22,7 +22,7 @@ pub trait Ledger {
 
     // For now, we always read/write everything in a resource bucket.
 
-    fn get_bucket(&self, bid: BID) -> Option<PersistedBucket>;
+    fn get_bucket(&self, bid: BID) -> Option<PersistentBucket>;
 
-    fn put_bucket(&mut self, bid: BID, bucket: PersistedBucket);
+    fn put_bucket(&mut self, bid: BID, bucket: PersistentBucket);
 }

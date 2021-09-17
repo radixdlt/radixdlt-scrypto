@@ -2,7 +2,6 @@ use sbor::*;
 use scrypto::buffer::*;
 use scrypto::rust::borrow::ToOwned;
 use scrypto::rust::collections::HashMap;
-use scrypto::rust::rc::Rc;
 use scrypto::rust::string::ToString;
 use scrypto::rust::vec::Vec;
 use scrypto::types::*;
@@ -18,7 +17,7 @@ pub struct InMemoryRadixEngine {
     nonce: u32,
     verbose: bool,
     prepared_buckets: HashMap<BID, Bucket>, // prepared for next invocation
-    prepared_references: HashMap<RID, Rc<LockedBucket>>, // prepared for next invocation
+    prepared_references: HashMap<RID, BucketRef>, // prepared for next invocation
     alloc: AddressAllocator,
 }
 

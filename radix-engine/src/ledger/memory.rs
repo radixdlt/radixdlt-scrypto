@@ -10,7 +10,7 @@ pub struct InMemoryLedger {
     components: HashMap<Address, Component>,
     storages: HashMap<SID, Storage>,
     resources: HashMap<Address, Resource>,
-    buckets: HashMap<BID, PersistedBucket>,
+    buckets: HashMap<BID, PersistentBucket>,
 }
 
 impl InMemoryLedger {
@@ -64,11 +64,11 @@ impl Ledger for InMemoryLedger {
         self.storages.insert(sid, storage);
     }
 
-    fn get_bucket(&self, bid: BID) -> Option<PersistedBucket> {
+    fn get_bucket(&self, bid: BID) -> Option<PersistentBucket> {
         self.buckets.get(&bid).map(Clone::clone)
     }
 
-    fn put_bucket(&mut self, bid: BID, bucket: PersistedBucket) {
+    fn put_bucket(&mut self, bid: BID, bucket: PersistentBucket) {
         self.buckets.insert(bid, bucket);
     }
 }

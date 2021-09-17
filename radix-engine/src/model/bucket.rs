@@ -1,4 +1,5 @@
 use sbor::*;
+use scrypto::rust::rc::Rc;
 use scrypto::types::*;
 
 /// Represents an error when accessing a bucket.
@@ -25,9 +26,12 @@ pub struct LockedBucket {
     bucket: Bucket,
 }
 
+/// A reference to a bucket.
+pub type BucketRef = Rc<LockedBucket>;
+
 /// A persisted bucket is stored permanently on ledger state.
 #[derive(Debug, Clone, Encode, Decode)]
-pub struct PersistedBucket {
+pub struct PersistentBucket {
     bucket: Bucket,
     owner: Address,
 }
@@ -85,7 +89,7 @@ impl From<LockedBucket> for Bucket {
     }
 }
 
-impl PersistedBucket {
+impl PersistentBucket {
     pub fn new(bucket: Bucket, owner: Address) -> Self {
         Self { bucket, owner }
     }

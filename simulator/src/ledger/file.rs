@@ -115,11 +115,11 @@ impl Ledger for FileBasedLedger {
         )
     }
 
-    fn get_bucket(&self, bid: BID) -> Option<PersistedBucket> {
+    fn get_bucket(&self, bid: BID) -> Option<PersistentBucket> {
         Self::read(self.get_path(BUCKETS, bid.to_string(), FILE_EXT)).map(Self::decode)
     }
 
-    fn put_bucket(&mut self, bid: BID, bucket: PersistedBucket) {
+    fn put_bucket(&mut self, bid: BID, bucket: PersistentBucket) {
         Self::write(
             self.get_path(BUCKETS, bid.to_string(), FILE_EXT),
             Self::encode(&bucket),

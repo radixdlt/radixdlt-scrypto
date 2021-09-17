@@ -26,7 +26,7 @@ pub struct Runtime<'le, T: Ledger> {
     components: HashMap<Address, Component>,
     storages: HashMap<SID, Storage>,
     resources: HashMap<Address, Resource>,
-    buckets: HashMap<BID, PersistedBucket>,
+    buckets: HashMap<BID, PersistentBucket>,
     updated_packages: HashSet<Address>,
     updated_components: HashSet<Address>,
     updated_storages: HashSet<SID>,
@@ -245,7 +245,7 @@ impl<'le, T: Ledger> Runtime<'le, T> {
 
     /// Returns an immutable reference to a bucket, if exists.
     #[allow(dead_code)]
-    pub fn get_bucket(&mut self, bid: BID) -> Option<&PersistedBucket> {
+    pub fn get_bucket(&mut self, bid: BID) -> Option<&PersistentBucket> {
         if self.buckets.contains_key(&bid) {
             return self.buckets.get(&bid);
         }
@@ -259,7 +259,7 @@ impl<'le, T: Ledger> Runtime<'le, T> {
     }
 
     /// Returns a mutable reference to a bucket, if exists.
-    pub fn get_bucket_mut(&mut self, bid: BID) -> Option<&mut PersistedBucket> {
+    pub fn get_bucket_mut(&mut self, bid: BID) -> Option<&mut PersistentBucket> {
         self.updated_buckets.insert(bid);
 
         if self.buckets.contains_key(&bid) {
@@ -275,7 +275,7 @@ impl<'le, T: Ledger> Runtime<'le, T> {
     }
 
     /// Inserts a new bucket.
-    pub fn put_bucket(&mut self, bid: BID, bucket: PersistedBucket) {
+    pub fn put_bucket(&mut self, bid: BID, bucket: PersistentBucket) {
         self.updated_buckets.insert(bid);
 
         self.buckets.insert(bid, bucket);

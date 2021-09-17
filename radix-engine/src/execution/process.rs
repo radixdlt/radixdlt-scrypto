@@ -45,10 +45,10 @@ pub struct Process<'rt, 'le, L: Ledger> {
     trace: bool,
     runtime: &'rt mut Runtime<'le, L>,
     buckets: HashMap<BID, Bucket>,
-    references: HashMap<RID, Rc<LockedBucket>>,
-    locked_buckets: HashMap<BID, Rc<LockedBucket>>,
+    references: HashMap<RID, BucketRef>,
+    locked_buckets: HashMap<BID, BucketRef>,
     moving_buckets: HashMap<BID, Bucket>,
-    moving_references: HashMap<RID, Rc<LockedBucket>>,
+    moving_references: HashMap<RID, BucketRef>,
     vm: Option<VM>,
 }
 
@@ -134,14 +134,14 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
     pub fn put_resources(
         &mut self,
         buckets: HashMap<BID, Bucket>,
-        references: HashMap<RID, Rc<LockedBucket>>,
+        references: HashMap<RID, BucketRef>,
     ) {
         self.buckets.extend(buckets);
         self.references.extend(references);
     }
 
     /// Take resources from this process.
-    pub fn take_resources(&mut self) -> (HashMap<BID, Bucket>, HashMap<RID, Rc<LockedBucket>>) {
+    pub fn take_resources(&mut self) -> (HashMap<BID, Bucket>, HashMap<RID, BucketRef>) {
         let buckets = self.moving_buckets.drain().collect();
         let references = self.moving_references.drain().collect();
         (buckets, references)
@@ -766,7 +766,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
             }
             None => {
                 // first time borrow
-                let bucket = Rc::new(LockedBucket::new(
+                let bucket = BucketRef::new(LockedBucket::new(
                     bid,
                     self.buckets
                         .remove(&bid)
@@ -1021,7 +1021,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
                 .ok_or(RuntimeError::BucketNotFound)?;
             let new_bid = self.runtime.new_persisted_bid();
             self.runtime
-                .put_bucket(new_bid, PersistedBucket::new(bucket, package));
+                .put_bucket(new_bid, PersistentBucket::new(bucket, package));
             trace!(self, "Converting {:?} to {:?}", bid, new_bid);
             Ok(new_bid)
         } else {
@@ -1040,7 +1040,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
             self.moving_buckets.insert(bid, bucket);
             Ok(bid)
         } else {
-            Err(RuntimeError::PersistedBucketMoveNotAllowed)
+            Err(RuntimeError::PersistentBucketMoveNotAllowed)
         }
     }
 

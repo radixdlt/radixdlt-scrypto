@@ -64,7 +64,7 @@ pub enum RuntimeError {
 
     UnauthorizedToWithdraw,
 
-    PersistedBucketMoveNotAllowed,
+    PersistentBucketMoveNotAllowed,
 
     ReferenceNotAllowed,
 
