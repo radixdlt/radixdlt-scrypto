@@ -34,5 +34,6 @@ echo "Running simulator..."
 
 echo "Running benchmark..."
 (cd sbor-tests; cargo bench)
+(cd radix-engine; cargo bench)
 
 echo "Congrats! All tests passed."
