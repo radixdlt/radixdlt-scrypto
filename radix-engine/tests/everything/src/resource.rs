@@ -23,7 +23,7 @@ blueprint! {
 
         pub fn query() -> ResourceInfo {
             let resource = create_mutable_tokens("r3", Context::package_address());
-            Resource::from(resource).get_info()
+            Resource::from(resource).info()
         }
     }
 }

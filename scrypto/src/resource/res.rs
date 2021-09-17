@@ -54,7 +54,7 @@ impl Resource {
         output.bucket.into()
     }
 
-    pub fn get_info(&self) -> ResourceInfo {
+    pub fn info(&self) -> ResourceInfo {
         let input = GetResourceInfoInput {
             resource: self.address,
         };
