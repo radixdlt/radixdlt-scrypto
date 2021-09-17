@@ -7,7 +7,7 @@ pub trait BucketRef {
 
     fn resource(&self) -> Address;
 
-    fn destroy(self);
+    fn drop(self);
 }
 
 impl BucketRef for RID {
@@ -25,7 +25,7 @@ impl BucketRef for RID {
         output.resource
     }
 
-    fn destroy(self) {
+    fn drop(self) {
         let input = DropReferenceInput { reference: self };
         let _: DropReferenceOutput = call_kernel(DROP_REFERENCE, input);
     }
