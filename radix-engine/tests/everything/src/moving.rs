@@ -18,7 +18,7 @@ blueprint! {
 
         pub fn receive_reference(&self, t: TokensRef) {
             info!("Received reference: address = {}, amount = {}", t.resource(), t.amount());
-            t.destroy();
+            t.drop();
         }
 
         pub fn move_bucket() {

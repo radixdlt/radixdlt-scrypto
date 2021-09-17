@@ -553,11 +553,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         input: CreateResourceMutableInput,
     ) -> Result<CreateResourceMutableOutput, RuntimeError> {
         let resource = Resource {
-            symbol: input.symbol,
-            name: input.name,
-            description: input.description,
-            url: input.url,
-            icon_url: input.icon_url,
+            metadata: input.metadata,
             minter: Some(input.minter),
             supply: None,
         };
@@ -579,11 +575,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         input: CreateResourceFixedInput,
     ) -> Result<CreateResourceFixedOutput, RuntimeError> {
         let resource = Resource {
-            symbol: input.symbol,
-            name: input.name,
-            description: input.description,
-            url: input.url,
-            icon_url: input.icon_url,
+            metadata: input.metadata,
             minter: None,
             supply: Some(input.supply),
         };
@@ -602,10 +594,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         let bid = self.runtime.new_transient_bid();
         self.buckets.insert(bid, bucket);
 
-        Ok(CreateResourceFixedOutput {
-            resource: address,
-            bucket: bid,
-        })
+        Ok(CreateResourceFixedOutput { bucket: bid })
     }
 
     pub fn get_resource_info(
@@ -619,11 +608,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
             .clone();
 
         Ok(GetResourceInfoOutput {
-            symbol: resource.symbol,
-            name: resource.name,
-            description: resource.description,
-            url: resource.url,
-            icon_url: resource.icon_url,
+            metadata: resource.metadata,
             minter: resource.minter,
             supply: resource.supply,
         })

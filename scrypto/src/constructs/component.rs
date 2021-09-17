@@ -58,7 +58,7 @@ impl Component {
         unwrap_light(scrypto_decode(&output.rtn))
     }
 
-    pub fn get_info(&self) -> ComponentInfo {
+    pub fn info(&self) -> ComponentInfo {
         let input = GetComponentInfoInput {
             component: self.address,
         };
@@ -71,7 +71,7 @@ impl Component {
     }
 
     pub fn get_blueprint(&self) -> Blueprint {
-        let info = self.get_info();
+        let info = self.info();
         Blueprint::from(info.package, info.blueprint.as_str())
     }
 

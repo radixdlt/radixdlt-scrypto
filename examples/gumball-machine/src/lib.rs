@@ -8,15 +8,14 @@ blueprint! {
 
     impl GumballMachine {
         pub fn new() -> Address {
+            let gumballs = ResourceBuilder::new()
+                .name("Gumball")
+                .symbol("gum")
+                .description("The best gumball in the world.")
+                .create_tokens_fixed(1000);
+
             Self {
-                gumballs: Resource::new_fixed(
-                    "gum",
-                    "Gumball",
-                    "The best gumball in the world.",
-                    "https://www.example.com/",
-                    "https://www.example.com/icon.png",
-                    100.into(),
-                ),
+                gumballs,
                 collected_xrd: Tokens::new(Address::RadixToken),
             }
             .instantiate()
@@ -30,7 +29,7 @@ blueprint! {
             self.collected_xrd.put(payment);
 
             // give them back a gumball
-            self.gumballs.take(1.into())
+            self.gumballs.take(1)
         }
     }
 }

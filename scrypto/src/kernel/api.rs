@@ -1,5 +1,6 @@
 use sbor::{Decode, Encode};
 
+use crate::rust::collections::HashMap;
 use crate::rust::string::String;
 use crate::rust::vec::Vec;
 use crate::types::*;
@@ -195,11 +196,7 @@ pub struct PutStorageEntryOutput {}
 
 #[derive(Debug, Clone, Encode, Decode)]
 pub struct CreateResourceMutableInput {
-    pub symbol: String,
-    pub name: String,
-    pub description: String,
-    pub url: String,
-    pub icon_url: String,
+    pub metadata: HashMap<String, String>,
     pub minter: Address,
 }
 
@@ -210,17 +207,12 @@ pub struct CreateResourceMutableOutput {
 
 #[derive(Debug, Clone, Encode, Decode)]
 pub struct CreateResourceFixedInput {
-    pub symbol: String,
-    pub name: String,
-    pub description: String,
-    pub url: String,
-    pub icon_url: String,
+    pub metadata: HashMap<String, String>,
     pub supply: U256,
 }
 
 #[derive(Debug, Clone, Encode, Decode)]
 pub struct CreateResourceFixedOutput {
-    pub resource: Address,
     pub bucket: BID,
 }
 
@@ -231,11 +223,7 @@ pub struct GetResourceInfoInput {
 
 #[derive(Debug, Clone, Encode, Decode)]
 pub struct GetResourceInfoOutput {
-    pub symbol: String,
-    pub name: String,
-    pub description: String,
-    pub url: String,
-    pub icon_url: String,
+    pub metadata: HashMap<String, String>,
     pub minter: Option<Address>,
     pub supply: Option<U256>,
 }

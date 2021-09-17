@@ -24,7 +24,7 @@ blueprint! {
         }
 
         pub fn get_component_info(address: Address) -> ComponentInfo {
-            Component::from(address).get_info()
+            Component::from(address).info()
         }
 
         pub fn get_component_state(&self) -> String {

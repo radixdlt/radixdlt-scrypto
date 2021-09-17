@@ -36,8 +36,8 @@ impl TokensRef {
         self.rid.resource()
     }
 
-    pub fn destroy(self) {
-        self.rid.destroy()
+    pub fn drop(self) {
+        self.rid.drop()
     }
 }
 

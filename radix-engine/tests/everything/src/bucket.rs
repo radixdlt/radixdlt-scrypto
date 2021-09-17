@@ -29,7 +29,7 @@ blueprint! {
             let resource = create_mutable_tokens("b3", Context::package_address());
             let tokens = mint_tokens(resource, 100);
             let reference = tokens.borrow();
-            reference.destroy();
+            reference.drop();
             tokens
         }
 

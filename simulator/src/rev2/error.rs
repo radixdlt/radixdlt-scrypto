@@ -19,6 +19,8 @@ pub enum Error {
 
     InvalidAddress(ParseAddressError),
 
+    InvalidU256,
+
     IOError(io::Error),
 
     JSONError(serde_json::Error),

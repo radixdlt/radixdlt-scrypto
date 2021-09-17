@@ -8,7 +8,7 @@ pub trait Bucket<T: BucketRef> {
 
     fn put(&self, other: Self);
 
-    fn take(&self, amount: U256) -> Self;
+    fn take<A: Into<U256>>(&self, amount: A) -> Self;
 
     fn amount(&self) -> U256;
 
@@ -33,10 +33,10 @@ impl Bucket<RID> for BID {
         let _: CombineBucketsOutput = call_kernel(COMBINE_BUCKETS, input);
     }
 
-    fn take(&self, amount: U256) -> Self {
+    fn take<A: Into<U256>>(&self, amount: A) -> Self {
         let input = SplitBucketInput {
             bucket: *self,
-            amount,
+            amount: amount.into(),
         };
         let output: SplitBucketOutput = call_kernel(SPLIT_BUCKET, input);
 

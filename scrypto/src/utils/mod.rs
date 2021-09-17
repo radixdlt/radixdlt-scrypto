@@ -2,7 +2,7 @@ mod sha;
 
 pub use sha::*;
 
-/// Unwrap a result and panic (with no debug info) on error.
+/// A lightweight `unwrap()` which does not format the error.
 pub fn unwrap_light<T, E>(res: Result<T, E>) -> T {
     match res {
         Ok(v) => v,

@@ -9,6 +9,11 @@ scrypto = { version = "0.1", path = "../scrypto", default-features = false}
 wasmi = { version = "0.9", default-features = false }
 colored = { version = "2.0", default-features = false }
 lru = { version = "0.6" }
+bencher = { version = "0.1.5" }
+
+[[bench]]
+name = "bench"
+harness = false
 
 [features]
 # You should enable either `std` or `alloc`

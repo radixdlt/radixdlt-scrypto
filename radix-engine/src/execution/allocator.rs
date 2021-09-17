@@ -16,6 +16,10 @@ impl AddressAllocator {
         self.count
     }
 
+    pub fn reset(&mut self) {
+        self.count = 0;
+    }
+
     pub fn new_package_address(&mut self, tx_hash: H256) -> Address {
         let mut data = tx_hash.as_ref().to_vec();
         data.extend(self.count.to_le_bytes());

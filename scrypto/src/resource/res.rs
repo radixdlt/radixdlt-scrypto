@@ -2,12 +2,13 @@ use sbor::{describe::Type, *};
 
 use crate::constants::*;
 use crate::kernel::*;
+use crate::resource::*;
 use crate::rust::borrow::ToOwned;
+use crate::rust::collections::HashMap;
 use crate::rust::string::String;
-use crate::rust::string::ToString;
 use crate::types::*;
 
-/// A primitive piece of state which has a single owner, and behaves like a physical object.
+/// An abstraction of digital assets, e.g. token, badge and NFT.
 #[derive(Debug, Encode, Decode)]
 pub struct Resource {
     address: Address,
@@ -16,13 +17,14 @@ pub struct Resource {
 /// Information about a resource.
 #[derive(Debug, Clone, Describe, Encode, Decode)]
 pub struct ResourceInfo {
-    pub symbol: String,
-    pub name: String,
-    pub description: String,
-    pub url: String,
-    pub icon_url: String,
+    pub metadata: HashMap<String, String>,
     pub minter: Option<Address>,
     pub supply: Option<U256>,
+}
+
+/// Utility for creating new resources
+pub struct ResourceBuilder {
+    metadata: HashMap<String, String>,
 }
 
 impl From<Address> for Resource {
@@ -38,60 +40,28 @@ impl From<Resource> for Address {
 }
 
 impl Resource {
-    pub fn new_mutable(
-        symbol: &str,
-        name: &str,
-        description: &str,
-        url: &str,
-        icon_url: &str,
-        minter: Address,
-    ) -> Self {
-        let input = CreateResourceMutableInput {
-            symbol: symbol.to_string(),
-            name: name.to_string(),
-            description: description.to_string(),
-            url: url.to_string(),
-            icon_url: icon_url.to_string(),
-            minter,
-        };
+    pub fn new_mutable(metadata: HashMap<String, String>, minter: Address) -> Self {
+        let input = CreateResourceMutableInput { metadata, minter };
         let output: CreateResourceMutableOutput = call_kernel(CREATE_RESOURCE_MUTABLE, input);
 
         output.resource.into()
     }
 
-    pub fn new_fixed<T: From<BID>>(
-        symbol: &str,
-        name: &str,
-        description: &str,
-        url: &str,
-        icon_url: &str,
-        supply: U256,
-    ) -> T {
-        let input = CreateResourceFixedInput {
-            symbol: symbol.to_string(),
-            name: name.to_string(),
-            description: description.to_string(),
-            url: url.to_string(),
-            icon_url: icon_url.to_string(),
-            supply,
-        };
+    pub fn new_fixed<T: From<BID>>(metadata: HashMap<String, String>, supply: U256) -> T {
+        let input = CreateResourceFixedInput { metadata, supply };
         let output: CreateResourceFixedOutput = call_kernel(CREATE_RESOURCE_FIXED, input);
 
         output.bucket.into()
     }
 
-    pub fn get_info(&self) -> ResourceInfo {
+    pub fn info(&self) -> ResourceInfo {
         let input = GetResourceInfoInput {
             resource: self.address,
         };
         let output: GetResourceInfoOutput = call_kernel(GET_RESOURCE_INFO, input);
 
         ResourceInfo {
-            symbol: output.symbol,
-            name: output.name,
-            description: output.description,
-            url: output.url,
-            icon_url: output.icon_url,
+            metadata: output.metadata,
             minter: output.minter,
             supply: output.supply,
         }
@@ -119,5 +89,60 @@ impl Describe for Resource {
         Type::Custom {
             name: SCRYPTO_NAME_RESOURCE.to_owned(),
         }
+    }
+}
+
+impl ResourceBuilder {
+    /// New resource builder.
+    pub fn new() -> Self {
+        Self {
+            metadata: HashMap::new(),
+        }
+    }
+
+    /// Create tokens with mutable supply; the resource can be minted using `Resource::mint()` afterwards.
+    pub fn create_tokens_mutable(&self, minter: Address) -> Resource {
+        Resource::new_mutable(self.metadata.clone(), minter)
+    }
+
+    /// Create tokens with fixed supply.
+    pub fn create_tokens_fixed<T: Into<U256>>(&self, supply: T) -> Tokens {
+        Resource::new_fixed(self.metadata.clone(), supply.into())
+    }
+
+    /// Create badges with mutable supply; the resource can be minted using `Resource::mint()` afterwards.
+    pub fn create_badges_mutable(&self, minter: Address) -> Resource {
+        Resource::new_mutable(self.metadata.clone(), minter)
+    }
+
+    /// Create badges with fixed supply.
+    pub fn create_badges_fixed(&self, supply: U256) -> Badges {
+        Resource::new_fixed(self.metadata.clone(), supply)
+    }
+
+    /// Add metadata attribute.
+    pub fn metadata(&mut self, name: &str, value: &str) -> &mut Self {
+        self.metadata.insert(name.to_owned(), value.to_owned());
+        self
+    }
+
+    pub fn symbol(&mut self, symbol: &str) -> &mut Self {
+        self.metadata("symbol", symbol)
+    }
+
+    pub fn name(&mut self, name: &str) -> &mut Self {
+        self.metadata("name", name)
+    }
+
+    pub fn description(&mut self, description: &str) -> &mut Self {
+        self.metadata("description", description)
+    }
+
+    pub fn url(&mut self, url: &str) -> &mut Self {
+        self.metadata("url", url)
+    }
+
+    pub fn icon_url(&mut self, icon_url: &str) -> &mut Self {
+        self.metadata("icon_url", icon_url)
     }
 }

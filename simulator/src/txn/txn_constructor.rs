@@ -46,7 +46,7 @@ pub fn build_call_function<T: Ledger>(
             });
             v.push(Instruction::DepositAll {
                 component: account,
-                method: "deposit_buckets".to_owned(),
+                method: "deposit_all".to_owned(),
             });
             v.push(Instruction::Finalize);
             Ok(Transaction { instructions: v })
@@ -84,7 +84,7 @@ pub fn build_call_method<T: Ledger>(
             });
             v.push(Instruction::DepositAll {
                 component: account,
-                method: "deposit_buckets".to_owned(),
+                method: "deposit_all".to_owned(),
             });
             v.push(Instruction::Finalize);
             Ok(Transaction { instructions: v })

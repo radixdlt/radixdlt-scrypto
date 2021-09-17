@@ -1,6 +1,8 @@
 use sbor::*;
 use scrypto::buffer::*;
 use scrypto::rust::borrow::ToOwned;
+use scrypto::rust::collections::HashMap;
+use scrypto::rust::rc::Rc;
 use scrypto::rust::string::ToString;
 use scrypto::rust::vec::Vec;
 use scrypto::types::*;
@@ -15,6 +17,9 @@ pub struct InMemoryRadixEngine {
     ledger: InMemoryLedger,
     nonce: u32,
     verbose: bool,
+    prepared_buckets: HashMap<BID, Bucket>, // prepared for next invocation
+    prepared_references: HashMap<RID, Rc<LockedBucket>>, // prepared for next invocation
+    alloc: AddressAllocator,
 }
 
 impl InMemoryRadixEngine {
@@ -24,6 +29,9 @@ impl InMemoryRadixEngine {
             ledger: InMemoryLedger::new(),
             nonce: 0,
             verbose,
+            prepared_buckets: HashMap::new(),
+            prepared_references: HashMap::new(),
+            alloc: AddressAllocator::new(),
         }
     }
 
@@ -52,6 +60,14 @@ impl InMemoryRadixEngine {
         Ok(address)
     }
 
+    /// Prepare bucket for next invocation.
+    pub fn prepare_bucket(&mut self, amount: U256, resource: Address) -> BID {
+        let bid = self.alloc.new_transient_bid();
+        self.prepared_buckets
+            .insert(bid, Bucket::new(amount, resource));
+        bid
+    }
+
     /// Calls a function.
     pub fn call_function<T: Decode>(
         &mut self,
@@ -65,8 +81,19 @@ impl InMemoryRadixEngine {
         let mut process = Process::new(0, self.verbose, &mut runtime);
         let target =
             process.prepare_call_function(package, blueprint, function.to_owned(), args)?;
+
+        // move resources
+        process.put_resources(
+            self.prepared_buckets.drain().collect(),
+            self.prepared_references.drain().collect(),
+        );
+        self.alloc.reset();
+
+        // run
         let result = process.run(target);
         process.finalize()?;
+
+        // check
         match result {
             Ok(bytes) => {
                 runtime.flush();
@@ -87,8 +114,19 @@ impl InMemoryRadixEngine {
         let mut runtime = Runtime::new(tx_hash, &mut self.ledger);
         let mut process = Process::new(0, self.verbose, &mut runtime);
         let target = process.prepare_call_method(component, method.to_owned(), args)?;
+
+        // move resources
+        process.put_resources(
+            self.prepared_buckets.drain().collect(),
+            self.prepared_references.drain().collect(),
+        );
+        self.alloc.reset();
+
+        // run
         let result = process.run(target);
         process.finalize()?;
+
+        // check
         match result {
             Ok(bytes) => {
                 runtime.flush();
