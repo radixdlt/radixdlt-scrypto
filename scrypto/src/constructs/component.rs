@@ -5,6 +5,7 @@ use crate::constants::*;
 use crate::constructs::*;
 use crate::kernel::*;
 use crate::rust::borrow::ToOwned;
+use crate::rust::string::String;
 use crate::rust::string::ToString;
 use crate::rust::vec::Vec;
 use crate::types::*;
@@ -14,6 +15,13 @@ use crate::utils::*;
 #[derive(Debug, Encode, Decode)]
 pub struct Component {
     address: Address,
+}
+
+/// Information about a component.
+#[derive(Debug, Clone, Describe, Encode, Decode)]
+pub struct ComponentInfo {
+    pub package: Address,
+    pub blueprint: String,
 }
 
 impl From<Address> for Component {

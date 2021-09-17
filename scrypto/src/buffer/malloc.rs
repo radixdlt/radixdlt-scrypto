@@ -3,6 +3,9 @@ use crate::rust::ptr::copy;
 use crate::rust::vec::Vec;
 
 /// Allocates a chunk of memory that is not tracked by Rust ownership system.
+/// 
+/// # Safety
+/// The allocated memory is not tracked by Rust ownership; be use to free it after use.
 #[no_mangle]
 pub unsafe extern "C" fn scrypto_alloc(len: u32) -> *mut u8 {
     let cap = (len + 4) as usize;
@@ -21,6 +24,9 @@ pub fn scrypto_wrap(mut buf: Vec<u8>) -> *mut u8 {
 }
 
 /// Consumes a memory chunk.
+/// 
+/// # Safety
+/// The memory pointer must be obtained from `scrypto_alloc` or `scrypto_wrap`.
 pub unsafe fn scrypto_consume<T>(ptr: *mut u8, f: fn(slice: &[u8]) -> T) -> T {
     let mut len = [0u8; 4];
     copy(ptr, len.as_mut_ptr(), 4);
@@ -31,6 +37,9 @@ pub unsafe fn scrypto_consume<T>(ptr: *mut u8, f: fn(slice: &[u8]) -> T) -> T {
 }
 
 /// Frees an allocated memory.
+/// 
+/// # Safety
+/// The memory pointer must be obtained from `scrypto_alloc` or `scrypto_wrap`.
 #[no_mangle]
 pub unsafe extern "C" fn scrypto_free(ptr: *mut u8) {
     scrypto_consume(ptr, |_| {});

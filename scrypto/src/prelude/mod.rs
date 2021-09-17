@@ -5,13 +5,14 @@ pub use crate::{blueprint, import};
 pub use crate::buffer::{scrypto_decode, scrypto_encode};
 
 pub use crate::constructs::{
-    Blueprint, Component, ComponentInfo, Context, Level, Logger, Package, Resource, ResourceInfo,
-    Storage,
+    Blueprint, Component, ComponentInfo, Context, Level, Logger, Package, Storage,
 };
 
 pub use crate::kernel::call_kernel;
 
-pub use crate::resource::{Badges, BadgesRef, Bucket, BucketRef, Tokens, TokensRef};
+pub use crate::resource::{
+    Badges, BadgesRef, Bucket, BucketRef, Resource, ResourceInfo, Tokens, TokensRef,
+};
 
 pub use crate::types::{Address, BID, H256, RID, U256};
 

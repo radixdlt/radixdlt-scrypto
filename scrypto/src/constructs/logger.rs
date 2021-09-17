@@ -1,10 +1,21 @@
-use crate::constructs::*;
+use sbor::*;
+
 use crate::kernel::*;
 use crate::rust::string::String;
 
 /// A logger for dumping messages.
 #[derive(Debug)]
 pub struct Logger {}
+
+/// Represents a logging level.
+#[derive(Debug, Clone, Describe, Encode, Decode)]
+pub enum Level {
+    Error = 0,
+    Warn,
+    Info,
+    Debug,
+    Trace,
+}
 
 impl Logger {
     pub fn log(level: Level, message: String) {

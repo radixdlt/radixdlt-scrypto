@@ -1,9 +1,9 @@
 use sbor::{describe::Type, *};
 
 use crate::constants::*;
-use crate::constructs::*;
 use crate::kernel::*;
 use crate::rust::borrow::ToOwned;
+use crate::rust::string::String;
 use crate::rust::string::ToString;
 use crate::types::*;
 
@@ -11,6 +11,18 @@ use crate::types::*;
 #[derive(Debug, Encode, Decode)]
 pub struct Resource {
     address: Address,
+}
+
+/// Information about a resource.
+#[derive(Debug, Clone, Describe, Encode, Decode)]
+pub struct ResourceInfo {
+    pub symbol: String,
+    pub name: String,
+    pub description: String,
+    pub url: String,
+    pub icon_url: String,
+    pub minter: Option<Address>,
+    pub supply: Option<U256>,
 }
 
 impl From<Address> for Resource {
