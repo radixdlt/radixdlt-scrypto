@@ -26,12 +26,12 @@ r#"
             "inputs": [
                 {
                     "type": "Custom",
-                    "name": "scrypto::Tokens"
+                    "name": "scrypto::Bucket"
                 }
             ],
             "output": {
                 "type": "Custom",
-                "name": "scrypto::BadgesRef"
+                "name": "scrypto::BucketRef"
             }
         }
     ],

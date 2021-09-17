@@ -40,11 +40,11 @@ fn test_resource() {
     let package = engine.publish(package_code!("./everything")).unwrap();
 
     engine
-        .call_function::<Tokens>(package, "ResourceTest", "create_mutable", args!())
+        .call_function::<Bucket>(package, "ResourceTest", "create_mutable", args!())
         .unwrap();
 
     engine
-        .call_function::<Tokens>(package, "ResourceTest", "create_fixed", args!())
+        .call_function::<Bucket>(package, "ResourceTest", "create_fixed", args!())
         .unwrap();
 
     engine
@@ -58,19 +58,19 @@ fn test_bucket() {
     let package = engine.publish(package_code!("./everything")).unwrap();
 
     engine
-        .call_function::<Tokens>(package, "BucketTest", "combine", args!())
+        .call_function::<Bucket>(package, "BucketTest", "combine", args!())
         .unwrap();
 
     engine
-        .call_function::<(Tokens, Tokens)>(package, "BucketTest", "split", args!())
+        .call_function::<(Bucket, Bucket)>(package, "BucketTest", "split", args!())
         .unwrap();
 
     engine
-        .call_function::<Tokens>(package, "BucketTest", "borrow", args!())
+        .call_function::<Bucket>(package, "BucketTest", "borrow", args!())
         .unwrap();
 
     engine
-        .call_function::<(U256, Address, Tokens)>(package, "BucketTest", "query", args!())
+        .call_function::<(U256, Address, Bucket)>(package, "BucketTest", "query", args!())
         .unwrap();
 }
 
@@ -84,6 +84,6 @@ fn test_move_resource() {
         .unwrap();
 
     engine
-        .call_function::<Tokens>(package, "MoveTest", "move_reference", args!())
+        .call_function::<Bucket>(package, "MoveTest", "move_reference", args!())
         .unwrap();
 }

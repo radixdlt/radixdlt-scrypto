@@ -22,12 +22,12 @@ r#"
             "inputs": [
                 {
                     "type": "Custom",
-                    "name": "scrypto::Tokens"
+                    "name": "scrypto::Bucket"
                 }
             ],
             "output": {
                 "type": "Custom",
-                "name": "scrypto::Tokens"
+                "name": "scrypto::Bucket"
             }
         }
     ]
@@ -48,7 +48,7 @@ blueprint! {
             .instantiate()
         }
 
-        pub fn get_gumball(&self, payment: Tokens) -> Tokens {
+        pub fn get_gumball(&self, payment: Bucket) -> Bucket {
             let component = GumballMachine::at(self.machine);
             component.get_gumball(payment)
         }

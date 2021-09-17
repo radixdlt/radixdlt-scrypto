@@ -318,16 +318,13 @@ fn get_native_type(ty: &des::Type) -> (Type, Vec<Item>) {
             "scrypto::RID" => parse_quote! { ::scrypto::types::RID },
             "scrypto::SID" => parse_quote! { ::scrypto::types::SID },
 
-            "scrypto::Tokens" => parse_quote! { ::scrypto::resource::Tokens },
-            "scrypto::TokensRef" => parse_quote! { ::scrypto::resource::TokensRef },
-            "scrypto::Badges" => parse_quote! { ::scrypto::resource::Badges },
-            "scrypto::BadgesRef" => parse_quote! { ::scrypto::resource::BadgesRef },
-
             "scrypto::Package" => parse_quote! { ::scrypto::constructs::Package },
             "scrypto::Blueprint" => parse_quote! { ::scrypto::constructs::Blueprint },
             "scrypto::Component" => parse_quote! { ::scrypto::constructs::Component },
             "scrypto::Resource" => parse_quote! { ::scrypto::constructs::Resource },
-            "scrypto::Map" => parse_quote! { ::scrypto::constructs::Map },
+            "scrypto::Storage" => parse_quote! { ::scrypto::constructs::Storage },
+            "scrypto::Bucket" => parse_quote! { ::scrypto::resource::Bucket },
+            "scrypto::BucketRef" => parse_quote! { ::scrypto::resource::BucketRef },
 
             _ => panic!("Invalid custom type: {}", name),
         },

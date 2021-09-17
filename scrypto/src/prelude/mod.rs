@@ -10,10 +10,7 @@ pub use crate::constructs::{
 
 pub use crate::kernel::call_kernel;
 
-pub use crate::resource::{
-    Badges, BadgesRef, Bucket, BucketRef, Resource, ResourceBuilder, ResourceInfo, Tokens,
-    TokensRef,
-};
+pub use crate::resource::{Bucket, BucketRef, Resource, ResourceBuilder, ResourceInfo};
 
 pub use crate::types::{Address, BID, H256, RID, U256};
 

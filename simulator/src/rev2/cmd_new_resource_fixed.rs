@@ -10,17 +10,17 @@ use crate::ledger::*;
 use crate::rev2::*;
 
 const ARG_TRACE: &str = "TRACE";
-const ARG_MINTER: &str = "MINTER";
+const ARG_SUPPLY: &str = "SUPPLY";
 const ARG_SYMBOL: &str = "SYMBOL";
 const ARG_NAME: &str = "NAME";
 const ARG_DESCRIPTION: &str = "DESCRIPTION";
 const ARG_URL: &str = "URL";
 const ARG_ICON_URL: &str = "ICON_URL";
 
-/// Constructs a `new-tokens-mutable` subcommand.
-pub fn make_new_tokens_mutable_cmd<'a, 'b>() -> App<'a, 'b> {
-    SubCommand::with_name(CMD_NEW_TOKENS_MUTABLE)
-        .about("Creates token with mutable supply")
+/// Constructs a `new-resource-fixed` subcommand.
+pub fn make_new_resource_fixed_cmd<'a, 'b>() -> App<'a, 'b> {
+    SubCommand::with_name(CMD_NEW_RESOURCE_FIXED)
+        .about("Creates token with fixed supply")
         .version(crate_version!())
         .arg(
             Arg::with_name(ARG_TRACE)
@@ -29,8 +29,8 @@ pub fn make_new_tokens_mutable_cmd<'a, 'b>() -> App<'a, 'b> {
                 .help("Turns on tracing."),
         )
         .arg(
-            Arg::with_name(ARG_MINTER)
-                .help("Specify the minter.")
+            Arg::with_name(ARG_SUPPLY)
+                .help("Specify the total supply.")
                 .required(true),
         )
         .arg(
@@ -70,15 +70,16 @@ pub fn make_new_tokens_mutable_cmd<'a, 'b>() -> App<'a, 'b> {
         )
 }
 
-/// Handles a `new-tokens-mutable` request.
-pub fn handle_new_tokens_mutable(matches: &ArgMatches) -> Result<(), Error> {
+/// Handles a `new-resource-fixed` request.
+pub fn handle_new_resource_fixed(matches: &ArgMatches) -> Result<(), Error> {
     let trace = matches.is_present(ARG_TRACE);
 
-    let minter: Address = matches
-        .value_of(ARG_MINTER)
-        .ok_or_else(|| Error::MissingArgument(ARG_MINTER.to_owned()))?
-        .parse()
-        .map_err(Error::InvalidAddress)?;
+    let supply = U256::from_dec_str(
+        matches
+            .value_of(ARG_SUPPLY)
+            .ok_or_else(|| Error::MissingArgument(ARG_SUPPLY.to_owned()))?,
+    )
+    .map_err(|_| Error::InvalidU256)?;
 
     let mut metadata = HashMap::new();
     matches
@@ -108,8 +109,8 @@ pub fn handle_new_tokens_mutable(matches: &ArgMatches) -> Result<(), Error> {
             let output = process
                 .prepare_call_method(
                     account,
-                    "new_resource_mutable".to_owned(),
-                    vec![scrypto_encode(&metadata), scrypto_encode(&minter)],
+                    "new_resource_fixed".to_owned(),
+                    vec![scrypto_encode(&metadata), scrypto_encode(&supply)],
                 )
                 .and_then(|target| process.run(target))
                 .map_err(Error::TxnExecutionError)?;

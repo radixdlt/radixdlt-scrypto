@@ -12,13 +12,10 @@ pub const SCRYPTO_NAME_BID: &str = "scrypto::BID";
 pub const SCRYPTO_NAME_RID: &str = "scrypto::RID";
 pub const SCRYPTO_NAME_SID: &str = "scrypto::SID";
 
-pub const SCRYPTO_NAME_TOKENS: &str = "scrypto::Tokens";
-pub const SCRYPTO_NAME_TOKENS_REF: &str = "scrypto::TokensRef";
-pub const SCRYPTO_NAME_BADGES: &str = "scrypto::Badges";
-pub const SCRYPTO_NAME_BADGES_REF: &str = "scrypto::BadgesRef";
-
 pub const SCRYPTO_NAME_PACKAGE: &str = "scrypto::Package";
 pub const SCRYPTO_NAME_BLUEPRINT: &str = "scrypto::Blueprint";
 pub const SCRYPTO_NAME_COMPONENT: &str = "scrypto::Component";
 pub const SCRYPTO_NAME_RESOURCE: &str = "scrypto::Resource";
-pub const SCRYPTO_NAME_STORAGE: &str = "scrypto::Map";
+pub const SCRYPTO_NAME_STORAGE: &str = "scrypto::Storage";
+pub const SCRYPTO_NAME_BUCKET: &str = "scrypto::Bucket";
+pub const SCRYPTO_NAME_BUCKET_REF: &str = "scrypto::BucketRef";

@@ -24,9 +24,9 @@ fn cross_component_call(b: &mut Bencher) {
         .unwrap();
 
     b.iter(|| {
-        let tokens: Tokens = engine.prepare_bucket(1.into(), Address::RadixToken).into();
+        let bucket: Bucket = engine.prepare_bucket(1.into(), Address::RadixToken).into();
         engine
-            .call_method::<Tokens>(component, "get_gumball", args!(tokens))
+            .call_method::<Bucket>(component, "get_gumball", args!(bucket))
             .unwrap()
     });
 }
