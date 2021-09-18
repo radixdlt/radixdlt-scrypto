@@ -11,7 +11,9 @@ Language for building DeFi apps on Radix.
 - **Component** An instance of a blueprint, which lives in the persistent state and may own resources.
 - **Function**: A set of statements to perform a specific task.
 - **Method**: A function attached to a component.
-- **Resource**: A primitive state which can only be created once and moved.
+- **Resource**: A primitive state which can only be created once and moved, used for modelling digital assets.
+- **Bucket**: A transient container of resources during transaction execution runtime.
+- **Vault**: A persistent container of resources on ledger.
 
 ## Installation
 
