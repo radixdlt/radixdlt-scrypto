@@ -577,7 +577,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         Ok(CreateResourceFixedOutput { bucket: bid })
     }
 
-    pub fn get_bucket_resource_info(
+    pub fn ge_resource_info(
         &mut self,
         input: GetResourceInfoInput,
     ) -> Result<GetResourceInfoOutput, RuntimeError> {
@@ -1174,7 +1174,7 @@ impl<'rt, 'le, L: Ledger> Externals for Process<'rt, 'le, L> {
                         self.handle(args, Self::create_resource_mutable, true)
                     }
                     CREATE_RESOURCE_FIXED => self.handle(args, Self::create_resource_fixed, true),
-                    GET_RESOURCE_INFO => self.handle(args, Self::get_bucket_resource_info, true),
+                    GET_RESOURCE_INFO => self.handle(args, Self::ge_resource_info, true),
                     MINT_RESOURCE => self.handle(args, Self::mint_resource, true),
 
                     CREATE_EMPTY_VAULT => self.handle(args, Self::new_vault, true),
