@@ -45,27 +45,27 @@ pub struct Process<'rt, 'le, L: Ledger> {
     trace: bool,
     runtime: &'rt mut Runtime<'le, L>,
     buckets: HashMap<BID, Bucket>,
-    references: HashMap<RID, Rc<LockedBucket>>,
-    locked_buckets: HashMap<BID, Rc<LockedBucket>>,
+    references: HashMap<RID, BucketRef>,
+    locked_buckets: HashMap<BID, BucketRef>,
     moving_buckets: HashMap<BID, Bucket>,
-    moving_references: HashMap<RID, Rc<LockedBucket>>,
-    vm: Option<VM>,
+    moving_references: HashMap<RID, BucketRef>,
+    vm: Option<Interpreter>,
 }
 
-/// The target function to be invoked.
+/// Represents an interpreter.
+pub struct Interpreter {
+    invocation: Invocation,
+    module: ModuleRef,
+    memory: MemoryRef,
+}
+
+/// Represents an invocation.
 #[derive(Debug, Clone)]
-pub struct Target {
+pub struct Invocation {
     package: Address,
     export: String,
     function: String,
     args: Vec<Vec<u8>>,
-}
-
-/// Represents a VM instance.
-pub struct VM {
-    target: Target,
-    module: ModuleRef,
-    memory: MemoryRef,
 }
 
 impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
@@ -84,106 +84,154 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         }
     }
 
-    pub fn prepare_call_function(
-        &mut self,
-        package: Address,
-        blueprint: &str,
-        function: String,
-        args: Vec<Vec<u8>>,
-    ) -> Result<Target, RuntimeError> {
-        Ok(Target {
-            package,
-            export: format!("{}_main", blueprint),
-            function,
-            args,
-        })
+    /// Publishes a package.
+    pub fn publish(&mut self, code: &[u8]) -> Result<Address, RuntimeError> {
+        let address = self.runtime.new_package_address();
+        self.publish_at(code, address)?;
+        Ok(address)
     }
 
-    pub fn prepare_call_method(
-        &mut self,
-        component: Address,
-        method: String,
-        args: Vec<Vec<u8>>,
-    ) -> Result<Target, RuntimeError> {
-        let com = self
-            .runtime
-            .get_component(component)
-            .ok_or(RuntimeError::ComponentNotFound(component))?
-            .clone();
+    /// Publishes a package at a specific address.
+    pub fn publish_at(&mut self, code: &[u8], address: Address) -> Result<(), RuntimeError> {
+        if self.runtime.get_package(address).is_some() {
+            return Err(RuntimeError::PackageAlreadyExists(address));
+        }
+        validate_module(code)?;
 
-        let mut self_args = vec![scrypto_encode(&component)];
-        self_args.extend(args);
-
-        self.prepare_call_function(com.package(), com.blueprint(), method, self_args)
+        trace!(
+            self,
+            "New package: address = {:?}, code length = {}",
+            address,
+            code.len()
+        );
+        self.runtime
+            .put_package(address, Package::new(code.to_owned()));
+        Ok(())
     }
 
-    pub fn prepare_call_abi(
-        &mut self,
-        package: Address,
-        blueprint: &str,
-    ) -> Result<Target, RuntimeError> {
-        Ok(Target {
-            package,
-            export: format!("{}_abi", blueprint),
-            function: String::new(),
-            args: Vec::new(),
-        })
+    /// Reserve a bucket id.
+    pub fn reserve_bucket_id(&mut self) -> BID {
+        self.runtime.new_bucket_id()
     }
 
-    /// Put resources into this process's treasury.
-    pub fn put_resources(
+    /// Create a bucket of resources.
+    pub fn create_bucket(&mut self, amount: Amount, resource: Address) -> BID {
+        let bid = self.runtime.new_bucket_id();
+        self.buckets.insert(bid, Bucket::new(amount, resource));
+        bid
+    }
+
+    /// Put bucket into this process.
+    pub fn put_bucket(&mut self, bid: BID, bucket: Bucket) {
+        self.buckets.insert(bid, bucket);
+    }
+
+    /// Put buckets and references into this process.
+    pub fn put_buckets_and_refs(
         &mut self,
         buckets: HashMap<BID, Bucket>,
-        references: HashMap<RID, Rc<LockedBucket>>,
+        references: HashMap<RID, BucketRef>,
     ) {
         self.buckets.extend(buckets);
         self.references.extend(references);
     }
 
-    /// Take resources from this process.
-    pub fn take_resources(&mut self) -> (HashMap<BID, Bucket>, HashMap<RID, Rc<LockedBucket>>) {
+    /// Take all **moving** buckets and references from this process.
+    pub fn take_moving_buckets_and_refs(
+        &mut self,
+    ) -> (HashMap<BID, Bucket>, HashMap<RID, BucketRef>) {
         let buckets = self.moving_buckets.drain().collect();
         let references = self.moving_references.drain().collect();
         (buckets, references)
     }
 
+    /// Return owned buckets
+    pub fn owned_buckets(&mut self) -> Vec<BID> {
+        self.buckets.keys().copied().collect()
+    }
+
+    /// Withdraw specified resources into a reserved bucket.
+    pub fn withdraw_buckets_to_reserved(
+        &mut self,
+        amount: Amount,
+        resource: Address,
+        bid: BID,
+    ) -> Result<(), RuntimeError> {
+        assert!(!self.buckets.contains_key(&bid));
+
+        let candidates: BTreeSet<BID> = self
+            .buckets
+            .iter()
+            .filter(|(_, v)| v.resource() == resource)
+            .map(|(k, _)| *k)
+            .collect();
+
+        let mut needed = amount;
+        let mut remainder = Amount::zero();
+        for candidate in candidates {
+            if needed.is_zero() {
+                break;
+            }
+            let avail = self.buckets.remove(&candidate).unwrap().amount();
+            if avail > needed {
+                remainder = avail - needed;
+                needed = Amount::zero();
+            } else {
+                needed -= avail;
+            }
+        }
+
+        if needed.is_zero() {
+            self.create_bucket(remainder, resource);
+            self.put_bucket(bid, Bucket::new(amount, resource));
+            trace!(
+                self,
+                "Withdrawn: amount = {}, resource = {}, to bucket {}",
+                amount,
+                resource,
+                bid
+            );
+            Ok(())
+        } else {
+            Err(RuntimeError::AccountingError(
+                BucketError::InsufficientBalance,
+            ))
+        }
+    }
+
     /// Run the specified export with this process.
-    pub fn run(&mut self, target: Target) -> Result<Vec<u8>, RuntimeError> {
+    pub fn run(&mut self, invocation: Invocation) -> Result<Vec<u8>, RuntimeError> {
         #[cfg(not(feature = "alloc"))]
         let now = std::time::Instant::now();
         info!(
             self,
-            "Run started: package = {}, export = {}", target.package, target.export
+            "Run started: package = {}, export = {}", invocation.package, invocation.export
         );
 
         // Load the code
         let (module, memory) = self
             .runtime
-            .load_module(target.package)
-            .ok_or(RuntimeError::PackageNotFound(target.package))?;
-        let vm = VM {
-            target: target.clone(),
+            .load_module(invocation.package)
+            .ok_or(RuntimeError::PackageNotFound(invocation.package))?;
+        let vm = Interpreter {
+            invocation: invocation.clone(),
             module: module.clone(),
             memory,
         };
         self.vm = Some(vm);
 
         // run the main function
-        let invoke_res = module.invoke_export(target.export.as_str(), &[], self);
-        trace!(self, "Invoke result: {:?}", invoke_res);
-        let return_value = invoke_res
+        let result = module.invoke_export(invocation.export.as_str(), &[], self);
+        trace!(self, "Invoke result: {:?}", result);
+        let rtn = result
             .map_err(RuntimeError::InvokeError)?
             .ok_or(RuntimeError::NoReturnValue)?;
 
         // move resources based on return data
-        let output = match return_value {
+        let output = match rtn {
             RuntimeValue::I32(ptr) => {
                 let bytes = self.read_bytes(ptr)?;
-                self.transform_data(
-                    &bytes,
-                    Self::move_transient_reject_persisted,
-                    Self::move_references,
-                )?;
+                self.process_data(&bytes, Self::move_buckets, Self::move_references)?;
                 bytes
             }
             _ => {
@@ -203,27 +251,72 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         Ok(output)
     }
 
+    /// Prepare call function
+    pub fn prepare_call_function(
+        &mut self,
+        package: Address,
+        blueprint: &str,
+        function: &str,
+        args: Vec<Vec<u8>>,
+    ) -> Result<Invocation, RuntimeError> {
+        Ok(Invocation {
+            package,
+            export: format!("{}_main", blueprint),
+            function: function.to_owned(),
+            args,
+        })
+    }
+
+    /// Prepare call method
+    pub fn prepare_call_method(
+        &mut self,
+        component: Address,
+        method: &str,
+        args: Vec<Vec<u8>>,
+    ) -> Result<Invocation, RuntimeError> {
+        let com = self
+            .runtime
+            .get_component(component)
+            .ok_or(RuntimeError::ComponentNotFound(component))?
+            .clone();
+
+        let mut self_args = vec![scrypto_encode(&component)];
+        self_args.extend(args);
+
+        self.prepare_call_function(com.package(), com.blueprint(), method, self_args)
+    }
+
+    /// Prepare call ABI
+    pub fn prepare_call_abi(
+        &mut self,
+        package: Address,
+        blueprint: &str,
+    ) -> Result<Invocation, RuntimeError> {
+        Ok(Invocation {
+            package,
+            export: format!("{}_abi", blueprint),
+            function: String::new(),
+            args: Vec::new(),
+        })
+    }
+
     /// Call a function/method.
-    pub fn call(&mut self, target: Target) -> Result<Vec<u8>, RuntimeError> {
+    pub fn call(&mut self, invocation: Invocation) -> Result<Vec<u8>, RuntimeError> {
         // move resources
-        for arg in &target.args {
-            self.transform_data(
-                arg,
-                Self::move_transient_reject_persisted,
-                Self::move_references,
-            )?;
+        for arg in &invocation.args {
+            self.process_data(arg, Self::move_buckets, Self::move_references)?;
         }
-        let (buckets_out, references_out) = self.take_resources();
+        let (buckets_out, references_out) = self.take_moving_buckets_and_refs();
         let mut process = Process::new(self.depth + 1, self.trace, self.runtime);
-        process.put_resources(buckets_out, references_out);
+        process.put_buckets_and_refs(buckets_out, references_out);
 
         // run the function and finalize
-        let result = process.run(target)?;
+        let result = process.run(invocation)?;
         process.finalize()?;
 
         // move resources
-        let (buckets_in, references_in) = process.take_resources();
-        self.put_resources(buckets_in, references_in);
+        let (buckets_in, references_in) = process.take_moving_buckets_and_refs();
+        self.put_buckets_and_refs(buckets_in, references_in);
 
         // scan locked buckets for some might have been unlocked by child processes
         let bids: Vec<BID> = self
@@ -242,44 +335,33 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         Ok(result)
     }
 
-    /// Return the package address
-    pub fn package(&self) -> Result<Address, RuntimeError> {
-        self.vm
-            .as_ref()
-            .ok_or(RuntimeError::VmNotStarted)
-            .map(|vm| vm.target.package)
+    /// Call a function
+    pub fn call_function(
+        &mut self,
+        package: Address,
+        blueprint: &str,
+        function: &str,
+        args: Vec<Vec<u8>>,
+    ) -> Result<Vec<u8>, RuntimeError> {
+        let invocation = self.prepare_call_function(package, blueprint, function, args)?;
+        self.call(invocation)
     }
 
-    /// Return the function name
-    pub fn function(&self) -> Result<String, RuntimeError> {
-        self.vm
-            .as_ref()
-            .ok_or(RuntimeError::VmNotStarted)
-            .map(|vm| vm.target.function.clone())
+    /// Call a method
+    pub fn call_method(
+        &mut self,
+        component: Address,
+        method: &str,
+        args: Vec<Vec<u8>>,
+    ) -> Result<Vec<u8>, RuntimeError> {
+        let invocation = self.prepare_call_method(component, method, args)?;
+        self.call(invocation)
     }
 
-    /// Return the function name
-    pub fn args(&self) -> Result<Vec<Vec<u8>>, RuntimeError> {
-        self.vm
-            .as_ref()
-            .ok_or(RuntimeError::VmNotStarted)
-            .map(|vm| vm.target.args.clone())
-    }
-
-    /// Return the module reference
-    pub fn module(&self) -> Result<ModuleRef, RuntimeError> {
-        self.vm
-            .as_ref()
-            .ok_or(RuntimeError::VmNotStarted)
-            .map(|vm| vm.module.clone())
-    }
-
-    /// Return the memory reference
-    pub fn memory(&self) -> Result<MemoryRef, RuntimeError> {
-        self.vm
-            .as_ref()
-            .ok_or(RuntimeError::VmNotStarted)
-            .map(|vm| vm.memory.clone())
+    /// Call ABI
+    pub fn call_abi(&mut self, package: Address, blueprint: &str) -> Result<Vec<u8>, RuntimeError> {
+        let invocation = self.prepare_call_abi(package, blueprint)?;
+        self.call(invocation)
     }
 
     /// Finalize this process.
@@ -287,7 +369,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         let mut success = true;
 
         for (bid, bucket) in &self.buckets {
-            if bucket.amount() != U256::zero() {
+            if bucket.amount() != Amount::zero() {
                 warn!(self, "Pending bucket: {:?} {:?}", bid, bucket);
                 success = false;
             }
@@ -325,576 +407,63 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         }
     }
 
-    pub fn publish(
-        &mut self,
-        input: PublishPackageInput,
-    ) -> Result<PublishPackageOutput, RuntimeError> {
-        let address = self.runtime.new_package_address();
-
-        if self.runtime.get_package(address).is_some() {
-            return Err(RuntimeError::PackageAlreadyExists(address));
-        }
-        validate_module(&input.code)?;
-
-        trace!(
-            self,
-            "New package: address = {:?}, code length = {}",
-            address,
-            input.code.len()
-        );
-        self.runtime.put_package(address, Package::new(input.code));
-
-        Ok(PublishPackageOutput { package: address })
+    /// Return the package address
+    fn package(&self) -> Result<Address, RuntimeError> {
+        self.vm
+            .as_ref()
+            .ok_or(RuntimeError::VmNotStarted)
+            .map(|vm| vm.invocation.package)
     }
 
-    pub fn call_function(
-        &mut self,
-        input: CallFunctionInput,
-    ) -> Result<CallFunctionOutput, RuntimeError> {
-        trace!(
-            self,
-            "CALL started: package = {}, blueprint = {}, function = {}, args = {:?}",
-            input.package,
-            input.blueprint,
-            input.function,
-            input.args
-        );
-
-        let target = self.prepare_call_function(
-            input.package,
-            input.blueprint.as_str(),
-            input.function,
-            input.args,
-        )?;
-        let result = self.call(target);
-
-        trace!(self, "CALL finished");
-        Ok(CallFunctionOutput { rtn: result? })
+    /// Return the function name
+    fn function(&self) -> Result<String, RuntimeError> {
+        self.vm
+            .as_ref()
+            .ok_or(RuntimeError::VmNotStarted)
+            .map(|vm| vm.invocation.function.clone())
     }
 
-    pub fn call_method(
-        &mut self,
-        input: CallMethodInput,
-    ) -> Result<CallMethodOutput, RuntimeError> {
-        trace!(
-            self,
-            "CALL started: component = {}, method = {}, args = {:?}",
-            input.component,
-            input.method,
-            input.args
-        );
-
-        let target = self.prepare_call_method(input.component, input.method, input.args)?;
-        let result = self.call(target);
-
-        trace!(self, "CALL finished");
-        Ok(CallMethodOutput { rtn: result? })
+    /// Return the function name
+    fn args(&self) -> Result<Vec<Vec<u8>>, RuntimeError> {
+        self.vm
+            .as_ref()
+            .ok_or(RuntimeError::VmNotStarted)
+            .map(|vm| vm.invocation.args.clone())
     }
 
-    pub fn create_component(
-        &mut self,
-        input: CreateComponentInput,
-    ) -> Result<CreateComponentOutput, RuntimeError> {
-        let address = self.runtime.new_component_address();
-
-        if self.runtime.get_component(address).is_some() {
-            return Err(RuntimeError::ComponentAlreadyExists(address));
-        }
-
-        let new_state = self.transform_data(
-            &input.state,
-            Self::convert_transient_to_persist,
-            Self::reject_references,
-        )?;
-        trace!(
-            self,
-            "New component: address = {:?}, state = {:?}",
-            address,
-            new_state
-        );
-
-        let component = Component::new(self.package()?, input.blueprint, new_state);
-        self.runtime.put_component(address, component);
-
-        Ok(CreateComponentOutput { component: address })
+    /// Return the module reference
+    fn module(&self) -> Result<ModuleRef, RuntimeError> {
+        self.vm
+            .as_ref()
+            .ok_or(RuntimeError::VmNotStarted)
+            .map(|vm| vm.module.clone())
     }
 
-    pub fn get_component_info(
-        &mut self,
-        input: GetComponentInfoInput,
-    ) -> Result<GetComponentInfoOutput, RuntimeError> {
-        let package = self.package()?;
-
-        let component = self
-            .runtime
-            .get_component(input.component)
-            .ok_or(RuntimeError::ComponentNotFound(input.component))?;
-        if package != component.package() {
-            return Err(RuntimeError::UnauthorizedAccess);
-        }
-
-        Ok(GetComponentInfoOutput {
-            package: component.package(),
-            blueprint: component.blueprint().to_owned(),
-        })
+    /// Return the memory reference
+    fn memory(&self) -> Result<MemoryRef, RuntimeError> {
+        self.vm
+            .as_ref()
+            .ok_or(RuntimeError::VmNotStarted)
+            .map(|vm| vm.memory.clone())
     }
 
-    pub fn get_component_state(
-        &mut self,
-        input: GetComponentStateInput,
-    ) -> Result<GetComponentStateOutput, RuntimeError> {
-        let package = self.package()?;
-
-        let component = self
-            .runtime
-            .get_component(input.component)
-            .ok_or(RuntimeError::ComponentNotFound(input.component))?;
-        if package != component.package() {
-            return Err(RuntimeError::UnauthorizedAccess);
-        }
-
-        let state = component.state();
-
-        Ok(GetComponentStateOutput {
-            state: state.to_owned(),
-        })
-    }
-
-    pub fn put_component_state(
-        &mut self,
-        input: PutComponentStateInput,
-    ) -> Result<PutComponentStateOutput, RuntimeError> {
-        let package = self.package()?;
-
-        let new_state = self.transform_data(
-            &input.state,
-            Self::convert_transient_to_persist,
-            Self::reject_references,
-        )?;
-        trace!(self, "Transformed: {:?}", new_state);
-
-        let component = self
-            .runtime
-            .get_component_mut(input.component)
-            .ok_or(RuntimeError::ComponentNotFound(input.component))?;
-        if package != component.package() {
-            return Err(RuntimeError::UnauthorizedAccess);
-        }
-
-        component.set_state(new_state);
-
-        Ok(PutComponentStateOutput {})
-    }
-
-    pub fn create_storage(
-        &mut self,
-        _input: CreateStorageInput,
-    ) -> Result<CreateStorageOutput, RuntimeError> {
-        let sid = self.runtime.new_sid();
-
-        self.runtime.put_storage(sid, Storage::new(self.package()?));
-
-        Ok(CreateStorageOutput { storage: sid })
-    }
-
-    pub fn get_storage_entry(
-        &mut self,
-        input: GetStorageEntryInput,
-    ) -> Result<GetStorageEntryOutput, RuntimeError> {
-        let package = self.package()?;
-
-        let storage = self
-            .runtime
-            .get_storage(input.storage)
-            .ok_or(RuntimeError::StorageNotFound(input.storage))?;
-        if package != storage.owner() {
-            return Err(RuntimeError::UnauthorizedAccess);
-        }
-
-        Ok(GetStorageEntryOutput {
-            value: storage.get_entry(&input.key).map(|e| e.to_vec()),
-        })
-    }
-
-    pub fn put_storage_entry(
-        &mut self,
-        input: PutStorageEntryInput,
-    ) -> Result<PutStorageEntryOutput, RuntimeError> {
-        let package = self.package()?;
-
-        let new_key = self.transform_data(
-            &input.key,
-            Self::convert_transient_to_persist,
-            Self::reject_references,
-        )?;
-        trace!(self, "Transformed key: {:?}", new_key);
-        let new_value = self.transform_data(
-            &input.value,
-            Self::convert_transient_to_persist,
-            Self::reject_references,
-        )?;
-        trace!(self, "Transformed value: {:?}", new_value);
-
-        let storage = self
-            .runtime
-            .get_storage_mut(input.storage)
-            .ok_or(RuntimeError::StorageNotFound(input.storage))?;
-        if package != storage.owner() {
-            return Err(RuntimeError::UnauthorizedAccess);
-        }
-
-        storage.set_entry(new_key, new_value);
-
-        Ok(PutStorageEntryOutput {})
-    }
-
-    pub fn create_resource_mutable(
-        &mut self,
-        input: CreateResourceMutableInput,
-    ) -> Result<CreateResourceMutableOutput, RuntimeError> {
-        let resource = Resource {
-            metadata: input.metadata,
-            minter: Some(input.minter),
-            supply: None,
-        };
-
-        let address = self.runtime.new_resource_address();
-
-        if self.runtime.get_resource(address).is_some() {
-            return Err(RuntimeError::ResourceAlreadyExists(address));
-        } else {
-            trace!(self, "New resource: {:?}", address);
-
-            self.runtime.put_resource(address, resource);
-        }
-        Ok(CreateResourceMutableOutput { resource: address })
-    }
-
-    pub fn create_resource_fixed(
-        &mut self,
-        input: CreateResourceFixedInput,
-    ) -> Result<CreateResourceFixedOutput, RuntimeError> {
-        let resource = Resource {
-            metadata: input.metadata,
-            minter: None,
-            supply: Some(input.supply),
-        };
-
-        let address = self.runtime.new_resource_address();
-
-        if self.runtime.get_resource(address).is_some() {
-            return Err(RuntimeError::ResourceAlreadyExists(address));
-        } else {
-            trace!(self, "New resource: {:?}", address);
-
-            self.runtime.put_resource(address, resource);
-        }
-
-        let bucket = Bucket::new(input.supply, address);
-        let bid = self.runtime.new_transient_bid();
-        self.buckets.insert(bid, bucket);
-
-        Ok(CreateResourceFixedOutput { bucket: bid })
-    }
-
-    pub fn get_resource_info(
-        &mut self,
-        input: GetResourceInfoInput,
-    ) -> Result<GetResourceInfoOutput, RuntimeError> {
-        let resource = self
-            .runtime
-            .get_resource(input.resource)
-            .ok_or(RuntimeError::ResourceNotFound(input.resource))?
-            .clone();
-
-        Ok(GetResourceInfoOutput {
-            metadata: resource.metadata,
-            minter: resource.minter,
-            supply: resource.supply,
-        })
-    }
-
-    pub fn mint_resource(
-        &mut self,
-        input: MintResourceInput,
-    ) -> Result<MintResourceOutput, RuntimeError> {
-        let resource = self
-            .runtime
-            .get_resource(input.resource)
-            .ok_or(RuntimeError::ResourceNotFound(input.resource))?;
-
-        match resource.minter {
-            Some(address) => {
-                let authorized = match address {
-                    Address::Package(_) => address == self.package()?,
-                    Address::Component(_) => {
-                        self.runtime
-                            .get_component(address)
-                            .ok_or(RuntimeError::ComponentNotFound(address))?
-                            .package()
-                            == self.package()?
-                    }
-                    _ => false,
-                };
-                if !authorized {
-                    return Err(RuntimeError::UnauthorizedToMint);
-                }
-            }
-            _ => {
-                return Err(RuntimeError::FixedResourceMintNotAllowed);
-            }
-        }
-
-        let bucket = Bucket::new(input.amount, input.resource);
-        let bid = self.runtime.new_transient_bid();
-        self.buckets.insert(bid, bucket);
-        Ok(MintResourceOutput { bucket: bid })
-    }
-
-    pub fn new_bucket(
-        &mut self,
-        input: NewEmptyBucketInput,
-    ) -> Result<NewEmptyBucketOutput, RuntimeError> {
-        let new_bucket = Bucket::new(U256::zero(), input.resource);
-        let new_bid = self.runtime.new_transient_bid();
-        self.buckets.insert(new_bid, new_bucket);
-
-        Ok(NewEmptyBucketOutput { bucket: new_bid })
-    }
-
-    pub fn combine_buckets(
-        &mut self,
-        input: CombineBucketsInput,
-    ) -> Result<CombineBucketsOutput, RuntimeError> {
-        let package = self.package()?;
-
-        let other = if input.other.is_persisted() {
-            let bucket = self
-                .runtime
-                .get_bucket_mut(input.other)
-                .ok_or(RuntimeError::BucketNotFound)?;
-            bucket
-                .take(bucket.amount(), package)
-                .map_err(RuntimeError::AccountingError)?
-        } else {
-            self.buckets
-                .remove(&input.other)
-                .ok_or(RuntimeError::BucketNotFound)?
-        };
-
-        if input.bucket.is_persisted() {
-            self.runtime
-                .get_bucket_mut(input.bucket)
-                .ok_or(RuntimeError::BucketNotFound)?
-                .put(other, package)
-                .map_err(RuntimeError::AccountingError)?;
-        } else {
-            self.buckets
-                .get_mut(&input.bucket)
-                .ok_or(RuntimeError::BucketNotFound)?
-                .put(other)
-                .map_err(RuntimeError::AccountingError)?;
-        }
-
-        Ok(CombineBucketsOutput {})
-    }
-
-    pub fn split_bucket(
-        &mut self,
-        input: SplitBucketInput,
-    ) -> Result<SplitBucketOutput, RuntimeError> {
-        let package = self.package()?;
-
-        let new_bucket = if input.bucket.is_persisted() {
-            self.runtime
-                .get_bucket_mut(input.bucket)
-                .ok_or(RuntimeError::BucketNotFound)?
-                .take(input.amount, package)
-                .map_err(RuntimeError::AccountingError)?
-        } else {
-            self.buckets
-                .get_mut(&input.bucket)
-                .ok_or(RuntimeError::BucketNotFound)?
-                .take(input.amount)
-                .map_err(RuntimeError::AccountingError)?
-        };
-        let new_bid = self.runtime.new_transient_bid();
-        self.buckets.insert(new_bid, new_bucket);
-
-        Ok(SplitBucketOutput { bucket: new_bid })
-    }
-
-    pub fn get_amount(&mut self, input: GetAmountInput) -> Result<GetAmountOutput, RuntimeError> {
-        let bid = input.bucket;
-        let amount = self
-            .buckets
-            .get(&bid)
-            .map(|b| b.amount())
-            .or_else(|| self.locked_buckets.get(&bid).map(|x| x.bucket().amount()))
-            .ok_or(RuntimeError::BucketNotFound)?;
-
-        Ok(GetAmountOutput { amount })
-    }
-
-    pub fn get_resource(
-        &mut self,
-        input: GetResourceInput,
-    ) -> Result<GetResourceOutput, RuntimeError> {
-        let bid = input.bucket;
-        let resource = self
-            .buckets
-            .get(&bid)
-            .map(|b| b.resource())
-            .or_else(|| self.locked_buckets.get(&bid).map(|x| x.bucket().resource()))
-            .ok_or(RuntimeError::BucketNotFound)?;
-
-        Ok(GetResourceOutput { resource })
-    }
-
-    pub fn borrow_immutable(
-        &mut self,
-        input: BorrowImmutableInput,
-    ) -> Result<BorrowImmutableOutput, RuntimeError> {
-        let bid = input.bucket;
-        let rid = self.runtime.new_rid();
-        trace!(self, "Borrowing: bid =  {:?}, rid = {:?}", bid, rid);
-
-        match self.locked_buckets.get_mut(&bid) {
-            Some(bucket_rc) => {
-                // re-borrow
-                self.references.insert(rid, bucket_rc.clone());
-            }
-            None => {
-                // first time borrow
-                let bucket = Rc::new(LockedBucket::new(
-                    bid,
-                    self.buckets
-                        .remove(&bid)
-                        .ok_or(RuntimeError::BucketNotFound)?,
-                ));
-                self.references.insert(rid, bucket.clone());
-                self.locked_buckets.insert(bid, bucket);
-            }
-        }
-
-        Ok(BorrowImmutableOutput { reference: rid })
-    }
-
-    pub fn drop_reference(
-        &mut self,
-        input: DropReferenceInput,
-    ) -> Result<DropReferenceOutput, RuntimeError> {
-        let rid = input.reference;
-        if rid.is_mutable() {
-            todo!()
-        };
-
-        let (count, bid) = {
-            let bucket = self
-                .references
-                .remove(&rid)
-                .ok_or(RuntimeError::ReferenceNotFound)?;
-            trace!(self, "Returning {:?}: {:?}", rid, bucket);
-            (Rc::strong_count(&bucket) - 1, bucket.bucket_id())
-        };
-
-        if count == 1 {
-            if let Some(b) = self.locked_buckets.remove(&bid) {
-                self.buckets.insert(bid, Rc::try_unwrap(b).unwrap().into());
-            }
-        }
-
-        Ok(DropReferenceOutput {})
-    }
-
-    pub fn get_amount_ref(
-        &mut self,
-        input: GetAmountRefInput,
-    ) -> Result<GetAmountRefOutput, RuntimeError> {
-        let reference = self
-            .references
-            .get(&input.reference)
-            .ok_or(RuntimeError::ReferenceNotFound)?;
-
-        Ok(GetAmountRefOutput {
-            amount: reference.bucket().amount(),
-        })
-    }
-
-    pub fn get_resource_ref(
-        &mut self,
-        input: GetResourceRefInput,
-    ) -> Result<GetResourceRefOutput, RuntimeError> {
-        let reference = self
-            .references
-            .get(&input.reference)
-            .ok_or(RuntimeError::ReferenceNotFound)?;
-
-        Ok(GetResourceRefOutput {
-            resource: reference.bucket().resource(),
-        })
-    }
-
-    pub fn emit_log(&mut self, input: EmitLogInput) -> Result<EmitLogOutput, RuntimeError> {
-        let level = match input.level {
-            0 => Ok(Level::Error),
-            1 => Ok(Level::Warn),
-            2 => Ok(Level::Info),
-            3 => Ok(Level::Debug),
-            4 => Ok(Level::Trace),
-            _ => Err(RuntimeError::InvalidLogLevel),
-        };
-
-        self.runtime.add_log(level?, input.message);
-
-        Ok(EmitLogOutput {})
-    }
-
-    pub fn get_package_address(
-        &mut self,
-        _input: GetPackageAddressInput,
-    ) -> Result<GetPackageAddressOutput, RuntimeError> {
-        Ok(GetPackageAddressOutput {
-            address: self.package()?,
-        })
-    }
-
-    pub fn get_call_data(
-        &mut self,
-        _input: GetCallDataInput,
-    ) -> Result<GetCallDataOutput, RuntimeError> {
-        Ok(GetCallDataOutput {
-            function: self.function()?,
-            args: self.args()?,
-        })
-    }
-
-    pub fn get_transaction_hash(
-        &mut self,
-        _input: GetTransactionHashInput,
-    ) -> Result<GetTransactionHashOutput, RuntimeError> {
-        Ok(GetTransactionHashOutput {
-            tx_hash: self.runtime.tx_hash(),
-        })
-    }
-
-    /// Transform SBOR data by applying function on BID and RID.
-    fn transform_data(
+    /// Process SBOR data by applying functions on BID and RID.
+    fn process_data(
         &mut self,
         data: &[u8],
         bf: fn(&mut Self, BID) -> Result<BID, RuntimeError>,
         rf: fn(&mut Self, RID) -> Result<RID, RuntimeError>,
     ) -> Result<Vec<u8>, RuntimeError> {
         let value = parse_any(data).map_err(RuntimeError::InvalidData)?;
-        let transformed = self.trans(value, bf, rf)?;
+        let transformed = self.visit(value, bf, rf)?;
 
         let mut encoder = Encoder::with_type(Vec::with_capacity(data.len() + 512));
         write_any(None, &transformed, &mut encoder);
         Ok(encoder.into())
     }
 
-    /// Transform SBOR value. TODO: stack overflow
-    fn trans(
+    // TODO: stack overflow
+    fn visit(
         &mut self,
         v: Value,
         bf: fn(&mut Self, BID) -> Result<BID, RuntimeError>,
@@ -917,45 +486,45 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
             | Value::String(_) => Ok(v),
             // rust types
             Value::Option(x) => match *x {
-                Some(value) => Ok(Value::Option(Box::new(Some(self.trans(value, bf, rf)?)))),
+                Some(value) => Ok(Value::Option(Box::new(Some(self.visit(value, bf, rf)?)))),
                 None => Ok(Value::Option(Box::new(None))),
             },
-            Value::Box(value) => Ok(Value::Box(Box::new(self.trans(*value, bf, rf)?))),
-            Value::Array(ty, values) => Ok(Value::Array(ty, self.trans_vec(values, bf, rf)?)),
-            Value::Tuple(values) => Ok(Value::Tuple(self.trans_vec(values, bf, rf)?)),
-            Value::Struct(fields) => Ok(Value::Struct(self.trans_fields(fields, bf, rf)?)),
+            Value::Box(value) => Ok(Value::Box(Box::new(self.visit(*value, bf, rf)?))),
+            Value::Array(ty, values) => Ok(Value::Array(ty, self.visit_vec(values, bf, rf)?)),
+            Value::Tuple(values) => Ok(Value::Tuple(self.visit_vec(values, bf, rf)?)),
+            Value::Struct(fields) => Ok(Value::Struct(self.visit_fields(fields, bf, rf)?)),
             Value::Enum(index, fields) => {
-                Ok(Value::Enum(index, self.trans_fields(fields, bf, rf)?))
+                Ok(Value::Enum(index, self.visit_fields(fields, bf, rf)?))
             }
             // collections
-            Value::Vec(ty, values) => Ok(Value::Vec(ty, self.trans_vec(values, bf, rf)?)),
-            Value::TreeSet(ty, values) => Ok(Value::TreeSet(ty, self.trans_vec(values, bf, rf)?)),
-            Value::HashSet(ty, values) => Ok(Value::HashSet(ty, self.trans_vec(values, bf, rf)?)),
+            Value::Vec(ty, values) => Ok(Value::Vec(ty, self.visit_vec(values, bf, rf)?)),
+            Value::TreeSet(ty, values) => Ok(Value::TreeSet(ty, self.visit_vec(values, bf, rf)?)),
+            Value::HashSet(ty, values) => Ok(Value::HashSet(ty, self.visit_vec(values, bf, rf)?)),
             Value::TreeMap(ty_k, ty_v, values) => {
-                Ok(Value::TreeMap(ty_k, ty_v, self.trans_map(values, bf, rf)?))
+                Ok(Value::TreeMap(ty_k, ty_v, self.visit_map(values, bf, rf)?))
             }
             Value::HashMap(ty_k, ty_v, values) => {
-                Ok(Value::HashMap(ty_k, ty_v, self.trans_map(values, bf, rf)?))
+                Ok(Value::HashMap(ty_k, ty_v, self.visit_map(values, bf, rf)?))
             }
             // custom types
-            Value::Custom(ty, data) => self.trans_custom(ty, data, bf, rf),
+            Value::Custom(ty, data) => self.visit_custom(ty, data, bf, rf),
         }
     }
 
-    fn trans_fields(
+    fn visit_fields(
         &mut self,
         fields: Fields,
         bf: fn(&mut Self, BID) -> Result<BID, RuntimeError>,
         rf: fn(&mut Self, RID) -> Result<RID, RuntimeError>,
     ) -> Result<Fields, RuntimeError> {
         match fields {
-            Fields::Named(named) => Ok(Fields::Named(self.trans_vec(named, bf, rf)?)),
-            Fields::Unnamed(unnamed) => Ok(Fields::Unnamed(self.trans_vec(unnamed, bf, rf)?)),
+            Fields::Named(named) => Ok(Fields::Named(self.visit_vec(named, bf, rf)?)),
+            Fields::Unnamed(unnamed) => Ok(Fields::Unnamed(self.visit_vec(unnamed, bf, rf)?)),
             Fields::Unit => Ok(Fields::Unit),
         }
     }
 
-    fn trans_vec(
+    fn visit_vec(
         &mut self,
         values: Vec<Value>,
         bf: fn(&mut Self, BID) -> Result<BID, RuntimeError>,
@@ -963,12 +532,12 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
     ) -> Result<Vec<Value>, RuntimeError> {
         let mut result = Vec::new();
         for e in values {
-            result.push(self.trans(e, bf, rf)?);
+            result.push(self.visit(e, bf, rf)?);
         }
         Ok(result)
     }
 
-    fn trans_map(
+    fn visit_map(
         &mut self,
         values: Vec<(Value, Value)>,
         bf: fn(&mut Self, BID) -> Result<BID, RuntimeError>,
@@ -976,12 +545,12 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
     ) -> Result<Vec<(Value, Value)>, RuntimeError> {
         let mut result = Vec::new();
         for (k, v) in values {
-            result.push((self.trans(k, bf, rf)?, self.trans(v, bf, rf)?));
+            result.push((self.visit(k, bf, rf)?, self.visit(v, bf, rf)?));
         }
         Ok(result)
     }
 
-    fn trans_custom(
+    fn visit_custom(
         &mut self,
         ty: u8,
         data: Vec<u8>,
@@ -1011,53 +580,36 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         }
     }
 
-    /// Convert transient buckets to persisted buckets
-    fn convert_transient_to_persist(&mut self, bid: BID) -> Result<BID, RuntimeError> {
-        let package = self.package()?;
-        if bid.is_transient() {
-            let bucket = self
-                .buckets
-                .remove(&bid)
-                .ok_or(RuntimeError::BucketNotFound)?;
-            let new_bid = self.runtime.new_persisted_bid();
-            self.runtime
-                .put_bucket(new_bid, PersistedBucket::new(bucket, package));
-            trace!(self, "Converting {:?} to {:?}", bid, new_bid);
-            Ok(new_bid)
-        } else {
-            Ok(bid)
-        }
+    /// Remove transient buckets from this process
+    fn move_buckets(&mut self, bid: BID) -> Result<BID, RuntimeError> {
+        let bucket = self
+            .buckets
+            .remove(&bid)
+            .ok_or(RuntimeError::BucketNotFound(bid))?;
+        trace!(self, "Moving {:?}: {:?}", bid, bucket);
+        self.moving_buckets.insert(bid, bucket);
+        Ok(bid)
     }
 
-    /// Remove transient buckets from this process, and reject persisted buckets.
-    fn move_transient_reject_persisted(&mut self, bid: BID) -> Result<BID, RuntimeError> {
-        if bid.is_transient() {
-            let bucket = self
-                .buckets
-                .remove(&bid)
-                .ok_or(RuntimeError::BucketNotFound)?;
-            trace!(self, "Moving {:?}: {:?}", bid, bucket);
-            self.moving_buckets.insert(bid, bucket);
-            Ok(bid)
-        } else {
-            Err(RuntimeError::PersistedBucketMoveNotAllowed)
-        }
-    }
-
-    /// Remove transient buckets from this process, and reject persisted buckets.
+    /// Remove transient buckets from this process
     fn move_references(&mut self, rid: RID) -> Result<RID, RuntimeError> {
         let bucket_ref = self
             .references
             .remove(&rid)
-            .ok_or(RuntimeError::BucketNotFound)?;
+            .ok_or(RuntimeError::ReferenceNotFound(rid))?;
         trace!(self, "Moving {:?}: {:?}", rid, bucket_ref);
         self.moving_references.insert(rid, bucket_ref);
         Ok(rid)
     }
 
-    /// Remove transient buckets from this process, and reject persisted buckets.
+    /// Reject buckets movements
+    fn reject_buckets(&mut self, _: BID) -> Result<BID, RuntimeError> {
+        Err(RuntimeError::BucketMoveNotAllowed)
+    }
+
+    /// Reject references movements
     fn reject_references(&mut self, _: RID) -> Result<RID, RuntimeError> {
-        Err(RuntimeError::ReferenceNotAllowed)
+        Err(RuntimeError::ReferenceMoveNotAllowed)
     }
 
     /// Send a byte array to wasm instance.
@@ -1109,8 +661,8 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         &mut self,
         args: RuntimeArgs,
         handler: fn(&mut Self, input: I) -> Result<O, RuntimeError>,
-        trace: bool,
     ) -> Result<Option<RuntimeValue>, Trap> {
+        let op: u32 = args.nth_checked(0)?;
         let input_ptr: u32 = args.nth_checked(1)?;
         let input_len: u32 = args.nth_checked(2)?;
         let input_bytes = self
@@ -1119,18 +671,601 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
             .map_err(|e| Trap::from(RuntimeError::MemoryAccessError(e)))?;
         let input: I = scrypto_decode(&input_bytes)
             .map_err(|e| Trap::from(RuntimeError::InvalidRequest(e)))?;
-        if trace {
+        if op != PUBLISH {
             trace!(self, "{:?}", input);
         }
 
         let output: O = handler(self, input).map_err(Trap::from)?;
         let output_bytes = scrypto_encode(&output);
         let output_ptr = self.send_bytes(&output_bytes).map_err(Trap::from)?;
-        if trace {
+        if op != PUBLISH {
             trace!(self, "{:?}", output);
         }
 
         Ok(Some(RuntimeValue::I32(output_ptr)))
+    }
+
+    //============================
+    // SYSTEM CALL HANDLERS START
+    //============================
+
+    fn handle_publish(
+        &mut self,
+        input: PublishPackageInput,
+    ) -> Result<PublishPackageOutput, RuntimeError> {
+        Ok(PublishPackageOutput {
+            package: self.publish(&input.code)?,
+        })
+    }
+
+    fn handle_call_function(
+        &mut self,
+        input: CallFunctionInput,
+    ) -> Result<CallFunctionOutput, RuntimeError> {
+        trace!(
+            self,
+            "CALL started: package = {}, blueprint = {}, function = {}, args = {:?}",
+            input.package,
+            input.blueprint,
+            input.function,
+            input.args
+        );
+
+        let invocation = self.prepare_call_function(
+            input.package,
+            input.blueprint.as_str(),
+            input.function.as_str(),
+            input.args,
+        )?;
+        let result = self.call(invocation);
+
+        trace!(self, "CALL finished");
+        Ok(CallFunctionOutput { rtn: result? })
+    }
+
+    fn handle_call_method(
+        &mut self,
+        input: CallMethodInput,
+    ) -> Result<CallMethodOutput, RuntimeError> {
+        trace!(
+            self,
+            "CALL started: component = {}, method = {}, args = {:?}",
+            input.component,
+            input.method,
+            input.args
+        );
+
+        let invocation =
+            self.prepare_call_method(input.component, input.method.as_str(), input.args)?;
+        let result = self.call(invocation);
+
+        trace!(self, "CALL finished");
+        Ok(CallMethodOutput { rtn: result? })
+    }
+
+    fn handle_create_component(
+        &mut self,
+        input: CreateComponentInput,
+    ) -> Result<CreateComponentOutput, RuntimeError> {
+        let address = self.runtime.new_component_address();
+
+        if self.runtime.get_component(address).is_some() {
+            return Err(RuntimeError::ComponentAlreadyExists(address));
+        }
+
+        let new_state =
+            self.process_data(&input.state, Self::reject_buckets, Self::reject_references)?;
+        trace!(
+            self,
+            "New component: address = {:?}, state = {:?}",
+            address,
+            new_state
+        );
+
+        let component = Component::new(self.package()?, input.blueprint, new_state);
+        self.runtime.put_component(address, component);
+
+        Ok(CreateComponentOutput { component: address })
+    }
+
+    fn handle_get_component_info(
+        &mut self,
+        input: GetComponentInfoInput,
+    ) -> Result<GetComponentInfoOutput, RuntimeError> {
+        let package = self.package()?;
+
+        let component = self
+            .runtime
+            .get_component(input.component)
+            .ok_or(RuntimeError::ComponentNotFound(input.component))?;
+        if package != component.package() {
+            return Err(RuntimeError::UnauthorizedAccess);
+        }
+
+        Ok(GetComponentInfoOutput {
+            package: component.package(),
+            blueprint: component.blueprint().to_owned(),
+        })
+    }
+
+    fn handle_get_component_state(
+        &mut self,
+        input: GetComponentStateInput,
+    ) -> Result<GetComponentStateOutput, RuntimeError> {
+        let package = self.package()?;
+
+        let component = self
+            .runtime
+            .get_component(input.component)
+            .ok_or(RuntimeError::ComponentNotFound(input.component))?;
+        if package != component.package() {
+            return Err(RuntimeError::UnauthorizedAccess);
+        }
+
+        let state = component.state();
+
+        Ok(GetComponentStateOutput {
+            state: state.to_owned(),
+        })
+    }
+
+    fn handle_put_component_state(
+        &mut self,
+        input: PutComponentStateInput,
+    ) -> Result<PutComponentStateOutput, RuntimeError> {
+        let package = self.package()?;
+
+        let new_state =
+            self.process_data(&input.state, Self::reject_buckets, Self::reject_references)?;
+        trace!(self, "Transformed: {:?}", new_state);
+
+        let component = self
+            .runtime
+            .get_component_mut(input.component)
+            .ok_or(RuntimeError::ComponentNotFound(input.component))?;
+        if package != component.package() {
+            return Err(RuntimeError::UnauthorizedAccess);
+        }
+
+        component.set_state(new_state);
+
+        Ok(PutComponentStateOutput {})
+    }
+
+    fn handle_create_storage(
+        &mut self,
+        _input: CreateStorageInput,
+    ) -> Result<CreateStorageOutput, RuntimeError> {
+        let sid = self.runtime.new_sid();
+
+        self.runtime.put_storage(sid, Storage::new(self.package()?));
+
+        Ok(CreateStorageOutput { storage: sid })
+    }
+
+    fn handle_get_storage_entry(
+        &mut self,
+        input: GetStorageEntryInput,
+    ) -> Result<GetStorageEntryOutput, RuntimeError> {
+        let package = self.package()?;
+
+        let storage = self
+            .runtime
+            .get_storage(input.storage)
+            .ok_or(RuntimeError::StorageNotFound(input.storage))?;
+        if package != storage.owner() {
+            return Err(RuntimeError::UnauthorizedAccess);
+        }
+
+        Ok(GetStorageEntryOutput {
+            value: storage.get_entry(&input.key).map(|e| e.to_vec()),
+        })
+    }
+
+    fn handle_put_storage_entry(
+        &mut self,
+        input: PutStorageEntryInput,
+    ) -> Result<PutStorageEntryOutput, RuntimeError> {
+        let package = self.package()?;
+
+        let new_key =
+            self.process_data(&input.key, Self::reject_buckets, Self::reject_references)?;
+        trace!(self, "Transformed key: {:?}", new_key);
+        let new_value =
+            self.process_data(&input.value, Self::reject_buckets, Self::reject_references)?;
+        trace!(self, "Transformed value: {:?}", new_value);
+
+        let storage = self
+            .runtime
+            .get_storage_mut(input.storage)
+            .ok_or(RuntimeError::StorageNotFound(input.storage))?;
+        if package != storage.owner() {
+            return Err(RuntimeError::UnauthorizedAccess);
+        }
+
+        storage.set_entry(new_key, new_value);
+
+        Ok(PutStorageEntryOutput {})
+    }
+
+    fn handle_create_resource_mutable(
+        &mut self,
+        input: CreateResourceMutableInput,
+    ) -> Result<CreateResourceMutableOutput, RuntimeError> {
+        let resource = Resource {
+            metadata: input.metadata,
+            minter: Some(input.minter),
+            supply: None,
+        };
+
+        let address = self.runtime.new_resource_address();
+
+        if self.runtime.get_resource(address).is_some() {
+            return Err(RuntimeError::ResourceAlreadyExists(address));
+        } else {
+            trace!(self, "New resource: {:?}", address);
+
+            self.runtime.put_resource(address, resource);
+        }
+        Ok(CreateResourceMutableOutput { resource: address })
+    }
+
+    fn handle_create_resource_fixed(
+        &mut self,
+        input: CreateResourceFixedInput,
+    ) -> Result<CreateResourceFixedOutput, RuntimeError> {
+        let resource = Resource {
+            metadata: input.metadata,
+            minter: None,
+            supply: Some(input.supply),
+        };
+
+        let address = self.runtime.new_resource_address();
+
+        if self.runtime.get_resource(address).is_some() {
+            return Err(RuntimeError::ResourceAlreadyExists(address));
+        } else {
+            trace!(self, "New resource: {:?}", address);
+
+            self.runtime.put_resource(address, resource);
+        }
+
+        let bucket = Bucket::new(input.supply, address);
+        let bid = self.runtime.new_bucket_id();
+        self.buckets.insert(bid, bucket);
+
+        Ok(CreateResourceFixedOutput { bucket: bid })
+    }
+
+    fn handle_get_resource_info(
+        &mut self,
+        input: GetResourceInfoInput,
+    ) -> Result<GetResourceInfoOutput, RuntimeError> {
+        let resource = self
+            .runtime
+            .get_resource(input.resource)
+            .ok_or(RuntimeError::ResourceNotFound(input.resource))?
+            .clone();
+
+        Ok(GetResourceInfoOutput {
+            metadata: resource.metadata,
+            minter: resource.minter,
+            supply: resource.supply,
+        })
+    }
+
+    fn handle_mint_resource(
+        &mut self,
+        input: MintResourceInput,
+    ) -> Result<MintResourceOutput, RuntimeError> {
+        let resource = self
+            .runtime
+            .get_resource(input.resource)
+            .ok_or(RuntimeError::ResourceNotFound(input.resource))?;
+
+        match resource.minter {
+            Some(address) => {
+                let authorized = match address {
+                    Address::Package(_) => address == self.package()?,
+                    Address::Component(_) => {
+                        self.runtime
+                            .get_component(address)
+                            .ok_or(RuntimeError::ComponentNotFound(address))?
+                            .package()
+                            == self.package()?
+                    }
+                    _ => false,
+                };
+                if !authorized {
+                    return Err(RuntimeError::UnauthorizedToMint);
+                }
+            }
+            _ => {
+                return Err(RuntimeError::UnableToMintFixedResource);
+            }
+        }
+
+        let bucket = Bucket::new(input.amount, input.resource);
+        let bid = self.runtime.new_bucket_id();
+        self.buckets.insert(bid, bucket);
+        Ok(MintResourceOutput { bucket: bid })
+    }
+
+    fn handle_create_vault(
+        &mut self,
+        input: CreateEmptyVaultInput,
+    ) -> Result<CreateEmptyVaultOutput, RuntimeError> {
+        let package = self.package()?;
+
+        let new_vault = Vault::new(Bucket::new(Amount::zero(), input.resource), package);
+        let new_vid = self.runtime.new_vault_id();
+        self.runtime.put_vault(new_vid, new_vault);
+
+        Ok(CreateEmptyVaultOutput { vault: new_vid })
+    }
+
+    fn handle_put_into_vault(
+        &mut self,
+        input: PutIntoVaultInput,
+    ) -> Result<PutIntoVaultOutput, RuntimeError> {
+        let package = self.package()?;
+
+        let other = self
+            .buckets
+            .remove(&input.bucket)
+            .ok_or(RuntimeError::BucketNotFound(input.bucket))?;
+
+        self.runtime
+            .get_vault_mut(input.vault)
+            .ok_or(RuntimeError::VaultNotFound(input.vault))?
+            .put(other, package)
+            .map_err(RuntimeError::AccountingError)?;
+
+        Ok(PutIntoVaultOutput {})
+    }
+
+    fn handle_take_from_vault(
+        &mut self,
+        input: TakeFromVaultInput,
+    ) -> Result<TakeFromVaultOutput, RuntimeError> {
+        let package = self.package()?;
+
+        let new_bucket = self
+            .runtime
+            .get_vault_mut(input.vault)
+            .ok_or(RuntimeError::VaultNotFound(input.vault))?
+            .take(input.amount, package)
+            .map_err(RuntimeError::AccountingError)?;
+
+        let new_bid = self.runtime.new_bucket_id();
+        self.buckets.insert(new_bid, new_bucket);
+
+        Ok(TakeFromVaultOutput { bucket: new_bid })
+    }
+
+    fn handle_get_vault_amount(
+        &mut self,
+        input: GetVaultAmountInput,
+    ) -> Result<GetVaultAmountOutput, RuntimeError> {
+        let amount = self
+            .runtime
+            .get_vault(input.vault)
+            .map(|b| b.amount())
+            .ok_or(RuntimeError::VaultNotFound(input.vault))?;
+
+        Ok(GetVaultAmountOutput { amount })
+    }
+
+    fn handle_get_vault_resource(
+        &mut self,
+        input: GetVaultResourceInput,
+    ) -> Result<GetVaultResourceOutput, RuntimeError> {
+        let resource = self
+            .runtime
+            .get_vault(input.vault)
+            .map(|b| b.resource())
+            .ok_or(RuntimeError::VaultNotFound(input.vault))?;
+
+        Ok(GetVaultResourceOutput { resource })
+    }
+
+    fn handle_create_bucket(
+        &mut self,
+        input: CreateEmptyBucketInput,
+    ) -> Result<CreateEmptyBucketOutput, RuntimeError> {
+        let new_bucket = Bucket::new(Amount::zero(), input.resource);
+        let new_bid = self.runtime.new_bucket_id();
+        self.buckets.insert(new_bid, new_bucket);
+
+        Ok(CreateEmptyBucketOutput { bucket: new_bid })
+    }
+
+    fn handle_put_into_bucket(
+        &mut self,
+        input: PutIntoBucketInput,
+    ) -> Result<PutIntoBucketOutput, RuntimeError> {
+        let other = self
+            .buckets
+            .remove(&input.other)
+            .ok_or(RuntimeError::BucketNotFound(input.other))?;
+
+        self.buckets
+            .get_mut(&input.bucket)
+            .ok_or(RuntimeError::BucketNotFound(input.bucket))?
+            .put(other)
+            .map_err(RuntimeError::AccountingError)?;
+
+        Ok(PutIntoBucketOutput {})
+    }
+
+    fn handle_take_from_bucket(
+        &mut self,
+        input: TakeFromBucketInput,
+    ) -> Result<TakeFromBucketOutput, RuntimeError> {
+        let new_bucket = self
+            .buckets
+            .get_mut(&input.bucket)
+            .ok_or(RuntimeError::BucketNotFound(input.bucket))?
+            .take(input.amount)
+            .map_err(RuntimeError::AccountingError)?;
+        let new_bid = self.runtime.new_bucket_id();
+        self.buckets.insert(new_bid, new_bucket);
+
+        Ok(TakeFromBucketOutput { bucket: new_bid })
+    }
+
+    fn handle_get_bucket_amount(
+        &mut self,
+        input: GetBucketAmountInput,
+    ) -> Result<GetBucketAmountOutput, RuntimeError> {
+        let bid = input.bucket;
+        let amount = self
+            .buckets
+            .get(&bid)
+            .map(|b| b.amount())
+            .or_else(|| self.locked_buckets.get(&bid).map(|x| x.bucket().amount()))
+            .ok_or(RuntimeError::BucketNotFound(bid))?;
+
+        Ok(GetBucketAmountOutput { amount })
+    }
+
+    fn handle_get_bucket_resource(
+        &mut self,
+        input: GetBucketResourceInput,
+    ) -> Result<GetBucketResourceOutput, RuntimeError> {
+        let bid = input.bucket;
+        let resource = self
+            .buckets
+            .get(&bid)
+            .map(|b| b.resource())
+            .or_else(|| self.locked_buckets.get(&bid).map(|x| x.bucket().resource()))
+            .ok_or(RuntimeError::BucketNotFound(bid))?;
+
+        Ok(GetBucketResourceOutput { resource })
+    }
+
+    fn handle_create_reference(
+        &mut self,
+        input: CreateReferenceInput,
+    ) -> Result<CreateReferenceOutput, RuntimeError> {
+        let bid = input.bucket;
+        let rid = self.runtime.new_rid();
+        trace!(self, "Borrowing: bid =  {:?}, rid = {:?}", bid, rid);
+
+        match self.locked_buckets.get_mut(&bid) {
+            Some(bucket_rc) => {
+                // re-borrow
+                self.references.insert(rid, bucket_rc.clone());
+            }
+            None => {
+                // first time borrow
+                let bucket = BucketRef::new(LockedBucket::new(
+                    bid,
+                    self.buckets
+                        .remove(&bid)
+                        .ok_or(RuntimeError::BucketNotFound(bid))?,
+                ));
+                self.references.insert(rid, bucket.clone());
+                self.locked_buckets.insert(bid, bucket);
+            }
+        }
+
+        Ok(CreateReferenceOutput { reference: rid })
+    }
+
+    fn handle_drop_reference(
+        &mut self,
+        input: DropReferenceInput,
+    ) -> Result<DropReferenceOutput, RuntimeError> {
+        let rid = input.reference;
+
+        let (count, bid) = {
+            let bucket = self
+                .references
+                .remove(&rid)
+                .ok_or(RuntimeError::ReferenceNotFound(rid))?;
+            trace!(self, "Returning {:?}: {:?}", rid, bucket);
+            (Rc::strong_count(&bucket) - 1, bucket.bucket_id())
+        };
+
+        if count == 1 {
+            if let Some(b) = self.locked_buckets.remove(&bid) {
+                self.buckets.insert(bid, Rc::try_unwrap(b).unwrap().into());
+            }
+        }
+
+        Ok(DropReferenceOutput {})
+    }
+
+    fn handle_get_ref_amount(
+        &mut self,
+        input: GetRefAmountInput,
+    ) -> Result<GetRefAmountOutput, RuntimeError> {
+        let reference = self
+            .references
+            .get(&input.reference)
+            .ok_or(RuntimeError::ReferenceNotFound(input.reference))?;
+
+        Ok(GetRefAmountOutput {
+            amount: reference.bucket().amount(),
+        })
+    }
+
+    fn handle_get_ref_resource(
+        &mut self,
+        input: GetRefResourceInput,
+    ) -> Result<GetRefResourceOutput, RuntimeError> {
+        let reference = self
+            .references
+            .get(&input.reference)
+            .ok_or(RuntimeError::ReferenceNotFound(input.reference))?;
+
+        Ok(GetRefResourceOutput {
+            resource: reference.bucket().resource(),
+        })
+    }
+
+    fn handle_emit_log(&mut self, input: EmitLogInput) -> Result<EmitLogOutput, RuntimeError> {
+        let level = match input.level {
+            0 => Ok(Level::Error),
+            1 => Ok(Level::Warn),
+            2 => Ok(Level::Info),
+            3 => Ok(Level::Debug),
+            4 => Ok(Level::Trace),
+            _ => Err(RuntimeError::InvalidLogLevel),
+        };
+
+        self.runtime.add_log(level?, input.message);
+
+        Ok(EmitLogOutput {})
+    }
+
+    fn handle_get_package_address(
+        &mut self,
+        _input: GetPackageAddressInput,
+    ) -> Result<GetPackageAddressOutput, RuntimeError> {
+        Ok(GetPackageAddressOutput {
+            address: self.package()?,
+        })
+    }
+
+    fn handle_get_call_data(
+        &mut self,
+        _input: GetCallDataInput,
+    ) -> Result<GetCallDataOutput, RuntimeError> {
+        Ok(GetCallDataOutput {
+            function: self.function()?,
+            args: self.args()?,
+        })
+    }
+
+    fn handle_get_transaction_hash(
+        &mut self,
+        _input: GetTransactionHashInput,
+    ) -> Result<GetTransactionHashOutput, RuntimeError> {
+        Ok(GetTransactionHashOutput {
+            tx_hash: self.runtime.tx_hash(),
+        })
     }
 }
 
@@ -1144,40 +1279,48 @@ impl<'rt, 'le, L: Ledger> Externals for Process<'rt, 'le, L> {
             KERNEL_INDEX => {
                 let operation: u32 = args.nth_checked(0)?;
                 match operation {
-                    PUBLISH => self.handle(args, Self::publish, false),
-                    CALL_FUNCTION => self.handle(args, Self::call_function, true),
-                    CALL_METHOD => self.handle(args, Self::call_method, true),
+                    PUBLISH => self.handle(args, Self::handle_publish),
+                    CALL_FUNCTION => self.handle(args, Self::handle_call_function),
+                    CALL_METHOD => self.handle(args, Self::handle_call_method),
 
-                    CREATE_COMPONENT => self.handle(args, Self::create_component, true),
-                    GET_COMPONENT_INFO => self.handle(args, Self::get_component_info, true),
-                    GET_COMPONENT_STATE => self.handle(args, Self::get_component_state, true),
-                    PUT_COMPONENT_STATE => self.handle(args, Self::put_component_state, true),
+                    CREATE_COMPONENT => self.handle(args, Self::handle_create_component),
+                    GET_COMPONENT_INFO => self.handle(args, Self::handle_get_component_info),
+                    GET_COMPONENT_STATE => self.handle(args, Self::handle_get_component_state),
+                    PUT_COMPONENT_STATE => self.handle(args, Self::handle_put_component_state),
 
-                    CREATE_STORAGE => self.handle(args, Self::create_storage, true),
-                    GET_STORAGE_ENTRY => self.handle(args, Self::get_storage_entry, true),
-                    PUT_STORAGE_ENTRY => self.handle(args, Self::put_storage_entry, true),
+                    CREATE_STORAGE => self.handle(args, Self::handle_create_storage),
+                    GET_STORAGE_ENTRY => self.handle(args, Self::handle_get_storage_entry),
+                    PUT_STORAGE_ENTRY => self.handle(args, Self::handle_put_storage_entry),
 
                     CREATE_RESOURCE_MUTABLE => {
-                        self.handle(args, Self::create_resource_mutable, true)
+                        self.handle(args, Self::handle_create_resource_mutable)
                     }
-                    CREATE_RESOURCE_FIXED => self.handle(args, Self::create_resource_fixed, true),
-                    GET_RESOURCE_INFO => self.handle(args, Self::get_resource_info, true),
-                    MINT_RESOURCE => self.handle(args, Self::mint_resource, true),
+                    CREATE_RESOURCE_FIXED => self.handle(args, Self::handle_create_resource_fixed),
+                    GET_RESOURCE_INFO => self.handle(args, Self::handle_get_resource_info),
+                    MINT_RESOURCE => self.handle(args, Self::handle_mint_resource),
 
-                    NEW_EMPTY_BUCKET => self.handle(args, Self::new_bucket, true),
-                    COMBINE_BUCKETS => self.handle(args, Self::combine_buckets, true),
-                    SPLIT_BUCKET => self.handle(args, Self::split_bucket, true),
-                    GET_AMOUNT => self.handle(args, Self::get_amount, true),
-                    GET_RESOURCE => self.handle(args, Self::get_resource, true),
-                    BORROW_IMMUTABLE => self.handle(args, Self::borrow_immutable, true),
-                    DROP_REFERENCE => self.handle(args, Self::drop_reference, true),
-                    GET_AMOUNT_REF => self.handle(args, Self::get_amount_ref, true),
-                    GET_RESOURCE_REF => self.handle(args, Self::get_resource_ref, true),
+                    CREATE_EMPTY_VAULT => self.handle(args, Self::handle_create_vault),
+                    PUT_INTO_VAULT => self.handle(args, Self::handle_put_into_vault),
+                    TAKE_FROM_VAULT => self.handle(args, Self::handle_take_from_vault),
+                    GET_VAULT_AMOUNT => self.handle(args, Self::handle_get_vault_amount),
+                    GET_VAULT_RESOURCE => self.handle(args, Self::handle_get_vault_resource),
 
-                    EMIT_LOG => self.handle(args, Self::emit_log, true),
-                    GET_PACKAGE_ADDRESS => self.handle(args, Self::get_package_address, true),
-                    GET_CALL_DATA => self.handle(args, Self::get_call_data, true),
-                    GET_TRANSACTION_HASH => self.handle(args, Self::get_transaction_hash, true),
+                    CREATE_EMPTY_BUCKET => self.handle(args, Self::handle_create_bucket),
+                    PUT_INTO_BUCKET => self.handle(args, Self::handle_put_into_bucket),
+                    TAKE_FROM_BUCKET => self.handle(args, Self::handle_take_from_bucket),
+                    GET_BUCKET_AMOUNT => self.handle(args, Self::handle_get_bucket_amount),
+                    GET_BUCKET_RESOURCE => self.handle(args, Self::handle_get_bucket_resource),
+
+                    CREATE_REFERENCE => self.handle(args, Self::handle_create_reference),
+                    DROP_REFERENCE => self.handle(args, Self::handle_drop_reference),
+                    GET_REF_AMOUNT => self.handle(args, Self::handle_get_ref_amount),
+                    GET_REF_RESOURCE => self.handle(args, Self::handle_get_ref_resource),
+
+                    EMIT_LOG => self.handle(args, Self::handle_emit_log),
+                    GET_PACKAGE_ADDRESS => self.handle(args, Self::handle_get_package_address),
+                    GET_CALL_DATA => self.handle(args, Self::handle_get_call_data),
+                    GET_TRANSACTION_HASH => self.handle(args, Self::handle_get_transaction_hash),
+
                     _ => Err(RuntimeError::InvalidOpCode(operation).into()),
                 }
             }

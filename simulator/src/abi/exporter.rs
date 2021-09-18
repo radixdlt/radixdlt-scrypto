@@ -1,9 +1,8 @@
+use radix_engine::engine::*;
 use radix_engine::execution::*;
 use radix_engine::ledger::*;
 use scrypto::abi;
-use scrypto::buffer::*;
 use scrypto::types::*;
-use scrypto::utils::*;
 
 /// Export the ABI of a blueprint.
 pub fn export_abi<T: Ledger>(
@@ -12,9 +11,8 @@ pub fn export_abi<T: Ledger>(
     blueprint: &str,
     trace: bool,
 ) -> Result<abi::Blueprint, RuntimeError> {
-    let tx_hash = sha256(""); // fixed tx hash for determinism
-    let mut mem_ledger = InMemoryLedger::new(); // empty ledger for determinism
-    let mut runtime = Runtime::new(tx_hash, &mut mem_ledger);
+    let mut engine = InMemoryRadixEngine::new();
+    let mut runtime = engine.start_runtime();
 
     // Load package code from file system
     runtime.put_package(
@@ -25,13 +23,10 @@ pub fn export_abi<T: Ledger>(
     );
 
     // Start a process and run abi generator
-    let mut process = Process::new(0, trace, &mut runtime);
-    let target = process.prepare_call_abi(package, blueprint)?;
-    let result = process.run(target);
+    let mut proc = runtime.start_process(trace);
+    let output: (Vec<abi::Function>, Vec<abi::Method>) =
+        proc.call_abi(package, blueprint).and_then(decode_return)?;
 
-    // Parse ABI
-    let output = scrypto_decode::<(Vec<abi::Function>, Vec<abi::Method>)>(&result?)
-        .map_err(RuntimeError::InvalidData)?;
     Ok(abi::Blueprint {
         package: package.to_string(),
         blueprint: blueprint.to_owned(),

@@ -8,5 +8,5 @@ use scrypto::types::*;
 pub struct Resource {
     pub metadata: HashMap<String, String>,
     pub minter: Option<Address>,
-    pub supply: Option<U256>,
+    pub supply: Option<Amount>,
 }

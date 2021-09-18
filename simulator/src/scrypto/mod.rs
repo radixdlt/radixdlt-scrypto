@@ -21,9 +21,9 @@ where
         .name("scrypto")
         .about("Create, build and test Scrypto code.")
         .version(clap::crate_version!())
-        .subcommand(make_new_package_cmd())
-        .subcommand(make_build_cmd())
-        .subcommand(make_test_cmd());
+        .subcommand(make_new_package())
+        .subcommand(make_build())
+        .subcommand(make_test());
     let matches = app.get_matches_from(args);
 
     match matches.subcommand() {

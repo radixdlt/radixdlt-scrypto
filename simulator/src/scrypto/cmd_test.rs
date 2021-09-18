@@ -6,7 +6,7 @@ use crate::utils::*;
 const ARG_ARGS: &str = "ARGS";
 
 /// Constructs a `test` subcommand.
-pub fn make_test_cmd<'a, 'b>() -> App<'a, 'b> {
+pub fn make_test<'a, 'b>() -> App<'a, 'b> {
     SubCommand::with_name(CMD_TEST)
         .about("Tests a package")
         .version(crate_version!())

@@ -26,12 +26,64 @@ r#"
             "inputs": [
                 {
                     "type": "Custom",
-                    "name": "scrypto::Tokens"
+                    "name": "scrypto::Amount"
+                },
+                {
+                    "type": "Custom",
+                    "name": "scrypto::Address"
+                },
+                {
+                    "type": "Custom",
+                    "name": "scrypto::H256"
+                },
+                {
+                    "type": "Custom",
+                    "name": "scrypto::BID"
+                },
+                {
+                    "type": "Custom",
+                    "name": "scrypto::RID"
+                },
+                {
+                    "type": "Custom",
+                    "name": "scrypto::SID"
+                },
+                {
+                    "type": "Custom",
+                    "name": "scrypto::VID"
+                },
+                {
+                    "type": "Custom",
+                    "name": "scrypto::Package"
+                },
+                {
+                    "type": "Custom",
+                    "name": "scrypto::Blueprint"
+                },
+                {
+                    "type": "Custom",
+                    "name": "scrypto::Component"
+                },
+                {
+                    "type": "Custom",
+                    "name": "scrypto::Storage"
+                },
+                {
+                    "type": "Custom",
+                    "name": "scrypto::Bucket"
+                },
+                {
+                    "type": "Custom",
+                    "name": "scrypto::BucketRef"
+                },
+                {
+                    "type": "Custom",
+                    "name": "scrypto::Vault"
                 }
             ],
             "output": {
                 "type": "Custom",
-                "name": "scrypto::BadgesRef"
+                "name": "scrypto::BucketRef"
             }
         }
     ],

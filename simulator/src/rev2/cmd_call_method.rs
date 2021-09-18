@@ -12,7 +12,7 @@ const ARG_METHOD: &str = "METHOD";
 const ARG_ARGS: &str = "ARGS";
 
 /// Constructs a `call-method` subcommand.
-pub fn make_call_method_cmd<'a, 'b>() -> App<'a, 'b> {
+pub fn make_call_method<'a, 'b>() -> App<'a, 'b> {
     SubCommand::with_name(CMD_CALL_METHOD)
         .about("Calls a component method")
         .version(crate_version!())
@@ -62,8 +62,12 @@ pub fn handle_call_method(matches: &ArgMatches) -> Result<(), Error> {
             match build_call_method(&mut ledger, account, component, method, &args, trace) {
                 Ok(txn) => {
                     let receipt = execute(&mut ledger, txn, trace);
-                    dump_receipt(receipt);
-                    Ok(())
+                    dump_receipt(&receipt);
+                    if receipt.success {
+                        Ok(())
+                    } else {
+                        Err(Error::TransactionFailed)
+                    }
                 }
                 Err(e) => Err(Error::TxnConstructionErr(e)),
             }

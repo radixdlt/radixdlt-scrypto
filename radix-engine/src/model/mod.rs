@@ -4,7 +4,7 @@ mod package;
 mod resource;
 mod storage;
 
-pub use bucket::{Bucket, BucketError, LockedBucket, PersistedBucket};
+pub use bucket::{Bucket, BucketError, BucketRef, LockedBucket, Vault};
 pub use component::Component;
 pub use package::Package;
 pub use resource::Resource;

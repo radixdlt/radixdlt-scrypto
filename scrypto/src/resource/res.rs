@@ -19,10 +19,10 @@ pub struct Resource {
 pub struct ResourceInfo {
     pub metadata: HashMap<String, String>,
     pub minter: Option<Address>,
-    pub supply: Option<U256>,
+    pub supply: Option<Amount>,
 }
 
-/// Utility for creating new resources
+/// Utility for creating new resource
 pub struct ResourceBuilder {
     metadata: HashMap<String, String>,
 }
@@ -47,8 +47,11 @@ impl Resource {
         output.resource.into()
     }
 
-    pub fn new_fixed<T: From<BID>>(metadata: HashMap<String, String>, supply: U256) -> T {
-        let input = CreateResourceFixedInput { metadata, supply };
+    pub fn new_fixed<T: Into<Amount>>(metadata: HashMap<String, String>, supply: T) -> Bucket {
+        let input = CreateResourceFixedInput {
+            metadata,
+            supply: supply.into(),
+        };
         let output: CreateResourceFixedOutput = call_kernel(CREATE_RESOURCE_FIXED, input);
 
         output.bucket.into()
@@ -67,12 +70,13 @@ impl Resource {
         }
     }
 
-    pub fn mint<T: From<BID>>(&self, amount: U256) -> T {
-        assert!(amount >= U256::one());
+    pub fn mint<T: Into<Amount>>(&self, amount: T) -> Bucket {
+        let amt = amount.into();
+        assert!(amt >= Amount::one());
 
         let input = MintResourceInput {
             resource: self.address,
-            amount,
+            amount: amt,
         };
         let output: MintResourceOutput = call_kernel(MINT_RESOURCE, input);
 
@@ -100,49 +104,24 @@ impl ResourceBuilder {
         }
     }
 
-    /// Create tokens with mutable supply; the resource can be minted using `Resource::mint()` afterwards.
-    pub fn create_tokens_mutable(&self, minter: Address) -> Resource {
-        Resource::new_mutable(self.metadata.clone(), minter)
-    }
-
-    /// Create tokens with fixed supply.
-    pub fn create_tokens_fixed<T: Into<U256>>(&self, supply: T) -> Tokens {
-        Resource::new_fixed(self.metadata.clone(), supply.into())
-    }
-
-    /// Create badges with mutable supply; the resource can be minted using `Resource::mint()` afterwards.
-    pub fn create_badges_mutable(&self, minter: Address) -> Resource {
-        Resource::new_mutable(self.metadata.clone(), minter)
-    }
-
-    /// Create badges with fixed supply.
-    pub fn create_badges_fixed(&self, supply: U256) -> Badges {
-        Resource::new_fixed(self.metadata.clone(), supply)
-    }
-
     /// Add metadata attribute.
     pub fn metadata(&mut self, name: &str, value: &str) -> &mut Self {
         self.metadata.insert(name.to_owned(), value.to_owned());
         self
     }
 
-    pub fn symbol(&mut self, symbol: &str) -> &mut Self {
-        self.metadata("symbol", symbol)
+    /// Create resource with mutable supply; the resource can be minted using `Resource::mint()` afterwards.
+    pub fn create_mutable(&self, minter: Address) -> Resource {
+        Resource::new_mutable(self.metadata.clone(), minter)
     }
 
-    pub fn name(&mut self, name: &str) -> &mut Self {
-        self.metadata("name", name)
+    /// Create resource with fixed supply.
+    pub fn create_fixed<T: Into<Amount>>(&self, supply: T) -> Bucket {
+        Resource::new_fixed(self.metadata.clone(), supply.into())
     }
-
-    pub fn description(&mut self, description: &str) -> &mut Self {
-        self.metadata("description", description)
-    }
-
-    pub fn url(&mut self, url: &str) -> &mut Self {
-        self.metadata("url", url)
-    }
-
-    pub fn icon_url(&mut self, icon_url: &str) -> &mut Self {
-        self.metadata("icon_url", icon_url)
+}
+impl Default for ResourceBuilder {
+    fn default() -> Self {
+        Self::new()
     }
 }

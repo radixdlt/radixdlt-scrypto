@@ -7,7 +7,7 @@ pub fn parse_module(code: &[u8]) -> Result<Module, RuntimeError> {
     Module::from_buffer(code).map_err(RuntimeError::InvalidModule)
 }
 
-/// Instance a WASM module.
+/// Instantiate a WASM module.
 pub fn instantiate_module(module: &Module) -> Result<(ModuleRef, MemoryRef), RuntimeError> {
     // Instantiate
     let instance = ModuleInstance::new(

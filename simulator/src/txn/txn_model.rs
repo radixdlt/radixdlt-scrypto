@@ -20,7 +20,7 @@ pub enum Instruction {
     /// Create a bucket to be used for function call.
     NewBucket {
         offset: u8,
-        amount: U256,
+        amount: Amount,
         resource: Address,
     },
 

@@ -1,16 +1,18 @@
 mod address;
+mod amount;
 mod bid;
 mod h256;
 mod rid;
 mod sid;
-mod u256;
+mod vid;
 
 pub use address::{Address, ParseAddressError};
-pub use bid::BID;
+pub use amount::{Amount, ParseAmountError};
+pub use bid::{ParseBIDError, BID};
 pub use h256::{ParseH256Error, H256};
-pub use rid::RID;
-pub use sid::SID;
-pub use u256::U256;
+pub use rid::{ParseRIDError, RID};
+pub use sid::{ParseSIDError, SID};
+pub use vid::{ParseVIDError, VID};
 
 use crate::rust::vec::Vec;
 
@@ -24,17 +26,9 @@ fn copy_u8_array<const N: usize>(slice: &[u8]) -> [u8; N] {
     }
 }
 
-fn combine2(ty: u8, bytes: &[u8]) -> Vec<u8> {
+fn combine(ty: u8, bytes: &[u8]) -> Vec<u8> {
     let mut v = Vec::with_capacity(1 + bytes.len());
     v.push(ty);
     v.extend(bytes);
-    v
-}
-
-fn combine3(ty: u8, bytes: &[u8], bytes2: &[u8]) -> Vec<u8> {
-    let mut v = Vec::with_capacity(1 + bytes.len() + bytes2.len());
-    v.push(ty);
-    v.extend(bytes);
-    v.extend(bytes2);
     v
 }

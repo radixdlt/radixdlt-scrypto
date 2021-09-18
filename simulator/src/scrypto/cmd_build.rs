@@ -4,7 +4,7 @@ use crate::scrypto::*;
 use crate::utils::*;
 
 /// Constructs a `build` subcommand.
-pub fn make_build_cmd<'a, 'b>() -> App<'a, 'b> {
+pub fn make_build<'a, 'b>() -> App<'a, 'b> {
     SubCommand::with_name(CMD_BUILD)
         .about("Builds a package")
         .version(crate_version!())

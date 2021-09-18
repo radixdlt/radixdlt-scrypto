@@ -42,10 +42,10 @@ impl Address {
         match self {
             Self::System => [0].to_vec(),
             Self::RadixToken => [1].to_vec(),
-            Self::Resource(d) => combine2(3, d),
-            Self::PublicKey(d) => combine2(4, d),
-            Self::Package(d) => combine2(5, d),
-            Self::Component(d) => combine2(6, d),
+            Self::Resource(d) => combine(3, d),
+            Self::PublicKey(d) => combine(4, d),
+            Self::Package(d) => combine(5, d),
+            Self::Component(d) => combine(6, d),
         }
     }
 }

@@ -16,13 +16,13 @@ const PACKAGES: &str = "packages";
 const COMPONENTS: &str = "components";
 const STORAGES: &str = "storages";
 const RESOURCES: &str = "resources";
-const BUCKETS: &str = "buckets";
+const VAULTS: &str = "vaults";
 
 const FILE_EXT: &str = "sbor";
 
 impl FileBasedLedger {
     pub fn new(root: PathBuf) -> Self {
-        for folder in [PACKAGES, COMPONENTS, STORAGES, RESOURCES, BUCKETS] {
+        for folder in [PACKAGES, COMPONENTS, STORAGES, RESOURCES, VAULTS] {
             let mut path = root.clone();
             path.push(folder);
             if !path.exists() {
@@ -115,14 +115,14 @@ impl Ledger for FileBasedLedger {
         )
     }
 
-    fn get_bucket(&self, bid: BID) -> Option<PersistedBucket> {
-        Self::read(self.get_path(BUCKETS, bid.to_string(), FILE_EXT)).map(Self::decode)
+    fn get_vault(&self, vid: VID) -> Option<Vault> {
+        Self::read(self.get_path(VAULTS, vid.to_string(), FILE_EXT)).map(Self::decode)
     }
 
-    fn put_bucket(&mut self, bid: BID, bucket: PersistedBucket) {
+    fn put_vault(&mut self, vid: VID, vault: Vault) {
         Self::write(
-            self.get_path(BUCKETS, bid.to_string(), FILE_EXT),
-            Self::encode(&bucket),
+            self.get_path(VAULTS, vid.to_string(), FILE_EXT),
+            Self::encode(&vault),
         )
     }
 }

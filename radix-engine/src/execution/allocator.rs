@@ -47,19 +47,19 @@ impl AddressAllocator {
         Address::Resource(hash.lower_26_bytes())
     }
 
-    pub fn new_transient_bid(&mut self) -> BID {
+    pub fn new_bucket_id(&mut self) -> BID {
         self.count += 1;
-        BID::Transient(self.count - 1)
+        BID(self.count - 1)
     }
 
-    pub fn new_persisted_bid(&mut self, tx_hash: H256) -> BID {
+    pub fn new_vault_id(&mut self, tx_hash: H256) -> VID {
         self.count += 1;
-        BID::Persisted(tx_hash, self.count - 1)
+        VID(tx_hash, self.count - 1)
     }
 
     pub fn new_rid(&mut self) -> RID {
         self.count += 1;
-        RID::Immutable(self.count)
+        RID(self.count)
     }
 
     pub fn new_sid(&mut self, tx_hash: H256) -> SID {

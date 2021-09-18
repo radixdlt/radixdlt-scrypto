@@ -3,10 +3,11 @@ use std::fs;
 use std::path::PathBuf;
 
 use clap::{crate_version, App, Arg, ArgMatches, SubCommand};
+use radix_engine::engine::*;
 use radix_engine::execution::*;
 use radix_engine::ledger::*;
 use radix_engine::model::*;
-use scrypto::buffer::*;
+use scrypto::args;
 use scrypto::types::*;
 use scrypto::utils::*;
 use uuid::Uuid;
@@ -20,7 +21,7 @@ const ARG_PATH: &str = "PATH";
 const ARG_ADDRESS: &str = "ADDRESS";
 
 /// Constructs a `publish` subcommand.
-pub fn make_publish_cmd<'a, 'b>() -> App<'a, 'b> {
+pub fn make_publish<'a, 'b>() -> App<'a, 'b> {
     SubCommand::with_name(CMD_PUBLISH)
         .about("Publishes a package")
         .version(crate_version!())
@@ -71,25 +72,18 @@ pub fn handle_publish(matches: &ArgMatches) -> Result<(), Error> {
     match get_config(CONF_DEFAULT_ACCOUNT)? {
         Some(a) => {
             let account: Address = a.as_str().parse().map_err(Error::InvalidAddress)?;
-            let tx_hash = sha256(Uuid::new_v4().to_string());
-            let mut ledger = FileBasedLedger::new(get_data_dir()?);
-            let mut runtime = Runtime::new(tx_hash, &mut ledger);
 
-            let mut process = Process::new(0, trace, &mut runtime);
-            let output = process
-                .prepare_call_method(
-                    account,
-                    "publish_package".to_owned(),
-                    vec![scrypto_encode(&code)],
-                )
-                .and_then(|target| process.run(target))
+            let mut ledger = FileBasedLedger::new(get_data_dir()?);
+            let mut runtime = Runtime::new(sha256(Uuid::new_v4().to_string()), &mut ledger);
+            let mut process = runtime.start_process(trace);
+            let package: Address = process
+                .call_method(account, "publish_package", args!(code))
+                .and_then(decode_return)
                 .map_err(Error::TxnExecutionError)?;
             process.finalize().map_err(Error::TxnExecutionError)?;
-            let package: Address = scrypto_decode(&output).map_err(Error::DataError)?;
-
             runtime.flush();
-            println!("New package: {}", package);
 
+            println!("New package: {}", package);
             Ok(())
         }
         None => Err(Error::NoDefaultAccount),

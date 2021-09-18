@@ -28,53 +28,63 @@ pub const GET_COMPONENT_STATE: u32 = 0x12;
 pub const PUT_COMPONENT_STATE: u32 = 0x13;
 
 /// Create a new storage
-pub const CREATE_STORAGE: u32 = 0x14;
+pub const CREATE_STORAGE: u32 = 0x20;
 /// Retrieve an entry from a storage
-pub const GET_STORAGE_ENTRY: u32 = 0x15;
+pub const GET_STORAGE_ENTRY: u32 = 0x21;
 /// Insert a key-value pair into a storage
-pub const PUT_STORAGE_ENTRY: u32 = 0x16;
+pub const PUT_STORAGE_ENTRY: u32 = 0x22;
 
 /// Create a new resource with mutable supply
-pub const CREATE_RESOURCE_MUTABLE: u32 = 0x20;
+pub const CREATE_RESOURCE_MUTABLE: u32 = 0x30;
 /// Create a new resource with fixed supply
-pub const CREATE_RESOURCE_FIXED: u32 = 0x21;
+pub const CREATE_RESOURCE_FIXED: u32 = 0x31;
 /// Retrieve resource information
-pub const GET_RESOURCE_INFO: u32 = 0x22;
+pub const GET_RESOURCE_INFO: u32 = 0x32;
 /// Mint resource
-pub const MINT_RESOURCE: u32 = 0x23;
+pub const MINT_RESOURCE: u32 = 0x33;
+
+/// Creates a new empty vault
+pub const CREATE_EMPTY_VAULT: u32 = 0x40;
+/// Combine vaults
+pub const PUT_INTO_VAULT: u32 = 0x41;
+/// Split a vault
+pub const TAKE_FROM_VAULT: u32 = 0x42;
+/// Get vault resource amount
+pub const GET_VAULT_AMOUNT: u32 = 0x43;
+/// Get vault resource address
+pub const GET_VAULT_RESOURCE: u32 = 0x44;
 
 /// Creates a new empty bucket
-pub const NEW_EMPTY_BUCKET: u32 = 0x30;
+pub const CREATE_EMPTY_BUCKET: u32 = 0x50;
 /// Combine buckets
-pub const COMBINE_BUCKETS: u32 = 0x31;
+pub const PUT_INTO_BUCKET: u32 = 0x51;
 /// Split a bucket
-pub const SPLIT_BUCKET: u32 = 0x32;
+pub const TAKE_FROM_BUCKET: u32 = 0x52;
 /// Get bucket resource amount
-pub const GET_AMOUNT: u32 = 0x33;
+pub const GET_BUCKET_AMOUNT: u32 = 0x53;
 /// Get bucket resource address
-pub const GET_RESOURCE: u32 = 0x34;
+pub const GET_BUCKET_RESOURCE: u32 = 0x54;
+
 /// Obtain an immutable reference to a bucket
-pub const BORROW_IMMUTABLE: u32 = 0x35;
-/// TODO: Obtain a mutable reference to a bucket
-pub const BORROW_MUTABLE: u32 = 0x36;
+pub const CREATE_REFERENCE: u32 = 0x60;
 /// Drop a reference
-pub const DROP_REFERENCE: u32 = 0x37;
+pub const DROP_REFERENCE: u32 = 0x61;
 /// Get the resource amount behind a reference
-pub const GET_AMOUNT_REF: u32 = 0x38;
+pub const GET_REF_AMOUNT: u32 = 0x62;
 /// Get the resource address behind a reference
-pub const GET_RESOURCE_REF: u32 = 0x39;
+pub const GET_REF_RESOURCE: u32 = 0x63;
 
 /// Log a message
-pub const EMIT_LOG: u32 = 0x40;
+pub const EMIT_LOG: u32 = 0xf0;
 /// Retrieve context package address
-pub const GET_PACKAGE_ADDRESS: u32 = 0x41;
+pub const GET_PACKAGE_ADDRESS: u32 = 0xf1;
 /// Retrieve call data
-pub const GET_CALL_DATA: u32 = 0x42;
+pub const GET_CALL_DATA: u32 = 0xf2;
 /// Retrieve transaction hash
-pub const GET_TRANSACTION_HASH: u32 = 0x43;
+pub const GET_TRANSACTION_HASH: u32 = 0xf3;
 
 //==========
-// code
+// blueprint
 //==========
 
 #[derive(Debug, Clone, Encode, Decode)]
@@ -208,7 +218,7 @@ pub struct CreateResourceMutableOutput {
 #[derive(Debug, Clone, Encode, Decode)]
 pub struct CreateResourceFixedInput {
     pub metadata: HashMap<String, String>,
-    pub supply: U256,
+    pub supply: Amount,
 }
 
 #[derive(Debug, Clone, Encode, Decode)]
@@ -225,13 +235,13 @@ pub struct GetResourceInfoInput {
 pub struct GetResourceInfoOutput {
     pub metadata: HashMap<String, String>,
     pub minter: Option<Address>,
-    pub supply: Option<U256>,
+    pub supply: Option<Amount>,
 }
 
 #[derive(Debug, Clone, Encode, Decode)]
 pub struct MintResourceInput {
     pub resource: Address,
-    pub amount: U256,
+    pub amount: Amount,
 }
 
 #[derive(Debug, Clone, Encode, Decode)]
@@ -239,73 +249,125 @@ pub struct MintResourceOutput {
     pub bucket: BID,
 }
 
+//==========
+// vault
+//==========
+
 #[derive(Debug, Clone, Encode, Decode)]
-pub struct NewEmptyBucketInput {
+pub struct CreateEmptyVaultInput {
     pub resource: Address,
 }
 
 #[derive(Debug, Clone, Encode, Decode)]
-pub struct NewEmptyBucketOutput {
+pub struct CreateEmptyVaultOutput {
+    pub vault: VID,
+}
+
+#[derive(Debug, Clone, Encode, Decode)]
+pub struct PutIntoVaultInput {
+    pub vault: VID,
     pub bucket: BID,
 }
 
 #[derive(Debug, Clone, Encode, Decode)]
-pub struct CombineBucketsInput {
+pub struct PutIntoVaultOutput {}
+
+#[derive(Debug, Clone, Encode, Decode)]
+pub struct TakeFromVaultInput {
+    pub vault: VID,
+    pub amount: Amount,
+}
+
+#[derive(Debug, Clone, Encode, Decode)]
+pub struct TakeFromVaultOutput {
+    pub bucket: BID,
+}
+
+#[derive(Debug, Clone, Encode, Decode)]
+pub struct GetVaultAmountInput {
+    pub vault: VID,
+}
+
+#[derive(Debug, Clone, Encode, Decode)]
+pub struct GetVaultAmountOutput {
+    pub amount: Amount,
+}
+
+#[derive(Debug, Clone, Encode, Decode)]
+pub struct GetVaultResourceInput {
+    pub vault: VID,
+}
+
+#[derive(Debug, Clone, Encode, Decode)]
+pub struct GetVaultResourceOutput {
+    pub resource: Address,
+}
+
+//==========
+// bucket
+//==========
+
+#[derive(Debug, Clone, Encode, Decode)]
+pub struct CreateEmptyBucketInput {
+    pub resource: Address,
+}
+
+#[derive(Debug, Clone, Encode, Decode)]
+pub struct CreateEmptyBucketOutput {
+    pub bucket: BID,
+}
+
+#[derive(Debug, Clone, Encode, Decode)]
+pub struct PutIntoBucketInput {
     pub bucket: BID,
     pub other: BID,
 }
 
 #[derive(Debug, Clone, Encode, Decode)]
-pub struct CombineBucketsOutput {}
+pub struct PutIntoBucketOutput {}
 
 #[derive(Debug, Clone, Encode, Decode)]
-pub struct SplitBucketInput {
+pub struct TakeFromBucketInput {
     pub bucket: BID,
-    pub amount: U256,
+    pub amount: Amount,
 }
 
 #[derive(Debug, Clone, Encode, Decode)]
-pub struct SplitBucketOutput {
-    pub bucket: BID,
-}
-
-#[derive(Debug, Clone, Encode, Decode)]
-pub struct GetAmountInput {
+pub struct TakeFromBucketOutput {
     pub bucket: BID,
 }
 
 #[derive(Debug, Clone, Encode, Decode)]
-pub struct GetAmountOutput {
-    pub amount: U256,
-}
-
-#[derive(Debug, Clone, Encode, Decode)]
-pub struct GetResourceInput {
+pub struct GetBucketAmountInput {
     pub bucket: BID,
 }
 
 #[derive(Debug, Clone, Encode, Decode)]
-pub struct GetResourceOutput {
+pub struct GetBucketAmountOutput {
+    pub amount: Amount,
+}
+
+#[derive(Debug, Clone, Encode, Decode)]
+pub struct GetBucketResourceInput {
+    pub bucket: BID,
+}
+
+#[derive(Debug, Clone, Encode, Decode)]
+pub struct GetBucketResourceOutput {
     pub resource: Address,
 }
 
+//==========
+// reference
+//==========
+
 #[derive(Debug, Clone, Encode, Decode)]
-pub struct BorrowImmutableInput {
+pub struct CreateReferenceInput {
     pub bucket: BID,
 }
 
 #[derive(Debug, Clone, Encode, Decode)]
-pub struct BorrowImmutableOutput {
-    pub reference: RID,
-}
-
-#[derive(Debug, Clone, Encode, Decode)]
-pub struct BorrowMutableInput {
-    pub bucket: BID,
-}
-
-#[derive(Debug, Clone, Encode, Decode)]
-pub struct BorrowMutableOutput {
+pub struct CreateReferenceOutput {
     pub reference: RID,
 }
 
@@ -318,22 +380,22 @@ pub struct DropReferenceInput {
 pub struct DropReferenceOutput {}
 
 #[derive(Debug, Clone, Encode, Decode)]
-pub struct GetAmountRefInput {
+pub struct GetRefAmountInput {
     pub reference: RID,
 }
 
 #[derive(Debug, Clone, Encode, Decode)]
-pub struct GetAmountRefOutput {
-    pub amount: U256,
+pub struct GetRefAmountOutput {
+    pub amount: Amount,
 }
 
 #[derive(Debug, Clone, Encode, Decode)]
-pub struct GetResourceRefInput {
+pub struct GetRefResourceInput {
     pub reference: RID,
 }
 
 #[derive(Debug, Clone, Encode, Decode)]
-pub struct GetResourceRefOutput {
+pub struct GetRefResourceOutput {
     pub resource: Address,
 }
 

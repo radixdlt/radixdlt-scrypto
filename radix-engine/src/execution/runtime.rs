@@ -9,35 +9,34 @@ use crate::execution::*;
 use crate::ledger::*;
 use crate::model::*;
 
-/// Runtime is an abstraction to the execution state of a transaction.
+/// Runtime is an abstraction of transaction execution state.
 ///
 /// It acts as the facade of ledger state and keeps track of all temporary state updates,
-/// util the `flush()` method is called.
+/// until the `flush()` method is called.
 ///
-/// Typically, a runtime is shared by a series of processes, created during the life time
-/// of a transaction.
+/// Typically, a runtime involves a series of processes.
 ///
-pub struct Runtime<'le, T: Ledger> {
+pub struct Runtime<'le, L: Ledger> {
     tx_hash: H256,
-    ledger: &'le mut T,
+    ledger: &'le mut L,
     alloc: AddressAllocator,
     logs: Vec<(Level, String)>,
     packages: HashMap<Address, Package>,
     components: HashMap<Address, Component>,
     storages: HashMap<SID, Storage>,
     resources: HashMap<Address, Resource>,
-    buckets: HashMap<BID, PersistedBucket>,
+    vaults: HashMap<VID, Vault>,
     updated_packages: HashSet<Address>,
     updated_components: HashSet<Address>,
     updated_storages: HashSet<SID>,
     updated_resources: HashSet<Address>,
-    updated_buckets: HashSet<BID>,
+    updated_vaults: HashSet<VID>,
     new_addresses: Vec<Address>,
     cache: LruCache<Address, Module>, // TODO: move to ledger level
 }
 
-impl<'le, T: Ledger> Runtime<'le, T> {
-    pub fn new(tx_hash: H256, ledger: &'le mut T) -> Self {
+impl<'le, L: Ledger> Runtime<'le, L> {
+    pub fn new(tx_hash: H256, ledger: &'le mut L) -> Self {
         Self {
             tx_hash,
             ledger,
@@ -47,15 +46,20 @@ impl<'le, T: Ledger> Runtime<'le, T> {
             components: HashMap::new(),
             storages: HashMap::new(),
             resources: HashMap::new(),
-            buckets: HashMap::new(),
+            vaults: HashMap::new(),
             updated_packages: HashSet::new(),
             updated_components: HashSet::new(),
             updated_storages: HashSet::new(),
             updated_resources: HashSet::new(),
-            updated_buckets: HashSet::new(),
+            updated_vaults: HashSet::new(),
             new_addresses: Vec::new(),
             cache: LruCache::new(1024),
         }
+    }
+
+    /// Start a process.
+    pub fn start_process<'rt>(&'rt mut self, verbose: bool) -> Process<'rt, 'le, L> {
+        Process::new(0, verbose, self)
     }
 
     /// Returns the transaction hash.
@@ -243,45 +247,45 @@ impl<'le, T: Ledger> Runtime<'le, T> {
         self.resources.insert(address, resource);
     }
 
-    /// Returns an immutable reference to a bucket, if exists.
+    /// Returns an immutable reference to a vault, if exists.
     #[allow(dead_code)]
-    pub fn get_bucket(&mut self, bid: BID) -> Option<&PersistedBucket> {
-        if self.buckets.contains_key(&bid) {
-            return self.buckets.get(&bid);
+    pub fn get_vault(&mut self, vid: VID) -> Option<&Vault> {
+        if self.vaults.contains_key(&vid) {
+            return self.vaults.get(&vid);
         }
 
-        if let Some(bucket) = self.ledger.get_bucket(bid) {
-            self.buckets.insert(bid, bucket);
-            self.buckets.get(&bid)
+        if let Some(vault) = self.ledger.get_vault(vid) {
+            self.vaults.insert(vid, vault);
+            self.vaults.get(&vid)
         } else {
             None
         }
     }
 
-    /// Returns a mutable reference to a bucket, if exists.
-    pub fn get_bucket_mut(&mut self, bid: BID) -> Option<&mut PersistedBucket> {
-        self.updated_buckets.insert(bid);
+    /// Returns a mutable reference to a vault, if exists.
+    pub fn get_vault_mut(&mut self, vid: VID) -> Option<&mut Vault> {
+        self.updated_vaults.insert(vid);
 
-        if self.buckets.contains_key(&bid) {
-            return self.buckets.get_mut(&bid);
+        if self.vaults.contains_key(&vid) {
+            return self.vaults.get_mut(&vid);
         }
 
-        if let Some(bucket) = self.ledger.get_bucket(bid) {
-            self.buckets.insert(bid, bucket);
-            self.buckets.get_mut(&bid)
+        if let Some(vault) = self.ledger.get_vault(vid) {
+            self.vaults.insert(vid, vault);
+            self.vaults.get_mut(&vid)
         } else {
             None
         }
     }
 
-    /// Inserts a new bucket.
-    pub fn put_bucket(&mut self, bid: BID, bucket: PersistedBucket) {
-        self.updated_buckets.insert(bid);
+    /// Inserts a new vault.
+    pub fn put_vault(&mut self, vid: VID, vault: Vault) {
+        self.updated_vaults.insert(vid);
 
-        self.buckets.insert(bid, bucket);
+        self.vaults.insert(vid, vault);
     }
 
-    /// Creates a new package bid.
+    /// Creates a new package address.
     pub fn new_package_address(&mut self) -> Address {
         let address = self.alloc.new_package_address(self.tx_hash());
         self.new_addresses.push(address);
@@ -302,14 +306,14 @@ impl<'le, T: Ledger> Runtime<'le, T> {
         address
     }
 
-    /// Creates a new transient bucket id.
-    pub fn new_transient_bid(&mut self) -> BID {
-        self.alloc.new_transient_bid()
+    /// Creates a new bucket ID.
+    pub fn new_bucket_id(&mut self) -> BID {
+        self.alloc.new_bucket_id()
     }
 
-    /// Creates a new persisted bucket id.
-    pub fn new_persisted_bid(&mut self) -> BID {
-        self.alloc.new_persisted_bid(self.tx_hash())
+    /// Creates a new vault ID.
+    pub fn new_vault_id(&mut self) -> VID {
+        self.alloc.new_vault_id(self.tx_hash())
     }
 
     /// Creates a new reference id.
@@ -344,9 +348,9 @@ impl<'le, T: Ledger> Runtime<'le, T> {
                 .put_resource(address, self.resources.get(&address).unwrap().clone());
         }
 
-        for bucket in self.updated_buckets.clone() {
+        for vault in self.updated_vaults.clone() {
             self.ledger
-                .put_bucket(bucket, self.buckets.get(&bucket).unwrap().clone());
+                .put_vault(vault, self.vaults.get(&vault).unwrap().clone());
         }
     }
 }

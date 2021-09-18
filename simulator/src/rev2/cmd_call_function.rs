@@ -13,7 +13,7 @@ const ARG_FUNCTION: &str = "FUNCTION";
 const ARG_ARGS: &str = "ARGS";
 
 /// Constructs a `call-function` subcommand.
-pub fn make_call_function_cmd<'a, 'b>() -> App<'a, 'b> {
+pub fn make_call_function<'a, 'b>() -> App<'a, 'b> {
     SubCommand::with_name(CMD_CALL_FUNCTION)
         .about("Calls a blueprint function")
         .version(crate_version!())
@@ -79,8 +79,12 @@ pub fn handle_call_function(matches: &ArgMatches) -> Result<(), Error> {
             ) {
                 Ok(txn) => {
                     let receipt = execute(&mut ledger, txn, trace);
-                    dump_receipt(receipt);
-                    Ok(())
+                    dump_receipt(&receipt);
+                    if receipt.success {
+                        Ok(())
+                    } else {
+                        Err(Error::TransactionFailed)
+                    }
                 }
                 Err(e) => Err(Error::TxnConstructionErr(e)),
             }

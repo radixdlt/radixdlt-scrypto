@@ -52,29 +52,35 @@ pub enum RuntimeError {
 
     ResourceNotFound(Address),
 
-    FixedResourceMintNotAllowed,
+    UnableToMintFixedResource,
 
     UnauthorizedToMint,
 
-    BucketNotFound,
+    VaultNotFound(VID),
 
-    ReferenceNotFound,
+    BucketNotFound(BID),
+
+    ReferenceNotFound(RID),
 
     AccountingError(BucketError),
 
     UnauthorizedToWithdraw,
 
-    PersistedBucketMoveNotAllowed,
+    UnauthorizedAccess,
 
-    ReferenceNotAllowed,
+    BucketMoveNotAllowed,
+
+    ReferenceMoveNotAllowed,
 
     VmNotStarted,
 
     InvalidLogLevel,
 
-    UnexpectedResourceReturn,
+    BucketNotReserved,
 
-    UnauthorizedAccess,
+    UnexpectedBucketReturn,
+
+    UnexpectedReferenceReturn,
 }
 
 impl fmt::Display for RuntimeError {

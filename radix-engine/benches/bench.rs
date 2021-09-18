@@ -2,31 +2,35 @@
 extern crate bencher;
 use bencher::Bencher;
 
-use radix_engine::engine::InMemoryRadixEngine;
+use radix_engine::engine::*;
 use scrypto::prelude::*;
 
 fn cross_component_call(b: &mut Bencher) {
-    let mut engine = InMemoryRadixEngine::new(false);
-    engine
-        .publish_at(
-            include_bytes!("../../assets/gumball-machine.wasm"),
-            "05a405d3129b61e86c51c3168d553d2ffd7a3f0bd2f66b5a3e9876"
-                .parse()
-                .unwrap(),
-        )
-        .unwrap();
-    let package = engine
+    let mut engine = InMemoryRadixEngine::new();
+    let mut runtime = engine.start_runtime();
+    let mut proc = runtime.start_process(false);
+
+    proc.publish_at(
+        include_bytes!("../../assets/gumball-machine.wasm"),
+        "05a405d3129b61e86c51c3168d553d2ffd7a3f0bd2f66b5a3e9876"
+            .parse()
+            .unwrap(),
+    )
+    .unwrap();
+
+    let package = proc
         .publish(include_bytes!("../../assets/gumball-machine-vendor.wasm"))
         .unwrap();
 
-    let component = engine
-        .call_function::<Address>(package, "Vendor", "new", args!())
+    let component: Address = proc
+        .call_function(package, "Vendor", "new", args!())
+        .and_then(decode_return)
         .unwrap();
 
     b.iter(|| {
-        let tokens: Tokens = engine.prepare_bucket(1.into(), Address::RadixToken).into();
-        engine
-            .call_method::<Tokens>(component, "get_gumball", args!(tokens))
+        let bucket =
+            scrypto::resource::Bucket::from(proc.create_bucket(1.into(), Address::RadixToken));
+        proc.call_method(component, "get_gumball", args!(bucket))
             .unwrap()
     });
 }

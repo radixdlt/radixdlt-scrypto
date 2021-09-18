@@ -11,7 +11,9 @@ Language for building DeFi apps on Radix.
 - **Component** An instance of a blueprint, which lives in the persistent state and may own resources.
 - **Function**: A set of statements to perform a specific task.
 - **Method**: A function attached to a component.
-- **Resource**: A primitive state which can only be created once and moved.
+- **Resource**: A primitive state which can only be created once and moved, used for modelling digital assets.
+- **Bucket**: A transient container of resources during transaction execution runtime.
+- **Vault**: A persistent container of resources on ledger.
 
 ## Installation
 
@@ -67,7 +69,7 @@ scrypto test
 |---|---|
 | To create an account | ``` rev2 new-account ``` |
 | To change default account | ``` rev2 set-default-account <account_address> ``` |
-| To create tokens with fixed supply | ``` rev2 new-tokens-fixed <amount> ``` |
+| To create resource with fixed supply | ``` rev2 new-resource-fixed <amount> ``` |
 | To publish a package | ``` rev2 publish <package_dir_or_wasm_file> ``` |
 | To call a function | ``` rev2 call-function <package_address> <blueprint_name> <function> <args> ``` |
 | To call a method | ``` rev2 call-method <component_address> <method> <args> ``` |

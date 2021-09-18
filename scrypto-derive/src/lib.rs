@@ -76,12 +76,12 @@ pub fn blueprint(input: TokenStream) -> TokenStream {
 ///             "inputs": [
 ///                 {
 ///                     "type": "Custom",
-///                     "name": "scrypto::Tokens"
+///                     "name": "scrypto::Bucket"
 ///                 }
 ///             ],
 ///             "output": {
 ///                 "type": "Custom",
-///                 "name": "scrypto::Tokens"
+///                 "name": "scrypto::Bucket"
 ///             }
 ///         }
 ///     ]

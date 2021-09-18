@@ -1,7 +1,9 @@
 use clap::{crate_version, App, Arg, ArgMatches, SubCommand};
+use radix_engine::engine::*;
 use radix_engine::execution::*;
-use scrypto::buffer::*;
+use scrypto::args;
 use scrypto::rust::collections::HashMap;
+use scrypto::rust::str::FromStr;
 use scrypto::types::*;
 use scrypto::utils::*;
 use uuid::Uuid;
@@ -17,9 +19,9 @@ const ARG_DESCRIPTION: &str = "DESCRIPTION";
 const ARG_URL: &str = "URL";
 const ARG_ICON_URL: &str = "ICON_URL";
 
-/// Constructs a `new-tokens-fixed` subcommand.
-pub fn make_new_tokens_fixed_cmd<'a, 'b>() -> App<'a, 'b> {
-    SubCommand::with_name(CMD_NEW_TOKENS_FIXED)
+/// Constructs a `new-resource-fixed` subcommand.
+pub fn make_new_resource_fixed<'a, 'b>() -> App<'a, 'b> {
+    SubCommand::with_name(CMD_NEW_RESOURCE_FIXED)
         .about("Creates token with fixed supply")
         .version(crate_version!())
         .arg(
@@ -70,16 +72,16 @@ pub fn make_new_tokens_fixed_cmd<'a, 'b>() -> App<'a, 'b> {
         )
 }
 
-/// Handles a `new-tokens-fixed` request.
-pub fn handle_new_tokens_fixed(matches: &ArgMatches) -> Result<(), Error> {
+/// Handles a `new-resource-fixed` request.
+pub fn handle_new_resource_fixed(matches: &ArgMatches) -> Result<(), Error> {
     let trace = matches.is_present(ARG_TRACE);
 
-    let supply = U256::from_dec_str(
+    let supply = Amount::from_str(
         matches
             .value_of(ARG_SUPPLY)
             .ok_or_else(|| Error::MissingArgument(ARG_SUPPLY.to_owned()))?,
     )
-    .map_err(|_| Error::InvalidU256)?;
+    .map_err(|_| Error::InvalidAmount)?;
 
     let mut metadata = HashMap::new();
     matches
@@ -101,25 +103,18 @@ pub fn handle_new_tokens_fixed(matches: &ArgMatches) -> Result<(), Error> {
     match get_config(CONF_DEFAULT_ACCOUNT)? {
         Some(a) => {
             let account: Address = a.as_str().parse().map_err(Error::InvalidAddress)?;
-            let tx_hash = sha256(Uuid::new_v4().to_string());
-            let mut ledger = FileBasedLedger::new(get_data_dir()?);
-            let mut runtime = Runtime::new(tx_hash, &mut ledger);
 
-            let mut process = Process::new(0, trace, &mut runtime);
-            let output = process
-                .prepare_call_method(
-                    account,
-                    "new_resource_fixed".to_owned(),
-                    vec![scrypto_encode(&metadata), scrypto_encode(&supply)],
-                )
-                .and_then(|target| process.run(target))
+            let mut ledger = FileBasedLedger::new(get_data_dir()?);
+            let mut runtime = Runtime::new(sha256(Uuid::new_v4().to_string()), &mut ledger);
+            let mut process = runtime.start_process(trace);
+            let resource: Address = process
+                .call_method(account, "new_resource_fixed", args!(metadata, supply))
+                .and_then(decode_return)
                 .map_err(Error::TxnExecutionError)?;
             process.finalize().map_err(Error::TxnExecutionError)?;
-            let resource: Address = scrypto_decode(&output).map_err(Error::DataError)?;
-
             runtime.flush();
-            println!("New token resource: {}", resource);
 
+            println!("New token resource: {}", resource);
             Ok(())
         }
         None => Err(Error::NoDefaultAccount),

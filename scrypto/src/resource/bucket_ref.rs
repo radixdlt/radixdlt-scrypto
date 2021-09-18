@@ -1,32 +1,58 @@
+use sbor::{describe::Type, *};
+
+use crate::constants::*;
 use crate::kernel::*;
+use crate::rust::borrow::ToOwned;
 use crate::types::*;
 
 /// Represents a reference to a bucket.
-pub trait BucketRef {
-    fn amount(&self) -> U256;
-
-    fn resource(&self) -> Address;
-
-    fn drop(self);
+#[derive(Debug, Encode, Decode)]
+pub struct BucketRef {
+    rid: RID,
 }
 
-impl BucketRef for RID {
-    fn amount(&self) -> U256 {
-        let input = GetAmountRefInput { reference: *self };
-        let output: GetAmountRefOutput = call_kernel(GET_AMOUNT_REF, input);
+impl From<RID> for BucketRef {
+    fn from(rid: RID) -> Self {
+        Self { rid }
+    }
+}
+
+impl From<BucketRef> for RID {
+    fn from(a: BucketRef) -> RID {
+        a.rid
+    }
+}
+impl Describe for BucketRef {
+    fn describe() -> Type {
+        Type::Custom {
+            name: SCRYPTO_NAME_BUCKET_REF.to_owned(),
+        }
+    }
+}
+
+impl BucketRef {
+    pub fn amount(&self) -> Amount {
+        let input = GetRefAmountInput {
+            reference: self.rid,
+        };
+        let output: GetRefAmountOutput = call_kernel(GET_REF_AMOUNT, input);
 
         output.amount
     }
 
-    fn resource(&self) -> Address {
-        let input = GetResourceRefInput { reference: *self };
-        let output: GetResourceRefOutput = call_kernel(GET_RESOURCE_REF, input);
+    pub fn resource(&self) -> Address {
+        let input = GetRefResourceInput {
+            reference: self.rid,
+        };
+        let output: GetRefResourceOutput = call_kernel(GET_REF_RESOURCE, input);
 
         output.resource
     }
 
-    fn drop(self) {
-        let input = DropReferenceInput { reference: self };
+    pub fn drop(self) {
+        let input = DropReferenceInput {
+            reference: self.rid,
+        };
         let _: DropReferenceOutput = call_kernel(DROP_REFERENCE, input);
     }
 }

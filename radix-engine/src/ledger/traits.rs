@@ -20,9 +20,9 @@ pub trait Ledger {
 
     fn put_storage(&mut self, sid: SID, storage: Storage);
 
-    // For now, we always read/write everything in a resource bucket.
+    // For now, we always read/write everything in a vault.
 
-    fn get_bucket(&self, bid: BID) -> Option<PersistedBucket>;
+    fn get_vault(&self, vid: VID) -> Option<Vault>;
 
-    fn put_bucket(&mut self, bid: BID, bucket: PersistedBucket);
+    fn put_vault(&mut self, vid: VID, bucket: Vault);
 }

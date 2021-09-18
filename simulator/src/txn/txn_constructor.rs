@@ -28,16 +28,11 @@ pub fn build_call_function<T: Ledger>(
     let func = get_function_abi(ledger, package, blueprint, function, trace)?;
     let mut alloc = AddressAllocator::new();
     match prepare_args(&func.inputs, args, &mut alloc) {
-        Ok(ParseArgsOutput {
-            result,
-            tokens,
-            badges,
-        }) => {
+        Ok(ParseArgsOutput { result, bucket, .. }) => {
             let mut v = vec![Instruction::ReserveBuckets {
                 n: alloc.count() as u8,
             }];
-            prepare_buckets(&mut v, &tokens, account, "withdraw_tokens");
-            prepare_buckets(&mut v, &badges, account, "withdraw_badges");
+            prepare_buckets(&mut v, &bucket, account, "withdraw");
             v.push(Instruction::CallFunction {
                 package,
                 blueprint: blueprint.to_owned(),
@@ -46,7 +41,7 @@ pub fn build_call_function<T: Ledger>(
             });
             v.push(Instruction::DepositAll {
                 component: account,
-                method: "deposit_all".to_owned(),
+                method: "deposit_batch".to_owned(),
             });
             v.push(Instruction::Finalize);
             Ok(Transaction { instructions: v })
@@ -67,16 +62,11 @@ pub fn build_call_method<T: Ledger>(
     let meth = get_method_abi(ledger, component, method, trace)?;
     let mut alloc = AddressAllocator::new();
     match prepare_args(&meth.inputs, args, &mut alloc) {
-        Ok(ParseArgsOutput {
-            result,
-            tokens,
-            badges,
-        }) => {
+        Ok(ParseArgsOutput { result, bucket, .. }) => {
             let mut v = vec![Instruction::ReserveBuckets {
                 n: alloc.count() as u8,
             }];
-            prepare_buckets(&mut v, &tokens, account, "withdraw_tokens");
-            prepare_buckets(&mut v, &badges, account, "withdraw_badges");
+            prepare_buckets(&mut v, &bucket, account, "withdraw");
             v.push(Instruction::CallMethod {
                 component,
                 method: method.to_owned(),
@@ -84,7 +74,7 @@ pub fn build_call_method<T: Ledger>(
             });
             v.push(Instruction::DepositAll {
                 component: account,
-                method: "deposit_all".to_owned(),
+                method: "deposit_batch".to_owned(),
             });
             v.push(Instruction::Finalize);
             Ok(Transaction { instructions: v })
@@ -126,8 +116,9 @@ fn get_method_abi<T: Ledger>(
 
 struct ParseArgsOutput {
     result: Vec<Vec<u8>>,
-    tokens: HashMap<u8, Bucket>,
-    badges: HashMap<u8, Bucket>,
+    bucket: HashMap<u8, Bucket>,
+    #[allow(dead_code)]
+    references: HashMap<u8, BucketRef>,
 }
 
 fn prepare_args(
@@ -136,8 +127,8 @@ fn prepare_args(
     alloc: &mut AddressAllocator,
 ) -> Result<ParseArgsOutput, BuildArgError> {
     let mut result = Vec::new();
-    let mut tokens = HashMap::new();
-    let mut badges = HashMap::new();
+    let mut bucket = HashMap::new();
+    let mut references = HashMap::new();
 
     for (i, t) in types.iter().enumerate() {
         let arg = *(args
@@ -157,7 +148,7 @@ fn prepare_args(
             Type::U128 => handle_basic_ty::<u128>(i, t, arg),
             Type::String => handle_basic_ty::<String>(i, t, arg),
             Type::Custom { name } => {
-                handle_custom_ty(i, t, arg, name, alloc, &mut tokens, &mut badges)
+                handle_custom_ty(i, t, arg, name, alloc, &mut bucket, &mut references)
             }
             _ => Err(BuildArgError::UnsupportedType(i, t.clone())),
         };
@@ -166,8 +157,8 @@ fn prepare_args(
 
     Ok(ParseArgsOutput {
         result,
-        tokens,
-        badges,
+        bucket,
+        references,
     })
 }
 
@@ -188,11 +179,16 @@ fn handle_custom_ty(
     arg: &str,
     name: &str,
     alloc: &mut AddressAllocator,
-    tokens: &mut HashMap<u8, Bucket>,
-    badges: &mut HashMap<u8, Bucket>,
+    bucket: &mut HashMap<u8, Bucket>,
+    _references: &mut HashMap<u8, BucketRef>,
 ) -> Result<Vec<u8>, BuildArgError> {
     match name {
-        SCRYPTO_NAME_U256 => handle_basic_ty::<U256>(i, ty, arg),
+        SCRYPTO_NAME_AMOUNT => {
+            let value = arg
+                .parse::<Amount>()
+                .map_err(|_| BuildArgError::UnableToParse(i, ty.clone(), arg.to_owned()))?;
+            Ok(scrypto_encode(&value))
+        }
         SCRYPTO_NAME_ADDRESS => {
             let value = arg
                 .parse::<Address>()
@@ -205,9 +201,9 @@ fn handle_custom_ty(
                 .map_err(|_| BuildArgError::UnableToParse(i, ty.clone(), arg.to_owned()))?;
             Ok(scrypto_encode(&value))
         }
-        SCRYPTO_NAME_TOKENS | SCRYPTO_NAME_BADGES => {
+        SCRYPTO_NAME_BUCKET => {
             let mut split = arg.split(',');
-            let amount = split.next().and_then(|v| U256::from_dec_str(v.trim()).ok());
+            let amount = split.next().and_then(|v| v.trim().parse::<Amount>().ok());
             let resource = split.next().and_then(|v| v.trim().parse::<Address>().ok());
             match (amount, resource) {
                 (Some(a), Some(r)) => {
@@ -216,14 +212,9 @@ fn handle_custom_ty(
                         return Err(BuildArgError::BucketLimitReached);
                     }
 
-                    let bid = alloc.new_transient_bid();
-                    if name == SCRYPTO_NAME_TOKENS {
-                        tokens.insert(n as u8, Bucket::new(a, r));
-                        Ok(scrypto_encode(&scrypto::resource::Tokens::from(bid)))
-                    } else {
-                        badges.insert(n as u8, Bucket::new(a, r));
-                        Ok(scrypto_encode(&scrypto::resource::Badges::from(bid)))
-                    }
+                    let bid = alloc.new_bucket_id();
+                    bucket.insert(n as u8, Bucket::new(a, r));
+                    Ok(scrypto_encode(&scrypto::resource::Bucket::from(bid)))
                 }
                 _ => Err(BuildArgError::UnableToParse(i, ty.clone(), arg.to_owned())),
             }

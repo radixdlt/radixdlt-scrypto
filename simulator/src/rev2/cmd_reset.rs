@@ -4,7 +4,7 @@ use clap::{crate_version, App, ArgMatches, SubCommand};
 
 use crate::rev2::*;
 /// Constructs a `reset` subcommand.
-pub fn make_reset_cmd<'a, 'b>() -> App<'a, 'b> {
+pub fn make_reset<'a, 'b>() -> App<'a, 'b> {
     SubCommand::with_name(CMD_RESET)
         .about("Resets the data directory")
         .version(crate_version!())

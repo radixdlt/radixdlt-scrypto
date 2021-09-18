@@ -5,7 +5,7 @@ use crate::rev2::*;
 const ARG_ADDRESS: &str = "ADDRESS";
 
 /// Constructs a `config` subcommand.
-pub fn make_set_default_account_cmd<'a, 'b>() -> App<'a, 'b> {
+pub fn make_set_default_account<'a, 'b>() -> App<'a, 'b> {
     SubCommand::with_name(CMD_SET_DEFAULT_ACCOUNT)
         .about("Sets the default account")
         .version(crate_version!())
