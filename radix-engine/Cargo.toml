@@ -6,7 +6,7 @@ edition = "2018"
 [dependencies]
 sbor = { version = "0.1", path = "../sbor", default-features = false }
 scrypto = { version = "0.1", path = "../scrypto", default-features = false}
-wasmi = { version = "0.9", default-features = false }
+wasmi = { version = "0.9", default-features = false, features = ["vec_memory"] }
 colored = { version = "2.0", default-features = false }
 lru = { version = "0.6" }
 bencher = { version = "0.1.5" }
