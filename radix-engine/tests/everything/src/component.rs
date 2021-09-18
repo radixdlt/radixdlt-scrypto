@@ -17,7 +17,7 @@ blueprint! {
             let bucket =  mint_resource(resource, 100);
 
             Self {
-                resource: resource,
+                resource,
                 bucket: Vault::wrap(bucket),
                 secret: "Secret".to_owned(),
             }.instantiate()

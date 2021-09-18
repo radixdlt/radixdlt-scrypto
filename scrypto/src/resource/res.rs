@@ -120,3 +120,8 @@ impl ResourceBuilder {
         Resource::new_fixed(self.metadata.clone(), supply.into())
     }
 }
+impl Default for ResourceBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}

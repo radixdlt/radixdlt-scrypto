@@ -8,7 +8,7 @@ use crate::rust::str::FromStr;
 use crate::rust::vec::Vec;
 use crate::types::*;
 
-/// Represents An address.
+/// Represents an address.
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Address {
     /// System address.

@@ -50,7 +50,7 @@ blueprint! {
         /// Deposit a batch of buckets into this account
         pub fn deposit_batch(&mut self, buckets: Vec<Bucket>) {
             for bucket in buckets {
-                self.deposit(bucket.into());
+                self.deposit(bucket);
             }
         }
 
