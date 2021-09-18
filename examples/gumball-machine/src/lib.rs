@@ -12,9 +12,7 @@ blueprint! {
                 gumballs: Vault::wrap(
                     Resource::new_fixed(HashMap::new(), 1000)
                 ),
-                collected_xrd: Vault::wrap(
-                    Bucket::new(Address::RadixToken)
-                )
+                collected_xrd: Vault::new(Address::RadixToken)
             }
             .instantiate()
         }
