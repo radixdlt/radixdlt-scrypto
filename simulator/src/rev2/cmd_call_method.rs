@@ -62,8 +62,12 @@ pub fn handle_call_method(matches: &ArgMatches) -> Result<(), Error> {
             match build_call_method(&mut ledger, account, component, method, &args, trace) {
                 Ok(txn) => {
                     let receipt = execute(&mut ledger, txn, trace);
-                    dump_receipt(receipt);
-                    Ok(())
+                    dump_receipt(&receipt);
+                    if receipt.success {
+                        Ok(())
+                    } else {
+                        Err(Error::TransactionFailed)
+                    }
                 }
                 Err(e) => Err(Error::TxnConstructionErr(e)),
             }

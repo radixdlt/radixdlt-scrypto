@@ -1,6 +1,7 @@
 use clap::{crate_version, App, Arg, ArgMatches, SubCommand};
+use radix_engine::engine::*;
 use radix_engine::execution::*;
-use scrypto::buffer::*;
+use scrypto::args;
 use scrypto::rust::collections::HashMap;
 use scrypto::rust::str::FromStr;
 use scrypto::types::*;
@@ -102,25 +103,18 @@ pub fn handle_new_resource_fixed(matches: &ArgMatches) -> Result<(), Error> {
     match get_config(CONF_DEFAULT_ACCOUNT)? {
         Some(a) => {
             let account: Address = a.as_str().parse().map_err(Error::InvalidAddress)?;
-            let tx_hash = sha256(Uuid::new_v4().to_string());
-            let mut ledger = FileBasedLedger::new(get_data_dir()?);
-            let mut runtime = Runtime::new(tx_hash, &mut ledger);
 
-            let mut process = Process::new(0, trace, &mut runtime);
-            let output = process
-                .prepare_call_method(
-                    account,
-                    "new_resource_fixed".to_owned(),
-                    vec![scrypto_encode(&metadata), scrypto_encode(&supply)],
-                )
-                .and_then(|invocation| process.run(invocation))
+            let mut ledger = FileBasedLedger::new(get_data_dir()?);
+            let mut runtime = Runtime::new(sha256(Uuid::new_v4().to_string()), &mut ledger);
+            let mut process = runtime.start_process(trace);
+            let resource: Address = process
+                .call_method(account, "new_resource_fixed", args!(metadata, supply))
+                .and_then(decode_return)
                 .map_err(Error::TxnExecutionError)?;
             process.finalize().map_err(Error::TxnExecutionError)?;
-            let resource: Address = scrypto_decode(&output).map_err(Error::DataError)?;
-
             runtime.flush();
-            println!("New token resource: {}", resource);
 
+            println!("New token resource: {}", resource);
             Ok(())
         }
         None => Err(Error::NoDefaultAccount),

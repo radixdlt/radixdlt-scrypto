@@ -74,7 +74,7 @@ pub fn dump_resource<T: Ledger>(address: Address, ledger: &T) {
     }
 }
 
-pub fn dump_receipt(receipt: TransactionReceipt) {
+pub fn dump_receipt(receipt: &TransactionReceipt) {
     println!(
         "{} {}",
         "Transaction Status:".bold().green(),

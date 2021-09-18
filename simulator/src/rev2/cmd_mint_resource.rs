@@ -1,6 +1,6 @@
 use clap::{crate_version, App, Arg, ArgMatches, SubCommand};
 use radix_engine::execution::*;
-use scrypto::buffer::*;
+use scrypto::args;
 use scrypto::rust::str::FromStr;
 use scrypto::types::*;
 use scrypto::utils::*;
@@ -54,20 +54,14 @@ pub fn handle_mint_resource(matches: &ArgMatches) -> Result<(), Error> {
     match get_config(CONF_DEFAULT_ACCOUNT)? {
         Some(a) => {
             let account: Address = a.as_str().parse().map_err(Error::InvalidAddress)?;
-            let tx_hash = sha256(Uuid::new_v4().to_string());
-            let mut ledger = FileBasedLedger::new(get_data_dir()?);
-            let mut runtime = Runtime::new(tx_hash, &mut ledger);
 
-            let mut process = Process::new(0, trace, &mut runtime);
+            let mut ledger = FileBasedLedger::new(get_data_dir()?);
+            let mut runtime = Runtime::new(sha256(Uuid::new_v4().to_string()), &mut ledger);
+            let mut process = runtime.start_process(trace);
             process
-                .prepare_call_method(
-                    account,
-                    "mint_resource".to_owned(),
-                    vec![scrypto_encode(&amount), scrypto_encode(&resource)],
-                )
-                .and_then(|invocation| process.run(invocation))
+                .call_method(account, "mint_resource", args!(amount, resource))
+                .and_then(|_| process.finalize())
                 .map_err(Error::TxnExecutionError)?;
-            process.finalize().map_err(Error::TxnExecutionError)?;
             runtime.flush();
 
             println!("Done!");

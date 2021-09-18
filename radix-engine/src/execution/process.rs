@@ -84,8 +84,50 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         }
     }
 
-    /// Put resources into this process's treasury.
-    pub fn put_resources(
+    /// Publishes a package.
+    pub fn publish(&mut self, code: &[u8]) -> Result<Address, RuntimeError> {
+        let address = self.runtime.new_package_address();
+        self.publish_at(code, address)?;
+        Ok(address)
+    }
+
+    /// Publishes a package at a specific address.
+    pub fn publish_at(&mut self, code: &[u8], address: Address) -> Result<(), RuntimeError> {
+        if self.runtime.get_package(address).is_some() {
+            return Err(RuntimeError::PackageAlreadyExists(address));
+        }
+        validate_module(code)?;
+
+        trace!(
+            self,
+            "New package: address = {:?}, code length = {}",
+            address,
+            code.len()
+        );
+        self.runtime
+            .put_package(address, Package::new(code.to_owned()));
+        Ok(())
+    }
+
+    /// Reserve a bucket id.
+    pub fn reserve_bucket_id(&mut self) -> BID {
+        self.runtime.new_bucket_id()
+    }
+
+    /// Create a bucket of resources.
+    pub fn create_bucket(&mut self, amount: Amount, resource: Address) -> BID {
+        let bid = self.runtime.new_bucket_id();
+        self.buckets.insert(bid, Bucket::new(amount, resource));
+        bid
+    }
+
+    /// Put bucket into this process.
+    pub fn put_bucket(&mut self, bid: BID, bucket: Bucket) {
+        self.buckets.insert(bid, bucket);
+    }
+
+    /// Put buckets and references into this process.
+    pub fn put_buckets_and_refs(
         &mut self,
         buckets: HashMap<BID, Bucket>,
         references: HashMap<RID, BucketRef>,
@@ -94,11 +136,67 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         self.references.extend(references);
     }
 
-    /// Take resources from this process.
-    pub fn take_resources(&mut self) -> (HashMap<BID, Bucket>, HashMap<RID, BucketRef>) {
+    /// Take all **moving** buckets and references from this process.
+    pub fn take_moving_buckets_and_refs(
+        &mut self,
+    ) -> (HashMap<BID, Bucket>, HashMap<RID, BucketRef>) {
         let buckets = self.moving_buckets.drain().collect();
         let references = self.moving_references.drain().collect();
         (buckets, references)
+    }
+
+    /// Return owned buckets
+    pub fn owned_buckets(&mut self) -> Vec<BID> {
+        self.buckets.keys().copied().collect()
+    }
+
+    /// Withdraw specified resources into a reserved bucket.
+    pub fn withdraw_buckets_to_reserved(
+        &mut self,
+        amount: Amount,
+        resource: Address,
+        bid: BID,
+    ) -> Result<(), RuntimeError> {
+        assert!(!self.buckets.contains_key(&bid));
+
+        let candidates: BTreeSet<BID> = self
+            .buckets
+            .iter()
+            .filter(|(_, v)| v.resource() == resource)
+            .map(|(k, _)| *k)
+            .collect();
+
+        let mut needed = amount;
+        let mut remainder = Amount::zero();
+        for candidate in candidates {
+            if needed.is_zero() {
+                break;
+            }
+            let avail = self.buckets.remove(&candidate).unwrap().amount();
+            if avail > needed {
+                remainder = avail - needed;
+                needed = Amount::zero();
+            } else {
+                needed -= avail;
+            }
+        }
+
+        if needed.is_zero() {
+            self.create_bucket(remainder, resource);
+            self.put_bucket(bid, Bucket::new(amount, resource));
+            trace!(
+                self,
+                "Withdrawn: amount = {}, resource = {}, to bucket {}",
+                amount,
+                resource,
+                bid
+            );
+            Ok(())
+        } else {
+            Err(RuntimeError::AccountingError(
+                BucketError::InsufficientBalance,
+            ))
+        }
     }
 
     /// Run the specified export with this process.
@@ -158,13 +256,13 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         &mut self,
         package: Address,
         blueprint: &str,
-        function: String,
+        function: &str,
         args: Vec<Vec<u8>>,
     ) -> Result<Invocation, RuntimeError> {
         Ok(Invocation {
             package,
             export: format!("{}_main", blueprint),
-            function,
+            function: function.to_owned(),
             args,
         })
     }
@@ -173,7 +271,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
     pub fn prepare_call_method(
         &mut self,
         component: Address,
-        method: String,
+        method: &str,
         args: Vec<Vec<u8>>,
     ) -> Result<Invocation, RuntimeError> {
         let com = self
@@ -208,17 +306,17 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         for arg in &invocation.args {
             self.process_data(arg, Self::move_buckets, Self::move_references)?;
         }
-        let (buckets_out, references_out) = self.take_resources();
+        let (buckets_out, references_out) = self.take_moving_buckets_and_refs();
         let mut process = Process::new(self.depth + 1, self.trace, self.runtime);
-        process.put_resources(buckets_out, references_out);
+        process.put_buckets_and_refs(buckets_out, references_out);
 
         // run the function and finalize
         let result = process.run(invocation)?;
         process.finalize()?;
 
         // move resources
-        let (buckets_in, references_in) = process.take_resources();
-        self.put_resources(buckets_in, references_in);
+        let (buckets_in, references_in) = process.take_moving_buckets_and_refs();
+        self.put_buckets_and_refs(buckets_in, references_in);
 
         // scan locked buckets for some might have been unlocked by child processes
         let bids: Vec<BID> = self
@@ -235,6 +333,35 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         }
 
         Ok(result)
+    }
+
+    /// Call a function
+    pub fn call_function(
+        &mut self,
+        package: Address,
+        blueprint: &str,
+        function: &str,
+        args: Vec<Vec<u8>>,
+    ) -> Result<Vec<u8>, RuntimeError> {
+        let invocation = self.prepare_call_function(package, blueprint, function, args)?;
+        self.call(invocation)
+    }
+
+    /// Call a method
+    pub fn call_method(
+        &mut self,
+        component: Address,
+        method: &str,
+        args: Vec<Vec<u8>>,
+    ) -> Result<Vec<u8>, RuntimeError> {
+        let invocation = self.prepare_call_method(component, method, args)?;
+        self.call(invocation)
+    }
+
+    /// Call ABI
+    pub fn call_abi(&mut self, package: Address, blueprint: &str) -> Result<Vec<u8>, RuntimeError> {
+        let invocation = self.prepare_call_abi(package, blueprint)?;
+        self.call(invocation)
     }
 
     /// Finalize this process.
@@ -566,22 +693,9 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         &mut self,
         input: PublishPackageInput,
     ) -> Result<PublishPackageOutput, RuntimeError> {
-        let address = self.runtime.new_package_address();
-
-        if self.runtime.get_package(address).is_some() {
-            return Err(RuntimeError::PackageAlreadyExists(address));
-        }
-        validate_module(&input.code)?;
-
-        trace!(
-            self,
-            "New package: address = {:?}, code length = {}",
-            address,
-            input.code.len()
-        );
-        self.runtime.put_package(address, Package::new(input.code));
-
-        Ok(PublishPackageOutput { package: address })
+        Ok(PublishPackageOutput {
+            package: self.publish(&input.code)?,
+        })
     }
 
     fn handle_call_function(
@@ -600,7 +714,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         let invocation = self.prepare_call_function(
             input.package,
             input.blueprint.as_str(),
-            input.function,
+            input.function.as_str(),
             input.args,
         )?;
         let result = self.call(invocation);
@@ -621,7 +735,8 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
             input.args
         );
 
-        let invocation = self.prepare_call_method(input.component, input.method, input.args)?;
+        let invocation =
+            self.prepare_call_method(input.component, input.method.as_str(), input.args)?;
         let result = self.call(invocation);
 
         trace!(self, "CALL finished");

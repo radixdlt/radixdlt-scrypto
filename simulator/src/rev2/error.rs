@@ -31,5 +31,7 @@ pub enum Error {
 
     TxnExecutionError(RuntimeError),
 
+    TransactionFailed,
+
     DataError(DecodeError),
 }

@@ -10,7 +10,7 @@ use crate::rust::vec::Vec;
 use crate::types::*;
 
 /// Represents a reference id.
-#[derive(Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct RID(pub u32);
 
 /// Represents an error when parsing RID.

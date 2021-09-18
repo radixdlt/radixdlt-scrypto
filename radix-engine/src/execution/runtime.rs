@@ -16,9 +16,9 @@ use crate::model::*;
 ///
 /// Typically, a runtime involves a series of processes.
 ///
-pub struct Runtime<'le, T: Ledger> {
+pub struct Runtime<'le, L: Ledger> {
     tx_hash: H256,
-    ledger: &'le mut T,
+    ledger: &'le mut L,
     alloc: AddressAllocator,
     logs: Vec<(Level, String)>,
     packages: HashMap<Address, Package>,
@@ -35,8 +35,8 @@ pub struct Runtime<'le, T: Ledger> {
     cache: LruCache<Address, Module>, // TODO: move to ledger level
 }
 
-impl<'le, T: Ledger> Runtime<'le, T> {
-    pub fn new(tx_hash: H256, ledger: &'le mut T) -> Self {
+impl<'le, L: Ledger> Runtime<'le, L> {
+    pub fn new(tx_hash: H256, ledger: &'le mut L) -> Self {
         Self {
             tx_hash,
             ledger,
@@ -55,6 +55,11 @@ impl<'le, T: Ledger> Runtime<'le, T> {
             new_addresses: Vec::new(),
             cache: LruCache::new(1024),
         }
+    }
+
+    /// Start a process.
+    pub fn start_process<'rt>(&'rt mut self, verbose: bool) -> Process<'rt, 'le, L> {
+        Process::new(0, verbose, self)
     }
 
     /// Returns the transaction hash.
