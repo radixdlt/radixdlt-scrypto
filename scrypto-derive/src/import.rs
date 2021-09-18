@@ -327,7 +327,7 @@ fn get_native_type(ty: &des::Type) -> (Type, Vec<Item>) {
             "scrypto::Resource" => parse_quote! { ::scrypto::resource::Resource },
             "scrypto::Bucket" => parse_quote! { ::scrypto::resource::Bucket },
             "scrypto::BucketRef" => parse_quote! { ::scrypto::resource::BucketRef },
-            "scrypto::Vault" => parse_quote! { ::scrypto::constructs::Vault },
+            "scrypto::Vault" => parse_quote! { ::scrypto::resource::Vault },
 
             _ => panic!("Invalid custom type: {}", name),
         },

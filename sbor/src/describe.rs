@@ -119,6 +119,12 @@ pub trait Describe {
     fn describe() -> Type;
 }
 
+impl Describe for () {
+    fn describe() -> Type {
+        Type::Unit
+    }
+}
+
 macro_rules! describe_basic_type {
     ($type:ident, $type_id:expr) => {
         impl Describe for $type {
