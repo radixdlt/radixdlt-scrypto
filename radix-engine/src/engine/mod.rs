@@ -28,6 +28,7 @@ impl InMemoryRadixEngine {
     }
 }
 
+/// Decodes call return data into a Rust type.
 pub fn decode_return<T: sbor::Decode>(data: Vec<u8>) -> Result<T, RuntimeError> {
     scrypto_decode(&data).map_err(RuntimeError::InvalidData)
 }

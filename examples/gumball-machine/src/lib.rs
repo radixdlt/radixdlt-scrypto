@@ -10,7 +10,11 @@ blueprint! {
         pub fn new() -> Address {
             Self {
                 gumballs: Vault::wrap(
-                    Resource::new_fixed(HashMap::new(), 1000)
+                    ResourceBuilder::new()
+                        .metadata("name", "Gumball")
+                        .metadata("symbol", "gum")
+                        .metadata("description", "The best gumball in the world.")
+                        .create_fixed(1000)
                 ),
                 collected_xrd: Vault::new(Address::RadixToken)
             }
