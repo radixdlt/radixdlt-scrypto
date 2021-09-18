@@ -19,7 +19,7 @@ pub enum Error {
 
     InvalidAddress(ParseAddressError),
 
-    InvalidU256,
+    InvalidAmount,
 
     IOError(io::Error),
 

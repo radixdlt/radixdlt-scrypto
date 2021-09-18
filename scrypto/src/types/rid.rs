@@ -5,38 +5,24 @@ use crate::rust::borrow::ToOwned;
 use crate::rust::convert::TryFrom;
 use crate::rust::fmt;
 use crate::rust::str::FromStr;
+use crate::rust::string::String;
 use crate::rust::vec::Vec;
 use crate::types::*;
 
-/// Reference to a bucket.
+/// Represents a reference id.
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
-pub enum RID {
-    Immutable(u32),
-
-    Mutable(u32),
-}
+pub struct RID(pub u32);
 
 /// Represents an error when parsing RID.
 #[derive(Debug, Clone)]
 pub enum ParseRIDError {
-    InvalidHex(hex::FromHexError),
+    InvalidU32(String),
     InvalidLength(usize),
 }
 
 impl RID {
-    pub fn is_mutable(&self) -> bool {
-        matches!(self, Self::Mutable(_))
-    }
-
-    pub fn is_immutable(&self) -> bool {
-        matches!(self, Self::Immutable(_))
-    }
-
     pub fn to_vec(&self) -> Vec<u8> {
-        match self {
-            Self::Immutable(id) => combine2(0, &id.to_le_bytes()),
-            Self::Mutable(id) => combine2(1, &id.to_le_bytes()),
-        }
+        self.0.to_le_bytes().to_vec()
     }
 }
 
@@ -44,8 +30,9 @@ impl FromStr for RID {
     type Err = ParseRIDError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let bytes = hex::decode(s).map_err(ParseRIDError::InvalidHex)?;
-        Self::try_from(bytes.as_slice())
+        Ok(Self(
+            u32::from_str(s).map_err(|_| ParseRIDError::InvalidU32(s.to_owned()))?,
+        ))
     }
 }
 
@@ -53,25 +40,23 @@ impl TryFrom<&[u8]> for RID {
     type Error = ParseRIDError;
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
-        match (slice.get(0), slice.len()) {
-            (Some(0), 5) => Ok(RID::Immutable(u32::from_le_bytes(copy_u8_array(
-                &slice[1..],
-            )))),
-            (Some(1), 5) => Ok(RID::Mutable(u32::from_le_bytes(copy_u8_array(&slice[1..])))),
-            (_, len) => Err(ParseRIDError::InvalidLength(len)),
+        if slice.len() != 4 {
+            Err(ParseRIDError::InvalidLength(slice.len()))
+        } else {
+            Ok(Self(u32::from_le_bytes(copy_u8_array(slice))))
         }
     }
 }
 
 impl fmt::Debug for RID {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", hex::encode(self.to_vec()))
+        write!(f, "{}", self.0)
     }
 }
 
 impl fmt::Display for RID {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", hex::encode(self.to_vec()))
+        write!(f, "{}", self.0)
     }
 }
 
@@ -116,7 +101,7 @@ mod tests {
 
     #[test]
     fn test_from_to_string() {
-        let s = "0100000001";
+        let s = "123";
         let a = RID::from_str(s).unwrap();
         assert_eq!(a.to_string(), s);
     }

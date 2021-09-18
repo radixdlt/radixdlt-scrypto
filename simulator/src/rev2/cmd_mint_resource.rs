@@ -1,6 +1,7 @@
 use clap::{crate_version, App, Arg, ArgMatches, SubCommand};
 use radix_engine::execution::*;
 use scrypto::buffer::*;
+use scrypto::rust::str::FromStr;
 use scrypto::types::*;
 use scrypto::utils::*;
 use uuid::Uuid;
@@ -38,12 +39,12 @@ pub fn make_mint_resource_cmd<'a, 'b>() -> App<'a, 'b> {
 /// Handles a `mint-resource` request.
 pub fn handle_mint_resource(matches: &ArgMatches) -> Result<(), Error> {
     let trace = matches.is_present(ARG_TRACE);
-    let amount = U256::from_dec_str(
+    let amount = Amount::from_str(
         matches
             .value_of(ARG_AMOUNT)
             .ok_or_else(|| Error::MissingArgument(ARG_AMOUNT.to_owned()))?,
     )
-    .map_err(|_| Error::InvalidU256)?;
+    .map_err(|_| Error::InvalidAmount)?;
     let resource: Address = matches
         .value_of(ARG_RESOURCE)
         .ok_or_else(|| Error::MissingArgument(ARG_RESOURCE.to_owned()))?

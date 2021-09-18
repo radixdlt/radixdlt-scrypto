@@ -8,7 +8,7 @@ pub fn create_mutable(symbol: &str, minter: Address) -> Address {
         .into()
 }
 
-pub fn create_fixed(symbol: &str, supply: U256) -> Bucket {
+pub fn create_fixed(symbol: &str, supply: Amount) -> Bucket {
     ResourceBuilder::new()
         .metadata("symbol", symbol)
         .create_fixed(supply)
@@ -16,5 +16,5 @@ pub fn create_fixed(symbol: &str, supply: U256) -> Bucket {
 
 pub fn mint_resource(resource: Address, amount: u32) -> Bucket {
     let resource = Resource::from(resource);
-    resource.mint(U256::from(amount))
+    resource.mint(Amount::from(amount))
 }

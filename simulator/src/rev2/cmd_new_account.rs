@@ -68,7 +68,7 @@ pub fn handle_new_account(matches: &ArgMatches) -> Result<(), Error> {
 
     // allocate free XRD
     let mut buckets = HashMap::new();
-    let bid = runtime.new_transient_bid();
+    let bid = runtime.new_bucket_id();
     let bucket = Bucket::new(1_000_000.into(), Address::RadixToken);
     buckets.insert(bid, bucket);
 
@@ -78,8 +78,8 @@ pub fn handle_new_account(matches: &ArgMatches) -> Result<(), Error> {
     process2
         .prepare_call_method(
             component,
-            "deposit_all".to_owned(),
-            vec![scrypto_encode(&vec![bid])],
+            "deposit".to_owned(),
+            vec![scrypto_encode(&scrypto::resource::Bucket::from(bid))],
         )
         .and_then(|target| process2.run(target))
         .map_err(Error::TxnExecutionError)?;

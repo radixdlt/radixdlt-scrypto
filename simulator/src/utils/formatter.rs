@@ -123,7 +123,7 @@ pub fn format_custom<L: Ledger>(
     res: &mut Vec<Bucket>,
 ) -> Result<String, DecodeError> {
     match ty {
-        SCRYPTO_TYPE_U256 => Ok(<U256>::from_little_endian(data).to_string()),
+        SCRYPTO_TYPE_AMOUNT => Ok(<Amount>::from_little_endian(data).to_string()),
         SCRYPTO_TYPE_ADDRESS => {
             let address =
                 Address::try_from(data).map_err(|_| DecodeError::InvalidCustomData(ty))?;
@@ -151,20 +151,24 @@ pub fn format_custom<L: Ledger>(
         }
         SCRYPTO_TYPE_BID => {
             let bid = BID::try_from(data).map_err(|_| DecodeError::InvalidCustomData(ty))?;
-            let bucket = le
-                .get_bucket(bid)
-                .ok_or(DecodeError::InvalidCustomData(ty))?;
-            res.push(Bucket::new(bucket.amount(), bucket.resource()));
-            Ok(format!(
-                "Bucket {{ bid: {}, amount: {}, resource: {} }}",
-                bid,
-                bucket.amount(),
-                bucket.resource()
-            ))
+            Ok(format!("BID ({})", bid))
         }
         SCRYPTO_TYPE_RID => {
             let rid = RID::try_from(data).map_err(|_| DecodeError::InvalidCustomData(ty))?;
             Ok(format!("RID ({})", rid))
+        }
+        SCRYPTO_TYPE_VID => {
+            let vid = VID::try_from(data).map_err(|_| DecodeError::InvalidCustomData(ty))?;
+            let vault = le
+                .get_vault(vid)
+                .ok_or(DecodeError::InvalidCustomData(ty))?;
+            res.push(Bucket::new(vault.amount(), vault.resource()));
+            Ok(format!(
+                "Vault {{ vid: {}, amount: {}, resource: {} }}",
+                vid,
+                vault.amount(),
+                vault.resource()
+            ))
         }
         _ => Err(DecodeError::InvalidType {
             expected: 0xff,

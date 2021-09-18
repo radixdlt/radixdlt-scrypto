@@ -6,14 +6,14 @@ use scrypto::*;
 
 blueprint! {
     struct MoveTest {
-        bucket: Vec<Bucket>
+        vaults: Vec<Vault>
     }
 
     impl MoveTest {
 
         pub fn receive_bucket(&mut self, t: Bucket) {
             info!("Received bucket: address = {}, amount = {}", t.resource(), t.amount());
-            self.bucket.push(t);
+            self.vaults.push(Vault::wrap(t));
         }
 
         pub fn receive_reference(&self, t: BucketRef) {
@@ -25,7 +25,7 @@ blueprint! {
             let resource =  create_mutable("m1", Context::package_address());
             let bucket =  mint_resource(resource, 100);
             let component: Component = MoveTest {
-                bucket: Vec::new()
+                vaults: Vec::new()
             }.instantiate().into();
 
             component.call::<()>("receive_bucket", args!(bucket));
@@ -35,7 +35,7 @@ blueprint! {
             let resource =  create_mutable("m2", Context::package_address());
             let bucket =  mint_resource(resource, 100);
             let component: Component = MoveTest {
-                bucket: Vec::new()
+                vaults: Vec::new()
             }.instantiate().into();
 
             component.call::<()>("receive_reference", args!(bucket.borrow()));

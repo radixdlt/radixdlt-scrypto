@@ -7,7 +7,7 @@ use scrypto::*;
 blueprint! {
     struct ComponentTest {
         resource: Address,
-        bucket: Bucket,
+        bucket: Vault,
         secret: String,
     }
 
@@ -18,7 +18,7 @@ blueprint! {
 
             Self {
                 resource: resource,
-                bucket: bucket,
+                bucket: Vault::wrap(bucket),
                 secret: "Secret".to_owned(),
             }.instantiate()
         }

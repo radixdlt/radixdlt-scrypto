@@ -19,7 +19,7 @@ pub struct Resource {
 pub struct ResourceInfo {
     pub metadata: HashMap<String, String>,
     pub minter: Option<Address>,
-    pub supply: Option<U256>,
+    pub supply: Option<Amount>,
 }
 
 /// Utility for creating new resource
@@ -47,7 +47,7 @@ impl Resource {
         output.resource.into()
     }
 
-    pub fn new_fixed<T: Into<U256>>(metadata: HashMap<String, String>, supply: T) -> Bucket {
+    pub fn new_fixed<T: Into<Amount>>(metadata: HashMap<String, String>, supply: T) -> Bucket {
         let input = CreateResourceFixedInput {
             metadata,
             supply: supply.into(),
@@ -70,9 +70,9 @@ impl Resource {
         }
     }
 
-    pub fn mint<T: Into<U256>>(&self, amount: T) -> Bucket {
+    pub fn mint<T: Into<Amount>>(&self, amount: T) -> Bucket {
         let amt = amount.into();
-        assert!(amt >= U256::one());
+        assert!(amt >= Amount::one());
 
         let input = MintResourceInput {
             resource: self.address,
@@ -116,7 +116,7 @@ impl ResourceBuilder {
     }
 
     /// Create resource with fixed supply.
-    pub fn create_fixed<T: Into<U256>>(&self, supply: T) -> Bucket {
+    pub fn create_fixed<T: Into<Amount>>(&self, supply: T) -> Bucket {
         Resource::new_fixed(self.metadata.clone(), supply.into())
     }
 }

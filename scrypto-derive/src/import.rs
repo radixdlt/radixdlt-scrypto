@@ -311,20 +311,23 @@ fn get_native_type(ty: &des::Type) -> (Type, Vec<Item>) {
             parse_quote! { HashMap<#key_type, #value_type> }
         }
         des::Type::Custom { name } => match name.as_str() {
-            "scrypto::U256" => parse_quote! { ::scrypto::types::U256 },
             "scrypto::Address" => parse_quote! { ::scrypto::types::Address },
+            "scrypto::Amount" => parse_quote! { ::scrypto::types::Amount },
             "scrypto::H256" => parse_quote! { ::scrypto::types::H256 },
             "scrypto::BID" => parse_quote! { ::scrypto::types::BID },
             "scrypto::RID" => parse_quote! { ::scrypto::types::RID },
             "scrypto::SID" => parse_quote! { ::scrypto::types::SID },
+            "scrypto::VID" => parse_quote! { ::scrypto::types::VID },
 
             "scrypto::Package" => parse_quote! { ::scrypto::constructs::Package },
             "scrypto::Blueprint" => parse_quote! { ::scrypto::constructs::Blueprint },
             "scrypto::Component" => parse_quote! { ::scrypto::constructs::Component },
-            "scrypto::Resource" => parse_quote! { ::scrypto::constructs::Resource },
             "scrypto::Storage" => parse_quote! { ::scrypto::constructs::Storage },
+
+            "scrypto::Resource" => parse_quote! { ::scrypto::resource::Resource },
             "scrypto::Bucket" => parse_quote! { ::scrypto::resource::Bucket },
             "scrypto::BucketRef" => parse_quote! { ::scrypto::resource::BucketRef },
+            "scrypto::Vault" => parse_quote! { ::scrypto::constructs::Vault },
 
             _ => panic!("Invalid custom type: {}", name),
         },

@@ -2,15 +2,19 @@ use scrypto::prelude::*;
 
 blueprint! {
     struct GumballMachine {
-        gumballs: Bucket,
-        collected_xrd: Bucket,
+        gumballs: Vault,
+        collected_xrd: Vault,
     }
 
     impl GumballMachine {
         pub fn new() -> Address {
             Self {
-                gumballs: Resource::new_fixed(HashMap::new(), 1000),
-                collected_xrd: Bucket::new(Address::RadixToken),
+                gumballs: Vault::wrap(
+                    Resource::new_fixed(HashMap::new(), 1000)
+                ),
+                collected_xrd: Vault::wrap(
+                    Bucket::new(Address::RadixToken)
+                )
             }
             .instantiate()
         }

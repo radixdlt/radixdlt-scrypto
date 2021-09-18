@@ -21,7 +21,7 @@ blueprint! {
         pub fn split()  -> (Bucket, Bucket) {
             let resource = create_mutable("b2", Context::package_address());
             let bucket1 = mint_resource(resource, 100);
-            let bucket2 = bucket1.take(U256::from(5));
+            let bucket2 = bucket1.take(Amount::from(5));
             (bucket1, bucket2)
         }
 
@@ -33,7 +33,7 @@ blueprint! {
             bucket
         }
 
-        pub fn query() -> (U256, Address, Bucket) {
+        pub fn query() -> (Amount, Address, Bucket) {
             let resource = create_mutable("b4", Context::package_address());
             let bucket = mint_resource(resource, 100);
             (bucket.amount(), bucket.resource(), bucket)

@@ -70,7 +70,7 @@ fn test_bucket() {
         .unwrap();
 
     engine
-        .call_function::<(U256, Address, Bucket)>(package, "BucketTest", "query", args!())
+        .call_function::<(Amount, Address, Bucket)>(package, "BucketTest", "query", args!())
         .unwrap();
 }
 

@@ -2,13 +2,13 @@ use scrypto::prelude::*;
 
 blueprint! {
     struct Account {
-        buckets: Storage,
+        vaults: Storage,
     }
 
     impl Account {
         pub fn new() -> Address {
             Account {
-                buckets: Storage::new(),
+                vaults: Storage::new(),
             }
             .instantiate()
         }
@@ -33,7 +33,7 @@ blueprint! {
         pub fn new_resource_fixed(
             &mut self,
             metadata: HashMap<String, String>,
-            supply: U256,
+            supply: Amount,
         ) -> Address {
             let bucket = Resource::new_fixed(metadata, supply);
             let address = bucket.resource();
@@ -42,13 +42,13 @@ blueprint! {
         }
 
         /// Mints resources and deposits them into this account.
-        pub fn mint_resource(&mut self, amount: U256, resource: Address)  {
+        pub fn mint_resource(&mut self, amount: Amount, resource: Address)  {
             let bucket = Resource::from(resource).mint(amount);
             self.deposit(bucket);
         }
 
-        /// Deposit buckets of resources into this account
-        pub fn deposit_all(&mut self, buckets: Vec<BID>) {
+        /// Deposit a batch of buckets into this account
+        pub fn deposit_batch(&mut self, buckets: Vec<Bucket>) {
             for bucket in buckets {
                 self.deposit(bucket.into());
             }
@@ -57,22 +57,21 @@ blueprint! {
         /// Deposits resources into this account.
         pub fn deposit(&mut self, bucket: Bucket) {
             let resource = bucket.resource();
-            match self.buckets.get::<Address, Bucket>(&resource) {
-                Some(b) => {
-                    b.put(bucket);
+            match self.vaults.get::<Address, Vault>(&resource) {
+                Some(v) => {
+                    v.put(bucket);
                 }
                 None => {
-                    let b = Bucket::new(resource);
-                    b.put(bucket);
-                    self.buckets.insert(resource, b);
+                    let v = Vault::wrap(bucket);
+                    self.vaults.insert(resource, v);
                 }
             }
         }
 
         /// Withdraws resources from this account.
-        pub fn withdraw(&mut self, amount: U256, resource: Address) -> Bucket {
-            let bucket = self.buckets.get::<Address, Bucket>(&resource).unwrap();
-            bucket.take(amount)
+        pub fn withdraw(&mut self, amount: Amount, resource: Address) -> Bucket {
+            let vault = self.vaults.get::<Address, Vault>(&resource).unwrap();
+            vault.take(amount)
         }
     }
 }

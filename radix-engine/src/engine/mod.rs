@@ -60,8 +60,8 @@ impl InMemoryRadixEngine {
     }
 
     /// Prepare bucket for next invocation.
-    pub fn prepare_bucket(&mut self, amount: U256, resource: Address) -> BID {
-        let bid = self.alloc.new_transient_bid();
+    pub fn prepare_bucket(&mut self, amount: Amount, resource: Address) -> BID {
+        let bid = self.alloc.new_bucket_id();
         self.prepared_buckets
             .insert(bid, Bucket::new(amount, resource));
         bid

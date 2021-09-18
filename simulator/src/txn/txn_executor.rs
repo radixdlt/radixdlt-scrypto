@@ -30,7 +30,7 @@ pub fn execute<T: Ledger>(
             Instruction::ReserveBuckets { n } => {
                 // TODO check if this is the first instruction
                 for _ in 0..n {
-                    reserved_bids.push(runtime.new_transient_bid());
+                    reserved_bids.push(runtime.new_bucket_id());
                 }
                 Ok(vec![])
             }
@@ -54,7 +54,7 @@ pub fn execute<T: Ledger>(
                         )),
                     }
                 }
-                None => Err(RuntimeError::BucketNotFound),
+                None => Err(RuntimeError::BucketNotReserved),
             },
             Instruction::CallFunction {
                 package,
@@ -94,8 +94,8 @@ pub fn execute<T: Ledger>(
                 let mut buckets = vec![];
                 for (_, bucket) in resource_collector.iter_mut() {
                     if bucket.amount() > 0.into() {
-                        let bid = runtime.new_transient_bid();
-                        buckets.push(bid);
+                        let bid = runtime.new_bucket_id();
+                        buckets.push(scrypto::resource::Bucket::from(bid));
                         moving_buckets.insert(bid, bucket.take(bucket.amount()).unwrap());
                     }
                 }
@@ -177,12 +177,15 @@ fn call<L: Ledger>(
                     .unwrap();
             }
             if !references.is_empty() {
-                return Err(RuntimeError::UnexpectedResourceReturn);
+                return Err(RuntimeError::UnexpectedReferenceReturn);
             }
         }
         None => {
-            if !buckets.is_empty() || !references.is_empty() {
-                return Err(RuntimeError::UnexpectedResourceReturn);
+            if !references.is_empty() {
+                return Err(RuntimeError::UnexpectedReferenceReturn);
+            }
+            if !buckets.is_empty() {
+                return Err(RuntimeError::UnexpectedBucketReturn);
             }
         }
     }

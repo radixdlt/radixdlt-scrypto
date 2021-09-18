@@ -41,40 +41,40 @@ impl Bucket {
     }
 
     pub fn put(&self, other: Self) {
-        let input = CombineBucketsInput {
+        let input = PutIntoBucketInput {
             bucket: self.bid,
             other: other.bid,
         };
-        let _: CombineBucketsOutput = call_kernel(COMBINE_BUCKETS, input);
+        let _: PutIntoBucketOutput = call_kernel(PUT_INTO_BUCKET, input);
     }
 
-    pub fn take<A: Into<U256>>(&self, amount: A) -> Self {
-        let input = SplitBucketInput {
+    pub fn take<A: Into<Amount>>(&self, amount: A) -> Self {
+        let input = TakeFromBucketInput {
             bucket: self.bid,
             amount: amount.into(),
         };
-        let output: SplitBucketOutput = call_kernel(SPLIT_BUCKET, input);
+        let output: TakeFromBucketOutput = call_kernel(TAKE_FROM_BUCKET, input);
 
         output.bucket.into()
     }
 
     pub fn borrow(&self) -> BucketRef {
-        let input = BorrowImmutableInput { bucket: self.bid };
-        let output: BorrowImmutableOutput = call_kernel(BORROW_IMMUTABLE, input);
+        let input = CreateReferenceInput { bucket: self.bid };
+        let output: CreateReferenceOutput = call_kernel(CREATE_REFERENCE, input);
 
         output.reference.into()
     }
 
-    pub fn amount(&self) -> U256 {
-        let input = GetAmountInput { bucket: self.bid };
-        let output: GetAmountOutput = call_kernel(GET_AMOUNT, input);
+    pub fn amount(&self) -> Amount {
+        let input = GetBucketAmountInput { bucket: self.bid };
+        let output: GetBucketAmountOutput = call_kernel(GET_BUCKET_AMOUNT, input);
 
         output.amount
     }
 
     pub fn resource(&self) -> Address {
-        let input = GetResourceInput { bucket: self.bid };
-        let output: GetResourceOutput = call_kernel(GET_RESOURCE, input);
+        let input = GetBucketResourceInput { bucket: self.bid };
+        let output: GetBucketResourceOutput = call_kernel(GET_BUCKET_RESOURCE, input);
 
         output.resource
     }

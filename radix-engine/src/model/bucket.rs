@@ -14,7 +14,7 @@ pub enum BucketError {
 /// A bucket is a container that holds resources.
 #[derive(Debug, Clone, Encode, Decode)]
 pub struct Bucket {
-    amount: U256,
+    amount: Amount,
     resource: Address,
 }
 
@@ -31,13 +31,13 @@ pub type BucketRef = Rc<LockedBucket>;
 
 /// A persisted bucket is stored permanently on ledger state.
 #[derive(Debug, Clone, Encode, Decode)]
-pub struct PersistentBucket {
+pub struct Vault {
     bucket: Bucket,
     owner: Address,
 }
 
 impl Bucket {
-    pub fn new(amount: U256, resource: Address) -> Self {
+    pub fn new(amount: Amount, resource: Address) -> Self {
         Self { amount, resource }
     }
 
@@ -50,7 +50,7 @@ impl Bucket {
         }
     }
 
-    pub fn take(&mut self, amount: U256) -> Result<Self, BucketError> {
+    pub fn take(&mut self, amount: Amount) -> Result<Self, BucketError> {
         if self.amount < amount {
             Err(BucketError::InsufficientBalance)
         } else {
@@ -60,7 +60,7 @@ impl Bucket {
         }
     }
 
-    pub fn amount(&self) -> U256 {
+    pub fn amount(&self) -> Amount {
         self.amount
     }
 
@@ -89,7 +89,7 @@ impl From<LockedBucket> for Bucket {
     }
 }
 
-impl PersistentBucket {
+impl Vault {
     pub fn new(bucket: Bucket, owner: Address) -> Self {
         Self { bucket, owner }
     }
@@ -102,7 +102,7 @@ impl PersistentBucket {
         }
     }
 
-    pub fn take(&mut self, amount: U256, requester: Address) -> Result<Bucket, BucketError> {
+    pub fn take(&mut self, amount: Amount, requester: Address) -> Result<Bucket, BucketError> {
         if requester == self.owner {
             self.bucket.take(amount)
         } else {
@@ -110,7 +110,7 @@ impl PersistentBucket {
         }
     }
 
-    pub fn amount(&self) -> U256 {
+    pub fn amount(&self) -> Amount {
         self.bucket.amount()
     }
 

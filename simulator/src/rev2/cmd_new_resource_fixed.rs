@@ -2,6 +2,7 @@ use clap::{crate_version, App, Arg, ArgMatches, SubCommand};
 use radix_engine::execution::*;
 use scrypto::buffer::*;
 use scrypto::rust::collections::HashMap;
+use scrypto::rust::str::FromStr;
 use scrypto::types::*;
 use scrypto::utils::*;
 use uuid::Uuid;
@@ -74,12 +75,12 @@ pub fn make_new_resource_fixed_cmd<'a, 'b>() -> App<'a, 'b> {
 pub fn handle_new_resource_fixed(matches: &ArgMatches) -> Result<(), Error> {
     let trace = matches.is_present(ARG_TRACE);
 
-    let supply = U256::from_dec_str(
+    let supply = Amount::from_str(
         matches
             .value_of(ARG_SUPPLY)
             .ok_or_else(|| Error::MissingArgument(ARG_SUPPLY.to_owned()))?,
     )
-    .map_err(|_| Error::InvalidU256)?;
+    .map_err(|_| Error::InvalidAmount)?;
 
     let mut metadata = HashMap::new();
     matches

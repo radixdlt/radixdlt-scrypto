@@ -31,20 +31,20 @@ impl Describe for BucketRef {
 }
 
 impl BucketRef {
-    pub fn amount(&self) -> U256 {
-        let input = GetAmountRefInput {
+    pub fn amount(&self) -> Amount {
+        let input = GetRefAmountInput {
             reference: self.rid,
         };
-        let output: GetAmountRefOutput = call_kernel(GET_AMOUNT_REF, input);
+        let output: GetRefAmountOutput = call_kernel(GET_REF_AMOUNT, input);
 
         output.amount
     }
 
     pub fn resource(&self) -> Address {
-        let input = GetResourceRefInput {
+        let input = GetRefResourceInput {
             reference: self.rid,
         };
-        let output: GetResourceRefOutput = call_kernel(GET_RESOURCE_REF, input);
+        let output: GetRefResourceOutput = call_kernel(GET_REF_RESOURCE, input);
 
         output.resource
     }
