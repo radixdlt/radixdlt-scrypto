@@ -12,7 +12,7 @@ const ARG_METHOD: &str = "METHOD";
 const ARG_ARGS: &str = "ARGS";
 
 /// Constructs a `call-method` subcommand.
-pub fn make_call_method_cmd<'a, 'b>() -> App<'a, 'b> {
+pub fn make_call_method<'a, 'b>() -> App<'a, 'b> {
     SubCommand::with_name(CMD_CALL_METHOD)
         .about("Calls a component method")
         .version(crate_version!())

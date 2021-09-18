@@ -19,7 +19,7 @@ const ARG_URL: &str = "URL";
 const ARG_ICON_URL: &str = "ICON_URL";
 
 /// Constructs a `new-resource-fixed` subcommand.
-pub fn make_new_resource_fixed_cmd<'a, 'b>() -> App<'a, 'b> {
+pub fn make_new_resource_fixed<'a, 'b>() -> App<'a, 'b> {
     SubCommand::with_name(CMD_NEW_RESOURCE_FIXED)
         .about("Creates token with fixed supply")
         .version(crate_version!())

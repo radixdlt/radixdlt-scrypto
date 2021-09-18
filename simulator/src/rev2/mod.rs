@@ -49,17 +49,17 @@ where
         .name("rev2")
         .about("Build fast, reward everyone, and scale without friction")
         .version(clap::crate_version!())
-        .subcommand(make_export_abi_cmd())
-        .subcommand(make_call_function_cmd())
-        .subcommand(make_call_method_cmd())
-        .subcommand(make_new_resource_fixed_cmd())
-        .subcommand(make_new_resource_mutable_cmd())
-        .subcommand(make_mint_resource_cmd())
-        .subcommand(make_new_account_cmd())
-        .subcommand(make_publish_cmd())
-        .subcommand(make_reset_cmd())
-        .subcommand(make_set_default_account_cmd())
-        .subcommand(make_show_cmd());
+        .subcommand(make_export_abi())
+        .subcommand(make_call_function())
+        .subcommand(make_call_method())
+        .subcommand(make_new_resource_fixed())
+        .subcommand(make_new_resource_mutable())
+        .subcommand(make_mint_resource())
+        .subcommand(make_new_account())
+        .subcommand(make_publish())
+        .subcommand(make_reset())
+        .subcommand(make_set_default_account())
+        .subcommand(make_show());
     let matches = app.get_matches_from(args);
 
     match matches.subcommand() {

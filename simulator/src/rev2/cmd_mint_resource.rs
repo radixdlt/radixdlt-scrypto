@@ -14,7 +14,7 @@ const ARG_AMOUNT: &str = "AMOUNT";
 const ARG_RESOURCE: &str = "RESOURCE";
 
 /// Constructs a `mint-resource` subcommand.
-pub fn make_mint_resource_cmd<'a, 'b>() -> App<'a, 'b> {
+pub fn make_mint_resource<'a, 'b>() -> App<'a, 'b> {
     SubCommand::with_name(CMD_MINT_RESOURCE)
         .about("Mints resource")
         .version(crate_version!())

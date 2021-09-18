@@ -9,7 +9,7 @@ use crate::utils::*;
 const ARG_ADDRESS: &str = "ADDRESS";
 
 /// Constructs a `show` subcommand.
-pub fn make_show_cmd<'a, 'b>() -> App<'a, 'b> {
+pub fn make_show<'a, 'b>() -> App<'a, 'b> {
     SubCommand::with_name(CMD_SHOW)
         .about("Shows the content of an address")
         .version(crate_version!())

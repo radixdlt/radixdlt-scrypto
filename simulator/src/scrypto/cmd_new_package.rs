@@ -7,7 +7,7 @@ use crate::scrypto::*;
 const ARG_NAME: &str = "NAME";
 
 /// Constructs a `new-package` subcommand.
-pub fn make_new_package_cmd<'a, 'b>() -> App<'a, 'b> {
+pub fn make_new_package<'a, 'b>() -> App<'a, 'b> {
     SubCommand::with_name(CMD_NEW_PACKAGE)
         .about("Creates an package")
         .version(crate_version!())

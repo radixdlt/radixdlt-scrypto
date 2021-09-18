@@ -7,7 +7,7 @@ mod sid;
 mod vid;
 
 pub use address::{Address, ParseAddressError};
-pub use amount::Amount;
+pub use amount::{Amount, ParseAmountError};
 pub use bid::{ParseBIDError, BID};
 pub use h256::{ParseH256Error, H256};
 pub use rid::{ParseRIDError, RID};

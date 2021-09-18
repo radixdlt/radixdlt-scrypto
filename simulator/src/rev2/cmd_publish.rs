@@ -20,7 +20,7 @@ const ARG_PATH: &str = "PATH";
 const ARG_ADDRESS: &str = "ADDRESS";
 
 /// Constructs a `publish` subcommand.
-pub fn make_publish_cmd<'a, 'b>() -> App<'a, 'b> {
+pub fn make_publish<'a, 'b>() -> App<'a, 'b> {
     SubCommand::with_name(CMD_PUBLISH)
         .about("Publishes a package")
         .version(crate_version!())

@@ -10,7 +10,7 @@ const ARG_PACKAGE: &str = "PACKAGE";
 const ARG_BLUEPRINT: &str = "BLUEPRINT";
 
 /// Constructs a `export-abi` subcommand.
-pub fn make_export_abi_cmd<'a, 'b>() -> App<'a, 'b> {
+pub fn make_export_abi<'a, 'b>() -> App<'a, 'b> {
     SubCommand::with_name(CMD_EXPORT_ABI)
         .about("Exports the ABI of a blueprint")
         .version(crate_version!())

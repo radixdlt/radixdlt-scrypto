@@ -13,7 +13,7 @@ const ARG_FUNCTION: &str = "FUNCTION";
 const ARG_ARGS: &str = "ARGS";
 
 /// Constructs a `call-function` subcommand.
-pub fn make_call_function_cmd<'a, 'b>() -> App<'a, 'b> {
+pub fn make_call_function<'a, 'b>() -> App<'a, 'b> {
     SubCommand::with_name(CMD_CALL_FUNCTION)
         .about("Calls a blueprint function")
         .version(crate_version!())
