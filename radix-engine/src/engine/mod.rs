@@ -78,7 +78,7 @@ impl InMemoryRadixEngine {
         let tx_hash = self.next_tx_hash();
         let mut runtime = Runtime::new(tx_hash, &mut self.ledger);
         let mut process = Process::new(0, self.verbose, &mut runtime);
-        let target =
+        let invocation =
             process.prepare_call_function(package, blueprint, function.to_owned(), args)?;
 
         // move resources
@@ -89,7 +89,7 @@ impl InMemoryRadixEngine {
         self.alloc.reset();
 
         // run
-        let result = process.run(target);
+        let result = process.run(invocation);
         process.finalize()?;
 
         // check
@@ -112,7 +112,7 @@ impl InMemoryRadixEngine {
         let tx_hash = self.next_tx_hash();
         let mut runtime = Runtime::new(tx_hash, &mut self.ledger);
         let mut process = Process::new(0, self.verbose, &mut runtime);
-        let target = process.prepare_call_method(component, method.to_owned(), args)?;
+        let invocation = process.prepare_call_method(component, method.to_owned(), args)?;
 
         // move resources
         process.put_resources(
@@ -122,7 +122,7 @@ impl InMemoryRadixEngine {
         self.alloc.reset();
 
         // run
-        let result = process.run(target);
+        let result = process.run(invocation);
         process.finalize()?;
 
         // check

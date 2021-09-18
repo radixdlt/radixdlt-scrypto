@@ -63,12 +63,12 @@ pub fn execute<T: Ledger>(
                 args,
             } => {
                 let mut process = Process::new(0, trace, &mut runtime);
-                let target =
+                let invocation =
                     process.prepare_call_function(package, blueprint.as_str(), function, args);
-                target.and_then(|target| {
+                invocation.and_then(|invocation| {
                     call(
                         &mut process,
-                        target,
+                        invocation,
                         &mut moving_buckets,
                         Some(&mut resource_collector),
                     )
@@ -80,11 +80,11 @@ pub fn execute<T: Ledger>(
                 args,
             } => {
                 let mut process = Process::new(0, trace, &mut runtime);
-                let target = process.prepare_call_method(component, method, args);
-                target.and_then(|target| {
+                let invocation = process.prepare_call_method(component, method, args);
+                invocation.and_then(|invocation| {
                     call(
                         &mut process,
-                        target,
+                        invocation,
                         &mut moving_buckets,
                         Some(&mut resource_collector),
                     )
@@ -102,12 +102,14 @@ pub fn execute<T: Ledger>(
 
                 if !buckets.is_empty() {
                     let mut process = Process::new(0, trace, &mut runtime);
-                    let target = process.prepare_call_method(
+                    let invocation = process.prepare_call_method(
                         component,
                         method.clone(),
                         vec![scrypto_encode(&buckets)],
                     );
-                    target.and_then(|target| call(&mut process, target, &mut moving_buckets, None))
+                    invocation.and_then(|invocation| {
+                        call(&mut process, invocation, &mut moving_buckets, None)
+                    })
                 } else {
                     Ok(vec![])
                 }
@@ -154,7 +156,7 @@ pub fn execute<T: Ledger>(
 
 fn call<L: Ledger>(
     process: &mut Process<L>,
-    target: Target,
+    invocation: Invocation,
     buckets: &mut HashMap<BID, Bucket>,
     resource_collector: Option<&mut HashMap<Address, Bucket>>,
 ) -> Result<Vec<u8>, RuntimeError> {
@@ -163,7 +165,7 @@ fn call<L: Ledger>(
     buckets.clear();
 
     // run
-    let result = process.run(target);
+    let result = process.run(invocation);
 
     // move resources
     let (buckets, references) = process.take_resources();

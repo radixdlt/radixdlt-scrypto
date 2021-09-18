@@ -26,8 +26,8 @@ pub fn export_abi<T: Ledger>(
 
     // Start a process and run abi generator
     let mut process = Process::new(0, trace, &mut runtime);
-    let target = process.prepare_call_abi(package, blueprint)?;
-    let result = process.run(target);
+    let invocation = process.prepare_call_abi(package, blueprint)?;
+    let result = process.run(invocation);
 
     // Parse ABI
     let output = scrypto_decode::<(Vec<abi::Function>, Vec<abi::Method>)>(&result?)

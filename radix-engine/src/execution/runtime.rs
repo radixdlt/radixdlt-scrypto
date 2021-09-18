@@ -9,13 +9,12 @@ use crate::execution::*;
 use crate::ledger::*;
 use crate::model::*;
 
-/// Runtime is an abstraction to the execution state of a transaction.
+/// Runtime is an abstraction of transaction execution state.
 ///
 /// It acts as the facade of ledger state and keeps track of all temporary state updates,
-/// util the `flush()` method is called.
+/// until the `flush()` method is called.
 ///
-/// Typically, a runtime is shared by a series of processes, created during the life time
-/// of a transaction.
+/// Typically, a runtime involves a series of processes.
 ///
 pub struct Runtime<'le, T: Ledger> {
     tx_hash: H256,

@@ -82,7 +82,7 @@ pub fn handle_publish(matches: &ArgMatches) -> Result<(), Error> {
                     "publish_package".to_owned(),
                     vec![scrypto_encode(&code)],
                 )
-                .and_then(|target| process.run(target))
+                .and_then(|invocation| process.run(invocation))
                 .map_err(Error::TxnExecutionError)?;
             process.finalize().map_err(Error::TxnExecutionError)?;
             let package: Address = scrypto_decode(&output).map_err(Error::DataError)?;

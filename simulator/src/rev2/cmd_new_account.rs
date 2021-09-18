@@ -61,7 +61,7 @@ pub fn handle_new_account(matches: &ArgMatches) -> Result<(), Error> {
     let mut process = Process::new(0, trace, &mut runtime);
     let output = process
         .prepare_call_function(package, "Account", "new".to_owned(), Vec::new())
-        .and_then(|target| process.run(target))
+        .and_then(|invocation| process.run(invocation))
         .map_err(Error::TxnExecutionError)?;
     process.finalize().map_err(Error::TxnExecutionError)?;
     let component: Address = scrypto_decode(&output).map_err(Error::DataError)?;
@@ -81,7 +81,7 @@ pub fn handle_new_account(matches: &ArgMatches) -> Result<(), Error> {
             "deposit".to_owned(),
             vec![scrypto_encode(&scrypto::resource::Bucket::from(bid))],
         )
-        .and_then(|target| process2.run(target))
+        .and_then(|invocation| process2.run(invocation))
         .map_err(Error::TxnExecutionError)?;
     process2.finalize().map_err(Error::TxnExecutionError)?;
 

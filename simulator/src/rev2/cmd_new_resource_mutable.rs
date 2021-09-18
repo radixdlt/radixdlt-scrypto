@@ -111,7 +111,7 @@ pub fn handle_new_resource_mutable(matches: &ArgMatches) -> Result<(), Error> {
                     "new_resource_mutable".to_owned(),
                     vec![scrypto_encode(&metadata), scrypto_encode(&minter)],
                 )
-                .and_then(|target| process.run(target))
+                .and_then(|invocation| process.run(invocation))
                 .map_err(Error::TxnExecutionError)?;
             process.finalize().map_err(Error::TxnExecutionError)?;
             let resource: Address = scrypto_decode(&output).map_err(Error::DataError)?;

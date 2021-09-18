@@ -65,7 +65,7 @@ pub fn handle_mint_resource(matches: &ArgMatches) -> Result<(), Error> {
                     "mint_resource".to_owned(),
                     vec![scrypto_encode(&amount), scrypto_encode(&resource)],
                 )
-                .and_then(|target| process.run(target))
+                .and_then(|invocation| process.run(invocation))
                 .map_err(Error::TxnExecutionError)?;
             process.finalize().map_err(Error::TxnExecutionError)?;
             runtime.flush();
