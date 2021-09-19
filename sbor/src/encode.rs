@@ -1,11 +1,11 @@
-use crate::constants::*;
 use crate::rust::boxed::Box;
 use crate::rust::collections::*;
 use crate::rust::string::String;
 use crate::rust::vec::Vec;
+use crate::type_id::*;
 
 /// A data structure that can be serialized into a byte array using SBOR.
-pub trait Encode {
+pub trait Encode: TypeId {
     #[inline]
     fn encode(&self, encoder: &mut Encoder) {
         encoder.write_type(Self::type_id());
@@ -13,8 +13,6 @@ pub trait Encode {
     }
 
     fn encode_value(&self, encoder: &mut Encoder);
-
-    fn type_id() -> u8;
 }
 
 /// An `Encoder` abstracts the logic for writing core types into a byte buffer.
@@ -63,21 +61,11 @@ impl From<Encoder> for Vec<u8> {
 
 impl Encode for () {
     fn encode_value(&self, _encoder: &mut Encoder) {}
-
-    #[inline]
-    fn type_id() -> u8 {
-        TYPE_UNIT
-    }
 }
 
 impl Encode for bool {
     fn encode_value(&self, encoder: &mut Encoder) {
         encoder.write_u8(if *self { 1u8 } else { 0u8 })
-    }
-
-    #[inline]
-    fn type_id() -> u8 {
-        TYPE_BOOL
     }
 }
 
@@ -85,21 +73,11 @@ impl Encode for i8 {
     fn encode_value(&self, encoder: &mut Encoder) {
         encoder.write_u8(*self as u8);
     }
-
-    #[inline]
-    fn type_id() -> u8 {
-        TYPE_I8
-    }
 }
 
 impl Encode for u8 {
     fn encode_value(&self, encoder: &mut Encoder) {
         encoder.write_u8(*self);
-    }
-
-    #[inline]
-    fn type_id() -> u8 {
-        TYPE_U8
     }
 }
 
@@ -108,11 +86,6 @@ macro_rules! encode_int {
         impl Encode for $type {
             fn encode_value(&self, encoder: &mut Encoder) {
                 encoder.write_slice(&(*self).to_le_bytes());
-            }
-
-            #[inline]
-            fn type_id() -> u8 {
-                $type_id
             }
         }
     };
@@ -131,21 +104,11 @@ impl Encode for isize {
     fn encode_value(&self, encoder: &mut Encoder) {
         (*self as i32).encode_value(encoder);
     }
-
-    #[inline]
-    fn type_id() -> u8 {
-        i32::type_id()
-    }
 }
 
 impl Encode for usize {
     fn encode_value(&self, encoder: &mut Encoder) {
         (*self as u32).encode_value(encoder);
-    }
-
-    #[inline]
-    fn type_id() -> u8 {
-        u32::type_id()
     }
 }
 
@@ -154,22 +117,10 @@ impl Encode for str {
         encoder.write_len(self.len());
         encoder.write_slice(self.as_bytes());
     }
-
-    #[inline]
-    fn type_id() -> u8 {
-        TYPE_STRING
-    }
 }
-
 impl Encode for String {
     fn encode_value(&self, encoder: &mut Encoder) {
         self.as_str().encode_value(encoder);
-    }
-
-    #[inline]
-    #[inline]
-    fn type_id() -> u8 {
-        TYPE_STRING
     }
 }
 
@@ -185,21 +136,11 @@ impl<T: Encode> Encode for Option<T> {
             }
         }
     }
-
-    #[inline]
-    fn type_id() -> u8 {
-        TYPE_OPTION
-    }
 }
 
 impl<T: Encode> Encode for Box<T> {
     fn encode_value(&self, encoder: &mut Encoder) {
         self.as_ref().encode(encoder);
-    }
-
-    #[inline]
-    fn type_id() -> u8 {
-        TYPE_BOX
     }
 }
 
@@ -211,25 +152,15 @@ impl<T: Encode, const N: usize> Encode for [T; N] {
             v.encode_value(encoder);
         }
     }
-
-    #[inline]
-    fn type_id() -> u8 {
-        TYPE_ARRAY
-    }
 }
 
 macro_rules! encode_tuple {
     ($n:tt $($idx:tt $name:ident)+) => {
         impl<$($name: Encode),+> Encode for ($($name,)+) {
-                    fn encode_value(&self, encoder: &mut Encoder) {
+            fn encode_value(&self, encoder: &mut Encoder) {
                 encoder.write_len($n);
 
                 $(self.$idx.encode(encoder);)+
-            }
-
-            #[inline]
-            fn type_id() -> u8 {
-                TYPE_TUPLE
             }
         }
     };
@@ -253,11 +184,6 @@ impl<T: Encode> Encode for Vec<T> {
             v.encode_value(encoder);
         }
     }
-
-    #[inline]
-    fn type_id() -> u8 {
-        TYPE_VEC
-    }
 }
 
 impl<T: Encode> Encode for BTreeSet<T> {
@@ -267,11 +193,6 @@ impl<T: Encode> Encode for BTreeSet<T> {
         for v in self {
             v.encode_value(encoder);
         }
-    }
-
-    #[inline]
-    fn type_id() -> u8 {
-        TYPE_TREE_SET
     }
 }
 
@@ -285,11 +206,6 @@ impl<K: Encode, V: Encode> Encode for BTreeMap<K, V> {
             v.encode_value(encoder);
         }
     }
-
-    #[inline]
-    fn type_id() -> u8 {
-        TYPE_TREE_MAP
-    }
 }
 
 impl<T: Encode> Encode for HashSet<T> {
@@ -299,11 +215,6 @@ impl<T: Encode> Encode for HashSet<T> {
         for v in self {
             v.encode_value(encoder);
         }
-    }
-
-    #[inline]
-    fn type_id() -> u8 {
-        TYPE_HASH_SET
     }
 }
 
@@ -316,11 +227,6 @@ impl<K: Encode, V: Encode> Encode for HashMap<K, V> {
             k.encode_value(encoder);
             v.encode_value(encoder);
         }
-    }
-
-    #[inline]
-    fn type_id() -> u8 {
-        TYPE_HASH_MAP
     }
 }
 

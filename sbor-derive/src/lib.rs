@@ -1,6 +1,7 @@
 mod decode;
 mod describe;
 mod encode;
+mod type_id;
 mod utils;
 
 use proc_macro::TokenStream;
@@ -9,6 +10,13 @@ use proc_macro::TokenStream;
 #[proc_macro_derive(Describe, attributes(sbor))]
 pub fn describe(input: TokenStream) -> TokenStream {
     let output = describe::handle_describe(proc_macro2::TokenStream::from(input));
+    TokenStream::from(output)
+}
+
+/// Derive code responsible for encoding this data structure.
+#[proc_macro_derive(TypeId, attributes(sbor))]
+pub fn type_id(input: TokenStream) -> TokenStream {
+    let output = type_id::handle_type_id(proc_macro2::TokenStream::from(input));
     TokenStream::from(output)
 }
 

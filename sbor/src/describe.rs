@@ -1,7 +1,7 @@
 #[cfg(any(feature = "serde_std", feature = "serde_alloc"))]
 use serde::{Deserialize, Serialize};
 
-use crate::sbor::{Decode, Encode};
+use crate::sbor::{Decode, Encode, TypeId};
 
 use crate::rust::boxed::Box;
 use crate::rust::collections::*;
@@ -18,7 +18,7 @@ use crate::rust::vec::Vec;
     derive(Serialize, Deserialize),
     serde(tag = "type")
 )]
-#[derive(Debug, Clone, PartialEq, Eq, Decode, Encode)]
+#[derive(Debug, Clone, PartialEq, Eq, TypeId, Decode, Encode)]
 pub enum Type {
     Unit,
     Bool,
@@ -93,7 +93,7 @@ pub enum Type {
     any(feature = "serde_std", feature = "serde_alloc"),
     derive(Serialize, Deserialize)
 )]
-#[derive(Debug, Clone, PartialEq, Eq, Decode, Encode)]
+#[derive(Debug, Clone, PartialEq, Eq, TypeId, Decode, Encode)]
 pub struct Variant {
     pub name: String,
     pub fields: Fields,
@@ -105,7 +105,7 @@ pub struct Variant {
     derive(Serialize, Deserialize),
     serde(tag = "type")
 )]
-#[derive(Debug, Clone, PartialEq, Eq, Decode, Encode)]
+#[derive(Debug, Clone, PartialEq, Eq, TypeId, Decode, Encode)]
 pub enum Fields {
     Named { named: Vec<(String, Type)> },
 

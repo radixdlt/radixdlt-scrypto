@@ -6,7 +6,7 @@ use sbor::*;
 use serde::Serialize;
 use serde_json::{json, to_value, Value};
 
-#[derive(Debug, PartialEq, Encode, Decode, Describe)]
+#[derive(Debug, PartialEq, TypeId, Encode, Decode, Describe)]
 pub struct TestStructNamed {
     #[allow(unused_variables)]
     #[sbor(skip)]
@@ -14,13 +14,13 @@ pub struct TestStructNamed {
     pub y: u32,
 }
 
-#[derive(Debug, PartialEq, Encode, Decode, Describe)]
+#[derive(Debug, PartialEq, TypeId, Encode, Decode, Describe)]
 pub struct TestStructUnnamed(#[sbor(skip)] u32, u32);
 
-#[derive(Debug, PartialEq, Encode, Decode, Describe)]
+#[derive(Debug, PartialEq, TypeId, Encode, Decode, Describe)]
 pub struct TestStructUnit;
 
-#[derive(Debug, PartialEq, Encode, Decode, Describe)]
+#[derive(Debug, PartialEq, TypeId, Encode, Decode, Describe)]
 pub enum TestEnum {
     A {
         #[sbor(skip)]

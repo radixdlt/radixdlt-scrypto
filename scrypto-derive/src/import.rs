@@ -177,7 +177,7 @@ fn get_native_type(ty: &des::Type) -> (Type, Vec<Item>) {
                         items.extend(new_items);
                     }
                     items.push(parse_quote! {
-                        #[derive(Debug, ::sbor::Encode, ::sbor::Decode)]
+                        #[derive(Debug, ::sbor::TypeId, ::sbor::Encode, ::sbor::Decode)]
                         pub struct #ident {
                             #( pub #names : #types, )*
                         }
@@ -191,7 +191,7 @@ fn get_native_type(ty: &des::Type) -> (Type, Vec<Item>) {
                         items.extend(new_items);
                     }
                     items.push(parse_quote! {
-                        #[derive(Debug, ::sbor::Encode, ::sbor::Decode)]
+                        #[derive(Debug, ::sbor::TypeId, ::sbor::Encode, ::sbor::Decode)]
                         pub struct #ident (
                             #( pub #types ),*
                         )
@@ -199,7 +199,7 @@ fn get_native_type(ty: &des::Type) -> (Type, Vec<Item>) {
                 }
                 des::Fields::Unit => {
                     items.push(parse_quote! {
-                        #[derive(Debug, ::sbor::Encode, ::sbor::Decode)]
+                        #[derive(Debug, ::sbor::TypeId, ::sbor::Encode, ::sbor::Decode)]
                         pub struct #ident;
                     });
                 }
@@ -268,7 +268,7 @@ fn get_native_type(ty: &des::Type) -> (Type, Vec<Item>) {
             }
 
             items.push(parse_quote! {
-                #[derive(Debug, ::sbor::Encode, ::sbor::Decode)]
+                #[derive(Debug, ::sbor::TypeId, ::sbor::Encode, ::sbor::Decode)]
                 pub enum #ident {
                     #( #native_variants ),*
                 }

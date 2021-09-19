@@ -7,7 +7,7 @@ use crate::rust::borrow::ToOwned;
 use crate::types::*;
 
 /// Represents a resource container on ledger.
-#[derive(Debug, Encode, Decode)]
+#[derive(Debug, TypeId, Encode, Decode)]
 pub struct Vault {
     vid: VID,
 }

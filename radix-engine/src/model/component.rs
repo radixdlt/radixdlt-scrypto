@@ -5,7 +5,7 @@ use scrypto::rust::vec::Vec;
 use scrypto::types::*;
 
 /// A component is an instance of blueprint.
-#[derive(Debug, Clone, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct Component {
     package: Address,
     blueprint: String,

@@ -9,13 +9,13 @@ use crate::rust::string::String;
 use crate::types::*;
 
 /// An abstraction of digital assets, e.g. token, badge and NFT.
-#[derive(Debug, Encode, Decode)]
+#[derive(Debug, TypeId, Encode, Decode)]
 pub struct Resource {
     address: Address,
 }
 
 /// Information about a resource.
-#[derive(Debug, Clone, Describe, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Describe, Encode, Decode)]
 pub struct ResourceInfo {
     pub metadata: HashMap<String, String>,
     pub minter: Option<Address>,

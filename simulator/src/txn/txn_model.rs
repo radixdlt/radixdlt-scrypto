@@ -4,13 +4,13 @@ use sbor::*;
 use scrypto::types::*;
 
 /// A transaction consists a sequence of instructions.
-#[derive(Debug, Clone, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct Transaction {
     pub instructions: Vec<Instruction>,
 }
 
 /// Represents an instruction
-#[derive(Debug, Clone, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub enum Instruction {
     /// Reserve `n` buckets upfront.
     ReserveBuckets {

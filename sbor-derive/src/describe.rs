@@ -158,7 +158,7 @@ pub fn handle_describe(input: TokenStream) -> TokenStream {
             panic!("Union is not supported!")
         }
     };
-    trace!("handle_derive() finishes");
+    trace!("handle_describe() finishes");
 
     #[cfg(feature = "trace")]
     crate::utils::print_compiled_code("Describe", &output);

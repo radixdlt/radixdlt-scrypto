@@ -12,7 +12,7 @@ pub enum BucketError {
 }
 
 /// A bucket is a container that holds resources.
-#[derive(Debug, Clone, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct Bucket {
     amount: Amount,
     resource: Address,
@@ -20,7 +20,7 @@ pub struct Bucket {
 
 /// When a bucket gets borrowed, it becomes unlocked immediately
 /// until all references have been dropped.
-#[derive(Debug, Clone, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct LockedBucket {
     bucket_id: BID,
     bucket: Bucket,
@@ -30,7 +30,7 @@ pub struct LockedBucket {
 pub type BucketRef = Rc<LockedBucket>;
 
 /// A persisted bucket is stored permanently on ledger state.
-#[derive(Debug, Clone, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct Vault {
     bucket: Bucket,
     owner: Address,

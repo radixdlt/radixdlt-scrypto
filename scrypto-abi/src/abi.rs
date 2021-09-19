@@ -9,14 +9,14 @@ pub use alloc::vec::Vec;
 use serde::{Deserialize, Serialize};
 
 use sbor::describe::*;
-use sbor::{Decode, Encode};
+use sbor::{Decode, Encode, TypeId};
 
 /// Represents a blueprint.
 #[cfg_attr(
     any(feature = "serde_std", feature = "serde_alloc"),
     derive(Serialize, Deserialize)
 )]
-#[derive(Debug, Clone, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct Blueprint {
     pub package: String,
     pub blueprint: String,
@@ -29,7 +29,7 @@ pub struct Blueprint {
     any(feature = "serde_std", feature = "serde_alloc"),
     derive(Serialize, Deserialize)
 )]
-#[derive(Debug, Clone, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct Function {
     pub name: String,
     pub inputs: Vec<Type>,
@@ -41,7 +41,7 @@ pub struct Function {
     any(feature = "serde_std", feature = "serde_alloc"),
     derive(Serialize, Deserialize)
 )]
-#[derive(Debug, Clone, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct Method {
     pub name: String,
     pub mutability: Mutability,
@@ -54,7 +54,7 @@ pub struct Method {
     any(feature = "serde_std", feature = "serde_alloc"),
     derive(Serialize, Deserialize)
 )]
-#[derive(Debug, Clone, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub enum Mutability {
     /// An immutable method requires an immutable reference to component state.
     Immutable,

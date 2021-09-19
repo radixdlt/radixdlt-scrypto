@@ -12,13 +12,13 @@ use crate::types::*;
 use crate::utils::*;
 
 /// A self-executing program that holds resources and exposed actions to other entities.
-#[derive(Debug, Encode, Decode)]
+#[derive(Debug, TypeId, Encode, Decode)]
 pub struct Component {
     address: Address,
 }
 
 /// Information about a component.
-#[derive(Debug, Clone, Describe, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Describe, Encode, Decode)]
 pub struct ComponentInfo {
     pub package: Address,
     pub blueprint: String,

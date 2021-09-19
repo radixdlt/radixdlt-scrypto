@@ -58,7 +58,7 @@ mod tests {
         assert_eq!(vec![8, 0, 0, 0, 12, 3, 0, 0, 0, 97, 98, 99], encoded);
     }
 
-    #[derive(Encode, Decode)]
+    #[derive(TypeId, Encode, Decode)]
     struct ComponentTest {
         resource: Address,
         bucket: Bucket,

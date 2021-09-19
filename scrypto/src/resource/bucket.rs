@@ -7,7 +7,7 @@ use crate::rust::borrow::ToOwned;
 use crate::types::*;
 
 /// Represents resources of some quantity.
-#[derive(Debug, Encode, Decode)]
+#[derive(Debug, TypeId, Encode, Decode)]
 pub struct Bucket {
     bid: BID,
 }

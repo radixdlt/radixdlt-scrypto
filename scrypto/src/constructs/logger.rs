@@ -8,7 +8,7 @@ use crate::rust::string::String;
 pub struct Logger {}
 
 /// Represents log severity.
-#[derive(Debug, Clone, Describe, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Describe, Encode, Decode)]
 pub enum Level {
     Error = 0,
     Warn,

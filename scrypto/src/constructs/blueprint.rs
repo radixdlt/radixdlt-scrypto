@@ -11,7 +11,7 @@ use crate::types::*;
 use crate::utils::*;
 
 /// A piece of code that defines the structure and methods of components.
-#[derive(Debug, Encode, Decode)]
+#[derive(Debug, TypeId, Encode, Decode)]
 pub struct Blueprint {
     package: Address,
     name: String,

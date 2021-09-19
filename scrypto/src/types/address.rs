@@ -87,16 +87,18 @@ impl fmt::Display for Address {
     }
 }
 
+impl TypeId for Address {
+    #[inline]
+    fn type_id() -> u8 {
+        SCRYPTO_TYPE_ADDRESS
+    }
+}
+
 impl Encode for Address {
     fn encode_value(&self, encoder: &mut Encoder) {
         let bytes = self.to_vec();
         encoder.write_len(bytes.len());
         encoder.write_slice(&bytes);
-    }
-
-    #[inline]
-    fn type_id() -> u8 {
-        SCRYPTO_TYPE_ADDRESS
     }
 }
 
@@ -105,11 +107,6 @@ impl Decode for Address {
         let len = decoder.read_len()?;
         let slice = decoder.read_bytes(len)?;
         Self::try_from(slice).map_err(|_| DecodeError::InvalidCustomData(SCRYPTO_TYPE_ADDRESS))
-    }
-
-    #[inline]
-    fn type_id() -> u8 {
-        SCRYPTO_TYPE_ADDRESS
     }
 }
 

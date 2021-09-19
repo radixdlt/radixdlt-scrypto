@@ -4,7 +4,7 @@ use scrypto::rust::vec::Vec;
 use scrypto::types::Address;
 
 /// A key-value storage.
-#[derive(Debug, Clone, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct Storage {
     pub owner: Address,
     pub storage: HashMap<Vec<u8>, Vec<u8>>,

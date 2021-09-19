@@ -5,23 +5,24 @@ compile_error!("Either feature `std` or `alloc` must be enabled for this crate."
 #[cfg(all(feature = "std", feature = "alloc"))]
 compile_error!("Feature `std` and `alloc` can't be enabled at the same time.");
 
-/// SBOR constants, like type ids.
-pub mod constants;
-/// SBOR data decoding.
+/// SBOR decoding.
 pub mod decode;
-/// SBOR type describing.
+/// SBOR describing.
 pub mod describe;
-/// SBOR value encoding.
+/// SBOR encoding.
 pub mod encode;
-/// SBOR any data parsing and any value writing.
+/// SBOR encode and decode any SBOR data.
 pub mod parse;
 /// A facade to Rust types.
 pub mod rust;
+/// SBOR type ids.
+pub mod type_id;
 
 pub use decode::{Decode, DecodeError, Decoder};
 pub use describe::Describe;
 pub use encode::{Encode, Encoder};
 pub use parse::{parse_any, write_any};
+pub use type_id::TypeId;
 
 use crate::rust::vec::Vec;
 

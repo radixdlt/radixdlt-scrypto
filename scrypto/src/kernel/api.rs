@@ -1,4 +1,4 @@
-use sbor::{Decode, Encode};
+use sbor::{Decode, Encode, TypeId};
 
 use crate::rust::collections::HashMap;
 use crate::rust::string::String;
@@ -87,17 +87,17 @@ pub const GET_TRANSACTION_HASH: u32 = 0xf3;
 // blueprint
 //==========
 
-#[derive(Debug, Clone, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct PublishPackageInput {
     pub code: Vec<u8>,
 }
 
-#[derive(Debug, Clone, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct PublishPackageOutput {
     pub package: Address,
 }
 
-#[derive(Debug, Clone, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct CallFunctionInput {
     pub package: Address,
     pub blueprint: String,
@@ -105,19 +105,19 @@ pub struct CallFunctionInput {
     pub args: Vec<Vec<u8>>,
 }
 
-#[derive(Debug, Clone, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct CallFunctionOutput {
     pub rtn: Vec<u8>,
 }
 
-#[derive(Debug, Clone, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct CallMethodInput {
     pub component: Address,
     pub method: String,
     pub args: Vec<Vec<u8>>,
 }
 
-#[derive(Debug, Clone, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct CallMethodOutput {
     pub rtn: Vec<u8>,
 }
@@ -126,125 +126,125 @@ pub struct CallMethodOutput {
 // component
 //==========
 
-#[derive(Debug, Clone, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct CreateComponentInput {
     pub blueprint: String,
     pub state: Vec<u8>,
 }
 
-#[derive(Debug, Clone, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct CreateComponentOutput {
     pub component: Address,
 }
 
-#[derive(Debug, Clone, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct GetComponentInfoInput {
     pub component: Address,
 }
 
-#[derive(Debug, Clone, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct GetComponentInfoOutput {
     pub package: Address,
     pub blueprint: String,
 }
 
-#[derive(Debug, Clone, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct GetComponentStateInput {
     pub component: Address,
 }
 
-#[derive(Debug, Clone, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct GetComponentStateOutput {
     pub state: Vec<u8>,
 }
 
-#[derive(Debug, Clone, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct PutComponentStateInput {
     pub component: Address,
     pub state: Vec<u8>,
 }
 
-#[derive(Debug, Clone, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct PutComponentStateOutput {}
 
 //==========
 // Storage
 //==========
 
-#[derive(Debug, Clone, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct CreateStorageInput {}
 
-#[derive(Debug, Clone, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct CreateStorageOutput {
     pub storage: SID,
 }
 
-#[derive(Debug, Clone, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct GetStorageEntryInput {
     pub storage: SID,
     pub key: Vec<u8>,
 }
 
-#[derive(Debug, Clone, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct GetStorageEntryOutput {
     pub value: Option<Vec<u8>>,
 }
 
-#[derive(Debug, Clone, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct PutStorageEntryInput {
     pub storage: SID,
     pub key: Vec<u8>,
     pub value: Vec<u8>,
 }
 
-#[derive(Debug, Clone, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct PutStorageEntryOutput {}
 
 //=========
 // resource
 //=========
 
-#[derive(Debug, Clone, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct CreateResourceMutableInput {
     pub metadata: HashMap<String, String>,
     pub minter: Address,
 }
 
-#[derive(Debug, Clone, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct CreateResourceMutableOutput {
     pub resource: Address,
 }
 
-#[derive(Debug, Clone, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct CreateResourceFixedInput {
     pub metadata: HashMap<String, String>,
     pub supply: Amount,
 }
 
-#[derive(Debug, Clone, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct CreateResourceFixedOutput {
     pub bucket: BID,
 }
 
-#[derive(Debug, Clone, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct GetResourceInfoInput {
     pub resource: Address,
 }
 
-#[derive(Debug, Clone, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct GetResourceInfoOutput {
     pub metadata: HashMap<String, String>,
     pub minter: Option<Address>,
     pub supply: Option<Amount>,
 }
 
-#[derive(Debug, Clone, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct MintResourceInput {
     pub resource: Address,
     pub amount: Amount,
 }
 
-#[derive(Debug, Clone, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct MintResourceOutput {
     pub bucket: BID,
 }
@@ -253,52 +253,52 @@ pub struct MintResourceOutput {
 // vault
 //==========
 
-#[derive(Debug, Clone, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct CreateEmptyVaultInput {
     pub resource: Address,
 }
 
-#[derive(Debug, Clone, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct CreateEmptyVaultOutput {
     pub vault: VID,
 }
 
-#[derive(Debug, Clone, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct PutIntoVaultInput {
     pub vault: VID,
     pub bucket: BID,
 }
 
-#[derive(Debug, Clone, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct PutIntoVaultOutput {}
 
-#[derive(Debug, Clone, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct TakeFromVaultInput {
     pub vault: VID,
     pub amount: Amount,
 }
 
-#[derive(Debug, Clone, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct TakeFromVaultOutput {
     pub bucket: BID,
 }
 
-#[derive(Debug, Clone, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct GetVaultAmountInput {
     pub vault: VID,
 }
 
-#[derive(Debug, Clone, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct GetVaultAmountOutput {
     pub amount: Amount,
 }
 
-#[derive(Debug, Clone, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct GetVaultResourceInput {
     pub vault: VID,
 }
 
-#[derive(Debug, Clone, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct GetVaultResourceOutput {
     pub resource: Address,
 }
@@ -307,52 +307,52 @@ pub struct GetVaultResourceOutput {
 // bucket
 //==========
 
-#[derive(Debug, Clone, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct CreateEmptyBucketInput {
     pub resource: Address,
 }
 
-#[derive(Debug, Clone, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct CreateEmptyBucketOutput {
     pub bucket: BID,
 }
 
-#[derive(Debug, Clone, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct PutIntoBucketInput {
     pub bucket: BID,
     pub other: BID,
 }
 
-#[derive(Debug, Clone, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct PutIntoBucketOutput {}
 
-#[derive(Debug, Clone, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct TakeFromBucketInput {
     pub bucket: BID,
     pub amount: Amount,
 }
 
-#[derive(Debug, Clone, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct TakeFromBucketOutput {
     pub bucket: BID,
 }
 
-#[derive(Debug, Clone, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct GetBucketAmountInput {
     pub bucket: BID,
 }
 
-#[derive(Debug, Clone, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct GetBucketAmountOutput {
     pub amount: Amount,
 }
 
-#[derive(Debug, Clone, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct GetBucketResourceInput {
     pub bucket: BID,
 }
 
-#[derive(Debug, Clone, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct GetBucketResourceOutput {
     pub resource: Address,
 }
@@ -361,40 +361,40 @@ pub struct GetBucketResourceOutput {
 // reference
 //==========
 
-#[derive(Debug, Clone, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct CreateReferenceInput {
     pub bucket: BID,
 }
 
-#[derive(Debug, Clone, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct CreateReferenceOutput {
     pub reference: RID,
 }
 
-#[derive(Debug, Clone, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct DropReferenceInput {
     pub reference: RID,
 }
 
-#[derive(Debug, Clone, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct DropReferenceOutput {}
 
-#[derive(Debug, Clone, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct GetRefAmountInput {
     pub reference: RID,
 }
 
-#[derive(Debug, Clone, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct GetRefAmountOutput {
     pub amount: Amount,
 }
 
-#[derive(Debug, Clone, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct GetRefResourceInput {
     pub reference: RID,
 }
 
-#[derive(Debug, Clone, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct GetRefResourceOutput {
     pub resource: Address,
 }
@@ -403,36 +403,36 @@ pub struct GetRefResourceOutput {
 // others
 //=======
 
-#[derive(Debug, Clone, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct EmitLogInput {
     pub level: u8,
     pub message: String,
 }
 
-#[derive(Debug, Clone, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct EmitLogOutput {}
 
-#[derive(Debug, Clone, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct GetPackageAddressInput {}
 
-#[derive(Debug, Clone, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct GetPackageAddressOutput {
     pub address: Address,
 }
 
-#[derive(Debug, Clone, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct GetCallDataInput {}
 
-#[derive(Debug, Clone, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct GetCallDataOutput {
     pub function: String,
     pub args: Vec<Vec<u8>>,
 }
 
-#[derive(Debug, Clone, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct GetTransactionHashInput {}
 
-#[derive(Debug, Clone, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct GetTransactionHashOutput {
     pub tx_hash: H256,
 }

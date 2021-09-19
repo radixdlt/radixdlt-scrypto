@@ -8,7 +8,7 @@ use crate::types::*;
 use crate::utils::*;
 
 /// A scalable key-value storage.
-#[derive(Debug, Encode, Decode)]
+#[derive(Debug, TypeId, Encode, Decode)]
 pub struct Storage {
     sid: SID,
 }

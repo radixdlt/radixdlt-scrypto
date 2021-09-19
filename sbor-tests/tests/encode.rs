@@ -4,19 +4,20 @@ use sbor::rust::vec;
 use sbor::rust::vec::Vec;
 use sbor::Encode;
 use sbor::Encoder;
+use sbor::TypeId;
 
-#[derive(Encode)]
+#[derive(TypeId, Encode)]
 pub struct TestStructNamed {
     pub state: u32,
 }
 
-#[derive(Encode)]
+#[derive(TypeId, Encode)]
 pub struct TestStructUnnamed(u32);
 
-#[derive(Encode)]
+#[derive(TypeId, Encode)]
 pub struct TestStructUnit;
 
-#[derive(Encode)]
+#[derive(TypeId, Encode)]
 pub enum TestEnum {
     A { x: u32, y: u32 },
     B(u32),

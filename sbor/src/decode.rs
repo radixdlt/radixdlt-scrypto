@@ -1,4 +1,3 @@
-use crate::constants::*;
 use crate::rust::boxed::Box;
 use crate::rust::collections::*;
 use crate::rust::hash::Hash;
@@ -6,6 +5,7 @@ use crate::rust::mem::MaybeUninit;
 use crate::rust::ptr::copy;
 use crate::rust::string::String;
 use crate::rust::vec::Vec;
+use crate::type_id::*;
 
 /// Represents an error ocurred during decoding.
 #[derive(Debug, Clone)]
@@ -32,7 +32,7 @@ pub enum DecodeError {
 }
 
 /// A data structure that can be decoded from a byte array using SBOR.
-pub trait Decode: Sized {
+pub trait Decode: Sized + TypeId {
     #[inline]
     fn decode(decoder: &mut Decoder) -> Result<Self, DecodeError> {
         decoder.check_type(Self::type_id())?;
@@ -40,8 +40,6 @@ pub trait Decode: Sized {
     }
 
     fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError>;
-
-    fn type_id() -> u8;
 }
 
 /// An `Decoder` abstracts the logic for reading and checking core types from a slice.
@@ -148,11 +146,6 @@ impl Decode for () {
     fn decode_value(_decoder: &mut Decoder) -> Result<Self, DecodeError> {
         Ok(())
     }
-
-    #[inline]
-    fn type_id() -> u8 {
-        TYPE_UNIT
-    }
 }
 
 impl Decode for bool {
@@ -164,11 +157,6 @@ impl Decode for bool {
             _ => Err(DecodeError::InvalidBool(value)),
         }
     }
-
-    #[inline]
-    fn type_id() -> u8 {
-        TYPE_BOOL
-    }
 }
 
 impl Decode for i8 {
@@ -176,22 +164,12 @@ impl Decode for i8 {
         let value = decoder.read_u8()?;
         Ok(value as i8)
     }
-
-    #[inline]
-    fn type_id() -> u8 {
-        TYPE_I8
-    }
 }
 
 impl Decode for u8 {
     fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
         let value = decoder.read_u8()?;
         Ok(value)
-    }
-
-    #[inline]
-    fn type_id() -> u8 {
-        TYPE_U8
     }
 }
 
@@ -203,11 +181,6 @@ macro_rules! decode_int {
                 let mut bytes = [0u8; $n];
                 bytes.copy_from_slice(&slice[..]);
                 Ok(<$type>::from_le_bytes(bytes))
-            }
-
-            #[inline]
-            fn type_id() -> u8 {
-                $type_id
             }
         }
     };
@@ -226,21 +199,11 @@ impl Decode for isize {
     fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
         i32::decode_value(decoder).map(|i| i as isize)
     }
-
-    #[inline]
-    fn type_id() -> u8 {
-        i32::type_id()
-    }
 }
 
 impl Decode for usize {
     fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
         u32::decode_value(decoder).map(|i| i as usize)
-    }
-
-    #[inline]
-    fn type_id() -> u8 {
-        u32::type_id()
     }
 }
 
@@ -249,11 +212,6 @@ impl Decode for String {
         let len = decoder.read_len()?;
         let slice = decoder.read_bytes(len)?;
         String::from_utf8(slice.to_vec()).map_err(|_| DecodeError::InvalidUtf8)
-    }
-
-    #[inline]
-    fn type_id() -> u8 {
-        TYPE_STRING
     }
 }
 
@@ -267,22 +225,12 @@ impl<T: Decode> Decode for Option<T> {
             _ => Err(DecodeError::InvalidIndex(index)),
         }
     }
-
-    #[inline]
-    fn type_id() -> u8 {
-        TYPE_OPTION
-    }
 }
 
 impl<T: Decode> Decode for Box<T> {
     fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
         let v = T::decode(decoder)?;
         Ok(Box::new(v))
-    }
-
-    #[inline]
-    fn type_id() -> u8 {
-        TYPE_BOX
     }
 }
 
@@ -298,11 +246,6 @@ impl<T: Decode, const N: usize> Decode for [T; N] {
         }
         Ok(unsafe { x.assume_init() })
     }
-
-    #[inline]
-    fn type_id() -> u8 {
-        TYPE_ARRAY
-    }
 }
 
 macro_rules! decode_tuple {
@@ -316,10 +259,6 @@ macro_rules! decode_tuple {
                 }
 
                 Ok(($($name::decode(decoder)?),+))
-            }
-            #[inline]
-            fn type_id() -> u8 {
-                TYPE_TUPLE
             }
         }
     };
@@ -356,11 +295,6 @@ impl<T: Decode> Decode for Vec<T> {
             Ok(result)
         }
     }
-
-    #[inline]
-    fn type_id() -> u8 {
-        TYPE_VEC
-    }
 }
 
 impl<T: Decode + Ord> Decode for BTreeSet<T> {
@@ -375,11 +309,6 @@ impl<T: Decode + Ord> Decode for BTreeSet<T> {
             }
         }
         Ok(result)
-    }
-
-    #[inline]
-    fn type_id() -> u8 {
-        TYPE_TREE_SET
     }
 }
 
@@ -399,11 +328,6 @@ impl<K: Decode + Ord, V: Decode> Decode for BTreeMap<K, V> {
         }
         Ok(map)
     }
-
-    #[inline]
-    fn type_id() -> u8 {
-        TYPE_TREE_MAP
-    }
 }
 
 impl<T: Decode + Hash + Eq> Decode for HashSet<T> {
@@ -418,11 +342,6 @@ impl<T: Decode + Hash + Eq> Decode for HashSet<T> {
             }
         }
         Ok(result)
-    }
-
-    #[inline]
-    fn type_id() -> u8 {
-        TYPE_HASH_SET
     }
 }
 
@@ -441,11 +360,6 @@ impl<K: Decode + Hash + Eq, V: Decode> Decode for HashMap<K, V> {
             }
         }
         Ok(map)
-    }
-
-    #[inline]
-    fn type_id() -> u8 {
-        TYPE_HASH_MAP
     }
 }
 

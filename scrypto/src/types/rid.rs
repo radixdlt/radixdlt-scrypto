@@ -60,16 +60,18 @@ impl fmt::Display for RID {
     }
 }
 
+impl TypeId for RID {
+    #[inline]
+    fn type_id() -> u8 {
+        SCRYPTO_TYPE_RID
+    }
+}
+
 impl Encode for RID {
     fn encode_value(&self, encoder: &mut Encoder) {
         let bytes = self.to_vec();
         encoder.write_len(bytes.len());
         encoder.write_slice(&bytes);
-    }
-
-    #[inline]
-    fn type_id() -> u8 {
-        SCRYPTO_TYPE_RID
     }
 }
 
@@ -78,11 +80,6 @@ impl Decode for RID {
         let len = decoder.read_len()?;
         let slice = decoder.read_bytes(len)?;
         Self::try_from(slice).map_err(|_| DecodeError::InvalidCustomData(SCRYPTO_TYPE_RID))
-    }
-
-    #[inline]
-    fn type_id() -> u8 {
-        SCRYPTO_TYPE_RID
     }
 }
 

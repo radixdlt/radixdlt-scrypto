@@ -77,16 +77,18 @@ impl fmt::Display for VID {
     }
 }
 
+impl TypeId for VID {
+    #[inline]
+    fn type_id() -> u8 {
+        SCRYPTO_TYPE_VID
+    }
+}
+
 impl Encode for VID {
     fn encode_value(&self, encoder: &mut Encoder) {
         let bytes = self.to_vec();
         encoder.write_len(bytes.len());
         encoder.write_slice(&bytes);
-    }
-
-    #[inline]
-    fn type_id() -> u8 {
-        SCRYPTO_TYPE_VID
     }
 }
 
@@ -95,11 +97,6 @@ impl Decode for VID {
         let len = decoder.read_len()?;
         let slice = decoder.read_bytes(len)?;
         Self::try_from(slice).map_err(|_| DecodeError::InvalidCustomData(SCRYPTO_TYPE_VID))
-    }
-
-    #[inline]
-    fn type_id() -> u8 {
-        SCRYPTO_TYPE_VID
     }
 }
 

@@ -3,19 +3,20 @@
 use sbor::rust::vec;
 use sbor::Decode;
 use sbor::Decoder;
+use sbor::TypeId;
 
-#[derive(Decode, Debug, PartialEq)]
+#[derive(TypeId, Decode, Debug, PartialEq)]
 pub struct TestStructNamed {
     pub state: u32,
 }
 
-#[derive(Decode, Debug, PartialEq)]
+#[derive(TypeId, Decode, Debug, PartialEq)]
 pub struct TestStructUnnamed(u32);
 
-#[derive(Decode, Debug, PartialEq)]
+#[derive(TypeId, Decode, Debug, PartialEq)]
 pub struct TestStructUnit;
 
-#[derive(Decode, Debug, PartialEq)]
+#[derive(TypeId, Decode, Debug, PartialEq)]
 pub enum TestEnum {
     A { x: u32, y: u32 },
     B(u32),

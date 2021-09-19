@@ -32,16 +32,12 @@ pub fn handle_decode(input: TokenStream) -> TokenStream {
                     impl ::sbor::Decode for #ident {
                         fn decode_value(decoder: &mut ::sbor::Decoder) -> Result<Self, ::sbor::DecodeError> {
                             use ::sbor::{self, Decode};
-                            decoder.check_type(::sbor::constants::TYPE_FIELDS_NAMED)?;
+                            decoder.check_type(::sbor::type_id::TYPE_FIELDS_NAMED)?;
                             decoder.check_len(#ns_n)?;
                             Ok(Self {
                                 #(#ns_ids: <#ns_types>::decode(decoder)?,)*
                                 #(#s_ids: <#s_types>::default()),*
                             })
-                        }
-                        #[inline]
-                        fn type_id() -> u8 {
-                            ::sbor::constants::TYPE_STRUCT
                         }
                     }
                 }
@@ -61,15 +57,11 @@ pub fn handle_decode(input: TokenStream) -> TokenStream {
                     impl ::sbor::Decode for #ident {
                         fn decode_value(decoder: &mut ::sbor::Decoder) -> Result<Self, ::sbor::DecodeError> {
                             use ::sbor::{self, Decode};
-                            decoder.check_type(::sbor::constants::TYPE_FIELDS_UNNAMED)?;
+                            decoder.check_type(::sbor::type_id::TYPE_FIELDS_UNNAMED)?;
                             decoder.check_len(#ns_n)?;
                             Ok(Self (
                                 #(#all_exprs,)*
                             ))
-                        }
-                        #[inline]
-                        fn type_id() -> u8 {
-                            ::sbor::constants::TYPE_STRUCT
                         }
                     }
                 }
@@ -78,12 +70,8 @@ pub fn handle_decode(input: TokenStream) -> TokenStream {
                 quote! {
                     impl ::sbor::Decode for #ident {
                         fn decode_value(decoder: &mut ::sbor::Decoder) -> Result<Self, ::sbor::DecodeError> {
-                            decoder.check_type(::sbor::constants::TYPE_FIELDS_UNIT)?;
+                            decoder.check_type(::sbor::type_id::TYPE_FIELDS_UNIT)?;
                             Ok(Self {})
-                        }
-                        #[inline]
-                        fn type_id() -> u8 {
-                            ::sbor::constants::TYPE_STRUCT
                         }
                     }
                 }
@@ -104,7 +92,7 @@ pub fn handle_decode(input: TokenStream) -> TokenStream {
                         let s_types = s.iter().map(|f| &f.ty);
                         quote! {
                             #v_ith => {
-                                decoder.check_type(::sbor::constants::TYPE_FIELDS_NAMED)?;
+                                decoder.check_type(::sbor::type_id::TYPE_FIELDS_NAMED)?;
                                 decoder.check_len(#ns_n)?;
 
                                 Ok(Self::#v_id {
@@ -127,7 +115,7 @@ pub fn handle_decode(input: TokenStream) -> TokenStream {
                         let ns_n = Index::from(unnamed.iter().filter(|f| !is_skipped(f)).count());
                         quote! {
                             #v_ith => {
-                                decoder.check_type(::sbor::constants::TYPE_FIELDS_UNNAMED)?;
+                                decoder.check_type(::sbor::type_id::TYPE_FIELDS_UNNAMED)?;
                                 decoder.check_len(#ns_n)?;
 
                                 Ok(Self::#v_id (
@@ -139,7 +127,7 @@ pub fn handle_decode(input: TokenStream) -> TokenStream {
                     syn::Fields::Unit => {
                         quote! {
                             #v_ith => {
-                                decoder.check_type(::sbor::constants::TYPE_FIELDS_UNIT)?;
+                                decoder.check_type(::sbor::type_id::TYPE_FIELDS_UNIT)?;
                                 Ok(Self::#v_id)
                             }
                         }
@@ -159,10 +147,6 @@ pub fn handle_decode(input: TokenStream) -> TokenStream {
                             _ => Err(::sbor::DecodeError::InvalidIndex(index))
                         }
                     }
-                    #[inline]
-                    fn type_id() -> u8 {
-                        ::sbor::constants::TYPE_ENUM
-                    }
                 }
             }
         }
@@ -170,7 +154,7 @@ pub fn handle_decode(input: TokenStream) -> TokenStream {
             panic!("Union is not supported!")
         }
     };
-    trace!("handle_derive() finishes");
+    trace!("handle_decode() finishes");
 
     #[cfg(feature = "trace")]
     crate::utils::print_compiled_code("Decode", &output);
@@ -200,15 +184,11 @@ mod tests {
                 impl ::sbor::Decode for Test {
                     fn decode_value(decoder: &mut ::sbor::Decoder) -> Result<Self, ::sbor::DecodeError> {
                         use ::sbor::{self, Decode};
-                        decoder.check_type(::sbor::constants::TYPE_FIELDS_NAMED)?;
+                        decoder.check_type(::sbor::type_id::TYPE_FIELDS_NAMED)?;
                         decoder.check_len(1)?;
                         Ok(Self {
                             a: <u32>::decode(decoder)?,
                         })
-                    }
-                    #[inline]
-                    fn type_id() -> u8 {
-                        ::sbor::constants::TYPE_STRUCT
                     }
                 }
             },
@@ -230,16 +210,16 @@ mod tests {
                         let index = decoder.read_u8()?;
                         match index {
                             0u8 => {
-                                decoder.check_type(::sbor::constants::TYPE_FIELDS_UNIT)?;
+                                decoder.check_type(::sbor::type_id::TYPE_FIELDS_UNIT)?;
                                 Ok(Self::A)
                             },
                             1u8 => {
-                                decoder.check_type(::sbor::constants::TYPE_FIELDS_UNNAMED)?;
+                                decoder.check_type(::sbor::type_id::TYPE_FIELDS_UNNAMED)?;
                                 decoder.check_len(1)?;
                                 Ok(Self::B(<u32>::decode(decoder)?))
                             },
                             2u8 => {
-                                decoder.check_type(::sbor::constants::TYPE_FIELDS_NAMED)?;
+                                decoder.check_type(::sbor::type_id::TYPE_FIELDS_NAMED)?;
                                 decoder.check_len(1)?;
                                 Ok(Self::C {
                                     x: <u8>::decode(decoder)?,
@@ -247,10 +227,6 @@ mod tests {
                             },
                             _ => Err(::sbor::DecodeError::InvalidIndex(index))
                         }
-                    }
-                    #[inline]
-                    fn type_id() -> u8 {
-                        ::sbor::constants::TYPE_ENUM
                     }
                 }
             },

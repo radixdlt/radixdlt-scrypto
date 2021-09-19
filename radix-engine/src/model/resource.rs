@@ -4,7 +4,7 @@ use scrypto::rust::string::String;
 use scrypto::types::*;
 
 /// Represents a resource created.
-#[derive(Debug, Clone, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct Resource {
     pub metadata: HashMap<String, String>,
     pub minter: Option<Address>,

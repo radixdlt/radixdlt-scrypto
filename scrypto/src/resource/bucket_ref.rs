@@ -6,7 +6,7 @@ use crate::rust::borrow::ToOwned;
 use crate::types::*;
 
 /// Represents a reference to a bucket.
-#[derive(Debug, Encode, Decode)]
+#[derive(Debug, TypeId, Encode, Decode)]
 pub struct BucketRef {
     rid: RID,
 }
