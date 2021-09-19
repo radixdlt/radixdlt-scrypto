@@ -4,6 +4,8 @@ use std::path::PathBuf;
 
 use crate::rev2::*;
 
+pub const CONF_DEFAULT_ACCOUNT: &str = "default_account";
+
 /// Returns the data directory.
 pub fn get_data_dir() -> Result<PathBuf, Error> {
     let mut path = dirs::home_dir().ok_or(Error::NoHomeFolder)?;

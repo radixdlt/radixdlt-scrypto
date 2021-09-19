@@ -9,6 +9,7 @@ mod cmd_publish;
 mod cmd_reset;
 mod cmd_set_default_account;
 mod cmd_show;
+mod cmd_show_configs;
 mod config;
 mod error;
 
@@ -23,10 +24,9 @@ pub use cmd_publish::*;
 pub use cmd_reset::*;
 pub use cmd_set_default_account::*;
 pub use cmd_show::*;
+pub use cmd_show_configs::*;
 pub use config::*;
 pub use error::*;
-
-pub const CONF_DEFAULT_ACCOUNT: &str = "default.account";
 
 pub const CMD_EXPORT_ABI: &str = "export-abi";
 pub const CMD_CALL_FUNCTION: &str = "call-function";
@@ -39,6 +39,7 @@ pub const CMD_PUBLISH: &str = "publish";
 pub const CMD_RESET: &str = "reset";
 pub const CMD_SET_DEFAULT_ACCOUNT: &str = "set-default-account";
 pub const CMD_SHOW: &str = "show";
+pub const CMD_SHOW_CONFIGS: &str = "show-configs";
 
 pub fn run<I, T>(args: I) -> Result<(), Error>
 where
@@ -59,7 +60,8 @@ where
         .subcommand(make_publish())
         .subcommand(make_reset())
         .subcommand(make_set_default_account())
-        .subcommand(make_show());
+        .subcommand(make_show())
+        .subcommand(make_show_configs());
     let matches = app.get_matches_from(args);
 
     match matches.subcommand() {
@@ -74,6 +76,7 @@ where
         (CMD_RESET, Some(m)) => handle_reset(m),
         (CMD_SET_DEFAULT_ACCOUNT, Some(m)) => handle_set_default_account(m),
         (CMD_SHOW, Some(m)) => handle_show(m),
+        (CMD_SHOW_CONFIGS, Some(m)) => handle_show_configs(m),
         _ => Err(Error::MissingSubCommand),
     }
 }
