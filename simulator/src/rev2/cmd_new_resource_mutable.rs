@@ -110,7 +110,7 @@ pub fn handle_new_resource_mutable(matches: &ArgMatches) -> Result<(), Error> {
                 .and_then(decode_return)
                 .map_err(Error::TxnExecutionError)?;
             process.finalize().map_err(Error::TxnExecutionError)?;
-            runtime.flush();
+            runtime.commit();
 
             println!("New resource: {}", resource);
             Ok(())

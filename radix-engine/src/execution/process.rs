@@ -23,19 +23,33 @@ use crate::model::*;
 
 macro_rules! trace {
     ($proc:expr, $($args: expr),+) => {
-        $proc.log(Level::Trace, format!($($args),+));
+        if $proc.trace {
+            $proc.log(Level::Trace, format!($($args),+));
+        }
+    };
+}
+
+macro_rules! debug {
+    ($proc:expr, $($args: expr),+) => {
+        if $proc.trace {
+            $proc.log(Level::Debug, format!($($args),+));
+        }
     };
 }
 
 macro_rules! info {
     ($proc:expr, $($args: expr),+) => {
-        $proc.log(Level::Info, format!($($args),+));
+        if $proc.trace {
+            $proc.log(Level::Info, format!($($args),+));
+        }
     };
 }
 
 macro_rules! warn {
     ($proc:expr, $($args: expr),+) => {
-        $proc.log(Level::Warn, format!($($args),+));
+        if $proc.trace {
+            $proc.log(Level::Warn, format!($($args),+));
+        }
     };
 }
 
@@ -98,7 +112,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         }
         validate_module(code)?;
 
-        trace!(
+        debug!(
             self,
             "New package: address = {:?}, code length = {}",
             address,
@@ -157,6 +171,10 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         resource: Address,
         bid: BID,
     ) -> Result<(), RuntimeError> {
+        debug!(
+            self,
+            "Moving to bucket: amount = {}, resource = {}, destination = {}", amount, resource, bid
+        );
         assert!(!self.buckets.contains_key(&bid));
 
         let candidates: BTreeSet<BID> = self
@@ -184,13 +202,6 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         if needed.is_zero() {
             self.create_bucket(remainder, resource);
             self.put_bucket(bid, Bucket::new(amount, resource));
-            trace!(
-                self,
-                "Withdrawn: amount = {}, resource = {}, to bucket {}",
-                amount,
-                resource,
-                bid
-            );
             Ok(())
         } else {
             Err(RuntimeError::AccountingError(
@@ -222,7 +233,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
 
         // run the main function
         let result = module.invoke_export(invocation.export.as_str(), &[], self);
-        trace!(self, "Invoke result: {:?}", result);
+        debug!(self, "Invoke result: {:?}", result);
         let rtn = result
             .map_err(RuntimeError::InvokeError)?
             .ok_or(RuntimeError::NoReturnValue)?;
@@ -242,11 +253,11 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         #[cfg(not(feature = "alloc"))]
         info!(
             self,
-            "Run finished: time elapsed = {} ms",
+            "Run ended: time elapsed = {} ms",
             now.elapsed().as_millis()
         );
         #[cfg(feature = "alloc")]
-        info!(self, "Run finished");
+        info!(self, "Run ended");
 
         Ok(output)
     }
@@ -326,7 +337,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
             .map(|v| v.bucket_id())
             .collect();
         for bid in bids {
-            trace!(self, "Moving {:?} to unlocked_buckets state", bid);
+            debug!(self, "Changing bucket {:?} to unlocked state", bid);
             let bucket_rc = self.locked_buckets.remove(&bid).unwrap();
             let bucket = Rc::try_unwrap(bucket_rc).unwrap();
             self.buckets.insert(bid, bucket.into());
@@ -343,8 +354,11 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         function: &str,
         args: Vec<Vec<u8>>,
     ) -> Result<Vec<u8>, RuntimeError> {
+        debug!(self, "Call function started");
         let invocation = self.prepare_call_function(package, blueprint, function, args)?;
-        self.call(invocation)
+        let result = self.call(invocation);
+        debug!(self, "Call function ended");
+        result
     }
 
     /// Call a method
@@ -354,18 +368,25 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         method: &str,
         args: Vec<Vec<u8>>,
     ) -> Result<Vec<u8>, RuntimeError> {
+        debug!(self, "Call method started");
         let invocation = self.prepare_call_method(component, method, args)?;
-        self.call(invocation)
+        let result = self.call(invocation);
+        debug!(self, "Call method ended");
+        result
     }
 
     /// Call ABI
     pub fn call_abi(&mut self, package: Address, blueprint: &str) -> Result<Vec<u8>, RuntimeError> {
+        debug!(self, "Call abi started");
         let invocation = self.prepare_call_abi(package, blueprint)?;
-        self.call(invocation)
+        let result = self.call(invocation);
+        debug!(self, "Call abi ended");
+        result
     }
 
     /// Finalize this process.
     pub fn finalize(&self) -> Result<(), RuntimeError> {
+        debug!(self, "Finalization started");
         let mut success = true;
 
         for (bid, bucket) in &self.buckets {
@@ -383,6 +404,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
             success = false;
         }
 
+        debug!(self, "Finalization ended");
         if success {
             Ok(())
         } else {
@@ -393,18 +415,16 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
     /// Log a message to console.
     #[allow(unused_variables)]
     pub fn log(&self, level: Level, msg: String) {
-        if self.trace {
-            let (l, m) = match level {
-                Level::Error => ("ERROR".red(), msg.red()),
-                Level::Warn => ("WARN".yellow(), msg.yellow()),
-                Level::Info => ("INFO".green(), msg.green()),
-                Level::Debug => ("DEBUG".cyan(), msg.cyan()),
-                Level::Trace => ("TRACE".normal(), msg.normal()),
-            };
+        let (l, m) = match level {
+            Level::Error => ("ERROR".red(), msg.red()),
+            Level::Warn => ("WARN".yellow(), msg.yellow()),
+            Level::Info => ("INFO".green(), msg.green()),
+            Level::Debug => ("DEBUG".cyan(), msg.cyan()),
+            Level::Trace => ("TRACE".normal(), msg.normal()),
+        };
 
-            #[cfg(not(feature = "alloc"))]
-            println!("{}[{:5}] {}", "  ".repeat(self.depth), l, m);
-        }
+        #[cfg(not(feature = "alloc"))]
+        println!("{}[{:5}] {}", "  ".repeat(self.depth), l, m);
     }
 
     /// Return the package address
@@ -586,7 +606,10 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
             .buckets
             .remove(&bid)
             .ok_or(RuntimeError::BucketNotFound(bid))?;
-        trace!(self, "Moving {:?}: {:?}", bid, bucket);
+        debug!(
+            self,
+            "Moving bucket: bid = {:?}, bucket = {:?}", bid, bucket
+        );
         self.moving_buckets.insert(bid, bucket);
         Ok(bid)
     }
@@ -597,7 +620,10 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
             .references
             .remove(&rid)
             .ok_or(RuntimeError::ReferenceNotFound(rid))?;
-        trace!(self, "Moving {:?}: {:?}", rid, bucket_ref);
+        debug!(
+            self,
+            "Moving reference: bid = {:?}, ref = {:?}", rid, bucket_ref
+        );
         self.moving_references.insert(rid, bucket_ref);
         Ok(rid)
     }
@@ -702,7 +728,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         &mut self,
         input: CallFunctionInput,
     ) -> Result<CallFunctionOutput, RuntimeError> {
-        trace!(
+        debug!(
             self,
             "CALL started: package = {}, blueprint = {}, function = {}, args = {:?}",
             input.package,
@@ -719,7 +745,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         )?;
         let result = self.call(invocation);
 
-        trace!(self, "CALL finished");
+        debug!(self, "CALL finished");
         Ok(CallFunctionOutput { rtn: result? })
     }
 
@@ -727,7 +753,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         &mut self,
         input: CallMethodInput,
     ) -> Result<CallMethodOutput, RuntimeError> {
-        trace!(
+        debug!(
             self,
             "CALL started: component = {}, method = {}, args = {:?}",
             input.component,
@@ -739,7 +765,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
             self.prepare_call_method(input.component, input.method.as_str(), input.args)?;
         let result = self.call(invocation);
 
-        trace!(self, "CALL finished");
+        debug!(self, "CALL finished");
         Ok(CallMethodOutput { rtn: result? })
     }
 
@@ -755,11 +781,9 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
 
         let new_state =
             self.process_data(&input.state, Self::reject_buckets, Self::reject_references)?;
-        trace!(
+        debug!(
             self,
-            "New component: address = {:?}, state = {:?}",
-            address,
-            new_state
+            "New component: address = {:?}, state = {:?}", address, new_state
         );
 
         let component = Component::new(self.package()?, input.blueprint, new_state);
@@ -817,7 +841,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
 
         let new_state =
             self.process_data(&input.state, Self::reject_buckets, Self::reject_references)?;
-        trace!(self, "Transformed: {:?}", new_state);
+        debug!(self, "Transformed state: {:?}", new_state);
 
         let component = self
             .runtime
@@ -870,10 +894,10 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
 
         let new_key =
             self.process_data(&input.key, Self::reject_buckets, Self::reject_references)?;
-        trace!(self, "Transformed key: {:?}", new_key);
+        debug!(self, "Transformed key: {:?}", new_key);
         let new_value =
             self.process_data(&input.value, Self::reject_buckets, Self::reject_references)?;
-        trace!(self, "Transformed value: {:?}", new_value);
+        debug!(self, "Transformed value: {:?}", new_value);
 
         let storage = self
             .runtime
@@ -903,7 +927,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         if self.runtime.get_resource(address).is_some() {
             return Err(RuntimeError::ResourceAlreadyExists(address));
         } else {
-            trace!(self, "New resource: {:?}", address);
+            debug!(self, "New resource: {:?}", address);
 
             self.runtime.put_resource(address, resource);
         }
@@ -925,7 +949,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         if self.runtime.get_resource(address).is_some() {
             return Err(RuntimeError::ResourceAlreadyExists(address));
         } else {
-            trace!(self, "New resource: {:?}", address);
+            debug!(self, "New resource: {:?}", address);
 
             self.runtime.put_resource(address, resource);
         }
@@ -1150,7 +1174,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
     ) -> Result<CreateReferenceOutput, RuntimeError> {
         let bid = input.bucket;
         let rid = self.runtime.new_rid();
-        trace!(self, "Borrowing: bid =  {:?}, rid = {:?}", bid, rid);
+        debug!(self, "Borrowing: bid =  {:?}, rid = {:?}", bid, rid);
 
         match self.locked_buckets.get_mut(&bid) {
             Some(bucket_rc) => {
@@ -1184,7 +1208,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
                 .references
                 .remove(&rid)
                 .ok_or(RuntimeError::ReferenceNotFound(rid))?;
-            trace!(self, "Returning {:?}: {:?}", rid, bucket);
+            debug!(self, "Returning {:?}: {:?}", rid, bucket);
             (Rc::strong_count(&bucket) - 1, bucket.bucket_id())
         };
 

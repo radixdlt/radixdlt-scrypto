@@ -71,7 +71,7 @@ pub fn handle_new_account(matches: &ArgMatches) -> Result<(), Error> {
     proc.call_method(account, "deposit", vec![scrypto_encode(&bucket)])
         .map_err(Error::TxnExecutionError)?;
     proc.finalize().map_err(Error::TxnExecutionError)?;
-    runtime.flush();
+    runtime.commit();
 
     println!("New account: {}", account);
 

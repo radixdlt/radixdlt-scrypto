@@ -4,7 +4,7 @@ use scrypto::prelude::*;
 #[test]
 fn test_component() {
     let mut engine = InMemoryRadixEngine::new();
-    let mut runtime = engine.start_runtime();
+    let mut runtime = engine.start_transaction();
     let mut proc = runtime.start_process(true);
     let pkg = proc.publish(package_code!("./everything")).unwrap();
 
@@ -25,7 +25,7 @@ fn test_component() {
 #[test]
 fn test_storage() {
     let mut engine = InMemoryRadixEngine::new();
-    let mut runtime = engine.start_runtime();
+    let mut runtime = engine.start_transaction();
     let mut proc = runtime.start_process(true);
     let pkg = proc.publish(package_code!("./everything")).unwrap();
 
@@ -41,7 +41,7 @@ fn test_storage() {
 #[test]
 fn test_resource() {
     let mut engine = InMemoryRadixEngine::new();
-    let mut runtime = engine.start_runtime();
+    let mut runtime = engine.start_transaction();
     let mut proc = runtime.start_process(true);
     let pkg = proc.publish(package_code!("./everything")).unwrap();
 
@@ -56,7 +56,7 @@ fn test_resource() {
 #[test]
 fn test_bucket() {
     let mut engine = InMemoryRadixEngine::new();
-    let mut runtime = engine.start_runtime();
+    let mut runtime = engine.start_transaction();
     let mut proc = runtime.start_process(true);
     let pkg = proc.publish(package_code!("./everything")).unwrap();
 
@@ -73,7 +73,7 @@ fn test_bucket() {
 #[test]
 fn test_move_resource() {
     let mut engine = InMemoryRadixEngine::new();
-    let mut runtime = engine.start_runtime();
+    let mut runtime = engine.start_transaction();
     let mut proc = runtime.start_process(true);
     let pkg = proc.publish(package_code!("./everything")).unwrap();
 

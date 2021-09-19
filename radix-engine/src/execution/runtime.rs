@@ -12,7 +12,7 @@ use crate::model::*;
 /// Runtime is an abstraction of transaction execution state.
 ///
 /// It acts as the facade of ledger state and keeps track of all temporary state updates,
-/// until the `flush()` method is called.
+/// until the `commit()` method is called.
 ///
 /// Typically, a runtime involves a series of processes.
 ///
@@ -326,8 +326,8 @@ impl<'le, L: Ledger> Runtime<'le, L> {
         self.alloc.new_sid(self.tx_hash())
     }
 
-    /// Flush changes to ledger.
-    pub fn flush(&mut self) {
+    /// Commits changes to ledger.
+    pub fn commit(&mut self) {
         for address in self.updated_packages.clone() {
             self.ledger
                 .put_package(address, self.packages.get(&address).unwrap().clone());

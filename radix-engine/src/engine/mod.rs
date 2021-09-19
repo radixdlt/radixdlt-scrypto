@@ -21,7 +21,7 @@ impl InMemoryRadixEngine {
         }
     }
 
-    pub fn start_runtime(&mut self) -> Runtime<InMemoryLedger> {
+    pub fn start_transaction(&mut self) -> Runtime<InMemoryLedger> {
         let tx_hash = sha256(self.nonce.to_string());
         self.nonce += 1;
         Runtime::new(tx_hash, &mut self.ledger)

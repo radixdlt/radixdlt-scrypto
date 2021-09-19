@@ -62,7 +62,7 @@ pub fn handle_mint_resource(matches: &ArgMatches) -> Result<(), Error> {
                 .call_method(account, "mint_resource", args!(amount, resource))
                 .and_then(|_| process.finalize())
                 .map_err(Error::TxnExecutionError)?;
-            runtime.flush();
+            runtime.commit();
 
             println!("Resource minted into the default account!");
             Ok(())

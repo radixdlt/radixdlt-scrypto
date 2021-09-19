@@ -12,7 +12,7 @@ pub fn export_abi<T: Ledger>(
     trace: bool,
 ) -> Result<abi::Blueprint, RuntimeError> {
     let mut engine = InMemoryRadixEngine::new();
-    let mut runtime = engine.start_runtime();
+    let mut runtime = engine.start_transaction();
 
     // Load package code from file system
     runtime.put_package(

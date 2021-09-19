@@ -71,9 +71,9 @@ pub fn execute<T: Ledger>(
         }
     }
 
-    // flush state updates
+    // commit state updates
     if success {
-        runtime.flush();
+        runtime.commit();
     }
 
     TransactionReceipt {
