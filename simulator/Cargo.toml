@@ -9,7 +9,7 @@ scrypto = { version = "0.1", path = "../scrypto", features = ["serde_std"] }
 sbor = { version = "0.1", path = "../sbor" }
 serde_json = { version = "1.0" }
 clap = { version = "2.33" }
-dirs = { version = "3.0" }
+dirs = { version = "4.0" }
 colored = { version = "2.0" }
 uuid = { version = "0.8", features = ["v4"] }
 hex = { version = "0.4" }
@@ -17,3 +17,7 @@ hex = { version = "0.4" }
 [[bin]]
 name = "rev2"
 path = "src/bin/rev2.rs"
+
+[[bin]]
+name = "scrypto"
+path = "src/bin/scrypto.rs"

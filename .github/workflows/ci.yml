@@ -93,6 +93,13 @@ jobs:
     - name: Run tests (no_std)
       run: cargo test --verbose --no-default-features --features alloc
       working-directory: radix-engine
-    - name: Run simulator
+  simulator:
+    name: Run simulator tests
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Add wasm target
+      run: rustup target add wasm32-unknown-unknown
+    - name: Run tests
       run: bash ./tests/run.sh
       working-directory: simulator
