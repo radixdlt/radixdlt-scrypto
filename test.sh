@@ -30,7 +30,8 @@ echo "Building examples..."
 (cd examples/gumball-machine-vendor; cargo build --target wasm32-unknown-unknown --release; cargo test)
 
 echo "Running simulator..."
-(cd simulator; bash ./tests/run.sh)
+(cd simulator; bash ./tests/rev2.sh)
+(cd simulator; bash ./tests/scrypto.sh)
 
 echo "Running benchmark..."
 (cd sbor-tests; cargo bench)

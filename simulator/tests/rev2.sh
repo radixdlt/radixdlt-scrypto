@@ -5,7 +5,6 @@ set -e
 
 cd "$(dirname "$0")/.."
 
-scrypto="cargo run --bin scrypto $@ --"
 rev2="cargo run --bin rev2 $@ --"
 
 # Set up environment
@@ -32,10 +31,3 @@ $rev2 export-abi $package GumballMachine
 $rev2 show $package
 $rev2 show $component
 $rev2 show $account
-
-# Create, build, and test scrypto
-test_pkg="./target/temp/hello-world"
-rm -fr $test_pkg
-$scrypto new-package hello-world --path $test_pkg
-$scrypto build --path $test_pkg
-$scrypto test --path $test_pkg

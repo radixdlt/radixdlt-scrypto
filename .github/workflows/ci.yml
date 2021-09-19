@@ -63,7 +63,7 @@ jobs:
       run: cargo test --verbose --no-default-features --features alloc
       working-directory: scrypto-tests
   scrypto-examples:
-    name: Run examples
+    name: Run Scrypto examples
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
@@ -93,13 +93,23 @@ jobs:
     - name: Run tests (no_std)
       run: cargo test --verbose --no-default-features --features alloc
       working-directory: radix-engine
-  simulator:
-    name: Run simulator tests
+  simulator-rev2:
+    name: Run Simulator tests (rev2)
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
     - name: Add wasm target
       run: rustup target add wasm32-unknown-unknown
     - name: Run tests
-      run: bash ./tests/run.sh
+      run: bash ./tests/rev2.sh
+      working-directory: simulator
+  simulator-scrypto:
+    name: Run Simulator tests (scrypto)
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Add wasm target
+      run: rustup target add wasm32-unknown-unknown
+    - name: Run tests
+      run: bash ./tests/scrypto.sh
       working-directory: simulator
