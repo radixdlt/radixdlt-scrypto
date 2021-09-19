@@ -112,7 +112,7 @@ pub fn handle_new_resource_mutable(matches: &ArgMatches) -> Result<(), Error> {
             process.finalize().map_err(Error::TxnExecutionError)?;
             runtime.flush();
 
-            println!("New token resource: {}", resource);
+            println!("New resource: {}", resource);
             Ok(())
         }
         None => Err(Error::NoDefaultAccount),

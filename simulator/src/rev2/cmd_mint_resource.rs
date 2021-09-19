@@ -64,7 +64,7 @@ pub fn handle_mint_resource(matches: &ArgMatches) -> Result<(), Error> {
                 .map_err(Error::TxnExecutionError)?;
             runtime.flush();
 
-            println!("Done!");
+            println!("Resource minted into the default account!");
             Ok(())
         }
         None => Err(Error::NoDefaultAccount),

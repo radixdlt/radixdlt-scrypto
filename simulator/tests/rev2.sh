@@ -11,7 +11,7 @@ rev2="cargo run --bin rev2 $@ --"
 $rev2 reset
 account=`$rev2 new-account | tee /dev/tty | awk '/New account: / {print $NF}'`
 $rev2 new-resource-fixed 333
-resource=`$rev2 new-resource-mutable $account | tee /dev/tty | awk '/New token resource: / {print $NF}'`
+resource=`$rev2 new-resource-mutable $account | tee /dev/tty | awk '/New resource: / {print $NF}'`
 $rev2 mint-resource 666 $resource
 
 # Test helloworld

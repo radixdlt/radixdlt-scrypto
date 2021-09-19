@@ -26,7 +26,7 @@ pub fn dump_component<T: Ledger>(address: Address, ledger: &T) {
             println!("{}: {}", "Component".green().bold(), address.to_string());
 
             println!(
-                "{}: {}::{}",
+                "{}: {{ package: {}, blueprint: {} }}",
                 "Blueprint".green().bold(),
                 c.package(),
                 c.blueprint()

@@ -26,6 +26,6 @@ pub fn handle_set_default_account(matches: &ArgMatches) -> Result<(), Error> {
 
     set_config(CONF_DEFAULT_ACCOUNT, &address.to_string())?;
 
-    println!("Done!");
+    println!("Default account updated!");
     Ok(())
 }
