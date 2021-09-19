@@ -76,7 +76,7 @@ scrypto test
 | To export the ABI of a blueprint | ``` rev2 export-abi <package_address> <blueprint_name> ``` |
 | To show info about an address | ``` rev2 show <address> ``` |
 
-**Note:** The commands above will use the default account as transaction sender.
+**Note:** The commands use the default account as transaction sender.
 
 ## Project Layout
 
