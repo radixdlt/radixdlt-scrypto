@@ -6,6 +6,7 @@ use crate::rust::string::String;
 use crate::rust::vec::Vec;
 use crate::type_id::*;
 
+/// Represents a SBOR value.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Value {
     Unit,
@@ -47,6 +48,7 @@ pub enum Value {
     Custom(u8, Vec<u8>),
 }
 
+/// Represents the fields of a struct or enum variant.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Fields {
     Named(Vec<Value>),
@@ -56,6 +58,7 @@ pub enum Fields {
     Unit,
 }
 
+/// Encodes any SBOR value into byte array.
 pub fn write_any(ty_ctx: Option<u8>, value: &Value, enc: &mut Encoder) {
     match value {
         // basic types
@@ -191,7 +194,7 @@ pub fn write_any(ty_ctx: Option<u8>, value: &Value, enc: &mut Encoder) {
     }
 }
 
-pub fn write_fields(fields: &Fields, enc: &mut Encoder) {
+fn write_fields(fields: &Fields, enc: &mut Encoder) {
     match fields {
         Fields::Named(named) => {
             enc.write_type(TYPE_FIELDS_NAMED);
@@ -340,7 +343,7 @@ fn traverse(ty_ctx: Option<u8>, dec: &mut Decoder) -> Result<Value, DecodeError>
             }
         }
         _ => {
-            if ty >= CUSTOM_TYPE_START {
+            if ty >= TYPE_CUSTOM_START {
                 // length
                 let len = dec.read_len()?;
                 let slice = dec.read_bytes(len)?;

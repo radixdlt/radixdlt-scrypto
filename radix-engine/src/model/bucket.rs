@@ -11,15 +11,14 @@ pub enum BucketError {
     UnauthorizedAccess,
 }
 
-/// A bucket is a container that holds resources.
+/// A bucket is a transient container of resources.
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct Bucket {
     amount: Amount,
     resource: Address,
 }
 
-/// When a bucket gets borrowed, it becomes unlocked immediately
-/// until all references have been dropped.
+/// A borrowed bucket becomes locked until has references have been dropped.
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct LockedBucket {
     bucket_id: BID,
@@ -29,7 +28,7 @@ pub struct LockedBucket {
 /// A reference to a bucket.
 pub type BucketRef = Rc<LockedBucket>;
 
-/// A persisted bucket is stored permanently on ledger state.
+/// A persistent bucket on ledger state.
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct Vault {
     bucket: Bucket,

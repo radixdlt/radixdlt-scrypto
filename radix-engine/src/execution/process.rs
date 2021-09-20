@@ -53,7 +53,7 @@ macro_rules! warn {
     };
 }
 
-/// A runnable process
+/// A process manages resource movements and code execution.
 pub struct Process<'rt, 'le, L: Ledger> {
     depth: usize,
     trace: bool,

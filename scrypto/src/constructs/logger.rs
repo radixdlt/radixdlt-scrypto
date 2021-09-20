@@ -3,7 +3,7 @@ use sbor::*;
 use crate::kernel::*;
 use crate::rust::string::String;
 
-/// A logger for dumping messages.
+/// A utility for logging messages.
 #[derive(Debug)]
 pub struct Logger {}
 

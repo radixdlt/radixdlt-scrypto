@@ -7,7 +7,7 @@ pub fn scrypto_encode<T: Encode + ?Sized>(v: &T) -> Vec<u8> {
     sbor::encode_with_type(Vec::with_capacity(512), v)
 }
 
-/// Encodes a data structure into byte array, which will be consumed by kernel.
+/// Encodes a data structure into byte array for kernel.
 pub fn scrypto_encode_for_kernel<T: Encode + ?Sized>(v: &T) -> Vec<u8> {
     // create a buffer and pre-append with length (0).
     let mut buf = Vec::with_capacity(512);

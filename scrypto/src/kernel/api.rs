@@ -43,7 +43,7 @@ pub const GET_RESOURCE_INFO: u32 = 0x32;
 /// Mint resource
 pub const MINT_RESOURCE: u32 = 0x33;
 
-/// Creates a new empty vault
+/// Create a new empty vault
 pub const CREATE_EMPTY_VAULT: u32 = 0x40;
 /// Combine vaults
 pub const PUT_INTO_VAULT: u32 = 0x41;
@@ -54,7 +54,7 @@ pub const GET_VAULT_AMOUNT: u32 = 0x43;
 /// Get vault resource address
 pub const GET_VAULT_RESOURCE: u32 = 0x44;
 
-/// Creates a new empty bucket
+/// Create a new empty bucket
 pub const CREATE_EMPTY_BUCKET: u32 = 0x50;
 /// Combine buckets
 pub const PUT_INTO_BUCKET: u32 = 0x51;

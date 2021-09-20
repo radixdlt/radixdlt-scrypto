@@ -11,7 +11,7 @@ use crate::rust::vec::Vec;
 use crate::types::*;
 use crate::utils::*;
 
-/// A self-executing program that holds resources and exposed actions to other entities.
+/// An instance of a blueprint, which lives in the persistent state and may own resources.
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct Component {
     address: Address,

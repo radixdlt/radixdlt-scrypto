@@ -10,7 +10,7 @@ use crate::rust::vec::Vec;
 use crate::types::*;
 use crate::utils::*;
 
-/// A piece of code that defines the structure and methods of components.
+/// A template that describes the common behavior and state structure of its instances.
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct Blueprint {
     package: Address,

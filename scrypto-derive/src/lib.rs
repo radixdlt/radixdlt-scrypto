@@ -5,7 +5,7 @@ mod utils;
 
 use proc_macro::TokenStream;
 
-/// Define the structure and implementation of a new blueprint.
+/// Defines a blueprint.
 ///
 /// The `blueprint!` macro is a convenient way to define a new blueprint. It takes
 /// two arguments:
@@ -45,7 +45,7 @@ pub fn blueprint(input: TokenStream) -> TokenStream {
     TokenStream::from(output)
 }
 
-/// Import a blueprint from its ABI.
+/// Imports a blueprint from its ABI.
 ///
 /// This macro will generate stubs for accessing a blueprint that complies to the
 /// given ABI specification.

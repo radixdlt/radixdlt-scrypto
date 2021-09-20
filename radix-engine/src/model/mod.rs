@@ -10,7 +10,7 @@ pub use package::Package;
 pub use resource::Resource;
 pub use storage::Storage;
 
-/// Represents a log level
+/// Represents a log severity.
 #[derive(Debug, Clone)]
 pub enum Level {
     Error,

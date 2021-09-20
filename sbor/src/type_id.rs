@@ -34,11 +34,13 @@ pub const TYPE_TREE_MAP: u8 = 0x22;
 pub const TYPE_HASH_SET: u8 = 0x23;
 pub const TYPE_HASH_MAP: u8 = 0x24;
 // custom types start from 0x80 and values are encoded as `len + data`
-pub const CUSTOM_TYPE_START: u8 = 0x80;
+pub const TYPE_CUSTOM_START: u8 = 0x80;
 
+/// A SBOR type ID.
 pub trait TypeId {
     fn type_id() -> u8;
 }
+
 impl TypeId for () {
     #[inline]
     fn type_id() -> u8 {
@@ -179,6 +181,7 @@ impl<T: TypeId> TypeId for HashSet<T> {
         TYPE_HASH_SET
     }
 }
+
 impl<K: TypeId, V: TypeId> TypeId for HashMap<K, V> {
     #[inline]
     fn type_id() -> u8 {

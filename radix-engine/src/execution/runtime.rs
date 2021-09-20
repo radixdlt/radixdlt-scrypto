@@ -9,7 +9,7 @@ use crate::execution::*;
 use crate::ledger::*;
 use crate::model::*;
 
-/// Runtime is an abstraction of transaction execution state.
+/// An abstraction of transaction execution state.
 ///
 /// It acts as the facade of ledger state and keeps track of all temporary state updates,
 /// until the `commit()` method is called.

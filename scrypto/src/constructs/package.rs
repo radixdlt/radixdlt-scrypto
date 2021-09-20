@@ -6,7 +6,7 @@ use crate::kernel::*;
 use crate::rust::borrow::ToOwned;
 use crate::types::*;
 
-/// A package consists of blueprints.
+/// A collection of blueprints, built and published as a single unit.
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct Package {
     address: Address,

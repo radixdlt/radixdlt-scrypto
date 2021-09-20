@@ -6,7 +6,7 @@ use scrypto::utils::*;
 use crate::execution::*;
 use crate::ledger::*;
 
-/// A in-memory version of Radix Engine.
+/// A Radix Engine which employs an in-memory ledger.
 pub struct InMemoryRadixEngine {
     ledger: InMemoryLedger,
     nonce: u32,
@@ -28,7 +28,7 @@ impl InMemoryRadixEngine {
     }
 }
 
-/// Decodes call return data into a Rust type.
+/// Decodes call return data into an instance of `T`.
 pub fn decode_return<T: sbor::Decode>(data: Vec<u8>) -> Result<T, RuntimeError> {
     scrypto_decode(&data).map_err(RuntimeError::InvalidData)
 }

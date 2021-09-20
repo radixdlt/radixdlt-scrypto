@@ -42,7 +42,7 @@ pub trait Decode: Sized + TypeId {
     fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError>;
 }
 
-/// An `Decoder` abstracts the logic for reading and checking core types from a slice.
+/// A `Decoder` abstracts the logic for decoding basic types.
 pub struct Decoder<'de> {
     input: &'de [u8],
     offset: usize,

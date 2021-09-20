@@ -5,17 +5,17 @@ compile_error!("Either feature `std` or `alloc` must be enabled for this crate."
 #[cfg(all(feature = "std", feature = "alloc"))]
 compile_error!("Feature `std` and `alloc` can't be enabled at the same time.");
 
-/// Scrypto data encoding/decoding and memory allocation scheme.
+/// Scrypto data encoding/decoding and memory allocation.
 pub mod buffer;
 /// Scrypto constants.
 pub mod constants;
-/// Scrypto high level abstraction.
+/// Scrypto high-level abstractions.
 pub mod constructs;
-/// Kernel APIs and helper functions.
+/// Kernel APIs.
 pub mod kernel;
 /// The prelude of Scrypto library.
 pub mod prelude;
-/// Scrypto resource containers and references.
+/// Scrypto resource, bucket and reference.
 pub mod resource;
 /// A facade to Rust standard types.
 pub mod rust;
@@ -23,7 +23,7 @@ pub mod rust;
 pub mod traits;
 /// Scrypto primitive types.
 pub mod types;
-/// Utility functions, like crypto algorithms.
+/// Utility functions.
 pub mod utils;
 
 /// Scrypto blueprint ABI.
@@ -35,7 +35,14 @@ pub mod abi {
 extern crate scrypto_derive;
 pub use scrypto_derive::*;
 
-/// Encode arguments for invoking a blueprint or component.
+/// Encodes arguments according to `CALL` abi.
+///
+/// # Example
+/// ```ignore
+/// use scrypto::prelude::*;
+///
+/// args!(5, "hello")
+/// ```
 #[macro_export]
 macro_rules! args {
     ($($args: expr),*) => {
@@ -47,7 +54,7 @@ macro_rules! args {
     };
 }
 
-/// Log an `ERROR` message.
+/// Logs an `ERROR` message.
 #[macro_export]
 macro_rules! error {
     ($($args: expr),+) => {{
@@ -55,7 +62,7 @@ macro_rules! error {
     }};
 }
 
-/// Log a `WARN` message.
+/// Logs a `WARN` message.
 #[macro_export]
 macro_rules! warn {
     ($($args: expr),+) => {{
@@ -63,7 +70,7 @@ macro_rules! warn {
     }};
 }
 
-/// Log an `INFO` message.
+/// Logs an `INFO` message.
 #[macro_export]
 macro_rules! info {
     ($($args: expr),+) => {{
@@ -71,7 +78,7 @@ macro_rules! info {
     }};
 }
 
-/// Log a `DEBUG` message.
+/// Logs a `DEBUG` message.
 #[macro_export]
 macro_rules! debug {
     ($($args: expr),+) => {{
@@ -79,7 +86,7 @@ macro_rules! debug {
     }};
 }
 
-/// Log a `TRACE` message.
+/// Logs a `TRACE` message.
 #[macro_export]
 macro_rules! trace {
     ($($args: expr),+) => {{
@@ -87,7 +94,7 @@ macro_rules! trace {
     }};
 }
 
-/// Returns the code of the current package.
+/// Includes a package code as a byte array.
 #[macro_export]
 macro_rules! package_code {
     () => {
