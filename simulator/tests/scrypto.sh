@@ -17,3 +17,5 @@ $scrypto build --path $test_pkg
 
 # Test
 $scrypto test --path $test_pkg
+$scrypto test --path $test_pkg -- test_greeting --nocapture
+$scrypto test --path $test_pkg -- --nocapture

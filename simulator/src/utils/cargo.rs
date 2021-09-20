@@ -60,6 +60,7 @@ where
             .arg("test")
             .arg("--manifest-path")
             .arg(cargo.canonicalize().unwrap().to_str().unwrap())
+            .arg("--")
             .args(args)
             .status()
             .map_err(CargoExecutionError::FailedToRunCargo)?;

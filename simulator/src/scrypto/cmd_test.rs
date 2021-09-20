@@ -15,8 +15,10 @@ pub fn make_test<'a, 'b>() -> App<'a, 'b> {
         .version(crate_version!())
         .arg(
             Arg::with_name(ARG_ARGS)
-                .help("Specify additional arguments to cargo.")
-                .multiple(true),
+                .help("Specify the arguments to test executable.")
+                .allow_hyphen_values(true)
+                .multiple(true)
+                .required(false),
         )
         .arg(
             Arg::with_name(ARG_PATH)
