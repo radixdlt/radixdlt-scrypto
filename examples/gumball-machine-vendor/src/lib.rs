@@ -49,7 +49,7 @@ blueprint! {
         }
 
         pub fn get_gumball(&self, payment: Bucket) -> Bucket {
-            let component = GumballMachine::at(self.machine);
+            let component = GumballMachine::instance(self.machine);
             component.get_gumball(payment)
         }
     }
