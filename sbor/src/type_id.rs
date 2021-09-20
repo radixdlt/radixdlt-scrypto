@@ -108,6 +108,14 @@ impl TypeId for str {
         TYPE_STRING
     }
 }
+
+impl TypeId for &str {
+    #[inline]
+    fn type_id() -> u8 {
+        TYPE_STRING
+    }
+}
+
 impl TypeId for String {
     #[inline]
     fn type_id() -> u8 {

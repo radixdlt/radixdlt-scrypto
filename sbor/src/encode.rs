@@ -118,6 +118,14 @@ impl Encode for str {
         encoder.write_slice(self.as_bytes());
     }
 }
+
+impl Encode for &str {
+    fn encode_value(&self, encoder: &mut Encoder) {
+        encoder.write_len(self.len());
+        encoder.write_slice(self.as_bytes());
+    }
+}
+
 impl Encode for String {
     fn encode_value(&self, encoder: &mut Encoder) {
         self.as_str().encode_value(encoder);
