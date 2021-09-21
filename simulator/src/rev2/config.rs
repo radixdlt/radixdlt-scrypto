@@ -9,7 +9,7 @@ pub const CONF_DEFAULT_ACCOUNT: &str = "default_account";
 /// Returns the data directory.
 pub fn get_data_dir() -> Result<PathBuf, Error> {
     let mut path = dirs::home_dir().ok_or(Error::NoHomeFolder)?;
-    path.push(".radix-engine-simulator");
+    path.push("scrypto-simulator");
     if !path.exists() {
         std::fs::create_dir_all(&path).map_err(Error::IOError)?;
     }
