@@ -8,14 +8,13 @@ blueprint! {
 
     impl GumballMachine {
         pub fn new() -> Address {
+            let bucket = ResourceBuilder::new()
+                .metadata("name", "Gumball")
+                .metadata("symbol", "gum")
+                .metadata("description", "The best gumball in the world.")
+                .create_fixed(1000);
             Self {
-                gumballs: Vault::wrap(
-                    ResourceBuilder::new()
-                        .metadata("name", "Gumball")
-                        .metadata("symbol", "gum")
-                        .metadata("description", "The best gumball in the world.")
-                        .create_fixed(1000)
-                ),
+                gumballs: Vault::wrap(bucket),
                 collected_xrd: Vault::new(Address::RadixToken)
             }
             .instantiate()
