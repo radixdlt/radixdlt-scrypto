@@ -64,6 +64,10 @@ impl Vault {
         output.bucket.into()
     }
 
+    pub fn take_all(&self) -> Bucket {
+        self.take(self.amount())
+    }
+
     pub fn amount(&self) -> Amount {
         let input = GetVaultAmountInput { vault: self.vid };
         let output: GetVaultAmountOutput = call_kernel(GET_VAULT_AMOUNT, input);
