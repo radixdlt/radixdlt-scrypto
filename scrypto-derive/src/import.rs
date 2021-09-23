@@ -15,7 +15,7 @@ macro_rules! trace {
 }
 
 pub fn handle_import(input: TokenStream) -> TokenStream {
-    trace!("handle_import() starts");
+    trace!("Started processing import macro");
     let span = Span::call_site();
 
     let content = parse2::<LitStr>(input)
@@ -23,7 +23,7 @@ pub fn handle_import(input: TokenStream) -> TokenStream {
         .value();
     let blueprint: abi::Blueprint =
         serde_json::from_str(content.as_str()).expect("Unable to parse ABI");
-    trace!("ABI: {:?}", blueprint);
+    trace!("Parsed ABI: {:?}", blueprint);
 
     let mut items: Vec<Item> = vec![];
     let mut implementations: Vec<ItemImpl> = vec![];
@@ -31,7 +31,7 @@ pub fn handle_import(input: TokenStream) -> TokenStream {
     let package = blueprint.package;
     let name = blueprint.blueprint;
     let ident = Ident::new(name.as_str(), span);
-    trace!("Blueprint: {}", quote! { #ident });
+    trace!("Blueprint name: {}", name);
 
     let structure: Item = parse_quote! {
         pub struct #ident {
@@ -118,7 +118,7 @@ pub fn handle_import(input: TokenStream) -> TokenStream {
             #(#functions)*
         }
     };
-    trace!("Implementation: {}", quote! { #implementation });
+    trace!("Generated impl: {}", quote! { #implementation });
     implementations.push(implementation);
 
     let output = quote! {
@@ -126,7 +126,7 @@ pub fn handle_import(input: TokenStream) -> TokenStream {
 
          #(#implementations)*
     };
-    trace!("handle_import() finishes");
+    trace!("Finished processing import macro");
 
     #[cfg(feature = "trace")]
     crate::utils::print_compiled_code("import!", &output);

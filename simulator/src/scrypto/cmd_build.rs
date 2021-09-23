@@ -6,6 +6,7 @@ use crate::scrypto::*;
 use crate::utils::*;
 
 const ARG_PATH: &str = "PATH";
+const ARG_TRACE: &str = "TRACE";
 
 /// Constructs a `build` subcommand.
 pub fn make_build<'a, 'b>() -> App<'a, 'b> {
@@ -19,6 +20,12 @@ pub fn make_build<'a, 'b>() -> App<'a, 'b> {
                 .help("Specifies the package dir.")
                 .required(false),
         )
+        .arg(
+            Arg::with_name(ARG_TRACE)
+                .short("t")
+                .long("trace")
+                .help("Turns on tracing."),
+        )
 }
 
 /// Handles a `build` request.
@@ -27,8 +34,9 @@ pub fn handle_build(matches: &ArgMatches) -> Result<(), Error> {
         .value_of(ARG_PATH)
         .map(PathBuf::from)
         .unwrap_or_else(|| std::env::current_dir().unwrap());
+    let trace = matches.is_present(ARG_TRACE);
 
-    build_package(pkg_path)
+    build_package(pkg_path, trace)
         .map(|_| ())
         .map_err(Error::CargoError)
 }

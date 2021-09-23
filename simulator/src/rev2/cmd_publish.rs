@@ -54,7 +54,7 @@ pub fn handle_publish(matches: &ArgMatches) -> Result<(), Error> {
             .ok_or_else(|| Error::MissingArgument(ARG_PATH.to_owned()))?,
     );
     let file = if path.extension() != Some(OsStr::new("wasm")) {
-        build_package(path).map_err(Error::CargoError)?
+        build_package(path, false).map_err(Error::CargoError)?
     } else {
         path
     };

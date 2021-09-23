@@ -18,7 +18,7 @@ pub enum CargoExecutionError {
     FailedToTest(ExitStatus),
 }
 
-pub fn build_package<P: AsRef<Path>>(path: P) -> Result<PathBuf, CargoExecutionError> {
+pub fn build_package<P: AsRef<Path>>(path: P, trace: bool) -> Result<PathBuf, CargoExecutionError> {
     let mut cargo = path.as_ref().to_owned();
     cargo.push("Cargo.toml");
     if cargo.exists() {
@@ -29,6 +29,11 @@ pub fn build_package<P: AsRef<Path>>(path: P) -> Result<PathBuf, CargoExecutionE
             .arg("--release")
             .arg("--manifest-path")
             .arg(cargo.canonicalize().unwrap().to_str().unwrap())
+            .args(if trace {
+                vec!["--features", "scrypto/trace"]
+            } else {
+                vec![]
+            })
             .status()
             .map_err(CargoExecutionError::FailedToRunCargo)?;
         if !status.success() {
@@ -51,7 +56,7 @@ where
     I: IntoIterator<Item = S>,
     S: AsRef<OsStr>,
 {
-    build_package(&path)?;
+    build_package(&path, false)?;
 
     let mut cargo = path.as_ref().to_owned();
     cargo.push("Cargo.toml");

@@ -13,7 +13,7 @@ macro_rules! trace {
 }
 
 pub fn handle_blueprint(input: TokenStream, output_abi: bool) -> TokenStream {
-    trace!("handle_blueprint() begins");
+    trace!("Started processing blueprint macro");
 
     // parse blueprint struct and impl
     let result: Result<ast::Blueprint> = parse2(input);
@@ -27,9 +27,9 @@ pub fn handle_blueprint(input: TokenStream, output_abi: bool) -> TokenStream {
     let bp_ident = &bp_strut.ident;
     let bp_items = &bp_impl.items;
     let bp_name = bp_ident.to_string();
+    trace!("Blueprint name: {}", bp_name);
 
-    trace!("Processing blueprint: {}", bp_name);
-    let generated_blueprint = quote! {
+    let generated_impl = quote! {
         #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
         pub #bp_strut
 
@@ -49,8 +49,8 @@ pub fn handle_blueprint(input: TokenStream, output_abi: bool) -> TokenStream {
             }
         }
     };
+    trace!("Generated impl: \n{}", quote! { #generated_impl });
 
-    trace!("Generating dispatcher function...");
     let dispatcher_ident = format_ident!("{}_main", bp_ident);
     let (arm_guards, arm_bodies) = generate_dispatcher(bp_ident, bp_items);
     let generated_dispatcher = quote! {
@@ -75,8 +75,11 @@ pub fn handle_blueprint(input: TokenStream, output_abi: bool) -> TokenStream {
             ::scrypto::buffer::scrypto_wrap(rtn)
         }
     };
+    trace!(
+        "Generated dispatcher: \n{}",
+        quote! { #generated_dispatcher }
+    );
 
-    trace!("Generating ABI function...");
     let abi_ident = format_ident!("{}_abi", bp_ident);
     let (abi_functions, abi_methods) = generate_abi(&bp_name, bp_items);
     let generated_abi = quote! {
@@ -99,16 +102,20 @@ pub fn handle_blueprint(input: TokenStream, output_abi: bool) -> TokenStream {
             ::scrypto::buffer::scrypto_wrap(output_bytes)
         }
     };
+    trace!(
+        "Generated ABI exporter: \n{}",
+        quote! { #generated_dispatcher }
+    );
 
     let optional_abi = output_abi.then(|| generated_abi);
     let output = quote! {
-        #generated_blueprint
+        #generated_impl
 
         #generated_dispatcher
 
         #optional_abi
     };
-    trace!("handle_blueprint() finishes");
+    trace!("Finished processing blueprint macro");
 
     #[cfg(feature = "trace")]
     crate::utils::print_compiled_code("blueprint!", &output);
@@ -130,7 +137,6 @@ fn generate_dispatcher(bp_ident: &Ident, items: &[ImplItem]) -> (Vec<Expr>, Vec<
                 let fn_name = &m.sig.ident.to_string();
                 let fn_ident = &m.sig.ident;
 
-                trace!("[1] Generating argument loading statements...");
                 let mut args: Vec<Expr> = vec![];
                 let mut stmts: Vec<Stmt> = vec![];
                 let mut get_state: Option<Stmt> = None;
@@ -153,7 +159,7 @@ fn generate_dispatcher(bp_ident: &Ident, items: &[ImplItem]) -> (Vec<Expr>, Vec<
                                     )
                                 );
                             };
-                            trace!("Stmt: {}", quote! { #stmt });
+                            trace!("Generated stmt: {}", quote! { #stmt });
                             args.push(parse_quote! { & #mutability state });
                             stmts.push(stmt);
 
@@ -178,18 +184,17 @@ fn generate_dispatcher(bp_ident: &Ident, items: &[ImplItem]) -> (Vec<Expr>, Vec<
                                     ::scrypto::buffer::scrypto_decode::<#ty>(&calldata.args[#i])
                                 );
                             };
-                            trace!("Stmt: {}", quote! { #stmt });
+                            trace!("Generated stmt: {}", quote! { #stmt });
                             args.push(parse_quote! { #arg });
                             stmts.push(stmt);
                         }
                     }
                 }
 
-                trace!("[2] Generating function call statement...");
                 // load state if needed
-                if let Some(s) = get_state {
-                    trace!("Stmt: {}", quote! { #s });
-                    stmts.push(s);
+                if let Some(stmt) = get_state {
+                    trace!("Generated stmt: {}", quote! { #stmt });
+                    stmts.push(stmt);
                 }
                 // call the function
                 let stmt: Stmt = parse_quote! {
@@ -197,15 +202,14 @@ fn generate_dispatcher(bp_ident: &Ident, items: &[ImplItem]) -> (Vec<Expr>, Vec<
                         &#bp_ident::#fn_ident(#(#args),*)
                     );
                 };
-                trace!("Stmt: {}", quote! { #stmt });
+                trace!("Generated stmt: {}", quote! { #stmt });
                 stmts.push(stmt);
                 // update state
-                if let Some(s) = put_state {
-                    trace!("Stmt: {}", quote! { #s });
-                    stmts.push(s);
+                if let Some(stmt) = put_state {
+                    trace!("Generated stmt: {}", quote! { #stmt });
+                    stmts.push(stmt);
                 }
 
-                trace!("[3] Generating match arm...");
                 arm_guards.push(parse_quote! { #fn_name });
                 arm_bodies.push(Expr::Block(ExprBlock {
                     attrs: vec![],
