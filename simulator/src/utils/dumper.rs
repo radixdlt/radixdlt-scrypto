@@ -31,20 +31,22 @@ pub fn dump_component<T: Ledger>(address: Address, ledger: &T) {
                 c.package(),
                 c.blueprint()
             );
+            let mut vaults = vec![];
             println!(
                 "{}: {}",
                 "State".green().bold(),
-                format_sbor(c.state()).unwrap_or_else(|_| "Failed to parse data".to_owned())
+                format_sbor_with_ledger(c.state(), ledger, &mut vaults).unwrap()
             );
 
-            let resources = Vec::<Bucket>::new();
             println!("{}:", "Resources".green().bold());
-            for (last, b) in resources.iter().identify_last() {
+            for (last, vid) in vaults.iter().identify_last() {
+                let vault = ledger.get_vault(*vid).unwrap();
                 println!(
-                    "{} {{ amount: {}, resource: {} }}",
+                    "{} {{ vault: {}, amount: {}, resource: {} }}",
                     list_item_prefix(last),
-                    b.amount(),
-                    b.resource(),
+                    vid,
+                    vault.amount(),
+                    vault.resource(),
                 );
             }
         }

@@ -1,3 +1,4 @@
+use radix_engine::ledger::*;
 use sbor::parse::*;
 use sbor::*;
 use scrypto::constants::*;
@@ -6,11 +7,25 @@ use scrypto::rust::convert::TryFrom;
 use scrypto::types::*;
 
 pub fn format_sbor(data: &[u8]) -> Result<String, DecodeError> {
-    let value = parse_any(data)?;
-    format_value(&value)
+    let ledger = InMemoryLedger::new();
+    let mut vaults = vec![];
+    format_sbor_with_ledger(data, &ledger, &mut vaults)
 }
 
-pub fn format_value(value: &Value) -> Result<String, DecodeError> {
+pub fn format_sbor_with_ledger<L: Ledger>(
+    data: &[u8],
+    ledger: &L,
+    vaults: &mut Vec<VID>,
+) -> Result<String, DecodeError> {
+    let value = parse_any(data)?;
+    format_value(&value, ledger, vaults)
+}
+
+pub fn format_value<L: Ledger>(
+    value: &Value,
+    ledger: &L,
+    vaults: &mut Vec<VID>,
+) -> Result<String, DecodeError> {
     match value {
         // basic types
         Value::Unit => Ok(String::from("()")),
@@ -28,66 +43,101 @@ pub fn format_value(value: &Value) -> Result<String, DecodeError> {
         Value::String(v) => Ok(v.to_string()),
         // rust types
         Value::Option(v) => match v.borrow() {
-            Some(x) => Ok(format!("Some({})", format_value(x)?)),
+            Some(x) => Ok(format!("Some({})", format_value(x, ledger, vaults)?)),
             None => Ok(String::from("None")),
         },
-        Value::Box(v) => Ok(format!("Box({})", format_value(v.borrow())?)),
-        Value::Array(_, elements) => format_vec(elements.iter(), "[", "]"),
-        Value::Tuple(elements) => format_vec(elements.iter(), "(", ")"),
-        Value::Struct(fields) => Ok(format!("Struct {}", format_fields(fields)?)),
-        Value::Enum(index, fields) => Ok(format!("Enum::{} {}", index, format_fields(fields)?)),
+        Value::Box(v) => Ok(format!(
+            "Box({})",
+            format_value(v.borrow(), ledger, vaults)?
+        )),
+        Value::Array(_, elements) => format_vec(elements.iter(), "[", "]", ledger, vaults),
+        Value::Tuple(elements) => format_vec(elements.iter(), "(", ")", ledger, vaults),
+        Value::Struct(fields) => Ok(format!("Struct {}", format_fields(fields, ledger, vaults)?)),
+        Value::Enum(index, fields) => Ok(format!(
+            "Enum::{} {}",
+            index,
+            format_fields(fields, ledger, vaults)?
+        )),
         // collections
-        Value::Vec(_, elements) => format_vec(elements.iter(), "Vec { ", " }"),
-        Value::TreeSet(_, elements) => format_vec(elements.iter(), "TreeSet { ", " }"),
-        Value::HashSet(_, elements) => format_vec(elements.iter(), "HashSet { ", " }"),
-        Value::TreeMap(_, _, elements) => format_map(elements.iter(), "TreeMap { ", " }"),
-        Value::HashMap(_, _, elements) => format_map(elements.iter(), "HashMap { ", " }"),
+        Value::Vec(_, elements) => format_vec(elements.iter(), "Vec { ", " }", ledger, vaults),
+        Value::TreeSet(_, elements) => {
+            format_vec(elements.iter(), "TreeSet { ", " }", ledger, vaults)
+        }
+        Value::HashSet(_, elements) => {
+            format_vec(elements.iter(), "HashSet { ", " }", ledger, vaults)
+        }
+        Value::TreeMap(_, _, elements) => {
+            format_map(elements.iter(), "TreeMap { ", " }", ledger, vaults)
+        }
+        Value::HashMap(_, _, elements) => {
+            format_map(elements.iter(), "HashMap { ", " }", ledger, vaults)
+        }
         // custom types
-        Value::Custom(ty, data) => format_custom(*ty, data),
+        Value::Custom(ty, data) => format_custom(*ty, data, ledger, vaults),
     }
 }
 
-pub fn format_fields(fields: &Fields) -> Result<String, DecodeError> {
+pub fn format_fields<L: Ledger>(
+    fields: &Fields,
+    ledger: &L,
+    vaults: &mut Vec<VID>,
+) -> Result<String, DecodeError> {
     match fields {
-        Fields::Named(named) => format_vec(named.iter(), "{ ", " }"),
-        Fields::Unnamed(unnamed) => format_vec(unnamed.iter(), "( ", " )"),
+        Fields::Named(named) => format_vec(named.iter(), "{ ", " }", ledger, vaults),
+        Fields::Unnamed(unnamed) => format_vec(unnamed.iter(), "( ", " )", ledger, vaults),
         Fields::Unit => Ok(String::from("()")),
     }
 }
 
-pub fn format_vec<'a, I: Iterator<Item = &'a Value>>(
+pub fn format_vec<'a, L: Ledger, I: Iterator<Item = &'a Value>>(
     itr: I,
     begin: &str,
     end: &str,
+    ledger: &L,
+    vaults: &mut Vec<VID>,
 ) -> Result<String, DecodeError> {
     let mut buf = String::from(begin);
     for (i, x) in itr.enumerate() {
         if i != 0 {
             buf.push_str(", ");
         }
-        buf.push_str(format_value(x)?.as_str());
+        buf.push_str(format_value(x, ledger, vaults)?.as_str());
     }
     buf.push_str(end);
     Ok(buf)
 }
 
-pub fn format_map<'a, I: Iterator<Item = &'a (Value, Value)>>(
+pub fn format_map<'a, L: Ledger, I: Iterator<Item = &'a (Value, Value)>>(
     itr: I,
     begin: &str,
     end: &str,
+    ledger: &L,
+    vaults: &mut Vec<VID>,
 ) -> Result<String, DecodeError> {
     let mut buf = String::from(begin);
     for (i, x) in itr.enumerate() {
         if i != 0 {
             buf.push_str(", ");
         }
-        buf.push_str(format!("{} => {}", format_value(&x.0)?, format_value(&x.1)?).as_str());
+        buf.push_str(
+            format!(
+                "{} => {}",
+                format_value(&x.0, ledger, vaults)?,
+                format_value(&x.1, ledger, vaults)?
+            )
+            .as_str(),
+        );
     }
     buf.push_str(end);
     Ok(buf)
 }
 
-pub fn format_custom(ty: u8, data: &[u8]) -> Result<String, DecodeError> {
+pub fn format_custom<L: Ledger>(
+    ty: u8,
+    data: &[u8],
+    ledger: &L,
+    vaults: &mut Vec<VID>,
+) -> Result<String, DecodeError> {
     match ty {
         SCRYPTO_TYPE_AMOUNT => {
             let amount = Amount::try_from(data).map_err(|_| DecodeError::InvalidCustomData(ty))?;
@@ -104,7 +154,20 @@ pub fn format_custom(ty: u8, data: &[u8]) -> Result<String, DecodeError> {
         }
         SCRYPTO_TYPE_SID => {
             let sid = SID::try_from(data).map_err(|_| DecodeError::InvalidCustomData(ty))?;
-            Ok(format!("SID({})", sid))
+
+            let mut buf = String::new();
+            if let Some(storage) = ledger.get_storage(sid) {
+                for (i, (k, v)) in storage.storage.iter().enumerate() {
+                    if i != 0 {
+                        buf.push_str(", ");
+                    }
+                    buf.push_str(format_sbor_with_ledger(k, ledger, vaults)?.as_str());
+                    buf.push_str(" => ");
+                    buf.push_str(format_sbor_with_ledger(v, ledger, vaults)?.as_str());
+                }
+            };
+
+            Ok(format!("SID({}) {{ {} }}", sid, buf))
         }
         SCRYPTO_TYPE_BID => {
             let bid = BID::try_from(data).map_err(|_| DecodeError::InvalidCustomData(ty))?;
@@ -116,6 +179,7 @@ pub fn format_custom(ty: u8, data: &[u8]) -> Result<String, DecodeError> {
         }
         SCRYPTO_TYPE_VID => {
             let vid = VID::try_from(data).map_err(|_| DecodeError::InvalidCustomData(ty))?;
+            vaults.push(vid);
             Ok(format!("VID({})", vid))
         }
         _ => Err(DecodeError::InvalidType {
