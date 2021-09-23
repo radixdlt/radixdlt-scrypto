@@ -165,7 +165,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
     }
 
     /// Withdraw specified resources into a reserved bucket.
-    pub fn withdraw_buckets_to_reserved(
+    pub fn move_to_bucket(
         &mut self,
         amount: Amount,
         resource: Address,

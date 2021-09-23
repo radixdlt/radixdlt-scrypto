@@ -21,10 +21,10 @@ pub enum Instruction {
     },
 
     /// Create a bucket to be used for function call.
-    MoveResources {
+    MoveToBucket {
         amount: Amount,
         resource: Address,
-        offset: u8,
+        index: u8,
     },
 
     /// Call a function.

@@ -229,7 +229,7 @@ fn prepare_buckets(
     account: Address,
     method: &str,
 ) {
-    for (offset, bucket) in buckets {
+    for (index, bucket) in buckets {
         instructions.push(Instruction::CallMethod {
             component: account,
             method: method.to_owned(),
@@ -238,10 +238,10 @@ fn prepare_buckets(
                 scrypto_encode(&bucket.resource()),
             ]),
         });
-        instructions.push(Instruction::MoveResources {
+        instructions.push(Instruction::MoveToBucket {
             amount: bucket.amount(),
             resource: bucket.resource(),
-            offset: *offset,
+            index: *index,
         });
     }
 }

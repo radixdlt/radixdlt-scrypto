@@ -29,14 +29,12 @@ pub fn execute<T: Ledger>(
                 }
                 Ok(None)
             }
-            Instruction::MoveResources {
-                offset,
+            Instruction::MoveToBucket {
+                index,
                 amount,
                 resource,
-            } => match reserved_bids.get(offset as usize) {
-                Some(bid) => proc
-                    .withdraw_buckets_to_reserved(amount, resource, *bid)
-                    .map(|()| None),
+            } => match reserved_bids.get(index as usize) {
+                Some(bid) => proc.move_to_bucket(amount, resource, *bid).map(|()| None),
                 None => Err(RuntimeError::BucketNotReserved),
             },
             Instruction::CallFunction {

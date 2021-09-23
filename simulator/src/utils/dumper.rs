@@ -89,7 +89,7 @@ pub fn dump_receipt(receipt: &TransactionReceipt) {
         println!("{} {:?}", list_item_prefix(last), inst);
     }
 
-    println!("{}", "Instruction Results:".bold().green());
+    println!("{}", "Results:".bold().green());
     for (last, result) in receipt.results.iter().identify_last() {
         let msg = match result {
             Ok(r) => match r {
