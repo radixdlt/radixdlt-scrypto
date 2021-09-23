@@ -350,7 +350,7 @@ fn traverse(ty_ctx: Option<u8>, dec: &mut Decoder) -> Result<Value, DecodeError>
                 Ok(Value::Custom(ty, slice.to_vec()))
             } else {
                 Err(DecodeError::InvalidType {
-                    expected: 0xff,
+                    expected: None,
                     actual: ty,
                 })
             }
@@ -383,7 +383,7 @@ fn traverse_fields(dec: &mut Decoder) -> Result<Fields, DecodeError> {
         }
         TYPE_FIELDS_UNIT => Ok(Fields::Unit),
         _ => Err(DecodeError::InvalidType {
-            expected: 0xff,
+            expected: None,
             actual: ty,
         }),
     }

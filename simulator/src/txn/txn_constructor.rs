@@ -37,7 +37,7 @@ pub fn build_call_function<T: Ledger>(
                 package,
                 blueprint: blueprint.to_owned(),
                 function: function.to_owned(),
-                args: result,
+                args: Args(result),
             });
             v.push(Instruction::DepositAll {
                 component: account,
@@ -70,7 +70,7 @@ pub fn build_call_method<T: Ledger>(
             v.push(Instruction::CallMethod {
                 component,
                 method: method.to_owned(),
-                args: result,
+                args: Args(result),
             });
             v.push(Instruction::DepositAll {
                 component: account,
@@ -233,15 +233,15 @@ fn prepare_buckets(
         instructions.push(Instruction::CallMethod {
             component: account,
             method: method.to_owned(),
-            args: vec![
+            args: Args(vec![
                 scrypto_encode(&bucket.amount()),
                 scrypto_encode(&bucket.resource()),
-            ],
+            ]),
         });
-        instructions.push(Instruction::NewBucket {
-            offset: *offset,
+        instructions.push(Instruction::MoveResources {
             amount: bucket.amount(),
             resource: bucket.resource(),
+            offset: *offset,
         });
     }
 }

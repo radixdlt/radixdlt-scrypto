@@ -12,7 +12,7 @@ use crate::type_id::*;
 pub enum DecodeError {
     Underflow { required: usize, remaining: usize },
 
-    InvalidType { expected: u8, actual: u8 },
+    InvalidType { expected: Option<u8>, actual: u8 },
 
     InvalidName { expected: String, actual: String },
 
@@ -111,7 +111,7 @@ impl<'de> Decoder<'de> {
             let ty = self.read_type()?;
             if ty != expected {
                 return Err(DecodeError::InvalidType {
-                    expected,
+                    expected: Some(expected),
                     actual: ty,
                 });
             }

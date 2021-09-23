@@ -1,7 +1,10 @@
 use radix_engine::execution::*;
 use radix_engine::model::Level;
 use sbor::*;
+use scrypto::rust::fmt;
 use scrypto::types::*;
+
+use crate::utils::*;
 
 /// A transaction consists a sequence of instructions.
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
@@ -18,10 +21,10 @@ pub enum Instruction {
     },
 
     /// Create a bucket to be used for function call.
-    NewBucket {
-        offset: u8,
+    MoveResources {
         amount: Amount,
         resource: Address,
+        offset: u8,
     },
 
     /// Call a function.
@@ -29,14 +32,14 @@ pub enum Instruction {
         package: Address,
         blueprint: String,
         function: String,
-        args: Vec<Vec<u8>>,
+        args: Args,
     },
 
     /// Call a method.
     CallMethod {
         component: Address,
         method: String,
-        args: Vec<Vec<u8>>,
+        args: Args,
     },
 
     /// Pass all remaining resources to a component.
@@ -48,12 +51,29 @@ pub enum Instruction {
     Finalize,
 }
 
+#[derive(Clone, TypeId, Encode, Decode)]
+pub struct Args(pub Vec<Vec<u8>>);
+
+impl fmt::Debug for Args {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "[{}]",
+            self.0
+                .iter()
+                .map(|v| format_sbor(v).unwrap())
+                .collect::<Vec<String>>()
+                .join(", ")
+        )
+    }
+}
+
 #[derive(Debug)]
 pub struct TransactionReceipt {
     pub transaction: Transaction,
     pub success: bool,
     pub execution_time: u128,
-    pub results: Vec<Result<Vec<u8>, RuntimeError>>,
+    pub results: Vec<Result<Option<Vec<u8>>, RuntimeError>>,
     pub logs: Vec<(Level, String)>,
     pub new_addresses: Vec<Address>,
 }

@@ -31,19 +31,15 @@ pub fn dump_component<T: Ledger>(address: Address, ledger: &T) {
                 c.package(),
                 c.blueprint()
             );
-
-            println!("{}: {:?}", "State".green().bold(), c.state());
-
-            let mut res = Vec::new();
             println!(
                 "{}: {}",
-                "State Parsed".green().bold(),
-                format_sbor(c.state(), ledger, &mut res)
-                    .unwrap_or_else(|_| "Failed to parse data".to_owned())
+                "State".green().bold(),
+                format_sbor(c.state()).unwrap_or_else(|_| "Failed to parse data".to_owned())
             );
 
+            let resources = Vec::<Bucket>::new();
             println!("{}:", "Resources".green().bold());
-            for (last, b) in res.iter().identify_last() {
+            for (last, b) in resources.iter().identify_last() {
                 println!(
                     "{} {{ amount: {}, resource: {} }}",
                     list_item_prefix(last),
@@ -91,9 +87,18 @@ pub fn dump_receipt(receipt: &TransactionReceipt) {
         println!("{} {:?}", list_item_prefix(last), inst);
     }
 
-    println!("{}", "Results:".bold().green());
+    println!("{}", "Instruction Results:".bold().green());
     for (last, result) in receipt.results.iter().identify_last() {
-        println!("{} {:?}", list_item_prefix(last), result);
+        let msg = match result {
+            Ok(r) => match r {
+                Some(rtn) => {
+                    format!("Ok({})", format_sbor(rtn).unwrap())
+                }
+                None => "Ok".to_string(),
+            },
+            Err(err) => format!("Err({:?})", err),
+        };
+        println!("{} {}", list_item_prefix(last), msg);
     }
 
     println!("{} {}", "Logs:".bold().green(), receipt.logs.len());

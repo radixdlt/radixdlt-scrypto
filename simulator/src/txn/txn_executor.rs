@@ -27,16 +27,16 @@ pub fn execute<T: Ledger>(
                 for _ in 0..n {
                     reserved_bids.push(proc.reserve_bucket_id());
                 }
-                Ok(vec![])
+                Ok(None)
             }
-            Instruction::NewBucket {
+            Instruction::MoveResources {
                 offset,
                 amount,
                 resource,
             } => match reserved_bids.get(offset as usize) {
                 Some(bid) => proc
                     .withdraw_buckets_to_reserved(amount, resource, *bid)
-                    .map(|()| vec![]),
+                    .map(|()| None),
                 None => Err(RuntimeError::BucketNotReserved),
             },
             Instruction::CallFunction {
@@ -44,12 +44,16 @@ pub fn execute<T: Ledger>(
                 blueprint,
                 function,
                 args,
-            } => proc.call_function(package, blueprint.as_str(), function.as_str(), args),
+            } => proc
+                .call_function(package, blueprint.as_str(), function.as_str(), args.0)
+                .map(Option::from),
             Instruction::CallMethod {
                 component,
                 method,
                 args,
-            } => proc.call_method(component, method.as_str(), args),
+            } => proc
+                .call_method(component, method.as_str(), args.0)
+                .map(Option::from),
             Instruction::DepositAll { component, method } => {
                 let buckets: Vec<_> = proc
                     .owned_buckets()
@@ -58,11 +62,12 @@ pub fn execute<T: Ledger>(
                     .collect();
                 if !buckets.is_empty() {
                     proc.call_method(component, method.as_str(), args!(buckets))
+                        .map(Option::from)
                 } else {
-                    Ok(vec![])
+                    Ok(None)
                 }
             }
-            Instruction::Finalize => proc.finalize().map(|()| vec![]),
+            Instruction::Finalize => proc.finalize().map(|()| None),
         };
         results.push(res);
         if results.last().unwrap().is_err() {
