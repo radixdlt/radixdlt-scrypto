@@ -47,12 +47,6 @@ blueprint! {
             self.deposit(bucket);
         }
 
-        /// [Experimental] Transfers resources to another account.
-        pub fn transfer(&mut self, amount: Amount, resource: Address, recipient: Address) {
-            let component = Component::from(recipient);
-            component.call::<()>("deposit", args!(self.withdraw(amount, resource)));
-        }
-
         /// Deposit a batch of buckets into this account
         pub fn deposit_batch(&mut self, buckets: Vec<Bucket>) {
             for bucket in buckets {

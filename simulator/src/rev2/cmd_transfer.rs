@@ -69,13 +69,24 @@ pub fn handle_transfer(matches: &ArgMatches) -> Result<(), Error> {
             let mut ledger = FileBasedLedger::new(get_data_dir()?);
             let mut runtime = Runtime::new(sha256(Uuid::new_v4().to_string()), &mut ledger);
             let mut process = runtime.start_process(trace);
+            let bid = process.reserve_bucket_id();
             process
-                .call_method(account, "transfer", args!(amount, resource, recipient))
-                .and_then(|_| process.finalize())
+                .call_method(account, "withdraw", args!(amount, resource))
                 .map_err(Error::TxnExecutionError)?;
+            process
+                .move_to_bucket(amount, resource, bid)
+                .map_err(Error::TxnExecutionError)?;
+            process
+                .call_method(
+                    recipient,
+                    "deposit",
+                    args!(scrypto::resource::Bucket::from(bid)),
+                )
+                .map_err(Error::TxnExecutionError)?;
+            process.finalize().map_err(Error::TxnExecutionError)?;
             runtime.commit();
 
-            println!("Resource transfered into the default account!");
+            println!("Resource transferred!");
             Ok(())
         }
         None => Err(Error::NoDefaultAccount),
