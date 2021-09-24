@@ -15,6 +15,8 @@ Language for building DeFi apps on Radix.
 - **Bucket**: A transient container of resources during transaction execution runtime.
 - **Vault**: A persistent container of resources on ledger.
 
+![Resource Flow](./assets/resource-flow.png)
+
 ## Installation
 
 1. Install Rust
