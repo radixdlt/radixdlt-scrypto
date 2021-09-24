@@ -18,7 +18,11 @@ fn create_account(engine: &mut InMemoryRadixEngine) -> Address {
 
     // Create account
     let account: Address = proc
-        .call_function(Address::Package([0u8; 26]), "Account", "new", args!())
+        .call_function(
+            (Address::Package([0u8; 26]), "Account".to_owned()),
+            "new",
+            args!(),
+        )
         .and_then(decode_return)
         .unwrap();
 
@@ -42,7 +46,7 @@ fn create_gumball_machine(engine: &mut InMemoryRadixEngine) -> Address {
         .unwrap();
 
     let component: Address = proc
-        .call_function(package, "GumballMachine", "new", args!())
+        .call_function((package, "GumballMachine".to_owned()), "new", args!())
         .and_then(decode_return)
         .unwrap();
 
