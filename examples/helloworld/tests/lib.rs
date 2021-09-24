@@ -2,7 +2,7 @@ use radix_engine::engine::*;
 use scrypto::prelude::*;
 
 #[test]
-fn test_greeting() {
+fn test_hello() {
     // Create an in-memory Radix Engine.
     let mut engine = InMemoryRadixEngine::new();
     let mut runtime = engine.start_transaction();
@@ -13,14 +13,14 @@ fn test_greeting() {
 
     // Invoke the `new` function.
     let component: Address = proc
-        .call_function(package, "Greeting", "new", args!())
+        .call_function(package, "Hello", "new", args!())
         .and_then(decode_return)
         .unwrap();
 
-    // Invoke the `say_hello` function.
-    let rtn: u32 = proc
-        .call_method(component, "say_hello", args!())
+    // Invoke the `airdrop` function.
+    let _rtn: Bucket = proc
+        .call_method(component, "airdrop", args!())
         .and_then(decode_return)
         .unwrap();
-    assert_eq!(1, rtn);
+    // FIXME assert_eq!(1, rtn.amount());
 }

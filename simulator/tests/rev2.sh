@@ -16,8 +16,8 @@ $rev2 mint-resource 666 $resource
 
 # Test helloworld
 package=`$rev2 publish ../assets/helloworld.wasm | tee /dev/tty | awk '/New package/ {print $NF}'`
-component=`$rev2 call-function $package Greeting new | tee /dev/tty | awk '/Component:/ {print $NF}'`
-$rev2 call-method $component say_hello
+component=`$rev2 call-function $package Hello new | tee /dev/tty | awk '/Component:/ {print $NF}'`
+$rev2 call-method $component airdrop
 
 # Test gumball machine
 package=`$rev2 publish ../assets/gumball-machine.wasm | tee /dev/tty | awk '/New package/ {print $NF}'`

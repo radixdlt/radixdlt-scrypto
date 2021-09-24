@@ -31,7 +31,7 @@ pub fn handle_blueprint(input: TokenStream, output_abi: bool) -> TokenStream {
 
     let generated_impl = quote! {
         #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
-        pub #bp_strut
+        #bp_strut
 
         impl #bp_ident {
             #(#bp_items)*
@@ -345,7 +345,7 @@ mod tests {
             output,
             quote! {
                 #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
-                pub struct Test {
+                struct Test {
                     a: u32
                 }
                 impl Test {

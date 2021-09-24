@@ -26,7 +26,7 @@ pub fn dump_component<T: Ledger>(address: Address, ledger: &T) {
             println!("{}: {}", "Component".green().bold(), address.to_string());
 
             println!(
-                "{}: {{ package: {}, blueprint: {} }}",
+                "{}: {{ package: {}, name: {:?} }}",
                 "Blueprint".green().bold(),
                 c.package(),
                 c.blueprint()
@@ -42,9 +42,8 @@ pub fn dump_component<T: Ledger>(address: Address, ledger: &T) {
             for (last, vid) in vaults.iter().identify_last() {
                 let vault = ledger.get_vault(*vid).unwrap();
                 println!(
-                    "{} {{ vault: {}, amount: {}, resource: {} }}",
+                    "{} {{ amount: {}, resource: {} }}",
                     list_item_prefix(last),
-                    vid,
                     vault.amount(),
                     vault.resource(),
                 );
