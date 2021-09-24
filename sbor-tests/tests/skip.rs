@@ -36,7 +36,7 @@ fn assert_json_eq<T: Serialize>(actual: T, expected: Value) {
 }
 
 #[test]
-fn test_struct() {
+fn test_struct_with_skip() {
     let a = TestStructNamed { x: 1, y: 2 };
     let b = TestStructUnnamed(3, 4);
     let c = TestStructUnit;
@@ -50,18 +50,18 @@ fn test_struct() {
     #[rustfmt::skip]
     assert_eq!(
         vec![
-          20, // struct type
-          22, // fields type
+          16, // struct type
+          18, // fields type
           1, 0, 0, 0, // number of fields
           9, 2, 0, 0, 0, // field value
           
-          20,  // struct type
-          23,  // fields type
+          16,  // struct type
+          19,  // fields type
           1, 0, 0, 0,  // number of fields
           9, 4, 0, 0, 0,  // field value
           
-          20, // struct type
-          24 // fields type
+          16, // struct type
+          20 // fields type
         ],
         bytes
     );
@@ -121,7 +121,7 @@ fn test_struct() {
 }
 
 #[test]
-fn test_enum() {
+fn test_enum_with_skip() {
     let a = TestEnum::A { x: 1, y: 2 };
     let b = TestEnum::B(3, 4);
     let c = TestEnum::C;
@@ -135,21 +135,21 @@ fn test_enum() {
     #[rustfmt::skip]
     assert_eq!(
         vec![
-            21, // enum type
+            17, // enum type
             0, // enum index
-            22, // fields type
+            18, // fields type
             1, 0, 0, 0,  // number of fields
             9, 2, 0, 0, 0, // field value
 
-            21, // enum type
+            17, // enum type
             1,  // enum index
-            23, // fields type
+            19, // fields type
             1, 0, 0, 0, // number of fields
             9, 4, 0, 0, 0, // field value
             
-            21, // enum type
+            17, // enum type
             2,  // enum index
-            24  // fields type
+            20  // fields type
         ],
         bytes
     );

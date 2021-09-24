@@ -39,18 +39,18 @@ fn test_encode_struct() {
     #[rustfmt::skip]
     assert_eq!(
         vec![
-            20, // struct type
-            22, // fields type
+            16, // struct type
+            18, // fields type
             1, 0, 0, 0, // number of fields
             9, 3, 0, 0, 0, // field value
             
-            20,  // struct type
-            23,  // fields type
+            16,  // struct type
+            19,  // fields type
             1, 0, 0, 0,  // number of fields
             9, 3, 0, 0, 0,  // field value
             
-            20, // struct type
-            24 // fields type
+            16, // struct type
+            20 // fields type
         ],
         bytes
     );
@@ -71,22 +71,22 @@ fn test_encode_enum() {
     #[rustfmt::skip]
     assert_eq!(
         vec![
-            21, // enum type
+            17, // enum type
             0, // enum index
-            22, // fields type
+            18, // fields type
             2, 0, 0, 0,  // number of fields
             9, 2, 0, 0, 0, // field value
             9, 3, 0, 0, 0,  // field value
 
-            21, // enum type
+            17, // enum type
             1,  // enum index
-            23, // fields type
+            19, // fields type
             1, 0, 0, 0, // number of fields
             9, 1, 0, 0, 0, // field value
             
-            21, // enum type
+            17, // enum type
             2,  // enum index
-            24  // fields type
+            20  // fields type
         ],
         bytes
     );

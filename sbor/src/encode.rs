@@ -184,6 +184,21 @@ encode_tuple! { 8 0 A 1 B 2 C 3 D 4 E 5 F 6 G 7 H }
 encode_tuple! { 9 0 A 1 B 2 C 3 D 4 E 5 F 6 G 7 H 8 I }
 encode_tuple! { 10 0 A 1 B 2 C 3 D 4 E 5 F 6 G 7 H 8 I 9 J }
 
+impl<T: Encode, E: Encode> Encode for Result<T, E> {
+    fn encode_value(&self, encoder: &mut Encoder) {
+        match self {
+            Ok(o) => {
+                encoder.write_u8(0);
+                o.encode(encoder);
+            }
+            Err(e) => {
+                encoder.write_u8(1);
+                e.encode(encoder);
+            }
+        }
+    }
+}
+
 impl<T: Encode> Encode for Vec<T> {
     fn encode_value(&self, encoder: &mut Encoder) {
         encoder.write_type(T::type_id());
@@ -240,8 +255,10 @@ impl<K: Encode, V: Encode> Encode for HashMap<K, V> {
 
 #[cfg(test)]
 mod tests {
+    use crate::rust::borrow::ToOwned;
     use crate::rust::boxed::Box;
     use crate::rust::collections::*;
+    use crate::rust::string::String;
     use crate::rust::vec;
     use crate::rust::vec::Vec;
 
@@ -266,6 +283,8 @@ mod tests {
         Box::new(1u32).encode(enc);
         [1u32, 2u32, 3u32].encode(enc);
         (1u32, 2u32).encode(enc);
+        Result::<u32, String>::Ok(1u32).encode(enc);
+        Result::<u32, String>::Err("hello".to_owned()).encode(enc);
 
         vec![1u32, 2u32, 3u32].encode(enc);
         let mut set = BTreeSet::<u8>::new();
@@ -299,13 +318,15 @@ mod tests {
                 10, 1, 0, 0, 0, 0, 0, 0, 0, // u64
                 11, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // u128
                 12, 5, 0, 0, 0, 104, 101, 108, 108, 111, // string
-                16, 1, 9, 1, 0, 0, 0, // option
-                17, 9, 1, 0, 0, 0, // box
-                18, 9, 3, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, // array
-                19, 2, 0, 0, 0, 9, 1, 0, 0, 0, 9, 2, 0, 0, 0, // tuple
-                32, 9, 3, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, // vec
-                33, 7, 2, 0, 0, 0, 1, 2, // set
-                34, 7, 7, 2, 0, 0, 0, 1, 2, 3, 4 // map
+                32, 1, 9, 1, 0, 0, 0, // option
+                33, 9, 1, 0, 0, 0, // box
+                34, 9, 3, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, // array
+                35, 2, 0, 0, 0, 9, 1, 0, 0, 0, 9, 2, 0, 0, 0, // tuple
+                36, 0, 9, 1, 0, 0, 0, // result
+                36, 1, 12, 5, 0, 0, 0, 104, 101, 108, 108, 111, // result
+                48, 9, 3, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, // vec
+                49, 7, 2, 0, 0, 0, 1, 2, // set
+                50, 7, 7, 2, 0, 0, 0, 1, 2, 3, 4 // map
             ],
             bytes
         );
@@ -336,6 +357,8 @@ mod tests {
                 1, 0, 0, 0, // box
                 3, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, // array
                 2, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, // tuple
+                0, 1, 0, 0, 0, // result
+                1, 5, 0, 0, 0, 104, 101, 108, 108, 111, // result
                 3, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, // vec
                 2, 0, 0, 0, 1, 2, // set
                 2, 0, 0, 0, 1, 2, 3, 4 // map

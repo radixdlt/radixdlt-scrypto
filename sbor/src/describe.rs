@@ -61,6 +61,11 @@ pub enum Type {
         variants: Vec<Variant>, // Order matters as it decides of the variant index
     },
 
+    Result {
+        okay: Box<Type>,
+        error: Box<Type>,
+    },
+
     Vec {
         element: Box<Type>,
     },
@@ -200,6 +205,17 @@ describe_tuple! { A B C D E F G }
 describe_tuple! { A B C D E F G H }
 describe_tuple! { A B C D E F G H I }
 describe_tuple! { A B C D E F G H I J }
+
+impl<T: Describe, E: Describe> Describe for Result<T, E> {
+    fn describe() -> Type {
+        let t = T::describe();
+        let e = E::describe();
+        Type::Result {
+            okay: Box::new(t),
+            error: Box::new(e),
+        }
+    }
+}
 
 impl<T: Describe> Describe for Vec<T> {
     fn describe() -> Type {

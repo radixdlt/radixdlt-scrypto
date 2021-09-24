@@ -276,6 +276,14 @@ fn get_native_type(ty: &des::Type) -> (Type, Vec<Item>) {
 
             parse_quote! { #ident }
         }
+        des::Type::Result { okay, error } => {
+            let (okay_type, new_items) = get_native_type(okay);
+            items.extend(new_items);
+            let (error_type, new_items) = get_native_type(error);
+            items.extend(new_items);
+
+            parse_quote! { Result<#okay_type, #error_type> }
+        }
         des::Type::Vec { element } => {
             let (new_type, new_items) = get_native_type(element);
             items.extend(new_items);

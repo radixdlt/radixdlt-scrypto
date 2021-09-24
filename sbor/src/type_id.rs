@@ -3,7 +3,7 @@ use crate::rust::collections::*;
 use crate::rust::string::String;
 use crate::rust::vec::Vec;
 
-// types
+// primitive types
 pub const TYPE_UNIT: u8 = 0x00;
 pub const TYPE_BOOL: u8 = 0x01;
 pub const TYPE_I8: u8 = 0x02;
@@ -17,22 +17,24 @@ pub const TYPE_U32: u8 = 0x09;
 pub const TYPE_U64: u8 = 0x0a;
 pub const TYPE_U128: u8 = 0x0b;
 pub const TYPE_STRING: u8 = 0x0c;
-// rust types
-pub const TYPE_OPTION: u8 = 0x10;
-pub const TYPE_BOX: u8 = 0x11;
-pub const TYPE_ARRAY: u8 = 0x12;
-pub const TYPE_TUPLE: u8 = 0x13;
-pub const TYPE_STRUCT: u8 = 0x14;
-pub const TYPE_ENUM: u8 = 0x15;
-pub const TYPE_FIELDS_NAMED: u8 = 0x16;
-pub const TYPE_FIELDS_UNNAMED: u8 = 0x17;
-pub const TYPE_FIELDS_UNIT: u8 = 0x18;
+// enum and struct
+pub const TYPE_STRUCT: u8 = 0x10;
+pub const TYPE_ENUM: u8 = 0x11;
+pub const TYPE_FIELDS_NAMED: u8 = 0x12;
+pub const TYPE_FIELDS_UNNAMED: u8 = 0x13;
+pub const TYPE_FIELDS_UNIT: u8 = 0x14;
+// composite types
+pub const TYPE_OPTION: u8 = 0x20;
+pub const TYPE_BOX: u8 = 0x21;
+pub const TYPE_ARRAY: u8 = 0x22;
+pub const TYPE_TUPLE: u8 = 0x23;
+pub const TYPE_RESULT: u8 = 0x24;
 // collections
-pub const TYPE_VEC: u8 = 0x20;
-pub const TYPE_TREE_SET: u8 = 0x21;
-pub const TYPE_TREE_MAP: u8 = 0x22;
-pub const TYPE_HASH_SET: u8 = 0x23;
-pub const TYPE_HASH_MAP: u8 = 0x24;
+pub const TYPE_VEC: u8 = 0x30;
+pub const TYPE_TREE_SET: u8 = 0x31;
+pub const TYPE_TREE_MAP: u8 = 0x32;
+pub const TYPE_HASH_SET: u8 = 0x33;
+pub const TYPE_HASH_MAP: u8 = 0x34;
 // custom types start from 0x80 and values are encoded as `len + data`
 pub const TYPE_CUSTOM_START: u8 = 0x80;
 
@@ -129,12 +131,14 @@ impl<T: TypeId> TypeId for Option<T> {
         TYPE_OPTION
     }
 }
+
 impl<T: TypeId> TypeId for Box<T> {
     #[inline]
     fn type_id() -> u8 {
         TYPE_BOX
     }
 }
+
 impl<T: TypeId, const N: usize> TypeId for [T; N] {
     #[inline]
     fn type_id() -> u8 {
@@ -161,6 +165,13 @@ type_id_tuple! { 7 0 A 1 B 2 C 3 D 4 E 5 F 6 G }
 type_id_tuple! { 8 0 A 1 B 2 C 3 D 4 E 5 F 6 G 7 H }
 type_id_tuple! { 9 0 A 1 B 2 C 3 D 4 E 5 F 6 G 7 H 8 I }
 type_id_tuple! { 10 0 A 1 B 2 C 3 D 4 E 5 F 6 G 7 H 8 I 9 J }
+
+impl<T: TypeId, E: TypeId> TypeId for Result<T, E> {
+    #[inline]
+    fn type_id() -> u8 {
+        TYPE_RESULT
+    }
+}
 
 impl<T: TypeId> TypeId for Vec<T> {
     #[inline]
