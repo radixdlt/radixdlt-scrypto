@@ -6,14 +6,14 @@ Language for building DeFi apps on Radix.
 
 ## Terminology
 
-- **Package**: A collection of blueprints, built and published as a single unit.
-- **Blueprint**: A template that describes the common behavior and state of its instances.
+- **Package**: A collection of blueprints, compiled and published as a single unit.
+- **Blueprint**: A template that describes the common behavior and structure of its instances.
 - **Component** An instance of a blueprint, which lives in the persistent state and may own resources.
 - **Function**: A set of statements to perform a specific task.
-- **Method**: A function attached to a component.
-- **Resource**: A primitive state which can only be created once and moved, used for modelling digital assets.
-- **Bucket**: A transient container of resources during transaction execution runtime.
-- **Vault**: A persistent container of resources on ledger.
+- **Method**: A function associated with a component.
+- **ResourceDef**: A resource definition, describing the metadata, minter and supply.
+- **Bucket**: A transient container of resources.
+- **Vault**: A persistent container of resources on ledger state.
 
 ![Resource Flow](./assets/resource-flow.png)
 
@@ -37,7 +37,7 @@ git clone git@github.com:radixdlt/radixdlt-scrypto.git
 cd radixdlt-scrypto
 cargo install --path ./simulator
 ```
-5. (Optional) Open Scrypto reference documentation for later use
+5. (Optional) Open Scrypto reference for later use
 ```
 ./doc.sh
 ```
@@ -85,11 +85,11 @@ scrypto test
 
 ## Project Layout
 
-- `sbor`: Scrypto Binary Object Representation (SBOR), the data format for Scrypto.
-- `sbor-derive`: SBOR derives for Rust `struct` and `enum`.
+- `sbor`: The binary data format used by Scrypto.
+- `sbor-derive`: Derives for encoding and decoding Rust `struct` and `enum`.
 - `scrypto`: Scrypto standard library.
-- `scrypto-abi`: Scrypto JSON-exportable blueprint ABI.
-- `scrypto-derive`: Derives for creating and importing Scrypto blueprints.
-- `radix-engine`: Radix Engine, the Scrypto execution layer.
-- `simulator`: Simulate ledger environment locally and run Scrypto code.
-- `examples`: Example Scrypto code.
+- `scrypto-abi`: Scrypto blueprint ABI.
+- `scrypto-derive`: Derives for defining and importing Scrypto blueprints.
+- `radix-engine`: The Scrypto execution engine.
+- `simulator`: A simulator that run Scrypto code on a filesystem based ledger.
+- `examples`: Scrypto examples.
