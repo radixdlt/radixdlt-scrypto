@@ -39,7 +39,7 @@ impl From<Component> for Address {
 impl Component {
     pub fn new<T: Encode + crate::traits::Blueprint>(state: T) -> Self {
         let input = CreateComponentInput {
-            blueprint: T::name().to_string(),
+            name: T::name().to_string(),
             state: scrypto_encode(&state),
         };
         let output: CreateComponentOutput = call_kernel(CREATE_COMPONENT, input);
@@ -58,21 +58,13 @@ impl Component {
         unwrap_light(scrypto_decode(&output.rtn))
     }
 
-    pub fn info(&self) -> ComponentInfo {
+    pub fn blueprint(&self) -> Blueprint {
         let input = GetComponentInfoInput {
             component: self.address,
         };
         let output: GetComponentInfoOutput = call_kernel(GET_COMPONENT_INFO, input);
 
-        ComponentInfo {
-            package: output.package,
-            blueprint: output.blueprint,
-        }
-    }
-
-    pub fn get_blueprint(&self) -> Blueprint {
-        let info = self.info();
-        Blueprint::from(info.package, info.blueprint.as_str())
+        output.blueprint.into()
     }
 
     pub fn get_state<T: Decode>(&self) -> T {

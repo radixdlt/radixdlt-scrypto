@@ -44,7 +44,7 @@ impl AddressAllocator {
         self.count += 1;
 
         let hash = sha256_twice(data);
-        Address::Resource(hash.lower_26_bytes())
+        Address::ResourceDef(hash.lower_26_bytes())
     }
 
     pub fn new_bucket_id(&mut self) -> BID {

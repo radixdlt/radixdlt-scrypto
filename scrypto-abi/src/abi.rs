@@ -19,7 +19,7 @@ use sbor::{Decode, Encode, TypeId};
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct Blueprint {
     pub package: String,
-    pub blueprint: String,
+    pub name: String,
     pub functions: Vec<Function>,
     pub methods: Vec<Method>,
 }

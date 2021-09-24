@@ -29,7 +29,7 @@ pub fn handle_import(input: TokenStream) -> TokenStream {
     let mut implementations: Vec<ItemImpl> = vec![];
 
     let package = blueprint.package;
-    let name = blueprint.blueprint;
+    let name = blueprint.name;
     let ident = Ident::new(name.as_str(), span);
     trace!("Blueprint name: {}", name);
 

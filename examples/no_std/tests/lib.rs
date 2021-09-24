@@ -13,7 +13,7 @@ fn test_hello() {
 
     // Invoke the `new` function.
     let component: Address = proc
-        .call_function(package, "Hello", "new", args!())
+        .call_function((package, "Hello".to_owned()), "new", args!())
         .and_then(decode_return)
         .unwrap();
 

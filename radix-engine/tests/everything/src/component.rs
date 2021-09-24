@@ -23,8 +23,8 @@ blueprint! {
             }.instantiate()
         }
 
-        pub fn get_component_info(address: Address) -> ComponentInfo {
-            Component::from(address).info()
+        pub fn get_component_info(address: Address) -> Blueprint {
+            Component::from(address).blueprint()
         }
 
         pub fn get_component_state(&self) -> String {

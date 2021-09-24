@@ -19,13 +19,12 @@ use crate::txn::*;
 pub fn build_call_function<T: Ledger>(
     ledger: &mut T,
     account: Address,
-    package: Address,
-    blueprint: &str,
+    blueprint: (Address, String),
     function: &str,
     args: &[&str],
     trace: bool,
 ) -> Result<Transaction, BuildTxnError> {
-    let func = get_function_abi(ledger, package, blueprint, function, trace)?;
+    let func = get_function_abi(ledger, blueprint.clone(), function, trace)?;
     let mut alloc = AddressAllocator::new();
     match prepare_args(&func.inputs, args, &mut alloc) {
         Ok(ParseArgsOutput { result, bucket, .. }) => {
@@ -34,8 +33,7 @@ pub fn build_call_function<T: Ledger>(
             }];
             prepare_buckets(&mut v, &bucket, account, "withdraw");
             v.push(Instruction::CallFunction {
-                package,
-                blueprint: blueprint.to_owned(),
+                blueprint,
                 function: function.to_owned(),
                 args: Args(result),
             });
@@ -85,12 +83,11 @@ pub fn build_call_method<T: Ledger>(
 
 fn get_function_abi<T: Ledger>(
     ledger: &mut T,
-    package: Address,
-    blueprint: &str,
+    blueprint: (Address, String),
     function: &str,
     trace: bool,
 ) -> Result<abi::Function, BuildTxnError> {
-    export_abi(ledger, package, blueprint, trace)
+    export_abi(ledger, blueprint, trace)
         .map_err(BuildTxnError::FailedToExportAbi)?
         .functions
         .iter()

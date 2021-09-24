@@ -64,7 +64,7 @@ pub fn handle_new_account(matches: &ArgMatches) -> Result<(), Error> {
     // Create new account component with test XRD
     let mut proc = runtime.start_process(trace);
     let account: Address = proc
-        .call_function(package, "Account", "new", args!())
+        .call_function((package, "Account".to_owned()), "new", args!())
         .and_then(decode_return)
         .map_err(Error::TxnExecutionError)?;
     let bucket =

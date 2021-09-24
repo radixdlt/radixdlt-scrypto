@@ -17,6 +17,21 @@ pub struct Blueprint {
     name: String,
 }
 
+impl <T: AsRef<str>> From<(Address, T)> for Blueprint {
+    fn from(address: (Address, T)) -> Self {
+        Self {
+            package: address.0,
+            name: address.1.as_ref().to_owned(),
+        }
+    }
+}
+
+impl From<Blueprint> for (Address, String) {
+    fn from(a: Blueprint) -> Self {
+        (a.package, a.name)
+    }
+}
+
 impl Blueprint {
     pub fn from(package: Address, name: &str) -> Self {
         Self {
@@ -27,8 +42,7 @@ impl Blueprint {
 
     pub fn call<T: Decode>(&self, function: &str, args: Vec<Vec<u8>>) -> T {
         let input = CallFunctionInput {
-            package: self.package,
-            blueprint: self.name.clone(),
+            blueprint: (self.package, self.name.clone()),
             function: function.to_string(),
             args,
         };

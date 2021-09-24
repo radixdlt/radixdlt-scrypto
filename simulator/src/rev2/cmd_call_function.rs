@@ -8,7 +8,7 @@ use crate::utils::*;
 
 const ARG_TRACE: &str = "TRACE";
 const ARG_PACKAGE: &str = "PACKAGE";
-const ARG_BLUEPRINT: &str = "BLUEPRINT";
+const ARG_NAME: &str = "NAME";
 const ARG_FUNCTION: &str = "FUNCTION";
 const ARG_ARGS: &str = "ARGS";
 
@@ -29,7 +29,7 @@ pub fn make_call_function<'a, 'b>() -> App<'a, 'b> {
                 .required(true),
         )
         .arg(
-            Arg::with_name(ARG_BLUEPRINT)
+            Arg::with_name(ARG_NAME)
                 .help("Specify the blueprint name.")
                 .required(true),
         )
@@ -53,9 +53,9 @@ pub fn handle_call_function(matches: &ArgMatches) -> Result<(), Error> {
         .ok_or_else(|| Error::MissingArgument(ARG_PACKAGE.to_owned()))?
         .parse()
         .map_err(Error::InvalidAddress)?;
-    let blueprint = matches
-        .value_of(ARG_BLUEPRINT)
-        .ok_or_else(|| Error::MissingArgument(ARG_BLUEPRINT.to_owned()))?;
+    let name = matches
+        .value_of(ARG_NAME)
+        .ok_or_else(|| Error::MissingArgument(ARG_NAME.to_owned()))?;
     let function = matches
         .value_of(ARG_FUNCTION)
         .ok_or_else(|| Error::MissingArgument(ARG_FUNCTION.to_owned()))?;
@@ -71,8 +71,7 @@ pub fn handle_call_function(matches: &ArgMatches) -> Result<(), Error> {
             match build_call_function(
                 &mut ledger,
                 account,
-                package,
-                blueprint,
+                (package, name.to_owned()),
                 function,
                 &args,
                 trace,

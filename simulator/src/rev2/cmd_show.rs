@@ -42,7 +42,7 @@ pub fn handle_show(matches: &ArgMatches) -> Result<(), Error> {
         Address::Component(_) => {
             dump_component(address, &ledger);
         }
-        Address::Resource(_) | Address::RadixToken => {
+        Address::ResourceDef(_) | Address::RadixToken => {
             dump_resource(address, &ledger);
         }
     }

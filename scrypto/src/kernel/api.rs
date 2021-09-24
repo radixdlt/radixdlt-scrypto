@@ -99,8 +99,7 @@ pub struct PublishPackageOutput {
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct CallFunctionInput {
-    pub package: Address,
-    pub blueprint: String,
+    pub blueprint: (Address, String),
     pub function: String,
     pub args: Vec<Vec<u8>>,
 }
@@ -128,7 +127,7 @@ pub struct CallMethodOutput {
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct CreateComponentInput {
-    pub blueprint: String,
+    pub name: String,
     pub state: Vec<u8>,
 }
 
@@ -144,8 +143,7 @@ pub struct GetComponentInfoInput {
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct GetComponentInfoOutput {
-    pub package: Address,
-    pub blueprint: String,
+    pub blueprint: (Address, String),
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]

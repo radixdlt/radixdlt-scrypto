@@ -10,7 +10,11 @@ fn test_component() {
 
     let component: Address = scrypto_decode(
         &proc
-            .call_function(pkg, "ComponentTest", "create_component", args!())
+            .call_function(
+                (pkg, "ComponentTest".to_owned()),
+                "create_component",
+                args!(),
+            )
             .unwrap(),
     )
     .unwrap();
@@ -31,7 +35,7 @@ fn test_storage() {
 
     let result: Option<String> = scrypto_decode(
         &proc
-            .call_function(pkg, "StorageTest", "test_storage", args!())
+            .call_function((pkg, "StorageTest".to_owned()), "test_storage", args!())
             .unwrap(),
     )
     .unwrap();
@@ -45,11 +49,11 @@ fn test_resource() {
     let mut proc = runtime.start_process(true);
     let pkg = proc.publish(package_code!("./everything")).unwrap();
 
-    proc.call_function(pkg, "ResourceTest", "create_mutable", args!())
+    proc.call_function((pkg, "ResourceTest".to_owned()), "create_mutable", args!())
         .unwrap();
-    proc.call_function(pkg, "ResourceTest", "create_fixed", args!())
+    proc.call_function((pkg, "ResourceTest".to_owned()), "create_fixed", args!())
         .unwrap();
-    proc.call_function(pkg, "ResourceTest", "query", args!())
+    proc.call_function((pkg, "ResourceTest".to_owned()), "query", args!())
         .unwrap();
 }
 
@@ -60,13 +64,13 @@ fn test_bucket() {
     let mut proc = runtime.start_process(true);
     let pkg = proc.publish(package_code!("./everything")).unwrap();
 
-    proc.call_function(pkg, "BucketTest", "combine", args!())
+    proc.call_function((pkg, "BucketTest".to_owned()), "combine", args!())
         .unwrap();
-    proc.call_function(pkg, "BucketTest", "split", args!())
+    proc.call_function((pkg, "BucketTest".to_owned()), "split", args!())
         .unwrap();
-    proc.call_function(pkg, "BucketTest", "borrow", args!())
+    proc.call_function((pkg, "BucketTest".to_owned()), "borrow", args!())
         .unwrap();
-    proc.call_function(pkg, "BucketTest", "query", args!())
+    proc.call_function((pkg, "BucketTest".to_owned()), "query", args!())
         .unwrap();
 }
 
@@ -77,8 +81,8 @@ fn test_move_resource() {
     let mut proc = runtime.start_process(true);
     let pkg = proc.publish(package_code!("./everything")).unwrap();
 
-    proc.call_function(pkg, "MoveTest", "move_bucket", args!())
+    proc.call_function((pkg, "MoveTest".to_owned()), "move_bucket", args!())
         .unwrap();
-    proc.call_function(pkg, "MoveTest", "move_reference", args!())
+    proc.call_function((pkg, "MoveTest".to_owned()), "move_reference", args!())
         .unwrap();
 }

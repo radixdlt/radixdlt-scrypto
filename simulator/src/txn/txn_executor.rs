@@ -38,12 +38,11 @@ pub fn execute<T: Ledger>(
                 None => Err(RuntimeError::BucketNotReserved),
             },
             Instruction::CallFunction {
-                package,
                 blueprint,
                 function,
                 args,
             } => proc
-                .call_function(package, blueprint.as_str(), function.as_str(), args.0)
+                .call_function(blueprint, function.as_str(), args.0)
                 .map(Option::from),
             Instruction::CallMethod {
                 component,

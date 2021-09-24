@@ -7,7 +7,7 @@ use crate::rev2::*;
 
 const ARG_TRACE: &str = "TRACE";
 const ARG_PACKAGE: &str = "PACKAGE";
-const ARG_BLUEPRINT: &str = "BLUEPRINT";
+const ARG_NAME: &str = "NAME";
 
 /// Constructs a `export-abi` subcommand.
 pub fn make_export_abi<'a, 'b>() -> App<'a, 'b> {
@@ -26,7 +26,7 @@ pub fn make_export_abi<'a, 'b>() -> App<'a, 'b> {
                 .required(true),
         )
         .arg(
-            Arg::with_name(ARG_BLUEPRINT)
+            Arg::with_name(ARG_NAME)
                 .help("Specify the blueprint name.")
                 .required(true),
         )
@@ -40,12 +40,12 @@ pub fn handle_export_abi(matches: &ArgMatches) -> Result<(), Error> {
         .ok_or_else(|| Error::MissingArgument(ARG_PACKAGE.to_owned()))?
         .parse()
         .map_err(Error::InvalidAddress)?;
-    let blueprint = matches
-        .value_of(ARG_BLUEPRINT)
-        .ok_or_else(|| Error::MissingArgument(ARG_BLUEPRINT.to_owned()))?;
+    let name = matches
+        .value_of(ARG_NAME)
+        .ok_or_else(|| Error::MissingArgument(ARG_NAME.to_owned()))?;
 
     let mut ledger = FileBasedLedger::new(get_data_dir()?);
-    let result = export_abi(&mut ledger, package, blueprint, trace);
+    let result = export_abi(&mut ledger, (package, name.to_owned()), trace);
 
     match result {
         Err(e) => Err(Error::TxnExecutionError(e)),

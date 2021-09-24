@@ -7,27 +7,21 @@ use scrypto::types::*;
 /// A component is an instance of blueprint.
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct Component {
-    package: Address,
-    blueprint: String,
+    blueprint: (Address, String),
     state: Vec<u8>,
     map: HashMap<Vec<u8>, Vec<u8>>,
 }
 
 impl Component {
-    pub fn new(package: Address, blueprint: String, state: Vec<u8>) -> Self {
+    pub fn new(blueprint: (Address, String), state: Vec<u8>) -> Self {
         Self {
-            package,
             blueprint,
             state,
             map: HashMap::new(),
         }
     }
 
-    pub fn package(&self) -> Address {
-        self.package
-    }
-
-    pub fn blueprint(&self) -> &str {
+    pub fn blueprint(&self) -> &(Address, String) {
         &self.blueprint
     }
 

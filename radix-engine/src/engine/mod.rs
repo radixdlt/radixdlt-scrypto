@@ -28,6 +28,12 @@ impl InMemoryRadixEngine {
     }
 }
 
+impl Default for InMemoryRadixEngine {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 /// Decodes call return data into an instance of `T`.
 pub fn decode_return<T: sbor::Decode>(data: Vec<u8>) -> Result<T, RuntimeError> {
     scrypto_decode(&data).map_err(RuntimeError::InvalidData)

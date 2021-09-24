@@ -2,13 +2,13 @@
 extern crate alloc;
 
 #[cfg(feature = "alloc")]
+pub use alloc::borrow;
+#[cfg(feature = "alloc")]
 pub use alloc::boxed;
 #[cfg(feature = "alloc")]
 pub use alloc::string;
 #[cfg(feature = "alloc")]
 pub use alloc::vec;
-#[cfg(feature = "alloc")]
-pub use alloc::borrow;
 #[cfg(feature = "alloc")]
 pub use core::convert;
 #[cfg(feature = "alloc")]

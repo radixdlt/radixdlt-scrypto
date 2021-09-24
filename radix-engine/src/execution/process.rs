@@ -265,14 +265,13 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
     /// Prepare call function
     pub fn prepare_call_function(
         &mut self,
-        package: Address,
-        blueprint: &str,
+        blueprint: (Address, String),
         function: &str,
         args: Vec<Vec<u8>>,
     ) -> Result<Invocation, RuntimeError> {
         Ok(Invocation {
-            package,
-            export: format!("{}_main", blueprint),
+            package: blueprint.0,
+            export: format!("{}_main", blueprint.1),
             function: function.to_owned(),
             args,
         })
@@ -294,18 +293,17 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         let mut self_args = vec![scrypto_encode(&component)];
         self_args.extend(args);
 
-        self.prepare_call_function(com.package(), com.blueprint(), method, self_args)
+        self.prepare_call_function(com.blueprint().clone(), method, self_args)
     }
 
     /// Prepare call ABI
     pub fn prepare_call_abi(
         &mut self,
-        package: Address,
-        blueprint: &str,
+        blueprint: (Address, String),
     ) -> Result<Invocation, RuntimeError> {
         Ok(Invocation {
-            package,
-            export: format!("{}_abi", blueprint),
+            package: blueprint.0,
+            export: format!("{}_abi", blueprint.1),
             function: String::new(),
             args: Vec::new(),
         })
@@ -349,13 +347,12 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
     /// Call a function
     pub fn call_function(
         &mut self,
-        package: Address,
-        blueprint: &str,
+        blueprint: (Address, String),
         function: &str,
         args: Vec<Vec<u8>>,
     ) -> Result<Vec<u8>, RuntimeError> {
         debug!(self, "Call function started");
-        let invocation = self.prepare_call_function(package, blueprint, function, args)?;
+        let invocation = self.prepare_call_function(blueprint, function, args)?;
         let result = self.call(invocation);
         debug!(self, "Call function ended");
         result
@@ -376,9 +373,9 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
     }
 
     /// Call ABI
-    pub fn call_abi(&mut self, package: Address, blueprint: &str) -> Result<Vec<u8>, RuntimeError> {
+    pub fn call_abi(&mut self, blueprint: (Address, String)) -> Result<Vec<u8>, RuntimeError> {
         debug!(self, "Call abi started");
-        let invocation = self.prepare_call_abi(package, blueprint)?;
+        let invocation = self.prepare_call_abi(blueprint)?;
         let result = self.call(invocation);
         debug!(self, "Call abi ended");
         result
@@ -730,19 +727,14 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
     ) -> Result<CallFunctionOutput, RuntimeError> {
         debug!(
             self,
-            "CALL started: package = {}, blueprint = {}, function = {}, args = {:?}",
-            input.package,
+            "CALL started: blueprint = {:?}, function = {}, args = {:?}",
             input.blueprint,
             input.function,
             input.args
         );
 
-        let invocation = self.prepare_call_function(
-            input.package,
-            input.blueprint.as_str(),
-            input.function.as_str(),
-            input.args,
-        )?;
+        let invocation =
+            self.prepare_call_function(input.blueprint, input.function.as_str(), input.args)?;
         let result = self.call(invocation);
 
         debug!(self, "CALL finished");
@@ -786,7 +778,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
             "New component: address = {:?}, state = {:?}", address, new_state
         );
 
-        let component = Component::new(self.package()?, input.blueprint, new_state);
+        let component = Component::new((self.package()?, input.name), new_state);
         self.runtime.put_component(address, component);
 
         Ok(CreateComponentOutput { component: address })
@@ -802,13 +794,12 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
             .runtime
             .get_component(input.component)
             .ok_or(RuntimeError::ComponentNotFound(input.component))?;
-        if package != component.package() {
+        if package != component.blueprint().0 {
             return Err(RuntimeError::UnauthorizedAccess);
         }
 
         Ok(GetComponentInfoOutput {
-            package: component.package(),
-            blueprint: component.blueprint().to_owned(),
+            blueprint: component.blueprint().clone(),
         })
     }
 
@@ -822,7 +813,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
             .runtime
             .get_component(input.component)
             .ok_or(RuntimeError::ComponentNotFound(input.component))?;
-        if package != component.package() {
+        if package != component.blueprint().0 {
             return Err(RuntimeError::UnauthorizedAccess);
         }
 
@@ -847,7 +838,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
             .runtime
             .get_component_mut(input.component)
             .ok_or(RuntimeError::ComponentNotFound(input.component))?;
-        if package != component.package() {
+        if package != component.blueprint().0 {
             return Err(RuntimeError::UnauthorizedAccess);
         }
 
@@ -918,11 +909,13 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
     ) -> Result<CreateResourceMutableOutput, RuntimeError> {
         let auth = match input.minter {
             Address::Package(_) => input.minter,
-            Address::Component(_) => self
-                .runtime
-                .get_component(input.minter)
-                .ok_or(RuntimeError::ComponentNotFound(input.minter))?
-                .package(),
+            Address::Component(_) => {
+                self.runtime
+                    .get_component(input.minter)
+                    .ok_or(RuntimeError::ComponentNotFound(input.minter))?
+                    .blueprint()
+                    .0
+            }
             _ => {
                 return Err(RuntimeError::InvalidAddressType);
             }
@@ -930,8 +923,8 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         let resource = ResourceDef {
             metadata: input.metadata,
             minter: Some(input.minter),
-            auth: Some(auth),
             supply: Amount::zero(),
+            auth: Some(auth),
         };
 
         let address = self.runtime.new_resource_address();

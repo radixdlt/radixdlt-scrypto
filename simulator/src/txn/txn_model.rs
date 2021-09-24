@@ -29,8 +29,7 @@ pub enum Instruction {
 
     /// Call a function.
     CallFunction {
-        package: Address,
-        blueprint: String,
+        blueprint: (Address, String),
         function: String,
         args: Args,
     },
