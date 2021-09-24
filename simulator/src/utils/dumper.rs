@@ -57,7 +57,7 @@ pub fn dump_component<T: Ledger>(address: Address, ledger: &T) {
 }
 
 pub fn dump_resource<T: Ledger>(address: Address, ledger: &T) {
-    let resource = ledger.get_resource(address);
+    let resource = ledger.get_resource_def(address);
     match resource {
         Some(r) => {
             for (k, v) in r.metadata {

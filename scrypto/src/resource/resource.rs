@@ -8,38 +8,30 @@ use crate::rust::collections::HashMap;
 use crate::rust::string::String;
 use crate::types::*;
 
-/// An abstraction of digital assets, e.g. token, badge and NFT.
+/// The definition of a particular class of resources.
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct Resource {
+pub struct ResourceDef {
     address: Address,
 }
 
-/// Information about a resource.
-#[derive(Debug, Clone, TypeId, Describe, Encode, Decode)]
-pub struct ResourceInfo {
-    pub metadata: HashMap<String, String>,
-    pub minter: Option<Address>,
-    pub supply: Option<Amount>,
-}
-
-/// Utility for creating new resource
+/// Utility for creating resources
 pub struct ResourceBuilder {
     metadata: HashMap<String, String>,
 }
 
-impl From<Address> for Resource {
+impl From<Address> for ResourceDef {
     fn from(address: Address) -> Self {
         Self { address }
     }
 }
 
-impl From<Resource> for Address {
-    fn from(a: Resource) -> Address {
+impl From<ResourceDef> for Address {
+    fn from(a: ResourceDef) -> Address {
         a.address
     }
 }
 
-impl Resource {
+impl ResourceDef {
     pub fn new_mutable(metadata: HashMap<String, String>, minter: Address) -> Self {
         let input = CreateResourceMutableInput { metadata, minter };
         let output: CreateResourceMutableOutput = call_kernel(CREATE_RESOURCE_MUTABLE, input);
@@ -57,19 +49,6 @@ impl Resource {
         output.bucket.into()
     }
 
-    pub fn info(&self) -> ResourceInfo {
-        let input = GetResourceInfoInput {
-            resource: self.address,
-        };
-        let output: GetResourceInfoOutput = call_kernel(GET_RESOURCE_INFO, input);
-
-        ResourceInfo {
-            metadata: output.metadata,
-            minter: output.minter,
-            supply: output.supply,
-        }
-    }
-
     pub fn mint<T: Into<Amount>>(&self, amount: T) -> Bucket {
         let amt = amount.into();
         assert!(amt >= Amount::one());
@@ -83,12 +62,39 @@ impl Resource {
         output.bucket.into()
     }
 
+    pub fn metadata(&self) -> HashMap<String, String> {
+        let input = GetResourceInfoInput {
+            resource: self.address,
+        };
+        let output: GetResourceInfoOutput = call_kernel(GET_RESOURCE_INFO, input);
+
+        output.metadata
+    }
+
+    pub fn minter(&self) -> Option<Address> {
+        let input = GetResourceInfoInput {
+            resource: self.address,
+        };
+        let output: GetResourceInfoOutput = call_kernel(GET_RESOURCE_INFO, input);
+
+        output.minter
+    }
+
+    pub fn supply(&self) -> Amount {
+        let input = GetResourceInfoInput {
+            resource: self.address,
+        };
+        let output: GetResourceInfoOutput = call_kernel(GET_RESOURCE_INFO, input);
+
+        output.supply
+    }
+
     pub fn address(&self) -> Address {
         self.address
     }
 }
 
-impl Describe for Resource {
+impl Describe for ResourceDef {
     fn describe() -> Type {
         Type::Custom {
             name: SCRYPTO_NAME_RESOURCE.to_owned(),
@@ -111,13 +117,13 @@ impl ResourceBuilder {
     }
 
     /// Create resource with mutable supply; the resource can be minted using `Resource::mint()` afterwards.
-    pub fn create_mutable(&self, minter: Address) -> Resource {
-        Resource::new_mutable(self.metadata.clone(), minter)
+    pub fn create_mutable(&self, minter: Address) -> ResourceDef {
+        ResourceDef::new_mutable(self.metadata.clone(), minter)
     }
 
     /// Create resource with fixed supply.
     pub fn create_fixed<T: Into<Amount>>(&self, supply: T) -> Bucket {
-        Resource::new_fixed(self.metadata.clone(), supply.into())
+        ResourceDef::new_fixed(self.metadata.clone(), supply.into())
     }
 }
 impl Default for ResourceBuilder {

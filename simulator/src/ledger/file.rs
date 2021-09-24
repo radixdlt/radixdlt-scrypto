@@ -15,14 +15,14 @@ pub struct FileBasedLedger {
 const PACKAGES: &str = "packages";
 const COMPONENTS: &str = "components";
 const STORAGES: &str = "storages";
-const RESOURCES: &str = "resources";
+const RESOURCE_DEFS: &str = "resource-defs";
 const VAULTS: &str = "vaults";
 
 const FILE_EXT: &str = "sbor";
 
 impl FileBasedLedger {
     pub fn new(root: PathBuf) -> Self {
-        for folder in [PACKAGES, COMPONENTS, STORAGES, RESOURCES, VAULTS] {
+        for folder in [PACKAGES, COMPONENTS, STORAGES, RESOURCE_DEFS, VAULTS] {
             let mut path = root.clone();
             path.push(folder);
             if !path.exists() {
@@ -71,6 +71,17 @@ impl FileBasedLedger {
 }
 
 impl Ledger for FileBasedLedger {
+    fn get_resource_def(&self, address: Address) -> Option<ResourceDef> {
+        Self::read(self.get_path(RESOURCE_DEFS, address.to_string(), FILE_EXT)).map(Self::decode)
+    }
+
+    fn put_resource_def(&mut self, address: Address, resource: ResourceDef) {
+        Self::write(
+            self.get_path(RESOURCE_DEFS, address.to_string(), FILE_EXT),
+            Self::encode(&resource),
+        )
+    }
+
     fn get_package(&self, address: Address) -> Option<Package> {
         Self::read(self.get_path(PACKAGES, address.to_string(), FILE_EXT)).map(Self::decode)
     }
@@ -79,17 +90,6 @@ impl Ledger for FileBasedLedger {
         Self::write(
             self.get_path(PACKAGES, address.to_string(), FILE_EXT),
             Self::encode(&package),
-        )
-    }
-
-    fn get_resource(&self, address: Address) -> Option<Resource> {
-        Self::read(self.get_path(RESOURCES, address.to_string(), FILE_EXT)).map(Self::decode)
-    }
-
-    fn put_resource(&mut self, address: Address, resource: Resource) {
-        Self::write(
-            self.get_path(RESOURCES, address.to_string(), FILE_EXT),
-            Self::encode(&resource),
         )
     }
 

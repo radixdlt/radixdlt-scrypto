@@ -35,18 +35,19 @@ pub fn handle_new_account(matches: &ArgMatches) -> Result<(), Error> {
     let mut runtime = Runtime::new(sha256(Uuid::new_v4().to_string()), &mut ledger);
 
     // create XRD native token
-    if runtime.get_resource(Address::RadixToken).is_none() {
+    if runtime.get_resource_def(Address::RadixToken).is_none() {
         let mut metadata = HashMap::new();
         metadata.insert("symbol".to_owned(), "xrd".to_owned());
         metadata.insert("name".to_owned(), "Radix".to_owned());
         metadata.insert("description".to_owned(), "The Radix Public Network's native token, used to pay the network's required transaction fees and to secure the network through staking to its validator nodes.".to_owned());
         metadata.insert("url".to_owned(), "https://tokens.radixdlt.com".to_owned());
-        runtime.put_resource(
+        runtime.put_resource_def(
             Address::RadixToken,
-            Resource {
+            ResourceDef {
                 metadata,
                 minter: Some(Address::System),
-                supply: None,
+                auth: Some(Address::System),
+                supply: 1_000_000.into(),
             },
         );
     }

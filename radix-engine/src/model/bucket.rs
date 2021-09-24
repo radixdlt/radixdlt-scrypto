@@ -32,7 +32,7 @@ pub type BucketRef = Rc<LockedBucket>;
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct Vault {
     bucket: Bucket,
-    owner: Address,
+    auth: Address,
 }
 
 impl Bucket {
@@ -89,12 +89,12 @@ impl From<LockedBucket> for Bucket {
 }
 
 impl Vault {
-    pub fn new(bucket: Bucket, owner: Address) -> Self {
-        Self { bucket, owner }
+    pub fn new(bucket: Bucket, auth: Address) -> Self {
+        Self { bucket, auth }
     }
 
     pub fn put(&mut self, other: Bucket, requester: Address) -> Result<(), BucketError> {
-        if requester == self.owner {
+        if requester == self.auth {
             self.bucket.put(other)
         } else {
             Err(BucketError::UnauthorizedAccess)
@@ -102,7 +102,7 @@ impl Vault {
     }
 
     pub fn take(&mut self, amount: Amount, requester: Address) -> Result<Bucket, BucketError> {
-        if requester == self.owner {
+        if requester == self.auth {
             self.bucket.take(amount)
         } else {
             Err(BucketError::UnauthorizedAccess)

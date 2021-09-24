@@ -1,6 +1,7 @@
 use crate::utils::*;
 use scrypto::constructs::*;
 use scrypto::resource::*;
+use scrypto::rust::collections::*;
 use scrypto::types::*;
 use scrypto::*;
 
@@ -21,9 +22,10 @@ blueprint! {
            create_fixed("r2", 100.into())
         }
 
-        pub fn query() -> ResourceInfo {
+        pub fn query() -> (HashMap<String, String>, Option<Address>, Amount) {
             let resource = create_mutable("r3", Context::package_address());
-            Resource::from(resource).info()
+            let def = ResourceDef::from(resource);
+            (def.metadata(), def.minter(), def.supply())
         }
     }
 }

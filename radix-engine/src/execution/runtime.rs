@@ -24,7 +24,7 @@ pub struct Runtime<'le, L: Ledger> {
     packages: HashMap<Address, Package>,
     components: HashMap<Address, Component>,
     storages: HashMap<SID, Storage>,
-    resources: HashMap<Address, Resource>,
+    resources: HashMap<Address, ResourceDef>,
     vaults: HashMap<VID, Vault>,
     updated_packages: HashSet<Address>,
     updated_components: HashSet<Address>,
@@ -210,12 +210,12 @@ impl<'le, L: Ledger> Runtime<'le, L> {
     }
 
     /// Returns an immutable reference to a resource, if exists.
-    pub fn get_resource(&mut self, address: Address) -> Option<&Resource> {
+    pub fn get_resource_def(&mut self, address: Address) -> Option<&ResourceDef> {
         if self.resources.contains_key(&address) {
             return self.resources.get(&address);
         }
 
-        if let Some(resource) = self.ledger.get_resource(address) {
+        if let Some(resource) = self.ledger.get_resource_def(address) {
             self.resources.insert(address, resource);
             self.resources.get(&address)
         } else {
@@ -225,14 +225,14 @@ impl<'le, L: Ledger> Runtime<'le, L> {
 
     /// Returns a mutable reference to a resource, if exists.
     #[allow(dead_code)]
-    pub fn get_resource_mut(&mut self, address: Address) -> Option<&mut Resource> {
+    pub fn get_resource_def_mut(&mut self, address: Address) -> Option<&mut ResourceDef> {
         self.updated_resources.insert(address);
 
         if self.resources.contains_key(&address) {
             return self.resources.get_mut(&address);
         }
 
-        if let Some(resource) = self.ledger.get_resource(address) {
+        if let Some(resource) = self.ledger.get_resource_def(address) {
             self.resources.insert(address, resource);
             self.resources.get_mut(&address)
         } else {
@@ -241,7 +241,7 @@ impl<'le, L: Ledger> Runtime<'le, L> {
     }
 
     /// Inserts a new resource.
-    pub fn put_resource(&mut self, address: Address, resource: Resource) {
+    pub fn put_resource_def(&mut self, address: Address, resource: ResourceDef) {
         self.updated_resources.insert(address);
 
         self.resources.insert(address, resource);
@@ -345,7 +345,7 @@ impl<'le, L: Ledger> Runtime<'le, L> {
 
         for address in self.updated_resources.clone() {
             self.ledger
-                .put_resource(address, self.resources.get(&address).unwrap().clone());
+                .put_resource_def(address, self.resources.get(&address).unwrap().clone());
         }
 
         for vault in self.updated_vaults.clone() {

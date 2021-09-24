@@ -4,13 +4,13 @@ use crate::model::*;
 
 /// A ledger stores all the transactions and substates.
 pub trait Ledger {
+    fn get_resource_def(&self, address: Address) -> Option<ResourceDef>;
+
+    fn put_resource_def(&mut self, address: Address, resource: ResourceDef);
+
     fn get_package(&self, address: Address) -> Option<Package>;
 
     fn put_package(&mut self, address: Address, package: Package);
-
-    fn get_resource(&self, address: Address) -> Option<Resource>;
-
-    fn put_resource(&mut self, address: Address, info: Resource);
 
     fn get_component(&self, address: Address) -> Option<Component>;
 

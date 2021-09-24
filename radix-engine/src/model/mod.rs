@@ -7,7 +7,7 @@ mod storage;
 pub use bucket::{Bucket, BucketError, BucketRef, LockedBucket, Vault};
 pub use component::Component;
 pub use package::Package;
-pub use resource::Resource;
+pub use resource::ResourceDef;
 pub use storage::Storage;
 
 /// Represents a log severity.

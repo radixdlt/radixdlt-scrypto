@@ -877,7 +877,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
             .runtime
             .get_storage(input.storage)
             .ok_or(RuntimeError::StorageNotFound(input.storage))?;
-        if package != storage.owner() {
+        if package != storage.auth() {
             return Err(RuntimeError::UnauthorizedAccess);
         }
 
@@ -903,7 +903,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
             .runtime
             .get_storage_mut(input.storage)
             .ok_or(RuntimeError::StorageNotFound(input.storage))?;
-        if package != storage.owner() {
+        if package != storage.auth() {
             return Err(RuntimeError::UnauthorizedAccess);
         }
 
@@ -916,21 +916,33 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         &mut self,
         input: CreateResourceMutableInput,
     ) -> Result<CreateResourceMutableOutput, RuntimeError> {
-        let resource = Resource {
+        let auth = match input.minter {
+            Address::Package(_) => input.minter,
+            Address::Component(_) => self
+                .runtime
+                .get_component(input.minter)
+                .ok_or(RuntimeError::ComponentNotFound(input.minter))?
+                .package(),
+            _ => {
+                return Err(RuntimeError::InvalidAddressType);
+            }
+        };
+        let resource = ResourceDef {
             metadata: input.metadata,
             minter: Some(input.minter),
-            supply: None,
+            auth: Some(auth),
+            supply: Amount::zero(),
         };
 
         let address = self.runtime.new_resource_address();
-
-        if self.runtime.get_resource(address).is_some() {
+        if self.runtime.get_resource_def(address).is_some() {
             return Err(RuntimeError::ResourceAlreadyExists(address));
         } else {
             debug!(self, "New resource: {:?}", address);
 
-            self.runtime.put_resource(address, resource);
+            self.runtime.put_resource_def(address, resource);
         }
+
         Ok(CreateResourceMutableOutput { resource: address })
     }
 
@@ -938,20 +950,21 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         &mut self,
         input: CreateResourceFixedInput,
     ) -> Result<CreateResourceFixedOutput, RuntimeError> {
-        let resource = Resource {
+        let resource = ResourceDef {
             metadata: input.metadata,
             minter: None,
-            supply: Some(input.supply),
+            supply: input.supply,
+            auth: None,
         };
 
         let address = self.runtime.new_resource_address();
 
-        if self.runtime.get_resource(address).is_some() {
+        if self.runtime.get_resource_def(address).is_some() {
             return Err(RuntimeError::ResourceAlreadyExists(address));
         } else {
             debug!(self, "New resource: {:?}", address);
 
-            self.runtime.put_resource(address, resource);
+            self.runtime.put_resource_def(address, resource);
         }
 
         let bucket = Bucket::new(input.supply, address);
@@ -967,7 +980,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
     ) -> Result<GetResourceInfoOutput, RuntimeError> {
         let resource = self
             .runtime
-            .get_resource(input.resource)
+            .get_resource_def(input.resource)
             .ok_or(RuntimeError::ResourceNotFound(input.resource))?
             .clone();
 
@@ -982,36 +995,27 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         &mut self,
         input: MintResourceInput,
     ) -> Result<MintResourceOutput, RuntimeError> {
+        let package = self.package()?;
         let resource = self
             .runtime
-            .get_resource(input.resource)
+            .get_resource_def_mut(input.resource)
             .ok_or(RuntimeError::ResourceNotFound(input.resource))?;
-
-        match resource.minter {
-            Some(address) => {
-                let authorized = match address {
-                    Address::Package(_) => address == self.package()?,
-                    Address::Component(_) => {
-                        self.runtime
-                            .get_component(address)
-                            .ok_or(RuntimeError::ComponentNotFound(address))?
-                            .package()
-                            == self.package()?
-                    }
-                    _ => false,
-                };
-                if !authorized {
+        match resource.auth {
+            Some(pkg) => {
+                if package != pkg {
                     return Err(RuntimeError::UnauthorizedToMint);
                 }
             }
-            _ => {
+            None => {
                 return Err(RuntimeError::UnableToMintFixedResource);
             }
         }
+        resource.supply += input.amount;
 
         let bucket = Bucket::new(input.amount, input.resource);
         let bid = self.runtime.new_bucket_id();
         self.buckets.insert(bid, bucket);
+
         Ok(MintResourceOutput { bucket: bid })
     }
 

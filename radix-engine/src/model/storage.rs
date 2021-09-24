@@ -6,20 +6,20 @@ use scrypto::types::Address;
 /// A key-value storage.
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct Storage {
-    pub owner: Address,
     pub storage: HashMap<Vec<u8>, Vec<u8>>,
+    pub auth: Address,
 }
 
 impl Storage {
-    pub fn new(owner: Address) -> Self {
+    pub fn new(auth: Address) -> Self {
         Self {
-            owner,
             storage: HashMap::new(),
+            auth,
         }
     }
 
-    pub fn owner(&self) -> Address {
-        self.owner
+    pub fn auth(&self) -> Address {
+        self.auth
     }
 
     pub fn get_entry(&self, key: &[u8]) -> Option<&[u8]> {

@@ -3,7 +3,7 @@ pub use crate::constructs::{
     Blueprint, Component, ComponentInfo, Context, Level, Logger, Package, Storage,
 };
 pub use crate::kernel::call_kernel;
-pub use crate::resource::{Bucket, BucketRef, Resource, ResourceBuilder, ResourceInfo, Vault};
+pub use crate::resource::{Bucket, BucketRef, ResourceBuilder, ResourceDef, Vault};
 pub use crate::types::{Address, Amount, BID, H256, RID, SID, VID};
 pub use crate::utils::{sha256, sha256_twice};
 pub use crate::{args, blueprint, debug, error, import, info, package_code, trace, warn};

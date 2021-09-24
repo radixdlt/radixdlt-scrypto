@@ -5,8 +5,9 @@ use scrypto::types::*;
 
 /// Represents a resource created.
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct Resource {
+pub struct ResourceDef {
     pub metadata: HashMap<String, String>,
     pub minter: Option<Address>,
-    pub supply: Option<Amount>,
+    pub supply: Amount,
+    pub auth: Option<Address>,
 }

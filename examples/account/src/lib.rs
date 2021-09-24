@@ -25,7 +25,7 @@ blueprint! {
             metadata: HashMap<String, String>,
             minter: Address,
         ) -> Address {
-            let resource = Resource::new_mutable(metadata, minter);
+            let resource = ResourceDef::new_mutable(metadata, minter);
             resource.into()
         }
 
@@ -35,7 +35,7 @@ blueprint! {
             metadata: HashMap<String, String>,
             supply: Amount,
         ) -> Address {
-            let bucket = Resource::new_fixed(metadata, supply);
+            let bucket = ResourceDef::new_fixed(metadata, supply);
             let address = bucket.resource();
             self.deposit(bucket);
             address
@@ -43,7 +43,7 @@ blueprint! {
 
         /// Mints resources and deposits them into this account.
         pub fn mint_resource(&mut self, amount: Amount, resource: Address)  {
-            let bucket = Resource::from(resource).mint(amount);
+            let bucket = ResourceDef::from(resource).mint(amount);
             self.deposit(bucket);
         }
 

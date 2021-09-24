@@ -235,7 +235,7 @@ pub struct GetResourceInfoInput {
 pub struct GetResourceInfoOutput {
     pub metadata: HashMap<String, String>,
     pub minter: Option<Address>,
-    pub supply: Option<Amount>,
+    pub supply: Amount,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]

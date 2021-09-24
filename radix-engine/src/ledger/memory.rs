@@ -9,7 +9,7 @@ pub struct InMemoryLedger {
     packages: HashMap<Address, Package>,
     components: HashMap<Address, Component>,
     storages: HashMap<SID, Storage>,
-    resources: HashMap<Address, Resource>,
+    resource_defs: HashMap<Address, ResourceDef>,
     vaults: HashMap<VID, Vault>,
 }
 
@@ -19,7 +19,7 @@ impl InMemoryLedger {
             packages: HashMap::new(),
             components: HashMap::new(),
             storages: HashMap::new(),
-            resources: HashMap::new(),
+            resource_defs: HashMap::new(),
             vaults: HashMap::new(),
         }
     }
@@ -32,20 +32,20 @@ impl Default for InMemoryLedger {
 }
 
 impl Ledger for InMemoryLedger {
+    fn get_resource_def(&self, address: Address) -> Option<ResourceDef> {
+        self.resource_defs.get(&address).map(Clone::clone)
+    }
+
+    fn put_resource_def(&mut self, address: Address, resource: ResourceDef) {
+        self.resource_defs.insert(address, resource);
+    }
+
     fn get_package(&self, address: Address) -> Option<Package> {
         self.packages.get(&address).map(Clone::clone)
     }
 
     fn put_package(&mut self, address: Address, package: Package) {
         self.packages.insert(address, package);
-    }
-
-    fn get_resource(&self, address: Address) -> Option<Resource> {
-        self.resources.get(&address).map(Clone::clone)
-    }
-
-    fn put_resource(&mut self, address: Address, info: Resource) {
-        self.resources.insert(address, info);
     }
 
     fn get_component(&self, address: Address) -> Option<Component> {
