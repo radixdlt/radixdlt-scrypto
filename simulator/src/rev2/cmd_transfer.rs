@@ -12,11 +12,12 @@ use crate::rev2::*;
 const ARG_TRACE: &str = "TRACE";
 const ARG_AMOUNT: &str = "AMOUNT";
 const ARG_RESOURCE: &str = "RESOURCE";
+const ARG_RECIPIENT: &str = "RECIPIENT";
 
-/// Constructs a `mint-resource` subcommand.
-pub fn make_mint_resource<'a, 'b>() -> App<'a, 'b> {
-    SubCommand::with_name(CMD_MINT_RESOURCE)
-        .about("Mints resource")
+/// Constructs a `transfer` subcommand.
+pub fn make_transfer<'a, 'b>() -> App<'a, 'b> {
+    SubCommand::with_name(CMD_TRANSFER)
+        .about("Transfers resources")
         .version(crate_version!())
         .arg(
             Arg::with_name(ARG_TRACE)
@@ -26,7 +27,7 @@ pub fn make_mint_resource<'a, 'b>() -> App<'a, 'b> {
         )
         .arg(
             Arg::with_name(ARG_AMOUNT)
-                .help("Specify the amount to mint.")
+                .help("Specify the amount to transfer.")
                 .required(true),
         )
         .arg(
@@ -34,10 +35,15 @@ pub fn make_mint_resource<'a, 'b>() -> App<'a, 'b> {
                 .help("Specify the resource address.")
                 .required(true),
         )
+        .arg(
+            Arg::with_name(ARG_RECIPIENT)
+                .help("Specify the recipient address.")
+                .required(true),
+        )
 }
 
-/// Handles a `mint-resource` request.
-pub fn handle_mint_resource(matches: &ArgMatches) -> Result<(), Error> {
+/// Handles a `transfer` request.
+pub fn handle_transfer(matches: &ArgMatches) -> Result<(), Error> {
     let trace = matches.is_present(ARG_TRACE);
     let amount = Amount::from_str(
         matches
@@ -50,6 +56,11 @@ pub fn handle_mint_resource(matches: &ArgMatches) -> Result<(), Error> {
         .ok_or_else(|| Error::MissingArgument(ARG_RESOURCE.to_owned()))?
         .parse()
         .map_err(Error::InvalidAddress)?;
+    let recipient: Address = matches
+        .value_of(ARG_RECIPIENT)
+        .ok_or_else(|| Error::MissingArgument(ARG_RECIPIENT.to_owned()))?
+        .parse()
+        .map_err(Error::InvalidAddress)?;
 
     match get_config(CONF_DEFAULT_ACCOUNT)? {
         Some(a) => {
@@ -59,12 +70,12 @@ pub fn handle_mint_resource(matches: &ArgMatches) -> Result<(), Error> {
             let mut runtime = Runtime::new(sha256(Uuid::new_v4().to_string()), &mut ledger);
             let mut process = runtime.start_process(trace);
             process
-                .call_method(account, "mint_resource", args!(amount, resource))
+                .call_method(account, "transfer", args!(amount, resource, recipient))
                 .and_then(|_| process.finalize())
                 .map_err(Error::TxnExecutionError)?;
             runtime.commit();
 
-            println!("Resource minted into the default account!");
+            println!("Resource transfered into the default account!");
             Ok(())
         }
         None => Err(Error::NoDefaultAccount),

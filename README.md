@@ -72,7 +72,10 @@ scrypto test
 | To create an account | ``` rev2 new-account ``` |
 | To change default account | ``` rev2 set-default-account <account_address> ``` |
 | To create resource with fixed supply | ``` rev2 new-resource-fixed <amount> ``` |
-| To publish a package | ``` rev2 publish <package_dir_or_wasm_file> ``` |
+| To create resource with mutable supply | ``` rev2 new-resource-mutable <minter> ``` |
+| To mint resources | ``` rev2 mint <amount> <resource_address>``` |
+| To transfer resources | ``` rev2 transfer <amount> <resource_address> <recipient_address> ``` |
+| To publish a package | ``` rev2 publish <path_to_package_dir_or_wasm_file> ``` |
 | To call a function | ``` rev2 call-function <package_address> <blueprint_name> <function> <args> ``` |
 | To call a method | ``` rev2 call-method <component_address> <method> <args> ``` |
 | To export the ABI of a blueprint | ``` rev2 export-abi <package_address> <blueprint_name> ``` |

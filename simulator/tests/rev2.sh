@@ -10,9 +10,11 @@ rev2="cargo run --bin rev2 $@ --"
 # Set up environment
 $rev2 reset
 account=`$rev2 new-account | tee /dev/tty | awk '/New account: / {print $NF}'`
+account2=`$rev2 new-account | tee /dev/tty | awk '/New account: / {print $NF}'`
 $rev2 new-resource-fixed 333
 resource=`$rev2 new-resource-mutable $account | tee /dev/tty | awk '/New resource: / {print $NF}'`
-$rev2 mint-resource 666 $resource
+$rev2 mint 777 $resource
+$rev2 transfer 111 $resource $account2
 
 # Test helloworld
 package=`$rev2 publish ../assets/helloworld.wasm | tee /dev/tty | awk '/New package/ {print $NF}'`
@@ -31,3 +33,4 @@ $rev2 export-abi $package GumballMachine
 $rev2 show $package
 $rev2 show $component
 $rev2 show $account
+$rev2 show $account2

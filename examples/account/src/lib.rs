@@ -13,13 +13,13 @@ blueprint! {
             .instantiate()
         }
 
-        /// Publishes a package from this account.
+        /// [Experimental] Publishes a package from this account.
         pub fn publish_package(&self, code: Vec<u8>) -> Address {
             let package = Package::new(&code);
             package.into()
         }
 
-        /// Creates a resource with mutable supply.
+        /// [Experimental] Creates a resource with mutable supply.
         pub fn new_resource_mutable(
             &self,
             metadata: HashMap<String, String>,
@@ -29,7 +29,7 @@ blueprint! {
             resource.into()
         }
 
-        /// Creates a resource with fixed supply, which will be deposited into this account.
+        /// [Experimental] Creates a resource with fixed supply, which will be deposited into this account.
         pub fn new_resource_fixed(
             &mut self,
             metadata: HashMap<String, String>,
@@ -41,10 +41,16 @@ blueprint! {
             address
         }
 
-        /// Mints resources and deposits them into this account.
-        pub fn mint_resource(&mut self, amount: Amount, resource: Address)  {
+        /// [Experimental] Mints resources and deposits them into this account.
+        pub fn mint(&mut self, amount: Amount, resource: Address)  {
             let bucket = ResourceDef::from(resource).mint(amount);
             self.deposit(bucket);
+        }
+
+        /// [Experimental] Transfers resources to another account.
+        pub fn transfer(&mut self, amount: Amount, resource: Address, recipient: Address) {
+            let component = Component::from(recipient);
+            component.call::<()>("deposit", args!(self.withdraw(amount, resource)));
         }
 
         /// Deposit a batch of buckets into this account
