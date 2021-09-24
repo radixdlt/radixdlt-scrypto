@@ -5,7 +5,7 @@ use scrypto::prelude::*;
 // from this blueprint will airdrop 1 `HT` token to its caller.
 
 blueprint! {
-    /// Every `Hello` component will have a vault, used for storing the initial `HELLO` tokens.
+    /// Every `Hello` component will have a vault, used for storing `HT` tokens.
     struct Hello {
         vault: Vault
     }
@@ -27,9 +27,7 @@ blueprint! {
         /// This method takes 1 `HT` token from its vault and returns it to the caller.
         pub fn airdrop(&mut self) -> Bucket {
             let bucket: Bucket = self.vault.take(1);
-
             info!("Balance: {} HT", self.vault.amount());
-
             bucket
         }
     }
