@@ -23,26 +23,19 @@ pub enum Value {
     U128(u128),
     String(String),
 
-    Option(Box<Option<Value>>),
-
-    Box(Box<Value>),
-
-    Array(u8, Vec<Value>),
-
-    Tuple(Vec<Value>),
-
     Struct(Fields),
-
     Enum(u8, Fields),
 
+    Option(Box<Option<Value>>),
+    Box(Box<Value>),
+    Array(u8, Vec<Value>),
+    Tuple(Vec<Value>),
+    Result(Box<Result<Value, Value>>),
+
     Vec(u8, Vec<Value>),
-
     TreeSet(u8, Vec<Value>),
-
     TreeMap(u8, u8, Vec<(Value, Value)>),
-
     HashSet(u8, Vec<Value>),
-
     HashMap(u8, u8, Vec<(Value, Value)>),
 
     Custom(u8, Vec<u8>),
@@ -59,34 +52,48 @@ pub enum Fields {
 }
 
 /// Encodes any SBOR value into byte array.
-pub fn write_any(ty_ctx: Option<u8>, value: &Value, enc: &mut Encoder) {
+pub fn encode_any(ty_ctx: Option<u8>, value: &Value, enc: &mut Encoder) {
     match value {
-        // basic types
-        Value::Unit => write_basic(ty_ctx, TYPE_UNIT, &(), enc),
-        Value::Bool(v) => write_basic(ty_ctx, TYPE_BOOL, v, enc),
-        Value::I8(v) => write_basic(ty_ctx, TYPE_I8, v, enc),
-        Value::I16(v) => write_basic(ty_ctx, TYPE_I16, v, enc),
-        Value::I32(v) => write_basic(ty_ctx, TYPE_I32, v, enc),
-        Value::I64(v) => write_basic(ty_ctx, TYPE_I64, v, enc),
-        Value::I128(v) => write_basic(ty_ctx, TYPE_I128, v, enc),
-        Value::U8(v) => write_basic(ty_ctx, TYPE_U8, v, enc),
-        Value::U16(v) => write_basic(ty_ctx, TYPE_U16, v, enc),
-        Value::U32(v) => write_basic(ty_ctx, TYPE_U32, v, enc),
-        Value::U64(v) => write_basic(ty_ctx, TYPE_U64, v, enc),
-        Value::U128(v) => write_basic(ty_ctx, TYPE_U128, v, enc),
-        Value::String(v) => write_basic(ty_ctx, TYPE_STRING, v, enc),
-        // rust types
+        // primitive types
+        Value::Unit => encode_basic(ty_ctx, TYPE_UNIT, &(), enc),
+        Value::Bool(v) => encode_basic(ty_ctx, TYPE_BOOL, v, enc),
+        Value::I8(v) => encode_basic(ty_ctx, TYPE_I8, v, enc),
+        Value::I16(v) => encode_basic(ty_ctx, TYPE_I16, v, enc),
+        Value::I32(v) => encode_basic(ty_ctx, TYPE_I32, v, enc),
+        Value::I64(v) => encode_basic(ty_ctx, TYPE_I64, v, enc),
+        Value::I128(v) => encode_basic(ty_ctx, TYPE_I128, v, enc),
+        Value::U8(v) => encode_basic(ty_ctx, TYPE_U8, v, enc),
+        Value::U16(v) => encode_basic(ty_ctx, TYPE_U16, v, enc),
+        Value::U32(v) => encode_basic(ty_ctx, TYPE_U32, v, enc),
+        Value::U64(v) => encode_basic(ty_ctx, TYPE_U64, v, enc),
+        Value::U128(v) => encode_basic(ty_ctx, TYPE_U128, v, enc),
+        Value::String(v) => encode_basic(ty_ctx, TYPE_STRING, v, enc),
+        // struct & enum
+        Value::Struct(fields) => {
+            if ty_ctx.is_none() {
+                enc.write_type(TYPE_STRUCT);
+            }
+            encode_fields(fields, enc);
+        }
+        Value::Enum(index, fields) => {
+            if ty_ctx.is_none() {
+                enc.write_type(TYPE_ENUM);
+            }
+            enc.write_u8(*index);
+            encode_fields(fields, enc);
+        }
+        // composite types
         Value::Option(v) => {
             if ty_ctx.is_none() {
                 enc.write_type(TYPE_OPTION);
             }
             match v.borrow() {
-                Some(x) => {
-                    enc.write_u8(1);
-                    write_any(None, x, enc);
-                }
                 None => {
                     enc.write_u8(0);
+                }
+                Some(x) => {
+                    enc.write_u8(1);
+                    encode_any(None, x, enc);
                 }
             }
         }
@@ -94,7 +101,7 @@ pub fn write_any(ty_ctx: Option<u8>, value: &Value, enc: &mut Encoder) {
             if ty_ctx.is_none() {
                 enc.write_type(TYPE_BOX);
             }
-            write_any(None, v, enc);
+            encode_any(None, v, enc);
         }
         Value::Array(ty, elements) => {
             if ty_ctx.is_none() {
@@ -103,7 +110,7 @@ pub fn write_any(ty_ctx: Option<u8>, value: &Value, enc: &mut Encoder) {
             enc.write_type(*ty);
             enc.write_len(elements.len());
             for e in elements {
-                write_any(Some(*ty), e, enc);
+                encode_any(Some(*ty), e, enc);
             }
         }
         Value::Tuple(elements) => {
@@ -112,21 +119,23 @@ pub fn write_any(ty_ctx: Option<u8>, value: &Value, enc: &mut Encoder) {
             }
             enc.write_len(elements.len());
             for e in elements {
-                write_any(None, e, enc);
+                encode_any(None, e, enc);
             }
         }
-        Value::Struct(fields) => {
+        Value::Result(v) => {
             if ty_ctx.is_none() {
-                enc.write_type(TYPE_STRUCT);
+                enc.write_type(TYPE_RESULT);
             }
-            write_fields(fields, enc);
-        }
-        Value::Enum(index, fields) => {
-            if ty_ctx.is_none() {
-                enc.write_type(TYPE_ENUM);
+            match v.borrow() {
+                Ok(x) => {
+                    enc.write_u8(0);
+                    encode_any(None, x, enc);
+                }
+                Err(x) => {
+                    enc.write_u8(1);
+                    encode_any(None, x, enc);
+                }
             }
-            enc.write_u8(*index);
-            write_fields(fields, enc);
         }
         // collections
         Value::Vec(ty, elements) => {
@@ -136,7 +145,7 @@ pub fn write_any(ty_ctx: Option<u8>, value: &Value, enc: &mut Encoder) {
             enc.write_type(*ty);
             enc.write_len(elements.len());
             for e in elements {
-                write_any(Some(*ty), e, enc);
+                encode_any(Some(*ty), e, enc);
             }
         }
         Value::TreeSet(ty, elements) => {
@@ -146,7 +155,7 @@ pub fn write_any(ty_ctx: Option<u8>, value: &Value, enc: &mut Encoder) {
             enc.write_type(*ty);
             enc.write_len(elements.len());
             for e in elements {
-                write_any(Some(*ty), e, enc);
+                encode_any(Some(*ty), e, enc);
             }
         }
         Value::HashSet(ty, elements) => {
@@ -156,7 +165,7 @@ pub fn write_any(ty_ctx: Option<u8>, value: &Value, enc: &mut Encoder) {
             enc.write_type(*ty);
             enc.write_len(elements.len());
             for e in elements {
-                write_any(Some(*ty), e, enc);
+                encode_any(Some(*ty), e, enc);
             }
         }
         Value::TreeMap(ty_k, ty_v, elements) => {
@@ -167,8 +176,8 @@ pub fn write_any(ty_ctx: Option<u8>, value: &Value, enc: &mut Encoder) {
             enc.write_type(*ty_v);
             enc.write_len(elements.len());
             for (k, v) in elements {
-                write_any(Some(*ty_k), k, enc);
-                write_any(Some(*ty_v), v, enc);
+                encode_any(Some(*ty_k), k, enc);
+                encode_any(Some(*ty_v), v, enc);
             }
         }
         Value::HashMap(ty_k, ty_v, elements) => {
@@ -179,8 +188,8 @@ pub fn write_any(ty_ctx: Option<u8>, value: &Value, enc: &mut Encoder) {
             enc.write_type(*ty_v);
             enc.write_len(elements.len());
             for (k, v) in elements {
-                write_any(Some(*ty_k), k, enc);
-                write_any(Some(*ty_v), v, enc);
+                encode_any(Some(*ty_k), k, enc);
+                encode_any(Some(*ty_v), v, enc);
             }
         }
         // custom types
@@ -194,20 +203,20 @@ pub fn write_any(ty_ctx: Option<u8>, value: &Value, enc: &mut Encoder) {
     }
 }
 
-fn write_fields(fields: &Fields, enc: &mut Encoder) {
+fn encode_fields(fields: &Fields, enc: &mut Encoder) {
     match fields {
         Fields::Named(named) => {
             enc.write_type(TYPE_FIELDS_NAMED);
             enc.write_len(named.len());
             for e in named {
-                write_any(None, e, enc);
+                encode_any(None, e, enc);
             }
         }
         Fields::Unnamed(unnamed) => {
             enc.write_type(TYPE_FIELDS_UNNAMED);
             enc.write_len(unnamed.len());
             for e in unnamed {
-                write_any(None, e, enc);
+                encode_any(None, e, enc);
             }
         }
         Fields::Unit => {
@@ -216,28 +225,29 @@ fn write_fields(fields: &Fields, enc: &mut Encoder) {
     }
 }
 
-fn write_basic<T: Encode>(ty_ctx: Option<u8>, t: u8, v: &T, enc: &mut Encoder) {
+fn encode_basic<T: Encode>(ty_ctx: Option<u8>, t: u8, v: &T, enc: &mut Encoder) {
     if ty_ctx.is_none() {
         enc.write_type(t);
     }
     <T>::encode_value(v, enc);
 }
 
-/// Parses any SBOR data.
-pub fn parse_any(data: &[u8]) -> Result<Value, DecodeError> {
+/// Decode any SBOR data.
+pub fn decode_any(data: &[u8]) -> Result<Value, DecodeError> {
     let mut decoder = Decoder::with_type(data);
-    let result = traverse(None, &mut decoder);
+    let result = decode_next(None, &mut decoder);
     decoder.check_end()?;
     result
 }
 
-fn traverse(ty_ctx: Option<u8>, dec: &mut Decoder) -> Result<Value, DecodeError> {
+fn decode_next(ty_ctx: Option<u8>, dec: &mut Decoder) -> Result<Value, DecodeError> {
     let ty = match ty_ctx {
         Some(t) => t,
         None => dec.read_type()?,
     };
 
     match ty {
+        // primitive types
         TYPE_UNIT => Ok(Value::Unit),
         TYPE_BOOL => Ok(Value::Bool(<bool>::decode_value(dec)?)),
         TYPE_I8 => Ok(Value::I8(<i8>::decode_value(dec)?)),
@@ -251,17 +261,31 @@ fn traverse(ty_ctx: Option<u8>, dec: &mut Decoder) -> Result<Value, DecodeError>
         TYPE_U64 => Ok(Value::U64(<u64>::decode_value(dec)?)),
         TYPE_U128 => Ok(Value::U128(<u128>::decode_value(dec)?)),
         TYPE_STRING => Ok(Value::String(<String>::decode_value(dec)?)),
+        // struct & enum
+        TYPE_STRUCT => {
+            // fields
+            let fields = decode_fields(dec)?;
+            Ok(Value::Struct(fields))
+        }
+        TYPE_ENUM => {
+            // index
+            let index = dec.read_u8()?;
+            // fields
+            let fields = decode_fields(dec)?;
+            Ok(Value::Enum(index, fields))
+        }
+        // composite types
         TYPE_OPTION => {
             // index
             let index = dec.read_u8()?;
             // optional value
             match index {
                 0 => Ok(Value::Option(Box::new(None))),
-                1 => Ok(Value::Option(Box::new(Some(traverse(None, dec)?)))),
+                1 => Ok(Value::Option(Box::new(Some(decode_next(None, dec)?)))),
                 _ => Err(DecodeError::InvalidIndex(index)),
             }
         }
-        TYPE_BOX => Ok(Value::Box(Box::new(traverse(None, dec)?))),
+        TYPE_BOX => Ok(Value::Box(Box::new(decode_next(None, dec)?))),
         TYPE_ARRAY => {
             // element type
             let ele_ty = dec.read_type()?;
@@ -270,7 +294,7 @@ fn traverse(ty_ctx: Option<u8>, dec: &mut Decoder) -> Result<Value, DecodeError>
             // values
             let mut elements = Vec::new();
             for _ in 0..len {
-                elements.push(traverse(Some(ele_ty), dec)?);
+                elements.push(decode_next(Some(ele_ty), dec)?);
             }
             Ok(Value::Array(ele_ty, elements))
         }
@@ -280,22 +304,21 @@ fn traverse(ty_ctx: Option<u8>, dec: &mut Decoder) -> Result<Value, DecodeError>
             // values
             let mut elements = Vec::new();
             for _ in 0..len {
-                elements.push(traverse(None, dec)?);
+                elements.push(decode_next(None, dec)?);
             }
             Ok(Value::Tuple(elements))
         }
-        TYPE_STRUCT => {
-            // fields
-            let fields = traverse_fields(dec)?;
-            Ok(Value::Struct(fields))
-        }
-        TYPE_ENUM => {
+        TYPE_RESULT => {
             // index
             let index = dec.read_u8()?;
-            // fields
-            let fields = traverse_fields(dec)?;
-            Ok(Value::Enum(index, fields))
+            // result value
+            match index {
+                0 => Ok(Value::Result(Box::new(Ok(decode_next(None, dec)?)))),
+                1 => Ok(Value::Result(Box::new(Err(decode_next(None, dec)?)))),
+                _ => Err(DecodeError::InvalidIndex(index)),
+            }
         }
+        // collections
         TYPE_VEC => {
             // element type
             let ele_ty = dec.read_type()?;
@@ -304,7 +327,7 @@ fn traverse(ty_ctx: Option<u8>, dec: &mut Decoder) -> Result<Value, DecodeError>
             // values
             let mut elements = Vec::new();
             for _ in 0..len {
-                elements.push(traverse(Some(ele_ty), dec)?);
+                elements.push(decode_next(Some(ele_ty), dec)?);
             }
             Ok(Value::Vec(ele_ty, elements))
         }
@@ -316,7 +339,7 @@ fn traverse(ty_ctx: Option<u8>, dec: &mut Decoder) -> Result<Value, DecodeError>
             // values
             let mut elements = Vec::new();
             for _ in 0..len {
-                elements.push(traverse(Some(ele_ty), dec)?);
+                elements.push(decode_next(Some(ele_ty), dec)?);
             }
             if ty == TYPE_TREE_SET {
                 Ok(Value::TreeSet(ele_ty, elements))
@@ -334,7 +357,10 @@ fn traverse(ty_ctx: Option<u8>, dec: &mut Decoder) -> Result<Value, DecodeError>
             // elements
             let mut elements = Vec::new();
             for _ in 0..len {
-                elements.push((traverse(Some(key_ty), dec)?, traverse(Some(value_ty), dec)?));
+                elements.push((
+                    decode_next(Some(key_ty), dec)?,
+                    decode_next(Some(value_ty), dec)?,
+                ));
             }
             if ty == TYPE_TREE_MAP {
                 Ok(Value::TreeMap(key_ty, value_ty, elements))
@@ -358,7 +384,7 @@ fn traverse(ty_ctx: Option<u8>, dec: &mut Decoder) -> Result<Value, DecodeError>
     }
 }
 
-fn traverse_fields(dec: &mut Decoder) -> Result<Fields, DecodeError> {
+fn decode_fields(dec: &mut Decoder) -> Result<Fields, DecodeError> {
     let ty = dec.read_type()?;
     match ty {
         TYPE_FIELDS_NAMED => {
@@ -367,7 +393,7 @@ fn traverse_fields(dec: &mut Decoder) -> Result<Fields, DecodeError> {
             // named fields
             let mut named = Vec::new();
             for _ in 0..len {
-                named.push(traverse(None, dec)?);
+                named.push(decode_next(None, dec)?);
             }
             Ok(Fields::Named(named))
         }
@@ -377,7 +403,7 @@ fn traverse_fields(dec: &mut Decoder) -> Result<Fields, DecodeError> {
             // named fields
             let mut unnamed = Vec::new();
             for _ in 0..len {
-                unnamed.push(traverse(None, dec)?);
+                unnamed.push(decode_next(None, dec)?);
             }
             Ok(Fields::Unnamed(unnamed))
         }
@@ -482,7 +508,7 @@ mod tests {
             z: map2,
         };
         let bytes = encode_with_type(Vec::new(), &data);
-        let value = parse_any(&bytes).unwrap();
+        let value = decode_any(&bytes).unwrap();
 
         assert_eq!(
             Value::Struct(Fields::Named(vec![
@@ -517,7 +543,7 @@ mod tests {
         );
 
         let mut enc = Encoder::with_type(Vec::new());
-        write_any(None, &value, &mut enc);
+        encode_any(None, &value, &mut enc);
         let bytes2: Vec<u8> = enc.into();
         assert_eq!(bytes2, bytes);
     }
@@ -525,7 +551,7 @@ mod tests {
     #[test]
     pub fn test_parse_custom() {
         let bytes: Vec<u8> = vec![0x80, 0x02, 0x00, 0x00, 0x00, 0x01, 0x02];
-        let value = parse_any(&bytes).unwrap();
+        let value = decode_any(&bytes).unwrap();
 
         assert_eq!(Value::Custom(0x80, vec![1, 2]), value);
     }

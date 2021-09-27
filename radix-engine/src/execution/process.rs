@@ -1,5 +1,5 @@
 use colored::*;
-use sbor::parse::*;
+use sbor::any::*;
 use sbor::rust::boxed::Box;
 use sbor::*;
 use scrypto::buffer::*;
@@ -471,11 +471,11 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         bf: fn(&mut Self, BID) -> Result<BID, RuntimeError>,
         rf: fn(&mut Self, RID) -> Result<RID, RuntimeError>,
     ) -> Result<Vec<u8>, RuntimeError> {
-        let value = parse_any(data).map_err(RuntimeError::InvalidData)?;
+        let value = decode_any(data).map_err(RuntimeError::InvalidData)?;
         let transformed = self.visit(value, bf, rf)?;
 
         let mut encoder = Encoder::with_type(Vec::with_capacity(data.len() + 512));
-        write_any(None, &transformed, &mut encoder);
+        encode_any(None, &transformed, &mut encoder);
         Ok(encoder.into())
     }
 
@@ -487,7 +487,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         rf: fn(&mut Self, RID) -> Result<RID, RuntimeError>,
     ) -> Result<Value, RuntimeError> {
         match v {
-            // basic types
+            // primitive types
             Value::Unit
             | Value::Bool(_)
             | Value::I8(_)
@@ -501,7 +501,12 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
             | Value::U64(_)
             | Value::U128(_)
             | Value::String(_) => Ok(v),
-            // rust types
+            // struct & enum
+            Value::Struct(fields) => Ok(Value::Struct(self.visit_fields(fields, bf, rf)?)),
+            Value::Enum(index, fields) => {
+                Ok(Value::Enum(index, self.visit_fields(fields, bf, rf)?))
+            }
+            // composite types
             Value::Option(x) => match *x {
                 Some(value) => Ok(Value::Option(Box::new(Some(self.visit(value, bf, rf)?)))),
                 None => Ok(Value::Option(Box::new(None))),
@@ -509,10 +514,10 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
             Value::Box(value) => Ok(Value::Box(Box::new(self.visit(*value, bf, rf)?))),
             Value::Array(ty, values) => Ok(Value::Array(ty, self.visit_vec(values, bf, rf)?)),
             Value::Tuple(values) => Ok(Value::Tuple(self.visit_vec(values, bf, rf)?)),
-            Value::Struct(fields) => Ok(Value::Struct(self.visit_fields(fields, bf, rf)?)),
-            Value::Enum(index, fields) => {
-                Ok(Value::Enum(index, self.visit_fields(fields, bf, rf)?))
-            }
+            Value::Result(x) => match *x {
+                Ok(value) => Ok(Value::Result(Box::new(Ok(self.visit(value, bf, rf)?)))),
+                Err(value) => Ok(Value::Result(Box::new(Err(self.visit(value, bf, rf)?)))),
+            },
             // collections
             Value::Vec(ty, values) => Ok(Value::Vec(ty, self.visit_vec(values, bf, rf)?)),
             Value::TreeSet(ty, values) => Ok(Value::TreeSet(ty, self.visit_vec(values, bf, rf)?)),

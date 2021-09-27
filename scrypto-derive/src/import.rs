@@ -138,6 +138,7 @@ fn get_native_type(ty: &des::Type) -> (Type, Vec<Item>) {
     let mut items = Vec::<Item>::new();
 
     let t: Type = match ty {
+        // primitive types
         des::Type::Unit => parse_quote! { () },
         des::Type::Bool => parse_quote! { bool },
         des::Type::I8 => parse_quote! { i8 },
@@ -151,18 +152,7 @@ fn get_native_type(ty: &des::Type) -> (Type, Vec<Item>) {
         des::Type::U64 => parse_quote! { u64 },
         des::Type::U128 => parse_quote! { u128 },
         des::Type::String => parse_quote! { String },
-        des::Type::Option { value } => {
-            let (new_type, new_items) = get_native_type(value);
-            items.extend(new_items);
-
-            parse_quote! { Option<#new_type> }
-        }
-        des::Type::Box { value } => {
-            let (new_type, new_items) = get_native_type(value);
-            items.extend(new_items);
-
-            parse_quote! { Box<#new_type> }
-        }
+        // struct & enum
         des::Type::Struct { name, fields } => {
             let ident = format_ident!("{}", name);
 
@@ -206,24 +196,6 @@ fn get_native_type(ty: &des::Type) -> (Type, Vec<Item>) {
             }
 
             parse_quote! { #ident }
-        }
-        des::Type::Tuple { elements } => {
-            let mut types: Vec<Type> = vec![];
-
-            for element in elements {
-                let (new_type, new_items) = get_native_type(element);
-                types.push(new_type);
-                items.extend(new_items);
-            }
-
-            parse_quote! { ( #(#types),* ) }
-        }
-        des::Type::Array { element, length } => {
-            let (new_type, new_items) = get_native_type(element);
-            items.extend(new_items);
-
-            let n = *length as usize;
-            parse_quote! { [#new_type; #n] }
         }
         des::Type::Enum { name, variants } => {
             let ident = format_ident!("{}", name);
@@ -276,6 +248,37 @@ fn get_native_type(ty: &des::Type) -> (Type, Vec<Item>) {
 
             parse_quote! { #ident }
         }
+        // composite types
+        des::Type::Option { value } => {
+            let (new_type, new_items) = get_native_type(value);
+            items.extend(new_items);
+
+            parse_quote! { Option<#new_type> }
+        }
+        des::Type::Box { value } => {
+            let (new_type, new_items) = get_native_type(value);
+            items.extend(new_items);
+
+            parse_quote! { Box<#new_type> }
+        }
+        des::Type::Tuple { elements } => {
+            let mut types: Vec<Type> = vec![];
+
+            for element in elements {
+                let (new_type, new_items) = get_native_type(element);
+                types.push(new_type);
+                items.extend(new_items);
+            }
+
+            parse_quote! { ( #(#types),* ) }
+        }
+        des::Type::Array { element, length } => {
+            let (new_type, new_items) = get_native_type(element);
+            items.extend(new_items);
+
+            let n = *length as usize;
+            parse_quote! { [#new_type; #n] }
+        }
         des::Type::Result { okay, error } => {
             let (okay_type, new_items) = get_native_type(okay);
             items.extend(new_items);
@@ -284,6 +287,7 @@ fn get_native_type(ty: &des::Type) -> (Type, Vec<Item>) {
 
             parse_quote! { Result<#okay_type, #error_type> }
         }
+        // collection
         des::Type::Vec { element } => {
             let (new_type, new_items) = get_native_type(element);
             items.extend(new_items);

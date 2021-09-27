@@ -56,7 +56,7 @@ fn create_gumball_machine(engine: &mut InMemoryRadixEngine) -> Address {
     component
 }
 
-fn cross_component_call(b: &mut Bencher) {
+fn bench_swap_transaction(b: &mut Bencher) {
     let mut engine = InMemoryRadixEngine::new();
     let account = create_account(&mut engine);
     let component = create_gumball_machine(&mut engine);

@@ -17,7 +17,7 @@ pub struct Blueprint {
     name: String,
 }
 
-impl <T: AsRef<str>> From<(Address, T)> for Blueprint {
+impl<T: AsRef<str>> From<(Address, T)> for Blueprint {
     fn from(address: (Address, T)) -> Self {
         Self {
             package: address.0,

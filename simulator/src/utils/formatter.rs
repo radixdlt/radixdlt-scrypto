@@ -1,5 +1,5 @@
 use radix_engine::ledger::*;
-use sbor::parse::*;
+use sbor::any::*;
 use sbor::*;
 use scrypto::constants::*;
 use scrypto::rust::borrow::Borrow;
@@ -17,7 +17,7 @@ pub fn format_sbor_with_ledger<L: Ledger>(
     ledger: &L,
     vaults: &mut Vec<VID>,
 ) -> Result<String, DecodeError> {
-    let value = parse_any(data)?;
+    let value = decode_any(data)?;
     format_value(&value, ledger, vaults)
 }
 
@@ -27,7 +27,7 @@ pub fn format_value<L: Ledger>(
     vaults: &mut Vec<VID>,
 ) -> Result<String, DecodeError> {
     match value {
-        // basic types
+        // primitive types
         Value::Unit => Ok(String::from("()")),
         Value::Bool(v) => Ok(v.to_string()),
         Value::I8(v) => Ok(v.to_string()),
@@ -41,6 +41,13 @@ pub fn format_value<L: Ledger>(
         Value::U64(v) => Ok(v.to_string()),
         Value::U128(v) => Ok(v.to_string()),
         Value::String(v) => Ok(v.to_string()),
+        // struct & enum
+        Value::Struct(fields) => Ok(format!("Struct {}", format_fields(fields, ledger, vaults)?)),
+        Value::Enum(index, fields) => Ok(format!(
+            "Enum::{} {}",
+            index,
+            format_fields(fields, ledger, vaults)?
+        )),
         // rust types
         Value::Option(v) => match v.borrow() {
             Some(x) => Ok(format!("Some({})", format_value(x, ledger, vaults)?)),
@@ -52,12 +59,10 @@ pub fn format_value<L: Ledger>(
         )),
         Value::Array(_, elements) => format_vec(elements.iter(), "[", "]", ledger, vaults),
         Value::Tuple(elements) => format_vec(elements.iter(), "(", ")", ledger, vaults),
-        Value::Struct(fields) => Ok(format!("Struct {}", format_fields(fields, ledger, vaults)?)),
-        Value::Enum(index, fields) => Ok(format!(
-            "Enum::{} {}",
-            index,
-            format_fields(fields, ledger, vaults)?
-        )),
+        Value::Result(v) => match v.borrow() {
+            Ok(x) => Ok(format!("Ok({})", format_value(x, ledger, vaults)?)),
+            Err(x) => Ok(format!("Err({})", format_value(x, ledger, vaults)?)),
+        },
         // collections
         Value::Vec(_, elements) => format_vec(elements.iter(), "Vec { ", " }", ledger, vaults),
         Value::TreeSet(_, elements) => {

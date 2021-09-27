@@ -21,7 +21,7 @@ pub mod type_id;
 pub use decode::{Decode, DecodeError, Decoder};
 pub use describe::Describe;
 pub use encode::{Encode, Encoder};
-pub use parse::{parse_any, write_any};
+pub use parse::{decode_any, encode_any};
 pub use type_id::TypeId;
 
 use crate::rust::vec::Vec;
