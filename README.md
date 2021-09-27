@@ -20,27 +20,34 @@ Language for building DeFi apps on Radix.
 ## Installation
 
 1. Install Rust
-```
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-```
+   * Windows:
+       * Download and install [`rustup-init.exe`](https://win.rustup.rs/x86_64)
+       * Install "Desktop development with C++" with [Build Tools for Visual Studio 2019](https://visualstudio.microsoft.com/thank-you-downloading-visual-studio/?sku=BuildTools&rel=16)
+   * MacOs and Linux:
+       ```
+       curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+       ```
 2. Enable `cargo` in the current shell:
-```
-source $HOME/.cargo/env
-```
+   * Windows:
+       * Start a new PowerShell
+   * MacOs and Linux:
+       ```
+       source $HOME/.cargo/env
+       ```
 3. Add WebAssembly target
-```
-rustup target add wasm32-unknown-unknown
-```
-4. Install Radix Engine simulator
-```
-git clone git@github.com:radixdlt/radixdlt-scrypto.git
-cd radixdlt-scrypto
-cargo install --path ./simulator
-```
+    ```
+    rustup target add wasm32-unknown-unknown
+    ```
+4. Install simulator
+    ```
+    git clone git@github.com:radixdlt/radixdlt-scrypto.git
+    cd radixdlt-scrypto
+    cargo install --path ./simulator
+    ```
 5. (Optional) Open Scrypto reference for later use
-```
-./doc.sh
-```
+    ```
+    ./doc.sh
+    ```
 
 **Note:** For preview release, do not delete or move the repository after installation. It will be used when resolving dependencies of Scrypto packages.
 
