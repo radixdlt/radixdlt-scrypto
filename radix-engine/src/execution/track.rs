@@ -14,9 +14,9 @@ use crate::model::*;
 /// It acts as the facade of ledger state and keeps track of all temporary state updates,
 /// until the `commit()` method is called.
 ///
-/// Typically, a runtime involves a series of processes.
+/// Typically, a track involves a series of processes.
 ///
-pub struct Runtime<'le, L: Ledger> {
+pub struct Track<'le, L: Ledger> {
     tx_hash: H256,
     ledger: &'le mut L,
     alloc: AddressAllocator,
@@ -35,7 +35,7 @@ pub struct Runtime<'le, L: Ledger> {
     cache: LruCache<Address, Module>, // TODO: move to ledger level
 }
 
-impl<'le, L: Ledger> Runtime<'le, L> {
+impl<'le, L: Ledger> Track<'le, L> {
     pub fn new(tx_hash: H256, ledger: &'le mut L) -> Self {
         Self {
             tx_hash,

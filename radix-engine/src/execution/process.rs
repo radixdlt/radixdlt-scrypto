@@ -57,7 +57,7 @@ macro_rules! warn {
 pub struct Process<'rt, 'le, L: Ledger> {
     depth: usize,
     trace: bool,
-    runtime: &'rt mut Runtime<'le, L>,
+    track: &'rt mut Track<'le, L>,
     buckets: HashMap<BID, Bucket>,
     references: HashMap<RID, BucketRef>,
     locked_buckets: HashMap<BID, BucketRef>,
@@ -84,11 +84,11 @@ pub struct Invocation {
 
 impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
     /// Create a new process which is yet started.
-    pub fn new(depth: usize, trace: bool, runtime: &'rt mut Runtime<'le, L>) -> Self {
+    pub fn new(depth: usize, trace: bool, track: &'rt mut Track<'le, L>) -> Self {
         Self {
             depth,
             trace,
-            runtime,
+            track,
             buckets: HashMap::new(),
             references: HashMap::new(),
             locked_buckets: HashMap::new(),
@@ -100,14 +100,14 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
 
     /// Publishes a package.
     pub fn publish(&mut self, code: &[u8]) -> Result<Address, RuntimeError> {
-        let address = self.runtime.new_package_address();
+        let address = self.track.new_package_address();
         self.publish_at(code, address)?;
         Ok(address)
     }
 
     /// Publishes a package at a specific address.
     pub fn publish_at(&mut self, code: &[u8], address: Address) -> Result<(), RuntimeError> {
-        if self.runtime.get_package(address).is_some() {
+        if self.track.get_package(address).is_some() {
             return Err(RuntimeError::PackageAlreadyExists(address));
         }
         validate_module(code)?;
@@ -118,19 +118,19 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
             address,
             code.len()
         );
-        self.runtime
+        self.track
             .put_package(address, Package::new(code.to_owned()));
         Ok(())
     }
 
     /// Reserve a bucket id.
     pub fn reserve_bucket_id(&mut self) -> BID {
-        self.runtime.new_bucket_id()
+        self.track.new_bucket_id()
     }
 
     /// Create a bucket of resources.
     pub fn create_bucket(&mut self, amount: Amount, resource: Address) -> BID {
-        let bid = self.runtime.new_bucket_id();
+        let bid = self.track.new_bucket_id();
         self.buckets.insert(bid, Bucket::new(amount, resource));
         bid
     }
@@ -221,7 +221,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
 
         // Load the code
         let (module, memory) = self
-            .runtime
+            .track
             .load_module(invocation.package)
             .ok_or(RuntimeError::PackageNotFound(invocation.package))?;
         let vm = Interpreter {
@@ -285,7 +285,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         args: Vec<Vec<u8>>,
     ) -> Result<Invocation, RuntimeError> {
         let com = self
-            .runtime
+            .track
             .get_component(component)
             .ok_or(RuntimeError::ComponentNotFound(component))?
             .clone();
@@ -316,7 +316,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
             self.process_data(arg, Self::move_buckets, Self::move_references)?;
         }
         let (buckets_out, references_out) = self.take_moving_buckets_and_refs();
-        let mut process = Process::new(self.depth + 1, self.trace, self.runtime);
+        let mut process = Process::new(self.depth + 1, self.trace, self.track);
         process.put_buckets_and_refs(buckets_out, references_out);
 
         // run the function and finalize
@@ -770,9 +770,9 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         &mut self,
         input: CreateComponentInput,
     ) -> Result<CreateComponentOutput, RuntimeError> {
-        let address = self.runtime.new_component_address();
+        let address = self.track.new_component_address();
 
-        if self.runtime.get_component(address).is_some() {
+        if self.track.get_component(address).is_some() {
             return Err(RuntimeError::ComponentAlreadyExists(address));
         }
 
@@ -784,7 +784,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         );
 
         let component = Component::new((self.package()?, input.name), new_state);
-        self.runtime.put_component(address, component);
+        self.track.put_component(address, component);
 
         Ok(CreateComponentOutput { component: address })
     }
@@ -796,7 +796,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         let package = self.package()?;
 
         let component = self
-            .runtime
+            .track
             .get_component(input.component)
             .ok_or(RuntimeError::ComponentNotFound(input.component))?;
         if package != component.blueprint().0 {
@@ -815,7 +815,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         let package = self.package()?;
 
         let component = self
-            .runtime
+            .track
             .get_component(input.component)
             .ok_or(RuntimeError::ComponentNotFound(input.component))?;
         if package != component.blueprint().0 {
@@ -840,7 +840,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         debug!(self, "Transformed state: {:?}", new_state);
 
         let component = self
-            .runtime
+            .track
             .get_component_mut(input.component)
             .ok_or(RuntimeError::ComponentNotFound(input.component))?;
         if package != component.blueprint().0 {
@@ -856,9 +856,9 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         &mut self,
         _input: CreateStorageInput,
     ) -> Result<CreateStorageOutput, RuntimeError> {
-        let sid = self.runtime.new_sid();
+        let sid = self.track.new_sid();
 
-        self.runtime.put_storage(sid, Storage::new(self.package()?));
+        self.track.put_storage(sid, Storage::new(self.package()?));
 
         Ok(CreateStorageOutput { storage: sid })
     }
@@ -870,7 +870,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         let package = self.package()?;
 
         let storage = self
-            .runtime
+            .track
             .get_storage(input.storage)
             .ok_or(RuntimeError::StorageNotFound(input.storage))?;
         if package != storage.auth() {
@@ -896,7 +896,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         debug!(self, "Transformed value: {:?}", new_value);
 
         let storage = self
-            .runtime
+            .track
             .get_storage_mut(input.storage)
             .ok_or(RuntimeError::StorageNotFound(input.storage))?;
         if package != storage.auth() {
@@ -915,7 +915,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         let auth = match input.minter {
             Address::Package(_) => input.minter,
             Address::Component(_) => {
-                self.runtime
+                self.track
                     .get_component(input.minter)
                     .ok_or(RuntimeError::ComponentNotFound(input.minter))?
                     .blueprint()
@@ -932,13 +932,13 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
             auth: Some(auth),
         };
 
-        let address = self.runtime.new_resource_address();
-        if self.runtime.get_resource_def(address).is_some() {
+        let address = self.track.new_resource_address();
+        if self.track.get_resource_def(address).is_some() {
             return Err(RuntimeError::ResourceAlreadyExists(address));
         } else {
             debug!(self, "New resource: {:?}", address);
 
-            self.runtime.put_resource_def(address, resource);
+            self.track.put_resource_def(address, resource);
         }
 
         Ok(CreateResourceMutableOutput { resource: address })
@@ -955,18 +955,18 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
             auth: None,
         };
 
-        let address = self.runtime.new_resource_address();
+        let address = self.track.new_resource_address();
 
-        if self.runtime.get_resource_def(address).is_some() {
+        if self.track.get_resource_def(address).is_some() {
             return Err(RuntimeError::ResourceAlreadyExists(address));
         } else {
             debug!(self, "New resource: {:?}", address);
 
-            self.runtime.put_resource_def(address, resource);
+            self.track.put_resource_def(address, resource);
         }
 
         let bucket = Bucket::new(input.supply, address);
-        let bid = self.runtime.new_bucket_id();
+        let bid = self.track.new_bucket_id();
         self.buckets.insert(bid, bucket);
 
         Ok(CreateResourceFixedOutput { bucket: bid })
@@ -977,7 +977,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         input: GetResourceInfoInput,
     ) -> Result<GetResourceInfoOutput, RuntimeError> {
         let resource = self
-            .runtime
+            .track
             .get_resource_def(input.resource)
             .ok_or(RuntimeError::ResourceNotFound(input.resource))?
             .clone();
@@ -995,7 +995,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
     ) -> Result<MintResourceOutput, RuntimeError> {
         let package = self.package()?;
         let resource = self
-            .runtime
+            .track
             .get_resource_def_mut(input.resource)
             .ok_or(RuntimeError::ResourceNotFound(input.resource))?;
         match resource.auth {
@@ -1011,7 +1011,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         resource.supply += input.amount;
 
         let bucket = Bucket::new(input.amount, input.resource);
-        let bid = self.runtime.new_bucket_id();
+        let bid = self.track.new_bucket_id();
         self.buckets.insert(bid, bucket);
 
         Ok(MintResourceOutput { bucket: bid })
@@ -1024,8 +1024,8 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         let package = self.package()?;
 
         let new_vault = Vault::new(Bucket::new(Amount::zero(), input.resource), package);
-        let new_vid = self.runtime.new_vault_id();
-        self.runtime.put_vault(new_vid, new_vault);
+        let new_vid = self.track.new_vault_id();
+        self.track.put_vault(new_vid, new_vault);
 
         Ok(CreateEmptyVaultOutput { vault: new_vid })
     }
@@ -1041,7 +1041,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
             .remove(&input.bucket)
             .ok_or(RuntimeError::BucketNotFound(input.bucket))?;
 
-        self.runtime
+        self.track
             .get_vault_mut(input.vault)
             .ok_or(RuntimeError::VaultNotFound(input.vault))?
             .put(other, package)
@@ -1057,13 +1057,13 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         let package = self.package()?;
 
         let new_bucket = self
-            .runtime
+            .track
             .get_vault_mut(input.vault)
             .ok_or(RuntimeError::VaultNotFound(input.vault))?
             .take(input.amount, package)
             .map_err(RuntimeError::AccountingError)?;
 
-        let new_bid = self.runtime.new_bucket_id();
+        let new_bid = self.track.new_bucket_id();
         self.buckets.insert(new_bid, new_bucket);
 
         Ok(TakeFromVaultOutput { bucket: new_bid })
@@ -1074,7 +1074,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         input: GetVaultAmountInput,
     ) -> Result<GetVaultAmountOutput, RuntimeError> {
         let amount = self
-            .runtime
+            .track
             .get_vault(input.vault)
             .map(|b| b.amount())
             .ok_or(RuntimeError::VaultNotFound(input.vault))?;
@@ -1087,7 +1087,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         input: GetVaultResourceInput,
     ) -> Result<GetVaultResourceOutput, RuntimeError> {
         let resource = self
-            .runtime
+            .track
             .get_vault(input.vault)
             .map(|b| b.resource())
             .ok_or(RuntimeError::VaultNotFound(input.vault))?;
@@ -1100,7 +1100,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         input: CreateEmptyBucketInput,
     ) -> Result<CreateEmptyBucketOutput, RuntimeError> {
         let new_bucket = Bucket::new(Amount::zero(), input.resource);
-        let new_bid = self.runtime.new_bucket_id();
+        let new_bid = self.track.new_bucket_id();
         self.buckets.insert(new_bid, new_bucket);
 
         Ok(CreateEmptyBucketOutput { bucket: new_bid })
@@ -1134,7 +1134,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
             .ok_or(RuntimeError::BucketNotFound(input.bucket))?
             .take(input.amount)
             .map_err(RuntimeError::AccountingError)?;
-        let new_bid = self.runtime.new_bucket_id();
+        let new_bid = self.track.new_bucket_id();
         self.buckets.insert(new_bid, new_bucket);
 
         Ok(TakeFromBucketOutput { bucket: new_bid })
@@ -1175,7 +1175,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         input: CreateReferenceInput,
     ) -> Result<CreateReferenceOutput, RuntimeError> {
         let bid = input.bucket;
-        let rid = self.runtime.new_rid();
+        let rid = self.track.new_rid();
         debug!(self, "Borrowing: bid =  {:?}, rid = {:?}", bid, rid);
 
         match self.locked_buckets.get_mut(&bid) {
@@ -1261,7 +1261,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
             _ => Err(RuntimeError::InvalidLogLevel),
         };
 
-        self.runtime.add_log(level?, input.message);
+        self.track.add_log(level?, input.message);
 
         Ok(EmitLogOutput {})
     }
@@ -1290,7 +1290,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         _input: GetTransactionHashInput,
     ) -> Result<GetTransactionHashOutput, RuntimeError> {
         Ok(GetTransactionHashOutput {
-            tx_hash: self.runtime.tx_hash(),
+            tx_hash: self.track.tx_hash(),
         })
     }
 }

@@ -6,8 +6,8 @@ use radix_engine::engine::*;
 use scrypto::prelude::*;
 
 fn create_account(engine: &mut InMemoryRadixEngine) -> Address {
-    let mut runtime = engine.start_transaction();
-    let mut proc = runtime.start_process(false);
+    let mut track = engine.start_transaction();
+    let mut proc = track.start_process(false);
 
     // Publish Account blueprint
     proc.publish_at(
@@ -32,14 +32,14 @@ fn create_account(engine: &mut InMemoryRadixEngine) -> Address {
 
     // Commit
     proc.finalize().unwrap();
-    runtime.commit();
+    track.commit();
 
     account
 }
 
 fn create_gumball_machine(engine: &mut InMemoryRadixEngine) -> Address {
-    let mut runtime = engine.start_transaction();
-    let mut proc = runtime.start_process(false);
+    let mut track = engine.start_transaction();
+    let mut proc = track.start_process(false);
 
     let package = proc
         .publish(include_bytes!("../../assets/gumball-machine.wasm"))
@@ -51,7 +51,7 @@ fn create_gumball_machine(engine: &mut InMemoryRadixEngine) -> Address {
         .unwrap();
 
     proc.finalize().unwrap();
-    runtime.commit();
+    track.commit();
 
     component
 }
@@ -62,8 +62,8 @@ fn bench_swap_transaction(b: &mut Bencher) {
     let component = create_gumball_machine(&mut engine);
 
     b.iter(|| {
-        let mut runtime = engine.start_transaction();
-        let mut proc = runtime.start_process(false);
+        let mut track = engine.start_transaction();
+        let mut proc = track.start_process(false);
         let xrd: scrypto::resource::Bucket = proc
             .call_method(
                 account,
@@ -78,9 +78,9 @@ fn bench_swap_transaction(b: &mut Bencher) {
             .unwrap();
         proc.call_method(account, "deposit", args!(gum)).unwrap();
         proc.finalize().unwrap();
-        //runtime.commit();
+        //track.commit();
     });
 }
 
-benchmark_group!(radix_engine, cross_component_call);
+benchmark_group!(radix_engine, bench_swap_transaction);
 benchmark_main!(radix_engine);

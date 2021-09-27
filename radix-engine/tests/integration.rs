@@ -4,8 +4,8 @@ use scrypto::prelude::*;
 #[test]
 fn test_component() {
     let mut engine = InMemoryRadixEngine::new();
-    let mut runtime = engine.start_transaction();
-    let mut proc = runtime.start_process(true);
+    let mut track = engine.start_transaction();
+    let mut proc = track.start_process(true);
     let pkg = proc.publish(package_code!("./everything")).unwrap();
 
     let component: Address = scrypto_decode(
@@ -29,8 +29,8 @@ fn test_component() {
 #[test]
 fn test_storage() {
     let mut engine = InMemoryRadixEngine::new();
-    let mut runtime = engine.start_transaction();
-    let mut proc = runtime.start_process(true);
+    let mut track = engine.start_transaction();
+    let mut proc = track.start_process(true);
     let pkg = proc.publish(package_code!("./everything")).unwrap();
 
     let result: Option<String> = scrypto_decode(
@@ -45,8 +45,8 @@ fn test_storage() {
 #[test]
 fn test_resource() {
     let mut engine = InMemoryRadixEngine::new();
-    let mut runtime = engine.start_transaction();
-    let mut proc = runtime.start_process(true);
+    let mut track = engine.start_transaction();
+    let mut proc = track.start_process(true);
     let pkg = proc.publish(package_code!("./everything")).unwrap();
 
     proc.call_function((pkg, "ResourceTest".to_owned()), "create_mutable", args!())
@@ -60,8 +60,8 @@ fn test_resource() {
 #[test]
 fn test_bucket() {
     let mut engine = InMemoryRadixEngine::new();
-    let mut runtime = engine.start_transaction();
-    let mut proc = runtime.start_process(true);
+    let mut track = engine.start_transaction();
+    let mut proc = track.start_process(true);
     let pkg = proc.publish(package_code!("./everything")).unwrap();
 
     proc.call_function((pkg, "BucketTest".to_owned()), "combine", args!())
@@ -77,8 +77,8 @@ fn test_bucket() {
 #[test]
 fn test_move_resource() {
     let mut engine = InMemoryRadixEngine::new();
-    let mut runtime = engine.start_transaction();
-    let mut proc = runtime.start_process(true);
+    let mut track = engine.start_transaction();
+    let mut proc = track.start_process(true);
     let pkg = proc.publish(package_code!("./everything")).unwrap();
 
     proc.call_function((pkg, "MoveTest".to_owned()), "move_bucket", args!())

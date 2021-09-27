@@ -14,8 +14,8 @@ pub fn execute<T: Ledger>(
     trace: bool,
 ) -> TransactionReceipt {
     let now = Instant::now();
-    let mut runtime = Runtime::new(sha256(Uuid::new_v4().to_string()), ledger);
-    let mut proc = runtime.start_process(trace);
+    let mut track = Track::new(sha256(Uuid::new_v4().to_string()), ledger);
+    let mut proc = track.start_process(trace);
 
     let mut reserved_bids = vec![];
     let mut results = vec![];
@@ -75,7 +75,7 @@ pub fn execute<T: Ledger>(
 
     // commit state updates
     if success {
-        runtime.commit();
+        track.commit();
     }
 
     TransactionReceipt {
@@ -83,7 +83,7 @@ pub fn execute<T: Ledger>(
         success,
         execution_time: now.elapsed().as_millis(),
         results,
-        logs: runtime.logs().clone(),
-        new_addresses: runtime.new_addresses().to_vec(),
+        logs: track.logs().clone(),
+        new_addresses: track.new_addresses().to_vec(),
     }
 }

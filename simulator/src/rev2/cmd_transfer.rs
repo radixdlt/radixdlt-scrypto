@@ -67,8 +67,8 @@ pub fn handle_transfer(matches: &ArgMatches) -> Result<(), Error> {
             let account: Address = a.as_str().parse().map_err(Error::InvalidAddress)?;
 
             let mut ledger = FileBasedLedger::new(get_data_dir()?);
-            let mut runtime = Runtime::new(sha256(Uuid::new_v4().to_string()), &mut ledger);
-            let mut process = runtime.start_process(trace);
+            let mut track = Track::new(sha256(Uuid::new_v4().to_string()), &mut ledger);
+            let mut process = track.start_process(trace);
             let bid = process.reserve_bucket_id();
             process
                 .call_method(account, "withdraw", args!(amount, resource))
@@ -84,7 +84,7 @@ pub fn handle_transfer(matches: &ArgMatches) -> Result<(), Error> {
                 )
                 .map_err(Error::TxnExecutionError)?;
             process.finalize().map_err(Error::TxnExecutionError)?;
-            runtime.commit();
+            track.commit();
 
             println!("Resource transferred!");
             Ok(())

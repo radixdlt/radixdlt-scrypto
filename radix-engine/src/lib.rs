@@ -7,7 +7,7 @@ compile_error!("Feature `std` and `alloc` can't be enabled at the same time.");
 
 /// Radix Engine implementations.
 pub mod engine;
-/// Transaction execution and runtime.
+/// Transaction execution and track.
 pub mod execution;
 /// Ledger abstraction.
 pub mod ledger;

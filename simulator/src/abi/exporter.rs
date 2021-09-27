@@ -11,10 +11,10 @@ pub fn export_abi<T: Ledger>(
     trace: bool,
 ) -> Result<abi::Blueprint, RuntimeError> {
     let mut engine = InMemoryRadixEngine::new();
-    let mut runtime = engine.start_transaction();
+    let mut track = engine.start_transaction();
 
     // Load package code from file system
-    runtime.put_package(
+    track.put_package(
         blueprint.0,
         ledger
             .get_package(blueprint.0)
@@ -22,7 +22,7 @@ pub fn export_abi<T: Ledger>(
     );
 
     // Start a process and run abi generator
-    let mut proc = runtime.start_process(trace);
+    let mut proc = track.start_process(trace);
     let output: (Vec<abi::Function>, Vec<abi::Method>) =
         proc.call_abi(blueprint.clone()).and_then(decode_return)?;
 

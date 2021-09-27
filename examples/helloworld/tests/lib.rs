@@ -5,8 +5,8 @@ use scrypto::prelude::*;
 fn test_hello() {
     // Create an in-memory Radix Engine.
     let mut engine = InMemoryRadixEngine::new();
-    let mut runtime = engine.start_transaction();
-    let mut proc = runtime.start_process(true);
+    let mut track = engine.start_transaction();
+    let mut proc = track.start_process(true);
 
     // Publish this package.
     let package = proc.publish(package_code!()).unwrap();
