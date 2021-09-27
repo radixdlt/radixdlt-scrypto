@@ -53,7 +53,7 @@ macro_rules! warn {
     };
 }
 
-/// A process manages resource movements and code execution.
+/// A process manages temporary resources and triggers code execution on demand.
 pub struct Process<'rt, 'le, L: Ledger> {
     depth: usize,
     trace: bool,
@@ -83,7 +83,7 @@ pub struct Invocation {
 }
 
 impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
-    /// Create a new process which is yet started.
+    /// Create a new process, which is not started.
     pub fn new(depth: usize, trace: bool, track: &'rt mut Track<'le, L>) -> Self {
         Self {
             depth,
@@ -105,7 +105,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         Ok(address)
     }
 
-    /// Publishes a package at a specific address.
+    /// Publishes a package to a specific address.
     pub fn publish_at(&mut self, code: &[u8], address: Address) -> Result<(), RuntimeError> {
         if self.track.get_package(address).is_some() {
             return Err(RuntimeError::PackageAlreadyExists(address));
@@ -123,24 +123,115 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         Ok(())
     }
 
-    /// Reserve a bucket id.
+    /// Create resource with mutable supply.
+    pub fn create_resource_mutable(
+        &mut self,
+        metadata: HashMap<String, String>,
+        minter: Address,
+    ) -> Result<Address, RuntimeError> {
+        let auth = match minter {
+            Address::Package(_) => minter,
+            Address::Component(_) => {
+                self.track
+                    .get_component(minter)
+                    .ok_or(RuntimeError::ComponentNotFound(minter))?
+                    .blueprint()
+                    .0
+            }
+            _ => {
+                return Err(RuntimeError::InvalidAddressType);
+            }
+        };
+        let resource_def = ResourceDef {
+            metadata: metadata,
+            minter: Some(minter),
+            supply: Amount::zero(),
+            auth: Some(auth),
+        };
+
+        let address = self.track.new_resource_address();
+        if self.track.get_resource_def(address).is_some() {
+            return Err(RuntimeError::ResourceAlreadyExists(address));
+        } else {
+            debug!(self, "New resource: {:?}", address);
+
+            self.track.put_resource_def(address, resource_def);
+        }
+
+        Ok(address)
+    }
+
+    /// Create resource with fixed supply.
+    pub fn create_resource_fixed(
+        &mut self,
+        metadata: HashMap<String, String>,
+        supply: Amount,
+    ) -> Result<BID, RuntimeError> {
+        let resource_def = ResourceDef {
+            metadata: metadata,
+            minter: None,
+            supply: supply,
+            auth: None,
+        };
+
+        let address = self.track.new_resource_address();
+
+        if self.track.get_resource_def(address).is_some() {
+            return Err(RuntimeError::ResourceAlreadyExists(address));
+        } else {
+            debug!(self, "New resource: {:?}", address);
+
+            self.track.put_resource_def(address, resource_def);
+        }
+
+        let bucket = Bucket::new(supply, address);
+        let bid = self.track.new_bucket_id();
+        self.buckets.insert(bid, bucket);
+
+        Ok(bid)
+    }
+
+    /// Mints resources.
+    pub fn mint_resource(
+        &mut self,
+        amount: Amount,
+        resource: Address,
+    ) -> Result<BID, RuntimeError> {
+        let package = self.package()?;
+        let resource_def = self
+            .track
+            .get_resource_def_mut(resource)
+            .ok_or(RuntimeError::ResourceNotFound(resource))?;
+        match resource_def.auth {
+            Some(pkg) => {
+                if package != pkg {
+                    return Err(RuntimeError::UnauthorizedToMint);
+                }
+            }
+            None => {
+                return Err(RuntimeError::UnableToMintFixedResource);
+            }
+        }
+        resource_def.supply += amount;
+
+        let bucket = Bucket::new(amount, resource);
+        let bid = self.track.new_bucket_id();
+        self.buckets.insert(bid, bucket);
+
+        Ok(bid)
+    }
+
+    /// Reserves a bucket id, especially when preparing buckets for function/method invocation.
     pub fn reserve_bucket_id(&mut self) -> BID {
         self.track.new_bucket_id()
     }
 
-    /// Create a bucket of resources.
-    pub fn create_bucket(&mut self, amount: Amount, resource: Address) -> BID {
-        let bid = self.track.new_bucket_id();
-        self.buckets.insert(bid, Bucket::new(amount, resource));
-        bid
-    }
-
-    /// Put bucket into this process.
+    /// Puts a bucket into this process.
     pub fn put_bucket(&mut self, bid: BID, bucket: Bucket) {
         self.buckets.insert(bid, bucket);
     }
 
-    /// Put buckets and references into this process.
+    /// Puts buckets and references into this process.
     pub fn put_buckets_and_refs(
         &mut self,
         buckets: HashMap<BID, Bucket>,
@@ -150,7 +241,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         self.references.extend(references);
     }
 
-    /// Take all **moving** buckets and references from this process.
+    /// Takes all **moving** buckets and references from this process.
     pub fn take_moving_buckets_and_refs(
         &mut self,
     ) -> (HashMap<BID, Bucket>, HashMap<RID, BucketRef>) {
@@ -159,12 +250,12 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         (buckets, references)
     }
 
-    /// Return owned buckets
+    /// Returns the IDs of all owned buckets.
     pub fn owned_buckets(&mut self) -> Vec<BID> {
         self.buckets.keys().copied().collect()
     }
 
-    /// Withdraw specified resources into a reserved bucket.
+    /// Moves resources into a reserved bucket.
     pub fn move_to_bucket(
         &mut self,
         amount: Amount,
@@ -200,7 +291,9 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         }
 
         if needed.is_zero() {
-            self.create_bucket(remainder, resource);
+            let rem_bid = self.track.new_bucket_id();
+            let rem_bucket = Bucket::new(remainder, resource);
+            self.put_bucket(rem_bid, rem_bucket);
             self.put_bucket(bid, Bucket::new(amount, resource));
             Ok(())
         } else {
@@ -210,7 +303,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         }
     }
 
-    /// Run the specified export with this process.
+    /// Runs the given export within this process.
     pub fn run(&mut self, invocation: Invocation) -> Result<Vec<u8>, RuntimeError> {
         #[cfg(not(feature = "alloc"))]
         let now = std::time::Instant::now();
@@ -262,7 +355,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         Ok(output)
     }
 
-    /// Prepare call function
+    /// Prepares a function call.
     pub fn prepare_call_function(
         &mut self,
         blueprint: (Address, String),
@@ -277,7 +370,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         })
     }
 
-    /// Prepare call method
+    /// Prepares a method call.
     pub fn prepare_call_method(
         &mut self,
         component: Address,
@@ -296,7 +389,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         self.prepare_call_function(com.blueprint().clone(), method, self_args)
     }
 
-    /// Prepare call ABI
+    /// Prepares an ABI call.
     pub fn prepare_call_abi(
         &mut self,
         blueprint: (Address, String),
@@ -309,7 +402,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         })
     }
 
-    /// Call a function/method.
+    /// Calls a function/method.
     pub fn call(&mut self, invocation: Invocation) -> Result<Vec<u8>, RuntimeError> {
         // move resources
         for arg in &invocation.args {
@@ -344,7 +437,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         Ok(result)
     }
 
-    /// Call a function
+    /// Calls a function.
     pub fn call_function(
         &mut self,
         blueprint: (Address, String),
@@ -358,7 +451,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         result
     }
 
-    /// Call a method
+    /// Calls a method.
     pub fn call_method(
         &mut self,
         component: Address,
@@ -372,7 +465,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         result
     }
 
-    /// Call ABI
+    /// Calls the ABI generator of a blueprint.
     pub fn call_abi(&mut self, blueprint: (Address, String)) -> Result<Vec<u8>, RuntimeError> {
         debug!(self, "Call abi started");
         let invocation = self.prepare_call_abi(blueprint)?;
@@ -381,7 +474,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         result
     }
 
-    /// Finalize this process.
+    /// Finalizes this process by checking resource leaks.
     pub fn finalize(&self) -> Result<(), RuntimeError> {
         debug!(self, "Finalization started");
         let mut success = true;
@@ -409,7 +502,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         }
     }
 
-    /// Log a message to console.
+    /// Logs a message to the console.
     #[allow(unused_variables)]
     pub fn log(&self, level: Level, msg: String) {
         let (l, m) = match level {
@@ -912,64 +1005,18 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         &mut self,
         input: CreateResourceMutableInput,
     ) -> Result<CreateResourceMutableOutput, RuntimeError> {
-        let auth = match input.minter {
-            Address::Package(_) => input.minter,
-            Address::Component(_) => {
-                self.track
-                    .get_component(input.minter)
-                    .ok_or(RuntimeError::ComponentNotFound(input.minter))?
-                    .blueprint()
-                    .0
-            }
-            _ => {
-                return Err(RuntimeError::InvalidAddressType);
-            }
-        };
-        let resource = ResourceDef {
-            metadata: input.metadata,
-            minter: Some(input.minter),
-            supply: Amount::zero(),
-            auth: Some(auth),
-        };
-
-        let address = self.track.new_resource_address();
-        if self.track.get_resource_def(address).is_some() {
-            return Err(RuntimeError::ResourceAlreadyExists(address));
-        } else {
-            debug!(self, "New resource: {:?}", address);
-
-            self.track.put_resource_def(address, resource);
-        }
-
-        Ok(CreateResourceMutableOutput { resource: address })
+        Ok(CreateResourceMutableOutput {
+            resource: self.create_resource_mutable(input.metadata, input.minter)?,
+        })
     }
 
     fn handle_create_resource_fixed(
         &mut self,
         input: CreateResourceFixedInput,
     ) -> Result<CreateResourceFixedOutput, RuntimeError> {
-        let resource = ResourceDef {
-            metadata: input.metadata,
-            minter: None,
-            supply: input.supply,
-            auth: None,
-        };
-
-        let address = self.track.new_resource_address();
-
-        if self.track.get_resource_def(address).is_some() {
-            return Err(RuntimeError::ResourceAlreadyExists(address));
-        } else {
-            debug!(self, "New resource: {:?}", address);
-
-            self.track.put_resource_def(address, resource);
-        }
-
-        let bucket = Bucket::new(input.supply, address);
-        let bid = self.track.new_bucket_id();
-        self.buckets.insert(bid, bucket);
-
-        Ok(CreateResourceFixedOutput { bucket: bid })
+        Ok(CreateResourceFixedOutput {
+            bucket: self.create_resource_fixed(input.metadata, input.supply)?,
+        })
     }
 
     fn handle_get_resource_info(
@@ -993,28 +1040,9 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         &mut self,
         input: MintResourceInput,
     ) -> Result<MintResourceOutput, RuntimeError> {
-        let package = self.package()?;
-        let resource = self
-            .track
-            .get_resource_def_mut(input.resource)
-            .ok_or(RuntimeError::ResourceNotFound(input.resource))?;
-        match resource.auth {
-            Some(pkg) => {
-                if package != pkg {
-                    return Err(RuntimeError::UnauthorizedToMint);
-                }
-            }
-            None => {
-                return Err(RuntimeError::UnableToMintFixedResource);
-            }
-        }
-        resource.supply += input.amount;
-
-        let bucket = Bucket::new(input.amount, input.resource);
-        let bid = self.track.new_bucket_id();
-        self.buckets.insert(bid, bucket);
-
-        Ok(MintResourceOutput { bucket: bid })
+        Ok(MintResourceOutput {
+            bucket: self.mint_resource(input.amount, input.resource)?,
+        })
     }
 
     fn handle_create_vault(

@@ -6,8 +6,8 @@ use scrypto::types::Address;
 /// A key-value map where keys and values are lazily loaded on-demand.
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct LazyMap {
-    pub map: HashMap<Vec<u8>, Vec<u8>>,
-    pub auth: Address,
+    map: HashMap<Vec<u8>, Vec<u8>>,
+    auth: Address,
 }
 
 impl LazyMap {
@@ -16,6 +16,10 @@ impl LazyMap {
             map: HashMap::new(),
             auth,
         }
+    }
+
+    pub fn map(&self) -> &HashMap<Vec<u8>, Vec<u8>> {
+        &self.map
     }
 
     pub fn auth(&self) -> Address {

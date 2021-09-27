@@ -14,7 +14,7 @@ use crate::model::*;
 /// It acts as the facade of ledger state and keeps track of all temporary state updates,
 /// until the `commit()` method is called.
 ///
-/// Typically, a track involves a series of processes.
+/// Typically, a track is shared by all the processes created within a transaction.
 ///
 pub struct Track<'le, L: Ledger> {
     tx_hash: H256,

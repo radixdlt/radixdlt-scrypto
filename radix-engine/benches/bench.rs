@@ -11,25 +11,24 @@ fn create_account(engine: &mut InMemoryRadixEngine) -> Address {
     let mut proc = track.start_process(false);
 
     // Publish Account blueprint
-    proc.publish_at(
-        include_bytes!("../../assets/account.wasm"),
-        Address::Package([0u8; 26]),
-    )
-    .unwrap();
+    let acc_bp = Address::Package([0u8; 26]);
+    proc.publish_at(include_bytes!("../../assets/account.wasm"), acc_bp)
+        .unwrap();
 
     // Create account
     let account: Address = proc
-        .call_function(
-            (Address::Package([0u8; 26]), "Account".to_owned()),
-            "new",
-            args!(),
-        )
+        .call_function((acc_bp, "Account".to_owned()), "new", args!())
         .and_then(decode_return)
         .unwrap();
 
     // Allocate 1 XRD
-    let bucket = scrypto::resource::Bucket::from(proc.create_bucket(1.into(), Address::RadixToken));
-    proc.call_method(account, "deposit", args!(bucket)).unwrap();
+    let bid = proc.reserve_bucket_id();
+    proc.put_bucket(
+        bid,
+        radix_engine::model::Bucket::new(1.into(), Address::RadixToken),
+    );
+    proc.call_method(account, "deposit", args!(Bucket::from(bid)))
+        .unwrap();
 
     // Commit
     proc.finalize().unwrap();
@@ -65,7 +64,7 @@ fn bench_swap_transaction(b: &mut Bencher) {
     b.iter(|| {
         let mut track = engine.start_transaction();
         let mut proc = track.start_process(false);
-        let xrd: scrypto::resource::Bucket = proc
+        let xrd: Bucket = proc
             .call_method(
                 account,
                 "withdraw",
@@ -73,7 +72,7 @@ fn bench_swap_transaction(b: &mut Bencher) {
             )
             .and_then(decode_return)
             .unwrap();
-        let gum: scrypto::resource::Bucket = proc
+        let gum: Bucket = proc
             .call_method(component, "get_gumball", args!(xrd))
             .and_then(decode_return)
             .unwrap();

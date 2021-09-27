@@ -2,7 +2,7 @@ use scrypto::types::*;
 
 use crate::model::*;
 
-/// A ledger stores all the transactions and substates.
+/// A ledger stores all transactions and substates.
 pub trait Ledger {
     fn get_resource_def(&self, address: Address) -> Option<ResourceDef>;
 

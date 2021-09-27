@@ -6,7 +6,7 @@ pub const KERNEL_INDEX: usize = 0;
 /// Kernel entrance function name.
 pub const KERNEL_NAME: &str = "kernel";
 
-/// Decides what symbols are available in the `env` module.
+/// An `env` module resolver defines how symbols in `env` are resolved.
 pub struct EnvModuleResolver;
 
 impl ModuleImportResolver for EnvModuleResolver {

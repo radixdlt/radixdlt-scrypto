@@ -47,7 +47,7 @@ pub fn handle_new_account(matches: &ArgMatches) -> Result<(), Error> {
                 metadata,
                 minter: Some(Address::System),
                 auth: Some(Address::System),
-                supply: 1_000_000.into(),
+                supply: 0.into(),
             },
         );
     }
@@ -67,10 +67,14 @@ pub fn handle_new_account(matches: &ArgMatches) -> Result<(), Error> {
         .call_function((package, "Account".to_owned()), "new", args!())
         .and_then(decode_return)
         .map_err(Error::TxnExecutionError)?;
-    let bucket =
-        scrypto::resource::Bucket::from(proc.create_bucket(1_000_000.into(), Address::RadixToken));
-    proc.call_method(account, "deposit", vec![scrypto_encode(&bucket)])
-        .map_err(Error::TxnExecutionError)?;
+    let bid = proc.reserve_bucket_id();
+    proc.put_bucket(bid, Bucket::new(1_000_000.into(), Address::RadixToken));
+    proc.call_method(
+        account,
+        "deposit",
+        vec![scrypto_encode(&scrypto::resource::Bucket::from(bid))],
+    )
+    .map_err(Error::TxnExecutionError)?;
     proc.finalize().map_err(Error::TxnExecutionError)?;
     track.commit();
 
