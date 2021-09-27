@@ -23,14 +23,14 @@ Language for building DeFi apps on Radix.
    * Windows:
        * Download and install [`rustup-init.exe`](https://win.rustup.rs/x86_64)
        * Install "Desktop development with C++" with [Build Tools for Visual Studio 2019](https://visualstudio.microsoft.com/thank-you-downloading-visual-studio/?sku=BuildTools&rel=16)
-   * MacOs and Linux:
+   * Linux and macOS:
        ```
        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
        ```
 2. Enable `cargo` in the current shell:
    * Windows:
        * Start a new PowerShell
-   * MacOs and Linux:
+   * Linux and macOS:
        ```
        source $HOME/.cargo/env
        ```
