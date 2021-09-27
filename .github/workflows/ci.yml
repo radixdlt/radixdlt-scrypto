@@ -8,7 +8,10 @@ env:
 jobs:
   sbor-unit-tests:
     name: Run SBOR unit tests
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
     steps:
     - uses: actions/checkout@v2
     - name: Run tests
@@ -22,7 +25,10 @@ jobs:
       working-directory: sbor-derive
   sbor-integration-tests:
     name: Run SBOR integration tests
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
     steps:
     - uses: actions/checkout@v2
     - name: Run tests
@@ -36,7 +42,10 @@ jobs:
       working-directory: sbor-tests
   scrypto-unit-tests:
     name: Run Scrypto unit tests
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
     steps:
     - uses: actions/checkout@v2
     - name: Run tests
@@ -53,7 +62,10 @@ jobs:
       working-directory: scrypto-derive
   scrypto-integration-tests:
     name: Run Scrypto integration tests
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
     steps:
     - uses: actions/checkout@v2
     - name: Run tests
@@ -64,7 +76,10 @@ jobs:
       working-directory: scrypto-tests
   scrypto-examples:
     name: Run Scrypto examples
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
     steps:
     - uses: actions/checkout@v2
     - name: Add wasm target
@@ -82,7 +97,10 @@ jobs:
       working-directory: examples/no_std
   radix-engine:
     name: Run Radix Engine tests
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
     steps:
     - uses: actions/checkout@v2
     - name: Add wasm target
@@ -98,7 +116,10 @@ jobs:
       working-directory: radix-engine
   simulator-rev2:
     name: Run Simulator tests (rev2)
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
     steps:
     - uses: actions/checkout@v2
     - name: Add wasm target
@@ -108,7 +129,10 @@ jobs:
       working-directory: simulator
   simulator-scrypto:
     name: Run Simulator tests (scrypto)
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
     steps:
     - uses: actions/checkout@v2
     - name: Add wasm target

@@ -28,7 +28,7 @@ pub fn build_package<P: AsRef<Path>>(path: P, trace: bool) -> Result<PathBuf, Ca
             .arg("wasm32-unknown-unknown")
             .arg("--release")
             .arg("--manifest-path")
-            .arg(cargo.canonicalize().unwrap().to_str().unwrap())
+            .arg(cargo.to_str().unwrap())
             .args(if trace {
                 vec!["--features", "scrypto/trace"]
             } else {
@@ -64,7 +64,7 @@ where
         let status = Command::new("cargo")
             .arg("test")
             .arg("--manifest-path")
-            .arg(cargo.canonicalize().unwrap().to_str().unwrap())
+            .arg(cargo.to_str().unwrap())
             .arg("--")
             .args(args)
             .status()

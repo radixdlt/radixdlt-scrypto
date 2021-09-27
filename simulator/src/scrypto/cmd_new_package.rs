@@ -46,7 +46,7 @@ pub fn handle_new_package(matches: &ArgMatches) -> Result<(), Error> {
             PathBuf::from(format!("{}/Cargo.toml", pkg_dir)),
             include_str!("../../../assets/template/package/Cargo.toml")
                 .replace("${package_name}", pkg_name)
-                .replace("${scrypto_home}", &scrypto_dir),
+                .replace("${scrypto_home}", &scrypto_dir.replace("\\", "/")),
         )
         .map_err(Error::IOError)?;
 
