@@ -328,13 +328,13 @@ fn get_native_type(ty: &des::Type) -> (Type, Vec<Item>) {
             "scrypto::H256" => parse_quote! { ::scrypto::types::H256 },
             "scrypto::BID" => parse_quote! { ::scrypto::types::BID },
             "scrypto::RID" => parse_quote! { ::scrypto::types::RID },
-            "scrypto::SID" => parse_quote! { ::scrypto::types::SID },
+            "scrypto::MID" => parse_quote! { ::scrypto::types::MID },
             "scrypto::VID" => parse_quote! { ::scrypto::types::VID },
 
             "scrypto::Package" => parse_quote! { ::scrypto::constructs::Package },
             "scrypto::Blueprint" => parse_quote! { ::scrypto::constructs::Blueprint },
             "scrypto::Component" => parse_quote! { ::scrypto::constructs::Component },
-            "scrypto::Storage" => parse_quote! { ::scrypto::constructs::Storage },
+            "scrypto::LazyMap" => parse_quote! { ::scrypto::constructs::LazyMap },
 
             "scrypto::Resource" => parse_quote! { ::scrypto::resource::Resource },
             "scrypto::Bucket" => parse_quote! { ::scrypto::resource::Bucket },

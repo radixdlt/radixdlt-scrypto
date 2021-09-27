@@ -46,7 +46,7 @@ r#"
                 },
                 {
                     "type": "Custom",
-                    "name": "scrypto::SID"
+                    "name": "scrypto::MID"
                 },
                 {
                     "type": "Custom",
@@ -66,7 +66,7 @@ r#"
                 },
                 {
                     "type": "Custom",
-                    "name": "scrypto::Storage"
+                    "name": "scrypto::LazyMap"
                 },
                 {
                     "type": "Custom",

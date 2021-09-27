@@ -157,12 +157,12 @@ pub fn format_custom<L: Ledger>(
             let h256 = H256::try_from(data).map_err(|_| DecodeError::InvalidCustomData(ty))?;
             Ok(format!("H256({})", h256))
         }
-        SCRYPTO_TYPE_SID => {
-            let sid = SID::try_from(data).map_err(|_| DecodeError::InvalidCustomData(ty))?;
+        SCRYPTO_TYPE_MID => {
+            let mid = MID::try_from(data).map_err(|_| DecodeError::InvalidCustomData(ty))?;
 
             let mut buf = String::new();
-            if let Some(storage) = ledger.get_storage(sid) {
-                for (i, (k, v)) in storage.storage.iter().enumerate() {
+            if let Some(lazy_map) = ledger.get_lazy_map(mid) {
+                for (i, (k, v)) in lazy_map.map.iter().enumerate() {
                     if i != 0 {
                         buf.push_str(", ");
                     }
@@ -172,7 +172,7 @@ pub fn format_custom<L: Ledger>(
                 }
             };
 
-            Ok(format!("SID({}) {{ {} }}", sid, buf))
+            Ok(format!("MID({}) {{ {} }}", mid, buf))
         }
         SCRYPTO_TYPE_BID => {
             let bid = BID::try_from(data).map_err(|_| DecodeError::InvalidCustomData(ty))?;

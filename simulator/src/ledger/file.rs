@@ -14,15 +14,15 @@ pub struct FileBasedLedger {
 
 const PACKAGES: &str = "packages";
 const COMPONENTS: &str = "components";
-const STORAGES: &str = "storages";
-const RESOURCE_DEFS: &str = "resource-defs";
+const LAZY_MAPS: &str = "lazy_maps";
+const RESOURCE_DEFS: &str = "resource_defs";
 const VAULTS: &str = "vaults";
 
 const FILE_EXT: &str = "sbor";
 
 impl FileBasedLedger {
     pub fn new(root: PathBuf) -> Self {
-        for folder in [PACKAGES, COMPONENTS, STORAGES, RESOURCE_DEFS, VAULTS] {
+        for folder in [PACKAGES, COMPONENTS, LAZY_MAPS, RESOURCE_DEFS, VAULTS] {
             let mut path = root.clone();
             path.push(folder);
             if !path.exists() {
@@ -104,14 +104,14 @@ impl Ledger for FileBasedLedger {
         )
     }
 
-    fn get_storage(&self, sid: SID) -> Option<Storage> {
-        Self::read(self.get_path(STORAGES, sid.to_string(), FILE_EXT)).map(Self::decode)
+    fn get_lazy_map(&self, mid: MID) -> Option<LazyMap> {
+        Self::read(self.get_path(LAZY_MAPS, mid.to_string(), FILE_EXT)).map(Self::decode)
     }
 
-    fn put_storage(&mut self, sid: SID, storage: Storage) {
+    fn put_lazy_map(&mut self, mid: MID, lazy_map: LazyMap) {
         Self::write(
-            self.get_path(STORAGES, sid.to_string(), FILE_EXT),
-            Self::encode(&storage),
+            self.get_path(LAZY_MAPS, mid.to_string(), FILE_EXT),
+            Self::encode(&lazy_map),
         )
     }
 

@@ -23,12 +23,12 @@ pub struct Track<'le, L: Ledger> {
     logs: Vec<(Level, String)>,
     packages: HashMap<Address, Package>,
     components: HashMap<Address, Component>,
-    storages: HashMap<SID, Storage>,
+    lazy_maps: HashMap<MID, LazyMap>,
     resources: HashMap<Address, ResourceDef>,
     vaults: HashMap<VID, Vault>,
     updated_packages: HashSet<Address>,
     updated_components: HashSet<Address>,
-    updated_storages: HashSet<SID>,
+    updated_lazy_maps: HashSet<MID>,
     updated_resources: HashSet<Address>,
     updated_vaults: HashSet<VID>,
     new_addresses: Vec<Address>,
@@ -44,12 +44,12 @@ impl<'le, L: Ledger> Track<'le, L> {
             logs: Vec::new(),
             packages: HashMap::new(),
             components: HashMap::new(),
-            storages: HashMap::new(),
+            lazy_maps: HashMap::new(),
             resources: HashMap::new(),
             vaults: HashMap::new(),
             updated_packages: HashSet::new(),
             updated_components: HashSet::new(),
-            updated_storages: HashSet::new(),
+            updated_lazy_maps: HashSet::new(),
             updated_resources: HashSet::new(),
             updated_vaults: HashSet::new(),
             new_addresses: Vec::new(),
@@ -174,39 +174,39 @@ impl<'le, L: Ledger> Track<'le, L> {
     }
 
     /// Returns an immutable reference to a map, if exists.
-    pub fn get_storage(&mut self, sid: SID) -> Option<&Storage> {
-        if self.storages.contains_key(&sid) {
-            return self.storages.get(&sid);
+    pub fn get_lazy_map(&mut self, mid: MID) -> Option<&LazyMap> {
+        if self.lazy_maps.contains_key(&mid) {
+            return self.lazy_maps.get(&mid);
         }
 
-        if let Some(storage) = self.ledger.get_storage(sid) {
-            self.storages.insert(sid, storage);
-            self.storages.get(&sid)
+        if let Some(lazy_map) = self.ledger.get_lazy_map(mid) {
+            self.lazy_maps.insert(mid, lazy_map);
+            self.lazy_maps.get(&mid)
         } else {
             None
         }
     }
     /// Returns a mutable reference to a map, if exists.
-    pub fn get_storage_mut(&mut self, sid: SID) -> Option<&mut Storage> {
-        self.updated_storages.insert(sid);
+    pub fn get_lazy_map_mut(&mut self, mid: MID) -> Option<&mut LazyMap> {
+        self.updated_lazy_maps.insert(mid);
 
-        if self.storages.contains_key(&sid) {
-            return self.storages.get_mut(&sid);
+        if self.lazy_maps.contains_key(&mid) {
+            return self.lazy_maps.get_mut(&mid);
         }
 
-        if let Some(storage) = self.ledger.get_storage(sid) {
-            self.storages.insert(sid, storage);
-            self.storages.get_mut(&sid)
+        if let Some(lazy_map) = self.ledger.get_lazy_map(mid) {
+            self.lazy_maps.insert(mid, lazy_map);
+            self.lazy_maps.get_mut(&mid)
         } else {
             None
         }
     }
 
     /// Inserts a new map.
-    pub fn put_storage(&mut self, sid: SID, storage: Storage) {
-        self.updated_storages.insert(sid);
+    pub fn put_lazy_map(&mut self, mid: MID, lazy_map: LazyMap) {
+        self.updated_lazy_maps.insert(mid);
 
-        self.storages.insert(sid, storage);
+        self.lazy_maps.insert(mid, lazy_map);
     }
 
     /// Returns an immutable reference to a resource, if exists.
@@ -322,8 +322,8 @@ impl<'le, L: Ledger> Track<'le, L> {
     }
 
     /// Creates a new map id.
-    pub fn new_sid(&mut self) -> SID {
-        self.alloc.new_sid(self.tx_hash())
+    pub fn new_mid(&mut self) -> MID {
+        self.alloc.new_mid(self.tx_hash())
     }
 
     /// Commits changes to ledger.
@@ -338,9 +338,9 @@ impl<'le, L: Ledger> Track<'le, L> {
                 .put_component(address, self.components.get(&address).unwrap().clone());
         }
 
-        for sid in self.updated_storages.clone() {
+        for mid in self.updated_lazy_maps.clone() {
             self.ledger
-                .put_storage(sid, self.storages.get(&sid).unwrap().clone());
+                .put_lazy_map(mid, self.lazy_maps.get(&mid).unwrap().clone());
         }
 
         for address in self.updated_resources.clone() {

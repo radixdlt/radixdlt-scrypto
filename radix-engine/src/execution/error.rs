@@ -48,7 +48,7 @@ pub enum RuntimeError {
 
     ComponentNotFound(Address),
 
-    StorageNotFound(SID),
+    LazyMapNotFound(MID),
 
     ResourceNotFound(Address),
 

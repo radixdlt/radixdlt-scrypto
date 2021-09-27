@@ -26,11 +26,11 @@ blueprint! {
             self.state = new_state;
         }
 
-        pub fn custom_types_1() -> (Amount, Address, H256, BID, RID, SID, VID) {
+        pub fn custom_types_1() -> (Amount, Address, H256, BID, RID, MID, VID) {
             todo!()
         }
 
-        pub fn custom_types_2() -> (Package, Blueprint, Component, Storage) {
+        pub fn custom_types_2() -> (Package, Blueprint, Component, LazyMap) {
             todo!()
         }
 
@@ -90,7 +90,7 @@ fn test_simple_abi() {
                             },
                             {
                                 "type": "Custom",
-                                "name": "scrypto::SID"
+                                "name": "scrypto::MID"
                             },
                             {
                                 "type": "Custom",
@@ -119,7 +119,7 @@ fn test_simple_abi() {
                             },
                             {
                                 "type": "Custom",
-                                "name": "scrypto::Storage"
+                                "name": "scrypto::LazyMap"
                             }
                         ]
                     }

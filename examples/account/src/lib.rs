@@ -2,13 +2,13 @@ use scrypto::prelude::*;
 
 blueprint! {
     struct Account {
-        vaults: Storage,
+        vaults: LazyMap,
     }
 
     impl Account {
         pub fn new() -> Address {
             Account {
-                vaults: Storage::new(),
+                vaults: LazyMap::new(),
             }
             .instantiate()
         }

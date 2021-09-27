@@ -18,7 +18,7 @@ pub const CALL_FUNCTION: u32 = 0x01;
 /// Call a method
 pub const CALL_METHOD: u32 = 0x02;
 
-/// Create a new component
+/// Create a component
 pub const CREATE_COMPONENT: u32 = 0x10;
 /// Retrieve component information
 pub const GET_COMPONENT_INFO: u32 = 0x11;
@@ -27,12 +27,12 @@ pub const GET_COMPONENT_STATE: u32 = 0x12;
 /// Update component state
 pub const PUT_COMPONENT_STATE: u32 = 0x13;
 
-/// Create a new storage
-pub const CREATE_STORAGE: u32 = 0x20;
-/// Retrieve an entry from a storage
-pub const GET_STORAGE_ENTRY: u32 = 0x21;
-/// Insert a key-value pair into a storage
-pub const PUT_STORAGE_ENTRY: u32 = 0x22;
+/// Create a lazy map
+pub const CREATE_LAZY_MAP: u32 = 0x20;
+/// Retrieve an entry from a lazy map
+pub const GET_LAZY_MAP_ENTRY: u32 = 0x21;
+/// Insert a key-value pair into a lazy map
+pub const PUT_LAZY_MAP_ENTRY: u32 = 0x22;
 
 /// Create a new resource with mutable supply
 pub const CREATE_RESOURCE_MUTABLE: u32 = 0x30;
@@ -166,37 +166,37 @@ pub struct PutComponentStateInput {
 pub struct PutComponentStateOutput {}
 
 //==========
-// Storage
+// LazyMap
 //==========
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct CreateStorageInput {}
+pub struct CreateLazyMapInput {}
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct CreateStorageOutput {
-    pub storage: SID,
+pub struct CreateLazyMapOutput {
+    pub lazy_map: MID,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct GetStorageEntryInput {
-    pub storage: SID,
+pub struct GetLazyMapEntryInput {
+    pub lazy_map: MID,
     pub key: Vec<u8>,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct GetStorageEntryOutput {
+pub struct GetLazyMapEntryOutput {
     pub value: Option<Vec<u8>>,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct PutStorageEntryInput {
-    pub storage: SID,
+pub struct PutLazyMapEntryInput {
+    pub lazy_map: MID,
     pub key: Vec<u8>,
     pub value: Vec<u8>,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct PutStorageEntryOutput {}
+pub struct PutLazyMapEntryOutput {}
 
 //=========
 // resource

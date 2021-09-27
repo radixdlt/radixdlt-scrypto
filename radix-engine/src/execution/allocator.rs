@@ -62,9 +62,9 @@ impl AddressAllocator {
         RID(self.count)
     }
 
-    pub fn new_sid(&mut self, tx_hash: H256) -> SID {
+    pub fn new_mid(&mut self, tx_hash: H256) -> MID {
         self.count += 1;
-        SID(tx_hash, self.count - 1)
+        MID(tx_hash, self.count - 1)
     }
 }
 

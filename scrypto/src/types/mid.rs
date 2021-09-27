@@ -9,18 +9,18 @@ use crate::rust::string::String;
 use crate::rust::vec::Vec;
 use crate::types::*;
 
-/// Represents a storage id.
+/// Represents a lazy_map id.
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
-pub struct SID(pub H256, pub u32);
+pub struct MID(pub H256, pub u32);
 
-/// Represents an error when parsing SID.
+/// Represents an error when parsing MID.
 #[derive(Debug, Clone)]
-pub enum ParseSIDError {
+pub enum ParseMIDError {
     InvalidHex(hex::FromHexError),
     InvalidLength(usize),
 }
 
-impl SID {
+impl MID {
     pub fn to_vec(&self) -> Vec<u8> {
         let mut vec = Vec::with_capacity(36);
         vec.extend(self.0.as_ref());
@@ -29,21 +29,21 @@ impl SID {
     }
 }
 
-impl FromStr for SID {
-    type Err = ParseSIDError;
+impl FromStr for MID {
+    type Err = ParseMIDError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let bytes = hex::decode(s).map_err(ParseSIDError::InvalidHex)?;
+        let bytes = hex::decode(s).map_err(ParseMIDError::InvalidHex)?;
         Self::try_from(bytes.as_slice())
     }
 }
 
-impl TryFrom<&[u8]> for SID {
-    type Error = ParseSIDError;
+impl TryFrom<&[u8]> for MID {
+    type Error = ParseMIDError;
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
         if slice.len() != 36 {
-            Err(ParseSIDError::InvalidLength(slice.len()))
+            Err(ParseMIDError::InvalidLength(slice.len()))
         } else {
             Ok(Self(
                 H256(copy_u8_array(&slice[..32])),
@@ -53,38 +53,38 @@ impl TryFrom<&[u8]> for SID {
     }
 }
 
-impl From<&str> for SID {
+impl From<&str> for MID {
     fn from(s: &str) -> Self {
         Self::from_str(s).unwrap()
     }
 }
 
-impl From<String> for SID {
+impl From<String> for MID {
     fn from(s: String) -> Self {
         Self::from_str(&s).unwrap()
     }
 }
 
-impl fmt::Debug for SID {
+impl fmt::Debug for MID {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", hex::encode(self.to_vec()))
     }
 }
 
-impl fmt::Display for SID {
+impl fmt::Display for MID {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", hex::encode(self.to_vec()))
     }
 }
 
-impl TypeId for SID {
+impl TypeId for MID {
     #[inline]
     fn type_id() -> u8 {
-        SCRYPTO_TYPE_SID
+        SCRYPTO_TYPE_MID
     }
 }
 
-impl Encode for SID {
+impl Encode for MID {
     fn encode_value(&self, encoder: &mut Encoder) {
         let bytes = self.to_vec();
         encoder.write_len(bytes.len());
@@ -92,18 +92,18 @@ impl Encode for SID {
     }
 }
 
-impl Decode for SID {
+impl Decode for MID {
     fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
         let len = decoder.read_len()?;
         let slice = decoder.read_bytes(len)?;
-        Self::try_from(slice).map_err(|_| DecodeError::InvalidCustomData(SCRYPTO_TYPE_SID))
+        Self::try_from(slice).map_err(|_| DecodeError::InvalidCustomData(SCRYPTO_TYPE_MID))
     }
 }
 
-impl Describe for SID {
+impl Describe for MID {
     fn describe() -> Type {
         Type::Custom {
-            name: SCRYPTO_NAME_SID.to_owned(),
+            name: SCRYPTO_NAME_MID.to_owned(),
         }
     }
 }
@@ -116,7 +116,7 @@ mod tests {
     #[test]
     fn test_from_to_string() {
         let s = "f4cb57e4c4cd9d6564823eee427779d022d4f5f601791484a97837e6ffcf4cba01000000";
-        let a = SID::from_str(s).unwrap();
+        let a = MID::from_str(s).unwrap();
         assert_eq!(a.to_string(), s);
     }
 }

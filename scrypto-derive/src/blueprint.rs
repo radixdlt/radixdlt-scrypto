@@ -147,7 +147,7 @@ fn generate_dispatcher(bp_ident: &Ident, items: &[ImplItem]) -> (Vec<Expr>, Vec<
                         FnArg::Receiver(ref r) => {
                             // Check receiver type and mutability
                             if r.reference.is_none() {
-                                panic!("Function input `self` is not supported. Consider replacing it with &self.");
+                                panic!("Function input `self` is not supported. Conmider replacing it with &self.");
                             }
                             let mutability = r.mutability;
 
@@ -246,7 +246,7 @@ fn generate_abi(bp_name: &str, items: &[ImplItem]) -> (Vec<Expr>, Vec<Expr>) {
                             FnArg::Receiver(ref r) => {
                                 // Check receiver type and mutability
                                 if r.reference.is_none() {
-                                    panic!("Function input `self` is not supported. Consider replacing it with &self.");
+                                    panic!("Function input `self` is not supported. Conmider replacing it with &self.");
                                 }
 
                                 if r.mutability.is_some() {

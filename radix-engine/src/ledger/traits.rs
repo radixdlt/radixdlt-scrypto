@@ -16,9 +16,9 @@ pub trait Ledger {
 
     fn put_component(&mut self, address: Address, component: Component);
 
-    fn get_storage(&self, sid: SID) -> Option<Storage>;
+    fn get_lazy_map(&self, mid: MID) -> Option<LazyMap>;
 
-    fn put_storage(&mut self, sid: SID, storage: Storage);
+    fn put_lazy_map(&mut self, mid: MID, lazy_map: LazyMap);
 
     // For now, we always read/write everything in a vault.
 

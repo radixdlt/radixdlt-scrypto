@@ -2,16 +2,16 @@ mod address;
 mod amount;
 mod bid;
 mod h256;
+mod mid;
 mod rid;
-mod sid;
 mod vid;
 
 pub use address::{Address, ParseAddressError};
 pub use amount::{Amount, ParseAmountError};
 pub use bid::{ParseBIDError, BID};
 pub use h256::{ParseH256Error, H256};
+pub use mid::{ParseMIDError, MID};
 pub use rid::{ParseRIDError, RID};
-pub use sid::{ParseSIDError, SID};
 pub use vid::{ParseVIDError, VID};
 
 use crate::rust::vec::Vec;

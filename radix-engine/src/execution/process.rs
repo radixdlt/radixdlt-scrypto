@@ -852,40 +852,40 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         Ok(PutComponentStateOutput {})
     }
 
-    fn handle_create_storage(
+    fn handle_create_lazy_map(
         &mut self,
-        _input: CreateStorageInput,
-    ) -> Result<CreateStorageOutput, RuntimeError> {
-        let sid = self.track.new_sid();
+        _input: CreateLazyMapInput,
+    ) -> Result<CreateLazyMapOutput, RuntimeError> {
+        let mid = self.track.new_mid();
 
-        self.track.put_storage(sid, Storage::new(self.package()?));
+        self.track.put_lazy_map(mid, LazyMap::new(self.package()?));
 
-        Ok(CreateStorageOutput { storage: sid })
+        Ok(CreateLazyMapOutput { lazy_map: mid })
     }
 
-    fn handle_get_storage_entry(
+    fn handle_get_lazy_map_entry(
         &mut self,
-        input: GetStorageEntryInput,
-    ) -> Result<GetStorageEntryOutput, RuntimeError> {
+        input: GetLazyMapEntryInput,
+    ) -> Result<GetLazyMapEntryOutput, RuntimeError> {
         let package = self.package()?;
 
-        let storage = self
+        let lazy_map = self
             .track
-            .get_storage(input.storage)
-            .ok_or(RuntimeError::StorageNotFound(input.storage))?;
-        if package != storage.auth() {
+            .get_lazy_map(input.lazy_map)
+            .ok_or(RuntimeError::LazyMapNotFound(input.lazy_map))?;
+        if package != lazy_map.auth() {
             return Err(RuntimeError::UnauthorizedAccess);
         }
 
-        Ok(GetStorageEntryOutput {
-            value: storage.get_entry(&input.key).map(|e| e.to_vec()),
+        Ok(GetLazyMapEntryOutput {
+            value: lazy_map.get_entry(&input.key).map(|e| e.to_vec()),
         })
     }
 
-    fn handle_put_storage_entry(
+    fn handle_put_lazy_map_entry(
         &mut self,
-        input: PutStorageEntryInput,
-    ) -> Result<PutStorageEntryOutput, RuntimeError> {
+        input: PutLazyMapEntryInput,
+    ) -> Result<PutLazyMapEntryOutput, RuntimeError> {
         let package = self.package()?;
 
         let new_key =
@@ -895,17 +895,17 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
             self.process_data(&input.value, Self::reject_buckets, Self::reject_references)?;
         debug!(self, "Transformed value: {:?}", new_value);
 
-        let storage = self
+        let lazy_map = self
             .track
-            .get_storage_mut(input.storage)
-            .ok_or(RuntimeError::StorageNotFound(input.storage))?;
-        if package != storage.auth() {
+            .get_lazy_map_mut(input.lazy_map)
+            .ok_or(RuntimeError::LazyMapNotFound(input.lazy_map))?;
+        if package != lazy_map.auth() {
             return Err(RuntimeError::UnauthorizedAccess);
         }
 
-        storage.set_entry(new_key, new_value);
+        lazy_map.set_entry(new_key, new_value);
 
-        Ok(PutStorageEntryOutput {})
+        Ok(PutLazyMapEntryOutput {})
     }
 
     fn handle_create_resource_mutable(
@@ -1314,9 +1314,9 @@ impl<'rt, 'le, L: Ledger> Externals for Process<'rt, 'le, L> {
                     GET_COMPONENT_STATE => self.handle(args, Self::handle_get_component_state),
                     PUT_COMPONENT_STATE => self.handle(args, Self::handle_put_component_state),
 
-                    CREATE_STORAGE => self.handle(args, Self::handle_create_storage),
-                    GET_STORAGE_ENTRY => self.handle(args, Self::handle_get_storage_entry),
-                    PUT_STORAGE_ENTRY => self.handle(args, Self::handle_put_storage_entry),
+                    CREATE_LAZY_MAP => self.handle(args, Self::handle_create_lazy_map),
+                    GET_LAZY_MAP_ENTRY => self.handle(args, Self::handle_get_lazy_map_entry),
+                    PUT_LAZY_MAP_ENTRY => self.handle(args, Self::handle_put_lazy_map_entry),
 
                     CREATE_RESOURCE_MUTABLE => {
                         self.handle(args, Self::handle_create_resource_mutable)

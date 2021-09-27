@@ -27,7 +27,7 @@ fn test_component() {
 }
 
 #[test]
-fn test_storage() {
+fn test_lazy_map() {
     let mut engine = InMemoryRadixEngine::new();
     let mut track = engine.start_transaction();
     let mut proc = track.start_process(true);
@@ -35,7 +35,7 @@ fn test_storage() {
 
     let result: Option<String> = scrypto_decode(
         &proc
-            .call_function((pkg, "StorageTest".to_owned()), "test_storage", args!())
+            .call_function((pkg, "LazyMapTest".to_owned()), "test_lazy_map", args!())
             .unwrap(),
     )
     .unwrap();
