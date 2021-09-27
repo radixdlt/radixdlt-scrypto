@@ -1,6 +1,6 @@
 use wasmi::*;
 
-use crate::execution::*;
+use crate::engine::*;
 
 /// Parse a WASM module.
 pub fn parse_module(code: &[u8]) -> Result<Module, RuntimeError> {

@@ -1,4 +1,5 @@
 use radix_engine::engine::*;
+use radix_engine::utils::*;
 use scrypto::prelude::*;
 
 #[test]

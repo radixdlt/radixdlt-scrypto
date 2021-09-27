@@ -1,9 +1,10 @@
 use colored::*;
 use radix_engine::ledger::*;
 use radix_engine::model::*;
+use radix_engine::transaction::*;
+use radix_engine::utils::*;
 use scrypto::types::*;
 
-use crate::txn::*;
 use crate::utils::*;
 
 pub fn dump_package<T: Ledger>(address: Address, ledger: &T) {
@@ -123,10 +124,4 @@ pub fn dump_receipt(receipt: &TransactionReceipt) {
         };
         println!("{} {}: {}", list_item_prefix(last), ty, address);
     }
-
-    println!(
-        "{} {} ms",
-        "Execution Time:".bold().green(),
-        receipt.execution_time
-    );
 }

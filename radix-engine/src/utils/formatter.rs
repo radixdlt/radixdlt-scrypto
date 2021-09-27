@@ -1,17 +1,25 @@
-use radix_engine::ledger::*;
 use sbor::any::*;
 use sbor::*;
 use scrypto::constants::*;
 use scrypto::rust::borrow::Borrow;
 use scrypto::rust::convert::TryFrom;
+use scrypto::rust::format;
+use scrypto::rust::string::String;
+use scrypto::rust::string::ToString;
+use scrypto::rust::vec;
+use scrypto::rust::vec::Vec;
 use scrypto::types::*;
 
+use crate::ledger::*;
+
+/// Format SBOR data into string.
 pub fn format_sbor(data: &[u8]) -> Result<String, DecodeError> {
     let ledger = InMemoryLedger::new();
     let mut vaults = vec![];
     format_sbor_with_ledger(data, &ledger, &mut vaults)
 }
 
+/// Format SBOR data into string, based on ledger state.
 pub fn format_sbor_with_ledger<L: Ledger>(
     data: &[u8],
     ledger: &L,

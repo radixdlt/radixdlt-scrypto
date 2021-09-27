@@ -17,7 +17,7 @@ use scrypto::rust::vec::Vec;
 use scrypto::types::*;
 use wasmi::*;
 
-use crate::execution::*;
+use crate::engine::*;
 use crate::ledger::*;
 use crate::model::*;
 

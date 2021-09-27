@@ -1,9 +1,11 @@
 use clap::{crate_version, App, Arg, ArgMatches, SubCommand};
+use radix_engine::transaction::*;
 use scrypto::types::*;
+use scrypto::utils::*;
+use uuid::Uuid;
 
 use crate::ledger::*;
 use crate::rev2::*;
-use crate::txn::*;
 use crate::utils::*;
 
 const ARG_TRACE: &str = "TRACE";
@@ -77,7 +79,12 @@ pub fn handle_call_function(matches: &ArgMatches) -> Result<(), Error> {
                 trace,
             ) {
                 Ok(txn) => {
-                    let receipt = execute(&mut ledger, txn, trace);
+                    let receipt = execute_transaction(
+                        &mut ledger,
+                        sha256(Uuid::new_v4().to_string()),
+                        txn,
+                        trace,
+                    );
                     dump_receipt(&receipt);
                     if receipt.success {
                         Ok(())

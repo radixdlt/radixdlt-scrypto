@@ -1,8 +1,12 @@
-use radix_engine::engine::*;
-use radix_engine::execution::*;
-use radix_engine::ledger::*;
 use scrypto::abi;
+use scrypto::rust::string::String;
+use scrypto::rust::string::ToString;
+use scrypto::rust::vec::Vec;
 use scrypto::types::*;
+
+use crate::engine::*;
+use crate::ledger::*;
+use crate::utils::*;
 
 /// Export the ABI of a blueprint.
 pub fn export_abi<T: Ledger>(

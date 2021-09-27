@@ -1,40 +1,15 @@
-use scrypto::buffer::*;
-use scrypto::rust::string::ToString;
-use scrypto::rust::vec::Vec;
-use scrypto::utils::*;
+mod allocator;
+mod env;
+mod error;
+mod loader;
+mod process;
+mod re;
+mod track;
 
-use crate::execution::*;
-use crate::ledger::*;
-
-/// A Radix Engine which employs an in-memory ledger.
-pub struct InMemoryRadixEngine {
-    ledger: InMemoryLedger,
-    nonce: u32,
-}
-
-impl InMemoryRadixEngine {
-    /// Creates a new in-memory radix engine.
-    pub fn new() -> Self {
-        Self {
-            ledger: InMemoryLedger::new(),
-            nonce: 0,
-        }
-    }
-
-    pub fn start_transaction(&mut self) -> Track<InMemoryLedger> {
-        let tx_hash = sha256(self.nonce.to_string());
-        self.nonce += 1;
-        Track::new(tx_hash, &mut self.ledger)
-    }
-}
-
-impl Default for InMemoryRadixEngine {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-/// Decodes call return data into an instance of `T`.
-pub fn decode_return<T: sbor::Decode>(data: Vec<u8>) -> Result<T, RuntimeError> {
-    scrypto_decode(&data).map_err(RuntimeError::InvalidData)
-}
+pub use allocator::AddressAllocator;
+pub use env::{EnvModuleResolver, KERNEL_INDEX, KERNEL_NAME};
+pub use error::RuntimeError;
+pub use loader::{instantiate_module, parse_module, validate_module};
+pub use process::{Invocation, Process};
+pub use re::InMemoryRadixEngine;
+pub use track::Track;

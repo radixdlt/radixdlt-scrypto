@@ -1,9 +1,11 @@
-use radix_engine::execution::*;
-use radix_engine::model::Level;
 use sbor::*;
 use scrypto::rust::fmt;
+use scrypto::rust::string::String;
+use scrypto::rust::vec::Vec;
 use scrypto::types::*;
 
+use crate::engine::*;
+use crate::model::*;
 use crate::utils::*;
 
 /// A transaction consists a sequence of instructions.
@@ -71,7 +73,6 @@ impl fmt::Debug for Args {
 pub struct TransactionReceipt {
     pub transaction: Transaction,
     pub success: bool,
-    pub execution_time: u128,
     pub results: Vec<Result<Option<Vec<u8>>, RuntimeError>>,
     pub logs: Vec<(Level, String)>,
     pub new_addresses: Vec<Address>,

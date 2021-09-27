@@ -1,20 +1,19 @@
-use std::time::Instant;
-
-use radix_engine::execution::*;
-use radix_engine::ledger::*;
 use scrypto::args;
-use scrypto::utils::*;
-use uuid::Uuid;
+use scrypto::rust::vec;
+use scrypto::rust::vec::Vec;
+use scrypto::types::*;
 
-use crate::txn::*;
+use crate::engine::*;
+use crate::ledger::*;
+use crate::transaction::*;
 
-pub fn execute<T: Ledger>(
+pub fn execute_transaction<T: Ledger>(
     ledger: &mut T,
+    tx_hash: H256,
     transaction: Transaction,
     trace: bool,
 ) -> TransactionReceipt {
-    let now = Instant::now();
-    let mut track = Track::new(sha256(Uuid::new_v4().to_string()), ledger);
+    let mut track = Track::new(tx_hash, ledger);
     let mut proc = track.start_process(trace);
 
     let mut reserved_bids = vec![];
@@ -81,7 +80,6 @@ pub fn execute<T: Ledger>(
     TransactionReceipt {
         transaction,
         success,
-        execution_time: now.elapsed().as_millis(),
         results,
         logs: track.logs().clone(),
         new_addresses: track.new_addresses().to_vec(),

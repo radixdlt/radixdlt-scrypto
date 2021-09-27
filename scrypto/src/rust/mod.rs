@@ -3,6 +3,8 @@ extern crate alloc;
 #[cfg(feature = "alloc")]
 pub use alloc::borrow;
 #[cfg(feature = "alloc")]
+pub use alloc::fmt;
+#[cfg(feature = "alloc")]
 pub use alloc::format;
 #[cfg(feature = "alloc")]
 pub use alloc::rc;
@@ -16,8 +18,6 @@ pub use alloc::vec;
 pub use core::cell;
 #[cfg(feature = "alloc")]
 pub use core::convert;
-#[cfg(feature = "alloc")]
-pub use core::fmt;
 #[cfg(feature = "alloc")]
 pub use core::marker;
 #[cfg(feature = "alloc")]

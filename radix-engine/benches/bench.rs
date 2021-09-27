@@ -3,6 +3,7 @@ extern crate bencher;
 use bencher::Bencher;
 
 use radix_engine::engine::*;
+use radix_engine::utils::*;
 use scrypto::prelude::*;
 
 fn create_account(engine: &mut InMemoryRadixEngine) -> Address {
