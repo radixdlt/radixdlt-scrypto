@@ -11,7 +11,7 @@ use crate::ledger::*;
 use crate::rev2::*;
 
 const ARG_TRACE: &str = "TRACE";
-const ARG_MINTER: &str = "MINTER";
+const ARG_MINTER_ADDRESS: &str = "MINTER_ADDRESS";
 const ARG_SYMBOL: &str = "SYMBOL";
 const ARG_NAME: &str = "NAME";
 const ARG_DESCRIPTION: &str = "DESCRIPTION";
@@ -30,8 +30,8 @@ pub fn make_new_resource_mutable<'a, 'b>() -> App<'a, 'b> {
                 .help("Turns on tracing."),
         )
         .arg(
-            Arg::with_name(ARG_MINTER)
-                .help("Specify the minter.")
+            Arg::with_name(ARG_MINTER_ADDRESS)
+                .help("Specify the minter address.")
                 .required(true),
         )
         .arg(
@@ -75,9 +75,9 @@ pub fn make_new_resource_mutable<'a, 'b>() -> App<'a, 'b> {
 pub fn handle_new_resource_mutable(matches: &ArgMatches) -> Result<(), Error> {
     let trace = matches.is_present(ARG_TRACE);
 
-    let minter: Address = matches
-        .value_of(ARG_MINTER)
-        .ok_or_else(|| Error::MissingArgument(ARG_MINTER.to_owned()))?
+    let minter_address: Address = matches
+        .value_of(ARG_MINTER_ADDRESS)
+        .ok_or_else(|| Error::MissingArgument(ARG_MINTER_ADDRESS.to_owned()))?
         .parse()
         .map_err(Error::InvalidAddress)?;
 
@@ -105,14 +105,18 @@ pub fn handle_new_resource_mutable(matches: &ArgMatches) -> Result<(), Error> {
             let mut ledger = FileBasedLedger::new(get_data_dir()?);
             let mut track = Track::new(sha256(Uuid::new_v4().to_string()), &mut ledger);
             let mut process = track.start_process(trace);
-            let resource: Address = process
-                .call_method(account, "new_resource_mutable", args!(metadata, minter))
+            let resource_address: Address = process
+                .call_method(
+                    account,
+                    "new_resource_mutable",
+                    args!(metadata, minter_address),
+                )
                 .and_then(decode_return)
                 .map_err(Error::TxnExecutionError)?;
             process.finalize().map_err(Error::TxnExecutionError)?;
             track.commit();
 
-            println!("New resource: {}", resource);
+            println!("New resource: {}", resource_address);
             Ok(())
         }
         None => Err(Error::NoDefaultAccount),

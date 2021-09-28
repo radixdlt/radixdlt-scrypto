@@ -17,8 +17,8 @@ pub enum Address {
     /// Radix native token address.
     RadixToken,
 
-    /// Represents a resource definition.
-    ResourceDef([u8; 26]),
+    /// Represents a resource.
+    Resource([u8; 26]),
 
     /// Represents a public key.
     PublicKey([u8; 33]),
@@ -42,7 +42,7 @@ impl Address {
         match self {
             Self::System => [0].to_vec(),
             Self::RadixToken => [1].to_vec(),
-            Self::ResourceDef(d) => combine(3, d),
+            Self::Resource(d) => combine(3, d),
             Self::PublicKey(d) => combine(4, d),
             Self::Package(d) => combine(5, d),
             Self::Component(d) => combine(6, d),
@@ -64,12 +64,12 @@ impl TryFrom<&[u8]> for Address {
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
         match (slice.get(0), slice.len()) {
-            (Some(0), 1) => Ok(Address::System),
-            (Some(1), 1) => Ok(Address::RadixToken),
-            (Some(3), 27) => Ok(Address::ResourceDef(copy_u8_array(&slice[1..]))),
-            (Some(4), 34) => Ok(Address::PublicKey(copy_u8_array(&slice[1..]))),
-            (Some(5), 27) => Ok(Address::Package(copy_u8_array(&slice[1..]))),
-            (Some(6), 27) => Ok(Address::Component(copy_u8_array(&slice[1..]))),
+            (Some(0), 1) => Ok(Self::System),
+            (Some(1), 1) => Ok(Self::RadixToken),
+            (Some(3), 27) => Ok(Self::Resource(copy_u8_array(&slice[1..]))),
+            (Some(4), 34) => Ok(Self::PublicKey(copy_u8_array(&slice[1..]))),
+            (Some(5), 27) => Ok(Self::Package(copy_u8_array(&slice[1..]))),
+            (Some(6), 27) => Ok(Self::Component(copy_u8_array(&slice[1..]))),
             (_, len) => Err(ParseAddressError::InvalidLength(len)),
         }
     }

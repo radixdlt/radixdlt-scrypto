@@ -9,8 +9,8 @@ use crate::rev2::*;
 use crate::utils::*;
 
 const ARG_TRACE: &str = "TRACE";
-const ARG_PACKAGE: &str = "PACKAGE";
-const ARG_NAME: &str = "NAME";
+const ARG_PACKAGE_ADDRESS: &str = "PACKAGE_ADDRESS";
+const ARG_BLUEPRINT_NAME: &str = "BLUEPRINT_NAME";
 const ARG_FUNCTION: &str = "FUNCTION";
 const ARG_ARGS: &str = "ARGS";
 
@@ -26,12 +26,12 @@ pub fn make_call_function<'a, 'b>() -> App<'a, 'b> {
                 .help("Turns on tracing."),
         )
         .arg(
-            Arg::with_name(ARG_PACKAGE)
+            Arg::with_name(ARG_PACKAGE_ADDRESS)
                 .help("Specify the package address.")
                 .required(true),
         )
         .arg(
-            Arg::with_name(ARG_NAME)
+            Arg::with_name(ARG_BLUEPRINT_NAME)
                 .help("Specify the blueprint name.")
                 .required(true),
         )
@@ -42,7 +42,7 @@ pub fn make_call_function<'a, 'b>() -> App<'a, 'b> {
         )
         .arg(
             Arg::with_name(ARG_ARGS)
-                .help("Specify the arguments, e.g. `123`, `hello` or `amount,resource`.")
+                .help("Specify the arguments, e.g. \"5\", \"hello\" or \"amount,resource_address\" (bucket).")
                 .multiple(true),
         )
 }
@@ -50,14 +50,14 @@ pub fn make_call_function<'a, 'b>() -> App<'a, 'b> {
 /// Handles a `call-function` request.
 pub fn handle_call_function(matches: &ArgMatches) -> Result<(), Error> {
     let trace = matches.is_present(ARG_TRACE);
-    let package: Address = matches
-        .value_of(ARG_PACKAGE)
-        .ok_or_else(|| Error::MissingArgument(ARG_PACKAGE.to_owned()))?
+    let package_address: Address = matches
+        .value_of(ARG_PACKAGE_ADDRESS)
+        .ok_or_else(|| Error::MissingArgument(ARG_PACKAGE_ADDRESS.to_owned()))?
         .parse()
         .map_err(Error::InvalidAddress)?;
-    let name = matches
-        .value_of(ARG_NAME)
-        .ok_or_else(|| Error::MissingArgument(ARG_NAME.to_owned()))?;
+    let blueprint_name = matches
+        .value_of(ARG_BLUEPRINT_NAME)
+        .ok_or_else(|| Error::MissingArgument(ARG_BLUEPRINT_NAME.to_owned()))?;
     let function = matches
         .value_of(ARG_FUNCTION)
         .ok_or_else(|| Error::MissingArgument(ARG_FUNCTION.to_owned()))?;
@@ -73,7 +73,7 @@ pub fn handle_call_function(matches: &ArgMatches) -> Result<(), Error> {
             match build_call_function(
                 &mut ledger,
                 account,
-                (package, name.to_owned()),
+                (package_address, blueprint_name.to_owned()),
                 function,
                 &args,
                 trace,

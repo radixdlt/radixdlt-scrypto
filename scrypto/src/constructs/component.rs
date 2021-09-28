@@ -10,7 +10,7 @@ use crate::rust::vec::Vec;
 use crate::types::*;
 use crate::utils::*;
 
-/// An instance of a blueprint, which lives in the persistent state and may own resources.
+/// An instance of a blueprint, which lives in the ledger state.
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct Component {
     address: Address,
@@ -50,15 +50,6 @@ impl Component {
         unwrap_light(scrypto_decode(&output.rtn))
     }
 
-    pub fn blueprint(&self) -> Blueprint {
-        let input = GetComponentBlueprintInput {
-            component: self.address,
-        };
-        let output: GetComponentBlueprintOutput = call_kernel(GET_COMPONENT_BLUEPRINT, input);
-
-        output.blueprint.into()
-    }
-
     pub fn get_state<T: Decode>(&self) -> T {
         let input = GetComponentStateInput {
             component: self.address,
@@ -74,6 +65,15 @@ impl Component {
             state: scrypto_encode(&state),
         };
         let _: PutComponentStateOutput = call_kernel(PUT_COMPONENT_STATE, input);
+    }
+
+    pub fn blueprint(&self) -> Blueprint {
+        let input = GetComponentBlueprintInput {
+            component: self.address,
+        };
+        let output: GetComponentBlueprintOutput = call_kernel(GET_COMPONENT_BLUEPRINT, input);
+
+        output.blueprint.into()
     }
 
     pub fn address(&self) -> Address {

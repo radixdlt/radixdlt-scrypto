@@ -6,8 +6,8 @@ use crate::ledger::*;
 use crate::rev2::*;
 
 const ARG_TRACE: &str = "TRACE";
-const ARG_PACKAGE: &str = "PACKAGE";
-const ARG_NAME: &str = "NAME";
+const ARG_PACKAGE_ADDRESS: &str = "PACKAGE_ADDRESS";
+const ARG_BLUEPRINT_NAME: &str = "BLUEPRINT_NAME";
 
 /// Constructs a `export-abi` subcommand.
 pub fn make_export_abi<'a, 'b>() -> App<'a, 'b> {
@@ -21,12 +21,12 @@ pub fn make_export_abi<'a, 'b>() -> App<'a, 'b> {
                 .help("Turns on tracing."),
         )
         .arg(
-            Arg::with_name(ARG_PACKAGE)
+            Arg::with_name(ARG_PACKAGE_ADDRESS)
                 .help("Specify the package address.")
                 .required(true),
         )
         .arg(
-            Arg::with_name(ARG_NAME)
+            Arg::with_name(ARG_BLUEPRINT_NAME)
                 .help("Specify the blueprint name.")
                 .required(true),
         )
@@ -35,17 +35,21 @@ pub fn make_export_abi<'a, 'b>() -> App<'a, 'b> {
 /// Handles a `export-abi` request.
 pub fn handle_export_abi(matches: &ArgMatches) -> Result<(), Error> {
     let trace = matches.is_present(ARG_TRACE);
-    let package: Address = matches
-        .value_of(ARG_PACKAGE)
-        .ok_or_else(|| Error::MissingArgument(ARG_PACKAGE.to_owned()))?
+    let package_address: Address = matches
+        .value_of(ARG_PACKAGE_ADDRESS)
+        .ok_or_else(|| Error::MissingArgument(ARG_PACKAGE_ADDRESS.to_owned()))?
         .parse()
         .map_err(Error::InvalidAddress)?;
-    let name = matches
-        .value_of(ARG_NAME)
-        .ok_or_else(|| Error::MissingArgument(ARG_NAME.to_owned()))?;
+    let blueprint_name = matches
+        .value_of(ARG_BLUEPRINT_NAME)
+        .ok_or_else(|| Error::MissingArgument(ARG_BLUEPRINT_NAME.to_owned()))?;
 
     let mut ledger = FileBasedLedger::new(get_data_dir()?);
-    let result = export_abi(&mut ledger, (package, name.to_owned()), trace);
+    let result = export_abi(
+        &mut ledger,
+        (package_address, blueprint_name.to_owned()),
+        trace,
+    );
 
     match result {
         Err(e) => Err(Error::TxnExecutionError(e)),

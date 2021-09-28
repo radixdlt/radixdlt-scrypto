@@ -9,7 +9,7 @@ use crate::rev2::*;
 use crate::utils::*;
 
 const ARG_TRACE: &str = "TRACE";
-const ARG_COMPONENT: &str = "COMPONENT";
+const ARG_COMPONENT_ADDRESS: &str = "COMPONENT_ADDRESS";
 const ARG_METHOD: &str = "METHOD";
 const ARG_ARGS: &str = "ARGS";
 
@@ -25,7 +25,7 @@ pub fn make_call_method<'a, 'b>() -> App<'a, 'b> {
                 .help("Turns on tracing."),
         )
         .arg(
-            Arg::with_name(ARG_COMPONENT)
+            Arg::with_name(ARG_COMPONENT_ADDRESS)
                 .help("Specify the component address.")
                 .required(true),
         )
@@ -36,7 +36,7 @@ pub fn make_call_method<'a, 'b>() -> App<'a, 'b> {
         )
         .arg(
             Arg::with_name(ARG_ARGS)
-                .help("Specify the arguments, e.g. `123`, `hello` or `amount,resource`.")
+            .help("Specify the arguments, e.g. \"5\", \"hello\" or \"amount,resource_address\" (bucket).")
                 .multiple(true),
         )
 }
@@ -44,9 +44,9 @@ pub fn make_call_method<'a, 'b>() -> App<'a, 'b> {
 /// Handles a `call-method` request.
 pub fn handle_call_method(matches: &ArgMatches) -> Result<(), Error> {
     let trace = matches.is_present(ARG_TRACE);
-    let component: Address = matches
-        .value_of(ARG_COMPONENT)
-        .ok_or_else(|| Error::MissingArgument(ARG_COMPONENT.to_owned()))?
+    let component_address: Address = matches
+        .value_of(ARG_COMPONENT_ADDRESS)
+        .ok_or_else(|| Error::MissingArgument(ARG_COMPONENT_ADDRESS.to_owned()))?
         .parse()
         .map_err(Error::InvalidAddress)?;
     let method = matches
@@ -61,7 +61,14 @@ pub fn handle_call_method(matches: &ArgMatches) -> Result<(), Error> {
         Some(a) => {
             let account: Address = a.as_str().parse().map_err(Error::InvalidAddress)?;
             let mut ledger = FileBasedLedger::new(get_data_dir()?);
-            match build_call_method(&mut ledger, account, component, method, &args, trace) {
+            match build_call_method(
+                &mut ledger,
+                account,
+                component_address,
+                method,
+                &args,
+                trace,
+            ) {
                 Ok(txn) => {
                     let receipt = execute_transaction(
                         &mut ledger,

@@ -11,12 +11,12 @@ use crate::rev2::*;
 
 const ARG_TRACE: &str = "TRACE";
 const ARG_AMOUNT: &str = "AMOUNT";
-const ARG_RESOURCE: &str = "RESOURCE";
+const ARG_RESOURCE_ADDRESS: &str = "RESOURCE_ADDRESS";
 
 /// Constructs a `mint` subcommand.
 pub fn make_mint<'a, 'b>() -> App<'a, 'b> {
     SubCommand::with_name(CMD_MINT)
-        .about("Mints resources")
+        .about("Mints resource")
         .version(crate_version!())
         .arg(
             Arg::with_name(ARG_TRACE)
@@ -30,7 +30,7 @@ pub fn make_mint<'a, 'b>() -> App<'a, 'b> {
                 .required(true),
         )
         .arg(
-            Arg::with_name(ARG_RESOURCE)
+            Arg::with_name(ARG_RESOURCE_ADDRESS)
                 .help("Specify the resource address.")
                 .required(true),
         )
@@ -45,9 +45,9 @@ pub fn handle_mint(matches: &ArgMatches) -> Result<(), Error> {
             .ok_or_else(|| Error::MissingArgument(ARG_AMOUNT.to_owned()))?,
     )
     .map_err(|_| Error::InvalidAmount)?;
-    let resource: Address = matches
-        .value_of(ARG_RESOURCE)
-        .ok_or_else(|| Error::MissingArgument(ARG_RESOURCE.to_owned()))?
+    let resource_address: Address = matches
+        .value_of(ARG_RESOURCE_ADDRESS)
+        .ok_or_else(|| Error::MissingArgument(ARG_RESOURCE_ADDRESS.to_owned()))?
         .parse()
         .map_err(Error::InvalidAddress)?;
 
@@ -59,12 +59,12 @@ pub fn handle_mint(matches: &ArgMatches) -> Result<(), Error> {
             let mut track = Track::new(sha256(Uuid::new_v4().to_string()), &mut ledger);
             let mut process = track.start_process(trace);
             process
-                .call_method(account, "mint", args!(amount, resource))
+                .call_method(account, "mint", args!(amount, resource_address))
                 .and_then(|_| process.finalize())
                 .map_err(Error::TxnExecutionError)?;
             track.commit();
 
-            println!("Resource minted into the default account!");
+            println!("Resource minted!");
             Ok(())
         }
         None => Err(Error::NoDefaultAccount),

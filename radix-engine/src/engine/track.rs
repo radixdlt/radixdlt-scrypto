@@ -24,12 +24,12 @@ pub struct Track<'le, L: Ledger> {
     packages: HashMap<Address, Package>,
     components: HashMap<Address, Component>,
     lazy_maps: HashMap<MID, LazyMap>,
-    resources: HashMap<Address, ResourceDef>,
+    resource_defs: HashMap<Address, ResourceDef>,
     vaults: HashMap<VID, Vault>,
     updated_packages: HashSet<Address>,
     updated_components: HashSet<Address>,
     updated_lazy_maps: HashSet<MID>,
-    updated_resources: HashSet<Address>,
+    updated_resource_defs: HashSet<Address>,
     updated_vaults: HashSet<VID>,
     new_addresses: Vec<Address>,
     cache: LruCache<Address, Module>, // TODO: move to ledger level
@@ -45,12 +45,12 @@ impl<'le, L: Ledger> Track<'le, L> {
             packages: HashMap::new(),
             components: HashMap::new(),
             lazy_maps: HashMap::new(),
-            resources: HashMap::new(),
+            resource_defs: HashMap::new(),
             vaults: HashMap::new(),
             updated_packages: HashSet::new(),
             updated_components: HashSet::new(),
             updated_lazy_maps: HashSet::new(),
-            updated_resources: HashSet::new(),
+            updated_resource_defs: HashSet::new(),
             updated_vaults: HashSet::new(),
             new_addresses: Vec::new(),
             cache: LruCache::new(1024),
@@ -209,42 +209,42 @@ impl<'le, L: Ledger> Track<'le, L> {
         self.lazy_maps.insert(mid, lazy_map);
     }
 
-    /// Returns an immutable reference to a resource, if exists.
+    /// Returns an immutable reference to a resource definition, if exists.
     pub fn get_resource_def(&mut self, address: Address) -> Option<&ResourceDef> {
-        if self.resources.contains_key(&address) {
-            return self.resources.get(&address);
+        if self.resource_defs.contains_key(&address) {
+            return self.resource_defs.get(&address);
         }
 
-        if let Some(resource) = self.ledger.get_resource_def(address) {
-            self.resources.insert(address, resource);
-            self.resources.get(&address)
+        if let Some(resource_def) = self.ledger.get_resource_def(address) {
+            self.resource_defs.insert(address, resource_def);
+            self.resource_defs.get(&address)
         } else {
             None
         }
     }
 
-    /// Returns a mutable reference to a resource, if exists.
+    /// Returns a mutable reference to a resource definition, if exists.
     #[allow(dead_code)]
     pub fn get_resource_def_mut(&mut self, address: Address) -> Option<&mut ResourceDef> {
-        self.updated_resources.insert(address);
+        self.updated_resource_defs.insert(address);
 
-        if self.resources.contains_key(&address) {
-            return self.resources.get_mut(&address);
+        if self.resource_defs.contains_key(&address) {
+            return self.resource_defs.get_mut(&address);
         }
 
-        if let Some(resource) = self.ledger.get_resource_def(address) {
-            self.resources.insert(address, resource);
-            self.resources.get_mut(&address)
+        if let Some(resource_def) = self.ledger.get_resource_def(address) {
+            self.resource_defs.insert(address, resource_def);
+            self.resource_defs.get_mut(&address)
         } else {
             None
         }
     }
 
-    /// Inserts a new resource.
-    pub fn put_resource_def(&mut self, address: Address, resource: ResourceDef) {
-        self.updated_resources.insert(address);
+    /// Inserts a new resource definition.
+    pub fn put_resource_def(&mut self, address: Address, resource_def: ResourceDef) {
+        self.updated_resource_defs.insert(address);
 
-        self.resources.insert(address, resource);
+        self.resource_defs.insert(address, resource_def);
     }
 
     /// Returns an immutable reference to a vault, if exists.
@@ -343,9 +343,9 @@ impl<'le, L: Ledger> Track<'le, L> {
                 .put_lazy_map(mid, self.lazy_maps.get(&mid).unwrap().clone());
         }
 
-        for address in self.updated_resources.clone() {
+        for address in self.updated_resource_defs.clone() {
             self.ledger
-                .put_resource_def(address, self.resources.get(&address).unwrap().clone());
+                .put_resource_def(address, self.resource_defs.get(&address).unwrap().clone());
         }
 
         for vault in self.updated_vaults.clone() {

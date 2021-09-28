@@ -6,7 +6,7 @@ use crate::kernel::*;
 use crate::rust::borrow::ToOwned;
 use crate::types::*;
 
-/// A collection of blueprints, built and published as a single unit.
+/// A collection of blueprints, compiles and published as a single unit.
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct Package {
     address: Address,
@@ -35,7 +35,7 @@ impl Package {
     }
 
     pub fn blueprint(&self, name: &str) -> Blueprint {
-        Blueprint::from(self.address, name)
+        Blueprint::from((self.address, name))
     }
 
     pub fn address(&self) -> Address {

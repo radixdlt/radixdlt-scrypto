@@ -36,8 +36,8 @@ impl Ledger for InMemoryLedger {
         self.resource_defs.get(&address).map(Clone::clone)
     }
 
-    fn put_resource_def(&mut self, address: Address, resource: ResourceDef) {
-        self.resource_defs.insert(address, resource);
+    fn put_resource_def(&mut self, address: Address, resource_def: ResourceDef) {
+        self.resource_defs.insert(address, resource_def);
     }
 
     fn get_package(&self, address: Address) -> Option<Package> {

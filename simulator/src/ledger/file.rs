@@ -75,10 +75,10 @@ impl Ledger for FileBasedLedger {
         Self::read(self.get_path(RESOURCE_DEFS, address.to_string(), FILE_EXT)).map(Self::decode)
     }
 
-    fn put_resource_def(&mut self, address: Address, resource: ResourceDef) {
+    fn put_resource_def(&mut self, address: Address, resource_def: ResourceDef) {
         Self::write(
             self.get_path(RESOURCE_DEFS, address.to_string(), FILE_EXT),
-            Self::encode(&resource),
+            Self::encode(&resource_def),
         )
     }
 

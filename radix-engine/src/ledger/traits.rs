@@ -6,7 +6,7 @@ use crate::model::*;
 pub trait Ledger {
     fn get_resource_def(&self, address: Address) -> Option<ResourceDef>;
 
-    fn put_resource_def(&mut self, address: Address, resource: ResourceDef);
+    fn put_resource_def(&mut self, address: Address, resource_def: ResourceDef);
 
     fn get_package(&self, address: Address) -> Option<Package>;
 

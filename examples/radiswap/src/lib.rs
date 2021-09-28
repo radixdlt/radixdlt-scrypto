@@ -2,22 +2,22 @@ use scrypto::prelude::*;
 
 blueprint! {
     struct Radiswap {
-        /// The resource definition of the LP token.
-        lp_token_def: ResourceDef,
+        /// The resource definition of LP token.
+        lp_resource_def: ResourceDef,
         /// The reserve for token A.
         a_pool: Vault,
         /// The reserve for token B.
         b_pool: Vault,
         /// The fee to apply for every swap, like `3` for a 0.3% fee.
         fee_in_thousandths: u32,
-        /// The scale to use when adding/removing liquidity. When this value is
-        /// set to 5, the min liquidity to add is `0.001%` of the pools.
+        /// The scale to use when adding/removing liquidity. If this value is
+        /// set to `5`, the min liquidity to add is 0.001% of the pools.
         scale: usize,
     }
 
     impl Radiswap {
-        /// Creates a Radiswap component for token pair A and B and returns its address
-        /// and the initial LP tokens.
+        /// Creates a Radiswap component for token pair A/B and returns the component address
+        /// along with the initial LP tokens.
         pub fn new(
             a_tokens: Bucket,
             b_tokens: Bucket,
@@ -37,16 +37,16 @@ blueprint! {
             assert!(scale >= 1 && scale <= 9, "Invalid scale");
 
             // Instantiate our LP token and mint an initial supply of them
-            let lp_token_def = ResourceBuilder::new()
+            let lp_resource_def = ResourceBuilder::new()
                 .metadata("symbol", lp_symbol)
                 .metadata("name", lp_name)
                 .metadata("url", lp_url)
                 .create_mutable(Context::package_address());
-            let lp_tokens = lp_token_def.mint(lp_initial_supply);
+            let lp_tokens = lp_resource_def.mint(lp_initial_supply);
 
             // Instantiate our Radiswap component
             let radiswap = Self {
-                lp_token_def,
+                lp_resource_def,
                 a_pool: Vault::with_bucket(a_tokens),
                 b_pool: Vault::with_bucket(b_tokens),
                 fee_in_thousandths,
@@ -56,11 +56,6 @@ blueprint! {
 
             // Return the new Radiswap component, as well as the initial supply of LP tokens
             (radiswap, lp_tokens)
-        }
-
-        /// Returns the current total supply of the LP token.
-        pub fn lp_token_supply(&self) -> Amount {
-            self.lp_token_def.supply()
         }
 
         /// Adds liquidity to this pool and return the LP tokens representing pool shares
@@ -83,7 +78,7 @@ blueprint! {
             };
 
             // Mint LP tokens according to the share the provider is contributing
-            let lp_tokens = self.lp_token_def.mint(self.lp_token_supply() * actual_share / scale);
+            let lp_tokens = self.lp_resource_def.mint(self.lp_resource_def.supply() * actual_share / scale);
 
             // Return the LP tokens along with any remainder
             (lp_tokens, remainder)
@@ -92,13 +87,13 @@ blueprint! {
         /// Removes liquidity from this pool.
         pub fn remove_liquidity(&self, lp_tokens: Bucket) -> (Bucket, Bucket) {
             assert!(
-                self.lp_token_def.address() == lp_tokens.resource(),
+                self.lp_resource_def.address() == lp_tokens.resource_address(),
                 "Wrong token type passed in"
             );
 
             // Calculate the share based on the input LP tokens.
             let scale = Amount::exp10(self.scale);
-            let share = scale * lp_tokens.amount() / self.lp_token_supply();
+            let share = scale * lp_tokens.amount() / self.lp_resource_def.supply();
 
             // Withdraw the correct amounts of tokens A and B from reserves
             let a_withdrawn = self.a_pool.take(self.a_pool.amount() * share / scale);
@@ -116,7 +111,7 @@ blueprint! {
             // Calculate the swap fee
             let fee_amount = input_tokens.amount() * self.fee_in_thousandths / 1000;
 
-            if input_tokens.resource() == self.a_pool.resource() {
+            if input_tokens.resource_address() == self.a_pool.resource_address() {
                 // Calculate how much of token B we will return
                 let b_amount = self.b_pool.amount()
                     - self.a_pool.amount() * self.b_pool.amount()

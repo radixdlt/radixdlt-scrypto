@@ -31,9 +31,11 @@ pub fn execute_transaction<T: Ledger>(
             Instruction::MoveToBucket {
                 index,
                 amount,
-                resource,
+                resource_address,
             } => match reserved_bids.get(index as usize) {
-                Some(bid) => proc.move_to_bucket(amount, resource, *bid).map(|()| None),
+                Some(bid) => proc
+                    .move_to_bucket(amount, resource_address, *bid)
+                    .map(|()| None),
                 None => Err(RuntimeError::BucketNotReserved),
             },
             Instruction::CallFunction {

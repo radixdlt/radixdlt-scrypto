@@ -6,7 +6,7 @@ use crate::resource::*;
 use crate::rust::borrow::ToOwned;
 use crate::types::*;
 
-/// Represents a resource container on ledger.
+/// Represents a persistent resource container on ledger state.
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct Vault {
     vid: VID,
@@ -33,15 +33,15 @@ impl From<Vault> for VID {
 }
 
 impl Vault {
-    pub fn new(resource: Address) -> Self {
-        let input = CreateEmptyVaultInput { resource };
+    pub fn new(resource_address: Address) -> Self {
+        let input = CreateEmptyVaultInput { resource_address };
         let output: CreateEmptyVaultOutput = call_kernel(CREATE_EMPTY_VAULT, input);
 
         output.vault.into()
     }
 
     pub fn with_bucket(bucket: Bucket) -> Self {
-        let vault = Vault::new(bucket.resource());
+        let vault = Vault::new(bucket.resource_address());
         vault.put(bucket);
         vault
     }
@@ -75,11 +75,11 @@ impl Vault {
         output.amount
     }
 
-    pub fn resource(&self) -> Address {
-        let input = GetVaultResourceInput { vault: self.vid };
-        let output: GetVaultResourceOutput = call_kernel(GET_VAULT_RESOURCE, input);
+    pub fn resource_address(&self) -> Address {
+        let input = GetVaultResourceAddressInput { vault: self.vid };
+        let output: GetVaultResourceAddressOutput = call_kernel(GET_VAULT_RESOURCE_ADDRESS, input);
 
-        output.resource
+        output.resource_address
     }
 
     pub fn is_empty(&self) -> bool {

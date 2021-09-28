@@ -11,13 +11,13 @@ use crate::rev2::*;
 
 const ARG_TRACE: &str = "TRACE";
 const ARG_AMOUNT: &str = "AMOUNT";
-const ARG_RESOURCE: &str = "RESOURCE";
-const ARG_RECIPIENT: &str = "RECIPIENT";
+const ARG_RESOURCE_ADDRESS: &str = "RESOURCE_ADDRESS";
+const ARG_RECIPIENT_ADDRESS: &str = "RECIPIENT_ADDRESS";
 
 /// Constructs a `transfer` subcommand.
 pub fn make_transfer<'a, 'b>() -> App<'a, 'b> {
     SubCommand::with_name(CMD_TRANSFER)
-        .about("Transfers resources")
+        .about("Transfers resource")
         .version(crate_version!())
         .arg(
             Arg::with_name(ARG_TRACE)
@@ -31,12 +31,12 @@ pub fn make_transfer<'a, 'b>() -> App<'a, 'b> {
                 .required(true),
         )
         .arg(
-            Arg::with_name(ARG_RESOURCE)
+            Arg::with_name(ARG_RESOURCE_ADDRESS)
                 .help("Specify the resource address.")
                 .required(true),
         )
         .arg(
-            Arg::with_name(ARG_RECIPIENT)
+            Arg::with_name(ARG_RECIPIENT_ADDRESS)
                 .help("Specify the recipient address.")
                 .required(true),
         )
@@ -51,14 +51,14 @@ pub fn handle_transfer(matches: &ArgMatches) -> Result<(), Error> {
             .ok_or_else(|| Error::MissingArgument(ARG_AMOUNT.to_owned()))?,
     )
     .map_err(|_| Error::InvalidAmount)?;
-    let resource: Address = matches
-        .value_of(ARG_RESOURCE)
-        .ok_or_else(|| Error::MissingArgument(ARG_RESOURCE.to_owned()))?
+    let resource_address: Address = matches
+        .value_of(ARG_RESOURCE_ADDRESS)
+        .ok_or_else(|| Error::MissingArgument(ARG_RESOURCE_ADDRESS.to_owned()))?
         .parse()
         .map_err(Error::InvalidAddress)?;
-    let recipient: Address = matches
-        .value_of(ARG_RECIPIENT)
-        .ok_or_else(|| Error::MissingArgument(ARG_RECIPIENT.to_owned()))?
+    let recipient_address: Address = matches
+        .value_of(ARG_RECIPIENT_ADDRESS)
+        .ok_or_else(|| Error::MissingArgument(ARG_RECIPIENT_ADDRESS.to_owned()))?
         .parse()
         .map_err(Error::InvalidAddress)?;
 
@@ -71,14 +71,14 @@ pub fn handle_transfer(matches: &ArgMatches) -> Result<(), Error> {
             let mut process = track.start_process(trace);
             let bid = process.reserve_bucket_id();
             process
-                .call_method(account, "withdraw", args!(amount, resource))
+                .call_method(account, "withdraw", args!(amount, resource_address))
                 .map_err(Error::TxnExecutionError)?;
             process
-                .move_to_bucket(amount, resource, bid)
+                .move_to_bucket(amount, resource_address, bid)
                 .map_err(Error::TxnExecutionError)?;
             process
                 .call_method(
-                    recipient,
+                    recipient_address,
                     "deposit",
                     args!(scrypto::resource::Bucket::from(bid)),
                 )

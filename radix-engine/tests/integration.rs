@@ -77,7 +77,7 @@ fn test_bucket() {
 }
 
 #[test]
-fn test_move_resource() {
+fn test_move_bucket_and_ref() {
     let mut engine = InMemoryRadixEngine::new();
     let mut track = engine.start_transaction();
     let mut proc = track.start_process(true);

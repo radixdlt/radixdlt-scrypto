@@ -107,14 +107,14 @@ pub fn handle_new_resource_fixed(matches: &ArgMatches) -> Result<(), Error> {
             let mut ledger = FileBasedLedger::new(get_data_dir()?);
             let mut track = Track::new(sha256(Uuid::new_v4().to_string()), &mut ledger);
             let mut process = track.start_process(trace);
-            let resource: Address = process
+            let resource_address: Address = process
                 .call_method(account, "new_resource_fixed", args!(metadata, supply))
                 .and_then(decode_return)
                 .map_err(Error::TxnExecutionError)?;
             process.finalize().map_err(Error::TxnExecutionError)?;
             track.commit();
 
-            println!("New resource: {}", resource);
+            println!("New resource: {}", resource_address);
             Ok(())
         }
         None => Err(Error::NoDefaultAccount),

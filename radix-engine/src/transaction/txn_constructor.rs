@@ -203,8 +203,8 @@ fn handle_custom_ty(
         SCRYPTO_NAME_BUCKET => {
             let mut split = arg.split(',');
             let amount = split.next().and_then(|v| v.trim().parse::<Amount>().ok());
-            let resource = split.next().and_then(|v| v.trim().parse::<Address>().ok());
-            match (amount, resource) {
+            let resource_address = split.next().and_then(|v| v.trim().parse::<Address>().ok());
+            match (amount, resource_address) {
                 (Some(a), Some(r)) => {
                     let n = alloc.count();
                     if n >= 255 {
@@ -234,12 +234,12 @@ fn prepare_buckets(
             method: method.to_owned(),
             args: Args(vec![
                 scrypto_encode(&bucket.amount()),
-                scrypto_encode(&bucket.resource()),
+                scrypto_encode(&bucket.resource_address()),
             ]),
         });
         instructions.push(Instruction::MoveToBucket {
             amount: bucket.amount(),
-            resource: bucket.resource(),
+            resource_address: bucket.resource_address(),
             index: *index,
         });
     }

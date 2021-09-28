@@ -40,13 +40,13 @@ impl BucketRef {
         output.amount
     }
 
-    pub fn resource(&self) -> Address {
-        let input = GetRefResourceInput {
+    pub fn resource_address(&self) -> Address {
+        let input = GetRefResourceAddressInput {
             reference: self.rid,
         };
-        let output: GetRefResourceOutput = call_kernel(GET_REF_RESOURCE, input);
+        let output: GetRefResourceAddressOutput = call_kernel(GET_REF_RESOURCE_ADDRESS, input);
 
-        output.resource
+        output.resource_address
     }
 
     pub fn drop(self) {

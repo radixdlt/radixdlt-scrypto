@@ -8,12 +8,12 @@ Language for building DeFi apps on Radix.
 
 - **Package**: A collection of blueprints, compiled and published as a single unit.
 - **Blueprint**: A template that describes the common behavior and structure of its instances.
-- **Component** An instance of a blueprint, which lives in the persistent state and may own resources.
+- **Component** An instance of a blueprint, which lives in ledger state.
 - **Function**: A set of statements to perform a specific task.
 - **Method**: A function associated with a component.
-- **ResourceDef**: A resource definition, describing the metadata, minter and supply.
-- **Bucket**: A transient container of resources.
-- **Vault**: A persistent container of resources on ledger state.
+- **ResourceDef**: The definition of a resource, including metadata, minter and supply.
+- **Bucket**: A transient resource container.
+- **Vault**: A persistent resource container in ledger state.
 
 ![Resource Flow](./assets/resource-flow.png)
 
@@ -77,11 +77,11 @@ scrypto test
 | Action | Command |
 |---|---|
 | To create an account | ``` rev2 new-account ``` |
-| To change default account | ``` rev2 set-default-account <account_address> ``` |
-| To create resource with fixed supply | ``` rev2 new-resource-fixed <amount> ``` |
-| To create resource with mutable supply | ``` rev2 new-resource-mutable <minter> ``` |
-| To mint resources | ``` rev2 mint <amount> <resource_address>``` |
-| To transfer resources | ``` rev2 transfer <amount> <resource_address> <recipient_address> ``` |
+| To change the default account | ``` rev2 set-default-account <account_address> ``` |
+| To create a resource with fixed supply | ``` rev2 new-resource-fixed <amount> ``` |
+| To create a resource with mutable supply | ``` rev2 new-resource-mutable <minter_address> ``` |
+| To mint resource | ``` rev2 mint <amount> <resource_address>``` |
+| To transfer resource | ``` rev2 transfer <amount> <resource_address> <recipient_address> ``` |
 | To publish a package | ``` rev2 publish <path_to_package_dir_or_wasm_file> ``` |
 | To call a function | ``` rev2 call-function <package_address> <blueprint_name> <function> <args> ``` |
 | To call a method | ``` rev2 call-method <component_address> <method> <args> ``` |

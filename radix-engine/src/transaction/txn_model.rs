@@ -17,15 +17,15 @@ pub struct Transaction {
 /// Represents an instruction
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub enum Instruction {
-    /// Reserve `n` buckets upfront.
+    /// Reserve buckets for calls.
     ReserveBuckets {
         n: u8,
     },
 
-    /// Create a bucket to be used for function call.
+    /// Move resource to a reserved bucket.
     MoveToBucket {
         amount: Amount,
-        resource: Address,
+        resource_address: Address,
         index: u8,
     },
 
@@ -43,7 +43,7 @@ pub enum Instruction {
         args: Args,
     },
 
-    /// Pass all remaining resources to a component.
+    /// Deposit all buckets of resource to a component.
     DepositAll {
         component: Address,
         method: String,

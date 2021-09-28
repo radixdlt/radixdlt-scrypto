@@ -6,18 +6,18 @@ use scrypto::*;
 
 blueprint! {
     struct ComponentTest {
-        resource: Address,
+        resource_def: ResourceDef,
         bucket: Vault,
         secret: String,
     }
 
     impl ComponentTest {
         pub fn create_component() -> Address {
-            let resource = create_mutable("c1", Context::package_address());
-            let bucket =  mint_resource(resource, 100);
+            let resource_def = create_mutable("c1", Context::package_address());
+            let bucket =  resource_def.mint(100);
 
             Self {
-                resource,
+                resource_def,
                 bucket: Vault::with_bucket(bucket),
                 secret: "Secret".to_owned(),
             }.instantiate()
@@ -32,9 +32,9 @@ blueprint! {
         }
 
         pub fn put_component_state(&mut self)  {
-            let bucket = mint_resource(self.resource, 100);
+            let bucket = self.resource_def.mint(100);
 
-            // Receive resource
+            // Receive bucket
             self.bucket.put(bucket);
 
             // Update state

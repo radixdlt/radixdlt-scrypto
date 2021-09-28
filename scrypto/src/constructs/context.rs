@@ -1,7 +1,7 @@
 use crate::kernel::*;
 use crate::types::*;
 
-/// The execution context.
+/// A utility for accessing transaction context.
 #[derive(Debug)]
 pub struct Context {}
 

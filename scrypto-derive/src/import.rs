@@ -76,7 +76,7 @@ pub fn handle_import(input: TokenStream) -> TokenStream {
                 let package = ::scrypto::utils::unwrap_light(
                     ::scrypto::types::Address::from_str(#package)
                 );
-                let blueprint = ::scrypto::constructs::Blueprint::from(package, #name);
+                let blueprint = ::scrypto::constructs::Blueprint::from((package, #name));
                 blueprint.call(#func_name, ::scrypto::args!(#(#func_args),*))
             }
         });
@@ -336,7 +336,7 @@ fn get_native_type(ty: &des::Type) -> (Type, Vec<Item>) {
             "scrypto::Component" => parse_quote! { ::scrypto::constructs::Component },
             "scrypto::LazyMap" => parse_quote! { ::scrypto::constructs::LazyMap },
 
-            "scrypto::Resource" => parse_quote! { ::scrypto::resource::Resource },
+            "scrypto::ResourceDef" => parse_quote! { ::scrypto::resource::ResourceDef },
             "scrypto::Bucket" => parse_quote! { ::scrypto::resource::Bucket },
             "scrypto::BucketRef" => parse_quote! { ::scrypto::resource::BucketRef },
             "scrypto::Vault" => parse_quote! { ::scrypto::resource::Vault },

@@ -19,7 +19,7 @@ pub const SCRYPTO_NAME_BLUEPRINT: &str = "scrypto::Blueprint";
 pub const SCRYPTO_NAME_COMPONENT: &str = "scrypto::Component";
 pub const SCRYPTO_NAME_LAZY_MAP: &str = "scrypto::LazyMap";
 
-pub const SCRYPTO_NAME_RESOURCE: &str = "scrypto::Resource";
+pub const SCRYPTO_NAME_RESOURCE_DEF: &str = "scrypto::ResourceDef";
 pub const SCRYPTO_NAME_BUCKET: &str = "scrypto::Bucket";
 pub const SCRYPTO_NAME_BUCKET_REF: &str = "scrypto::BucketRef";
 pub const SCRYPTO_NAME_VAULT: &str = "scrypto::Vault";

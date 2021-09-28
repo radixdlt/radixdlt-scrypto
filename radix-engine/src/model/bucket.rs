@@ -5,20 +5,20 @@ use scrypto::types::*;
 /// Represents an error when accessing a bucket.
 #[derive(Debug, Clone)]
 pub enum BucketError {
-    MismatchingResourceType,
+    MismatchingResourceAddress,
     InsufficientBalance,
     ReferenceCountUnderflow,
     UnauthorizedAccess,
 }
 
-/// A bucket is a transient container of resources.
+/// A transient resource container.
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct Bucket {
     amount: Amount,
-    resource: Address,
+    resource_address: Address,
 }
 
-/// A borrowed bucket becomes locked until has references have been dropped.
+/// A bucket becomes locked after a borrow operation.
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct LockedBucket {
     bucket_id: BID,
@@ -36,13 +36,16 @@ pub struct Vault {
 }
 
 impl Bucket {
-    pub fn new(amount: Amount, resource: Address) -> Self {
-        Self { amount, resource }
+    pub fn new(amount: Amount, resource_address: Address) -> Self {
+        Self {
+            amount,
+            resource_address,
+        }
     }
 
     pub fn put(&mut self, other: Self) -> Result<(), BucketError> {
-        if self.resource != other.resource {
-            Err(BucketError::MismatchingResourceType)
+        if self.resource_address != other.resource_address {
+            Err(BucketError::MismatchingResourceAddress)
         } else {
             self.amount += other.amount;
             Ok(())
@@ -55,7 +58,7 @@ impl Bucket {
         } else {
             self.amount -= amount;
 
-            Ok(Self::new(amount, self.resource))
+            Ok(Self::new(amount, self.resource_address))
         }
     }
 
@@ -63,8 +66,8 @@ impl Bucket {
         self.amount
     }
 
-    pub fn resource(&self) -> Address {
-        self.resource
+    pub fn resource_address(&self) -> Address {
+        self.resource_address
     }
 }
 
@@ -113,7 +116,7 @@ impl Vault {
         self.bucket.amount()
     }
 
-    pub fn resource(&self) -> Address {
-        self.bucket.resource()
+    pub fn resource_address(&self) -> Address {
+        self.bucket.resource_address()
     }
 }

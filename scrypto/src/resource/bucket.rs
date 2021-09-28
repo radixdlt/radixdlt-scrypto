@@ -6,7 +6,7 @@ use crate::resource::*;
 use crate::rust::borrow::ToOwned;
 use crate::types::*;
 
-/// Represents resources of some quantity.
+/// Represents a transient resource container.
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct Bucket {
     bid: BID,
@@ -33,8 +33,8 @@ impl From<Bucket> for BID {
 }
 
 impl Bucket {
-    pub fn new(resource: Address) -> Self {
-        let input = CreateEmptyBucketInput { resource };
+    pub fn new(resource_address: Address) -> Self {
+        let input = CreateEmptyBucketInput { resource_address };
         let output: CreateEmptyBucketOutput = call_kernel(CREATE_EMPTY_BUCKET, input);
 
         output.bucket.into()
@@ -72,18 +72,16 @@ impl Bucket {
         output.amount
     }
 
-    pub fn resource(&self) -> Address {
-        let input = GetBucketResourceInput { bucket: self.bid };
-        let output: GetBucketResourceOutput = call_kernel(GET_BUCKET_RESOURCE, input);
+    pub fn resource_address(&self) -> Address {
+        let input = GetBucketResourceAddressInput { bucket: self.bid };
+        let output: GetBucketResourceAddressOutput =
+            call_kernel(GET_BUCKET_RESOURCE_ADDRESS, input);
 
-        output.resource
+        output.resource_address
     }
 
     pub fn burn(self) {
-        let input = BurnResourceInput {
-            bucket: self.into(),
-        };
-        let _output: BurnResourceOutput = call_kernel(BURN_RESOURCE, input);
+        ResourceDef::burn(self);
     }
 
     pub fn is_empty(&self) -> bool {

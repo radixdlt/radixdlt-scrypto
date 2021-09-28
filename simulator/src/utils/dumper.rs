@@ -38,10 +38,10 @@ pub fn dump_component<T: Ledger>(address: Address, ledger: &T) {
             for (last, vid) in vaults.iter().identify_last() {
                 let vault = ledger.get_vault(*vid).unwrap();
                 println!(
-                    "{} {{ amount: {}, resource: {} }}",
+                    "{} {{ amount: {}, address: {} }}",
                     list_item_prefix(last),
                     vault.amount(),
-                    vault.resource(),
+                    vault.resource_address(),
                 );
             }
         }
@@ -51,9 +51,9 @@ pub fn dump_component<T: Ledger>(address: Address, ledger: &T) {
     }
 }
 
-pub fn dump_resource<T: Ledger>(address: Address, ledger: &T) {
-    let resource = ledger.get_resource_def(address);
-    match resource {
+pub fn dump_resource_def<T: Ledger>(address: Address, ledger: &T) {
+    let resource_def = ledger.get_resource_def(address);
+    match resource_def {
         Some(r) => {
             for (k, v) in r.metadata {
                 println!("{}: {}", k.green().bold(), v);
@@ -62,7 +62,7 @@ pub fn dump_resource<T: Ledger>(address: Address, ledger: &T) {
             println!("{}: {:?}", "supply".green().bold(), r.supply);
         }
         None => {
-            println!("{}", "Resource not found".red());
+            println!("{}", "Resource definition not found".red());
         }
     }
 }
@@ -119,7 +119,7 @@ pub fn dump_receipt(receipt: &TransactionReceipt) {
         let ty = match address {
             Address::Package(_) => "Package",
             Address::Component(_) => "Component",
-            Address::ResourceDef(_) => "Resource",
+            Address::Resource(_) => "Resource",
             _ => "Other",
         };
         println!("{} {}: {}", list_item_prefix(last), ty, address);

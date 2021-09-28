@@ -6,16 +6,12 @@ use scrypto::types::*;
 use scrypto::*;
 
 blueprint! {
-    struct ResourceTest {
-        resource: Address,
-        bucket: Bucket,
-        secret: String,
-    }
+    struct ResourceTest;
 
     impl ResourceTest {
         pub fn create_mutable() -> Bucket {
-           let resource = create_mutable("r1", Context::package_address());
-           mint_resource(resource, 100)
+           let resource_def = create_mutable("r1", Context::package_address());
+           resource_def.mint(100)
         }
 
         pub fn create_fixed() -> Bucket {
@@ -23,9 +19,8 @@ blueprint! {
         }
 
         pub fn query() -> (HashMap<String, String>, Option<Address>, Amount) {
-            let resource = create_mutable("r3", Context::package_address());
-            let def = ResourceDef::from(resource);
-            (def.metadata(), def.minter(), def.supply())
+            let resource_def = create_mutable("r3", Context::package_address());
+            (resource_def.metadata(), resource_def.minter(), resource_def.supply())
         }
 
         pub fn burn() {

@@ -2,6 +2,7 @@ use sbor::{describe::Type, *};
 
 use crate::buffer::*;
 use crate::constants::*;
+use crate::constructs::*;
 use crate::kernel::*;
 use crate::rust::borrow::ToOwned;
 use crate::rust::string::String;
@@ -33,13 +34,6 @@ impl From<Blueprint> for (Address, String) {
 }
 
 impl Blueprint {
-    pub fn from(package: Address, name: &str) -> Self {
-        Self {
-            package,
-            name: name.to_owned(),
-        }
-    }
-
     pub fn call<T: Decode>(&self, function: &str, args: Vec<Vec<u8>>) -> T {
         let input = CallFunctionInput {
             blueprint: (self.package, self.name.clone()),
@@ -51,8 +45,8 @@ impl Blueprint {
         unwrap_light(scrypto_decode(&output.rtn))
     }
 
-    pub fn package(&self) -> Address {
-        self.package
+    pub fn package(&self) -> Package {
+        self.package.into()
     }
 
     pub fn name(&self) -> &str {

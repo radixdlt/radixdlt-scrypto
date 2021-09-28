@@ -1,7 +1,7 @@
 use sbor::*;
 use scrypto::rust::vec::Vec;
 
-/// A package contains the code that defines a collection of blueprints.
+/// A collection of blueprints, compiled and published as a single unit.
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct Package {
     code: Vec<u8>,

@@ -15,7 +15,7 @@ pub mod constructs;
 pub mod kernel;
 /// The prelude of Scrypto library.
 pub mod prelude;
-/// Scrypto resource, bucket and reference.
+/// Scrypto resource abstractions.
 pub mod resource;
 /// A facade to Rust standard types.
 pub mod rust;
@@ -94,7 +94,7 @@ macro_rules! trace {
     }};
 }
 
-/// Includes a package code as a byte array.
+/// Includes package code as a byte array.
 #[macro_export]
 macro_rules! package_code {
     () => {

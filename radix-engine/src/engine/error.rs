@@ -42,7 +42,7 @@ pub enum RuntimeError {
 
     ComponentAlreadyExists(Address),
 
-    ResourceAlreadyExists(Address),
+    ResourceDefAlreadyExists(Address),
 
     PackageNotFound(Address),
 
@@ -50,9 +50,9 @@ pub enum RuntimeError {
 
     LazyMapNotFound(MID),
 
-    ResourceNotFound(Address),
+    ResourceDefNotFound(Address),
 
-    UnableToMintFixedResource,
+    UnableToMintDueToFixedSupply,
 
     UnauthorizedToMint,
 

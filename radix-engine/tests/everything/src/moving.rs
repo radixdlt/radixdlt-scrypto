@@ -12,18 +12,18 @@ blueprint! {
     impl MoveTest {
 
         pub fn receive_bucket(&mut self, t: Bucket) {
-            info!("Received bucket: address = {}, amount = {}", t.resource(), t.amount());
+            info!("Received bucket: resource address = {}, amount = {}", t.resource_address(), t.amount());
             self.vaults.push(Vault::with_bucket(t));
         }
 
         pub fn receive_reference(&self, t: BucketRef) {
-            info!("Received reference: address = {}, amount = {}", t.resource(), t.amount());
+            info!("Received reference: resource address = {}, amount = {}", t.resource_address(), t.amount());
             t.drop();
         }
 
         pub fn move_bucket() {
-            let resource =  create_mutable("m1", Context::package_address());
-            let bucket =  mint_resource(resource, 100);
+            let resource_def =  create_mutable("m1", Context::package_address());
+            let bucket = resource_def.mint(100);
             let component: Component = MoveTest {
                 vaults: Vec::new()
             }.instantiate().into();
@@ -32,8 +32,8 @@ blueprint! {
         }
 
         pub fn move_reference() -> Bucket {
-            let resource =  create_mutable("m2", Context::package_address());
-            let bucket =  mint_resource(resource, 100);
+            let resource_def =  create_mutable("m2", Context::package_address());
+            let bucket = resource_def.mint(100);
             let component: Component = MoveTest {
                 vaults: Vec::new()
             }.instantiate().into();
