@@ -105,7 +105,7 @@ blueprint! {
             let b_withdrawn = self.b_pool.take(share * self.b_pool.amount() / scale);
 
             // Burn the LP tokens received
-            ResourceDef::burn(lp_tokens);
+            lp_tokens.burn();
 
             // Return the withdrawn tokens
             (a_withdrawn, b_withdrawn)

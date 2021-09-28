@@ -95,6 +95,9 @@ jobs:
     - name: Build no_std
       run: cargo build --target wasm32-unknown-unknown --release
       working-directory: examples/no_std
+    - name: Build radiswap
+      run: cargo build --target wasm32-unknown-unknown --release
+      working-directory: examples/radiswap
   radix-engine:
     name: Run Radix Engine tests
     runs-on: ${{ matrix.os }}

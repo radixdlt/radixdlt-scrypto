@@ -11,6 +11,7 @@ echo "Building packages..."
 (cd examples/no_std; cargo build --target wasm32-unknown-unknown --release)
 (cd examples/gumball-machine; cargo build --target wasm32-unknown-unknown --release)
 (cd examples/gumball-machine-vendor; cargo build --target wasm32-unknown-unknown --release)
+(cd examples/radiswap; cargo build --target wasm32-unknown-unknown --release)
 
 echo "Publishing assets..."
 wasm-opt \
@@ -38,4 +39,9 @@ wasm-opt \
   --strip-debug --strip-dwarf --strip-producers \
   -o ./assets/gumball-machine-vendor.wasm \
   ./examples/gumball-machine-vendor/target/wasm32-unknown-unknown/release/out.wasm
+wasm-opt \
+  -Os -g \
+  --strip-debug --strip-dwarf --strip-producers \
+  -o ./assets/radiswap.wasm \
+  ./examples/radiswap/target/wasm32-unknown-unknown/release/out.wasm
 echo "Done!"

@@ -28,6 +28,7 @@ echo "Building examples..."
 (cd examples/no_std; cargo build --target wasm32-unknown-unknown --release; cargo test)
 (cd examples/gumball-machine; cargo build --target wasm32-unknown-unknown --release; cargo test)
 (cd examples/gumball-machine-vendor; cargo build --target wasm32-unknown-unknown --release; cargo test)
+(cd examples/radiswap; cargo build --target wasm32-unknown-unknown --release; cargo test)
 
 echo "Running simulator..."
 (cd simulator; bash ./tests/rev2.sh)

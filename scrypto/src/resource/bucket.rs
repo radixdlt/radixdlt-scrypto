@@ -78,4 +78,11 @@ impl Bucket {
 
         output.resource
     }
+
+    pub fn burn(self) {
+        let input = BurnResourceInput {
+            bucket: self.into(),
+        };
+        let _output: BurnResourceOutput = call_kernel(BURN_RESOURCE, input);
+    }
 }

@@ -29,7 +29,7 @@ blueprint! {
         }
 
         pub fn burn() {
-           ResourceDef::burn(create_fixed("r4", 100.into()));
+           create_fixed("r4", 100.into()).burn();
         }
     }
 }

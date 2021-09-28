@@ -62,13 +62,6 @@ impl ResourceDef {
         output.bucket.into()
     }
 
-    pub fn burn(bucket: Bucket) {
-        let input = BurnResourceInput {
-            bucket: bucket.into(),
-        };
-        let _output: BurnResourceOutput = call_kernel(BURN_RESOURCE, input);
-    }
-
     pub fn metadata(&self) -> HashMap<String, String> {
         let input = GetResourceMetadataInput {
             resource: self.address,
