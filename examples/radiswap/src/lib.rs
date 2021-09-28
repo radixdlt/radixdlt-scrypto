@@ -12,7 +12,7 @@ blueprint! {
         fee_in_thousandths: u32,
         /// The scale to use when adding/removing liquidity. When this value is
         /// set to 5, the min liquidity to add is `0.001%` of the pools.
-        scale: u32,
+        scale: usize,
     }
 
     impl Radiswap {
@@ -26,7 +26,7 @@ blueprint! {
             lp_name: String,
             lp_url: String,
             fee_in_thousandths: u32,
-            scale: u32,
+            scale: usize,
         ) -> (Address, Bucket) {
             // Check arguments
             assert!(
@@ -66,24 +66,24 @@ blueprint! {
         /// Adds liquidity to this pool and return the LP tokens representing pool shares
         /// along with any remainder.
         pub fn add_liquidity(&self, a_tokens: Bucket, b_tokens: Bucket) -> (Bucket, Bucket) {
-            let scale = Amount::from(10u32.pow(self.scale));
+            let scale = Amount::exp10(self.scale);
             let a_share = scale * a_tokens.amount() / self.a_pool.amount();
             let b_share = scale * b_tokens.amount() / self.b_pool.amount();
 
             let (actual_share, remainder) = if a_share <= b_share {
                 // We will claim all input token A's, and only the correct amount of token B
                 self.a_pool.put(a_tokens);
-                self.b_pool.put(b_tokens.take(a_share * self.b_pool.amount() / scale));
+                self.b_pool.put(b_tokens.take(self.b_pool.amount() * a_share / scale));
                 (a_share, b_tokens)
             } else {
                 // We will claim all input token B's, and only the correct amount of token A
                 self.b_pool.put(b_tokens);
-                self.a_pool.put(a_tokens.take(b_share * self.a_pool.amount() / scale));
+                self.a_pool.put(a_tokens.take(self.a_pool.amount() * b_share / scale));
                 (b_share, a_tokens)
             };
 
             // Mint LP tokens according to the share the provider is contributing
-            let lp_tokens = self.lp_token_def.mint(actual_share * self.lp_token_supply() / scale);
+            let lp_tokens = self.lp_token_def.mint(self.lp_token_supply() * actual_share / scale);
 
             // Return the LP tokens along with any remainder
             (lp_tokens, remainder)
@@ -97,12 +97,12 @@ blueprint! {
             );
 
             // Calculate the share based on the input LP tokens.
-            let scale = Amount::from(10u32.pow(self.scale));
+            let scale = Amount::exp10(self.scale);
             let share = scale * lp_tokens.amount() / self.lp_token_supply();
 
             // Withdraw the correct amounts of tokens A and B from reserves
-            let a_withdrawn = self.a_pool.take(share * self.a_pool.amount() / scale);
-            let b_withdrawn = self.b_pool.take(share * self.b_pool.amount() / scale);
+            let a_withdrawn = self.a_pool.take(self.a_pool.amount() * share / scale);
+            let b_withdrawn = self.b_pool.take(self.b_pool.amount() * share / scale);
 
             // Burn the LP tokens received
             lp_tokens.burn();
@@ -114,7 +114,7 @@ blueprint! {
         /// Swaps token A for B, or vice versa.
         pub fn swap(&self, input_tokens: Bucket) -> Bucket {
             // Calculate the swap fee
-            let fee_amount = Amount::from(self.fee_in_thousandths) * input_tokens.amount() / 1000.into();
+            let fee_amount = input_tokens.amount() * self.fee_in_thousandths / 1000;
 
             if input_tokens.resource() == self.a_pool.resource() {
                 // Calculate how much of token B we will return

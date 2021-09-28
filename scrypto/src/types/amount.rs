@@ -39,15 +39,19 @@ impl Amount {
     pub fn from_little_endian(slice: &[u8]) -> Self {
         Self(U256::from_little_endian(slice))
     }
+
     pub fn zero() -> Self {
         Self(U256::zero())
     }
+
     pub fn one() -> Self {
         Self(U256::one())
     }
+
     pub fn exp10(n: usize) -> Self {
         Self(U256::exp10(n))
     }
+
     pub fn pow(self, exp: Self) -> Self {
         Self(self.0.pow(exp.0))
     }
@@ -55,6 +59,7 @@ impl Amount {
     pub fn is_zero(&self) -> bool {
         self.0.is_zero()
     }
+
     pub fn bits(&self) -> usize {
         self.0.bits()
     }
@@ -62,12 +67,15 @@ impl Amount {
     pub fn as_u32(&self) -> u32 {
         self.0.as_u32()
     }
+
     pub fn as_u64(&self) -> u64 {
         self.0.as_u64()
     }
+
     pub fn as_u128(&self) -> u128 {
         self.0.as_u128()
     }
+
     pub fn as_usize(&self) -> usize {
         self.0.as_usize()
     }
@@ -95,40 +103,41 @@ from_int!(i64);
 from_int!(i128);
 from_int!(isize);
 
-impl Add for Amount {
+impl<T: Into<Amount>> Add<T> for Amount {
     type Output = Amount;
 
-    fn add(self, other: Amount) -> Self {
-        Self(Add::add(self.0, other.0))
+    fn add(self, other: T) -> Self::Output {
+        Self(Add::add(self.0, Into::<Amount>::into(other).0))
     }
 }
 
-impl Sub for Amount {
+impl<T: Into<Amount>> Sub<T> for Amount {
     type Output = Amount;
-    fn sub(self, other: Amount) -> Self {
-        Self(Sub::sub(self.0, other.0))
+
+    fn sub(self, other: T) -> Self::Output {
+        Self(Sub::sub(self.0, Into::<Amount>::into(other).0))
     }
 }
 
-impl Mul for Amount {
+impl<T: Into<Amount>> Mul<T> for Amount {
     type Output = Amount;
 
-    fn mul(self, other: Amount) -> Self {
-        Self(Mul::mul(self.0, other.0))
+    fn mul(self, other: T) -> Self::Output {
+        Self(Mul::mul(self.0, Into::<Amount>::into(other).0))
     }
 }
 
-impl Div for Amount {
+impl<T: Into<Amount>> Div<T> for Amount {
     type Output = Amount;
 
-    fn div(self, other: Amount) -> Self {
-        Self(Div::div(self.0, other.0))
+    fn div(self, other: T) -> Self::Output {
+        Self(Div::div(self.0, Into::<Amount>::into(other).0))
     }
 }
 impl Shl<usize> for Amount {
     type Output = Amount;
 
-    fn shl(self, shift: usize) -> Self {
+    fn shl(self, shift: usize) -> Self::Output {
         Self(Shl::shl(self.0, shift))
     }
 }
@@ -136,34 +145,35 @@ impl Shl<usize> for Amount {
 impl Shr<usize> for Amount {
     type Output = Amount;
 
-    fn shr(self, shift: usize) -> Self {
+    fn shr(self, shift: usize) -> Self::Output {
         Self(Shr::shr(self.0, shift))
     }
 }
 
-impl AddAssign for Amount {
-    fn add_assign(&mut self, other: Amount) {
-        AddAssign::add_assign(&mut self.0, other.0);
+impl<T: Into<Amount>> AddAssign<T> for Amount {
+    fn add_assign(&mut self, other: T) {
+        AddAssign::add_assign(&mut self.0, Into::<Amount>::into(other).0);
     }
 }
 
-impl SubAssign for Amount {
-    fn sub_assign(&mut self, other: Amount) {
-        SubAssign::sub_assign(&mut self.0, other.0);
+impl<T: Into<Amount>> SubAssign<T> for Amount {
+    fn sub_assign(&mut self, other: T) {
+        SubAssign::sub_assign(&mut self.0, Into::<Amount>::into(other).0);
     }
 }
 
-impl MulAssign for Amount {
-    fn mul_assign(&mut self, other: Amount) {
-        MulAssign::mul_assign(&mut self.0, other.0);
+impl<T: Into<Amount>> MulAssign<T> for Amount {
+    fn mul_assign(&mut self, other: T) {
+        MulAssign::mul_assign(&mut self.0, Into::<Amount>::into(other).0);
     }
 }
 
-impl DivAssign for Amount {
-    fn div_assign(&mut self, other: Amount) {
-        DivAssign::div_assign(&mut self.0, other.0);
+impl<T: Into<Amount>> DivAssign<T> for Amount {
+    fn div_assign(&mut self, other: T) {
+        DivAssign::div_assign(&mut self.0, Into::<Amount>::into(other).0);
     }
 }
+
 impl ShlAssign<usize> for Amount {
     fn shl_assign(&mut self, shift: usize) {
         ShlAssign::shl_assign(&mut self.0, shift);
@@ -251,5 +261,42 @@ mod tests {
         let s = "123";
         let a = Amount::from_str(s).unwrap();
         assert_eq!(a.to_string(), s);
+    }
+
+    #[test]
+    fn test_math() {
+        let mut a = Amount::from(7);
+        assert_eq!(Amount::from(10), a + 3);
+        a += 3;
+        assert_eq!(Amount::from(10), a);
+
+        let mut a = Amount::from(7);
+        assert_eq!(Amount::from(4), a - 3);
+        a -= 3;
+        assert_eq!(Amount::from(4), a);
+
+        let mut a = Amount::from(7);
+        assert_eq!(Amount::from(21), a * 3);
+        a *= 3;
+        assert_eq!(Amount::from(21), a);
+
+        let mut a = Amount::from(7);
+        assert_eq!(Amount::from(2), a / 3);
+        a /= 3;
+        assert_eq!(Amount::from(2), a);
+    }
+
+    #[test]
+    #[should_panic]
+    #[allow(unused_must_use)]
+    fn test_divide_by_zero() {
+        Amount::from(10) / Amount::zero();
+    }
+
+    #[test]
+    #[should_panic]
+    #[allow(unused_must_use)]
+    fn test_overflow() {
+        Amount::from(1) - Amount::from(2);
     }
 }
