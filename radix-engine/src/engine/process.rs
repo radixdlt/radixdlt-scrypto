@@ -1077,9 +1077,17 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         &mut self,
         input: BurnResourceInput,
     ) -> Result<BurnResourceOutput, RuntimeError> {
-        self.buckets
+        let bucket = self
+            .buckets
             .remove(&input.bucket)
             .ok_or(RuntimeError::BucketNotFound(input.bucket))?;
+
+        let resource_def = self
+            .track
+            .get_resource_def_mut(bucket.resource())
+            .ok_or(RuntimeError::ResourceNotFound(bucket.resource()))?;
+
+        resource_def.supply -= bucket.amount();
 
         Ok(BurnResourceOutput {})
     }
