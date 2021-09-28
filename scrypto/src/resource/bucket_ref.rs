@@ -55,4 +55,8 @@ impl BucketRef {
         };
         let _: DropReferenceOutput = call_kernel(DROP_REFERENCE, input);
     }
+
+    pub fn is_empty(&self) -> bool {
+        self.amount() == 0.into()
+    }
 }

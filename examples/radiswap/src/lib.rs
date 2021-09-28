@@ -30,7 +30,7 @@ blueprint! {
         ) -> (Address, Bucket) {
             // Check arguments
             assert!(
-                a_tokens.amount() > 0.into() && b_tokens.amount() > 0.into(),
+                !a_tokens.is_empty() && !b_tokens.is_empty(),
                 "You must pass in an initial supply of each token"
             );
             assert!(fee_in_thousandths <= 1000, "Invalid fee in thousandths");

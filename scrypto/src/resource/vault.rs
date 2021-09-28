@@ -81,4 +81,8 @@ impl Vault {
 
         output.resource
     }
+
+    pub fn is_empty(&self) -> bool {
+        self.amount() == 0.into()
+    }
 }

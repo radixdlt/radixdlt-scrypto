@@ -85,4 +85,8 @@ impl Bucket {
         };
         let _output: BurnResourceOutput = call_kernel(BURN_RESOURCE, input);
     }
+
+    pub fn is_empty(&self) -> bool {
+        self.amount() == 0.into()
+    }
 }
