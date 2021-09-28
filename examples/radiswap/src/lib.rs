@@ -127,7 +127,7 @@ blueprint! {
 
                 // Return the tokens owed
                 self.b_pool.take(b_amount)
-            } else if input_tokens.resource() == self.b_pool.resource() {
+            } else {
                 // Calculate how much of token A we will return
                 let a_amount = self.a_pool.amount()
                     - self.a_pool.amount() * self.b_pool.amount()
@@ -138,8 +138,6 @@ blueprint! {
 
                 // Return the tokens owed
                 self.a_pool.take(a_amount)
-            } else {
-                panic!("Unexpected input tokens");
             }
         }
     }
