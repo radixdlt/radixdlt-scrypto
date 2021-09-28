@@ -115,9 +115,9 @@ fn get_method_abi<T: Ledger>(
 
 struct ParseArgsOutput {
     result: Vec<Vec<u8>>,
-    bucket: HashMap<u8, Bucket>,
+    bucket: BTreeMap<u8, Bucket>,
     #[allow(dead_code)]
-    references: HashMap<u8, BucketRef>,
+    references: BTreeMap<u8, BucketRef>,
 }
 
 fn prepare_args(
@@ -126,8 +126,8 @@ fn prepare_args(
     alloc: &mut AddressAllocator,
 ) -> Result<ParseArgsOutput, BuildArgError> {
     let mut result = Vec::new();
-    let mut bucket = HashMap::new();
-    let mut references = HashMap::new();
+    let mut bucket = BTreeMap::new();
+    let mut references = BTreeMap::new();
 
     for (i, t) in types.iter().enumerate() {
         let arg = *(args
@@ -178,8 +178,8 @@ fn handle_custom_ty(
     arg: &str,
     name: &str,
     alloc: &mut AddressAllocator,
-    bucket: &mut HashMap<u8, Bucket>,
-    _references: &mut HashMap<u8, BucketRef>,
+    bucket: &mut BTreeMap<u8, Bucket>,
+    _references: &mut BTreeMap<u8, BucketRef>,
 ) -> Result<Vec<u8>, BuildArgError> {
     match name {
         SCRYPTO_NAME_AMOUNT => {
@@ -224,7 +224,7 @@ fn handle_custom_ty(
 
 fn prepare_buckets(
     instructions: &mut Vec<Instruction>,
-    buckets: &HashMap<u8, Bucket>,
+    buckets: &BTreeMap<u8, Bucket>,
     account: Address,
     method: &str,
 ) {

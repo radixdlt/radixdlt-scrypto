@@ -13,7 +13,7 @@ blueprint! {
 
         pub fn receive_bucket(&mut self, t: Bucket) {
             info!("Received bucket: address = {}, amount = {}", t.resource(), t.amount());
-            self.vaults.push(Vault::wrap(t));
+            self.vaults.push(Vault::with_bucket(t));
         }
 
         pub fn receive_reference(&self, t: BucketRef) {

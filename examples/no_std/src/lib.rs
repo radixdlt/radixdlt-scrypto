@@ -40,7 +40,7 @@ blueprint! {
                 .create_fixed(1000);
 
             Self {
-                vault: Vault::wrap(bucket)
+                vault: Vault::with_bucket(bucket)
             }
             .instantiate()
         }

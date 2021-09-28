@@ -14,7 +14,7 @@ blueprint! {
                 .metadata("description", "The best gumball in the world.")
                 .create_fixed(1000);
             Self {
-                gumballs: Vault::wrap(bucket),
+                gumballs: Vault::with_bucket(bucket),
                 collected_xrd: Vault::new(Address::RadixToken)
             }
             .instantiate()

@@ -62,7 +62,7 @@ blueprint! {
                     v.put(bucket);
                 }
                 None => {
-                    let v = Vault::wrap(bucket);
+                    let v = Vault::with_bucket(bucket);
                     self.vaults.insert(resource, v);
                 }
             }

@@ -40,7 +40,7 @@ impl Vault {
         output.vault.into()
     }
 
-    pub fn wrap(bucket: Bucket) -> Self {
+    pub fn with_bucket(bucket: Bucket) -> Self {
         let vault = Vault::new(bucket.resource());
         vault.put(bucket);
         vault

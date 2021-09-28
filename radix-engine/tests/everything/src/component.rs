@@ -18,7 +18,7 @@ blueprint! {
 
             Self {
                 resource,
-                bucket: Vault::wrap(bucket),
+                bucket: Vault::with_bucket(bucket),
                 secret: "Secret".to_owned(),
             }.instantiate()
         }
