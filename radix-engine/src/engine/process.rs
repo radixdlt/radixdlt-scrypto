@@ -64,6 +64,7 @@ pub struct Process<'rt, 'le, L: Ledger> {
     moving_buckets: HashMap<BID, Bucket>,
     moving_references: HashMap<RID, BucketRef>,
     vm: Option<Interpreter>,
+    reserved_bucket_ids: HashSet<BID>,
 }
 
 /// Represents an interpreter.
@@ -95,6 +96,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
             moving_buckets: HashMap::new(),
             moving_references: HashMap::new(),
             vm: None,
+            reserved_bucket_ids: HashSet::new(),
         }
     }
 
@@ -223,7 +225,9 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
 
     /// Reserves a bucket id, especially when preparing buckets for function/method invocation.
     pub fn reserve_bucket_id(&mut self) -> BID {
-        self.track.new_bucket_id()
+        let bid = self.track.new_bucket_id();
+        self.reserved_bucket_ids.insert(bid);
+        bid
     }
 
     /// Puts a bucket into this process.
@@ -264,14 +268,15 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
     ) -> Result<(), RuntimeError> {
         debug!(
             self,
-            "Moving to bucket: amount = {}, resource = {}, destination = {}", amount, resource, bid
+            "Moving to bucket: amount = {}, resource = {}, bid = {}", amount, resource, bid
         );
+        assert!(self.reserved_bucket_ids.contains(&bid));
         assert!(!self.buckets.contains_key(&bid));
 
         let candidates: BTreeSet<BID> = self
             .buckets
             .iter()
-            .filter(|(_, v)| v.resource() == resource)
+            .filter(|(k, v)| v.resource() == resource && !self.reserved_bucket_ids.contains(k))
             .map(|(k, _)| *k)
             .collect();
 

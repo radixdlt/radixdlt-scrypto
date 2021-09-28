@@ -63,7 +63,9 @@ impl ResourceDef {
     }
 
     pub fn burn(bucket: Bucket) {
-        let input = BurnResourceInput { bucket: bucket.into() };
+        let input = BurnResourceInput {
+            bucket: bucket.into(),
+        };
         let _output: BurnResourceOutput = call_kernel(BURN_RESOURCE, input);
     }
 
@@ -117,7 +119,8 @@ impl ResourceBuilder {
 
     /// Add metadata attribute.
     pub fn metadata<K: AsRef<str>, V: AsRef<str>>(&mut self, name: K, value: V) -> &mut Self {
-        self.metadata.insert(name.as_ref().to_owned(), value.as_ref().to_owned());
+        self.metadata
+            .insert(name.as_ref().to_owned(), value.as_ref().to_owned());
         self
     }
 
