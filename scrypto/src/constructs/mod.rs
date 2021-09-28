@@ -6,7 +6,7 @@ mod logger;
 mod package;
 
 pub use blueprint::Blueprint;
-pub use component::{Component, ComponentInfo};
+pub use component::Component;
 pub use context::Context;
 pub use lazy_map::LazyMap;
 pub use logger::{Level, Logger};

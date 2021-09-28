@@ -21,7 +21,7 @@ pub const CALL_METHOD: u32 = 0x02;
 /// Create a component
 pub const CREATE_COMPONENT: u32 = 0x10;
 /// Retrieve component information
-pub const GET_COMPONENT_INFO: u32 = 0x11;
+pub const GET_COMPONENT_BLUEPRINT: u32 = 0x11;
 /// Retrieve component state
 pub const GET_COMPONENT_STATE: u32 = 0x12;
 /// Update component state
@@ -34,14 +34,20 @@ pub const GET_LAZY_MAP_ENTRY: u32 = 0x21;
 /// Insert a key-value pair into a lazy map
 pub const PUT_LAZY_MAP_ENTRY: u32 = 0x22;
 
-/// Create a new resource with mutable supply
+/// Create resource with mutable supply
 pub const CREATE_RESOURCE_MUTABLE: u32 = 0x30;
-/// Create a new resource with fixed supply
+/// Create resource with fixed supply
 pub const CREATE_RESOURCE_FIXED: u32 = 0x31;
-/// Retrieve resource information
-pub const GET_RESOURCE_INFO: u32 = 0x32;
+/// Get resource metadata
+pub const GET_RESOURCE_METADATA: u32 = 0x32;
+/// Get resource supply
+pub const GET_RESOURCE_SUPPLY: u32 = 0x33;
+/// Get resource minter
+pub const GET_RESOURCE_MINTER: u32 = 0x34;
 /// Mint resource
-pub const MINT_RESOURCE: u32 = 0x33;
+pub const MINT_RESOURCE: u32 = 0x35;
+/// Burn resource
+pub const BURN_RESOURCE: u32 = 0x36;
 
 /// Create a new empty vault
 pub const CREATE_EMPTY_VAULT: u32 = 0x40;
@@ -137,12 +143,12 @@ pub struct CreateComponentOutput {
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct GetComponentInfoInput {
+pub struct GetComponentBlueprintInput {
     pub component: Address,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct GetComponentInfoOutput {
+pub struct GetComponentBlueprintOutput {
     pub blueprint: (Address, String),
 }
 
@@ -225,15 +231,33 @@ pub struct CreateResourceFixedOutput {
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct GetResourceInfoInput {
+pub struct GetResourceMetadataInput {
     pub resource: Address,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct GetResourceInfoOutput {
+pub struct GetResourceMetadataOutput {
     pub metadata: HashMap<String, String>,
-    pub minter: Option<Address>,
+}
+
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
+pub struct GetResourceSupplyInput {
+    pub resource: Address,
+}
+
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
+pub struct GetResourceSupplyOutput {
     pub supply: Amount,
+}
+
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
+pub struct GetResourceMinterInput {
+    pub resource: Address,
+}
+
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
+pub struct GetResourceMinterOutput {
+    pub minter: Option<Address>,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
@@ -246,6 +270,14 @@ pub struct MintResourceInput {
 pub struct MintResourceOutput {
     pub bucket: BID,
 }
+
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
+pub struct BurnResourceInput {
+    pub bucket: BID,
+}
+
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
+pub struct BurnResourceOutput {}
 
 //==========
 // vault

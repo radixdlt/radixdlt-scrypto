@@ -18,7 +18,7 @@ fn test_component() {
             .unwrap(),
     )
     .unwrap();
-    proc.call_method(component, "get_component_info", args!())
+    proc.call_method(component, "get_component_blueprint", args!())
         .unwrap();
     proc.call_method(component, "get_component_state", args!())
         .unwrap();
@@ -54,6 +54,8 @@ fn test_resource() {
     proc.call_function((pkg, "ResourceTest".to_owned()), "create_fixed", args!())
         .unwrap();
     proc.call_function((pkg, "ResourceTest".to_owned()), "query", args!())
+        .unwrap();
+    proc.call_function((pkg, "ResourceTest".to_owned()), "burn", args!())
         .unwrap();
 }
 

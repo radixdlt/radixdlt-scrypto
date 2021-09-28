@@ -27,5 +27,9 @@ blueprint! {
             let def = ResourceDef::from(resource);
             (def.metadata(), def.minter(), def.supply())
         }
+
+        pub fn burn() {
+           ResourceDef::burn(create_fixed("r4", 100.into()));
+        }
     }
 }

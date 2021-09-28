@@ -882,10 +882,10 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         Ok(CreateComponentOutput { component: address })
     }
 
-    fn handle_get_component_info(
+    fn handle_get_component_blueprint(
         &mut self,
-        input: GetComponentInfoInput,
-    ) -> Result<GetComponentInfoOutput, RuntimeError> {
+        input: GetComponentBlueprintInput,
+    ) -> Result<GetComponentBlueprintOutput, RuntimeError> {
         let package = self.package()?;
 
         let component = self
@@ -896,7 +896,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
             return Err(RuntimeError::UnauthorizedAccess);
         }
 
-        Ok(GetComponentInfoOutput {
+        Ok(GetComponentBlueprintOutput {
             blueprint: component.blueprint().clone(),
         })
     }
@@ -1019,20 +1019,48 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         })
     }
 
-    fn handle_get_resource_info(
+    fn handle_get_resource_metadata(
         &mut self,
-        input: GetResourceInfoInput,
-    ) -> Result<GetResourceInfoOutput, RuntimeError> {
+        input: GetResourceMetadataInput,
+    ) -> Result<GetResourceMetadataOutput, RuntimeError> {
         let resource = self
             .track
             .get_resource_def(input.resource)
             .ok_or(RuntimeError::ResourceNotFound(input.resource))?
             .clone();
 
-        Ok(GetResourceInfoOutput {
+        Ok(GetResourceMetadataOutput {
             metadata: resource.metadata,
-            minter: resource.minter,
+        })
+    }
+
+    fn handle_get_resource_supply(
+        &mut self,
+        input: GetResourceSupplyInput,
+    ) -> Result<GetResourceSupplyOutput, RuntimeError> {
+        let resource = self
+            .track
+            .get_resource_def(input.resource)
+            .ok_or(RuntimeError::ResourceNotFound(input.resource))?
+            .clone();
+
+        Ok(GetResourceSupplyOutput {
             supply: resource.supply,
+        })
+    }
+
+    fn handle_get_resource_minter(
+        &mut self,
+        input: GetResourceMinterInput,
+    ) -> Result<GetResourceMinterOutput, RuntimeError> {
+        let resource = self
+            .track
+            .get_resource_def(input.resource)
+            .ok_or(RuntimeError::ResourceNotFound(input.resource))?
+            .clone();
+
+        Ok(GetResourceMinterOutput {
+            minter: resource.minter,
         })
     }
 
@@ -1043,6 +1071,17 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         Ok(MintResourceOutput {
             bucket: self.mint_resource(input.amount, input.resource)?,
         })
+    }
+
+    fn handle_burn_resource(
+        &mut self,
+        input: BurnResourceInput,
+    ) -> Result<BurnResourceOutput, RuntimeError> {
+        self.buckets
+            .remove(&input.bucket)
+            .ok_or(RuntimeError::BucketNotFound(input.bucket))?;
+
+        Ok(BurnResourceOutput {})
     }
 
     fn handle_create_vault(
@@ -1338,7 +1377,9 @@ impl<'rt, 'le, L: Ledger> Externals for Process<'rt, 'le, L> {
                     CALL_METHOD => self.handle(args, Self::handle_call_method),
 
                     CREATE_COMPONENT => self.handle(args, Self::handle_create_component),
-                    GET_COMPONENT_INFO => self.handle(args, Self::handle_get_component_info),
+                    GET_COMPONENT_BLUEPRINT => {
+                        self.handle(args, Self::handle_get_component_blueprint)
+                    }
                     GET_COMPONENT_STATE => self.handle(args, Self::handle_get_component_state),
                     PUT_COMPONENT_STATE => self.handle(args, Self::handle_put_component_state),
 
@@ -1350,8 +1391,11 @@ impl<'rt, 'le, L: Ledger> Externals for Process<'rt, 'le, L> {
                         self.handle(args, Self::handle_create_resource_mutable)
                     }
                     CREATE_RESOURCE_FIXED => self.handle(args, Self::handle_create_resource_fixed),
-                    GET_RESOURCE_INFO => self.handle(args, Self::handle_get_resource_info),
+                    GET_RESOURCE_METADATA => self.handle(args, Self::handle_get_resource_metadata),
+                    GET_RESOURCE_SUPPLY => self.handle(args, Self::handle_get_resource_supply),
+                    GET_RESOURCE_MINTER => self.handle(args, Self::handle_get_resource_minter),
                     MINT_RESOURCE => self.handle(args, Self::handle_mint_resource),
+                    BURN_RESOURCE => self.handle(args, Self::handle_burn_resource),
 
                     CREATE_EMPTY_VAULT => self.handle(args, Self::handle_create_vault),
                     PUT_INTO_VAULT => self.handle(args, Self::handle_put_into_vault),

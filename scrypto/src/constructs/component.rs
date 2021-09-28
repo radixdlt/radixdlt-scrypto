@@ -5,7 +5,6 @@ use crate::constants::*;
 use crate::constructs::*;
 use crate::kernel::*;
 use crate::rust::borrow::ToOwned;
-use crate::rust::string::String;
 use crate::rust::string::ToString;
 use crate::rust::vec::Vec;
 use crate::types::*;
@@ -15,13 +14,6 @@ use crate::utils::*;
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct Component {
     address: Address,
-}
-
-/// Information about a component.
-#[derive(Debug, Clone, TypeId, Describe, Encode, Decode)]
-pub struct ComponentInfo {
-    pub package: Address,
-    pub blueprint: String,
 }
 
 impl From<Address> for Component {
@@ -59,10 +51,10 @@ impl Component {
     }
 
     pub fn blueprint(&self) -> Blueprint {
-        let input = GetComponentInfoInput {
+        let input = GetComponentBlueprintInput {
             component: self.address,
         };
-        let output: GetComponentInfoOutput = call_kernel(GET_COMPONENT_INFO, input);
+        let output: GetComponentBlueprintOutput = call_kernel(GET_COMPONENT_BLUEPRINT, input);
 
         output.blueprint.into()
     }

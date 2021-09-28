@@ -62,29 +62,34 @@ impl ResourceDef {
         output.bucket.into()
     }
 
+    pub fn burn(bucket: Bucket) {
+        let input = BurnResourceInput { bucket: bucket.into() };
+        let _output: BurnResourceOutput = call_kernel(BURN_RESOURCE, input);
+    }
+
     pub fn metadata(&self) -> HashMap<String, String> {
-        let input = GetResourceInfoInput {
+        let input = GetResourceMetadataInput {
             resource: self.address,
         };
-        let output: GetResourceInfoOutput = call_kernel(GET_RESOURCE_INFO, input);
+        let output: GetResourceMetadataOutput = call_kernel(GET_RESOURCE_METADATA, input);
 
         output.metadata
     }
 
     pub fn minter(&self) -> Option<Address> {
-        let input = GetResourceInfoInput {
+        let input = GetResourceMinterInput {
             resource: self.address,
         };
-        let output: GetResourceInfoOutput = call_kernel(GET_RESOURCE_INFO, input);
+        let output: GetResourceMinterOutput = call_kernel(GET_RESOURCE_MINTER, input);
 
         output.minter
     }
 
     pub fn supply(&self) -> Amount {
-        let input = GetResourceInfoInput {
+        let input = GetResourceSupplyInput {
             resource: self.address,
         };
-        let output: GetResourceInfoOutput = call_kernel(GET_RESOURCE_INFO, input);
+        let output: GetResourceSupplyOutput = call_kernel(GET_RESOURCE_SUPPLY, input);
 
         output.supply
     }
@@ -126,6 +131,7 @@ impl ResourceBuilder {
         ResourceDef::new_fixed(self.metadata.clone(), supply.into())
     }
 }
+
 impl Default for ResourceBuilder {
     fn default() -> Self {
         Self::new()
