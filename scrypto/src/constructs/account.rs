@@ -8,7 +8,7 @@ use crate::rust::vec;
 use crate::types::*;
 
 /// An account is a component that holds user's resource.
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug, PartialEq, Eq, TypeId, Encode, Decode)]
 pub struct Account {
     address: Address,
 }

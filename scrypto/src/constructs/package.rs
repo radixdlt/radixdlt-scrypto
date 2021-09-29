@@ -7,7 +7,7 @@ use crate::rust::borrow::ToOwned;
 use crate::types::*;
 
 /// A collection of blueprints, compiles and published as a single unit.
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug, PartialEq, Eq, TypeId, Encode, Decode)]
 pub struct Package {
     address: Address,
 }

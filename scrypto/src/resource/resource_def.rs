@@ -9,7 +9,7 @@ use crate::rust::string::String;
 use crate::types::*;
 
 /// Represents the definition of a resource.
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug, PartialEq, Eq, TypeId, Encode, Decode)]
 pub struct ResourceDef {
     address: Address,
 }

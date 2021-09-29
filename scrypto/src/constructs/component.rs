@@ -10,7 +10,7 @@ use crate::types::*;
 use crate::utils::*;
 
 /// An instance of a blueprint, which lives in the ledger state.
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug, PartialEq, Eq, TypeId, Encode, Decode)]
 pub struct Component {
     address: Address,
 }

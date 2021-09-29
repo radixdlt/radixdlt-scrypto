@@ -11,7 +11,7 @@ use crate::types::*;
 use crate::utils::*;
 
 /// A template that describes the common behavior and state structure of its instances.
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug, PartialEq, Eq, TypeId, Encode, Decode)]
 pub struct Blueprint {
     package: Address,
     name: String,
