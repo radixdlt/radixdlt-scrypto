@@ -113,12 +113,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         }
         validate_module(code)?;
 
-        debug!(
-            self,
-            "New package: address = {:?}, code length = {}",
-            address,
-            code.len()
-        );
+        debug!(self, "New package: {}", address);
         self.track
             .put_package(address, Package::new(code.to_owned()));
         Ok(())
@@ -154,7 +149,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         if self.track.get_resource_def(address).is_some() {
             return Err(RuntimeError::ResourceDefAlreadyExists(address));
         } else {
-            debug!(self, "New resource: {:?}", address);
+            debug!(self, "New resource: {}", address);
 
             self.track.put_resource_def(address, resource_def);
         }
@@ -879,7 +874,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
             self.process_data(&input.state, Self::reject_buckets, Self::reject_references)?;
         debug!(
             self,
-            "New component: address = {:?}, state = {:?}", address, new_state
+            "New component: address = {}, state = {:?}", address, new_state
         );
 
         let component = Component::new((self.package()?, input.name), new_state);

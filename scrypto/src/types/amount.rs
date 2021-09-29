@@ -18,7 +18,7 @@ construct_uint! {
 
 // TODO: Make Amount a big int.
 
-/// Represents a bucket id.
+/// Represents some quantity.
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Amount(U256);
 

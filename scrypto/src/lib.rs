@@ -1,3 +1,20 @@
+//! # The Scrypto Standard Library
+//!
+//! The Scrypto Standard Library is the foundation of Scrypto blueprints, a
+//! set of minimal and shared abstractions for the Radix ecosystem.
+//! It offers core types, resource and many other high-level construct
+//! abstractions.
+//!
+//! If you know the name of what you're looking for, the fastest way to find
+//! it is to use the <a href="#" onclick="focusSearchBar();">search
+//! bar</a> at the top of the page.
+//!
+//! Otherwise, you may want to start with the following modules:
+//! * [`types`]
+//! * [`resource`]
+//! * [`constructs`]
+//!
+
 #![cfg_attr(not(feature = "std"), no_std)]
 
 #[cfg(not(any(feature = "std", feature = "alloc")))]
