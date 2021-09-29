@@ -331,6 +331,7 @@ fn get_native_type(ty: &des::Type) -> (Type, Vec<Item>) {
             "scrypto::MID" => parse_quote! { ::scrypto::types::MID },
             "scrypto::VID" => parse_quote! { ::scrypto::types::VID },
 
+            "scrypto::Account" => parse_quote! { ::scrypto::constructs::Account },
             "scrypto::Package" => parse_quote! { ::scrypto::constructs::Package },
             "scrypto::Blueprint" => parse_quote! { ::scrypto::constructs::Blueprint },
             "scrypto::Component" => parse_quote! { ::scrypto::constructs::Component },

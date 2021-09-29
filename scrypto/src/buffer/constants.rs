@@ -14,6 +14,7 @@ pub const SCRYPTO_NAME_RID: &str = "scrypto::RID";
 pub const SCRYPTO_NAME_MID: &str = "scrypto::MID";
 pub const SCRYPTO_NAME_VID: &str = "scrypto::VID";
 
+pub const SCRYPTO_NAME_ACCOUNT: &str = "scrypto::Account";
 pub const SCRYPTO_NAME_PACKAGE: &str = "scrypto::Package";
 pub const SCRYPTO_NAME_BLUEPRINT: &str = "scrypto::Blueprint";
 pub const SCRYPTO_NAME_COMPONENT: &str = "scrypto::Component";
