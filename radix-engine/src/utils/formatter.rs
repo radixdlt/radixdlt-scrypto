@@ -1,6 +1,6 @@
 use sbor::any::*;
 use sbor::*;
-use scrypto::constants::*;
+use scrypto::buffer::*;
 use scrypto::rust::borrow::Borrow;
 use scrypto::rust::convert::TryFrom;
 use scrypto::rust::format;

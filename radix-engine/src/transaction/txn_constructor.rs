@@ -2,7 +2,6 @@ use sbor::describe::*;
 use sbor::*;
 use scrypto::abi;
 use scrypto::buffer::*;
-use scrypto::constants::*;
 use scrypto::rust::borrow::ToOwned;
 use scrypto::rust::collections::*;
 use scrypto::rust::fmt;

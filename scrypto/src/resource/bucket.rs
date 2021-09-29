@@ -1,6 +1,6 @@
 use sbor::{describe::Type, *};
 
-use crate::constants::*;
+use crate::buffer::*;
 use crate::kernel::*;
 use crate::resource::*;
 use crate::rust::borrow::ToOwned;

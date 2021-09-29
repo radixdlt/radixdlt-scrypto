@@ -3,7 +3,6 @@ use sbor::any::*;
 use sbor::rust::boxed::Box;
 use sbor::*;
 use scrypto::buffer::*;
-use scrypto::constants::*;
 use scrypto::kernel::*;
 use scrypto::rust::borrow::ToOwned;
 use scrypto::rust::collections::*;

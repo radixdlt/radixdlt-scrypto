@@ -7,8 +7,6 @@ compile_error!("Feature `std` and `alloc` can't be enabled at the same time.");
 
 /// Scrypto data encoding/decoding and memory allocation.
 pub mod buffer;
-/// Scrypto constants.
-pub mod constants;
 /// Scrypto high-level abstractions.
 pub mod constructs;
 /// Kernel APIs.

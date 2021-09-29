@@ -3,7 +3,7 @@ use core::ops::*;
 use sbor::{describe::Type, *};
 use uint::construct_uint;
 
-use crate::constants::*;
+use crate::buffer::*;
 use crate::rust::borrow::ToOwned;
 use crate::rust::convert::TryFrom;
 use crate::rust::fmt;
