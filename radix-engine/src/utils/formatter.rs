@@ -48,7 +48,7 @@ pub fn format_value<L: Ledger>(
         Value::U32(v) => Ok(v.to_string()),
         Value::U64(v) => Ok(v.to_string()),
         Value::U128(v) => Ok(v.to_string()),
-        Value::String(v) => Ok(v.to_string()),
+        Value::String(v) => Ok(format!("\"{}\"", v)),
         // struct & enum
         Value::Struct(fields) => Ok(format!("Struct {}", format_fields(fields, ledger, vaults)?)),
         Value::Enum(index, fields) => Ok(format!(

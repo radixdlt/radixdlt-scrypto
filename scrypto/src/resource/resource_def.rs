@@ -48,12 +48,9 @@ impl ResourceDef {
     }
 
     pub fn mint<T: Into<Amount>>(&self, amount: T) -> Bucket {
-        let amt = amount.into();
-        assert!(amt >= Amount::one());
-
         let input = MintResourceInput {
             resource_address: self.address,
-            amount: amt,
+            amount: amount.into(),
         };
         let output: MintResourceOutput = call_kernel(MINT_RESOURCE, input);
 

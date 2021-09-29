@@ -11,7 +11,7 @@ blueprint! {
         /// The fee to apply for every swap, like `3` for a 0.3% fee.
         fee_in_thousandths: u32,
         /// The scale to use when adding/removing liquidity. If this value is
-        /// set to `5`, the min liquidity to add is 0.001% of the pools.
+        /// set to `5`, the min liquidity to add will be 0.001% of the pools.
         scale: usize,
     }
 
