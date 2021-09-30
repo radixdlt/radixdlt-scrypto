@@ -87,7 +87,7 @@ blueprint! {
         /// Removes liquidity from this pool.
         pub fn remove_liquidity(&self, lp_tokens: Bucket) -> (Bucket, Bucket) {
             assert!(
-                self.lp_resource_def.address() == lp_tokens.resource_address(),
+                self.lp_resource_def == lp_tokens.resource_def(),
                 "Wrong token type passed in"
             );
 
@@ -111,7 +111,7 @@ blueprint! {
             // Calculate the swap fee
             let fee_amount = input_tokens.amount() * self.fee_in_thousandths / 1000;
 
-            if input_tokens.resource_address() == self.a_pool.resource_address() {
+            if input_tokens.resource_def() == self.a_pool.resource_def() {
                 // Calculate how much of token B we will return
                 let b_amount = self.b_pool.amount()
                     - self.a_pool.amount() * self.b_pool.amount()

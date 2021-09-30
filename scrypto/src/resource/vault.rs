@@ -41,7 +41,7 @@ impl Vault {
     }
 
     pub fn with_bucket(bucket: Bucket) -> Self {
-        let vault = Vault::new(bucket.resource_address());
+        let vault = Vault::new(bucket.resource_def().address());
         vault.put(bucket);
         vault
     }
@@ -75,11 +75,11 @@ impl Vault {
         output.amount
     }
 
-    pub fn resource_address(&self) -> Address {
+    pub fn resource_def(&self) -> ResourceDef {
         let input = GetVaultResourceAddressInput { vault: self.vid };
         let output: GetVaultResourceAddressOutput = call_kernel(GET_VAULT_RESOURCE_ADDRESS, input);
 
-        output.resource_address
+        output.resource_address.into()
     }
 
     pub fn is_empty(&self) -> bool {

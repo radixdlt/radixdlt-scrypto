@@ -119,7 +119,7 @@ pub fn dump_receipt(receipt: &TransactionReceipt) {
         let ty = match address {
             Address::Package(_) => "Package",
             Address::Component(_) => "Component",
-            Address::Resource(_) => "Resource",
+            Address::ResourceDef(_) => "Resource",
             _ => "Other",
         };
         println!("{} {}: {}", list_item_prefix(last), ty, address);

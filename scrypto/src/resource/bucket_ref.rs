@@ -2,6 +2,7 @@ use sbor::{describe::Type, *};
 
 use crate::buffer::*;
 use crate::kernel::*;
+use crate::resource::*;
 use crate::rust::borrow::ToOwned;
 use crate::types::*;
 
@@ -40,13 +41,13 @@ impl BucketRef {
         output.amount
     }
 
-    pub fn resource_address(&self) -> Address {
+    pub fn resource_def(&self) -> ResourceDef {
         let input = GetRefResourceAddressInput {
             reference: self.rid,
         };
         let output: GetRefResourceAddressOutput = call_kernel(GET_REF_RESOURCE_ADDRESS, input);
 
-        output.resource_address
+        output.resource_address.into()
     }
 
     pub fn drop(self) {

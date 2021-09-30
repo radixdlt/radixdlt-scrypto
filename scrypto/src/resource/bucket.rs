@@ -72,12 +72,12 @@ impl Bucket {
         output.amount
     }
 
-    pub fn resource_address(&self) -> Address {
+    pub fn resource_def(&self) -> ResourceDef {
         let input = GetBucketResourceAddressInput { bucket: self.bid };
         let output: GetBucketResourceAddressOutput =
             call_kernel(GET_BUCKET_RESOURCE_ADDRESS, input);
 
-        output.resource_address
+        output.resource_address.into()
     }
 
     pub fn burn(self) {

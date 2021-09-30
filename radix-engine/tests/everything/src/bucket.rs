@@ -36,7 +36,7 @@ blueprint! {
         pub fn query() -> (Amount, Address, Bucket) {
             let resource_def = create_mutable("b4", Context::package_address());
             let bucket = resource_def.mint(100);
-            (bucket.amount(), bucket.resource_address(), bucket)
+            (bucket.amount(), bucket.resource_def().address(), bucket)
         }
     }
 }

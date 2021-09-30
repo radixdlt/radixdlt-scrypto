@@ -12,12 +12,12 @@ blueprint! {
     impl MoveTest {
 
         pub fn receive_bucket(&mut self, t: Bucket) {
-            info!("Received bucket: resource address = {}, amount = {}", t.resource_address(), t.amount());
+            info!("Received bucket: resource address = {}, amount = {}", t.resource_def().address(), t.amount());
             self.vaults.push(Vault::with_bucket(t));
         }
 
         pub fn receive_reference(&self, t: BucketRef) {
-            info!("Received reference: resource address = {}, amount = {}", t.resource_address(), t.amount());
+            info!("Received reference: resource address = {}, amount = {}", t.resource_def().address(), t.amount());
             t.drop();
         }
 
