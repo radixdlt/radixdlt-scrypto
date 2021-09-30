@@ -1,11 +1,7 @@
 use clap::{crate_version, App, Arg, ArgMatches, SubCommand};
-use radix_engine::engine::*;
-use radix_engine::utils::*;
-use scrypto::args;
+use radix_engine::transaction::*;
 use scrypto::rust::collections::HashMap;
 use scrypto::types::*;
-use scrypto::utils::*;
-use uuid::Uuid;
 
 use crate::ledger::*;
 use crate::rev2::*;
@@ -25,7 +21,6 @@ pub fn make_new_resource_mutable<'a, 'b>() -> App<'a, 'b> {
         .version(crate_version!())
         .arg(
             Arg::with_name(ARG_TRACE)
-                .short("t")
                 .long("trace")
                 .help("Turns on tracing."),
         )
@@ -98,27 +93,12 @@ pub fn handle_new_resource_mutable(matches: &ArgMatches) -> Result<(), Error> {
         .value_of(ARG_ICON_URL)
         .and_then(|v| metadata.insert("icon_url".to_owned(), v.to_owned()));
 
-    match get_config(CONF_DEFAULT_ACCOUNT)? {
-        Some(a) => {
-            let account: Address = a.as_str().parse().map_err(Error::InvalidAddress)?;
-
+ 
             let mut ledger = FileBasedLedger::new(get_data_dir()?);
-            let mut track = Track::new(sha256(Uuid::new_v4().to_string()), &mut ledger);
-            let mut process = track.start_process(trace);
-            let resource_address: Address = process
-                .call_method(
-                    account,
-                    "new_resource_mutable",
-                    args!(metadata, minter_address),
-                )
-                .and_then(decode_return)
-                .map_err(Error::TxnExecutionError)?;
-            process.finalize().map_err(Error::TxnExecutionError)?;
-            track.commit();
+            let mut executor = TransactionExecutor::new(&mut ledger, 0, 0); // TODO: fix nonce and epoch.
+
+            let resource_address = executor.new_resource_mutable(metadata, minter_address, trace);
 
             println!("New resource: {}", resource_address);
-            Ok(())
-        }
-        None => Err(Error::NoDefaultAccount),
-    }
+            Ok(()) 
 }

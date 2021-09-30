@@ -27,7 +27,7 @@ pub enum Error {
 
     CargoError(CargoExecutionError),
 
-    TxnConstructionErr(BuildTxnError),
+    TxnConstructionErr(BuildTransactionError),
 
     TxnExecutionError(RuntimeError),
 

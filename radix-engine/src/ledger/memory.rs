@@ -23,6 +23,12 @@ impl InMemoryLedger {
             vaults: HashMap::new(),
         }
     }
+
+    pub fn with_bootstrap() -> Self {
+        let mut ledger = Self::new();
+        ledger.bootstrap();
+        ledger
+    }
 }
 
 impl Default for InMemoryLedger {

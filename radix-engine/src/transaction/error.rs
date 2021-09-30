@@ -4,11 +4,9 @@ use scrypto::rust::fmt;
 use scrypto::rust::format;
 use scrypto::rust::string::String;
 
-use crate::engine::*;
-
 /// Represents an error when parsing arguments.
-#[derive(Debug)]
-pub enum BuildArgError {
+#[derive(Debug, Clone)]
+pub enum BuildArgsError {
     /// The argument is not provided.
     MissingArgument(usize, Type),
 
@@ -17,14 +15,11 @@ pub enum BuildArgError {
 
     /// Failed to parse argument.
     UnableToParse(usize, Type, String),
-
-    /// Bucket limit reached.
-    BucketLimitReached,
 }
 
 /// Represents an error when construction a transaction.
-#[derive(Debug)]
-pub enum BuildTxnError {
+#[derive(Debug, Clone)]
+pub enum BuildTransactionError {
     /// The given blueprint function does not exist.
     FunctionNotFound(String),
 
@@ -32,13 +27,12 @@ pub enum BuildTxnError {
     MethodNotFound(String),
 
     /// The provided arguments do not match ABI.
-    ArgConstructionError(BuildArgError),
+    FailedToBuildArgs(BuildArgsError),
 
-    /// Failed to export the blueprint ABI.
-    FailedToExportAbi(RuntimeError),
+    AccountNotProvided,
 }
 
-impl fmt::Display for BuildArgError {
+impl fmt::Display for BuildArgsError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let msg = match self {
             Self::MissingArgument(i, ty) => {
@@ -55,7 +49,6 @@ impl fmt::Display for BuildArgError {
                 ty,
                 arg
             ),
-            Self::BucketLimitReached => "Bucket limit reached".to_owned(),
         };
 
         f.write_str(msg.as_str())

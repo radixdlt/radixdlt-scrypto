@@ -6,11 +6,8 @@ use clap::{crate_version, App, Arg, ArgMatches, SubCommand};
 use radix_engine::engine::*;
 use radix_engine::ledger::*;
 use radix_engine::model::*;
-use radix_engine::utils::*;
-use scrypto::args;
+use radix_engine::transaction::*;
 use scrypto::types::*;
-use scrypto::utils::*;
-use uuid::Uuid;
 
 use crate::ledger::*;
 use crate::rev2::*;
@@ -27,7 +24,6 @@ pub fn make_publish<'a, 'b>() -> App<'a, 'b> {
         .version(crate_version!())
         .arg(
             Arg::with_name(ARG_TRACE)
-                .short("t")
                 .long("trace")
                 .help("Turns on tracing."),
         )
@@ -69,23 +65,12 @@ pub fn handle_publish(matches: &ArgMatches) -> Result<(), Error> {
         return Ok(());
     }
 
-    match get_config(CONF_DEFAULT_ACCOUNT)? {
-        Some(a) => {
-            let account: Address = a.as_str().parse().map_err(Error::InvalidAddress)?;
+    let mut ledger = FileBasedLedger::new(get_data_dir()?);
 
-            let mut ledger = FileBasedLedger::new(get_data_dir()?);
-            let mut track = Track::new(sha256(Uuid::new_v4().to_string()), &mut ledger);
-            let mut process = track.start_process(trace);
-            let package: Address = process
-                .call_method(account, "publish_package", args!(code))
-                .and_then(decode_return)
-                .map_err(Error::TxnExecutionError)?;
-            process.finalize().map_err(Error::TxnExecutionError)?;
-            track.commit();
+    let mut executor = TransactionExecutor::new(&mut ledger, 0, 0);
 
-            println!("New package: {}", package);
-            Ok(())
-        }
-        None => Err(Error::NoDefaultAccount),
-    }
+    let package = executor.publish_package(&code, trace);
+
+    println!("New package: {}", package);
+    Ok(())
 }

@@ -180,6 +180,13 @@ impl<T: TypeId> TypeId for Vec<T> {
     }
 }
 
+impl<T: TypeId> TypeId for [T] {
+    #[inline]
+    fn type_id() -> u8 {
+        TYPE_VEC
+    }
+}
+
 impl<T: TypeId> TypeId for BTreeSet<T> {
     #[inline]
     fn type_id() -> u8 {

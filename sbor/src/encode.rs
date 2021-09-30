@@ -209,6 +209,16 @@ impl<T: Encode> Encode for Vec<T> {
     }
 }
 
+impl<T: Encode> Encode for [T] {
+    fn encode_value(&self, encoder: &mut Encoder) {
+        encoder.write_type(T::type_id());
+        encoder.write_len(self.len());
+        for v in self {
+            v.encode_value(encoder);
+        }
+    }
+}
+
 impl<T: Encode> Encode for BTreeSet<T> {
     fn encode_value(&self, encoder: &mut Encoder) {
         encoder.write_type(T::type_id());

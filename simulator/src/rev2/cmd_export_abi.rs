@@ -16,7 +16,6 @@ pub fn make_export_abi<'a, 'b>() -> App<'a, 'b> {
         .version(crate_version!())
         .arg(
             Arg::with_name(ARG_TRACE)
-                .short("t")
                 .long("trace")
                 .help("Turns on tracing."),
         )
@@ -45,11 +44,9 @@ pub fn handle_export_abi(matches: &ArgMatches) -> Result<(), Error> {
         .ok_or_else(|| Error::MissingArgument(ARG_BLUEPRINT_NAME.to_owned()))?;
 
     let mut ledger = FileBasedLedger::new(get_data_dir()?);
-    let result = export_abi(
-        &mut ledger,
-        (package_address, blueprint_name.to_owned()),
-        trace,
-    );
+    let   executor = TransactionExecutor::new(&mut ledger, 0, 0);
+
+    let result = executor.export_abi(package_address, blueprint_name, trace);
 
     match result {
         Err(e) => Err(Error::TxnExecutionError(e)),

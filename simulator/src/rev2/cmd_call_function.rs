@@ -1,8 +1,6 @@
 use clap::{crate_version, App, Arg, ArgMatches, SubCommand};
 use radix_engine::transaction::*;
 use scrypto::types::*;
-use scrypto::utils::*;
-use uuid::Uuid;
 
 use crate::ledger::*;
 use crate::rev2::*;
@@ -21,7 +19,6 @@ pub fn make_call_function<'a, 'b>() -> App<'a, 'b> {
         .version(crate_version!())
         .arg(
             Arg::with_name(ARG_TRACE)
-                .short("t")
                 .long("trace")
                 .help("Turns on tracing."),
         )
@@ -68,31 +65,28 @@ pub fn handle_call_function(matches: &ArgMatches) -> Result<(), Error> {
 
     match get_config(CONF_DEFAULT_ACCOUNT)? {
         Some(a) => {
+            // TODO: fix nonce and epoch.
             let account: Address = a.as_str().parse().map_err(Error::InvalidAddress)?;
+
             let mut ledger = FileBasedLedger::new(get_data_dir()?);
-            match build_call_function(
-                &mut ledger,
-                account,
-                (package_address, blueprint_name.to_owned()),
-                function,
-                &args,
-                trace,
-            ) {
-                Ok(txn) => {
-                    let receipt = execute_transaction(
-                        &mut ledger,
-                        sha256(Uuid::new_v4().to_string()),
-                        txn,
-                        trace,
-                    );
-                    dump_receipt(&receipt);
-                    if receipt.success {
-                        Ok(())
-                    } else {
-                        Err(Error::TransactionFailed)
-                    }
-                }
-                Err(e) => Err(Error::TxnConstructionErr(e)),
+            let mut executor = TransactionExecutor::new(&mut ledger, 0, 0); // TODO: fix nonce and epoch.
+
+            let abi = executor
+                .export_abi(package_address, blueprint_name, trace)
+                .map_err(Error::TxnExecutionError)?;
+
+            let transaction = TransactionBuilder::new()
+                .call_function(&abi, function, args)
+                .build_with(Some(account))
+                .map_err(Error::TxnConstructionErr)?;
+
+            let receipt = executor.execute(&transaction, trace);
+            dump_receipt(&receipt);
+
+            if receipt.success {
+                Ok(())
+            } else {
+                Err(Error::TransactionFailed)
             }
         }
         None => Err(Error::NoDefaultAccount),

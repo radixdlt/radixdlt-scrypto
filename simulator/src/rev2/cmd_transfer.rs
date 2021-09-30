@@ -1,13 +1,11 @@
 use clap::{crate_version, App, Arg, ArgMatches, SubCommand};
-use radix_engine::engine::*;
-use scrypto::args;
+use radix_engine::transaction::*;
 use scrypto::rust::str::FromStr;
 use scrypto::types::*;
-use scrypto::utils::*;
-use uuid::Uuid;
 
 use crate::ledger::*;
 use crate::rev2::*;
+use crate::utils::*;
 
 const ARG_TRACE: &str = "TRACE";
 const ARG_AMOUNT: &str = "AMOUNT";
@@ -21,7 +19,6 @@ pub fn make_transfer<'a, 'b>() -> App<'a, 'b> {
         .version(crate_version!())
         .arg(
             Arg::with_name(ARG_TRACE)
-                .short("t")
                 .long("trace")
                 .help("Turns on tracing."),
         )
@@ -32,7 +29,7 @@ pub fn make_transfer<'a, 'b>() -> App<'a, 'b> {
         )
         .arg(
             Arg::with_name(ARG_RESOURCE_ADDRESS)
-                .help("Specify the resource address.")
+                .help("Specify the resource definition address.")
                 .required(true),
         )
         .arg(
@@ -67,27 +64,36 @@ pub fn handle_transfer(matches: &ArgMatches) -> Result<(), Error> {
             let account: Address = a.as_str().parse().map_err(Error::InvalidAddress)?;
 
             let mut ledger = FileBasedLedger::new(get_data_dir()?);
-            let mut track = Track::new(sha256(Uuid::new_v4().to_string()), &mut ledger);
-            let mut process = track.start_process(trace);
-            let bid = process.reserve_bucket_id();
-            process
-                .call_method(account, "withdraw", args!(amount, resource_address))
+            let mut executor = TransactionExecutor::new(&mut ledger, 0, 0); // TODO: fix nonce and epoch.
+
+            let abi = executor
+                .export_abi_by_component(account, trace)
                 .map_err(Error::TxnExecutionError)?;
-            process
-                .move_to_bucket(amount, resource_address, bid)
-                .map_err(Error::TxnExecutionError)?;
-            process
+
+            let transaction = TransactionBuilder::new()
                 .call_method(
+                    &abi,
+                    account,
+                    "withdraw",
+                    vec![&amount.to_string(), &resource_address.to_string()],
+                )
+                .call_method(
+                    &abi,
                     recipient_address,
                     "deposit",
-                    args!(scrypto::resource::Bucket::from(bid)),
+                    vec![&format!("{},{}", amount, resource_address)],
                 )
-                .map_err(Error::TxnExecutionError)?;
-            process.finalize().map_err(Error::TxnExecutionError)?;
-            track.commit();
+                .build_with(Some(account))
+                .map_err(Error::TxnConstructionErr)?;
 
-            println!("Resource transferred!");
-            Ok(())
+            let receipt = executor.execute(&transaction, trace);
+            dump_receipt(&receipt);
+
+            if receipt.success {
+                Ok(())
+            } else {
+                Err(Error::TransactionFailed)
+            }
         }
         None => Err(Error::NoDefaultAccount),
     }

@@ -8,26 +8,26 @@ use crate::rust::str::FromStr;
 use crate::rust::vec::Vec;
 use crate::types::*;
 
+/// System package which provides bootstrap functions.
+pub const SYSTEM_PACKAGE: Address = Address::Package([0u8; 26]);
+
+/// The package that defines the `Account` blueprint.
+pub const ACCOUNT_PACKAGE: Address = Address::Package([1u8; 26]);
+
+/// The XRD resource definition.
+pub const RADIX_TOKEN: Address = Address::ResourceDef([0u8; 26]);
+
 /// Represents an address.
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Address {
-    /// Radix System address
-    System,
-
-    /// Radix native token address.
-    RadixToken,
-
-    /// Represents a resource.
-    ResourceDef([u8; 26]),
-
-    /// Represents a public key.
-    PublicKey([u8; 33]),
-
     /// Represents a package.
     Package([u8; 26]),
 
     /// Represents a component.
     Component([u8; 26]),
+
+    /// Represents the definition of a resource.
+    ResourceDef([u8; 26]),
 }
 
 /// Represents an error when parsing Address.
@@ -35,17 +35,15 @@ pub enum Address {
 pub enum ParseAddressError {
     InvalidHex(hex::FromHexError),
     InvalidLength(usize),
+    InvalidType(u8),
 }
 
 impl Address {
     pub fn to_vec(&self) -> Vec<u8> {
         match self {
-            Self::System => [0].to_vec(),
-            Self::RadixToken => [1].to_vec(),
+            Self::Package(d) => combine(1, d),
+            Self::Component(d) => combine(2, d),
             Self::ResourceDef(d) => combine(3, d),
-            Self::PublicKey(d) => combine(4, d),
-            Self::Package(d) => combine(5, d),
-            Self::Component(d) => combine(6, d),
         }
     }
 }
@@ -63,14 +61,15 @@ impl TryFrom<&[u8]> for Address {
     type Error = ParseAddressError;
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
-        match (slice.get(0), slice.len()) {
-            (Some(0), 1) => Ok(Self::System),
-            (Some(1), 1) => Ok(Self::RadixToken),
-            (Some(3), 27) => Ok(Self::ResourceDef(copy_u8_array(&slice[1..]))),
-            (Some(4), 34) => Ok(Self::PublicKey(copy_u8_array(&slice[1..]))),
-            (Some(5), 27) => Ok(Self::Package(copy_u8_array(&slice[1..]))),
-            (Some(6), 27) => Ok(Self::Component(copy_u8_array(&slice[1..]))),
-            (_, len) => Err(ParseAddressError::InvalidLength(len)),
+        if slice.len() != 27 {
+            return Err(ParseAddressError::InvalidLength(slice.len()));
+        } else {
+            match slice[0] {
+                1 => Ok(Self::Package(copy_u8_array(&slice[1..]))),
+                2 => Ok(Self::Component(copy_u8_array(&slice[1..]))),
+                3 => Ok(Self::ResourceDef(copy_u8_array(&slice[1..]))),
+                _ => Err(ParseAddressError::InvalidType(slice[0])),
+            }
         }
     }
 }
@@ -125,7 +124,7 @@ mod tests {
 
     #[test]
     fn test_from_to_string() {
-        let s = "040377bac8066e51cd0d6b320c338d5abbcdbcca25572b6b3eee9443eafc92106bba";
+        let s = "037ac8066e51cd0d6b320c338d5abbcdbcca25572b6b3e11ee944a";
         let a = Address::from_str(s).unwrap();
         assert_eq!(a.to_string(), s);
     }

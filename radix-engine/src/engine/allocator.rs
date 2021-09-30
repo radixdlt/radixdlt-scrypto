@@ -2,11 +2,11 @@ use scrypto::types::*;
 use scrypto::utils::*;
 
 /// An address allocator generates new addresses and identities.
-pub struct AddressAllocator {
+pub struct IdAllocator {
     count: u32,
 }
 
-impl AddressAllocator {
+impl IdAllocator {
     /// Creates an address allocator.
     pub fn new() -> Self {
         Self { count: 0 }
@@ -42,7 +42,7 @@ impl AddressAllocator {
         Address::Component(hash.lower_26_bytes())
     }
 
-    /// Creates a new resource address.
+    /// Creates a new resource definition address.
     pub fn new_resource_address(&mut self, tx_hash: H256) -> Address {
         let mut data = tx_hash.as_ref().to_vec();
         data.extend(self.count.to_le_bytes());
@@ -53,7 +53,7 @@ impl AddressAllocator {
     }
 
     /// Creates a new bucket ID.
-    pub fn new_bucket_id(&mut self) -> BID {
+    pub fn new_bid(&mut self) -> BID {
         self.count += 1;
         BID(self.count - 1)
     }
@@ -77,7 +77,7 @@ impl AddressAllocator {
     }
 }
 
-impl Default for AddressAllocator {
+impl Default for IdAllocator {
     fn default() -> Self {
         Self::new()
     }

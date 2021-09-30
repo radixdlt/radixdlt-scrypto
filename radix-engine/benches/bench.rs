@@ -22,7 +22,7 @@ fn create_account(engine: &mut InMemoryRadixEngine) -> Address {
         .unwrap();
 
     // Allocate 1 XRD
-    let bid = proc.reserve_bucket_id();
+    let bid = proc.reserve_bucket();
     proc.put_bucket(
         bid,
         radix_engine::model::Bucket::new(1.into(), Address::RadixToken),

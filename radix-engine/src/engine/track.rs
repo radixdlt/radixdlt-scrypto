@@ -16,10 +16,11 @@ use crate::model::*;
 ///
 /// Typically, a track is shared by all the processes created within a transaction.
 ///
-pub struct Track<'le, L: Ledger> {
+pub struct Track<'l, L: Ledger> {
+    ledger: &'l mut L,
+    epoch: u64,
     tx_hash: H256,
-    ledger: &'le mut L,
-    alloc: AddressAllocator,
+    alloc: IdAllocator,
     logs: Vec<(Level, String)>,
     packages: HashMap<Address, Package>,
     components: HashMap<Address, Component>,
@@ -35,12 +36,13 @@ pub struct Track<'le, L: Ledger> {
     cache: LruCache<Address, Module>, // TODO: move to ledger level
 }
 
-impl<'le, L: Ledger> Track<'le, L> {
-    pub fn new(tx_hash: H256, ledger: &'le mut L) -> Self {
+impl<'l, L: Ledger> Track<'l, L> {
+    pub fn new(ledger: &'l mut L, epoch: u64, tx_hash: H256) -> Self {
         Self {
-            tx_hash,
             ledger,
-            alloc: AddressAllocator::new(),
+            epoch,
+            tx_hash,
+            alloc: IdAllocator::new(),
             logs: Vec::new(),
             packages: HashMap::new(),
             components: HashMap::new(),
@@ -58,13 +60,18 @@ impl<'le, L: Ledger> Track<'le, L> {
     }
 
     /// Start a process.
-    pub fn start_process<'rt>(&'rt mut self, verbose: bool) -> Process<'rt, 'le, L> {
+    pub fn start_process<'r>(&'r mut self, verbose: bool) -> Process<'r, 'l, L> {
         Process::new(0, verbose, self)
     }
 
     /// Returns the transaction hash.
     pub fn tx_hash(&self) -> H256 {
         self.tx_hash
+    }
+
+    /// Returns the current epoch.
+    pub fn epoch(&self) -> u64 {
+        self.epoch
     }
 
     /// Returns the logs collected so far.
@@ -299,7 +306,7 @@ impl<'le, L: Ledger> Track<'le, L> {
         address
     }
 
-    /// Creates a new resource address.
+    /// Creates a new resource definition address.
     pub fn new_resource_address(&mut self) -> Address {
         let address = self.alloc.new_resource_address(self.tx_hash());
         self.new_addresses.push(address);
@@ -307,8 +314,8 @@ impl<'le, L: Ledger> Track<'le, L> {
     }
 
     /// Creates a new bucket ID.
-    pub fn new_bucket_id(&mut self) -> BID {
-        self.alloc.new_bucket_id()
+    pub fn new_bid(&mut self) -> BID {
+        self.alloc.new_bid()
     }
 
     /// Creates a new vault ID.

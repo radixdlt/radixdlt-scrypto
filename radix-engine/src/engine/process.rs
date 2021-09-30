@@ -53,17 +53,17 @@ macro_rules! warn {
 }
 
 /// A process keeps track of resource movements and code execution.
-pub struct Process<'rt, 'le, L: Ledger> {
+pub struct Process<'r, 'l, L: Ledger> {
     depth: usize,
     trace: bool,
-    track: &'rt mut Track<'le, L>,
+    track: &'r mut Track<'l, L>,
+    reserved_bucket_ids: HashSet<BID>,
     buckets: HashMap<BID, Bucket>,
     references: HashMap<RID, BucketRef>,
     locked_buckets: HashMap<BID, BucketRef>,
     moving_buckets: HashMap<BID, Bucket>,
     moving_references: HashMap<RID, BucketRef>,
     vm: Option<Interpreter>,
-    reserved_bucket_ids: HashSet<BID>,
 }
 
 /// Represents an interpreter.
@@ -82,20 +82,20 @@ pub struct Invocation {
     args: Vec<Vec<u8>>,
 }
 
-impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
+impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
     /// Create a new process, which is not started.
-    pub fn new(depth: usize, trace: bool, track: &'rt mut Track<'le, L>) -> Self {
+    pub fn new(depth: usize, trace: bool, track: &'r mut Track<'l, L>) -> Self {
         Self {
             depth,
             trace,
             track,
+            reserved_bucket_ids: HashSet::new(),
             buckets: HashMap::new(),
             references: HashMap::new(),
             locked_buckets: HashMap::new(),
             moving_buckets: HashMap::new(),
             moving_references: HashMap::new(),
             vm: None,
-            reserved_bucket_ids: HashSet::new(),
         }
     }
 
@@ -181,7 +181,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         }
 
         let bucket = Bucket::new(supply, address);
-        let bid = self.track.new_bucket_id();
+        let bid = self.track.new_bid();
         self.buckets.insert(bid, bucket);
 
         Ok((address, bid))
@@ -211,17 +211,42 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         resource_def.supply += amount;
 
         let bucket = Bucket::new(amount, resource_address);
-        let bid = self.track.new_bucket_id();
+        let bid = self.track.new_bid();
         self.buckets.insert(bid, bucket);
 
         Ok(bid)
     }
 
     /// Reserves a bucket id, especially when preparing buckets for function/method invocation.
-    pub fn reserve_bucket_id(&mut self) -> BID {
-        let bid = self.track.new_bucket_id();
+    pub fn reserve_bucket(&mut self) -> BID {
+        let bid = self.track.new_bid();
         self.reserved_bucket_ids.insert(bid);
         bid
+    }
+
+    pub fn borrow_bucket(&mut self, bid: BID) -> Result<RID, RuntimeError> {
+        let rid = self.track.new_rid();
+        debug!(self, "Borrowing: bid =  {:?}, rid = {:?}", bid, rid);
+
+        match self.locked_buckets.get_mut(&bid) {
+            Some(bucket_rc) => {
+                // re-borrow
+                self.references.insert(rid, bucket_rc.clone());
+            }
+            None => {
+                // first time borrow
+                let bucket = BucketRef::new(LockedBucket::new(
+                    bid,
+                    self.buckets
+                        .remove(&bid)
+                        .ok_or(RuntimeError::BucketNotFound(bid))?,
+                ));
+                self.references.insert(rid, bucket.clone());
+                self.locked_buckets.insert(bid, bucket);
+            }
+        }
+
+        Ok(rid)
     }
 
     /// Puts a bucket into this process.
@@ -292,7 +317,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         }
 
         if needed.is_zero() {
-            let rem_bid = self.track.new_bucket_id();
+            let rem_bid = self.track.new_bid();
             let rem_bucket = Bucket::new(remainder, resource_address);
             self.put_bucket(rem_bid, rem_bucket);
             self.put_bucket(bid, Bucket::new(amount, resource_address));
@@ -330,7 +355,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         debug!(self, "Invoke result: {:?}", result);
         let rtn = result
             .map_err(RuntimeError::InvokeError)?
-            .ok_or(RuntimeError::NoReturnValue)?;
+            .ok_or(RuntimeError::NoReturnData)?;
 
         // move resource based on return data
         let output = match rtn {
@@ -793,15 +818,24 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
             .map_err(|e| Trap::from(RuntimeError::MemoryAccessError(e)))?;
         let input: I = scrypto_decode(&input_bytes)
             .map_err(|e| Trap::from(RuntimeError::InvalidRequest(e)))?;
-        if op != PUBLISH {
+        if input_len <= 1024 {
             trace!(self, "{:?}", input);
+        } else {
+            trace!(self, "Large request: op = {:02x}, len = {}", op, input_len);
         }
 
         let output: O = handler(self, input).map_err(Trap::from)?;
         let output_bytes = scrypto_encode(&output);
         let output_ptr = self.send_bytes(&output_bytes).map_err(Trap::from)?;
-        if op != PUBLISH {
+        if output_bytes.len() <= 1024 {
             trace!(self, "{:?}", output);
+        } else {
+            trace!(
+                self,
+                "Large response: op = {:02x}, len = {}",
+                op,
+                output_bytes.len()
+            );
         }
 
         Ok(Some(RuntimeValue::I32(output_ptr)))
@@ -1142,7 +1176,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
             .take(input.amount, package)
             .map_err(RuntimeError::AccountingError)?;
 
-        let new_bid = self.track.new_bucket_id();
+        let new_bid = self.track.new_bid();
         self.buckets.insert(new_bid, new_bucket);
 
         Ok(TakeFromVaultOutput { bucket: new_bid })
@@ -1179,7 +1213,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         input: CreateEmptyBucketInput,
     ) -> Result<CreateEmptyBucketOutput, RuntimeError> {
         let new_bucket = Bucket::new(Amount::zero(), input.resource_address);
-        let new_bid = self.track.new_bucket_id();
+        let new_bid = self.track.new_bid();
         self.buckets.insert(new_bid, new_bucket);
 
         Ok(CreateEmptyBucketOutput { bucket: new_bid })
@@ -1213,7 +1247,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
             .ok_or(RuntimeError::BucketNotFound(input.bucket))?
             .take(input.amount)
             .map_err(RuntimeError::AccountingError)?;
-        let new_bid = self.track.new_bucket_id();
+        let new_bid = self.track.new_bid();
         self.buckets.insert(new_bid, new_bucket);
 
         Ok(TakeFromBucketOutput { bucket: new_bid })
@@ -1257,29 +1291,9 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
         &mut self,
         input: CreateReferenceInput,
     ) -> Result<CreateReferenceOutput, RuntimeError> {
-        let bid = input.bucket;
-        let rid = self.track.new_rid();
-        debug!(self, "Borrowing: bid =  {:?}, rid = {:?}", bid, rid);
-
-        match self.locked_buckets.get_mut(&bid) {
-            Some(bucket_rc) => {
-                // re-borrow
-                self.references.insert(rid, bucket_rc.clone());
-            }
-            None => {
-                // first time borrow
-                let bucket = BucketRef::new(LockedBucket::new(
-                    bid,
-                    self.buckets
-                        .remove(&bid)
-                        .ok_or(RuntimeError::BucketNotFound(bid))?,
-                ));
-                self.references.insert(rid, bucket.clone());
-                self.locked_buckets.insert(bid, bucket);
-            }
-        }
-
-        Ok(CreateReferenceOutput { reference: rid })
+        Ok(CreateReferenceOutput {
+            reference: self.borrow_bucket(input.bucket)?,
+        })
     }
 
     fn handle_drop_reference(
@@ -1378,7 +1392,7 @@ impl<'rt, 'le, L: Ledger> Process<'rt, 'le, L> {
     }
 }
 
-impl<'rt, 'le, L: Ledger> Externals for Process<'rt, 'le, L> {
+impl<'r, 'l, L: Ledger> Externals for Process<'r, 'l, L> {
     fn invoke_index(
         &mut self,
         index: usize,
@@ -1388,7 +1402,7 @@ impl<'rt, 'le, L: Ledger> Externals for Process<'rt, 'le, L> {
             KERNEL_INDEX => {
                 let operation: u32 = args.nth_checked(0)?;
                 match operation {
-                    PUBLISH => self.handle(args, Self::handle_publish),
+                    PUBLISH_PACKAGE => self.handle(args, Self::handle_publish),
                     CALL_FUNCTION => self.handle(args, Self::handle_call_function),
                     CALL_METHOD => self.handle(args, Self::handle_call_method),
 

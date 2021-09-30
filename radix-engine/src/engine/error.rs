@@ -10,8 +10,6 @@ use crate::model::*;
 pub enum RuntimeError {
     InvalidModule(Error),
 
-    UnableToInstantiate(Error),
-
     StartFunctionNotAllowed,
 
     FloatingPointNotAllowed,
@@ -22,7 +20,7 @@ pub enum RuntimeError {
 
     MemoryAccessError(Error),
 
-    NoReturnValue,
+    NoReturnData,
 
     InvalidReturnType,
 

@@ -1,5 +1,4 @@
 use clap::{crate_version, App, Arg, ArgMatches, SubCommand};
-use colored::*;
 use scrypto::types::*;
 
 use crate::ledger::*;
@@ -30,19 +29,13 @@ pub fn handle_show(matches: &ArgMatches) -> Result<(), Error> {
 
     let ledger = FileBasedLedger::new(get_data_dir()?);
     match address {
-        Address::System => {
-            println!("Radix system address");
-        }
-        Address::PublicKey(_) => {
-            println!("{}: {}", "Public key".green().bold(), address.to_string());
-        }
         Address::Package(_) => {
             dump_package(address, &ledger);
         }
         Address::Component(_) => {
             dump_component(address, &ledger);
         }
-        Address::ResourceDef(_) | Address::RadixToken => {
+        Address::ResourceDef(_) => {
             dump_resource_def(address, &ledger);
         }
     }

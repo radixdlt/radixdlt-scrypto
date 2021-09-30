@@ -1,13 +1,5 @@
 use clap::{crate_version, App, Arg, ArgMatches, SubCommand};
-use radix_engine::engine::*;
-use radix_engine::model::*;
-use radix_engine::utils::*;
-use scrypto::args;
-use scrypto::buffer::*;
-use scrypto::rust::collections::*;
-use scrypto::types::*;
-use scrypto::utils::*;
-use uuid::Uuid;
+use radix_engine::transaction::*;
 
 use crate::ledger::*;
 use crate::rev2::*;
@@ -21,7 +13,6 @@ pub fn make_new_account<'a, 'b>() -> App<'a, 'b> {
         .version(crate_version!())
         .arg(
             Arg::with_name(ARG_TRACE)
-                .short("t")
                 .long("trace")
                 .help("Turns on tracing."),
         )
@@ -32,51 +23,10 @@ pub fn handle_new_account(matches: &ArgMatches) -> Result<(), Error> {
     let trace = matches.is_present(ARG_TRACE);
 
     let mut ledger = FileBasedLedger::new(get_data_dir()?);
-    let mut track = Track::new(sha256(Uuid::new_v4().to_string()), &mut ledger);
 
-    // create XRD native token
-    if track.get_resource_def(Address::RadixToken).is_none() {
-        let mut metadata = HashMap::new();
-        metadata.insert("symbol".to_owned(), "xrd".to_owned());
-        metadata.insert("name".to_owned(), "Radix".to_owned());
-        metadata.insert("description".to_owned(), "The Radix Public Network's native token, used to pay the network's required transaction fees and to secure the network through staking to its validator nodes.".to_owned());
-        metadata.insert("url".to_owned(), "https://tokens.radixdlt.com".to_owned());
-        track.put_resource_def(
-            Address::RadixToken,
-            ResourceDef {
-                metadata,
-                minter: Some(Address::System),
-                auth: Some(Address::System),
-                supply: 0.into(),
-            },
-        );
-    }
+    let mut executor = TransactionExecutor::new(&mut ledger, 0, 0);
 
-    // publish smart account blueprint
-    let package = Address::Package([1u8; 26]);
-    if track.get_package(package).is_none() {
-        track.put_package(
-            package,
-            Package::new(include_bytes!("../../../assets/account.wasm").to_vec()),
-        );
-    }
-
-    // Create new account component with test XRD
-    let mut proc = track.start_process(trace);
-    let account: Address = proc
-        .call_function((package, "Account".to_owned()), "new", args!())
-        .and_then(decode_return)
-        .map_err(Error::TxnExecutionError)?;
-    let bid = proc.reserve_bucket_id();
-    proc.put_bucket(bid, Bucket::new(1_000_000.into(), Address::RadixToken));
-    proc.call_method(
-        account,
-        "deposit",
-        vec![scrypto_encode(&scrypto::resource::Bucket::from(bid))],
-    )
-    .map_err(Error::TxnExecutionError)?;
-    proc.finalize().map_err(Error::TxnExecutionError)?;
-    track.commit();
+    let account = executor.new_account( trace);
 
     println!("New account: {}", account);
 

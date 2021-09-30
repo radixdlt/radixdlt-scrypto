@@ -88,13 +88,22 @@ jobs:
       run: rustup +nightly target add wasm32-unknown-unknown
     - name: Build account
       run: cargo build --target wasm32-unknown-unknown --release
-      working-directory: examples/account
+      working-directory: assets/account
+    - name: Build system
+      run: cargo build --target wasm32-unknown-unknown --release
+      working-directory: assets/system
     - name: Build helloworld
       run: cargo build --target wasm32-unknown-unknown --release
       working-directory: examples/helloworld
     - name: Build no_std
       run: cargo build --target wasm32-unknown-unknown --release
       working-directory: examples/no_std
+    - name: Build gumball machine
+      run: cargo build --target wasm32-unknown-unknown --release
+      working-directory: examples/gumball-machine
+    - name: Build gumball machine vendor
+      run: cargo build --target wasm32-unknown-unknown --release
+      working-directory: examples/gumball-machine-vendor
     - name: Build radiswap
       run: cargo build --target wasm32-unknown-unknown --release
       working-directory: examples/radiswap

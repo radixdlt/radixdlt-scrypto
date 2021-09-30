@@ -1,10 +1,7 @@
 use clap::{crate_version, App, Arg, ArgMatches, SubCommand};
-use radix_engine::engine::*;
-use scrypto::args;
+use radix_engine::transaction::*;
 use scrypto::rust::str::FromStr;
 use scrypto::types::*;
-use scrypto::utils::*;
-use uuid::Uuid;
 
 use crate::ledger::*;
 use crate::rev2::*;
@@ -20,7 +17,6 @@ pub fn make_mint<'a, 'b>() -> App<'a, 'b> {
         .version(crate_version!())
         .arg(
             Arg::with_name(ARG_TRACE)
-                .short("t")
                 .long("trace")
                 .help("Turns on tracing."),
         )
@@ -31,7 +27,7 @@ pub fn make_mint<'a, 'b>() -> App<'a, 'b> {
         )
         .arg(
             Arg::with_name(ARG_RESOURCE_ADDRESS)
-                .help("Specify the resource address.")
+                .help("Specify the resource definition address.")
                 .required(true),
         )
 }
@@ -56,13 +52,9 @@ pub fn handle_mint(matches: &ArgMatches) -> Result<(), Error> {
             let account: Address = a.as_str().parse().map_err(Error::InvalidAddress)?;
 
             let mut ledger = FileBasedLedger::new(get_data_dir()?);
-            let mut track = Track::new(sha256(Uuid::new_v4().to_string()), &mut ledger);
-            let mut process = track.start_process(trace);
-            process
-                .call_method(account, "mint", args!(amount, resource_address))
-                .and_then(|_| process.finalize())
-                .map_err(Error::TxnExecutionError)?;
-            track.commit();
+            let mut executor = TransactionExecutor::new(&mut ledger, 0, 0); // TODO: fix nonce and epoch.
+
+            executor.mint_resource(amount, resource_address, account, trace);
 
             println!("Resource minted!");
             Ok(())

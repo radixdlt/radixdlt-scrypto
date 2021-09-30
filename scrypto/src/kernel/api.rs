@@ -12,7 +12,7 @@ extern "C" {
 }
 
 /// Publish a code package
-pub const PUBLISH: u32 = 0x00;
+pub const PUBLISH_PACKAGE: u32 = 0x00;
 /// Call a function
 pub const CALL_FUNCTION: u32 = 0x01;
 /// Call a method
@@ -57,7 +57,7 @@ pub const PUT_INTO_VAULT: u32 = 0x41;
 pub const TAKE_FROM_VAULT: u32 = 0x42;
 /// Get vault resource amount
 pub const GET_VAULT_AMOUNT: u32 = 0x43;
-/// Get vault resource address
+/// Get vault resource definition address
 pub const GET_VAULT_RESOURCE_ADDRESS: u32 = 0x44;
 
 /// Create a new empty bucket
@@ -68,7 +68,7 @@ pub const PUT_INTO_BUCKET: u32 = 0x51;
 pub const TAKE_FROM_BUCKET: u32 = 0x52;
 /// Get bucket resource amount
 pub const GET_BUCKET_AMOUNT: u32 = 0x53;
-/// Get bucket resource address
+/// Get bucket resource definition address
 pub const GET_BUCKET_RESOURCE_ADDRESS: u32 = 0x54;
 
 /// Obtain an immutable reference to a bucket
@@ -77,7 +77,7 @@ pub const CREATE_REFERENCE: u32 = 0x60;
 pub const DROP_REFERENCE: u32 = 0x61;
 /// Get the resource amount behind a reference
 pub const GET_REF_AMOUNT: u32 = 0x62;
-/// Get the resource address behind a reference
+/// Get the resource definition address behind a reference
 pub const GET_REF_RESOURCE_ADDRESS: u32 = 0x63;
 
 /// Log a message
@@ -88,6 +88,8 @@ pub const GET_PACKAGE_ADDRESS: u32 = 0xf1;
 pub const GET_CALL_DATA: u32 = 0xf2;
 /// Retrieve transaction hash
 pub const GET_TRANSACTION_HASH: u32 = 0xf3;
+/// Retrieve current epoch
+pub const GET_EPOCH: u32 = 0xf4;
 
 //==========
 // blueprint
@@ -466,4 +468,12 @@ pub struct GetTransactionHashInput {}
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct GetTransactionHashOutput {
     pub tx_hash: H256,
+}
+
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
+pub struct GetCurrentEpochInput {}
+
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
+pub struct GetCurrentEpochOutput {
+    pub epoch: u64,
 }
