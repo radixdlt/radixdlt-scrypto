@@ -102,12 +102,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
     /// Publishes a package.
     pub fn publish(&mut self, code: &[u8]) -> Result<Address, RuntimeError> {
         let address = self.track.new_package_address();
-        self.publish_at(code, address)?;
-        Ok(address)
-    }
 
-    /// Publishes a package to a specific address.
-    pub fn publish_at(&mut self, code: &[u8], address: Address) -> Result<(), RuntimeError> {
         if self.track.get_package(address).is_some() {
             return Err(RuntimeError::PackageAlreadyExists(address));
         }
@@ -116,7 +111,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         debug!(self, "New package: {}", address);
         self.track
             .put_package(address, Package::new(code.to_owned()));
-        Ok(())
+        Ok(address)
     }
 
     /// Create resource with mutable supply.

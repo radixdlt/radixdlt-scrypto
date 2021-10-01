@@ -2,85 +2,44 @@
 extern crate bencher;
 use bencher::Bencher;
 
-use radix_engine::engine::*;
-use radix_engine::utils::*;
+use radix_engine::ledger::*;
+use radix_engine::transaction::*;
 use scrypto::prelude::*;
 
-fn create_account(engine: &mut InMemoryRadixEngine) -> Address {
-    let mut track = engine.start_transaction();
-    let mut proc = track.start_process(false);
+fn create_account<L: Ledger>(executor: &mut TransactionExecutor<L>) -> Address {
+    let transaction1 = TransactionBuilder::new().new_account().build().unwrap();
+    let receipt1 = executor.run(&transaction1, false);
+    assert!(receipt1.success);
 
-    // Publish Account blueprint
-    let acc_bp = Address::Package([0u8; 26]);
-    proc.publish_at(include_bytes!("../../assets/account.wasm"), acc_bp)
+    let account = receipt1.nth_component(0).unwrap();
+
+    let transaction2 = TransactionBuilder::new()
+        .mint_resource(1000.into(), RADIX_TOKEN)
+        .deposit_all(account)
+        .build()
         .unwrap();
-
-    // Create account
-    let account: Address = proc
-        .call_function((acc_bp, "Account".to_owned()), "new", args!())
-        .and_then(decode_return)
-        .unwrap();
-
-    // Allocate 1 XRD
-    let bid = proc.reserve_bucket();
-    proc.put_bucket(
-        bid,
-        radix_engine::model::Bucket::new(1.into(), Address::RadixToken),
-    );
-    proc.call_method(account, "deposit", args!(Bucket::from(bid)))
-        .unwrap();
-
-    // Commit
-    proc.finalize().unwrap();
-    track.commit();
+    let receipt2 = executor.run(&transaction2, false);
+    assert!(receipt2.success);
 
     account
 }
 
-fn create_gumball_machine(engine: &mut InMemoryRadixEngine) -> Address {
-    let mut track = engine.start_transaction();
-    let mut proc = track.start_process(false);
-
-    let package = proc
-        .publish(include_bytes!("../../assets/gumball-machine.wasm"))
-        .unwrap();
-
-    let component: Address = proc
-        .call_function((package, "GumballMachine".to_owned()), "new", args!())
-        .and_then(decode_return)
-        .unwrap();
-
-    proc.finalize().unwrap();
-    track.commit();
-
-    component
-}
-
-fn bench_swap_transaction(b: &mut Bencher) {
-    let mut engine = InMemoryRadixEngine::new();
-    let account = create_account(&mut engine);
-    let component = create_gumball_machine(&mut engine);
+fn bench_transfer(b: &mut Bencher) {
+    let mut ledger = InMemoryLedger::with_bootstrap();
+    let mut executor = TransactionExecutor::new(&mut ledger, 0, 0);
+    let account1 = create_account(&mut executor);
+    let account2 = create_account(&mut executor);
 
     b.iter(|| {
-        let mut track = engine.start_transaction();
-        let mut proc = track.start_process(false);
-        let xrd: Bucket = proc
-            .call_method(
-                account,
-                "withdraw",
-                args!(Amount::one(), Address::RadixToken),
-            )
-            .and_then(decode_return)
+        let transaction = TransactionBuilder::new()
+            .withdraw(1.into(), RADIX_TOKEN, account1)
+            .deposit_all(account2)
+            .build()
             .unwrap();
-        let gum: Bucket = proc
-            .call_method(component, "get_gumball", args!(xrd))
-            .and_then(decode_return)
-            .unwrap();
-        proc.call_method(account, "deposit", args!(gum)).unwrap();
-        proc.finalize().unwrap();
-        //track.commit();
+        let receipt = executor.run(&transaction, false);
+        assert!(receipt.success);
     });
 }
 
-benchmark_group!(radix_engine, bench_swap_transaction);
+benchmark_group!(radix_engine, bench_transfer);
 benchmark_main!(radix_engine);
