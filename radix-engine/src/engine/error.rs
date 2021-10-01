@@ -81,6 +81,8 @@ pub enum RuntimeError {
     UnexpectedReferenceReturn,
 
     InvalidAddressType,
+
+    NotReservedBucket,
 }
 
 impl fmt::Display for RuntimeError {

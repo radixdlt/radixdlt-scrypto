@@ -1,13 +1,12 @@
 use clap::{crate_version, App, Arg, ArgMatches, SubCommand};
 use radix_engine::transaction::*;
 use scrypto::rust::collections::HashMap;
-use scrypto::types::*;
 
 use crate::ledger::*;
 use crate::rev2::*;
+use crate::utils::*;
 
 const ARG_TRACE: &str = "TRACE";
-const ARG_MINTER_ADDRESS: &str = "MINTER_ADDRESS";
 const ARG_SYMBOL: &str = "SYMBOL";
 const ARG_NAME: &str = "NAME";
 const ARG_DESCRIPTION: &str = "DESCRIPTION";
@@ -19,15 +18,11 @@ pub fn make_new_resource_mutable<'a, 'b>() -> App<'a, 'b> {
     SubCommand::with_name(CMD_NEW_RESOURCE_MUTABLE)
         .about("Creates token with mutable supply")
         .version(crate_version!())
+        // options
         .arg(
             Arg::with_name(ARG_TRACE)
                 .long("trace")
                 .help("Turns on tracing."),
-        )
-        .arg(
-            Arg::with_name(ARG_MINTER_ADDRESS)
-                .help("Specify the minter address.")
-                .required(true),
         )
         .arg(
             Arg::with_name(ARG_SYMBOL)
@@ -69,13 +64,6 @@ pub fn make_new_resource_mutable<'a, 'b>() -> App<'a, 'b> {
 /// Handles a `new-resource-mutable` request.
 pub fn handle_new_resource_mutable(matches: &ArgMatches) -> Result<(), Error> {
     let trace = matches.is_present(ARG_TRACE);
-
-    let minter_address: Address = matches
-        .value_of(ARG_MINTER_ADDRESS)
-        .ok_or_else(|| Error::MissingArgument(ARG_MINTER_ADDRESS.to_owned()))?
-        .parse()
-        .map_err(Error::InvalidAddress)?;
-
     let mut metadata = HashMap::new();
     matches
         .value_of(ARG_SYMBOL)
@@ -93,12 +81,22 @@ pub fn handle_new_resource_mutable(matches: &ArgMatches) -> Result<(), Error> {
         .value_of(ARG_ICON_URL)
         .and_then(|v| metadata.insert("icon_url".to_owned(), v.to_owned()));
 
- 
-            let mut ledger = FileBasedLedger::new(get_data_dir()?);
-            let mut executor = TransactionExecutor::new(&mut ledger, 0, 0); // TODO: fix nonce and epoch.
+    let mut configs = get_configs()?;
+    let mut ledger = FileBasedLedger::with_bootstrap(get_data_dir()?);
+    let mut executor = TransactionExecutor::new(&mut ledger, configs.current_epoch, configs.nonce);
+    let transaction = TransactionBuilder::new()
+        .new_resource_mutable(metadata)
+        .build()
+        .map_err(Error::TransactionConstructionError)?;
 
-            let resource_address = executor.new_resource_mutable(metadata, minter_address, trace);
+    let receipt = executor.run(&transaction, trace);
 
-            println!("New resource: {}", resource_address);
-            Ok(()) 
+    dump_receipt(&transaction, &receipt);
+    if receipt.success {
+        configs.nonce = executor.nonce();
+        set_configs(configs)?;
+        Ok(())
+    } else {
+        Err(Error::TransactionFailed)
+    }
 }

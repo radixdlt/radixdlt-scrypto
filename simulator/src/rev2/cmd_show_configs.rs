@@ -11,5 +11,11 @@ pub fn make_show_configs<'a, 'b>() -> App<'a, 'b> {
 
 /// Handles a `show-configs` request.
 pub fn handle_show_configs(_matches: &ArgMatches) -> Result<(), Error> {
-    get_configs().map(|configs| println!("{}", serde_json::to_string_pretty(&configs).unwrap()))
+    let configs = get_configs()?;
+
+    println!("Default Account: {:?}", configs.default_account);
+    println!("Current Epoch: {}", configs.current_epoch);
+    println!("Nonce: {}", configs.nonce);
+
+    Ok(())
 }

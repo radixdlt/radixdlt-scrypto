@@ -13,6 +13,7 @@ mod cmd_show_configs;
 mod cmd_transfer;
 mod config;
 mod error;
+mod utils;
 
 pub use cmd_call_function::*;
 pub use cmd_call_method::*;
@@ -29,6 +30,7 @@ pub use cmd_show_configs::*;
 pub use cmd_transfer::*;
 pub use config::*;
 pub use error::*;
+pub use utils::*;
 
 pub const CMD_EXPORT_ABI: &str = "export-abi";
 pub const CMD_CALL_FUNCTION: &str = "call-function";

@@ -15,19 +15,17 @@ pub struct Transaction {
 /// Represents an instruction in transaction
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub enum Instruction {
-    /// Reserve a bucket
-    ReserveBucket,
+    /// Create an empty bucket
+    CreateBucket { resource_def: Address },
 
-    /// Reserve a reference
-    BorrowBucket {
-        bid: BID,
-    },
+    /// Borrows a bucket, thus creating a reference.
+    BorrowBucket { bucket: BID },
 
     /// Move resource to a reserved bucket.
     MoveToBucket {
         amount: Amount,
-        resource_address: Address,
-        bid: BID,
+        resource_def: Address,
+        bucket: BID,
     },
 
     /// Call a function.
@@ -45,18 +43,12 @@ pub enum Instruction {
     },
 
     /// Deposit all buckets of resource to a component.
-    DepositAll {
-        component: Address,
-        method: String,
-    },
-
-    Finalize,
+    DepositAll { component: Address, method: String },
 }
 
 /// Represents a transaction receipt.
 #[derive(Debug)]
 pub struct Receipt {
-    pub transaction: Transaction,
     pub success: bool,
     pub results: Vec<Result<Option<Vec<u8>>, RuntimeError>>,
     pub logs: Vec<(Level, String)>,

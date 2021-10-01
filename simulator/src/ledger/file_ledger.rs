@@ -34,6 +34,12 @@ impl FileBasedLedger {
         Self { root }
     }
 
+    pub fn with_bootstrap(root: PathBuf) -> Self {
+        let mut ledger = Self::new(root);
+        ledger.bootstrap();
+        ledger
+    }
+
     fn get_path<T: AsRef<str>>(&self, kind: &str, name: T, ext: &str) -> PathBuf {
         let mut path = self.root.clone();
         path.push(kind);

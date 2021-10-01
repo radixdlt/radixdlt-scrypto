@@ -19,19 +19,21 @@ pub enum Error {
 
     InvalidAddress(ParseAddressError),
 
-    InvalidAmount,
+    InvalidAmount(ParseAmountError),
 
     IOError(io::Error),
 
-    JSONError(serde_json::Error),
+    ConfigDecodeError(sbor::DecodeError),
 
     CargoError(CargoExecutionError),
 
-    TxnConstructionErr(BuildTransactionError),
+    TransactionConstructionError(BuildTransactionError),
 
-    TxnExecutionError(RuntimeError),
+    TransactionExecutionError(RuntimeError),
 
     TransactionFailed,
 
     DataError(DecodeError),
+
+    JSONError(serde_json::Error),
 }

@@ -145,11 +145,11 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
             auth: Some(auth),
         };
 
-        let address = self.track.new_resource_address();
+        let address = self.track.new_resource_def_address();
         if self.track.get_resource_def(address).is_some() {
             return Err(RuntimeError::ResourceDefAlreadyExists(address));
         } else {
-            debug!(self, "New resource: {}", address);
+            debug!(self, "New resource definition: {}", address);
 
             self.track.put_resource_def(address, resource_def);
         }
@@ -170,12 +170,12 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
             auth: None,
         };
 
-        let address = self.track.new_resource_address();
+        let address = self.track.new_resource_def_address();
 
         if self.track.get_resource_def(address).is_some() {
             return Err(RuntimeError::ResourceDefAlreadyExists(address));
         } else {
-            debug!(self, "New resource: {:?}", address);
+            debug!(self, "New resource definition: {:?}", address);
 
             self.track.put_resource_def(address, resource_def);
         }
@@ -191,14 +191,14 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
     pub fn mint_resource(
         &mut self,
         amount: Amount,
-        resource_address: Address,
+        resource_def: Address,
     ) -> Result<BID, RuntimeError> {
         let package = self.package()?;
-        let resource_def = self
+        let definition = self
             .track
-            .get_resource_def_mut(resource_address)
-            .ok_or(RuntimeError::ResourceDefNotFound(resource_address))?;
-        match resource_def.auth {
+            .get_resource_def_mut(resource_def)
+            .ok_or(RuntimeError::ResourceDefNotFound(resource_def))?;
+        match definition.auth {
             Some(pkg) => {
                 if package != pkg {
                     return Err(RuntimeError::UnauthorizedToMint);
@@ -208,22 +208,25 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
                 return Err(RuntimeError::UnableToMintDueToFixedSupply);
             }
         }
-        resource_def.supply += amount;
+        definition.supply += amount;
 
-        let bucket = Bucket::new(amount, resource_address);
+        let bucket = Bucket::new(amount, resource_def);
         let bid = self.track.new_bid();
         self.buckets.insert(bid, bucket);
 
         Ok(bid)
     }
 
-    /// Reserves a bucket id, especially when preparing buckets for function/method invocation.
-    pub fn reserve_bucket(&mut self) -> BID {
+    /// Reserves a bucket, used for function/method invocation.
+    pub fn create_bucket(&mut self, resource_def: Address) -> BID {
         let bid = self.track.new_bid();
+        let bucket = Bucket::new(Amount::zero(), resource_def);
+        self.buckets.insert(bid, bucket);
         self.reserved_bucket_ids.insert(bid);
         bid
     }
 
+    /// Borrows a bucket.
     pub fn borrow_bucket(&mut self, bid: BID) -> Result<RID, RuntimeError> {
         let rid = self.track.new_rid();
         debug!(self, "Borrowing: bid =  {:?}, rid = {:?}", bid, rid);
@@ -249,12 +252,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         Ok(rid)
     }
 
-    /// Puts a bucket into this process.
-    pub fn put_bucket(&mut self, bid: BID, bucket: Bucket) {
-        self.buckets.insert(bid, bucket);
-    }
-
-    /// Puts buckets and references into this process.
+    /// Puts buckets and references into this process, used for passing resources to child process.
     pub fn put_buckets_and_refs(
         &mut self,
         buckets: HashMap<BID, Bucket>,
@@ -264,7 +262,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         self.references.extend(references);
     }
 
-    /// Takes all **moving** buckets and references from this process.
+    /// Takes all **moving** buckets and references from this process, used for returning resources to parent.
     pub fn take_moving_buckets_and_refs(
         &mut self,
     ) -> (HashMap<BID, Bucket>, HashMap<RID, BucketRef>) {
@@ -282,45 +280,48 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
     pub fn move_to_bucket(
         &mut self,
         amount: Amount,
-        resource_address: Address,
+        resource_def: Address,
         bid: BID,
     ) -> Result<(), RuntimeError> {
         debug!(
             self,
-            "Moving to bucket: amount = {}, address = {}, bid = {}", amount, resource_address, bid
+            "Moving to bucket: amount = {}, resource_def = {}, bid = {}", amount, resource_def, bid
         );
-        assert!(self.reserved_bucket_ids.contains(&bid));
-        assert!(!self.buckets.contains_key(&bid));
+        if !self.reserved_bucket_ids.contains(&bid) {
+            return Err(RuntimeError::NotReservedBucket);
+        }
 
         let candidates: BTreeSet<BID> = self
             .buckets
             .iter()
             .filter(|(k, v)| {
-                v.resource_address() == resource_address && !self.reserved_bucket_ids.contains(k)
+                v.resource_def() == resource_def && !self.reserved_bucket_ids.contains(k)
             })
             .map(|(k, _)| *k)
             .collect();
 
         let mut needed = amount;
-        let mut remainder = Amount::zero();
         for candidate in candidates {
             if needed.is_zero() {
                 break;
             }
-            let avail = self.buckets.remove(&candidate).unwrap().amount();
-            if avail > needed {
-                remainder = avail - needed;
+            let available = self.buckets.get(&candidate).unwrap().amount();
+            if available > needed {
+                self.buckets
+                    .get_mut(&candidate)
+                    .unwrap()
+                    .take(needed)
+                    .unwrap();
                 needed = Amount::zero();
             } else {
-                needed -= avail;
+                self.buckets.remove(&candidate);
+                needed -= available;
             }
         }
 
         if needed.is_zero() {
-            let rem_bid = self.track.new_bid();
-            let rem_bucket = Bucket::new(remainder, resource_address);
-            self.put_bucket(rem_bid, rem_bucket);
-            self.put_bucket(bid, Bucket::new(amount, resource_address));
+            self.reserved_bucket_ids.remove(&bid);
+            self.buckets.insert(bid, Bucket::new(amount, resource_def));
             Ok(())
         } else {
             Err(RuntimeError::AccountingError(
@@ -1041,7 +1042,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         input: CreateResourceMutableInput,
     ) -> Result<CreateResourceMutableOutput, RuntimeError> {
         Ok(CreateResourceMutableOutput {
-            resource_address: self.create_resource_mutable(input.metadata, input.minter)?,
+            resource_def: self.create_resource_mutable(input.metadata, input.minter)?,
         })
     }
 
@@ -1049,10 +1050,9 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         &mut self,
         input: CreateResourceFixedInput,
     ) -> Result<CreateResourceFixedOutput, RuntimeError> {
-        let (resource_address, bucket) =
-            self.create_resource_fixed(input.metadata, input.supply)?;
+        let (resource_def, bucket) = self.create_resource_fixed(input.metadata, input.supply)?;
         Ok(CreateResourceFixedOutput {
-            resource_address,
+            resource_def,
             bucket,
         })
     }
@@ -1063,8 +1063,8 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
     ) -> Result<GetResourceMetadataOutput, RuntimeError> {
         let resource_def = self
             .track
-            .get_resource_def(input.resource_address)
-            .ok_or(RuntimeError::ResourceDefNotFound(input.resource_address))?
+            .get_resource_def(input.resource_def)
+            .ok_or(RuntimeError::ResourceDefNotFound(input.resource_def))?
             .clone();
 
         Ok(GetResourceMetadataOutput {
@@ -1078,8 +1078,8 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
     ) -> Result<GetResourceSupplyOutput, RuntimeError> {
         let resource_def = self
             .track
-            .get_resource_def(input.resource_address)
-            .ok_or(RuntimeError::ResourceDefNotFound(input.resource_address))?
+            .get_resource_def(input.resource_def)
+            .ok_or(RuntimeError::ResourceDefNotFound(input.resource_def))?
             .clone();
 
         Ok(GetResourceSupplyOutput {
@@ -1093,8 +1093,8 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
     ) -> Result<GetResourceMinterOutput, RuntimeError> {
         let resource_def = self
             .track
-            .get_resource_def(input.resource_address)
-            .ok_or(RuntimeError::ResourceDefNotFound(input.resource_address))?
+            .get_resource_def(input.resource_def)
+            .ok_or(RuntimeError::ResourceDefNotFound(input.resource_def))?
             .clone();
 
         Ok(GetResourceMinterOutput {
@@ -1107,7 +1107,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         input: MintResourceInput,
     ) -> Result<MintResourceOutput, RuntimeError> {
         Ok(MintResourceOutput {
-            bucket: self.mint_resource(input.amount, input.resource_address)?,
+            bucket: self.mint_resource(input.amount, input.resource_def)?,
         })
     }
 
@@ -1122,8 +1122,8 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
 
         let resource_def = self
             .track
-            .get_resource_def_mut(bucket.resource_address())
-            .ok_or(RuntimeError::ResourceDefNotFound(bucket.resource_address()))?;
+            .get_resource_def_mut(bucket.resource_def())
+            .ok_or(RuntimeError::ResourceDefNotFound(bucket.resource_def()))?;
 
         resource_def.supply -= bucket.amount();
 
@@ -1136,7 +1136,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
     ) -> Result<CreateEmptyVaultOutput, RuntimeError> {
         let package = self.package()?;
 
-        let new_vault = Vault::new(Bucket::new(Amount::zero(), input.resource_address), package);
+        let new_vault = Vault::new(Bucket::new(Amount::zero(), input.resource_def), package);
         let new_vid = self.track.new_vault_id();
         self.track.put_vault(new_vid, new_vault);
 
@@ -1195,24 +1195,24 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         Ok(GetVaultAmountOutput { amount })
     }
 
-    fn handle_get_vault_resource_address(
+    fn handle_get_vault_resource_def(
         &mut self,
         input: GetVaultResourceAddressInput,
     ) -> Result<GetVaultResourceAddressOutput, RuntimeError> {
-        let resource_address = self
+        let resource_def = self
             .track
             .get_vault(input.vault)
-            .map(|b| b.resource_address())
+            .map(|b| b.resource_def())
             .ok_or(RuntimeError::VaultNotFound(input.vault))?;
 
-        Ok(GetVaultResourceAddressOutput { resource_address })
+        Ok(GetVaultResourceAddressOutput { resource_def })
     }
 
     fn handle_create_bucket(
         &mut self,
         input: CreateEmptyBucketInput,
     ) -> Result<CreateEmptyBucketOutput, RuntimeError> {
-        let new_bucket = Bucket::new(Amount::zero(), input.resource_address);
+        let new_bucket = Bucket::new(Amount::zero(), input.resource_def);
         let new_bid = self.track.new_bid();
         self.buckets.insert(new_bid, new_bucket);
 
@@ -1268,23 +1268,23 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         Ok(GetBucketAmountOutput { amount })
     }
 
-    fn handle_get_bucket_resource_address(
+    fn handle_get_bucket_resource_def(
         &mut self,
         input: GetBucketResourceAddressInput,
     ) -> Result<GetBucketResourceAddressOutput, RuntimeError> {
         let bid = input.bucket;
-        let resource_address = self
+        let resource_def = self
             .buckets
             .get(&bid)
-            .map(|b| b.resource_address())
+            .map(|b| b.resource_def())
             .or_else(|| {
                 self.locked_buckets
                     .get(&bid)
-                    .map(|x| x.bucket().resource_address())
+                    .map(|x| x.bucket().resource_def())
             })
             .ok_or(RuntimeError::BucketNotFound(bid))?;
 
-        Ok(GetBucketResourceAddressOutput { resource_address })
+        Ok(GetBucketResourceAddressOutput { resource_def })
     }
 
     fn handle_create_reference(
@@ -1334,7 +1334,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         })
     }
 
-    fn handle_get_ref_resource_address(
+    fn handle_get_ref_resource_def(
         &mut self,
         input: GetRefResourceAddressInput,
     ) -> Result<GetRefResourceAddressOutput, RuntimeError> {
@@ -1344,7 +1344,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
             .ok_or(RuntimeError::ReferenceNotFound(input.reference))?;
 
         Ok(GetRefResourceAddressOutput {
-            resource_address: reference.bucket().resource_address(),
+            resource_def: reference.bucket().resource_def(),
         })
     }
 
@@ -1431,24 +1431,22 @@ impl<'r, 'l, L: Ledger> Externals for Process<'r, 'l, L> {
                     PUT_INTO_VAULT => self.handle(args, Self::handle_put_into_vault),
                     TAKE_FROM_VAULT => self.handle(args, Self::handle_take_from_vault),
                     GET_VAULT_AMOUNT => self.handle(args, Self::handle_get_vault_amount),
-                    GET_VAULT_RESOURCE_ADDRESS => {
-                        self.handle(args, Self::handle_get_vault_resource_address)
+                    GET_VAULT_RESOURCE_DEF => {
+                        self.handle(args, Self::handle_get_vault_resource_def)
                     }
 
                     CREATE_EMPTY_BUCKET => self.handle(args, Self::handle_create_bucket),
                     PUT_INTO_BUCKET => self.handle(args, Self::handle_put_into_bucket),
                     TAKE_FROM_BUCKET => self.handle(args, Self::handle_take_from_bucket),
                     GET_BUCKET_AMOUNT => self.handle(args, Self::handle_get_bucket_amount),
-                    GET_BUCKET_RESOURCE_ADDRESS => {
-                        self.handle(args, Self::handle_get_bucket_resource_address)
+                    GET_BUCKET_RESOURCE_DEF => {
+                        self.handle(args, Self::handle_get_bucket_resource_def)
                     }
 
                     CREATE_REFERENCE => self.handle(args, Self::handle_create_reference),
                     DROP_REFERENCE => self.handle(args, Self::handle_drop_reference),
                     GET_REF_AMOUNT => self.handle(args, Self::handle_get_ref_amount),
-                    GET_REF_RESOURCE_ADDRESS => {
-                        self.handle(args, Self::handle_get_ref_resource_address)
-                    }
+                    GET_REF_RESOURCE_DEF => self.handle(args, Self::handle_get_ref_resource_def),
 
                     EMIT_LOG => self.handle(args, Self::handle_emit_log),
                     GET_PACKAGE_ADDRESS => self.handle(args, Self::handle_get_package_address),

@@ -14,6 +14,6 @@ pub fn make_reset<'a, 'b>() -> App<'a, 'b> {
 pub fn handle_reset(_matches: &ArgMatches) -> Result<(), Error> {
     let dir = get_data_dir()?;
     remove_dir_all(dir).map_err(Error::IOError)?;
-    println!("Data directory deleted.");
+    println!("Data directory cleared.");
     Ok(())
 }

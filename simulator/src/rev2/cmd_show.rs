@@ -3,7 +3,6 @@ use scrypto::types::*;
 
 use crate::ledger::*;
 use crate::rev2::*;
-use crate::utils::*;
 
 const ARG_ADDRESS: &str = "ADDRESS";
 
@@ -27,7 +26,7 @@ pub fn handle_show(matches: &ArgMatches) -> Result<(), Error> {
         .parse()
         .map_err(Error::InvalidAddress)?;
 
-    let ledger = FileBasedLedger::new(get_data_dir()?);
+    let ledger = FileBasedLedger::with_bootstrap(get_data_dir()?);
     match address {
         Address::Package(_) => {
             dump_package(address, &ledger);

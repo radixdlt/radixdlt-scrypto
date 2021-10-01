@@ -33,8 +33,8 @@ impl From<Bucket> for BID {
 }
 
 impl Bucket {
-    pub fn new(resource_address: Address) -> Self {
-        let input = CreateEmptyBucketInput { resource_address };
+    pub fn new(resource_def: Address) -> Self {
+        let input = CreateEmptyBucketInput { resource_def };
         let output: CreateEmptyBucketOutput = call_kernel(CREATE_EMPTY_BUCKET, input);
 
         output.bucket.into()
@@ -74,10 +74,9 @@ impl Bucket {
 
     pub fn resource_def(&self) -> ResourceDef {
         let input = GetBucketResourceAddressInput { bucket: self.bid };
-        let output: GetBucketResourceAddressOutput =
-            call_kernel(GET_BUCKET_RESOURCE_ADDRESS, input);
+        let output: GetBucketResourceAddressOutput = call_kernel(GET_BUCKET_RESOURCE_DEF, input);
 
-        output.resource_address.into()
+        output.resource_def.into()
     }
 
     pub fn burn(self) {

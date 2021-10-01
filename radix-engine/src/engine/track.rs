@@ -18,7 +18,7 @@ use crate::model::*;
 ///
 pub struct Track<'l, L: Ledger> {
     ledger: &'l mut L,
-    epoch: u64,
+    current_epoch: u64,
     tx_hash: H256,
     alloc: IdAllocator,
     logs: Vec<(Level, String)>,
@@ -37,10 +37,10 @@ pub struct Track<'l, L: Ledger> {
 }
 
 impl<'l, L: Ledger> Track<'l, L> {
-    pub fn new(ledger: &'l mut L, epoch: u64, tx_hash: H256) -> Self {
+    pub fn new(ledger: &'l mut L, current_epoch: u64, tx_hash: H256) -> Self {
         Self {
             ledger,
-            epoch,
+            current_epoch,
             tx_hash,
             alloc: IdAllocator::new(),
             logs: Vec::new(),
@@ -69,9 +69,9 @@ impl<'l, L: Ledger> Track<'l, L> {
         self.tx_hash
     }
 
-    /// Returns the current epoch.
-    pub fn epoch(&self) -> u64 {
-        self.epoch
+    /// Returns the current current_epoch.
+    pub fn current_epoch(&self) -> u64 {
+        self.current_epoch
     }
 
     /// Returns the logs collected so far.
@@ -307,8 +307,8 @@ impl<'l, L: Ledger> Track<'l, L> {
     }
 
     /// Creates a new resource definition address.
-    pub fn new_resource_address(&mut self) -> Address {
-        let address = self.alloc.new_resource_address(self.tx_hash());
+    pub fn new_resource_def_address(&mut self) -> Address {
+        let address = self.alloc.new_resource_def_address(self.tx_hash());
         self.new_addresses.push(address);
         address
     }

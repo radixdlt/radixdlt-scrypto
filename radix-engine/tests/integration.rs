@@ -6,35 +6,52 @@ use scrypto::prelude::*;
 fn test_component() {
     let mut ledger = InMemoryLedger::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, 0, 0);
-    let account = executor.new_account(false);
-    let package = executor.publish_package(package_code!("./everything"), false);
+    let account = executor
+        .run(
+            &TransactionBuilder::new().new_account().build().unwrap(),
+            false,
+        )
+        .nth_component(0)
+        .unwrap();
+    let package = executor
+        .run(
+            &TransactionBuilder::new()
+                .publish_package(package_code!("./everything"))
+                .build()
+                .unwrap(),
+            false,
+        )
+        .nth_package(0)
+        .unwrap();
     let abi = executor
         .export_abi(package, "ComponentTest", false)
         .unwrap();
 
     // Create component
     let transaction1 = TransactionBuilder::new()
-        .call_function(&abi, "create_component", vec![])
-        .build_with(Some(account))
+        .call_function(&abi, "create_component", vec![], account)
+        .build()
         .unwrap();
-    let receipt1 = executor.execute(&transaction1, true);
+    let receipt1 = executor.run(&transaction1, true);
     assert!(receipt1.success);
 
     // Find the component address from receipt
     let component = receipt1.nth_component(0).unwrap();
 
     // Call functions & methods
-    let txn2 = TransactionBuilder::new()
+    let transaction2 = TransactionBuilder::new()
         .call_function(
             &abi,
             "get_component_blueprint",
-            vec![component.to_string().as_ref()],
+            vec![component.to_string()],
+            account,
         )
-        .call_method(&abi, component, "get_component_state", vec![])
-        .call_method(&abi, component, "put_component_state", vec![])
-        .build_with(Some(account))
+        .call_method(&abi, component, "get_component_state", vec![], account)
+        .call_method(&abi, component, "put_component_state", vec![], account)
+        .deposit_all(account)
+        .build()
         .unwrap();
-    let receipt2 = executor.execute(&txn2, true);
+    let receipt2 = executor.run(&transaction2, true);
     assert!(receipt2.success);
 }
 
@@ -42,15 +59,30 @@ fn test_component() {
 fn test_lazy_map() {
     let mut ledger = InMemoryLedger::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, 0, 0);
-    let account = executor.new_account(false);
-    let package = executor.publish_package(package_code!("./everything"), false);
+    let account = executor
+        .run(
+            &TransactionBuilder::new().new_account().build().unwrap(),
+            false,
+        )
+        .nth_component(0)
+        .unwrap();
+    let package = executor
+        .run(
+            &TransactionBuilder::new()
+                .publish_package(package_code!("./everything"))
+                .build()
+                .unwrap(),
+            false,
+        )
+        .nth_package(0)
+        .unwrap();
     let abi = executor.export_abi(package, "LazyMapTest", false).unwrap();
 
-    let txn = TransactionBuilder::new()
-        .call_function(&abi, "test_lazy_map", vec![])
-        .build_with(Some(account))
+    let transaction = TransactionBuilder::new()
+        .call_function(&abi, "test_lazy_map", vec![], account)
+        .build()
         .unwrap();
-    let receipt = executor.execute(&txn, true);
+    let receipt = executor.run(&transaction, true);
     assert!(receipt.success);
 }
 
@@ -58,18 +90,34 @@ fn test_lazy_map() {
 fn test_resource() {
     let mut ledger = InMemoryLedger::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, 0, 0);
-    let account = executor.new_account(false);
-    let package = executor.publish_package(package_code!("./everything"), false);
+    let account = executor
+        .run(
+            &TransactionBuilder::new().new_account().build().unwrap(),
+            false,
+        )
+        .nth_component(0)
+        .unwrap();
+    let package = executor
+        .run(
+            &TransactionBuilder::new()
+                .publish_package(package_code!("./everything"))
+                .build()
+                .unwrap(),
+            false,
+        )
+        .nth_package(0)
+        .unwrap();
     let abi = executor.export_abi(package, "ResourceTest", false).unwrap();
 
-    let txn = TransactionBuilder::new()
-        .call_function(&abi, "create_mutable", vec![])
-        .call_function(&abi, "create_fixed", vec![])
-        .call_function(&abi, "query", vec![])
-        .call_function(&abi, "burn", vec![])
-        .build_with(Some(account))
+    let transaction = TransactionBuilder::new()
+        .call_function(&abi, "create_mutable", vec![], account)
+        .call_function(&abi, "create_fixed", vec![], account)
+        .call_function(&abi, "query", vec![], account)
+        .call_function(&abi, "burn", vec![], account)
+        .deposit_all(account)
+        .build()
         .unwrap();
-    let receipt = executor.execute(&txn, true);
+    let receipt = executor.run(&transaction, true);
     assert!(receipt.success);
 }
 
@@ -77,18 +125,34 @@ fn test_resource() {
 fn test_bucket() {
     let mut ledger = InMemoryLedger::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, 0, 0);
-    let account = executor.new_account(false);
-    let package = executor.publish_package(package_code!("./everything"), false);
+    let account = executor
+        .run(
+            &TransactionBuilder::new().new_account().build().unwrap(),
+            false,
+        )
+        .nth_component(0)
+        .unwrap();
+    let package = executor
+        .run(
+            &TransactionBuilder::new()
+                .publish_package(package_code!("./everything"))
+                .build()
+                .unwrap(),
+            false,
+        )
+        .nth_package(0)
+        .unwrap();
     let abi = executor.export_abi(package, "BucketTest", false).unwrap();
 
-    let txn = TransactionBuilder::new()
-        .call_function(&abi, "combine", vec![])
-        .call_function(&abi, "split", vec![])
-        .call_function(&abi, "borrow", vec![])
-        .call_function(&abi, "query", vec![])
-        .build_with(Some(account))
+    let transaction = TransactionBuilder::new()
+        .call_function(&abi, "combine", vec![], account)
+        .call_function(&abi, "split", vec![], account)
+        .call_function(&abi, "borrow", vec![], account)
+        .call_function(&abi, "query", vec![], account)
+        .deposit_all(account)
+        .build()
         .unwrap();
-    let receipt = executor.execute(&txn, true);
+    let receipt = executor.run(&transaction, true);
     assert!(receipt.success);
 }
 
@@ -96,15 +160,31 @@ fn test_bucket() {
 fn test_move_bucket_and_ref() {
     let mut ledger = InMemoryLedger::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, 0, 0);
-    let account = executor.new_account(false);
-    let package = executor.publish_package(package_code!("./everything"), false);
+    let account = executor
+        .run(
+            &TransactionBuilder::new().new_account().build().unwrap(),
+            false,
+        )
+        .nth_component(0)
+        .unwrap();
+    let package = executor
+        .run(
+            &TransactionBuilder::new()
+                .publish_package(package_code!("./everything"))
+                .build()
+                .unwrap(),
+            false,
+        )
+        .nth_package(0)
+        .unwrap();
     let abi = executor.export_abi(package, "MoveTest", false).unwrap();
 
-    let txn = TransactionBuilder::new()
-        .call_function(&abi, "move_bucket", vec![])
-        .call_function(&abi, "move_reference", vec![])
-        .build_with(Some(account))
+    let transaction = TransactionBuilder::new()
+        .call_function(&abi, "move_bucket", vec![], account)
+        .call_function(&abi, "move_reference", vec![], account)
+        .deposit_all(account)
+        .build()
         .unwrap();
-    let receipt = executor.execute(&txn, true);
+    let receipt = executor.run(&transaction, true);
     assert!(receipt.success);
 }

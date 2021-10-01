@@ -3,6 +3,7 @@ use radix_engine::transaction::*;
 
 use crate::ledger::*;
 use crate::rev2::*;
+use crate::utils::*;
 
 const ARG_TRACE: &str = "TRACE";
 
@@ -11,6 +12,7 @@ pub fn make_new_account<'a, 'b>() -> App<'a, 'b> {
     SubCommand::with_name(CMD_NEW_ACCOUNT)
         .about("Creates an account")
         .version(crate_version!())
+        // options
         .arg(
             Arg::with_name(ARG_TRACE)
                 .long("trace")
@@ -22,19 +24,24 @@ pub fn make_new_account<'a, 'b>() -> App<'a, 'b> {
 pub fn handle_new_account(matches: &ArgMatches) -> Result<(), Error> {
     let trace = matches.is_present(ARG_TRACE);
 
-    let mut ledger = FileBasedLedger::new(get_data_dir()?);
+    let mut configs = get_configs()?;
+    let mut ledger = FileBasedLedger::with_bootstrap(get_data_dir()?);
+    let mut executor = TransactionExecutor::new(&mut ledger, configs.current_epoch, configs.nonce);
+    let transaction = TransactionBuilder::new()
+        .new_account()
+        .build()
+        .map_err(Error::TransactionConstructionError)?;
+    let receipt = executor.run(&transaction, trace);
 
-    let mut executor = TransactionExecutor::new(&mut ledger, 0, 0);
-
-    let account = executor.new_account( trace);
-
-    println!("New account: {}", account);
-
-    // set as default config if not set
-    if get_config(CONF_DEFAULT_ACCOUNT)?.is_none() {
-        set_config(CONF_DEFAULT_ACCOUNT, &account.to_string())?;
-        println!("No default account configured. This will be used as the default account.")
+    dump_receipt(&transaction, &receipt);
+    if receipt.success {
+        configs.nonce = executor.nonce();
+        configs.default_account = configs
+            .default_account
+            .or(Some(receipt.nth_component(0).unwrap()));
+        set_configs(configs)?;
+        Ok(())
+    } else {
+        Err(Error::TransactionFailed)
     }
-
-    Ok(())
 }

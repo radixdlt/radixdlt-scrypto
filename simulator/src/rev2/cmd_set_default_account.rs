@@ -2,7 +2,7 @@ use clap::{crate_version, App, Arg, ArgMatches, SubCommand};
 
 use crate::rev2::*;
 
-const ARG_ADDRESS: &str = "ADDRESS";
+const ARG_ACCOUNT: &str = "ACCOUNT";
 
 /// Constructs a `config` subcommand.
 pub fn make_set_default_account<'a, 'b>() -> App<'a, 'b> {
@@ -10,22 +10,20 @@ pub fn make_set_default_account<'a, 'b>() -> App<'a, 'b> {
         .about("Sets the default account")
         .version(crate_version!())
         .arg(
-            Arg::with_name(ARG_ADDRESS)
-                .help("Specify the address.")
+            Arg::with_name(ARG_ACCOUNT)
+                .help("Specify the account address.")
                 .required(true),
         )
 }
 
 /// Handles a `config` request.
 pub fn handle_set_default_account(matches: &ArgMatches) -> Result<(), Error> {
-    let address: Address = matches
-        .value_of(ARG_ADDRESS)
-        .ok_or_else(|| Error::MissingArgument(ARG_ADDRESS.to_owned()))?
-        .parse()
-        .map_err(Error::InvalidAddress)?;
+    let account: Address = match_address(matches, ARG_ACCOUNT)?;
 
-    set_config(CONF_DEFAULT_ACCOUNT, &address.to_string())?;
+    let mut configs = get_configs()?;
+    configs.default_account = Some(account);
+    set_configs(configs)?;
 
-    println!("Default account updated!");
+    println!("Default account set!");
     Ok(())
 }

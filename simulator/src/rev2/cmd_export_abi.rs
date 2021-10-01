@@ -1,13 +1,13 @@
 use clap::{crate_version, App, Arg, ArgMatches, SubCommand};
 use radix_engine::transaction::*;
-use scrypto::types::*;
 
 use crate::ledger::*;
 use crate::rev2::*;
 
+const ARG_PACKAGE: &str = "PACKAGE";
+const ARG_BLUEPRINT: &str = "BLUEPRINT";
+
 const ARG_TRACE: &str = "TRACE";
-const ARG_PACKAGE_ADDRESS: &str = "PACKAGE_ADDRESS";
-const ARG_BLUEPRINT_NAME: &str = "BLUEPRINT_NAME";
 
 /// Constructs a `export-abi` subcommand.
 pub fn make_export_abi<'a, 'b>() -> App<'a, 'b> {
@@ -15,45 +15,40 @@ pub fn make_export_abi<'a, 'b>() -> App<'a, 'b> {
         .about("Exports the ABI of a blueprint")
         .version(crate_version!())
         .arg(
-            Arg::with_name(ARG_TRACE)
-                .long("trace")
-                .help("Turns on tracing."),
-        )
-        .arg(
-            Arg::with_name(ARG_PACKAGE_ADDRESS)
+            Arg::with_name(ARG_PACKAGE)
                 .help("Specify the package address.")
                 .required(true),
         )
         .arg(
-            Arg::with_name(ARG_BLUEPRINT_NAME)
+            Arg::with_name(ARG_BLUEPRINT)
                 .help("Specify the blueprint name.")
                 .required(true),
+        )
+        // options
+        .arg(
+            Arg::with_name(ARG_TRACE)
+                .long("trace")
+                .help("Turns on tracing."),
         )
 }
 
 /// Handles a `export-abi` request.
 pub fn handle_export_abi(matches: &ArgMatches) -> Result<(), Error> {
+    let package = match_address(matches, ARG_PACKAGE)?;
+    let blueprint = match_string(matches, ARG_BLUEPRINT)?;
     let trace = matches.is_present(ARG_TRACE);
-    let package_address: Address = matches
-        .value_of(ARG_PACKAGE_ADDRESS)
-        .ok_or_else(|| Error::MissingArgument(ARG_PACKAGE_ADDRESS.to_owned()))?
-        .parse()
-        .map_err(Error::InvalidAddress)?;
-    let blueprint_name = matches
-        .value_of(ARG_BLUEPRINT_NAME)
-        .ok_or_else(|| Error::MissingArgument(ARG_BLUEPRINT_NAME.to_owned()))?;
 
-    let mut ledger = FileBasedLedger::new(get_data_dir()?);
-    let   executor = TransactionExecutor::new(&mut ledger, 0, 0);
+    let configs = get_configs()?;
+    let mut ledger = FileBasedLedger::with_bootstrap(get_data_dir()?);
+    let executor = TransactionExecutor::new(&mut ledger, configs.current_epoch, configs.nonce);
+    let abi = executor.export_abi(package, blueprint, trace);
 
-    let result = executor.export_abi(package_address, blueprint_name, trace);
-
-    match result {
-        Err(e) => Err(Error::TxnExecutionError(e)),
-        Ok(abi) => {
+    match abi {
+        Err(e) => Err(Error::TransactionExecutionError(e)),
+        Ok(a) => {
             println!(
                 "{}",
-                serde_json::to_string_pretty(&abi).map_err(Error::JSONError)?
+                serde_json::to_string_pretty(&a).map_err(Error::JSONError)?
             );
             Ok(())
         }

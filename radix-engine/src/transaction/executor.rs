@@ -2,8 +2,6 @@ use scrypto::abi;
 use scrypto::args;
 use scrypto::buffer::*;
 use scrypto::rust::borrow::ToOwned;
-use scrypto::rust::collections::*;
-use scrypto::rust::string::String;
 use scrypto::rust::string::ToString;
 use scrypto::rust::vec;
 use scrypto::rust::vec::Vec;
@@ -17,110 +15,61 @@ use crate::transaction::*;
 /// A transaction executor.
 pub struct TransactionExecutor<'l, L: Ledger> {
     ledger: &'l mut L,
-    epoch: u64,
+    current_epoch: u64,
     nonce: u64,
 }
 
 impl<'l, L: Ledger> TransactionExecutor<'l, L> {
-    pub fn new(ledger: &'l mut L, epoch: u64, nonce: u64) -> Self {
+    pub fn new(ledger: &'l mut L, current_epoch: u64, nonce: u64) -> Self {
         Self {
             ledger,
-            epoch,
+            current_epoch,
             nonce,
         }
     }
 
-    pub fn set_epoch(&mut self, epoch: u64) {
-        self.epoch = epoch;
+    pub fn current_epoch(&self) -> u64 {
+        self.current_epoch
     }
 
-    pub fn new_account(&mut self, trace: bool) -> Address {
-        self.ledger.bootstrap();
-        let abi = self.export_abi(ACCOUNT_PACKAGE, "Account", false).unwrap();
-
-        let transaction = TransactionBuilder::new()
-            .call_function(&abi, "new", vec![])
-            .build_with(None)
-            .unwrap();
-
-        let receipt = self.execute(&transaction, trace);
-        receipt.nth_component(0).unwrap()
+    pub fn nonce(&self) -> u64 {
+        self.nonce
     }
 
-    pub fn publish_package(&mut self, code: &[u8], trace: bool) -> Address {
-        self.ledger.bootstrap();
-        let abi = self.export_abi(SYSTEM_PACKAGE, "System", false).unwrap();
-
-        let transaction = TransactionBuilder::new()
-            .instruction(Instruction::CallFunction {
-                blueprint: (abi.package.parse().unwrap(), abi.name.to_string()),
-                function: "publish_package".to_string(),
-                args: vec![scrypto_encode(code)],
-            })
-            .build_with(None)
-            .unwrap();
-
-        let receipt = self.execute(&transaction, trace);
-        receipt.nth_package(0).unwrap()
+    pub fn set_epoch(&mut self, current_epoch: u64) {
+        self.current_epoch = current_epoch;
     }
 
-    pub fn new_resource_mutable(
-        &mut self,
-        metadata: HashMap<String, String>,
-        minter: Address, trace: bool
-    ) -> Address {
-        self.ledger.bootstrap();
-        let abi = self.export_abi(SYSTEM_PACKAGE, "System", false).unwrap();
+    pub fn export_abi<A: AsRef<str>>(
+        &self,
+        package: Address,
+        blueprint: A,
+        trace: bool,
+    ) -> Result<abi::Blueprint, RuntimeError> {
+        // deterministic ledger, current_epoch and transaction hash
+        let mut ledger = InMemoryLedger::new();
+        ledger.put_package(
+            package,
+            self.ledger
+                .get_package(package)
+                .ok_or(RuntimeError::PackageNotFound(package.to_owned()))?,
+        );
+        let current_epoch = 0;
+        let tx_hash = sha256([]);
 
-        let transaction = TransactionBuilder::new()
-            .instruction(Instruction::CallFunction {
-                blueprint: (abi.package.parse().unwrap(), abi.name.to_string()),
-                function: "new_resource_mutable".to_string(),
-                args: vec![scrypto_encode(&metadata), scrypto_encode(&minter)],
-            })
-            .build_with(None)
-            .unwrap();
+        // Start a process and run abi generator
+        let mut track = Track::new(&mut ledger, current_epoch, tx_hash);
+        let mut proc = track.start_process(trace);
+        let output: (Vec<abi::Function>, Vec<abi::Method>) = proc
+            .call_abi((package, blueprint.as_ref().to_owned()))
+            .and_then(|rtn| scrypto_decode(&rtn).map_err(RuntimeError::InvalidData))?;
 
-        let receipt = self.execute(&transaction, trace);
-        receipt.nth_resource_def(0).unwrap()
-    }
-
-    pub fn new_resource_fixed(
-        &mut self,
-        metadata: HashMap<String, String>,
-        supply: Amount,
-        recipient: Address, trace: bool
-    ) -> Address {
-        self.ledger.bootstrap();
-        let abi = self.export_abi(SYSTEM_PACKAGE, "System", false).unwrap();
-
-        let transaction = TransactionBuilder::new()
-            .instruction(Instruction::CallFunction {
-                blueprint: (abi.package.parse().unwrap(), abi.name.to_string()),
-                function: "new_resource_fixed".to_string(),
-                args: vec![scrypto_encode(&metadata), scrypto_encode(&supply)],
-            })
-            .build_with(Some(recipient))
-            .unwrap();
-
-        let receipt = self.execute(&transaction, trace);
-        receipt.nth_resource_def(0).unwrap()
-    }
-
-    pub fn mint_resource(&mut self, amount: Amount, resource_address: Address, recipient: Address, trace: bool) {
-        self.ledger.bootstrap();
-        let abi = self.export_abi(SYSTEM_PACKAGE, "System", false).unwrap();
-
-        let transaction = TransactionBuilder::new()
-            .instruction(Instruction::CallFunction {
-                blueprint: (abi.package.parse().unwrap(), abi.name.to_string()),
-                function: "mint_resource".to_string(),
-                args: vec![scrypto_encode(&amount), scrypto_encode(&resource_address)],
-            })
-            .build_with(Some(recipient))
-            .unwrap();
-
-        self.execute(&transaction, trace);
+        Ok(abi::Blueprint {
+            package: package.to_string(),
+            name: blueprint.as_ref().to_string(),
+            functions: output.0,
+            methods: output.1,
+        })
     }
 
     pub fn export_abi_by_component(
@@ -132,64 +81,32 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
             .ledger
             .get_component(component)
             .ok_or(RuntimeError::ComponentNotFound(component))?;
-        self.export_abi(c.blueprint().0.clone(), c.blueprint().1.as_ref(), trace)
+        self.export_abi(c.blueprint().0.clone(), c.blueprint().1.clone(), trace)
     }
 
-    pub fn export_abi(
-        &self,
-        package: Address,
-        blueprint: &str,
-        trace: bool,
-    ) -> Result<abi::Blueprint, RuntimeError> {
-        // deterministic ledger, epoch and transaction hash
-        let mut ledger = InMemoryLedger::new();
-        ledger.put_package(
-            package,
-            self.ledger
-                .get_package(package)
-                .ok_or(RuntimeError::PackageNotFound(package.to_owned()))?,
+    pub fn run(&mut self, tx: &Transaction, trace: bool) -> Receipt {
+        let mut track = Track::new(
+            self.ledger,
+            self.current_epoch,
+            sha256(self.nonce.to_string()),
         );
-        let epoch = 0;
-        let tx_hash = sha256([]);
-
-        // Start a process and run abi generator
-        let mut track = Track::new(&mut ledger, epoch, tx_hash);
-        let mut proc = track.start_process(trace);
-        let output: (Vec<abi::Function>, Vec<abi::Method>) = proc
-            .call_abi((package, blueprint.to_owned()))
-            .and_then(|rtn| scrypto_decode(&rtn).map_err(RuntimeError::InvalidData))?;
-
-        Ok(abi::Blueprint {
-            package: package.to_string(),
-            name: blueprint.to_string(),
-            functions: output.0,
-            methods: output.1,
-        })
-    }
-
-    pub fn execute(&mut self, tx: &Transaction, trace: bool) -> Receipt {
-        let mut track = Track::new(self.ledger, self.epoch, sha256(self.nonce.to_string()));
         let mut proc = track.start_process(trace);
 
         let mut results = vec![];
         let mut success = true;
         for inst in &tx.instructions {
             let res = match inst {
-                Instruction::ReserveBucket => {
-                    // TODO check if this is the first instruction
-                    proc.reserve_bucket();
+                Instruction::CreateBucket { resource_def } => {
+                    proc.create_bucket(*resource_def);
                     Ok(None)
                 }
-                Instruction::BorrowBucket { bid } => {
-                    // TODO check if this is the first instruction
-                    proc.borrow_bucket(*bid).map(|_| None)
-                }
+                Instruction::BorrowBucket { bucket } => proc.borrow_bucket(*bucket).map(|_| None),
                 Instruction::MoveToBucket {
                     amount,
-                    resource_address,
-                    bid,
+                    resource_def,
+                    bucket,
                 } => proc
-                    .move_to_bucket(*amount, *resource_address, *bid)
+                    .move_to_bucket(*amount, *resource_def, *bucket)
                     .map(|_| None),
                 Instruction::CallFunction {
                     blueprint,
@@ -218,13 +135,19 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
                         Ok(None)
                     }
                 }
-                Instruction::Finalize => proc.finalize().map(|_| None),
             };
+            success &= res.is_ok();
             results.push(res);
-            if results.last().unwrap().is_err() {
-                success = false;
+            if !success {
                 break;
             }
+        }
+
+        // check resource leak
+        if success {
+            let res = proc.finalize();
+            success &= res.is_ok();
+            results.push(res.map(|_| None));
         }
 
         // commit state updates
@@ -234,11 +157,14 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
         }
 
         Receipt {
-            transaction: tx.clone(),
             success,
             results,
             logs: track.logs().clone(),
-            new_addresses: track.new_addresses().to_vec(),
+            new_addresses: if success {
+                track.new_addresses().to_vec()
+            } else {
+                Vec::new()
+            },
         }
     }
 }

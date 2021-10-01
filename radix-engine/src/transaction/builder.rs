@@ -3,9 +3,11 @@ use sbor::*;
 use scrypto::abi;
 use scrypto::buffer::*;
 use scrypto::rust::borrow::ToOwned;
+use scrypto::rust::collections::*;
 use scrypto::rust::fmt;
 use scrypto::rust::str::FromStr;
 use scrypto::rust::string::String;
+use scrypto::rust::string::ToString;
 use scrypto::rust::vec;
 use scrypto::rust::vec::Vec;
 use scrypto::types::*;
@@ -19,7 +21,7 @@ pub struct TransactionBuilder {
     /// The address allocator for calculating reserved bucket id.
     allocator: IdAllocator,
     /// Bucket or BucketRef reservations.
-    reservations: Vec<(BID, bool, Bucket)>,
+    reservations: Vec<(Address, Vec<Resource>)>,
     /// Instructions generated.
     instructions: Vec<Instruction>,
     /// Collected Errors
@@ -37,30 +39,99 @@ impl TransactionBuilder {
         }
     }
 
-    /// Appends an instruction.
+    /// Publishes a package.
+    pub fn publish_package(&mut self, code: &[u8]) -> &mut Self {
+        self.instruction(Instruction::CallFunction {
+            blueprint: (SYSTEM_PACKAGE, "System".to_owned()),
+            function: "publish_package".to_string(),
+            args: vec![scrypto_encode(code)],
+        })
+    }
+
+    /// Creates an Account component.
+    pub fn new_account(&mut self) -> &mut Self {
+        self.instruction(Instruction::CallFunction {
+            blueprint: (ACCOUNT_PACKAGE, "Account".to_owned()),
+            function: "new".to_string(),
+            args: vec![],
+        })
+    }
+
+    /// Creates a resource with mutable supply.
+    pub fn new_resource_mutable(&mut self, metadata: HashMap<String, String>) -> &mut Self {
+        self.instruction(Instruction::CallFunction {
+            blueprint: (SYSTEM_PACKAGE, "System".to_owned()),
+            function: "new_resource_mutable".to_string(),
+            args: vec![scrypto_encode(&metadata)],
+        })
+    }
+
+    /// Creates a resource with fixed supply.
+    pub fn new_resource_fixed(
+        &mut self,
+        metadata: HashMap<String, String>,
+        supply: Amount,
+    ) -> &mut Self {
+        self.instruction(Instruction::CallFunction {
+            blueprint: (SYSTEM_PACKAGE, "System".to_owned()),
+            function: "new_resource_fixed".to_string(),
+            args: vec![scrypto_encode(&metadata), scrypto_encode(&supply)],
+        })
+    }
+
+    /// Mints resource.
+    pub fn mint_resource(&mut self, amount: Amount, resource_def: Address) -> &mut Self {
+        self.instruction(Instruction::CallFunction {
+            blueprint: (SYSTEM_PACKAGE, "System".to_owned()),
+            function: "mint_resource".to_string(),
+            args: vec![scrypto_encode(&amount), scrypto_encode(&resource_def)],
+        })
+    }
+
+    /// Withdraws resource from an account.
+    pub fn withdraw(
+        &mut self,
+        amount: Amount,
+        resource_def: Address,
+        account: Address,
+    ) -> &mut Self {
+        self.instruction(Instruction::CallMethod {
+            component: account,
+            method: "withdraw".to_string(),
+            args: vec![scrypto_encode(&amount), scrypto_encode(&resource_def)],
+        })
+    }
+
+    /// Deposits everything to an account.
+    pub fn deposit_all(&mut self, account: Address) -> &mut Self {
+        self.instruction(Instruction::DepositAll {
+            component: account,
+            method: "deposit_batch".to_string(),
+        })
+    }
+
+    /// Appends a raw instruction.
     pub fn instruction(&mut self, inst: Instruction) -> &mut Self {
         self.instructions.push(inst);
         self
     }
 
-    /// Adds instructions for calling a function.
+    /// Calls a function.
     pub fn call_function(
         &mut self,
         abi: &abi::Blueprint,
         function: &str,
-        args: Vec<&str>,
+        args: Vec<String>,
+        account: Address,
     ) -> &mut Self {
-        match Self::find_function_abi(abi, function) {
+        match Self::find_function_abi(abi, function.as_ref()) {
             Ok(f) => match prepare_args(&f.inputs, args, &mut self.allocator) {
-                Ok(ParseArgsResult {
-                    result,
-                    reservations,
-                }) => {
-                    self.reservations.extend(reservations);
+                Ok(ParseArgsResult { encoded, resources }) => {
+                    self.reservations.push((account, resources));
                     self.instructions.push(Instruction::CallFunction {
                         blueprint: (abi.package.parse().unwrap(), abi.name.clone()),
                         function: function.to_owned(),
-                        args: result,
+                        args: encoded,
                     });
                 }
                 Err(e) => {
@@ -75,25 +146,23 @@ impl TransactionBuilder {
         self
     }
 
-    /// Adds instructions for calling a method.
+    /// Calls a method.
     pub fn call_method(
         &mut self,
         abi: &abi::Blueprint,
         component: Address,
         method: &str,
-        args: Vec<&str>,
+        args: Vec<String>,
+        account: Address,
     ) -> &mut Self {
-        match Self::find_method_abi(&abi, method) {
+        match Self::find_method_abi(&abi, method.as_ref()) {
             Ok(m) => match prepare_args(&m.inputs, args, &mut self.allocator) {
-                Ok(ParseArgsResult {
-                    result,
-                    reservations,
-                }) => {
-                    self.reservations.extend(reservations);
+                Ok(ParseArgsResult { encoded, resources }) => {
+                    self.reservations.push((account, resources));
                     self.instructions.push(Instruction::CallMethod {
                         component,
                         method: method.to_owned(),
-                        args: result,
+                        args: encoded,
                     });
                 }
                 Err(e) => {
@@ -108,53 +177,46 @@ impl TransactionBuilder {
         self
     }
 
-    /// Builds transaction with an account.
-    pub fn build_with(
-        &mut self,
-        account: Option<Address>,
-    ) -> Result<Transaction, BuildTransactionError> {
-        let mut v = Vec::new();
+    /// Builds the transaction.
+    pub fn build(&mut self) -> Result<Transaction, BuildTransactionError> {
         if !self.errors.is_empty() {
             return Err(self.errors[0].clone());
         }
-        // Allocate bucket and reference IDs.
-        for reservation in &self.reservations {
-            v.push(Instruction::ReserveBucket);
-            if reservation.1 {
-                v.push(Instruction::BorrowBucket { bid: reservation.0 });
+        let mut v = Vec::new();
+
+        // Reserve buckets and references.
+        for (_, resources) in &self.reservations {
+            for r in resources {
+                v.push(Instruction::CreateBucket {
+                    resource_def: r.bucket.resource_def(),
+                });
+                if let Some(_) = r.rid {
+                    v.push(Instruction::BorrowBucket { bucket: r.bid });
+                }
             }
         }
 
-        // Withdraw resources from accounts to buckets
-        for reservation in &self.reservations {
-            v.push(Instruction::CallMethod {
-                component: account.ok_or(BuildTransactionError::AccountNotProvided)?,
-                method: "withdraw".to_owned(),
-                args: vec![
-                    scrypto_encode(&reservation.2.amount()),
-                    scrypto_encode(&reservation.2.resource_address()),
-                ],
-            });
-            v.push(Instruction::MoveToBucket {
-                amount: reservation.2.amount(),
-                resource_address: reservation.2.resource_address(),
-                bid: reservation.0,
-            });
+        // Withdraw resources from account and move them to buckets.
+        for (account, resources) in &self.reservations {
+            for r in resources {
+                v.push(Instruction::CallMethod {
+                    component: account.clone(),
+                    method: "withdraw".to_owned(),
+                    args: vec![
+                        scrypto_encode(&r.bucket.amount()),
+                        scrypto_encode(&r.bucket.resource_def()),
+                    ],
+                });
+                v.push(Instruction::MoveToBucket {
+                    amount: r.bucket.amount(),
+                    resource_def: r.bucket.resource_def(),
+                    bucket: r.bid,
+                });
+            }
         }
 
-        // Call instructions
+        // Extend with instructions in the builder.
         v.extend(self.instructions.clone());
-
-        // Transfer all resource to signer
-        if let Some(acc) = account {
-            v.push(Instruction::DepositAll {
-                component: acc,
-                method: "deposit_batch".to_owned(),
-            });
-        }
-
-        // Finalize
-        v.push(Instruction::Finalize);
 
         Ok(Transaction { instructions: v })
     }
@@ -182,23 +244,29 @@ impl TransactionBuilder {
     }
 }
 
+struct Resource {
+    pub bucket: Bucket,
+    pub bid: BID,
+    pub rid: Option<RID>,
+}
+
 struct ParseArgsResult {
-    result: Vec<Vec<u8>>,
-    reservations: Vec<(BID, bool, Bucket)>,
+    pub encoded: Vec<Vec<u8>>,
+    pub resources: Vec<Resource>,
 }
 
 fn prepare_args(
     types: &[Type],
-    args: Vec<&str>,
+    args: Vec<String>,
     allocator: &mut IdAllocator,
 ) -> Result<ParseArgsResult, BuildArgsError> {
-    let mut result = Vec::new();
-    let mut reservations = Vec::new();
+    let mut encoded = Vec::new();
+    let mut resources = Vec::new();
 
     for (i, t) in types.iter().enumerate() {
-        let arg = *(args
+        let arg = args
             .get(i)
-            .ok_or_else(|| BuildArgsError::MissingArgument(i, t.clone()))?);
+            .ok_or_else(|| BuildArgsError::MissingArgument(i, t.clone()))?;
         let res = match t {
             Type::Bool => parse_basic_type::<bool>(i, t, arg),
             Type::I8 => parse_basic_type::<i8>(i, t, arg),
@@ -212,16 +280,13 @@ fn prepare_args(
             Type::U64 => parse_basic_type::<u64>(i, t, arg),
             Type::U128 => parse_basic_type::<u128>(i, t, arg),
             Type::String => parse_basic_type::<String>(i, t, arg),
-            Type::Custom { name } => parse_custom_ty(i, t, arg, name, allocator, &mut reservations),
+            Type::Custom { name } => parse_custom_ty(i, t, arg, name, allocator, &mut resources),
             _ => Err(BuildArgsError::UnsupportedType(i, t.clone())),
         };
-        result.push(res?);
+        encoded.push(res?);
     }
 
-    Ok(ParseArgsResult {
-        result,
-        reservations,
-    })
+    Ok(ParseArgsResult { encoded, resources })
 }
 
 fn parse_basic_type<T>(i: usize, ty: &Type, arg: &str) -> Result<Vec<u8>, BuildArgsError>
@@ -241,7 +306,7 @@ fn parse_custom_ty(
     arg: &str,
     name: &str,
     allocator: &mut IdAllocator,
-    reservations: &mut Vec<(BID, bool, Bucket)>,
+    reservations: &mut Vec<Resource>,
 ) -> Result<Vec<u8>, BuildArgsError> {
     match name {
         SCRYPTO_NAME_AMOUNT => {
@@ -265,29 +330,45 @@ fn parse_custom_ty(
         SCRYPTO_NAME_BID | SCRYPTO_NAME_BUCKET | SCRYPTO_NAME_RID | SCRYPTO_NAME_BUCKET_REF => {
             let mut split = arg.split(',');
             let amount = split.next().and_then(|v| v.trim().parse::<Amount>().ok());
-            let resource_address = split.next().and_then(|v| v.trim().parse::<Address>().ok());
-            match (amount, resource_address) {
+            let resource_def = split.next().and_then(|v| v.trim().parse::<Address>().ok());
+            match (amount, resource_def) {
                 (Some(a), Some(r)) => {
                     let bid = allocator.new_bid();
                     let bucket = Bucket::new(a, r);
 
                     match name {
                         SCRYPTO_NAME_BID => {
-                            reservations.push((bid, false, bucket));
+                            reservations.push(Resource {
+                                bucket,
+                                bid,
+                                rid: None,
+                            });
                             Ok(scrypto_encode(&bid))
                         }
                         SCRYPTO_NAME_BUCKET => {
-                            reservations.push((bid, false, bucket));
+                            reservations.push(Resource {
+                                bucket,
+                                bid,
+                                rid: None,
+                            });
                             Ok(scrypto_encode(&scrypto::resource::Bucket::from(bid)))
                         }
                         SCRYPTO_NAME_RID => {
                             let rid = allocator.new_rid();
-                            reservations.push((bid, true, bucket));
+                            reservations.push(Resource {
+                                bucket,
+                                bid,
+                                rid: Some(rid),
+                            });
                             Ok(scrypto_encode(&rid))
                         }
                         SCRYPTO_NAME_BUCKET_REF => {
                             let rid = allocator.new_rid();
-                            reservations.push((bid, true, bucket));
+                            reservations.push(Resource {
+                                bucket,
+                                bid,
+                                rid: Some(rid),
+                            });
                             Ok(scrypto_encode(&scrypto::resource::BucketRef::from(rid)))
                         }
                         _ => panic!("Unexpected"),

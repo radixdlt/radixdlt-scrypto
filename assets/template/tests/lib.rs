@@ -5,30 +5,44 @@ use scrypto::prelude::*;
 #[test]
 fn test_hello() {
     // Create an in-memory Radix Engine.
-    let mut ledger = InMemoryLedger::new();
+    let mut ledger = InMemoryLedger::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, 0, 0);
-    let account = executor.new_account(false);
 
-    // Publish this package.
-    let package = executor.publish_package(package_code!(), false);
+    // Create account and publish this package.
+    let account = executor
+        .run(
+            &TransactionBuilder::new().new_account().build().unwrap(),
+            true,
+        )
+        .nth_component(0)
+        .unwrap();
+    let package = executor
+        .run(
+            &TransactionBuilder::new()
+                .publish_package(package_code!())
+                .build()
+                .unwrap(),
+            false,
+        )
+        .nth_package(0)
+        .unwrap();
     let abi = executor.export_abi(package, "Hello", false).unwrap();
 
     // Invoke the `new` function.
     let transaction = TransactionBuilder::new()
-        .call_function(&abi, "new", vec![])
-        .build_with(Some(account))
+        .call_function(&abi, "new", vec![], account)
+        .build()
         .unwrap();
-    let receipt = executor.execute(&transaction, true);
+    let receipt = executor.run(&transaction, true);
     assert!(receipt.success);
 
-    // Read component address from the receipt.
-    let component = receipt.nth_component(0).unwrap();
-
     // Invoke the `airdrop` function.
+    let component = receipt.nth_component(0).unwrap();
     let transaction2 = TransactionBuilder::new()
-        .call_method(&abi, component, "airdrop", vec![])
-        .build_with(Some(account))
+        .call_method(&abi, component, "airdrop", vec![], account)
+        .deposit_all(account)
+        .build()
         .unwrap();
-    let receipt2 = executor.execute(&transaction2, true);
+    let receipt2 = executor.run(&transaction2, true);
     assert!(receipt2.success);
 }

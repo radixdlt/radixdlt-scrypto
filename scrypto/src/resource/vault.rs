@@ -33,8 +33,8 @@ impl From<Vault> for VID {
 }
 
 impl Vault {
-    pub fn new(resource_address: Address) -> Self {
-        let input = CreateEmptyVaultInput { resource_address };
+    pub fn new(resource_def: Address) -> Self {
+        let input = CreateEmptyVaultInput { resource_def };
         let output: CreateEmptyVaultOutput = call_kernel(CREATE_EMPTY_VAULT, input);
 
         output.vault.into()
@@ -77,9 +77,9 @@ impl Vault {
 
     pub fn resource_def(&self) -> ResourceDef {
         let input = GetVaultResourceAddressInput { vault: self.vid };
-        let output: GetVaultResourceAddressOutput = call_kernel(GET_VAULT_RESOURCE_ADDRESS, input);
+        let output: GetVaultResourceAddressOutput = call_kernel(GET_VAULT_RESOURCE_DEF, input);
 
-        output.resource_address.into()
+        output.resource_def.into()
     }
 
     pub fn is_empty(&self) -> bool {

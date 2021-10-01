@@ -41,8 +41,8 @@ blueprint! {
         }
 
         /// [Experimental] Mints and deposits into this account.
-        pub fn mint(&mut self, amount: Amount, resource_address: Address)  {
-            let bucket = ResourceDef::from(resource_address).mint(amount);
+        pub fn mint(&mut self, amount: Amount, resource_def: Address)  {
+            let bucket = ResourceDef::from(resource_def).mint(amount);
             self.deposit(bucket);
         }
 
@@ -55,21 +55,21 @@ blueprint! {
 
         /// Deposits a bucket of resource into this account.
         pub fn deposit(&mut self, bucket: Bucket) {
-            let resource_address = bucket.resource_def().address();
-            match self.vaults.get::<Address, Vault>(&resource_address) {
+            let resource_def = bucket.resource_def().address();
+            match self.vaults.get::<Address, Vault>(&resource_def) {
                 Some(v) => {
                     v.put(bucket);
                 }
                 None => {
                     let v = Vault::with_bucket(bucket);
-                    self.vaults.insert(resource_address, v);
+                    self.vaults.insert(resource_def, v);
                 }
             }
         }
 
         /// Withdraws from this account.
-        pub fn withdraw(&mut self, amount: Amount, resource_address: Address) -> Bucket {
-            let vault = self.vaults.get::<Address, Vault>(&resource_address).unwrap();
+        pub fn withdraw(&mut self, amount: Amount, resource_def: Address) -> Bucket {
+            let vault = self.vaults.get::<Address, Vault>(&resource_def).unwrap();
             vault.take(amount)
         }
     }

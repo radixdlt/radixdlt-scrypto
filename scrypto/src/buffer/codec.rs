@@ -60,7 +60,7 @@ mod tests {
 
     #[derive(TypeId, Encode, Decode)]
     struct ComponentTest {
-        resource_address: Address,
+        resource_def: Address,
         bucket: Bucket,
         secret: String,
     }

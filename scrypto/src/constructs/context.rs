@@ -20,10 +20,10 @@ impl Context {
         output.tx_hash
     }
 
-    /// Returns the current epoch.
-    pub fn epoch() -> u64 {
+    /// Returns the current current_epoch.
+    pub fn current_epoch() -> u64 {
         let input = GetCurrentEpochInput {};
         let output: GetCurrentEpochOutput = call_kernel(GET_EPOCH, input);
-        output.epoch
+        output.current_epoch
     }
 }

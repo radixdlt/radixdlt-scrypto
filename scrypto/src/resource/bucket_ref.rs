@@ -45,9 +45,9 @@ impl BucketRef {
         let input = GetRefResourceAddressInput {
             reference: self.rid,
         };
-        let output: GetRefResourceAddressOutput = call_kernel(GET_REF_RESOURCE_ADDRESS, input);
+        let output: GetRefResourceAddressOutput = call_kernel(GET_REF_RESOURCE_DEF, input);
 
-        output.resource_address.into()
+        output.resource_def.into()
     }
 
     pub fn drop(self) {

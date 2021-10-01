@@ -26,7 +26,7 @@ pub enum Address {
     /// Represents a component.
     Component([u8; 26]),
 
-    /// Represents the definition of a resource.
+    /// Represents a resource definition.
     ResourceDef([u8; 26]),
 }
 

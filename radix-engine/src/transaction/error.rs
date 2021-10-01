@@ -17,7 +17,7 @@ pub enum BuildArgsError {
     UnableToParse(usize, Type, String),
 }
 
-/// Represents an error when construction a transaction.
+/// Represents an error when building a transaction.
 #[derive(Debug, Clone)]
 pub enum BuildTransactionError {
     /// The given blueprint function does not exist.

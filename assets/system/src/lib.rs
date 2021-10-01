@@ -10,20 +10,23 @@ blueprint! {
             package.into()
         }
 
+        // TODO: badge for mint authorization.
+
         /// Creates a resource with mutable supply, and returns the resource definition address.
-        pub fn new_resource_mutable(metadata: HashMap<String, String>, minter: Address) -> Address {
-            let resource_def = ResourceDef::new_mutable(metadata, minter);
+        pub fn new_resource_mutable(metadata: HashMap<String, String>) -> Address {
+            let resource_def = ResourceDef::new_mutable(metadata, Context::package_address());
             resource_def.address()
         }
 
         /// Creates a resource with fixed supply, and returns all supply.
-        pub fn new_resource_fixed(metadata: HashMap<String, String>, supply: Amount) -> Bucket {
-            ResourceDef::new_fixed(metadata, supply).1
+        pub fn new_resource_fixed(metadata: HashMap<String, String>, supply: Amount) -> (Address, Bucket) {
+            let (resource_def, bucket) = ResourceDef::new_fixed(metadata, supply);
+            (resource_def.address(), bucket)
         }
 
         /// Mints resource
-        pub fn mint(amount: Amount, resource_address: Address) -> Bucket {
-            ResourceDef::from(resource_address).mint(amount)
+        pub fn mint_resource(amount: Amount, resource_def: Address) -> Bucket {
+            ResourceDef::from(resource_def).mint(amount)
         }
     }
 }
