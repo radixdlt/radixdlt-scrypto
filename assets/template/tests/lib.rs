@@ -30,7 +30,7 @@ fn test_hello() {
 
     // Invoke the `new` function.
     let transaction = TransactionBuilder::new()
-        .call_function(&abi, "new", vec![], account)
+        .call_function(&abi, "new", vec![], None)
         .build()
         .unwrap();
     let receipt = executor.run(&transaction, true);
@@ -39,7 +39,7 @@ fn test_hello() {
     // Invoke the `airdrop` function.
     let component = receipt.nth_component(0).unwrap();
     let transaction2 = TransactionBuilder::new()
-        .call_method(&abi, component, "airdrop", vec![], account)
+        .call_method(&abi, component, "airdrop", vec![], Some(account))
         .deposit_all(account)
         .build()
         .unwrap();

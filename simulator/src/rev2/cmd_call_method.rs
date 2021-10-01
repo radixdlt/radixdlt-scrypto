@@ -54,7 +54,7 @@ pub fn handle_call_method(matches: &ArgMatches) -> Result<(), Error> {
         .export_abi_by_component(component, trace)
         .map_err(Error::TransactionExecutionError)?;
     let transaction = TransactionBuilder::new()
-        .call_method(&abi, component, &method, args, account)
+        .call_method(&abi, component, &method, args, Some(account))
         .deposit_all(account)
         .build()
         .map_err(Error::TransactionConstructionError)?;

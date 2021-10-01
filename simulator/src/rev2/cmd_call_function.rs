@@ -61,7 +61,7 @@ pub fn handle_call_function(matches: &ArgMatches) -> Result<(), Error> {
         .export_abi(package, blueprint, trace)
         .map_err(Error::TransactionExecutionError)?;
     let transaction = TransactionBuilder::new()
-        .call_function(&abi, &function, args, account)
+        .call_function(&abi, &function, args, Some(account))
         .deposit_all(account)
         .build()
         .map_err(Error::TransactionConstructionError)?;

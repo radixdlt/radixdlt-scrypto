@@ -213,7 +213,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
     }
 
     /// Reserves a bucket, used for function/method invocation.
-    pub fn create_bucket(&mut self, resource_def: Address) -> BID {
+    pub fn reserve_bucket(&mut self, resource_def: Address) -> BID {
         let bid = self.track.new_bid();
         let bucket = Bucket::new(Amount::zero(), resource_def);
         self.buckets.insert(bid, bucket);
@@ -245,30 +245,6 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         }
 
         Ok(rid)
-    }
-
-    /// Puts buckets and references into this process, used for passing resources to child process.
-    pub fn put_buckets_and_refs(
-        &mut self,
-        buckets: HashMap<BID, Bucket>,
-        references: HashMap<RID, BucketRef>,
-    ) {
-        self.buckets.extend(buckets);
-        self.references.extend(references);
-    }
-
-    /// Takes all **moving** buckets and references from this process, used for returning resources to parent.
-    pub fn take_moving_buckets_and_refs(
-        &mut self,
-    ) -> (HashMap<BID, Bucket>, HashMap<RID, BucketRef>) {
-        let buckets = self.moving_buckets.drain().collect();
-        let references = self.moving_references.drain().collect();
-        (buckets, references)
-    }
-
-    /// Returns the IDs of all owned buckets.
-    pub fn owned_buckets(&mut self) -> Vec<BID> {
-        self.buckets.keys().copied().collect()
     }
 
     /// Moves resource into a reserved bucket.
@@ -323,6 +299,30 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
                 BucketError::InsufficientBalance,
             ))
         }
+    }
+
+    /// Puts buckets and references into this process, used for passing resources to child process.
+    pub fn put_buckets_and_refs(
+        &mut self,
+        buckets: HashMap<BID, Bucket>,
+        references: HashMap<RID, BucketRef>,
+    ) {
+        self.buckets.extend(buckets);
+        self.references.extend(references);
+    }
+
+    /// Takes all **moving** buckets and references from this process, used for returning resources to parent.
+    pub fn take_moving_buckets_and_refs(
+        &mut self,
+    ) -> (HashMap<BID, Bucket>, HashMap<RID, BucketRef>) {
+        let buckets = self.moving_buckets.drain().collect();
+        let references = self.moving_references.drain().collect();
+        (buckets, references)
+    }
+
+    /// Returns the IDs of all owned buckets.
+    pub fn owned_buckets(&mut self) -> Vec<BID> {
+        self.buckets.keys().copied().collect()
     }
 
     /// Runs the given export within this process.

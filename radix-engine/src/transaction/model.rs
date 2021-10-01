@@ -15,35 +15,38 @@ pub struct Transaction {
 /// Represents an instruction in transaction
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub enum Instruction {
-    /// Create an empty bucket
-    CreateBucket { resource_def: Address },
+    /// Creates an empty bucket
+    ReserveBucket { resource_def: Address },
 
     /// Borrows a bucket, thus creating a reference.
     BorrowBucket { bucket: BID },
 
-    /// Move resource to a reserved bucket.
+    /// Moves resource to a reserved bucket.
     MoveToBucket {
         amount: Amount,
         resource_def: Address,
         bucket: BID,
     },
 
-    /// Call a function.
+    /// Calls a function.
     CallFunction {
         blueprint: (Address, String),
         function: String,
         args: Vec<Vec<u8>>,
     },
 
-    /// Call a method.
+    /// Calls a method.
     CallMethod {
         component: Address,
         method: String,
         args: Vec<Vec<u8>>,
     },
 
-    /// Deposit all buckets of resource to a component.
+    /// Deposits all buckets of resource to a component.
     DepositAll { component: Address, method: String },
+
+    /// Marks the end of a transaction.
+    End,
 }
 
 /// Represents a transaction receipt.

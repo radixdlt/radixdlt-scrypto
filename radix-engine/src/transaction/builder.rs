@@ -13,15 +13,14 @@ use scrypto::rust::vec::Vec;
 use scrypto::types::*;
 
 use crate::engine::*;
-use crate::model::*;
 use crate::transaction::*;
 
 /// A utility for building transactions.
 pub struct TransactionBuilder {
     /// The address allocator for calculating reserved bucket id.
     allocator: IdAllocator,
-    /// Bucket or BucketRef reservations.
-    reservations: Vec<(Address, Vec<Resource>)>,
+    /// Bucket or BucketRef reservations
+    reservations: Vec<Instruction>,
     /// Instructions generated.
     instructions: Vec<Instruction>,
     /// Collected Errors
@@ -39,21 +38,42 @@ impl TransactionBuilder {
         }
     }
 
+    /// Creates an empty bucket
+    pub fn reserve_bucket(&mut self, resource_def: Address) -> BID {
+        let bid = self.allocator.new_bid();
+        self.reservations
+            .push(Instruction::ReserveBucket { resource_def });
+        bid
+    }
+
+    /// Creates a reference by borrowing a bucket.
+    pub fn create_reference(&mut self, bucket: BID) -> RID {
+        let rid = self.allocator.new_rid();
+        self.reservations.push(Instruction::BorrowBucket { bucket });
+        rid
+    }
+
+    /// Moves resource (from context) to a bucket.
+    pub fn move_to_bucket(&mut self, amount: Amount, resource_def: Address, bucket: BID) {
+        self.instruction(Instruction::MoveToBucket {
+            amount,
+            resource_def,
+            bucket,
+        });
+    }
+
+    /// Appends a raw instruction.
+    pub fn instruction(&mut self, inst: Instruction) -> &mut Self {
+        self.instructions.push(inst);
+        self
+    }
+
     /// Publishes a package.
     pub fn publish_package(&mut self, code: &[u8]) -> &mut Self {
         self.instruction(Instruction::CallFunction {
             blueprint: (SYSTEM_PACKAGE, "System".to_owned()),
             function: "publish_package".to_string(),
             args: vec![scrypto_encode(code)],
-        })
-    }
-
-    /// Creates an Account component.
-    pub fn new_account(&mut self) -> &mut Self {
-        self.instruction(Instruction::CallFunction {
-            blueprint: (ACCOUNT_PACKAGE, "Account".to_owned()),
-            function: "new".to_string(),
-            args: vec![],
         })
     }
 
@@ -88,6 +108,30 @@ impl TransactionBuilder {
         })
     }
 
+    /// Creates an Account component.
+    pub fn new_account(&mut self) -> &mut Self {
+        self.instruction(Instruction::CallFunction {
+            blueprint: (ACCOUNT_PACKAGE, "Account".to_owned()),
+            function: "new".to_string(),
+            args: vec![],
+        })
+    }
+
+    /// Creates an Account component.
+    pub fn new_account_with_resource(
+        &mut self,
+        amount: Amount,
+        resource_def: Address,
+    ) -> &mut Self {
+        let bid = self.reserve_bucket(resource_def);
+        self.move_to_bucket(amount, resource_def, bid);
+        self.instruction(Instruction::CallFunction {
+            blueprint: (ACCOUNT_PACKAGE, "Account".to_owned()),
+            function: "with_bucket".to_string(),
+            args: vec![scrypto_encode(&scrypto::resource::Bucket::from(bid))],
+        })
+    }
+
     /// Withdraws resource from an account.
     pub fn withdraw(
         &mut self,
@@ -110,28 +154,28 @@ impl TransactionBuilder {
         })
     }
 
-    /// Appends a raw instruction.
-    pub fn instruction(&mut self, inst: Instruction) -> &mut Self {
-        self.instructions.push(inst);
-        self
-    }
-
     /// Calls a function.
+    ///
+    /// The default implementation will automatically prepare the arguments based on the
+    /// function ABI, including resource buckets and references.
+    ///
+    /// If an account address is provided, resources will be withdrawn from the specified account;
+    /// otherwise, they will be taken from transaction context (presumably obtained from
+    /// previous instructions).
     pub fn call_function(
         &mut self,
         abi: &abi::Blueprint,
         function: &str,
         args: Vec<String>,
-        account: Address,
+        account: Option<Address>,
     ) -> &mut Self {
         match Self::find_function_abi(abi, function.as_ref()) {
-            Ok(f) => match prepare_args(&f.inputs, args, &mut self.allocator) {
-                Ok(ParseArgsResult { encoded, resources }) => {
-                    self.reservations.push((account, resources));
+            Ok(f) => match self.prepare_args(&f.inputs, args, account) {
+                Ok(o) => {
                     self.instructions.push(Instruction::CallFunction {
                         blueprint: (abi.package.parse().unwrap(), abi.name.clone()),
                         function: function.to_owned(),
-                        args: encoded,
+                        args: o,
                     });
                 }
                 Err(e) => {
@@ -147,22 +191,28 @@ impl TransactionBuilder {
     }
 
     /// Calls a method.
+    ///
+    /// The default implementation will automatically prepare the arguments based on the
+    /// method ABI, including resource buckets and references.
+    ///
+    /// If an account address is provided, resources will be withdrawn from the specified account;
+    /// otherwise, they will be taken from transaction context (presumably obtained from
+    /// previous instructions).
     pub fn call_method(
         &mut self,
         abi: &abi::Blueprint,
         component: Address,
         method: &str,
         args: Vec<String>,
-        account: Address,
+        account: Option<Address>,
     ) -> &mut Self {
         match Self::find_method_abi(&abi, method.as_ref()) {
-            Ok(m) => match prepare_args(&m.inputs, args, &mut self.allocator) {
-                Ok(ParseArgsResult { encoded, resources }) => {
-                    self.reservations.push((account, resources));
+            Ok(m) => match self.prepare_args(&m.inputs, args, account) {
+                Ok(o) => {
                     self.instructions.push(Instruction::CallMethod {
                         component,
                         method: method.to_owned(),
-                        args: encoded,
+                        args: o,
                     });
                 }
                 Err(e) => {
@@ -182,41 +232,11 @@ impl TransactionBuilder {
         if !self.errors.is_empty() {
             return Err(self.errors[0].clone());
         }
+
         let mut v = Vec::new();
-
-        // Reserve buckets and references.
-        for (_, resources) in &self.reservations {
-            for r in resources {
-                v.push(Instruction::CreateBucket {
-                    resource_def: r.bucket.resource_def(),
-                });
-                if let Some(_) = r.rid {
-                    v.push(Instruction::BorrowBucket { bucket: r.bid });
-                }
-            }
-        }
-
-        // Withdraw resources from account and move them to buckets.
-        for (account, resources) in &self.reservations {
-            for r in resources {
-                v.push(Instruction::CallMethod {
-                    component: account.clone(),
-                    method: "withdraw".to_owned(),
-                    args: vec![
-                        scrypto_encode(&r.bucket.amount()),
-                        scrypto_encode(&r.bucket.resource_def()),
-                    ],
-                });
-                v.push(Instruction::MoveToBucket {
-                    amount: r.bucket.amount(),
-                    resource_def: r.bucket.resource_def(),
-                    bucket: r.bid,
-                });
-            }
-        }
-
-        // Extend with instructions in the builder.
+        v.extend(self.reservations.clone());
         v.extend(self.instructions.clone());
+        v.push(Instruction::End);
 
         Ok(Transaction { instructions: v })
     }
@@ -242,141 +262,117 @@ impl TransactionBuilder {
             .map(Clone::clone)
             .ok_or_else(|| BuildTransactionError::MethodNotFound(method.to_owned()))
     }
-}
 
-struct Resource {
-    pub bucket: Bucket,
-    pub bid: BID,
-    pub rid: Option<RID>,
-}
+    fn prepare_args(
+        &mut self,
+        types: &[Type],
+        args: Vec<String>,
+        account: Option<Address>,
+    ) -> Result<Vec<Vec<u8>>, BuildArgsError> {
+        let mut encoded = Vec::new();
 
-struct ParseArgsResult {
-    pub encoded: Vec<Vec<u8>>,
-    pub resources: Vec<Resource>,
-}
+        for (i, t) in types.iter().enumerate() {
+            let arg = args
+                .get(i)
+                .ok_or_else(|| BuildArgsError::MissingArgument(i, t.clone()))?;
+            let res = match t {
+                Type::Bool => self.prepare_basic_ty::<bool>(i, t, arg),
+                Type::I8 => self.prepare_basic_ty::<i8>(i, t, arg),
+                Type::I16 => self.prepare_basic_ty::<i16>(i, t, arg),
+                Type::I32 => self.prepare_basic_ty::<i32>(i, t, arg),
+                Type::I64 => self.prepare_basic_ty::<i64>(i, t, arg),
+                Type::I128 => self.prepare_basic_ty::<i128>(i, t, arg),
+                Type::U8 => self.prepare_basic_ty::<u8>(i, t, arg),
+                Type::U16 => self.prepare_basic_ty::<u16>(i, t, arg),
+                Type::U32 => self.prepare_basic_ty::<u32>(i, t, arg),
+                Type::U64 => self.prepare_basic_ty::<u64>(i, t, arg),
+                Type::U128 => self.prepare_basic_ty::<u128>(i, t, arg),
+                Type::String => self.prepare_basic_ty::<String>(i, t, arg),
+                Type::Custom { name } => self.prepare_custom_ty(i, t, arg, name, account),
+                _ => Err(BuildArgsError::UnsupportedType(i, t.clone())),
+            };
+            encoded.push(res?);
+        }
 
-fn prepare_args(
-    types: &[Type],
-    args: Vec<String>,
-    allocator: &mut IdAllocator,
-) -> Result<ParseArgsResult, BuildArgsError> {
-    let mut encoded = Vec::new();
-    let mut resources = Vec::new();
-
-    for (i, t) in types.iter().enumerate() {
-        let arg = args
-            .get(i)
-            .ok_or_else(|| BuildArgsError::MissingArgument(i, t.clone()))?;
-        let res = match t {
-            Type::Bool => parse_basic_type::<bool>(i, t, arg),
-            Type::I8 => parse_basic_type::<i8>(i, t, arg),
-            Type::I16 => parse_basic_type::<i16>(i, t, arg),
-            Type::I32 => parse_basic_type::<i32>(i, t, arg),
-            Type::I64 => parse_basic_type::<i64>(i, t, arg),
-            Type::I128 => parse_basic_type::<i128>(i, t, arg),
-            Type::U8 => parse_basic_type::<u8>(i, t, arg),
-            Type::U16 => parse_basic_type::<u16>(i, t, arg),
-            Type::U32 => parse_basic_type::<u32>(i, t, arg),
-            Type::U64 => parse_basic_type::<u64>(i, t, arg),
-            Type::U128 => parse_basic_type::<u128>(i, t, arg),
-            Type::String => parse_basic_type::<String>(i, t, arg),
-            Type::Custom { name } => parse_custom_ty(i, t, arg, name, allocator, &mut resources),
-            _ => Err(BuildArgsError::UnsupportedType(i, t.clone())),
-        };
-        encoded.push(res?);
+        Ok(encoded)
     }
 
-    Ok(ParseArgsResult { encoded, resources })
-}
+    fn prepare_basic_ty<T>(
+        &mut self,
+        i: usize,
+        ty: &Type,
+        arg: &str,
+    ) -> Result<Vec<u8>, BuildArgsError>
+    where
+        T: FromStr + Encode,
+        T::Err: fmt::Debug,
+    {
+        let value = arg
+            .parse::<T>()
+            .map_err(|_| BuildArgsError::UnableToParse(i, ty.clone(), arg.to_owned()))?;
+        Ok(scrypto_encode(&value))
+    }
 
-fn parse_basic_type<T>(i: usize, ty: &Type, arg: &str) -> Result<Vec<u8>, BuildArgsError>
-where
-    T: FromStr + Encode,
-    T::Err: fmt::Debug,
-{
-    let value = arg
-        .parse::<T>()
-        .map_err(|_| BuildArgsError::UnableToParse(i, ty.clone(), arg.to_owned()))?;
-    Ok(scrypto_encode(&value))
-}
-
-fn parse_custom_ty(
-    i: usize,
-    ty: &Type,
-    arg: &str,
-    name: &str,
-    allocator: &mut IdAllocator,
-    reservations: &mut Vec<Resource>,
-) -> Result<Vec<u8>, BuildArgsError> {
-    match name {
-        SCRYPTO_NAME_AMOUNT => {
-            let value = arg
-                .parse::<Amount>()
-                .map_err(|_| BuildArgsError::UnableToParse(i, ty.clone(), arg.to_owned()))?;
-            Ok(scrypto_encode(&value))
-        }
-        SCRYPTO_NAME_ADDRESS => {
-            let value = arg
-                .parse::<Address>()
-                .map_err(|_| BuildArgsError::UnableToParse(i, ty.clone(), arg.to_owned()))?;
-            Ok(scrypto_encode(&value))
-        }
-        SCRYPTO_NAME_H256 => {
-            let value = arg
-                .parse::<Address>()
-                .map_err(|_| BuildArgsError::UnableToParse(i, ty.clone(), arg.to_owned()))?;
-            Ok(scrypto_encode(&value))
-        }
-        SCRYPTO_NAME_BID | SCRYPTO_NAME_BUCKET | SCRYPTO_NAME_RID | SCRYPTO_NAME_BUCKET_REF => {
-            let mut split = arg.split(',');
-            let amount = split.next().and_then(|v| v.trim().parse::<Amount>().ok());
-            let resource_def = split.next().and_then(|v| v.trim().parse::<Address>().ok());
-            match (amount, resource_def) {
-                (Some(a), Some(r)) => {
-                    let bid = allocator.new_bid();
-                    let bucket = Bucket::new(a, r);
-
-                    match name {
-                        SCRYPTO_NAME_BID => {
-                            reservations.push(Resource {
-                                bucket,
-                                bid,
-                                rid: None,
-                            });
-                            Ok(scrypto_encode(&bid))
-                        }
-                        SCRYPTO_NAME_BUCKET => {
-                            reservations.push(Resource {
-                                bucket,
-                                bid,
-                                rid: None,
-                            });
-                            Ok(scrypto_encode(&scrypto::resource::Bucket::from(bid)))
-                        }
-                        SCRYPTO_NAME_RID => {
-                            let rid = allocator.new_rid();
-                            reservations.push(Resource {
-                                bucket,
-                                bid,
-                                rid: Some(rid),
-                            });
-                            Ok(scrypto_encode(&rid))
-                        }
-                        SCRYPTO_NAME_BUCKET_REF => {
-                            let rid = allocator.new_rid();
-                            reservations.push(Resource {
-                                bucket,
-                                bid,
-                                rid: Some(rid),
-                            });
-                            Ok(scrypto_encode(&scrypto::resource::BucketRef::from(rid)))
-                        }
-                        _ => panic!("Unexpected"),
-                    }
-                }
-                _ => Err(BuildArgsError::UnableToParse(i, ty.clone(), arg.to_owned())),
+    fn prepare_custom_ty(
+        &mut self,
+        i: usize,
+        ty: &Type,
+        arg: &str,
+        name: &str,
+        account: Option<Address>,
+    ) -> Result<Vec<u8>, BuildArgsError> {
+        match name {
+            SCRYPTO_NAME_AMOUNT => {
+                let value = arg
+                    .parse::<Amount>()
+                    .map_err(|_| BuildArgsError::UnableToParse(i, ty.clone(), arg.to_owned()))?;
+                Ok(scrypto_encode(&value))
             }
+            SCRYPTO_NAME_ADDRESS => {
+                let value = arg
+                    .parse::<Address>()
+                    .map_err(|_| BuildArgsError::UnableToParse(i, ty.clone(), arg.to_owned()))?;
+                Ok(scrypto_encode(&value))
+            }
+            SCRYPTO_NAME_H256 => {
+                let value = arg
+                    .parse::<H256>()
+                    .map_err(|_| BuildArgsError::UnableToParse(i, ty.clone(), arg.to_owned()))?;
+                Ok(scrypto_encode(&value))
+            }
+            SCRYPTO_NAME_BID | SCRYPTO_NAME_BUCKET | SCRYPTO_NAME_RID | SCRYPTO_NAME_BUCKET_REF => {
+                let mut split = arg.split(',');
+                let amount = split.next().and_then(|v| v.trim().parse::<Amount>().ok());
+                let resource_def = split.next().and_then(|v| v.trim().parse::<Address>().ok());
+                match (amount, resource_def) {
+                    (Some(a), Some(r)) => {
+                        let bid = self.reserve_bucket(r);
+
+                        if let Some(account) = account {
+                            self.withdraw(a, r, account);
+                        }
+                        self.move_to_bucket(a, r, bid);
+
+                        match name {
+                            SCRYPTO_NAME_BID => Ok(scrypto_encode(&bid)),
+                            SCRYPTO_NAME_BUCKET => {
+                                Ok(scrypto_encode(&scrypto::resource::Bucket::from(bid)))
+                            }
+                            SCRYPTO_NAME_RID => {
+                                let rid = self.create_reference(bid);
+                                Ok(scrypto_encode(&rid))
+                            }
+                            SCRYPTO_NAME_BUCKET_REF => {
+                                let rid = self.create_reference(bid);
+                                Ok(scrypto_encode(&scrypto::resource::BucketRef::from(rid)))
+                            }
+                            _ => panic!("Unexpected"),
+                        }
+                    }
+                    _ => Err(BuildArgsError::UnableToParse(i, ty.clone(), arg.to_owned())),
+                }
+            }
+            _ => Err(BuildArgsError::UnsupportedType(i, ty.clone())),
         }
-        _ => Err(BuildArgsError::UnsupportedType(i, ty.clone())),
     }
 }

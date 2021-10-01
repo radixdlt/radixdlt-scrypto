@@ -96,8 +96,8 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
         let mut success = true;
         for inst in &tx.instructions {
             let res = match inst {
-                Instruction::CreateBucket { resource_def } => {
-                    proc.create_bucket(*resource_def);
+                Instruction::ReserveBucket { resource_def } => {
+                    proc.reserve_bucket(*resource_def);
                     Ok(None)
                 }
                 Instruction::BorrowBucket { bucket } => proc.borrow_bucket(*bucket).map(|_| None),
@@ -135,19 +135,13 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
                         Ok(None)
                     }
                 }
+                Instruction::End => proc.finalize().map(|_| None),
             };
             success &= res.is_ok();
             results.push(res);
             if !success {
                 break;
             }
-        }
-
-        // check resource leak
-        if success {
-            let res = proc.finalize();
-            success &= res.is_ok();
-            results.push(res.map(|_| None));
         }
 
         // commit state updates

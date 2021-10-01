@@ -13,6 +13,14 @@ blueprint! {
             .instantiate()
         }
 
+        pub fn with_bucket(bucket: Bucket) -> Address {
+            let mut account = Account {
+                vaults: LazyMap::new()
+            };
+            account.deposit(bucket);
+            account.instantiate()
+        }
+
         /// Deposit a batch of buckets into this account
         pub fn deposit_batch(&mut self, buckets: Vec<Bucket>) {
             for bucket in buckets {
