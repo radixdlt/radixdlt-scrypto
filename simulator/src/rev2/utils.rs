@@ -20,6 +20,14 @@ pub fn match_amount(matches: &ArgMatches, name: &str) -> Result<Amount, Error> {
         .map_err(Error::InvalidAmount)
 }
 
+pub fn match_u64(matches: &ArgMatches, name: &str) -> Result<u64, Error> {
+    matches
+        .value_of(name)
+        .ok_or_else(|| Error::MissingArgument(name.to_string()))?
+        .parse()
+        .map_err(|_| Error::InvalidNumber)
+}
+
 pub fn match_string(matches: &ArgMatches, name: &str) -> Result<String, Error> {
     matches
         .value_of(name)

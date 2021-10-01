@@ -21,6 +21,8 @@ pub enum Error {
 
     InvalidAmount(ParseAmountError),
 
+    InvalidNumber,
+
     IOError(io::Error),
 
     ConfigDecodeError(sbor::DecodeError),

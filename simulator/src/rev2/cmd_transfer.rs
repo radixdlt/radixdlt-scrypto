@@ -1,6 +1,5 @@
 use clap::{crate_version, App, Arg, ArgMatches, SubCommand};
 use radix_engine::transaction::*;
-use scrypto::types::*;
 
 use crate::ledger::*;
 use crate::rev2::*;
@@ -43,8 +42,8 @@ pub fn make_transfer<'a, 'b>() -> App<'a, 'b> {
 /// Handles a `transfer` request.
 pub fn handle_transfer(matches: &ArgMatches) -> Result<(), Error> {
     let amount = match_amount(matches, ARG_AMOUNT)?;
-    let resource_def: Address = match_address(matches, ARG_RESOURCE_DEF)?;
-    let recipient: Address = match_address(matches, ARG_RECIPIENT)?;
+    let resource_def = match_address(matches, ARG_RESOURCE_DEF)?;
+    let recipient = match_address(matches, ARG_RECIPIENT)?;
     let trace = matches.is_present(ARG_TRACE);
 
     let mut configs = get_configs()?;
