@@ -113,15 +113,23 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
                     function,
                     args,
                 } => proc
-                    .call_function(blueprint.clone(), function.as_str(), args.clone())
-                    .map(Option::from),
+                    .call_function(
+                        blueprint.clone(),
+                        function.as_str(),
+                        args.iter().map(|v| v.0.clone()).collect(),
+                    )
+                    .map(|rtn| Some(SmartValue(rtn))),
                 Instruction::CallMethod {
                     component,
                     method,
                     args,
                 } => proc
-                    .call_method(*component, method.as_str(), args.clone())
-                    .map(Option::from),
+                    .call_method(
+                        *component,
+                        method.as_str(),
+                        args.iter().map(|v| v.0.clone()).collect(),
+                    )
+                    .map(|rtn| Some(SmartValue(rtn))),
                 Instruction::DepositAll { component, method } => {
                     let buckets: Vec<_> = proc
                         .owned_buckets()
@@ -130,7 +138,7 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
                         .collect();
                     if !buckets.is_empty() {
                         proc.call_method(*component, method.as_str(), args!(buckets))
-                            .map(Option::from)
+                            .map(|rtn| Some(SmartValue(rtn)))
                     } else {
                         Ok(None)
                     }

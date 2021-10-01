@@ -67,7 +67,7 @@ impl From<String> for MID {
 
 impl fmt::Debug for MID {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", hex::encode(self.to_vec()))
+        write!(f, "MID({})", hex::encode(self.to_vec()))
     }
 }
 

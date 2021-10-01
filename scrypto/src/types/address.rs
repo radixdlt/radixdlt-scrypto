@@ -76,7 +76,7 @@ impl TryFrom<&[u8]> for Address {
 
 impl fmt::Debug for Address {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", hex::encode(self.to_vec()))
+        write!(f, "Address({})", hex::encode(self.to_vec()))
     }
 }
 

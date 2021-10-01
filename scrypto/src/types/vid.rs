@@ -67,7 +67,7 @@ impl From<String> for VID {
 
 impl fmt::Debug for VID {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", hex::encode(self.to_vec()))
+        write!(f, "VID({})", hex::encode(self.to_vec()))
     }
 }
 

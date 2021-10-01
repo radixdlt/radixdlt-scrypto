@@ -66,7 +66,7 @@ impl AsRef<[u8]> for H256 {
 
 impl fmt::Debug for H256 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", hex::encode(self))
+        write!(f, "H256({})", hex::encode(self))
     }
 }
 

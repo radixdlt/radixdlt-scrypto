@@ -6,4 +6,4 @@ mod model;
 pub use builder::TransactionBuilder;
 pub use error::{BuildArgsError, BuildTransactionError};
 pub use executor::TransactionExecutor;
-pub use model::{Instruction, Receipt, Transaction};
+pub use model::{Instruction, Receipt, SmartValue, Transaction};

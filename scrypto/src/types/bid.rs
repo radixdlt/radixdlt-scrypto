@@ -50,7 +50,7 @@ impl TryFrom<&[u8]> for BID {
 
 impl fmt::Debug for BID {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.0)
+        write!(f, "BID({})", self.0)
     }
 }
 

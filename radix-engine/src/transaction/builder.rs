@@ -73,7 +73,7 @@ impl TransactionBuilder {
         self.instruction(Instruction::CallFunction {
             blueprint: (SYSTEM_PACKAGE, "System".to_owned()),
             function: "publish_package".to_string(),
-            args: vec![scrypto_encode(code)],
+            args: vec![SmartValue(scrypto_encode(code))],
         })
     }
 
@@ -82,7 +82,7 @@ impl TransactionBuilder {
         self.instruction(Instruction::CallFunction {
             blueprint: (SYSTEM_PACKAGE, "System".to_owned()),
             function: "new_resource_mutable".to_string(),
-            args: vec![scrypto_encode(&metadata)],
+            args: vec![SmartValue::from(metadata)],
         })
     }
 
@@ -95,7 +95,7 @@ impl TransactionBuilder {
         self.instruction(Instruction::CallFunction {
             blueprint: (SYSTEM_PACKAGE, "System".to_owned()),
             function: "new_resource_fixed".to_string(),
-            args: vec![scrypto_encode(&metadata), scrypto_encode(&supply)],
+            args: vec![SmartValue::from(metadata), SmartValue::from(supply)],
         })
     }
 
@@ -104,7 +104,7 @@ impl TransactionBuilder {
         self.instruction(Instruction::CallFunction {
             blueprint: (SYSTEM_PACKAGE, "System".to_owned()),
             function: "mint_resource".to_string(),
-            args: vec![scrypto_encode(&amount), scrypto_encode(&resource_def)],
+            args: vec![SmartValue::from(amount), SmartValue::from(resource_def)],
         })
     }
 
@@ -128,7 +128,7 @@ impl TransactionBuilder {
         self.instruction(Instruction::CallFunction {
             blueprint: (ACCOUNT_PACKAGE, "Account".to_owned()),
             function: "with_bucket".to_string(),
-            args: vec![scrypto_encode(&scrypto::resource::Bucket::from(bid))],
+            args: vec![SmartValue::from(scrypto::resource::Bucket::from(bid))],
         })
     }
 
@@ -142,7 +142,7 @@ impl TransactionBuilder {
         self.instruction(Instruction::CallMethod {
             component: account,
             method: "withdraw".to_string(),
-            args: vec![scrypto_encode(&amount), scrypto_encode(&resource_def)],
+            args: vec![SmartValue::from(amount), SmartValue::from(resource_def)],
         })
     }
 
@@ -268,7 +268,7 @@ impl TransactionBuilder {
         types: &[Type],
         args: Vec<String>,
         account: Option<Address>,
-    ) -> Result<Vec<Vec<u8>>, BuildArgsError> {
+    ) -> Result<Vec<SmartValue>, BuildArgsError> {
         let mut encoded = Vec::new();
 
         for (i, t) in types.iter().enumerate() {
@@ -302,7 +302,7 @@ impl TransactionBuilder {
         i: usize,
         ty: &Type,
         arg: &str,
-    ) -> Result<Vec<u8>, BuildArgsError>
+    ) -> Result<SmartValue, BuildArgsError>
     where
         T: FromStr + Encode,
         T::Err: fmt::Debug,
@@ -310,7 +310,7 @@ impl TransactionBuilder {
         let value = arg
             .parse::<T>()
             .map_err(|_| BuildArgsError::UnableToParse(i, ty.clone(), arg.to_owned()))?;
-        Ok(scrypto_encode(&value))
+        Ok(SmartValue::from(value))
     }
 
     fn prepare_custom_ty(
@@ -320,25 +320,25 @@ impl TransactionBuilder {
         arg: &str,
         name: &str,
         account: Option<Address>,
-    ) -> Result<Vec<u8>, BuildArgsError> {
+    ) -> Result<SmartValue, BuildArgsError> {
         match name {
             SCRYPTO_NAME_AMOUNT => {
                 let value = arg
                     .parse::<Amount>()
                     .map_err(|_| BuildArgsError::UnableToParse(i, ty.clone(), arg.to_owned()))?;
-                Ok(scrypto_encode(&value))
+                Ok(SmartValue::from(value))
             }
             SCRYPTO_NAME_ADDRESS => {
                 let value = arg
                     .parse::<Address>()
                     .map_err(|_| BuildArgsError::UnableToParse(i, ty.clone(), arg.to_owned()))?;
-                Ok(scrypto_encode(&value))
+                Ok(SmartValue::from(value))
             }
             SCRYPTO_NAME_H256 => {
                 let value = arg
                     .parse::<H256>()
                     .map_err(|_| BuildArgsError::UnableToParse(i, ty.clone(), arg.to_owned()))?;
-                Ok(scrypto_encode(&value))
+                Ok(SmartValue::from(value))
             }
             SCRYPTO_NAME_BID | SCRYPTO_NAME_BUCKET | SCRYPTO_NAME_RID | SCRYPTO_NAME_BUCKET_REF => {
                 let mut split = arg.split(',');
@@ -354,17 +354,17 @@ impl TransactionBuilder {
                         self.move_to_bucket(a, r, bid);
 
                         match name {
-                            SCRYPTO_NAME_BID => Ok(scrypto_encode(&bid)),
+                            SCRYPTO_NAME_BID => Ok(SmartValue::from(bid)),
                             SCRYPTO_NAME_BUCKET => {
-                                Ok(scrypto_encode(&scrypto::resource::Bucket::from(bid)))
+                                Ok(SmartValue::from(scrypto::resource::Bucket::from(bid)))
                             }
                             SCRYPTO_NAME_RID => {
                                 let rid = self.create_reference(bid);
-                                Ok(scrypto_encode(&rid))
+                                Ok(SmartValue::from(rid))
                             }
                             SCRYPTO_NAME_BUCKET_REF => {
                                 let rid = self.create_reference(bid);
-                                Ok(scrypto_encode(&scrypto::resource::BucketRef::from(rid)))
+                                Ok(SmartValue::from(scrypto::resource::BucketRef::from(rid)))
                             }
                             _ => panic!("Unexpected"),
                         }
