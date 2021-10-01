@@ -85,6 +85,9 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
     }
 
     pub fn run(&mut self, transaction: Transaction, trace: bool) -> Receipt {
+        #[cfg(not(feature = "alloc"))]
+        let now = std::time::Instant::now();
+
         let mut track = Track::new(
             self.ledger,
             self.current_epoch,
@@ -157,6 +160,10 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
             track.commit();
             self.nonce += 1;
         }
+        #[cfg(feature = "alloc")]
+        let execution_time = None;
+        #[cfg(not(feature = "alloc"))]
+        let execution_time = Some(now.elapsed().as_millis());
 
         Receipt {
             transaction,
@@ -168,6 +175,7 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
             } else {
                 Vec::new()
             },
+            execution_time,
         }
     }
 }
