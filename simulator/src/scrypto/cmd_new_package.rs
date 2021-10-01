@@ -10,7 +10,7 @@ const ARG_PATH: &str = "PATH";
 /// Constructs a `new-package` subcommand.
 pub fn make_new_package<'a, 'b>() -> App<'a, 'b> {
     SubCommand::with_name(CMD_NEW_PACKAGE)
-        .about("Creates an package")
+        .about("Creates a package")
         .version(crate_version!())
         .arg(
             Arg::with_name(ARG_NAME)

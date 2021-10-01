@@ -24,7 +24,12 @@ pub fn dump_component<T: Ledger>(address: Address, ledger: &T) {
         Some(c) => {
             println!("{}: {}", "Component".green().bold(), address.to_string());
 
-            println!("{}: {:?}", "Blueprint".green().bold(), c.blueprint());
+            println!(
+                "{}: {{ package: {}, name: {} }}",
+                "Blueprint".green().bold(),
+                c.package(),
+                c.name()
+            );
             let mut vaults = vec![];
             println!(
                 "{}: {}",
@@ -53,11 +58,12 @@ pub fn dump_resource_def<T: Ledger>(address: Address, ledger: &T) {
     let resource_def = ledger.get_resource_def(address);
     match resource_def {
         Some(r) => {
+            println!("{}: {}", "Metadata".green().bold(), r.metadata.len());
             for (k, v) in r.metadata {
-                println!("{}: {}", k.green().bold(), v);
+                println!("   {}: {}", k.green().bold(), v);
             }
             println!("{}: {:?}", "Minter".green().bold(), r.minter);
-            println!("{}: {:?}", "supply".green().bold(), r.supply);
+            println!("{}: {:?}", "Supply".green().bold(), r.supply);
         }
         None => {
             println!("{}", "Resource definition not found".red());

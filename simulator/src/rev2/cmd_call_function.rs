@@ -5,7 +5,7 @@ use crate::ledger::*;
 use crate::rev2::*;
 
 const ARG_PACKAGE: &str = "PACKAGE";
-const ARG_BLUEPRINT: &str = "BLUEPRINT";
+const ARG_NAME: &str = "NAME";
 const ARG_FUNCTION: &str = "FUNCTION";
 const ARG_ARGS: &str = "ARGS";
 
@@ -14,15 +14,15 @@ const ARG_TRACE: &str = "TRACE";
 /// Constructs a `call-function` subcommand.
 pub fn make_call_function<'a, 'b>() -> App<'a, 'b> {
     SubCommand::with_name(CMD_CALL_FUNCTION)
-        .about("Calls a blueprint function")
+        .about("Calls a function")
         .version(crate_version!())
         .arg(
             Arg::with_name(ARG_PACKAGE)
-                .help("Specify the package address.")
+                .help("Specify the blueprint package address.")
                 .required(true),
         )
         .arg(
-            Arg::with_name(ARG_BLUEPRINT)
+            Arg::with_name(ARG_NAME)
                 .help("Specify the blueprint name.")
                 .required(true),
         )
@@ -47,7 +47,7 @@ pub fn make_call_function<'a, 'b>() -> App<'a, 'b> {
 /// Handles a `call-function` request.
 pub fn handle_call_function(matches: &ArgMatches) -> Result<(), Error> {
     let package = match_address(matches, ARG_PACKAGE)?;
-    let blueprint = match_string(matches, ARG_BLUEPRINT)?;
+    let name = match_string(matches, ARG_NAME)?;
     let function = match_string(matches, ARG_FUNCTION)?;
     let args = match_args(matches, ARG_ARGS)?;
     let trace = matches.is_present(ARG_TRACE);
@@ -57,7 +57,7 @@ pub fn handle_call_function(matches: &ArgMatches) -> Result<(), Error> {
     let mut ledger = FileBasedLedger::with_bootstrap(get_data_dir()?);
     let mut executor = TransactionExecutor::new(&mut ledger, configs.current_epoch, configs.nonce);
     let abi = executor
-        .export_abi(package, blueprint, trace)
+        .export_abi(package, name, trace)
         .map_err(Error::TransactionExecutionError)?;
     let transaction = TransactionBuilder::new()
         .call_function(&abi, &function, args, Some(account))

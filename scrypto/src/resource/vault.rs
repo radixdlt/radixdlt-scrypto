@@ -33,8 +33,10 @@ impl From<Vault> for Vid {
 }
 
 impl Vault {
-    pub fn new(resource_def: Address) -> Self {
-        let input = CreateEmptyVaultInput { resource_def };
+    pub fn new<A: Into<Address>>(resource_def: A) -> Self {
+        let input = CreateEmptyVaultInput {
+            resource_def: resource_def.into(),
+        };
         let output: CreateEmptyVaultOutput = call_kernel(CREATE_EMPTY_VAULT, input);
 
         output.vault.into()

@@ -7,7 +7,7 @@ use crate::rust::borrow::ToOwned;
 use crate::rust::vec;
 use crate::types::*;
 
-/// An account is a component that holds user's resource.
+/// An account is a component that holds resources.
 #[derive(Debug, PartialEq, Eq, TypeId, Encode, Decode)]
 pub struct Account {
     address: Address,
@@ -26,10 +26,17 @@ impl From<Account> for Address {
 }
 
 impl Account {
+    pub fn withdraw<A: Into<Address>>(&self, amount: Amount, resource_def: A) {
+        let args = vec![
+            scrypto_encode(&amount),
+            scrypto_encode(&resource_def.into()),
+        ];
+        Component::from(self.address()).call::<()>("withdraw", args);
+    }
+
     pub fn deposit(&self, bucket: Bucket) {
-        let component = Component::from(self.address());
         let args = vec![scrypto_encode(&bucket)];
-        component.call::<()>("deposit", args);
+        Component::from(self.address()).call::<()>("deposit", args);
     }
 
     pub fn address(&self) -> Address {

@@ -35,7 +35,7 @@ impl Package {
     }
 
     pub fn blueprint(&self, name: &str) -> Blueprint {
-        Blueprint::from((self.address, name))
+        Blueprint::from(self.address, name)
     }
 
     pub fn address(&self) -> Address {

@@ -122,13 +122,11 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
     ) -> Result<Address, RuntimeError> {
         let auth = match minter {
             Address::Package(_) => minter,
-            Address::Component(_) => {
-                self.track
-                    .get_component(minter)
-                    .ok_or(RuntimeError::ComponentNotFound(minter))?
-                    .blueprint()
-                    .0
-            }
+            Address::Component(_) => self
+                .track
+                .get_component(minter)
+                .ok_or(RuntimeError::ComponentNotFound(minter))?
+                .package(),
             _ => {
                 return Err(RuntimeError::InvalidAddressType);
             }
@@ -380,13 +378,14 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
     /// Prepares a function call.
     pub fn prepare_call_function(
         &mut self,
-        blueprint: (Address, String),
+        package: Address,
+        name: &str,
         function: &str,
         args: Vec<Vec<u8>>,
     ) -> Result<Invocation, RuntimeError> {
         Ok(Invocation {
-            package: blueprint.0,
-            export: format!("{}_main", blueprint.1),
+            package,
+            export: format!("{}_main", name),
             function: function.to_owned(),
             args,
         })
@@ -408,17 +407,18 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         let mut self_args = vec![scrypto_encode(&component)];
         self_args.extend(args);
 
-        self.prepare_call_function(com.blueprint().clone(), method, self_args)
+        self.prepare_call_function(com.package(), com.name(), method, self_args)
     }
 
     /// Prepares an ABI call.
     pub fn prepare_call_abi(
         &mut self,
-        blueprint: (Address, String),
+        package: Address,
+        name: &str,
     ) -> Result<Invocation, RuntimeError> {
         Ok(Invocation {
-            package: blueprint.0,
-            export: format!("{}_abi", blueprint.1),
+            package: package,
+            export: format!("{}_abi", name),
             function: String::new(),
             args: Vec::new(),
         })
@@ -462,12 +462,13 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
     /// Calls a function.
     pub fn call_function(
         &mut self,
-        blueprint: (Address, String),
+        package: Address,
+        name: &str,
         function: &str,
         args: Vec<Vec<u8>>,
     ) -> Result<Vec<u8>, RuntimeError> {
         debug!(self, "Call function started");
-        let invocation = self.prepare_call_function(blueprint, function, args)?;
+        let invocation = self.prepare_call_function(package, name, function, args)?;
         let result = self.call(invocation);
         debug!(self, "Call function ended");
         result
@@ -488,9 +489,9 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
     }
 
     /// Calls the ABI generator of a blueprint.
-    pub fn call_abi(&mut self, blueprint: (Address, String)) -> Result<Vec<u8>, RuntimeError> {
+    pub fn call_abi(&mut self, package: Address, name: &str) -> Result<Vec<u8>, RuntimeError> {
         debug!(self, "Call abi started");
-        let invocation = self.prepare_call_abi(blueprint)?;
+        let invocation = self.prepare_call_abi(package, name)?;
         let result = self.call(invocation);
         debug!(self, "Call abi ended");
         result
@@ -856,14 +857,19 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
     ) -> Result<CallFunctionOutput, RuntimeError> {
         debug!(
             self,
-            "CALL started: blueprint = {:?}, function = {}, args = {:?}",
-            input.blueprint,
+            "CALL started: package = {:?}, name = {}, function = {}, args = {:?}",
+            input.package,
+            input.name,
             input.function,
             input.args
         );
 
-        let invocation =
-            self.prepare_call_function(input.blueprint, input.function.as_str(), input.args)?;
+        let invocation = self.prepare_call_function(
+            input.package,
+            &input.name,
+            input.function.as_str(),
+            input.args,
+        )?;
         let result = self.call(invocation);
 
         debug!(self, "CALL finished");
@@ -907,7 +913,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
             "New component: address = {}, state = {:?}", address, new_state
         );
 
-        let component = Component::new((self.package()?, input.name), new_state);
+        let component = Component::new(self.package()?, input.name, new_state);
         self.track.put_component(address, component);
 
         Ok(CreateComponentOutput { component: address })
@@ -923,12 +929,13 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
             .track
             .get_component(input.component)
             .ok_or(RuntimeError::ComponentNotFound(input.component))?;
-        if package != component.blueprint().0 {
+        if package != component.package() {
             return Err(RuntimeError::UnauthorizedAccess);
         }
 
         Ok(GetComponentBlueprintOutput {
-            blueprint: component.blueprint().clone(),
+            package: component.package(),
+            name: component.name().to_owned(),
         })
     }
 
@@ -942,7 +949,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
             .track
             .get_component(input.component)
             .ok_or(RuntimeError::ComponentNotFound(input.component))?;
-        if package != component.blueprint().0 {
+        if package != component.package() {
             return Err(RuntimeError::UnauthorizedAccess);
         }
 
@@ -967,7 +974,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
             .track
             .get_component_mut(input.component)
             .ok_or(RuntimeError::ComponentNotFound(input.component))?;
-        if package != component.blueprint().0 {
+        if package != component.package() {
             return Err(RuntimeError::UnauthorizedAccess);
         }
 

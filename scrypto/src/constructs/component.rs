@@ -72,7 +72,7 @@ impl Component {
         };
         let output: GetComponentBlueprintOutput = call_kernel(GET_COMPONENT_BLUEPRINT, input);
 
-        output.blueprint.into()
+        Blueprint::from(output.package, output.name)
     }
 
     pub fn address(&self) -> Address {

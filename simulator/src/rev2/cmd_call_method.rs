@@ -13,7 +13,7 @@ const ARG_TRACE: &str = "TRACE";
 /// Constructs a `call-method` subcommand.
 pub fn make_call_method<'a, 'b>() -> App<'a, 'b> {
     SubCommand::with_name(CMD_CALL_METHOD)
-        .about("Calls a component method")
+        .about("Calls a method")
         .version(crate_version!())
         .arg(
             Arg::with_name(ARG_COMPONENT)
@@ -50,7 +50,7 @@ pub fn handle_call_method(matches: &ArgMatches) -> Result<(), Error> {
     let mut ledger = FileBasedLedger::with_bootstrap(get_data_dir()?);
     let mut executor = TransactionExecutor::new(&mut ledger, configs.current_epoch, configs.nonce);
     let abi = executor
-        .export_abi_by_component(component, trace)
+        .export_abi_component(component, trace)
         .map_err(Error::TransactionExecutionError)?;
     let transaction = TransactionBuilder::new()
         .call_method(&abi, component, &method, args, Some(account))

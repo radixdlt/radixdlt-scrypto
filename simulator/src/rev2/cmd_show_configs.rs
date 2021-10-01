@@ -6,7 +6,7 @@ use crate::rev2::*;
 /// Constructs a `show-configs` subcommand.
 pub fn make_show_configs<'a, 'b>() -> App<'a, 'b> {
     SubCommand::with_name(CMD_SHOW_CONFIGS)
-        .about("Show configurations")
+        .about("Displays configurations")
         .version(crate_version!())
 }
 

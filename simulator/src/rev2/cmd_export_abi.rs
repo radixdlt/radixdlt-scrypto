@@ -5,7 +5,7 @@ use crate::ledger::*;
 use crate::rev2::*;
 
 const ARG_PACKAGE: &str = "PACKAGE";
-const ARG_BLUEPRINT: &str = "BLUEPRINT";
+const ARG_NAME: &str = "NAME";
 
 const ARG_TRACE: &str = "TRACE";
 
@@ -16,11 +16,11 @@ pub fn make_export_abi<'a, 'b>() -> App<'a, 'b> {
         .version(crate_version!())
         .arg(
             Arg::with_name(ARG_PACKAGE)
-                .help("Specify the package address.")
+                .help("Specify the blueprint package address.")
                 .required(true),
         )
         .arg(
-            Arg::with_name(ARG_BLUEPRINT)
+            Arg::with_name(ARG_NAME)
                 .help("Specify the blueprint name.")
                 .required(true),
         )
@@ -35,13 +35,13 @@ pub fn make_export_abi<'a, 'b>() -> App<'a, 'b> {
 /// Handles a `export-abi` request.
 pub fn handle_export_abi(matches: &ArgMatches) -> Result<(), Error> {
     let package = match_address(matches, ARG_PACKAGE)?;
-    let blueprint = match_string(matches, ARG_BLUEPRINT)?;
+    let name = match_string(matches, ARG_NAME)?;
     let trace = matches.is_present(ARG_TRACE);
 
     let configs = get_configs()?;
     let mut ledger = FileBasedLedger::with_bootstrap(get_data_dir()?);
     let executor = TransactionExecutor::new(&mut ledger, configs.current_epoch, configs.nonce);
-    let abi = executor.export_abi(package, blueprint, trace);
+    let abi = executor.export_abi(package, name, trace);
 
     match abi {
         Err(e) => Err(Error::TransactionExecutionError(e)),

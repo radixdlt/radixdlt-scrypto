@@ -38,7 +38,7 @@ pub fn handle_new_account(matches: &ArgMatches) -> Result<(), Error> {
         configs.nonce = executor.nonce();
         configs.default_account = configs
             .default_account
-            .or(Some(receipt.nth_component(0).unwrap()));
+            .or(Some(receipt.component(0).unwrap()));
         set_configs(configs)?;
         Ok(())
     } else {

@@ -76,7 +76,7 @@ pub fn handle_import(input: TokenStream) -> TokenStream {
                 let package = ::scrypto::utils::unwrap_light(
                     ::scrypto::types::Address::from_str(#package)
                 );
-                let blueprint = ::scrypto::constructs::Blueprint::from((package, #name));
+                let blueprint = ::scrypto::constructs::Blueprint::from(package, #name);
                 blueprint.call(#func_name, ::scrypto::args!(#(#func_args),*))
             }
         });

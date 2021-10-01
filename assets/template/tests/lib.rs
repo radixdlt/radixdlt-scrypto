@@ -14,7 +14,7 @@ fn test_hello() {
             TransactionBuilder::new().new_account().build().unwrap(),
             true,
         )
-        .nth_component(0)
+        .component(0)
         .unwrap();
     let package = executor
         .run(
@@ -24,7 +24,7 @@ fn test_hello() {
                 .unwrap(),
             false,
         )
-        .nth_package(0)
+        .package(0)
         .unwrap();
     let abi = executor.export_abi(package, "Hello", false).unwrap();
 
@@ -37,7 +37,7 @@ fn test_hello() {
     assert!(receipt.success);
 
     // Invoke the `airdrop` function.
-    let component = receipt.nth_component(0).unwrap();
+    let component = receipt.component(0).unwrap();
     let transaction2 = TransactionBuilder::new()
         .call_method(&abi, component, "airdrop", vec![], Some(account))
         .deposit_all(account)

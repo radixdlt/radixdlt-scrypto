@@ -33,8 +33,10 @@ impl From<Bucket> for Bid {
 }
 
 impl Bucket {
-    pub fn new(resource_def: Address) -> Self {
-        let input = CreateEmptyBucketInput { resource_def };
+    pub fn new<A: Into<Address>>(resource_def: A) -> Self {
+        let input = CreateEmptyBucketInput {
+            resource_def: resource_def.into(),
+        };
         let output: CreateEmptyBucketOutput = call_kernel(CREATE_EMPTY_BUCKET, input);
 
         output.bucket.into()

@@ -17,25 +17,18 @@ pub struct Blueprint {
     name: String,
 }
 
-impl<T: AsRef<str>> From<(Address, T)> for Blueprint {
-    fn from(address: (Address, T)) -> Self {
+impl Blueprint {
+    pub fn from<A: Into<Address>, S: AsRef<str>>(package: A, name: S) -> Self {
         Self {
-            package: address.0,
-            name: address.1.as_ref().to_owned(),
+            package: package.into(),
+            name: name.as_ref().to_owned(),
         }
     }
-}
 
-impl From<Blueprint> for (Address, String) {
-    fn from(a: Blueprint) -> Self {
-        (a.package, a.name)
-    }
-}
-
-impl Blueprint {
     pub fn call<T: Decode>(&self, function: &str, args: Vec<Vec<u8>>) -> T {
         let input = CallFunctionInput {
-            blueprint: (self.package, self.name.clone()),
+            package: self.package,
+            name: self.name.clone(),
             function: function.to_string(),
             args,
         };

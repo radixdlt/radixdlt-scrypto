@@ -15,7 +15,7 @@ const ARG_ICON_URL: &str = "ICON_URL";
 /// Constructs a `new-resource-mutable` subcommand.
 pub fn make_new_resource_mutable<'a, 'b>() -> App<'a, 'b> {
     SubCommand::with_name(CMD_NEW_RESOURCE_MUTABLE)
-        .about("Creates token with mutable supply")
+        .about("Creates resource with mutable supply")
         .version(crate_version!())
         // options
         .arg(

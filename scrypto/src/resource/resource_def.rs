@@ -27,8 +27,11 @@ impl From<ResourceDef> for Address {
 }
 
 impl ResourceDef {
-    pub fn new_mutable(metadata: HashMap<String, String>, minter: Address) -> Self {
-        let input = CreateResourceMutableInput { metadata, minter };
+    pub fn new_mutable<A: Into<Address>>(metadata: HashMap<String, String>, minter: A) -> Self {
+        let input = CreateResourceMutableInput {
+            metadata,
+            minter: minter.into(),
+        };
         let output: CreateResourceMutableOutput = call_kernel(CREATE_RESOURCE_MUTABLE, input);
 
         output.resource_def.into()

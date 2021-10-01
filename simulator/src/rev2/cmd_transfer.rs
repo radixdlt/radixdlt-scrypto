@@ -13,7 +13,7 @@ const ARG_TRACE: &str = "TRACE";
 /// Constructs a `transfer` subcommand.
 pub fn make_transfer<'a, 'b>() -> App<'a, 'b> {
     SubCommand::with_name(CMD_TRANSFER)
-        .about("Transfers resource")
+        .about("Transfers resource to another account")
         .version(crate_version!())
         .arg(
             Arg::with_name(ARG_AMOUNT)

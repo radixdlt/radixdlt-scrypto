@@ -71,7 +71,8 @@ impl TransactionBuilder {
     /// Publishes a package.
     pub fn publish_package(&mut self, code: &[u8]) -> &mut Self {
         self.instruction(Instruction::CallFunction {
-            blueprint: (SYSTEM_PACKAGE, "System".to_owned()),
+            package: SYSTEM_PACKAGE,
+            name: "System".to_owned(),
             function: "publish_package".to_string(),
             args: vec![SmartValue(scrypto_encode(code))],
         })
@@ -80,7 +81,8 @@ impl TransactionBuilder {
     /// Creates a resource with mutable supply.
     pub fn new_resource_mutable(&mut self, metadata: HashMap<String, String>) -> &mut Self {
         self.instruction(Instruction::CallFunction {
-            blueprint: (SYSTEM_PACKAGE, "System".to_owned()),
+            package: SYSTEM_PACKAGE,
+            name: "System".to_owned(),
             function: "new_resource_mutable".to_string(),
             args: vec![SmartValue::from(metadata)],
         })
@@ -93,7 +95,8 @@ impl TransactionBuilder {
         supply: Amount,
     ) -> &mut Self {
         self.instruction(Instruction::CallFunction {
-            blueprint: (SYSTEM_PACKAGE, "System".to_owned()),
+            package: SYSTEM_PACKAGE,
+            name: "System".to_owned(),
             function: "new_resource_fixed".to_string(),
             args: vec![SmartValue::from(metadata), SmartValue::from(supply)],
         })
@@ -102,7 +105,8 @@ impl TransactionBuilder {
     /// Mints resource.
     pub fn mint_resource(&mut self, amount: Amount, resource_def: Address) -> &mut Self {
         self.instruction(Instruction::CallFunction {
-            blueprint: (SYSTEM_PACKAGE, "System".to_owned()),
+            package: SYSTEM_PACKAGE,
+            name: "System".to_owned(),
             function: "mint_resource".to_string(),
             args: vec![SmartValue::from(amount), SmartValue::from(resource_def)],
         })
@@ -111,7 +115,8 @@ impl TransactionBuilder {
     /// Creates an Account component.
     pub fn new_account(&mut self) -> &mut Self {
         self.instruction(Instruction::CallFunction {
-            blueprint: (ACCOUNT_PACKAGE, "Account".to_owned()),
+            package: ACCOUNT_PACKAGE,
+            name: "Account".to_owned(),
             function: "new".to_string(),
             args: vec![],
         })
@@ -126,7 +131,8 @@ impl TransactionBuilder {
         let bid = self.reserve_bucket(resource_def);
         self.move_to_bucket(amount, resource_def, bid);
         self.instruction(Instruction::CallFunction {
-            blueprint: (ACCOUNT_PACKAGE, "Account".to_owned()),
+            package: ACCOUNT_PACKAGE,
+            name: "Account".to_owned(),
             function: "with_bucket".to_string(),
             args: vec![SmartValue::from(scrypto::resource::Bucket::from(bid))],
         })
@@ -173,7 +179,8 @@ impl TransactionBuilder {
             Ok(f) => match self.prepare_args(&f.inputs, args, account) {
                 Ok(o) => {
                     self.instructions.push(Instruction::CallFunction {
-                        blueprint: (abi.package.parse().unwrap(), abi.name.clone()),
+                        package: abi.package.parse().unwrap(),
+                        name: abi.name.clone(),
                         function: function.to_owned(),
                         args: o,
                     });

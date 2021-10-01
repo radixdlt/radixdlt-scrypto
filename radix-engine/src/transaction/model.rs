@@ -55,7 +55,8 @@ pub enum Instruction {
 
     /// Calls a function.
     CallFunction {
-        blueprint: (Address, String),
+        package: Address,
+        name: String,
         function: String,
         args: Vec<SmartValue>,
     },
@@ -85,28 +86,28 @@ pub struct Receipt {
 }
 
 impl Receipt {
-    pub fn nth_package(&self, n: usize) -> Option<Address> {
+    pub fn package(&self, nth: usize) -> Option<Address> {
         self.new_addresses
             .iter()
             .filter(|a| matches!(a, Address::Package(_)))
             .map(Clone::clone)
-            .nth(n)
+            .nth(nth)
     }
 
-    pub fn nth_component(&self, n: usize) -> Option<Address> {
+    pub fn component(&self, nth: usize) -> Option<Address> {
         self.new_addresses
             .iter()
             .filter(|a| matches!(a, Address::Component(_)))
             .map(Clone::clone)
-            .nth(n)
+            .nth(nth)
     }
 
-    pub fn nth_resource_def(&self, n: usize) -> Option<Address> {
+    pub fn resource_def(&self, nth: usize) -> Option<Address> {
         self.new_addresses
             .iter()
             .filter(|a| matches!(a, Address::ResourceDef(_)))
             .map(Clone::clone)
-            .nth(n)
+            .nth(nth)
     }
 }
 

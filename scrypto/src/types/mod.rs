@@ -8,9 +8,9 @@ mod vid;
 
 pub use address::{Address, ParseAddressError, ACCOUNT_PACKAGE, RADIX_TOKEN, SYSTEM_PACKAGE};
 pub use amount::{Amount, ParseAmountError};
-pub use bid::{ParseBidError, Bid};
+pub use bid::{Bid, ParseBidError};
 pub use h256::{ParseH256Error, H256};
-pub use mid::{ParseMidError, Mid};
+pub use mid::{Mid, ParseMidError};
 pub use rid::{ParseRidError, Rid};
 pub use vid::{ParseVidError, Vid};
 

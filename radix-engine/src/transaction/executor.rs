@@ -43,7 +43,7 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
     pub fn export_abi<A: AsRef<str>>(
         &self,
         package: Address,
-        blueprint: A,
+        name: A,
         trace: bool,
     ) -> Result<abi::Blueprint, RuntimeError> {
         // deterministic ledger, current_epoch and transaction hash
@@ -61,18 +61,18 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
         let mut track = Track::new(&mut ledger, current_epoch, tx_hash);
         let mut proc = track.start_process(trace);
         let output: (Vec<abi::Function>, Vec<abi::Method>) = proc
-            .call_abi((package, blueprint.as_ref().to_owned()))
+            .call_abi(package, name.as_ref())
             .and_then(|rtn| scrypto_decode(&rtn).map_err(RuntimeError::InvalidData))?;
 
         Ok(abi::Blueprint {
             package: package.to_string(),
-            name: blueprint.as_ref().to_string(),
+            name: name.as_ref().to_string(),
             functions: output.0,
             methods: output.1,
         })
     }
 
-    pub fn export_abi_by_component(
+    pub fn export_abi_component(
         &self,
         component: Address,
         trace: bool,
@@ -81,7 +81,7 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
             .ledger
             .get_component(component)
             .ok_or(RuntimeError::ComponentNotFound(component))?;
-        self.export_abi(c.blueprint().0.clone(), c.blueprint().1.clone(), trace)
+        self.export_abi(c.package(), c.name().to_owned(), trace)
     }
 
     pub fn run(&mut self, transaction: Transaction, trace: bool) -> Receipt {
@@ -112,12 +112,14 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
                     .move_to_bucket(*amount, *resource_def, *bucket)
                     .map(|_| None),
                 Instruction::CallFunction {
-                    blueprint,
+                    package,
+                    name,
                     function,
                     args,
                 } => proc
                     .call_function(
-                        blueprint.clone(),
+                        *package,
+                        name.as_str(),
                         function.as_str(),
                         args.iter().map(|v| v.0.clone()).collect(),
                     )

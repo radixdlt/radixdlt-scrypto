@@ -11,7 +11,7 @@ fn create_account<L: Ledger>(executor: &mut TransactionExecutor<L>) -> Address {
     let receipt1 = executor.run(transaction1, false);
     assert!(receipt1.success);
 
-    let account = receipt1.nth_component(0).unwrap();
+    let account = receipt1.component(0).unwrap();
 
     let transaction2 = TransactionBuilder::new()
         .mint_resource(1000.into(), RADIX_TOKEN)

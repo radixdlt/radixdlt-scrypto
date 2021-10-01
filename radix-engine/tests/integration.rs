@@ -1,9 +1,19 @@
 use radix_engine::ledger::*;
 use radix_engine::transaction::*;
 use scrypto::prelude::*;
+use std::process::Command;
+
+fn compile() {
+    Command::new("cargo")
+        .current_dir("./tests/everything")
+        .args(["build", "--target", "wasm32-unknown-unknown", "--release"])
+        .status()
+        .unwrap();
+}
 
 #[test]
 fn test_component() {
+    compile();
     let mut ledger = InMemoryLedger::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, 0, 0);
     let account = executor
@@ -11,7 +21,7 @@ fn test_component() {
             TransactionBuilder::new().new_account().build().unwrap(),
             false,
         )
-        .nth_component(0)
+        .component(0)
         .unwrap();
     let package = executor
         .run(
@@ -21,7 +31,7 @@ fn test_component() {
                 .unwrap(),
             false,
         )
-        .nth_package(0)
+        .package(0)
         .unwrap();
     let abi = executor
         .export_abi(package, "ComponentTest", false)
@@ -36,7 +46,7 @@ fn test_component() {
     assert!(receipt1.success);
 
     // Find the component address from receipt
-    let component = receipt1.nth_component(0).unwrap();
+    let component = receipt1.component(0).unwrap();
 
     // Call functions & methods
     let transaction2 = TransactionBuilder::new()
@@ -69,6 +79,7 @@ fn test_component() {
 
 #[test]
 fn test_lazy_map() {
+    compile();
     let mut ledger = InMemoryLedger::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, 0, 0);
     let account = executor
@@ -76,7 +87,7 @@ fn test_lazy_map() {
             TransactionBuilder::new().new_account().build().unwrap(),
             false,
         )
-        .nth_component(0)
+        .component(0)
         .unwrap();
     let package = executor
         .run(
@@ -86,7 +97,7 @@ fn test_lazy_map() {
                 .unwrap(),
             false,
         )
-        .nth_package(0)
+        .package(0)
         .unwrap();
     let abi = executor.export_abi(package, "LazyMapTest", false).unwrap();
 
@@ -100,6 +111,7 @@ fn test_lazy_map() {
 
 #[test]
 fn test_resource() {
+    compile();
     let mut ledger = InMemoryLedger::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, 0, 0);
     let account = executor
@@ -107,7 +119,7 @@ fn test_resource() {
             TransactionBuilder::new().new_account().build().unwrap(),
             false,
         )
-        .nth_component(0)
+        .component(0)
         .unwrap();
     let package = executor
         .run(
@@ -117,7 +129,7 @@ fn test_resource() {
                 .unwrap(),
             false,
         )
-        .nth_package(0)
+        .package(0)
         .unwrap();
     let abi = executor.export_abi(package, "ResourceTest", false).unwrap();
 
@@ -135,6 +147,7 @@ fn test_resource() {
 
 #[test]
 fn test_bucket() {
+    compile();
     let mut ledger = InMemoryLedger::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, 0, 0);
     let account = executor
@@ -142,7 +155,7 @@ fn test_bucket() {
             TransactionBuilder::new().new_account().build().unwrap(),
             false,
         )
-        .nth_component(0)
+        .component(0)
         .unwrap();
     let package = executor
         .run(
@@ -152,7 +165,7 @@ fn test_bucket() {
                 .unwrap(),
             false,
         )
-        .nth_package(0)
+        .package(0)
         .unwrap();
     let abi = executor.export_abi(package, "BucketTest", false).unwrap();
 
@@ -170,6 +183,7 @@ fn test_bucket() {
 
 #[test]
 fn test_move_bucket_and_ref() {
+    compile();
     let mut ledger = InMemoryLedger::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, 0, 0);
     let account = executor
@@ -177,7 +191,7 @@ fn test_move_bucket_and_ref() {
             TransactionBuilder::new().new_account().build().unwrap(),
             false,
         )
-        .nth_component(0)
+        .component(0)
         .unwrap();
     let package = executor
         .run(
@@ -187,7 +201,7 @@ fn test_move_bucket_and_ref() {
                 .unwrap(),
             false,
         )
-        .nth_package(0)
+        .package(0)
         .unwrap();
     let abi = executor.export_abi(package, "MoveTest", false).unwrap();
 
