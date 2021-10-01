@@ -182,12 +182,12 @@ pub struct CreateLazyMapInput {}
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct CreateLazyMapOutput {
-    pub lazy_map: MID,
+    pub lazy_map: Mid,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct GetLazyMapEntryInput {
-    pub lazy_map: MID,
+    pub lazy_map: Mid,
     pub key: Vec<u8>,
 }
 
@@ -198,7 +198,7 @@ pub struct GetLazyMapEntryOutput {
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct PutLazyMapEntryInput {
-    pub lazy_map: MID,
+    pub lazy_map: Mid,
     pub key: Vec<u8>,
     pub value: Vec<u8>,
 }
@@ -230,7 +230,7 @@ pub struct CreateResourceFixedInput {
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct CreateResourceFixedOutput {
     pub resource_def: Address,
-    pub bucket: BID,
+    pub bucket: Bid,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
@@ -271,12 +271,12 @@ pub struct MintResourceInput {
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct MintResourceOutput {
-    pub bucket: BID,
+    pub bucket: Bid,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct BurnResourceInput {
-    pub bucket: BID,
+    pub bucket: Bid,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
@@ -293,13 +293,13 @@ pub struct CreateEmptyVaultInput {
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct CreateEmptyVaultOutput {
-    pub vault: VID,
+    pub vault: Vid,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct PutIntoVaultInput {
-    pub vault: VID,
-    pub bucket: BID,
+    pub vault: Vid,
+    pub bucket: Bid,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
@@ -307,18 +307,18 @@ pub struct PutIntoVaultOutput {}
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct TakeFromVaultInput {
-    pub vault: VID,
+    pub vault: Vid,
     pub amount: Amount,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct TakeFromVaultOutput {
-    pub bucket: BID,
+    pub bucket: Bid,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct GetVaultAmountInput {
-    pub vault: VID,
+    pub vault: Vid,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
@@ -328,7 +328,7 @@ pub struct GetVaultAmountOutput {
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct GetVaultResourceAddressInput {
-    pub vault: VID,
+    pub vault: Vid,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
@@ -347,13 +347,13 @@ pub struct CreateEmptyBucketInput {
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct CreateEmptyBucketOutput {
-    pub bucket: BID,
+    pub bucket: Bid,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct PutIntoBucketInput {
-    pub bucket: BID,
-    pub other: BID,
+    pub bucket: Bid,
+    pub other: Bid,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
@@ -361,18 +361,18 @@ pub struct PutIntoBucketOutput {}
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct TakeFromBucketInput {
-    pub bucket: BID,
+    pub bucket: Bid,
     pub amount: Amount,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct TakeFromBucketOutput {
-    pub bucket: BID,
+    pub bucket: Bid,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct GetBucketAmountInput {
-    pub bucket: BID,
+    pub bucket: Bid,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
@@ -382,7 +382,7 @@ pub struct GetBucketAmountOutput {
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct GetBucketResourceAddressInput {
-    pub bucket: BID,
+    pub bucket: Bid,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
@@ -396,17 +396,17 @@ pub struct GetBucketResourceAddressOutput {
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct CreateReferenceInput {
-    pub bucket: BID,
+    pub bucket: Bid,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct CreateReferenceOutput {
-    pub reference: RID,
+    pub reference: Rid,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct DropReferenceInput {
-    pub reference: RID,
+    pub reference: Rid,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
@@ -414,7 +414,7 @@ pub struct DropReferenceOutput {}
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct GetRefAmountInput {
-    pub reference: RID,
+    pub reference: Rid,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
@@ -424,7 +424,7 @@ pub struct GetRefAmountOutput {
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct GetRefResourceAddressInput {
-    pub reference: RID,
+    pub reference: Rid,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]

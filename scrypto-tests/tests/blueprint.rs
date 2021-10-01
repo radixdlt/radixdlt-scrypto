@@ -26,7 +26,7 @@ blueprint! {
             self.state = new_state;
         }
 
-        pub fn custom_types_1() -> (Amount, Address, H256, BID, RID, MID, VID) {
+        pub fn custom_types_1() -> (Amount, Address, H256, Bid, Rid, Mid, Vid) {
             todo!()
         }
 
@@ -82,19 +82,19 @@ fn test_simple_abi() {
                             },
                             {
                                 "type": "Custom",
-                                "name": "scrypto::BID"
+                                "name": "scrypto::Bid"
                             },
                             {
                                 "type": "Custom",
-                                "name": "scrypto::RID"
+                                "name": "scrypto::Rid"
                             },
                             {
                                 "type": "Custom",
-                                "name": "scrypto::MID"
+                                "name": "scrypto::Mid"
                             },
                             {
                                 "type": "Custom",
-                                "name": "scrypto::VID"
+                                "name": "scrypto::Vid"
                             }
                         ]
                     }

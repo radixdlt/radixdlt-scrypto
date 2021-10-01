@@ -9,17 +9,17 @@ use crate::types::*;
 /// Represents a reference to a bucket.
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct BucketRef {
-    rid: RID,
+    rid: Rid,
 }
 
-impl From<RID> for BucketRef {
-    fn from(rid: RID) -> Self {
+impl From<Rid> for BucketRef {
+    fn from(rid: Rid) -> Self {
         Self { rid }
     }
 }
 
-impl From<BucketRef> for RID {
-    fn from(a: BucketRef) -> RID {
+impl From<BucketRef> for Rid {
+    fn from(a: BucketRef) -> Rid {
         a.rid
     }
 }

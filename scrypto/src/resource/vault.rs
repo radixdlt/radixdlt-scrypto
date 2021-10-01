@@ -9,7 +9,7 @@ use crate::types::*;
 /// Represents a persistent resource container on ledger state.
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct Vault {
-    vid: VID,
+    vid: Vid,
 }
 
 impl Describe for Vault {
@@ -20,14 +20,14 @@ impl Describe for Vault {
     }
 }
 
-impl From<VID> for Vault {
-    fn from(vid: VID) -> Self {
+impl From<Vid> for Vault {
+    fn from(vid: Vid) -> Self {
         Self { vid }
     }
 }
 
-impl From<Vault> for VID {
-    fn from(a: Vault) -> VID {
+impl From<Vault> for Vid {
+    fn from(a: Vault) -> Vid {
         a.vid
     }
 }

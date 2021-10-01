@@ -18,13 +18,13 @@ pub trait Ledger {
 
     fn put_component(&mut self, address: Address, component: Component);
 
-    fn get_lazy_map(&self, mid: MID) -> Option<LazyMap>;
+    fn get_lazy_map(&self, mid: Mid) -> Option<LazyMap>;
 
-    fn put_lazy_map(&mut self, mid: MID, lazy_map: LazyMap);
+    fn put_lazy_map(&mut self, mid: Mid, lazy_map: LazyMap);
 
-    fn get_vault(&self, vid: VID) -> Option<Vault>;
+    fn get_vault(&self, vid: Vid) -> Option<Vault>;
 
-    fn put_vault(&mut self, vid: VID, bucket: Vault);
+    fn put_vault(&mut self, vid: Vid, bucket: Vault);
 
     fn bootstrap(&mut self) {
         if self.get_package(SYSTEM_PACKAGE).is_none() {

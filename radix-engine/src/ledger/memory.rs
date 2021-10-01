@@ -8,9 +8,9 @@ use crate::model::*;
 pub struct InMemoryLedger {
     packages: HashMap<Address, Package>,
     components: HashMap<Address, Component>,
-    lazy_maps: HashMap<MID, LazyMap>,
+    lazy_maps: HashMap<Mid, LazyMap>,
     resource_defs: HashMap<Address, ResourceDef>,
-    vaults: HashMap<VID, Vault>,
+    vaults: HashMap<Vid, Vault>,
 }
 
 impl InMemoryLedger {
@@ -62,19 +62,19 @@ impl Ledger for InMemoryLedger {
         self.components.insert(address, component);
     }
 
-    fn get_lazy_map(&self, mid: MID) -> Option<LazyMap> {
+    fn get_lazy_map(&self, mid: Mid) -> Option<LazyMap> {
         self.lazy_maps.get(&mid).map(Clone::clone)
     }
 
-    fn put_lazy_map(&mut self, mid: MID, lazy_map: LazyMap) {
+    fn put_lazy_map(&mut self, mid: Mid, lazy_map: LazyMap) {
         self.lazy_maps.insert(mid, lazy_map);
     }
 
-    fn get_vault(&self, vid: VID) -> Option<Vault> {
+    fn get_vault(&self, vid: Vid) -> Option<Vault> {
         self.vaults.get(&vid).map(Clone::clone)
     }
 
-    fn put_vault(&mut self, vid: VID, vault: Vault) {
+    fn put_vault(&mut self, vid: Vid, vault: Vault) {
         self.vaults.insert(vid, vault);
     }
 }

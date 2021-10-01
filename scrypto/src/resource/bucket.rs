@@ -9,7 +9,7 @@ use crate::types::*;
 /// Represents a transient resource container.
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct Bucket {
-    bid: BID,
+    bid: Bid,
 }
 
 impl Describe for Bucket {
@@ -20,14 +20,14 @@ impl Describe for Bucket {
     }
 }
 
-impl From<BID> for Bucket {
-    fn from(bid: BID) -> Self {
+impl From<Bid> for Bucket {
+    fn from(bid: Bid) -> Self {
         Self { bid }
     }
 }
 
-impl From<Bucket> for BID {
-    fn from(a: Bucket) -> BID {
+impl From<Bucket> for Bid {
+    fn from(a: Bucket) -> Bid {
         a.bid
     }
 }

@@ -57,12 +57,12 @@ pub struct Process<'r, 'l, L: Ledger> {
     depth: usize,
     trace: bool,
     track: &'r mut Track<'l, L>,
-    reserved_bucket_ids: HashSet<BID>,
-    buckets: HashMap<BID, Bucket>,
-    references: HashMap<RID, BucketRef>,
-    locked_buckets: HashMap<BID, BucketRef>,
-    moving_buckets: HashMap<BID, Bucket>,
-    moving_references: HashMap<RID, BucketRef>,
+    reserved_bucket_ids: HashSet<Bid>,
+    buckets: HashMap<Bid, Bucket>,
+    references: HashMap<Rid, BucketRef>,
+    locked_buckets: HashMap<Bid, BucketRef>,
+    moving_buckets: HashMap<Bid, Bucket>,
+    moving_references: HashMap<Rid, BucketRef>,
     vm: Option<Interpreter>,
 }
 
@@ -157,7 +157,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         &mut self,
         metadata: HashMap<String, String>,
         supply: Amount,
-    ) -> Result<(Address, BID), RuntimeError> {
+    ) -> Result<(Address, Bid), RuntimeError> {
         let resource_def = ResourceDef {
             metadata: metadata,
             minter: None,
@@ -187,7 +187,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         &mut self,
         amount: Amount,
         resource_def: Address,
-    ) -> Result<BID, RuntimeError> {
+    ) -> Result<Bid, RuntimeError> {
         let package = self.package()?;
         let definition = self
             .track
@@ -213,7 +213,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
     }
 
     /// Reserves a bucket, used for function/method invocation.
-    pub fn reserve_bucket(&mut self, resource_def: Address) -> BID {
+    pub fn reserve_bucket(&mut self, resource_def: Address) -> Bid {
         let bid = self.track.new_bid();
         let bucket = Bucket::new(Amount::zero(), resource_def);
         self.buckets.insert(bid, bucket);
@@ -222,7 +222,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
     }
 
     /// Borrows a bucket.
-    pub fn borrow_bucket(&mut self, bid: BID) -> Result<RID, RuntimeError> {
+    pub fn borrow_bucket(&mut self, bid: Bid) -> Result<Rid, RuntimeError> {
         let rid = self.track.new_rid();
         debug!(self, "Borrowing: bid =  {:?}, rid = {:?}", bid, rid);
 
@@ -252,7 +252,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         &mut self,
         amount: Amount,
         resource_def: Address,
-        bid: BID,
+        bid: Bid,
     ) -> Result<(), RuntimeError> {
         debug!(
             self,
@@ -262,7 +262,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
             return Err(RuntimeError::NotReservedBucket);
         }
 
-        let candidates: BTreeSet<BID> = self
+        let candidates: BTreeSet<Bid> = self
             .buckets
             .iter()
             .filter(|(k, v)| {
@@ -304,8 +304,8 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
     /// Puts buckets and references into this process, used for passing resources to child process.
     pub fn put_buckets_and_refs(
         &mut self,
-        buckets: HashMap<BID, Bucket>,
-        references: HashMap<RID, BucketRef>,
+        buckets: HashMap<Bid, Bucket>,
+        references: HashMap<Rid, BucketRef>,
     ) {
         self.buckets.extend(buckets);
         self.references.extend(references);
@@ -314,14 +314,14 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
     /// Takes all **moving** buckets and references from this process, used for returning resources to parent.
     pub fn take_moving_buckets_and_refs(
         &mut self,
-    ) -> (HashMap<BID, Bucket>, HashMap<RID, BucketRef>) {
+    ) -> (HashMap<Bid, Bucket>, HashMap<Rid, BucketRef>) {
         let buckets = self.moving_buckets.drain().collect();
         let references = self.moving_references.drain().collect();
         (buckets, references)
     }
 
     /// Returns the IDs of all owned buckets.
-    pub fn owned_buckets(&mut self) -> Vec<BID> {
+    pub fn owned_buckets(&mut self) -> Vec<Bid> {
         self.buckets.keys().copied().collect()
     }
 
@@ -443,7 +443,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         self.put_buckets_and_refs(buckets_in, references_in);
 
         // scan locked buckets for some might have been unlocked by child processes
-        let bids: Vec<BID> = self
+        let bids: Vec<Bid> = self
             .locked_buckets
             .values()
             .filter(|v| Rc::strong_count(v) == 1)
@@ -579,12 +579,12 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
             .map(|vm| vm.memory.clone())
     }
 
-    /// Process SBOR data by applying functions on BID and RID.
+    /// Process SBOR data by applying functions on Bid and Rid.
     fn process_data(
         &mut self,
         data: &[u8],
-        bf: fn(&mut Self, BID) -> Result<BID, RuntimeError>,
-        rf: fn(&mut Self, RID) -> Result<RID, RuntimeError>,
+        bf: fn(&mut Self, Bid) -> Result<Bid, RuntimeError>,
+        rf: fn(&mut Self, Rid) -> Result<Rid, RuntimeError>,
     ) -> Result<Vec<u8>, RuntimeError> {
         let value = decode_any(data).map_err(RuntimeError::InvalidData)?;
         let transformed = self.visit(value, bf, rf)?;
@@ -598,8 +598,8 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
     fn visit(
         &mut self,
         v: Value,
-        bf: fn(&mut Self, BID) -> Result<BID, RuntimeError>,
-        rf: fn(&mut Self, RID) -> Result<RID, RuntimeError>,
+        bf: fn(&mut Self, Bid) -> Result<Bid, RuntimeError>,
+        rf: fn(&mut Self, Rid) -> Result<Rid, RuntimeError>,
     ) -> Result<Value, RuntimeError> {
         match v {
             // primitive types
@@ -651,8 +651,8 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
     fn visit_fields(
         &mut self,
         fields: Fields,
-        bf: fn(&mut Self, BID) -> Result<BID, RuntimeError>,
-        rf: fn(&mut Self, RID) -> Result<RID, RuntimeError>,
+        bf: fn(&mut Self, Bid) -> Result<Bid, RuntimeError>,
+        rf: fn(&mut Self, Rid) -> Result<Rid, RuntimeError>,
     ) -> Result<Fields, RuntimeError> {
         match fields {
             Fields::Named(named) => Ok(Fields::Named(self.visit_vec(named, bf, rf)?)),
@@ -664,8 +664,8 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
     fn visit_vec(
         &mut self,
         values: Vec<Value>,
-        bf: fn(&mut Self, BID) -> Result<BID, RuntimeError>,
-        rf: fn(&mut Self, RID) -> Result<RID, RuntimeError>,
+        bf: fn(&mut Self, Bid) -> Result<Bid, RuntimeError>,
+        rf: fn(&mut Self, Rid) -> Result<Rid, RuntimeError>,
     ) -> Result<Vec<Value>, RuntimeError> {
         let mut result = Vec::new();
         for e in values {
@@ -677,8 +677,8 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
     fn visit_map(
         &mut self,
         values: Vec<(Value, Value)>,
-        bf: fn(&mut Self, BID) -> Result<BID, RuntimeError>,
-        rf: fn(&mut Self, RID) -> Result<RID, RuntimeError>,
+        bf: fn(&mut Self, Bid) -> Result<Bid, RuntimeError>,
+        rf: fn(&mut Self, Rid) -> Result<Rid, RuntimeError>,
     ) -> Result<Vec<(Value, Value)>, RuntimeError> {
         let mut result = Vec::new();
         for (k, v) in values {
@@ -691,14 +691,14 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         &mut self,
         ty: u8,
         data: Vec<u8>,
-        bf: fn(&mut Self, BID) -> Result<BID, RuntimeError>,
-        rf: fn(&mut Self, RID) -> Result<RID, RuntimeError>,
+        bf: fn(&mut Self, Bid) -> Result<Bid, RuntimeError>,
+        rf: fn(&mut Self, Rid) -> Result<Rid, RuntimeError>,
     ) -> Result<Value, RuntimeError> {
         match ty {
             SCRYPTO_TYPE_BID => {
                 let bid = bf(
                     self,
-                    BID::try_from(data.as_slice()).map_err(|_| {
+                    Bid::try_from(data.as_slice()).map_err(|_| {
                         RuntimeError::InvalidData(DecodeError::InvalidCustomData(ty))
                     })?,
                 )?;
@@ -707,7 +707,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
             SCRYPTO_TYPE_RID => {
                 let rid = rf(
                     self,
-                    RID::try_from(data.as_slice()).map_err(|_| {
+                    Rid::try_from(data.as_slice()).map_err(|_| {
                         RuntimeError::InvalidData(DecodeError::InvalidCustomData(ty))
                     })?,
                 )?;
@@ -718,7 +718,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
     }
 
     /// Remove transient buckets from this process
-    fn move_buckets(&mut self, bid: BID) -> Result<BID, RuntimeError> {
+    fn move_buckets(&mut self, bid: Bid) -> Result<Bid, RuntimeError> {
         let bucket = self
             .buckets
             .remove(&bid)
@@ -732,7 +732,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
     }
 
     /// Remove transient buckets from this process
-    fn move_references(&mut self, rid: RID) -> Result<RID, RuntimeError> {
+    fn move_references(&mut self, rid: Rid) -> Result<Rid, RuntimeError> {
         let bucket_ref = self
             .references
             .remove(&rid)
@@ -746,12 +746,12 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
     }
 
     /// Reject buckets movements
-    fn reject_buckets(&mut self, _: BID) -> Result<BID, RuntimeError> {
+    fn reject_buckets(&mut self, _: Bid) -> Result<Bid, RuntimeError> {
         Err(RuntimeError::BucketMoveNotAllowed)
     }
 
     /// Reject references movements
-    fn reject_references(&mut self, _: RID) -> Result<RID, RuntimeError> {
+    fn reject_references(&mut self, _: Rid) -> Result<Rid, RuntimeError> {
         Err(RuntimeError::ReferenceMoveNotAllowed)
     }
 

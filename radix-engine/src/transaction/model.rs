@@ -3,6 +3,7 @@ use sbor::*;
 use scrypto::buffer::*;
 use scrypto::rust::fmt;
 use scrypto::rust::string::String;
+use scrypto::rust::string::ToString;
 use scrypto::rust::vec::Vec;
 use scrypto::types::*;
 
@@ -43,13 +44,13 @@ pub enum Instruction {
     ReserveBucket { resource_def: Address },
 
     /// Borrows a bucket, thus creating a reference.
-    BorrowBucket { bucket: BID },
+    BorrowBucket { bucket: Bid },
 
     /// Moves resource to a reserved bucket.
     MoveToBucket {
         amount: Amount,
         resource_def: Address,
-        bucket: BID,
+        bucket: Bid,
     },
 
     /// Calls a function.

@@ -21,7 +21,7 @@ pub struct Bucket {
 /// A bucket becomes locked after a borrow operation.
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct LockedBucket {
-    bucket_id: BID,
+    bucket_id: Bid,
     bucket: Bucket,
 }
 
@@ -72,11 +72,11 @@ impl Bucket {
 }
 
 impl LockedBucket {
-    pub fn new(bucket_id: BID, bucket: Bucket) -> Self {
+    pub fn new(bucket_id: Bid, bucket: Bucket) -> Self {
         Self { bucket_id, bucket }
     }
 
-    pub fn bucket_id(&self) -> BID {
+    pub fn bucket_id(&self) -> Bid {
         self.bucket_id
     }
 

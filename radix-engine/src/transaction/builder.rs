@@ -39,7 +39,7 @@ impl TransactionBuilder {
     }
 
     /// Creates an empty bucket
-    pub fn reserve_bucket(&mut self, resource_def: Address) -> BID {
+    pub fn reserve_bucket(&mut self, resource_def: Address) -> Bid {
         let bid = self.allocator.new_bid();
         self.reservations
             .push(Instruction::ReserveBucket { resource_def });
@@ -47,14 +47,14 @@ impl TransactionBuilder {
     }
 
     /// Creates a reference by borrowing a bucket.
-    pub fn create_reference(&mut self, bucket: BID) -> RID {
+    pub fn create_reference(&mut self, bucket: Bid) -> Rid {
         let rid = self.allocator.new_rid();
         self.reservations.push(Instruction::BorrowBucket { bucket });
         rid
     }
 
     /// Moves resource (from context) to a bucket.
-    pub fn move_to_bucket(&mut self, amount: Amount, resource_def: Address, bucket: BID) {
+    pub fn move_to_bucket(&mut self, amount: Amount, resource_def: Address, bucket: Bid) {
         self.instruction(Instruction::MoveToBucket {
             amount,
             resource_def,

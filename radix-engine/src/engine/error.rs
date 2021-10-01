@@ -46,7 +46,7 @@ pub enum RuntimeError {
 
     ComponentNotFound(Address),
 
-    LazyMapNotFound(MID),
+    LazyMapNotFound(Mid),
 
     ResourceDefNotFound(Address),
 
@@ -54,11 +54,11 @@ pub enum RuntimeError {
 
     UnauthorizedToMint,
 
-    VaultNotFound(VID),
+    VaultNotFound(Vid),
 
-    BucketNotFound(BID),
+    BucketNotFound(Bid),
 
-    ReferenceNotFound(RID),
+    ReferenceNotFound(Rid),
 
     AccountingError(BucketError),
 
