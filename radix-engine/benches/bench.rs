@@ -8,7 +8,7 @@ use scrypto::prelude::*;
 
 fn create_account<L: Ledger>(executor: &mut TransactionExecutor<L>) -> Address {
     let transaction1 = TransactionBuilder::new().new_account().build().unwrap();
-    let receipt1 = executor.run(&transaction1, false);
+    let receipt1 = executor.run(transaction1, false);
     assert!(receipt1.success);
 
     let account = receipt1.nth_component(0).unwrap();
@@ -18,7 +18,7 @@ fn create_account<L: Ledger>(executor: &mut TransactionExecutor<L>) -> Address {
         .deposit_all(account)
         .build()
         .unwrap();
-    let receipt2 = executor.run(&transaction2, false);
+    let receipt2 = executor.run(transaction2, false);
     assert!(receipt2.success);
 
     account
@@ -36,7 +36,7 @@ fn bench_transfer(b: &mut Bencher) {
             .deposit_all(account2)
             .build()
             .unwrap();
-        let receipt = executor.run(&transaction, false);
+        let receipt = executor.run(transaction, false);
         assert!(receipt.success);
     });
 }

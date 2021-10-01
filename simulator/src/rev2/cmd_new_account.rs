@@ -3,7 +3,6 @@ use radix_engine::transaction::*;
 
 use crate::ledger::*;
 use crate::rev2::*;
-use crate::utils::*;
 
 const ARG_TRACE: &str = "TRACE";
 
@@ -32,9 +31,9 @@ pub fn handle_new_account(matches: &ArgMatches) -> Result<(), Error> {
         .new_account_with_resource(1000.into(), RADIX_TOKEN)
         .build()
         .map_err(Error::TransactionConstructionError)?;
-    let receipt = executor.run(&transaction, trace);
+    let receipt = executor.run(transaction, trace);
 
-    dump_receipt(&transaction, &receipt);
+    println!("{:?}", receipt);
     if receipt.success {
         configs.nonce = executor.nonce();
         configs.default_account = configs

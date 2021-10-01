@@ -3,7 +3,6 @@ use radix_engine::transaction::*;
 
 use crate::ledger::*;
 use crate::rev2::*;
-use crate::utils::*;
 
 const ARG_AMOUNT: &str = "AMOUNT";
 const ARG_RESOURCE_DEF: &str = "RESOURCE_DEF";
@@ -55,9 +54,9 @@ pub fn handle_transfer(matches: &ArgMatches) -> Result<(), Error> {
         .deposit_all(recipient)
         .build()
         .map_err(Error::TransactionConstructionError)?;
-    let receipt = executor.run(&transaction, trace);
+    let receipt = executor.run(transaction, trace);
 
-    dump_receipt(&transaction, &receipt);
+    println!("{:?}", receipt);
     if receipt.success {
         configs.nonce = executor.nonce();
         set_configs(configs)?;

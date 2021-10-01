@@ -84,7 +84,7 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
         self.export_abi(c.blueprint().0.clone(), c.blueprint().1.clone(), trace)
     }
 
-    pub fn run(&mut self, tx: &Transaction, trace: bool) -> Receipt {
+    pub fn run(&mut self, transaction: Transaction, trace: bool) -> Receipt {
         let mut track = Track::new(
             self.ledger,
             self.current_epoch,
@@ -94,7 +94,7 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
 
         let mut results = vec![];
         let mut success = true;
-        for inst in &tx.instructions {
+        for inst in &transaction.instructions {
             let res = match inst {
                 Instruction::ReserveBucket { resource_def } => {
                     proc.reserve_bucket(*resource_def);
@@ -151,6 +151,7 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
         }
 
         Receipt {
+            transaction,
             success,
             results,
             logs: track.logs().clone(),

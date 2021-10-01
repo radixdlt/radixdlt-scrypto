@@ -4,7 +4,6 @@ use scrypto::rust::collections::HashMap;
 
 use crate::ledger::*;
 use crate::rev2::*;
-use crate::utils::*;
 
 const ARG_SUPPLY: &str = "SUPPLY";
 
@@ -99,9 +98,9 @@ pub fn handle_new_resource_fixed(matches: &ArgMatches) -> Result<(), Error> {
         .deposit_all(account)
         .build()
         .map_err(Error::TransactionConstructionError)?;
-    let receipt = executor.run(&transaction, trace);
+    let receipt = executor.run(transaction, trace);
 
-    dump_receipt(&transaction, &receipt);
+    println!("{:?}", receipt);
     if receipt.success {
         configs.nonce = executor.nonce();
         set_configs(configs)?;

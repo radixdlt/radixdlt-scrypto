@@ -11,14 +11,14 @@ fn test_hello() {
     // Create account and publish this package.
     let account = executor
         .run(
-            &TransactionBuilder::new().new_account().build().unwrap(),
+            TransactionBuilder::new().new_account().build().unwrap(),
             true,
         )
         .nth_component(0)
         .unwrap();
     let package = executor
         .run(
-            &TransactionBuilder::new()
+            TransactionBuilder::new()
                 .publish_package(package_code!())
                 .build()
                 .unwrap(),
@@ -33,7 +33,7 @@ fn test_hello() {
         .call_function(&abi, "new", vec![], None)
         .build()
         .unwrap();
-    let receipt = executor.run(&transaction, true);
+    let receipt = executor.run(transaction, true);
     assert!(receipt.success);
 
     // Invoke the `airdrop` function.
@@ -43,6 +43,6 @@ fn test_hello() {
         .deposit_all(account)
         .build()
         .unwrap();
-    let receipt2 = executor.run(&transaction2, true);
+    let receipt2 = executor.run(transaction2, true);
     assert!(receipt2.success);
 }

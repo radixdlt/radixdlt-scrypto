@@ -70,9 +70,9 @@ pub fn handle_publish(matches: &ArgMatches) -> Result<(), Error> {
             .build()
             .map_err(Error::TransactionConstructionError)?;
 
-        let receipt = executor.run(&transaction, trace);
+        let receipt = executor.run(transaction, trace);
 
-        dump_receipt(&transaction, &receipt);
+        println!("{:?}", receipt);
         if receipt.success {
             configs.nonce = executor.nonce();
             set_configs(configs)?;

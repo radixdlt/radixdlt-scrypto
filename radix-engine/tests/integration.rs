@@ -8,14 +8,14 @@ fn test_component() {
     let mut executor = TransactionExecutor::new(&mut ledger, 0, 0);
     let account = executor
         .run(
-            &TransactionBuilder::new().new_account().build().unwrap(),
+            TransactionBuilder::new().new_account().build().unwrap(),
             false,
         )
         .nth_component(0)
         .unwrap();
     let package = executor
         .run(
-            &TransactionBuilder::new()
+            TransactionBuilder::new()
                 .publish_package(package_code!("./everything"))
                 .build()
                 .unwrap(),
@@ -32,7 +32,7 @@ fn test_component() {
         .call_function(&abi, "create_component", vec![], Some(account))
         .build()
         .unwrap();
-    let receipt1 = executor.run(&transaction1, true);
+    let receipt1 = executor.run(transaction1, true);
     assert!(receipt1.success);
 
     // Find the component address from receipt
@@ -63,7 +63,7 @@ fn test_component() {
         .deposit_all(account)
         .build()
         .unwrap();
-    let receipt2 = executor.run(&transaction2, true);
+    let receipt2 = executor.run(transaction2, true);
     assert!(receipt2.success);
 }
 
@@ -73,14 +73,14 @@ fn test_lazy_map() {
     let mut executor = TransactionExecutor::new(&mut ledger, 0, 0);
     let account = executor
         .run(
-            &TransactionBuilder::new().new_account().build().unwrap(),
+            TransactionBuilder::new().new_account().build().unwrap(),
             false,
         )
         .nth_component(0)
         .unwrap();
     let package = executor
         .run(
-            &TransactionBuilder::new()
+            TransactionBuilder::new()
                 .publish_package(package_code!("./everything"))
                 .build()
                 .unwrap(),
@@ -94,7 +94,7 @@ fn test_lazy_map() {
         .call_function(&abi, "test_lazy_map", vec![], Some(account))
         .build()
         .unwrap();
-    let receipt = executor.run(&transaction, true);
+    let receipt = executor.run(transaction, true);
     assert!(receipt.success);
 }
 
@@ -104,14 +104,14 @@ fn test_resource() {
     let mut executor = TransactionExecutor::new(&mut ledger, 0, 0);
     let account = executor
         .run(
-            &TransactionBuilder::new().new_account().build().unwrap(),
+            TransactionBuilder::new().new_account().build().unwrap(),
             false,
         )
         .nth_component(0)
         .unwrap();
     let package = executor
         .run(
-            &TransactionBuilder::new()
+            TransactionBuilder::new()
                 .publish_package(package_code!("./everything"))
                 .build()
                 .unwrap(),
@@ -129,7 +129,7 @@ fn test_resource() {
         .deposit_all(account)
         .build()
         .unwrap();
-    let receipt = executor.run(&transaction, true);
+    let receipt = executor.run(transaction, true);
     assert!(receipt.success);
 }
 
@@ -139,14 +139,14 @@ fn test_bucket() {
     let mut executor = TransactionExecutor::new(&mut ledger, 0, 0);
     let account = executor
         .run(
-            &TransactionBuilder::new().new_account().build().unwrap(),
+            TransactionBuilder::new().new_account().build().unwrap(),
             false,
         )
         .nth_component(0)
         .unwrap();
     let package = executor
         .run(
-            &TransactionBuilder::new()
+            TransactionBuilder::new()
                 .publish_package(package_code!("./everything"))
                 .build()
                 .unwrap(),
@@ -164,7 +164,7 @@ fn test_bucket() {
         .deposit_all(account)
         .build()
         .unwrap();
-    let receipt = executor.run(&transaction, true);
+    let receipt = executor.run(transaction, true);
     assert!(receipt.success);
 }
 
@@ -174,14 +174,14 @@ fn test_move_bucket_and_ref() {
     let mut executor = TransactionExecutor::new(&mut ledger, 0, 0);
     let account = executor
         .run(
-            &TransactionBuilder::new().new_account().build().unwrap(),
+            TransactionBuilder::new().new_account().build().unwrap(),
             false,
         )
         .nth_component(0)
         .unwrap();
     let package = executor
         .run(
-            &TransactionBuilder::new()
+            TransactionBuilder::new()
                 .publish_package(package_code!("./everything"))
                 .build()
                 .unwrap(),
@@ -197,6 +197,6 @@ fn test_move_bucket_and_ref() {
         .deposit_all(account)
         .build()
         .unwrap();
-    let receipt = executor.run(&transaction, true);
+    let receipt = executor.run(transaction, true);
     assert!(receipt.success);
 }
