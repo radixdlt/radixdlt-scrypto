@@ -124,8 +124,8 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         })
     }
 
-    /// Creates an Account component.
-    pub fn new_account_with_resource(
+    /// Creates an Account component which will take resources from context.
+    pub fn new_account_take_resource(
         &mut self,
         amount: Amount,
         resource_def: Address,

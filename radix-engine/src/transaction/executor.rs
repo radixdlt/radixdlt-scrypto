@@ -62,18 +62,54 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
         }
     }
 
+    /// Returns the current epoch.
     pub fn current_epoch(&self) -> u64 {
         self.current_epoch
     }
 
+    /// Sets the current epoch.
+    pub fn set_current_epoch(&mut self, current_epoch: u64) {
+        self.current_epoch = current_epoch;
+    }
+
+    /// Returns the transaction nonce.
     pub fn nonce(&self) -> u64 {
         self.nonce
     }
 
-    pub fn set_epoch(&mut self, current_epoch: u64) {
-        self.current_epoch = current_epoch;
+    /// Set the transaction epoch.
+    pub fn set_nonce(&self) -> u64 {
+        self.nonce
     }
 
+    /// Creates a test account with 1000 XRD in balance.
+    pub fn new_account(&mut self) -> Address {
+        self.run(
+            TransactionBuilder::new(self)
+                .mint_resource(1000.into(), RADIX_TOKEN)
+                .new_account_take_resource(1000.into(), RADIX_TOKEN)
+                .build()
+                .unwrap(),
+            false,
+        )
+        .component(0)
+        .unwrap()
+    }
+
+    /// Creates a test account with 1000 XRD in balance.
+    pub fn publish_package(&mut self, code: &[u8]) -> Address {
+        self.run(
+            TransactionBuilder::new(self)
+                .publish_package(code)
+                .build()
+                .unwrap(),
+            false,
+        )
+        .package(0)
+        .unwrap()
+    }
+
+    /// Executes a transaction.
     pub fn run(&mut self, transaction: Transaction, trace: bool) -> Receipt {
         #[cfg(not(feature = "alloc"))]
         let now = std::time::Instant::now();

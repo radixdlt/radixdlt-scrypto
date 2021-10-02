@@ -6,32 +6,11 @@ use radix_engine::ledger::*;
 use radix_engine::transaction::*;
 use scrypto::prelude::*;
 
-fn create_account<L: Ledger>(executor: &mut TransactionExecutor<L>) -> Address {
-    let transaction1 = TransactionBuilder::new(executor)
-        .new_account()
-        .build()
-        .unwrap();
-    let receipt1 = executor.run(transaction1, false);
-    assert!(receipt1.success);
-
-    let account = receipt1.component(0).unwrap();
-
-    let transaction2 = TransactionBuilder::new(executor)
-        .mint_resource(1000.into(), RADIX_TOKEN)
-        .deposit_all(account)
-        .build()
-        .unwrap();
-    let receipt2 = executor.run(transaction2, false);
-    assert!(receipt2.success);
-
-    account
-}
-
 fn bench_transfer(b: &mut Bencher) {
     let mut ledger = InMemoryLedger::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, 0, 0);
-    let account1 = create_account(&mut executor);
-    let account2 = create_account(&mut executor);
+    let account1 = executor.new_account();
+    let account2 = executor.new_account();
     let transaction = TransactionBuilder::new(&executor)
         .withdraw(1.into(), RADIX_TOKEN, account1)
         .deposit_all(account2)

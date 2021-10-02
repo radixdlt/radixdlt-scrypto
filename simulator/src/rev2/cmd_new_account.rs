@@ -28,7 +28,7 @@ pub fn handle_new_account(matches: &ArgMatches) -> Result<(), Error> {
     let mut executor = TransactionExecutor::new(&mut ledger, configs.current_epoch, configs.nonce);
     let transaction = TransactionBuilder::new(&executor)
         .mint_resource(1000.into(), RADIX_TOKEN)
-        .new_account_with_resource(1000.into(), RADIX_TOKEN)
+        .new_account_take_resource(1000.into(), RADIX_TOKEN)
         .build()
         .map_err(Error::TransactionConstructionError)?;
     let receipt = executor.run(transaction, trace);
@@ -36,9 +36,10 @@ pub fn handle_new_account(matches: &ArgMatches) -> Result<(), Error> {
     println!("{:?}", receipt);
     if receipt.success {
         configs.nonce = executor.nonce();
-        configs.default_account = configs
-            .default_account
-            .or(Some(receipt.component(0).unwrap()));
+        if configs.default_account.is_none() {
+            println!("No default account set. The above component will be your default account.");
+            configs.default_account = receipt.component(0);
+        }
         set_configs(configs)?;
         Ok(())
     } else {
