@@ -9,7 +9,7 @@ use crate::types::*;
 /// Represents a transient resource container.
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct Bucket {
-    bid: BID,
+    bid: Bid,
 }
 
 impl Describe for Bucket {
@@ -20,21 +20,23 @@ impl Describe for Bucket {
     }
 }
 
-impl From<BID> for Bucket {
-    fn from(bid: BID) -> Self {
+impl From<Bid> for Bucket {
+    fn from(bid: Bid) -> Self {
         Self { bid }
     }
 }
 
-impl From<Bucket> for BID {
-    fn from(a: Bucket) -> BID {
+impl From<Bucket> for Bid {
+    fn from(a: Bucket) -> Bid {
         a.bid
     }
 }
 
 impl Bucket {
-    pub fn new(resource_address: Address) -> Self {
-        let input = CreateEmptyBucketInput { resource_address };
+    pub fn new<A: Into<Address>>(resource_def: A) -> Self {
+        let input = CreateEmptyBucketInput {
+            resource_def: resource_def.into(),
+        };
         let output: CreateEmptyBucketOutput = call_kernel(CREATE_EMPTY_BUCKET, input);
 
         output.bucket.into()
@@ -74,10 +76,9 @@ impl Bucket {
 
     pub fn resource_def(&self) -> ResourceDef {
         let input = GetBucketResourceAddressInput { bucket: self.bid };
-        let output: GetBucketResourceAddressOutput =
-            call_kernel(GET_BUCKET_RESOURCE_ADDRESS, input);
+        let output: GetBucketResourceAddressOutput = call_kernel(GET_BUCKET_RESOURCE_DEF, input);
 
-        output.resource_address.into()
+        output.resource_def.into()
     }
 
     pub fn burn(self) {

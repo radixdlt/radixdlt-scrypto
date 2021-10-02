@@ -27,11 +27,14 @@ impl From<ResourceDef> for Address {
 }
 
 impl ResourceDef {
-    pub fn new_mutable(metadata: HashMap<String, String>, minter: Address) -> Self {
-        let input = CreateResourceMutableInput { metadata, minter };
+    pub fn new_mutable<A: Into<Address>>(metadata: HashMap<String, String>, minter: A) -> Self {
+        let input = CreateResourceMutableInput {
+            metadata,
+            minter: minter.into(),
+        };
         let output: CreateResourceMutableOutput = call_kernel(CREATE_RESOURCE_MUTABLE, input);
 
-        output.resource_address.into()
+        output.resource_def.into()
     }
 
     pub fn new_fixed<T: Into<Amount>>(
@@ -44,12 +47,12 @@ impl ResourceDef {
         };
         let output: CreateResourceFixedOutput = call_kernel(CREATE_RESOURCE_FIXED, input);
 
-        (output.resource_address.into(), output.bucket.into())
+        (output.resource_def.into(), output.bucket.into())
     }
 
     pub fn mint<T: Into<Amount>>(&self, amount: T) -> Bucket {
         let input = MintResourceInput {
-            resource_address: self.address,
+            resource_def: self.address,
             amount: amount.into(),
         };
         let output: MintResourceOutput = call_kernel(MINT_RESOURCE, input);
@@ -66,7 +69,7 @@ impl ResourceDef {
 
     pub fn metadata(&self) -> HashMap<String, String> {
         let input = GetResourceMetadataInput {
-            resource_address: self.address,
+            resource_def: self.address,
         };
         let output: GetResourceMetadataOutput = call_kernel(GET_RESOURCE_METADATA, input);
 
@@ -75,7 +78,7 @@ impl ResourceDef {
 
     pub fn minter(&self) -> Option<Address> {
         let input = GetResourceMinterInput {
-            resource_address: self.address,
+            resource_def: self.address,
         };
         let output: GetResourceMinterOutput = call_kernel(GET_RESOURCE_MINTER, input);
 
@@ -84,7 +87,7 @@ impl ResourceDef {
 
     pub fn supply(&self) -> Amount {
         let input = GetResourceSupplyInput {
-            resource_address: self.address,
+            resource_def: self.address,
         };
         let output: GetResourceSupplyOutput = call_kernel(GET_RESOURCE_SUPPLY, input);
 

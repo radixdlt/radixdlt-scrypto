@@ -1,17 +1,15 @@
 use clap::{crate_version, App, Arg, ArgMatches, SubCommand};
-use colored::*;
 use scrypto::types::*;
 
 use crate::ledger::*;
 use crate::rev2::*;
-use crate::utils::*;
 
 const ARG_ADDRESS: &str = "ADDRESS";
 
 /// Constructs a `show` subcommand.
 pub fn make_show<'a, 'b>() -> App<'a, 'b> {
     SubCommand::with_name(CMD_SHOW)
-        .about("Shows the content of an address")
+        .about("Displays the content behind an address")
         .version(crate_version!())
         .arg(
             Arg::with_name(ARG_ADDRESS)
@@ -28,14 +26,8 @@ pub fn handle_show(matches: &ArgMatches) -> Result<(), Error> {
         .parse()
         .map_err(Error::InvalidAddress)?;
 
-    let ledger = FileBasedLedger::new(get_data_dir()?);
+    let ledger = FileBasedLedger::with_bootstrap(get_data_dir()?);
     match address {
-        Address::System => {
-            println!("Radix system address");
-        }
-        Address::PublicKey(_) => {
-            println!("{}: {}", "Public key".green().bold(), address.to_string());
-        }
         Address::Package(_) => {
             dump_package(address, &ledger);
         }

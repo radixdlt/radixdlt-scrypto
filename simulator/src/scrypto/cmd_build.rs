@@ -22,7 +22,6 @@ pub fn make_build<'a, 'b>() -> App<'a, 'b> {
         )
         .arg(
             Arg::with_name(ARG_TRACE)
-                .short("t")
                 .long("trace")
                 .help("Turns on tracing."),
         )

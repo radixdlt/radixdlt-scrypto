@@ -7,12 +7,14 @@ mod cmd_new_resource_fixed;
 mod cmd_new_resource_mutable;
 mod cmd_publish;
 mod cmd_reset;
+mod cmd_set_current_epoch;
 mod cmd_set_default_account;
 mod cmd_show;
 mod cmd_show_configs;
 mod cmd_transfer;
 mod config;
 mod error;
+mod utils;
 
 pub use cmd_call_function::*;
 pub use cmd_call_method::*;
@@ -23,12 +25,14 @@ pub use cmd_new_resource_fixed::*;
 pub use cmd_new_resource_mutable::*;
 pub use cmd_publish::*;
 pub use cmd_reset::*;
+pub use cmd_set_current_epoch::*;
 pub use cmd_set_default_account::*;
 pub use cmd_show::*;
 pub use cmd_show_configs::*;
 pub use cmd_transfer::*;
 pub use config::*;
 pub use error::*;
+pub use utils::*;
 
 pub const CMD_EXPORT_ABI: &str = "export-abi";
 pub const CMD_CALL_FUNCTION: &str = "call-function";
@@ -41,6 +45,7 @@ pub const CMD_TRANSFER: &str = "transfer";
 pub const CMD_PUBLISH: &str = "publish";
 pub const CMD_RESET: &str = "reset";
 pub const CMD_SET_DEFAULT_ACCOUNT: &str = "set-default-account";
+pub const CMD_SET_CURRENT_EPOCH: &str = "set-current-epoch";
 pub const CMD_SHOW: &str = "show";
 pub const CMD_SHOW_CONFIGS: &str = "show-configs";
 
@@ -64,6 +69,7 @@ where
         .subcommand(make_publish())
         .subcommand(make_reset())
         .subcommand(make_set_default_account())
+        .subcommand(make_set_current_epoch())
         .subcommand(make_show())
         .subcommand(make_show_configs());
     let matches = app.get_matches_from(args);
@@ -80,6 +86,7 @@ where
         (CMD_PUBLISH, Some(m)) => handle_publish(m),
         (CMD_RESET, Some(m)) => handle_reset(m),
         (CMD_SET_DEFAULT_ACCOUNT, Some(m)) => handle_set_default_account(m),
+        (CMD_SET_CURRENT_EPOCH, Some(m)) => handle_set_current_epoch(m),
         (CMD_SHOW, Some(m)) => handle_show(m),
         (CMD_SHOW_CONFIGS, Some(m)) => handle_show_configs(m),
         _ => Err(Error::MissingSubCommand),

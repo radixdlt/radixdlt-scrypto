@@ -10,8 +10,6 @@ use crate::model::*;
 pub enum RuntimeError {
     InvalidModule(Error),
 
-    UnableToInstantiate(Error),
-
     StartFunctionNotAllowed,
 
     FloatingPointNotAllowed,
@@ -22,7 +20,7 @@ pub enum RuntimeError {
 
     MemoryAccessError(Error),
 
-    NoReturnValue,
+    NoReturnData,
 
     InvalidReturnType,
 
@@ -48,7 +46,7 @@ pub enum RuntimeError {
 
     ComponentNotFound(Address),
 
-    LazyMapNotFound(MID),
+    LazyMapNotFound(Mid),
 
     ResourceDefNotFound(Address),
 
@@ -56,11 +54,11 @@ pub enum RuntimeError {
 
     UnauthorizedToMint,
 
-    VaultNotFound(VID),
+    VaultNotFound(Vid),
 
-    BucketNotFound(BID),
+    BucketNotFound(Bid),
 
-    ReferenceNotFound(RID),
+    ReferenceNotFound(Rid),
 
     AccountingError(BucketError),
 
@@ -83,6 +81,8 @@ pub enum RuntimeError {
     UnexpectedReferenceReturn,
 
     InvalidAddressType,
+
+    NotReservedBucket,
 }
 
 impl fmt::Display for RuntimeError {

@@ -1,31 +1,22 @@
 use clap::{crate_version, App, Arg, ArgMatches, SubCommand};
 use radix_engine::transaction::*;
-use scrypto::types::*;
-use scrypto::utils::*;
-use uuid::Uuid;
 
 use crate::ledger::*;
 use crate::rev2::*;
-use crate::utils::*;
 
-const ARG_TRACE: &str = "TRACE";
-const ARG_COMPONENT_ADDRESS: &str = "COMPONENT_ADDRESS";
+const ARG_COMPONENT: &str = "COMPONENT_ADDRESS";
 const ARG_METHOD: &str = "METHOD";
 const ARG_ARGS: &str = "ARGS";
+
+const ARG_TRACE: &str = "TRACE";
 
 /// Constructs a `call-method` subcommand.
 pub fn make_call_method<'a, 'b>() -> App<'a, 'b> {
     SubCommand::with_name(CMD_CALL_METHOD)
-        .about("Calls a component method")
+        .about("Calls a method")
         .version(crate_version!())
         .arg(
-            Arg::with_name(ARG_TRACE)
-                .short("t")
-                .long("trace")
-                .help("Turns on tracing."),
-        )
-        .arg(
-            Arg::with_name(ARG_COMPONENT_ADDRESS)
+            Arg::with_name(ARG_COMPONENT)
                 .help("Specify the component address.")
                 .required(true),
         )
@@ -36,56 +27,41 @@ pub fn make_call_method<'a, 'b>() -> App<'a, 'b> {
         )
         .arg(
             Arg::with_name(ARG_ARGS)
-            .help("Specify the arguments, e.g. \"5\", \"hello\" or \"amount,resource_address\" (bucket).")
+            .help("Specify the arguments, e.g. \"5\", \"hello\" or \"amount,resource_def\" (Bucket).")
                 .multiple(true),
+        )
+        // options
+        .arg(
+            Arg::with_name(ARG_TRACE)
+                .long("trace")
+                .help("Turns on tracing."),
         )
 }
 
 /// Handles a `call-method` request.
 pub fn handle_call_method(matches: &ArgMatches) -> Result<(), Error> {
+    let component = match_address(matches, ARG_COMPONENT)?;
+    let method = match_string(matches, ARG_METHOD)?;
+    let args = match_args(matches, ARG_ARGS)?;
     let trace = matches.is_present(ARG_TRACE);
-    let component_address: Address = matches
-        .value_of(ARG_COMPONENT_ADDRESS)
-        .ok_or_else(|| Error::MissingArgument(ARG_COMPONENT_ADDRESS.to_owned()))?
-        .parse()
-        .map_err(Error::InvalidAddress)?;
-    let method = matches
-        .value_of(ARG_METHOD)
-        .ok_or_else(|| Error::MissingArgument(ARG_METHOD.to_owned()))?;
-    let mut args = Vec::new();
-    if let Some(x) = matches.values_of(ARG_ARGS) {
-        x.for_each(|a| args.push(a));
-    }
 
-    match get_config(CONF_DEFAULT_ACCOUNT)? {
-        Some(a) => {
-            let account: Address = a.as_str().parse().map_err(Error::InvalidAddress)?;
-            let mut ledger = FileBasedLedger::new(get_data_dir()?);
-            match build_call_method(
-                &mut ledger,
-                account,
-                component_address,
-                method,
-                &args,
-                trace,
-            ) {
-                Ok(txn) => {
-                    let receipt = execute_transaction(
-                        &mut ledger,
-                        sha256(Uuid::new_v4().to_string()),
-                        txn,
-                        trace,
-                    );
-                    dump_receipt(&receipt);
-                    if receipt.success {
-                        Ok(())
-                    } else {
-                        Err(Error::TransactionFailed)
-                    }
-                }
-                Err(e) => Err(Error::TxnConstructionErr(e)),
-            }
-        }
-        None => Err(Error::NoDefaultAccount),
+    let mut configs = get_configs()?;
+    let account = configs.default_account.ok_or(Error::NoDefaultAccount)?;
+    let mut ledger = FileBasedLedger::with_bootstrap(get_data_dir()?);
+    let mut executor = TransactionExecutor::new(&mut ledger, configs.current_epoch, configs.nonce);
+    let transaction = TransactionBuilder::new(&executor)
+        .call_method(component, &method, args, Some(account))
+        .deposit_all(account)
+        .build()
+        .map_err(Error::TransactionConstructionError)?;
+    let receipt = executor.run(transaction, trace);
+
+    println!("{:?}", receipt);
+    if receipt.success {
+        configs.nonce = executor.nonce();
+        set_configs(configs)?;
+        Ok(())
+    } else {
+        Err(Error::TransactionFailed)
     }
 }

@@ -23,7 +23,8 @@ echo "Testing with no_std..."
 (cd radix-engine; cargo test --no-default-features --features alloc)
 
 echo "Building examples..."
-(cd examples/account; cargo build --target wasm32-unknown-unknown --release; cargo test)
+(cd assets/account; cargo build --target wasm32-unknown-unknown --release; cargo test)
+(cd assets/system; cargo build --target wasm32-unknown-unknown --release; cargo test)
 (cd examples/helloworld; cargo build --target wasm32-unknown-unknown --release; cargo test)
 (cd examples/no_std; cargo build --target wasm32-unknown-unknown --release; cargo test)
 (cd examples/gumball-machine; cargo build --target wasm32-unknown-unknown --release; cargo test)

@@ -1,52 +1,102 @@
 use scrypto::abi;
+use scrypto::buffer::*;
+use scrypto::rust::borrow::ToOwned;
 use scrypto::rust::string::String;
 use scrypto::rust::string::ToString;
 use scrypto::rust::vec::Vec;
 use scrypto::types::*;
+use scrypto::utils::*;
 
 use crate::engine::*;
 use crate::ledger::*;
-use crate::utils::*;
+use crate::model::*;
 
-/// Export the ABI of a blueprint.
-pub fn export_abi<T: Ledger>(
-    ledger: &mut T,
-    blueprint: (Address, String),
-    trace: bool,
-) -> Result<abi::Blueprint, RuntimeError> {
-    let mut engine = InMemoryRadixEngine::new();
-    let mut track = engine.start_transaction();
+/// An interface for exporting the ABI of a blueprint.
+pub trait AbiProvider {
+    /// Exports the ABI of a blueprint.
+    fn export_abi<S: AsRef<str>>(
+        &self,
+        package: Address,
+        name: S,
+        trace: bool,
+    ) -> Result<abi::Blueprint, RuntimeError>;
 
-    // Load package code from file system
-    track.put_package(
-        blueprint.0,
-        ledger
-            .get_package(blueprint.0)
-            .ok_or(RuntimeError::PackageNotFound(blueprint.0))?,
-    );
-
-    // Start a process and run abi generator
-    let mut proc = track.start_process(trace);
-    let output: (Vec<abi::Function>, Vec<abi::Method>) =
-        proc.call_abi(blueprint.clone()).and_then(decode_return)?;
-
-    Ok(abi::Blueprint {
-        package: blueprint.0.to_string(),
-        name: blueprint.1,
-        functions: output.0,
-        methods: output.1,
-    })
+    /// Exports the ABI of the blueprint, from which the given component is instantiated.
+    fn export_abi_component(
+        &self,
+        component: Address,
+        trace: bool,
+    ) -> Result<abi::Blueprint, RuntimeError>;
 }
 
-/// Export the ABI of the blueprint of a component.
-pub fn export_abi_by_component<T: Ledger>(
-    ledger: &mut T,
-    component: Address,
-    trace: bool,
-) -> Result<abi::Blueprint, RuntimeError> {
-    let com = ledger
-        .get_component(component)
-        .ok_or(RuntimeError::ComponentNotFound(component))?;
+/// This basic ABI provider can provide ABIs of bootstrapped and manually
+/// added blueprints.
+pub struct BasicAbiProvider {
+    ledger: InMemoryLedger,
+}
 
-    export_abi(ledger, com.blueprint().clone(), trace)
+impl BasicAbiProvider {
+    pub fn new() -> Self {
+        Self {
+            ledger: InMemoryLedger::with_bootstrap(),
+        }
+    }
+
+    pub fn with_package(&mut self, address: Address, code: Vec<u8>) -> &mut Self {
+        self.ledger.put_package(address, Package::new(code));
+        self
+    }
+
+    pub fn with_component(
+        &mut self,
+        address: Address,
+        package: Address,
+        name: String,
+        state: Vec<u8>,
+    ) -> &mut Self {
+        self.ledger
+            .put_component(address, Component::new(package, name, state));
+        self
+    }
+}
+
+impl AbiProvider for BasicAbiProvider {
+    fn export_abi<S: AsRef<str>>(
+        &self,
+        package: Address,
+        name: S,
+        trace: bool,
+    ) -> Result<abi::Blueprint, RuntimeError> {
+        // Deterministic transaction context
+        let mut ledger = self.ledger.clone();
+        let current_epoch = 0;
+        let tx_hash = sha256([]);
+
+        // Start a process and run abi generator
+        let mut track = Track::new(&mut ledger, current_epoch, tx_hash);
+        let mut proc = track.start_process(trace);
+        let output: (Vec<abi::Function>, Vec<abi::Method>) = proc
+            .call_abi(package, name.as_ref())
+            .and_then(|rtn| scrypto_decode(&rtn).map_err(RuntimeError::InvalidData))?;
+
+        // Return ABI
+        Ok(abi::Blueprint {
+            package: package.to_string(),
+            name: name.as_ref().to_string(),
+            functions: output.0,
+            methods: output.1,
+        })
+    }
+
+    fn export_abi_component(
+        &self,
+        component: Address,
+        trace: bool,
+    ) -> Result<abi::Blueprint, RuntimeError> {
+        let c = self
+            .ledger
+            .get_component(component)
+            .ok_or(RuntimeError::ComponentNotFound(component))?;
+        self.export_abi(c.package(), c.name().to_owned(), trace)
+    }
 }

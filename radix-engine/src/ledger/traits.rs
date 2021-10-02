@@ -1,3 +1,5 @@
+use scrypto::rust::borrow::ToOwned;
+use scrypto::rust::collections::*;
 use scrypto::types::*;
 
 use crate::model::*;
@@ -16,13 +18,43 @@ pub trait Ledger {
 
     fn put_component(&mut self, address: Address, component: Component);
 
-    fn get_lazy_map(&self, mid: MID) -> Option<LazyMap>;
+    fn get_lazy_map(&self, mid: Mid) -> Option<LazyMap>;
 
-    fn put_lazy_map(&mut self, mid: MID, lazy_map: LazyMap);
+    fn put_lazy_map(&mut self, mid: Mid, lazy_map: LazyMap);
 
-    // For now, we always read/write everything in a vault.
+    fn get_vault(&self, vid: Vid) -> Option<Vault>;
 
-    fn get_vault(&self, vid: VID) -> Option<Vault>;
+    fn put_vault(&mut self, vid: Vid, bucket: Vault);
 
-    fn put_vault(&mut self, vid: VID, bucket: Vault);
+    fn bootstrap(&mut self) {
+        if self.get_package(SYSTEM_PACKAGE).is_none() {
+            // System package
+            self.put_package(
+                SYSTEM_PACKAGE,
+                Package::new(include_bytes!("../../../assets/system.wasm").to_vec()),
+            );
+
+            // Account package
+            self.put_package(
+                ACCOUNT_PACKAGE,
+                Package::new(include_bytes!("../../../assets/account.wasm").to_vec()),
+            );
+
+            // XRD resource
+            let mut metadata = HashMap::new();
+            metadata.insert("symbol".to_owned(), "xrd".to_owned());
+            metadata.insert("name".to_owned(), "Radix".to_owned());
+            metadata.insert("description".to_owned(), "The Radix Public Network's native token, used to pay the network's required transaction fees and to secure the network through staking to its validator nodes.".to_owned());
+            metadata.insert("url".to_owned(), "https://tokens.radixdlt.com".to_owned());
+            self.put_resource_def(
+                RADIX_TOKEN,
+                ResourceDef {
+                    metadata,
+                    minter: Some(SYSTEM_PACKAGE),
+                    auth: Some(SYSTEM_PACKAGE),
+                    supply: 0.into(),
+                },
+            );
+        }
+    }
 }

@@ -15,7 +15,7 @@ blueprint! {
                 .create_fixed(1000);
             Self {
                 gumballs: Vault::with_bucket(bucket),
-                collected_xrd: Vault::new(Address::RadixToken)
+                collected_xrd: Vault::new(RADIX_TOKEN)
             }
             .instantiate()
         }

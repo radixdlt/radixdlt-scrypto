@@ -9,10 +9,10 @@ pub const SCRYPTO_TYPE_VID: u8 = 0x86;
 pub const SCRYPTO_NAME_AMOUNT: &str = "scrypto::Amount";
 pub const SCRYPTO_NAME_ADDRESS: &str = "scrypto::Address";
 pub const SCRYPTO_NAME_H256: &str = "scrypto::H256";
-pub const SCRYPTO_NAME_BID: &str = "scrypto::BID";
-pub const SCRYPTO_NAME_RID: &str = "scrypto::RID";
-pub const SCRYPTO_NAME_MID: &str = "scrypto::MID";
-pub const SCRYPTO_NAME_VID: &str = "scrypto::VID";
+pub const SCRYPTO_NAME_BID: &str = "scrypto::Bid";
+pub const SCRYPTO_NAME_RID: &str = "scrypto::Rid";
+pub const SCRYPTO_NAME_MID: &str = "scrypto::Mid";
+pub const SCRYPTO_NAME_VID: &str = "scrypto::Vid";
 
 pub const SCRYPTO_NAME_ACCOUNT: &str = "scrypto::Account";
 pub const SCRYPTO_NAME_PACKAGE: &str = "scrypto::Package";

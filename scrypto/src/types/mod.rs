@@ -6,13 +6,13 @@ mod mid;
 mod rid;
 mod vid;
 
-pub use address::{Address, ParseAddressError};
+pub use address::{Address, ParseAddressError, ACCOUNT_PACKAGE, RADIX_TOKEN, SYSTEM_PACKAGE};
 pub use amount::{Amount, ParseAmountError};
-pub use bid::{ParseBIDError, BID};
+pub use bid::{Bid, ParseBidError};
 pub use h256::{ParseH256Error, H256};
-pub use mid::{ParseMIDError, MID};
-pub use rid::{ParseRIDError, RID};
-pub use vid::{ParseVIDError, VID};
+pub use mid::{Mid, ParseMidError};
+pub use rid::{ParseRidError, Rid};
+pub use vid::{ParseVidError, Vid};
 
 use crate::rust::vec::Vec;
 

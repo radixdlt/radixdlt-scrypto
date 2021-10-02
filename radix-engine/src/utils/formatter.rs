@@ -23,7 +23,7 @@ pub fn format_sbor(data: &[u8]) -> Result<String, DecodeError> {
 pub fn format_sbor_with_ledger<L: Ledger>(
     data: &[u8],
     ledger: &L,
-    vaults: &mut Vec<VID>,
+    vaults: &mut Vec<Vid>,
 ) -> Result<String, DecodeError> {
     let value = decode_any(data)?;
     format_value(&value, ledger, vaults)
@@ -32,7 +32,7 @@ pub fn format_sbor_with_ledger<L: Ledger>(
 pub fn format_value<L: Ledger>(
     value: &Value,
     ledger: &L,
-    vaults: &mut Vec<VID>,
+    vaults: &mut Vec<Vid>,
 ) -> Result<String, DecodeError> {
     match value {
         // primitive types
@@ -93,7 +93,7 @@ pub fn format_value<L: Ledger>(
 pub fn format_fields<L: Ledger>(
     fields: &Fields,
     ledger: &L,
-    vaults: &mut Vec<VID>,
+    vaults: &mut Vec<Vid>,
 ) -> Result<String, DecodeError> {
     match fields {
         Fields::Named(named) => format_vec(named.iter(), "{ ", " }", ledger, vaults),
@@ -107,7 +107,7 @@ pub fn format_vec<'a, L: Ledger, I: Iterator<Item = &'a Value>>(
     begin: &str,
     end: &str,
     ledger: &L,
-    vaults: &mut Vec<VID>,
+    vaults: &mut Vec<Vid>,
 ) -> Result<String, DecodeError> {
     let mut buf = String::from(begin);
     for (i, x) in itr.enumerate() {
@@ -125,7 +125,7 @@ pub fn format_map<'a, L: Ledger, I: Iterator<Item = &'a (Value, Value)>>(
     begin: &str,
     end: &str,
     ledger: &L,
-    vaults: &mut Vec<VID>,
+    vaults: &mut Vec<Vid>,
 ) -> Result<String, DecodeError> {
     let mut buf = String::from(begin);
     for (i, x) in itr.enumerate() {
@@ -149,7 +149,7 @@ pub fn format_custom<L: Ledger>(
     ty: u8,
     data: &[u8],
     ledger: &L,
-    vaults: &mut Vec<VID>,
+    vaults: &mut Vec<Vid>,
 ) -> Result<String, DecodeError> {
     match ty {
         SCRYPTO_TYPE_AMOUNT => {
@@ -166,7 +166,7 @@ pub fn format_custom<L: Ledger>(
             Ok(format!("H256({})", h256))
         }
         SCRYPTO_TYPE_MID => {
-            let mid = MID::try_from(data).map_err(|_| DecodeError::InvalidCustomData(ty))?;
+            let mid = Mid::try_from(data).map_err(|_| DecodeError::InvalidCustomData(ty))?;
 
             let mut buf = String::new();
             if let Some(lazy_map) = ledger.get_lazy_map(mid) {
@@ -180,20 +180,20 @@ pub fn format_custom<L: Ledger>(
                 }
             };
 
-            Ok(format!("MID({}) {{ {} }}", mid, buf))
+            Ok(format!("Mid({}) {{ {} }}", mid, buf))
         }
         SCRYPTO_TYPE_BID => {
-            let bid = BID::try_from(data).map_err(|_| DecodeError::InvalidCustomData(ty))?;
-            Ok(format!("BID({})", bid))
+            let bid = Bid::try_from(data).map_err(|_| DecodeError::InvalidCustomData(ty))?;
+            Ok(format!("Bid({})", bid))
         }
         SCRYPTO_TYPE_RID => {
-            let rid = RID::try_from(data).map_err(|_| DecodeError::InvalidCustomData(ty))?;
-            Ok(format!("RID({})", rid))
+            let rid = Rid::try_from(data).map_err(|_| DecodeError::InvalidCustomData(ty))?;
+            Ok(format!("Rid({})", rid))
         }
         SCRYPTO_TYPE_VID => {
-            let vid = VID::try_from(data).map_err(|_| DecodeError::InvalidCustomData(ty))?;
+            let vid = Vid::try_from(data).map_err(|_| DecodeError::InvalidCustomData(ty))?;
             vaults.push(vid);
-            Ok(format!("VID({})", vid))
+            Ok(format!("Vid({})", vid))
         }
         _ => Err(DecodeError::InvalidType {
             expected: None,

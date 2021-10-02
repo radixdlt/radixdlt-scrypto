@@ -34,6 +34,12 @@ impl FileBasedLedger {
         Self { root }
     }
 
+    pub fn with_bootstrap(root: PathBuf) -> Self {
+        let mut ledger = Self::new(root);
+        ledger.bootstrap();
+        ledger
+    }
+
     fn get_path<T: AsRef<str>>(&self, kind: &str, name: T, ext: &str) -> PathBuf {
         let mut path = self.root.clone();
         path.push(kind);
@@ -104,22 +110,22 @@ impl Ledger for FileBasedLedger {
         )
     }
 
-    fn get_lazy_map(&self, mid: MID) -> Option<LazyMap> {
+    fn get_lazy_map(&self, mid: Mid) -> Option<LazyMap> {
         Self::read(self.get_path(LAZY_MAPS, mid.to_string(), FILE_EXT)).map(Self::decode)
     }
 
-    fn put_lazy_map(&mut self, mid: MID, lazy_map: LazyMap) {
+    fn put_lazy_map(&mut self, mid: Mid, lazy_map: LazyMap) {
         Self::write(
             self.get_path(LAZY_MAPS, mid.to_string(), FILE_EXT),
             Self::encode(&lazy_map),
         )
     }
 
-    fn get_vault(&self, vid: VID) -> Option<Vault> {
+    fn get_vault(&self, vid: Vid) -> Option<Vault> {
         Self::read(self.get_path(VAULTS, vid.to_string(), FILE_EXT)).map(Self::decode)
     }
 
-    fn put_vault(&mut self, vid: VID, vault: Vault) {
+    fn put_vault(&mut self, vid: Vid, vault: Vault) {
         Self::write(
             self.get_path(VAULTS, vid.to_string(), FILE_EXT),
             Self::encode(&vault),

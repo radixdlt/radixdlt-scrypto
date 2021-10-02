@@ -16,7 +16,9 @@ pub unsafe extern "C" fn scrypto_alloc(len: u32) -> *mut u8 {
     ptr
 }
 
-/// Wraps a byte array into a pointer, assuming it has the same layout as one allocated through `scrypto_alloc`.
+/// Wraps a byte array into a pointer.
+///
+/// This function assumes the input byte array has the layout specified by `scrypto_alloc`.
 pub fn scrypto_wrap(mut buf: Vec<u8>) -> *mut u8 {
     let ptr = buf.as_mut_ptr();
     forget(buf);

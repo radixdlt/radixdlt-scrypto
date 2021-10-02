@@ -5,7 +5,7 @@ use scrypto::types::*;
 /// Represents an error when accessing a bucket.
 #[derive(Debug, Clone)]
 pub enum BucketError {
-    MismatchingResourceAddress,
+    MismatchingResourceDef,
     InsufficientBalance,
     ReferenceCountUnderflow,
     UnauthorizedAccess,
@@ -15,13 +15,13 @@ pub enum BucketError {
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct Bucket {
     amount: Amount,
-    resource_address: Address,
+    resource_def: Address,
 }
 
 /// A bucket becomes locked after a borrow operation.
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct LockedBucket {
-    bucket_id: BID,
+    bucket_id: Bid,
     bucket: Bucket,
 }
 
@@ -36,16 +36,16 @@ pub struct Vault {
 }
 
 impl Bucket {
-    pub fn new(amount: Amount, resource_address: Address) -> Self {
+    pub fn new(amount: Amount, resource_def: Address) -> Self {
         Self {
             amount,
-            resource_address,
+            resource_def,
         }
     }
 
     pub fn put(&mut self, other: Self) -> Result<(), BucketError> {
-        if self.resource_address != other.resource_address {
-            Err(BucketError::MismatchingResourceAddress)
+        if self.resource_def != other.resource_def {
+            Err(BucketError::MismatchingResourceDef)
         } else {
             self.amount += other.amount;
             Ok(())
@@ -58,7 +58,7 @@ impl Bucket {
         } else {
             self.amount -= amount;
 
-            Ok(Self::new(amount, self.resource_address))
+            Ok(Self::new(amount, self.resource_def))
         }
     }
 
@@ -66,17 +66,17 @@ impl Bucket {
         self.amount
     }
 
-    pub fn resource_address(&self) -> Address {
-        self.resource_address
+    pub fn resource_def(&self) -> Address {
+        self.resource_def
     }
 }
 
 impl LockedBucket {
-    pub fn new(bucket_id: BID, bucket: Bucket) -> Self {
+    pub fn new(bucket_id: Bid, bucket: Bucket) -> Self {
         Self { bucket_id, bucket }
     }
 
-    pub fn bucket_id(&self) -> BID {
+    pub fn bucket_id(&self) -> Bid {
         self.bucket_id
     }
 
@@ -116,7 +116,7 @@ impl Vault {
         self.bucket.amount()
     }
 
-    pub fn resource_address(&self) -> Address {
-        self.bucket.resource_address()
+    pub fn resource_def(&self) -> Address {
+        self.bucket.resource_def()
     }
 }

@@ -11,63 +11,63 @@ use crate::types::*;
 
 /// Represents a bucket id.
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct BID(pub u32);
+pub struct Bid(pub u32);
 
-/// Represents an error when parsing BID.
+/// Represents an error when parsing Bid.
 #[derive(Debug, Clone)]
-pub enum ParseBIDError {
+pub enum ParseBidError {
     InvalidU32(String),
     InvalidLength(usize),
 }
 
-impl BID {
+impl Bid {
     pub fn to_vec(&self) -> Vec<u8> {
         self.0.to_le_bytes().to_vec()
     }
 }
 
-impl FromStr for BID {
-    type Err = ParseBIDError;
+impl FromStr for Bid {
+    type Err = ParseBidError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(Self(
-            u32::from_str(s).map_err(|_| ParseBIDError::InvalidU32(s.to_owned()))?,
+            u32::from_str(s).map_err(|_| ParseBidError::InvalidU32(s.to_owned()))?,
         ))
     }
 }
 
-impl TryFrom<&[u8]> for BID {
-    type Error = ParseBIDError;
+impl TryFrom<&[u8]> for Bid {
+    type Error = ParseBidError;
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
         if slice.len() != 4 {
-            Err(ParseBIDError::InvalidLength(slice.len()))
+            Err(ParseBidError::InvalidLength(slice.len()))
         } else {
             Ok(Self(u32::from_le_bytes(copy_u8_array(slice))))
         }
     }
 }
 
-impl fmt::Debug for BID {
+impl fmt::Debug for Bid {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Bid({})", self.0)
+    }
+}
+
+impl fmt::Display for Bid {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.0)
     }
 }
 
-impl fmt::Display for BID {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.0)
-    }
-}
-
-impl TypeId for BID {
+impl TypeId for Bid {
     #[inline]
     fn type_id() -> u8 {
         SCRYPTO_TYPE_BID
     }
 }
 
-impl Encode for BID {
+impl Encode for Bid {
     fn encode_value(&self, encoder: &mut Encoder) {
         let bytes = self.to_vec();
         encoder.write_len(bytes.len());
@@ -75,7 +75,7 @@ impl Encode for BID {
     }
 }
 
-impl Decode for BID {
+impl Decode for Bid {
     fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
         let len = decoder.read_len()?;
         let slice = decoder.read_bytes(len)?;
@@ -83,7 +83,7 @@ impl Decode for BID {
     }
 }
 
-impl Describe for BID {
+impl Describe for Bid {
     fn describe() -> Type {
         Type::Custom {
             name: SCRYPTO_NAME_BID.to_owned(),
@@ -99,7 +99,7 @@ mod tests {
     #[test]
     fn test_from_to_string() {
         let s = "123";
-        let a = BID::from_str(s).unwrap();
+        let a = Bid::from_str(s).unwrap();
         assert_eq!(a.to_string(), s);
     }
 }

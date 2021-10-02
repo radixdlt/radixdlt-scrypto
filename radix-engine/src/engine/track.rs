@@ -16,31 +16,33 @@ use crate::model::*;
 ///
 /// Typically, a track is shared by all the processes created within a transaction.
 ///
-pub struct Track<'le, L: Ledger> {
+pub struct Track<'l, L: Ledger> {
+    ledger: &'l mut L,
+    current_epoch: u64,
     tx_hash: H256,
-    ledger: &'le mut L,
-    alloc: AddressAllocator,
+    alloc: IdAllocator,
     logs: Vec<(Level, String)>,
     packages: HashMap<Address, Package>,
     components: HashMap<Address, Component>,
-    lazy_maps: HashMap<MID, LazyMap>,
+    lazy_maps: HashMap<Mid, LazyMap>,
     resource_defs: HashMap<Address, ResourceDef>,
-    vaults: HashMap<VID, Vault>,
+    vaults: HashMap<Vid, Vault>,
     updated_packages: HashSet<Address>,
     updated_components: HashSet<Address>,
-    updated_lazy_maps: HashSet<MID>,
+    updated_lazy_maps: HashSet<Mid>,
     updated_resource_defs: HashSet<Address>,
-    updated_vaults: HashSet<VID>,
+    updated_vaults: HashSet<Vid>,
     new_addresses: Vec<Address>,
     cache: LruCache<Address, Module>, // TODO: move to ledger level
 }
 
-impl<'le, L: Ledger> Track<'le, L> {
-    pub fn new(tx_hash: H256, ledger: &'le mut L) -> Self {
+impl<'l, L: Ledger> Track<'l, L> {
+    pub fn new(ledger: &'l mut L, current_epoch: u64, tx_hash: H256) -> Self {
         Self {
-            tx_hash,
             ledger,
-            alloc: AddressAllocator::new(),
+            current_epoch,
+            tx_hash,
+            alloc: IdAllocator::new(),
             logs: Vec::new(),
             packages: HashMap::new(),
             components: HashMap::new(),
@@ -58,13 +60,18 @@ impl<'le, L: Ledger> Track<'le, L> {
     }
 
     /// Start a process.
-    pub fn start_process<'rt>(&'rt mut self, verbose: bool) -> Process<'rt, 'le, L> {
+    pub fn start_process<'r>(&'r mut self, verbose: bool) -> Process<'r, 'l, L> {
         Process::new(0, verbose, self)
     }
 
     /// Returns the transaction hash.
     pub fn tx_hash(&self) -> H256 {
         self.tx_hash
+    }
+
+    /// Returns the current current_epoch.
+    pub fn current_epoch(&self) -> u64 {
+        self.current_epoch
     }
 
     /// Returns the logs collected so far.
@@ -174,7 +181,7 @@ impl<'le, L: Ledger> Track<'le, L> {
     }
 
     /// Returns an immutable reference to a map, if exists.
-    pub fn get_lazy_map(&mut self, mid: MID) -> Option<&LazyMap> {
+    pub fn get_lazy_map(&mut self, mid: Mid) -> Option<&LazyMap> {
         if self.lazy_maps.contains_key(&mid) {
             return self.lazy_maps.get(&mid);
         }
@@ -187,7 +194,7 @@ impl<'le, L: Ledger> Track<'le, L> {
         }
     }
     /// Returns a mutable reference to a map, if exists.
-    pub fn get_lazy_map_mut(&mut self, mid: MID) -> Option<&mut LazyMap> {
+    pub fn get_lazy_map_mut(&mut self, mid: Mid) -> Option<&mut LazyMap> {
         self.updated_lazy_maps.insert(mid);
 
         if self.lazy_maps.contains_key(&mid) {
@@ -203,7 +210,7 @@ impl<'le, L: Ledger> Track<'le, L> {
     }
 
     /// Inserts a new map.
-    pub fn put_lazy_map(&mut self, mid: MID, lazy_map: LazyMap) {
+    pub fn put_lazy_map(&mut self, mid: Mid, lazy_map: LazyMap) {
         self.updated_lazy_maps.insert(mid);
 
         self.lazy_maps.insert(mid, lazy_map);
@@ -249,7 +256,7 @@ impl<'le, L: Ledger> Track<'le, L> {
 
     /// Returns an immutable reference to a vault, if exists.
     #[allow(dead_code)]
-    pub fn get_vault(&mut self, vid: VID) -> Option<&Vault> {
+    pub fn get_vault(&mut self, vid: Vid) -> Option<&Vault> {
         if self.vaults.contains_key(&vid) {
             return self.vaults.get(&vid);
         }
@@ -263,7 +270,7 @@ impl<'le, L: Ledger> Track<'le, L> {
     }
 
     /// Returns a mutable reference to a vault, if exists.
-    pub fn get_vault_mut(&mut self, vid: VID) -> Option<&mut Vault> {
+    pub fn get_vault_mut(&mut self, vid: Vid) -> Option<&mut Vault> {
         self.updated_vaults.insert(vid);
 
         if self.vaults.contains_key(&vid) {
@@ -279,7 +286,7 @@ impl<'le, L: Ledger> Track<'le, L> {
     }
 
     /// Inserts a new vault.
-    pub fn put_vault(&mut self, vid: VID, vault: Vault) {
+    pub fn put_vault(&mut self, vid: Vid, vault: Vault) {
         self.updated_vaults.insert(vid);
 
         self.vaults.insert(vid, vault);
@@ -299,30 +306,30 @@ impl<'le, L: Ledger> Track<'le, L> {
         address
     }
 
-    /// Creates a new resource address.
-    pub fn new_resource_address(&mut self) -> Address {
-        let address = self.alloc.new_resource_address(self.tx_hash());
+    /// Creates a new resource definition address.
+    pub fn new_resource_def_address(&mut self) -> Address {
+        let address = self.alloc.new_resource_def_address(self.tx_hash());
         self.new_addresses.push(address);
         address
     }
 
     /// Creates a new bucket ID.
-    pub fn new_bucket_id(&mut self) -> BID {
-        self.alloc.new_bucket_id()
+    pub fn new_bid(&mut self) -> Bid {
+        self.alloc.new_bid()
     }
 
     /// Creates a new vault ID.
-    pub fn new_vault_id(&mut self) -> VID {
+    pub fn new_vault_id(&mut self) -> Vid {
         self.alloc.new_vault_id(self.tx_hash())
     }
 
     /// Creates a new reference id.
-    pub fn new_rid(&mut self) -> RID {
+    pub fn new_rid(&mut self) -> Rid {
         self.alloc.new_rid()
     }
 
     /// Creates a new map id.
-    pub fn new_mid(&mut self) -> MID {
+    pub fn new_mid(&mut self) -> Mid {
         self.alloc.new_mid(self.tx_hash())
     }
 

@@ -76,7 +76,7 @@ pub fn handle_import(input: TokenStream) -> TokenStream {
                 let package = ::scrypto::utils::unwrap_light(
                     ::scrypto::types::Address::from_str(#package)
                 );
-                let blueprint = ::scrypto::constructs::Blueprint::from((package, #name));
+                let blueprint = ::scrypto::constructs::Blueprint::from(package, #name);
                 blueprint.call(#func_name, ::scrypto::args!(#(#func_args),*))
             }
         });
@@ -326,10 +326,10 @@ fn get_native_type(ty: &des::Type) -> (Type, Vec<Item>) {
             "scrypto::Address" => parse_quote! { ::scrypto::types::Address },
             "scrypto::Amount" => parse_quote! { ::scrypto::types::Amount },
             "scrypto::H256" => parse_quote! { ::scrypto::types::H256 },
-            "scrypto::BID" => parse_quote! { ::scrypto::types::BID },
-            "scrypto::RID" => parse_quote! { ::scrypto::types::RID },
-            "scrypto::MID" => parse_quote! { ::scrypto::types::MID },
-            "scrypto::VID" => parse_quote! { ::scrypto::types::VID },
+            "scrypto::Bid" => parse_quote! { ::scrypto::types::Bid },
+            "scrypto::Rid" => parse_quote! { ::scrypto::types::Rid },
+            "scrypto::Mid" => parse_quote! { ::scrypto::types::Mid },
+            "scrypto::Vid" => parse_quote! { ::scrypto::types::Vid },
 
             "scrypto::Account" => parse_quote! { ::scrypto::constructs::Account },
             "scrypto::Package" => parse_quote! { ::scrypto::constructs::Package },

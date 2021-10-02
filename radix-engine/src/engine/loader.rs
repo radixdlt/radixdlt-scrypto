@@ -14,7 +14,7 @@ pub fn instantiate_module(module: &Module) -> Result<(ModuleRef, MemoryRef), Run
         module,
         &ImportsBuilder::new().with_resolver("env", &EnvModuleResolver),
     )
-    .map_err(RuntimeError::UnableToInstantiate)?
+    .map_err(RuntimeError::InvalidModule)?
     .assert_no_start();
 
     // Find memory export
@@ -40,7 +40,7 @@ pub fn validate_module(code: &[u8]) -> Result<(), RuntimeError> {
         &parsed,
         &ImportsBuilder::new().with_resolver("env", &EnvModuleResolver),
     )
-    .map_err(RuntimeError::UnableToInstantiate)?;
+    .map_err(RuntimeError::InvalidModule)?;
 
     // Check start function
     if instance.has_start() {

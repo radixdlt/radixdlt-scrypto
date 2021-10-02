@@ -9,7 +9,7 @@ use crate::types::*;
 /// Represents a persistent resource container on ledger state.
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct Vault {
-    vid: VID,
+    vid: Vid,
 }
 
 impl Describe for Vault {
@@ -20,21 +20,23 @@ impl Describe for Vault {
     }
 }
 
-impl From<VID> for Vault {
-    fn from(vid: VID) -> Self {
+impl From<Vid> for Vault {
+    fn from(vid: Vid) -> Self {
         Self { vid }
     }
 }
 
-impl From<Vault> for VID {
-    fn from(a: Vault) -> VID {
+impl From<Vault> for Vid {
+    fn from(a: Vault) -> Vid {
         a.vid
     }
 }
 
 impl Vault {
-    pub fn new(resource_address: Address) -> Self {
-        let input = CreateEmptyVaultInput { resource_address };
+    pub fn new<A: Into<Address>>(resource_def: A) -> Self {
+        let input = CreateEmptyVaultInput {
+            resource_def: resource_def.into(),
+        };
         let output: CreateEmptyVaultOutput = call_kernel(CREATE_EMPTY_VAULT, input);
 
         output.vault.into()
@@ -77,9 +79,9 @@ impl Vault {
 
     pub fn resource_def(&self) -> ResourceDef {
         let input = GetVaultResourceAddressInput { vault: self.vid };
-        let output: GetVaultResourceAddressOutput = call_kernel(GET_VAULT_RESOURCE_ADDRESS, input);
+        let output: GetVaultResourceAddressOutput = call_kernel(GET_VAULT_RESOURCE_DEF, input);
 
-        output.resource_address.into()
+        output.resource_def.into()
     }
 
     pub fn is_empty(&self) -> bool {

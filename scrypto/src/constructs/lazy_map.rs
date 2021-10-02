@@ -9,17 +9,17 @@ use crate::utils::*;
 /// A scalable key-value lazy_map.
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct LazyMap {
-    mid: MID,
+    mid: Mid,
 }
 
-impl From<MID> for LazyMap {
-    fn from(mid: MID) -> Self {
+impl From<Mid> for LazyMap {
+    fn from(mid: Mid) -> Self {
         Self { mid }
     }
 }
 
-impl From<LazyMap> for MID {
-    fn from(a: LazyMap) -> MID {
+impl From<LazyMap> for Mid {
+    fn from(a: LazyMap) -> Mid {
         a.mid
     }
 }
@@ -51,7 +51,7 @@ impl LazyMap {
         let _: PutLazyMapEntryOutput = call_kernel(PUT_LAZY_MAP_ENTRY, input);
     }
 
-    pub fn mid(&self) -> MID {
+    pub fn mid(&self) -> Mid {
         self.mid
     }
 }

@@ -11,16 +11,16 @@ use crate::types::*;
 
 /// Represents a vault id.
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
-pub struct VID(pub H256, pub u32);
+pub struct Vid(pub H256, pub u32);
 
-/// Represents an error when parsing VID.
+/// Represents an error when parsing Vid.
 #[derive(Debug, Clone)]
-pub enum ParseVIDError {
+pub enum ParseVidError {
     InvalidHex(hex::FromHexError),
     InvalidLength(usize),
 }
 
-impl VID {
+impl Vid {
     pub fn to_vec(&self) -> Vec<u8> {
         let mut vec = Vec::with_capacity(36);
         vec.extend(self.0.as_ref());
@@ -29,21 +29,21 @@ impl VID {
     }
 }
 
-impl FromStr for VID {
-    type Err = ParseVIDError;
+impl FromStr for Vid {
+    type Err = ParseVidError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let bytes = hex::decode(s).map_err(ParseVIDError::InvalidHex)?;
+        let bytes = hex::decode(s).map_err(ParseVidError::InvalidHex)?;
         Self::try_from(bytes.as_slice())
     }
 }
 
-impl TryFrom<&[u8]> for VID {
-    type Error = ParseVIDError;
+impl TryFrom<&[u8]> for Vid {
+    type Error = ParseVidError;
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
         if slice.len() != 36 {
-            Err(ParseVIDError::InvalidLength(slice.len()))
+            Err(ParseVidError::InvalidLength(slice.len()))
         } else {
             Ok(Self(
                 H256(copy_u8_array(&slice[..32])),
@@ -53,38 +53,38 @@ impl TryFrom<&[u8]> for VID {
     }
 }
 
-impl From<&str> for VID {
+impl From<&str> for Vid {
     fn from(s: &str) -> Self {
         Self::from_str(s).unwrap()
     }
 }
 
-impl From<String> for VID {
+impl From<String> for Vid {
     fn from(s: String) -> Self {
         Self::from_str(&s).unwrap()
     }
 }
 
-impl fmt::Debug for VID {
+impl fmt::Debug for Vid {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Vid({})", hex::encode(self.to_vec()))
+    }
+}
+
+impl fmt::Display for Vid {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", hex::encode(self.to_vec()))
     }
 }
 
-impl fmt::Display for VID {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", hex::encode(self.to_vec()))
-    }
-}
-
-impl TypeId for VID {
+impl TypeId for Vid {
     #[inline]
     fn type_id() -> u8 {
         SCRYPTO_TYPE_VID
     }
 }
 
-impl Encode for VID {
+impl Encode for Vid {
     fn encode_value(&self, encoder: &mut Encoder) {
         let bytes = self.to_vec();
         encoder.write_len(bytes.len());
@@ -92,7 +92,7 @@ impl Encode for VID {
     }
 }
 
-impl Decode for VID {
+impl Decode for Vid {
     fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
         let len = decoder.read_len()?;
         let slice = decoder.read_bytes(len)?;
@@ -100,7 +100,7 @@ impl Decode for VID {
     }
 }
 
-impl Describe for VID {
+impl Describe for Vid {
     fn describe() -> Type {
         Type::Custom {
             name: SCRYPTO_NAME_VID.to_owned(),
@@ -116,7 +116,7 @@ mod tests {
     #[test]
     fn test_from_to_string() {
         let s = "f4cb57e4c4cd9d6564823eee427779d022d4f5f601791484a97837e6ffcf4cba01000000";
-        let a = VID::from_str(s).unwrap();
+        let a = Vid::from_str(s).unwrap();
         assert_eq!(a.to_string(), s);
     }
 }

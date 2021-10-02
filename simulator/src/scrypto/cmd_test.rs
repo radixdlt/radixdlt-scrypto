@@ -11,7 +11,7 @@ const ARG_PATH: &str = "PATH";
 /// Constructs a `test` subcommand.
 pub fn make_test<'a, 'b>() -> App<'a, 'b> {
     SubCommand::with_name(CMD_TEST)
-        .about("Tests a package")
+        .about("Runs tests")
         .version(crate_version!())
         .arg(
             Arg::with_name(ARG_ARGS)

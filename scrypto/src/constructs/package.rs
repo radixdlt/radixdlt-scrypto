@@ -29,13 +29,13 @@ impl Package {
         let input = PublishPackageInput {
             code: code.to_vec(),
         };
-        let output: PublishPackageOutput = call_kernel(PUBLISH, input);
+        let output: PublishPackageOutput = call_kernel(PUBLISH_PACKAGE, input);
 
         output.package.into()
     }
 
     pub fn blueprint(&self, name: &str) -> Blueprint {
-        Blueprint::from((self.address, name))
+        Blueprint::from(self.address, name)
     }
 
     pub fn address(&self) -> Address {

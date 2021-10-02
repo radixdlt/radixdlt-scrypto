@@ -10,7 +10,7 @@ const ARG_PATH: &str = "PATH";
 /// Constructs a `new-package` subcommand.
 pub fn make_new_package<'a, 'b>() -> App<'a, 'b> {
     SubCommand::with_name(CMD_NEW_PACKAGE)
-        .about("Creates an package")
+        .about("Creates a package")
         .version(crate_version!())
         .arg(
             Arg::with_name(ARG_NAME)
@@ -44,7 +44,7 @@ pub fn handle_new_package(matches: &ArgMatches) -> Result<(), Error> {
 
         fs::write(
             PathBuf::from(format!("{}/Cargo.toml", pkg_dir)),
-            include_str!("../../../assets/template/package/Cargo.toml")
+            include_str!("../../../assets/template/Cargo.toml")
                 .replace("${package_name}", pkg_name)
                 .replace("${scrypto_home}", &scrypto_dir.replace("\\", "/")),
         )
@@ -52,13 +52,13 @@ pub fn handle_new_package(matches: &ArgMatches) -> Result<(), Error> {
 
         fs::write(
             PathBuf::from(format!("{}/src/lib.rs", pkg_dir)),
-            include_str!("../../../assets/template/package/src/lib.rs"),
+            include_str!("../../../assets/template/src/lib.rs"),
         )
         .map_err(Error::IOError)?;
 
         fs::write(
             PathBuf::from(format!("{}/tests/lib.rs", pkg_dir)),
-            include_str!("../../../assets/template/package/tests/lib.rs"),
+            include_str!("../../../assets/template/tests/lib.rs"),
         )
         .map_err(Error::IOError)?;
 

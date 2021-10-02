@@ -1,16 +1,11 @@
 use std::ffi::OsStr;
 use std::fs;
-use std::path::PathBuf;
 
 use clap::{crate_version, App, Arg, ArgMatches, SubCommand};
-use radix_engine::engine::*;
 use radix_engine::ledger::*;
 use radix_engine::model::*;
-use radix_engine::utils::*;
-use scrypto::args;
+use radix_engine::transaction::*;
 use scrypto::types::*;
-use scrypto::utils::*;
-use uuid::Uuid;
 
 use crate::ledger::*;
 use crate::rev2::*;
@@ -26,15 +21,15 @@ pub fn make_publish<'a, 'b>() -> App<'a, 'b> {
         .about("Publishes a package")
         .version(crate_version!())
         .arg(
-            Arg::with_name(ARG_TRACE)
-                .short("t")
-                .long("trace")
-                .help("Turns on tracing."),
-        )
-        .arg(
             Arg::with_name(ARG_PATH)
                 .help("Specify the the path to a Scrypto package or a .wasm file.")
                 .required(true),
+        )
+        // options
+        .arg(
+            Arg::with_name(ARG_TRACE)
+                .long("trace")
+                .help("Turns on tracing."),
         )
         .arg(
             Arg::with_name(ARG_ADDRESS)
@@ -47,45 +42,43 @@ pub fn make_publish<'a, 'b>() -> App<'a, 'b> {
 
 /// Handles a `publish` request.
 pub fn handle_publish(matches: &ArgMatches) -> Result<(), Error> {
+    let path = match_path(matches, ARG_PATH)?;
     let trace = matches.is_present(ARG_TRACE);
-    let path = PathBuf::from(
-        matches
-            .value_of(ARG_PATH)
-            .ok_or_else(|| Error::MissingArgument(ARG_PATH.to_owned()))?,
-    );
-    let file = if path.extension() != Some(OsStr::new("wasm")) {
+
+    // Load wasm code
+    let code = fs::read(if path.extension() != Some(OsStr::new("wasm")) {
         build_package(path, false).map_err(Error::CargoError)?
     } else {
         path
-    };
-    let code = fs::read(&file).map_err(Error::IOError)?;
-    validate_module(&code).map_err(Error::TxnExecutionError)?;
+    })
+    .map_err(Error::IOError)?;
 
+    // Update existing package if `--address` is provided
     if let Some(a) = matches.value_of(ARG_ADDRESS) {
         let address: Address = a.parse().map_err(Error::InvalidAddress)?;
-        let mut ledger = FileBasedLedger::new(get_data_dir()?);
+        let mut ledger = FileBasedLedger::with_bootstrap(get_data_dir()?);
         ledger.put_package(address, Package::new(code));
-        println!("New package: {}", address);
-        return Ok(());
-    }
+        println!("Package updated!");
+        Ok(())
+    } else {
+        let mut configs = get_configs()?;
+        let mut ledger = FileBasedLedger::with_bootstrap(get_data_dir()?);
+        let mut executor =
+            TransactionExecutor::new(&mut ledger, configs.current_epoch, configs.nonce);
+        let transaction = TransactionBuilder::new(&executor)
+            .publish_package(&code)
+            .build()
+            .map_err(Error::TransactionConstructionError)?;
 
-    match get_config(CONF_DEFAULT_ACCOUNT)? {
-        Some(a) => {
-            let account: Address = a.as_str().parse().map_err(Error::InvalidAddress)?;
+        let receipt = executor.run(transaction, trace);
 
-            let mut ledger = FileBasedLedger::new(get_data_dir()?);
-            let mut track = Track::new(sha256(Uuid::new_v4().to_string()), &mut ledger);
-            let mut process = track.start_process(trace);
-            let package: Address = process
-                .call_method(account, "publish_package", args!(code))
-                .and_then(decode_return)
-                .map_err(Error::TxnExecutionError)?;
-            process.finalize().map_err(Error::TxnExecutionError)?;
-            track.commit();
-
-            println!("New package: {}", package);
+        println!("{:?}", receipt);
+        if receipt.success {
+            configs.nonce = executor.nonce();
+            set_configs(configs)?;
             Ok(())
+        } else {
+            Err(Error::TransactionFailed)
         }
-        None => Err(Error::NoDefaultAccount),
     }
 }

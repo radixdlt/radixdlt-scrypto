@@ -9,17 +9,17 @@ use crate::types::*;
 /// Represents a reference to a bucket.
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct BucketRef {
-    rid: RID,
+    rid: Rid,
 }
 
-impl From<RID> for BucketRef {
-    fn from(rid: RID) -> Self {
+impl From<Rid> for BucketRef {
+    fn from(rid: Rid) -> Self {
         Self { rid }
     }
 }
 
-impl From<BucketRef> for RID {
-    fn from(a: BucketRef) -> RID {
+impl From<BucketRef> for Rid {
+    fn from(a: BucketRef) -> Rid {
         a.rid
     }
 }
@@ -45,9 +45,9 @@ impl BucketRef {
         let input = GetRefResourceAddressInput {
             reference: self.rid,
         };
-        let output: GetRefResourceAddressOutput = call_kernel(GET_REF_RESOURCE_ADDRESS, input);
+        let output: GetRefResourceAddressOutput = call_kernel(GET_REF_RESOURCE_DEF, input);
 
-        output.resource_address.into()
+        output.resource_def.into()
     }
 
     pub fn drop(self) {

@@ -38,19 +38,19 @@ r#"
                 },
                 {
                     "type": "Custom",
-                    "name": "scrypto::BID"
+                    "name": "scrypto::Bid"
                 },
                 {
                     "type": "Custom",
-                    "name": "scrypto::RID"
+                    "name": "scrypto::Rid"
                 },
                 {
                     "type": "Custom",
-                    "name": "scrypto::MID"
+                    "name": "scrypto::Mid"
                 },
                 {
                     "type": "Custom",
-                    "name": "scrypto::VID"
+                    "name": "scrypto::Vid"
                 },
                 {
                     "type": "Custom",

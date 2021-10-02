@@ -1,90 +1,147 @@
-use radix_engine::engine::InMemoryRadixEngine;
+use radix_engine::ledger::*;
+use radix_engine::transaction::*;
 use scrypto::prelude::*;
+use std::process::Command;
+
+fn compile() {
+    Command::new("cargo")
+        .current_dir("./tests/everything")
+        .args(["build", "--target", "wasm32-unknown-unknown", "--release"])
+        .status()
+        .unwrap();
+}
 
 #[test]
 fn test_component() {
-    let mut engine = InMemoryRadixEngine::new();
-    let mut track = engine.start_transaction();
-    let mut proc = track.start_process(true);
-    let pkg = proc.publish(package_code!("./everything")).unwrap();
+    compile();
+    let mut ledger = InMemoryLedger::with_bootstrap();
+    let mut executor = TransactionExecutor::new(&mut ledger, 0, 0);
+    let account = executor.new_account();
+    let package = executor.publish_package(package_code!("./everything"));
 
-    let component: Address = scrypto_decode(
-        &proc
-            .call_function(
-                (pkg, "ComponentTest".to_owned()),
-                "create_component",
-                args!(),
-            )
-            .unwrap(),
-    )
-    .unwrap();
-    proc.call_method(component, "get_component_blueprint", args!())
+    // Create component
+    let transaction1 = TransactionBuilder::new(&executor)
+        .call_function(
+            package,
+            "ComponentTest",
+            "create_component",
+            vec![],
+            Some(account),
+        )
+        .build()
         .unwrap();
-    proc.call_method(component, "get_component_state", args!())
+    let receipt1 = executor.run(transaction1, true);
+    assert!(receipt1.success);
+
+    // Find the component address from receipt
+    let component = receipt1.component(0).unwrap();
+
+    // Call functions & methods
+    let transaction2 = TransactionBuilder::new(&executor)
+        .call_function(
+            package,
+            "ComponentTest",
+            "get_component_blueprint",
+            vec![component.to_string()],
+            Some(account),
+        )
+        .call_method(component, "get_component_state", vec![], Some(account))
+        .call_method(component, "put_component_state", vec![], Some(account))
+        .deposit_all(account)
+        .build()
         .unwrap();
-    proc.call_method(component, "put_component_state", args!())
-        .unwrap();
+    let receipt2 = executor.run(transaction2, true);
+    assert!(receipt2.success);
 }
 
 #[test]
 fn test_lazy_map() {
-    let mut engine = InMemoryRadixEngine::new();
-    let mut track = engine.start_transaction();
-    let mut proc = track.start_process(true);
-    let pkg = proc.publish(package_code!("./everything")).unwrap();
+    compile();
+    let mut ledger = InMemoryLedger::with_bootstrap();
+    let mut executor = TransactionExecutor::new(&mut ledger, 0, 0);
+    let account = executor.new_account();
+    let package = executor.publish_package(package_code!("./everything"));
 
-    let result: Option<String> = scrypto_decode(
-        &proc
-            .call_function((pkg, "LazyMapTest".to_owned()), "test_lazy_map", args!())
-            .unwrap(),
-    )
-    .unwrap();
-    assert_eq!(Some("world".to_owned()), result)
+    let transaction = TransactionBuilder::new(&executor)
+        .call_function(
+            package,
+            "LazyMapTest",
+            "test_lazy_map",
+            vec![],
+            Some(account),
+        )
+        .build()
+        .unwrap();
+    let receipt = executor.run(transaction, true);
+    assert!(receipt.success);
 }
 
 #[test]
 fn test_resource() {
-    let mut engine = InMemoryRadixEngine::new();
-    let mut track = engine.start_transaction();
-    let mut proc = track.start_process(true);
-    let pkg = proc.publish(package_code!("./everything")).unwrap();
+    compile();
+    let mut ledger = InMemoryLedger::with_bootstrap();
+    let mut executor = TransactionExecutor::new(&mut ledger, 0, 0);
+    let account = executor.new_account();
+    let package = executor.publish_package(package_code!("./everything"));
 
-    proc.call_function((pkg, "ResourceTest".to_owned()), "create_mutable", args!())
+    let transaction = TransactionBuilder::new(&executor)
+        .call_function(
+            package,
+            "ResourceTest",
+            "create_mutable",
+            vec![],
+            Some(account),
+        )
+        .call_function(
+            package,
+            "ResourceTest",
+            "create_fixed",
+            vec![],
+            Some(account),
+        )
+        .call_function(package, "ResourceTest", "query", vec![], Some(account))
+        .call_function(package, "ResourceTest", "burn", vec![], Some(account))
+        .deposit_all(account)
+        .build()
         .unwrap();
-    proc.call_function((pkg, "ResourceTest".to_owned()), "create_fixed", args!())
-        .unwrap();
-    proc.call_function((pkg, "ResourceTest".to_owned()), "query", args!())
-        .unwrap();
-    proc.call_function((pkg, "ResourceTest".to_owned()), "burn", args!())
-        .unwrap();
+    let receipt = executor.run(transaction, true);
+    assert!(receipt.success);
 }
 
 #[test]
 fn test_bucket() {
-    let mut engine = InMemoryRadixEngine::new();
-    let mut track = engine.start_transaction();
-    let mut proc = track.start_process(true);
-    let pkg = proc.publish(package_code!("./everything")).unwrap();
+    compile();
+    let mut ledger = InMemoryLedger::with_bootstrap();
+    let mut executor = TransactionExecutor::new(&mut ledger, 0, 0);
+    let account = executor.new_account();
+    let package = executor.publish_package(package_code!("./everything"));
 
-    proc.call_function((pkg, "BucketTest".to_owned()), "combine", args!())
+    let transaction = TransactionBuilder::new(&executor)
+        .call_function(package, "BucketTest", "combine", vec![], Some(account))
+        .call_function(package, "BucketTest", "split", vec![], Some(account))
+        .call_function(package, "BucketTest", "borrow", vec![], Some(account))
+        .call_function(package, "BucketTest", "query", vec![], Some(account))
+        .deposit_all(account)
+        .build()
         .unwrap();
-    proc.call_function((pkg, "BucketTest".to_owned()), "split", args!())
-        .unwrap();
-    proc.call_function((pkg, "BucketTest".to_owned()), "borrow", args!())
-        .unwrap();
-    proc.call_function((pkg, "BucketTest".to_owned()), "query", args!())
-        .unwrap();
+    let receipt = executor.run(transaction, true);
+    assert!(receipt.success);
 }
 
 #[test]
 fn test_move_bucket_and_ref() {
-    let mut engine = InMemoryRadixEngine::new();
-    let mut track = engine.start_transaction();
-    let mut proc = track.start_process(true);
-    let pkg = proc.publish(package_code!("./everything")).unwrap();
+    compile();
+    let mut ledger = InMemoryLedger::with_bootstrap();
+    let mut executor = TransactionExecutor::new(&mut ledger, 0, 0);
+    let account = executor.new_account();
+    let package = executor.publish_package(package_code!("./everything"));
 
-    proc.call_function((pkg, "MoveTest".to_owned()), "move_bucket", args!())
+    let transaction = TransactionBuilder::new(&executor)
+        .call_function(package, "MoveTest", "move_bucket", vec![], Some(account))
+        .call_function(package, "MoveTest", "move_reference", vec![], Some(account))
+        .deposit_all(account)
+        .build()
         .unwrap();
-    proc.call_function((pkg, "MoveTest".to_owned()), "move_reference", args!())
-        .unwrap();
+    let receipt = executor.run(transaction, true);
+    assert!(receipt.success);
 }
