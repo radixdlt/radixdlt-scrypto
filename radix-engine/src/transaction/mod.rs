@@ -4,7 +4,7 @@ mod error;
 mod executor;
 mod model;
 
-pub use abi::{AbiProvider, MockAbiProvider};
+pub use abi::{AbiProvider, BasicAbiProvider};
 pub use builder::TransactionBuilder;
 pub use error::{BuildArgsError, BuildTransactionError};
 pub use executor::TransactionExecutor;

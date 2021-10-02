@@ -1,7 +1,5 @@
 use scrypto::abi;
 use scrypto::args;
-use scrypto::buffer::*;
-use scrypto::rust::borrow::ToOwned;
 use scrypto::rust::string::ToString;
 use scrypto::rust::vec;
 use scrypto::rust::vec::Vec;
@@ -17,6 +15,42 @@ pub struct TransactionExecutor<'l, L: Ledger> {
     ledger: &'l mut L,
     current_epoch: u64,
     nonce: u64,
+}
+
+impl<'l, L: Ledger> AbiProvider for TransactionExecutor<'l, L> {
+    fn export_abi<A: AsRef<str>>(
+        &self,
+        package: Address,
+        name: A,
+        trace: bool,
+    ) -> Result<abi::Blueprint, RuntimeError> {
+        let p = self
+            .ledger
+            .get_package(package)
+            .ok_or(RuntimeError::PackageNotFound(package))?;
+
+        BasicAbiProvider::new()
+            .with_package(package, p.code().to_vec())
+            .export_abi(package, name, trace)
+    }
+
+    fn export_abi_component(
+        &self,
+        component: Address,
+        trace: bool,
+    ) -> Result<abi::Blueprint, RuntimeError> {
+        let c = self
+            .ledger
+            .get_component(component)
+            .ok_or(RuntimeError::ComponentNotFound(component))?;
+        let p = self
+            .ledger
+            .get_package(c.package())
+            .ok_or(RuntimeError::PackageNotFound(c.package()))?;
+        BasicAbiProvider::new()
+            .with_package(c.package(), p.code().to_vec())
+            .export_abi(c.package(), c.name(), trace)
+    }
 }
 
 impl<'l, L: Ledger> TransactionExecutor<'l, L> {
@@ -38,50 +72,6 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
 
     pub fn set_epoch(&mut self, current_epoch: u64) {
         self.current_epoch = current_epoch;
-    }
-
-    pub fn export_abi<A: AsRef<str>>(
-        &self,
-        package: Address,
-        name: A,
-        trace: bool,
-    ) -> Result<abi::Blueprint, RuntimeError> {
-        // deterministic ledger, current_epoch and transaction hash
-        let mut ledger = InMemoryLedger::new();
-        ledger.put_package(
-            package,
-            self.ledger
-                .get_package(package)
-                .ok_or(RuntimeError::PackageNotFound(package.to_owned()))?,
-        );
-        let current_epoch = 0;
-        let tx_hash = sha256([]);
-
-        // Start a process and run abi generator
-        let mut track = Track::new(&mut ledger, current_epoch, tx_hash);
-        let mut proc = track.start_process(trace);
-        let output: (Vec<abi::Function>, Vec<abi::Method>) = proc
-            .call_abi(package, name.as_ref())
-            .and_then(|rtn| scrypto_decode(&rtn).map_err(RuntimeError::InvalidData))?;
-
-        Ok(abi::Blueprint {
-            package: package.to_string(),
-            name: name.as_ref().to_string(),
-            functions: output.0,
-            methods: output.1,
-        })
-    }
-
-    pub fn export_abi_component(
-        &self,
-        component: Address,
-        trace: bool,
-    ) -> Result<abi::Blueprint, RuntimeError> {
-        let c = self
-            .ledger
-            .get_component(component)
-            .ok_or(RuntimeError::ComponentNotFound(component))?;
-        self.export_abi(c.package(), c.name().to_owned(), trace)
     }
 
     pub fn run(&mut self, transaction: Transaction, trace: bool) -> Receipt {

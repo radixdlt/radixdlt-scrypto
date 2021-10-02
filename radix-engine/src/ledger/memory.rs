@@ -5,6 +5,7 @@ use crate::ledger::*;
 use crate::model::*;
 
 /// An in-memory ledger stores all substates in host memory.
+#[derive(Debug, Clone)]
 pub struct InMemoryLedger {
     packages: HashMap<Address, Package>,
     components: HashMap<Address, Component>,
