@@ -181,7 +181,7 @@ impl fmt::Debug for Receipt {
             let ty = match address {
                 Address::Package(_) => "Package",
                 Address::Component(_) => "Component",
-                Address::ResourceDef(_) => "ResourceDef",
+                Address::ResourceDef(_) | Address::RadixToken => "ResourceDef",
             };
             write!(
                 f,

@@ -24,8 +24,7 @@ $rev2 call-method $component airdrop
 # Test gumball machine
 package=`$rev2 publish ../examples/gumball-machine | tee /dev/tty | awk '/Package:/ {print $NF}'`
 component=`$rev2 call-function $package GumballMachine new | tee /dev/tty | awk '/Component:/ {print $NF}'`
-$rev2 mint 1 030000000000000000000000000000000000000000000000000000
-$rev2 call-method $component get_gumball 1,030000000000000000000000000000000000000000000000000000
+$rev2 call-method $component get_gumball 1,01
 
 # Export abi
 $rev2 export-abi $package GumballMachine
