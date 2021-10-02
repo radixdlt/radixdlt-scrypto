@@ -83,7 +83,7 @@ pub fn handle_new_resource_mutable(matches: &ArgMatches) -> Result<(), Error> {
     let mut configs = get_configs()?;
     let mut ledger = FileBasedLedger::with_bootstrap(get_data_dir()?);
     let mut executor = TransactionExecutor::new(&mut ledger, configs.current_epoch, configs.nonce);
-    let transaction = TransactionBuilder::new()
+    let transaction = TransactionBuilder::new(&executor)
         .new_resource_mutable(metadata)
         .build()
         .map_err(Error::TransactionConstructionError)?;

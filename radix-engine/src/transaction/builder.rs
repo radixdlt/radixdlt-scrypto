@@ -16,7 +16,8 @@ use crate::engine::*;
 use crate::transaction::*;
 
 /// A utility for building transactions.
-pub struct TransactionBuilder {
+pub struct TransactionBuilder<'a, A: AbiProvider> {
+    abi_provider: &'a A,
     /// The address allocator for calculating reserved bucket id.
     allocator: IdAllocator,
     /// Bucket or BucketRef reservations
@@ -27,10 +28,11 @@ pub struct TransactionBuilder {
     errors: Vec<BuildTransactionError>,
 }
 
-impl TransactionBuilder {
+impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     /// Starts a new transaction builder.
-    pub fn new() -> Self {
+    pub fn new(abi_provider: &'a A) -> Self {
         Self {
+            abi_provider,
             allocator: IdAllocator::new(),
             reservations: Vec::new(),
             instructions: Vec::new(),
@@ -170,30 +172,40 @@ impl TransactionBuilder {
     /// previous instructions).
     pub fn call_function(
         &mut self,
-        abi: &abi::Blueprint,
+        package: Address,
+        name: &str,
         function: &str,
         args: Vec<String>,
         account: Option<Address>,
     ) -> &mut Self {
-        match Self::find_function_abi(abi, function.as_ref()) {
-            Ok(f) => match self.prepare_args(&f.inputs, args, account) {
-                Ok(o) => {
-                    self.instructions.push(Instruction::CallFunction {
-                        package: abi.package.parse().unwrap(),
-                        name: abi.name.clone(),
-                        function: function.to_owned(),
-                        args: o,
-                    });
-                }
-                Err(e) => {
-                    self.errors
-                        .push(BuildTransactionError::FailedToBuildArgs(e));
-                }
-            },
-            Err(e) => {
-                self.errors.push(e);
+        let result = self
+            .abi_provider
+            .export_abi(package, name, false)
+            .map_err(|_| {
+                BuildTransactionError::FailedToExportFunctionAbi(
+                    package,
+                    name.to_owned(),
+                    function.to_owned(),
+                )
+            })
+            .and_then(|abi| Self::find_function_abi(&abi, function))
+            .and_then(|f| {
+                self.prepare_args(&f.inputs, args, account)
+                    .map_err(|e| BuildTransactionError::FailedToBuildArgs(e))
+            });
+
+        match result {
+            Ok(args) => {
+                self.instruction(Instruction::CallFunction {
+                    package: package,
+                    name: name.to_owned(),
+                    function: function.to_owned(),
+                    args,
+                });
             }
+            Err(e) => self.errors.push(e),
         }
+
         self
     }
 
@@ -207,30 +219,34 @@ impl TransactionBuilder {
     /// previous instructions).
     pub fn call_method(
         &mut self,
-        abi: &abi::Blueprint,
         component: Address,
         method: &str,
         args: Vec<String>,
         account: Option<Address>,
     ) -> &mut Self {
-        match Self::find_method_abi(&abi, method.as_ref()) {
-            Ok(m) => match self.prepare_args(&m.inputs, args, account) {
-                Ok(o) => {
-                    self.instructions.push(Instruction::CallMethod {
-                        component,
-                        method: method.to_owned(),
-                        args: o,
-                    });
-                }
-                Err(e) => {
-                    self.errors
-                        .push(BuildTransactionError::FailedToBuildArgs(e));
-                }
-            },
-            Err(e) => {
-                self.errors.push(e);
+        let result = self
+            .abi_provider
+            .export_abi_component(component, false)
+            .map_err(|_| {
+                BuildTransactionError::FailedToExportMethodAbi(component, method.to_owned())
+            })
+            .and_then(|abi| Self::find_method_abi(&abi, method))
+            .and_then(|m| {
+                self.prepare_args(&m.inputs, args, account)
+                    .map_err(|e| BuildTransactionError::FailedToBuildArgs(e))
+            });
+
+        match result {
+            Ok(args) => {
+                self.instruction(Instruction::CallMethod {
+                    component: component,
+                    method: method.to_owned(),
+                    args,
+                });
             }
+            Err(e) => self.errors.push(e),
         }
+
         self
     }
 

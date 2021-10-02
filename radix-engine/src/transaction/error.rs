@@ -3,6 +3,7 @@ use scrypto::rust::borrow::ToOwned;
 use scrypto::rust::fmt;
 use scrypto::rust::format;
 use scrypto::rust::string::String;
+use scrypto::types::*;
 
 /// Represents an error when parsing arguments.
 #[derive(Debug, Clone)]
@@ -28,6 +29,10 @@ pub enum BuildTransactionError {
 
     /// The provided arguments do not match ABI.
     FailedToBuildArgs(BuildArgsError),
+
+    FailedToExportFunctionAbi(Address, String, String),
+
+    FailedToExportMethodAbi(Address, String),
 
     AccountNotProvided,
 }

@@ -65,7 +65,7 @@ pub fn handle_publish(matches: &ArgMatches) -> Result<(), Error> {
         let mut ledger = FileBasedLedger::with_bootstrap(get_data_dir()?);
         let mut executor =
             TransactionExecutor::new(&mut ledger, configs.current_epoch, configs.nonce);
-        let transaction = TransactionBuilder::new()
+        let transaction = TransactionBuilder::new(&executor)
             .publish_package(&code)
             .build()
             .map_err(Error::TransactionConstructionError)?;

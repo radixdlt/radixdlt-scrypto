@@ -26,7 +26,7 @@ pub fn handle_new_account(matches: &ArgMatches) -> Result<(), Error> {
     let mut configs = get_configs()?;
     let mut ledger = FileBasedLedger::with_bootstrap(get_data_dir()?);
     let mut executor = TransactionExecutor::new(&mut ledger, configs.current_epoch, configs.nonce);
-    let transaction = TransactionBuilder::new()
+    let transaction = TransactionBuilder::new(&executor)
         .mint_resource(1000.into(), RADIX_TOKEN)
         .new_account_with_resource(1000.into(), RADIX_TOKEN)
         .build()

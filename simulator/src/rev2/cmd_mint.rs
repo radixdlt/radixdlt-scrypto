@@ -42,7 +42,7 @@ pub fn handle_mint(matches: &ArgMatches) -> Result<(), Error> {
     let account = configs.default_account.ok_or(Error::NoDefaultAccount)?;
     let mut ledger = FileBasedLedger::with_bootstrap(get_data_dir()?);
     let mut executor = TransactionExecutor::new(&mut ledger, configs.current_epoch, configs.nonce);
-    let transaction = TransactionBuilder::new()
+    let transaction = TransactionBuilder::new(&executor)
         .mint_resource(amount, resource_def)
         .deposit_all(account)
         .build()

@@ -18,14 +18,17 @@ fn test_component() {
     let mut executor = TransactionExecutor::new(&mut ledger, 0, 0);
     let account = executor
         .run(
-            TransactionBuilder::new().new_account().build().unwrap(),
+            TransactionBuilder::new(&executor)
+                .new_account()
+                .build()
+                .unwrap(),
             false,
         )
         .component(0)
         .unwrap();
     let package = executor
         .run(
-            TransactionBuilder::new()
+            TransactionBuilder::new(&executor)
                 .publish_package(package_code!("./everything"))
                 .build()
                 .unwrap(),
@@ -33,13 +36,16 @@ fn test_component() {
         )
         .package(0)
         .unwrap();
-    let abi = executor
-        .export_abi(package, "ComponentTest", false)
-        .unwrap();
 
     // Create component
-    let transaction1 = TransactionBuilder::new()
-        .call_function(&abi, "create_component", vec![], Some(account))
+    let transaction1 = TransactionBuilder::new(&executor)
+        .call_function(
+            package,
+            "ComponentTest",
+            "create_component",
+            vec![],
+            Some(account),
+        )
         .build()
         .unwrap();
     let receipt1 = executor.run(transaction1, true);
@@ -49,27 +55,16 @@ fn test_component() {
     let component = receipt1.component(0).unwrap();
 
     // Call functions & methods
-    let transaction2 = TransactionBuilder::new()
+    let transaction2 = TransactionBuilder::new(&executor)
         .call_function(
-            &abi,
+            package,
+            "ComponentTest",
             "get_component_blueprint",
             vec![component.to_string()],
             Some(account),
         )
-        .call_method(
-            &abi,
-            component,
-            "get_component_state",
-            vec![],
-            Some(account),
-        )
-        .call_method(
-            &abi,
-            component,
-            "put_component_state",
-            vec![],
-            Some(account),
-        )
+        .call_method(component, "get_component_state", vec![], Some(account))
+        .call_method(component, "put_component_state", vec![], Some(account))
         .deposit_all(account)
         .build()
         .unwrap();
@@ -84,14 +79,17 @@ fn test_lazy_map() {
     let mut executor = TransactionExecutor::new(&mut ledger, 0, 0);
     let account = executor
         .run(
-            TransactionBuilder::new().new_account().build().unwrap(),
+            TransactionBuilder::new(&executor)
+                .new_account()
+                .build()
+                .unwrap(),
             false,
         )
         .component(0)
         .unwrap();
     let package = executor
         .run(
-            TransactionBuilder::new()
+            TransactionBuilder::new(&executor)
                 .publish_package(package_code!("./everything"))
                 .build()
                 .unwrap(),
@@ -99,10 +97,15 @@ fn test_lazy_map() {
         )
         .package(0)
         .unwrap();
-    let abi = executor.export_abi(package, "LazyMapTest", false).unwrap();
 
-    let transaction = TransactionBuilder::new()
-        .call_function(&abi, "test_lazy_map", vec![], Some(account))
+    let transaction = TransactionBuilder::new(&executor)
+        .call_function(
+            package,
+            "LazyMapTest",
+            "test_lazy_map",
+            vec![],
+            Some(account),
+        )
         .build()
         .unwrap();
     let receipt = executor.run(transaction, true);
@@ -116,14 +119,17 @@ fn test_resource() {
     let mut executor = TransactionExecutor::new(&mut ledger, 0, 0);
     let account = executor
         .run(
-            TransactionBuilder::new().new_account().build().unwrap(),
+            TransactionBuilder::new(&executor)
+                .new_account()
+                .build()
+                .unwrap(),
             false,
         )
         .component(0)
         .unwrap();
     let package = executor
         .run(
-            TransactionBuilder::new()
+            TransactionBuilder::new(&executor)
                 .publish_package(package_code!("./everything"))
                 .build()
                 .unwrap(),
@@ -131,13 +137,24 @@ fn test_resource() {
         )
         .package(0)
         .unwrap();
-    let abi = executor.export_abi(package, "ResourceTest", false).unwrap();
 
-    let transaction = TransactionBuilder::new()
-        .call_function(&abi, "create_mutable", vec![], Some(account))
-        .call_function(&abi, "create_fixed", vec![], Some(account))
-        .call_function(&abi, "query", vec![], Some(account))
-        .call_function(&abi, "burn", vec![], Some(account))
+    let transaction = TransactionBuilder::new(&executor)
+        .call_function(
+            package,
+            "ResourceTest",
+            "create_mutable",
+            vec![],
+            Some(account),
+        )
+        .call_function(
+            package,
+            "ResourceTest",
+            "create_fixed",
+            vec![],
+            Some(account),
+        )
+        .call_function(package, "ResourceTest", "query", vec![], Some(account))
+        .call_function(package, "ResourceTest", "burn", vec![], Some(account))
         .deposit_all(account)
         .build()
         .unwrap();
@@ -152,14 +169,17 @@ fn test_bucket() {
     let mut executor = TransactionExecutor::new(&mut ledger, 0, 0);
     let account = executor
         .run(
-            TransactionBuilder::new().new_account().build().unwrap(),
+            TransactionBuilder::new(&executor)
+                .new_account()
+                .build()
+                .unwrap(),
             false,
         )
         .component(0)
         .unwrap();
     let package = executor
         .run(
-            TransactionBuilder::new()
+            TransactionBuilder::new(&executor)
                 .publish_package(package_code!("./everything"))
                 .build()
                 .unwrap(),
@@ -167,13 +187,12 @@ fn test_bucket() {
         )
         .package(0)
         .unwrap();
-    let abi = executor.export_abi(package, "BucketTest", false).unwrap();
 
-    let transaction = TransactionBuilder::new()
-        .call_function(&abi, "combine", vec![], Some(account))
-        .call_function(&abi, "split", vec![], Some(account))
-        .call_function(&abi, "borrow", vec![], Some(account))
-        .call_function(&abi, "query", vec![], Some(account))
+    let transaction = TransactionBuilder::new(&executor)
+        .call_function(package, "BucketTest", "combine", vec![], Some(account))
+        .call_function(package, "BucketTest", "split", vec![], Some(account))
+        .call_function(package, "BucketTest", "borrow", vec![], Some(account))
+        .call_function(package, "BucketTest", "query", vec![], Some(account))
         .deposit_all(account)
         .build()
         .unwrap();
@@ -188,14 +207,17 @@ fn test_move_bucket_and_ref() {
     let mut executor = TransactionExecutor::new(&mut ledger, 0, 0);
     let account = executor
         .run(
-            TransactionBuilder::new().new_account().build().unwrap(),
+            TransactionBuilder::new(&executor)
+                .new_account()
+                .build()
+                .unwrap(),
             false,
         )
         .component(0)
         .unwrap();
     let package = executor
         .run(
-            TransactionBuilder::new()
+            TransactionBuilder::new(&executor)
                 .publish_package(package_code!("./everything"))
                 .build()
                 .unwrap(),
@@ -203,11 +225,10 @@ fn test_move_bucket_and_ref() {
         )
         .package(0)
         .unwrap();
-    let abi = executor.export_abi(package, "MoveTest", false).unwrap();
 
-    let transaction = TransactionBuilder::new()
-        .call_function(&abi, "move_bucket", vec![], Some(account))
-        .call_function(&abi, "move_reference", vec![], Some(account))
+    let transaction = TransactionBuilder::new(&executor)
+        .call_function(package, "MoveTest", "move_bucket", vec![], Some(account))
+        .call_function(package, "MoveTest", "move_reference", vec![], Some(account))
         .deposit_all(account)
         .build()
         .unwrap();

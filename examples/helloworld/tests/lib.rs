@@ -11,14 +11,17 @@ fn test_hello() {
     // Create account and publish this package.
     let account = executor
         .run(
-            TransactionBuilder::new().new_account().build().unwrap(),
+            TransactionBuilder::new(&executor)
+                .new_account()
+                .build()
+                .unwrap(),
             true,
         )
         .component(0)
         .unwrap();
     let package = executor
         .run(
-            TransactionBuilder::new()
+            TransactionBuilder::new(&executor)
                 .publish_package(package_code!())
                 .build()
                 .unwrap(),
@@ -26,11 +29,10 @@ fn test_hello() {
         )
         .package(0)
         .unwrap();
-    let abi = executor.export_abi(package, "Hello", false).unwrap();
 
     // Invoke the `new` function.
-    let transaction = TransactionBuilder::new()
-        .call_function(&abi, "new", vec![], None)
+    let transaction = TransactionBuilder::new(&executor)
+        .call_function(package, "Hello", "new", vec![], None)
         .build()
         .unwrap();
     let receipt = executor.run(transaction, true);
@@ -38,8 +40,8 @@ fn test_hello() {
 
     // Invoke the `airdrop` function.
     let component = receipt.component(0).unwrap();
-    let transaction2 = TransactionBuilder::new()
-        .call_method(&abi, component, "airdrop", vec![], Some(account))
+    let transaction2 = TransactionBuilder::new(&executor)
+        .call_method(component, "airdrop", vec![], Some(account))
         .deposit_all(account)
         .build()
         .unwrap();

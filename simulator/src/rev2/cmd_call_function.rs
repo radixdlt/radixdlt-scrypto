@@ -56,11 +56,8 @@ pub fn handle_call_function(matches: &ArgMatches) -> Result<(), Error> {
     let account = configs.default_account.ok_or(Error::NoDefaultAccount)?;
     let mut ledger = FileBasedLedger::with_bootstrap(get_data_dir()?);
     let mut executor = TransactionExecutor::new(&mut ledger, configs.current_epoch, configs.nonce);
-    let abi = executor
-        .export_abi(package, name, trace)
-        .map_err(Error::TransactionExecutionError)?;
-    let transaction = TransactionBuilder::new()
-        .call_function(&abi, &function, args, Some(account))
+    let transaction = TransactionBuilder::new(&executor)
+        .call_function(package, &name, &function, args, Some(account))
         .deposit_all(account)
         .build()
         .map_err(Error::TransactionConstructionError)?;

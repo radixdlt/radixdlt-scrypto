@@ -49,7 +49,7 @@ pub fn handle_transfer(matches: &ArgMatches) -> Result<(), Error> {
     let account = configs.default_account.ok_or(Error::NoDefaultAccount)?;
     let mut ledger = FileBasedLedger::with_bootstrap(get_data_dir()?);
     let mut executor = TransactionExecutor::new(&mut ledger, configs.current_epoch, configs.nonce);
-    let transaction = TransactionBuilder::new()
+    let transaction = TransactionBuilder::new(&executor)
         .withdraw(amount, resource_def, account)
         .deposit_all(recipient)
         .build()

@@ -93,7 +93,7 @@ pub fn handle_new_resource_fixed(matches: &ArgMatches) -> Result<(), Error> {
     let account = configs.default_account.ok_or(Error::NoDefaultAccount)?;
     let mut ledger = FileBasedLedger::with_bootstrap(get_data_dir()?);
     let mut executor = TransactionExecutor::new(&mut ledger, configs.current_epoch, configs.nonce);
-    let transaction = TransactionBuilder::new()
+    let transaction = TransactionBuilder::new(&executor)
         .new_resource_fixed(metadata, supply)
         .deposit_all(account)
         .build()
