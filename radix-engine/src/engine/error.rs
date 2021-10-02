@@ -34,7 +34,7 @@ pub enum RuntimeError {
 
     UnableToAllocateMemory,
 
-    ResourceLeak,
+    ResourceCheckFailure,
 
     PackageAlreadyExists(Address),
 
@@ -62,13 +62,11 @@ pub enum RuntimeError {
 
     AccountingError(BucketError),
 
-    UnauthorizedToWithdraw,
-
     UnauthorizedAccess,
 
-    BucketMoveNotAllowed,
+    BucketNotAllowed,
 
-    ReferenceMoveNotAllowed,
+    ReferenceNotAllowed,
 
     VmNotStarted,
 
@@ -81,8 +79,6 @@ pub enum RuntimeError {
     UnexpectedReferenceReturn,
 
     InvalidAddressType,
-
-    NotReservedBucket,
 }
 
 impl fmt::Display for RuntimeError {

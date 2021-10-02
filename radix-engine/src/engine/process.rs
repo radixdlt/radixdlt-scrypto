@@ -257,7 +257,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
             "Moving to bucket: amount = {}, resource_def = {}, bid = {}", amount, resource_def, bid
         );
         if !self.reserved_bucket_ids.contains(&bid) {
-            return Err(RuntimeError::NotReservedBucket);
+            return Err(RuntimeError::BucketNotReserved);
         }
 
         let candidates: BTreeSet<Bid> = self
@@ -503,17 +503,15 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         let mut success = true;
 
         for (bid, bucket) in &self.buckets {
-            if bucket.amount() != Amount::zero() {
-                warn!(self, "Pending bucket: {:?} {:?}", bid, bucket);
-                success = false;
-            }
+            warn!(self, "Open bucket: {:?}, {:?}", bid, bucket);
+            success = false;
         }
         for (bid, bucket) in &self.locked_buckets {
-            warn!(self, "Pending locked bucket: {:?} {:?}", bid, bucket);
+            warn!(self, "Open locked bucket: {:?}, {:?}", bid, bucket);
             success = false;
         }
         for (rid, bucket_ref) in &self.references {
-            warn!(self, "Pending reference: {:?} {:?}", rid, bucket_ref);
+            warn!(self, "Open reference: {:?}, {:?}", rid, bucket_ref);
             success = false;
         }
 
@@ -521,7 +519,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         if success {
             Ok(())
         } else {
-            Err(RuntimeError::ResourceLeak)
+            Err(RuntimeError::ResourceCheckFailure)
         }
     }
 
@@ -748,12 +746,12 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
 
     /// Reject buckets movements
     fn reject_buckets(&mut self, _: Bid) -> Result<Bid, RuntimeError> {
-        Err(RuntimeError::BucketMoveNotAllowed)
+        Err(RuntimeError::BucketNotAllowed)
     }
 
     /// Reject references movements
     fn reject_references(&mut self, _: Rid) -> Result<Rid, RuntimeError> {
-        Err(RuntimeError::ReferenceMoveNotAllowed)
+        Err(RuntimeError::ReferenceNotAllowed)
     }
 
     /// Send a byte array to wasm instance.
