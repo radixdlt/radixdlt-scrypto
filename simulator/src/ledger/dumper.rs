@@ -59,8 +59,8 @@ pub fn dump_resource_def<T: Ledger>(address: Address, ledger: &T) {
     match resource_def {
         Some(r) => {
             println!("{}: {}", "Metadata".green().bold(), r.metadata.len());
-            for (k, v) in r.metadata {
-                println!("   {}: {}", k.green().bold(), v);
+            for (last, e) in r.metadata.iter().identify_last() {
+                println!("{} {}: {}", list_item_prefix(last), e.0.green().bold(), e.1);
             }
             println!("{}: {:?}", "Minter".green().bold(), r.minter);
             println!("{}: {:?}", "Supply".green().bold(), r.supply);

@@ -4,8 +4,8 @@ use radix_engine::transaction::*;
 use crate::ledger::*;
 use crate::rev2::*;
 
-const ARG_PACKAGE: &str = "PACKAGE";
-const ARG_NAME: &str = "NAME";
+const ARG_PACKAGE: &str = "PACKAGE_ADDRESS";
+const ARG_NAME: &str = "BLUEPRINT_NAME";
 const ARG_FUNCTION: &str = "FUNCTION";
 const ARG_ARGS: &str = "ARGS";
 
@@ -33,7 +33,7 @@ pub fn make_call_function<'a, 'b>() -> App<'a, 'b> {
         )
         .arg(
             Arg::with_name(ARG_ARGS)
-                .help("Specify the arguments, e.g. \"5\", \"hello\" or \"amount,resource_def\" (bucket).")
+                .help("Specify the arguments, e.g. \"5\", \"hello\" or \"amount,resource_def\" (Bucket).")
                 .multiple(true),
         )
         // options

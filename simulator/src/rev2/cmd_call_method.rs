@@ -4,7 +4,7 @@ use radix_engine::transaction::*;
 use crate::ledger::*;
 use crate::rev2::*;
 
-const ARG_COMPONENT: &str = "COMPONENT";
+const ARG_COMPONENT: &str = "COMPONENT_ADDRESS";
 const ARG_METHOD: &str = "METHOD";
 const ARG_ARGS: &str = "ARGS";
 
@@ -27,7 +27,7 @@ pub fn make_call_method<'a, 'b>() -> App<'a, 'b> {
         )
         .arg(
             Arg::with_name(ARG_ARGS)
-            .help("Specify the arguments, e.g. \"5\", \"hello\" or \"amount,resource_def\" (bucket).")
+            .help("Specify the arguments, e.g. \"5\", \"hello\" or \"amount,resource_def\" (Bucket).")
                 .multiple(true),
         )
         // options

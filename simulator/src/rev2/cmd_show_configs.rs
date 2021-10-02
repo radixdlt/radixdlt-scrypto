@@ -24,7 +24,7 @@ pub fn handle_show_configs(_matches: &ArgMatches) -> Result<(), Error> {
         "Current Epoch".green().bold(),
         configs.current_epoch
     );
-    println!("{}: {}", "Transaction Nonce".green().bold(), configs.nonce);
+    println!("{}: {}", "Nonce".green().bold(), configs.nonce);
 
     Ok(())
 }

@@ -4,8 +4,8 @@ use radix_engine::transaction::*;
 use crate::ledger::*;
 use crate::rev2::*;
 
-const ARG_PACKAGE: &str = "PACKAGE";
-const ARG_NAME: &str = "NAME";
+const ARG_PACKAGE: &str = "PACKAGE_ADDRESS";
+const ARG_NAME: &str = "BLUEPRINT_NAME";
 
 const ARG_TRACE: &str = "TRACE";
 

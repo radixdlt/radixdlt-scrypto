@@ -72,7 +72,7 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
         self.current_epoch = current_epoch;
     }
 
-    /// Returns the transaction nonce.
+    /// Returns the nonce.
     pub fn nonce(&self) -> u64 {
         self.nonce
     }
