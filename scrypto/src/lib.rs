@@ -125,3 +125,19 @@ macro_rules! include_code {
         ))
     };
 }
+
+#[macro_export]
+macro_rules! scrypto_assert {
+    ($cond: expr $(,)?) => {
+        if !$cond {
+            error!("Assertion failed: {}", stringify!($cond));
+            panic!();
+        }
+    };
+    ($cond: expr, $($arg: tt)+) => {
+        if !$cond {
+            error!("Assertion failed: {}", format!($($arg)+));
+            panic!();
+        }
+    };
+}

@@ -29,12 +29,12 @@ blueprint! {
             scale: usize,
         ) -> (Address, Bucket) {
             // Check arguments
-            assert!(
+            scrypto_assert!(
                 !a_tokens.is_empty() && !b_tokens.is_empty(),
                 "You must pass in an initial supply of each token"
             );
-            assert!(fee_in_thousandths <= 1000, "Invalid fee in thousandths");
-            assert!(scale >= 1 && scale <= 9, "Invalid scale");
+            scrypto_assert!(fee_in_thousandths <= 1000, "Invalid fee in thousandths");
+            scrypto_assert!(scale >= 1 && scale <= 9, "Invalid scale");
 
             // Instantiate our LP token and mint an initial supply of them
             let lp_resource_def = ResourceBuilder::new()
@@ -86,7 +86,7 @@ blueprint! {
 
         /// Removes liquidity from this pool.
         pub fn remove_liquidity(&self, lp_tokens: Bucket) -> (Bucket, Bucket) {
-            assert!(
+            scrypto_assert!(
                 self.lp_resource_def == lp_tokens.resource_def(),
                 "Wrong token type passed in"
             );

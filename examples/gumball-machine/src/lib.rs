@@ -22,7 +22,7 @@ blueprint! {
 
         pub fn get_gumball(&mut self, payment: Bucket) -> Bucket {
             // make sure they sent us exactly 1 XRD
-            assert!(payment.amount() == 1.into(), "Wrong amount of XRD sent");
+            scrypto_assert!(payment.amount() == 1.into(), "Wrong amount of XRD sent");
 
             // take ownership of their XRD
             self.collected_xrd.put(payment);
