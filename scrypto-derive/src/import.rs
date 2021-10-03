@@ -42,7 +42,7 @@ pub fn handle_import(input: TokenStream) -> TokenStream {
 
     let mut functions = Vec::<ItemFn>::new();
     functions.push(parse_quote! {
-        pub fn instance(address: ::scrypto::types::Address) -> Self {
+        pub fn component(address: ::scrypto::types::Address) -> Self {
             Self {
                 address
             }

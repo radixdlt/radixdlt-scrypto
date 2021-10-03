@@ -6,7 +6,7 @@ pub use crate::kernel::call_kernel;
 pub use crate::resource::{Bucket, BucketRef, ResourceBuilder, ResourceDef, Vault};
 pub use crate::types::*;
 pub use crate::utils::{sha256, sha256_twice};
-pub use crate::{args, blueprint, debug, error, import, info, package_code, trace, warn};
+pub use crate::{args, blueprint, debug, error, import, include_code, info, trace, warn};
 
 pub use crate::rust::borrow::ToOwned;
 pub use crate::rust::collections::{BTreeMap, BTreeSet, HashMap, HashSet};

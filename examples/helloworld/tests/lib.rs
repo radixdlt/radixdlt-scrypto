@@ -8,7 +8,7 @@ fn test_hello() {
     let mut ledger = InMemoryLedger::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, 0, 0);
     let account = executor.new_account();
-    let package = executor.publish_package(package_code!());
+    let package = executor.publish_package(include_code!());
 
     // Invoke the `new` function.
     let transaction1 = TransactionBuilder::new(&executor)
@@ -16,7 +16,7 @@ fn test_hello() {
         .build()
         .unwrap();
     let receipt1 = executor.run(transaction1, false);
-    println!("\n{:?}\n", receipt1);
+    println!("{:?}\n", receipt1);
     assert!(receipt1.success);
 
     // Invoke the `airdrop` method.
@@ -27,6 +27,6 @@ fn test_hello() {
         .build()
         .unwrap();
     let receipt2 = executor.run(transaction2, false);
-    println!("\n{:?}\n", receipt2);
+    println!("{:?}\n", receipt2);
     assert!(receipt2.success);
 }

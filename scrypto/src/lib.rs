@@ -111,7 +111,7 @@ macro_rules! trace {
 
 /// Includes package code as a byte array.
 #[macro_export]
-macro_rules! package_code {
+macro_rules! include_code {
     () => {
         include_bytes!(concat!(
             env!("CARGO_MANIFEST_DIR"),
