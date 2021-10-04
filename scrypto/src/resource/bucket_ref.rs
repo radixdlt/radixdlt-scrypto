@@ -5,6 +5,7 @@ use crate::constructs::*;
 use crate::kernel::*;
 use crate::resource::*;
 use crate::rust::borrow::ToOwned;
+use crate::rust::format;
 use crate::types::*;
 
 /// Represents a reference to a bucket.
@@ -37,7 +38,7 @@ impl BucketRef {
         if self.amount() > 0.into() && self.resource_def() == resource_def.into() {
             self.drop();
         } else {
-            Logger::error(format!("Refereneced bucket does not have {}", resource_def));
+            Logger::error(format!("Referenced bucket does not have {}", resource_def));
             panic!();
         }
     }
