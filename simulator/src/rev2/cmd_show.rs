@@ -28,15 +28,10 @@ pub fn handle_show(matches: &ArgMatches) -> Result<(), Error> {
 
     let ledger = FileBasedLedger::with_bootstrap(get_data_dir()?);
     match address {
-        Address::Package(_) => {
-            dump_package(address, &ledger);
-        }
-        Address::Component(_) => {
-            dump_component(address, &ledger);
-        }
+        Address::Package(_) => dump_package(address, &ledger).map_err(Error::LedgerDumpError),
+        Address::Component(_) => dump_component(address, &ledger).map_err(Error::LedgerDumpError),
         Address::ResourceDef(_) | Address::RadixToken => {
-            dump_resource_def(address, &ledger);
+            dump_resource_def(address, &ledger).map_err(Error::LedgerDumpError)
         }
     }
-    Ok(())
 }

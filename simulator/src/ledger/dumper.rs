@@ -5,20 +5,36 @@ use scrypto::types::*;
 
 use crate::utils::*;
 
-pub fn dump_package<T: Ledger>(address: Address, ledger: &T) {
+/// Represents an error when displaying an entity.
+#[derive(Debug, Clone)]
+pub enum DisplayError {
+    PackageNotFound,
+    ComponentNotFound,
+    ResourceDefNotFound,
+}
+fn list_item_prefix(last: bool) -> &'static str {
+    if last {
+        "└─"
+    } else {
+        "├─"
+    }
+}
+
+/// Dump a package into console.
+pub fn dump_package<T: Ledger>(address: Address, ledger: &T) -> Result<(), DisplayError> {
     let package = ledger.get_package(address);
     match package {
         Some(b) => {
             println!("{}: {}", "Package".green().bold(), address.to_string());
             println!("{}: {} bytes", "Code size".green().bold(), b.code().len());
+            Ok(())
         }
-        None => {
-            println!("{}", "Package not found".red());
-        }
+        None => Err(DisplayError::PackageNotFound),
     }
 }
 
-pub fn dump_component<T: Ledger>(address: Address, ledger: &T) {
+/// Dump a component into console.
+pub fn dump_component<T: Ledger>(address: Address, ledger: &T) -> Result<(), DisplayError> {
     let component = ledger.get_component(address);
     match component {
         Some(c) => {
@@ -47,14 +63,14 @@ pub fn dump_component<T: Ledger>(address: Address, ledger: &T) {
                     vault.resource_def(),
                 );
             }
+            Ok(())
         }
-        None => {
-            println!("{}", "Component not found".red());
-        }
+        None => Err(DisplayError::ComponentNotFound),
     }
 }
 
-pub fn dump_resource_def<T: Ledger>(address: Address, ledger: &T) {
+/// Dump a resource definition into console.
+pub fn dump_resource_def<T: Ledger>(address: Address, ledger: &T) -> Result<(), DisplayError> {
     let resource_def = ledger.get_resource_def(address);
     match resource_def {
         Some(r) => {
@@ -64,9 +80,8 @@ pub fn dump_resource_def<T: Ledger>(address: Address, ledger: &T) {
             }
             println!("{}: {:?}", "Minter".green().bold(), r.minter);
             println!("{}: {:?}", "Supply".green().bold(), r.supply);
+            Ok(())
         }
-        None => {
-            println!("{}", "Resource definition not found".red());
-        }
+        None => Err(DisplayError::ResourceDefNotFound),
     }
 }

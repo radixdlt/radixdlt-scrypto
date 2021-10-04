@@ -757,10 +757,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
             .remove(&bid)
             .or_else(|| self.temp_buckets.remove(&bid))
             .ok_or(RuntimeError::BucketNotFound(bid))?;
-        debug!(
-            self,
-            "Moving bucket: bid = {:?}, bucket = {:?}", bid, bucket
-        );
+        debug!(self, "Moving bucket: {:?}, {:?}", bid, bucket);
         self.moving_buckets.insert(bid, bucket);
         Ok(bid)
     }

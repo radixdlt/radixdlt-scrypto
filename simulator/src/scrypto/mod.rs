@@ -12,6 +12,7 @@ pub const CMD_NEW_PACKAGE: &str = "new-package";
 pub const CMD_BUILD: &str = "build";
 pub const CMD_TEST: &str = "test";
 
+/// Runs scrypto CLI.
 pub fn run<I, T>(args: I) -> Result<(), Error>
 where
     I: IntoIterator<Item = T>,

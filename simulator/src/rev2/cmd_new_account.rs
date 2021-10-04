@@ -1,5 +1,6 @@
 use clap::{crate_version, App, Arg, ArgMatches, SubCommand};
 use radix_engine::transaction::*;
+use scrypto::types::*;
 
 use crate::ledger::*;
 use crate::rev2::*;

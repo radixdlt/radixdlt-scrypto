@@ -1,10 +1,8 @@
-pub use std::io;
-
-pub use sbor::*;
-pub use scrypto::types::*;
+use std::io;
 
 use crate::utils::*;
 
+/// Represents a scrypto error.
 #[derive(Debug)]
 pub enum Error {
     MissingArgument(String),

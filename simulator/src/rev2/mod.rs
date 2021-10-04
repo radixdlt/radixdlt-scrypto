@@ -49,6 +49,7 @@ pub const CMD_SET_CURRENT_EPOCH: &str = "set-current-epoch";
 pub const CMD_SHOW: &str = "show";
 pub const CMD_SHOW_CONFIGS: &str = "show-configs";
 
+/// Runs rev2 CLI.
 pub fn run<I, T>(args: I) -> Result<(), Error>
 where
     I: IntoIterator<Item = T>,

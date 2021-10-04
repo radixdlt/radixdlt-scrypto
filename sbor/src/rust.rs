@@ -35,6 +35,7 @@ pub use std::string;
 #[cfg(not(feature = "alloc"))]
 pub use std::vec;
 
+/// Rust's standard collection library.
 pub mod collections {
     #[cfg(feature = "alloc")]
     extern crate alloc;

@@ -1,17 +1,20 @@
-pub use std::io;
+use std::io;
+use std::num::ParseIntError;
 
-pub use radix_engine::engine::*;
+use radix_engine::engine::*;
 use radix_engine::transaction::*;
-pub use sbor::*;
-pub use scrypto::types::*;
+use sbor::*;
+use scrypto::types::*;
 
+use crate::ledger::*;
 use crate::utils::*;
 
+/// Represents a REv2 error.
 #[derive(Debug)]
 pub enum Error {
     NoDefaultAccount,
 
-    NoHomeFolder,
+    MissingHomeDirectory,
 
     MissingSubCommand,
 
@@ -21,11 +24,15 @@ pub enum Error {
 
     InvalidAmount(ParseAmountError),
 
-    InvalidNumber,
+    InvalidNumber(ParseIntError),
+
+    InvalidConfig(sbor::DecodeError),
 
     IOError(io::Error),
 
-    ConfigDecodeError(sbor::DecodeError),
+    DataError(DecodeError),
+
+    JSONError(serde_json::Error),
 
     CargoError(CargoExecutionError),
 
@@ -33,9 +40,7 @@ pub enum Error {
 
     TransactionExecutionError(RuntimeError),
 
+    LedgerDumpError(DisplayError),
+
     TransactionFailed,
-
-    DataError(DecodeError),
-
-    JSONError(serde_json::Error),
 }

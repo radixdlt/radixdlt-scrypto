@@ -1,7 +1,9 @@
-use sbor::*;
-use scrypto::buffer::*;
 use std::fs;
 use std::path::PathBuf;
+
+use sbor::*;
+use scrypto::buffer::*;
+use scrypto::types::*;
 
 use crate::rev2::*;
 
@@ -25,7 +27,7 @@ impl Default for Configs {
 
 /// Returns the data directory.
 pub fn get_data_dir() -> Result<PathBuf, Error> {
-    let mut path = dirs::home_dir().ok_or(Error::NoHomeFolder)?;
+    let mut path = dirs::home_dir().ok_or(Error::MissingHomeDirectory)?;
     path.push("scrypto-simulator");
     if !path.exists() {
         std::fs::create_dir_all(&path).map_err(Error::IOError)?;
@@ -40,13 +42,13 @@ pub fn get_config_file() -> Result<PathBuf, Error> {
     Ok(path.with_extension("sbor"))
 }
 
-/// Returns configurations.
+/// Returns rev2 configurations.
 pub fn get_configs() -> Result<Configs, Error> {
     let path = get_config_file()?;
     if path.exists() {
         Ok(
             scrypto_decode(&fs::read(path).map_err(Error::IOError)?.as_ref())
-                .map_err(Error::ConfigDecodeError)?,
+                .map_err(Error::InvalidConfig)?,
         )
     } else {
         Ok(Configs::default())
