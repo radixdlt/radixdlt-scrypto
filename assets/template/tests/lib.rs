@@ -22,7 +22,7 @@ fn test_hello() {
     // Invoke the `airdrop` method.
     let component = receipt1.component(0).unwrap();
     let transaction2 = TransactionBuilder::new(&executor)
-        .call_method(component, "airdrop", vec![], Some(account))
+        .call_method(component, "free_token", vec![], Some(account))
         .deposit_all(account)
         .build()
         .unwrap();
