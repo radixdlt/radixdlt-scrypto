@@ -6,7 +6,7 @@ use scrypto::rust::string::String;
 use scrypto::types::*;
 
 /// Represents an error when parsing arguments.
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub enum BuildArgsError {
     /// The argument is not provided.
     MissingArgument(usize, Type),
@@ -40,19 +40,19 @@ pub enum BuildTransactionError {
     AccountNotProvided,
 }
 
-impl fmt::Display for BuildArgsError {
+impl fmt::Debug for BuildArgsError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let msg = match self {
             Self::MissingArgument(i, ty) => {
-                format!("Missing the {} argument of type {:?}", fmt_nth(*i), ty)
+                format!("The {} argument (type: {:?}) is missing", fmt_nth(*i), ty)
             }
             Self::UnsupportedType(i, ty) => format!(
-                "The {} argument is of unsupported type {:?}",
+                "The {} argument (type {:?}) is of unsupported type",
                 fmt_nth(*i),
                 ty
             ),
             Self::ParseDataFailure(i, ty, arg) => format!(
-                "Unable to parse the {} argument of type {:?} from {}",
+                "The {} argument (type {:?}) can't be parsed from {}",
                 fmt_nth(*i),
                 ty,
                 arg
@@ -60,6 +60,12 @@ impl fmt::Display for BuildArgsError {
         };
 
         f.write_str(msg.as_str())
+    }
+}
+
+impl fmt::Display for BuildArgsError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{:?}", self)
     }
 }
 

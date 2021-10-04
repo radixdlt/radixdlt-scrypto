@@ -111,23 +111,25 @@ impl Ledger for FileBasedLedger {
     }
 
     fn get_lazy_map(&self, mid: Mid) -> Option<LazyMap> {
-        Self::read(self.get_path(LAZY_MAPS, mid.to_string(), FILE_EXT)).map(Self::decode)
+        Self::read(self.get_path(LAZY_MAPS, format!("{}_{}", mid.0, mid.1), FILE_EXT))
+            .map(Self::decode)
     }
 
     fn put_lazy_map(&mut self, mid: Mid, lazy_map: LazyMap) {
         Self::write(
-            self.get_path(LAZY_MAPS, mid.to_string(), FILE_EXT),
+            self.get_path(LAZY_MAPS, format!("{}_{}", mid.0, mid.1), FILE_EXT),
             Self::encode(&lazy_map),
         )
     }
 
     fn get_vault(&self, vid: Vid) -> Option<Vault> {
-        Self::read(self.get_path(VAULTS, vid.to_string(), FILE_EXT)).map(Self::decode)
+        Self::read(self.get_path(VAULTS, format!("{}_{}", vid.0, vid.1), FILE_EXT))
+            .map(Self::decode)
     }
 
     fn put_vault(&mut self, vid: Vid, vault: Vault) {
         Self::write(
-            self.get_path(VAULTS, vid.to_string(), FILE_EXT),
+            self.get_path(VAULTS, format!("{}_{}", vid.0, vid.1), FILE_EXT),
             Self::encode(&vault),
         )
     }

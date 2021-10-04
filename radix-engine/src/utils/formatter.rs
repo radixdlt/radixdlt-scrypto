@@ -154,16 +154,16 @@ pub fn format_custom<L: Ledger>(
     match ty {
         SCRYPTO_TYPE_AMOUNT => {
             let amount = Amount::try_from(data).map_err(|_| DecodeError::InvalidCustomData(ty))?;
-            Ok(format!("Amount({})", amount))
+            Ok(format!("{}", amount))
         }
         SCRYPTO_TYPE_ADDRESS => {
             let address =
                 Address::try_from(data).map_err(|_| DecodeError::InvalidCustomData(ty))?;
-            Ok(format!("Address({})", address))
+            Ok(format!("{}", address))
         }
         SCRYPTO_TYPE_H256 => {
             let h256 = H256::try_from(data).map_err(|_| DecodeError::InvalidCustomData(ty))?;
-            Ok(format!("H256({})", h256))
+            Ok(format!("{}", h256))
         }
         SCRYPTO_TYPE_MID => {
             let mid = Mid::try_from(data).map_err(|_| DecodeError::InvalidCustomData(ty))?;
@@ -180,20 +180,20 @@ pub fn format_custom<L: Ledger>(
                 }
             };
 
-            Ok(format!("Mid({}) {{ {} }}", mid, buf))
+            Ok(format!("{:?} {{ {} }}", mid, buf))
         }
         SCRYPTO_TYPE_BID => {
             let bid = Bid::try_from(data).map_err(|_| DecodeError::InvalidCustomData(ty))?;
-            Ok(format!("Bid({})", bid))
+            Ok(format!("{:?}", bid))
         }
         SCRYPTO_TYPE_RID => {
             let rid = Rid::try_from(data).map_err(|_| DecodeError::InvalidCustomData(ty))?;
-            Ok(format!("Rid({})", rid))
+            Ok(format!("{:?}", rid))
         }
         SCRYPTO_TYPE_VID => {
             let vid = Vid::try_from(data).map_err(|_| DecodeError::InvalidCustomData(ty))?;
             vaults.push(vid);
-            Ok(format!("Vid({})", vid))
+            Ok(format!("{:?}", vid))
         }
         _ => Err(DecodeError::InvalidType {
             expected: None,

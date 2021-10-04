@@ -3,14 +3,12 @@ use sbor::{describe::Type, *};
 use crate::buffer::*;
 use crate::rust::borrow::ToOwned;
 use crate::rust::convert::TryFrom;
-use crate::rust::fmt;
-use crate::rust::str::FromStr;
 use crate::rust::string::String;
 use crate::rust::vec::Vec;
 use crate::types::*;
 
 /// Represents a bucket id.
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Bid(pub u32);
 
 /// Represents an error when parsing Bid.
@@ -26,16 +24,6 @@ impl Bid {
     }
 }
 
-impl FromStr for Bid {
-    type Err = ParseBidError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(Self(
-            u32::from_str(s).map_err(|_| ParseBidError::InvalidU32(s.to_owned()))?,
-        ))
-    }
-}
-
 impl TryFrom<&[u8]> for Bid {
     type Error = ParseBidError;
 
@@ -45,18 +33,6 @@ impl TryFrom<&[u8]> for Bid {
         } else {
             Ok(Self(u32::from_le_bytes(copy_u8_array(slice))))
         }
-    }
-}
-
-impl fmt::Debug for Bid {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Bid({})", self.0)
-    }
-}
-
-impl fmt::Display for Bid {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.0)
     }
 }
 
@@ -88,18 +64,5 @@ impl Describe for Bid {
         Type::Custom {
             name: SCRYPTO_NAME_BID.to_owned(),
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::rust::string::ToString;
-
-    #[test]
-    fn test_from_to_string() {
-        let s = "123";
-        let a = Bid::from_str(s).unwrap();
-        assert_eq!(a.to_string(), s);
     }
 }

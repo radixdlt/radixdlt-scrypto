@@ -86,8 +86,8 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
     pub fn new_account(&mut self) -> Address {
         self.run(
             TransactionBuilder::new(self)
-                .mint_resource(1000.into(), RADIX_TOKEN)
-                .new_account_with_resource(1000.into(), RADIX_TOKEN)
+                .mint_resource(1000000.into(), RADIX_TOKEN)
+                .new_account_with_resource(1000000.into(), RADIX_TOKEN)
                 .build()
                 .unwrap(),
             false,
