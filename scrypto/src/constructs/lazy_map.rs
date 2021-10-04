@@ -6,7 +6,7 @@ use crate::rust::borrow::ToOwned;
 use crate::types::*;
 use crate::utils::*;
 
-/// A scalable key-value lazy_map.
+/// A scalable key-value map which loads values on demand.
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct LazyMap {
     mid: Mid,

@@ -32,7 +32,7 @@ pub mod kernel;
 pub mod prelude;
 /// Scrypto resource abstractions.
 pub mod resource;
-/// A facade to Rust standard types.
+/// A facade of Rust standard types.
 pub mod rust;
 /// Scrypto traits.
 pub mod traits;
@@ -126,6 +126,7 @@ macro_rules! include_code {
     };
 }
 
+/// Asserts a condition and panics if it's false.
 #[macro_export]
 macro_rules! scrypto_assert {
     ($cond: expr $(,)?) => {

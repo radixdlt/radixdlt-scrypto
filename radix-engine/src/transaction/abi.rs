@@ -29,8 +29,7 @@ pub trait AbiProvider {
     ) -> Result<abi::Blueprint, RuntimeError>;
 }
 
-/// This basic ABI provider can provide ABIs of bootstrapped and manually
-/// added blueprints.
+/// Provides ABIs for blueprints either installed during bootstrap or added manually.
 pub struct BasicAbiProvider {
     ledger: InMemoryLedger,
 }

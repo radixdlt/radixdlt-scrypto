@@ -20,20 +20,20 @@ pub struct Track<'l, L: Ledger> {
     ledger: &'l mut L,
     current_epoch: u64,
     tx_hash: H256,
-    alloc: IdAllocator,
+    id_alloc: IdAllocator,
     logs: Vec<(Level, String)>,
     packages: HashMap<Address, Package>,
     components: HashMap<Address, Component>,
-    lazy_maps: HashMap<Mid, LazyMap>,
     resource_defs: HashMap<Address, ResourceDef>,
+    lazy_maps: HashMap<Mid, LazyMap>,
     vaults: HashMap<Vid, Vault>,
     updated_packages: HashSet<Address>,
     updated_components: HashSet<Address>,
     updated_lazy_maps: HashSet<Mid>,
     updated_resource_defs: HashSet<Address>,
     updated_vaults: HashSet<Vid>,
-    new_addresses: Vec<Address>,
-    cache: LruCache<Address, Module>, // TODO: move to ledger level
+    new_entities: Vec<Address>,
+    code_cache: LruCache<Address, Module>, // TODO: move to ledger level
 }
 
 impl<'l, L: Ledger> Track<'l, L> {
@@ -42,20 +42,20 @@ impl<'l, L: Ledger> Track<'l, L> {
             ledger,
             current_epoch,
             tx_hash,
-            alloc: IdAllocator::new(),
+            id_alloc: IdAllocator::new(),
             logs: Vec::new(),
             packages: HashMap::new(),
             components: HashMap::new(),
-            lazy_maps: HashMap::new(),
             resource_defs: HashMap::new(),
+            lazy_maps: HashMap::new(),
             vaults: HashMap::new(),
             updated_packages: HashSet::new(),
             updated_components: HashSet::new(),
             updated_lazy_maps: HashSet::new(),
             updated_resource_defs: HashSet::new(),
             updated_vaults: HashSet::new(),
-            new_addresses: Vec::new(),
-            cache: LruCache::new(1024),
+            new_entities: Vec::new(),
+            code_cache: LruCache::new(1024),
         }
     }
 
@@ -69,7 +69,7 @@ impl<'l, L: Ledger> Track<'l, L> {
         self.tx_hash
     }
 
-    /// Returns the current current_epoch.
+    /// Returns the current epoch.
     pub fn current_epoch(&self) -> u64 {
         self.current_epoch
     }
@@ -79,9 +79,9 @@ impl<'l, L: Ledger> Track<'l, L> {
         &self.logs
     }
 
-    /// Returns new addresses created so far.
-    pub fn new_addresses(&self) -> &[Address] {
-        &self.new_addresses
+    /// Returns new entities created so far.
+    pub fn new_entities(&self) -> &[Address] {
+        &self.new_entities
     }
 
     /// Adds a log message.
@@ -93,12 +93,12 @@ impl<'l, L: Ledger> Track<'l, L> {
     pub fn load_module(&mut self, address: Address) -> Option<(ModuleRef, MemoryRef)> {
         match self.get_package(address).map(Clone::clone) {
             Some(p) => {
-                if let Some(m) = self.cache.get(&address) {
+                if let Some(m) = self.code_cache.get(&address) {
                     Some(instantiate_module(m).unwrap())
                 } else {
                     let module = parse_module(p.code()).unwrap();
                     let inst = instantiate_module(&module).unwrap();
-                    self.cache.put(address, module);
+                    self.code_cache.put(address, module);
                     Some(inst)
                 }
             }
@@ -180,7 +180,7 @@ impl<'l, L: Ledger> Track<'l, L> {
         self.components.insert(address, component);
     }
 
-    /// Returns an immutable reference to a map, if exists.
+    /// Returns an immutable reference to a lazy map, if exists.
     pub fn get_lazy_map(&mut self, mid: Mid) -> Option<&LazyMap> {
         if self.lazy_maps.contains_key(&mid) {
             return self.lazy_maps.get(&mid);
@@ -193,7 +193,8 @@ impl<'l, L: Ledger> Track<'l, L> {
             None
         }
     }
-    /// Returns a mutable reference to a map, if exists.
+
+    /// Returns a mutable reference to a lazy map, if exists.
     pub fn get_lazy_map_mut(&mut self, mid: Mid) -> Option<&mut LazyMap> {
         self.updated_lazy_maps.insert(mid);
 
@@ -209,7 +210,7 @@ impl<'l, L: Ledger> Track<'l, L> {
         }
     }
 
-    /// Inserts a new map.
+    /// Inserts a new lazy map.
     pub fn put_lazy_map(&mut self, mid: Mid, lazy_map: LazyMap) {
         self.updated_lazy_maps.insert(mid);
 
@@ -294,46 +295,46 @@ impl<'l, L: Ledger> Track<'l, L> {
 
     /// Creates a new package address.
     pub fn new_package_address(&mut self) -> Address {
-        let address = self.alloc.new_package_address(self.tx_hash());
-        self.new_addresses.push(address);
+        let address = self.id_alloc.new_package_address(self.tx_hash());
+        self.new_entities.push(address);
         address
     }
 
     /// Creates a new component address.
     pub fn new_component_address(&mut self) -> Address {
-        let address = self.alloc.new_component_address(self.tx_hash());
-        self.new_addresses.push(address);
+        let address = self.id_alloc.new_component_address(self.tx_hash());
+        self.new_entities.push(address);
         address
     }
 
     /// Creates a new resource definition address.
     pub fn new_resource_def_address(&mut self) -> Address {
-        let address = self.alloc.new_resource_def_address(self.tx_hash());
-        self.new_addresses.push(address);
+        let address = self.id_alloc.new_resource_def_address(self.tx_hash());
+        self.new_entities.push(address);
         address
     }
 
     /// Creates a new bucket ID.
     pub fn new_bid(&mut self) -> Bid {
-        self.alloc.new_bid()
+        self.id_alloc.new_bid()
     }
 
     /// Creates a new vault ID.
     pub fn new_vid(&mut self) -> Vid {
-        self.alloc.new_vid(self.tx_hash())
+        self.id_alloc.new_vid(self.tx_hash())
     }
 
     /// Creates a new reference id.
     pub fn new_rid(&mut self) -> Rid {
-        self.alloc.new_rid()
+        self.id_alloc.new_rid()
     }
 
     /// Creates a new map id.
     pub fn new_mid(&mut self) -> Mid {
-        self.alloc.new_mid(self.tx_hash())
+        self.id_alloc.new_mid(self.tx_hash())
     }
 
-    /// Commits changes to ledger.
+    /// Commits changes to the underlying ledger.
     pub fn commit(&mut self) {
         for address in self.updated_packages.clone() {
             self.ledger
@@ -345,14 +346,14 @@ impl<'l, L: Ledger> Track<'l, L> {
                 .put_component(address, self.components.get(&address).unwrap().clone());
         }
 
-        for mid in self.updated_lazy_maps.clone() {
-            self.ledger
-                .put_lazy_map(mid, self.lazy_maps.get(&mid).unwrap().clone());
-        }
-
         for address in self.updated_resource_defs.clone() {
             self.ledger
                 .put_resource_def(address, self.resource_defs.get(&address).unwrap().clone());
+        }
+
+        for mid in self.updated_lazy_maps.clone() {
+            self.ledger
+                .put_lazy_map(mid, self.lazy_maps.get(&mid).unwrap().clone());
         }
 
         for vault in self.updated_vaults.clone() {

@@ -5,7 +5,7 @@ compile_error!("Either feature `std` or `alloc` must be enabled for this crate."
 #[cfg(all(feature = "std", feature = "alloc"))]
 compile_error!("Feature `std` and `alloc` can't be enabled at the same time.");
 
-/// SBOR encode, decode any data.
+/// SBOR any data encoding and decoding.
 pub mod any;
 /// SBOR decoding.
 pub mod decode;
@@ -13,7 +13,7 @@ pub mod decode;
 pub mod describe;
 /// SBOR encoding.
 pub mod encode;
-/// A facade to Rust types.
+/// A facade of Rust types.
 pub mod rust;
 /// SBOR type ids.
 pub mod type_id;

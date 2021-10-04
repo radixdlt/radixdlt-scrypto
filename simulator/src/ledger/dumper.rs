@@ -34,7 +34,7 @@ pub fn dump_component<T: Ledger>(address: Address, ledger: &T) {
             println!(
                 "{}: {}",
                 "State".green().bold(),
-                format_sbor_with_ledger(c.state(), ledger, &mut vaults).unwrap()
+                format_data_with_ledger(c.state(), ledger, &mut vaults).unwrap()
             );
 
             println!("{}:", "Resources".green().bold());

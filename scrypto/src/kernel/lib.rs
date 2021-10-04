@@ -13,7 +13,7 @@ pub mod describe;
 pub mod encode;
 /// SBOR parse any SBOR data.
 pub mod parse;
-/// A facade to Rust types.
+/// A facade of Rust types.
 pub mod rust;
 /// SBOR type ids.
 pub mod type_id;

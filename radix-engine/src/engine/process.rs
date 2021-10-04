@@ -69,14 +69,14 @@ pub struct Process<'r, 'l, L: Ledger> {
     vm: Option<Interpreter>,
 }
 
-/// Represents an interpreter.
+/// Represents an interpreter instance.
 pub struct Interpreter {
     invocation: Invocation,
     module: ModuleRef,
     memory: MemoryRef,
 }
 
-/// Represents an invocation.
+/// Keeps invocation information.
 #[derive(Debug, Clone)]
 pub struct Invocation {
     package: Address,
@@ -120,7 +120,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         Ok(address)
     }
 
-    /// Create resource with mutable supply.
+    /// Create a resource with mutable supply.
     pub fn create_resource_mutable(
         &mut self,
         metadata: HashMap<String, String>,
@@ -156,7 +156,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         Ok(address)
     }
 
-    /// Create resource with fixed supply.
+    /// Create a resource with fixed supply.
     pub fn create_resource_fixed(
         &mut self,
         metadata: HashMap<String, String>,
@@ -200,11 +200,11 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         match definition.auth {
             Some(pkg) => {
                 if package != pkg {
-                    return Err(RuntimeError::UnauthorizedToMint);
+                    return Err(RuntimeError::UnauthorizedMint);
                 }
             }
             None => {
-                return Err(RuntimeError::UnableToMintDueToFixedSupply);
+                return Err(RuntimeError::MintFixedSupplyResource);
             }
         }
         definition.supply += amount;
@@ -217,14 +217,14 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
     }
 
     /// Reserves a bucket id.
-    pub fn reserve_bid(&mut self) -> Bid {
+    pub fn reserve_bucket_id(&mut self) -> Bid {
         let bid = self.track.new_bid();
         self.reserved_bids.insert(bid);
         bid
     }
 
     /// Reserves a bucket ref id.
-    pub fn reserve_rid(&mut self) -> Rid {
+    pub fn reserve_bucket_ref_id(&mut self) -> Rid {
         let rid = self.track.new_rid();
         self.reserved_rids.insert(rid);
         rid
@@ -526,7 +526,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
 
     /// Checks resource leak.
     pub fn check_resource(&self) -> Result<(), RuntimeError> {
-        debug!(self, "Finalization started");
+        debug!(self, "Resource check started");
         let mut success = true;
 
         for (bid, bucket) in &self.buckets {
@@ -549,7 +549,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
             success = false;
         }
 
-        debug!(self, "Finalization ended");
+        debug!(self, "Resource check ended");
         if success {
             Ok(())
         } else {
@@ -576,7 +576,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
     fn package(&self) -> Result<Address, RuntimeError> {
         self.vm
             .as_ref()
-            .ok_or(RuntimeError::VmNotStarted)
+            .ok_or(RuntimeError::InterpreterNotStarted)
             .map(|vm| vm.invocation.package)
     }
 
@@ -584,7 +584,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
     fn function(&self) -> Result<String, RuntimeError> {
         self.vm
             .as_ref()
-            .ok_or(RuntimeError::VmNotStarted)
+            .ok_or(RuntimeError::InterpreterNotStarted)
             .map(|vm| vm.invocation.function.clone())
     }
 
@@ -592,7 +592,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
     fn args(&self) -> Result<Vec<Vec<u8>>, RuntimeError> {
         self.vm
             .as_ref()
-            .ok_or(RuntimeError::VmNotStarted)
+            .ok_or(RuntimeError::InterpreterNotStarted)
             .map(|vm| vm.invocation.args.clone())
     }
 
@@ -600,7 +600,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
     fn module(&self) -> Result<ModuleRef, RuntimeError> {
         self.vm
             .as_ref()
-            .ok_or(RuntimeError::VmNotStarted)
+            .ok_or(RuntimeError::InterpreterNotStarted)
             .map(|vm| vm.module.clone())
     }
 
@@ -608,7 +608,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
     fn memory(&self) -> Result<MemoryRef, RuntimeError> {
         self.vm
             .as_ref()
-            .ok_or(RuntimeError::VmNotStarted)
+            .ok_or(RuntimeError::InterpreterNotStarted)
             .map(|vm| vm.memory.clone())
     }
 
@@ -801,7 +801,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
             }
         }
 
-        Err(RuntimeError::UnableToAllocateMemory)
+        Err(RuntimeError::MemoryAllocError)
     }
 
     /// Read a byte array from wasm instance.
@@ -845,7 +845,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
             .get(input_ptr, input_len as usize)
             .map_err(|e| Trap::from(RuntimeError::MemoryAccessError(e)))?;
         let input: I = scrypto_decode(&input_bytes)
-            .map_err(|e| Trap::from(RuntimeError::InvalidRequest(e)))?;
+            .map_err(|e| Trap::from(RuntimeError::InvalidRequestData(e)))?;
         if input_len <= 1024 {
             trace!(self, "{:?}", input);
         } else {
@@ -1019,6 +1019,10 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         _input: CreateLazyMapInput,
     ) -> Result<CreateLazyMapOutput, RuntimeError> {
         let mid = self.track.new_mid();
+
+        if self.track.get_lazy_map(mid).is_some() {
+            return Err(RuntimeError::LazyMapAlreadyExists(mid));
+        }
 
         self.track.put_lazy_map(mid, LazyMap::new(self.package()?));
 
@@ -1443,6 +1447,10 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
             tx_hash: self.track.tx_hash(),
         })
     }
+
+    //============================
+    // SYSTEM CALL HANDLERS END
+    //============================
 }
 
 impl<'r, 'l, L: Ledger> Externals for Process<'r, 'l, L> {
@@ -1508,10 +1516,10 @@ impl<'r, 'l, L: Ledger> Externals for Process<'r, 'l, L> {
                     GET_CALL_DATA => self.handle(args, Self::handle_get_call_data),
                     GET_TRANSACTION_HASH => self.handle(args, Self::handle_get_transaction_hash),
 
-                    _ => Err(RuntimeError::InvalidOpCode(operation).into()),
+                    _ => Err(RuntimeError::InvalidRequestCode(operation).into()),
                 }
             }
-            _ => Err(RuntimeError::UnknownHostFunction(index).into()),
+            _ => Err(RuntimeError::HostFunctionNotFound(index).into()),
         }
     }
 }

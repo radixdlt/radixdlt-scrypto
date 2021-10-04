@@ -14,8 +14,8 @@ pub enum BuildArgsError {
     /// The argument is of unsupported type.
     UnsupportedType(usize, Type),
 
-    /// Failed to parse argument.
-    UnableToParse(usize, Type, String),
+    /// Failure when parsing an argument.
+    ParseDataFailure(usize, Type, String),
 }
 
 /// Represents an error when building a transaction.
@@ -30,10 +30,13 @@ pub enum BuildTransactionError {
     /// The provided arguments do not match ABI.
     FailedToBuildArgs(BuildArgsError),
 
+    /// Failed to export the ABI of a function.
     FailedToExportFunctionAbi(Address, String, String),
 
+    /// Failed to export the ABI of a method.
     FailedToExportMethodAbi(Address, String),
 
+    /// Account is required but not provided.
     AccountNotProvided,
 }
 
@@ -48,7 +51,7 @@ impl fmt::Display for BuildArgsError {
                 fmt_nth(*i),
                 ty
             ),
-            Self::UnableToParse(i, ty, arg) => format!(
+            Self::ParseDataFailure(i, ty, arg) => format!(
                 "Unable to parse the {} argument of type {:?} from {}",
                 fmt_nth(*i),
                 ty,

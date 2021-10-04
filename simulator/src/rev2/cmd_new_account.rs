@@ -28,7 +28,7 @@ pub fn handle_new_account(matches: &ArgMatches) -> Result<(), Error> {
     let mut executor = TransactionExecutor::new(&mut ledger, configs.current_epoch, configs.nonce);
     let transaction = TransactionBuilder::new(&executor)
         .mint_resource(1000.into(), RADIX_TOKEN)
-        .new_account_take_resource(1000.into(), RADIX_TOKEN)
+        .new_account_with_resource(1000.into(), RADIX_TOKEN)
         .build()
         .map_err(Error::TransactionConstructionError)?;
     let receipt = executor.run(transaction, trace);

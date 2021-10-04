@@ -47,8 +47,8 @@ pub fn blueprint(input: TokenStream) -> TokenStream {
 
 /// Imports a blueprint from its ABI.
 ///
-/// This macro will generate stubs for accessing a blueprint that complies to the
-/// given ABI specification.
+/// This macro will generate stubs for accessing the blueprint according to
+/// its ABI specification.
 ///
 /// # Example
 /// ```ignore

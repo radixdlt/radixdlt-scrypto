@@ -10,7 +10,7 @@ use crate::engine::*;
 use crate::ledger::*;
 use crate::transaction::*;
 
-/// A transaction executor.
+/// The transaction executor.
 pub struct TransactionExecutor<'l, L: Ledger> {
     ledger: &'l mut L,
     current_epoch: u64,
@@ -87,7 +87,7 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
         self.run(
             TransactionBuilder::new(self)
                 .mint_resource(1000.into(), RADIX_TOKEN)
-                .new_account_take_resource(1000.into(), RADIX_TOKEN)
+                .new_account_with_resource(1000.into(), RADIX_TOKEN)
                 .build()
                 .unwrap(),
             false,
@@ -125,12 +125,12 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
         let mut success = true;
         for inst in &transaction.instructions {
             let res = match inst {
-                Instruction::ReserveBid => {
-                    proc.reserve_bid();
+                Instruction::ReserveBucketId => {
+                    proc.reserve_bucket_id();
                     Ok(None)
                 }
-                Instruction::ReserveRid => {
-                    proc.reserve_rid();
+                Instruction::ReserveBucketRefId => {
+                    proc.reserve_bucket_ref_id();
                     Ok(None)
                 }
                 Instruction::CreateTempBucket {
@@ -208,8 +208,8 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
             success,
             results,
             logs: track.logs().clone(),
-            new_addresses: if success {
-                track.new_addresses().to_vec()
+            new_entities: if success {
+                track.new_entities().to_vec()
             } else {
                 Vec::new()
             },

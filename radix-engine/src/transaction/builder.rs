@@ -15,7 +15,7 @@ use scrypto::types::*;
 use crate::engine::*;
 use crate::transaction::*;
 
-/// A utility for building transactions.
+/// Utility for building transaction.
 pub struct TransactionBuilder<'a, A: AbiProvider> {
     abi_provider: &'a A,
     /// The address allocator for calculating reserved bucket id.
@@ -41,16 +41,16 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     }
 
     /// Reserves a bucket id.
-    pub fn reserve_bid(&mut self) -> Bid {
+    pub fn reserve_bucket_id(&mut self) -> Bid {
         let bid = self.allocator.new_bid();
-        self.reservations.push(Instruction::ReserveBid);
+        self.reservations.push(Instruction::ReserveBucketId);
         bid
     }
 
     /// Reserves a bucket ref id.
-    pub fn reserve_rid(&mut self) -> Rid {
+    pub fn reserve_bucket_ref_id(&mut self) -> Rid {
         let rid = self.allocator.new_rid();
-        self.reservations.push(Instruction::ReserveRid);
+        self.reservations.push(Instruction::ReserveBucketRefId);
         rid
     }
 
@@ -72,7 +72,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         });
     }
 
-    /// Appends a raw instruction.
+    /// Adds a raw instruction.
     pub fn instruction(&mut self, inst: Instruction) -> &mut Self {
         self.instructions.push(inst);
         self
@@ -122,7 +122,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         })
     }
 
-    /// Creates an Account component.
+    /// Creates an account.
     pub fn new_account(&mut self) -> &mut Self {
         self.instruction(Instruction::CallFunction {
             package: ACCOUNT_PACKAGE,
@@ -132,13 +132,15 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         })
     }
 
-    /// Creates an Account component which will take resources from context.
-    pub fn new_account_take_resource(
+    /// Creates an account with resource taken from context.
+    ///
+    /// Note: need to make sure the context contains the required resource.
+    pub fn new_account_with_resource(
         &mut self,
         amount: Amount,
         resource_def: Address,
     ) -> &mut Self {
-        let bid = self.reserve_bid();
+        let bid = self.reserve_bucket_id();
         self.create_bucket(amount, resource_def, bid);
         self.instruction(Instruction::CallFunction {
             package: ACCOUNT_PACKAGE,
@@ -162,7 +164,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         })
     }
 
-    /// Deposits everything to an account.
+    /// Deposits everything into an account.
     pub fn deposit_all(&mut self, account: Address) -> &mut Self {
         self.instruction(Instruction::DepositAll {
             component: account,
@@ -172,12 +174,11 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
 
     /// Calls a function.
     ///
-    /// The default implementation will automatically prepare the arguments based on the
+    /// The implementation will automatically prepare the arguments based on the
     /// function ABI, including resource buckets and bucket refs.
     ///
-    /// If an account address is provided, resources will be withdrawn from the specified account;
-    /// otherwise, they will be taken from transaction context (presumably obtained from
-    /// previous instructions).
+    /// If an account address is provided, resources will be withdrawn from the given account;
+    /// otherwise, they will be taken from transaction context.
     pub fn call_function(
         &mut self,
         package: Address,
@@ -219,12 +220,11 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
 
     /// Calls a method.
     ///
-    /// The default implementation will automatically prepare the arguments based on the
+    /// The implementation will automatically prepare the arguments based on the
     /// method ABI, including resource buckets and bucket refs.
     ///
-    /// If an account address is provided, resources will be withdrawn from the specified account;
-    /// otherwise, they will be taken from transaction context (presumably obtained from
-    /// previous instructions).
+    /// If an account address is provided, resources will be withdrawn from the given account;
+    /// otherwise, they will be taken from transaction context.
     pub fn call_method(
         &mut self,
         component: Address,
@@ -258,7 +258,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         self
     }
 
-    /// Builds the transaction.
+    /// Builds a transaction.
     pub fn build(&mut self) -> Result<Transaction, BuildTransactionError> {
         if !self.errors.is_empty() {
             return Err(self.errors[0].clone());
@@ -340,7 +340,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     {
         let value = arg
             .parse::<T>()
-            .map_err(|_| BuildArgsError::UnableToParse(i, ty.clone(), arg.to_owned()))?;
+            .map_err(|_| BuildArgsError::ParseDataFailure(i, ty.clone(), arg.to_owned()))?;
         Ok(SmartValue::from(value))
     }
 
@@ -356,19 +356,19 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
             SCRYPTO_NAME_AMOUNT => {
                 let value = arg
                     .parse::<Amount>()
-                    .map_err(|_| BuildArgsError::UnableToParse(i, ty.clone(), arg.to_owned()))?;
+                    .map_err(|_| BuildArgsError::ParseDataFailure(i, ty.clone(), arg.to_owned()))?;
                 Ok(SmartValue::from(value))
             }
             SCRYPTO_NAME_ADDRESS => {
                 let value = arg
                     .parse::<Address>()
-                    .map_err(|_| BuildArgsError::UnableToParse(i, ty.clone(), arg.to_owned()))?;
+                    .map_err(|_| BuildArgsError::ParseDataFailure(i, ty.clone(), arg.to_owned()))?;
                 Ok(SmartValue::from(value))
             }
             SCRYPTO_NAME_H256 => {
                 let value = arg
                     .parse::<H256>()
-                    .map_err(|_| BuildArgsError::UnableToParse(i, ty.clone(), arg.to_owned()))?;
+                    .map_err(|_| BuildArgsError::ParseDataFailure(i, ty.clone(), arg.to_owned()))?;
                 Ok(SmartValue::from(value))
             }
             SCRYPTO_NAME_BID | SCRYPTO_NAME_BUCKET | SCRYPTO_NAME_RID | SCRYPTO_NAME_BUCKET_REF => {
@@ -383,29 +383,33 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
 
                         match name {
                             SCRYPTO_NAME_BID => {
-                                let bid = self.reserve_bid();
+                                let bid = self.reserve_bucket_id();
                                 self.create_bucket(a, r, bid);
                                 Ok(SmartValue::from(bid))
                             }
                             SCRYPTO_NAME_BUCKET => {
-                                let bid = self.reserve_bid();
+                                let bid = self.reserve_bucket_id();
                                 self.create_bucket(a, r, bid);
                                 Ok(SmartValue::from(scrypto::resource::Bucket::from(bid)))
                             }
                             SCRYPTO_NAME_RID => {
-                                let rid = self.reserve_rid();
+                                let rid = self.reserve_bucket_ref_id();
                                 self.create_bucket_ref(a, r, rid);
                                 Ok(SmartValue::from(rid))
                             }
                             SCRYPTO_NAME_BUCKET_REF => {
-                                let rid = self.reserve_rid();
+                                let rid = self.reserve_bucket_ref_id();
                                 self.create_bucket_ref(a, r, rid);
                                 Ok(SmartValue::from(scrypto::resource::BucketRef::from(rid)))
                             }
                             _ => panic!("Unexpected"),
                         }
                     }
-                    _ => Err(BuildArgsError::UnableToParse(i, ty.clone(), arg.to_owned())),
+                    _ => Err(BuildArgsError::ParseDataFailure(
+                        i,
+                        ty.clone(),
+                        arg.to_owned(),
+                    )),
                 }
             }
             _ => Err(BuildArgsError::UnsupportedType(i, ty.clone())),

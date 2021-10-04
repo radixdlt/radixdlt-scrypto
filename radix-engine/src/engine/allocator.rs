@@ -1,23 +1,23 @@
 use scrypto::types::*;
 use scrypto::utils::*;
 
-/// An address allocator generates new addresses and identities.
+/// An ID allocator defines how identities are generated.
 pub struct IdAllocator {
     count: u32,
 }
 
 impl IdAllocator {
-    /// Creates an address allocator.
+    /// Creates an ID allocator.
     pub fn new() -> Self {
         Self { count: 0 }
     }
 
-    /// Returns the number of addresses that have been generated.
+    /// Returns the number of IDs that have been generated.
     pub fn count(&self) -> u32 {
         self.count
     }
 
-    /// Resets this allocator.
+    /// Resets the counter.
     pub fn reset(&mut self) {
         self.count = 0;
     }
@@ -42,7 +42,7 @@ impl IdAllocator {
         Address::Component(hash.lower_26_bytes())
     }
 
-    /// Creates a new resource definition address.
+    /// Creates a new resource def address.
     pub fn new_resource_def_address(&mut self, tx_hash: H256) -> Address {
         let mut data = tx_hash.as_ref().to_vec();
         data.extend(self.count.to_le_bytes());

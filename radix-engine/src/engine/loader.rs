@@ -2,12 +2,12 @@ use wasmi::*;
 
 use crate::engine::*;
 
-/// Parse a WASM module.
+/// Parses a WASM module.
 pub fn parse_module(code: &[u8]) -> Result<Module, RuntimeError> {
     Module::from_buffer(code).map_err(RuntimeError::InvalidModule)
 }
 
-/// Instantiate a WASM module.
+/// Instantiates a WASM module.
 pub fn instantiate_module(module: &Module) -> Result<(ModuleRef, MemoryRef), RuntimeError> {
     // Instantiate
     let instance = ModuleInstance::new(
@@ -25,7 +25,7 @@ pub fn instantiate_module(module: &Module) -> Result<(ModuleRef, MemoryRef), Run
     }
 }
 
-/// Validate a WASM module.
+/// Validates a WASM module.
 pub fn validate_module(code: &[u8]) -> Result<(), RuntimeError> {
     // Parse
     let parsed = parse_module(code)?;

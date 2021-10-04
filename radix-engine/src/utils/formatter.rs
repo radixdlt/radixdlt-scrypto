@@ -12,15 +12,15 @@ use scrypto::types::*;
 
 use crate::ledger::*;
 
-/// Format SBOR data.
-pub fn format_sbor(data: &[u8]) -> Result<String, DecodeError> {
+/// Formats any data.
+pub fn format_data(data: &[u8]) -> Result<String, DecodeError> {
     let ledger = InMemoryLedger::new();
     let mut vaults = vec![];
-    format_sbor_with_ledger(data, &ledger, &mut vaults)
+    format_data_with_ledger(data, &ledger, &mut vaults)
 }
 
-/// Format SBOR data, using ledger state.
-pub fn format_sbor_with_ledger<L: Ledger>(
+/// Formats any data, using ledger state.
+pub fn format_data_with_ledger<L: Ledger>(
     data: &[u8],
     ledger: &L,
     vaults: &mut Vec<Vid>,
@@ -174,9 +174,9 @@ pub fn format_custom<L: Ledger>(
                     if i != 0 {
                         buf.push_str(", ");
                     }
-                    buf.push_str(format_sbor_with_ledger(k, ledger, vaults)?.as_str());
+                    buf.push_str(format_data_with_ledger(k, ledger, vaults)?.as_str());
                     buf.push_str(" => ");
-                    buf.push_str(format_sbor_with_ledger(v, ledger, vaults)?.as_str());
+                    buf.push_str(format_data_with_ledger(v, ledger, vaults)?.as_str());
                 }
             };
 

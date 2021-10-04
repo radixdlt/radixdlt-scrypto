@@ -10,7 +10,7 @@ use crate::rust::vec::Vec;
 use crate::types::*;
 use crate::utils::*;
 
-/// A template that describes the common behavior and state structure of its instances.
+/// A template that describes shared structure and behavior.
 #[derive(Debug, PartialEq, Eq, TypeId, Encode, Decode)]
 pub struct Blueprint {
     package: Address,

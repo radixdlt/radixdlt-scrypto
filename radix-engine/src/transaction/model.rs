@@ -24,7 +24,7 @@ impl SmartValue {
 impl fmt::Debug for SmartValue {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if self.0.len() <= 1024 {
-            write!(f, "{}", format_sbor(&self.0).unwrap())
+            write!(f, "{}", format_data(&self.0).unwrap())
         } else {
             write!(f, "LargeValue(len: {})", self.0.len())
         }
@@ -41,10 +41,10 @@ pub struct Transaction {
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub enum Instruction {
     /// Reserves a bucket id.
-    ReserveBid,
+    ReserveBucketId,
 
     /// Reserves a bucket ref id.
-    ReserveRid,
+    ReserveBucketRefId,
 
     /// Creates bucket by withdrawing resource from context.
     CreateTempBucket {
@@ -88,13 +88,13 @@ pub struct Receipt {
     pub success: bool,
     pub results: Vec<Result<Option<SmartValue>, RuntimeError>>,
     pub logs: Vec<(Level, String)>,
-    pub new_addresses: Vec<Address>,
+    pub new_entities: Vec<Address>,
     pub execution_time: Option<u128>,
 }
 
 impl Receipt {
     pub fn package(&self, nth: usize) -> Option<Address> {
-        self.new_addresses
+        self.new_entities
             .iter()
             .filter(|a| matches!(a, Address::Package(_)))
             .map(Clone::clone)
@@ -102,7 +102,7 @@ impl Receipt {
     }
 
     pub fn component(&self, nth: usize) -> Option<Address> {
-        self.new_addresses
+        self.new_entities
             .iter()
             .filter(|a| matches!(a, Address::Component(_)))
             .map(Clone::clone)
@@ -110,7 +110,7 @@ impl Receipt {
     }
 
     pub fn resource_def(&self, nth: usize) -> Option<Address> {
-        self.new_addresses
+        self.new_entities
             .iter()
             .filter(|a| matches!(a, Address::ResourceDef(_)))
             .map(Clone::clone)
@@ -181,22 +181,16 @@ impl fmt::Debug for Receipt {
         write!(
             f,
             "\n{} {}",
-            "New Addresses:".bold().green(),
-            self.new_addresses.len()
+            "New Entities:".bold().green(),
+            self.new_entities.len()
         )?;
-        for (i, address) in self.new_addresses.iter().enumerate() {
+        for (i, address) in self.new_entities.iter().enumerate() {
             let ty = match address {
                 Address::Package(_) => "Package",
                 Address::Component(_) => "Component",
                 Address::ResourceDef(_) | Address::RadixToken => "ResourceDef",
             };
-            write!(
-                f,
-                "\n{} {}: {}",
-                prefix!(i, self.new_addresses),
-                ty,
-                address
-            )?;
+            write!(f, "\n{} {}: {}", prefix!(i, self.new_entities), ty, address)?;
         }
 
         Ok(())

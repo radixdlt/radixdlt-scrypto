@@ -8,7 +8,7 @@ use crate::rust::str::FromStr;
 use crate::rust::vec::Vec;
 use crate::types::*;
 
-/// System package which provides bootstrap functions.
+/// The package which defines the `System` blueprint.
 pub const SYSTEM_PACKAGE: Address = Address::Package([0u8; 26]);
 
 /// The package that defines the `Account` blueprint.
