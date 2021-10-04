@@ -43,12 +43,17 @@ blueprint! {
         }
 
         /// Withdraws resource from this account.
-        pub fn withdraw(&mut self, amount: Amount, address: Address) -> Bucket {
+        pub fn withdraw(&mut self, amount: Amount, resource_def: Address) -> Bucket {
             let vault = self
                 .vaults
-                .get::<Address, Vault>(&address)
-                .unwrap();
-            vault.take(amount)
+                .get::<Address, Vault>(&resource_def);
+            match vault {
+                Some(vault) => vault.take(amount),
+                None => {
+                    error!("Resource not found in account: amount = {}, resource_def = {}", amount, resource_def);
+                    panic!();
+                }
+            }
         }
     }
 }
