@@ -340,7 +340,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     {
         let value = arg
             .parse::<T>()
-            .map_err(|_| BuildArgsError::ParseDataFailure(i, ty.clone(), arg.to_owned()))?;
+            .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
         Ok(SmartValue::from(value))
     }
 
@@ -356,19 +356,19 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
             SCRYPTO_NAME_AMOUNT => {
                 let value = arg
                     .parse::<Amount>()
-                    .map_err(|_| BuildArgsError::ParseDataFailure(i, ty.clone(), arg.to_owned()))?;
+                    .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
                 Ok(SmartValue::from(value))
             }
             SCRYPTO_NAME_ADDRESS => {
                 let value = arg
                     .parse::<Address>()
-                    .map_err(|_| BuildArgsError::ParseDataFailure(i, ty.clone(), arg.to_owned()))?;
+                    .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
                 Ok(SmartValue::from(value))
             }
             SCRYPTO_NAME_H256 => {
                 let value = arg
                     .parse::<H256>()
-                    .map_err(|_| BuildArgsError::ParseDataFailure(i, ty.clone(), arg.to_owned()))?;
+                    .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
                 Ok(SmartValue::from(value))
             }
             SCRYPTO_NAME_BID | SCRYPTO_NAME_BUCKET | SCRYPTO_NAME_RID | SCRYPTO_NAME_BUCKET_REF => {
@@ -405,11 +405,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                             _ => panic!("Unexpected"),
                         }
                     }
-                    _ => Err(BuildArgsError::ParseDataFailure(
-                        i,
-                        ty.clone(),
-                        arg.to_owned(),
-                    )),
+                    _ => Err(BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned())),
                 }
             }
             _ => Err(BuildArgsError::UnsupportedType(i, ty.clone())),
