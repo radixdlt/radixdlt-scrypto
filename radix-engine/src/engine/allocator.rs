@@ -59,7 +59,7 @@ impl IdAllocator {
     }
 
     /// Creates a new vault ID.
-    pub fn new_vault_id(&mut self, tx_hash: H256) -> Vid {
+    pub fn new_vid(&mut self, tx_hash: H256) -> Vid {
         self.count += 1;
         Vid(tx_hash, self.count - 1)
     }
@@ -67,10 +67,10 @@ impl IdAllocator {
     /// Creates a new reference ID.
     pub fn new_rid(&mut self) -> Rid {
         self.count += 1;
-        Rid(self.count)
+        Rid(self.count - 1)
     }
 
-    /// Creates a new lazy map id.
+    /// Creates a new lazy map ID.
     pub fn new_mid(&mut self, tx_hash: H256) -> Mid {
         self.count += 1;
         Mid(tx_hash, self.count - 1)

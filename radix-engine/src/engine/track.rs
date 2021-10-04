@@ -319,8 +319,8 @@ impl<'l, L: Ledger> Track<'l, L> {
     }
 
     /// Creates a new vault ID.
-    pub fn new_vault_id(&mut self) -> Vid {
-        self.alloc.new_vault_id(self.tx_hash())
+    pub fn new_vid(&mut self) -> Vid {
+        self.alloc.new_vid(self.tx_hash())
     }
 
     /// Creates a new reference id.

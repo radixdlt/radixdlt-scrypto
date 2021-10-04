@@ -40,27 +40,35 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         }
     }
 
-    /// Creates an empty bucket
-    pub fn reserve_bucket(&mut self, resource_def: Address) -> Bid {
+    /// Reserves a bucket id.
+    pub fn reserve_bid(&mut self) -> Bid {
         let bid = self.allocator.new_bid();
-        self.reservations
-            .push(Instruction::ReserveBucket { resource_def });
+        self.reservations.push(Instruction::ReserveBid);
         bid
     }
 
-    /// Creates a reference by borrowing a bucket.
-    pub fn create_reference(&mut self, bucket: Bid) -> Rid {
+    /// Reserves a bucket ref id.
+    pub fn reserve_rid(&mut self) -> Rid {
         let rid = self.allocator.new_rid();
-        self.reservations.push(Instruction::BorrowBucket { bucket });
+        self.reservations.push(Instruction::ReserveRid);
         rid
     }
 
-    /// Moves resource (from context) to a bucket.
-    pub fn move_to_bucket(&mut self, amount: Amount, resource_def: Address, bucket: Bid) {
-        self.instruction(Instruction::MoveToBucket {
+    /// Creates a bucket by withdrawing resource from context.
+    pub fn create_bucket(&mut self, amount: Amount, resource_def: Address, bucket: Bid) {
+        self.instruction(Instruction::CreateTempBucket {
             amount,
             resource_def,
             bucket,
+        });
+    }
+
+    /// Creates a bucket ref by borrowing resource from context.
+    pub fn create_bucket_ref(&mut self, amount: Amount, resource_def: Address, reference: Rid) {
+        self.instruction(Instruction::CreateTempBucketRef {
+            amount,
+            resource_def,
+            reference,
         });
     }
 
@@ -130,8 +138,8 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         amount: Amount,
         resource_def: Address,
     ) -> &mut Self {
-        let bid = self.reserve_bucket(resource_def);
-        self.move_to_bucket(amount, resource_def, bid);
+        let bid = self.reserve_bid();
+        self.create_bucket(amount, resource_def, bid);
         self.instruction(Instruction::CallFunction {
             package: ACCOUNT_PACKAGE,
             name: "Account".to_owned(),
@@ -369,24 +377,29 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                 let resource_def = split.next().and_then(|v| v.trim().parse::<Address>().ok());
                 match (amount, resource_def) {
                     (Some(a), Some(r)) => {
-                        let bid = self.reserve_bucket(r);
-
                         if let Some(account) = account {
                             self.withdraw(a, r, account);
                         }
-                        self.move_to_bucket(a, r, bid);
 
                         match name {
-                            SCRYPTO_NAME_BID => Ok(SmartValue::from(bid)),
+                            SCRYPTO_NAME_BID => {
+                                let bid = self.reserve_bid();
+                                self.create_bucket(a, r, bid);
+                                Ok(SmartValue::from(bid))
+                            }
                             SCRYPTO_NAME_BUCKET => {
+                                let bid = self.reserve_bid();
+                                self.create_bucket(a, r, bid);
                                 Ok(SmartValue::from(scrypto::resource::Bucket::from(bid)))
                             }
                             SCRYPTO_NAME_RID => {
-                                let rid = self.create_reference(bid);
+                                let rid = self.reserve_rid();
+                                self.create_bucket_ref(a, r, rid);
                                 Ok(SmartValue::from(rid))
                             }
                             SCRYPTO_NAME_BUCKET_REF => {
-                                let rid = self.create_reference(bid);
+                                let rid = self.reserve_rid();
+                                self.create_bucket_ref(a, r, rid);
                                 Ok(SmartValue::from(scrypto::resource::BucketRef::from(rid)))
                             }
                             _ => panic!("Unexpected"),

@@ -40,17 +40,24 @@ pub struct Transaction {
 /// Represents an instruction in transaction
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub enum Instruction {
-    /// Creates an empty bucket
-    ReserveBucket { resource_def: Address },
+    /// Reserves a bucket id.
+    ReserveBid,
 
-    /// Borrows a bucket, thus creating a reference.
-    BorrowBucket { bucket: Bid },
+    /// Reserves a reference id.
+    ReserveRid,
 
-    /// Moves resource to a reserved bucket.
-    MoveToBucket {
+    /// Creates bucket by withdrawing resource from context.
+    CreateTempBucket {
         amount: Amount,
         resource_def: Address,
         bucket: Bid,
+    },
+
+    /// Creates a bucket ref by borrowing resource from context.
+    CreateTempBucketRef {
+        amount: Amount,
+        resource_def: Address,
+        reference: Rid,
     },
 
     /// Calls a function.

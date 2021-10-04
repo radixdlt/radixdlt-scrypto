@@ -1,6 +1,7 @@
 use sbor::{describe::Type, *};
 
 use crate::buffer::*;
+use crate::constructs::*;
 use crate::kernel::*;
 use crate::resource::*;
 use crate::rust::borrow::ToOwned;
@@ -32,6 +33,15 @@ impl Describe for BucketRef {
 }
 
 impl BucketRef {
+    pub fn check(self, resource_def: Address) {
+        if self.amount() > 0.into() && self.resource_def() == resource_def.into() {
+            self.drop();
+        } else {
+            Logger::error(format!("Refereneced bucket does not have {}", resource_def));
+            panic!();
+        }
+    }
+
     pub fn amount(&self) -> Amount {
         let input = GetRefAmountInput {
             reference: self.rid,

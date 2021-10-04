@@ -57,12 +57,15 @@ pub struct Process<'r, 'l, L: Ledger> {
     depth: usize,
     trace: bool,
     track: &'r mut Track<'l, L>,
-    reserved_bucket_ids: HashSet<Bid>,
     buckets: HashMap<Bid, Bucket>,
     references: HashMap<Rid, BucketRef>,
     locked_buckets: HashMap<Bid, BucketRef>,
     moving_buckets: HashMap<Bid, Bucket>,
     moving_references: HashMap<Rid, BucketRef>,
+    temp_buckets: HashMap<Bid, Bucket>,
+    temp_references: HashMap<Rid, BucketRef>,
+    reserved_bids: HashSet<Bid>,
+    reserved_rids: HashSet<Rid>,
     vm: Option<Interpreter>,
 }
 
@@ -89,12 +92,15 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
             depth,
             trace,
             track,
-            reserved_bucket_ids: HashSet::new(),
             buckets: HashMap::new(),
             references: HashMap::new(),
             locked_buckets: HashMap::new(),
             moving_buckets: HashMap::new(),
             moving_references: HashMap::new(),
+            temp_buckets: HashMap::new(),
+            temp_references: HashMap::new(),
+            reserved_bids: HashSet::new(),
+            reserved_rids: HashSet::new(),
             vm: None,
         }
     }
@@ -108,7 +114,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         }
         validate_module(code)?;
 
-        debug!(self, "New package: {}", address);
+        debug!(self, "New package: {:?}", address);
         self.track
             .put_package(address, Package::new(code.to_owned()));
         Ok(address)
@@ -142,7 +148,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         if self.track.get_resource_def(address).is_some() {
             return Err(RuntimeError::ResourceDefAlreadyExists(address));
         } else {
-            debug!(self, "New resource definition: {}", address);
+            debug!(self, "New resource definition: {:?}", address);
 
             self.track.put_resource_def(address, resource_def);
         }
@@ -210,62 +216,29 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         Ok(bid)
     }
 
-    /// Reserves a bucket, used for function/method invocation.
-    pub fn reserve_bucket(&mut self, resource_def: Address) -> Bid {
+    /// Reserves a bucket id.
+    pub fn reserve_bid(&mut self) -> Bid {
         let bid = self.track.new_bid();
-        let bucket = Bucket::new(Amount::zero(), resource_def);
-        self.buckets.insert(bid, bucket);
-        self.reserved_bucket_ids.insert(bid);
+        self.reserved_bids.insert(bid);
         bid
     }
 
-    /// Borrows a bucket.
-    pub fn borrow_bucket(&mut self, bid: Bid) -> Result<Rid, RuntimeError> {
+    /// Reserves a reference id.
+    pub fn reserve_rid(&mut self) -> Rid {
         let rid = self.track.new_rid();
-        debug!(self, "Borrowing: bid =  {:?}, rid = {:?}", bid, rid);
-
-        match self.locked_buckets.get_mut(&bid) {
-            Some(bucket_rc) => {
-                // re-borrow
-                self.references.insert(rid, bucket_rc.clone());
-            }
-            None => {
-                // first time borrow
-                let bucket = BucketRef::new(LockedBucket::new(
-                    bid,
-                    self.buckets
-                        .remove(&bid)
-                        .ok_or(RuntimeError::BucketNotFound(bid))?,
-                ));
-                self.references.insert(rid, bucket.clone());
-                self.locked_buckets.insert(bid, bucket);
-            }
-        }
-
-        Ok(rid)
+        self.reserved_rids.insert(rid);
+        rid
     }
 
-    /// Moves resource into a reserved bucket.
-    pub fn move_to_bucket(
+    fn withdraw_resource(
         &mut self,
         amount: Amount,
         resource_def: Address,
-        bid: Bid,
     ) -> Result<(), RuntimeError> {
-        debug!(
-            self,
-            "Moving to bucket: amount = {}, resource_def = {}, bid = {}", amount, resource_def, bid
-        );
-        if !self.reserved_bucket_ids.contains(&bid) {
-            return Err(RuntimeError::BucketNotReserved);
-        }
-
         let candidates: BTreeSet<Bid> = self
             .buckets
             .iter()
-            .filter(|(k, v)| {
-                v.resource_def() == resource_def && !self.reserved_bucket_ids.contains(k)
-            })
+            .filter(|(_, v)| v.resource_def() == resource_def)
             .map(|(k, _)| *k)
             .collect();
 
@@ -276,6 +249,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
             }
             let available = self.buckets.get(&candidate).unwrap().amount();
             if available > needed {
+                debug!(self, "Withdrawing {:?} from {:?}", amount, candidate);
                 self.buckets
                     .get_mut(&candidate)
                     .unwrap()
@@ -283,20 +257,73 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
                     .unwrap();
                 needed = Amount::zero();
             } else {
+                debug!(self, "Withdrawing all from {:?}", candidate);
                 self.buckets.remove(&candidate);
                 needed -= available;
             }
         }
 
         if needed.is_zero() {
-            self.reserved_bucket_ids.remove(&bid);
-            self.buckets.insert(bid, Bucket::new(amount, resource_def));
             Ok(())
         } else {
             Err(RuntimeError::AccountingError(
                 BucketError::InsufficientBalance,
             ))
         }
+    }
+
+    /// Creates a bucket by withdrawing resource from context.
+    pub fn create_temp_bucket(
+        &mut self,
+        amount: Amount,
+        resource_def: Address,
+        bid: Bid,
+    ) -> Result<(), RuntimeError> {
+        debug!(
+            self,
+            "Creating bucket: amount = {:?}, resource_def = {:?}, bid = {:?}",
+            amount,
+            resource_def,
+            bid
+        );
+        if !self.reserved_bids.remove(&bid) {
+            return Err(RuntimeError::BucketNotReserved);
+        }
+
+        self.withdraw_resource(amount, resource_def)?;
+
+        self.temp_buckets
+            .insert(bid, Bucket::new(amount, resource_def));
+
+        Ok(())
+    }
+
+    /// Creates a bucket ref by borrowing resource from context.
+    pub fn create_temp_bucket_ref(
+        &mut self,
+        amount: Amount,
+        resource_def: Address,
+        rid: Rid,
+    ) -> Result<(), RuntimeError> {
+        debug!(
+            self,
+            "Creating bucket ref: amount = {:?}, resource_def = {:?}, rid = {:?}",
+            amount,
+            resource_def,
+            rid
+        );
+        if !self.reserved_rids.remove(&rid) {
+            return Err(RuntimeError::ReferenceNotReserved);
+        }
+
+        self.withdraw_resource(amount, resource_def)?;
+
+        let bid = self.track.new_bid();
+        let bucket = BucketRef::new(LockedBucket::new(bid, Bucket::new(amount, resource_def)));
+        self.locked_buckets.insert(bid, bucket.clone());
+        self.temp_references.insert(rid, bucket);
+
+        Ok(())
     }
 
     /// Puts buckets and references into this process, used for passing resources to child process.
@@ -329,7 +356,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         let now = std::time::Instant::now();
         info!(
             self,
-            "Run started: package = {}, export = {}", invocation.package, invocation.export
+            "Run started: package = {:?}, export = {:?}", invocation.package, invocation.export
         );
 
         // Load the code
@@ -434,9 +461,9 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         let mut process = Process::new(self.depth + 1, self.trace, self.track);
         process.put_buckets_and_refs(buckets_out, references_out);
 
-        // run the function and finalize
+        // run the function
         let result = process.run(invocation)?;
-        process.finalize()?;
+        process.check_resource()?;
 
         // move resource
         let (buckets_in, references_in) = process.take_moving_buckets_and_refs();
@@ -497,21 +524,25 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         result
     }
 
-    /// Finalizes this process by checking resource leaks.
-    pub fn finalize(&self) -> Result<(), RuntimeError> {
+    /// Checks resource leak.
+    pub fn check_resource(&self) -> Result<(), RuntimeError> {
         debug!(self, "Finalization started");
         let mut success = true;
 
         for (bid, bucket) in &self.buckets {
-            warn!(self, "Open bucket: {:?}, {:?}", bid, bucket);
-            success = false;
-        }
-        for (bid, bucket) in &self.locked_buckets {
-            warn!(self, "Open locked bucket: {:?}, {:?}", bid, bucket);
+            warn!(self, "Dangling bucket: {:?}, {:?}", bid, bucket);
             success = false;
         }
         for (rid, bucket_ref) in &self.references {
-            warn!(self, "Open reference: {:?}, {:?}", rid, bucket_ref);
+            warn!(self, "Dangling reference: {:?}, {:?}", rid, bucket_ref);
+            success = false;
+        }
+        for (bid, bucket) in &self.temp_buckets {
+            warn!(self, "Dangling temp bucket: {:?}, {:?}", bid, bucket);
+            success = false;
+        }
+        for (rid, bucket_ref) in &self.temp_references {
+            warn!(self, "Dangling temp reference: {:?}, {:?}", rid, bucket_ref);
             success = false;
         }
 
@@ -721,6 +752,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         let bucket = self
             .buckets
             .remove(&bid)
+            .or_else(|| self.temp_buckets.remove(&bid))
             .ok_or(RuntimeError::BucketNotFound(bid))?;
         debug!(
             self,
@@ -735,10 +767,11 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         let bucket_ref = self
             .references
             .remove(&rid)
+            .or_else(|| self.temp_references.remove(&rid))
             .ok_or(RuntimeError::ReferenceNotFound(rid))?;
         debug!(
             self,
-            "Moving reference: bid = {:?}, ref = {:?}", rid, bucket_ref
+            "Moving reference: rid = {:?}, bucket = {:?}", rid, bucket_ref
         );
         self.moving_references.insert(rid, bucket_ref);
         Ok(rid)
@@ -855,7 +888,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
     ) -> Result<CallFunctionOutput, RuntimeError> {
         debug!(
             self,
-            "CALL started: package = {:?}, name = {}, function = {}, args = {:?}",
+            "CALL started: package = {:?}, name = {:?}, function = {:?}, args = {:?}",
             input.package,
             input.name,
             input.function,
@@ -880,7 +913,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
     ) -> Result<CallMethodOutput, RuntimeError> {
         debug!(
             self,
-            "CALL started: component = {}, method = {}, args = {:?}",
+            "CALL started: component = {:?}, method = {:?}, args = {:?}",
             input.component,
             input.method,
             input.args
@@ -908,7 +941,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
             self.process_data(&input.state, Self::reject_buckets, Self::reject_references)?;
         debug!(
             self,
-            "New component: address = {}, state = {:?}", address, new_state
+            "New component: address = {:?}, state = {:?}", address, new_state
         );
 
         let component = Component::new(self.package()?, input.name, new_state);
@@ -1137,7 +1170,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         let package = self.package()?;
 
         let new_vault = Vault::new(Bucket::new(Amount::zero(), input.resource_def), package);
-        let new_vid = self.track.new_vault_id();
+        let new_vid = self.track.new_vid();
         self.track.put_vault(new_vid, new_vault);
 
         Ok(CreateEmptyVaultOutput { vault: new_vid })
@@ -1291,9 +1324,29 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         &mut self,
         input: CreateReferenceInput,
     ) -> Result<CreateReferenceOutput, RuntimeError> {
-        Ok(CreateReferenceOutput {
-            reference: self.borrow_bucket(input.bucket)?,
-        })
+        let bid = input.bucket;
+        let rid = self.track.new_rid();
+        debug!(self, "Borrowing: bid = {:?}, rid = {:?}", bid, rid);
+
+        match self.locked_buckets.get_mut(&bid) {
+            Some(bucket_rc) => {
+                // re-borrow
+                self.references.insert(rid, bucket_rc.clone());
+            }
+            None => {
+                // first time borrow
+                let bucket = BucketRef::new(LockedBucket::new(
+                    bid,
+                    self.buckets
+                        .remove(&bid)
+                        .ok_or(RuntimeError::BucketNotFound(bid))?,
+                ));
+                self.locked_buckets.insert(bid, bucket.clone());
+                self.references.insert(rid, bucket);
+            }
+        }
+
+        Ok(CreateReferenceOutput { reference: rid })
     }
 
     fn handle_drop_reference(

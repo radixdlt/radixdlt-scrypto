@@ -74,6 +74,8 @@ pub enum RuntimeError {
 
     BucketNotReserved,
 
+    ReferenceNotReserved,
+
     UnexpectedBucketReturn,
 
     UnexpectedReferenceReturn,

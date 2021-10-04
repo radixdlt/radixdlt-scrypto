@@ -125,17 +125,27 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
         let mut success = true;
         for inst in &transaction.instructions {
             let res = match inst {
-                Instruction::ReserveBucket { resource_def } => {
-                    proc.reserve_bucket(*resource_def);
+                Instruction::ReserveBid => {
+                    proc.reserve_bid();
                     Ok(None)
                 }
-                Instruction::BorrowBucket { bucket } => proc.borrow_bucket(*bucket).map(|_| None),
-                Instruction::MoveToBucket {
+                Instruction::ReserveRid => {
+                    proc.reserve_rid();
+                    Ok(None)
+                }
+                Instruction::CreateTempBucket {
                     amount,
                     resource_def,
                     bucket,
                 } => proc
-                    .move_to_bucket(*amount, *resource_def, *bucket)
+                    .create_temp_bucket(*amount, *resource_def, *bucket)
+                    .map(|_| None),
+                Instruction::CreateTempBucketRef {
+                    amount,
+                    resource_def,
+                    reference,
+                } => proc
+                    .create_temp_bucket_ref(*amount, *resource_def, *reference)
                     .map(|_| None),
                 Instruction::CallFunction {
                     package,
@@ -174,7 +184,7 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
                         Ok(None)
                     }
                 }
-                Instruction::End => proc.finalize().map(|_| None),
+                Instruction::End => proc.check_resource().map(|_| None),
             };
             success &= res.is_ok();
             results.push(res);
