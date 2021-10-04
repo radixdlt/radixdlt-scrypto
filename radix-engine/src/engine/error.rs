@@ -58,7 +58,7 @@ pub enum RuntimeError {
 
     BucketNotFound(Bid),
 
-    ReferenceNotFound(Rid),
+    BucketRefNotFound(Rid),
 
     AccountingError(BucketError),
 
@@ -66,7 +66,7 @@ pub enum RuntimeError {
 
     BucketNotAllowed,
 
-    ReferenceNotAllowed,
+    BucketRefNotAllowed,
 
     VmNotStarted,
 
@@ -74,11 +74,7 @@ pub enum RuntimeError {
 
     BucketNotReserved,
 
-    ReferenceNotReserved,
-
-    UnexpectedBucketReturn,
-
-    UnexpectedReferenceReturn,
+    BucketRefNotReserved,
 
     InvalidAddressType,
 }

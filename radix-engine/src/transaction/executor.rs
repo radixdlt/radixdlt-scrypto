@@ -143,9 +143,9 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
                 Instruction::CreateTempBucketRef {
                     amount,
                     resource_def,
-                    reference,
+                    bucket_ref,
                 } => proc
-                    .create_temp_bucket_ref(*amount, *resource_def, *reference)
+                    .create_temp_bucket_ref(*amount, *resource_def, *bucket_ref)
                     .map(|_| None),
                 Instruction::CallFunction {
                     package,

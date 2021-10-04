@@ -9,7 +9,7 @@ use crate::rust::string::String;
 use crate::rust::vec::Vec;
 use crate::types::*;
 
-/// Represents a reference id.
+/// Represents a bucket ref id.
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Rid(pub u32);
 

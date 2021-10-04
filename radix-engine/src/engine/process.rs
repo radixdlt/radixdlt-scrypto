@@ -58,12 +58,12 @@ pub struct Process<'r, 'l, L: Ledger> {
     trace: bool,
     track: &'r mut Track<'l, L>,
     buckets: HashMap<Bid, Bucket>,
-    references: HashMap<Rid, BucketRef>,
+    bucket_refs: HashMap<Rid, BucketRef>,
     locked_buckets: HashMap<Bid, BucketRef>,
     moving_buckets: HashMap<Bid, Bucket>,
-    moving_references: HashMap<Rid, BucketRef>,
+    moving_bucket_refs: HashMap<Rid, BucketRef>,
     temp_buckets: HashMap<Bid, Bucket>,
-    temp_references: HashMap<Rid, BucketRef>,
+    temp_bucket_refs: HashMap<Rid, BucketRef>,
     reserved_bids: HashSet<Bid>,
     reserved_rids: HashSet<Rid>,
     vm: Option<Interpreter>,
@@ -93,12 +93,12 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
             trace,
             track,
             buckets: HashMap::new(),
-            references: HashMap::new(),
+            bucket_refs: HashMap::new(),
             locked_buckets: HashMap::new(),
             moving_buckets: HashMap::new(),
-            moving_references: HashMap::new(),
+            moving_bucket_refs: HashMap::new(),
             temp_buckets: HashMap::new(),
-            temp_references: HashMap::new(),
+            temp_bucket_refs: HashMap::new(),
             reserved_bids: HashSet::new(),
             reserved_rids: HashSet::new(),
             vm: None,
@@ -223,7 +223,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         bid
     }
 
-    /// Reserves a reference id.
+    /// Reserves a bucket ref id.
     pub fn reserve_rid(&mut self) -> Rid {
         let rid = self.track.new_rid();
         self.reserved_rids.insert(rid);
@@ -313,7 +313,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
             rid
         );
         if !self.reserved_rids.remove(&rid) {
-            return Err(RuntimeError::ReferenceNotReserved);
+            return Err(RuntimeError::BucketRefNotReserved);
         }
 
         self.withdraw_resource(amount, resource_def)?;
@@ -321,28 +321,28 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         let bid = self.track.new_bid();
         let bucket = BucketRef::new(LockedBucket::new(bid, Bucket::new(amount, resource_def)));
         self.locked_buckets.insert(bid, bucket.clone());
-        self.temp_references.insert(rid, bucket);
+        self.temp_bucket_refs.insert(rid, bucket);
 
         Ok(())
     }
 
-    /// Puts buckets and references into this process, used for passing resources to child process.
+    /// Puts buckets and bucket refs into this process, used for passing resources to child process.
     pub fn put_buckets_and_refs(
         &mut self,
         buckets: HashMap<Bid, Bucket>,
-        references: HashMap<Rid, BucketRef>,
+        bucket_refs: HashMap<Rid, BucketRef>,
     ) {
         self.buckets.extend(buckets);
-        self.references.extend(references);
+        self.bucket_refs.extend(bucket_refs);
     }
 
-    /// Takes all **moving** buckets and references from this process, used for returning resources to parent.
+    /// Takes all **moving** buckets and bucket refs from this process, used for returning resources to parent.
     pub fn take_moving_buckets_and_refs(
         &mut self,
     ) -> (HashMap<Bid, Bucket>, HashMap<Rid, BucketRef>) {
         let buckets = self.moving_buckets.drain().collect();
-        let references = self.moving_references.drain().collect();
-        (buckets, references)
+        let bucket_refs = self.moving_bucket_refs.drain().collect();
+        (buckets, bucket_refs)
     }
 
     /// Returns the IDs of all owned buckets.
@@ -382,7 +382,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         let output = match rtn {
             RuntimeValue::I32(ptr) => {
                 let bytes = self.read_bytes(ptr)?;
-                self.process_data(&bytes, Self::move_buckets, Self::move_references)?;
+                self.process_data(&bytes, Self::move_buckets, Self::move_bucket_refs)?;
                 bytes
             }
             _ => {
@@ -455,19 +455,19 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
     pub fn call(&mut self, invocation: Invocation) -> Result<Vec<u8>, RuntimeError> {
         // move resource
         for arg in &invocation.args {
-            self.process_data(arg, Self::move_buckets, Self::move_references)?;
+            self.process_data(arg, Self::move_buckets, Self::move_bucket_refs)?;
         }
-        let (buckets_out, references_out) = self.take_moving_buckets_and_refs();
+        let (buckets_out, bucket_refs_out) = self.take_moving_buckets_and_refs();
         let mut process = Process::new(self.depth + 1, self.trace, self.track);
-        process.put_buckets_and_refs(buckets_out, references_out);
+        process.put_buckets_and_refs(buckets_out, bucket_refs_out);
 
         // run the function
         let result = process.run(invocation)?;
         process.check_resource()?;
 
         // move resource
-        let (buckets_in, references_in) = process.take_moving_buckets_and_refs();
-        self.put_buckets_and_refs(buckets_in, references_in);
+        let (buckets_in, bucket_refs_in) = process.take_moving_buckets_and_refs();
+        self.put_buckets_and_refs(buckets_in, bucket_refs_in);
 
         // scan locked buckets for some might have been unlocked by child processes
         let bids: Vec<Bid> = self
@@ -533,16 +533,19 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
             warn!(self, "Dangling bucket: {:?}, {:?}", bid, bucket);
             success = false;
         }
-        for (rid, bucket_ref) in &self.references {
-            warn!(self, "Dangling reference: {:?}, {:?}", rid, bucket_ref);
+        for (rid, bucket_ref) in &self.bucket_refs {
+            warn!(self, "Dangling bucket ref: {:?}, {:?}", rid, bucket_ref);
             success = false;
         }
         for (bid, bucket) in &self.temp_buckets {
             warn!(self, "Dangling temp bucket: {:?}, {:?}", bid, bucket);
             success = false;
         }
-        for (rid, bucket_ref) in &self.temp_references {
-            warn!(self, "Dangling temp reference: {:?}, {:?}", rid, bucket_ref);
+        for (rid, bucket_ref) in &self.temp_bucket_refs {
+            warn!(
+                self,
+                "Dangling temp bucket ref: {:?}, {:?}", rid, bucket_ref
+            );
             success = false;
         }
 
@@ -593,7 +596,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
             .map(|vm| vm.invocation.args.clone())
     }
 
-    /// Return the module reference
+    /// Return the module ref
     fn module(&self) -> Result<ModuleRef, RuntimeError> {
         self.vm
             .as_ref()
@@ -601,7 +604,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
             .map(|vm| vm.module.clone())
     }
 
-    /// Return the memory reference
+    /// Return the memory ref
     fn memory(&self) -> Result<MemoryRef, RuntimeError> {
         self.vm
             .as_ref()
@@ -763,28 +766,25 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
     }
 
     /// Remove transient buckets from this process
-    fn move_references(&mut self, rid: Rid) -> Result<Rid, RuntimeError> {
+    fn move_bucket_refs(&mut self, rid: Rid) -> Result<Rid, RuntimeError> {
         let bucket_ref = self
-            .references
+            .bucket_refs
             .remove(&rid)
-            .or_else(|| self.temp_references.remove(&rid))
-            .ok_or(RuntimeError::ReferenceNotFound(rid))?;
-        debug!(
-            self,
-            "Moving reference: rid = {:?}, bucket = {:?}", rid, bucket_ref
-        );
-        self.moving_references.insert(rid, bucket_ref);
+            .or_else(|| self.temp_bucket_refs.remove(&rid))
+            .ok_or(RuntimeError::BucketRefNotFound(rid))?;
+        debug!(self, "Moving bucket ref: {:?}, {:?}", rid, bucket_ref);
+        self.moving_bucket_refs.insert(rid, bucket_ref);
         Ok(rid)
     }
 
-    /// Reject buckets movements
+    /// Reject buckets
     fn reject_buckets(&mut self, _: Bid) -> Result<Bid, RuntimeError> {
         Err(RuntimeError::BucketNotAllowed)
     }
 
-    /// Reject references movements
-    fn reject_references(&mut self, _: Rid) -> Result<Rid, RuntimeError> {
-        Err(RuntimeError::ReferenceNotAllowed)
+    /// Reject bucket refs
+    fn reject_bucket_refs(&mut self, _: Rid) -> Result<Rid, RuntimeError> {
+        Err(RuntimeError::BucketRefNotAllowed)
     }
 
     /// Send a byte array to wasm instance.
@@ -938,7 +938,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         }
 
         let new_state =
-            self.process_data(&input.state, Self::reject_buckets, Self::reject_references)?;
+            self.process_data(&input.state, Self::reject_buckets, Self::reject_bucket_refs)?;
         debug!(
             self,
             "New component: address = {:?}, state = {:?}", address, new_state
@@ -998,7 +998,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         let package = self.package()?;
 
         let new_state =
-            self.process_data(&input.state, Self::reject_buckets, Self::reject_references)?;
+            self.process_data(&input.state, Self::reject_buckets, Self::reject_bucket_refs)?;
         debug!(self, "Transformed state: {:?}", new_state);
 
         let component = self
@@ -1051,10 +1051,10 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         let package = self.package()?;
 
         let new_key =
-            self.process_data(&input.key, Self::reject_buckets, Self::reject_references)?;
+            self.process_data(&input.key, Self::reject_buckets, Self::reject_bucket_refs)?;
         debug!(self, "Transformed key: {:?}", new_key);
         let new_value =
-            self.process_data(&input.value, Self::reject_buckets, Self::reject_references)?;
+            self.process_data(&input.value, Self::reject_buckets, Self::reject_bucket_refs)?;
         debug!(self, "Transformed value: {:?}", new_value);
 
         let lazy_map = self
@@ -1320,10 +1320,10 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         Ok(GetBucketResourceAddressOutput { resource_def })
     }
 
-    fn handle_create_reference(
+    fn handle_create_bucket_ref(
         &mut self,
-        input: CreateReferenceInput,
-    ) -> Result<CreateReferenceOutput, RuntimeError> {
+        input: CreateBucketRefInput,
+    ) -> Result<CreateBucketRefOutput, RuntimeError> {
         let bid = input.bucket;
         let rid = self.track.new_rid();
         debug!(self, "Borrowing: bid = {:?}, rid = {:?}", bid, rid);
@@ -1331,7 +1331,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         match self.locked_buckets.get_mut(&bid) {
             Some(bucket_rc) => {
                 // re-borrow
-                self.references.insert(rid, bucket_rc.clone());
+                self.bucket_refs.insert(rid, bucket_rc.clone());
             }
             None => {
                 // first time borrow
@@ -1342,24 +1342,24 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
                         .ok_or(RuntimeError::BucketNotFound(bid))?,
                 ));
                 self.locked_buckets.insert(bid, bucket.clone());
-                self.references.insert(rid, bucket);
+                self.bucket_refs.insert(rid, bucket);
             }
         }
 
-        Ok(CreateReferenceOutput { reference: rid })
+        Ok(CreateBucketRefOutput { bucket_ref: rid })
     }
 
-    fn handle_drop_reference(
+    fn handle_drop_bucket_ref(
         &mut self,
-        input: DropReferenceInput,
-    ) -> Result<DropReferenceOutput, RuntimeError> {
-        let rid = input.reference;
+        input: DropBucketRefInput,
+    ) -> Result<DropBucketRefOutput, RuntimeError> {
+        let rid = input.bucket_ref;
 
         let (count, bid) = {
             let bucket = self
-                .references
+                .bucket_refs
                 .remove(&rid)
-                .ok_or(RuntimeError::ReferenceNotFound(rid))?;
+                .ok_or(RuntimeError::BucketRefNotFound(rid))?;
             debug!(self, "Returning {:?}: {:?}", rid, bucket);
             (Rc::strong_count(&bucket) - 1, bucket.bucket_id())
         };
@@ -1370,34 +1370,34 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
             }
         }
 
-        Ok(DropReferenceOutput {})
+        Ok(DropBucketRefOutput {})
     }
 
-    fn handle_get_ref_amount(
+    fn handle_get_bucket_ref_amount(
         &mut self,
-        input: GetRefAmountInput,
-    ) -> Result<GetRefAmountOutput, RuntimeError> {
-        let reference = self
-            .references
-            .get(&input.reference)
-            .ok_or(RuntimeError::ReferenceNotFound(input.reference))?;
+        input: GetBucketRefAmountInput,
+    ) -> Result<GetBucketRefAmountOutput, RuntimeError> {
+        let bucket_ref = self
+            .bucket_refs
+            .get(&input.bucket_ref)
+            .ok_or(RuntimeError::BucketRefNotFound(input.bucket_ref))?;
 
-        Ok(GetRefAmountOutput {
-            amount: reference.bucket().amount(),
+        Ok(GetBucketRefAmountOutput {
+            amount: bucket_ref.bucket().amount(),
         })
     }
 
-    fn handle_get_ref_resource_def(
+    fn handle_get_bucket_ref_resource_def(
         &mut self,
-        input: GetRefResourceAddressInput,
-    ) -> Result<GetRefResourceAddressOutput, RuntimeError> {
-        let reference = self
-            .references
-            .get(&input.reference)
-            .ok_or(RuntimeError::ReferenceNotFound(input.reference))?;
+        input: GetBucketRefResourceDefInput,
+    ) -> Result<GetBucketRefResourceDefOutput, RuntimeError> {
+        let bucket_ref = self
+            .bucket_refs
+            .get(&input.bucket_ref)
+            .ok_or(RuntimeError::BucketRefNotFound(input.bucket_ref))?;
 
-        Ok(GetRefResourceAddressOutput {
-            resource_def: reference.bucket().resource_def(),
+        Ok(GetBucketRefResourceDefOutput {
+            resource_def: bucket_ref.bucket().resource_def(),
         })
     }
 
@@ -1496,10 +1496,12 @@ impl<'r, 'l, L: Ledger> Externals for Process<'r, 'l, L> {
                         self.handle(args, Self::handle_get_bucket_resource_def)
                     }
 
-                    CREATE_REFERENCE => self.handle(args, Self::handle_create_reference),
-                    DROP_REFERENCE => self.handle(args, Self::handle_drop_reference),
-                    GET_REF_AMOUNT => self.handle(args, Self::handle_get_ref_amount),
-                    GET_REF_RESOURCE_DEF => self.handle(args, Self::handle_get_ref_resource_def),
+                    CREATE_BUCKET_REF => self.handle(args, Self::handle_create_bucket_ref),
+                    DROP_BUCKET_REF => self.handle(args, Self::handle_drop_bucket_ref),
+                    GET_BUCKET_REF_AMOUNT => self.handle(args, Self::handle_get_bucket_ref_amount),
+                    GET_BUCKET_REF_RESOURCE_DEF => {
+                        self.handle(args, Self::handle_get_bucket_ref_resource_def)
+                    }
 
                     EMIT_LOG => self.handle(args, Self::handle_emit_log),
                     GET_PACKAGE_ADDRESS => self.handle(args, Self::handle_get_package_address),

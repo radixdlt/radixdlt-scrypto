@@ -44,7 +44,7 @@ Language for building DeFi apps on Radix.
     cd radixdlt-scrypto
     cargo install --path ./simulator
     ```
-5. (Optional) Open Scrypto reference for later use
+5. (Optional) Open Scrypto documentation for later use
     ```
     ./doc.sh
     ```

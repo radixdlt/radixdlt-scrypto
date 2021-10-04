@@ -43,7 +43,7 @@ pub enum Instruction {
     /// Reserves a bucket id.
     ReserveBid,
 
-    /// Reserves a reference id.
+    /// Reserves a bucket ref id.
     ReserveRid,
 
     /// Creates bucket by withdrawing resource from context.
@@ -57,7 +57,7 @@ pub enum Instruction {
     CreateTempBucketRef {
         amount: Amount,
         resource_def: Address,
-        reference: Rid,
+        bucket_ref: Rid,
     },
 
     /// Calls a function.

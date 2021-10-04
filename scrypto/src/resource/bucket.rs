@@ -61,10 +61,10 @@ impl Bucket {
     }
 
     pub fn borrow(&self) -> BucketRef {
-        let input = CreateReferenceInput { bucket: self.bid };
-        let output: CreateReferenceOutput = call_kernel(CREATE_REFERENCE, input);
+        let input = CreateBucketRefInput { bucket: self.bid };
+        let output: CreateBucketRefOutput = call_kernel(CREATE_BUCKET_REF, input);
 
-        output.reference.into()
+        output.bucket_ref.into()
     }
 
     pub fn amount(&self) -> Amount {

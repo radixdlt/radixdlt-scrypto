@@ -28,8 +28,8 @@ blueprint! {
         pub fn borrow() -> Bucket {
             let resource_def = create_mutable("b3", Context::package_address());
             let bucket = resource_def.mint(100);
-            let reference = bucket.borrow();
-            reference.drop();
+            let bucket_ref = bucket.borrow();
+            bucket_ref.drop();
             bucket
         }
 

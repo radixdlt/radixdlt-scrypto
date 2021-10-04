@@ -64,7 +64,7 @@ impl IdAllocator {
         Vid(tx_hash, self.count - 1)
     }
 
-    /// Creates a new reference ID.
+    /// Creates a new bucket ref ID.
     pub fn new_rid(&mut self) -> Rid {
         self.count += 1;
         Rid(self.count - 1)

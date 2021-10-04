@@ -147,7 +147,7 @@ fn generate_dispatcher(bp_ident: &Ident, items: &[ImplItem]) -> (Vec<Expr>, Vec<
                         FnArg::Receiver(ref r) => {
                             // Check receiver type and mutability
                             if r.reference.is_none() {
-                                panic!("Function input `self` is not supported. Conmider replacing it with &self.");
+                                panic!("Function input `self` is not supported. Try replacing it with `&self`.");
                             }
                             let mutability = r.mutability;
 

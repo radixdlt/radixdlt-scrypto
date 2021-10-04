@@ -138,7 +138,13 @@ fn test_move_bucket_and_ref() {
 
     let transaction = TransactionBuilder::new(&executor)
         .call_function(package, "MoveTest", "move_bucket", vec![], Some(account))
-        .call_function(package, "MoveTest", "move_reference", vec![], Some(account))
+        .call_function(
+            package,
+            "MoveTest",
+            "move_bucket_ref",
+            vec![],
+            Some(account),
+        )
         .deposit_all(account)
         .build()
         .unwrap();

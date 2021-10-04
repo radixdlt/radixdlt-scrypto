@@ -71,14 +71,14 @@ pub const GET_BUCKET_AMOUNT: u32 = 0x53;
 /// Get bucket resource definition
 pub const GET_BUCKET_RESOURCE_DEF: u32 = 0x54;
 
-/// Obtain an immutable reference to a bucket
-pub const CREATE_REFERENCE: u32 = 0x60;
-/// Drop a reference
-pub const DROP_REFERENCE: u32 = 0x61;
-/// Get the resource amount behind a reference
-pub const GET_REF_AMOUNT: u32 = 0x62;
-/// Get the resource definition behind a reference
-pub const GET_REF_RESOURCE_DEF: u32 = 0x63;
+/// Obtain a bucket ref
+pub const CREATE_BUCKET_REF: u32 = 0x60;
+/// Drop a bucket ref
+pub const DROP_BUCKET_REF: u32 = 0x61;
+/// Get the resource amount behind a bucket ref
+pub const GET_BUCKET_REF_AMOUNT: u32 = 0x62;
+/// Get the resource definition behind a bucket ref
+pub const GET_BUCKET_REF_RESOURCE_DEF: u32 = 0x63;
 
 /// Log a message
 pub const EMIT_LOG: u32 = 0xf0;
@@ -393,44 +393,44 @@ pub struct GetBucketResourceAddressOutput {
 }
 
 //==========
-// reference
+// bucket ref
 //==========
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct CreateReferenceInput {
+pub struct CreateBucketRefInput {
     pub bucket: Bid,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct CreateReferenceOutput {
-    pub reference: Rid,
+pub struct CreateBucketRefOutput {
+    pub bucket_ref: Rid,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct DropReferenceInput {
-    pub reference: Rid,
+pub struct DropBucketRefInput {
+    pub bucket_ref: Rid,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct DropReferenceOutput {}
+pub struct DropBucketRefOutput {}
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct GetRefAmountInput {
-    pub reference: Rid,
+pub struct GetBucketRefAmountInput {
+    pub bucket_ref: Rid,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct GetRefAmountOutput {
+pub struct GetBucketRefAmountOutput {
     pub amount: Amount,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct GetRefResourceAddressInput {
-    pub reference: Rid,
+pub struct GetBucketRefResourceDefInput {
+    pub bucket_ref: Rid,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct GetRefResourceAddressOutput {
+pub struct GetBucketRefResourceDefOutput {
     pub resource_def: Address,
 }
 

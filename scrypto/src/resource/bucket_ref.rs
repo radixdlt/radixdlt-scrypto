@@ -44,28 +44,28 @@ impl BucketRef {
     }
 
     pub fn amount(&self) -> Amount {
-        let input = GetRefAmountInput {
-            reference: self.rid,
+        let input = GetBucketRefAmountInput {
+            bucket_ref: self.rid,
         };
-        let output: GetRefAmountOutput = call_kernel(GET_REF_AMOUNT, input);
+        let output: GetBucketRefAmountOutput = call_kernel(GET_BUCKET_REF_AMOUNT, input);
 
         output.amount
     }
 
     pub fn resource_def(&self) -> ResourceDef {
-        let input = GetRefResourceAddressInput {
-            reference: self.rid,
+        let input = GetBucketRefResourceDefInput {
+            bucket_ref: self.rid,
         };
-        let output: GetRefResourceAddressOutput = call_kernel(GET_REF_RESOURCE_DEF, input);
+        let output: GetBucketRefResourceDefOutput = call_kernel(GET_BUCKET_REF_RESOURCE_DEF, input);
 
         output.resource_def.into()
     }
 
     pub fn drop(self) {
-        let input = DropReferenceInput {
-            reference: self.rid,
+        let input = DropBucketRefInput {
+            bucket_ref: self.rid,
         };
-        let _: DropReferenceOutput = call_kernel(DROP_REFERENCE, input);
+        let _: DropBucketRefOutput = call_kernel(DROP_BUCKET_REF, input);
     }
 
     pub fn is_empty(&self) -> bool {

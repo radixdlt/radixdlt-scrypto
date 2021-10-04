@@ -7,7 +7,6 @@ use scrypto::types::*;
 pub enum BucketError {
     MismatchingResourceDef,
     InsufficientBalance,
-    ReferenceCountUnderflow,
     UnauthorizedAccess,
 }
 

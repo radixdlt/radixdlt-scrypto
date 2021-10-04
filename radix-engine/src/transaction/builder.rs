@@ -64,11 +64,11 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     }
 
     /// Creates a bucket ref by borrowing resource from context.
-    pub fn create_bucket_ref(&mut self, amount: Amount, resource_def: Address, reference: Rid) {
+    pub fn create_bucket_ref(&mut self, amount: Amount, resource_def: Address, bucket_ref: Rid) {
         self.instruction(Instruction::CreateTempBucketRef {
             amount,
             resource_def,
-            reference,
+            bucket_ref,
         });
     }
 
@@ -173,7 +173,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     /// Calls a function.
     ///
     /// The default implementation will automatically prepare the arguments based on the
-    /// function ABI, including resource buckets and references.
+    /// function ABI, including resource buckets and bucket refs.
     ///
     /// If an account address is provided, resources will be withdrawn from the specified account;
     /// otherwise, they will be taken from transaction context (presumably obtained from
@@ -220,7 +220,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     /// Calls a method.
     ///
     /// The default implementation will automatically prepare the arguments based on the
-    /// method ABI, including resource buckets and references.
+    /// method ABI, including resource buckets and bucket refs.
     ///
     /// If an account address is provided, resources will be withdrawn from the specified account;
     /// otherwise, they will be taken from transaction context (presumably obtained from

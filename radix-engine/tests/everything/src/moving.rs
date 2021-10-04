@@ -16,8 +16,8 @@ blueprint! {
             self.vaults.push(Vault::with_bucket(t));
         }
 
-        pub fn receive_reference(&self, t: BucketRef) {
-            info!("Received reference: resource_def = {}, amount = {}", t.resource_def().address(), t.amount());
+        pub fn receive_bucket_ref(&self, t: BucketRef) {
+            info!("Received bucket_ref: resource_def = {}, amount = {}", t.resource_def().address(), t.amount());
             t.drop();
         }
 
@@ -31,14 +31,14 @@ blueprint! {
             component.call::<()>("receive_bucket", args!(bucket));
         }
 
-        pub fn move_reference() -> Bucket {
+        pub fn move_bucket_ref() -> Bucket {
             let resource_def =  create_mutable("m2", Context::package_address());
             let bucket = resource_def.mint(100);
             let component: Component = MoveTest {
                 vaults: Vec::new()
             }.instantiate().into();
 
-            component.call::<()>("receive_reference", args!(bucket.borrow()));
+            component.call::<()>("receive_bucket_ref", args!(bucket.borrow()));
 
             // The package still owns the bucket
             bucket
