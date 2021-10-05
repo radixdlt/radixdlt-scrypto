@@ -30,7 +30,7 @@ pub fn handle_blueprint(input: TokenStream, output_abi: bool) -> TokenStream {
     trace!("Blueprint name: {}", bp_name);
 
     let generated_impl = quote! {
-        #[derive(Debug, ::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
+        #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode)]
         #bp_strut
 
         impl #bp_ident {
@@ -344,7 +344,7 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                #[derive(Debug, ::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
+                #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode)]
                 struct Test {
                     a: u32
                 }
