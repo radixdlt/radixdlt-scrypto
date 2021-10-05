@@ -30,7 +30,7 @@ pub fn handle_show(matches: &ArgMatches) -> Result<(), Error> {
     match address {
         Address::Package(_) => dump_package(address, &ledger).map_err(Error::LedgerDumpError),
         Address::Component(_) => dump_component(address, &ledger).map_err(Error::LedgerDumpError),
-        Address::ResourceDef(_) | Address::RadixToken => {
+        Address::ResourceDef(_) => {
             dump_resource_def(address, &ledger).map_err(Error::LedgerDumpError)
         }
     }

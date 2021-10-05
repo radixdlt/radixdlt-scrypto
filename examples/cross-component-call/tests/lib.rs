@@ -31,7 +31,7 @@ fn test_no_std() {
         .call_method(
             component,
             "get_gumball",
-            vec!["1,01".to_owned()],
+            vec!["1,030000000000000000000000000000000000000000000000000000".to_owned()],
             Some(account),
         )
         .deposit_all(account)

@@ -15,14 +15,11 @@ pub const SYSTEM_PACKAGE: Address = Address::Package([0u8; 26]);
 pub const ACCOUNT_PACKAGE: Address = Address::Package([1u8; 26]);
 
 /// The XRD resource definition.
-pub const RADIX_TOKEN: Address = Address::RadixToken;
+pub const RADIX_TOKEN: Address = Address::ResourceDef([0u8; 26]);
 
 /// Represents an address.
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Address {
-    /// [To be removed] The XRD token resource definition address,
-    RadixToken,
-
     /// Represents a package.
     Package([u8; 26]),
 
@@ -44,7 +41,6 @@ pub enum ParseAddressError {
 impl Address {
     pub fn to_vec(&self) -> Vec<u8> {
         match self {
-            Self::RadixToken => [1].to_vec(),
             Self::Package(d) => combine(1, d),
             Self::Component(d) => combine(2, d),
             Self::ResourceDef(d) => combine(3, d),
@@ -65,10 +61,6 @@ impl TryFrom<&[u8]> for Address {
     type Error = ParseAddressError;
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
-        if slice.len() == 1 && slice[0] == 1 {
-            return Ok(Self::RadixToken);
-        }
-
         if slice.len() != 27 {
             return Err(ParseAddressError::InvalidLength(slice.len()));
         } else {

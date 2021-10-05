@@ -24,7 +24,7 @@ $rev2 call-method $component free_token
 # Test gumball machine
 package=`$rev2 publish ../examples/gumball-machine | tee /dev/tty | awk '/Package:/ {print $NF}'`
 component=`$rev2 call-function $package GumballMachine new | tee /dev/tty | awk '/Component:/ {print $NF}'`
-$rev2 call-method $component get_gumball 1,01
+$rev2 call-method $component get_gumball 1,030000000000000000000000000000000000000000000000000000
 
 # Export abi
 $rev2 export-abi $package GumballMachine
