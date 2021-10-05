@@ -103,7 +103,7 @@ jobs:
       working-directory: examples/gumball-machine
     - name: Build gumball machine vendor
       run: cargo build --target wasm32-unknown-unknown --release
-      working-directory: examples/gumball-machine-vendor
+      working-directory: examples/cross-component-call
     - name: Build radiswap
       run: cargo build --target wasm32-unknown-unknown --release
       working-directory: examples/radiswap

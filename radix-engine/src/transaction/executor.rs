@@ -8,6 +8,7 @@ use scrypto::utils::*;
 
 use crate::engine::*;
 use crate::ledger::*;
+use crate::model::*;
 use crate::transaction::*;
 
 /// The transaction executor.
@@ -72,7 +73,7 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
         self.current_epoch = current_epoch;
     }
 
-    /// Returns the nonce.
+    /// Returns the transaction nonce.
     pub fn nonce(&self) -> u64 {
         self.nonce
     }
@@ -82,12 +83,12 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
         self.nonce
     }
 
-    /// Creates a test account with 1000 XRD in balance.
-    pub fn new_account(&mut self) -> Address {
+    /// Creates an account with 1000 XRD in balance.
+    pub fn create_account(&mut self) -> Address {
         self.run(
             TransactionBuilder::new(self)
                 .mint_resource(1000000.into(), RADIX_TOKEN)
-                .new_account_with_resource(1000000.into(), RADIX_TOKEN)
+                .create_account_with_resource(1000000.into(), RADIX_TOKEN)
                 .build()
                 .unwrap(),
             false,
@@ -96,7 +97,7 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
         .unwrap()
     }
 
-    /// Creates a test account with 1000 XRD in balance.
+    /// Publishes a package.
     pub fn publish_package(&mut self, code: &[u8]) -> Address {
         self.run(
             TransactionBuilder::new(self)
@@ -107,6 +108,11 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
         )
         .package(0)
         .unwrap()
+    }
+
+    /// Publishes a package to a specified address.
+    pub fn publish_package_to(&mut self, code: &[u8], address: Address) {
+        self.ledger.put_package(address, Package::new(code.to_vec()));
     }
 
     /// Executes a transaction.

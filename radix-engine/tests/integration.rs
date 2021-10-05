@@ -16,7 +16,7 @@ fn test_component() {
     compile();
     let mut ledger = InMemoryLedger::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, 0, 0);
-    let account = executor.new_account();
+    let account = executor.create_account();
     let package = executor.publish_package(include_code!("./everything"));
 
     // Create component
@@ -59,7 +59,7 @@ fn test_lazy_map() {
     compile();
     let mut ledger = InMemoryLedger::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, 0, 0);
-    let account = executor.new_account();
+    let account = executor.create_account();
     let package = executor.publish_package(include_code!("./everything"));
 
     let transaction = TransactionBuilder::new(&executor)
@@ -81,7 +81,7 @@ fn test_resource() {
     compile();
     let mut ledger = InMemoryLedger::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, 0, 0);
-    let account = executor.new_account();
+    let account = executor.create_account();
     let package = executor.publish_package(include_code!("./everything"));
 
     let transaction = TransactionBuilder::new(&executor)
@@ -113,7 +113,7 @@ fn test_bucket() {
     compile();
     let mut ledger = InMemoryLedger::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, 0, 0);
-    let account = executor.new_account();
+    let account = executor.create_account();
     let package = executor.publish_package(include_code!("./everything"));
 
     let transaction = TransactionBuilder::new(&executor)
@@ -133,7 +133,7 @@ fn test_move_bucket_and_ref() {
     compile();
     let mut ledger = InMemoryLedger::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, 0, 0);
-    let account = executor.new_account();
+    let account = executor.create_account();
     let package = executor.publish_package(include_code!("./everything"));
 
     let transaction = TransactionBuilder::new(&executor)

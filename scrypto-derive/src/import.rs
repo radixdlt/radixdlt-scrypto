@@ -34,6 +34,7 @@ pub fn handle_import(input: TokenStream) -> TokenStream {
     trace!("Blueprint name: {}", name);
 
     let structure: Item = parse_quote! {
+        #[derive(Debug, ::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
         pub struct #ident {
             address: ::scrypto::types::Address
         }
@@ -41,13 +42,6 @@ pub fn handle_import(input: TokenStream) -> TokenStream {
     items.push(structure);
 
     let mut functions = Vec::<ItemFn>::new();
-    functions.push(parse_quote! {
-        pub fn component(address: ::scrypto::types::Address) -> Self {
-            Self {
-                address
-            }
-        }
-    });
 
     for function in &blueprint.functions {
         trace!("Processing function: {:?}", function);
@@ -120,6 +114,15 @@ pub fn handle_import(input: TokenStream) -> TokenStream {
     };
     trace!("Generated impl: {}", quote! { #implementation });
     implementations.push(implementation);
+    implementations.push(parse_quote! {
+        impl From<::scrypto::types::Address> for #ident {
+            fn from(address: ::scrypto::types::Address) -> Self {
+                Self {
+                    address
+                }
+            }
+        }
+    });
 
     let output = quote! {
          #(#items)*
@@ -167,7 +170,7 @@ fn get_native_type(ty: &des::Type) -> (Type, Vec<Item>) {
                         items.extend(new_items);
                     }
                     items.push(parse_quote! {
-                        #[derive(Debug, ::sbor::TypeId, ::sbor::Encode, ::sbor::Decode)]
+                        #[derive(Debug, ::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
                         pub struct #ident {
                             #( pub #names : #types, )*
                         }
@@ -181,7 +184,7 @@ fn get_native_type(ty: &des::Type) -> (Type, Vec<Item>) {
                         items.extend(new_items);
                     }
                     items.push(parse_quote! {
-                        #[derive(Debug, ::sbor::TypeId, ::sbor::Encode, ::sbor::Decode)]
+                        #[derive(Debug, ::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
                         pub struct #ident (
                             #( pub #types ),*
                         )
@@ -189,7 +192,7 @@ fn get_native_type(ty: &des::Type) -> (Type, Vec<Item>) {
                 }
                 des::Fields::Unit => {
                     items.push(parse_quote! {
-                        #[derive(Debug, ::sbor::TypeId, ::sbor::Encode, ::sbor::Decode)]
+                        #[derive(Debug, ::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
                         pub struct #ident;
                     });
                 }
@@ -347,4 +350,50 @@ fn get_native_type(ty: &des::Type) -> (Type, Vec<Item>) {
     };
 
     (t, items)
+}
+
+#[cfg(test)]
+mod tests {
+    use proc_macro2::TokenStream;
+    use std::str::FromStr;
+
+    use super::*;
+
+    fn assert_code_eq(a: TokenStream, b: TokenStream) {
+        assert_eq!(a.to_string(), b.to_string());
+    }
+
+    #[test]
+    fn test_import_empty() {
+        let input = TokenStream::from_str(
+            r###"
+                r#"
+                {
+                    "package": "056967d3d49213394892980af59be76e9b3e7cc4cb78237460d0c7",
+                    "name": "Sample",
+                    "functions": [],
+                    "methods": []
+                }
+                "#
+            "###,
+        )
+        .unwrap();
+        let output = handle_import(input);
+
+        assert_code_eq(
+            output,
+            quote! {
+                #[derive(Debug, ::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
+                pub struct Sample {
+                    address: ::scrypto::types::Address
+                }
+                impl Sample {}
+                impl From<::scrypto::types::Address> for Sample {
+                    fn from(address: ::scrypto::types::Address) -> Self {
+                        Self { address }
+                    }
+                }
+            },
+        );
+    }
 }

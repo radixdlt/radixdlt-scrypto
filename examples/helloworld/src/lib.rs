@@ -1,34 +1,35 @@
 use scrypto::prelude::*;
 
-// A blueprint defines the structure and common behaviour of all its instances, called components.
-// In this example, we're creating a `Hello` blueprint.  All components instantiated
-// from this blueprint will airdrop 1 `HT` token to its caller.
-
 blueprint! {
-    /// Every `Hello` component will have a vault, used for storing `HT` tokens.
     struct Hello {
-        vault: Vault
+        // Define what resources and data will be managed by Hello components
+        sample_vault: Vault
     }
 
     impl Hello {
-        /// This function creates 1000 `HT` tokens and a `Hello` component.
+        // Implement the functions and methods which will manage those resources and data
+        
+        // This is a function, and can be called directly on the blueprint once deployed
         pub fn new() -> Address {
-            let bucket: Bucket = ResourceBuilder::new()
+            // Create a new token called "HelloToken," with a fixed supply of 1000, and put that supply into a bucket
+            let my_bucket: Bucket = ResourceBuilder::new()
                 .metadata("name", "HelloToken")
                 .metadata("symbol", "HT")
                 .create_fixed(1000);
 
+            // Instantiate a Hello component, populating its vault with our supply of 1000 HelloToken
             Self {
-                vault: Vault::with_bucket(bucket)
+                sample_vault: Vault::with_bucket(my_bucket)
             }
             .instantiate()
         }
 
-        /// This method takes 1 `HT` token from its vault and returns it to the caller.
-        pub fn airdrop(&mut self) -> Bucket {
-            let bucket: Bucket = self.vault.take(1);
-            info!("Balance: {} HT", self.vault.amount());
-            bucket
+        // This is a method, because it needs a reference to self.  Methods can only be called on components
+        pub fn free_token(&mut self) -> Bucket {
+            info!("My balance is: {} HelloToken.  Now giving away a token!", self.sample_vault.amount());
+            // If the semi-colon is omitted on the last line, the last value seen is automatically returned
+            // In this case, a bucket containing 1 HelloToken is returned
+            self.sample_vault.take(1)
         }
     }
 }

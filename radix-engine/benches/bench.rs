@@ -9,8 +9,8 @@ use scrypto::prelude::*;
 fn bench_transfer(b: &mut Bencher) {
     let mut ledger = InMemoryLedger::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, 0, 0);
-    let account1 = executor.new_account();
-    let account2 = executor.new_account();
+    let account1 = executor.create_account();
+    let account2 = executor.create_account();
     let transaction = TransactionBuilder::new(&executor)
         .withdraw(1.into(), RADIX_TOKEN, account1)
         .deposit_all(account2)

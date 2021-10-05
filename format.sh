@@ -19,7 +19,7 @@ cd "$(dirname "$0")"
 (cd examples/helloworld; cargo fmt)
 (cd examples/no_std; cargo fmt)
 (cd examples/gumball-machine; cargo fmt)
-(cd examples/gumball-machine-vendor; cargo fmt)
+(cd examples/cross-component-call; cargo fmt)
 (cd examples/radiswap; cargo fmt)
 (cd simulator; cargo fmt)
 

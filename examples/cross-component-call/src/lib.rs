@@ -3,7 +3,7 @@ use scrypto::prelude::*;
 import! {
 r#"
 {
-    "package": "05a405d3129b61e86c51c3168d553d2ffd7a3f0bd2f66b5a3e9876",
+    "package": "01a405d3129b61e86c51c3168d553d2ffd7a3f0bd2f66b5a3e9876",
     "name": "GumballMachine",
     "functions": [
         {
@@ -37,20 +37,19 @@ r#"
 
 blueprint! {
     struct Vendor {
-        machine: Address
+        machine: GumballMachine
     }
 
     impl Vendor {
         pub fn new() -> Address {
             Self {
-                machine: GumballMachine::new()
+                machine: GumballMachine::new().into()
             }
             .instantiate()
         }
 
         pub fn get_gumball(&self, payment: Bucket) -> Bucket {
-            let component = GumballMachine::component(self.machine);
-            component.get_gumball(payment)
+            self.machine.get_gumball(payment)
         }
     }
 }

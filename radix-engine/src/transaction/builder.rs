@@ -135,7 +135,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     /// Creates an account with resource taken from context.
     ///
     /// Note: need to make sure the context contains the required resource.
-    pub fn new_account_with_resource(
+    pub fn create_account_with_resource(
         &mut self,
         amount: Amount,
         resource_def: Address,

@@ -4,13 +4,13 @@ use scrypto::prelude::*;
 
 #[test]
 fn test_hello() {
-    // Prepare environment.
+    // Set up environment.
     let mut ledger = InMemoryLedger::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, 0, 0);
-    let account = executor.new_account();
+    let account = executor.create_account();
     let package = executor.publish_package(include_code!());
 
-    // Invoke the `new` function.
+    // Test the `new` function.
     let transaction1 = TransactionBuilder::new(&executor)
         .call_function(package, "Hello", "new", vec![], None)
         .build()
@@ -19,10 +19,10 @@ fn test_hello() {
     println!("{:?}\n", receipt1);
     assert!(receipt1.success);
 
-    // Invoke the `airdrop` method.
+    // Test the `free_token` method.
     let component = receipt1.component(0).unwrap();
     let transaction2 = TransactionBuilder::new(&executor)
-        .call_method(component, "airdrop", vec![], Some(account))
+        .call_method(component, "free_token", vec![], Some(account))
         .deposit_all(account)
         .build()
         .unwrap();

@@ -19,7 +19,7 @@ $rev2 transfer 111 $resource_def $account2
 # Test helloworld
 package=`$rev2 publish ../examples/helloworld | tee /dev/tty | awk '/Package:/ {print $NF}'`
 component=`$rev2 call-function $package Hello new | tee /dev/tty | awk '/Component:/ {print $NF}'`
-$rev2 call-method $component airdrop
+$rev2 call-method $component free_token
 
 # Test gumball machine
 package=`$rev2 publish ../examples/gumball-machine | tee /dev/tty | awk '/Package:/ {print $NF}'`

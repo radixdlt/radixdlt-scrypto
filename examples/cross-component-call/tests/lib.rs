@@ -3,26 +3,37 @@ use radix_engine::transaction::*;
 use scrypto::prelude::*;
 
 #[test]
-fn test_hello() {
+fn test_no_std() {
     // Set up environment.
     let mut ledger = InMemoryLedger::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, 0, 0);
     let account = executor.create_account();
     let package = executor.publish_package(include_code!());
 
+    // Mock the GumballMachine blueprint.
+    executor.publish_package_to(
+        include_code!("../../gumball-machine"),
+        Address::from_str("01a405d3129b61e86c51c3168d553d2ffd7a3f0bd2f66b5a3e9876").unwrap(),
+    );
+
     // Test the `new` function.
     let transaction1 = TransactionBuilder::new(&executor)
-        .call_function(package, "Hello", "new", vec![], None)
+        .call_function(package, "Vendor", "new", vec![], None)
         .build()
         .unwrap();
     let receipt1 = executor.run(transaction1, false);
     println!("{:?}\n", receipt1);
     assert!(receipt1.success);
 
-    // Test the `free_token` method.
+    // Test the `get_gumball` method.
     let component = receipt1.component(0).unwrap();
     let transaction2 = TransactionBuilder::new(&executor)
-        .call_method(component, "free_token", vec![], Some(account))
+        .call_method(
+            component,
+            "get_gumball",
+            vec!["1,01".to_owned()],
+            Some(account),
+        )
         .deposit_all(account)
         .build()
         .unwrap();
