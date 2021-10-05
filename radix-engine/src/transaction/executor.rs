@@ -112,7 +112,8 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
 
     /// Publishes a package to a specified address.
     pub fn publish_package_to(&mut self, code: &[u8], address: Address) {
-        self.ledger.put_package(address, Package::new(code.to_vec()));
+        self.ledger
+            .put_package(address, Package::new(code.to_vec()));
     }
 
     /// Executes a transaction.

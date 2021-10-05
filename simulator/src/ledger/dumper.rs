@@ -12,13 +12,6 @@ pub enum DisplayError {
     ComponentNotFound,
     ResourceDefNotFound,
 }
-fn list_item_prefix(last: bool) -> &'static str {
-    if last {
-        "└─"
-    } else {
-        "├─"
-    }
-}
 
 /// Dump a package into console.
 pub fn dump_package<T: Ledger>(address: Address, ledger: &T) -> Result<(), DisplayError> {

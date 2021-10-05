@@ -2,6 +2,7 @@ use std::fs;
 use std::fs::File;
 use std::io::prelude::*;
 use std::path::{Path, PathBuf};
+use std::str::FromStr;
 
 use radix_engine::ledger::*;
 use radix_engine::model::*;
@@ -38,6 +39,35 @@ impl FileBasedLedger {
         let mut ledger = Self::new(root);
         ledger.bootstrap();
         ledger
+    }
+
+    pub fn list_packages(&self) -> Vec<Address> {
+        self.list_items(PACKAGES)
+    }
+
+    pub fn list_components(&self) -> Vec<Address> {
+        self.list_items(COMPONENTS)
+    }
+
+    pub fn list_resource_defs(&self) -> Vec<Address> {
+        self.list_items(RESOURCE_DEFS)
+    }
+
+    fn list_items(&self, kind: &str) -> Vec<Address> {
+        let mut path = self.root.clone();
+        path.push(kind);
+
+        let mut results = Vec::new();
+        for entry in fs::read_dir(path).unwrap() {
+            let entry = entry.unwrap();
+            let path = entry.path();
+            if path.is_file() {
+                let name = path.file_name().unwrap().to_str().unwrap();
+                let address = Address::from_str(&name[0..name.rfind('.').unwrap()]).unwrap();
+                results.push(address);
+            }
+        }
+        results
     }
 
     fn get_path<T: AsRef<str>>(&self, kind: &str, name: T, ext: &str) -> PathBuf {

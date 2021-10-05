@@ -11,6 +11,7 @@ mod cmd_set_current_epoch;
 mod cmd_set_default_account;
 mod cmd_show;
 mod cmd_show_configs;
+mod cmd_show_ledger;
 mod cmd_transfer;
 mod config;
 mod error;
@@ -29,6 +30,7 @@ pub use cmd_set_current_epoch::*;
 pub use cmd_set_default_account::*;
 pub use cmd_show::*;
 pub use cmd_show_configs::*;
+pub use cmd_show_ledger::*;
 pub use cmd_transfer::*;
 pub use config::*;
 pub use error::*;
@@ -48,6 +50,7 @@ pub const CMD_SET_DEFAULT_ACCOUNT: &str = "set-default-account";
 pub const CMD_SET_CURRENT_EPOCH: &str = "set-current-epoch";
 pub const CMD_SHOW: &str = "show";
 pub const CMD_SHOW_CONFIGS: &str = "show-configs";
+pub const CMD_SHOW_LEDGER: &str = "show-ledger";
 
 /// Runs rev2 CLI.
 pub fn run<I, T>(args: I) -> Result<(), Error>
@@ -72,7 +75,8 @@ where
         .subcommand(make_set_default_account())
         .subcommand(make_set_current_epoch())
         .subcommand(make_show())
-        .subcommand(make_show_configs());
+        .subcommand(make_show_configs())
+        .subcommand(make_show_ledger());
     let matches = app.get_matches_from(args);
 
     match matches.subcommand() {
@@ -90,6 +94,7 @@ where
         (CMD_SET_CURRENT_EPOCH, Some(m)) => handle_set_current_epoch(m),
         (CMD_SHOW, Some(m)) => handle_show(m),
         (CMD_SHOW_CONFIGS, Some(m)) => handle_show_configs(m),
+        (CMD_SHOW_LEDGER, Some(m)) => handle_show_ledger(m),
         _ => Err(Error::MissingSubCommand),
     }
 }
