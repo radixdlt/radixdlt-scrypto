@@ -1,7 +1,7 @@
 use sbor::{describe::Type, *};
 
 use crate::buffer::*;
-use crate::constructs::*;
+use crate::core::*;
 use crate::kernel::*;
 use crate::resource::*;
 use crate::rust::borrow::ToOwned;

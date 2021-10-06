@@ -45,7 +45,7 @@ pub fn handle_blueprint(input: TokenStream, output_abi: bool) -> TokenStream {
 
         impl #bp_ident {
             fn instantiate(self) -> ::scrypto::types::Address {
-                ::scrypto::constructs::Component::new(self).address()
+                ::scrypto::core::Component::new(self).address()
             }
         }
     };
@@ -153,7 +153,7 @@ fn generate_dispatcher(bp_ident: &Ident, items: &[ImplItem]) -> (Vec<Expr>, Vec<
 
                             // Generate an `Arg` and a loading `Stmt` for the i-th argument
                             let stmt: Stmt = parse_quote! {
-                                let #arg = ::scrypto::constructs::Component::from(
+                                let #arg = ::scrypto::core::Component::from(
                                     ::scrypto::utils::unwrap_light(
                                         ::scrypto::buffer::scrypto_decode::<::scrypto::types::Address>(&calldata.args[#i])
                                     )
@@ -360,7 +360,7 @@ mod tests {
                 }
                 impl Test {
                     fn instantiate(self) -> ::scrypto::types::Address {
-                        ::scrypto::constructs::Component::new(self).address()
+                        ::scrypto::core::Component::new(self).address()
                     }
                 }
                 #[no_mangle]
@@ -372,7 +372,7 @@ mod tests {
                     let rtn;
                     match calldata.function.as_str() {
                         "x" => {
-                            let arg0 = ::scrypto::constructs::Component::from(::scrypto::utils::unwrap_light(
+                            let arg0 = ::scrypto::core::Component::from(::scrypto::utils::unwrap_light(
                                 ::scrypto::buffer::scrypto_decode::<::scrypto::types::Address>(
                                     &calldata.args[0usize]
                             )));

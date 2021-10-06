@@ -1,5 +1,5 @@
 use crate::utils::*;
-use scrypto::constructs::*;
+use scrypto::core::*;
 use scrypto::resource::*;
 use scrypto::rust::vec::Vec;
 use scrypto::*;

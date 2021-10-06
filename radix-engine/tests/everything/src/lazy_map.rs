@@ -1,4 +1,4 @@
-use scrypto::constructs::LazyMap;
+use scrypto::core::LazyMap;
 use scrypto::*;
 
 blueprint! {

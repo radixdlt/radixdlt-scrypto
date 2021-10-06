@@ -70,7 +70,7 @@ pub fn handle_import(input: TokenStream) -> TokenStream {
                 let package = ::scrypto::utils::unwrap_light(
                     ::scrypto::types::Address::from_str(#package)
                 );
-                let rtn = ::scrypto::constructs::call_function(
+                let rtn = ::scrypto::core::call_function(
                     package,
                     #name,
                     #func_name,
@@ -105,7 +105,7 @@ pub fn handle_import(input: TokenStream) -> TokenStream {
 
         let m = parse_quote! {
             pub fn #method_indent(&self, #method_inputs) -> #method_output {
-                let rtn = ::scrypto::constructs::call_method(
+                let rtn = ::scrypto::core::call_method(
                     self.address,
                     #method_name,
                     ::scrypto::args!(#(#method_args),*)
@@ -343,11 +343,11 @@ fn get_native_type(ty: &des::Type) -> (Type, Vec<Item>) {
             "scrypto::Mid" => parse_quote! { ::scrypto::types::Mid },
             "scrypto::Vid" => parse_quote! { ::scrypto::types::Vid },
 
-            "scrypto::Account" => parse_quote! { ::scrypto::constructs::Account },
-            "scrypto::Package" => parse_quote! { ::scrypto::constructs::Package },
-            "scrypto::Blueprint" => parse_quote! { ::scrypto::constructs::Blueprint },
-            "scrypto::Component" => parse_quote! { ::scrypto::constructs::Component },
-            "scrypto::LazyMap" => parse_quote! { ::scrypto::constructs::LazyMap },
+            "scrypto::Account" => parse_quote! { ::scrypto::core::Account },
+            "scrypto::Package" => parse_quote! { ::scrypto::core::Package },
+            "scrypto::Blueprint" => parse_quote! { ::scrypto::core::Blueprint },
+            "scrypto::Component" => parse_quote! { ::scrypto::core::Component },
+            "scrypto::LazyMap" => parse_quote! { ::scrypto::core::LazyMap },
 
             "scrypto::ResourceDef" => parse_quote! { ::scrypto::resource::ResourceDef },
             "scrypto::Bucket" => parse_quote! { ::scrypto::resource::Bucket },
