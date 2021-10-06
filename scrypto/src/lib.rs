@@ -33,8 +33,6 @@ pub mod prelude;
 pub mod resource;
 /// A facade of Rust standard types.
 pub mod rust;
-/// Scrypto traits.
-pub mod traits;
 /// Scrypto primitive types.
 pub mod types;
 /// Utility functions.
