@@ -31,12 +31,12 @@ impl Account {
             scrypto_encode(&amount),
             scrypto_encode(&resource_def.into()),
         ];
-        Component::from(self.address()).call::<()>("withdraw", args);
+        call_method(self.address(), "withdraw", args);
     }
 
     pub fn deposit(&self, bucket: Bucket) {
         let args = vec![scrypto_encode(&bucket)];
-        Component::from(self.address()).call::<()>("deposit", args);
+        call_method(self.address(), "deposit", args);
     }
 
     pub fn address(&self) -> Address {

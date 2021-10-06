@@ -2,13 +2,9 @@ use sbor::{describe::Type, *};
 
 use crate::buffer::*;
 use crate::constructs::*;
-use crate::kernel::*;
 use crate::rust::borrow::ToOwned;
 use crate::rust::string::String;
-use crate::rust::string::ToString;
-use crate::rust::vec::Vec;
 use crate::types::*;
-use crate::utils::*;
 
 /// A template that describes shared structure and behavior.
 #[derive(Debug, PartialEq, Eq, TypeId, Encode, Decode)]
@@ -17,26 +13,22 @@ pub struct Blueprint {
     name: String,
 }
 
-impl Blueprint {
-    pub fn from<A: Into<Address>, S: AsRef<str>>(package: A, name: S) -> Self {
+impl<A: Into<Address>, S: AsRef<str>> From<(A, S)> for Blueprint {
+    fn from(a: (A, S)) -> Self {
         Self {
-            package: package.into(),
-            name: name.as_ref().to_owned(),
+            package: a.0.into(),
+            name: a.1.as_ref().to_owned(),
         }
     }
+}
 
-    pub fn call<T: Decode>(&self, function: &str, args: Vec<Vec<u8>>) -> T {
-        let input = CallFunctionInput {
-            package: self.package,
-            name: self.name.clone(),
-            function: function.to_string(),
-            args,
-        };
-        let output: CallFunctionOutput = call_kernel(CALL_FUNCTION, input);
-
-        unwrap_light(scrypto_decode(&output.rtn))
+impl From<Blueprint> for (Address, String) {
+    fn from(blueprint: Blueprint) -> Self {
+        (blueprint.package, blueprint.name)
     }
+}
 
+impl Blueprint {
     pub fn package(&self) -> Package {
         self.package.into()
     }

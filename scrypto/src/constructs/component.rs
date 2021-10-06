@@ -5,7 +5,6 @@ use crate::constructs::*;
 use crate::kernel::*;
 use crate::rust::borrow::ToOwned;
 use crate::rust::string::ToString;
-use crate::rust::vec::Vec;
 use crate::types::*;
 use crate::utils::*;
 
@@ -38,17 +37,6 @@ impl Component {
         output.component.into()
     }
 
-    pub fn call<T: Decode>(&self, method: &str, args: Vec<Vec<u8>>) -> T {
-        let input = CallMethodInput {
-            component: self.address,
-            method: method.to_string(),
-            args,
-        };
-        let output: CallMethodOutput = call_kernel(CALL_METHOD, input);
-
-        unwrap_light(scrypto_decode(&output.rtn))
-    }
-
     pub fn get_state<T: Decode>(&self) -> T {
         let input = GetComponentStateInput {
             component: self.address,
@@ -72,7 +60,7 @@ impl Component {
         };
         let output: GetComponentBlueprintOutput = call_kernel(GET_COMPONENT_BLUEPRINT, input);
 
-        Blueprint::from(output.package, output.name)
+        Blueprint::from((output.package, output.name))
     }
 
     pub fn address(&self) -> Address {

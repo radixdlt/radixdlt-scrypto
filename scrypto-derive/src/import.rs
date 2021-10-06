@@ -70,8 +70,13 @@ pub fn handle_import(input: TokenStream) -> TokenStream {
                 let package = ::scrypto::utils::unwrap_light(
                     ::scrypto::types::Address::from_str(#package)
                 );
-                let blueprint = ::scrypto::constructs::Blueprint::from(package, #name);
-                blueprint.call(#func_name, ::scrypto::args!(#(#func_args),*))
+                let rtn = ::scrypto::constructs::call_function(
+                    package,
+                    #name,
+                    #func_name,
+                    ::scrypto::args!(#(#func_args),*)
+                );
+                ::scrypto::utils::unwrap_light(::scrypto::buffer::scrypto_decode(&rtn))
             }
         });
     }
@@ -100,8 +105,12 @@ pub fn handle_import(input: TokenStream) -> TokenStream {
 
         let m = parse_quote! {
             pub fn #method_indent(&self, #method_inputs) -> #method_output {
-                let component = ::scrypto::constructs::Component::from(self.address);
-                component.call(#method_name, ::scrypto::args!(#(#method_args),*))
+                let rtn = ::scrypto::constructs::call_method(
+                    self.address,
+                    #method_name,
+                    ::scrypto::args!(#(#method_args),*)
+                );
+                ::scrypto::utils::unwrap_light(::scrypto::buffer::scrypto_decode(&rtn))
             }
         };
         functions.push(m);

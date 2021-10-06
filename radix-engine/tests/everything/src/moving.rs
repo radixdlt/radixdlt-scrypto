@@ -28,7 +28,7 @@ blueprint! {
                 vaults: Vec::new()
             }.instantiate().into();
 
-            component.call::<()>("receive_bucket", args!(bucket));
+            call_method(component.address(), "receive_bucket", args!(bucket));
         }
 
         pub fn move_bucket_ref() -> Bucket {
@@ -38,7 +38,7 @@ blueprint! {
                 vaults: Vec::new()
             }.instantiate().into();
 
-            component.call::<()>("receive_bucket_ref", args!(bucket.borrow()));
+            call_method(component.address(), "receive_bucket_ref", args!(bucket.borrow()));
 
             // The package still owns the bucket
             bucket
