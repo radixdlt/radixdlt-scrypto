@@ -25,8 +25,8 @@ impl ResourceBuilder {
     }
 
     /// Create a resource with mutable supply.
-    pub fn create_mutable(&self, minter: Address) -> ResourceDef {
-        ResourceDef::new_mutable(self.metadata.clone(), minter)
+    pub fn create_mutable<A: Into<Address>>(&self, minter: A) -> ResourceDef {
+        ResourceDef::new_mutable(self.metadata.clone(), minter.into())
     }
 
     /// Create a resource with fixed supply.

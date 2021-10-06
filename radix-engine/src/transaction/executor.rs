@@ -179,11 +179,7 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
                     )
                     .map(|rtn| Some(SmartValue(rtn))),
                 Instruction::DepositAll { component, method } => {
-                    let buckets: Vec<_> = proc
-                        .owned_buckets()
-                        .iter()
-                        .map(|bid| scrypto::resource::Bucket::from(*bid))
-                        .collect();
+                    let buckets = proc.owned_buckets();
                     if !buckets.is_empty() {
                         proc.call_method(*component, method.as_str(), args!(buckets))
                             .map(|rtn| Some(SmartValue(rtn)))

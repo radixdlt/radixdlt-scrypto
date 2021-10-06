@@ -35,14 +35,14 @@ pub fn handle_describe(input: TokenStream) -> TokenStream {
                 quote! {
                     impl ::sbor::Describe for #ident {
                         fn describe() -> ::sbor::describe::Type {
-                            use ::sbor::rust::string::ToString;
+                            use ::sbor::rust::borrow::ToOwned;
                             use ::sbor::rust::vec;
                             use ::sbor::Describe;
 
                             ::sbor::describe::Type::Struct {
-                                name: #ident_str.to_string(),
+                                name: #ident_str.to_owned(),
                                 fields: ::sbor::describe::Fields::Named {
-                                    named: vec![#((#names.to_string(), <#types>::describe())),*]
+                                    named: vec![#((#names.to_owned(), <#types>::describe())),*]
                                 },
                             }
                         }
@@ -57,12 +57,12 @@ pub fn handle_describe(input: TokenStream) -> TokenStream {
                 quote! {
                     impl ::sbor::Describe for #ident {
                         fn describe() -> ::sbor::describe::Type {
-                            use ::sbor::rust::string::ToString;
+                            use ::sbor::rust::borrow::ToOwned;
                             use ::sbor::rust::vec;
                             use ::sbor::Describe;
 
                             ::sbor::describe::Type::Struct {
-                                name: #ident_str.to_string(),
+                                name: #ident_str.to_owned(),
                                 fields: ::sbor::describe::Fields::Unnamed {
                                     unnamed: vec![#(<#types>::describe()),*]
                                 },
@@ -75,10 +75,10 @@ pub fn handle_describe(input: TokenStream) -> TokenStream {
                 quote! {
                     impl ::sbor::Describe for #ident {
                         fn describe() -> ::sbor::describe::Type {
-                            use ::sbor::rust::string::ToString;
+                            use ::sbor::rust::borrow::ToOwned;
 
                             ::sbor::describe::Type::Struct {
-                                name: #ident_str.to_string(),
+                                name: #ident_str.to_owned(),
                                 fields: ::sbor::describe::Fields::Unit,
                             }
                         }
@@ -106,7 +106,7 @@ pub fn handle_describe(input: TokenStream) -> TokenStream {
                         quote! {
                             {
                                 ::sbor::describe::Fields::Named {
-                                    named: vec![#((#names.to_string(), <#types>::describe())),*]
+                                    named: vec![#((#names.to_owned(), <#types>::describe())),*]
                                 }
                             }
                         }
@@ -137,15 +137,15 @@ pub fn handle_describe(input: TokenStream) -> TokenStream {
             quote! {
                 impl ::sbor::Describe for #ident {
                     fn describe() -> ::sbor::describe::Type {
-                        use ::sbor::rust::string::ToString;
+                        use ::sbor::rust::borrow::ToOwned;
                         use ::sbor::rust::vec;
                         use ::sbor::Describe;
 
                         ::sbor::describe::Type::Enum {
-                            name: #ident_str.to_string(),
+                            name: #ident_str.to_owned(),
                             variants: vec![
                                 #(::sbor::describe::Variant {
-                                    name: #names.to_string(),
+                                    name: #names.to_owned(),
                                     fields: #fields
                                 }),*
                             ]
@@ -187,14 +187,14 @@ mod tests {
             quote! {
                 impl ::sbor::Describe for Test {
                     fn describe() -> ::sbor::describe::Type {
-                        use ::sbor::rust::string::ToString;
+                        use ::sbor::rust::borrow::ToOwned;
                         use ::sbor::rust::vec;
                         use ::sbor::Describe;
 
                         ::sbor::describe::Type::Struct {
-                            name: "Test".to_string(),
+                            name: "Test".to_owned(),
                             fields: ::sbor::describe::Fields::Named {
-                                named: vec![("a".to_string(), <u32>::describe())]
+                                named: vec![("a".to_owned(), <u32>::describe())]
                             },
                         }
                     }
@@ -213,27 +213,27 @@ mod tests {
             quote! {
                 impl ::sbor::Describe for Test {
                     fn describe() -> ::sbor::describe::Type {
-                        use ::sbor::rust::string::ToString;
+                        use ::sbor::rust::borrow::ToOwned;
                         use ::sbor::rust::vec;
                         use ::sbor::Describe;
 
                         ::sbor::describe::Type::Enum {
-                            name: "Test".to_string(),
+                            name: "Test".to_owned(),
                             variants: vec![
                                 ::sbor::describe::Variant {
-                                    name: "A".to_string(),
+                                    name: "A".to_owned(),
                                     fields: { ::sbor::describe::Fields::Unit }
                                 },
                                 ::sbor::describe::Variant {
-                                    name: "B".to_string(),
+                                    name: "B".to_owned(),
                                     fields: {
                                         ::sbor::describe::Fields::Unnamed { unnamed: vec![<u32>::describe()] }
                                     }
                                 },
                                 ::sbor::describe::Variant {
-                                    name: "C".to_string(),
+                                    name: "C".to_owned(),
                                     fields: {
-                                        ::sbor::describe::Fields::Named { named: vec![("x".to_string(), <u8>::describe())] }
+                                        ::sbor::describe::Fields::Named { named: vec![("x".to_owned(), <u8>::describe())] }
                                     }
                                 }
                             ]
@@ -254,12 +254,12 @@ mod tests {
             quote! {
                 impl ::sbor::Describe for Test {
                     fn describe() -> ::sbor::describe::Type {
-                        use ::sbor::rust::string::ToString;
+                        use ::sbor::rust::borrow::ToOwned;
                         use ::sbor::rust::vec;
                         use ::sbor::Describe;
 
                         ::sbor::describe::Type::Struct {
-                            name: "Test".to_string(),
+                            name: "Test".to_owned(),
                             fields: ::sbor::describe::Fields::Named { named: vec![] },
                         }
                     }
@@ -280,25 +280,25 @@ mod tests {
             quote! {
                 impl ::sbor::Describe for Test {
                     fn describe() -> ::sbor::describe::Type {
-                        use ::sbor::rust::string::ToString;
+                        use ::sbor::rust::borrow::ToOwned;
                         use ::sbor::rust::vec;
                         use ::sbor::Describe;
 
                         ::sbor::describe::Type::Enum {
-                            name: "Test".to_string(),
+                            name: "Test".to_owned(),
                             variants: vec![
                                 ::sbor::describe::Variant {
-                                    name: "A".to_string(),
+                                    name: "A".to_owned(),
                                     fields: { ::sbor::describe::Fields::Unit }
                                 },
                                 ::sbor::describe::Variant {
-                                    name: "B".to_string(),
+                                    name: "B".to_owned(),
                                     fields: {
                                         ::sbor::describe::Fields::Unnamed { unnamed: vec![] }
                                     }
                                 },
                                 ::sbor::describe::Variant {
-                                    name: "C".to_string(),
+                                    name: "C".to_owned(),
                                     fields: {
                                         ::sbor::describe::Fields::Named { named: vec![] }
                                     }

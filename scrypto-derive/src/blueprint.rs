@@ -81,7 +81,7 @@ pub fn handle_blueprint(input: TokenStream, output_abi: bool) -> TokenStream {
         pub extern "C" fn #abi_ident() -> *mut u8 {
             use ::sbor::Describe;
             use ::scrypto::abi::{Function, Method};
-            use ::scrypto::rust::string::ToString;
+            use ::scrypto::rust::borrow::ToOwned;
             use ::scrypto::rust::vec;
             use ::scrypto::rust::vec::Vec;
 
@@ -275,7 +275,7 @@ fn generate_abi(bp_name: &str, items: &[ImplItem]) -> (Vec<Expr>, Vec<Expr>) {
                     if mutability.is_none() {
                         functions.push(parse_quote! {
                             ::scrypto::abi::Function {
-                                name: #name.to_string(),
+                                name: #name.to_owned(),
                                 inputs: vec![#(#inputs),*],
                                 output: #output,
                             }
@@ -283,7 +283,7 @@ fn generate_abi(bp_name: &str, items: &[ImplItem]) -> (Vec<Expr>, Vec<Expr>) {
                     } else {
                         methods.push(parse_quote! {
                             ::scrypto::abi::Method {
-                                name: #name.to_string(),
+                                name: #name.to_owned(),
                                 mutability: #mutability,
                                 inputs: vec![#(#inputs),*],
                                 output: #output,
@@ -378,12 +378,12 @@ mod tests {
                 pub extern "C" fn Test_abi() -> *mut u8 {
                     use ::sbor::Describe;
                     use ::scrypto::abi::{Function, Method};
-                    use ::scrypto::rust::string::ToString;
+                    use ::scrypto::rust::borrow::ToOwned;
                     use ::scrypto::rust::vec;
                     use ::scrypto::rust::vec::Vec;
                     let functions: Vec<Function> = vec![];
                     let methods: Vec<Method> = vec![::scrypto::abi::Method {
-                        name: "x".to_string(),
+                        name: "x".to_owned(),
                         mutability: ::scrypto::abi::Mutability::Immutable,
                         inputs: vec![],
                         output: <u32>::describe(),

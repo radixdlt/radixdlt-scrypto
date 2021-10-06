@@ -8,7 +8,7 @@ use crate::rev2::*;
 pub fn match_address(matches: &ArgMatches, name: &str) -> Result<Address, Error> {
     matches
         .value_of(name)
-        .ok_or_else(|| Error::MissingArgument(name.to_string()))?
+        .ok_or_else(|| Error::MissingArgument(name.to_owned()))?
         .parse()
         .map_err(Error::InvalidAddress)
 }
@@ -17,7 +17,7 @@ pub fn match_address(matches: &ArgMatches, name: &str) -> Result<Address, Error>
 pub fn match_amount(matches: &ArgMatches, name: &str) -> Result<Amount, Error> {
     matches
         .value_of(name)
-        .ok_or_else(|| Error::MissingArgument(name.to_string()))?
+        .ok_or_else(|| Error::MissingArgument(name.to_owned()))?
         .parse()
         .map_err(Error::InvalidAmount)
 }
@@ -26,7 +26,7 @@ pub fn match_amount(matches: &ArgMatches, name: &str) -> Result<Amount, Error> {
 pub fn match_u64(matches: &ArgMatches, name: &str) -> Result<u64, Error> {
     matches
         .value_of(name)
-        .ok_or_else(|| Error::MissingArgument(name.to_string()))?
+        .ok_or_else(|| Error::MissingArgument(name.to_owned()))?
         .parse()
         .map_err(Error::InvalidNumber)
 }
@@ -35,8 +35,8 @@ pub fn match_u64(matches: &ArgMatches, name: &str) -> Result<u64, Error> {
 pub fn match_string(matches: &ArgMatches, name: &str) -> Result<String, Error> {
     matches
         .value_of(name)
-        .ok_or_else(|| Error::MissingArgument(name.to_string()))
-        .map(ToString::to_string)
+        .ok_or_else(|| Error::MissingArgument(name.to_owned()))
+        .map(String::from)
 }
 
 /// Match a file path argument.

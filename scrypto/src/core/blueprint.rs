@@ -7,7 +7,7 @@ use crate::rust::string::String;
 use crate::types::*;
 
 /// A template that describes shared structure and behavior.
-#[derive(Debug, PartialEq, Eq, TypeId, Encode, Decode)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct Blueprint {
     package: Address,
     name: String,
@@ -35,6 +35,28 @@ impl Blueprint {
 
     pub fn name(&self) -> &str {
         &self.name
+    }
+}
+
+//========
+// SBOR
+//========
+
+impl TypeId for Blueprint {
+    fn type_id() -> u8 {
+        <(Address, String)>::type_id()
+    }
+}
+
+impl Encode for Blueprint {
+    fn encode_value(&self, encoder: &mut Encoder) {
+        (self.package, self.name.to_owned()).encode_value(encoder);
+    }
+}
+
+impl Decode for Blueprint {
+    fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
+        <(Address, String)>::decode_value(decoder).map(Into::into)
     }
 }
 

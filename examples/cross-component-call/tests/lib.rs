@@ -3,7 +3,7 @@ use radix_engine::transaction::*;
 use scrypto::prelude::*;
 
 #[test]
-fn test_no_std() {
+fn test_vendor() {
     // Set up environment.
     let mut ledger = InMemoryLedger::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, 0, 0);

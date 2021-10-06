@@ -7,17 +7,9 @@ use crate::rust::borrow::ToOwned;
 use crate::types::*;
 
 /// Represents a persistent resource container on ledger state.
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug)]
 pub struct Vault {
     vid: Vid,
-}
-
-impl Describe for Vault {
-    fn describe() -> Type {
-        Type::Custom {
-            name: SCRYPTO_NAME_VAULT.to_owned(),
-        }
-    }
 }
 
 impl From<Vid> for Vault {
@@ -86,5 +78,35 @@ impl Vault {
 
     pub fn is_empty(&self) -> bool {
         self.amount() == 0.into()
+    }
+}
+
+//========
+// SBOR
+//========
+
+impl TypeId for Vault {
+    fn type_id() -> u8 {
+        Vid::type_id()
+    }
+}
+
+impl Encode for Vault {
+    fn encode_value(&self, encoder: &mut Encoder) {
+        self.vid.encode_value(encoder);
+    }
+}
+
+impl Decode for Vault {
+    fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
+        Vid::decode_value(decoder).map(Into::into)
+    }
+}
+
+impl Describe for Vault {
+    fn describe() -> Type {
+        Type::Custom {
+            name: SCRYPTO_NAME_VAULT.to_owned(),
+        }
     }
 }

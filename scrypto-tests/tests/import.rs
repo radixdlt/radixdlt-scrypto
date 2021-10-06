@@ -1,9 +1,9 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use scrypto::import;
+use scrypto::rust::borrow::ToOwned;
 use scrypto::rust::str::FromStr;
 use scrypto::rust::string::String;
-use scrypto::rust::string::ToString;
 use scrypto::rust::vec::Vec;
 use scrypto::types::*;
 
@@ -197,7 +197,7 @@ fn test_import_from_abi() {
     let arg3 = Vec::<String>::new();
     let arg4 = 5;
     let arg5 = Hello::A { x: 1 };
-    let arg6 = ["a".to_string(), "b".to_string()];
+    let arg6 = ["a".to_owned(), "b".to_owned()];
 
     instance.calculate_volume(arg1, arg2, arg3, arg4, arg5, arg6);
 }

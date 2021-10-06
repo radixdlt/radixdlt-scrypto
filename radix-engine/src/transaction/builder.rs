@@ -7,7 +7,6 @@ use scrypto::rust::collections::*;
 use scrypto::rust::fmt;
 use scrypto::rust::str::FromStr;
 use scrypto::rust::string::String;
-use scrypto::rust::string::ToString;
 use scrypto::rust::vec;
 use scrypto::rust::vec::Vec;
 use scrypto::types::*;
@@ -83,7 +82,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         self.instruction(Instruction::CallFunction {
             package: SYSTEM_PACKAGE,
             name: "System".to_owned(),
-            function: "publish_package".to_string(),
+            function: "publish_package".to_owned(),
             args: vec![SmartValue(scrypto_encode(code))],
         })
     }
@@ -93,7 +92,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         self.instruction(Instruction::CallFunction {
             package: SYSTEM_PACKAGE,
             name: "System".to_owned(),
-            function: "new_resource_mutable".to_string(),
+            function: "new_resource_mutable".to_owned(),
             args: vec![SmartValue::from(metadata)],
         })
     }
@@ -107,7 +106,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         self.instruction(Instruction::CallFunction {
             package: SYSTEM_PACKAGE,
             name: "System".to_owned(),
-            function: "new_resource_fixed".to_string(),
+            function: "new_resource_fixed".to_owned(),
             args: vec![SmartValue::from(metadata), SmartValue::from(supply)],
         })
     }
@@ -117,7 +116,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         self.instruction(Instruction::CallFunction {
             package: SYSTEM_PACKAGE,
             name: "System".to_owned(),
-            function: "mint_resource".to_string(),
+            function: "mint_resource".to_owned(),
             args: vec![SmartValue::from(amount), SmartValue::from(resource_def)],
         })
     }
@@ -127,7 +126,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         self.instruction(Instruction::CallFunction {
             package: ACCOUNT_PACKAGE,
             name: "Account".to_owned(),
-            function: "new".to_string(),
+            function: "new".to_owned(),
             args: vec![],
         })
     }
@@ -145,8 +144,8 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         self.instruction(Instruction::CallFunction {
             package: ACCOUNT_PACKAGE,
             name: "Account".to_owned(),
-            function: "with_bucket".to_string(),
-            args: vec![SmartValue::from(scrypto::resource::Bucket::from(bid))],
+            function: "with_bucket".to_owned(),
+            args: vec![SmartValue::from(bid)],
         })
     }
 
@@ -159,7 +158,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     ) -> &mut Self {
         self.instruction(Instruction::CallMethod {
             component: account,
-            method: "withdraw".to_string(),
+            method: "withdraw".to_owned(),
             args: vec![SmartValue::from(amount), SmartValue::from(resource_def)],
         })
     }
@@ -168,7 +167,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     pub fn deposit_all(&mut self, account: Address) -> &mut Self {
         self.instruction(Instruction::DepositAll {
             component: account,
-            method: "deposit_batch".to_string(),
+            method: "deposit_batch".to_owned(),
         })
     }
 
@@ -371,7 +370,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                     .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
                 Ok(SmartValue::from(value))
             }
-            SCRYPTO_NAME_BID | SCRYPTO_NAME_BUCKET | SCRYPTO_NAME_RID | SCRYPTO_NAME_BUCKET_REF => {
+            SCRYPTO_NAME_BID | SCRYPTO_NAME_BUCKET => {
                 let mut split = arg.split(',');
                 let amount = split.next().and_then(|v| v.trim().parse::<Amount>().ok());
                 let resource_def = split.next().and_then(|v| v.trim().parse::<Address>().ok());
@@ -380,30 +379,25 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                         if let Some(account) = account {
                             self.withdraw(a, r, account);
                         }
-
-                        match name {
-                            SCRYPTO_NAME_BID => {
-                                let bid = self.reserve_bucket_id();
-                                self.create_bucket(a, r, bid);
-                                Ok(SmartValue::from(bid))
-                            }
-                            SCRYPTO_NAME_BUCKET => {
-                                let bid = self.reserve_bucket_id();
-                                self.create_bucket(a, r, bid);
-                                Ok(SmartValue::from(scrypto::resource::Bucket::from(bid)))
-                            }
-                            SCRYPTO_NAME_RID => {
-                                let rid = self.reserve_bucket_ref_id();
-                                self.create_bucket_ref(a, r, rid);
-                                Ok(SmartValue::from(rid))
-                            }
-                            SCRYPTO_NAME_BUCKET_REF => {
-                                let rid = self.reserve_bucket_ref_id();
-                                self.create_bucket_ref(a, r, rid);
-                                Ok(SmartValue::from(scrypto::resource::BucketRef::from(rid)))
-                            }
-                            _ => panic!("Unexpected"),
+                        let bid = self.reserve_bucket_id();
+                        self.create_bucket(a, r, bid);
+                        Ok(SmartValue::from(bid))
+                    }
+                    _ => Err(BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned())),
+                }
+            }
+            SCRYPTO_NAME_RID | SCRYPTO_NAME_BUCKET_REF => {
+                let mut split = arg.split(',');
+                let amount = split.next().and_then(|v| v.trim().parse::<Amount>().ok());
+                let resource_def = split.next().and_then(|v| v.trim().parse::<Address>().ok());
+                match (amount, resource_def) {
+                    (Some(a), Some(r)) => {
+                        if let Some(account) = account {
+                            self.withdraw(a, r, account);
                         }
+                        let rid = self.reserve_bucket_ref_id();
+                        self.create_bucket_ref(a, r, rid);
+                        Ok(SmartValue::from(rid))
                     }
                     _ => Err(BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned())),
                 }

@@ -6,7 +6,7 @@ use crate::rust::borrow::ToOwned;
 use crate::types::*;
 
 /// A collection of blueprints, compiles and published as a single unit.
-#[derive(Debug, PartialEq, Eq, TypeId, Encode, Decode)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct Package {
     address: Address,
 }
@@ -35,6 +35,28 @@ impl Package {
 
     pub fn address(&self) -> Address {
         self.address
+    }
+}
+
+//========
+// SBOR
+//========
+
+impl TypeId for Package {
+    fn type_id() -> u8 {
+        Address::type_id()
+    }
+}
+
+impl Encode for Package {
+    fn encode_value(&self, encoder: &mut Encoder) {
+        self.address.encode_value(encoder);
+    }
+}
+
+impl Decode for Package {
+    fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
+        Address::decode_value(decoder).map(Into::into)
     }
 }
 

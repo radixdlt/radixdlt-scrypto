@@ -4,12 +4,11 @@ use crate::buffer::*;
 use crate::core::*;
 use crate::kernel::*;
 use crate::rust::borrow::ToOwned;
-use crate::rust::string::ToString;
 use crate::types::*;
 use crate::utils::*;
 
 /// An instance of a blueprint, which lives in the ledger state.
-#[derive(Debug, PartialEq, Eq, TypeId, Encode, Decode)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct Component {
     address: Address,
 }
@@ -27,9 +26,9 @@ impl From<Component> for Address {
 }
 
 impl Component {
-    pub fn new<T: Encode>(name: &str, state: T) -> Self {
+    pub fn new<S: AsRef<str>, T: Encode>(name: S, state: T) -> Self {
         let input = CreateComponentInput {
-            name: name.to_string(),
+            name: name.as_ref().to_owned(),
             state: scrypto_encode(&state),
         };
         let output: CreateComponentOutput = call_kernel(CREATE_COMPONENT, input);
@@ -65,6 +64,28 @@ impl Component {
 
     pub fn address(&self) -> Address {
         self.address
+    }
+}
+
+//========
+// SBOR
+//========
+
+impl TypeId for Component {
+    fn type_id() -> u8 {
+        Address::type_id()
+    }
+}
+
+impl Encode for Component {
+    fn encode_value(&self, encoder: &mut Encoder) {
+        self.address.encode_value(encoder);
+    }
+}
+
+impl Decode for Component {
+    fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
+        Address::decode_value(decoder).map(Into::into)
     }
 }
 

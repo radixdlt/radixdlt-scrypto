@@ -7,7 +7,7 @@ use crate::types::*;
 use crate::utils::*;
 
 /// A scalable key-value map which loads values on demand.
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug)]
 pub struct LazyMap {
     mid: Mid,
 }
@@ -59,6 +59,28 @@ impl LazyMap {
 impl Default for LazyMap {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+//========
+// SBOR
+//========
+
+impl TypeId for LazyMap {
+    fn type_id() -> u8 {
+        Mid::type_id()
+    }
+}
+
+impl Encode for LazyMap {
+    fn encode_value(&self, encoder: &mut Encoder) {
+        self.mid.encode_value(encoder);
+    }
+}
+
+impl Decode for LazyMap {
+    fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
+        Mid::decode_value(decoder).map(Into::into)
     }
 }
 
