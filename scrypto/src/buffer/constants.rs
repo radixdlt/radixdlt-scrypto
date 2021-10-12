@@ -6,21 +6,21 @@ pub const SCRYPTO_TYPE_RID: u8 = 0x84;
 pub const SCRYPTO_TYPE_MID: u8 = 0x85;
 pub const SCRYPTO_TYPE_VID: u8 = 0x86;
 
-pub const SCRYPTO_NAME_AMOUNT: &str = "scrypto::Amount";
-pub const SCRYPTO_NAME_ADDRESS: &str = "scrypto::Address";
-pub const SCRYPTO_NAME_H256: &str = "scrypto::H256";
-pub const SCRYPTO_NAME_BID: &str = "scrypto::Bid";
-pub const SCRYPTO_NAME_RID: &str = "scrypto::Rid";
-pub const SCRYPTO_NAME_MID: &str = "scrypto::Mid";
-pub const SCRYPTO_NAME_VID: &str = "scrypto::Vid";
+pub const SCRYPTO_NAME_AMOUNT: &str = "scrypto::types::Amount";
+pub const SCRYPTO_NAME_ADDRESS: &str = "scrypto::types::Address";
+pub const SCRYPTO_NAME_H256: &str = "scrypto::types::H256";
+pub const SCRYPTO_NAME_BID: &str = "scrypto::types::Bid";
+pub const SCRYPTO_NAME_RID: &str = "scrypto::types::Rid";
+pub const SCRYPTO_NAME_MID: &str = "scrypto::types::Mid";
+pub const SCRYPTO_NAME_VID: &str = "scrypto::types::Vid";
 
-pub const SCRYPTO_NAME_ACCOUNT: &str = "scrypto::Account";
-pub const SCRYPTO_NAME_PACKAGE: &str = "scrypto::Package";
-pub const SCRYPTO_NAME_BLUEPRINT: &str = "scrypto::Blueprint";
-pub const SCRYPTO_NAME_COMPONENT: &str = "scrypto::Component";
-pub const SCRYPTO_NAME_LAZY_MAP: &str = "scrypto::LazyMap";
+pub const SCRYPTO_NAME_ACCOUNT: &str = "scrypto::core::Account";
+pub const SCRYPTO_NAME_PACKAGE: &str = "scrypto::core::Package";
+pub const SCRYPTO_NAME_BLUEPRINT: &str = "scrypto::core::Blueprint";
+pub const SCRYPTO_NAME_COMPONENT: &str = "scrypto::core::Component";
+pub const SCRYPTO_NAME_LAZY_MAP: &str = "scrypto::core::LazyMap";
 
-pub const SCRYPTO_NAME_RESOURCE_DEF: &str = "scrypto::ResourceDef";
-pub const SCRYPTO_NAME_BUCKET: &str = "scrypto::Bucket";
-pub const SCRYPTO_NAME_BUCKET_REF: &str = "scrypto::BucketRef";
-pub const SCRYPTO_NAME_VAULT: &str = "scrypto::Vault";
+pub const SCRYPTO_NAME_RESOURCE_DEF: &str = "scrypto::resource::ResourceDef";
+pub const SCRYPTO_NAME_BUCKET: &str = "scrypto::resource::Bucket";
+pub const SCRYPTO_NAME_BUCKET_REF: &str = "scrypto::resource::BucketRef";
+pub const SCRYPTO_NAME_VAULT: &str = "scrypto::resource::Vault";

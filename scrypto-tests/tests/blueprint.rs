@@ -12,7 +12,7 @@ blueprint! {
     }
 
     impl Simple {
-        pub fn new() -> Address {
+        pub fn new() -> Component {
             Self {
                 state: 0
             }.instantiate()
@@ -30,7 +30,7 @@ blueprint! {
             todo!()
         }
 
-        pub fn custom_types_2() -> (Package, Blueprint, Component, LazyMap) {
+        pub fn custom_types_2() -> (Package, Blueprint, Component, LazyMap<String, String>) {
             todo!()
         }
 
@@ -59,7 +59,8 @@ fn test_simple_abi() {
                     "inputs": [],
                     "output": {
                         "type": "Custom",
-                        "name": "scrypto::Address"
+                        "name": "scrypto::core::Component",
+                        "generics": []
                     }
                 },
                 {
@@ -70,31 +71,38 @@ fn test_simple_abi() {
                         "elements": [
                             {
                                 "type": "Custom",
-                                "name": "scrypto::Amount"
+                                "name": "scrypto::types::Amount",
+                                "generics": []
                             },
                             {
                                 "type": "Custom",
-                                "name": "scrypto::Address"
+                                "name": "scrypto::types::Address",
+                                "generics": []
                             },
                             {
                                 "type": "Custom",
-                                "name": "scrypto::H256"
+                                "name": "scrypto::types::H256",
+                                "generics": []
                             },
                             {
                                 "type": "Custom",
-                                "name": "scrypto::Bid"
+                                "name": "scrypto::types::Bid",
+                                "generics": []
                             },
                             {
                                 "type": "Custom",
-                                "name": "scrypto::Rid"
+                                "name": "scrypto::types::Rid",
+                                "generics": []
                             },
                             {
                                 "type": "Custom",
-                                "name": "scrypto::Mid"
+                                "name": "scrypto::types::Mid",
+                                "generics": []
                             },
                             {
                                 "type": "Custom",
-                                "name": "scrypto::Vid"
+                                "name": "scrypto::types::Vid",
+                                "generics": []
                             }
                         ]
                     }
@@ -107,19 +115,30 @@ fn test_simple_abi() {
                         "elements": [
                             {
                                 "type": "Custom",
-                                "name": "scrypto::Package"
+                                "name": "scrypto::core::Package",
+                                "generics": []
                             },
                             {
                                 "type": "Custom",
-                                "name": "scrypto::Blueprint"
+                                "name": "scrypto::core::Blueprint",
+                                "generics": []
                             },
                             {
                                 "type": "Custom",
-                                "name": "scrypto::Component"
+                                "name": "scrypto::core::Component",
+                                "generics": []
                             },
                             {
                                 "type": "Custom",
-                                "name": "scrypto::LazyMap"
+                                "name": "scrypto::core::LazyMap",
+                                "generics": [
+                                    {
+                                        "type": "String"
+                                    },
+                                    {
+                                        "type": "String"
+                                    }
+                                ]
                             }
                         ]
                     }
@@ -132,15 +151,18 @@ fn test_simple_abi() {
                         "elements": [
                             {
                                 "type": "Custom",
-                                "name": "scrypto::Bucket"
+                                "name": "scrypto::resource::Bucket",
+                                "generics": []
                             },
                             {
                                 "type": "Custom",
-                                "name": "scrypto::BucketRef"
+                                "name": "scrypto::resource::BucketRef",
+                                "generics": []
                             },
                             {
                                 "type": "Custom",
-                                "name": "scrypto::Vault"
+                                "name": "scrypto::resource::Vault",
+                                "generics": []
                             }
                         ]
                     }

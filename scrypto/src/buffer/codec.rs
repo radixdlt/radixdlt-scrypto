@@ -35,8 +35,8 @@ mod tests {
     use crate::buffer::*;
     use crate::kernel::*;
     use crate::resource::*;
+    use crate::rust::borrow::ToOwned;
     use crate::rust::string::String;
-    use crate::rust::string::ToString;
     use crate::rust::vec;
     use crate::types::*;
 
@@ -44,7 +44,7 @@ mod tests {
     fn test_serialization() {
         let obj = PutComponentStateInput {
             component: Address::Component([1u8; 26]),
-            state: scrypto_encode(&"test".to_string()),
+            state: scrypto_encode(&"test".to_owned()),
         };
         let encoded = crate::buffer::scrypto_encode(&obj);
         let decoded = crate::buffer::scrypto_decode::<PutComponentStateInput>(&encoded).unwrap();

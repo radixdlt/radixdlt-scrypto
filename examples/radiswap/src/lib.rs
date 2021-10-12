@@ -27,7 +27,7 @@ blueprint! {
             lp_url: String,
             fee_in_thousandths: u32,
             scale: usize,
-        ) -> (Address, Bucket) {
+        ) -> (Component, Bucket) {
             // Check arguments
             scrypto_assert!(
                 !a_tokens.is_empty() && !b_tokens.is_empty(),

@@ -1,8 +1,9 @@
+use scrypto::blueprint;
+use scrypto::core::Context;
+use scrypto::resource::Bucket;
+use scrypto::types::{Address, Amount};
+
 use crate::utils::*;
-use scrypto::constructs::*;
-use scrypto::resource::*;
-use scrypto::types::*;
-use scrypto::*;
 
 blueprint! {
     struct BucketTest;

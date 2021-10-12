@@ -1,9 +1,10 @@
-use crate::utils::*;
-use scrypto::constructs::*;
-use scrypto::resource::*;
+use scrypto::blueprint;
+use scrypto::core::Context;
+use scrypto::resource::Bucket;
 use scrypto::rust::collections::*;
-use scrypto::types::*;
-use scrypto::*;
+use scrypto::types::{Address, Amount};
+
+use crate::utils::*;
 
 blueprint! {
     struct ResourceTest;

@@ -4,20 +4,13 @@ use crate::buffer::*;
 use crate::kernel::*;
 use crate::resource::*;
 use crate::rust::borrow::ToOwned;
+use crate::rust::vec;
 use crate::types::*;
 
 /// Represents a transient resource container.
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug)]
 pub struct Bucket {
     bid: Bid,
-}
-
-impl Describe for Bucket {
-    fn describe() -> Type {
-        Type::Custom {
-            name: SCRYPTO_NAME_BUCKET.to_owned(),
-        }
-    }
 }
 
 impl From<Bid> for Bucket {
@@ -33,7 +26,8 @@ impl From<Bucket> for Bid {
 }
 
 impl Bucket {
-    pub fn new<A: Into<Address>>(resource_def: A) -> Self {
+    pub fn new<A: Into<ResourceDef>>(resource_def: A) -> Self {
+        let resource_def: ResourceDef = resource_def.into();
         let input = CreateEmptyBucketInput {
             resource_def: resource_def.into(),
         };
@@ -87,5 +81,36 @@ impl Bucket {
 
     pub fn is_empty(&self) -> bool {
         self.amount() == 0.into()
+    }
+}
+
+//========
+// SBOR
+//========
+
+impl TypeId for Bucket {
+    fn type_id() -> u8 {
+        Bid::type_id()
+    }
+}
+
+impl Encode for Bucket {
+    fn encode_value(&self, encoder: &mut Encoder) {
+        self.bid.encode_value(encoder);
+    }
+}
+
+impl Decode for Bucket {
+    fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
+        Bid::decode_value(decoder).map(Into::into)
+    }
+}
+
+impl Describe for Bucket {
+    fn describe() -> Type {
+        Type::Custom {
+            name: SCRYPTO_NAME_BUCKET.to_owned(),
+            generics: vec![],
+        }
     }
 }

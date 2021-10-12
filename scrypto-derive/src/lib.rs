@@ -25,7 +25,7 @@ use proc_macro::TokenStream;
 ///     }
 ///
 ///     impl Counter {
-///         pub fn new() -> Address {
+///         pub fn new() -> Component {
 ///             Self {
 ///                 count: 0
 ///             }.instantiate()
@@ -41,7 +41,7 @@ use proc_macro::TokenStream;
 /// ```
 #[proc_macro]
 pub fn blueprint(input: TokenStream) -> TokenStream {
-    let output = blueprint::handle_blueprint(proc_macro2::TokenStream::from(input), true);
+    let output = blueprint::handle_blueprint(proc_macro2::TokenStream::from(input));
     TokenStream::from(output)
 }
 
@@ -65,7 +65,7 @@ pub fn blueprint(input: TokenStream) -> TokenStream {
 ///             "inputs": [],
 ///             "output": {
 ///                 "type": "Custom",
-///                 "name": "scrypto::Address"
+///                 "name": "scrypto::types::Address"
 ///             }
 ///         }
 ///     ],
@@ -76,12 +76,12 @@ pub fn blueprint(input: TokenStream) -> TokenStream {
 ///             "inputs": [
 ///                 {
 ///                     "type": "Custom",
-///                     "name": "scrypto::Bucket"
+///                     "name": "scrypto::resource::Bucket"
 ///                 }
 ///             ],
 ///             "output": {
 ///                 "type": "Custom",
-///                 "name": "scrypto::Bucket"
+///                 "name": "scrypto::resource::Bucket"
 ///             }
 ///         }
 ///     ]

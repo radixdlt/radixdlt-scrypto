@@ -1,13 +1,13 @@
 use sbor::{describe::Type, *};
 
 use crate::buffer::*;
-use crate::constructs::*;
 use crate::kernel::*;
 use crate::rust::borrow::ToOwned;
+use crate::rust::vec;
 use crate::types::*;
 
 /// A collection of blueprints, compiles and published as a single unit.
-#[derive(Debug, PartialEq, Eq, TypeId, Encode, Decode)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct Package {
     address: Address,
 }
@@ -34,12 +34,30 @@ impl Package {
         output.package.into()
     }
 
-    pub fn blueprint(&self, name: &str) -> Blueprint {
-        Blueprint::from(self.address, name)
-    }
-
     pub fn address(&self) -> Address {
         self.address
+    }
+}
+
+//========
+// SBOR
+//========
+
+impl TypeId for Package {
+    fn type_id() -> u8 {
+        Address::type_id()
+    }
+}
+
+impl Encode for Package {
+    fn encode_value(&self, encoder: &mut Encoder) {
+        self.address.encode_value(encoder);
+    }
+}
+
+impl Decode for Package {
+    fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
+        Address::decode_value(decoder).map(Into::into)
     }
 }
 
@@ -47,6 +65,7 @@ impl Describe for Package {
     fn describe() -> Type {
         Type::Custom {
             name: SCRYPTO_NAME_PACKAGE.to_owned(),
+            generics: vec![],
         }
     }
 }

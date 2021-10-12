@@ -1,6 +1,7 @@
 pub use crate::buffer::{scrypto_decode, scrypto_encode};
-pub use crate::constructs::{
-    Account, Blueprint, Component, Context, LazyMap, Level, Logger, Package,
+pub use crate::core::{
+    call_function, call_method, Account, Blueprint, Component, Context, LazyMap, Level, Logger,
+    Package, State,
 };
 pub use crate::kernel::call_kernel;
 pub use crate::resource::{Bucket, BucketRef, ResourceBuilder, ResourceDef, Vault};

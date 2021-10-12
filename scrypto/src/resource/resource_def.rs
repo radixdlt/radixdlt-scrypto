@@ -6,10 +6,11 @@ use crate::resource::*;
 use crate::rust::borrow::ToOwned;
 use crate::rust::collections::HashMap;
 use crate::rust::string::String;
+use crate::rust::vec;
 use crate::types::*;
 
 /// Represents the definition of a resource.
-#[derive(Debug, PartialEq, Eq, TypeId, Encode, Decode)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct ResourceDef {
     address: Address,
 }
@@ -99,10 +100,33 @@ impl ResourceDef {
     }
 }
 
+//========
+// SBOR
+//========
+
+impl TypeId for ResourceDef {
+    fn type_id() -> u8 {
+        Address::type_id()
+    }
+}
+
+impl Encode for ResourceDef {
+    fn encode_value(&self, encoder: &mut Encoder) {
+        self.address.encode_value(encoder);
+    }
+}
+
+impl Decode for ResourceDef {
+    fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
+        Address::decode_value(decoder).map(Into::into)
+    }
+}
+
 impl Describe for ResourceDef {
     fn describe() -> Type {
         Type::Custom {
             name: SCRYPTO_NAME_RESOURCE_DEF.to_owned(),
+            generics: vec![],
         }
     }
 }

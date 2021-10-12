@@ -1,9 +1,9 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use scrypto::import;
+use scrypto::rust::borrow::ToOwned;
 use scrypto::rust::str::FromStr;
 use scrypto::rust::string::String;
-use scrypto::rust::string::ToString;
 use scrypto::rust::vec::Vec;
 use scrypto::types::*;
 
@@ -12,7 +12,7 @@ import! {
 r#"
 {
     "package": "056967d3d49213394892980af59be76e9b3e7cc4cb78237460d0c7",
-    "name": "Sample",
+    "name": "Simple",
     "functions": [
         {
             "name": "stateless_func",
@@ -26,64 +26,86 @@ r#"
             "inputs": [
                 {
                     "type": "Custom",
-                    "name": "scrypto::Amount"
+                    "name": "scrypto::types::Amount",
+                    "generics": []
                 },
                 {
                     "type": "Custom",
-                    "name": "scrypto::Address"
+                    "name": "scrypto::types::Address",
+                    "generics": []
                 },
                 {
                     "type": "Custom",
-                    "name": "scrypto::H256"
+                    "name": "scrypto::types::H256",
+                    "generics": []
                 },
                 {
                     "type": "Custom",
-                    "name": "scrypto::Bid"
+                    "name": "scrypto::types::Bid",
+                    "generics": []
                 },
                 {
                     "type": "Custom",
-                    "name": "scrypto::Rid"
+                    "name": "scrypto::types::Rid",
+                    "generics": []
                 },
                 {
                     "type": "Custom",
-                    "name": "scrypto::Mid"
+                    "name": "scrypto::types::Mid",
+                    "generics": []
                 },
                 {
                     "type": "Custom",
-                    "name": "scrypto::Vid"
+                    "name": "scrypto::types::Vid",
+                    "generics": []
                 },
                 {
                     "type": "Custom",
-                    "name": "scrypto::Package"
+                    "name": "scrypto::core::Package",
+                    "generics": []
                 },
                 {
                     "type": "Custom",
-                    "name": "scrypto::Blueprint"
+                    "name": "scrypto::core::Blueprint",
+                    "generics": []
                 },
                 {
                     "type": "Custom",
-                    "name": "scrypto::Component"
+                    "name": "scrypto::core::Component",
+                    "generics": []
                 },
                 {
                     "type": "Custom",
-                    "name": "scrypto::LazyMap"
+                    "name": "scrypto::core::LazyMap",
+                    "generics": [
+                        {
+                            "type": "String"
+                        },
+                        {
+                            "type": "String"
+                        }
+                    ]
                 },
                 {
                     "type": "Custom",
-                    "name": "scrypto::Bucket"
+                    "name": "scrypto::resource::Bucket",
+                    "generics": []
                 },
                 {
                     "type": "Custom",
-                    "name": "scrypto::BucketRef"
+                    "name": "scrypto::resource::BucketRef",
+                    "generics": []
                 },
                 {
                     "type": "Custom",
-                    "name": "scrypto::Vault"
+                    "name": "scrypto::resource::Vault",
+                    "generics": []
                 }
             ],
             "output": {
                 "type": "Custom",
-                "name": "scrypto::BucketRef"
+                "name": "scrypto::resource::BucketRef",
+                "generics": []
             }
         }
     ],
@@ -190,14 +212,14 @@ r#"
 #[test]
 #[should_panic] // asserts it compiles
 fn test_import_from_abi() {
-    let instance = Sample::from(Address::from_str("").unwrap());
+    let instance = Simple::from(Address::from_str("").unwrap());
 
     let arg1 = Floor { x: 5, y: 12 };
     let arg2 = (1u8, 2u16);
     let arg3 = Vec::<String>::new();
     let arg4 = 5;
     let arg5 = Hello::A { x: 1 };
-    let arg6 = ["a".to_string(), "b".to_string()];
+    let arg6 = ["a".to_owned(), "b".to_owned()];
 
     instance.calculate_volume(arg1, arg2, arg3, arg4, arg5, arg6);
 }

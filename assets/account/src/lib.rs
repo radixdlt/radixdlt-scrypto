@@ -2,18 +2,18 @@ use scrypto::prelude::*;
 
 blueprint! {
     struct Account {
-        vaults: LazyMap,
+        vaults: LazyMap<Address, Vault>,
     }
 
     impl Account {
-        pub fn new() -> Address {
+        pub fn new() -> Component {
             Account {
                 vaults: LazyMap::new(),
             }
             .instantiate()
         }
 
-        pub fn with_bucket(bucket: Bucket) -> Address {
+        pub fn with_bucket(bucket: Bucket) -> Component {
             let mut account = Account {
                 vaults: LazyMap::new()
             };
@@ -31,7 +31,7 @@ blueprint! {
         /// Deposits resource into this account.
         pub fn deposit(&mut self, bucket: Bucket) {
             let address = bucket.resource_def().address();
-            match self.vaults.get::<Address, Vault>(&address) {
+            match self.vaults.get(&address) {
                 Some(v) => {
                     v.put(bucket);
                 }
@@ -46,7 +46,7 @@ blueprint! {
         pub fn withdraw(&mut self, amount: Amount, resource_def: Address) -> Bucket {
             let vault = self
                 .vaults
-                .get::<Address, Vault>(&resource_def);
+                .get(&resource_def);
             match vault {
                 Some(vault) => vault.take(amount),
                 None => {

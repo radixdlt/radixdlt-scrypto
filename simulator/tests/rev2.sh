@@ -26,8 +26,14 @@ package=`$rev2 publish ../examples/gumball-machine | tee /dev/tty | awk '/Packag
 component=`$rev2 call-function $package GumballMachine new | tee /dev/tty | awk '/Component:/ {print $NF}'`
 $rev2 call-method $component get_gumball 1,030000000000000000000000000000000000000000000000000000
 
+# Test cross component call
+$rev2 publish ../examples/gumball-machine --address 01a405d3129b61e86c51c3168d553d2ffd7a3f0bd2f66b5a3e9876
+package=`$rev2 publish ../examples/cross-component-call | tee /dev/tty | awk '/Package:/ {print $NF}'`
+component=`$rev2 call-function $package Vendor new | tee /dev/tty | awk '/Component:/ {print $NF}' | tail -n1`
+$rev2 call-method $component get_gumball 1,030000000000000000000000000000000000000000000000000000
+
 # Export abi
-$rev2 export-abi $package GumballMachine
+$rev2 export-abi $package Vendor
 
 # Show state
 $rev2 show $package
