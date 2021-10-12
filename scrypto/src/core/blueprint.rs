@@ -4,6 +4,7 @@ use crate::buffer::*;
 use crate::core::*;
 use crate::rust::borrow::ToOwned;
 use crate::rust::string::String;
+use crate::rust::vec;
 use crate::types::*;
 
 /// A template that describes shared structure and behavior.
@@ -64,6 +65,7 @@ impl Describe for Blueprint {
     fn describe() -> Type {
         Type::Custom {
             name: SCRYPTO_NAME_BLUEPRINT.to_owned(),
+            generics: vec![],
         }
     }
 }

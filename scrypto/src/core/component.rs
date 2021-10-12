@@ -4,6 +4,7 @@ use crate::buffer::*;
 use crate::core::*;
 use crate::kernel::*;
 use crate::rust::borrow::ToOwned;
+use crate::rust::vec;
 use crate::types::*;
 use crate::utils::*;
 
@@ -93,6 +94,7 @@ impl Describe for Component {
     fn describe() -> Type {
         Type::Custom {
             name: SCRYPTO_NAME_COMPONENT.to_owned(),
+            generics: vec![],
         }
     }
 }

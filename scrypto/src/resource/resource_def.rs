@@ -6,6 +6,7 @@ use crate::resource::*;
 use crate::rust::borrow::ToOwned;
 use crate::rust::collections::HashMap;
 use crate::rust::string::String;
+use crate::rust::vec;
 use crate::types::*;
 
 /// Represents the definition of a resource.
@@ -125,6 +126,7 @@ impl Describe for ResourceDef {
     fn describe() -> Type {
         Type::Custom {
             name: SCRYPTO_NAME_RESOURCE_DEF.to_owned(),
+            generics: vec![],
         }
     }
 }

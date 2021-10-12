@@ -4,6 +4,7 @@ use crate::buffer::*;
 use crate::kernel::*;
 use crate::resource::*;
 use crate::rust::borrow::ToOwned;
+use crate::rust::vec;
 use crate::types::*;
 
 /// Represents a transient resource container.
@@ -109,6 +110,7 @@ impl Describe for Bucket {
     fn describe() -> Type {
         Type::Custom {
             name: SCRYPTO_NAME_BUCKET.to_owned(),
+            generics: vec![],
         }
     }
 }

@@ -76,6 +76,7 @@ impl Describe for Account {
     fn describe() -> Type {
         Type::Custom {
             name: SCRYPTO_NAME_ACCOUNT.to_owned(),
+            generics: vec![],
         }
     }
 }

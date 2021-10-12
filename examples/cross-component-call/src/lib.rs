@@ -11,7 +11,8 @@ r#"
             "inputs": [],
             "output": {
                 "type": "Custom",
-                "name": "scrypto::types::Address"
+                "name": "scrypto::types::Address",
+                "generics": []
             }
         }
     ],
@@ -22,12 +23,14 @@ r#"
             "inputs": [
                 {
                     "type": "Custom",
-                    "name": "scrypto::resource::Bucket"
+                    "name": "scrypto::resource::Bucket",
+                    "generics": []
                 }
             ],
             "output": {
                 "type": "Custom",
-                "name": "scrypto::resource::Bucket"
+                "name": "scrypto::resource::Bucket",
+                "generics": []
             }
         }
     ]

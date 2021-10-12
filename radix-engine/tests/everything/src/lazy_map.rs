@@ -8,7 +8,7 @@ blueprint! {
         pub fn test_lazy_map() -> Option<String> {
             let s = LazyMap::new();
             s.insert("hello".to_owned(), "world".to_owned());
-            s.get("hello")
+            s.get(&"hello".to_owned())
         }
     }
 }

@@ -3,6 +3,7 @@ use sbor::{describe::Type, *};
 use crate::buffer::*;
 use crate::kernel::*;
 use crate::rust::borrow::ToOwned;
+use crate::rust::vec;
 use crate::types::*;
 
 /// A collection of blueprints, compiles and published as a single unit.
@@ -64,6 +65,7 @@ impl Describe for Package {
     fn describe() -> Type {
         Type::Custom {
             name: SCRYPTO_NAME_PACKAGE.to_owned(),
+            generics: vec![],
         }
     }
 }

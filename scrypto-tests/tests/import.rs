@@ -26,64 +26,86 @@ r#"
             "inputs": [
                 {
                     "type": "Custom",
-                    "name": "scrypto::types::Amount"
+                    "name": "scrypto::types::Amount",
+                    "generics": []
                 },
                 {
                     "type": "Custom",
-                    "name": "scrypto::types::Address"
+                    "name": "scrypto::types::Address",
+                    "generics": []
                 },
                 {
                     "type": "Custom",
-                    "name": "scrypto::types::H256"
+                    "name": "scrypto::types::H256",
+                    "generics": []
                 },
                 {
                     "type": "Custom",
-                    "name": "scrypto::types::Bid"
+                    "name": "scrypto::types::Bid",
+                    "generics": []
                 },
                 {
                     "type": "Custom",
-                    "name": "scrypto::types::Rid"
+                    "name": "scrypto::types::Rid",
+                    "generics": []
                 },
                 {
                     "type": "Custom",
-                    "name": "scrypto::types::Mid"
+                    "name": "scrypto::types::Mid",
+                    "generics": []
                 },
                 {
                     "type": "Custom",
-                    "name": "scrypto::types::Vid"
+                    "name": "scrypto::types::Vid",
+                    "generics": []
                 },
                 {
                     "type": "Custom",
-                    "name": "scrypto::core::Package"
+                    "name": "scrypto::core::Package",
+                    "generics": []
                 },
                 {
                     "type": "Custom",
-                    "name": "scrypto::core::Blueprint"
+                    "name": "scrypto::core::Blueprint",
+                    "generics": []
                 },
                 {
                     "type": "Custom",
-                    "name": "scrypto::core::Component"
+                    "name": "scrypto::core::Component",
+                    "generics": []
                 },
                 {
                     "type": "Custom",
-                    "name": "scrypto::core::LazyMap"
+                    "name": "scrypto::core::LazyMap",
+                    "generics": [
+                        {
+                            "type": "String"
+                        },
+                        {
+                            "type": "String"
+                        }
+                    ]
                 },
                 {
                     "type": "Custom",
-                    "name": "scrypto::resource::Bucket"
+                    "name": "scrypto::resource::Bucket",
+                    "generics": []
                 },
                 {
                     "type": "Custom",
-                    "name": "scrypto::resource::BucketRef"
+                    "name": "scrypto::resource::BucketRef",
+                    "generics": []
                 },
                 {
                     "type": "Custom",
-                    "name": "scrypto::resource::Vault"
+                    "name": "scrypto::resource::Vault",
+                    "generics": []
                 }
             ],
             "output": {
                 "type": "Custom",
-                "name": "scrypto::resource::BucketRef"
+                "name": "scrypto::resource::BucketRef",
+                "generics": []
             }
         }
     ],

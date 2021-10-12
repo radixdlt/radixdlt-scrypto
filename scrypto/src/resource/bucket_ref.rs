@@ -6,6 +6,7 @@ use crate::kernel::*;
 use crate::resource::*;
 use crate::rust::borrow::ToOwned;
 use crate::rust::format;
+use crate::rust::vec;
 use crate::types::*;
 
 /// Represents a reference to a bucket.
@@ -96,6 +97,7 @@ impl Describe for BucketRef {
     fn describe() -> Type {
         Type::Custom {
             name: SCRYPTO_NAME_BUCKET_REF.to_owned(),
+            generics: vec![],
         }
     }
 }

@@ -90,6 +90,7 @@ pub enum Type {
 
     Custom {
         name: String,
+        generics: Vec<Type>,
     },
 }
 

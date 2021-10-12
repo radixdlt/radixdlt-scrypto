@@ -10,6 +10,7 @@ use crate::rust::fmt;
 use crate::rust::str::FromStr;
 use crate::rust::string::String;
 use crate::rust::string::ToString;
+use crate::rust::vec;
 use crate::rust::vec::Vec;
 
 construct_uint! {
@@ -247,6 +248,7 @@ impl Describe for Amount {
     fn describe() -> Type {
         Type::Custom {
             name: SCRYPTO_NAME_AMOUNT.to_owned(),
+            generics: vec![],
         }
     }
 }

@@ -4,6 +4,7 @@ use crate::buffer::*;
 use crate::rust::borrow::ToOwned;
 use crate::rust::convert::TryFrom;
 use crate::rust::string::String;
+use crate::rust::vec;
 use crate::rust::vec::Vec;
 use crate::types::*;
 
@@ -63,6 +64,7 @@ impl Describe for Bid {
     fn describe() -> Type {
         Type::Custom {
             name: SCRYPTO_NAME_BID.to_owned(),
+            generics: vec![],
         }
     }
 }

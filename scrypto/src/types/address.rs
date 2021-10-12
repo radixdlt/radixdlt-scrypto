@@ -5,6 +5,7 @@ use crate::rust::borrow::ToOwned;
 use crate::rust::convert::TryFrom;
 use crate::rust::fmt;
 use crate::rust::str::FromStr;
+use crate::rust::vec;
 use crate::rust::vec::Vec;
 use crate::types::*;
 
@@ -113,6 +114,7 @@ impl Describe for Address {
     fn describe() -> Type {
         Type::Custom {
             name: SCRYPTO_NAME_ADDRESS.to_owned(),
+            generics: vec![],
         }
     }
 }

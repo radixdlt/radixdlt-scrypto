@@ -318,7 +318,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                 Type::U64 => self.prepare_basic_ty::<u64>(i, t, arg),
                 Type::U128 => self.prepare_basic_ty::<u128>(i, t, arg),
                 Type::String => self.prepare_basic_ty::<String>(i, t, arg),
-                Type::Custom { name } => self.prepare_custom_ty(i, t, arg, name, account),
+                Type::Custom { name, .. } => self.prepare_custom_ty(i, t, arg, name, account),
                 _ => Err(BuildArgsError::UnsupportedType(i, t.clone())),
             };
             encoded.push(res?);

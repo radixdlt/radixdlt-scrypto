@@ -3,28 +3,36 @@ use sbor::{describe::Type, *};
 use crate::buffer::*;
 use crate::kernel::*;
 use crate::rust::borrow::ToOwned;
+use crate::rust::marker::PhantomData;
+use crate::rust::vec;
 use crate::types::*;
 use crate::utils::*;
 
 /// A scalable key-value map which loads values on demand.
 #[derive(Debug)]
-pub struct LazyMap {
+pub struct LazyMap<K: Encode + Decode, V: Encode + Decode> {
     mid: Mid,
+    key: PhantomData<K>,
+    value: PhantomData<V>,
 }
 
-impl From<Mid> for LazyMap {
+impl<K: Encode + Decode, V: Encode + Decode> From<Mid> for LazyMap<K, V> {
     fn from(mid: Mid) -> Self {
-        Self { mid }
+        Self {
+            mid,
+            key: PhantomData,
+            value: PhantomData,
+        }
     }
 }
 
-impl From<LazyMap> for Mid {
-    fn from(a: LazyMap) -> Mid {
+impl<K: Encode + Decode, V: Encode + Decode> From<LazyMap<K, V>> for Mid {
+    fn from(a: LazyMap<K, V>) -> Mid {
         a.mid
     }
 }
 
-impl LazyMap {
+impl<K: Encode + Decode, V: Encode + Decode> LazyMap<K, V> {
     pub fn new() -> Self {
         let input = CreateLazyMapInput {};
         let output: CreateLazyMapOutput = call_kernel(CREATE_LAZY_MAP, input);
@@ -32,7 +40,7 @@ impl LazyMap {
         output.lazy_map.into()
     }
 
-    pub fn get<K: Encode + ?Sized, V: Decode>(&self, key: &K) -> Option<V> {
+    pub fn get(&self, key: &K) -> Option<V> {
         let input = GetLazyMapEntryInput {
             lazy_map: self.mid,
             key: scrypto_encode(key),
@@ -42,7 +50,7 @@ impl LazyMap {
         output.value.map(|v| unwrap_light(scrypto_decode(&v)))
     }
 
-    pub fn insert<K: Encode, V: Encode>(&self, key: K, value: V) {
+    pub fn insert(&self, key: K, value: V) {
         let input = PutLazyMapEntryInput {
             lazy_map: self.mid,
             key: scrypto_encode(&key),
@@ -56,7 +64,7 @@ impl LazyMap {
     }
 }
 
-impl Default for LazyMap {
+impl<K: Encode + Decode, V: Encode + Decode> Default for LazyMap<K, V> {
     fn default() -> Self {
         Self::new()
     }
@@ -66,28 +74,29 @@ impl Default for LazyMap {
 // SBOR
 //========
 
-impl TypeId for LazyMap {
+impl<K: Encode + Decode, V: Encode + Decode> TypeId for LazyMap<K, V> {
     fn type_id() -> u8 {
         Mid::type_id()
     }
 }
 
-impl Encode for LazyMap {
+impl<K: Encode + Decode, V: Encode + Decode> Encode for LazyMap<K, V> {
     fn encode_value(&self, encoder: &mut Encoder) {
         self.mid.encode_value(encoder);
     }
 }
 
-impl Decode for LazyMap {
+impl<K: Encode + Decode, V: Encode + Decode> Decode for LazyMap<K, V> {
     fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
         Mid::decode_value(decoder).map(Into::into)
     }
 }
 
-impl Describe for LazyMap {
+impl<K: Encode + Decode + Describe, V: Encode + Decode + Describe> Describe for LazyMap<K, V> {
     fn describe() -> Type {
         Type::Custom {
             name: SCRYPTO_NAME_LAZY_MAP.to_owned(),
+            generics: vec![K::describe(), V::describe()],
         }
     }
 }

@@ -4,6 +4,7 @@ use crate::buffer::*;
 use crate::kernel::*;
 use crate::resource::*;
 use crate::rust::borrow::ToOwned;
+use crate::rust::vec;
 use crate::types::*;
 
 /// Represents a persistent resource container on ledger state.
@@ -107,6 +108,7 @@ impl Describe for Vault {
     fn describe() -> Type {
         Type::Custom {
             name: SCRYPTO_NAME_VAULT.to_owned(),
+            generics: vec![],
         }
     }
 }

@@ -334,10 +334,20 @@ fn get_native_type(ty: &des::Type) -> (Type, Vec<Item>) {
 
             parse_quote! { HashMap<#key_type, #value_type> }
         }
-        des::Type::Custom { name } => {
+        des::Type::Custom { name, generics } => {
             if name.starts_with("scrypto::") {
                 let ty: Type = parse_str(&format!("::{}", name)).unwrap();
-                parse_quote! { #ty }
+                if generics.is_empty() {
+                    parse_quote! { #ty }
+                } else {
+                    let mut types = vec![];
+                    for g in generics {
+                        let (t, v) = get_native_type(g);
+                        types.push(t);
+                        structs.extend(v);
+                    }
+                    parse_quote! { #ty<#(#types),*> }
+                }
             } else {
                 panic!("Invalid custom type: {}", name)
             }
@@ -372,7 +382,8 @@ mod tests {
                             "inputs": [],
                             "output": {
                                 "type": "Custom",
-                                "name": "scrypto::core::Component"
+                                "name": "scrypto::core::Component",
+                                "generics": []
                             }
                         }
                     ],
@@ -384,7 +395,8 @@ mod tests {
                             ],
                             "output": {
                                 "type": "Custom",
-                                "name": "scrypto::resource::Bucket"
+                                "name": "scrypto::resource::Bucket",
+                                "generics": []
                             }
                         }
                     ]
