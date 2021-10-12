@@ -26,9 +26,9 @@ impl From<Component> for Address {
 }
 
 impl Component {
-    pub fn new<S: AsRef<str>, T: Encode>(name: S, state: T) -> Self {
+    pub fn new<T: State>(state: T) -> Self {
         let input = CreateComponentInput {
-            name: name.as_ref().to_owned(),
+            name: T::name().to_owned(),
             state: scrypto_encode(&state),
         };
         let output: CreateComponentOutput = call_kernel(CREATE_COMPONENT, input);
@@ -36,7 +36,7 @@ impl Component {
         output.component.into()
     }
 
-    pub fn get_state<T: Decode>(&self) -> T {
+    pub fn get_state<T: State>(&self) -> T {
         let input = GetComponentStateInput {
             component: self.address,
         };
@@ -45,7 +45,7 @@ impl Component {
         unwrap_light(scrypto_decode(&output.state))
     }
 
-    pub fn put_state<T: Encode>(&self, state: T) {
+    pub fn put_state<T: State>(&self, state: T) {
         let input = PutComponentStateInput {
             component: self.address,
             state: scrypto_encode(&state),

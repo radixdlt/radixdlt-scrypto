@@ -9,9 +9,9 @@ fn test_no_std() {
     let mut executor = TransactionExecutor::new(&mut ledger, 0, 0);
     let package = executor.publish_package(include_code!());
 
-    // Test the `new` function.
+    // Test the `hello` function.
     let transaction1 = TransactionBuilder::new(&executor)
-        .call_function(package, "NoStd", "new", vec![], None)
+        .call_function(package, "NoStd", "hello", vec![], None)
         .build()
         .unwrap();
     let receipt1 = executor.run(transaction1, false);

@@ -12,7 +12,7 @@ import! {
 r#"
 {
     "package": "056967d3d49213394892980af59be76e9b3e7cc4cb78237460d0c7",
-    "name": "Sample",
+    "name": "Simple",
     "functions": [
         {
             "name": "stateless_func",
@@ -26,64 +26,64 @@ r#"
             "inputs": [
                 {
                     "type": "Custom",
-                    "name": "scrypto::Amount"
+                    "name": "scrypto::types::Amount"
                 },
                 {
                     "type": "Custom",
-                    "name": "scrypto::Address"
+                    "name": "scrypto::types::Address"
                 },
                 {
                     "type": "Custom",
-                    "name": "scrypto::H256"
+                    "name": "scrypto::types::H256"
                 },
                 {
                     "type": "Custom",
-                    "name": "scrypto::Bid"
+                    "name": "scrypto::types::Bid"
                 },
                 {
                     "type": "Custom",
-                    "name": "scrypto::Rid"
+                    "name": "scrypto::types::Rid"
                 },
                 {
                     "type": "Custom",
-                    "name": "scrypto::Mid"
+                    "name": "scrypto::types::Mid"
                 },
                 {
                     "type": "Custom",
-                    "name": "scrypto::Vid"
+                    "name": "scrypto::types::Vid"
                 },
                 {
                     "type": "Custom",
-                    "name": "scrypto::Package"
+                    "name": "scrypto::core::Package"
                 },
                 {
                     "type": "Custom",
-                    "name": "scrypto::Blueprint"
+                    "name": "scrypto::core::Blueprint"
                 },
                 {
                     "type": "Custom",
-                    "name": "scrypto::Component"
+                    "name": "scrypto::core::Component"
                 },
                 {
                     "type": "Custom",
-                    "name": "scrypto::LazyMap"
+                    "name": "scrypto::core::LazyMap"
                 },
                 {
                     "type": "Custom",
-                    "name": "scrypto::Bucket"
+                    "name": "scrypto::resource::Bucket"
                 },
                 {
                     "type": "Custom",
-                    "name": "scrypto::BucketRef"
+                    "name": "scrypto::resource::BucketRef"
                 },
                 {
                     "type": "Custom",
-                    "name": "scrypto::Vault"
+                    "name": "scrypto::resource::Vault"
                 }
             ],
             "output": {
                 "type": "Custom",
-                "name": "scrypto::BucketRef"
+                "name": "scrypto::resource::BucketRef"
             }
         }
     ],
@@ -190,7 +190,7 @@ r#"
 #[test]
 #[should_panic] // asserts it compiles
 fn test_import_from_abi() {
-    let instance = Sample::from(Address::from_str("").unwrap());
+    let instance = Simple::from(Address::from_str("").unwrap());
 
     let arg1 = Floor { x: 5, y: 12 };
     let arg2 = (1u8, 2u16);

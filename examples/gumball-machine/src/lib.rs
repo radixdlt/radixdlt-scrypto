@@ -7,7 +7,7 @@ blueprint! {
     }
 
     impl GumballMachine {
-        pub fn new() -> Address {
+        pub fn new() -> Component {
             let bucket = ResourceBuilder::new()
                 .metadata("name", "Gumball")
                 .metadata("symbol", "gum")

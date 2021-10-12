@@ -1,8 +1,9 @@
+use scrypto::blueprint;
+use scrypto::core::{Blueprint, Component, Context, State};
+use scrypto::resource::{ResourceDef, Vault};
+use scrypto::types::Address;
+
 use crate::utils::*;
-use scrypto::core::*;
-use scrypto::resource::*;
-use scrypto::types::*;
-use scrypto::*;
 
 blueprint! {
     struct ComponentTest {
@@ -12,7 +13,7 @@ blueprint! {
     }
 
     impl ComponentTest {
-        pub fn create_component() -> Address {
+        pub fn create_component() -> Component {
             let resource_def = create_mutable("c1", Context::package_address());
             let bucket =  resource_def.mint(100);
 

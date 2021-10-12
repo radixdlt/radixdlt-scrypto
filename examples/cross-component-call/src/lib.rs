@@ -11,7 +11,7 @@ r#"
             "inputs": [],
             "output": {
                 "type": "Custom",
-                "name": "scrypto::Address"
+                "name": "scrypto::types::Address"
             }
         }
     ],
@@ -22,12 +22,12 @@ r#"
             "inputs": [
                 {
                     "type": "Custom",
-                    "name": "scrypto::Bucket"
+                    "name": "scrypto::resource::Bucket"
                 }
             ],
             "output": {
                 "type": "Custom",
-                "name": "scrypto::Bucket"
+                "name": "scrypto::resource::Bucket"
             }
         }
     ]
@@ -41,7 +41,7 @@ blueprint! {
     }
 
     impl Vendor {
-        pub fn new() -> Address {
+        pub fn new() -> Component {
             Self {
                 machine: GumballMachine::new().into()
             }

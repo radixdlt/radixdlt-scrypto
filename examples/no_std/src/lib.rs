@@ -25,7 +25,7 @@ blueprint! {
     struct NoStd;
 
     impl NoStd {
-        pub fn new() {
+        pub fn hello() {
             info!("Hello, no_std!");
         }
     }

@@ -6,14 +6,14 @@ blueprint! {
     }
 
     impl Account {
-        pub fn new() -> Address {
+        pub fn new() -> Component {
             Account {
                 vaults: LazyMap::new(),
             }
             .instantiate()
         }
 
-        pub fn with_bucket(bucket: Bucket) -> Address {
+        pub fn with_bucket(bucket: Bucket) -> Component {
             let mut account = Account {
                 vaults: LazyMap::new()
             };

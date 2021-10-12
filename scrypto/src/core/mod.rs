@@ -15,3 +15,10 @@ pub use context::Context;
 pub use lazy_map::LazyMap;
 pub use logger::{Level, Logger};
 pub use package::Package;
+
+/// Represents the state of a component.
+pub trait State: sbor::Encode + sbor::Decode {
+    fn name() -> &'static str;
+
+    fn instantiate(self) -> Component;
+}
