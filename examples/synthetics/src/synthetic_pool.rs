@@ -4,7 +4,7 @@ use crate::oracle::PriceOracle;
 
 import! {
 r#"
-    
+{    
   "package": "01806c33ab58c922240ce20a5b697546cc84aaecdf1b460a42c425",
   "name": "PriceOracle",
   "functions": [
