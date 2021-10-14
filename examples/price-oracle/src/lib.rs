@@ -2,23 +2,26 @@ use scrypto::prelude::*;
 
 blueprint! {
     struct PriceOracle {
-        prices_in_thousandths: LazyMap<String, u64>,
+        prices_in_billionth: LazyMap<(Address, Address), u128>,
     }
 
     impl PriceOracle {
+        /// Creates a PriceOracle component.
         pub fn new() -> Component {
             Self {
-                prices_in_thousandths: LazyMap::new(),
+                prices_in_billionth: LazyMap::new(),
             }
             .instantiate()
         }
 
-        pub fn get_price(&self, pair: String) -> Option<u64> {
-            self.prices_in_thousandths.get(&pair)
+        /// Returns the price (in billionth) of pair BASE/QUOTE.
+        pub fn get_price(&self, base: Address, quote: Address) -> Option<u128> {
+            self.prices_in_billionth.get(&(base, quote))
         }
 
-        pub fn put_price(&self, pair: String, price_in_thousandths: u64) {
-            self.prices_in_thousandths.insert(pair, price_in_thousandths);
+        /// Updates the price (in billionth) of pair BASE/QUOTE.
+        pub fn update_price(&self, base: Address, quote: Address, price_in_billionth: u128) {
+            self.prices_in_billionth.insert((base, quote), price_in_billionth);
         }
     }
 }
