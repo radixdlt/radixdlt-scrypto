@@ -93,5 +93,9 @@ blueprint! {
             synthetic_pool
         }
 
+      pub fn get_price(&self, base: Address, quote: Address) -> Option<u128> {
+        self.oracle.get_price(base, quote)
+      }
     }
+  
 }
