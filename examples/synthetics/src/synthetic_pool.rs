@@ -65,11 +65,12 @@ blueprint! {
 
     impl SyntheticPool {
         pub fn new(
-            oracle: PriceOracle,
+            oracle_address: Address,
             collateral_token_symbol: String,
             underlying_asset_token_symbol: String,
             synthetic_asset_token_symbol: String,
         } -> (Component) {
+            let oracle: PriceOracle = oracle_address.into();
             let synthetic_pool = Self {
                 oracle: oracle,
                 collateral_token_symbol: collateral_token_symbol,

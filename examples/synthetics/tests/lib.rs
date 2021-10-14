@@ -21,7 +21,7 @@ fn test_hello() {
 
     // create our synthetic pool
     let transaction1 = TransactionBuilder::new(&executor)
-        .call_function(package, "SyntheticPool", "new", vec![], None)
+        .call_function(package, "SyntheticPool", "new", vec![po_receipt.component(0).unwrap()], None)
         .build()
         .unwrap();
     let receipt1 = executor.run(transaction1, false);
