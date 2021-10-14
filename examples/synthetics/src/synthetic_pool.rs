@@ -4,53 +4,67 @@ use crate::oracle::PriceOracle;
 
 import! {
 r#"
+    
+  "package": "01806c33ab58c922240ce20a5b697546cc84aaecdf1b460a42c425",
+  "name": "PriceOracle",
+  "functions": [
     {
-        "package": "01ca59a8d6ea4f7efa1765cef702d14e47570c079aedd44992dd09",
-        "name": "PriceOracle",
-        "functions": [
-          {
-            "name": "new",
-            "inputs": [],
-            "output": {
-              "type": "Custom",
-              "name": "scrypto::core::Component",
-              "generics": []
-            }
-          }
-        ],
-        "methods": [
-          {
-            "name": "get_price",
-            "mutability": "Immutable",
-            "inputs": [
-              {
-                "type": "String"
-              }
-            ],
-            "output": {
-              "type": "Option",
-              "value": {
-                "type": "U64"
-              }
-            }
-          },
-          {
-            "name": "put_price",
-            "mutability": "Immutable",
-            "inputs": [
-              {
-                "type": "String"
-              },
-              {
-                "type": "U64"
-              }
-            ],
-            "output": {
-              "type": "Unit"
-            }
-          }
-        ]
+      "name": "new",
+      "inputs": [],
+      "output": {
+        "type": "Custom",
+        "name": "scrypto::core::Component",
+        "generics": []
       }
+    }
+  ],
+  "methods": [
+    {
+      "name": "get_price",
+      "mutability": "Immutable",
+      "inputs": [
+        {
+          "type": "Custom",
+          "name": "scrypto::types::Address",
+          "generics": []
+        },
+        {
+          "type": "Custom",
+          "name": "scrypto::types::Address",
+          "generics": []
+        }
+      ],
+      "output": {
+        "type": "Option",
+        "value": {
+          "type": "U128"
+        }
+      }
+    },
+    {
+      "name": "update_price",
+      "mutability": "Immutable",
+      "inputs": [
+        {
+          "type": "Custom",
+          "name": "scrypto::types::Address",
+          "generics": []
+        },
+        {
+          "type": "Custom",
+          "name": "scrypto::types::Address",
+          "generics": []
+        },
+        {
+          "type": "U128"
+        }
+      ],
+      "output": {
+        "type": "Unit"
+      }
+    }
+  ]
+}
 "#
 }
 

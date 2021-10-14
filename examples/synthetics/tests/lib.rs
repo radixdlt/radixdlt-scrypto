@@ -21,14 +21,19 @@ fn test_hello() {
 
     // create our synthetic pool
     let transaction1 = TransactionBuilder::new(&executor)
-        .call_function(package, "SyntheticPool", "new", vec![po_receipt.component(0).unwrap()], None)
+        .call_function(package, "SyntheticPool", "new", vec![
+            po_receipt.component(0).unwrap().to_string(),
+            "collateral".to_string(),
+            "underlying".to_string(),
+            "synthetic".to_string()
+            ], None)
         .build()
         .unwrap();
     let receipt1 = executor.run(transaction1, false);
     println!("{:?}\n", receipt1);
     assert!(receipt1.success);
 
-    // Test the `free_token` method.
+    // Test the `get price` method.
     let component = receipt1.component(0).unwrap();
     let transaction2 = TransactionBuilder::new(&executor)
         .call_method(component, "free_token", vec![], Some(account))
