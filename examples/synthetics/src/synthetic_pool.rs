@@ -1,7 +1,5 @@
 use scrypto::prelude::*;
 
-use crate::oracle::PriceOracle;
-
 import! {
 r#"
 {    
@@ -83,7 +81,7 @@ blueprint! {
             collateral_token_symbol: String,
             underlying_asset_token_symbol: String,
             synthetic_asset_token_symbol: String,
-        } -> (Component) {
+         ) -> Component {
             let oracle: PriceOracle = oracle_address.into();
             let synthetic_pool = Self {
                 oracle: oracle,

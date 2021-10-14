@@ -39,6 +39,5 @@ fn test1_rename_me() {
     println!("{:?}\n", receipt1);
     assert!(receipt1.success);
 
-    // Test the `get price` method.
 
 }
