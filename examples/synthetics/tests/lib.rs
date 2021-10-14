@@ -10,9 +10,18 @@ fn test_hello() {
     let account = executor.create_account();
     let package = executor.publish_package(include_code!());
 
-    // Test the `new` function.
+    // create a price oracle
+    let po_transaction = TransactionBuilder::new(&executor)
+        .call_function(package, "PriceOracle", "new", vec![], None)
+        .build()
+        .unwrap();
+    let po_receipt = executor.run(po_transaction, false);
+    println!("{:?}\n", po_receipt);
+    assert!(po_receipt.success);
+
+    // create our synthetic pool
     let transaction1 = TransactionBuilder::new(&executor)
-        .call_function(package, "Hello", "new", vec![], None)
+        .call_function(package, "SyntheticPool", "new", vec![], None)
         .build()
         .unwrap();
     let receipt1 = executor.run(transaction1, false);

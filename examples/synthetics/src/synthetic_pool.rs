@@ -1,35 +1,87 @@
 use scrypto::prelude::*;
 
+use crate::oracle::PriceOracle;
+
+import! {
+r#"
+    {
+        "package": "01ca59a8d6ea4f7efa1765cef702d14e47570c079aedd44992dd09",
+        "name": "PriceOracle",
+        "functions": [
+          {
+            "name": "new",
+            "inputs": [],
+            "output": {
+              "type": "Custom",
+              "name": "scrypto::core::Component",
+              "generics": []
+            }
+          }
+        ],
+        "methods": [
+          {
+            "name": "get_price",
+            "mutability": "Immutable",
+            "inputs": [
+              {
+                "type": "String"
+              }
+            ],
+            "output": {
+              "type": "Option",
+              "value": {
+                "type": "U64"
+              }
+            }
+          },
+          {
+            "name": "put_price",
+            "mutability": "Immutable",
+            "inputs": [
+              {
+                "type": "String"
+              },
+              {
+                "type": "U64"
+              }
+            ],
+            "output": {
+              "type": "Unit"
+            }
+          }
+        ]
+      }
+"#
+}
+
+
 blueprint! {
-    struct Hello {
-        // Define what resources and data will be managed by Hello components
-        sample_vault: Vault
+    struct SyntheticPool {
+        oracle: PriceOracle,
+        collateral_token_symbol: String,
+        underlying_asset_token_symbol: String,
+        synthetic_asset_token_symbol: String,
     }
 
-    impl Hello {
-        // Implement the functions and methods which will manage those resources and data
-        
-        // This is a function, and can be called directly on the blueprint once deployed
-        pub fn new() -> Component {
-            // Create a new token called "HelloToken," with a fixed supply of 1000, and put that supply into a bucket
-            let my_bucket: Bucket = ResourceBuilder::new()
-                .metadata("name", "HelloToken")
-                .metadata("symbol", "HT")
-                .create_fixed(1000);
+    impl SyntheticPool {
+        pub fn new(
+            oracle: PriceOracle,
+            collateral_token_symbol: String,
+            underlying_asset_token_symbol: String,
+            synthetic_asset_token_symbol: String,
+        } -> (Component) {
+            let synthetic_pool = Self {
+                oracle: oracle,
+                collateral_token_symbol: collateral_token_symbol,
+                underlying_asset_token_symbol: underlying_asset_token_symbol,
+                synthetic_asset_token_symbol: synthetic_asset_token_symbol,
+            }.instantiate();
 
-            // Instantiate a Hello component, populating its vault with our supply of 1000 HelloToken
-            Self {
-                sample_vault: Vault::with_bucket(my_bucket)
-            }
-            .instantiate()
+            synthetic_pool
         }
 
-        // This is a method, because it needs a reference to self.  Methods can only be called on components
-        pub fn free_token(&mut self) -> Bucket {
-            info!("My balance is: {} HelloToken.  Now giving away a token!", self.sample_vault.amount());
-            // If the semi-colon is omitted on the last line, the last value seen is automatically returned
-            // In this case, a bucket containing 1 HelloToken is returned
-            self.sample_vault.take(1)
+        pub fn get_price(&self, pair: String) -> Bucket {
+            self.vendor.get_price(pair)
         }
     }
 }
