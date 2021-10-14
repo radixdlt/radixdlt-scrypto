@@ -41,6 +41,8 @@ blueprint! {
 
         // get back the deposit
         // XXX: HOW TO PAY INTEREST?!!
+        //      1. We need internal map. Tracking external account doesn't work as the asset is liquid
+        //      2. Interest needs to be based on liquidity as well
         pub fn redeem(&mut self, aB_tokens: Bucket) -> Bucket {
             let B_amount_needed = aB_tokens.amount();
             scrypto_assert!(
