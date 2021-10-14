@@ -1,0 +1,78 @@
+====================================================================================
+Account 1: 02b60ca34208e70794dabb39cc470a70ec9f7f24e4ee473dbd3461
+Account 2: 02c1897261516ff0597fded2b19bf2472ff97b2d791ea50bd02ab2
+Account 3: 02ffa01926302c78c0f050f6d08140ec77757ec6cd277f7eecef42
+Account 4: 02d8541671ab09116ae450d468f91e5488a9b22c705d70dcfe9e09
+BTC: 03e192213f8ae4d9ae27f6a5fd2ed30df6f1449947c4280b1afac2
+ETH: 0350048063b070ff6987322e6b12a046b654ef99fb82ee0edb2096
+USD: 03d1f50010e4102d88aacc347711491f852c515134a9ecf67ba17c
+GBP: 03e2df51eb999d85f29fd3d92bc4be9fec7119f3408ebbd7db91ae
+Radix swap blueprint: 01cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d
+Price oracle blueprint: 01806c33ab58c922240ce20a5b697546cc84aaecdf1b460a42c425
+Price oracle component: 0266b051ea4947852c9d5489d3bb7e14cf0768078495ed3b4d9afc
+====================================================================================
+
+And then we can generate the price oracle abi:
+rev2 export-abi 01806c33ab58c922240ce20a5b697546cc84aaecdf1b460a42c425 PriceOracle
+
+{
+  "package": "01806c33ab58c922240ce20a5b697546cc84aaecdf1b460a42c425",
+  "name": "PriceOracle",
+  "functions": [
+    {
+      "name": "new",
+      "inputs": [],
+      "output": {
+        "type": "Custom",
+        "name": "scrypto::core::Component",
+        "generics": []
+      }
+    }
+  ],
+  "methods": [
+    {
+      "name": "get_price",
+      "mutability": "Immutable",
+      "inputs": [
+        {
+          "type": "Custom",
+          "name": "scrypto::types::Address",
+          "generics": []
+        },
+        {
+          "type": "Custom",
+          "name": "scrypto::types::Address",
+          "generics": []
+        }
+      ],
+      "output": {
+        "type": "Option",
+        "value": {
+          "type": "U128"
+        }
+      }
+    },
+    {
+      "name": "update_price",
+      "mutability": "Immutable",
+      "inputs": [
+        {
+          "type": "Custom",
+          "name": "scrypto::types::Address",
+          "generics": []
+        },
+        {
+          "type": "Custom",
+          "name": "scrypto::types::Address",
+          "generics": []
+        },
+        {
+          "type": "U128"
+        }
+      ],
+      "output": {
+        "type": "Unit"
+      }
+    }
+  ]
+}
