@@ -22,7 +22,7 @@ blueprint! {
         /// Updates the price (in billionth) of pair BASE/QUOTE.
         pub fn update_price(&self, base: Address, quote: Address, price_in_billionth: u128) {
             self.prices_in_billionth.insert((base, quote), price_in_billionth);
-            self.prices_in_billionth.insert((base, quote), 1_000_000_000 / price_in_billionth);
+            self.prices_in_billionth.insert((quote, base), 1_000_000_000 * 1_000_000_000 / price_in_billionth);
         }
     }
 }
