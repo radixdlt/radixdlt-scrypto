@@ -39,6 +39,8 @@ rev2 call-method $po_cp update_price $eth $usd 3763000000000
 rev2 call-method $po_cp update_price $btc $gbp 41950000000000
 rev2 call-method $po_cp update_price $eth $gbp 2746000000000
 rev2 call-method $po_cp update_price $btc $eth 15000000000
+rev2 call-method $po_cp get_price $btc $eth
+rev2 call-method $po_cp get_price $eth $btc
 
 # Summary
 echo "===================================================================================="
