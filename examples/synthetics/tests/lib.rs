@@ -3,16 +3,22 @@ use radix_engine::transaction::*;
 use scrypto::prelude::*;
 
 #[test]
-fn test_hello() {
+fn test1_rename_me() {
     // Set up environment.
     let mut ledger = InMemoryLedger::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, 0, 0);
-    let account = executor.create_account();
-    let package = executor.publish_package(include_code!());
+    let synthetics_package = executor.publish_package(include_code!());
+
+    let oracle_package_address = Address::from_str("01806c33ab58c922240ce20a5b697546cc84aaecdf1b460a42c425").unwrap();
+
+    executor.publish_package_to(
+        include_code!("../../price-oracle"),
+        oracle_package_address,
+    );
 
     // create a price oracle
     let po_transaction = TransactionBuilder::new(&executor)
-        .call_function(package, "PriceOracle", "new", vec![], None)
+        .call_function(oracle_package_address, "PriceOracle", "new", vec![], None)
         .build()
         .unwrap();
     let po_receipt = executor.run(po_transaction, false);
@@ -21,7 +27,7 @@ fn test_hello() {
 
     // create our synthetic pool
     let transaction1 = TransactionBuilder::new(&executor)
-        .call_function(package, "SyntheticPool", "new", vec![
+        .call_function(synthetics_package, "SyntheticPool", "new", vec![
             po_receipt.component(0).unwrap().to_string(),
             "collateral".to_string(),
             "underlying".to_string(),
@@ -34,13 +40,5 @@ fn test_hello() {
     assert!(receipt1.success);
 
     // Test the `get price` method.
-    let component = receipt1.component(0).unwrap();
-    let transaction2 = TransactionBuilder::new(&executor)
-        .call_method(component, "free_token", vec![], Some(account))
-        .deposit_all(account)
-        .build()
-        .unwrap();
-    let receipt2 = executor.run(transaction2, false);
-    println!("{:?}\n", receipt2);
-    assert!(receipt2.success);
+
 }

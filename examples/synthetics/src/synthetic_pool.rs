@@ -95,8 +95,5 @@ blueprint! {
             synthetic_pool
         }
 
-        pub fn get_price(&self, pair: String) -> Bucket {
-            self.vendor.get_price(pair)
-        }
     }
 }
