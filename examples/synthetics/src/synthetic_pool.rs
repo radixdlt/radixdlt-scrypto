@@ -96,6 +96,15 @@ blueprint! {
       pub fn get_price(&self, base: Address, quote: Address) -> Option<u128> {
         self.oracle.get_price(base, quote)
       }
+
+      pub fn mint_synthetic(&self, name: String, symbol: String) -> Option<ResourceDef> {
+        let synthetic_token_resource_definition = ResourceBuilder::new()
+                .metadata("name", name)
+                .metadata("symbol", symbol)
+                .create_mutable(Context::package_address());
+
+        Some(synthetic_token_resource_definition)
     }
+  }
   
 }
