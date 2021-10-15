@@ -4,11 +4,11 @@ version = "0.1.0"
 edition = "2018"
 
 [dependencies]
-sbor = { path = "/Users/sennui/proj/radix/radixdlt-scrypto/sbor" }
-scrypto = { path = "/Users/sennui/proj/radix/radixdlt-scrypto/scrypto" }
+sbor = { path = "../../sbor" }
+scrypto = { path = "../../scrypto" }
 
 [dev-dependencies]
-radix-engine = { path = "/Users/sennui/proj/radix/radixdlt-scrypto/radix-engine" }
+radix-engine = { path = "../../radix-engine" }
 
 [profile.release]
 opt-level = 's'     # Optimize for size.
