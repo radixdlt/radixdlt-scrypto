@@ -2,6 +2,9 @@ use radix_engine::ledger::*;
 use radix_engine::transaction::*;
 use scrypto::prelude::*;
 
+/// NOTE - THE BELOW IS NOT POSSIBLE AND DOES NOT COMPILE - IT'S PSEUDO CODE FOR DEMONSTRATION
+/// OF WHAT A !create_transaction_in_code MACRO MIGHT BE NICE (IF IT'S EVEN POSSIBLE)
+
 #[test]
 fn test1_via_separate_transactions_to_ledger() {
     // Set up environment.
