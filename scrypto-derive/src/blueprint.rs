@@ -343,12 +343,13 @@ fn generate_stubs(bp_ident: &Ident, items: &[ImplItem]) -> TokenStream {
                                 }
                             }
                             FnArg::Typed(ref t) => {
-                                input_len += 1;
                                 let arg = format_ident!("arg{}", input_len.to_string());
                                 input_args.push(arg);
 
                                 let ty = replace_self_with(&t.ty, &bp_ident.to_string());
                                 input_types.push(ty);
+
+                                input_len += 1;
                             }
                         }
                     }
