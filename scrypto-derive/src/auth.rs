@@ -55,7 +55,7 @@ pub fn handle_auth(attr: TokenStream, item: TokenStream) -> Result<TokenStream> 
 
                 #f_body
             } else {
-                panic!()
+                ::scrypto::utils::scrypto_abort("Auth check failure")
             }
         }
     };
@@ -98,7 +98,7 @@ mod tests {
                             self.a
                         }
                     } else {
-                        panic!()
+                        ::scrypto::utils::scrypto_abort("Auth check failure")
                     }
                 }
             },

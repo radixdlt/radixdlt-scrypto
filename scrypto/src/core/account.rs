@@ -29,7 +29,7 @@ impl From<Account> for Address {
 impl Account {
     pub fn new() -> Account {
         let rtn = call_function(ACCOUNT_PACKAGE, "Account", "new", vec![]);
-        unwrap_light(scrypto_decode(&rtn))
+        scrypto_unwrap(scrypto_decode(&rtn))
     }
 
     pub fn withdraw<A: Into<Address>>(&self, amount: Amount, resource_def: A) {

@@ -72,7 +72,7 @@ pub fn handle_blueprint(input: TokenStream) -> TokenStream {
             match calldata.function.as_str() {
                 #( #arm_guards => #arm_bodies )*
                 _ => {
-                    panic!();
+                    ::scrypto::utils::scrypto_abort("Function/method not fund")
                 }
             }
 
@@ -159,7 +159,7 @@ fn generate_dispatcher(bp_ident: &Ident, items: &[ImplItem]) -> (Vec<Expr>, Vec<
                             // Generate an `Arg` and a loading `Stmt` for the i-th argument
                             let stmt: Stmt = parse_quote! {
                                 let #arg = ::scrypto::core::Component::from(
-                                    ::scrypto::utils::unwrap_light(
+                                    ::scrypto::utils::scrypto_unwrap(
                                         ::scrypto::buffer::scrypto_decode::<::scrypto::types::Address>(&calldata.args[#i])
                                     )
                                 );
@@ -185,7 +185,7 @@ fn generate_dispatcher(bp_ident: &Ident, items: &[ImplItem]) -> (Vec<Expr>, Vec<
                             // Generate an `Arg` and a loading `Stmt` for the i-th argument
                             let ty = &t.ty;
                             let stmt: Stmt = parse_quote! {
-                                let #arg = ::scrypto::utils::unwrap_light(
+                                let #arg = ::scrypto::utils::scrypto_unwrap(
                                     ::scrypto::buffer::scrypto_decode::<#ty>(&calldata.args[#i])
                                 );
                             };
@@ -206,7 +206,7 @@ fn generate_dispatcher(bp_ident: &Ident, items: &[ImplItem]) -> (Vec<Expr>, Vec<
                     .is_some()
                 {
                     let stmt: Stmt = parse_quote! {
-                        let auth = ::scrypto::utils::unwrap_light(
+                        let auth = ::scrypto::utils::scrypto_unwrap(
                             ::scrypto::buffer::scrypto_decode::<::scrypto::resource::BucketRef>(&calldata.args[#i])
                         );
                     };
@@ -410,7 +410,7 @@ fn generate_stubs(bp_ident: &Ident, items: &[ImplItem]) -> TokenStream {
                                     #name,
                                     ::scrypto::args!(#(#input_args),*)
                                 );
-                                ::scrypto::utils::unwrap_light(::scrypto::buffer::scrypto_decode(&rtn))
+                                ::scrypto::utils::scrypto_unwrap(::scrypto::buffer::scrypto_decode(&rtn))
                             }
                         });
                     } else {
@@ -421,7 +421,7 @@ fn generate_stubs(bp_ident: &Ident, items: &[ImplItem]) -> TokenStream {
                                     #name,
                                     ::scrypto::args!(#(#input_args),*)
                                 );
-                                ::scrypto::utils::unwrap_light(::scrypto::buffer::scrypto_decode(&rtn))
+                                ::scrypto::utils::scrypto_unwrap(::scrypto::buffer::scrypto_decode(&rtn))
                             }
                         });
                     }
@@ -546,19 +546,19 @@ mod tests {
                     let rtn;
                     match calldata.function.as_str() {
                         "x" => {
-                            let arg0 = ::scrypto::core::Component::from(::scrypto::utils::unwrap_light(
+                            let arg0 = ::scrypto::core::Component::from(::scrypto::utils::scrypto_unwrap(
                                 ::scrypto::buffer::scrypto_decode::<::scrypto::types::Address>(
                                     &calldata.args[0usize]
                                 )
                             ));
-                            let auth = ::scrypto::utils::unwrap_light(
+                            let auth = ::scrypto::utils::scrypto_unwrap(
                                 ::scrypto::buffer::scrypto_decode::<::scrypto::resource::BucketRef>(&calldata.args[1usize])
                             );
                             let state: blueprint::Test = arg0.get_state();
                             rtn = ::scrypto::buffer::scrypto_encode_for_kernel(&blueprint::Test::x(&state, auth));
                         }
                         _ => {
-                            panic!();
+                            ::scrypto::utils::scrypto_abort("Function/method not fund")
                         }
                     }
                     ::scrypto::buffer::scrypto_wrap(rtn)
@@ -590,7 +590,7 @@ mod tests {
                 impl Test {
                     pub fn x(&self, auth: ::scrypto::resource::BucketRef) -> u32 {
                         let rtn = ::scrypto::core::call_method(self.address, "x", ::scrypto::args!(auth));
-                        ::scrypto::utils::unwrap_light(::scrypto::buffer::scrypto_decode(&rtn))
+                        ::scrypto::utils::scrypto_unwrap(::scrypto::buffer::scrypto_decode(&rtn))
                     }
                 }
                 impl From<::scrypto::types::Address> for Test {

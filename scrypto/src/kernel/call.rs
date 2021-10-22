@@ -15,7 +15,9 @@ pub fn call_kernel<T: Encode, V: Decode>(op: u32, input: T) -> V {
         let output_ptr = kernel(op, input_bytes.as_ptr(), input_bytes.len());
 
         // 3. deserialize the output
-        scrypto_consume(output_ptr, |slice| unwrap_light(scrypto_decode::<V>(slice)))
+        scrypto_consume(output_ptr, |slice| {
+            scrypto_unwrap(scrypto_decode::<V>(slice))
+        })
     }
 }
 
@@ -25,11 +27,11 @@ pub fn call_kernel<T: Encode, V: Decode>(op: u32, input: T) -> V {
     if op == EMIT_LOG {
         let input_bytes = scrypto_encode(&input);
         #[allow(unused_variables)]
-        let input_value = unwrap_light(scrypto_decode::<EmitLogInput>(&input_bytes));
+        let input_value = scrypto_unwrap(scrypto_decode::<EmitLogInput>(&input_bytes));
         #[cfg(feature = "std")]
         println!("{}", input_value.message);
         let output_bytes = scrypto_encode(&EmitLogOutput {});
-        unwrap_light(scrypto_decode::<V>(&output_bytes))
+        scrypto_unwrap(scrypto_decode::<V>(&output_bytes))
     } else {
         todo!()
     }

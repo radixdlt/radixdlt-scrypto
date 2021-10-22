@@ -43,7 +43,7 @@ impl Component {
         };
         let output: GetComponentStateOutput = call_kernel(GET_COMPONENT_STATE, input);
 
-        unwrap_light(scrypto_decode(&output.state))
+        scrypto_unwrap(scrypto_decode(&output.state))
     }
 
     pub fn put_state<T: State>(&self, state: T) {
