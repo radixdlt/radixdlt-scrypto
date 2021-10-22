@@ -3,6 +3,8 @@ use quote::quote;
 use syn::spanned::Spanned;
 use syn::*;
 
+use crate::ast;
+
 macro_rules! trace {
     ($($arg:expr),*) => {{
         #[cfg(feature = "trace")]
@@ -13,58 +15,48 @@ macro_rules! trace {
 pub fn handle_auth(attr: TokenStream, item: TokenStream) -> Result<TokenStream> {
     trace!("Started processing auth macro");
 
-    let meta = parse2::<MetaList>(attr)?;
-    println!("{:?}", meta);
-
-    let mut badges = Vec::new();
-    if let Some(ident) = meta.path.get_ident() {
-        if ident.to_string().as_str() == "all" {
-            for m in &meta.nested {
-                if let NestedMeta::Meta(x) = m {
-                    if let Meta::Path(p) = x {
-                        badges.push(
-                            p.get_ident()
-                                .ok_or(Error::new(p.span(), "Missing identity"))?,
-                        );
-                    } else {
-                        return Err(Error::new(x.span(), "Only path is allowed"));
-                    }
-                } else {
-                    return Err(Error::new(m.span(), "Only meta is allowed"));
-                }
-            }
+    // parse auth
+    let auth = parse2::<ast::Auth>(attr)?;
+    let mut allowed_badges = Vec::new();
+    for a in auth.allowed {
+        if let Some(ident) = a.get_ident() {
+            allowed_badges.push(ident.clone());
         } else {
-            return Err(Error::new(meta.path.span(), "Unsupported predicate"));
+            return Err(Error::new(a.span(), "Only path is allowed"));
         }
-    } else {
-        return Err(Error::new(
-            meta.path.span(),
-            "Missing predicate, try `all` or `any` (TODO)",
-        ));
     }
 
+    // parse function
     let f = parse2::<ItemFn>(item)?;
-
-    // function visibility, identity, inputs and output
     let f_attrs = f.attrs;
     let f_vis = f.vis;
     let f_ident = f.sig.ident;
     let mut f_inputs: Vec<FnArg> = f.sig.inputs.iter().map(Clone::clone).collect();
     f_inputs.push(parse_quote! {
-        badges: ::scrypto::rust::vec::Vec<::scrypto::resource::BucketRef>
+        auth: ::scrypto::resource::BucketRef
     });
     let f_output = f.sig.output;
+    if let Some(a) = f_attrs
+        .iter()
+        .find(|a| a.path.get_ident().map(ToString::to_string) == Some("auth".to_string()))
+    {
+        return Err(Error::new(a.span(), "Only one auth attribute is allowed"));
+    }
 
     // function body
     let f_body = f.block;
 
     // generate output
-    let i = 0..badges.len();
     let output = quote! {
         #(#f_attrs)*
         #f_vis fn #f_ident (#(#f_inputs),*) #f_output {
-            #(badges[#i].check(self.#badges);)*
-            #f_body
+            if #(auth.contains(self.#allowed_badges))||* {
+                auth.drop();
+
+                #f_body
+            } else {
+                panic!()
+            }
         }
     };
     trace!("Finished processing auth macro");
@@ -88,7 +80,7 @@ mod tests {
 
     #[test]
     fn test_auth_all() {
-        let attr = TokenStream::from_str("all(foo, bar)").unwrap();
+        let attr = TokenStream::from_str("foo, bar").unwrap();
         let item = TokenStream::from_str("#[other] pub fn x(&self) -> u32 { self.a }").unwrap();
         let output = handle_auth(attr, item).unwrap();
 
@@ -98,12 +90,15 @@ mod tests {
                 #[other]
                 pub fn x(
                     &self,
-                    badges: ::scrypto::rust::vec::Vec<::scrypto::resource::BucketRef>
+                    auth: ::scrypto::resource::BucketRef
                 ) -> u32 {
-                    badges[0usize].check(self.foo);
-                    badges[1usize].check(self.bar);
-                    {
-                        self.a
+                    if auth.contains(self.foo) || auth.contains(self.bar) {
+                        auth.drop();
+                        {
+                            self.a
+                        }
+                    } else {
+                        panic!()
                     }
                 }
             },

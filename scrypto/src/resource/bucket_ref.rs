@@ -5,7 +5,6 @@ use crate::core::*;
 use crate::kernel::*;
 use crate::resource::*;
 use crate::rust::borrow::ToOwned;
-use crate::rust::format;
 use crate::rust::vec;
 use crate::types::*;
 
@@ -29,16 +28,17 @@ impl From<BucketRef> for Rid {
 
 impl BucketRef {
     pub fn check<A: Into<ResourceDef>>(self, resource_def: A) {
-        let resource_def: ResourceDef = resource_def.into();
-        if self.amount() > 0.into() && self.resource_def() == resource_def {
+        if self.contains(resource_def) {
             self.drop();
         } else {
-            Logger::error(format!(
-                "Referenced bucket does not have {}",
-                resource_def.address()
-            ));
+            Logger::error("BucketRef check failed".to_string());
             panic!();
         }
+    }
+
+    pub fn contains<A: Into<ResourceDef>>(&self, resource_def: A) -> bool {
+        let resource_def: ResourceDef = resource_def.into();
+        self.amount() > 0.into() && self.resource_def() == resource_def
     }
 
     pub fn amount(&self) -> Amount {
