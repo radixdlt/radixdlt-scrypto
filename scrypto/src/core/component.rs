@@ -16,6 +16,10 @@ pub struct Component {
 
 impl From<Address> for Component {
     fn from(address: Address) -> Self {
+        if !address.is_component() {
+            scrypto_abort("Unable to downcast Address to Component");
+        }
+
         Self { address }
     }
 }

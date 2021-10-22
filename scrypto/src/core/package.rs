@@ -5,6 +5,7 @@ use crate::kernel::*;
 use crate::rust::borrow::ToOwned;
 use crate::rust::vec;
 use crate::types::*;
+use crate::utils::*;
 
 /// A collection of blueprints, compiles and published as a single unit.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -14,6 +15,10 @@ pub struct Package {
 
 impl From<Address> for Package {
     fn from(address: Address) -> Self {
+        if !address.is_package() {
+            scrypto_abort("Unable to downcast Address to Package");
+        }
+
         Self { address }
     }
 }

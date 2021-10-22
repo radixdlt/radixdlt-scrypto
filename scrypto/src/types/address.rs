@@ -47,6 +47,18 @@ impl Address {
             Self::ResourceDef(d) => combine(3, d),
         }
     }
+
+    pub fn is_package(&self) -> bool {
+        matches!(self, Address::Package(_))
+    }
+
+    pub fn is_component(&self) -> bool {
+        matches!(self, Address::Component(_))
+    }
+
+    pub fn is_resource_def(&self) -> bool {
+        matches!(self, Address::ResourceDef(_))
+    }
 }
 
 impl FromStr for Address {
