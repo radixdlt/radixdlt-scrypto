@@ -10,7 +10,7 @@ use crate::rust::vec;
 use crate::types::*;
 
 /// Represents the definition of a resource.
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ResourceDef {
     address: Address,
 }

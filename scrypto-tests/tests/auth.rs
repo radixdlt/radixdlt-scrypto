@@ -9,12 +9,12 @@ use serde_json::{json, to_value, Value};
 blueprint! {
     struct SimpleAuth {
         admin: ResourceDef,
-        user: ResourceDef,
+        user: Address,
         reserves: Vault,
     }
 
     impl SimpleAuth {
-        pub fn new(admin: ResourceDef, user: ResourceDef) -> Component {
+        pub fn new(admin: ResourceDef, user: Address) -> Component {
             Self {
                 admin,
                 user,
@@ -23,12 +23,12 @@ blueprint! {
             .instantiate()
         }
 
-        //#[auth(all(admin))]
+        #[auth(admin)]
         pub fn pump(&self, xrd: Bucket) {
             self.reserves.put(xrd);
         }
 
-        //#[auth(all(user))]
+        #[auth(admin, user)]
         pub fn airdrop(&self) -> Bucket {
             self.reserves.take(1)
         }
@@ -48,54 +48,65 @@ fn test_simple_auth() {
     assert_json_eq(
         abi,
         json!([
-          [
-            {
-              "name": "new",
-              "inputs": [
+            [
                 {
-                  "type": "Custom",
-                  "name": "scrypto::resource::ResourceDef",
-                  "generics": []
+                    "name": "new",
+                    "inputs": [
+                        {
+                            "type": "Custom",
+                            "name": "scrypto::resource::ResourceDef",
+                            "generics": []
+                        },
+                        {
+                            "type": "Custom",
+                            "name": "scrypto::types::Address",
+                            "generics": []
+                        }
+                    ],
+                    "output": {
+                        "type": "Custom",
+                        "name": "scrypto::core::Component",
+                        "generics": []
+                    }
+                }
+            ],
+            [
+                {
+                    "name": "pump",
+                    "mutability": "Immutable",
+                    "inputs": [
+                        {
+                            "type": "Custom",
+                            "name": "scrypto::resource::Bucket",
+                            "generics": []
+                        },
+                        {
+                            "type": "Custom",
+                            "name": "scrypto::resource::BucketRef",
+                            "generics": []
+                        }
+                    ],
+                    "output": {
+                        "type": "Unit"
+                    }
                 },
                 {
-                  "type": "Custom",
-                  "name": "scrypto::resource::ResourceDef",
-                  "generics": []
+                    "name": "airdrop",
+                    "mutability": "Immutable",
+                    "inputs": [
+                        {
+                            "type": "Custom",
+                            "name": "scrypto::resource::BucketRef",
+                            "generics": []
+                        }
+                    ],
+                    "output": {
+                        "type": "Custom",
+                        "name": "scrypto::resource::Bucket",
+                        "generics": []
+                    }
                 }
-              ],
-              "output": {
-                "type": "Custom",
-                "name": "scrypto::core::Component",
-                "generics": []
-              }
-            }
-          ],
-          [
-            {
-              "name": "pump",
-              "mutability": "Immutable",
-              "inputs": [
-                {
-                  "type": "Custom",
-                  "name": "scrypto::resource::Bucket",
-                  "generics": []
-                }
-              ],
-              "output": {
-                "type": "Unit"
-              }
-            },
-            {
-              "name": "airdrop",
-              "mutability": "Immutable",
-              "inputs": [],
-              "output": {
-                "type": "Custom",
-                "name": "scrypto::resource::Bucket",
-                "generics": []
-              }
-            }
-          ]
+            ]
         ]),
     );
 }

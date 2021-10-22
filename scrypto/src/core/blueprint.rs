@@ -8,7 +8,7 @@ use crate::rust::vec;
 use crate::types::*;
 
 /// A template that describes shared structure and behavior.
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Blueprint {
     package: Address,
     name: String,

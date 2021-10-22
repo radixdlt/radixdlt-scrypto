@@ -1,5 +1,6 @@
 use proc_macro2::{Ident, Span, TokenStream};
 use quote::{format_ident, quote};
+use syn::spanned::Spanned;
 use syn::token::Brace;
 use syn::*;
 
@@ -134,7 +135,7 @@ fn generate_dispatcher(bp_ident: &Ident, items: &[ImplItem]) -> (Vec<Expr>, Vec<
     let mut arm_bodies = Vec::<Expr>::new();
 
     for item in items {
-        trace!("Processing function: {}", quote! { #item });
+        trace!("Processing item: {}", quote! { #item });
 
         if let ImplItem::Method(ref m) = item {
             if let Visibility::Public(_) = &m.vis {
@@ -193,6 +194,25 @@ fn generate_dispatcher(bp_ident: &Ident, items: &[ImplItem]) -> (Vec<Expr>, Vec<
                             stmts.push(stmt);
                         }
                     }
+                }
+
+                // auth
+                let i = m.sig.inputs.len();
+                if m.attrs
+                    .iter()
+                    .find(|a| {
+                        a.path.get_ident().map(ToString::to_string) == Some("auth".to_string())
+                    })
+                    .is_some()
+                {
+                    let stmt: Stmt = parse_quote! {
+                        let auth = ::scrypto::utils::unwrap_light(
+                            ::scrypto::buffer::scrypto_decode::<::scrypto::resource::BucketRef>(&calldata.args[#i])
+                        );
+                    };
+                    trace!("Generated stmt: {}", quote! { #stmt });
+                    args.push(parse_quote! { auth });
+                    stmts.push(stmt);
                 }
 
                 // load state if needed
@@ -268,6 +288,18 @@ fn generate_abi(bp_ident: &Ident, items: &[ImplItem]) -> (Vec<Expr>, Vec<Expr>) 
                                 });
                             }
                         }
+                    }
+
+                    if m.attrs
+                        .iter()
+                        .find(|a| {
+                            a.path.get_ident().map(ToString::to_string) == Some("auth".to_string())
+                        })
+                        .is_some()
+                    {
+                        inputs.push(quote! {
+                            <::scrypto::resource::BucketRef>::describe()
+                        });
                     }
 
                     let output = match &m.sig.output {
@@ -352,6 +384,15 @@ fn generate_stubs(bp_ident: &Ident, items: &[ImplItem]) -> TokenStream {
                                 input_len += 1;
                             }
                         }
+                    }
+
+                    if let Some(auth) = m.attrs.iter().find(|a| {
+                        a.path.get_ident().map(ToString::to_string) == Some("auth".to_string())
+                    }) {
+                        input_args.push(Ident::new("auth", auth.span()));
+                        input_types.push(parse_quote! {
+                            ::scrypto::resource::BucketRef
+                        });
                     }
 
                     let output = match &m.sig.output {
@@ -463,7 +504,7 @@ mod tests {
     #[test]
     fn test_blueprint() {
         let input = TokenStream::from_str(
-            "struct Test {a: u32} impl Test { pub fn x(&self) -> u32 { self.a } }",
+            "struct Test {a: u32, admin: ResourceDef} impl Test { #[auth(admin)] pub fn x(&self) -> u32 { self.a } }",
         )
         .unwrap();
         let output = handle_blueprint(input);
@@ -476,10 +517,12 @@ mod tests {
 
                     #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode)]
                     pub struct Test {
-                        a: u32
+                        a: u32,
+                        admin: ResourceDef
                     }
 
                     impl Test {
+                        #[auth(admin)]
                         pub fn x(&self) -> u32 {
                             self.a
                         }
@@ -508,8 +551,11 @@ mod tests {
                                     &calldata.args[0usize]
                                 )
                             ));
+                            let auth = ::scrypto::utils::unwrap_light(
+                                ::scrypto::buffer::scrypto_decode::<::scrypto::resource::BucketRef>(&calldata.args[1usize])
+                            );
                             let state: blueprint::Test = arg0.get_state();
-                            rtn = ::scrypto::buffer::scrypto_encode_for_kernel(&blueprint::Test::x(&state));
+                            rtn = ::scrypto::buffer::scrypto_encode_for_kernel(&blueprint::Test::x(&state, auth));
                         }
                         _ => {
                             panic!();
@@ -528,7 +574,9 @@ mod tests {
                     let methods: Vec<Method> = vec![::scrypto::abi::Method {
                         name: "x".to_owned(),
                         mutability: ::scrypto::abi::Mutability::Immutable,
-                        inputs: vec![],
+                        inputs: vec![
+                            <::scrypto::resource::BucketRef>::describe()
+                        ],
                         output: <u32>::describe(),
                     }];
                     let output = (functions, methods);
@@ -540,8 +588,8 @@ mod tests {
                     address: ::scrypto::types::Address,
                 }
                 impl Test {
-                    pub fn x(&self) -> u32 {
-                        let rtn = ::scrypto::core::call_method(self.address, "x", ::scrypto::args!());
+                    pub fn x(&self, auth: ::scrypto::resource::BucketRef) -> u32 {
+                        let rtn = ::scrypto::core::call_method(self.address, "x", ::scrypto::args!(auth));
                         ::scrypto::utils::unwrap_light(::scrypto::buffer::scrypto_decode(&rtn))
                     }
                 }

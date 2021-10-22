@@ -7,7 +7,7 @@ use crate::rust::vec;
 use crate::types::*;
 
 /// A collection of blueprints, compiles and published as a single unit.
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Package {
     address: Address,
 }

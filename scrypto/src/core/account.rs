@@ -9,7 +9,7 @@ use crate::types::*;
 use crate::utils::*;
 
 /// An account is a component that holds resources.
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Account {
     address: Address,
 }

@@ -5,6 +5,7 @@ use crate::core::*;
 use crate::kernel::*;
 use crate::resource::*;
 use crate::rust::borrow::ToOwned;
+use crate::rust::string::ToString;
 use crate::rust::vec;
 use crate::types::*;
 

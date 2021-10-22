@@ -9,7 +9,7 @@ use crate::types::*;
 use crate::utils::*;
 
 /// A scalable key-value map which loads values on demand.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct LazyMap<K: Encode + Decode, V: Encode + Decode> {
     mid: Mid,
     key: PhantomData<K>,

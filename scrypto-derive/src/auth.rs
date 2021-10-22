@@ -50,7 +50,7 @@ pub fn handle_auth(attr: TokenStream, item: TokenStream) -> Result<TokenStream> 
     let output = quote! {
         #(#f_attrs)*
         #f_vis fn #f_ident (#(#f_inputs),*) #f_output {
-            if #(auth.contains(self.#allowed_badges))||* {
+            if #(auth.contains(self.#allowed_badges.clone()))||* {
                 auth.drop();
 
                 #f_body
@@ -92,7 +92,7 @@ mod tests {
                     &self,
                     auth: ::scrypto::resource::BucketRef
                 ) -> u32 {
-                    if auth.contains(self.foo) || auth.contains(self.bar) {
+                    if auth.contains(self.foo.clone()) || auth.contains(self.bar.clone()) {
                         auth.drop();
                         {
                             self.a
