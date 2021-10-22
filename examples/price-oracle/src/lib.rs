@@ -2,15 +2,19 @@ use scrypto::prelude::*;
 
 blueprint! {
     struct PriceOracle {
+        /// Last price of each resource pair
         prices: LazyMap<(Address, Address), u128>,
+        /// The number of decimal places
         decimals: u8,
-        admin: Address,
+        /// The admin badge resource def address
+        admin: Address
     }
 
     impl PriceOracle {
         /// Creates a PriceOracle component, along with necessary badges.
         pub fn new(decimals: u8, num_of_admins: u32) -> (Component, Bucket) {
             scrypto_assert!(decimals >= 2 && decimals <= 18);
+            scrypto_assert!(num_of_admins >= 1);
 
             let badges = ResourceBuilder::new()
                 .metadata("name", "Admin Badge")
@@ -39,12 +43,12 @@ blueprint! {
             self.prices.insert((quote, base), scale * scale / price);
         }
 
-        /// Returns the decimal
+        /// Returns the number of decimal places.
         pub fn decimals(&self) -> u8 {
             self.decimals
         }
 
-        /// Returns the admin badge address
+        /// Returns the admin badge resource def address.
         pub fn admin(&self) -> Address {
             self.admin
         }
