@@ -80,22 +80,31 @@ pub enum RuntimeError {
     /// Bucket ref does not exist.
     BucketRefNotFound(Rid),
 
+    /// Not a package address.
     InvalidPackageAddress(Address),
 
+    /// Not a component address.
     InvalidComponentAddress(Address),
 
+    /// Not a resource def address.
     InvalidResourceDefAddress(Address),
 
-    InvalidBadge,
+    /// The referenced bucket contains no resource.
+    EmptyBucketRef,
 
+    /// Bucket access error.
     BucketError(BucketError),
 
+    /// Component access error.
     ComponentError(ComponentError),
 
+    /// Lazy map access error.
     LazyMapError(LazyMapError),
 
+    /// Bucket ref access error.
     ResourceDefError(ResourceDefError),
 
+    /// Vault access error.
     VaultError(VaultError),
 
     /// Bucket is not allowed (in component state).

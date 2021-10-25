@@ -783,7 +783,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
     fn badge_auth(&self, bucket_ref: &BucketRef) -> Result<Vec<Address>, RuntimeError> {
         let bucket = bucket_ref.bucket();
         if bucket.amount().is_zero() {
-            Err(RuntimeError::InvalidBadge)
+            Err(RuntimeError::EmptyBucketRef)
         } else {
             Ok(vec![bucket.resource_def()])
         }
