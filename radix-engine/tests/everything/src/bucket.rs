@@ -1,8 +1,6 @@
 use scrypto::blueprint;
-use scrypto::resource::Bucket;
+use scrypto::resource::{Bucket, ResourceBuilder};
 use scrypto::types::{Address, Amount};
-
-use crate::utils::*;
 
 blueprint! {
     struct BucketTest;
@@ -10,28 +8,30 @@ blueprint! {
     impl BucketTest {
 
         pub fn combine() -> Bucket {
-            let (resource_def, auth) = create_mutable("b1");
-            let bucket1 = resource_def.mint(50, auth.borrow());
-            let bucket2 = resource_def.mint(50, auth.borrow());
-            auth.burn();
+            let bucket = ResourceBuilder::new()
+                .metadata("name", "TestToken")
+                .create_fixed(100);
+            let bucket1 = bucket.take(50);
+            let bucket2 = bucket.take(50);
+            bucket.burn();
 
             bucket1.put(bucket2);
             bucket1
         }
 
         pub fn split()  -> (Bucket, Bucket) {
-            let (resource_def, auth) = create_mutable("b2");
-            let bucket1 = resource_def.mint(100, auth.borrow());
-            auth.burn();
+            let bucket = ResourceBuilder::new()
+                .metadata("name", "TestToken")
+                .create_fixed(100);
 
-            let bucket2 = bucket1.take(Amount::from(5));
-            (bucket1, bucket2)
+            let bucket2 = bucket.take(Amount::from(5));
+            (bucket, bucket2)
         }
 
         pub fn borrow() -> Bucket {
-            let (resource_def, auth) = create_mutable("b3");
-            let bucket = resource_def.mint(100, auth.borrow());
-            auth.burn();
+            let bucket = ResourceBuilder::new()
+                .metadata("name", "TestToken")
+                .create_fixed(100);
 
             let bucket_ref = bucket.borrow();
             bucket_ref.drop();
@@ -39,9 +39,9 @@ blueprint! {
         }
 
         pub fn query() -> (Amount, Address, Bucket) {
-            let (resource_def, auth) = create_mutable("b4");
-            let bucket = resource_def.mint(100, auth.borrow());
-            auth.burn();
+            let bucket = ResourceBuilder::new()
+                .metadata("name", "TestToken")
+                .create_fixed(100);
 
             (bucket.amount(), bucket.resource_def().address(), bucket)
         }
