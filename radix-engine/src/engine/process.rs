@@ -1445,6 +1445,15 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         })
     }
 
+    fn handle_get_current_epoch(
+        &mut self,
+        _input: GetCurrentEpochInput,
+    ) -> Result<GetCurrentEpochOutput, RuntimeError> {
+        Ok(GetCurrentEpochOutput {
+            current_epoch: self.track.current_epoch(),
+        })
+    }
+
     //============================
     // SYSTEM CALL HANDLERS END
     //============================
@@ -1512,6 +1521,7 @@ impl<'r, 'l, L: Ledger> Externals for Process<'r, 'l, L> {
                     GET_PACKAGE_ADDRESS => self.handle(args, Self::handle_get_package_address),
                     GET_CALL_DATA => self.handle(args, Self::handle_get_call_data),
                     GET_TRANSACTION_HASH => self.handle(args, Self::handle_get_transaction_hash),
+                    GET_CURRENT_EPOCH => self.handle(args, Self::handle_get_current_epoch),
 
                     _ => Err(RuntimeError::InvalidRequestCode(operation).into()),
                 }

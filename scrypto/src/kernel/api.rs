@@ -89,7 +89,7 @@ pub const GET_CALL_DATA: u32 = 0xf2;
 /// Retrieve transaction hash
 pub const GET_TRANSACTION_HASH: u32 = 0xf3;
 /// Retrieve current current_epoch
-pub const GET_EPOCH: u32 = 0xf4;
+pub const GET_CURRENT_EPOCH: u32 = 0xf4;
 
 //==========
 // blueprint
