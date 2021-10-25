@@ -31,7 +31,7 @@ fn test_vendor() {
         .call_method(
             component,
             "get_gumball",
-            vec!["1,030000000000000000000000000000000000000000000000000000".to_owned()],
+            vec!["1,030000000000000000000000000000000000000000000000000004".to_owned()],
             Some(account),
         )
         .deposit_all(account)
@@ -71,7 +71,7 @@ fn test_sub_vendor() {
         .call_method(
             component,
             "get_gumball",
-            vec!["1,030000000000000000000000000000000000000000000000000000".to_owned()],
+            vec!["1,030000000000000000000000000000000000000000000000000004".to_owned()],
             Some(account),
         )
         .deposit_all(account)

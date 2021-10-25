@@ -28,7 +28,12 @@ pub fn handle_new_account(matches: &ArgMatches) -> Result<(), Error> {
     let mut ledger = FileBasedLedger::with_bootstrap(get_data_dir()?);
     let mut executor = TransactionExecutor::new(&mut ledger, configs.current_epoch, configs.nonce);
     let transaction = TransactionBuilder::new(&executor)
-        .mint_resource(1000000.into(), RADIX_TOKEN)
+        .call_method(
+            SYSTEM_COMPONENT,
+            "free_xrd",
+            vec!["1000000".to_owned()],
+            None,
+        )
         .create_account_with_resource(1000000.into(), RADIX_TOKEN)
         .build()
         .map_err(Error::TransactionConstructionError)?;

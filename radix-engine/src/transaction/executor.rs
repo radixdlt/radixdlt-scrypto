@@ -1,5 +1,6 @@
 use scrypto::abi;
 use scrypto::args;
+use scrypto::rust::borrow::ToOwned;
 use scrypto::rust::string::ToString;
 use scrypto::rust::vec;
 use scrypto::rust::vec::Vec;
@@ -83,11 +84,16 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
         self.nonce
     }
 
-    /// Creates an account with 1000 XRD in balance.
+    /// Creates an account with 1,000,000 XRD in balance.
     pub fn create_account(&mut self) -> Address {
         self.run(
             TransactionBuilder::new(self)
-                .mint_resource(1000000.into(), RADIX_TOKEN)
+                .call_method(
+                    SYSTEM_COMPONENT,
+                    "free_xrd",
+                    vec!["1000000".to_owned()],
+                    None,
+                )
                 .create_account_with_resource(1000000.into(), RADIX_TOKEN)
                 .build()
                 .unwrap(),

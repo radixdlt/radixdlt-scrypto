@@ -5,6 +5,7 @@ use crate::kernel::*;
 use crate::resource::*;
 use crate::rust::borrow::ToOwned;
 use crate::rust::collections::HashMap;
+use crate::rust::format;
 use crate::rust::string::String;
 use crate::rust::vec;
 use crate::types::*;
@@ -18,8 +19,11 @@ pub struct ResourceDef {
 
 impl From<Address> for ResourceDef {
     fn from(address: Address) -> Self {
-        if !address.is_package() {
-            scrypto_abort("Unable to downcast Address to ResourceDef");
+        if !address.is_resource_def() {
+            scrypto_abort(format!(
+                "Unable to downcast Address to ResourceDef: {}",
+                address
+            ));
         }
 
         Self { address }
@@ -34,10 +38,13 @@ impl From<ResourceDef> for Address {
 
 impl ResourceDef {
     /// Creates a resource with mutable supply. The resource definition is returned.
-    pub fn new_mutable<A: Into<ResourceDef>>(metadata: HashMap<String, String>, minter: A) -> Self {
+    pub fn new_mutable<A: Into<ResourceDef>>(
+        metadata: HashMap<String, String>,
+        mint_auth: A,
+    ) -> Self {
         let input = CreateResourceMutableInput {
             metadata,
-            minter: minter.into().address(),
+            mint_auth: mint_auth.into().address(),
         };
         let output: CreateResourceMutableOutput = call_kernel(CREATE_RESOURCE_MUTABLE, input);
 
@@ -59,10 +66,11 @@ impl ResourceDef {
     }
 
     /// Mints resources
-    pub fn mint<T: Into<Amount>>(&self, amount: T) -> Bucket {
+    pub fn mint<T: Into<Amount>>(&self, amount: T, auth: BucketRef) -> Bucket {
         let input = MintResourceInput {
             resource_def: self.address,
             amount: amount.into(),
+            mint_auth: auth.into(),
         };
         let output: MintResourceOutput = call_kernel(MINT_RESOURCE, input);
 
@@ -87,14 +95,14 @@ impl ResourceDef {
         output.metadata
     }
 
-    /// Returns the minter address.
-    pub fn minter(&self) -> Option<Address> {
-        let input = GetResourceMinterInput {
+    /// Returns the mint auth.
+    pub fn mint_auth(&self) -> Option<Address> {
+        let input = GetResourceMintAuthInput {
             resource_def: self.address,
         };
-        let output: GetResourceMinterOutput = call_kernel(GET_RESOURCE_MINTER, input);
+        let output: GetResourceMintAuthOutput = call_kernel(GET_RESOURCE_MINT_AUTH, input);
 
-        output.minter
+        output.mint_auth
     }
 
     /// Returns the current supply of this resource.

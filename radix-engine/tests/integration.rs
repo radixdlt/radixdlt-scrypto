@@ -129,7 +129,7 @@ fn test_bucket() {
 }
 
 #[test]
-fn test_move_bucket_and_ref() {
+fn test_moving() {
     compile();
     let mut ledger = InMemoryLedger::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, 0, 0);

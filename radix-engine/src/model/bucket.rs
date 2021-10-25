@@ -7,7 +7,6 @@ use scrypto::types::*;
 pub enum BucketError {
     MismatchingResourceDef,
     InsufficientBalance,
-    UnauthorizedAccess,
 }
 
 /// A transient resource container.
@@ -26,13 +25,6 @@ pub struct LockedBucket {
 
 /// A reference to a bucket.
 pub type BucketRef = Rc<LockedBucket>;
-
-/// A persistent bucket on ledger state.
-#[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct Vault {
-    bucket: Bucket,
-    auth: Address,
-}
 
 impl Bucket {
     pub fn new(amount: Amount, resource_def: Address) -> Self {
@@ -87,35 +79,5 @@ impl LockedBucket {
 impl From<LockedBucket> for Bucket {
     fn from(b: LockedBucket) -> Self {
         b.bucket
-    }
-}
-
-impl Vault {
-    pub fn new(bucket: Bucket, auth: Address) -> Self {
-        Self { bucket, auth }
-    }
-
-    pub fn put(&mut self, other: Bucket, requester: Address) -> Result<(), BucketError> {
-        if requester == self.auth {
-            self.bucket.put(other)
-        } else {
-            Err(BucketError::UnauthorizedAccess)
-        }
-    }
-
-    pub fn take(&mut self, amount: Amount, requester: Address) -> Result<Bucket, BucketError> {
-        if requester == self.auth {
-            self.bucket.take(amount)
-        } else {
-            Err(BucketError::UnauthorizedAccess)
-        }
-    }
-
-    pub fn amount(&self) -> Amount {
-        self.bucket.amount()
-    }
-
-    pub fn resource_def(&self) -> Address {
-        self.bucket.resource_def()
     }
 }

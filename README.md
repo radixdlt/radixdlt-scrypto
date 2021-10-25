@@ -11,7 +11,7 @@ Language for building DeFi apps on Radix.
 - **Component** An instance of a blueprint, which lives in ledger state.
 - **Function**: A set of statements to perform a specific task.
 - **Method**: A function associated with a component.
-- **ResourceDef**: The definition of a resource, including metadata, minter and supply.
+- **ResourceDef**: The definition of a resource, including metadata, supply and mint auth.
 - **Bucket**: A transient resource container.
 - **Vault**: A persistent resource container in ledger state.
 

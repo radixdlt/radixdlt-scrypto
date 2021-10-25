@@ -1,5 +1,4 @@
 use scrypto::blueprint;
-use scrypto::core::Context;
 use scrypto::resource::Bucket;
 use scrypto::rust::collections::*;
 use scrypto::types::{Address, Amount};
@@ -11,8 +10,11 @@ blueprint! {
 
     impl ResourceTest {
         pub fn create_mutable() -> Bucket {
-           let resource_def = create_mutable("r1", Context::package_address());
-           resource_def.mint(100)
+           let (resource_def, auth) = create_mutable("r1");
+           let bucket = resource_def.mint(100, auth.borrow());
+           auth.burn();
+
+           bucket
         }
 
         pub fn create_fixed() -> Bucket {
@@ -20,8 +22,9 @@ blueprint! {
         }
 
         pub fn query() -> (HashMap<String, String>, Option<Address>, Amount) {
-            let resource_def = create_mutable("r3", Context::package_address());
-            (resource_def.metadata(), resource_def.minter(), resource_def.supply())
+            let (resource_def, auth) = create_mutable("r3");
+            auth.burn();
+            (resource_def.metadata(), resource_def.mint_auth(), resource_def.supply())
         }
 
         pub fn burn() {

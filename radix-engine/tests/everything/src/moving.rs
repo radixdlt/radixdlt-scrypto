@@ -1,4 +1,4 @@
-use scrypto::core::{call_method, Context, State};
+use scrypto::core::{call_method, State};
 use scrypto::resource::{Bucket, BucketRef, Vault};
 use scrypto::{args, blueprint, info};
 
@@ -22,8 +22,10 @@ blueprint! {
         }
 
         pub fn move_bucket() {
-            let resource_def =  create_mutable("m1", Context::package_address());
-            let bucket = resource_def.mint(100);
+            let (resource_def, auth) =  create_mutable("m1");
+            let bucket = resource_def.mint(100, auth.borrow());
+            auth.burn();
+
             let component = MoveTest {
                 vaults: Vec::new()
             }
@@ -33,8 +35,10 @@ blueprint! {
         }
 
         pub fn move_bucket_ref() -> Bucket {
-            let resource_def =  create_mutable("m2", Context::package_address());
-            let bucket = resource_def.mint(100);
+            let (resource_def, auth) =  create_mutable("m2");
+            let bucket = resource_def.mint(100, auth.borrow());
+            auth.burn();
+
             let component = MoveTest {
                 vaults: Vec::new()
             }
