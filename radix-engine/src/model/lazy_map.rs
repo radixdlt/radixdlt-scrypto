@@ -3,6 +3,8 @@ use scrypto::rust::collections::*;
 use scrypto::rust::vec::Vec;
 use scrypto::types::Address;
 
+use crate::model::Auth;
+
 /// Represents an error when accessing a bucket.
 #[derive(Debug, Clone)]
 pub enum LazyMapError {
@@ -29,8 +31,8 @@ impl LazyMap {
         &self.map
     }
 
-    pub fn get_entry(&self, key: &[u8], auth: Vec<Address>) -> Result<Option<&[u8]>, LazyMapError> {
-        if auth.contains(&self.auth) {
+    pub fn get_entry(&self, key: &[u8], auth: Auth) -> Result<Option<&[u8]>, LazyMapError> {
+        if auth.contains(self.auth) {
             Ok(self.map.get(key).map(|e| e.as_slice()))
         } else {
             Err(LazyMapError::UnauthorizedAccess)
@@ -41,9 +43,9 @@ impl LazyMap {
         &mut self,
         key: Vec<u8>,
         value: Vec<u8>,
-        auth: Vec<Address>,
+        auth: Auth,
     ) -> Result<(), LazyMapError> {
-        if auth.contains(&self.auth) {
+        if auth.contains(self.auth) {
             self.map.insert(key, value);
             Ok(())
         } else {

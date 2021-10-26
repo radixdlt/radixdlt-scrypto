@@ -3,6 +3,8 @@ use scrypto::rust::string::String;
 use scrypto::rust::vec::Vec;
 use scrypto::types::*;
 
+use crate::model::Auth;
+
 /// Represents an error when accessing a bucket.
 #[derive(Debug, Clone)]
 pub enum ComponentError {
@@ -38,20 +40,16 @@ impl Component {
         &self.name
     }
 
-    pub fn state(&self, auth: Vec<Address>) -> Result<&[u8], ComponentError> {
-        if auth.contains(&self.auth) {
+    pub fn state(&self, auth: Auth) -> Result<&[u8], ComponentError> {
+        if auth.contains(self.auth) {
             Ok(&self.state)
         } else {
             Err(ComponentError::UnauthorizedAccess)
         }
     }
 
-    pub fn set_state(
-        &mut self,
-        new_state: Vec<u8>,
-        auth: Vec<Address>,
-    ) -> Result<(), ComponentError> {
-        if auth.contains(&self.auth) {
+    pub fn set_state(&mut self, new_state: Vec<u8>, auth: Auth) -> Result<(), ComponentError> {
+        if auth.contains(self.auth) {
             self.state = new_state;
             Ok(())
         } else {

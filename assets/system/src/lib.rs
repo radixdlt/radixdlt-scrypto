@@ -1,7 +1,7 @@
 use scrypto::prelude::*;
 
 blueprint! {
-    // no one is able to instantiate a system component but bootstrap process
+    // nobody can instantiate a system component except the bootstrap process
     struct System {
         xrd: Vault
     }

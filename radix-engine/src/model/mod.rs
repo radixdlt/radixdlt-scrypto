@@ -1,3 +1,4 @@
+mod auth;
 mod bucket;
 mod component;
 mod lazy_map;
@@ -5,6 +6,7 @@ mod package;
 mod resource_def;
 mod vault;
 
+pub use auth::Auth;
 pub use bucket::{Bucket, BucketError, BucketRef, LockedBucket};
 pub use component::{Component, ComponentError};
 pub use lazy_map::{LazyMap, LazyMapError};

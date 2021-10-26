@@ -1,5 +1,6 @@
 use colored::*;
 use radix_engine::ledger::*;
+use radix_engine::model::Auth;
 use radix_engine::utils::*;
 use scrypto::types::*;
 
@@ -43,7 +44,7 @@ pub fn dump_component<T: Ledger>(address: Address, ledger: &T) -> Result<(), Dis
             println!(
                 "{}: {}",
                 "State".green().bold(),
-                format_data_with_ledger(c.state(vec![c.package()]).unwrap(), ledger, &mut vaults)
+                format_data_with_ledger(c.state(Auth::NoAuth).unwrap(), ledger, &mut vaults)
                     .unwrap()
             );
 
@@ -53,8 +54,8 @@ pub fn dump_component<T: Ledger>(address: Address, ledger: &T) -> Result<(), Dis
                 println!(
                     "{} {{ amount: {}, resource_def: {} }}",
                     list_item_prefix(last),
-                    vault.amount(vec![c.package()]).unwrap(),
-                    vault.resource_def(vec![c.package()]).unwrap(),
+                    vault.amount(Auth::NoAuth).unwrap(),
+                    vault.resource_def(Auth::NoAuth).unwrap(),
                 );
             }
             Ok(())

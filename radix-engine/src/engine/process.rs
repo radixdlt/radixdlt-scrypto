@@ -776,16 +776,16 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         }
     }
 
-    fn package_auth(&self) -> Result<Vec<Address>, RuntimeError> {
-        Ok(vec![self.package()?])
+    fn package_auth(&self) -> Result<Auth, RuntimeError> {
+        Ok(Auth::PackageAuth(self.package()?))
     }
 
-    fn badge_auth(&self, bucket_ref: &BucketRef) -> Result<Vec<Address>, RuntimeError> {
+    fn badge_auth(&self, bucket_ref: &BucketRef) -> Result<Auth, RuntimeError> {
         let bucket = bucket_ref.bucket();
         if bucket.amount().is_zero() {
             Err(RuntimeError::EmptyBucketRef)
         } else {
-            Ok(vec![bucket.resource_def()])
+            Ok(Auth::BadgeAuth(bucket.resource_def()))
         }
     }
 

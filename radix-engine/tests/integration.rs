@@ -42,13 +42,7 @@ fn test_context() {
     let package = executor.publish_package(include_code!("./everything"));
 
     let transaction1 = TransactionBuilder::new(&executor)
-        .call_function(
-            package,
-            "ContextTest",
-            "query",
-            vec![],
-            Some(account),
-        )
+        .call_function(package, "ContextTest", "query", vec![], Some(account))
         .build()
         .unwrap();
     let receipt1 = executor.run(transaction1, true);

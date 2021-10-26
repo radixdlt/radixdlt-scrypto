@@ -1,8 +1,9 @@
 use sbor::*;
 use scrypto::rust::collections::HashMap;
 use scrypto::rust::string::String;
-use scrypto::rust::vec::Vec;
 use scrypto::types::*;
+
+use crate::model::Auth;
 
 /// Represents an error when accessing a bucket.
 #[derive(Debug, Clone)]
@@ -44,10 +45,10 @@ impl ResourceDef {
         self.mint_auth.clone()
     }
 
-    pub fn mint(&mut self, amount: Amount, auth: Vec<Address>) -> Result<(), ResourceDefError> {
+    pub fn mint(&mut self, amount: Amount, auth: Auth) -> Result<(), ResourceDefError> {
         match self.mint_auth() {
-            Some(m) => {
-                if auth.contains(&m) {
+            Some(a) => {
+                if auth.contains(a) {
                     self.supply += amount;
                     Ok(())
                 } else {
