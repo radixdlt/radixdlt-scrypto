@@ -26,6 +26,7 @@ impl From<Bucket> for Bid {
 }
 
 impl Bucket {
+    /// Creates a new bucket to hold resources of the given definition.
     pub fn new<A: Into<ResourceDef>>(resource_def: A) -> Self {
         let resource_def: ResourceDef = resource_def.into();
         let input = CreateEmptyBucketInput {
@@ -36,6 +37,7 @@ impl Bucket {
         output.bucket.into()
     }
 
+    /// Puts resources from another bucket into this bucket.
     pub fn put(&self, other: Self) {
         let input = PutIntoBucketInput {
             bucket: self.bid,
@@ -44,6 +46,7 @@ impl Bucket {
         let _: PutIntoBucketOutput = call_kernel(PUT_INTO_BUCKET, input);
     }
 
+    /// Takes some amount of resources from this bucket.
     pub fn take<A: Into<Amount>>(&self, amount: A) -> Self {
         let input = TakeFromBucketInput {
             bucket: self.bid,
@@ -54,6 +57,7 @@ impl Bucket {
         output.bucket.into()
     }
 
+    /// Creates an immutable reference to this bucket.
     pub fn borrow(&self) -> BucketRef {
         let input = CreateBucketRefInput { bucket: self.bid };
         let output: CreateBucketRefOutput = call_kernel(CREATE_BUCKET_REF, input);
@@ -61,6 +65,7 @@ impl Bucket {
         output.bucket_ref.into()
     }
 
+    /// Returns the amount of resources in this bucket.
     pub fn amount(&self) -> Amount {
         let input = GetBucketAmountInput { bucket: self.bid };
         let output: GetBucketAmountOutput = call_kernel(GET_BUCKET_AMOUNT, input);
@@ -68,6 +73,7 @@ impl Bucket {
         output.amount
     }
 
+    /// Returns the resource definition of resources in this bucket.
     pub fn resource_def(&self) -> ResourceDef {
         let input = GetBucketResourceAddressInput { bucket: self.bid };
         let output: GetBucketResourceAddressOutput = call_kernel(GET_BUCKET_RESOURCE_DEF, input);
@@ -75,10 +81,12 @@ impl Bucket {
         output.resource_def.into()
     }
 
+    /// Burns all resources within this bucket.
     pub fn burn(self) {
         ResourceDef::burn(self);
     }
 
+    /// Checks if this bucket is empty.
     pub fn is_empty(&self) -> bool {
         self.amount() == 0.into()
     }

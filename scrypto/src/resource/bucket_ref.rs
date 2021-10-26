@@ -1,13 +1,12 @@
 use sbor::{describe::Type, *};
 
 use crate::buffer::*;
-use crate::core::*;
 use crate::kernel::*;
 use crate::resource::*;
 use crate::rust::borrow::ToOwned;
-use crate::rust::format;
 use crate::rust::vec;
 use crate::types::*;
+use crate::utils::*;
 
 /// Represents a reference to a bucket.
 #[derive(Debug)]
@@ -28,19 +27,22 @@ impl From<BucketRef> for Rid {
 }
 
 impl BucketRef {
+    /// Checks if the referenced bucket contains the given resource, and aborts if not so.
     pub fn check<A: Into<ResourceDef>>(self, resource_def: A) {
-        let resource_def: ResourceDef = resource_def.into();
-        if self.amount() > 0.into() && self.resource_def() == resource_def {
+        if self.contains(resource_def) {
             self.drop();
         } else {
-            Logger::error(format!(
-                "Referenced bucket does not have {}",
-                resource_def.address()
-            ));
-            panic!();
+            scrypto_abort("BucketRef check failed");
         }
     }
 
+    /// Checks if the referenced bucket contains the given resource.
+    pub fn contains<A: Into<ResourceDef>>(&self, resource_def: A) -> bool {
+        let resource_def: ResourceDef = resource_def.into();
+        self.amount() > 0.into() && self.resource_def() == resource_def
+    }
+
+    /// Returns the resource amount within the bucket.
     pub fn amount(&self) -> Amount {
         let input = GetBucketRefAmountInput {
             bucket_ref: self.rid,
@@ -50,6 +52,7 @@ impl BucketRef {
         output.amount
     }
 
+    /// Returns the resource definition of resources within the bucket.
     pub fn resource_def(&self) -> ResourceDef {
         let input = GetBucketRefResourceDefInput {
             bucket_ref: self.rid,
@@ -59,6 +62,7 @@ impl BucketRef {
         output.resource_def.into()
     }
 
+    /// Destroys this reference.
     pub fn drop(self) {
         let input = DropBucketRefInput {
             bucket_ref: self.rid,
@@ -66,6 +70,7 @@ impl BucketRef {
         let _: DropBucketRefOutput = call_kernel(DROP_BUCKET_REF, input);
     }
 
+    /// Checks if the referenced bucket is empty.
     pub fn is_empty(&self) -> bool {
         self.amount() == 0.into()
     }

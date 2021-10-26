@@ -1,8 +1,15 @@
 use sbor::*;
-use scrypto::rust::collections::*;
 use scrypto::rust::string::String;
 use scrypto::rust::vec::Vec;
 use scrypto::types::*;
+
+use crate::model::Auth;
+
+/// Represents an error when accessing a bucket.
+#[derive(Debug, Clone)]
+pub enum ComponentError {
+    UnauthorizedAccess,
+}
 
 /// A component is an instance of blueprint.
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
@@ -10,16 +17,18 @@ pub struct Component {
     package: Address,
     name: String,
     state: Vec<u8>,
-    map: HashMap<Vec<u8>, Vec<u8>>,
+    auth: Address,
 }
 
 impl Component {
     pub fn new(package: Address, name: String, state: Vec<u8>) -> Self {
+        assert!(package.is_package());
+
         Self {
             package,
             name,
             state,
-            map: HashMap::new(),
+            auth: package,
         }
     }
 
@@ -31,19 +40,20 @@ impl Component {
         &self.name
     }
 
-    pub fn state(&self) -> &[u8] {
-        &self.state
+    pub fn state(&self, auth: Auth) -> Result<&[u8], ComponentError> {
+        if auth.contains(self.auth) {
+            Ok(&self.state)
+        } else {
+            Err(ComponentError::UnauthorizedAccess)
+        }
     }
 
-    pub fn set_state(&mut self, new_state: Vec<u8>) {
-        self.state = new_state;
-    }
-
-    pub fn map_entry(&self, key: &[u8]) -> Option<&[u8]> {
-        self.map.get(key).map(|e| e.as_slice())
-    }
-
-    pub fn set_map_entry(&mut self, key: Vec<u8>, value: Vec<u8>) {
-        self.map.insert(key, value);
+    pub fn set_state(&mut self, new_state: Vec<u8>, auth: Auth) -> Result<(), ComponentError> {
+        if auth.contains(self.auth) {
+            self.state = new_state;
+            Ok(())
+        } else {
+            Err(ComponentError::UnauthorizedAccess)
+        }
     }
 }

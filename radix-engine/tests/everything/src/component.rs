@@ -1,25 +1,22 @@
 use scrypto::blueprint;
-use scrypto::core::{Blueprint, Component, Context, State};
-use scrypto::resource::{ResourceDef, Vault};
+use scrypto::core::{Blueprint, Component, State};
+use scrypto::resource::{ResourceBuilder, Vault};
 use scrypto::types::Address;
-
-use crate::utils::*;
 
 blueprint! {
     struct ComponentTest {
-        resource_def: ResourceDef,
-        bucket: Vault,
+        test_vault: Vault,
         secret: String,
     }
 
     impl ComponentTest {
         pub fn create_component() -> Component {
-            let resource_def = create_mutable("c1", Context::package_address());
-            let bucket =  resource_def.mint(100);
+            let bucket = ResourceBuilder::new()
+                .metadata("name", "TestToken")
+                .create_fixed(1000);
 
             Self {
-                resource_def,
-                bucket: Vault::with_bucket(bucket),
+                test_vault: Vault::with_bucket(bucket),
                 secret: "Secret".to_owned(),
             }.instantiate()
         }
@@ -33,10 +30,8 @@ blueprint! {
         }
 
         pub fn put_component_state(&mut self)  {
-            let bucket = self.resource_def.mint(100);
-
-            // Receive bucket
-            self.bucket.put(bucket);
+            // Take resource from vault
+            self.test_vault.take(1).burn();
 
             // Update state
             self.secret = "New secret".to_owned();

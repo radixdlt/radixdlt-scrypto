@@ -12,6 +12,44 @@ fn compile() {
 }
 
 #[test]
+fn test_package() {
+    compile();
+    let mut ledger = InMemoryLedger::with_bootstrap();
+    let mut executor = TransactionExecutor::new(&mut ledger, 0, 0);
+    let account = executor.create_account();
+    let package = executor.publish_package(include_code!("./everything"));
+
+    let transaction1 = TransactionBuilder::new(&executor)
+        .call_function(
+            package,
+            "PackageTest",
+            "publish_package",
+            vec![],
+            Some(account),
+        )
+        .build()
+        .unwrap();
+    let receipt1 = executor.run(transaction1, true);
+    assert!(receipt1.success);
+}
+
+#[test]
+fn test_context() {
+    compile();
+    let mut ledger = InMemoryLedger::with_bootstrap();
+    let mut executor = TransactionExecutor::new(&mut ledger, 0, 0);
+    let account = executor.create_account();
+    let package = executor.publish_package(include_code!("./everything"));
+
+    let transaction1 = TransactionBuilder::new(&executor)
+        .call_function(package, "ContextTest", "query", vec![], Some(account))
+        .build()
+        .unwrap();
+    let receipt1 = executor.run(transaction1, true);
+    assert!(receipt1.success);
+}
+
+#[test]
 fn test_component() {
     compile();
     let mut ledger = InMemoryLedger::with_bootstrap();
@@ -77,7 +115,7 @@ fn test_lazy_map() {
 }
 
 #[test]
-fn test_resource() {
+fn test_resource_def() {
     compile();
     let mut ledger = InMemoryLedger::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, 0, 0);
@@ -129,7 +167,7 @@ fn test_bucket() {
 }
 
 #[test]
-fn test_move_bucket_and_ref() {
+fn test_move_resource() {
     compile();
     let mut ledger = InMemoryLedger::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, 0, 0);

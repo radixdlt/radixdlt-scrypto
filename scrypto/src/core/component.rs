@@ -4,18 +4,26 @@ use crate::buffer::*;
 use crate::core::*;
 use crate::kernel::*;
 use crate::rust::borrow::ToOwned;
+use crate::rust::format;
 use crate::rust::vec;
 use crate::types::*;
 use crate::utils::*;
 
 /// An instance of a blueprint, which lives in the ledger state.
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Component {
     address: Address,
 }
 
 impl From<Address> for Component {
     fn from(address: Address) -> Self {
+        if !address.is_component() {
+            scrypto_abort(format!(
+                "Unable to downcast Address to Component: {}",
+                address
+            ));
+        }
+
         Self { address }
     }
 }
@@ -43,7 +51,7 @@ impl Component {
         };
         let output: GetComponentStateOutput = call_kernel(GET_COMPONENT_STATE, input);
 
-        unwrap_light(scrypto_decode(&output.state))
+        scrypto_unwrap(scrypto_decode(&output.state))
     }
 
     pub fn put_state<T: State>(&self, state: T) {

@@ -10,13 +10,24 @@ use crate::rust::vec::Vec;
 use crate::types::*;
 
 /// The package which defines the `System` blueprint.
-pub const SYSTEM_PACKAGE: Address = Address::Package([0u8; 26]);
+pub const SYSTEM_PACKAGE: Address = Address::Package([
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+]);
+
+/// The system component
+pub const SYSTEM_COMPONENT: Address = Address::Component([
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2,
+]);
 
 /// The package that defines the `Account` blueprint.
-pub const ACCOUNT_PACKAGE: Address = Address::Package([1u8; 26]);
+pub const ACCOUNT_PACKAGE: Address = Address::Package([
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3,
+]);
 
 /// The XRD resource definition.
-pub const RADIX_TOKEN: Address = Address::ResourceDef([0u8; 26]);
+pub const RADIX_TOKEN: Address = Address::ResourceDef([
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4,
+]);
 
 /// Represents an address.
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
@@ -46,6 +57,18 @@ impl Address {
             Self::Component(d) => combine(2, d),
             Self::ResourceDef(d) => combine(3, d),
         }
+    }
+
+    pub fn is_package(&self) -> bool {
+        matches!(self, Address::Package(_))
+    }
+
+    pub fn is_component(&self) -> bool {
+        matches!(self, Address::Component(_))
+    }
+
+    pub fn is_resource_def(&self) -> bool {
+        matches!(self, Address::ResourceDef(_))
     }
 }
 

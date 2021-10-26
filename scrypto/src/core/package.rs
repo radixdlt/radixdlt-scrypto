@@ -3,17 +3,26 @@ use sbor::{describe::Type, *};
 use crate::buffer::*;
 use crate::kernel::*;
 use crate::rust::borrow::ToOwned;
+use crate::rust::format;
 use crate::rust::vec;
 use crate::types::*;
+use crate::utils::*;
 
 /// A collection of blueprints, compiles and published as a single unit.
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Package {
     address: Address,
 }
 
 impl From<Address> for Package {
     fn from(address: Address) -> Self {
+        if !address.is_package() {
+            scrypto_abort(format!(
+                "Unable to downcast Address to Package: {}",
+                address
+            ));
+        }
+
         Self { address }
     }
 }

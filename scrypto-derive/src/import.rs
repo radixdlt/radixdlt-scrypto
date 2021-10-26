@@ -50,7 +50,7 @@ pub fn handle_import(input: TokenStream) -> TokenStream {
 
         functions.push(parse_quote! {
             pub fn #func_indent(#(#func_args: #func_types),*) -> #func_output {
-                let package = ::scrypto::utils::unwrap_light(
+                let package = ::scrypto::utils::scrypto_unwrap(
                     ::scrypto::types::Address::from_str(#package)
                 );
                 let rtn = ::scrypto::core::call_function(
@@ -59,7 +59,7 @@ pub fn handle_import(input: TokenStream) -> TokenStream {
                     #func_name,
                     ::scrypto::args!(#(#func_args),*)
                 );
-                ::scrypto::utils::unwrap_light(::scrypto::buffer::scrypto_decode(&rtn))
+                ::scrypto::utils::scrypto_unwrap(::scrypto::buffer::scrypto_decode(&rtn))
             }
         });
     }
@@ -90,7 +90,7 @@ pub fn handle_import(input: TokenStream) -> TokenStream {
                     #method_name,
                     ::scrypto::args!(#(#method_args),*)
                 );
-                ::scrypto::utils::unwrap_light(::scrypto::buffer::scrypto_decode(&rtn))
+                ::scrypto::utils::scrypto_unwrap(::scrypto::buffer::scrypto_decode(&rtn))
             }
         };
         methods.push(m);
@@ -416,15 +416,15 @@ mod tests {
                 }
                 impl Simple {
                     pub fn new() -> ::scrypto::core::Component {
-                        let package = ::scrypto::utils::unwrap_light(::scrypto::types::Address::from_str(
+                        let package = ::scrypto::utils::scrypto_unwrap(::scrypto::types::Address::from_str(
                             "056967d3d49213394892980af59be76e9b3e7cc4cb78237460d0c7"
                         ));
                         let rtn = ::scrypto::core::call_function(package, "Simple", "new", ::scrypto::args!());
-                        ::scrypto::utils::unwrap_light(::scrypto::buffer::scrypto_decode(&rtn))
+                        ::scrypto::utils::scrypto_unwrap(::scrypto::buffer::scrypto_decode(&rtn))
                     }
                     pub fn free_token(&self) -> ::scrypto::resource::Bucket {
                         let rtn = ::scrypto::core::call_method(self.address, "free_token", ::scrypto::args!());
-                        ::scrypto::utils::unwrap_light(::scrypto::buffer::scrypto_decode(&rtn))
+                        ::scrypto::utils::scrypto_unwrap(::scrypto::buffer::scrypto_decode(&rtn))
                     }
                 }
                 impl From<::scrypto::types::Address> for Simple {

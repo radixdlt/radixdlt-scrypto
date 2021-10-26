@@ -9,7 +9,7 @@ use crate::types::*;
 use crate::utils::*;
 
 /// A scalable key-value map which loads values on demand.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct LazyMap<K: Encode + Decode, V: Encode + Decode> {
     mid: Mid,
     key: PhantomData<K>,
@@ -47,7 +47,7 @@ impl<K: Encode + Decode, V: Encode + Decode> LazyMap<K, V> {
         };
         let output: GetLazyMapEntryOutput = call_kernel(GET_LAZY_MAP_ENTRY, input);
 
-        output.value.map(|v| unwrap_light(scrypto_decode(&v)))
+        output.value.map(|v| scrypto_unwrap(scrypto_decode(&v)))
     }
 
     pub fn insert(&self, key: K, value: V) {

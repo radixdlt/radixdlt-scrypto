@@ -23,7 +23,7 @@ impl Context {
     /// Returns the current epoch.
     pub fn current_epoch() -> u64 {
         let input = GetCurrentEpochInput {};
-        let output: GetCurrentEpochOutput = call_kernel(GET_EPOCH, input);
+        let output: GetCurrentEpochOutput = call_kernel(GET_CURRENT_EPOCH, input);
         output.current_epoch
     }
 }

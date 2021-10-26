@@ -26,7 +26,7 @@ blueprint! {
 
         // This is a method, because it needs a reference to self.  Methods can only be called on components
         pub fn free_token(&mut self) -> Bucket {
-            info!("My balance is: {} HelloToken.  Now giving away a token!", self.sample_vault.amount());
+            info!("My balance is: {} HelloToken. Now giving away a token!", self.sample_vault.amount());
             // If the semi-colon is omitted on the last line, the last value seen is automatically returned
             // In this case, a bucket containing 1 HelloToken is returned
             self.sample_vault.take(1)

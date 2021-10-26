@@ -80,17 +80,32 @@ pub enum RuntimeError {
     /// Bucket ref does not exist.
     BucketRefNotFound(Rid),
 
-    /// Tried to mint resource with fixed supply.
-    MintFixedSupplyResource,
+    /// Not a package address.
+    InvalidPackageAddress(Address),
 
-    /// Unauthorized mint.
-    UnauthorizedMint,
+    /// Not a component address.
+    InvalidComponentAddress(Address),
 
-    /// Unauthorized access.
-    UnauthorizedAccess,
+    /// Not a resource def address.
+    InvalidResourceDefAddress(Address),
 
-    /// Accounting error.
-    AccountingError(BucketError),
+    /// The referenced bucket contains no resource.
+    EmptyBucketRef,
+
+    /// Bucket access error.
+    BucketError(BucketError),
+
+    /// Component access error.
+    ComponentError(ComponentError),
+
+    /// Lazy map access error.
+    LazyMapError(LazyMapError),
+
+    /// Bucket ref access error.
+    ResourceDefError(ResourceDefError),
+
+    /// Vault access error.
+    VaultError(VaultError),
 
     /// Bucket is not allowed (in component state).
     BucketNotAllowed,
@@ -103,9 +118,6 @@ pub enum RuntimeError {
 
     /// Invalid log level.
     InvalidLogLevel,
-
-    /// Invalid access type.
-    InvalidAddressType,
 
     /// The bucket id is not reserved.
     BucketNotReserved,
