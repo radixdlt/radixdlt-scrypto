@@ -7,7 +7,7 @@ blueprint! {
         /// The number of decimal places
         decimals: u8,
         /// The admin badge resource def address
-        admin: Address
+        admin: Address,
     }
 
     impl PriceOracle {
@@ -23,7 +23,7 @@ blueprint! {
             let component = Self {
                 prices: LazyMap::new(),
                 decimals,
-                admin: badges.resource_def().address()
+                admin: badges.resource_def().address(),
             }
             .instantiate();
 

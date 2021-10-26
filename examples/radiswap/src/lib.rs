@@ -74,19 +74,22 @@ blueprint! {
             let (actual_share, remainder) = if a_share <= b_share {
                 // We will claim all input token A's, and only the correct amount of token B
                 self.a_pool.put(a_tokens);
-                self.b_pool.put(b_tokens.take(self.b_pool.amount() * a_share / scale));
+                self.b_pool
+                    .put(b_tokens.take(self.b_pool.amount() * a_share / scale));
                 (a_share, b_tokens)
             } else {
                 // We will claim all input token B's, and only the correct amount of token A
                 self.b_pool.put(b_tokens);
-                self.a_pool.put(a_tokens.take(self.a_pool.amount() * b_share / scale));
+                self.a_pool
+                    .put(a_tokens.take(self.a_pool.amount() * b_share / scale));
                 (b_share, a_tokens)
             };
 
             // Mint LP tokens according to the share the provider is contributing
-            let lp_mint_auth_temp = self.lp_mint_auth.take(1);
-            let lp_tokens = self.lp_resource_def.mint(self.lp_resource_def.supply() * actual_share / scale, lp_mint_auth_temp.borrow());
-            self.lp_mint_auth.put(lp_mint_auth_temp);
+            let lp_tokens = self.lp_mint_auth.authorize(|badge| {
+                self.lp_resource_def
+                    .mint(self.lp_resource_def.supply() * actual_share / scale, badge)
+            });
 
             // Return the LP tokens along with any remainder
             (lp_tokens, remainder)
