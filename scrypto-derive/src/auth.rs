@@ -16,14 +16,27 @@ pub fn handle_auth(attr: TokenStream, item: TokenStream) -> Result<TokenStream> 
     trace!("Started processing auth macro");
 
     // parse auth
+    let attr_span = attr.span();
     let auth = parse2::<ast::Auth>(attr)?;
     let mut allowed_badges = Vec::new();
+    let mut keep_auth = false;
     for a in auth.allowed {
         if let Some(ident) = a.get_ident() {
-            allowed_badges.push(ident.clone());
+            if ident.to_string().as_str() == "keep_auth" {
+                keep_auth = true;
+            } else {
+                allowed_badges.push(ident.clone());
+            }
         } else {
-            return Err(Error::new(a.span(), "Only path is allowed"));
+            return Err(Error::new(a.span(), "Only path value is allowed"));
         }
+    }
+
+    if allowed_badges.is_empty() {
+        return Err(Error::new(
+            attr_span,
+            "You need to specify at list one auth",
+        ));
     }
 
     // parse function
@@ -47,11 +60,12 @@ pub fn handle_auth(attr: TokenStream, item: TokenStream) -> Result<TokenStream> 
     let f_body = f.block;
 
     // generate output
+    let drop: Option<Stmt> = (!keep_auth).then(|| parse_quote! { auth.drop(); });
     let output = quote! {
         #(#f_attrs)*
         #f_vis fn #f_ident (#(#f_inputs),*) #f_output {
             if #(auth.contains(self.#allowed_badges.clone()))||* {
-                auth.drop();
+                #drop
 
                 #f_body
             } else {
@@ -79,7 +93,7 @@ mod tests {
     }
 
     #[test]
-    fn test_auth_all() {
+    fn test_auth() {
         let attr = TokenStream::from_str("foo, bar").unwrap();
         let item = TokenStream::from_str("#[other] pub fn x(&self) -> u32 { self.a }").unwrap();
         let output = handle_auth(attr, item).unwrap();
@@ -103,5 +117,39 @@ mod tests {
                 }
             },
         );
+    }
+
+    #[test]
+    fn test_keep_auth() {
+        let attr = TokenStream::from_str("keep_auth, foo").unwrap();
+        let item = TokenStream::from_str("pub fn x(&self) -> u32 { auth.drop(); self.a }").unwrap();
+        let output = handle_auth(attr, item).unwrap();
+
+        assert_code_eq(
+            output,
+            quote! {
+                pub fn x(
+                    &self,
+                    auth: ::scrypto::resource::BucketRef
+                ) -> u32 {
+                    if auth.contains(self.foo.clone()) {
+                        {
+                            auth.drop();
+                            self.a
+                        }
+                    } else {
+                        ::scrypto::utils::scrypto_abort("Auth check failure")
+                    }
+                }
+            },
+        );
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_double_auth_should_fail() {
+        let attr = TokenStream::from_str("simple").unwrap();
+        let item = TokenStream::from_str("#[auth(a)] pub fn x(&self) -> u32 { self.a }").unwrap();
+        handle_auth(attr, item).unwrap();
     }
 }
