@@ -127,10 +127,17 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
         #[cfg(not(feature = "alloc"))]
         let now = std::time::Instant::now();
 
+        let signers = if let Some(Instruction::End { signers }) = transaction.instructions.last() {
+            signers.clone()
+        } else {
+            Vec::new()
+        };
+
         let mut track = Track::new(
             self.ledger,
             self.current_epoch,
             sha256(self.nonce.to_string()),
+            signers,
         );
         let mut proc = track.start_process(trace);
 

@@ -1443,6 +1443,15 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         })
     }
 
+    fn handle_get_transaction_signers(
+        &mut self,
+        _input: GetTransactionSignersInput,
+    ) -> Result<GetTransactionSignersOutput, RuntimeError> {
+        Ok(GetTransactionSignersOutput {
+            tx_signers: self.track.tx_signers(),
+        })
+    }
+
     fn handle_get_current_epoch(
         &mut self,
         _input: GetCurrentEpochInput,
@@ -1522,6 +1531,9 @@ impl<'r, 'l, L: Ledger> Externals for Process<'r, 'l, L> {
                     GET_CALL_DATA => self.handle(args, Self::handle_get_call_data),
                     GET_TRANSACTION_HASH => self.handle(args, Self::handle_get_transaction_hash),
                     GET_CURRENT_EPOCH => self.handle(args, Self::handle_get_current_epoch),
+                    GET_TRANSACTION_SIGNERS => {
+                        self.handle(args, Self::handle_get_transaction_signers)
+                    }
 
                     _ => Err(RuntimeError::InvalidRequestCode(operation).into()),
                 }

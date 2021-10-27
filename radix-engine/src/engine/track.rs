@@ -20,6 +20,7 @@ pub struct Track<'l, L: Ledger> {
     ledger: &'l mut L,
     current_epoch: u64,
     tx_hash: H256,
+    tx_signers: Vec<Address>,
     id_alloc: IdAllocator,
     logs: Vec<(Level, String)>,
     packages: HashMap<Address, Package>,
@@ -37,11 +38,17 @@ pub struct Track<'l, L: Ledger> {
 }
 
 impl<'l, L: Ledger> Track<'l, L> {
-    pub fn new(ledger: &'l mut L, current_epoch: u64, tx_hash: H256) -> Self {
+    pub fn new(
+        ledger: &'l mut L,
+        current_epoch: u64,
+        tx_hash: H256,
+        tx_signers: Vec<Address>,
+    ) -> Self {
         Self {
             ledger,
             current_epoch,
             tx_hash,
+            tx_signers,
             id_alloc: IdAllocator::new(),
             logs: Vec::new(),
             packages: HashMap::new(),
@@ -67,6 +74,11 @@ impl<'l, L: Ledger> Track<'l, L> {
     /// Returns the transaction hash.
     pub fn tx_hash(&self) -> H256 {
         self.tx_hash
+    }
+
+    /// Returns the transaction hash.
+    pub fn tx_signers(&self) -> Vec<Address> {
+        self.tx_signers.clone()
     }
 
     /// Returns the current epoch.

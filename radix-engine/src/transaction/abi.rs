@@ -72,7 +72,7 @@ impl AbiProvider for BasicAbiProvider {
         let tx_hash = sha256([]);
 
         // Start a process and run abi generator
-        let mut track = Track::new(&mut ledger, current_epoch, tx_hash);
+        let mut track = Track::new(&mut ledger, current_epoch, tx_hash, Vec::new());
         let mut proc = track.start_process(trace);
         let output: (Vec<abi::Function>, Vec<abi::Method>) = proc
             .call_abi(package, name.as_ref())
