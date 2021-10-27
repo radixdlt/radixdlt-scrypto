@@ -53,7 +53,7 @@ pub fn handle_mint(matches: &ArgMatches) -> Result<(), Error> {
         .withdraw(1.into(), mint_auth, account)
         .mint_resource(amount, resource_def, mint_auth)
         .deposit_all(account)
-        .build()
+        .build(Vec::new())
         .map_err(Error::TransactionConstructionError)?;
     let receipt = executor.run(transaction, trace);
 

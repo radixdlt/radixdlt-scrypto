@@ -19,7 +19,7 @@ fn test_vendor() {
     // Test the `new` function.
     let transaction1 = TransactionBuilder::new(&executor)
         .call_function(package, "Vendor", "new", vec![], None)
-        .build()
+        .build(Vec::new())
         .unwrap();
     let receipt1 = executor.run(transaction1, false);
     println!("{:?}\n", receipt1);
@@ -35,7 +35,7 @@ fn test_vendor() {
             Some(account),
         )
         .deposit_all(account)
-        .build()
+        .build(Vec::new())
         .unwrap();
     let receipt2 = executor.run(transaction2, false);
     println!("{:?}\n", receipt2);
@@ -59,7 +59,7 @@ fn test_sub_vendor() {
     // Test the `new` function.
     let transaction1 = TransactionBuilder::new(&executor)
         .call_function(package, "SubVendor", "new", vec![], None)
-        .build()
+        .build(Vec::new())
         .unwrap();
     let receipt1 = executor.run(transaction1, false);
     println!("{:?}\n", receipt1);
@@ -75,7 +75,7 @@ fn test_sub_vendor() {
             Some(account),
         )
         .deposit_all(account)
-        .build()
+        .build(Vec::new())
         .unwrap();
     let receipt2 = executor.run(transaction2, false);
     println!("{:?}\n", receipt2);

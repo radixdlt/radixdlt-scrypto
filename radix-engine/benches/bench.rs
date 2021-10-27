@@ -14,7 +14,7 @@ fn bench_transfer(b: &mut Bencher) {
     let transaction = TransactionBuilder::new(&executor)
         .withdraw(1.into(), RADIX_TOKEN, account1)
         .deposit_all(account2)
-        .build()
+        .build(Vec::new())
         .unwrap();
 
     b.iter(|| {

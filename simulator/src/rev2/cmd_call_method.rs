@@ -52,7 +52,7 @@ pub fn handle_call_method(matches: &ArgMatches) -> Result<(), Error> {
     let transaction = TransactionBuilder::new(&executor)
         .call_method(component, &method, args, Some(account))
         .deposit_all(account)
-        .build()
+        .build(Vec::new())
         .map_err(Error::TransactionConstructionError)?;
     let receipt = executor.run(transaction, trace);
 

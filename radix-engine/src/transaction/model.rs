@@ -79,7 +79,7 @@ pub enum Instruction {
     DepositAll { component: Address, method: String },
 
     /// Marks the end of a transaction.
-    End,
+    End { signers: Vec<Address> },
 }
 
 /// Represents a transaction receipt.

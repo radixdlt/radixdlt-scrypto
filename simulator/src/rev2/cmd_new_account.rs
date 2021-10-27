@@ -35,7 +35,7 @@ pub fn handle_new_account(matches: &ArgMatches) -> Result<(), Error> {
             None,
         )
         .create_account_with_resource(1000000.into(), RADIX_TOKEN)
-        .build()
+        .build(Vec::new())
         .map_err(Error::TransactionConstructionError)?;
     let receipt = executor.run(transaction, trace);
 

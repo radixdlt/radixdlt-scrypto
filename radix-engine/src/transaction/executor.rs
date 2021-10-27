@@ -95,7 +95,7 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
                     None,
                 )
                 .create_account_with_resource(1000000.into(), RADIX_TOKEN)
-                .build()
+                .build(Vec::new())
                 .unwrap(),
             false,
         )
@@ -108,7 +108,7 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
         self.run(
             TransactionBuilder::new(self)
                 .publish_package(code)
-                .build()
+                .build(Vec::new())
                 .unwrap(),
             false,
         )
@@ -193,7 +193,7 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
                         Ok(None)
                     }
                 }
-                Instruction::End => proc.check_resource().map(|_| None),
+                Instruction::End { .. } => proc.check_resource().map(|_| None),
             };
             success &= res.is_ok();
             results.push(res);

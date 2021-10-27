@@ -93,7 +93,7 @@ pub fn handle_new_resource_mutable(matches: &ArgMatches) -> Result<(), Error> {
     let mut executor = TransactionExecutor::new(&mut ledger, configs.current_epoch, configs.nonce);
     let transaction = TransactionBuilder::new(&executor)
         .new_resource_mutable(metadata, mint_auth)
-        .build()
+        .build(Vec::new())
         .map_err(Error::TransactionConstructionError)?;
 
     let receipt = executor.run(transaction, trace);

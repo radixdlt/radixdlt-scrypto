@@ -52,7 +52,7 @@ pub fn handle_transfer(matches: &ArgMatches) -> Result<(), Error> {
     let transaction = TransactionBuilder::new(&executor)
         .withdraw(amount, resource_def, account)
         .deposit_all(recipient)
-        .build()
+        .build(Vec::new())
         .map_err(Error::TransactionConstructionError)?;
     let receipt = executor.run(transaction, trace);
 

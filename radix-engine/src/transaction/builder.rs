@@ -273,7 +273,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     }
 
     /// Builds a transaction.
-    pub fn build(&mut self) -> Result<Transaction, BuildTransactionError> {
+    pub fn build(&mut self, signers: Vec<Address>) -> Result<Transaction, BuildTransactionError> {
         if !self.errors.is_empty() {
             return Err(self.errors[0].clone());
         }
@@ -281,7 +281,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         let mut v = Vec::new();
         v.extend(self.reservations.clone());
         v.extend(self.instructions.clone());
-        v.push(Instruction::End);
+        v.push(Instruction::End { signers });
 
         Ok(Transaction { instructions: v })
     }
