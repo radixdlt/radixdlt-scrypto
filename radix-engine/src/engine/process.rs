@@ -60,8 +60,6 @@ pub struct Process<'r, 'l, L: Ledger> {
     buckets: HashMap<Bid, Bucket>,
     bucket_refs: HashMap<Rid, BucketRef>,
     locked_buckets: HashMap<Bid, BucketRef>,
-    moving_buckets: HashMap<Bid, Bucket>,
-    moving_bucket_refs: HashMap<Rid, BucketRef>,
     temp_buckets: HashMap<Bid, Bucket>,
     temp_bucket_refs: HashMap<Rid, BucketRef>,
     reserved_bids: HashSet<Bid>,
@@ -95,8 +93,6 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
             buckets: HashMap::new(),
             bucket_refs: HashMap::new(),
             locked_buckets: HashMap::new(),
-            moving_buckets: HashMap::new(),
-            moving_bucket_refs: HashMap::new(),
             temp_buckets: HashMap::new(),
             temp_bucket_refs: HashMap::new(),
             reserved_bids: HashSet::new(),
@@ -222,12 +218,12 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         self.bucket_refs.extend(bucket_refs);
     }
 
-    /// Takes all **moving** buckets and bucket refs from this process, used for returning resources to parent.
-    pub fn take_moving_buckets_and_refs(
+    /// Takes all temporary buckets and bucket refs from this process, used for returning resources to parent.
+    pub fn take_temp_buckets_and_bucket_refs(
         &mut self,
     ) -> (HashMap<Bid, Bucket>, HashMap<Rid, BucketRef>) {
-        let buckets = self.moving_buckets.drain().collect();
-        let bucket_refs = self.moving_bucket_refs.drain().collect();
+        let buckets = self.temp_buckets.drain().collect();
+        let bucket_refs = self.temp_bucket_refs.drain().collect();
         (buckets, bucket_refs)
     }
 
@@ -343,7 +339,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         for arg in &invocation.args {
             self.process_data(arg, Self::move_buckets, Self::move_bucket_refs)?;
         }
-        let (buckets_out, bucket_refs_out) = self.take_moving_buckets_and_refs();
+        let (buckets_out, bucket_refs_out) = self.take_temp_buckets_and_bucket_refs();
         let mut process = Process::new(self.depth + 1, self.trace, self.track);
         process.put_buckets_and_refs(buckets_out, bucket_refs_out);
 
@@ -352,7 +348,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         process.check_resource()?;
 
         // move resource
-        let (buckets_in, bucket_refs_in) = process.take_moving_buckets_and_refs();
+        let (buckets_in, bucket_refs_in) = process.take_temp_buckets_and_bucket_refs();
         self.put_buckets_and_refs(buckets_in, bucket_refs_in);
 
         // scan locked buckets for some might have been unlocked by child processes
@@ -423,16 +419,20 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
             warn!(self, "Dangling bucket ref: {:?}, {:?}", rid, bucket_ref);
             success = false;
         }
-        for (bid, bucket) in &self.temp_buckets {
-            warn!(self, "Dangling temp bucket: {:?}, {:?}", bid, bucket);
-            success = false;
-        }
-        for (rid, bucket_ref) in &self.temp_bucket_refs {
-            warn!(
-                self,
-                "Dangling temp bucket ref: {:?}, {:?}", rid, bucket_ref
-            );
-            success = false;
+        // At depth=0, temporary buckets are created by instruction, to be used for invocation.
+        // When the transaction finished, any dangling bucket or bucket ref should result in an error.
+        if self.depth == 0 {
+            for (bid, bucket) in &self.temp_buckets {
+                warn!(self, "Dangling temp bucket: {:?}, {:?}", bid, bucket);
+                success = false;
+            }
+            for (rid, bucket_ref) in &self.temp_bucket_refs {
+                warn!(
+                    self,
+                    "Dangling temp bucket ref: {:?}, {:?}", rid, bucket_ref
+                );
+                success = false;
+            }
         }
 
         debug!(self, "Resource check ended");
@@ -644,7 +644,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
             .or_else(|| self.temp_buckets.remove(&bid))
             .ok_or(RuntimeError::BucketNotFound(bid))?;
         debug!(self, "Moving bucket: {:?}, {:?}", bid, bucket);
-        self.moving_buckets.insert(bid, bucket);
+        self.temp_buckets.insert(bid, bucket);
         Ok(bid)
     }
 
@@ -656,7 +656,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
             .or_else(|| self.temp_bucket_refs.remove(&rid))
             .ok_or(RuntimeError::BucketRefNotFound(rid))?;
         debug!(self, "Moving bucket ref: {:?}, {:?}", rid, bucket_ref);
-        self.moving_bucket_refs.insert(rid, bucket_ref);
+        self.temp_bucket_refs.insert(rid, bucket_ref);
         Ok(rid)
     }
 
