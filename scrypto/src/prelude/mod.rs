@@ -6,9 +6,9 @@ pub use crate::core::{
 pub use crate::kernel::call_kernel;
 pub use crate::resource::{Bucket, BucketRef, ResourceBuilder, ResourceDef, Vault};
 pub use crate::types::*;
-pub use crate::utils::{sha256, sha256_twice};
+pub use crate::utils::*;
 pub use crate::{
-    args, blueprint, debug, error, import, include_code, info, scrypto_assert, trace, warn,
+    args, auth, blueprint, debug, error, import, include_code, info, scrypto_assert, trace, warn,
 };
 
 pub use crate::rust::borrow::ToOwned;

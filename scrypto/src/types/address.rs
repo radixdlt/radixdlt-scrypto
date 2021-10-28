@@ -10,13 +10,24 @@ use crate::rust::vec::Vec;
 use crate::types::*;
 
 /// The package which defines the `System` blueprint.
-pub const SYSTEM_PACKAGE: Address = Address::Package([0u8; 26]);
+pub const SYSTEM_PACKAGE: Address = Address::Package([
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+]);
+
+/// The system component
+pub const SYSTEM_COMPONENT: Address = Address::Component([
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2,
+]);
 
 /// The package that defines the `Account` blueprint.
-pub const ACCOUNT_PACKAGE: Address = Address::Package([1u8; 26]);
+pub const ACCOUNT_PACKAGE: Address = Address::Package([
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3,
+]);
 
 /// The XRD resource definition.
-pub const RADIX_TOKEN: Address = Address::ResourceDef([0u8; 26]);
+pub const RADIX_TOKEN: Address = Address::ResourceDef([
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4,
+]);
 
 /// Represents an address.
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
@@ -29,6 +40,9 @@ pub enum Address {
 
     /// Represents a resource definition.
     ResourceDef([u8; 26]),
+
+    /// Represents a public key
+    PublicKey([u8; 33]),
 }
 
 /// Represents an error when parsing Address.
@@ -45,7 +59,24 @@ impl Address {
             Self::Package(d) => combine(1, d),
             Self::Component(d) => combine(2, d),
             Self::ResourceDef(d) => combine(3, d),
+            Self::PublicKey(d) => combine(4, d),
         }
+    }
+
+    pub fn is_package(&self) -> bool {
+        matches!(self, Address::Package(_))
+    }
+
+    pub fn is_component(&self) -> bool {
+        matches!(self, Address::Component(_))
+    }
+
+    pub fn is_resource_def(&self) -> bool {
+        matches!(self, Address::ResourceDef(_))
+    }
+
+    pub fn is_public_key(&self) -> bool {
+        matches!(self, Address::PublicKey(_))
     }
 }
 
@@ -62,15 +93,18 @@ impl TryFrom<&[u8]> for Address {
     type Error = ParseAddressError;
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
-        if slice.len() != 27 {
-            return Err(ParseAddressError::InvalidLength(slice.len()));
-        } else {
-            match slice[0] {
+        match slice.len() {
+            27 => match slice[0] {
                 1 => Ok(Self::Package(copy_u8_array(&slice[1..]))),
                 2 => Ok(Self::Component(copy_u8_array(&slice[1..]))),
                 3 => Ok(Self::ResourceDef(copy_u8_array(&slice[1..]))),
                 _ => Err(ParseAddressError::InvalidType(slice[0])),
-            }
+            },
+            34 => match slice[0] {
+                4 => Ok(Self::PublicKey(copy_u8_array(&slice[1..]))),
+                _ => Err(ParseAddressError::InvalidType(slice[0])),
+            },
+            _ => Err(ParseAddressError::InvalidLength(slice.len())),
         }
     }
 }

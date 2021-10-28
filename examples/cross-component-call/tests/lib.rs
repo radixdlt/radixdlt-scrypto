@@ -19,9 +19,9 @@ fn test_vendor() {
     // Test the `new` function.
     let transaction1 = TransactionBuilder::new(&executor)
         .call_function(package, "Vendor", "new", vec![], None)
-        .build()
+        .build(Vec::new())
         .unwrap();
-    let receipt1 = executor.run(transaction1, false);
+    let receipt1 = executor.run(transaction1, true).unwrap();
     println!("{:?}\n", receipt1);
     assert!(receipt1.success);
 
@@ -31,13 +31,13 @@ fn test_vendor() {
         .call_method(
             component,
             "get_gumball",
-            vec!["1,030000000000000000000000000000000000000000000000000000".to_owned()],
+            vec!["1,030000000000000000000000000000000000000000000000000004".to_owned()],
             Some(account),
         )
         .deposit_all(account)
-        .build()
+        .build(Vec::new())
         .unwrap();
-    let receipt2 = executor.run(transaction2, false);
+    let receipt2 = executor.run(transaction2, true).unwrap();
     println!("{:?}\n", receipt2);
     assert!(receipt2.success);
 }
@@ -59,9 +59,9 @@ fn test_sub_vendor() {
     // Test the `new` function.
     let transaction1 = TransactionBuilder::new(&executor)
         .call_function(package, "SubVendor", "new", vec![], None)
-        .build()
+        .build(Vec::new())
         .unwrap();
-    let receipt1 = executor.run(transaction1, false);
+    let receipt1 = executor.run(transaction1, true).unwrap();
     println!("{:?}\n", receipt1);
     assert!(receipt1.success);
 
@@ -71,13 +71,13 @@ fn test_sub_vendor() {
         .call_method(
             component,
             "get_gumball",
-            vec!["1,030000000000000000000000000000000000000000000000000000".to_owned()],
+            vec!["1,030000000000000000000000000000000000000000000000000004".to_owned()],
             Some(account),
         )
         .deposit_all(account)
-        .build()
+        .build(Vec::new())
         .unwrap();
-    let receipt2 = executor.run(transaction2, false);
+    let receipt2 = executor.run(transaction2, true).unwrap();
     println!("{:?}\n", receipt2);
     assert!(receipt2.success);
 }

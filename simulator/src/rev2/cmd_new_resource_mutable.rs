@@ -5,6 +5,8 @@ use scrypto::rust::collections::HashMap;
 use crate::ledger::*;
 use crate::rev2::*;
 
+const ARG_MINT_AUTH: &str = "MINT_AUTH";
+
 const ARG_TRACE: &str = "TRACE";
 const ARG_SYMBOL: &str = "SYMBOL";
 const ARG_NAME: &str = "NAME";
@@ -17,6 +19,11 @@ pub fn make_new_resource_mutable<'a, 'b>() -> App<'a, 'b> {
     SubCommand::with_name(CMD_NEW_RESOURCE_MUTABLE)
         .about("Creates resource with mutable supply")
         .version(crate_version!())
+        .arg(
+            Arg::with_name(ARG_MINT_AUTH)
+                .help("Specify the mint auth resource definition address.")
+                .required(true),
+        )
         // options
         .arg(
             Arg::with_name(ARG_TRACE)
@@ -62,6 +69,7 @@ pub fn make_new_resource_mutable<'a, 'b>() -> App<'a, 'b> {
 
 /// Handles a `new-resource-mutable` request.
 pub fn handle_new_resource_mutable(matches: &ArgMatches) -> Result<(), Error> {
+    let mint_auth = match_address(matches, ARG_MINT_AUTH)?;
     let trace = matches.is_present(ARG_TRACE);
     let mut metadata = HashMap::new();
     matches
@@ -84,11 +92,11 @@ pub fn handle_new_resource_mutable(matches: &ArgMatches) -> Result<(), Error> {
     let mut ledger = FileBasedLedger::with_bootstrap(get_data_dir()?);
     let mut executor = TransactionExecutor::new(&mut ledger, configs.current_epoch, configs.nonce);
     let transaction = TransactionBuilder::new(&executor)
-        .new_resource_mutable(metadata)
-        .build()
+        .new_resource_mutable(metadata, mint_auth)
+        .build(Vec::new())
         .map_err(Error::TransactionConstructionError)?;
 
-    let receipt = executor.run(transaction, trace);
+    let receipt = executor.run(transaction, trace).unwrap();
 
     println!("{:?}", receipt);
     if receipt.success {

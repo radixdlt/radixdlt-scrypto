@@ -33,5 +33,6 @@ pub fn handle_show(matches: &ArgMatches) -> Result<(), Error> {
         Address::ResourceDef(_) => {
             dump_resource_def(address, &ledger).map_err(Error::LedgerDumpError)
         }
+        Address::PublicKey(_) => Ok(println!("Public Key: {}", address)),
     }
 }

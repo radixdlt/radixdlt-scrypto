@@ -1,4 +1,5 @@
 mod ast;
+mod auth;
 mod blueprint;
 mod import;
 mod utils;
@@ -93,4 +94,14 @@ pub fn blueprint(input: TokenStream) -> TokenStream {
 pub fn import(input: TokenStream) -> TokenStream {
     let output = import::handle_import(proc_macro2::TokenStream::from(input));
     TokenStream::from(output)
+}
+
+#[proc_macro_attribute]
+pub fn auth(attr: TokenStream, item: TokenStream) -> TokenStream {
+    auth::handle_auth(
+        proc_macro2::TokenStream::from(attr),
+        proc_macro2::TokenStream::from(item),
+    )
+    .unwrap_or_else(|err| err.to_compile_error())
+    .into()
 }

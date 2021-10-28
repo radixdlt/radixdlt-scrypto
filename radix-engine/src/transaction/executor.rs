@@ -1,5 +1,6 @@
 use scrypto::abi;
 use scrypto::args;
+use scrypto::rust::borrow::ToOwned;
 use scrypto::rust::string::ToString;
 use scrypto::rust::vec;
 use scrypto::rust::vec::Vec;
@@ -16,6 +17,11 @@ pub struct TransactionExecutor<'l, L: Ledger> {
     ledger: &'l mut L,
     current_epoch: u64,
     nonce: u64,
+}
+
+#[derive(Debug)]
+pub enum TransactionExecutionError {
+    MissingEndInstruction,
 }
 
 impl<'l, L: Ledger> AbiProvider for TransactionExecutor<'l, L> {
@@ -83,16 +89,22 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
         self.nonce
     }
 
-    /// Creates an account with 1000 XRD in balance.
+    /// Creates an account with 1,000,000 XRD in balance.
     pub fn create_account(&mut self) -> Address {
         self.run(
             TransactionBuilder::new(self)
-                .mint_resource(1000000.into(), RADIX_TOKEN)
+                .call_method(
+                    SYSTEM_COMPONENT,
+                    "free_xrd",
+                    vec!["1000000".to_owned()],
+                    None,
+                )
                 .create_account_with_resource(1000000.into(), RADIX_TOKEN)
-                .build()
+                .build(Vec::new())
                 .unwrap(),
             false,
         )
+        .unwrap()
         .component(0)
         .unwrap()
     }
@@ -102,10 +114,11 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
         self.run(
             TransactionBuilder::new(self)
                 .publish_package(code)
-                .build()
+                .build(Vec::new())
                 .unwrap(),
             false,
         )
+        .unwrap()
         .package(0)
         .unwrap()
     }
@@ -117,14 +130,26 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
     }
 
     /// Executes a transaction.
-    pub fn run(&mut self, transaction: Transaction, trace: bool) -> Receipt {
+    pub fn run(
+        &mut self,
+        transaction: Transaction,
+        trace: bool,
+    ) -> Result<Receipt, TransactionExecutionError> {
         #[cfg(not(feature = "alloc"))]
         let now = std::time::Instant::now();
+
+        let signers = if let Some(Instruction::End { signers }) = transaction.instructions.last() {
+            // TODO: check all signer addresses are public key; eventually should be computed from signature.
+            signers.clone()
+        } else {
+            return Err(TransactionExecutionError::MissingEndInstruction);
+        };
 
         let mut track = Track::new(
             self.ledger,
             self.current_epoch,
             sha256(self.nonce.to_string()),
+            signers,
         );
         let mut proc = track.start_process(trace);
 
@@ -164,9 +189,9 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
                         *package,
                         name.as_str(),
                         function.as_str(),
-                        args.iter().map(|v| v.0.clone()).collect(),
+                        args.iter().map(|v| v.encoded.clone()).collect(),
                     )
-                    .map(|rtn| Some(SmartValue(rtn))),
+                    .map(|rtn| Some(SmartValue::from(rtn))),
                 Instruction::CallMethod {
                     component,
                     method,
@@ -175,19 +200,19 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
                     .call_method(
                         *component,
                         method.as_str(),
-                        args.iter().map(|v| v.0.clone()).collect(),
+                        args.iter().map(|v| v.encoded.clone()).collect(),
                     )
-                    .map(|rtn| Some(SmartValue(rtn))),
+                    .map(|rtn| Some(SmartValue::from(rtn))),
                 Instruction::DepositAll { component, method } => {
                     let buckets = proc.owned_buckets();
                     if !buckets.is_empty() {
                         proc.call_method(*component, method.as_str(), args!(buckets))
-                            .map(|rtn| Some(SmartValue(rtn)))
+                            .map(|rtn| Some(SmartValue::from(rtn)))
                     } else {
                         Ok(None)
                     }
                 }
-                Instruction::End => proc.check_resource().map(|_| None),
+                Instruction::End { .. } => proc.check_resource().map(|_| None),
             };
             success &= res.is_ok();
             results.push(res);
@@ -206,7 +231,7 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
         #[cfg(not(feature = "alloc"))]
         let execution_time = Some(now.elapsed().as_millis());
 
-        Receipt {
+        Ok(Receipt {
             transaction,
             success,
             results,
@@ -217,6 +242,6 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
                 Vec::new()
             },
             execution_time,
-        }
+        })
     }
 }

@@ -67,10 +67,10 @@ pub fn handle_publish(matches: &ArgMatches) -> Result<(), Error> {
             TransactionExecutor::new(&mut ledger, configs.current_epoch, configs.nonce);
         let transaction = TransactionBuilder::new(&executor)
             .publish_package(&code)
-            .build()
+            .build(Vec::new())
             .map_err(Error::TransactionConstructionError)?;
 
-        let receipt = executor.run(transaction, trace);
+        let receipt = executor.run(transaction, trace).unwrap();
 
         println!("{:?}", receipt);
         if receipt.success {

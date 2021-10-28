@@ -9,30 +9,32 @@ use crate::types::*;
 use crate::utils::*;
 
 /// An account is a component that holds resources.
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Account {
-    address: Address,
+    component: Component,
 }
 
-impl From<Address> for Account {
-    fn from(address: Address) -> Self {
-        Self { address }
+impl<A: Into<Component>> From<A> for Account {
+    fn from(a: A) -> Self {
+        Self {
+            component: a.into(),
+        }
     }
 }
 
 impl From<Account> for Address {
     fn from(a: Account) -> Address {
-        a.address
+        a.component.into()
     }
 }
 
 impl Account {
     pub fn new() -> Account {
         let rtn = call_function(ACCOUNT_PACKAGE, "Account", "new", vec![]);
-        unwrap_light(scrypto_decode(&rtn))
+        scrypto_unwrap(scrypto_decode(&rtn))
     }
 
-    pub fn withdraw<A: Into<Address>>(&self, amount: Amount, resource_def: A) {
+    pub fn withdraw<A: Into<ResourceDef>>(&self, amount: Amount, resource_def: A) {
         let args = vec![
             scrypto_encode(&amount),
             scrypto_encode(&resource_def.into()),
@@ -46,7 +48,7 @@ impl Account {
     }
 
     pub fn address(&self) -> Address {
-        self.address
+        self.component.address()
     }
 }
 
@@ -62,7 +64,7 @@ impl TypeId for Account {
 
 impl Encode for Account {
     fn encode_value(&self, encoder: &mut Encoder) {
-        self.address.encode_value(encoder);
+        self.component.encode_value(encoder);
     }
 }
 

@@ -40,60 +40,75 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     }
 
     /// Reserves a bucket id.
-    pub fn reserve_bucket_id(&mut self) -> Bid {
+    pub fn reserve_bucket_id<F>(&mut self, then: F) -> &mut Self
+    where
+        F: FnOnce(&mut Self, Bid) -> &mut Self,
+    {
         let bid = self.allocator.new_bid();
         self.reservations.push(Instruction::ReserveBucketId);
-        bid
+        then(self, bid)
     }
 
     /// Reserves a bucket ref id.
-    pub fn reserve_bucket_ref_id(&mut self) -> Rid {
+    pub fn reserve_bucket_ref_id<F>(&mut self, then: F) -> &mut Self
+    where
+        F: FnOnce(&mut Self, Rid) -> &mut Self,
+    {
         let rid = self.allocator.new_rid();
         self.reservations.push(Instruction::ReserveBucketRefId);
-        rid
+        then(self, rid)
     }
 
     /// Creates a bucket by withdrawing resource from context.
-    pub fn create_bucket(&mut self, amount: Amount, resource_def: Address, bucket: Bid) {
-        self.instruction(Instruction::CreateTempBucket {
+    pub fn create_bucket(&mut self, amount: Amount, resource_def: Address, bid: Bid) -> &mut Self {
+        self.add_instruction(Instruction::CreateTempBucket {
             amount,
             resource_def,
-            bucket,
-        });
+            bucket: bid,
+        })
     }
 
     /// Creates a bucket ref by borrowing resource from context.
-    pub fn create_bucket_ref(&mut self, amount: Amount, resource_def: Address, bucket_ref: Rid) {
-        self.instruction(Instruction::CreateTempBucketRef {
+    pub fn create_bucket_ref(
+        &mut self,
+        amount: Amount,
+        resource_def: Address,
+        rid: Rid,
+    ) -> &mut Self {
+        self.add_instruction(Instruction::CreateTempBucketRef {
             amount,
             resource_def,
-            bucket_ref,
-        });
+            bucket_ref: rid,
+        })
     }
 
     /// Adds a raw instruction.
-    pub fn instruction(&mut self, inst: Instruction) -> &mut Self {
+    pub fn add_instruction(&mut self, inst: Instruction) -> &mut Self {
         self.instructions.push(inst);
         self
     }
 
     /// Publishes a package.
     pub fn publish_package(&mut self, code: &[u8]) -> &mut Self {
-        self.instruction(Instruction::CallFunction {
+        self.add_instruction(Instruction::CallFunction {
             package: SYSTEM_PACKAGE,
             name: "System".to_owned(),
             function: "publish_package".to_owned(),
-            args: vec![SmartValue(scrypto_encode(code))],
+            args: vec![SmartValue::from(code.to_vec())],
         })
     }
 
     /// Creates a resource with mutable supply.
-    pub fn new_resource_mutable(&mut self, metadata: HashMap<String, String>) -> &mut Self {
-        self.instruction(Instruction::CallFunction {
+    pub fn new_resource_mutable(
+        &mut self,
+        metadata: HashMap<String, String>,
+        mint_auth: Address,
+    ) -> &mut Self {
+        self.add_instruction(Instruction::CallFunction {
             package: SYSTEM_PACKAGE,
             name: "System".to_owned(),
             function: "new_resource_mutable".to_owned(),
-            args: vec![SmartValue::from(metadata)],
+            args: vec![SmartValue::from(metadata), SmartValue::from(mint_auth)],
         })
     }
 
@@ -103,7 +118,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         metadata: HashMap<String, String>,
         supply: Amount,
     ) -> &mut Self {
-        self.instruction(Instruction::CallFunction {
+        self.add_instruction(Instruction::CallFunction {
             package: SYSTEM_PACKAGE,
             name: "System".to_owned(),
             function: "new_resource_fixed".to_owned(),
@@ -112,18 +127,30 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     }
 
     /// Mints resource.
-    pub fn mint_resource(&mut self, amount: Amount, resource_def: Address) -> &mut Self {
-        self.instruction(Instruction::CallFunction {
-            package: SYSTEM_PACKAGE,
-            name: "System".to_owned(),
-            function: "mint_resource".to_owned(),
-            args: vec![SmartValue::from(amount), SmartValue::from(resource_def)],
+    pub fn mint_resource(
+        &mut self,
+        amount: Amount,
+        resource_def: Address,
+        mint_auth: Address,
+    ) -> &mut Self {
+        self.reserve_bucket_ref_id(|builder, rid| {
+            builder.create_bucket_ref(1.into(), mint_auth, rid);
+            builder.add_instruction(Instruction::CallFunction {
+                package: SYSTEM_PACKAGE,
+                name: "System".to_owned(),
+                function: "mint_resource".to_owned(),
+                args: vec![
+                    SmartValue::from(amount),
+                    SmartValue::from(resource_def),
+                    SmartValue::from(rid),
+                ],
+            })
         })
     }
 
     /// Creates an account.
     pub fn new_account(&mut self) -> &mut Self {
-        self.instruction(Instruction::CallFunction {
+        self.add_instruction(Instruction::CallFunction {
             package: ACCOUNT_PACKAGE,
             name: "Account".to_owned(),
             function: "new".to_owned(),
@@ -139,13 +166,14 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         amount: Amount,
         resource_def: Address,
     ) -> &mut Self {
-        let bid = self.reserve_bucket_id();
-        self.create_bucket(amount, resource_def, bid);
-        self.instruction(Instruction::CallFunction {
-            package: ACCOUNT_PACKAGE,
-            name: "Account".to_owned(),
-            function: "with_bucket".to_owned(),
-            args: vec![SmartValue::from(bid)],
+        self.reserve_bucket_id(|builder, bid| {
+            builder.create_bucket(amount, resource_def, bid);
+            builder.add_instruction(Instruction::CallFunction {
+                package: ACCOUNT_PACKAGE,
+                name: "Account".to_owned(),
+                function: "with_bucket".to_owned(),
+                args: vec![SmartValue::from(bid)],
+            })
         })
     }
 
@@ -156,7 +184,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         resource_def: Address,
         account: Address,
     ) -> &mut Self {
-        self.instruction(Instruction::CallMethod {
+        self.add_instruction(Instruction::CallMethod {
             component: account,
             method: "withdraw".to_owned(),
             args: vec![SmartValue::from(amount), SmartValue::from(resource_def)],
@@ -165,7 +193,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
 
     /// Deposits everything into an account.
     pub fn deposit_all(&mut self, account: Address) -> &mut Self {
-        self.instruction(Instruction::DepositAll {
+        self.add_instruction(Instruction::DepositAll {
             component: account,
             method: "deposit_batch".to_owned(),
         })
@@ -204,7 +232,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
 
         match result {
             Ok(args) => {
-                self.instruction(Instruction::CallFunction {
+                self.add_instruction(Instruction::CallFunction {
                     package: package,
                     name: name.to_owned(),
                     function: function.to_owned(),
@@ -245,7 +273,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
 
         match result {
             Ok(args) => {
-                self.instruction(Instruction::CallMethod {
+                self.add_instruction(Instruction::CallMethod {
                     component: component,
                     method: method.to_owned(),
                     args,
@@ -258,7 +286,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     }
 
     /// Builds a transaction.
-    pub fn build(&mut self) -> Result<Transaction, BuildTransactionError> {
+    pub fn build(&mut self, signers: Vec<Address>) -> Result<Transaction, BuildTransactionError> {
         if !self.errors.is_empty() {
             return Err(self.errors[0].clone());
         }
@@ -266,10 +294,14 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         let mut v = Vec::new();
         v.extend(self.reservations.clone());
         v.extend(self.instructions.clone());
-        v.push(Instruction::End);
+        v.push(Instruction::End { signers });
 
         Ok(Transaction { instructions: v })
     }
+
+    //===============================
+    // private methods below
+    //===============================
 
     fn find_function_abi(
         abi: &abi::Blueprint,
@@ -379,9 +411,12 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                         if let Some(account) = account {
                             self.withdraw(a, r, account);
                         }
-                        let bid = self.reserve_bucket_id();
-                        self.create_bucket(a, r, bid);
-                        Ok(SmartValue::from(bid))
+                        let mut created_bid = None;
+                        self.reserve_bucket_id(|builder, bid| {
+                            created_bid = Some(bid);
+                            builder.create_bucket(a, r, bid)
+                        });
+                        Ok(SmartValue::from(created_bid.unwrap()))
                     }
                     _ => Err(BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned())),
                 }
@@ -395,9 +430,12 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                         if let Some(account) = account {
                             self.withdraw(a, r, account);
                         }
-                        let rid = self.reserve_bucket_ref_id();
-                        self.create_bucket_ref(a, r, rid);
-                        Ok(SmartValue::from(rid))
+                        let mut created_rid = None;
+                        self.reserve_bucket_ref_id(|builder, rid| {
+                            created_rid = Some(rid);
+                            builder.create_bucket_ref(a, r, rid)
+                        });
+                        Ok(SmartValue::from(created_rid.unwrap()))
                     }
                     _ => Err(BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned())),
                 }

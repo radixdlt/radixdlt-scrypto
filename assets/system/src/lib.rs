@@ -1,7 +1,10 @@
 use scrypto::prelude::*;
 
 blueprint! {
-    struct System;
+    // nobody can instantiate a system component except the bootstrap process
+    struct System {
+        xrd: Vault
+    }
 
     impl System {
         /// Publishes a package.
@@ -11,8 +14,8 @@ blueprint! {
         }
 
         /// Creates a resource with mutable supply, and returns the resource definition address.
-        pub fn new_resource_mutable(metadata: HashMap<String, String>) -> Address {
-            let resource_def = ResourceDef::new_mutable(metadata, Context::package_address());
+        pub fn new_resource_mutable(metadata: HashMap<String, String>, mint_auth: Address) -> Address {
+            let resource_def = ResourceDef::new_mutable(metadata, mint_auth);
             resource_def.address()
         }
 
@@ -23,9 +26,13 @@ blueprint! {
         }
 
         /// Mints resource.
-        // TODO: badge for mint authorization.
-        pub fn mint_resource(amount: Amount, resource_def: Address) -> Bucket {
-            ResourceDef::from(resource_def).mint(amount)
+        pub fn mint_resource(amount: Amount, resource_def: Address, auth: BucketRef) -> Bucket {
+            ResourceDef::from(resource_def).mint(amount, auth)
+        }
+
+        /// Gives away XRD tokens for testing.
+        pub fn free_xrd(&self, amount: Amount) -> Bucket {
+            self.xrd.take(amount)
         }
     }
 }

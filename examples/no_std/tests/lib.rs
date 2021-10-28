@@ -12,9 +12,9 @@ fn test_no_std() {
     // Test the `hello` function.
     let transaction1 = TransactionBuilder::new(&executor)
         .call_function(package, "NoStd", "hello", vec![], None)
-        .build()
+        .build(Vec::new())
         .unwrap();
-    let receipt1 = executor.run(transaction1, false);
+    let receipt1 = executor.run(transaction1, true).unwrap();
     println!("{:?}\n", receipt1);
     assert!(receipt1.success);
 }

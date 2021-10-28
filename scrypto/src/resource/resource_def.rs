@@ -5,18 +5,27 @@ use crate::kernel::*;
 use crate::resource::*;
 use crate::rust::borrow::ToOwned;
 use crate::rust::collections::HashMap;
+use crate::rust::format;
 use crate::rust::string::String;
 use crate::rust::vec;
 use crate::types::*;
+use crate::utils::*;
 
 /// Represents the definition of a resource.
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ResourceDef {
     address: Address,
 }
 
 impl From<Address> for ResourceDef {
     fn from(address: Address) -> Self {
+        if !address.is_resource_def() {
+            scrypto_abort(format!(
+                "Unable to downcast Address to ResourceDef: {}",
+                address
+            ));
+        }
+
         Self { address }
     }
 }
@@ -28,16 +37,21 @@ impl From<ResourceDef> for Address {
 }
 
 impl ResourceDef {
-    pub fn new_mutable<A: Into<Address>>(metadata: HashMap<String, String>, minter: A) -> Self {
+    /// Creates a resource with mutable supply. The resource definition is returned.
+    pub fn new_mutable<A: Into<ResourceDef>>(
+        metadata: HashMap<String, String>,
+        mint_auth: A,
+    ) -> Self {
         let input = CreateResourceMutableInput {
             metadata,
-            minter: minter.into(),
+            mint_auth: mint_auth.into().address(),
         };
         let output: CreateResourceMutableOutput = call_kernel(CREATE_RESOURCE_MUTABLE, input);
 
         output.resource_def.into()
     }
 
+    /// Creates a resource with fixed supply. The created resource is immediately returned.
     pub fn new_fixed<T: Into<Amount>>(
         metadata: HashMap<String, String>,
         supply: T,
@@ -51,16 +65,19 @@ impl ResourceDef {
         (output.resource_def.into(), output.bucket.into())
     }
 
-    pub fn mint<T: Into<Amount>>(&self, amount: T) -> Bucket {
+    /// Mints resources
+    pub fn mint<T: Into<Amount>>(&self, amount: T, auth: BucketRef) -> Bucket {
         let input = MintResourceInput {
             resource_def: self.address,
             amount: amount.into(),
+            mint_auth: auth.into(),
         };
         let output: MintResourceOutput = call_kernel(MINT_RESOURCE, input);
 
         output.bucket.into()
     }
 
+    /// Burns a bucket of resources.
     pub fn burn(bucket: Bucket) {
         let input = BurnResourceInput {
             bucket: bucket.into(),
@@ -68,6 +85,7 @@ impl ResourceDef {
         let _output: BurnResourceOutput = call_kernel(BURN_RESOURCE, input);
     }
 
+    /// Returns the metadata associated with this resource.
     pub fn metadata(&self) -> HashMap<String, String> {
         let input = GetResourceMetadataInput {
             resource_def: self.address,
@@ -77,15 +95,17 @@ impl ResourceDef {
         output.metadata
     }
 
-    pub fn minter(&self) -> Option<Address> {
-        let input = GetResourceMinterInput {
+    /// Returns the mint auth.
+    pub fn mint_auth(&self) -> Option<Address> {
+        let input = GetResourceMintAuthInput {
             resource_def: self.address,
         };
-        let output: GetResourceMinterOutput = call_kernel(GET_RESOURCE_MINTER, input);
+        let output: GetResourceMintAuthOutput = call_kernel(GET_RESOURCE_MINT_AUTH, input);
 
-        output.minter
+        output.mint_auth
     }
 
+    /// Returns the current supply of this resource.
     pub fn supply(&self) -> Amount {
         let input = GetResourceSupplyInput {
             resource_def: self.address,
@@ -95,6 +115,7 @@ impl ResourceDef {
         output.supply
     }
 
+    /// Returns the address of this resource.
     pub fn address(&self) -> Address {
         self.address
     }

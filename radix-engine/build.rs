@@ -9,7 +9,4 @@ fn main() {
     if !status.success() {
         panic!()
     }
-
-    println!("cargo:rerun-if-changed=tests/everything/src");
-    println!("cargo:rerun-if-changed=tests/everything/Cargo.toml");
 }

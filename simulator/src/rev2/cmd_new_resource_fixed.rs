@@ -96,9 +96,9 @@ pub fn handle_new_resource_fixed(matches: &ArgMatches) -> Result<(), Error> {
     let transaction = TransactionBuilder::new(&executor)
         .new_resource_fixed(metadata, supply)
         .deposit_all(account)
-        .build()
+        .build(Vec::new())
         .map_err(Error::TransactionConstructionError)?;
-    let receipt = executor.run(transaction, trace);
+    let receipt = executor.run(transaction, trace).unwrap();
 
     println!("{:?}", receipt);
     if receipt.success {

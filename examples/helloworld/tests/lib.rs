@@ -13,9 +13,9 @@ fn test_hello() {
     // Test the `new` function.
     let transaction1 = TransactionBuilder::new(&executor)
         .call_function(package, "Hello", "new", vec![], None)
-        .build()
+        .build(Vec::new())
         .unwrap();
-    let receipt1 = executor.run(transaction1, false);
+    let receipt1 = executor.run(transaction1, true).unwrap();
     println!("{:?}\n", receipt1);
     assert!(receipt1.success);
 
@@ -24,9 +24,9 @@ fn test_hello() {
     let transaction2 = TransactionBuilder::new(&executor)
         .call_method(component, "free_token", vec![], Some(account))
         .deposit_all(account)
-        .build()
+        .build(Vec::new())
         .unwrap();
-    let receipt2 = executor.run(transaction2, false);
+    let receipt2 = executor.run(transaction2, true).unwrap();
     println!("{:?}\n", receipt2);
     assert!(receipt2.success);
 }

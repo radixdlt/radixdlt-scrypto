@@ -8,13 +8,13 @@ use crate::rust::vec;
 use crate::types::*;
 
 /// A template that describes shared structure and behavior.
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Blueprint {
-    package: Address,
+    package: Package,
     name: String,
 }
 
-impl<A: Into<Address>, S: AsRef<str>> From<(A, S)> for Blueprint {
+impl<A: Into<Package>, S: AsRef<str>> From<(A, S)> for Blueprint {
     fn from(a: (A, S)) -> Self {
         Self {
             package: a.0.into(),
@@ -25,13 +25,13 @@ impl<A: Into<Address>, S: AsRef<str>> From<(A, S)> for Blueprint {
 
 impl From<Blueprint> for (Address, String) {
     fn from(blueprint: Blueprint) -> Self {
-        (blueprint.package, blueprint.name)
+        (blueprint.package.address(), blueprint.name)
     }
 }
 
 impl Blueprint {
     pub fn package(&self) -> Package {
-        self.package.into()
+        self.package.clone()
     }
 
     pub fn name(&self) -> &str {
@@ -51,7 +51,7 @@ impl TypeId for Blueprint {
 
 impl Encode for Blueprint {
     fn encode_value(&self, encoder: &mut Encoder) {
-        (self.package, self.name.to_owned()).encode_value(encoder);
+        (self.package.address(), self.name.to_owned()).encode_value(encoder);
     }
 }
 

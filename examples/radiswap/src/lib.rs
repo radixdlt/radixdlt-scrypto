@@ -4,6 +4,8 @@ blueprint! {
     struct Radiswap {
         /// The resource definition of LP token.
         lp_resource_def: ResourceDef,
+        /// Mint authorization to LP tokens.
+        lp_mint_auth: Vault,
         /// The reserve for token A.
         a_pool: Vault,
         /// The reserve for token B.
@@ -37,16 +39,20 @@ blueprint! {
             scrypto_assert!(scale >= 1 && scale <= 9, "Invalid scale");
 
             // Instantiate our LP token and mint an initial supply of them
+            let lp_mint_auth = ResourceBuilder::new()
+                .metadata("name", "LP Token Mint Auth")
+                .create_fixed(1);
             let lp_resource_def = ResourceBuilder::new()
                 .metadata("symbol", lp_symbol)
                 .metadata("name", lp_name)
                 .metadata("url", lp_url)
-                .create_mutable(Context::package_address());
-            let lp_tokens = lp_resource_def.mint(lp_initial_supply);
+                .create_mutable(lp_mint_auth.resource_def());
+            let lp_tokens = lp_resource_def.mint(lp_initial_supply, lp_mint_auth.borrow());
 
             // Instantiate our Radiswap component
             let radiswap = Self {
                 lp_resource_def,
+                lp_mint_auth: Vault::with_bucket(lp_mint_auth),
                 a_pool: Vault::with_bucket(a_tokens),
                 b_pool: Vault::with_bucket(b_tokens),
                 fee_in_thousandths,
@@ -68,17 +74,22 @@ blueprint! {
             let (actual_share, remainder) = if a_share <= b_share {
                 // We will claim all input token A's, and only the correct amount of token B
                 self.a_pool.put(a_tokens);
-                self.b_pool.put(b_tokens.take(self.b_pool.amount() * a_share / scale));
+                self.b_pool
+                    .put(b_tokens.take(self.b_pool.amount() * a_share / scale));
                 (a_share, b_tokens)
             } else {
                 // We will claim all input token B's, and only the correct amount of token A
                 self.b_pool.put(b_tokens);
-                self.a_pool.put(a_tokens.take(self.a_pool.amount() * b_share / scale));
+                self.a_pool
+                    .put(a_tokens.take(self.a_pool.amount() * b_share / scale));
                 (b_share, a_tokens)
             };
 
             // Mint LP tokens according to the share the provider is contributing
-            let lp_tokens = self.lp_resource_def.mint(self.lp_resource_def.supply() * actual_share / scale);
+            let lp_tokens = self.lp_mint_auth.authorize(|badge| {
+                self.lp_resource_def
+                    .mint(self.lp_resource_def.supply() * actual_share / scale, badge)
+            });
 
             // Return the LP tokens along with any remainder
             (lp_tokens, remainder)

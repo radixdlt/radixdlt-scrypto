@@ -1,5 +1,6 @@
 use colored::*;
 use radix_engine::ledger::*;
+use radix_engine::model::Auth;
 use radix_engine::utils::*;
 use scrypto::types::*;
 
@@ -43,7 +44,8 @@ pub fn dump_component<T: Ledger>(address: Address, ledger: &T) -> Result<(), Dis
             println!(
                 "{}: {}",
                 "State".green().bold(),
-                format_data_with_ledger(c.state(), ledger, &mut vaults).unwrap()
+                format_data_with_ledger(c.state(Auth::NoAuth).unwrap(), ledger, &mut vaults)
+                    .unwrap()
             );
 
             println!("{}:", "Resources".green().bold());
@@ -52,8 +54,8 @@ pub fn dump_component<T: Ledger>(address: Address, ledger: &T) -> Result<(), Dis
                 println!(
                     "{} {{ amount: {}, resource_def: {} }}",
                     list_item_prefix(last),
-                    vault.amount(),
-                    vault.resource_def(),
+                    vault.amount(Auth::NoAuth).unwrap(),
+                    vault.resource_def(Auth::NoAuth).unwrap(),
                 );
             }
             Ok(())
@@ -67,12 +69,12 @@ pub fn dump_resource_def<T: Ledger>(address: Address, ledger: &T) -> Result<(), 
     let resource_def = ledger.get_resource_def(address);
     match resource_def {
         Some(r) => {
-            println!("{}: {}", "Metadata".green().bold(), r.metadata.len());
-            for (last, e) in r.metadata.iter().identify_last() {
+            println!("{}: {}", "Metadata".green().bold(), r.metadata().len());
+            for (last, e) in r.metadata().iter().identify_last() {
                 println!("{} {}: {}", list_item_prefix(last), e.0.green().bold(), e.1);
             }
-            println!("{}: {:?}", "Minter".green().bold(), r.minter);
-            println!("{}: {:?}", "Supply".green().bold(), r.supply);
+            println!("{}: {}", "Supply".green().bold(), r.supply());
+            println!("{}: {:?}", "Mint Auth".green().bold(), r.mint_auth());
             Ok(())
         }
         None => Err(DisplayError::ResourceDefNotFound),
