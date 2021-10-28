@@ -29,7 +29,7 @@ fn test_package() {
         )
         .build(Vec::new())
         .unwrap();
-    let receipt1 = executor.run(transaction1, true);
+    let receipt1 = executor.run(transaction1, true).unwrap();
     assert!(receipt1.success);
 }
 
@@ -45,7 +45,7 @@ fn test_context() {
         .call_function(package, "ContextTest", "query", vec![], Some(account))
         .build(Vec::new())
         .unwrap();
-    let receipt1 = executor.run(transaction1, true);
+    let receipt1 = executor.run(transaction1, true).unwrap();
     assert!(receipt1.success);
 }
 
@@ -68,7 +68,7 @@ fn test_component() {
         )
         .build(Vec::new())
         .unwrap();
-    let receipt1 = executor.run(transaction1, true);
+    let receipt1 = executor.run(transaction1, true).unwrap();
     assert!(receipt1.success);
 
     // Find the component address from receipt
@@ -88,7 +88,7 @@ fn test_component() {
         .deposit_all(account)
         .build(Vec::new())
         .unwrap();
-    let receipt2 = executor.run(transaction2, true);
+    let receipt2 = executor.run(transaction2, true).unwrap();
     assert!(receipt2.success);
 }
 
@@ -110,7 +110,7 @@ fn test_lazy_map() {
         )
         .build(Vec::new())
         .unwrap();
-    let receipt = executor.run(transaction, true);
+    let receipt = executor.run(transaction, true).unwrap();
     assert!(receipt.success);
 }
 
@@ -142,7 +142,7 @@ fn test_resource_def() {
         .deposit_all(account)
         .build(Vec::new())
         .unwrap();
-    let receipt = executor.run(transaction, true);
+    let receipt = executor.run(transaction, true).unwrap();
     assert!(receipt.success);
 }
 
@@ -162,7 +162,7 @@ fn test_bucket() {
         .deposit_all(account)
         .build(Vec::new())
         .unwrap();
-    let receipt = executor.run(transaction, true);
+    let receipt = executor.run(transaction, true).unwrap();
     assert!(receipt.success);
 }
 
@@ -186,6 +186,6 @@ fn test_move_resource() {
         .deposit_all(account)
         .build(Vec::new())
         .unwrap();
-    let receipt = executor.run(transaction, true);
+    let receipt = executor.run(transaction, true).unwrap();
     assert!(receipt.success);
 }

@@ -14,7 +14,7 @@ fn test_no_std() {
         .call_function(package, "NoStd", "hello", vec![], None)
         .build(Vec::new())
         .unwrap();
-    let receipt1 = executor.run(transaction1, false);
+    let receipt1 = executor.run(transaction1, true).unwrap();
     println!("{:?}\n", receipt1);
     assert!(receipt1.success);
 }

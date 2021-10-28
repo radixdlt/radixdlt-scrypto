@@ -19,6 +19,11 @@ pub struct TransactionExecutor<'l, L: Ledger> {
     nonce: u64,
 }
 
+#[derive(Debug)]
+pub enum TransactionExecutionError {
+    MissingEndInstruction,
+}
+
 impl<'l, L: Ledger> AbiProvider for TransactionExecutor<'l, L> {
     fn export_abi<A: AsRef<str>>(
         &self,
@@ -99,6 +104,7 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
                 .unwrap(),
             false,
         )
+        .unwrap()
         .component(0)
         .unwrap()
     }
@@ -112,6 +118,7 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
                 .unwrap(),
             false,
         )
+        .unwrap()
         .package(0)
         .unwrap()
     }
@@ -123,14 +130,19 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
     }
 
     /// Executes a transaction.
-    pub fn run(&mut self, transaction: Transaction, trace: bool) -> Receipt {
+    pub fn run(
+        &mut self,
+        transaction: Transaction,
+        trace: bool,
+    ) -> Result<Receipt, TransactionExecutionError> {
         #[cfg(not(feature = "alloc"))]
         let now = std::time::Instant::now();
 
         let signers = if let Some(Instruction::End { signers }) = transaction.instructions.last() {
+            // TODO: check all signer addresses are public key; eventually should be computed from signature.
             signers.clone()
         } else {
-            Vec::new()
+            return Err(TransactionExecutionError::MissingEndInstruction);
         };
 
         let mut track = Track::new(
@@ -219,7 +231,7 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
         #[cfg(not(feature = "alloc"))]
         let execution_time = Some(now.elapsed().as_millis());
 
-        Receipt {
+        Ok(Receipt {
             transaction,
             success,
             results,
@@ -230,6 +242,6 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
                 Vec::new()
             },
             execution_time,
-        }
+        })
     }
 }
