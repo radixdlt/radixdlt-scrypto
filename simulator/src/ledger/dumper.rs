@@ -51,11 +51,22 @@ pub fn dump_component<T: Ledger>(address: Address, ledger: &T) -> Result<(), Dis
             println!("{}:", "Resources".green().bold());
             for (last, vid) in vaults.iter().identify_last() {
                 let vault = ledger.get_vault(*vid).unwrap();
+                let amount = vault.amount(Auth::NoAuth).unwrap();
+                let resource_def_address = vault.resource_def(Auth::NoAuth).unwrap();
+                let resource_def = ledger.get_resource_def(resource_def_address).unwrap();
                 println!(
-                    "{} {{ amount: {}, resource_def: {} }}",
+                    "{} {{ amount: {}, resource_def: {}, name: {:?}, symbol: {:?}}}",
                     list_item_prefix(last),
-                    vault.amount(Auth::NoAuth).unwrap(),
-                    vault.resource_def(Auth::NoAuth).unwrap(),
+                    amount,
+                    resource_def_address,
+                    resource_def
+                        .metadata()
+                        .get("name")
+                        .unwrap_or(&"".to_owned()),
+                    resource_def
+                        .metadata()
+                        .get("symbol")
+                        .unwrap_or(&"".to_owned()),
                 );
             }
             Ok(())
