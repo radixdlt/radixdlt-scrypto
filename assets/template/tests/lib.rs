@@ -15,7 +15,7 @@ fn test_hello() {
         .call_function(package, "Hello", "new", vec![], None)
         .build(Vec::new())
         .unwrap();
-    let receipt1 = executor.run(transaction1, false);
+    let receipt1 = executor.run(transaction1, false).unwrap();
     println!("{:?}\n", receipt1);
     assert!(receipt1.success);
 
@@ -26,7 +26,7 @@ fn test_hello() {
         .deposit_all(account)
         .build(Vec::new())
         .unwrap();
-    let receipt2 = executor.run(transaction2, false);
+    let receipt2 = executor.run(transaction2, false).unwrap();
     println!("{:?}\n", receipt2);
     assert!(receipt2.success);
 }

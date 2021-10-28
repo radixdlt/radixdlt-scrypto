@@ -13,20 +13,24 @@ use crate::utils::*;
 
 /// Represents a universally recognizable value.
 #[derive(Clone, TypeId, Encode, Decode)]
-pub struct SmartValue(pub Vec<u8>);
+pub struct SmartValue {
+    pub encoded: Vec<u8>,
+}
 
 impl SmartValue {
     pub fn from<T: Encode>(v: T) -> Self {
-        Self(scrypto_encode(&v))
+        Self {
+            encoded: scrypto_encode(&v),
+        }
     }
 }
 
 impl fmt::Debug for SmartValue {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        if self.0.len() <= 1024 {
-            write!(f, "{}", format_data(&self.0).unwrap())
+        if self.encoded.len() <= 1024 {
+            write!(f, "{}", format_data(&self.encoded).unwrap())
         } else {
-            write!(f, "LargeValue(len: {})", self.0.len())
+            write!(f, "LargeValue(len: {})", self.encoded.len())
         }
     }
 }

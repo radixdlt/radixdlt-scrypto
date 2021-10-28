@@ -54,7 +54,7 @@ pub fn handle_transfer(matches: &ArgMatches) -> Result<(), Error> {
         .deposit_all(recipient)
         .build(Vec::new())
         .map_err(Error::TransactionConstructionError)?;
-    let receipt = executor.run(transaction, trace);
+    let receipt = executor.run(transaction, trace).unwrap();
 
     println!("{:?}", receipt);
     if receipt.success {

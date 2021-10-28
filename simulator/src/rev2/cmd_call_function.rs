@@ -61,7 +61,7 @@ pub fn handle_call_function(matches: &ArgMatches) -> Result<(), Error> {
         .deposit_all(account)
         .build(Vec::new())
         .map_err(Error::TransactionConstructionError)?;
-    let receipt = executor.run(transaction, trace);
+    let receipt = executor.run(transaction, trace).unwrap();
 
     println!("{:?}", receipt);
     if receipt.success {

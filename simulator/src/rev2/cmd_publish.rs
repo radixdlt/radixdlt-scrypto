@@ -70,7 +70,7 @@ pub fn handle_publish(matches: &ArgMatches) -> Result<(), Error> {
             .build(Vec::new())
             .map_err(Error::TransactionConstructionError)?;
 
-        let receipt = executor.run(transaction, trace);
+        let receipt = executor.run(transaction, trace).unwrap();
 
         println!("{:?}", receipt);
         if receipt.success {
