@@ -199,7 +199,7 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
                         function.as_str(),
                         args.iter().map(|v| v.encoded.clone()).collect(),
                     )
-                    .map(|rtn| Some(SmartValue::from(rtn))),
+                    .map(|rtn| Some(SmartValue { encoded: rtn })),
                 Instruction::CallMethod {
                     component,
                     method,
@@ -210,12 +210,12 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
                         method.as_str(),
                         args.iter().map(|v| v.encoded.clone()).collect(),
                     )
-                    .map(|rtn| Some(SmartValue::from(rtn))),
+                    .map(|rtn| Some(SmartValue { encoded: rtn })),
                 Instruction::DepositAll { component, method } => {
                     let buckets = proc.owned_buckets();
                     if !buckets.is_empty() {
                         proc.call_method(*component, method.as_str(), args!(buckets))
-                            .map(|rtn| Some(SmartValue::from(rtn)))
+                            .map(|rtn| Some(SmartValue { encoded: rtn }))
                     } else {
                         Ok(None)
                     }
