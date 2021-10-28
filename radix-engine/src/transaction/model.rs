@@ -189,6 +189,7 @@ impl fmt::Debug for Receipt {
                 Address::Package(_) => "Package",
                 Address::Component(_) => "Component",
                 Address::ResourceDef(_) => "ResourceDef",
+                Address::PublicKey(_) => "PublicKey",
             };
             write!(f, "\n{} {}: {}", prefix!(i, self.new_entities), ty, address)?;
         }

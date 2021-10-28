@@ -40,6 +40,9 @@ pub enum Address {
 
     /// Represents a resource definition.
     ResourceDef([u8; 26]),
+
+    /// Represents a public key
+    PublicKey([u8; 33]),
 }
 
 /// Represents an error when parsing Address.
@@ -56,6 +59,7 @@ impl Address {
             Self::Package(d) => combine(1, d),
             Self::Component(d) => combine(2, d),
             Self::ResourceDef(d) => combine(3, d),
+            Self::PublicKey(d) => combine(4, d),
         }
     }
 
@@ -69,6 +73,10 @@ impl Address {
 
     pub fn is_resource_def(&self) -> bool {
         matches!(self, Address::ResourceDef(_))
+    }
+
+    pub fn is_public_key(&self) -> bool {
+        matches!(self, Address::PublicKey(_))
     }
 }
 
@@ -85,15 +93,18 @@ impl TryFrom<&[u8]> for Address {
     type Error = ParseAddressError;
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
-        if slice.len() != 27 {
-            return Err(ParseAddressError::InvalidLength(slice.len()));
-        } else {
-            match slice[0] {
+        match slice.len() {
+            27 => match slice[0] {
                 1 => Ok(Self::Package(copy_u8_array(&slice[1..]))),
                 2 => Ok(Self::Component(copy_u8_array(&slice[1..]))),
                 3 => Ok(Self::ResourceDef(copy_u8_array(&slice[1..]))),
                 _ => Err(ParseAddressError::InvalidType(slice[0])),
-            }
+            },
+            34 => match slice[0] {
+                4 => Ok(Self::PublicKey(copy_u8_array(&slice[1..]))),
+                _ => Err(ParseAddressError::InvalidType(slice[0])),
+            },
+            _ => Err(ParseAddressError::InvalidLength(slice.len())),
         }
     }
 }
