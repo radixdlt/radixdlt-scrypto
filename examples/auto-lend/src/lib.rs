@@ -3,6 +3,7 @@ mod token;
 
 blueprint! {
     struct AutoLend {
+        a_b_resource_auth: Vault,
         a_b_resource_def: ResourceDef,
         a_b_pool: Vault,
         b_pool: Vault,
@@ -12,14 +13,17 @@ blueprint! {
 
     impl AutoLend {
         pub fn new(b_addr: Address, c_addr: Address) -> Component {
-             
+            let  a_b_resource_auth = ResourceBuilder::new()
+            .metadata("name", "LP Token Mint Auth")
+            .create_fixed(1);
             let a_b_resource_def = ResourceBuilder::new()
                 .metadata("symbol", "aB")
                 .metadata("name", "aB")
-                .create_mutable(Context::package_address());
+                .create_mutable(a_b_resource_auth.resource_def());
             let a_b_addr = a_b_resource_def.address();
 
             Self {
+                a_b_resource_auth: Vault::with_bucket(a_b_resource_auth),
                 a_b_resource_def,
                 a_b_pool: Vault::new(a_b_addr),
                 b_pool: Vault::new(b_addr),
@@ -36,7 +40,10 @@ blueprint! {
         pub fn deposit(&mut self, b_tokens: Bucket) -> Bucket {
             let a_b_amount_needed = b_tokens.amount();
             self.b_pool.put(b_tokens);
-            let a_b_tokens = self.a_b_resource_def.mint(a_b_amount_needed);
+            let a_b_tokens = self.a_b_resource_auth.authorize(|badge| {
+                self.a_b_resource_def
+                    .mint(a_b_amount_needed, badge)
+            });
             return a_b_tokens
         }
 
