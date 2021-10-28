@@ -89,8 +89,16 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
         self.nonce
     }
 
+    /// Generates a new public key.
+    pub fn new_public_key(&mut self) -> Address {
+        let mut raw = [0u8; 33];
+        raw[1..].copy_from_slice(sha256(self.nonce.to_string()).as_ref());
+        self.nonce += 1;
+        Address::PublicKey(raw)
+    }
+
     /// Creates an account with 1,000,000 XRD in balance.
-    pub fn create_account(&mut self) -> Address {
+    pub fn create_account(&mut self, key: Address) -> Address {
         self.run(
             TransactionBuilder::new(self)
                 .call_method(
@@ -99,7 +107,7 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
                     vec!["1000000".to_owned()],
                     None,
                 )
-                .create_account_with_resource(1000000.into(), RADIX_TOKEN)
+                .create_account_with_resource(key, 1000000.into(), RADIX_TOKEN)
                 .build(Vec::new())
                 .unwrap(),
             false,

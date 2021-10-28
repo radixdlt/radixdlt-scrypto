@@ -7,13 +7,14 @@ fn test_hello() {
     // Set up environment.
     let mut ledger = InMemoryLedger::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, 0, 0);
-    let account = executor.create_account();
+    let key = executor.new_public_key();
+    let account = executor.create_account(key);
     let package = executor.publish_package(include_code!());
 
     // Test the `new` function.
     let transaction1 = TransactionBuilder::new(&executor)
         .call_function(package, "Hello", "new", vec![], None)
-        .build(Vec::new())
+        .build(vec![key])
         .unwrap();
     let receipt1 = executor.run(transaction1, true).unwrap();
     println!("{:?}\n", receipt1);
@@ -24,7 +25,7 @@ fn test_hello() {
     let transaction2 = TransactionBuilder::new(&executor)
         .call_method(component, "free_token", vec![], Some(account))
         .deposit_all(account)
-        .build(Vec::new())
+        .build(vec![key])
         .unwrap();
     let receipt2 = executor.run(transaction2, true).unwrap();
     println!("{:?}\n", receipt2);

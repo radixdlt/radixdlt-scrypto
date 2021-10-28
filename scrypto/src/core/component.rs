@@ -6,6 +6,7 @@ use crate::kernel::*;
 use crate::rust::borrow::ToOwned;
 use crate::rust::format;
 use crate::rust::vec;
+use crate::rust::vec::Vec;
 use crate::types::*;
 use crate::utils::*;
 
@@ -43,6 +44,12 @@ impl Component {
         let output: CreateComponentOutput = call_kernel(CREATE_COMPONENT, input);
 
         output.component.into()
+    }
+
+    pub fn call<T: Decode>(&self, method: &str, args: Vec<Vec<u8>>) -> T {
+        let output = call_method(self.address, method, args);
+
+        scrypto_unwrap(scrypto_decode(&output))
     }
 
     pub fn get_state<T: State>(&self) -> T {

@@ -9,12 +9,14 @@ use scrypto::prelude::*;
 fn bench_transfer(b: &mut Bencher) {
     let mut ledger = InMemoryLedger::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, 0, 0);
-    let account1 = executor.create_account();
-    let account2 = executor.create_account();
+    let key1 = executor.new_public_key();
+    let account1 = executor.create_account(key1);
+    let key2 = executor.new_public_key();
+    let account2 = executor.create_account(key2);
     let transaction = TransactionBuilder::new(&executor)
         .withdraw(1.into(), RADIX_TOKEN, account1)
         .deposit_all(account2)
-        .build(Vec::new())
+        .build(vec![key1])
         .unwrap();
 
     b.iter(|| {

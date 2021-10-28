@@ -9,6 +9,7 @@ const ARG_METHOD: &str = "METHOD";
 const ARG_ARGS: &str = "ARGS";
 
 const ARG_TRACE: &str = "TRACE";
+const ARG_SIGNERS: &str = "SIGNERS";
 
 /// Constructs a `call-method` subcommand.
 pub fn make_call_method<'a, 'b>() -> App<'a, 'b> {
@@ -34,7 +35,13 @@ pub fn make_call_method<'a, 'b>() -> App<'a, 'b> {
         .arg(
             Arg::with_name(ARG_TRACE)
                 .long("trace")
-                .help("Turns on tracing."),
+                .help("Turn on tracing."),
+        )
+        .arg(
+            Arg::with_name(ARG_SIGNERS)
+                .long("signers")
+                .takes_value(true)
+                .help("Specify the transaction signers, separated by comma."),
         )
 }
 
@@ -44,6 +51,7 @@ pub fn handle_call_method(matches: &ArgMatches) -> Result<(), Error> {
     let method = match_string(matches, ARG_METHOD)?;
     let args = match_args(matches, ARG_ARGS)?;
     let trace = matches.is_present(ARG_TRACE);
+    let signers = match_signers(matches, ARG_SIGNERS)?;
 
     let mut configs = get_configs()?;
     let account = configs.default_account.ok_or(Error::NoDefaultAccount)?;
@@ -52,7 +60,7 @@ pub fn handle_call_method(matches: &ArgMatches) -> Result<(), Error> {
     let transaction = TransactionBuilder::new(&executor)
         .call_method(component, &method, args, Some(account))
         .deposit_all(account)
-        .build(Vec::new())
+        .build(signers)
         .map_err(Error::TransactionConstructionError)?;
     let receipt = executor.run(transaction, trace).unwrap();
 

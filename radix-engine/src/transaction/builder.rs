@@ -149,12 +149,12 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     }
 
     /// Creates an account.
-    pub fn new_account(&mut self) -> &mut Self {
+    pub fn new_account(&mut self, key: Address) -> &mut Self {
         self.add_instruction(Instruction::CallFunction {
             package: ACCOUNT_PACKAGE,
             name: "Account".to_owned(),
             function: "new".to_owned(),
-            args: vec![],
+            args: vec![SmartValue::from(key)],
         })
     }
 
@@ -163,6 +163,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     /// Note: need to make sure the context contains the required resource.
     pub fn create_account_with_resource(
         &mut self,
+        key: Address,
         amount: Amount,
         resource_def: Address,
     ) -> &mut Self {
@@ -172,7 +173,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                 package: ACCOUNT_PACKAGE,
                 name: "Account".to_owned(),
                 function: "with_bucket".to_owned(),
-                args: vec![SmartValue::from(bid)],
+                args: vec![SmartValue::from(key), SmartValue::from(bid)],
             })
         })
     }

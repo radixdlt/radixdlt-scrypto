@@ -56,3 +56,19 @@ pub fn match_args(matches: &ArgMatches, name: &str) -> Result<Vec<String>, Error
     }
     Ok(v)
 }
+
+/// Match signers
+pub fn match_signers(matches: &ArgMatches, name: &str) -> Result<Vec<Address>, Error> {
+    let mut v = Vec::<Address>::new();
+    if let Some(x) = matches.value_of(name) {
+        for a in x.split(',') {
+            let address: Address = a.trim().parse().map_err(Error::InvalidAddress)?;
+            if address.is_public_key() {
+                v.push(address);
+            } else {
+                return Err(Error::InvalidSignerPublicKey);
+            }
+        }
+    }
+    Ok(v)
+}

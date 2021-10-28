@@ -6,7 +6,7 @@ use crate::rust::borrow::ToOwned;
 pub fn scrypto_unwrap<T, E>(res: Result<T, E>) -> T {
     match res {
         Ok(v) => v,
-        _ => scrypto_abort("Result is a failure"),
+        _ => panic!(),
     }
 }
 

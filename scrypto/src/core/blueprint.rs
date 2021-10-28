@@ -5,7 +5,9 @@ use crate::core::*;
 use crate::rust::borrow::ToOwned;
 use crate::rust::string::String;
 use crate::rust::vec;
+use crate::rust::vec::Vec;
 use crate::types::*;
+use crate::utils::*;
 
 /// A template that describes shared structure and behavior.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -36,6 +38,12 @@ impl Blueprint {
 
     pub fn name(&self) -> &str {
         &self.name
+    }
+
+    pub fn call<T: Decode>(&self, function: &str, args: Vec<Vec<u8>>) -> T {
+        let output = call_function(self.package.address(), self.name(), function, args);
+
+        scrypto_unwrap(scrypto_decode(&output))
     }
 }
 

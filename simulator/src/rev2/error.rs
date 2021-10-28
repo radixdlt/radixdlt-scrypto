@@ -28,6 +28,8 @@ pub enum Error {
 
     InvalidConfig(sbor::DecodeError),
 
+    InvalidSignerPublicKey,
+
     IOError(io::Error),
 
     DataError(DecodeError),
