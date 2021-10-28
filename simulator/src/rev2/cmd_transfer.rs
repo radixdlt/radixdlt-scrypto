@@ -9,6 +9,7 @@ const ARG_RESOURCE_DEF: &str = "RESOURCE_DEF";
 const ARG_RECIPIENT: &str = "RECIPIENT";
 
 const ARG_TRACE: &str = "TRACE";
+const ARG_SIGNERS: &str = "SIGNERS";
 
 /// Constructs a `transfer` subcommand.
 pub fn make_transfer<'a, 'b>() -> App<'a, 'b> {
@@ -34,7 +35,13 @@ pub fn make_transfer<'a, 'b>() -> App<'a, 'b> {
         .arg(
             Arg::with_name(ARG_TRACE)
                 .long("trace")
-                .help("Turns on tracing."),
+                .help("Turn on tracing."),
+        )
+        .arg(
+            Arg::with_name(ARG_SIGNERS)
+                .long("signers")
+                .takes_value(true)
+                .help("Specify the transaction signers, separated by comma."),
         )
 }
 
@@ -44,6 +51,7 @@ pub fn handle_transfer(matches: &ArgMatches) -> Result<(), Error> {
     let resource_def = match_address(matches, ARG_RESOURCE_DEF)?;
     let recipient = match_address(matches, ARG_RECIPIENT)?;
     let trace = matches.is_present(ARG_TRACE);
+    let signers = match_signers(matches, ARG_SIGNERS)?;
 
     let mut configs = get_configs()?;
     let account = configs.default_account.ok_or(Error::NoDefaultAccount)?;
@@ -52,7 +60,7 @@ pub fn handle_transfer(matches: &ArgMatches) -> Result<(), Error> {
     let transaction = TransactionBuilder::new(&executor)
         .withdraw(amount, resource_def, account)
         .deposit_all(recipient)
-        .build(Vec::new())
+        .build(signers)
         .map_err(Error::TransactionConstructionError)?;
     let receipt = executor.run(transaction, trace).unwrap();
 

@@ -31,7 +31,7 @@ impl Context {
     /// Returns the transaction signers.
     pub fn transaction_signers() -> Vec<Address> {
         let input = GetTransactionSignersInput {};
-        let output: GetTransactionSignersOutput = call_kernel(GET_TRANSACTION_HASH, input);
+        let output: GetTransactionSignersOutput = call_kernel(GET_TRANSACTION_SIGNERS, input);
         output.tx_signers
     }
 }

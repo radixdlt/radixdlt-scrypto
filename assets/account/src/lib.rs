@@ -2,23 +2,23 @@ use scrypto::prelude::*;
 
 blueprint! {
     struct Account {
+        key: Address,
         vaults: LazyMap<Address, Vault>,
     }
 
     impl Account {
-        pub fn new() -> Component {
+        pub fn new(key: Address) -> Component {
             Account {
+                key,
                 vaults: LazyMap::new(),
             }
             .instantiate()
         }
 
-        pub fn with_bucket(bucket: Bucket) -> Component {
-            let mut account = Account {
-                vaults: LazyMap::new()
-            };
-            account.deposit(bucket);
-            account.instantiate()
+        pub fn with_bucket(key: Address, bucket: Bucket) -> Component {
+            let account = Self::new(key);
+            account.call::<()>("deposit", vec![scrypto_encode(&bucket)]);
+            account
         }
 
         /// Deposit a batch of buckets into this account
@@ -44,14 +44,15 @@ blueprint! {
 
         /// Withdraws resource from this account.
         pub fn withdraw(&mut self, amount: Amount, resource_def: Address) -> Bucket {
-            let vault = self
-                .vaults
-                .get(&resource_def);
+            if !Context::transaction_signers().contains(&self.key) {
+                scrypto_abort("Not authorized! Make sure you sign transaction with the correct keys.")
+            }
+
+            let vault = self.vaults.get(&resource_def);
             match vault {
                 Some(vault) => vault.take(amount),
                 None => {
-                    error!("Resource not found in account: amount = {}, resource_def = {}", amount, resource_def);
-                    panic!();
+                    scrypto_abort("Insufficient balance");
                 }
             }
         }

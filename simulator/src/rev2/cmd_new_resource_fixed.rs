@@ -8,6 +8,7 @@ use crate::rev2::*;
 const ARG_SUPPLY: &str = "SUPPLY";
 
 const ARG_TRACE: &str = "TRACE";
+const ARG_SIGNERS: &str = "SIGNERS";
 const ARG_SYMBOL: &str = "SYMBOL";
 const ARG_NAME: &str = "NAME";
 const ARG_DESCRIPTION: &str = "DESCRIPTION";
@@ -28,7 +29,13 @@ pub fn make_new_resource_fixed<'a, 'b>() -> App<'a, 'b> {
         .arg(
             Arg::with_name(ARG_TRACE)
                 .long("trace")
-                .help("Turns on tracing."),
+                .help("Turn on tracing."),
+        )
+        .arg(
+            Arg::with_name(ARG_SIGNERS)
+                .long("signers")
+                .takes_value(true)
+                .help("Specify the transaction signers, separated by comma."),
         )
         .arg(
             Arg::with_name(ARG_SYMBOL)
@@ -72,6 +79,7 @@ pub fn handle_new_resource_fixed(matches: &ArgMatches) -> Result<(), Error> {
     let supply = match_amount(matches, ARG_SUPPLY)?;
 
     let trace = matches.is_present(ARG_TRACE);
+    let signers = match_signers(matches, ARG_SIGNERS)?;
     let mut metadata = HashMap::new();
     matches
         .value_of(ARG_SYMBOL)
@@ -96,7 +104,7 @@ pub fn handle_new_resource_fixed(matches: &ArgMatches) -> Result<(), Error> {
     let transaction = TransactionBuilder::new(&executor)
         .new_resource_fixed(metadata, supply)
         .deposit_all(account)
-        .build(Vec::new())
+        .build(signers)
         .map_err(Error::TransactionConstructionError)?;
     let receipt = executor.run(transaction, trace).unwrap();
 

@@ -12,6 +12,7 @@ use crate::rev2::*;
 use crate::utils::*;
 
 const ARG_TRACE: &str = "TRACE";
+const ARG_SIGNERS: &str = "SIGNERS";
 const ARG_PATH: &str = "PATH";
 const ARG_ADDRESS: &str = "ADDRESS";
 
@@ -29,7 +30,13 @@ pub fn make_publish<'a, 'b>() -> App<'a, 'b> {
         .arg(
             Arg::with_name(ARG_TRACE)
                 .long("trace")
-                .help("Turns on tracing."),
+                .help("Turn on tracing."),
+        )
+        .arg(
+            Arg::with_name(ARG_SIGNERS)
+                .long("signers")
+                .takes_value(true)
+                .help("Specify the transaction signers, separated by comma."),
         )
         .arg(
             Arg::with_name(ARG_ADDRESS)
@@ -44,6 +51,7 @@ pub fn make_publish<'a, 'b>() -> App<'a, 'b> {
 pub fn handle_publish(matches: &ArgMatches) -> Result<(), Error> {
     let path = match_path(matches, ARG_PATH)?;
     let trace = matches.is_present(ARG_TRACE);
+    let signers = match_signers(matches, ARG_SIGNERS)?;
 
     // Load wasm code
     let code = fs::read(if path.extension() != Some(OsStr::new("wasm")) {
@@ -67,7 +75,7 @@ pub fn handle_publish(matches: &ArgMatches) -> Result<(), Error> {
             TransactionExecutor::new(&mut ledger, configs.current_epoch, configs.nonce);
         let transaction = TransactionBuilder::new(&executor)
             .publish_package(&code)
-            .build(Vec::new())
+            .build(signers)
             .map_err(Error::TransactionConstructionError)?;
 
         let receipt = executor.run(transaction, trace).unwrap();

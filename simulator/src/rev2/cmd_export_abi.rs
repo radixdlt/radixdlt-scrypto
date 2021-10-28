@@ -28,7 +28,7 @@ pub fn make_export_abi<'a, 'b>() -> App<'a, 'b> {
         .arg(
             Arg::with_name(ARG_TRACE)
                 .long("trace")
-                .help("Turns on tracing."),
+                .help("Turn on tracing."),
         )
 }
 
