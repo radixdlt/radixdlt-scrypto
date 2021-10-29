@@ -38,7 +38,7 @@ fn deposit_test() {
     assert_eq!(b_tokens_liquidity(&mut executor, auto_lend_address, pub_key), Amount::from(100));
 
     // after depositing, LP supply should be equal to 1
-    assert_eq!(a_b_tokens_supply(&mut executor, auto_lend_address, pub_key), Amount::from(1));
+    assert_eq!(a_b_tokens_supply(&mut executor, auto_lend_address, pub_key), Amount::from(100));
 }
 
 #[test]
@@ -76,8 +76,8 @@ fn two_deposits_test() {
     // after first deposit, liquidity should be equal to 100
     assert_eq!(b_tokens_liquidity(&mut executor, auto_lend_address, pub_key), Amount::from(100));
 
-    // after depositing, LP supply should be equal to 1
-    assert_eq!(a_b_tokens_supply(&mut executor, auto_lend_address, pub_key), Amount::from(1));
+    // after depositing, LP supply should be equal to 100
+    assert_eq!(a_b_tokens_supply(&mut executor, auto_lend_address, pub_key), Amount::from(100));
 
     deposit_token_b(
         &mut executor, auto_lend_address, token_b_address, account, Amount::from(10), pub_key
@@ -86,8 +86,8 @@ fn two_deposits_test() {
     // after second depositing, liquidity should be equal to 110
     assert_eq!(b_tokens_liquidity(&mut executor, auto_lend_address, pub_key), Amount::from(110));
 
-    // after depositing, LP supply should be equal to 1.1
-    assert_eq!(a_b_tokens_supply(&mut executor, auto_lend_address, pub_key), Amount::from(1));
+    // after depositing, LP supply should be equal to 110
+    assert_eq!(a_b_tokens_supply(&mut executor, auto_lend_address, pub_key), Amount::from(110));
 }
 
 fn create_token(

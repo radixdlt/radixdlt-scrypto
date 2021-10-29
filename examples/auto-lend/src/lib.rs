@@ -9,6 +9,7 @@ blueprint! {
         b_pool: Vault,
         c_pool: Vault,
         collateral_ratio: u32,
+        scale: usize
     }
 
     impl AutoLend {
@@ -29,6 +30,7 @@ blueprint! {
                 b_pool: Vault::new(b_addr),
                 c_pool: Vault::new(c_addr), 
                 collateral_ratio: 2,
+                scale: 8
             }
             .instantiate()
         }
@@ -38,10 +40,12 @@ blueprint! {
 
         // deposit B and get aB
         pub fn deposit(&mut self, b_tokens: Bucket) -> Bucket {
+            let scale = Amount::exp10(self.scale);
             let lp_amount_to_be_minted = if self.b_pool.amount() > 0.into() {
-                b_tokens.amount() / self.b_pool.amount() * self.a_b_resource_def.supply()
+                let b_share = scale * b_tokens.amount() / self.b_pool.amount();
+                b_share * self.a_b_resource_def.supply() / scale
             } else {
-                1.into()
+                100.into()
             };
             self.b_pool.put(b_tokens);
             let a_b_tokens = self.a_b_resource_auth.authorize(|badge| {
