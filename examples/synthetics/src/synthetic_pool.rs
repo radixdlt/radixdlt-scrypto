@@ -3,7 +3,7 @@ use scrypto::prelude::*;
 import! {
 r#"
 {    
-  "package": "01806c33ab58c922240ce20a5b697546cc84aaecdf1b460a42c425",
+  "package": "01024420d4c8749579abc13133bf07b0a4fc307aa0172f595a0245",
   "name": "PriceOracle",
   "functions": [
     {
