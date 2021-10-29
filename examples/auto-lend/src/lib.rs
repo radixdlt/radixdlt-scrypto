@@ -13,6 +13,7 @@ blueprint! {
     }
 
     impl AutoLend {
+
         pub fn new(b_addr: Address, c_addr: Address) -> Component {
             let  a_b_resource_auth = ResourceBuilder::new()
             .metadata("name", "LP Token Mint Auth")
@@ -30,7 +31,7 @@ blueprint! {
                 b_pool: Vault::new(b_addr),
                 c_pool: Vault::new(c_addr), 
                 collateral_ratio: 2,
-                scale: 8
+                scale: 21
             }
             .instantiate()
         }
@@ -45,7 +46,7 @@ blueprint! {
                 let b_share = scale * b_tokens.amount() / self.b_pool.amount();
                 b_share * self.a_b_resource_def.supply() / scale
             } else {
-                100.into()
+                100.into() //arbitrary initial LP tokens
             };
             self.b_pool.put(b_tokens);
             let a_b_tokens = self.a_b_resource_auth.authorize(|badge| {
@@ -60,11 +61,9 @@ blueprint! {
         //      1. We need internal map. Tracking external account doesn't work as the asset is liquid
         //      2. Interest needs to be based on liquidity as well
         pub fn redeem(&mut self, a_b_tokens: Bucket) -> Bucket {
-            let b_amount_needed = a_b_tokens.amount();
-            scrypto_assert!(
-                self.b_pool.amount() < b_amount_needed,
-                "Not enough liquidity"
-            );
+            let scale = Amount::exp10(self.scale);
+            let a_b_share = scale * a_b_tokens.amount() / self.a_b_pool.resource_def().supply();
+            let b_amount_needed = a_b_share * self.b_pool.amount() / scale;
             a_b_tokens.burn();
             return self.b_pool.take(b_amount_needed);
         }
