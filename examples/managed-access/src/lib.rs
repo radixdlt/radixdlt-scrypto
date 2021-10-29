@@ -3,7 +3,7 @@ use scrypto::prelude::*;
 import! {
     r#"
     {
-        "package": "013fa22e238526e9c82376d2b4679a845364243bf970e5f783d13f",
+        "package": "0191de320eec0b1fc56232cf8214efcff4d761fc6396b91c2e1cb4",
         "name": "FlatAdmin",
         "functions": [
           {
@@ -60,14 +60,24 @@ import! {
             "output": {
               "type": "Unit"
             }
+          },
+          {
+            "name": "get_admin_badge_address",
+            "mutability": "Immutable",
+            "inputs": [],
+            "output": {
+              "type": "Custom",
+              "name": "scrypto::types::Address",
+              "generics": []
+            }
           }
         ]
-    }
+      }
     "#
 }
 blueprint! {
     struct ManagedAccess {
-        admin_badge: Address,
+        admin_badge: ResourceDef,
         flat_admin_controller: Address,
         protected_vault: Vault
     }
@@ -77,7 +87,7 @@ blueprint! {
             let (flat_admin_component, admin_badge) = FlatAdmin::new("My Managed Access Badge".into());                        
             
             let component = Self {
-                admin_badge: admin_badge.resource_def().address(),
+                admin_badge: admin_badge.resource_def(),
                 flat_admin_controller: flat_admin_component.address(),
                 protected_vault: Vault::new(RADIX_TOKEN)
             }
@@ -95,7 +105,7 @@ blueprint! {
         }
 
         pub fn get_admin_badge_address(&mut self) -> Address {
-            self.admin_badge
+            self.admin_badge.address()
         }
 
         pub fn get_flat_admin_controller_address(&mut self) -> Address {
