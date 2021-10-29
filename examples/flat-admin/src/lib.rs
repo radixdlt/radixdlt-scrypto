@@ -27,7 +27,7 @@ blueprint! {
         // Any existing admin may create another admin token
         #[auth(admin_badge_address)]
         pub fn create_additional_admin(&self) -> Bucket {
-            self.admin_badge_def.mint(1, self.admin_mint_auth.take(1).borrow())
+            self.admin_mint_auth.authorize(|badge| { self.admin_badge_def.mint(1, badge) })            
         }
 
         pub fn destroy_admin_badge(&self, to_destroy: Bucket) {
