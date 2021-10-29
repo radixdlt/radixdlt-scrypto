@@ -41,10 +41,10 @@ pub fn handle_new_account(matches: &ArgMatches) -> Result<(), Error> {
         .call_method(
             SYSTEM_COMPONENT,
             "free_xrd",
-            vec!["1000000".to_owned()],
+            vec!["1000000000000000000000000".to_owned()],
             None,
         )
-        .create_account_with_resource(key, 1000000.into(), RADIX_TOKEN)
+        .create_account_with_resource(key, 1000000000000000000000000u128.into(), RADIX_TOKEN)
         .build(signers)
         .map_err(Error::TransactionConstructionError)?;
     let receipt = executor.run(transaction, trace).unwrap();
