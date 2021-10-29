@@ -38,11 +38,15 @@ blueprint! {
 
         // deposit B and get aB
         pub fn deposit(&mut self, b_tokens: Bucket) -> Bucket {
-            let a_b_amount_needed = b_tokens.amount();
+            let lp_amount_to_be_minted = if self.b_pool.amount() > 0.into() {
+                b_tokens.amount() / self.b_pool.amount() * self.a_b_resource_def.supply()
+            } else {
+                1.into()
+            };
             self.b_pool.put(b_tokens);
             let a_b_tokens = self.a_b_resource_auth.authorize(|badge| {
                 self.a_b_resource_def
-                    .mint(a_b_amount_needed, badge)
+                    .mint(lp_amount_to_be_minted, badge)
             });
             return a_b_tokens
         }
@@ -103,5 +107,12 @@ blueprint! {
 
         // XXX: again idea with user classes? L... and B... s
 
+        pub fn a_b_tokens_supply(&mut self) -> Amount {
+            return self.a_b_resource_def.supply();
+        }
+
+        pub fn b_tokens_liquidity(&mut self) -> Amount {
+            return self.b_pool.amount()
+        }
     }
 }
