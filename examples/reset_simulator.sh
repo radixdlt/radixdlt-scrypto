@@ -60,6 +60,7 @@ rev2 call-method $po_cp get_price $eth $btc
 echo "===================================================================================="
 echo "Account 1 address: $acc1_address"
 echo "Account 1 public key: $acc1_pub_key"
+echo "Account 1 mint auth: $acc1_mint_auth"
 echo "Account 2 address: $acc2_address"
 echo "Account 2 public key: $acc2_pub_key"
 echo "Account 3 address: $acc3_address"
