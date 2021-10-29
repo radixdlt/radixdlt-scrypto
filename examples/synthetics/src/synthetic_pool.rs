@@ -128,7 +128,7 @@ blueprint! {
 
         pub fn stake_to_existing_vault(&self, vault_owner_badge: BucketRef, collateral: Bucket) {
             scrypto_assert!(
-                vault_owner_badge.is_empty(),
+                !vault_owner_badge.is_empty(),
                 "Your badge bucket doesn't contain a badge"
             );
 
