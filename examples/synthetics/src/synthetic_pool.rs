@@ -67,7 +67,7 @@ r#"
 }
 
 
-blueprint! {
+ blueprint! {
     struct SyntheticPool {
         // Parameters
         oracle: PriceOracle,
@@ -106,14 +106,7 @@ blueprint! {
 
         pub fn stake_to_new_vault(&self, collateral: Bucket) -> Bucket {
 
-            scrypto_assert!(
-                collateral.resource_def() == self.collateral_resource_definition,
-                "You need to provide {} ({}) as collateral, but you provided {} ({})",
-                self.collateral_resource_definition.metadata().get("symbol").unwrap_or(&"UNKNOWN_SYMBOL".to_string()),
-                self.collateral_resource_definition.address().to_string(),
-                collateral.resource_def().metadata().get("symbol").unwrap_or(&"UNKNOWN_SYMBOL".to_string()),
-                collateral.resource_def().address().to_string()
-            );
+            self.assert_collateral_correct(&collateral);
 
             let vault_owner_badge = ResourceBuilder::new()
                 .metadata("name", "Vault Badge")
@@ -127,11 +120,40 @@ blueprint! {
         }
 
         pub fn stake_to_existing_vault(&self, vault_owner_badge: BucketRef, collateral: Bucket) {
+            self.assert_collateral_correct(&collateral);
+
+            let vault = self.get_vault_for_badgeref_safe(vault_owner_badge);
+
+            vault.put(collateral);
+        }
+
+        // NB - I considered taking a badge, not a badge ref, because we might want to burn it if the vault is emptied
+        //      But I preferred the option to explicitly dispose_badge if a user wished to close their vault
+        pub fn unstake_from_vault(&self, vault_owner_badge: BucketRef, amount_to_unstake: Amount) -> Bucket {
+            let vault = self.get_vault_for_badgeref_safe(vault_owner_badge);
+
+            vault.take(amount_to_unstake) // Throws if not enough tokens
+        }
+
+        pub fn dispose_badge(&self, vault_owner_badge: Bucket) {
+            let vault = self.get_vault_for_badge_safe(&vault_owner_badge);
+
             scrypto_assert!(
-                !vault_owner_badge.is_empty(),
-                "Your badge bucket doesn't contain a badge"
+                vault.is_empty(),
+                "You can't dispose of a badge if your vault is not empty"
             );
 
+            // Lazy map doesn't at present support remove
+            // self.staked_collateral_vault_map.remove(vault_owner_badge);
+            vault_owner_badge.burn();
+        }
+
+        pub fn get_staked_balance(&self, vault_owner_badge: BucketRef) -> Amount {
+            let vault = self.get_vault_for_badgeref_safe(vault_owner_badge);
+            vault.amount()
+        }
+
+        fn assert_collateral_correct(&self, collateral: &Bucket) {
             scrypto_assert!(
                 collateral.resource_def() == self.collateral_resource_definition,
                 "You need to provide {} ({}) as collateral, but you provided {} ({})",
@@ -139,6 +161,13 @@ blueprint! {
                 self.collateral_resource_definition.address().to_string(),
                 collateral.resource_def().metadata().get("symbol").unwrap_or(&"UNKNOWN_SYMBOL".to_string()),
                 collateral.resource_def().address().to_string()
+            );
+        }
+
+        fn get_vault_for_badgeref_safe(&self, vault_owner_badge: BucketRef) -> Vault {
+            scrypto_assert!(
+                !vault_owner_badge.is_empty(),
+                "The provided vault owner badge bucketref doesn't contain a badge"
             );
 
             let vault_owner_badge_address = vault_owner_badge.resource_def().address();
@@ -148,13 +177,30 @@ blueprint! {
 
             scrypto_assert!(
                 vault_map_contents.is_some(),
-                "The provided badge does not correspond to an active vault"
+                "The provided vault owner badge does not correspond to an active vault"
             );
 
-            let vault = vault_map_contents.unwrap();
-
-            vault.put(collateral);
+            vault_map_contents.unwrap()
         }
+
+        fn get_vault_for_badge_safe(&self, vault_owner_badge: &Bucket) -> Vault {
+            scrypto_assert!(
+                !vault_owner_badge.is_empty(),
+                "The provided vault owner badge bucket doesn't contain a badge"
+            );
+
+            let vault_owner_badge_address = vault_owner_badge.resource_def().address();
+
+            let vault_map_contents = self.staked_collateral_vault_map.get(&vault_owner_badge_address);
+
+            scrypto_assert!(
+                vault_map_contents.is_some(),
+                "The provided vault owner badge does not correspond to an active vault"
+            );
+
+            vault_map_contents.unwrap()
+        }
+
 /*
         pub fn mint_synthetic(&self, exchange: String, ticker_code: String, amount_in_billionths_to_mint: u128, collateral: Bucket) -> Bucket {
 

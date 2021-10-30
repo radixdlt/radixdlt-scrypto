@@ -34,7 +34,22 @@ echo "Vault badge resource def: $vault_badge"
 
 # Top up our account
 additional_amount_to_stake=21
-rev2 call-method $synthetics_pool_component stake_to_existing_vault "1,$vault_badge" "$additional_amount_to_stake,$snx" --signers $acc1_pub_key --trace
+rev2 call-method $synthetics_pool_component stake_to_existing_vault "1,$vault_badge" "$additional_amount_to_stake,$snx" --signers $acc1_pub_key
+
+# Check our staked balance is 31
+echo "There should be a line under results here saying Ok(Some(31)), in line with the CallMethod instruction"
+rev2 call-method $synthetics_pool_component get_staked_balance "1,$vault_badge" --signers $acc1_pub_key
+
+# Unstake 20 tokens
+rev2 call-method $synthetics_pool_component unstake_from_vault "1,$vault_badge" 20 --signers $acc1_pub_key
+
+# This should error because we have 11 tokens left
+# rev2 call-method $synthetics_pool_component dispose_badge "1,$vault_badge" --signers $acc1_pub_key
+
+rev2 call-method $synthetics_pool_component unstake_from_vault "1,$vault_badge" 11 --signers $acc1_pub_key
+
+# Can now dispose badge as vault is empty
+rev2 call-method $synthetics_pool_component dispose_badge "1,$vault_badge" --signers $acc1_pub_key
 
 echo
 echo "================================="
