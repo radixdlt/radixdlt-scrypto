@@ -2,7 +2,7 @@ use clap::ArgMatches;
 use scrypto::types::*;
 use std::path::PathBuf;
 
-use crate::rev2::*;
+use crate::resim::*;
 
 /// Match an address argument.
 pub fn match_address(matches: &ArgMatches, name: &str) -> Result<Address, Error> {

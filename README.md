@@ -76,17 +76,17 @@ scrypto test
 
 | Action | Command |
 |---|---|
-| To create an account | ``` rev2 new-account ``` |
-| To change the default account | ``` rev2 set-default-account <account_address> ``` |
-| To create a resource with fixed supply | ``` rev2 new-resource-fixed <amount> ``` |
-| To create a resource with mutable supply | ``` rev2 new-resource-mutable ``` |
-| To mint resource | ``` rev2 mint <amount> <resource_def>``` |
-| To transfer resource | ``` rev2 transfer <amount> <resource_def> <recipient_address> ``` |
-| To publish a package | ``` rev2 publish <path_to_package_dir_or_wasm_file> ``` |
-| To call a function | ``` rev2 call-function <package_address> <blueprint_name> <function> <args> ``` |
-| To call a method | ``` rev2 call-method <component_address> <method> <args> ``` |
-| To export the ABI of a blueprint | ``` rev2 export-abi <package_address> <blueprint_name> ``` |
-| To show info about an address | ``` rev2 show <address> ``` |
+| To create an account | ``` resim new-account ``` |
+| To change the default account | ``` resim set-default-account <account_address> ``` |
+| To create a resource with fixed supply | ``` resim new-resource-fixed <amount> ``` |
+| To create a resource with mutable supply | ``` resim new-resource-mutable ``` |
+| To mint resource | ``` resim mint <amount> <resource_def>``` |
+| To transfer resource | ``` resim transfer <amount> <resource_def> <recipient_address> ``` |
+| To publish a package | ``` resim publish <path_to_package_dir_or_wasm_file> ``` |
+| To call a function | ``` resim call-function <package_address> <blueprint_name> <function> <args> ``` |
+| To call a method | ``` resim call-method <component_address> <method> <args> ``` |
+| To export the ABI of a blueprint | ``` resim export-abi <package_address> <blueprint_name> ``` |
+| To show info about an address | ``` resim show <address> ``` |
 
 **Note:** The commands use the default account as transaction sender.
 

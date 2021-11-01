@@ -2,7 +2,7 @@ use clap::{crate_version, App, Arg, ArgMatches, SubCommand};
 use scrypto::types::*;
 
 use crate::ledger::*;
-use crate::rev2::*;
+use crate::resim::*;
 
 const ARG_ADDRESS: &str = "ADDRESS";
 

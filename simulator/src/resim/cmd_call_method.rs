@@ -2,39 +2,33 @@ use clap::{crate_version, App, Arg, ArgMatches, SubCommand};
 use radix_engine::transaction::*;
 
 use crate::ledger::*;
-use crate::rev2::*;
+use crate::resim::*;
 
-const ARG_PACKAGE: &str = "PACKAGE_ADDRESS";
-const ARG_NAME: &str = "BLUEPRINT_NAME";
-const ARG_FUNCTION: &str = "FUNCTION";
+const ARG_COMPONENT: &str = "COMPONENT_ADDRESS";
+const ARG_METHOD: &str = "METHOD";
 const ARG_ARGS: &str = "ARGS";
 
 const ARG_TRACE: &str = "TRACE";
 const ARG_SIGNERS: &str = "SIGNERS";
 
-/// Constructs a `call-function` subcommand.
-pub fn make_call_function<'a, 'b>() -> App<'a, 'b> {
-    SubCommand::with_name(CMD_CALL_FUNCTION)
-        .about("Calls a function")
+/// Constructs a `call-method` subcommand.
+pub fn make_call_method<'a, 'b>() -> App<'a, 'b> {
+    SubCommand::with_name(CMD_CALL_METHOD)
+        .about("Calls a method")
         .version(crate_version!())
         .arg(
-            Arg::with_name(ARG_PACKAGE)
-                .help("Specify the blueprint package address.")
+            Arg::with_name(ARG_COMPONENT)
+                .help("Specify the component address.")
                 .required(true),
         )
         .arg(
-            Arg::with_name(ARG_NAME)
-                .help("Specify the blueprint name.")
-                .required(true),
-        )
-        .arg(
-            Arg::with_name(ARG_FUNCTION)
-                .help("Specify the function name.")
+            Arg::with_name(ARG_METHOD)
+                .help("Specify the method name.")
                 .required(true),
         )
         .arg(
             Arg::with_name(ARG_ARGS)
-                .help("Specify the arguments, e.g. \"5\", \"hello\" or \"amount,resource_def\" (Bucket).")
+            .help("Specify the arguments, e.g. \"5\", \"hello\" or \"amount,resource_def\" (Bucket).")
                 .multiple(true),
         )
         // options
@@ -51,11 +45,10 @@ pub fn make_call_function<'a, 'b>() -> App<'a, 'b> {
         )
 }
 
-/// Handles a `call-function` request.
-pub fn handle_call_function(matches: &ArgMatches) -> Result<(), Error> {
-    let package = match_address(matches, ARG_PACKAGE)?;
-    let name = match_string(matches, ARG_NAME)?;
-    let function = match_string(matches, ARG_FUNCTION)?;
+/// Handles a `call-method` request.
+pub fn handle_call_method(matches: &ArgMatches) -> Result<(), Error> {
+    let component = match_address(matches, ARG_COMPONENT)?;
+    let method = match_string(matches, ARG_METHOD)?;
     let args = match_args(matches, ARG_ARGS)?;
     let trace = matches.is_present(ARG_TRACE);
     let signers = match_signers(matches, ARG_SIGNERS)?;
@@ -65,7 +58,7 @@ pub fn handle_call_function(matches: &ArgMatches) -> Result<(), Error> {
     let mut ledger = FileBasedLedger::with_bootstrap(get_data_dir()?);
     let mut executor = TransactionExecutor::new(&mut ledger, configs.current_epoch, configs.nonce);
     let transaction = TransactionBuilder::new(&executor)
-        .call_function(package, &name, &function, args, Some(account))
+        .call_method(component, &method, args, Some(account))
         .deposit_all(account)
         .build(signers)
         .map_err(Error::TransactionConstructionError)?;

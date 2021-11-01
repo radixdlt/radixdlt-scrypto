@@ -2,34 +2,40 @@ use clap::{crate_version, App, Arg, ArgMatches, SubCommand};
 use radix_engine::transaction::*;
 
 use crate::ledger::*;
-use crate::rev2::*;
+use crate::resim::*;
 
-const ARG_AMOUNT: &str = "AMOUNT";
-const ARG_RESOURCE_DEF: &str = "RESOURCE_DEF";
-const ARG_RECIPIENT: &str = "RECIPIENT";
+const ARG_PACKAGE: &str = "PACKAGE_ADDRESS";
+const ARG_NAME: &str = "BLUEPRINT_NAME";
+const ARG_FUNCTION: &str = "FUNCTION";
+const ARG_ARGS: &str = "ARGS";
 
 const ARG_TRACE: &str = "TRACE";
 const ARG_SIGNERS: &str = "SIGNERS";
 
-/// Constructs a `transfer` subcommand.
-pub fn make_transfer<'a, 'b>() -> App<'a, 'b> {
-    SubCommand::with_name(CMD_TRANSFER)
-        .about("Transfers resource to another account")
+/// Constructs a `call-function` subcommand.
+pub fn make_call_function<'a, 'b>() -> App<'a, 'b> {
+    SubCommand::with_name(CMD_CALL_FUNCTION)
+        .about("Calls a function")
         .version(crate_version!())
         .arg(
-            Arg::with_name(ARG_AMOUNT)
-                .help("Specify the amount to transfer.")
+            Arg::with_name(ARG_PACKAGE)
+                .help("Specify the blueprint package address.")
                 .required(true),
         )
         .arg(
-            Arg::with_name(ARG_RESOURCE_DEF)
-                .help("Specify the resource definition address.")
+            Arg::with_name(ARG_NAME)
+                .help("Specify the blueprint name.")
                 .required(true),
         )
         .arg(
-            Arg::with_name(ARG_RECIPIENT)
-                .help("Specify the recipient address.")
+            Arg::with_name(ARG_FUNCTION)
+                .help("Specify the function name.")
                 .required(true),
+        )
+        .arg(
+            Arg::with_name(ARG_ARGS)
+                .help("Specify the arguments, e.g. \"5\", \"hello\" or \"amount,resource_def\" (Bucket).")
+                .multiple(true),
         )
         // options
         .arg(
@@ -45,11 +51,12 @@ pub fn make_transfer<'a, 'b>() -> App<'a, 'b> {
         )
 }
 
-/// Handles a `transfer` request.
-pub fn handle_transfer(matches: &ArgMatches) -> Result<(), Error> {
-    let amount = match_amount(matches, ARG_AMOUNT)?;
-    let resource_def = match_address(matches, ARG_RESOURCE_DEF)?;
-    let recipient = match_address(matches, ARG_RECIPIENT)?;
+/// Handles a `call-function` request.
+pub fn handle_call_function(matches: &ArgMatches) -> Result<(), Error> {
+    let package = match_address(matches, ARG_PACKAGE)?;
+    let name = match_string(matches, ARG_NAME)?;
+    let function = match_string(matches, ARG_FUNCTION)?;
+    let args = match_args(matches, ARG_ARGS)?;
     let trace = matches.is_present(ARG_TRACE);
     let signers = match_signers(matches, ARG_SIGNERS)?;
 
@@ -58,8 +65,8 @@ pub fn handle_transfer(matches: &ArgMatches) -> Result<(), Error> {
     let mut ledger = FileBasedLedger::with_bootstrap(get_data_dir()?);
     let mut executor = TransactionExecutor::new(&mut ledger, configs.current_epoch, configs.nonce);
     let transaction = TransactionBuilder::new(&executor)
-        .withdraw(amount, resource_def, account)
-        .deposit_all(recipient)
+        .call_function(package, &name, &function, args, Some(account))
+        .deposit_all(account)
         .build(signers)
         .map_err(Error::TransactionConstructionError)?;
     let receipt = executor.run(transaction, trace).unwrap();

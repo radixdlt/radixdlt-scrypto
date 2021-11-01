@@ -52,14 +52,14 @@ pub const CMD_SHOW: &str = "show";
 pub const CMD_SHOW_CONFIGS: &str = "show-configs";
 pub const CMD_SHOW_LEDGER: &str = "show-ledger";
 
-/// Runs rev2 CLI.
+/// Runs resim CLI.
 pub fn run<I, T>(args: I) -> Result<(), Error>
 where
     I: IntoIterator<Item = T>,
     T: Into<std::ffi::OsString> + Clone,
 {
     let app = clap::App::new("Radix Engine Simulator")
-        .name("rev2")
+        .name("resim")
         .about("Build fast, reward everyone, and scale without friction")
         .version(clap::crate_version!())
         .subcommand(make_export_abi())
