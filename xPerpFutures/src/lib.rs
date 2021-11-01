@@ -92,7 +92,7 @@ blueprint! {
                 }                
         }
 
-        pub fn settle_call_position(&mut self,trader_account: Address,n_quantity:u32){
+        pub fn settle_call_position(&mut self,trader_account: Address,n_quantity:u32) -> Option<Bucket>  {
 
 
             match self.all_trader_pstns.entry(trader_account) {
@@ -101,12 +101,15 @@ blueprint! {
                     match index{
                         Some(i) => {
                             self.mm.settle_call_on_xrd(pstns.get().get(i).unwrap());
-                            pstns.get_mut().remove(i);},
-                        _=> println!("Error finding position for wallet ")
+                            let temp_bucket = self.deposited_usd.take(pstns.get().get(i).unwrap().margin_amount);
+                            pstns.get_mut().remove(i);
+                            return Some(temp_bucket);
+                        },
+                        _=> panic!("Error finding position for wallet ")
                     }
                 }
                 Entry::Vacant(e) => {
-                    println!("Error finding position for wallet ")
+                    panic!("Error finding position for wallet ")
                 }
             }     
         }
