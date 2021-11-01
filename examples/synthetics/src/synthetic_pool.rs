@@ -2,72 +2,71 @@ use scrypto::prelude::*;
 
 import! {
 r#"
-{    
-  "package": "01024420d4c8749579abc13133bf07b0a4fc307aa0172f595a0245",
-  "name": "PriceOracle",
-  "functions": [
-    {
-      "name": "new",
-      "inputs": [],
-      "output": {
-        "type": "Custom",
-        "name": "scrypto::core::Component",
-        "generics": []
-      }
-    }
-  ],
-  "methods": [
-    {
-      "name": "get_price",
-      "mutability": "Immutable",
-      "inputs": [
+{
+    "package": "01024420d4c8749579abc13133bf07b0a4fc307aa0172f595a0245",
+    "name": "PriceOracle",
+    "functions": [
         {
-          "type": "Custom",
-          "name": "scrypto::types::Address",
-          "generics": []
+            "name": "new",
+            "inputs": [],
+            "output": {
+                "type": "Custom",
+                "name": "scrypto::core::Component",
+                "generics": []
+            }
+        }
+    ],
+    "methods": [
+        {
+            "name": "get_price",
+            "mutability": "Immutable",
+            "inputs": [
+                {
+                "type": "Custom",
+                "name": "scrypto::types::Address",
+                "generics": []
+                },
+                {
+                "type": "Custom",
+                "name": "scrypto::types::Address",
+                "generics": []
+                }
+            ],
+            "output": {
+                "type": "Option",
+                "value": {
+                "type": "U128"
+                }
+            }
         },
         {
-          "type": "Custom",
-          "name": "scrypto::types::Address",
-          "generics": []
+            "name": "update_price",
+            "mutability": "Immutable",
+            "inputs": [
+                {
+                "type": "Custom",
+                "name": "scrypto::types::Address",
+                "generics": []
+                },
+                {
+                "type": "Custom",
+                "name": "scrypto::types::Address",
+                "generics": []
+                },
+                {
+                "type": "U128"
+                }
+            ],
+            "output": {
+                "type": "Unit"
+            }
         }
-      ],
-      "output": {
-        "type": "Option",
-        "value": {
-          "type": "U128"
-        }
-      }
-    },
-    {
-      "name": "update_price",
-      "mutability": "Immutable",
-      "inputs": [
-        {
-          "type": "Custom",
-          "name": "scrypto::types::Address",
-          "generics": []
-        },
-        {
-          "type": "Custom",
-          "name": "scrypto::types::Address",
-          "generics": []
-        },
-        {
-          "type": "U128"
-        }
-      ],
-      "output": {
-        "type": "Unit"
-      }
-    }
-  ]
+    ]
 }
 "#
 }
 
-
- blueprint! {
+blueprint! {
     struct SyntheticPool {
         // Parameters
         oracle: PriceOracle,
