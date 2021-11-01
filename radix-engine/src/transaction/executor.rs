@@ -165,27 +165,27 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
         let mut success = true;
         for inst in &transaction.instructions {
             let res = match inst {
-                Instruction::ReserveBucketId => {
-                    proc.reserve_bucket_id();
+                Instruction::DeclareTempBucket => {
+                    proc.declare_bucket();
                     Ok(None)
                 }
-                Instruction::ReserveBucketRefId => {
-                    proc.reserve_bucket_ref_id();
+                Instruction::DeclareTempBucketRef => {
+                    proc.declare_bucket_ref();
                     Ok(None)
                 }
-                Instruction::CreateTempBucket {
+                Instruction::TakeFromContext {
                     amount,
                     resource_def,
-                    bucket,
+                    to,
                 } => proc
-                    .create_temp_bucket(*amount, *resource_def, *bucket)
+                    .take_from_context(*amount, *resource_def, *to)
                     .map(|_| None),
-                Instruction::CreateTempBucketRef {
+                Instruction::BorrowFromContext {
                     amount,
                     resource_def,
-                    bucket_ref,
+                    to,
                 } => proc
-                    .create_temp_bucket_ref(*amount, *resource_def, *bucket_ref)
+                    .borrow_from_context(*amount, *resource_def, *to)
                     .map(|_| None),
                 Instruction::CallFunction {
                     package,
@@ -211,10 +211,10 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
                         args.iter().map(|v| v.encoded.clone()).collect(),
                     )
                     .map(|rtn| Some(SmartValue { encoded: rtn })),
-                Instruction::DepositAll { component, method } => {
-                    let buckets = proc.owned_buckets();
+                Instruction::PutEverythingIntoAccount { account } => {
+                    let buckets = proc.list_resources();
                     if !buckets.is_empty() {
-                        proc.call_method(*component, method.as_str(), args!(buckets))
+                        proc.call_method(*account, "deposit_batch", args!(buckets))
                             .map(|rtn| Some(SmartValue { encoded: rtn }))
                     } else {
                         Ok(None)

@@ -44,27 +44,31 @@ pub struct Transaction {
 /// Represents an instruction in transaction
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub enum Instruction {
-    /// Reserves a bucket id.
-    ReserveBucketId,
+    /// Declares a temporary bucket for later use.
+    DeclareTempBucket,
 
-    /// Reserves a bucket ref id.
-    ReserveBucketRefId,
+    /// Declares a temporary bucket ref for later use.
+    DeclareTempBucketRef,
 
-    /// Creates bucket by withdrawing resource from context.
-    CreateTempBucket {
+    /// Takes resource from transaction context to a temporary bucket.
+    TakeFromContext {
         amount: Amount,
         resource_def: Address,
-        bucket: Bid,
+        to: Bid,
     },
 
-    /// Creates a bucket ref by borrowing resource from context.
-    CreateTempBucketRef {
+    /// Borrows resource from transaction context to a temporary bucket ref.
+    ///
+    /// A bucket will be created to support the reference and it will stay within the context.
+    BorrowFromContext {
         amount: Amount,
         resource_def: Address,
-        bucket_ref: Rid,
+        to: Rid,
     },
 
-    /// Calls a function.
+    /// Calls a blueprint function.
+    ///
+    /// Buckets and bucket refs in arguments moves from transaction context to the callee.
     CallFunction {
         package: Address,
         name: String,
@@ -72,17 +76,19 @@ pub enum Instruction {
         args: Vec<SmartValue>,
     },
 
-    /// Calls a method.
+    /// Calls a component method.
+    ///
+    /// Buckets and bucket refs in arguments moves from transaction context to the callee.
     CallMethod {
         component: Address,
         method: String,
         args: Vec<SmartValue>,
     },
 
-    /// Deposits all buckets of resource to a component.
-    DepositAll { component: Address, method: String },
+    /// Puts all resources from transaction context to the designated account.
+    PutEverythingIntoAccount { account: Address },
 
-    /// Marks the end of a transaction.
+    /// Marks the end of transaction with signatures.
     End { signers: Vec<Address> },
 }
 

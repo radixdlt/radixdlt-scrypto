@@ -40,31 +40,31 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     }
 
     /// Reserves a bucket id.
-    pub fn reserve_bucket_id<F>(&mut self, then: F) -> &mut Self
+    pub fn declare_bucket<F>(&mut self, then: F) -> &mut Self
     where
         F: FnOnce(&mut Self, Bid) -> &mut Self,
     {
         let bid = self.allocator.new_bid();
-        self.reservations.push(Instruction::ReserveBucketId);
+        self.reservations.push(Instruction::DeclareTempBucket);
         then(self, bid)
     }
 
     /// Reserves a bucket ref id.
-    pub fn reserve_bucket_ref_id<F>(&mut self, then: F) -> &mut Self
+    pub fn declare_bucket_ref<F>(&mut self, then: F) -> &mut Self
     where
         F: FnOnce(&mut Self, Rid) -> &mut Self,
     {
         let rid = self.allocator.new_rid();
-        self.reservations.push(Instruction::ReserveBucketRefId);
+        self.reservations.push(Instruction::DeclareTempBucketRef);
         then(self, rid)
     }
 
     /// Creates a bucket by withdrawing resource from context.
     pub fn create_bucket(&mut self, amount: Amount, resource_def: Address, bid: Bid) -> &mut Self {
-        self.add_instruction(Instruction::CreateTempBucket {
+        self.add_instruction(Instruction::TakeFromContext {
             amount,
             resource_def,
-            bucket: bid,
+            to: bid,
         })
     }
 
@@ -75,10 +75,10 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         resource_def: Address,
         rid: Rid,
     ) -> &mut Self {
-        self.add_instruction(Instruction::CreateTempBucketRef {
+        self.add_instruction(Instruction::BorrowFromContext {
             amount,
             resource_def,
-            bucket_ref: rid,
+            to: rid,
         })
     }
 
@@ -133,7 +133,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         resource_def: Address,
         mint_auth: Address,
     ) -> &mut Self {
-        self.reserve_bucket_ref_id(|builder, rid| {
+        self.declare_bucket_ref(|builder, rid| {
             builder.create_bucket_ref(1.into(), mint_auth, rid);
             builder.add_instruction(Instruction::CallFunction {
                 package: SYSTEM_PACKAGE,
@@ -167,7 +167,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         amount: Amount,
         resource_def: Address,
     ) -> &mut Self {
-        self.reserve_bucket_id(|builder, bid| {
+        self.declare_bucket(|builder, bid| {
             builder.create_bucket(amount, resource_def, bid);
             builder.add_instruction(Instruction::CallFunction {
                 package: ACCOUNT_PACKAGE,
@@ -194,10 +194,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
 
     /// Deposits everything into an account.
     pub fn deposit_all(&mut self, account: Address) -> &mut Self {
-        self.add_instruction(Instruction::DepositAll {
-            component: account,
-            method: "deposit_batch".to_owned(),
-        })
+        self.add_instruction(Instruction::PutEverythingIntoAccount { account })
     }
 
     /// Calls a function.
@@ -413,7 +410,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                             self.withdraw(a, r, account);
                         }
                         let mut created_bid = None;
-                        self.reserve_bucket_id(|builder, bid| {
+                        self.declare_bucket(|builder, bid| {
                             created_bid = Some(bid);
                             builder.create_bucket(a, r, bid)
                         });
@@ -432,7 +429,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                             self.withdraw(a, r, account);
                         }
                         let mut created_rid = None;
-                        self.reserve_bucket_ref_id(|builder, rid| {
+                        self.declare_bucket_ref(|builder, rid| {
                             created_rid = Some(rid);
                             builder.create_bucket_ref(a, r, rid)
                         });

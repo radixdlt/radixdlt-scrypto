@@ -104,15 +104,16 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
             vm: None,
         }
     }
-    /// Reserves a bucket id.
-    pub fn reserve_bucket_id(&mut self) -> Bid {
+
+    /// Reserves a BID.
+    pub fn declare_bucket(&mut self) -> Bid {
         let bid = self.track.new_bid();
         self.reserved_bids.insert(bid);
         bid
     }
 
-    /// Reserves a bucket ref id.
-    pub fn reserve_bucket_ref_id(&mut self) -> Rid {
+    /// Reserves a RID.
+    pub fn declare_bucket_ref(&mut self) -> Rid {
         let rid = self.track.new_rid();
         self.reserved_rids.insert(rid);
         rid
@@ -158,8 +159,8 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         }
     }
 
-    /// Creates a bucket by withdrawing resource from context.
-    pub fn create_temp_bucket(
+    /// Takes resource from this context to a temporary bucket.
+    pub fn take_from_context(
         &mut self,
         amount: Amount,
         resource_def: Address,
@@ -184,8 +185,10 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         Ok(())
     }
 
-    /// Creates a bucket ref by borrowing resource from context.
-    pub fn create_temp_bucket_ref(
+    /// Borrows resource from this context to a temporary bucket ref.
+    ///
+    /// A bucket will be created to support the reference.
+    pub fn borrow_from_context(
         &mut self,
         amount: Amount,
         resource_def: Address,
@@ -212,8 +215,8 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         Ok(())
     }
 
-    /// Puts buckets and bucket refs into this process, used for passing resources to child process.
-    pub fn put_buckets_and_refs(
+    /// Puts buckets and bucket refs into this process.
+    pub fn put_resources(
         &mut self,
         buckets: HashMap<Bid, Bucket>,
         bucket_refs: HashMap<Rid, BucketRef>,
@@ -222,17 +225,15 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         self.bucket_refs.extend(bucket_refs);
     }
 
-    /// Takes all **moving** buckets and bucket refs from this process, used for returning resources to parent.
-    pub fn take_moving_buckets_and_refs(
-        &mut self,
-    ) -> (HashMap<Bid, Bucket>, HashMap<Rid, BucketRef>) {
+    /// Takes all **moving** buckets and bucket refs from this process.
+    pub fn take_moving_resources(&mut self) -> (HashMap<Bid, Bucket>, HashMap<Rid, BucketRef>) {
         let buckets = self.moving_buckets.drain().collect();
         let bucket_refs = self.moving_bucket_refs.drain().collect();
         (buckets, bucket_refs)
     }
 
-    /// Returns the IDs of all owned buckets.
-    pub fn owned_buckets(&mut self) -> Vec<Bid> {
+    /// Returns all bucket ids.
+    pub fn list_resources(&mut self) -> Vec<Bid> {
         self.buckets.keys().copied().collect()
     }
 
@@ -343,17 +344,17 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         for arg in &invocation.args {
             self.process_data(arg, Self::move_buckets, Self::move_bucket_refs)?;
         }
-        let (buckets_out, bucket_refs_out) = self.take_moving_buckets_and_refs();
+        let (buckets_out, bucket_refs_out) = self.take_moving_resources();
         let mut process = Process::new(self.depth + 1, self.trace, self.track);
-        process.put_buckets_and_refs(buckets_out, bucket_refs_out);
+        process.put_resources(buckets_out, bucket_refs_out);
 
         // run the function
         let result = process.run(invocation)?;
         process.check_resource()?;
 
         // move resource
-        let (buckets_in, bucket_refs_in) = process.take_moving_buckets_and_refs();
-        self.put_buckets_and_refs(buckets_in, bucket_refs_in);
+        let (buckets_in, bucket_refs_in) = process.take_moving_resources();
+        self.put_resources(buckets_in, bucket_refs_in);
 
         // scan locked buckets for some might have been unlocked by child processes
         let bids: Vec<Bid> = self
