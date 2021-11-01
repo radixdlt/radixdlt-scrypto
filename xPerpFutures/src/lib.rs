@@ -18,18 +18,18 @@ impl VMM {
         return nQuantiy;
     }
 
-    pub fn settle_call_on_xrd(&mut self, settlePstn: Position) -> u32{
+    pub fn settle_call_on_xrd(&mut self, settlePstn: Position) -> u32 {
         let initialxrd = self.xrd;
         let initialusdt = self.usdt;
         self.xrd = initialxrd + settlePstn.nQuantity;
         let PnL =
             initialusdt - (self.k / self.xrd) - (settlePstn.marginAmount * settlePstn.leverage);
         self.usdt = self.k / self.xrd;
-        return PnL
+        return PnL;
     }
 }
 
-#[derive(TypeId, Encode, Decode)]
+#[derive(TypeId, Encode, Decode, Clone)]
 struct Position {
     positionType: String,
     marginAmount: u32,
@@ -40,13 +40,13 @@ struct Position {
 
 impl Position {
     pub fn addTraderPstns(
-        traderPstns: Vec<Position>,
+        traderPstns: &mut Vec<Position>,
         marginRecieved: u32,
         traderAccount: Address,
         leverage: u32,
         positionType: String,
         nQuatity: u32,
-    ) -> Vec<Position> {
+    ) -> &mut Vec<Position> {
         let newPos = Position {
             positionType: String::from("call"),
             marginAmount: marginRecieved,
@@ -60,11 +60,11 @@ impl Position {
 
     pub fn getTraderExistingPstns(
         wallet_id: Address,
-        allTraderPstns: HashMap<Address, Vec<Position>>,
-    ) -> Vec<Position> {
+        allTraderPstns:  HashMap<Address, Vec<Position>>,
+    ) ->  Vec<Position> {
         let trader = wallet_id;
         match allTraderPstns.get(&trader) {
-            Some(&custPstns) => return custPstns,
+            Some(pstns) => return *pstns,
             _ => {
                 let mut traderPstns: Vec<Position> = Vec::new();
                 return traderPstns;
@@ -73,17 +73,21 @@ impl Position {
     }
 
     pub fn findTraderPstn(
-        wallet_id: Address,nQuantity:u32, allTraderPstns: HashMap<Address, Vec<Position>>) -> Option<Position> {
-            let trader = wallet_id;
-            let mut traderPstns: Vec<Position>;
-            match allTraderPstns.get(&trader){
-                Some(custPstns) => { 
-                     return custPstns.iter().find(
-                        |x| x.wallet_id == trader && x.nQuantity == nQuantity
-                    )                       
-                }
-                _ => return None
+        wallet_id: Address,
+        nQuantity: u32,
+        allTraderPstns: &mut HashMap<Address, Vec<Position>>,
+    ) -> Option<&mut Position> {
+        let trader = wallet_id;
+        let mut traderPstns: Vec<Position>;
+        match allTraderPstns.get(&trader) {
+            Some(custPstns) => {
+                let toReturn = custPstns
+                    .iter_mut()
+                    .find(|x| x.wallet_id == trader && x.nQuantity == nQuantity);
+                return toReturn;
             }
+            _ => return None,
+        }
     }
 }
 
@@ -120,16 +124,22 @@ blueprint! {
                 assert!(marginRecieved!= 0.into());
                 self.depositedUsd.put(marginAmount);
                 let nQuatity = self.mm.take_call_on_xrd(pstnAmount.as_u32());
-                let mut traderPstns:Vec<Position> = Position::getTraderExistingPstns(traderAccount,&self.allTraderPstns);
-                traderPstns = Position::addTraderPstns(traderPstns, marginRecieved.as_u32(), traderAccount, leverage, positionType, nQuatity);
-                self.allTraderPstns.insert(traderAccount,traderPstns);
+                let mut traderPstns = Position::getTraderExistingPstns(traderAccount,self.allTraderPstns.clone());
+                let pstns = Position::addTraderPstns(&mut traderPstns, marginRecieved.as_u32(), traderAccount, leverage, positionType, nQuatity);
+                self.allTraderPstns.insert(traderAccount,pstns.to_vec());
         }
 
         pub fn settle_call_position(&mut self,traderAccount: Address,nQuantity:u32){
-            Position:findTraderPstn();
-            self.mm.settle_call_on_xrd(settlePstn)
+            let psnt_to_settle = Position::findTraderPstn(traderAccount,nQuantity,&mut self.allTraderPstns);
+            match psnt_to_settle{
+                Some(pstn)=> {            
+                    self.mm.settle_call_on_xrd(pstn.clone());
+                },
+                _ => {
+                    println!("Position not found")
+                }
+            }
         }
- 
 
     }
 }
