@@ -40,11 +40,11 @@ impl ResourceDef {
     /// Creates a resource with mutable supply. The resource definition is returned.
     pub fn new_mutable<A: Into<ResourceDef>>(
         metadata: HashMap<String, String>,
-        mint_auth: A,
+        mint_burn_auth: A,
     ) -> Self {
         let input = CreateResourceMutableInput {
             metadata,
-            mint_auth: mint_auth.into().address(),
+            mint_burn_auth: mint_burn_auth.into().address(),
         };
         let output: CreateResourceMutableOutput = call_kernel(CREATE_RESOURCE_MUTABLE, input);
 
@@ -66,11 +66,11 @@ impl ResourceDef {
     }
 
     /// Mints resources
-    pub fn mint<T: Into<Amount>>(&self, amount: T, auth: BucketRef) -> Bucket {
+    pub fn mint<T: Into<Amount>>(&self, amount: T, mint_burn_auth: BucketRef) -> Bucket {
         let input = MintResourceInput {
             resource_def: self.address,
             amount: amount.into(),
-            mint_auth: auth.into(),
+            mint_burn_auth: mint_burn_auth.into(),
         };
         let output: MintResourceOutput = call_kernel(MINT_RESOURCE, input);
 
@@ -78,9 +78,10 @@ impl ResourceDef {
     }
 
     /// Burns a bucket of resources.
-    pub fn burn(bucket: Bucket) {
+    pub fn burn(&self, bucket: Bucket, mint_burn_auth: BucketRef) {
         let input = BurnResourceInput {
             bucket: bucket.into(),
+            mint_burn_auth: mint_burn_auth.into(),
         };
         let _output: BurnResourceOutput = call_kernel(BURN_RESOURCE, input);
     }
@@ -96,13 +97,13 @@ impl ResourceDef {
     }
 
     /// Returns the mint auth.
-    pub fn mint_auth(&self) -> Option<Address> {
+    pub fn mint_burn_auth(&self) -> Option<Address> {
         let input = GetResourceMintAuthInput {
             resource_def: self.address,
         };
-        let output: GetResourceMintAuthOutput = call_kernel(GET_RESOURCE_MINT_AUTH, input);
+        let output: GetResourceMintAuthOutput = call_kernel(GET_RESOURCE_MINT_BURN_AUTH, input);
 
-        output.mint_auth
+        output.mint_burn_auth
     }
 
     /// Returns the current supply of this resource.

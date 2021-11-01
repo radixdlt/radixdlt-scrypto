@@ -10,6 +10,7 @@ use crate::model::Auth;
 pub enum ResourceDefError {
     UnauthorizedAccess,
     MintNotAllowed,
+    BurnNotAllowed,
 }
 
 /// The definition of a resource.
@@ -17,19 +18,19 @@ pub enum ResourceDefError {
 pub struct ResourceDef {
     metadata: HashMap<String, String>,
     supply: Amount,
-    mint_auth: Option<Address>,
+    mint_burn_auth: Option<Address>,
 }
 
 impl ResourceDef {
     pub fn new(
         metadata: HashMap<String, String>,
         supply: Amount,
-        mint_auth: Option<Address>,
+        mint_burn_auth: Option<Address>,
     ) -> Self {
         Self {
             metadata,
             supply,
-            mint_auth,
+            mint_burn_auth,
         }
     }
 
@@ -41,12 +42,12 @@ impl ResourceDef {
         self.supply
     }
 
-    pub fn mint_auth(&self) -> Option<Address> {
-        self.mint_auth.clone()
+    pub fn mint_burn_auth(&self) -> Option<Address> {
+        self.mint_burn_auth.clone()
     }
 
     pub fn mint(&mut self, amount: Amount, auth: Auth) -> Result<(), ResourceDefError> {
-        match self.mint_auth() {
+        match self.mint_burn_auth() {
             Some(a) => {
                 if auth.contains(a) {
                     self.supply += amount;
@@ -59,7 +60,17 @@ impl ResourceDef {
         }
     }
 
-    pub fn burn(&mut self, amount: Amount) {
-        self.supply -= amount;
+    pub fn burn(&mut self, amount: Amount, auth: Auth) -> Result<(), ResourceDefError> {
+        match self.mint_burn_auth() {
+            Some(a) => {
+                if auth.contains(a) {
+                    self.supply -= amount;
+                    Ok(())
+                } else {
+                    Err(ResourceDefError::UnauthorizedAccess)
+                }
+            }
+            None => Err(ResourceDefError::BurnNotAllowed),
+        }
     }
 }

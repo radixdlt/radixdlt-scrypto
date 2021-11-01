@@ -6,7 +6,7 @@ use crate::resim::*;
 
 const ARG_AMOUNT: &str = "AMOUNT";
 const ARG_RESOURCE_DEF: &str = "RESOURCE_DEF";
-const ARG_MINT_AUTH: &str = "MINT_AUTH";
+const ARG_MINT_BURN_AUTH: &str = "MINT_BURN_AUTH";
 
 const ARG_TRACE: &str = "TRACE";
 const ARG_SIGNERS: &str = "SIGNERS";
@@ -27,7 +27,7 @@ pub fn make_mint<'a, 'b>() -> App<'a, 'b> {
                 .required(true),
         )
         .arg(
-            Arg::with_name(ARG_MINT_AUTH)
+            Arg::with_name(ARG_MINT_BURN_AUTH)
                 .help("Specify the mint auth resource definition address.")
                 .required(true),
         )
@@ -49,7 +49,7 @@ pub fn make_mint<'a, 'b>() -> App<'a, 'b> {
 pub fn handle_mint(matches: &ArgMatches) -> Result<(), Error> {
     let amount = match_amount(matches, ARG_AMOUNT)?;
     let resource_def = match_address(matches, ARG_RESOURCE_DEF)?;
-    let mint_auth = match_address(matches, ARG_MINT_AUTH)?;
+    let mint_burn_auth = match_address(matches, ARG_MINT_BURN_AUTH)?;
     let trace = matches.is_present(ARG_TRACE);
     let signers = match_signers(matches, ARG_SIGNERS)?;
 
@@ -58,8 +58,8 @@ pub fn handle_mint(matches: &ArgMatches) -> Result<(), Error> {
     let mut ledger = FileBasedLedger::with_bootstrap(get_data_dir()?);
     let mut executor = TransactionExecutor::new(&mut ledger, configs.current_epoch, configs.nonce);
     let transaction = TransactionBuilder::new(&executor)
-        .withdraw(1.into(), mint_auth, account)
-        .mint_resource(amount, resource_def, mint_auth)
+        .withdraw(1.into(), mint_burn_auth, account)
+        .mint_resource(amount, resource_def, mint_burn_auth)
         .deposit_all(account)
         .build(signers)
         .map_err(Error::TransactionConstructionError)?;

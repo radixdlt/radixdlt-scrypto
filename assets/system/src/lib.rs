@@ -14,8 +14,8 @@ blueprint! {
         }
 
         /// Creates a resource with mutable supply, and returns the resource definition address.
-        pub fn new_resource_mutable(metadata: HashMap<String, String>, mint_auth: Address) -> Address {
-            let resource_def = ResourceDef::new_mutable(metadata, mint_auth);
+        pub fn new_resource_mutable(metadata: HashMap<String, String>, mint_burn_auth: Address) -> Address {
+            let resource_def = ResourceDef::new_mutable(metadata, mint_burn_auth);
             resource_def.address()
         }
 

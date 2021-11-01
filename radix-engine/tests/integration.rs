@@ -148,6 +148,7 @@ fn test_resource_def() {
         .build(vec![key])
         .unwrap();
     let receipt = executor.run(transaction, true).unwrap();
+    println!("{:?}", receipt);
     assert!(receipt.success);
 }
 

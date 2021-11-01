@@ -1008,9 +1008,10 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         &mut self,
         input: CreateResourceMutableInput,
     ) -> Result<CreateResourceMutableOutput, RuntimeError> {
-        Self::expect_resource_def_address(input.mint_auth)?;
+        Self::expect_resource_def_address(input.mint_burn_auth)?;
 
-        let resource_def = ResourceDef::new(input.metadata, Amount::zero(), Some(input.mint_auth));
+        let resource_def =
+            ResourceDef::new(input.metadata, Amount::zero(), Some(input.mint_burn_auth));
 
         let address = self.track.new_resource_def_address();
         if self.track.get_resource_def(address).is_some() {
@@ -1085,7 +1086,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         })
     }
 
-    fn handle_get_resource_mint_auth(
+    fn handle_get_resource_mint_burn_auth(
         &mut self,
         input: GetResourceMintAuthInput,
     ) -> Result<GetResourceMintAuthOutput, RuntimeError> {
@@ -1098,7 +1099,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
             .clone();
 
         Ok(GetResourceMintAuthOutput {
-            mint_auth: resource_def.mint_auth(),
+            mint_burn_auth: resource_def.mint_burn_auth(),
         })
     }
 
@@ -1112,8 +1113,8 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         {
             let bucket_ref = self
                 .bucket_refs
-                .get(&input.mint_auth)
-                .ok_or(RuntimeError::BucketRefNotFound(input.mint_auth))?;
+                .get(&input.mint_burn_auth)
+                .ok_or(RuntimeError::BucketRefNotFound(input.mint_burn_auth))?;
             let auth = self.badge_auth(bucket_ref)?;
 
             let definition = self
@@ -1126,7 +1127,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         }
         // drop the input mint auth
         self.handle_drop_bucket_ref(DropBucketRefInput {
-            bucket_ref: input.mint_auth,
+            bucket_ref: input.mint_burn_auth,
         })?;
 
         // issue resource
@@ -1141,18 +1142,32 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         &mut self,
         input: BurnResourceInput,
     ) -> Result<BurnResourceOutput, RuntimeError> {
-        let bucket = self
-            .buckets
-            .remove(&input.bucket)
-            .ok_or(RuntimeError::BucketNotFound(input.bucket))?;
+        // update resource def
+        {
+            let bucket = self
+                .buckets
+                .remove(&input.bucket)
+                .ok_or(RuntimeError::BucketNotFound(input.bucket))?;
 
-        let resource_def = self
-            .track
-            .get_resource_def_mut(bucket.resource_def())
-            .ok_or(RuntimeError::ResourceDefNotFound(bucket.resource_def()))?;
+            let bucket_ref = self
+                .bucket_refs
+                .get(&input.mint_burn_auth)
+                .ok_or(RuntimeError::BucketRefNotFound(input.mint_burn_auth))?;
+            let auth = self.badge_auth(bucket_ref)?;
 
-        resource_def.burn(bucket.amount());
+            let resource_def = self
+                .track
+                .get_resource_def_mut(bucket.resource_def())
+                .ok_or(RuntimeError::ResourceDefNotFound(bucket.resource_def()))?;
 
+            resource_def
+                .burn(bucket.amount(), auth)
+                .map_err(RuntimeError::ResourceDefError)?;
+        }
+        // drop the input mint auth
+        self.handle_drop_bucket_ref(DropBucketRefInput {
+            bucket_ref: input.mint_burn_auth,
+        })?;
         Ok(BurnResourceOutput {})
     }
 
@@ -1498,8 +1513,8 @@ impl<'r, 'l, L: Ledger> Externals for Process<'r, 'l, L> {
                     CREATE_RESOURCE_FIXED => self.handle(args, Self::handle_create_resource_fixed),
                     GET_RESOURCE_METADATA => self.handle(args, Self::handle_get_resource_metadata),
                     GET_RESOURCE_SUPPLY => self.handle(args, Self::handle_get_resource_supply),
-                    GET_RESOURCE_MINT_AUTH => {
-                        self.handle(args, Self::handle_get_resource_mint_auth)
+                    GET_RESOURCE_MINT_BURN_AUTH => {
+                        self.handle(args, Self::handle_get_resource_mint_burn_auth)
                     }
                     MINT_RESOURCE => self.handle(args, Self::handle_mint_resource),
                     BURN_RESOURCE => self.handle(args, Self::handle_burn_resource),

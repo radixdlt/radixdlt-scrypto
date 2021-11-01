@@ -43,7 +43,7 @@ pub const GET_RESOURCE_METADATA: u32 = 0x32;
 /// Get resource supply
 pub const GET_RESOURCE_SUPPLY: u32 = 0x33;
 /// Get resource mint auth
-pub const GET_RESOURCE_MINT_AUTH: u32 = 0x34;
+pub const GET_RESOURCE_MINT_BURN_AUTH: u32 = 0x34;
 /// Mint resource
 pub const MINT_RESOURCE: u32 = 0x35;
 /// Burn resource
@@ -217,7 +217,7 @@ pub struct PutLazyMapEntryOutput {}
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct CreateResourceMutableInput {
     pub metadata: HashMap<String, String>,
-    pub mint_auth: Address,
+    pub mint_burn_auth: Address,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
@@ -264,14 +264,14 @@ pub struct GetResourceMintAuthInput {
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct GetResourceMintAuthOutput {
-    pub mint_auth: Option<Address>,
+    pub mint_burn_auth: Option<Address>,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct MintResourceInput {
     pub resource_def: Address,
     pub amount: Amount,
-    pub mint_auth: Rid,
+    pub mint_burn_auth: Rid,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
@@ -282,6 +282,7 @@ pub struct MintResourceOutput {
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct BurnResourceInput {
     pub bucket: Bid,
+    pub mint_burn_auth: Rid,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]

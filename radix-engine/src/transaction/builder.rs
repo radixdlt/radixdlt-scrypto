@@ -102,13 +102,13 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     pub fn new_resource_mutable(
         &mut self,
         metadata: HashMap<String, String>,
-        mint_auth: Address,
+        mint_burn_auth: Address,
     ) -> &mut Self {
         self.add_instruction(Instruction::CallFunction {
             package: SYSTEM_PACKAGE,
             name: "System".to_owned(),
             function: "new_resource_mutable".to_owned(),
-            args: vec![SmartValue::from(metadata), SmartValue::from(mint_auth)],
+            args: vec![SmartValue::from(metadata), SmartValue::from(mint_burn_auth)],
         })
     }
 
@@ -131,10 +131,10 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         &mut self,
         amount: Amount,
         resource_def: Address,
-        mint_auth: Address,
+        mint_burn_auth: Address,
     ) -> &mut Self {
         self.declare_bucket_ref(|builder, rid| {
-            builder.create_bucket_ref(1.into(), mint_auth, rid);
+            builder.create_bucket_ref(1.into(), mint_burn_auth, rid);
             builder.add_instruction(Instruction::CallFunction {
                 package: SYSTEM_PACKAGE,
                 name: "System".to_owned(),

@@ -1,6 +1,6 @@
 use scrypto::blueprint;
 use scrypto::core::{Blueprint, Component, State};
-use scrypto::resource::{ResourceBuilder, Vault};
+use scrypto::resource::{Bucket, ResourceBuilder, Vault};
 use scrypto::types::Address;
 
 blueprint! {
@@ -29,12 +29,14 @@ blueprint! {
             self.secret.clone()
         }
 
-        pub fn put_component_state(&mut self)  {
+        pub fn put_component_state(&mut self) -> Bucket  {
             // Take resource from vault
-            self.test_vault.take(1).burn();
+            let bucket = self.test_vault.take(1);
 
             // Update state
             self.secret = "New secret".to_owned();
+
+            bucket
         }
     }
 }

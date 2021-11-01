@@ -81,11 +81,6 @@ impl Bucket {
         output.resource_def.into()
     }
 
-    /// Burns all resources within this bucket.
-    pub fn burn(self) {
-        ResourceDef::burn(self);
-    }
-
     /// Checks if this bucket is empty.
     pub fn is_empty(&self) -> bool {
         self.amount() == 0.into()
