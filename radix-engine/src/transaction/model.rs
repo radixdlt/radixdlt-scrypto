@@ -85,8 +85,11 @@ pub enum Instruction {
         args: Vec<SmartValue>,
     },
 
-    /// Puts all resources from transaction context to the designated account.
-    PutEverythingIntoAccount { account: Address },
+    /// Drops all bucket refs.
+    DropAllBucketRefs,
+
+    /// Deposits all resources from transaction context into the designated account.
+    DepositAllBuckets { account: Address },
 
     /// Marks the end of transaction with signatures.
     End { signers: Vec<Address> },

@@ -88,7 +88,8 @@ fn test_component() {
         )
         .call_method(component, "get_component_state", vec![], Some(account))
         .call_method(component, "put_component_state", vec![], Some(account))
-        .deposit_all(account)
+        .drop_all_bucket_refs()
+        .deposit_all_buckets(account)
         .build(vec![key])
         .unwrap();
     let receipt2 = executor.run(transaction2, true).unwrap();
@@ -144,7 +145,8 @@ fn test_resource_def() {
         )
         .call_function(package, "ResourceTest", "query", vec![], Some(account))
         .call_function(package, "ResourceTest", "burn", vec![], Some(account))
-        .deposit_all(account)
+        .drop_all_bucket_refs()
+        .deposit_all_buckets(account)
         .build(vec![key])
         .unwrap();
     let receipt = executor.run(transaction, true).unwrap();
@@ -166,7 +168,8 @@ fn test_bucket() {
         .call_function(package, "BucketTest", "split", vec![], Some(account))
         .call_function(package, "BucketTest", "borrow", vec![], Some(account))
         .call_function(package, "BucketTest", "query", vec![], Some(account))
-        .deposit_all(account)
+        .drop_all_bucket_refs()
+        .deposit_all_buckets(account)
         .build(vec![key])
         .unwrap();
     let receipt = executor.run(transaction, true).unwrap();
@@ -191,7 +194,8 @@ fn test_move_resource() {
             vec![],
             Some(account),
         )
-        .deposit_all(account)
+        .drop_all_bucket_refs()
+        .deposit_all_buckets(account)
         .build(vec![key])
         .unwrap();
     let receipt = executor.run(transaction, true).unwrap();

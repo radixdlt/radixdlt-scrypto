@@ -107,7 +107,7 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
                     vec!["1000000".to_owned()],
                     None,
                 )
-                .create_account_with_resource(key, 1000000.into(), RADIX_TOKEN)
+                .new_account_with_resource(key, 1000000.into(), RADIX_TOKEN)
                 .build(Vec::new())
                 .unwrap(),
             false,
@@ -211,8 +211,13 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
                         args.iter().map(|v| v.encoded.clone()).collect(),
                     )
                     .map(|rtn| Some(SmartValue { encoded: rtn })),
-                Instruction::PutEverythingIntoAccount { account } => {
-                    let buckets = proc.list_resources();
+
+                Instruction::DropAllBucketRefs => {
+                    proc.drop_bucket_refs();
+                    Ok(None)
+                }
+                Instruction::DepositAllBuckets { account } => {
+                    let buckets = proc.list_buckets();
                     if !buckets.is_empty() {
                         proc.call_method(*account, "deposit_batch", args!(buckets))
                             .map(|rtn| Some(SmartValue { encoded: rtn }))

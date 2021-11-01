@@ -103,7 +103,8 @@ pub fn handle_new_resource_fixed(matches: &ArgMatches) -> Result<(), Error> {
     let mut executor = TransactionExecutor::new(&mut ledger, configs.current_epoch, configs.nonce);
     let transaction = TransactionBuilder::new(&executor)
         .new_resource_fixed(metadata, supply)
-        .deposit_all(account)
+        .drop_all_bucket_refs()
+        .deposit_all_buckets(account)
         .build(signers)
         .map_err(Error::TransactionConstructionError)?;
     let receipt = executor.run(transaction, trace).unwrap();

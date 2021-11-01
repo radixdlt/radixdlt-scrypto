@@ -233,8 +233,18 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
     }
 
     /// Returns all bucket ids.
-    pub fn list_resources(&mut self) -> Vec<Bid> {
+    pub fn list_buckets(&mut self) -> Vec<Bid> {
         self.buckets.keys().copied().collect()
+    }
+
+    /// Returns all bucket ids.
+    pub fn drop_bucket_refs(&mut self) {
+        let rids: Vec<Rid> = self.bucket_refs.keys().copied().collect();
+
+        rids.iter().for_each(|rid| {
+            self.handle_drop_bucket_ref(DropBucketRefInput { bucket_ref: *rid })
+                .unwrap();
+        });
     }
 
     /// Runs the given export within this process.

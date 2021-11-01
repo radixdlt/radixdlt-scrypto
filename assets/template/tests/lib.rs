@@ -24,7 +24,8 @@ fn test_hello() {
     let component = receipt1.component(0).unwrap();
     let transaction2 = TransactionBuilder::new(&executor)
         .call_method(component, "free_token", vec![], Some(account))
-        .deposit_all(account)
+        .drop_all_bucket_refs()
+        .deposit_all_buckets(account)
         .build(vec![key])
         .unwrap();
     let receipt2 = executor.run(transaction2, false).unwrap();

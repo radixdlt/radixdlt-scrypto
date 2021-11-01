@@ -58,8 +58,9 @@ pub fn handle_transfer(matches: &ArgMatches) -> Result<(), Error> {
     let mut ledger = FileBasedLedger::with_bootstrap(get_data_dir()?);
     let mut executor = TransactionExecutor::new(&mut ledger, configs.current_epoch, configs.nonce);
     let transaction = TransactionBuilder::new(&executor)
-        .withdraw(amount, resource_def, account)
-        .deposit_all(recipient)
+        .withdraw_from_account(amount, resource_def, account)
+        .drop_all_bucket_refs()
+        .deposit_all_buckets(recipient)
         .build(signers)
         .map_err(Error::TransactionConstructionError)?;
     let receipt = executor.run(transaction, trace).unwrap();

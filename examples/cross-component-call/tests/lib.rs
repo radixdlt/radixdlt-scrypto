@@ -35,7 +35,8 @@ fn test_vendor() {
             vec!["1,030000000000000000000000000000000000000000000000000004".to_owned()],
             Some(account),
         )
-        .deposit_all(account)
+        .drop_all_bucket_refs()
+        .deposit_all_buckets(account)
         .build(vec![key])
         .unwrap();
     let receipt2 = executor.run(transaction2, true).unwrap();
@@ -76,7 +77,8 @@ fn test_sub_vendor() {
             vec!["1,030000000000000000000000000000000000000000000000000004".to_owned()],
             Some(account),
         )
-        .deposit_all(account)
+        .drop_all_bucket_refs()
+        .deposit_all_buckets(account)
         .build(vec![key])
         .unwrap();
     let receipt2 = executor.run(transaction2, true).unwrap();

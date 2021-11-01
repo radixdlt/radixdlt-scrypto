@@ -39,6 +39,12 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         }
     }
 
+    /// Adds a raw instruction.
+    pub fn add_instruction(&mut self, inst: Instruction) -> &mut Self {
+        self.instructions.push(inst);
+        self
+    }
+
     /// Reserves a bucket id.
     pub fn declare_bucket<F>(&mut self, then: F) -> &mut Self
     where
@@ -60,16 +66,21 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     }
 
     /// Creates a bucket by withdrawing resource from context.
-    pub fn create_bucket(&mut self, amount: Amount, resource_def: Address, bid: Bid) -> &mut Self {
+    pub fn take_from_context(
+        &mut self,
+        amount: Amount,
+        resource_def: Address,
+        to: Bid,
+    ) -> &mut Self {
         self.add_instruction(Instruction::TakeFromContext {
             amount,
             resource_def,
-            to: bid,
+            to,
         })
     }
 
     /// Creates a bucket ref by borrowing resource from context.
-    pub fn create_bucket_ref(
+    pub fn borrow_from_context(
         &mut self,
         amount: Amount,
         resource_def: Address,
@@ -80,121 +91,6 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
             resource_def,
             to: rid,
         })
-    }
-
-    /// Adds a raw instruction.
-    pub fn add_instruction(&mut self, inst: Instruction) -> &mut Self {
-        self.instructions.push(inst);
-        self
-    }
-
-    /// Publishes a package.
-    pub fn publish_package(&mut self, code: &[u8]) -> &mut Self {
-        self.add_instruction(Instruction::CallFunction {
-            package: SYSTEM_PACKAGE,
-            name: "System".to_owned(),
-            function: "publish_package".to_owned(),
-            args: vec![SmartValue::from(code.to_vec())],
-        })
-    }
-
-    /// Creates a resource with mutable supply.
-    pub fn new_resource_mutable(
-        &mut self,
-        metadata: HashMap<String, String>,
-        mint_burn_auth: Address,
-    ) -> &mut Self {
-        self.add_instruction(Instruction::CallFunction {
-            package: SYSTEM_PACKAGE,
-            name: "System".to_owned(),
-            function: "new_resource_mutable".to_owned(),
-            args: vec![SmartValue::from(metadata), SmartValue::from(mint_burn_auth)],
-        })
-    }
-
-    /// Creates a resource with fixed supply.
-    pub fn new_resource_fixed(
-        &mut self,
-        metadata: HashMap<String, String>,
-        supply: Amount,
-    ) -> &mut Self {
-        self.add_instruction(Instruction::CallFunction {
-            package: SYSTEM_PACKAGE,
-            name: "System".to_owned(),
-            function: "new_resource_fixed".to_owned(),
-            args: vec![SmartValue::from(metadata), SmartValue::from(supply)],
-        })
-    }
-
-    /// Mints resource.
-    pub fn mint_resource(
-        &mut self,
-        amount: Amount,
-        resource_def: Address,
-        mint_burn_auth: Address,
-    ) -> &mut Self {
-        self.declare_bucket_ref(|builder, rid| {
-            builder.create_bucket_ref(1.into(), mint_burn_auth, rid);
-            builder.add_instruction(Instruction::CallFunction {
-                package: SYSTEM_PACKAGE,
-                name: "System".to_owned(),
-                function: "mint_resource".to_owned(),
-                args: vec![
-                    SmartValue::from(amount),
-                    SmartValue::from(resource_def),
-                    SmartValue::from(rid),
-                ],
-            })
-        })
-    }
-
-    /// Creates an account.
-    pub fn new_account(&mut self, key: Address) -> &mut Self {
-        self.add_instruction(Instruction::CallFunction {
-            package: ACCOUNT_PACKAGE,
-            name: "Account".to_owned(),
-            function: "new".to_owned(),
-            args: vec![SmartValue::from(key)],
-        })
-    }
-
-    /// Creates an account with resource taken from context.
-    ///
-    /// Note: need to make sure the context contains the required resource.
-    pub fn create_account_with_resource(
-        &mut self,
-        key: Address,
-        amount: Amount,
-        resource_def: Address,
-    ) -> &mut Self {
-        self.declare_bucket(|builder, bid| {
-            builder.create_bucket(amount, resource_def, bid);
-            builder.add_instruction(Instruction::CallFunction {
-                package: ACCOUNT_PACKAGE,
-                name: "Account".to_owned(),
-                function: "with_bucket".to_owned(),
-                args: vec![SmartValue::from(key), SmartValue::from(bid)],
-            })
-        })
-    }
-
-    /// Withdraws resource from an account.
-    pub fn withdraw(
-        &mut self,
-        amount: Amount,
-        resource_def: Address,
-        account: Address,
-    ) -> &mut Self {
-        self.add_instruction(Instruction::CallMethod {
-            component: account,
-            method: "withdraw".to_owned(),
-            args: vec![SmartValue::from(amount), SmartValue::from(resource_def)],
-        })
-    }
-
-    /// Deposits everything into an account.
-    pub fn deposit_all(&mut self, account: Address) -> &mut Self {
-        self.add_instruction(Instruction::PutEverythingIntoAccount { account })
     }
 
     /// Calls a function.
@@ -283,6 +179,16 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         self
     }
 
+    /// Drops all bucket refs.
+    pub fn drop_all_bucket_refs(&mut self) -> &mut Self {
+        self.add_instruction(Instruction::DropAllBucketRefs)
+    }
+
+    /// Deposits everything into an account.
+    pub fn deposit_all_buckets(&mut self, account: Address) -> &mut Self {
+        self.add_instruction(Instruction::DepositAllBuckets { account })
+    }
+
     /// Builds a transaction.
     pub fn build(&mut self, signers: Vec<Address>) -> Result<Transaction, BuildTransactionError> {
         if !self.errors.is_empty() {
@@ -295,6 +201,114 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         v.push(Instruction::End { signers });
 
         Ok(Transaction { instructions: v })
+    }
+
+    //===============================
+    // complex instruction below
+    //===============================
+
+    /// Publishes a package.
+    pub fn publish_package(&mut self, code: &[u8]) -> &mut Self {
+        self.add_instruction(Instruction::CallFunction {
+            package: SYSTEM_PACKAGE,
+            name: "System".to_owned(),
+            function: "publish_package".to_owned(),
+            args: vec![SmartValue::from(code.to_vec())],
+        })
+    }
+
+    /// Creates a resource with mutable supply.
+    pub fn new_resource_mutable(
+        &mut self,
+        metadata: HashMap<String, String>,
+        mint_burn_auth: Address,
+    ) -> &mut Self {
+        self.add_instruction(Instruction::CallFunction {
+            package: SYSTEM_PACKAGE,
+            name: "System".to_owned(),
+            function: "new_resource_mutable".to_owned(),
+            args: vec![SmartValue::from(metadata), SmartValue::from(mint_burn_auth)],
+        })
+    }
+
+    /// Creates a resource with fixed supply.
+    pub fn new_resource_fixed(
+        &mut self,
+        metadata: HashMap<String, String>,
+        supply: Amount,
+    ) -> &mut Self {
+        self.add_instruction(Instruction::CallFunction {
+            package: SYSTEM_PACKAGE,
+            name: "System".to_owned(),
+            function: "new_resource_fixed".to_owned(),
+            args: vec![SmartValue::from(metadata), SmartValue::from(supply)],
+        })
+    }
+
+    /// Mints resource.
+    pub fn mint_resource(
+        &mut self,
+        amount: Amount,
+        resource_def: Address,
+        mint_burn_auth: Address,
+    ) -> &mut Self {
+        self.declare_bucket_ref(|builder, rid| {
+            builder.borrow_from_context(1.into(), mint_burn_auth, rid);
+            builder.add_instruction(Instruction::CallFunction {
+                package: SYSTEM_PACKAGE,
+                name: "System".to_owned(),
+                function: "mint_resource".to_owned(),
+                args: vec![
+                    SmartValue::from(amount),
+                    SmartValue::from(resource_def),
+                    SmartValue::from(rid),
+                ],
+            })
+        })
+    }
+
+    /// Creates an account.
+    pub fn new_account(&mut self, key: Address) -> &mut Self {
+        self.add_instruction(Instruction::CallFunction {
+            package: ACCOUNT_PACKAGE,
+            name: "Account".to_owned(),
+            function: "new".to_owned(),
+            args: vec![SmartValue::from(key)],
+        })
+    }
+
+    /// Creates an account with resource taken from context.
+    ///
+    /// Note: need to make sure the context contains the required resource.
+    pub fn new_account_with_resource(
+        &mut self,
+        key: Address,
+        amount: Amount,
+        resource_def: Address,
+    ) -> &mut Self {
+        self.declare_bucket(|builder, bid| {
+            builder.take_from_context(amount, resource_def, bid);
+            builder.add_instruction(Instruction::CallFunction {
+                package: ACCOUNT_PACKAGE,
+                name: "Account".to_owned(),
+                function: "with_bucket".to_owned(),
+                args: vec![SmartValue::from(key), SmartValue::from(bid)],
+            })
+        })
+    }
+
+    /// Withdraws resource from an account.
+    pub fn withdraw_from_account(
+        &mut self,
+        amount: Amount,
+        resource_def: Address,
+        account: Address,
+    ) -> &mut Self {
+        self.add_instruction(Instruction::CallMethod {
+            component: account,
+            method: "withdraw".to_owned(),
+            args: vec![SmartValue::from(amount), SmartValue::from(resource_def)],
+        })
     }
 
     //===============================
@@ -407,12 +421,12 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                 match (amount, resource_def) {
                     (Some(a), Some(r)) => {
                         if let Some(account) = account {
-                            self.withdraw(a, r, account);
+                            self.withdraw_from_account(a, r, account);
                         }
                         let mut created_bid = None;
                         self.declare_bucket(|builder, bid| {
                             created_bid = Some(bid);
-                            builder.create_bucket(a, r, bid)
+                            builder.take_from_context(a, r, bid)
                         });
                         Ok(SmartValue::from(created_bid.unwrap()))
                     }
@@ -426,12 +440,12 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                 match (amount, resource_def) {
                     (Some(a), Some(r)) => {
                         if let Some(account) = account {
-                            self.withdraw(a, r, account);
+                            self.withdraw_from_account(a, r, account);
                         }
                         let mut created_rid = None;
                         self.declare_bucket_ref(|builder, rid| {
                             created_rid = Some(rid);
-                            builder.create_bucket_ref(a, r, rid)
+                            builder.borrow_from_context(a, r, rid)
                         });
                         Ok(SmartValue::from(created_rid.unwrap()))
                     }

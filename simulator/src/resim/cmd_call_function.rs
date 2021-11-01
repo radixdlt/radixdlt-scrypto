@@ -66,7 +66,8 @@ pub fn handle_call_function(matches: &ArgMatches) -> Result<(), Error> {
     let mut executor = TransactionExecutor::new(&mut ledger, configs.current_epoch, configs.nonce);
     let transaction = TransactionBuilder::new(&executor)
         .call_function(package, &name, &function, args, Some(account))
-        .deposit_all(account)
+        .drop_all_bucket_refs()
+        .deposit_all_buckets(account)
         .build(signers)
         .map_err(Error::TransactionConstructionError)?;
     let receipt = executor.run(transaction, trace).unwrap();

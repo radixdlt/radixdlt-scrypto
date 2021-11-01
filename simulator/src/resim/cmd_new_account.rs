@@ -44,7 +44,7 @@ pub fn handle_new_account(matches: &ArgMatches) -> Result<(), Error> {
             vec!["1000000".to_owned()],
             None,
         )
-        .create_account_with_resource(key, 1000000.into(), RADIX_TOKEN)
+        .new_account_with_resource(key, 1000000.into(), RADIX_TOKEN)
         .build(signers)
         .map_err(Error::TransactionConstructionError)?;
     let receipt = executor.run(transaction, trace).unwrap();
