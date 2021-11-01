@@ -81,6 +81,11 @@ impl Bucket {
         output.resource_def.into()
     }
 
+    /// Burns resource within this bucket.
+    pub fn burn(self, mint_burn_auth: BucketRef) {
+        self.resource_def().burn(self, mint_burn_auth);
+    }
+
     /// Checks if this bucket is empty.
     pub fn is_empty(&self) -> bool {
         self.amount() == 0.into()

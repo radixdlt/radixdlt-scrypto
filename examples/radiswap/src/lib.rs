@@ -111,7 +111,9 @@ blueprint! {
             let b_withdrawn = self.b_pool.take(self.b_pool.amount() * share / scale);
 
             // Burn the LP tokens received
-            lp_tokens.burn();
+            self.lp_mint_burn_auth.authorize(|badge| {
+                lp_tokens.burn(badge);
+            });
 
             // Return the withdrawn tokens
             (a_withdrawn, b_withdrawn)
