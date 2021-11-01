@@ -22,20 +22,20 @@ r#"
             "mutability": "Immutable",
             "inputs": [
                 {
-                "type": "Custom",
-                "name": "scrypto::types::Address",
-                "generics": []
+                    "type": "Custom",
+                    "name": "scrypto::types::Address",
+                    "generics": []
                 },
                 {
-                "type": "Custom",
-                "name": "scrypto::types::Address",
-                "generics": []
+                    "type": "Custom",
+                    "name": "scrypto::types::Address",
+                    "generics": []
                 }
             ],
             "output": {
                 "type": "Option",
                 "value": {
-                "type": "U128"
+                    "type": "U128"
                 }
             }
         },
@@ -44,17 +44,17 @@ r#"
             "mutability": "Immutable",
             "inputs": [
                 {
-                "type": "Custom",
-                "name": "scrypto::types::Address",
-                "generics": []
+                    "type": "Custom",
+                    "name": "scrypto::types::Address",
+                    "generics": []
                 },
                 {
-                "type": "Custom",
-                "name": "scrypto::types::Address",
-                "generics": []
+                    "type": "Custom",
+                    "name": "scrypto::types::Address",
+                    "generics": []
                 },
                 {
-                "type": "U128"
+                    "type": "U128"
                 }
             ],
             "output": {
