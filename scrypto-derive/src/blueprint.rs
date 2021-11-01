@@ -13,17 +13,11 @@ macro_rules! trace {
     }};
 }
 
-pub fn handle_blueprint(input: TokenStream) -> TokenStream {
+pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
     trace!("Started processing blueprint macro");
 
     // parse blueprint struct and impl
-    let bp = match parse2::<ast::Blueprint>(input) {
-        Ok(bp) => bp,
-        Err(e) => {
-            return e.to_compile_error();
-        }
-    };
-
+    let bp = parse2::<ast::Blueprint>(input)?;
     let bp_strut = &bp.structure;
     let bp_fields = &bp_strut.fields;
     let bp_semi_token = &bp_strut.semi_token;
@@ -32,6 +26,21 @@ pub fn handle_blueprint(input: TokenStream) -> TokenStream {
     let bp_items = &bp_impl.items;
     let bp_name = bp_ident.to_string();
     trace!("Blueprint name: {}", bp_name);
+
+    let impl_ident_matches = match &*bp_impl.self_ty {
+        Type::Path(p) => p
+            .path
+            .get_ident()
+            .filter(|i| i.to_string() == bp_name)
+            .is_some(),
+        _ => false,
+    };
+    if !impl_ident_matches {
+        return Err(Error::new(
+            bp_impl.span(),
+            format!("Only `impl {}` is allowed here", bp_name),
+        ));
+    }
 
     let output_mod = quote! {
         mod blueprint {
@@ -57,7 +66,7 @@ pub fn handle_blueprint(input: TokenStream) -> TokenStream {
     trace!("Generated mod: \n{}", quote! { #output_mod });
 
     let dispatcher_ident = format_ident!("{}_main", bp_ident);
-    let (arm_guards, arm_bodies) = generate_dispatcher(bp_ident, bp_items);
+    let (arm_guards, arm_bodies) = generate_dispatcher(bp_ident, bp_items)?;
     let output_dispatcher = quote! {
         #[no_mangle]
         pub extern "C" fn #dispatcher_ident() -> *mut u8 {
@@ -83,7 +92,7 @@ pub fn handle_blueprint(input: TokenStream) -> TokenStream {
     trace!("Generated dispatcher: \n{}", quote! { #output_dispatcher });
 
     let abi_ident = format_ident!("{}_abi", bp_ident);
-    let (abi_functions, abi_methods) = generate_abi(bp_ident, bp_items);
+    let (abi_functions, abi_methods) = generate_abi(bp_ident, bp_items)?;
     let output_abi = quote! {
         #[no_mangle]
         pub extern "C" fn #abi_ident() -> *mut u8 {
@@ -109,7 +118,7 @@ pub fn handle_blueprint(input: TokenStream) -> TokenStream {
         quote! { #output_dispatcher }
     );
 
-    let output_stubs = generate_stubs(bp_ident, bp_items);
+    let output_stubs = generate_stubs(bp_ident, bp_items)?;
 
     let output = quote! {
         #output_mod
@@ -125,12 +134,12 @@ pub fn handle_blueprint(input: TokenStream) -> TokenStream {
     #[cfg(feature = "trace")]
     crate::utils::print_compiled_code("blueprint!", &output);
 
-    output
+    Ok(output)
 }
 
 // Parses function items in an `Impl` and returns the arm guards and bodies
 // used for call matching.
-fn generate_dispatcher(bp_ident: &Ident, items: &[ImplItem]) -> (Vec<Expr>, Vec<Expr>) {
+fn generate_dispatcher(bp_ident: &Ident, items: &[ImplItem]) -> Result<(Vec<Expr>, Vec<Expr>)> {
     let mut arm_guards = Vec::<Expr>::new();
     let mut arm_bodies = Vec::<Expr>::new();
 
@@ -152,7 +161,7 @@ fn generate_dispatcher(bp_ident: &Ident, items: &[ImplItem]) -> (Vec<Expr>, Vec<
                         FnArg::Receiver(ref r) => {
                             // Check receiver type and mutability
                             if r.reference.is_none() {
-                                panic!("Function input `self` is not supported. Try replacing it with `&self`.");
+                                return Err(Error::new(r.span(), "Function input `self` is not supported. Try replacing it with `&self`."));
                             }
                             let mutability = r.mutability;
 
@@ -249,11 +258,11 @@ fn generate_dispatcher(bp_ident: &Ident, items: &[ImplItem]) -> (Vec<Expr>, Vec<
         };
     }
 
-    (arm_guards, arm_bodies)
+    Ok((arm_guards, arm_bodies))
 }
 
 // Parses function items of an `Impl` and returns ABI of functions.
-fn generate_abi(bp_ident: &Ident, items: &[ImplItem]) -> (Vec<Expr>, Vec<Expr>) {
+fn generate_abi(bp_ident: &Ident, items: &[ImplItem]) -> Result<(Vec<Expr>, Vec<Expr>)> {
     let mut functions = Vec::<Expr>::new();
     let mut methods = Vec::<Expr>::new();
 
@@ -270,7 +279,7 @@ fn generate_abi(bp_ident: &Ident, items: &[ImplItem]) -> (Vec<Expr>, Vec<Expr>) 
                             FnArg::Receiver(ref r) => {
                                 // Check receiver type and mutability
                                 if r.reference.is_none() {
-                                    panic!("Function input `self` is not supported. Try replacing it with &self.");
+                                    return Err(Error::new(r.span(), "Function input `self` is not supported. Try replacing it with &self."));
                                 }
 
                                 if r.mutability.is_some() {
@@ -335,16 +344,19 @@ fn generate_abi(bp_ident: &Ident, items: &[ImplItem]) -> (Vec<Expr>, Vec<Expr>) 
                 }
             }
             _ => {
-                panic!("Non-method impl items are not supported!")
+                return Err(Error::new(
+                    item.span(),
+                    "Non-method impl items are not supported!",
+                ));
             }
         };
     }
 
-    (functions, methods)
+    Ok((functions, methods))
 }
 
 // Parses function items of an `Impl` and returns ABI of functions.
-fn generate_stubs(bp_ident: &Ident, items: &[ImplItem]) -> TokenStream {
+fn generate_stubs(bp_ident: &Ident, items: &[ImplItem]) -> Result<TokenStream> {
     let bp_name = bp_ident.to_string();
     let mut functions = Vec::<ImplItem>::new();
     let mut methods = Vec::<ImplItem>::new();
@@ -365,7 +377,7 @@ fn generate_stubs(bp_ident: &Ident, items: &[ImplItem]) -> TokenStream {
                             FnArg::Receiver(ref r) => {
                                 // Check receiver type and mutability
                                 if r.reference.is_none() {
-                                    panic!("Function input `self` is not supported. Try replacing it with &self.");
+                                    return Err(Error::new(r.span(), "Function input `self` is not supported. Try replacing it with &self."));
                                 }
 
                                 if r.mutability.is_some() {
@@ -428,12 +440,15 @@ fn generate_stubs(bp_ident: &Ident, items: &[ImplItem]) -> TokenStream {
                 }
             }
             _ => {
-                panic!("Non-method impl items are not supported!")
+                return Err(Error::new(
+                    item.span(),
+                    "Non-method impl items are not supported!",
+                ));
             }
         };
     }
 
-    quote! {
+    let output = quote! {
         #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode)]
         pub struct #bp_ident {
             address: ::scrypto::types::Address,
@@ -472,7 +487,9 @@ fn generate_stubs(bp_ident: &Ident, items: &[ImplItem]) -> TokenStream {
                 a.address.into()
             }
         }
-    }
+    };
+
+    Ok(output)
 }
 
 fn replace_self_with(t: &Type, name: &str) -> Type {
@@ -502,12 +519,19 @@ mod tests {
     }
 
     #[test]
+    #[should_panic]
+    fn test_inconsistent_names_should_fail() {
+        let input = TokenStream::from_str("struct A {} impl B { }").unwrap();
+        handle_blueprint(input).unwrap();
+    }
+
+    #[test]
     fn test_blueprint() {
         let input = TokenStream::from_str(
             "struct Test {a: u32, admin: ResourceDef} impl Test { #[auth(admin)] pub fn x(&self) -> u32 { self.a } }",
         )
         .unwrap();
-        let output = handle_blueprint(input);
+        let output = handle_blueprint(input).unwrap();
 
         assert_code_eq(
             output,
