@@ -10,10 +10,10 @@ struct VMM {
 }
 
 impl VMM {
-    pub fn take_call_on_xrd(&mut self, additional_usd: u32) -> u32 {
+    pub fn take_call_on_xrd(&mut self, usd_pstn_amount: u32) -> u32 {
         let initialxrd = self.xrd;
         let initialusdt = self.usdt;
-        self.usdt = initialusdt + additional_usd;
+        self.usdt = initialusdt + usd_pstn_amount;
         self.xrd = self.k / self.usdt;
         let n_quantiy = initialxrd - self.xrd;
         return n_quantiy;
@@ -27,6 +27,26 @@ impl VMM {
             initialusdt as i32 - ((self.k / self.xrd) as i32) - (settle_pstn.margin_amount * settle_pstn.leverage) as i32;
         self.usdt = self.k / self.xrd;
         return profit_n_loss;
+    }
+
+    pub fn take_sell_on_xrd(&mut self, usd_pstn_amount: u32) -> u32{
+        let initialxrd = self.xrd;
+        let initialusdt = self.usdt;
+        self.usdt = initialusdt - usd_pstn_amount;
+        self.xrd = self.k / self.usdt;
+        let n_quantiy =  self.xrd - initialxrd ;
+        return n_quantiy;
+    }
+
+    pub fn settle_sell_on_xrd(&mut self, settle_pstn: &Position)-> i32{
+        let initialxrd = self.xrd;
+        let initialusdt = self.usdt;
+        self.xrd = initialxrd - settle_pstn.n_quantity;
+        let profit_n_loss =
+            initialusdt as i32 - ((self.k / self.xrd) as i32) + (settle_pstn.margin_amount * settle_pstn.leverage) as i32;
+        self.usdt = self.k / self.xrd;
+        return profit_n_loss;
+
     }
 }
 
