@@ -19,12 +19,12 @@ impl VMM {
         return n_quantiy;
     }
 
-    pub fn settle_call_on_xrd(&mut self, settle_pstn: &Position) -> u32 {
+    pub fn settle_call_on_xrd(&mut self, settle_pstn: &Position) -> i32 {
         let initialxrd = self.xrd;
         let initialusdt = self.usdt;
         self.xrd = initialxrd + settle_pstn.n_quantity;
         let profit_n_loss =
-            initialusdt - (self.k / self.xrd) - (settle_pstn.margin_amount * settle_pstn.leverage);
+            initialusdt as i32 - ((self.k / self.xrd) as i32) - (settle_pstn.margin_amount * settle_pstn.leverage) as i32;
         self.usdt = self.k / self.xrd;
         return profit_n_loss;
     }
@@ -43,7 +43,8 @@ blueprint! {
     struct ClearingHouse {
         all_trader_pstns: HashMap<Address,Vec<Position>>,
         deposited_usd: Vault,
-        mm: VMM
+        mm: VMM,
+        transfer_vault: Vault
     }
 
     impl PerpF {
@@ -54,10 +55,11 @@ blueprint! {
                 all_trader_pstns: HashMap::new(),
                 deposited_usd: Vault::new(x_usd_addrs),
                 mm: VMM {
-                    k: 1000000,
-                    xrd: 100,
-                    usdt: 10000,
-                }
+                    k: 100000000,
+                    xrd: 1000,
+                    usdt: 100000,
+                },
+                transfer_vault: Vault::new(x_usd_addrs)
             }
             .instantiate()
         }
@@ -94,14 +96,16 @@ blueprint! {
 
         pub fn settle_call_position(&mut self,trader_account: Address,n_quantity:u32) -> Option<Bucket>  {
 
-
+        
             match self.all_trader_pstns.entry(trader_account) {
                 Entry::Occupied(mut pstns) =>  {
                     let index = pstns.get().iter().position(|x| x.wallet_id == trader_account && x.n_quantity == n_quantity);
                     match index{
                         Some(i) => {
-                            self.mm.settle_call_on_xrd(pstns.get().get(i).unwrap());
-                            let temp_bucket = self.deposited_usd.take(pstns.get().get(i).unwrap().margin_amount);
+                            let profit_n_loss = self.mm.settle_call_on_xrd(pstns.get().get(i).unwrap());
+                            let margin_amount = pstns.get().get(i).unwrap().margin_amount as i32;
+                            assert!(margin_amount >= profit_n_loss);
+                            let temp_bucket = self.deposited_usd.take(margin_amount + profit_n_loss);
                             pstns.get_mut().remove(i);
                             return Some(temp_bucket);
                         },
@@ -114,5 +118,12 @@ blueprint! {
             }     
         }
 
+        pub fn transfer_tokens_to_token_vault(&mut self, from: Address, amount:Bucket ) {
+            self.transfer_vault.put(amount);
+        }
+
+        pub fn transfer_tokens_from_token_vault(&mut self, to: Address, amount: u32 ) -> Option<Bucket>  {
+            return Some(self.transfer_vault.take(amount));
+        }
     }
 }
