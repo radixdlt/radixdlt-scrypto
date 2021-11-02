@@ -303,13 +303,13 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
     pub fn prepare_call_function(
         &mut self,
         package: Address,
-        name: &str,
+        blueprint: &str,
         function: &str,
         args: Vec<Vec<u8>>,
     ) -> Result<Invocation, RuntimeError> {
         Ok(Invocation {
             package,
-            export: format!("{}_main", name),
+            export: format!("{}_main", blueprint),
             function: function.to_owned(),
             args,
         })
@@ -387,12 +387,12 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
     pub fn call_function(
         &mut self,
         package: Address,
-        name: &str,
+        blueprint: &str,
         function: &str,
         args: Vec<Vec<u8>>,
     ) -> Result<Vec<u8>, RuntimeError> {
         debug!(self, "Call function started");
-        let invocation = self.prepare_call_function(package, name, function, args)?;
+        let invocation = self.prepare_call_function(package, blueprint, function, args)?;
         let result = self.call(invocation);
         debug!(self, "Call function ended");
         result

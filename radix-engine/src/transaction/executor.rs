@@ -189,13 +189,13 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
                     .map(|_| None),
                 Instruction::CallFunction {
                     package,
-                    name,
+                    blueprint,
                     function,
                     args,
                 } => proc
                     .call_function(
                         *package,
-                        name.as_str(),
+                        blueprint.as_str(),
                         function.as_str(),
                         args.iter().map(|v| v.encoded.clone()).collect(),
                     )

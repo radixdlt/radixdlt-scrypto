@@ -17,7 +17,7 @@ pub trait AbiProvider {
     fn export_abi<S: AsRef<str>>(
         &self,
         package: Address,
-        name: S,
+        blueprint: S,
         trace: bool,
     ) -> Result<abi::Blueprint, RuntimeError>;
 
@@ -63,7 +63,7 @@ impl AbiProvider for BasicAbiProvider {
     fn export_abi<S: AsRef<str>>(
         &self,
         package: Address,
-        name: S,
+        blueprint: S,
         trace: bool,
     ) -> Result<abi::Blueprint, RuntimeError> {
         // Deterministic transaction context
@@ -75,13 +75,13 @@ impl AbiProvider for BasicAbiProvider {
         let mut track = Track::new(&mut ledger, current_epoch, tx_hash, Vec::new());
         let mut proc = track.start_process(trace);
         let output: (Vec<abi::Function>, Vec<abi::Method>) = proc
-            .call_abi(package, name.as_ref())
+            .call_abi(package, blueprint.as_ref())
             .and_then(|rtn| scrypto_decode(&rtn).map_err(RuntimeError::InvalidData))?;
 
         // Return ABI
         Ok(abi::Blueprint {
             package: package.to_string(),
-            name: name.as_ref().to_owned(),
+            name: blueprint.as_ref().to_owned(),
             functions: output.0,
             methods: output.1,
         })

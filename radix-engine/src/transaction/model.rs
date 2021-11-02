@@ -71,7 +71,7 @@ pub enum Instruction {
     /// Buckets and bucket refs in arguments moves from transaction context to the callee.
     CallFunction {
         package: Address,
-        name: String,
+        blueprint: String,
         function: String,
         args: Vec<SmartValue>,
     },

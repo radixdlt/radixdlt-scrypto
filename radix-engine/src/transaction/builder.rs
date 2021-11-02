@@ -103,18 +103,18 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     pub fn call_function(
         &mut self,
         package: Address,
-        name: &str,
+        blueprint: &str,
         function: &str,
         args: Vec<String>,
         account: Option<Address>,
     ) -> &mut Self {
         let result = self
             .abi_provider
-            .export_abi(package, name, false)
+            .export_abi(package, blueprint, false)
             .map_err(|_| {
                 BuildTransactionError::FailedToExportFunctionAbi(
                     package,
-                    name.to_owned(),
+                    blueprint.to_owned(),
                     function.to_owned(),
                 )
             })
@@ -128,7 +128,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
             Ok(args) => {
                 self.add_instruction(Instruction::CallFunction {
                     package: package,
-                    name: name.to_owned(),
+                    blueprint: blueprint.to_owned(),
                     function: function.to_owned(),
                     args,
                 });
@@ -211,7 +211,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     pub fn publish_package(&mut self, code: &[u8]) -> &mut Self {
         self.add_instruction(Instruction::CallFunction {
             package: SYSTEM_PACKAGE,
-            name: "System".to_owned(),
+            blueprint: "System".to_owned(),
             function: "publish_package".to_owned(),
             args: vec![SmartValue::from(code.to_vec())],
         })
@@ -225,7 +225,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     ) -> &mut Self {
         self.add_instruction(Instruction::CallFunction {
             package: SYSTEM_PACKAGE,
-            name: "System".to_owned(),
+            blueprint: "System".to_owned(),
             function: "new_resource_mutable".to_owned(),
             args: vec![SmartValue::from(metadata), SmartValue::from(mint_burn_auth)],
         })
@@ -239,7 +239,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     ) -> &mut Self {
         self.add_instruction(Instruction::CallFunction {
             package: SYSTEM_PACKAGE,
-            name: "System".to_owned(),
+            blueprint: "System".to_owned(),
             function: "new_resource_fixed".to_owned(),
             args: vec![SmartValue::from(metadata), SmartValue::from(supply)],
         })
@@ -256,7 +256,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
             builder.borrow_from_context(1.into(), mint_burn_auth, rid);
             builder.add_instruction(Instruction::CallFunction {
                 package: SYSTEM_PACKAGE,
-                name: "System".to_owned(),
+                blueprint: "System".to_owned(),
                 function: "mint_resource".to_owned(),
                 args: vec![
                     SmartValue::from(amount),
@@ -271,7 +271,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     pub fn new_account(&mut self, key: Address) -> &mut Self {
         self.add_instruction(Instruction::CallFunction {
             package: ACCOUNT_PACKAGE,
-            name: "Account".to_owned(),
+            blueprint: "Account".to_owned(),
             function: "new".to_owned(),
             args: vec![SmartValue::from(key)],
         })
@@ -290,7 +290,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
             builder.take_from_context(amount, resource_def, bid);
             builder.add_instruction(Instruction::CallFunction {
                 package: ACCOUNT_PACKAGE,
-                name: "Account".to_owned(),
+                blueprint: "Account".to_owned(),
                 function: "with_bucket".to_owned(),
                 args: vec![SmartValue::from(key), SmartValue::from(bid)],
             })
