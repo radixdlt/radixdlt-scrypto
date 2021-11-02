@@ -58,9 +58,9 @@ pub fn handle_call_method(matches: &ArgMatches) -> Result<(), Error> {
     let mut ledger = FileBasedLedger::with_bootstrap(get_data_dir()?);
     let mut executor = TransactionExecutor::new(&mut ledger, configs.current_epoch, configs.nonce);
     let transaction = TransactionBuilder::new(&executor)
-        .call_method(component, &method, args, Some(account))
+        .call_method(component, &method, args, Some(account.0))
         .drop_all_bucket_refs()
-        .deposit_all_buckets(account)
+        .deposit_all_buckets(account.0)
         .build(signers)
         .map_err(Error::TransactionConstructionError)?;
     let receipt = executor.run(transaction, trace).unwrap();

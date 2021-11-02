@@ -58,10 +58,10 @@ pub fn handle_mint(matches: &ArgMatches) -> Result<(), Error> {
     let mut ledger = FileBasedLedger::with_bootstrap(get_data_dir()?);
     let mut executor = TransactionExecutor::new(&mut ledger, configs.current_epoch, configs.nonce);
     let transaction = TransactionBuilder::new(&executor)
-        .withdraw_from_account(1.into(), mint_burn_auth, account)
+        .withdraw_from_account(1.into(), mint_burn_auth, account.0)
         .mint_resource(amount, resource_def, mint_burn_auth)
         .drop_all_bucket_refs()
-        .deposit_all_buckets(account)
+        .deposit_all_buckets(account.0)
         .build(signers)
         .map_err(Error::TransactionConstructionError)?;
     let receipt = executor.run(transaction, trace).unwrap();

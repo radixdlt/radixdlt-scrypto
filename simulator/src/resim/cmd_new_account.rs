@@ -58,7 +58,7 @@ pub fn handle_new_account(matches: &ArgMatches) -> Result<(), Error> {
         println!("Account address: {}", account.to_string().green());
         if configs.default_account.is_none() {
             println!("As this is the first account, it has been set as your default account.");
-            configs.default_account = receipt.component(0);
+            configs.default_account = Some((receipt.component(0).unwrap(), key));
         }
         println!("{}", "=".repeat(80));
 

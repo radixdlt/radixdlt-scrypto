@@ -70,5 +70,10 @@ pub fn match_signers(matches: &ArgMatches, name: &str) -> Result<Vec<Address>, E
             }
         }
     }
+    if let Some(account) = get_configs()?.default_account {
+        if !v.contains(&account.1) {
+            v.push(account.1);
+        }
+    }
     Ok(v)
 }

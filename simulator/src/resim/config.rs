@@ -10,7 +10,7 @@ use crate::resim::*;
 /// Radix Engine configurations.
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct Configs {
-    pub default_account: Option<Address>,
+    pub default_account: Option<(Address, Address)>,
     pub current_epoch: u64,
     pub nonce: u64,
 }
