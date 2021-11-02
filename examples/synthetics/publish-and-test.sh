@@ -11,7 +11,9 @@ acc1_address='02526629b90e1142492e934fbe807b446935407064db3ea2fcf856'
 acc1_pub_key='04005feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9'
 acc1_mint_auth='03d1f50010e4102d88aacc347711491f852c515134a9ecf67ba17c'
 po_cp='0203672369abe1ac2f25e2a44ec60f8257172aac525030331cf2ea'
+po_update_auth='03b6fe12281eb607ec48a4599f01a328db4836c1e3510b639d761f'
 btc='03c29248a0d4c7d4da7b323adfeb4b4fbe811868eb637725ebb7c1'
+usd='03806c33ab58c922240ce20a5b697546cc84aaecdf1b460a42c425'
 
 rev2 set-default-account $acc1_address
 
@@ -24,7 +26,10 @@ rev2 mint 117921786 $snx $acc1_mint_auth --signers $acc1_pub_key
 
 # Publish synthetics blueprint
 synthetics_blueprint=`rev2 publish ./synthetics | tee /dev/tty | awk '/Package:/ {print $NF}'`
-synthetics_pool_component=`rev2 call-function $synthetics_blueprint SyntheticPool new $po_cp $snx 4000000000 | tee /dev/tty | awk '/Component:|ResourceDef:/ {print $NF}'`
+synthetics_pool_component=`rev2 call-function $synthetics_blueprint SyntheticPool new $po_cp $snx $usd 4000000000 | tee /dev/tty | awk '/Component:|ResourceDef:/ {print $NF}'`
+
+# One SNX is $42
+rev2 call-method $po_cp update_price $snx $usd 42000000000 1,$po_update_auth --signers $acc1_pub_key
 
 # Stake some SNX tokens! (from the default account)
 amount_to_stake=10
