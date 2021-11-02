@@ -23,30 +23,30 @@ impl VMM {
         let initialxrd = self.xrd;
         let initialusdt = self.usdt;
         self.xrd = initialxrd + settle_pstn.n_quantity;
-        let profit_n_loss =
-            initialusdt as i32 - ((self.k / self.xrd) as i32) - (settle_pstn.margin_amount * settle_pstn.leverage) as i32;
+        let profit_n_loss = initialusdt as i32
+            - ((self.k / self.xrd) as i32)
+            - (settle_pstn.margin_amount * settle_pstn.leverage) as i32;
         self.usdt = self.k / self.xrd;
         return profit_n_loss;
     }
 
-    pub fn take_sell_on_xrd(&mut self, usd_pstn_amount: u32) -> u32{
+    pub fn take_put_on_xrd(&mut self, usd_pstn_amount: u32) -> u32 {
         let initialxrd = self.xrd;
         let initialusdt = self.usdt;
         self.usdt = initialusdt - usd_pstn_amount;
         self.xrd = self.k / self.usdt;
-        let n_quantiy =  self.xrd - initialxrd ;
+        let n_quantiy = self.xrd - initialxrd;
         return n_quantiy;
     }
 
-    pub fn settle_sell_on_xrd(&mut self, settle_pstn: &Position)-> i32{
+    pub fn settle_put_on_xrd(&mut self, settle_pstn: &Position) -> i32 {
         let initialxrd = self.xrd;
         let initialusdt = self.usdt;
         self.xrd = initialxrd - settle_pstn.n_quantity;
-        let profit_n_loss =
-            initialusdt as i32 - ((self.k / self.xrd) as i32) + (settle_pstn.margin_amount * settle_pstn.leverage) as i32;
+        let profit_n_loss = initialusdt as i32 - ((self.k / self.xrd) as i32)
+            + (settle_pstn.margin_amount * settle_pstn.leverage) as i32;
         self.usdt = self.k / self.xrd;
         return profit_n_loss;
-
     }
 }
 
@@ -85,17 +85,23 @@ blueprint! {
         }
 
 
-        pub fn take_call_position(&mut self,
+        pub fn take_position(&mut self,
              margin_amount:Bucket,
              trader_account: Address,
-             leverage:u32) {
+             leverage:u32, position_type:String) {
                 let margin_recieved : Amount = margin_amount.amount();
                 let pstn_amount = margin_recieved * leverage;
                 assert!(margin_recieved!= 0.into());
                 self.deposited_usd.put(margin_amount);
-                let n_quatity = self.mm.take_call_on_xrd(pstn_amount.as_u32());
+                let n_quatity;
+                match position_type.as_ref() {
+                    "call" => n_quatity = self.mm.take_call_on_xrd(pstn_amount.as_u32()),
+                    "put" => n_quatity = self.mm.take_put_on_xrd(pstn_amount.as_u32()),
+                    _=> panic!("Invalid type of instrument. Either should be call or put ")
+                }
+
                 let new_pos = Position {
-                    position_type: String::from("call"),
+                    position_type: position_type,
                     margin_amount: margin_recieved.as_u32(),
                     wallet_id: trader_account,
                     leverage: leverage,
@@ -111,18 +117,25 @@ blueprint! {
                         newpstns.push(new_pos);
                         self.all_trader_pstns.insert(trader_account,newpstns);
                     }
-                }                
+                }
         }
 
-        pub fn settle_call_position(&mut self,trader_account: Address,n_quantity:u32) -> Option<Bucket>  {
+        pub fn settle_position(&mut self,trader_account: Address,n_quantity:u32,position_type:String) -> Option<Bucket>  {
 
-        
+
             match self.all_trader_pstns.entry(trader_account) {
                 Entry::Occupied(mut pstns) =>  {
                     let index = pstns.get().iter().position(|x| x.wallet_id == trader_account && x.n_quantity == n_quantity);
                     match index{
                         Some(i) => {
-                            let profit_n_loss = self.mm.settle_call_on_xrd(pstns.get().get(i).unwrap());
+                            let position : &Position = pstns.get().get(i).unwrap();
+                            assert!(position.position_type == position_type);
+                            let profit_n_loss;
+                            match position_type.as_ref() {
+                                "call" =>  profit_n_loss = self.mm.settle_call_on_xrd(pstns.get().get(i).unwrap()),
+                                "put" =>   profit_n_loss= self.mm.settle_put_on_xrd(pstns.get().get(i).unwrap()),
+                                _=> panic!("Invalid type of instrument. Either should be call or put ")
+                            }
                             let margin_amount = pstns.get().get(i).unwrap().margin_amount as i32;
                             assert!(margin_amount >= profit_n_loss);
                             let temp_bucket = self.deposited_usd.take(margin_amount + profit_n_loss);
@@ -135,7 +148,7 @@ blueprint! {
                 Entry::Vacant(e) => {
                     panic!("Error finding position for wallet ")
                 }
-            }     
+            }
         }
 
         pub fn transfer_tokens_to_token_vault(&mut self, from: Address, amount:Bucket ) {
