@@ -138,7 +138,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
             }
             let available = self.buckets.get(&candidate).unwrap().amount();
             if available > needed {
-                debug!(self, "Withdrawing {:?} from {:?}", amount, candidate);
+                debug!(self, "Withdrawing {:?} from {:?}", needed, candidate);
                 self.buckets
                     .get_mut(&candidate)
                     .unwrap()
@@ -177,7 +177,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
             return Err(RuntimeError::BucketNotReserved);
         }
 
-        self.withdraw_resource(amount, resource_def)?;
+        self.withdraw_resource(amount.clone(), resource_def)?;
 
         self.temp_buckets
             .insert(bid, Bucket::new(amount, resource_def));
@@ -205,7 +205,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
             return Err(RuntimeError::BucketRefNotReserved);
         }
 
-        self.withdraw_resource(amount, resource_def)?;
+        self.withdraw_resource(amount.clone(), resource_def)?;
 
         let bid = self.track.new_bid();
         let bucket = BucketRef::new(LockedBucket::new(bid, Bucket::new(amount, resource_def)));
@@ -1041,7 +1041,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         &mut self,
         input: CreateResourceFixedInput,
     ) -> Result<CreateResourceFixedOutput, RuntimeError> {
-        let resource_def = ResourceDef::new(input.metadata, input.supply, None);
+        let resource_def = ResourceDef::new(input.metadata, input.supply.clone(), None);
 
         let address = self.track.new_resource_def_address();
 
@@ -1132,7 +1132,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
                 .get_resource_def_mut(input.resource_def)
                 .ok_or(RuntimeError::ResourceDefNotFound(input.resource_def))?;
             definition
-                .mint(input.amount, auth)
+                .mint(input.amount.clone(), auth)
                 .map_err(RuntimeError::ResourceDefError)?;
         }
         // drop the input mint auth

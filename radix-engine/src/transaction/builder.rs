@@ -421,12 +421,12 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                 match (amount, resource_def) {
                     (Some(a), Some(r)) => {
                         if let Some(account) = account {
-                            self.withdraw_from_account(a, r, account);
+                            self.withdraw_from_account(a.clone(), r, account);
                         }
                         let mut created_bid = None;
                         self.declare_bucket(|builder, bid| {
                             created_bid = Some(bid);
-                            builder.take_from_context(a, r, bid)
+                            builder.take_from_context(a.clone(), r, bid)
                         });
                         Ok(SmartValue::from(created_bid.unwrap()))
                     }
@@ -440,12 +440,12 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                 match (amount, resource_def) {
                     (Some(a), Some(r)) => {
                         if let Some(account) = account {
-                            self.withdraw_from_account(a, r, account);
+                            self.withdraw_from_account(a.clone(), r, account);
                         }
                         let mut created_rid = None;
                         self.declare_bucket_ref(|builder, rid| {
                             created_rid = Some(rid);
-                            builder.borrow_from_context(a, r, rid)
+                            builder.borrow_from_context(a.clone(), r, rid)
                         });
                         Ok(SmartValue::from(created_rid.unwrap()))
                     }

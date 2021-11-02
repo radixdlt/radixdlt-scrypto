@@ -17,8 +17,11 @@ fn test_package() {
     let mut ledger = InMemoryLedger::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, 0, 0);
     let key = executor.new_public_key();
-    let account = executor.create_account(key);
-    let package = executor.publish_package(include_code!("./everything"));
+    let account = executor.create_account(key).component(0).unwrap();
+    let package = executor
+        .publish_package(include_code!("./everything"))
+        .package(0)
+        .unwrap();
 
     let transaction1 = TransactionBuilder::new(&executor)
         .call_function(
@@ -40,8 +43,11 @@ fn test_context() {
     let mut ledger = InMemoryLedger::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, 0, 0);
     let key = executor.new_public_key();
-    let account = executor.create_account(key);
-    let package = executor.publish_package(include_code!("./everything"));
+    let account = executor.create_account(key).component(0).unwrap();
+    let package = executor
+        .publish_package(include_code!("./everything"))
+        .package(0)
+        .unwrap();
 
     let transaction1 = TransactionBuilder::new(&executor)
         .call_function(package, "ContextTest", "query", vec![], Some(account))
@@ -57,8 +63,11 @@ fn test_component() {
     let mut ledger = InMemoryLedger::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, 0, 0);
     let key = executor.new_public_key();
-    let account = executor.create_account(key);
-    let package = executor.publish_package(include_code!("./everything"));
+    let account = executor.create_account(key).component(0).unwrap();
+    let package = executor
+        .publish_package(include_code!("./everything"))
+        .package(0)
+        .unwrap();
 
     // Create component
     let transaction1 = TransactionBuilder::new(&executor)
@@ -102,8 +111,11 @@ fn test_lazy_map() {
     let mut ledger = InMemoryLedger::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, 0, 0);
     let key = executor.new_public_key();
-    let account = executor.create_account(key);
-    let package = executor.publish_package(include_code!("./everything"));
+    let account = executor.create_account(key).component(0).unwrap();
+    let package = executor
+        .publish_package(include_code!("./everything"))
+        .package(0)
+        .unwrap();
 
     let transaction = TransactionBuilder::new(&executor)
         .call_function(
@@ -125,8 +137,11 @@ fn test_resource_def() {
     let mut ledger = InMemoryLedger::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, 0, 0);
     let key = executor.new_public_key();
-    let account = executor.create_account(key);
-    let package = executor.publish_package(include_code!("./everything"));
+    let account = executor.create_account(key).component(0).unwrap();
+    let package = executor
+        .publish_package(include_code!("./everything"))
+        .package(0)
+        .unwrap();
 
     let transaction = TransactionBuilder::new(&executor)
         .call_function(
@@ -160,8 +175,11 @@ fn test_bucket() {
     let mut ledger = InMemoryLedger::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, 0, 0);
     let key = executor.new_public_key();
-    let account = executor.create_account(key);
-    let package = executor.publish_package(include_code!("./everything"));
+    let account = executor.create_account(key).component(0).unwrap();
+    let package = executor
+        .publish_package(include_code!("./everything"))
+        .package(0)
+        .unwrap();
 
     let transaction = TransactionBuilder::new(&executor)
         .call_function(package, "BucketTest", "combine", vec![], Some(account))
@@ -182,8 +200,11 @@ fn test_move_resource() {
     let mut ledger = InMemoryLedger::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, 0, 0);
     let key = executor.new_public_key();
-    let account = executor.create_account(key);
-    let package = executor.publish_package(include_code!("./everything"));
+    let account = executor.create_account(key).component(0).unwrap();
+    let package = executor
+        .publish_package(include_code!("./everything"))
+        .package(0)
+        .unwrap();
 
     let transaction = TransactionBuilder::new(&executor)
         .call_function(package, "MoveTest", "move_bucket", vec![], Some(account))

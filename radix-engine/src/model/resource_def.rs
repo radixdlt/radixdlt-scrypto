@@ -39,7 +39,7 @@ impl ResourceDef {
     }
 
     pub fn supply(&self) -> Amount {
-        self.supply
+        self.supply.clone()
     }
 
     pub fn mint_burn_auth(&self) -> Option<Address> {

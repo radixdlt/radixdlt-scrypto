@@ -47,14 +47,14 @@ impl Bucket {
         if self.amount < amount {
             Err(BucketError::InsufficientBalance)
         } else {
-            self.amount -= amount;
+            self.amount -= amount.clone();
 
             Ok(Self::new(amount, self.resource_def))
         }
     }
 
     pub fn amount(&self) -> Amount {
-        self.amount
+        self.amount.clone()
     }
 
     pub fn resource_def(&self) -> Address {

@@ -12,9 +12,6 @@ blueprint! {
         b_pool: Vault,
         /// The fee to apply for every swap, like `3` for a 0.3% fee.
         fee_in_thousandths: u32,
-        /// The scale to use when adding/removing liquidity. If this value is
-        /// set to `5`, the min liquidity to add will be 0.001% of the pools.
-        scale: usize,
     }
 
     impl Radiswap {
@@ -28,7 +25,6 @@ blueprint! {
             lp_name: String,
             lp_url: String,
             fee_in_thousandths: u32,
-            scale: usize,
         ) -> (Component, Bucket) {
             // Check arguments
             scrypto_assert!(
@@ -36,7 +32,6 @@ blueprint! {
                 "You must pass in an initial supply of each token"
             );
             scrypto_assert!(fee_in_thousandths <= 1000, "Invalid fee in thousandths");
-            scrypto_assert!(scale >= 1 && scale <= 9, "Invalid scale");
 
             // Instantiate our LP token and mint an initial supply of them
             let lp_mint_burn_auth = ResourceBuilder::new()
@@ -56,7 +51,6 @@ blueprint! {
                 a_pool: Vault::with_bucket(a_tokens),
                 b_pool: Vault::with_bucket(b_tokens),
                 fee_in_thousandths,
-                scale,
             }
             .instantiate();
 
@@ -67,28 +61,27 @@ blueprint! {
         /// Adds liquidity to this pool and return the LP tokens representing pool shares
         /// along with any remainder.
         pub fn add_liquidity(&self, a_tokens: Bucket, b_tokens: Bucket) -> (Bucket, Bucket) {
-            let scale = Amount::exp10(self.scale);
-            let a_share = scale * a_tokens.amount() / self.a_pool.amount();
-            let b_share = scale * b_tokens.amount() / self.b_pool.amount();
+            let a_share = a_tokens.amount().to_decimal(18) / self.a_pool.amount().to_decimal(18);
+            let b_share = b_tokens.amount().to_decimal(18) / self.b_pool.amount().to_decimal(18);
 
             let (actual_share, remainder) = if a_share <= b_share {
                 // We will claim all input token A's, and only the correct amount of token B
                 self.a_pool.put(a_tokens);
                 self.b_pool
-                    .put(b_tokens.take(self.b_pool.amount() * a_share / scale));
+                    .put(b_tokens.take((self.b_pool.amount().to_decimal(18) * a_share.clone()).to_amount(18)));
                 (a_share, b_tokens)
             } else {
                 // We will claim all input token B's, and only the correct amount of token A
                 self.b_pool.put(b_tokens);
                 self.a_pool
-                    .put(a_tokens.take(self.a_pool.amount() * b_share / scale));
+                    .put(a_tokens.take((self.a_pool.amount().to_decimal(18) * b_share.clone()).to_amount(18)));
                 (b_share, a_tokens)
             };
 
             // Mint LP tokens according to the share the provider is contributing
             let lp_tokens = self.lp_mint_burn_auth.authorize(|badge| {
                 self.lp_resource_def
-                    .mint(self.lp_resource_def.supply() * actual_share / scale, badge)
+                    .mint((self.lp_resource_def.supply().to_decimal(18) * actual_share).to_amount(18), badge)
             });
 
             // Return the LP tokens along with any remainder
@@ -103,12 +96,11 @@ blueprint! {
             );
 
             // Calculate the share based on the input LP tokens.
-            let scale = Amount::exp10(self.scale);
-            let share = scale * lp_tokens.amount() / self.lp_resource_def.supply();
+            let share = lp_tokens.amount().to_decimal(18) / self.lp_resource_def.supply().to_decimal(18);
 
             // Withdraw the correct amounts of tokens A and B from reserves
-            let a_withdrawn = self.a_pool.take(self.a_pool.amount() * share / scale);
-            let b_withdrawn = self.b_pool.take(self.b_pool.amount() * share / scale);
+            let a_withdrawn = self.a_pool.take((self.a_pool.amount().to_decimal(18) * share.clone()).to_amount(18));
+            let b_withdrawn = self.b_pool.take((self.b_pool.amount().to_decimal(18) * share.clone()).to_amount(18));
 
             // Burn the LP tokens received
             self.lp_mint_burn_auth.authorize(|badge| {
@@ -122,30 +114,30 @@ blueprint! {
         /// Swaps token A for B, or vice versa.
         pub fn swap(&self, input_tokens: Bucket) -> Bucket {
             // Calculate the swap fee
-            let fee_amount = input_tokens.amount() * self.fee_in_thousandths / 1000;
+            let fee_amount = input_tokens.amount().to_decimal(18) * self.fee_in_thousandths / 1000;
 
             if input_tokens.resource_def() == self.a_pool.resource_def() {
                 // Calculate how much of token B we will return
-                let b_amount = self.b_pool.amount()
-                    - self.a_pool.amount() * self.b_pool.amount()
-                        / (input_tokens.amount() - fee_amount + self.a_pool.amount());
+                let b_amount = self.b_pool.amount().to_decimal(18)
+                    - self.a_pool.amount().to_decimal(18) * self.b_pool.amount().to_decimal(18)
+                        / (input_tokens.amount().to_decimal(18) - fee_amount + self.a_pool.amount().to_decimal(18));
 
                 // Put the input tokens into our pool
                 self.a_pool.put(input_tokens);
 
                 // Return the tokens owed
-                self.b_pool.take(b_amount)
+                self.b_pool.take(b_amount.to_amount(18))
             } else {
                 // Calculate how much of token A we will return
-                let a_amount = self.a_pool.amount()
-                    - self.a_pool.amount() * self.b_pool.amount()
-                        / (input_tokens.amount() - fee_amount + self.b_pool.amount());
+                let a_amount = self.a_pool.amount().to_decimal(18)
+                    - self.a_pool.amount().to_decimal(18) * self.b_pool.amount().to_decimal(18)
+                        / (input_tokens.amount().to_decimal(18) - fee_amount + self.b_pool.amount().to_decimal(18));
 
                 // Put the input tokens into our pool
                 self.b_pool.put(input_tokens);
 
                 // Return the tokens owed
-                self.a_pool.take(a_amount)
+                self.a_pool.take(a_amount.to_amount(18))
             }
         }
     }

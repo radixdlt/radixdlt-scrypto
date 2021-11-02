@@ -1,10 +1,14 @@
 use core::ops::*;
 
 use num_bigint::BigInt;
-use num_traits::sign::Signed;
+use num_traits::{sign::Signed, ToPrimitive, Zero};
 
 use crate::rust::fmt;
 use crate::rust::format;
+use crate::rust::string::String;
+use crate::rust::vec::Vec;
+use crate::types::Amount;
+use crate::utils::*;
 
 const PRECISION: u128 = 10u128.pow(18);
 
@@ -16,7 +20,32 @@ impl Decimal {
     pub fn new<T: Into<BigInt>>(value: T, decimals: u8) -> Self {
         assert!(decimals <= 18);
 
-        Self(value.into() * 10u128.pow((18 - decimals).into()))
+        Self(value.into() * 10u128.pow((18 - decimals) as u32))
+    }
+
+    pub fn to_amount(&self, decimals: u8) -> Amount {
+        assert!(decimals <= 18);
+
+        if self.is_negative() {
+            scrypto_abort("Can't convert negative decimal into Amount");
+        }
+
+        (self.0.clone() / 10u128.pow((18 - decimals) as u32))
+            .to_biguint()
+            .unwrap()
+            .into()
+    }
+
+    pub fn is_zero(&self) {
+        self.0.is_zero();
+    }
+
+    pub fn is_positive(&self) -> bool {
+        self.0.is_positive()
+    }
+
+    pub fn is_negative(&self) -> bool {
+        self.0.is_negative()
     }
 }
 
@@ -99,7 +128,18 @@ impl<T: Into<Decimal>> DivAssign<T> for Decimal {
 
 impl fmt::Debug for Decimal {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let raw = self.0.abs().to_str_radix(10);
+        // format big int
+        let mut v = Vec::new();
+        let mut r = self.0.abs();
+        loop {
+            v.push(char::from_digit((r.clone() % 10u32).to_u32().unwrap(), 10).unwrap());
+            r = r / 10u32;
+            if r.is_zero() {
+                break;
+            }
+        }
+        let raw = v.iter().rev().collect::<String>();
+
         // add radix point
         let scaled = if raw.len() <= 18 {
             format!("0.{}{}", "0".repeat(18 - raw.len()), raw)

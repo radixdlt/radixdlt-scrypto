@@ -1,6 +1,5 @@
 use scrypto::abi;
 use scrypto::args;
-use scrypto::rust::borrow::ToOwned;
 use scrypto::rust::string::ToString;
 use scrypto::rust::vec;
 use scrypto::rust::vec::Vec;
@@ -98,41 +97,39 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
     }
 
     /// Creates an account with 1,000,000 XRD in balance.
-    pub fn create_account(&mut self, key: Address) -> Address {
+    pub fn create_account(&mut self, key: Address) -> Receipt {
+        let free_xrd_amount = Decimal::from(1_000_000).to_amount(18);
+
         self.run(
             TransactionBuilder::new(self)
                 .call_method(
                     SYSTEM_COMPONENT,
                     "free_xrd",
-                    vec!["1000000".to_owned()],
+                    vec![free_xrd_amount.to_string()],
                     None,
                 )
-                .new_account_with_resource(key, 1000000.into(), RADIX_TOKEN)
+                .new_account_with_resource(key, free_xrd_amount, RADIX_TOKEN)
                 .build(Vec::new())
                 .unwrap(),
             false,
         )
         .unwrap()
-        .component(0)
-        .unwrap()
     }
 
     /// Publishes a package.
-    pub fn publish_package(&mut self, code: &[u8]) -> Address {
+    pub fn publish_package(&mut self, code: &[u8]) -> Receipt {
         self.run(
             TransactionBuilder::new(self)
                 .publish_package(code)
                 .build(Vec::new())
                 .unwrap(),
-            false,
+            true,
         )
-        .unwrap()
-        .package(0)
         .unwrap()
     }
 
     /// Publishes a package to a specified address.
-    pub fn publish_package_to(&mut self, code: &[u8], address: Address) {
+    pub fn overwrite_package(&mut self, address: Address, code: &[u8]) {
         self.ledger
             .put_package(address, Package::new(code.to_vec()));
     }
@@ -178,14 +175,14 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
                     resource_def,
                     to,
                 } => proc
-                    .take_from_context(*amount, *resource_def, *to)
+                    .take_from_context(amount.clone(), *resource_def, *to)
                     .map(|_| None),
                 Instruction::BorrowFromContext {
                     amount,
                     resource_def,
                     to,
                 } => proc
-                    .borrow_from_context(*amount, *resource_def, *to)
+                    .borrow_from_context(amount.clone(), *resource_def, *to)
                     .map(|_| None),
                 Instruction::CallFunction {
                     package,

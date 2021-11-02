@@ -1,7 +1,7 @@
 use core::ops::*;
 
 use num_bigint::BigUint;
-use num_traits::{Num, One, Zero};
+use num_traits::{Num, One, ToPrimitive, Zero};
 use sbor::{describe::Type, *};
 
 use crate::buffer::*;
@@ -10,7 +10,6 @@ use crate::rust::convert::TryFrom;
 use crate::rust::fmt;
 use crate::rust::str::FromStr;
 use crate::rust::string::String;
-use crate::rust::string::ToString;
 use crate::rust::vec;
 use crate::rust::vec::Vec;
 use crate::types::Decimal;
@@ -92,6 +91,12 @@ from_int!(i64);
 from_int!(i128);
 from_int!(isize);
 
+impl From<BigUint> for Amount {
+    fn from(value: BigUint) -> Self {
+        Self(value)
+    }
+}
+
 impl<T: Into<Amount>> Add<T> for Amount {
     type Output = Amount;
 
@@ -168,13 +173,25 @@ impl TryFrom<&[u8]> for Amount {
 
 impl fmt::Debug for Amount {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.0.to_string())
+        // format big int
+        let mut v = Vec::new();
+        let mut r = self.0.clone();
+        loop {
+            v.push(char::from_digit((r.clone() % 10u32).to_u32().unwrap(), 10).unwrap());
+            r = r / 10u32;
+            if r.is_zero() {
+                break;
+            }
+        }
+        let raw = v.iter().rev().collect::<String>();
+
+        write!(f, "{}", raw)
     }
 }
 
 impl fmt::Display for Amount {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.0.to_string())
+        write!(f, "{:?}", self)
     }
 }
 
