@@ -1,7 +1,8 @@
 use core::ops::*;
 
+use num_bigint::BigUint;
+use num_traits::{Num, One, Zero};
 use sbor::{describe::Type, *};
-use uint::construct_uint;
 
 use crate::buffer::*;
 use crate::rust::borrow::ToOwned;
@@ -12,77 +13,50 @@ use crate::rust::string::String;
 use crate::rust::string::ToString;
 use crate::rust::vec;
 use crate::rust::vec::Vec;
+use crate::types::Decimal;
+use crate::utils::*;
 
-construct_uint! {
-    struct U256(4);
-}
-
-// TODO: Make Amount a big int.
-
-/// Represents some quantity.
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct Amount(U256);
+/// Represents the quantity of some resource. It's always **unsigned**.
+///
+/// Only a subset of arithmetic operations are allowed:
+/// - Adds two `Amount`s;
+/// - Subtract an `Amount` by another `Amount`;
+/// - Divides an `Amount` by an unsigned number;
+/// - Multiplies an `Amount` by an unsigned number.
+///
+/// If you need more, consider converting into `Decimal` instead.
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct Amount(BigUint);
 
 /// Represents an error when parsing Amount.
 #[derive(Debug, Clone)]
 pub enum ParseAmountError {
     InvalidAmount(String),
-    InvalidLength(usize),
 }
 
 impl Amount {
     pub fn to_vec(&self) -> Vec<u8> {
-        let mut bytes = [0u8; 32];
-        self.0.to_little_endian(&mut bytes);
-        bytes.to_vec()
+        self.0.to_bytes_le()
     }
 
-    pub fn from_little_endian(slice: &[u8]) -> Self {
-        Self(U256::from_little_endian(slice))
+    pub fn to_decimal(&self, decimals: u8) -> Decimal {
+        Decimal::new(self.0.clone(), decimals)
     }
 
     pub fn zero() -> Self {
-        Self(U256::zero())
+        Self(BigUint::zero())
     }
 
     pub fn one() -> Self {
-        Self(U256::one())
-    }
-
-    pub fn exp10(n: usize) -> Self {
-        Self(U256::exp10(n))
-    }
-
-    pub fn pow(self, exp: Self) -> Self {
-        Self(self.0.pow(exp.0))
+        Self(BigUint::one())
     }
 
     pub fn is_zero(&self) -> bool {
         self.0.is_zero()
     }
-
-    pub fn bits(&self) -> usize {
-        self.0.bits()
-    }
-
-    pub fn as_u32(&self) -> u32 {
-        self.0.as_u32()
-    }
-
-    pub fn as_u64(&self) -> u64 {
-        self.0.as_u64()
-    }
-
-    pub fn as_u128(&self) -> u128 {
-        self.0.as_u128()
-    }
-
-    pub fn as_usize(&self) -> usize {
-        self.0.as_usize()
-    }
 }
 
-macro_rules! from_int {
+macro_rules! from_uint {
     ($type:ident) => {
         impl From<$type> for Amount {
             fn from(val: $type) -> Self {
@@ -91,12 +65,26 @@ macro_rules! from_int {
         }
     };
 }
-from_int!(u8);
-from_int!(u16);
-from_int!(u32);
-from_int!(u64);
-from_int!(u128);
-from_int!(usize);
+from_uint!(u8);
+from_uint!(u16);
+from_uint!(u32);
+from_uint!(u64);
+from_uint!(u128);
+from_uint!(usize);
+
+macro_rules! from_int {
+    ($type:ident) => {
+        impl From<$type> for Amount {
+            fn from(val: $type) -> Self {
+                if val < 0 {
+                    scrypto_abort("Negative value can't be converted into Amount");
+                } else {
+                    Self((val as u128).into())
+                }
+            }
+        }
+    };
+}
 from_int!(i8);
 from_int!(i16);
 from_int!(i32);
@@ -108,7 +96,7 @@ impl<T: Into<Amount>> Add<T> for Amount {
     type Output = Amount;
 
     fn add(self, other: T) -> Self::Output {
-        Self(Add::add(self.0, Into::<Amount>::into(other).0))
+        Self(self.0 + other.into().0)
     }
 }
 
@@ -116,74 +104,47 @@ impl<T: Into<Amount>> Sub<T> for Amount {
     type Output = Amount;
 
     fn sub(self, other: T) -> Self::Output {
-        Self(Sub::sub(self.0, Into::<Amount>::into(other).0))
+        Self(self.0 - other.into().0)
     }
 }
 
-impl<T: Into<Amount>> Mul<T> for Amount {
+impl<T: Into<u128>> Mul<T> for Amount {
     type Output = Amount;
 
     fn mul(self, other: T) -> Self::Output {
-        Self(Mul::mul(self.0, Into::<Amount>::into(other).0))
+        Self(self.0 * other.into())
     }
 }
 
-impl<T: Into<Amount>> Div<T> for Amount {
+impl<T: Into<u128>> Div<T> for Amount {
     type Output = Amount;
 
     fn div(self, other: T) -> Self::Output {
-        Self(Div::div(self.0, Into::<Amount>::into(other).0))
-    }
-}
-impl Shl<usize> for Amount {
-    type Output = Amount;
-
-    fn shl(self, shift: usize) -> Self::Output {
-        Self(Shl::shl(self.0, shift))
-    }
-}
-
-impl Shr<usize> for Amount {
-    type Output = Amount;
-
-    fn shr(self, shift: usize) -> Self::Output {
-        Self(Shr::shr(self.0, shift))
+        Self(self.0 / other.into())
     }
 }
 
 impl<T: Into<Amount>> AddAssign<T> for Amount {
     fn add_assign(&mut self, other: T) {
-        AddAssign::add_assign(&mut self.0, Into::<Amount>::into(other).0);
+        self.0 = self.0.clone() + other.into().0;
     }
 }
 
 impl<T: Into<Amount>> SubAssign<T> for Amount {
     fn sub_assign(&mut self, other: T) {
-        SubAssign::sub_assign(&mut self.0, Into::<Amount>::into(other).0);
+        self.0 = self.0.clone() - other.into().0;
     }
 }
 
-impl<T: Into<Amount>> MulAssign<T> for Amount {
+impl<T: Into<u128>> MulAssign<T> for Amount {
     fn mul_assign(&mut self, other: T) {
-        MulAssign::mul_assign(&mut self.0, Into::<Amount>::into(other).0);
+        self.0 = self.0.clone() * other.into();
     }
 }
 
-impl<T: Into<Amount>> DivAssign<T> for Amount {
+impl<T: Into<u128>> DivAssign<T> for Amount {
     fn div_assign(&mut self, other: T) {
-        DivAssign::div_assign(&mut self.0, Into::<Amount>::into(other).0);
-    }
-}
-
-impl ShlAssign<usize> for Amount {
-    fn shl_assign(&mut self, shift: usize) {
-        ShlAssign::shl_assign(&mut self.0, shift);
-    }
-}
-
-impl ShrAssign<usize> for Amount {
-    fn shr_assign(&mut self, shift: usize) {
-        ShrAssign::shr_assign(&mut self.0, shift);
+        self.0 = self.0.clone() / other.into();
     }
 }
 
@@ -191,7 +152,7 @@ impl FromStr for Amount {
     type Err = ParseAmountError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(Self(U256::from_dec_str(s).map_err(|_| {
+        Ok(Self(BigUint::from_str_radix(s, 10).map_err(|_| {
             ParseAmountError::InvalidAmount(s.to_owned())
         })?))
     }
@@ -201,11 +162,7 @@ impl TryFrom<&[u8]> for Amount {
     type Error = ParseAmountError;
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
-        if slice.len() != 32 {
-            Err(ParseAmountError::InvalidLength(slice.len()))
-        } else {
-            Ok(Self::from_little_endian(slice))
-        }
+        Ok(Self(BigUint::from_bytes_le(slice)))
     }
 }
 
@@ -268,23 +225,23 @@ mod tests {
     #[test]
     fn test_math() {
         let mut a = Amount::from(7);
-        assert_eq!(Amount::from(10), a + 3);
+        assert_eq!(Amount::from(10), a.clone() + 3);
         a += 3;
         assert_eq!(Amount::from(10), a);
 
         let mut a = Amount::from(7);
-        assert_eq!(Amount::from(4), a - 3);
+        assert_eq!(Amount::from(4), a.clone() - 3);
         a -= 3;
         assert_eq!(Amount::from(4), a);
 
         let mut a = Amount::from(7);
-        assert_eq!(Amount::from(21), a * 3);
-        a *= 3;
+        assert_eq!(Amount::from(21), a.clone() * 3u32);
+        a *= 3u32;
         assert_eq!(Amount::from(21), a);
 
         let mut a = Amount::from(7);
-        assert_eq!(Amount::from(2), a / 3);
-        a /= 3;
+        assert_eq!(Amount::from(2), a.clone() / 3u32);
+        a /= 3u32;
         assert_eq!(Amount::from(2), a);
     }
 
@@ -292,7 +249,7 @@ mod tests {
     #[should_panic]
     #[allow(unused_must_use)]
     fn test_divide_by_zero() {
-        Amount::from(10) / Amount::zero();
+        Amount::from(10) / 0u32;
     }
 
     #[test]
