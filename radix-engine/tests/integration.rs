@@ -177,6 +177,28 @@ fn test_bucket() {
 }
 
 #[test]
+fn test_badge() {
+    compile();
+    let mut ledger = InMemoryLedger::with_bootstrap();
+    let mut executor = TransactionExecutor::new(&mut ledger, 0, 0);
+    let key = executor.new_public_key();
+    let account = executor.new_account(key);
+    let package = executor.publish_package(include_code!("./everything"));
+
+    let transaction = TransactionBuilder::new(&executor)
+        .call_function(package, "BadgeTest", "combine", vec![], Some(account))
+        .call_function(package, "BadgeTest", "split", vec![], Some(account))
+        .call_function(package, "BadgeTest", "borrow", vec![], Some(account))
+        .call_function(package, "BadgeTest", "query", vec![], Some(account))
+        .drop_all_bucket_refs()
+        .deposit_all_buckets(account)
+        .build(vec![key])
+        .unwrap();
+    let receipt = executor.run(transaction, true).unwrap();
+    assert!(receipt.success);
+}
+
+#[test]
 fn test_move_resource() {
     compile();
     let mut ledger = InMemoryLedger::with_bootstrap();
