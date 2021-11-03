@@ -10,9 +10,6 @@ r#"
             "name": "new",
             "inputs": [
                 {
-                    "type": "U8"
-                },
-                {
                     "type": "U32"
                 }
             ],
@@ -21,12 +18,12 @@ r#"
                 "elements": [
                     {
                         "type": "Custom",
-                        "name": "scrypto::core::Component",
+                        "name": "scrypto::resource::Bucket",
                         "generics": []
                     },
                     {
                         "type": "Custom",
-                        "name": "scrypto::resource::Bucket",
+                        "name": "scrypto::core::Component",
                         "generics": []
                     }
                 ]
@@ -52,7 +49,9 @@ r#"
             "output": {
                 "type": "Option",
                 "value": {
-                    "type": "U128"
+                    "type": "Custom",
+                    "name": "scrypto::types::Decimal",
+                    "generics": []
                 }
             }
         },
@@ -71,7 +70,9 @@ r#"
                     "generics": []
                 },
                 {
-                    "type": "U128"
+                    "type": "Custom",
+                    "name": "scrypto::types::Decimal",
+                    "generics": []
                 },
                 {
                     "type": "Custom",
@@ -84,15 +85,7 @@ r#"
             }
         },
         {
-            "name": "decimals",
-            "mutability": "Immutable",
-            "inputs": [],
-            "output": {
-                "type": "U8"
-            }
-        },
-        {
-            "name": "admin",
+            "name": "admin_badge_address",
             "mutability": "Immutable",
             "inputs": [],
             "output": {
@@ -110,7 +103,7 @@ blueprint! {
     struct SyntheticPool {
         // Parameters
         oracle: PriceOracle,
-        collateralization_ratio_billionths: Amount, // Suggested ratio of 4, ie 4000000000
+        collateralization_ratio: Decimal,
         collateral_resource_definition: ResourceDef,
         usd_resource_definition: ResourceDef,
         // State
@@ -119,8 +112,10 @@ blueprint! {
         synthetic_token_and_debt_rdefs_by_ticker_code: LazyMap<String, (ResourceDef, ResourceDef)>,
         synthetic_token_rdef_to_ticker_code: LazyMap<ResourceDef, String>,
         // Oracle State
-        off_ledger_ticker_code_prices_in_billionths_of_usd: LazyMap<String, u128>,
-        unix_timestamp_oracle: u128
+        off_ledger_ticker_code_prices_of_usd: LazyMap<String, Decimal>,
+        unix_timestamp_oracle: u128,
+        // trash
+        trash: Vec<Vault>,
     }
 
     impl SyntheticPool {
@@ -128,38 +123,40 @@ blueprint! {
             oracle_address: Address,
             collateral_token_address: Address,
             usd_token_address: Address,
-            collateralization_ratio_billionths: u128
+            collateralization_ratio: Decimal,
         ) -> Component {
             let oracle: PriceOracle = oracle_address.into();
             let collateral_resource_definition: ResourceDef = collateral_token_address.into();
             let usd_resource_definition: ResourceDef = usd_token_address.into();
             let synthetic_pool = Self {
                 oracle,
-                collateralization_ratio_billionths: collateralization_ratio_billionths.into(),
+                collateralization_ratio,
                 collateral_resource_definition,
                 usd_resource_definition,
                 staked_collateral_vault_map: LazyMap::new(),
                 synthetic_token_minted_debt_by_ticker_code: HashMap::new(),
                 synthetic_token_and_debt_rdefs_by_ticker_code: LazyMap::new(),
                 synthetic_token_rdef_to_ticker_code: LazyMap::new(),
-                off_ledger_ticker_code_prices_in_billionths_of_usd: LazyMap::new(),
-                unix_timestamp_oracle: 0
-            }.instantiate();
+                off_ledger_ticker_code_prices_of_usd: LazyMap::new(),
+                unix_timestamp_oracle: 0,
+                trash: Vec::new(),
+            }
+            .instantiate();
 
             synthetic_pool
         }
 
         pub fn stake_to_new_vault(&self, collateral: Bucket) -> Bucket {
-
             self.assert_collateral_correct(&collateral);
 
             let vault_owner_badge = ResourceBuilder::new()
                 .metadata("name", "Vault Badge")
-                .create_fixed(1);
+                .new_badge_fixed(1);
 
             let vault_owner_badge_address = vault_owner_badge.resource_def().address();
 
-            self.staked_collateral_vault_map.insert(vault_owner_badge_address, Vault::with_bucket(collateral));
+            self.staked_collateral_vault_map
+                .insert(vault_owner_badge_address, Vault::with_bucket(collateral));
 
             vault_owner_badge
         }
@@ -174,7 +171,11 @@ blueprint! {
 
         // NB - I considered taking a badge, not a badge ref, because we might want to burn it if the vault is emptied
         //      But I preferred the option to explicitly dispose_badge if a user wished to close their vault
-        pub fn unstake_from_vault(&self, vault_owner_badge: BucketRef, amount_to_unstake: Amount) -> Bucket {
+        pub fn unstake_from_vault(
+            &self,
+            vault_owner_badge: BucketRef,
+            amount_to_unstake: Decimal,
+        ) -> Bucket {
             let vault = self.get_vault_for_badgeref_safe_no_use_ref(&vault_owner_badge);
 
             let unstaked_tokens = vault.take(amount_to_unstake); // Throws if not enough tokens
@@ -185,7 +186,7 @@ blueprint! {
             unstaked_tokens
         }
 
-        pub fn dispose_badge(&self, vault_owner_badge: Bucket) {
+        pub fn dispose_badge(&mut self, vault_owner_badge: Bucket) {
             let vault = self.get_vault_for_badge_safe(&vault_owner_badge);
 
             scrypto_assert!(
@@ -195,16 +196,21 @@ blueprint! {
 
             // Lazy map doesn't at present support remove
             // self.staked_collateral_vault_map.remove(vault_owner_badge);
-            vault_owner_badge.burn();
+            self.trash.push(Vault::with_bucket(vault_owner_badge));
         }
 
-        pub fn get_staked_balance(&self, vault_owner_badge: BucketRef) -> Amount {
+        pub fn get_staked_balance(&self, vault_owner_badge: BucketRef) -> Decimal {
             let vault = self.get_vault_for_badgeref_safe(vault_owner_badge);
             vault.amount()
         }
 
-        pub fn mint_synthetic(&self, vault_owner_badge: BucketRef, exchange: String, ticker_code: String, quantity: Amount) -> Bucket {
-
+        pub fn mint_synthetic(
+            &self,
+            vault_owner_badge: BucketRef,
+            exchange: String,
+            ticker_code: String,
+            quantity: Decimal,
+        ) -> Bucket {
             let new_synthetics = self.mint_synthetic_internal(exchange, ticker_code, quantity);
 
             // TODO - work out increase in vault owner's proportion of the debt pool - for now each vault owner is assumed to own the whole system debt!
@@ -219,9 +225,16 @@ blueprint! {
             scrypto_assert!(
                 collateral.resource_def() == self.collateral_resource_definition,
                 "You need to provide {} ({}) as collateral, but you provided {} ({})",
-                self.collateral_resource_definition.metadata().get("symbol").unwrap_or(&"UNKNOWN_SYMBOL".to_string()),
+                self.collateral_resource_definition
+                    .metadata()
+                    .get("symbol")
+                    .unwrap_or(&"UNKNOWN_SYMBOL".to_string()),
                 self.collateral_resource_definition.address().to_string(),
-                collateral.resource_def().metadata().get("symbol").unwrap_or(&"UNKNOWN_SYMBOL".to_string()),
+                collateral
+                    .resource_def()
+                    .metadata()
+                    .get("symbol")
+                    .unwrap_or(&"UNKNOWN_SYMBOL".to_string()),
                 collateral.resource_def().address().to_string()
             );
         }
@@ -235,7 +248,9 @@ blueprint! {
             let vault_owner_badge_address = vault_owner_badge.resource_def().address();
             vault_owner_badge.drop();
 
-            let vault_map_contents = self.staked_collateral_vault_map.get(&vault_owner_badge_address);
+            let vault_map_contents = self
+                .staked_collateral_vault_map
+                .get(&vault_owner_badge_address);
 
             scrypto_assert!(
                 vault_map_contents.is_some(),
@@ -253,7 +268,9 @@ blueprint! {
 
             let vault_owner_badge_address = vault_owner_badge.resource_def().address();
 
-            let vault_map_contents = self.staked_collateral_vault_map.get(&vault_owner_badge_address);
+            let vault_map_contents = self
+                .staked_collateral_vault_map
+                .get(&vault_owner_badge_address);
 
             scrypto_assert!(
                 vault_map_contents.is_some(),
@@ -271,7 +288,9 @@ blueprint! {
 
             let vault_owner_badge_address = vault_owner_badge.resource_def().address();
 
-            let vault_map_contents = self.staked_collateral_vault_map.get(&vault_owner_badge_address);
+            let vault_map_contents = self
+                .staked_collateral_vault_map
+                .get(&vault_owner_badge_address);
 
             scrypto_assert!(
                 vault_map_contents.is_some(),
@@ -282,16 +301,23 @@ blueprint! {
         }
 
         // TODO - implement me!
-        fn mint_synthetic_internal(&self, _exchange: String, _ticker_code: String, _quantity: Amount) -> Bucket {
+        fn mint_synthetic_internal(
+            &self,
+            _exchange: String,
+            _ticker_code: String,
+            _quantity: Decimal,
+        ) -> Bucket {
             // TODO - fix me!
-            Bucket::new(ResourceDef::from(self.collateral_resource_definition.address()))
+            Bucket::new(ResourceDef::from(
+                self.collateral_resource_definition.address(),
+            ))
         }
 
         // TODO - revisit this when the resource definition supports decimals
-        fn get_total_system_debt_in_usd_billionths(&self) -> Amount {
-            let mut total = Amount::zero();
+        fn get_total_system_debt_in_usd(&self) -> Decimal {
+            let mut total = Decimal::zero();
             for (ticker_code, vault) in &self.synthetic_token_minted_debt_by_ticker_code {
-                let oracle_price = self.get_off_ledger_usd_price_in_billionths(ticker_code.to_string());
+                let oracle_price = self.get_off_ledger_usd_price(ticker_code.to_string());
                 scrypto_assert!(
                     oracle_price.is_some(),
                     "The oracle price for ({}) has no value",
@@ -302,57 +328,57 @@ blueprint! {
             total
         }
 
-        fn get_collateral_price_in_usd_billionths(&self) -> Amount {
-            let oracle_decimals = self.oracle.decimals();
-            let oracle_price = self.oracle.get_price(self.collateral_resource_definition.address(), self.usd_resource_definition.address());
+        fn get_collateral_price(&self) -> Decimal {
+            let oracle_price = self.oracle.get_price(
+                self.collateral_resource_definition.address(),
+                self.usd_resource_definition.address(),
+            );
             scrypto_assert!(
                 oracle_price.is_some(),
                 "The oracle price for collateral {} ({}) has no value",
-                self.collateral_resource_definition.metadata().get("symbol").unwrap_or(&"UNKNOWN_SYMBOL".to_string()),
+                self.collateral_resource_definition
+                    .metadata()
+                    .get("symbol")
+                    .unwrap_or(&"UNKNOWN_SYMBOL".to_string()),
                 self.collateral_resource_definition.address().to_string()
             );
-            let base: u128 = 10;
-            if oracle_decimals >= 9 {
-                (oracle_price.unwrap() / base.pow((oracle_decimals - 9).into())).into()
-            } else {
-                (oracle_price.unwrap() * base.pow((9 - oracle_decimals).into())).into()
-            }
+            oracle_price.unwrap()
         }
 
         fn assert_sufficiently_collateralised(&self, vault_owner_badge: BucketRef) {
             let vault = self.get_vault_for_badgeref_safe(vault_owner_badge);
-            let billion: Amount = (1000000000).into();
 
-            let collateral_in_usd_billionths = vault.amount() * self.get_collateral_price_in_usd_billionths();
+            let collateral_in_usd = vault.amount() * self.get_collateral_price();
 
-            // TODO - fix it so that the proportion of system debt is tracked - so that we don't assume each user is responsible for the whole system debt! 
-            let proportion_of_system_debt_in_billionths = billion;
-            let vault_owned_system_debt_in_usd_billionths = (self.get_total_system_debt_in_usd_billionths() * proportion_of_system_debt_in_billionths) / billion;
+            // TODO - fix it so that the proportion of system debt is tracked - so that we don't assume each user is responsible for the whole system debt!
+            let vault_owned_system_debt_in_usd = self.get_total_system_debt_in_usd();
 
-            if vault_owned_system_debt_in_usd_billionths == Amount::zero() {
-                return
+            if vault_owned_system_debt_in_usd == Decimal::zero() {
+                return;
             }
 
-            let vault_collat_ratio_in_billionths = collateral_in_usd_billionths * billion / vault_owned_system_debt_in_usd_billionths;
+            let vault_collat_ratio = collateral_in_usd / vault_owned_system_debt_in_usd;
 
             scrypto_assert!(
-                vault_collat_ratio_in_billionths >= self.collateralization_ratio_billionths,
-                "Your (new) vault collateralisation ratio (in billionths) is {}, but needs to be at least {}",
-                vault_collat_ratio_in_billionths, self.collateralization_ratio_billionths
+                vault_collat_ratio >= self.collateralization_ratio,
+                "Your (new) vault collateralisation ratio is {}, but needs to be at least {}",
+                vault_collat_ratio,
+                self.collateralization_ratio
             );
         }
 
         // SLIGHT HACK - WE ADD AN OFF-LEDGER PRICE ORACLE TO THIS COMPONENT - BUT IT COULD BE SEPARATE
         // TODO - Add badge auth
 
-        /// Sets the price (in billionth) of pair BASE/QUOTE.
-        pub fn get_off_ledger_usd_price_in_billionths(&self, ticker_code: String) -> Option<u128> {
-            self.off_ledger_ticker_code_prices_in_billionths_of_usd.get(&ticker_code)
+        /// Sets the price of pair BASE/QUOTE.
+        pub fn get_off_ledger_usd_price(&self, ticker_code: String) -> Option<Decimal> {
+            self.off_ledger_ticker_code_prices_of_usd.get(&ticker_code)
         }
 
-        /// Updates the price (in billionth) of pair BASE/QUOTE.
-        pub fn update_off_ledger_usd_price(&self, ticker_code: String, price_in_billionths: u128) {
-            self.off_ledger_ticker_code_prices_in_billionths_of_usd.insert(ticker_code, price_in_billionths);
+        /// Updates the price of pair BASE/QUOTE.
+        pub fn update_off_ledger_usd_price(&self, ticker_code: String, price: Decimal) {
+            self.off_ledger_ticker_code_prices_of_usd
+                .insert(ticker_code, price);
         }
 
         pub fn get_unix_timestamp(&self) -> u128 {

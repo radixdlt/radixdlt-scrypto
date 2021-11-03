@@ -3,7 +3,7 @@
 set -e
 
 cd "$(dirname "$0")/../"
-./reset_simulator.sh
+./demo.sh
 
 # Copies from reset_simulator.sh output
 
@@ -15,46 +15,46 @@ po_update_auth='03b6fe12281eb607ec48a4599f01a328db4836c1e3510b639d761f'
 btc='03c29248a0d4c7d4da7b323adfeb4b4fbe811868eb637725ebb7c1'
 usd='03806c33ab58c922240ce20a5b697546cc84aaecdf1b460a42c425'
 
-rev2 set-default-account $acc1_address
+resim set-default-account $acc1_address $acc1_pub_key
 
 # SYNTHETICS
 
 # mint SNX
-snx=`rev2 new-resource-mutable $acc1_mint_auth --name "Synthetics Collateral Token" --symbol SNX --description "A token which is used in the synthetics component for collateral" | tee /dev/tty | awk '/ResourceDef:/ {print $NF}'`
-rev2 mint 117921786 $snx $acc1_mint_auth --signers $acc1_pub_key
+snx=`resim new-token-mutable $acc1_mint_auth --name "Synthetics Collateral Token" --symbol SNX --description "A token which is used in the synthetics component for collateral" | tee /dev/tty | awk '/ResourceDef:/ {print $NF}'`
+resim mint 117921786 $snx $acc1_mint_auth --signers $acc1_pub_key
 
 
 # Publish synthetics blueprint
-synthetics_blueprint=`rev2 publish ./synthetics | tee /dev/tty | awk '/Package:/ {print $NF}'`
-synthetics_pool_component=`rev2 call-function $synthetics_blueprint SyntheticPool new $po_cp $snx $usd 4000000000 | tee /dev/tty | awk '/Component:|ResourceDef:/ {print $NF}'`
+synthetics_blueprint=`resim publish ./synthetics | tee /dev/tty | awk '/Package:/ {print $NF}'`
+synthetics_pool_component=`resim call-function $synthetics_blueprint SyntheticPool new $po_cp $snx $usd 4000000000 | tee /dev/tty | awk '/Component:/ {print $NF}'`
 
 # One SNX is $42
-rev2 call-method $po_cp update_price $snx $usd 42000000000 1,$po_update_auth --signers $acc1_pub_key
+resim call-method $po_cp update_price $snx $usd 42000000000 1,$po_update_auth --signers $acc1_pub_key
 
 # Stake some SNX tokens! (from the default account)
 amount_to_stake=10
-vault_badge=`rev2 call-method $synthetics_pool_component stake_to_new_vault "$amount_to_stake,$snx" --signers $acc1_pub_key | tee /dev/tty | awk '/ResourceDef:/ {print $NF}'`
+vault_badge=`resim call-method $synthetics_pool_component stake_to_new_vault "$amount_to_stake,$snx" --signers $acc1_pub_key | tee /dev/tty | awk '/ResourceDef:/ {print $NF}'`
 
 echo "Vault badge resource def: $vault_badge"
 
 # Top up our account
 additional_amount_to_stake=21
-rev2 call-method $synthetics_pool_component stake_to_existing_vault "1,$vault_badge" "$additional_amount_to_stake,$snx" --signers $acc1_pub_key
+resim call-method $synthetics_pool_component stake_to_existing_vault "1,$vault_badge" "$additional_amount_to_stake,$snx" --signers $acc1_pub_key
 
 # Check our staked balance is 31
 echo "There should be a line under results here saying Ok(Some(31)), in line with the CallMethod instruction"
-rev2 call-method $synthetics_pool_component get_staked_balance "1,$vault_badge" --signers $acc1_pub_key
+resim call-method $synthetics_pool_component get_staked_balance "1,$vault_badge" --signers $acc1_pub_key
 
 # Unstake 20 tokens
-rev2 call-method $synthetics_pool_component unstake_from_vault "1,$vault_badge" 20 --signers $acc1_pub_key
+resim call-method $synthetics_pool_component unstake_from_vault "1,$vault_badge" 20 --signers $acc1_pub_key
 
 # This should error because we have 11 tokens left
-# rev2 call-method $synthetics_pool_component dispose_badge "1,$vault_badge" --signers $acc1_pub_key
+# resim call-method $synthetics_pool_component dispose_badge "1,$vault_badge" --signers $acc1_pub_key
 
-rev2 call-method $synthetics_pool_component unstake_from_vault "1,$vault_badge" 11 --signers $acc1_pub_key
+resim call-method $synthetics_pool_component unstake_from_vault "1,$vault_badge" 11 --signers $acc1_pub_key
 
 # Can now dispose badge as vault is empty
-rev2 call-method $synthetics_pool_component dispose_badge "1,$vault_badge" --signers $acc1_pub_key
+resim call-method $synthetics_pool_component dispose_badge "1,$vault_badge" --signers $acc1_pub_key
 
 echo
 echo "================================="
