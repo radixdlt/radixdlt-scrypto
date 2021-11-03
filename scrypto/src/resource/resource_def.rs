@@ -52,7 +52,7 @@ impl ResourceDef {
     }
 
     /// Creates a resource with fixed supply. The created resource is immediately returned.
-    pub fn new_fixed<T: Into<Amount>>(
+    pub fn new_fixed<T: Into<Decimal>>(
         metadata: HashMap<String, String>,
         supply: T,
     ) -> (Self, Bucket) {
@@ -66,7 +66,7 @@ impl ResourceDef {
     }
 
     /// Mints resources
-    pub fn mint<T: Into<Amount>>(&self, amount: T, mint_burn_auth: BucketRef) -> Bucket {
+    pub fn mint<T: Into<Decimal>>(&self, amount: T, mint_burn_auth: BucketRef) -> Bucket {
         let input = MintResourceInput {
             resource_def: self.address,
             amount: amount.into(),
@@ -107,7 +107,7 @@ impl ResourceDef {
     }
 
     /// Returns the current supply of this resource.
-    pub fn supply(&self) -> Amount {
+    pub fn supply(&self) -> Decimal {
         let input = GetResourceSupplyInput {
             resource_def: self.address,
         };

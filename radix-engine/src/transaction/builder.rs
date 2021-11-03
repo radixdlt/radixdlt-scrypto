@@ -68,7 +68,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     /// Creates a bucket by withdrawing resource from context.
     pub fn take_from_context(
         &mut self,
-        amount: Amount,
+        amount: Decimal,
         resource_def: Address,
         to: Bid,
     ) -> &mut Self {
@@ -82,7 +82,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     /// Creates a bucket ref by borrowing resource from context.
     pub fn borrow_from_context(
         &mut self,
-        amount: Amount,
+        amount: Decimal,
         resource_def: Address,
         rid: Rid,
     ) -> &mut Self {
@@ -235,7 +235,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     pub fn new_resource_fixed(
         &mut self,
         metadata: HashMap<String, String>,
-        supply: Amount,
+        supply: Decimal,
     ) -> &mut Self {
         self.add_instruction(Instruction::CallFunction {
             package: SYSTEM_PACKAGE,
@@ -248,7 +248,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     /// Mints resource.
     pub fn mint_resource(
         &mut self,
-        amount: Amount,
+        amount: Decimal,
         resource_def: Address,
         mint_burn_auth: Address,
     ) -> &mut Self {
@@ -283,7 +283,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     pub fn new_account_with_resource(
         &mut self,
         key: Address,
-        amount: Amount,
+        amount: Decimal,
         resource_def: Address,
     ) -> &mut Self {
         self.declare_bucket(|builder, bid| {
@@ -300,7 +300,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     /// Withdraws resource from an account.
     pub fn withdraw_from_account(
         &mut self,
-        amount: Amount,
+        amount: Decimal,
         resource_def: Address,
         account: Address,
     ) -> &mut Self {
@@ -396,9 +396,9 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         account: Option<Address>,
     ) -> Result<SmartValue, BuildArgsError> {
         match name {
-            SCRYPTO_NAME_AMOUNT => {
+            SCRYPTO_NAME_DECIMAL => {
                 let value = arg
-                    .parse::<Amount>()
+                    .parse::<Decimal>()
                     .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
                 Ok(SmartValue::from(value))
             }
@@ -416,7 +416,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
             }
             SCRYPTO_NAME_BID | SCRYPTO_NAME_BUCKET => {
                 let mut split = arg.split(',');
-                let amount = split.next().and_then(|v| v.trim().parse::<Amount>().ok());
+                let amount = split.next().and_then(|v| v.trim().parse::<Decimal>().ok());
                 let resource_def = split.next().and_then(|v| v.trim().parse::<Address>().ok());
                 match (amount, resource_def) {
                     (Some(a), Some(r)) => {
@@ -435,7 +435,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
             }
             SCRYPTO_NAME_RID | SCRYPTO_NAME_BUCKET_REF => {
                 let mut split = arg.split(',');
-                let amount = split.next().and_then(|v| v.trim().parse::<Amount>().ok());
+                let amount = split.next().and_then(|v| v.trim().parse::<Decimal>().ok());
                 let resource_def = split.next().and_then(|v| v.trim().parse::<Address>().ok());
                 match (amount, resource_def) {
                     (Some(a), Some(r)) => {

@@ -12,7 +12,7 @@ pub enum BucketError {
 /// A transient resource container.
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct Bucket {
-    amount: Amount,
+    amount: Decimal,
     resource_def: Address,
 }
 
@@ -27,7 +27,7 @@ pub struct LockedBucket {
 pub type BucketRef = Rc<LockedBucket>;
 
 impl Bucket {
-    pub fn new(amount: Amount, resource_def: Address) -> Self {
+    pub fn new(amount: Decimal, resource_def: Address) -> Self {
         Self {
             amount,
             resource_def,
@@ -43,7 +43,7 @@ impl Bucket {
         }
     }
 
-    pub fn take(&mut self, amount: Amount) -> Result<Self, BucketError> {
+    pub fn take(&mut self, amount: Decimal) -> Result<Self, BucketError> {
         if self.amount < amount {
             Err(BucketError::InsufficientBalance)
         } else {
@@ -53,7 +53,7 @@ impl Bucket {
         }
     }
 
-    pub fn amount(&self) -> Amount {
+    pub fn amount(&self) -> Decimal {
         self.amount.clone()
     }
 

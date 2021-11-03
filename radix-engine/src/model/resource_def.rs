@@ -17,14 +17,14 @@ pub enum ResourceDefError {
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct ResourceDef {
     metadata: HashMap<String, String>,
-    supply: Amount,
+    supply: Decimal,
     mint_burn_auth: Option<Address>,
 }
 
 impl ResourceDef {
     pub fn new(
         metadata: HashMap<String, String>,
-        supply: Amount,
+        supply: Decimal,
         mint_burn_auth: Option<Address>,
     ) -> Self {
         Self {
@@ -38,7 +38,7 @@ impl ResourceDef {
         &self.metadata
     }
 
-    pub fn supply(&self) -> Amount {
+    pub fn supply(&self) -> Decimal {
         self.supply.clone()
     }
 
@@ -46,7 +46,7 @@ impl ResourceDef {
         self.mint_burn_auth.clone()
     }
 
-    pub fn mint(&mut self, amount: Amount, auth: Auth) -> Result<(), ResourceDefError> {
+    pub fn mint(&mut self, amount: Decimal, auth: Auth) -> Result<(), ResourceDefError> {
         match self.mint_burn_auth() {
             Some(a) => {
                 if auth.contains(a) {
@@ -60,7 +60,7 @@ impl ResourceDef {
         }
     }
 
-    pub fn burn(&mut self, amount: Amount, auth: Auth) -> Result<(), ResourceDefError> {
+    pub fn burn(&mut self, amount: Decimal, auth: Auth) -> Result<(), ResourceDefError> {
         match self.mint_burn_auth() {
             Some(a) => {
                 if auth.contains(a) {

@@ -14,12 +14,12 @@ pub fn match_address(matches: &ArgMatches, name: &str) -> Result<Address, Error>
 }
 
 /// Match an amount argument.
-pub fn match_amount(matches: &ArgMatches, name: &str) -> Result<Amount, Error> {
+pub fn match_amount(matches: &ArgMatches, name: &str) -> Result<Decimal, Error> {
     matches
         .value_of(name)
         .ok_or_else(|| Error::MissingArgument(name.to_owned()))?
         .parse()
-        .map_err(Error::InvalidAmount)
+        .map_err(Error::InvalidDecimal)
 }
 
 /// Match a u64 argument.

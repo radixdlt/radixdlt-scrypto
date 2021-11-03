@@ -228,7 +228,7 @@ pub struct CreateResourceMutableOutput {
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct CreateResourceFixedInput {
     pub metadata: HashMap<String, String>,
-    pub supply: Amount,
+    pub supply: Decimal,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
@@ -254,7 +254,7 @@ pub struct GetResourceSupplyInput {
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct GetResourceSupplyOutput {
-    pub supply: Amount,
+    pub supply: Decimal,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
@@ -270,7 +270,7 @@ pub struct GetResourceMintAuthOutput {
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct MintResourceInput {
     pub resource_def: Address,
-    pub amount: Amount,
+    pub amount: Decimal,
     pub mint_burn_auth: Rid,
 }
 
@@ -314,7 +314,7 @@ pub struct PutIntoVaultOutput {}
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct TakeFromVaultInput {
     pub vault: Vid,
-    pub amount: Amount,
+    pub amount: Decimal,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
@@ -323,13 +323,13 @@ pub struct TakeFromVaultOutput {
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct GetVaultAmountInput {
+pub struct GetVaultDecimalInput {
     pub vault: Vid,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct GetVaultAmountOutput {
-    pub amount: Amount,
+pub struct GetVaultDecimalOutput {
+    pub amount: Decimal,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
@@ -368,7 +368,7 @@ pub struct PutIntoBucketOutput {}
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct TakeFromBucketInput {
     pub bucket: Bid,
-    pub amount: Amount,
+    pub amount: Decimal,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
@@ -377,13 +377,13 @@ pub struct TakeFromBucketOutput {
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct GetBucketAmountInput {
+pub struct GetBucketDecimalInput {
     pub bucket: Bid,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct GetBucketAmountOutput {
-    pub amount: Amount,
+pub struct GetBucketDecimalOutput {
+    pub amount: Decimal,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
@@ -419,13 +419,13 @@ pub struct DropBucketRefInput {
 pub struct DropBucketRefOutput {}
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct GetBucketRefAmountInput {
+pub struct GetBucketRefDecimalInput {
     pub bucket_ref: Rid,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct GetBucketRefAmountOutput {
-    pub amount: Amount,
+pub struct GetBucketRefDecimalOutput {
+    pub amount: Decimal,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]

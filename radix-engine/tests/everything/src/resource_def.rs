@@ -1,7 +1,7 @@
 use scrypto::blueprint;
 use scrypto::resource::{Bucket, ResourceBuilder, ResourceDef};
 use scrypto::rust::collections::*;
-use scrypto::types::{Address, Amount};
+use scrypto::types::{Address, Decimal};
 
 blueprint! {
     struct ResourceTest;
@@ -25,7 +25,7 @@ blueprint! {
             bucket
         }
 
-        pub fn query() -> (Bucket, HashMap<String, String>, Option<Address>, Amount) {
+        pub fn query() -> (Bucket, HashMap<String, String>, Option<Address>, Decimal) {
             let bucket = ResourceBuilder::new()
                 .metadata("name", "TestToken")
                 .create_fixed(100);

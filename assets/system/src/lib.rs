@@ -20,18 +20,18 @@ blueprint! {
         }
 
         /// Creates a resource with fixed supply, and returns all supply.
-        pub fn new_resource_fixed(metadata: HashMap<String, String>, supply: Amount) -> (Address, Bucket) {
+        pub fn new_resource_fixed(metadata: HashMap<String, String>, supply: Decimal) -> (Address, Bucket) {
             let (resource_def, bucket) = ResourceDef::new_fixed(metadata, supply);
             (resource_def.address(), bucket)
         }
 
         /// Mints resource.
-        pub fn mint_resource(amount: Amount, resource_def: Address, auth: BucketRef) -> Bucket {
+        pub fn mint_resource(amount: Decimal, resource_def: Address, auth: BucketRef) -> Bucket {
             ResourceDef::from(resource_def).mint(amount, auth)
         }
 
         /// Gives away XRD tokens for testing.
-        pub fn free_xrd(&self, amount: Amount) -> Bucket {
+        pub fn free_xrd(&self, amount: Decimal) -> Bucket {
             self.xrd.take(amount)
         }
     }

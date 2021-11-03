@@ -121,7 +121,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
 
     fn withdraw_resource(
         &mut self,
-        amount: Amount,
+        amount: Decimal,
         resource_def: Address,
     ) -> Result<(), RuntimeError> {
         let candidates: BTreeSet<Bid> = self
@@ -144,7 +144,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
                     .unwrap()
                     .take(needed)
                     .unwrap();
-                needed = Amount::zero();
+                needed = Decimal::zero();
             } else {
                 debug!(self, "Withdrawing all from {:?}", candidate);
                 self.buckets.remove(&candidate);
@@ -162,7 +162,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
     /// Takes resource from this context to a temporary bucket.
     pub fn take_from_context(
         &mut self,
-        amount: Amount,
+        amount: Decimal,
         resource_def: Address,
         bid: Bid,
     ) -> Result<(), RuntimeError> {
@@ -190,7 +190,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
     /// A bucket will be created to support the reference.
     pub fn borrow_from_context(
         &mut self,
-        amount: Amount,
+        amount: Decimal,
         resource_def: Address,
         rid: Rid,
     ) -> Result<(), RuntimeError> {
@@ -1021,7 +1021,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         Self::expect_resource_def_address(input.mint_burn_auth)?;
 
         let resource_def =
-            ResourceDef::new(input.metadata, Amount::zero(), Some(input.mint_burn_auth));
+            ResourceDef::new(input.metadata, Decimal::zero(), Some(input.mint_burn_auth));
 
         let address = self.track.new_resource_def_address();
         if self.track.get_resource_def(address).is_some() {
@@ -1186,7 +1186,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         input: CreateEmptyVaultInput,
     ) -> Result<CreateEmptyVaultOutput, RuntimeError> {
         let new_vault = Vault::new(
-            Bucket::new(Amount::zero(), input.resource_def),
+            Bucket::new(Decimal::zero(), input.resource_def),
             self.package()?,
         );
         let new_vid = self.track.new_vid();
@@ -1236,8 +1236,8 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
 
     fn handle_get_vault_amount(
         &mut self,
-        input: GetVaultAmountInput,
-    ) -> Result<GetVaultAmountOutput, RuntimeError> {
+        input: GetVaultDecimalInput,
+    ) -> Result<GetVaultDecimalOutput, RuntimeError> {
         let auth = self.package_auth()?;
 
         let vault = self
@@ -1245,7 +1245,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
             .get_vault(input.vault)
             .ok_or(RuntimeError::VaultNotFound(input.vault))?;
 
-        Ok(GetVaultAmountOutput {
+        Ok(GetVaultDecimalOutput {
             amount: vault.amount(auth).map_err(RuntimeError::VaultError)?,
         })
     }
@@ -1270,7 +1270,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         &mut self,
         input: CreateEmptyBucketInput,
     ) -> Result<CreateEmptyBucketOutput, RuntimeError> {
-        let new_bucket = Bucket::new(Amount::zero(), input.resource_def);
+        let new_bucket = Bucket::new(Decimal::zero(), input.resource_def);
         let new_bid = self.track.new_bid();
         self.buckets.insert(new_bid, new_bucket);
 
@@ -1313,8 +1313,8 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
 
     fn handle_get_bucket_amount(
         &mut self,
-        input: GetBucketAmountInput,
-    ) -> Result<GetBucketAmountOutput, RuntimeError> {
+        input: GetBucketDecimalInput,
+    ) -> Result<GetBucketDecimalOutput, RuntimeError> {
         let bid = input.bucket;
         let amount = self
             .buckets
@@ -1323,7 +1323,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
             .or_else(|| self.locked_buckets.get(&bid).map(|x| x.bucket().amount()))
             .ok_or(RuntimeError::BucketNotFound(bid))?;
 
-        Ok(GetBucketAmountOutput { amount })
+        Ok(GetBucketDecimalOutput { amount })
     }
 
     fn handle_get_bucket_resource_def(
@@ -1400,14 +1400,14 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
 
     fn handle_get_bucket_ref_amount(
         &mut self,
-        input: GetBucketRefAmountInput,
-    ) -> Result<GetBucketRefAmountOutput, RuntimeError> {
+        input: GetBucketRefDecimalInput,
+    ) -> Result<GetBucketRefDecimalOutput, RuntimeError> {
         let bucket_ref = self
             .bucket_refs
             .get(&input.bucket_ref)
             .ok_or(RuntimeError::BucketRefNotFound(input.bucket_ref))?;
 
-        Ok(GetBucketRefAmountOutput {
+        Ok(GetBucketRefDecimalOutput {
             amount: bucket_ref.bucket().amount(),
         })
     }

@@ -98,7 +98,7 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
 
     /// Creates an account with 1,000,000 XRD in balance.
     pub fn create_account(&mut self, key: Address) -> Receipt {
-        let free_xrd_amount = Decimal::from(1_000_000).to_amount(18);
+        let free_xrd_amount = Decimal::from(1_000_000);
 
         self.run(
             TransactionBuilder::new(self)

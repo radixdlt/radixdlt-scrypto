@@ -1,14 +1,18 @@
 use core::ops::*;
 
-use num_bigint::BigInt;
+use num_bigint::{BigInt, Sign};
 use num_traits::{sign::Signed, ToPrimitive, Zero};
+use sbor::{describe::Type, *};
 
+use crate::buffer::*;
+use crate::rust::borrow::ToOwned;
+use crate::rust::convert::TryFrom;
 use crate::rust::fmt;
 use crate::rust::format;
+use crate::rust::str::FromStr;
 use crate::rust::string::String;
+use crate::rust::vec;
 use crate::rust::vec::Vec;
-use crate::types::Amount;
-use crate::utils::*;
 
 const PRECISION: u128 = 10u128.pow(18);
 
@@ -16,28 +20,37 @@ const PRECISION: u128 = 10u128.pow(18);
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Decimal(BigInt);
 
+/// Represents an error when parsing Decimal.
+#[derive(Debug, Clone)]
+pub enum ParseDecimalError {
+    InvalidDecimal(String),
+    InvalidSign(u8),
+    InvalidLength,
+}
+
 impl Decimal {
-    pub fn new<T: Into<BigInt>>(value: T, decimals: u8) -> Self {
-        assert!(decimals <= 18);
-
-        Self(value.into() * 10u128.pow((18 - decimals) as u32))
+    pub fn zero() -> Self {
+        Self(0.into())
     }
 
-    pub fn to_amount(&self, decimals: u8) -> Amount {
-        assert!(decimals <= 18);
+    pub fn one() -> Self {
+        Self(1.into())
+    }
 
-        if self.is_negative() {
-            scrypto_abort("Can't convert negative decimal into Amount");
+    pub fn to_vec(&self) -> Vec<u8> {
+        let mut result = Vec::new();
+        let (sign, v) = self.0.to_bytes_le();
+        match sign {
+            Sign::NoSign => result.push(0u8),
+            Sign::Plus => result.push(1u8),
+            Sign::Minus => result.push(2u8),
         }
-
-        (self.0.clone() / 10u128.pow((18 - decimals) as u32))
-            .to_biguint()
-            .unwrap()
-            .into()
+        result.extend(v);
+        result
     }
 
-    pub fn is_zero(&self) {
-        self.0.is_zero();
+    pub fn is_zero(&self) -> bool {
+        self.0.is_zero()
     }
 
     pub fn is_positive(&self) -> bool {
@@ -49,11 +62,27 @@ impl Decimal {
     }
 }
 
-impl<T: Into<BigInt>> From<T> for Decimal {
-    fn from(v: T) -> Self {
-        Self(v.into() * PRECISION)
-    }
+macro_rules! from_int {
+    ($type:ident) => {
+        impl From<$type> for Decimal {
+            fn from(val: $type) -> Self {
+                Self(BigInt::from(val) * PRECISION)
+            }
+        }
+    };
 }
+from_int!(u8);
+from_int!(u16);
+from_int!(u32);
+from_int!(u64);
+from_int!(u128);
+from_int!(usize);
+from_int!(i8);
+from_int!(i16);
+from_int!(i32);
+from_int!(i64);
+from_int!(i128);
+from_int!(isize);
 
 impl<T: Into<Decimal>> Add<T> for Decimal {
     type Output = Decimal;
@@ -126,6 +155,71 @@ impl<T: Into<Decimal>> DivAssign<T> for Decimal {
     }
 }
 
+impl FromStr for Decimal {
+    type Err = ParseDecimalError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        // TODO: this is for the happy path; need to handle invalid formatting.
+
+        let mut is_negative = false;
+        let mut value = BigInt::zero();
+
+        let chars: Vec<char> = s.chars().collect();
+        let mut p = 0;
+
+        // read sign
+        if chars[p] == '-' {
+            is_negative = true;
+            p += 1;
+        }
+
+        // read integral
+        while p < chars.len() && chars[p] != '.' {
+            value = value * 10 + chars[p] as u32 - 48;
+            p += 1;
+        }
+
+        // read radix point
+        if p < chars.len() && chars[p] == '.' {
+            p += 1;
+        }
+
+        // read fraction
+        for i in 0..18 {
+            if p + i < chars.len() {
+                value = value * 10 + chars[p + i] as u32 - 48;
+            } else {
+                value *= 10;
+            }
+        }
+
+        if is_negative {
+            value *= -1;
+        }
+
+        Ok(Self(value))
+    }
+}
+
+impl TryFrom<&[u8]> for Decimal {
+    type Error = ParseDecimalError;
+
+    fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
+        let sign = if let Some(b) = slice.get(0) {
+            match b {
+                0 => Ok(Sign::NoSign),
+                1 => Ok(Sign::Plus),
+                2 => Ok(Sign::Minus),
+                _ => Err(ParseDecimalError::InvalidSign(*b)),
+            }
+        } else {
+            Err(ParseDecimalError::InvalidLength)
+        };
+
+        Ok(Self(BigInt::from_bytes_le(sign?, &slice[1..])))
+    }
+}
+
 impl fmt::Debug for Decimal {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         // format big int
@@ -166,6 +260,38 @@ impl fmt::Display for Decimal {
     }
 }
 
+impl TypeId for Decimal {
+    #[inline]
+    fn type_id() -> u8 {
+        SCRYPTO_TYPE_DECIMAL
+    }
+}
+
+impl Encode for Decimal {
+    fn encode_value(&self, encoder: &mut Encoder) {
+        let bytes = self.to_vec();
+        encoder.write_len(bytes.len());
+        encoder.write_slice(&bytes);
+    }
+}
+
+impl Decode for Decimal {
+    fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
+        let len = decoder.read_len()?;
+        let slice = decoder.read_bytes(len)?;
+        Self::try_from(slice).map_err(|_| DecodeError::InvalidCustomData(SCRYPTO_TYPE_DECIMAL))
+    }
+}
+
+impl Describe for Decimal {
+    fn describe() -> Type {
+        Type::Custom {
+            name: SCRYPTO_NAME_DECIMAL.to_owned(),
+            generics: vec![],
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -180,6 +306,30 @@ mod tests {
         );
         assert_eq!(Decimal(1000000000000000000u128.into()).to_string(), "1");
         assert_eq!(Decimal(123000000000000000000u128.into()).to_string(), "123");
+        assert_eq!(
+            Decimal(123456789123456789000000000000000000u128.into()).to_string(),
+            "123456789123456789"
+        );
+    }
+
+    #[test]
+    fn test_parse() {
+        assert_eq!(
+            Decimal(1u128.into()),
+            "0.000000000000000001".parse().unwrap()
+        );
+        assert_eq!(
+            Decimal(123456789123456789u128.into()),
+            "0.123456789123456789".parse().unwrap()
+        );
+        assert_eq!(
+            Decimal(1000000000000000000u128.into()),
+            "1".parse().unwrap()
+        );
+        assert_eq!(
+            Decimal(123456789123456789000000000000000000u128.into()),
+            "123456789123456789".parse().unwrap()
+        );
     }
 
     #[test]

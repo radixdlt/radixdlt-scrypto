@@ -10,7 +10,7 @@ const XRD_SYMBOL: &str = "XRD";
 const XRD_NAME: &str = "Radix";
 const XRD_DESCRIPTION: &str = "The Radix Public Network's native token, used to pay the network's required transaction fees and to secure the network through staking to its validator nodes.";
 const XRD_URL: &str = "https://tokens.radixdlt.com";
-const XRD_MAX_SUPPLY: u128 = 24_000_000_000_000_000_000_000_000_000u128;
+const XRD_MAX_SUPPLY: u128 = 24_000_000_000_000u128;
 const XRD_VAULT_ID: Vid = Vid(H256([0u8; 32]), 0);
 
 const SYSTEM_COMPONENT_NAME: &str = "System";

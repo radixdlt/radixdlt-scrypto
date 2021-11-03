@@ -26,7 +26,7 @@ blueprint! {
             self.state = new_state;
         }
 
-        pub fn custom_types_1() -> (Amount, Address, H256, Bid, Rid, Mid, Vid) {
+        pub fn custom_types_1() -> (Decimal, Address, H256, Bid, Rid, Mid, Vid) {
             todo!()
         }
 
@@ -71,7 +71,7 @@ fn test_simple_abi() {
                         "elements": [
                             {
                                 "type": "Custom",
-                                "name": "scrypto::types::Amount",
+                                "name": "scrypto::types::Decimal",
                                 "generics": []
                             },
                             {

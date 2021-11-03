@@ -30,7 +30,7 @@ impl ResourceBuilder {
     }
 
     /// Creates a resource with fixed supply.
-    pub fn create_fixed<T: Into<Amount>>(&self, supply: T) -> Bucket {
+    pub fn create_fixed<T: Into<Decimal>>(&self, supply: T) -> Bucket {
         ResourceDef::new_fixed(self.metadata.clone(), supply.into()).1
     }
 }
