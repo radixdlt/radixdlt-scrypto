@@ -48,15 +48,26 @@ impl VMM {
         self.usdt = self.k / self.xrd;
         return profit_n_loss;
     }
+
+    pub fn running_xrd_price(&self) -> u32 {
+        return self.usdt / self.xrd;
+    }
 }
 
-#[derive(TypeId, Encode, Decode, Clone)]
+#[derive(TypeId, Encode, Decode, Clone, Debug,Describe)]
 struct Position {
     position_type: String,
     margin_amount: u32,
     wallet_id: Address,
     leverage: u32,
     n_quantity: u32,
+}
+
+impl Position {
+    pub fn running_margin(position: &Position, running_xrd_price: u32) -> u32 {
+        info!("Running xrd price {}", running_xrd_price);
+        return 100 * position.margin_amount / (position.n_quantity * running_xrd_price);
+    }
 }
 
 blueprint! {
@@ -149,6 +160,37 @@ blueprint! {
                     panic!("Error finding position for wallet ")
                 }
             }
+        }
+
+        pub fn print_running_margins(&mut self){
+            for (address,positions) in &self.all_trader_pstns{
+                for (i,position) in positions.iter().enumerate(){
+                    let running_margin = Position::running_margin(position,self.mm.running_xrd_price());
+                    info!("Running margin {}% for account {:?}  " , running_margin,position);
+                }
+            }
+        }
+
+        pub fn liquidate(&mut self){
+            let positions = self.positions_to_liquidate();
+            for position in positions{
+                let bucket = self.settle_position(position.wallet_id,position.n_quantity,position.position_type);
+             }
+        }
+
+        pub fn positions_to_liquidate(&self)->  Vec<Position> {
+            let mut positions :Vec<Position>  = Vec::new();
+                          
+                for (address,positions) in &self.all_trader_pstns{
+                    for (i,position) in positions.iter().enumerate(){
+                        let running_margin = Position::running_margin(position,self.mm.running_xrd_price());
+                        info!("Running margin {}% for account {:?}  " , running_margin,position);
+                        if running_margin < 10 {
+                            positions.push(position);
+                        }
+                    }
+                }
+            return positions;
         }
 
         pub fn transfer_tokens_to_token_vault(&mut self, from: Address, amount:Bucket ) {
