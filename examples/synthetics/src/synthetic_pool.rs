@@ -115,11 +115,11 @@ blueprint! {
         usd_resource_definition: ResourceDef,
         // State
         staked_collateral_vault_map: LazyMap<Address, Vault>,
-        synthetic_token_minted_debt_by_exchange_ticker_code: HashMap<(String, String), Vault>,
-        synthetic_token_resource_definitions_by_exchange_ticker_code: LazyMap<(String, String), ResourceDef>,
-        synthetic_token_resource_definitions_to_exchange_ticker_code: LazyMap<ResourceDef, (String, String)>,
+        synthetic_token_minted_debt_by_ticker_code: HashMap<String, Vault>,
+        synthetic_token_and_debt_rdefs_by_ticker_code: LazyMap<String, (ResourceDef, ResourceDef)>,
+        synthetic_token_rdef_to_ticker_code: LazyMap<ResourceDef, String>,
         // Oracle State
-        off_ledger_exchange_ticker_code_prices_in_billionths_of_base: LazyMap<(String, String), u128>,
+        off_ledger_ticker_code_prices_in_billionths_of_usd: LazyMap<String, u128>,
         unix_timestamp_oracle: u128
     }
 
@@ -139,10 +139,10 @@ blueprint! {
                 collateral_resource_definition,
                 usd_resource_definition,
                 staked_collateral_vault_map: LazyMap::new(),
-                synthetic_token_minted_debt_by_exchange_ticker_code: HashMap::new(),
-                synthetic_token_resource_definitions_by_exchange_ticker_code: LazyMap::new(),
-                synthetic_token_resource_definitions_to_exchange_ticker_code: LazyMap::new(),
-                off_ledger_exchange_ticker_code_prices_in_billionths_of_base: LazyMap::new(),
+                synthetic_token_minted_debt_by_ticker_code: HashMap::new(),
+                synthetic_token_and_debt_rdefs_by_ticker_code: LazyMap::new(),
+                synthetic_token_rdef_to_ticker_code: LazyMap::new(),
+                off_ledger_ticker_code_prices_in_billionths_of_usd: LazyMap::new(),
                 unix_timestamp_oracle: 0
             }.instantiate();
 
@@ -290,12 +290,12 @@ blueprint! {
         // TODO - revisit this when the resource definition supports decimals
         fn get_total_system_debt_in_usd_billionths(&self) -> Amount {
             let mut total = Amount::zero();
-            for (exchange_ticker_code_key, vault) in &self.synthetic_token_minted_debt_by_exchange_ticker_code {
-                let oracle_price = self.get_off_ledger_usd_price_in_billionths(exchange_ticker_code_key.0.to_string(), exchange_ticker_code_key.1.to_string());
+            for (ticker_code, vault) in &self.synthetic_token_minted_debt_by_ticker_code {
+                let oracle_price = self.get_off_ledger_usd_price_in_billionths(ticker_code.to_string());
                 scrypto_assert!(
                     oracle_price.is_some(),
-                    "The oracle price for ({}, {}) has no value",
-                    exchange_ticker_code_key.0, exchange_ticker_code_key.1
+                    "The oracle price for ({}) has no value",
+                    ticker_code
                 );
                 total = total + vault.amount() * oracle_price.unwrap();
             }
@@ -346,13 +346,13 @@ blueprint! {
         // TODO - Add badge auth
 
         /// Sets the price (in billionth) of pair BASE/QUOTE.
-        pub fn get_off_ledger_usd_price_in_billionths(&self, exchange: String, ticker_code: String) -> Option<u128> {
-            self.off_ledger_exchange_ticker_code_prices_in_billionths_of_base.get(&(exchange, ticker_code))
+        pub fn get_off_ledger_usd_price_in_billionths(&self, ticker_code: String) -> Option<u128> {
+            self.off_ledger_ticker_code_prices_in_billionths_of_usd.get(&ticker_code)
         }
 
         /// Updates the price (in billionth) of pair BASE/QUOTE.
-        pub fn update_off_ledger_usd_price(&self, exchange: String, ticker_code: String, price_in_billionths: u128) {
-            self.off_ledger_exchange_ticker_code_prices_in_billionths_of_base.insert((exchange, ticker_code), price_in_billionths);
+        pub fn update_off_ledger_usd_price(&self, ticker_code: String, price_in_billionths: u128) {
+            self.off_ledger_ticker_code_prices_in_billionths_of_usd.insert(ticker_code, price_in_billionths);
         }
 
         pub fn get_unix_timestamp(&self) -> u128 {
