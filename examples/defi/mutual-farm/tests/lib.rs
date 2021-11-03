@@ -13,22 +13,10 @@ fn test_hello() {
 
     // Test the `new` function.
     let transaction1 = TransactionBuilder::new(&executor)
-        .call_function(package, "Hello", "new", vec![], None)
+        .call_function(package, "MutualFarm", "new", vec![], Some(account))
         .build(vec![key])
         .unwrap();
     let receipt1 = executor.run(transaction1, false).unwrap();
     println!("{:?}\n", receipt1);
     assert!(receipt1.success);
-
-    // Test the `free_token` method.
-    let component = receipt1.component(0).unwrap();
-    let transaction2 = TransactionBuilder::new(&executor)
-        .call_method(component, "free_token", vec![], Some(account))
-        .drop_all_bucket_refs()
-        .deposit_all_buckets(account)
-        .build(vec![key])
-        .unwrap();
-    let receipt2 = executor.run(transaction2, false).unwrap();
-    println!("{:?}\n", receipt2);
-    assert!(receipt2.success);
 }
