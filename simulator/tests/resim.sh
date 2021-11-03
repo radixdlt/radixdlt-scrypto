@@ -23,19 +23,16 @@ package=`$resim publish ../examples/helloworld | tee /dev/tty | awk '/Package:/ 
 component=`$resim call-function $package Hello new | tee /dev/tty | awk '/Component:/ {print $NF}'`
 $resim call-method $component free_token
 
-# Test gumball machine
-package=`$resim publish ../examples/gumball-machine | tee /dev/tty | awk '/Package:/ {print $NF}'`
-component=`$resim call-function $package GumballMachine new | tee /dev/tty | awk '/Component:/ {print $NF}'`
-$resim call-method $component get_gumball 1,030000000000000000000000000000000000000000000000000004 --signers $account_key
-
 # Test cross component call
-$resim publish ../examples/gumball-machine --address 01a405d3129b61e86c51c3168d553d2ffd7a3f0bd2f66b5a3e9876
-package=`$resim publish ../examples/cross-component-call | tee /dev/tty | awk '/Package:/ {print $NF}'`
-component=`$resim call-function $package Vendor new | tee /dev/tty | awk '/Component:/ {print $NF}' | tail -n1`
-$resim call-method $component get_gumball 1,030000000000000000000000000000000000000000000000000004 --signers $account_key
+$resim publish ../examples/features/cross-component-call --address 01bda8686d6c2fa45dce04fac71a09b54efbc8028c23aac74bc00e
+package=`$resim publish ../examples/features/cross-component-call | tee /dev/tty | awk '/Package:/ {print $NF}'`
+component=`$resim call-function $package Proxy1 new | tee /dev/tty | awk '/Component:/ {print $NF}' | tail -n1`
+$resim call-method $component free_token
+component=`$resim call-function $package Proxy2 new | tee /dev/tty | awk '/Component:/ {print $NF}' | tail -n1`
+$resim call-method $component free_token
 
 # Export abi
-$resim export-abi $package Vendor
+$resim export-abi $package Proxy1
 
 # Show state
 $resim show $package

@@ -13,18 +13,17 @@ pub enum Skill {
 
 blueprint! {
     struct Radragon {
-        owner_badge_addr: Address,
         level: u32,
         skin_colour: Colour,
         hair_colour: Colour,
         weight_kg: u32,
         height_cm: u32,
         skills: Vec<Skill>,
-        owner: BucketRef,
+        owner: ResourceDef,
     }
 
     impl Radragon {
-        pub fn new(to_burn: Bucket) {
+        pub fn new() {
             
         }
     }

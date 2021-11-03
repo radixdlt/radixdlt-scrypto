@@ -1,14 +1,14 @@
 [package]
-name = "nft"
+name = "radiswap"
 version = "0.1.0"
 edition = "2018"
 
 [dependencies]
-sbor = { path = "../../sbor" }
-scrypto = { path = "../../scrypto" }
+sbor = { path = "../../../sbor" }
+scrypto = { path = "../../../scrypto" }
 
 [dev-dependencies]
-radix-engine = { path = "../../radix-engine" }
+radix-engine = { path = "../../../radix-engine" }
 
 [profile.release]
 opt-level = 's'     # Optimize for size.

@@ -97,16 +97,10 @@ jobs:
       working-directory: examples/helloworld
     - name: Build no_std
       run: cargo build --target wasm32-unknown-unknown --release
-      working-directory: examples/no_std
-    - name: Build gumball machine
+      working-directory: examples/features/no_std
+    - name: Build cross-component-call
       run: cargo build --target wasm32-unknown-unknown --release
-      working-directory: examples/gumball-machine
-    - name: Build gumball machine vendor
-      run: cargo build --target wasm32-unknown-unknown --release
-      working-directory: examples/cross-component-call
-    - name: Build radiswap
-      run: cargo build --target wasm32-unknown-unknown --release
-      working-directory: examples/radiswap
+      working-directory: examples/features/cross-component-call
   radix-engine:
     name: Run Radix Engine tests
     runs-on: ${{ matrix.os }}
