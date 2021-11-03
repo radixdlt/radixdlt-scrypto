@@ -73,9 +73,13 @@ blueprint! {
         pub fn borrow(&mut self, b_requested: u32, c_tokens: Bucket) -> Bucket {
             
             // TODO: go via oracle to establish B<->C exachange
-            //       bellow I assume
+            //       bellow I assume B = 1 * C
+            let b_c_exchange = 1
+            // TODO: take fee % and add a pool for it
+            let max_b_borrow = c_tokens.amount().as_u32() / ( b_c_exchange * self.collateral_ratio )
+
             scrypto_assert!(
-                c_tokens.amount().as_u32() < b_requested * self.collateral_ratio,
+                b_requested > max_b_borrow,
                 "Not enough collateral"
             );
             scrypto_assert!(
@@ -83,8 +87,6 @@ blueprint! {
                 "Not enough liquidity"
             );
             self.c_pool.put(c_tokens);
-
-            // TODO: take fee % and add a pool for it
 
             return self.b_pool.take(b_requested);
         }
