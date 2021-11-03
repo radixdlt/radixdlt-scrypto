@@ -1,3 +1,4 @@
+pub mod badge;
 pub mod bucket;
 pub mod component;
 pub mod context;

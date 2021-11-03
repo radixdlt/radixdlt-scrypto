@@ -1,6 +1,5 @@
 use scrypto::abi;
 use scrypto::args;
-use scrypto::rust::borrow::ToOwned;
 use scrypto::rust::string::ToString;
 use scrypto::rust::vec;
 use scrypto::rust::vec::Vec;
@@ -98,16 +97,18 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
     }
 
     /// Creates an account with 1,000,000 XRD in balance.
-    pub fn create_account(&mut self, key: Address) -> Address {
+    pub fn new_account(&mut self, key: Address) -> Address {
+        let free_xrd_amount = Decimal::from(1_000_000);
+
         self.run(
             TransactionBuilder::new(self)
                 .call_method(
                     SYSTEM_COMPONENT,
                     "free_xrd",
-                    vec!["1000000".to_owned()],
+                    vec![free_xrd_amount.to_string()],
                     None,
                 )
-                .create_account_with_resource(key, 1000000.into(), RADIX_TOKEN)
+                .new_account_with_resource(key, free_xrd_amount, RADIX_TOKEN)
                 .build(Vec::new())
                 .unwrap(),
             false,
@@ -119,20 +120,27 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
 
     /// Publishes a package.
     pub fn publish_package(&mut self, code: &[u8]) -> Address {
-        self.run(
-            TransactionBuilder::new(self)
-                .publish_package(code)
-                .build(Vec::new())
-                .unwrap(),
-            false,
-        )
-        .unwrap()
-        .package(0)
-        .unwrap()
+        let receipt = self
+            .run(
+                TransactionBuilder::new(self)
+                    .publish_package(code)
+                    .build(Vec::new())
+                    .unwrap(),
+                true,
+            )
+            .unwrap();
+
+        if !receipt.success {
+            #[cfg(not(feature = "alloc"))]
+            println!("{:?}", receipt);
+            panic!("Failed to publish package. See receipt above.");
+        } else {
+            receipt.package(0).unwrap()
+        }
     }
 
     /// Publishes a package to a specified address.
-    pub fn publish_package_to(&mut self, code: &[u8], address: Address) {
+    pub fn overwrite_package(&mut self, address: Address, code: &[u8]) {
         self.ledger
             .put_package(address, Package::new(code.to_vec()));
     }
@@ -165,37 +173,37 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
         let mut success = true;
         for inst in &transaction.instructions {
             let res = match inst {
-                Instruction::ReserveBucketId => {
-                    proc.reserve_bucket_id();
+                Instruction::DeclareTempBucket => {
+                    proc.declare_bucket();
                     Ok(None)
                 }
-                Instruction::ReserveBucketRefId => {
-                    proc.reserve_bucket_ref_id();
+                Instruction::DeclareTempBucketRef => {
+                    proc.declare_bucket_ref();
                     Ok(None)
                 }
-                Instruction::CreateTempBucket {
+                Instruction::TakeFromContext {
                     amount,
                     resource_def,
-                    bucket,
+                    to,
                 } => proc
-                    .create_temp_bucket(*amount, *resource_def, *bucket)
+                    .take_from_context(amount.clone(), *resource_def, *to)
                     .map(|_| None),
-                Instruction::CreateTempBucketRef {
+                Instruction::BorrowFromContext {
                     amount,
                     resource_def,
-                    bucket_ref,
+                    to,
                 } => proc
-                    .create_temp_bucket_ref(*amount, *resource_def, *bucket_ref)
+                    .borrow_from_context(amount.clone(), *resource_def, *to)
                     .map(|_| None),
                 Instruction::CallFunction {
                     package,
-                    name,
+                    blueprint,
                     function,
                     args,
                 } => proc
                     .call_function(
                         *package,
-                        name.as_str(),
+                        blueprint.as_str(),
                         function.as_str(),
                         args.iter().map(|v| v.encoded.clone()).collect(),
                     )
@@ -211,10 +219,15 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
                         args.iter().map(|v| v.encoded.clone()).collect(),
                     )
                     .map(|rtn| Some(SmartValue { encoded: rtn })),
-                Instruction::DepositAll { component, method } => {
-                    let buckets = proc.owned_buckets();
+
+                Instruction::DropAllBucketRefs => {
+                    proc.drop_bucket_refs();
+                    Ok(None)
+                }
+                Instruction::DepositAllBuckets { account } => {
+                    let buckets = proc.list_buckets();
                     if !buckets.is_empty() {
-                        proc.call_method(*component, method.as_str(), args!(buckets))
+                        proc.call_method(*account, "deposit_batch", args!(buckets))
                             .map(|rtn| Some(SmartValue { encoded: rtn }))
                     } else {
                         Ok(None)

@@ -152,8 +152,8 @@ pub fn format_custom<L: Ledger>(
     vaults: &mut Vec<Vid>,
 ) -> Result<String, DecodeError> {
     match ty {
-        SCRYPTO_TYPE_AMOUNT => {
-            let amount = Amount::try_from(data).map_err(|_| DecodeError::InvalidCustomData(ty))?;
+        SCRYPTO_TYPE_DECIMAL => {
+            let amount = Decimal::try_from(data).map_err(|_| DecodeError::InvalidCustomData(ty))?;
             Ok(format!("{}", amount))
         }
         SCRYPTO_TYPE_ADDRESS => {

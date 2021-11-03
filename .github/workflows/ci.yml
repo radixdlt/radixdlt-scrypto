@@ -126,8 +126,8 @@ jobs:
     - name: Run bench
       run: cargo bench
       working-directory: radix-engine
-  simulator-rev2:
-    name: Run Simulator tests (rev2)
+  simulator-resim:
+    name: Run Simulator tests (resim)
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -137,7 +137,7 @@ jobs:
     - name: Add wasm target
       run: rustup target add wasm32-unknown-unknown
     - name: Run tests
-      run: bash ./tests/rev2.sh
+      run: bash ./tests/resim.sh
       working-directory: simulator
   simulator-scrypto:
     name: Run Simulator tests (scrypto)

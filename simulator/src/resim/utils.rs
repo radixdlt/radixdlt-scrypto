@@ -2,7 +2,7 @@ use clap::ArgMatches;
 use scrypto::types::*;
 use std::path::PathBuf;
 
-use crate::rev2::*;
+use crate::resim::*;
 
 /// Match an address argument.
 pub fn match_address(matches: &ArgMatches, name: &str) -> Result<Address, Error> {
@@ -14,12 +14,12 @@ pub fn match_address(matches: &ArgMatches, name: &str) -> Result<Address, Error>
 }
 
 /// Match an amount argument.
-pub fn match_amount(matches: &ArgMatches, name: &str) -> Result<Amount, Error> {
+pub fn match_amount(matches: &ArgMatches, name: &str) -> Result<Decimal, Error> {
     matches
         .value_of(name)
         .ok_or_else(|| Error::MissingArgument(name.to_owned()))?
         .parse()
-        .map_err(Error::InvalidAmount)
+        .map_err(Error::InvalidDecimal)
 }
 
 /// Match a u64 argument.
@@ -68,6 +68,11 @@ pub fn match_signers(matches: &ArgMatches, name: &str) -> Result<Vec<Address>, E
             } else {
                 return Err(Error::InvalidSignerPublicKey);
             }
+        }
+    }
+    if let Some(account) = get_configs()?.default_account {
+        if !v.contains(&account.1) {
+            v.push(account.1);
         }
     }
     Ok(v)

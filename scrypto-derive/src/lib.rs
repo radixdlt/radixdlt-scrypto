@@ -42,8 +42,9 @@ use proc_macro::TokenStream;
 /// ```
 #[proc_macro]
 pub fn blueprint(input: TokenStream) -> TokenStream {
-    let output = blueprint::handle_blueprint(proc_macro2::TokenStream::from(input));
-    TokenStream::from(output)
+    blueprint::handle_blueprint(proc_macro2::TokenStream::from(input))
+        .unwrap_or_else(|err| err.to_compile_error())
+        .into()
 }
 
 /// Imports a blueprint from its ABI.
@@ -92,8 +93,9 @@ pub fn blueprint(input: TokenStream) -> TokenStream {
 /// ```
 #[proc_macro]
 pub fn import(input: TokenStream) -> TokenStream {
-    let output = import::handle_import(proc_macro2::TokenStream::from(input));
-    TokenStream::from(output)
+    import::handle_import(proc_macro2::TokenStream::from(input))
+        .unwrap_or_else(|err| err.to_compile_error())
+        .into()
 }
 
 #[proc_macro_attribute]

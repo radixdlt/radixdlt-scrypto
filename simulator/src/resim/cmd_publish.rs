@@ -8,7 +8,7 @@ use radix_engine::transaction::*;
 use scrypto::types::*;
 
 use crate::ledger::*;
-use crate::rev2::*;
+use crate::resim::*;
 use crate::utils::*;
 
 const ARG_TRACE: &str = "TRACE";

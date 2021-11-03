@@ -16,8 +16,8 @@ uuid = { version = "0.8", features = ["v4"] }
 hex = { version = "0.4" }
 
 [[bin]]
-name = "rev2"
-path = "src/bin/rev2.rs"
+name = "resim"
+path = "src/bin/resim.rs"
 
 [[bin]]
 name = "scrypto"

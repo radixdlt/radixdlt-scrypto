@@ -9,7 +9,7 @@ use scrypto::types::*;
 use crate::ledger::*;
 use crate::utils::*;
 
-/// Represents a REv2 error.
+/// Represents a resim error.
 #[derive(Debug)]
 pub enum Error {
     NoDefaultAccount,
@@ -22,7 +22,7 @@ pub enum Error {
 
     InvalidAddress(ParseAddressError),
 
-    InvalidAmount(ParseAmountError),
+    InvalidDecimal(ParseDecimalError),
 
     InvalidNumber(ParseIntError),
 

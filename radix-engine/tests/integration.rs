@@ -17,7 +17,7 @@ fn test_package() {
     let mut ledger = InMemoryLedger::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, 0, 0);
     let key = executor.new_public_key();
-    let account = executor.create_account(key);
+    let account = executor.new_account(key);
     let package = executor.publish_package(include_code!("./everything"));
 
     let transaction1 = TransactionBuilder::new(&executor)
@@ -40,7 +40,7 @@ fn test_context() {
     let mut ledger = InMemoryLedger::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, 0, 0);
     let key = executor.new_public_key();
-    let account = executor.create_account(key);
+    let account = executor.new_account(key);
     let package = executor.publish_package(include_code!("./everything"));
 
     let transaction1 = TransactionBuilder::new(&executor)
@@ -57,7 +57,7 @@ fn test_component() {
     let mut ledger = InMemoryLedger::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, 0, 0);
     let key = executor.new_public_key();
-    let account = executor.create_account(key);
+    let account = executor.new_account(key);
     let package = executor.publish_package(include_code!("./everything"));
 
     // Create component
@@ -88,7 +88,8 @@ fn test_component() {
         )
         .call_method(component, "get_component_state", vec![], Some(account))
         .call_method(component, "put_component_state", vec![], Some(account))
-        .deposit_all(account)
+        .drop_all_bucket_refs()
+        .deposit_all_buckets(account)
         .build(vec![key])
         .unwrap();
     let receipt2 = executor.run(transaction2, true).unwrap();
@@ -101,7 +102,7 @@ fn test_lazy_map() {
     let mut ledger = InMemoryLedger::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, 0, 0);
     let key = executor.new_public_key();
-    let account = executor.create_account(key);
+    let account = executor.new_account(key);
     let package = executor.publish_package(include_code!("./everything"));
 
     let transaction = TransactionBuilder::new(&executor)
@@ -124,7 +125,7 @@ fn test_resource_def() {
     let mut ledger = InMemoryLedger::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, 0, 0);
     let key = executor.new_public_key();
-    let account = executor.create_account(key);
+    let account = executor.new_account(key);
     let package = executor.publish_package(include_code!("./everything"));
 
     let transaction = TransactionBuilder::new(&executor)
@@ -144,10 +145,12 @@ fn test_resource_def() {
         )
         .call_function(package, "ResourceTest", "query", vec![], Some(account))
         .call_function(package, "ResourceTest", "burn", vec![], Some(account))
-        .deposit_all(account)
+        .drop_all_bucket_refs()
+        .deposit_all_buckets(account)
         .build(vec![key])
         .unwrap();
     let receipt = executor.run(transaction, true).unwrap();
+    println!("{:?}", receipt);
     assert!(receipt.success);
 }
 
@@ -157,7 +160,7 @@ fn test_bucket() {
     let mut ledger = InMemoryLedger::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, 0, 0);
     let key = executor.new_public_key();
-    let account = executor.create_account(key);
+    let account = executor.new_account(key);
     let package = executor.publish_package(include_code!("./everything"));
 
     let transaction = TransactionBuilder::new(&executor)
@@ -165,7 +168,30 @@ fn test_bucket() {
         .call_function(package, "BucketTest", "split", vec![], Some(account))
         .call_function(package, "BucketTest", "borrow", vec![], Some(account))
         .call_function(package, "BucketTest", "query", vec![], Some(account))
-        .deposit_all(account)
+        .drop_all_bucket_refs()
+        .deposit_all_buckets(account)
+        .build(vec![key])
+        .unwrap();
+    let receipt = executor.run(transaction, true).unwrap();
+    assert!(receipt.success);
+}
+
+#[test]
+fn test_badge() {
+    compile();
+    let mut ledger = InMemoryLedger::with_bootstrap();
+    let mut executor = TransactionExecutor::new(&mut ledger, 0, 0);
+    let key = executor.new_public_key();
+    let account = executor.new_account(key);
+    let package = executor.publish_package(include_code!("./everything"));
+
+    let transaction = TransactionBuilder::new(&executor)
+        .call_function(package, "BadgeTest", "combine", vec![], Some(account))
+        .call_function(package, "BadgeTest", "split", vec![], Some(account))
+        .call_function(package, "BadgeTest", "borrow", vec![], Some(account))
+        .call_function(package, "BadgeTest", "query", vec![], Some(account))
+        .drop_all_bucket_refs()
+        .deposit_all_buckets(account)
         .build(vec![key])
         .unwrap();
     let receipt = executor.run(transaction, true).unwrap();
@@ -178,7 +204,7 @@ fn test_move_resource() {
     let mut ledger = InMemoryLedger::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, 0, 0);
     let key = executor.new_public_key();
-    let account = executor.create_account(key);
+    let account = executor.new_account(key);
     let package = executor.publish_package(include_code!("./everything"));
 
     let transaction = TransactionBuilder::new(&executor)
@@ -190,7 +216,8 @@ fn test_move_resource() {
             vec![],
             Some(account),
         )
-        .deposit_all(account)
+        .drop_all_bucket_refs()
+        .deposit_all_buckets(account)
         .build(vec![key])
         .unwrap();
     let receipt = executor.run(transaction, true).unwrap();

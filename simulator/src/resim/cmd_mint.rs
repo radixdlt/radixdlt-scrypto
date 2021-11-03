@@ -2,34 +2,34 @@ use clap::{crate_version, App, Arg, ArgMatches, SubCommand};
 use radix_engine::transaction::*;
 
 use crate::ledger::*;
-use crate::rev2::*;
+use crate::resim::*;
 
-const ARG_COMPONENT: &str = "COMPONENT_ADDRESS";
-const ARG_METHOD: &str = "METHOD";
-const ARG_ARGS: &str = "ARGS";
+const ARG_AMOUNT: &str = "AMOUNT";
+const ARG_RESOURCE_DEF: &str = "RESOURCE_DEF";
+const ARG_MINTER: &str = "MINTER";
 
 const ARG_TRACE: &str = "TRACE";
 const ARG_SIGNERS: &str = "SIGNERS";
 
-/// Constructs a `call-method` subcommand.
-pub fn make_call_method<'a, 'b>() -> App<'a, 'b> {
-    SubCommand::with_name(CMD_CALL_METHOD)
-        .about("Calls a method")
+/// Constructs a `mint` subcommand.
+pub fn make_mint<'a, 'b>() -> App<'a, 'b> {
+    SubCommand::with_name(CMD_MINT)
+        .about("Mints resource")
         .version(crate_version!())
         .arg(
-            Arg::with_name(ARG_COMPONENT)
-                .help("Specify the component address.")
+            Arg::with_name(ARG_AMOUNT)
+                .help("Specify the amount to mint.")
                 .required(true),
         )
         .arg(
-            Arg::with_name(ARG_METHOD)
-                .help("Specify the method name.")
+            Arg::with_name(ARG_RESOURCE_DEF)
+                .help("Specify the resource definition address.")
                 .required(true),
         )
         .arg(
-            Arg::with_name(ARG_ARGS)
-            .help("Specify the arguments, e.g. \"5\", \"hello\" or \"amount,resource_def\" (Bucket).")
-                .multiple(true),
+            Arg::with_name(ARG_MINTER)
+                .help("Specify the mint auth resource definition address.")
+                .required(true),
         )
         // options
         .arg(
@@ -45,11 +45,11 @@ pub fn make_call_method<'a, 'b>() -> App<'a, 'b> {
         )
 }
 
-/// Handles a `call-method` request.
-pub fn handle_call_method(matches: &ArgMatches) -> Result<(), Error> {
-    let component = match_address(matches, ARG_COMPONENT)?;
-    let method = match_string(matches, ARG_METHOD)?;
-    let args = match_args(matches, ARG_ARGS)?;
+/// Handles a `mint` request.
+pub fn handle_mint(matches: &ArgMatches) -> Result<(), Error> {
+    let amount = match_amount(matches, ARG_AMOUNT)?;
+    let resource_def = match_address(matches, ARG_RESOURCE_DEF)?;
+    let minter = match_address(matches, ARG_MINTER)?;
     let trace = matches.is_present(ARG_TRACE);
     let signers = match_signers(matches, ARG_SIGNERS)?;
 
@@ -58,8 +58,10 @@ pub fn handle_call_method(matches: &ArgMatches) -> Result<(), Error> {
     let mut ledger = FileBasedLedger::with_bootstrap(get_data_dir()?);
     let mut executor = TransactionExecutor::new(&mut ledger, configs.current_epoch, configs.nonce);
     let transaction = TransactionBuilder::new(&executor)
-        .call_method(component, &method, args, Some(account))
-        .deposit_all(account)
+        .withdraw_from_account(1.into(), minter, account.0)
+        .mint_resource(amount, resource_def, minter)
+        .drop_all_bucket_refs()
+        .deposit_all_buckets(account.0)
         .build(signers)
         .map_err(Error::TransactionConstructionError)?;
     let receipt = executor.run(transaction, trace).unwrap();

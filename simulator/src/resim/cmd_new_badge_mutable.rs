@@ -3,9 +3,9 @@ use radix_engine::transaction::*;
 use scrypto::rust::collections::HashMap;
 
 use crate::ledger::*;
-use crate::rev2::*;
+use crate::resim::*;
 
-const ARG_MINT_AUTH: &str = "MINT_AUTH";
+const ARG_MINTER: &str = "MINTER";
 
 const ARG_TRACE: &str = "TRACE";
 const ARG_SIGNERS: &str = "SIGNERS";
@@ -15,13 +15,13 @@ const ARG_DESCRIPTION: &str = "DESCRIPTION";
 const ARG_URL: &str = "URL";
 const ARG_ICON_URL: &str = "ICON_URL";
 
-/// Constructs a `new-resource-mutable` subcommand.
-pub fn make_new_resource_mutable<'a, 'b>() -> App<'a, 'b> {
-    SubCommand::with_name(CMD_NEW_RESOURCE_MUTABLE)
-        .about("Creates resource with mutable supply")
+/// Constructs a `new-badge-mutable` subcommand.
+pub fn make_new_badge_mutable<'a, 'b>() -> App<'a, 'b> {
+    SubCommand::with_name(CMD_NEW_BADGE_MUTABLE)
+        .about("Creates badge resource with mutable supply")
         .version(crate_version!())
         .arg(
-            Arg::with_name(ARG_MINT_AUTH)
+            Arg::with_name(ARG_MINTER)
                 .help("Specify the mint auth resource definition address.")
                 .required(true),
         )
@@ -74,9 +74,9 @@ pub fn make_new_resource_mutable<'a, 'b>() -> App<'a, 'b> {
         )
 }
 
-/// Handles a `new-resource-mutable` request.
-pub fn handle_new_resource_mutable(matches: &ArgMatches) -> Result<(), Error> {
-    let mint_auth = match_address(matches, ARG_MINT_AUTH)?;
+/// Handles a `new-badge-mutable` request.
+pub fn handle_new_badge_mutable(matches: &ArgMatches) -> Result<(), Error> {
+    let minter = match_address(matches, ARG_MINTER)?;
     let trace = matches.is_present(ARG_TRACE);
     let signers = match_signers(matches, ARG_SIGNERS)?;
     let mut metadata = HashMap::new();
@@ -100,7 +100,7 @@ pub fn handle_new_resource_mutable(matches: &ArgMatches) -> Result<(), Error> {
     let mut ledger = FileBasedLedger::with_bootstrap(get_data_dir()?);
     let mut executor = TransactionExecutor::new(&mut ledger, configs.current_epoch, configs.nonce);
     let transaction = TransactionBuilder::new(&executor)
-        .new_resource_mutable(metadata, mint_auth)
+        .new_badge_mutable(metadata, minter)
         .build(signers)
         .map_err(Error::TransactionConstructionError)?;
 

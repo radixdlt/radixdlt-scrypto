@@ -1,4 +1,4 @@
-use proc_macro2::{Ident, TokenStream};
+use proc_macro2::{Ident, Span, TokenStream};
 use quote::{format_ident, quote};
 use syn::*;
 
@@ -12,14 +12,16 @@ macro_rules! trace {
     }};
 }
 
-pub fn handle_import(input: TokenStream) -> TokenStream {
+pub fn handle_import(input: TokenStream) -> Result<TokenStream> {
     trace!("Started processing import macro");
 
-    let content = parse2::<LitStr>(input)
-        .expect("Unable to parse input")
-        .value();
-    let blueprint: abi::Blueprint =
-        serde_json::from_str(content.as_str()).expect("Unable to parse ABI");
+    let content = parse2::<LitStr>(input)?;
+    let blueprint: abi::Blueprint = match serde_json::from_str(content.value().as_str()) {
+        Ok(o) => o,
+        Err(e) => {
+            return Err(Error::new(content.span(), e));
+        }
+    };
     trace!("Parsed ABI: {:?}", blueprint);
 
     let package = blueprint.package;
@@ -40,12 +42,12 @@ pub fn handle_import(input: TokenStream) -> TokenStream {
 
         for (i, input) in function.inputs.iter().enumerate() {
             let ident = format_ident!("arg{}", i);
-            let (new_type, new_structs) = get_native_type(input);
+            let (new_type, new_structs) = get_native_type(input)?;
             func_args.push(parse_quote! { #ident });
             func_types.push(parse_quote! { #new_type });
             structs.extend(new_structs);
         }
-        let (func_output, new_structs) = get_native_type(&function.output);
+        let (func_output, new_structs) = get_native_type(&function.output)?;
         structs.extend(new_structs);
 
         functions.push(parse_quote! {
@@ -75,12 +77,12 @@ pub fn handle_import(input: TokenStream) -> TokenStream {
 
         for (i, input) in method.inputs.iter().enumerate() {
             let ident = format_ident!("arg{}", i);
-            let (new_type, new_structs) = get_native_type(input);
+            let (new_type, new_structs) = get_native_type(input)?;
             method_args.push(parse_quote! { #ident });
             method_types.push(parse_quote! { #new_type });
             structs.extend(new_structs);
         }
-        let (method_output, new_structs) = get_native_type(&method.output);
+        let (method_output, new_structs) = get_native_type(&method.output)?;
         structs.extend(new_structs);
 
         let m = parse_quote! {
@@ -143,10 +145,10 @@ pub fn handle_import(input: TokenStream) -> TokenStream {
     #[cfg(feature = "trace")]
     crate::utils::print_compiled_code("import!", &output);
 
-    output
+    Ok(output)
 }
 
-fn get_native_type(ty: &des::Type) -> (Type, Vec<Item>) {
+fn get_native_type(ty: &des::Type) -> Result<(Type, Vec<Item>)> {
     let mut structs = Vec::<Item>::new();
 
     let t: Type = match ty {
@@ -174,7 +176,7 @@ fn get_native_type(ty: &des::Type) -> (Type, Vec<Item>) {
                         named.iter().map(|k| format_ident!("{}", k.0)).collect();
                     let mut types: Vec<Type> = vec![];
                     for (_, v) in named {
-                        let (new_type, new_structs) = get_native_type(v);
+                        let (new_type, new_structs) = get_native_type(v)?;
                         types.push(new_type);
                         structs.extend(new_structs);
                     }
@@ -188,7 +190,7 @@ fn get_native_type(ty: &des::Type) -> (Type, Vec<Item>) {
                 des::Fields::Unnamed { unnamed } => {
                     let mut types: Vec<Type> = vec![];
                     for v in unnamed {
-                        let (new_type, new_structs) = get_native_type(v);
+                        let (new_type, new_structs) = get_native_type(v)?;
                         types.push(new_type);
                         structs.extend(new_structs);
                     }
@@ -222,7 +224,7 @@ fn get_native_type(ty: &des::Type) -> (Type, Vec<Item>) {
                         let mut types: Vec<Type> = vec![];
                         for (n, v) in named {
                             names.push(format_ident!("{}", n));
-                            let (new_type, new_structs) = get_native_type(v);
+                            let (new_type, new_structs) = get_native_type(v)?;
                             types.push(new_type);
                             structs.extend(new_structs);
                         }
@@ -235,7 +237,7 @@ fn get_native_type(ty: &des::Type) -> (Type, Vec<Item>) {
                     des::Fields::Unnamed { unnamed } => {
                         let mut types: Vec<Type> = vec![];
                         for v in unnamed {
-                            let (new_type, new_structs) = get_native_type(v);
+                            let (new_type, new_structs) = get_native_type(v)?;
                             types.push(new_type);
                             structs.extend(new_structs);
                         }
@@ -262,13 +264,13 @@ fn get_native_type(ty: &des::Type) -> (Type, Vec<Item>) {
         }
         // composite types
         des::Type::Option { value } => {
-            let (new_type, new_structs) = get_native_type(value);
+            let (new_type, new_structs) = get_native_type(value)?;
             structs.extend(new_structs);
 
             parse_quote! { Option<#new_type> }
         }
         des::Type::Box { value } => {
-            let (new_type, new_structs) = get_native_type(value);
+            let (new_type, new_structs) = get_native_type(value)?;
             structs.extend(new_structs);
 
             parse_quote! { Box<#new_type> }
@@ -277,7 +279,7 @@ fn get_native_type(ty: &des::Type) -> (Type, Vec<Item>) {
             let mut types: Vec<Type> = vec![];
 
             for element in elements {
-                let (new_type, new_structs) = get_native_type(element);
+                let (new_type, new_structs) = get_native_type(element)?;
                 types.push(new_type);
                 structs.extend(new_structs);
             }
@@ -285,51 +287,51 @@ fn get_native_type(ty: &des::Type) -> (Type, Vec<Item>) {
             parse_quote! { ( #(#types),* ) }
         }
         des::Type::Array { element, length } => {
-            let (new_type, new_structs) = get_native_type(element);
+            let (new_type, new_structs) = get_native_type(element)?;
             structs.extend(new_structs);
 
             let n = *length as usize;
             parse_quote! { [#new_type; #n] }
         }
         des::Type::Result { okay, error } => {
-            let (okay_type, new_structs) = get_native_type(okay);
+            let (okay_type, new_structs) = get_native_type(okay)?;
             structs.extend(new_structs);
-            let (error_type, new_structs) = get_native_type(error);
+            let (error_type, new_structs) = get_native_type(error)?;
             structs.extend(new_structs);
 
             parse_quote! { Result<#okay_type, #error_type> }
         }
         // collection
         des::Type::Vec { element } => {
-            let (new_type, new_structs) = get_native_type(element);
+            let (new_type, new_structs) = get_native_type(element)?;
             structs.extend(new_structs);
 
             parse_quote! { Vec<#new_type> }
         }
         des::Type::TreeSet { element } => {
-            let (new_type, new_structs) = get_native_type(element);
+            let (new_type, new_structs) = get_native_type(element)?;
             structs.extend(new_structs);
 
             parse_quote! { BTreeSet<#new_type> }
         }
         des::Type::TreeMap { key, value } => {
-            let (key_type, new_structs) = get_native_type(key);
+            let (key_type, new_structs) = get_native_type(key)?;
             structs.extend(new_structs);
-            let (value_type, new_structs) = get_native_type(value);
+            let (value_type, new_structs) = get_native_type(value)?;
             structs.extend(new_structs);
 
             parse_quote! { BTreeMap<#key_type, #value_type> }
         }
         des::Type::HashSet { element } => {
-            let (new_type, new_structs) = get_native_type(element);
+            let (new_type, new_structs) = get_native_type(element)?;
             structs.extend(new_structs);
 
             parse_quote! { HashSet<#new_type> }
         }
         des::Type::HashMap { key, value } => {
-            let (key_type, new_structs) = get_native_type(key);
+            let (key_type, new_structs) = get_native_type(key)?;
             structs.extend(new_structs);
-            let (value_type, new_structs) = get_native_type(value);
+            let (value_type, new_structs) = get_native_type(value)?;
             structs.extend(new_structs);
 
             parse_quote! { HashMap<#key_type, #value_type> }
@@ -342,19 +344,22 @@ fn get_native_type(ty: &des::Type) -> (Type, Vec<Item>) {
                 } else {
                     let mut types = vec![];
                     for g in generics {
-                        let (t, v) = get_native_type(g);
+                        let (t, v) = get_native_type(g)?;
                         types.push(t);
                         structs.extend(v);
                     }
                     parse_quote! { #ty<#(#types),*> }
                 }
             } else {
-                panic!("Invalid custom type: {}", name)
+                return Err(Error::new(
+                    Span::call_site(),
+                    format!("Invalid custom type: {}", name),
+                ));
             }
         }
     };
 
-    (t, structs)
+    Ok((t, structs))
 }
 
 #[cfg(test)]
@@ -405,7 +410,7 @@ mod tests {
             "###,
         )
         .unwrap();
-        let output = handle_import(input);
+        let output = handle_import(input).unwrap();
 
         assert_code_eq(
             output,

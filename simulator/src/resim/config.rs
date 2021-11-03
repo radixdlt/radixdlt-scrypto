@@ -5,12 +5,12 @@ use sbor::*;
 use scrypto::buffer::*;
 use scrypto::types::*;
 
-use crate::rev2::*;
+use crate::resim::*;
 
 /// Radix Engine configurations.
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct Configs {
-    pub default_account: Option<Address>,
+    pub default_account: Option<(Address, Address)>,
     pub current_epoch: u64,
     pub nonce: u64,
 }
@@ -42,7 +42,7 @@ pub fn get_config_file() -> Result<PathBuf, Error> {
     Ok(path.with_extension("sbor"))
 }
 
-/// Returns rev2 configurations.
+/// Returns resim configurations.
 pub fn get_configs() -> Result<Configs, Error> {
     let path = get_config_file()?;
     if path.exists() {

@@ -1,9 +1,9 @@
 #[cfg(windows)]
 use colored::*;
-use simulator::rev2;
+use simulator::resim;
 
-pub fn main() -> Result<(), rev2::Error> {
+pub fn main() -> Result<(), resim::Error> {
     #[cfg(windows)]
     control::set_virtual_terminal(true).unwrap();
-    rev2::run(std::env::args())
+    resim::run(std::env::args())
 }

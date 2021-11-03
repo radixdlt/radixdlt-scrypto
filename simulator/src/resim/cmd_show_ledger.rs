@@ -2,7 +2,7 @@ use clap::{crate_version, App, ArgMatches, SubCommand};
 use colored::*;
 
 use crate::ledger::*;
-use crate::rev2::*;
+use crate::resim::*;
 use crate::utils::*;
 
 /// Constructs a `show-ledger` subcommand.

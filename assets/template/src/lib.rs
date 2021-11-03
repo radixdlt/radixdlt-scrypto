@@ -15,7 +15,7 @@ blueprint! {
             let my_bucket: Bucket = ResourceBuilder::new()
                 .metadata("name", "HelloToken")
                 .metadata("symbol", "HT")
-                .create_fixed(1000);
+                .new_token_fixed(1000);
 
             // Instantiate a Hello component, populating its vault with our supply of 1000 HelloToken
             Self {

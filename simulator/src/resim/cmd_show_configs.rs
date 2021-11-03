@@ -1,7 +1,7 @@
 use clap::{crate_version, App, ArgMatches, SubCommand};
 use colored::*;
 
-use crate::rev2::*;
+use crate::resim::*;
 
 /// Constructs a `show-configs` subcommand.
 pub fn make_show_configs<'a, 'b>() -> App<'a, 'b> {

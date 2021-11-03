@@ -10,12 +10,13 @@ fn bench_transfer(b: &mut Bencher) {
     let mut ledger = InMemoryLedger::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, 0, 0);
     let key1 = executor.new_public_key();
-    let account1 = executor.create_account(key1);
+    let account1 = executor.new_account(key1);
     let key2 = executor.new_public_key();
-    let account2 = executor.create_account(key2);
+    let account2 = executor.new_account(key2);
     let transaction = TransactionBuilder::new(&executor)
-        .withdraw(1.into(), RADIX_TOKEN, account1)
-        .deposit_all(account2)
+        .withdraw_from_account(1.into(), RADIX_TOKEN, account1)
+        .drop_all_bucket_refs()
+        .deposit_all_buckets(account2)
         .build(vec![key1])
         .unwrap();
 

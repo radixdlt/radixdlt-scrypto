@@ -3,7 +3,7 @@ use radix_engine::transaction::*;
 use scrypto::rust::collections::HashMap;
 
 use crate::ledger::*;
-use crate::rev2::*;
+use crate::resim::*;
 
 const ARG_SUPPLY: &str = "SUPPLY";
 
@@ -15,10 +15,10 @@ const ARG_DESCRIPTION: &str = "DESCRIPTION";
 const ARG_URL: &str = "URL";
 const ARG_ICON_URL: &str = "ICON_URL";
 
-/// Constructs a `new-resource-fixed` subcommand.
-pub fn make_new_resource_fixed<'a, 'b>() -> App<'a, 'b> {
-    SubCommand::with_name(CMD_NEW_RESOURCE_FIXED)
-        .about("Creates resource with fixed supply")
+/// Constructs a `new-token-fixed` subcommand.
+pub fn make_new_token_fixed<'a, 'b>() -> App<'a, 'b> {
+    SubCommand::with_name(CMD_NEW_TOKEN_FIXED)
+        .about("Creates token resource with fixed supply")
         .version(crate_version!())
         .arg(
             Arg::with_name(ARG_SUPPLY)
@@ -74,8 +74,8 @@ pub fn make_new_resource_fixed<'a, 'b>() -> App<'a, 'b> {
         )
 }
 
-/// Handles a `new-resource-fixed` request.
-pub fn handle_new_resource_fixed(matches: &ArgMatches) -> Result<(), Error> {
+/// Handles a `new-token-fixed` request.
+pub fn handle_new_token_fixed(matches: &ArgMatches) -> Result<(), Error> {
     let supply = match_amount(matches, ARG_SUPPLY)?;
 
     let trace = matches.is_present(ARG_TRACE);
@@ -102,8 +102,9 @@ pub fn handle_new_resource_fixed(matches: &ArgMatches) -> Result<(), Error> {
     let mut ledger = FileBasedLedger::with_bootstrap(get_data_dir()?);
     let mut executor = TransactionExecutor::new(&mut ledger, configs.current_epoch, configs.nonce);
     let transaction = TransactionBuilder::new(&executor)
-        .new_resource_fixed(metadata, supply)
-        .deposit_all(account)
+        .new_token_fixed(metadata, supply)
+        .drop_all_bucket_refs()
+        .deposit_all_buckets(account.0)
         .build(signers)
         .map_err(Error::TransactionConstructionError)?;
     let receipt = executor.run(transaction, trace).unwrap();

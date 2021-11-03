@@ -43,7 +43,7 @@ blueprint! {
         }
 
         /// Withdraws resource from this account.
-        pub fn withdraw(&mut self, amount: Amount, resource_def: Address) -> Bucket {
+        pub fn withdraw(&mut self, amount: Decimal, resource_def: Address) -> Bucket {
             if !Context::transaction_signers().contains(&self.key) {
                 scrypto_abort("Not authorized! Make sure you sign transaction with the correct keys.")
             }

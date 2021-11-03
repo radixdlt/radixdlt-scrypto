@@ -2,7 +2,7 @@ use clap::{crate_version, App, Arg, ArgMatches, SubCommand};
 use radix_engine::transaction::*;
 
 use crate::ledger::*;
-use crate::rev2::*;
+use crate::resim::*;
 
 const ARG_PACKAGE: &str = "PACKAGE_ADDRESS";
 const ARG_NAME: &str = "BLUEPRINT_NAME";
