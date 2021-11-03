@@ -18,7 +18,7 @@ const PRECISION: u128 = 10u128.pow(18);
 
 /// Represented a **signed** fixed-point decimal, where the precision is 10^-18.
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct Decimal(BigInt);
+pub struct Decimal(pub BigInt);
 
 /// Represents an error when parsing Decimal.
 #[derive(Debug, Clone)]

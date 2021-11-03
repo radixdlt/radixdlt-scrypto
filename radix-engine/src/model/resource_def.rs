@@ -11,6 +11,9 @@ pub enum ResourceDefError {
     UnauthorizedAccess,
     MintNotAllowed,
     BurnNotAllowed,
+    InvalidGranularity,
+    GranularityCheckFailed,
+    NegativeAmount,
 }
 
 /// The definition of a resource.
@@ -28,13 +31,15 @@ impl ResourceDef {
         metadata: HashMap<String, String>,
         supply: Decimal,
         minter: Option<Address>,
-    ) -> Self {
-        Self {
+    ) -> Result<Self, ResourceDefError> {
+        Self::check_amount(&supply, granularity)?;
+
+        Ok(Self {
             granularity,
             metadata,
             supply,
             minter,
-        }
+        })
     }
 
     pub fn metadata(&self) -> &HashMap<String, String> {
@@ -54,6 +59,8 @@ impl ResourceDef {
     }
 
     pub fn mint(&mut self, amount: Decimal, auth: Auth) -> Result<(), ResourceDefError> {
+        Self::check_amount(&amount, self.granularity)?;
+
         match self.minter() {
             Some(a) => {
                 if auth.contains(a) {
@@ -68,6 +75,8 @@ impl ResourceDef {
     }
 
     pub fn burn(&mut self, amount: Decimal, auth: Auth) -> Result<(), ResourceDefError> {
+        Self::check_amount(&amount, self.granularity)?;
+
         match self.minter() {
             Some(a) => {
                 if auth.contains(a) {
@@ -78,6 +87,24 @@ impl ResourceDef {
                 }
             }
             None => Err(ResourceDefError::BurnNotAllowed),
+        }
+    }
+
+    fn check_amount(amount: &Decimal, granularity: u8) -> Result<(), ResourceDefError> {
+        if amount.is_negative() {
+            return Err(ResourceDefError::NegativeAmount);
+        }
+
+        match granularity {
+            1 => Ok(()),
+            18 => {
+                if amount.0.clone() % 10u128.pow(18) != 0.into() {
+                    Err(ResourceDefError::GranularityCheckFailed)
+                } else {
+                    Ok(())
+                }
+            }
+            _ => Err(ResourceDefError::InvalidGranularity),
         }
     }
 }

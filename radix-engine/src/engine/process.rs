@@ -176,11 +176,16 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         if !self.reserved_bids.remove(&bid) {
             return Err(RuntimeError::BucketNotReserved);
         }
+        let definition = self
+            .track
+            .get_resource_def(resource_def)
+            .ok_or(RuntimeError::ResourceDefNotFound(resource_def))?;
+        let granularity = definition.granularity();
 
         self.withdraw_resource(amount.clone(), resource_def)?;
 
         self.temp_buckets
-            .insert(bid, Bucket::new(amount, resource_def));
+            .insert(bid, Bucket::new(amount, resource_def, granularity));
 
         Ok(())
     }
@@ -205,10 +210,19 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
             return Err(RuntimeError::BucketRefNotReserved);
         }
 
+        let definition = self
+            .track
+            .get_resource_def(resource_def)
+            .ok_or(RuntimeError::ResourceDefNotFound(resource_def))?;
+        let granularity = definition.granularity();
+
         self.withdraw_resource(amount.clone(), resource_def)?;
 
         let bid = self.track.new_bid();
-        let bucket = BucketRef::new(LockedBucket::new(bid, Bucket::new(amount, resource_def)));
+        let bucket = BucketRef::new(LockedBucket::new(
+            bid,
+            Bucket::new(amount, resource_def, granularity),
+        ));
         self.locked_buckets.insert(bid, bucket.clone());
         self.temp_bucket_refs.insert(rid, bucket);
 
@@ -1025,7 +1039,8 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
             input.metadata,
             Decimal::zero(),
             Some(input.minter),
-        );
+        )
+        .map_err(RuntimeError::ResourceDefError)?;
 
         let address = self.track.new_resource_def_address();
         if self.track.get_resource_def(address).is_some() {
@@ -1045,31 +1060,32 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         &mut self,
         input: CreateResourceFixedInput,
     ) -> Result<CreateResourceFixedOutput, RuntimeError> {
-        let resource_def = ResourceDef::new(
+        let definition = ResourceDef::new(
             input.granularity,
             input.metadata,
             input.supply.clone(),
             None,
-        );
+        )
+        .map_err(RuntimeError::ResourceDefError)?;
 
         let address = self.track.new_resource_def_address();
 
         if self.track.get_resource_def(address).is_some() {
-            return Err(RuntimeError::ResourceDefAlreadyExists(address));
+            Err(RuntimeError::ResourceDefAlreadyExists(address))
         } else {
             debug!(self, "New resource definition: {:?}", address);
 
-            self.track.put_resource_def(address, resource_def);
+            let bucket = Bucket::new(input.supply, address, definition.granularity());
+            let bid = self.track.new_bid();
+            self.buckets.insert(bid, bucket);
+
+            self.track.put_resource_def(address, definition);
+
+            Ok(CreateResourceFixedOutput {
+                resource_def: address,
+                bucket: bid,
+            })
         }
-
-        let bucket = Bucket::new(input.supply, address);
-        let bid = self.track.new_bid();
-        self.buckets.insert(bid, bucket);
-
-        Ok(CreateResourceFixedOutput {
-            resource_def: address,
-            bucket: bid,
-        })
     }
 
     fn handle_get_resource_metadata(
@@ -1146,7 +1162,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         Self::expect_resource_def_address(input.resource_def)?;
 
         // update resource def
-        {
+        let bid = {
             let bucket_ref = self
                 .bucket_refs
                 .get(&input.minter)
@@ -1157,19 +1173,22 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
                 .track
                 .get_resource_def_mut(input.resource_def)
                 .ok_or(RuntimeError::ResourceDefNotFound(input.resource_def))?;
+            let granularity = definition.granularity();
             definition
                 .mint(input.amount.clone(), auth)
                 .map_err(RuntimeError::ResourceDefError)?;
-        }
+
+            // issue resource
+            let bucket = Bucket::new(input.amount, input.resource_def, granularity);
+            let bid = self.track.new_bid();
+            self.buckets.insert(bid, bucket);
+            bid
+        };
+
         // drop the input mint auth
         self.handle_drop_bucket_ref(DropBucketRefInput {
             bucket_ref: input.minter,
         })?;
-
-        // issue resource
-        let bucket = Bucket::new(input.amount, input.resource_def);
-        let bid = self.track.new_bid();
-        self.buckets.insert(bid, bucket);
 
         Ok(MintResourceOutput { bucket: bid })
     }
@@ -1211,8 +1230,17 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         &mut self,
         input: CreateEmptyVaultInput,
     ) -> Result<CreateEmptyVaultOutput, RuntimeError> {
+        let definition = self
+            .track
+            .get_resource_def(input.resource_def)
+            .ok_or(RuntimeError::ResourceDefNotFound(input.resource_def))?;
+
         let new_vault = Vault::new(
-            Bucket::new(Decimal::zero(), input.resource_def),
+            Bucket::new(
+                Decimal::zero(),
+                input.resource_def,
+                definition.granularity(),
+            ),
             self.package()?,
         );
         let new_vid = self.track.new_vid();
@@ -1296,7 +1324,16 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         &mut self,
         input: CreateEmptyBucketInput,
     ) -> Result<CreateEmptyBucketOutput, RuntimeError> {
-        let new_bucket = Bucket::new(Decimal::zero(), input.resource_def);
+        let definition = self
+            .track
+            .get_resource_def(input.resource_def)
+            .ok_or(RuntimeError::ResourceDefNotFound(input.resource_def))?;
+
+        let new_bucket = Bucket::new(
+            Decimal::zero(),
+            input.resource_def,
+            definition.granularity(),
+        );
         let new_bid = self.track.new_bid();
         self.buckets.insert(new_bid, new_bucket);
 

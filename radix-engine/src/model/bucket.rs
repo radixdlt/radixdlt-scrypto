@@ -7,6 +7,9 @@ use scrypto::types::*;
 pub enum BucketError {
     MismatchingResourceDef,
     InsufficientBalance,
+    InvalidGranularity,
+    GranularityCheckFailed,
+    NegativeAmount,
 }
 
 /// A transient resource container.
@@ -14,6 +17,7 @@ pub enum BucketError {
 pub struct Bucket {
     amount: Decimal,
     resource_def: Address,
+    granularity: u8,
 }
 
 /// A bucket becomes locked after a borrow operation.
@@ -27,10 +31,11 @@ pub struct LockedBucket {
 pub type BucketRef = Rc<LockedBucket>;
 
 impl Bucket {
-    pub fn new(amount: Decimal, resource_def: Address) -> Self {
+    pub fn new(amount: Decimal, resource_def: Address, granularity: u8) -> Self {
         Self {
             amount,
             resource_def,
+            granularity,
         }
     }
 
@@ -44,12 +49,14 @@ impl Bucket {
     }
 
     pub fn take(&mut self, amount: Decimal) -> Result<Self, BucketError> {
+        Self::check_amount(&amount, self.granularity)?;
+
         if self.amount < amount {
             Err(BucketError::InsufficientBalance)
         } else {
             self.amount -= amount.clone();
 
-            Ok(Self::new(amount, self.resource_def))
+            Ok(Self::new(amount, self.resource_def, self.granularity))
         }
     }
 
@@ -59,6 +66,24 @@ impl Bucket {
 
     pub fn resource_def(&self) -> Address {
         self.resource_def
+    }
+
+    fn check_amount(amount: &Decimal, granularity: u8) -> Result<(), BucketError> {
+        if amount.is_negative() {
+            return Err(BucketError::NegativeAmount);
+        }
+
+        match granularity {
+            1 => Ok(()),
+            18 => {
+                if amount.0.clone() % 10u128.pow(18) != 0.into() {
+                    Err(BucketError::GranularityCheckFailed)
+                } else {
+                    Ok(())
+                }
+            }
+            _ => Err(BucketError::InvalidGranularity),
+        }
     }
 }
 
