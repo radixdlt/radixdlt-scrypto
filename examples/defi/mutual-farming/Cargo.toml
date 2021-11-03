@@ -1,14 +1,14 @@
 [package]
-name = "xPerpFutures"
+name = "mutual-farming"
 version = "0.1.0"
 edition = "2018"
 
 [dependencies]
-sbor = { path = "/Users/shambu/project/scyrpto-day/radixdlt-scrypto/sbor" }
-scrypto = { path = "/Users/shambu/project/scyrpto-day/radixdlt-scrypto/scrypto" }
+sbor = { path = "../../../sbor" }
+scrypto = { path = "../../../scrypto" }
 
 [dev-dependencies]
-radix-engine = { path = "/Users/shambu/project/scyrpto-day/radixdlt-scrypto/radix-engine" }
+radix-engine = { path = "../../../radix-engine" }
 
 [profile.release]
 opt-level = 's'     # Optimize for size.
