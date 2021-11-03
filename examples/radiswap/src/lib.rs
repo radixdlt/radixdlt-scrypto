@@ -5,7 +5,7 @@ blueprint! {
         /// The resource definition of LP token.
         lp_resource_def: ResourceDef,
         /// Mint authorization to LP tokens.
-        lp_mint_burn_auth: Vault,
+        lp_minter: Vault,
         /// The reserve for token A.
         a_pool: Vault,
         /// The reserve for token B.
@@ -34,20 +34,20 @@ blueprint! {
             scrypto_assert!(fee_in_thousandths <= 1000, "Invalid fee in thousandths");
 
             // Instantiate our LP token and mint an initial supply of them
-            let lp_mint_burn_auth = ResourceBuilder::new()
+            let lp_minter = ResourceBuilder::new()
                 .metadata("name", "LP Token Mint Auth")
-                .create_fixed(1);
+                .new_token_fixed(1);
             let lp_resource_def = ResourceBuilder::new()
                 .metadata("symbol", lp_symbol)
                 .metadata("name", lp_name)
                 .metadata("url", lp_url)
-                .create_mutable(lp_mint_burn_auth.resource_def());
-            let lp_tokens = lp_resource_def.mint(lp_initial_supply, lp_mint_burn_auth.borrow());
+                .new_token_mutable(lp_minter.resource_def());
+            let lp_tokens = lp_resource_def.mint(lp_initial_supply, lp_minter.borrow());
 
             // Instantiate our Radiswap component
             let radiswap = Self {
                 lp_resource_def,
-                lp_mint_burn_auth: Vault::with_bucket(lp_mint_burn_auth),
+                lp_minter: Vault::with_bucket(lp_minter),
                 a_pool: Vault::with_bucket(a_tokens),
                 b_pool: Vault::with_bucket(b_tokens),
                 fee_in_thousandths,
@@ -79,7 +79,7 @@ blueprint! {
             };
 
             // Mint LP tokens according to the share the provider is contributing
-            let lp_tokens = self.lp_mint_burn_auth.authorize(|badge| {
+            let lp_tokens = self.lp_minter.authorize(|badge| {
                 self.lp_resource_def
                     .mint(self.lp_resource_def.supply() * actual_share, badge)
             });
@@ -103,7 +103,7 @@ blueprint! {
             let b_withdrawn = self.b_pool.take(self.b_pool.amount() * share.clone());
 
             // Burn the LP tokens received
-            self.lp_mint_burn_auth.authorize(|badge| {
+            self.lp_minter.authorize(|badge| {
                 lp_tokens.burn(badge);
             });
 

@@ -97,7 +97,7 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
     }
 
     /// Creates an account with 1,000,000 XRD in balance.
-    pub fn create_account(&mut self, key: Address) -> Receipt {
+    pub fn new_account(&mut self, key: Address) -> Address {
         let free_xrd_amount = Decimal::from(1_000_000);
 
         self.run(
@@ -114,18 +114,29 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
             false,
         )
         .unwrap()
+        .component(0)
+        .unwrap()
     }
 
     /// Publishes a package.
-    pub fn publish_package(&mut self, code: &[u8]) -> Receipt {
-        self.run(
-            TransactionBuilder::new(self)
-                .publish_package(code)
-                .build(Vec::new())
-                .unwrap(),
-            true,
-        )
-        .unwrap()
+    pub fn publish_package(&mut self, code: &[u8]) -> Address {
+        let receipt = self
+            .run(
+                TransactionBuilder::new(self)
+                    .publish_package(code)
+                    .build(Vec::new())
+                    .unwrap(),
+                true,
+            )
+            .unwrap();
+
+        if !receipt.success {
+            #[cfg(not(feature = "alloc"))]
+            println!("{:?}", receipt);
+            panic!("Failed to publish package. See receipt above.");
+        } else {
+            receipt.package(0).unwrap()
+        }
     }
 
     /// Publishes a package to a specified address.

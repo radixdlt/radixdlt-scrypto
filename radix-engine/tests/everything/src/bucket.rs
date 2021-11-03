@@ -10,7 +10,7 @@ blueprint! {
         pub fn combine() -> Bucket {
             let bucket1 = ResourceBuilder::new()
                 .metadata("name", "TestToken")
-                .create_fixed(100);
+                .new_token_fixed(100);
             let bucket2 = bucket1.take(50);
 
             bucket1.put(bucket2);
@@ -20,7 +20,7 @@ blueprint! {
         pub fn split()  -> (Bucket, Bucket) {
             let bucket1 = ResourceBuilder::new()
                 .metadata("name", "TestToken")
-                .create_fixed(100);
+                .new_token_fixed(100);
             let bucket2 = bucket1.take(Decimal::from(5));
             (bucket1, bucket2)
         }
@@ -28,7 +28,7 @@ blueprint! {
         pub fn borrow() -> Bucket {
             let bucket = ResourceBuilder::new()
                 .metadata("name", "TestToken")
-                .create_fixed(100);
+                .new_token_fixed(100);
 
             let bucket_ref = bucket.borrow();
             bucket_ref.drop();
@@ -38,7 +38,7 @@ blueprint! {
         pub fn query() -> (Decimal, Address, Bucket) {
             let bucket = ResourceBuilder::new()
                 .metadata("name", "TestToken")
-                .create_fixed(100);
+                .new_token_fixed(100);
 
             (bucket.amount(), bucket.resource_def().address(), bucket)
         }

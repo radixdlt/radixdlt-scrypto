@@ -5,7 +5,7 @@ use scrypto::rust::collections::HashMap;
 use crate::ledger::*;
 use crate::resim::*;
 
-const ARG_MINT_BURN_AUTH: &str = "MINT_BURN_AUTH";
+const ARG_SUPPLY: &str = "SUPPLY";
 
 const ARG_TRACE: &str = "TRACE";
 const ARG_SIGNERS: &str = "SIGNERS";
@@ -15,14 +15,14 @@ const ARG_DESCRIPTION: &str = "DESCRIPTION";
 const ARG_URL: &str = "URL";
 const ARG_ICON_URL: &str = "ICON_URL";
 
-/// Constructs a `new-resource-mutable` subcommand.
-pub fn make_new_resource_mutable<'a, 'b>() -> App<'a, 'b> {
-    SubCommand::with_name(CMD_NEW_RESOURCE_MUTABLE)
-        .about("Creates resource with mutable supply")
+/// Constructs a `new-token-fixed` subcommand.
+pub fn make_new_token_fixed<'a, 'b>() -> App<'a, 'b> {
+    SubCommand::with_name(CMD_NEW_TOKEN_FIXED)
+        .about("Creates token resource with fixed supply")
         .version(crate_version!())
         .arg(
-            Arg::with_name(ARG_MINT_BURN_AUTH)
-                .help("Specify the mint auth resource definition address.")
+            Arg::with_name(ARG_SUPPLY)
+                .help("Specify the total supply.")
                 .required(true),
         )
         // options
@@ -74,9 +74,10 @@ pub fn make_new_resource_mutable<'a, 'b>() -> App<'a, 'b> {
         )
 }
 
-/// Handles a `new-resource-mutable` request.
-pub fn handle_new_resource_mutable(matches: &ArgMatches) -> Result<(), Error> {
-    let mint_burn_auth = match_address(matches, ARG_MINT_BURN_AUTH)?;
+/// Handles a `new-token-fixed` request.
+pub fn handle_new_token_fixed(matches: &ArgMatches) -> Result<(), Error> {
+    let supply = match_amount(matches, ARG_SUPPLY)?;
+
     let trace = matches.is_present(ARG_TRACE);
     let signers = match_signers(matches, ARG_SIGNERS)?;
     let mut metadata = HashMap::new();
@@ -97,13 +98,15 @@ pub fn handle_new_resource_mutable(matches: &ArgMatches) -> Result<(), Error> {
         .and_then(|v| metadata.insert("icon_url".to_owned(), v.to_owned()));
 
     let mut configs = get_configs()?;
+    let account = configs.default_account.ok_or(Error::NoDefaultAccount)?;
     let mut ledger = FileBasedLedger::with_bootstrap(get_data_dir()?);
     let mut executor = TransactionExecutor::new(&mut ledger, configs.current_epoch, configs.nonce);
     let transaction = TransactionBuilder::new(&executor)
-        .new_resource_mutable(metadata, mint_burn_auth)
+        .new_token_fixed(metadata, supply)
+        .drop_all_bucket_refs()
+        .deposit_all_buckets(account.0)
         .build(signers)
         .map_err(Error::TransactionConstructionError)?;
-
     let receipt = executor.run(transaction, trace).unwrap();
 
     println!("{:?}", receipt);

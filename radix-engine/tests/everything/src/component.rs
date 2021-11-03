@@ -13,7 +13,7 @@ blueprint! {
         pub fn create_component() -> Component {
             let bucket = ResourceBuilder::new()
                 .metadata("name", "TestToken")
-                .create_fixed(1000);
+                .new_token_fixed(1000);
 
             Self {
                 test_vault: Vault::with_bucket(bucket),

@@ -12,7 +12,7 @@ blueprint! {
                 .metadata("name", "Gumball")
                 .metadata("symbol", "gum")
                 .metadata("description", "The best gumball in the world.")
-                .create_fixed(1000);
+                .new_token_fixed(1000);
             Self {
                 gumballs: Vault::with_bucket(bucket),
                 collected_xrd: Vault::new(RADIX_TOKEN)

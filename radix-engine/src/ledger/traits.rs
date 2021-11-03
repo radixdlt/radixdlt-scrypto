@@ -64,7 +64,7 @@ pub trait Ledger {
             metadata.insert("url".to_owned(), XRD_URL.to_owned());
             self.put_resource_def(
                 RADIX_TOKEN,
-                ResourceDef::new(metadata, XRD_MAX_SUPPLY.into(), None),
+                ResourceDef::new(1, metadata, XRD_MAX_SUPPLY.into(), None),
             );
 
             // Instantiate system component

@@ -38,16 +38,18 @@ pub const PUT_LAZY_MAP_ENTRY: u32 = 0x22;
 pub const CREATE_RESOURCE_MUTABLE: u32 = 0x30;
 /// Create resource with fixed supply
 pub const CREATE_RESOURCE_FIXED: u32 = 0x31;
-/// Get resource metadata
-pub const GET_RESOURCE_METADATA: u32 = 0x32;
-/// Get resource supply
-pub const GET_RESOURCE_SUPPLY: u32 = 0x33;
-/// Get resource mint auth
-pub const GET_RESOURCE_MINT_BURN_AUTH: u32 = 0x34;
 /// Mint resource
-pub const MINT_RESOURCE: u32 = 0x35;
+pub const MINT_RESOURCE: u32 = 0x32;
 /// Burn resource
-pub const BURN_RESOURCE: u32 = 0x36;
+pub const BURN_RESOURCE: u32 = 0x33;
+/// Get resource metadata
+pub const GET_RESOURCE_METADATA: u32 = 0x34;
+/// Get resource supply
+pub const GET_RESOURCE_SUPPLY: u32 = 0x35;
+/// Get resource minter address
+pub const GET_RESOURCE_MINTER: u32 = 0x36;
+/// Get resource granularity
+pub const GET_RESOURCE_GRANULARITY: u32 = 0x37;
 
 /// Create a new empty vault
 pub const CREATE_EMPTY_VAULT: u32 = 0x40;
@@ -216,8 +218,9 @@ pub struct PutLazyMapEntryOutput {}
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct CreateResourceMutableInput {
+    pub granularity: u8,
     pub metadata: HashMap<String, String>,
-    pub mint_burn_auth: Address,
+    pub minter: Address,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
@@ -227,6 +230,7 @@ pub struct CreateResourceMutableOutput {
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct CreateResourceFixedInput {
+    pub granularity: u8,
     pub metadata: HashMap<String, String>,
     pub supply: Decimal,
 }
@@ -258,20 +262,30 @@ pub struct GetResourceSupplyOutput {
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct GetResourceMintAuthInput {
+pub struct GetResourceMinterInput {
     pub resource_def: Address,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct GetResourceMintAuthOutput {
-    pub mint_burn_auth: Option<Address>,
+pub struct GetResourceMinterOutput {
+    pub minter: Option<Address>,
+}
+
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
+pub struct GetResourceGranularityInput {
+    pub resource_def: Address,
+}
+
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
+pub struct GetResourceGranularityOutput {
+    pub granularity: u8,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct MintResourceInput {
     pub resource_def: Address,
     pub amount: Decimal,
-    pub mint_burn_auth: Rid,
+    pub minter: Rid,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
@@ -282,7 +296,7 @@ pub struct MintResourceOutput {
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct BurnResourceInput {
     pub bucket: Bid,
-    pub mint_burn_auth: Rid,
+    pub minter: Rid,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]

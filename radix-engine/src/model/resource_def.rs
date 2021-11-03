@@ -16,21 +16,24 @@ pub enum ResourceDefError {
 /// The definition of a resource.
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct ResourceDef {
+    granularity: u8,
     metadata: HashMap<String, String>,
     supply: Decimal,
-    mint_burn_auth: Option<Address>,
+    minter: Option<Address>,
 }
 
 impl ResourceDef {
     pub fn new(
+        granularity: u8,
         metadata: HashMap<String, String>,
         supply: Decimal,
-        mint_burn_auth: Option<Address>,
+        minter: Option<Address>,
     ) -> Self {
         Self {
+            granularity,
             metadata,
             supply,
-            mint_burn_auth,
+            minter,
         }
     }
 
@@ -42,12 +45,16 @@ impl ResourceDef {
         self.supply.clone()
     }
 
-    pub fn mint_burn_auth(&self) -> Option<Address> {
-        self.mint_burn_auth.clone()
+    pub fn minter(&self) -> Option<Address> {
+        self.minter.clone()
+    }
+
+    pub fn granularity(&self) -> u8 {
+        self.granularity
     }
 
     pub fn mint(&mut self, amount: Decimal, auth: Auth) -> Result<(), ResourceDefError> {
-        match self.mint_burn_auth() {
+        match self.minter() {
             Some(a) => {
                 if auth.contains(a) {
                     self.supply += amount;
@@ -61,7 +68,7 @@ impl ResourceDef {
     }
 
     pub fn burn(&mut self, amount: Decimal, auth: Auth) -> Result<(), ResourceDefError> {
-        match self.mint_burn_auth() {
+        match self.minter() {
             Some(a) => {
                 if auth.contains(a) {
                     self.supply -= amount;

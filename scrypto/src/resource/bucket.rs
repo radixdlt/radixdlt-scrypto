@@ -82,8 +82,8 @@ impl Bucket {
     }
 
     /// Burns resource within this bucket.
-    pub fn burn(self, mint_burn_auth: BucketRef) {
-        self.resource_def().burn(self, mint_burn_auth);
+    pub fn burn(self, minter: BucketRef) {
+        self.resource_def().burn(self, minter);
     }
 
     /// Checks if this bucket is empty.

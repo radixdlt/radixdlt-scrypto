@@ -1018,10 +1018,14 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         &mut self,
         input: CreateResourceMutableInput,
     ) -> Result<CreateResourceMutableOutput, RuntimeError> {
-        Self::expect_resource_def_address(input.mint_burn_auth)?;
+        Self::expect_resource_def_address(input.minter)?;
 
-        let resource_def =
-            ResourceDef::new(input.metadata, Decimal::zero(), Some(input.mint_burn_auth));
+        let resource_def = ResourceDef::new(
+            input.granularity,
+            input.metadata,
+            Decimal::zero(),
+            Some(input.minter),
+        );
 
         let address = self.track.new_resource_def_address();
         if self.track.get_resource_def(address).is_some() {
@@ -1041,7 +1045,12 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         &mut self,
         input: CreateResourceFixedInput,
     ) -> Result<CreateResourceFixedOutput, RuntimeError> {
-        let resource_def = ResourceDef::new(input.metadata, input.supply.clone(), None);
+        let resource_def = ResourceDef::new(
+            input.granularity,
+            input.metadata,
+            input.supply.clone(),
+            None,
+        );
 
         let address = self.track.new_resource_def_address();
 
@@ -1096,10 +1105,10 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         })
     }
 
-    fn handle_get_resource_mint_burn_auth(
+    fn handle_get_resource_minter(
         &mut self,
-        input: GetResourceMintAuthInput,
-    ) -> Result<GetResourceMintAuthOutput, RuntimeError> {
+        input: GetResourceMinterInput,
+    ) -> Result<GetResourceMinterOutput, RuntimeError> {
         Self::expect_resource_def_address(input.resource_def)?;
 
         let resource_def = self
@@ -1108,8 +1117,25 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
             .ok_or(RuntimeError::ResourceDefNotFound(input.resource_def))?
             .clone();
 
-        Ok(GetResourceMintAuthOutput {
-            mint_burn_auth: resource_def.mint_burn_auth(),
+        Ok(GetResourceMinterOutput {
+            minter: resource_def.minter(),
+        })
+    }
+
+    fn handle_get_resource_granularity(
+        &mut self,
+        input: GetResourceGranularityInput,
+    ) -> Result<GetResourceGranularityOutput, RuntimeError> {
+        Self::expect_resource_def_address(input.resource_def)?;
+
+        let resource_def = self
+            .track
+            .get_resource_def(input.resource_def)
+            .ok_or(RuntimeError::ResourceDefNotFound(input.resource_def))?
+            .clone();
+
+        Ok(GetResourceGranularityOutput {
+            granularity: resource_def.granularity(),
         })
     }
 
@@ -1123,8 +1149,8 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         {
             let bucket_ref = self
                 .bucket_refs
-                .get(&input.mint_burn_auth)
-                .ok_or(RuntimeError::BucketRefNotFound(input.mint_burn_auth))?;
+                .get(&input.minter)
+                .ok_or(RuntimeError::BucketRefNotFound(input.minter))?;
             let auth = self.badge_auth(bucket_ref)?;
 
             let definition = self
@@ -1137,7 +1163,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         }
         // drop the input mint auth
         self.handle_drop_bucket_ref(DropBucketRefInput {
-            bucket_ref: input.mint_burn_auth,
+            bucket_ref: input.minter,
         })?;
 
         // issue resource
@@ -1161,8 +1187,8 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
 
             let bucket_ref = self
                 .bucket_refs
-                .get(&input.mint_burn_auth)
-                .ok_or(RuntimeError::BucketRefNotFound(input.mint_burn_auth))?;
+                .get(&input.minter)
+                .ok_or(RuntimeError::BucketRefNotFound(input.minter))?;
             let auth = self.badge_auth(bucket_ref)?;
 
             let resource_def = self
@@ -1176,7 +1202,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         }
         // drop the input mint auth
         self.handle_drop_bucket_ref(DropBucketRefInput {
-            bucket_ref: input.mint_burn_auth,
+            bucket_ref: input.minter,
         })?;
         Ok(BurnResourceOutput {})
     }
@@ -1523,8 +1549,9 @@ impl<'r, 'l, L: Ledger> Externals for Process<'r, 'l, L> {
                     CREATE_RESOURCE_FIXED => self.handle(args, Self::handle_create_resource_fixed),
                     GET_RESOURCE_METADATA => self.handle(args, Self::handle_get_resource_metadata),
                     GET_RESOURCE_SUPPLY => self.handle(args, Self::handle_get_resource_supply),
-                    GET_RESOURCE_MINT_BURN_AUTH => {
-                        self.handle(args, Self::handle_get_resource_mint_burn_auth)
+                    GET_RESOURCE_MINTER => self.handle(args, Self::handle_get_resource_minter),
+                    GET_RESOURCE_GRANULARITY => {
+                        self.handle(args, Self::handle_get_resource_granularity)
                     }
                     MINT_RESOURCE => self.handle(args, Self::handle_mint_resource),
                     BURN_RESOURCE => self.handle(args, Self::handle_burn_resource),
