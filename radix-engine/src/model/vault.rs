@@ -30,7 +30,7 @@ impl Vault {
         }
     }
 
-    pub fn take(&mut self, amount: Amount, auth: Auth) -> Result<Bucket, VaultError> {
+    pub fn take(&mut self, amount: Decimal, auth: Auth) -> Result<Bucket, VaultError> {
         if auth.contains(self.auth) {
             self.bucket
                 .take(amount)
@@ -40,7 +40,7 @@ impl Vault {
         }
     }
 
-    pub fn amount(&self, auth: Auth) -> Result<Amount, VaultError> {
+    pub fn amount(&self, auth: Auth) -> Result<Decimal, VaultError> {
         if auth.contains(self.auth) {
             Ok(self.bucket.amount())
         } else {

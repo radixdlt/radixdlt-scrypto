@@ -39,12 +39,14 @@ impl From<ResourceDef> for Address {
 impl ResourceDef {
     /// Creates a resource with mutable supply. The resource definition is returned.
     pub fn new_mutable<A: Into<ResourceDef>>(
+        granularity: u8,
         metadata: HashMap<String, String>,
-        mint_auth: A,
+        minter: A,
     ) -> Self {
         let input = CreateResourceMutableInput {
+            granularity,
             metadata,
-            mint_auth: mint_auth.into().address(),
+            minter: minter.into().address(),
         };
         let output: CreateResourceMutableOutput = call_kernel(CREATE_RESOURCE_MUTABLE, input);
 
@@ -52,11 +54,13 @@ impl ResourceDef {
     }
 
     /// Creates a resource with fixed supply. The created resource is immediately returned.
-    pub fn new_fixed<T: Into<Amount>>(
+    pub fn new_fixed<T: Into<Decimal>>(
+        granularity: u8,
         metadata: HashMap<String, String>,
         supply: T,
     ) -> (Self, Bucket) {
         let input = CreateResourceFixedInput {
+            granularity,
             metadata,
             supply: supply.into(),
         };
@@ -66,11 +70,11 @@ impl ResourceDef {
     }
 
     /// Mints resources
-    pub fn mint<T: Into<Amount>>(&self, amount: T, auth: BucketRef) -> Bucket {
+    pub fn mint<T: Into<Decimal>>(&self, amount: T, minter: BucketRef) -> Bucket {
         let input = MintResourceInput {
             resource_def: self.address,
             amount: amount.into(),
-            mint_auth: auth.into(),
+            minter: minter.into(),
         };
         let output: MintResourceOutput = call_kernel(MINT_RESOURCE, input);
 
@@ -78,9 +82,10 @@ impl ResourceDef {
     }
 
     /// Burns a bucket of resources.
-    pub fn burn(bucket: Bucket) {
+    pub fn burn(&self, bucket: Bucket, minter: BucketRef) {
         let input = BurnResourceInput {
             bucket: bucket.into(),
+            minter: minter.into(),
         };
         let _output: BurnResourceOutput = call_kernel(BURN_RESOURCE, input);
     }
@@ -95,18 +100,28 @@ impl ResourceDef {
         output.metadata
     }
 
-    /// Returns the mint auth.
-    pub fn mint_auth(&self) -> Option<Address> {
-        let input = GetResourceMintAuthInput {
+    /// Returns the minter address.
+    pub fn minter(&self) -> Option<Address> {
+        let input = GetResourceMinterInput {
             resource_def: self.address,
         };
-        let output: GetResourceMintAuthOutput = call_kernel(GET_RESOURCE_MINT_AUTH, input);
+        let output: GetResourceMinterOutput = call_kernel(GET_RESOURCE_MINTER, input);
 
-        output.mint_auth
+        output.minter
+    }
+
+    /// Returns the granularity.
+    pub fn granularity(&self) -> u8 {
+        let input = GetResourceGranularityInput {
+            resource_def: self.address,
+        };
+        let output: GetResourceGranularityOutput = call_kernel(GET_RESOURCE_MINTER, input);
+
+        output.granularity
     }
 
     /// Returns the current supply of this resource.
-    pub fn supply(&self) -> Amount {
+    pub fn supply(&self) -> Decimal {
         let input = GetResourceSupplyInput {
             resource_def: self.address,
         };

@@ -34,7 +34,7 @@ impl Account {
         scrypto_unwrap(scrypto_decode(&rtn))
     }
 
-    pub fn withdraw<A: Into<ResourceDef>>(&self, amount: Amount, resource_def: A) {
+    pub fn withdraw<A: Into<ResourceDef>>(&self, amount: Decimal, resource_def: A) {
         let args = vec![
             scrypto_encode(&amount),
             scrypto_encode(&resource_def.into()),

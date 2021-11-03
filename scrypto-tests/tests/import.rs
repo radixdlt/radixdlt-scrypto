@@ -26,7 +26,7 @@ r#"
             "inputs": [
                 {
                     "type": "Custom",
-                    "name": "scrypto::types::Amount",
+                    "name": "scrypto::types::Decimal",
                     "generics": []
                 },
                 {

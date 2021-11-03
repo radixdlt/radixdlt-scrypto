@@ -43,11 +43,11 @@ impl BucketRef {
     }
 
     /// Returns the resource amount within the bucket.
-    pub fn amount(&self) -> Amount {
-        let input = GetBucketRefAmountInput {
+    pub fn amount(&self) -> Decimal {
+        let input = GetBucketRefDecimalInput {
             bucket_ref: self.rid,
         };
-        let output: GetBucketRefAmountOutput = call_kernel(GET_BUCKET_REF_AMOUNT, input);
+        let output: GetBucketRefDecimalOutput = call_kernel(GET_BUCKET_REF_AMOUNT, input);
 
         output.amount
     }

@@ -97,16 +97,10 @@ jobs:
       working-directory: examples/helloworld
     - name: Build no_std
       run: cargo build --target wasm32-unknown-unknown --release
-      working-directory: examples/no_std
-    - name: Build gumball machine
+      working-directory: examples/features/no_std
+    - name: Build cross-component-call
       run: cargo build --target wasm32-unknown-unknown --release
-      working-directory: examples/gumball-machine
-    - name: Build gumball machine vendor
-      run: cargo build --target wasm32-unknown-unknown --release
-      working-directory: examples/cross-component-call
-    - name: Build radiswap
-      run: cargo build --target wasm32-unknown-unknown --release
-      working-directory: examples/radiswap
+      working-directory: examples/features/cross-component-call
   radix-engine:
     name: Run Radix Engine tests
     runs-on: ${{ matrix.os }}
@@ -126,8 +120,8 @@ jobs:
     - name: Run bench
       run: cargo bench
       working-directory: radix-engine
-  simulator-rev2:
-    name: Run Simulator tests (rev2)
+  simulator-resim:
+    name: Run Simulator tests (resim)
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -137,7 +131,7 @@ jobs:
     - name: Add wasm target
       run: rustup target add wasm32-unknown-unknown
     - name: Run tests
-      run: bash ./tests/rev2.sh
+      run: bash ./tests/resim.sh
       working-directory: simulator
   simulator-scrypto:
     name: Run Simulator tests (scrypto)
