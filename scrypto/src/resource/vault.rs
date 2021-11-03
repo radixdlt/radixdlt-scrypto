@@ -53,7 +53,7 @@ impl Vault {
     }
 
     /// Takes some amount of resources out of this vault.
-    pub fn take<A: Into<Amount>>(&self, amount: A) -> Bucket {
+    pub fn take<A: Into<Decimal>>(&self, amount: A) -> Bucket {
         let input = TakeFromVaultInput {
             vault: self.vid,
             amount: amount.into(),
@@ -69,9 +69,9 @@ impl Vault {
     }
 
     /// Returns the amount of resources within this vault.
-    pub fn amount(&self) -> Amount {
-        let input = GetVaultAmountInput { vault: self.vid };
-        let output: GetVaultAmountOutput = call_kernel(GET_VAULT_AMOUNT, input);
+    pub fn amount(&self) -> Decimal {
+        let input = GetVaultDecimalInput { vault: self.vid };
+        let output: GetVaultDecimalOutput = call_kernel(GET_VAULT_AMOUNT, input);
 
         output.amount
     }

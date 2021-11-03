@@ -20,7 +20,7 @@ blueprint! {
         pub fn move_bucket() {
             let bucket = ResourceBuilder::new()
                 .metadata("name", "TestToken")
-                .create_fixed(1000);
+                .new_token_fixed(1000);
 
             let component = MoveTest {
                 vaults: Vec::new()
@@ -32,7 +32,7 @@ blueprint! {
         pub fn move_bucket_ref() -> Bucket {
             let bucket = ResourceBuilder::new()
                 .metadata("name", "TestToken")
-                .create_fixed(1000);
+                .new_token_fixed(1000);
 
             let component = MoveTest {
                 vaults: Vec::new()

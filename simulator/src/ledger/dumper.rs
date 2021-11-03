@@ -85,7 +85,7 @@ pub fn dump_resource_def<T: Ledger>(address: Address, ledger: &T) -> Result<(), 
                 println!("{} {}: {}", list_item_prefix(last), e.0.green().bold(), e.1);
             }
             println!("{}: {}", "Supply".green().bold(), r.supply());
-            println!("{}: {:?}", "Mint Auth".green().bold(), r.mint_burn_auth());
+            println!("{}: {:?}", "Mint Auth".green().bold(), r.minter());
             Ok(())
         }
         None => Err(DisplayError::ResourceDefNotFound),

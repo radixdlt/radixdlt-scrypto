@@ -5,16 +5,13 @@ blueprint! {
         /// The resource definition of LP token.
         lp_resource_def: ResourceDef,
         /// Mint authorization to LP tokens.
-        lp_mint_burn_auth: Vault,
+        lp_minter: Vault,
         /// The reserve for token A.
         a_pool: Vault,
         /// The reserve for token B.
         b_pool: Vault,
         /// The fee to apply for every swap, like `3` for a 0.3% fee.
         fee_in_thousandths: u32,
-        /// The scale to use when adding/removing liquidity. If this value is
-        /// set to `5`, the min liquidity to add will be 0.001% of the pools.
-        scale: usize,
     }
 
     impl Radiswap {
@@ -23,12 +20,11 @@ blueprint! {
         pub fn new(
             a_tokens: Bucket,
             b_tokens: Bucket,
-            lp_initial_supply: Amount,
+            lp_initial_supply: Decimal,
             lp_symbol: String,
             lp_name: String,
             lp_url: String,
             fee_in_thousandths: u32,
-            scale: usize,
         ) -> (Component, Bucket) {
             // Check arguments
             scrypto_assert!(
@@ -36,27 +32,25 @@ blueprint! {
                 "You must pass in an initial supply of each token"
             );
             scrypto_assert!(fee_in_thousandths <= 1000, "Invalid fee in thousandths");
-            scrypto_assert!(scale >= 1 && scale <= 9, "Invalid scale");
 
             // Instantiate our LP token and mint an initial supply of them
-            let lp_mint_burn_auth = ResourceBuilder::new()
+            let lp_minter = ResourceBuilder::new()
                 .metadata("name", "LP Token Mint Auth")
-                .create_fixed(1);
+                .new_token_fixed(1);
             let lp_resource_def = ResourceBuilder::new()
                 .metadata("symbol", lp_symbol)
                 .metadata("name", lp_name)
                 .metadata("url", lp_url)
-                .create_mutable(lp_mint_burn_auth.resource_def());
-            let lp_tokens = lp_resource_def.mint(lp_initial_supply, lp_mint_burn_auth.borrow());
+                .new_token_mutable(lp_minter.resource_def());
+            let lp_tokens = lp_resource_def.mint(lp_initial_supply, lp_minter.borrow());
 
             // Instantiate our Radiswap component
             let radiswap = Self {
                 lp_resource_def,
-                lp_mint_burn_auth: Vault::with_bucket(lp_mint_burn_auth),
+                lp_minter: Vault::with_bucket(lp_minter),
                 a_pool: Vault::with_bucket(a_tokens),
                 b_pool: Vault::with_bucket(b_tokens),
                 fee_in_thousandths,
-                scale,
             }
             .instantiate();
 
@@ -67,28 +61,27 @@ blueprint! {
         /// Adds liquidity to this pool and return the LP tokens representing pool shares
         /// along with any remainder.
         pub fn add_liquidity(&self, a_tokens: Bucket, b_tokens: Bucket) -> (Bucket, Bucket) {
-            let scale = Amount::exp10(self.scale);
-            let a_share = scale * a_tokens.amount() / self.a_pool.amount();
-            let b_share = scale * b_tokens.amount() / self.b_pool.amount();
+            let a_share = a_tokens.amount() / self.a_pool.amount();
+            let b_share = b_tokens.amount() / self.b_pool.amount();
 
             let (actual_share, remainder) = if a_share <= b_share {
                 // We will claim all input token A's, and only the correct amount of token B
                 self.a_pool.put(a_tokens);
                 self.b_pool
-                    .put(b_tokens.take(self.b_pool.amount() * a_share / scale));
+                    .put(b_tokens.take(self.b_pool.amount() * a_share.clone()));
                 (a_share, b_tokens)
             } else {
                 // We will claim all input token B's, and only the correct amount of token A
                 self.b_pool.put(b_tokens);
                 self.a_pool
-                    .put(a_tokens.take(self.a_pool.amount() * b_share / scale));
+                    .put(a_tokens.take(self.a_pool.amount() * b_share.clone()));
                 (b_share, a_tokens)
             };
 
             // Mint LP tokens according to the share the provider is contributing
-            let lp_tokens = self.lp_mint_burn_auth.authorize(|badge| {
+            let lp_tokens = self.lp_minter.authorize(|badge| {
                 self.lp_resource_def
-                    .mint(self.lp_resource_def.supply() * actual_share / scale, badge)
+                    .mint(self.lp_resource_def.supply() * actual_share, badge)
             });
 
             // Return the LP tokens along with any remainder
@@ -103,15 +96,14 @@ blueprint! {
             );
 
             // Calculate the share based on the input LP tokens.
-            let scale = Amount::exp10(self.scale);
-            let share = scale * lp_tokens.amount() / self.lp_resource_def.supply();
+            let share = lp_tokens.amount() / self.lp_resource_def.supply();
 
             // Withdraw the correct amounts of tokens A and B from reserves
-            let a_withdrawn = self.a_pool.take(self.a_pool.amount() * share / scale);
-            let b_withdrawn = self.b_pool.take(self.b_pool.amount() * share / scale);
+            let a_withdrawn = self.a_pool.take(self.a_pool.amount() * share.clone());
+            let b_withdrawn = self.b_pool.take(self.b_pool.amount() * share.clone());
 
             // Burn the LP tokens received
-            self.lp_mint_burn_auth.authorize(|badge| {
+            self.lp_minter.authorize(|badge| {
                 lp_tokens.burn(badge);
             });
 

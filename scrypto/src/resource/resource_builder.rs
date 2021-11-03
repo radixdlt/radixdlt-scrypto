@@ -24,14 +24,24 @@ impl ResourceBuilder {
         self
     }
 
-    /// Creates a resource with mutable supply.
-    pub fn create_mutable<A: Into<ResourceDef>>(&self, mint_burn_auth: A) -> ResourceDef {
-        ResourceDef::new_mutable(self.metadata.clone(), mint_burn_auth)
+    /// Creates a token resource with mutable supply.
+    pub fn new_token_mutable<A: Into<ResourceDef>>(&self, minter: A) -> ResourceDef {
+        ResourceDef::new_mutable(1, self.metadata.clone(), minter)
     }
 
-    /// Creates a resource with fixed supply.
-    pub fn create_fixed<T: Into<Amount>>(&self, supply: T) -> Bucket {
-        ResourceDef::new_fixed(self.metadata.clone(), supply.into()).1
+    /// Creates a token resource with fixed supply.
+    pub fn new_token_fixed<T: Into<Decimal>>(&self, supply: T) -> Bucket {
+        ResourceDef::new_fixed(1, self.metadata.clone(), supply.into()).1
+    }
+
+    /// Creates a badge resource with mutable supply.
+    pub fn new_badge_mutable<A: Into<ResourceDef>>(&self, minter: A) -> ResourceDef {
+        ResourceDef::new_mutable(18, self.metadata.clone(), minter)
+    }
+
+    /// Creates a badge resource with fixed supply.
+    pub fn new_badge_fixed<T: Into<Decimal>>(&self, supply: T) -> Bucket {
+        ResourceDef::new_fixed(18, self.metadata.clone(), supply.into()).1
     }
 }
 

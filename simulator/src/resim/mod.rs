@@ -3,8 +3,10 @@ mod cmd_call_method;
 mod cmd_export_abi;
 mod cmd_mint;
 mod cmd_new_account;
-mod cmd_new_resource_fixed;
-mod cmd_new_resource_mutable;
+mod cmd_new_badge_fixed;
+mod cmd_new_badge_mutable;
+mod cmd_new_token_fixed;
+mod cmd_new_token_mutable;
 mod cmd_publish;
 mod cmd_reset;
 mod cmd_set_current_epoch;
@@ -22,8 +24,10 @@ pub use cmd_call_method::*;
 pub use cmd_export_abi::*;
 pub use cmd_mint::*;
 pub use cmd_new_account::*;
-pub use cmd_new_resource_fixed::*;
-pub use cmd_new_resource_mutable::*;
+pub use cmd_new_badge_fixed::*;
+pub use cmd_new_badge_mutable::*;
+pub use cmd_new_token_fixed::*;
+pub use cmd_new_token_mutable::*;
 pub use cmd_publish::*;
 pub use cmd_reset::*;
 pub use cmd_set_current_epoch::*;
@@ -40,8 +44,10 @@ pub const CMD_EXPORT_ABI: &str = "export-abi";
 pub const CMD_CALL_FUNCTION: &str = "call-function";
 pub const CMD_CALL_METHOD: &str = "call-method";
 pub const CMD_NEW_ACCOUNT: &str = "new-account";
-pub const CMD_NEW_RESOURCE_FIXED: &str = "new-resource-fixed";
-pub const CMD_NEW_RESOURCE_MUTABLE: &str = "new-resource-mutable";
+pub const CMD_NEW_TOKEN_FIXED: &str = "new-token-fixed";
+pub const CMD_NEW_TOKEN_MUTABLE: &str = "new-token-mutable";
+pub const CMD_NEW_BADGE_FIXED: &str = "new-badge-fixed";
+pub const CMD_NEW_BADGE_MUTABLE: &str = "new-badge-mutable";
 pub const CMD_MINT: &str = "mint";
 pub const CMD_TRANSFER: &str = "transfer";
 pub const CMD_PUBLISH: &str = "publish";
@@ -65,8 +71,10 @@ where
         .subcommand(make_export_abi())
         .subcommand(make_call_function())
         .subcommand(make_call_method())
-        .subcommand(make_new_resource_fixed())
-        .subcommand(make_new_resource_mutable())
+        .subcommand(make_new_token_fixed())
+        .subcommand(make_new_token_mutable())
+        .subcommand(make_new_badge_fixed())
+        .subcommand(make_new_badge_mutable())
         .subcommand(make_mint())
         .subcommand(make_transfer())
         .subcommand(make_new_account())
@@ -83,8 +91,10 @@ where
         (CMD_EXPORT_ABI, Some(m)) => handle_export_abi(m),
         (CMD_CALL_FUNCTION, Some(m)) => handle_call_function(m),
         (CMD_CALL_METHOD, Some(m)) => handle_call_method(m),
-        (CMD_NEW_RESOURCE_FIXED, Some(m)) => handle_new_resource_fixed(m),
-        (CMD_NEW_RESOURCE_MUTABLE, Some(m)) => handle_new_resource_mutable(m),
+        (CMD_NEW_TOKEN_FIXED, Some(m)) => handle_new_token_fixed(m),
+        (CMD_NEW_TOKEN_MUTABLE, Some(m)) => handle_new_token_mutable(m),
+        (CMD_NEW_BADGE_FIXED, Some(m)) => handle_new_badge_fixed(m),
+        (CMD_NEW_BADGE_MUTABLE, Some(m)) => handle_new_badge_mutable(m),
         (CMD_MINT, Some(m)) => handle_mint(m),
         (CMD_TRANSFER, Some(m)) => handle_transfer(m),
         (CMD_NEW_ACCOUNT, Some(m)) => handle_new_account(m),

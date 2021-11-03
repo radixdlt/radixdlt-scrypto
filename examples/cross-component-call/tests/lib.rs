@@ -8,13 +8,13 @@ fn test_vendor() {
     let mut ledger = InMemoryLedger::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, 0, 0);
     let key = executor.new_public_key();
-    let account = executor.create_account(key);
+    let account = executor.new_account(key);
     let package = executor.publish_package(include_code!());
 
     // Mock the GumballMachine blueprint.
-    executor.publish_package_to(
-        include_code!("../../gumball-machine"),
+    executor.overwrite_package(
         Address::from_str("01a405d3129b61e86c51c3168d553d2ffd7a3f0bd2f66b5a3e9876").unwrap(),
+        include_code!("../../gumball-machine"),
     );
 
     // Test the `new` function.
@@ -50,13 +50,13 @@ fn test_sub_vendor() {
     let mut ledger = InMemoryLedger::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, 0, 0);
     let key = executor.new_public_key();
-    let account = executor.create_account(key);
+    let account = executor.new_account(key);
     let package = executor.publish_package(include_code!());
 
     // Mock the GumballMachine blueprint.
-    executor.publish_package_to(
-        include_code!("../../gumball-machine"),
+    executor.overwrite_package(
         Address::from_str("01a405d3129b61e86c51c3168d553d2ffd7a3f0bd2f66b5a3e9876").unwrap(),
+        include_code!("../../gumball-machine"),
     );
 
     // Test the `new` function.

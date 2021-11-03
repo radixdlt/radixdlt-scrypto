@@ -52,7 +52,7 @@ pub enum Instruction {
 
     /// Takes resource from transaction context to a temporary bucket.
     TakeFromContext {
-        amount: Amount,
+        amount: Decimal,
         resource_def: Address,
         to: Bid,
     },
@@ -61,7 +61,7 @@ pub enum Instruction {
     ///
     /// A bucket will be created to support the reference and it will stay within the context.
     BorrowFromContext {
-        amount: Amount,
+        amount: Decimal,
         resource_def: Address,
         to: Rid,
     },

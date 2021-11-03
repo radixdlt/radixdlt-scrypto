@@ -1,4 +1,4 @@
-pub const SCRYPTO_TYPE_AMOUNT: u8 = 0x80;
+pub const SCRYPTO_TYPE_DECIMAL: u8 = 0x80;
 pub const SCRYPTO_TYPE_ADDRESS: u8 = 0x81;
 pub const SCRYPTO_TYPE_H256: u8 = 0x82;
 pub const SCRYPTO_TYPE_BID: u8 = 0x83;
@@ -6,7 +6,7 @@ pub const SCRYPTO_TYPE_RID: u8 = 0x84;
 pub const SCRYPTO_TYPE_MID: u8 = 0x85;
 pub const SCRYPTO_TYPE_VID: u8 = 0x86;
 
-pub const SCRYPTO_NAME_AMOUNT: &str = "scrypto::types::Amount";
+pub const SCRYPTO_NAME_DECIMAL: &str = "scrypto::types::Decimal";
 pub const SCRYPTO_NAME_ADDRESS: &str = "scrypto::types::Address";
 pub const SCRYPTO_NAME_H256: &str = "scrypto::types::H256";
 pub const SCRYPTO_NAME_BID: &str = "scrypto::types::Bid";

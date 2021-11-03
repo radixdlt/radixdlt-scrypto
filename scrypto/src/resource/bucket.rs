@@ -47,7 +47,7 @@ impl Bucket {
     }
 
     /// Takes some amount of resources from this bucket.
-    pub fn take<A: Into<Amount>>(&self, amount: A) -> Self {
+    pub fn take<A: Into<Decimal>>(&self, amount: A) -> Self {
         let input = TakeFromBucketInput {
             bucket: self.bid,
             amount: amount.into(),
@@ -66,9 +66,9 @@ impl Bucket {
     }
 
     /// Returns the amount of resources in this bucket.
-    pub fn amount(&self) -> Amount {
-        let input = GetBucketAmountInput { bucket: self.bid };
-        let output: GetBucketAmountOutput = call_kernel(GET_BUCKET_AMOUNT, input);
+    pub fn amount(&self) -> Decimal {
+        let input = GetBucketDecimalInput { bucket: self.bid };
+        let output: GetBucketDecimalOutput = call_kernel(GET_BUCKET_AMOUNT, input);
 
         output.amount
     }
@@ -82,8 +82,8 @@ impl Bucket {
     }
 
     /// Burns resource within this bucket.
-    pub fn burn(self, mint_burn_auth: BucketRef) {
-        self.resource_def().burn(self, mint_burn_auth);
+    pub fn burn(self, minter: BucketRef) {
+        self.resource_def().burn(self, minter);
     }
 
     /// Checks if this bucket is empty.

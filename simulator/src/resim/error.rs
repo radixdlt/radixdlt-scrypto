@@ -22,7 +22,7 @@ pub enum Error {
 
     InvalidAddress(ParseAddressError),
 
-    InvalidAmount(ParseAmountError),
+    InvalidDecimal(ParseDecimalError),
 
     InvalidNumber(ParseIntError),
 

@@ -18,7 +18,7 @@ blueprint! {
 
             let badges = ResourceBuilder::new()
                 .metadata("name", "Admin Badge")
-                .create_fixed(num_of_admins);
+                .new_token_fixed(num_of_admins);
 
             let component = Self {
                 prices: LazyMap::new(),

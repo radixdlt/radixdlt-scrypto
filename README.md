@@ -78,8 +78,10 @@ scrypto test
 |---|---|
 | To create an account | ``` resim new-account ``` |
 | To change the default account | ``` resim set-default-account <account_address> ``` |
-| To create a resource with fixed supply | ``` resim new-resource-fixed <amount> ``` |
-| To create a resource with mutable supply | ``` resim new-resource-mutable ``` |
+| To create a token with fixed supply | ``` resim new-token-fixed <amount> ``` |
+| To create a token with mutable supply | ``` resim new-token-mutable <minter_badge_address> ``` |
+| To create a badge with fixed supply | ``` resim new-badge-fixed <amount> ``` |
+| To create a badge with mutable supply | ``` resim new-badge-mutable <minter_badge_address> ``` |
 | To mint resource | ``` resim mint <amount> <resource_def>``` |
 | To transfer resource | ``` resim transfer <amount> <resource_def> <recipient_address> ``` |
 | To publish a package | ``` resim publish <path_to_package_dir_or_wasm_file> ``` |
