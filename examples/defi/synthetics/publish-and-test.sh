@@ -17,7 +17,7 @@ usd='03806c33ab58c922240ce20a5b697546cc84aaecdf1b460a42c425'
 
 resim set-default-account $acc1_address $acc1_pub_key
 
-# SYNTHETICS
+## SYNTHETICS - PREPARATION
 
 # mint SNX
 snx=`resim new-token-mutable $acc1_mint_auth --name "Synthetics Collateral Token" --symbol SNX --description "A token which is used in the synthetics component for collateral" | tee /dev/tty | awk '/ResourceDef:/ {print $NF}'`
@@ -26,16 +26,21 @@ resim mint 117921786 $snx $acc1_mint_auth --signers $acc1_pub_key
 
 # Publish synthetics blueprint
 synthetics_blueprint=`resim publish ./synthetics | tee /dev/tty | awk '/Package:/ {print $NF}'`
-synthetics_pool_component=`resim call-function $synthetics_blueprint SyntheticPool new $po_cp $snx $usd 4000000000 | tee /dev/tty | awk '/Component:/ {print $NF}'`
 
-# One SNX is $42
-resim call-method $po_cp update_price $snx $usd 42000000000 1,$po_update_auth --signers $acc1_pub_key
+# Publish SyntheticsPool with collat ratio of 4, using collateral of SNX and base price of USD
+synthetics_pool_component=`resim call-function $synthetics_blueprint SyntheticPool new $po_cp $snx $usd 4 | tee /dev/tty | awk '/Component:/ {print $NF}'`
+
+# One SNX is $42 (decimals in price oracle is 18)
+resim call-method $po_cp update_price $snx $usd 42000000000000000000 1,$po_update_auth --signers $acc1_pub_key
+
+# One TESLA is $1176 (decimals is 18)
+resim call-method $synthetics_pool_component update_off_ledger_usd_price TESLA 1176000000000000000000
+
+## SYNTHETICS - TESTING
 
 # Stake some SNX tokens! (from the default account)
 amount_to_stake=10
 vault_badge=`resim call-method $synthetics_pool_component stake_to_new_vault "$amount_to_stake,$snx" --signers $acc1_pub_key | tee /dev/tty | awk '/ResourceDef:/ {print $NF}'`
-
-echo "Vault badge resource def: $vault_badge"
 
 # Top up our account
 additional_amount_to_stake=21
@@ -55,6 +60,22 @@ resim call-method $synthetics_pool_component unstake_from_vault "1,$vault_badge"
 
 # Can now dispose badge as vault is empty
 resim call-method $synthetics_pool_component dispose_badge "1,$vault_badge" --signers $acc1_pub_key
+
+# Create new account (with a replacement badge!)
+# Stake 1000 SNX = $42 000 of collateral (can mint $10 500 of synths)
+amount_to_stake=1000
+vault_badge=`resim call-method $synthetics_pool_component stake_to_new_vault "$amount_to_stake,$snx" --signers $acc1_pub_key | tee /dev/tty | awk '/ResourceDef:/ {print $NF}'`
+
+# Mint 20 sTESLA which is 20 * $1176 = $23 520 - should fail
+# resim call-method $synthetics_pool_component mint_synthetic "1,$vault_badge" TESLA 20 --signers $acc1_pub_key
+
+# Mint 5 sTESLA which is 5 * $1176 and then 2 * $1176 for total of 7 * $1176 =  just within our collat ratio
+resim call-method $synthetics_pool_component mint_synthetic "1,$vault_badge" TESLA 5 --signers $acc1_pub_key
+resim call-method $synthetics_pool_component mint_synthetic "1,$vault_badge" TESLA 2 --signers $acc1_pub_key
+
+# Check we have our 7 sTESLA
+resim show $acc1_address
+
 
 echo
 echo "================================="

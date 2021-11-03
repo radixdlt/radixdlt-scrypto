@@ -107,17 +107,24 @@ blueprint! {
         collateral_resource_definition: ResourceDef,
         usd_resource_definition: ResourceDef,
         // State
+        synthetics_minter_auth: Vault,
         staked_collateral_vault_map: LazyMap<Address, Vault>,
         synthetic_token_minted_debt_by_ticker_code: HashMap<String, Vault>,
         synthetic_token_and_debt_rdefs_by_ticker_code: LazyMap<String, (ResourceDef, ResourceDef)>,
         synthetic_token_rdef_to_ticker_code: LazyMap<ResourceDef, String>,
         // Oracle State
-        off_ledger_ticker_code_prices_of_usd: LazyMap<String, Decimal>,
+        off_ledger_ticker_code_prices_in_usd: LazyMap<String, Decimal>,
         unix_timestamp_oracle: u128,
-        // trash
+        // Trash
         trash: Vec<Vault>,
     }
 
+    /// Implements a barebones synthetics system for a single user.
+    /// Does not currently implement:
+    /// * Proportional debt ownership
+    /// * Burning synths
+    /// * Trading synths
+    /// * Fees or rewards
     impl SyntheticPool {
         pub fn new(
             oracle_address: Address,
@@ -128,16 +135,18 @@ blueprint! {
             let oracle: PriceOracle = oracle_address.into();
             let collateral_resource_definition: ResourceDef = collateral_token_address.into();
             let usd_resource_definition: ResourceDef = usd_token_address.into();
+            let synthetics_mint_auth_badge: Bucket = ResourceBuilder::new().metadata("name", "synthetics_mint_auth").new_token_fixed(1);
             let synthetic_pool = Self {
                 oracle,
                 collateralization_ratio,
                 collateral_resource_definition,
                 usd_resource_definition,
+                synthetics_minter_auth: Vault::with_bucket(synthetics_mint_auth_badge),
                 staked_collateral_vault_map: LazyMap::new(),
                 synthetic_token_minted_debt_by_ticker_code: HashMap::new(),
                 synthetic_token_and_debt_rdefs_by_ticker_code: LazyMap::new(),
                 synthetic_token_rdef_to_ticker_code: LazyMap::new(),
-                off_ledger_ticker_code_prices_of_usd: LazyMap::new(),
+                off_ledger_ticker_code_prices_in_usd: LazyMap::new(),
                 unix_timestamp_oracle: 0,
                 trash: Vec::new(),
             }
@@ -196,6 +205,9 @@ blueprint! {
 
             // Lazy map doesn't at present support remove
             // self.staked_collateral_vault_map.remove(vault_owner_badge);
+
+            // Burn the badge
+            // TODO - make the resource def mutable / actually burn the badge(?)
             self.trash.push(Vault::with_bucket(vault_owner_badge));
         }
 
@@ -205,13 +217,12 @@ blueprint! {
         }
 
         pub fn mint_synthetic(
-            &self,
+            &mut self,
             vault_owner_badge: BucketRef,
-            exchange: String,
             ticker_code: String,
             quantity: Decimal,
         ) -> Bucket {
-            let new_synthetics = self.mint_synthetic_internal(exchange, ticker_code, quantity);
+            let new_synthetics = self.mint_synthetic_internal(&ticker_code, quantity);
 
             // TODO - work out increase in vault owner's proportion of the debt pool - for now each vault owner is assumed to own the whole system debt!
 
@@ -301,19 +312,43 @@ blueprint! {
         }
 
         // TODO - implement me!
-        fn mint_synthetic_internal(
-            &self,
-            _exchange: String,
-            _ticker_code: String,
-            _quantity: Decimal,
-        ) -> Bucket {
-            // TODO - fix me!
-            Bucket::new(ResourceDef::from(
-                self.collateral_resource_definition.address(),
-            ))
+        fn mint_synthetic_internal(&mut self, ticker_code: &String, quantity: Decimal) -> Bucket {
+            let (synthetic_resource_def, debt_resource_def) = self.get_resource_defs_for_synthetic_and_debt(ticker_code);
+            
+            let minted_token = self.synthetics_minter_auth.authorize(|badge| synthetic_resource_def.mint(quantity.to_owned(), badge));
+            let minted_debt = self.synthetics_minter_auth.authorize(|badge| debt_resource_def.mint(quantity.to_owned(), badge));
+            let debt_vault_option = self.synthetic_token_minted_debt_by_ticker_code.get(ticker_code);
+            if debt_vault_option.is_some() {
+                debt_vault_option.unwrap().put(minted_debt);
+            } else {
+                self.synthetic_token_minted_debt_by_ticker_code.insert(ticker_code.to_owned(), Vault::with_bucket(minted_debt));
+            }
+            minted_token
         }
 
-        // TODO - revisit this when the resource definition supports decimals
+        fn get_resource_defs_for_synthetic_and_debt(&self, ticker_code: &String) -> (ResourceDef, ResourceDef) {
+            let resource_defs_option = self.synthetic_token_and_debt_rdefs_by_ticker_code.get(&ticker_code);
+
+            if resource_defs_option.is_some() {
+                return resource_defs_option.unwrap();
+            }        
+            
+            let resource_defs = (
+                ResourceBuilder::new()
+                    .metadata("name".to_owned(), format!("Synthetic {}", ticker_code))
+                    .metadata("symbol".to_owned(), format!("s{}", ticker_code))
+                    .new_token_mutable(self.synthetics_minter_auth.resource_def()),
+                ResourceBuilder::new()
+                    .metadata("name".to_owned(), format!("Synthetic {} system debt", ticker_code))
+                    .metadata("symbol".to_owned(), format!("s{}-DEBT", ticker_code))
+                    .new_token_mutable(self.synthetics_minter_auth.resource_def())
+            );
+
+            self.synthetic_token_and_debt_rdefs_by_ticker_code.insert(ticker_code.to_owned(), resource_defs.to_owned());
+
+            resource_defs
+        }
+
         fn get_total_system_debt_in_usd(&self) -> Decimal {
             let mut total = Decimal::zero();
             for (ticker_code, vault) in &self.synthetic_token_minted_debt_by_ticker_code {
@@ -367,17 +402,16 @@ blueprint! {
             );
         }
 
-        // SLIGHT HACK - WE ADD AN OFF-LEDGER PRICE ORACLE TO THIS COMPONENT - BUT IT COULD BE SEPARATE
-        // TODO - Add badge auth
+        // SLIGHT HACK - WE ADD AN OFF-LEDGER PRICE ORACLE TO THIS COMPONENT - BUT THIS SHOULD BE SEPARATE AND AUTHORISED
 
         /// Sets the price of pair BASE/QUOTE.
         pub fn get_off_ledger_usd_price(&self, ticker_code: String) -> Option<Decimal> {
-            self.off_ledger_ticker_code_prices_of_usd.get(&ticker_code)
+            self.off_ledger_ticker_code_prices_in_usd.get(&ticker_code)
         }
 
         /// Updates the price of pair BASE/QUOTE.
         pub fn update_off_ledger_usd_price(&self, ticker_code: String, price: Decimal) {
-            self.off_ledger_ticker_code_prices_of_usd
+            self.off_ledger_ticker_code_prices_in_usd
                 .insert(ticker_code, price);
         }
 
