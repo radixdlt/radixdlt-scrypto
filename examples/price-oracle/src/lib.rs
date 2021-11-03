@@ -3,54 +3,44 @@ use scrypto::prelude::*;
 blueprint! {
     struct PriceOracle {
         /// Last price of each resource pair
-        prices: LazyMap<(Address, Address), u128>,
-        /// The number of decimal places
-        decimals: u8,
+        prices: LazyMap<(Address, Address), Decimal>,
         /// The admin badge resource def address
-        admin: Address,
+        admin_badge: ResourceDef,
     }
 
     impl PriceOracle {
-        /// Creates a PriceOracle component, along with necessary badges.
-        pub fn new(decimals: u8, num_of_admins: u32) -> (Component, Bucket) {
-            scrypto_assert!(decimals >= 2 && decimals <= 18);
+        /// Creates a PriceOracle component, along with admin badges.
+        pub fn new(num_of_admins: u32) -> (Bucket, Component) {
             scrypto_assert!(num_of_admins >= 1);
 
             let badges = ResourceBuilder::new()
-                .metadata("name", "Admin Badge")
-                .new_token_fixed(num_of_admins);
+                .metadata("name", "Price Oracle Admin Badge")
+                .new_badge_fixed(num_of_admins);
 
             let component = Self {
                 prices: LazyMap::new(),
-                decimals,
-                admin: badges.resource_def().address(),
+                admin_badge: badges.resource_def(),
             }
             .instantiate();
 
-            (component, badges)
+            (badges, component)
         }
 
-        /// Returns the current price of a resource pair.
-        pub fn get_price(&self, base: Address, quote: Address) -> Option<u128> {
+        /// Returns the current price of a resource pair BASE/QUOTE.
+        pub fn get_price(&self, base: Address, quote: Address) -> Option<Decimal> {
             self.prices.get(&(base, quote))
         }
 
-        /// Updates the price of a resource pair and its inverse.
-        #[auth(admin)]
-        pub fn update_price(&self, base: Address, quote: Address, price: u128) {
-            let scale = 10u128.pow(self.decimals as u32);
-            self.prices.insert((base, quote), price);
-            self.prices.insert((quote, base), scale * scale / price);
-        }
-
-        /// Returns the number of decimal places.
-        pub fn decimals(&self) -> u8 {
-            self.decimals
+        /// Updates the price of a resource pair BASE/QUOTE and its inverse.
+        #[auth(admin_badge)]
+        pub fn update_price(&self, base: Address, quote: Address, price: Decimal) {
+            self.prices.insert((base, quote), price.clone());
+            self.prices.insert((quote, base), Decimal::from(1) / price);
         }
 
         /// Returns the admin badge resource def address.
-        pub fn admin(&self) -> Address {
-            self.admin
+        pub fn admin_badge_address(&self) -> Address {
+            self.admin_badge.address()
         }
     }
 }
