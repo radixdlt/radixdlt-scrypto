@@ -1,10 +1,19 @@
 use sbor::*;
 use scrypto::prelude::*;
 
+// This is a barebone implementation of Lending protocol.
+//
+// The following core features are missing:
+// * Fees
+// * Multi-collateral with price oracle
+// * Authorization
+// * Interest dynamic adjustment strategy
+// * Upgradability
+
 #[derive(Debug, TypeId, Encode, Decode, Describe, PartialEq, Eq)]
 pub struct User {
-    /// The user's reserve balance
-    pub principle_balance: Decimal,
+    /// The user's deposit balance
+    pub deposit_balance: Decimal,
     /// The interest rate of deposits
     pub deposit_interest_rate: Decimal,
     /// Last update timestamp
@@ -23,8 +32,8 @@ impl User {
         if self.borrow_balance.is_zero() {
             None
         } else {
-            let collateral = &self.principle_balance
-                + &self.principle_balance
+            let collateral = &self.deposit_balance
+                + &self.deposit_balance
                     * &self.deposit_interest_rate
                     * self.deposit_time_elapsed();
 
@@ -46,18 +55,18 @@ impl User {
     }
 
     pub fn on_deposit(&mut self, amount: Decimal, interest_rate: Decimal) {
-        // Increase principle balance by interests incurred so far
+        // Increase principle balance by interests accrued
         let interest =
-            &self.principle_balance * &self.deposit_interest_rate * self.deposit_time_elapsed();
-        self.principle_balance += interest;
+            &self.deposit_balance * &self.deposit_interest_rate * self.deposit_time_elapsed();
+        self.deposit_balance += interest;
 
         // Calculate the aggregated interest of previous deposits & the new deposit
-        self.deposit_interest_rate = (&self.principle_balance * &self.deposit_interest_rate
+        self.deposit_interest_rate = (&self.deposit_balance * &self.deposit_interest_rate
             + &amount * &interest_rate)
-            / (&self.principle_balance + &amount);
+            / (&self.deposit_balance + &amount);
 
         // Increase principle balance by the amount.
-        self.principle_balance += amount;
+        self.deposit_balance += amount;
 
         // Update timestamp
         self.deposit_last_update = Context::current_epoch();
@@ -65,14 +74,14 @@ impl User {
 
     pub fn on_redeem(&mut self, amount: Decimal) -> Decimal {
         // Deduct withdrawn amount from principle
-        self.principle_balance -= &amount;
+        self.deposit_balance -= &amount;
 
         // Calculate the amount to return
         &amount + &amount * &self.deposit_interest_rate * self.deposit_time_elapsed()
     }
 
     pub fn on_borrow(&mut self, amount: Decimal, interest_rate: Decimal) {
-        // Increase borrow balance by interests incurred so far
+        // Increase borrow balance by interests accrued
         let interest =
             &self.borrow_balance * &self.borrow_interest_rate * self.borrow_time_elapsed();
         self.borrow_balance += interest;
@@ -90,7 +99,7 @@ impl User {
     }
 
     pub fn on_repay(&mut self, amount: Decimal) -> Decimal {
-        // Increase borrow balance by interests incurred so far
+        // Increase borrow balance by interests accrued
         let interest =
             &self.borrow_balance * &self.borrow_interest_rate * self.borrow_time_elapsed();
         self.borrow_balance += interest;
@@ -124,10 +133,14 @@ blueprint! {
         liquidity_pool: Vault,
         /// The total amount of all borrows
         total_borrows: Decimal,
-        /// The min collateral ratio
+        /// The min collateral ratio that a user has to maintain
         min_collateral_ratio: Decimal,
-        /// The max percentage of liquidity pool can be borrowed each time
-        max_stable_borrow_percent: Decimal,
+        /// The max percentage of liquidity pool one can borrow
+        max_borrow_percentage: Decimal,
+        /// The max percentage of debt one can liquidate
+        max_liquidation_percentage: Decimal,
+        /// Liquidation bonus
+        liquidation_bonus: Decimal,
         /// AToken resource definition
         a_token_def: ResourceDef,
         /// AToken minter badge
@@ -141,7 +154,7 @@ blueprint! {
     }
 
     impl AutoLend {
-        /// Creates a lending pool, with single reserve.
+        /// Creates a lending pool, with single collateral.
         pub fn new(reserve_address: Address, reserve_symbol: String) -> Component {
             let a_token_minter_badge = ResourceBuilder::new()
                 .metadata("name", "AToken Minter Badge")
@@ -154,13 +167,15 @@ blueprint! {
             Self {
                 liquidity_pool: Vault::new(reserve_address),
                 total_borrows: Decimal::zero(),
-                min_collateral_ratio: Decimal::from_str("1.2").unwrap(),
-                max_stable_borrow_percent: Decimal::from_str("0.5").unwrap(),
+                min_collateral_ratio: "1.2".parse().unwrap(),
+                max_borrow_percentage: "0.3".parse().unwrap(),
+                max_liquidation_percentage: "0.5".parse().unwrap(),
+                liquidation_bonus: "0.05".parse().unwrap(),
                 a_token_def,
                 a_token_minter_badge: Vault::with_bucket(a_token_minter_badge),
                 users: LazyMap::new(),
-                deposit_interest_rate: Decimal::from_str("0.01").unwrap(),
-                borrow_interest_rate: Decimal::from_str("0.02").unwrap(),
+                deposit_interest_rate: "0.01".parse().unwrap(),
+                borrow_interest_rate: "0.02".parse().unwrap(),
             }
             .instantiate()
         }
@@ -190,7 +205,7 @@ blueprint! {
                     user
                 }
                 None => User {
-                    principle_balance: amount,
+                    deposit_balance: amount,
                     borrow_balance: Decimal::zero(),
                     deposit_interest_rate,
                     borrow_interest_rate: Decimal::zero(),
@@ -235,7 +250,7 @@ blueprint! {
             let user_id = Self::get_user_id(user_auth);
 
             scrypto_assert!(
-                requested <= self.liquidity_pool.amount() * &self.max_stable_borrow_percent,
+                requested <= self.liquidity_pool.amount() * &self.max_borrow_percentage,
                 "Max borrow percent exceeded"
             );
 
@@ -266,11 +281,30 @@ blueprint! {
         }
 
         /// Liquidates one user's position, if it's under collateralized.
-        pub fn liquidate(&mut self, _user_id: Address) -> Bucket {
+        pub fn liquidate(&mut self, user_id: Address, repaid: Bucket) -> Bucket {
+            let user = self.get_user(user_id);
+
+            // Check if the user is under collateralized
+            let collateral_ratio = user.get_collateral_ratio();
+            if let Some(ratio) = collateral_ratio {
+                scrypto_assert!(
+                    ratio <= self.min_collateral_ratio,
+                    "Liquidation not allowed."
+                );
+            } else {
+                scrypto_abort("No borrow from the user");
+            }
+
+            // Check liquidation size
+            scrypto_assert!(
+                repaid.amount() <= user.borrow_balance * &self.max_liquidation_percentage,
+                "Liquidation not allowed."
+            );
+
             todo!()
         }
 
-        /// Returns a user.
+        /// Returns the current state of a user.
         pub fn get_user(&self, user_id: Address) -> User {
             match self.users.get(&user_id) {
                 Some(user) => user,

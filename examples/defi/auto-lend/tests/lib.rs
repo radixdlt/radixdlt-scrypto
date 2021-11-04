@@ -127,7 +127,7 @@ fn test_deposit_and_redeem() {
     assert_eq!(
         user_state,
         User {
-            principle_balance: "100".parse().unwrap(),
+            deposit_balance: "100".parse().unwrap(),
             deposit_interest_rate: "0.01".parse().unwrap(),
             deposit_last_update: 0,
             borrow_balance: "0".parse().unwrap(),
@@ -177,7 +177,7 @@ fn test_deposit_and_redeem() {
     assert_eq!(
         user_state,
         User {
-            principle_balance: "201".parse().unwrap(),
+            deposit_balance: "201".parse().unwrap(),
             deposit_interest_rate: "0.02990049751243781".parse().unwrap(),
             deposit_last_update: 0,
             borrow_balance: "0".parse().unwrap(),
@@ -211,7 +211,7 @@ fn test_deposit_and_redeem() {
     assert_eq!(
         user_state,
         User {
-            principle_balance: "51".parse().unwrap(),
+            deposit_balance: "51".parse().unwrap(),
             deposit_interest_rate: "0.02990049751243781".parse().unwrap(),
             deposit_last_update: 0,
             borrow_balance: "0".parse().unwrap(),
@@ -253,7 +253,7 @@ fn test_borrow_and_repay() {
     assert_eq!(
         user_state,
         User {
-            principle_balance: "1000".parse().unwrap(),
+            deposit_balance: "1000".parse().unwrap(),
             deposit_interest_rate: "0.01".parse().unwrap(),
             deposit_last_update: 0,
             borrow_balance: "0".parse().unwrap(),
@@ -284,7 +284,7 @@ fn test_borrow_and_repay() {
     assert_eq!(
         user_state,
         User {
-            principle_balance: "1000".parse().unwrap(),
+            deposit_balance: "1000".parse().unwrap(),
             deposit_interest_rate: "0.01".parse().unwrap(),
             deposit_last_update: 0,
             borrow_balance: "100".parse().unwrap(),
@@ -334,7 +334,7 @@ fn test_borrow_and_repay() {
     assert_eq!(
         user_state,
         User {
-            principle_balance: "1000".parse().unwrap(),
+            deposit_balance: "1000".parse().unwrap(),
             deposit_interest_rate: "0.01".parse().unwrap(),
             deposit_last_update: 0,
             borrow_balance: "202".parse().unwrap(),
@@ -365,7 +365,7 @@ fn test_borrow_and_repay() {
     assert_eq!(
         user_state,
         User {
-            principle_balance: "1000".parse().unwrap(),
+            deposit_balance: "1000".parse().unwrap(),
             deposit_interest_rate: "0.01".parse().unwrap(),
             deposit_last_update: 0,
             borrow_balance: "59.039999999999999902".parse().unwrap(),
@@ -399,7 +399,7 @@ fn test_borrow_and_repay() {
     assert_eq!(
         user_state,
         User {
-            principle_balance: "1000".parse().unwrap(),
+            deposit_balance: "1000".parse().unwrap(),
             deposit_interest_rate: "0.01".parse().unwrap(),
             deposit_last_update: 0,
             borrow_balance: "0".parse().unwrap(),
