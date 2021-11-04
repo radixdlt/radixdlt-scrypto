@@ -26,8 +26,8 @@ echo "Building examples..."
 (cd assets/account; cargo build --target wasm32-unknown-unknown --release; cargo test)
 (cd assets/system; cargo build --target wasm32-unknown-unknown --release; cargo test)
 (cd examples/helloworld; cargo build --target wasm32-unknown-unknown --release; cargo test)
-(cd examples/features/no_std; cargo build --target wasm32-unknown-unknown --release; cargo test)
-(cd examples/features/cross-component-call; cargo build --target wasm32-unknown-unknown --release; cargo test)
+(cd examples/core/no_std; cargo build --target wasm32-unknown-unknown --release; cargo test)
+(cd examples/core/cross-component-call; cargo build --target wasm32-unknown-unknown --release; cargo test)
 (cd examples/defi/gumball-machine; cargo build --target wasm32-unknown-unknown --release; cargo test)
 (cd examples/defi/radiswap; cargo build --target wasm32-unknown-unknown --release; cargo test)
 

@@ -24,8 +24,8 @@ component=`$resim call-function $package Hello new | tee /dev/tty | awk '/Compon
 $resim call-method $component free_token
 
 # Test cross component call
-$resim publish ../examples/features/cross-component-call --address 01bda8686d6c2fa45dce04fac71a09b54efbc8028c23aac74bc00e
-package=`$resim publish ../examples/features/cross-component-call | tee /dev/tty | awk '/Package:/ {print $NF}'`
+$resim publish ../examples/core/cross-component-call --address 01bda8686d6c2fa45dce04fac71a09b54efbc8028c23aac74bc00e
+package=`$resim publish ../examples/core/cross-component-call | tee /dev/tty | awk '/Package:/ {print $NF}'`
 component=`$resim call-function $package Proxy1 new | tee /dev/tty | awk '/Component:/ {print $NF}' | tail -n1`
 $resim call-method $component free_token
 component=`$resim call-function $package Proxy2 new | tee /dev/tty | awk '/Component:/ {print $NF}' | tail -n1`

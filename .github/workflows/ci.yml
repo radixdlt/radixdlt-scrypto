@@ -97,10 +97,10 @@ jobs:
       working-directory: examples/helloworld
     - name: Build no_std
       run: cargo build --target wasm32-unknown-unknown --release
-      working-directory: examples/features/no_std
+      working-directory: examples/core/no_std
     - name: Build cross-component-call
       run: cargo build --target wasm32-unknown-unknown --release
-      working-directory: examples/features/cross-component-call
+      working-directory: examples/core/cross-component-call
   radix-engine:
     name: Run Radix Engine tests
     runs-on: ${{ matrix.os }}
