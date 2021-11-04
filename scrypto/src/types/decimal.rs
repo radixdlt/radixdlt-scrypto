@@ -84,42 +84,159 @@ from_int!(i64);
 from_int!(i128);
 from_int!(isize);
 
+//=====
+// ADD
+//=====
+
 impl<T: Into<Decimal>> Add<T> for Decimal {
     type Output = Decimal;
 
     fn add(self, other: T) -> Self::Output {
-        Self(self.0 + other.into().0)
+        Decimal(self.0 + other.into().0)
     }
 }
+
+impl<'a> Add<&'a Decimal> for Decimal {
+    type Output = Decimal;
+
+    fn add(self, other: &'a Decimal) -> Self::Output {
+        Decimal(self.0.clone() + other.0.clone())
+    }
+}
+
+impl<'a, T: Into<Decimal>> Add<T> for &'a Decimal {
+    type Output = Decimal;
+
+    fn add(self, other: T) -> Self::Output {
+        Decimal(self.0.clone() + other.into().0)
+    }
+}
+
+impl<'a, 'b> Add<&'a Decimal> for &'b Decimal {
+    type Output = Decimal;
+
+    fn add(self, other: &'a Decimal) -> Self::Output {
+        Decimal(self.0.clone() + other.0.clone())
+    }
+}
+
+//=====
+// Sub
+//=====
 
 impl<T: Into<Decimal>> Sub<T> for Decimal {
     type Output = Decimal;
 
     fn sub(self, other: T) -> Self::Output {
-        Self(self.0 - other.into().0)
+        Decimal(self.0 - other.into().0)
     }
 }
+
+impl<'a> Sub<&'a Decimal> for Decimal {
+    type Output = Decimal;
+
+    fn sub(self, other: &'a Decimal) -> Self::Output {
+        Decimal(self.0.clone() - other.0.clone())
+    }
+}
+
+impl<'a, T: Into<Decimal>> Sub<T> for &'a Decimal {
+    type Output = Decimal;
+
+    fn sub(self, other: T) -> Self::Output {
+        Decimal(self.0.clone() - other.into().0)
+    }
+}
+
+impl<'a, 'b> Sub<&'a Decimal> for &'b Decimal {
+    type Output = Decimal;
+
+    fn sub(self, other: &'a Decimal) -> Self::Output {
+        Decimal(self.0.clone() - other.0.clone())
+    }
+}
+
+//=====
+// Mul
+//=====
 
 impl<T: Into<Decimal>> Mul<T> for Decimal {
     type Output = Decimal;
 
     fn mul(self, other: T) -> Self::Output {
-        Self(self.0 * other.into().0 / PRECISION)
+        Decimal(self.0 * other.into().0 / PRECISION)
     }
 }
+
+impl<'a> Mul<&'a Decimal> for Decimal {
+    type Output = Decimal;
+
+    fn mul(self, other: &'a Decimal) -> Self::Output {
+        Decimal(self.0.clone() * other.0.clone() / PRECISION)
+    }
+}
+
+impl<'a, T: Into<Decimal>> Mul<T> for &'a Decimal {
+    type Output = Decimal;
+
+    fn mul(self, other: T) -> Self::Output {
+        Decimal(self.0.clone() * other.into().0 / PRECISION)
+    }
+}
+
+impl<'a, 'b> Mul<&'a Decimal> for &'b Decimal {
+    type Output = Decimal;
+
+    fn mul(self, other: &'a Decimal) -> Self::Output {
+        Decimal(self.0.clone() * other.0.clone() / PRECISION)
+    }
+}
+
+//=====
+// Div
+//=====
 
 impl<T: Into<Decimal>> Div<T> for Decimal {
     type Output = Decimal;
 
     fn div(self, other: T) -> Self::Output {
-        Self(self.0 * PRECISION / other.into().0)
+        Decimal(self.0 * PRECISION / other.into().0)
     }
 }
+
+impl<'a> Div<&'a Decimal> for Decimal {
+    type Output = Decimal;
+
+    fn div(self, other: &'a Decimal) -> Self::Output {
+        Decimal(self.0.clone() * PRECISION / other.0.clone())
+    }
+}
+
+impl<'a, T: Into<Decimal>> Div<T> for &'a Decimal {
+    type Output = Decimal;
+
+    fn div(self, other: T) -> Self::Output {
+        Decimal(self.0.clone() * PRECISION / other.into().0)
+    }
+}
+
+impl<'a, 'b> Div<&'a Decimal> for &'b Decimal {
+    type Output = Decimal;
+
+    fn div(self, other: &'a Decimal) -> Self::Output {
+        Decimal(self.0.clone() * PRECISION / other.0.clone())
+    }
+}
+
+//=======
+// Shift
+//=======
+
 impl Shl<usize> for Decimal {
     type Output = Decimal;
 
     fn shl(self, shift: usize) -> Self::Output {
-        Self(self.0.shl(shift))
+        Decimal(self.0.shl(shift))
     }
 }
 
@@ -127,9 +244,13 @@ impl Shr<usize> for Decimal {
     type Output = Decimal;
 
     fn shr(self, shift: usize) -> Self::Output {
-        Self(self.0.shr(shift))
+        Decimal(self.0.shr(shift))
     }
 }
+
+//===========
+// AddAssign
+//===========
 
 impl<T: Into<Decimal>> AddAssign<T> for Decimal {
     fn add_assign(&mut self, other: T) {
@@ -137,11 +258,31 @@ impl<T: Into<Decimal>> AddAssign<T> for Decimal {
     }
 }
 
+impl<'a> AddAssign<&'a Decimal> for Decimal {
+    fn add_assign(&mut self, other: &'a Decimal) {
+        self.0 += other.0.clone();
+    }
+}
+
+//===========
+// SubAssign
+//===========
+
 impl<T: Into<Decimal>> SubAssign<T> for Decimal {
     fn sub_assign(&mut self, other: T) {
         self.0 -= other.into().0;
     }
 }
+
+impl<'a> SubAssign<&'a Decimal> for Decimal {
+    fn sub_assign(&mut self, other: &'a Decimal) {
+        self.0 -= other.0.clone();
+    }
+}
+
+//===========
+// MulAssign
+//===========
 
 impl<T: Into<Decimal>> MulAssign<T> for Decimal {
     fn mul_assign(&mut self, other: T) {
@@ -149,9 +290,25 @@ impl<T: Into<Decimal>> MulAssign<T> for Decimal {
     }
 }
 
+impl<'a> MulAssign<&'a Decimal> for Decimal {
+    fn mul_assign(&mut self, other: &'a Decimal) {
+        self.0 = self.0.clone() * other.0.clone() / PRECISION;
+    }
+}
+
+//===========
+// DivAssign
+//===========
+
 impl<T: Into<Decimal>> DivAssign<T> for Decimal {
     fn div_assign(&mut self, other: T) {
         self.0 = self.0.clone() * PRECISION / other.into().0;
+    }
+}
+
+impl<'a> DivAssign<&'a Decimal> for Decimal {
+    fn div_assign(&mut self, other: &'a Decimal) {
+        self.0 = self.0.clone() * PRECISION / other.0.clone();
     }
 }
 
@@ -343,8 +500,8 @@ mod tests {
     fn test_sub() {
         let a = Decimal::from(5u32);
         let b = Decimal::from(7u32);
-        assert_eq!((a.clone() - b.clone()).to_string(), "-2");
-        assert_eq!((b - a).to_string(), "2");
+        assert_eq!((&a - &b).to_string(), "-2");
+        assert_eq!((&b - &a).to_string(), "2");
     }
 
     #[test]
