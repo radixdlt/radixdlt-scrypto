@@ -1,112 +1,293 @@
+use sbor::*;
 use scrypto::prelude::*;
-mod token;
+
+#[derive(Debug, TypeId, Encode, Decode, Describe, PartialEq, Eq)]
+pub struct User {
+    /// The user's reserve balance
+    pub principle_balance: Decimal,
+    /// The interest rate of deposits
+    pub deposit_interest_rate: Decimal,
+    /// Last update timestamp
+    pub deposit_last_update: u64,
+
+    /// The user's borrow balance
+    pub borrow_balance: Decimal,
+    /// The (stable) interest rate of loans
+    pub borrow_interest_rate: Decimal,
+    /// Last update timestamp
+    pub borrow_last_update: u64,
+}
+
+impl User {
+    pub fn get_collateral_ratio(&self) -> Option<Decimal> {
+        // FIXME calculate interest rate
+
+        if self.borrow_balance.is_zero() {
+            None
+        } else {
+            Some(&self.principle_balance / &self.borrow_balance)
+        }
+    }
+
+    pub fn check_collateral_ratio(&self, min_collateral_ratio: Decimal) {
+        let collateral_ratio = self.get_collateral_ratio();
+        if let Some(ratio) = collateral_ratio {
+            scrypto_assert!(
+                ratio >= min_collateral_ratio,
+                "Min collateral ratio does not meet"
+            );
+        }
+    }
+
+    pub fn on_deposit(&mut self, amount: Decimal, interest_rate: Decimal) {
+        // Increase principle balance by interests incurred so far
+        let interest =
+            &self.principle_balance * &self.deposit_interest_rate * self.deposit_time_elapsed();
+        self.principle_balance += interest;
+
+        // Calculate the aggregated interest of previous deposits & the new deposit
+        self.deposit_interest_rate = (&self.principle_balance * &self.deposit_interest_rate
+            + &amount * &interest_rate)
+            / (&self.principle_balance + &amount);
+
+        // Increase principle balance by the amount.
+        self.principle_balance += amount;
+
+        // Update timestamp
+        self.deposit_last_update = Context::current_epoch();
+    }
+
+    pub fn on_redeem(&mut self, amount: Decimal) -> Decimal {
+        // Deduct withdrawn amount from principle
+        self.principle_balance -= &amount;
+
+        // Calculate the amount to return
+        &amount + &amount * &self.deposit_interest_rate * self.deposit_time_elapsed()
+    }
+
+    pub fn on_borrow(&mut self, amount: Decimal, interest_rate: Decimal) {
+        // Increase borrow balance by interests incurred so far
+        let interest =
+            &self.borrow_balance * &self.borrow_interest_rate * self.borrow_time_elapsed();
+        self.borrow_balance += interest;
+
+        // Calculate the aggregated interest of previous borrows & the new borrow
+        self.borrow_interest_rate = (&self.borrow_balance * &self.borrow_interest_rate
+            + &amount * &interest_rate)
+            / (&self.borrow_balance + &amount);
+
+        // Increase principle balance by the amount.
+        self.borrow_balance += amount;
+
+        // Update timestamp
+        self.borrow_last_update = Context::current_epoch();
+    }
+
+    pub fn on_repay(&mut self, amount: Decimal) -> Decimal {
+        // Increase borrow balance by interests incurred so far
+        let interest =
+            &self.borrow_balance * &self.borrow_interest_rate * self.borrow_time_elapsed();
+        self.borrow_balance += interest;
+
+        // Repay the loan
+        if self.borrow_balance < amount {
+            let to_return = amount - &self.borrow_balance;
+            self.borrow_balance = Decimal::zero();
+            self.borrow_interest_rate = Decimal::zero();
+            to_return
+        } else {
+            self.borrow_balance -= amount;
+            Decimal::zero()
+        }
+    }
+
+    fn deposit_time_elapsed(&self) -> u64 {
+        // +1 is for demo purpose only
+        Context::current_epoch() - self.deposit_last_update + 1
+    }
+
+    fn borrow_time_elapsed(&self) -> u64 {
+        // +1 is for demo purpose only
+        Context::current_epoch() - self.borrow_last_update + 1
+    }
+}
 
 blueprint! {
     struct AutoLend {
-        a_b_resource_auth: Vault,
-        a_b_resource_def: ResourceDef,
-        a_b_pool: Vault,
-        b_pool: Vault,
-        c_pool: Vault,
-        collateral_ratio: u32,
-        scale: usize,
+        /// The liquidity pool
+        liquidity_pool: Vault,
+        /// The total amount of all borrows
+        total_borrows: Decimal,
+        /// The min collateral ratio
+        min_collateral_ratio: Decimal,
+        /// The max percentage of liquidity pool can be borrowed each time
+        max_stable_borrow_percent: Decimal,
+        /// AToken resource definition
+        a_token_def: ResourceDef,
+        /// AToken minter badge
+        a_token_minter_badge: Vault,
+        /// User state
+        users: LazyMap<Address, User>,
+        /// The interest rate of deposits, per epoch
+        pub deposit_interest_rate: Decimal,
+        /// The (stable) interest rate of loans, per epoch
+        pub borrow_interest_rate: Decimal,
     }
 
     impl AutoLend {
-        pub fn new(b_addr: Address, c_addr: Address) -> Component {
-            let a_b_resource_auth = ResourceBuilder::new()
-                .metadata("name", "LP Token Mint Auth")
+        /// Creates a lending pool, with single reserve.
+        pub fn new(reserve_address: Address, reserve_symbol: String) -> Component {
+            let a_token_minter_badge = ResourceBuilder::new()
+                .metadata("name", "AToken Minter Badge")
                 .new_badge_fixed(1);
-            let a_b_resource_def = ResourceBuilder::new()
-                .metadata("symbol", "aB")
-                .metadata("name", "aB")
-                .new_token_mutable(a_b_resource_auth.resource_def());
-            let a_b_addr = a_b_resource_def.address();
+            let a_token_def = ResourceBuilder::new()
+                .metadata("name", format!("a{}", reserve_symbol))
+                .metadata("symbol", format!("a{}", reserve_symbol))
+                .new_token_mutable(a_token_minter_badge.resource_def());
 
             Self {
-                a_b_resource_auth: Vault::with_bucket(a_b_resource_auth),
-                a_b_resource_def,
-                a_b_pool: Vault::new(a_b_addr),
-                b_pool: Vault::new(b_addr),
-                c_pool: Vault::new(c_addr),
-                collateral_ratio: 2,
-                scale: 21,
+                liquidity_pool: Vault::new(reserve_address),
+                total_borrows: Decimal::zero(),
+                min_collateral_ratio: Decimal::from_str("1.2").unwrap(),
+                max_stable_borrow_percent: Decimal::from_str("0.5").unwrap(),
+                a_token_def,
+                a_token_minter_badge: Vault::with_bucket(a_token_minter_badge),
+                users: LazyMap::new(),
+                deposit_interest_rate: Decimal::from_str("0.01").unwrap(),
+                borrow_interest_rate: Decimal::from_str("0.02").unwrap(),
             }
             .instantiate()
         }
 
-        // XXX: HOW TO KNOW WHENTHE COLLATERAL DROPS BELOW RATIO
-        //      ^^ add a map with all the credits? (per currecy pair)
+        /// Registers a new user
+        pub fn new_user(&self) -> Bucket {
+            ResourceBuilder::new()
+                .metadata("name", "AutoLend User Badge")
+                .new_badge_fixed(1)
+        }
 
-        // deposit B and get aB
-        pub fn deposit(&mut self, b_tokens: Bucket) -> Bucket {
-            let lp_amount_to_be_minted = if self.b_pool.amount() > 0.into() {
-                let b_share = b_tokens.amount() / self.b_pool.amount();
-                b_share * self.a_b_resource_def.supply()
-            } else {
-                100.into() //arbitrary initial LP tokens
+        /// Deposits into the liquidity pool and start earning.
+        pub fn deposit(&mut self, user_auth: BucketRef, reserve_tokens: Bucket) -> Bucket {
+            let user_id = Self::get_user_id(user_auth);
+            let amount = reserve_tokens.amount();
+
+            // Mint aA token 1:1
+            let a_tokens = self
+                .a_token_minter_badge
+                .authorize(|badge| self.a_token_def.mint(amount.clone(), badge));
+
+            // Update user state
+            let deposit_interest_rate = self.deposit_interest_rate.clone();
+            let user = match self.users.get(&user_id) {
+                Some(mut user) => {
+                    user.on_deposit(amount, deposit_interest_rate);
+                    user
+                }
+                None => User {
+                    principle_balance: amount,
+                    borrow_balance: Decimal::zero(),
+                    deposit_interest_rate,
+                    borrow_interest_rate: Decimal::zero(),
+                    deposit_last_update: Context::current_epoch(),
+                    borrow_last_update: Context::current_epoch(),
+                },
             };
-            self.b_pool.put(b_tokens);
-            let a_b_tokens = self
-                .a_b_resource_auth
-                .authorize(|badge| self.a_b_resource_def.mint(lp_amount_to_be_minted, badge));
-            return a_b_tokens;
+
+            // Commit state changes
+            self.users.insert(user_id, user);
+            self.liquidity_pool.put(reserve_tokens);
+            a_tokens
         }
 
-        // get back the deposit
-        // XXX: HOW TO PAY INTEREST?!!
-        //      1. We need internal map. Tracking external account doesn't work as the asset is liquid
-        //      2. Interest needs to be based on liquidity as well
-        pub fn redeem(&mut self, a_b_tokens: Bucket) -> Bucket {
-            let a_b_share = a_b_tokens.amount() / self.a_b_pool.resource_def().supply();
-            let b_amount_needed = a_b_share * self.b_pool.amount();
-            self.a_b_resource_auth.authorize(|badge| {
-                a_b_tokens.burn(badge);
+        /// Redeems the underlying assets, partially or in full.
+        pub fn redeem(&mut self, user_auth: BucketRef, a_tokens: Bucket) -> Bucket {
+            let user_id = Self::get_user_id(user_auth);
+
+            // Update user state
+            let mut user = self.get_user(user_id);
+            let to_return_amount = user.on_redeem(a_tokens.amount());
+            user.check_collateral_ratio(self.min_collateral_ratio.clone());
+
+            // Burn the aToken used for redeeming
+            self.a_token_minter_badge.authorize(|badge| {
+                a_tokens.burn(badge);
             });
-            return self.b_pool.take(b_amount_needed);
-        }
 
-        // only one currency (B) available for borrow,
-        // so 1 arg for now
-        pub fn borrow(&mut self, b_requested: Decimal, c_tokens: Bucket) -> Bucket {
-            // TODO: go via oracle to establish B<->C exachange
-            //       bellow I assume
-            scrypto_assert!(
-                c_tokens.amount() < b_requested.clone() * self.collateral_ratio,
-                "Not enough collateral"
+            debug!(
+                "LP balance: {}, redeemded: {}",
+                self.liquidity_pool.amount(),
+                to_return_amount
             );
-            scrypto_assert!(self.b_pool.amount() < b_requested.clone(), "Not enough liquidity");
-            self.c_pool.put(c_tokens);
 
-            // TODO: take fee % and add a pool for it
-
-            return self.b_pool.take(b_requested);
+            // Commit state changes
+            self.users.insert(user_id, user);
+            self.liquidity_pool.take(to_return_amount)
         }
 
-        // give back the Bs
-        // XXX: HOW TO KNOW WHICH COLLATERAL WE SHOULD RETURN?!!
-        // XXX: HOW TO AUTHORIZE? DO WE NEED IT? ITs x2 collateral!!!
-        // XXX: WE NEED TO PASS A PAIR (like B<->C) or HAVE CONTRACT PER PAIR
-        pub fn repay(&mut self, b_repaid: Bucket) -> Bucket {
-            let repaid_b = b_repaid.amount();
-            let needed_c = repaid_b * self.collateral_ratio;
-            scrypto_assert!(self.c_pool.amount() < needed_c, "Not enough liquidity");
-            self.b_pool.put(b_repaid);
-            return self.c_pool.take(needed_c);
+        /// Borrows the specified amount from lending pool
+        pub fn borrow(&mut self, user_auth: BucketRef, requested: Decimal) -> Bucket {
+            let user_id = Self::get_user_id(user_auth);
+
+            scrypto_assert!(
+                requested <= self.liquidity_pool.amount() * &self.max_stable_borrow_percent,
+                "Max borrow percent exceeded"
+            );
+
+            // Update user state
+            let borrow_interest_rate = self.borrow_interest_rate.clone();
+            let mut user = self.get_user(user_id);
+            user.on_borrow(requested.clone(), borrow_interest_rate);
+            user.check_collateral_ratio(self.min_collateral_ratio.clone());
+
+            // Commit state changes
+            self.users.insert(user_id, user);
+            self.liquidity_pool.take(requested)
         }
 
-        pub fn get_collateral_ratio(&self) -> u32 {
-            return self.collateral_ratio;
+        /// Repays a loan, partially or in full.
+        pub fn repay(&mut self, user_auth: BucketRef, repaid: Bucket) -> Bucket {
+            let user_id = Self::get_user_id(user_auth);
+
+            // Update user state
+            let mut user = self.get_user(user_id);
+            let to_return_amount = user.on_repay(repaid.amount());
+            let to_return = repaid.take(to_return_amount);
+
+            // Commit state changes
+            self.users.insert(user_id, user);
+            self.liquidity_pool.put(repaid);
+            to_return
         }
 
-        // XXX: again idea with user classes? L... and B... s
-
-        pub fn a_b_tokens_supply(&mut self) -> Decimal {
-            return self.a_b_resource_def.supply();
+        /// Liquidates one user's position, if it's under collateralized.
+        pub fn liquidate(&mut self, _user_id: Address) -> Bucket {
+            todo!()
         }
 
-        pub fn b_tokens_liquidity(&mut self) -> Decimal {
-            return self.b_pool.amount();
+        /// Returns a user.
+        pub fn get_user(&self, user_id: Address) -> User {
+            match self.users.get(&user_id) {
+                Some(user) => user,
+                _ => scrypto_abort("User not found"),
+            }
+        }
+
+        /// Returns the earn interest rate per epoch
+        pub fn set_deposit_interest_rate(&mut self, rate: Decimal) {
+            self.deposit_interest_rate = rate;
+        }
+
+        /// Returns the borrow interest rate per epoch
+        pub fn set_borrow_interest_rate(&mut self, rate: Decimal) {
+            self.borrow_interest_rate = rate;
+        }
+
+        /// Parse user id from a bucket ref.
+        fn get_user_id(user_auth: BucketRef) -> Address {
+            scrypto_assert!(user_auth.amount() > 0.into(), "Invalid user proof");
+            let user_id = user_auth.resource_def().address();
+            user_auth.drop();
+            user_id
         }
     }
 }

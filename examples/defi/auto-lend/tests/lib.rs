@@ -2,444 +2,411 @@ use radix_engine::ledger::*;
 use radix_engine::transaction::*;
 use scrypto::prelude::*;
 
-#[test]
-fn deposit_test() {
-    // Set up environment.
-    let mut ledger = InMemoryLedger::with_bootstrap();
-    let mut executor = TransactionExecutor::new(&mut ledger, 0, 0);
-    let pub_key = executor.new_public_key();
-    let account = executor.new_account(pub_key);
-    let package = executor.publish_package(include_code!());
+use out::User;
 
-    // we can't use ResourceBuilder in tests, so this is a workaround to create resources
-    let token_b_address = create_token(
-        &mut executor,
-        package,
-        account,
-        pub_key,
-        "Token B".to_owned(),
-        "tokenB".to_owned(),
-    );
-
-    let token_c_address: Address = create_token(
-        &mut executor,
-        package,
-        account,
-        pub_key,
-        "Token C".to_owned(),
-        "tokenC".to_owned(),
-    );
-
-    let (auto_lend_address, _) = create_auto_lend(
-        &mut executor,
-        package,
-        token_b_address,
-        token_c_address,
-        pub_key,
-    );
-
-    assert_eq!(
-        b_tokens_liquidity(&mut executor, auto_lend_address, pub_key),
-        Decimal::from(0)
-    );
-
-    assert_eq!(
-        a_b_tokens_supply(&mut executor, auto_lend_address, pub_key),
-        Decimal::from(0)
-    );
-
-    deposit_token_b(
-        &mut executor,
-        auto_lend_address,
-        token_b_address,
-        account,
-        Decimal::from(100),
-        pub_key,
-    );
-
-    assert_eq!(
-        b_tokens_liquidity(&mut executor, auto_lend_address, pub_key),
-        Decimal::from(100)
-    );
-
-    assert_eq!(
-        a_b_tokens_supply(&mut executor, auto_lend_address, pub_key),
-        Decimal::from(100)
-    );
-}
-
-#[test]
-fn two_deposits_test() {
-    // Set up environment.
-    let mut ledger = InMemoryLedger::with_bootstrap();
-    let mut executor = TransactionExecutor::new(&mut ledger, 0, 0);
-    let pub_key = executor.new_public_key();
-    let account = executor.new_account(pub_key);
-    let package = executor.publish_package(include_code!());
-
-    // we can't use ResourceBuilder in tests, so this is a workaround to create resources
-    let token_b_address = create_token(
-        &mut executor,
-        package,
-        account,
-        pub_key,
-        "Token B".to_owned(),
-        "tokenB".to_owned(),
-    );
-
-    let token_c_address: Address = create_token(
-        &mut executor,
-        package,
-        account,
-        pub_key,
-        "Token C".to_owned(),
-        "tokenC".to_owned(),
-    );
-
-    let (auto_lend_address, _) = create_auto_lend(
-        &mut executor,
-        package,
-        token_b_address,
-        token_c_address,
-        pub_key,
-    );
-
-    assert_eq!(
-        b_tokens_liquidity(&mut executor, auto_lend_address, pub_key),
-        Decimal::from(0)
-    );
-
-    assert_eq!(
-        a_b_tokens_supply(&mut executor, auto_lend_address, pub_key),
-        Decimal::from(0)
-    );
-
-    deposit_token_b(
-        &mut executor,
-        auto_lend_address,
-        token_b_address,
-        account,
-        Decimal::from(100),
-        pub_key,
-    );
-
-    assert_eq!(
-        b_tokens_liquidity(&mut executor, auto_lend_address, pub_key),
-        Decimal::from(100)
-    );
-
-    assert_eq!(
-        a_b_tokens_supply(&mut executor, auto_lend_address, pub_key),
-        Decimal::from(100)
-    );
-
-    deposit_token_b(
-        &mut executor,
-        auto_lend_address,
-        token_b_address,
-        account,
-        Decimal::from(10),
-        pub_key,
-    );
-
-    assert_eq!(
-        b_tokens_liquidity(&mut executor, auto_lend_address, pub_key),
-        Decimal::from(110)
-    );
-
-    assert_eq!(
-        a_b_tokens_supply(&mut executor, auto_lend_address, pub_key),
-        Decimal::from(110)
-    );
-}
-
-#[test]
-fn redeem_test() {
-    // Set up environment.
-    let mut ledger = InMemoryLedger::with_bootstrap();
-    let mut executor = TransactionExecutor::new(&mut ledger, 0, 0);
-    let pub_key = executor.new_public_key();
-    let account = executor.new_account(pub_key);
-    let package = executor.publish_package(include_code!());
-
-    // we can't use ResourceBuilder in tests, so this is a workaround to create resources
-    let token_b_address = create_token(
-        &mut executor,
-        package,
-        account,
-        pub_key,
-        "Token B".to_owned(),
-        "tokenB".to_owned(),
-    );
-
-    let token_c_address: Address = create_token(
-        &mut executor,
-        package,
-        account,
-        pub_key,
-        "Token C".to_owned(),
-        "tokenC".to_owned(),
-    );
-
-    let (auto_lend_address, token_a_b_address) = create_auto_lend(
-        &mut executor,
-        package,
-        token_b_address,
-        token_c_address,
-        pub_key,
-    );
-
-    deposit_token_b(
-        &mut executor,
-        auto_lend_address,
-        token_b_address,
-        account,
-        Decimal::from(100),
-        pub_key,
-    );
-
-    redeem_token_b(
-        &mut executor,
-        auto_lend_address,
-        token_a_b_address,
-        account,
-        Decimal::from(100),
-        pub_key,
-    );
-
-    assert_eq!(
-        b_tokens_liquidity(&mut executor, auto_lend_address, pub_key),
-        Decimal::from(0)
-    );
-
-    assert_eq!(
-        a_b_tokens_supply(&mut executor, auto_lend_address, pub_key),
-        Decimal::from(0)
-    );
-}
-
-#[test]
-fn two_redeems_test() {
-    // Set up environment.
-    let mut ledger = InMemoryLedger::with_bootstrap();
-    let mut executor = TransactionExecutor::new(&mut ledger, 0, 0);
-    let pub_key = executor.new_public_key();
-    let account = executor.new_account(pub_key);
-    let package = executor.publish_package(include_code!());
-
-    // we can't use ResourceBuilder in tests, so this is a workaround to create resources
-    let token_b_address = create_token(
-        &mut executor,
-        package,
-        account,
-        pub_key,
-        "Token B".to_owned(),
-        "tokenB".to_owned(),
-    );
-
-    let token_c_address: Address = create_token(
-        &mut executor,
-        package,
-        account,
-        pub_key,
-        "Token C".to_owned(),
-        "tokenC".to_owned(),
-    );
-
-    let (auto_lend_address, token_a_b_address) = create_auto_lend(
-        &mut executor,
-        package,
-        token_b_address,
-        token_c_address,
-        pub_key,
-    );
-
-    deposit_token_b(
-        &mut executor,
-        auto_lend_address,
-        token_b_address,
-        account,
-        Decimal::from(100),
-        pub_key,
-    );
-
-    deposit_token_b(
-        &mut executor,
-        auto_lend_address,
-        token_b_address,
-        account,
-        Decimal::from(10),
-        pub_key,
-    );
-
-    assert_eq!(
-        b_tokens_liquidity(&mut executor, auto_lend_address, pub_key),
-        Decimal::from(110)
-    );
-    redeem_token_b(
-        &mut executor,
-        auto_lend_address,
-        token_a_b_address,
-        account,
-        Decimal::from(100),
-        pub_key,
-    );
-
-    assert_eq!(
-        b_tokens_liquidity(&mut executor, auto_lend_address, pub_key),
-        Decimal::from_str("10.0000000000000001").unwrap()
-    );
-
-    assert_eq!(
-        a_b_tokens_supply(&mut executor, auto_lend_address, pub_key),
-        Decimal::from(10)
-    );
-    redeem_token_b(
-        &mut executor,
-        auto_lend_address,
-        token_a_b_address,
-        account,
-        Decimal::from(10),
-        pub_key,
-    );
-
-    assert_eq!(
-        b_tokens_liquidity(&mut executor, auto_lend_address, pub_key),
-        Decimal::from(0)
-    );
-
-    assert_eq!(
-        a_b_tokens_supply(&mut executor, auto_lend_address, pub_key),
-        Decimal::from(0)
-    );
-}
-
-fn create_token(
-    executor: &mut TransactionExecutor<InMemoryLedger>,
-    package: Address,
+struct TestEnv<'a, L: Ledger> {
+    executor: TransactionExecutor<'a, L>,
+    key: Address,
     account: Address,
-    signer: Address,
-    name: String,
-    symbol: String,
-) -> Address {
-    let create_token_c_tx = TransactionBuilder::new(executor)
-        .call_function(package, "Token", "new", vec![name, symbol], Some(account))
-        .deposit_all_buckets(account)
-        .build(vec![signer])
-        .unwrap();
-    let create_token_c_tx_receipt = executor.run(create_token_c_tx, false).unwrap();
-    let token_c_address: Address = create_token_c_tx_receipt.resource_def(0).unwrap();
-    return token_c_address;
+    usd: Address,
+    lending_pool: Address,
+    a_token: Address,
 }
 
-fn create_auto_lend(
-    executor: &mut TransactionExecutor<InMemoryLedger>,
-    package: Address,
-    token_b_address: Address,
-    token_c_address: Address,
-    signer: Address,
-) -> (Address, Address) {
-    let create_auto_lend_tx = TransactionBuilder::new(executor)
-        .call_function(
-            package,
-            "AutoLend",
-            "new",
-            vec![token_b_address.to_string(), token_c_address.to_string()],
-            None,
+fn set_up_test_env<'a, L: Ledger>(ledger: &'a mut L) -> TestEnv<'a, L> {
+    let mut executor = TransactionExecutor::new(ledger, 0, 0);
+    let key = executor.new_public_key();
+    let account = executor.new_account(key);
+    let package = executor.publish_package(include_code!());
+
+    let receipt = executor
+        .run(
+            TransactionBuilder::new(&executor)
+                .new_token_fixed(HashMap::new(), 1_000_000.into())
+                .deposit_all_buckets(account)
+                .build(vec![key])
+                .unwrap(),
+            false,
         )
-        .build(vec![signer])
         .unwrap();
-    let create_auto_lend_tx_receipt = executor.run(create_auto_lend_tx, false).unwrap();
-    //println!("{:?}\n", create_auto_lend_tx_receipt);
-    let auto_lend_address = create_auto_lend_tx_receipt.component(0).unwrap();
-    let token_a_b_address = create_auto_lend_tx_receipt.resource_def(1).unwrap();
-    return (auto_lend_address, token_a_b_address);
-}
+    let usd = receipt.resource_def(0).unwrap();
 
-fn deposit_token_b(
-    executor: &mut TransactionExecutor<InMemoryLedger>,
-    auto_lend_address: Address,
-    token_b_address: Address,
-    account: Address,
-    amount: Decimal,
-    signer: Address,
-) {
-    let tx = TransactionBuilder::new(executor)
-        .call_method(
-            auto_lend_address,
-            "deposit",
-            vec![format!("{},{}", amount, token_b_address)],
-            Some(account),
+    let receipt = executor
+        .run(
+            TransactionBuilder::new(&executor)
+                .call_function(
+                    package,
+                    "AutoLend",
+                    "new",
+                    vec![usd.to_string(), "USD".to_owned()],
+                    Some(account),
+                )
+                .deposit_all_buckets(account)
+                .build(vec![key])
+                .unwrap(),
+            false,
         )
-        .deposit_all_buckets(account)
-        .build(vec![signer])
         .unwrap();
-    let _receipt = executor.run(tx, false).unwrap();
-    //println!("{:?}\n", receipt);
+    let lending_pool = receipt.component(0).unwrap();
+    let a_token = receipt.resource_def(1).unwrap();
+
+    TestEnv {
+        executor,
+        key,
+        account,
+        usd,
+        lending_pool,
+        a_token,
+    }
 }
 
-fn redeem_token_b(
-    executor: &mut TransactionExecutor<InMemoryLedger>,
-    auto_lend_address: Address,
-    token_a_b_address: Address,
-    account: Address,
-    amount: Decimal,
-    signer: Address,
-) {
-    let tx = TransactionBuilder::new(executor)
-        .call_method(
-            auto_lend_address,
-            "redeem",
-            vec![format!("{},{}", amount, token_a_b_address)],
-            Some(account),
+fn create_user<'a, L: Ledger>(env: &mut TestEnv<'a, L>) -> Address {
+    let receipt = env
+        .executor
+        .run(
+            TransactionBuilder::new(&env.executor)
+                .call_method(env.lending_pool, "new_user", args![], Some(env.account))
+                .deposit_all_buckets(env.account)
+                .build(vec![env.key])
+                .unwrap(),
+            false,
         )
-        .deposit_all_buckets(account)
-        .build(vec![signer])
         .unwrap();
-    let _receipt = executor.run(tx, false).unwrap();
-    //println!("{:?}\n", receipt);
+    assert!(receipt.success);
+    receipt.resource_def(0).unwrap()
 }
 
-fn a_b_tokens_supply(
-    executor: &mut TransactionExecutor<InMemoryLedger>,
-    auto_lend_address: Address,
-    signer: Address,
-) -> Decimal {
-    let tx = TransactionBuilder::new(executor)
-        .call_method(auto_lend_address, "a_b_tokens_supply", vec![], None)
-        .build(vec![signer])
+fn get_user_state<'a, L: Ledger>(env: &mut TestEnv<'a, L>, user_id: Address) -> User {
+    let mut receipt = env
+        .executor
+        .run(
+            TransactionBuilder::new(&env.executor)
+                .call_method(
+                    env.lending_pool,
+                    "get_user",
+                    vec![user_id.to_string()],
+                    Some(env.account),
+                )
+                .deposit_all_buckets(env.account)
+                .build(vec![env.key])
+                .unwrap(),
+            false,
+        )
         .unwrap();
-
-    let receipt3 = executor.run(tx, false).unwrap();
-    return scrypto_decode(
-        &receipt3.results[0]
-            .as_ref()
-            .unwrap()
-            .as_ref()
-            .unwrap()
-            .encoded,
-    )
-    .unwrap();
+    assert!(receipt.success);
+    let encoded = receipt.results.swap_remove(0).unwrap().unwrap().encoded;
+    scrypto_decode(&encoded).unwrap()
 }
 
-fn b_tokens_liquidity(
-    executor: &mut TransactionExecutor<InMemoryLedger>,
-    auto_lend_address: Address,
-    signer: Address,
-) -> Decimal {
-    let tx = TransactionBuilder::new(executor)
-        .call_method(auto_lend_address, "b_tokens_liquidity", vec![], None)
-        .build(vec![signer])
-        .unwrap();
+// FIXME the numbers are all wrong
 
-    let receipt3 = executor.run(tx, false).unwrap();
-    return scrypto_decode(
-        &receipt3.results[0]
-            .as_ref()
-            .unwrap()
-            .as_ref()
-            .unwrap()
-            .encoded,
-    )
-    .unwrap();
+#[test]
+fn test_deposit_and_redeem() {
+    let mut ledger = InMemoryLedger::with_bootstrap();
+    let mut env = set_up_test_env(&mut ledger);
+
+    let user_id = create_user(&mut env);
+
+    // First, deposit 100 USD
+    let receipt = env
+        .executor
+        .run(
+            TransactionBuilder::new(&env.executor)
+                .call_method(
+                    env.lending_pool,
+                    "deposit",
+                    vec![format!("{},{}", 1, user_id), format!("{},{}", 100, env.usd)],
+                    Some(env.account),
+                )
+                .deposit_all_buckets(env.account)
+                .build(vec![env.key])
+                .unwrap(),
+            false,
+        )
+        .unwrap();
+    println!("{:?}", receipt);
+    let user_state = get_user_state(&mut env, user_id);
+    assert_eq!(
+        user_state,
+        User {
+            principle_balance: "100".parse().unwrap(),
+            deposit_interest_rate: "0.01".parse().unwrap(),
+            deposit_last_update: 0,
+            borrow_balance: "0".parse().unwrap(),
+            borrow_interest_rate: "0".parse().unwrap(),
+            borrow_last_update: 0
+        }
+    );
+
+    // Then, increase deposit interest rate to 5%
+    let receipt = env
+        .executor
+        .run(
+            TransactionBuilder::new(&env.executor)
+                .call_method(
+                    env.lending_pool,
+                    "set_deposit_interest_rate",
+                    vec!["0.05".to_string()],
+                    Some(env.account),
+                )
+                .deposit_all_buckets(env.account)
+                .build(vec![env.key])
+                .unwrap(),
+            false,
+        )
+        .unwrap();
+    println!("{:?}", receipt);
+
+    // After that, deposit another 100 USD
+    let receipt = env
+        .executor
+        .run(
+            TransactionBuilder::new(&env.executor)
+                .call_method(
+                    env.lending_pool,
+                    "deposit",
+                    vec![format!("{},{}", 1, user_id), format!("{},{}", 100, env.usd)],
+                    Some(env.account),
+                )
+                .deposit_all_buckets(env.account)
+                .build(vec![env.key])
+                .unwrap(),
+            false,
+        )
+        .unwrap();
+    println!("{:?}", receipt);
+    let user_state = get_user_state(&mut env, user_id);
+    assert_eq!(
+        user_state,
+        User {
+            principle_balance: "201".parse().unwrap(),
+            deposit_interest_rate: "0.02990049751243781".parse().unwrap(),
+            deposit_last_update: 0,
+            borrow_balance: "0".parse().unwrap(),
+            borrow_interest_rate: "0".parse().unwrap(),
+            borrow_last_update: 0
+        }
+    );
+
+    // Finally, redeem with 150 aUSD
+    let receipt = env
+        .executor
+        .run(
+            TransactionBuilder::new(&env.executor)
+                .call_method(
+                    env.lending_pool,
+                    "redeem",
+                    vec![
+                        format!("{},{}", 1, user_id),
+                        format!("{},{}", 150, env.a_token),
+                    ],
+                    Some(env.account),
+                )
+                .deposit_all_buckets(env.account)
+                .build(vec![env.key])
+                .unwrap(),
+            false,
+        )
+        .unwrap();
+    println!("{:?}", receipt);
+    let user_state = get_user_state(&mut env, user_id);
+    assert_eq!(
+        user_state,
+        User {
+            principle_balance: "51".parse().unwrap(),
+            deposit_interest_rate: "0.02990049751243781".parse().unwrap(),
+            deposit_last_update: 0,
+            borrow_balance: "0".parse().unwrap(),
+            borrow_interest_rate: "0".parse().unwrap(),
+            borrow_last_update: 0
+        }
+    );
+}
+
+#[test]
+fn test_borrow_and_repay() {
+    let mut ledger = InMemoryLedger::with_bootstrap();
+    let mut env = set_up_test_env(&mut ledger);
+
+    let user_id = create_user(&mut env);
+
+    // First, deposit 1000 USD
+    let receipt = env
+        .executor
+        .run(
+            TransactionBuilder::new(&env.executor)
+                .call_method(
+                    env.lending_pool,
+                    "deposit",
+                    vec![
+                        format!("{},{}", 1, user_id),
+                        format!("{},{}", 1000, env.usd),
+                    ],
+                    Some(env.account),
+                )
+                .deposit_all_buckets(env.account)
+                .build(vec![env.key])
+                .unwrap(),
+            false,
+        )
+        .unwrap();
+    println!("{:?}", receipt);
+    let user_state = get_user_state(&mut env, user_id);
+    assert_eq!(
+        user_state,
+        User {
+            principle_balance: "1000".parse().unwrap(),
+            deposit_interest_rate: "0.01".parse().unwrap(),
+            deposit_last_update: 0,
+            borrow_balance: "0".parse().unwrap(),
+            borrow_interest_rate: "0".parse().unwrap(),
+            borrow_last_update: 0
+        }
+    );
+
+    // Then, borrow 100 USD
+    let receipt = env
+        .executor
+        .run(
+            TransactionBuilder::new(&env.executor)
+                .call_method(
+                    env.lending_pool,
+                    "borrow",
+                    vec![format!("{},{}", 1, user_id), "100".to_owned()],
+                    Some(env.account),
+                )
+                .deposit_all_buckets(env.account)
+                .build(vec![env.key])
+                .unwrap(),
+            false,
+        )
+        .unwrap();
+    println!("{:?}", receipt);
+    let user_state = get_user_state(&mut env, user_id);
+    assert_eq!(
+        user_state,
+        User {
+            principle_balance: "1000".parse().unwrap(),
+            deposit_interest_rate: "0.01".parse().unwrap(),
+            deposit_last_update: 0,
+            borrow_balance: "100".parse().unwrap(),
+            borrow_interest_rate: "0.02".parse().unwrap(),
+            borrow_last_update: 0
+        }
+    );
+
+    // Then, increase borrow interest rate to 5%
+    let receipt = env
+        .executor
+        .run(
+            TransactionBuilder::new(&env.executor)
+                .call_method(
+                    env.lending_pool,
+                    "set_borrow_interest_rate",
+                    vec!["0.05".to_string()],
+                    Some(env.account),
+                )
+                .deposit_all_buckets(env.account)
+                .build(vec![env.key])
+                .unwrap(),
+            false,
+        )
+        .unwrap();
+    println!("{:?}", receipt);
+
+    // After that, borrow another 100 USD
+    let receipt = env
+        .executor
+        .run(
+            TransactionBuilder::new(&env.executor)
+                .call_method(
+                    env.lending_pool,
+                    "borrow",
+                    vec![format!("{},{}", 1, user_id), "100".to_owned()],
+                    Some(env.account),
+                )
+                .deposit_all_buckets(env.account)
+                .build(vec![env.key])
+                .unwrap(),
+            false,
+        )
+        .unwrap();
+    println!("{:?}", receipt);
+    let user_state = get_user_state(&mut env, user_id);
+    assert_eq!(
+        user_state,
+        User {
+            principle_balance: "1000".parse().unwrap(),
+            deposit_interest_rate: "0.01".parse().unwrap(),
+            deposit_last_update: 0,
+            borrow_balance: "202".parse().unwrap(),
+            borrow_interest_rate: "0.034851485148514851".parse().unwrap(),
+            borrow_last_update: 0
+        }
+    );
+
+    // Finally, repay with 150 USD
+    let receipt = env
+        .executor
+        .run(
+            TransactionBuilder::new(&env.executor)
+                .call_method(
+                    env.lending_pool,
+                    "repay",
+                    vec![format!("{},{}", 1, user_id), format!("{},{}", 150, env.usd)],
+                    Some(env.account),
+                )
+                .deposit_all_buckets(env.account)
+                .build(vec![env.key])
+                .unwrap(),
+            false,
+        )
+        .unwrap();
+    println!("{:?}", receipt);
+    let user_state = get_user_state(&mut env, user_id);
+    assert_eq!(
+        user_state,
+        User {
+            principle_balance: "1000".parse().unwrap(),
+            deposit_interest_rate: "0.01".parse().unwrap(),
+            deposit_last_update: 0,
+            borrow_balance: "59.039999999999999902".parse().unwrap(),
+            borrow_interest_rate: "0.034851485148514851".parse().unwrap(),
+            borrow_last_update: 0
+        }
+    );
+
+    // F*k it, repay everything
+    let receipt = env
+        .executor
+        .run(
+            TransactionBuilder::new(&env.executor)
+                .call_method(
+                    env.lending_pool,
+                    "repay",
+                    vec![
+                        format!("{},{}", 1, user_id),
+                        format!("{},{}", 1000, env.usd),
+                    ],
+                    Some(env.account),
+                )
+                .deposit_all_buckets(env.account)
+                .build(vec![env.key])
+                .unwrap(),
+            false,
+        )
+        .unwrap();
+    println!("{:?}", receipt);
+    let user_state = get_user_state(&mut env, user_id);
+    assert_eq!(
+        user_state,
+        User {
+            principle_balance: "1000".parse().unwrap(),
+            deposit_interest_rate: "0.01".parse().unwrap(),
+            deposit_last_update: 0,
+            borrow_balance: "0".parse().unwrap(),
+            borrow_interest_rate: "0".parse().unwrap(),
+            borrow_last_update: 0
+        }
+    );
 }
