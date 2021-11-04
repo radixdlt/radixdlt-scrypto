@@ -98,8 +98,6 @@ fn get_user_state<'a, L: Ledger>(env: &mut TestEnv<'a, L>, user_id: Address) -> 
     scrypto_decode(&encoded).unwrap()
 }
 
-// FIXME the numbers are all wrong
-
 #[test]
 fn test_deposit_and_redeem() {
     let mut ledger = InMemoryLedger::with_bootstrap();

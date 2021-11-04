@@ -20,12 +20,18 @@ pub struct User {
 
 impl User {
     pub fn get_collateral_ratio(&self) -> Option<Decimal> {
-        // FIXME calculate interest rate
-
         if self.borrow_balance.is_zero() {
             None
         } else {
-            Some(&self.principle_balance / &self.borrow_balance)
+            let collateral = &self.principle_balance
+                + &self.principle_balance
+                    * &self.deposit_interest_rate
+                    * self.deposit_time_elapsed();
+
+            let loan = &self.borrow_balance
+                + &self.borrow_balance * &self.borrow_interest_rate * self.borrow_time_elapsed();
+
+            Some(collateral / loan)
         }
     }
 
@@ -129,9 +135,9 @@ blueprint! {
         /// User state
         users: LazyMap<Address, User>,
         /// The interest rate of deposits, per epoch
-        pub deposit_interest_rate: Decimal,
+        deposit_interest_rate: Decimal,
         /// The (stable) interest rate of loans, per epoch
-        pub borrow_interest_rate: Decimal,
+        borrow_interest_rate: Decimal,
     }
 
     impl AutoLend {
