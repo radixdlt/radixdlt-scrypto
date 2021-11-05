@@ -140,5 +140,13 @@ blueprint! {
                 self.a_pool.take(a_amount)
             }
         }
+
+        /// Returns the resource definition addresses of the pair.
+        pub fn get_pair(&self) -> (Address, Address) {
+            (
+                self.a_pool.resource_def().address(),
+                self.b_pool.resource_def().address()
+            )
+        }
     }
 }
