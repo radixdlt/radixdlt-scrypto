@@ -14,8 +14,6 @@ blueprint! {
     struct AutoLend {
         /// The liquidity pool
         liquidity_pool: Vault,
-        /// The total amount of all borrows
-        total_borrows: Decimal,
         /// The min collateral ratio that a user has to maintain
         min_collateral_ratio: Decimal,
         /// The max percent of liquidity pool one can borrow
@@ -37,7 +35,6 @@ blueprint! {
         pub fn new(reserve_address: Address) -> Component {
             Self {
                 liquidity_pool: Vault::new(reserve_address),
-                total_borrows: Decimal::zero(),
                 min_collateral_ratio: "1.2".parse().unwrap(),
                 max_borrow_percent: "0.3".parse().unwrap(),
                 max_liquidation_percent: "0.5".parse().unwrap(),
