@@ -10,7 +10,6 @@ struct TestEnv<'a, L: Ledger> {
     account: Address,
     usd: Address,
     lending_pool: Address,
-    a_token: Address,
 }
 
 fn set_up_test_env<'a, L: Ledger>(ledger: &'a mut L) -> TestEnv<'a, L> {
@@ -48,7 +47,6 @@ fn set_up_test_env<'a, L: Ledger>(ledger: &'a mut L) -> TestEnv<'a, L> {
         )
         .unwrap();
     let lending_pool = receipt.component(0).unwrap();
-    let a_token = receipt.resource_def(1).unwrap();
 
     TestEnv {
         executor,
@@ -56,7 +54,6 @@ fn set_up_test_env<'a, L: Ledger>(ledger: &'a mut L) -> TestEnv<'a, L> {
         account,
         usd,
         lending_pool,
-        a_token,
     }
 }
 
@@ -194,10 +191,7 @@ fn test_deposit_and_redeem() {
                 .call_method(
                     env.lending_pool,
                     "redeem",
-                    vec![
-                        format!("{},{}", 1, user_id),
-                        format!("{},{}", 150, env.a_token),
-                    ],
+                    vec![format!("{},{}", 1, user_id), "150".to_owned()],
                     Some(env.account),
                 )
                 .deposit_all_buckets(env.account)
