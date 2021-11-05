@@ -6,6 +6,7 @@ use scrypto::prelude::*;
 // Following features are missing:
 // * Fees
 // * Multi-collateral with price oracle
+// * Variable interest rate
 // * Authorization
 // * Interest dynamic adjustment strategy
 // * Upgradability
@@ -53,7 +54,7 @@ blueprint! {
                 .new_badge_fixed(1)
         }
 
-        /// Deposits into the liquidity pool and start earning.
+        /// Deposits into the liquidity pool and start earning interest.
         pub fn deposit(&mut self, user_auth: BucketRef, reserve_tokens: Bucket) {
             let user_id = Self::get_user_id(user_auth);
             let amount = reserve_tokens.amount();
@@ -174,7 +175,7 @@ blueprint! {
             }
         }
 
-        /// Returns the earn interest rate per epoch
+        /// Returns the deposit interest rate per epoch
         pub fn set_deposit_interest_rate(&mut self, rate: Decimal) {
             self.deposit_interest_rate = rate;
         }
