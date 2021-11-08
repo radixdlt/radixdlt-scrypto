@@ -3,7 +3,7 @@
 set -e
 
 cd "$(dirname "$0")/../"
-#./demo.sh
+./demo.sh
 
 # Copies from reset_simulator.sh output
 
@@ -70,4 +70,4 @@ echo "================================="
 echo "SNX resource definition address: $snx"
 echo "Synthetics blueprint address: $synthetics_blueprint, SyntheticPool"
 echo "Synthetics component address: $synthetics_component"
-echo "sBTC resource definition address: $vault_badge"
+echo "sBTC resource definition address: $sbtc"
