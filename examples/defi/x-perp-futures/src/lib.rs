@@ -1,229 +1,227 @@
 use sbor::*;
 use scrypto::prelude::*;
-use std::collections::hash_map::*;
-
-#[derive(TypeId, Encode, Decode)]
-struct VMM {
-    k: Decimal,
-    xrd: Decimal,
-    usdt: Decimal,
-}
-
-impl VMM {
-    pub fn take_call_on_xrd(&mut self, usd_pstn_amount: Decimal) -> Decimal {
-        let initialxrd = self.xrd.clone();
-        let initialusdt = self.usdt.clone();
-        self.usdt = initialusdt + usd_pstn_amount;
-        self.xrd = self.k.clone() / self.usdt.clone();
-        let n_quantiy = initialxrd - self.xrd.clone();
-        return n_quantiy;
-    }
-
-    pub fn settle_call_on_xrd(&mut self, settle_pstn: &Position) -> Decimal {
-        let initialxrd = self.xrd.clone();
-        let initialusdt = self.usdt.clone();
-        self.xrd = initialxrd + settle_pstn.n_quantity.clone();
-        let profit_n_loss =
-            initialusdt - (self.k.clone() / self.xrd.clone()) - (settle_pstn.margin_amount.clone() * settle_pstn.leverage.clone());
-        self.usdt = self.k.clone() / self.xrd.clone();
-        return profit_n_loss;
-    }
-
-    pub fn take_put_on_xrd(&mut self, usd_pstn_amount: Decimal) -> Decimal {
-        let initialxrd = self.xrd.clone();
-        let initialusdt = self.usdt.clone();
-        self.usdt = initialusdt - usd_pstn_amount;
-        self.xrd = self.k.clone() / self.usdt.clone();
-        let n_quantiy = self.xrd.clone() - initialxrd;
-        return n_quantiy;
-    }
-
-    pub fn settle_put_on_xrd(&mut self, settle_pstn: &Position) -> Decimal {
-        let initialxrd = self.xrd.clone();
-        let initialusdt = self.usdt.clone();
-        self.xrd = initialxrd - settle_pstn.n_quantity.clone();
-        let profit_n_loss =
-            initialusdt - (self.k.clone() / self.xrd.clone()) + settle_pstn.margin_amount.clone() * settle_pstn.leverage.clone();
-        self.usdt = self.k.clone() / self.xrd.clone();
-        return profit_n_loss;
-    }
-
-    pub fn running_xrd_price(&self) -> Decimal {
-        return self.usdt.clone() / self.xrd.clone();
-    }
-}
-
-#[derive(TypeId, Encode, Decode, Clone, Debug, Describe)]
-struct Position {
-    position_type: String,
-    margin_amount: Decimal,
-    wallet_id: Address,
-    leverage: Decimal,
-    n_quantity: Decimal,
-}
-
-impl Position {
-    pub fn running_margin(position: &Position, running_xrd_price: Decimal) -> Decimal {
-        info!("Running xrd price {}", running_xrd_price);
-        return position.margin_amount.clone() / (running_xrd_price * position.n_quantity.clone());
-    }
-}
 
 blueprint! {
     struct ClearingHouse {
-        all_trader_pstns: HashMap<Address, Vec<Position>>,
-        deposited_usd: Vault,
-        mm: VMM,
-        transfer_vault: Vault,
+        /// All traders' positions
+        trader_positions: LazyMap<Address, Vec<Position>>,
+        /// Deposit vault
+        deposits_in_quote: Vault,
+        /// Liquidation threshold
+        liquidation_threshold: Decimal,
+        /// Virtual AMM
+        amm: AMM,
     }
 
     impl ClearingHouse {
-        pub fn new(x_usd_addrs: Address) -> Component {
-            // Instantiate a Hello component, populating its vault with our supply of 1000 HelloToken
+        pub fn new(
+            quote_address: Address,
+            base_init_supply: Decimal,
+            quote_init_supply: Decimal,
+        ) -> Component {
             Self {
-                all_trader_pstns: HashMap::new(),
-                deposited_usd: Vault::new(x_usd_addrs),
-                mm: VMM {
-                    k: 100000000.into(),
-                    xrd: 1000.into(),
-                    usdt: 100000.into(),
+                trader_positions: LazyMap::new(),
+                deposits_in_quote: Vault::new(quote_address),
+                liquidation_threshold: "0.06".parse().unwrap(),
+                amm: AMM {
+                    base_supply: base_init_supply,
+                    quote_supply: quote_init_supply,
                 },
-                transfer_vault: Vault::new(x_usd_addrs),
             }
             .instantiate()
         }
 
-        pub fn take_position(
+        /// Creates a position.
+        pub fn new_position(
             &mut self,
-            margin_amount: Bucket,
-            trader_account: Address,
+            user_auth: BucketRef,
+            margin: Bucket,
             leverage: Decimal,
-            position_type: String,
+            position_type: String, // TODO: make CLI support enum
         ) {
-            let margin_recieved: Decimal = margin_amount.amount();
-            let pstn_amount = margin_recieved.clone() * leverage.clone();
-            assert!(margin_recieved.clone() != 0.into());
-            self.deposited_usd.put(margin_amount);
-            let n_quatity;
-            match position_type.as_ref() {
-                "call" => n_quatity = self.mm.take_call_on_xrd(pstn_amount),
-                "put" => n_quatity = self.mm.take_put_on_xrd(pstn_amount),
-                _ => panic!("Invalid type of instrument. Either should be call or put "),
-            }
-
-            let new_pos = Position {
-                position_type: position_type,
-                margin_amount: margin_recieved,
-                wallet_id: trader_account,
-                leverage: leverage,
-                n_quantity: n_quatity,
+            scrypto_assert!(leverage >= 1.into() && leverage <= 16.into());
+            let user_id = Self::get_user_id(user_auth);
+            let position_type = match position_type.as_str() {
+                "Long" => PositionType::Long,
+                "Short" => PositionType::Short,
+                _ => scrypto_abort("Invalid position type"),
             };
 
-            match self.all_trader_pstns.entry(trader_account) {
-                Entry::Occupied(mut pstns) => pstns.get_mut().push(new_pos),
-                Entry::Vacant(e) => {
-                    let mut newpstns: Vec<Position> = Vec::new();
-                    newpstns.push(new_pos);
-                    self.all_trader_pstns.insert(trader_account, newpstns);
-                }
-            }
+            let margin_amount = margin.amount();
+            let position = self
+                .amm
+                .new_position(margin_amount, leverage, position_type);
+            let mut positions = self.trader_positions.get(&user_id).unwrap_or(Vec::new());
+            positions.push(position);
+
+            self.trader_positions.insert(user_id, positions);
+            self.deposits_in_quote.put(margin);
         }
 
-        pub fn settle_position(
-            &mut self,
-            trader_account: Address,
-            n_quantity: Decimal,
-            position_type: String,
-        ) -> Option<Bucket> {
-            match self.all_trader_pstns.entry(trader_account) {
-                Entry::Occupied(mut pstns) => {
-                    let index = pstns
-                        .get()
-                        .iter()
-                        .position(|x| x.wallet_id == trader_account && x.n_quantity == n_quantity);
-                    match index {
-                        Some(i) => {
-                            let position: &Position = pstns.get().get(i).unwrap();
-                            assert!(position.position_type == position_type);
-                            let profit_n_loss;
-                            match position_type.as_ref() {
-                                "call" => {
-                                    profit_n_loss =
-                                        self.mm.settle_call_on_xrd(pstns.get().get(i).unwrap())
-                                }
-                                "put" => {
-                                    profit_n_loss =
-                                        self.mm.settle_put_on_xrd(pstns.get().get(i).unwrap())
-                                }
-                                _ => panic!(
-                                    "Invalid type of instrument. Either should be call or put "
-                                ),
-                            }
-                            let margin_amount = pstns.get().get(i).unwrap().margin_amount.clone();
-                            assert!(margin_amount >= profit_n_loss);
-                            let temp_bucket =
-                                self.deposited_usd.take(margin_amount + profit_n_loss);
-                            pstns.get_mut().remove(i);
-                            return Some(temp_bucket);
-                        }
-                        _ => panic!("Error finding position for wallet "),
-                    }
-                }
-                Entry::Vacant(e) => {
-                    panic!("Error finding position for wallet ")
-                }
-            }
+        /// Settles a position.
+        pub fn settle_position(&mut self, user_auth: BucketRef, nth: usize) -> Bucket {
+            let user_id = Self::get_user_id(user_auth);
+            self.settle_internal(user_id, nth)
         }
 
-        pub fn print_running_margins(&mut self) {
-            for (address, positions) in &self.all_trader_pstns {
-                for (i, position) in positions.iter().enumerate() {
-                    let running_margin =
-                        Position::running_margin(position, self.mm.running_xrd_price());
-                    info!(
-                        "Running margin {}% for account {:?}  ",
-                        running_margin, position
-                    );
-                }
-            }
+        /// Liquidate a position.
+        pub fn liquidate(&mut self, user_id: Address, nth: usize) -> Bucket {
+            scrypto_assert!(
+                self.get_margin_ratio(user_id, nth) <= self.liquidation_threshold,
+                "Position can't be liquidated"
+            );
+
+            self.settle_internal(user_id, nth)
         }
 
-        pub fn liquidate(&mut self) {
-            let positions = self.positions_to_liquidate();
-            for position in positions {
-                // TODO liquidate the i-th position of some account
-            }
+        /// Returns the running price.
+        pub fn get_price(&self) -> Decimal {
+            self.amm.get_price()
         }
 
-        pub fn positions_to_liquidate(&self) -> Vec<(Address, usize)> {
-            let mut result = Vec::new();
-
-            for (address, positions) in &self.all_trader_pstns {
-                for (i, position) in positions.iter().enumerate() {
-                    let running_margin =
-                        Position::running_margin(position, self.mm.running_xrd_price());
-                    info!(
-                        "Running margin {}% for account {:?}  ",
-                        running_margin, position
-                    );
-                    if running_margin < Decimal::from_str("0.1").unwrap() {
-                        result.push((*address, i));
-                    }
-                }
-            }
-            return result;
+        /// Returns the n-th position of a user
+        pub fn get_position(&self, user_id: Address, nth: usize) -> Position {
+            let positions = self.trader_positions.get(&user_id).unwrap();
+            positions.get(nth).unwrap().clone()
         }
 
-        pub fn transfer_tokens_to_token_vault(&mut self, from: Address, amount: Bucket) {
-            self.transfer_vault.put(amount);
+        /// Returns the margin ratio of a specific position
+        pub fn get_margin_ratio(&self, user_id: Address, nth: usize) -> Decimal {
+            let position = self.get_position(user_id, nth);
+            self.amm.get_margin_ratio(&position)
         }
 
-        pub fn transfer_tokens_from_token_vault(
-            &mut self,
-            to: Address,
-            amount: u32,
-        ) -> Option<Bucket> {
-            return Some(self.transfer_vault.take(amount));
+        /// Donates into this protocol.
+        pub fn donate(&self, donation: Bucket) {
+            self.deposits_in_quote.put(donation);
+        }
+
+        /// Registers a new user
+        pub fn new_user(&self) -> Bucket {
+            ResourceBuilder::new()
+                .metadata("name", "xPerpFutures User Badge")
+                .new_badge_fixed(1)
+        }
+
+        /// Parse user id from a bucket ref.
+        fn get_user_id(user_auth: BucketRef) -> Address {
+            scrypto_assert!(user_auth.amount() > 0.into(), "Invalid user proof");
+            let user_id = user_auth.resource_def().address();
+            user_auth.drop();
+            user_id
+        }
+
+        fn settle_internal(&mut self, user_id: Address, nth: usize) -> Bucket {
+            let mut positions = self.trader_positions.get(&user_id).unwrap();
+            let position = positions.get(nth).unwrap();
+
+            let pnl = self.amm.settle_position(position);
+            debug!(
+                "Margin: {}, PnL: {}, Vault balance: {}",
+                position.margin_in_quote,
+                pnl,
+                self.deposits_in_quote.amount()
+            );
+            let to_return = &position.margin_in_quote + pnl;
+
+            positions.swap_remove(nth);
+            self.trader_positions.insert(user_id, positions);
+            self.deposits_in_quote.take(to_return)
+        }
+    }
+}
+
+#[derive(Debug, Clone, TypeId, Encode, Decode, Describe, PartialEq, Eq)]
+pub enum PositionType {
+    Long,
+    Short,
+}
+
+#[derive(Debug, Clone, TypeId, Encode, Decode, Describe, PartialEq, Eq)]
+pub struct Position {
+    /// The position type, either long or short
+    pub position_type: PositionType,
+    /// The initial margin in quote, always positive
+    pub margin_in_quote: Decimal,
+    /// The leverage
+    pub leverage: Decimal,
+    /// The position in base, positive for long and negative for short
+    pub position_in_base: Decimal,
+}
+
+#[derive(TypeId, Encode, Decode)]
+struct AMM {
+    /// Supply of base asset
+    base_supply: Decimal,
+    /// Supply of quote asset
+    quote_supply: Decimal,
+}
+
+impl AMM {
+    /// Creates a new position.
+    pub fn new_position(
+        &mut self,
+        margin_in_quote: Decimal,
+        leverage: Decimal,
+        position_type: PositionType,
+    ) -> Position {
+        // Calculate the new quote & base supply
+        let k = &self.base_supply * &self.quote_supply;
+        let new_quote_supply = if position_type == PositionType::Long {
+            &self.quote_supply + &margin_in_quote * &leverage
+        } else {
+            &self.quote_supply - &margin_in_quote * &leverage
+        };
+        let new_base_supply = &k / &new_quote_supply;
+
+        // Calculate the position received and commit changes
+        let position_in_base = &self.base_supply - &new_base_supply;
+        self.quote_supply = new_quote_supply;
+        self.base_supply = new_base_supply;
+
+        Position {
+            position_type,
+            margin_in_quote,
+            leverage,
+            position_in_base,
+        }
+    }
+
+    /// Settles a position and returns the PnL
+    pub fn settle_position(&mut self, position: &Position) -> Decimal {
+        let pnl = self.get_pnl(position);
+
+        let k = &self.base_supply * &self.quote_supply;
+        self.base_supply += &position.position_in_base;
+        self.quote_supply = &k / &self.base_supply;
+
+        pnl
+    }
+
+    /// Returns the current price of pair BASE/QUOTE
+    pub fn get_price(&self) -> Decimal {
+        self.quote_supply.clone() / self.base_supply.clone()
+    }
+
+    /// Returns the margin ratio of a position
+    pub fn get_margin_ratio(&self, position: &Position) -> Decimal {
+        (&position.margin_in_quote + self.get_pnl(position))
+            / (self.get_price() * position.position_in_base.abs())
+    }
+
+    /// Returns the profit and loss of a position
+    pub fn get_pnl(&self, position: &Position) -> Decimal {
+        // Calculate the new quote & base supply
+        let k = &self.base_supply * &self.quote_supply;
+        let new_base_supply = &self.base_supply + &position.position_in_base;
+        let new_quote_supply = &k / &new_base_supply;
+
+        // Calculate PnL
+        let delta_in_quote = &self.quote_supply - &new_quote_supply;
+        if position.position_type == PositionType::Long {
+            delta_in_quote - &position.margin_in_quote * &position.leverage
+        } else {
+            delta_in_quote + &position.margin_in_quote * &position.leverage
         }
     }
 }
