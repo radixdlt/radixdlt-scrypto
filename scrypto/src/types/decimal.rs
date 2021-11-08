@@ -60,6 +60,10 @@ impl Decimal {
     pub fn is_negative(&self) -> bool {
         self.0.is_negative()
     }
+
+    pub fn abs(&self) -> Decimal {
+        Decimal(self.0.abs())
+    }
 }
 
 macro_rules! from_int {
@@ -225,6 +229,26 @@ impl<'a, 'b> Div<&'a Decimal> for &'b Decimal {
 
     fn div(self, other: &'a Decimal) -> Self::Output {
         Decimal(self.0.clone() * PRECISION / other.0.clone())
+    }
+}
+
+//=======
+// Neg
+//=======
+
+impl Neg for Decimal {
+    type Output = Decimal;
+
+    fn neg(self) -> Self::Output {
+        Decimal(-self.0)
+    }
+}
+
+impl<'a> Neg for &'a Decimal {
+    type Output = Decimal;
+
+    fn neg(self) -> Self::Output {
+        Decimal(-self.0.clone())
     }
 }
 
