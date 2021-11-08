@@ -3,7 +3,7 @@
 set -e
 
 cd "$(dirname "$0")/../"
-./demo.sh
+#./demo.sh
 
 # Copies from reset_simulator.sh output
 
@@ -20,66 +20,54 @@ resim set-default-account $acc1_address $acc1_pub_key
 ## SYNTHETICS - PREPARATION
 
 # mint SNX
-snx=`resim new-token-mutable $acc1_mint_auth --name "Synthetics Collateral Token" --symbol SNX --description "A token which is used in the synthetics component for collateral" | tee /dev/tty | awk '/ResourceDef:/ {print $NF}'`
-resim mint 117921786 $snx $acc1_mint_auth --signers $acc1_pub_key
-
+snx=`resim new-token-mutable $acc1_mint_auth --name "Synthetics Token" --symbol SNX --description "A token which is used in the synthetics component for collateral" | tee /dev/tty | awk '/ResourceDef:/ {print $NF}'`
+resim mint 114841533.01 $snx $acc1_mint_auth
 
 # Publish synthetics blueprint
 synthetics_blueprint=`resim publish ./synthetics | tee /dev/tty | awk '/Package:/ {print $NF}'`
 
 # Publish SyntheticsPool with collat ratio of 4, using collateral of SNX and base price of USD
-synthetics_pool_component=`resim call-function $synthetics_blueprint SyntheticPool new $po_cp $snx $usd 4 | tee /dev/tty | awk '/Component:/ {print $NF}'`
+synthetics_component=`resim call-function $synthetics_blueprint SyntheticPool new $po_cp $snx $usd 4 | tee /dev/tty | awk '/Component:/ {print $NF}'`
 
-# One SNX is $42 (decimals in price oracle is 18)
-resim call-method $po_cp update_price $snx $usd 42000000000000000000 1,$po_update_auth --signers $acc1_pub_key
+# One SNX is $10.40
+resim call-method $po_cp update_price $snx $usd 10.40  1,$po_update_auth
 
-# One TESLA is $1176 (decimals is 18)
-resim call-method $synthetics_pool_component update_off_ledger_usd_price TESLA 1176000000000000000000
+# One BTC is $66050.98
+resim call-method $po_cp update_price $btc $usd 66050.98  1,$po_update_auth
 
 ## SYNTHETICS - TESTING
 
-# Stake some SNX tokens! (from the default account)
-amount_to_stake=10
-vault_badge=`resim call-method $synthetics_pool_component stake_to_new_vault "$amount_to_stake,$snx" --signers $acc1_pub_key | tee /dev/tty | awk '/ResourceDef:/ {print $NF}'`
+# Create a Synthetics account
+user1=`resim call-method $synthetics_component new_user | tee /dev/tty | awk '/ResourceDef:/ {print $NF}'`
 
-# Top up our account
-additional_amount_to_stake=21
-resim call-method $synthetics_pool_component stake_to_existing_vault "1,$vault_badge" "$additional_amount_to_stake,$snx" --signers $acc1_pub_key
+# Stake 1000 SNX
+vault_badge=`resim call-method $synthetics_component stake 1,$user1 1000,$snx | tee /dev/tty | awk '/ResourceDef:/ {print $NF}'`
+resim call-method $synthetics_component get_user_summary $user1
+#read -n 1 -p "Press any key to continue!"
 
-# Check our staked balance is 31
-echo "There should be a line under results here saying Ok(Some(31)), in line with the CallMethod instruction"
-resim call-method $synthetics_pool_component get_staked_balance "1,$vault_badge" --signers $acc1_pub_key
+# Unstake 200 SNX
+resim call-method $synthetics_component unstake 1,$user1 200
+resim call-method $synthetics_component get_user_summary $user1
+#read -n 1 -p "Press any key to continue!"
 
-# Unstake 20 tokens
-resim call-method $synthetics_pool_component unstake_from_vault "1,$vault_badge" 20 --signers $acc1_pub_key
+# Add sBTC synth
+sbtc=`resim call-method $synthetics_component add_synthetic_token "BTC" $btc | tee /dev/tty | awk '/ResourceDef:/ {print $NF}'`
+resim call-method $synthetics_component get_user_summary $user1
+#read -n 1 -p "Press any key to continue!"
 
-# This should error because we have 11 tokens left
-# resim call-method $synthetics_pool_component dispose_badge "1,$vault_badge" --signers $acc1_pub_key
+# Mint 0.01 sBTC
+resim call-method $synthetics_component mint 1,$user1 0.01 "BTC"
+resim call-method $synthetics_component get_user_summary $user1
+#read -n 1 -p "Press any key to continue!"
 
-resim call-method $synthetics_pool_component unstake_from_vault "1,$vault_badge" 11 --signers $acc1_pub_key
-
-# Can now dispose badge as vault is empty
-resim call-method $synthetics_pool_component dispose_badge "1,$vault_badge" --signers $acc1_pub_key
-
-# Create new account (with a replacement badge!)
-# Stake 1000 SNX = $42 000 of collateral (can mint $10 500 of synths)
-amount_to_stake=1000
-vault_badge=`resim call-method $synthetics_pool_component stake_to_new_vault "$amount_to_stake,$snx" --signers $acc1_pub_key | tee /dev/tty | awk '/ResourceDef:/ {print $NF}'`
-
-# Mint 20 sTESLA which is 20 * $1176 = $23 520 - should fail
-# resim call-method $synthetics_pool_component mint_synthetic "1,$vault_badge" TESLA 20 --signers $acc1_pub_key
-
-# Mint 5 sTESLA which is 5 * $1176 and then 2 * $1176 for total of 7 * $1176 =  just within our collat ratio
-resim call-method $synthetics_pool_component mint_synthetic "1,$vault_badge" TESLA 5 --signers $acc1_pub_key
-resim call-method $synthetics_pool_component mint_synthetic "1,$vault_badge" TESLA 2 --signers $acc1_pub_key
-
-# Check we have our 7 sTESLA
-resim show $acc1_address
-
+# Burn 0.01 sBTC
+resim call-method $synthetics_component burn 1,$user1 0.005,$sbtc
+resim call-method $synthetics_component get_user_summary $user1
+#read -n 1 -p "Press any key to continue!"
 
 echo
 echo "================================="
-echo "SNX Resource Def Address: $snx"
-echo "Synthetics Blueprint Address: $synthetics_blueprint"
-echo "Synthetics Component Address: $synthetics_pool_component"
-echo "Vault badge resource def: $vault_badge"
+echo "SNX resource definition address: $snx"
+echo "Synthetics blueprint address: $synthetics_blueprint, SyntheticPool"
+echo "Synthetics component address: $synthetics_component"
+echo "sBTC resource definition address: $vault_badge"
