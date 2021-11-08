@@ -137,7 +137,7 @@ blueprint! {
             let usd_resource_def: ResourceDef = usd_token_address.into();
             let synthetics_minter_badge = ResourceBuilder::new()
                 .metadata("name", "Synthetics Minter Badge")
-                .new_token_fixed(1);
+                .new_badge_fixed(1);
             let synthetics_global_debt_resource_def = ResourceBuilder::new()
                 .metadata("name", "Synthetics Global Debt")
                 .new_token_mutable(synthetics_minter_badge.resource_def());
