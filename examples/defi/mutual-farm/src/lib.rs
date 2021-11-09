@@ -1,9 +1,20 @@
 use scrypto::prelude::*;
 
+// Welcome to MutualFund! 
+//
+// Start earning today by converting your XRD into liquidity.
+//
+// For every 1 XRD invested,
+// 1. We immediately convert 0.75 XRD into SNX
+// 2. All SNX will be staked into a Synthetic pool
+// 3. Synthetic TESLA token will be minted with a 1000% collateralization ratio
+// 4. The minted sTELSA and 0.25 XRD will be added to a sTESLA/XRD swap pool owned by us
+// 5. Based on your contribution, we issue MutualFund share tokens which allows you to redeem underlying assets and dividends.
+
 import! {
 r#"
 {
-    "package": "01024420d4c8749579abc13133bf07b0a4fc307aa0172f595a0245",
+    "package": "01e61370219353678d8bfb37bce521e257d0ec29ae9a2e95d194ea",
     "name": "PriceOracle",
     "functions": [
         {
@@ -335,7 +346,7 @@ r#"
 import! {
 r#"
 {
-    "package": "01a78cfec3dac583cc2394d14452099892a5af4a5201d771d918a2",
+    "package": "01d25d4eab30b60d9951f3433b35cff52a48f8cf163b66c0a16677",
     "name": "SyntheticPool",
     "functions": [
         {
@@ -540,7 +551,7 @@ r#"
 import! {
 r#"
 {
-    "package": "01d25d4eab30b60d9951f3433b35cff52a48f8cf163b66c0a16677",
+    "package": "01f91f613875b4326060eac0bcc0c98c0eaad15eb1c9c51ace0401",
     "name": "Radiswap",
     "functions": [
         {
@@ -676,10 +687,10 @@ blueprint! {
     struct MutualFarm {
         /// Badge for interacting with other components.
         identity_badge: Vault,
+        /// XRD/SNX Radiswap
+        xrd_snx_radiswap: Radiswap,
         /// Price Oracle
         price_oracle: PriceOracle,
-        /// AutoLend component for borrowing SNX with XRD as collateral
-        auto_lend: AutoLend,
         /// Synthetic for minting synthetic tokens
         synthetic_pool: SyntheticPool,
 
@@ -697,44 +708,48 @@ blueprint! {
 
         /// Mutual farm share resource definition
         mutual_farm_share_resource_def: ResourceDef,
+        /// Total contribution
+        total_contribution_in_usd: Decimal,
     }
 
     impl MutualFarm {
         pub fn new(
             price_oracle_address: Address,
-            auto_lend_address: Address,
+            xrd_snx_radiswap_address: Address,
             synthetic_pool_address: Address,
             asset_symbol: String,
             asset_address: Address,
+            initial_shares: Decimal,
             initial_xrd: Bucket,
             snx_address: Address,
-            num_of_tesla: Decimal,
-        ) -> Component {
+            usd_address: Address,
+        ) -> (Bucket, Component) {
             debug!("Create an identity badge for accessing other components");
             let identity_badge = ResourceBuilder::new().new_badge_fixed(1);
             let identity_badge_address = identity_badge.resource_def().address();
 
-            debug!("Calculate how much the initial XRD worths in SNX");
+            debug!("Fetch price info from oracle");
             let price_oracle: PriceOracle = price_oracle_address.into();
-            let xrd_snx_price = price_oracle
-                .get_price(initial_xrd.resource_def().address(), snx_address)
+            let xrd_usd_price = price_oracle
+                .get_price(initial_xrd.resource_def().address(), usd_address)
                 .unwrap();
+            let snx_usd_price = price_oracle.get_price(snx_address, usd_address).unwrap();
+            let tesla_usd_price = price_oracle.get_price(asset_address, usd_address).unwrap();
+
+            debug!("Swap 3/4 of XRD for SNX");
+            let xrd_snx_radiswap: Radiswap = xrd_snx_radiswap_address.into();
             let xrd_amount = initial_xrd.amount();
-            let xrd_in_snx = &xrd_amount * &xrd_snx_price;
+            let snx = xrd_snx_radiswap.swap(initial_xrd.take(initial_xrd.amount() * 3 / 4));
+            let snx_amount = snx.amount();
 
-            debug!(
-                "Deposit half of the XRD into AutoLend and borrow SNX with 200% collateral ratio"
-            );
-            let auto_lend: AutoLend = auto_lend_address.into();
-            auto_lend.deposit(identity_badge.borrow(), initial_xrd.take(xrd_amount / 2));
-            let snx = auto_lend.borrow(identity_badge.borrow(), xrd_in_snx / 4); // Not working, as AutoLend only provides loans in XRD
-
-            debug!("Deposit SNX into synthetic pool and mint sTESLA.");
+            debug!("Deposit SNX into synthetic pool and mint sTESLA (1/10 of our SNX).");
+            let price_oracle: PriceOracle = price_oracle_address.into();
             let synthetic_pool: SyntheticPool = synthetic_pool_address.into();
             synthetic_pool.add_synthetic_token(asset_symbol.clone(), asset_address);
             synthetic_pool.stake(identity_badge.borrow(), snx);
+            let quantity = snx_amount * snx_usd_price / 10 / tesla_usd_price;
             let synth =
-                synthetic_pool.mint(identity_badge.borrow(), num_of_tesla, asset_symbol.clone());
+                synthetic_pool.mint(identity_badge.borrow(), quantity, asset_symbol.clone());
             let synth_address = synth.resource_def().address();
 
             debug!("Set up sTESLA/XRD swap pool");
@@ -748,10 +763,17 @@ blueprint! {
                 "0.003".parse().unwrap(),
             );
 
-            Self {
+            debug!("Mint initial shares");
+            let mutual_farm_share_resource_def = ResourceBuilder::new()
+                .metadata("name", "MutualFarm share")
+                .new_token_mutable(identity_badge_address);
+            let shares =
+                mutual_farm_share_resource_def.mint(initial_shares, identity_badge.borrow());
+
+            let component = Self {
                 identity_badge: Vault::with_bucket(identity_badge),
                 price_oracle,
-                auto_lend,
+                xrd_snx_radiswap,
                 synthetic_pool,
                 asset_symbol,
                 asset_address,
@@ -761,8 +783,11 @@ blueprint! {
                 mutual_farm_share_resource_def: ResourceBuilder::new()
                     .metadata("name", "MutualFarm share")
                     .new_token_mutable(identity_badge_address),
+                total_contribution_in_usd: xrd_amount * xrd_usd_price,
             }
-            .instantiate()
+            .instantiate();
+
+            (shares, component)
         }
 
         pub fn deposit(&mut self, _xrd_bucket: Bucket) -> Bucket {

@@ -68,6 +68,9 @@ synthetics_component=`resim call-function $synthetics_package SyntheticPool new 
 perpetual_futures_package=`resim publish ./x-perp-futures | tee /dev/tty | awk '/Package:/ {print $NF}'`
 perpetual_futures_component=`resim call-function $perpetual_futures_package ClearingHouse new $usd 100 45 | tee /dev/tty | awk '/Component:/ {print $NF}'`
 
+# Set up swap pools
+xrd_snx_radiswap_component=`resim call-function $radiswap_package Radiswap new 1000000,$xrd 38271,$snx 1000000 LPT LPToken https://www.example.com/ 0.001 | tee /dev/tty | awk '/Component:/ {print $NF}'`
+
 # Update price
 resim call-method $price_oracle_component update_price $btc $usd 57523  1,$price_oracle_update_auth
 resim call-method $price_oracle_component update_price $eth $usd 3763  1,$price_oracle_update_auth
@@ -108,4 +111,5 @@ echo "Synthetics blueprint: $synthetics_package SyntheticPool"
 echo "Synthetics component: $synthetics_component"
 echo "xPerpFutures blueprint: $perpetual_futures_package ClearingHouse"
 echo "xPerpFutures component: $perpetual_futures_component"
+echo "XRD/SNX swap: $xrd_snx_radiswap_component"
 echo "===================================================================================="
