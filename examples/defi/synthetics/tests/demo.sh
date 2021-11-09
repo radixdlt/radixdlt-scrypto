@@ -1,41 +1,26 @@
 #!/bin/bash
 
 set -e
-
 cd "$(dirname "$0")/../"
-./demo.sh
+(../demo.sh)
 
-# Copies from ../demo.sh output
+#====================
+# Set up environment
+#====================
 
 acc1_address='02526629b90e1142492e934fbe807b446935407064db3ea2fcf856'
 acc1_pub_key='04005feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9'
 acc1_minter_badge='03d1f50010e4102d88aacc347711491f852c515134a9ecf67ba17c'
-price_oracle_component='02ccd9ea66c5e785eef48f950e42b3248ae37be4d0aa9612b0894c'
-price_oracle_update_auth='03024420d4c8749579abc13133bf07b0a4fc307aa0172f595a0245'
 btc='03c29248a0d4c7d4da7b323adfeb4b4fbe811868eb637725ebb7c1'
 usd='03806c33ab58c922240ce20a5b697546cc84aaecdf1b460a42c425'
+snx='03b6fe12281eb607ec48a4599f01a328db4836c1e3510b639d761f'
+price_oracle_component='022cf5de8153aaf56ee81c032fb06c7fde0a1dc2389040d651dfc2'
+price_oracle_update_auth='034ef4ca57d3a6846c2d757d475dbec8e3ae869b900dd8566073a4'
+synthetics_component='0225267e74b1a067a09cdde372380c6e385d890c194359cb7c866d'
 
-resim set-default-account $acc1_address $acc1_pub_key
-
-## SYNTHETICS - PREPARATION
-
-# mint SNX
-snx=`resim new-token-mutable $acc1_minter_badge --name "Synthetics Token" --symbol SNX --description "A token which is used in the synthetics component for collateral" | tee /dev/tty | awk '/ResourceDef:/ {print $NF}'`
-resim mint 114841533.01 $snx $acc1_minter_badge
-
-# Publish synthetics blueprint
-synthetics_blueprint=`resim publish ./synthetics | tee /dev/tty | awk '/Package:/ {print $NF}'`
-
-# Publish SyntheticsPool with collat ratio of 4, using collateral of SNX and base price of USD
-synthetics_component=`resim call-function $synthetics_blueprint SyntheticPool new $price_oracle_component $snx $usd 4 | tee /dev/tty | awk '/Component:/ {print $NF}'`
-
-# One SNX is $10.40
-resim call-method $price_oracle_component update_price $snx $usd 10.40  1,$price_oracle_update_auth
-
-# One BTC is $66050.98
-resim call-method $price_oracle_component update_price $btc $usd 66050.98  1,$price_oracle_update_auth
-
-## SYNTHETICS - TESTING
+#====================
+# Test synthetics
+#====================
 
 # Create a Synthetics account
 user1=`resim call-method $synthetics_component new_user | tee /dev/tty | awk '/ResourceDef:/ {print $NF}'`
@@ -64,10 +49,3 @@ resim call-method $synthetics_component get_user_summary $user1
 resim call-method $synthetics_component burn 1,$user1 0.005,$sbtc
 resim call-method $synthetics_component get_user_summary $user1
 #read -n 1 -p "Press any key to continue!"
-
-echo
-echo "================================="
-echo "SNX resource definition address: $snx"
-echo "Synthetics blueprint address: $synthetics_blueprint, SyntheticPool"
-echo "Synthetics component address: $synthetics_component"
-echo "sBTC resource definition address: $sbtc"

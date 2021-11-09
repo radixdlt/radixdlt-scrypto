@@ -10,8 +10,8 @@ blueprint! {
         a_pool: Vault,
         /// The reserve for token B.
         b_pool: Vault,
-        /// The fee to apply for every swap, like `3` for a 0.3% fee.
-        fee_in_thousandths: u32,
+        /// The fee to apply for every swap
+        fee: Decimal,
     }
 
     impl Radiswap {
@@ -24,14 +24,14 @@ blueprint! {
             lp_symbol: String,
             lp_name: String,
             lp_url: String,
-            fee_in_thousandths: u32,
+            fee: Decimal,
         ) -> (Component, Bucket) {
             // Check arguments
             scrypto_assert!(
                 !a_tokens.is_empty() && !b_tokens.is_empty(),
                 "You must pass in an initial supply of each token"
             );
-            scrypto_assert!(fee_in_thousandths <= 1000, "Invalid fee in thousandths");
+            scrypto_assert!(fee >= 0.into() && fee <= 1.into(), "Invalid fee in thousandths");
 
             // Instantiate our LP token and mint an initial supply of them
             let lp_minter = ResourceBuilder::new()
@@ -50,7 +50,7 @@ blueprint! {
                 lp_minter: Vault::with_bucket(lp_minter),
                 a_pool: Vault::with_bucket(a_tokens),
                 b_pool: Vault::with_bucket(b_tokens),
-                fee_in_thousandths,
+                fee,
             }
             .instantiate();
 
@@ -114,7 +114,7 @@ blueprint! {
         /// Swaps token A for B, or vice versa.
         pub fn swap(&self, input_tokens: Bucket) -> Bucket {
             // Calculate the swap fee
-            let fee_amount = input_tokens.amount() * self.fee_in_thousandths / 1000;
+            let fee_amount = input_tokens.amount() * &self.fee;
 
             if input_tokens.resource_def() == self.a_pool.resource_def() {
                 // Calculate how much of token B we will return
