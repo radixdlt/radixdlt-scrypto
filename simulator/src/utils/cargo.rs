@@ -66,6 +66,7 @@ where
     if cargo.exists() {
         let status = Command::new("cargo")
             .arg("test")
+            .arg("--release")
             .arg("--manifest-path")
             .arg(cargo.to_str().unwrap())
             .arg("--")

@@ -17,10 +17,8 @@ cd "$(dirname "$0")"
 (cd assets/account; cargo fmt)
 (cd assets/system; cargo fmt)
 (cd examples/helloworld; cargo fmt)
-(cd examples/no_std; cargo fmt)
-(cd examples/gumball-machine; cargo fmt)
-(cd examples/cross-component-call; cargo fmt)
-(cd examples/radiswap; cargo fmt)
+(cd examples/core/no_std; cargo fmt)
+(cd examples/core/cross-component-call; cargo fmt)
 (cd simulator; cargo fmt)
 
 echo "All packages have been formatted."

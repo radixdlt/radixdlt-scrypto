@@ -56,14 +56,30 @@ pub mod collections {
     extern crate alloc;
 
     #[cfg(feature = "alloc")]
+    pub use alloc::collections::btree_map;
+    #[cfg(feature = "alloc")]
+    pub use alloc::collections::btree_set;
+    #[cfg(feature = "alloc")]
     pub use alloc::collections::BTreeMap;
     #[cfg(feature = "alloc")]
     pub use alloc::collections::BTreeSet;
+    #[cfg(feature = "alloc")]
+    pub use hashbrown::hash_map;
+    #[cfg(feature = "alloc")]
+    pub use hashbrown::hash_set;
     #[cfg(feature = "alloc")]
     pub use hashbrown::HashMap;
     #[cfg(feature = "alloc")]
     pub use hashbrown::HashSet;
 
+    #[cfg(not(feature = "alloc"))]
+    pub use std::collections::btree_map;
+    #[cfg(not(feature = "alloc"))]
+    pub use std::collections::btree_set;
+    #[cfg(not(feature = "alloc"))]
+    pub use std::collections::hash_map;
+    #[cfg(not(feature = "alloc"))]
+    pub use std::collections::hash_set;
     #[cfg(not(feature = "alloc"))]
     pub use std::collections::BTreeMap;
     #[cfg(not(feature = "alloc"))]

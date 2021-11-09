@@ -126,7 +126,7 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
                     .publish_package(code)
                     .build(Vec::new())
                     .unwrap(),
-                true,
+                false,
             )
             .unwrap();
 
