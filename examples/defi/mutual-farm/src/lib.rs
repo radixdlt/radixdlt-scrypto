@@ -6,10 +6,10 @@ use scrypto::prelude::*;
 //
 // For every 1 XRD invested,
 // 1. We immediately convert 0.75 XRD into SNX
-// 2. All SNX will be staked into a Synthetic pool
-// 3. Synthetic TESLA token will be minted with a 1000% collateralization ratio
-// 4. The minted sTELSA and 0.25 XRD will be added to a sTESLA/XRD swap pool owned by us
-// 5. Based on your contribution, we issue MutualFund share tokens which allows you to redeem underlying assets and dividends.
+// 2. All SNX will be staked into a Synthetic Pool
+// 3. We mint Synthetic TESLA token a 1000% collateralization ratio
+// 4. The minted sTELSA and 0.25 XRD will be added to a sTESLA/XRD swap pool owned by us (with change returned to you)
+// 5. Based on your contribution (in dollar amount), we issue MutualFund share tokens which allow you to redeem underlying assets and claim dividends.
 
 import! {
 r#"
@@ -103,239 +103,6 @@ r#"
                 "type": "Custom",
                 "name": "scrypto::types::Address",
                 "generics": []
-            }
-        }
-    ]
-}
-"#
-}
-
-import! {
-r#"
-{
-    "package": "01205eedae4ac21cbdc07728bf934d6c0b253cdec0439f867e6bee",
-    "name": "AutoLend",
-    "functions": [
-        {
-            "name": "new",
-            "inputs": [
-                {
-                    "type": "Custom",
-                    "name": "scrypto::types::Address",
-                    "generics": []
-                }
-            ],
-            "output": {
-                "type": "Custom",
-                "name": "scrypto::core::Component",
-                "generics": []
-            }
-        }
-    ],
-    "methods": [
-        {
-            "name": "new_user",
-            "mutability": "Immutable",
-            "inputs": [],
-            "output": {
-                "type": "Custom",
-                "name": "scrypto::resource::Bucket",
-                "generics": []
-            }
-        },
-        {
-            "name": "deposit",
-            "mutability": "Mutable",
-            "inputs": [
-                {
-                    "type": "Custom",
-                    "name": "scrypto::resource::BucketRef",
-                    "generics": []
-                },
-                {
-                    "type": "Custom",
-                    "name": "scrypto::resource::Bucket",
-                    "generics": []
-                }
-            ],
-            "output": {
-                "type": "Unit"
-            }
-        },
-        {
-            "name": "redeem",
-            "mutability": "Mutable",
-            "inputs": [
-                {
-                    "type": "Custom",
-                    "name": "scrypto::resource::BucketRef",
-                    "generics": []
-                },
-                {
-                    "type": "Custom",
-                    "name": "scrypto::types::Decimal",
-                    "generics": []
-                }
-            ],
-            "output": {
-                "type": "Custom",
-                "name": "scrypto::resource::Bucket",
-                "generics": []
-            }
-        },
-        {
-            "name": "borrow",
-            "mutability": "Mutable",
-            "inputs": [
-                {
-                    "type": "Custom",
-                    "name": "scrypto::resource::BucketRef",
-                    "generics": []
-                },
-                {
-                    "type": "Custom",
-                    "name": "scrypto::types::Decimal",
-                    "generics": []
-                }
-            ],
-            "output": {
-                "type": "Custom",
-                "name": "scrypto::resource::Bucket",
-                "generics": []
-            }
-        },
-        {
-            "name": "repay",
-            "mutability": "Mutable",
-            "inputs": [
-                {
-                    "type": "Custom",
-                    "name": "scrypto::resource::BucketRef",
-                    "generics": []
-                },
-                {
-                    "type": "Custom",
-                    "name": "scrypto::resource::Bucket",
-                    "generics": []
-                }
-            ],
-            "output": {
-                "type": "Custom",
-                "name": "scrypto::resource::Bucket",
-                "generics": []
-            }
-        },
-        {
-            "name": "liquidate",
-            "mutability": "Mutable",
-            "inputs": [
-                {
-                    "type": "Custom",
-                    "name": "scrypto::types::Address",
-                    "generics": []
-                },
-                {
-                    "type": "Custom",
-                    "name": "scrypto::resource::Bucket",
-                    "generics": []
-                }
-            ],
-            "output": {
-                "type": "Custom",
-                "name": "scrypto::resource::Bucket",
-                "generics": []
-            }
-        },
-        {
-            "name": "get_user",
-            "mutability": "Immutable",
-            "inputs": [
-                {
-                    "type": "Custom",
-                    "name": "scrypto::types::Address",
-                    "generics": []
-                }
-            ],
-            "output": {
-                "type": "Struct",
-                "name": "User",
-                "fields": {
-                    "type": "Named",
-                    "named": [
-                        [
-                            "deposit_balance",
-                            {
-                                "type": "Custom",
-                                "name": "scrypto::types::Decimal",
-                                "generics": []
-                            }
-                        ],
-                        [
-                            "deposit_interest_rate",
-                            {
-                                "type": "Custom",
-                                "name": "scrypto::types::Decimal",
-                                "generics": []
-                            }
-                        ],
-                        [
-                            "deposit_last_update",
-                            {
-                                "type": "U64"
-                            }
-                        ],
-                        [
-                            "borrow_balance",
-                            {
-                                "type": "Custom",
-                                "name": "scrypto::types::Decimal",
-                                "generics": []
-                            }
-                        ],
-                        [
-                            "borrow_interest_rate",
-                            {
-                                "type": "Custom",
-                                "name": "scrypto::types::Decimal",
-                                "generics": []
-                            }
-                        ],
-                        [
-                            "borrow_last_update",
-                            {
-                                "type": "U64"
-                            }
-                        ]
-                    ]
-                }
-            }
-        },
-        {
-            "name": "set_deposit_interest_rate",
-            "mutability": "Mutable",
-            "inputs": [
-                {
-                    "type": "Custom",
-                    "name": "scrypto::types::Decimal",
-                    "generics": []
-                }
-            ],
-            "output": {
-                "type": "Unit"
-            }
-        },
-        {
-            "name": "set_borrow_interest_rate",
-            "mutability": "Mutable",
-            "inputs": [
-                {
-                    "type": "Custom",
-                    "name": "scrypto::types::Decimal",
-                    "generics": []
-                }
-            ],
-            "output": {
-                "type": "Unit"
             }
         }
     ]
@@ -770,6 +537,7 @@ blueprint! {
             let shares =
                 mutual_farm_share_resource_def.mint(initial_shares, identity_badge.borrow());
 
+            debug!("Instantiate MutualFund component");
             let component = Self {
                 identity_badge: Vault::with_bucket(identity_badge),
                 price_oracle,
@@ -780,9 +548,7 @@ blueprint! {
                 synth_address,
                 radiswap: radiswap_comp.into(),
                 radiswap_lp_tokens: Vault::with_bucket(lp_tokens),
-                mutual_farm_share_resource_def: ResourceBuilder::new()
-                    .metadata("name", "MutualFarm share")
-                    .new_token_mutable(identity_badge_address),
+                mutual_farm_share_resource_def,
                 total_contribution_in_usd: xrd_amount * xrd_usd_price,
             }
             .instantiate();
