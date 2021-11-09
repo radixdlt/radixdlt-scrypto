@@ -1,6 +1,6 @@
 use scrypto::prelude::*;
 
-// Welcome to MutualFund! 
+// Welcome to MutualFund!
 //
 // Start earning today by converting your XRD into liquidity.
 //
@@ -467,6 +467,10 @@ blueprint! {
         asset_address: Address,
         /// Synthetic asset address
         synth_address: Address,
+        /// SNX resource definition address
+        snx_address: Address,
+        /// USD resource definition address
+        usd_address: Address,
 
         /// Radiswap for sTESLA/XRD
         radiswap: Radiswap,
@@ -492,7 +496,9 @@ blueprint! {
             usd_address: Address,
         ) -> (Bucket, Component) {
             debug!("Create an identity badge for accessing other components");
-            let identity_badge = ResourceBuilder::new().new_badge_fixed(1);
+            let identity_badge = ResourceBuilder::new()
+                .metadata("name", "ID")
+                .new_badge_fixed(1);
             let identity_badge_address = identity_badge.resource_def().address();
 
             debug!("Fetch price info from oracle");
@@ -546,6 +552,8 @@ blueprint! {
                 asset_symbol,
                 asset_address,
                 synth_address,
+                snx_address,
+                usd_address,
                 radiswap: radiswap_comp.into(),
                 radiswap_lp_tokens: Vault::with_bucket(lp_tokens),
                 mutual_farm_share_resource_def,
@@ -556,8 +564,57 @@ blueprint! {
             (shares, component)
         }
 
-        pub fn deposit(&mut self, _xrd_bucket: Bucket) -> Bucket {
-            todo!()
+        pub fn deposit(&mut self, xrd: Bucket) -> (Bucket, Bucket) {
+            debug!("Fetch price info from oracle");
+            let xrd_usd_price = self
+                .price_oracle
+                .get_price(xrd.resource_def().address(), self.usd_address)
+                .unwrap();
+            let snx_usd_price = self
+                .price_oracle
+                .get_price(self.snx_address, self.usd_address)
+                .unwrap();
+            let tesla_usd_price = self
+                .price_oracle
+                .get_price(self.asset_address, self.usd_address)
+                .unwrap();
+
+            debug!("Swap 3/4 of XRD for SNX");
+            let xrd_address = xrd.resource_def();
+            let xrd_amount = xrd.amount();
+            let snx = self.xrd_snx_radiswap.swap(xrd.take(xrd.amount() * 3 / 4));
+            let snx_amount = snx.amount();
+
+            debug!("Deposit SNX into synthetic pool and mint sTESLA (1/10 of our SNX).");
+            self.identity_badge.authorize(|badge| {
+                self.synthetic_pool.stake(badge, snx);
+            });
+            let quantity = snx_amount * snx_usd_price / 10 / tesla_usd_price;
+            let synth = self.identity_badge.authorize(|badge| {
+                self.synthetic_pool
+                    .mint(badge, quantity, self.asset_symbol.clone())
+            });
+
+            debug!("Add liquidity to sTESLA/XRD swap pool");
+            let (lp_tokens, mut remainder) = self.radiswap.add_liquidity(synth, xrd);
+            if remainder.resource_def().address() == self.synth_address {
+                self.identity_badge.authorize(|badge| {
+                    self.synthetic_pool.burn(badge, remainder);
+                });
+                remainder = Bucket::new(xrd_address);
+            }
+            self.radiswap_lp_tokens.put(lp_tokens);
+
+            debug!("Mint initial shares");
+            let contribution = xrd_usd_price * (xrd_amount - remainder.amount());
+            let num_shares_to_issue = &contribution
+                / (&self.total_contribution_in_usd / &self.mutual_farm_share_resource_def.supply());
+            self.total_contribution_in_usd += contribution;
+            let shares = self.identity_badge.authorize(|badge| {
+                self.mutual_farm_share_resource_def
+                    .mint(num_shares_to_issue, badge)
+            });
+            (shares, remainder)
         }
 
         pub fn withdraw(&mut self) -> (Bucket, Bucket) {

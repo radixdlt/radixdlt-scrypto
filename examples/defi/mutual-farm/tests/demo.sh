@@ -33,5 +33,12 @@ resim call-method $price_oracle_component update_price $xrd $snx 0.03901819  1,$
 # Publish mutual farm package
 mutual_farm_package=`resim publish . | tee /dev/tty | awk '/Package:/ {print $NF}'`
 
-# Publish mutual_farm
-resim call-function --trace $mutual_farm_package MutualFarm new $price_oracle_component $xrd_snx_radiswap_component $synthetic_pool_component "TESLA" $tesla 1000 1000000,$xrd $snx $usd
+# Instantiate mutual farm
+out=`resim call-function $mutual_farm_package MutualFarm new $price_oracle_component $xrd_snx_radiswap_component $synthetic_pool_component "TESLA" $tesla 1000 1000000,$xrd $snx $usd  | tee /dev/tty | awk '/Component:/ {print $NF}'`
+mutual_farm_component=`echo $out | cut -d " " -f2`
+resim show $mutual_farm_component
+resim show $acc1_address
+
+# Deposit another 1,000,000 XRD
+resim call-method $mutual_farm_component deposit 1000000,$xrd
+resim show $acc1_address
