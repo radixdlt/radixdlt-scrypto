@@ -607,8 +607,8 @@ blueprint! {
 
             debug!("Mint initial shares");
             let contribution = xrd_usd_price * (xrd_amount - remainder.amount());
-            let num_shares_to_issue = &contribution
-                / (&self.total_contribution_in_usd / &self.mutual_farm_share_resource_def.supply());
+            let num_shares_to_issue = contribution
+                / (self.total_contribution_in_usd / self.mutual_farm_share_resource_def.supply());
             self.total_contribution_in_usd += contribution;
             let shares = self.identity_badge.authorize(|badge| {
                 self.mutual_farm_share_resource_def

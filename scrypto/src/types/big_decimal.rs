@@ -1,30 +1,31 @@
 use core::ops::*;
 
 use num_bigint::{BigInt, Sign};
-use num_traits::{sign::Signed, ToPrimitive, Zero};
+use num_traits::{sign::Signed, Zero};
 use sbor::{describe::Type, *};
 
 use crate::buffer::*;
 use crate::rust::borrow::ToOwned;
 use crate::rust::convert::TryFrom;
 use crate::rust::fmt;
-use crate::rust::format;
 use crate::rust::str::FromStr;
 use crate::rust::string::String;
 use crate::rust::vec;
 use crate::rust::vec::Vec;
 
-const PRECISION: u128 = 10u128.pow(18);
+const PRECISION: i128 = 10i128.pow(18);
 
-/// Represented a **signed** fixed-point BigDecimal, where the precision is 10^-18.
+/// Represented a **signed** and **unbounded** fixed-point decimal, where the precision is 10^-18.
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct BigDecimal(pub BigInt);
 
-/// Represents an error when parsing BigDecimal.
+/// Represents an error when parsing decimal.
 #[derive(Debug, Clone)]
 pub enum ParseBigDecimalError {
     InvalidBigDecimal(String),
     InvalidSign(u8),
+    InvalidChar(char),
+    UnsupportedDecimalPlace,
     InvalidLength,
 }
 
@@ -252,26 +253,6 @@ impl<'a> Neg for &'a BigDecimal {
     }
 }
 
-//=======
-// Shift
-//=======
-
-impl Shl<usize> for BigDecimal {
-    type Output = BigDecimal;
-
-    fn shl(self, shift: usize) -> Self::Output {
-        BigDecimal(self.0.shl(shift))
-    }
-}
-
-impl Shr<usize> for BigDecimal {
-    type Output = BigDecimal;
-
-    fn shr(self, shift: usize) -> Self::Output {
-        BigDecimal(self.0.shr(shift))
-    }
-}
-
 //===========
 // AddAssign
 //===========
@@ -336,13 +317,28 @@ impl<'a> DivAssign<&'a BigDecimal> for BigDecimal {
     }
 }
 
+fn read_digit(c: char) -> Result<i128, ParseBigDecimalError> {
+    let n = c as i128;
+    if n >= 48 && n <= 48 + 9 {
+        Ok(n - 48)
+    } else {
+        Err(ParseBigDecimalError::InvalidChar(c))
+    }
+}
+
+fn read_dot(c: char) -> Result<(), ParseBigDecimalError> {
+    if c == '.' {
+        Ok(())
+    } else {
+        Err(ParseBigDecimalError::InvalidChar(c))
+    }
+}
+
 impl FromStr for BigDecimal {
     type Err = ParseBigDecimalError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        // TODO: this is for the happy path; need to handle invalid formatting.
-
-        let mut is_negative = false;
+        let mut sign = 1i128;
         let mut value = BigInt::zero();
 
         let chars: Vec<char> = s.chars().collect();
@@ -350,35 +346,37 @@ impl FromStr for BigDecimal {
 
         // read sign
         if chars[p] == '-' {
-            is_negative = true;
+            sign = -1;
             p += 1;
         }
 
         // read integral
         while p < chars.len() && chars[p] != '.' {
-            value = value * 10 + chars[p] as u32 - 48;
+            value = value * 10 + read_digit(chars[p])? * sign;
             p += 1;
         }
 
         // read radix point
-        if p < chars.len() && chars[p] == '.' {
+        if p < chars.len() {
+            read_dot(chars[p])?;
             p += 1;
         }
 
         // read fraction
-        for i in 0..18 {
-            if p + i < chars.len() {
-                value = value * 10 + chars[p + i] as u32 - 48;
+        for _ in 0..18 {
+            if p < chars.len() {
+                value = value * 10 + read_digit(chars[p])? * sign;
+                p += 1;
             } else {
                 value *= 10;
             }
         }
 
-        if is_negative {
-            value *= -1;
+        if p < chars.len() {
+            Err(ParseBigDecimalError::UnsupportedDecimalPlace)
+        } else {
+            Ok(Self(value))
         }
-
-        Ok(Self(value))
     }
 }
 
@@ -401,37 +399,46 @@ impl TryFrom<&[u8]> for BigDecimal {
     }
 }
 
+fn big_int_to_u32_unchecked(v: BigInt) -> u32 {
+    let (_, bytes) = v.to_bytes_le();
+    bytes[0] as u32
+}
+
 impl fmt::Debug for BigDecimal {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        // format big int
-        let mut v = Vec::new();
-        let mut r = self.0.abs();
-        loop {
-            v.push(char::from_digit((r.clone() % 10u32).to_u32().unwrap(), 10).unwrap());
-            r = r / 10u32;
-            if r.is_zero() {
-                break;
+        let mut a = self.0.clone();
+        let mut buf = String::new();
+
+        let mut trailing_zeros = true;
+        for _ in 0..18 {
+            let m: BigInt = &a % 10;
+            if !m.is_zero() || !trailing_zeros {
+                trailing_zeros = false;
+                buf.push(char::from_digit(big_int_to_u32_unchecked(m.abs()), 10).unwrap())
+            }
+            a /= 10;
+        }
+
+        if !buf.is_empty() {
+            buf.push('.');
+        }
+
+        if a.is_zero() {
+            buf.push('0')
+        } else {
+            while !a.is_zero() {
+                let m: BigInt = &a % 10;
+                buf.push(char::from_digit(big_int_to_u32_unchecked(m.abs()), 10).unwrap());
+                a /= 10
             }
         }
-        let raw = v.iter().rev().collect::<String>();
 
-        // add radix point
-        let scaled = if raw.len() <= 18 {
-            format!("0.{}{}", "0".repeat(18 - raw.len()), raw)
-        } else {
-            format!("{}.{}", &raw[..raw.len() - 18], &raw[raw.len() - 18..])
-        };
-
-        // strip trailing zeros
-        let mut res = scaled.as_str();
-        while res.ends_with('0') {
-            res = &res[..res.len() - 1];
-        }
-        if res.ends_with('.') {
-            res = &res[..res.len() - 1];
-        }
-
-        write!(f, "{}{}", if self.0.is_negative() { "-" } else { "" }, res)
+        write!(
+            f,
+            "{}{}",
+            if self.is_negative() { "-" } else { "" },
+            buf.chars().rev().collect::<String>()
+        )
     }
 }
 
@@ -480,18 +487,18 @@ mod tests {
 
     #[test]
     fn test_format() {
-        assert_eq!(BigDecimal(1u128.into()).to_string(), "0.000000000000000001");
+        assert_eq!(BigDecimal(1i128.into()).to_string(), "0.000000000000000001");
         assert_eq!(
-            BigDecimal(123456789123456789u128.into()).to_string(),
+            BigDecimal(123456789123456789i128.into()).to_string(),
             "0.123456789123456789"
         );
-        assert_eq!(BigDecimal(1000000000000000000u128.into()).to_string(), "1");
+        assert_eq!(BigDecimal(1000000000000000000i128.into()).to_string(), "1");
         assert_eq!(
-            BigDecimal(123000000000000000000u128.into()).to_string(),
+            BigDecimal(123000000000000000000i128.into()).to_string(),
             "123"
         );
         assert_eq!(
-            BigDecimal(123456789123456789000000000000000000u128.into()).to_string(),
+            BigDecimal(123456789123456789000000000000000000i128.into()).to_string(),
             "123456789123456789"
         );
     }
@@ -499,20 +506,20 @@ mod tests {
     #[test]
     fn test_parse() {
         assert_eq!(
-            BigDecimal(1u128.into()),
-            "0.000000000000000001".parse().unwrap()
+            BigDecimal::from_str("0.000000000000000001").unwrap(),
+            BigDecimal(1i128.into()),
         );
         assert_eq!(
-            BigDecimal(123456789123456789u128.into()),
-            "0.123456789123456789".parse().unwrap()
+            BigDecimal::from_str("0.123456789123456789").unwrap(),
+            BigDecimal(123456789123456789i128.into()),
         );
         assert_eq!(
-            BigDecimal(1000000000000000000u128.into()),
-            "1".parse().unwrap()
+            BigDecimal::from_str("1").unwrap(),
+            BigDecimal(1000000000000000000i128.into()),
         );
         assert_eq!(
-            BigDecimal(123456789123456789000000000000000000u128.into()),
-            "123456789123456789".parse().unwrap()
+            BigDecimal::from_str("123456789123456789").unwrap(),
+            BigDecimal(123456789123456789000000000000000000i128.into()),
         );
     }
 

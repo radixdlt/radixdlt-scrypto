@@ -207,6 +207,7 @@ impl fmt::Debug for Receipt {
             write!(f, "\n{} {}: {}", prefix!(i, self.new_entities), ty, address)?;
         }
 
+        write!(f, "\n")?;
         Ok(())
     }
 }

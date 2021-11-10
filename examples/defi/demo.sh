@@ -49,7 +49,7 @@ resim mint 114841533.01 $snx $acc1_minter_badge
 
 # publish PriceOracle
 price_oracle_package=`resim publish ./price-oracle | tee /dev/tty | awk '/Package:/ {print $NF}'`
-out=`resim call-function $price_oracle_package PriceOracle new 18 1 | tee /dev/tty | awk '/Component:|ResourceDef:/ {print $NF}'`
+out=`resim call-function $price_oracle_package PriceOracle new 1 | tee /dev/tty | awk '/Component:|ResourceDef:/ {print $NF}'`
 price_oracle_update_auth=`echo $out | cut -d " " -f1`
 price_oracle_component=`echo $out | cut -d " " -f2`
 

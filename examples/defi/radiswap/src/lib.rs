@@ -68,13 +68,13 @@ blueprint! {
                 // We will claim all input token A's, and only the correct amount of token B
                 self.a_pool.put(a_tokens);
                 self.b_pool
-                    .put(b_tokens.take(self.b_pool.amount() * &a_share));
+                    .put(b_tokens.take(self.b_pool.amount() * a_share));
                 (a_share, b_tokens)
             } else {
                 // We will claim all input token B's, and only the correct amount of token A
                 self.b_pool.put(b_tokens);
                 self.a_pool
-                    .put(a_tokens.take(self.a_pool.amount() * &a_share));
+                    .put(a_tokens.take(self.a_pool.amount() * a_share));
                 (b_share, a_tokens)
             };
 
@@ -99,8 +99,8 @@ blueprint! {
             let share = lp_tokens.amount() / self.lp_resource_def.supply();
 
             // Withdraw the correct amounts of tokens A and B from reserves
-            let a_withdrawn = self.a_pool.take(self.a_pool.amount() * &share);
-            let b_withdrawn = self.b_pool.take(self.b_pool.amount() * &share);
+            let a_withdrawn = self.a_pool.take(self.a_pool.amount() * share);
+            let b_withdrawn = self.b_pool.take(self.b_pool.amount() * share);
 
             // Burn the LP tokens received
             self.lp_minter.authorize(|badge| {
@@ -114,7 +114,7 @@ blueprint! {
         /// Swaps token A for B, or vice versa.
         pub fn swap(&self, input_tokens: Bucket) -> Bucket {
             // Calculate the swap fee
-            let fee_amount = input_tokens.amount() * &self.fee;
+            let fee_amount = input_tokens.amount() * self.fee;
 
             if input_tokens.resource_def() == self.a_pool.resource_def() {
                 // Calculate how much of token B we will return

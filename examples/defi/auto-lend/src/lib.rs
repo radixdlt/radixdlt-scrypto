@@ -60,7 +60,7 @@ blueprint! {
             let amount = reserve_tokens.amount();
 
             // Update user state
-            let deposit_interest_rate = self.deposit_interest_rate.clone();
+            let deposit_interest_rate = self.deposit_interest_rate;
             let user = match self.users.get(&user_id) {
                 Some(mut user) => {
                     user.on_deposit(amount, deposit_interest_rate);
@@ -88,7 +88,7 @@ blueprint! {
             // Update user state
             let mut user = self.get_user(user_id);
             let to_return_amount = user.on_redeem(amount);
-            user.check_collateral_ratio(self.min_collateral_ratio.clone());
+            user.check_collateral_ratio(self.min_collateral_ratio);
 
             debug!(
                 "LP balance: {}, redeemded: {}",
@@ -106,15 +106,15 @@ blueprint! {
             let user_id = Self::get_user_id(user_auth);
 
             scrypto_assert!(
-                requested <= self.liquidity_pool.amount() * &self.max_borrow_percent,
+                requested <= self.liquidity_pool.amount() * self.max_borrow_percent,
                 "Max borrow percent exceeded"
             );
 
             // Update user state
-            let borrow_interest_rate = self.borrow_interest_rate.clone();
+            let borrow_interest_rate = self.borrow_interest_rate;
             let mut user = self.get_user(user_id);
-            user.on_borrow(requested.clone(), borrow_interest_rate);
-            user.check_collateral_ratio(self.min_collateral_ratio.clone());
+            user.on_borrow(requested, borrow_interest_rate);
+            user.check_collateral_ratio(self.min_collateral_ratio);
 
             // Commit state changes
             self.users.insert(user_id, user);
@@ -153,13 +153,13 @@ blueprint! {
 
             // Check liquidation size
             scrypto_assert!(
-                repaid.amount() <= &user.borrow_balance * &self.max_liquidation_percent,
+                repaid.amount() <= user.borrow_balance * self.max_liquidation_percent,
                 "Max liquidation percent exceeded."
             );
 
             // Update user state
             let to_return_amount =
-                user.on_liquidate(repaid.amount(), self.max_liquidation_percent.clone());
+                user.on_liquidate(repaid.amount(), self.max_liquidation_percent);
             let to_return = self.liquidity_pool.take(to_return_amount);
 
             // Commit state changes
@@ -217,11 +217,11 @@ impl User {
         if self.borrow_balance.is_zero() {
             None
         } else {
-            let collateral = &self.deposit_balance
-                + &self.deposit_balance * &self.deposit_interest_rate * self.deposit_time_elapsed();
+            let collateral = self.deposit_balance
+                + self.deposit_balance * self.deposit_interest_rate * self.deposit_time_elapsed();
 
-            let loan = &self.borrow_balance
-                + &self.borrow_balance * &self.borrow_interest_rate * self.borrow_time_elapsed();
+            let loan = self.borrow_balance
+                + self.borrow_balance * self.borrow_interest_rate * self.borrow_time_elapsed();
 
             Some(collateral / loan)
         }
@@ -240,14 +240,14 @@ impl User {
     pub fn on_deposit(&mut self, amount: Decimal, interest_rate: Decimal) {
         // Increase principle balance by interests accrued
         let interest =
-            &self.deposit_balance * &self.deposit_interest_rate * self.deposit_time_elapsed();
+            self.deposit_balance * self.deposit_interest_rate * self.deposit_time_elapsed();
         self.deposit_balance += interest;
         self.deposit_last_update = Context::current_epoch();
 
         // Calculate the aggregated interest of previous deposits & the new deposit
-        self.deposit_interest_rate = (&self.deposit_balance * &self.deposit_interest_rate
-            + &amount * &interest_rate)
-            / (&self.deposit_balance + &amount);
+        self.deposit_interest_rate = (self.deposit_balance * self.deposit_interest_rate
+            + amount * interest_rate)
+            / (self.deposit_balance + amount);
 
         // Increase principle balance by the amount.
         self.deposit_balance += amount;
@@ -255,23 +255,23 @@ impl User {
 
     pub fn on_redeem(&mut self, amount: Decimal) -> Decimal {
         // Deduct withdrawn amount from principle
-        self.deposit_balance -= &amount;
+        self.deposit_balance -= amount;
 
         // Calculate the amount to return
-        &amount + &amount * &self.deposit_interest_rate * self.deposit_time_elapsed()
+        amount + amount * self.deposit_interest_rate * self.deposit_time_elapsed()
     }
 
     pub fn on_borrow(&mut self, amount: Decimal, interest_rate: Decimal) {
         // Increase borrow balance by interests accrued
         let interest =
-            &self.borrow_balance * &self.borrow_interest_rate * self.borrow_time_elapsed();
+            self.borrow_balance * self.borrow_interest_rate * self.borrow_time_elapsed();
         self.borrow_balance += interest;
         self.borrow_last_update = Context::current_epoch();
 
         // Calculate the aggregated interest of previous borrows & the new borrow
-        self.borrow_interest_rate = (&self.borrow_balance * &self.borrow_interest_rate
-            + &amount * &interest_rate)
-            / (&self.borrow_balance + &amount);
+        self.borrow_interest_rate = (self.borrow_balance * self.borrow_interest_rate
+            + amount * interest_rate)
+            / (self.borrow_balance + amount);
 
         // Increase principle balance by the amount.
         self.borrow_balance += amount;
@@ -280,13 +280,13 @@ impl User {
     pub fn on_repay(&mut self, amount: Decimal) -> Decimal {
         // Increase borrow balance by interests accrued
         let interest =
-            &self.borrow_balance * &self.borrow_interest_rate * self.borrow_time_elapsed();
+            self.borrow_balance * self.borrow_interest_rate * self.borrow_time_elapsed();
         self.borrow_balance += interest;
         self.borrow_last_update = Context::current_epoch();
 
         // Repay the loan
         if self.borrow_balance < amount {
-            let to_return = amount - &self.borrow_balance;
+            let to_return = amount - self.borrow_balance;
             self.borrow_balance = Decimal::zero();
             self.borrow_interest_rate = Decimal::zero();
             to_return
@@ -297,13 +297,13 @@ impl User {
     }
 
     pub fn on_liquidate(&mut self, amount: Decimal, bonus_percent: Decimal) -> Decimal {
-        let changes = self.on_repay(amount.clone());
+        let changes = self.on_repay(amount);
         scrypto_assert!(changes == 0.into());
 
         // TODO add exchange rate here when collaterals and borrows are different
 
-        let to_return = &amount * (bonus_percent + 1);
-        self.deposit_balance -= &to_return;
+        let to_return = amount * (bonus_percent + 1);
+        self.deposit_balance -= to_return;
         to_return
     }
 

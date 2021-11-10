@@ -34,7 +34,7 @@ blueprint! {
         /// Updates the price of a resource pair BASE/QUOTE and its inverse.
         #[auth(admin_badge)]
         pub fn update_price(&self, base: Address, quote: Address, price: Decimal) {
-            self.prices.insert((base, quote), price.clone());
+            self.prices.insert((base, quote), price);
             self.prices.insert((quote, base), Decimal::from(1) / price);
         }
 

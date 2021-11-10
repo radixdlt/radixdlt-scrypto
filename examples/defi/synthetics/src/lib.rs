@@ -167,8 +167,8 @@ blueprint! {
             );
 
             let token_resource_def = ResourceBuilder::new()
-                .metadata("name", format!("Synthetic {}", asset_symbol))
-                .metadata("symbol", format!("s{}", asset_symbol))
+                .metadata("name", format!("Synthetic {}", asset_symbol.clone()))
+                .metadata("symbol", format!("s{}", asset_symbol.clone()))
                 .new_token_mutable(self.synthetics_minter_badge.resource_def());
             let token_address = token_resource_def.address();
             self.synthetics.insert(
@@ -196,7 +196,7 @@ blueprint! {
                 self.get_snx_price(),
                 self.get_total_global_debt(),
                 self.synthetics_global_debt_share_resource_def.clone(),
-                self.collateralization_threshold.clone(),
+                self.collateralization_threshold,
             );
             tokens
         }
@@ -208,7 +208,7 @@ blueprint! {
 
             let synth = self.synthetics.get(&symbol).unwrap();
             let global_debt = self.get_total_global_debt();
-            let new_debt = self.get_asset_price(synth.asset_address) * &amount;
+            let new_debt = self.get_asset_price(synth.asset_address) * amount;
 
             user.global_debt_share
                 .put(self.synthetics_minter_badge.authorize(|badge| {
@@ -216,8 +216,8 @@ blueprint! {
                         if global_debt.is_zero() {
                             Decimal::from(100)
                         } else {
-                            &new_debt
-                                / (&global_debt
+                            new_debt
+                                / (global_debt
                                     / self.synthetics_global_debt_share_resource_def.supply())
                         },
                         badge,
@@ -230,7 +230,7 @@ blueprint! {
                 self.get_snx_price(),
                 self.get_total_global_debt(),
                 self.synthetics_global_debt_share_resource_def.clone(),
-                self.collateralization_threshold.clone(),
+                self.collateralization_threshold,
             );
             tokens
         }
@@ -249,8 +249,8 @@ blueprint! {
             let global_debt = self.get_total_global_debt();
             let debt_to_remove = self.get_asset_price(synth.asset_address) * bucket.amount();
             let shares_to_burn = user.global_debt_share.take(
-                self.synthetics_global_debt_share_resource_def.supply() * &debt_to_remove
-                    / &global_debt,
+                self.synthetics_global_debt_share_resource_def.supply() * debt_to_remove
+                    /global_debt,
             );
 
             self.synthetics_minter_badge.authorize(|badge| {

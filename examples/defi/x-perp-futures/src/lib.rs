@@ -122,7 +122,7 @@ blueprint! {
                 pnl,
                 self.deposits_in_quote.amount()
             );
-            let to_return = &position.margin_in_quote + pnl;
+            let to_return = position.margin_in_quote + pnl;
 
             positions.swap_remove(nth);
             self.trader_positions.insert(user_id, positions);
@@ -166,16 +166,16 @@ impl AMM {
         position_type: PositionType,
     ) -> Position {
         // Calculate the new quote & base supply
-        let k = &self.base_supply * &self.quote_supply;
+        let k = self.base_supply * self.quote_supply;
         let new_quote_supply = if position_type == PositionType::Long {
-            &self.quote_supply + &margin_in_quote * &leverage
+            self.quote_supply + margin_in_quote * leverage
         } else {
-            &self.quote_supply - &margin_in_quote * &leverage
+            self.quote_supply - margin_in_quote * leverage
         };
-        let new_base_supply = &k / &new_quote_supply;
+        let new_base_supply = k /new_quote_supply;
 
         // Calculate the position received and commit changes
-        let position_in_base = &self.base_supply - &new_base_supply;
+        let position_in_base = self.base_supply - new_base_supply;
         self.quote_supply = new_quote_supply;
         self.base_supply = new_base_supply;
 
@@ -191,37 +191,37 @@ impl AMM {
     pub fn settle_position(&mut self, position: &Position) -> Decimal {
         let pnl = self.get_pnl(position);
 
-        let k = &self.base_supply * &self.quote_supply;
-        self.base_supply += &position.position_in_base;
-        self.quote_supply = &k / &self.base_supply;
+        let k = self.base_supply * self.quote_supply;
+        self.base_supply += position.position_in_base;
+        self.quote_supply = k / self.base_supply;
 
         pnl
     }
 
     /// Returns the current price of pair BASE/QUOTE
     pub fn get_price(&self) -> Decimal {
-        self.quote_supply.clone() / self.base_supply.clone()
+        self.quote_supply / self.base_supply
     }
 
     /// Returns the margin ratio of a position
     pub fn get_margin_ratio(&self, position: &Position) -> Decimal {
-        (&position.margin_in_quote + self.get_pnl(position))
+        (position.margin_in_quote + self.get_pnl(position))
             / (self.get_price() * position.position_in_base.abs())
     }
 
     /// Returns the profit and loss of a position
     pub fn get_pnl(&self, position: &Position) -> Decimal {
         // Calculate the new quote & base supply
-        let k = &self.base_supply * &self.quote_supply;
-        let new_base_supply = &self.base_supply + &position.position_in_base;
-        let new_quote_supply = &k / &new_base_supply;
+        let k = self.base_supply * self.quote_supply;
+        let new_base_supply = self.base_supply + position.position_in_base;
+        let new_quote_supply = k /new_base_supply;
 
         // Calculate PnL
-        let delta_in_quote = &self.quote_supply - &new_quote_supply;
+        let delta_in_quote = self.quote_supply -new_quote_supply;
         if position.position_type == PositionType::Long {
-            delta_in_quote - &position.margin_in_quote * &position.leverage
+            delta_in_quote -position.margin_in_quote * position.leverage
         } else {
-            delta_in_quote + &position.margin_in_quote * &position.leverage
+            delta_in_quote + position.margin_in_quote * position.leverage
         }
     }
 }
