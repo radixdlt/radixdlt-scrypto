@@ -23,13 +23,13 @@ echo "Testing with no_std..."
 (cd radix-engine; cargo test --no-default-features --features alloc)
 
 echo "Building examples..."
-(cd assets/account; cargo build --target wasm32-unknown-unknown --release; cargo test)
-(cd assets/system; cargo build --target wasm32-unknown-unknown --release; cargo test)
-(cd examples/helloworld; cargo build --target wasm32-unknown-unknown --release; cargo test)
-(cd examples/core/no_std; cargo build --target wasm32-unknown-unknown --release; cargo test)
-(cd examples/core/cross-component-call; cargo build --target wasm32-unknown-unknown --release; cargo test)
-(cd examples/defi/gumball-machine; cargo build --target wasm32-unknown-unknown --release; cargo test)
-(cd examples/defi/radiswap; cargo build --target wasm32-unknown-unknown --release; cargo test)
+(cd assets/account; cargo build --target wasm32-unknown-unknown --release; cargo test --release)
+(cd assets/system; cargo build --target wasm32-unknown-unknown --release; cargo test --release)
+(cd examples/helloworld; cargo build --target wasm32-unknown-unknown --release; cargo test --release)
+(cd examples/core/cross-component-call; cargo build --target wasm32-unknown-unknown --release; cargo test --release)
+(cd examples/core/flat-admin; cargo build --target wasm32-unknown-unknown --release; cargo test --release)
+(cd examples/core/managed-access; cargo build --target wasm32-unknown-unknown --release; cargo test --release)
+(cd examples/core/no_std; cargo build --target wasm32-unknown-unknown --release)
 
 echo "Running simulator..."
 (cd simulator; bash ./tests/resim.sh)

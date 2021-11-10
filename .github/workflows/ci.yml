@@ -95,12 +95,18 @@ jobs:
     - name: Build helloworld
       run: cargo build --target wasm32-unknown-unknown --release
       working-directory: examples/helloworld
-    - name: Build no_std
-      run: cargo build --target wasm32-unknown-unknown --release
-      working-directory: examples/core/no_std
     - name: Build cross-component-call
       run: cargo build --target wasm32-unknown-unknown --release
       working-directory: examples/core/cross-component-call
+    - name: Build flat-admin
+      run: cargo build --target wasm32-unknown-unknown --release
+      working-directory: examples/core/flat-admin
+    - name: Build managed-access
+      run: cargo build --target wasm32-unknown-unknown --release
+      working-directory: examples/core/managed-access
+    - name: Build no_std
+      run: cargo build --target wasm32-unknown-unknown --release
+      working-directory: examples/core/no_std
   radix-engine:
     name: Run Radix Engine tests
     runs-on: ${{ matrix.os }}
