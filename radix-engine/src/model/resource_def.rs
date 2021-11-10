@@ -47,7 +47,7 @@ impl ResourceDef {
     }
 
     pub fn supply(&self) -> Decimal {
-        self.supply.clone()
+        self.supply
     }
 
     pub fn minter(&self) -> Option<Address> {
@@ -98,7 +98,7 @@ impl ResourceDef {
         match granularity {
             1 => Ok(()),
             18 => {
-                if amount.0.clone() % 10i128.pow(18) != 0.into() {
+                if amount.0 % 10i128.pow(18) != 0.into() {
                     Err(ResourceDefError::GranularityCheckFailed)
                 } else {
                     Ok(())

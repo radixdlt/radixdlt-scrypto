@@ -182,7 +182,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
             .ok_or(RuntimeError::ResourceDefNotFound(resource_def))?;
         let granularity = definition.granularity();
 
-        self.withdraw_resource(amount.clone(), resource_def)?;
+        self.withdraw_resource(amount, resource_def)?;
 
         self.temp_buckets
             .insert(bid, Bucket::new(amount, resource_def, granularity));
@@ -216,7 +216,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
             .ok_or(RuntimeError::ResourceDefNotFound(resource_def))?;
         let granularity = definition.granularity();
 
-        self.withdraw_resource(amount.clone(), resource_def)?;
+        self.withdraw_resource(amount, resource_def)?;
 
         let bid = self.track.new_bid();
         let bucket = BucketRef::new(LockedBucket::new(
@@ -1175,7 +1175,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
                 .ok_or(RuntimeError::ResourceDefNotFound(input.resource_def))?;
             let granularity = definition.granularity();
             definition
-                .mint(input.amount.clone(), auth)
+                .mint(input.amount, auth)
                 .map_err(RuntimeError::ResourceDefError)?;
 
             // issue resource

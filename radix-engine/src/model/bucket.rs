@@ -54,14 +54,14 @@ impl Bucket {
         if self.amount < amount {
             Err(BucketError::InsufficientBalance)
         } else {
-            self.amount -= amount.clone();
+            self.amount -= amount;
 
             Ok(Self::new(amount, self.resource_def, self.granularity))
         }
     }
 
     pub fn amount(&self) -> Decimal {
-        self.amount.clone()
+        self.amount
     }
 
     pub fn resource_def(&self) -> Address {
@@ -76,7 +76,7 @@ impl Bucket {
         match granularity {
             1 => Ok(()),
             18 => {
-                if amount.0.clone() % 10i128.pow(18) != 0.into() {
+                if amount.0 % 10i128.pow(18) != 0.into() {
                     Err(BucketError::GranularityCheckFailed)
                 } else {
                     Ok(())

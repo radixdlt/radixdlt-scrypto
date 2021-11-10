@@ -501,6 +501,14 @@ mod tests {
             BigDecimal(123456789123456789000000000000000000i128.into()).to_string(),
             "123456789123456789"
         );
+        assert_eq!(
+            BigDecimal(i128::MAX.into()).to_string(),
+            "170141183460469231731.687303715884105727"
+        );
+        assert_eq!(
+            BigDecimal(i128::MIN.into()).to_string(),
+            "-170141183460469231731.687303715884105728"
+        );
     }
 
     #[test]
@@ -520,6 +528,14 @@ mod tests {
         assert_eq!(
             BigDecimal::from_str("123456789123456789").unwrap(),
             BigDecimal(123456789123456789000000000000000000i128.into()),
+        );
+        assert_eq!(
+            BigDecimal::from_str("170141183460469231731.687303715884105727").unwrap(),
+            BigDecimal(i128::MAX.into())
+        );
+        assert_eq!(
+            BigDecimal::from_str("-170141183460469231731.687303715884105728").unwrap(),
+            BigDecimal(i128::MIN.into())
         );
     }
 
