@@ -8,18 +8,18 @@ In addition to the most basic operation, this particular example allows instanti
 struct GumballMachine {
   gumballs: Vault,
   collected_xrd: Vault,
-  price: u32
+  price: Decimal
 }
 ```
 Our gumball machine will hold two kinds of resources in vaults: the gumballs to be dispensed, and any XRD which has been collected as payment.
 
-We'll also need to maintain the price, which we're using a unsigned 32-bit integer for.  To allow a truly arbitrary price, we'd use a different type here, but we wanted to show that familiar types are usable in Scrypto.
+We'll also need to maintain the price, which we're using `Decimal` for.  `Decimal` is a bounded type appropriate for use for resource quantities.  In Scrypto, it has a fixed precision of 10<sup>-18</sup>, and a maximum value of 2<sup>96</sup>.  Unless we're selling spectacularly expensive gumballs, this should be fine.  If we wanted an unbounded type to use for quantity, we could use `BigDecimal` instead.
 
 ## Getting Ready for Instantiation
 In order to instantiate a new gumball machine, the only input we need from the caller is to set the price of each gumball.  After creation, we'll be returning the address of our new component, so we'll set our function signature up appropriately:
 
 ```rust
-pub fn new(price: u32) -> Component {
+pub fn new(price: Decimal) -> Component {
 ```
 
 Within the `new` function, the first thing we need to do is create a new supply of gumballs which we intend to populate our new component with:
