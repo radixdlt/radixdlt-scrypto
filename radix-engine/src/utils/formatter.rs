@@ -156,6 +156,11 @@ pub fn format_custom<L: Ledger>(
             let amount = Decimal::try_from(data).map_err(|_| DecodeError::InvalidCustomData(ty))?;
             Ok(format!("{}", amount))
         }
+        SCRYPTO_TYPE_BIG_DECIMAL => {
+            let amount =
+                BigDecimal::try_from(data).map_err(|_| DecodeError::InvalidCustomData(ty))?;
+            Ok(format!("{}", amount))
+        }
         SCRYPTO_TYPE_ADDRESS => {
             let address =
                 Address::try_from(data).map_err(|_| DecodeError::InvalidCustomData(ty))?;

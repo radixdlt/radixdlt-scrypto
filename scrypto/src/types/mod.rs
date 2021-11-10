@@ -1,5 +1,6 @@
 mod address;
 mod bid;
+mod big_decimal;
 mod decimal;
 mod h256;
 mod mid;
@@ -10,6 +11,7 @@ pub use address::{
     Address, ParseAddressError, ACCOUNT_PACKAGE, RADIX_TOKEN, SYSTEM_COMPONENT, SYSTEM_PACKAGE,
 };
 pub use bid::{Bid, ParseBidError};
+pub use big_decimal::{BigDecimal, ParseBigDecimalError};
 pub use decimal::{Decimal, ParseDecimalError};
 pub use h256::{ParseH256Error, H256};
 pub use mid::{Mid, ParseMidError};

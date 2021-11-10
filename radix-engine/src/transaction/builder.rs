@@ -430,6 +430,12 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                     .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
                 Ok(SmartValue::from(value))
             }
+            SCRYPTO_NAME_BIG_DECIMAL => {
+                let value = arg
+                    .parse::<BigDecimal>()
+                    .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
+                Ok(SmartValue::from(value))
+            }
             SCRYPTO_NAME_ADDRESS => {
                 let value = arg
                     .parse::<Address>()
