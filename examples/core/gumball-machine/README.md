@@ -47,8 +47,10 @@ Self {
 In order to sell a gumball, we just need the caller to pass us in enough XRD to cover the price.  We'll return the purchased gumball, as well as giving back their change if they overpaid, so we actually need to return _two_ buckets.  This is easily accomplished by simply returning a tuple, giving us a method signature like this:
 
 ```rust
-pub fn buy_gumball(&self, payment: Bucket) -> (Bucket, Bucket) {
+pub fn buy_gumball(&mut self, payment: Bucket) -> (Bucket, Bucket) {
 ```
+
+Note that we used `&mut self` because our reference to ourself must be mutable; we will be changing the contents of our vaults, if all goes well.
 
 Accomplishing the actual mechanics of putting the XRD in our vault, taking a gumball out, and then returning the gumball as well as whatever is left in the caller's input bucket are trivial:
 
