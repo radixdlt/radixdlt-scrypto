@@ -1,4 +1,5 @@
 use std::ffi::OsStr;
+use std::fs;
 use std::io;
 use std::path::Path;
 use std::path::PathBuf;
@@ -12,11 +13,15 @@ pub enum CargoExecutionError {
 
     MissingPackageName,
 
+    IOError(io::Error),
+
     FailedToRunCargo(io::Error),
 
     FailedToBuild(ExitStatus),
 
     FailedToTest(ExitStatus),
+
+    FailedToFormat(ExitStatus),
 }
 
 /// Builds a package.
@@ -76,6 +81,55 @@ where
         if !status.success() {
             return Err(CargoExecutionError::FailedToTest(status));
         }
+        Ok(())
+    } else {
+        Err(CargoExecutionError::NotCargoPackage)
+    }
+}
+
+/// Format a package.
+pub fn fmt_package<P: AsRef<Path>>(path: P) -> Result<(), CargoExecutionError> {
+    build_package(&path, false)?;
+
+    let mut cargo = path.as_ref().to_owned();
+    cargo.push("Cargo.toml");
+    if cargo.exists() {
+        // replace `blueprint!` with `mod blueprint`
+        let mut src = path.as_ref().to_owned();
+        src.push("src");
+        for entry in fs::read_dir(&src).map_err(CargoExecutionError::IOError)? {
+            let p = entry.map_err(CargoExecutionError::IOError)?.path();
+            if let Some(ext) = p.extension() {
+                if ext.to_str() == Some("rs") {
+                    let code = fs::read_to_string(&p).map_err(CargoExecutionError::IOError)?;
+                    let code_transformed = code.replace("blueprint!", "mod blueprint");
+                    fs::write(&p, code_transformed).map_err(CargoExecutionError::IOError)?;
+                }
+            }
+        }
+
+        let status = Command::new("cargo")
+            .arg("fmt")
+            .arg("--manifest-path")
+            .arg(cargo.to_str().unwrap())
+            .status()
+            .map_err(CargoExecutionError::FailedToRunCargo)?;
+        if !status.success() {
+            return Err(CargoExecutionError::FailedToFormat(status));
+        }
+
+        // replace `mod blueprint` with `blueprint!`
+        for entry in fs::read_dir(&src).map_err(CargoExecutionError::IOError)? {
+            let p = entry.map_err(CargoExecutionError::IOError)?.path();
+            if let Some(ext) = p.extension() {
+                if ext.to_str() == Some("rs") {
+                    let code = fs::read_to_string(&p).map_err(CargoExecutionError::IOError)?;
+                    let code_transformed = code.replace("mod blueprint", "blueprint!");
+                    fs::write(&p, code_transformed).map_err(CargoExecutionError::IOError)?;
+                }
+            }
+        }
+
         Ok(())
     } else {
         Err(CargoExecutionError::NotCargoPackage)

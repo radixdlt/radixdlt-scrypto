@@ -13,12 +13,15 @@ cd "$(dirname "$0")"
 (cd scrypto-derive; cargo fmt)
 (cd scrypto-tests; cargo fmt)
 (cd radix-engine; cargo fmt)
-(cd radix-engine/tests/everything; cargo fmt)
-(cd assets/account; cargo fmt)
-(cd assets/system; cargo fmt)
-(cd examples/helloworld; cargo fmt)
-(cd examples/core/no_std; cargo fmt)
-(cd examples/core/cross-component-call; cargo fmt)
 (cd simulator; cargo fmt)
+
+(cd radix-engine/tests/everything; scrypto fmt)
+(cd assets/account; scrypto fmt)
+(cd assets/system; scrypto fmt)
+(cd examples/helloworld; scrypto fmt)
+(cd examples/core/cross-component-call; scrypto fmt)
+(cd examples/core/flat-admin; scrypto fmt)
+(cd examples/core/managed-access; scrypto fmt)
+(cd examples/core/no_std; scrypto fmt)
 
 echo "All packages have been formatted."
