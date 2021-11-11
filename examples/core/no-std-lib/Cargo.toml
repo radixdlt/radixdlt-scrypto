@@ -1,5 +1,5 @@
 [package]
-name = "no_std"
+name = "no-std-lib"
 version = "0.1.0"
 edition = "2018"
 

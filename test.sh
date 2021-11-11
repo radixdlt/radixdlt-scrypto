@@ -28,9 +28,9 @@ echo "Building examples..."
 (cd examples/core/cross-component-call; cargo build --target wasm32-unknown-unknown --release; cargo test --release)
 (cd examples/core/flat-admin; cargo build --target wasm32-unknown-unknown --release; cargo test --release)
 (cd examples/core/gumball-machine; cargo build --target wasm32-unknown-unknown --release; cargo test --release)
-(cd examples/core/helloworld; cargo build --target wasm32-unknown-unknown --release; cargo test --release)
+(cd examples/core/hello-world; cargo build --target wasm32-unknown-unknown --release; cargo test --release)
 (cd examples/core/managed-access; cargo build --target wasm32-unknown-unknown --release; cargo test --release)
-(cd examples/core/no_std; cargo build --target wasm32-unknown-unknown --release)
+(cd examples/core/no-std-lib; cargo build --target wasm32-unknown-unknown --release)
 
 echo "Running simulator..."
 (cd simulator; bash ./tests/resim.sh)

@@ -18,8 +18,8 @@ resource_def=`$resim new-token-mutable $minter_badge | tee /dev/tty | awk '/Reso
 $resim mint 777 $resource_def $minter_badge --signers $account_key
 $resim transfer 111 $resource_def $account2 --signers $account_key
 
-# Test helloworld
-package=`$resim publish ../examples/core/helloworld | tee /dev/tty | awk '/Package:/ {print $NF}'`
+# Test hello-world
+package=`$resim publish ../examples/core/hello-world | tee /dev/tty | awk '/Package:/ {print $NF}'`
 component=`$resim call-function $package Hello new | tee /dev/tty | awk '/Component:/ {print $NF}'`
 $resim call-method $component free_token
 

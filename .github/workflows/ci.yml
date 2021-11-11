@@ -92,9 +92,9 @@ jobs:
     - name: Build system
       run: cargo build --target wasm32-unknown-unknown --release
       working-directory: assets/system
-    - name: Build helloworld
+    - name: Build hello-world
       run: cargo build --target wasm32-unknown-unknown --release
-      working-directory: examples/core/helloworld
+      working-directory: examples/core/hello-world
     - name: Build cross-component-call
       run: cargo build --target wasm32-unknown-unknown --release
       working-directory: examples/core/cross-component-call
@@ -107,9 +107,9 @@ jobs:
     - name: Build gumball-machine
       run: cargo build --target wasm32-unknown-unknown --release
       working-directory: examples/core/gumball-machine
-    - name: Build no_std
+    - name: Build no-std-lib
       run: cargo build --target wasm32-unknown-unknown --release
-      working-directory: examples/core/no_std
+      working-directory: examples/core/no-std-lib
   radix-engine:
     name: Run Radix Engine tests
     runs-on: ${{ matrix.os }}
