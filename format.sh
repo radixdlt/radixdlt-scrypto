@@ -18,9 +18,10 @@ cd "$(dirname "$0")"
 (cd radix-engine/tests/everything; scrypto fmt)
 (cd assets/account; scrypto fmt)
 (cd assets/system; scrypto fmt)
-(cd examples/helloworld; scrypto fmt)
 (cd examples/core/cross-component-call; scrypto fmt)
 (cd examples/core/flat-admin; scrypto fmt)
+(cd examples/core/gumball-machine; scrypto fmt)
+(cd examples/core/helloworld; scrypto fmt)
 (cd examples/core/managed-access; scrypto fmt)
 (cd examples/core/no_std; scrypto fmt)
 

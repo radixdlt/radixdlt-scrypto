@@ -94,7 +94,7 @@ jobs:
       working-directory: assets/system
     - name: Build helloworld
       run: cargo build --target wasm32-unknown-unknown --release
-      working-directory: examples/helloworld
+      working-directory: examples/core/helloworld
     - name: Build cross-component-call
       run: cargo build --target wasm32-unknown-unknown --release
       working-directory: examples/core/cross-component-call
@@ -104,6 +104,9 @@ jobs:
     - name: Build managed-access
       run: cargo build --target wasm32-unknown-unknown --release
       working-directory: examples/core/managed-access
+    - name: Build gumball-machine
+      run: cargo build --target wasm32-unknown-unknown --release
+      working-directory: examples/core/gumball-machine
     - name: Build no_std
       run: cargo build --target wasm32-unknown-unknown --release
       working-directory: examples/core/no_std
