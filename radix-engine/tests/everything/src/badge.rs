@@ -6,7 +6,6 @@ blueprint! {
     struct BadgeTest;
 
     impl BadgeTest {
-
         pub fn combine() -> Bucket {
             let bucket1 = ResourceBuilder::new()
                 .metadata("name", "TestBadge")
@@ -17,7 +16,7 @@ blueprint! {
             bucket1
         }
 
-        pub fn split()  -> (Bucket, Bucket) {
+        pub fn split() -> (Bucket, Bucket) {
             let bucket1 = ResourceBuilder::new()
                 .metadata("name", "TestBadge")
                 .new_badge_fixed(100);

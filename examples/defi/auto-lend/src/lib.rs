@@ -158,8 +158,7 @@ blueprint! {
             );
 
             // Update user state
-            let to_return_amount =
-                user.on_liquidate(repaid.amount(), self.max_liquidation_percent);
+            let to_return_amount = user.on_liquidate(repaid.amount(), self.max_liquidation_percent);
             let to_return = self.liquidity_pool.take(to_return_amount);
 
             // Commit state changes
@@ -263,8 +262,7 @@ impl User {
 
     pub fn on_borrow(&mut self, amount: Decimal, interest_rate: Decimal) {
         // Increase borrow balance by interests accrued
-        let interest =
-            self.borrow_balance * self.borrow_interest_rate * self.borrow_time_elapsed();
+        let interest = self.borrow_balance * self.borrow_interest_rate * self.borrow_time_elapsed();
         self.borrow_balance += interest;
         self.borrow_last_update = Context::current_epoch();
 
@@ -279,8 +277,7 @@ impl User {
 
     pub fn on_repay(&mut self, amount: Decimal) -> Decimal {
         // Increase borrow balance by interests accrued
-        let interest =
-            self.borrow_balance * self.borrow_interest_rate * self.borrow_time_elapsed();
+        let interest = self.borrow_balance * self.borrow_interest_rate * self.borrow_time_elapsed();
         self.borrow_balance += interest;
         self.borrow_last_update = Context::current_epoch();
 

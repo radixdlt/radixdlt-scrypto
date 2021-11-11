@@ -34,13 +34,13 @@ r#"
 
 blueprint! {
     struct Proxy1 {
-        airdrop: Airdrop
+        airdrop: Airdrop,
     }
 
     impl Proxy1 {
         pub fn new() -> Component {
             Self {
-                airdrop: Airdrop::new().into()
+                airdrop: Airdrop::new().into(),
             }
             .instantiate()
         }

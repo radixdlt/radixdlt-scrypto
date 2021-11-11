@@ -3,7 +3,7 @@ use scrypto::prelude::*;
 blueprint! {
     // nobody can instantiate a system component except the bootstrap process
     struct System {
-        xrd: Vault
+        xrd: Vault,
     }
 
     impl System {
@@ -20,7 +20,10 @@ blueprint! {
         }
 
         /// Creates a token resource with fixed supply, and returns all supply.
-        pub fn new_token_fixed(metadata: HashMap<String, String>, supply: Decimal) -> (Address, Bucket) {
+        pub fn new_token_fixed(
+            metadata: HashMap<String, String>,
+            supply: Decimal,
+        ) -> (Address, Bucket) {
             let (resource_def, bucket) = ResourceDef::new_fixed(1, metadata, supply);
             (resource_def.address(), bucket)
         }
@@ -32,7 +35,10 @@ blueprint! {
         }
 
         /// Creates a badge resource with fixed supply, and returns all supply.
-        pub fn new_badge_fixed(metadata: HashMap<String, String>, supply: Decimal) -> (Address, Bucket) {
+        pub fn new_badge_fixed(
+            metadata: HashMap<String, String>,
+            supply: Decimal,
+        ) -> (Address, Bucket) {
             let (resource_def, bucket) = ResourceDef::new_fixed(18, metadata, supply);
             (resource_def.address(), bucket)
         }

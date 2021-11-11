@@ -4,7 +4,7 @@ blueprint! {
     struct GumballMachine {
         gumballs: Vault,
         collected_xrd: Vault,
-        price: Decimal
+        price: Decimal,
     }
 
     impl GumballMachine {
@@ -21,7 +21,7 @@ blueprint! {
             Self {
                 gumballs: Vault::with_bucket(bucket_of_gumballs),
                 collected_xrd: Vault::new(RADIX_TOKEN),
-                price: price
+                price: price,
             }
             .instantiate()
         }
@@ -35,7 +35,7 @@ blueprint! {
             // if the caller has sent too few, or sent something other than XRD, they'll get a runtime error
             let our_share = payment.take(self.price);
             self.collected_xrd.put(our_share);
-            
+
             // we could have simplified the above into a single line, like so:
             // self.collected_xrd.put(payment.take(self.price));
 

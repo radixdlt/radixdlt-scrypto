@@ -30,7 +30,12 @@ blueprint! {
                 .metadata("name", "TestToken")
                 .new_token_fixed(100);
             let resource_def = bucket.resource_def();
-            (bucket, resource_def.metadata(), resource_def.minter(), resource_def.supply())
+            (
+                bucket,
+                resource_def.metadata(),
+                resource_def.minter(),
+                resource_def.supply(),
+            )
         }
 
         pub fn burn() -> Bucket {

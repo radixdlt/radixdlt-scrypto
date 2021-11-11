@@ -31,7 +31,10 @@ blueprint! {
                 !a_tokens.is_empty() && !b_tokens.is_empty(),
                 "You must pass in an initial supply of each token"
             );
-            scrypto_assert!(fee >= 0.into() && fee <= 1.into(), "Invalid fee in thousandths");
+            scrypto_assert!(
+                fee >= 0.into() && fee <= 1.into(),
+                "Invalid fee in thousandths"
+            );
 
             // Instantiate our LP token and mint an initial supply of them
             let lp_minter = ResourceBuilder::new()
@@ -145,7 +148,7 @@ blueprint! {
         pub fn get_pair(&self) -> (Address, Address) {
             (
                 self.a_pool.resource_def().address(),
-                self.b_pool.resource_def().address()
+                self.b_pool.resource_def().address(),
             )
         }
     }

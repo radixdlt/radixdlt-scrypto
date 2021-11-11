@@ -4,13 +4,13 @@ use crate::callee::Airdrop;
 
 blueprint! {
     struct Proxy2 {
-        airdrop: Airdrop
+        airdrop: Airdrop,
     }
 
     impl Proxy2 {
         pub fn new() -> Component {
             Self {
-                airdrop: Airdrop::new().into()
+                airdrop: Airdrop::new().into(),
             }
             .instantiate()
         }

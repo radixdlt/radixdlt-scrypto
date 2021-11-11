@@ -250,7 +250,7 @@ blueprint! {
             let debt_to_remove = self.get_asset_price(synth.asset_address) * bucket.amount();
             let shares_to_burn = user.global_debt_share.take(
                 self.synthetics_global_debt_share_resource_def.supply() * debt_to_remove
-                    /global_debt,
+                    / global_debt,
             );
 
             self.synthetics_minter_badge.authorize(|badge| {

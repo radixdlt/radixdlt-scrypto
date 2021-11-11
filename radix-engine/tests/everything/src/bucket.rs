@@ -6,7 +6,6 @@ blueprint! {
     struct BucketTest;
 
     impl BucketTest {
-
         pub fn combine() -> Bucket {
             let bucket1 = ResourceBuilder::new()
                 .metadata("name", "TestToken")
@@ -17,7 +16,7 @@ blueprint! {
             bucket1
         }
 
-        pub fn split()  -> (Bucket, Bucket) {
+        pub fn split() -> (Bucket, Bucket) {
             let bucket1 = ResourceBuilder::new()
                 .metadata("name", "TestToken")
                 .new_token_fixed(100);

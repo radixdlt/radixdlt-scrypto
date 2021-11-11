@@ -18,7 +18,8 @@ blueprint! {
             Self {
                 test_vault: Vault::with_bucket(bucket),
                 secret: "Secret".to_owned(),
-            }.instantiate()
+            }
+            .instantiate()
         }
 
         pub fn get_component_blueprint(address: Address) -> Blueprint {
@@ -29,7 +30,7 @@ blueprint! {
             self.secret.clone()
         }
 
-        pub fn put_component_state(&mut self) -> Bucket  {
+        pub fn put_component_state(&mut self) -> Bucket {
             // Take resource from vault
             let bucket = self.test_vault.take(1);
 
