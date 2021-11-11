@@ -25,7 +25,7 @@ echo "Testing with no_std..."
 echo "Building examples..."
 (cd assets/account; cargo build --target wasm32-unknown-unknown --release; cargo test --release)
 (cd assets/system; cargo build --target wasm32-unknown-unknown --release; cargo test --release)
-(cd examples/core/cross-component-call; cargo build --target wasm32-unknown-unknown --release; cargo test --release)
+(cd examples/core/cross-blueprint-call; cargo build --target wasm32-unknown-unknown --release; cargo test --release)
 (cd examples/core/flat-admin; cargo build --target wasm32-unknown-unknown --release; cargo test --release)
 (cd examples/core/gumball-machine; cargo build --target wasm32-unknown-unknown --release; cargo test --release)
 (cd examples/core/hello-world; cargo build --target wasm32-unknown-unknown --release; cargo test --release)

@@ -95,9 +95,9 @@ jobs:
     - name: Build hello-world
       run: cargo build --target wasm32-unknown-unknown --release
       working-directory: examples/core/hello-world
-    - name: Build cross-component-call
+    - name: Build cross-blueprint-call
       run: cargo build --target wasm32-unknown-unknown --release
-      working-directory: examples/core/cross-component-call
+      working-directory: examples/core/cross-blueprint-call
     - name: Build flat-admin
       run: cargo build --target wasm32-unknown-unknown --release
       working-directory: examples/core/flat-admin
