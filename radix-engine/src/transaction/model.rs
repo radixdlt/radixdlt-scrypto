@@ -143,7 +143,6 @@ macro_rules! prefix {
 
 impl fmt::Debug for Receipt {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "\n")?;
         write!(
             f,
             "{} {}",
@@ -208,7 +207,6 @@ impl fmt::Debug for Receipt {
             write!(f, "\n{} {}: {}", prefix!(i, self.new_entities), ty, address)?;
         }
 
-        write!(f, "\n")?;
         Ok(())
     }
 }
