@@ -30,7 +30,7 @@ blueprint! {
 
         /// Creates a badge resource with mutable supply, and returns the resource definition address.
         pub fn new_badge_mutable(metadata: HashMap<String, String>, minter: Address) -> Address {
-            let resource_def = ResourceDef::new_mutable(18, metadata, minter);
+            let resource_def = ResourceDef::new_mutable(19, metadata, minter);
             resource_def.address()
         }
 
@@ -39,7 +39,7 @@ blueprint! {
             metadata: HashMap<String, String>,
             supply: Decimal,
         ) -> (Address, Bucket) {
-            let (resource_def, bucket) = ResourceDef::new_fixed(18, metadata, supply);
+            let (resource_def, bucket) = ResourceDef::new_fixed(19, metadata, supply);
             (resource_def.address(), bucket)
         }
 

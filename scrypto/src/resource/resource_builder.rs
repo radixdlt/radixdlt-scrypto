@@ -36,12 +36,12 @@ impl ResourceBuilder {
 
     /// Creates a badge resource with mutable supply.
     pub fn new_badge_mutable<A: Into<ResourceDef>>(&self, minter: A) -> ResourceDef {
-        ResourceDef::new_mutable(18, self.metadata.clone(), minter)
+        ResourceDef::new_mutable(19, self.metadata.clone(), minter)
     }
 
     /// Creates a badge resource with fixed supply.
     pub fn new_badge_fixed<T: Into<Decimal>>(&self, supply: T) -> Bucket {
-        ResourceDef::new_fixed(18, self.metadata.clone(), supply.into()).1
+        ResourceDef::new_fixed(19, self.metadata.clone(), supply.into()).1
     }
 }
 

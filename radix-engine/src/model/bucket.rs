@@ -73,16 +73,14 @@ impl Bucket {
             return Err(BucketError::NegativeAmount);
         }
 
-        match granularity {
-            1 => Ok(()),
-            18 => {
-                if amount.0 % 10i128.pow(18) != 0.into() {
-                    Err(BucketError::GranularityCheckFailed)
-                } else {
-                    Ok(())
-                }
+        if granularity >= 1 && granularity <= 36 {
+            if amount.0 % 10i128.pow((granularity - 1).into()) != 0.into() {
+                Err(BucketError::GranularityCheckFailed)
+            } else {
+                Ok(())
             }
-            _ => Err(BucketError::InvalidGranularity),
+        } else {
+            Err(BucketError::InvalidGranularity)
         }
     }
 }

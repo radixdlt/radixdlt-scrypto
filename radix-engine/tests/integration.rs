@@ -137,14 +137,28 @@ fn test_resource_def() {
         .call_function(
             package,
             "ResourceTest",
-            "create_mutable",
+            "create_mutable_token",
             vec![],
             Some(account),
         )
         .call_function(
             package,
             "ResourceTest",
-            "create_fixed",
+            "create_fixed_token",
+            vec![],
+            Some(account),
+        )
+        .call_function(
+            package,
+            "ResourceTest",
+            "create_mutable_badge",
+            vec![],
+            Some(account),
+        )
+        .call_function(
+            package,
+            "ResourceTest",
+            "create_fixed_badge",
             vec![],
             Some(account),
         )
@@ -157,6 +171,22 @@ fn test_resource_def() {
     let receipt = executor.run(transaction, true).unwrap();
     println!("{:?}", receipt);
     assert!(receipt.success);
+
+    let transaction = TransactionBuilder::new(&executor)
+        .call_function(
+            package,
+            "ResourceTest",
+            "create_fixed_badge_should_fail",
+            vec![],
+            Some(account),
+        )
+        .drop_all_bucket_refs()
+        .deposit_all_buckets(account)
+        .build(vec![key])
+        .unwrap();
+    let receipt = executor.run(transaction, true).unwrap();
+    println!("{:?}", receipt);
+    assert!(!receipt.success);
 }
 
 #[test]
