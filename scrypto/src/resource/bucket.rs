@@ -81,6 +81,11 @@ impl Bucket {
         output.resource_def.into()
     }
 
+    /// Returns the resource definition address.
+    pub fn resource_address(&self) -> Address {
+        self.resource_def().address()
+    }
+
     /// Burns resource within this bucket.
     pub fn burn(self, minter: BucketRef) {
         self.resource_def().burn(self, minter);

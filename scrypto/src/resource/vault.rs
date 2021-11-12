@@ -84,6 +84,11 @@ impl Vault {
         output.resource_def.into()
     }
 
+    /// Returns the resource definition address.
+    pub fn resource_address(&self) -> Address {
+        self.resource_def().address()
+    }
+
     /// Checks if this vault is empty.
     pub fn is_empty(&self) -> bool {
         self.amount() == 0.into()

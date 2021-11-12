@@ -2,13 +2,18 @@ use radix_engine::ledger::*;
 use radix_engine::transaction::*;
 use scrypto::prelude::*;
 use std::process::Command;
+use std::sync::Once;
 
-fn compile() {
-    Command::new("cargo")
-        .current_dir("./tests/everything")
-        .args(["build", "--target", "wasm32-unknown-unknown", "--release"])
-        .status()
-        .unwrap();
+static COMPILE: Once = Once::new();
+
+pub fn compile() {
+    COMPILE.call_once(|| {
+        Command::new("cargo")
+            .current_dir("./tests/everything")
+            .args(["build", "--target", "wasm32-unknown-unknown", "--release"])
+            .status()
+            .unwrap();
+    });
 }
 
 #[test]

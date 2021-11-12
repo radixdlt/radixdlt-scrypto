@@ -64,13 +64,13 @@ pub fn handle_auth(attr: TokenStream, item: TokenStream) -> Result<TokenStream> 
     let output = quote! {
         #(#f_attrs)*
         #f_vis fn #f_ident (#(#f_inputs),*) #f_output {
-            if #(auth.contains(self.#allowed_badges.clone()))||* {
-                #drop
-
-                #f_body
-            } else {
+            if !(#(auth.contains(self.#allowed_badges.clone()))||*) {
                 ::scrypto::utils::scrypto_abort("Auth check failure")
             }
+
+            let output = #f_body;
+            #drop
+            output
         }
     };
     trace!("Finished processing auth macro");
@@ -102,18 +102,15 @@ mod tests {
             output,
             quote! {
                 #[other]
-                pub fn x(
-                    &self,
-                    auth: ::scrypto::resource::BucketRef
-                ) -> u32 {
-                    if auth.contains(self.foo.clone()) || auth.contains(self.bar.clone()) {
-                        auth.drop();
-                        {
-                            self.a
-                        }
-                    } else {
+                pub fn x(&self, auth: ::scrypto::resource::BucketRef) -> u32 {
+                    if !(auth.contains(self.foo.clone()) || auth.contains(self.bar.clone())) {
                         ::scrypto::utils::scrypto_abort("Auth check failure")
                     }
+                    let output = {
+                        self.a
+                    };
+                    auth.drop();
+                    output
                 }
             },
         );
@@ -128,18 +125,15 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                pub fn x(
-                    &self,
-                    auth: ::scrypto::resource::BucketRef
-                ) -> u32 {
-                    if auth.contains(self.foo.clone()) {
-                        {
-                            auth.drop();
-                            self.a
-                        }
-                    } else {
+                pub fn x(&self, auth: ::scrypto::resource::BucketRef) -> u32 {
+                    if !(auth.contains(self.foo.clone())) {
                         ::scrypto::utils::scrypto_abort("Auth check failure")
                     }
+                    let output = {
+                        auth.drop();
+                        self.a
+                    };
+                    output
                 }
             },
         );

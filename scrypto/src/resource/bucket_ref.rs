@@ -62,6 +62,11 @@ impl BucketRef {
         output.resource_def.into()
     }
 
+    /// Returns the resource definition address.
+    pub fn resource_address(&self) -> Address {
+        self.resource_def().address()
+    }
+
     /// Destroys this reference.
     pub fn drop(self) {
         let input = DropBucketRefInput {
