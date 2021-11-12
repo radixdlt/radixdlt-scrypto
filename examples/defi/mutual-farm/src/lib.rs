@@ -499,12 +499,12 @@ blueprint! {
             let identity_badge = ResourceBuilder::new()
                 .metadata("name", "ID")
                 .new_badge_fixed(1);
-            let identity_badge_address = identity_badge.resource_def().address();
+            let identity_badge_address = identity_badge.resource_address();
 
             debug!("Fetch price info from oracle");
             let price_oracle: PriceOracle = price_oracle_address.into();
             let xrd_usd_price = price_oracle
-                .get_price(initial_xrd.resource_def().address(), usd_address)
+                .get_price(initial_xrd.resource_address(), usd_address)
                 .unwrap();
             let snx_usd_price = price_oracle.get_price(snx_address, usd_address).unwrap();
             let tesla_usd_price = price_oracle.get_price(asset_address, usd_address).unwrap();
@@ -523,7 +523,7 @@ blueprint! {
             let quantity = snx_amount * snx_usd_price / 10 / tesla_usd_price;
             let synth =
                 synthetic_pool.mint(identity_badge.borrow(), quantity, asset_symbol.clone());
-            let synth_address = synth.resource_def().address();
+            let synth_address = synth.resource_address();
 
             debug!("Set up sTESLA/XRD swap pool");
             let (radiswap_comp, lp_tokens) = Radiswap::new(
@@ -568,7 +568,7 @@ blueprint! {
             debug!("Fetch price info from oracle");
             let xrd_usd_price = self
                 .price_oracle
-                .get_price(xrd.resource_def().address(), self.usd_address)
+                .get_price(xrd.resource_address(), self.usd_address)
                 .unwrap();
             let snx_usd_price = self
                 .price_oracle
@@ -597,7 +597,7 @@ blueprint! {
 
             debug!("Add liquidity to sTESLA/XRD swap pool");
             let (lp_tokens, mut remainder) = self.radiswap.add_liquidity(synth, xrd);
-            if remainder.resource_def().address() == self.synth_address {
+            if remainder.resource_address() == self.synth_address {
                 self.identity_badge.authorize(|badge| {
                     self.synthetic_pool.burn(badge, remainder);
                 });

@@ -30,7 +30,7 @@ blueprint! {
 
         /// Deposits resource into this account.
         pub fn deposit(&mut self, bucket: Bucket) {
-            let address = bucket.resource_def().address();
+            let address = bucket.resource_address();
             match self.vaults.get(&address) {
                 Some(v) => {
                     v.put(bucket);

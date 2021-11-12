@@ -39,7 +39,7 @@ blueprint! {
                 .metadata("name", "TestToken")
                 .new_token_fixed(100);
 
-            (bucket.amount(), bucket.resource_def().address(), bucket)
+            (bucket.amount(), bucket.resource_address(), bucket)
         }
     }
 }

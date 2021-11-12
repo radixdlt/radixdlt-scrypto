@@ -8,7 +8,6 @@ blueprint! {
 
     impl FlatAdmin {
         pub fn new(badge_name: String) -> (Component, Bucket) {
-        
             // Create a badge for internal use which will hold mint/burn authority for the admin badge we will soon create
             let admin_mint_badge = ResourceBuilder::new().new_badge_fixed(1);
 
@@ -23,7 +22,7 @@ blueprint! {
             // Initialize our component, placing the minting authority badge within its vault, where it will remain forever
             let component = Self {
                 admin_mint_badge: Vault::with_bucket(admin_mint_badge),
-                admin_badge: admin_badge_def
+                admin_badge: admin_badge_def,
             }
             .instantiate();
 
@@ -41,7 +40,7 @@ blueprint! {
 
         pub fn destroy_admin_badge(&self, to_destroy: Bucket) {
             scrypto_assert!(
-                to_destroy.resource_def().address() == self.admin_badge.address(),
+                to_destroy.resource_address() == self.admin_badge.address(),
                 "Can not destroy the contents of this bucket!"
             );
             self.admin_mint_badge
