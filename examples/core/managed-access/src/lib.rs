@@ -106,11 +106,11 @@ blueprint! {
             self.protected_vault.put(to_deposit);
         }
 
-        pub fn get_admin_badge_address(&mut self) -> Address {
+        pub fn get_admin_badge_address(&self) -> Address {
             self.admin_badge.address()
         }
 
-        pub fn get_flat_admin_controller_address(&mut self) -> Address {
+        pub fn get_flat_admin_controller_address(&self) -> Address {
             self.flat_admin_controller
         }
     }
