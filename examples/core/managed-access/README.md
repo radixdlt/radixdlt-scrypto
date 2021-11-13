@@ -1,5 +1,5 @@
 # Managed Access
-This example demonstrates the use of the FlatAdmin blueprint to manage access in another blueprint.
+This example demonstrates the use of the `FlatAdmin` blueprint to manage access in another blueprint.
 
 Note that in order for this example to function, you will have to publish the package containing the `FlatAdmin` blueprint to your simulator to a specific address (or change the address imported near the top of `lib.rs` in this package).
 
@@ -38,7 +38,7 @@ struct ManagedAccess {
 
 Our instantiated component will maintain a single vault which stores XRD.  Anyone may deposit to the vault, but only a caller in possession of an admin badge may withdraw from it.
 
-The only state we need to maintain is the aforementioned vault, and the `ResourceDef` of the badge used for authorization.  As a convenience for the user, we will also store the address of the `FlatAdmin` component which managed the supply of those badges.
+The only state we need to maintain is the aforementioned vault, and the `ResourceDef` of the badge used for authorization.  As a convenience for the user, we will also store the address of the `FlatAdmin` component which manages the supply of those badges.
 
 ## Getting Ready for Instantiation
 In order to instantiate, we'll require no parameters and return to the caller a tuple containing the newly instantiated component, and a bucket containing the first admin badge created by our `FlatAdmin` badge manager:
