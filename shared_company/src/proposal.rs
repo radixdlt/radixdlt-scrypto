@@ -3,24 +3,33 @@ use scrypto::prelude::*;
 //This fund can then be used to pay for services and products of other firms
 blueprint! {
 struct Proposal{
+            // Fund which are looked for the vote
             cost_vault: Vault,
+            // If proposal is accepted: Funds are send to this adress
             destination_adress_funds: String,
+            // What are users voting on?
             reason: String,
+            // The token that is needed to vote.
             company_voting_token: Vault,
+            // Material for voting. If the vault could count, yes and no counter wouldnt be needed
             replacement_tokens_type_yes: Vault,
             replacement_tokens_type_no: Vault,
             yes_counter: Decimal,
             no_counter: Decimal,
+            // the admin can stop the proposal
             proposal_admin: Vault,
+            // The votes needed for the vote to succeed
             needed_votes: Decimal,
-            end_epoch: u32,
-              admin_adress: String,
+            // When this epoch is reached and try_solve() is called,
+            //no more voting will be possible and cost_vault will be send to owners address (not implemented yet)
+            end_epoch: u64,
+            admin_adress: String,
     }
 
             impl Proposal{
 
                 // creates a new instance
-                pub fn new(cost: Bucket, destination_adress_funds: String, reason: String, admin_adress: String, end_epoch: u32,
+                pub fn new(cost: Bucket, destination_adress_funds: String, reason: String, admin_adress: String, end_epoch: u64,
                     needed_votes: Decimal, company_voting_token_resource_def: ResourceDef)-> Component {
 
                     // The token that the user gets in exchange for their voting.
@@ -78,13 +87,21 @@ struct Proposal{
                     replacement_tokens
 
                 }
-
-               /*  pub fn trySuccess(){
-                    //If yes > 51
-                    // if no >51
-                    // if time is over (like no)
-                    // (Either way terminate struct)
-                    // Otherwise: nothing happens
+                /// Checks if a finish condition is reached
+               pub fn try_solve(&mut self){
+                   if self.yes_counter > self.needed_votes {
+                    // ToDo send tokens to destination_adress.
+                    //Problem: Account::from Str not working, cant find the correct type
+                    /*  let acc = Account::from(self.destination_adress_funds);
+                    acc.deposit(self.cost_vault.take_all()) */
+                   }
+                   if self.no_counter > self.needed_votes {
+                    //ToDo send tokens to initial address
+                   }
+                   if Context::current_epoch() > self.end_epoch {
+                    // Optimal: Send all tokens back to their owners.
+                    // For now: Send funds back to owner, user can retrive their tokens with retrive_voting_tokens()
+                   }
                 }
                 //Additional needed Methods
                 //on_failure (auto-send-back. Not needed for prototype)
