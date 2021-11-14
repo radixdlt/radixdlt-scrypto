@@ -64,20 +64,20 @@ blueprint! {
         /// Adds liquidity to this pool and return the LP tokens representing pool shares
         /// along with any remainder.
         pub fn add_liquidity(&self, a_tokens: Bucket, b_tokens: Bucket) -> (Bucket, Bucket) {
-            let a_share = a_tokens.amount() / self.a_pool.amount();
-            let b_share = b_tokens.amount() / self.b_pool.amount();
+            let a_share = a_tokens.amount() / (self.a_pool.amount() + a_tokens.amount());
+            let b_share = b_tokens.amount() / (self.b_pool.amount() + b_tokens.amount());
 
             let (actual_share, remainder) = if a_share <= b_share {
                 // We will claim all input token A's, and only the correct amount of token B
                 self.a_pool.put(a_tokens);
                 self.b_pool
-                    .put(b_tokens.take(self.b_pool.amount() * a_share));
+                    .put(b_tokens.take(self.b_pool.amount() * a_share / (1 - a_share)));
                 (a_share, b_tokens)
             } else {
                 // We will claim all input token B's, and only the correct amount of token A
                 self.b_pool.put(b_tokens);
                 self.a_pool
-                    .put(a_tokens.take(self.a_pool.amount() * a_share));
+                    .put(a_tokens.take(self.a_pool.amount() * b_share / (1 - b_share)));
                 (b_share, a_tokens)
             };
 
