@@ -23,26 +23,26 @@ struct Proposal{
             // When this epoch is reached and try_solve() is called,
             //no more voting will be possible and cost_vault will be send to owners address (not implemented yet)
             end_epoch: u64,
-            admin_adress: String,
+            fund_owner_adress: String,
     }
 
             impl Proposal{
 
-                // creates a new instance
+                /// creates a new instance of a proposal
                 pub fn new(cost: Bucket, destination_adress_funds: String, reason: String, admin_adress: String, end_epoch: u64,
                     needed_votes: Decimal, company_voting_token_resource_def: ResourceDef)-> Component {
 
-                    // The token that the user gets in exchange for their voting.
+                    // The token that the user gets in exchange for their "yes" voting.
                     let replacement_token_yes_resource_def = ResourceBuilder::new()
                        .metadata("name", "Replacement token yes").metadata("symbol", "RTY")
                     .new_token_fixed(1_000_000);
 
-                     // The token that the user gets in exchange for their voting.
+                     // The token that the user gets in exchange for their "no" voting.
                      let replacement_token_no_resource_def = ResourceBuilder::new()
                      .metadata("name", "Replacement token no").metadata("symbol", "RTN")
                   .new_token_fixed(1_000_000);
 
-
+                    // This badge can be theoretically be used for burns
                     let proposal_admin_badge = ResourceBuilder::new().new_badge_fixed(1);
                     // the vault that holds the costs that are associated with the proposal
                     let cost_vault = Vault::new(cost.resource_def());
@@ -59,7 +59,7 @@ struct Proposal{
                     no_counter: Decimal(0.0 as i128),
                     proposal_admin: Vault::with_bucket(proposal_admin_badge),
                     needed_votes: needed_votes,
-                    admin_adress: admin_adress,
+                    fund_owner_adress: admin_adress,
                     end_epoch: end_epoch,
                 }.instantiate()
                 }
@@ -94,6 +94,9 @@ struct Proposal{
                     //Problem: Account::from Str not working, cant find the correct type
                     /*  let acc = Account::from(self.destination_adress_funds);
                     acc.deposit(self.cost_vault.take_all()) */
+                    let string = "testset";
+                    let my_addr: Address::from_str(&string);
+                    let acc = Account::from(my_addr);
                    }
                    if self.no_counter > self.needed_votes {
                     //ToDo send tokens to initial address
