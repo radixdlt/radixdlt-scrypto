@@ -17,7 +17,8 @@ blueprint! {
                         impl Proposal{
              
             
-                            pub fn new(cost: Bucket, destination_adress_funds: String, reason: String, admin_adress: String, end_epoch: u32, needed_votes: Decimal, company_voting_token_resource_def: ResourceDef)-> Component {
+                            pub fn new(cost: Bucket, destination_adress_funds: String, reason: String, admin_adress: String, end_epoch: u32, 
+                                needed_votes: Decimal, company_voting_token_resource_def: ResourceDef)-> Component {
                               
                                 // The token that the user gets in exchange for their voting.
                                 let replacement_token_yes_resource_def = ResourceBuilder::new()

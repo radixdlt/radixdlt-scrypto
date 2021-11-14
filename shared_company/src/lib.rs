@@ -1,5 +1,6 @@
 use scrypto::prelude::*;
 mod proposal;
+use crate::proposal::Proposal;
 
 
 // A company that is owned by its share (equity_badge) holders 
@@ -71,6 +72,11 @@ blueprint! {
            
             // returns the same percentage of the company xrd 
             self.company_radix.take(self.company_radix.amount() * percentage_of_all_shares)  
+        }
+
+        // A proposal that if it is accepted sends funds away from the company
+        pub fn make_proposal(&self, cost: Bucket, destination_adress: String,reason: String, admin_adress: String, end_epoch: u32,){
+            let proposal =  Proposal::new(cost, destination_adress, reason, admin_adress, end_epoch, self.share_counter / 2 + 1, self.company_voting_token.resource_def()); 
         }
  
     
