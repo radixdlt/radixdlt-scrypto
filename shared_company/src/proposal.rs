@@ -18,14 +18,8 @@ blueprint! {
              
             
                             pub fn new(cost: Bucket, destination_adress_funds: String, reason: String, admin_adress: String, end_epoch: u32, needed_votes: Decimal, company_voting_token_resource_def: ResourceDef)-> Component {
-                                
-                                // prepare Decimals (is there a cleaner way?)
-                                let  yes_counter = Decimal::from_str("0.0").unwrap(); 
-                                let  no_counter = Decimal::from_str("0.0").unwrap(); 
-                                
-                            
-
-                                  // The token that the user gets in exchange for their voting.
+                              
+                                // The token that the user gets in exchange for their voting.
                                 let replacement_token_yes_resource_def = ResourceBuilder::new()
                                    .metadata("name", "Replacement token yes").metadata("symbol", "RTY")
                                 .new_token_fixed(1_000_000);
@@ -44,8 +38,8 @@ blueprint! {
                                     ),
                                     replacement_tokens_type_yes: Vault::with_bucket(replacement_token_yes_resource_def),
                                     replacement_tokens_type_no: Vault::with_bucket(replacement_token_no_resource_def),
-                                    yes_counter: yes_counter,
-                                    no_counter: no_counter,
+                                    yes_counter: Decimal(0.0 as i128),
+                                    no_counter: Decimal(0.0 as i128),
                                     proposal_admin: Vault::with_bucket(proposal_admin_badge),
                                     needed_votes: needed_votes,
                                     admin_adress: admin_adress,

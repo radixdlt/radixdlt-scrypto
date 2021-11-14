@@ -1,5 +1,4 @@
 use scrypto::prelude::*;
-
 mod proposal;
 
 
