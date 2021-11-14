@@ -74,11 +74,11 @@ impl SharedCompany {
     }
 
     // A proposal that if it is accepted sends funds away from the company
-    pub fn make_proposal(&self, destination_adress: String,reason: String,
+    pub fn make_proposal(&self,cost_as_number: u32, destination_adress: String,reason: String,
         admin_adress: String, end_epoch: u64,){
         //ToDo change this to smt variable, but fails method call for some reason
-            let cost = self.company_radix.take(5);
-        let proposal =  Proposal::new(cost, destination_adress, reason, admin_adress, end_epoch, self.share_counter / 2 + 1, self.company_voting_token.resource_def());
+            let cost = self.company_radix.take(cost_as_number);
+        Proposal::new(cost, destination_adress, reason, admin_adress, end_epoch, self.share_counter / 2 + 1, self.company_voting_token.resource_def());
     }
 
 
