@@ -49,7 +49,7 @@ pub const GET_RESOURCE_SUPPLY: u32 = 0x35;
 /// Get resource minter address
 pub const GET_RESOURCE_MINTER: u32 = 0x36;
 /// Get resource granularity
-pub const GET_RESOURCE_GRANULARITY: u32 = 0x37;
+pub const GET_RESOURCE_TYPE: u32 = 0x37;
 
 /// Create a new empty vault
 pub const CREATE_EMPTY_VAULT: u32 = 0x40;
@@ -95,7 +95,16 @@ pub const GET_CURRENT_EPOCH: u32 = 0xf4;
 /// Retrieve transaction signers
 pub const GET_TRANSACTION_SIGNERS: u32 = 0xf5;
 
-#[derive(Debug, Clone, TypeId, Encode, Decode, Describe)]
+#[derive(Debug, Clone, Copy, TypeId, Encode, Decode, Describe)]
+pub enum LogLevel {
+    Error,
+    Warn,
+    Info,
+    Debug,
+    Trace,
+}
+
+#[derive(Debug, Clone, Copy, TypeId, Encode, Decode, Describe)]
 pub enum ResourceType {
     Fungible { granularity: u8 },
 
@@ -107,15 +116,6 @@ pub enum ResourceSupply {
     Fungible { supply: Decimal },
 
     NonFungible { supply: Vec<(u32, Vec<u8>)> },
-}
-
-#[derive(Debug, Clone, TypeId, Encode, Decode, Describe)]
-pub enum LogLevel {
-    Error = 0,
-    Warn,
-    Info,
-    Debug,
-    Trace,
 }
 
 //==========

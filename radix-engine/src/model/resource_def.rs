@@ -1,4 +1,5 @@
 use sbor::*;
+use scrypto::kernel::*;
 use scrypto::rust::collections::HashMap;
 use scrypto::rust::string::String;
 use scrypto::types::*;
@@ -19,7 +20,7 @@ pub enum ResourceDefError {
 /// The definition of a resource.
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct ResourceDef {
-    granularity: u8,
+    resource_type: ResourceType,
     metadata: HashMap<String, String>,
     supply: Decimal,
     minter: Option<Address>,
@@ -27,19 +28,23 @@ pub struct ResourceDef {
 
 impl ResourceDef {
     pub fn new(
-        granularity: u8,
+        resource_type: ResourceType,
         metadata: HashMap<String, String>,
         supply: Decimal,
         minter: Option<Address>,
     ) -> Result<Self, ResourceDefError> {
-        Self::check_amount(&supply, granularity)?;
+        Self::check_amount(&supply, resource_type)?;
 
         Ok(Self {
-            granularity,
+            resource_type,
             metadata,
             supply,
             minter,
         })
+    }
+
+    pub fn resource_type(&self) -> ResourceType {
+        self.resource_type
     }
 
     pub fn metadata(&self) -> &HashMap<String, String> {
@@ -54,12 +59,8 @@ impl ResourceDef {
         self.minter.clone()
     }
 
-    pub fn granularity(&self) -> u8 {
-        self.granularity
-    }
-
     pub fn mint(&mut self, amount: Decimal, auth: Auth) -> Result<(), ResourceDefError> {
-        Self::check_amount(&amount, self.granularity)?;
+        Self::check_amount(&amount, self.resource_type)?;
 
         match self.minter() {
             Some(a) => {
@@ -75,7 +76,7 @@ impl ResourceDef {
     }
 
     pub fn burn(&mut self, amount: Decimal, auth: Auth) -> Result<(), ResourceDefError> {
-        Self::check_amount(&amount, self.granularity)?;
+        Self::check_amount(&amount, self.resource_type)?;
 
         match self.minter() {
             Some(a) => {
@@ -90,10 +91,15 @@ impl ResourceDef {
         }
     }
 
-    fn check_amount(amount: &Decimal, granularity: u8) -> Result<(), ResourceDefError> {
+    fn check_amount(amount: &Decimal, resource_type: ResourceType) -> Result<(), ResourceDefError> {
         if amount.is_negative() {
             return Err(ResourceDefError::NegativeAmount);
         }
+
+        let granularity = match resource_type {
+            ResourceType::Fungible { granularity } => granularity,
+            ResourceType::NonFungible => 19,
+        };
 
         if granularity >= 1 && granularity <= 36 {
             if amount.0 % 10i128.pow((granularity - 1).into()) != 0.into() {

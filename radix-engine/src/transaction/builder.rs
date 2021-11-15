@@ -2,6 +2,7 @@ use sbor::describe::*;
 use sbor::*;
 use scrypto::abi;
 use scrypto::buffer::*;
+use scrypto::kernel::*;
 use scrypto::rust::borrow::ToOwned;
 use scrypto::rust::collections::*;
 use scrypto::rust::fmt;
@@ -226,8 +227,12 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         self.add_instruction(Instruction::CallFunction {
             package: SYSTEM_PACKAGE,
             blueprint: "System".to_owned(),
-            function: "new_token_mutable".to_owned(),
-            args: vec![SmartValue::from(metadata), SmartValue::from(minter)],
+            function: "new_resource_mutable".to_owned(),
+            args: vec![
+                SmartValue::from(ResourceType::Fungible { granularity: 1 }),
+                SmartValue::from(metadata),
+                SmartValue::from(minter),
+            ],
         })
     }
 
@@ -240,8 +245,12 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         self.add_instruction(Instruction::CallFunction {
             package: SYSTEM_PACKAGE,
             blueprint: "System".to_owned(),
-            function: "new_token_fixed".to_owned(),
-            args: vec![SmartValue::from(metadata), SmartValue::from(supply)],
+            function: "new_resource_fixed".to_owned(),
+            args: vec![
+                SmartValue::from(ResourceType::Fungible { granularity: 1 }),
+                SmartValue::from(metadata),
+                SmartValue::from(ResourceSupply::Fungible { supply }),
+            ],
         })
     }
 
@@ -254,8 +263,12 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         self.add_instruction(Instruction::CallFunction {
             package: SYSTEM_PACKAGE,
             blueprint: "System".to_owned(),
-            function: "new_badge_mutable".to_owned(),
-            args: vec![SmartValue::from(metadata), SmartValue::from(minter)],
+            function: "new_resource_mutable".to_owned(),
+            args: vec![
+                SmartValue::from(ResourceType::Fungible { granularity: 19 }),
+                SmartValue::from(metadata),
+                SmartValue::from(minter),
+            ],
         })
     }
 
@@ -268,24 +281,23 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         self.add_instruction(Instruction::CallFunction {
             package: SYSTEM_PACKAGE,
             blueprint: "System".to_owned(),
-            function: "new_badge_fixed".to_owned(),
-            args: vec![SmartValue::from(metadata), SmartValue::from(supply)],
+            function: "new_resource_fixed".to_owned(),
+            args: vec![
+                SmartValue::from(ResourceType::Fungible { granularity: 19 }),
+                SmartValue::from(metadata),
+                SmartValue::from(ResourceSupply::Fungible { supply }),
+            ],
         })
     }
 
     /// Mints resource.
-    pub fn mint_resource(
-        &mut self,
-        amount: Decimal,
-        resource_def: Address,
-        minter: Address,
-    ) -> &mut Self {
+    pub fn mint(&mut self, amount: Decimal, resource_def: Address, minter: Address) -> &mut Self {
         self.declare_bucket_ref(|builder, rid| {
             builder.borrow_from_context(1.into(), minter, rid);
             builder.add_instruction(Instruction::CallFunction {
                 package: SYSTEM_PACKAGE,
                 blueprint: "System".to_owned(),
-                function: "mint_resource".to_owned(),
+                function: "mint".to_owned(),
                 args: vec![
                     SmartValue::from(amount),
                     SmartValue::from(resource_def),

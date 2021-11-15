@@ -1,4 +1,5 @@
 use sbor::*;
+use scrypto::kernel::*;
 use scrypto::rust::rc::Rc;
 use scrypto::types::*;
 
@@ -17,7 +18,7 @@ pub enum BucketError {
 pub struct Bucket {
     amount: Decimal,
     resource_def: Address,
-    granularity: u8,
+    resource_type: ResourceType,
 }
 
 /// A bucket becomes locked after a borrow operation.
@@ -31,11 +32,11 @@ pub struct LockedBucket {
 pub type BucketRef = Rc<LockedBucket>;
 
 impl Bucket {
-    pub fn new(amount: Decimal, resource_def: Address, granularity: u8) -> Self {
+    pub fn new(amount: Decimal, resource_def: Address, resource_type: ResourceType) -> Self {
         Self {
             amount,
             resource_def,
-            granularity,
+            resource_type,
         }
     }
 
@@ -49,14 +50,14 @@ impl Bucket {
     }
 
     pub fn take(&mut self, amount: Decimal) -> Result<Self, BucketError> {
-        Self::check_amount(&amount, self.granularity)?;
+        Self::check_amount(&amount, &self.resource_type)?;
 
         if self.amount < amount {
             Err(BucketError::InsufficientBalance)
         } else {
             self.amount -= amount;
 
-            Ok(Self::new(amount, self.resource_def, self.granularity))
+            Ok(Self::new(amount, self.resource_def, self.resource_type))
         }
     }
 
@@ -68,10 +69,15 @@ impl Bucket {
         self.resource_def
     }
 
-    fn check_amount(amount: &Decimal, granularity: u8) -> Result<(), BucketError> {
+    fn check_amount(amount: &Decimal, resource_type: &ResourceType) -> Result<(), BucketError> {
         if amount.is_negative() {
             return Err(BucketError::NegativeAmount);
         }
+
+        let granularity = match resource_type {
+            ResourceType::Fungible { granularity } => *granularity,
+            ResourceType::NonFungible => 19,
+        };
 
         if granularity >= 1 && granularity <= 36 {
             if amount.0 % 10i128.pow((granularity - 1).into()) != 0.into() {

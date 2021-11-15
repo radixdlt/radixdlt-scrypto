@@ -1,5 +1,6 @@
 use sbor::*;
 use scrypto::buffer::*;
+use scrypto::kernel::*;
 use scrypto::rust::borrow::ToOwned;
 use scrypto::rust::collections::*;
 use scrypto::types::*;
@@ -64,14 +65,24 @@ pub trait Ledger {
             metadata.insert("url".to_owned(), XRD_URL.to_owned());
             self.put_resource_def(
                 RADIX_TOKEN,
-                ResourceDef::new(1, metadata, XRD_MAX_SUPPLY.into(), None).unwrap(),
+                ResourceDef::new(
+                    ResourceType::Fungible { granularity: 1 },
+                    metadata,
+                    XRD_MAX_SUPPLY.into(),
+                    None,
+                )
+                .unwrap(),
             );
 
             // Instantiate system component
             self.put_vault(
                 XRD_VAULT_ID,
                 Vault::new(
-                    Bucket::new(XRD_MAX_SUPPLY.into(), RADIX_TOKEN, 1),
+                    Bucket::new(
+                        XRD_MAX_SUPPLY.into(),
+                        RADIX_TOKEN,
+                        ResourceType::Fungible { granularity: 1 },
+                    ),
                     SYSTEM_PACKAGE,
                 ),
             );

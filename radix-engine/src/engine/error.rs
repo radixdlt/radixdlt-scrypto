@@ -44,6 +44,9 @@ pub enum RuntimeError {
     /// The data is invalid (not in SBOR format).
     InvalidData(DecodeError),
 
+    /// The provided parameters for resource creation are invalid.
+    InvalidResourceParameters,
+
     /// The requested host function does not exist.
     HostFunctionNotFound(usize),
 

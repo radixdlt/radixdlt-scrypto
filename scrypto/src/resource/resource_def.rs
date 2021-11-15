@@ -64,11 +64,27 @@ impl ResourceDef {
         (output.resource_def.into(), output.bucket.into())
     }
 
-    /// Mints resources
-    pub fn mint(&self, supply: ResourceSupply, auth: BucketRef) -> Bucket {
+    /// Mints fungible resources
+    pub fn mint<T: Into<Decimal>>(&self, amount: T, auth: BucketRef) -> Bucket {
         let input = MintResourceInput {
             resource_def: self.address,
-            supply,
+            supply: ResourceSupply::Fungible {
+                supply: amount.into(),
+            },
+            auth: auth.into(),
+        };
+        let output: MintResourceOutput = call_kernel(MINT_RESOURCE, input);
+
+        output.bucket.into()
+    }
+
+    /// Mints non-fungible resources
+    pub fn mint_nft<T: Encode>(&self, id: u32, value: T, auth: BucketRef) -> Bucket {
+        let input = MintResourceInput {
+            resource_def: self.address,
+            supply: ResourceSupply::NonFungible {
+                supply: vec![(id, scrypto_encode(&value))],
+            },
             auth: auth.into(),
         };
         let output: MintResourceOutput = call_kernel(MINT_RESOURCE, input);
@@ -106,7 +122,7 @@ impl ResourceDef {
     }
 
     /// Returns the resource type.
-    pub fn kind(&self) -> ResourceType {
+    pub fn resource_type(&self) -> ResourceType {
         let input = GetResourceTypeInput {
             resource_def: self.address,
         };

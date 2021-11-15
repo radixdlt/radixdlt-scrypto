@@ -33,13 +33,9 @@ blueprint! {
             (resource_def.address(), bucket)
         }
 
-        /// Mints resource.
-        pub fn mint_resource(
-            resource_def: Address,
-            supply: ResourceSupply,
-            auth: BucketRef,
-        ) -> Bucket {
-            ResourceDef::from(resource_def).mint(supply, auth)
+        /// Mints fungible resource.
+        pub fn mint(amount: Decimal, resource_def: Address, auth: BucketRef) -> Bucket {
+            ResourceDef::from(resource_def).mint(amount, auth)
         }
 
         /// Gives away XRD tokens for testing.
