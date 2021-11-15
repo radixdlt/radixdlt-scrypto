@@ -11,7 +11,7 @@ blueprint! {
         pub fn create_mutable_token() -> (Bucket, ResourceDef) {
             let auth = ResourceBuilder::new()
                 .metadata("name", "Auth")
-                .new_token_fixed(1);
+                .new_badge_fixed(1);
             let resource_def = ResourceBuilder::new()
                 .metadata("name", "TestToken")
                 .new_token_mutable(auth.resource_def());
@@ -31,7 +31,7 @@ blueprint! {
         pub fn create_mutable_badge() -> (Bucket, ResourceDef) {
             let auth = ResourceBuilder::new()
                 .metadata("name", "Auth")
-                .new_token_fixed(1);
+                .new_badge_fixed(1);
             let resource_def = ResourceBuilder::new()
                 .metadata("name", "TestToken")
                 .new_badge_mutable(auth.resource_def());
