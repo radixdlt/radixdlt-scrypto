@@ -64,27 +64,28 @@ blueprint! {
         /// Adds liquidity to this pool and return the LP tokens representing pool shares
         /// along with any remainder.
         pub fn add_liquidity(&self, a_tokens: Bucket, b_tokens: Bucket) -> (Bucket, Bucket) {
-            let a_share = a_tokens.amount() / self.a_pool.amount();
-            let b_share = b_tokens.amount() / self.b_pool.amount();
+            // The ratio of added liquidity in existing liquidty.
+            let a_ratio = a_tokens.amount() / self.a_pool.amount();
+            let b_ratio = b_tokens.amount() / self.b_pool.amount();
 
-            let (actual_share, remainder) = if a_share <= b_share {
+            let (actual_ratio, remainder) = if a_ratio <= b_ratio {
                 // We will claim all input token A's, and only the correct amount of token B
                 self.a_pool.put(a_tokens);
                 self.b_pool
-                    .put(b_tokens.take(self.b_pool.amount() * a_share));
-                (a_share, b_tokens)
+                    .put(b_tokens.take(self.b_pool.amount() * a_ratio));
+                (a_ratio, b_tokens)
             } else {
                 // We will claim all input token B's, and only the correct amount of token A
                 self.b_pool.put(b_tokens);
                 self.a_pool
-                    .put(a_tokens.take(self.a_pool.amount() * b_share));
-                (b_share, a_tokens)
+                    .put(a_tokens.take(self.a_pool.amount() * b_ratio));
+                (b_ratio, a_tokens)
             };
 
             // Mint LP tokens according to the share the provider is contributing
             let lp_tokens = self.lp_minter.authorize(|badge| {
                 self.lp_resource_def
-                    .mint(self.lp_resource_def.supply() * actual_share, badge)
+                    .mint(self.lp_resource_def.supply() * actual_ratio, badge)
             });
 
             // Return the LP tokens along with any remainder
