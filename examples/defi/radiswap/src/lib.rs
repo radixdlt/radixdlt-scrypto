@@ -39,7 +39,7 @@ blueprint! {
             // Instantiate our LP token and mint an initial supply of them
             let lp_minter = ResourceBuilder::new()
                 .metadata("name", "LP Token Mint Auth")
-                .new_token_fixed(1);
+                .new_badge_fixed(1);
             let lp_resource_def = ResourceBuilder::new()
                 .metadata("symbol", lp_symbol)
                 .metadata("name", lp_name)

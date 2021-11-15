@@ -95,6 +95,11 @@ impl Bucket {
     pub fn is_empty(&self) -> bool {
         self.amount() == 0.into()
     }
+
+     /// Use resources in this bucket as authorization for an operation.
+     pub fn authorize<F: FnOnce(BucketRef) -> O, O>(&self, f: F) -> O {
+        f(self.borrow())
+    }
 }
 
 //========

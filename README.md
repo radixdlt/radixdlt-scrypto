@@ -53,6 +53,8 @@ Language for building DeFi apps on Radix.
 
 ## Getting Started
 
+If you want a quick walkthrough of how to deploy and run some code, please see the [First Steps](./tutorials/tutorial-01.md) tutorial. If you prefer to soldier through on your own, keep reading below.
+
 ### Writing Scrypto Code
 
 1. Start by creating a new package:
