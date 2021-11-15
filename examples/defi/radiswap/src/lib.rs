@@ -77,7 +77,7 @@ blueprint! {
                 // We will claim all input token B's, and only the correct amount of token A
                 self.b_pool.put(b_tokens);
                 self.a_pool
-                    .put(a_tokens.take(self.a_pool.amount() * a_share));
+                    .put(a_tokens.take(self.a_pool.amount() * b_share));
                 (b_share, a_tokens)
             };
 
