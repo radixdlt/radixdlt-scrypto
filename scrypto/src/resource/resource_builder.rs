@@ -1,3 +1,7 @@
+use sbor::*;
+
+use crate::buffer::*;
+use crate::kernel::*;
 use crate::resource::*;
 use crate::rust::borrow::ToOwned;
 use crate::rust::collections::HashMap;
@@ -26,22 +30,76 @@ impl ResourceBuilder {
 
     /// Creates a token resource with mutable supply.
     pub fn new_token_mutable<A: Into<ResourceDef>>(&self, minter: A) -> ResourceDef {
-        ResourceDef::new_mutable(1, self.metadata.clone(), minter)
+        ResourceDef::new_mutable(
+            ResourceType::Fungible {
+                granularity: 1.into(),
+            },
+            self.metadata.clone(),
+            minter.into().address(),
+        )
     }
 
     /// Creates a token resource with fixed supply.
     pub fn new_token_fixed<T: Into<Decimal>>(&self, supply: T) -> Bucket {
-        ResourceDef::new_fixed(1, self.metadata.clone(), supply.into()).1
+        ResourceDef::new_fixed(
+            ResourceType::Fungible {
+                granularity: 1.into(),
+            },
+            self.metadata.clone(),
+            ResourceSupply::Fungible {
+                supply: supply.into(),
+            },
+        )
+        .1
     }
 
     /// Creates a badge resource with mutable supply.
     pub fn new_badge_mutable<A: Into<ResourceDef>>(&self, minter: A) -> ResourceDef {
-        ResourceDef::new_mutable(19, self.metadata.clone(), minter)
+        ResourceDef::new_mutable(
+            ResourceType::Fungible {
+                granularity: 19.into(),
+            },
+            self.metadata.clone(),
+            minter.into().address(),
+        )
     }
 
     /// Creates a badge resource with fixed supply.
     pub fn new_badge_fixed<T: Into<Decimal>>(&self, supply: T) -> Bucket {
-        ResourceDef::new_fixed(19, self.metadata.clone(), supply.into()).1
+        ResourceDef::new_fixed(
+            ResourceType::Fungible {
+                granularity: 19.into(),
+            },
+            self.metadata.clone(),
+            ResourceSupply::Fungible {
+                supply: supply.into(),
+            },
+        )
+        .1
+    }
+
+    /// Creates a NFT resource with mutable supply.
+    pub fn new_nft_mutable<A: Into<ResourceDef>>(&self, minter: A) -> ResourceDef {
+        ResourceDef::new_mutable(
+            ResourceType::NonFungible,
+            self.metadata.clone(),
+            minter.into().address(),
+        )
+    }
+
+    /// Creates a NFT resource with fixed supply.
+    pub fn new_nft_fixed<V: Encode>(&self, supply: Vec<(u32, V)>) -> Bucket {
+        ResourceDef::new_fixed(
+            ResourceType::NonFungible,
+            self.metadata.clone(),
+            ResourceSupply::NonFungible {
+                supply: supply
+                    .iter()
+                    .map(|(k, v)| (*k, scrypto_encode(v)))
+                    .collect(),
+            },
+        )
+        .1
     }
 }
 

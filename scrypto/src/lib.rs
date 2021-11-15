@@ -70,7 +70,7 @@ macro_rules! args {
 #[macro_export]
 macro_rules! error {
     ($($args: expr),+) => {{
-        ::scrypto::core::Logger::log(scrypto::core::Level::Error, ::scrypto::rust::format!($($args),+));
+        ::scrypto::core::Logger::log(scrypto::kernel::LogLevel::Error, ::scrypto::rust::format!($($args),+));
     }};
 }
 
@@ -78,7 +78,7 @@ macro_rules! error {
 #[macro_export]
 macro_rules! warn {
     ($($args: expr),+) => {{
-        ::scrypto::core::Logger::log(scrypto::core::Level::Warn, ::scrypto::rust::format!($($args),+));
+        ::scrypto::core::Logger::log(scrypto::kernel::LogLevel::Warn, ::scrypto::rust::format!($($args),+));
     }};
 }
 
@@ -86,7 +86,7 @@ macro_rules! warn {
 #[macro_export]
 macro_rules! info {
     ($($args: expr),+) => {{
-        ::scrypto::core::Logger::log(scrypto::core::Level::Info, ::scrypto::rust::format!($($args),+));
+        ::scrypto::core::Logger::log(scrypto::kernel::LogLevel::Info, ::scrypto::rust::format!($($args),+));
     }};
 }
 
@@ -94,7 +94,7 @@ macro_rules! info {
 #[macro_export]
 macro_rules! debug {
     ($($args: expr),+) => {{
-        ::scrypto::core::Logger::log(scrypto::core::Level::Debug, ::scrypto::rust::format!($($args),+));
+        ::scrypto::core::Logger::log(scrypto::kernel::LogLevel::Debug, ::scrypto::rust::format!($($args),+));
     }};
 }
 
@@ -102,7 +102,7 @@ macro_rules! debug {
 #[macro_export]
 macro_rules! trace {
     ($($args: expr),+) => {{
-        ::scrypto::core::Logger::log(scrypto::core::Level::Trace, ::scrypto::rust::format!($($args),+));
+        ::scrypto::core::Logger::log(scrypto::kernel::LogLevel::Trace, ::scrypto::rust::format!($($args),+));
     }};
 }
 

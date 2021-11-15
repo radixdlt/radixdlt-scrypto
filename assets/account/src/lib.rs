@@ -16,9 +16,10 @@ blueprint! {
         }
 
         pub fn with_bucket(key: Address, bucket: Bucket) -> Component {
-            let account = Self::new(key);
-            account.call::<()>("deposit", vec![scrypto_encode(&bucket)]);
-            account
+            let vaults = LazyMap::new();
+            vaults.insert(bucket.resource_address(), Vault::with_bucket(bucket));
+
+            Account { key, vaults }.instantiate()
         }
 
         /// Deposit a batch of buckets into this account

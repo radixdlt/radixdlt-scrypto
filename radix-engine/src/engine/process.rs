@@ -1148,8 +1148,8 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
 
     fn handle_get_resource_granularity(
         &mut self,
-        input: GetResourceGranularityInput,
-    ) -> Result<GetResourceGranularityOutput, RuntimeError> {
+        input: GetResourceTypeInput,
+    ) -> Result<GetResourceTypeOutput, RuntimeError> {
         Self::expect_resource_def_address(input.resource_def)?;
 
         let resource_def = self
@@ -1158,7 +1158,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
             .ok_or(RuntimeError::ResourceDefNotFound(input.resource_def))?
             .clone();
 
-        Ok(GetResourceGranularityOutput {
+        Ok(GetResourceTypeOutput {
             granularity: resource_def.granularity(),
         })
     }

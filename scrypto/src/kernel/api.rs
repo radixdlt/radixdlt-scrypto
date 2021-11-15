@@ -1,4 +1,4 @@
-use sbor::{Decode, Encode, TypeId};
+use sbor::{Decode, Describe, Encode, TypeId};
 
 use crate::rust::collections::HashMap;
 use crate::rust::string::String;
@@ -94,6 +94,29 @@ pub const GET_TRANSACTION_HASH: u32 = 0xf3;
 pub const GET_CURRENT_EPOCH: u32 = 0xf4;
 /// Retrieve transaction signers
 pub const GET_TRANSACTION_SIGNERS: u32 = 0xf5;
+
+#[derive(Debug, Clone, TypeId, Encode, Decode, Describe)]
+pub enum ResourceType {
+    Fungible { granularity: u8 },
+
+    NonFungible,
+}
+
+#[derive(Debug, Clone, TypeId, Encode, Decode, Describe)]
+pub enum ResourceSupply {
+    Fungible { supply: Decimal },
+
+    NonFungible { supply: Vec<(u32, Vec<u8>)> },
+}
+
+#[derive(Debug, Clone, TypeId, Encode, Decode, Describe)]
+pub enum LogLevel {
+    Error = 0,
+    Warn,
+    Info,
+    Debug,
+    Trace,
+}
 
 //==========
 // blueprint
@@ -218,7 +241,7 @@ pub struct PutLazyMapEntryOutput {}
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct CreateResourceMutableInput {
-    pub granularity: u8,
+    pub resource_type: ResourceType,
     pub metadata: HashMap<String, String>,
     pub minter: Address,
 }
@@ -230,9 +253,9 @@ pub struct CreateResourceMutableOutput {
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct CreateResourceFixedInput {
-    pub granularity: u8,
+    pub resource_type: ResourceType,
     pub metadata: HashMap<String, String>,
-    pub supply: Decimal,
+    pub supply: ResourceSupply,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
@@ -240,6 +263,27 @@ pub struct CreateResourceFixedOutput {
     pub resource_def: Address,
     pub bucket: Bid,
 }
+
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
+pub struct MintResourceInput {
+    pub resource_def: Address,
+    pub supply: ResourceSupply,
+    pub auth: Rid,
+}
+
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
+pub struct MintResourceOutput {
+    pub bucket: Bid,
+}
+
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
+pub struct BurnResourceInput {
+    pub bucket: Bid,
+    pub auth: Rid,
+}
+
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
+pub struct BurnResourceOutput {}
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct GetResourceMetadataInput {
@@ -272,35 +316,14 @@ pub struct GetResourceMinterOutput {
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct GetResourceGranularityInput {
+pub struct GetResourceTypeInput {
     pub resource_def: Address,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct GetResourceGranularityOutput {
-    pub granularity: u8,
+pub struct GetResourceTypeOutput {
+    pub resource_type: ResourceType,
 }
-
-#[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct MintResourceInput {
-    pub resource_def: Address,
-    pub amount: Decimal,
-    pub minter: Rid,
-}
-
-#[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct MintResourceOutput {
-    pub bucket: Bid,
-}
-
-#[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct BurnResourceInput {
-    pub bucket: Bid,
-    pub minter: Rid,
-}
-
-#[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct BurnResourceOutput {}
 
 //==========
 // vault
