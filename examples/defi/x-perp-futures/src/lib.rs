@@ -44,7 +44,7 @@ blueprint! {
             let position_type = match position_type.as_str() {
                 "Long" => PositionType::Long,
                 "Short" => PositionType::Short,
-                _ => scrypto_abort("Invalid position type"),
+                _ => panic!("Invalid position type"),
             };
 
             let margin_amount = margin.amount();

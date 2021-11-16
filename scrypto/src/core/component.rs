@@ -4,7 +4,6 @@ use crate::buffer::*;
 use crate::core::*;
 use crate::kernel::*;
 use crate::rust::borrow::ToOwned;
-use crate::rust::format;
 use crate::rust::vec;
 use crate::rust::vec::Vec;
 use crate::types::*;
@@ -19,10 +18,7 @@ pub struct Component {
 impl From<Address> for Component {
     fn from(address: Address) -> Self {
         if !address.is_component() {
-            scrypto_abort(format!(
-                "Unable to downcast Address to Component: {}",
-                address
-            ));
+            panic!("Unable to downcast Address to Component: {}", address);
         }
 
         Self { address }

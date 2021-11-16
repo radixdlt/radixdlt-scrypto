@@ -6,7 +6,6 @@ use crate::resource::*;
 use crate::rust::borrow::ToOwned;
 use crate::rust::vec;
 use crate::types::*;
-use crate::utils::*;
 
 /// Represents a reference to a bucket.
 #[derive(Debug)]
@@ -32,7 +31,7 @@ impl BucketRef {
         if self.contains(resource_def) {
             self.drop();
         } else {
-            scrypto_abort("BucketRef check failed");
+            panic!("BucketRef check failed");
         }
     }
 

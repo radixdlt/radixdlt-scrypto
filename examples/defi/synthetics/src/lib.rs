@@ -281,10 +281,10 @@ blueprint! {
             if let Some(oracle_price) = self.oracle.get_price(asset_address, usd_address) {
                 oracle_price
             } else {
-                scrypto_abort(format!(
+                panic!(
                     "Failed to obtain price of {}/{}",
                     asset_address, usd_address
-                ));
+                ) ;
             }
         }
 
@@ -330,7 +330,7 @@ blueprint! {
                 );
                 self.users.get(&user_id).unwrap()
             } else {
-                scrypto_abort("User not found");
+                panic!("User not found");
             }
         }
     }

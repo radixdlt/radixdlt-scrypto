@@ -65,7 +65,7 @@ pub fn handle_auth(attr: TokenStream, item: TokenStream) -> Result<TokenStream> 
         #(#f_attrs)*
         #f_vis fn #f_ident (#(#f_inputs),*) #f_output {
             if !(#(auth.contains(self.#allowed_badges.clone()))||*) {
-                ::scrypto::utils::scrypto_abort("Auth check failure")
+                panic!("Auth check failure")
             }
 
             let output = #f_body;
@@ -104,7 +104,7 @@ mod tests {
                 #[other]
                 pub fn x(&self, auth: ::scrypto::resource::BucketRef) -> u32 {
                     if !(auth.contains(self.foo.clone()) || auth.contains(self.bar.clone())) {
-                        ::scrypto::utils::scrypto_abort("Auth check failure")
+                        panic!("Auth check failure")
                     }
                     let output = {
                         self.a
@@ -127,7 +127,7 @@ mod tests {
             quote! {
                 pub fn x(&self, auth: ::scrypto::resource::BucketRef) -> u32 {
                     if !(auth.contains(self.foo.clone())) {
-                        ::scrypto::utils::scrypto_abort("Auth check failure")
+                        panic!("Auth check failure")
                     }
                     let output = {
                         auth.drop();

@@ -128,14 +128,12 @@ macro_rules! include_code {
 macro_rules! scrypto_assert {
     ($cond: expr $(,)?) => {
         if !$cond {
-            error!("Assertion failed: {}", stringify!($cond));
-            panic!();
+            panic!("Assertion failed: {}", stringify!($cond));
         }
     };
     ($cond: expr, $($arg: tt)+) => {
         if !$cond {
-            error!("Assertion failed: {}", format!($($arg)+));
-            panic!();
+            panic!("Assertion failed: {}", format!($($arg)+));
         }
     };
 }

@@ -70,6 +70,9 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
     let output_dispatcher = quote! {
         #[no_mangle]
         pub extern "C" fn #dispatcher_ident() -> *mut u8 {
+            // Set up panic hook
+            ::scrypto::utils::scrypto_setup_panic_hook();
+
             // Retrieve call data
             let calldata: ::scrypto::kernel::GetCallDataOutput = ::scrypto::kernel::call_kernel(
                 ::scrypto::kernel::GET_CALL_DATA,
@@ -81,7 +84,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
             match calldata.function.as_str() {
                 #( #arm_guards => #arm_bodies )*
                 _ => {
-                    ::scrypto::utils::scrypto_abort("Function/method not fund")
+                    panic!("Function/method not fund")
                 }
             }
 
@@ -563,6 +566,7 @@ mod tests {
                 }
                 #[no_mangle]
                 pub extern "C" fn Test_main() -> *mut u8 {
+                    ::scrypto::utils::scrypto_setup_panic_hook();
                     let calldata: ::scrypto::kernel::GetCallDataOutput = ::scrypto::kernel::call_kernel(
                         ::scrypto::kernel::GET_CALL_DATA,
                         ::scrypto::kernel::GetCallDataInput {},
@@ -582,7 +586,7 @@ mod tests {
                             rtn = ::scrypto::buffer::scrypto_encode_for_kernel(&blueprint::Test::x(&state, auth));
                         }
                         _ => {
-                            ::scrypto::utils::scrypto_abort("Function/method not fund")
+                            panic!("Function/method not fund")
                         }
                     }
                     ::scrypto::buffer::scrypto_wrap(rtn)

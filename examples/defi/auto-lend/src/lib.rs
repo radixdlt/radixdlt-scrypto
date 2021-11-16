@@ -148,7 +148,7 @@ blueprint! {
                     "Liquidation not allowed."
                 );
             } else {
-                scrypto_abort("No borrow from the user");
+                panic!("No borrow from the user");
             }
 
             // Check liquidation size
@@ -170,7 +170,7 @@ blueprint! {
         pub fn get_user(&self, user_id: Address) -> User {
             match self.users.get(&user_id) {
                 Some(user) => user,
-                _ => scrypto_abort("User not found"),
+                _ => panic!("User not found"),
             }
         }
 

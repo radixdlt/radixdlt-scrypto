@@ -5,11 +5,9 @@ use crate::kernel::*;
 use crate::resource::*;
 use crate::rust::borrow::ToOwned;
 use crate::rust::collections::HashMap;
-use crate::rust::format;
 use crate::rust::string::String;
 use crate::rust::vec;
 use crate::types::*;
-use crate::utils::*;
 
 /// Represents the definition of a resource.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -20,10 +18,7 @@ pub struct ResourceDef {
 impl From<Address> for ResourceDef {
     fn from(address: Address) -> Self {
         if !address.is_resource_def() {
-            scrypto_abort(format!(
-                "Unable to downcast Address to ResourceDef: {}",
-                address
-            ));
+            panic!("Unable to downcast Address to ResourceDef: {}", address);
         }
 
         Self { address }

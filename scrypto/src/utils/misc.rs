@@ -1,17 +1,16 @@
-use crate::core::Logger;
-use crate::rust::borrow::ToOwned;
-
 /// Unwrap a result and abort if it's a failure. Different from the normal
 /// unwrap, this function does not dump the error details (for better performance).
 pub fn scrypto_unwrap<T, E>(res: Result<T, E>) -> T {
     match res {
         Ok(v) => v,
-        _ => panic!(),
+        _ => panic!("Result is an error"),
     }
 }
 
-/// Dumps an error message and abort.
-pub fn scrypto_abort<S: AsRef<str>>(msg: S) -> ! {
-    Logger::error(msg.as_ref().to_owned());
-    panic!();
+/// Set up panic hook.
+pub fn scrypto_setup_panic_hook() {
+    #[cfg(not(feature = "alloc"))]
+    std::panic::set_hook(Box::new(|info| {
+        crate::core::Logger::error(crate::rust::format!("Panicked at: {:?}", info.location()));
+    }));
 }

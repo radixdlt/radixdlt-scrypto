@@ -45,16 +45,14 @@ blueprint! {
         /// Withdraws resource from this account.
         pub fn withdraw(&mut self, amount: Decimal, resource_def: Address) -> Bucket {
             if !Context::transaction_signers().contains(&self.key) {
-                scrypto_abort(
-                    "Not authorized! Make sure you sign transaction with the correct keys.",
-                )
+                panic!("Not authorized! Make sure you sign transaction with the correct keys.",)
             }
 
             let vault = self.vaults.get(&resource_def);
             match vault {
                 Some(vault) => vault.take(amount),
                 None => {
-                    scrypto_abort("Insufficient balance");
+                    panic!("Insufficient balance");
                 }
             }
         }
