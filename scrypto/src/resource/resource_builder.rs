@@ -48,7 +48,7 @@ impl ResourceBuilder {
             },
             self.metadata.clone(),
             ResourceSupply::Fungible {
-                supply: supply.into(),
+                amount: supply.into(),
             },
         )
         .1
@@ -73,7 +73,7 @@ impl ResourceBuilder {
             },
             self.metadata.clone(),
             ResourceSupply::Fungible {
-                supply: supply.into(),
+                amount: supply.into(),
             },
         )
         .1
@@ -94,7 +94,7 @@ impl ResourceBuilder {
             ResourceType::NonFungible,
             self.metadata.clone(),
             ResourceSupply::NonFungible {
-                supply: supply
+                entries: supply
                     .iter()
                     .map(|(k, v)| (*k, scrypto_encode(v)))
                     .collect(),

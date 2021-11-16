@@ -33,7 +33,7 @@ impl ResourceDef {
         supply: Decimal,
         minter: Option<Address>,
     ) -> Result<Self, ResourceDefError> {
-        Self::check_amount(&supply, resource_type)?;
+        Self::check_amount(supply, resource_type)?;
 
         Ok(Self {
             resource_type,
@@ -60,7 +60,7 @@ impl ResourceDef {
     }
 
     pub fn mint(&mut self, amount: Decimal, auth: Auth) -> Result<(), ResourceDefError> {
-        Self::check_amount(&amount, self.resource_type)?;
+        Self::check_amount(amount, self.resource_type)?;
 
         match self.minter() {
             Some(a) => {
@@ -76,7 +76,7 @@ impl ResourceDef {
     }
 
     pub fn burn(&mut self, amount: Decimal, auth: Auth) -> Result<(), ResourceDefError> {
-        Self::check_amount(&amount, self.resource_type)?;
+        Self::check_amount(amount, self.resource_type)?;
 
         match self.minter() {
             Some(a) => {
@@ -91,7 +91,7 @@ impl ResourceDef {
         }
     }
 
-    fn check_amount(amount: &Decimal, resource_type: ResourceType) -> Result<(), ResourceDefError> {
+    fn check_amount(amount: Decimal, resource_type: ResourceType) -> Result<(), ResourceDefError> {
         if amount.is_negative() {
             return Err(ResourceDefError::NegativeAmount);
         }

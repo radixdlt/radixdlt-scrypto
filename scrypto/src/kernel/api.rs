@@ -113,9 +113,9 @@ pub enum ResourceType {
 
 #[derive(Debug, Clone, TypeId, Encode, Decode, Describe)]
 pub enum ResourceSupply {
-    Fungible { supply: Decimal },
+    Fungible { amount: Decimal },
 
-    NonFungible { supply: Vec<(u32, Vec<u8>)> },
+    NonFungible { entries: Vec<(u32, Vec<u8>)> },
 }
 
 //==========

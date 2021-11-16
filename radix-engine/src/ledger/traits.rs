@@ -79,9 +79,11 @@ pub trait Ledger {
                 XRD_VAULT_ID,
                 Vault::new(
                     Bucket::new(
-                        XRD_MAX_SUPPLY.into(),
                         RADIX_TOKEN,
                         ResourceType::Fungible { granularity: 1 },
+                        ResourceSupply::Fungible {
+                            amount: XRD_MAX_SUPPLY.into(),
+                        },
                     ),
                     SYSTEM_PACKAGE,
                 ),

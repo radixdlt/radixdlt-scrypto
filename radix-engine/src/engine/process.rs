@@ -184,8 +184,14 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
 
         self.withdraw_resource(amount, resource_def)?;
 
-        self.temp_buckets
-            .insert(bid, Bucket::new(amount, resource_def, resource_type));
+        self.temp_buckets.insert(
+            bid,
+            Bucket::new(
+                resource_def,
+                resource_type,
+                ResourceSupply::Fungible { amount },
+            ),
+        );
 
         Ok(())
     }
@@ -221,7 +227,11 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         let bid = self.track.new_bid();
         let bucket = BucketRef::new(LockedBucket::new(
             bid,
-            Bucket::new(amount, resource_def, resource_type),
+            Bucket::new(
+                resource_def,
+                resource_type,
+                ResourceSupply::Fungible { amount },
+            ),
         ));
         self.locked_buckets.insert(bid, bucket.clone());
         self.temp_bucket_refs.insert(rid, bucket);
@@ -1070,16 +1080,20 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
     ) -> Result<CreateResourceFixedOutput, RuntimeError> {
         match input.resource_type {
             ResourceType::Fungible { .. } => {
-                if let ResourceSupply::Fungible { supply } = input.supply {
+                if let ResourceSupply::Fungible { amount } = input.supply {
                     let definition =
-                        ResourceDef::new(input.resource_type, input.metadata, supply, None)
+                        ResourceDef::new(input.resource_type, input.metadata, amount, None)
                             .map_err(RuntimeError::ResourceDefError)?;
                     let address = self.track.new_resource_def_address();
                     if self.track.get_resource_def(address).is_some() {
                         Err(RuntimeError::ResourceDefAlreadyExists(address))
                     } else {
                         debug!(self, "New resource definition: {:?}", address);
-                        let bucket = Bucket::new(supply, address, input.resource_type);
+                        let bucket = Bucket::new(
+                            address,
+                            input.resource_type,
+                            ResourceSupply::Fungible { amount },
+                        );
                         let bid = self.track.new_bid();
                         self.buckets.insert(bid, bucket);
                         self.track.put_resource_def(address, definition);
@@ -1186,13 +1200,17 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
 
             match resource_type {
                 ResourceType::Fungible { .. } => {
-                    if let ResourceSupply::Fungible { supply } = input.supply {
+                    if let ResourceSupply::Fungible { amount } = input.supply {
                         definition
-                            .mint(supply, auth)
+                            .mint(amount, auth)
                             .map_err(RuntimeError::ResourceDefError)?;
 
                         // issue resource
-                        let bucket = Bucket::new(supply, input.resource_def, resource_type);
+                        let bucket = Bucket::new(
+                            input.resource_def,
+                            resource_type,
+                            ResourceSupply::Fungible { amount },
+                        );
                         let bid = self.track.new_bid();
                         self.buckets.insert(bid, bucket);
                         bid
@@ -1258,9 +1276,9 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
 
         let new_vault = Vault::new(
             Bucket::new(
-                Decimal::zero(),
                 input.resource_def,
                 definition.resource_type(),
+                ResourceSupply::Fungible { amount: 0.into() },
             ),
             self.package()?,
         );
@@ -1351,9 +1369,9 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
             .ok_or(RuntimeError::ResourceDefNotFound(input.resource_def))?;
 
         let new_bucket = Bucket::new(
-            Decimal::zero(),
             input.resource_def,
             definition.resource_type(),
+            ResourceSupply::Fungible { amount: 0.into() },
         );
         let new_bid = self.track.new_bid();
         self.buckets.insert(new_bid, new_bucket);

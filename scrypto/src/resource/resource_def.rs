@@ -69,7 +69,7 @@ impl ResourceDef {
         let input = MintResourceInput {
             resource_def: self.address,
             supply: ResourceSupply::Fungible {
-                supply: amount.into(),
+                amount: amount.into(),
             },
             auth: auth.into(),
         };
@@ -83,7 +83,7 @@ impl ResourceDef {
         let input = MintResourceInput {
             resource_def: self.address,
             supply: ResourceSupply::NonFungible {
-                supply: vec![(id, scrypto_encode(&value))],
+                entries: vec![(id, scrypto_encode(&value))],
             },
             auth: auth.into(),
         };

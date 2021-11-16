@@ -1,6 +1,8 @@
 use sbor::*;
 use scrypto::kernel::*;
 use scrypto::rust::rc::Rc;
+use scrypto::rust::string::ToString;
+use scrypto::rust::vec::Vec;
 use scrypto::types::*;
 
 /// Represents an error when accessing a bucket.
@@ -11,14 +13,15 @@ pub enum BucketError {
     InvalidGranularity,
     GranularityCheckFailed,
     NegativeAmount,
+    UnsupportedOperation,
 }
 
 /// A transient resource container.
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct Bucket {
-    amount: Decimal,
     resource_def: Address,
     resource_type: ResourceType,
+    supply: ResourceSupply,
 }
 
 /// A bucket becomes locked after a borrow operation.
@@ -32,11 +35,11 @@ pub struct LockedBucket {
 pub type BucketRef = Rc<LockedBucket>;
 
 impl Bucket {
-    pub fn new(amount: Decimal, resource_def: Address, resource_type: ResourceType) -> Self {
+    pub fn new(resource_def: Address, resource_type: ResourceType, supply: ResourceSupply) -> Self {
         Self {
-            amount,
             resource_def,
             resource_type,
+            supply,
         }
     }
 
@@ -44,32 +47,72 @@ impl Bucket {
         if self.resource_def != other.resource_def {
             Err(BucketError::MismatchingResourceDef)
         } else {
-            self.amount += other.amount;
+            match &mut self.supply {
+                ResourceSupply::Fungible { amount } => {
+                    self.supply = ResourceSupply::Fungible {
+                        amount: *amount + other.amount(),
+                    };
+                }
+                ResourceSupply::NonFungible { ref mut entries } => {
+                    entries.extend(other.entries()?);
+                }
+            }
             Ok(())
         }
     }
 
-    pub fn take(&mut self, amount: Decimal) -> Result<Self, BucketError> {
-        Self::check_amount(&amount, &self.resource_type)?;
+    pub fn take(&mut self, amount_to_withdraw: Decimal) -> Result<Self, BucketError> {
+        Self::check_amount(amount_to_withdraw, &self.resource_type)?;
 
-        if self.amount < amount {
+        if self.amount() < amount_to_withdraw {
             Err(BucketError::InsufficientBalance)
         } else {
-            self.amount -= amount;
-
-            Ok(Self::new(amount, self.resource_def, self.resource_type))
+            match &mut self.supply {
+                ResourceSupply::Fungible { amount } => {
+                    self.supply = ResourceSupply::Fungible {
+                        amount: *amount - amount_to_withdraw,
+                    };
+                    Ok(Self::new(
+                        self.resource_def,
+                        self.resource_type,
+                        ResourceSupply::Fungible {
+                            amount: amount_to_withdraw,
+                        },
+                    ))
+                }
+                ResourceSupply::NonFungible { ref mut entries } => {
+                    let split = entries.split_off(
+                        entries.len() - amount_to_withdraw.to_string().parse::<usize>().unwrap(),
+                    );
+                    Ok(Self::new(
+                        self.resource_def,
+                        self.resource_type,
+                        ResourceSupply::NonFungible { entries: split },
+                    ))
+                }
+            }
         }
     }
 
     pub fn amount(&self) -> Decimal {
-        self.amount
+        match &self.supply {
+            ResourceSupply::Fungible { amount } => *amount,
+            ResourceSupply::NonFungible { entries } => entries.len().into(),
+        }
+    }
+
+    pub fn entries(&self) -> Result<Vec<(u32, Vec<u8>)>, BucketError> {
+        match &self.supply {
+            ResourceSupply::Fungible { .. } => Err(BucketError::UnsupportedOperation),
+            ResourceSupply::NonFungible { entries } => Ok(entries.clone()),
+        }
     }
 
     pub fn resource_def(&self) -> Address {
         self.resource_def
     }
 
-    fn check_amount(amount: &Decimal, resource_type: &ResourceType) -> Result<(), BucketError> {
+    fn check_amount(amount: Decimal, resource_type: &ResourceType) -> Result<(), BucketError> {
         if amount.is_negative() {
             return Err(BucketError::NegativeAmount);
         }
