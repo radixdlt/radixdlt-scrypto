@@ -1,15 +1,13 @@
-use scrypto::blueprint;
-use scrypto::resource::{Bucket, ResourceBuilder};
-use scrypto::types::{Address, Decimal};
+use scrypto::prelude::*;
 
 blueprint! {
-    struct BadgeTest;
+    struct BucketTest;
 
-    impl BadgeTest {
+    impl BucketTest {
         pub fn combine() -> Bucket {
             let bucket1 = ResourceBuilder::new()
-                .metadata("name", "TestBadge")
-                .new_badge_fixed(100);
+                .metadata("name", "TestToken")
+                .new_token_fixed(100);
             let bucket2 = bucket1.take(50);
 
             bucket1.put(bucket2);
@@ -18,16 +16,16 @@ blueprint! {
 
         pub fn split() -> (Bucket, Bucket) {
             let bucket1 = ResourceBuilder::new()
-                .metadata("name", "TestBadge")
-                .new_badge_fixed(100);
+                .metadata("name", "TestToken")
+                .new_token_fixed(100);
             let bucket2 = bucket1.take(Decimal::from(5));
             (bucket1, bucket2)
         }
 
         pub fn borrow() -> Bucket {
             let bucket = ResourceBuilder::new()
-                .metadata("name", "TestBadge")
-                .new_badge_fixed(100);
+                .metadata("name", "TestToken")
+                .new_token_fixed(100);
 
             let bucket_ref = bucket.borrow();
             bucket_ref.drop();
@@ -36,8 +34,8 @@ blueprint! {
 
         pub fn query() -> (Decimal, Address, Bucket) {
             let bucket = ResourceBuilder::new()
-                .metadata("name", "TestBadge")
-                .new_badge_fixed(100);
+                .metadata("name", "TestToken")
+                .new_token_fixed(100);
 
             (bucket.amount(), bucket.resource_address(), bucket)
         }

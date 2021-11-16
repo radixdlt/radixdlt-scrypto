@@ -15,7 +15,6 @@ cd "$(dirname "$0")"
 (cd radix-engine; cargo fmt)
 (cd simulator; cargo fmt)
 
-(cd radix-engine/tests/everything; scrypto fmt)
 (cd assets/account; scrypto fmt)
 (cd assets/system; scrypto fmt)
 (cd examples/core/cross-blueprint-call; scrypto fmt)

@@ -1,6 +1,4 @@
-use scrypto::core::{call_method, State};
-use scrypto::resource::{Bucket, BucketRef, ResourceBuilder, Vault};
-use scrypto::{args, blueprint};
+use scrypto::prelude::*;
 
 blueprint! {
     struct MoveTest {

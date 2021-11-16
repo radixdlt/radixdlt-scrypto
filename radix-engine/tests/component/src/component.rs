@@ -1,7 +1,4 @@
-use scrypto::blueprint;
-use scrypto::core::{Blueprint, Component, State};
-use scrypto::resource::{Bucket, ResourceBuilder, Vault};
-use scrypto::types::Address;
+use scrypto::prelude::*;
 
 blueprint! {
     struct ComponentTest {

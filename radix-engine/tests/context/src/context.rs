@@ -1,6 +1,4 @@
-use scrypto::blueprint;
-use scrypto::core::Context;
-use scrypto::types::*;
+use scrypto::prelude::*;
 
 blueprint! {
     struct ContextTest;

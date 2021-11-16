@@ -1,8 +1,4 @@
-use scrypto::blueprint;
-use scrypto::resource::{Bucket, ResourceBuilder, ResourceDef};
-use scrypto::rust::collections::*;
-use scrypto::rust::str::FromStr;
-use scrypto::types::{Address, Decimal};
+use scrypto::prelude::*;
 
 blueprint! {
     struct ResourceTest;

@@ -1,5 +1,4 @@
-use scrypto::blueprint;
-use scrypto::core::LazyMap;
+use scrypto::prelude::*;
 
 blueprint! {
     struct LazyMapTest {}
