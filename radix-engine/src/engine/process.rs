@@ -1052,13 +1052,9 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
     ) -> Result<CreateResourceMutableOutput, RuntimeError> {
         Self::expect_resource_def_address(input.minter)?;
 
-        let resource_def = ResourceDef::new(
-            input.resource_type,
-            input.metadata,
-            Decimal::zero(),
-            Some(input.minter),
-        )
-        .map_err(RuntimeError::ResourceDefError)?;
+        let resource_def =
+            ResourceDef::new_mutable(input.resource_type, input.metadata, Some(input.minter))
+                .map_err(RuntimeError::ResourceDefError)?;
 
         let address = self.track.new_resource_def_address();
         if self.track.get_resource_def(address).is_some() {
@@ -1078,37 +1074,23 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         &mut self,
         input: CreateResourceFixedInput,
     ) -> Result<CreateResourceFixedOutput, RuntimeError> {
-        match input.resource_type {
-            ResourceType::Fungible { .. } => {
-                if let ResourceSupply::Fungible { amount } = input.supply {
-                    let definition =
-                        ResourceDef::new(input.resource_type, input.metadata, amount, None)
-                            .map_err(RuntimeError::ResourceDefError)?;
-                    let address = self.track.new_resource_def_address();
-                    if self.track.get_resource_def(address).is_some() {
-                        Err(RuntimeError::ResourceDefAlreadyExists(address))
-                    } else {
-                        debug!(self, "New resource definition: {:?}", address);
-                        let bucket = Bucket::new(
-                            address,
-                            input.resource_type,
-                            ResourceSupply::Fungible { amount },
-                        );
-                        let bid = self.track.new_bid();
-                        self.buckets.insert(bid, bucket);
-                        self.track.put_resource_def(address, definition);
-                        Ok(CreateResourceFixedOutput {
-                            resource_def: address,
-                            bucket: bid,
-                        })
-                    }
-                } else {
-                    Err(RuntimeError::InvalidResourceParameters)
-                }
-            }
-            ResourceType::NonFungible => {
-                todo!()
-            }
+        let (definition, supply) =
+            ResourceDef::new_fixed(input.resource_type, input.metadata, input.supply, None)
+                .map_err(RuntimeError::ResourceDefError)?;
+
+        let address = self.track.new_resource_def_address();
+        if self.track.get_resource_def(address).is_some() {
+            Err(RuntimeError::ResourceDefAlreadyExists(address))
+        } else {
+            debug!(self, "New resource definition: {:?}", address);
+            let bucket = Bucket::new(address, input.resource_type, supply);
+            let bid = self.track.new_bid();
+            self.buckets.insert(bid, bucket);
+            self.track.put_resource_def(address, definition);
+            Ok(CreateResourceFixedOutput {
+                resource_def: address,
+                bucket: bid,
+            })
         }
     }
 
@@ -1179,7 +1161,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         })
     }
 
-    fn handle_mint(
+    fn handle_mint_resource(
         &mut self,
         input: MintResourceInput,
     ) -> Result<MintResourceOutput, RuntimeError> {
@@ -1198,30 +1180,16 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
                 .ok_or(RuntimeError::ResourceDefNotFound(input.resource_def))?;
             let resource_type = definition.resource_type();
 
-            match resource_type {
-                ResourceType::Fungible { .. } => {
-                    if let ResourceSupply::Fungible { amount } = input.supply {
-                        definition
-                            .mint(amount, auth)
-                            .map_err(RuntimeError::ResourceDefError)?;
+            // mint resource
+            let supply = definition
+                .mint(input.supply, auth)
+                .map_err(RuntimeError::ResourceDefError)?;
 
-                        // issue resource
-                        let bucket = Bucket::new(
-                            input.resource_def,
-                            resource_type,
-                            ResourceSupply::Fungible { amount },
-                        );
-                        let bid = self.track.new_bid();
-                        self.buckets.insert(bid, bucket);
-                        bid
-                    } else {
-                        return Err(RuntimeError::InvalidResourceParameters);
-                    }
-                }
-                ResourceType::NonFungible => {
-                    todo!()
-                }
-            }
+            // wrap resource into a bucket
+            let bucket = Bucket::new(input.resource_def, resource_type, supply);
+            let bid = self.track.new_bid();
+            self.buckets.insert(bid, bucket);
+            bid
         };
 
         // drop the input mint auth
@@ -1255,7 +1223,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
                 .ok_or(RuntimeError::ResourceDefNotFound(bucket.resource_def()))?;
 
             resource_def
-                .burn(bucket.amount(), auth)
+                .burn(bucket.supply(), auth)
                 .map_err(RuntimeError::ResourceDefError)?;
         }
         // drop the input mint auth
@@ -1627,7 +1595,7 @@ impl<'r, 'l, L: Ledger> Externals for Process<'r, 'l, L> {
                     GET_RESOURCE_SUPPLY => self.handle(args, Self::handle_get_resource_supply),
                     GET_RESOURCE_MINTER => self.handle(args, Self::handle_get_resource_minter),
                     GET_RESOURCE_TYPE => self.handle(args, Self::handle_get_resource_type),
-                    MINT_RESOURCE => self.handle(args, Self::handle_mint),
+                    MINT_RESOURCE => self.handle(args, Self::handle_mint_resource),
                     BURN_RESOURCE => self.handle(args, Self::handle_burn_resource),
 
                     CREATE_EMPTY_VAULT => self.handle(args, Self::handle_create_vault),

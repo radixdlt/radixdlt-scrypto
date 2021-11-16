@@ -15,5 +15,14 @@ blueprint! {
 
             (minter_badge, resource_def, nft)
         }
+
+        pub fn create_nft_fixed() -> Bucket {
+            ResourceBuilder::new()
+                .metadata("name", "Katz's Sandwiches")
+                .new_nft_fixed(vec![
+                    (1, "Hi"),
+                    (2, "Test")
+                ])
+        }
     }
 }

@@ -94,6 +94,10 @@ impl Bucket {
         }
     }
 
+    pub fn supply(&self) -> ResourceSupply {
+        self.supply.clone()
+    }
+
     pub fn amount(&self) -> Decimal {
         match &self.supply {
             ResourceSupply::Fungible { amount } => *amount,
