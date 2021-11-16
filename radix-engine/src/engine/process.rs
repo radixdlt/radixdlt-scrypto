@@ -657,7 +657,15 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
                 )?;
                 Ok(Value::Custom(ty, rid.to_vec()))
             }
-            _ => Ok(Value::Custom(ty, data)),
+            SCRYPTO_TYPE_DECIMAL
+            | SCRYPTO_TYPE_BIG_DECIMAL
+            | SCRYPTO_TYPE_ADDRESS
+            | SCRYPTO_TYPE_H256
+            | SCRYPTO_TYPE_MID
+            | SCRYPTO_TYPE_VID => Ok(Value::Custom(ty, data)),
+            _ => Err(RuntimeError::InvalidData(DecodeError::InvalidCustomData(
+                ty,
+            ))),
         }
     }
 
