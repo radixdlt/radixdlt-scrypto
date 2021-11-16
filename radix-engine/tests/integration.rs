@@ -252,3 +252,27 @@ fn test_call() {
     let receipt = executor.run(transaction, true).unwrap();
     assert!(receipt.success);
 }
+
+#[test]
+fn test_nft() {
+    let mut ledger = InMemoryLedger::with_bootstrap();
+    let mut executor = TransactionExecutor::new(&mut ledger, 0, 0);
+    let key = executor.new_public_key();
+    let account = executor.new_account(key);
+    let package = executor.publish_package(&compile("nft"));
+
+    let transaction = TransactionBuilder::new(&executor)
+        .call_function(
+            package,
+            "NftTest",
+            "create_nft_mutable",
+            vec![],
+            Some(account),
+        )
+        .drop_all_bucket_refs()
+        .deposit_all_buckets(account)
+        .build(vec![key])
+        .unwrap();
+    let receipt = executor.run(transaction, true).unwrap();
+    assert!(receipt.success);
+}
