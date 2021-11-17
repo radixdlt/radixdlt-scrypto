@@ -19,11 +19,11 @@ blueprint! {
         pub fn create_nft_fixed() -> Bucket {
             ResourceBuilder::new()
                 .metadata("name", "Katz's Sandwiches")
-                .new_nft_fixed(vec![
-                    (1, "Hi"),
-                    (2, "Test"),
-                    (3, "NFT")
-                ])
+                .new_nft_fixed(BTreeMap::from([
+                    (1u64, "Hi"),
+                    (2u64, "Test"),
+                    (3u64, "NFT")
+                ]))
         }
 
         pub fn take_and_put() -> Bucket {

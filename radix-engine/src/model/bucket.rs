@@ -111,7 +111,7 @@ impl Bucket {
         }
     }
 
-    pub fn entries(&self) -> Result<BTreeMap<u32, Vec<u8>>, BucketError> {
+    pub fn entries(&self) -> Result<BTreeMap<u64, Vec<u8>>, BucketError> {
         match &self.supply {
             ResourceSupply::Fungible { .. } => Err(BucketError::UnsupportedOperation),
             ResourceSupply::NonFungible { entries } => Ok(entries.clone()),

@@ -4,9 +4,9 @@ use crate::buffer::*;
 use crate::kernel::*;
 use crate::resource::*;
 use crate::rust::borrow::ToOwned;
+use crate::rust::collections::BTreeMap;
 use crate::rust::collections::HashMap;
 use crate::rust::string::String;
-use crate::rust::vec::Vec;
 use crate::types::*;
 
 /// Utility for creating a resource
@@ -89,16 +89,16 @@ impl ResourceBuilder {
     }
 
     /// Creates a NFT resource with fixed supply.
-    pub fn new_nft_fixed<V: Encode>(&self, supply: Vec<(u32, V)>) -> Bucket {
+    pub fn new_nft_fixed<V: Encode>(&self, supply: BTreeMap<u64, V>) -> Bucket {
+        let mut encoded = BTreeMap::new();
+        for (k, v) in supply {
+            encoded.insert(k, scrypto_encode(&v));
+        }
+
         ResourceDef::new_fixed(
             ResourceType::NonFungible,
             self.metadata.clone(),
-            ResourceSupply::NonFungible {
-                entries: supply
-                    .iter()
-                    .map(|(k, v)| (*k, scrypto_encode(v)))
-                    .collect(),
-            },
+            ResourceSupply::NonFungible { entries: encoded },
         )
         .1
     }

@@ -116,7 +116,7 @@ pub enum ResourceType {
 pub enum ResourceSupply {
     Fungible { amount: Decimal },
 
-    NonFungible { entries: BTreeMap<u32, Vec<u8>> },
+    NonFungible { entries: BTreeMap<u64, Vec<u8>> },
 }
 
 //==========

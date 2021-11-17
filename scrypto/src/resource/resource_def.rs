@@ -80,7 +80,7 @@ impl ResourceDef {
     }
 
     /// Mints non-fungible resources
-    pub fn mint_nft<T: Encode>(&self, id: u32, value: T, auth: BucketRef) -> Bucket {
+    pub fn mint_nft<T: Encode>(&self, id: u64, value: T, auth: BucketRef) -> Bucket {
         let mut entries = BTreeMap::new();
         entries.insert(id, scrypto_encode(&value));
 
