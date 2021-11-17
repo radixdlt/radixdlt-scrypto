@@ -161,7 +161,7 @@ blueprint! {
             asset_symbol: String,
             asset_address: Address,
         ) -> Address {
-            scrypto_assert!(
+            assert!(
                 !self.synthetics.contains_key(&asset_symbol),
                 "Asset already exist",
             );
@@ -310,7 +310,7 @@ blueprint! {
 
         /// Parse user id from a bucket ref.
         fn get_user_id(user_auth: BucketRef) -> Address {
-            scrypto_assert!(user_auth.amount() > 0.into(), "Invalid user proof");
+            assert!(user_auth.amount() > 0.into(), "Invalid user proof");
             let user_id = user_auth.resource_address();
             user_auth.drop();
             user_id
@@ -383,7 +383,7 @@ impl User {
         threshold: Decimal,
     ) {
         if !global_debt_resource_def.supply().is_zero() {
-            scrypto_assert!(
+            assert!(
                 self.snx.amount() * snx_price
                     / (global_debt / global_debt_resource_def.supply()
                         * self.global_debt_share.amount())

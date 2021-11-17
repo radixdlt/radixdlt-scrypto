@@ -27,11 +27,11 @@ blueprint! {
             fee: Decimal,
         ) -> (Component, Bucket) {
             // Check arguments
-            scrypto_assert!(
+            assert!(
                 !a_tokens.is_empty() && !b_tokens.is_empty(),
                 "You must pass in an initial supply of each token"
             );
-            scrypto_assert!(
+            assert!(
                 fee >= 0.into() && fee <= 1.into(),
                 "Invalid fee in thousandths"
             );
@@ -94,7 +94,7 @@ blueprint! {
 
         /// Removes liquidity from this pool.
         pub fn remove_liquidity(&self, lp_tokens: Bucket) -> (Bucket, Bucket) {
-            scrypto_assert!(
+            assert!(
                 self.lp_resource_def == lp_tokens.resource_def(),
                 "Wrong token type passed in"
             );
