@@ -22,11 +22,11 @@ blueprint! {
                 .new_nft_fixed(BTreeMap::from([
                     (1u64, "Hi"),
                     (2u64, "Test"),
-                    (3u64, "NFT")
+                    (3u64, "NFT"),
                 ]))
         }
 
-        pub fn take_and_put() -> Bucket {
+        pub fn take_and_put_bucket() -> Bucket {
             let bucket = Self::create_nft_fixed();
             assert_eq!(bucket.amount(), 3.into());
 
@@ -38,7 +38,7 @@ blueprint! {
             bucket
         }
 
-        pub fn vault() -> Bucket {
+        pub fn take_and_put_vault() -> Bucket {
             let vault = Vault::with_bucket(Self::create_nft_fixed());
             assert_eq!(vault.amount(), 3.into());
 
@@ -46,6 +46,22 @@ blueprint! {
             assert_eq!(vault.amount(), 2.into());
             assert_eq!(nft.amount(), 1.into());
 
+            nft
+        }
+
+        pub fn get_ids_bucket() -> (Bucket, Bucket) {
+            let bucket = Self::create_nft_fixed();
+            let nft = bucket.take(1);
+            assert_eq!(bucket.get_ids(), vec![2, 3]);
+            assert_eq!(nft.get_ids(), vec![1]);
+            (bucket, nft)
+        }
+
+        pub fn get_ids_vault() -> Bucket {
+            let vault = Vault::with_bucket(Self::create_nft_fixed());
+            let nft = vault.take(1);
+            assert_eq!(vault.get_ids(), vec![2, 3]);
+            assert_eq!(nft.get_ids(), vec![1]);
             nft
         }
     }

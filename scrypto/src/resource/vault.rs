@@ -6,7 +6,6 @@ use crate::resource::*;
 use crate::rust::borrow::ToOwned;
 use crate::rust::vec;
 use crate::types::*;
-use crate::utils::scrypto_unwrap;
 
 /// Represents a persistent resource container on ledger state.
 #[derive(Debug)]
@@ -117,18 +116,15 @@ impl Vault {
         output.bucket.into()
     }
 
-    /// Reads the n-th NFT in this vault.
+    /// Reads all the NFT IDs in this vault.
     ///
     /// # Panics
-    /// Panics if this is not an NFT vault or the index is out of bound.
-    pub fn read_nth<T: Decode>(&self, nth: usize) -> (u64, T) {
-        let input = ReadNthInVaultInput {
-            vault: self.vid,
-            nth,
-        };
-        let output: ReadNthInVaultOutput = call_kernel(READ_NTH_IN_VAULT, input);
+    /// Panics if this is not an NFT vault.
+    pub fn get_ids(&self) -> Vec<u64> {
+        let input = GetIdsInVaultInput { vault: self.vid };
+        let output: GetIdsInVaultOutput = call_kernel(GET_IDS_IN_VAULT, input);
 
-        (output.id, scrypto_unwrap(scrypto_decode(&output.value)))
+        output.ids
     }
 }
 

@@ -40,6 +40,24 @@ impl Vault {
         }
     }
 
+    pub fn take_by_id(&mut self, id: u64, auth: Auth) -> Result<Bucket, VaultError> {
+        if auth.contains(self.auth) {
+            self.bucket
+                .take_by_id(id)
+                .map_err(VaultError::AccountingError)
+        } else {
+            Err(VaultError::UnauthorizedAccess)
+        }
+    }
+
+    pub fn get_ids(&self, auth: Auth) -> Result<Vec<u64>, VaultError> {
+        if auth.contains(self.auth) {
+            self.bucket.get_ids().map_err(VaultError::AccountingError)
+        } else {
+            Err(VaultError::UnauthorizedAccess)
+        }
+    }
+
     pub fn amount(&self, auth: Auth) -> Result<Decimal, VaultError> {
         if auth.contains(self.auth) {
             Ok(self.bucket.amount())

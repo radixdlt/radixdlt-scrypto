@@ -6,7 +6,6 @@ use crate::resource::*;
 use crate::rust::borrow::ToOwned;
 use crate::rust::vec;
 use crate::types::*;
-use crate::utils::scrypto_unwrap;
 
 /// Represents a transient resource container.
 #[derive(Debug)]
@@ -116,18 +115,15 @@ impl Bucket {
         output.bucket.into()
     }
 
-    /// Reads the n-th NFT in this bucket.
+    /// Reads all the NFT IDs in this bucket.
     ///
     /// # Panics
-    /// Panics if this is not an NFT bucket or the index is out of bound.
-    pub fn read_nth<T: Decode>(&self, nth: usize) -> (u64, T) {
-        let input = ReadNthInBucketInput {
-            bucket: self.bid,
-            nth,
-        };
-        let output: ReadNthInBucketOutput = call_kernel(READ_NTH_IN_BUCKET, input);
+    /// Panics if this is not an NFT bucket.
+    pub fn get_ids(&self) -> Vec<u64> {
+        let input = GetIdsInBucketInput { bucket: self.bid };
+        let output: GetIdsInBucketOutput = call_kernel(GET_IDS_IN_BUCKET, input);
 
-        (output.id, scrypto_unwrap(scrypto_decode(&output.value)))
+        output.ids
     }
 }
 

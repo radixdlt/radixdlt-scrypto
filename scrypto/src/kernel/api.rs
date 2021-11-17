@@ -63,7 +63,7 @@ pub const GET_VAULT_AMOUNT: u32 = 0x43;
 /// Get vault resource definition
 pub const GET_VAULT_RESOURCE_DEF: u32 = 0x44;
 /// Read the nth item in the vault
-pub const READ_NTH_IN_VAULT: u32 = 0x45;
+pub const GET_IDS_IN_VAULT: u32 = 0x45;
 /// Take an item from this vault, by id
 pub const TAKE_BY_ID_FROM_VAULT: u32 = 0x46;
 
@@ -78,7 +78,7 @@ pub const GET_BUCKET_AMOUNT: u32 = 0x53;
 /// Get bucket resource definition
 pub const GET_BUCKET_RESOURCE_DEF: u32 = 0x54;
 /// Read the nth item in the bucket
-pub const READ_NTH_IN_BUCKET: u32 = 0x55;
+pub const GET_IDS_IN_BUCKET: u32 = 0x55;
 /// Take an item from this bucket, by id
 pub const TAKE_BY_ID_FROM_BUCKET: u32 = 0x56;
 
@@ -400,15 +400,13 @@ pub struct TakeByIdFromVaultOutput {
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct ReadNthInVaultInput {
+pub struct GetIdsInVaultInput {
     pub vault: Vid,
-    pub nth: usize,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct ReadNthInVaultOutput {
-    pub id: u64,
-    pub value: Vec<u8>,
+pub struct GetIdsInVaultOutput {
+    pub ids: Vec<u64>,
 }
 
 //==========
@@ -477,15 +475,13 @@ pub struct TakeByIdFromBucketOutput {
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct ReadNthInBucketInput {
+pub struct GetIdsInBucketInput {
     pub bucket: Bid,
-    pub nth: usize,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct ReadNthInBucketOutput {
-    pub id: u64,
-    pub value: Vec<u8>,
+pub struct GetIdsInBucketOutput {
+    pub ids: Vec<u64>,
 }
 
 //==========

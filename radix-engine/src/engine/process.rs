@@ -1246,7 +1246,12 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
             Bucket::new(
                 input.resource_def,
                 definition.resource_type(),
-                ResourceSupply::Fungible { amount: 0.into() },
+                match definition.resource_type() {
+                    ResourceType::Fungible { .. } => ResourceSupply::Fungible { amount: 0.into() },
+                    ResourceType::NonFungible { .. } => ResourceSupply::NonFungible {
+                        entries: BTreeMap::new(),
+                    },
+                },
             ),
             self.package()?,
         );
@@ -1295,6 +1300,41 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         Ok(TakeFromVaultOutput { bucket: new_bid })
     }
 
+    fn handle_take_by_id_from_vault(
+        &mut self,
+        input: TakeByIdFromVaultInput,
+    ) -> Result<TakeByIdFromVaultOutput, RuntimeError> {
+        let auth = self.package_auth()?;
+
+        let new_bucket = self
+            .track
+            .get_vault_mut(input.vault)
+            .ok_or(RuntimeError::VaultNotFound(input.vault))?
+            .take_by_id(input.id, auth)
+            .map_err(RuntimeError::VaultError)?;
+
+        let new_bid = self.track.new_bid();
+        self.buckets.insert(new_bid, new_bucket);
+
+        Ok(TakeByIdFromVaultOutput { bucket: new_bid })
+    }
+
+    fn handle_get_ids_in_vault(
+        &mut self,
+        input: GetIdsInVaultInput,
+    ) -> Result<GetIdsInVaultOutput, RuntimeError> {
+        let auth = self.package_auth()?;
+
+        let vault = self
+            .track
+            .get_vault(input.vault)
+            .ok_or(RuntimeError::VaultNotFound(input.vault))?;
+
+        Ok(GetIdsInVaultOutput {
+            ids: vault.get_ids(auth).map_err(RuntimeError::VaultError)?,
+        })
+    }
+
     fn handle_get_vault_amount(
         &mut self,
         input: GetVaultDecimalInput,
@@ -1339,7 +1379,12 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         let new_bucket = Bucket::new(
             input.resource_def,
             definition.resource_type(),
-            ResourceSupply::Fungible { amount: 0.into() },
+            match definition.resource_type() {
+                ResourceType::Fungible { .. } => ResourceSupply::Fungible { amount: 0.into() },
+                ResourceType::NonFungible { .. } => ResourceSupply::NonFungible {
+                    entries: BTreeMap::new(),
+                },
+            },
         );
         let new_bid = self.track.new_bid();
         self.buckets.insert(new_bid, new_bucket);
@@ -1413,6 +1458,36 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
             .ok_or(RuntimeError::BucketNotFound(bid))?;
 
         Ok(GetBucketResourceAddressOutput { resource_def })
+    }
+
+    fn handle_take_by_id_from_bucket(
+        &mut self,
+        input: TakeByIdFromBucketInput,
+    ) -> Result<TakeByIdFromBucketOutput, RuntimeError> {
+        let new_bucket = self
+            .buckets
+            .get_mut(&input.bucket)
+            .ok_or(RuntimeError::BucketNotFound(input.bucket))?
+            .take_by_id(input.id)
+            .map_err(RuntimeError::BucketError)?;
+        let new_bid = self.track.new_bid();
+        self.buckets.insert(new_bid, new_bucket);
+
+        Ok(TakeByIdFromBucketOutput { bucket: new_bid })
+    }
+
+    fn handle_get_ids_in_bucket(
+        &mut self,
+        input: GetIdsInBucketInput,
+    ) -> Result<GetIdsInBucketOutput, RuntimeError> {
+        let bucket = self
+            .buckets
+            .get(&input.bucket)
+            .ok_or(RuntimeError::BucketNotFound(input.bucket))?;
+
+        Ok(GetIdsInBucketOutput {
+            ids: bucket.get_ids().map_err(RuntimeError::BucketError)?,
+        })
     }
 
     fn handle_create_bucket_ref(
@@ -1605,6 +1680,8 @@ impl<'r, 'l, L: Ledger> Externals for Process<'r, 'l, L> {
                     GET_VAULT_RESOURCE_DEF => {
                         self.handle(args, Self::handle_get_vault_resource_def)
                     }
+                    TAKE_BY_ID_FROM_VAULT => self.handle(args, Self::handle_take_by_id_from_vault),
+                    GET_IDS_IN_VAULT => self.handle(args, Self::handle_get_ids_in_vault),
 
                     CREATE_EMPTY_BUCKET => self.handle(args, Self::handle_create_bucket),
                     PUT_INTO_BUCKET => self.handle(args, Self::handle_put_into_bucket),
@@ -1613,6 +1690,10 @@ impl<'r, 'l, L: Ledger> Externals for Process<'r, 'l, L> {
                     GET_BUCKET_RESOURCE_DEF => {
                         self.handle(args, Self::handle_get_bucket_resource_def)
                     }
+                    TAKE_BY_ID_FROM_BUCKET => {
+                        self.handle(args, Self::handle_take_by_id_from_bucket)
+                    }
+                    GET_IDS_IN_BUCKET => self.handle(args, Self::handle_get_ids_in_bucket),
 
                     CREATE_BUCKET_REF => self.handle(args, Self::handle_create_bucket_ref),
                     DROP_BUCKET_REF => self.handle(args, Self::handle_drop_bucket_ref),

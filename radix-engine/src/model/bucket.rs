@@ -15,6 +15,7 @@ pub enum BucketError {
     GranularityCheckFailed,
     NegativeAmount,
     UnsupportedOperation,
+    NftNotFound,
 }
 
 /// A transient resource container.
@@ -96,6 +97,31 @@ impl Bucket {
                         ResourceSupply::NonFungible { entries: to_return },
                     ))
                 }
+            }
+        }
+    }
+
+    pub fn take_by_id(&mut self, id: u64) -> Result<Self, BucketError> {
+        match &mut self.supply {
+            ResourceSupply::Fungible { .. } => Err(BucketError::UnsupportedOperation),
+            ResourceSupply::NonFungible { ref mut entries } => {
+                let nft = entries.remove(&id).ok_or(BucketError::NftNotFound)?;
+                Ok(Self::new(
+                    self.resource_def,
+                    self.resource_type,
+                    ResourceSupply::NonFungible {
+                        entries: BTreeMap::from([(id, nft)]),
+                    },
+                ))
+            }
+        }
+    }
+
+    pub fn get_ids(&self) -> Result<Vec<u64>, BucketError> {
+        match &self.supply {
+            ResourceSupply::Fungible { .. } => Err(BucketError::UnsupportedOperation),
+            ResourceSupply::NonFungible { entries } => {
+                Ok(entries.keys().into_iter().map(Clone::clone).collect())
             }
         }
     }
