@@ -79,7 +79,7 @@ impl ResourceBuilder {
         .1
     }
 
-    /// Creates a NFT resource with mutable supply.
+    /// Creates an NFT resource with mutable supply.
     pub fn new_nft_mutable<A: Into<ResourceDef>>(&self, minter: A) -> ResourceDef {
         ResourceDef::new_mutable(
             ResourceType::NonFungible,
@@ -88,7 +88,7 @@ impl ResourceBuilder {
         )
     }
 
-    /// Creates a NFT resource with fixed supply.
+    /// Creates an NFT resource with fixed supply.
     pub fn new_nft_fixed<V: Encode>(&self, supply: BTreeMap<u64, V>) -> Bucket {
         let mut encoded = BTreeMap::new();
         for (k, v) in supply {

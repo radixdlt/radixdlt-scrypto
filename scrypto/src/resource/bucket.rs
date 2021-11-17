@@ -6,6 +6,7 @@ use crate::resource::*;
 use crate::rust::borrow::ToOwned;
 use crate::rust::vec;
 use crate::types::*;
+use crate::utils::scrypto_unwrap;
 
 /// Represents a transient resource container.
 #[derive(Debug)]
@@ -96,9 +97,37 @@ impl Bucket {
         self.amount() == 0.into()
     }
 
-    /// Use resources in this bucket as authorization for an operation.
+    /// Uses resources in this bucket as authorization for an operation.
     pub fn authorize<F: FnOnce(BucketRef) -> O, O>(&self, f: F) -> O {
         f(self.borrow())
+    }
+
+    /// Takes an NFT from this bucket, by id.
+    ///
+    /// # Panics
+    /// Panics if this is not an NFT bucket or the specified NFT is not found.
+    pub fn take_by_id(&self, id: u64) -> Bucket {
+        let input = TakeByIdFromBucketInput {
+            bucket: self.bid,
+            id,
+        };
+        let output: TakeByIdFromBucketOutput = call_kernel(TAKE_BY_ID_FROM_BUCKET, input);
+
+        output.bucket.into()
+    }
+
+    /// Reads the n-th NFT in this bucket.
+    ///
+    /// # Panics
+    /// Panics if this is not an NFT bucket or the index is out of bound.
+    pub fn read_nth<T: Decode>(&self, nth: usize) -> (u64, T) {
+        let input = ReadNthInBucketInput {
+            bucket: self.bid,
+            nth,
+        };
+        let output: ReadNthInBucketOutput = call_kernel(READ_NTH_IN_BUCKET, input);
+
+        (output.id, scrypto_unwrap(scrypto_decode(&output.value)))
     }
 }
 

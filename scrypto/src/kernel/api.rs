@@ -62,6 +62,10 @@ pub const TAKE_FROM_VAULT: u32 = 0x42;
 pub const GET_VAULT_AMOUNT: u32 = 0x43;
 /// Get vault resource definition
 pub const GET_VAULT_RESOURCE_DEF: u32 = 0x44;
+/// Read the nth item in the vault
+pub const READ_NTH_IN_VAULT: u32 = 0x45;
+/// Take an item from this vault, by id
+pub const TAKE_BY_ID_FROM_VAULT: u32 = 0x46;
 
 /// Create a new empty bucket
 pub const CREATE_EMPTY_BUCKET: u32 = 0x50;
@@ -73,6 +77,10 @@ pub const TAKE_FROM_BUCKET: u32 = 0x52;
 pub const GET_BUCKET_AMOUNT: u32 = 0x53;
 /// Get bucket resource definition
 pub const GET_BUCKET_RESOURCE_DEF: u32 = 0x54;
+/// Read the nth item in the bucket
+pub const READ_NTH_IN_BUCKET: u32 = 0x55;
+/// Take an item from this bucket, by id
+pub const TAKE_BY_ID_FROM_BUCKET: u32 = 0x56;
 
 /// Obtain a bucket ref
 pub const CREATE_BUCKET_REF: u32 = 0x60;
@@ -380,6 +388,29 @@ pub struct GetVaultResourceAddressOutput {
     pub resource_def: Address,
 }
 
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
+pub struct TakeByIdFromVaultInput {
+    pub vault: Vid,
+    pub id: u64,
+}
+
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
+pub struct TakeByIdFromVaultOutput {
+    pub bucket: Bid,
+}
+
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
+pub struct ReadNthInVaultInput {
+    pub vault: Vid,
+    pub nth: usize,
+}
+
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
+pub struct ReadNthInVaultOutput {
+    pub id: u64,
+    pub value: Vec<u8>,
+}
+
 //==========
 // bucket
 //==========
@@ -432,6 +463,29 @@ pub struct GetBucketResourceAddressInput {
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct GetBucketResourceAddressOutput {
     pub resource_def: Address,
+}
+
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
+pub struct TakeByIdFromBucketInput {
+    pub bucket: Bid,
+    pub id: u64,
+}
+
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
+pub struct TakeByIdFromBucketOutput {
+    pub bucket: Bid,
+}
+
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
+pub struct ReadNthInBucketInput {
+    pub bucket: Bid,
+    pub nth: usize,
+}
+
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
+pub struct ReadNthInBucketOutput {
+    pub id: u64,
+    pub value: Vec<u8>,
 }
 
 //==========
