@@ -1,5 +1,6 @@
 use sbor::*;
 use scrypto::kernel::*;
+use scrypto::rust::collections::BTreeMap;
 use scrypto::rust::rc::Rc;
 use scrypto::rust::string::ToString;
 use scrypto::rust::vec::Vec;
@@ -81,13 +82,18 @@ impl Bucket {
                     ))
                 }
                 ResourceSupply::NonFungible { ref mut entries } => {
-                    let split = entries.split_off(
-                        entries.len() - amount_to_withdraw.to_string().parse::<usize>().unwrap(),
-                    );
+                    let mut to_return = BTreeMap::new();
+                    let n: usize = amount_to_withdraw.to_string().parse().unwrap();
+                    for _ in 0..n {
+                        // pop_first() once it's stable
+                        let first_key = entries.keys().next().unwrap().clone();
+                        let first_value = entries.remove(&first_key).unwrap();
+                        to_return.insert(first_key, first_value);
+                    }
                     Ok(Self::new(
                         self.resource_def,
                         self.resource_type,
-                        ResourceSupply::NonFungible { entries: split },
+                        ResourceSupply::NonFungible { entries: to_return },
                     ))
                 }
             }
@@ -105,7 +111,7 @@ impl Bucket {
         }
     }
 
-    pub fn entries(&self) -> Result<Vec<(u32, Vec<u8>)>, BucketError> {
+    pub fn entries(&self) -> Result<BTreeMap<u32, Vec<u8>>, BucketError> {
         match &self.supply {
             ResourceSupply::Fungible { .. } => Err(BucketError::UnsupportedOperation),
             ResourceSupply::NonFungible { entries } => Ok(entries.clone()),

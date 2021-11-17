@@ -4,6 +4,7 @@ use crate::buffer::*;
 use crate::kernel::*;
 use crate::resource::*;
 use crate::rust::borrow::ToOwned;
+use crate::rust::collections::BTreeMap;
 use crate::rust::collections::HashMap;
 use crate::rust::string::String;
 use crate::rust::vec;
@@ -80,11 +81,12 @@ impl ResourceDef {
 
     /// Mints non-fungible resources
     pub fn mint_nft<T: Encode>(&self, id: u32, value: T, auth: BucketRef) -> Bucket {
+        let mut entries = BTreeMap::new();
+        entries.insert(id, scrypto_encode(&value));
+
         let input = MintResourceInput {
             resource_def: self.address,
-            supply: ResourceSupply::NonFungible {
-                entries: vec![(id, scrypto_encode(&value))],
-            },
+            supply: ResourceSupply::NonFungible { entries },
             auth: auth.into(),
         };
         let output: MintResourceOutput = call_kernel(MINT_RESOURCE, input);

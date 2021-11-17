@@ -21,8 +21,32 @@ blueprint! {
                 .metadata("name", "Katz's Sandwiches")
                 .new_nft_fixed(vec![
                     (1, "Hi"),
-                    (2, "Test")
+                    (2, "Test"),
+                    (3, "NFT")
                 ])
+        }
+
+        pub fn take_and_put() -> Bucket {
+            let bucket = Self::create_nft_fixed();
+            assert_eq!(bucket.amount(), 3.into());
+
+            let nft = bucket.take(1);
+            assert_eq!(bucket.amount(), 2.into());
+            assert_eq!(nft.amount(), 1.into());
+
+            bucket.put(nft);
+            bucket
+        }
+
+        pub fn vault() -> Bucket {
+            let vault = Vault::with_bucket(Self::create_nft_fixed());
+            assert_eq!(vault.amount(), 3.into());
+
+            let nft = vault.take(1);
+            assert_eq!(vault.amount(), 2.into());
+            assert_eq!(nft.amount(), 1.into());
+
+            nft
         }
     }
 }

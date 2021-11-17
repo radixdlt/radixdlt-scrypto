@@ -1,5 +1,6 @@
 use sbor::{Decode, Describe, Encode, TypeId};
 
+use crate::rust::collections::BTreeMap;
 use crate::rust::collections::HashMap;
 use crate::rust::string::String;
 use crate::rust::vec::Vec;
@@ -115,7 +116,7 @@ pub enum ResourceType {
 pub enum ResourceSupply {
     Fungible { amount: Decimal },
 
-    NonFungible { entries: Vec<(u32, Vec<u8>)> },
+    NonFungible { entries: BTreeMap<u32, Vec<u8>> },
 }
 
 //==========

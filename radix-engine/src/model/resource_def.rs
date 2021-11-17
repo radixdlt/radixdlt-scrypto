@@ -37,7 +37,7 @@ impl ResourceDef {
         let total = match resource_type {
             ResourceType::Fungible { .. } => {
                 if let ResourceSupply::Fungible { amount } = supply.clone() {
-                    Self::check_amount( amount, resource_type)?;
+                    Self::check_amount(amount, resource_type)?;
                     amount
                 } else {
                     return Err(ResourceDefError::TypeSupplyNotMatching);
