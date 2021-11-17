@@ -39,7 +39,7 @@ blueprint! {
             leverage: Decimal,
             position_type: String, // TODO: make CLI support enum
         ) {
-            scrypto_assert!(leverage >= 1.into() && leverage <= 16.into());
+            assert!(leverage >= 1.into() && leverage <= 16.into());
             let user_id = Self::get_user_id(user_auth);
             let position_type = match position_type.as_str() {
                 "Long" => PositionType::Long,
@@ -66,7 +66,7 @@ blueprint! {
 
         /// Liquidate a position.
         pub fn liquidate(&mut self, user_id: Address, nth: usize) -> Bucket {
-            scrypto_assert!(
+            assert!(
                 self.get_margin_ratio(user_id, nth) <= self.liquidation_threshold,
                 "Position can't be liquidated"
             );
@@ -105,7 +105,7 @@ blueprint! {
 
         /// Parse user id from a bucket ref.
         fn get_user_id(user_auth: BucketRef) -> Address {
-            scrypto_assert!(user_auth.amount() > 0.into(), "Invalid user proof");
+            assert!(user_auth.amount() > 0.into(), "Invalid user proof");
             let user_id = user_auth.resource_address();
             user_auth.drop();
             user_id

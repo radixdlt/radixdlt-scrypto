@@ -105,7 +105,7 @@ blueprint! {
         pub fn borrow(&mut self, user_auth: BucketRef, requested: Decimal) -> Bucket {
             let user_id = Self::get_user_id(user_auth);
 
-            scrypto_assert!(
+            assert!(
                 requested <= self.liquidity_pool.amount() * self.max_borrow_percent,
                 "Max borrow percent exceeded"
             );
@@ -143,7 +143,7 @@ blueprint! {
             // Check if the user is under collateralized
             let collateral_ratio = user.get_collateral_ratio();
             if let Some(ratio) = collateral_ratio {
-                scrypto_assert!(
+                assert!(
                     ratio <= self.min_collateral_ratio,
                     "Liquidation not allowed."
                 );
@@ -152,7 +152,7 @@ blueprint! {
             }
 
             // Check liquidation size
-            scrypto_assert!(
+            assert!(
                 repaid.amount() <= user.borrow_balance * self.max_liquidation_percent,
                 "Max liquidation percent exceeded."
             );
@@ -186,7 +186,7 @@ blueprint! {
 
         /// Parse user id from a bucket ref.
         fn get_user_id(user_auth: BucketRef) -> Address {
-            scrypto_assert!(user_auth.amount() > 0.into(), "Invalid user proof");
+            assert!(user_auth.amount() > 0.into(), "Invalid user proof");
             let user_id = user_auth.resource_address();
             user_auth.drop();
             user_id
@@ -229,7 +229,7 @@ impl User {
     pub fn check_collateral_ratio(&self, min_collateral_ratio: Decimal) {
         let collateral_ratio = self.get_collateral_ratio();
         if let Some(ratio) = collateral_ratio {
-            scrypto_assert!(
+            assert!(
                 ratio >= min_collateral_ratio,
                 "Min collateral ratio does not meet"
             );
@@ -295,7 +295,7 @@ impl User {
 
     pub fn on_liquidate(&mut self, amount: Decimal, bonus_percent: Decimal) -> Decimal {
         let changes = self.on_repay(amount);
-        scrypto_assert!(changes == 0.into());
+        assert!(changes == 0.into());
 
         // TODO add exchange rate here when collaterals and borrows are different
 

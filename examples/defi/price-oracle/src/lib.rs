@@ -11,7 +11,7 @@ blueprint! {
     impl PriceOracle {
         /// Creates a PriceOracle component, along with admin badges.
         pub fn new(num_of_admins: u32) -> (Bucket, Component) {
-            scrypto_assert!(num_of_admins >= 1);
+            assert!(num_of_admins >= 1);
 
             let badges = ResourceBuilder::new()
                 .metadata("name", "Price Oracle Admin Badge")

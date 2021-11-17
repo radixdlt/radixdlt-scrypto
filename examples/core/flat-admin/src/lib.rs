@@ -39,7 +39,7 @@ blueprint! {
         }
 
         pub fn destroy_admin_badge(&self, to_destroy: Bucket) {
-            scrypto_assert!(
+            assert!(
                 to_destroy.resource_address() == self.admin_badge.address(),
                 "Can not destroy the contents of this bucket!"
             );
