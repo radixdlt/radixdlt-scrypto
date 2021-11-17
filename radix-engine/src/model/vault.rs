@@ -1,4 +1,5 @@
 use sbor::*;
+use scrypto::rust::vec::Vec;
 use scrypto::types::*;
 
 use crate::model::{Auth, Bucket, BucketError};

@@ -5,6 +5,7 @@ use crate::kernel::*;
 use crate::resource::*;
 use crate::rust::borrow::ToOwned;
 use crate::rust::vec;
+use crate::rust::vec::Vec;
 use crate::types::*;
 
 /// Represents a transient resource container.
