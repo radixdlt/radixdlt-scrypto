@@ -1,6 +1,7 @@
 use colored::*;
 use sbor::*;
 use scrypto::buffer::*;
+use scrypto::kernel::*;
 use scrypto::rust::fmt;
 use scrypto::rust::string::String;
 use scrypto::rust::string::ToString;
@@ -8,7 +9,6 @@ use scrypto::rust::vec::Vec;
 use scrypto::types::*;
 
 use crate::engine::*;
-use crate::model::*;
 use crate::utils::*;
 
 /// Represents a universally recognizable value.
@@ -100,7 +100,7 @@ pub struct Receipt {
     pub transaction: Transaction,
     pub success: bool,
     pub results: Vec<Result<Option<SmartValue>, RuntimeError>>,
-    pub logs: Vec<(Level, String)>,
+    pub logs: Vec<(LogLevel, String)>,
     pub new_entities: Vec<Address>,
     pub execution_time: Option<u128>,
 }
@@ -182,11 +182,11 @@ impl fmt::Debug for Receipt {
         write!(f, "\n{} {}", "Logs:".bold().green(), self.logs.len())?;
         for (i, (level, msg)) in self.logs.iter().enumerate() {
             let (l, m) = match level {
-                Level::Error => ("ERROR".red(), msg.red()),
-                Level::Warn => ("WARN".yellow(), msg.yellow()),
-                Level::Info => ("INFO".green(), msg.green()),
-                Level::Debug => ("DEBUG".cyan(), msg.cyan()),
-                Level::Trace => ("TRACE".normal(), msg.normal()),
+                LogLevel::Error => ("ERROR".red(), msg.red()),
+                LogLevel::Warn => ("WARN".yellow(), msg.yellow()),
+                LogLevel::Info => ("INFO".green(), msg.green()),
+                LogLevel::Debug => ("DEBUG".cyan(), msg.cyan()),
+                LogLevel::Trace => ("TRACE".normal(), msg.normal()),
             };
             write!(f, "\n{} [{:5}] {}", prefix!(i, self.logs), l, m)?;
         }

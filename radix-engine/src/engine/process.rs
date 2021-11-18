@@ -23,7 +23,7 @@ use crate::model::*;
 macro_rules! trace {
     ($proc:expr, $($args: expr),+) => {
         if $proc.trace {
-            $proc.log(Level::Trace, format!($($args),+));
+            $proc.log(LogLevel::Trace, format!($($args),+));
         }
     };
 }
@@ -31,7 +31,7 @@ macro_rules! trace {
 macro_rules! debug {
     ($proc:expr, $($args: expr),+) => {
         if $proc.trace {
-            $proc.log(Level::Debug, format!($($args),+));
+            $proc.log(LogLevel::Debug, format!($($args),+));
         }
     };
 }
@@ -39,7 +39,7 @@ macro_rules! debug {
 macro_rules! info {
     ($proc:expr, $($args: expr),+) => {
         if $proc.trace {
-            $proc.log(Level::Info, format!($($args),+));
+            $proc.log(LogLevel::Info, format!($($args),+));
         }
     };
 }
@@ -47,7 +47,7 @@ macro_rules! info {
 macro_rules! warn {
     ($proc:expr, $($args: expr),+) => {
         if $proc.trace {
-            $proc.log(Level::Warn, format!($($args),+));
+            $proc.log(LogLevel::Warn, format!($($args),+));
         }
     };
 }
@@ -480,13 +480,13 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
 
     /// Logs a message to the console.
     #[allow(unused_variables)]
-    pub fn log(&self, level: Level, msg: String) {
+    pub fn log(&self, level: LogLevel, msg: String) {
         let (l, m) = match level {
-            Level::Error => ("ERROR".red(), msg.red()),
-            Level::Warn => ("WARN".yellow(), msg.yellow()),
-            Level::Info => ("INFO".green(), msg.green()),
-            Level::Debug => ("DEBUG".cyan(), msg.cyan()),
-            Level::Trace => ("TRACE".normal(), msg.normal()),
+            LogLevel::Error => ("ERROR".red(), msg.red()),
+            LogLevel::Warn => ("WARN".yellow(), msg.yellow()),
+            LogLevel::Info => ("INFO".green(), msg.green()),
+            LogLevel::Debug => ("DEBUG".cyan(), msg.cyan()),
+            LogLevel::Trace => ("TRACE".normal(), msg.normal()),
         };
 
         #[cfg(not(feature = "alloc"))]
@@ -1606,16 +1606,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
     }
 
     fn handle_emit_log(&mut self, input: EmitLogInput) -> Result<EmitLogOutput, RuntimeError> {
-        let level = match input.level {
-            0 => Ok(Level::Error),
-            1 => Ok(Level::Warn),
-            2 => Ok(Level::Info),
-            3 => Ok(Level::Debug),
-            4 => Ok(Level::Trace),
-            _ => Err(RuntimeError::InvalidLogLevel),
-        };
-
-        self.track.add_log(level?, input.message);
+        self.track.add_log(input.level, input.message);
 
         Ok(EmitLogOutput {})
     }

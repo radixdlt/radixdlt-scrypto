@@ -558,7 +558,7 @@ pub struct GetBucketRefResourceDefOutput {
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct EmitLogInput {
-    pub level: u8,
+    pub level: LogLevel,
     pub message: String,
 }
 

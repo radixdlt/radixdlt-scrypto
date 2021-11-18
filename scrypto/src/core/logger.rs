@@ -7,10 +7,7 @@ pub struct Logger {}
 
 impl Logger {
     pub fn log(level: LogLevel, message: String) {
-        let input = EmitLogInput {
-            level: level as u8,
-            message,
-        };
+        let input = EmitLogInput { level, message };
         let _: EmitLogOutput = call_kernel(EMIT_LOG, input);
     }
 

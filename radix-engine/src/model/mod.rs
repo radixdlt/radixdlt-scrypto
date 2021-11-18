@@ -13,13 +13,3 @@ pub use lazy_map::{LazyMap, LazyMapError};
 pub use package::Package;
 pub use resource_def::{ResourceDef, ResourceDefError};
 pub use vault::{Vault, VaultError};
-
-/// Represents a log severity.
-#[derive(Debug, Clone)]
-pub enum Level {
-    Error,
-    Warn,
-    Info,
-    Debug,
-    Trace,
-}

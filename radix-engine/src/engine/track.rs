@@ -1,4 +1,5 @@
 use lru::LruCache;
+use scrypto::kernel::*;
 use scrypto::rust::collections::*;
 use scrypto::rust::string::String;
 use scrypto::rust::vec::Vec;
@@ -22,7 +23,7 @@ pub struct Track<'l, L: Ledger> {
     tx_hash: H256,
     tx_signers: Vec<Address>,
     id_alloc: IdAllocator,
-    logs: Vec<(Level, String)>,
+    logs: Vec<(LogLevel, String)>,
     packages: HashMap<Address, Package>,
     components: HashMap<Address, Component>,
     resource_defs: HashMap<Address, ResourceDef>,
@@ -87,7 +88,7 @@ impl<'l, L: Ledger> Track<'l, L> {
     }
 
     /// Returns the logs collected so far.
-    pub fn logs(&self) -> &Vec<(Level, String)> {
+    pub fn logs(&self) -> &Vec<(LogLevel, String)> {
         &self.logs
     }
 
@@ -97,7 +98,7 @@ impl<'l, L: Ledger> Track<'l, L> {
     }
 
     /// Adds a log message.
-    pub fn add_log(&mut self, level: Level, message: String) {
+    pub fn add_log(&mut self, level: LogLevel, message: String) {
         self.logs.push((level, message));
     }
 
