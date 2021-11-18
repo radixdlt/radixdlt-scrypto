@@ -176,6 +176,11 @@ blueprint! {
 
             // TODO how to wrap a NFT into a bucket? What about supply mutability?
 
+            // let nft2 = nfts.take_nft(nft_ids[1]);
+            // nft2.burn();
+            // nfts.set_nft(nft_ids[0], new_card);
+            // return nfts;
+
             todo!()
         }
 
