@@ -101,7 +101,7 @@ impl Bucket {
         }
     }
 
-    pub fn take_by_id(&mut self, id: u64) -> Result<Self, BucketError> {
+    pub fn take_nft(&mut self, id: u64) -> Result<Self, BucketError> {
         match &mut self.supply {
             ResourceSupply::Fungible { .. } => Err(BucketError::UnsupportedOperation),
             ResourceSupply::NonFungible { ref mut entries } => {
@@ -117,7 +117,17 @@ impl Bucket {
         }
     }
 
-    pub fn get_ids(&self) -> Result<Vec<u64>, BucketError> {
+    pub fn get_nft(&self, id: u64) -> Result<Vec<u8>, BucketError> {
+        match &self.supply {
+            ResourceSupply::Fungible { .. } => Err(BucketError::UnsupportedOperation),
+            ResourceSupply::NonFungible { entries } => {
+                let nft = entries.get(&id).ok_or(BucketError::NftNotFound)?;
+                Ok(nft.clone())
+            }
+        }
+    }
+
+    pub fn get_nft_ids(&self) -> Result<Vec<u64>, BucketError> {
         match &self.supply {
             ResourceSupply::Fungible { .. } => Err(BucketError::UnsupportedOperation),
             ResourceSupply::NonFungible { entries } => {

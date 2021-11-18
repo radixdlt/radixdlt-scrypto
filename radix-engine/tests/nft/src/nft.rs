@@ -49,19 +49,32 @@ blueprint! {
             nft
         }
 
-        pub fn get_ids_bucket() -> (Bucket, Bucket) {
+        pub fn get_nft_bucket() -> Bucket {
+            let bucket = Self::create_nft_fixed();
+            let nft: String = bucket.get_nft(2);
+            assert_eq!(nft, "Test");
+            bucket
+        }
+
+        pub fn get_nft_vault() {
+            let vault = Vault::with_bucket(Self::create_nft_fixed());
+            let nft: String = vault.get_nft(2);
+            assert_eq!(nft, "Test");
+        }
+
+        pub fn get_nft_ids_bucket() -> (Bucket, Bucket) {
             let bucket = Self::create_nft_fixed();
             let nft = bucket.take(1);
-            assert_eq!(bucket.get_ids(), vec![2, 3]);
-            assert_eq!(nft.get_ids(), vec![1]);
+            assert_eq!(bucket.get_nft_ids(), vec![2, 3]);
+            assert_eq!(nft.get_nft_ids(), vec![1]);
             (bucket, nft)
         }
 
-        pub fn get_ids_vault() -> Bucket {
+        pub fn get_nft_ids_vault() -> Bucket {
             let vault = Vault::with_bucket(Self::create_nft_fixed());
             let nft = vault.take(1);
-            assert_eq!(vault.get_ids(), vec![2, 3]);
-            assert_eq!(nft.get_ids(), vec![1]);
+            assert_eq!(vault.get_nft_ids(), vec![2, 3]);
+            assert_eq!(nft.get_nft_ids(), vec![1]);
             nft
         }
     }

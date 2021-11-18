@@ -7,6 +7,7 @@ use crate::rust::borrow::ToOwned;
 use crate::rust::vec;
 use crate::rust::vec::Vec;
 use crate::types::*;
+use crate::utils::*;
 
 /// Represents a persistent resource container on ledger state.
 #[derive(Debug)]
@@ -107,23 +108,37 @@ impl Vault {
     ///
     /// # Panics
     /// Panics if this is not an NFT vault or the specified NFT is not found.
-    pub fn take_by_id(&self, id: u64) -> Bucket {
-        let input = TakeByIdFromVaultInput {
+    pub fn take_nft(&self, id: u64) -> Bucket {
+        let input = TakeNftFromVaultInput {
             vault: self.vid,
             id,
         };
-        let output: TakeByIdFromVaultOutput = call_kernel(TAKE_BY_ID_FROM_VAULT, input);
+        let output: TakeNftFromVaultOutput = call_kernel(TAKE_NFT_FROM_VAULT, input);
 
         output.bucket.into()
+    }
+
+    /// Gets the data of an NFT in this vault, by id.
+    ///
+    /// # Panics
+    /// Panics if this is not an NFT vault or the specified NFT is not found.
+    pub fn get_nft<T: Decode>(&self, id: u64) -> T {
+        let input = GetNftInVaultInput {
+            vault: self.vid,
+            id,
+        };
+        let output: GetNftInVaultOutput = call_kernel(TAKE_NFT_FROM_VAULT, input);
+
+        scrypto_unwrap(scrypto_decode(&output.data))
     }
 
     /// Reads all the NFT IDs in this vault.
     ///
     /// # Panics
     /// Panics if this is not an NFT vault.
-    pub fn get_ids(&self) -> Vec<u64> {
-        let input = GetIdsInVaultInput { vault: self.vid };
-        let output: GetIdsInVaultOutput = call_kernel(GET_IDS_IN_VAULT, input);
+    pub fn get_nft_ids(&self) -> Vec<u64> {
+        let input = GetNftIdsInVaultInput { vault: self.vid };
+        let output: GetNftIdsInVaultOutput = call_kernel(GET_NFT_IDS_IN_VAULT, input);
 
         output.ids
     }

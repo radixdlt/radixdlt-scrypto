@@ -41,19 +41,29 @@ impl Vault {
         }
     }
 
-    pub fn take_by_id(&mut self, id: u64, auth: Auth) -> Result<Bucket, VaultError> {
+    pub fn take_nft(&mut self, id: u64, auth: Auth) -> Result<Bucket, VaultError> {
         if auth.contains(self.auth) {
             self.bucket
-                .take_by_id(id)
+                .take_nft(id)
                 .map_err(VaultError::AccountingError)
         } else {
             Err(VaultError::UnauthorizedAccess)
         }
     }
 
-    pub fn get_ids(&self, auth: Auth) -> Result<Vec<u64>, VaultError> {
+    pub fn get_nft_ids(&self, auth: Auth) -> Result<Vec<u64>, VaultError> {
         if auth.contains(self.auth) {
-            self.bucket.get_ids().map_err(VaultError::AccountingError)
+            self.bucket
+                .get_nft_ids()
+                .map_err(VaultError::AccountingError)
+        } else {
+            Err(VaultError::UnauthorizedAccess)
+        }
+    }
+
+    pub fn get_nft(&self, id: u64, auth: Auth) -> Result<Vec<u8>, VaultError> {
+        if auth.contains(self.auth) {
+            self.bucket.get_nft(id).map_err(VaultError::AccountingError)
         } else {
             Err(VaultError::UnauthorizedAccess)
         }

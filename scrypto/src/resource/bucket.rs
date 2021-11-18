@@ -7,6 +7,7 @@ use crate::rust::borrow::ToOwned;
 use crate::rust::vec;
 use crate::rust::vec::Vec;
 use crate::types::*;
+use crate::utils::*;
 
 /// Represents a transient resource container.
 #[derive(Debug)]
@@ -106,23 +107,37 @@ impl Bucket {
     ///
     /// # Panics
     /// Panics if this is not an NFT bucket or the specified NFT is not found.
-    pub fn take_by_id(&self, id: u64) -> Bucket {
-        let input = TakeByIdFromBucketInput {
+    pub fn take_nft(&self, id: u64) -> Bucket {
+        let input = TakeNftFromBucketInput {
             bucket: self.bid,
             id,
         };
-        let output: TakeByIdFromBucketOutput = call_kernel(TAKE_BY_ID_FROM_BUCKET, input);
+        let output: TakeNftFromBucketOutput = call_kernel(TAKE_NFT_FROM_BUCKET, input);
 
         output.bucket.into()
+    }
+
+    /// Gets the data of an NFT in this bucket, by id.
+    ///
+    /// # Panics
+    /// Panics if this is not an NFT bucket or the specified NFT is not found.
+    pub fn get_nft<T: Decode>(&self, id: u64) -> T {
+        let input = GetNftInBucketInput {
+            bucket: self.bid,
+            id,
+        };
+        let output: GetNftInBucketOutput = call_kernel(TAKE_NFT_FROM_BUCKET, input);
+
+        scrypto_unwrap(scrypto_decode(&output.data))
     }
 
     /// Reads all the NFT IDs in this bucket.
     ///
     /// # Panics
     /// Panics if this is not an NFT bucket.
-    pub fn get_ids(&self) -> Vec<u64> {
-        let input = GetIdsInBucketInput { bucket: self.bid };
-        let output: GetIdsInBucketOutput = call_kernel(GET_IDS_IN_BUCKET, input);
+    pub fn get_nft_ids(&self) -> Vec<u64> {
+        let input = GetNftIdsInBucketInput { bucket: self.bid };
+        let output: GetNftIdsInBucketOutput = call_kernel(GET_NFT_IDS_IN_BUCKET, input);
 
         output.ids
     }

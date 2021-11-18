@@ -290,8 +290,20 @@ fn test_nft() {
             vec![],
             Some(account),
         )
-        .call_function(package, "NftTest", "get_ids_bucket", vec![], Some(account))
-        .call_function(package, "NftTest", "get_ids_vault", vec![], Some(account))
+        .call_function(
+            package,
+            "NftTest",
+            "get_nft_ids_bucket",
+            vec![],
+            Some(account),
+        )
+        .call_function(
+            package,
+            "NftTest",
+            "get_nft_ids_vault",
+            vec![],
+            Some(account),
+        )
         .drop_all_bucket_refs()
         .deposit_all_buckets(account)
         .build(vec![key])
