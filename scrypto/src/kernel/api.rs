@@ -1,6 +1,7 @@
 use sbor::{Decode, Describe, Encode, TypeId};
 
 use crate::rust::collections::BTreeMap;
+use crate::rust::collections::BTreeSet;
 use crate::rust::collections::HashMap;
 use crate::rust::string::String;
 use crate::rust::vec::Vec;
@@ -421,7 +422,7 @@ pub struct GetNftIdsInVaultInput {
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct GetNftIdsInVaultOutput {
-    pub ids: Vec<u64>,
+    pub ids: BTreeSet<u64>,
 }
 
 //==========
@@ -507,7 +508,7 @@ pub struct GetNftIdsInBucketInput {
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct GetNftIdsInBucketOutput {
-    pub ids: Vec<u64>,
+    pub ids: BTreeSet<u64>,
 }
 
 //==========

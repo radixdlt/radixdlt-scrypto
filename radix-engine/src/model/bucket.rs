@@ -1,6 +1,7 @@
 use sbor::*;
 use scrypto::kernel::*;
 use scrypto::rust::collections::BTreeMap;
+use scrypto::rust::collections::BTreeSet;
 use scrypto::rust::rc::Rc;
 use scrypto::rust::string::ToString;
 use scrypto::rust::vec::Vec;
@@ -127,7 +128,7 @@ impl Bucket {
         }
     }
 
-    pub fn get_nft_ids(&self) -> Result<Vec<u64>, BucketError> {
+    pub fn get_nft_ids(&self) -> Result<BTreeSet<u64>, BucketError> {
         match &self.supply {
             ResourceSupply::Fungible { .. } => Err(BucketError::UnsupportedOperation),
             ResourceSupply::NonFungible { entries } => {

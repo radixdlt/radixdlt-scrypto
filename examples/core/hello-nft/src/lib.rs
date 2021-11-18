@@ -1,7 +1,7 @@
 use sbor::*;
 use scrypto::prelude::*;
 
-#[derive(TypeId, Encode, Decode)]
+#[derive(TypeId, Encode, Decode, Describe)]
 pub enum Color {
     White,
     Blue,
@@ -10,7 +10,7 @@ pub enum Color {
     Green,
 }
 
-#[derive(TypeId, Encode, Decode)]
+#[derive(TypeId, Encode, Decode, Describe)]
 pub enum Class {
     Land,
     Creature,
@@ -21,7 +21,7 @@ pub enum Class {
     Instant,
 }
 
-#[derive(TypeId, Encode, Decode)]
+#[derive(TypeId, Encode, Decode, Describe)]
 pub enum Rarity {
     Common,
     Uncommon,
@@ -29,7 +29,7 @@ pub enum Rarity {
     MythicRare,
 }
 
-#[derive(TypeId, Encode, Decode)]
+#[derive(TypeId, Encode, Decode, Describe)]
 pub struct MagicCard {
     color: Color,
     class: Class,
@@ -139,7 +139,12 @@ blueprint! {
                 class: Self::random_class(random_seed),
                 rarity: Self::random_rarity(random_seed),
             };
-            let nft_id: u64 = self.random_card_resource_def.supply().to_string().parse().unwrap();
+            let nft_id: u64 = self
+                .random_card_resource_def
+                .supply()
+                .to_string()
+                .parse()
+                .unwrap(); // TODO: provide convenience method for conversion
             let nft = self.random_card_minter.authorize(|auth| {
                 self.random_card_resource_def
                     .mint_nft(nft_id, new_card, auth)
@@ -147,6 +152,41 @@ blueprint! {
 
             // Return the NFT and change
             (nft, payment)
+        }
+
+        pub fn get_available_special_cards(&self) -> BTreeSet<u64> {
+            self.special_cards.get_nft_ids()
+        }
+
+        pub fn fuse_my_cards(&self, nfts: Bucket) -> Bucket {
+            assert!(
+                nfts.amount() == 2.into(),
+                "You need to pass 2 NFTs for fusion"
+            );
+
+            // Get the NFT IDs
+            let nft_ids: Vec<u64> = nfts.get_nft_ids().iter().cloned().collect();
+
+            // Read data of each NFT
+            let card1: MagicCard = nfts.get_nft(nft_ids[0]);
+            let card2: MagicCard = nfts.get_nft(nft_ids[1]);
+
+            // Fuse
+            let new_card = Self::fuse_magic_card(card1, card2);
+
+            // TODO how to wrap a NFT into a bucket? What about supply mutability?
+
+            todo!()
+        }
+
+        pub fn fuse_magic_card(card1: MagicCard, card2: MagicCard) -> MagicCard {
+            // TODO introduce some fusion algorithm
+
+            MagicCard {
+                color: Color::Black,
+                class: Class::Land,
+                rarity: Rarity::MythicRare,
+            }
         }
 
         fn random_color(seed: u64) -> Color {

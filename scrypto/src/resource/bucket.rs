@@ -4,8 +4,8 @@ use crate::buffer::*;
 use crate::kernel::*;
 use crate::resource::*;
 use crate::rust::borrow::ToOwned;
+use crate::rust::collections::BTreeSet;
 use crate::rust::vec;
-use crate::rust::vec::Vec;
 use crate::types::*;
 use crate::utils::*;
 
@@ -135,7 +135,7 @@ impl Bucket {
     ///
     /// # Panics
     /// Panics if this is not an NFT bucket.
-    pub fn get_nft_ids(&self) -> Vec<u64> {
+    pub fn get_nft_ids(&self) -> BTreeSet<u64> {
         let input = GetNftIdsInBucketInput { bucket: self.bid };
         let output: GetNftIdsInBucketOutput = call_kernel(GET_NFT_IDS_IN_BUCKET, input);
 

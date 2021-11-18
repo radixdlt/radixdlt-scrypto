@@ -1,4 +1,5 @@
 use sbor::*;
+use scrypto::rust::collections::BTreeSet;
 use scrypto::rust::vec::Vec;
 use scrypto::types::*;
 
@@ -51,7 +52,7 @@ impl Vault {
         }
     }
 
-    pub fn get_nft_ids(&self, auth: Auth) -> Result<Vec<u64>, VaultError> {
+    pub fn get_nft_ids(&self, auth: Auth) -> Result<BTreeSet<u64>, VaultError> {
         if auth.contains(self.auth) {
             self.bucket
                 .get_nft_ids()
