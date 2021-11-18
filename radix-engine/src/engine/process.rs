@@ -1319,6 +1319,24 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         Ok(TakeNftFromVaultOutput { bucket: new_bid })
     }
 
+    fn handle_update_nft_in_vault(
+        &mut self,
+        input: UpdateNftInVaultInput,
+    ) -> Result<UpdateNftInVaultOutput, RuntimeError> {
+        let auth = self.package_auth()?;
+
+        let vault = self
+            .track
+            .get_vault_mut(input.vault)
+            .ok_or(RuntimeError::VaultNotFound(input.vault))?;
+
+        vault
+            .update_nft(input.id, input.data, auth)
+            .map_err(RuntimeError::VaultError)?;
+
+        Ok(UpdateNftInVaultOutput {})
+    }
+
     fn handle_get_nft_in_vault(
         &mut self,
         input: GetNftInVaultInput,
@@ -1492,6 +1510,22 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         self.buckets.insert(new_bid, new_bucket);
 
         Ok(TakeNftFromBucketOutput { bucket: new_bid })
+    }
+
+    fn handle_update_nft_in_bucket(
+        &mut self,
+        input: UpdateNftInBucketInput,
+    ) -> Result<UpdateNftInBucketOutput, RuntimeError> {
+        let bucket = self
+            .buckets
+            .get_mut(&input.bucket)
+            .ok_or(RuntimeError::BucketNotFound(input.bucket))?;
+
+        bucket
+            .update_nft(input.id, input.data)
+            .map_err(RuntimeError::BucketError)?;
+
+        Ok(UpdateNftInBucketOutput {})
     }
 
     fn handle_get_nft_in_bucket(
@@ -1706,6 +1740,7 @@ impl<'r, 'l, L: Ledger> Externals for Process<'r, 'l, L> {
                         self.handle(args, Self::handle_get_vault_resource_def)
                     }
                     TAKE_NFT_FROM_VAULT => self.handle(args, Self::handle_take_nft_from_vault),
+                    UPDATE_NFT_IN_VAULT => self.handle(args, Self::handle_update_nft_in_vault),
                     GET_NFT_IN_VAULT => self.handle(args, Self::handle_get_nft_in_vault),
                     GET_NFT_IDS_IN_VAULT => self.handle(args, Self::handle_get_nft_ids_in_vault),
 
@@ -1717,6 +1752,7 @@ impl<'r, 'l, L: Ledger> Externals for Process<'r, 'l, L> {
                         self.handle(args, Self::handle_get_bucket_resource_def)
                     }
                     TAKE_NFT_FROM_BUCKET => self.handle(args, Self::handle_take_nft_from_bucket),
+                    UPDATE_NFT_IN_BUCKET => self.handle(args, Self::handle_update_nft_in_bucket),
                     GET_NFT_IN_BUCKET => self.handle(args, Self::handle_get_nft_in_bucket),
                     GET_NFT_IDS_IN_BUCKET => self.handle(args, Self::handle_get_nft_ids_in_bucket),
 

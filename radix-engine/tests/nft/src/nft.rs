@@ -49,6 +49,22 @@ blueprint! {
             nft
         }
 
+        pub fn update_nft_bucket() -> Bucket {
+            let bucket = Self::create_nft_fixed();
+            bucket.update_nft(2, "New String");
+            let nft: String = bucket.get_nft(2);
+            assert_eq!(nft, "New String");
+            bucket
+        }
+
+        pub fn update_nft_vault() {
+            let vault = Vault::with_bucket(Self::create_nft_fixed());
+            vault.update_nft(2, "New String");
+            let nft: String = vault.get_nft(2);
+            assert_eq!(nft, "New String");
+            assert_eq!(nft, "Test");
+        }
+
         pub fn get_nft_bucket() -> Bucket {
             let bucket = Self::create_nft_fixed();
             let nft: String = bucket.get_nft(2);

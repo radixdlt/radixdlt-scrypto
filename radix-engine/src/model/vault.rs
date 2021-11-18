@@ -62,6 +62,16 @@ impl Vault {
         }
     }
 
+    pub fn update_nft(&mut self, id: u64, data: Vec<u8>, auth: Auth) -> Result<(), VaultError> {
+        if auth.contains(self.auth) {
+            self.bucket
+                .update_nft(id, data)
+                .map_err(VaultError::AccountingError)
+        } else {
+            Err(VaultError::UnauthorizedAccess)
+        }
+    }
+
     pub fn get_nft(&self, id: u64, auth: Auth) -> Result<Vec<u8>, VaultError> {
         if auth.contains(self.auth) {
             self.bucket.get_nft(id).map_err(VaultError::AccountingError)

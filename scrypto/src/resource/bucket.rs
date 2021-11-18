@@ -89,8 +89,8 @@ impl Bucket {
     }
 
     /// Burns resource within this bucket.
-    pub fn burn(self, minter: BucketRef) {
-        self.resource_def().burn(self, minter);
+    pub fn burn(self, auth: BucketRef) {
+        self.resource_def().burn(self, auth);
     }
 
     /// Checks if this bucket is empty.
@@ -115,6 +115,18 @@ impl Bucket {
         let output: TakeNftFromBucketOutput = call_kernel(TAKE_NFT_FROM_BUCKET, input);
 
         output.bucket.into()
+    }
+    /// Updates the data of an NFT in this bucket, by id.
+    ///
+    /// # Panics
+    /// Panics if this is not an NFT bucket or the specified NFT is not found.
+    pub fn update_nft<T: Encode>(&self, id: u64, data: T) {
+        let input = UpdateNftInBucketInput {
+            bucket: self.bid,
+            id,
+            data: scrypto_encode(&data),
+        };
+        let _: UpdateNftInBucketOutput = call_kernel(UPDATE_NFT_IN_BUCKET, input);
     }
 
     /// Gets the data of an NFT in this bucket, by id.

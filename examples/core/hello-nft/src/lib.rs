@@ -164,6 +164,11 @@ blueprint! {
                 "You need to pass 2 NFTs for fusion"
             );
 
+            assert!(
+                nfts.resource_def() == self.random_card_resource_def,
+                "Wrong type of resource passed"
+            );
+
             // Get the NFT IDs
             let nft_ids: Vec<u64> = nfts.get_nft_ids().iter().cloned().collect();
 
@@ -171,25 +176,26 @@ blueprint! {
             let card1: MagicCard = nfts.get_nft(nft_ids[0]);
             let card2: MagicCard = nfts.get_nft(nft_ids[1]);
 
-            // Fuse
-            let new_card = Self::fuse_magic_card(card1, card2);
+            // Fuse a new card
+            let new_card = Self::fuse_magic_cards(card1, card2);
 
-            // TODO how to wrap a NFT into a bucket? What about supply mutability?
+            // Burn the 2nd NFT and update the 1st
+            let nft2 = nfts.take_nft(nft_ids[1]);
+            self.random_card_minter.authorize(|auth| {
+                // TODO what if I want to fuse Magic Cards with mutable supply?
+                nft2.burn(auth);
+            });
+            nfts.update_nft(nft_ids[0], new_card);
 
-            // let nft2 = nfts.take_nft(nft_ids[1]);
-            // nft2.burn();
-            // nfts.set_nft(nft_ids[0], new_card);
-            // return nfts;
-
-            todo!()
+            // Return the new NFT
+            nfts
         }
 
-        pub fn fuse_magic_card(card1: MagicCard, card2: MagicCard) -> MagicCard {
-            // TODO introduce some fusion algorithm
-
+        pub fn fuse_magic_cards(card1: MagicCard, card2: MagicCard) -> MagicCard {
+            // TODO introduce some cool fusion algorithm
             MagicCard {
-                color: Color::Black,
-                class: Class::Land,
+                color: card1.color,
+                class: card2.class,
                 rarity: Rarity::MythicRare,
             }
         }

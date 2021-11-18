@@ -118,6 +118,20 @@ impl Bucket {
         }
     }
 
+    pub fn update_nft(&mut self, id: u64, data: Vec<u8>) -> Result<(), BucketError> {
+        match &mut self.supply {
+            ResourceSupply::Fungible { .. } => Err(BucketError::UnsupportedOperation),
+            ResourceSupply::NonFungible { ref mut entries } => {
+                if !entries.contains_key(&id) {
+                    return Err(BucketError::NftNotFound);
+                }
+
+                entries.insert(id, data);
+                Ok(())
+            }
+        }
+    }
+
     pub fn get_nft(&self, id: u64) -> Result<Vec<u8>, BucketError> {
         match &self.supply {
             ResourceSupply::Fungible { .. } => Err(BucketError::UnsupportedOperation),

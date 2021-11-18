@@ -118,6 +118,19 @@ impl Vault {
         output.bucket.into()
     }
 
+    /// Updates the data of an NFT in this vault, by id.
+    ///
+    /// # Panics
+    /// Panics if this is not an NFT vault or the specified NFT is not found.
+    pub fn update_nft<T: Encode>(&self, id: u64, data: T) {
+        let input = UpdateNftInVaultInput {
+            vault: self.vid,
+            id,
+            data: scrypto_encode(&data),
+        };
+        let _: UpdateNftInVaultOutput = call_kernel(UPDATE_NFT_IN_VAULT, input);
+    }
+
     /// Gets the data of an NFT in this vault, by id.
     ///
     /// # Panics

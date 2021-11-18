@@ -65,10 +65,12 @@ pub const GET_VAULT_AMOUNT: u32 = 0x43;
 pub const GET_VAULT_RESOURCE_DEF: u32 = 0x44;
 /// Take an NFT from this vault, by id
 pub const TAKE_NFT_FROM_VAULT: u32 = 0x45;
-/// Get an NFT from this vault, by id
-pub const GET_NFT_IN_VAULT: u32 = 0x46;
+/// Update an NFT in this vault
+pub const UPDATE_NFT_IN_VAULT: u32 = 0x46;
+/// Get the data of an NFT
+pub const GET_NFT_IN_VAULT: u32 = 0x47;
 /// Get the IDs of all NFTs in this vault
-pub const GET_NFT_IDS_IN_VAULT: u32 = 0x47;
+pub const GET_NFT_IDS_IN_VAULT: u32 = 0x48;
 
 /// Create an empty bucket
 pub const CREATE_EMPTY_BUCKET: u32 = 0x50;
@@ -82,10 +84,12 @@ pub const GET_BUCKET_AMOUNT: u32 = 0x53;
 pub const GET_BUCKET_RESOURCE_DEF: u32 = 0x54;
 /// Take an NFT from this bucket, by id
 pub const TAKE_NFT_FROM_BUCKET: u32 = 0x55;
-/// Get an NFT from this bucket, by id
-pub const GET_NFT_IN_BUCKET: u32 = 0x56;
+/// Update an NFT in this bucket
+pub const UPDATE_NFT_IN_BUCKET: u32 = 0x56;
+/// Get the data of an NFT
+pub const GET_NFT_IN_BUCKET: u32 = 0x57;
 /// Get the IDs of all NFTs in this bucket
-pub const GET_NFT_IDS_IN_BUCKET: u32 = 0x57;
+pub const GET_NFT_IDS_IN_BUCKET: u32 = 0x58;
 
 /// Obtain a bucket ref
 pub const CREATE_BUCKET_REF: u32 = 0x60;
@@ -425,6 +429,16 @@ pub struct GetNftIdsInVaultOutput {
     pub ids: BTreeSet<u64>,
 }
 
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
+pub struct UpdateNftInVaultInput {
+    pub vault: Vid,
+    pub id: u64,
+    pub data: Vec<u8>,
+}
+
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
+pub struct UpdateNftInVaultOutput {}
+
 //==========
 // bucket
 //==========
@@ -510,6 +524,16 @@ pub struct GetNftIdsInBucketInput {
 pub struct GetNftIdsInBucketOutput {
     pub ids: BTreeSet<u64>,
 }
+
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
+pub struct UpdateNftInBucketInput {
+    pub bucket: Bid,
+    pub id: u64,
+    pub data: Vec<u8>,
+}
+
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
+pub struct UpdateNftInBucketOutput {}
 
 //==========
 // bucket ref
