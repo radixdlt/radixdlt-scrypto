@@ -38,10 +38,6 @@ pub struct MagicCard {
 
 // FIXME Bucket::take_all() is broken because of NFT
 
-// TODO How to change an NFT? Who is authorized to do so?
-
-// TODO Display NFTs when `resim show`
-
 // TODO Support passing NFT to a component
 
 blueprint! {
@@ -182,7 +178,7 @@ blueprint! {
             // Burn the 2nd NFT and update the 1st
             let nft2 = nfts.take_nft(nft_ids[1]);
             self.random_card_minter.authorize(|auth| {
-                // TODO what if I want to fuse Magic Cards with mutable supply?
+                // TODO what if I want to fuse Magic Cards with fixed supply?
                 nft2.burn(auth);
             });
             nfts.update_nft(nft_ids[0], new_card);

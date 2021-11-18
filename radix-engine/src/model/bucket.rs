@@ -51,13 +51,23 @@ impl Bucket {
             Err(BucketError::MismatchingResourceDef)
         } else {
             match &mut self.supply {
-                ResourceSupply::Fungible { amount } => {
-                    self.supply = ResourceSupply::Fungible {
-                        amount: *amount + other.amount(),
+                ResourceSupply::Fungible { ref mut amount } => {
+                    let other_amount = match other.supply() {
+                        ResourceSupply::Fungible { amount } => amount,
+                        ResourceSupply::NonFungible { .. } => {
+                            return Err(BucketError::UnsupportedOperation);
+                        }
                     };
+                    *amount = *amount + other_amount;
                 }
                 ResourceSupply::NonFungible { ref mut entries } => {
-                    entries.extend(other.entries()?);
+                    let other_entries = match other.supply() {
+                        ResourceSupply::Fungible { .. } => {
+                            return Err(BucketError::UnsupportedOperation);
+                        }
+                        ResourceSupply::NonFungible { entries } => entries,
+                    };
+                    entries.extend(other_entries);
                 }
             }
             Ok(())
@@ -159,13 +169,6 @@ impl Bucket {
         match &self.supply {
             ResourceSupply::Fungible { amount } => *amount,
             ResourceSupply::NonFungible { entries } => entries.len().into(),
-        }
-    }
-
-    pub fn entries(&self) -> Result<BTreeMap<u64, Vec<u8>>, BucketError> {
-        match &self.supply {
-            ResourceSupply::Fungible { .. } => Err(BucketError::UnsupportedOperation),
-            ResourceSupply::NonFungible { entries } => Ok(entries.clone()),
         }
     }
 

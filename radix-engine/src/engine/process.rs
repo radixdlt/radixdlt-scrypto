@@ -184,6 +184,8 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
 
         self.withdraw_resource(amount, resource_def)?;
 
+        // FIXME: Non-fungible resource
+
         self.temp_buckets.insert(
             bid,
             Bucket::new(

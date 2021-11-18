@@ -1,4 +1,5 @@
 use sbor::*;
+use scrypto::kernel::*;
 use scrypto::rust::collections::BTreeSet;
 use scrypto::rust::vec::Vec;
 use scrypto::types::*;
@@ -75,6 +76,14 @@ impl Vault {
     pub fn get_nft(&self, id: u64, auth: Auth) -> Result<Vec<u8>, VaultError> {
         if auth.contains(self.auth) {
             self.bucket.get_nft(id).map_err(VaultError::AccountingError)
+        } else {
+            Err(VaultError::UnauthorizedAccess)
+        }
+    }
+
+    pub fn supply(&self, auth: Auth) -> Result<ResourceSupply, VaultError> {
+        if auth.contains(self.auth) {
+            Ok(self.bucket.supply())
         } else {
             Err(VaultError::UnauthorizedAccess)
         }
