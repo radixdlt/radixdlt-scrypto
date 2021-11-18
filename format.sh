@@ -20,6 +20,7 @@ cd "$(dirname "$0")"
 (cd examples/core/cross-blueprint-call; scrypto fmt)
 (cd examples/core/flat-admin; scrypto fmt)
 (cd examples/core/gumball-machine; scrypto fmt)
+(cd examples/core/hello-nft; scrypto fmt)
 (cd examples/core/hello-world; scrypto fmt)
 (cd examples/core/managed-access; scrypto fmt)
 (cd examples/core/no-std-lib; scrypto fmt)
