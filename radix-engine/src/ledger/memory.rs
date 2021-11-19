@@ -12,6 +12,7 @@ pub struct InMemoryLedger {
     lazy_maps: HashMap<Mid, LazyMap>,
     resource_defs: HashMap<Address, ResourceDef>,
     vaults: HashMap<Vid, Vault>,
+    nfts: HashMap<(Address, u64), Vec<u8>>,
 }
 
 impl InMemoryLedger {
@@ -22,6 +23,7 @@ impl InMemoryLedger {
             lazy_maps: HashMap::new(),
             resource_defs: HashMap::new(),
             vaults: HashMap::new(),
+            nfts: HashMap::new(),
         }
     }
 
@@ -63,11 +65,11 @@ impl Ledger for InMemoryLedger {
         self.components.insert(address, component);
     }
 
-    fn get_lazy_map(&self, mid: Mid) -> Option<LazyMap> {
+    fn get_lazy_map_entry(&self, mid: Mid) -> Option<LazyMap> {
         self.lazy_maps.get(&mid).map(Clone::clone)
     }
 
-    fn put_lazy_map(&mut self, mid: Mid, lazy_map: LazyMap) {
+    fn put_lazy_map_entry(&mut self, mid: Mid, lazy_map: LazyMap) {
         self.lazy_maps.insert(mid, lazy_map);
     }
 
@@ -77,5 +79,13 @@ impl Ledger for InMemoryLedger {
 
     fn put_vault(&mut self, vid: Vid, vault: Vault) {
         self.vaults.insert(vid, vault);
+    }
+
+    fn get_nft(&self, resource_def: Address, id: u64) -> Option<Vec<u8>> {
+        self.nfts.get(&(resource_def, id)).cloned()
+    }
+
+    fn put_nft(&mut self, resource_def: Address, id: u64, data: Vec<u8>) {
+        self.nfts.insert((resource_def, id), data);
     }
 }

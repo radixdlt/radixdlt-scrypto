@@ -18,6 +18,7 @@ const COMPONENTS: &str = "components";
 const LAZY_MAPS: &str = "lazy_maps";
 const RESOURCE_DEFS: &str = "resource_defs";
 const VAULTS: &str = "vaults";
+const NFTS: &str = "nfts";
 
 const FILE_EXT: &str = "sbor";
 
@@ -140,12 +141,12 @@ impl Ledger for FileBasedLedger {
         )
     }
 
-    fn get_lazy_map(&self, mid: Mid) -> Option<LazyMap> {
+    fn get_lazy_map_entry(&self, mid: Mid) -> Option<LazyMap> {
         Self::read(self.get_path(LAZY_MAPS, format!("{}_{}", mid.0, mid.1), FILE_EXT))
             .map(Self::decode)
     }
 
-    fn put_lazy_map(&mut self, mid: Mid, lazy_map: LazyMap) {
+    fn put_lazy_map_entry(&mut self, mid: Mid, lazy_map: LazyMap) {
         Self::write(
             self.get_path(LAZY_MAPS, format!("{}_{}", mid.0, mid.1), FILE_EXT),
             Self::encode(&lazy_map),
@@ -161,6 +162,17 @@ impl Ledger for FileBasedLedger {
         Self::write(
             self.get_path(VAULTS, format!("{}_{}", vid.0, vid.1), FILE_EXT),
             Self::encode(&vault),
+        )
+    }
+
+    fn get_nft(&self, resource_def: Address, id: u64) -> Option<Vec<u8>> {
+        Self::read(self.get_path(NFTS, format!("{}_{}", resource_def, id), FILE_EXT))
+    }
+
+    fn put_nft(&mut self, resource_def: Address, id: u64, data: Vec<u8>) {
+        Self::write(
+            self.get_path(NFTS, format!("{}_{}", resource_def, id), FILE_EXT),
+            data,
         )
     }
 }

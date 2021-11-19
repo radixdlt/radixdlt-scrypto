@@ -36,8 +36,6 @@ pub struct MagicCard {
     rarity: Rarity,
 }
 
-// FIXME Bucket::take_all() is broken because of NFT
-
 // TODO Support passing NFT to a component
 
 blueprint! {

@@ -994,11 +994,12 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
     ) -> Result<CreateLazyMapOutput, RuntimeError> {
         let mid = self.track.new_mid();
 
-        if self.track.get_lazy_map(mid).is_some() {
+        if self.track.get_lazy_map_entry(mid).is_some() {
             return Err(RuntimeError::LazyMapAlreadyExists(mid));
         }
 
-        self.track.put_lazy_map(mid, LazyMap::new(self.package()?));
+        self.track
+            .put_lazy_map_entry(mid, LazyMap::new(self.package()?));
 
         Ok(CreateLazyMapOutput { lazy_map: mid })
     }
@@ -1011,7 +1012,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
 
         let lazy_map = self
             .track
-            .get_lazy_map(input.lazy_map)
+            .get_lazy_map_entry(input.lazy_map)
             .ok_or(RuntimeError::LazyMapNotFound(input.lazy_map))?;
 
         let value = lazy_map

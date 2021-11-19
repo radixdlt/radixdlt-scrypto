@@ -194,12 +194,12 @@ impl<'l, L: Ledger> Track<'l, L> {
     }
 
     /// Returns an immutable reference to a lazy map, if exists.
-    pub fn get_lazy_map(&mut self, mid: Mid) -> Option<&LazyMap> {
+    pub fn get_lazy_map_entry(&mut self, mid: Mid) -> Option<&LazyMap> {
         if self.lazy_maps.contains_key(&mid) {
             return self.lazy_maps.get(&mid);
         }
 
-        if let Some(lazy_map) = self.ledger.get_lazy_map(mid) {
+        if let Some(lazy_map) = self.ledger.get_lazy_map_entry(mid) {
             self.lazy_maps.insert(mid, lazy_map);
             self.lazy_maps.get(&mid)
         } else {
@@ -215,7 +215,7 @@ impl<'l, L: Ledger> Track<'l, L> {
             return self.lazy_maps.get_mut(&mid);
         }
 
-        if let Some(lazy_map) = self.ledger.get_lazy_map(mid) {
+        if let Some(lazy_map) = self.ledger.get_lazy_map_entry(mid) {
             self.lazy_maps.insert(mid, lazy_map);
             self.lazy_maps.get_mut(&mid)
         } else {
@@ -224,7 +224,7 @@ impl<'l, L: Ledger> Track<'l, L> {
     }
 
     /// Inserts a new lazy map.
-    pub fn put_lazy_map(&mut self, mid: Mid, lazy_map: LazyMap) {
+    pub fn put_lazy_map_entry(&mut self, mid: Mid, lazy_map: LazyMap) {
         self.updated_lazy_maps.insert(mid);
 
         self.lazy_maps.insert(mid, lazy_map);
@@ -366,7 +366,7 @@ impl<'l, L: Ledger> Track<'l, L> {
 
         for mid in self.updated_lazy_maps.clone() {
             self.ledger
-                .put_lazy_map(mid, self.lazy_maps.get(&mid).unwrap().clone());
+                .put_lazy_map_entry(mid, self.lazy_maps.get(&mid).unwrap().clone());
         }
 
         for vault in self.updated_vaults.clone() {
