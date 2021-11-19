@@ -52,6 +52,8 @@ blueprint! {
         random_card_resource_def: ResourceDef,
         /// The price of each random card
         random_card_price: Decimal,
+        /// A counter for ID generation
+        random_card_id_counter: u64,
         /// A vault that collects all XRD payments
         collected_xrd: Vault,
     }
@@ -107,6 +109,7 @@ blueprint! {
                 random_card_minter: Vault::with_bucket(random_card_minter_badge),
                 random_card_resource_def,
                 random_card_price: 50.into(),
+                random_card_id_counter: 0,
                 collected_xrd: Vault::new(RADIX_TOKEN),
             }
             .instantiate()
@@ -135,16 +138,11 @@ blueprint! {
                 class: Self::random_class(random_seed),
                 rarity: Self::random_rarity(random_seed),
             };
-            let nft_id: u64 = self
-                .random_card_resource_def
-                .supply()
-                .to_string()
-                .parse()
-                .unwrap(); // TODO: provide convenience method for conversion
             let nft = self.random_card_minter.authorize(|auth| {
                 self.random_card_resource_def
-                    .mint_nft(nft_id, new_card, auth)
+                    .mint_nft(self.random_card_id_counter, new_card, auth)
             });
+            self.random_card_id_counter += 1;
 
             // Return the NFT and change
             (nft, payment)
