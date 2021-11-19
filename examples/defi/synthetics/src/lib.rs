@@ -211,7 +211,7 @@ blueprint! {
             let new_debt = self.get_asset_price(synth.asset_address) * amount;
 
             user.global_debt_share
-                .put(self.synthetics_minter_badge.authorize(|badge| {
+                .put(self.synthetics_minter_badge.authorize(|auth| {
                     self.synthetics_global_debt_share_resource_def.mint(
                         if global_debt.is_zero() {
                             Decimal::from(100)
@@ -220,12 +220,12 @@ blueprint! {
                                 / (global_debt
                                     / self.synthetics_global_debt_share_resource_def.supply())
                         },
-                        badge,
+                        auth,
                     )
                 }));
             let tokens = self
                 .synthetics_minter_badge
-                .authorize(|badge| synth.token_resource_def.mint(amount, badge));
+                .authorize(|auth| synth.token_resource_def.mint(amount, auth));
             user.check_collateralization_ratio(
                 self.get_snx_price(),
                 self.get_total_global_debt(),
@@ -253,11 +253,11 @@ blueprint! {
                     / global_debt,
             );
 
-            self.synthetics_minter_badge.authorize(|badge| {
-                shares_to_burn.burn(badge);
+            self.synthetics_minter_badge.authorize(|auth| {
+                shares_to_burn.burn(auth);
             });
             self.synthetics_minter_badge
-                .authorize(|badge| bucket.burn(badge));
+                .authorize(|auth| bucket.burn(auth));
         }
 
         /// Returns the total global debt.

@@ -53,8 +53,8 @@ Obviously we don't want just anyone to be able to create additional admin badges
 #[auth(admin_badge)]
 pub fn create_additional_admin(&self) -> Bucket {
   self.admin_mint_badge
-    .authorize(|badge| self.admin_badge.mint(1, badge))
+    .authorize(|auth| self.admin_badge.mint(1, auth))
 }
 ```
 
-The `authorize` method is a convenience method which allows us to present the badge contained within our `admin_mint_badge` vault without having to fetch it, present it, and return it.  The closure syntax using `|` characters may be unfamiliar to you: think of `|badge|` as being equivalent to `(badge) ->` in Java or `(badge) =>` in C#.
+The `authorize` method is a convenience method which allows us to present the badge contained within our `admin_mint_badge` vault without having to fetch it, present it, and return it.  The closure syntax using `|` characters may be unfamiliar to you: think of `|auth|` as being equivalent to `(auth) ->` in Java or `(auth) =>` in C#.

@@ -83,9 +83,9 @@ blueprint! {
             };
 
             // Mint LP tokens according to the share the provider is contributing
-            let lp_tokens = self.lp_minter.authorize(|badge| {
+            let lp_tokens = self.lp_minter.authorize(|auth| {
                 self.lp_resource_def
-                    .mint(self.lp_resource_def.supply() * actual_ratio, badge)
+                    .mint(self.lp_resource_def.supply() * actual_ratio, auth)
             });
 
             // Return the LP tokens along with any remainder
@@ -107,8 +107,8 @@ blueprint! {
             let b_withdrawn = self.b_pool.take(self.b_pool.amount() * share);
 
             // Burn the LP tokens received
-            self.lp_minter.authorize(|badge| {
-                lp_tokens.burn(badge);
+            self.lp_minter.authorize(|auth| {
+                lp_tokens.burn(auth);
             });
 
             // Return the withdrawn tokens
