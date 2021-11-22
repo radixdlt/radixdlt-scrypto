@@ -1,6 +1,7 @@
 use sbor::{Decode, Describe, Encode, TypeId};
 
 use crate::rust::collections::BTreeMap;
+use crate::rust::vec::Vec;
 use crate::types::*;
 
 /// Represents the level of a log message.
