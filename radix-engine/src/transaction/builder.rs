@@ -249,7 +249,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
             args: vec![
                 SmartValue::from(ResourceType::Fungible { granularity: 1 }),
                 SmartValue::from(metadata),
-                SmartValue::from(InitialSupply::Fungible { amount: supply }),
+                SmartValue::from(NewSupply::Fungible { amount: supply }),
             ],
         })
     }
@@ -285,7 +285,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
             args: vec![
                 SmartValue::from(ResourceType::Fungible { granularity: 19 }),
                 SmartValue::from(metadata),
-                SmartValue::from(InitialSupply::Fungible { amount: supply }),
+                SmartValue::from(NewSupply::Fungible { amount: supply }),
             ],
         })
     }

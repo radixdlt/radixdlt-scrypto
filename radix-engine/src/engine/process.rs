@@ -986,12 +986,11 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
     ) -> Result<CreateLazyMapOutput, RuntimeError> {
         let mid = self.track.new_mid();
 
-        if self.track.get_lazy_map_entry(mid).is_some() {
+        if self.track.get_lazy_map(mid).is_some() {
             return Err(RuntimeError::LazyMapAlreadyExists(mid));
         }
 
-        self.track
-            .put_lazy_map_entry(mid, LazyMap::new(self.package()?));
+        self.track.put_lazy_map(mid, LazyMap::new(self.package()?));
 
         Ok(CreateLazyMapOutput { lazy_map: mid })
     }
@@ -1004,7 +1003,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
 
         let lazy_map = self
             .track
-            .get_lazy_map_entry(input.lazy_map)
+            .get_lazy_map(input.lazy_map)
             .ok_or(RuntimeError::LazyMapNotFound(input.lazy_map))?;
 
         let value = lazy_map
@@ -1069,24 +1068,41 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         &mut self,
         input: CreateResourceFixedInput,
     ) -> Result<CreateResourceFixedOutput, RuntimeError> {
-        let (definition, supply) =
-            ResourceDef::new_fixed(input.resource_type, input.metadata, input.supply, None)
-                .map_err(RuntimeError::ResourceDefError)?;
-
         let address = self.track.new_resource_def_address();
         if self.track.get_resource_def(address).is_some() {
-            Err(RuntimeError::ResourceDefAlreadyExists(address))
-        } else {
-            debug!(self, "New resource definition: {:?}", address);
-            let bucket = Bucket::new(address, input.resource_type, supply);
-            let bid = self.track.new_bid();
-            self.buckets.insert(bid, bucket);
-            self.track.put_resource_def(address, definition);
-            Ok(CreateResourceFixedOutput {
-                resource_def: address,
-                bucket: bid,
-            })
+            return Err(RuntimeError::ResourceDefAlreadyExists(address));
         }
+        debug!(self, "New resource definition: {:?}", address);
+
+        let supply = match input.new_supply {
+            NewSupply::Fungible { amount } => Supply::Fungible { amount },
+            NewSupply::NonFungible { entries } => {
+                let mut ids = BTreeSet::new();
+
+                for (id, data) in entries {
+                    if self.track.get_nft(address, id).is_some() {
+                        return Err(RuntimeError::NftAlreadyExists(address, id));
+                    }
+                    // FIXME update auth
+                    self.track.put_nft(address, id, Nft::new(data, RADIX_TOKEN));
+                    ids.insert(id);
+                }
+
+                Supply::NonFungible { entries: ids }
+            }
+        };
+
+        let definition = ResourceDef::new_fixed(input.resource_type, input.metadata, &supply, None)
+            .map_err(RuntimeError::ResourceDefError)?;
+
+        let bucket = Bucket::new(address, input.resource_type, supply);
+        let bid = self.track.new_bid();
+        self.buckets.insert(bid, bucket);
+        self.track.put_resource_def(address, definition);
+        Ok(CreateResourceFixedOutput {
+            resource_def: address,
+            bucket: bid,
+        })
     }
 
     fn handle_get_resource_metadata(
@@ -1107,8 +1123,8 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
 
     fn handle_get_resource_total_supply(
         &mut self,
-        input: GetInitialSupplyInput,
-    ) -> Result<GetInitialSupplyOutput, RuntimeError> {
+        input: GetNewSupplyInput,
+    ) -> Result<GetNewSupplyOutput, RuntimeError> {
         Self::expect_resource_def_address(input.resource_def)?;
 
         let resource_def = self
@@ -1117,7 +1133,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
             .ok_or(RuntimeError::ResourceDefNotFound(input.resource_def))?
             .clone();
 
-        Ok(GetInitialSupplyOutput {
+        Ok(GetNewSupplyOutput {
             supply: resource_def.total_supply(),
         })
     }
@@ -1161,6 +1177,27 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         input: MintResourceInput,
     ) -> Result<MintResourceOutput, RuntimeError> {
         Self::expect_resource_def_address(input.resource_def)?;
+
+        // process supply
+        let supply = match input.new_supply {
+            NewSupply::Fungible { amount } => Supply::Fungible { amount },
+            NewSupply::NonFungible { entries } => {
+                let mut ids = BTreeSet::new();
+
+                for (id, data) in entries {
+                    if self.track.get_nft(input.resource_def, id).is_some() {
+                        return Err(RuntimeError::NftAlreadyExists(input.resource_def, id));
+                    }
+                    // FIXME update auth
+                    self.track
+                        .put_nft(input.resource_def, id, Nft::new(data, RADIX_TOKEN));
+                    ids.insert(id);
+                }
+
+                Supply::NonFungible { entries: ids }
+            }
+        };
+
         // update resource def
         let bid = {
             let bucket_ref = self
@@ -1176,8 +1213,8 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
             let resource_type = definition.resource_type();
 
             // mint resource
-            let supply = definition
-                .mint(input.supply, auth)
+            definition
+                .mint(&supply, auth)
                 .map_err(RuntimeError::ResourceDefError)?;
 
             // wrap resource into a bucket
@@ -1228,33 +1265,37 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         Ok(BurnResourceOutput {})
     }
 
-    fn handle_update_nft(
+    fn handle_update_nft_data(
         &mut self,
-        input: UpdateNftInput,
-    ) -> Result<UpdateNftOutput, RuntimeError> {
-        let definition = self
+        input: UpdateNftDataInput,
+    ) -> Result<UpdateNftDataOutput, RuntimeError> {
+        let bucket_ref = self
+            .bucket_refs
+            .get(&input.auth)
+            .ok_or(RuntimeError::BucketRefNotFound(input.auth))?;
+        let auth = self.badge_auth(bucket_ref)?;
+
+        let nft = self
             .track
-            .get_resource_def_mut(input.resource_def)
-            .ok_or(RuntimeError::ResourceDefNotFound(input.resource_def))?;
+            .get_nft_mut(input.resource_def, input.id)
+            .ok_or(RuntimeError::NftNotFound(input.resource_def, input.id))?;
 
-        definition
-            .update_nft(input.id, input.data)
-            .map_err(RuntimeError::ResourceDefError)?;
+        nft.set_data(input.data, auth)
+            .map_err(RuntimeError::NftError)?;
 
-        Ok(UpdateNftOutput {})
+        Ok(UpdateNftDataOutput {})
     }
 
-    fn handle_get_nft(&mut self, input: GetNftInput) -> Result<GetNftOutput, RuntimeError> {
-        let definition = self
+    fn handle_get_nft_data(
+        &mut self,
+        input: GetNftDataInput,
+    ) -> Result<GetNftDataOutput, RuntimeError> {
+        let nft = self
             .track
-            .get_resource_def(input.resource_def)
-            .ok_or(RuntimeError::ResourceDefNotFound(input.resource_def))?;
+            .get_nft(input.resource_def, input.id)
+            .ok_or(RuntimeError::NftNotFound(input.resource_def, input.id))?;
 
-        Ok(GetNftOutput {
-            data: definition
-                .get_nft(input.id)
-                .map_err(RuntimeError::ResourceDefError)?,
-        })
+        Ok(GetNftDataOutput { data: nft.data() })
     }
 
     fn handle_create_vault(
@@ -1689,8 +1730,8 @@ impl<'r, 'l, L: Ledger> Externals for Process<'r, 'l, L> {
                     GET_RESOURCE_TYPE => self.handle(args, Self::handle_get_resource_type),
                     MINT_RESOURCE => self.handle(args, Self::handle_mint_resource),
                     BURN_RESOURCE => self.handle(args, Self::handle_burn_resource),
-                    UPDATE_NFT => self.handle(args, Self::handle_update_nft),
-                    GET_NFT => self.handle(args, Self::handle_get_nft),
+                    UPDATE_NFT_DATA => self.handle(args, Self::handle_update_nft_data),
+                    GET_NFT_DATA => self.handle(args, Self::handle_get_nft_data),
 
                     CREATE_EMPTY_VAULT => self.handle(args, Self::handle_create_vault),
                     PUT_INTO_VAULT => self.handle(args, Self::handle_put_into_vault),

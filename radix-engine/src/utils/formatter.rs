@@ -174,7 +174,7 @@ pub fn format_custom<L: Ledger>(
             let mid = Mid::try_from(data).map_err(|_| DecodeError::InvalidCustomData(ty))?;
 
             let mut buf = String::new();
-            if let Some(lazy_map) = ledger.get_lazy_map_entry(mid) {
+            if let Some(lazy_map) = ledger.get_lazy_map(mid) {
                 for (i, (k, v)) in lazy_map.map().iter().enumerate() {
                     if i != 0 {
                         buf.push_str(", ");

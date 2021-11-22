@@ -20,19 +20,19 @@ blueprint! {
             ResourceBuilder::new()
                 .metadata("name", "Katz's Sandwiches")
                 .new_nft_fixed(BTreeMap::from([
-                    (1u64, "Hi"),
-                    (2u64, "Test"),
-                    (3u64, "NFT"),
+                    (1, "Hi"), 
+                    (2, "Test"), 
+                    (3, "NFT")
                 ]))
         }
 
         pub fn update_and_get_nft() -> (Bucket, Bucket) {
             let (minter, resource_def, bucket) = Self::create_nft_mutable();
-            // let nft: String = resource_def.get_nft(2);
-            // assert_eq!(nft, "Test");
-            // resource_def.update_nft(2, "New String", minter.borrow());
-            // let nft: String = resource_def.get_nft(2);
-            // assert_eq!(nft, "New String");
+            let nft: String = resource_def.get_nft_data(0);
+            assert_eq!(nft, "Prastrami");
+            resource_def.update_nft_data(0, "New String", minter.borrow());
+            let nft: String = resource_def.get_nft_data(0);
+            assert_eq!(nft, "New String");
             (minter, bucket)
         }
 
@@ -70,8 +70,8 @@ blueprint! {
         pub fn get_nft_ids_vault() -> Bucket {
             let vault = Vault::with_bucket(Self::create_nft_fixed());
             let nft = vault.take(1);
-            assert_eq!(vault.get_nft_ids(),  BTreeSet::from([2, 3]));
-            assert_eq!(nft.get_nft_ids(),  BTreeSet::from([1]));
+            assert_eq!(vault.get_nft_ids(), BTreeSet::from([2, 3]));
+            assert_eq!(nft.get_nft_ids(), BTreeSet::from([1]));
             nft
         }
     }

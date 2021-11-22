@@ -106,7 +106,7 @@ impl Bucket {
     ///
     /// # Panics
     /// Panics if this is not an NFT bucket or the specified NFT is not found.
-    pub fn take_nft(&self, id: u64) -> Bucket {
+    pub fn take_nft(&self, id: u128) -> Bucket {
         let input = TakeNftFromBucketInput {
             bucket: self.bid,
             id,
@@ -120,7 +120,7 @@ impl Bucket {
     ///
     /// # Panics
     /// Panics if this is not an NFT bucket.
-    pub fn get_nft_ids(&self) -> BTreeSet<u64> {
+    pub fn get_nft_ids(&self) -> BTreeSet<u128> {
         let input = GetNftIdsInBucketInput { bucket: self.bid };
         let output: GetNftIdsInBucketOutput = call_kernel(GET_NFT_IDS_IN_BUCKET, input);
 

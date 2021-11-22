@@ -47,7 +47,7 @@ impl ResourceBuilder {
                 granularity: 1.into(),
             },
             self.metadata.clone(),
-            InitialSupply::Fungible {
+            NewSupply::Fungible {
                 amount: supply.into(),
             },
         )
@@ -72,7 +72,7 @@ impl ResourceBuilder {
                 granularity: 19.into(),
             },
             self.metadata.clone(),
-            InitialSupply::Fungible {
+            NewSupply::Fungible {
                 amount: supply.into(),
             },
         )
@@ -89,7 +89,7 @@ impl ResourceBuilder {
     }
 
     /// Creates an NFT resource with fixed supply.
-    pub fn new_nft_fixed<V: Encode>(&self, supply: BTreeMap<u64, V>) -> Bucket {
+    pub fn new_nft_fixed<V: Encode>(&self, supply: BTreeMap<u128, V>) -> Bucket {
         let mut encoded = BTreeMap::new();
         for (k, v) in supply {
             encoded.insert(k, scrypto_encode(&v));
@@ -98,7 +98,7 @@ impl ResourceBuilder {
         ResourceDef::new_fixed(
             ResourceType::NonFungible,
             self.metadata.clone(),
-            InitialSupply::NonFungible { entries: encoded },
+            NewSupply::NonFungible { entries: encoded },
         )
         .1
     }

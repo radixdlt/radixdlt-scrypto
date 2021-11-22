@@ -3,7 +3,6 @@ use scrypto::buffer::*;
 use scrypto::kernel::*;
 use scrypto::rust::borrow::ToOwned;
 use scrypto::rust::collections::*;
-use scrypto::rust::vec::Vec;
 use scrypto::types::*;
 
 use crate::model::*;
@@ -36,17 +35,17 @@ pub trait Ledger {
 
     fn put_component(&mut self, address: Address, component: Component);
 
-    fn get_lazy_map_entry(&self, mid: Mid) -> Option<LazyMap>;
+    fn get_lazy_map(&self, mid: Mid) -> Option<LazyMap>;
 
-    fn put_lazy_map_entry(&mut self, mid: Mid, lazy_map: LazyMap);
+    fn put_lazy_map(&mut self, mid: Mid, lazy_map: LazyMap);
 
     fn get_vault(&self, vid: Vid) -> Option<Vault>;
 
     fn put_vault(&mut self, vid: Vid, vault: Vault);
 
-    fn get_nft(&self, resource_def: Address, id: u64) -> Option<Vec<u8>>;
+    fn get_nft(&self, resource_def: Address, id: u128) -> Option<Nft>;
 
-    fn put_nft(&mut self, resource_def: Address, id: u64, data: Vec<u8>);
+    fn put_nft(&mut self, resource_def: Address, id: u128, nft: Nft);
 
     fn bootstrap(&mut self) {
         if self.get_package(SYSTEM_PACKAGE).is_none() {
@@ -73,13 +72,12 @@ pub trait Ledger {
                 ResourceDef::new_fixed(
                     ResourceType::Fungible { granularity: 1 },
                     metadata,
-                    InitialSupply::Fungible {
+                    &Supply::Fungible {
                         amount: XRD_MAX_SUPPLY.into(),
                     },
                     None,
                 )
-                .unwrap()
-                .0,
+                .unwrap(),
             );
 
             // Instantiate system component

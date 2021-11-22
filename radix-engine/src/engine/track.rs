@@ -29,11 +29,13 @@ pub struct Track<'l, L: Ledger> {
     resource_defs: HashMap<Address, ResourceDef>,
     lazy_maps: HashMap<Mid, LazyMap>,
     vaults: HashMap<Vid, Vault>,
+    nfts: HashMap<(Address, u128), Nft>,
     updated_packages: HashSet<Address>,
     updated_components: HashSet<Address>,
     updated_lazy_maps: HashSet<Mid>,
     updated_resource_defs: HashSet<Address>,
     updated_vaults: HashSet<Vid>,
+    updated_nfts: HashSet<(Address, u128)>,
     new_entities: Vec<Address>,
     code_cache: LruCache<Address, Module>, // TODO: move to ledger level
 }
@@ -57,11 +59,13 @@ impl<'l, L: Ledger> Track<'l, L> {
             resource_defs: HashMap::new(),
             lazy_maps: HashMap::new(),
             vaults: HashMap::new(),
+            nfts: HashMap::new(),
             updated_packages: HashSet::new(),
             updated_components: HashSet::new(),
             updated_lazy_maps: HashSet::new(),
             updated_resource_defs: HashSet::new(),
             updated_vaults: HashSet::new(),
+            updated_nfts: HashSet::new(),
             new_entities: Vec::new(),
             code_cache: LruCache::new(1024),
         }
@@ -193,13 +197,50 @@ impl<'l, L: Ledger> Track<'l, L> {
         self.components.insert(address, component);
     }
 
+    /// Returns an immutable reference to a nft, if exists.
+    pub fn get_nft(&mut self, resource_def: Address, id: u128) -> Option<&Nft> {
+        if self.nfts.contains_key(&(resource_def, id)) {
+            return self.nfts.get(&(resource_def, id));
+        }
+
+        if let Some(nft) = self.ledger.get_nft(resource_def, id) {
+            self.nfts.insert((resource_def, id), nft);
+            self.nfts.get(&(resource_def, id))
+        } else {
+            None
+        }
+    }
+
+    /// Returns a mutable reference to a nft, if exists.
+    pub fn get_nft_mut(&mut self, resource_def: Address, id: u128) -> Option<&mut Nft> {
+        self.updated_nfts.insert((resource_def, id));
+
+        if self.nfts.contains_key(&(resource_def, id)) {
+            return self.nfts.get_mut(&(resource_def, id));
+        }
+
+        if let Some(nft) = self.ledger.get_nft(resource_def, id) {
+            self.nfts.insert((resource_def, id), nft);
+            self.nfts.get_mut(&(resource_def, id))
+        } else {
+            None
+        }
+    }
+
+    /// Inserts a new nft.
+    pub fn put_nft(&mut self, resource_def: Address, id: u128, nft: Nft) {
+        self.updated_nfts.insert((resource_def, id));
+
+        self.nfts.insert((resource_def, id), nft);
+    }
+
     /// Returns an immutable reference to a lazy map, if exists.
-    pub fn get_lazy_map_entry(&mut self, mid: Mid) -> Option<&LazyMap> {
+    pub fn get_lazy_map(&mut self, mid: Mid) -> Option<&LazyMap> {
         if self.lazy_maps.contains_key(&mid) {
             return self.lazy_maps.get(&mid);
         }
 
-        if let Some(lazy_map) = self.ledger.get_lazy_map_entry(mid) {
+        if let Some(lazy_map) = self.ledger.get_lazy_map(mid) {
             self.lazy_maps.insert(mid, lazy_map);
             self.lazy_maps.get(&mid)
         } else {
@@ -215,7 +256,7 @@ impl<'l, L: Ledger> Track<'l, L> {
             return self.lazy_maps.get_mut(&mid);
         }
 
-        if let Some(lazy_map) = self.ledger.get_lazy_map_entry(mid) {
+        if let Some(lazy_map) = self.ledger.get_lazy_map(mid) {
             self.lazy_maps.insert(mid, lazy_map);
             self.lazy_maps.get_mut(&mid)
         } else {
@@ -224,7 +265,7 @@ impl<'l, L: Ledger> Track<'l, L> {
     }
 
     /// Inserts a new lazy map.
-    pub fn put_lazy_map_entry(&mut self, mid: Mid, lazy_map: LazyMap) {
+    pub fn put_lazy_map(&mut self, mid: Mid, lazy_map: LazyMap) {
         self.updated_lazy_maps.insert(mid);
 
         self.lazy_maps.insert(mid, lazy_map);
@@ -326,6 +367,10 @@ impl<'l, L: Ledger> Track<'l, L> {
         self.new_entities.push(address);
         address
     }
+    /// Creates a new nft ID.
+    pub fn new_nft_id(&mut self) -> u128 {
+        self.id_alloc.new_nft_id(self.tx_hash())
+    }
 
     /// Creates a new bucket ID.
     pub fn new_bid(&mut self) -> Bid {
@@ -366,12 +411,20 @@ impl<'l, L: Ledger> Track<'l, L> {
 
         for mid in self.updated_lazy_maps.clone() {
             self.ledger
-                .put_lazy_map_entry(mid, self.lazy_maps.get(&mid).unwrap().clone());
+                .put_lazy_map(mid, self.lazy_maps.get(&mid).unwrap().clone());
         }
 
-        for vault in self.updated_vaults.clone() {
+        for vid in self.updated_vaults.clone() {
             self.ledger
-                .put_vault(vault, self.vaults.get(&vault).unwrap().clone());
+                .put_vault(vid, self.vaults.get(&vid).unwrap().clone());
+        }
+
+        for (resource_def, id) in self.updated_nfts.clone() {
+            self.ledger.put_nft(
+                resource_def,
+                id,
+                self.nfts.get(&(resource_def, id)).unwrap().clone(),
+            );
         }
     }
 }

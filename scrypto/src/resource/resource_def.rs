@@ -54,12 +54,12 @@ impl ResourceDef {
     pub fn new_fixed(
         resource_type: ResourceType,
         metadata: HashMap<String, String>,
-        supply: InitialSupply,
+        new_supply: NewSupply,
     ) -> (Self, Bucket) {
         let input = CreateResourceFixedInput {
             resource_type,
             metadata,
-            supply,
+            new_supply,
         };
         let output: CreateResourceFixedOutput = call_kernel(CREATE_RESOURCE_FIXED, input);
 
@@ -70,7 +70,7 @@ impl ResourceDef {
     pub fn mint<T: Into<Decimal>>(&self, amount: T, auth: BucketRef) -> Bucket {
         let input = MintResourceInput {
             resource_def: self.address,
-            supply: InitialSupply::Fungible {
+            new_supply: NewSupply::Fungible {
                 amount: amount.into(),
             },
             auth: auth.into(),
@@ -81,13 +81,13 @@ impl ResourceDef {
     }
 
     /// Mints non-fungible resources
-    pub fn mint_nft<T: Encode>(&self, id: u64, data: T, auth: BucketRef) -> Bucket {
+    pub fn mint_nft<T: Encode>(&self, id: u128, data: T, auth: BucketRef) -> Bucket {
         let mut entries = BTreeMap::new();
         entries.insert(id, scrypto_encode(&data));
 
         let input = MintResourceInput {
             resource_def: self.address,
-            supply: InitialSupply::NonFungible { entries },
+            new_supply: NewSupply::NonFungible { entries },
             auth: auth.into(),
         };
         let output: MintResourceOutput = call_kernel(MINT_RESOURCE, input);
@@ -142,10 +142,10 @@ impl ResourceDef {
 
     /// Returns the current supply of this resource.
     pub fn total_supply(&self) -> Decimal {
-        let input = GetInitialSupplyInput {
+        let input = GetNewSupplyInput {
             resource_def: self.address,
         };
-        let output: GetInitialSupplyOutput = call_kernel(GET_RESOURCE_TOTAL_SUPPLY, input);
+        let output: GetNewSupplyOutput = call_kernel(GET_RESOURCE_TOTAL_SUPPLY, input);
 
         output.supply
     }
@@ -155,16 +155,18 @@ impl ResourceDef {
         self.address
     }
 
+    // TODO provide NFT abstraction
+
     /// Gets the data of an NFT.
     ///
     /// # Panics
     /// Panics if this is not an NFT resource or the specified NFT is not found.
-    pub fn get_nft<T: Decode>(&self, id: u64) -> T {
-        let input = GetNftInput {
+    pub fn get_nft_data<T: Decode>(&self, id: u128) -> T {
+        let input = GetNftDataInput {
             resource_def: self.address,
             id,
         };
-        let output: GetNftOutput = call_kernel(GET_NFT, input);
+        let output: GetNftDataOutput = call_kernel(GET_NFT_DATA, input);
 
         scrypto_unwrap(scrypto_decode(&output.data))
     }
@@ -173,14 +175,14 @@ impl ResourceDef {
     ///
     /// # Panics
     /// Panics if this is not an NFT resource or the specified NFT is not found.
-    pub fn update_nft<T: Encode>(&self, id: u64, data: T, auth: BucketRef) {
-        let input = UpdateNftInput {
+    pub fn update_nft_data<T: Encode>(&self, id: u128, data: T, auth: BucketRef) {
+        let input = UpdateNftDataInput {
             resource_def: self.address,
             id,
             data: scrypto_encode(&data),
             auth: auth.into(),
         };
-        let _: UpdateNftOutput = call_kernel(UPDATE_NFT, input);
+        let _: UpdateNftDataOutput = call_kernel(UPDATE_NFT_DATA, input);
     }
 }
 

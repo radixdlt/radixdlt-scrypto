@@ -52,6 +52,18 @@ impl IdAllocator {
         Address::ResourceDef(hash.lower_26_bytes())
     }
 
+    /// Creates a new nft id.
+    pub fn new_nft_id(&mut self, tx_hash: H256) -> u128 {
+        let mut data = tx_hash.as_ref().to_vec();
+        data.extend(self.count.to_le_bytes());
+        self.count += 1;
+
+        let hash = sha256_twice(data);
+        let mut buf = [0u8; 16];
+        buf.copy_from_slice(&hash.0[0..16]);
+        u128::from_le_bytes(buf)
+    }
+
     /// Creates a new bucket ID.
     pub fn new_bid(&mut self) -> Bid {
         self.count += 1;

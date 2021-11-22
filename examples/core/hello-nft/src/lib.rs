@@ -43,7 +43,7 @@ blueprint! {
         /// A vault that holds all our special cards
         special_cards: Vault,
         /// The price for each special card
-        special_card_prices: HashMap<u64, Decimal>,
+        special_card_prices: HashMap<u128, Decimal>,
         /// A vault that holds the minter badge
         random_card_minter: Vault,
         /// The resource definition of all random cards
@@ -51,7 +51,7 @@ blueprint! {
         /// The price of each random card
         random_card_price: Decimal,
         /// A counter for ID generation
-        random_card_id_counter: u64,
+        random_card_id_counter: u128,
         /// A vault that collects all XRD payments
         collected_xrd: Vault,
     }
@@ -113,7 +113,7 @@ blueprint! {
             .instantiate()
         }
 
-        pub fn buy_special_card(&mut self, id: u64, payment: Bucket) -> (Bucket, Bucket) {
+        pub fn buy_special_card(&mut self, id: u128, payment: Bucket) -> (Bucket, Bucket) {
             // Take our price out of the payment bucket
             let price = self.special_card_prices.remove(&id).unwrap();
             self.collected_xrd.put(payment.take(price));
@@ -146,7 +146,7 @@ blueprint! {
             (nft, payment)
         }
 
-        pub fn get_available_special_cards(&self) -> BTreeSet<u64> {
+        pub fn get_available_special_cards(&self) -> BTreeSet<u128> {
             self.special_cards.get_nft_ids()
         }
 
@@ -162,11 +162,11 @@ blueprint! {
             );
 
             // Get the NFT IDs
-            let nft_ids: Vec<u64> = nfts.get_nft_ids().iter().cloned().collect();
+            let nft_ids: Vec<u128> = nfts.get_nft_ids().iter().cloned().collect();
 
             // Read data of each NFT
-            let card1: MagicCard = nfts.resource_def().get_nft(nft_ids[0]);
-            let card2: MagicCard = nfts.resource_def().get_nft(nft_ids[1]);
+            let card1: MagicCard = nfts.resource_def().get_nft_data(nft_ids[0]);
+            let card2: MagicCard = nfts.resource_def().get_nft_data(nft_ids[1]);
 
             // Fuse a new card
             let new_card = Self::fuse_magic_cards(card1, card2);
@@ -178,7 +178,7 @@ blueprint! {
                 nft2.burn(auth);
             });
             self.random_card_minter.authorize(|auth| {
-                nfts.resource_def().update_nft(nft_ids[0], new_card, auth);
+                nfts.resource_def().update_nft_data(nft_ids[0], new_card, auth);
             });
 
             // Return the new NFT

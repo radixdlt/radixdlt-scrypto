@@ -107,7 +107,7 @@ impl Vault {
     ///
     /// # Panics
     /// Panics if this is not an NFT vault or the specified NFT is not found.
-    pub fn take_nft(&self, id: u64) -> Bucket {
+    pub fn take_nft(&self, id: u128) -> Bucket {
         let input = TakeNftFromVaultInput {
             vault: self.vid,
             id,
@@ -121,7 +121,7 @@ impl Vault {
     ///
     /// # Panics
     /// Panics if this is not an NFT vault.
-    pub fn get_nft_ids(&self) -> BTreeSet<u64> {
+    pub fn get_nft_ids(&self) -> BTreeSet<u128> {
         let input = GetNftIdsInVaultInput { vault: self.vid };
         let output: GetNftIdsInVaultOutput = call_kernel(GET_NFT_IDS_IN_VAULT, input);
 

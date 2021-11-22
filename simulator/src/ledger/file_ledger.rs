@@ -141,12 +141,12 @@ impl Ledger for FileBasedLedger {
         )
     }
 
-    fn get_lazy_map_entry(&self, mid: Mid) -> Option<LazyMap> {
+    fn get_lazy_map(&self, mid: Mid) -> Option<LazyMap> {
         Self::read(self.get_path(LAZY_MAPS, format!("{}_{}", mid.0, mid.1), FILE_EXT))
             .map(Self::decode)
     }
 
-    fn put_lazy_map_entry(&mut self, mid: Mid, lazy_map: LazyMap) {
+    fn put_lazy_map(&mut self, mid: Mid, lazy_map: LazyMap) {
         Self::write(
             self.get_path(LAZY_MAPS, format!("{}_{}", mid.0, mid.1), FILE_EXT),
             Self::encode(&lazy_map),
@@ -165,14 +165,15 @@ impl Ledger for FileBasedLedger {
         )
     }
 
-    fn get_nft(&self, resource_def: Address, id: u64) -> Option<Vec<u8>> {
+    fn get_nft(&self, resource_def: Address, id: u128) -> Option<Nft> {
         Self::read(self.get_path(NFTS, format!("{}_{}", resource_def, id), FILE_EXT))
+            .map(Self::decode)
     }
 
-    fn put_nft(&mut self, resource_def: Address, id: u64, data: Vec<u8>) {
+    fn put_nft(&mut self, resource_def: Address, id: u128, nft: Nft) {
         Self::write(
             self.get_path(NFTS, format!("{}_{}", resource_def, id), FILE_EXT),
-            data,
+            Self::encode(&nft),
         )
     }
 }

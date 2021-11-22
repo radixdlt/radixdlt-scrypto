@@ -3,7 +3,7 @@ pub use crate::core::{
     call_function, call_method, Account, Blueprint, Component, Context, LazyMap, Logger, Package,
     State,
 };
-pub use crate::kernel::{call_kernel, InitialSupply, LogLevel, ResourceType};
+pub use crate::kernel::{call_kernel, LogLevel, NewSupply, ResourceType};
 pub use crate::resource::{Bucket, BucketRef, ResourceBuilder, ResourceDef, Vault};
 pub use crate::types::*;
 pub use crate::utils::*;

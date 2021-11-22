@@ -21,7 +21,7 @@ pub enum BucketError {
 pub enum Supply {
     Fungible { amount: Decimal },
 
-    NonFungible { entries: BTreeSet<u64> },
+    NonFungible { entries: BTreeSet<u128> },
 }
 
 /// A transient resource container.
@@ -114,7 +114,7 @@ impl Bucket {
         }
     }
 
-    pub fn take_nft(&mut self, id: u64) -> Result<Self, BucketError> {
+    pub fn take_nft(&mut self, id: u128) -> Result<Self, BucketError> {
         match &mut self.supply {
             Supply::Fungible { .. } => Err(BucketError::UnsupportedOperation),
             Supply::NonFungible { ref mut entries } => {
@@ -132,7 +132,7 @@ impl Bucket {
         }
     }
 
-    pub fn get_nft_ids(&self) -> Result<BTreeSet<u64>, BucketError> {
+    pub fn get_nft_ids(&self) -> Result<BTreeSet<u128>, BucketError> {
         match &self.supply {
             Supply::Fungible { .. } => Err(BucketError::UnsupportedOperation),
             Supply::NonFungible { entries } => Ok(entries.iter().cloned().collect()),

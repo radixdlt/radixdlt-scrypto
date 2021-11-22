@@ -41,7 +41,7 @@ impl Vault {
         }
     }
 
-    pub fn take_nft(&mut self, id: u64, auth: Auth) -> Result<Bucket, VaultError> {
+    pub fn take_nft(&mut self, id: u128, auth: Auth) -> Result<Bucket, VaultError> {
         if auth.contains(self.auth) {
             self.bucket
                 .take_nft(id)
@@ -51,7 +51,7 @@ impl Vault {
         }
     }
 
-    pub fn get_nft_ids(&self, auth: Auth) -> Result<BTreeSet<u64>, VaultError> {
+    pub fn get_nft_ids(&self, auth: Auth) -> Result<BTreeSet<u128>, VaultError> {
         if auth.contains(self.auth) {
             self.bucket
                 .get_nft_ids()
