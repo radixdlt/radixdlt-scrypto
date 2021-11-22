@@ -316,5 +316,6 @@ fn test_nft() {
         .build(vec![key])
         .unwrap();
     let receipt = executor.run(transaction, true).unwrap();
+    println!("{:?}", receipt);
     assert!(receipt.success);
 }

@@ -222,7 +222,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     pub fn new_token_mutable(
         &mut self,
         metadata: HashMap<String, String>,
-        minter: Address,
+        mint_badge_address: Address,
     ) -> &mut Self {
         self.add_instruction(Instruction::CallFunction {
             package: SYSTEM_PACKAGE,
@@ -231,7 +231,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
             args: vec![
                 SmartValue::from(ResourceType::Fungible { granularity: 1 }),
                 SmartValue::from(metadata),
-                SmartValue::from(minter),
+                SmartValue::from(ResourceAuthConfigs::new(mint_badge_address)),
             ],
         })
     }
@@ -258,7 +258,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     pub fn new_badge_mutable(
         &mut self,
         metadata: HashMap<String, String>,
-        minter: Address,
+        mint_badge_address: Address,
     ) -> &mut Self {
         self.add_instruction(Instruction::CallFunction {
             package: SYSTEM_PACKAGE,
@@ -267,7 +267,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
             args: vec![
                 SmartValue::from(ResourceType::Fungible { granularity: 19 }),
                 SmartValue::from(metadata),
-                SmartValue::from(minter),
+                SmartValue::from(ResourceAuthConfigs::new(mint_badge_address)),
             ],
         })
     }
@@ -291,9 +291,14 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     }
 
     /// Mints resource.
-    pub fn mint(&mut self, amount: Decimal, resource_def: Address, minter: Address) -> &mut Self {
+    pub fn mint(
+        &mut self,
+        amount: Decimal,
+        resource_def: Address,
+        mint_badge_address: Address,
+    ) -> &mut Self {
         self.declare_bucket_ref(|builder, rid| {
-            builder.borrow_from_context(1.into(), minter, rid);
+            builder.borrow_from_context(1.into(), mint_badge_address, rid);
             builder.add_instruction(Instruction::CallFunction {
                 package: SYSTEM_PACKAGE,
                 blueprint: "System".to_owned(),

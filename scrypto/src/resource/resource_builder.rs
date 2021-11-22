@@ -30,13 +30,13 @@ impl ResourceBuilder {
     }
 
     /// Creates a token resource with mutable supply.
-    pub fn new_token_mutable<A: Into<ResourceDef>>(&self, minter: A) -> ResourceDef {
+    pub fn new_token_mutable(&self, auth_configs: ResourceAuthConfigs) -> ResourceDef {
         ResourceDef::new_mutable(
             ResourceType::Fungible {
                 granularity: 1.into(),
             },
             self.metadata.clone(),
-            minter.into().address(),
+            auth_configs,
         )
     }
 
@@ -55,13 +55,13 @@ impl ResourceBuilder {
     }
 
     /// Creates a badge resource with mutable supply.
-    pub fn new_badge_mutable<A: Into<ResourceDef>>(&self, minter: A) -> ResourceDef {
+    pub fn new_badge_mutable(&self, auth_configs: ResourceAuthConfigs) -> ResourceDef {
         ResourceDef::new_mutable(
             ResourceType::Fungible {
                 granularity: 19.into(),
             },
             self.metadata.clone(),
-            minter.into().address(),
+            auth_configs,
         )
     }
 
@@ -80,11 +80,11 @@ impl ResourceBuilder {
     }
 
     /// Creates an NFT resource with mutable supply.
-    pub fn new_nft_mutable<A: Into<ResourceDef>>(&self, minter: A) -> ResourceDef {
+    pub fn new_nft_mutable(&self, auth_configs: ResourceAuthConfigs) -> ResourceDef {
         ResourceDef::new_mutable(
             ResourceType::NonFungible,
             self.metadata.clone(),
-            minter.into().address(),
+            auth_configs,
         )
     }
 

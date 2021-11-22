@@ -44,8 +44,8 @@ blueprint! {
         special_cards: Vault,
         /// The price for each special card
         special_card_prices: HashMap<u128, Decimal>,
-        /// A vault that holds the minter badge
-        random_card_minter: Vault,
+        /// A vault that holds the mint badge
+        random_card_mint_badge: Vault,
         /// The resource definition of all random cards
         random_card_resource_def: ResourceDef,
         /// The price of each random card
@@ -89,12 +89,14 @@ blueprint! {
                 ]));
 
             // Create an NFT resource with mutable supply
-            let random_card_minter_badge = ResourceBuilder::new()
-                .metadata("name", "Random Cards Minter Badge")
+            let random_card_mint_badge_badge = ResourceBuilder::new()
+                .metadata("name", "Random Cards Mint Badge")
                 .new_badge_fixed(1);
             let random_card_resource_def = ResourceBuilder::new()
                 .metadata("name", "Random Cards")
-                .new_nft_mutable(random_card_minter_badge.resource_def());
+                .new_nft_mutable(ResourceAuthConfigs::new(
+                    random_card_mint_badge_badge.resource_def(),
+                ));
 
             // Instantiate our component
             Self {
@@ -104,7 +106,7 @@ blueprint! {
                     (2, 666.into()),
                     (3, 123.into()),
                 ]),
-                random_card_minter: Vault::with_bucket(random_card_minter_badge),
+                random_card_mint_badge: Vault::with_bucket(random_card_mint_badge_badge),
                 random_card_resource_def,
                 random_card_price: 50.into(),
                 random_card_id_counter: 0,
@@ -136,7 +138,7 @@ blueprint! {
                 class: Self::random_class(random_seed),
                 rarity: Self::random_rarity(random_seed),
             };
-            let nft = self.random_card_minter.authorize(|auth| {
+            let nft = self.random_card_mint_badge.authorize(|auth| {
                 self.random_card_resource_def
                     .mint_nft(self.random_card_id_counter, new_card, auth)
             });
@@ -173,12 +175,13 @@ blueprint! {
 
             // Burn the 2nd NFT and update the 1st
             let nft2 = nfts.take_nft(nft_ids[1]);
-            self.random_card_minter.authorize(|auth| {
+            self.random_card_mint_badge.authorize(|auth| {
                 // TODO what if I want to fuse Magic Cards with fixed supply?
                 nft2.burn(auth);
             });
-            self.random_card_minter.authorize(|auth| {
-                nfts.resource_def().update_nft_data(nft_ids[0], new_card, auth);
+            self.random_card_mint_badge.authorize(|auth| {
+                nfts.resource_def()
+                    .update_nft_data(nft_ids[0], new_card, auth);
             });
 
             // Return the new NFT

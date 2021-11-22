@@ -38,12 +38,12 @@ impl ResourceDef {
     pub fn new_mutable(
         resource_type: ResourceType,
         metadata: HashMap<String, String>,
-        minter: Address,
+        auth_configs: ResourceAuthConfigs,
     ) -> Self {
         let input = CreateResourceMutableInput {
             resource_type,
             metadata,
-            minter,
+            auth_configs,
         };
         let output: CreateResourceMutableOutput = call_kernel(CREATE_RESOURCE_MUTABLE, input);
 
@@ -114,14 +114,14 @@ impl ResourceDef {
         output.metadata
     }
 
-    /// Returns the minter address.
-    pub fn minter(&self) -> Option<Address> {
-        let input = GetResourceMinterInput {
+    /// Returns the authorization configurations.
+    pub fn auth_configs(&self) -> Option<ResourceAuthConfigs> {
+        let input = GetResourceAuthConfigsInput {
             resource_def: self.address,
         };
-        let output: GetResourceMinterOutput = call_kernel(GET_RESOURCE_MINTER, input);
+        let output: GetResourceAuthConfigsOutput = call_kernel(GET_RESOURCE_AUTH_CONFIGS, input);
 
-        output.minter
+        output.auth_configs
     }
 
     /// Returns the resource type.
@@ -129,7 +129,7 @@ impl ResourceDef {
         let input = GetResourceTypeInput {
             resource_def: self.address,
         };
-        let output: GetResourceTypeOutput = call_kernel(GET_RESOURCE_MINTER, input);
+        let output: GetResourceTypeOutput = call_kernel(GET_RESOURCE_AUTH_CONFIGS, input);
 
         output.resource_type
     }

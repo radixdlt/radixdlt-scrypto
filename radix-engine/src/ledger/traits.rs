@@ -75,7 +75,6 @@ pub trait Ledger {
                     &Supply::Fungible {
                         amount: XRD_MAX_SUPPLY.into(),
                     },
-                    None,
                 )
                 .unwrap(),
             );

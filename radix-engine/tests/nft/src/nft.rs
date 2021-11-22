@@ -5,35 +5,35 @@ blueprint! {
 
     impl NftTest {
         pub fn create_nft_mutable() -> (Bucket, ResourceDef, Bucket) {
-            let minter_badge = ResourceBuilder::new().new_badge_fixed(1);
+            let mint_badge = ResourceBuilder::new().new_badge_fixed(1);
+            let mint_badge_address = mint_badge.resource_address();
 
             let resource_def = ResourceBuilder::new()
                 .metadata("name", "Katz's Sandwiches")
-                .new_nft_mutable(minter_badge.resource_address());
+                .new_nft_mutable(
+                    ResourceAuthConfigs::new(mint_badge_address)
+                        .with_update_badge_address(mint_badge_address),
+                );
 
-            let nft = resource_def.mint_nft(0, "Prastrami", minter_badge.borrow());
+            let nft = resource_def.mint_nft(0, "Prastrami", mint_badge.borrow());
 
-            (minter_badge, resource_def, nft)
+            (mint_badge, resource_def, nft)
         }
 
         pub fn create_nft_fixed() -> Bucket {
             ResourceBuilder::new()
                 .metadata("name", "Katz's Sandwiches")
-                .new_nft_fixed(BTreeMap::from([
-                    (1, "Hi"), 
-                    (2, "Test"), 
-                    (3, "NFT")
-                ]))
+                .new_nft_fixed(BTreeMap::from([(1, "Hi"), (2, "Test"), (3, "NFT")]))
         }
 
         pub fn update_and_get_nft() -> (Bucket, Bucket) {
-            let (minter, resource_def, bucket) = Self::create_nft_mutable();
+            let (mint_badge, resource_def, bucket) = Self::create_nft_mutable();
             let nft: String = resource_def.get_nft_data(0);
             assert_eq!(nft, "Prastrami");
-            resource_def.update_nft_data(0, "New String", minter.borrow());
+            resource_def.update_nft_data(0, "New String", mint_badge.borrow());
             let nft: String = resource_def.get_nft_data(0);
             assert_eq!(nft, "New String");
-            (minter, bucket)
+            (mint_badge, bucket)
         }
 
         pub fn take_and_put_bucket() -> Bucket {

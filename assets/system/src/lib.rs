@@ -17,9 +17,10 @@ blueprint! {
         pub fn new_resource_mutable(
             resource_type: ResourceType,
             metadata: HashMap<String, String>,
-            minter: Address,
+            resource_auth_configs: ResourceAuthConfigs,
         ) -> Address {
-            let resource_def = ResourceDef::new_mutable(resource_type, metadata, minter);
+            let resource_def =
+                ResourceDef::new_mutable(resource_type, metadata, resource_auth_configs);
             resource_def.address()
         }
 

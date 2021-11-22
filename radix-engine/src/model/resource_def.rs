@@ -10,13 +10,11 @@ use crate::model::{Auth, Supply};
 #[derive(Debug, Clone)]
 pub enum ResourceDefError {
     UnauthorizedAccess,
-    MintNotAllowed,
-    BurnNotAllowed,
     InvalidGranularity,
-    GranularityCheckFailed,
-    NegativeAmount,
     TypeSupplyNotMatching,
     UnsupportedOperation,
+    MutableOperationNotAllowed,
+    InvalidAmount(Decimal),
 }
 
 /// The definition of a resource.
@@ -25,7 +23,8 @@ pub struct ResourceDef {
     resource_type: ResourceType,
     metadata: HashMap<String, String>,
     total_supply: Decimal,
-    minter: Option<Address>,
+    mutable: bool,
+    auth_configs: Option<ResourceAuthConfigs>,
 }
 
 impl ResourceDef {
@@ -33,7 +32,6 @@ impl ResourceDef {
         resource_type: ResourceType,
         metadata: HashMap<String, String>,
         supply: &Supply,
-        minter: Option<Address>,
     ) -> Result<Self, ResourceDefError> {
         let total_supply = match resource_type {
             ResourceType::Fungible { .. } => {
@@ -57,20 +55,22 @@ impl ResourceDef {
             resource_type,
             metadata,
             total_supply,
-            minter,
+            mutable: false,
+            auth_configs: None,
         })
     }
 
     pub fn new_mutable(
         resource_type: ResourceType,
         metadata: HashMap<String, String>,
-        minter: Option<Address>,
+        auth_configs: ResourceAuthConfigs,
     ) -> Result<Self, ResourceDefError> {
         Ok(Self {
             resource_type,
             metadata,
             total_supply: 0.into(),
-            minter,
+            mutable: true,
+            auth_configs: Some(auth_configs),
         })
     }
 
@@ -86,21 +86,21 @@ impl ResourceDef {
         self.total_supply
     }
 
-    pub fn minter(&self) -> Option<Address> {
-        self.minter.clone()
+    pub fn mutable(&self) -> bool {
+        self.mutable
+    }
+
+    pub fn auth_configs(&self) -> Option<ResourceAuthConfigs> {
+        self.auth_configs.clone()
     }
 
     pub fn mint(&mut self, supply: &Supply, auth: Auth) -> Result<(), ResourceDefError> {
-        match self.minter() {
-            Some(a) => {
-                if !auth.contains(a) {
-                    return Err(ResourceDefError::UnauthorizedAccess);
-                }
-            }
-            None => {
-                return Err(ResourceDefError::MintNotAllowed);
-            }
-        };
+        if !self.mutable {
+            return Err(ResourceDefError::MutableOperationNotAllowed);
+        }
+        if !auth.contains(self.auth_configs().unwrap().mint_badge) {
+            return Err(ResourceDefError::UnauthorizedAccess);
+        }
 
         match self.resource_type {
             ResourceType::Fungible { .. } => {
@@ -124,16 +124,12 @@ impl ResourceDef {
     }
 
     pub fn burn(&mut self, supply: Supply, auth: Auth) -> Result<(), ResourceDefError> {
-        match self.minter() {
-            Some(a) => {
-                if !auth.contains(a) {
-                    return Err(ResourceDefError::UnauthorizedAccess);
-                }
-            }
-            None => {
-                return Err(ResourceDefError::BurnNotAllowed);
-            }
-        };
+        if !self.mutable {
+            return Err(ResourceDefError::MutableOperationNotAllowed);
+        }
+        if !auth.contains(self.auth_configs().unwrap().mint_badge) {
+            return Err(ResourceDefError::UnauthorizedAccess);
+        }
 
         match self.resource_type {
             ResourceType::Fungible { .. } => {
@@ -162,7 +158,7 @@ impl ResourceDef {
 
     fn check_amount(amount: Decimal, resource_type: ResourceType) -> Result<(), ResourceDefError> {
         if amount.is_negative() {
-            return Err(ResourceDefError::NegativeAmount);
+            return Err(ResourceDefError::InvalidAmount(amount));
         }
 
         let granularity = match resource_type {
@@ -172,7 +168,7 @@ impl ResourceDef {
 
         if granularity >= 1 && granularity <= 36 {
             if amount.0 % 10i128.pow((granularity - 1).into()) != 0.into() {
-                Err(ResourceDefError::GranularityCheckFailed)
+                Err(ResourceDefError::InvalidAmount(amount))
             } else {
                 Ok(())
             }

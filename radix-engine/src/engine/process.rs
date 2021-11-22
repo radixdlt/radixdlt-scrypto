@@ -1044,10 +1044,11 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         &mut self,
         input: CreateResourceMutableInput,
     ) -> Result<CreateResourceMutableOutput, RuntimeError> {
-        Self::expect_resource_def_address(input.minter)?;
+        Self::expect_resource_def_address(input.auth_configs.mint_badge)?;
+        Self::expect_resource_def_address(input.auth_configs.update_badge)?;
 
         let resource_def =
-            ResourceDef::new_mutable(input.resource_type, input.metadata, Some(input.minter))
+            ResourceDef::new_mutable(input.resource_type, input.metadata, input.auth_configs)
                 .map_err(RuntimeError::ResourceDefError)?;
 
         let address = self.track.new_resource_def_address();
@@ -1083,8 +1084,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
                     if self.track.get_nft(address, id).is_some() {
                         return Err(RuntimeError::NftAlreadyExists(address, id));
                     }
-                    // FIXME update auth
-                    self.track.put_nft(address, id, Nft::new(data, RADIX_TOKEN));
+                    self.track.put_nft(address, id, Nft::new(data));
                     ids.insert(id);
                 }
 
@@ -1092,7 +1092,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
             }
         };
 
-        let definition = ResourceDef::new_fixed(input.resource_type, input.metadata, &supply, None)
+        let definition = ResourceDef::new_fixed(input.resource_type, input.metadata, &supply)
             .map_err(RuntimeError::ResourceDefError)?;
 
         let bucket = Bucket::new(address, input.resource_type, supply);
@@ -1138,10 +1138,10 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         })
     }
 
-    fn handle_get_resource_minter(
+    fn handle_get_resource_auth_configs(
         &mut self,
-        input: GetResourceMinterInput,
-    ) -> Result<GetResourceMinterOutput, RuntimeError> {
+        input: GetResourceAuthConfigsInput,
+    ) -> Result<GetResourceAuthConfigsOutput, RuntimeError> {
         Self::expect_resource_def_address(input.resource_def)?;
 
         let resource_def = self
@@ -1150,8 +1150,8 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
             .ok_or(RuntimeError::ResourceDefNotFound(input.resource_def))?
             .clone();
 
-        Ok(GetResourceMinterOutput {
-            minter: resource_def.minter(),
+        Ok(GetResourceAuthConfigsOutput {
+            auth_configs: resource_def.auth_configs(),
         })
     }
 
@@ -1188,9 +1188,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
                     if self.track.get_nft(input.resource_def, id).is_some() {
                         return Err(RuntimeError::NftAlreadyExists(input.resource_def, id));
                     }
-                    // FIXME update auth
-                    self.track
-                        .put_nft(input.resource_def, id, Nft::new(data, RADIX_TOKEN));
+                    self.track.put_nft(input.resource_def, id, Nft::new(data));
                     ids.insert(id);
                 }
 
@@ -1275,13 +1273,33 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
             .ok_or(RuntimeError::BucketRefNotFound(input.auth))?;
         let auth = self.badge_auth(bucket_ref)?;
 
+        // TODO It's a bit weird to have auth check here
+        let definition = self
+            .track
+            .get_resource_def(input.resource_def)
+            .ok_or(RuntimeError::ResourceDefNotFound(input.resource_def))?;
+        if !definition.mutable() {
+            return Err(RuntimeError::ResourceDefError(
+                ResourceDefError::MutableOperationNotAllowed,
+            ));
+        }
+        if !auth.contains(definition.auth_configs().unwrap().update_badge) {
+            return Err(RuntimeError::ResourceDefError(
+                ResourceDefError::UnauthorizedAccess,
+            ));
+        }
+
+        // drop the input auth
+        self.handle_drop_bucket_ref(DropBucketRefInput {
+            bucket_ref: input.auth,
+        })?;
+
         let nft = self
             .track
             .get_nft_mut(input.resource_def, input.id)
             .ok_or(RuntimeError::NftNotFound(input.resource_def, input.id))?;
 
-        nft.set_data(input.data, auth)
-            .map_err(RuntimeError::NftError)?;
+        nft.set_data(input.data).map_err(RuntimeError::NftError)?;
 
         Ok(UpdateNftDataOutput {})
     }
@@ -1726,7 +1744,9 @@ impl<'r, 'l, L: Ledger> Externals for Process<'r, 'l, L> {
                     GET_RESOURCE_TOTAL_SUPPLY => {
                         self.handle(args, Self::handle_get_resource_total_supply)
                     }
-                    GET_RESOURCE_MINTER => self.handle(args, Self::handle_get_resource_minter),
+                    GET_RESOURCE_AUTH_CONFIGS => {
+                        self.handle(args, Self::handle_get_resource_auth_configs)
+                    }
                     GET_RESOURCE_TYPE => self.handle(args, Self::handle_get_resource_type),
                     MINT_RESOURCE => self.handle(args, Self::handle_mint_resource),
                     BURN_RESOURCE => self.handle(args, Self::handle_burn_resource),

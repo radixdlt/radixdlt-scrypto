@@ -12,9 +12,9 @@ pub enum BucketError {
     InsufficientBalance,
     InvalidGranularity,
     GranularityCheckFailed,
-    NegativeAmount,
     UnsupportedOperation,
     NftNotFound,
+    InvalidAmount(Decimal),
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
@@ -156,7 +156,7 @@ impl Bucket {
 
     fn check_amount(amount: Decimal, resource_type: &ResourceType) -> Result<(), BucketError> {
         if amount.is_negative() {
-            return Err(BucketError::NegativeAmount);
+            return Err(BucketError::InvalidAmount(amount));
         }
 
         let granularity = match resource_type {
@@ -166,7 +166,7 @@ impl Bucket {
 
         if granularity >= 1 && granularity <= 36 {
             if amount.0 % 10i128.pow((granularity - 1).into()) != 0.into() {
-                Err(BucketError::GranularityCheckFailed)
+                Err(BucketError::InvalidAmount(amount))
             } else {
                 Ok(())
             }

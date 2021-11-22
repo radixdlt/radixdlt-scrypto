@@ -1,6 +1,6 @@
-use sbor::{Decode, Describe, Encode, TypeId};
+use sbor::{Decode, Encode, TypeId};
 
-use crate::rust::collections::BTreeMap;
+use crate::kernel::*;
 use crate::rust::collections::BTreeSet;
 use crate::rust::collections::HashMap;
 use crate::rust::string::String;
@@ -48,8 +48,8 @@ pub const BURN_RESOURCE: u32 = 0x33;
 pub const GET_RESOURCE_METADATA: u32 = 0x34;
 /// Get resource supply
 pub const GET_RESOURCE_TOTAL_SUPPLY: u32 = 0x35;
-/// Get resource minter address
-pub const GET_RESOURCE_MINTER: u32 = 0x36;
+/// Get resource authorization config
+pub const GET_RESOURCE_AUTH_CONFIGS: u32 = 0x36;
 /// Get resource granularity
 pub const GET_RESOURCE_TYPE: u32 = 0x37;
 /// Get the data of an NFT
@@ -108,29 +108,6 @@ pub const GET_TRANSACTION_HASH: u32 = 0xf3;
 pub const GET_CURRENT_EPOCH: u32 = 0xf4;
 /// Retrieve transaction signers
 pub const GET_TRANSACTION_SIGNERS: u32 = 0xf5;
-
-#[derive(Debug, Clone, Copy, TypeId, Encode, Decode, Describe)]
-pub enum LogLevel {
-    Error,
-    Warn,
-    Info,
-    Debug,
-    Trace,
-}
-
-#[derive(Debug, Clone, Copy, TypeId, Encode, Decode, Describe)]
-pub enum ResourceType {
-    Fungible { granularity: u8 },
-
-    NonFungible,
-}
-
-#[derive(Debug, Clone, TypeId, Encode, Decode, Describe)]
-pub enum NewSupply {
-    Fungible { amount: Decimal },
-
-    NonFungible { entries: BTreeMap<u128, Vec<u8>> },
-}
 
 //==========
 // blueprint
@@ -257,7 +234,7 @@ pub struct PutLazyMapEntryOutput {}
 pub struct CreateResourceMutableInput {
     pub resource_type: ResourceType,
     pub metadata: HashMap<String, String>,
-    pub minter: Address,
+    pub auth_configs: ResourceAuthConfigs,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
@@ -320,13 +297,13 @@ pub struct GetNewSupplyOutput {
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct GetResourceMinterInput {
+pub struct GetResourceAuthConfigsInput {
     pub resource_def: Address,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct GetResourceMinterOutput {
-    pub minter: Option<Address>,
+pub struct GetResourceAuthConfigsOutput {
+    pub auth_configs: Option<ResourceAuthConfigs>,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]

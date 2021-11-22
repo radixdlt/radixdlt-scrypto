@@ -5,7 +5,7 @@ use scrypto::rust::collections::HashMap;
 use crate::ledger::*;
 use crate::resim::*;
 
-const ARG_MINTER: &str = "MINTER";
+const ARG_MINT_BADGE_ADDR: &str = "MINT_BADGE_ADDRESS";
 
 const ARG_TRACE: &str = "TRACE";
 const ARG_SIGNERS: &str = "SIGNERS";
@@ -21,7 +21,7 @@ pub fn make_new_badge_mutable<'a, 'b>() -> App<'a, 'b> {
         .about("Creates badge resource with mutable supply")
         .version(crate_version!())
         .arg(
-            Arg::with_name(ARG_MINTER)
+            Arg::with_name(ARG_MINT_BADGE_ADDR)
                 .help("Specify the mint auth resource definition address.")
                 .required(true),
         )
@@ -76,7 +76,7 @@ pub fn make_new_badge_mutable<'a, 'b>() -> App<'a, 'b> {
 
 /// Handles a `new-badge-mutable` request.
 pub fn handle_new_badge_mutable(matches: &ArgMatches) -> Result<(), Error> {
-    let minter = match_address(matches, ARG_MINTER)?;
+    let mint_badge_addr = match_address(matches, ARG_MINT_BADGE_ADDR)?;
     let trace = matches.is_present(ARG_TRACE);
     let signers = match_signers(matches, ARG_SIGNERS)?;
     let mut metadata = HashMap::new();
@@ -100,7 +100,7 @@ pub fn handle_new_badge_mutable(matches: &ArgMatches) -> Result<(), Error> {
     let mut ledger = FileBasedLedger::with_bootstrap(get_data_dir()?);
     let mut executor = TransactionExecutor::new(&mut ledger, configs.current_epoch, configs.nonce);
     let transaction = TransactionBuilder::new(&executor)
-        .new_badge_mutable(metadata, minter)
+        .new_badge_mutable(metadata, mint_badge_addr)
         .build(signers)
         .map_err(Error::TransactionConstructionError)?;
 
