@@ -165,8 +165,8 @@ blueprint! {
             let nft_ids: Vec<u64> = nfts.get_nft_ids().iter().cloned().collect();
 
             // Read data of each NFT
-            let card1: MagicCard = nfts.get_nft(nft_ids[0]);
-            let card2: MagicCard = nfts.get_nft(nft_ids[1]);
+            let card1: MagicCard = nfts.resource_def().get_nft(nft_ids[0]);
+            let card2: MagicCard = nfts.resource_def().get_nft(nft_ids[1]);
 
             // Fuse a new card
             let new_card = Self::fuse_magic_cards(card1, card2);
@@ -177,7 +177,9 @@ blueprint! {
                 // TODO what if I want to fuse Magic Cards with fixed supply?
                 nft2.burn(auth);
             });
-            nfts.update_nft(nft_ids[0], new_card);
+            self.random_card_minter.authorize(|auth| {
+                nfts.resource_def().update_nft(nft_ids[0], new_card, auth);
+            });
 
             // Return the new NFT
             nfts

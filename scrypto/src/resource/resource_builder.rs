@@ -47,7 +47,7 @@ impl ResourceBuilder {
                 granularity: 1.into(),
             },
             self.metadata.clone(),
-            ResourceSupply::Fungible {
+            InitialSupply::Fungible {
                 amount: supply.into(),
             },
         )
@@ -72,7 +72,7 @@ impl ResourceBuilder {
                 granularity: 19.into(),
             },
             self.metadata.clone(),
-            ResourceSupply::Fungible {
+            InitialSupply::Fungible {
                 amount: supply.into(),
             },
         )
@@ -98,7 +98,7 @@ impl ResourceBuilder {
         ResourceDef::new_fixed(
             ResourceType::NonFungible,
             self.metadata.clone(),
-            ResourceSupply::NonFungible { entries: encoded },
+            InitialSupply::NonFungible { entries: encoded },
         )
         .1
     }

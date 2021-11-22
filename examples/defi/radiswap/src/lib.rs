@@ -85,7 +85,7 @@ blueprint! {
             // Mint LP tokens according to the share the provider is contributing
             let lp_tokens = self.lp_minter.authorize(|auth| {
                 self.lp_resource_def
-                    .mint(self.lp_resource_def.supply() * actual_ratio, auth)
+                    .mint(self.lp_resource_def.total_supply() * actual_ratio, auth)
             });
 
             // Return the LP tokens along with any remainder
@@ -100,7 +100,7 @@ blueprint! {
             );
 
             // Calculate the share based on the input LP tokens.
-            let share = lp_tokens.amount() / self.lp_resource_def.supply();
+            let share = lp_tokens.amount() / self.lp_resource_def.total_supply();
 
             // Withdraw the correct amounts of tokens A and B from reserves
             let a_withdrawn = self.a_pool.take(self.a_pool.amount() * share);

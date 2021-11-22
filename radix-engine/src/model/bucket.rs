@@ -1,10 +1,8 @@
 use sbor::*;
 use scrypto::kernel::*;
-use scrypto::rust::collections::BTreeMap;
 use scrypto::rust::collections::BTreeSet;
 use scrypto::rust::rc::Rc;
 use scrypto::rust::string::ToString;
-use scrypto::rust::vec::Vec;
 use scrypto::types::*;
 
 /// Represents an error when accessing a bucket.
@@ -19,12 +17,19 @@ pub enum BucketError {
     NftNotFound,
 }
 
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
+pub enum Supply {
+    Fungible { amount: Decimal },
+
+    NonFungible { entries: BTreeSet<u64> },
+}
+
 /// A transient resource container.
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct Bucket {
     resource_def: Address,
     resource_type: ResourceType,
-    supply: ResourceSupply,
+    supply: Supply,
 }
 
 /// A bucket becomes locked after a borrow operation.
@@ -38,7 +43,7 @@ pub struct LockedBucket {
 pub type BucketRef = Rc<LockedBucket>;
 
 impl Bucket {
-    pub fn new(resource_def: Address, resource_type: ResourceType, supply: ResourceSupply) -> Self {
+    pub fn new(resource_def: Address, resource_type: ResourceType, supply: Supply) -> Self {
         Self {
             resource_def,
             resource_type,
@@ -51,21 +56,21 @@ impl Bucket {
             Err(BucketError::MismatchingResourceDef)
         } else {
             match &mut self.supply {
-                ResourceSupply::Fungible { ref mut amount } => {
+                Supply::Fungible { ref mut amount } => {
                     let other_amount = match other.supply() {
-                        ResourceSupply::Fungible { amount } => amount,
-                        ResourceSupply::NonFungible { .. } => {
+                        Supply::Fungible { amount } => amount,
+                        Supply::NonFungible { .. } => {
                             return Err(BucketError::UnsupportedOperation);
                         }
                     };
                     *amount = *amount + other_amount;
                 }
-                ResourceSupply::NonFungible { ref mut entries } => {
+                Supply::NonFungible { ref mut entries } => {
                     let other_entries = match other.supply() {
-                        ResourceSupply::Fungible { .. } => {
+                        Supply::Fungible { .. } => {
                             return Err(BucketError::UnsupportedOperation);
                         }
-                        ResourceSupply::NonFungible { entries } => entries,
+                        Supply::NonFungible { entries } => entries,
                     };
                     entries.extend(other_entries);
                 }
@@ -74,38 +79,35 @@ impl Bucket {
         }
     }
 
-    pub fn take(&mut self, amount_to_withdraw: Decimal) -> Result<Self, BucketError> {
-        Self::check_amount(amount_to_withdraw, &self.resource_type)?;
+    pub fn take(&mut self, quantity: Decimal) -> Result<Self, BucketError> {
+        Self::check_amount(quantity, &self.resource_type)?;
 
-        if self.amount() < amount_to_withdraw {
+        if self.amount() < quantity {
             Err(BucketError::InsufficientBalance)
         } else {
             match &mut self.supply {
-                ResourceSupply::Fungible { amount } => {
-                    self.supply = ResourceSupply::Fungible {
-                        amount: *amount - amount_to_withdraw,
+                Supply::Fungible { amount } => {
+                    self.supply = Supply::Fungible {
+                        amount: *amount - quantity,
                     };
                     Ok(Self::new(
                         self.resource_def,
                         self.resource_type,
-                        ResourceSupply::Fungible {
-                            amount: amount_to_withdraw,
-                        },
+                        Supply::Fungible { amount: quantity },
                     ))
                 }
-                ResourceSupply::NonFungible { ref mut entries } => {
-                    let mut to_return = BTreeMap::new();
-                    let n: usize = amount_to_withdraw.to_string().parse().unwrap();
+                Supply::NonFungible { ref mut entries } => {
+                    let mut to_return = BTreeSet::new();
+                    let n: usize = quantity.to_string().parse().unwrap();
                     for _ in 0..n {
-                        // pop_first() once it's stable
-                        let first_key = entries.keys().next().unwrap().clone();
-                        let first_value = entries.remove(&first_key).unwrap();
-                        to_return.insert(first_key, first_value);
+                        let e = entries.iter().next().cloned().unwrap();
+                        entries.remove(&e);
+                        to_return.insert(e);
                     }
                     Ok(Self::new(
                         self.resource_def,
                         self.resource_type,
-                        ResourceSupply::NonFungible { entries: to_return },
+                        Supply::NonFungible { entries: to_return },
                     ))
                 }
             }
@@ -114,61 +116,37 @@ impl Bucket {
 
     pub fn take_nft(&mut self, id: u64) -> Result<Self, BucketError> {
         match &mut self.supply {
-            ResourceSupply::Fungible { .. } => Err(BucketError::UnsupportedOperation),
-            ResourceSupply::NonFungible { ref mut entries } => {
-                let nft = entries.remove(&id).ok_or(BucketError::NftNotFound)?;
+            Supply::Fungible { .. } => Err(BucketError::UnsupportedOperation),
+            Supply::NonFungible { ref mut entries } => {
+                if !entries.contains(&id) {
+                    return Err(BucketError::NftNotFound);
+                }
                 Ok(Self::new(
                     self.resource_def,
                     self.resource_type,
-                    ResourceSupply::NonFungible {
-                        entries: BTreeMap::from([(id, nft)]),
+                    Supply::NonFungible {
+                        entries: BTreeSet::from([id]),
                     },
                 ))
             }
         }
     }
 
-    pub fn update_nft(&mut self, id: u64, data: Vec<u8>) -> Result<(), BucketError> {
-        match &mut self.supply {
-            ResourceSupply::Fungible { .. } => Err(BucketError::UnsupportedOperation),
-            ResourceSupply::NonFungible { ref mut entries } => {
-                if !entries.contains_key(&id) {
-                    return Err(BucketError::NftNotFound);
-                }
-
-                entries.insert(id, data);
-                Ok(())
-            }
-        }
-    }
-
-    pub fn get_nft(&self, id: u64) -> Result<Vec<u8>, BucketError> {
-        match &self.supply {
-            ResourceSupply::Fungible { .. } => Err(BucketError::UnsupportedOperation),
-            ResourceSupply::NonFungible { entries } => {
-                let nft = entries.get(&id).ok_or(BucketError::NftNotFound)?;
-                Ok(nft.clone())
-            }
-        }
-    }
-
     pub fn get_nft_ids(&self) -> Result<BTreeSet<u64>, BucketError> {
         match &self.supply {
-            ResourceSupply::Fungible { .. } => Err(BucketError::UnsupportedOperation),
-            ResourceSupply::NonFungible { entries } => {
-                Ok(entries.keys().into_iter().map(Clone::clone).collect())
-            }
+            Supply::Fungible { .. } => Err(BucketError::UnsupportedOperation),
+            Supply::NonFungible { entries } => Ok(entries.iter().cloned().collect()),
         }
     }
 
-    pub fn supply(&self) -> ResourceSupply {
+    pub fn supply(&self) -> Supply {
         self.supply.clone()
     }
 
     pub fn amount(&self) -> Decimal {
         match &self.supply {
-            ResourceSupply::Fungible { amount } => *amount,
-            ResourceSupply::NonFungible { entries } => entries.len().into(),
+            Supply::Fungible { amount } => *amount,
+            Supply::NonFungible { entries } => entries.len().into(),
         }
     }
 

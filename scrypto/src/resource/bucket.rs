@@ -7,7 +7,6 @@ use crate::rust::borrow::ToOwned;
 use crate::rust::collections::BTreeSet;
 use crate::rust::vec;
 use crate::types::*;
-use crate::utils::*;
 
 /// Represents a transient resource container.
 #[derive(Debug)]
@@ -115,32 +114,6 @@ impl Bucket {
         let output: TakeNftFromBucketOutput = call_kernel(TAKE_NFT_FROM_BUCKET, input);
 
         output.bucket.into()
-    }
-    /// Updates the data of an NFT in this bucket, by id.
-    ///
-    /// # Panics
-    /// Panics if this is not an NFT bucket or the specified NFT is not found.
-    pub fn update_nft<T: Encode>(&self, id: u64, data: T) {
-        let input = UpdateNftInBucketInput {
-            bucket: self.bid,
-            id,
-            data: scrypto_encode(&data),
-        };
-        let _: UpdateNftInBucketOutput = call_kernel(UPDATE_NFT_IN_BUCKET, input);
-    }
-
-    /// Gets the data of an NFT in this bucket, by id.
-    ///
-    /// # Panics
-    /// Panics if this is not an NFT bucket or the specified NFT is not found.
-    pub fn get_nft<T: Decode>(&self, id: u64) -> T {
-        let input = GetNftInBucketInput {
-            bucket: self.bid,
-            id,
-        };
-        let output: GetNftInBucketOutput = call_kernel(TAKE_NFT_FROM_BUCKET, input);
-
-        scrypto_unwrap(scrypto_decode(&output.data))
     }
 
     /// Reads all the NFT IDs in this bucket.

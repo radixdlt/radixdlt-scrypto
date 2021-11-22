@@ -27,7 +27,7 @@ blueprint! {
         pub fn new_resource_fixed(
             resource_type: ResourceType,
             metadata: HashMap<String, String>,
-            supply: ResourceSupply,
+            supply: InitialSupply,
         ) -> (Address, Bucket) {
             let (resource_def, bucket) = ResourceDef::new_fixed(resource_type, metadata, supply);
             (resource_def.address(), bucket)

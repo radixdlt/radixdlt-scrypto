@@ -7,7 +7,6 @@ use crate::rust::borrow::ToOwned;
 use crate::rust::collections::BTreeSet;
 use crate::rust::vec;
 use crate::types::*;
-use crate::utils::*;
 
 /// Represents a persistent resource container on ledger state.
 #[derive(Debug)]
@@ -116,33 +115,6 @@ impl Vault {
         let output: TakeNftFromVaultOutput = call_kernel(TAKE_NFT_FROM_VAULT, input);
 
         output.bucket.into()
-    }
-
-    /// Updates the data of an NFT in this vault, by id.
-    ///
-    /// # Panics
-    /// Panics if this is not an NFT vault or the specified NFT is not found.
-    pub fn update_nft<T: Encode>(&self, id: u64, data: T) {
-        let input = UpdateNftInVaultInput {
-            vault: self.vid,
-            id,
-            data: scrypto_encode(&data),
-        };
-        let _: UpdateNftInVaultOutput = call_kernel(UPDATE_NFT_IN_VAULT, input);
-    }
-
-    /// Gets the data of an NFT in this vault, by id.
-    ///
-    /// # Panics
-    /// Panics if this is not an NFT vault or the specified NFT is not found.
-    pub fn get_nft<T: Decode>(&self, id: u64) -> T {
-        let input = GetNftInVaultInput {
-            vault: self.vid,
-            id,
-        };
-        let output: GetNftInVaultOutput = call_kernel(TAKE_NFT_FROM_VAULT, input);
-
-        scrypto_unwrap(scrypto_decode(&output.data))
     }
 
     /// Reads all the NFT IDs in this vault.

@@ -9,6 +9,7 @@ use crate::rust::collections::HashMap;
 use crate::rust::string::String;
 use crate::rust::vec;
 use crate::types::*;
+use crate::utils::*;
 
 /// Represents the definition of a resource.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -53,7 +54,7 @@ impl ResourceDef {
     pub fn new_fixed(
         resource_type: ResourceType,
         metadata: HashMap<String, String>,
-        supply: ResourceSupply,
+        supply: InitialSupply,
     ) -> (Self, Bucket) {
         let input = CreateResourceFixedInput {
             resource_type,
@@ -69,7 +70,7 @@ impl ResourceDef {
     pub fn mint<T: Into<Decimal>>(&self, amount: T, auth: BucketRef) -> Bucket {
         let input = MintResourceInput {
             resource_def: self.address,
-            supply: ResourceSupply::Fungible {
+            supply: InitialSupply::Fungible {
                 amount: amount.into(),
             },
             auth: auth.into(),
@@ -86,7 +87,7 @@ impl ResourceDef {
 
         let input = MintResourceInput {
             resource_def: self.address,
-            supply: ResourceSupply::NonFungible { entries },
+            supply: InitialSupply::NonFungible { entries },
             auth: auth.into(),
         };
         let output: MintResourceOutput = call_kernel(MINT_RESOURCE, input);
@@ -134,11 +135,17 @@ impl ResourceDef {
     }
 
     /// Returns the current supply of this resource.
+    #[deprecated]
     pub fn supply(&self) -> Decimal {
-        let input = GetResourceSupplyInput {
+        self.total_supply()
+    }
+
+    /// Returns the current supply of this resource.
+    pub fn total_supply(&self) -> Decimal {
+        let input = GetInitialSupplyInput {
             resource_def: self.address,
         };
-        let output: GetResourceSupplyOutput = call_kernel(GET_RESOURCE_SUPPLY, input);
+        let output: GetInitialSupplyOutput = call_kernel(GET_RESOURCE_TOTAL_SUPPLY, input);
 
         output.supply
     }
@@ -146,6 +153,34 @@ impl ResourceDef {
     /// Returns the address of this resource.
     pub fn address(&self) -> Address {
         self.address
+    }
+
+    /// Gets the data of an NFT.
+    ///
+    /// # Panics
+    /// Panics if this is not an NFT resource or the specified NFT is not found.
+    pub fn get_nft<T: Decode>(&self, id: u64) -> T {
+        let input = GetNftInput {
+            resource_def: self.address,
+            id,
+        };
+        let output: GetNftOutput = call_kernel(GET_NFT, input);
+
+        scrypto_unwrap(scrypto_decode(&output.data))
+    }
+
+    /// Updates the data of an NFT.
+    ///
+    /// # Panics
+    /// Panics if this is not an NFT resource or the specified NFT is not found.
+    pub fn update_nft<T: Encode>(&self, id: u64, data: T, auth: BucketRef) {
+        let input = UpdateNftInput {
+            resource_def: self.address,
+            id,
+            data: scrypto_encode(&data),
+            auth: auth.into(),
+        };
+        let _: UpdateNftOutput = call_kernel(UPDATE_NFT, input);
     }
 }
 

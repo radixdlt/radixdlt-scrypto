@@ -123,7 +123,12 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         &mut self,
         amount: Decimal,
         resource_def: Address,
-    ) -> Result<(), RuntimeError> {
+    ) -> Result<Bucket, RuntimeError> {
+        let definition = self
+            .track
+            .get_resource_def(resource_def)
+            .ok_or(RuntimeError::ResourceDefNotFound(resource_def))?;
+
         let candidates: BTreeSet<Bid> = self
             .buckets
             .iter()
@@ -131,6 +136,16 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
             .map(|(k, _)| *k)
             .collect();
 
+        let mut collector = Bucket::new(
+            resource_def,
+            definition.resource_type(),
+            match definition.resource_type() {
+                ResourceType::Fungible { .. } => Supply::Fungible { amount: 0.into() },
+                ResourceType::NonFungible { .. } => Supply::NonFungible {
+                    entries: BTreeSet::new(),
+                },
+            },
+        );
         let mut needed = amount;
         for candidate in candidates {
             if needed.is_zero() {
@@ -139,21 +154,27 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
             let available = self.buckets.get(&candidate).unwrap().amount();
             if available > needed {
                 debug!(self, "Withdrawing {:?} from {:?}", needed, candidate);
-                self.buckets
-                    .get_mut(&candidate)
-                    .unwrap()
-                    .take(needed)
-                    .unwrap();
+                collector
+                    .put(
+                        self.buckets
+                            .get_mut(&candidate)
+                            .unwrap()
+                            .take(needed)
+                            .unwrap(),
+                    )
+                    .map_err(RuntimeError::BucketError)?;
                 needed = Decimal::zero();
             } else {
                 debug!(self, "Withdrawing all from {:?}", candidate);
-                self.buckets.remove(&candidate);
+                collector
+                    .put(self.buckets.remove(&candidate).unwrap())
+                    .map_err(RuntimeError::BucketError)?;
                 needed -= available;
             }
         }
 
         if needed.is_zero() {
-            Ok(())
+            Ok(collector)
         } else {
             Err(RuntimeError::BucketError(BucketError::InsufficientBalance))
         }
@@ -176,24 +197,8 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         if !self.reserved_bids.remove(&bid) {
             return Err(RuntimeError::BucketNotReserved);
         }
-        let definition = self
-            .track
-            .get_resource_def(resource_def)
-            .ok_or(RuntimeError::ResourceDefNotFound(resource_def))?;
-        let resource_type = definition.resource_type();
-
-        self.withdraw_resource(amount, resource_def)?;
-
-        // FIXME: Non-fungible resource
-
-        self.temp_buckets.insert(
-            bid,
-            Bucket::new(
-                resource_def,
-                resource_type,
-                ResourceSupply::Fungible { amount },
-            ),
-        );
+        let bucket = self.withdraw_resource(amount, resource_def)?;
+        self.temp_buckets.insert(bid, bucket);
 
         Ok(())
     }
@@ -217,23 +222,10 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         if !self.reserved_rids.remove(&rid) {
             return Err(RuntimeError::BucketRefNotReserved);
         }
-
-        let definition = self
-            .track
-            .get_resource_def(resource_def)
-            .ok_or(RuntimeError::ResourceDefNotFound(resource_def))?;
-        let resource_type = definition.resource_type();
-
-        self.withdraw_resource(amount, resource_def)?;
-
         let bid = self.track.new_bid();
         let bucket = BucketRef::new(LockedBucket::new(
             bid,
-            Bucket::new(
-                resource_def,
-                resource_type,
-                ResourceSupply::Fungible { amount },
-            ),
+            self.withdraw_resource(amount, resource_def)?,
         ));
         self.locked_buckets.insert(bid, bucket.clone());
         self.temp_bucket_refs.insert(rid, bucket);
@@ -1113,10 +1105,10 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         })
     }
 
-    fn handle_get_resource_supply(
+    fn handle_get_resource_total_supply(
         &mut self,
-        input: GetResourceSupplyInput,
-    ) -> Result<GetResourceSupplyOutput, RuntimeError> {
+        input: GetInitialSupplyInput,
+    ) -> Result<GetInitialSupplyOutput, RuntimeError> {
         Self::expect_resource_def_address(input.resource_def)?;
 
         let resource_def = self
@@ -1125,8 +1117,8 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
             .ok_or(RuntimeError::ResourceDefNotFound(input.resource_def))?
             .clone();
 
-        Ok(GetResourceSupplyOutput {
-            supply: resource_def.supply(),
+        Ok(GetInitialSupplyOutput {
+            supply: resource_def.total_supply(),
         })
     }
 
@@ -1236,6 +1228,35 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         Ok(BurnResourceOutput {})
     }
 
+    fn handle_update_nft(
+        &mut self,
+        input: UpdateNftInput,
+    ) -> Result<UpdateNftOutput, RuntimeError> {
+        let definition = self
+            .track
+            .get_resource_def_mut(input.resource_def)
+            .ok_or(RuntimeError::ResourceDefNotFound(input.resource_def))?;
+
+        definition
+            .update_nft(input.id, input.data)
+            .map_err(RuntimeError::ResourceDefError)?;
+
+        Ok(UpdateNftOutput {})
+    }
+
+    fn handle_get_nft(&mut self, input: GetNftInput) -> Result<GetNftOutput, RuntimeError> {
+        let definition = self
+            .track
+            .get_resource_def(input.resource_def)
+            .ok_or(RuntimeError::ResourceDefNotFound(input.resource_def))?;
+
+        Ok(GetNftOutput {
+            data: definition
+                .get_nft(input.id)
+                .map_err(RuntimeError::ResourceDefError)?,
+        })
+    }
+
     fn handle_create_vault(
         &mut self,
         input: CreateEmptyVaultInput,
@@ -1250,9 +1271,9 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
                 input.resource_def,
                 definition.resource_type(),
                 match definition.resource_type() {
-                    ResourceType::Fungible { .. } => ResourceSupply::Fungible { amount: 0.into() },
-                    ResourceType::NonFungible { .. } => ResourceSupply::NonFungible {
-                        entries: BTreeMap::new(),
+                    ResourceType::Fungible { .. } => Supply::Fungible { amount: 0.into() },
+                    ResourceType::NonFungible { .. } => Supply::NonFungible {
+                        entries: BTreeSet::new(),
                     },
                 },
             ),
@@ -1322,42 +1343,6 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         Ok(TakeNftFromVaultOutput { bucket: new_bid })
     }
 
-    fn handle_update_nft_in_vault(
-        &mut self,
-        input: UpdateNftInVaultInput,
-    ) -> Result<UpdateNftInVaultOutput, RuntimeError> {
-        let auth = self.package_auth()?;
-
-        let vault = self
-            .track
-            .get_vault_mut(input.vault)
-            .ok_or(RuntimeError::VaultNotFound(input.vault))?;
-
-        vault
-            .update_nft(input.id, input.data, auth)
-            .map_err(RuntimeError::VaultError)?;
-
-        Ok(UpdateNftInVaultOutput {})
-    }
-
-    fn handle_get_nft_in_vault(
-        &mut self,
-        input: GetNftInVaultInput,
-    ) -> Result<GetNftInVaultOutput, RuntimeError> {
-        let auth = self.package_auth()?;
-
-        let vault = self
-            .track
-            .get_vault(input.vault)
-            .ok_or(RuntimeError::VaultNotFound(input.vault))?;
-
-        Ok(GetNftInVaultOutput {
-            data: vault
-                .get_nft(input.id, auth)
-                .map_err(RuntimeError::VaultError)?,
-        })
-    }
-
     fn handle_get_nft_ids_in_vault(
         &mut self,
         input: GetNftIdsInVaultInput,
@@ -1419,9 +1404,9 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
             input.resource_def,
             definition.resource_type(),
             match definition.resource_type() {
-                ResourceType::Fungible { .. } => ResourceSupply::Fungible { amount: 0.into() },
-                ResourceType::NonFungible { .. } => ResourceSupply::NonFungible {
-                    entries: BTreeMap::new(),
+                ResourceType::Fungible { .. } => Supply::Fungible { amount: 0.into() },
+                ResourceType::NonFungible { .. } => Supply::NonFungible {
+                    entries: BTreeSet::new(),
                 },
             },
         );
@@ -1513,38 +1498,6 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         self.buckets.insert(new_bid, new_bucket);
 
         Ok(TakeNftFromBucketOutput { bucket: new_bid })
-    }
-
-    fn handle_update_nft_in_bucket(
-        &mut self,
-        input: UpdateNftInBucketInput,
-    ) -> Result<UpdateNftInBucketOutput, RuntimeError> {
-        let bucket = self
-            .buckets
-            .get_mut(&input.bucket)
-            .ok_or(RuntimeError::BucketNotFound(input.bucket))?;
-
-        bucket
-            .update_nft(input.id, input.data)
-            .map_err(RuntimeError::BucketError)?;
-
-        Ok(UpdateNftInBucketOutput {})
-    }
-
-    fn handle_get_nft_in_bucket(
-        &mut self,
-        input: GetNftInBucketInput,
-    ) -> Result<GetNftInBucketOutput, RuntimeError> {
-        let bucket = self
-            .buckets
-            .get(&input.bucket)
-            .ok_or(RuntimeError::BucketNotFound(input.bucket))?;
-
-        Ok(GetNftInBucketOutput {
-            data: bucket
-                .get_nft(input.id)
-                .map_err(RuntimeError::BucketError)?,
-        })
     }
 
     fn handle_get_nft_ids_in_bucket(
@@ -1729,11 +1682,15 @@ impl<'r, 'l, L: Ledger> Externals for Process<'r, 'l, L> {
                     }
                     CREATE_RESOURCE_FIXED => self.handle(args, Self::handle_create_resource_fixed),
                     GET_RESOURCE_METADATA => self.handle(args, Self::handle_get_resource_metadata),
-                    GET_RESOURCE_SUPPLY => self.handle(args, Self::handle_get_resource_supply),
+                    GET_RESOURCE_TOTAL_SUPPLY => {
+                        self.handle(args, Self::handle_get_resource_total_supply)
+                    }
                     GET_RESOURCE_MINTER => self.handle(args, Self::handle_get_resource_minter),
                     GET_RESOURCE_TYPE => self.handle(args, Self::handle_get_resource_type),
                     MINT_RESOURCE => self.handle(args, Self::handle_mint_resource),
                     BURN_RESOURCE => self.handle(args, Self::handle_burn_resource),
+                    UPDATE_NFT => self.handle(args, Self::handle_update_nft),
+                    GET_NFT => self.handle(args, Self::handle_get_nft),
 
                     CREATE_EMPTY_VAULT => self.handle(args, Self::handle_create_vault),
                     PUT_INTO_VAULT => self.handle(args, Self::handle_put_into_vault),
@@ -1743,8 +1700,6 @@ impl<'r, 'l, L: Ledger> Externals for Process<'r, 'l, L> {
                         self.handle(args, Self::handle_get_vault_resource_def)
                     }
                     TAKE_NFT_FROM_VAULT => self.handle(args, Self::handle_take_nft_from_vault),
-                    UPDATE_NFT_IN_VAULT => self.handle(args, Self::handle_update_nft_in_vault),
-                    GET_NFT_IN_VAULT => self.handle(args, Self::handle_get_nft_in_vault),
                     GET_NFT_IDS_IN_VAULT => self.handle(args, Self::handle_get_nft_ids_in_vault),
 
                     CREATE_EMPTY_BUCKET => self.handle(args, Self::handle_create_bucket),
@@ -1755,8 +1710,6 @@ impl<'r, 'l, L: Ledger> Externals for Process<'r, 'l, L> {
                         self.handle(args, Self::handle_get_bucket_resource_def)
                     }
                     TAKE_NFT_FROM_BUCKET => self.handle(args, Self::handle_take_nft_from_bucket),
-                    UPDATE_NFT_IN_BUCKET => self.handle(args, Self::handle_update_nft_in_bucket),
-                    GET_NFT_IN_BUCKET => self.handle(args, Self::handle_get_nft_in_bucket),
                     GET_NFT_IDS_IN_BUCKET => self.handle(args, Self::handle_get_nft_ids_in_bucket),
 
                     CREATE_BUCKET_REF => self.handle(args, Self::handle_create_bucket_ref),

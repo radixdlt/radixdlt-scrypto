@@ -47,11 +47,15 @@ pub const BURN_RESOURCE: u32 = 0x33;
 /// Get resource metadata
 pub const GET_RESOURCE_METADATA: u32 = 0x34;
 /// Get resource supply
-pub const GET_RESOURCE_SUPPLY: u32 = 0x35;
+pub const GET_RESOURCE_TOTAL_SUPPLY: u32 = 0x35;
 /// Get resource minter address
 pub const GET_RESOURCE_MINTER: u32 = 0x36;
 /// Get resource granularity
 pub const GET_RESOURCE_TYPE: u32 = 0x37;
+/// Get the data of an NFT
+pub const GET_NFT: u32 = 0x38;
+/// Update the update of an NFT
+pub const UPDATE_NFT: u32 = 0x39;
 
 /// Create an empty vault
 pub const CREATE_EMPTY_VAULT: u32 = 0x40;
@@ -65,10 +69,6 @@ pub const GET_VAULT_AMOUNT: u32 = 0x43;
 pub const GET_VAULT_RESOURCE_DEF: u32 = 0x44;
 /// Take an NFT from this vault, by id
 pub const TAKE_NFT_FROM_VAULT: u32 = 0x45;
-/// Update an NFT in this vault
-pub const UPDATE_NFT_IN_VAULT: u32 = 0x46;
-/// Get the data of an NFT
-pub const GET_NFT_IN_VAULT: u32 = 0x47;
 /// Get the IDs of all NFTs in this vault
 pub const GET_NFT_IDS_IN_VAULT: u32 = 0x48;
 
@@ -84,10 +84,6 @@ pub const GET_BUCKET_AMOUNT: u32 = 0x53;
 pub const GET_BUCKET_RESOURCE_DEF: u32 = 0x54;
 /// Take an NFT from this bucket, by id
 pub const TAKE_NFT_FROM_BUCKET: u32 = 0x55;
-/// Update an NFT in this bucket
-pub const UPDATE_NFT_IN_BUCKET: u32 = 0x56;
-/// Get the data of an NFT
-pub const GET_NFT_IN_BUCKET: u32 = 0x57;
 /// Get the IDs of all NFTs in this bucket
 pub const GET_NFT_IDS_IN_BUCKET: u32 = 0x58;
 
@@ -130,7 +126,7 @@ pub enum ResourceType {
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode, Describe)]
-pub enum ResourceSupply {
+pub enum InitialSupply {
     Fungible { amount: Decimal },
 
     NonFungible { entries: BTreeMap<u64, Vec<u8>> },
@@ -273,7 +269,7 @@ pub struct CreateResourceMutableOutput {
 pub struct CreateResourceFixedInput {
     pub resource_type: ResourceType,
     pub metadata: HashMap<String, String>,
-    pub supply: ResourceSupply,
+    pub supply: InitialSupply,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
@@ -285,7 +281,7 @@ pub struct CreateResourceFixedOutput {
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct MintResourceInput {
     pub resource_def: Address,
-    pub supply: ResourceSupply,
+    pub supply: InitialSupply,
     pub auth: Rid,
 }
 
@@ -314,12 +310,12 @@ pub struct GetResourceMetadataOutput {
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct GetResourceSupplyInput {
+pub struct GetInitialSupplyInput {
     pub resource_def: Address,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct GetResourceSupplyOutput {
+pub struct GetInitialSupplyOutput {
     pub supply: Decimal,
 }
 
@@ -342,6 +338,28 @@ pub struct GetResourceTypeInput {
 pub struct GetResourceTypeOutput {
     pub resource_type: ResourceType,
 }
+
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
+pub struct GetNftInput {
+    pub resource_def: Address,
+    pub id: u64,
+}
+
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
+pub struct GetNftOutput {
+    pub data: Vec<u8>,
+}
+
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
+pub struct UpdateNftInput {
+    pub resource_def: Address,
+    pub id: u64,
+    pub data: Vec<u8>,
+    pub auth: Rid,
+}
+
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
+pub struct UpdateNftOutput {}
 
 //==========
 // vault
@@ -409,17 +427,6 @@ pub struct TakeNftFromVaultOutput {
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct GetNftInVaultInput {
-    pub vault: Vid,
-    pub id: u64,
-}
-
-#[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct GetNftInVaultOutput {
-    pub data: Vec<u8>,
-}
-
-#[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct GetNftIdsInVaultInput {
     pub vault: Vid,
 }
@@ -428,16 +435,6 @@ pub struct GetNftIdsInVaultInput {
 pub struct GetNftIdsInVaultOutput {
     pub ids: BTreeSet<u64>,
 }
-
-#[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct UpdateNftInVaultInput {
-    pub vault: Vid,
-    pub id: u64,
-    pub data: Vec<u8>,
-}
-
-#[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct UpdateNftInVaultOutput {}
 
 //==========
 // bucket
@@ -505,17 +502,6 @@ pub struct TakeNftFromBucketOutput {
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct GetNftInBucketInput {
-    pub bucket: Bid,
-    pub id: u64,
-}
-
-#[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct GetNftInBucketOutput {
-    pub data: Vec<u8>,
-}
-
-#[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct GetNftIdsInBucketInput {
     pub bucket: Bid,
 }
@@ -524,16 +510,6 @@ pub struct GetNftIdsInBucketInput {
 pub struct GetNftIdsInBucketOutput {
     pub ids: BTreeSet<u64>,
 }
-
-#[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct UpdateNftInBucketInput {
-    pub bucket: Bid,
-    pub id: u64,
-    pub data: Vec<u8>,
-}
-
-#[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct UpdateNftInBucketOutput {}
 
 //==========
 // bucket ref

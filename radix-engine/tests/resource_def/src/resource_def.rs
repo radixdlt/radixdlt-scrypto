@@ -59,7 +59,7 @@ blueprint! {
                 bucket,
                 resource_def.metadata(),
                 resource_def.minter(),
-                resource_def.supply(),
+                resource_def.total_supply(),
             )
         }
 

@@ -218,7 +218,7 @@ blueprint! {
                         } else {
                             new_debt
                                 / (global_debt
-                                    / self.synthetics_global_debt_share_resource_def.supply())
+                                    / self.synthetics_global_debt_share_resource_def.total_supply())
                         },
                         auth,
                     )
@@ -249,7 +249,7 @@ blueprint! {
             let global_debt = self.get_total_global_debt();
             let debt_to_remove = self.get_asset_price(synth.asset_address) * bucket.amount();
             let shares_to_burn = user.global_debt_share.take(
-                self.synthetics_global_debt_share_resource_def.supply() * debt_to_remove
+                self.synthetics_global_debt_share_resource_def.total_supply() * debt_to_remove
                     / global_debt,
             );
 
@@ -265,7 +265,7 @@ blueprint! {
             let mut total = Decimal::zero();
             for (_, synth) in &self.synthetics {
                 total +=
-                    self.get_asset_price(synth.asset_address) * synth.token_resource_def.supply();
+                    self.get_asset_price(synth.asset_address) * synth.token_resource_def.total_supply();
             }
             total
         }
@@ -297,7 +297,7 @@ blueprint! {
                 self.get_snx_price(),
                 self.get_total_global_debt(),
                 user.global_debt_share.amount(),
-                self.synthetics_global_debt_share_resource_def.supply()
+                self.synthetics_global_debt_share_resource_def.total_supply()
             )
         }
 
@@ -382,10 +382,10 @@ impl User {
         global_debt_resource_def: ResourceDef,
         threshold: Decimal,
     ) {
-        if !global_debt_resource_def.supply().is_zero() {
+        if !global_debt_resource_def.total_supply().is_zero() {
             assert!(
                 self.snx.amount() * snx_price
-                    / (global_debt / global_debt_resource_def.supply()
+                    / (global_debt / global_debt_resource_def.total_supply()
                         * self.global_debt_share.amount())
                     >= threshold,
                 "Under collateralized!",

@@ -3,6 +3,7 @@ use scrypto::buffer::*;
 use scrypto::kernel::*;
 use scrypto::rust::borrow::ToOwned;
 use scrypto::rust::collections::*;
+use scrypto::rust::vec::Vec;
 use scrypto::types::*;
 
 use crate::model::*;
@@ -72,7 +73,7 @@ pub trait Ledger {
                 ResourceDef::new_fixed(
                     ResourceType::Fungible { granularity: 1 },
                     metadata,
-                    ResourceSupply::Fungible {
+                    InitialSupply::Fungible {
                         amount: XRD_MAX_SUPPLY.into(),
                     },
                     None,
@@ -88,7 +89,7 @@ pub trait Ledger {
                     Bucket::new(
                         RADIX_TOKEN,
                         ResourceType::Fungible { granularity: 1 },
-                        ResourceSupply::Fungible {
+                        Supply::Fungible {
                             amount: XRD_MAX_SUPPLY.into(),
                         },
                     ),

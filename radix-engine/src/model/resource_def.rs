@@ -2,9 +2,10 @@ use sbor::*;
 use scrypto::kernel::*;
 use scrypto::rust::collections::HashMap;
 use scrypto::rust::string::String;
+use scrypto::rust::vec::Vec;
 use scrypto::types::*;
 
-use crate::model::Auth;
+use crate::model::{Auth, Supply};
 
 /// Represents an error when accessing a bucket.
 #[derive(Debug, Clone)]
@@ -16,6 +17,7 @@ pub enum ResourceDefError {
     GranularityCheckFailed,
     NegativeAmount,
     TypeSupplyNotMatching,
+    UnsupportedOperation,
 }
 
 /// The definition of a resource.
@@ -23,7 +25,7 @@ pub enum ResourceDefError {
 pub struct ResourceDef {
     resource_type: ResourceType,
     metadata: HashMap<String, String>,
-    supply: Decimal,
+    total_supply: Decimal,
     minter: Option<Address>,
 }
 
@@ -31,21 +33,27 @@ impl ResourceDef {
     pub fn new_fixed(
         resource_type: ResourceType,
         metadata: HashMap<String, String>,
-        supply: ResourceSupply,
+        initial_supply: InitialSupply,
         minter: Option<Address>,
-    ) -> Result<(Self, ResourceSupply), ResourceDefError> {
-        let total = match resource_type {
+    ) -> Result<(Self, Supply), ResourceDefError> {
+        let (total_supply, supply) = match resource_type {
             ResourceType::Fungible { .. } => {
-                if let ResourceSupply::Fungible { amount } = supply.clone() {
+                if let InitialSupply::Fungible { amount } = initial_supply {
                     Self::check_amount(amount, resource_type)?;
-                    amount
+                    (amount, Supply::Fungible { amount })
                 } else {
                     return Err(ResourceDefError::TypeSupplyNotMatching);
                 }
             }
             ResourceType::NonFungible => {
-                if let ResourceSupply::NonFungible { entries } = supply.clone() {
-                    entries.len().into()
+                if let InitialSupply::NonFungible { entries } = initial_supply {
+                    // TODO insert NFT into ledger
+                    (
+                        entries.len().into(),
+                        Supply::NonFungible {
+                            entries: entries.keys().cloned().collect(),
+                        },
+                    )
                 } else {
                     return Err(ResourceDefError::TypeSupplyNotMatching);
                 }
@@ -56,7 +64,7 @@ impl ResourceDef {
             Self {
                 resource_type,
                 metadata,
-                supply: total,
+                total_supply,
                 minter,
             },
             supply,
@@ -71,7 +79,7 @@ impl ResourceDef {
         Ok(Self {
             resource_type,
             metadata,
-            supply: 0.into(),
+            total_supply: 0.into(),
             minter,
         })
     }
@@ -84,19 +92,15 @@ impl ResourceDef {
         &self.metadata
     }
 
-    pub fn supply(&self) -> Decimal {
-        self.supply
+    pub fn total_supply(&self) -> Decimal {
+        self.total_supply
     }
 
     pub fn minter(&self) -> Option<Address> {
         self.minter.clone()
     }
 
-    pub fn mint(
-        &mut self,
-        supply: ResourceSupply,
-        auth: Auth,
-    ) -> Result<ResourceSupply, ResourceDefError> {
+    pub fn mint(&mut self, supply: InitialSupply, auth: Auth) -> Result<Supply, ResourceDefError> {
         match self.minter() {
             Some(a) => {
                 if !auth.contains(a) {
@@ -104,25 +108,27 @@ impl ResourceDef {
                 }
             }
             None => {
-                return Err(ResourceDefError::BurnNotAllowed);
+                return Err(ResourceDefError::MintNotAllowed);
             }
         };
 
         match self.resource_type {
             ResourceType::Fungible { .. } => {
-                if let ResourceSupply::Fungible { amount } = supply {
+                if let InitialSupply::Fungible { amount } = supply {
                     Self::check_amount(amount, self.resource_type)?;
-                    self.supply += amount;
-                    Ok(ResourceSupply::Fungible { amount })
+                    self.total_supply += amount;
+                    Ok(Supply::Fungible { amount })
                 } else {
                     Err(ResourceDefError::TypeSupplyNotMatching)
                 }
             }
             ResourceType::NonFungible => {
-                if let ResourceSupply::NonFungible { entries } = supply {
+                if let InitialSupply::NonFungible { entries } = supply {
                     // TODO check existence and store in state.
-                    self.supply += entries.len();
-                    Ok(ResourceSupply::NonFungible { entries })
+                    self.total_supply += entries.len();
+                    Ok(Supply::NonFungible {
+                        entries: entries.keys().cloned().collect(),
+                    })
                 } else {
                     Err(ResourceDefError::TypeSupplyNotMatching)
                 }
@@ -130,7 +136,7 @@ impl ResourceDef {
         }
     }
 
-    pub fn burn(&mut self, supply: ResourceSupply, auth: Auth) -> Result<(), ResourceDefError> {
+    pub fn burn(&mut self, supply: Supply, auth: Auth) -> Result<(), ResourceDefError> {
         match self.minter() {
             Some(a) => {
                 if !auth.contains(a) {
@@ -144,22 +150,42 @@ impl ResourceDef {
 
         match self.resource_type {
             ResourceType::Fungible { .. } => {
-                if let ResourceSupply::Fungible { amount } = supply {
+                if let Supply::Fungible { amount } = supply {
                     Self::check_amount(amount, self.resource_type)?;
-                    self.supply -= amount;
+                    self.total_supply -= amount;
                     Ok(())
                 } else {
                     Err(ResourceDefError::TypeSupplyNotMatching)
                 }
             }
             ResourceType::NonFungible => {
-                if let ResourceSupply::NonFungible { entries } = supply {
+                if let Supply::NonFungible { entries } = supply {
                     // TODO check existence and remove in state.
-                    self.supply -= entries.len();
+                    self.total_supply -= entries.len();
                     Ok(())
                 } else {
                     Err(ResourceDefError::TypeSupplyNotMatching)
                 }
+            }
+        }
+    }
+
+    pub fn get_nft(&self, id: u64) -> Result<Vec<u8>, ResourceDefError> {
+        match &self.resource_type {
+            ResourceType::Fungible { .. } => Err(ResourceDefError::UnsupportedOperation),
+            ResourceType::NonFungible { .. } => {
+                // TODO retrieve data
+                Ok(Vec::new())
+            }
+        }
+    }
+
+    pub fn update_nft(&mut self, id: u64, data: Vec<u8>) -> Result<(), ResourceDefError> {
+        match &self.resource_type {
+            ResourceType::Fungible { .. } => Err(ResourceDefError::UnsupportedOperation),
+            ResourceType::NonFungible { .. } => {
+                // TODO update data
+                Ok(())
             }
         }
     }

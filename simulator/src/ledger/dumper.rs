@@ -1,8 +1,7 @@
 use colored::*;
 use radix_engine::ledger::*;
-use radix_engine::model::Auth;
+use radix_engine::model::*;
 use radix_engine::utils::*;
-use scrypto::kernel::*;
 use scrypto::types::*;
 
 use crate::utils::*;
@@ -71,11 +70,11 @@ pub fn dump_component<T: Ledger>(address: Address, ledger: &T) -> Result<(), Dis
                         .map(|symbol| format!(", symbol: {}", symbol))
                         .unwrap_or(String::new()),
                 );
-                if let ResourceSupply::NonFungible { entries } = vault.supply(Auth::NoAuth).unwrap()
-                {
-                    // FIXME how to deal with the case where a vault id is referenced in the NFT
+                if let Supply::NonFungible { entries } = vault.total_supply(Auth::NoAuth).unwrap() {
+                    // TODO how to deal with the case where a vault id is referenced in the NFT
                     let mut vaults = Vec::new();
-                    for (inner_last, (id, data)) in entries.iter().identify_last() {
+                    for (inner_last, id) in entries.iter().identify_last() {
+                        let data = []; // FIXME retrieve NFT data
                         println!(
                             "{}  {} NFT {{ id: {}, data: {} }}",
                             if last { " " } else { "│" },
@@ -106,7 +105,7 @@ pub fn dump_resource_def<T: Ledger>(address: Address, ledger: &T) -> Result<(), 
             for (last, e) in r.metadata().iter().identify_last() {
                 println!("{} {}: {}", list_item_prefix(last), e.0.green().bold(), e.1);
             }
-            println!("{}: {}", "Total Supply".green().bold(), r.supply());
+            println!("{}: {}", "Total Supply".green().bold(), r.total_supply());
             println!("{}: {:?}", "Mint Auth".green().bold(), r.minter());
             Ok(())
         }

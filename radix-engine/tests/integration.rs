@@ -279,6 +279,13 @@ fn test_nft() {
         .call_function(
             package,
             "NftTest",
+            "update_and_get_nft",
+            vec![],
+            Some(account),
+        )
+        .call_function(
+            package,
+            "NftTest",
             "take_and_put_bucket",
             vec![],
             Some(account),

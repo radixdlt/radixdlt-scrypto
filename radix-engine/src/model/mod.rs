@@ -7,7 +7,7 @@ mod resource_def;
 mod vault;
 
 pub use auth::Auth;
-pub use bucket::{Bucket, BucketError, BucketRef, LockedBucket};
+pub use bucket::{Bucket, BucketError, BucketRef, LockedBucket, Supply};
 pub use component::{Component, ComponentError};
 pub use lazy_map::{LazyMap, LazyMapError};
 pub use package::Package;
