@@ -87,13 +87,13 @@ blueprint! {
                 ]));
 
             // Create an NFT resource with mutable supply
-            let random_card_mint_badge_badge = ResourceBuilder::new()
+            let random_card_mint_badge = ResourceBuilder::new()
                 .metadata("name", "Random Cards Mint Badge")
                 .new_badge_fixed(1);
             let random_card_resource_def = ResourceBuilder::new()
                 .metadata("name", "Random Cards")
                 .new_nft_mutable(ResourceAuthConfigs::new(
-                    random_card_mint_badge_badge.resource_def(),
+                    random_card_mint_badge.resource_def(),
                 ));
 
             // Instantiate our component
@@ -104,7 +104,7 @@ blueprint! {
                     (2, 666.into()),
                     (3, 123.into()),
                 ]),
-                random_card_mint_badge: Vault::with_bucket(random_card_mint_badge_badge),
+                random_card_mint_badge: Vault::with_bucket(random_card_mint_badge),
                 random_card_resource_def,
                 random_card_price: 50.into(),
                 random_card_id_counter: 0,
