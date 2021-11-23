@@ -14,7 +14,13 @@ fn bench_transfer(b: &mut Bencher) {
     let key2 = executor.new_public_key();
     let account2 = executor.new_account(key2);
     let transaction = TransactionBuilder::new(&executor)
-        .withdraw_from_account(1.into(), RADIX_TOKEN, account1)
+        .withdraw_from_account(
+            &ResourceSpec::Fungible {
+                amount: 1.into(),
+                resource_address: RADIX_TOKEN,
+            },
+            account1,
+        )
         .drop_all_bucket_refs()
         .deposit_all_buckets(account2)
         .build(vec![key1])

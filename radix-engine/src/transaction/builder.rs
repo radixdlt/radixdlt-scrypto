@@ -15,6 +15,17 @@ use scrypto::types::*;
 use crate::engine::*;
 use crate::transaction::*;
 
+pub enum ResourceSpec {
+    Fungible {
+        amount: Decimal,
+        resource_address: Address,
+    },
+    NonFungible {
+        ids: BTreeSet<u128>,
+        resource_address: Address,
+    },
+}
+
 /// Utility for building transaction.
 pub struct TransactionBuilder<'a, A: AbiProvider> {
     abi_provider: &'a A,
@@ -345,15 +356,33 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     /// Withdraws resource from an account.
     pub fn withdraw_from_account(
         &mut self,
-        amount: Decimal,
-        resource_def: Address,
+        resource_spec: &ResourceSpec,
         account: Address,
     ) -> &mut Self {
-        self.add_instruction(Instruction::CallMethod {
-            component: account,
-            method: "withdraw".to_owned(),
-            args: vec![SmartValue::from(amount), SmartValue::from(resource_def)],
-        })
+        match resource_spec {
+            ResourceSpec::Fungible {
+                amount,
+                resource_address,
+            } => self.add_instruction(Instruction::CallMethod {
+                component: account,
+                method: "withdraw".to_owned(),
+                args: vec![
+                    SmartValue::from(*amount),
+                    SmartValue::from(*resource_address),
+                ],
+            }),
+            ResourceSpec::NonFungible {
+                ids,
+                resource_address,
+            } => self.add_instruction(Instruction::CallMethod {
+                component: account,
+                method: "withdraw_nfts".to_owned(),
+                args: vec![
+                    SmartValue::from(ids.clone()),
+                    SmartValue::from(*resource_address),
+                ],
+            }),
+        }
     }
 
     //===============================
@@ -466,44 +495,89 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                 Ok(SmartValue::from(value))
             }
             SCRYPTO_NAME_BID | SCRYPTO_NAME_BUCKET => {
-                let mut split = arg.split(',');
-                let amount = split.next().and_then(|v| v.trim().parse::<Decimal>().ok());
-                let resource_def = split.next().and_then(|v| v.trim().parse::<Address>().ok());
-                match (amount, resource_def) {
-                    (Some(a), Some(r)) => {
-                        if let Some(account) = account {
-                            self.withdraw_from_account(a, r, account);
-                        }
-                        let mut created_bid = None;
-                        self.declare_bucket(|builder, bid| {
-                            created_bid = Some(bid);
-                            builder.take_from_context(a, r, bid)
-                        });
-                        Ok(SmartValue::from(created_bid.unwrap()))
-                    }
-                    _ => Err(BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned())),
+                let resource_spec = parse_resource_spec(i, ty, arg)?;
+
+                if let Some(account) = account {
+                    self.withdraw_from_account(&resource_spec, account);
                 }
+                let mut created_bid = None;
+                self.declare_bucket(|builder, bid| {
+                    created_bid = Some(bid);
+                    let (a, r) = match resource_spec {
+                        ResourceSpec::Fungible {
+                            amount,
+                            resource_address,
+                        } => (amount, resource_address),
+                        ResourceSpec::NonFungible {
+                            ids,
+                            resource_address,
+                        } => (ids.len().into(), resource_address),
+                    };
+                    builder.take_from_context(a, r, bid)
+                });
+                Ok(SmartValue::from(created_bid.unwrap()))
             }
             SCRYPTO_NAME_RID | SCRYPTO_NAME_BUCKET_REF => {
-                let mut split = arg.split(',');
-                let amount = split.next().and_then(|v| v.trim().parse::<Decimal>().ok());
-                let resource_def = split.next().and_then(|v| v.trim().parse::<Address>().ok());
-                match (amount, resource_def) {
-                    (Some(a), Some(r)) => {
-                        if let Some(account) = account {
-                            self.withdraw_from_account(a, r, account);
-                        }
-                        let mut created_rid = None;
-                        self.declare_bucket_ref(|builder, rid| {
-                            created_rid = Some(rid);
-                            builder.borrow_from_context(a, r, rid)
-                        });
-                        Ok(SmartValue::from(created_rid.unwrap()))
-                    }
-                    _ => Err(BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned())),
+                let resource_spec = parse_resource_spec(i, ty, arg)?;
+                if let Some(account) = account {
+                    self.withdraw_from_account(&resource_spec, account);
                 }
+                let mut created_rid = None;
+                self.declare_bucket_ref(|builder, rid| {
+                    created_rid = Some(rid);
+                    let (a, r) = match resource_spec {
+                        ResourceSpec::Fungible {
+                            amount,
+                            resource_address,
+                        } => (amount, resource_address),
+                        ResourceSpec::NonFungible {
+                            ids,
+                            resource_address,
+                        } => (ids.len().into(), resource_address),
+                    };
+                    builder.borrow_from_context(a, r, rid)
+                });
+                Ok(SmartValue::from(created_rid.unwrap()))
             }
             _ => Err(BuildArgsError::UnsupportedType(i, ty.clone())),
         }
+    }
+}
+
+fn parse_resource_spec(i: usize, ty: &Type, arg: &str) -> Result<ResourceSpec, BuildArgsError> {
+    let error = BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned());
+    let tokens: Vec<&str> = arg.trim().split(',').collect();
+
+    if tokens.len() >= 2 {
+        let resource_address = tokens
+            .last()
+            .ok_or(error.clone())?
+            .parse::<Address>()
+            .map_err(|_| error.clone())?;
+        if tokens[0].starts_with('#') {
+            let mut ids = BTreeSet::<u128>::new();
+            for id in &tokens[..tokens.len() - 1] {
+                if id.starts_with('#') {
+                    ids.insert(id[1..].parse().map_err(|_| error.clone())?);
+                } else {
+                    return Err(error);
+                }
+            }
+            Ok(ResourceSpec::NonFungible {
+                ids,
+                resource_address,
+            })
+        } else {
+            if tokens.len() == 2 {
+                Ok(ResourceSpec::Fungible {
+                    amount: tokens[0].parse().map_err(|_| error)?,
+                    resource_address,
+                })
+            } else {
+                Err(error)
+            }
+        }
+    } else {
+        Err(error)
     }
 }

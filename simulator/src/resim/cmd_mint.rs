@@ -58,7 +58,13 @@ pub fn handle_mint(matches: &ArgMatches) -> Result<(), Error> {
     let mut ledger = FileBasedLedger::with_bootstrap(get_data_dir()?);
     let mut executor = TransactionExecutor::new(&mut ledger, configs.current_epoch, configs.nonce);
     let transaction = TransactionBuilder::new(&executor)
-        .withdraw_from_account(1.into(), mint_badge_addr, account.0)
+        .withdraw_from_account(
+            &ResourceSpec::Fungible {
+                amount: 1.into(),
+                resource_address: mint_badge_addr,
+            },
+            account.0,
+        )
         .mint(amount, resource_def, mint_badge_addr)
         .drop_all_bucket_refs()
         .deposit_all_buckets(account.0)
