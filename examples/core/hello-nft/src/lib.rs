@@ -173,6 +173,7 @@ blueprint! {
             // Burn the second card
             self.random_card_mint_badge.authorize(|auth| {
                 nfts.take_nft(nft_ids[1]).burn(auth);
+                assert_eq!(Decimal::from(1), nfts.amount());
             });
 
             // Update the first card

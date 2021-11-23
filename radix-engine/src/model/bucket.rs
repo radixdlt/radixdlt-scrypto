@@ -97,17 +97,15 @@ impl Bucket {
                     ))
                 }
                 Supply::NonFungible { ref mut entries } => {
-                    let mut to_return = BTreeSet::new();
                     let n: usize = quantity.to_string().parse().unwrap();
-                    for _ in 0..n {
-                        let e = entries.iter().next().cloned().unwrap();
-                        entries.remove(&e);
-                        to_return.insert(e);
+                    let taken: BTreeSet<u128> = entries.iter().cloned().take(n).collect();
+                    for e in &taken {
+                        entries.remove(e);
                     }
                     Ok(Self::new(
                         self.resource_def,
                         self.resource_type,
-                        Supply::NonFungible { entries: to_return },
+                        Supply::NonFungible { entries: taken },
                     ))
                 }
             }
@@ -121,6 +119,7 @@ impl Bucket {
                 if !entries.contains(&id) {
                     return Err(BucketError::NftNotFound);
                 }
+                entries.remove(&id);
                 Ok(Self::new(
                     self.resource_def,
                     self.resource_type,
