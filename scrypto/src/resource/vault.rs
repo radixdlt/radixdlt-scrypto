@@ -127,6 +127,14 @@ impl Vault {
 
         output.ids
     }
+
+    pub fn get_nft_data<T: Decode>(&self, id: u128) -> T {
+        self.resource_def().get_nft_data(id)
+    }
+
+    pub fn update_nft_data<T: Encode>(&self, id: u128, data: T, auth: BucketRef) {
+        self.resource_def().update_nft_data(id, data, auth)
+    }
 }
 
 //========

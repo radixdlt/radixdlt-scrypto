@@ -157,34 +157,29 @@ blueprint! {
                 nfts.amount() == 2.into(),
                 "You need to pass 2 NFTs for fusion"
             );
-
             assert!(
                 nfts.resource_def() == self.random_card_resource_def,
-                "Wrong type of resource passed"
+                "Only random cards can be fused"
             );
 
             // Get the NFT IDs
             let nft_ids: Vec<u128> = nfts.get_nft_ids().iter().cloned().collect();
 
-            // Read data of each NFT
-            let card1: MagicCard = nfts.resource_def().get_nft_data(nft_ids[0]);
-            let card2: MagicCard = nfts.resource_def().get_nft_data(nft_ids[1]);
-
-            // Fuse a new card
+            // Generate a new card based on the provided two.
+            let card1: MagicCard = nfts.get_nft_data(nft_ids[0]);
+            let card2: MagicCard = nfts.get_nft_data(nft_ids[1]);
             let new_card = Self::fuse_magic_cards(card1, card2);
 
-            // Burn the 2nd NFT and update the 1st
-            let nft2 = nfts.take_nft(nft_ids[1]);
+            // Burn the second card
             self.random_card_mint_badge.authorize(|auth| {
-                // TODO what if I want to fuse Magic Cards with fixed supply?
-                nft2.burn(auth);
-            });
-            self.random_card_mint_badge.authorize(|auth| {
-                nfts.resource_def()
-                    .update_nft_data(nft_ids[0], new_card, auth);
+                nfts.take_nft(nft_ids[1]).burn(auth);
             });
 
-            // Return the new NFT
+            // Update the first card
+            self.random_card_mint_badge.authorize(|auth| {
+                nfts.update_nft_data(nft_ids[0], new_card, auth);
+            });
+
             nfts
         }
 

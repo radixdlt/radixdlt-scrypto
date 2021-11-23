@@ -155,8 +155,6 @@ impl ResourceDef {
         self.address
     }
 
-    // TODO provide NFT abstraction
-
     /// Gets the data of an NFT.
     ///
     /// # Panics

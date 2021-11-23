@@ -74,13 +74,13 @@ pub fn dump_component<T: Ledger>(address: Address, ledger: &T) -> Result<(), Dis
                     // TODO how to deal with the case where a vault id is referenced in the NFT
                     let mut vaults = Vec::new();
                     for (inner_last, id) in entries.iter().identify_last() {
-                        let data = []; // FIXME retrieve NFT data
+                        let nft = ledger.get_nft(resource_def_address, *id).unwrap();
                         println!(
                             "{}  {} NFT {{ id: {}, data: {} }}",
                             if last { " " } else { "│" },
                             list_item_prefix(inner_last),
                             id,
-                            format_data_with_ledger(&data, ledger, &mut vaults).unwrap()
+                            format_data_with_ledger(&nft.data(), ledger, &mut vaults).unwrap()
                         );
                     }
                 }
