@@ -1724,6 +1724,15 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         })
     }
 
+    fn handle_generate_uuid(
+        &mut self,
+        _input: GenerateUuidInput,
+    ) -> Result<GenerateUuidOutput, RuntimeError> {
+        Ok(GenerateUuidOutput {
+            uuid: self.track.new_uuid(),
+        })
+    }
+
     //============================
     // SYSTEM CALL HANDLERS END
     //============================
@@ -1807,6 +1816,7 @@ impl<'r, 'l, L: Ledger> Externals for Process<'r, 'l, L> {
                     GET_TRANSACTION_SIGNERS => {
                         self.handle(args, Self::handle_get_transaction_signers)
                     }
+                    GENERATE_UUID => self.handle(args, Self::handle_generate_uuid),
 
                     _ => Err(RuntimeError::InvalidRequestCode(operation).into()),
                 }

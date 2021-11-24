@@ -6,6 +6,7 @@ mod context;
 mod lazy_map;
 mod logger;
 mod package;
+mod uuid;
 
 pub use account::Account;
 pub use blueprint::Blueprint;
@@ -15,6 +16,7 @@ pub use context::Context;
 pub use lazy_map::LazyMap;
 pub use logger::Logger;
 pub use package::Package;
+pub use uuid::Uuid;
 
 /// Represents the state of a component.
 pub trait State: sbor::Encode + sbor::Decode {

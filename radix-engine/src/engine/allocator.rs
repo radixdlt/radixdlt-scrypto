@@ -52,8 +52,8 @@ impl IdAllocator {
         Address::ResourceDef(hash.lower_26_bytes())
     }
 
-    /// Creates a new nft id.
-    pub fn new_nft_id(&mut self, tx_hash: H256) -> u128 {
+    /// Creates a new UUID.
+    pub fn new_uuid(&mut self, tx_hash: H256) -> u128 {
         let mut data = tx_hash.as_ref().to_vec();
         data.extend(self.count.to_le_bytes());
         self.count += 1;

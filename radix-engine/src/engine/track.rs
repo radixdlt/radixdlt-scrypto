@@ -367,9 +367,10 @@ impl<'l, L: Ledger> Track<'l, L> {
         self.new_entities.push(address);
         address
     }
-    /// Creates a new nft ID.
-    pub fn new_nft_id(&mut self) -> u128 {
-        self.id_alloc.new_nft_id(self.tx_hash())
+
+    /// Creates a new UUID.
+    pub fn new_uuid(&mut self) -> u128 {
+        self.id_alloc.new_uuid(self.tx_hash())
     }
 
     /// Creates a new bucket ID.
