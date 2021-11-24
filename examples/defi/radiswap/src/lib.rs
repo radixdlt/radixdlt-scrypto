@@ -12,6 +12,9 @@ blueprint! {
         b_pool: Vault,
         /// The fee to apply for every swap
         fee: Decimal,
+        /// The standard (Uniswap-like) DEX follows the X*Y=K rule. Since we enable a user defined 'lp_initial_supply', we need to store this value to recover incase all liquidity is removed from the system.
+        /// Adding and removing liquidity does not change this ratio, this ratio is only changed upon swaps.
+        lp_per_asset_ratio: Decimal,
     }
 
     impl Radiswap {
@@ -47,6 +50,9 @@ blueprint! {
                 .new_token_mutable(ResourceAuthConfigs::new(lp_mint_badge.resource_def()));
             let lp_tokens = lp_resource_def.mint(lp_initial_supply, lp_mint_badge.borrow());
 
+            // ratio = initial supply / (x * y) = initial supply / k
+            let lp_per_asset_ratio = lp_initial_supply / (a_tokens.amount() * b_tokens.amount());
+
             // Instantiate our Radiswap component
             let radiswap = Self {
                 lp_resource_def,
@@ -54,6 +60,7 @@ blueprint! {
                 a_pool: Vault::with_bucket(a_tokens),
                 b_pool: Vault::with_bucket(b_tokens),
                 fee,
+                lp_per_asset_ratio,
             }
             .instantiate();
 
@@ -64,29 +71,42 @@ blueprint! {
         /// Adds liquidity to this pool and return the LP tokens representing pool shares
         /// along with any remainder.
         pub fn add_liquidity(&self, a_tokens: Bucket, b_tokens: Bucket) -> (Bucket, Bucket) {
-            // The ratio of added liquidity in existing liquidty.
-            let a_ratio = a_tokens.amount() / self.a_pool.amount();
-            let b_ratio = b_tokens.amount() / self.b_pool.amount();
-
-            let (actual_ratio, remainder) = if a_ratio <= b_ratio {
-                // We will claim all input token A's, and only the correct amount of token B
-                self.a_pool.put(a_tokens);
-                self.b_pool
-                    .put(b_tokens.take(self.b_pool.amount() * a_ratio));
-                (a_ratio, b_tokens)
-            } else {
-                // We will claim all input token B's, and only the correct amount of token A
+            // Differentiate LP calculation based on whether pool is empty or not.
+            let (supply_to_mint, remainder) = if self.lp_resource_def.total_supply() == 0.into() {
+                // Set initial LP tokens based on previous LP per K ratio.
+                let supply_to_mint =
+                    self.lp_per_asset_ratio * a_tokens.amount() * b_tokens.amount();
+                self.a_pool.put(a_tokens.take(a_tokens.amount()));
                 self.b_pool.put(b_tokens);
-                self.a_pool
-                    .put(a_tokens.take(self.a_pool.amount() * b_ratio));
-                (b_ratio, a_tokens)
+                (supply_to_mint, a_tokens)
+            } else {
+                // The ratio of added liquidity in existing liquidty.
+                let a_ratio = a_tokens.amount() / self.a_pool.amount();
+                let b_ratio = b_tokens.amount() / self.b_pool.amount();
+
+                let (actual_ratio, remainder) = if a_ratio <= b_ratio {
+                    // We will claim all input token A's, and only the correct amount of token B
+                    self.a_pool.put(a_tokens);
+                    self.b_pool
+                        .put(b_tokens.take(self.b_pool.amount() * a_ratio));
+                    (a_ratio, b_tokens)
+                } else {
+                    // We will claim all input token B's, and only the correct amount of token A
+                    self.b_pool.put(b_tokens);
+                    self.a_pool
+                        .put(a_tokens.take(self.a_pool.amount() * b_ratio));
+                    (b_ratio, a_tokens)
+                };
+                (
+                    self.lp_resource_def.total_supply() * actual_ratio,
+                    remainder,
+                )
             };
 
             // Mint LP tokens according to the share the provider is contributing
-            let lp_tokens = self.lp_mint_badge.authorize(|auth| {
-                self.lp_resource_def
-                    .mint(self.lp_resource_def.total_supply() * actual_ratio, auth)
-            });
+            let lp_tokens = self
+                .lp_mint_badge
+                .authorize(|auth| self.lp_resource_def.mint(supply_to_mint, auth));
 
             // Return the LP tokens along with any remainder
             (lp_tokens, remainder)
@@ -116,11 +136,11 @@ blueprint! {
         }
 
         /// Swaps token A for B, or vice versa.
-        pub fn swap(&self, input_tokens: Bucket) -> Bucket {
+        pub fn swap(&mut self, input_tokens: Bucket) -> Bucket {
             // Calculate the swap fee
             let fee_amount = input_tokens.amount() * self.fee;
 
-            if input_tokens.resource_def() == self.a_pool.resource_def() {
+            let output_tokens = if input_tokens.resource_def() == self.a_pool.resource_def() {
                 // Calculate how much of token B we will return
                 let b_amount = self.b_pool.amount()
                     - self.a_pool.amount() * self.b_pool.amount()
@@ -142,7 +162,13 @@ blueprint! {
 
                 // Return the tokens owed
                 self.a_pool.take(a_amount)
-            }
+            };
+
+            // Accrued fees change the raio
+            self.lp_per_asset_ratio =
+                self.lp_resource_def.total_supply() / (self.a_pool.amount() * self.b_pool.amount());
+
+            output_tokens
         }
 
         /// Returns the resource definition addresses of the pair.
