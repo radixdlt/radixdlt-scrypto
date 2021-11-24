@@ -116,7 +116,7 @@ impl Bucket {
         output.bucket.into()
     }
 
-    /// Reads all the NFT IDs in this bucket.
+    /// Get all NFT IDs in this bucket.
     ///
     /// # Panics
     /// Panics if this is not an NFT bucket.
@@ -127,10 +127,18 @@ impl Bucket {
         output.ids
     }
 
+    /// Reads the data of an NFT.
+    ///
+    /// # Panics
+    /// Panics if this is not an NFT bucket.
     pub fn get_nft_data<T: Decode>(&self, id: u128) -> T {
         self.resource_def().get_nft_data(id)
     }
 
+    /// Updates the data of an NFT.
+    ///
+    /// # Panics
+    /// Panics if this is not an NFT bucket.
     pub fn update_nft_data<T: Encode>(&self, id: u128, data: T, auth: BucketRef) {
         self.resource_def().update_nft_data(id, data, auth)
     }

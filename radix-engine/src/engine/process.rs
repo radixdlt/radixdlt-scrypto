@@ -1065,6 +1065,29 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         })
     }
 
+    fn allocate_resource(
+        &mut self,
+        resource_address: Address,
+        new_supply: NewSupply,
+    ) -> Result<Supply, RuntimeError> {
+        match new_supply {
+            NewSupply::Fungible { amount } => Ok(Supply::Fungible { amount }),
+            NewSupply::NonFungible { entries } => {
+                let mut ids = BTreeSet::new();
+
+                for (id, data) in entries {
+                    if self.track.get_nft(resource_address, id).is_some() {
+                        return Err(RuntimeError::NftAlreadyExists(resource_address, id));
+                    }
+                    self.track.put_nft(resource_address, id, Nft::new(data));
+                    ids.insert(id);
+                }
+
+                Ok(Supply::NonFungible { entries: ids })
+            }
+        }
+    }
+
     fn handle_create_resource_fixed(
         &mut self,
         input: CreateResourceFixedInput,
@@ -1075,23 +1098,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         }
         debug!(self, "New resource definition: {:?}", address);
 
-        let supply = match input.new_supply {
-            NewSupply::Fungible { amount } => Supply::Fungible { amount },
-            NewSupply::NonFungible { entries } => {
-                let mut ids = BTreeSet::new();
-
-                for (id, data) in entries {
-                    if self.track.get_nft(address, id).is_some() {
-                        return Err(RuntimeError::NftAlreadyExists(address, id));
-                    }
-                    self.track.put_nft(address, id, Nft::new(data));
-                    ids.insert(id);
-                }
-
-                Supply::NonFungible { entries: ids }
-            }
-        };
-
+        let supply = self.allocate_resource(address, input.new_supply)?;
         let definition = ResourceDef::new_fixed(input.resource_type, input.metadata, &supply)
             .map_err(RuntimeError::ResourceDefError)?;
 
@@ -1123,8 +1130,8 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
 
     fn handle_get_resource_total_supply(
         &mut self,
-        input: GetNewSupplyInput,
-    ) -> Result<GetNewSupplyOutput, RuntimeError> {
+        input: GetResourceTotalSupplyInput,
+    ) -> Result<GetResourceTotalSupplyOutput, RuntimeError> {
         Self::expect_resource_def_address(input.resource_def)?;
 
         let resource_def = self
@@ -1133,7 +1140,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
             .ok_or(RuntimeError::ResourceDefNotFound(input.resource_def))?
             .clone();
 
-        Ok(GetNewSupplyOutput {
+        Ok(GetResourceTotalSupplyOutput {
             supply: resource_def.total_supply(),
         })
     }
@@ -1178,23 +1185,8 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
     ) -> Result<MintResourceOutput, RuntimeError> {
         Self::expect_resource_def_address(input.resource_def)?;
 
-        // process supply
-        let supply = match input.new_supply {
-            NewSupply::Fungible { amount } => Supply::Fungible { amount },
-            NewSupply::NonFungible { entries } => {
-                let mut ids = BTreeSet::new();
-
-                for (id, data) in entries {
-                    if self.track.get_nft(input.resource_def, id).is_some() {
-                        return Err(RuntimeError::NftAlreadyExists(input.resource_def, id));
-                    }
-                    self.track.put_nft(input.resource_def, id, Nft::new(data));
-                    ids.insert(id);
-                }
-
-                Supply::NonFungible { entries: ids }
-            }
-        };
+        // allocate resource
+        let supply = self.allocate_resource(input.resource_def, input.new_supply)?;
 
         // update resource def
         let bid = {

@@ -135,17 +135,17 @@ impl ResourceDef {
     }
 
     /// Returns the current supply of this resource.
-    #[deprecated]
+    #[deprecated(note = "Please use `total_supply()` instead")]
     pub fn supply(&self) -> Decimal {
         self.total_supply()
     }
 
     /// Returns the current supply of this resource.
     pub fn total_supply(&self) -> Decimal {
-        let input = GetNewSupplyInput {
+        let input = GetResourceTotalSupplyInput {
             resource_def: self.address,
         };
-        let output: GetNewSupplyOutput = call_kernel(GET_RESOURCE_TOTAL_SUPPLY, input);
+        let output: GetResourceTotalSupplyOutput = call_kernel(GET_RESOURCE_TOTAL_SUPPLY, input);
 
         output.supply
     }

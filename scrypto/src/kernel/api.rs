@@ -50,11 +50,11 @@ pub const GET_RESOURCE_METADATA: u32 = 0x34;
 pub const GET_RESOURCE_TOTAL_SUPPLY: u32 = 0x35;
 /// Get resource authorization config
 pub const GET_RESOURCE_AUTH_CONFIGS: u32 = 0x36;
-/// Get resource granularity
+/// Get resource type
 pub const GET_RESOURCE_TYPE: u32 = 0x37;
 /// Get the data of an NFT
 pub const GET_NFT_DATA: u32 = 0x38;
-/// Update the update of an NFT
+/// Update the data of an NFT
 pub const UPDATE_NFT_DATA: u32 = 0x39;
 /// Change a mutable resource to immutable
 pub const CHANGE_TO_IMMUTABLE: u32 = 0x3a;
@@ -289,12 +289,12 @@ pub struct GetResourceMetadataOutput {
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct GetNewSupplyInput {
+pub struct GetResourceTotalSupplyInput {
     pub resource_def: Address,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct GetNewSupplyOutput {
+pub struct GetResourceTotalSupplyOutput {
     pub supply: Decimal,
 }
 

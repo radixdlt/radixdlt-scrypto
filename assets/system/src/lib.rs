@@ -17,11 +17,9 @@ blueprint! {
         pub fn new_resource_mutable(
             resource_type: ResourceType,
             metadata: HashMap<String, String>,
-            resource_auth_configs: ResourceAuthConfigs,
+            auth_configs: ResourceAuthConfigs,
         ) -> Address {
-            let resource_def =
-                ResourceDef::new_mutable(resource_type, metadata, resource_auth_configs);
-            resource_def.address()
+            ResourceDef::new_mutable(resource_type, metadata, auth_configs).address()
         }
 
         /// Creates a resource with fixed supply, and returns all supply.
@@ -35,8 +33,8 @@ blueprint! {
         }
 
         /// Mints fungible resource.
-        pub fn mint(amount: Decimal, resource_def: Address, auth: BucketRef) -> Bucket {
-            ResourceDef::from(resource_def).mint(amount, auth)
+        pub fn mint(amount: Decimal, resource_address: Address, auth: BucketRef) -> Bucket {
+            ResourceDef::from(resource_address).mint(amount, auth)
         }
 
         /// Gives away XRD tokens for testing.

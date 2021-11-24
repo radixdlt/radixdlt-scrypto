@@ -1,13 +1,13 @@
 use sbor::*;
 use scrypto::rust::vec::Vec;
 
-/// Represents an error when accessing a bucket.
+/// Represents an error when accessing a NFT.
 #[derive(Debug, Clone)]
 pub enum NftError {
     UnauthorizedAccess,
 }
 
-/// A nft is an instance of blueprint.
+/// An nft is a peirece of data that is uniquely identified within a resource.
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct Nft {
     data: Vec<u8>,

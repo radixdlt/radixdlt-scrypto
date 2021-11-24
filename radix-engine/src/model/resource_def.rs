@@ -11,7 +11,7 @@ use crate::model::{Auth, Supply};
 pub enum ResourceDefError {
     UnauthorizedAccess,
     InvalidGranularity,
-    TypeSupplyNotMatching,
+    TypeAndSupplyNotMatching,
     UnsupportedOperation,
     MutableOperationNotAllowed,
     InvalidAmount(Decimal),
@@ -39,14 +39,14 @@ impl ResourceDef {
                     Self::check_amount(*amount, resource_type)?;
                     *amount
                 } else {
-                    return Err(ResourceDefError::TypeSupplyNotMatching);
+                    return Err(ResourceDefError::TypeAndSupplyNotMatching);
                 }
             }
             ResourceType::NonFungible => {
                 if let Supply::NonFungible { entries } = supply {
                     entries.len().into()
                 } else {
-                    return Err(ResourceDefError::TypeSupplyNotMatching);
+                    return Err(ResourceDefError::TypeAndSupplyNotMatching);
                 }
             }
         };
@@ -109,7 +109,7 @@ impl ResourceDef {
                     self.total_supply += *amount;
                     Ok(())
                 } else {
-                    Err(ResourceDefError::TypeSupplyNotMatching)
+                    Err(ResourceDefError::TypeAndSupplyNotMatching)
                 }
             }
             ResourceType::NonFungible => {
@@ -117,7 +117,7 @@ impl ResourceDef {
                     self.total_supply += entries.len();
                     Ok(())
                 } else {
-                    Err(ResourceDefError::TypeSupplyNotMatching)
+                    Err(ResourceDefError::TypeAndSupplyNotMatching)
                 }
             }
         }
@@ -138,7 +138,7 @@ impl ResourceDef {
                     self.total_supply -= amount;
                     Ok(())
                 } else {
-                    Err(ResourceDefError::TypeSupplyNotMatching)
+                    Err(ResourceDefError::TypeAndSupplyNotMatching)
                 }
             }
             ResourceType::NonFungible => {
@@ -150,7 +150,7 @@ impl ResourceDef {
                     self.total_supply -= entries.len();
                     Ok(())
                 } else {
-                    Err(ResourceDefError::TypeSupplyNotMatching)
+                    Err(ResourceDefError::TypeAndSupplyNotMatching)
                 }
             }
         }
