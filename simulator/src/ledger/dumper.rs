@@ -101,6 +101,7 @@ pub fn dump_resource_def<T: Ledger>(address: Address, ledger: &T) -> Result<(), 
                 "Resource Type".green().bold(),
                 r.resource_type()
             );
+            println!("{}: {}", "Mutable".green().bold(), r.mutable());
             println!("{}: {}", "Metadata".green().bold(), r.metadata().len());
             for (last, e) in r.metadata().iter().identify_last() {
                 println!("{} {}: {}", list_item_prefix(last), e.0.green().bold(), e.1);

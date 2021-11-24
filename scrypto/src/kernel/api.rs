@@ -56,6 +56,8 @@ pub const GET_RESOURCE_TYPE: u32 = 0x37;
 pub const GET_NFT_DATA: u32 = 0x38;
 /// Update the update of an NFT
 pub const UPDATE_NFT_DATA: u32 = 0x39;
+/// Change a mutable resource to immutable
+pub const CHANGE_TO_IMMUTABLE: u32 = 0x3a;
 
 /// Create an empty vault
 pub const CREATE_EMPTY_VAULT: u32 = 0x40;
@@ -337,6 +339,15 @@ pub struct UpdateNftDataInput {
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct UpdateNftDataOutput {}
+
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
+pub struct ChangeToImmutableInput {
+    pub resource_def: Address,
+    pub auth: Rid,
+}
+
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
+pub struct ChangeToImmutableOutput {}
 
 //==========
 // vault

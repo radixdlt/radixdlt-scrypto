@@ -1316,6 +1316,32 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         Ok(GetNftDataOutput { data: nft.data() })
     }
 
+    fn handle_change_to_immutable(
+        &mut self,
+        input: ChangeToImmutableInput,
+    ) -> Result<ChangeToImmutableOutput, RuntimeError> {
+        let bucket_ref = self
+            .bucket_refs
+            .get(&input.auth)
+            .ok_or(RuntimeError::BucketRefNotFound(input.auth))?;
+        let auth = self.badge_auth(bucket_ref)?;
+
+        let definition = self
+            .track
+            .get_resource_def_mut(input.resource_def)
+            .ok_or(RuntimeError::ResourceDefNotFound(input.resource_def))?;
+        definition
+            .change_to_immutable(auth)
+            .map_err(RuntimeError::ResourceDefError)?;
+
+        // drop the input auth
+        self.handle_drop_bucket_ref(DropBucketRefInput {
+            bucket_ref: input.auth,
+        })?;
+
+        Ok(ChangeToImmutableOutput {})
+    }
+
     fn handle_create_vault(
         &mut self,
         input: CreateEmptyVaultInput,
@@ -1752,6 +1778,7 @@ impl<'r, 'l, L: Ledger> Externals for Process<'r, 'l, L> {
                     BURN_RESOURCE => self.handle(args, Self::handle_burn_resource),
                     UPDATE_NFT_DATA => self.handle(args, Self::handle_update_nft_data),
                     GET_NFT_DATA => self.handle(args, Self::handle_get_nft_data),
+                    CHANGE_TO_IMMUTABLE => self.handle(args, Self::handle_change_to_immutable),
 
                     CREATE_EMPTY_VAULT => self.handle(args, Self::handle_create_vault),
                     PUT_INTO_VAULT => self.handle(args, Self::handle_put_into_vault),

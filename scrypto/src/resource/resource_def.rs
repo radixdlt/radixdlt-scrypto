@@ -182,6 +182,18 @@ impl ResourceDef {
         };
         let _: UpdateNftDataOutput = call_kernel(UPDATE_NFT_DATA, input);
     }
+
+    /// Changes this resource to immutable.
+    ///
+    /// #Panics
+    /// Panics if this resource is not mutable
+    pub fn change_to_immutable(&self, auth: BucketRef) {
+        let input = ChangeToImmutableInput {
+            resource_def: self.address,
+            auth: auth.into(),
+        };
+        let _: ChangeToImmutableOutput = call_kernel(CHANGE_TO_IMMUTABLE, input);
+    }
 }
 
 //========

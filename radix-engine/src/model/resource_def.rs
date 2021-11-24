@@ -156,6 +156,18 @@ impl ResourceDef {
         }
     }
 
+    pub fn change_to_immutable(&mut self, auth: Auth) -> Result<(), ResourceDefError> {
+        if !self.mutable {
+            return Err(ResourceDefError::MutableOperationNotAllowed);
+        }
+        if !auth.contains(self.auth_configs().unwrap().update_badge) {
+            return Err(ResourceDefError::UnauthorizedAccess);
+        }
+
+        self.mutable = false;
+        Ok(())
+    }
+
     fn check_amount(amount: Decimal, resource_type: ResourceType) -> Result<(), ResourceDefError> {
         if amount.is_negative() {
             return Err(ResourceDefError::InvalidAmount(amount));

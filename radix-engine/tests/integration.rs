@@ -161,6 +161,13 @@ fn test_resource_def() {
         )
         .call_function(package, "ResourceTest", "query", vec![], Some(account))
         .call_function(package, "ResourceTest", "burn", vec![], Some(account))
+        .call_function(
+            package,
+            "ResourceTest",
+            "change_to_immutable",
+            vec![],
+            Some(account),
+        )
         .drop_all_bucket_refs()
         .deposit_all_buckets(account)
         .build(vec![key])
