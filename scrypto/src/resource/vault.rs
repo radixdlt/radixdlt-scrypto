@@ -98,7 +98,7 @@ impl Vault {
     /// Use resources in this vault as authorization for an operation.
     pub fn authorize<F: FnOnce(BucketRef) -> O, O>(&self, f: F) -> O {
         let bucket = self.take(1);
-        let output = f(bucket.borrow());
+        let output = f(bucket.present());
         self.put(bucket);
         output
     }

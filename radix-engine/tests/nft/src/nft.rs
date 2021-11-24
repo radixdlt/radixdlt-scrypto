@@ -15,7 +15,7 @@ blueprint! {
                         .with_update_badge_address(mint_badge_address),
                 );
 
-            let nft = resource_def.mint_nft(0, "Prastrami", mint_badge.borrow());
+            let nft = resource_def.mint_nft(0, "Prastrami", mint_badge.present());
 
             (mint_badge, resource_def, nft)
         }
@@ -30,7 +30,7 @@ blueprint! {
             let (mint_badge, resource_def, bucket) = Self::create_nft_mutable();
             let nft: String = resource_def.get_nft_data(0);
             assert_eq!(nft, "Prastrami");
-            resource_def.update_nft_data(0, "New String", mint_badge.borrow());
+            resource_def.update_nft_data(0, "New String", mint_badge.present());
             let nft: String = resource_def.get_nft_data(0);
             assert_eq!(nft, "New String");
             (mint_badge, bucket)

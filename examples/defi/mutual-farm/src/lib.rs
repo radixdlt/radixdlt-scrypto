@@ -519,10 +519,10 @@ blueprint! {
             let price_oracle: PriceOracle = price_oracle_address.into();
             let synthetic_pool: SyntheticPool = synthetic_pool_address.into();
             synthetic_pool.add_synthetic_token(asset_symbol.clone(), asset_address);
-            synthetic_pool.stake(identity_badge.borrow(), snx);
+            synthetic_pool.stake(identity_badge.present(), snx);
             let quantity = snx_amount * snx_usd_price / 10 / tesla_usd_price;
             let synth =
-                synthetic_pool.mint(identity_badge.borrow(), quantity, asset_symbol.clone());
+                synthetic_pool.mint(identity_badge.present(), quantity, asset_symbol.clone());
             let synth_address = synth.resource_address();
 
             debug!("Set up sTESLA/XRD swap pool");
@@ -541,7 +541,7 @@ blueprint! {
                 .metadata("name", "MutualFarm share")
                 .new_token_mutable(ResourceAuthConfigs::new(identity_badge_address));
             let shares =
-                mutual_farm_share_resource_def.mint(initial_shares, identity_badge.borrow());
+                mutual_farm_share_resource_def.mint(initial_shares, identity_badge.present());
 
             debug!("Instantiate MutualFund component");
             let component = Self {

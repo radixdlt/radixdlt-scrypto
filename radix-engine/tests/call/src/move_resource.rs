@@ -32,7 +32,7 @@ blueprint! {
             call_method(
                 component.address(),
                 "receive_bucket_ref",
-                args!(bucket.borrow()),
+                args!(bucket.present()),
             );
 
             bucket

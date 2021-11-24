@@ -48,7 +48,7 @@ blueprint! {
                 .metadata("name", lp_name)
                 .metadata("url", lp_url)
                 .new_token_mutable(ResourceAuthConfigs::new(lp_mint_badge.resource_def()));
-            let lp_tokens = lp_resource_def.mint(lp_initial_supply, lp_mint_badge.borrow());
+            let lp_tokens = lp_resource_def.mint(lp_initial_supply, lp_mint_badge.present());
 
             // ratio = initial supply / (x * y) = initial supply / k
             let lp_per_asset_ratio = lp_initial_supply / (a_tokens.amount() * b_tokens.amount());

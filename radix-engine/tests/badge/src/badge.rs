@@ -27,7 +27,7 @@ blueprint! {
                 .metadata("name", "TestBadge")
                 .new_badge_fixed(100);
 
-            let bucket_ref = bucket.borrow();
+            let bucket_ref = bucket.present();
             bucket_ref.drop();
             bucket
         }

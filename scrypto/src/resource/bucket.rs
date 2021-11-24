@@ -59,7 +59,7 @@ impl Bucket {
     }
 
     /// Creates an immutable reference to this bucket.
-    pub fn borrow(&self) -> BucketRef {
+    pub fn present(&self) -> BucketRef {
         let input = CreateBucketRefInput { bucket: self.bid };
         let output: CreateBucketRefOutput = call_kernel(CREATE_BUCKET_REF, input);
 
@@ -99,7 +99,7 @@ impl Bucket {
 
     /// Uses resources in this bucket as authorization for an operation.
     pub fn authorize<F: FnOnce(BucketRef) -> O, O>(&self, f: F) -> O {
-        f(self.borrow())
+        f(self.present())
     }
 
     /// Takes an NFT from this bucket, by id.

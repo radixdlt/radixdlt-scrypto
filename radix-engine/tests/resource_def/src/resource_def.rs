@@ -65,14 +65,14 @@ blueprint! {
 
         pub fn burn() -> Bucket {
             let (auth, resource_def) = Self::create_mutable_token();
-            let bucket = resource_def.mint(1, auth.borrow());
-            resource_def.burn(bucket, auth.borrow());
+            let bucket = resource_def.mint(1, auth.present());
+            resource_def.burn(bucket, auth.present());
             auth
         }
 
         pub fn change_to_immutable() -> Bucket {
             let (auth, resource_def) = Self::create_mutable_token();
-            resource_def.change_to_immutable(auth.borrow());
+            resource_def.change_to_immutable(auth.present());
             auth
         }
     }

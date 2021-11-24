@@ -17,7 +17,7 @@ blueprint! {
                 .new_badge_mutable(ResourceAuthConfigs::new(admin_mint_badge.resource_def()));
 
             // Using our minting authority badge, mint a single admin badge
-            let first_admin_badge = admin_badge_def.mint(1, admin_mint_badge.borrow());
+            let first_admin_badge = admin_badge_def.mint(1, admin_mint_badge.present());
 
             // Initialize our component, placing the minting authority badge within its vault, where it will remain forever
             let component = Self {

@@ -34,7 +34,7 @@ let admin_badge_def = ResourceBuilder::new()
 With that out of the way, we can mint our first admin badge and create our component.  We'll tuck our sole minting authority badge safely away within its vault.  Then we'll return the new component and the admin badge.
 
 ```rust
-let first_admin_badge = admin_badge_def.mint(1, admin_mint_badge.borrow());
+let first_admin_badge = admin_badge_def.mint(1, admin_mint_badge.present());
 let component = Self {
     admin_mint_badge: Vault::with_bucket(admin_mint_badge),
     admin_badge: admin_badge_def

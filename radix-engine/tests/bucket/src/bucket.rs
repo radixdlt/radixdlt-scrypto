@@ -27,7 +27,7 @@ blueprint! {
                 .metadata("name", "TestToken")
                 .new_token_fixed(100);
 
-            let bucket_ref = bucket.borrow();
+            let bucket_ref = bucket.present();
             bucket_ref.drop();
             bucket
         }
