@@ -23,7 +23,7 @@ let special_cards_bucket = ResourceBuilder::new()
     .metadata("name", "Russ' Magic Card Collection")
     .new_nft_fixed(BTreeMap::from([
         (
-            1,
+            1, // The ID of the first NFT, you can also use `Uuid::generate()` to create a random ID
             MagicCard {
                 color: Color::Black,
                 class: Class::Sorcery,
@@ -31,7 +31,7 @@ let special_cards_bucket = ResourceBuilder::new()
             },
         ),
         (
-            2,
+            2, // The ID of the second NFT
             MagicCard {
                 color: Color::Green,
                 class: Class::Planeswalker,
