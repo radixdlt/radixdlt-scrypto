@@ -4,7 +4,6 @@ use crate::buffer::*;
 use crate::kernel::*;
 use crate::resource::*;
 use crate::rust::borrow::ToOwned;
-use crate::rust::collections::BTreeMap;
 use crate::rust::collections::HashMap;
 use crate::rust::string::String;
 use crate::rust::vec;
@@ -20,7 +19,7 @@ pub struct ResourceDef {
 impl From<Address> for ResourceDef {
     fn from(address: Address) -> Self {
         if !address.is_resource_def() {
-            panic!("Unable to downcast Address to ResourceDef: {}", address);
+            panic!("{} is not a resource definition address", address);
         }
 
         Self { address }
@@ -34,43 +33,29 @@ impl From<ResourceDef> for Address {
 }
 
 impl ResourceDef {
-    /// Creates a resource with mutable supply. The resource definition is returned.
-    pub fn new_mutable(
-        resource_type: ResourceType,
-        metadata: HashMap<String, String>,
-        auth_configs: ResourceConfigs,
-    ) -> Self {
-        let input = CreateResourceMutableInput {
-            resource_type,
-            metadata,
-            auth_configs,
-        };
-        let output: CreateResourceMutableOutput = call_kernel(CREATE_RESOURCE_MUTABLE, input);
-
-        output.resource_def.into()
-    }
-
     /// Creates a resource with fixed supply. The created resource is immediately returned.
-    pub fn new_fixed(
+    pub fn new(
         resource_type: ResourceType,
         metadata: HashMap<String, String>,
-        new_supply: NewSupply,
-    ) -> (Self, Bucket) {
-        let input = CreateResourceFixedInput {
+        initial_supply: ResourceSupply,
+        configs: ResourceConfigs,
+    ) -> Bucket {
+        let input = CreateResourceInput {
             resource_type,
             metadata,
-            new_supply,
+            initial_supply,
+            configs,
         };
-        let output: CreateResourceFixedOutput = call_kernel(CREATE_RESOURCE_FIXED, input);
+        let output: CreateResourceOutput = call_kernel(CREATE_RESOURCE, input);
 
-        (output.resource_def.into(), output.bucket.into())
+        output.bucket.into()
     }
 
     /// Mints fungible resources
     pub fn mint<T: Into<Decimal>>(&self, amount: T, auth: BucketRef) -> Bucket {
         let input = MintResourceInput {
             resource_def: self.address,
-            new_supply: NewSupply::Fungible {
+            new_supply: ResourceSupply::Fungible {
                 amount: amount.into(),
             },
             auth: auth.into(),
@@ -82,12 +67,12 @@ impl ResourceDef {
 
     /// Mints non-fungible resources
     pub fn mint_nft<T: Encode>(&self, id: u128, data: T, auth: BucketRef) -> Bucket {
-        let mut entries = BTreeMap::new();
+        let mut entries = HashMap::new();
         entries.insert(id, scrypto_encode(&data));
 
         let input = MintResourceInput {
             resource_def: self.address,
-            new_supply: NewSupply::NonFungible { entries },
+            new_supply: ResourceSupply::NonFungible { entries },
             auth: auth.into(),
         };
         let output: MintResourceOutput = call_kernel(MINT_RESOURCE, input);

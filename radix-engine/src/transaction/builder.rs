@@ -256,11 +256,11 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         self.add_instruction(Instruction::CallFunction {
             package: SYSTEM_PACKAGE,
             blueprint: "System".to_owned(),
-            function: "new_resource_fixed".to_owned(),
+            function: "new_resource".to_owned(),
             args: vec![
                 SmartValue::from(ResourceType::Fungible { granularity: 1 }),
                 SmartValue::from(metadata),
-                SmartValue::from(NewSupply::Fungible { amount: supply }),
+                SmartValue::from(ResourceSupply::Fungible { amount: supply }),
             ],
         })
     }
@@ -292,11 +292,11 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         self.add_instruction(Instruction::CallFunction {
             package: SYSTEM_PACKAGE,
             blueprint: "System".to_owned(),
-            function: "new_resource_fixed".to_owned(),
+            function: "new_resource".to_owned(),
             args: vec![
                 SmartValue::from(ResourceType::Fungible { granularity: 19 }),
                 SmartValue::from(metadata),
-                SmartValue::from(NewSupply::Fungible { amount: supply }),
+                SmartValue::from(ResourceSupply::Fungible { amount: supply }),
             ],
         })
     }

@@ -15,7 +15,7 @@ pub struct Package {
 impl From<Address> for Package {
     fn from(address: Address) -> Self {
         if !address.is_package() {
-            panic!("Unable to downcast Address to Package: {}", address);
+            panic!("{} is not a package address", address);
         }
 
         Self { address }

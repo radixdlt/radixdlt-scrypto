@@ -18,7 +18,7 @@ pub struct Component {
 impl From<Address> for Component {
     fn from(address: Address) -> Self {
         if !address.is_component() {
-            panic!("Unable to downcast Address to Component: {}", address);
+            panic!("{} is not a component address", address);
         }
 
         Self { address }

@@ -36,10 +36,8 @@ pub const GET_LAZY_MAP_ENTRY: u32 = 0x21;
 /// Insert a key-value pair into a lazy map
 pub const PUT_LAZY_MAP_ENTRY: u32 = 0x22;
 
-/// Create resource with mutable supply
-pub const CREATE_RESOURCE_MUTABLE: u32 = 0x30;
-/// Create resource with fixed supply
-pub const CREATE_RESOURCE_FIXED: u32 = 0x31;
+/// Create resource
+pub const CREATE_RESOURCE: u32 = 0x30;
 /// Mint resource
 pub const MINT_RESOURCE: u32 = 0x32;
 /// Burn resource
@@ -235,34 +233,22 @@ pub struct PutLazyMapEntryOutput {}
 //=========
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct CreateResourceMutableInput {
+pub struct CreateResourceInput {
     pub resource_type: ResourceType,
     pub metadata: HashMap<String, String>,
-    pub auth_configs: ResourceConfigs,
+    pub initial_supply: ResourceSupply,
+    pub configs: ResourceConfigs,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct CreateResourceMutableOutput {
-    pub resource_def: Address,
-}
-
-#[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct CreateResourceFixedInput {
-    pub resource_type: ResourceType,
-    pub metadata: HashMap<String, String>,
-    pub new_supply: NewSupply,
-}
-
-#[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct CreateResourceFixedOutput {
-    pub resource_def: Address,
+pub struct CreateResourceOutput {
     pub bucket: Bid,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct MintResourceInput {
     pub resource_def: Address,
-    pub new_supply: NewSupply,
+    pub new_supply: ResourceSupply,
     pub auth: Rid,
 }
 

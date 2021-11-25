@@ -1068,11 +1068,11 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
     fn allocate_resource(
         &mut self,
         resource_address: Address,
-        new_supply: NewSupply,
+        new_supply: ResourceSupply,
     ) -> Result<Supply, RuntimeError> {
         match new_supply {
-            NewSupply::Fungible { amount } => Ok(Supply::Fungible { amount }),
-            NewSupply::NonFungible { entries } => {
+            ResourceSupply::Fungible { amount } => Ok(Supply::Fungible { amount }),
+            ResourceSupply::NonFungible { entries } => {
                 let mut ids = BTreeSet::new();
 
                 for (id, data) in entries {
@@ -1088,10 +1088,10 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         }
     }
 
-    fn handle_create_resource_fixed(
+    fn handle_create_resource(
         &mut self,
-        input: CreateResourceFixedInput,
-    ) -> Result<CreateResourceFixedOutput, RuntimeError> {
+        input: CreateResourceInput,
+    ) -> Result<CreateResourceOutput, RuntimeError> {
         let address = self.track.new_resource_def_address();
         if self.track.get_resource_def(address).is_some() {
             return Err(RuntimeError::ResourceDefAlreadyExists(address));
@@ -1106,7 +1106,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         let bid = self.track.new_bid();
         self.buckets.insert(bid, bucket);
         self.track.put_resource_def(address, definition);
-        Ok(CreateResourceFixedOutput {
+        Ok(CreateResourceOutput {
             resource_def: address,
             bucket: bid,
         })
@@ -1766,7 +1766,7 @@ impl<'r, 'l, L: Ledger> Externals for Process<'r, 'l, L> {
                     CREATE_RESOURCE_MUTABLE => {
                         self.handle(args, Self::handle_create_resource_mutable)
                     }
-                    CREATE_RESOURCE_FIXED => self.handle(args, Self::handle_create_resource_fixed),
+                    CREATE_RESOURCE => self.handle(args, Self::handle_create_resource),
                     GET_RESOURCE_METADATA => self.handle(args, Self::handle_get_resource_metadata),
                     GET_RESOURCE_TOTAL_SUPPLY => {
                         self.handle(args, Self::handle_get_resource_total_supply)
