@@ -1147,8 +1147,8 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
 
     fn handle_get_resource_auth_configs(
         &mut self,
-        input: GetResourceAuthConfigsInput,
-    ) -> Result<GetResourceAuthConfigsOutput, RuntimeError> {
+        input: GetResourceConfigsInput,
+    ) -> Result<GetResourceConfigsOutput, RuntimeError> {
         Self::expect_resource_def_address(input.resource_def)?;
 
         let resource_def = self
@@ -1157,7 +1157,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
             .ok_or(RuntimeError::ResourceDefNotFound(input.resource_def))?
             .clone();
 
-        Ok(GetResourceAuthConfigsOutput {
+        Ok(GetResourceConfigsOutput {
             auth_configs: resource_def.auth_configs(),
         })
     }

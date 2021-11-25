@@ -17,7 +17,7 @@ blueprint! {
         pub fn new_resource_mutable(
             resource_type: ResourceType,
             metadata: HashMap<String, String>,
-            auth_configs: ResourceAuthConfigs,
+            auth_configs: ResourceConfigs,
         ) -> Address {
             ResourceDef::new_mutable(resource_type, metadata, auth_configs).address()
         }

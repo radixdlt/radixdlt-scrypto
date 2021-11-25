@@ -10,7 +10,7 @@ blueprint! {
                 .new_badge_fixed(1);
             let resource_def = ResourceBuilder::new()
                 .metadata("name", "TestToken")
-                .new_token_mutable(ResourceAuthConfigs::new(badge.resource_def()));
+                .new_token_mutable(ResourceConfigs::new(badge.resource_def()));
             (badge, resource_def)
         }
 
@@ -30,7 +30,7 @@ blueprint! {
                 .new_badge_fixed(1);
             let resource_def = ResourceBuilder::new()
                 .metadata("name", "TestToken")
-                .new_badge_mutable(ResourceAuthConfigs::new(badge.resource_def()));
+                .new_badge_mutable(ResourceConfigs::new(badge.resource_def()));
             (badge, resource_def)
         }
 
@@ -50,7 +50,7 @@ blueprint! {
             (bucket.take(Decimal::from_str("0.1").unwrap()), bucket)
         }
 
-        pub fn query() -> (Bucket, HashMap<String, String>, Option<ResourceAuthConfigs>, Decimal) {
+        pub fn query() -> (Bucket, HashMap<String, String>, Option<ResourceConfigs>, Decimal) {
             let bucket = ResourceBuilder::new()
                 .metadata("name", "TestToken")
                 .new_token_fixed(100);

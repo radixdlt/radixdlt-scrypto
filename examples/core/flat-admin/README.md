@@ -28,7 +28,7 @@ We'll want our supply of admin badges to be mutable.  Mutable supply resources c
 let admin_mint_badge = ResourceBuilder::new().new_badge_fixed(1);
 let admin_badge_def = ResourceBuilder::new()
   .metadata("name", badge_name)
-  .new_badge_mutable(ResourceAuthConfigs::new(admin_mint_badge.resource_def()));
+  .new_badge_mutable(ResourceConfigs::new(admin_mint_badge.resource_def()));
 ```
 
 With that out of the way, we can mint our first admin badge and create our component.  We'll tuck our sole minting authority badge safely away within its vault.  Then we'll return the new component and the admin badge.

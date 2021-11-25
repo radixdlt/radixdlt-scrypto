@@ -14,7 +14,7 @@ blueprint! {
             // Create the ResourceDef for a mutable supply admin badge
             let admin_badge_def = ResourceBuilder::new()
                 .metadata("name", badge_name)
-                .new_badge_mutable(ResourceAuthConfigs::new(admin_mint_badge.resource_def()));
+                .new_badge_mutable(ResourceConfigs::new(admin_mint_badge.resource_def()));
 
             // Using our minting authority badge, mint a single admin badge
             let first_admin_badge = admin_badge_def.mint(1, admin_mint_badge.present());

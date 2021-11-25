@@ -11,7 +11,7 @@ blueprint! {
             let resource_def = ResourceBuilder::new()
                 .metadata("name", "Katz's Sandwiches")
                 .new_nft_mutable(
-                    ResourceAuthConfigs::new(mint_badge_address)
+                    ResourceConfigs::new(mint_badge_address)
                         .with_update_badge_address(mint_badge_address),
                 );
 

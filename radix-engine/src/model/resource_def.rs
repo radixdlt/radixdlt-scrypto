@@ -24,7 +24,7 @@ pub struct ResourceDef {
     metadata: HashMap<String, String>,
     total_supply: Decimal,
     mutable: bool,
-    auth_configs: Option<ResourceAuthConfigs>,
+    auth_configs: Option<ResourceConfigs>,
 }
 
 impl ResourceDef {
@@ -63,7 +63,7 @@ impl ResourceDef {
     pub fn new_mutable(
         resource_type: ResourceType,
         metadata: HashMap<String, String>,
-        auth_configs: ResourceAuthConfigs,
+        auth_configs: ResourceConfigs,
     ) -> Result<Self, ResourceDefError> {
         Ok(Self {
             resource_type,
@@ -90,7 +90,7 @@ impl ResourceDef {
         self.mutable
     }
 
-    pub fn auth_configs(&self) -> Option<ResourceAuthConfigs> {
+    pub fn auth_configs(&self) -> Option<ResourceConfigs> {
         self.auth_configs.clone()
     }
 

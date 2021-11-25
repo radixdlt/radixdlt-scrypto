@@ -36,14 +36,14 @@ pub enum NewSupply {
 
 /// Represents the authorization configuration of a resource.
 #[derive(Debug, Clone, TypeId, Encode, Decode, Describe, Eq, PartialEq)]
-pub struct ResourceAuthConfigs {
+pub struct ResourceConfigs {
     /// Badge for resource minting.
     pub mint_badge: Address,
     /// Badge for resource updating.
     pub update_badge: Address,
 }
 
-impl ResourceAuthConfigs {
+impl ResourceConfigs {
     /// Creates a new resource authorization configuration, with one badge for all permissions.
     pub fn new<A: Into<Address>>(root: A) -> Self {
         let address = root.into();

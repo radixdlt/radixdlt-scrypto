@@ -50,14 +50,14 @@ let random_card_mint_badge = ResourceBuilder::new()
 let random_card_resource_def = ResourceBuilder::new()
     .metadata("name", "Random Cards")
     .new_nft_mutable(
-        ResourceAuthConfigs::new(random_card_mint_badge.resource_address())
+        ResourceConfigs::new(random_card_mint_badge.resource_address())
     );
 ```
 
 Here, we're using the mint badge for both minting, burning and updating. If you want, you can also specify different badge for each permission, like,
 
 ```rust
-ResourceAuthConfigs::new(address_a).with_update_badge_address(address_b)
+ResourceConfigs::new(address_a).with_update_badge_address(address_b)
 ```
 
 To further mint NFTs, we can use the `mint_nft` method:

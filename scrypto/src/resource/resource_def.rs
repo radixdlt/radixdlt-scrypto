@@ -38,7 +38,7 @@ impl ResourceDef {
     pub fn new_mutable(
         resource_type: ResourceType,
         metadata: HashMap<String, String>,
-        auth_configs: ResourceAuthConfigs,
+        auth_configs: ResourceConfigs,
     ) -> Self {
         let input = CreateResourceMutableInput {
             resource_type,
@@ -115,11 +115,11 @@ impl ResourceDef {
     }
 
     /// Returns the authorization configurations.
-    pub fn auth_configs(&self) -> Option<ResourceAuthConfigs> {
-        let input = GetResourceAuthConfigsInput {
+    pub fn auth_configs(&self) -> Option<ResourceConfigs> {
+        let input = GetResourceConfigsInput {
             resource_def: self.address,
         };
-        let output: GetResourceAuthConfigsOutput = call_kernel(GET_RESOURCE_AUTH_CONFIGS, input);
+        let output: GetResourceConfigsOutput = call_kernel(GET_RESOURCE_AUTH_CONFIGS, input);
 
         output.auth_configs
     }

@@ -140,7 +140,7 @@ blueprint! {
                 .new_badge_fixed(1);
             let synthetics_global_debt_share_resource_def = ResourceBuilder::new()
                 .metadata("name", "Synthetics Global Debt")
-                .new_token_mutable(ResourceAuthConfigs::new(synthetics_mint_badge.resource_def()));
+                .new_token_mutable(ResourceConfigs::new(synthetics_mint_badge.resource_def()));
 
             Self {
                 oracle,
@@ -169,7 +169,7 @@ blueprint! {
             let token_resource_def = ResourceBuilder::new()
                 .metadata("name", format!("Synthetic {}", asset_symbol.clone()))
                 .metadata("symbol", format!("s{}", asset_symbol.clone()))
-                .new_token_mutable(ResourceAuthConfigs::new(self.synthetics_mint_badge.resource_def()));
+                .new_token_mutable(ResourceConfigs::new(self.synthetics_mint_badge.resource_def()));
             let token_address = token_resource_def.address();
             self.synthetics.insert(
                 asset_symbol.clone(),

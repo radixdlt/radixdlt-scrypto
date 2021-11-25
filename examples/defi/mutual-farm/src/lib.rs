@@ -539,7 +539,7 @@ blueprint! {
             debug!("Mint initial shares");
             let mutual_farm_share_resource_def = ResourceBuilder::new()
                 .metadata("name", "MutualFarm share")
-                .new_token_mutable(ResourceAuthConfigs::new(identity_badge_address));
+                .new_token_mutable(ResourceConfigs::new(identity_badge_address));
             let shares =
                 mutual_farm_share_resource_def.mint(initial_shares, identity_badge.present());
 

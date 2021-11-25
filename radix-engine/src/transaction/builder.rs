@@ -242,7 +242,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
             args: vec![
                 SmartValue::from(ResourceType::Fungible { granularity: 1 }),
                 SmartValue::from(metadata),
-                SmartValue::from(ResourceAuthConfigs::new(mint_badge_address)),
+                SmartValue::from(ResourceConfigs::new(mint_badge_address)),
             ],
         })
     }
@@ -278,7 +278,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
             args: vec![
                 SmartValue::from(ResourceType::Fungible { granularity: 19 }),
                 SmartValue::from(metadata),
-                SmartValue::from(ResourceAuthConfigs::new(mint_badge_address)),
+                SmartValue::from(ResourceConfigs::new(mint_badge_address)),
             ],
         })
     }

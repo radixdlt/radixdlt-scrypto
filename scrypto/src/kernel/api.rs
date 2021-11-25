@@ -238,7 +238,7 @@ pub struct PutLazyMapEntryOutput {}
 pub struct CreateResourceMutableInput {
     pub resource_type: ResourceType,
     pub metadata: HashMap<String, String>,
-    pub auth_configs: ResourceAuthConfigs,
+    pub auth_configs: ResourceConfigs,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
@@ -301,13 +301,13 @@ pub struct GetResourceTotalSupplyOutput {
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct GetResourceAuthConfigsInput {
+pub struct GetResourceConfigsInput {
     pub resource_def: Address,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct GetResourceAuthConfigsOutput {
-    pub auth_configs: Option<ResourceAuthConfigs>,
+pub struct GetResourceConfigsOutput {
+    pub auth_configs: Option<ResourceConfigs>,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]

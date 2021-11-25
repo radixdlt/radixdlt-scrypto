@@ -47,7 +47,7 @@ blueprint! {
                 .metadata("symbol", lp_symbol)
                 .metadata("name", lp_name)
                 .metadata("url", lp_url)
-                .new_token_mutable(ResourceAuthConfigs::new(lp_mint_badge.resource_def()));
+                .new_token_mutable(ResourceConfigs::new(lp_mint_badge.resource_def()));
             let lp_tokens = lp_resource_def.mint(lp_initial_supply, lp_mint_badge.present());
 
             // ratio = initial supply / (x * y) = initial supply / k

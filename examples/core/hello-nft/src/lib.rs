@@ -92,9 +92,7 @@ blueprint! {
                 .new_badge_fixed(1);
             let random_card_resource_def = ResourceBuilder::new()
                 .metadata("name", "Random Cards")
-                .new_nft_mutable(ResourceAuthConfigs::new(
-                    random_card_mint_badge.resource_def(),
-                ));
+                .new_nft_mutable(ResourceConfigs::new(random_card_mint_badge.resource_def()));
 
             // Instantiate our component
             Self {
