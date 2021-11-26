@@ -46,8 +46,8 @@ pub const BURN_RESOURCE: u32 = 0x33;
 pub const GET_RESOURCE_METADATA: u32 = 0x34;
 /// Get resource supply
 pub const GET_RESOURCE_TOTAL_SUPPLY: u32 = 0x35;
-/// Get resource authorization config
-pub const GET_RESOURCE_AUTH_CONFIGS: u32 = 0x36;
+/// Get resource configurations
+pub const GET_RESOURCE_CONFIGS: u32 = 0x36;
 /// Get resource type
 pub const GET_RESOURCE_TYPE: u32 = 0x37;
 /// Get the data of an NFT
@@ -236,19 +236,23 @@ pub struct PutLazyMapEntryOutput {}
 pub struct CreateResourceInput {
     pub resource_type: ResourceType,
     pub metadata: HashMap<String, String>,
-    pub initial_supply: ResourceSupply,
-    pub configs: ResourceConfigs,
+    pub granularity: u8,
+    pub flags: u16,
+    pub mutable_flags: u16,
+    pub permissions: HashMap<Address, u16>,
+    pub initial_supply: Option<NewSupply>,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct CreateResourceOutput {
-    pub bucket: Bid,
+    pub resource_def: Address,
+    pub bucket: Option<Bid>,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct MintResourceInput {
     pub resource_def: Address,
-    pub new_supply: ResourceSupply,
+    pub new_supply: NewSupply,
     pub auth: Rid,
 }
 
@@ -287,13 +291,14 @@ pub struct GetResourceTotalSupplyOutput {
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct GetResourceConfigsInput {
+pub struct GetResourceFlagsInput {
     pub resource_def: Address,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct GetResourceConfigsOutput {
-    pub auth_configs: Option<ResourceConfigs>,
+pub struct GetResourceFlagsOutput {
+    pub flags: u16,
+    pub mutable_flags: u16,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]

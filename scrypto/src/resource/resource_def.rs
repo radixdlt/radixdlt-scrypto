@@ -37,25 +37,31 @@ impl ResourceDef {
     pub fn new(
         resource_type: ResourceType,
         metadata: HashMap<String, String>,
-        initial_supply: ResourceSupply,
-        configs: ResourceConfigs,
-    ) -> Bucket {
+        granularity: u8,
+        flags: u16,
+        mutable_flags: u16,
+        permissions: HashMap<Address, u16>,
+        initial_supply: Option<NewSupply>,
+    ) -> (ResourceDef, Option<Bucket>) {
         let input = CreateResourceInput {
             resource_type,
             metadata,
+            granularity,
+            flags,
+            mutable_flags,
+            permissions,
             initial_supply,
-            configs,
         };
         let output: CreateResourceOutput = call_kernel(CREATE_RESOURCE, input);
 
-        output.bucket.into()
+        (output.resource_def.into(), output.bucket.map(Into::into))
     }
 
     /// Mints fungible resources
     pub fn mint<T: Into<Decimal>>(&self, amount: T, auth: BucketRef) -> Bucket {
         let input = MintResourceInput {
             resource_def: self.address,
-            new_supply: ResourceSupply::Fungible {
+            new_supply: NewSupply::Fungible {
                 amount: amount.into(),
             },
             auth: auth.into(),
@@ -72,7 +78,7 @@ impl ResourceDef {
 
         let input = MintResourceInput {
             resource_def: self.address,
-            new_supply: ResourceSupply::NonFungible { entries },
+            new_supply: NewSupply::NonFungible { entries },
             auth: auth.into(),
         };
         let output: MintResourceOutput = call_kernel(MINT_RESOURCE, input);
@@ -100,13 +106,13 @@ impl ResourceDef {
     }
 
     /// Returns the authorization configurations.
-    pub fn auth_configs(&self) -> Option<ResourceConfigs> {
-        let input = GetResourceConfigsInput {
+    pub fn flags(&self) -> (u16, u16) {
+        let input = GetResourceFlagsInput {
             resource_def: self.address,
         };
-        let output: GetResourceConfigsOutput = call_kernel(GET_RESOURCE_AUTH_CONFIGS, input);
+        let output: GetResourceFlagsOutput = call_kernel(GET_RESOURCE_CONFIGS, input);
 
-        output.auth_configs
+        (output.flags, output.mutable_flags)
     }
 
     /// Returns the resource type.
@@ -114,7 +120,7 @@ impl ResourceDef {
         let input = GetResourceTypeInput {
             resource_def: self.address,
         };
-        let output: GetResourceTypeOutput = call_kernel(GET_RESOURCE_AUTH_CONFIGS, input);
+        let output: GetResourceTypeOutput = call_kernel(GET_RESOURCE_CONFIGS, input);
 
         output.resource_type
     }
@@ -168,17 +174,7 @@ impl ResourceDef {
         let _: UpdateNftDataOutput = call_kernel(UPDATE_NFT_DATA, input);
     }
 
-    /// Changes this resource to immutable.
-    ///
-    /// #Panics
-    /// Panics if this resource is not mutable
-    pub fn change_to_immutable(&self, auth: BucketRef) {
-        let input = ChangeToImmutableInput {
-            resource_def: self.address,
-            auth: auth.into(),
-        };
-        let _: ChangeToImmutableOutput = call_kernel(CHANGE_TO_IMMUTABLE, input);
-    }
+    // TODO: support toggling on/off feature and locking feature setting
 }
 
 //========
