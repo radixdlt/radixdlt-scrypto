@@ -39,23 +39,29 @@ pub const PUT_LAZY_MAP_ENTRY: u32 = 0x22;
 /// Create resource
 pub const CREATE_RESOURCE: u32 = 0x30;
 /// Mint resource
-pub const MINT_RESOURCE: u32 = 0x32;
+pub const MINT_RESOURCE: u32 = 0x31;
 /// Burn resource
-pub const BURN_RESOURCE: u32 = 0x33;
+pub const BURN_RESOURCE: u32 = 0x32;
+/// Get resource type
+pub const GET_RESOURCE_TYPE: u32 = 0x33;
 /// Get resource metadata
 pub const GET_RESOURCE_METADATA: u32 = 0x34;
+/// Get resource granularity
+pub const GET_RESOURCE_GRANULARITY: u32 = 0x35;
 /// Get resource supply
-pub const GET_RESOURCE_TOTAL_SUPPLY: u32 = 0x35;
-/// Get resource configurations
-pub const GET_RESOURCE_CONFIGS: u32 = 0x36;
-/// Get resource type
-pub const GET_RESOURCE_TYPE: u32 = 0x37;
+pub const GET_RESOURCE_TOTAL_SUPPLY: u32 = 0x36;
+/// Get feature flags
+pub const GET_RESOURCE_FLAGS: u32 = 0x37;
+/// Update feature flags
+pub const UPDATE_RESOURCE_FLAGS: u32 = 0x38;
+/// Get mutable feature flags
+pub const GET_RESOURCE_MUTABLE_FLAGS: u32 = 0x39;
+/// Update mutable feature flags
+pub const UPDATE_RESOURCE_MUTABLE_FLAGS: u32 = 0x3a;
 /// Get the data of an NFT
-pub const GET_NFT_DATA: u32 = 0x38;
+pub const GET_NFT_DATA: u32 = 0x3b;
 /// Update the data of an NFT
-pub const UPDATE_NFT_DATA: u32 = 0x39;
-/// Change a mutable resource to immutable
-pub const CHANGE_TO_IMMUTABLE: u32 = 0x3a;
+pub const UPDATE_NFT_DATA: u32 = 0x3c;
 
 /// Create an empty vault
 pub const CREATE_EMPTY_VAULT: u32 = 0x40;
@@ -239,7 +245,7 @@ pub struct CreateResourceInput {
     pub granularity: u8,
     pub flags: u16,
     pub mutable_flags: u16,
-    pub permissions: HashMap<Address, u16>,
+    pub authorities: HashMap<Address, u16>,
     pub initial_supply: Option<NewSupply>,
 }
 
@@ -281,27 +287,6 @@ pub struct GetResourceMetadataOutput {
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct GetResourceTotalSupplyInput {
-    pub resource_def: Address,
-}
-
-#[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct GetResourceTotalSupplyOutput {
-    pub supply: Decimal,
-}
-
-#[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct GetResourceFlagsInput {
-    pub resource_def: Address,
-}
-
-#[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct GetResourceFlagsOutput {
-    pub flags: u16,
-    pub mutable_flags: u16,
-}
-
-#[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct GetResourceTypeInput {
     pub resource_def: Address,
 }
@@ -309,6 +294,26 @@ pub struct GetResourceTypeInput {
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct GetResourceTypeOutput {
     pub resource_type: ResourceType,
+}
+
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
+pub struct GetResourceGranularityInput {
+    pub resource_def: Address,
+}
+
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
+pub struct GetResourceGranularityOutput {
+    pub granularity: u8,
+}
+
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
+pub struct GetResourceTotalSupplyInput {
+    pub resource_def: Address,
+}
+
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
+pub struct GetResourceTotalSupplyOutput {
+    pub supply: Decimal,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
@@ -334,13 +339,44 @@ pub struct UpdateNftDataInput {
 pub struct UpdateNftDataOutput {}
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct ChangeToImmutableInput {
+pub struct GetResourceFlagsInput {
     pub resource_def: Address,
+}
+
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
+pub struct GetResourceFlagsOutput {
+    pub flags: u16,
+}
+
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
+pub struct UpdateResourceFlagsInput {
+    pub resource_def: Address,
+    pub new_flags: Address,
     pub auth: Rid,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct ChangeToImmutableOutput {}
+pub struct UpdateResourceFlagsOutput {}
+
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
+pub struct GetResourceMutableFlagsInput {
+    pub resource_def: Address,
+}
+
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
+pub struct GetResourceMutableFlagsOutput {
+    pub mutable_flags: u16,
+}
+
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
+pub struct UpdateResourceMutableFlagsInput {
+    pub resource_def: Address,
+    pub new_mutable_flags: Address,
+    pub auth: Rid,
+}
+
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
+pub struct UpdateResourceMutableFlagsOutput {}
 
 //==========
 // vault

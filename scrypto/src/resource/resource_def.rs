@@ -40,7 +40,7 @@ impl ResourceDef {
         granularity: u8,
         flags: u16,
         mutable_flags: u16,
-        permissions: HashMap<Address, u16>,
+        authorities: HashMap<Address, u16>,
         initial_supply: Option<NewSupply>,
     ) -> (ResourceDef, Option<Bucket>) {
         let input = CreateResourceInput {
@@ -49,7 +49,7 @@ impl ResourceDef {
             granularity,
             flags,
             mutable_flags,
-            permissions,
+            authorities,
             initial_supply,
         };
         let output: CreateResourceOutput = call_kernel(CREATE_RESOURCE, input);
@@ -95,6 +95,16 @@ impl ResourceDef {
         let _output: BurnResourceOutput = call_kernel(BURN_RESOURCE, input);
     }
 
+    /// Returns the resource type.
+    pub fn resource_type(&self) -> ResourceType {
+        let input = GetResourceTypeInput {
+            resource_def: self.address,
+        };
+        let output: GetResourceTypeOutput = call_kernel(GET_RESOURCE_GRANULARITY, input);
+
+        output.resource_type
+    }
+
     /// Returns the metadata associated with this resource.
     pub fn metadata(&self) -> HashMap<String, String> {
         let input = GetResourceMetadataInput {
@@ -105,30 +115,34 @@ impl ResourceDef {
         output.metadata
     }
 
-    /// Returns the authorization configurations.
-    pub fn flags(&self) -> (u16, u16) {
+    /// Returns the granularity.
+    pub fn granularity(&self) -> u8 {
+        let input = GetResourceGranularityInput {
+            resource_def: self.address,
+        };
+        let output: GetResourceGranularityOutput = call_kernel(GET_RESOURCE_GRANULARITY, input);
+
+        output.granularity
+    }
+
+    /// Returns the feature flags.
+    pub fn flags(&self) -> u16 {
         let input = GetResourceFlagsInput {
             resource_def: self.address,
         };
-        let output: GetResourceFlagsOutput = call_kernel(GET_RESOURCE_CONFIGS, input);
+        let output: GetResourceFlagsOutput = call_kernel(GET_RESOURCE_FLAGS, input);
 
-        (output.flags, output.mutable_flags)
+        output.flags
     }
 
-    /// Returns the resource type.
-    pub fn resource_type(&self) -> ResourceType {
-        let input = GetResourceTypeInput {
+    /// Returns the mutable feature flags.
+    pub fn mutable_flags(&self) -> u16 {
+        let input = GetResourceMutableFlagsInput {
             resource_def: self.address,
         };
-        let output: GetResourceTypeOutput = call_kernel(GET_RESOURCE_CONFIGS, input);
+        let output: GetResourceMutableFlagsOutput = call_kernel(GET_RESOURCE_MUTABLE_FLAGS, input);
 
-        output.resource_type
-    }
-
-    /// Returns the current supply of this resource.
-    #[deprecated(note = "Please use `total_supply()` instead")]
-    pub fn supply(&self) -> Decimal {
-        self.total_supply()
+        output.mutable_flags
     }
 
     /// Returns the current supply of this resource.

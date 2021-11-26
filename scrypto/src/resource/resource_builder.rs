@@ -12,7 +12,7 @@ pub struct ResourceBuilder {
     granularity: u8,
     flags: u16,
     mutable_flags: u16,
-    permissions: HashMap<Address, u16>,
+    authorities: HashMap<Address, u16>,
 }
 
 impl ResourceBuilder {
@@ -24,7 +24,7 @@ impl ResourceBuilder {
             granularity: 1,
             flags: 0,
             mutable_flags: 0,
-            permissions: HashMap::new(),
+            authorities: HashMap::new(),
         }
     }
 
@@ -70,8 +70,8 @@ impl ResourceBuilder {
     }
 
     /// Adds a permission configuration.
-    pub fn permission(&mut self, badge_address: Address, permissions: u16) -> &mut Self {
-        self.permissions.insert(badge_address, permissions);
+    pub fn permission(&mut self, badge_address: Address, authorities: u16) -> &mut Self {
+        self.authorities.insert(badge_address, authorities);
         self
     }
 
@@ -92,7 +92,7 @@ impl ResourceBuilder {
             self.granularity,
             self.flags,
             self.mutable_flags,
-            self.permissions.clone(),
+            self.authorities.clone(),
             supply,
         )
     }
