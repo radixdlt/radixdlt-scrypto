@@ -12,10 +12,11 @@ blueprint! {
         // This is a function, and can be called directly on the blueprint once deployed
         pub fn new() -> Component {
             // Create a new token called "HelloToken," with a fixed supply of 1000, and put that supply into a bucket
-            let my_bucket: Bucket = ResourceBuilder::new()
+            let my_bucket: Bucket = ResourceBuilder::new_fungible()
                 .metadata("name", "HelloToken")
                 .metadata("symbol", "HT")
-                .new_token_fixed(1000);
+                .flags(FREELY_TRANSFERABLE)
+                .initial_supply(NewSupply::fungible(1000));
 
             // Instantiate a Hello component, populating its vault with our supply of 1000 HelloToken
             Self {

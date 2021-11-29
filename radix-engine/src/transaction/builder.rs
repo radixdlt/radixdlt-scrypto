@@ -231,6 +231,12 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         })
     }
 
+    fn single_authority(badge: Address, permission: u16) -> HashMap<Address, u16> {
+        let mut map = HashMap::new();
+        map.insert(badge, permission);
+        map
+    }
+
     /// Creates a token resource with mutable supply.
     pub fn new_token_mutable(
         &mut self,
@@ -240,14 +246,17 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         self.add_instruction(Instruction::CallFunction {
             package: SYSTEM_PACKAGE,
             blueprint: "System".to_owned(),
-            function: "new_resource_mutable".to_owned(),
+            function: "new_resource".to_owned(),
             args: vec![
                 SmartValue::from(ResourceType::Fungible),
                 SmartValue::from(metadata),
-                SmartValue::from(1),
-                SmartValue::from(FREELY_TRANSFERABLE | FREELY_BURNABLE | MINTABLE),
+                SmartValue::from(1u8),
+                SmartValue::from(FREELY_TRANSFERABLE | MINTABLE | BURNABLE),
                 SmartValue::from(0u16),
-                SmartValue::from(HashMap::from([(mint_badge_address, MAY_MINT)])),
+                SmartValue::from(Self::single_authority(
+                    mint_badge_address,
+                    MAY_MINT | MAY_BURN,
+                )),
                 SmartValue::from::<Option<NewSupply>>(None),
             ],
         })
@@ -266,7 +275,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
             args: vec![
                 SmartValue::from(ResourceType::Fungible),
                 SmartValue::from(metadata),
-                SmartValue::from(1),
+                SmartValue::from(1u8),
                 SmartValue::from(FREELY_TRANSFERABLE | FREELY_BURNABLE),
                 SmartValue::from(0u16),
                 SmartValue::from(HashMap::<Address, u16>::new()),
@@ -286,14 +295,17 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         self.add_instruction(Instruction::CallFunction {
             package: SYSTEM_PACKAGE,
             blueprint: "System".to_owned(),
-            function: "new_resource_mutable".to_owned(),
+            function: "new_resource".to_owned(),
             args: vec![
                 SmartValue::from(ResourceType::Fungible),
                 SmartValue::from(metadata),
-                SmartValue::from(19),
-                SmartValue::from(FREELY_TRANSFERABLE | FREELY_BURNABLE | MINTABLE),
+                SmartValue::from(19u8),
+                SmartValue::from(FREELY_TRANSFERABLE | MINTABLE | BURNABLE),
                 SmartValue::from(0u16),
-                SmartValue::from(HashMap::from([(mint_badge_address, MAY_MINT)])),
+                SmartValue::from(Self::single_authority(
+                    mint_badge_address,
+                    MAY_MINT | MAY_BURN,
+                )),
                 SmartValue::from::<Option<NewSupply>>(None),
             ],
         })
@@ -312,7 +324,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
             args: vec![
                 SmartValue::from(ResourceType::Fungible),
                 SmartValue::from(metadata),
-                SmartValue::from(19),
+                SmartValue::from(19u8),
                 SmartValue::from(FREELY_TRANSFERABLE | FREELY_BURNABLE),
                 SmartValue::from(0u16),
                 SmartValue::from(HashMap::<Address, u16>::new()),
