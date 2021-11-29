@@ -33,7 +33,7 @@ blueprint! {
             );
             // If the semi-colon is omitted on the last line, the last value seen is automatically returned
             // In this case, a bucket containing 1 HelloToken is returned
-            self.sample_vault.take(1)
+            self.sample_vault.take(1, None)
         }
     }
 }

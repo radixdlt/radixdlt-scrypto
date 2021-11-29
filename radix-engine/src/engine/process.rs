@@ -813,16 +813,35 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         }
     }
 
-    fn package_auth(&self) -> Result<Auth, RuntimeError> {
-        Ok(Auth::Package(self.package()?))
+    fn authenticate(&self) -> Result<Actor, RuntimeError> {
+        Ok(Actor::Package(self.package()?))
     }
 
-    fn badge_auth(&self, bucket_ref: &BucketRef) -> Result<Auth, RuntimeError> {
-        let bucket = bucket_ref.bucket();
-        if bucket.amount().is_zero() {
-            Err(RuntimeError::EmptyBucketRef)
+    fn authenticate_with_badge(
+        &mut self,
+        optional_rid: Option<Rid>,
+    ) -> Result<Actor, RuntimeError> {
+        if let Some(rid) = optional_rid {
+            // retrieve bucket reference
+            let bucket_ref = self
+                .bucket_refs
+                .get(&rid)
+                .ok_or(RuntimeError::BucketRefNotFound(rid))?;
+
+            // read amount & address
+            if bucket_ref.bucket().amount().is_zero() {
+                return Err(RuntimeError::EmptyBucketRef);
+            }
+            let resource_address = bucket_ref.bucket().resource_address();
+
+            // drop bucket reference after use
+            self.handle_drop_bucket_ref(DropBucketRefInput { bucket_ref: rid })?;
+
+            let mut set = HashSet::new();
+            set.insert(resource_address);
+            Ok(Actor::PackageWithBadges(self.package()?, set))
         } else {
-            Ok(Auth::ResourceHolder(bucket.resource_address()))
+            Ok(Actor::PackageWithBadges(self.package()?, HashSet::new()))
         }
     }
 
@@ -941,7 +960,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         input: GetComponentStateInput,
     ) -> Result<GetComponentStateOutput, RuntimeError> {
         Self::expect_component_address(input.component)?;
-        let auth = self.package_auth()?;
+        let actor = self.authenticate()?;
 
         let component = self
             .track
@@ -949,7 +968,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
             .ok_or(RuntimeError::ComponentNotFound(input.component))?;
 
         let state = component
-            .state(auth)
+            .state(actor)
             .map_err(RuntimeError::ComponentError)?;
 
         Ok(GetComponentStateOutput {
@@ -962,7 +981,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         input: PutComponentStateInput,
     ) -> Result<PutComponentStateOutput, RuntimeError> {
         Self::expect_component_address(input.component)?;
-        let auth = self.package_auth()?;
+        let actor = self.authenticate()?;
 
         let new_state =
             self.process_data(&input.state, Self::reject_buckets, Self::reject_bucket_refs)?;
@@ -974,7 +993,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
             .ok_or(RuntimeError::ComponentNotFound(input.component))?;
 
         component
-            .set_state(new_state, auth)
+            .set_state(new_state, actor)
             .map_err(RuntimeError::ComponentError)?;
 
         Ok(PutComponentStateOutput {})
@@ -999,7 +1018,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         &mut self,
         input: GetLazyMapEntryInput,
     ) -> Result<GetLazyMapEntryOutput, RuntimeError> {
-        let auth = self.package_auth()?;
+        let actor = self.authenticate()?;
 
         let lazy_map = self
             .track
@@ -1007,7 +1026,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
             .ok_or(RuntimeError::LazyMapNotFound(input.lazy_map))?;
 
         let value = lazy_map
-            .get_entry(&input.key, auth)
+            .get_entry(&input.key, actor)
             .map_err(RuntimeError::LazyMapError)?;
 
         Ok(GetLazyMapEntryOutput {
@@ -1019,7 +1038,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         &mut self,
         input: PutLazyMapEntryInput,
     ) -> Result<PutLazyMapEntryOutput, RuntimeError> {
-        let auth = self.package_auth()?;
+        let actor = self.authenticate()?;
 
         let new_key =
             self.process_data(&input.key, Self::reject_buckets, Self::reject_bucket_refs)?;
@@ -1034,7 +1053,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
             .ok_or(RuntimeError::LazyMapNotFound(input.lazy_map))?;
 
         lazy_map
-            .set_entry(new_key, new_value, auth)
+            .set_entry(new_key, new_value, actor)
             .map_err(RuntimeError::LazyMapError)?;
 
         Ok(PutLazyMapEntryOutput {})
@@ -1067,6 +1086,10 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         &mut self,
         input: CreateResourceInput,
     ) -> Result<CreateResourceOutput, RuntimeError> {
+        for (address, _) in &input.authorities {
+            Self::expect_resource_address(*address)?;
+        }
+
         // instantiate resource definition
         let resource_address = self.track.new_resource_address();
         if self.track.get_resource_def(resource_address).is_some() {
@@ -1191,38 +1214,24 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         input: MintResourceInput,
     ) -> Result<MintResourceOutput, RuntimeError> {
         Self::expect_resource_address(input.resource_address)?;
+        let actor = self.authenticate_with_badge(Some(input.auth))?;
 
         // allocate resource
         let supply = self.allocate_resource(input.resource_address, input.new_supply)?;
 
-        // update resource def
-        let bid = {
-            let bucket_ref = self
-                .bucket_refs
-                .get(&input.auth)
-                .ok_or(RuntimeError::BucketRefNotFound(input.auth))?;
-            let auth = self.badge_auth(bucket_ref)?;
+        // mint resource
+        let resource_def = self
+            .track
+            .get_resource_def_mut(input.resource_address)
+            .ok_or(RuntimeError::ResourceDefNotFound(input.resource_address))?;
+        resource_def
+            .mint(&supply, actor)
+            .map_err(RuntimeError::ResourceDefError)?;
 
-            // mint resource
-            let definition = self
-                .track
-                .get_resource_def_mut(input.resource_address)
-                .ok_or(RuntimeError::ResourceDefNotFound(input.resource_address))?;
-            definition
-                .mint(&supply, auth)
-                .map_err(RuntimeError::ResourceDefError)?;
-
-            // wrap resource into a bucket
-            let bucket = Bucket::new(input.resource_address, definition.resource_type(), supply);
-            let bid = self.track.new_bid();
-            self.buckets.insert(bid, bucket);
-            bid
-        };
-
-        // drop the input mint auth
-        self.handle_drop_bucket_ref(DropBucketRefInput {
-            bucket_ref: input.auth,
-        })?;
+        // wrap resource into a bucket
+        let bucket = Bucket::new(input.resource_address, resource_def.resource_type(), supply);
+        let bid = self.track.new_bid();
+        self.buckets.insert(bid, bucket);
 
         Ok(MintResourceOutput { bucket: bid })
     }
@@ -1231,32 +1240,21 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         &mut self,
         input: BurnResourceInput,
     ) -> Result<BurnResourceOutput, RuntimeError> {
-        // update resource def
-        {
-            let bucket = self
-                .buckets
-                .remove(&input.bucket)
-                .ok_or(RuntimeError::BucketNotFound(input.bucket))?;
+        let actor = self.authenticate_with_badge(input.auth)?;
 
-            let bucket_ref = self
-                .bucket_refs
-                .get(&input.auth)
-                .ok_or(RuntimeError::BucketRefNotFound(input.auth))?;
-            let auth = self.badge_auth(bucket_ref)?;
+        let bucket = self
+            .buckets
+            .remove(&input.bucket)
+            .ok_or(RuntimeError::BucketNotFound(input.bucket))?;
 
-            let resource_def = self
-                .track
-                .get_resource_def_mut(bucket.resource_address())
-                .ok_or(RuntimeError::ResourceDefNotFound(bucket.resource_address()))?;
+        let resource_def = self
+            .track
+            .get_resource_def_mut(bucket.resource_address())
+            .ok_or(RuntimeError::ResourceDefNotFound(bucket.resource_address()))?;
 
-            resource_def
-                .burn(bucket.supply(), auth)
-                .map_err(RuntimeError::ResourceDefError)?;
-        }
-        // drop the input mint auth
-        self.handle_drop_bucket_ref(DropBucketRefInput {
-            bucket_ref: input.auth,
-        })?;
+        resource_def
+            .burn(bucket.supply(), actor)
+            .map_err(RuntimeError::ResourceDefError)?;
         Ok(BurnResourceOutput {})
     }
 
@@ -1264,26 +1262,16 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         &mut self,
         input: UpdateNftDataInput,
     ) -> Result<UpdateNftDataOutput, RuntimeError> {
-        let bucket_ref = self
-            .bucket_refs
-            .get(&input.auth)
-            .ok_or(RuntimeError::BucketRefNotFound(input.auth))?;
-        let auth = self.badge_auth(bucket_ref)?;
+        let actor = self.authenticate_with_badge(Some(input.auth))?;
 
         // obtain authorization from resource definition
-        let definition = self
+        let resource_def = self
             .track
             .get_resource_def(input.resource_address)
             .ok_or(RuntimeError::ResourceDefNotFound(input.resource_address))?;
-        definition
-            .update_nft_data(auth)
+        resource_def
+            .update_nft_data(actor)
             .map_err(RuntimeError::ResourceDefError)?;
-
-        // drop the input auth
-        self.handle_drop_bucket_ref(DropBucketRefInput {
-            bucket_ref: input.auth,
-        })?;
-
         // update state
         self.track
             .get_nft_mut(input.resource_address, input.id)
@@ -1338,7 +1326,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         &mut self,
         input: PutIntoVaultInput,
     ) -> Result<PutIntoVaultOutput, RuntimeError> {
-        let auth = self.package_auth()?;
+        let actor = self.authenticate()?;
 
         let other = self
             .buckets
@@ -1348,7 +1336,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         self.track
             .get_vault_mut(input.vault)
             .ok_or(RuntimeError::VaultNotFound(input.vault))?
-            .put(other, auth)
+            .put(other, actor)
             .map_err(RuntimeError::VaultError)?;
 
         Ok(PutIntoVaultOutput {})
@@ -1358,13 +1346,13 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         &mut self,
         input: TakeFromVaultInput,
     ) -> Result<TakeFromVaultOutput, RuntimeError> {
-        let auth = self.package_auth()?;
+        let actor = self.authenticate_with_badge(input.auth)?;
 
         let new_bucket = self
             .track
             .get_vault_mut(input.vault)
             .ok_or(RuntimeError::VaultNotFound(input.vault))?
-            .take(input.amount, auth)
+            .take(input.amount, actor)
             .map_err(RuntimeError::VaultError)?;
 
         let new_bid = self.track.new_bid();
@@ -1377,13 +1365,13 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         &mut self,
         input: TakeNftFromVaultInput,
     ) -> Result<TakeNftFromVaultOutput, RuntimeError> {
-        let auth = self.package_auth()?;
+        let actor = self.authenticate_with_badge(input.auth)?;
 
         let new_bucket = self
             .track
             .get_vault_mut(input.vault)
             .ok_or(RuntimeError::VaultNotFound(input.vault))?
-            .take_nft(input.id, auth)
+            .take_nft(input.id, actor)
             .map_err(RuntimeError::VaultError)?;
 
         let new_bid = self.track.new_bid();
@@ -1396,7 +1384,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         &mut self,
         input: GetNftIdsInVaultInput,
     ) -> Result<GetNftIdsInVaultOutput, RuntimeError> {
-        let auth = self.package_auth()?;
+        let actor = self.authenticate()?;
 
         let vault = self
             .track
@@ -1404,7 +1392,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
             .ok_or(RuntimeError::VaultNotFound(input.vault))?;
 
         Ok(GetNftIdsInVaultOutput {
-            ids: vault.get_nft_ids(auth).map_err(RuntimeError::VaultError)?,
+            ids: vault.get_nft_ids(actor).map_err(RuntimeError::VaultError)?,
         })
     }
 
@@ -1412,7 +1400,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         &mut self,
         input: GetVaultDecimalInput,
     ) -> Result<GetVaultDecimalOutput, RuntimeError> {
-        let auth = self.package_auth()?;
+        let actor = self.authenticate()?;
 
         let vault = self
             .track
@@ -1420,7 +1408,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
             .ok_or(RuntimeError::VaultNotFound(input.vault))?;
 
         Ok(GetVaultDecimalOutput {
-            amount: vault.amount(auth).map_err(RuntimeError::VaultError)?,
+            amount: vault.amount(actor).map_err(RuntimeError::VaultError)?,
         })
     }
 
@@ -1428,7 +1416,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         &mut self,
         input: GetVaultResourceAddressInput,
     ) -> Result<GetVaultResourceAddressOutput, RuntimeError> {
-        let auth = self.package_auth()?;
+        let actor = self.authenticate()?;
 
         let vault = self
             .track
@@ -1437,7 +1425,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
 
         Ok(GetVaultResourceAddressOutput {
             resource_address: vault
-                .resource_address(auth)
+                .resource_address(actor)
                 .map_err(RuntimeError::VaultError)?,
         })
     }

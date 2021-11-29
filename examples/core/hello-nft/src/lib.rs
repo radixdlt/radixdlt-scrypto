@@ -124,7 +124,7 @@ blueprint! {
             self.collected_xrd.put(payment.take(price));
 
             // Take the requested NFT
-            let nft = self.special_cards.take_nft(id);
+            let nft = self.special_cards.take_nft(id, None);
 
             // Return the NFT and change
             (nft, payment)
@@ -141,10 +141,16 @@ blueprint! {
                 class: Self::random_class(random_seed),
                 rarity: Self::random_rarity(random_seed),
             };
-            let nft = self.random_card_mint_badge.authorize(|auth| {
-                self.random_card_resource_def
-                    .mint_nft(self.random_card_id_counter, new_card, auth)
-            });
+            let nft = self.random_card_mint_badge.authorize(
+                |auth| {
+                    self.random_card_resource_def.mint_nft(
+                        self.random_card_id_counter,
+                        new_card,
+                        auth,
+                    )
+                },
+                None,
+            );
             self.random_card_id_counter += 1;
 
             // Return the NFT and change
@@ -174,14 +180,20 @@ blueprint! {
             let new_card = Self::fuse_magic_cards(card1, card2);
 
             // Burn the second card
-            self.random_card_mint_badge.authorize(|auth| {
-                nfts.take_nft(nft_ids[1]).burn(auth);
-            });
+            self.random_card_mint_badge.authorize(
+                |auth| {
+                    nfts.take_nft(nft_ids[1]).burn(Some(auth));
+                },
+                None,
+            );
 
             // Update the first card
-            self.random_card_mint_badge.authorize(|auth| {
-                nfts.update_nft_data(nft_ids[0], new_card, auth);
-            });
+            self.random_card_mint_badge.authorize(
+                |auth| {
+                    nfts.update_nft_data(nft_ids[0], new_card, auth);
+                },
+                None,
+            );
 
             nfts
         }

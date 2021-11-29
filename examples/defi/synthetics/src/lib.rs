@@ -196,7 +196,7 @@ blueprint! {
             let user_id = Self::get_user_id(user_auth);
             let user = self.get_user(user_id, false);
 
-            let tokens = user.snx.take(amount);
+            let tokens = user.snx.take(amount, None);
             user.check_collateralization_ratio(
                 self.get_snx_price(),
                 self.get_total_global_debt(),
@@ -227,10 +227,10 @@ blueprint! {
                         },
                         auth,
                     )
-                }));
+                }, None));
             let tokens = self
                 .synthetics_mint_badge
-                .authorize(|auth| synth.token_resource_def.mint(amount, auth));
+                .authorize(|auth| synth.token_resource_def.mint(amount, auth), None);
             user.check_collateralization_ratio(
                 self.get_snx_price(),
                 self.get_total_global_debt(),
@@ -256,13 +256,14 @@ blueprint! {
             let shares_to_burn = user.global_debt_share.take(
                 self.synthetics_global_debt_share_resource_def.total_supply() * debt_to_remove
                     / global_debt,
+                None
             );
 
             self.synthetics_mint_badge.authorize(|auth| {
-                shares_to_burn.burn(auth);
-            });
+                shares_to_burn.burn(Some(auth));
+            }, None);
             self.synthetics_mint_badge
-                .authorize(|auth| bucket.burn(auth));
+                .authorize(|auth| bucket.burn(Some(auth)), None);
         }
 
         /// Returns the total global debt.

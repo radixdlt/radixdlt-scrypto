@@ -267,7 +267,7 @@ pub struct MintResourceOutput {
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct BurnResourceInput {
     pub bucket: Bid,
-    pub auth: Rid,
+    pub auth: Option<Rid>,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
@@ -392,6 +392,7 @@ pub struct PutIntoVaultOutput {}
 pub struct TakeFromVaultInput {
     pub vault: Vid,
     pub amount: Decimal,
+    pub auth: Option<Rid>,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
@@ -423,6 +424,7 @@ pub struct GetVaultResourceAddressOutput {
 pub struct TakeNftFromVaultInput {
     pub vault: Vid,
     pub id: u128,
+    pub auth: Option<Rid>,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]

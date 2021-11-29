@@ -87,7 +87,7 @@ impl Bucket {
     }
 
     /// Burns resource within this bucket.
-    pub fn burn(self, auth: BucketRef) {
+    pub fn burn(self, auth: Option<BucketRef>) {
         self.resource_def().burn(self, auth);
     }
 

@@ -44,15 +44,15 @@ pub fn dump_component<T: Ledger>(address: Address, ledger: &T) -> Result<(), Dis
             println!(
                 "{}: {}",
                 "State".green().bold(),
-                format_data_with_ledger(c.state(Auth::SuperUser).unwrap(), ledger, &mut vaults)
+                format_data_with_ledger(c.state(Actor::SuperUser).unwrap(), ledger, &mut vaults)
                     .unwrap()
             );
 
             println!("{}:", "Resources".green().bold());
             for (last, vid) in vaults.iter().identify_last() {
                 let vault = ledger.get_vault(*vid).unwrap();
-                let amount = vault.amount(Auth::SuperUser).unwrap();
-                let resource_address = vault.resource_address(Auth::SuperUser).unwrap();
+                let amount = vault.amount(Actor::SuperUser).unwrap();
+                let resource_address = vault.resource_address(Actor::SuperUser).unwrap();
                 let resource_def = ledger.get_resource_def(resource_address).unwrap();
                 println!(
                     "{} {{ amount: {}, resource_def: {}{}{} }}",
@@ -70,7 +70,7 @@ pub fn dump_component<T: Ledger>(address: Address, ledger: &T) -> Result<(), Dis
                         .map(|symbol| format!(", symbol: {}", symbol))
                         .unwrap_or(String::new()),
                 );
-                if let Supply::NonFungible { ids } = vault.total_supply(Auth::SuperUser).unwrap() {
+                if let Supply::NonFungible { ids } = vault.total_supply(Actor::SuperUser).unwrap() {
                     // TODO how to deal with the case where a vault id is referenced in the NFT
                     let mut vaults = Vec::new();
                     for (inner_last, id) in ids.iter().identify_last() {

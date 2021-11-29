@@ -57,7 +57,7 @@ Obviously we don't want just anyone to be able to create additional admin badges
 #[auth(admin_badge)]
 pub fn create_additional_admin(&self) -> Bucket {
   self.admin_mint_badge
-    .authorize(|auth| self.admin_badge.mint(1, auth))
+    .authorize(|auth| self.admin_badge.mint(1, auth), None)
 }
 ```
 

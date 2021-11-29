@@ -51,7 +51,8 @@ blueprint! {
 
             let vault = self.vaults.get(&resource_address);
             match vault {
-                Some(vault) => vault.take(amount),
+                // TODO how to deal with `RESTRICTED_TRANSFER`?
+                Some(vault) => vault.take(amount, None),
                 None => {
                     panic!("Insufficient balance");
                 }
@@ -69,7 +70,8 @@ blueprint! {
                 Some(vault) => {
                     let bucket = Bucket::new(resource_address);
                     for id in ids {
-                        bucket.put(vault.take_nft(id));
+                        // TODO how to deal with `RESTRICTED_TRANSFER`?
+                        bucket.put(vault.take_nft(id, None));
                     }
                     bucket
                 }

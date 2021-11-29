@@ -127,7 +127,7 @@ blueprint! {
 
             positions.swap_remove(nth);
             self.trader_positions.insert(user_id, positions);
-            self.deposits_in_quote.take(to_return)
+            self.deposits_in_quote.take(to_return, None)
         }
     }
 }

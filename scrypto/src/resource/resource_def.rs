@@ -33,7 +33,9 @@ impl From<ResourceDef> for Address {
 }
 
 impl ResourceDef {
-    /// Creates a resource with fixed supply. The created resource is immediately returned.
+    /// Creates a resource with the given parameters.
+    ///
+    /// A bucket is returned iif an initial supply is provided.
     pub fn new(
         resource_type: ResourceType,
         metadata: HashMap<String, String>,
@@ -88,10 +90,10 @@ impl ResourceDef {
     }
 
     /// Burns a bucket of resources.
-    pub fn burn(&self, bucket: Bucket, auth: BucketRef) {
+    pub fn burn(&self, bucket: Bucket, auth: Option<BucketRef>) {
         let input = BurnResourceInput {
             bucket: bucket.into(),
-            auth: auth.into(),
+            auth: auth.map(Into::into),
         };
         let _output: BurnResourceOutput = call_kernel(BURN_RESOURCE, input);
     }

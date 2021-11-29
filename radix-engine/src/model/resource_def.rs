@@ -6,7 +6,7 @@ use scrypto::rust::collections::HashMap;
 use scrypto::rust::string::String;
 use scrypto::types::*;
 
-use crate::model::{Auth, Supply};
+use crate::model::{Actor, Supply};
 
 /// Represents an error when accessing a bucket.
 #[derive(Debug, Clone)]
@@ -89,11 +89,11 @@ impl ResourceDef {
         self.total_supply
     }
 
-    pub fn mint(&mut self, supply: &Supply, auth: Auth) -> Result<(), ResourceDefError> {
+    pub fn mint(&mut self, supply: &Supply, actor: Actor) -> Result<(), ResourceDefError> {
         if self.flags() & MINTABLE == 0 {
             return Err(ResourceDefError::OperationNotAllowed);
         }
-        if !auth.check_for(self.authorities(), MAY_MINT) {
+        if !actor.check_permission(self.authorities(), MAY_MINT) {
             return Err(ResourceDefError::UnauthorizedAccess);
         }
 
@@ -118,11 +118,11 @@ impl ResourceDef {
         }
     }
 
-    pub fn burn(&mut self, supply: Supply, auth: Auth) -> Result<(), ResourceDefError> {
+    pub fn burn(&mut self, supply: Supply, actor: Actor) -> Result<(), ResourceDefError> {
         if self.flags() & BURNABLE == 0 {
             return Err(ResourceDefError::OperationNotAllowed);
         }
-        if !auth.check_for(self.authorities(), MAY_BURN) {
+        if !actor.check_permission(self.authorities(), MAY_BURN) {
             return Err(ResourceDefError::UnauthorizedAccess);
         }
 
@@ -151,11 +151,11 @@ impl ResourceDef {
         }
     }
 
-    pub fn update_nft_data(&self, auth: Auth) -> Result<(), ResourceDefError> {
+    pub fn update_nft_data(&self, actor: Actor) -> Result<(), ResourceDefError> {
         if self.flags() & INDIVIDUAL_METADATA_MUTABLE == 0 {
             return Err(ResourceDefError::OperationNotAllowed);
         }
-        if !auth.check_for(self.authorities(), MAY_CHANGE_INDIVIDUAL_METADATA) {
+        if !actor.check_permission(self.authorities(), MAY_CHANGE_INDIVIDUAL_METADATA) {
             return Err(ResourceDefError::UnauthorizedAccess);
         }
 

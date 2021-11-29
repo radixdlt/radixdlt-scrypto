@@ -37,7 +37,7 @@ blueprint! {
         pub fn burn() -> Bucket {
             let (badge, resource_def) = Self::create_fungible();
             let bucket = resource_def.mint(1, badge.present());
-            resource_def.burn(bucket, badge.present());
+            resource_def.burn(bucket, Some(badge.present()));
             badge
         }
     }

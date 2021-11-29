@@ -39,7 +39,8 @@ blueprint! {
 
         /// Gives away XRD tokens for testing.
         pub fn free_xrd(&self, amount: Decimal) -> Bucket {
-            self.xrd.take(amount)
+            // TODO how to deal with `RESTRICTED_TRANSFER`?
+            self.xrd.take(amount, None)
         }
     }
 }

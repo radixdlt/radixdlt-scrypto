@@ -2,7 +2,7 @@ use sbor::*;
 use scrypto::rust::collections::BTreeSet;
 use scrypto::types::*;
 
-use crate::model::{Auth, Bucket, BucketError, Supply};
+use crate::model::{Actor, Bucket, BucketError, Supply};
 
 /// Represents an error when accessing a vault.
 #[derive(Debug, Clone)]
@@ -23,16 +23,16 @@ impl Vault {
         Self { bucket, owner }
     }
 
-    pub fn put(&mut self, other: Bucket, auth: Auth) -> Result<(), VaultError> {
-        if auth.check(self.owner) {
+    pub fn put(&mut self, other: Bucket, actor: Actor) -> Result<(), VaultError> {
+        if actor.check(self.owner) {
             self.bucket.put(other).map_err(VaultError::AccountingError)
         } else {
             Err(VaultError::UnauthorizedAccess)
         }
     }
 
-    pub fn take(&mut self, amount: Decimal, auth: Auth) -> Result<Bucket, VaultError> {
-        if auth.check(self.owner) {
+    pub fn take(&mut self, amount: Decimal, actor: Actor) -> Result<Bucket, VaultError> {
+        if actor.check(self.owner) {
             self.bucket
                 .take(amount)
                 .map_err(VaultError::AccountingError)
@@ -41,8 +41,8 @@ impl Vault {
         }
     }
 
-    pub fn take_nft(&mut self, id: u128, auth: Auth) -> Result<Bucket, VaultError> {
-        if auth.check(self.owner) {
+    pub fn take_nft(&mut self, id: u128, actor: Actor) -> Result<Bucket, VaultError> {
+        if actor.check(self.owner) {
             self.bucket
                 .take_nft(id)
                 .map_err(VaultError::AccountingError)
@@ -51,8 +51,8 @@ impl Vault {
         }
     }
 
-    pub fn get_nft_ids(&self, auth: Auth) -> Result<BTreeSet<u128>, VaultError> {
-        if auth.check(self.owner) {
+    pub fn get_nft_ids(&self, actor: Actor) -> Result<BTreeSet<u128>, VaultError> {
+        if actor.check(self.owner) {
             self.bucket
                 .get_nft_ids()
                 .map_err(VaultError::AccountingError)
@@ -61,24 +61,24 @@ impl Vault {
         }
     }
 
-    pub fn total_supply(&self, auth: Auth) -> Result<Supply, VaultError> {
-        if auth.check(self.owner) {
+    pub fn total_supply(&self, actor: Actor) -> Result<Supply, VaultError> {
+        if actor.check(self.owner) {
             Ok(self.bucket.supply())
         } else {
             Err(VaultError::UnauthorizedAccess)
         }
     }
 
-    pub fn amount(&self, auth: Auth) -> Result<Decimal, VaultError> {
-        if auth.check(self.owner) {
+    pub fn amount(&self, actor: Actor) -> Result<Decimal, VaultError> {
+        if actor.check(self.owner) {
             Ok(self.bucket.amount())
         } else {
             Err(VaultError::UnauthorizedAccess)
         }
     }
 
-    pub fn resource_address(&self, auth: Auth) -> Result<Address, VaultError> {
-        if auth.check(self.owner) {
+    pub fn resource_address(&self, actor: Actor) -> Result<Address, VaultError> {
+        if actor.check(self.owner) {
             Ok(self.bucket.resource_address())
         } else {
             Err(VaultError::UnauthorizedAccess)
