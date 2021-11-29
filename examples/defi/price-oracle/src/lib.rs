@@ -13,8 +13,7 @@ blueprint! {
         pub fn new(num_of_admins: u32) -> (Bucket, Component) {
             assert!(num_of_admins >= 1);
 
-            let badges = ResourceBuilder::new_fungible()
-                .granularity(19)
+            let badges = ResourceBuilder::new_fungible(18)
                 .metadata("name", "Price Oracle Admin Badge")
                 .flags(FREELY_TRANSFERABLE)
                 .initial_supply(NewSupply::fungible(num_of_admins));

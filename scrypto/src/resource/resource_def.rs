@@ -37,7 +37,6 @@ impl ResourceDef {
     pub fn new(
         resource_type: ResourceType,
         metadata: HashMap<String, String>,
-        granularity: u8,
         flags: u16,
         mutable_flags: u16,
         authorities: HashMap<Address, u16>,
@@ -46,7 +45,6 @@ impl ResourceDef {
         let input = CreateResourceInput {
             resource_type,
             metadata,
-            granularity,
             flags,
             mutable_flags,
             authorities,
@@ -100,7 +98,7 @@ impl ResourceDef {
         let input = GetResourceTypeInput {
             resource_def: self.address,
         };
-        let output: GetResourceTypeOutput = call_kernel(GET_RESOURCE_GRANULARITY, input);
+        let output: GetResourceTypeOutput = call_kernel(GET_RESOURCE_TYPE, input);
 
         output.resource_type
     }
@@ -113,16 +111,6 @@ impl ResourceDef {
         let output: GetResourceMetadataOutput = call_kernel(GET_RESOURCE_METADATA, input);
 
         output.metadata
-    }
-
-    /// Returns the granularity.
-    pub fn granularity(&self) -> u8 {
-        let input = GetResourceGranularityInput {
-            resource_def: self.address,
-        };
-        let output: GetResourceGranularityOutput = call_kernel(GET_RESOURCE_GRANULARITY, input);
-
-        output.granularity
     }
 
     /// Returns the feature flags.

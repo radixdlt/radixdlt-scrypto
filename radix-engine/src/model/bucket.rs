@@ -27,7 +27,6 @@ pub enum Supply {
 pub struct Bucket {
     resource_address: Address,
     resource_type: ResourceType,
-    granularity: u8,
     supply: Supply,
 }
 
@@ -42,16 +41,10 @@ pub struct LockedBucket {
 pub type BucketRef = Rc<LockedBucket>;
 
 impl Bucket {
-    pub fn new(
-        resource_address: Address,
-        resource_type: ResourceType,
-        granularity: u8,
-        supply: Supply,
-    ) -> Self {
+    pub fn new(resource_address: Address, resource_type: ResourceType, supply: Supply) -> Self {
         Self {
             resource_address,
             resource_type,
-            granularity,
             supply,
         }
     }
@@ -85,7 +78,7 @@ impl Bucket {
     }
 
     pub fn take(&mut self, quantity: Decimal) -> Result<Self, BucketError> {
-        Self::check_amount(quantity, self.granularity)?;
+        Self::check_amount(quantity, self.resource_type.granularity())?;
 
         if self.amount() < quantity {
             Err(BucketError::InsufficientBalance)
@@ -98,7 +91,6 @@ impl Bucket {
                     Ok(Self::new(
                         self.resource_address,
                         self.resource_type,
-                        self.granularity,
                         Supply::Fungible { amount: quantity },
                     ))
                 }
@@ -111,7 +103,6 @@ impl Bucket {
                     Ok(Self::new(
                         self.resource_address,
                         self.resource_type,
-                        self.granularity,
                         Supply::NonFungible { ids: taken },
                     ))
                 }
@@ -130,7 +121,6 @@ impl Bucket {
                 Ok(Self::new(
                     self.resource_address,
                     self.resource_type,
-                    self.granularity,
                     Supply::NonFungible {
                         ids: BTreeSet::from([id]),
                     },
@@ -162,7 +152,7 @@ impl Bucket {
     }
 
     fn check_amount(amount: Decimal, granularity: u8) -> Result<(), BucketError> {
-        if !amount.is_negative() && amount.0 % 10i128.pow((granularity - 1).into()) != 0.into() {
+        if !amount.is_negative() && amount.0 % 10i128.pow(granularity.into()) != 0.into() {
             Err(BucketError::InvalidAmount(amount))
         } else {
             Ok(())

@@ -98,8 +98,7 @@ blueprint! {
 
         /// Registers a new user
         pub fn new_user(&self) -> Bucket {
-            ResourceBuilder::new_fungible()
-                .granularity(19)
+            ResourceBuilder::new_fungible(18)
                 .metadata("name", "xPerpFutures User Badge")
                 .flags(FREELY_TRANSFERABLE)
                 .initial_supply(NewSupply::fungible(1))

@@ -135,12 +135,11 @@ blueprint! {
             let oracle: PriceOracle = oracle_address.into();
             let snx_resource_def: ResourceDef = snx_token_address.into();
             let usd_resource_def: ResourceDef = usd_token_address.into();
-            let synthetics_mint_badge = ResourceBuilder::new_fungible()
-                .granularity(19)
+            let synthetics_mint_badge = ResourceBuilder::new_fungible(18)
                 .metadata("name", "Synthetics Mint Badge")
                 .flags(FREELY_TRANSFERABLE)
                 .initial_supply(NewSupply::fungible(1));
-            let synthetics_global_debt_share_resource_def = ResourceBuilder::new_fungible()
+            let synthetics_global_debt_share_resource_def = ResourceBuilder::new_fungible(0)
                 .metadata("name", "Synthetics Global Debt")
                 .flags(FREELY_TRANSFERABLE | MINTABLE | BURNABLE)
                 .badge(synthetics_mint_badge.resource_def(), MAY_MINT | MAY_BURN)
@@ -170,7 +169,7 @@ blueprint! {
                 "Asset already exist",
             );
 
-            let token_resource_def = ResourceBuilder::new_fungible()
+            let token_resource_def = ResourceBuilder::new_fungible(0)
                 .metadata("name", format!("Synthetic {}", asset_symbol.clone()))
                 .metadata("symbol", format!("s{}", asset_symbol.clone()))
                 .flags(FREELY_TRANSFERABLE | MINTABLE | BURNABLE)
@@ -309,8 +308,7 @@ blueprint! {
 
         /// Registers a new user
         pub fn new_user(&self) -> Bucket {
-            ResourceBuilder::new_fungible()
-                .granularity(19)
+            ResourceBuilder::new_fungible(18)
                 .metadata("name", "Synthetic Pool User Badge")
                 .flags(FREELY_TRANSFERABLE)
                 .initial_supply(NewSupply::fungible(1))

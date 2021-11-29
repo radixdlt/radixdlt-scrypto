@@ -24,7 +24,6 @@ pub enum ResourceDefError {
 pub struct ResourceDef {
     resource_type: ResourceType,
     metadata: HashMap<String, String>,
-    granularity: u8,
     flags: u16,
     mutable_flags: u16,
     authorities: HashMap<Address, u16>,
@@ -35,21 +34,20 @@ impl ResourceDef {
     pub fn new(
         resource_type: ResourceType,
         metadata: HashMap<String, String>,
-        granularity: u8,
         flags: u16,
         mutable_flags: u16,
         authorities: HashMap<Address, u16>,
         initial_supply: &Option<NewSupply>,
     ) -> Result<Self, ResourceDefError> {
-        if granularity < 1
-            || granularity > 36
-            || granularity != 19 && (resource_type == ResourceType::NonFungible)
-        {
-            return Err(ResourceDefError::InvalidGranularity);
-        }
-
         let total_supply = match (resource_type, initial_supply) {
-            (ResourceType::Fungible, Some(NewSupply::Fungible { amount })) => Ok(*amount),
+            (ResourceType::Fungible { granularity }, Some(NewSupply::Fungible { amount })) => {
+                if granularity >= 36 {
+                    Err(ResourceDefError::InvalidGranularity)
+                } else {
+                    Self::check_amount(*amount, granularity)?;
+                    Ok(*amount)
+                }
+            }
             (ResourceType::NonFungible, Some(NewSupply::NonFungible { entries })) => {
                 Ok(entries.len().into())
             }
@@ -60,7 +58,6 @@ impl ResourceDef {
         Ok(Self {
             resource_type,
             metadata,
-            granularity,
             flags,
             mutable_flags,
             authorities,
@@ -74,10 +71,6 @@ impl ResourceDef {
 
     pub fn metadata(&self) -> &HashMap<String, String> {
         &self.metadata
-    }
-
-    pub fn granularity(&self) -> u8 {
-        self.granularity
     }
 
     pub fn flags(&self) -> u16 {
@@ -107,7 +100,7 @@ impl ResourceDef {
         match self.resource_type {
             ResourceType::Fungible { .. } => {
                 if let Supply::Fungible { amount } = supply {
-                    Self::check_amount(*amount, self.granularity())?;
+                    Self::check_amount(*amount, self.resource_type.granularity())?;
                     self.total_supply += *amount;
                     Ok(())
                 } else {
@@ -136,7 +129,7 @@ impl ResourceDef {
         match self.resource_type {
             ResourceType::Fungible { .. } => {
                 if let Supply::Fungible { amount } = supply {
-                    Self::check_amount(amount, self.granularity())?;
+                    Self::check_amount(amount, self.resource_type.granularity())?;
                     self.total_supply -= amount;
                     Ok(())
                 } else {
@@ -170,7 +163,7 @@ impl ResourceDef {
     }
 
     fn check_amount(amount: Decimal, granularity: u8) -> Result<(), ResourceDefError> {
-        if !amount.is_negative() && amount.0 % 10i128.pow((granularity - 1).into()) != 0.into() {
+        if !amount.is_negative() && amount.0 % 10i128.pow(granularity.into()) != 0.into() {
             Err(ResourceDefError::InvalidAmount(amount))
         } else {
             Ok(())

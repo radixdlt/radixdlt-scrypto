@@ -9,7 +9,6 @@ use crate::types::*;
 pub struct ResourceBuilder {
     resource_type: ResourceType,
     metadata: HashMap<String, String>,
-    granularity: u8,
     flags: u16,
     mutable_flags: u16,
     authorities: HashMap<Address, u16>,
@@ -17,11 +16,10 @@ pub struct ResourceBuilder {
 
 impl ResourceBuilder {
     /// Starts a new builder.
-    pub fn new(resource_type: ResourceType, granularity: u8) -> Self {
+    pub fn new(resource_type: ResourceType) -> Self {
         Self {
             resource_type,
             metadata: HashMap::new(),
-            granularity,
             flags: 0,
             mutable_flags: 0,
             authorities: HashMap::new(),
@@ -29,23 +27,18 @@ impl ResourceBuilder {
     }
 
     /// Starts a new builder to create fungible resource, e.g., tokens.
-    pub fn new_fungible() -> Self {
-        Self::new(ResourceType::Fungible, 1)
+    ///
+    /// Fungible resource can have different granularity
+    /// * If granularity is `0`, the smallest unit is `10^-18`;
+    /// * If granularity is `1`, the smallest unit is `10^-17`;
+    /// * So on and so forth.
+    pub fn new_fungible(granularity: u8) -> Self {
+        Self::new(ResourceType::Fungible { granularity })
     }
 
     /// Starts a new builder to create non-fungible resource, e.g. NFT.
     pub fn new_non_fungible() -> Self {
-        Self::new(ResourceType::NonFungible, 19)
-    }
-
-    /// Sets the resource granularity.
-    ///
-    /// * If the granularity is `1`, the smallest unit is `10^-18`;
-    /// * If the granularity is `2`, the smallest unit is `10^-17`;
-    /// * So on and so forth.
-    pub fn granularity(&mut self, granularity: u8) -> &mut Self {
-        self.granularity = granularity;
-        self
+        Self::new(ResourceType::NonFungible)
     }
 
     /// Adds a shared metadata.
@@ -90,7 +83,6 @@ impl ResourceBuilder {
         ResourceDef::new(
             self.resource_type,
             self.metadata.clone(),
-            self.granularity,
             self.flags,
             self.mutable_flags,
             self.authorities.clone(),

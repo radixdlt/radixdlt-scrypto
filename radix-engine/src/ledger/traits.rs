@@ -71,9 +71,8 @@ pub trait Ledger {
             self.put_resource_def(
                 RADIX_TOKEN,
                 ResourceDef::new(
-                    ResourceType::Fungible,
-                    metadata,
-                    1,
+                    ResourceType::Fungible { granularity: 0 },
+                    HashMap::new(),
                     FREELY_TRANSFERABLE,
                     0,
                     HashMap::new(),
@@ -90,8 +89,7 @@ pub trait Ledger {
                 Vault::new(
                     Bucket::new(
                         RADIX_TOKEN,
-                        ResourceType::Fungible,
-                        1,
+                        ResourceType::Fungible { granularity: 0 },
                         Supply::Fungible {
                             amount: XRD_MAX_SUPPLY.into(),
                         },

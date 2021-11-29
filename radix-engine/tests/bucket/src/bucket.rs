@@ -5,7 +5,7 @@ blueprint! {
 
     impl BucketTest {
         fn create_test_token(amount: u32) -> Bucket {
-            ResourceBuilder::new_fungible()
+            ResourceBuilder::new_fungible(0)
                 .metadata("name", "TestToken")
                 .flags(FREELY_TRANSFERABLE)
                 .initial_supply(NewSupply::fungible(amount))

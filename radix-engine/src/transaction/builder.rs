@@ -248,9 +248,8 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
             blueprint: "System".to_owned(),
             function: "new_resource".to_owned(),
             args: vec![
-                SmartValue::from(ResourceType::Fungible),
+                SmartValue::from(ResourceType::Fungible { granularity: 0 }),
                 SmartValue::from(metadata),
-                SmartValue::from(1u8),
                 SmartValue::from(FREELY_TRANSFERABLE | MINTABLE | BURNABLE),
                 SmartValue::from(0u16),
                 SmartValue::from(Self::single_authority(
@@ -273,9 +272,8 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
             blueprint: "System".to_owned(),
             function: "new_resource".to_owned(),
             args: vec![
-                SmartValue::from(ResourceType::Fungible),
+                SmartValue::from(ResourceType::Fungible { granularity: 0 }),
                 SmartValue::from(metadata),
-                SmartValue::from(1u8),
                 SmartValue::from(FREELY_TRANSFERABLE | FREELY_BURNABLE),
                 SmartValue::from(0u16),
                 SmartValue::from(HashMap::<Address, u16>::new()),
@@ -297,9 +295,8 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
             blueprint: "System".to_owned(),
             function: "new_resource".to_owned(),
             args: vec![
-                SmartValue::from(ResourceType::Fungible),
+                SmartValue::from(ResourceType::Fungible { granularity: 18 }),
                 SmartValue::from(metadata),
-                SmartValue::from(19u8),
                 SmartValue::from(FREELY_TRANSFERABLE | MINTABLE | BURNABLE),
                 SmartValue::from(0u16),
                 SmartValue::from(Self::single_authority(
@@ -322,9 +319,8 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
             blueprint: "System".to_owned(),
             function: "new_resource".to_owned(),
             args: vec![
-                SmartValue::from(ResourceType::Fungible),
+                SmartValue::from(ResourceType::Fungible { granularity: 18 }),
                 SmartValue::from(metadata),
-                SmartValue::from(19u8),
                 SmartValue::from(FREELY_TRANSFERABLE | FREELY_BURNABLE),
                 SmartValue::from(0u16),
                 SmartValue::from(HashMap::<Address, u16>::new()),

@@ -17,7 +17,6 @@ blueprint! {
         pub fn new_resource(
             resource_type: ResourceType,
             metadata: HashMap<String, String>,
-            granularity: u8,
             flags: u16,
             mutable_flags: u16,
             authorities: HashMap<Address, u16>,
@@ -26,7 +25,6 @@ blueprint! {
             ResourceDef::new(
                 resource_type,
                 metadata,
-                granularity,
                 flags,
                 mutable_flags,
                 authorities,

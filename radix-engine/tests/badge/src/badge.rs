@@ -5,9 +5,8 @@ blueprint! {
 
     impl BadgeTest {
         fn create_test_badge(amount: u32) -> Bucket {
-            ResourceBuilder::new_fungible()
+            ResourceBuilder::new_fungible(18)
                 .metadata("name", "TestBadge")
-                .granularity(19)
                 .flags(FREELY_TRANSFERABLE)
                 .initial_supply(NewSupply::fungible(amount))
         }

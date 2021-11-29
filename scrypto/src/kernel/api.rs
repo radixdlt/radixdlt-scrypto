@@ -46,8 +46,6 @@ pub const BURN_RESOURCE: u32 = 0x32;
 pub const GET_RESOURCE_TYPE: u32 = 0x33;
 /// Get resource metadata
 pub const GET_RESOURCE_METADATA: u32 = 0x34;
-/// Get resource granularity
-pub const GET_RESOURCE_GRANULARITY: u32 = 0x35;
 /// Get resource supply
 pub const GET_RESOURCE_TOTAL_SUPPLY: u32 = 0x36;
 /// Get feature flags
@@ -242,7 +240,6 @@ pub struct PutLazyMapEntryOutput {}
 pub struct CreateResourceInput {
     pub resource_type: ResourceType,
     pub metadata: HashMap<String, String>,
-    pub granularity: u8,
     pub flags: u16,
     pub mutable_flags: u16,
     pub authorities: HashMap<Address, u16>,
@@ -294,16 +291,6 @@ pub struct GetResourceTypeInput {
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct GetResourceTypeOutput {
     pub resource_type: ResourceType,
-}
-
-#[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct GetResourceGranularityInput {
-    pub resource_def: Address,
-}
-
-#[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct GetResourceGranularityOutput {
-    pub granularity: u8,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]

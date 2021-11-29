@@ -6,8 +6,7 @@ blueprint! {
     impl NftTest {
         pub fn create_nft_mutable() -> (Bucket, ResourceDef, Bucket) {
             // Create a mint badge
-            let mint_badge = ResourceBuilder::new_fungible()
-                .granularity(19)
+            let mint_badge = ResourceBuilder::new_fungible(18)
                 .flags(FREELY_TRANSFERABLE)
                 .initial_supply(NewSupply::fungible(1));
 

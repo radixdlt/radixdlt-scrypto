@@ -40,12 +40,11 @@ blueprint! {
             );
 
             // Instantiate our LP token and mint an initial supply of them
-            let lp_mint_badge = ResourceBuilder::new_fungible()
-                .granularity(19)
+            let lp_mint_badge = ResourceBuilder::new_fungible(18)
                 .metadata("name", "LP Token Mint Auth")
                 .flags(FREELY_TRANSFERABLE)
                 .initial_supply(NewSupply::fungible(1));
-            let lp_resource_def = ResourceBuilder::new_fungible()
+            let lp_resource_def = ResourceBuilder::new_fungible(0)
                 .metadata("symbol", lp_symbol)
                 .metadata("name", lp_name)
                 .metadata("url", lp_url)

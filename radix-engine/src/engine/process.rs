@@ -139,7 +139,6 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         let mut collector = Bucket::new(
             resource_def,
             definition.resource_type(),
-            definition.granularity(),
             match definition.resource_type() {
                 ResourceType::Fungible { .. } => Supply::Fungible { amount: 0.into() },
                 ResourceType::NonFungible { .. } => Supply::NonFungible {
@@ -1077,7 +1076,6 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         let definition = ResourceDef::new(
             input.resource_type,
             input.metadata,
-            input.granularity,
             input.flags,
             input.mutable_flags,
             input.authorities,
@@ -1090,7 +1088,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         let bucket = if let Some(initial_supply) = input.initial_supply {
             let supply = self.allocate_resource(address, initial_supply)?;
 
-            let bucket = Bucket::new(address, input.resource_type, input.granularity, supply);
+            let bucket = Bucket::new(address, input.resource_type, supply);
             let bid = self.track.new_bid();
             self.buckets.insert(bid, bucket);
             Some(bid)
@@ -1134,23 +1132,6 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
 
         Ok(GetResourceTotalSupplyOutput {
             supply: resource_def.total_supply(),
-        })
-    }
-
-    fn handle_get_resource_granularity(
-        &mut self,
-        input: GetResourceGranularityInput,
-    ) -> Result<GetResourceGranularityOutput, RuntimeError> {
-        Self::expect_resource_address(input.resource_def)?;
-
-        let resource_def = self
-            .track
-            .get_resource_def(input.resource_def)
-            .ok_or(RuntimeError::ResourceDefNotFound(input.resource_def))?
-            .clone();
-
-        Ok(GetResourceGranularityOutput {
-            granularity: resource_def.granularity(),
         })
     }
 
@@ -1232,12 +1213,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
                 .map_err(RuntimeError::ResourceDefError)?;
 
             // wrap resource into a bucket
-            let bucket = Bucket::new(
-                input.resource_def,
-                definition.resource_type(),
-                definition.granularity(),
-                supply,
-            );
+            let bucket = Bucket::new(input.resource_def, definition.resource_type(), supply);
             let bid = self.track.new_bid();
             self.buckets.insert(bid, bucket);
             bid
@@ -1343,7 +1319,6 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
             Bucket::new(
                 input.resource_def,
                 definition.resource_type(),
-                definition.granularity(),
                 match definition.resource_type() {
                     ResourceType::Fungible { .. } => Supply::Fungible { amount: 0.into() },
                     ResourceType::NonFungible { .. } => Supply::NonFungible {
@@ -1479,7 +1454,6 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         let new_bucket = Bucket::new(
             input.resource_def,
             definition.resource_type(),
-            definition.granularity(),
             match definition.resource_type() {
                 ResourceType::Fungible { .. } => Supply::Fungible { amount: 0.into() },
                 ResourceType::NonFungible { .. } => Supply::NonFungible {
@@ -1768,9 +1742,6 @@ impl<'r, 'l, L: Ledger> Externals for Process<'r, 'l, L> {
                     GET_RESOURCE_METADATA => self.handle(args, Self::handle_get_resource_metadata),
                     GET_RESOURCE_TOTAL_SUPPLY => {
                         self.handle(args, Self::handle_get_resource_total_supply)
-                    }
-                    GET_RESOURCE_GRANULARITY => {
-                        self.handle(args, Self::handle_get_resource_granularity)
                     }
                     GET_RESOURCE_FLAGS => self.handle(args, Self::handle_get_resource_flags),
                     UPDATE_RESOURCE_FLAGS => {

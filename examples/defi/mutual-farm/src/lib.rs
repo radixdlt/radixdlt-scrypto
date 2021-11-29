@@ -496,8 +496,7 @@ blueprint! {
             usd_address: Address,
         ) -> (Bucket, Component) {
             debug!("Create an identity badge for accessing other components");
-            let identity_badge = ResourceBuilder::new_fungible()
-                .granularity(19)
+            let identity_badge = ResourceBuilder::new_fungible(18)
                 .metadata("name", "ID")
                 .initial_supply(NewSupply::fungible(1));
             let identity_badge_address = identity_badge.resource_address();
@@ -538,7 +537,7 @@ blueprint! {
             );
 
             debug!("Mint initial shares");
-            let mutual_farm_share_resource_def = ResourceBuilder::new_fungible()
+            let mutual_farm_share_resource_def = ResourceBuilder::new_fungible(0)
                 .metadata("name", "MutualFarm share")
                 .flags(FREELY_TRANSFERABLE | MINTABLE | BURNABLE)
                 .badge(identity_badge_address, MAY_MINT | MAY_BURN)
