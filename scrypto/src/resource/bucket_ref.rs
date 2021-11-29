@@ -58,7 +58,7 @@ impl BucketRef {
         };
         let output: GetBucketRefResourceDefOutput = call_kernel(GET_BUCKET_REF_RESOURCE_DEF, input);
 
-        output.resource_def.into()
+        output.resource_address.into()
     }
 
     /// Returns the resource definition address.

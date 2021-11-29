@@ -52,13 +52,16 @@ impl ResourceDef {
         };
         let output: CreateResourceOutput = call_kernel(CREATE_RESOURCE, input);
 
-        (output.resource_def.into(), output.bucket.map(Into::into))
+        (
+            output.resource_address.into(),
+            output.bucket.map(Into::into),
+        )
     }
 
     /// Mints fungible resources
     pub fn mint<T: Into<Decimal>>(&self, amount: T, auth: BucketRef) -> Bucket {
         let input = MintResourceInput {
-            resource_def: self.address,
+            resource_address: self.address,
             new_supply: NewSupply::Fungible {
                 amount: amount.into(),
             },
@@ -75,7 +78,7 @@ impl ResourceDef {
         entries.insert(id, scrypto_encode(&data));
 
         let input = MintResourceInput {
-            resource_def: self.address,
+            resource_address: self.address,
             new_supply: NewSupply::NonFungible { entries },
             auth: auth.into(),
         };
@@ -96,7 +99,7 @@ impl ResourceDef {
     /// Returns the resource type.
     pub fn resource_type(&self) -> ResourceType {
         let input = GetResourceTypeInput {
-            resource_def: self.address,
+            resource_address: self.address,
         };
         let output: GetResourceTypeOutput = call_kernel(GET_RESOURCE_TYPE, input);
 
@@ -106,7 +109,7 @@ impl ResourceDef {
     /// Returns the metadata associated with this resource.
     pub fn metadata(&self) -> HashMap<String, String> {
         let input = GetResourceMetadataInput {
-            resource_def: self.address,
+            resource_address: self.address,
         };
         let output: GetResourceMetadataOutput = call_kernel(GET_RESOURCE_METADATA, input);
 
@@ -116,7 +119,7 @@ impl ResourceDef {
     /// Returns the feature flags.
     pub fn flags(&self) -> u16 {
         let input = GetResourceFlagsInput {
-            resource_def: self.address,
+            resource_address: self.address,
         };
         let output: GetResourceFlagsOutput = call_kernel(GET_RESOURCE_FLAGS, input);
 
@@ -126,7 +129,7 @@ impl ResourceDef {
     /// Returns the mutable feature flags.
     pub fn mutable_flags(&self) -> u16 {
         let input = GetResourceMutableFlagsInput {
-            resource_def: self.address,
+            resource_address: self.address,
         };
         let output: GetResourceMutableFlagsOutput = call_kernel(GET_RESOURCE_MUTABLE_FLAGS, input);
 
@@ -136,7 +139,7 @@ impl ResourceDef {
     /// Returns the current supply of this resource.
     pub fn total_supply(&self) -> Decimal {
         let input = GetResourceTotalSupplyInput {
-            resource_def: self.address,
+            resource_address: self.address,
         };
         let output: GetResourceTotalSupplyOutput = call_kernel(GET_RESOURCE_TOTAL_SUPPLY, input);
 
@@ -154,7 +157,7 @@ impl ResourceDef {
     /// Panics if this is not an NFT resource or the specified NFT is not found.
     pub fn get_nft_data<T: Decode>(&self, id: u128) -> T {
         let input = GetNftDataInput {
-            resource_def: self.address,
+            resource_address: self.address,
             id,
         };
         let output: GetNftDataOutput = call_kernel(GET_NFT_DATA, input);
@@ -168,7 +171,7 @@ impl ResourceDef {
     /// Panics if this is not an NFT resource or the specified NFT is not found.
     pub fn update_nft_data<T: Encode>(&self, id: u128, data: T, auth: BucketRef) {
         let input = UpdateNftDataInput {
-            resource_def: self.address,
+            resource_address: self.address,
             id,
             data: scrypto_encode(&data),
             auth: auth.into(),

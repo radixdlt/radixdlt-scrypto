@@ -29,9 +29,8 @@ impl From<Bucket> for Bid {
 impl Bucket {
     /// Creates a new bucket to hold resources of the given definition.
     pub fn new<A: Into<ResourceDef>>(resource_def: A) -> Self {
-        let resource_def: ResourceDef = resource_def.into();
         let input = CreateEmptyBucketInput {
-            resource_def: resource_def.into(),
+            resource_address: resource_def.into().address(),
         };
         let output: CreateEmptyBucketOutput = call_kernel(CREATE_EMPTY_BUCKET, input);
 
@@ -79,7 +78,7 @@ impl Bucket {
         let input = GetBucketResourceAddressInput { bucket: self.bid };
         let output: GetBucketResourceAddressOutput = call_kernel(GET_BUCKET_RESOURCE_DEF, input);
 
-        output.resource_def.into()
+        output.resource_address.into()
     }
 
     /// Returns the resource definition address.

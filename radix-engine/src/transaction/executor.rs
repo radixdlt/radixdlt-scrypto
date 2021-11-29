@@ -183,17 +183,17 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
                 }
                 Instruction::TakeFromContext {
                     amount,
-                    resource_def,
+                    resource_address,
                     to,
                 } => proc
-                    .take_from_context(*amount, *resource_def, *to)
+                    .take_from_context(*amount, *resource_address, *to)
                     .map(|_| None),
                 Instruction::BorrowFromContext {
                     amount,
-                    resource_def,
+                    resource_address,
                     to,
                 } => proc
-                    .borrow_from_context(*amount, *resource_def, *to)
+                    .borrow_from_context(*amount, *resource_address, *to)
                     .map(|_| None),
                 Instruction::CallFunction {
                     package,

@@ -30,7 +30,7 @@ impl Vault {
     /// Creates an empty vault to permanently hold resource of the given definition.
     pub fn new<A: Into<ResourceDef>>(resource_def: A) -> Self {
         let input = CreateEmptyVaultInput {
-            resource_def: resource_def.into().address(),
+            resource_address: resource_def.into().address(),
         };
         let output: CreateEmptyVaultOutput = call_kernel(CREATE_EMPTY_VAULT, input);
 
@@ -82,7 +82,7 @@ impl Vault {
         let input = GetVaultResourceAddressInput { vault: self.vid };
         let output: GetVaultResourceAddressOutput = call_kernel(GET_VAULT_RESOURCE_DEF, input);
 
-        output.resource_def.into()
+        output.resource_address.into()
     }
 
     /// Returns the resource definition address.

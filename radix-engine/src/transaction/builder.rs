@@ -83,12 +83,12 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     pub fn take_from_context(
         &mut self,
         amount: Decimal,
-        resource_def: Address,
+        resource_address: Address,
         to: Bid,
     ) -> &mut Self {
         self.add_instruction(Instruction::TakeFromContext {
             amount,
-            resource_def,
+            resource_address,
             to,
         })
     }
@@ -97,12 +97,12 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     pub fn borrow_from_context(
         &mut self,
         amount: Decimal,
-        resource_def: Address,
+        resource_address: Address,
         rid: Rid,
     ) -> &mut Self {
         self.add_instruction(Instruction::BorrowFromContext {
             amount,
-            resource_def,
+            resource_address,
             to: rid,
         })
     }
@@ -335,7 +335,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     pub fn mint(
         &mut self,
         amount: Decimal,
-        resource_def: Address,
+        resource_address: Address,
         mint_badge_address: Address,
     ) -> &mut Self {
         self.declare_bucket_ref(|builder, rid| {
@@ -346,7 +346,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                 function: "mint".to_owned(),
                 args: vec![
                     SmartValue::from(amount),
-                    SmartValue::from(resource_def),
+                    SmartValue::from(resource_address),
                     SmartValue::from(rid),
                 ],
             })
@@ -370,10 +370,10 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         &mut self,
         key: Address,
         amount: Decimal,
-        resource_def: Address,
+        resource_address: Address,
     ) -> &mut Self {
         self.declare_bucket(|builder, bid| {
-            builder.take_from_context(amount, resource_def, bid);
+            builder.take_from_context(amount, resource_address, bid);
             builder.add_instruction(Instruction::CallFunction {
                 package: ACCOUNT_PACKAGE,
                 blueprint: "Account".to_owned(),

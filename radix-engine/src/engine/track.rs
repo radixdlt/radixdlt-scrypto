@@ -198,40 +198,40 @@ impl<'l, L: Ledger> Track<'l, L> {
     }
 
     /// Returns an immutable reference to a nft, if exists.
-    pub fn get_nft(&mut self, resource_def: Address, id: u128) -> Option<&Nft> {
-        if self.nfts.contains_key(&(resource_def, id)) {
-            return self.nfts.get(&(resource_def, id));
+    pub fn get_nft(&mut self, resource_address: Address, id: u128) -> Option<&Nft> {
+        if self.nfts.contains_key(&(resource_address, id)) {
+            return self.nfts.get(&(resource_address, id));
         }
 
-        if let Some(nft) = self.ledger.get_nft(resource_def, id) {
-            self.nfts.insert((resource_def, id), nft);
-            self.nfts.get(&(resource_def, id))
+        if let Some(nft) = self.ledger.get_nft(resource_address, id) {
+            self.nfts.insert((resource_address, id), nft);
+            self.nfts.get(&(resource_address, id))
         } else {
             None
         }
     }
 
     /// Returns a mutable reference to a nft, if exists.
-    pub fn get_nft_mut(&mut self, resource_def: Address, id: u128) -> Option<&mut Nft> {
-        self.updated_nfts.insert((resource_def, id));
+    pub fn get_nft_mut(&mut self, resource_address: Address, id: u128) -> Option<&mut Nft> {
+        self.updated_nfts.insert((resource_address, id));
 
-        if self.nfts.contains_key(&(resource_def, id)) {
-            return self.nfts.get_mut(&(resource_def, id));
+        if self.nfts.contains_key(&(resource_address, id)) {
+            return self.nfts.get_mut(&(resource_address, id));
         }
 
-        if let Some(nft) = self.ledger.get_nft(resource_def, id) {
-            self.nfts.insert((resource_def, id), nft);
-            self.nfts.get_mut(&(resource_def, id))
+        if let Some(nft) = self.ledger.get_nft(resource_address, id) {
+            self.nfts.insert((resource_address, id), nft);
+            self.nfts.get_mut(&(resource_address, id))
         } else {
             None
         }
     }
 
     /// Inserts a new nft.
-    pub fn put_nft(&mut self, resource_def: Address, id: u128, nft: Nft) {
-        self.updated_nfts.insert((resource_def, id));
+    pub fn put_nft(&mut self, resource_address: Address, id: u128, nft: Nft) {
+        self.updated_nfts.insert((resource_address, id));
 
-        self.nfts.insert((resource_def, id), nft);
+        self.nfts.insert((resource_address, id), nft);
     }
 
     /// Returns an immutable reference to a lazy map, if exists.

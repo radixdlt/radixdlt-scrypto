@@ -248,13 +248,13 @@ pub struct CreateResourceInput {
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct CreateResourceOutput {
-    pub resource_def: Address,
+    pub resource_address: Address,
     pub bucket: Option<Bid>,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct MintResourceInput {
-    pub resource_def: Address,
+    pub resource_address: Address,
     pub new_supply: NewSupply,
     pub auth: Rid,
 }
@@ -275,7 +275,7 @@ pub struct BurnResourceOutput {}
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct GetResourceMetadataInput {
-    pub resource_def: Address,
+    pub resource_address: Address,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
@@ -285,7 +285,7 @@ pub struct GetResourceMetadataOutput {
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct GetResourceTypeInput {
-    pub resource_def: Address,
+    pub resource_address: Address,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
@@ -295,7 +295,7 @@ pub struct GetResourceTypeOutput {
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct GetResourceTotalSupplyInput {
-    pub resource_def: Address,
+    pub resource_address: Address,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
@@ -305,7 +305,7 @@ pub struct GetResourceTotalSupplyOutput {
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct GetNftDataInput {
-    pub resource_def: Address,
+    pub resource_address: Address,
     pub id: u128,
 }
 
@@ -316,7 +316,7 @@ pub struct GetNftDataOutput {
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct UpdateNftDataInput {
-    pub resource_def: Address,
+    pub resource_address: Address,
     pub id: u128,
     pub data: Vec<u8>,
     pub auth: Rid,
@@ -327,7 +327,7 @@ pub struct UpdateNftDataOutput {}
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct GetResourceFlagsInput {
-    pub resource_def: Address,
+    pub resource_address: Address,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
@@ -337,7 +337,7 @@ pub struct GetResourceFlagsOutput {
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct UpdateResourceFlagsInput {
-    pub resource_def: Address,
+    pub resource_address: Address,
     pub new_flags: Address,
     pub auth: Rid,
 }
@@ -347,7 +347,7 @@ pub struct UpdateResourceFlagsOutput {}
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct GetResourceMutableFlagsInput {
-    pub resource_def: Address,
+    pub resource_address: Address,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
@@ -357,7 +357,7 @@ pub struct GetResourceMutableFlagsOutput {
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct UpdateResourceMutableFlagsInput {
-    pub resource_def: Address,
+    pub resource_address: Address,
     pub new_mutable_flags: Address,
     pub auth: Rid,
 }
@@ -371,7 +371,7 @@ pub struct UpdateResourceMutableFlagsOutput {}
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct CreateEmptyVaultInput {
-    pub resource_def: Address,
+    pub resource_address: Address,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
@@ -416,7 +416,7 @@ pub struct GetVaultResourceAddressInput {
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct GetVaultResourceAddressOutput {
-    pub resource_def: Address,
+    pub resource_address: Address,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
@@ -446,7 +446,7 @@ pub struct GetNftIdsInVaultOutput {
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct CreateEmptyBucketInput {
-    pub resource_def: Address,
+    pub resource_address: Address,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
@@ -491,7 +491,7 @@ pub struct GetBucketResourceAddressInput {
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct GetBucketResourceAddressOutput {
-    pub resource_def: Address,
+    pub resource_address: Address,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
@@ -554,7 +554,7 @@ pub struct GetBucketRefResourceDefInput {
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct GetBucketRefResourceDefOutput {
-    pub resource_def: Address,
+    pub resource_address: Address,
 }
 
 //=======
