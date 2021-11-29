@@ -5,8 +5,8 @@ use crate::ledger::*;
 use crate::resim::*;
 
 const ARG_AMOUNT: &str = "AMOUNT";
-const ARG_RESOURCE_DEF: &str = "RESOURCE_DEF";
-const ARG_RECIPIENT: &str = "RECIPIENT";
+const ARG_RESOURCE_ADDRESS: &str = "RESOURCE_ADDRESS";
+const ARG_RECIPIENT_ADDRESS: &str = "RECIPIENT_ADDRESS";
 
 const ARG_TRACE: &str = "TRACE";
 const ARG_SIGNERS: &str = "SIGNERS";
@@ -22,12 +22,12 @@ pub fn make_transfer<'a, 'b>() -> App<'a, 'b> {
                 .required(true),
         )
         .arg(
-            Arg::with_name(ARG_RESOURCE_DEF)
+            Arg::with_name(ARG_RESOURCE_ADDRESS)
                 .help("Specify the resource definition address.")
                 .required(true),
         )
         .arg(
-            Arg::with_name(ARG_RECIPIENT)
+            Arg::with_name(ARG_RECIPIENT_ADDRESS)
                 .help("Specify the recipient address.")
                 .required(true),
         )
@@ -48,8 +48,8 @@ pub fn make_transfer<'a, 'b>() -> App<'a, 'b> {
 /// Handles a `transfer` request.
 pub fn handle_transfer(matches: &ArgMatches) -> Result<(), Error> {
     let amount = match_amount(matches, ARG_AMOUNT)?;
-    let resource_def = match_address(matches, ARG_RESOURCE_DEF)?;
-    let recipient = match_address(matches, ARG_RECIPIENT)?;
+    let resource_address = match_address(matches, ARG_RESOURCE_ADDRESS)?;
+    let recipient = match_address(matches, ARG_RECIPIENT_ADDRESS)?;
     let trace = matches.is_present(ARG_TRACE);
     let signers = match_signers(matches, ARG_SIGNERS)?;
 
@@ -61,7 +61,7 @@ pub fn handle_transfer(matches: &ArgMatches) -> Result<(), Error> {
         .withdraw_from_account(
             &ResourceSpec::Fungible {
                 amount: amount,
-                resource_address: resource_def,
+                resource_address: resource_address,
             },
             account.0,
         )

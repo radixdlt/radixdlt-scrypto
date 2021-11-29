@@ -35,10 +35,10 @@ pub fn dump_component<T: Ledger>(address: Address, ledger: &T) -> Result<(), Dis
             println!("{}: {}", "Component".green().bold(), address.to_string());
 
             println!(
-                "{}: {{ package: {}, name: {} }}",
+                "{}: {{ package address: {}, blueprint name: \"{}\" }}",
                 "Blueprint".green().bold(),
-                c.package(),
-                c.name()
+                c.package_address(),
+                c.blueprint_name()
             );
             let mut vaults = vec![];
             println!(
@@ -62,12 +62,12 @@ pub fn dump_component<T: Ledger>(address: Address, ledger: &T) -> Result<(), Dis
                     resource_def
                         .metadata()
                         .get("name")
-                        .map(|name| format!(", name: {}", name))
+                        .map(|name| format!(", name: \"{}\"", name))
                         .unwrap_or(String::new()),
                     resource_def
                         .metadata()
                         .get("symbol")
-                        .map(|symbol| format!(", symbol: {}", symbol))
+                        .map(|symbol| format!(", symbol: \"{}\"", symbol))
                         .unwrap_or(String::new()),
                 );
                 if let Supply::NonFungible { ids } = vault.total_supply(Actor::SuperUser).unwrap() {

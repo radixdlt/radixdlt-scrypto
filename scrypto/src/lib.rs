@@ -1,8 +1,7 @@
 //! # The Scrypto Standard Library
 //!
-//! The Scrypto Standard Library is the foundation of Scrypto apps, a
+//! The Scrypto Standard Library is the foundation of Scrypto blueprints, a
 //! set of minimal and shared abstractions for the Radix ecosystem.
-//! It offers primitive types, core abstractions and resource constructs.
 //!
 //! If you know the name of what you're looking for, the fastest way to find
 //! it is to use the <a href="#" onclick="focusSearchBar();">search

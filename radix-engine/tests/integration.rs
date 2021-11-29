@@ -86,7 +86,7 @@ fn test_component() {
         .call_function(
             package,
             "ComponentTest",
-            "get_component_blueprint",
+            "get_component_info",
             vec![component.to_string()],
             Some(account),
         )

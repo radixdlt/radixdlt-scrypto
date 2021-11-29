@@ -1,5 +1,7 @@
-/// Unwrap a result and abort if it's a failure. Different from the normal
-/// unwrap, this function does not dump the error details (for better performance).
+/// Unwrap a result and abort if it's a failure.
+///
+/// Different from the normal `Result::unwrap()`, this function does not dump
+/// the error details.
 pub fn scrypto_unwrap<T, E>(res: Result<T, E>) -> T {
     match res {
         Ok(v) => v,

@@ -11,14 +11,14 @@ impl Context {
     pub fn package_address() -> Address {
         let input = GetPackageAddressInput {};
         let output: GetPackageAddressOutput = call_kernel(GET_PACKAGE_ADDRESS, input);
-        output.address
+        output.package_address
     }
 
     /// Returns the transaction hash.
     pub fn transaction_hash() -> H256 {
         let input = GetTransactionHashInput {};
         let output: GetTransactionHashOutput = call_kernel(GET_TRANSACTION_HASH, input);
-        output.tx_hash
+        output.transaction_hash
     }
 
     /// Returns the current epoch.
@@ -32,6 +32,6 @@ impl Context {
     pub fn transaction_signers() -> Vec<Address> {
         let input = GetTransactionSignersInput {};
         let output: GetTransactionSignersOutput = call_kernel(GET_TRANSACTION_SIGNERS, input);
-        output.tx_signers
+        output.transaction_signers
     }
 }

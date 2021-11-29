@@ -6,7 +6,7 @@ use crate::rust::borrow::ToOwned;
 use crate::rust::vec;
 use crate::types::*;
 
-/// A collection of blueprints, compiles and published as a single unit.
+/// A collection of blueprints, compiled and published as a single unit.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Package {
     address: Address,
@@ -35,7 +35,7 @@ impl Package {
         };
         let output: PublishPackageOutput = call_kernel(PUBLISH_PACKAGE, input);
 
-        output.package.into()
+        output.package_address.into()
     }
 
     pub fn address(&self) -> Address {

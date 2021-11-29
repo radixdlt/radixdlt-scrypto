@@ -23,8 +23,8 @@ impl IdAllocator {
     }
 
     /// Creates a new package address.
-    pub fn new_package_address(&mut self, tx_hash: H256) -> Address {
-        let mut data = tx_hash.as_ref().to_vec();
+    pub fn new_package_address(&mut self, transaction_hash: H256) -> Address {
+        let mut data = transaction_hash.as_ref().to_vec();
         data.extend(self.count.to_le_bytes());
         self.count += 1;
 
@@ -33,8 +33,8 @@ impl IdAllocator {
     }
 
     /// Creates a new component address.
-    pub fn new_component_address(&mut self, tx_hash: H256) -> Address {
-        let mut data = tx_hash.as_ref().to_vec();
+    pub fn new_component_address(&mut self, transaction_hash: H256) -> Address {
+        let mut data = transaction_hash.as_ref().to_vec();
         data.extend(self.count.to_le_bytes());
         self.count += 1;
 
@@ -43,8 +43,8 @@ impl IdAllocator {
     }
 
     /// Creates a new resource def address.
-    pub fn new_resource_address(&mut self, tx_hash: H256) -> Address {
-        let mut data = tx_hash.as_ref().to_vec();
+    pub fn new_resource_address(&mut self, transaction_hash: H256) -> Address {
+        let mut data = transaction_hash.as_ref().to_vec();
         data.extend(self.count.to_le_bytes());
         self.count += 1;
 
@@ -53,8 +53,8 @@ impl IdAllocator {
     }
 
     /// Creates a new UUID.
-    pub fn new_uuid(&mut self, tx_hash: H256) -> u128 {
-        let mut data = tx_hash.as_ref().to_vec();
+    pub fn new_uuid(&mut self, transaction_hash: H256) -> u128 {
+        let mut data = transaction_hash.as_ref().to_vec();
         data.extend(self.count.to_le_bytes());
         self.count += 1;
 
@@ -71,9 +71,9 @@ impl IdAllocator {
     }
 
     /// Creates a new vault ID.
-    pub fn new_vid(&mut self, tx_hash: H256) -> Vid {
+    pub fn new_vid(&mut self, transaction_hash: H256) -> Vid {
         self.count += 1;
-        Vid(tx_hash, self.count - 1)
+        Vid(transaction_hash, self.count - 1)
     }
 
     /// Creates a new bucket ref ID.
@@ -83,9 +83,9 @@ impl IdAllocator {
     }
 
     /// Creates a new lazy map ID.
-    pub fn new_mid(&mut self, tx_hash: H256) -> Mid {
+    pub fn new_mid(&mut self, transaction_hash: H256) -> Mid {
         self.count += 1;
-        Mid(tx_hash, self.count - 1)
+        Mid(transaction_hash, self.count - 1)
     }
 }
 

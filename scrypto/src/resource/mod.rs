@@ -4,7 +4,10 @@ mod resource_builder;
 mod resource_def;
 mod vault;
 
+/// Resource feature flags.
 pub mod resource_flags;
+
+/// Various resource permissions.
 pub mod resource_permissions;
 
 pub use bucket::Bucket;

@@ -9,7 +9,7 @@ use crate::rust::vec::Vec;
 use crate::types::*;
 use crate::utils::*;
 
-/// A template that describes shared structure and behavior.
+/// A template that describes a shared structure and behavior, like class in Java.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Blueprint {
     package: Package,

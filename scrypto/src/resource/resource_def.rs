@@ -71,7 +71,7 @@ impl ResourceDef {
         };
         let output: MintResourceOutput = call_kernel(MINT_RESOURCE, input);
 
-        output.bucket.into()
+        output.bid.into()
     }
 
     /// Mints non-fungible resources
@@ -86,13 +86,13 @@ impl ResourceDef {
         };
         let output: MintResourceOutput = call_kernel(MINT_RESOURCE, input);
 
-        output.bucket.into()
+        output.bid.into()
     }
 
     /// Burns a bucket of resources.
     pub fn burn(&self, bucket: Bucket, auth: Option<BucketRef>) {
         let input = BurnResourceInput {
-            bucket: bucket.into(),
+            bid: bucket.into(),
             auth: auth.map(Into::into),
         };
         let _output: BurnResourceOutput = call_kernel(BURN_RESOURCE, input);
@@ -145,7 +145,7 @@ impl ResourceDef {
         };
         let output: GetResourceTotalSupplyOutput = call_kernel(GET_RESOURCE_TOTAL_SUPPLY, input);
 
-        output.supply
+        output.total_supply
     }
 
     /// Returns the address of this resource.

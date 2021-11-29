@@ -7,7 +7,7 @@ use crate::rust::vec;
 use crate::rust::vec::Vec;
 use crate::types::*;
 
-/// Represents a lazy_map id.
+/// Represents a lazy map id.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Mid(pub H256, pub u32);
 

@@ -14,30 +14,28 @@ pub enum ComponentError {
 /// A component is an instance of blueprint.
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct Component {
-    package: Address,
-    name: String,
+    package_address: Address,
+    blueprint_name: String,
     state: Vec<u8>,
     authority: Address,
 }
 
 impl Component {
-    pub fn new(package: Address, name: String, state: Vec<u8>) -> Self {
-        assert!(package.is_package());
-
+    pub fn new(package_address: Address, blueprint_name: String, state: Vec<u8>) -> Self {
         Self {
-            package,
-            name,
+            package_address,
+            blueprint_name,
             state,
-            authority: package,
+            authority: package_address,
         }
     }
 
-    pub fn package(&self) -> Address {
-        self.package
+    pub fn package_address(&self) -> Address {
+        self.package_address
     }
 
-    pub fn name(&self) -> &str {
-        &self.name
+    pub fn blueprint_name(&self) -> &str {
+        &self.blueprint_name
     }
 
     pub fn state(&self, actor: Actor) -> Result<&[u8], ComponentError> {

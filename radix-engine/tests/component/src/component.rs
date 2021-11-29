@@ -22,7 +22,7 @@ blueprint! {
             .instantiate()
         }
 
-        pub fn get_component_blueprint(address: Address) -> Blueprint {
+        pub fn get_component_info(address: Address) -> Blueprint {
             Component::from(address).blueprint()
         }
 

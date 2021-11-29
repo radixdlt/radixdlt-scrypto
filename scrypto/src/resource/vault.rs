@@ -34,7 +34,7 @@ impl Vault {
         };
         let output: CreateEmptyVaultOutput = call_kernel(CREATE_EMPTY_VAULT, input);
 
-        output.vault.into()
+        output.vid.into()
     }
 
     /// Creates an empty vault and fills it with an initial bucket of resources.
@@ -45,10 +45,10 @@ impl Vault {
     }
 
     /// Puts a bucket of resources into this vault.
-    pub fn put(&self, other: Bucket) {
+    pub fn put(&self, bucket: Bucket) {
         let input = PutIntoVaultInput {
-            vault: self.vid,
-            bucket: other.into(),
+            vid: self.vid,
+            bid: bucket.into(),
         };
         let _: PutIntoVaultOutput = call_kernel(PUT_INTO_VAULT, input);
     }
@@ -68,13 +68,13 @@ impl Vault {
     /// ```
     pub fn take<A: Into<Decimal>>(&self, amount: A, auth: Option<BucketRef>) -> Bucket {
         let input = TakeFromVaultInput {
-            vault: self.vid,
+            vid: self.vid,
             amount: amount.into(),
             auth: auth.map(Into::into),
         };
         let output: TakeFromVaultOutput = call_kernel(TAKE_FROM_VAULT, input);
 
-        output.bucket.into()
+        output.bid.into()
     }
 
     /// Takes all resource stored in this vault.
@@ -88,13 +88,13 @@ impl Vault {
     /// Panics if this is not an NFT vault or the specified NFT is not found.
     pub fn take_nft(&self, id: u128, auth: Option<BucketRef>) -> Bucket {
         let input = TakeNftFromVaultInput {
-            vault: self.vid,
+            vid: self.vid,
             id,
             auth: auth.map(Into::into),
         };
         let output: TakeNftFromVaultOutput = call_kernel(TAKE_NFT_FROM_VAULT, input);
 
-        output.bucket.into()
+        output.bid.into()
     }
 
     /// This is a convenience method for using the contained resource for authorization.
@@ -122,7 +122,7 @@ impl Vault {
 
     /// Returns the amount of resources within this vault.
     pub fn amount(&self) -> Decimal {
-        let input = GetVaultDecimalInput { vault: self.vid };
+        let input = GetVaultDecimalInput { vid: self.vid };
         let output: GetVaultDecimalOutput = call_kernel(GET_VAULT_AMOUNT, input);
 
         output.amount
@@ -130,7 +130,7 @@ impl Vault {
 
     /// Returns the resource definition of resources within this vault.
     pub fn resource_def(&self) -> ResourceDef {
-        let input = GetVaultResourceAddressInput { vault: self.vid };
+        let input = GetVaultResourceAddressInput { vid: self.vid };
         let output: GetVaultResourceAddressOutput = call_kernel(GET_VAULT_RESOURCE_DEF, input);
 
         output.resource_address.into()
@@ -151,7 +151,7 @@ impl Vault {
     /// # Panics
     /// Panics if this is not an NFT vault.
     pub fn get_nft_ids(&self) -> BTreeSet<u128> {
-        let input = GetNftIdsInVaultInput { vault: self.vid };
+        let input = GetNftIdsInVaultInput { vid: self.vid };
         let output: GetNftIdsInVaultOutput = call_kernel(GET_NFT_IDS_IN_VAULT, input);
 
         output.ids

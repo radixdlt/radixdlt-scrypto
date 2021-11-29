@@ -13,10 +13,10 @@ pub const FREELY_BURNABLE: u16 = 1u16 << 3;
 /// New supply can be minted.
 pub const MINTABLE: u16 = 1u16 << 4;
 
-/// Resource can be seized from any vault if proper authorization is presented.
+/// Resource can be seized from any vault if proper authority is presented.
 pub const RECALLABLE: u16 = 1u16 << 5;
 
-/// Top-level metadata can be changed.
+/// Top-level resource metadata can be changed.
 pub const SHARED_METADATA_MUTABLE: u16 = 1u16 << 6;
 
 /// The mutable data part of an individual NFT can be modified.

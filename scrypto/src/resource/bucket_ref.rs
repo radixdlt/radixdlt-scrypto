@@ -43,9 +43,7 @@ impl BucketRef {
 
     /// Returns the resource amount within the bucket.
     pub fn amount(&self) -> Decimal {
-        let input = GetBucketRefDecimalInput {
-            bucket_ref: self.rid,
-        };
+        let input = GetBucketRefDecimalInput { rid: self.rid };
         let output: GetBucketRefDecimalOutput = call_kernel(GET_BUCKET_REF_AMOUNT, input);
 
         output.amount
@@ -53,10 +51,9 @@ impl BucketRef {
 
     /// Returns the resource definition of resources within the bucket.
     pub fn resource_def(&self) -> ResourceDef {
-        let input = GetBucketRefResourceDefInput {
-            bucket_ref: self.rid,
-        };
-        let output: GetBucketRefResourceDefOutput = call_kernel(GET_BUCKET_REF_RESOURCE_DEF, input);
+        let input = GetBucketRefResourceAddressInput { rid: self.rid };
+        let output: GetBucketRefResourceAddressOutput =
+            call_kernel(GET_BUCKET_REF_RESOURCE_DEF, input);
 
         output.resource_address.into()
     }
@@ -68,9 +65,7 @@ impl BucketRef {
 
     /// Destroys this reference.
     pub fn drop(self) {
-        let input = DropBucketRefInput {
-            bucket_ref: self.rid,
-        };
+        let input = DropBucketRefInput { rid: self.rid };
         let _: DropBucketRefOutput = call_kernel(DROP_BUCKET_REF, input);
     }
 

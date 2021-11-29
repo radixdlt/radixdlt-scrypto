@@ -23,7 +23,7 @@ pub const CALL_METHOD: u32 = 0x02;
 /// Create a component
 pub const CREATE_COMPONENT: u32 = 0x10;
 /// Retrieve component information
-pub const GET_COMPONENT_BLUEPRINT: u32 = 0x11;
+pub const GET_COMPONENT_INFO: u32 = 0x11;
 /// Retrieve component state
 pub const GET_COMPONENT_STATE: u32 = 0x12;
 /// Update component state
@@ -47,19 +47,19 @@ pub const GET_RESOURCE_TYPE: u32 = 0x33;
 /// Get resource metadata
 pub const GET_RESOURCE_METADATA: u32 = 0x34;
 /// Get resource supply
-pub const GET_RESOURCE_TOTAL_SUPPLY: u32 = 0x36;
+pub const GET_RESOURCE_TOTAL_SUPPLY: u32 = 0x35;
 /// Get feature flags
-pub const GET_RESOURCE_FLAGS: u32 = 0x37;
+pub const GET_RESOURCE_FLAGS: u32 = 0x36;
 /// Update feature flags
-pub const UPDATE_RESOURCE_FLAGS: u32 = 0x38;
+pub const UPDATE_RESOURCE_FLAGS: u32 = 0x37;
 /// Get mutable feature flags
-pub const GET_RESOURCE_MUTABLE_FLAGS: u32 = 0x39;
+pub const GET_RESOURCE_MUTABLE_FLAGS: u32 = 0x38;
 /// Update mutable feature flags
-pub const UPDATE_RESOURCE_MUTABLE_FLAGS: u32 = 0x3a;
+pub const UPDATE_RESOURCE_MUTABLE_FLAGS: u32 = 0x39;
 /// Get the data of an NFT
-pub const GET_NFT_DATA: u32 = 0x3b;
+pub const GET_NFT_DATA: u32 = 0x3a;
 /// Update the data of an NFT
-pub const UPDATE_NFT_DATA: u32 = 0x3c;
+pub const UPDATE_NFT_DATA: u32 = 0x3b;
 
 /// Create an empty vault
 pub const CREATE_EMPTY_VAULT: u32 = 0x40;
@@ -74,7 +74,7 @@ pub const GET_VAULT_RESOURCE_DEF: u32 = 0x44;
 /// Take an NFT from this vault, by id
 pub const TAKE_NFT_FROM_VAULT: u32 = 0x45;
 /// Get the IDs of all NFTs in this vault
-pub const GET_NFT_IDS_IN_VAULT: u32 = 0x48;
+pub const GET_NFT_IDS_IN_VAULT: u32 = 0x46;
 
 /// Create an empty bucket
 pub const CREATE_EMPTY_BUCKET: u32 = 0x50;
@@ -89,7 +89,7 @@ pub const GET_BUCKET_RESOURCE_DEF: u32 = 0x54;
 /// Take an NFT from this bucket, by id
 pub const TAKE_NFT_FROM_BUCKET: u32 = 0x55;
 /// Get the IDs of all NFTs in this bucket
-pub const GET_NFT_IDS_IN_BUCKET: u32 = 0x58;
+pub const GET_NFT_IDS_IN_BUCKET: u32 = 0x56;
 
 /// Obtain a bucket ref
 pub const CREATE_BUCKET_REF: u32 = 0x60;
@@ -106,13 +106,13 @@ pub const EMIT_LOG: u32 = 0xf0;
 pub const GET_PACKAGE_ADDRESS: u32 = 0xf1;
 /// Retrieve call data
 pub const GET_CALL_DATA: u32 = 0xf2;
-/// Retrieve transaction hash
-pub const GET_TRANSACTION_HASH: u32 = 0xf3;
 /// Retrieve current current_epoch
-pub const GET_CURRENT_EPOCH: u32 = 0xf4;
+pub const GET_CURRENT_EPOCH: u32 = 0xf3;
+/// Retrieve transaction hash
+pub const GET_TRANSACTION_HASH: u32 = 0xf4;
 /// Retrieve transaction signers
 pub const GET_TRANSACTION_SIGNERS: u32 = 0xf5;
-/// Generates an UUID
+/// Generate an UUID
 pub const GENERATE_UUID: u32 = 0xf6;
 
 //==========
@@ -126,12 +126,12 @@ pub struct PublishPackageInput {
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct PublishPackageOutput {
-    pub package: Address,
+    pub package_address: Address,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct CallFunctionInput {
-    pub package: Address,
+    pub package_address: Address,
     pub blueprint_name: String,
     pub function: String,
     pub args: Vec<Vec<u8>>,
@@ -144,7 +144,7 @@ pub struct CallFunctionOutput {
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct CallMethodInput {
-    pub component: Address,
+    pub component_address: Address,
     pub method: String,
     pub args: Vec<Vec<u8>>,
 }
@@ -166,23 +166,23 @@ pub struct CreateComponentInput {
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct CreateComponentOutput {
-    pub component: Address,
+    pub component_address: Address,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct GetComponentBlueprintInput {
-    pub component: Address,
+pub struct GetComponentInfoInput {
+    pub component_address: Address,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct GetComponentBlueprintOutput {
-    pub package: Address,
-    pub name: String,
+pub struct GetComponentInfoOutput {
+    pub package_address: Address,
+    pub blueprint_name: String,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct GetComponentStateInput {
-    pub component: Address,
+    pub component_address: Address,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
@@ -192,7 +192,7 @@ pub struct GetComponentStateOutput {
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct PutComponentStateInput {
-    pub component: Address,
+    pub component_address: Address,
     pub state: Vec<u8>,
 }
 
@@ -208,12 +208,12 @@ pub struct CreateLazyMapInput {}
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct CreateLazyMapOutput {
-    pub lazy_map: Mid,
+    pub mid: Mid,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct GetLazyMapEntryInput {
-    pub lazy_map: Mid,
+    pub mid: Mid,
     pub key: Vec<u8>,
 }
 
@@ -224,7 +224,7 @@ pub struct GetLazyMapEntryOutput {
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct PutLazyMapEntryInput {
-    pub lazy_map: Mid,
+    pub mid: Mid,
     pub key: Vec<u8>,
     pub value: Vec<u8>,
 }
@@ -261,12 +261,12 @@ pub struct MintResourceInput {
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct MintResourceOutput {
-    pub bucket: Bid,
+    pub bid: Bid,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct BurnResourceInput {
-    pub bucket: Bid,
+    pub bid: Bid,
     pub auth: Option<Rid>,
 }
 
@@ -300,7 +300,7 @@ pub struct GetResourceTotalSupplyInput {
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct GetResourceTotalSupplyOutput {
-    pub supply: Decimal,
+    pub total_supply: Decimal,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
@@ -376,13 +376,13 @@ pub struct CreateEmptyVaultInput {
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct CreateEmptyVaultOutput {
-    pub vault: Vid,
+    pub vid: Vid,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct PutIntoVaultInput {
-    pub vault: Vid,
-    pub bucket: Bid,
+    pub vid: Vid,
+    pub bid: Bid,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
@@ -390,19 +390,19 @@ pub struct PutIntoVaultOutput {}
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct TakeFromVaultInput {
-    pub vault: Vid,
+    pub vid: Vid,
     pub amount: Decimal,
     pub auth: Option<Rid>,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct TakeFromVaultOutput {
-    pub bucket: Bid,
+    pub bid: Bid,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct GetVaultDecimalInput {
-    pub vault: Vid,
+    pub vid: Vid,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
@@ -412,7 +412,7 @@ pub struct GetVaultDecimalOutput {
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct GetVaultResourceAddressInput {
-    pub vault: Vid,
+    pub vid: Vid,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
@@ -422,19 +422,19 @@ pub struct GetVaultResourceAddressOutput {
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct TakeNftFromVaultInput {
-    pub vault: Vid,
+    pub vid: Vid,
     pub id: u128,
     pub auth: Option<Rid>,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct TakeNftFromVaultOutput {
-    pub bucket: Bid,
+    pub bid: Bid,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct GetNftIdsInVaultInput {
-    pub vault: Vid,
+    pub vid: Vid,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
@@ -453,12 +453,12 @@ pub struct CreateEmptyBucketInput {
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct CreateEmptyBucketOutput {
-    pub bucket: Bid,
+    pub bid: Bid,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct PutIntoBucketInput {
-    pub bucket: Bid,
+    pub bid: Bid,
     pub other: Bid,
 }
 
@@ -467,18 +467,18 @@ pub struct PutIntoBucketOutput {}
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct TakeFromBucketInput {
-    pub bucket: Bid,
+    pub bid: Bid,
     pub amount: Decimal,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct TakeFromBucketOutput {
-    pub bucket: Bid,
+    pub bid: Bid,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct GetBucketDecimalInput {
-    pub bucket: Bid,
+    pub bid: Bid,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
@@ -488,7 +488,7 @@ pub struct GetBucketDecimalOutput {
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct GetBucketResourceAddressInput {
-    pub bucket: Bid,
+    pub bid: Bid,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
@@ -498,18 +498,18 @@ pub struct GetBucketResourceAddressOutput {
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct TakeNftFromBucketInput {
-    pub bucket: Bid,
+    pub bid: Bid,
     pub id: u128,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct TakeNftFromBucketOutput {
-    pub bucket: Bid,
+    pub bid: Bid,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct GetNftIdsInBucketInput {
-    pub bucket: Bid,
+    pub bid: Bid,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
@@ -523,17 +523,17 @@ pub struct GetNftIdsInBucketOutput {
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct CreateBucketRefInput {
-    pub bucket: Bid,
+    pub bid: Bid,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct CreateBucketRefOutput {
-    pub bucket_ref: Rid,
+    pub rid: Rid,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct DropBucketRefInput {
-    pub bucket_ref: Rid,
+    pub rid: Rid,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
@@ -541,7 +541,7 @@ pub struct DropBucketRefOutput {}
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct GetBucketRefDecimalInput {
-    pub bucket_ref: Rid,
+    pub rid: Rid,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
@@ -550,12 +550,12 @@ pub struct GetBucketRefDecimalOutput {
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct GetBucketRefResourceDefInput {
-    pub bucket_ref: Rid,
+pub struct GetBucketRefResourceAddressInput {
+    pub rid: Rid,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct GetBucketRefResourceDefOutput {
+pub struct GetBucketRefResourceAddressOutput {
     pub resource_address: Address,
 }
 
@@ -577,7 +577,7 @@ pub struct GetPackageAddressInput {}
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct GetPackageAddressOutput {
-    pub address: Address,
+    pub package_address: Address,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
@@ -590,14 +590,6 @@ pub struct GetCallDataOutput {
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct GetTransactionHashInput {}
-
-#[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct GetTransactionHashOutput {
-    pub tx_hash: H256,
-}
-
-#[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct GetCurrentEpochInput {}
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
@@ -606,11 +598,19 @@ pub struct GetCurrentEpochOutput {
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
+pub struct GetTransactionHashInput {}
+
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
+pub struct GetTransactionHashOutput {
+    pub transaction_hash: H256,
+}
+
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct GetTransactionSignersInput {}
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct GetTransactionSignersOutput {
-    pub tx_signers: Vec<Address>,
+    pub transaction_signers: Vec<Address>,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]

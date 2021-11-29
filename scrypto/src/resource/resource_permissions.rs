@@ -19,5 +19,5 @@ pub const MAY_CHANGE_INDIVIDUAL_METADATA: u16 = 1u16 << 7;
 /// May change mutable flags.
 pub const MAY_CHANGE_FLAGS: u16 = 1u16 << 7;
 
-/// All resources permissions.
+/// All permissions.
 pub const ALL_PERMISSIONS: u16 = !0u16;
