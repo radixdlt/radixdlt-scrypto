@@ -8,7 +8,7 @@ blueprint! {
             ResourceBuilder::new_fungible(0)
                 .metadata("name", "TestToken")
                 .flags(FREELY_TRANSFERABLE | FREELY_BURNABLE)
-                .initial_supply(NewSupply::fungible(amount))
+                .initial_supply_fungible(amount)
         }
 
         pub fn combine() -> Bucket {

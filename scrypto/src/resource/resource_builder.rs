@@ -1,3 +1,5 @@
+use sbor::*;
+
 use crate::kernel::*;
 use crate::resource::*;
 use crate::rust::borrow::ToOwned;
@@ -72,6 +74,21 @@ impl ResourceBuilder {
     /// Creates resource with the given initial supply.
     pub fn initial_supply(&self, supply: NewSupply) -> Bucket {
         self.build(Some(supply)).1.unwrap()
+    }
+
+    /// Creates resource with the given initial fungible supply.
+    pub fn initial_supply_fungible<T: Into<Decimal>>(&self, amount: T) -> Bucket {
+        self.build(Some(NewSupply::fungible(amount))).1.unwrap()
+    }
+
+    /// Creates resource with the given initial non-fungible supply.
+    pub fn initial_supply_non_fungible<T: Encode, const N: usize>(
+        &self,
+        entries: [(u128, T); N],
+    ) -> Bucket {
+        self.build(Some(NewSupply::non_fungible(entries)))
+            .1
+            .unwrap()
     }
 
     /// Creates resource with no initial supply.

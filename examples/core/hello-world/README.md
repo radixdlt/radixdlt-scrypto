@@ -61,7 +61,7 @@ let my_bucket: Bucket = ResourceBuilder::new_fungible(0)
     .metadata("name", "HelloToken")
     .metadata("symbol", "HT")
     .flags(FREELY_TRANSFERABLE | FREELY_BURNABLE)
-    .initial_supply(NewSupply::fungible(1000));
+    .initial_supply_fungible(1000);
 ```
 
 Once created, the resource is held in transient container `my_bucket`. To permanently store the created resource, we need to put it into a `Vault` like in the example:

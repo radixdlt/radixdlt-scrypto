@@ -499,7 +499,7 @@ blueprint! {
             let identity_badge = ResourceBuilder::new_fungible(18)
                 .metadata("name", "ID")
                 .flags(FREELY_TRANSFERABLE | FREELY_BURNABLE)
-                .initial_supply(NewSupply::fungible(1));
+                .initial_supply_fungible(1);
             let identity_badge_address = identity_badge.resource_address();
 
             debug!("Fetch price info from oracle");

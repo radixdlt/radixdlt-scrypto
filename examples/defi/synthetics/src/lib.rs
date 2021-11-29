@@ -138,7 +138,7 @@ blueprint! {
             let synthetics_mint_badge = ResourceBuilder::new_fungible(18)
                 .metadata("name", "Synthetics Mint Badge")
                 .flags(FREELY_TRANSFERABLE | FREELY_BURNABLE)
-                .initial_supply(NewSupply::fungible(1));
+                .initial_supply_fungible(1);
             let synthetics_global_debt_share_resource_def = ResourceBuilder::new_fungible(0)
                 .metadata("name", "Synthetics Global Debt")
                 .flags(FREELY_TRANSFERABLE | MINTABLE | BURNABLE)
@@ -311,7 +311,7 @@ blueprint! {
             ResourceBuilder::new_fungible(18)
                 .metadata("name", "Synthetic Pool User Badge")
                 .flags(FREELY_TRANSFERABLE | FREELY_BURNABLE)
-                .initial_supply(NewSupply::fungible(1))
+                .initial_supply_fungible(1)
         }
 
         /// Parse user id from a bucket ref.

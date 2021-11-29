@@ -16,7 +16,7 @@ blueprint! {
                 .metadata("name", "HelloToken")
                 .metadata("symbol", "HT")
                 .flags(FREELY_TRANSFERABLE | FREELY_BURNABLE)
-                .initial_supply(NewSupply::fungible(1000));
+                .initial_supply_fungible(1000);
 
             // Instantiate a Hello component, populating its vault with our supply of 1000 HelloToken
             Self {

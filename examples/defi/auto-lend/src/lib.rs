@@ -52,7 +52,7 @@ blueprint! {
             ResourceBuilder::new_fungible(18)
                 .metadata("name", "AutoLend User Badge")
                 .flags(FREELY_TRANSFERABLE | FREELY_BURNABLE)
-                .initial_supply(NewSupply::fungible(1))
+                .initial_supply_fungible(1)
         }
 
         /// Deposits into the liquidity pool and start earning interest.

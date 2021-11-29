@@ -60,7 +60,7 @@ blueprint! {
             let special_cards_bucket = ResourceBuilder::new_non_fungible()
                 .metadata("name", "Russ' Magic Card Collection")
                 .flags(FREELY_TRANSFERABLE | FREELY_BURNABLE)
-                .initial_supply(NewSupply::non_fungible([
+                .initial_supply_non_fungible([
                     (
                         1,
                         MagicCard {
@@ -85,13 +85,13 @@ blueprint! {
                             rarity: Rarity::Uncommon,
                         },
                     ),
-                ]));
+                ]);
 
             // Create an NFT resource with mutable supply
             let random_card_mint_badge = ResourceBuilder::new_fungible(18)
                 .metadata("name", "Random Cards Mint Badge")
                 .flags(FREELY_TRANSFERABLE | FREELY_BURNABLE)
-                .initial_supply(NewSupply::fungible(1));
+                .initial_supply_fungible(1);
             let random_card_resource_def = ResourceBuilder::new_non_fungible()
                 .metadata("name", "Random Cards")
                 .flags(FREELY_TRANSFERABLE | MINTABLE | BURNABLE | INDIVIDUAL_METADATA_MUTABLE)

@@ -16,7 +16,7 @@ blueprint! {
             let badges = ResourceBuilder::new_fungible(18)
                 .metadata("name", "Price Oracle Admin Badge")
                 .flags(FREELY_TRANSFERABLE | FREELY_BURNABLE)
-                .initial_supply(NewSupply::fungible(num_of_admins));
+                .initial_supply_fungible(num_of_admins);
 
             let component = Self {
                 prices: LazyMap::new(),

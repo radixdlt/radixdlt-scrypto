@@ -16,7 +16,7 @@ blueprint! {
                     ResourceBuilder::new_fungible(0)
                         .metadata("name", "FreeToken")
                         .flags(FREELY_TRANSFERABLE | FREELY_BURNABLE)
-                        .initial_supply(NewSupply::fungible(1000)),
+                        .initial_supply_fungible(1000),
                 ),
             }
             .instantiate()

@@ -1,13 +1,13 @@
 /// Resource can be transferred.
 pub const TRANSFERABLE: u16 = 1u16 << 0;
 
-/// Resource can be transferred by the holder, without any authorization.
+/// Resource can be transferred by the holder, without any authority.
 pub const FREELY_TRANSFERABLE: u16 = 1u16 << 1;
 
 /// Resource can be burned.
 pub const BURNABLE: u16 = 1u16 << 2;
 
-/// Resource can be burned by the holder, without any authorization.
+/// Resource can be burned by the holder, without any authority.
 pub const FREELY_BURNABLE: u16 = 1u16 << 3;
 
 /// New supply can be minted.

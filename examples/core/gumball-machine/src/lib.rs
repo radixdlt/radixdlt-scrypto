@@ -16,7 +16,7 @@ blueprint! {
                 .metadata("symbol", "GUM")
                 .metadata("description", "A delicious gumball")
                 .flags(FREELY_TRANSFERABLE | FREELY_BURNABLE)
-                .initial_supply(NewSupply::fungible(100));
+                .initial_supply_fungible(100);
 
             // populate a GumballMachine struct and instantiate a new component
             Self {

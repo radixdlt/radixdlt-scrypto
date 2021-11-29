@@ -7,8 +7,8 @@ blueprint! {
         pub fn create_nft_mutable() -> (Bucket, ResourceDef, Bucket) {
             // Create a mint badge
             let mint_badge = ResourceBuilder::new_fungible(18)
-            .flags(FREELY_TRANSFERABLE | FREELY_BURNABLE)
-                .initial_supply(NewSupply::fungible(1));
+                .flags(FREELY_TRANSFERABLE | FREELY_BURNABLE)
+                .initial_supply_fungible(1);
 
             // Create NFT resource with mutable supply
             let nft_resource_def = ResourceBuilder::new_non_fungible()
@@ -27,11 +27,11 @@ blueprint! {
             ResourceBuilder::new_non_fungible()
                 .metadata("name", "Katz's Sandwiches")
                 .flags(FREELY_TRANSFERABLE | FREELY_BURNABLE)
-                .initial_supply(NewSupply::non_fungible([
+                .initial_supply_non_fungible([
                     (1, "Hi"),
                     (2, "Test"),
                     (3, "NFT"),
-                ]))
+                ])
         }
 
         pub fn update_and_get_nft() -> (Bucket, Bucket) {
