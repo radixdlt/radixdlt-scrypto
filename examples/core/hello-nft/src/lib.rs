@@ -57,9 +57,10 @@ blueprint! {
     impl HelloNft {
         pub fn new() -> Component {
             // Creates a fixed set of NFTs
-            let special_cards_bucket = ResourceBuilder::new()
+            let special_cards_bucket = ResourceBuilder::new_non_fungible()
                 .metadata("name", "Russ' Magic Card Collection")
-                .new_nft_fixed(BTreeMap::from([
+                .flags(FREELY_TRANSFERABLE)
+                .initial_supply(NewSupply::non_fungible([
                     (
                         1,
                         MagicCard {
@@ -87,12 +88,19 @@ blueprint! {
                 ]));
 
             // Create an NFT resource with mutable supply
-            let random_card_mint_badge = ResourceBuilder::new()
+            let random_card_mint_badge = ResourceBuilder::new_fungible()
+                .granularity(19)
                 .metadata("name", "Random Cards Mint Badge")
-                .new_badge_fixed(1);
-            let random_card_resource_def = ResourceBuilder::new()
+                .flags(FREELY_TRANSFERABLE)
+                .initial_supply(NewSupply::fungible(1));
+            let random_card_resource_def = ResourceBuilder::new_non_fungible()
                 .metadata("name", "Random Cards")
-                .new_nft_mutable(ResourceConfigs::new(random_card_mint_badge.resource_def()));
+                .flags(FREELY_TRANSFERABLE | MINTABLE | BURNABLE | INDIVIDUAL_METADATA_MUTABLE)
+                .badge(
+                    random_card_mint_badge.resource_def(),
+                    MAY_MINT | MAY_BURN | MAY_CHANGE_INDIVIDUAL_METADATA,
+                )
+                .no_initial_supply();
 
             // Instantiate our component
             Self {

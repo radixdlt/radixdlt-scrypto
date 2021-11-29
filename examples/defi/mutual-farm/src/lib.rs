@@ -496,9 +496,10 @@ blueprint! {
             usd_address: Address,
         ) -> (Bucket, Component) {
             debug!("Create an identity badge for accessing other components");
-            let identity_badge = ResourceBuilder::new()
+            let identity_badge = ResourceBuilder::new_fungible()
+                .granularity(19)
                 .metadata("name", "ID")
-                .new_badge_fixed(1);
+                .initial_supply(NewSupply::fungible(1));
             let identity_badge_address = identity_badge.resource_address();
 
             debug!("Fetch price info from oracle");
@@ -537,9 +538,11 @@ blueprint! {
             );
 
             debug!("Mint initial shares");
-            let mutual_farm_share_resource_def = ResourceBuilder::new()
+            let mutual_farm_share_resource_def = ResourceBuilder::new_fungible()
                 .metadata("name", "MutualFarm share")
-                .new_token_mutable(ResourceConfigs::new(identity_badge_address));
+                .flags(FREELY_TRANSFERABLE | MINTABLE | BURNABLE)
+                .badge(identity_badge_address, MAY_MINT | MAY_BURN)
+                .no_initial_supply();
             let shares =
                 mutual_farm_share_resource_def.mint(initial_shares, identity_badge.present());
 

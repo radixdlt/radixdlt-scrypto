@@ -49,9 +49,10 @@ blueprint! {
 
         /// Registers a new user
         pub fn new_user(&self) -> Bucket {
-            ResourceBuilder::new()
+            ResourceBuilder::new_fungible().granularity(19)
                 .metadata("name", "AutoLend User Badge")
-                .new_badge_fixed(1)
+                .flags(FREELY_TRANSFERABLE)
+                .initial_supply(NewSupply::fungible(1))
         }
 
         /// Deposits into the liquidity pool and start earning interest.

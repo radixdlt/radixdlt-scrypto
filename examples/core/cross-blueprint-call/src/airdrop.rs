@@ -13,9 +13,10 @@ blueprint! {
         pub fn new() -> Component {
             Self {
                 tokens: Vault::with_bucket(
-                    ResourceBuilder::new()
+                    ResourceBuilder::new_fungible()
                         .metadata("name", "FreeToken")
-                        .new_token_fixed(1000),
+                        .flags(FREELY_TRANSFERABLE)
+                        .initial_supply(NewSupply::fungible(1000)),
                 ),
             }
             .instantiate()

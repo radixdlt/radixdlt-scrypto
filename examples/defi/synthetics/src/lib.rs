@@ -135,12 +135,16 @@ blueprint! {
             let oracle: PriceOracle = oracle_address.into();
             let snx_resource_def: ResourceDef = snx_token_address.into();
             let usd_resource_def: ResourceDef = usd_token_address.into();
-            let synthetics_mint_badge = ResourceBuilder::new()
+            let synthetics_mint_badge = ResourceBuilder::new_fungible()
+                .granularity(19)
                 .metadata("name", "Synthetics Mint Badge")
-                .new_badge_fixed(1);
-            let synthetics_global_debt_share_resource_def = ResourceBuilder::new()
+                .flags(FREELY_TRANSFERABLE)
+                .initial_supply(NewSupply::fungible(1));
+            let synthetics_global_debt_share_resource_def = ResourceBuilder::new_fungible()
                 .metadata("name", "Synthetics Global Debt")
-                .new_token_mutable(ResourceConfigs::new(synthetics_mint_badge.resource_def()));
+                .flags(FREELY_TRANSFERABLE | MINTABLE | BURNABLE)
+                .badge(synthetics_mint_badge.resource_def(), MAY_MINT | MAY_BURN)
+                .no_initial_supply();
 
             Self {
                 oracle,
@@ -166,10 +170,12 @@ blueprint! {
                 "Asset already exist",
             );
 
-            let token_resource_def = ResourceBuilder::new()
+            let token_resource_def = ResourceBuilder::new_fungible()
                 .metadata("name", format!("Synthetic {}", asset_symbol.clone()))
                 .metadata("symbol", format!("s{}", asset_symbol.clone()))
-                .new_token_mutable(ResourceConfigs::new(self.synthetics_mint_badge.resource_def()));
+                .flags(FREELY_TRANSFERABLE | MINTABLE | BURNABLE)
+                .badge(self.synthetics_mint_badge.resource_def(), MAY_MINT | MAY_BURN)
+                .no_initial_supply();
             let token_address = token_resource_def.address();
             self.synthetics.insert(
                 asset_symbol.clone(),
@@ -303,9 +309,11 @@ blueprint! {
 
         /// Registers a new user
         pub fn new_user(&self) -> Bucket {
-            ResourceBuilder::new()
+            ResourceBuilder::new_fungible()
+                .granularity(19)
                 .metadata("name", "Synthetic Pool User Badge")
-                .new_badge_fixed(1)
+                .flags(FREELY_TRANSFERABLE)
+                .initial_supply(NewSupply::fungible(1))
         }
 
         /// Parse user id from a bucket ref.

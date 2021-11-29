@@ -40,14 +40,18 @@ blueprint! {
             );
 
             // Instantiate our LP token and mint an initial supply of them
-            let lp_mint_badge = ResourceBuilder::new()
+            let lp_mint_badge = ResourceBuilder::new_fungible()
+                .granularity(19)
                 .metadata("name", "LP Token Mint Auth")
-                .new_badge_fixed(1);
-            let lp_resource_def = ResourceBuilder::new()
+                .flags(FREELY_TRANSFERABLE)
+                .initial_supply(NewSupply::fungible(1));
+            let lp_resource_def = ResourceBuilder::new_fungible()
                 .metadata("symbol", lp_symbol)
                 .metadata("name", lp_name)
                 .metadata("url", lp_url)
-                .new_token_mutable(ResourceConfigs::new(lp_mint_badge.resource_def()));
+                .flags(FREELY_TRANSFERABLE | MINTABLE | BURNABLE)
+                .badge(lp_mint_badge.resource_def(), MAY_MINT | MAY_BURN)
+                .no_initial_supply();
             let lp_tokens = lp_resource_def.mint(lp_initial_supply, lp_mint_badge.present());
 
             // ratio = initial supply / (x * y) = initial supply / k
