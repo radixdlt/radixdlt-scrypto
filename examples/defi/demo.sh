@@ -20,32 +20,32 @@ out=`resim new-account | tee /dev/tty | awk '/Component:|Public key:/ {print $NF
 acc4_address=`echo $out | cut -d " " -f1`
 acc4_pub_key=`echo $out | cut -d " " -f2`
 
-# generate acc1_minter_badge token
-acc1_minter_badge=`resim new-badge-fixed --name MinterBadge 1 | tee /dev/tty | awk '/ResourceDef:/ {print $NF}'`
+# generate acc1_mint_badge token
+acc1_mint_badge=`resim new-badge-fixed --name MintBadge 1 | tee /dev/tty | awk '/ResourceDef:/ {print $NF}'`
 
 # mint btc
-btc=`resim new-token-mutable $acc1_minter_badge --name Bitcoin --symbol BTC --description "Bitcoin is a decentralized digital currency, without a central bank or single administrator, that can be sent from user to user on the peer-to-peer bitcoin network without the need for intermediaries." | tee /dev/tty | awk '/ResourceDef:/ {print $NF}'`
-resim mint 18843462 $btc $acc1_minter_badge
+btc=`resim new-token-mutable $acc1_mint_badge --name Bitcoin --symbol BTC --description "Bitcoin is a decentralized digital currency, without a central bank or single administrator, that can be sent from user to user on the peer-to-peer bitcoin network without the need for intermediaries." | tee /dev/tty | awk '/ResourceDef:/ {print $NF}'`
+resim mint 18843462 $btc $acc1_mint_badge
 
 # mint ethereum
-eth=`resim new-token-mutable $acc1_minter_badge --name Ethereum --symbol ETH --description "Ethereum is a decentralized, open-source blockchain with smart contract functionality." | tee /dev/tty | awk '/ResourceDef:/ {print $NF}'`
-resim mint 117921786 $eth $acc1_minter_badge
+eth=`resim new-token-mutable $acc1_mint_badge --name Ethereum --symbol ETH --description "Ethereum is a decentralized, open-source blockchain with smart contract functionality." | tee /dev/tty | awk '/ResourceDef:/ {print $NF}'`
+resim mint 117921786 $eth $acc1_mint_badge
 
 # mint USD
-usd=`resim new-token-mutable $acc1_minter_badge --name "US Dollar" --symbol USD --description "The United States dollar is the official currency of the United States and its territories." | tee /dev/tty | awk '/ResourceDef:/ {print $NF}'`
-resim mint 19677000000000 $usd $acc1_minter_badge
+usd=`resim new-token-mutable $acc1_mint_badge --name "US Dollar" --symbol USD --description "The United States dollar is the official currency of the United States and its territories." | tee /dev/tty | awk '/ResourceDef:/ {print $NF}'`
+resim mint 19677000000000 $usd $acc1_mint_badge
 
 # mint GBP
-gbp=`resim new-token-mutable $acc1_minter_badge --name "Pound sterling" --symbol GBP --description "The pound sterling, known in some contexts simply as the pound or sterling, is the official currency of the United Kingdom, Jersey, Guernsey, the Isle of Man, Gibraltar, South Georgia and the South Sandwich Islands, the British Antarctic Territory, and Tristan da Cunha." | tee /dev/tty | awk '/ResourceDef:/ {print $NF}'`
-resim mint 2896859000000 $gbp $acc1_minter_badge
+gbp=`resim new-token-mutable $acc1_mint_badge --name "Pound sterling" --symbol GBP --description "The pound sterling, known in some contexts simply as the pound or sterling, is the official currency of the United Kingdom, Jersey, Guernsey, the Isle of Man, Gibraltar, South Georgia and the South Sandwich Islands, the British Antarctic Territory, and Tristan da Cunha." | tee /dev/tty | awk '/ResourceDef:/ {print $NF}'`
+resim mint 2896859000000 $gbp $acc1_mint_badge
 
 # mint XRD
-xrd=`resim new-token-mutable $acc1_minter_badge --name "Radix Token" --symbol XRD | tee /dev/tty | awk '/ResourceDef:/ {print $NF}'`
-resim mint 24000000000 $xrd $acc1_minter_badge
+xrd=`resim new-token-mutable $acc1_mint_badge --name "Radix Token" --symbol XRD | tee /dev/tty | awk '/ResourceDef:/ {print $NF}'`
+resim mint 24000000000 $xrd $acc1_mint_badge
 
 # mint SNX
-snx=`resim new-token-mutable $acc1_minter_badge --name "Synthetics Token" --symbol SNX --description "A token which is used in the synthetics component for collateral" | tee /dev/tty | awk '/ResourceDef:/ {print $NF}'`
-resim mint 114841533.01 $snx $acc1_minter_badge
+snx=`resim new-token-mutable $acc1_mint_badge --name "Synthetics Token" --symbol SNX --description "A token which is used in the synthetics component for collateral" | tee /dev/tty | awk '/ResourceDef:/ {print $NF}'`
+resim mint 114841533.01 $snx $acc1_mint_badge
 
 # publish PriceOracle
 price_oracle_package=`resim publish ./price-oracle | tee /dev/tty | awk '/Package:/ {print $NF}'`
@@ -88,7 +88,7 @@ echo "==========================================================================
 echo "Please assume a fixed number of decimal places for all resources: 18"
 echo "Account 1 address: $acc1_address"
 echo "Account 1 public key: $acc1_pub_key"
-echo "Account 1 mint auth: $acc1_minter_badge"
+echo "Account 1 mint auth: $acc1_mint_badge"
 echo "Account 2 address: $acc2_address"
 echo "Account 2 public key: $acc2_pub_key"
 echo "Account 3 address: $acc3_address"

@@ -18,12 +18,13 @@ const COMPONENTS: &str = "components";
 const LAZY_MAPS: &str = "lazy_maps";
 const RESOURCE_DEFS: &str = "resource_defs";
 const VAULTS: &str = "vaults";
+const NFTS: &str = "nfts";
 
 const FILE_EXT: &str = "sbor";
 
 impl FileBasedLedger {
     pub fn new(root: PathBuf) -> Self {
-        for folder in [PACKAGES, COMPONENTS, LAZY_MAPS, RESOURCE_DEFS, VAULTS] {
+        for folder in [PACKAGES, COMPONENTS, LAZY_MAPS, RESOURCE_DEFS, VAULTS, NFTS] {
             let mut path = root.clone();
             path.push(folder);
             if !path.exists() {
@@ -161,6 +162,18 @@ impl Ledger for FileBasedLedger {
         Self::write(
             self.get_path(VAULTS, format!("{}_{}", vid.0, vid.1), FILE_EXT),
             Self::encode(&vault),
+        )
+    }
+
+    fn get_nft(&self, resource_def: Address, id: u128) -> Option<Nft> {
+        Self::read(self.get_path(NFTS, format!("{}_{}", resource_def, id), FILE_EXT))
+            .map(Self::decode)
+    }
+
+    fn put_nft(&mut self, resource_def: Address, id: u128, nft: Nft) {
+        Self::write(
+            self.get_path(NFTS, format!("{}_{}", resource_def, id), FILE_EXT),
+            Self::encode(&nft),
         )
     }
 }

@@ -98,7 +98,7 @@ pub fn format_fields<L: Ledger>(
     match fields {
         Fields::Named(named) => format_vec(named.iter(), "{ ", " }", ledger, vaults),
         Fields::Unnamed(unnamed) => format_vec(unnamed.iter(), "( ", " )", ledger, vaults),
-        Fields::Unit => Ok(String::from("()")),
+        Fields::Unit => Ok(String::from("")),
     }
 }
 

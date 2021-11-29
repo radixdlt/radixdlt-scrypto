@@ -1,103 +1,186 @@
 use sbor::*;
+use scrypto::kernel::*;
 use scrypto::rust::collections::HashMap;
 use scrypto::rust::string::String;
 use scrypto::types::*;
 
-use crate::model::Auth;
+use crate::model::{Auth, Supply};
 
 /// Represents an error when accessing a bucket.
 #[derive(Debug, Clone)]
 pub enum ResourceDefError {
     UnauthorizedAccess,
-    MintNotAllowed,
-    BurnNotAllowed,
     InvalidGranularity,
-    GranularityCheckFailed,
-    NegativeAmount,
+    TypeAndSupplyNotMatching,
+    UnsupportedOperation,
+    MutableOperationNotAllowed,
+    InvalidAmount(Decimal),
 }
 
 /// The definition of a resource.
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct ResourceDef {
-    granularity: u8,
+    resource_type: ResourceType,
     metadata: HashMap<String, String>,
-    supply: Decimal,
-    minter: Option<Address>,
+    total_supply: Decimal,
+    mutable: bool,
+    auth_configs: Option<ResourceConfigs>,
 }
 
 impl ResourceDef {
-    pub fn new(
-        granularity: u8,
+    pub fn new_fixed(
+        resource_type: ResourceType,
         metadata: HashMap<String, String>,
-        supply: Decimal,
-        minter: Option<Address>,
+        supply: &Supply,
     ) -> Result<Self, ResourceDefError> {
-        Self::check_amount(&supply, granularity)?;
+        let total_supply = match resource_type {
+            ResourceType::Fungible { .. } => {
+                if let Supply::Fungible { amount } = supply {
+                    Self::check_amount(*amount, resource_type)?;
+                    *amount
+                } else {
+                    return Err(ResourceDefError::TypeAndSupplyNotMatching);
+                }
+            }
+            ResourceType::NonFungible => {
+                if let Supply::NonFungible { entries } = supply {
+                    entries.len().into()
+                } else {
+                    return Err(ResourceDefError::TypeAndSupplyNotMatching);
+                }
+            }
+        };
 
         Ok(Self {
-            granularity,
+            resource_type,
             metadata,
-            supply,
-            minter,
+            total_supply,
+            mutable: false,
+            auth_configs: None,
         })
+    }
+
+    pub fn new_mutable(
+        resource_type: ResourceType,
+        metadata: HashMap<String, String>,
+        auth_configs: ResourceConfigs,
+    ) -> Result<Self, ResourceDefError> {
+        Ok(Self {
+            resource_type,
+            metadata,
+            total_supply: 0.into(),
+            mutable: true,
+            auth_configs: Some(auth_configs),
+        })
+    }
+
+    pub fn resource_type(&self) -> ResourceType {
+        self.resource_type
     }
 
     pub fn metadata(&self) -> &HashMap<String, String> {
         &self.metadata
     }
 
-    pub fn supply(&self) -> Decimal {
-        self.supply
+    pub fn total_supply(&self) -> Decimal {
+        self.total_supply
     }
 
-    pub fn minter(&self) -> Option<Address> {
-        self.minter.clone()
+    pub fn mutable(&self) -> bool {
+        self.mutable
     }
 
-    pub fn granularity(&self) -> u8 {
-        self.granularity
+    pub fn auth_configs(&self) -> Option<ResourceConfigs> {
+        self.auth_configs.clone()
     }
 
-    pub fn mint(&mut self, amount: Decimal, auth: Auth) -> Result<(), ResourceDefError> {
-        Self::check_amount(&amount, self.granularity)?;
+    pub fn mint(&mut self, supply: &Supply, auth: Auth) -> Result<(), ResourceDefError> {
+        if !self.mutable {
+            return Err(ResourceDefError::MutableOperationNotAllowed);
+        }
+        if !auth.contains(self.auth_configs().unwrap().mint_badge) {
+            return Err(ResourceDefError::UnauthorizedAccess);
+        }
 
-        match self.minter() {
-            Some(a) => {
-                if auth.contains(a) {
-                    self.supply += amount;
+        match self.resource_type {
+            ResourceType::Fungible { .. } => {
+                if let Supply::Fungible { amount } = supply {
+                    Self::check_amount(*amount, self.resource_type)?;
+                    self.total_supply += *amount;
                     Ok(())
                 } else {
-                    Err(ResourceDefError::UnauthorizedAccess)
+                    Err(ResourceDefError::TypeAndSupplyNotMatching)
                 }
             }
-            None => Err(ResourceDefError::MintNotAllowed),
+            ResourceType::NonFungible => {
+                if let Supply::NonFungible { entries } = supply {
+                    self.total_supply += entries.len();
+                    Ok(())
+                } else {
+                    Err(ResourceDefError::TypeAndSupplyNotMatching)
+                }
+            }
         }
     }
 
-    pub fn burn(&mut self, amount: Decimal, auth: Auth) -> Result<(), ResourceDefError> {
-        Self::check_amount(&amount, self.granularity)?;
+    pub fn burn(&mut self, supply: Supply, auth: Auth) -> Result<(), ResourceDefError> {
+        if !self.mutable {
+            return Err(ResourceDefError::MutableOperationNotAllowed);
+        }
+        if !auth.contains(self.auth_configs().unwrap().mint_badge) {
+            return Err(ResourceDefError::UnauthorizedAccess);
+        }
 
-        match self.minter() {
-            Some(a) => {
-                if auth.contains(a) {
-                    self.supply -= amount;
+        match self.resource_type {
+            ResourceType::Fungible { .. } => {
+                if let Supply::Fungible { amount } = supply {
+                    Self::check_amount(amount, self.resource_type)?;
+                    self.total_supply -= amount;
                     Ok(())
                 } else {
-                    Err(ResourceDefError::UnauthorizedAccess)
+                    Err(ResourceDefError::TypeAndSupplyNotMatching)
                 }
             }
-            None => Err(ResourceDefError::BurnNotAllowed),
+            ResourceType::NonFungible => {
+                if let Supply::NonFungible { entries } = supply {
+                    // Note that the underlying NFTs are not deleted from the simulated ledger.
+                    // This is not an issue when integrated with UTXO-based state model, where
+                    // the UP state should have been spun down when the NFTs are withdrawn from
+                    // the vault.
+                    self.total_supply -= entries.len();
+                    Ok(())
+                } else {
+                    Err(ResourceDefError::TypeAndSupplyNotMatching)
+                }
+            }
         }
     }
 
-    fn check_amount(amount: &Decimal, granularity: u8) -> Result<(), ResourceDefError> {
+    pub fn change_to_immutable(&mut self, auth: Auth) -> Result<(), ResourceDefError> {
+        if !self.mutable {
+            return Err(ResourceDefError::MutableOperationNotAllowed);
+        }
+        if !auth.contains(self.auth_configs().unwrap().update_badge) {
+            return Err(ResourceDefError::UnauthorizedAccess);
+        }
+
+        self.mutable = false;
+        Ok(())
+    }
+
+    fn check_amount(amount: Decimal, resource_type: ResourceType) -> Result<(), ResourceDefError> {
         if amount.is_negative() {
-            return Err(ResourceDefError::NegativeAmount);
+            return Err(ResourceDefError::InvalidAmount(amount));
         }
+
+        let granularity = match resource_type {
+            ResourceType::Fungible { granularity } => granularity,
+            ResourceType::NonFungible => 19,
+        };
 
         if granularity >= 1 && granularity <= 36 {
             if amount.0 % 10i128.pow((granularity - 1).into()) != 0.into() {
-                Err(ResourceDefError::GranularityCheckFailed)
+                Err(ResourceDefError::InvalidAmount(amount))
             } else {
                 Ok(())
             }

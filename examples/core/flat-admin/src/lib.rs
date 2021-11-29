@@ -14,10 +14,10 @@ blueprint! {
             // Create the ResourceDef for a mutable supply admin badge
             let admin_badge_def = ResourceBuilder::new()
                 .metadata("name", badge_name)
-                .new_badge_mutable(admin_mint_badge.resource_def());
+                .new_badge_mutable(ResourceConfigs::new(admin_mint_badge.resource_def()));
 
             // Using our minting authority badge, mint a single admin badge
-            let first_admin_badge = admin_badge_def.mint(1, admin_mint_badge.borrow());
+            let first_admin_badge = admin_badge_def.mint(1, admin_mint_badge.present());
 
             // Initialize our component, placing the minting authority badge within its vault, where it will remain forever
             let component = Self {
@@ -35,7 +35,7 @@ blueprint! {
         pub fn create_additional_admin(&self) -> Bucket {
             // The "authorize" method provides a convenient shortcut to make use of the mint authority badge within our vault without removing it
             self.admin_mint_badge
-                .authorize(|badge| self.admin_badge.mint(1, badge))
+                .authorize(|auth| self.admin_badge.mint(1, auth))
         }
 
         pub fn destroy_admin_badge(&self, to_destroy: Bucket) {
@@ -44,7 +44,7 @@ blueprint! {
                 "Can not destroy the contents of this bucket!"
             );
             self.admin_mint_badge
-                .authorize(|badge| self.admin_badge.burn(to_destroy, badge))
+                .authorize(|auth| self.admin_badge.burn(to_destroy, auth))
         }
 
         pub fn get_admin_badge_address(&self) -> Address {

@@ -92,6 +92,9 @@ jobs:
     - name: Build system
       run: cargo build --target wasm32-unknown-unknown --release
       working-directory: assets/system
+    - name: Build hello-nft
+      run: cargo build --target wasm32-unknown-unknown --release
+      working-directory: examples/core/hello-nft
     - name: Build hello-world
       run: cargo build --target wasm32-unknown-unknown --release
       working-directory: examples/core/hello-world

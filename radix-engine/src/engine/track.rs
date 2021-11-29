@@ -1,4 +1,5 @@
 use lru::LruCache;
+use scrypto::kernel::*;
 use scrypto::rust::collections::*;
 use scrypto::rust::string::String;
 use scrypto::rust::vec::Vec;
@@ -22,17 +23,19 @@ pub struct Track<'l, L: Ledger> {
     tx_hash: H256,
     tx_signers: Vec<Address>,
     id_alloc: IdAllocator,
-    logs: Vec<(Level, String)>,
+    logs: Vec<(LogLevel, String)>,
     packages: HashMap<Address, Package>,
     components: HashMap<Address, Component>,
     resource_defs: HashMap<Address, ResourceDef>,
     lazy_maps: HashMap<Mid, LazyMap>,
     vaults: HashMap<Vid, Vault>,
+    nfts: HashMap<(Address, u128), Nft>,
     updated_packages: HashSet<Address>,
     updated_components: HashSet<Address>,
     updated_lazy_maps: HashSet<Mid>,
     updated_resource_defs: HashSet<Address>,
     updated_vaults: HashSet<Vid>,
+    updated_nfts: HashSet<(Address, u128)>,
     new_entities: Vec<Address>,
     code_cache: LruCache<Address, Module>, // TODO: move to ledger level
 }
@@ -56,11 +59,13 @@ impl<'l, L: Ledger> Track<'l, L> {
             resource_defs: HashMap::new(),
             lazy_maps: HashMap::new(),
             vaults: HashMap::new(),
+            nfts: HashMap::new(),
             updated_packages: HashSet::new(),
             updated_components: HashSet::new(),
             updated_lazy_maps: HashSet::new(),
             updated_resource_defs: HashSet::new(),
             updated_vaults: HashSet::new(),
+            updated_nfts: HashSet::new(),
             new_entities: Vec::new(),
             code_cache: LruCache::new(1024),
         }
@@ -87,7 +92,7 @@ impl<'l, L: Ledger> Track<'l, L> {
     }
 
     /// Returns the logs collected so far.
-    pub fn logs(&self) -> &Vec<(Level, String)> {
+    pub fn logs(&self) -> &Vec<(LogLevel, String)> {
         &self.logs
     }
 
@@ -97,7 +102,7 @@ impl<'l, L: Ledger> Track<'l, L> {
     }
 
     /// Adds a log message.
-    pub fn add_log(&mut self, level: Level, message: String) {
+    pub fn add_log(&mut self, level: LogLevel, message: String) {
         self.logs.push((level, message));
     }
 
@@ -190,6 +195,43 @@ impl<'l, L: Ledger> Track<'l, L> {
         self.updated_components.insert(address);
 
         self.components.insert(address, component);
+    }
+
+    /// Returns an immutable reference to a nft, if exists.
+    pub fn get_nft(&mut self, resource_def: Address, id: u128) -> Option<&Nft> {
+        if self.nfts.contains_key(&(resource_def, id)) {
+            return self.nfts.get(&(resource_def, id));
+        }
+
+        if let Some(nft) = self.ledger.get_nft(resource_def, id) {
+            self.nfts.insert((resource_def, id), nft);
+            self.nfts.get(&(resource_def, id))
+        } else {
+            None
+        }
+    }
+
+    /// Returns a mutable reference to a nft, if exists.
+    pub fn get_nft_mut(&mut self, resource_def: Address, id: u128) -> Option<&mut Nft> {
+        self.updated_nfts.insert((resource_def, id));
+
+        if self.nfts.contains_key(&(resource_def, id)) {
+            return self.nfts.get_mut(&(resource_def, id));
+        }
+
+        if let Some(nft) = self.ledger.get_nft(resource_def, id) {
+            self.nfts.insert((resource_def, id), nft);
+            self.nfts.get_mut(&(resource_def, id))
+        } else {
+            None
+        }
+    }
+
+    /// Inserts a new nft.
+    pub fn put_nft(&mut self, resource_def: Address, id: u128, nft: Nft) {
+        self.updated_nfts.insert((resource_def, id));
+
+        self.nfts.insert((resource_def, id), nft);
     }
 
     /// Returns an immutable reference to a lazy map, if exists.
@@ -326,6 +368,11 @@ impl<'l, L: Ledger> Track<'l, L> {
         address
     }
 
+    /// Creates a new UUID.
+    pub fn new_uuid(&mut self) -> u128 {
+        self.id_alloc.new_uuid(self.tx_hash())
+    }
+
     /// Creates a new bucket ID.
     pub fn new_bid(&mut self) -> Bid {
         self.id_alloc.new_bid()
@@ -368,9 +415,17 @@ impl<'l, L: Ledger> Track<'l, L> {
                 .put_lazy_map(mid, self.lazy_maps.get(&mid).unwrap().clone());
         }
 
-        for vault in self.updated_vaults.clone() {
+        for vid in self.updated_vaults.clone() {
             self.ledger
-                .put_vault(vault, self.vaults.get(&vault).unwrap().clone());
+                .put_vault(vid, self.vaults.get(&vid).unwrap().clone());
+        }
+
+        for (resource_def, id) in self.updated_nfts.clone() {
+            self.ledger.put_nft(
+                resource_def,
+                id,
+                self.nfts.get(&(resource_def, id)).unwrap().clone(),
+            );
         }
     }
 }

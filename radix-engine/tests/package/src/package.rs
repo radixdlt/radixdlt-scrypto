@@ -1,5 +1,4 @@
-use scrypto::blueprint;
-use scrypto::core::Package;
+use scrypto::prelude::*;
 
 blueprint! {
     struct PackageTest;

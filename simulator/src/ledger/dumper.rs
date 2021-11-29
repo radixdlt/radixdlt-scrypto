@@ -1,6 +1,6 @@
 use colored::*;
 use radix_engine::ledger::*;
-use radix_engine::model::Auth;
+use radix_engine::model::*;
 use radix_engine::utils::*;
 use scrypto::types::*;
 
@@ -55,19 +55,35 @@ pub fn dump_component<T: Ledger>(address: Address, ledger: &T) -> Result<(), Dis
                 let resource_def_address = vault.resource_def(Auth::NoAuth).unwrap();
                 let resource_def = ledger.get_resource_def(resource_def_address).unwrap();
                 println!(
-                    "{} {{ amount: {}, resource_def: {}, name: {:?}, symbol: {:?}}}",
+                    "{} {{ amount: {}, resource_def: {}{}{} }}",
                     list_item_prefix(last),
                     amount,
                     resource_def_address,
                     resource_def
                         .metadata()
                         .get("name")
-                        .unwrap_or(&"".to_owned()),
+                        .map(|name| format!(", name: {}", name))
+                        .unwrap_or(String::new()),
                     resource_def
                         .metadata()
                         .get("symbol")
-                        .unwrap_or(&"".to_owned()),
+                        .map(|symbol| format!(", symbol: {}", symbol))
+                        .unwrap_or(String::new()),
                 );
+                if let Supply::NonFungible { entries } = vault.total_supply(Auth::NoAuth).unwrap() {
+                    // TODO how to deal with the case where a vault id is referenced in the NFT
+                    let mut vaults = Vec::new();
+                    for (inner_last, id) in entries.iter().identify_last() {
+                        let nft = ledger.get_nft(resource_def_address, *id).unwrap();
+                        println!(
+                            "{}  {} NFT {{ id: {}, data: {} }}",
+                            if last { " " } else { "│" },
+                            list_item_prefix(inner_last),
+                            id,
+                            format_data_with_ledger(&nft.data(), ledger, &mut vaults).unwrap()
+                        );
+                    }
+                }
             }
             Ok(())
         }
@@ -80,12 +96,18 @@ pub fn dump_resource_def<T: Ledger>(address: Address, ledger: &T) -> Result<(), 
     let resource_def = ledger.get_resource_def(address);
     match resource_def {
         Some(r) => {
+            println!(
+                "{}: {:?}",
+                "Resource Type".green().bold(),
+                r.resource_type()
+            );
+            println!("{}: {}", "Mutable".green().bold(), r.mutable());
             println!("{}: {}", "Metadata".green().bold(), r.metadata().len());
             for (last, e) in r.metadata().iter().identify_last() {
                 println!("{} {}: {}", list_item_prefix(last), e.0.green().bold(), e.1);
             }
-            println!("{}: {}", "Supply".green().bold(), r.supply());
-            println!("{}: {:?}", "Mint Auth".green().bold(), r.minter());
+            println!("{}: {}", "Total Supply".green().bold(), r.total_supply());
+            println!("{}: {:?}", "Authorization".green().bold(), r.auth_configs());
             Ok(())
         }
         None => Err(DisplayError::ResourceDefNotFound),

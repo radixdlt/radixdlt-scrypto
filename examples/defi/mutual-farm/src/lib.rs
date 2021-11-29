@@ -519,10 +519,10 @@ blueprint! {
             let price_oracle: PriceOracle = price_oracle_address.into();
             let synthetic_pool: SyntheticPool = synthetic_pool_address.into();
             synthetic_pool.add_synthetic_token(asset_symbol.clone(), asset_address);
-            synthetic_pool.stake(identity_badge.borrow(), snx);
+            synthetic_pool.stake(identity_badge.present(), snx);
             let quantity = snx_amount * snx_usd_price / 10 / tesla_usd_price;
             let synth =
-                synthetic_pool.mint(identity_badge.borrow(), quantity, asset_symbol.clone());
+                synthetic_pool.mint(identity_badge.present(), quantity, asset_symbol.clone());
             let synth_address = synth.resource_address();
 
             debug!("Set up sTESLA/XRD swap pool");
@@ -539,9 +539,9 @@ blueprint! {
             debug!("Mint initial shares");
             let mutual_farm_share_resource_def = ResourceBuilder::new()
                 .metadata("name", "MutualFarm share")
-                .new_token_mutable(identity_badge_address);
+                .new_token_mutable(ResourceConfigs::new(identity_badge_address));
             let shares =
-                mutual_farm_share_resource_def.mint(initial_shares, identity_badge.borrow());
+                mutual_farm_share_resource_def.mint(initial_shares, identity_badge.present());
 
             debug!("Instantiate MutualFund component");
             let component = Self {
@@ -586,20 +586,20 @@ blueprint! {
             let snx_amount = snx.amount();
 
             debug!("Deposit SNX into synthetic pool and mint sTESLA (1/10 of our SNX).");
-            self.identity_badge.authorize(|badge| {
-                self.synthetic_pool.stake(badge, snx);
+            self.identity_badge.authorize(|auth| {
+                self.synthetic_pool.stake(auth, snx);
             });
             let quantity = snx_amount * snx_usd_price / 10 / tesla_usd_price;
-            let synth = self.identity_badge.authorize(|badge| {
+            let synth = self.identity_badge.authorize(|auth| {
                 self.synthetic_pool
-                    .mint(badge, quantity, self.asset_symbol.clone())
+                    .mint(auth, quantity, self.asset_symbol.clone())
             });
 
             debug!("Add liquidity to sTESLA/XRD swap pool");
             let (lp_tokens, mut remainder) = self.radiswap.add_liquidity(synth, xrd);
             if remainder.resource_address() == self.synth_address {
-                self.identity_badge.authorize(|badge| {
-                    self.synthetic_pool.burn(badge, remainder);
+                self.identity_badge.authorize(|auth| {
+                    self.synthetic_pool.burn(auth, remainder);
                 });
                 remainder = Bucket::new(xrd_address);
             }
@@ -608,11 +608,11 @@ blueprint! {
             debug!("Mint initial shares");
             let contribution = xrd_usd_price * (xrd_amount - remainder.amount());
             let num_shares_to_issue = contribution
-                / (self.total_contribution_in_usd / self.mutual_farm_share_resource_def.supply());
+                / (self.total_contribution_in_usd / self.mutual_farm_share_resource_def.total_supply());
             self.total_contribution_in_usd += contribution;
-            let shares = self.identity_badge.authorize(|badge| {
+            let shares = self.identity_badge.authorize(|auth| {
                 self.mutual_farm_share_resource_def
-                    .mint(num_shares_to_issue, badge)
+                    .mint(num_shares_to_issue, auth)
             });
             (shares, remainder)
         }

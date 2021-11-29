@@ -13,9 +13,9 @@ temp=`$resim new-account | tee /dev/tty | awk '/Component:|Public key:/ {print $
 account=`echo $temp | cut -d " " -f1`
 account_key=`echo $temp | cut -d " " -f2`
 account2=`$resim new-account | tee /dev/tty | awk '/Component:/ {print $NF}'`
-minter_badge=`$resim new-badge-fixed 1 --name 'MintBadge' | tee /dev/tty | awk '/ResourceDef:/ {print $NF}'`
-resource_def=`$resim new-token-mutable $minter_badge | tee /dev/tty | awk '/ResourceDef:/ {print $NF}'`
-$resim mint 777 $resource_def $minter_badge --signers $account_key
+mint_badge=`$resim new-badge-fixed 1 --name 'MintBadge' | tee /dev/tty | awk '/ResourceDef:/ {print $NF}'`
+resource_def=`$resim new-token-mutable $mint_badge | tee /dev/tty | awk '/ResourceDef:/ {print $NF}'`
+$resim mint 777 $resource_def $mint_badge --signers $account_key
 $resim transfer 111 $resource_def $account2 --signers $account_key
 
 # Test hello-world

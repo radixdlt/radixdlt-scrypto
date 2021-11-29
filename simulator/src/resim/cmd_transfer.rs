@@ -58,7 +58,13 @@ pub fn handle_transfer(matches: &ArgMatches) -> Result<(), Error> {
     let mut ledger = FileBasedLedger::with_bootstrap(get_data_dir()?);
     let mut executor = TransactionExecutor::new(&mut ledger, configs.current_epoch, configs.nonce);
     let transaction = TransactionBuilder::new(&executor)
-        .withdraw_from_account(amount, resource_def, account.0)
+        .withdraw_from_account(
+            &ResourceSpec::Fungible {
+                amount: amount,
+                resource_address: resource_def,
+            },
+            account.0,
+        )
         .drop_all_bucket_refs()
         .deposit_all_buckets(recipient)
         .build(signers)

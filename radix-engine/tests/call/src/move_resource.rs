@@ -1,6 +1,4 @@
-use scrypto::core::{call_method, State};
-use scrypto::resource::{Bucket, BucketRef, ResourceBuilder, Vault};
-use scrypto::{args, blueprint};
+use scrypto::prelude::*;
 
 blueprint! {
     struct MoveTest {
@@ -34,7 +32,7 @@ blueprint! {
             call_method(
                 component.address(),
                 "receive_bucket_ref",
-                args!(bucket.borrow()),
+                args!(bucket.present()),
             );
 
             bucket

@@ -16,9 +16,10 @@ blueprint! {
         }
 
         pub fn with_bucket(key: Address, bucket: Bucket) -> Component {
-            let account = Self::new(key);
-            account.call::<()>("deposit", vec![scrypto_encode(&bucket)]);
-            account
+            let vaults = LazyMap::new();
+            vaults.insert(bucket.resource_address(), Vault::with_bucket(bucket));
+
+            Account { key, vaults }.instantiate()
         }
 
         /// Deposit a batch of buckets into this account
@@ -51,6 +52,27 @@ blueprint! {
             let vault = self.vaults.get(&resource_def);
             match vault {
                 Some(vault) => vault.take(amount),
+                None => {
+                    panic!("Insufficient balance");
+                }
+            }
+        }
+
+        /// Withdraws NFTs from this account.
+        pub fn withdraw_nfts(&mut self, nft_ids: BTreeSet<u128>, resource_def: Address) -> Bucket {
+            if !Context::transaction_signers().contains(&self.key) {
+                panic!("Not authorized! Make sure you sign transaction with the correct keys.",)
+            }
+
+            let vault = self.vaults.get(&resource_def);
+            match vault {
+                Some(vault) => {
+                    let bucket = Bucket::new(resource_def);
+                    for id in nft_ids {
+                        bucket.put(vault.take_nft(id));
+                    }
+                    bucket
+                }
                 None => {
                     panic!("Insufficient balance");
                 }

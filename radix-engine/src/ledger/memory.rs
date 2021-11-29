@@ -12,6 +12,7 @@ pub struct InMemoryLedger {
     lazy_maps: HashMap<Mid, LazyMap>,
     resource_defs: HashMap<Address, ResourceDef>,
     vaults: HashMap<Vid, Vault>,
+    nfts: HashMap<(Address, u128), Nft>,
 }
 
 impl InMemoryLedger {
@@ -22,6 +23,7 @@ impl InMemoryLedger {
             lazy_maps: HashMap::new(),
             resource_defs: HashMap::new(),
             vaults: HashMap::new(),
+            nfts: HashMap::new(),
         }
     }
 
@@ -77,5 +79,13 @@ impl Ledger for InMemoryLedger {
 
     fn put_vault(&mut self, vid: Vid, vault: Vault) {
         self.vaults.insert(vid, vault);
+    }
+
+    fn get_nft(&self, resource_def: Address, id: u128) -> Option<Nft> {
+        self.nfts.get(&(resource_def, id)).cloned()
+    }
+
+    fn put_nft(&mut self, resource_def: Address, id: u128, nft: Nft) {
+        self.nfts.insert((resource_def, id), nft);
     }
 }

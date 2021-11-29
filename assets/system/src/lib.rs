@@ -13,39 +13,28 @@ blueprint! {
             package.into()
         }
 
-        /// Creates a token resource with mutable supply, and returns the resource definition address.
-        pub fn new_token_mutable(metadata: HashMap<String, String>, minter: Address) -> Address {
-            let resource_def = ResourceDef::new_mutable(1, metadata, minter);
-            resource_def.address()
+        /// Creates a resource with mutable supply, and returns the resource definition address.
+        pub fn new_resource_mutable(
+            resource_type: ResourceType,
+            metadata: HashMap<String, String>,
+            auth_configs: ResourceConfigs,
+        ) -> Address {
+            ResourceDef::new_mutable(resource_type, metadata, auth_configs).address()
         }
 
-        /// Creates a token resource with fixed supply, and returns all supply.
-        pub fn new_token_fixed(
+        /// Creates a resource with fixed supply, and returns all supply.
+        pub fn new_resource_fixed(
+            resource_type: ResourceType,
             metadata: HashMap<String, String>,
-            supply: Decimal,
+            supply: NewSupply,
         ) -> (Address, Bucket) {
-            let (resource_def, bucket) = ResourceDef::new_fixed(1, metadata, supply);
+            let (resource_def, bucket) = ResourceDef::new_fixed(resource_type, metadata, supply);
             (resource_def.address(), bucket)
         }
 
-        /// Creates a badge resource with mutable supply, and returns the resource definition address.
-        pub fn new_badge_mutable(metadata: HashMap<String, String>, minter: Address) -> Address {
-            let resource_def = ResourceDef::new_mutable(19, metadata, minter);
-            resource_def.address()
-        }
-
-        /// Creates a badge resource with fixed supply, and returns all supply.
-        pub fn new_badge_fixed(
-            metadata: HashMap<String, String>,
-            supply: Decimal,
-        ) -> (Address, Bucket) {
-            let (resource_def, bucket) = ResourceDef::new_fixed(19, metadata, supply);
-            (resource_def.address(), bucket)
-        }
-
-        /// Mints resource.
-        pub fn mint_resource(amount: Decimal, resource_def: Address, auth: BucketRef) -> Bucket {
-            ResourceDef::from(resource_def).mint(amount, auth)
+        /// Mints fungible resource.
+        pub fn mint(amount: Decimal, resource_address: Address, auth: BucketRef) -> Bucket {
+            ResourceDef::from(resource_address).mint(amount, auth)
         }
 
         /// Gives away XRD tokens for testing.

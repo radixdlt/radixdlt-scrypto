@@ -4,6 +4,7 @@ use crate::buffer::*;
 use crate::kernel::*;
 use crate::resource::*;
 use crate::rust::borrow::ToOwned;
+use crate::rust::collections::BTreeSet;
 use crate::rust::vec;
 use crate::types::*;
 
@@ -97,9 +98,50 @@ impl Vault {
     /// Use resources in this vault as authorization for an operation.
     pub fn authorize<F: FnOnce(BucketRef) -> O, O>(&self, f: F) -> O {
         let bucket = self.take(1);
-        let output = f(bucket.borrow());
+        let output = f(bucket.present());
         self.put(bucket);
         output
+    }
+
+    /// Takes an NFT from this vault, by id.
+    ///
+    /// # Panics
+    /// Panics if this is not an NFT vault or the specified NFT is not found.
+    pub fn take_nft(&self, id: u128) -> Bucket {
+        let input = TakeNftFromVaultInput {
+            vault: self.vid,
+            id,
+        };
+        let output: TakeNftFromVaultOutput = call_kernel(TAKE_NFT_FROM_VAULT, input);
+
+        output.bucket.into()
+    }
+
+    /// Get all NFT IDs in this vault.
+    ///
+    /// # Panics
+    /// Panics if this is not an NFT vault.
+    pub fn get_nft_ids(&self) -> BTreeSet<u128> {
+        let input = GetNftIdsInVaultInput { vault: self.vid };
+        let output: GetNftIdsInVaultOutput = call_kernel(GET_NFT_IDS_IN_VAULT, input);
+
+        output.ids
+    }
+
+    /// Reads the data of an NFT.
+    ///
+    /// # Panics
+    /// Panics if this is not an NFT bucket.
+    pub fn get_nft_data<T: Decode>(&self, id: u128) -> T {
+        self.resource_def().get_nft_data(id)
+    }
+
+    /// Updates the data of an NFT.
+    ///
+    /// # Panics
+    /// Panics if this is not an NFT bucket.
+    pub fn update_nft_data<T: Encode>(&self, id: u128, data: T, auth: BucketRef) {
+        self.resource_def().update_nft_data(id, data, auth)
     }
 }
 

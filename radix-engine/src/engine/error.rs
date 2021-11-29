@@ -68,6 +68,12 @@ pub enum RuntimeError {
     /// Resource definition does not exist.
     ResourceDefNotFound(Address),
 
+    /// Nft does not exist.
+    NftNotFound(Address, u128),
+
+    /// Nft already exists.
+    NftAlreadyExists(Address, u128),
+
     /// Lazy map does not exist.
     LazyMapNotFound(Mid),
 
@@ -106,6 +112,9 @@ pub enum RuntimeError {
 
     /// Vault access error.
     VaultError(VaultError),
+
+    /// Nft access error.
+    NftError(NftError),
 
     /// Bucket is not allowed (in component state).
     BucketNotAllowed,

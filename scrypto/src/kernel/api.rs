@@ -1,5 +1,7 @@
 use sbor::{Decode, Encode, TypeId};
 
+use crate::kernel::*;
+use crate::rust::collections::BTreeSet;
 use crate::rust::collections::HashMap;
 use crate::rust::string::String;
 use crate::rust::vec::Vec;
@@ -45,33 +47,47 @@ pub const BURN_RESOURCE: u32 = 0x33;
 /// Get resource metadata
 pub const GET_RESOURCE_METADATA: u32 = 0x34;
 /// Get resource supply
-pub const GET_RESOURCE_SUPPLY: u32 = 0x35;
-/// Get resource minter address
-pub const GET_RESOURCE_MINTER: u32 = 0x36;
-/// Get resource granularity
-pub const GET_RESOURCE_GRANULARITY: u32 = 0x37;
+pub const GET_RESOURCE_TOTAL_SUPPLY: u32 = 0x35;
+/// Get resource authorization config
+pub const GET_RESOURCE_AUTH_CONFIGS: u32 = 0x36;
+/// Get resource type
+pub const GET_RESOURCE_TYPE: u32 = 0x37;
+/// Get the data of an NFT
+pub const GET_NFT_DATA: u32 = 0x38;
+/// Update the data of an NFT
+pub const UPDATE_NFT_DATA: u32 = 0x39;
+/// Change a mutable resource to immutable
+pub const CHANGE_TO_IMMUTABLE: u32 = 0x3a;
 
-/// Create a new empty vault
+/// Create an empty vault
 pub const CREATE_EMPTY_VAULT: u32 = 0x40;
-/// Combine vaults
+/// Put fungible resource into this vault
 pub const PUT_INTO_VAULT: u32 = 0x41;
-/// Split a vault
+/// Take fungible resource from this vault
 pub const TAKE_FROM_VAULT: u32 = 0x42;
 /// Get vault resource amount
 pub const GET_VAULT_AMOUNT: u32 = 0x43;
 /// Get vault resource definition
 pub const GET_VAULT_RESOURCE_DEF: u32 = 0x44;
+/// Take an NFT from this vault, by id
+pub const TAKE_NFT_FROM_VAULT: u32 = 0x45;
+/// Get the IDs of all NFTs in this vault
+pub const GET_NFT_IDS_IN_VAULT: u32 = 0x48;
 
-/// Create a new empty bucket
+/// Create an empty bucket
 pub const CREATE_EMPTY_BUCKET: u32 = 0x50;
-/// Combine buckets
+/// Put fungible resource into this bucket
 pub const PUT_INTO_BUCKET: u32 = 0x51;
-/// Split a bucket
+/// Take fungible resource from this bucket
 pub const TAKE_FROM_BUCKET: u32 = 0x52;
 /// Get bucket resource amount
 pub const GET_BUCKET_AMOUNT: u32 = 0x53;
 /// Get bucket resource definition
 pub const GET_BUCKET_RESOURCE_DEF: u32 = 0x54;
+/// Take an NFT from this bucket, by id
+pub const TAKE_NFT_FROM_BUCKET: u32 = 0x55;
+/// Get the IDs of all NFTs in this bucket
+pub const GET_NFT_IDS_IN_BUCKET: u32 = 0x58;
 
 /// Obtain a bucket ref
 pub const CREATE_BUCKET_REF: u32 = 0x60;
@@ -94,6 +110,8 @@ pub const GET_TRANSACTION_HASH: u32 = 0xf3;
 pub const GET_CURRENT_EPOCH: u32 = 0xf4;
 /// Retrieve transaction signers
 pub const GET_TRANSACTION_SIGNERS: u32 = 0xf5;
+/// Generates an UUID
+pub const GENERATE_UUID: u32 = 0xf6;
 
 //==========
 // blueprint
@@ -218,9 +236,9 @@ pub struct PutLazyMapEntryOutput {}
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct CreateResourceMutableInput {
-    pub granularity: u8,
+    pub resource_type: ResourceType,
     pub metadata: HashMap<String, String>,
-    pub minter: Address,
+    pub auth_configs: ResourceConfigs,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
@@ -230,9 +248,9 @@ pub struct CreateResourceMutableOutput {
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct CreateResourceFixedInput {
-    pub granularity: u8,
+    pub resource_type: ResourceType,
     pub metadata: HashMap<String, String>,
-    pub supply: Decimal,
+    pub new_supply: NewSupply,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
@@ -240,6 +258,27 @@ pub struct CreateResourceFixedOutput {
     pub resource_def: Address,
     pub bucket: Bid,
 }
+
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
+pub struct MintResourceInput {
+    pub resource_def: Address,
+    pub new_supply: NewSupply,
+    pub auth: Rid,
+}
+
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
+pub struct MintResourceOutput {
+    pub bucket: Bid,
+}
+
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
+pub struct BurnResourceInput {
+    pub bucket: Bid,
+    pub auth: Rid,
+}
+
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
+pub struct BurnResourceOutput {}
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct GetResourceMetadataInput {
@@ -252,55 +291,65 @@ pub struct GetResourceMetadataOutput {
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct GetResourceSupplyInput {
+pub struct GetResourceTotalSupplyInput {
     pub resource_def: Address,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct GetResourceSupplyOutput {
+pub struct GetResourceTotalSupplyOutput {
     pub supply: Decimal,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct GetResourceMinterInput {
+pub struct GetResourceConfigsInput {
     pub resource_def: Address,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct GetResourceMinterOutput {
-    pub minter: Option<Address>,
+pub struct GetResourceConfigsOutput {
+    pub auth_configs: Option<ResourceConfigs>,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct GetResourceGranularityInput {
+pub struct GetResourceTypeInput {
     pub resource_def: Address,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct GetResourceGranularityOutput {
-    pub granularity: u8,
+pub struct GetResourceTypeOutput {
+    pub resource_type: ResourceType,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct MintResourceInput {
+pub struct GetNftDataInput {
     pub resource_def: Address,
-    pub amount: Decimal,
-    pub minter: Rid,
+    pub id: u128,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct MintResourceOutput {
-    pub bucket: Bid,
+pub struct GetNftDataOutput {
+    pub data: Vec<u8>,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct BurnResourceInput {
-    pub bucket: Bid,
-    pub minter: Rid,
+pub struct UpdateNftDataInput {
+    pub resource_def: Address,
+    pub id: u128,
+    pub data: Vec<u8>,
+    pub auth: Rid,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct BurnResourceOutput {}
+pub struct UpdateNftDataOutput {}
+
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
+pub struct ChangeToImmutableInput {
+    pub resource_def: Address,
+    pub auth: Rid,
+}
+
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
+pub struct ChangeToImmutableOutput {}
 
 //==========
 // vault
@@ -354,6 +403,27 @@ pub struct GetVaultResourceAddressInput {
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct GetVaultResourceAddressOutput {
     pub resource_def: Address,
+}
+
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
+pub struct TakeNftFromVaultInput {
+    pub vault: Vid,
+    pub id: u128,
+}
+
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
+pub struct TakeNftFromVaultOutput {
+    pub bucket: Bid,
+}
+
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
+pub struct GetNftIdsInVaultInput {
+    pub vault: Vid,
+}
+
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
+pub struct GetNftIdsInVaultOutput {
+    pub ids: BTreeSet<u128>,
 }
 
 //==========
@@ -410,6 +480,27 @@ pub struct GetBucketResourceAddressOutput {
     pub resource_def: Address,
 }
 
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
+pub struct TakeNftFromBucketInput {
+    pub bucket: Bid,
+    pub id: u128,
+}
+
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
+pub struct TakeNftFromBucketOutput {
+    pub bucket: Bid,
+}
+
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
+pub struct GetNftIdsInBucketInput {
+    pub bucket: Bid,
+}
+
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
+pub struct GetNftIdsInBucketOutput {
+    pub ids: BTreeSet<u128>,
+}
+
 //==========
 // bucket ref
 //==========
@@ -458,7 +549,7 @@ pub struct GetBucketRefResourceDefOutput {
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct EmitLogInput {
-    pub level: u8,
+    pub level: LogLevel,
     pub message: String,
 }
 
@@ -504,4 +595,12 @@ pub struct GetTransactionSignersInput {}
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct GetTransactionSignersOutput {
     pub tx_signers: Vec<Address>,
+}
+
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
+pub struct GenerateUuidInput {}
+
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
+pub struct GenerateUuidOutput {
+    pub uuid: u128,
 }

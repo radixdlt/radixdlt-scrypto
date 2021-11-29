@@ -72,7 +72,7 @@ macro_rules! from_int {
     ($type:ident) => {
         impl From<$type> for Decimal {
             fn from(val: $type) -> Self {
-                Self(i128::from(val) * PRECISION)
+                Self((val as i128) * PRECISION)
             }
         }
     };
@@ -81,11 +81,13 @@ from_int!(u8);
 from_int!(u16);
 from_int!(u32);
 from_int!(u64);
+from_int!(usize);
 from_int!(i8);
 from_int!(i16);
 from_int!(i32);
 from_int!(i64);
 from_int!(i128);
+from_int!(isize);
 
 //=====
 // ADD

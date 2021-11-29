@@ -4,10 +4,12 @@ use crate::buffer::*;
 use crate::kernel::*;
 use crate::resource::*;
 use crate::rust::borrow::ToOwned;
+use crate::rust::collections::BTreeMap;
 use crate::rust::collections::HashMap;
 use crate::rust::string::String;
 use crate::rust::vec;
 use crate::types::*;
+use crate::utils::*;
 
 /// Represents the definition of a resource.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -33,15 +35,15 @@ impl From<ResourceDef> for Address {
 
 impl ResourceDef {
     /// Creates a resource with mutable supply. The resource definition is returned.
-    pub fn new_mutable<A: Into<ResourceDef>>(
-        granularity: u8,
+    pub fn new_mutable(
+        resource_type: ResourceType,
         metadata: HashMap<String, String>,
-        minter: A,
+        auth_configs: ResourceConfigs,
     ) -> Self {
         let input = CreateResourceMutableInput {
-            granularity,
+            resource_type,
             metadata,
-            minter: minter.into().address(),
+            auth_configs,
         };
         let output: CreateResourceMutableOutput = call_kernel(CREATE_RESOURCE_MUTABLE, input);
 
@@ -49,27 +51,44 @@ impl ResourceDef {
     }
 
     /// Creates a resource with fixed supply. The created resource is immediately returned.
-    pub fn new_fixed<T: Into<Decimal>>(
-        granularity: u8,
+    pub fn new_fixed(
+        resource_type: ResourceType,
         metadata: HashMap<String, String>,
-        supply: T,
+        new_supply: NewSupply,
     ) -> (Self, Bucket) {
         let input = CreateResourceFixedInput {
-            granularity,
+            resource_type,
             metadata,
-            supply: supply.into(),
+            new_supply,
         };
         let output: CreateResourceFixedOutput = call_kernel(CREATE_RESOURCE_FIXED, input);
 
         (output.resource_def.into(), output.bucket.into())
     }
 
-    /// Mints resources
-    pub fn mint<T: Into<Decimal>>(&self, amount: T, minter: BucketRef) -> Bucket {
+    /// Mints fungible resources
+    pub fn mint<T: Into<Decimal>>(&self, amount: T, auth: BucketRef) -> Bucket {
         let input = MintResourceInput {
             resource_def: self.address,
-            amount: amount.into(),
-            minter: minter.into(),
+            new_supply: NewSupply::Fungible {
+                amount: amount.into(),
+            },
+            auth: auth.into(),
+        };
+        let output: MintResourceOutput = call_kernel(MINT_RESOURCE, input);
+
+        output.bucket.into()
+    }
+
+    /// Mints non-fungible resources
+    pub fn mint_nft<T: Encode>(&self, id: u128, data: T, auth: BucketRef) -> Bucket {
+        let mut entries = BTreeMap::new();
+        entries.insert(id, scrypto_encode(&data));
+
+        let input = MintResourceInput {
+            resource_def: self.address,
+            new_supply: NewSupply::NonFungible { entries },
+            auth: auth.into(),
         };
         let output: MintResourceOutput = call_kernel(MINT_RESOURCE, input);
 
@@ -77,10 +96,10 @@ impl ResourceDef {
     }
 
     /// Burns a bucket of resources.
-    pub fn burn(&self, bucket: Bucket, minter: BucketRef) {
+    pub fn burn(&self, bucket: Bucket, auth: BucketRef) {
         let input = BurnResourceInput {
             bucket: bucket.into(),
-            minter: minter.into(),
+            auth: auth.into(),
         };
         let _output: BurnResourceOutput = call_kernel(BURN_RESOURCE, input);
     }
@@ -95,32 +114,38 @@ impl ResourceDef {
         output.metadata
     }
 
-    /// Returns the minter address.
-    pub fn minter(&self) -> Option<Address> {
-        let input = GetResourceMinterInput {
+    /// Returns the authorization configurations.
+    pub fn auth_configs(&self) -> Option<ResourceConfigs> {
+        let input = GetResourceConfigsInput {
             resource_def: self.address,
         };
-        let output: GetResourceMinterOutput = call_kernel(GET_RESOURCE_MINTER, input);
+        let output: GetResourceConfigsOutput = call_kernel(GET_RESOURCE_AUTH_CONFIGS, input);
 
-        output.minter
+        output.auth_configs
     }
 
-    /// Returns the granularity.
-    pub fn granularity(&self) -> u8 {
-        let input = GetResourceGranularityInput {
+    /// Returns the resource type.
+    pub fn resource_type(&self) -> ResourceType {
+        let input = GetResourceTypeInput {
             resource_def: self.address,
         };
-        let output: GetResourceGranularityOutput = call_kernel(GET_RESOURCE_MINTER, input);
+        let output: GetResourceTypeOutput = call_kernel(GET_RESOURCE_AUTH_CONFIGS, input);
 
-        output.granularity
+        output.resource_type
     }
 
     /// Returns the current supply of this resource.
+    #[deprecated(note = "Please use `total_supply()` instead")]
     pub fn supply(&self) -> Decimal {
-        let input = GetResourceSupplyInput {
+        self.total_supply()
+    }
+
+    /// Returns the current supply of this resource.
+    pub fn total_supply(&self) -> Decimal {
+        let input = GetResourceTotalSupplyInput {
             resource_def: self.address,
         };
-        let output: GetResourceSupplyOutput = call_kernel(GET_RESOURCE_SUPPLY, input);
+        let output: GetResourceTotalSupplyOutput = call_kernel(GET_RESOURCE_TOTAL_SUPPLY, input);
 
         output.supply
     }
@@ -128,6 +153,46 @@ impl ResourceDef {
     /// Returns the address of this resource.
     pub fn address(&self) -> Address {
         self.address
+    }
+
+    /// Gets the data of an NFT.
+    ///
+    /// # Panics
+    /// Panics if this is not an NFT resource or the specified NFT is not found.
+    pub fn get_nft_data<T: Decode>(&self, id: u128) -> T {
+        let input = GetNftDataInput {
+            resource_def: self.address,
+            id,
+        };
+        let output: GetNftDataOutput = call_kernel(GET_NFT_DATA, input);
+
+        scrypto_unwrap(scrypto_decode(&output.data))
+    }
+
+    /// Updates the data of an NFT.
+    ///
+    /// # Panics
+    /// Panics if this is not an NFT resource or the specified NFT is not found.
+    pub fn update_nft_data<T: Encode>(&self, id: u128, data: T, auth: BucketRef) {
+        let input = UpdateNftDataInput {
+            resource_def: self.address,
+            id,
+            data: scrypto_encode(&data),
+            auth: auth.into(),
+        };
+        let _: UpdateNftDataOutput = call_kernel(UPDATE_NFT_DATA, input);
+    }
+
+    /// Changes this resource to immutable.
+    ///
+    /// #Panics
+    /// Panics if this resource is not mutable
+    pub fn change_to_immutable(&self, auth: BucketRef) {
+        let input = ChangeToImmutableInput {
+            resource_def: self.address,
+            auth: auth.into(),
+        };
+        let _: ChangeToImmutableOutput = call_kernel(CHANGE_TO_IMMUTABLE, input);
     }
 }
 

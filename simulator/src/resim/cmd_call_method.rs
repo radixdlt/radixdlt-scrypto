@@ -28,7 +28,7 @@ pub fn make_call_method<'a, 'b>() -> App<'a, 'b> {
         )
         .arg(
             Arg::with_name(ARG_ARGS)
-            .help("Specify the arguments, e.g. \"5\", \"hello\" or \"amount,resource_def\" (Bucket).")
+            .help("Specify the arguments, e.g. \"5\", \"hello\", \"amount,resource_def\" for Bucket, or \"#id1,#id2,..,resource_def\" for NFT Bucket.")
                 .multiple(true),
         )
         // options

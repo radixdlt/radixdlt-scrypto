@@ -89,8 +89,6 @@ where
 
 /// Format a package.
 pub fn fmt_package<P: AsRef<Path>>(path: P) -> Result<(), CargoExecutionError> {
-    build_package(&path, false)?;
-
     let mut cargo = path.as_ref().to_owned();
     cargo.push("Cargo.toml");
     if cargo.exists() {
@@ -114,9 +112,6 @@ pub fn fmt_package<P: AsRef<Path>>(path: P) -> Result<(), CargoExecutionError> {
             .arg(cargo.to_str().unwrap())
             .status()
             .map_err(CargoExecutionError::FailedToRunCargo)?;
-        if !status.success() {
-            return Err(CargoExecutionError::FailedToFormat(status));
-        }
 
         // replace `mod blueprint` with `blueprint!`
         for entry in fs::read_dir(&src).map_err(CargoExecutionError::IOError)? {
@@ -130,7 +125,11 @@ pub fn fmt_package<P: AsRef<Path>>(path: P) -> Result<(), CargoExecutionError> {
             }
         }
 
-        Ok(())
+        if status.success() {
+            Ok(())
+        } else {
+            Err(CargoExecutionError::FailedToFormat(status))
+        }
     } else {
         Err(CargoExecutionError::NotCargoPackage)
     }

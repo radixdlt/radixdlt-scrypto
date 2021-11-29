@@ -1,7 +1,8 @@
 use sbor::*;
+use scrypto::rust::collections::BTreeSet;
 use scrypto::types::*;
 
-use crate::model::{Auth, Bucket, BucketError};
+use crate::model::{Auth, Bucket, BucketError, Supply};
 
 /// Represents an error when accessing a vault.
 #[derive(Debug, Clone)]
@@ -35,6 +36,34 @@ impl Vault {
             self.bucket
                 .take(amount)
                 .map_err(VaultError::AccountingError)
+        } else {
+            Err(VaultError::UnauthorizedAccess)
+        }
+    }
+
+    pub fn take_nft(&mut self, id: u128, auth: Auth) -> Result<Bucket, VaultError> {
+        if auth.contains(self.auth) {
+            self.bucket
+                .take_nft(id)
+                .map_err(VaultError::AccountingError)
+        } else {
+            Err(VaultError::UnauthorizedAccess)
+        }
+    }
+
+    pub fn get_nft_ids(&self, auth: Auth) -> Result<BTreeSet<u128>, VaultError> {
+        if auth.contains(self.auth) {
+            self.bucket
+                .get_nft_ids()
+                .map_err(VaultError::AccountingError)
+        } else {
+            Err(VaultError::UnauthorizedAccess)
+        }
+    }
+
+    pub fn total_supply(&self, auth: Auth) -> Result<Supply, VaultError> {
+        if auth.contains(self.auth) {
+            Ok(self.bucket.supply())
         } else {
             Err(VaultError::UnauthorizedAccess)
         }

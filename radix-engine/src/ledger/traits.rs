@@ -1,5 +1,6 @@
 use sbor::*;
 use scrypto::buffer::*;
+use scrypto::kernel::*;
 use scrypto::rust::borrow::ToOwned;
 use scrypto::rust::collections::*;
 use scrypto::types::*;
@@ -42,6 +43,10 @@ pub trait Ledger {
 
     fn put_vault(&mut self, vid: Vid, vault: Vault);
 
+    fn get_nft(&self, resource_def: Address, id: u128) -> Option<Nft>;
+
+    fn put_nft(&mut self, resource_def: Address, id: u128, nft: Nft);
+
     fn bootstrap(&mut self) {
         if self.get_package(SYSTEM_PACKAGE).is_none() {
             // System package
@@ -64,14 +69,27 @@ pub trait Ledger {
             metadata.insert("url".to_owned(), XRD_URL.to_owned());
             self.put_resource_def(
                 RADIX_TOKEN,
-                ResourceDef::new(1, metadata, XRD_MAX_SUPPLY.into(), None).unwrap(),
+                ResourceDef::new_fixed(
+                    ResourceType::Fungible { granularity: 1 },
+                    metadata,
+                    &Supply::Fungible {
+                        amount: XRD_MAX_SUPPLY.into(),
+                    },
+                )
+                .unwrap(),
             );
 
             // Instantiate system component
             self.put_vault(
                 XRD_VAULT_ID,
                 Vault::new(
-                    Bucket::new(XRD_MAX_SUPPLY.into(), RADIX_TOKEN, 1),
+                    Bucket::new(
+                        RADIX_TOKEN,
+                        ResourceType::Fungible { granularity: 1 },
+                        Supply::Fungible {
+                            amount: XRD_MAX_SUPPLY.into(),
+                        },
+                    ),
                     SYSTEM_PACKAGE,
                 ),
             );

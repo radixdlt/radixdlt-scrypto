@@ -28,13 +28,13 @@ We'll want our supply of admin badges to be mutable.  Mutable supply resources c
 let admin_mint_badge = ResourceBuilder::new().new_badge_fixed(1);
 let admin_badge_def = ResourceBuilder::new()
   .metadata("name", badge_name)
-  .new_badge_mutable(admin_mint_badge.resource_def());
+  .new_badge_mutable(ResourceConfigs::new(admin_mint_badge.resource_def()));
 ```
 
 With that out of the way, we can mint our first admin badge and create our component.  We'll tuck our sole minting authority badge safely away within its vault.  Then we'll return the new component and the admin badge.
 
 ```rust
-let first_admin_badge = admin_badge_def.mint(1, admin_mint_badge.borrow());
+let first_admin_badge = admin_badge_def.mint(1, admin_mint_badge.present());
 let component = Self {
     admin_mint_badge: Vault::with_bucket(admin_mint_badge),
     admin_badge: admin_badge_def
@@ -53,8 +53,8 @@ Obviously we don't want just anyone to be able to create additional admin badges
 #[auth(admin_badge)]
 pub fn create_additional_admin(&self) -> Bucket {
   self.admin_mint_badge
-    .authorize(|badge| self.admin_badge.mint(1, badge))
+    .authorize(|auth| self.admin_badge.mint(1, auth))
 }
 ```
 
-The `authorize` method is a convenience method which allows us to present the badge contained within our `admin_mint_badge` vault without having to fetch it, present it, and return it.  The closure syntax using `|` characters may be unfamiliar to you: think of `|badge|` as being equivalent to `(badge) ->` in Java or `(badge) =>` in C#.
+The `authorize` method is a convenience method which allows us to present the badge contained within our `admin_mint_badge` vault without having to fetch it, present it, and return it.  The closure syntax using `|` characters may be unfamiliar to you: think of `|auth|` as being equivalent to `(auth) ->` in Java or `(auth) =>` in C#.

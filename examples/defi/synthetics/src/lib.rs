@@ -119,8 +119,8 @@ blueprint! {
         users: LazyMap<Address, User>,
         /// Synthetics
         synthetics: HashMap<String, SyntheticToken>,
-        /// Minter badge
-        synthetics_minter_badge: Vault,
+        /// Mint badge
+        synthetics_mint_badge: Vault,
         /// Global debt
         synthetics_global_debt_share_resource_def: ResourceDef,
     }
@@ -135,12 +135,12 @@ blueprint! {
             let oracle: PriceOracle = oracle_address.into();
             let snx_resource_def: ResourceDef = snx_token_address.into();
             let usd_resource_def: ResourceDef = usd_token_address.into();
-            let synthetics_minter_badge = ResourceBuilder::new()
-                .metadata("name", "Synthetics Minter Badge")
+            let synthetics_mint_badge = ResourceBuilder::new()
+                .metadata("name", "Synthetics Mint Badge")
                 .new_badge_fixed(1);
             let synthetics_global_debt_share_resource_def = ResourceBuilder::new()
                 .metadata("name", "Synthetics Global Debt")
-                .new_token_mutable(synthetics_minter_badge.resource_def());
+                .new_token_mutable(ResourceConfigs::new(synthetics_mint_badge.resource_def()));
 
             Self {
                 oracle,
@@ -149,7 +149,7 @@ blueprint! {
                 usd_resource_def,
                 users: LazyMap::new(),
                 synthetics: HashMap::new(),
-                synthetics_minter_badge: Vault::with_bucket(synthetics_minter_badge),
+                synthetics_mint_badge: Vault::with_bucket(synthetics_mint_badge),
                 synthetics_global_debt_share_resource_def,
             }
             .instantiate()
@@ -169,7 +169,7 @@ blueprint! {
             let token_resource_def = ResourceBuilder::new()
                 .metadata("name", format!("Synthetic {}", asset_symbol.clone()))
                 .metadata("symbol", format!("s{}", asset_symbol.clone()))
-                .new_token_mutable(self.synthetics_minter_badge.resource_def());
+                .new_token_mutable(ResourceConfigs::new(self.synthetics_mint_badge.resource_def()));
             let token_address = token_resource_def.address();
             self.synthetics.insert(
                 asset_symbol.clone(),
@@ -211,21 +211,21 @@ blueprint! {
             let new_debt = self.get_asset_price(synth.asset_address) * amount;
 
             user.global_debt_share
-                .put(self.synthetics_minter_badge.authorize(|badge| {
+                .put(self.synthetics_mint_badge.authorize(|auth| {
                     self.synthetics_global_debt_share_resource_def.mint(
                         if global_debt.is_zero() {
                             Decimal::from(100)
                         } else {
                             new_debt
                                 / (global_debt
-                                    / self.synthetics_global_debt_share_resource_def.supply())
+                                    / self.synthetics_global_debt_share_resource_def.total_supply())
                         },
-                        badge,
+                        auth,
                     )
                 }));
             let tokens = self
-                .synthetics_minter_badge
-                .authorize(|badge| synth.token_resource_def.mint(amount, badge));
+                .synthetics_mint_badge
+                .authorize(|auth| synth.token_resource_def.mint(amount, auth));
             user.check_collateralization_ratio(
                 self.get_snx_price(),
                 self.get_total_global_debt(),
@@ -249,15 +249,15 @@ blueprint! {
             let global_debt = self.get_total_global_debt();
             let debt_to_remove = self.get_asset_price(synth.asset_address) * bucket.amount();
             let shares_to_burn = user.global_debt_share.take(
-                self.synthetics_global_debt_share_resource_def.supply() * debt_to_remove
+                self.synthetics_global_debt_share_resource_def.total_supply() * debt_to_remove
                     / global_debt,
             );
 
-            self.synthetics_minter_badge.authorize(|badge| {
-                shares_to_burn.burn(badge);
+            self.synthetics_mint_badge.authorize(|auth| {
+                shares_to_burn.burn(auth);
             });
-            self.synthetics_minter_badge
-                .authorize(|badge| bucket.burn(badge));
+            self.synthetics_mint_badge
+                .authorize(|auth| bucket.burn(auth));
         }
 
         /// Returns the total global debt.
@@ -265,7 +265,7 @@ blueprint! {
             let mut total = Decimal::zero();
             for (_, synth) in &self.synthetics {
                 total +=
-                    self.get_asset_price(synth.asset_address) * synth.token_resource_def.supply();
+                    self.get_asset_price(synth.asset_address) * synth.token_resource_def.total_supply();
             }
             total
         }
@@ -297,7 +297,7 @@ blueprint! {
                 self.get_snx_price(),
                 self.get_total_global_debt(),
                 user.global_debt_share.amount(),
-                self.synthetics_global_debt_share_resource_def.supply()
+                self.synthetics_global_debt_share_resource_def.total_supply()
             )
         }
 
@@ -382,10 +382,10 @@ impl User {
         global_debt_resource_def: ResourceDef,
         threshold: Decimal,
     ) {
-        if !global_debt_resource_def.supply().is_zero() {
+        if !global_debt_resource_def.total_supply().is_zero() {
             assert!(
                 self.snx.amount() * snx_price
-                    / (global_debt / global_debt_resource_def.supply()
+                    / (global_debt / global_debt_resource_def.total_supply()
                         * self.global_debt_share.amount())
                     >= threshold,
                 "Under collateralized!",
