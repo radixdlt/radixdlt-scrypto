@@ -134,40 +134,12 @@ fn test_resource_def() {
         .call_function(
             package,
             "ResourceTest",
-            "create_mutable_token",
-            vec![],
-            Some(account),
-        )
-        .call_function(
-            package,
-            "ResourceTest",
-            "create_fixed_token",
-            vec![],
-            Some(account),
-        )
-        .call_function(
-            package,
-            "ResourceTest",
-            "create_mutable_badge",
-            vec![],
-            Some(account),
-        )
-        .call_function(
-            package,
-            "ResourceTest",
-            "create_fixed_badge",
+            "create_fungible",
             vec![],
             Some(account),
         )
         .call_function(package, "ResourceTest", "query", vec![], Some(account))
         .call_function(package, "ResourceTest", "burn", vec![], Some(account))
-        .call_function(
-            package,
-            "ResourceTest",
-            "change_to_immutable",
-            vec![],
-            Some(account),
-        )
         .drop_all_bucket_refs()
         .deposit_all_buckets(account)
         .build(vec![key])
@@ -180,7 +152,7 @@ fn test_resource_def() {
         .call_function(
             package,
             "ResourceTest",
-            "create_fixed_badge_should_fail",
+            "create_fungible_should_fail",
             vec![],
             Some(account),
         )

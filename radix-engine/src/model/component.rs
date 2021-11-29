@@ -17,7 +17,7 @@ pub struct Component {
     package: Address,
     name: String,
     state: Vec<u8>,
-    auth: Address,
+    authority: Address,
 }
 
 impl Component {
@@ -28,7 +28,7 @@ impl Component {
             package,
             name,
             state,
-            auth: package,
+            authority: package,
         }
     }
 
@@ -41,7 +41,7 @@ impl Component {
     }
 
     pub fn state(&self, auth: Auth) -> Result<&[u8], ComponentError> {
-        if auth.contains(self.auth) {
+        if auth.check(self.authority) {
             Ok(&self.state)
         } else {
             Err(ComponentError::UnauthorizedAccess)
@@ -49,7 +49,7 @@ impl Component {
     }
 
     pub fn set_state(&mut self, new_state: Vec<u8>, auth: Auth) -> Result<(), ComponentError> {
-        if auth.contains(self.auth) {
+        if auth.check(self.authority) {
             self.state = new_state;
             Ok(())
         } else {

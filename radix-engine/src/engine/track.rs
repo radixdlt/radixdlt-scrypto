@@ -362,8 +362,8 @@ impl<'l, L: Ledger> Track<'l, L> {
     }
 
     /// Creates a new resource definition address.
-    pub fn new_resource_def_address(&mut self) -> Address {
-        let address = self.id_alloc.new_resource_def_address(self.tx_hash());
+    pub fn new_resource_address(&mut self) -> Address {
+        let address = self.id_alloc.new_resource_address(self.tx_hash());
         self.new_entities.push(address);
         address
     }

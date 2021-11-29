@@ -3,6 +3,8 @@ use sbor::*;
 use scrypto::abi;
 use scrypto::buffer::*;
 use scrypto::kernel::*;
+use scrypto::resource::resource_flags::*;
+use scrypto::resource::resource_permissions::*;
 use scrypto::rust::borrow::ToOwned;
 use scrypto::rust::collections::*;
 use scrypto::rust::fmt;
@@ -240,9 +242,13 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
             blueprint: "System".to_owned(),
             function: "new_resource_mutable".to_owned(),
             args: vec![
-                SmartValue::from(ResourceType::Fungible { granularity: 1 }),
+                SmartValue::from(ResourceType::Fungible),
                 SmartValue::from(metadata),
-                SmartValue::from(ResourceConfigs::new(mint_badge_address)),
+                SmartValue::from(1),
+                SmartValue::from(FREELY_TRANSFERABLE | FREELY_BURNABLE | MINTABLE),
+                SmartValue::from(0u16),
+                SmartValue::from(HashMap::from([(mint_badge_address, MAY_MINT)])),
+                SmartValue::from::<Option<NewSupply>>(None),
             ],
         })
     }
@@ -251,16 +257,22 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     pub fn new_token_fixed(
         &mut self,
         metadata: HashMap<String, String>,
-        supply: Decimal,
+        initial_supply: Decimal,
     ) -> &mut Self {
         self.add_instruction(Instruction::CallFunction {
             package: SYSTEM_PACKAGE,
             blueprint: "System".to_owned(),
             function: "new_resource".to_owned(),
             args: vec![
-                SmartValue::from(ResourceType::Fungible { granularity: 1 }),
+                SmartValue::from(ResourceType::Fungible),
                 SmartValue::from(metadata),
-                SmartValue::from(ResourceSupply::Fungible { amount: supply }),
+                SmartValue::from(1),
+                SmartValue::from(FREELY_TRANSFERABLE | FREELY_BURNABLE),
+                SmartValue::from(0u16),
+                SmartValue::from(HashMap::<Address, u16>::new()),
+                SmartValue::from(Some(NewSupply::Fungible {
+                    amount: initial_supply.into(),
+                })),
             ],
         })
     }
@@ -276,9 +288,13 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
             blueprint: "System".to_owned(),
             function: "new_resource_mutable".to_owned(),
             args: vec![
-                SmartValue::from(ResourceType::Fungible { granularity: 19 }),
+                SmartValue::from(ResourceType::Fungible),
                 SmartValue::from(metadata),
-                SmartValue::from(ResourceConfigs::new(mint_badge_address)),
+                SmartValue::from(19),
+                SmartValue::from(FREELY_TRANSFERABLE | FREELY_BURNABLE | MINTABLE),
+                SmartValue::from(0u16),
+                SmartValue::from(HashMap::from([(mint_badge_address, MAY_MINT)])),
+                SmartValue::from::<Option<NewSupply>>(None),
             ],
         })
     }
@@ -287,16 +303,22 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     pub fn new_badge_fixed(
         &mut self,
         metadata: HashMap<String, String>,
-        supply: Decimal,
+        initial_supply: Decimal,
     ) -> &mut Self {
         self.add_instruction(Instruction::CallFunction {
             package: SYSTEM_PACKAGE,
             blueprint: "System".to_owned(),
             function: "new_resource".to_owned(),
             args: vec![
-                SmartValue::from(ResourceType::Fungible { granularity: 19 }),
+                SmartValue::from(ResourceType::Fungible),
                 SmartValue::from(metadata),
-                SmartValue::from(ResourceSupply::Fungible { amount: supply }),
+                SmartValue::from(19),
+                SmartValue::from(FREELY_TRANSFERABLE | FREELY_BURNABLE),
+                SmartValue::from(0u16),
+                SmartValue::from(HashMap::<Address, u16>::new()),
+                SmartValue::from(Some(NewSupply::Fungible {
+                    amount: initial_supply.into(),
+                })),
             ],
         })
     }

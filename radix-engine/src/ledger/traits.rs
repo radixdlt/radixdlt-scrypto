@@ -1,6 +1,7 @@
 use sbor::*;
 use scrypto::buffer::*;
 use scrypto::kernel::*;
+use scrypto::resource::resource_flags::*;
 use scrypto::rust::borrow::ToOwned;
 use scrypto::rust::collections::*;
 use scrypto::types::*;
@@ -69,12 +70,16 @@ pub trait Ledger {
             metadata.insert("url".to_owned(), XRD_URL.to_owned());
             self.put_resource_def(
                 RADIX_TOKEN,
-                ResourceDef::new_fixed(
-                    ResourceType::Fungible { granularity: 1 },
+                ResourceDef::new(
+                    ResourceType::Fungible,
                     metadata,
-                    &Supply::Fungible {
+                    1,
+                    FREELY_TRANSFERABLE,
+                    0,
+                    HashMap::new(),
+                    &Some(NewSupply::Fungible {
                         amount: XRD_MAX_SUPPLY.into(),
-                    },
+                    }),
                 )
                 .unwrap(),
             );
@@ -85,7 +90,8 @@ pub trait Ledger {
                 Vault::new(
                     Bucket::new(
                         RADIX_TOKEN,
-                        ResourceType::Fungible { granularity: 1 },
+                        ResourceType::Fungible,
+                        1,
                         Supply::Fungible {
                             amount: XRD_MAX_SUPPLY.into(),
                         },

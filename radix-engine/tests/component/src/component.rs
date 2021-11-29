@@ -7,13 +7,16 @@ blueprint! {
     }
 
     impl ComponentTest {
-        pub fn create_component() -> Component {
-            let bucket = ResourceBuilder::new()
+        fn create_test_token(amount: u32) -> Bucket {
+            ResourceBuilder::new_fungible()
                 .metadata("name", "TestToken")
-                .new_token_fixed(1000);
+                .flags(FREELY_TRANSFERABLE)
+                .initial_supply(NewSupply::fungible(amount))
+        }
 
+        pub fn create_component() -> Component {
             Self {
-                test_vault: Vault::with_bucket(bucket),
+                test_vault: Vault::with_bucket(Self::create_test_token(1000)),
                 secret: "Secret".to_owned(),
             }
             .instantiate()

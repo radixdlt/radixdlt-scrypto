@@ -42,7 +42,7 @@ impl NewSupply {
         }
     }
 
-    pub fn non_fungible<T: Encode>(entries: Vec<(u128, T)>) -> Self {
+    pub fn non_fungible<T: Encode, const N: usize>(entries: [(u128, T); N]) -> Self {
         let mut encoded = HashMap::new();
         for (k, v) in entries {
             encoded.insert(k, scrypto_encode(&v));

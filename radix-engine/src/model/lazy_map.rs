@@ -15,14 +15,14 @@ pub enum LazyMapError {
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct LazyMap {
     map: HashMap<Vec<u8>, Vec<u8>>,
-    auth: Address,
+    authority: Address,
 }
 
 impl LazyMap {
-    pub fn new(auth: Address) -> Self {
+    pub fn new(authority: Address) -> Self {
         Self {
             map: HashMap::new(),
-            auth,
+            authority,
         }
     }
 
@@ -32,7 +32,7 @@ impl LazyMap {
     }
 
     pub fn get_entry(&self, key: &[u8], auth: Auth) -> Result<Option<&[u8]>, LazyMapError> {
-        if auth.contains(self.auth) {
+        if auth.check(self.authority) {
             Ok(self.map.get(key).map(|e| e.as_slice()))
         } else {
             Err(LazyMapError::UnauthorizedAccess)
@@ -45,7 +45,7 @@ impl LazyMap {
         value: Vec<u8>,
         auth: Auth,
     ) -> Result<(), LazyMapError> {
-        if auth.contains(self.auth) {
+        if auth.check(self.authority) {
             self.map.insert(key, value);
             Ok(())
         } else {

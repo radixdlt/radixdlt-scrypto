@@ -17,11 +17,11 @@ pub struct ResourceBuilder {
 
 impl ResourceBuilder {
     /// Starts a new builder.
-    pub fn new(resource_type: ResourceType) -> Self {
+    pub fn new(resource_type: ResourceType, granularity: u8) -> Self {
         Self {
             resource_type,
             metadata: HashMap::new(),
-            granularity: 1,
+            granularity,
             flags: 0,
             mutable_flags: 0,
             authorities: HashMap::new(),
@@ -30,12 +30,12 @@ impl ResourceBuilder {
 
     /// Starts a new builder to create fungible resource, e.g., tokens.
     pub fn new_fungible() -> Self {
-        Self::new(ResourceType::Fungible)
+        Self::new(ResourceType::Fungible, 1)
     }
 
     /// Starts a new builder to create non-fungible resource, e.g. NFT.
     pub fn new_non_fungible() -> Self {
-        Self::new(ResourceType::NonFungible)
+        Self::new(ResourceType::NonFungible, 19)
     }
 
     /// Sets the resource granularity.
@@ -69,9 +69,10 @@ impl ResourceBuilder {
         self
     }
 
-    /// Adds a permission configuration.
-    pub fn permission(&mut self, badge_address: Address, authorities: u16) -> &mut Self {
-        self.authorities.insert(badge_address, authorities);
+    /// Adds a badge for authorization.
+    pub fn badge<A: Into<ResourceDef>>(&mut self, badge_address: A, permissions: u16) -> &mut Self {
+        self.authorities
+            .insert(badge_address.into().address(), permissions);
         self
     }
 

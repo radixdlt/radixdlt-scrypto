@@ -5,25 +5,33 @@ blueprint! {
 
     impl NftTest {
         pub fn create_nft_mutable() -> (Bucket, ResourceDef, Bucket) {
-            let mint_badge = ResourceBuilder::new().new_badge_fixed(1);
-            let mint_badge_address = mint_badge.resource_address();
+            // Create a mint badge
+            let mint_badge = ResourceBuilder::new_fungible()
+                .granularity(19)
+                .flags(FREELY_TRANSFERABLE)
+                .initial_supply(NewSupply::fungible(1));
 
-            let resource_def = ResourceBuilder::new()
+            // Create NFT resource with mutable supply
+            let nft_resource_def = ResourceBuilder::new_non_fungible()
                 .metadata("name", "Katz's Sandwiches")
-                .new_nft_mutable(
-                    ResourceConfigs::new(mint_badge_address)
-                        .with_update_badge_address(mint_badge_address),
-                );
+                .flags(FREELY_TRANSFERABLE | MINTABLE | INDIVIDUAL_METADATA_MUTABLE)
+                .badge(mint_badge.resource_def(), MAY_MINT | MAY_CHANGE_INDIVIDUAL_METADATA)
+                .no_initial_supply();
 
-            let nft = resource_def.mint_nft(0, "Prastrami", mint_badge.present());
+            // Mint an NFT
+            let nft = nft_resource_def.mint_nft(0, "Prastrami", mint_badge.present());
 
-            (mint_badge, resource_def, nft)
+            (mint_badge, nft_resource_def, nft)
         }
 
         pub fn create_nft_fixed() -> Bucket {
-            ResourceBuilder::new()
+            ResourceBuilder::new_non_fungible()
                 .metadata("name", "Katz's Sandwiches")
-                .new_nft_fixed(BTreeMap::from([(1, "Hi"), (2, "Test"), (3, "NFT")]))
+                .initial_supply(NewSupply::non_fungible([
+                    (1, "Hi"),
+                    (2, "Test"),
+                    (3, "NFT"),
+                ]))
         }
 
         pub fn update_and_get_nft() -> (Bucket, Bucket) {
