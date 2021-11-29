@@ -68,6 +68,11 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
         }
     }
 
+    /// Returns the underlying ledger.
+    pub fn ledger(&self) -> &L {
+        self.ledger
+    }
+
     /// Returns the current epoch.
     pub fn current_epoch(&self) -> u64 {
         self.current_epoch
