@@ -855,16 +855,16 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
 
         debug!(
             self,
-            "CALL started: package = {:?}, name = {:?}, function = {:?}, args = {:?}",
+            "CALL started: package = {:?}, blueprint = {:?}, function = {:?}, args = {:?}",
             input.package,
-            input.name,
+            input.blueprint_name,
             input.function,
             input.args
         );
 
         let invocation = self.prepare_call_function(
             input.package,
-            &input.name,
+            &input.blueprint_name,
             input.function.as_str(),
             input.args,
         )?;

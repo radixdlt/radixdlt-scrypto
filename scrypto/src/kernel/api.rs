@@ -132,7 +132,7 @@ pub struct PublishPackageOutput {
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct CallFunctionInput {
     pub package: Address,
-    pub name: String,
+    pub blueprint_name: String,
     pub function: String,
     pub args: Vec<Vec<u8>>,
 }

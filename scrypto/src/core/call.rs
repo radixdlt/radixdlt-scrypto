@@ -12,7 +12,7 @@ pub fn call_function(
 ) -> Vec<u8> {
     let input = CallFunctionInput {
         package,
-        name: blueprint.to_owned(),
+        blueprint_name: blueprint.to_owned(),
         function: function.to_owned(),
         args,
     };

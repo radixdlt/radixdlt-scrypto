@@ -73,7 +73,7 @@ pub trait Ledger {
                 ResourceDef::new(
                     ResourceType::Fungible { granularity: 0 },
                     HashMap::new(),
-                    FREELY_TRANSFERABLE,
+                    FREELY_TRANSFERABLE | FREELY_BURNABLE,
                     0,
                     HashMap::new(),
                     &Some(NewSupply::Fungible {

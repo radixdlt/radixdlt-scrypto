@@ -14,7 +14,7 @@ pub const FREELY_BURNABLE: u16 = 1u16 << 3;
 pub const MINTABLE: u16 = 1u16 << 4;
 
 /// Resource can be seized from any vault if proper authorization is presented.
-pub const CLAWBACKABLE: u16 = 1u16 << 5;
+pub const RECALLABLE: u16 = 1u16 << 5;
 
 /// Top-level metadata can be changed.
 pub const SHARED_METADATA_MUTABLE: u16 = 1u16 << 6;

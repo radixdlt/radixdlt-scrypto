@@ -8,7 +8,7 @@ pub const MAY_BURN: u16 = 1u16 << 2;
 pub const MAY_MINT: u16 = 1u16 << 4;
 
 /// May seize from any vault.
-pub const MAY_CLAWBACK: u16 = 1u16 << 5;
+pub const MAY_RECALL: u16 = 1u16 << 5;
 
 /// May change top-level resource metadata, e.g. name and symbol.
 pub const MAY_CHANGE_SHARED_METADATA: u16 = 1u16 << 6;
