@@ -10,7 +10,7 @@ blueprint! {
         fn create_test_token(amount: u32) -> Bucket {
             ResourceBuilder::new_fungible(0)
                 .metadata("name", "TestToken")
-                .flags(FREELY_TRANSFERABLE)
+                .flags(FREELY_TRANSFERABLE | FREELY_BURNABLE)
                 .initial_supply(NewSupply::fungible(amount))
         }
 

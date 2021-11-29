@@ -6,7 +6,7 @@ blueprint! {
     impl ResourceTest {
         pub fn create_fungible() -> (Bucket, ResourceDef) {
             let badge = ResourceBuilder::new_fungible(18)
-                .flags(FREELY_TRANSFERABLE)
+                .flags(FREELY_TRANSFERABLE | FREELY_BURNABLE)
                 .initial_supply(NewSupply::fungible(1));
             let token_resource_def = ResourceBuilder::new_fungible(0)
                 .metadata("name", "TestToken")
@@ -18,7 +18,7 @@ blueprint! {
 
         pub fn create_fungible_should_fail() -> (Bucket, Bucket) {
             let bucket = ResourceBuilder::new_fungible(18)
-                .flags(FREELY_TRANSFERABLE)
+                .flags(FREELY_TRANSFERABLE | FREELY_BURNABLE)
                 .initial_supply(NewSupply::fungible(1));
             (bucket.take(Decimal::from_str("0.1").unwrap()), bucket)
         }

@@ -15,7 +15,7 @@ blueprint! {
             let my_bucket: Bucket = ResourceBuilder::new_fungible(0)
                 .metadata("name", "HelloToken")
                 .metadata("symbol", "HT")
-                .flags(FREELY_TRANSFERABLE)
+                .flags(FREELY_TRANSFERABLE | FREELY_BURNABLE)
                 .initial_supply(NewSupply::fungible(1000));
 
             // Instantiate a Hello component, populating its vault with our supply of 1000 HelloToken

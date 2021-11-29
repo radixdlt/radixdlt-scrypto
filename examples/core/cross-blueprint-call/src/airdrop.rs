@@ -15,7 +15,7 @@ blueprint! {
                 tokens: Vault::with_bucket(
                     ResourceBuilder::new_fungible(0)
                         .metadata("name", "FreeToken")
-                        .flags(FREELY_TRANSFERABLE)
+                        .flags(FREELY_TRANSFERABLE | FREELY_BURNABLE)
                         .initial_supply(NewSupply::fungible(1000)),
                 ),
             }

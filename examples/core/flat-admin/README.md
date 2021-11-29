@@ -25,10 +25,14 @@ pub fn new(badge_name: String) -> (Component, Bucket) {
 We'll want our supply of admin badges to be mutable.  Mutable supply resources can only be minted and burned by an appropriate authority, so we'll first create a badge to serve as that authority, and then use that new badge to create our supply of admin badges.
 
 ```rust
-let admin_mint_badge = ResourceBuilder::new().new_badge_fixed(1);
-let admin_badge_def = ResourceBuilder::new()
-  .metadata("name", badge_name)
-  .new_badge_mutable(ResourceConfigs::new(admin_mint_badge.resource_def()));
+let admin_mint_badge = ResourceBuilder::new_fungible(18)
+    .flags(FREELY_TRANSFERABLE | FREELY_BURNABLE)
+    .initial_supply(NewSupply::fungible(1));
+let admin_badge_def = ResourceBuilder::new_fungible(18)
+    .metadata("name", badge_name)
+    .flags(FREELY_TRANSFERABLE | MINTABLE | BURNABLE)
+    .badge(admin_mint_badge.resource_def(), MAY_MINT | MAY_BURN)
+    .no_initial_supply();
 ```
 
 With that out of the way, we can mint our first admin badge and create our component.  We'll tuck our sole minting authority badge safely away within its vault.  Then we'll return the new component and the admin badge.

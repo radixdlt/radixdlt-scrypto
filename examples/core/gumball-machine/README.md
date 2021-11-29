@@ -25,11 +25,12 @@ pub fn new(price: Decimal) -> Component {
 Within the `new` function, the first thing we need to do is create a new supply of gumballs which we intend to populate our new component with:
 
 ```rust
-let bucket_of_gumballs = ResourceBuilder::new()
+let bucket_of_gumballs = ResourceBuilder::new_fungible(0)
   .metadata("name", "Gumball")
   .metadata("symbol", "GUM")
   .metadata("description", "A delicious gumball")
-  .new_token_fixed(100);
+  .flags(FREELY_TRANSFERABLE | FREELY_BURNABLE)
+  .initial_supply(NewSupply::fungible(100));
 ```
 
 All that's left is to populate our `GumballMachine` struct with our supply of gumballs, the user-specified price, and an empty Vault which we will force to contain XRD.  Then we'll instantiate it, which returns the address, and we'll return that to the caller.

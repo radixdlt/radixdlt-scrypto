@@ -7,7 +7,7 @@ blueprint! {
         fn create_test_badge(amount: u32) -> Bucket {
             ResourceBuilder::new_fungible(18)
                 .metadata("name", "TestBadge")
-                .flags(FREELY_TRANSFERABLE)
+                .flags(FREELY_TRANSFERABLE | FREELY_BURNABLE)
                 .initial_supply(NewSupply::fungible(amount))
         }
 
