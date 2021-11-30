@@ -14,6 +14,8 @@ fn test_hello() {
     // Test the `new` function.
     let transaction1 = TransactionBuilder::new(&executor)
         .call_function(package, "Hello", "new", vec![], None)
+        .drop_all_bucket_refs()
+        .deposit_all_buckets(account)
         .build(vec![key])
         .unwrap();
     let receipt1 = executor.run(transaction1, false).unwrap();
