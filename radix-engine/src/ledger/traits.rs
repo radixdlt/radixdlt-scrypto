@@ -71,7 +71,7 @@ pub trait Ledger {
                 RADIX_TOKEN,
                 ResourceDef::new(
                     ResourceType::Fungible { granularity: 0 },
-                    HashMap::new(),
+                    metadata,
                     0,
                     0,
                     HashMap::new(),
