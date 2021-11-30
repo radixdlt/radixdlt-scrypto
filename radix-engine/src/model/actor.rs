@@ -2,6 +2,7 @@ use scrypto::rust::collections::HashMap;
 use scrypto::rust::collections::HashSet;
 use scrypto::types::*;
 
+#[derive(Debug, Clone)]
 pub enum Actor {
     SuperUser,
 

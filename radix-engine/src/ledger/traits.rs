@@ -1,7 +1,6 @@
 use sbor::*;
 use scrypto::buffer::*;
 use scrypto::kernel::*;
-use scrypto::resource::resource_flags::*;
 use scrypto::rust::borrow::ToOwned;
 use scrypto::rust::collections::*;
 use scrypto::types::*;

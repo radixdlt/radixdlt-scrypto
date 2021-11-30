@@ -8,9 +8,9 @@
 //! bar</a> at the top of the page.
 //!
 //! Otherwise, you may want to start with the following modules:
-//! * [`types`]
 //! * [`core`]
 //! * [`resource`]
+//! * [`types`]
 //!
 
 #![cfg_attr(not(feature = "std"), no_std)]
@@ -46,7 +46,7 @@ pub mod abi {
 extern crate scrypto_derive;
 pub use scrypto_derive::*;
 
-/// Encodes arguments according to `CALL` abi.
+/// Encodes arguments according to Scrypto call abi.
 ///
 /// # Example
 /// ```ignore
