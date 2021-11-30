@@ -1,17 +1,16 @@
 //! # The Scrypto Standard Library
 //!
-//! The Scrypto Standard Library is the foundation of Scrypto apps, a
+//! The Scrypto Standard Library is the foundation of Scrypto blueprints, a
 //! set of minimal and shared abstractions for the Radix ecosystem.
-//! It offers primitive types, core abstractions and resource constructs.
 //!
 //! If you know the name of what you're looking for, the fastest way to find
 //! it is to use the <a href="#" onclick="focusSearchBar();">search
 //! bar</a> at the top of the page.
 //!
 //! Otherwise, you may want to start with the following modules:
-//! * [`types`]
 //! * [`core`]
 //! * [`resource`]
+//! * [`types`]
 //!
 
 #![cfg_attr(not(feature = "std"), no_std)]
@@ -47,7 +46,7 @@ pub mod abi {
 extern crate scrypto_derive;
 pub use scrypto_derive::*;
 
-/// Encodes arguments according to `CALL` abi.
+/// Encodes arguments according to Scrypto call abi.
 ///
 /// # Example
 /// ```ignore
@@ -120,20 +119,5 @@ macro_rules! include_code {
             $package_dir,
             "/target/wasm32-unknown-unknown/release/out.wasm"
         ))
-    };
-}
-
-/// Asserts a condition and panics if it's false.
-#[macro_export]
-macro_rules! scrypto_assert {
-    ($cond: expr $(,)?) => {
-        if !$cond {
-            panic!("Assertion failed: {}", stringify!($cond));
-        }
-    };
-    ($cond: expr, $($arg: tt)+) => {
-        if !$cond {
-            panic!("Assertion failed: {}", format!($($arg)+));
-        }
     };
 }

@@ -57,10 +57,10 @@ In Scrypto, resources are the abstraction of physical assets, like tokens, badge
 
 To define a new resource, we use the `ResourceBuilder` by specifying the metadata and initial supply:
 ```rust
-let my_bucket: Bucket = ResourceBuilder::new()
+let my_bucket: Bucket = ResourceBuilder::new_fungible(0)
     .metadata("name", "HelloToken")
     .metadata("symbol", "HT")
-    .new_token_fixed(1000);
+    .initial_supply_fungible(1000);
 ```
 
 Once created, the resource is held in transient container `my_bucket`. To permanently store the created resource, we need to put it into a `Vault` like in the example:

@@ -16,15 +16,15 @@ pub trait AbiProvider {
     /// Exports the ABI of a blueprint.
     fn export_abi<S: AsRef<str>>(
         &self,
-        package: Address,
-        blueprint: S,
+        package_address: Address,
+        blueprint_name: S,
         trace: bool,
     ) -> Result<abi::Blueprint, RuntimeError>;
 
     /// Exports the ABI of the blueprint, from which the given component is instantiated.
     fn export_abi_component(
         &self,
-        component: Address,
+        component_address: Address,
         trace: bool,
     ) -> Result<abi::Blueprint, RuntimeError>;
 }
@@ -48,13 +48,15 @@ impl BasicAbiProvider {
 
     pub fn with_component(
         &mut self,
-        address: Address,
-        package: Address,
-        name: String,
+        component_address: Address,
+        package_address: Address,
+        blueprint_name: String,
         state: Vec<u8>,
     ) -> &mut Self {
-        self.ledger
-            .put_component(address, Component::new(package, name, state));
+        self.ledger.put_component(
+            component_address,
+            Component::new(package_address, blueprint_name, state),
+        );
         self
     }
 }
@@ -62,26 +64,26 @@ impl BasicAbiProvider {
 impl AbiProvider for BasicAbiProvider {
     fn export_abi<S: AsRef<str>>(
         &self,
-        package: Address,
-        blueprint: S,
+        package_address: Address,
+        blueprint_name: S,
         trace: bool,
     ) -> Result<abi::Blueprint, RuntimeError> {
         // Deterministic transaction context
         let mut ledger = self.ledger.clone();
         let current_epoch = 0;
-        let tx_hash = sha256([]);
+        let transaction_hash = sha256([]);
 
         // Start a process and run abi generator
-        let mut track = Track::new(&mut ledger, current_epoch, tx_hash, Vec::new());
+        let mut track = Track::new(&mut ledger, current_epoch, transaction_hash, Vec::new());
         let mut proc = track.start_process(trace);
         let output: (Vec<abi::Function>, Vec<abi::Method>) = proc
-            .call_abi(package, blueprint.as_ref())
+            .call_abi(package_address, blueprint_name.as_ref())
             .and_then(|rtn| scrypto_decode(&rtn).map_err(RuntimeError::InvalidData))?;
 
         // Return ABI
         Ok(abi::Blueprint {
-            package: package.to_string(),
-            name: blueprint.as_ref().to_owned(),
+            package: package_address.to_string(),
+            name: blueprint_name.as_ref().to_owned(),
             functions: output.0,
             methods: output.1,
         })
@@ -89,13 +91,17 @@ impl AbiProvider for BasicAbiProvider {
 
     fn export_abi_component(
         &self,
-        component: Address,
+        component_address: Address,
         trace: bool,
     ) -> Result<abi::Blueprint, RuntimeError> {
-        let c = self
+        let component = self
             .ledger
-            .get_component(component)
-            .ok_or(RuntimeError::ComponentNotFound(component))?;
-        self.export_abi(c.package(), c.name().to_owned(), trace)
+            .get_component(component_address)
+            .ok_or(RuntimeError::ComponentNotFound(component_address))?;
+        self.export_abi(
+            component.package_address(),
+            component.blueprint_name().to_owned(),
+            trace,
+        )
     }
 }

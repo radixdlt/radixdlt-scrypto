@@ -8,26 +8,24 @@ use scrypto::types::*;
 /// Represents an error when accessing a bucket.
 #[derive(Debug, Clone)]
 pub enum BucketError {
-    MismatchingResourceDef,
+    ResourceNotMatching,
     InsufficientBalance,
-    InvalidGranularity,
-    GranularityCheckFailed,
+    InvalidAmount(Decimal),
     UnsupportedOperation,
     NftNotFound,
-    InvalidAmount(Decimal),
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub enum Supply {
     Fungible { amount: Decimal },
 
-    NonFungible { entries: BTreeSet<u128> },
+    NonFungible { ids: BTreeSet<u128> },
 }
 
 /// A transient resource container.
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct Bucket {
-    resource_def: Address,
+    resource_address: Address,
     resource_type: ResourceType,
     supply: Supply,
 }
@@ -43,36 +41,36 @@ pub struct LockedBucket {
 pub type BucketRef = Rc<LockedBucket>;
 
 impl Bucket {
-    pub fn new(resource_def: Address, resource_type: ResourceType, supply: Supply) -> Self {
+    pub fn new(resource_address: Address, resource_type: ResourceType, supply: Supply) -> Self {
         Self {
-            resource_def,
+            resource_address,
             resource_type,
             supply,
         }
     }
 
     pub fn put(&mut self, other: Self) -> Result<(), BucketError> {
-        if self.resource_def != other.resource_def {
-            Err(BucketError::MismatchingResourceDef)
+        if self.resource_address != other.resource_address {
+            Err(BucketError::ResourceNotMatching)
         } else {
             match &mut self.supply {
                 Supply::Fungible { ref mut amount } => {
                     let other_amount = match other.supply() {
                         Supply::Fungible { amount } => amount,
                         Supply::NonFungible { .. } => {
-                            return Err(BucketError::UnsupportedOperation);
+                            panic!("Illegal state!")
                         }
                     };
                     *amount = *amount + other_amount;
                 }
-                Supply::NonFungible { ref mut entries } => {
-                    let other_entries = match other.supply() {
+                Supply::NonFungible { ref mut ids } => {
+                    let other_ids = match other.supply() {
                         Supply::Fungible { .. } => {
-                            return Err(BucketError::UnsupportedOperation);
+                            panic!("Illegal state!")
                         }
-                        Supply::NonFungible { entries } => entries,
+                        Supply::NonFungible { ids } => ids,
                     };
-                    entries.extend(other_entries);
+                    ids.extend(other_ids);
                 }
             }
             Ok(())
@@ -80,7 +78,7 @@ impl Bucket {
     }
 
     pub fn take(&mut self, quantity: Decimal) -> Result<Self, BucketError> {
-        Self::check_amount(quantity, &self.resource_type)?;
+        Self::check_amount(quantity, self.resource_type.granularity())?;
 
         if self.amount() < quantity {
             Err(BucketError::InsufficientBalance)
@@ -91,21 +89,21 @@ impl Bucket {
                         amount: *amount - quantity,
                     };
                     Ok(Self::new(
-                        self.resource_def,
+                        self.resource_address,
                         self.resource_type,
                         Supply::Fungible { amount: quantity },
                     ))
                 }
-                Supply::NonFungible { ref mut entries } => {
+                Supply::NonFungible { ref mut ids } => {
                     let n: usize = quantity.to_string().parse().unwrap();
-                    let taken: BTreeSet<u128> = entries.iter().cloned().take(n).collect();
+                    let taken: BTreeSet<u128> = ids.iter().cloned().take(n).collect();
                     for e in &taken {
-                        entries.remove(e);
+                        ids.remove(e);
                     }
                     Ok(Self::new(
-                        self.resource_def,
+                        self.resource_address,
                         self.resource_type,
-                        Supply::NonFungible { entries: taken },
+                        Supply::NonFungible { ids: taken },
                     ))
                 }
             }
@@ -115,16 +113,16 @@ impl Bucket {
     pub fn take_nft(&mut self, id: u128) -> Result<Self, BucketError> {
         match &mut self.supply {
             Supply::Fungible { .. } => Err(BucketError::UnsupportedOperation),
-            Supply::NonFungible { ref mut entries } => {
-                if !entries.contains(&id) {
+            Supply::NonFungible { ref mut ids } => {
+                if !ids.contains(&id) {
                     return Err(BucketError::NftNotFound);
                 }
-                entries.remove(&id);
+                ids.remove(&id);
                 Ok(Self::new(
-                    self.resource_def,
+                    self.resource_address,
                     self.resource_type,
                     Supply::NonFungible {
-                        entries: BTreeSet::from([id]),
+                        ids: BTreeSet::from([id]),
                     },
                 ))
             }
@@ -134,7 +132,7 @@ impl Bucket {
     pub fn get_nft_ids(&self) -> Result<BTreeSet<u128>, BucketError> {
         match &self.supply {
             Supply::Fungible { .. } => Err(BucketError::UnsupportedOperation),
-            Supply::NonFungible { entries } => Ok(entries.iter().cloned().collect()),
+            Supply::NonFungible { ids } => Ok(ids.iter().cloned().collect()),
         }
     }
 
@@ -145,32 +143,19 @@ impl Bucket {
     pub fn amount(&self) -> Decimal {
         match &self.supply {
             Supply::Fungible { amount } => *amount,
-            Supply::NonFungible { entries } => entries.len().into(),
+            Supply::NonFungible { ids } => ids.len().into(),
         }
     }
 
-    pub fn resource_def(&self) -> Address {
-        self.resource_def
+    pub fn resource_address(&self) -> Address {
+        self.resource_address
     }
 
-    fn check_amount(amount: Decimal, resource_type: &ResourceType) -> Result<(), BucketError> {
-        if amount.is_negative() {
-            return Err(BucketError::InvalidAmount(amount));
-        }
-
-        let granularity = match resource_type {
-            ResourceType::Fungible { granularity } => *granularity,
-            ResourceType::NonFungible => 19,
-        };
-
-        if granularity >= 1 && granularity <= 36 {
-            if amount.0 % 10i128.pow((granularity - 1).into()) != 0.into() {
-                Err(BucketError::InvalidAmount(amount))
-            } else {
-                Ok(())
-            }
+    fn check_amount(amount: Decimal, granularity: u8) -> Result<(), BucketError> {
+        if !amount.is_negative() && amount.0 % 10i128.pow(granularity.into()) != 0.into() {
+            Err(BucketError::InvalidAmount(amount))
         } else {
-            Err(BucketError::InvalidGranularity)
+            Ok(())
         }
     }
 }

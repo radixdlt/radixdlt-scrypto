@@ -496,9 +496,9 @@ blueprint! {
             usd_address: Address,
         ) -> (Bucket, Component) {
             debug!("Create an identity badge for accessing other components");
-            let identity_badge = ResourceBuilder::new()
+            let identity_badge = ResourceBuilder::new_fungible(18)
                 .metadata("name", "ID")
-                .new_badge_fixed(1);
+                .initial_supply_fungible(1);
             let identity_badge_address = identity_badge.resource_address();
 
             debug!("Fetch price info from oracle");
@@ -537,9 +537,11 @@ blueprint! {
             );
 
             debug!("Mint initial shares");
-            let mutual_farm_share_resource_def = ResourceBuilder::new()
+            let mutual_farm_share_resource_def = ResourceBuilder::new_fungible(0)
                 .metadata("name", "MutualFarm share")
-                .new_token_mutable(ResourceConfigs::new(identity_badge_address));
+                .flags(MINTABLE | BURNABLE)
+                .badge(identity_badge_address, MAY_MINT | MAY_BURN)
+                .no_initial_supply();
             let shares =
                 mutual_farm_share_resource_def.mint(initial_shares, identity_badge.present());
 
@@ -588,19 +590,19 @@ blueprint! {
             debug!("Deposit SNX into synthetic pool and mint sTESLA (1/10 of our SNX).");
             self.identity_badge.authorize(|auth| {
                 self.synthetic_pool.stake(auth, snx);
-            });
+            }, None);
             let quantity = snx_amount * snx_usd_price / 10 / tesla_usd_price;
             let synth = self.identity_badge.authorize(|auth| {
                 self.synthetic_pool
                     .mint(auth, quantity, self.asset_symbol.clone())
-            });
+            }, None);
 
             debug!("Add liquidity to sTESLA/XRD swap pool");
             let (lp_tokens, mut remainder) = self.radiswap.add_liquidity(synth, xrd);
             if remainder.resource_address() == self.synth_address {
                 self.identity_badge.authorize(|auth| {
                     self.synthetic_pool.burn(auth, remainder);
-                });
+                }, None);
                 remainder = Bucket::new(xrd_address);
             }
             self.radiswap_lp_tokens.put(lp_tokens);
@@ -613,7 +615,7 @@ blueprint! {
             let shares = self.identity_badge.authorize(|auth| {
                 self.mutual_farm_share_resource_def
                     .mint(num_shares_to_issue, auth)
-            });
+            }, None);
             (shares, remainder)
         }
 

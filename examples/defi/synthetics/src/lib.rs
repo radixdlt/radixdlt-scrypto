@@ -135,12 +135,14 @@ blueprint! {
             let oracle: PriceOracle = oracle_address.into();
             let snx_resource_def: ResourceDef = snx_token_address.into();
             let usd_resource_def: ResourceDef = usd_token_address.into();
-            let synthetics_mint_badge = ResourceBuilder::new()
+            let synthetics_mint_badge = ResourceBuilder::new_fungible(18)
                 .metadata("name", "Synthetics Mint Badge")
-                .new_badge_fixed(1);
-            let synthetics_global_debt_share_resource_def = ResourceBuilder::new()
+                .initial_supply_fungible(1);
+            let synthetics_global_debt_share_resource_def = ResourceBuilder::new_fungible(0)
                 .metadata("name", "Synthetics Global Debt")
-                .new_token_mutable(ResourceConfigs::new(synthetics_mint_badge.resource_def()));
+                .flags(MINTABLE | BURNABLE)
+                .badge(synthetics_mint_badge.resource_def(), MAY_MINT | MAY_BURN)
+                .no_initial_supply();
 
             Self {
                 oracle,
@@ -166,10 +168,12 @@ blueprint! {
                 "Asset already exist",
             );
 
-            let token_resource_def = ResourceBuilder::new()
+            let token_resource_def = ResourceBuilder::new_fungible(0)
                 .metadata("name", format!("Synthetic {}", asset_symbol.clone()))
                 .metadata("symbol", format!("s{}", asset_symbol.clone()))
-                .new_token_mutable(ResourceConfigs::new(self.synthetics_mint_badge.resource_def()));
+                .flags(MINTABLE | BURNABLE)
+                .badge(self.synthetics_mint_badge.resource_def(), MAY_MINT | MAY_BURN)
+                .no_initial_supply();
             let token_address = token_resource_def.address();
             self.synthetics.insert(
                 asset_symbol.clone(),
@@ -191,7 +195,7 @@ blueprint! {
             let user_id = Self::get_user_id(user_auth);
             let user = self.get_user(user_id, false);
 
-            let tokens = user.snx.take(amount);
+            let tokens = user.snx.take(amount, None);
             user.check_collateralization_ratio(
                 self.get_snx_price(),
                 self.get_total_global_debt(),
@@ -222,10 +226,10 @@ blueprint! {
                         },
                         auth,
                     )
-                }));
+                }, None));
             let tokens = self
                 .synthetics_mint_badge
-                .authorize(|auth| synth.token_resource_def.mint(amount, auth));
+                .authorize(|auth| synth.token_resource_def.mint(amount, auth), None);
             user.check_collateralization_ratio(
                 self.get_snx_price(),
                 self.get_total_global_debt(),
@@ -251,13 +255,14 @@ blueprint! {
             let shares_to_burn = user.global_debt_share.take(
                 self.synthetics_global_debt_share_resource_def.total_supply() * debt_to_remove
                     / global_debt,
+                None
             );
 
             self.synthetics_mint_badge.authorize(|auth| {
-                shares_to_burn.burn(auth);
-            });
+                shares_to_burn.burn(Some(auth));
+            }, None);
             self.synthetics_mint_badge
-                .authorize(|auth| bucket.burn(auth));
+                .authorize(|auth| bucket.burn(Some(auth)), None);
         }
 
         /// Returns the total global debt.
@@ -303,9 +308,9 @@ blueprint! {
 
         /// Registers a new user
         pub fn new_user(&self) -> Bucket {
-            ResourceBuilder::new()
+            ResourceBuilder::new_fungible(18)
                 .metadata("name", "Synthetic Pool User Badge")
-                .new_badge_fixed(1)
+                .initial_supply_fungible(1)
         }
 
         /// Parse user id from a bucket ref.

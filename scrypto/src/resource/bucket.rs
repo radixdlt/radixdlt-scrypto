@@ -29,19 +29,18 @@ impl From<Bucket> for Bid {
 impl Bucket {
     /// Creates a new bucket to hold resources of the given definition.
     pub fn new<A: Into<ResourceDef>>(resource_def: A) -> Self {
-        let resource_def: ResourceDef = resource_def.into();
         let input = CreateEmptyBucketInput {
-            resource_def: resource_def.into(),
+            resource_address: resource_def.into().address(),
         };
         let output: CreateEmptyBucketOutput = call_kernel(CREATE_EMPTY_BUCKET, input);
 
-        output.bucket.into()
+        output.bid.into()
     }
 
     /// Puts resources from another bucket into this bucket.
     pub fn put(&self, other: Self) {
         let input = PutIntoBucketInput {
-            bucket: self.bid,
+            bid: self.bid,
             other: other.bid,
         };
         let _: PutIntoBucketOutput = call_kernel(PUT_INTO_BUCKET, input);
@@ -50,25 +49,25 @@ impl Bucket {
     /// Takes some amount of resources from this bucket.
     pub fn take<A: Into<Decimal>>(&self, amount: A) -> Self {
         let input = TakeFromBucketInput {
-            bucket: self.bid,
+            bid: self.bid,
             amount: amount.into(),
         };
         let output: TakeFromBucketOutput = call_kernel(TAKE_FROM_BUCKET, input);
 
-        output.bucket.into()
+        output.bid.into()
     }
 
     /// Creates an immutable reference to this bucket.
     pub fn present(&self) -> BucketRef {
-        let input = CreateBucketRefInput { bucket: self.bid };
+        let input = CreateBucketRefInput { bid: self.bid };
         let output: CreateBucketRefOutput = call_kernel(CREATE_BUCKET_REF, input);
 
-        output.bucket_ref.into()
+        output.rid.into()
     }
 
     /// Returns the amount of resources in this bucket.
     pub fn amount(&self) -> Decimal {
-        let input = GetBucketDecimalInput { bucket: self.bid };
+        let input = GetBucketDecimalInput { bid: self.bid };
         let output: GetBucketDecimalOutput = call_kernel(GET_BUCKET_AMOUNT, input);
 
         output.amount
@@ -76,10 +75,11 @@ impl Bucket {
 
     /// Returns the resource definition of resources in this bucket.
     pub fn resource_def(&self) -> ResourceDef {
-        let input = GetBucketResourceAddressInput { bucket: self.bid };
-        let output: GetBucketResourceAddressOutput = call_kernel(GET_BUCKET_RESOURCE_DEF, input);
+        let input = GetBucketResourceAddressInput { bid: self.bid };
+        let output: GetBucketResourceAddressOutput =
+            call_kernel(GET_BUCKET_RESOURCE_ADDRESS, input);
 
-        output.resource_def.into()
+        output.resource_address.into()
     }
 
     /// Returns the resource definition address.
@@ -88,7 +88,7 @@ impl Bucket {
     }
 
     /// Burns resource within this bucket.
-    pub fn burn(self, auth: BucketRef) {
+    pub fn burn(self, auth: Option<BucketRef>) {
         self.resource_def().burn(self, auth);
     }
 
@@ -107,13 +107,10 @@ impl Bucket {
     /// # Panics
     /// Panics if this is not an NFT bucket or the specified NFT is not found.
     pub fn take_nft(&self, id: u128) -> Bucket {
-        let input = TakeNftFromBucketInput {
-            bucket: self.bid,
-            id,
-        };
+        let input = TakeNftFromBucketInput { bid: self.bid, id };
         let output: TakeNftFromBucketOutput = call_kernel(TAKE_NFT_FROM_BUCKET, input);
 
-        output.bucket.into()
+        output.bid.into()
     }
 
     /// Get all NFT IDs in this bucket.
@@ -121,7 +118,7 @@ impl Bucket {
     /// # Panics
     /// Panics if this is not an NFT bucket.
     pub fn get_nft_ids(&self) -> BTreeSet<u128> {
-        let input = GetNftIdsInBucketInput { bucket: self.bid };
+        let input = GetNftIdsInBucketInput { bid: self.bid };
         let output: GetNftIdsInBucketOutput = call_kernel(GET_NFT_IDS_IN_BUCKET, input);
 
         output.ids

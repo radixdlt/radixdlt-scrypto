@@ -30,7 +30,7 @@ blueprint! {
 
         #[auth(admin, user)]
         pub fn airdrop(&self) -> Bucket {
-            self.reserves.take(1)
+            self.reserves.take(1, None)
         }
     }
 }

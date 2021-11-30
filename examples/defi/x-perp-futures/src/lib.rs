@@ -98,9 +98,9 @@ blueprint! {
 
         /// Registers a new user
         pub fn new_user(&self) -> Bucket {
-            ResourceBuilder::new()
+            ResourceBuilder::new_fungible(18)
                 .metadata("name", "xPerpFutures User Badge")
-                .new_badge_fixed(1)
+                .initial_supply_fungible(1)
         }
 
         /// Parse user id from a bucket ref.
@@ -126,7 +126,7 @@ blueprint! {
 
             positions.swap_remove(nth);
             self.trader_positions.insert(user_id, positions);
-            self.deposits_in_quote.take(to_return)
+            self.deposits_in_quote.take(to_return, None)
         }
     }
 }

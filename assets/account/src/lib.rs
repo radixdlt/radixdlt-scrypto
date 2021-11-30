@@ -44,14 +44,15 @@ blueprint! {
         }
 
         /// Withdraws resource from this account.
-        pub fn withdraw(&mut self, amount: Decimal, resource_def: Address) -> Bucket {
+        pub fn withdraw(&mut self, amount: Decimal, resource_address: Address) -> Bucket {
             if !Context::transaction_signers().contains(&self.key) {
                 panic!("Not authorized! Make sure you sign transaction with the correct keys.",)
             }
 
-            let vault = self.vaults.get(&resource_def);
+            let vault = self.vaults.get(&resource_address);
             match vault {
-                Some(vault) => vault.take(amount),
+                // TODO how to deal with `RESTRICTED_TRANSFER`?
+                Some(vault) => vault.take(amount, None),
                 None => {
                     panic!("Insufficient balance");
                 }
@@ -59,17 +60,18 @@ blueprint! {
         }
 
         /// Withdraws NFTs from this account.
-        pub fn withdraw_nfts(&mut self, nft_ids: BTreeSet<u128>, resource_def: Address) -> Bucket {
+        pub fn withdraw_nfts(&mut self, ids: BTreeSet<u128>, resource_address: Address) -> Bucket {
             if !Context::transaction_signers().contains(&self.key) {
                 panic!("Not authorized! Make sure you sign transaction with the correct keys.",)
             }
 
-            let vault = self.vaults.get(&resource_def);
+            let vault = self.vaults.get(&resource_address);
             match vault {
                 Some(vault) => {
-                    let bucket = Bucket::new(resource_def);
-                    for id in nft_ids {
-                        bucket.put(vault.take_nft(id));
+                    let bucket = Bucket::new(resource_address);
+                    for id in ids {
+                        // TODO how to deal with `RESTRICTED_TRANSFER`?
+                        bucket.put(vault.take_nft(id, None));
                     }
                     bucket
                 }

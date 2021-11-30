@@ -7,19 +7,21 @@ blueprint! {
     }
 
     impl ComponentTest {
-        pub fn create_component() -> Component {
-            let bucket = ResourceBuilder::new()
+        fn create_test_token(amount: u32) -> Bucket {
+            ResourceBuilder::new_fungible(0)
                 .metadata("name", "TestToken")
-                .new_token_fixed(1000);
+                .initial_supply_fungible(amount)
+        }
 
+        pub fn create_component() -> Component {
             Self {
-                test_vault: Vault::with_bucket(bucket),
+                test_vault: Vault::with_bucket(Self::create_test_token(1000)),
                 secret: "Secret".to_owned(),
             }
             .instantiate()
         }
 
-        pub fn get_component_blueprint(address: Address) -> Blueprint {
+        pub fn get_component_info(address: Address) -> Blueprint {
             Component::from(address).blueprint()
         }
 
@@ -29,7 +31,7 @@ blueprint! {
 
         pub fn put_component_state(&mut self) -> Bucket {
             // Take resource from vault
-            let bucket = self.test_vault.take(1);
+            let bucket = self.test_vault.take(1, None);
 
             // Update state
             self.secret = "New secret".to_owned();

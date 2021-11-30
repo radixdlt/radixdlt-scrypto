@@ -11,11 +11,11 @@ blueprint! {
         // given a price in XRD, creates a ready-to-use gumball machine
         pub fn new(price: Decimal) -> Component {
             // create a new Gumball resource, with a fixed quantity of 100
-            let bucket_of_gumballs = ResourceBuilder::new()
+            let bucket_of_gumballs = ResourceBuilder::new_fungible(0)
                 .metadata("name", "Gumball")
                 .metadata("symbol", "GUM")
                 .metadata("description", "A delicious gumball")
-                .new_token_fixed(100);
+                .initial_supply_fungible(100);
 
             // populate a GumballMachine struct and instantiate a new component
             Self {
@@ -41,7 +41,7 @@ blueprint! {
 
             // return a tuple containing a gumball, plus whatever change is left on the input payment (if any)
             // if we're out of gumballs to give, we'll see a runtime error when we try to grab one
-            (self.gumballs.take(1), payment)
+            (self.gumballs.take(1, None), payment)
         }
     }
 }

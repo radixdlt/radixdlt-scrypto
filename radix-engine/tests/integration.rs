@@ -86,7 +86,7 @@ fn test_component() {
         .call_function(
             package,
             "ComponentTest",
-            "get_component_blueprint",
+            "get_component_info",
             vec![component.to_string()],
             Some(account),
         )
@@ -134,28 +134,7 @@ fn test_resource_def() {
         .call_function(
             package,
             "ResourceTest",
-            "create_mutable_token",
-            vec![],
-            Some(account),
-        )
-        .call_function(
-            package,
-            "ResourceTest",
-            "create_fixed_token",
-            vec![],
-            Some(account),
-        )
-        .call_function(
-            package,
-            "ResourceTest",
-            "create_mutable_badge",
-            vec![],
-            Some(account),
-        )
-        .call_function(
-            package,
-            "ResourceTest",
-            "create_fixed_badge",
+            "create_fungible",
             vec![],
             Some(account),
         )
@@ -164,7 +143,7 @@ fn test_resource_def() {
         .call_function(
             package,
             "ResourceTest",
-            "change_to_immutable",
+            "update_feature_flags",
             vec![],
             Some(account),
         )
@@ -180,7 +159,23 @@ fn test_resource_def() {
         .call_function(
             package,
             "ResourceTest",
-            "create_fixed_badge_should_fail",
+            "create_fungible_should_fail",
+            vec![],
+            Some(account),
+        )
+        .drop_all_bucket_refs()
+        .deposit_all_buckets(account)
+        .build(vec![key])
+        .unwrap();
+    let receipt = executor.run(transaction, true).unwrap();
+    println!("{:?}", receipt);
+    assert!(!receipt.success);
+
+    let transaction = TransactionBuilder::new(&executor)
+        .call_function(
+            package,
+            "ResourceTest",
+            "update_feature_flags_should_fail",
             vec![],
             Some(account),
         )

@@ -5,7 +5,7 @@ use crate::ledger::*;
 use crate::resim::*;
 
 const ARG_AMOUNT: &str = "AMOUNT";
-const ARG_RESOURCE_DEF: &str = "RESOURCE_DEF";
+const ARG_RESOURCE_ADDRESS: &str = "RESOURCE_ADDRESS";
 const ARG_MINT_BADGE_ADDR: &str = "MINT_BADGE_ADDRESS";
 
 const ARG_TRACE: &str = "TRACE";
@@ -22,7 +22,7 @@ pub fn make_mint<'a, 'b>() -> App<'a, 'b> {
                 .required(true),
         )
         .arg(
-            Arg::with_name(ARG_RESOURCE_DEF)
+            Arg::with_name(ARG_RESOURCE_ADDRESS)
                 .help("Specify the resource definition address.")
                 .required(true),
         )
@@ -48,7 +48,7 @@ pub fn make_mint<'a, 'b>() -> App<'a, 'b> {
 /// Handles a `mint` request.
 pub fn handle_mint(matches: &ArgMatches) -> Result<(), Error> {
     let amount = match_amount(matches, ARG_AMOUNT)?;
-    let resource_def = match_address(matches, ARG_RESOURCE_DEF)?;
+    let resource_address = match_address(matches, ARG_RESOURCE_ADDRESS)?;
     let mint_badge_addr = match_address(matches, ARG_MINT_BADGE_ADDR)?;
     let trace = matches.is_present(ARG_TRACE);
     let signers = match_signers(matches, ARG_SIGNERS)?;
@@ -65,7 +65,7 @@ pub fn handle_mint(matches: &ArgMatches) -> Result<(), Error> {
             },
             account.0,
         )
-        .mint(amount, resource_def, mint_badge_addr)
+        .mint(amount, resource_address, mint_badge_addr)
         .drop_all_bucket_refs()
         .deposit_all_buckets(account.0)
         .build(signers)

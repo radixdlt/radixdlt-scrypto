@@ -53,7 +53,7 @@ pub enum Instruction {
     /// Takes resource from transaction context to a temporary bucket.
     TakeFromContext {
         amount: Decimal,
-        resource_def: Address,
+        resource_address: Address,
         to: Bid,
     },
 
@@ -62,7 +62,7 @@ pub enum Instruction {
     /// A bucket will be created to support the reference and it will stay within the context.
     BorrowFromContext {
         amount: Decimal,
-        resource_def: Address,
+        resource_address: Address,
         to: Rid,
     },
 
@@ -70,8 +70,8 @@ pub enum Instruction {
     ///
     /// Buckets and bucket refs in arguments moves from transaction context to the callee.
     CallFunction {
-        package: Address,
-        blueprint: String,
+        package_address: Address,
+        blueprint_name: String,
         function: String,
         args: Vec<SmartValue>,
     },
@@ -80,7 +80,7 @@ pub enum Instruction {
     ///
     /// Buckets and bucket refs in arguments moves from transaction context to the callee.
     CallMethod {
-        component: Address,
+        component_address: Address,
         method: String,
         args: Vec<SmartValue>,
     },

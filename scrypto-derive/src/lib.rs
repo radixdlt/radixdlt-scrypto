@@ -98,6 +98,21 @@ pub fn import(input: TokenStream) -> TokenStream {
         .into()
 }
 
+/// Defines the authorization rule for a method.
+///
+/// A list of component fields of type `ResourceDef` or `Address` should be provided.
+///
+/// Caller must provide a bucket ref containing any of the associated resource.
+///
+/// # Example
+/// ```ignore
+/// #[auth(admin, user)]
+/// pub fn some_method(&self) {
+///     // This is protected
+///
+///     // To retrieve auth resource address, use `auth.resource_address()`.
+/// }
+/// ```
 #[proc_macro_attribute]
 pub fn auth(attr: TokenStream, item: TokenStream) -> TokenStream {
     auth::handle_auth(

@@ -43,9 +43,9 @@ pub trait Ledger {
 
     fn put_vault(&mut self, vid: Vid, vault: Vault);
 
-    fn get_nft(&self, resource_def: Address, id: u128) -> Option<Nft>;
+    fn get_nft(&self, resource_address: Address, id: u128) -> Option<Nft>;
 
-    fn put_nft(&mut self, resource_def: Address, id: u128, nft: Nft);
+    fn put_nft(&mut self, resource_address: Address, id: u128, nft: Nft);
 
     fn bootstrap(&mut self) {
         if self.get_package(SYSTEM_PACKAGE).is_none() {
@@ -69,12 +69,15 @@ pub trait Ledger {
             metadata.insert("url".to_owned(), XRD_URL.to_owned());
             self.put_resource_def(
                 RADIX_TOKEN,
-                ResourceDef::new_fixed(
-                    ResourceType::Fungible { granularity: 1 },
+                ResourceDef::new(
+                    ResourceType::Fungible { granularity: 0 },
                     metadata,
-                    &Supply::Fungible {
+                    0,
+                    0,
+                    HashMap::new(),
+                    &Some(NewSupply::Fungible {
                         amount: XRD_MAX_SUPPLY.into(),
-                    },
+                    }),
                 )
                 .unwrap(),
             );
@@ -85,7 +88,7 @@ pub trait Ledger {
                 Vault::new(
                     Bucket::new(
                         RADIX_TOKEN,
-                        ResourceType::Fungible { granularity: 1 },
+                        ResourceType::Fungible { granularity: 0 },
                         Supply::Fungible {
                             amount: XRD_MAX_SUPPLY.into(),
                         },

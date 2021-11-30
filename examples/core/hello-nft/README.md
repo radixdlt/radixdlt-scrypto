@@ -19,9 +19,9 @@ pub struct MagicCard {
     rarity: Rarity,
 }
 
-let special_cards_bucket = ResourceBuilder::new()
+let special_cards_bucket = ResourceBuilder::new_non_fungible()
     .metadata("name", "Russ' Magic Card Collection")
-    .new_nft_fixed(BTreeMap::from([
+    .initial_supply_non_fungible([
         (
             1, // The ID of the first NFT, you can also use `Uuid::generate()` to create a random ID
             MagicCard {
@@ -38,20 +38,23 @@ let special_cards_bucket = ResourceBuilder::new()
                 rarity: Rarity::Rare,
             },
         )
-    ]));
+    ]);
 ```
 
 To create mutable NFTs, no initial supply is required but resource authorization configuration is required.
 
 ```rust
-let random_card_mint_badge = ResourceBuilder::new()
+let random_card_mint_badge = ResourceBuilder::new_fungible(18)
     .metadata("name", "Random Cards Mint Badge")
-    .new_badge_fixed(1);
-let random_card_resource_def = ResourceBuilder::new()
+    .initial_supply_fungible(1);
+let random_card_resource_def = ResourceBuilder::new_non_fungible()
     .metadata("name", "Random Cards")
-    .new_nft_mutable(
-        ResourceConfigs::new(random_card_mint_badge.resource_address())
-    );
+    .flags(MINTABLE | BURNABLE | INDIVIDUAL_METADATA_MUTABLE)
+    .badge(
+        random_card_mint_badge.resource_def(),
+        MAY_MINT | MAY_BURN | MAY_CHANGE_INDIVIDUAL_METADATA,
+    )
+    .no_initial_supply();
 ```
 
 Here, we're using the mint badge for both minting, burning and updating. If you want, you can also specify different badge for each permission, like,

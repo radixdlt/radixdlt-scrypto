@@ -26,36 +26,36 @@ pub enum TransactionExecutionError {
 impl<'l, L: Ledger> AbiProvider for TransactionExecutor<'l, L> {
     fn export_abi<A: AsRef<str>>(
         &self,
-        package: Address,
-        name: A,
+        package_address: Address,
+        blueprint_name: A,
         trace: bool,
     ) -> Result<abi::Blueprint, RuntimeError> {
         let p = self
             .ledger
-            .get_package(package)
-            .ok_or(RuntimeError::PackageNotFound(package))?;
+            .get_package(package_address)
+            .ok_or(RuntimeError::PackageNotFound(package_address))?;
 
         BasicAbiProvider::new()
-            .with_package(package, p.code().to_vec())
-            .export_abi(package, name, trace)
+            .with_package(package_address, p.code().to_vec())
+            .export_abi(package_address, blueprint_name, trace)
     }
 
     fn export_abi_component(
         &self,
-        component: Address,
+        component_address: Address,
         trace: bool,
     ) -> Result<abi::Blueprint, RuntimeError> {
         let c = self
             .ledger
-            .get_component(component)
-            .ok_or(RuntimeError::ComponentNotFound(component))?;
+            .get_component(component_address)
+            .ok_or(RuntimeError::ComponentNotFound(component_address))?;
         let p = self
             .ledger
-            .get_package(c.package())
-            .ok_or(RuntimeError::PackageNotFound(c.package()))?;
+            .get_package(c.package_address())
+            .ok_or(RuntimeError::PackageNotFound(c.package_address()))?;
         BasicAbiProvider::new()
-            .with_package(c.package(), p.code().to_vec())
-            .export_abi(c.package(), c.name(), trace)
+            .with_package(c.package_address(), p.code().to_vec())
+            .export_abi(c.package_address(), c.blueprint_name(), trace)
     }
 }
 
@@ -188,38 +188,38 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
                 }
                 Instruction::TakeFromContext {
                     amount,
-                    resource_def,
+                    resource_address,
                     to,
                 } => proc
-                    .take_from_context(*amount, *resource_def, *to)
+                    .take_from_context(*amount, *resource_address, *to)
                     .map(|_| None),
                 Instruction::BorrowFromContext {
                     amount,
-                    resource_def,
+                    resource_address,
                     to,
                 } => proc
-                    .borrow_from_context(*amount, *resource_def, *to)
+                    .borrow_from_context(*amount, *resource_address, *to)
                     .map(|_| None),
                 Instruction::CallFunction {
-                    package,
-                    blueprint,
+                    package_address,
+                    blueprint_name,
                     function,
                     args,
                 } => proc
                     .call_function(
-                        *package,
-                        blueprint.as_str(),
+                        *package_address,
+                        blueprint_name.as_str(),
                         function.as_str(),
                         args.iter().map(|v| v.encoded.clone()).collect(),
                     )
                     .map(|rtn| Some(SmartValue { encoded: rtn })),
                 Instruction::CallMethod {
-                    component,
+                    component_address,
                     method,
                     args,
                 } => proc
                     .call_method(
-                        *component,
+                        *component_address,
                         method.as_str(),
                         args.iter().map(|v| v.encoded.clone()).collect(),
                     )

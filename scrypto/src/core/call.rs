@@ -5,14 +5,14 @@ use crate::types::*;
 
 /// Calls a function.
 pub fn call_function(
-    package: Address,
-    blueprint: &str,
+    package_address: Address,
+    blueprint_name: &str,
     function: &str,
     args: Vec<Vec<u8>>,
 ) -> Vec<u8> {
     let input = CallFunctionInput {
-        package,
-        name: blueprint.to_owned(),
+        package_address,
+        blueprint_name: blueprint_name.to_owned(),
         function: function.to_owned(),
         args,
     };
@@ -22,9 +22,9 @@ pub fn call_function(
 }
 
 /// Calls a method.
-pub fn call_method(component: Address, method: &str, args: Vec<Vec<u8>>) -> Vec<u8> {
+pub fn call_method(component_address: Address, method: &str, args: Vec<Vec<u8>>) -> Vec<u8> {
     let input = CallMethodInput {
-        component,
+        component_address,
         method: method.to_owned(),
         args,
     };

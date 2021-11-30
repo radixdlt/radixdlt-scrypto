@@ -13,9 +13,9 @@ blueprint! {
         pub fn new(num_of_admins: u32) -> (Bucket, Component) {
             assert!(num_of_admins >= 1);
 
-            let badges = ResourceBuilder::new()
+            let badges = ResourceBuilder::new_fungible(18)
                 .metadata("name", "Price Oracle Admin Badge")
-                .new_badge_fixed(num_of_admins);
+                .initial_supply_fungible(num_of_admins);
 
             let component = Self {
                 prices: LazyMap::new(),

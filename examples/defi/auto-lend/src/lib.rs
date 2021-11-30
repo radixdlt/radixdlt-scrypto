@@ -49,9 +49,9 @@ blueprint! {
 
         /// Registers a new user
         pub fn new_user(&self) -> Bucket {
-            ResourceBuilder::new()
+            ResourceBuilder::new_fungible(18)
                 .metadata("name", "AutoLend User Badge")
-                .new_badge_fixed(1)
+                .initial_supply_fungible(1)
         }
 
         /// Deposits into the liquidity pool and start earning interest.
@@ -98,7 +98,7 @@ blueprint! {
 
             // Commit state changes
             self.users.insert(user_id, user);
-            self.liquidity_pool.take(to_return_amount)
+            self.liquidity_pool.take(to_return_amount, None)
         }
 
         /// Borrows the specified amount from lending pool
@@ -118,7 +118,7 @@ blueprint! {
 
             // Commit state changes
             self.users.insert(user_id, user);
-            self.liquidity_pool.take(requested)
+            self.liquidity_pool.take(requested, None)
         }
 
         /// Repays a loan, partially or in full.
@@ -159,7 +159,7 @@ blueprint! {
 
             // Update user state
             let to_return_amount = user.on_liquidate(repaid.amount(), self.max_liquidation_percent);
-            let to_return = self.liquidity_pool.take(to_return_amount);
+            let to_return = self.liquidity_pool.take(to_return_amount, None);
 
             // Commit state changes
             self.users.insert(user_id, user);

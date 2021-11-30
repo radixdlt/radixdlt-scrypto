@@ -18,7 +18,7 @@ pub struct Component {
 impl From<Address> for Component {
     fn from(address: Address) -> Self {
         if !address.is_component() {
-            panic!("Unable to downcast Address to Component: {}", address);
+            panic!("{} is not a component address", address);
         }
 
         Self { address }
@@ -39,7 +39,7 @@ impl Component {
         };
         let output: CreateComponentOutput = call_kernel(CREATE_COMPONENT, input);
 
-        output.component.into()
+        output.component_address.into()
     }
 
     pub fn call<T: Decode>(&self, method: &str, args: Vec<Vec<u8>>) -> T {
@@ -50,7 +50,7 @@ impl Component {
 
     pub fn get_state<T: State>(&self) -> T {
         let input = GetComponentStateInput {
-            component: self.address,
+            component_address: self.address,
         };
         let output: GetComponentStateOutput = call_kernel(GET_COMPONENT_STATE, input);
 
@@ -59,19 +59,19 @@ impl Component {
 
     pub fn put_state<T: State>(&self, state: T) {
         let input = PutComponentStateInput {
-            component: self.address,
+            component_address: self.address,
             state: scrypto_encode(&state),
         };
         let _: PutComponentStateOutput = call_kernel(PUT_COMPONENT_STATE, input);
     }
 
     pub fn blueprint(&self) -> Blueprint {
-        let input = GetComponentBlueprintInput {
-            component: self.address,
+        let input = GetComponentInfoInput {
+            component_address: self.address,
         };
-        let output: GetComponentBlueprintOutput = call_kernel(GET_COMPONENT_BLUEPRINT, input);
+        let output: GetComponentInfoOutput = call_kernel(GET_COMPONENT_INFO, input);
 
-        Blueprint::from((output.package, output.name))
+        Blueprint::from((output.package_address, output.blueprint_name))
     }
 
     pub fn address(&self) -> Address {

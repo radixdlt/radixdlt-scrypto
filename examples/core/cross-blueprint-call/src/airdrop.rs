@@ -13,9 +13,9 @@ blueprint! {
         pub fn new() -> Component {
             Self {
                 tokens: Vault::with_bucket(
-                    ResourceBuilder::new()
+                    ResourceBuilder::new_fungible(0)
                         .metadata("name", "FreeToken")
-                        .new_token_fixed(1000),
+                        .initial_supply_fungible(1000),
                 ),
             }
             .instantiate()
@@ -23,7 +23,7 @@ blueprint! {
 
         pub fn free_token(&self) -> Bucket {
             // Take 1 FreeToken and return
-            self.tokens.take(1)
+            self.tokens.take(1, None)
         }
     }
 }

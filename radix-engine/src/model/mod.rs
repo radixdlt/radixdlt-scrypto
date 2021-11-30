@@ -1,4 +1,4 @@
-mod auth;
+mod actor;
 mod bucket;
 mod component;
 mod lazy_map;
@@ -7,7 +7,7 @@ mod package;
 mod resource_def;
 mod vault;
 
-pub use auth::Auth;
+pub use actor::Actor;
 pub use bucket::{Bucket, BucketError, BucketRef, LockedBucket, Supply};
 pub use component::{Component, ComponentError};
 pub use lazy_map::{LazyMap, LazyMapError};

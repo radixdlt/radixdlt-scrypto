@@ -35,46 +35,46 @@ pub fn dump_component<T: Ledger>(address: Address, ledger: &T) -> Result<(), Dis
             println!("{}: {}", "Component".green().bold(), address.to_string());
 
             println!(
-                "{}: {{ package: {}, name: {} }}",
+                "{}: {{ package address: {}, blueprint name: \"{}\" }}",
                 "Blueprint".green().bold(),
-                c.package(),
-                c.name()
+                c.package_address(),
+                c.blueprint_name()
             );
             let mut vaults = vec![];
             println!(
                 "{}: {}",
                 "State".green().bold(),
-                format_data_with_ledger(c.state(Auth::NoAuth).unwrap(), ledger, &mut vaults)
+                format_data_with_ledger(c.state(Actor::SuperUser).unwrap(), ledger, &mut vaults)
                     .unwrap()
             );
 
             println!("{}:", "Resources".green().bold());
             for (last, vid) in vaults.iter().identify_last() {
                 let vault = ledger.get_vault(*vid).unwrap();
-                let amount = vault.amount(Auth::NoAuth).unwrap();
-                let resource_def_address = vault.resource_def(Auth::NoAuth).unwrap();
-                let resource_def = ledger.get_resource_def(resource_def_address).unwrap();
+                let amount = vault.amount(Actor::SuperUser).unwrap();
+                let resource_address = vault.resource_address(Actor::SuperUser).unwrap();
+                let resource_def = ledger.get_resource_def(resource_address).unwrap();
                 println!(
                     "{} {{ amount: {}, resource_def: {}{}{} }}",
                     list_item_prefix(last),
                     amount,
-                    resource_def_address,
+                    resource_address,
                     resource_def
                         .metadata()
                         .get("name")
-                        .map(|name| format!(", name: {}", name))
+                        .map(|name| format!(", name: \"{}\"", name))
                         .unwrap_or(String::new()),
                     resource_def
                         .metadata()
                         .get("symbol")
-                        .map(|symbol| format!(", symbol: {}", symbol))
+                        .map(|symbol| format!(", symbol: \"{}\"", symbol))
                         .unwrap_or(String::new()),
                 );
-                if let Supply::NonFungible { entries } = vault.total_supply(Auth::NoAuth).unwrap() {
+                if let Supply::NonFungible { ids } = vault.total_supply(Actor::SuperUser).unwrap() {
                     // TODO how to deal with the case where a vault id is referenced in the NFT
                     let mut vaults = Vec::new();
-                    for (inner_last, id) in entries.iter().identify_last() {
-                        let nft = ledger.get_nft(resource_def_address, *id).unwrap();
+                    for (inner_last, id) in ids.iter().identify_last() {
+                        let nft = ledger.get_nft(resource_address, *id).unwrap();
                         println!(
                             "{}  {} NFT {{ id: {}, data: {} }}",
                             if last { " " } else { "│" },
@@ -101,13 +101,14 @@ pub fn dump_resource_def<T: Ledger>(address: Address, ledger: &T) -> Result<(), 
                 "Resource Type".green().bold(),
                 r.resource_type()
             );
-            println!("{}: {}", "Mutable".green().bold(), r.mutable());
             println!("{}: {}", "Metadata".green().bold(), r.metadata().len());
             for (last, e) in r.metadata().iter().identify_last() {
                 println!("{} {}: {}", list_item_prefix(last), e.0.green().bold(), e.1);
             }
+            println!("{}: {}", "Flags".green().bold(), r.flags());
+            println!("{}: {}", "Mutable Flags".green().bold(), r.mutable_flags());
+            println!("{}: {:?}", "Authorities".green().bold(), r.authorities());
             println!("{}: {}", "Total Supply".green().bold(), r.total_supply());
-            println!("{}: {:?}", "Authorization".green().bold(), r.auth_configs());
             Ok(())
         }
         None => Err(DisplayError::ResourceDefNotFound),

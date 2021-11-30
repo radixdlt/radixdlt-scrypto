@@ -37,12 +37,12 @@ impl<K: Encode + Decode, V: Encode + Decode> LazyMap<K, V> {
         let input = CreateLazyMapInput {};
         let output: CreateLazyMapOutput = call_kernel(CREATE_LAZY_MAP, input);
 
-        output.lazy_map.into()
+        output.mid.into()
     }
 
     pub fn get(&self, key: &K) -> Option<V> {
         let input = GetLazyMapEntryInput {
-            lazy_map: self.mid,
+            mid: self.mid,
             key: scrypto_encode(key),
         };
         let output: GetLazyMapEntryOutput = call_kernel(GET_LAZY_MAP_ENTRY, input);
@@ -52,7 +52,7 @@ impl<K: Encode + Decode, V: Encode + Decode> LazyMap<K, V> {
 
     pub fn insert(&self, key: K, value: V) {
         let input = PutLazyMapEntryInput {
-            lazy_map: self.mid,
+            mid: self.mid,
             key: scrypto_encode(&key),
             value: scrypto_encode(&value),
         };

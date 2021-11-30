@@ -20,8 +20,8 @@ use crate::model::*;
 pub struct Track<'l, L: Ledger> {
     ledger: &'l mut L,
     current_epoch: u64,
-    tx_hash: H256,
-    tx_signers: Vec<Address>,
+    transaction_hash: H256,
+    transaction_signers: Vec<Address>,
     id_alloc: IdAllocator,
     logs: Vec<(LogLevel, String)>,
     packages: HashMap<Address, Package>,
@@ -44,14 +44,14 @@ impl<'l, L: Ledger> Track<'l, L> {
     pub fn new(
         ledger: &'l mut L,
         current_epoch: u64,
-        tx_hash: H256,
-        tx_signers: Vec<Address>,
+        transaction_hash: H256,
+        transaction_signers: Vec<Address>,
     ) -> Self {
         Self {
             ledger,
             current_epoch,
-            tx_hash,
-            tx_signers,
+            transaction_hash,
+            transaction_signers,
             id_alloc: IdAllocator::new(),
             logs: Vec::new(),
             packages: HashMap::new(),
@@ -77,13 +77,13 @@ impl<'l, L: Ledger> Track<'l, L> {
     }
 
     /// Returns the transaction hash.
-    pub fn tx_hash(&self) -> H256 {
-        self.tx_hash
+    pub fn transaction_hash(&self) -> H256 {
+        self.transaction_hash
     }
 
     /// Returns the transaction hash.
-    pub fn tx_signers(&self) -> Vec<Address> {
-        self.tx_signers.clone()
+    pub fn transaction_signers(&self) -> Vec<Address> {
+        self.transaction_signers.clone()
     }
 
     /// Returns the current epoch.
@@ -198,40 +198,40 @@ impl<'l, L: Ledger> Track<'l, L> {
     }
 
     /// Returns an immutable reference to a nft, if exists.
-    pub fn get_nft(&mut self, resource_def: Address, id: u128) -> Option<&Nft> {
-        if self.nfts.contains_key(&(resource_def, id)) {
-            return self.nfts.get(&(resource_def, id));
+    pub fn get_nft(&mut self, resource_address: Address, id: u128) -> Option<&Nft> {
+        if self.nfts.contains_key(&(resource_address, id)) {
+            return self.nfts.get(&(resource_address, id));
         }
 
-        if let Some(nft) = self.ledger.get_nft(resource_def, id) {
-            self.nfts.insert((resource_def, id), nft);
-            self.nfts.get(&(resource_def, id))
+        if let Some(nft) = self.ledger.get_nft(resource_address, id) {
+            self.nfts.insert((resource_address, id), nft);
+            self.nfts.get(&(resource_address, id))
         } else {
             None
         }
     }
 
     /// Returns a mutable reference to a nft, if exists.
-    pub fn get_nft_mut(&mut self, resource_def: Address, id: u128) -> Option<&mut Nft> {
-        self.updated_nfts.insert((resource_def, id));
+    pub fn get_nft_mut(&mut self, resource_address: Address, id: u128) -> Option<&mut Nft> {
+        self.updated_nfts.insert((resource_address, id));
 
-        if self.nfts.contains_key(&(resource_def, id)) {
-            return self.nfts.get_mut(&(resource_def, id));
+        if self.nfts.contains_key(&(resource_address, id)) {
+            return self.nfts.get_mut(&(resource_address, id));
         }
 
-        if let Some(nft) = self.ledger.get_nft(resource_def, id) {
-            self.nfts.insert((resource_def, id), nft);
-            self.nfts.get_mut(&(resource_def, id))
+        if let Some(nft) = self.ledger.get_nft(resource_address, id) {
+            self.nfts.insert((resource_address, id), nft);
+            self.nfts.get_mut(&(resource_address, id))
         } else {
             None
         }
     }
 
     /// Inserts a new nft.
-    pub fn put_nft(&mut self, resource_def: Address, id: u128, nft: Nft) {
-        self.updated_nfts.insert((resource_def, id));
+    pub fn put_nft(&mut self, resource_address: Address, id: u128, nft: Nft) {
+        self.updated_nfts.insert((resource_address, id));
 
-        self.nfts.insert((resource_def, id), nft);
+        self.nfts.insert((resource_address, id), nft);
     }
 
     /// Returns an immutable reference to a lazy map, if exists.
@@ -349,28 +349,28 @@ impl<'l, L: Ledger> Track<'l, L> {
 
     /// Creates a new package address.
     pub fn new_package_address(&mut self) -> Address {
-        let address = self.id_alloc.new_package_address(self.tx_hash());
+        let address = self.id_alloc.new_package_address(self.transaction_hash());
         self.new_entities.push(address);
         address
     }
 
     /// Creates a new component address.
     pub fn new_component_address(&mut self) -> Address {
-        let address = self.id_alloc.new_component_address(self.tx_hash());
+        let address = self.id_alloc.new_component_address(self.transaction_hash());
         self.new_entities.push(address);
         address
     }
 
     /// Creates a new resource definition address.
-    pub fn new_resource_def_address(&mut self) -> Address {
-        let address = self.id_alloc.new_resource_def_address(self.tx_hash());
+    pub fn new_resource_address(&mut self) -> Address {
+        let address = self.id_alloc.new_resource_address(self.transaction_hash());
         self.new_entities.push(address);
         address
     }
 
     /// Creates a new UUID.
     pub fn new_uuid(&mut self) -> u128 {
-        self.id_alloc.new_uuid(self.tx_hash())
+        self.id_alloc.new_uuid(self.transaction_hash())
     }
 
     /// Creates a new bucket ID.
@@ -380,7 +380,7 @@ impl<'l, L: Ledger> Track<'l, L> {
 
     /// Creates a new vault ID.
     pub fn new_vid(&mut self) -> Vid {
-        self.id_alloc.new_vid(self.tx_hash())
+        self.id_alloc.new_vid(self.transaction_hash())
     }
 
     /// Creates a new reference id.
@@ -390,7 +390,7 @@ impl<'l, L: Ledger> Track<'l, L> {
 
     /// Creates a new map id.
     pub fn new_mid(&mut self) -> Mid {
-        self.id_alloc.new_mid(self.tx_hash())
+        self.id_alloc.new_mid(self.transaction_hash())
     }
 
     /// Commits changes to the underlying ledger.

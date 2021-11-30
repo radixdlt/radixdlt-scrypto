@@ -3,6 +3,8 @@ use sbor::*;
 use scrypto::abi;
 use scrypto::buffer::*;
 use scrypto::kernel::*;
+use scrypto::resource::resource_flags::*;
+use scrypto::resource::resource_permissions::*;
 use scrypto::rust::borrow::ToOwned;
 use scrypto::rust::collections::*;
 use scrypto::rust::fmt;
@@ -24,6 +26,25 @@ pub enum ResourceSpec {
         ids: BTreeSet<u128>,
         resource_address: Address,
     },
+}
+
+impl ResourceSpec {
+    pub fn amount(&self) -> Decimal {
+        match self {
+            ResourceSpec::Fungible { amount, .. } => *amount,
+            ResourceSpec::NonFungible { ids, .. } => ids.len().into(),
+        }
+    }
+    pub fn resource_address(&self) -> Address {
+        match self {
+            ResourceSpec::Fungible {
+                resource_address, ..
+            }
+            | ResourceSpec::NonFungible {
+                resource_address, ..
+            } => *resource_address,
+        }
+    }
 }
 
 /// Utility for building transaction.
@@ -81,12 +102,12 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     pub fn take_from_context(
         &mut self,
         amount: Decimal,
-        resource_def: Address,
+        resource_address: Address,
         to: Bid,
     ) -> &mut Self {
         self.add_instruction(Instruction::TakeFromContext {
             amount,
-            resource_def,
+            resource_address,
             to,
         })
     }
@@ -95,12 +116,12 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     pub fn borrow_from_context(
         &mut self,
         amount: Decimal,
-        resource_def: Address,
+        resource_address: Address,
         rid: Rid,
     ) -> &mut Self {
         self.add_instruction(Instruction::BorrowFromContext {
             amount,
-            resource_def,
+            resource_address,
             to: rid,
         })
     }
@@ -114,19 +135,19 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     /// otherwise, they will be taken from transaction context.
     pub fn call_function(
         &mut self,
-        package: Address,
-        blueprint: &str,
+        package_address: Address,
+        blueprint_name: &str,
         function: &str,
         args: Vec<String>,
         account: Option<Address>,
     ) -> &mut Self {
         let result = self
             .abi_provider
-            .export_abi(package, blueprint, false)
+            .export_abi(package_address, blueprint_name, false)
             .map_err(|_| {
                 BuildTransactionError::FailedToExportFunctionAbi(
-                    package,
-                    blueprint.to_owned(),
+                    package_address,
+                    blueprint_name.to_owned(),
                     function.to_owned(),
                 )
             })
@@ -139,8 +160,8 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         match result {
             Ok(args) => {
                 self.add_instruction(Instruction::CallFunction {
-                    package: package,
-                    blueprint: blueprint.to_owned(),
+                    package_address,
+                    blueprint_name: blueprint_name.to_owned(),
                     function: function.to_owned(),
                     args,
                 });
@@ -160,16 +181,16 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     /// otherwise, they will be taken from transaction context.
     pub fn call_method(
         &mut self,
-        component: Address,
+        component_address: Address,
         method: &str,
         args: Vec<String>,
         account: Option<Address>,
     ) -> &mut Self {
         let result = self
             .abi_provider
-            .export_abi_component(component, false)
+            .export_abi_component(component_address, false)
             .map_err(|_| {
-                BuildTransactionError::FailedToExportMethodAbi(component, method.to_owned())
+                BuildTransactionError::FailedToExportMethodAbi(component_address, method.to_owned())
             })
             .and_then(|abi| Self::find_method_abi(&abi, method))
             .and_then(|m| {
@@ -180,7 +201,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         match result {
             Ok(args) => {
                 self.add_instruction(Instruction::CallMethod {
-                    component: component,
+                    component_address,
                     method: method.to_owned(),
                     args,
                 });
@@ -222,11 +243,17 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     /// Publishes a package.
     pub fn publish_package(&mut self, code: &[u8]) -> &mut Self {
         self.add_instruction(Instruction::CallFunction {
-            package: SYSTEM_PACKAGE,
-            blueprint: "System".to_owned(),
+            package_address: SYSTEM_PACKAGE,
+            blueprint_name: "System".to_owned(),
             function: "publish_package".to_owned(),
             args: vec![SmartValue::from(code.to_vec())],
         })
+    }
+
+    fn single_authority(badge: Address, permission: u16) -> HashMap<Address, u16> {
+        let mut map = HashMap::new();
+        map.insert(badge, permission);
+        map
     }
 
     /// Creates a token resource with mutable supply.
@@ -236,13 +263,19 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         mint_badge_address: Address,
     ) -> &mut Self {
         self.add_instruction(Instruction::CallFunction {
-            package: SYSTEM_PACKAGE,
-            blueprint: "System".to_owned(),
-            function: "new_resource_mutable".to_owned(),
+            package_address: SYSTEM_PACKAGE,
+            blueprint_name: "System".to_owned(),
+            function: "new_resource".to_owned(),
             args: vec![
-                SmartValue::from(ResourceType::Fungible { granularity: 1 }),
+                SmartValue::from(ResourceType::Fungible { granularity: 0 }),
                 SmartValue::from(metadata),
-                SmartValue::from(ResourceConfigs::new(mint_badge_address)),
+                SmartValue::from(MINTABLE | BURNABLE),
+                SmartValue::from(0u16),
+                SmartValue::from(Self::single_authority(
+                    mint_badge_address,
+                    MAY_MINT | MAY_BURN,
+                )),
+                SmartValue::from::<Option<NewSupply>>(None),
             ],
         })
     }
@@ -251,16 +284,21 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     pub fn new_token_fixed(
         &mut self,
         metadata: HashMap<String, String>,
-        supply: Decimal,
+        initial_supply: Decimal,
     ) -> &mut Self {
         self.add_instruction(Instruction::CallFunction {
-            package: SYSTEM_PACKAGE,
-            blueprint: "System".to_owned(),
-            function: "new_resource_fixed".to_owned(),
+            package_address: SYSTEM_PACKAGE,
+            blueprint_name: "System".to_owned(),
+            function: "new_resource".to_owned(),
             args: vec![
-                SmartValue::from(ResourceType::Fungible { granularity: 1 }),
+                SmartValue::from(ResourceType::Fungible { granularity: 0 }),
                 SmartValue::from(metadata),
-                SmartValue::from(NewSupply::Fungible { amount: supply }),
+                SmartValue::from(0u16),
+                SmartValue::from(0u16),
+                SmartValue::from(HashMap::<Address, u16>::new()),
+                SmartValue::from(Some(NewSupply::Fungible {
+                    amount: initial_supply.into(),
+                })),
             ],
         })
     }
@@ -272,13 +310,19 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         mint_badge_address: Address,
     ) -> &mut Self {
         self.add_instruction(Instruction::CallFunction {
-            package: SYSTEM_PACKAGE,
-            blueprint: "System".to_owned(),
-            function: "new_resource_mutable".to_owned(),
+            package_address: SYSTEM_PACKAGE,
+            blueprint_name: "System".to_owned(),
+            function: "new_resource".to_owned(),
             args: vec![
-                SmartValue::from(ResourceType::Fungible { granularity: 19 }),
+                SmartValue::from(ResourceType::Fungible { granularity: 18 }),
                 SmartValue::from(metadata),
-                SmartValue::from(ResourceConfigs::new(mint_badge_address)),
+                SmartValue::from(MINTABLE | BURNABLE),
+                SmartValue::from(0u16),
+                SmartValue::from(Self::single_authority(
+                    mint_badge_address,
+                    MAY_MINT | MAY_BURN,
+                )),
+                SmartValue::from::<Option<NewSupply>>(None),
             ],
         })
     }
@@ -287,16 +331,21 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     pub fn new_badge_fixed(
         &mut self,
         metadata: HashMap<String, String>,
-        supply: Decimal,
+        initial_supply: Decimal,
     ) -> &mut Self {
         self.add_instruction(Instruction::CallFunction {
-            package: SYSTEM_PACKAGE,
-            blueprint: "System".to_owned(),
-            function: "new_resource_fixed".to_owned(),
+            package_address: SYSTEM_PACKAGE,
+            blueprint_name: "System".to_owned(),
+            function: "new_resource".to_owned(),
             args: vec![
-                SmartValue::from(ResourceType::Fungible { granularity: 19 }),
+                SmartValue::from(ResourceType::Fungible { granularity: 18 }),
                 SmartValue::from(metadata),
-                SmartValue::from(NewSupply::Fungible { amount: supply }),
+                SmartValue::from(0u16),
+                SmartValue::from(0u16),
+                SmartValue::from(HashMap::<Address, u16>::new()),
+                SmartValue::from(Some(NewSupply::Fungible {
+                    amount: initial_supply.into(),
+                })),
             ],
         })
     }
@@ -305,18 +354,18 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     pub fn mint(
         &mut self,
         amount: Decimal,
-        resource_def: Address,
+        resource_address: Address,
         mint_badge_address: Address,
     ) -> &mut Self {
         self.declare_bucket_ref(|builder, rid| {
             builder.borrow_from_context(1.into(), mint_badge_address, rid);
             builder.add_instruction(Instruction::CallFunction {
-                package: SYSTEM_PACKAGE,
-                blueprint: "System".to_owned(),
+                package_address: SYSTEM_PACKAGE,
+                blueprint_name: "System".to_owned(),
                 function: "mint".to_owned(),
                 args: vec![
                     SmartValue::from(amount),
-                    SmartValue::from(resource_def),
+                    SmartValue::from(resource_address),
                     SmartValue::from(rid),
                 ],
             })
@@ -326,8 +375,8 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     /// Creates an account.
     pub fn new_account(&mut self, key: Address) -> &mut Self {
         self.add_instruction(Instruction::CallFunction {
-            package: ACCOUNT_PACKAGE,
-            blueprint: "Account".to_owned(),
+            package_address: ACCOUNT_PACKAGE,
+            blueprint_name: "Account".to_owned(),
             function: "new".to_owned(),
             args: vec![SmartValue::from(key)],
         })
@@ -340,13 +389,13 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         &mut self,
         key: Address,
         amount: Decimal,
-        resource_def: Address,
+        resource_address: Address,
     ) -> &mut Self {
         self.declare_bucket(|builder, bid| {
-            builder.take_from_context(amount, resource_def, bid);
+            builder.take_from_context(amount, resource_address, bid);
             builder.add_instruction(Instruction::CallFunction {
-                package: ACCOUNT_PACKAGE,
-                blueprint: "Account".to_owned(),
+                package_address: ACCOUNT_PACKAGE,
+                blueprint_name: "Account".to_owned(),
                 function: "with_bucket".to_owned(),
                 args: vec![SmartValue::from(key), SmartValue::from(bid)],
             })
@@ -364,7 +413,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                 amount,
                 resource_address,
             } => self.add_instruction(Instruction::CallMethod {
-                component: account,
+                component_address: account,
                 method: "withdraw".to_owned(),
                 args: vec![
                     SmartValue::from(*amount),
@@ -375,7 +424,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                 ids,
                 resource_address,
             } => self.add_instruction(Instruction::CallMethod {
-                component: account,
+                component_address: account,
                 method: "withdraw_nfts".to_owned(),
                 args: vec![
                     SmartValue::from(ids.clone()),
@@ -503,17 +552,11 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                 let mut created_bid = None;
                 self.declare_bucket(|builder, bid| {
                     created_bid = Some(bid);
-                    let (a, r) = match resource_spec {
-                        ResourceSpec::Fungible {
-                            amount,
-                            resource_address,
-                        } => (amount, resource_address),
-                        ResourceSpec::NonFungible {
-                            ids,
-                            resource_address,
-                        } => (ids.len().into(), resource_address),
-                    };
-                    builder.take_from_context(a, r, bid)
+                    builder.take_from_context(
+                        resource_spec.amount(),
+                        resource_spec.resource_address(),
+                        bid,
+                    )
                 });
                 Ok(SmartValue::from(created_bid.unwrap()))
             }
@@ -525,17 +568,11 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                 let mut created_rid = None;
                 self.declare_bucket_ref(|builder, rid| {
                     created_rid = Some(rid);
-                    let (a, r) = match resource_spec {
-                        ResourceSpec::Fungible {
-                            amount,
-                            resource_address,
-                        } => (amount, resource_address),
-                        ResourceSpec::NonFungible {
-                            ids,
-                            resource_address,
-                        } => (ids.len().into(), resource_address),
-                    };
-                    builder.borrow_from_context(a, r, rid)
+                    builder.borrow_from_context(
+                        resource_spec.amount(),
+                        resource_spec.resource_address(),
+                        rid,
+                    )
                 });
                 Ok(SmartValue::from(created_rid.unwrap()))
             }

@@ -43,12 +43,12 @@ mod tests {
     #[test]
     fn test_serialization() {
         let obj = PutComponentStateInput {
-            component: Address::Component([1u8; 26]),
+            component_address: Address::Component([1u8; 26]),
             state: scrypto_encode(&"test".to_owned()),
         };
         let encoded = crate::buffer::scrypto_encode(&obj);
         let decoded = crate::buffer::scrypto_decode::<PutComponentStateInput>(&encoded).unwrap();
-        assert_eq!(decoded.component, Address::Component([1u8; 26]));
+        assert_eq!(decoded.component_address, Address::Component([1u8; 26]));
         assert_eq!(scrypto_decode::<String>(&decoded.state).unwrap(), "test");
     }
 
@@ -60,7 +60,7 @@ mod tests {
 
     #[derive(TypeId, Encode, Decode)]
     struct ComponentTest {
-        resource_def: Address,
+        resource_address: Address,
         bucket: Bucket,
         secret: String,
     }
