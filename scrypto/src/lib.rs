@@ -121,18 +121,3 @@ macro_rules! include_code {
         ))
     };
 }
-
-/// Asserts a condition and panics if it's false.
-#[macro_export]
-macro_rules! scrypto_assert {
-    ($cond: expr $(,)?) => {
-        if !$cond {
-            panic!("Assertion failed: {}", stringify!($cond));
-        }
-    };
-    ($cond: expr, $($arg: tt)+) => {
-        if !$cond {
-            panic!("Assertion failed: {}", format!($($arg)+));
-        }
-    };
-}
