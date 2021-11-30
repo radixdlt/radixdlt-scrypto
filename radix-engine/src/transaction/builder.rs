@@ -28,6 +28,25 @@ pub enum ResourceSpec {
     },
 }
 
+impl ResourceSpec {
+    pub fn amount(&self) -> Decimal {
+        match self {
+            ResourceSpec::Fungible { amount, .. } => *amount,
+            ResourceSpec::NonFungible { ids, .. } => ids.len().into(),
+        }
+    }
+    pub fn resource_address(&self) -> Address {
+        match self {
+            ResourceSpec::Fungible {
+                resource_address, ..
+            }
+            | ResourceSpec::NonFungible {
+                resource_address, ..
+            } => *resource_address,
+        }
+    }
+}
+
 /// Utility for building transaction.
 pub struct TransactionBuilder<'a, A: AbiProvider> {
     abi_provider: &'a A,
@@ -533,17 +552,11 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                 let mut created_bid = None;
                 self.declare_bucket(|builder, bid| {
                     created_bid = Some(bid);
-                    let (a, r) = match resource_spec {
-                        ResourceSpec::Fungible {
-                            amount,
-                            resource_address,
-                        } => (amount, resource_address),
-                        ResourceSpec::NonFungible {
-                            ids,
-                            resource_address,
-                        } => (ids.len().into(), resource_address),
-                    };
-                    builder.take_from_context(a, r, bid)
+                    builder.take_from_context(
+                        resource_spec.amount(),
+                        resource_spec.resource_address(),
+                        bid,
+                    )
                 });
                 Ok(SmartValue::from(created_bid.unwrap()))
             }
@@ -555,17 +568,11 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                 let mut created_rid = None;
                 self.declare_bucket_ref(|builder, rid| {
                     created_rid = Some(rid);
-                    let (a, r) = match resource_spec {
-                        ResourceSpec::Fungible {
-                            amount,
-                            resource_address,
-                        } => (amount, resource_address),
-                        ResourceSpec::NonFungible {
-                            ids,
-                            resource_address,
-                        } => (ids.len().into(), resource_address),
-                    };
-                    builder.borrow_from_context(a, r, rid)
+                    builder.borrow_from_context(
+                        resource_spec.amount(),
+                        resource_spec.resource_address(),
+                        rid,
+                    )
                 });
                 Ok(SmartValue::from(created_rid.unwrap()))
             }

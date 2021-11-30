@@ -76,7 +76,7 @@ impl Bucket {
     /// Returns the resource definition of resources in this bucket.
     pub fn resource_def(&self) -> ResourceDef {
         let input = GetBucketResourceAddressInput { bid: self.bid };
-        let output: GetBucketResourceAddressOutput = call_kernel(GET_BUCKET_RESOURCE_DEF, input);
+        let output: GetBucketResourceAddressOutput = call_kernel(GET_BUCKET_RESOURCE_ADDRESS, input);
 
         output.resource_address.into()
     }

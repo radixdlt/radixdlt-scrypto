@@ -131,7 +131,7 @@ impl Vault {
     /// Returns the resource definition of resources within this vault.
     pub fn resource_def(&self) -> ResourceDef {
         let input = GetVaultResourceAddressInput { vid: self.vid };
-        let output: GetVaultResourceAddressOutput = call_kernel(GET_VAULT_RESOURCE_DEF, input);
+        let output: GetVaultResourceAddressOutput = call_kernel(GET_VAULT_RESOURCE_ADDRESS, input);
 
         output.resource_address.into()
     }

@@ -1785,7 +1785,7 @@ impl<'r, 'l, L: Ledger> Externals for Process<'r, 'l, L> {
                     PUT_INTO_VAULT => self.handle(args, Self::handle_put_into_vault),
                     TAKE_FROM_VAULT => self.handle(args, Self::handle_take_from_vault),
                     GET_VAULT_AMOUNT => self.handle(args, Self::handle_get_vault_amount),
-                    GET_VAULT_RESOURCE_DEF => {
+                    GET_VAULT_RESOURCE_ADDRESS => {
                         self.handle(args, Self::handle_get_vault_resource_address)
                     }
                     TAKE_NFT_FROM_VAULT => self.handle(args, Self::handle_take_nft_from_vault),
@@ -1795,7 +1795,7 @@ impl<'r, 'l, L: Ledger> Externals for Process<'r, 'l, L> {
                     PUT_INTO_BUCKET => self.handle(args, Self::handle_put_into_bucket),
                     TAKE_FROM_BUCKET => self.handle(args, Self::handle_take_from_bucket),
                     GET_BUCKET_AMOUNT => self.handle(args, Self::handle_get_bucket_amount),
-                    GET_BUCKET_RESOURCE_DEF => {
+                    GET_BUCKET_RESOURCE_ADDRESS => {
                         self.handle(args, Self::handle_get_bucket_resource_address)
                     }
                     TAKE_NFT_FROM_BUCKET => self.handle(args, Self::handle_take_nft_from_bucket),

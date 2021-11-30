@@ -17,7 +17,7 @@ pub trait AbiProvider {
     fn export_abi<S: AsRef<str>>(
         &self,
         package_address: Address,
-        blueprint: S,
+        blueprint_name: S,
         trace: bool,
     ) -> Result<abi::Blueprint, RuntimeError>;
 

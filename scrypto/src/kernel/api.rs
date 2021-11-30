@@ -70,7 +70,7 @@ pub const TAKE_FROM_VAULT: u32 = 0x42;
 /// Get vault resource amount
 pub const GET_VAULT_AMOUNT: u32 = 0x43;
 /// Get vault resource definition
-pub const GET_VAULT_RESOURCE_DEF: u32 = 0x44;
+pub const GET_VAULT_RESOURCE_ADDRESS: u32 = 0x44;
 /// Take an NFT from this vault, by id
 pub const TAKE_NFT_FROM_VAULT: u32 = 0x45;
 /// Get the IDs of all NFTs in this vault
@@ -85,7 +85,7 @@ pub const TAKE_FROM_BUCKET: u32 = 0x52;
 /// Get bucket resource amount
 pub const GET_BUCKET_AMOUNT: u32 = 0x53;
 /// Get bucket resource definition
-pub const GET_BUCKET_RESOURCE_DEF: u32 = 0x54;
+pub const GET_BUCKET_RESOURCE_ADDRESS: u32 = 0x54;
 /// Take an NFT from this bucket, by id
 pub const TAKE_NFT_FROM_BUCKET: u32 = 0x55;
 /// Get the IDs of all NFTs in this bucket
