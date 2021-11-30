@@ -140,6 +140,13 @@ fn test_resource_def() {
         )
         .call_function(package, "ResourceTest", "query", vec![], Some(account))
         .call_function(package, "ResourceTest", "burn", vec![], Some(account))
+        .call_function(
+            package,
+            "ResourceTest",
+            "update_feature_flags",
+            vec![],
+            Some(account),
+        )
         .drop_all_bucket_refs()
         .deposit_all_buckets(account)
         .build(vec![key])
@@ -153,6 +160,22 @@ fn test_resource_def() {
             package,
             "ResourceTest",
             "create_fungible_should_fail",
+            vec![],
+            Some(account),
+        )
+        .drop_all_bucket_refs()
+        .deposit_all_buckets(account)
+        .build(vec![key])
+        .unwrap();
+    let receipt = executor.run(transaction, true).unwrap();
+    println!("{:?}", receipt);
+    assert!(!receipt.success);
+
+    let transaction = TransactionBuilder::new(&executor)
+        .call_function(
+            package,
+            "ResourceTest",
+            "update_feature_flags_should_fail",
             vec![],
             Some(account),
         )

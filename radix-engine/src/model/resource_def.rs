@@ -17,6 +17,12 @@ pub enum ResourceDefError {
     OperationNotAllowed,
     InvalidGranularity,
     InvalidAmount(Decimal),
+    InvalidFlagUpdate {
+        flags: u16,
+        mutable_flags: u16,
+        new_flags: u16,
+        new_mutable_flags: u16,
+    },
 }
 
 /// The definition of a resource.
@@ -143,6 +149,44 @@ impl ResourceDef {
         }
     }
 
+    pub fn update_flags(&mut self, new_flags: u16, actor: Actor) -> Result<(), ResourceDefError> {
+        self.check_manage_flags_auth(actor)?;
+
+        let changed = self.flags ^ new_flags;
+        if self.mutable_flags | changed != self.mutable_flags {
+            return Err(ResourceDefError::InvalidFlagUpdate {
+                flags: self.flags,
+                mutable_flags: self.mutable_flags,
+                new_flags,
+                new_mutable_flags: self.mutable_flags,
+            });
+        }
+        self.flags = new_flags;
+
+        Ok(())
+    }
+
+    pub fn update_mutable_flags(
+        &mut self,
+        new_mutable_flags: u16,
+        actor: Actor,
+    ) -> Result<(), ResourceDefError> {
+        self.check_manage_flags_auth(actor)?;
+
+        let changed = self.mutable_flags ^ new_mutable_flags;
+        if self.mutable_flags | changed != self.mutable_flags {
+            return Err(ResourceDefError::InvalidFlagUpdate {
+                flags: self.flags,
+                mutable_flags: self.mutable_flags,
+                new_flags: self.flags,
+                new_mutable_flags: new_mutable_flags,
+            });
+        }
+        self.mutable_flags = new_mutable_flags;
+
+        Ok(())
+    }
+
     pub fn check_take_from_vault_auth(&self, actor: Actor) -> Result<(), ResourceDefError> {
         if self.flags() & RESTRICTED_TRANSFER == RESTRICTED_TRANSFER {
             if !actor.check_permission(self.authorities(), MAY_TRANSFER) {
@@ -179,6 +223,13 @@ impl ResourceDef {
             return Err(ResourceDefError::OperationNotAllowed);
         }
         if !actor.check_permission(self.authorities(), MAY_CHANGE_INDIVIDUAL_METADATA) {
+            return Err(ResourceDefError::UnauthorizedAccess);
+        }
+        Ok(())
+    }
+
+    pub fn check_manage_flags_auth(&self, actor: Actor) -> Result<(), ResourceDefError> {
+        if !actor.check_permission(self.authorities(), MAY_MANAGE_RESOURCE_FLAGS) {
             return Err(ResourceDefError::UnauthorizedAccess);
         }
         Ok(())

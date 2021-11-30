@@ -5,8 +5,7 @@ blueprint! {
 
     impl ResourceTest {
         pub fn create_fungible() -> (Bucket, ResourceDef) {
-            let badge = ResourceBuilder::new_fungible(18)
-                .initial_supply_fungible(1);
+            let badge = ResourceBuilder::new_fungible(18).initial_supply_fungible(1);
             let token_resource_def = ResourceBuilder::new_fungible(0)
                 .metadata("name", "TestToken")
                 .flags(MINTABLE | BURNABLE)
@@ -16,8 +15,7 @@ blueprint! {
         }
 
         pub fn create_fungible_should_fail() -> (Bucket, Bucket) {
-            let bucket = ResourceBuilder::new_fungible(18)
-                .initial_supply_fungible(1);
+            let bucket = ResourceBuilder::new_fungible(18).initial_supply_fungible(1);
             (bucket.take(Decimal::from_str("0.1").unwrap()), bucket)
         }
 
@@ -36,6 +34,46 @@ blueprint! {
             let (badge, resource_def) = Self::create_fungible();
             let bucket = resource_def.mint(1, badge.present());
             resource_def.burn(bucket, Some(badge.present()));
+            badge
+        }
+
+        pub fn update_feature_flags() -> Bucket {
+            let badge = ResourceBuilder::new_fungible(18).initial_supply_fungible(1);
+            let token_resource_def = ResourceBuilder::new_fungible(0)
+                .metadata("name", "TestToken")
+                .mutable_flags(MINTABLE)
+                .badge(
+                    badge.resource_address(),
+                    MAY_MANAGE_RESOURCE_FLAGS | MAY_MINT,
+                )
+                .no_initial_supply();
+
+            token_resource_def.enable_flags(MINTABLE, badge.present());
+            assert!(token_resource_def.flags() & MINTABLE == MINTABLE);
+            assert!(token_resource_def.mutable_flags() & MINTABLE == MINTABLE);
+
+            token_resource_def.disable_flags(MINTABLE, badge.present());
+            assert!(token_resource_def.flags() & MINTABLE == 0);
+            assert!(token_resource_def.mutable_flags() & MINTABLE == MINTABLE);
+
+            token_resource_def.lock_flags(MINTABLE, badge.present());
+            assert!(token_resource_def.flags() & MINTABLE == 0);
+            assert!(token_resource_def.mutable_flags() & MINTABLE == 0);
+
+            badge
+        }
+
+        pub fn update_feature_flags_should_fail() -> Bucket {
+            let badge = ResourceBuilder::new_fungible(18).initial_supply_fungible(1);
+            let token_resource_def = ResourceBuilder::new_fungible(0)
+                .metadata("name", "TestToken")
+                .badge(
+                    badge.resource_address(),
+                    MAY_MANAGE_RESOURCE_FLAGS | MAY_MINT,
+                )
+                .no_initial_supply();
+
+            token_resource_def.enable_flags(MINTABLE, badge.present());
             badge
         }
     }

@@ -338,7 +338,7 @@ pub struct GetResourceFlagsOutput {
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct UpdateResourceFlagsInput {
     pub resource_address: Address,
-    pub new_flags: Address,
+    pub new_flags: u16,
     pub auth: Rid,
 }
 
@@ -358,7 +358,7 @@ pub struct GetResourceMutableFlagsOutput {
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct UpdateResourceMutableFlagsInput {
     pub resource_address: Address,
-    pub new_mutable_flags: Address,
+    pub new_mutable_flags: u16,
     pub auth: Rid,
 }
 

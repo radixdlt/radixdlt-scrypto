@@ -1163,8 +1163,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         let resource_def = self
             .track
             .get_resource_def(input.resource_address)
-            .ok_or(RuntimeError::ResourceDefNotFound(input.resource_address))?
-            .clone();
+            .ok_or(RuntimeError::ResourceDefNotFound(input.resource_address))?;
 
         Ok(GetResourceTotalSupplyOutput {
             total_supply: resource_def.total_supply(),
@@ -1180,12 +1179,29 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         let resource_def = self
             .track
             .get_resource_def(input.resource_address)
-            .ok_or(RuntimeError::ResourceDefNotFound(input.resource_address))?
-            .clone();
+            .ok_or(RuntimeError::ResourceDefNotFound(input.resource_address))?;
 
         Ok(GetResourceFlagsOutput {
             flags: resource_def.flags(),
         })
+    }
+
+    fn handle_update_resource_flags(
+        &mut self,
+        input: UpdateResourceFlagsInput,
+    ) -> Result<UpdateResourceFlagsOutput, RuntimeError> {
+        Self::expect_resource_address(input.resource_address)?;
+        let actor = self.authenticate_with_badge(Some(input.auth))?;
+
+        let resource_def = self
+            .track
+            .get_resource_def_mut(input.resource_address)
+            .ok_or(RuntimeError::ResourceDefNotFound(input.resource_address))?;
+        resource_def
+            .update_flags(input.new_flags, actor)
+            .map_err(RuntimeError::ResourceDefError)?;
+
+        Ok(UpdateResourceFlagsOutput {})
     }
 
     fn handle_get_resource_mutable_flags(
@@ -1197,12 +1213,29 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         let resource_def = self
             .track
             .get_resource_def(input.resource_address)
-            .ok_or(RuntimeError::ResourceDefNotFound(input.resource_address))?
-            .clone();
+            .ok_or(RuntimeError::ResourceDefNotFound(input.resource_address))?;
 
         Ok(GetResourceMutableFlagsOutput {
             mutable_flags: resource_def.mutable_flags(),
         })
+    }
+
+    fn handle_update_resource_mutable_flags(
+        &mut self,
+        input: UpdateResourceMutableFlagsInput,
+    ) -> Result<UpdateResourceMutableFlagsOutput, RuntimeError> {
+        Self::expect_resource_address(input.resource_address)?;
+        let actor = self.authenticate_with_badge(Some(input.auth))?;
+
+        let resource_def = self
+            .track
+            .get_resource_def_mut(input.resource_address)
+            .ok_or(RuntimeError::ResourceDefNotFound(input.resource_address))?;
+        resource_def
+            .update_mutable_flags(input.new_mutable_flags, actor)
+            .map_err(RuntimeError::ResourceDefError)?;
+
+        Ok(UpdateResourceMutableFlagsOutput {})
     }
 
     fn handle_get_resource_type(
@@ -1214,8 +1247,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         let resource_def = self
             .track
             .get_resource_def(input.resource_address)
-            .ok_or(RuntimeError::ResourceDefNotFound(input.resource_address))?
-            .clone();
+            .ok_or(RuntimeError::ResourceDefNotFound(input.resource_address))?;
 
         Ok(GetResourceTypeOutput {
             resource_type: resource_def.resource_type(),
@@ -1767,14 +1799,12 @@ impl<'r, 'l, L: Ledger> Externals for Process<'r, 'l, L> {
                         self.handle(args, Self::handle_get_resource_total_supply)
                     }
                     GET_RESOURCE_FLAGS => self.handle(args, Self::handle_get_resource_flags),
-                    UPDATE_RESOURCE_FLAGS => {
-                        todo!()
-                    }
+                    UPDATE_RESOURCE_FLAGS => self.handle(args, Self::handle_update_resource_flags),
                     GET_RESOURCE_MUTABLE_FLAGS => {
                         self.handle(args, Self::handle_get_resource_mutable_flags)
                     }
                     UPDATE_RESOURCE_MUTABLE_FLAGS => {
-                        todo!()
+                        self.handle(args, Self::handle_update_resource_mutable_flags)
                     }
                     MINT_RESOURCE => self.handle(args, Self::handle_mint_resource),
                     BURN_RESOURCE => self.handle(args, Self::handle_burn_resource),

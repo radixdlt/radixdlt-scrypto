@@ -181,7 +181,36 @@ impl ResourceDef {
         let _: UpdateNftDataOutput = call_kernel(UPDATE_NFT_DATA, input);
     }
 
-    // TODO: support toggling on/off feature and locking feature setting
+    /// Turns on feature flags.
+    pub fn enable_flags(&self, flags: u16, auth: BucketRef) {
+        let input = UpdateResourceFlagsInput {
+            resource_address: self.address,
+            new_flags: self.flags() | flags,
+            auth: auth.into(),
+        };
+        let _output: UpdateResourceFlagsOutput = call_kernel(UPDATE_RESOURCE_FLAGS, input);
+    }
+
+    /// Turns off feature flags.
+    pub fn disable_flags(&self, flags: u16, auth: BucketRef) {
+        let input = UpdateResourceFlagsInput {
+            resource_address: self.address,
+            new_flags: self.flags() & !flags,
+            auth: auth.into(),
+        };
+        let _output: UpdateResourceFlagsOutput = call_kernel(UPDATE_RESOURCE_FLAGS, input);
+    }
+
+    /// Locks feature flag settings.
+    pub fn lock_flags(&self, flags: u16, auth: BucketRef) {
+        let input = UpdateResourceMutableFlagsInput {
+            resource_address: self.address,
+            new_mutable_flags: self.flags() & !flags,
+            auth: auth.into(),
+        };
+        let _output: UpdateResourceMutableFlagsOutput =
+            call_kernel(UPDATE_RESOURCE_MUTABLE_FLAGS, input);
+    }
 }
 
 //========
