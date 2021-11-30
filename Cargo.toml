@@ -1,0 +1,13 @@
+[workspace]
+members = [
+    "sbor",
+    "sbor-derive",
+    "sbor-tests",
+    "scrypto",
+    "scrypto-abi",
+    "scrypto-derive",
+    "scrypto-tests",
+    "radix-engine",
+    "simulator",
+]
+exclude = ["examples", "assets"]
