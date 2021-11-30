@@ -10,13 +10,12 @@ blueprint! {
         pub fn new(badge_name: String) -> (Component, Bucket) {
             // Create a badge for internal use which will hold mint/burn authority for the admin badge we will soon create
             let admin_mint_badge = ResourceBuilder::new_fungible(18)
-                .flags(FREELY_TRANSFERABLE | FREELY_BURNABLE)
                 .initial_supply_fungible(1);
 
             // Create the ResourceDef for a mutable supply admin badge
             let admin_badge_def = ResourceBuilder::new_fungible(18)
                 .metadata("name", badge_name)
-                .flags(FREELY_TRANSFERABLE | MINTABLE | BURNABLE)
+                .flags(MINTABLE | BURNABLE)
                 .badge(admin_mint_badge.resource_def(), MAY_MINT | MAY_BURN)
                 .no_initial_supply();
 

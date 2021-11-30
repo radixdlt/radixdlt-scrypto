@@ -137,11 +137,10 @@ blueprint! {
             let usd_resource_def: ResourceDef = usd_token_address.into();
             let synthetics_mint_badge = ResourceBuilder::new_fungible(18)
                 .metadata("name", "Synthetics Mint Badge")
-                .flags(FREELY_TRANSFERABLE | FREELY_BURNABLE)
                 .initial_supply_fungible(1);
             let synthetics_global_debt_share_resource_def = ResourceBuilder::new_fungible(0)
                 .metadata("name", "Synthetics Global Debt")
-                .flags(FREELY_TRANSFERABLE | MINTABLE | BURNABLE)
+                .flags(MINTABLE | BURNABLE)
                 .badge(synthetics_mint_badge.resource_def(), MAY_MINT | MAY_BURN)
                 .no_initial_supply();
 
@@ -172,7 +171,7 @@ blueprint! {
             let token_resource_def = ResourceBuilder::new_fungible(0)
                 .metadata("name", format!("Synthetic {}", asset_symbol.clone()))
                 .metadata("symbol", format!("s{}", asset_symbol.clone()))
-                .flags(FREELY_TRANSFERABLE | MINTABLE | BURNABLE)
+                .flags(MINTABLE | BURNABLE)
                 .badge(self.synthetics_mint_badge.resource_def(), MAY_MINT | MAY_BURN)
                 .no_initial_supply();
             let token_address = token_resource_def.address();
@@ -311,7 +310,6 @@ blueprint! {
         pub fn new_user(&self) -> Bucket {
             ResourceBuilder::new_fungible(18)
                 .metadata("name", "Synthetic Pool User Badge")
-                .flags(FREELY_TRANSFERABLE | FREELY_BURNABLE)
                 .initial_supply_fungible(1)
         }
 

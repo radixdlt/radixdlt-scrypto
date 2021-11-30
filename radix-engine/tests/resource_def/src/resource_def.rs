@@ -6,11 +6,10 @@ blueprint! {
     impl ResourceTest {
         pub fn create_fungible() -> (Bucket, ResourceDef) {
             let badge = ResourceBuilder::new_fungible(18)
-                .flags(FREELY_TRANSFERABLE | FREELY_BURNABLE)
                 .initial_supply_fungible(1);
             let token_resource_def = ResourceBuilder::new_fungible(0)
                 .metadata("name", "TestToken")
-                .flags(FREELY_TRANSFERABLE | MINTABLE | BURNABLE)
+                .flags(MINTABLE | BURNABLE)
                 .badge(badge.resource_address(), MAY_MINT | MAY_BURN)
                 .no_initial_supply();
             (badge, token_resource_def)
@@ -18,7 +17,6 @@ blueprint! {
 
         pub fn create_fungible_should_fail() -> (Bucket, Bucket) {
             let bucket = ResourceBuilder::new_fungible(18)
-                .flags(FREELY_TRANSFERABLE | FREELY_BURNABLE)
                 .initial_supply_fungible(1);
             (bucket.take(Decimal::from_str("0.1").unwrap()), bucket)
         }

@@ -26,11 +26,10 @@ We'll want our supply of admin badges to be mutable.  Mutable supply resources c
 
 ```rust
 let admin_mint_badge = ResourceBuilder::new_fungible(18)
-    .flags(FREELY_TRANSFERABLE | FREELY_BURNABLE)
     .initial_supply_fungible(1);
 let admin_badge_def = ResourceBuilder::new_fungible(18)
     .metadata("name", badge_name)
-    .flags(FREELY_TRANSFERABLE | MINTABLE | BURNABLE)
+    .flags(MINTABLE | BURNABLE)
     .badge(admin_mint_badge.resource_def(), MAY_MINT | MAY_BURN)
     .no_initial_supply();
 ```

@@ -250,7 +250,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
             args: vec![
                 SmartValue::from(ResourceType::Fungible { granularity: 0 }),
                 SmartValue::from(metadata),
-                SmartValue::from(FREELY_TRANSFERABLE | MINTABLE | BURNABLE),
+                SmartValue::from(MINTABLE | BURNABLE),
                 SmartValue::from(0u16),
                 SmartValue::from(Self::single_authority(
                     mint_badge_address,
@@ -274,7 +274,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
             args: vec![
                 SmartValue::from(ResourceType::Fungible { granularity: 0 }),
                 SmartValue::from(metadata),
-                SmartValue::from(FREELY_TRANSFERABLE | FREELY_BURNABLE),
+                SmartValue::from(0u16),
                 SmartValue::from(0u16),
                 SmartValue::from(HashMap::<Address, u16>::new()),
                 SmartValue::from(Some(NewSupply::Fungible {
@@ -297,7 +297,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
             args: vec![
                 SmartValue::from(ResourceType::Fungible { granularity: 18 }),
                 SmartValue::from(metadata),
-                SmartValue::from(FREELY_TRANSFERABLE | MINTABLE | BURNABLE),
+                SmartValue::from(MINTABLE | BURNABLE),
                 SmartValue::from(0u16),
                 SmartValue::from(Self::single_authority(
                     mint_badge_address,
@@ -321,7 +321,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
             args: vec![
                 SmartValue::from(ResourceType::Fungible { granularity: 18 }),
                 SmartValue::from(metadata),
-                SmartValue::from(FREELY_TRANSFERABLE | FREELY_BURNABLE),
+                SmartValue::from(0u16),
                 SmartValue::from(0u16),
                 SmartValue::from(HashMap::<Address, u16>::new()),
                 SmartValue::from(Some(NewSupply::Fungible {

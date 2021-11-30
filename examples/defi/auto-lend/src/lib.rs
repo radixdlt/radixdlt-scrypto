@@ -51,7 +51,6 @@ blueprint! {
         pub fn new_user(&self) -> Bucket {
             ResourceBuilder::new_fungible(18)
                 .metadata("name", "AutoLend User Badge")
-                .flags(FREELY_TRANSFERABLE | FREELY_BURNABLE)
                 .initial_supply_fungible(1)
         }
 

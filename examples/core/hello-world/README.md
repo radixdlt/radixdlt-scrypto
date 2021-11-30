@@ -60,7 +60,6 @@ To define a new resource, we use the `ResourceBuilder` by specifying the metadat
 let my_bucket: Bucket = ResourceBuilder::new_fungible(0)
     .metadata("name", "HelloToken")
     .metadata("symbol", "HT")
-    .flags(FREELY_TRANSFERABLE | FREELY_BURNABLE)
     .initial_supply_fungible(1000);
 ```
 
