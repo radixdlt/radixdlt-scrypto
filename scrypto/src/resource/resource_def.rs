@@ -211,6 +211,15 @@ impl ResourceDef {
         let _output: UpdateResourceMutableFlagsOutput =
             call_kernel(UPDATE_RESOURCE_MUTABLE_FLAGS, input);
     }
+
+    pub fn update_metadata(&self, new_metadata: HashMap<String, String>, auth: BucketRef) {
+        let input = UpdateResourceMetadataInput {
+            resource_address: self.address,
+            new_metadata,
+            auth: auth.into(),
+        };
+        let _output: UpdateResourceMetadataOutput = call_kernel(UPDATE_RESOURCE_METADATA, input);
+    }
 }
 
 //========

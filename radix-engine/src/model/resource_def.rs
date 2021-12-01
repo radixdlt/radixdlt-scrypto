@@ -187,6 +187,18 @@ impl ResourceDef {
         Ok(())
     }
 
+    pub fn update_metadata(
+        &mut self,
+        new_metadata: HashMap<String, String>,
+        actor: Actor,
+    ) -> Result<(), ResourceDefError> {
+        self.check_update_metadata_auth(actor)?;
+
+        self.metadata = new_metadata;
+
+        Ok(())
+    }
+
     pub fn check_take_from_vault_auth(&self, actor: Actor) -> Result<(), ResourceDefError> {
         if self.flags() & RESTRICTED_TRANSFER == RESTRICTED_TRANSFER {
             if !actor.check_permission(self.authorities(), MAY_TRANSFER) {
@@ -223,6 +235,16 @@ impl ResourceDef {
             return Err(ResourceDefError::OperationNotAllowed);
         }
         if !actor.check_permission(self.authorities(), MAY_CHANGE_INDIVIDUAL_METADATA) {
+            return Err(ResourceDefError::UnauthorizedAccess);
+        }
+        Ok(())
+    }
+
+    pub fn check_update_metadata_auth(&self, actor: Actor) -> Result<(), ResourceDefError> {
+        if self.flags() & SHARED_METADATA_MUTABLE != SHARED_METADATA_MUTABLE {
+            return Err(ResourceDefError::OperationNotAllowed);
+        }
+        if !actor.check_permission(self.authorities(), MAY_CHANGE_SHARED_METADATA) {
             return Err(ResourceDefError::UnauthorizedAccess);
         }
         Ok(())

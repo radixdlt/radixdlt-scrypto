@@ -1339,6 +1339,23 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         Ok(GetNftDataOutput { data: nft.data() })
     }
 
+    fn handle_update_resource_metadata(
+        &mut self,
+        input: UpdateResourceMetadataInput,
+    ) -> Result<UpdateResourceMetadataOutput, RuntimeError> {
+        let actor = self.authenticate_with_badge(Some(input.auth))?;
+
+        let resource_def = self
+            .track
+            .get_resource_def_mut(input.resource_address)
+            .ok_or(RuntimeError::ResourceDefNotFound(input.resource_address))?;
+        resource_def
+            .update_metadata(input.new_metadata, actor)
+            .map_err(RuntimeError::ResourceDefError)?;
+
+        Ok(UpdateResourceMetadataOutput {})
+    }
+
     fn handle_create_vault(
         &mut self,
         input: CreateEmptyVaultInput,
@@ -1810,6 +1827,9 @@ impl<'r, 'l, L: Ledger> Externals for Process<'r, 'l, L> {
                     BURN_RESOURCE => self.handle(args, Self::handle_burn_resource),
                     UPDATE_NFT_DATA => self.handle(args, Self::handle_update_nft_data),
                     GET_NFT_DATA => self.handle(args, Self::handle_get_nft_data),
+                    UPDATE_RESOURCE_METADATA => {
+                        self.handle(args, Self::handle_update_resource_metadata)
+                    }
 
                     CREATE_EMPTY_VAULT => self.handle(args, Self::handle_create_vault),
                     PUT_INTO_VAULT => self.handle(args, Self::handle_put_into_vault),

@@ -60,6 +60,8 @@ pub const UPDATE_RESOURCE_MUTABLE_FLAGS: u32 = 0x39;
 pub const GET_NFT_DATA: u32 = 0x3a;
 /// Update the data of an NFT
 pub const UPDATE_NFT_DATA: u32 = 0x3b;
+/// Update resource metadata
+pub const UPDATE_RESOURCE_METADATA: u32 = 0x3c;
 
 /// Create an empty vault
 pub const CREATE_EMPTY_VAULT: u32 = 0x40;
@@ -364,6 +366,16 @@ pub struct UpdateResourceMutableFlagsInput {
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct UpdateResourceMutableFlagsOutput {}
+
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
+pub struct UpdateResourceMetadataInput {
+    pub resource_address: Address,
+    pub new_metadata: HashMap<String, String>,
+    pub auth: Rid,
+}
+
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
+pub struct UpdateResourceMetadataOutput {}
 
 //==========
 // vault

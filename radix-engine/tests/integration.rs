@@ -147,6 +147,13 @@ fn test_resource_def() {
             vec![],
             Some(account),
         )
+        .call_function(
+            package,
+            "ResourceTest",
+            "update_resource_metadata",
+            vec![],
+            Some(account),
+        )
         .drop_all_bucket_refs()
         .deposit_all_buckets(account)
         .build(vec![key])

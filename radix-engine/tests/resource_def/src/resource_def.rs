@@ -76,5 +76,21 @@ blueprint! {
             token_resource_def.enable_flags(MINTABLE, badge.present());
             badge
         }
+
+        pub fn update_resource_metadata() -> Bucket {
+            let badge = ResourceBuilder::new_fungible(18).initial_supply_fungible(1);
+            let token_resource_def = ResourceBuilder::new_fungible(0)
+                .metadata("name", "TestToken")
+                .flags(SHARED_METADATA_MUTABLE)
+                .badge(badge.resource_address(), MAY_CHANGE_SHARED_METADATA)
+                .no_initial_supply();
+
+            let mut new_metadata = HashMap::new();
+            new_metadata.insert("a".to_owned(), "b".to_owned());
+            token_resource_def.update_metadata(new_metadata.clone(), badge.present());
+            assert_eq!(token_resource_def.metadata(), new_metadata);
+
+            badge
+        }
     }
 }
