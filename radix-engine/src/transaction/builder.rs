@@ -451,7 +451,14 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
             SCRYPTO_NAME_BID | SCRYPTO_NAME_BUCKET => {
                 let mut split = arg.split(',');
                 let amount = split.next().and_then(|v| v.trim().parse::<Decimal>().ok());
-                let resource_def = split.next().and_then(|v| v.trim().parse::<Address>().ok());
+                let resource_def = split.next().and_then(|v| {
+                    let address = v.trim();
+                    if address == "XRD" {
+                        return Some(RADIX_TOKEN);
+                    }
+                    address.parse::<Address>().ok()
+                });
+
                 match (amount, resource_def) {
                     (Some(a), Some(r)) => {
                         if let Some(account) = account {
