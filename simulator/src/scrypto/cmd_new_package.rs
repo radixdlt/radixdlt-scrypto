@@ -41,7 +41,11 @@ pub fn handle_new_package(matches: &ArgMatches) -> Result<(), Error> {
     let pkg_dir = matches.value_of(ARG_PATH).unwrap_or(pkg_name);
     let simulator_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let (sbor, scrypto, radix_engine) = if matches.is_present(ARG_LOCAL) {
-        let scrypto_dir = simulator_dir.parent().unwrap().to_string_lossy();
+        let scrypto_dir = simulator_dir
+            .parent()
+            .unwrap()
+            .to_string_lossy()
+            .replace("\\", "/");
         (
             format!("{{ path = \"{}/sbor\" }}", scrypto_dir),
             format!("{{ path = \"{}/scrypto\" }}", scrypto_dir),
