@@ -4,11 +4,11 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-sbor = { path = "${scrypto_home}/sbor" }
-scrypto = { path = "${scrypto_home}/scrypto" }
+sbor = ${sbor}
+scrypto = ${scrypto}
 
 [dev-dependencies]
-radix-engine = { path = "${scrypto_home}/radix-engine" }
+radix-engine = ${radix-engine}
 
 [profile.release]
 opt-level = 's'     # Optimize for size.

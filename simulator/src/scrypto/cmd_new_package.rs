@@ -6,6 +6,7 @@ use crate::scrypto::*;
 
 const ARG_NAME: &str = "NAME";
 const ARG_PATH: &str = "PATH";
+const ARG_LOCAL: &str = "TRACE";
 
 /// Constructs a `new-package` subcommand.
 pub fn make_new_package<'a, 'b>() -> App<'a, 'b> {
@@ -17,12 +18,18 @@ pub fn make_new_package<'a, 'b>() -> App<'a, 'b> {
                 .help("Specifies the package name.")
                 .required(true),
         )
+        // options
         .arg(
             Arg::with_name(ARG_PATH)
                 .long("path")
                 .takes_value(true)
                 .help("Specifies the package dir.")
                 .required(false),
+        )
+        .arg(
+            Arg::with_name(ARG_LOCAL)
+                .long("local")
+                .help("Uses local Scrypto as dependency."),
         )
 }
 
@@ -32,9 +39,21 @@ pub fn handle_new_package(matches: &ArgMatches) -> Result<(), Error> {
         .value_of(ARG_NAME)
         .ok_or_else(|| Error::MissingArgument(ARG_NAME.to_owned()))?;
     let pkg_dir = matches.value_of(ARG_PATH).unwrap_or(pkg_name);
-
     let simulator_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    let scrypto_dir = simulator_dir.parent().unwrap().to_string_lossy();
+    let (sbor, scrypto, radix_engine) = if matches.is_present(ARG_LOCAL) {
+        let scrypto_dir = simulator_dir.parent().unwrap().to_string_lossy();
+        (
+            format!("{{ path = \"{}/sbor\" }}", scrypto_dir),
+            format!("{{ path = \"{}/scrypto\" }}", scrypto_dir),
+            format!("{{ path = \"{}/radix-engine\" }}", scrypto_dir),
+        )
+    } else {
+        let s = format!(
+            "{{ git = \"https://github.com/radixdlt/radixdlt-scrypto\", tag = \"v{}\" }}",
+            env!("CARGO_PKG_VERSION")
+        );
+        (s.clone(), s.clone(), s)
+    };
 
     if PathBuf::from(pkg_dir).exists() {
         Err(Error::PackageAlreadyExists)
@@ -46,7 +65,9 @@ pub fn handle_new_package(matches: &ArgMatches) -> Result<(), Error> {
             PathBuf::from(format!("{}/Cargo.toml", pkg_dir)),
             include_str!("../../../assets/template/Cargo.toml")
                 .replace("${package_name}", pkg_name)
-                .replace("${scrypto_home}", &scrypto_dir.replace("\\", "/")),
+                .replace("${sbor}", &sbor)
+                .replace("${scrypto}", &scrypto)
+                .replace("${radix-engine}", &radix_engine),
         )
         .map_err(Error::IOError)?;
 

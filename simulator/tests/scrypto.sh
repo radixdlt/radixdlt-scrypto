@@ -10,7 +10,7 @@ test_pkg="./target/temp/hello-world"
 
 # Create package
 rm -fr $test_pkg
-$scrypto new-package hello-world --path $test_pkg
+$scrypto new-package hello-world --path $test_pkg --local
 
 # Build
 $scrypto build --path $test_pkg
