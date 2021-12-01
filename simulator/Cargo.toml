@@ -4,9 +4,9 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-radix-engine = { version = "0.1", path = "../radix-engine" }
-scrypto = { version = "0.1", path = "../scrypto", features = ["serde_std"] }
-sbor = { version = "0.1", path = "../sbor" }
+radix-engine = { path = "../radix-engine" }
+scrypto = { path = "../scrypto", features = ["serde_std"] }
+sbor = { path = "../sbor" }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = { version = "1.0" }
 clap = { version = "2.33" }

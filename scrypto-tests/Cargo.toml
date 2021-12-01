@@ -4,8 +4,8 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-scrypto = { version = "0.1", path = "../scrypto", default-features = false }
-sbor = { version = "0.1", path = "../sbor", default-features = false }
+scrypto = { path = "../scrypto", default-features = false }
+sbor = { path = "../sbor", default-features = false }
 serde = { version = "1.0", default-features = false }
 serde_json = { version = "1.0", default-features = false }
 

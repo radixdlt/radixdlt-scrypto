@@ -13,8 +13,8 @@ quote = { version = "1.0" }
 uuid = { version = "0.8", features = ["v4"] }
 serde = { version = "1.0", default-features = false }
 serde_json = { version = "1.0", default-features = false }
-sbor = { version = "0.1", path = "../sbor", default-features = false }
-scrypto-abi = { version = "0.1", path = "../scrypto-abi", default-features = false }
+sbor = { path = "../sbor", default-features = false }
+scrypto-abi = { path = "../scrypto-abi", default-features = false }
 
 [features]
 # Currenlty, dependencies of procedrual macros are imported to host crates. This may accidentally 

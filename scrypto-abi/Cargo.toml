@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-sbor = { version = "0.1", path = "../sbor", default-features = false }
+sbor = { path = "../sbor", default-features = false }
 serde = { version = "1.0", default-features = false, optional = true }
 
 [features]
