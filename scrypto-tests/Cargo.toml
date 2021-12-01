@@ -1,7 +1,7 @@
 [package]
 name = "scrypto-tests"
 version = "0.1.0"
-edition = "2018"
+edition = "2021"
 
 [dependencies]
 scrypto = { version = "0.1", path = "../scrypto", default-features = false }
@@ -11,5 +11,5 @@ serde_json = { version = "1.0", default-features = false }
 
 [features]
 default = ["std"]
-std = ["serde/std", "serde_json/std", "scrypto/std", "sbor/std"]
-alloc = ["serde/alloc", "serde_json/alloc", "scrypto/alloc", "sbor/alloc"]
+std = ["serde/std", "serde_json/std", "scrypto/std", "scrypto/serde_std", "sbor/std"]
+alloc = ["serde/alloc", "serde_json/alloc", "scrypto/alloc", "scrypto/serde_alloc", "sbor/alloc"]
