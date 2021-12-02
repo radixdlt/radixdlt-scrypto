@@ -43,6 +43,8 @@ pub struct MagicCardMut {
     level: u8,
 }
 
+pub type MagicCardData = (MagicCard, MagicCardMut);
+
 blueprint! {
     struct HelloNft {
         /// A vault that holds all our special cards
@@ -178,7 +180,7 @@ blueprint! {
             let nft_id = nft_bucket.get_nft_ids()[0];
 
             // Get and update the mutable data
-            let mut nft_data: (MagicCard, MagicCardMut) = nft_bucket.get_nft_data(nft_id);
+            let mut nft_data: MagicCardData = nft_bucket.get_nft_data(nft_id);
             nft_data.1.level += 1;
 
             self.random_card_mint_badge.authorize(
@@ -203,8 +205,8 @@ blueprint! {
             let nft_ids = nft_bucket.get_nft_ids();
 
             // Retrieve the NFT data.
-            let card1: (MagicCard, MagicCardMut) = nft_bucket.get_nft_data(nft_ids[0]);
-            let card2: (MagicCard, MagicCardMut) = nft_bucket.get_nft_data(nft_ids[1]);
+            let card1: MagicCardData = nft_bucket.get_nft_data(nft_ids[0]);
+            let card2: MagicCardData = nft_bucket.get_nft_data(nft_ids[1]);
             let new_card = Self::fuse_magic_cards(card1, card2);
 
             // Burn the original cards
@@ -232,10 +234,7 @@ blueprint! {
             new_nft_bucket
         }
 
-        pub fn fuse_magic_cards(
-            card1: (MagicCard, MagicCardMut),
-            card2: (MagicCard, MagicCardMut),
-        ) -> (MagicCard, MagicCardMut) {
+        pub fn fuse_magic_cards(card1: MagicCardData, card2: MagicCardData) -> MagicCardData {
             (
                 MagicCard {
                     color: card1.0.color,
