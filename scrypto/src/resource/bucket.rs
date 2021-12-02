@@ -132,12 +132,13 @@ impl Bucket {
         self.resource_def().get_nft_data(id)
     }
 
-   /// Updates the mutable part of the data of an NFT unit.
+    /// Updates the mutable part of the data of an NFT unit.
     ///
     /// # Panics
     /// Panics if this is not an NFT bucket or the specified NFT is not found.
     pub fn update_nft_data<M: Encode>(&self, id: u128, new_mutable_data: M, auth: BucketRef) {
-        self.resource_def().update_nft_data(id, new_mutable_data, auth)
+        self.resource_def()
+            .update_nft_data(id, new_mutable_data, auth)
     }
 }
 

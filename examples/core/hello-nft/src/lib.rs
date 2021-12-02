@@ -132,10 +132,10 @@ blueprint! {
             self.collected_xrd.put(payment.take(price));
 
             // Take the requested NFT
-            let nft = self.special_cards.take_nft(id, None);
+            let nft_bucket = self.special_cards.take_nft(id, None);
 
             // Return the NFT and change
-            (nft, payment)
+            (nft_bucket, payment)
         }
 
         pub fn buy_random_card(&mut self, payment: Bucket) -> (Bucket, Bucket) {
@@ -152,7 +152,7 @@ blueprint! {
             let new_card_mut = MagicCardMut {
                 level: random_seed as u8 % 8,
             };
-            let nft = self.random_card_mint_badge.authorize(
+            let nft_bucket = self.random_card_mint_badge.authorize(
                 |auth| {
                     self.random_card_resource_def.mint_nft(
                         self.random_card_id_counter,
@@ -166,55 +166,57 @@ blueprint! {
             self.random_card_id_counter += 1;
 
             // Return the NFT and change
-            (nft, payment)
+            (nft_bucket, payment)
         }
 
-        pub fn upgrade_my_card(&self, nft: Bucket) -> Bucket {
+        pub fn upgrade_my_card(&self, nft_bucket: Bucket) -> Bucket {
             assert!(
-                nft.amount() == 1.into(),
+                nft_bucket.amount() == 1.into(),
                 "We can upgrade only one card each time"
             );
 
-            let nft_id = nft.get_nft_ids()[0];
+            let nft_id = nft_bucket.get_nft_ids()[0];
 
             // Get and update the mutable data
-            let mut nft_data: (MagicCard, MagicCardMut) = nft.get_nft_data(nft_id);
+            let mut nft_data: (MagicCard, MagicCardMut) = nft_bucket.get_nft_data(nft_id);
             nft_data.1.level += 1;
 
-            self.random_card_mint_badge
-                .authorize(|auth| nft.update_nft_data(nft_id, nft_data.1, auth), None);
+            self.random_card_mint_badge.authorize(
+                |auth| nft_bucket.update_nft_data(nft_id, nft_data.1, auth),
+                None,
+            );
 
-            nft
+            nft_bucket
         }
 
-        pub fn fuse_my_cards(&mut self, nfts: Bucket) -> Bucket {
+        pub fn fuse_my_cards(&mut self, nft_bucket: Bucket) -> Bucket {
             assert!(
-                nfts.amount() == 2.into(),
+                nft_bucket.amount() == 2.into(),
                 "You need to pass 2 NFTs for fusion"
             );
             assert!(
-                nfts.resource_def() == self.random_card_resource_def,
+                nft_bucket.resource_def() == self.random_card_resource_def,
                 "Only random cards can be fused"
             );
 
             // Get the NFT IDs
-            let nft_ids = nfts.get_nft_ids();
+            let nft_ids = nft_bucket.get_nft_ids();
 
             // Retrieve the NFT data.
-            let card1: (MagicCard, MagicCardMut) = nfts.get_nft_data(nft_ids[0]);
-            let card2: (MagicCard, MagicCardMut) = nfts.get_nft_data(nft_ids[1]);
+            let card1: (MagicCard, MagicCardMut) = nft_bucket.get_nft_data(nft_ids[0]);
+            let card2: (MagicCard, MagicCardMut) = nft_bucket.get_nft_data(nft_ids[1]);
             let new_card = Self::fuse_magic_cards(card1, card2);
 
             // Burn the original cards
             self.random_card_mint_badge.authorize(
                 |auth| {
-                    nfts.burn(Some(auth));
+                    nft_bucket.burn(Some(auth));
                 },
                 None,
             );
 
             // Mint a new one.
-            let nft = self.random_card_mint_badge.authorize(
+            let new_nft_bucket = self.random_card_mint_badge.authorize(
                 |auth| {
                     self.random_card_resource_def.mint_nft(
                         self.random_card_id_counter,
@@ -227,7 +229,7 @@ blueprint! {
             );
             self.random_card_id_counter += 1;
 
-            nft
+            new_nft_bucket
         }
 
         pub fn fuse_magic_cards(

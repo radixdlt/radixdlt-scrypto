@@ -82,7 +82,7 @@ impl ResourceBuilder {
     }
 
     /// Creates resource with the given initial non-fungible supply.
-    /// 
+    ///
     /// # Example
     /// ```ignore
     /// let bucket = ResourceBuilder::new_non_fungible()
