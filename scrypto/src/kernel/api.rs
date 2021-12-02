@@ -1,7 +1,6 @@
 use sbor::{Decode, Encode, TypeId};
 
 use crate::kernel::*;
-use crate::rust::collections::BTreeSet;
 use crate::rust::collections::HashMap;
 use crate::rust::string::String;
 use crate::rust::vec::Vec;
@@ -59,7 +58,7 @@ pub const UPDATE_RESOURCE_MUTABLE_FLAGS: u32 = 0x39;
 /// Get the data of an NFT
 pub const GET_NFT_DATA: u32 = 0x3a;
 /// Update the data of an NFT
-pub const UPDATE_NFT_DATA: u32 = 0x3b;
+pub const UPDATE_NFT_MUTABLE_DATA: u32 = 0x3b;
 /// Update resource metadata
 pub const UPDATE_RESOURCE_METADATA: u32 = 0x3c;
 
@@ -313,19 +312,20 @@ pub struct GetNftDataInput {
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct GetNftDataOutput {
-    pub data: Vec<u8>,
+    pub immutable_data: Vec<u8>,
+    pub mutable_data: Vec<u8>,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct UpdateNftDataInput {
+pub struct UpdateNftMutableDataInput {
     pub resource_address: Address,
     pub id: u128,
-    pub data: Vec<u8>,
+    pub new_mutable_data: Vec<u8>,
     pub auth: Rid,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct UpdateNftDataOutput {}
+pub struct UpdateNftMutableDataOutput {}
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct GetResourceFlagsInput {
@@ -451,7 +451,7 @@ pub struct GetNftIdsInVaultInput {
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct GetNftIdsInVaultOutput {
-    pub ids: BTreeSet<u128>,
+    pub ids: Vec<u128>,
 }
 
 //==========
@@ -526,7 +526,7 @@ pub struct GetNftIdsInBucketInput {
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct GetNftIdsInBucketOutput {
-    pub ids: BTreeSet<u128>,
+    pub ids: Vec<u128>,
 }
 
 //==========

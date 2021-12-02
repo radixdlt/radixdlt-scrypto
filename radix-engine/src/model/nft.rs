@@ -10,20 +10,28 @@ pub enum NftError {
 /// An nft is a peirece of data that is uniquely identified within a resource.
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct Nft {
-    data: Vec<u8>,
+    immutable_data: Vec<u8>,
+    mutable_data: Vec<u8>,
 }
 
 impl Nft {
-    pub fn new(data: Vec<u8>) -> Self {
-        Self { data }
+    pub fn new(immutable_data: Vec<u8>, mutable_data: Vec<u8>) -> Self {
+        Self {
+            immutable_data,
+            mutable_data,
+        }
     }
 
-    pub fn data(&self) -> Vec<u8> {
-        self.data.clone()
+    pub fn immutable_data(&self) -> Vec<u8> {
+        self.immutable_data.clone()
     }
 
-    pub fn set_data(&mut self, new_data: Vec<u8>) -> Result<(), NftError> {
-        self.data = new_data;
+    pub fn mutable_data(&self) -> Vec<u8> {
+        self.mutable_data.clone()
+    }
+
+    pub fn set_mutable_data(&mut self, new_mutable_data: Vec<u8>) -> Result<(), NftError> {
+        self.mutable_data = new_mutable_data;
         Ok(())
     }
 }

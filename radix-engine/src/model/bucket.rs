@@ -3,6 +3,7 @@ use scrypto::kernel::*;
 use scrypto::rust::collections::BTreeSet;
 use scrypto::rust::rc::Rc;
 use scrypto::rust::string::ToString;
+use scrypto::rust::vec::Vec;
 use scrypto::types::*;
 
 /// Represents an error when accessing a bucket.
@@ -129,7 +130,7 @@ impl Bucket {
         }
     }
 
-    pub fn get_nft_ids(&self) -> Result<BTreeSet<u128>, BucketError> {
+    pub fn get_nft_ids(&self) -> Result<Vec<u128>, BucketError> {
         match &self.supply {
             Supply::Fungible { .. } => Err(BucketError::UnsupportedOperation),
             Supply::NonFungible { ids } => Ok(ids.iter().cloned().collect()),

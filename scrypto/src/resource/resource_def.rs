@@ -75,9 +75,21 @@ impl ResourceDef {
     }
 
     /// Mints non-fungible resources
-    pub fn mint_nft<T: Encode>(&self, id: u128, data: T, auth: BucketRef) -> Bucket {
+    pub fn mint_nft<I: Encode, M: Encode>(
+        &self,
+        id: u128,
+        immutable_data: I,
+        mutable_data: M,
+        auth: BucketRef,
+    ) -> Bucket {
         let mut entries = HashMap::new();
-        entries.insert(id, scrypto_encode(&data));
+        entries.insert(
+            id,
+            (
+                scrypto_encode(&immutable_data),
+                scrypto_encode(&mutable_data),
+            ),
+        );
 
         let input = MintResourceInput {
             resource_address: self.address,
@@ -153,32 +165,40 @@ impl ResourceDef {
         self.address
     }
 
-    /// Gets the data of an NFT.
+    /// Returns the data of an NFT unit, both the immutable and mutable parts.
     ///
     /// # Panics
     /// Panics if this is not an NFT resource or the specified NFT is not found.
-    pub fn get_nft_data<T: Decode>(&self, id: u128) -> T {
+    pub fn get_nft_data<I: Decode, M: Decode>(&self, id: u128) -> (I, M) {
         let input = GetNftDataInput {
             resource_address: self.address,
             id,
         };
         let output: GetNftDataOutput = call_kernel(GET_NFT_DATA, input);
 
-        scrypto_unwrap(scrypto_decode(&output.data))
+        (
+            scrypto_unwrap(scrypto_decode(&output.immutable_data)),
+            scrypto_unwrap(scrypto_decode(&output.mutable_data)),
+        )
     }
 
-    /// Updates the data of an NFT.
+    /// Updates the mutable part of an NFT unit.
     ///
     /// # Panics
     /// Panics if this is not an NFT resource or the specified NFT is not found.
-    pub fn update_nft_data<T: Encode>(&self, id: u128, data: T, auth: BucketRef) {
-        let input = UpdateNftDataInput {
+    pub fn update_nft_mutable_data<M: Encode>(
+        &self,
+        id: u128,
+        new_mutable_data: M,
+        auth: BucketRef,
+    ) {
+        let input = UpdateNftMutableDataInput {
             resource_address: self.address,
             id,
-            data: scrypto_encode(&data),
+            new_mutable_data: scrypto_encode(&new_mutable_data),
             auth: auth.into(),
         };
-        let _: UpdateNftDataOutput = call_kernel(UPDATE_NFT_DATA, input);
+        let _: UpdateNftMutableDataOutput = call_kernel(UPDATE_NFT_MUTABLE_DATA, input);
     }
 
     /// Turns on feature flags.

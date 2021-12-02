@@ -4,8 +4,8 @@ use crate::buffer::*;
 use crate::kernel::*;
 use crate::resource::*;
 use crate::rust::borrow::ToOwned;
-use crate::rust::collections::BTreeSet;
 use crate::rust::vec;
+use crate::rust::vec::Vec;
 use crate::types::*;
 
 /// Represents a persistent resource container on ledger state.
@@ -112,14 +112,6 @@ impl Vault {
         output
     }
 
-    /// Updates the data of an NFT.
-    ///
-    /// # Panics
-    /// Panics if this is not an NFT bucket.
-    pub fn update_nft_data<T: Encode>(&self, id: u128, data: T, auth: BucketRef) {
-        self.resource_def().update_nft_data(id, data, auth)
-    }
-
     /// Returns the amount of resources within this vault.
     pub fn amount(&self) -> Decimal {
         let input = GetVaultDecimalInput { vid: self.vid };
@@ -146,23 +138,52 @@ impl Vault {
         self.amount() == 0.into()
     }
 
+    /// Returns all the NFT units contained.
+    ///
+    /// # Panics
+    /// Panics if this is not an NFT vault.
+    pub fn get_nfts<I: Encode + Decode, M: Encode + Decode>(&self) -> Vec<Nft<I, M>> {
+        let input = GetNftIdsInVaultInput { vid: self.vid };
+        let output: GetNftIdsInVaultOutput = call_kernel(GET_NFT_IDS_IN_VAULT, input);
+        let resource_address = self.resource_address();
+        output
+            .ids
+            .iter()
+            .map(|id| Nft::new(resource_address, *id))
+            .collect()
+    }
+
     /// Get all NFT IDs in this vault.
     ///
     /// # Panics
     /// Panics if this is not an NFT vault.
-    pub fn get_nft_ids(&self) -> BTreeSet<u128> {
+    pub fn get_nft_ids(&self) -> Vec<u128> {
         let input = GetNftIdsInVaultInput { vid: self.vid };
         let output: GetNftIdsInVaultOutput = call_kernel(GET_NFT_IDS_IN_VAULT, input);
 
         output.ids
     }
 
-    /// Reads the data of an NFT.
+    /// Returns the data of an NFT unit, both the immutable and mutable parts.
     ///
     /// # Panics
     /// Panics if this is not an NFT bucket.
-    pub fn get_nft_data<T: Decode>(&self, id: u128) -> T {
+    pub fn get_nft_data<I: Decode, M: Decode>(&self, id: u128) -> (I, M) {
         self.resource_def().get_nft_data(id)
+    }
+
+    /// Updates the mutable part of the data of an NFT unit.
+    ///
+    /// # Panics
+    /// Panics if this is not an NFT vault or the specified NFT is not found.
+    pub fn update_nft_mutable_data<M: Encode>(
+        &self,
+        id: u128,
+        new_mutable_data: M,
+        auth: BucketRef,
+    ) {
+        self.resource_def()
+            .update_nft_mutable_data(id, new_mutable_data, auth)
     }
 }
 

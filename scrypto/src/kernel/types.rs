@@ -41,7 +41,9 @@ pub enum NewSupply {
     Fungible { amount: Decimal },
 
     /// A supply of non-fungible resource represented by a collection of NFTs keyed by ID.
-    NonFungible { entries: HashMap<u128, Vec<u8>> },
+    NonFungible {
+        entries: HashMap<u128, (Vec<u8>, Vec<u8>)>,
+    },
 }
 
 impl NewSupply {
@@ -51,10 +53,10 @@ impl NewSupply {
         }
     }
 
-    pub fn non_fungible<T: Encode, const N: usize>(entries: [(u128, T); N]) -> Self {
+    pub fn non_fungible<I: Encode, M: Encode, const N: usize>(entries: [(u128, I, M); N]) -> Self {
         let mut encoded = HashMap::new();
-        for (k, v) in entries {
-            encoded.insert(k, scrypto_encode(&v));
+        for (id, i, m) in entries {
+            encoded.insert(id, (scrypto_encode(&i), scrypto_encode(&m)));
         }
 
         Self::NonFungible { entries: encoded }

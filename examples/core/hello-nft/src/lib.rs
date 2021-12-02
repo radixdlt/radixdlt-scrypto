@@ -29,12 +29,21 @@ pub enum Rarity {
     MythicRare,
 }
 
+/// Immutable attributes of `MargicCard` NFT units.
 #[derive(TypeId, Encode, Decode, Describe)]
 pub struct MagicCard {
     color: Color,
     class: Class,
     rarity: Rarity,
 }
+
+/// Mutable attributes of `MargicCard` NFT units.
+#[derive(TypeId, Encode, Decode, Describe)]
+pub struct MagicCardMut {
+    level: u8,
+}
+
+pub type MagicCardData = (MagicCard, MagicCardMut);
 
 blueprint! {
     struct HelloNft {
@@ -67,6 +76,7 @@ blueprint! {
                             class: Class::Sorcery,
                             rarity: Rarity::MythicRare,
                         },
+                        MagicCardMut { level: 3 },
                     ),
                     (
                         2,
@@ -75,6 +85,7 @@ blueprint! {
                             class: Class::Planeswalker,
                             rarity: Rarity::Rare,
                         },
+                        MagicCardMut { level: 5 },
                     ),
                     (
                         3,
@@ -83,6 +94,7 @@ blueprint! {
                             class: Class::Creature,
                             rarity: Rarity::Uncommon,
                         },
+                        MagicCardMut { level: 100 },
                     ),
                 ]);
 
@@ -122,10 +134,10 @@ blueprint! {
             self.collected_xrd.put(payment.take(price));
 
             // Take the requested NFT
-            let nft = self.special_cards.take_nft(id, None);
+            let nft_bucket = self.special_cards.take_nft(id, None);
 
             // Return the NFT and change
-            (nft, payment)
+            (nft_bucket, payment)
         }
 
         pub fn buy_random_card(&mut self, payment: Bucket) -> (Bucket, Bucket) {
@@ -139,11 +151,15 @@ blueprint! {
                 class: Self::random_class(random_seed),
                 rarity: Self::random_rarity(random_seed),
             };
-            let nft = self.random_card_mint_badge.authorize(
+            let new_card_mut = MagicCardMut {
+                level: random_seed as u8 % 8,
+            };
+            let nft_bucket = self.random_card_mint_badge.authorize(
                 |auth| {
                     self.random_card_resource_def.mint_nft(
                         self.random_card_id_counter,
                         new_card,
+                        new_card_mut,
                         auth,
                     )
                 },
@@ -152,57 +168,83 @@ blueprint! {
             self.random_card_id_counter += 1;
 
             // Return the NFT and change
-            (nft, payment)
+            (nft_bucket, payment)
         }
 
-        pub fn get_available_special_cards(&self) -> BTreeSet<u128> {
-            self.special_cards.get_nft_ids()
-        }
-
-        pub fn fuse_my_cards(&self, nfts: Bucket) -> Bucket {
+        pub fn upgrade_my_card(&self, nft_bucket: Bucket) -> Bucket {
             assert!(
-                nfts.amount() == 2.into(),
+                nft_bucket.amount() == 1.into(),
+                "We can upgrade only one card each time"
+            );
+
+            let nft_id = nft_bucket.get_nft_ids()[0];
+
+            // Get and update the mutable data
+            let mut nft_data: MagicCardData = nft_bucket.get_nft_data(nft_id);
+            nft_data.1.level += 1;
+
+            self.random_card_mint_badge.authorize(
+                |auth| nft_bucket.update_nft_mutable_data(nft_id, nft_data.1, auth),
+                None,
+            );
+
+            nft_bucket
+        }
+
+        pub fn fuse_my_cards(&mut self, nft_bucket: Bucket) -> Bucket {
+            assert!(
+                nft_bucket.amount() == 2.into(),
                 "You need to pass 2 NFTs for fusion"
             );
             assert!(
-                nfts.resource_def() == self.random_card_resource_def,
+                nft_bucket.resource_def() == self.random_card_resource_def,
                 "Only random cards can be fused"
             );
 
             // Get the NFT IDs
-            let nft_ids: Vec<u128> = nfts.get_nft_ids().iter().cloned().collect();
+            let nft_ids = nft_bucket.get_nft_ids();
 
-            // Generate a new card based on the provided two.
-            let card1: MagicCard = nfts.get_nft_data(nft_ids[0]);
-            let card2: MagicCard = nfts.get_nft_data(nft_ids[1]);
+            // Retrieve the NFT data.
+            let card1: MagicCardData = nft_bucket.get_nft_data(nft_ids[0]);
+            let card2: MagicCardData = nft_bucket.get_nft_data(nft_ids[1]);
             let new_card = Self::fuse_magic_cards(card1, card2);
 
-            // Burn the second card
+            // Burn the original cards
             self.random_card_mint_badge.authorize(
                 |auth| {
-                    nfts.take_nft(nft_ids[1]).burn(Some(auth));
+                    nft_bucket.burn(Some(auth));
                 },
                 None,
             );
 
-            // Update the first card
-            self.random_card_mint_badge.authorize(
+            // Mint a new one.
+            let new_nft_bucket = self.random_card_mint_badge.authorize(
                 |auth| {
-                    nfts.update_nft_data(nft_ids[0], new_card, auth);
+                    self.random_card_resource_def.mint_nft(
+                        self.random_card_id_counter,
+                        new_card.0,
+                        new_card.1,
+                        auth,
+                    )
                 },
                 None,
             );
+            self.random_card_id_counter += 1;
 
-            nfts
+            new_nft_bucket
         }
 
-        pub fn fuse_magic_cards(card1: MagicCard, card2: MagicCard) -> MagicCard {
-            // TODO introduce some cool fusion algorithm
-            MagicCard {
-                color: card1.color,
-                class: card2.class,
-                rarity: Rarity::MythicRare,
-            }
+        pub fn fuse_magic_cards(card1: MagicCardData, card2: MagicCardData) -> MagicCardData {
+            (
+                MagicCard {
+                    color: card1.0.color,
+                    class: card2.0.class,
+                    rarity: Rarity::MythicRare,
+                },
+                MagicCardMut {
+                    level: card1.1.level + card2.1.level,
+                },
+            )
         }
 
         fn random_color(seed: u64) -> Color {

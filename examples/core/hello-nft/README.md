@@ -29,6 +29,9 @@ let special_cards_bucket = ResourceBuilder::new_non_fungible()
                 class: Class::Sorcery,
                 rarity: Rarity::MythicRare,
             },
+            MagicCardMut {
+                level: 2,
+            }
         ),
         (
             2, // The ID of the second NFT
@@ -37,6 +40,9 @@ let special_cards_bucket = ResourceBuilder::new_non_fungible()
                 class: Class::Planeswalker,
                 rarity: Rarity::Rare,
             },
+            MagicCardMut {
+                level: 3,
+            }
         )
     ]);
 ```
@@ -69,11 +75,15 @@ let nft = self.random_card_mint_badge.authorize(|auth| {
     self.random_card_resource_def.mint_nft(
         // The NFT id
         self.random_card_id_counter,
-        // The NFT data
+        // The immutable attributes
         MagicCard { 
             color: Self::random_color(random_seed),
             class: Self::random_class(random_seed),
             rarity: Self::random_rarity(random_seed),
+        },
+        // The mutable attributes
+        MagicCardMut { 
+            level: 5,
         },
         // authorization to mint
         auth
@@ -94,18 +104,16 @@ To pick a specific NFT when calling a function or method, we can use the followi
 ## Update an Existing NFT
 
 
-To update, one needs to call the `update_nft_data` method on resource definition.
+To update, one needs to call the `update_nft_mutable_data` method on resource definition.
 
 ```rust
 let nft = self.random_card_mint_badge.authorize(|auth| {
-    self.random_card_resource_def.update_nft_data(
+    self.random_card_resource_def.update_nft_mutable_data(
         // The NFT id
         self.random_card_id_counter,
-        // The NFT data
-        MagicCard { 
-            color: Self::random_color(random_seed),
-            class: Self::random_class(random_seed),
-            rarity: Self::random_rarity(random_seed),
+        // The new mutable part of the NFT data
+        MagicCardMut { 
+            level: 100,
         },
         // authorization to update
         auth

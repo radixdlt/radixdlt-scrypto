@@ -82,9 +82,19 @@ impl ResourceBuilder {
     }
 
     /// Creates resource with the given initial non-fungible supply.
-    pub fn initial_supply_non_fungible<T: Encode, const N: usize>(
+    ///
+    /// # Example
+    /// ```ignore
+    /// let bucket = ResourceBuilder::new_non_fungible()
+    ///     .metadata("name", "TestNft")
+    ///     .initial_supply_non_fungible([
+    ///         (1, "immutable_part", "mutable_part"),
+    ///         (2, "another_immutable_part", "another_mutable_part"),
+    ///     ]);
+    /// ```
+    pub fn initial_supply_non_fungible<I: Encode, M: Encode, const N: usize>(
         &self,
-        entries: [(u128, T); N],
+        entries: [(u128, I, M); N],
     ) -> Bucket {
         self.build(Some(NewSupply::non_fungible(entries)))
             .1
