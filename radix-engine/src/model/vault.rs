@@ -1,5 +1,5 @@
 use sbor::*;
-use scrypto::rust::collections::BTreeSet;
+use scrypto::rust::vec::Vec;
 use scrypto::types::*;
 
 use crate::model::{Actor, Bucket, BucketError, Supply};
@@ -51,7 +51,7 @@ impl Vault {
         }
     }
 
-    pub fn get_nft_ids(&self, actor: Actor) -> Result<BTreeSet<u128>, VaultError> {
+    pub fn get_nft_ids(&self, actor: Actor) -> Result<Vec<u128>, VaultError> {
         if actor.check(self.authority) {
             self.bucket
                 .get_nft_ids()

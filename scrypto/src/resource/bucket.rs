@@ -4,8 +4,8 @@ use crate::buffer::*;
 use crate::kernel::*;
 use crate::resource::*;
 use crate::rust::borrow::ToOwned;
-use crate::rust::collections::BTreeSet;
 use crate::rust::vec;
+use crate::rust::vec::Vec;
 use crate::types::*;
 
 /// Represents a transient resource container.
@@ -117,27 +117,27 @@ impl Bucket {
     ///
     /// # Panics
     /// Panics if this is not an NFT bucket.
-    pub fn get_nft_ids(&self) -> BTreeSet<u128> {
+    pub fn get_nft_ids(&self) -> Vec<u128> {
         let input = GetNftIdsInBucketInput { bid: self.bid };
         let output: GetNftIdsInBucketOutput = call_kernel(GET_NFT_IDS_IN_BUCKET, input);
 
         output.ids
     }
 
-    /// Reads the data of an NFT.
+    /// Returns the data of an NFT unit, both the immutable and mutable parts.
     ///
     /// # Panics
     /// Panics if this is not an NFT bucket.
-    pub fn get_nft_data<T: Decode>(&self, id: u128) -> T {
+    pub fn get_nft_data<I: Decode, M: Decode>(&self, id: u128) -> (I, M) {
         self.resource_def().get_nft_data(id)
     }
 
-    /// Updates the data of an NFT.
+   /// Updates the mutable part of the data of an NFT unit.
     ///
     /// # Panics
-    /// Panics if this is not an NFT bucket.
-    pub fn update_nft_data<T: Encode>(&self, id: u128, data: T, auth: BucketRef) {
-        self.resource_def().update_nft_data(id, data, auth)
+    /// Panics if this is not an NFT bucket or the specified NFT is not found.
+    pub fn update_nft_data<M: Encode>(&self, id: u128, new_mutable_data: M, auth: BucketRef) {
+        self.resource_def().update_nft_data(id, new_mutable_data, auth)
     }
 }
 

@@ -1086,7 +1086,8 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
                     if self.track.get_nft(resource_address, id).is_some() {
                         return Err(RuntimeError::NftAlreadyExists(resource_address, id));
                     }
-                    self.track.put_nft(resource_address, id, Nft::new(data));
+                    self.track
+                        .put_nft(resource_address, id, Nft::new(data.0, data.1));
                     ids.insert(id);
                 }
 
@@ -1321,7 +1322,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         self.track
             .get_nft_mut(input.resource_address, input.id)
             .ok_or(RuntimeError::NftNotFound(input.resource_address, input.id))?
-            .set_data(input.data)
+            .set_mutable_data(input.new_mutable_data)
             .map_err(RuntimeError::NftError)?;
 
         Ok(UpdateNftDataOutput {})
@@ -1336,7 +1337,10 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
             .get_nft(input.resource_address, input.id)
             .ok_or(RuntimeError::NftNotFound(input.resource_address, input.id))?;
 
-        Ok(GetNftDataOutput { data: nft.data() })
+        Ok(GetNftDataOutput {
+            immutable_data: nft.immutable_data(),
+            mutable_data: nft.mutable_data(),
+        })
     }
 
     fn handle_update_resource_metadata(

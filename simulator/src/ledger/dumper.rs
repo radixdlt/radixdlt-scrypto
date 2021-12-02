@@ -35,7 +35,7 @@ pub fn dump_component<T: Ledger>(address: Address, ledger: &T) -> Result<(), Dis
             println!("{}: {}", "Component".green().bold(), address.to_string());
 
             println!(
-                "{}: {{ package address: {}, blueprint name: \"{}\" }}",
+                "{}: {{ package_address: {}, blueprint_name: \"{}\" }}",
                 "Blueprint".green().bold(),
                 c.package_address(),
                 c.blueprint_name()
@@ -76,11 +76,14 @@ pub fn dump_component<T: Ledger>(address: Address, ledger: &T) -> Result<(), Dis
                     for (inner_last, id) in ids.iter().identify_last() {
                         let nft = ledger.get_nft(resource_address, *id).unwrap();
                         println!(
-                            "{}  {} NFT {{ id: {}, data: {} }}",
+                            "{}  {} NFT {{ id: {}, immutable_data: {}, mutable_data: {} }}",
                             if last { " " } else { "│" },
                             list_item_prefix(inner_last),
                             id,
-                            format_data_with_ledger(&nft.data(), ledger, &mut vaults).unwrap()
+                            format_data_with_ledger(&nft.immutable_data(), ledger, &mut vaults)
+                                .unwrap(),
+                            format_data_with_ledger(&nft.mutable_data(), ledger, &mut vaults)
+                                .unwrap()
                         );
                     }
                 }

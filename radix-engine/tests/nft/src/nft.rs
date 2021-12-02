@@ -17,7 +17,7 @@ blueprint! {
                 .no_initial_supply();
 
             // Mint an NFT
-            let nft = nft_resource_def.mint_nft(0, "Prastrami", mint_badge.present());
+            let nft = nft_resource_def.mint_nft(0, "Prastrami", "M", mint_badge.present());
 
             (mint_badge, nft_resource_def, nft)
         }
@@ -26,19 +26,19 @@ blueprint! {
             ResourceBuilder::new_non_fungible()
                 .metadata("name", "Katz's Sandwiches")
                 .initial_supply_non_fungible([
-                    (1, "Hi"),
-                    (2, "Test"),
-                    (3, "NFT"),
+                    (1, "Hi", "M"),
+                    (2, "Test", "M"),
+                    (3, "NFT", "M"),
                 ])
         }
 
         pub fn update_and_get_nft() -> (Bucket, Bucket) {
             let (mint_badge, resource_def, bucket) = Self::create_nft_mutable();
-            let nft: String = resource_def.get_nft_data(0);
-            assert_eq!(nft, "Prastrami");
+            let nft: (String, String) = resource_def.get_nft_data(0);
+            assert_eq!(nft.1, "M");
             resource_def.update_nft_data(0, "New String", mint_badge.present());
-            let nft: String = resource_def.get_nft_data(0);
-            assert_eq!(nft, "New String");
+            let nft: (String, String) = resource_def.get_nft_data(0);
+            assert_eq!(nft.1, "New String");
             (mint_badge, bucket)
         }
 
@@ -68,16 +68,16 @@ blueprint! {
         pub fn get_nft_ids_bucket() -> (Bucket, Bucket) {
             let bucket = Self::create_nft_fixed();
             let nft = bucket.take(1);
-            assert_eq!(bucket.get_nft_ids(), BTreeSet::from([2, 3]));
-            assert_eq!(nft.get_nft_ids(), BTreeSet::from([1]));
+            assert_eq!(bucket.get_nft_ids(), Vec::from([2, 3]));
+            assert_eq!(nft.get_nft_ids(), Vec::from([1]));
             (bucket, nft)
         }
 
         pub fn get_nft_ids_vault() -> Bucket {
             let vault = Vault::with_bucket(Self::create_nft_fixed());
             let nft = vault.take(1, None);
-            assert_eq!(vault.get_nft_ids(), BTreeSet::from([2, 3]));
-            assert_eq!(nft.get_nft_ids(), BTreeSet::from([1]));
+            assert_eq!(vault.get_nft_ids(), Vec::from([2, 3]));
+            assert_eq!(nft.get_nft_ids(), Vec::from([1]));
             nft
         }
     }
