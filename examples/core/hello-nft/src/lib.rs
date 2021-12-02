@@ -182,7 +182,7 @@ blueprint! {
             nft_data.1.level += 1;
 
             self.random_card_mint_badge.authorize(
-                |auth| nft_bucket.update_nft_data(nft_id, nft_data.1, auth),
+                |auth| nft_bucket.update_nft_mutable_data(nft_id, nft_data.1, auth),
                 None,
             );
 

@@ -1304,10 +1304,10 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         Ok(BurnResourceOutput {})
     }
 
-    fn handle_update_nft_data(
+    fn handle_update_nft_mutable_data(
         &mut self,
-        input: UpdateNftDataInput,
-    ) -> Result<UpdateNftDataOutput, RuntimeError> {
+        input: UpdateNftMutableDataInput,
+    ) -> Result<UpdateNftMutableDataOutput, RuntimeError> {
         let actor = self.authenticate_with_badge(Some(input.auth))?;
 
         // obtain authorization from resource definition
@@ -1316,7 +1316,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
             .get_resource_def(input.resource_address)
             .ok_or(RuntimeError::ResourceDefNotFound(input.resource_address))?;
         resource_def
-            .check_update_nft_data_auth(actor)
+            .check_update_nft_mutable_data_auth(actor)
             .map_err(RuntimeError::ResourceDefError)?;
         // update state
         self.track
@@ -1325,7 +1325,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
             .set_mutable_data(input.new_mutable_data)
             .map_err(RuntimeError::NftError)?;
 
-        Ok(UpdateNftDataOutput {})
+        Ok(UpdateNftMutableDataOutput {})
     }
 
     fn handle_get_nft_data(
@@ -1829,7 +1829,9 @@ impl<'r, 'l, L: Ledger> Externals for Process<'r, 'l, L> {
                     }
                     MINT_RESOURCE => self.handle(args, Self::handle_mint_resource),
                     BURN_RESOURCE => self.handle(args, Self::handle_burn_resource),
-                    UPDATE_NFT_DATA => self.handle(args, Self::handle_update_nft_data),
+                    UPDATE_NFT_MUTABLE_DATA => {
+                        self.handle(args, Self::handle_update_nft_mutable_data)
+                    }
                     GET_NFT_DATA => self.handle(args, Self::handle_get_nft_data),
                     UPDATE_RESOURCE_METADATA => {
                         self.handle(args, Self::handle_update_resource_metadata)

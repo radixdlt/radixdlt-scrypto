@@ -230,7 +230,7 @@ impl ResourceDef {
         Ok(())
     }
 
-    pub fn check_update_nft_data_auth(&self, actor: Actor) -> Result<(), ResourceDefError> {
+    pub fn check_update_nft_mutable_data_auth(&self, actor: Actor) -> Result<(), ResourceDefError> {
         if self.flags() & INDIVIDUAL_METADATA_MUTABLE != INDIVIDUAL_METADATA_MUTABLE {
             return Err(ResourceDefError::OperationNotAllowed);
         }

@@ -58,7 +58,7 @@ pub const UPDATE_RESOURCE_MUTABLE_FLAGS: u32 = 0x39;
 /// Get the data of an NFT
 pub const GET_NFT_DATA: u32 = 0x3a;
 /// Update the data of an NFT
-pub const UPDATE_NFT_DATA: u32 = 0x3b;
+pub const UPDATE_NFT_MUTABLE_DATA: u32 = 0x3b;
 /// Update resource metadata
 pub const UPDATE_RESOURCE_METADATA: u32 = 0x3c;
 
@@ -317,7 +317,7 @@ pub struct GetNftDataOutput {
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct UpdateNftDataInput {
+pub struct UpdateNftMutableDataInput {
     pub resource_address: Address,
     pub id: u128,
     pub new_mutable_data: Vec<u8>,
@@ -325,7 +325,7 @@ pub struct UpdateNftDataInput {
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct UpdateNftDataOutput {}
+pub struct UpdateNftMutableDataOutput {}
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct GetResourceFlagsInput {

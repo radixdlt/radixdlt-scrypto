@@ -182,18 +182,23 @@ impl ResourceDef {
         )
     }
 
-    /// Updates the mutable part of the data of an NFT unit.
+    /// Updates the mutable part of an NFT unit.
     ///
     /// # Panics
     /// Panics if this is not an NFT resource or the specified NFT is not found.
-    pub fn update_nft_data<M: Encode>(&self, id: u128, new_mutable_data: M, auth: BucketRef) {
-        let input = UpdateNftDataInput {
+    pub fn update_nft_mutable_data<M: Encode>(
+        &self,
+        id: u128,
+        new_mutable_data: M,
+        auth: BucketRef,
+    ) {
+        let input = UpdateNftMutableDataInput {
             resource_address: self.address,
             id,
             new_mutable_data: scrypto_encode(&new_mutable_data),
             auth: auth.into(),
         };
-        let _: UpdateNftDataOutput = call_kernel(UPDATE_NFT_DATA, input);
+        let _: UpdateNftMutableDataOutput = call_kernel(UPDATE_NFT_MUTABLE_DATA, input);
     }
 
     /// Turns on feature flags.

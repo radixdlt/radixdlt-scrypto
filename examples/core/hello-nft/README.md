@@ -104,11 +104,11 @@ To pick a specific NFT when calling a function or method, we can use the followi
 ## Update an Existing NFT
 
 
-To update, one needs to call the `update_nft_data` method on resource definition.
+To update, one needs to call the `update_nft_mutable_data` method on resource definition.
 
 ```rust
 let nft = self.random_card_mint_badge.authorize(|auth| {
-    self.random_card_resource_def.update_nft_data(
+    self.random_card_resource_def.update_nft_mutable_data(
         // The NFT id
         self.random_card_id_counter,
         // The new mutable part of the NFT data

@@ -36,7 +36,7 @@ blueprint! {
             let (mint_badge, resource_def, bucket) = Self::create_nft_mutable();
             let nft: (String, String) = resource_def.get_nft_data(0);
             assert_eq!(nft.1, "M");
-            resource_def.update_nft_data(0, "New String", mint_badge.present());
+            resource_def.update_nft_mutable_data(0, "New String", mint_badge.present());
             let nft: (String, String) = resource_def.get_nft_data(0);
             assert_eq!(nft.1, "New String");
             (mint_badge, bucket)

@@ -40,6 +40,6 @@ impl<I: Encode + Decode, M: Encode + Decode> Nft<I, M> {
 
     /// Updates the associated data of this unit.
     pub fn update_data(&self, new_data: (I, M), auth: BucketRef) {
-        ResourceDef::from(self.resource_address()).update_nft_data(self.id, new_data, auth);
+        ResourceDef::from(self.resource_address()).update_nft_mutable_data(self.id, new_data, auth);
     }
 }
