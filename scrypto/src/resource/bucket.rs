@@ -113,6 +113,21 @@ impl Bucket {
         output.bid.into()
     }
 
+    /// Returns all the NFT units contained.
+    ///
+    /// # Panics
+    /// Panics if this is not an NFT bucket.
+    pub fn get_nfts<I: Encode + Decode, M: Encode + Decode>(&self) -> Vec<Nft<I, M>> {
+        let input = GetNftIdsInBucketInput { bid: self.bid };
+        let output: GetNftIdsInBucketOutput = call_kernel(GET_NFT_IDS_IN_BUCKET, input);
+        let resource_address = self.resource_address();
+        output
+            .ids
+            .iter()
+            .map(|id| Nft::new(resource_address, *id))
+            .collect()
+    }
+
     /// Get all NFT IDs in this bucket.
     ///
     /// # Panics
