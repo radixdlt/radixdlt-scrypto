@@ -23,7 +23,7 @@ blueprint! {
 
         pub fn free_token(&self) -> Bucket {
             // Take 1 FreeToken and return
-            self.tokens.take(1, None)
+            self.tokens.take(1)
         }
     }
 }

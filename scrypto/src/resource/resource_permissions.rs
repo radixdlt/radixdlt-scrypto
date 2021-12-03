@@ -1,4 +1,4 @@
-/// May transfer owned resources.
+/// (Not implemented) May transfer owned resources.
 pub const MAY_TRANSFER: u16 = 1u16 << 0;
 
 /// May burn owned resources.
@@ -7,7 +7,7 @@ pub const MAY_BURN: u16 = 1u16 << 2;
 /// May create new supply.
 pub const MAY_MINT: u16 = 1u16 << 4;
 
-/// May seize from any vault.
+/// (Not implemented) May seize from any vault.
 pub const MAY_RECALL: u16 = 1u16 << 5;
 
 /// May change top-level resource metadata, e.g. name and symbol.

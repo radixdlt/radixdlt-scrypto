@@ -98,7 +98,7 @@ blueprint! {
 
             // Commit state changes
             self.users.insert(user_id, user);
-            self.liquidity_pool.take(to_return_amount, None)
+            self.liquidity_pool.take(to_return_amount)
         }
 
         /// Borrows the specified amount from lending pool
@@ -118,7 +118,7 @@ blueprint! {
 
             // Commit state changes
             self.users.insert(user_id, user);
-            self.liquidity_pool.take(requested, None)
+            self.liquidity_pool.take(requested)
         }
 
         /// Repays a loan, partially or in full.
@@ -159,7 +159,7 @@ blueprint! {
 
             // Update user state
             let to_return_amount = user.on_liquidate(repaid.amount(), self.max_liquidation_percent);
-            let to_return = self.liquidity_pool.take(to_return_amount, None);
+            let to_return = self.liquidity_pool.take(to_return_amount);
 
             // Commit state changes
             self.users.insert(user_id, user);

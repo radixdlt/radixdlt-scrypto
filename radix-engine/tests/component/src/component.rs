@@ -31,7 +31,7 @@ blueprint! {
 
         pub fn put_component_state(&mut self) -> Bucket {
             // Take resource from vault
-            let bucket = self.test_vault.take(1, None);
+            let bucket = self.test_vault.take(1);
 
             // Update state
             self.secret = "New secret".to_owned();

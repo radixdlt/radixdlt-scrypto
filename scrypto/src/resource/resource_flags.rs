@@ -1,4 +1,4 @@
-/// Resource can only be taken from vault with authority present.
+/// (Not implemented) Resource can only be taken from vault with authority present.
 pub const RESTRICTED_TRANSFER: u16 = 1u16 << 0;
 
 /// Resource can be burned.
@@ -10,7 +10,7 @@ pub const FREELY_BURNABLE: u16 = 1u16 << 2;
 /// New supply can be minted.
 pub const MINTABLE: u16 = 1u16 << 3;
 
-/// Resource can be seized from any vault if proper authority is presented.
+/// (Not implemented) Resource can be seized from any vault if proper authority is presented.
 pub const RECALLABLE: u16 = 1u16 << 4;
 
 /// Top-level resource metadata can be changed.
