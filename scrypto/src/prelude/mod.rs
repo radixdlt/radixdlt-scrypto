@@ -4,7 +4,9 @@ pub use crate::kernel::{call_kernel, LogLevel, NewSupply, ResourceType};
 pub use crate::resource::*;
 pub use crate::types::*;
 pub use crate::utils::*;
-pub use crate::{args, auth, blueprint, debug, error, import, include_code, info, trace, warn};
+pub use crate::{
+    args, auth, blueprint, debug, error, import, include_code, info, trace, warn, NftData,
+};
 
 pub use crate::rust::borrow::ToOwned;
 pub use crate::rust::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
