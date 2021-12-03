@@ -54,23 +54,10 @@ impl Vault {
     }
 
     /// Takes some amount of resource from this vault into a bucket.
-    ///
-    /// Normally, you don't need to present any authority and the acting package is allowed
-    /// to take resource from this vault if it's created this vault.
-    ///
-    /// Authority is only required when `RESTRICTED_TRANSFER` is turned on.
-    ///
-    ///
-    /// # Example
-    /// ```ignore
-    /// let vault = Vault::new(RADIX_TOKEN);
-    /// vault.take(5, None);
-    /// ```
-    pub fn take<A: Into<Decimal>>(&self, amount: A, auth: Option<BucketRef>) -> Bucket {
+    pub fn take<A: Into<Decimal>>(&self, amount: A) -> Bucket {
         let input = TakeFromVaultInput {
             vid: self.vid,
             amount: amount.into(),
-            auth: auth.map(Into::into),
         };
         let output: TakeFromVaultOutput = call_kernel(TAKE_FROM_VAULT, input);
 
@@ -78,20 +65,16 @@ impl Vault {
     }
 
     /// Takes all resource stored in this vault.
-    pub fn take_all(&self, auth: Option<BucketRef>) -> Bucket {
-        self.take(self.amount(), auth)
+    pub fn take_all(&self) -> Bucket {
+        self.take(self.amount())
     }
 
     /// Takes an NFT from this vault, by id.
     ///
     /// # Panics
     /// Panics if this is not an NFT vault or the specified NFT is not found.
-    pub fn take_nft(&self, id: u128, auth: Option<BucketRef>) -> Bucket {
-        let input = TakeNftFromVaultInput {
-            vid: self.vid,
-            id,
-            auth: auth.map(Into::into),
-        };
+    pub fn take_nft(&self, id: u128) -> Bucket {
+        let input = TakeNftFromVaultInput { vid: self.vid, id };
         let output: TakeNftFromVaultOutput = call_kernel(TAKE_NFT_FROM_VAULT, input);
 
         output.bid.into()
@@ -105,8 +88,8 @@ impl Vault {
     /// 3. Applies the specified function `f` with the created bucket reference;
     /// 4. Puts the `1` resource back into this vault.
     ///
-    pub fn authorize<F: FnOnce(BucketRef) -> O, O>(&self, f: F, auth: Option<BucketRef>) -> O {
-        let bucket = self.take(1, auth);
+    pub fn authorize<F: FnOnce(BucketRef) -> O, O>(&self, f: F) -> O {
+        let bucket = self.take(1);
         let output = f(bucket.present());
         self.put(bucket);
         output

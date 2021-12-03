@@ -134,7 +134,7 @@ blueprint! {
             self.collected_xrd.put(payment.take(price));
 
             // Take the requested NFT
-            let nft_bucket = self.special_cards.take_nft(id, None);
+            let nft_bucket = self.special_cards.take_nft(id);
 
             // Return the NFT and change
             (nft_bucket, payment)
@@ -154,17 +154,14 @@ blueprint! {
             let new_card_mut = MagicCardMut {
                 level: random_seed as u8 % 8,
             };
-            let nft_bucket = self.random_card_mint_badge.authorize(
-                |auth| {
-                    self.random_card_resource_def.mint_nft(
-                        self.random_card_id_counter,
-                        new_card,
-                        new_card_mut,
-                        auth,
-                    )
-                },
-                None,
-            );
+            let nft_bucket = self.random_card_mint_badge.authorize(|auth| {
+                self.random_card_resource_def.mint_nft(
+                    self.random_card_id_counter,
+                    new_card,
+                    new_card_mut,
+                    auth,
+                )
+            });
             self.random_card_id_counter += 1;
 
             // Return the NFT and change
@@ -183,10 +180,8 @@ blueprint! {
             let mut nft_data: MagicCardData = nft_bucket.get_nft_data(nft_id);
             nft_data.1.level += 1;
 
-            self.random_card_mint_badge.authorize(
-                |auth| nft_bucket.update_nft_mutable_data(nft_id, nft_data.1, auth),
-                None,
-            );
+            self.random_card_mint_badge
+                .authorize(|auth| nft_bucket.update_nft_mutable_data(nft_id, nft_data.1, auth));
 
             nft_bucket
         }
@@ -210,25 +205,19 @@ blueprint! {
             let new_card = Self::fuse_magic_cards(card1, card2);
 
             // Burn the original cards
-            self.random_card_mint_badge.authorize(
-                |auth| {
-                    nft_bucket.burn(Some(auth));
-                },
-                None,
-            );
+            self.random_card_mint_badge.authorize(|auth| {
+                nft_bucket.burn(Some(auth));
+            });
 
             // Mint a new one.
-            let new_nft_bucket = self.random_card_mint_badge.authorize(
-                |auth| {
-                    self.random_card_resource_def.mint_nft(
-                        self.random_card_id_counter,
-                        new_card.0,
-                        new_card.1,
-                        auth,
-                    )
-                },
-                None,
-            );
+            let new_nft_bucket = self.random_card_mint_badge.authorize(|auth| {
+                self.random_card_resource_def.mint_nft(
+                    self.random_card_id_counter,
+                    new_card.0,
+                    new_card.1,
+                    auth,
+                )
+            });
             self.random_card_id_counter += 1;
 
             new_nft_bucket

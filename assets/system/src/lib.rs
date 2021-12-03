@@ -39,7 +39,7 @@ blueprint! {
 
         /// Gives away XRD tokens for testing.
         pub fn free_xrd(&self, amount: Decimal) -> Bucket {
-            self.xrd.take(amount, None)
+            self.xrd.take(amount)
         }
     }
 }

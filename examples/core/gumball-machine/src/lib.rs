@@ -41,7 +41,7 @@ blueprint! {
 
             // return a tuple containing a gumball, plus whatever change is left on the input payment (if any)
             // if we're out of gumballs to give, we'll see a runtime error when we try to grab one
-            (self.gumballs.take(1, None), payment)
+            (self.gumballs.take(1), payment)
         }
     }
 }

@@ -199,15 +199,6 @@ impl ResourceDef {
         Ok(())
     }
 
-    pub fn check_take_from_vault_auth(&self, actor: Actor) -> Result<(), ResourceDefError> {
-        if self.flags() & RESTRICTED_TRANSFER == RESTRICTED_TRANSFER {
-            if !actor.check_permission(self.authorities(), MAY_TRANSFER) {
-                return Err(ResourceDefError::UnauthorizedAccess);
-            }
-        }
-        Ok(())
-    }
-
     pub fn check_mint_auth(&self, actor: Actor) -> Result<(), ResourceDefError> {
         if self.flags() & MINTABLE != MINTABLE {
             return Err(ResourceDefError::OperationNotAllowed);

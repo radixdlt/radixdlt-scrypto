@@ -1410,28 +1410,11 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         Ok(PutIntoVaultOutput {})
     }
 
-    fn check_take_from_vault_auth(&mut self, vid: Vid, actor: Actor) -> Result<(), RuntimeError> {
-        let resource_address = self
-            .track
-            .get_vault(vid)
-            .ok_or(RuntimeError::VaultNotFound(vid))?
-            .resource_address(actor.clone())
-            .map_err(RuntimeError::VaultError)?;
-        let resource_def = self
-            .track
-            .get_resource_def(resource_address)
-            .ok_or(RuntimeError::ResourceDefNotFound(resource_address))?;
-        resource_def
-            .check_take_from_vault_auth(actor)
-            .map_err(RuntimeError::ResourceDefError)
-    }
-
     fn handle_take_from_vault(
         &mut self,
         input: TakeFromVaultInput,
     ) -> Result<TakeFromVaultOutput, RuntimeError> {
-        let actor = self.authenticate_with_badge(input.auth)?;
-        self.check_take_from_vault_auth(input.vid, actor.clone())?;
+        let actor = self.authenticate()?;
 
         let new_bucket = self
             .track
@@ -1450,8 +1433,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         &mut self,
         input: TakeNftFromVaultInput,
     ) -> Result<TakeNftFromVaultOutput, RuntimeError> {
-        let actor = self.authenticate_with_badge(input.auth)?;
-        self.check_take_from_vault_auth(input.vid, actor.clone())?;
+        let actor = self.authenticate()?;
 
         let new_bucket = self
             .track

@@ -108,7 +108,7 @@ blueprint! {
             // Mint LP tokens according to the share the provider is contributing
             let lp_tokens = self
                 .lp_mint_badge
-                .authorize(|auth| self.lp_resource_def.mint(supply_to_mint, auth), None);
+                .authorize(|auth| self.lp_resource_def.mint(supply_to_mint, auth));
 
             // Return the LP tokens along with any remainder
             (lp_tokens, remainder)
@@ -125,13 +125,13 @@ blueprint! {
             let share = lp_tokens.amount() / self.lp_resource_def.total_supply();
 
             // Withdraw the correct amounts of tokens A and B from reserves
-            let a_withdrawn = self.a_pool.take(self.a_pool.amount() * share, None);
-            let b_withdrawn = self.b_pool.take(self.b_pool.amount() * share, None);
+            let a_withdrawn = self.a_pool.take(self.a_pool.amount() * share);
+            let b_withdrawn = self.b_pool.take(self.b_pool.amount() * share);
 
             // Burn the LP tokens received
             self.lp_mint_badge.authorize(|auth| {
                 lp_tokens.burn(Some(auth));
-            }, None);
+            });
 
             // Return the withdrawn tokens
             (a_withdrawn, b_withdrawn)
@@ -152,7 +152,7 @@ blueprint! {
                 self.a_pool.put(input_tokens);
 
                 // Return the tokens owed
-                self.b_pool.take(b_amount, None)
+                self.b_pool.take(b_amount)
             } else {
                 // Calculate how much of token A we will return
                 let a_amount = self.a_pool.amount()
@@ -163,7 +163,7 @@ blueprint! {
                 self.b_pool.put(input_tokens);
 
                 // Return the tokens owed
-                self.a_pool.take(a_amount, None)
+                self.a_pool.take(a_amount)
             };
 
             // Accrued fees change the raio

@@ -58,7 +58,7 @@ blueprint! {
             let vault = Vault::with_bucket(Self::create_nft_fixed());
             assert_eq!(vault.amount(), 3.into());
 
-            let nft = vault.take(1, None);
+            let nft = vault.take(1);
             assert_eq!(vault.amount(), 2.into());
             assert_eq!(nft.amount(), 1.into());
 
@@ -75,7 +75,7 @@ blueprint! {
 
         pub fn get_nft_ids_vault() -> Bucket {
             let vault = Vault::with_bucket(Self::create_nft_fixed());
-            let nft = vault.take(1, None);
+            let nft = vault.take(1);
             assert_eq!(vault.get_nft_ids(), Vec::from([2, 3]));
             assert_eq!(nft.get_nft_ids(), Vec::from([1]));
             nft
