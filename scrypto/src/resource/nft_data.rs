@@ -4,7 +4,7 @@ use crate::rust::vec::Vec;
 
 pub trait NftData {
     /// Decodes `Self` from the serialized immutable and mutable parts.
-    fn decode(immutable_data: Vec<u8>, mutable_data: Vec<u8>) -> Result<Self, DecodeError>
+    fn decode(immutable_data: &[u8], mutable_data: &[u8]) -> Result<Self, DecodeError>
     where
         Self: Sized;
 

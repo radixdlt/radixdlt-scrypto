@@ -17,7 +17,7 @@ fn test_nft_data() {
         b: "Test".to_owned(),
     };
     let instance_decoded =
-        Sample::decode(instance.immutable_data(), instance.mutable_data()).unwrap();
+        Sample::decode(&instance.immutable_data(), &instance.mutable_data()).unwrap();
     assert_eq!(instance_decoded, instance);
 
     let immutable_data_schema = instance.immutable_data_schema();
