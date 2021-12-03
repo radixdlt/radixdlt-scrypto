@@ -15,8 +15,9 @@ To create a fixed supply of NFTs, we will need to define the NFT data structure 
 #[derive(NftData)]
 pub struct MagicCard {
     color: Color,
-    class: Class,
     rarity: Rarity,
+    #[scrypto(mutable)]
+    level: u8
 }
 ```
 
@@ -30,7 +31,6 @@ let special_cards_bucket = ResourceBuilder::new_non_fungible()
             1, // The ID of the first NFT, you can also use `Uuid::generate()` to create a random ID
             MagicCard {
                 color: Color::Black,
-                class: Class::Sorcery,
                 rarity: Rarity::MythicRare,
                 level: 2,
             }
@@ -39,7 +39,6 @@ let special_cards_bucket = ResourceBuilder::new_non_fungible()
             2, // The ID of the second NFT
             MagicCard {
                 color: Color::Green,
-                class: Class::Planeswalker,
                 rarity: Rarity::Rare,
                 level: 3,
             }
@@ -72,7 +71,6 @@ let nft = self.random_card_mint_badge.authorize(|auth| {
         // The NFT data
         MagicCard {
             color: Self::random_color(random_seed),
-            class: Self::random_class(random_seed),
             rarity: Self::random_rarity(random_seed),
             level: 5,
         },
@@ -105,7 +103,6 @@ let nft = self.random_card_mint_badge.authorize(|auth| {
         // The new NFT data
         MagicCardMut {
             color: Color::Green,
-            class: Class::Warrior,
             rarity: Rarity::Common,
             level: 100,
         },

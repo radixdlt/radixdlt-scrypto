@@ -11,17 +11,6 @@ pub enum Color {
 }
 
 #[derive(TypeId, Encode, Decode, Describe)]
-pub enum Class {
-    Land,
-    Creature,
-    Artifact,
-    Enchantment,
-    Planeswalker,
-    Sorcery,
-    Instant,
-}
-
-#[derive(TypeId, Encode, Decode, Describe)]
 pub enum Rarity {
     Common,
     Uncommon,
@@ -32,7 +21,6 @@ pub enum Rarity {
 #[derive(NftData)]
 pub struct MagicCard {
     color: Color,
-    class: Class,
     rarity: Rarity,
     #[scrypto(mutable)]
     level: u8,
@@ -66,7 +54,6 @@ blueprint! {
                         1,
                         MagicCard {
                             color: Color::Black,
-                            class: Class::Sorcery,
                             rarity: Rarity::MythicRare,
                             level: 3,
                         },
@@ -75,7 +62,6 @@ blueprint! {
                         2,
                         MagicCard {
                             color: Color::Green,
-                            class: Class::Planeswalker,
                             rarity: Rarity::Rare,
                             level: 5,
                         },
@@ -84,7 +70,6 @@ blueprint! {
                         3,
                         MagicCard {
                             color: Color::Red,
-                            class: Class::Creature,
                             rarity: Rarity::Uncommon,
                             level: 100,
                         },
@@ -141,7 +126,6 @@ blueprint! {
             let random_seed = 100; // TODO: obtain from oracle
             let new_card = MagicCard {
                 color: Self::random_color(random_seed),
-                class: Self::random_class(random_seed),
                 rarity: Self::random_rarity(random_seed),
                 level: random_seed as u8 % 8,
             };
@@ -209,8 +193,7 @@ blueprint! {
         fn fuse_magic_cards(card1: MagicCard, card2: MagicCard) -> MagicCard {
             MagicCard {
                 color: card1.color,
-                class: card2.class,
-                rarity: Rarity::MythicRare,
+                rarity: card2.rarity,
                 level: card1.level + card2.level,
             }
         }
@@ -222,19 +205,6 @@ blueprint! {
                 2 => Color::Black,
                 3 => Color::Red,
                 4 => Color::Green,
-                _ => panic!(),
-            }
-        }
-
-        fn random_class(seed: u64) -> Class {
-            match seed % 7 {
-                0 => Class::Land,
-                1 => Class::Creature,
-                2 => Class::Artifact,
-                3 => Class::Enchantment,
-                4 => Class::Planeswalker,
-                5 => Class::Sorcery,
-                6 => Class::Instant,
                 _ => panic!(),
             }
         }
