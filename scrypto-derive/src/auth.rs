@@ -68,7 +68,8 @@ pub fn handle_auth(attr: TokenStream, item: TokenStream) -> Result<TokenStream> 
                 panic!("Auth check failure")
             }
 
-            let output = #f_body;
+            let func = || #f_body ;
+            let output = func();
             #drop
             output
         }
