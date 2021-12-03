@@ -1,5 +1,3 @@
-use sbor::*;
-
 use crate::kernel::*;
 use crate::resource::*;
 use crate::rust::borrow::ToOwned;
@@ -92,9 +90,9 @@ impl ResourceBuilder {
     ///         (2, "another_immutable_part", "another_mutable_part"),
     ///     ]);
     /// ```
-    pub fn initial_supply_non_fungible<I: Encode, M: Encode, const N: usize>(
+    pub fn initial_supply_non_fungible<T: NftData, const N: usize>(
         &self,
-        entries: [(u128, I, M); N],
+        entries: [(u128, T); N],
     ) -> Bucket {
         self.build(Some(NewSupply::non_fungible(entries)))
             .1

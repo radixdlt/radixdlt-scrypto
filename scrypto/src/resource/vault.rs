@@ -125,7 +125,7 @@ impl Vault {
     ///
     /// # Panics
     /// Panics if this is not an NFT vault.
-    pub fn get_nfts<I: Encode + Decode, M: Encode + Decode>(&self) -> Vec<Nft<I, M>> {
+    pub fn get_nfts<T: NftData>(&self) -> Vec<Nft<T>> {
         let input = GetNftIdsInVaultInput { vid: self.vid };
         let output: GetNftIdsInVaultOutput = call_kernel(GET_NFT_IDS_IN_VAULT, input);
         let resource_address = self.resource_address();
@@ -151,7 +151,7 @@ impl Vault {
     ///
     /// # Panics
     /// Panics if this is not an NFT bucket.
-    pub fn get_nft_data<I: Decode, M: Decode>(&self, id: u128) -> (I, M) {
+    pub fn get_nft_data<T: NftData>(&self, id: u128) -> T {
         self.resource_def().get_nft_data(id)
     }
 
@@ -159,14 +159,8 @@ impl Vault {
     ///
     /// # Panics
     /// Panics if this is not an NFT vault or the specified NFT is not found.
-    pub fn update_nft_mutable_data<M: Encode>(
-        &self,
-        id: u128,
-        new_mutable_data: M,
-        auth: BucketRef,
-    ) {
-        self.resource_def()
-            .update_nft_mutable_data(id, new_mutable_data, auth)
+    pub fn update_nft_data<T: NftData>(&self, id: u128, new_data: T, auth: BucketRef) {
+        self.resource_def().update_nft_data(id, new_data, auth)
     }
 }
 

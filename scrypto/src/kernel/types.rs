@@ -1,6 +1,6 @@
 use sbor::{Decode, Describe, Encode, TypeId};
 
-use crate::buffer::*;
+use crate::resource::*;
 use crate::rust::collections::HashMap;
 use crate::rust::vec::Vec;
 use crate::types::*;
@@ -53,10 +53,10 @@ impl NewSupply {
         }
     }
 
-    pub fn non_fungible<I: Encode, M: Encode, const N: usize>(entries: [(u128, I, M); N]) -> Self {
+    pub fn non_fungible<T: NftData, const N: usize>(entries: [(u128, T); N]) -> Self {
         let mut encoded = HashMap::new();
-        for (id, i, m) in entries {
-            encoded.insert(id, (scrypto_encode(&i), scrypto_encode(&m)));
+        for (id, e) in entries {
+            encoded.insert(id, (e.immutable_data(), e.mutable_data()));
         }
 
         Self::NonFungible { entries: encoded }

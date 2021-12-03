@@ -1,25 +1,21 @@
-use sbor::*;
-
 use crate::resource::*;
 use crate::rust::marker::PhantomData;
 use crate::types::*;
 
 /// Represents an NFT unit.
 #[derive(Debug)]
-pub struct Nft<I: Encode + Decode, M: Encode + Decode> {
+pub struct Nft<T: NftData> {
     resource_address: Address,
     id: u128,
-    immutable_data: PhantomData<I>,
-    mutable_data: PhantomData<M>,
+    data: PhantomData<T>,
 }
 
-impl<I: Encode + Decode, M: Encode + Decode> Nft<I, M> {
+impl<T: NftData> Nft<T> {
     pub fn new(resource_address: Address, id: u128) -> Self {
         Self {
             resource_address,
             id,
-            immutable_data: PhantomData,
-            mutable_data: PhantomData,
+            data: PhantomData,
         }
     }
 
@@ -34,12 +30,12 @@ impl<I: Encode + Decode, M: Encode + Decode> Nft<I, M> {
     }
 
     /// Returns the associated data of this unit.
-    pub fn data(&self) -> (I, M) {
+    pub fn data(&self) -> T {
         ResourceDef::from(self.resource_address()).get_nft_data(self.id)
     }
 
     /// Updates the associated data of this unit.
-    pub fn update_data(&self, new_data: (I, M), auth: BucketRef) {
-        ResourceDef::from(self.resource_address()).update_nft_mutable_data(self.id, new_data, auth);
+    pub fn update_data(&self, new_data: T, auth: BucketRef) {
+        ResourceDef::from(self.resource_address()).update_nft_data(self.id, new_data, auth);
     }
 }

@@ -1,4 +1,4 @@
-use proc_macro2::TokenStream;
+use proc_macro2::{Span, TokenStream};
 use quote::quote;
 use syn::*;
 
@@ -134,19 +134,25 @@ pub fn handle_nft_data(input: TokenStream) -> Result<TokenStream> {
                 }
             }
             syn::Fields::Unnamed(_) => {
-                panic!("Struct with unnamed fields is not supported!")
+                return Err(Error::new(
+                    Span::call_site(),
+                    "Struct with unnamed fields is not supported!",
+                ));
             }
             syn::Fields::Unit => {
-                panic!("Struct with no fields is not supported!")
+                return Err(Error::new(
+                    Span::call_site(),
+                    "Struct with no fields is not supported!",
+                ));
             }
         },
         Data::Enum(_) | Data::Union(_) => {
-            panic!("Union is not supported!")
+            return Err(Error::new(Span::call_site(), "Union is not supported!"));
         }
     };
     trace!("handle_nft_data() finishes");
 
-    //#[cfg(feature = "trace")]
+    #[cfg(feature = "trace")]
     crate::utils::print_compiled_code("NftData", &output);
 
     Ok(output)
