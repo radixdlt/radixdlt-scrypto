@@ -157,7 +157,7 @@ pub fn handle_decode(input: TokenStream) -> TokenStream {
     trace!("handle_decode() finishes");
 
     #[cfg(feature = "trace")]
-    crate::utils::print_compiled_code("Decode", &output);
+    crate::utils::print_generated_code("Decode", &output);
 
     output
 }

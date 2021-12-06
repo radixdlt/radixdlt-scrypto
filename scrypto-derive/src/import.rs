@@ -143,7 +143,7 @@ pub fn handle_import(input: TokenStream) -> Result<TokenStream> {
     trace!("Finished processing import macro");
 
     #[cfg(feature = "trace")]
-    crate::utils::print_compiled_code("import!", &output);
+    crate::utils::print_generated_code("import!", &output);
 
     Ok(output)
 }

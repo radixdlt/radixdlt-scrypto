@@ -77,7 +77,7 @@ pub fn handle_auth(attr: TokenStream, item: TokenStream) -> Result<TokenStream> 
     trace!("Finished processing auth macro");
 
     #[cfg(feature = "trace")]
-    crate::utils::print_compiled_code("auth", &output);
+    crate::utils::print_generated_code("auth", &output);
 
     Ok(output)
 }

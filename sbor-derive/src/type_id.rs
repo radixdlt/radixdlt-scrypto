@@ -39,7 +39,7 @@ pub fn handle_type_id(input: TokenStream) -> TokenStream {
     trace!("handle_type_id() finishes");
 
     #[cfg(feature = "trace")]
-    crate::utils::print_compiled_code("TypeId", &output);
+    crate::utils::print_generated_code("TypeId", &output);
 
     output
 }

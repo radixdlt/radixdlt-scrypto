@@ -153,7 +153,7 @@ pub fn handle_nft_data(input: TokenStream) -> Result<TokenStream> {
     trace!("handle_nft_data() finishes");
 
     #[cfg(feature = "trace")]
-    crate::utils::print_compiled_code("NftData", &output);
+    crate::utils::print_generated_code("NftData", &output);
 
     Ok(output)
 }
