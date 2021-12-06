@@ -58,7 +58,7 @@ pub fn decode_no_type<T: Decode>(buf: &[u8]) -> Result<T, DecodeError> {
 
 // Re-export derives
 extern crate sbor_derive;
-pub use sbor_derive::*;
+pub use sbor_derive::{Decode, Describe, Encode, TypeId};
 
 // This is to make derives work within this crate.
 // See: https://users.rust-lang.org/t/how-can-i-use-my-derive-macro-from-the-crate-that-declares-the-trait/60502

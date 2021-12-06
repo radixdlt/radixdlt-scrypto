@@ -44,7 +44,7 @@ pub mod abi {
 
 // Re-export Scrypto derive.
 extern crate scrypto_derive;
-pub use scrypto_derive::*;
+pub use scrypto_derive::{auth, blueprint, import, NftData};
 
 /// Encodes arguments according to Scrypto call abi.
 ///

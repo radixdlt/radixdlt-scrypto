@@ -135,7 +135,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
     trace!("Finished processing blueprint macro");
 
     #[cfg(feature = "trace")]
-    crate::utils::print_compiled_code("blueprint!", &output);
+    crate::utils::print_generated_code("blueprint!", &output);
 
     Ok(output)
 }

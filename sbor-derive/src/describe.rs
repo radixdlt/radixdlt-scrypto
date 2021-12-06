@@ -1,4 +1,4 @@
-use proc_macro2::TokenStream;
+use proc_macro2::{Span, TokenStream};
 use quote::quote;
 use syn::*;
 
@@ -11,10 +11,10 @@ macro_rules! trace {
     }};
 }
 
-pub fn handle_describe(input: TokenStream) -> TokenStream {
+pub fn handle_describe(input: TokenStream) -> Result<TokenStream> {
     trace!("handle_describe() starts");
 
-    let DeriveInput { ident, data, .. } = parse2(input).expect("Unable to parse input");
+    let DeriveInput { ident, data, .. } = parse2(input)?;
     let ident_str = ident.to_string();
     trace!("Describing: {}", ident);
 
@@ -155,15 +155,15 @@ pub fn handle_describe(input: TokenStream) -> TokenStream {
             }
         }
         Data::Union(_) => {
-            panic!("Union is not supported!")
+            return Err(Error::new(Span::call_site(), "Union is not supported!"));
         }
     };
     trace!("handle_describe() finishes");
 
     #[cfg(feature = "trace")]
-    crate::utils::print_compiled_code("Describe", &output);
+    crate::utils::print_generated_code("Describe", &output);
 
-    output
+    Ok(output)
 }
 
 #[cfg(test)]
@@ -180,7 +180,7 @@ mod tests {
     #[test]
     fn test_describe_struct() {
         let input = TokenStream::from_str("struct Test {a: u32}").unwrap();
-        let output = handle_describe(input);
+        let output = handle_describe(input).unwrap();
 
         assert_code_eq(
             output,
@@ -206,7 +206,7 @@ mod tests {
     #[test]
     fn test_describe_enum() {
         let input = TokenStream::from_str("enum Test {A, B (u32), C {x: u8}}").unwrap();
-        let output = handle_describe(input);
+        let output = handle_describe(input).unwrap();
 
         assert_code_eq(
             output,
@@ -247,7 +247,7 @@ mod tests {
     #[test]
     fn test_skip_field_1() {
         let input = TokenStream::from_str("struct Test {#[sbor(skip)] a: u32}").unwrap();
-        let output = handle_describe(input);
+        let output = handle_describe(input).unwrap();
 
         assert_code_eq(
             output,
@@ -273,7 +273,7 @@ mod tests {
         let input =
             TokenStream::from_str("enum Test {A, B (#[sbor(skip)] u32), C {#[sbor(skip)] x: u8}}")
                 .unwrap();
-        let output = handle_describe(input);
+        let output = handle_describe(input).unwrap();
 
         assert_code_eq(
             output,
