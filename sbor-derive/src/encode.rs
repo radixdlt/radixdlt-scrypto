@@ -1,4 +1,4 @@
-use proc_macro2::TokenStream;
+use proc_macro2::{Span, TokenStream};
 use quote::{format_ident, quote};
 use syn::*;
 
@@ -11,10 +11,10 @@ macro_rules! trace {
     }};
 }
 
-pub fn handle_encode(input: TokenStream) -> TokenStream {
+pub fn handle_encode(input: TokenStream) -> Result<TokenStream> {
     trace!("handle_encode() starts");
 
-    let DeriveInput { ident, data, .. } = parse2(input).expect("Unable to parse input");
+    let DeriveInput { ident, data, .. } = parse2(input)?;
     trace!("Encoding: {}", ident);
 
     let output = match data {
@@ -129,7 +129,7 @@ pub fn handle_encode(input: TokenStream) -> TokenStream {
             }
         }
         Data::Union(_) => {
-            panic!("Union is not supported!")
+            return Err(Error::new(Span::call_site(), "Union is not supported!"));
         }
     };
     trace!("handle_encode() finishes");
@@ -137,7 +137,7 @@ pub fn handle_encode(input: TokenStream) -> TokenStream {
     #[cfg(feature = "trace")]
     crate::utils::print_generated_code("Encode", &output);
 
-    output
+    Ok(output)
 }
 
 #[cfg(test)]
@@ -154,7 +154,7 @@ mod tests {
     #[test]
     fn test_encode_struct() {
         let input = TokenStream::from_str("struct Test {a: u32}").unwrap();
-        let output = handle_encode(input);
+        let output = handle_encode(input).unwrap();
 
         assert_code_eq(
             output,
@@ -174,7 +174,7 @@ mod tests {
     #[test]
     fn test_encode_enum() {
         let input = TokenStream::from_str("enum Test {A, B (u32), C {x: u8}}").unwrap();
-        let output = handle_encode(input);
+        let output = handle_encode(input).unwrap();
 
         assert_code_eq(
             output,

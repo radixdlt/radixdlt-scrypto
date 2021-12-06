@@ -1,4 +1,4 @@
-use proc_macro2::TokenStream;
+use proc_macro2::{Span, TokenStream};
 use quote::quote;
 use syn::*;
 
@@ -9,7 +9,7 @@ macro_rules! trace {
     }};
 }
 
-pub fn handle_type_id(input: TokenStream) -> TokenStream {
+pub fn handle_type_id(input: TokenStream) -> Result<TokenStream> {
     trace!("handle_type_id() starts");
 
     let DeriveInput { ident, data, .. } = parse2(input).expect("Unable to parse input");
@@ -33,7 +33,7 @@ pub fn handle_type_id(input: TokenStream) -> TokenStream {
             }
         },
         Data::Union(_) => {
-            panic!("Union is not supported!")
+            return Err(Error::new(Span::call_site(), "Union is not supported!"));
         }
     };
     trace!("handle_type_id() finishes");
@@ -41,7 +41,7 @@ pub fn handle_type_id(input: TokenStream) -> TokenStream {
     #[cfg(feature = "trace")]
     crate::utils::print_generated_code("TypeId", &output);
 
-    output
+    Ok(output)
 }
 
 #[cfg(test)]
@@ -58,7 +58,7 @@ mod tests {
     #[test]
     fn test_type_id_struct() {
         let input = TokenStream::from_str("struct Test {a: u32}").unwrap();
-        let output = handle_type_id(input);
+        let output = handle_type_id(input).unwrap();
 
         assert_code_eq(
             output,
@@ -76,7 +76,7 @@ mod tests {
     #[test]
     fn test_type_id_enum() {
         let input = TokenStream::from_str("enum Test {A, B (u32), C {x: u8}}").unwrap();
-        let output = handle_type_id(input);
+        let output = handle_type_id(input).unwrap();
 
         assert_code_eq(
             output,
