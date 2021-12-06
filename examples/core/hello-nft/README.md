@@ -10,15 +10,20 @@ In this example, we will show you how to create, mint, transfer and update NFTs 
 
 NFT is just another type of resource in Scrypto, and the way to define NFTs is through `ResourceBuilder`.
 
-To create immutable NFTs, we will need to define the structure first and then provide the initial, fixed set of NFTs, like
+To create a fixed supply of NFTs, we will need to define the NFT data structure first, like
 ```rust
-#[derive(TypeId, Encode, Decode, Describe)]
+#[derive(NftData)]
 pub struct MagicCard {
     color: Color,
-    class: Class,
     rarity: Rarity,
+    #[scrypto(mutable)]
+    level: u8
 }
+```
 
+and pass an array of instances to resource builder:
+
+```rust
 let special_cards_bucket = ResourceBuilder::new_non_fungible()
     .metadata("name", "Russ' Magic Card Collection")
     .initial_supply_non_fungible([
@@ -26,10 +31,7 @@ let special_cards_bucket = ResourceBuilder::new_non_fungible()
             1, // The ID of the first NFT, you can also use `Uuid::generate()` to create a random ID
             MagicCard {
                 color: Color::Black,
-                class: Class::Sorcery,
                 rarity: Rarity::MythicRare,
-            },
-            MagicCardMut {
                 level: 2,
             }
         ),
@@ -37,17 +39,14 @@ let special_cards_bucket = ResourceBuilder::new_non_fungible()
             2, // The ID of the second NFT
             MagicCard {
                 color: Color::Green,
-                class: Class::Planeswalker,
                 rarity: Rarity::Rare,
-            },
-            MagicCardMut {
                 level: 3,
             }
         )
     ]);
 ```
 
-To create mutable NFTs, no initial supply is required but resource authorization configuration is required.
+To create NFTs with mutable supply, 
 
 ```rust
 let random_card_mint_badge = ResourceBuilder::new_fungible(18)
@@ -63,26 +62,16 @@ let random_card_resource_def = ResourceBuilder::new_non_fungible()
     .no_initial_supply();
 ```
 
-Here, we're using the mint badge for both minting, burning and updating. If you want, you can also specify different badge for each permission, like,
-
-```rust
-ResourceConfigs::new(address_a).with_update_badge_address(address_b)
-```
-
-To further mint NFTs, we can use the `mint_nft` method:
+Once the resource is created, we can mint NFTs with the `mint_nft` method:
 ```rust
 let nft = self.random_card_mint_badge.authorize(|auth| {
     self.random_card_resource_def.mint_nft(
         // The NFT id
         self.random_card_id_counter,
-        // The immutable attributes
-        MagicCard { 
+        // The NFT data
+        MagicCard {
             color: Self::random_color(random_seed),
-            class: Self::random_class(random_seed),
             rarity: Self::random_rarity(random_seed),
-        },
-        // The mutable attributes
-        MagicCardMut { 
             level: 5,
         },
         // authorization to mint
@@ -93,7 +82,7 @@ let nft = self.random_card_mint_badge.authorize(|auth| {
 
 ## Transfer to Another Account/Component
 
-Since NFT is just another type if resource, it must be stored in either a bucket and vault. To transfer one NFT to another account, we will need to withdraw it from the sender's account and deposit into the recipient's account.
+Since NFT is just another type of resource, it must be stored in either a bucket and vault. To transfer one NFT to another account, we will need to withdraw it from the sender's account and deposit into the recipient's account.
 
 To pick a specific NFT when calling a function or method, we can use the following syntax:
 
@@ -104,15 +93,17 @@ To pick a specific NFT when calling a function or method, we can use the followi
 ## Update an Existing NFT
 
 
-To update, one needs to call the `update_nft_mutable_data` method on resource definition.
+To update, we need to call the `update_nft_data` method on resource definition.
 
 ```rust
 let nft = self.random_card_mint_badge.authorize(|auth| {
-    self.random_card_resource_def.update_nft_mutable_data(
+    self.random_card_resource_def.update_nft_data(
         // The NFT id
         self.random_card_id_counter,
-        // The new mutable part of the NFT data
-        MagicCardMut { 
+        // The new NFT data
+        MagicCardMut {
+            color: Color::Green,
+            rarity: Rarity::Common,
             level: 100,
         },
         // authorization to update
@@ -120,8 +111,6 @@ let nft = self.random_card_mint_badge.authorize(|auth| {
     )
 });
 ```
-
-Only the NFT update badge owners can update an NFT. 
 
 ## How to Play?
 

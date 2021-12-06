@@ -2,6 +2,7 @@ mod ast;
 mod auth;
 mod blueprint;
 mod import;
+mod nft_data;
 mod utils;
 
 use proc_macro::TokenStream;
@@ -121,4 +122,25 @@ pub fn auth(attr: TokenStream, item: TokenStream) -> TokenStream {
     )
     .unwrap_or_else(|err| err.to_compile_error())
     .into()
+}
+
+/// Derive code that describe the NFT data structure.
+///
+/// # Example
+///
+/// ```ignore
+/// use scrypto::prelude::*;
+///
+/// #[derive(NftData)]
+/// pub struct AwesomeNft {
+///     pub field_1: u32,
+///     #[scrypto(mutable)]
+///     pub field_2: String,
+/// }
+/// ```
+#[proc_macro_derive(NftData, attributes(scrypto))]
+pub fn nft_data(input: TokenStream) -> TokenStream {
+    nft_data::handle_nft_data(proc_macro2::TokenStream::from(input))
+        .unwrap_or_else(|err| err.to_compile_error())
+        .into()
 }
