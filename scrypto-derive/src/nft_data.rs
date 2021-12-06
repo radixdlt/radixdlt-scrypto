@@ -60,10 +60,12 @@ pub fn handle_nft_data(input: TokenStream) -> Result<TokenStream> {
                         fn decode(immutable_data: &[u8], mutable_data: &[u8]) -> Result<Self, ::sbor::DecodeError> {
                             use ::sbor::{type_id::*, *};
                             let mut decoder_nm = Decoder::new(immutable_data, true);
+                            decoder_nm.check_type(TYPE_STRUCT);
                             decoder_nm.check_type(TYPE_FIELDS_NAMED)?;
                             decoder_nm.check_len(#im_n)?;
 
                             let mut decoder_m = Decoder::new(mutable_data, true);
+                            decoder_m.check_type(TYPE_STRUCT);
                             decoder_m.check_type(TYPE_FIELDS_NAMED)?;
                             decoder_m.check_len(#m_n)?;
 
@@ -82,6 +84,7 @@ pub fn handle_nft_data(input: TokenStream) -> Result<TokenStream> {
                             use ::sbor::{type_id::*, *};
 
                             let mut encoder = Encoder::new(Vec::new(), true);
+                            encoder.write_type(TYPE_STRUCT);
                             encoder.write_type(TYPE_FIELDS_NAMED);
                             encoder.write_len(#im_n);
                             #(
@@ -96,6 +99,7 @@ pub fn handle_nft_data(input: TokenStream) -> Result<TokenStream> {
                             use ::scrypto::rust::vec::Vec;
 
                             let mut encoder = Encoder::new(Vec::new(), true);
+                            encoder.write_type(TYPE_STRUCT);
                             encoder.write_type(TYPE_FIELDS_NAMED);
                             encoder.write_len(#m_n);
                             #(
@@ -184,9 +188,11 @@ mod tests {
                     fn decode(immutable_data: &[u8], mutable_data: &[u8]) -> Result<Self, ::sbor::DecodeError> {
                         use ::sbor::{type_id::*, *};
                         let mut decoder_nm = Decoder::new(immutable_data, true);
+                        decoder_nm.check_type(TYPE_STRUCT);
                         decoder_nm.check_type(TYPE_FIELDS_NAMED)?;
                         decoder_nm.check_len(1)?;
                         let mut decoder_m = Decoder::new(mutable_data, true);
+                        decoder_m.check_type(TYPE_STRUCT);
                         decoder_m.check_type(TYPE_FIELDS_NAMED)?;
                         decoder_m.check_len(1)?;
                         let decoded = Self {
@@ -200,6 +206,7 @@ mod tests {
                     fn immutable_data(&self) -> ::scrypto::rust::vec::Vec<u8> {
                         use ::sbor::{type_id::*, *};
                         let mut encoder = Encoder::new(Vec::new(), true);
+                        encoder.write_type(TYPE_STRUCT);
                         encoder.write_type(TYPE_FIELDS_NAMED);
                         encoder.write_len(1);
                         self.field_1.encode(&mut encoder);
@@ -209,6 +216,7 @@ mod tests {
                         use ::sbor::{type_id::*, *};
                         use ::scrypto::rust::vec::Vec;
                         let mut encoder = Encoder::new(Vec::new(), true);
+                        encoder.write_type(TYPE_STRUCT);
                         encoder.write_type(TYPE_FIELDS_NAMED);
                         encoder.write_len(1);
                         self.field_2.encode(&mut encoder);
