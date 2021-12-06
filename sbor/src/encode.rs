@@ -1,5 +1,6 @@
 use crate::rust::boxed::Box;
 use crate::rust::collections::*;
+use crate::rust::ptr::copy;
 use crate::rust::string::String;
 use crate::rust::vec::Vec;
 use crate::type_id::*;
@@ -201,11 +202,7 @@ impl<T: Encode, E: Encode> Encode for Result<T, E> {
 
 impl<T: Encode> Encode for Vec<T> {
     fn encode_value(&self, encoder: &mut Encoder) {
-        encoder.write_type(T::type_id());
-        encoder.write_len(self.len());
-        for v in self {
-            v.encode_value(encoder);
-        }
+        self.as_slice().encode_value(encoder);
     }
 }
 
@@ -213,8 +210,17 @@ impl<T: Encode> Encode for [T] {
     fn encode_value(&self, encoder: &mut Encoder) {
         encoder.write_type(T::type_id());
         encoder.write_len(self.len());
-        for v in self {
-            v.encode_value(encoder);
+        if T::type_id() == TYPE_U8 || T::type_id() == TYPE_I8 {
+            let mut buf = Vec::<u8>::with_capacity(self.len());
+            unsafe {
+                copy(self.as_ptr() as *const u8, buf.as_mut_ptr(), self.len());
+                buf.set_len(self.len());
+            }
+            encoder.write_slice(&buf);
+        } else {
+            for v in self {
+                v.encode_value(encoder);
+            }
         }
     }
 }
