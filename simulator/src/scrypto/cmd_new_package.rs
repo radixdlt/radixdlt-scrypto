@@ -54,7 +54,7 @@ pub fn handle_new_package(matches: &ArgMatches) -> Result<(), Error> {
     } else {
         let s = format!(
             "{{ git = \"https://github.com/radixdlt/radixdlt-scrypto\", tag = \"v{}\" }}",
-            env!("CARGO_PKG_VERSION")
+            env!("LASTEST_STABLE_RELEASE_VERSION")
         );
         (s.clone(), s.clone(), s)
     };
