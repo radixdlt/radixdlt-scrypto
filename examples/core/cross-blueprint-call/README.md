@@ -68,13 +68,13 @@ In our example package, we have the following files:
 │   ├─ lib.rs
 │   ├─ airdrop.rs
 │   ├─ cross_package.rs
-│   └─ inner_package.rs
+│   └─ intra_package.rs
 ├─ test
 │   └─ lib.rs
 └─ Cargo.toml
 ```
 
-In `inner_package.rs`, we write
+In `intra_package.rs`, we write
 
 ```rust
 use crate::airdrop::Airdrop;
