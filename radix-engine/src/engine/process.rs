@@ -945,7 +945,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
             "New component: address = {:?}, state = {:?}", component_address, new_state
         );
 
-        let component = Component::new(self.package()?, input.name, new_state);
+        let component = Component::new(self.package()?, input.blueprint_name, new_state);
         self.track.put_component(component_address, component);
 
         Ok(CreateComponentOutput { component_address })

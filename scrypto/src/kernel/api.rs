@@ -163,7 +163,7 @@ pub struct CallMethodOutput {
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct CreateComponentInput {
-    pub name: String,
+    pub blueprint_name: String,
     pub state: Vec<u8>,
 }
 

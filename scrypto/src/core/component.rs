@@ -9,6 +9,13 @@ use crate::rust::vec::Vec;
 use crate::types::*;
 use crate::utils::*;
 
+/// Represents the state of a component.
+pub trait ComponentState: sbor::Encode + sbor::Decode {
+    fn blueprint_name() -> &'static str;
+
+    fn instantiate(self) -> Component;
+}
+
 /// An instance of a blueprint, which lives in the ledger state.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Component {
@@ -32,9 +39,9 @@ impl From<Component> for Address {
 }
 
 impl Component {
-    pub fn new<T: State>(state: T) -> Self {
+    pub fn new<T: ComponentState>(state: T) -> Self {
         let input = CreateComponentInput {
-            name: T::name().to_owned(),
+            blueprint_name: T::blueprint_name().to_owned(),
             state: scrypto_encode(&state),
         };
         let output: CreateComponentOutput = call_kernel(CREATE_COMPONENT, input);
@@ -48,7 +55,7 @@ impl Component {
         scrypto_unwrap(scrypto_decode(&output))
     }
 
-    pub fn get_state<T: State>(&self) -> T {
+    pub fn get_state<T: ComponentState>(&self) -> T {
         let input = GetComponentStateInput {
             component_address: self.address,
         };
@@ -57,7 +64,7 @@ impl Component {
         scrypto_unwrap(scrypto_decode(&output.state))
     }
 
-    pub fn put_state<T: State>(&self, state: T) {
+    pub fn put_state<T: ComponentState>(&self, state: T) {
         let input = PutComponentStateInput {
             component_address: self.address,
             state: scrypto_encode(&state),

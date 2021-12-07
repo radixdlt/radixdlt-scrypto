@@ -53,8 +53,8 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                 #(#bp_items)*
             }
 
-            impl ::scrypto::core::State for #bp_ident {
-                fn name() -> &'static str {
+            impl ::scrypto::core::ComponentState for #bp_ident {
+                fn blueprint_name() -> &'static str {
                     #bp_name
                 }
                 fn instantiate(self) -> ::scrypto::core::Component {
@@ -555,8 +555,8 @@ mod tests {
                         }
                     }
 
-                    impl ::scrypto::core::State for Test {
-                        fn name() -> &'static str {
+                    impl ::scrypto::core::ComponentState for Test {
+                        fn blueprint_name() -> &'static str {
                             "Test"
                         }
                         fn instantiate(self) -> ::scrypto::core::Component {
