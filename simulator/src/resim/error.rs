@@ -24,6 +24,8 @@ pub enum Error {
 
     InvalidDecimal(ParseDecimalError),
 
+    InvalidResourceAmount(ParseResourceAmountError),
+
     InvalidNumber(ParseIntError),
 
     InvalidConfig(sbor::DecodeError),

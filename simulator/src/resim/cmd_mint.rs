@@ -59,7 +59,7 @@ pub fn handle_mint(matches: &ArgMatches) -> Result<(), Error> {
     let mut executor = TransactionExecutor::new(&mut ledger, configs.current_epoch, configs.nonce);
     let transaction = TransactionBuilder::new(&executor)
         .withdraw_from_account(
-            &ResourceSpec::Fungible {
+            &ResourceAmount::Fungible {
                 amount: 1.into(),
                 resource_address: mint_badge_addr,
             },

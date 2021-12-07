@@ -15,7 +15,7 @@ fn bench_transfer(b: &mut Bencher) {
     let account2 = executor.new_account(key2);
     let transaction = TransactionBuilder::new(&executor)
         .withdraw_from_account(
-            &ResourceSpec::Fungible {
+            &ResourceAmount::Fungible {
                 amount: 1.into(),
                 resource_address: RADIX_TOKEN,
             },

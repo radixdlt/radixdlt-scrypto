@@ -1,4 +1,5 @@
 use clap::ArgMatches;
+use radix_engine::transaction::ResourceAmount;
 use scrypto::types::*;
 use std::path::PathBuf;
 
@@ -20,6 +21,15 @@ pub fn match_amount(matches: &ArgMatches, name: &str) -> Result<Decimal, Error> 
         .ok_or_else(|| Error::MissingArgument(name.to_owned()))?
         .parse()
         .map_err(Error::InvalidDecimal)
+}
+
+/// Match a resource argument.
+pub fn match_resource(matches: &ArgMatches, name: &str) -> Result<ResourceAmount, Error> {
+    matches
+        .value_of(name)
+        .ok_or_else(|| Error::MissingArgument(name.to_owned()))?
+        .parse()
+        .map_err(Error::InvalidResourceAmount)
 }
 
 /// Match a u64 argument.

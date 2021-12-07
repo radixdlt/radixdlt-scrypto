@@ -17,7 +17,7 @@ use scrypto::types::*;
 use crate::engine::*;
 use crate::transaction::*;
 
-pub enum ResourceSpec {
+pub enum ResourceAmount {
     Fungible {
         amount: Decimal,
         resource_address: Address,
@@ -28,19 +28,74 @@ pub enum ResourceSpec {
     },
 }
 
-impl ResourceSpec {
+#[derive(Debug, Clone)]
+pub enum ParseResourceAmountError {
+    InvalidAmount,
+    InvalidNftId,
+    InvalidResourceAddress,
+    MissingResourceAddress,
+}
+
+impl FromStr for ResourceAmount {
+    type Err = ParseResourceAmountError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let tokens: Vec<&str> = s.trim().split(',').collect();
+
+        if tokens.len() >= 2 {
+            let resource_address = tokens
+                .last()
+                .unwrap()
+                .parse::<Address>()
+                .map_err(|_| ParseResourceAmountError::InvalidResourceAddress)?;
+            if tokens[0].starts_with('#') {
+                let mut ids = BTreeSet::<u128>::new();
+                for id in &tokens[..tokens.len() - 1] {
+                    if id.starts_with('#') {
+                        ids.insert(
+                            id[1..]
+                                .parse()
+                                .map_err(|_| ParseResourceAmountError::InvalidNftId)?,
+                        );
+                    } else {
+                        return Err(ParseResourceAmountError::InvalidNftId);
+                    }
+                }
+                Ok(ResourceAmount::NonFungible {
+                    ids,
+                    resource_address,
+                })
+            } else {
+                if tokens.len() == 2 {
+                    Ok(ResourceAmount::Fungible {
+                        amount: tokens[0]
+                            .parse()
+                            .map_err(|_| ParseResourceAmountError::InvalidAmount)?,
+                        resource_address,
+                    })
+                } else {
+                    Err(ParseResourceAmountError::InvalidAmount)
+                }
+            }
+        } else {
+            Err(ParseResourceAmountError::MissingResourceAddress)
+        }
+    }
+}
+
+impl ResourceAmount {
     pub fn amount(&self) -> Decimal {
         match self {
-            ResourceSpec::Fungible { amount, .. } => *amount,
-            ResourceSpec::NonFungible { ids, .. } => ids.len().into(),
+            ResourceAmount::Fungible { amount, .. } => *amount,
+            ResourceAmount::NonFungible { ids, .. } => ids.len().into(),
         }
     }
     pub fn resource_address(&self) -> Address {
         match self {
-            ResourceSpec::Fungible {
+            ResourceAmount::Fungible {
                 resource_address, ..
             }
-            | ResourceSpec::NonFungible {
+            | ResourceAmount::NonFungible {
                 resource_address, ..
             } => *resource_address,
         }
@@ -405,11 +460,11 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     /// Withdraws resource from an account.
     pub fn withdraw_from_account(
         &mut self,
-        resource_spec: &ResourceSpec,
+        resource_spec: &ResourceAmount,
         account: Address,
     ) -> &mut Self {
         match resource_spec {
-            ResourceSpec::Fungible {
+            ResourceAmount::Fungible {
                 amount,
                 resource_address,
             } => self.add_instruction(Instruction::CallMethod {
@@ -420,7 +475,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                     SmartValue::from(*resource_address),
                 ],
             }),
-            ResourceSpec::NonFungible {
+            ResourceAmount::NonFungible {
                 ids,
                 resource_address,
             } => self.add_instruction(Instruction::CallMethod {
@@ -581,40 +636,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     }
 }
 
-fn parse_resource_spec(i: usize, ty: &Type, arg: &str) -> Result<ResourceSpec, BuildArgsError> {
-    let error = BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned());
-    let tokens: Vec<&str> = arg.trim().split(',').collect();
-
-    if tokens.len() >= 2 {
-        let resource_address = tokens
-            .last()
-            .ok_or(error.clone())?
-            .parse::<Address>()
-            .map_err(|_| error.clone())?;
-        if tokens[0].starts_with('#') {
-            let mut ids = BTreeSet::<u128>::new();
-            for id in &tokens[..tokens.len() - 1] {
-                if id.starts_with('#') {
-                    ids.insert(id[1..].parse().map_err(|_| error.clone())?);
-                } else {
-                    return Err(error);
-                }
-            }
-            Ok(ResourceSpec::NonFungible {
-                ids,
-                resource_address,
-            })
-        } else {
-            if tokens.len() == 2 {
-                Ok(ResourceSpec::Fungible {
-                    amount: tokens[0].parse().map_err(|_| error)?,
-                    resource_address,
-                })
-            } else {
-                Err(error)
-            }
-        }
-    } else {
-        Err(error)
-    }
+fn parse_resource_spec(i: usize, ty: &Type, arg: &str) -> Result<ResourceAmount, BuildArgsError> {
+    ResourceAmount::from_str(arg)
+        .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))
 }

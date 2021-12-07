@@ -4,8 +4,7 @@ use radix_engine::transaction::*;
 use crate::ledger::*;
 use crate::resim::*;
 
-const ARG_AMOUNT: &str = "AMOUNT";
-const ARG_RESOURCE_ADDRESS: &str = "RESOURCE_ADDRESS";
+const ARG_RESOURCE: &str = "RESOURCE";
 const ARG_RECIPIENT_ADDRESS: &str = "RECIPIENT_ADDRESS";
 
 const ARG_TRACE: &str = "TRACE";
@@ -17,13 +16,8 @@ pub fn make_transfer<'a, 'b>() -> App<'a, 'b> {
         .about("Transfers resource to another account")
         .version(crate_version!())
         .arg(
-            Arg::with_name(ARG_AMOUNT)
-                .help("Specify the amount to transfer.")
-                .required(true),
-        )
-        .arg(
-            Arg::with_name(ARG_RESOURCE_ADDRESS)
-                .help("Specify the resource definition address.")
+            Arg::with_name(ARG_RESOURCE)
+                .help("Specify the resource to transfer, e.g. \"amount,resource_address\" or \"#nft_id1,#nft_id2,..,resource_address\".")
                 .required(true),
         )
         .arg(
@@ -47,8 +41,7 @@ pub fn make_transfer<'a, 'b>() -> App<'a, 'b> {
 
 /// Handles a `transfer` request.
 pub fn handle_transfer(matches: &ArgMatches) -> Result<(), Error> {
-    let amount = match_amount(matches, ARG_AMOUNT)?;
-    let resource_address = match_address(matches, ARG_RESOURCE_ADDRESS)?;
+    let resource = match_resource(matches, ARG_RESOURCE)?;
     let recipient = match_address(matches, ARG_RECIPIENT_ADDRESS)?;
     let trace = matches.is_present(ARG_TRACE);
     let signers = match_signers(matches, ARG_SIGNERS)?;
@@ -58,13 +51,7 @@ pub fn handle_transfer(matches: &ArgMatches) -> Result<(), Error> {
     let mut ledger = FileBasedLedger::with_bootstrap(get_data_dir()?);
     let mut executor = TransactionExecutor::new(&mut ledger, configs.current_epoch, configs.nonce);
     let transaction = TransactionBuilder::new(&executor)
-        .withdraw_from_account(
-            &ResourceSpec::Fungible {
-                amount: amount,
-                resource_address: resource_address,
-            },
-            account.0,
-        )
+        .withdraw_from_account(&resource, account.0)
         .drop_all_bucket_refs()
         .deposit_all_buckets(recipient)
         .build(signers)

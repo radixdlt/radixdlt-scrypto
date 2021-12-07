@@ -93,7 +93,7 @@ impl ResourceBuilder {
     pub fn initial_supply_non_fungible<T, V>(&self, entries: T) -> Bucket
     where
         T: IntoIterator<Item = (u128, V)>,
-        V: NftData
+        V: NftData,
     {
         self.build(Some(NewSupply::non_fungible(entries)))
             .1
