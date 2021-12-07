@@ -5,6 +5,7 @@ use crate::kernel::*;
 use crate::resource::*;
 use crate::rust::borrow::ToOwned;
 use crate::rust::vec;
+use crate::rust::vec::Vec;
 use crate::types::*;
 
 /// Represents a reference to a bucket.
@@ -61,6 +62,21 @@ impl BucketRef {
     /// Returns the resource definition address.
     pub fn resource_address(&self) -> Address {
         self.resource_def().address()
+    }
+
+    /// Get the NFT ids in the referenced bucket.
+    pub fn get_nft_ids(&self) -> Vec<u128> {
+        let input = GetNftIdsInBucketRefInput { rid: self.rid };
+        let output: GetNftIdsInBucketRefOutput = call_kernel(GET_NFT_IDS_IN_BUCKET_REF, input);
+
+        output.ids
+    }
+
+    /// Get the NFT id and panic if not singleton.
+    pub fn get_nft_id(&self) -> u128 {
+        let ids = self.get_nft_ids();
+        assert!(ids.len() == 1, "Expect 1 NFT, but found {}", ids.len());
+        ids[0]
     }
 
     /// Destroys this reference.

@@ -139,6 +139,13 @@ impl Bucket {
         output.ids
     }
 
+    /// Get the NFT id and panic if not singleton.
+    pub fn get_nft_id(&self) -> u128 {
+        let ids = self.get_nft_ids();
+        assert!(ids.len() == 1, "Expect 1 NFT, but found {}", ids.len());
+        ids[0]
+    }
+
     /// Returns the data of an NFT unit, both the immutable and mutable parts.
     ///
     /// # Panics

@@ -100,6 +100,8 @@ pub const DROP_BUCKET_REF: u32 = 0x61;
 pub const GET_BUCKET_REF_AMOUNT: u32 = 0x62;
 /// Get the resource definition behind a bucket ref
 pub const GET_BUCKET_REF_RESOURCE_DEF: u32 = 0x63;
+/// Get the NFT ids in the bucket referenced
+pub const GET_NFT_IDS_IN_BUCKET_REF: u32 = 0x64;
 
 /// Log a message
 pub const EMIT_LOG: u32 = 0xf0;
@@ -567,6 +569,16 @@ pub struct GetBucketRefResourceAddressInput {
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct GetBucketRefResourceAddressOutput {
     pub resource_address: Address,
+}
+
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
+pub struct GetNftIdsInBucketRefInput {
+    pub rid: Rid,
+}
+
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
+pub struct GetNftIdsInBucketRefOutput {
+    pub ids: Vec<u128>,
 }
 
 //=======

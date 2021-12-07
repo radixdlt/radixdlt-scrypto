@@ -1719,6 +1719,23 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         })
     }
 
+    fn handle_get_nft_ids_in_bucket_ref(
+        &mut self,
+        input: GetNftIdsInBucketRefInput,
+    ) -> Result<GetNftIdsInBucketRefOutput, RuntimeError> {
+        let bucket_ref = self
+            .bucket_refs
+            .get(&input.rid)
+            .ok_or(RuntimeError::BucketRefNotFound(input.rid))?;
+
+        Ok(GetNftIdsInBucketRefOutput {
+            ids: bucket_ref
+                .bucket()
+                .get_nft_ids()
+                .map_err(RuntimeError::BucketError)?,
+        })
+    }
+
     fn handle_emit_log(&mut self, input: EmitLogInput) -> Result<EmitLogOutput, RuntimeError> {
         self.track.add_log(input.level, input.message);
 
@@ -1857,6 +1874,9 @@ impl<'r, 'l, L: Ledger> Externals for Process<'r, 'l, L> {
                     GET_BUCKET_REF_AMOUNT => self.handle(args, Self::handle_get_bucket_ref_amount),
                     GET_BUCKET_REF_RESOURCE_DEF => {
                         self.handle(args, Self::handle_get_bucket_ref_resource_def)
+                    }
+                    GET_NFT_IDS_IN_BUCKET_REF => {
+                        self.handle(args, Self::handle_get_nft_ids_in_bucket_ref)
                     }
 
                     EMIT_LOG => self.handle(args, Self::handle_emit_log),
