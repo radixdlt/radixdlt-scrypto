@@ -15,8 +15,8 @@ pub trait NftData {
     fn mutable_data(&self) -> Vec<u8>;
 
     /// Returns the schema of the immutable data.
-    fn immutable_data_schema(&self) -> Type;
+    fn immutable_data_schema() -> Type;
 
     /// Returns the schema of the mutable data.
-    fn mutable_data_schema(&self) -> Type;
+    fn mutable_data_schema() -> Type;
 }

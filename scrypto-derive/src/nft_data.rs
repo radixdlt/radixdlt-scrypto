@@ -109,7 +109,7 @@ pub fn handle_nft_data(input: TokenStream) -> Result<TokenStream> {
                             encoder.into()
                         }
 
-                        fn immutable_data_schema(&self) -> ::sbor::describe::Type {
+                        fn immutable_data_schema() -> ::sbor::describe::Type {
                             use ::sbor::rust::borrow::ToOwned;
                             use ::sbor::rust::vec;
                             use ::sbor::Describe;
@@ -122,7 +122,7 @@ pub fn handle_nft_data(input: TokenStream) -> Result<TokenStream> {
                             }
                         }
 
-                        fn mutable_data_schema(&self) -> ::sbor::describe::Type {
+                        fn mutable_data_schema() -> ::sbor::describe::Type {
                             use ::sbor::rust::borrow::ToOwned;
                             use ::sbor::rust::vec;
                             use ::sbor::Describe;
@@ -222,7 +222,7 @@ mod tests {
                         self.field_2.encode(&mut encoder);
                         encoder.into()
                     }
-                    fn immutable_data_schema(&self) -> ::sbor::describe::Type {
+                    fn immutable_data_schema() -> ::sbor::describe::Type {
                         use ::sbor::rust::borrow::ToOwned;
                         use ::sbor::rust::vec;
                         use ::sbor::Describe;
@@ -233,7 +233,7 @@ mod tests {
                             },
                         }
                     }
-                    fn mutable_data_schema(&self) -> ::sbor::describe::Type {
+                    fn mutable_data_schema() -> ::sbor::describe::Type {
                         use ::sbor::rust::borrow::ToOwned;
                         use ::sbor::rust::vec;
                         use ::sbor::Describe;

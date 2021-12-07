@@ -20,7 +20,7 @@ fn test_nft_data() {
         Sample::decode(&instance.immutable_data(), &instance.mutable_data()).unwrap();
     assert_eq!(instance_decoded, instance);
 
-    let immutable_data_schema = instance.immutable_data_schema();
+    let immutable_data_schema = Sample::immutable_data_schema();
     assert_eq!(
         immutable_data_schema,
         Type::Struct {
@@ -31,7 +31,7 @@ fn test_nft_data() {
         }
     );
 
-    let mutable_data_schema = instance.mutable_data_schema();
+    let mutable_data_schema = Sample::mutable_data_schema();
     assert_eq!(
         mutable_data_schema,
         Type::Struct {
