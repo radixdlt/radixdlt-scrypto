@@ -53,7 +53,11 @@ impl NewSupply {
         }
     }
 
-    pub fn non_fungible<T: NftData, const N: usize>(entries: [(u128, T); N]) -> Self {
+    pub fn non_fungible<T, V>(entries: T) -> Self
+    where
+        T: IntoIterator<Item = (u128, V)>,
+        V: NftData,
+    {
         let mut encoded = HashMap::new();
         for (id, e) in entries {
             encoded.insert(id, (e.immutable_data(), e.mutable_data()));

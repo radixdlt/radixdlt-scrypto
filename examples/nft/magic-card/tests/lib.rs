@@ -13,32 +13,42 @@ fn test_hello() {
 
     // Test the `new` function.
     let transaction1 = TransactionBuilder::new(&executor)
-        .call_function(package, "HelloNft", "new", vec!["5".to_owned()], None)
-        .drop_all_bucket_refs()
-        .deposit_all_buckets(account)
+        .call_function(package, "HelloNft", "new", vec![], None)
         .build(vec![key])
         .unwrap();
-    let receipt1 = executor.run(transaction1, true).unwrap();
+    let receipt1 = executor.run(transaction1, false).unwrap();
     println!("{:?}\n", receipt1);
     assert!(receipt1.success);
 
-    // Test the `buy_ticket` method.
+    // Test the `buy_special_card` method.
     let component = receipt1.component(0).unwrap();
     let transaction2 = TransactionBuilder::new(&executor)
         .call_method(
             component,
-            "buy_ticket",
-            vec![
-                "19263377484785923007266988645735551278".to_owned(),
-                "10,030000000000000000000000000000000000000000000000000004".to_owned(),
-            ],
+            "buy_special_card",
+            vec!["2".to_owned(), format!("666,{}", RADIX_TOKEN)],
             Some(account),
         )
-        .drop_all_bucket_refs()
         .deposit_all_buckets(account)
         .build(vec![key])
         .unwrap();
-    let receipt2 = executor.run(transaction2, true).unwrap();
+    let receipt2 = executor.run(transaction2, false).unwrap();
     println!("{:?}\n", receipt2);
     assert!(receipt2.success);
+
+    // Test the `buy_special_card` method.
+    let component = receipt1.component(0).unwrap();
+    let transaction3 = TransactionBuilder::new(&executor)
+        .call_method(
+            component,
+            "buy_random_card",
+            vec![format!("1000,{}", RADIX_TOKEN)],
+            Some(account),
+        )
+        .deposit_all_buckets(account)
+        .build(vec![key])
+        .unwrap();
+    let receipt3 = executor.run(transaction3, false).unwrap();
+    println!("{:?}\n", receipt3);
+    assert!(receipt3.success);
 }

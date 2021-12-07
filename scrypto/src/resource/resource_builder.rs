@@ -90,10 +90,11 @@ impl ResourceBuilder {
     ///         (2, "another_immutable_part", "another_mutable_part"),
     ///     ]);
     /// ```
-    pub fn initial_supply_non_fungible<T: NftData, const N: usize>(
-        &self,
-        entries: [(u128, T); N],
-    ) -> Bucket {
+    pub fn initial_supply_non_fungible<T, V>(&self, entries: T) -> Bucket
+    where
+        T: IntoIterator<Item = (u128, V)>,
+        V: NftData
+    {
         self.build(Some(NewSupply::non_fungible(entries)))
             .1
             .unwrap()
