@@ -49,8 +49,6 @@ Language for building DeFi apps on Radix.
     ./doc.sh
     ```
 
-**Note:** For preview release, do not delete or move the repository after installation. It will be used when resolving dependencies of Scrypto packages.
-
 ## Getting Started
 
 If you want a quick walkthrough of how to deploy and run some code, please see the [First Steps](./tutorials/tutorial-01.md) tutorial. If you prefer to soldier through on your own, keep reading below.
