@@ -6,7 +6,8 @@ blueprint! {
         internal_authority: Vault,
         collected_xrd: Vault,
         current_stage: u8,
-        admin_badge_def: ResourceDef
+        admin_badge_def: ResourceDef,
+        freeze_badge_def: ResourceDef,
     }
 
     impl RegulatedToken {
@@ -29,7 +30,7 @@ blueprint! {
                 .flags(FREELY_BURNABLE)
                 .initial_supply_fungible(1);
 
-            // Next we will create our regulated token with an initial supply of 100 and the appropriate flags and permissions
+            // Next we will create our regulated token with an initial fixed supply of 100 and the appropriate flags and permissions
             let my_bucket: Bucket = ResourceBuilder::new_fungible(0)
                 .metadata("name", "Regulo")
                 .metadata("symbol", "REG")
@@ -56,6 +57,7 @@ blueprint! {
                 collected_xrd: Vault::new(RADIX_TOKEN),
                 current_stage: 1,
                 admin_badge_def: general_admin.resource_def(),
+                freeze_badge_def: freeze_admin.resource_def(),
             }
             .instantiate();
 
@@ -66,39 +68,29 @@ blueprint! {
             (component, general_admin, freeze_admin)
         }
 
-        pub fn toggle_transfer_freeze(&self, badge: Bucket, set_frozen: bool) -> Bucket {
-            // We don't need to check that the input badge has the correct permissions, the operation will fail if not
-            // The operation will also fail if the token has reached stage 3 and the RESTRICTED_TRANSFER flag has become immutably disabled
+        /// Either the general admin or freeze admin badge may be used to freeze or unfreeze consumer transfers of the supply
+        #[auth(admin_badge_def, freeze_badge_def, keep_auth)]
+        pub fn toggle_transfer_freeze(&self, set_frozen: bool) {
+            // Because we used "keep_auth" in our authorization macro above, we can refer to the incoming badge as "auth"
+            // Note that this operation will fail if the token has reached stage 3 and the RESTRICTED_TRANSFER flag has become immutably disabled
             let token_def = self.token_supply.resource_def();
             if set_frozen {
-                badge.authorize(
-                    |auth| token_def.enable_flags(RESTRICTED_TRANSFER, auth)
-                );
+                token_def.enable_flags(RESTRICTED_TRANSFER, auth);
             }
             else {
-                badge.authorize(
-                    |auth| token_def.disable_flags(RESTRICTED_TRANSFER, auth)
-                );
+                token_def.disable_flags(RESTRICTED_TRANSFER, auth);
             }     
-            
-            badge
         }
 
         pub fn get_current_stage(&self) -> u8 {
             self.current_stage
         }
         
-        pub fn advance_stage(&mut self, badge: Bucket) -> Option<Bucket> {
-            if self.current_stage > 2 {
-                panic!("Already at final stage");
-            }
-            if badge.resource_def() != self.admin_badge_def {
-                panic!("Incorrect badge sent!");
-            }
-            // Technically, this check for quantity is not strictly required, since we will are about to attempt to use the badge for authorizing changes            
-            if badge.is_empty() {
-                panic!("You cannot send an empty bucket for the admin badge");
-            }
+        pub fn advance_stage(&mut self, badge: Bucket) -> Option<Bucket> {            
+            assert!(self.current_stage <= 2, "Already at final stage");            
+            assert!(badge.resource_def() == self.admin_badge_def, "Incorrect badge sent!");
+            // Technically, this check for quantity is not strictly required, since we are about to attempt to use the badge for authorizing changes            
+            assert!(!badge.is_empty(), "You cannot send an empty bucket for the admin badge");
 
             if self.current_stage == 1 {
                 // Advance to stage 2                
@@ -119,6 +111,7 @@ blueprint! {
                     |auth| token_def.enable_flags(MINTABLE, auth)
                 );
 
+                // Give the badge back to the caller
                 return Some(badge);
             }
             else {
@@ -147,11 +140,43 @@ blueprint! {
                 );
 
                 // With the resource flags all forever disabled and locked, our admin badges no longer have any use
-                // Burn the ones we can currently access (they are all FREELY_BURNABLE and require no authority)
+                // Burn the ones we can currently access (they are all FREELY_BURNABLE and require no authority)                
                 badge.burn(None);
                 self.internal_authority.take_all().burn(None);
-                
+
+                // We destroyed the caller's now-useless badge, so there's nothing to return
                 return None;
+            }
+        }
+
+        /// Buy a quantity of tokens, if the supply on-hand is sufficient, or if current rules permit minting additional supply
+        pub fn buy_token(&mut self, quantity: Decimal, payment: Bucket) -> (Bucket, Bucket) {
+            assert!(quantity > 0.into(), "Can't sell you nothing or less than nothing");
+            // Early birds who buy during stage 1 get a discounted rate
+            let price: Decimal = if self.current_stage == 1 { 50.into() } else { 100.into() };
+            
+            // Take what we're owed
+            self.collected_xrd.put(payment.take(price * quantity));
+
+            // Can we fill the desired quantity from current supply?
+            let extra_demand = self.token_supply.amount() - quantity;
+            if extra_demand <= 0.into() {
+                // Take the required quantity, and return it along with any change
+                return (self.token_supply.take(quantity), payment);                
+            }
+            else {
+                // We will attempt to mint the shortfall
+                // If we are in stage 1 or 3, this action will fail, and it would probably be a good idea to tell the user this
+                // For the purposes of example, we will blindly attempt to mint
+                let tokens = self.internal_authority.authorize(
+                    |auth| self.token_supply.resource_def().mint(extra_demand, auth)
+                );
+                
+                // Combine the new tokens with whatever was left in supply to meet the full quantity
+                tokens.put(self.token_supply.take_all());
+
+                // Return the tokens, along with any change
+                return (tokens, payment);
             }
         }
     }
