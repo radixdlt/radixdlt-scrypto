@@ -61,12 +61,12 @@ blueprint! {
                 for number in 1..10 {
                     let ticket = Ticket {
                         section: Section::Luxury,
-                        seat: format!("{}{}", letter, number),
+                        seat: Some(format!("{}{}", letter, number)),
                         prediction: Team::Home,
                     };
                     ticket_bucket.put(
                         my_admin.authorize(
-                            |auth| my_nft_def.mint_nft(manual_id, ticket, auth)
+                            |auth| ticket_bucket.resource_def().mint_nft(manual_id, ticket, auth)
                         )
                     );
                     manual_id += 1;
@@ -83,7 +83,7 @@ blueprint! {
                 };
                 ticket_bucket.put(
                     my_admin.authorize(
-                        |auth| my_nft_def.mint_nft(manual_id, ticket, auth)
+                        |auth| ticket_bucket.resource_def().mint_nft(manual_id, ticket, auth)
                     )
                 );
             }
@@ -146,7 +146,7 @@ blueprint! {
         /// Purchases a Luxury ticket with a specific desired seat, switching the prediction if appropriate, and returns it along with any change
         pub fn buy_luxury_ticket(&mut self, seat: String, will_home_team_win: bool, payment: Bucket) -> (Bucket, Bucket) {
             self.collected_xrd.put(payment.take(self.price_luxury));
-            let nft_bucket = self.get_ticket(Section::Luxury, seat);
+            let nft_bucket = self.get_ticket(Section::Luxury, Some(seat));
             if !will_home_team_win {
                 return (self.switch_nft_prediction(nft_bucket), payment);
             }
