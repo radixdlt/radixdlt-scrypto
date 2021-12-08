@@ -68,8 +68,7 @@ pub fn handle_auth(attr: TokenStream, item: TokenStream) -> Result<TokenStream> 
                 panic!("Auth check failure")
             }
 
-            let func = || #f_body ;
-            let output = func();
+            let output = (|| #f_body )();
             #drop
             output
         }
@@ -107,10 +106,9 @@ mod tests {
                     if !(auth.contains(self.foo.clone()) || auth.contains(self.bar.clone())) {
                         panic!("Auth check failure")
                     }
-                    let func = || {
+                    let output = (|| {
                         self.a
-                    };
-                    let output = func();
+                    })();
                     auth.drop();
                     output
                 }
@@ -131,11 +129,10 @@ mod tests {
                     if !(auth.contains(self.foo.clone())) {
                         panic!("Auth check failure")
                     }
-                    let func = || {
+                    let output = (|| {
                         auth.drop();
                         self.a
-                    };
-                    let output = func();
+                    })();
                     output
                 }
             },
