@@ -98,8 +98,7 @@ blueprint! {
                 let token_def = self.token_supply.resource_def();
 
                 // Update token's metadata to reflect the current stage
-                let mut metadata = token_def.metadata();                
-                metadata.remove("stage");
+                let mut metadata = token_def.metadata();
                 metadata.insert("stage".into(), "Stage 2 - Unlimited supply, may be restricted transfer".into());
                 badge.authorize(
                     |auth| token_def.update_metadata(metadata, auth)
@@ -122,7 +121,6 @@ blueprint! {
 
                 // Update token's metadata to reflect the final stage
                 let mut metadata = token_def.metadata();                
-                metadata.remove("stage");
                 metadata.insert("stage".into(), "Stage 3 - Unregulated token, fixed supply".into());
                 badge.authorize(
                     |auth| token_def.update_metadata(metadata, auth)
