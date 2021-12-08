@@ -24,7 +24,7 @@ blueprint! {
                 .flags(FREELY_BURNABLE)
                 .initial_supply_fungible(1);
 
-            // Next we will create an internal minting authority badge
+            // Next we will create a badge we'll hang on to for minting & transfer authority
             let internal_admin: Bucket = ResourceBuilder::new_fungible(18)
                 .metadata("name","RegulatedToken internal authority badge")
                 .flags(FREELY_BURNABLE)
@@ -61,8 +61,7 @@ blueprint! {
             }
             .instantiate();
 
-            // Note that the freeze badge actually has the ability to modify *both* of the mutable flags we set, not just RESTRICTED_TRANSFER.
-            //
+            // Note that the freeze badge actually has the ability to modify *all* of the mutable flags, not just RESTRICTED_TRANSFER.
             // In a real system, if we wanted the recipient to only have the ability to modify a single flag, we could hang on to the real badge
             // within our component, and issue something that grants the bearer the right to call a method which uses the real badge to modify the flag
             (component, general_admin, freeze_admin)
@@ -178,6 +177,7 @@ blueprint! {
                 );
                 
                 // Combine the new tokens with whatever was left in supply to meet the full quantity
+                // TODO - take using authority
                 tokens.put(self.token_supply.take_all());
 
                 // Return the tokens, along with any change
