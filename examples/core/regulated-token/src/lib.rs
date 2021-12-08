@@ -149,7 +149,8 @@ blueprint! {
             }
         }
 
-        /// Buy a quantity of tokens, if the supply on-hand is sufficient, or if current rules permit minting additional supply
+        /// Buy a quantity of tokens, if the supply on-hand is sufficient, or if current rules permit minting additional supply.
+        /// The system will *always* allow buyers to purchase available tokens, even when the token transfers are otherwise frozen
         pub fn buy_token(&mut self, quantity: Decimal, payment: Bucket) -> (Bucket, Bucket) {
             assert!(quantity > 0.into(), "Can't sell you nothing or less than nothing");
             // Early birds who buy during stage 1 get a discounted rate
@@ -162,6 +163,10 @@ blueprint! {
             let extra_demand = self.token_supply.amount() - quantity;
             if extra_demand <= 0.into() {
                 // Take the required quantity, and return it along with any change
+                // The token may currently be under restricted transfer, so we will authorize our withdrawal
+                // let tokens = self.internal_authority.authorize(
+                //     |auth| self.token_supply.take_with_auth(quantity, auth)
+                // );
                 return (self.token_supply.take(quantity), payment);                
             }
             else {
