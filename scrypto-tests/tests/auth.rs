@@ -32,6 +32,15 @@ blueprint! {
         pub fn airdrop(&self) -> Bucket {
             self.reserves.take(1)
         }
+
+        #[auth(admin, user)]
+        pub fn airdrop_mut(&mut self) -> Bucket {
+            return self.mut_take(); // tests both return and &mut self with auth
+        }
+
+        fn mut_take(&mut self) -> Bucket {
+            self.reserves.take(1)
+        }
     }
 }
 
@@ -93,6 +102,22 @@ fn test_simple_auth() {
                 {
                     "name": "airdrop",
                     "mutability": "Immutable",
+                    "inputs": [
+                        {
+                            "type": "Custom",
+                            "name": "scrypto::resource::BucketRef",
+                            "generics": []
+                        }
+                    ],
+                    "output": {
+                        "type": "Custom",
+                        "name": "scrypto::resource::Bucket",
+                        "generics": []
+                    }
+                },
+                {
+                    "name": "airdrop_mut",
+                    "mutability": "Mutable",
                     "inputs": [
                         {
                             "type": "Custom",
