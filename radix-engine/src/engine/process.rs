@@ -471,7 +471,9 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         for (rid, bucket_ref) in &self.temp_bucket_refs {
             re_warn!(
                 self,
-                "Dangling temp bucket ref: {:?}, {:?}", rid, bucket_ref
+                "Dangling temp bucket ref: {:?}, {:?}",
+                rid,
+                bucket_ref
             );
             success = false;
         }
@@ -942,7 +944,9 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
             self.process_data(&input.state, Self::reject_buckets, Self::reject_bucket_refs)?;
         re_debug!(
             self,
-            "New component: address = {:?}, state = {:?}", component_address, new_state
+            "New component: address = {:?}, state = {:?}",
+            component_address,
+            new_state
         );
 
         let component = Component::new(self.package()?, input.blueprint_name, new_state);
@@ -1767,7 +1771,9 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         let new_rid = self.track.new_rid();
         re_debug!(
             self,
-            "Cloning: rid = {:?}, new rid = {:?}", input.rid, new_rid
+            "Cloning: rid = {:?}, new rid = {:?}",
+            input.rid,
+            new_rid
         );
 
         self.bucket_refs.insert(new_rid, bucket_ref);

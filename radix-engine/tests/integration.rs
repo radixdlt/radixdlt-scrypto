@@ -208,6 +208,21 @@ fn test_bucket() {
         .call_function(package, "BucketTest", "split", vec![], Some(account))
         .call_function(package, "BucketTest", "borrow", vec![], Some(account))
         .call_function(package, "BucketTest", "query", vec![], Some(account))
+        .call_function(
+            package,
+            "BucketTest",
+            "test_restricted_transfer",
+            vec![],
+            Some(account),
+        )
+        .call_function(package, "BucketTest", "test_burn", vec![], Some(account))
+        .call_function(
+            package,
+            "BucketTest",
+            "test_burn_freely",
+            vec![],
+            Some(account),
+        )
         .drop_all_bucket_refs()
         .deposit_all_buckets(account)
         .build(vec![key])
