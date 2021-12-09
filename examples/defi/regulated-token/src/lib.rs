@@ -75,21 +75,22 @@ blueprint! {
             let token_def = self.token_supply.resource_def();
             if set_frozen {
                 token_def.enable_flags(RESTRICTED_TRANSFER, auth);
+                info!("Token transfer is now RESTRICTED");
             }
             else {
                 token_def.disable_flags(RESTRICTED_TRANSFER, auth);
+                info!("Token is now freely transferrable");
             }     
         }
 
         pub fn get_current_stage(&self) -> u8 {
+            info!("Current stage is {}", self.current_stage);
             self.current_stage
         }
         
-        pub fn advance_stage(&mut self, badge: Bucket) -> Option<Bucket> {            
-            assert!(self.current_stage <= 2, "Already at final stage");            
-            assert!(badge.resource_def() == self.admin_badge_def, "Incorrect badge sent!");
-            // Technically, this check for quantity is not strictly required, since we are about to attempt to use the badge for authorizing changes            
-            assert!(!badge.is_empty(), "You cannot send an empty bucket for the admin badge");
+        #[auth(admin_badge_def, keep_auth)]
+        pub fn advance_stage(&mut self) {            
+            assert!(self.current_stage <= 2, "Already at final stage");
 
             if self.current_stage == 1 {
                 // Advance to stage 2                
@@ -100,17 +101,12 @@ blueprint! {
                 // Update token's metadata to reflect the current stage
                 let mut metadata = token_def.metadata();
                 metadata.insert("stage".into(), "Stage 2 - Unlimited supply, may be restricted transfer".into());
-                badge.authorize(
-                    |auth| token_def.update_metadata(metadata, auth)
-                );
+                token_def.update_metadata(metadata, auth.clone());
 
-                // Enable minting for the token
-                badge.authorize(
-                    |auth| token_def.enable_flags(MINTABLE, auth)
-                );
-
-                // Give the badge back to the caller
-                return Some(badge);
+                info!("Made 3");
+                // Enable minting for the token                
+                token_def.enable_flags(MINTABLE, auth.clone());
+                info!("Advanced to stage 2");
             }
             else {
                 // Advance to stage 3
@@ -122,28 +118,23 @@ blueprint! {
                 // Update token's metadata to reflect the final stage
                 let mut metadata = token_def.metadata();                
                 metadata.insert("stage".into(), "Stage 3 - Unregulated token, fixed supply".into());
-                badge.authorize(
-                    |auth| token_def.update_metadata(metadata, auth)
-                );
+                token_def.update_metadata(metadata, auth.clone());
 
                 // Set our flags appropriately now that the regulated period has ended
-                badge.authorize(
-                    |auth| token_def.disable_flags(MINTABLE | RESTRICTED_TRANSFER | SHARED_METADATA_MUTABLE, auth)
-                );
+                token_def.disable_flags(MINTABLE | RESTRICTED_TRANSFER | SHARED_METADATA_MUTABLE, auth.clone());
 
                 // Permanently prevent the flags from changing
-                badge.authorize(
-                    |auth| token_def.lock_flags(ALL_FLAGS, auth)
-                );
+                token_def.lock_flags(ALL_FLAGS, auth.clone());
 
                 // With the resource flags all forever disabled and locked, our admin badges no longer have any use
-                // Burn the ones we can currently access (they are all FREELY_BURNABLE and require no authority)                
-                badge.burn(None);
+                // We will burn our internal badge, and the holders of the other badges may burn them at will
+                // It has the FREELY_BURNABLE flag, so there's no need to provide a burning authority           
                 self.internal_authority.take_all().burn(None);
-
-                // We destroyed the caller's now-useless badge, so there's nothing to return
-                return None;
+                info!("Advanced to stage 3");
             }
+
+            // since we used "auth.clone() every time, we must manually drop "auth"
+            auth.drop();
         }
 
         /// Buy a quantity of tokens, if the supply on-hand is sufficient, or if current rules permit minting additional supply.
@@ -157,14 +148,14 @@ blueprint! {
             self.collected_xrd.put(payment.take(price * quantity));
 
             // Can we fill the desired quantity from current supply?
-            let extra_demand = self.token_supply.amount() - quantity;
+            let extra_demand = quantity - self.token_supply.amount();
             if extra_demand <= 0.into() {
                 // Take the required quantity, and return it along with any change
                 // The token may currently be under restricted transfer, so we will authorize our withdrawal
-                // let tokens = self.internal_authority.authorize(
-                //     |auth| self.token_supply.take_with_auth(quantity, auth)
-                // );
-                return (self.token_supply.take(quantity), payment);                
+                let tokens = self.internal_authority.authorize(
+                    |auth| self.token_supply.take_with_auth(quantity, auth)
+                );
+                return (tokens, payment);                
             }
             else {
                 // We will attempt to mint the shortfall
@@ -175,8 +166,10 @@ blueprint! {
                 );
                 
                 // Combine the new tokens with whatever was left in supply to meet the full quantity
-                // TODO - take using authority
-                tokens.put(self.token_supply.take_all());
+                let existing_tokens = self.internal_authority.authorize(
+                    |auth| self.token_supply.take_all_with_auth(auth)
+                );
+                tokens.put(existing_tokens);
 
                 // Return the tokens, along with any change
                 return (tokens, payment);
