@@ -1,4 +1,4 @@
-/// (Not implemented) May transfer owned resources.
+/// May transfer owned resources.
 pub const MAY_TRANSFER: u16 = 1u16 << 0;
 
 /// May burn owned resources.

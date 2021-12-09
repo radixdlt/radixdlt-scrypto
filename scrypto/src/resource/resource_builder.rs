@@ -75,6 +75,13 @@ impl ResourceBuilder {
     }
 
     /// Creates resource with the given initial fungible supply.
+    ///
+    /// # Example
+    /// ```ignore
+    /// let bucket = ResourceBuilder::new_fungible()
+    ///     .metadata("name", "TestToken")
+    ///     .initial_supply_fungible(5);
+    /// ```
     pub fn initial_supply_fungible<T: Into<Decimal>>(&self, amount: T) -> Bucket {
         self.build(Some(NewSupply::fungible(amount))).1.unwrap()
     }

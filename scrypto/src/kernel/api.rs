@@ -406,6 +406,7 @@ pub struct PutIntoVaultOutput {}
 pub struct TakeFromVaultInput {
     pub vid: Vid,
     pub amount: Decimal,
+    pub auth: Option<Rid>,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
@@ -437,6 +438,7 @@ pub struct GetVaultResourceAddressOutput {
 pub struct TakeNftFromVaultInput {
     pub vid: Vid,
     pub id: u128,
+    pub auth: Option<Rid>,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
