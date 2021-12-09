@@ -124,7 +124,7 @@ impl Bucket {
         output
             .ids
             .iter()
-            .map(|id| Nft::new(resource_address, *id))
+            .map(|id| Nft::from((resource_address, *id)))
             .collect()
     }
 

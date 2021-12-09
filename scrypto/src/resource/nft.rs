@@ -10,15 +10,17 @@ pub struct Nft<T: NftData> {
     data: PhantomData<T>,
 }
 
-impl<T: NftData> Nft<T> {
-    pub fn new(resource_address: Address, id: u128) -> Self {
+impl<T: NftData> From<(Address, u128)> for Nft<T> {
+    fn from(tuple: (Address, u128)) -> Self {
         Self {
-            resource_address,
-            id,
+            resource_address: tuple.0,
+            id: tuple.1,
             data: PhantomData,
         }
     }
+}
 
+impl<T: NftData> Nft<T> {
     /// Returns the resource address.
     pub fn resource_address(&self) -> Address {
         self.resource_address
