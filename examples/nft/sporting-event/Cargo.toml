@@ -4,11 +4,11 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-sbor = { path = "/Users/russellharvey/code/radixdlt-scrypto/sbor" }
-scrypto = { path = "/Users/russellharvey/code/radixdlt-scrypto/scrypto" }
+sbor = { path = "../../../sbor" }
+scrypto = { path = "../../../scrypto" }
 
 [dev-dependencies]
-radix-engine = { path = "/Users/russellharvey/code/radixdlt-scrypto/radix-engine" }
+radix-engine = { path = "../../../radix-engine" }
 
 [profile.release]
 opt-level = 's'     # Optimize for size.
