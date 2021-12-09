@@ -58,8 +58,13 @@ blueprint! {
             }
         }
 
-         /// Withdraws resource from this account.
-         pub fn withdraw_with_auth(&mut self, amount: Decimal, resource_address: Address, auth: BucketRef) -> Bucket {
+        /// Withdraws resource from this account.
+        pub fn withdraw_with_auth(
+            &mut self,
+            amount: Decimal,
+            resource_address: Address,
+            auth: BucketRef,
+        ) -> Bucket {
             if !Context::transaction_signers().contains(&self.key) {
                 panic!("Not authorized! Make sure you sign transaction with the correct keys.",)
             }
@@ -94,8 +99,13 @@ blueprint! {
             }
         }
 
-         /// Withdraws NFTs from this account.
-         pub fn withdraw_nfts_with_auth(&mut self, ids: BTreeSet<u128>, resource_address: Address, auth: BucketRef) -> Bucket {
+        /// Withdraws NFTs from this account.
+        pub fn withdraw_nfts_with_auth(
+            &mut self,
+            ids: BTreeSet<u128>,
+            resource_address: Address,
+            auth: BucketRef,
+        ) -> Bucket {
             if !Context::transaction_signers().contains(&self.key) {
                 panic!("Not authorized! Make sure you sign transaction with the correct keys.",)
             }

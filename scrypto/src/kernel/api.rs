@@ -102,6 +102,8 @@ pub const GET_BUCKET_REF_AMOUNT: u32 = 0x62;
 pub const GET_BUCKET_REF_RESOURCE_DEF: u32 = 0x63;
 /// Get the NFT ids in the bucket referenced
 pub const GET_NFT_IDS_IN_BUCKET_REF: u32 = 0x64;
+/// Clone bucket ref
+pub const CLONE_BUCKET_REF: u32 = 0x65;
 
 /// Log a message
 pub const EMIT_LOG: u32 = 0xf0;
@@ -581,6 +583,16 @@ pub struct GetNftIdsInBucketRefInput {
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct GetNftIdsInBucketRefOutput {
     pub ids: Vec<u128>,
+}
+
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
+pub struct CloneBucketRefInput {
+    pub rid: Rid,
+}
+
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
+pub struct CloneBucketRefOutput {
+    pub rid: Rid,
 }
 
 //=======

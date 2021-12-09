@@ -1754,6 +1754,26 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         })
     }
 
+    fn handle_clone_bucket_ref(
+        &mut self,
+        input: CloneBucketRefInput,
+    ) -> Result<CloneBucketRefOutput, RuntimeError> {
+        let bucket_ref = self
+            .bucket_refs
+            .get(&input.rid)
+            .ok_or(RuntimeError::BucketRefNotFound(input.rid))?
+            .clone();
+
+        let new_rid = self.track.new_rid();
+        debug!(
+            self,
+            "Cloning: rid = {:?}, new rid = {:?}", input.rid, new_rid
+        );
+
+        self.bucket_refs.insert(new_rid, bucket_ref);
+        Ok(CloneBucketRefOutput { rid: new_rid })
+    }
+
     fn handle_emit_log(&mut self, input: EmitLogInput) -> Result<EmitLogOutput, RuntimeError> {
         self.track.add_log(input.level, input.message);
 
@@ -1896,6 +1916,7 @@ impl<'r, 'l, L: Ledger> Externals for Process<'r, 'l, L> {
                     GET_NFT_IDS_IN_BUCKET_REF => {
                         self.handle(args, Self::handle_get_nft_ids_in_bucket_ref)
                     }
+                    CLONE_BUCKET_REF => self.handle(args, Self::handle_clone_bucket_ref),
 
                     EMIT_LOG => self.handle(args, Self::handle_emit_log),
                     GET_PACKAGE_ADDRESS => self.handle(args, Self::handle_get_package_address),
