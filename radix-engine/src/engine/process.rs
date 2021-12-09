@@ -20,7 +20,7 @@ use crate::engine::*;
 use crate::ledger::*;
 use crate::model::*;
 
-macro_rules! trace {
+macro_rules! re_trace {
     ($proc:expr, $($args: expr),+) => {
         if $proc.trace {
             $proc.log(LogLevel::Trace, format!($($args),+));
@@ -28,7 +28,7 @@ macro_rules! trace {
     };
 }
 
-macro_rules! debug {
+macro_rules! re_debug {
     ($proc:expr, $($args: expr),+) => {
         if $proc.trace {
             $proc.log(LogLevel::Debug, format!($($args),+));
@@ -36,7 +36,7 @@ macro_rules! debug {
     };
 }
 
-macro_rules! info {
+macro_rules! re_info {
     ($proc:expr, $($args: expr),+) => {
         if $proc.trace {
             $proc.log(LogLevel::Info, format!($($args),+));
@@ -44,7 +44,7 @@ macro_rules! info {
     };
 }
 
-macro_rules! warn {
+macro_rules! re_warn {
     ($proc:expr, $($args: expr),+) => {
         if $proc.trace {
             $proc.log(LogLevel::Warn, format!($($args),+));
@@ -153,7 +153,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
             }
             let available = self.buckets.get(&candidate).unwrap().amount();
             if available > needed {
-                debug!(self, "Withdrawing {:?} from {:?}", needed, candidate);
+                re_debug!(self, "Withdrawing {:?} from {:?}", needed, candidate);
                 collector
                     .put(
                         self.buckets
@@ -165,7 +165,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
                     .map_err(RuntimeError::BucketError)?;
                 needed = Decimal::zero();
             } else {
-                debug!(self, "Withdrawing all from {:?}", candidate);
+                re_debug!(self, "Withdrawing all from {:?}", candidate);
                 collector
                     .put(self.buckets.remove(&candidate).unwrap())
                     .map_err(RuntimeError::BucketError)?;
@@ -187,7 +187,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         resource_address: Address,
         bid: Bid,
     ) -> Result<(), RuntimeError> {
-        debug!(
+        re_debug!(
             self,
             "Creating bucket: amount = {:?}, resource_address = {:?}, bid = {:?}",
             amount,
@@ -212,7 +212,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         resource_address: Address,
         rid: Rid,
     ) -> Result<(), RuntimeError> {
-        debug!(
+        re_debug!(
             self,
             "Creating bucket ref: amount = {:?}, resource_def = {:?}, rid = {:?}",
             amount,
@@ -269,7 +269,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
     pub fn run(&mut self, invocation: Invocation) -> Result<Vec<u8>, RuntimeError> {
         #[cfg(not(feature = "alloc"))]
         let now = std::time::Instant::now();
-        info!(
+        re_info!(
             self,
             "Run started: package = {:?}, export = {:?}",
             invocation.package_address,
@@ -290,7 +290,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
 
         // run the main function
         let result = module.invoke_export(invocation.export_name.as_str(), &[], self);
-        debug!(self, "Invoke result: {:?}", result);
+        re_debug!(self, "Invoke result: {:?}", result);
         let rtn = result
             .map_err(RuntimeError::InvokeError)?
             .ok_or(RuntimeError::NoReturnData)?;
@@ -308,13 +308,13 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         };
 
         #[cfg(not(feature = "alloc"))]
-        info!(
+        re_info!(
             self,
             "Run ended: time elapsed = {} ms",
             now.elapsed().as_millis()
         );
         #[cfg(feature = "alloc")]
-        info!(self, "Run ended");
+        re_info!(self, "Run ended");
 
         Ok(output)
     }
@@ -399,7 +399,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
             .map(|v| v.bucket_id())
             .collect();
         for bid in bids {
-            debug!(self, "Changing bucket {:?} to unlocked state", bid);
+            re_debug!(self, "Changing bucket {:?} to unlocked state", bid);
             let bucket_rc = self.locked_buckets.remove(&bid).unwrap();
             let bucket = Rc::try_unwrap(bucket_rc).unwrap();
             self.buckets.insert(bid, bucket.into());
@@ -416,11 +416,11 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         function: &str,
         args: Vec<Vec<u8>>,
     ) -> Result<Vec<u8>, RuntimeError> {
-        debug!(self, "Call function started");
+        re_debug!(self, "Call function started");
         let invocation =
             self.prepare_call_function(package_address, blueprint_name, function, args)?;
         let result = self.call(invocation);
-        debug!(self, "Call function ended");
+        re_debug!(self, "Call function ended");
         result
     }
 
@@ -431,10 +431,10 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         method: &str,
         args: Vec<Vec<u8>>,
     ) -> Result<Vec<u8>, RuntimeError> {
-        debug!(self, "Call method started");
+        re_debug!(self, "Call method started");
         let invocation = self.prepare_call_method(component_address, method, args)?;
         let result = self.call(invocation);
-        debug!(self, "Call method ended");
+        re_debug!(self, "Call method ended");
         result
     }
 
@@ -444,39 +444,39 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         package_address: Address,
         blueprint_name: &str,
     ) -> Result<Vec<u8>, RuntimeError> {
-        debug!(self, "Call abi started");
+        re_debug!(self, "Call abi started");
         let invocation = self.prepare_call_abi(package_address, blueprint_name)?;
         let result = self.call(invocation);
-        debug!(self, "Call abi ended");
+        re_debug!(self, "Call abi ended");
         result
     }
 
     /// Checks resource leak.
     pub fn check_resource(&self) -> Result<(), RuntimeError> {
-        debug!(self, "Resource check started");
+        re_debug!(self, "Resource check started");
         let mut success = true;
 
         for (bid, bucket) in &self.buckets {
-            warn!(self, "Dangling bucket: {:?}, {:?}", bid, bucket);
+            re_warn!(self, "Dangling bucket: {:?}, {:?}", bid, bucket);
             success = false;
         }
         for (rid, bucket_ref) in &self.bucket_refs {
-            warn!(self, "Dangling bucket ref: {:?}, {:?}", rid, bucket_ref);
+            re_warn!(self, "Dangling bucket ref: {:?}, {:?}", rid, bucket_ref);
             success = false;
         }
         for (bid, bucket) in &self.temp_buckets {
-            warn!(self, "Dangling temp bucket: {:?}, {:?}", bid, bucket);
+            re_warn!(self, "Dangling temp bucket: {:?}, {:?}", bid, bucket);
             success = false;
         }
         for (rid, bucket_ref) in &self.temp_bucket_refs {
-            warn!(
+            re_warn!(
                 self,
                 "Dangling temp bucket ref: {:?}, {:?}", rid, bucket_ref
             );
             success = false;
         }
 
-        debug!(self, "Resource check ended");
+        re_debug!(self, "Resource check ended");
         if success {
             Ok(())
         } else {
@@ -692,7 +692,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
             .remove(&bid)
             .or_else(|| self.temp_buckets.remove(&bid))
             .ok_or(RuntimeError::BucketNotFound(bid))?;
-        debug!(self, "Moving bucket: {:?}, {:?}", bid, bucket);
+        re_debug!(self, "Moving bucket: {:?}, {:?}", bid, bucket);
         self.moving_buckets.insert(bid, bucket);
         Ok(bid)
     }
@@ -704,7 +704,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
             .remove(&rid)
             .or_else(|| self.temp_bucket_refs.remove(&rid))
             .ok_or(RuntimeError::BucketRefNotFound(rid))?;
-        debug!(self, "Moving bucket ref: {:?}, {:?}", rid, bucket_ref);
+        re_debug!(self, "Moving bucket ref: {:?}, {:?}", rid, bucket_ref);
         self.moving_bucket_refs.insert(rid, bucket_ref);
         Ok(rid)
     }
@@ -779,18 +779,18 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         let input: I = scrypto_decode(&input_bytes)
             .map_err(|e| Trap::from(RuntimeError::InvalidRequestData(e)))?;
         if input_len <= 1024 {
-            trace!(self, "{:?}", input);
+            re_trace!(self, "{:?}", input);
         } else {
-            trace!(self, "Large request: op = {:02x}, len = {}", op, input_len);
+            re_trace!(self, "Large request: op = {:02x}, len = {}", op, input_len);
         }
 
         let output: O = handler(self, input).map_err(Trap::from)?;
         let output_bytes = scrypto_encode(&output);
         let output_ptr = self.send_bytes(&output_bytes).map_err(Trap::from)?;
         if output_bytes.len() <= 1024 {
-            trace!(self, "{:?}", output);
+            re_trace!(self, "{:?}", output);
         } else {
-            trace!(
+            re_trace!(
                 self,
                 "Large response: op = {:02x}, len = {}",
                 op,
@@ -872,7 +872,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         }
         validate_module(&input.code)?;
 
-        debug!(self, "New package: {:?}", package_address);
+        re_debug!(self, "New package: {:?}", package_address);
         self.track
             .put_package(package_address, Package::new(input.code));
 
@@ -885,7 +885,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
     ) -> Result<CallFunctionOutput, RuntimeError> {
         Self::expect_package_address(input.package_address)?;
 
-        debug!(
+        re_debug!(
             self,
             "CALL started: package = {:?}, blueprint = {:?}, function = {:?}, args = {:?}",
             input.package_address,
@@ -902,7 +902,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         )?;
         let result = self.call(invocation);
 
-        debug!(self, "CALL finished");
+        re_debug!(self, "CALL finished");
         Ok(CallFunctionOutput { rtn: result? })
     }
 
@@ -912,7 +912,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
     ) -> Result<CallMethodOutput, RuntimeError> {
         Self::expect_component_address(input.component_address)?;
 
-        debug!(
+        re_debug!(
             self,
             "CALL started: component = {:?}, method = {:?}, args = {:?}",
             input.component_address,
@@ -924,7 +924,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
             self.prepare_call_method(input.component_address, input.method.as_str(), input.args)?;
         let result = self.call(invocation);
 
-        debug!(self, "CALL finished");
+        re_debug!(self, "CALL finished");
         Ok(CallMethodOutput { rtn: result? })
     }
 
@@ -940,7 +940,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
 
         let new_state =
             self.process_data(&input.state, Self::reject_buckets, Self::reject_bucket_refs)?;
-        debug!(
+        re_debug!(
             self,
             "New component: address = {:?}, state = {:?}", component_address, new_state
         );
@@ -998,7 +998,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
 
         let new_state =
             self.process_data(&input.state, Self::reject_buckets, Self::reject_bucket_refs)?;
-        debug!(self, "Transformed state: {:?}", new_state);
+        re_debug!(self, "Transformed state: {:?}", new_state);
 
         let component = self
             .track
@@ -1055,10 +1055,10 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
 
         let new_key =
             self.process_data(&input.key, Self::reject_buckets, Self::reject_bucket_refs)?;
-        debug!(self, "Transformed key: {:?}", new_key);
+        re_debug!(self, "Transformed key: {:?}", new_key);
         let new_value =
             self.process_data(&input.value, Self::reject_buckets, Self::reject_bucket_refs)?;
-        debug!(self, "Transformed value: {:?}", new_value);
+        re_debug!(self, "Transformed value: {:?}", new_value);
 
         let lazy_map = self
             .track
@@ -1117,7 +1117,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         if self.track.get_resource_def(resource_address).is_some() {
             return Err(RuntimeError::ResourceDefAlreadyExists(resource_address));
         }
-        debug!(self, "New resource definition: {:?}", resource_address);
+        re_debug!(self, "New resource definition: {:?}", resource_address);
         let definition = ResourceDef::new(
             input.resource_type,
             input.metadata,
@@ -1662,7 +1662,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
     ) -> Result<CreateBucketRefOutput, RuntimeError> {
         let bid = input.bid;
         let rid = self.track.new_rid();
-        debug!(self, "Borrowing: bid = {:?}, rid = {:?}", bid, rid);
+        re_debug!(self, "Borrowing: bid = {:?}, rid = {:?}", bid, rid);
 
         match self.locked_buckets.get_mut(&bid) {
             Some(bucket_rc) => {
@@ -1696,7 +1696,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
                 .bucket_refs
                 .remove(&rid)
                 .ok_or(RuntimeError::BucketRefNotFound(rid))?;
-            debug!(self, "Returning {:?}: {:?}", rid, bucket_ref);
+            re_debug!(self, "Returning {:?}: {:?}", rid, bucket_ref);
             (Rc::strong_count(&bucket_ref) - 1, bucket_ref.bucket_id())
         };
 
@@ -1765,7 +1765,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
             .clone();
 
         let new_rid = self.track.new_rid();
-        debug!(
+        re_debug!(
             self,
             "Cloning: rid = {:?}, new rid = {:?}", input.rid, new_rid
         );
