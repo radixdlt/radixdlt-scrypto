@@ -97,6 +97,10 @@ impl ResourceDef {
         self.total_supply
     }
 
+    pub fn is_flag_on(&self, flag: u16) -> bool {
+        self.flags() & flag == flag
+    }
+
     pub fn mint(&mut self, supply: &Supply, actor: Actor) -> Result<(), ResourceDefError> {
         self.check_mint_auth(actor)?;
 
@@ -199,53 +203,68 @@ impl ResourceDef {
         Ok(())
     }
 
+    pub fn check_take_from_vault_auth(&self, actor: Actor) -> Result<(), ResourceDefError> {
+        if !self.is_flag_on(RESTRICTED_TRANSFER) {
+            Ok(())
+        } else {
+            actor
+                .check_permission(self.authorities(), MAY_TRANSFER)
+                .then(|| ())
+                .ok_or(ResourceDefError::UnauthorizedAccess)
+        }
+    }
+
     pub fn check_mint_auth(&self, actor: Actor) -> Result<(), ResourceDefError> {
-        if self.flags() & MINTABLE != MINTABLE {
-            return Err(ResourceDefError::OperationNotAllowed);
+        if self.is_flag_on(MINTABLE) {
+            actor
+                .check_permission(self.authorities(), MAY_MINT)
+                .then(|| ())
+                .ok_or(ResourceDefError::UnauthorizedAccess)
+        } else {
+            Err(ResourceDefError::OperationNotAllowed)
         }
-        if !actor.check_permission(self.authorities(), MAY_MINT) {
-            return Err(ResourceDefError::UnauthorizedAccess);
-        }
-        Ok(())
     }
 
     pub fn check_burn_auth(&self, actor: Actor) -> Result<(), ResourceDefError> {
-        if self.flags() & FREELY_BURNABLE != FREELY_BURNABLE {
-            if self.flags() & BURNABLE != BURNABLE {
-                return Err(ResourceDefError::OperationNotAllowed);
-            }
-            if !actor.check_permission(self.authorities(), MAY_BURN) {
-                return Err(ResourceDefError::UnauthorizedAccess);
-            }
+        if self.is_flag_on(FREELY_BURNABLE) {
+            Ok(())
+        } else if self.is_flag_on(BURNABLE) {
+            actor
+                .check_permission(self.authorities(), MAY_BURN)
+                .then(|| ())
+                .ok_or(ResourceDefError::UnauthorizedAccess)
+        } else {
+            Err(ResourceDefError::OperationNotAllowed)
         }
-        Ok(())
     }
 
     pub fn check_update_nft_mutable_data_auth(&self, actor: Actor) -> Result<(), ResourceDefError> {
-        if self.flags() & INDIVIDUAL_METADATA_MUTABLE != INDIVIDUAL_METADATA_MUTABLE {
-            return Err(ResourceDefError::OperationNotAllowed);
+        if self.is_flag_on(INDIVIDUAL_METADATA_MUTABLE) {
+            actor
+                .check_permission(self.authorities(), MAY_CHANGE_INDIVIDUAL_METADATA)
+                .then(|| ())
+                .ok_or(ResourceDefError::UnauthorizedAccess)
+        } else {
+            Err(ResourceDefError::OperationNotAllowed)
         }
-        if !actor.check_permission(self.authorities(), MAY_CHANGE_INDIVIDUAL_METADATA) {
-            return Err(ResourceDefError::UnauthorizedAccess);
-        }
-        Ok(())
     }
 
     pub fn check_update_metadata_auth(&self, actor: Actor) -> Result<(), ResourceDefError> {
-        if self.flags() & SHARED_METADATA_MUTABLE != SHARED_METADATA_MUTABLE {
-            return Err(ResourceDefError::OperationNotAllowed);
+        if self.is_flag_on(SHARED_METADATA_MUTABLE) {
+            actor
+                .check_permission(self.authorities(), MAY_CHANGE_SHARED_METADATA)
+                .then(|| ())
+                .ok_or(ResourceDefError::UnauthorizedAccess)
+        } else {
+            Err(ResourceDefError::OperationNotAllowed)
         }
-        if !actor.check_permission(self.authorities(), MAY_CHANGE_SHARED_METADATA) {
-            return Err(ResourceDefError::UnauthorizedAccess);
-        }
-        Ok(())
     }
 
     pub fn check_manage_flags_auth(&self, actor: Actor) -> Result<(), ResourceDefError> {
-        if !actor.check_permission(self.authorities(), MAY_MANAGE_RESOURCE_FLAGS) {
-            return Err(ResourceDefError::UnauthorizedAccess);
-        }
-        Ok(())
+        actor
+            .check_permission(self.authorities(), MAY_MANAGE_RESOURCE_FLAGS)
+            .then(|| ())
+            .ok_or(ResourceDefError::UnauthorizedAccess)
     }
 
     pub fn check_amount(&self, amount: Decimal) -> Result<(), ResourceDefError> {

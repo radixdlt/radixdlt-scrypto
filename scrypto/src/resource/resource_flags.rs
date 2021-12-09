@@ -1,4 +1,4 @@
-/// (Not implemented) Resource can only be taken from vault with authority present.
+/// Resource can only be taken from vault with authority present.
 pub const RESTRICTED_TRANSFER: u16 = 1u16 << 0;
 
 /// Resource can be burned.

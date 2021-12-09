@@ -58,6 +58,22 @@ impl Vault {
         let input = TakeFromVaultInput {
             vid: self.vid,
             amount: amount.into(),
+            auth: None,
+        };
+        let output: TakeFromVaultOutput = call_kernel(TAKE_FROM_VAULT, input);
+
+        output.bid.into()
+    }
+
+    /// Takes some amount of resource from this vault into a bucket.
+    ///
+    /// This variant of `take` accepts an additional auth parameter to support resources
+    /// with or without `RESTRICTED_TRANSFER` flag on.
+    pub fn take_with_auth<A: Into<Decimal>>(&self, amount: A, auth: BucketRef) -> Bucket {
+        let input = TakeFromVaultInput {
+            vid: self.vid,
+            amount: amount.into(),
+            auth: Some(auth.into()),
         };
         let output: TakeFromVaultOutput = call_kernel(TAKE_FROM_VAULT, input);
 
@@ -69,12 +85,42 @@ impl Vault {
         self.take(self.amount())
     }
 
+    /// Takes all resource stored in this vault.
+    ///
+    /// This variant of `take_all` accepts an additional auth parameter to support resources
+    /// with or without `RESTRICTED_TRANSFER` flag on.
+    pub fn take_all_with_auth(&self, auth: BucketRef) -> Bucket {
+        self.take_with_auth(self.amount(), auth)
+    }
+
     /// Takes an NFT from this vault, by id.
     ///
     /// # Panics
     /// Panics if this is not an NFT vault or the specified NFT is not found.
     pub fn take_nft(&self, id: u128) -> Bucket {
-        let input = TakeNftFromVaultInput { vid: self.vid, id };
+        let input = TakeNftFromVaultInput {
+            vid: self.vid,
+            id,
+            auth: None,
+        };
+        let output: TakeNftFromVaultOutput = call_kernel(TAKE_NFT_FROM_VAULT, input);
+
+        output.bid.into()
+    }
+
+    /// Takes an NFT from this vault, by id.
+    ///
+    /// This variant of `take_nft` accepts an additional auth parameter to support resources
+    /// with or without `RESTRICTED_TRANSFER` flag on.
+    ///
+    /// # Panics
+    /// Panics if this is not an NFT vault or the specified NFT is not found.
+    pub fn take_nft_with_auth(&self, id: u128, auth: BucketRef) -> Bucket {
+        let input = TakeNftFromVaultInput {
+            vid: self.vid,
+            id,
+            auth: Some(auth.into()),
+        };
         let output: TakeNftFromVaultOutput = call_kernel(TAKE_NFT_FROM_VAULT, input);
 
         output.bid.into()
@@ -90,6 +136,24 @@ impl Vault {
     ///
     pub fn authorize<F: FnOnce(BucketRef) -> O, O>(&self, f: F) -> O {
         let bucket = self.take(1);
+        let output = f(bucket.present());
+        self.put(bucket);
+        output
+    }
+
+    /// This is a convenience method for using the contained resource for authorization.
+    ///
+    /// It conducts the following actions in one shot:
+    /// 1. Takes `1` resource from this vault into a bucket;
+    /// 2. Creates a `BucketRef`.
+    /// 3. Applies the specified function `f` with the created bucket reference;
+    /// 4. Puts the `1` resource back into this vault.
+    ///
+    /// This variant of `authorize` accepts an additional auth parameter to support resources
+    /// with or without `RESTRICTED_TRANSFER` flag on.
+    ///
+    pub fn authorize_with_auth<F: FnOnce(BucketRef) -> O, O>(&self, f: F, auth: BucketRef) -> O {
+        let bucket = self.take_with_auth(1, auth);
         let output = f(bucket.present());
         self.put(bucket);
         output
@@ -132,7 +196,7 @@ impl Vault {
         output
             .ids
             .iter()
-            .map(|id| Nft::new(resource_address, *id))
+            .map(|id| Nft::from((resource_address, *id)))
             .collect()
     }
 

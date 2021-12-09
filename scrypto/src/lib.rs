@@ -46,7 +46,7 @@ pub mod abi {
 extern crate scrypto_derive;
 pub use scrypto_derive::{auth, blueprint, import, NftData};
 
-/// Encodes arguments according to Scrypto call abi.
+/// Encodes arguments according to Scrypto ABI.
 ///
 /// # Example
 /// ```ignore
@@ -66,6 +66,13 @@ macro_rules! args {
 }
 
 /// Logs an `ERROR` message.
+///
+/// # Example
+/// ```ignore
+/// use scrypto::prelude::*;
+///
+/// error!("Input number: {}", 100);
+/// ```
 #[macro_export]
 macro_rules! error {
     ($($args: expr),+) => {{
@@ -74,6 +81,13 @@ macro_rules! error {
 }
 
 /// Logs a `WARN` message.
+///
+/// # Example
+/// ```ignore
+/// use scrypto::prelude::*;
+///
+/// warn!("Input number: {}", 100);
+/// ```
 #[macro_export]
 macro_rules! warn {
     ($($args: expr),+) => {{
@@ -82,6 +96,13 @@ macro_rules! warn {
 }
 
 /// Logs an `INFO` message.
+///
+/// # Example
+/// ```ignore
+/// use scrypto::prelude::*;
+///
+/// info!("Input number: {}", 100);
+/// ```
 #[macro_export]
 macro_rules! info {
     ($($args: expr),+) => {{
@@ -90,6 +111,13 @@ macro_rules! info {
 }
 
 /// Logs a `DEBUG` message.
+///
+/// # Example
+/// ```ignore
+/// use scrypto::prelude::*;
+///
+/// debug!("Input number: {}", 100);
+/// ```
 #[macro_export]
 macro_rules! debug {
     ($($args: expr),+) => {{
@@ -98,6 +126,13 @@ macro_rules! debug {
 }
 
 /// Logs a `TRACE` message.
+///
+/// # Example
+/// ```ignore
+/// use scrypto::prelude::*;
+///
+/// trace!("Input number: {}", 100);
+/// ```
 #[macro_export]
 macro_rules! trace {
     ($($args: expr),+) => {{
@@ -106,6 +141,14 @@ macro_rules! trace {
 }
 
 /// Includes package code as a byte array.
+///
+/// # Example
+/// ```ignore
+/// use scrypto::prelude::*;
+///
+/// let code = include_code!();
+/// let code2 = include_code!("/path/to/package");
+/// ```
 #[macro_export]
 macro_rules! include_code {
     () => {
