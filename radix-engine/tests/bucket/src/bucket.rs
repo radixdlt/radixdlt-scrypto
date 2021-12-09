@@ -5,9 +5,14 @@ blueprint! {
 
     impl BucketTest {
         fn create_test_token(amount: u32) -> Bucket {
-            ResourceBuilder::new_fungible(0)
+            let bucket = ResourceBuilder::new_fungible(0)
                 .metadata("name", "TestToken")
-                .initial_supply_fungible(amount)
+                .initial_supply_fungible(amount);
+            let ref1 = bucket.present();
+            let ref2 = ref1.clone();
+            ref1.drop();
+            ref2.drop();
+            bucket
         }
 
         pub fn combine() -> Bucket {

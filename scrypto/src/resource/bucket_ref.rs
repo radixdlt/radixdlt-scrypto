@@ -29,7 +29,7 @@ impl From<BucketRef> for Rid {
 impl Clone for BucketRef {
     fn clone(&self) -> Self {
         let input = CloneBucketRefInput { rid: self.rid };
-        let output: CloneBucketRefOutput = call_kernel(CREATE_BUCKET_REF, input);
+        let output: CloneBucketRefOutput = call_kernel(CLONE_BUCKET_REF, input);
 
         output.rid.into()
     }
