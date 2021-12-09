@@ -70,7 +70,7 @@ blueprint! {
 
         /// Adds liquidity to this pool and return the LP tokens representing pool shares
         /// along with any remainder.
-        pub fn add_liquidity(&self, a_tokens: Bucket, b_tokens: Bucket) -> (Bucket, Bucket) {
+        pub fn add_liquidity(&mut self, a_tokens: Bucket, b_tokens: Bucket) -> (Bucket, Bucket) {
             // Differentiate LP calculation based on whether pool is empty or not.
             let (supply_to_mint, remainder) = if self.lp_resource_def.supply() == 0.into() {
                 // Set initial LP tokens based on previous LP per K ratio.
@@ -110,7 +110,7 @@ blueprint! {
         }
 
         /// Removes liquidity from this pool.
-        pub fn remove_liquidity(&self, lp_tokens: Bucket) -> (Bucket, Bucket) {
+        pub fn remove_liquidity(&mut self, lp_tokens: Bucket) -> (Bucket, Bucket) {
             assert!(
                 self.lp_resource_def == lp_tokens.resource_def(),
                 "Wrong token type passed in"

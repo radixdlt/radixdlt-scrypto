@@ -32,13 +32,13 @@ blueprint! {
 
         // Any existing admin may create another admin token
         #[auth(admin_badge)]
-        pub fn create_additional_admin(&self) -> Bucket {
+        pub fn create_additional_admin(&mut self) -> Bucket {
             // The "authorize" method provides a convenient shortcut to make use of the mint authority badge within our vault without removing it
             self.admin_mint_badge
                 .authorize(|badge| self.admin_badge.mint(1, badge))
         }
 
-        pub fn destroy_admin_badge(&self, to_destroy: Bucket) {
+        pub fn destroy_admin_badge(&mut self, to_destroy: Bucket) {
             assert!(
                 to_destroy.resource_address() == self.admin_badge.address(),
                 "Can not destroy the contents of this bucket!"
