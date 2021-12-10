@@ -258,10 +258,10 @@ blueprint! {
             );
 
             self.synthetics_mint_badge.authorize(|auth| {
-                shares_to_burn.burn(Some(auth));
+                shares_to_burn.burn_with_auth(auth);
             });
             self.synthetics_mint_badge
-                .authorize(|auth| bucket.burn(Some(auth)));
+                .authorize(|auth| bucket.burn_with_auth(auth));
         }
 
         /// Returns the total global debt.

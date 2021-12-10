@@ -88,8 +88,13 @@ impl Bucket {
     }
 
     /// Burns resource within this bucket.
-    pub fn burn(self, auth: Option<BucketRef>) {
-        self.resource_def().burn(self, auth);
+    pub fn burn(self) {
+        self.resource_def().burn(self);
+    }
+
+    /// Burns resource within this bucket.
+    pub fn burn_with_auth(self, auth: BucketRef) {
+        self.resource_def().burn_with_auth(self, auth);
     }
 
     /// Checks if this bucket is empty.
