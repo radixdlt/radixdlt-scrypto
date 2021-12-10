@@ -74,8 +74,8 @@ jobs:
     - name: Run tests (no_std)
       run: cargo test --verbose --no-default-features --features alloc
       working-directory: scrypto-tests
-  scrypto-examples:
-    name: Run Scrypto examples
+  scrypto-core-examples:
+    name: Run Scrypto core examples
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -113,6 +113,43 @@ jobs:
     - name: Build no-std-lib
       run: cargo build --target wasm32-unknown-unknown --release
       working-directory: examples/core/no-std-lib
+  scrypto-core-examples:
+    name: Run Scrypto DeFi & NFT examples
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+    - uses: actions/checkout@v2
+    - name: Add wasm target
+      run: rustup target add wasm32-unknown-unknown
+    - name: Build auto-lend
+      run: cargo build --target wasm32-unknown-unknown --release
+      working-directory: examples/defi/auto-lend
+    - name: Build mutual-farm
+      run: cargo build --target wasm32-unknown-unknown --release
+      working-directory: examples/defi/mutual-farm
+    - name: Build price-oracle
+      run: cargo build --target wasm32-unknown-unknown --release
+      working-directory: examples/defi/price-oracle
+    - name: Build radiswap
+      run: cargo build --target wasm32-unknown-unknown --release
+      working-directory: examples/defi/radiswap
+    - name: Build regulated-token
+      run: cargo build --target wasm32-unknown-unknown --release
+      working-directory: examples/defi/regulated-token
+    - name: Build synthetics
+      run: cargo build --target wasm32-unknown-unknown --release
+      working-directory: examples/defi/synthetics
+    - name: Build x-perp-futures
+      run: cargo build --target wasm32-unknown-unknown --release
+      working-directory: examples/defi/x-perp-futures
+    - name: Build magic-card
+      run: cargo build --target wasm32-unknown-unknown --release
+      working-directory: examples/nft/magic-card
+    - name: Build sporting-event
+      run: cargo build --target wasm32-unknown-unknown --release
+      working-directory: examples/nft/sporting-event
   radix-engine:
     name: Run Radix Engine tests
     runs-on: ${{ matrix.os }}
