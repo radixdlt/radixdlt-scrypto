@@ -113,7 +113,7 @@ jobs:
     - name: Build no-std-lib
       run: cargo build --target wasm32-unknown-unknown --release
       working-directory: examples/core/no-std-lib
-  scrypto-core-examples:
+  scrypto-defi-nft-examples:
     name: Run Scrypto DeFi & NFT examples
     runs-on: ${{ matrix.os }}
     strategy:

@@ -56,7 +56,7 @@ impl ResourceDef {
 
         resource_def.total_supply = match (resource_type, initial_supply) {
             (ResourceType::Fungible { divisibility }, Some(NewSupply::Fungible { amount })) => {
-                if divisibility >= 18 {
+                if divisibility > 18 {
                     Err(ResourceDefError::InvalidDivisibility)
                 } else {
                     resource_def.check_amount(*amount)?;
