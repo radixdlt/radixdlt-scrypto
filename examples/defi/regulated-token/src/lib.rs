@@ -87,6 +87,12 @@ blueprint! {
             info!("Current stage is {}", self.current_stage);
             self.current_stage
         }
+
+        /// Permit the proper authority to withdraw our collected XRD
+        #[auth(admin_badge_def)]
+        pub fn collect_payments(&mut self) -> Bucket {
+            self.collected_xrd.take_all()
+        }
         
         #[auth(admin_badge_def, keep_auth)]
         pub fn advance_stage(&mut self) {            
@@ -126,9 +132,9 @@ blueprint! {
                 // Permanently prevent the flags from changing
                 token_def.lock_flags(ALL_FLAGS, auth.clone());
 
-                // With the resource flags all forever disabled and locked, our admin badges no longer have any use
+                // With the resource flags all forever disabled and locked, our internal authority badge no longer has any use
                 // We will burn our internal badge, and the holders of the other badges may burn them at will
-                // It has the FREELY_BURNABLE flag, so there's no need to provide a burning authority           
+                // Our badge has the FREELY_BURNABLE flag, so there's no need to provide a burning authority           
                 self.internal_authority.take_all().burn();
                 info!("Advanced to stage 3");
             }
