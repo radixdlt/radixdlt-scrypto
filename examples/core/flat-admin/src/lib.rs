@@ -47,7 +47,7 @@ blueprint! {
                 "Can not destroy the contents of this bucket!"
             );
             self.admin_mint_badge
-                .authorize(|auth| self.admin_badge.burn(to_destroy, Some(auth)))
+                .authorize(|auth| self.admin_badge.burn_with_auth(to_destroy, auth))
         }
 
         pub fn get_admin_badge_address(&self) -> Address {

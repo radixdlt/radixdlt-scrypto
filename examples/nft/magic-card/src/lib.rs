@@ -177,7 +177,7 @@ blueprint! {
 
             // Burn the original cards
             self.random_card_mint_badge.authorize(|auth| {
-                nft_bucket.burn(Some(auth));
+                nft_bucket.burn_with_auth(auth);
             });
 
             // Mint a new one.

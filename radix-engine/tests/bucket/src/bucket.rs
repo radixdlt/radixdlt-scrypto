@@ -58,7 +58,7 @@ blueprint! {
                 .flags(BURNABLE)
                 .badge(badge.resource_address(), MAY_BURN)
                 .initial_supply_fungible(5);
-            bucket.burn(Some(badge.present()));
+            bucket.burn_with_auth(badge.present());
             vec![badge]
         }
 
@@ -68,8 +68,8 @@ blueprint! {
                 .flags(FREELY_BURNABLE)
                 .initial_supply_fungible(5);
             let bucket2 = bucket1.take(2);
-            bucket1.burn(Some(badge.present()));
-            bucket2.burn(None);
+            bucket1.burn_with_auth(badge.present());
+            bucket2.burn();
             vec![badge]
         }
     }

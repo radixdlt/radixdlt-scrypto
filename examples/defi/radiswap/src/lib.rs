@@ -130,7 +130,7 @@ blueprint! {
 
             // Burn the LP tokens received
             self.lp_mint_badge.authorize(|auth| {
-                lp_tokens.burn(Some(auth));
+                lp_tokens.burn_with_auth(auth);
             });
 
             // Return the withdrawn tokens

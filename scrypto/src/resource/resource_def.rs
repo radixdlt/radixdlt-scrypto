@@ -90,10 +90,19 @@ impl ResourceDef {
     }
 
     /// Burns a bucket of resources.
-    pub fn burn(&self, bucket: Bucket, auth: Option<BucketRef>) {
+    pub fn burn(&self, bucket: Bucket) {
         let input = BurnResourceInput {
             bid: bucket.into(),
-            auth: auth.map(Into::into),
+            auth: None,
+        };
+        let _output: BurnResourceOutput = call_kernel(BURN_RESOURCE, input);
+    }
+
+    /// Burns a bucket of resources.
+    pub fn burn_with_auth(&self, bucket: Bucket, auth: BucketRef) {
+        let input = BurnResourceInput {
+            bid: bucket.into(),
+            auth: Some(auth.into()),
         };
         let _output: BurnResourceOutput = call_kernel(BURN_RESOURCE, input);
     }

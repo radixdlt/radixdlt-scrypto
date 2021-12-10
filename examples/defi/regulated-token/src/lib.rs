@@ -129,7 +129,7 @@ blueprint! {
                 // With the resource flags all forever disabled and locked, our admin badges no longer have any use
                 // We will burn our internal badge, and the holders of the other badges may burn them at will
                 // It has the FREELY_BURNABLE flag, so there's no need to provide a burning authority           
-                self.internal_authority.take_all().burn(None);
+                self.internal_authority.take_all().burn();
                 info!("Advanced to stage 3");
             }
 
