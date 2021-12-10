@@ -15,7 +15,7 @@ pub enum ResourceDefError {
     TypeAndSupplyNotMatching,
     UnsupportedOperation,
     OperationNotAllowed,
-    InvalidGranularity,
+    InvalidDivisibility,
     InvalidAmount(Decimal),
     InvalidFlagUpdate {
         flags: u16,
@@ -55,9 +55,9 @@ impl ResourceDef {
         };
 
         resource_def.total_supply = match (resource_type, initial_supply) {
-            (ResourceType::Fungible { granularity }, Some(NewSupply::Fungible { amount })) => {
-                if granularity >= 36 {
-                    Err(ResourceDefError::InvalidGranularity)
+            (ResourceType::Fungible { divisibility }, Some(NewSupply::Fungible { amount })) => {
+                if divisibility >= 18 {
+                    Err(ResourceDefError::InvalidDivisibility)
                 } else {
                     resource_def.check_amount(*amount)?;
                     Ok(*amount)
@@ -268,9 +268,9 @@ impl ResourceDef {
     }
 
     pub fn check_amount(&self, amount: Decimal) -> Result<(), ResourceDefError> {
-        let granularity = self.resource_type.granularity();
+        let divisibility = self.resource_type.divisibility();
 
-        if !amount.is_negative() && amount.0 % 10i128.pow(granularity.into()) != 0.into() {
+        if !amount.is_negative() && amount.0 % 10i128.pow((18 - divisibility).into()) != 0.into() {
             Err(ResourceDefError::InvalidAmount(amount))
         } else {
             Ok(())

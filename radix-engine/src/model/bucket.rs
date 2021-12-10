@@ -79,7 +79,7 @@ impl Bucket {
     }
 
     pub fn take(&mut self, quantity: Decimal) -> Result<Self, BucketError> {
-        Self::check_amount(quantity, self.resource_type.granularity())?;
+        Self::check_amount(quantity, self.resource_type.divisibility())?;
 
         if self.amount() < quantity {
             Err(BucketError::InsufficientBalance)
@@ -152,8 +152,8 @@ impl Bucket {
         self.resource_address
     }
 
-    fn check_amount(amount: Decimal, granularity: u8) -> Result<(), BucketError> {
-        if !amount.is_negative() && amount.0 % 10i128.pow(granularity.into()) != 0.into() {
+    fn check_amount(amount: Decimal, divisibility: u8) -> Result<(), BucketError> {
+        if !amount.is_negative() && amount.0 % 10i128.pow((18 - divisibility).into()) != 0.into() {
             Err(BucketError::InvalidAmount(amount))
         } else {
             Ok(())

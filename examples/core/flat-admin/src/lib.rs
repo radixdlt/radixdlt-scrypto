@@ -9,10 +9,11 @@ blueprint! {
     impl FlatAdmin {
         pub fn new(badge_name: String) -> (Component, Bucket) {
             // Create a badge for internal use which will hold mint/burn authority for the admin badge we will soon create
-            let admin_mint_badge = ResourceBuilder::new_fungible(18).initial_supply_fungible(1);
+            let admin_mint_badge =
+                ResourceBuilder::new_fungible(DIVISIBILITY_NONE).initial_supply_fungible(1);
 
             // Create the ResourceDef for a mutable supply admin badge
-            let admin_badge_def = ResourceBuilder::new_fungible(18)
+            let admin_badge_def = ResourceBuilder::new_fungible(DIVISIBILITY_NONE)
                 .metadata("name", badge_name)
                 .flags(MINTABLE | BURNABLE)
                 .badge(admin_mint_badge.resource_def(), MAY_MINT | MAY_BURN)

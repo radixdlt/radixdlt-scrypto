@@ -13,7 +13,7 @@ blueprint! {
         pub fn new() -> Component {
             Self {
                 tokens: Vault::with_bucket(
-                    ResourceBuilder::new_fungible(0)
+                    ResourceBuilder::new_fungible(DIVISIBILITY_MAXIMUM)
                         .metadata("name", "FreeToken")
                         .initial_supply_fungible(1000),
                 ),

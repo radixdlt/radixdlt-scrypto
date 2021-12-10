@@ -5,7 +5,7 @@ blueprint! {
 
     impl BucketTest {
         fn create_test_token(amount: u32) -> Bucket {
-            let bucket = ResourceBuilder::new_fungible(0)
+            let bucket = ResourceBuilder::new_fungible(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "TestToken")
                 .initial_supply_fungible(amount);
             let ref1 = bucket.present();
@@ -42,8 +42,8 @@ blueprint! {
         }
 
         pub fn test_restricted_transfer() -> Vec<Bucket> {
-            let badge = ResourceBuilder::new_fungible(18).initial_supply_fungible(1);
-            let bucket = ResourceBuilder::new_fungible(0)
+            let badge = ResourceBuilder::new_fungible(DIVISIBILITY_NONE).initial_supply_fungible(1);
+            let bucket = ResourceBuilder::new_fungible(DIVISIBILITY_MAXIMUM)
                 .flags(RESTRICTED_TRANSFER)
                 .badge(badge.resource_address(), MAY_TRANSFER)
                 .initial_supply_fungible(5);
@@ -53,8 +53,8 @@ blueprint! {
         }
 
         pub fn test_burn() -> Vec<Bucket> {
-            let badge = ResourceBuilder::new_fungible(18).initial_supply_fungible(1);
-            let bucket = ResourceBuilder::new_fungible(0)
+            let badge = ResourceBuilder::new_fungible(DIVISIBILITY_NONE).initial_supply_fungible(1);
+            let bucket = ResourceBuilder::new_fungible(DIVISIBILITY_MAXIMUM)
                 .flags(BURNABLE)
                 .badge(badge.resource_address(), MAY_BURN)
                 .initial_supply_fungible(5);
@@ -63,8 +63,8 @@ blueprint! {
         }
 
         pub fn test_burn_freely() -> Vec<Bucket> {
-            let badge = ResourceBuilder::new_fungible(18).initial_supply_fungible(1);
-            let bucket1 = ResourceBuilder::new_fungible(0)
+            let badge = ResourceBuilder::new_fungible(DIVISIBILITY_NONE).initial_supply_fungible(1);
+            let bucket1 = ResourceBuilder::new_fungible(DIVISIBILITY_MAXIMUM)
                 .flags(FREELY_BURNABLE)
                 .initial_supply_fungible(5);
             let bucket2 = bucket1.take(2);

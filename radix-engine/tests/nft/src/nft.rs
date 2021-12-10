@@ -18,7 +18,7 @@ blueprint! {
     impl NftTest {
         pub fn create_nft_mutable() -> (Bucket, ResourceDef, Bucket) {
             // Create a mint badge
-            let mint_badge = ResourceBuilder::new_fungible(18).initial_supply_fungible(1);
+            let mint_badge = ResourceBuilder::new_fungible(DIVISIBILITY_NONE).initial_supply_fungible(1);
 
             // Create NFT resource with mutable supply
             let nft_resource_def = ResourceBuilder::new_non_fungible()

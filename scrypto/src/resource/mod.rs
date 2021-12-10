@@ -16,7 +16,7 @@ pub use bucket::Bucket;
 pub use bucket_ref::BucketRef;
 pub use nft::Nft;
 pub use nft_data::NftData;
-pub use resource_builder::ResourceBuilder;
+pub use resource_builder::{ResourceBuilder, DIVISIBILITY_MAXIMUM, DIVISIBILITY_NONE};
 pub use resource_def::ResourceDef;
 pub use resource_flags::*;
 pub use resource_permissions::*;

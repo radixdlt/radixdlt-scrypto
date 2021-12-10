@@ -5,8 +5,8 @@ blueprint! {
 
     impl ResourceTest {
         pub fn create_fungible() -> (Bucket, ResourceDef) {
-            let badge = ResourceBuilder::new_fungible(18).initial_supply_fungible(1);
-            let token_resource_def = ResourceBuilder::new_fungible(0)
+            let badge = ResourceBuilder::new_fungible(DIVISIBILITY_NONE).initial_supply_fungible(1);
+            let token_resource_def = ResourceBuilder::new_fungible(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "TestToken")
                 .flags(MINTABLE | BURNABLE)
                 .badge(badge.resource_address(), MAY_MINT | MAY_BURN)
@@ -15,7 +15,7 @@ blueprint! {
         }
 
         pub fn create_fungible_should_fail() -> (Bucket, Bucket) {
-            let bucket = ResourceBuilder::new_fungible(18).initial_supply_fungible(1);
+            let bucket = ResourceBuilder::new_fungible(DIVISIBILITY_NONE).initial_supply_fungible(1);
             (bucket.take(Decimal::from_str("0.1").unwrap()), bucket)
         }
 
@@ -38,8 +38,8 @@ blueprint! {
         }
 
         pub fn update_feature_flags() -> Bucket {
-            let badge = ResourceBuilder::new_fungible(18).initial_supply_fungible(1);
-            let token_resource_def = ResourceBuilder::new_fungible(0)
+            let badge = ResourceBuilder::new_fungible(DIVISIBILITY_NONE).initial_supply_fungible(1);
+            let token_resource_def = ResourceBuilder::new_fungible(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "TestToken")
                 .mutable_flags(MINTABLE)
                 .badge(
@@ -64,8 +64,8 @@ blueprint! {
         }
 
         pub fn update_feature_flags_should_fail() -> Bucket {
-            let badge = ResourceBuilder::new_fungible(18).initial_supply_fungible(1);
-            let token_resource_def = ResourceBuilder::new_fungible(0)
+            let badge = ResourceBuilder::new_fungible(DIVISIBILITY_NONE).initial_supply_fungible(1);
+            let token_resource_def = ResourceBuilder::new_fungible(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "TestToken")
                 .badge(
                     badge.resource_address(),
@@ -78,8 +78,8 @@ blueprint! {
         }
 
         pub fn update_resource_metadata() -> Bucket {
-            let badge = ResourceBuilder::new_fungible(18).initial_supply_fungible(1);
-            let token_resource_def = ResourceBuilder::new_fungible(0)
+            let badge = ResourceBuilder::new_fungible(DIVISIBILITY_NONE).initial_supply_fungible(1);
+            let token_resource_def = ResourceBuilder::new_fungible(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "TestToken")
                 .flags(SHARED_METADATA_MUTABLE)
                 .badge(badge.resource_address(), MAY_CHANGE_SHARED_METADATA)

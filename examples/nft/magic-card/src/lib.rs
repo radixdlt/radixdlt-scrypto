@@ -77,7 +77,7 @@ blueprint! {
                 ]);
 
             // Create an NFT resource with mutable supply
-            let random_card_mint_badge = ResourceBuilder::new_fungible(18)
+            let random_card_mint_badge = ResourceBuilder::new_fungible(DIVISIBILITY_NONE)
                 .metadata("name", "Random Cards Mint Badge")
                 .initial_supply_fungible(1);
             let random_card_resource_def = ResourceBuilder::new_non_fungible()

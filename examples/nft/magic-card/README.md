@@ -45,7 +45,7 @@ let special_cards_bucket = ResourceBuilder::new_non_fungible()
 To create NFTs with mutable supply, 
 
 ```rust
-let random_card_mint_badge = ResourceBuilder::new_fungible(18)
+let random_card_mint_badge = ResourceBuilder::new_fungible(DIVISIBILITY_NONE)
     .metadata("name", "Random Cards Mint Badge")
     .initial_supply_fungible(1);
 let random_card_resource_def = ResourceBuilder::new_non_fungible()

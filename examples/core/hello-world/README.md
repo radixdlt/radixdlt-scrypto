@@ -57,7 +57,7 @@ In Scrypto, resources are the abstraction of physical assets, like tokens, badge
 
 To define a new resource, we use the `ResourceBuilder` by specifying the metadata and initial supply:
 ```rust
-let my_bucket: Bucket = ResourceBuilder::new_fungible(0)
+let my_bucket: Bucket = ResourceBuilder::new_fungible(DIVISIBILITY_MAXIMUM)
     .metadata("name", "HelloToken")
     .metadata("symbol", "HT")
     .initial_supply_fungible(1000);
