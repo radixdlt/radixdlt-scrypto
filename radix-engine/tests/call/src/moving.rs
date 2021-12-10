@@ -7,7 +7,7 @@ blueprint! {
 
     impl MoveTest {
         fn create_test_token(amount: u32) -> Bucket {
-            ResourceBuilder::new_fungible(0)
+            ResourceBuilder::new_fungible(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "TestToken")
                 .initial_supply_fungible(amount)
         }

@@ -38,7 +38,7 @@ blueprint! {
             // For simplicity's sake, we will just use all fixed values for our numbers of tickets and their prices, though all of those could be parameterized
 
             // We'll start by creating our admin badge which is able to create and modify our NFT
-            let my_admin = ResourceBuilder::new_fungible(18)
+            let my_admin = ResourceBuilder::new_fungible(DIVISIBILITY_NONE)
                 .initial_supply_fungible(1);
 
             // Create our NFT

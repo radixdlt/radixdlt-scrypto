@@ -25,7 +25,7 @@ pub fn new(price: Decimal) -> Component {
 Within the `new` function, the first thing we need to do is create a new supply of gumballs which we intend to populate our new component with:
 
 ```rust
-let bucket_of_gumballs = ResourceBuilder::new_fungible(0)
+let bucket_of_gumballs = ResourceBuilder::new_fungible(DIVISIBILITY_MAXIMUM)
   .metadata("name", "Gumball")
   .metadata("symbol", "GUM")
   .metadata("description", "A delicious gumball")

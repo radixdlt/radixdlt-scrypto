@@ -5,6 +5,9 @@ use crate::rust::collections::HashMap;
 use crate::rust::string::String;
 use crate::types::*;
 
+pub const DIVISIBILITY_NONE: u8 = 0;
+pub const DIVISIBILITY_MAXIMUM: u8 = 18;
+
 /// Utility for creating resources.
 pub struct ResourceBuilder {
     resource_type: ResourceType,
@@ -26,14 +29,12 @@ impl ResourceBuilder {
         }
     }
 
-    /// Starts a new builder to create fungible resource, e.g., tokens.
+    /// Starts a new builder to create fungible resource.
     ///
-    /// Fungible resource can have different granularity
-    /// * If granularity is `0`, the smallest unit is `10^-18`;
-    /// * If granularity is `1`, the smallest unit is `10^-17`;
-    /// * So on and so forth.
-    pub fn new_fungible(granularity: u8) -> Self {
-        Self::new(ResourceType::Fungible { granularity })
+    /// # Arguments
+    /// * `divisibility` - The divisibility of the resource; `0` means not divisible, and `18` is the allowed max divisibility.
+    pub fn new_fungible(divisibility: u8) -> Self {
+        Self::new(ResourceType::Fungible { divisibility })
     }
 
     /// Starts a new builder to create non-fungible resource, e.g. NFT.

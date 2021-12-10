@@ -19,17 +19,17 @@ pub enum LogLevel {
 #[derive(Debug, Clone, Copy, TypeId, Encode, Decode, Describe, Eq, PartialEq)]
 pub enum ResourceType {
     /// Represents a fungible resource
-    Fungible { granularity: u8 },
+    Fungible { divisibility: u8 },
 
     /// Represents a non-fungible resource
     NonFungible,
 }
 
 impl ResourceType {
-    pub fn granularity(&self) -> u8 {
+    pub fn divisibility(&self) -> u8 {
         match self {
-            ResourceType::Fungible { granularity } => *granularity,
-            ResourceType::NonFungible => 18,
+            ResourceType::Fungible { divisibility } => *divisibility,
+            ResourceType::NonFungible => 0,
         }
     }
 }

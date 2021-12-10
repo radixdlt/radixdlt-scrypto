@@ -98,7 +98,7 @@ blueprint! {
 
         /// Registers a new user
         pub fn new_user(&self) -> Bucket {
-            ResourceBuilder::new_fungible(18)
+            ResourceBuilder::new_fungible(DIVISIBILITY_NONE)
                 .metadata("name", "xPerpFutures User Badge")
                 .initial_supply_fungible(1)
         }

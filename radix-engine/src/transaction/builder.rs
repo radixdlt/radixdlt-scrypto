@@ -322,7 +322,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
             blueprint_name: "System".to_owned(),
             function: "new_resource".to_owned(),
             args: vec![
-                SmartValue::from(ResourceType::Fungible { granularity: 0 }),
+                SmartValue::from(ResourceType::Fungible { divisibility: 18 }),
                 SmartValue::from(metadata),
                 SmartValue::from(MINTABLE | BURNABLE),
                 SmartValue::from(0u16),
@@ -346,7 +346,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
             blueprint_name: "System".to_owned(),
             function: "new_resource".to_owned(),
             args: vec![
-                SmartValue::from(ResourceType::Fungible { granularity: 0 }),
+                SmartValue::from(ResourceType::Fungible { divisibility: 18 }),
                 SmartValue::from(metadata),
                 SmartValue::from(0u16),
                 SmartValue::from(0u16),
@@ -369,7 +369,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
             blueprint_name: "System".to_owned(),
             function: "new_resource".to_owned(),
             args: vec![
-                SmartValue::from(ResourceType::Fungible { granularity: 18 }),
+                SmartValue::from(ResourceType::Fungible { divisibility: 0 }),
                 SmartValue::from(metadata),
                 SmartValue::from(MINTABLE | BURNABLE),
                 SmartValue::from(0u16),
@@ -393,7 +393,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
             blueprint_name: "System".to_owned(),
             function: "new_resource".to_owned(),
             args: vec![
-                SmartValue::from(ResourceType::Fungible { granularity: 18 }),
+                SmartValue::from(ResourceType::Fungible { divisibility: 0 }),
                 SmartValue::from(metadata),
                 SmartValue::from(0u16),
                 SmartValue::from(0u16),
