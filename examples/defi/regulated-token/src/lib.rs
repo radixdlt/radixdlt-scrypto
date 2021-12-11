@@ -109,7 +109,6 @@ blueprint! {
                 metadata.insert("stage".into(), "Stage 2 - Unlimited supply, may be restricted transfer".into());
                 token_def.update_metadata(metadata, auth.clone());
 
-                info!("Made 3");
                 // Enable minting for the token                
                 token_def.enable_flags(MINTABLE, auth.clone());
                 info!("Advanced to stage 2");
