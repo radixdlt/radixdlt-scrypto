@@ -7,6 +7,7 @@ use crate::scrypto::*;
 const ARG_NAME: &str = "NAME";
 const ARG_PATH: &str = "PATH";
 const ARG_LOCAL: &str = "TRACE";
+const ARG_MINIMAL: &str = "MINIMAL";
 
 /// Constructs a `new-package` subcommand.
 pub fn make_new_package<'a, 'b>() -> App<'a, 'b> {
@@ -30,6 +31,13 @@ pub fn make_new_package<'a, 'b>() -> App<'a, 'b> {
             Arg::with_name(ARG_LOCAL)
                 .long("local")
                 .help("Uses local Scrypto as dependency."),
+        )
+        .arg(
+            Arg::with_name(ARG_MINIMAL)
+                .long("minimal")
+                .takes_value(false)
+                .help("When specified, create package with a minimal lib.rs version")
+                .required(false)
         )
 }
 
@@ -63,7 +71,6 @@ pub fn handle_new_package(matches: &ArgMatches) -> Result<(), Error> {
         Err(Error::PackageAlreadyExists)
     } else {
         fs::create_dir_all(format!("{}/src", pkg_dir)).map_err(Error::IOError)?;
-        fs::create_dir_all(format!("{}/tests", pkg_dir)).map_err(Error::IOError)?;
 
         fs::write(
             PathBuf::from(format!("{}/Cargo.toml", pkg_dir)),
@@ -75,17 +82,25 @@ pub fn handle_new_package(matches: &ArgMatches) -> Result<(), Error> {
         )
         .map_err(Error::IOError)?;
 
-        fs::write(
-            PathBuf::from(format!("{}/src/lib.rs", pkg_dir)),
-            include_str!("../../../assets/template/src/lib.rs"),
-        )
-        .map_err(Error::IOError)?;
+        if matches.is_present(ARG_MINIMAL) {
+            fs::write(
+                PathBuf::from(format!("{}/src/lib.rs", pkg_dir)),
+                include_str!("../../../assets/template/src/lib-minimal.rs"),
+            ).map_err(Error::IOError)?;
+        } else {
+            fs::create_dir_all(format!("{}/tests", pkg_dir)).map_err(Error::IOError)?;
 
-        fs::write(
-            PathBuf::from(format!("{}/tests/lib.rs", pkg_dir)),
-            include_str!("../../../assets/template/tests/lib.rs"),
-        )
-        .map_err(Error::IOError)?;
+            fs::write(
+                PathBuf::from(format!("{}/src/lib.rs", pkg_dir)),
+                include_str!("../../../assets/template/src/lib.rs"),
+            ).map_err(Error::IOError)?;
+
+            fs::write(
+                PathBuf::from(format!("{}/tests/lib.rs", pkg_dir)),
+                include_str!("../../../assets/template/tests/lib.rs"),
+            )
+            .map_err(Error::IOError)?;
+        }
 
         Ok(())
     }
