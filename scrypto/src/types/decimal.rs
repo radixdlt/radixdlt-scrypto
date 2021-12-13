@@ -123,7 +123,7 @@ fn big_int_to_decimal(v: BigInt) -> Decimal {
         panic!("Overflow");
     } else {
         let mut buf = if v.is_negative() {
-            [1u8; 16]
+            [255u8; 16]
         } else {
             [0u8; 16]
         };
@@ -456,5 +456,12 @@ mod tests {
         let b = Decimal::from(7u32);
         assert_eq!((a / b).to_string(), "0.714285714285714285");
         assert_eq!((b / a).to_string(), "1.4");
+    }
+
+    #[test]
+    fn test_div_negative() {
+        let a = Decimal::from(-42);
+        let b = Decimal::from(2);
+        assert_eq!((a / b).to_string(), "-21");
     }
 }
