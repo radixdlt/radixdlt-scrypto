@@ -65,6 +65,10 @@ blueprint! {
             resource_address: Address,
             auth: BucketRef,
         ) -> Bucket {
+            // FIXME: Check call depth
+            // As we're statically checking transaction signers for authorization, we need to make sure
+            // the call depth is `1` (not invoked by another component/blueprint).
+
             if !Context::transaction_signers().contains(&self.key) {
                 panic!("Not authorized! Make sure you sign transaction with the correct keys.",)
             }
@@ -106,6 +110,10 @@ blueprint! {
             resource_address: Address,
             auth: BucketRef,
         ) -> Bucket {
+            // FIXME: Check call depth
+            // As we're statically checking transaction signers for authorization, we need to make sure
+            // the call depth is `1` (not invoked by another component/blueprint).
+
             if !Context::transaction_signers().contains(&self.key) {
                 panic!("Not authorized! Make sure you sign transaction with the correct keys.",)
             }
