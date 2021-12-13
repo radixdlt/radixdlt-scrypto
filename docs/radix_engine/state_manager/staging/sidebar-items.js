@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["StagedSubstateStore",""],["StagedSubstateStoreManager","Structure which manages the acyclic graph"]]});

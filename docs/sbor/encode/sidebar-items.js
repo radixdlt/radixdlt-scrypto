@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["Encoder","An `Encoder` abstracts the logic for writing core types into a byte buffer."]],"trait":[["Encode","A data structure that can be serialized into a byte array using SBOR."]]});

@@ -1,0 +1,3 @@
+(function() {var implementors = {};
+implementors["radix_engine"] = [{"text":"impl Rules for <a class=\"struct\" href=\"radix_engine/wasm/struct.InstructionCostRules.html\" title=\"struct radix_engine::wasm::InstructionCostRules\">InstructionCostRules</a>","synthetic":false,"types":["radix_engine::wasm::cost_rules::InstructionCostRules"]}];
+if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()

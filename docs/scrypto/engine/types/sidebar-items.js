@@ -1,0 +1,1 @@
+initSidebarItems({"enum":[["RENodeId",""],["SubstateId","TODO: separate space addresses?"]],"type":[["BucketId",""],["KeyValueStoreId",""],["ProofId",""],["VaultId",""]]});

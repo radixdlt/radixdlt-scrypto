@@ -1,0 +1,1 @@
+initSidebarItems({"enum":[["Value","Represents a SBOR value."]],"fn":[["decode_any","Decode any SBOR data."],["encode_any","Encodes any SBOR value into byte array."],["encode_any_with_buffer","Encodes any SBOR value with a given buffer"],["traverse_any",""]],"trait":[["CustomValueVisitor",""]]});

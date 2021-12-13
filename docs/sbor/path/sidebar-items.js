@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["MutableSborPath",""],["SborPath","A series of indexes which describes some value in the sbor tree"]]});

@@ -1,0 +1,136 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/types.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>types.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../normalize.css"><link rel="stylesheet" type="text/css" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../storage.js"></script><script src="../../crates.js"></script><script defer src="../../main.js"></script><script defer src="../../source-script.js"></script><script defer src="../../source-files.js"></script>
+    <noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div>
+        </a><h2 class="location"></h2>
+    </nav>
+    <nav class="sidebar"><a class="sidebar-logo" href="../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div>
+        </a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../radix_engine/index.html"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></a><nav class="sub"><div class="theme-picker hidden"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu" title="themes"><img width="22" height="22" alt="Pick another theme!" src="../../brush.svg"></button><div id="theme-choices" role="menu"></div></div><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><button type="button" id="help-button" title="help">?</button><a id="settings-menu" href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../wheel.svg"></a></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<span id="2">2</span>
+<span id="3">3</span>
+<span id="4">4</span>
+<span id="5">5</span>
+<span id="6">6</span>
+<span id="7">7</span>
+<span id="8">8</span>
+<span id="9">9</span>
+<span id="10">10</span>
+<span id="11">11</span>
+<span id="12">12</span>
+<span id="13">13</span>
+<span id="14">14</span>
+<span id="15">15</span>
+<span id="16">16</span>
+<span id="17">17</span>
+<span id="18">18</span>
+<span id="19">19</span>
+<span id="20">20</span>
+<span id="21">21</span>
+<span id="22">22</span>
+<span id="23">23</span>
+<span id="24">24</span>
+<span id="25">25</span>
+<span id="26">26</span>
+<span id="27">27</span>
+<span id="28">28</span>
+<span id="29">29</span>
+<span id="30">30</span>
+<span id="31">31</span>
+<span id="32">32</span>
+<span id="33">33</span>
+<span id="34">34</span>
+<span id="35">35</span>
+<span id="36">36</span>
+<span id="37">37</span>
+<span id="38">38</span>
+<span id="39">39</span>
+<span id="40">40</span>
+<span id="41">41</span>
+<span id="42">42</span>
+<span id="43">43</span>
+<span id="44">44</span>
+<span id="45">45</span>
+<span id="46">46</span>
+<span id="47">47</span>
+<span id="48">48</span>
+<span id="49">49</span>
+<span id="50">50</span>
+<span id="51">51</span>
+<span id="52">52</span>
+<span id="53">53</span>
+<span id="54">54</span>
+<span id="55">55</span>
+<span id="56">56</span>
+<span id="57">57</span>
+<span id="58">58</span>
+<span id="59">59</span>
+<span id="60">60</span>
+<span id="61">61</span>
+<span id="62">62</span>
+<span id="63">63</span>
+<span id="64">64</span>
+</pre><pre class="rust"><code><span class="kw">pub</span> <span class="kw">use</span> <span class="ident">sbor::rust::borrow::ToOwned</span>;
+<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">sbor::rust::boxed::Box</span>;
+<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">sbor::rust::cell</span>::{<span class="ident">Ref</span>, <span class="ident">RefCell</span>, <span class="ident">RefMut</span>};
+<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">sbor::rust::collections</span>::<span class="kw-2">*</span>;
+<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">sbor::rust::fmt</span>;
+<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">sbor::rust::format</span>;
+<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">sbor::rust::marker::PhantomData</span>;
+<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">sbor::rust::ops::AddAssign</span>;
+<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">sbor::rust::ptr</span>;
+<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">sbor::rust::rc::Rc</span>;
+<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">sbor::rust::str::FromStr</span>;
+<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">sbor::rust::string::String</span>;
+<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">sbor::rust::string::ToString</span>;
+<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">sbor::rust::vec</span>;
+<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">sbor::rust::vec::Vec</span>;
+<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">sbor</span>::{<span class="ident">Decode</span>, <span class="ident">DecodeError</span>, <span class="ident">Encode</span>, <span class="ident">Type</span>, <span class="ident">TypeId</span>, <span class="ident">Value</span>};
+<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">scrypto::abi</span>::{<span class="ident">BlueprintAbi</span>, <span class="ident">Fn</span>, <span class="ident">ScryptoType</span>};
+<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">scrypto::address</span>::{<span class="ident">AddressError</span>, <span class="ident">Bech32Decoder</span>, <span class="ident">Bech32Encoder</span>};
+<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">scrypto::component</span>::{
+    <span class="ident">ComponentAddAccessCheckInput</span>, <span class="ident">ComponentAddress</span>, <span class="ident">PackageAddress</span>, <span class="ident">PackagePublishInput</span>,
+};
+<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">scrypto::constants</span>::<span class="kw-2">*</span>;
+<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">scrypto::core</span>::{
+    <span class="ident">AuthZoneFnIdentifier</span>, <span class="ident">BucketFnIdentifier</span>, <span class="ident">ComponentFnIdentifier</span>, <span class="ident">Expression</span>, <span class="ident">FnIdentifier</span>,
+    <span class="ident">Level</span>, <span class="ident">NativeFnIdentifier</span>, <span class="ident">NetworkDefinition</span>, <span class="ident">PackageFnIdentifier</span>, <span class="ident">ProofFnIdentifier</span>, <span class="ident">Receiver</span>,
+    <span class="ident">ResourceManagerFnIdentifier</span>, <span class="ident">ScryptoActor</span>, <span class="ident">ScryptoRENode</span>, <span class="ident">SystemFnIdentifier</span>,
+    <span class="ident">SystemGetCurrentEpochInput</span>, <span class="ident">SystemGetTransactionHashInput</span>, <span class="ident">SystemSetEpochInput</span>,
+    <span class="ident">TransactionProcessorFnIdentifier</span>, <span class="ident">VaultFnIdentifier</span>, <span class="ident">WorktopFnIdentifier</span>,
+};
+<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">scrypto::crypto</span>::{
+    <span class="ident">EcdsaSecp256k1PublicKey</span>, <span class="ident">EcdsaSecp256k1Signature</span>, <span class="ident">EddsaEd25519PublicKey</span>, <span class="ident">EddsaEd25519Signature</span>,
+    <span class="ident">Hash</span>, <span class="ident">PublicKey</span>, <span class="ident">Signature</span>,
+};
+<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">scrypto::engine</span>::{<span class="ident">api::RadixEngineInput</span>, <span class="ident">types</span>::<span class="kw-2">*</span>};
+<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">scrypto::math</span>::{<span class="ident">Decimal</span>, <span class="ident">RoundingMode</span>, <span class="ident">I256</span>};
+<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">scrypto::resource</span>::{
+    <span class="ident">AccessRule</span>, <span class="ident">AccessRuleNode</span>, <span class="ident">AccessRules</span>, <span class="ident">AuthZoneClearInput</span>, <span class="ident">AuthZoneCreateProofByAmountInput</span>,
+    <span class="ident">AuthZoneCreateProofByIdsInput</span>, <span class="ident">AuthZoneCreateProofInput</span>, <span class="ident">AuthZonePopInput</span>, <span class="ident">AuthZonePushInput</span>,
+    <span class="ident">BucketCreateProofInput</span>, <span class="ident">BucketGetAmountInput</span>, <span class="ident">BucketGetNonFungibleIdsInput</span>,
+    <span class="ident">BucketGetResourceAddressInput</span>, <span class="ident">BucketPutInput</span>, <span class="ident">BucketTakeInput</span>, <span class="ident">BucketTakeNonFungiblesInput</span>,
+    <span class="ident">ConsumingBucketBurnInput</span>, <span class="ident">ConsumingProofDropInput</span>, <span class="ident">MintParams</span>, <span class="ident">Mutability</span>, <span class="ident">NonFungibleAddress</span>,
+    <span class="ident">NonFungibleId</span>, <span class="ident">ProofCloneInput</span>, <span class="ident">ProofGetAmountInput</span>, <span class="ident">ProofGetNonFungibleIdsInput</span>,
+    <span class="ident">ProofGetResourceAddressInput</span>, <span class="ident">ProofRule</span>, <span class="ident">ResourceAddress</span>, <span class="ident">ResourceManagerCreateBucketInput</span>,
+    <span class="ident">ResourceManagerCreateInput</span>, <span class="ident">ResourceManagerCreateVaultInput</span>, <span class="ident">ResourceManagerGetMetadataInput</span>,
+    <span class="ident">ResourceManagerGetNonFungibleInput</span>, <span class="ident">ResourceManagerGetResourceTypeInput</span>,
+    <span class="ident">ResourceManagerGetTotalSupplyInput</span>, <span class="ident">ResourceManagerLockAuthInput</span>, <span class="ident">ResourceManagerMintInput</span>,
+    <span class="ident">ResourceManagerNonFungibleExistsInput</span>, <span class="ident">ResourceManagerUpdateAuthInput</span>,
+    <span class="ident">ResourceManagerUpdateMetadataInput</span>, <span class="ident">ResourceManagerUpdateNonFungibleDataInput</span>,
+    <span class="ident">ResourceMethodAuthKey</span>, <span class="ident">ResourceType</span>, <span class="ident">SoftCount</span>, <span class="ident">SoftDecimal</span>, <span class="ident">SoftResource</span>,
+    <span class="ident">SoftResourceOrNonFungible</span>, <span class="ident">SoftResourceOrNonFungibleList</span>, <span class="ident">VaultCreateProofByAmountInput</span>,
+    <span class="ident">VaultCreateProofByIdsInput</span>, <span class="ident">VaultCreateProofInput</span>, <span class="ident">VaultGetAmountInput</span>,
+    <span class="ident">VaultGetNonFungibleIdsInput</span>, <span class="ident">VaultGetResourceAddressInput</span>, <span class="ident">VaultLockFeeInput</span>, <span class="ident">VaultPutInput</span>,
+    <span class="ident">VaultTakeInput</span>, <span class="ident">VaultTakeNonFungiblesInput</span>, <span class="ident">LOCKED</span>, <span class="ident">MUTABLE</span>,
+};
+<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">scrypto::values</span>::{<span class="ident">ScryptoValue</span>, <span class="ident">ScryptoValueReplaceError</span>};
+
+<span class="comment">// methods and macros</span>
+<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">sbor::decode_any</span>;
+<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">scrypto::buffer</span>::{<span class="ident">scrypto_decode</span>, <span class="ident">scrypto_encode</span>};
+<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">scrypto::crypto::hash</span>;
+<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">scrypto::resource</span>::{
+    <span class="ident">require</span>, <span class="ident">require_all_of</span>, <span class="ident">require_amount</span>, <span class="ident">require_any_of</span>, <span class="ident">require_n_of</span>,
+};
+<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">scrypto</span>::{<span class="ident">access_and_or</span>, <span class="ident">access_rule_node</span>, <span class="ident">args</span>, <span class="ident">dec</span>, <span class="ident">pdec</span>, <span class="ident">rule</span>};
+</code></pre></div>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="radix_engine" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.62.1 (e092d0b6b 2022-07-16)" ></div>
+</body></html>

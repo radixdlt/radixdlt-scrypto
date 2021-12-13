@@ -1,0 +1,1 @@
+window.ALL_CRATES = ["radix_engine","sbor","scrypto"];

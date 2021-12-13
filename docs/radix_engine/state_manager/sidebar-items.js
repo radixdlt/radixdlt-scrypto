@@ -1,0 +1,1 @@
+initSidebarItems({"mod":[["commit_receipt",""],["staging",""],["state_diff",""]]});

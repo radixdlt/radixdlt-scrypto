@@ -1,0 +1,1 @@
+initSidebarItems({"enum":[["Fields","Represents the type info of struct fields."],["Type","Represents a SBOR type."]],"struct":[["Variant","Represents the type info of an enum variant."]],"trait":[["Describe","A data structure that can be described using SBOR types."]]});
