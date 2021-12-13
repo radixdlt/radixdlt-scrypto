@@ -27,7 +27,8 @@ Development flow:
 Release workflow:
 1. Create a release branch;
 1. Tag the commit on Github releases;
-1. No commit should be pushed to the release branch once a tag is published.
+1. Update `main` branch to point to the "newest" release (by version number);
+1. Update `docs` branch to include documentation based on the "newest" release (by version number).
 
 ## Branching strategy
 
