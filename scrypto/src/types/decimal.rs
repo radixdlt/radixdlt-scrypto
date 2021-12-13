@@ -40,11 +40,11 @@ impl Decimal {
     pub const MAX: Self = Self(i128::MAX);
 
     pub fn zero() -> Self {
-        Self(0.into())
+        0.into()
     }
 
     pub fn one() -> Self {
-        Self(1.into())
+        1.into()
     }
 
     pub fn to_vec(&self) -> Vec<u8> {
@@ -463,5 +463,11 @@ mod tests {
         let a = Decimal::from(-42);
         let b = Decimal::from(2);
         assert_eq!((a / b).to_string(), "-21");
+    }
+
+    #[test]
+    fn test_one_and_zero() {
+        assert_eq!(Decimal::one().to_string(), "1");
+        assert_eq!(Decimal::zero().to_string(), "0");
     }
 }
