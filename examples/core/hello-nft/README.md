@@ -6,6 +6,71 @@ From Wikipedia,
 
 In this example, we will show you how to build a ticket vending machine in Scrypto.
 
+## Blueprint and Component
+
+The blueprint we're building is called `HelloNft`. Each `HelloNft` manages the following resources and data.
+
+```rust
+struct HelloNft {
+    /// A vault that holds all available tickets.
+    available_tickets: Vault,
+    /// The price for each ticket.
+    ticket_price: Decimal,
+    /// A vault for collecting payments.
+    collected_xrd: Vault,
+}
+```
+
+The `available_tickets` contains non-fungible `Ticket` resource. As you can, the syntax is very similar to how you would do with fungible resource. This is because `Vault` and `Bucket` supports both fungible and non-fungible resources.
+
+## Creating NFT Units
+
+In our example, the supply of NFT units are fixed and we allocate the resource upfront.
+
+First, we prepare the data of each NFT unit (every ticket is associated with a specific row and column number). 
+
+```rust
+let mut tickets = Vec::new();
+for row in 1..5 {
+    for column in 1..5 {
+        tickets.push((Uuid::generate(), Ticket { row, column }));
+    }
+}
+```
+
+Then, the whole vector of NFT data is passed to `ResourceBuilder` as the initial supply.
+
+```rust
+let ticket_bucket: Bucket = ResourceBuilder::new_non_fungible()
+    .metadata("name", "Ticket")
+    .initial_supply_non_fungible(tickets);
+```
+
+After that, we get a bucket of NFT units stored in `ticket_bucket`.
+
+## Allowing Callers to Buy Tickets
+
+`HelloNft` components exposes three public method:
+- `buy_ticket`: allowing caller to buy one ticket;
+- `buy_ticket_by_id`: allowing caller to buy one specific ticket;
+- `available_ticket_ids`: returns the IDs of available ticket.
+
+The workflow of `buy_ticket` and `buy_ticket_by_id` is very similar. 
+
+```rust
+self.collected_xrd.put(payment.take(self.ticket_price));
+let ticket = self.available_tickets.take(1);
+// OR let ticket = self.available_tickets.take_nft(id);
+(ticket, payment)
+```
+
+Both involves
+1. Taking a payment according to pre-defined price and putting it into the `collected_xrd` vault;
+1. Taking a ticket from the `available_tickets` vault:
+   * `take(1)` returns one NFT unit;
+   * `take_nft(id)` returns the specified NFT unit.
+1. Returning the ticket and payment change.
+
 ## How to Play?
 
 1. Create a new account, and save the account address
@@ -20,11 +85,11 @@ resim publish .
 ```
 resim call-function <PACKAGE_ADDRESS> HelloNft new 5
 ```
-4. Call the `get_available_ticket_ids`
+4. Call the `available_ticket_ids`
 ```
 resim call-method <COMPONENT_ADDRESS> get_available_ticket_ids
 ```
-4. Call the `buy_ticket` method
+4. Call the `buy_ticket_by_id` method
 ```
 resim call-method <COMPONENT_ADDRESS> buy_ticket <TICKET_ID> "100,030000000000000000000000000000000000000000000000000004"
 ```

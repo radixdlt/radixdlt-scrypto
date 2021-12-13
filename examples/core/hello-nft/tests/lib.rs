@@ -22,12 +22,12 @@ fn test_hello() {
     println!("{:?}\n", receipt1);
     assert!(receipt1.success);
 
-    // Test the `buy_ticket` method.
+    // Test the `buy_ticket_by_id` method.
     let component = receipt1.component(0).unwrap();
     let transaction2 = TransactionBuilder::new(&executor)
         .call_method(
             component,
-            "buy_ticket",
+            "buy_ticket_by_id",
             vec![
                 "19263377484785923007266988645735551278".to_owned(),
                 "10,030000000000000000000000000000000000000000000000000004".to_owned(),
