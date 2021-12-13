@@ -40,18 +40,29 @@ blueprint! {
             .instantiate()
         }
 
-        pub fn buy_ticket(&mut self, id: u128, payment: Bucket) -> (Bucket, Bucket) {
+        pub fn buy_ticket(&mut self, payment: Bucket) -> (Bucket, Bucket) {
             // Take our price out of the payment bucket
             self.collected_xrd.put(payment.take(self.ticket_price));
 
-            // Take the requested ticket
+            // Take any ticket
+            let ticket = self.available_tickets.take(1);
+
+            // Return the ticket and change
+            (ticket, payment)
+        }
+
+        pub fn buy_ticket_by_id(&mut self, id: u128, payment: Bucket) -> (Bucket, Bucket) {
+            // Take our price out of the payment bucket
+            self.collected_xrd.put(payment.take(self.ticket_price));
+
+            // Take the specific ticket
             let ticket = self.available_tickets.take_nft(id);
 
             // Return the ticket and change
             (ticket, payment)
         }
 
-        pub fn get_available_ticket_ids(&self) -> Vec<u128> {
+        pub fn available_ticket_ids(&self) -> Vec<u128> {
             self.available_tickets.get_nft_ids()
         }
     }
