@@ -1,6 +1,6 @@
 # Hello World!
 
-Welcome to this "Hello, World!" example in Scrypto! Different from many other programming languages where you get a "Hello, World!" printed to your console, we will do more meaningful stuff in this example. Hopefully, you'll get a taste of how asset-oriented programming fits the DeFi world.
+A good "Hello, World!" example provides the simplest possible piece of code to understand the basics of a new language. However, Scrypto isn't just a typical language – it is specialized for the management of assets on a decentralized network. So rather than just printing "Hello, World!" to a console, our example will hand out a token! Hopefully you'll get a taste of how asset-oriented programming with Scrypto for DeFi works.
 
 ## File Structure
 
@@ -9,14 +9,15 @@ For every new Scrypto package, there are mainly three files/folders:
 - The `test` folder, which contains all the test code;
 - The `Cargo.toml` file which specifies all the dependencies and compile configurations.
 
-Let's jump straight into the source code.
-
 ## Blueprint
 
-Blueprint is the code that defines a shared data structure and implementation, and multiple blueprints are grouped into a package.
+A *blueprint* is the code that defines a shared data structure and implementation. Multiple blueprints are grouped into a *package*.
 
+In this example, we have only one blueprint in the package called `Hello`, which defines:
 
-In this example, we have only one blueprint called `Hello`. Every instance of `Hello` blueprint (we call it "component") will have a data structure which contains a single vault, and an implementation which has a single method `free_token`. 
+* The state structure of all `Hello` components (a single *vault*, which is a container for *resources*);
+* A function `new`,  which instantiates a `Hello` component;
+* A method `free_token`, which returns a bucket of `HelloToken` each time invoked.
 
 ```rust
 use scrypto::prelude::*;
@@ -38,11 +39,9 @@ blueprint! {
 }
 ```
 
-In the implementation, we also have a `new` function which does not accept any parameter and returns a component. The only difference between function and method is that a function does not require a `self` reference to the structure.
-
 ## Component
 
-The way to instantiate a component is through the `instantiate()` method after providing the initial value for all the fields in the structure.
+The way to instantiate a component is through the `instantiate()` method on the state structure, after providing the initial values for all the fields.
 
 ```rust
 Self {
@@ -53,9 +52,10 @@ Self {
 
 ## ResourceDef, Vault and Bucket
 
-In Scrypto, resources are the abstraction of physical assets, like tokens, badges and NFTs. 
+In Scrypto, assets like tokens, NFTs, and more are not implemented as blueprints or components. Instead, they are types of *resources* that are configured and requested directly from the system.
 
-To define a new resource, we use the `ResourceBuilder` by specifying the metadata and initial supply:
+To define a new resource, we use the `ResourceBuilder`, specifying the metadata and initial supply. We can use the `ResourceBuilder` to create a simple fungible-supply token called `HelloToken` like this:
+
 ```rust
 let my_bucket: Bucket = ResourceBuilder::new_fungible(DIVISIBILITY_MAXIMUM)
     .metadata("name", "HelloToken")
@@ -63,7 +63,7 @@ let my_bucket: Bucket = ResourceBuilder::new_fungible(DIVISIBILITY_MAXIMUM)
     .initial_supply_fungible(1000);
 ```
 
-Once created, the resource is held in transient container `my_bucket`. To permanently store the created resource, we need to put it into a `Vault` like in the example:
+Once created, the 1000 resource-based `HelloToken` tokens are held in transient container `my_bucket`. To permanently store the created resources, we need to put them into a `Vault` like this:
 ```rust
 let vault: Vault = Vault::with_bucket(my_bucket);
 ```
