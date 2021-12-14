@@ -18,4 +18,3 @@ panic = 'abort'     # Abort on panic.
 
 [lib]
 crate-type = ["cdylib", "lib"]
-name = "out"
