@@ -2,7 +2,7 @@ use radix_engine::ledger::*;
 use radix_engine::transaction::*;
 use scrypto::prelude::*;
 
-use out::User;
+use auto_lend::User;
 
 struct TestEnv<'a, L: Ledger> {
     executor: TransactionExecutor<'a, L>,
@@ -16,7 +16,7 @@ fn set_up_test_env<'a, L: Ledger>(ledger: &'a mut L) -> TestEnv<'a, L> {
     let mut executor = TransactionExecutor::new(ledger, 0, 0);
     let key = executor.new_public_key();
     let account = executor.new_account(key);
-    let package = executor.publish_package(include_code!());
+    let package = executor.publish_package(include_code!("auto_lend"));
 
     let receipt = executor
         .run(

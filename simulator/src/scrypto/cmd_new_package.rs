@@ -38,6 +38,7 @@ pub fn handle_new_package(matches: &ArgMatches) -> Result<(), Error> {
     let pkg_name = matches
         .value_of(ARG_NAME)
         .ok_or_else(|| Error::MissingArgument(ARG_NAME.to_owned()))?;
+    let lib_name = pkg_name.replace("-", "_");
     let pkg_dir = matches.value_of(ARG_PATH).unwrap_or(pkg_name);
     let simulator_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let (sbor, scrypto, radix_engine) = if matches.is_present(ARG_LOCAL) {
@@ -83,7 +84,7 @@ pub fn handle_new_package(matches: &ArgMatches) -> Result<(), Error> {
 
         fs::write(
             PathBuf::from(format!("{}/tests/lib.rs", pkg_dir)),
-            include_str!("../../../assets/template/tests/lib.rs"),
+            include_str!("../../../assets/template/tests/lib.rs").replace("${lib_name}", &lib_name),
         )
         .map_err(Error::IOError)?;
 

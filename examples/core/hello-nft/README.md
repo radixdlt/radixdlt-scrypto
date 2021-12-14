@@ -21,13 +21,13 @@ struct HelloNft {
 }
 ```
 
-The `available_tickets` contains non-fungible `Ticket` resource. As you can, the syntax is very similar to how you would do with fungible resource. This is because `Vault` and `Bucket` supports both fungible and non-fungible resources.
+The `available_tickets` contains non-fungible `Ticket` resource. Both fungible and non-fungible resources are stored in a `Vault`.
 
 ## Creating NFT Units
 
-In our example, the supply of NFT units are fixed and we allocate the resource upfront.
+In our example, the supply of NFT units are fixed, and we allocate the resource upfront.
 
-First, we prepare the data of each NFT unit (every ticket is associated with a specific row and column number). 
+First, we prepare the data for each NFT unit (every ticket is associated with a specific row and column number).
 
 ```rust
 let mut tickets = Vec::new();
@@ -50,12 +50,13 @@ After that, we get a bucket of NFT units stored in `ticket_bucket`.
 
 ## Allowing Callers to Buy Tickets
 
-`HelloNft` components exposes three public method:
-- `buy_ticket`: allowing caller to buy one ticket;
-- `buy_ticket_by_id`: allowing caller to buy one specific ticket;
-- `available_ticket_ids`: returns the IDs of available ticket.
+A `HelloNft` component exposes three public methods:
 
-The workflow of `buy_ticket` and `buy_ticket_by_id` is very similar. 
+* `buy_ticket`: allowing caller to buy one ticket;
+* `buy_ticket_by_id`: allowing caller to buy one specific ticket;
+* `available_ticket_ids`: returns the IDs of all available tickets.
+
+The workflow of `buy_ticket` and `buy_ticket_by_id` is very similar.
 
 ```rust
 self.collected_xrd.put(payment.take(self.ticket_price));
@@ -89,11 +90,11 @@ resim call-function <PACKAGE_ADDRESS> HelloNft new 5
 ```
 resim call-method <COMPONENT_ADDRESS> get_available_ticket_ids
 ```
-4. Call the `buy_ticket_by_id` method
+5. Call the `buy_ticket_by_id` method
 ```
 resim call-method <COMPONENT_ADDRESS> buy_ticket <TICKET_ID> "100,030000000000000000000000000000000000000000000000000004"
 ```
-5. Check out our balance
+6. Check out our balance
 ```
 resim show <ACCOUNT_ADDRESS>
 ```

@@ -9,14 +9,14 @@ fn test_withdraw_all() {
     let mut executor = TransactionExecutor::new(&mut ledger, 0, 0);
     let key = executor.new_public_key();
     let account = executor.new_account(key);
-    let package = executor.publish_package(include_code!());
+    let package = executor.publish_package(include_code!("managed_access"));
 
     // Publish FlatAdmin
     executor.overwrite_package(
         "01ca59a8d6ea4f7efa1765cef702d14e47570c079aedd44992dd09"
             .parse()
             .unwrap(),
-        include_code!("../../flat-admin"),
+        include_code!("../../flat-admin", "flat_admin"),
     );
 
     // Test the `new` function.

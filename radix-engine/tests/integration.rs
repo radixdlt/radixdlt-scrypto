@@ -12,8 +12,9 @@ pub fn compile(name: &str) -> Vec<u8> {
         .status()
         .unwrap();
     fs::read(format!(
-        "./tests/{}/target/wasm32-unknown-unknown/release/out.wasm",
-        name
+        "./tests/{}/target/wasm32-unknown-unknown/release/{}.wasm",
+        name,
+        name.replace("-", "_")
     ))
     .unwrap()
 }

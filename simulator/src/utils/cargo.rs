@@ -6,6 +6,8 @@ use std::path::PathBuf;
 use std::process::Command;
 use std::process::ExitStatus;
 
+use cargo_toml::Manifest;
+
 /// Represents an error when running a cargo command.
 #[derive(Debug)]
 pub enum CargoExecutionError {
@@ -22,6 +24,8 @@ pub enum CargoExecutionError {
     FailedToTest(ExitStatus),
 
     FailedToFormat(ExitStatus),
+
+    InvalidManifestFile,
 }
 
 /// Builds a package.
@@ -47,11 +51,25 @@ pub fn build_package<P: AsRef<Path>>(path: P, trace: bool) -> Result<PathBuf, Ca
             return Err(CargoExecutionError::FailedToBuild(status));
         }
 
+        let manifest =
+            Manifest::from_path(&cargo).map_err(|_| CargoExecutionError::InvalidManifestFile)?;
+
+        // resolve lib name from manifest
+        let mut lib_name = None;
+        if let Some(lib) = manifest.lib {
+            lib_name = lib.name.clone();
+        }
+        if lib_name == None {
+            if let Some(pkg) = manifest.package {
+                lib_name = Some(pkg.name.replace("-", "_"));
+            }
+        }
+
         let mut bin = path.as_ref().to_owned();
         bin.push("target");
         bin.push("wasm32-unknown-unknown");
         bin.push("release");
-        bin.push("out");
+        bin.push(lib_name.ok_or(CargoExecutionError::InvalidManifestFile)?);
         Ok(bin.with_extension("wasm"))
     } else {
         Err(CargoExecutionError::NotCargoPackage)

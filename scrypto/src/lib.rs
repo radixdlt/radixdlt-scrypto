@@ -146,21 +146,25 @@ macro_rules! trace {
 /// ```ignore
 /// use scrypto::prelude::*;
 ///
-/// let code = include_code!();
-/// let code2 = include_code!("/path/to/package");
+/// let code = include_code!("lib_name");
+/// let code2 = include_code!("/path/to/package", "lib_name");
 /// ```
 #[macro_export]
 macro_rules! include_code {
-    () => {
+    ($lib_name: expr) => {
         include_bytes!(concat!(
             env!("CARGO_MANIFEST_DIR"),
-            "/target/wasm32-unknown-unknown/release/out.wasm"
+            "/target/wasm32-unknown-unknown/release/",
+            $lib_name,
+            ".wasm"
         ))
     };
-    ($package_dir: expr) => {
+    ($package_dir: expr, $lib_name: expr) => {
         include_bytes!(concat!(
             $package_dir,
-            "/target/wasm32-unknown-unknown/release/out.wasm"
+            "/target/wasm32-unknown-unknown/release/",
+            $lib_name,
+            ".wasm"
         ))
     };
 }
