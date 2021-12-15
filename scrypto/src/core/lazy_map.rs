@@ -33,6 +33,7 @@ impl<K: Encode + Decode, V: Encode + Decode> From<LazyMap<K, V>> for Mid {
 }
 
 impl<K: Encode + Decode, V: Encode + Decode> LazyMap<K, V> {
+    /// Creates a new lazy map.
     pub fn new() -> Self {
         let input = CreateLazyMapInput {};
         let output: CreateLazyMapOutput = call_kernel(CREATE_LAZY_MAP, input);
@@ -40,6 +41,7 @@ impl<K: Encode + Decode, V: Encode + Decode> LazyMap<K, V> {
         output.mid.into()
     }
 
+    /// Returns the value that is associated with the given key.
     pub fn get(&self, key: &K) -> Option<V> {
         let input = GetLazyMapEntryInput {
             mid: self.mid,
@@ -50,6 +52,7 @@ impl<K: Encode + Decode, V: Encode + Decode> LazyMap<K, V> {
         output.value.map(|v| scrypto_unwrap(scrypto_decode(&v)))
     }
 
+    /// Inserts a new key-value pair into this map.
     pub fn insert(&self, key: K, value: V) {
         let input = PutLazyMapEntryInput {
             mid: self.mid,
@@ -59,6 +62,7 @@ impl<K: Encode + Decode, V: Encode + Decode> LazyMap<K, V> {
         let _: PutLazyMapEntryOutput = call_kernel(PUT_LAZY_MAP_ENTRY, input);
     }
 
+    /// Returns the identifier of this map.
     pub fn mid(&self) -> Mid {
         self.mid
     }

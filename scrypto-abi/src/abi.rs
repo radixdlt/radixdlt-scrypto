@@ -49,7 +49,7 @@ pub struct Method {
     pub output: Type,
 }
 
-/// Represents the state mutability of a method.
+/// Whether a method is going to change the component state.
 #[cfg_attr(
     any(feature = "serde_std", feature = "serde_alloc"),
     derive(Serialize, Deserialize)

@@ -32,14 +32,17 @@ impl From<Blueprint> for (Address, String) {
 }
 
 impl Blueprint {
+    /// Returns the containing package.
     pub fn package(&self) -> Package {
         self.package.clone()
     }
 
+    /// Returns the name of this blueprint.
     pub fn name(&self) -> &str {
         &self.name
     }
 
+    /// Invokes a function on this blueprint.
     pub fn call<T: Decode>(&self, function: &str, args: Vec<Vec<u8>>) -> T {
         let output = call_function(self.package.address(), self.name(), function, args);
 

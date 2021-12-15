@@ -2,6 +2,7 @@ use sbor::{describe::*, *};
 
 use crate::rust::vec::Vec;
 
+/// Represents the data structure of an NFT.
 pub trait NftData {
     /// Decodes `Self` from the serialized immutable and mutable parts.
     fn decode(immutable_data: &[u8], mutable_data: &[u8]) -> Result<Self, DecodeError>

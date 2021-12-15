@@ -14,9 +14,10 @@ use crate::rust::vec;
 use crate::rust::vec::Vec;
 use crate::types::copy_u8_array;
 
-const PRECISION: i128 = 10i128.pow(18);
+/// The universal precision used by `Decimal`.
+pub const PRECISION: i128 = 10i128.pow(18);
 
-/// Represented a **signed** and **bounded** fixed-point decimal, where the precision is 10^-18.
+/// Represents a **signed**, **bounded** fixed-point decimal, where the precision is 10^-18.
 ///
 /// Panic when there is an overflow.
 ///
@@ -35,34 +36,43 @@ pub enum ParseDecimalError {
 }
 
 impl Decimal {
+    /// The min value of `Decimal`.
     pub const MIN: Self = Self(i128::MIN);
 
+    /// The max value of `Decimal`.
     pub const MAX: Self = Self(i128::MAX);
 
+    /// Returns `Decimal` of 0.
     pub fn zero() -> Self {
         0.into()
     }
 
+    /// Returns `Decimal` of 1.
     pub fn one() -> Self {
         1.into()
     }
 
+    /// Converts into a vector of bytes.
     pub fn to_vec(&self) -> Vec<u8> {
         self.0.to_le_bytes().to_vec()
     }
 
+    /// Whether this decimal is zero.
     pub fn is_zero(&self) -> bool {
         self.0 == 0
     }
 
+    /// Whether this decimal is positive.
     pub fn is_positive(&self) -> bool {
         self.0 > 0
     }
 
+    /// Whether this decimal is negative.
     pub fn is_negative(&self) -> bool {
         self.0 < 0
     }
 
+    /// Returns the absolute value.
     pub fn abs(&self) -> Decimal {
         Decimal(self.0.abs())
     }

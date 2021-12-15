@@ -11,8 +11,10 @@ use crate::utils::*;
 
 /// Represents the state of a component.
 pub trait ComponentState: sbor::Encode + sbor::Decode {
+    /// Returns the blueprint name.
     fn blueprint_name() -> &'static str;
 
+    /// Instantiates a component from this data structure.
     fn instantiate(self) -> Component;
 }
 
@@ -39,6 +41,7 @@ impl From<Component> for Address {
 }
 
 impl Component {
+    /// Instantiates a new component.
     pub fn new<T: ComponentState>(state: T) -> Self {
         let input = CreateComponentInput {
             blueprint_name: T::blueprint_name().to_owned(),
@@ -49,12 +52,14 @@ impl Component {
         output.component_address.into()
     }
 
+    /// Invokes a method on this component.
     pub fn call<T: Decode>(&self, method: &str, args: Vec<Vec<u8>>) -> T {
         let output = call_method(self.address, method, args);
 
         scrypto_unwrap(scrypto_decode(&output))
     }
 
+    /// Returns the state of this component.
     pub fn get_state<T: ComponentState>(&self) -> T {
         let input = GetComponentStateInput {
             component_address: self.address,
@@ -64,6 +69,7 @@ impl Component {
         scrypto_unwrap(scrypto_decode(&output.state))
     }
 
+    /// Updates the state of this component.
     pub fn put_state<T: ComponentState>(&self, state: T) {
         let input = PutComponentStateInput {
             component_address: self.address,
@@ -72,6 +78,7 @@ impl Component {
         let _: PutComponentStateOutput = call_kernel(PUT_COMPONENT_STATE, input);
     }
 
+    /// Returns the blueprint that this component is instantiated from.
     pub fn blueprint(&self) -> Blueprint {
         let input = GetComponentInfoInput {
             component_address: self.address,
@@ -81,6 +88,7 @@ impl Component {
         Blueprint::from((output.package_address, output.blueprint_name))
     }
 
+    /// Returns the component address.
     pub fn address(&self) -> Address {
         self.address
     }

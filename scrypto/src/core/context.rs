@@ -21,14 +21,14 @@ impl Context {
         output.transaction_hash
     }
 
-    /// Returns the current epoch.
+    /// Returns the current epoch number.
     pub fn current_epoch() -> u64 {
         let input = GetCurrentEpochInput {};
         let output: GetCurrentEpochOutput = call_kernel(GET_CURRENT_EPOCH, input);
         output.current_epoch
     }
 
-    /// Returns the transaction signers.
+    /// Returns the signers of this transaction.
     pub fn transaction_signers() -> Vec<Address> {
         let input = GetTransactionSignersInput {};
         let output: GetTransactionSignersOutput = call_kernel(GET_TRANSACTION_SIGNERS, input);

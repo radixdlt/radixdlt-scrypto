@@ -17,6 +17,7 @@ use scrypto::types::*;
 use crate::engine::*;
 use crate::transaction::*;
 
+/// Represents some amount of resource.
 pub enum ResourceAmount {
     Fungible {
         amount: Decimal,
@@ -28,6 +29,7 @@ pub enum ResourceAmount {
     },
 }
 
+/// Represents an error when parsing `ResourceAmount` from string.
 #[derive(Debug, Clone)]
 pub enum ParseResourceAmountError {
     InvalidAmount,

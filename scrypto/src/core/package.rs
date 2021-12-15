@@ -29,6 +29,7 @@ impl From<Package> for Address {
 }
 
 impl Package {
+    /// Creates a new package.
     pub fn new(code: &[u8]) -> Self {
         let input = PublishPackageInput {
             code: code.to_vec(),
@@ -38,6 +39,7 @@ impl Package {
         output.package_address.into()
     }
 
+    /// Returns the package address.
     pub fn address(&self) -> Address {
         self.address
     }

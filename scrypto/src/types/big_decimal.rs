@@ -13,9 +13,10 @@ use crate::rust::string::String;
 use crate::rust::vec;
 use crate::rust::vec::Vec;
 
+/// The universal precision used by `BigDecimal`.
 const PRECISION: i128 = 10i128.pow(18);
 
-/// Represented a **signed** and **unbounded** fixed-point decimal, where the precision is 10^-18.
+/// Represents a **signed**, **unbounded** fixed-point decimal, where the precision is 10^-18.
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct BigDecimal(pub BigInt);
 
@@ -30,14 +31,17 @@ pub enum ParseBigDecimalError {
 }
 
 impl BigDecimal {
+    /// Return a `BigDecimal` of 0.
     pub fn zero() -> Self {
         Self(0.into())
     }
 
+    /// Return a `BigDecimal` of 1.
     pub fn one() -> Self {
         Self(1.into())
     }
 
+    /// Converts into a vector of bytes.
     pub fn to_vec(&self) -> Vec<u8> {
         let mut result = Vec::new();
         let (sign, v) = self.0.to_bytes_le();
@@ -50,18 +54,22 @@ impl BigDecimal {
         result
     }
 
+    /// Whether this decimal is zero.
     pub fn is_zero(&self) -> bool {
         self.0.is_zero()
     }
 
+    /// Whether this decimal is positive.
     pub fn is_positive(&self) -> bool {
         self.0.is_positive()
     }
 
+    /// Whether this decimal is negative.
     pub fn is_negative(&self) -> bool {
         self.0.is_negative()
     }
 
+    /// Returns the absolute value.
     pub fn abs(&self) -> BigDecimal {
         BigDecimal(self.0.abs())
     }

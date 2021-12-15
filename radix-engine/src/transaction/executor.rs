@@ -11,13 +11,14 @@ use crate::ledger::*;
 use crate::model::*;
 use crate::transaction::*;
 
-/// The transaction executor.
+/// An executor that runs transactions.
 pub struct TransactionExecutor<'l, L: Ledger> {
     ledger: &'l mut L,
     current_epoch: u64,
     nonce: u64,
 }
 
+/// Represents an error when executing the transaction.
 #[derive(Debug)]
 pub enum TransactionExecutionError {
     MissingEndInstruction,

@@ -3,7 +3,7 @@ use crate::rust::borrow::ToOwned;
 use crate::rust::vec::Vec;
 use crate::types::*;
 
-/// Calls a function.
+/// Invokes a function on a blueprint.
 pub fn call_function(
     package_address: Address,
     blueprint_name: &str,
@@ -21,7 +21,7 @@ pub fn call_function(
     output.rtn
 }
 
-/// Calls a method.
+/// Invokes a method on a component.
 pub fn call_method(component_address: Address, method: &str, args: Vec<Vec<u8>>) -> Vec<u8> {
     let input = CallMethodInput {
         component_address,

@@ -5,7 +5,9 @@ use crate::rust::collections::HashMap;
 use crate::rust::string::String;
 use crate::types::*;
 
+/// Not divisible.
 pub const DIVISIBILITY_NONE: u8 = 0;
+/// The maximum divisibility supported.
 pub const DIVISIBILITY_MAXIMUM: u8 = 18;
 
 /// Utility for creating resources.

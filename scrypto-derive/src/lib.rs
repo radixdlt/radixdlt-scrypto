@@ -7,7 +7,7 @@ mod utils;
 
 use proc_macro::TokenStream;
 
-/// Defines a blueprint.
+/// Declares a blueprint.
 ///
 /// The `blueprint!` macro is a convenient way to define a new blueprint. It takes
 /// two arguments:
@@ -124,7 +124,7 @@ pub fn auth(attr: TokenStream, item: TokenStream) -> TokenStream {
     .into()
 }
 
-/// Derive code that describe the NFT data structure.
+/// Derive code that describe a NFT data structure.
 ///
 /// # Example
 ///

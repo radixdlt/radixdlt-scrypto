@@ -5,6 +5,7 @@ use crate::kernel::*;
 pub struct Uuid {}
 
 impl Uuid {
+    /// Generates an UUID.
     pub fn generate() -> u128 {
         let input = GenerateUuidInput {};
         let output: GenerateUuidOutput = call_kernel(GENERATE_UUID, input);

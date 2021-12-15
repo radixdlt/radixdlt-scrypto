@@ -29,11 +29,13 @@ impl From<Account> for Address {
 }
 
 impl Account {
+    /// Creates a new account.
     pub fn new() -> Account {
         let rtn = call_function(ACCOUNT_PACKAGE, "Account", "new", vec![]);
         scrypto_unwrap(scrypto_decode(&rtn))
     }
 
+    /// Withdraws resource fromm this account.
     pub fn withdraw<A: Into<ResourceDef>>(&self, amount: Decimal, resource_def: A) {
         let args = vec![
             scrypto_encode(&amount),
@@ -42,11 +44,13 @@ impl Account {
         call_method(self.address(), "withdraw", args);
     }
 
+    /// Deposits resource to this account.
     pub fn deposit(&self, bucket: Bucket) {
         let args = vec![scrypto_encode(&bucket)];
         call_method(self.address(), "deposit", args);
     }
 
+    /// Returns the address of this account.
     pub fn address(&self) -> Address {
         self.component.address()
     }

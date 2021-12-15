@@ -34,7 +34,7 @@ impl ResourceType {
     }
 }
 
-/// Represents som supply of resource.
+/// Represents some supply of resource.
 #[derive(Debug, Clone, TypeId, Encode, Decode, Describe)]
 pub enum NewSupply {
     /// A supply of fungible resource represented by amount.

@@ -16,6 +16,7 @@ pub enum BucketError {
     NftNotFound,
 }
 
+/// Represents the supply of resource.
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub enum Supply {
     Fungible { amount: Decimal },

@@ -1,16 +1,12 @@
 //! # The Scrypto Standard Library
 //!
 //! The Scrypto Standard Library is the foundation of Scrypto blueprints, a
-//! set of minimal and shared abstractions for the Radix ecosystem.
+//! set of minimal and shared abstractions on top of Radix Engine. It enables
+//! asset-oriented programming for feature-rich DeFi dApps.
 //!
 //! If you know the name of what you're looking for, the fastest way to find
 //! it is to use the <a href="#" onclick="focusSearchBar();">search
 //! bar</a> at the top of the page.
-//!
-//! Otherwise, you may want to start with the following modules:
-//! * [`core`]
-//! * [`resource`]
-//! * [`types`]
 //!
 
 #![cfg_attr(not(feature = "std"), no_std)]
@@ -20,17 +16,17 @@ compile_error!("Either feature `std` or `alloc` must be enabled for this crate."
 #[cfg(all(feature = "std", feature = "alloc"))]
 compile_error!("Feature `std` and `alloc` can't be enabled at the same time.");
 
-/// Scrypto data encoding/decoding and memory allocation.
+/// Scrypto data encoding, decoding and exchange.
 pub mod buffer;
 /// Scrypto core abstractions.
 pub mod core;
-/// Kernel APIs.
+/// Radix engine APIs.
 pub mod kernel;
-/// The prelude of Scrypto library.
+/// Scrypto preludes.
 pub mod prelude;
 /// Scrypto resource abstractions.
 pub mod resource;
-/// A facade of Rust standard types.
+/// A facade of types in Rust standard library.
 pub mod rust;
 /// Scrypto primitive types.
 pub mod types;
