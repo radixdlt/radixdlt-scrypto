@@ -4,18 +4,7 @@
 
 Language for building DeFi apps on Radix.
 
-## Terminology
-
-- **Package**: A collection of blueprints, compiled and published as a single unit.
-- **Blueprint**: A template that describes the common behavior and structure of its instances.
-- **Component** An instance of a blueprint, which lives in ledger state.
-- **Function**: A set of statements to perform a specific task.
-- **Method**: A function associated with a component.
-- **ResourceDef**: The definition of a resource, including metadata, supply and mint auth.
-- **Bucket**: A transient resource container.
-- **Vault**: A persistent resource container in ledger state.
-
-![Resource Flow](./assets/resource-flow.png)
+Documentation: https://docs.radixdlt.com/main/scrypto/introduction.html
 
 ## Installation
 
@@ -51,7 +40,7 @@ Language for building DeFi apps on Radix.
 
 ## Getting Started
 
-If you want a quick walkthrough of how to deploy and run some code, please see the [First Steps](./tutorials/tutorial-01.md) tutorial. If you prefer to soldier through on your own, keep reading below.
+If you want a quick walkthrough of how to deploy and run some code, please see the [Run Your First Project](https://docs.radixdlt.com/main/scrypto/getting-started/run-first-project.html) tutorial. If you prefer to soldier through on your own, keep reading below.
 
 ### Writing Scrypto Code
 
