@@ -243,11 +243,12 @@ impl Lexer {
                     'r' => s.push('\r'),
                     't' => s.push('\t'),
                     'u' => {
-                        let mut unicode: u32 = 0;
-                        for _ in 0..4 {
-                            let c2 = self.advance()?;
-                            if c2.is_ascii_hexdigit() {
-                                unicode = unicode * 16 + c2.to_digit(16).unwrap();
+                        let mut unicode = self.read_utf16_unit()?;
+                        if unicode >= 0xD800 && unicode <= 0xDFFF {
+                            if self.advance()? == '\\' && self.advance()? == 'u' {
+                                unicode = 0x10000
+                                    + ((unicode - 0xD800) << 10)
+                                    + (self.read_utf16_unit()? - 0xDC00);
                             } else {
                                 return Err(self.unexpected_char());
                             }
@@ -265,6 +266,21 @@ impl Lexer {
         self.advance()?;
 
         Ok(self.new_token(TokenKind::String(s), start))
+    }
+
+    fn read_utf16_unit(&mut self) -> Result<u32, LexerError> {
+        let mut code: u32 = 0;
+
+        for _ in 0..4 {
+            let c = self.advance()?;
+            if c.is_ascii_hexdigit() {
+                code = code * 16 + c.to_digit(16).unwrap();
+            } else {
+                return Err(self.unexpected_char());
+            }
+        }
+
+        Ok(code)
     }
 
     fn tokenize_identifier(&mut self) -> Result<Token, LexerError> {
@@ -411,11 +427,11 @@ mod tests {
     #[test]
     fn test_string() {
         parse_ok(
-            r#"  "" "abc" "abc\r\n\ud83d\udc08"def"  "#,
+            r#"  "" "abc" "abc\r\n\"def\uD83C\uDF0D"  "#,
             vec![
                 TokenKind::String("".to_string()),
                 TokenKind::String("abc".to_string()),
-                TokenKind::String("abc\r\n\"def🐈".to_string()),
+                TokenKind::String("abc\r\n\"def🌍".to_string()),
             ],
         );
         parse_error("\"", LexerError::UnexpectedEof);
