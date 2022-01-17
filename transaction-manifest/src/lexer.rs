@@ -11,29 +11,40 @@ pub struct Span {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TokenKind {
     /* Literals */
-    I8(i8),
-    I16(i16),
-    I32(i32),
-    I64(i64),
-    I128(i128),
-    U8(u8),
-    U16(u16),
-    U32(u32),
-    U64(u64),
-    U128(u128),
-    String(String),
+    BoolLiteral(bool),
+    I8Literal(i8),
+    I16Literal(i16),
+    I32Literal(i32),
+    I64Literal(i64),
+    I128Literal(i128),
+    U8Literal(u8),
+    U16Literal(u16),
+    U32Literal(u32),
+    U64Literal(u64),
+    U128Literal(u128),
+    StringLiteral(String),
 
-    /* Keywords */
+    /* Types */
     Unit,
-    True,
-    False,
+    Bool,
+    I8,
+    I16,
+    I32,
+    I64,
+    I128,
+    U8,
+    U16,
+    U32,
+    U64,
+    U128,
+    String,
     Struct,
     Enum,
-    Some,
-    None,
+    Option,
     Box,
-    Ok,
-    Err,
+    Array,
+    Tuple,
+    Result,
     Vec,
     TreeSet,
     TreeMap,
@@ -48,11 +59,21 @@ pub enum TokenKind {
     LazyMap,
     Vault,
 
+    /* Sub-types */
+    Some,
+    None,
+    Ok,
+    Err,
+
     /* Punctuations */
+    OpenCurlyBrace,
+    CloseCurlyBrace,
     OpenParenthesis,
     CloseParenthesis,
     OpenBracket,
     CloseBracket,
+    LessThan,
+    GreaterThan,
     Comma,
     Semicolon,
 
@@ -137,7 +158,9 @@ impl Lexer {
             '-' | '0'..='9' => self.tokenize_number(),
             '"' => self.tokenize_string(),
             'a'..='z' | 'A'..='Z' => self.tokenize_identifier(),
-            '(' | ')' | '[' | ']' | ',' | ';' => self.tokenize_punctuation(),
+            '{' | '}' | '(' | ')' | '[' | ']' | '<' | '>' | ',' | ';' => {
+                self.tokenize_punctuation()
+            }
             _ => Err(self.unexpected_char()),
         }
         .map(Option::from)
@@ -172,41 +195,41 @@ impl Lexer {
             'i' => match self.advance()? {
                 '1' => match self.advance()? {
                     '2' => match self.advance()? {
-                        '8' => Self::parse_int(&s, "i128", TokenKind::I128),
+                        '8' => Self::parse_int(&s, "i128", TokenKind::I128Literal),
                         _ => Err(self.unexpected_char()),
                     },
-                    '6' => Self::parse_int(&s, "i16", TokenKind::I16),
+                    '6' => Self::parse_int(&s, "i16", TokenKind::I16Literal),
                     _ => Err(self.unexpected_char()),
                 },
                 '3' => match self.advance()? {
-                    '2' => Self::parse_int(&s, "i32", TokenKind::I32),
+                    '2' => Self::parse_int(&s, "i32", TokenKind::I32Literal),
                     _ => Err(self.unexpected_char()),
                 },
                 '6' => match self.advance()? {
-                    '4' => Self::parse_int(&s, "i64", TokenKind::I64),
+                    '4' => Self::parse_int(&s, "i64", TokenKind::I64Literal),
                     _ => Err(self.unexpected_char()),
                 },
-                '8' => Self::parse_int(&s, "i8", TokenKind::I8),
+                '8' => Self::parse_int(&s, "i8", TokenKind::I8Literal),
                 _ => Err(self.unexpected_char()),
             },
             'u' => match self.advance()? {
                 '1' => match self.advance()? {
                     '2' => match self.advance()? {
-                        '8' => Self::parse_int(&s, "u128", TokenKind::U128),
+                        '8' => Self::parse_int(&s, "u128", TokenKind::U128Literal),
                         _ => Err(self.unexpected_char()),
                     },
-                    '6' => Self::parse_int(&s, "u16", TokenKind::U16),
+                    '6' => Self::parse_int(&s, "u16", TokenKind::U16Literal),
                     _ => Err(self.unexpected_char()),
                 },
                 '3' => match self.advance()? {
-                    '2' => Self::parse_int(&s, "u32", TokenKind::U32),
+                    '2' => Self::parse_int(&s, "u32", TokenKind::U32Literal),
                     _ => Err(self.unexpected_char()),
                 },
                 '6' => match self.advance()? {
-                    '4' => Self::parse_int(&s, "u64", TokenKind::U64),
+                    '4' => Self::parse_int(&s, "u64", TokenKind::U64Literal),
                     _ => Err(self.unexpected_char()),
                 },
-                '8' => Self::parse_int(&s, "u8", TokenKind::U8),
+                '8' => Self::parse_int(&s, "u8", TokenKind::U8Literal),
                 _ => Err(self.unexpected_char()),
             },
             _ => Err(self.unexpected_char()),
@@ -265,7 +288,7 @@ impl Lexer {
         }
         self.advance()?;
 
-        Ok(self.new_token(TokenKind::String(s), start))
+        Ok(self.new_token(TokenKind::StringLiteral(s), start))
     }
 
     fn read_utf16_unit(&mut self) -> Result<u32, LexerError> {
@@ -292,29 +315,46 @@ impl Lexer {
         }
 
         match id.as_str() {
-            "unit" => Ok(TokenKind::Unit),
-            "true" => Ok(TokenKind::True),
-            "false" => Ok(TokenKind::False),
-            "struct" => Ok(TokenKind::Struct),
-            "enum" => Ok(TokenKind::Enum),
-            "some" => Ok(TokenKind::Some),
-            "none" => Ok(TokenKind::None),
-            "box" => Ok(TokenKind::Box),
-            "ok" => Ok(TokenKind::Ok),
-            "err" => Ok(TokenKind::Err),
-            "vec" => Ok(TokenKind::Vec),
-            "tree_set" => Ok(TokenKind::TreeSet),
-            "tree_map" => Ok(TokenKind::TreeMap),
-            "hash_set" => Ok(TokenKind::HashSet),
-            "hash_map" => Ok(TokenKind::HashMap),
-            "decimal" => Ok(TokenKind::Decimal),
-            "big_decimal" => Ok(TokenKind::BigDecimal),
-            "address" => Ok(TokenKind::Address),
-            "hash" => Ok(TokenKind::Hash),
-            "bucket" => Ok(TokenKind::Bucket),
-            "bucket_ref" => Ok(TokenKind::BucketRef),
-            "lazy_map" => Ok(TokenKind::LazyMap),
-            "vault" => Ok(TokenKind::Vault),
+            "true" => Ok(TokenKind::BoolLiteral(true)),
+            "false" => Ok(TokenKind::BoolLiteral(false)),
+
+            "Unit" => Ok(TokenKind::Struct),
+            "Bool" => Ok(TokenKind::Struct),
+            "I8" => Ok(TokenKind::Struct),
+            "I16" => Ok(TokenKind::Struct),
+            "I32" => Ok(TokenKind::Struct),
+            "I128" => Ok(TokenKind::Struct),
+            "U8" => Ok(TokenKind::Struct),
+            "U32" => Ok(TokenKind::Struct),
+            "U64" => Ok(TokenKind::Struct),
+            "U128" => Ok(TokenKind::Struct),
+            "String" => Ok(TokenKind::String),
+            "Struct" => Ok(TokenKind::Struct),
+            "Enum" => Ok(TokenKind::Enum),
+            "Option" => Ok(TokenKind::Option),
+            "Box" => Ok(TokenKind::Box),
+            "Array" => Ok(TokenKind::Array),
+            "Tuple" => Ok(TokenKind::Tuple),
+            "Result" => Ok(TokenKind::Result),
+            "Vec" => Ok(TokenKind::Vec),
+            "TreeSet" => Ok(TokenKind::TreeSet),
+            "TreeMap" => Ok(TokenKind::TreeMap),
+            "HashSet" => Ok(TokenKind::HashSet),
+            "HashMap" => Ok(TokenKind::HashMap),
+            "Decimal" => Ok(TokenKind::Decimal),
+            "BigDecimal" => Ok(TokenKind::BigDecimal),
+            "Address" => Ok(TokenKind::Address),
+            "Hash" => Ok(TokenKind::Hash),
+            "Bucket" => Ok(TokenKind::Bucket),
+            "BucketRef" => Ok(TokenKind::BucketRef),
+            "LazyMap" => Ok(TokenKind::LazyMap),
+            "Vault" => Ok(TokenKind::Vault),
+
+            "Some" => Ok(TokenKind::Some),
+            "None" => Ok(TokenKind::None),
+            "Ok" => Ok(TokenKind::Ok),
+            "Err" => Ok(TokenKind::Err),
+
             "DECLARE_TEMP_BUCKET" => Ok(TokenKind::DeclareTempBucket),
             "DECLARE_TEMP_BUCKET_REF" => Ok(TokenKind::DeclareTempBucketRef),
             "TAKE_FROM_CONTEXT" => Ok(TokenKind::TakeFromContext),
@@ -332,13 +372,19 @@ impl Lexer {
         let start = self.current;
 
         let token_kind = match self.advance()? {
+            '{' => TokenKind::OpenCurlyBrace,
+            '}' => TokenKind::CloseCurlyBrace,
             '(' => TokenKind::OpenParenthesis,
             ')' => TokenKind::CloseParenthesis,
             '[' => TokenKind::OpenBracket,
             ']' => TokenKind::CloseBracket,
+            '<' => TokenKind::LessThan,
+            '>' => TokenKind::GreaterThan,
             ',' => TokenKind::Comma,
             ';' => TokenKind::Semicolon,
-            _ => panic!("Illegal state"),
+            _ => {
+                return Err(self.unexpected_char());
+            }
         };
 
         Ok(self.new_token(token_kind, start))
@@ -361,7 +407,6 @@ impl Lexer {
 
 #[cfg(test)]
 mod tests {
-    // Note this useful idiom: importing names from outer (for mod tests) scope.
     use super::*;
 
     fn parse_ok(s: &str, expected: Vec<TokenKind>) {
@@ -399,10 +444,9 @@ mod tests {
     }
 
     #[test]
-    fn test_unit_bool() {
-        parse_ok("unit", vec![TokenKind::Unit]);
-        parse_ok("true", vec![TokenKind::True]);
-        parse_ok("false", vec![TokenKind::False]);
+    fn test_bool() {
+        parse_ok("true", vec![TokenKind::BoolLiteral(true)]);
+        parse_ok("false", vec![TokenKind::BoolLiteral(false)]);
         parse_error(
             "false123u8",
             LexerError::UnknownIdentifier("false123u8".to_string()),
@@ -414,13 +458,16 @@ mod tests {
         parse_ok(
             "1u82u1283i84i128",
             vec![
-                TokenKind::U8(1),
-                TokenKind::U128(2),
-                TokenKind::I8(3),
-                TokenKind::I128(4),
+                TokenKind::U8Literal(1),
+                TokenKind::U128Literal(2),
+                TokenKind::I8Literal(3),
+                TokenKind::I128Literal(4),
             ],
         );
-        parse_ok("1u8 2u32", vec![TokenKind::U8(1), TokenKind::U32(2)]);
+        parse_ok(
+            "1u8 2u32",
+            vec![TokenKind::U8Literal(1), TokenKind::U32Literal(2)],
+        );
         parse_error("123", LexerError::UnexpectedEof);
     }
 
@@ -429,28 +476,31 @@ mod tests {
         parse_ok(
             r#"  "" "abc" "abc\r\n\"def\uD83C\uDF0D"  "#,
             vec![
-                TokenKind::String("".to_string()),
-                TokenKind::String("abc".to_string()),
-                TokenKind::String("abc\r\n\"def🌍".to_string()),
+                TokenKind::StringLiteral("".to_string()),
+                TokenKind::StringLiteral("abc".to_string()),
+                TokenKind::StringLiteral("abc\r\n\"def🌍".to_string()),
             ],
         );
         parse_error("\"", LexerError::UnexpectedEof);
     }
 
     #[test]
-    fn test_keyword_and_punctuation() {
+    fn test_mixed() {
         parse_ok(
-            r#"CALL_FUNCTION vec(hash_map(), ["abc"]);"#,
+            r#"CALL_FUNCTION HashMap<String, Array>("test", ["abc"]);"#,
             vec![
                 TokenKind::CallFunction,
-                TokenKind::Vec,
-                TokenKind::OpenParenthesis,
                 TokenKind::HashMap,
+                TokenKind::LessThan,
+                TokenKind::String,
+                TokenKind::Comma,
+                TokenKind::Array,
+                TokenKind::GreaterThan,
                 TokenKind::OpenParenthesis,
-                TokenKind::CloseParenthesis,
+                TokenKind::StringLiteral("test".to_string()),
                 TokenKind::Comma,
                 TokenKind::OpenBracket,
-                TokenKind::String("abc".to_owned()),
+                TokenKind::StringLiteral("abc".to_string()),
                 TokenKind::CloseBracket,
                 TokenKind::CloseParenthesis,
                 TokenKind::Semicolon,
