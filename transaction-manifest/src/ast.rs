@@ -1,9 +1,9 @@
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Transaction {
     pub instructions: Vec<Instruction>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Instruction {
     DeclareTempBucket {
         name: Value,
@@ -45,7 +45,7 @@ pub enum Instruction {
     },
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Type {
     /* Rust types */
     Unit,
@@ -87,7 +87,7 @@ pub enum Type {
     Vault,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Value {
     Unit,
     Bool(bool),
@@ -126,7 +126,7 @@ pub enum Value {
     Vault(Box<Value>),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Fields {
     Named(Vec<Value>),
 

@@ -1,6 +1,7 @@
 use crate::ast::{Fields, Instruction, Transaction, Type, Value};
 use crate::lexer::{Token, TokenKind};
 
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ParserError {
     UnexpectedEof,
     UnexpectedToken(Token),
@@ -23,9 +24,9 @@ macro_rules! advance_ok {
 
 #[macro_export]
 macro_rules! advance_match {
-    ( $self:expr, $pattern:path ) => {{
+    ( $self:expr, $expected:expr ) => {{
         let token = $self.advance()?;
-        if !matches!(token.kind, $pattern) {
+        if token.kind != $expected {
             return Err(ParserError::UnexpectedToken(token));
         }
     }};
@@ -129,17 +130,18 @@ impl Parser {
 
     pub fn parse_value(&mut self) -> Result<Value, ParserError> {
         let token = self.peek()?;
-
         match token.kind {
             TokenKind::BoolLiteral(value) => advance_ok!(self, Value::Bool(value)),
             TokenKind::U8Literal(value) => advance_ok!(self, Value::U8(value)),
             TokenKind::U16Literal(value) => advance_ok!(self, Value::U16(value)),
             TokenKind::U32Literal(value) => advance_ok!(self, Value::U32(value)),
             TokenKind::U64Literal(value) => advance_ok!(self, Value::U64(value)),
+            TokenKind::U128Literal(value) => advance_ok!(self, Value::U128(value)),
             TokenKind::I8Literal(value) => advance_ok!(self, Value::I8(value)),
             TokenKind::I16Literal(value) => advance_ok!(self, Value::I16(value)),
             TokenKind::I32Literal(value) => advance_ok!(self, Value::I32(value)),
             TokenKind::I64Literal(value) => advance_ok!(self, Value::I64(value)),
+            TokenKind::I128Literal(value) => advance_ok!(self, Value::I128(value)),
             TokenKind::StringLiteral(value) => advance_ok!(self, Value::String(value)),
             TokenKind::Struct => self.parse_struct(),
             TokenKind::Enum => self.parse_enum(),
@@ -175,8 +177,8 @@ impl Parser {
             TokenKind::OpenCurlyBrace => Fields::Named(
                 self.parse_values_any(TokenKind::OpenCurlyBrace, TokenKind::CloseCurlyBrace)?,
             ),
-            TokenKind::OpenBracket => Fields::Named(
-                self.parse_values_any(TokenKind::OpenBracket, TokenKind::CloseBracket)?,
+            TokenKind::OpenParenthesis => Fields::Unnamed(
+                self.parse_values_any(TokenKind::OpenParenthesis, TokenKind::CloseParenthesis)?,
             ),
             _ => Fields::Unit,
         }))
@@ -202,8 +204,8 @@ impl Parser {
                 TokenKind::OpenCurlyBrace => Fields::Named(
                     self.parse_values_any(TokenKind::OpenCurlyBrace, TokenKind::CloseCurlyBrace)?,
                 ),
-                TokenKind::OpenBracket => Fields::Named(
-                    self.parse_values_any(TokenKind::OpenBracket, TokenKind::CloseBracket)?,
+                TokenKind::OpenParenthesis => Fields::Unnamed(
+                    self.parse_values_any(TokenKind::OpenParenthesis, TokenKind::CloseParenthesis)?,
                 ),
                 _ => {
                     return Err(ParserError::UnexpectedToken(t));
@@ -318,19 +320,188 @@ impl Parser {
         }
     }
 
+    /// Parse a comma-separated value list, enclosed by a pair of marks.
     fn parse_values_any(
         &mut self,
-        _open: TokenKind,
-        _close: TokenKind,
+        open: TokenKind,
+        close: TokenKind,
     ) -> Result<Vec<Value>, ParserError> {
-        todo!()
+        advance_match!(self, open);
+        let mut values = Vec::new();
+        while self.peek()?.kind != close {
+            values.push(self.parse_value()?);
+            if self.peek()?.kind != close {
+                advance_match!(self, TokenKind::Comma);
+            }
+        }
+        advance_match!(self, close);
+        Ok(values)
     }
 
     fn parse_values_one(&mut self) -> Result<Value, ParserError> {
-        todo!()
+        let values =
+            self.parse_values_any(TokenKind::OpenParenthesis, TokenKind::CloseParenthesis)?;
+        if values.len() != 1 {
+            Err(ParserError::InvalidNumberOfValues {
+                actual: values.len(),
+                expected: 1,
+            })
+        } else {
+            Ok(values[0].clone())
+        }
     }
 
     fn parse_generics(&mut self, _n: usize) -> Result<Vec<Type>, ParserError> {
-        todo!()
+        advance_match!(self, TokenKind::LessThan);
+        let mut types = Vec::new();
+        while self.peek()?.kind != TokenKind::GreaterThan {
+            types.push(self.parse_type()?);
+            if self.peek()?.kind != TokenKind::GreaterThan {
+                advance_match!(self, TokenKind::Comma);
+            }
+        }
+        advance_match!(self, TokenKind::GreaterThan);
+        Ok(types)
     }
+
+    fn parse_type(&mut self) -> Result<Type, ParserError> {
+        let token = self.advance()?;
+        match &token.kind {
+            TokenKind::Unit => Ok(Type::Unit),
+            TokenKind::Bool => Ok(Type::Bool),
+            TokenKind::I8 => Ok(Type::I8),
+            TokenKind::I16 => Ok(Type::I16),
+            TokenKind::I32 => Ok(Type::I32),
+            TokenKind::I64 => Ok(Type::I64),
+            TokenKind::I128 => Ok(Type::I128),
+            TokenKind::U8 => Ok(Type::U8),
+            TokenKind::U16 => Ok(Type::U16),
+            TokenKind::U32 => Ok(Type::U32),
+            TokenKind::U64 => Ok(Type::U64),
+            TokenKind::U128 => Ok(Type::U128),
+            TokenKind::String => Ok(Type::String),
+            TokenKind::Struct => Ok(Type::Struct),
+            TokenKind::Enum => Ok(Type::Enum),
+            TokenKind::Option => Ok(Type::Option),
+            TokenKind::Box => Ok(Type::Box),
+            TokenKind::Array => Ok(Type::Array),
+            TokenKind::Tuple => Ok(Type::Tuple),
+            TokenKind::Result => Ok(Type::Result),
+            TokenKind::Vec => Ok(Type::Vec),
+            TokenKind::TreeSet => Ok(Type::TreeSet),
+            TokenKind::TreeMap => Ok(Type::TreeMap),
+            TokenKind::HashSet => Ok(Type::HashSet),
+            TokenKind::HashMap => Ok(Type::HashMap),
+            TokenKind::Decimal => Ok(Type::Decimal),
+            TokenKind::BigDecimal => Ok(Type::BigDecimal),
+            TokenKind::Address => Ok(Type::Address),
+            TokenKind::Hash => Ok(Type::Hash),
+            TokenKind::Bucket => Ok(Type::Bucket),
+            TokenKind::BucketRef => Ok(Type::BucketRef),
+            TokenKind::LazyMap => Ok(Type::LazyMap),
+            TokenKind::Vault => Ok(Type::Vault),
+            _ => Err(ParserError::UnexpectedToken(token)),
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::lexer::Lexer;
+
+    fn lex(s: &str) -> Vec<Token> {
+        let mut lexer = Lexer::new(s);
+        let mut tokens = Vec::new();
+        loop {
+            if let Some(token) = lexer.next_token().unwrap() {
+                tokens.push(token);
+            } else {
+                break;
+            }
+        }
+        tokens
+    }
+
+    #[macro_export]
+    macro_rules! parse_ok {
+        ( $s:expr, $expected:expr ) => {{
+            let mut parser = Parser::new(lex($s));
+            assert_eq!(parser.parse_value(), Ok($expected));
+            assert!(parser.is_eof());
+        }};
+    }
+
+    #[macro_export]
+    macro_rules! parse_error {
+        ( $s:expr, $expected:expr ) => {{
+            let mut parser = Parser::new(lex($s));
+            match parser.parse_value() {
+                Ok(_) => {
+                    panic!("Expected {:?} but no error is thrown", $expected);
+                }
+                Err(e) => {
+                    assert_eq!(e, $expected);
+                }
+            }
+        }};
+    }
+
+    #[test]
+    fn test_literals() {
+        parse_ok!(r#"true"#, Value::Bool(true));
+        parse_ok!(r#"false"#, Value::Bool(false));
+        parse_ok!(r#"1i8"#, Value::I8(1));
+        parse_ok!(r#"1i16"#, Value::I16(1));
+        parse_ok!(r#"1i32"#, Value::I32(1));
+        parse_ok!(r#"1i64"#, Value::I64(1));
+        parse_ok!(r#"1i128"#, Value::I128(1));
+        parse_ok!(r#"1u8"#, Value::U8(1));
+        parse_ok!(r#"1u16"#, Value::U16(1));
+        parse_ok!(r#"1u32"#, Value::U32(1));
+        parse_ok!(r#"1u64"#, Value::U64(1));
+        parse_ok!(r#"1u128"#, Value::U128(1));
+        parse_ok!(r#""test""#, Value::String("test".to_string()));
+    }
+
+    #[test]
+    fn test_struct() {
+        parse_ok!(
+            r#"Struct{"Hello", 123u8}"#,
+            Value::Struct(Fields::Named(vec![
+                Value::String("Hello".to_string()),
+                Value::U8(123),
+            ]))
+        );
+        parse_ok!(
+            r#"Struct("Hello", 123u8)"#,
+            Value::Struct(Fields::Unnamed(vec![
+                Value::String("Hello".to_string()),
+                Value::U8(123),
+            ]))
+        );
+        parse_ok!(r#"Struct"#, Value::Struct(Fields::Unit));
+    }
+
+    #[test]
+    fn test_enum() {
+        parse_ok!(
+            r#"Enum(0u8, {"Hello", 123u8})"#,
+            Value::Enum(
+                0,
+                Fields::Named(vec![Value::String("Hello".to_string()), Value::U8(123)]),
+            )
+        );
+        parse_ok!(
+            r#"Enum(0u8, ("Hello", 123u8))"#,
+            Value::Enum(
+                0,
+                Fields::Unnamed(vec![Value::String("Hello".to_string()), Value::U8(123)]),
+            )
+        );
+        parse_ok!(r#"Enum(0u8)"#, Value::Enum(0, Fields::Unit,));
+    }
+
+    #[test]
+    fn test_transaction() {}
 }
