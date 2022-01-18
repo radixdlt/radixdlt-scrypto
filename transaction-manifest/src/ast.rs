@@ -106,7 +106,7 @@ pub enum Value {
     Enum(u8, Fields),
     Option(Box<Option<Value>>),
     Box(Box<Value>),
-    Array(Vec<Value>),
+    Array(Type, Vec<Value>),
     Tuple(Vec<Value>),
     Result(Box<Result<Value, Value>>),
 

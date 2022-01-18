@@ -133,6 +133,11 @@ impl Parser {
     pub fn parse_value(&mut self) -> Result<Value, ParserError> {
         let token = self.peek()?;
         match token.kind {
+            TokenKind::OpenParenthesis => {
+                advance_match!(self, TokenKind::OpenParenthesis);
+                advance_match!(self, TokenKind::CloseParenthesis);
+                Ok(Value::Unit)
+            }
             TokenKind::BoolLiteral(value) => advance_ok!(self, Value::Bool(value)),
             TokenKind::U8Literal(value) => advance_ok!(self, Value::U8(value)),
             TokenKind::U16Literal(value) => advance_ok!(self, Value::U16(value)),
@@ -149,8 +154,8 @@ impl Parser {
             TokenKind::Enum => self.parse_enum(),
             TokenKind::Some | TokenKind::None => self.parse_option(),
             TokenKind::Box => self.parse_box(),
-            TokenKind::OpenBracket => self.parse_array(),
-            TokenKind::OpenParenthesis => self.parse_tuple(),
+            TokenKind::Array => self.parse_array(),
+            TokenKind::Tuple => self.parse_tuple(),
             TokenKind::Ok | TokenKind::Err => self.parse_result(),
             TokenKind::Vec => self.parse_vec(),
             TokenKind::TreeSet => self.parse_tree_set(),
@@ -236,13 +241,16 @@ impl Parser {
     }
 
     pub fn parse_array(&mut self) -> Result<Value, ParserError> {
-        Ok(Value::Array(self.parse_values_any(
-            TokenKind::OpenBracket,
-            TokenKind::CloseBracket,
-        )?))
+        advance_match!(self, TokenKind::Array);
+        let generics = self.parse_generics(1)?;
+        Ok(Value::Array(
+            generics[0],
+            self.parse_values_any(TokenKind::OpenParenthesis, TokenKind::CloseParenthesis)?,
+        ))
     }
 
     pub fn parse_tuple(&mut self) -> Result<Value, ParserError> {
+        advance_match!(self, TokenKind::Tuple);
         Ok(Value::Tuple(self.parse_values_any(
             TokenKind::OpenParenthesis,
             TokenKind::CloseParenthesis,
@@ -451,6 +459,7 @@ mod tests {
 
     #[test]
     fn test_literals() {
+        parse_ok!(r#"()"#, Value::Unit);
         parse_ok!(r#"true"#, Value::Bool(true));
         parse_ok!(r#"false"#, Value::Bool(false));
         parse_ok!(r#"1i8"#, Value::I8(1));
@@ -528,11 +537,11 @@ mod tests {
     #[test]
     fn test_array_tuple() {
         parse_ok!(
-            r#"[1u8, 2u8]"#,
-            Value::Array(vec![Value::U8(1), Value::U8(2)])
+            r#"Array<U8>(1u8, 2u8)"#,
+            Value::Array(Type::U8, vec![Value::U8(1), Value::U8(2)])
         );
         parse_ok!(
-            r#"(1u8, 2u8)"#,
+            r#"Tuple(1u8, 2u8)"#,
             Value::Tuple(vec![Value::U8(1), Value::U8(2)])
         );
     }

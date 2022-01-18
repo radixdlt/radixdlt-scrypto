@@ -70,8 +70,6 @@ pub enum TokenKind {
     CloseCurlyBrace,
     OpenParenthesis,
     CloseParenthesis,
-    OpenBracket,
-    CloseBracket,
     LessThan,
     GreaterThan,
     Comma,
@@ -158,10 +156,11 @@ impl Lexer {
             '-' | '0'..='9' => self.tokenize_number(),
             '"' => self.tokenize_string(),
             'a'..='z' | 'A'..='Z' => self.tokenize_identifier(),
-            '{' | '}' | '(' | ')' | '[' | ']' | '<' | '>' | ',' | ';' => {
-                self.tokenize_punctuation()
-            }
-            _ => Err(self.unexpected_char()),
+            '{' | '}' | '(' | ')' | '<' | '>' | ',' | ';' => self.tokenize_punctuation(),
+            _ => Err(LexerError::UnexpectedChar(
+                self.text[self.current],
+                self.current,
+            )),
         }
         .map(Option::from)
     }
@@ -377,8 +376,6 @@ impl Lexer {
             '}' => TokenKind::CloseCurlyBrace,
             '(' => TokenKind::OpenParenthesis,
             ')' => TokenKind::CloseParenthesis,
-            '[' => TokenKind::OpenBracket,
-            ']' => TokenKind::CloseBracket,
             '<' => TokenKind::LessThan,
             '>' => TokenKind::GreaterThan,
             ',' => TokenKind::Comma,
@@ -494,7 +491,7 @@ mod tests {
     #[test]
     fn test_mixed() {
         lex_ok!(
-            r#"CALL_FUNCTION HashMap<String, Array>("test", ["abc"]);"#,
+            r#"CALL_FUNCTION HashMap<String, Array>("test", Array<String>("abc"));"#,
             vec![
                 TokenKind::CallFunction,
                 TokenKind::HashMap,
@@ -506,9 +503,13 @@ mod tests {
                 TokenKind::OpenParenthesis,
                 TokenKind::StringLiteral("test".into()),
                 TokenKind::Comma,
-                TokenKind::OpenBracket,
+                TokenKind::Array,
+                TokenKind::LessThan,
+                TokenKind::String,
+                TokenKind::GreaterThan,
+                TokenKind::OpenParenthesis,
                 TokenKind::StringLiteral("abc".into()),
-                TokenKind::CloseBracket,
+                TokenKind::CloseParenthesis,
                 TokenKind::CloseParenthesis,
                 TokenKind::Semicolon,
             ]
