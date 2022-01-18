@@ -59,6 +59,7 @@ impl Parser {
 
         while !self.is_eof() {
             let token = self.advance()?;
+            println!("{:?}", token);
             match token.kind {
                 TokenKind::DeclareTempBucket => {
                     instructions.push(Instruction::DeclareTempBucket {
@@ -123,6 +124,7 @@ impl Parser {
                     return Err(ParserError::UnexpectedToken(token));
                 }
             }
+            advance_match!(self, TokenKind::Semicolon);
         }
 
         Ok(Transaction { instructions })
@@ -147,8 +149,8 @@ impl Parser {
             TokenKind::Enum => self.parse_enum(),
             TokenKind::Some | TokenKind::None => self.parse_option(),
             TokenKind::Box => self.parse_box(),
-            TokenKind::Array => self.parse_array(),
-            TokenKind::Tuple => self.parse_tuple(),
+            TokenKind::OpenBracket => self.parse_array(),
+            TokenKind::OpenParenthesis => self.parse_tuple(),
             TokenKind::Ok | TokenKind::Err => self.parse_result(),
             TokenKind::Vec => self.parse_vec(),
             TokenKind::TreeSet => self.parse_tree_set(),
@@ -234,7 +236,6 @@ impl Parser {
     }
 
     pub fn parse_array(&mut self) -> Result<Value, ParserError> {
-        advance_match!(self, TokenKind::Array);
         Ok(Value::Array(self.parse_values_any(
             TokenKind::OpenBracket,
             TokenKind::CloseBracket,
@@ -242,7 +243,6 @@ impl Parser {
     }
 
     pub fn parse_tuple(&mut self) -> Result<Value, ParserError> {
-        advance_match!(self, TokenKind::Tuple);
         Ok(Value::Tuple(self.parse_values_any(
             TokenKind::OpenParenthesis,
             TokenKind::CloseParenthesis,
@@ -270,14 +270,14 @@ impl Parser {
     pub fn parse_tree_set(&mut self) -> Result<Value, ParserError> {
         advance_match!(self, TokenKind::TreeSet);
         let generics = self.parse_generics(1)?;
-        Ok(Value::Vec(
+        Ok(Value::TreeSet(
             generics[0],
             self.parse_values_any(TokenKind::OpenParenthesis, TokenKind::CloseParenthesis)?,
         ))
     }
 
     pub fn parse_tree_map(&mut self) -> Result<Value, ParserError> {
-        advance_match!(self, TokenKind::TreeSet);
+        advance_match!(self, TokenKind::TreeMap);
         let generics = self.parse_generics(2)?;
         Ok(Value::TreeMap(
             generics[0],
@@ -290,14 +290,14 @@ impl Parser {
         advance_match!(self, TokenKind::HashSet);
 
         let generics = self.parse_generics(1)?;
-        Ok(Value::Vec(
+        Ok(Value::HashSet(
             generics[0],
             self.parse_values_any(TokenKind::OpenParenthesis, TokenKind::CloseParenthesis)?,
         ))
     }
 
     pub fn parse_hash_map(&mut self) -> Result<Value, ParserError> {
-        advance_match!(self, TokenKind::HashSet);
+        advance_match!(self, TokenKind::HashMap);
 
         let generics = self.parse_generics(2)?;
         Ok(Value::HashMap(
@@ -310,6 +310,8 @@ impl Parser {
     pub fn parse_scrypto_types(&mut self) -> Result<Value, ParserError> {
         let token = self.advance()?;
         match token.kind {
+            TokenKind::Decimal => Ok(Value::Decimal(self.parse_values_one()?.into())),
+            TokenKind::BigDecimal => Ok(Value::BigDecimal(self.parse_values_one()?.into())),
             TokenKind::Address => Ok(Value::Address(self.parse_values_one()?.into())),
             TokenKind::Hash => Ok(Value::Hash(self.parse_values_one()?.into())),
             TokenKind::Bucket => Ok(Value::Bucket(self.parse_values_one()?.into())),
@@ -461,7 +463,7 @@ mod tests {
         parse_ok!(r#"1u32"#, Value::U32(1));
         parse_ok!(r#"1u64"#, Value::U64(1));
         parse_ok!(r#"1u128"#, Value::U128(1));
-        parse_ok!(r#""test""#, Value::String("test".to_string()));
+        parse_ok!(r#""test""#, Value::String("test".into()));
     }
 
     #[test]
@@ -469,14 +471,14 @@ mod tests {
         parse_ok!(
             r#"Struct{"Hello", 123u8}"#,
             Value::Struct(Fields::Named(vec![
-                Value::String("Hello".to_string()),
+                Value::String("Hello".into()),
                 Value::U8(123),
             ]))
         );
         parse_ok!(
             r#"Struct("Hello", 123u8)"#,
             Value::Struct(Fields::Unnamed(vec![
-                Value::String("Hello".to_string()),
+                Value::String("Hello".into()),
                 Value::U8(123),
             ]))
         );
@@ -489,19 +491,197 @@ mod tests {
             r#"Enum(0u8, {"Hello", 123u8})"#,
             Value::Enum(
                 0,
-                Fields::Named(vec![Value::String("Hello".to_string()), Value::U8(123)]),
+                Fields::Named(vec![Value::String("Hello".into()), Value::U8(123)]),
             )
         );
         parse_ok!(
             r#"Enum(0u8, ("Hello", 123u8))"#,
             Value::Enum(
                 0,
-                Fields::Unnamed(vec![Value::String("Hello".to_string()), Value::U8(123)]),
+                Fields::Unnamed(vec![Value::String("Hello".into()), Value::U8(123)]),
             )
         );
         parse_ok!(r#"Enum(0u8)"#, Value::Enum(0, Fields::Unit,));
     }
 
     #[test]
-    fn test_transaction() {}
+    fn test_option_result_box() {
+        parse_ok!(
+            r#"Some("test")"#,
+            Value::Option(Some(Value::String("test".into())).into())
+        );
+        parse_ok!(r#"None"#, Value::Option(None.into()));
+        parse_ok!(
+            r#"Ok("test")"#,
+            Value::Result(Ok(Value::String("test".into())).into())
+        );
+        parse_ok!(
+            r#"Err("test")"#,
+            Value::Result(Err(Value::String("test".into())).into())
+        );
+        parse_ok!(
+            r#"Box("test")"#,
+            Value::Box(Value::String("test".into()).into())
+        );
+    }
+
+    #[test]
+    fn test_array_tuple() {
+        parse_ok!(
+            r#"[1u8, 2u8]"#,
+            Value::Array(vec![Value::U8(1), Value::U8(2)])
+        );
+        parse_ok!(
+            r#"(1u8, 2u8)"#,
+            Value::Tuple(vec![Value::U8(1), Value::U8(2)])
+        );
+    }
+
+    #[test]
+    fn test_containers() {
+        parse_ok!(
+            r#"Vec<String>("foo", "bar")"#,
+            Value::Vec(
+                Type::String,
+                vec![Value::String("foo".into()), Value::String("bar".into())]
+            )
+        );
+        parse_ok!(
+            r#"TreeSet<String>("1st", "2nd", "3rd")"#,
+            Value::TreeSet(
+                Type::String,
+                vec![
+                    Value::String("1st".into()),
+                    Value::String("2nd".into()),
+                    Value::String("3rd".into())
+                ]
+            )
+        );
+        parse_ok!(
+            r#"TreeMap<String, U32>("key1", 8u32, "key2", 100u32)"#,
+            Value::TreeMap(
+                Type::String,
+                Type::U32,
+                vec![
+                    Value::String("key1".into()),
+                    Value::U32(8),
+                    Value::String("key2".into()),
+                    Value::U32(100)
+                ]
+            )
+        );
+        parse_ok!(
+            r#"HashSet<String>("1st", "2nd", "3rd")"#,
+            Value::HashSet(
+                Type::String,
+                vec![
+                    Value::String("1st".into()),
+                    Value::String("2nd".into()),
+                    Value::String("3rd".into())
+                ]
+            )
+        );
+        parse_ok!(
+            r#"HashMap<String, U32>("key1", 8u32, "key2", 100u32)"#,
+            Value::HashMap(
+                Type::String,
+                Type::U32,
+                vec![
+                    Value::String("key1".into()),
+                    Value::U32(8),
+                    Value::String("key2".into()),
+                    Value::U32(100)
+                ]
+            )
+        );
+    }
+
+    #[test]
+    fn test_transaction() {
+        let tx_text = r#"
+DECLARE_TEMP_BUCKET  "xrd_bucket";
+DECLARE_TEMP_BUCKET_REF  "admin_auth";
+TAKE_FROM_CONTEXT  Decimal("1.0")  Address("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d")  Bucket("xrd_bucket");
+BORROW_FROM_CONTEXT  Decimal("1.0")  Address("03559905076cb3d4b9312640393a7bc6e1d4e491a8b1b62fa73a94")  BucketRef("admin_auth");
+CALL_FUNCTION  Address("01d1f50010e4102d88aacc347711491f852c515134a9ecf67ba17c")  "Airdrop"  "new"  500u32  HashMap<String, U8>("key", 1u8);
+CALL_METHOD  Address("0292566c83de7fd6b04fcc92b5e04b03228ccff040785673278ef1")  "refill"  Bucket("xrd_bucket")  BucketRef("admin_auth");
+DROP_ALL_BUCKET_REFS;
+DEPOSIT_ALL_BUCKETS  Address("02d43f479e9b2beb9df98bc3888344fc25eda181e8f710ce1bf1de");
+"#;
+        let mut parser = Parser::new(lex(tx_text));
+        let tx = parser.parse_transaction().unwrap();
+        assert_eq!(
+            tx,
+            Transaction {
+                instructions: vec![
+                    Instruction::DeclareTempBucket {
+                        name: Value::String("xrd_bucket".into())
+                    },
+                    Instruction::DeclareTempBucketRef {
+                        name: Value::String("admin_auth".into())
+                    },
+                    Instruction::TakeFromContext {
+                        amount: Value::Decimal(Value::String("1.0".into()).into()),
+                        resource_address: Value::Address(
+                            Value::String(
+                                "03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d".into()
+                            )
+                            .into()
+                        ),
+                        to: Value::Bucket(Value::String("xrd_bucket".into()).into()),
+                    },
+                    Instruction::BorrowFromContext {
+                        amount: Value::Decimal(Value::String("1.0".into()).into()),
+                        resource_address: Value::Address(
+                            Value::String(
+                                "03559905076cb3d4b9312640393a7bc6e1d4e491a8b1b62fa73a94".into()
+                            )
+                            .into()
+                        ),
+                        to: Value::BucketRef(Value::String("admin_auth".into()).into()),
+                    },
+                    Instruction::CallFunction {
+                        package_address: Value::Address(
+                            Value::String(
+                                "01d1f50010e4102d88aacc347711491f852c515134a9ecf67ba17c".into()
+                            )
+                            .into()
+                        ),
+                        blueprint_name: Value::String("Airdrop".into()),
+                        function: Value::String("new".into()),
+                        args: vec![
+                            Value::U32(500),
+                            Value::HashMap(
+                                Type::String,
+                                Type::U8,
+                                vec![Value::String("key".into()), Value::U8(1)]
+                            )
+                        ]
+                    },
+                    Instruction::CallMethod {
+                        component_address: Value::Address(
+                            Value::String(
+                                "0292566c83de7fd6b04fcc92b5e04b03228ccff040785673278ef1".into()
+                            )
+                            .into()
+                        ),
+                        method: Value::String("refill".into()),
+                        args: vec![
+                            Value::Bucket(Value::String("xrd_bucket".into()).into()),
+                            Value::BucketRef(Value::String("admin_auth".into()).into())
+                        ]
+                    },
+                    Instruction::DropAllBucketRefs,
+                    Instruction::DepositAllBuckets {
+                        account: Value::Address(
+                            Value::String(
+                                "02d43f479e9b2beb9df98bc3888344fc25eda181e8f710ce1bf1de".into()
+                            )
+                            .into()
+                        ),
+                    }
+                ]
+            }
+        )
+    }
 }

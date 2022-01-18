@@ -318,16 +318,16 @@ impl Lexer {
             "true" => Ok(TokenKind::BoolLiteral(true)),
             "false" => Ok(TokenKind::BoolLiteral(false)),
 
-            "Unit" => Ok(TokenKind::Struct),
-            "Bool" => Ok(TokenKind::Struct),
-            "I8" => Ok(TokenKind::Struct),
-            "I16" => Ok(TokenKind::Struct),
-            "I32" => Ok(TokenKind::Struct),
-            "I128" => Ok(TokenKind::Struct),
-            "U8" => Ok(TokenKind::Struct),
-            "U32" => Ok(TokenKind::Struct),
-            "U64" => Ok(TokenKind::Struct),
-            "U128" => Ok(TokenKind::Struct),
+            "Unit" => Ok(TokenKind::Unit),
+            "Bool" => Ok(TokenKind::Bool),
+            "I8" => Ok(TokenKind::I8),
+            "I16" => Ok(TokenKind::I16),
+            "I32" => Ok(TokenKind::I32),
+            "I128" => Ok(TokenKind::I128),
+            "U8" => Ok(TokenKind::U8),
+            "U32" => Ok(TokenKind::U32),
+            "U64" => Ok(TokenKind::U64),
+            "U128" => Ok(TokenKind::U128),
             "String" => Ok(TokenKind::String),
             "Struct" => Ok(TokenKind::Struct),
             "Enum" => Ok(TokenKind::Enum),
@@ -363,7 +363,8 @@ impl Lexer {
             "CALL_METHOD" => Ok(TokenKind::CallMethod),
             "DROP_ALL_BUCKET_REFS" => Ok(TokenKind::DropAllBucketRefs),
             "DEPOSIT_ALL_BUCKETS" => Ok(TokenKind::DepositAllBuckets),
-            s @ _ => Err(LexerError::UnknownIdentifier(s.to_string())),
+
+            s @ _ => Err(LexerError::UnknownIdentifier(s.into())),
         }
         .map(|kind| self.new_token(kind, start))
     }
@@ -409,84 +410,90 @@ impl Lexer {
 mod tests {
     use super::*;
 
-    fn parse_ok(s: &str, expected: Vec<TokenKind>) {
-        let mut lexer = Lexer::new(s);
-        for i in 0..expected.len() {
-            assert_eq!(
-                lexer.next_token().map(|opt| opt.map(|t| t.kind)),
-                Ok(Some(expected[i].clone()))
-            );
-        }
-        assert_eq!(lexer.next_token(), Ok(None));
+    #[macro_export]
+    macro_rules! lex_ok {
+        ( $s:expr, $expected:expr ) => {{
+            let mut lexer = Lexer::new($s);
+            for i in 0..$expected.len() {
+                assert_eq!(
+                    lexer.next_token().map(|opt| opt.map(|t| t.kind)),
+                    Ok(Some($expected[i].clone()))
+                );
+            }
+            assert_eq!(lexer.next_token(), Ok(None));
+        }};
     }
 
-    fn parse_error(s: &str, expected: LexerError) {
-        let mut lexer = Lexer::new(s);
-        loop {
-            match lexer.next_token() {
-                Ok(Some(_)) => {}
-                Ok(None) => {
-                    panic!("Expected {:?} but no error is thrown", expected);
-                }
-                Err(e) => {
-                    assert_eq!(e, expected);
-                    return;
+    #[macro_export]
+    macro_rules! lex_error {
+        ( $s:expr, $expected:expr ) => {{
+            let mut lexer = Lexer::new($s);
+            loop {
+                match lexer.next_token() {
+                    Ok(Some(_)) => {}
+                    Ok(None) => {
+                        panic!("Expected {:?} but no error is thrown", $expected);
+                    }
+                    Err(e) => {
+                        assert_eq!(e, $expected);
+                        return;
+                    }
                 }
             }
-        }
+        }};
     }
 
     #[test]
     fn test_empty_strings() {
-        parse_ok("", vec![]);
-        parse_ok("  ", vec![]);
-        parse_ok("\r\n\t", vec![]);
+        lex_ok!("", Vec::<TokenKind>::new());
+        lex_ok!("  ", Vec::<TokenKind>::new());
+        lex_ok!("\r\n\t", Vec::<TokenKind>::new());
     }
 
     #[test]
     fn test_bool() {
-        parse_ok("true", vec![TokenKind::BoolLiteral(true)]);
-        parse_ok("false", vec![TokenKind::BoolLiteral(false)]);
-        parse_error(
+        lex_ok!("true", vec![TokenKind::BoolLiteral(true)]);
+        lex_ok!("false", vec![TokenKind::BoolLiteral(false)]);
+        lex_error!(
             "false123u8",
-            LexerError::UnknownIdentifier("false123u8".to_string()),
+            LexerError::UnknownIdentifier("false123u8".into())
         );
     }
 
     #[test]
     fn test_int() {
-        parse_ok(
+        lex_ok!(
             "1u82u1283i84i128",
             vec![
                 TokenKind::U8Literal(1),
                 TokenKind::U128Literal(2),
                 TokenKind::I8Literal(3),
                 TokenKind::I128Literal(4),
-            ],
+            ]
         );
-        parse_ok(
+        lex_ok!(
             "1u8 2u32",
-            vec![TokenKind::U8Literal(1), TokenKind::U32Literal(2)],
+            vec![TokenKind::U8Literal(1), TokenKind::U32Literal(2)]
         );
-        parse_error("123", LexerError::UnexpectedEof);
+        lex_error!("123", LexerError::UnexpectedEof);
     }
 
     #[test]
     fn test_string() {
-        parse_ok(
+        lex_ok!(
             r#"  "" "abc" "abc\r\n\"def\uD83C\uDF0D"  "#,
             vec![
-                TokenKind::StringLiteral("".to_string()),
-                TokenKind::StringLiteral("abc".to_string()),
-                TokenKind::StringLiteral("abc\r\n\"def🌍".to_string()),
-            ],
+                TokenKind::StringLiteral("".into()),
+                TokenKind::StringLiteral("abc".into()),
+                TokenKind::StringLiteral("abc\r\n\"def🌍".into()),
+            ]
         );
-        parse_error("\"", LexerError::UnexpectedEof);
+        lex_error!("\"", LexerError::UnexpectedEof);
     }
 
     #[test]
     fn test_mixed() {
-        parse_ok(
+        lex_ok!(
             r#"CALL_FUNCTION HashMap<String, Array>("test", ["abc"]);"#,
             vec![
                 TokenKind::CallFunction,
@@ -497,14 +504,14 @@ mod tests {
                 TokenKind::Array,
                 TokenKind::GreaterThan,
                 TokenKind::OpenParenthesis,
-                TokenKind::StringLiteral("test".to_string()),
+                TokenKind::StringLiteral("test".into()),
                 TokenKind::Comma,
                 TokenKind::OpenBracket,
-                TokenKind::StringLiteral("abc".to_string()),
+                TokenKind::StringLiteral("abc".into()),
                 TokenKind::CloseBracket,
                 TokenKind::CloseParenthesis,
                 TokenKind::Semicolon,
-            ],
+            ]
         );
     }
 }
