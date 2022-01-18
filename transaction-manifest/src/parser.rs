@@ -166,6 +166,11 @@ impl Parser {
     }
     pub fn parse_struct(&mut self) -> Result<Value, ParserError> {
         advance_match!(self, TokenKind::Struct);
+
+        if self.is_eof() {
+            return Ok(Value::Struct(Fields::Unit));
+        }
+
         Ok(Value::Struct(match self.peek()?.kind {
             TokenKind::OpenCurlyBrace => Fields::Named(
                 self.parse_values_any(TokenKind::OpenCurlyBrace, TokenKind::CloseCurlyBrace)?,
