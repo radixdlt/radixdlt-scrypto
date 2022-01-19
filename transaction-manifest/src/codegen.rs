@@ -221,7 +221,7 @@ fn translate_value(value: &ast::Value, expected: Option<ast::Type>) -> Result<Va
         },
         ast::Value::Box(v) => Ok(Value::Box(translate_value(v, None)?.into())),
         ast::Value::Array(element_type, elements) => Ok(Value::Array(
-            type_id(element_type),
+            translate_type(element_type),
             translate_singletons(elements, Some(*element_type))?,
         )),
         ast::Value::Tuple(elements) => Ok(Value::Tuple(translate_singletons(elements, None)?)),
@@ -230,25 +230,25 @@ fn translate_value(value: &ast::Value, expected: Option<ast::Type>) -> Result<Va
             Err(inner) => Ok(Value::Result(Err(translate_value(inner, None)?).into())),
         },
         ast::Value::Vec(element_type, elements) => Ok(Value::Vec(
-            type_id(element_type),
+            translate_type(element_type),
             translate_singletons(elements, Some(*element_type))?,
         )),
         ast::Value::TreeSet(element_type, elements) => Ok(Value::TreeSet(
-            type_id(element_type),
+            translate_type(element_type),
             translate_singletons(elements, Some(*element_type))?,
         )),
         ast::Value::TreeMap(key_type, value_type, elements) => Ok(Value::TreeMap(
-            type_id(key_type),
-            type_id(value_type),
+            translate_type(key_type),
+            translate_type(value_type),
             translate_pairs(elements, *key_type, *value_type)?,
         )),
         ast::Value::HashSet(element_type, elements) => Ok(Value::HashSet(
-            type_id(element_type),
+            translate_type(element_type),
             translate_singletons(elements, Some(*element_type))?,
         )),
         ast::Value::HashMap(key_type, value_type, elements) => Ok(Value::HashMap(
-            type_id(key_type),
-            type_id(value_type),
+            translate_type(key_type),
+            translate_type(value_type),
             translate_pairs(elements, *key_type, *value_type)?,
         )),
         ast::Value::Decimal(v) => {
@@ -315,7 +315,7 @@ fn translate_pairs(
     Ok(result)
 }
 
-fn type_id(ty: &ast::Type) -> u8 {
+fn translate_type(ty: &ast::Type) -> u8 {
     match ty {
         ast::Type::Unit => TYPE_UNIT,
         ast::Type::Bool => TYPE_BOOL,
@@ -342,13 +342,13 @@ fn type_id(ty: &ast::Type) -> u8 {
         ast::Type::TreeMap => TYPE_TREE_MAP,
         ast::Type::HashSet => TYPE_HASH_SET,
         ast::Type::HashMap => TYPE_HASH_MAP,
-        ast::Type::Decimal => scrypto::buffer::SCRYPTO_TYPE_DECIMAL,
-        ast::Type::BigDecimal => scrypto::buffer::SCRYPTO_TYPE_BIG_DECIMAL,
-        ast::Type::Address => scrypto::buffer::SCRYPTO_TYPE_ADDRESS,
-        ast::Type::Hash => scrypto::buffer::SCRYPTO_TYPE_H256,
-        ast::Type::Bucket => scrypto::buffer::SCRYPTO_TYPE_BID,
-        ast::Type::BucketRef => scrypto::buffer::SCRYPTO_TYPE_RID,
-        ast::Type::LazyMap => scrypto::buffer::SCRYPTO_TYPE_MID,
-        ast::Type::Vault => scrypto::buffer::SCRYPTO_TYPE_VID,
+        ast::Type::Decimal => SCRYPTO_TYPE_DECIMAL,
+        ast::Type::BigDecimal => SCRYPTO_TYPE_BIG_DECIMAL,
+        ast::Type::Address => SCRYPTO_TYPE_ADDRESS,
+        ast::Type::Hash => SCRYPTO_TYPE_H256,
+        ast::Type::Bucket => SCRYPTO_TYPE_BID,
+        ast::Type::BucketRef => SCRYPTO_TYPE_RID,
+        ast::Type::LazyMap => SCRYPTO_TYPE_MID,
+        ast::Type::Vault => SCRYPTO_TYPE_VID,
     }
 }
