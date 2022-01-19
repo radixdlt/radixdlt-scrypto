@@ -76,8 +76,6 @@ pub enum TokenKind {
     Semicolon,
 
     /* Instructions */
-    DeclareTempBucket,
-    DeclareTempBucketRef,
     TakeFromContext,
     BorrowFromContext,
     CallFunction,
@@ -354,8 +352,6 @@ impl Lexer {
             "Ok" => Ok(TokenKind::Ok),
             "Err" => Ok(TokenKind::Err),
 
-            "DECLARE_TEMP_BUCKET" => Ok(TokenKind::DeclareTempBucket),
-            "DECLARE_TEMP_BUCKET_REF" => Ok(TokenKind::DeclareTempBucketRef),
             "TAKE_FROM_CONTEXT" => Ok(TokenKind::TakeFromContext),
             "BORROW_FROM_CONTEXT" => Ok(TokenKind::BorrowFromContext),
             "CALL_FUNCTION" => Ok(TokenKind::CallFunction),

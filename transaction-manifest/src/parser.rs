@@ -61,16 +61,6 @@ impl Parser {
             let token = self.advance()?;
             println!("{:?}", token);
             match token.kind {
-                TokenKind::DeclareTempBucket => {
-                    instructions.push(Instruction::DeclareTempBucket {
-                        name: self.parse_value()?,
-                    });
-                }
-                TokenKind::DeclareTempBucketRef => {
-                    instructions.push(Instruction::DeclareTempBucketRef {
-                        name: self.parse_value()?,
-                    });
-                }
                 TokenKind::TakeFromContext => {
                     instructions.push(Instruction::TakeFromContext {
                         amount: self.parse_value()?,
@@ -608,8 +598,6 @@ mod tests {
     #[test]
     fn test_transaction() {
         let tx_text = r#"
-DECLARE_TEMP_BUCKET  "xrd_bucket";
-DECLARE_TEMP_BUCKET_REF  "admin_auth";
 TAKE_FROM_CONTEXT  Decimal("1.0")  Address("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d")  Bucket("xrd_bucket");
 BORROW_FROM_CONTEXT  Decimal("1.0")  Address("03559905076cb3d4b9312640393a7bc6e1d4e491a8b1b62fa73a94")  BucketRef("admin_auth");
 CALL_FUNCTION  Address("01d1f50010e4102d88aacc347711491f852c515134a9ecf67ba17c")  "Airdrop"  "new"  500u32  HashMap<String, U8>("key", 1u8);
@@ -623,12 +611,6 @@ DEPOSIT_ALL_BUCKETS  Address("02d43f479e9b2beb9df98bc3888344fc25eda181e8f710ce1b
             tx,
             Transaction {
                 instructions: vec![
-                    Instruction::DeclareTempBucket {
-                        name: Value::String("xrd_bucket".into())
-                    },
-                    Instruction::DeclareTempBucketRef {
-                        name: Value::String("admin_auth".into())
-                    },
                     Instruction::TakeFromContext {
                         amount: Value::Decimal(Value::String("1.0".into()).into()),
                         resource_address: Value::Address(

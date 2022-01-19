@@ -5,14 +5,6 @@ pub struct Transaction {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Instruction {
-    DeclareTempBucket {
-        name: Value,
-    },
-
-    DeclareTempBucketRef {
-        name: Value,
-    },
-
     TakeFromContext {
         amount: Value,
         resource_address: Value,
@@ -133,4 +125,44 @@ pub enum Fields {
     Unnamed(Vec<Value>),
 
     Unit,
+}
+
+impl Value {
+    pub const fn kind(&self) -> Type {
+        match self {
+            Value::Unit => Type::Unit,
+            Value::Bool(_) => Type::Bool,
+            Value::I8(_) => Type::I8,
+            Value::I16(_) => Type::I16,
+            Value::I32(_) => Type::I32,
+            Value::I64(_) => Type::I64,
+            Value::I128(_) => Type::I128,
+            Value::U8(_) => Type::U8,
+            Value::U16(_) => Type::U16,
+            Value::U32(_) => Type::U32,
+            Value::U64(_) => Type::U64,
+            Value::U128(_) => Type::U128,
+            Value::String(_) => Type::String,
+            Value::Struct(_) => Type::Struct,
+            Value::Enum(_, _) => Type::Enum,
+            Value::Option(_) => Type::Option,
+            Value::Box(_) => Type::Box,
+            Value::Array(_, _) => Type::Array,
+            Value::Tuple(_) => Type::Tuple,
+            Value::Result(_) => Type::Result,
+            Value::Vec(_, _) => Type::Vec,
+            Value::TreeSet(_, _) => Type::TreeSet,
+            Value::TreeMap(_, _, _) => Type::TreeMap,
+            Value::HashSet(_, _) => Type::HashSet,
+            Value::HashMap(_, _, _) => Type::HashMap,
+            Value::Decimal(_) => Type::Decimal,
+            Value::BigDecimal(_) => Type::BigDecimal,
+            Value::Address(_) => Type::Address,
+            Value::Hash(_) => Type::Hash,
+            Value::Bucket(_) => Type::Bucket,
+            Value::BucketRef(_) => Type::BucketRef,
+            Value::LazyMap(_) => Type::LazyMap,
+            Value::Vault(_) => Type::Vault,
+        }
+    }
 }

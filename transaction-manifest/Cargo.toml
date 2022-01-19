@@ -4,4 +4,6 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+sbor = { path = "../sbor" }
 scrypto = { path = "../scrypto" }
+radix-engine = { path = "../radix-engine" }
