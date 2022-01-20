@@ -108,16 +108,14 @@ macro_rules! invalid_type {
     };
 }
 
-fn translate_args(values: &Vec<ast::Value>) -> Result<Vec<SmartValue>, CodegenError> {
-    let mut result = Vec::<SmartValue>::new();
+fn translate_args(values: &Vec<ast::Value>) -> Result<Vec<Vec<u8>>, CodegenError> {
+    let mut result = Vec::new();
     for v in values {
         let value = translate_value(v, None)?;
 
         let mut enc = Encoder::with_type(Vec::new());
         encode_any(None, &value, &mut enc);
-        result.push(SmartValue {
-            encoded: enc.into(),
-        });
+        result.push(enc.into());
     }
     Ok(result)
 }
