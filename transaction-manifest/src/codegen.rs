@@ -27,6 +27,12 @@ pub fn compile(tx: &ast::Transaction) -> Result<Transaction, CodegenError> {
 
     for inst in &tx.instructions {
         match inst {
+            ast::Instruction::DeclareTempBucket => {
+                allocations.push(Instruction::DeclareTempBucket);
+            }
+            ast::Instruction::DeclareTempBucketRef => {
+                allocations.push(Instruction::DeclareTempBucketRef);
+            }
             ast::Instruction::TakeFromContext {
                 amount,
                 resource_address,

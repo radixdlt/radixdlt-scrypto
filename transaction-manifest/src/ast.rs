@@ -5,6 +5,10 @@ pub struct Transaction {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Instruction {
+    DeclareTempBucket,
+
+    DeclareTempBucketRef,
+
     TakeFromContext {
         amount: Value,
         resource_address: Value,
