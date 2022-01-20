@@ -206,21 +206,21 @@ pub fn encode_any(ty_ctx: Option<u8>, value: &Value, enc: &mut Encoder) {
 fn encode_fields(fields: &Fields, enc: &mut Encoder) {
     match fields {
         Fields::Named(named) => {
-            enc.write_type(TYPE_FIELDS_NAMED);
+            enc.write_u8(FIELDS_TYPE_NAMED);
             enc.write_len(named.len());
             for e in named {
                 encode_any(None, e, enc);
             }
         }
         Fields::Unnamed(unnamed) => {
-            enc.write_type(TYPE_FIELDS_UNNAMED);
+            enc.write_u8(FIELDS_TYPE_UNNAMED);
             enc.write_len(unnamed.len());
             for e in unnamed {
                 encode_any(None, e, enc);
             }
         }
         Fields::Unit => {
-            enc.write_type(TYPE_FIELDS_UNIT);
+            enc.write_u8(FIELDS_TYPE_UNIT);
         }
     }
 }
@@ -387,7 +387,7 @@ fn decode_next(ty_ctx: Option<u8>, dec: &mut Decoder) -> Result<Value, DecodeErr
 fn decode_fields(dec: &mut Decoder) -> Result<Fields, DecodeError> {
     let ty = dec.read_type()?;
     match ty {
-        TYPE_FIELDS_NAMED => {
+        FIELDS_TYPE_NAMED => {
             //length
             let len = dec.read_len()?;
             // named fields
@@ -397,7 +397,7 @@ fn decode_fields(dec: &mut Decoder) -> Result<Fields, DecodeError> {
             }
             Ok(Fields::Named(named))
         }
-        TYPE_FIELDS_UNNAMED => {
+        FIELDS_TYPE_UNNAMED => {
             //length
             let len = dec.read_len()?;
             // named fields
@@ -407,7 +407,7 @@ fn decode_fields(dec: &mut Decoder) -> Result<Fields, DecodeError> {
             }
             Ok(Fields::Unnamed(unnamed))
         }
-        TYPE_FIELDS_UNIT => Ok(Fields::Unit),
+        FIELDS_TYPE_UNIT => Ok(Fields::Unit),
         _ => Err(DecodeError::InvalidType {
             expected: None,
             actual: ty,

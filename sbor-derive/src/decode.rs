@@ -32,7 +32,10 @@ pub fn handle_decode(input: TokenStream) -> Result<TokenStream> {
                     impl ::sbor::Decode for #ident {
                         fn decode_value(decoder: &mut ::sbor::Decoder) -> Result<Self, ::sbor::DecodeError> {
                             use ::sbor::{self, Decode};
-                            decoder.check_type(::sbor::type_id::TYPE_FIELDS_NAMED)?;
+                            let index = decoder.read_u8()?;
+                            if index != ::sbor::type_id::FIELDS_TYPE_NAMED {
+                                return Err(::sbor::DecodeError::InvalidIndex(index));
+                            }
                             decoder.check_len(#ns_n)?;
                             Ok(Self {
                                 #(#ns_ids: <#ns_types>::decode(decoder)?,)*
@@ -57,7 +60,10 @@ pub fn handle_decode(input: TokenStream) -> Result<TokenStream> {
                     impl ::sbor::Decode for #ident {
                         fn decode_value(decoder: &mut ::sbor::Decoder) -> Result<Self, ::sbor::DecodeError> {
                             use ::sbor::{self, Decode};
-                            decoder.check_type(::sbor::type_id::TYPE_FIELDS_UNNAMED)?;
+                            let index = decoder.read_u8()?;
+                            if index != ::sbor::type_id::FIELDS_TYPE_UNNAMED {
+                                return Err(::sbor::DecodeError::InvalidIndex(index));
+                            }
                             decoder.check_len(#ns_n)?;
                             Ok(Self (
                                 #(#all_exprs,)*
@@ -70,7 +76,10 @@ pub fn handle_decode(input: TokenStream) -> Result<TokenStream> {
                 quote! {
                     impl ::sbor::Decode for #ident {
                         fn decode_value(decoder: &mut ::sbor::Decoder) -> Result<Self, ::sbor::DecodeError> {
-                            decoder.check_type(::sbor::type_id::TYPE_FIELDS_UNIT)?;
+                            let index = decoder.read_u8()?;
+                            if index != ::sbor::type_id::FIELDS_TYPE_UNIT {
+                                return Err(::sbor::DecodeError::InvalidIndex(index));
+                            }
                             Ok(Self {})
                         }
                     }
@@ -92,7 +101,10 @@ pub fn handle_decode(input: TokenStream) -> Result<TokenStream> {
                         let s_types = s.iter().map(|f| &f.ty);
                         quote! {
                             #v_ith => {
-                                decoder.check_type(::sbor::type_id::TYPE_FIELDS_NAMED)?;
+                                let index = decoder.read_u8()?;
+                                if index != ::sbor::type_id::FIELDS_TYPE_NAMED {
+                                    return Err(::sbor::DecodeError::InvalidIndex(index));
+                                }
                                 decoder.check_len(#ns_n)?;
 
                                 Ok(Self::#v_id {
@@ -115,7 +127,10 @@ pub fn handle_decode(input: TokenStream) -> Result<TokenStream> {
                         let ns_n = Index::from(unnamed.iter().filter(|f| !is_skipped(f)).count());
                         quote! {
                             #v_ith => {
-                                decoder.check_type(::sbor::type_id::TYPE_FIELDS_UNNAMED)?;
+                                let index = decoder.read_u8()?;
+                                if index != ::sbor::type_id::FIELDS_TYPE_UNNAMED {
+                                    return Err(::sbor::DecodeError::InvalidIndex(index));
+                                }
                                 decoder.check_len(#ns_n)?;
 
                                 Ok(Self::#v_id (
@@ -127,7 +142,10 @@ pub fn handle_decode(input: TokenStream) -> Result<TokenStream> {
                     syn::Fields::Unit => {
                         quote! {
                             #v_ith => {
-                                decoder.check_type(::sbor::type_id::TYPE_FIELDS_UNIT)?;
+                                let index = decoder.read_u8()?;
+                                if index != ::sbor::type_id::FIELDS_TYPE_UNIT {
+                                    return Err(::sbor::DecodeError::InvalidIndex(index));
+                                }
                                 Ok(Self::#v_id)
                             }
                         }
@@ -184,7 +202,10 @@ mod tests {
                 impl ::sbor::Decode for Test {
                     fn decode_value(decoder: &mut ::sbor::Decoder) -> Result<Self, ::sbor::DecodeError> {
                         use ::sbor::{self, Decode};
-                        decoder.check_type(::sbor::type_id::TYPE_FIELDS_NAMED)?;
+                        let index = decoder.read_u8()?;
+                        if index != ::sbor::type_id::FIELDS_TYPE_NAMED {
+                            return Err(::sbor::DecodeError::InvalidIndex(index));
+                        }
                         decoder.check_len(1)?;
                         Ok(Self {
                             a: <u32>::decode(decoder)?,
@@ -210,16 +231,25 @@ mod tests {
                         let index = decoder.read_u8()?;
                         match index {
                             0u8 => {
-                                decoder.check_type(::sbor::type_id::TYPE_FIELDS_UNIT)?;
+                                let index = decoder.read_u8()?;
+                                if index != ::sbor::type_id::FIELDS_TYPE_UNIT {
+                                    return Err(::sbor::DecodeError::InvalidIndex(index));
+                                }
                                 Ok(Self::A)
                             },
                             1u8 => {
-                                decoder.check_type(::sbor::type_id::TYPE_FIELDS_UNNAMED)?;
+                                let index = decoder.read_u8()?;
+                                if index != ::sbor::type_id::FIELDS_TYPE_UNNAMED {
+                                    return Err(::sbor::DecodeError::InvalidIndex(index));
+                                }
                                 decoder.check_len(1)?;
                                 Ok(Self::B(<u32>::decode(decoder)?))
                             },
                             2u8 => {
-                                decoder.check_type(::sbor::type_id::TYPE_FIELDS_NAMED)?;
+                                let index = decoder.read_u8()?;
+                                if index != ::sbor::type_id::FIELDS_TYPE_NAMED {
+                                    return Err(::sbor::DecodeError::InvalidIndex(index));
+                                }
                                 decoder.check_len(1)?;
                                 Ok(Self::C {
                                     x: <u8>::decode(decoder)?,
