@@ -1,4 +1,5 @@
 use colored::*;
+use sbor::any::Value;
 use sbor::*;
 use scrypto::buffer::*;
 use scrypto::kernel::*;
@@ -10,30 +11,6 @@ use scrypto::types::*;
 
 use crate::engine::*;
 use crate::utils::*;
-
-/// Represents a universally recognizable value.
-#[derive(Clone, TypeId, Encode, Decode)]
-pub struct SmartValue {
-    pub encoded: Vec<u8>,
-}
-
-impl SmartValue {
-    pub fn from<T: Encode>(v: T) -> Self {
-        Self {
-            encoded: scrypto_encode(&v),
-        }
-    }
-}
-
-impl fmt::Debug for SmartValue {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        if self.encoded.len() <= 1024 {
-            write!(f, "{}", format_data(&self.encoded).unwrap())
-        } else {
-            write!(f, "LargeValue(len: {})", self.encoded.len())
-        }
-    }
-}
 
 /// A transaction consists a sequence of instructions.
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
@@ -73,7 +50,7 @@ pub enum Instruction {
         package_address: Address,
         blueprint_name: String,
         function: String,
-        args: Vec<SmartValue>,
+        args: Vec<Vec<u8>>,
     },
 
     /// Calls a component method.
@@ -82,7 +59,7 @@ pub enum Instruction {
     CallMethod {
         component_address: Address,
         method: String,
-        args: Vec<SmartValue>,
+        args: Vec<Vec<u8>>,
     },
 
     /// Drops all bucket refs.
@@ -92,14 +69,191 @@ pub enum Instruction {
     DepositAllBuckets { account: Address },
 
     /// Marks the end of transaction with signatures.
-    End { signers: Vec<Address> },
+    /// TODO: replace public key address with signature.
+    End { signatures: Vec<Address> },
+}
+
+impl Transaction {
+    pub fn check(&self) -> Result<CheckedTransaction, CheckTransactionError> {
+        // TODO should also consider semantic check, e.g. unused temp bucket/-ref.
+
+        let mut instructions = vec![];
+        let mut signers = vec![];
+        for (i, inst) in self.instructions.iter().enumerate() {
+            match inst.clone() {
+                Instruction::DeclareTempBucket => {
+                    instructions.push(CheckedInstruction::DeclareTempBucket);
+                }
+                Instruction::DeclareTempBucketRef => {
+                    instructions.push(CheckedInstruction::DeclareTempBucketRef);
+                }
+                Instruction::TakeFromContext {
+                    amount,
+                    resource_address,
+                    to,
+                } => {
+                    instructions.push(CheckedInstruction::TakeFromContext {
+                        amount,
+                        resource_address,
+                        to,
+                    });
+                }
+                Instruction::BorrowFromContext {
+                    amount,
+                    resource_address,
+                    to,
+                } => {
+                    instructions.push(CheckedInstruction::BorrowFromContext {
+                        amount,
+                        resource_address,
+                        to,
+                    });
+                }
+                Instruction::CallFunction {
+                    package_address,
+                    blueprint_name,
+                    function,
+                    args,
+                } => {
+                    let mut checked_args = vec![];
+                    for arg in args {
+                        checked_args.push(
+                            CheckedValue::from_untrusted(&arg)
+                                .map_err(|_| CheckTransactionError::InvalidCallArgument)?,
+                        );
+                    }
+                    instructions.push(CheckedInstruction::CallFunction {
+                        package_address,
+                        blueprint_name,
+                        function,
+                        args: checked_args,
+                    });
+                }
+                Instruction::CallMethod {
+                    component_address,
+                    method,
+                    args,
+                } => {
+                    let mut checked_args = vec![];
+                    for arg in args {
+                        checked_args.push(
+                            CheckedValue::from_untrusted(&arg)
+                                .map_err(|_| CheckTransactionError::InvalidCallArgument)?,
+                        );
+                    }
+                    instructions.push(CheckedInstruction::CallMethod {
+                        component_address,
+                        method,
+                        args: checked_args,
+                    });
+                }
+                Instruction::DropAllBucketRefs => {
+                    instructions.push(CheckedInstruction::DeclareTempBucketRef);
+                }
+                Instruction::DepositAllBuckets { account } => {
+                    instructions.push(CheckedInstruction::DepositAllBuckets { account });
+                }
+                Instruction::End { signatures } => {
+                    if i != self.instructions.len() - 1 {
+                        return Err(CheckTransactionError::UnexpectedEnd);
+                    }
+                    signers.extend(signatures);
+                }
+            }
+        }
+
+        Ok(CheckedTransaction {
+            instructions,
+            signers,
+        })
+    }
+}
+
+#[derive(Debug)]
+pub enum CheckTransactionError {
+    InvalidCallArgument,
+    InvalidSignature,
+    UnexpectedEnd,
+}
+
+#[derive(Debug, Clone)]
+pub struct CheckedTransaction {
+    pub instructions: Vec<CheckedInstruction>,
+    pub signers: Vec<Address>,
+}
+
+#[derive(Debug, Clone)]
+pub enum CheckedInstruction {
+    DeclareTempBucket,
+    DeclareTempBucketRef,
+    TakeFromContext {
+        amount: Decimal,
+        resource_address: Address,
+        to: Bid,
+    },
+    BorrowFromContext {
+        amount: Decimal,
+        resource_address: Address,
+        to: Rid,
+    },
+    CallFunction {
+        package_address: Address,
+        blueprint_name: String,
+        function: String,
+        args: Vec<CheckedValue>,
+    },
+    CallMethod {
+        component_address: Address,
+        method: String,
+        args: Vec<CheckedValue>,
+    },
+    DropAllBucketRefs,
+    DepositAllBuckets {
+        account: Address,
+    },
+}
+
+#[derive(Clone)]
+pub struct CheckedValue {
+    pub bytes: Vec<u8>,
+    pub value: Value,
+}
+
+impl CheckedValue {
+    pub fn from_trusted<T: Encode>(v: T) -> Self {
+        let bytes = scrypto_encode(&v);
+        let value = decode_any(&bytes).unwrap();
+
+        Self { bytes, value }
+    }
+
+    pub fn from_untrusted(raw: &[u8]) -> Result<Self, DecodeError> {
+        let bytes = raw.to_vec();
+        let value = decode_any(&bytes)?;
+        // TODO: recursively check custom types
+        // We should also consider if SBOR should be Scrypto-specific or generic.
+        // The benefits of the former is that we can move the custom type validation
+        // to SBOR.
+        Ok(Self { bytes, value })
+    }
+}
+
+impl fmt::Debug for CheckedValue {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        // TODO: format the value based on the tiny lang introduced by transaction manifest.
+        if self.bytes.len() <= 1024 {
+            write!(f, "{}", format_data(&self.bytes).unwrap())
+        } else {
+            write!(f, "LargeValue(len: {})", self.bytes.len())
+        }
+    }
 }
 
 /// Represents a transaction receipt.
 pub struct Receipt {
-    pub transaction: Transaction,
+    pub transaction: CheckedTransaction,
     pub success: bool,
-    pub results: Vec<Result<Option<SmartValue>, RuntimeError>>,
+    pub results: Vec<Result<Option<CheckedValue>, RuntimeError>>,
     pub logs: Vec<(LogLevel, String)>,
     pub new_entities: Vec<Address>,
     pub execution_time: Option<u128>,

@@ -21,7 +21,7 @@ pub struct TransactionExecutor<'l, L: Ledger> {
 /// Represents an error when executing the transaction.
 #[derive(Debug)]
 pub enum TransactionExecutionError {
-    MissingEndInstruction,
+    InvalidTransaction(CheckTransactionError),
 }
 
 impl<'l, L: Ledger> AbiProvider for TransactionExecutor<'l, L> {
@@ -160,48 +160,45 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
         #[cfg(not(feature = "alloc"))]
         let now = std::time::Instant::now();
 
-        let signers = if let Some(Instruction::End { signers }) = transaction.instructions.last() {
-            // TODO: check all signer addresses are public key; eventually should be computed from signature.
-            signers.clone()
-        } else {
-            return Err(TransactionExecutionError::MissingEndInstruction);
-        };
+        let check_tx = transaction
+            .check()
+            .map_err(TransactionExecutionError::InvalidTransaction)?;
 
         let mut track = Track::new(
             self.ledger,
             self.current_epoch,
             sha256(self.nonce.to_string()),
-            signers,
+            check_tx.signers.clone(),
         );
         let mut proc = track.start_process(trace);
 
         let mut results = vec![];
         let mut success = true;
-        for inst in &transaction.instructions {
+        for inst in &check_tx.instructions {
             let res = match inst {
-                Instruction::DeclareTempBucket => {
+                CheckedInstruction::DeclareTempBucket => {
                     proc.declare_bucket();
                     Ok(None)
                 }
-                Instruction::DeclareTempBucketRef => {
+                CheckedInstruction::DeclareTempBucketRef => {
                     proc.declare_bucket_ref();
                     Ok(None)
                 }
-                Instruction::TakeFromContext {
+                CheckedInstruction::TakeFromContext {
                     amount,
                     resource_address,
                     to,
                 } => proc
                     .take_from_context(*amount, *resource_address, *to)
                     .map(|_| None),
-                Instruction::BorrowFromContext {
+                CheckedInstruction::BorrowFromContext {
                     amount,
                     resource_address,
                     to,
                 } => proc
                     .borrow_from_context(*amount, *resource_address, *to)
                     .map(|_| None),
-                Instruction::CallFunction {
+                CheckedInstruction::CallFunction {
                     package_address,
                     blueprint_name,
                     function,
@@ -211,10 +208,10 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
                         *package_address,
                         blueprint_name.as_str(),
                         function.as_str(),
-                        args.iter().map(|v| v.encoded.clone()).collect(),
+                        args.iter().map(|a| a.bytes.clone()).collect(), // TODO: update RE interface
                     )
-                    .map(|rtn| Some(SmartValue { encoded: rtn })),
-                Instruction::CallMethod {
+                    .map(|rtn| Some(CheckedValue::from_trusted(rtn))),
+                CheckedInstruction::CallMethod {
                     component_address,
                     method,
                     args,
@@ -222,24 +219,23 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
                     .call_method(
                         *component_address,
                         method.as_str(),
-                        args.iter().map(|v| v.encoded.clone()).collect(),
+                        args.iter().map(|a| a.bytes.clone()).collect(),
                     )
-                    .map(|rtn| Some(SmartValue { encoded: rtn })),
+                    .map(|rtn| Some(CheckedValue::from_trusted(rtn))),
 
-                Instruction::DropAllBucketRefs => {
+                CheckedInstruction::DropAllBucketRefs => {
                     proc.drop_bucket_refs();
                     Ok(None)
                 }
-                Instruction::DepositAllBuckets { account } => {
+                CheckedInstruction::DepositAllBuckets { account } => {
                     let buckets = proc.list_buckets();
                     if !buckets.is_empty() {
                         proc.call_method(*account, "deposit_batch", args!(buckets))
-                            .map(|rtn| Some(SmartValue { encoded: rtn }))
+                            .map(|rtn| Some(CheckedValue::from_trusted(rtn)))
                     } else {
                         Ok(None)
                     }
                 }
-                Instruction::End { .. } => proc.check_resource().map(|_| None),
             };
             success &= res.is_ok();
             results.push(res);
@@ -259,7 +255,7 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
         let execution_time = Some(now.elapsed().as_millis());
 
         Ok(Receipt {
-            transaction,
+            transaction: check_tx,
             success,
             results,
             logs: track.logs().clone(),

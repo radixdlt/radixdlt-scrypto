@@ -288,7 +288,9 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         let mut v = Vec::new();
         v.extend(self.reservations.clone());
         v.extend(self.instructions.clone());
-        v.push(Instruction::End { signers });
+        v.push(Instruction::End {
+            signatures: signers, // TODO sign
+        });
 
         Ok(Transaction { instructions: v })
     }
@@ -303,7 +305,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
             package_address: SYSTEM_PACKAGE,
             blueprint_name: "System".to_owned(),
             function: "publish_package".to_owned(),
-            args: vec![SmartValue::from(code.to_vec())],
+            args: vec![scrypto_encode(&code.to_vec())],
         })
     }
 
@@ -324,15 +326,15 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
             blueprint_name: "System".to_owned(),
             function: "new_resource".to_owned(),
             args: vec![
-                SmartValue::from(ResourceType::Fungible { divisibility: 18 }),
-                SmartValue::from(metadata),
-                SmartValue::from(MINTABLE | BURNABLE),
-                SmartValue::from(0u16),
-                SmartValue::from(Self::single_authority(
+                scrypto_encode(&ResourceType::Fungible { divisibility: 18 }),
+                scrypto_encode(&metadata),
+                scrypto_encode(&(MINTABLE | BURNABLE)),
+                scrypto_encode(&0u16),
+                scrypto_encode(&Self::single_authority(
                     mint_badge_address,
                     MAY_MINT | MAY_BURN,
                 )),
-                SmartValue::from::<Option<NewSupply>>(None),
+                scrypto_encode::<Option<NewSupply>>(&None),
             ],
         })
     }
@@ -348,12 +350,12 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
             blueprint_name: "System".to_owned(),
             function: "new_resource".to_owned(),
             args: vec![
-                SmartValue::from(ResourceType::Fungible { divisibility: 18 }),
-                SmartValue::from(metadata),
-                SmartValue::from(0u16),
-                SmartValue::from(0u16),
-                SmartValue::from(HashMap::<Address, u16>::new()),
-                SmartValue::from(Some(NewSupply::Fungible {
+                scrypto_encode(&ResourceType::Fungible { divisibility: 18 }),
+                scrypto_encode(&metadata),
+                scrypto_encode(&0u16),
+                scrypto_encode(&0u16),
+                scrypto_encode(&HashMap::<Address, u16>::new()),
+                scrypto_encode(&Some(NewSupply::Fungible {
                     amount: initial_supply.into(),
                 })),
             ],
@@ -371,15 +373,15 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
             blueprint_name: "System".to_owned(),
             function: "new_resource".to_owned(),
             args: vec![
-                SmartValue::from(ResourceType::Fungible { divisibility: 0 }),
-                SmartValue::from(metadata),
-                SmartValue::from(MINTABLE | BURNABLE),
-                SmartValue::from(0u16),
-                SmartValue::from(Self::single_authority(
+                scrypto_encode(&ResourceType::Fungible { divisibility: 0 }),
+                scrypto_encode(&metadata),
+                scrypto_encode(&(MINTABLE | BURNABLE)),
+                scrypto_encode(&0u16),
+                scrypto_encode(&Self::single_authority(
                     mint_badge_address,
                     MAY_MINT | MAY_BURN,
                 )),
-                SmartValue::from::<Option<NewSupply>>(None),
+                scrypto_encode::<Option<NewSupply>>(&None),
             ],
         })
     }
@@ -395,12 +397,12 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
             blueprint_name: "System".to_owned(),
             function: "new_resource".to_owned(),
             args: vec![
-                SmartValue::from(ResourceType::Fungible { divisibility: 0 }),
-                SmartValue::from(metadata),
-                SmartValue::from(0u16),
-                SmartValue::from(0u16),
-                SmartValue::from(HashMap::<Address, u16>::new()),
-                SmartValue::from(Some(NewSupply::Fungible {
+                scrypto_encode(&ResourceType::Fungible { divisibility: 0 }),
+                scrypto_encode(&metadata),
+                scrypto_encode(&0u16),
+                scrypto_encode(&0u16),
+                scrypto_encode(&HashMap::<Address, u16>::new()),
+                scrypto_encode(&Some(NewSupply::Fungible {
                     amount: initial_supply.into(),
                 })),
             ],
@@ -421,9 +423,9 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                 blueprint_name: "System".to_owned(),
                 function: "mint".to_owned(),
                 args: vec![
-                    SmartValue::from(amount),
-                    SmartValue::from(resource_address),
-                    SmartValue::from(rid),
+                    scrypto_encode(&amount),
+                    scrypto_encode(&resource_address),
+                    scrypto_encode(&rid),
                 ],
             })
         })
@@ -435,7 +437,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
             package_address: ACCOUNT_PACKAGE,
             blueprint_name: "Account".to_owned(),
             function: "new".to_owned(),
-            args: vec![SmartValue::from(key)],
+            args: vec![scrypto_encode(&key)],
         })
     }
 
@@ -454,7 +456,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                 package_address: ACCOUNT_PACKAGE,
                 blueprint_name: "Account".to_owned(),
                 function: "with_bucket".to_owned(),
-                args: vec![SmartValue::from(key), SmartValue::from(bid)],
+                args: vec![scrypto_encode(&key), scrypto_encode(&bid)],
             })
         })
     }
@@ -472,10 +474,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
             } => self.add_instruction(Instruction::CallMethod {
                 component_address: account,
                 method: "withdraw".to_owned(),
-                args: vec![
-                    SmartValue::from(*amount),
-                    SmartValue::from(*resource_address),
-                ],
+                args: vec![scrypto_encode(&*amount), scrypto_encode(&*resource_address)],
             }),
             ResourceAmount::NonFungible {
                 ids,
@@ -484,8 +483,8 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                 component_address: account,
                 method: "withdraw_nfts".to_owned(),
                 args: vec![
-                    SmartValue::from(ids.clone()),
-                    SmartValue::from(*resource_address),
+                    scrypto_encode(&ids.clone()),
+                    scrypto_encode(&*resource_address),
                 ],
             }),
         }
@@ -522,7 +521,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         types: &[Type],
         args: Vec<String>,
         account: Option<Address>,
-    ) -> Result<Vec<SmartValue>, BuildArgsError> {
+    ) -> Result<Vec<Vec<u8>>, BuildArgsError> {
         let mut encoded = Vec::new();
 
         for (i, t) in types.iter().enumerate() {
@@ -556,7 +555,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         i: usize,
         ty: &Type,
         arg: &str,
-    ) -> Result<SmartValue, BuildArgsError>
+    ) -> Result<Vec<u8>, BuildArgsError>
     where
         T: FromStr + Encode,
         T::Err: fmt::Debug,
@@ -564,7 +563,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         let value = arg
             .parse::<T>()
             .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
-        Ok(SmartValue::from(value))
+        Ok(scrypto_encode(&value))
     }
 
     fn prepare_custom_ty(
@@ -574,31 +573,31 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         arg: &str,
         name: &str,
         account: Option<Address>,
-    ) -> Result<SmartValue, BuildArgsError> {
+    ) -> Result<Vec<u8>, BuildArgsError> {
         match name {
             SCRYPTO_NAME_DECIMAL => {
                 let value = arg
                     .parse::<Decimal>()
                     .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
-                Ok(SmartValue::from(value))
+                Ok(scrypto_encode(&value))
             }
             SCRYPTO_NAME_BIG_DECIMAL => {
                 let value = arg
                     .parse::<BigDecimal>()
                     .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
-                Ok(SmartValue::from(value))
+                Ok(scrypto_encode(&value))
             }
             SCRYPTO_NAME_ADDRESS => {
                 let value = arg
                     .parse::<Address>()
                     .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
-                Ok(SmartValue::from(value))
+                Ok(scrypto_encode(&value))
             }
             SCRYPTO_NAME_H256 => {
                 let value = arg
                     .parse::<H256>()
                     .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
-                Ok(SmartValue::from(value))
+                Ok(scrypto_encode(&value))
             }
             SCRYPTO_NAME_BID | SCRYPTO_NAME_BUCKET => {
                 let resource_spec = parse_resource_spec(i, ty, arg)?;
@@ -615,7 +614,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                         bid,
                     )
                 });
-                Ok(SmartValue::from(created_bid.unwrap()))
+                Ok(scrypto_encode(&created_bid.unwrap()))
             }
             SCRYPTO_NAME_RID | SCRYPTO_NAME_BUCKET_REF => {
                 let resource_spec = parse_resource_spec(i, ty, arg)?;
@@ -631,7 +630,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                         rid,
                     )
                 });
-                Ok(SmartValue::from(created_rid.unwrap()))
+                Ok(scrypto_encode(&created_rid.unwrap()))
             }
             _ => Err(BuildArgsError::UnsupportedType(i, ty.clone())),
         }
