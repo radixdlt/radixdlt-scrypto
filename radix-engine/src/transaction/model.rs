@@ -7,6 +7,7 @@ use scrypto::rust::fmt;
 use scrypto::rust::string::String;
 use scrypto::rust::string::ToString;
 use scrypto::rust::vec::Vec;
+use scrypto::rust::vec;
 use scrypto::types::*;
 
 use crate::engine::*;
