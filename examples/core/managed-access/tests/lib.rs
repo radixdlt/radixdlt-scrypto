@@ -23,7 +23,7 @@ fn test_withdraw_all() {
     let transaction1 = TransactionBuilder::new(&executor)
         .call_function(package, "ManagedAccess", "new", vec![], None)
         .drop_all_bucket_refs()
-        .deposit_all_buckets(account)
+        .call_method_with_all_resources(account, "deposit_batch")
         .build(vec![key])
         .unwrap();
     let receipt1 = executor.run(transaction1, false).unwrap();
@@ -41,7 +41,7 @@ fn test_withdraw_all() {
             Some(account),
         )
         .drop_all_bucket_refs()
-        .deposit_all_buckets(account)
+        .call_method_with_all_resources(account, "deposit_batch")
         .build(vec![key])
         .unwrap();
     let receipt2 = executor.run(transaction2, false).unwrap();

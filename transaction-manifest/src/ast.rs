@@ -36,8 +36,9 @@ pub enum Instruction {
 
     DropAllBucketRefs,
 
-    DepositAllBuckets {
-        account: Value,
+    CallMethodWithAllResources {
+        component_address: Value,
+        method: Value,
     },
 }
 

@@ -22,7 +22,7 @@ fn bench_transfer(b: &mut Bencher) {
             account1,
         )
         .drop_all_bucket_refs()
-        .deposit_all_buckets(account2)
+        .call_method_with_all_resources(account2, "deposit_batch")
         .build(vec![key1])
         .unwrap();
 

@@ -227,10 +227,13 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
                     proc.drop_bucket_refs();
                     Ok(None)
                 }
-                CheckedInstruction::DepositAllBuckets { account } => {
+                CheckedInstruction::CallMethodWithAllResources {
+                    component_address,
+                    method,
+                } => {
                     let buckets = proc.list_buckets();
                     if !buckets.is_empty() {
-                        proc.call_method(*account, "deposit_batch", args!(buckets))
+                        proc.call_method(*component_address, method, args!(buckets))
                             .map(|rtn| Some(CheckedValue::from_trusted(rtn)))
                     } else {
                         Ok(None)

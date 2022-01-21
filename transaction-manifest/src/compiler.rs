@@ -139,8 +139,12 @@ pub fn compile_instruction(
             args: compile_args(args, resolver)?,
         }),
         ast::Instruction::DropAllBucketRefs => Some(Instruction::DropAllBucketRefs),
-        ast::Instruction::DepositAllBuckets { account } => Some(Instruction::DepositAllBuckets {
-            account: compile_address(account)?,
+        ast::Instruction::CallMethodWithAllResources {
+            component_address,
+            method,
+        } => Some(Instruction::CallMethodWithAllResources {
+            component_address: compile_address(component_address)?,
+            method: compile_string(method)?,
         }),
     })
 }
@@ -724,12 +728,13 @@ mod tests {
             vec![]
         );
         compile_instruction_ok!(
-            r#"DEPOSIT_ALL_BUCKETS  Address("02d43f479e9b2beb9df98bc3888344fc25eda181e8f710ce1bf1de");"#,
-            Some(Instruction::DepositAllBuckets {
-                account: Address::from_str(
+            r#"CALL_METHOD_WITH_ALL_RESOURCES  Address("02d43f479e9b2beb9df98bc3888344fc25eda181e8f710ce1bf1de") "deposit_batch";"#,
+            Some(Instruction::CallMethodWithAllResources {
+                component_address: Address::from_str(
                     "02d43f479e9b2beb9df98bc3888344fc25eda181e8f710ce1bf1de".into()
                 )
                 .unwrap(),
+                method: "deposit_batch".into(),
             }),
             vec![]
         );

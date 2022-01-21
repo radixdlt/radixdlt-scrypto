@@ -103,8 +103,9 @@ impl Parser {
                 },
             },
             TokenKind::DropAllBucketRefs => Instruction::DropAllBucketRefs,
-            TokenKind::DepositAllBuckets => Instruction::DepositAllBuckets {
-                account: self.parse_value()?,
+            TokenKind::CallMethodWithAllResources => Instruction::CallMethodWithAllResources {
+                component_address: self.parse_value()?,
+                method: self.parse_value()?,
             },
             _ => {
                 return Err(ParserError::UnexpectedToken(token));
@@ -689,12 +690,13 @@ mod tests {
         );
         parse_instruction_ok!(r#"DROP_ALL_BUCKET_REFS;"#, Instruction::DropAllBucketRefs);
         parse_instruction_ok!(
-            r#"DEPOSIT_ALL_BUCKETS  Address("02d43f479e9b2beb9df98bc3888344fc25eda181e8f710ce1bf1de");"#,
-            Instruction::DepositAllBuckets {
-                account: Value::Address(
+            r#"CALL_METHOD_WITH_ALL_RESOURCES  Address("02d43f479e9b2beb9df98bc3888344fc25eda181e8f710ce1bf1de") "deposit_batch";"#,
+            Instruction::CallMethodWithAllResources {
+                component_address: Value::Address(
                     Value::String("02d43f479e9b2beb9df98bc3888344fc25eda181e8f710ce1bf1de".into())
                         .into()
                 ),
+                method: Value::String("deposit_batch".into()),
             }
         );
     }

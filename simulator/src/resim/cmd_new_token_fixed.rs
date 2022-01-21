@@ -104,7 +104,7 @@ pub fn handle_new_token_fixed(matches: &ArgMatches) -> Result<(), Error> {
     let transaction = TransactionBuilder::new(&executor)
         .new_token_fixed(metadata, supply)
         .drop_all_bucket_refs()
-        .deposit_all_buckets(account.0)
+        .call_method_with_all_resources(account.0, "deposit_batch")
         .build(signers)
         .map_err(Error::TransactionConstructionError)?;
     let receipt = executor.run(transaction, trace).unwrap();

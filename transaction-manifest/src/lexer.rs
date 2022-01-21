@@ -83,7 +83,7 @@ pub enum TokenKind {
     CallFunction,
     CallMethod,
     DropAllBucketRefs,
-    DepositAllBuckets,
+    CallMethodWithAllResources,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -374,7 +374,7 @@ impl Lexer {
             "CALL_FUNCTION" => Ok(TokenKind::CallFunction),
             "CALL_METHOD" => Ok(TokenKind::CallMethod),
             "DROP_ALL_BUCKET_REFS" => Ok(TokenKind::DropAllBucketRefs),
-            "DEPOSIT_ALL_BUCKETS" => Ok(TokenKind::DepositAllBuckets),
+            "CALL_METHOD_WITH_ALL_RESOURCES" => Ok(TokenKind::CallMethodWithAllResources),
 
             s @ _ => Err(LexerError::UnknownIdentifier(s.into())),
         }

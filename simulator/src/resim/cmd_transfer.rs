@@ -53,7 +53,7 @@ pub fn handle_transfer(matches: &ArgMatches) -> Result<(), Error> {
     let transaction = TransactionBuilder::new(&executor)
         .withdraw_from_account(&resource, account.0)
         .drop_all_bucket_refs()
-        .deposit_all_buckets(recipient)
+        .call_method_with_all_resources(recipient, "deposit_batch")
         .build(signers)
         .map_err(Error::TransactionConstructionError)?;
     let receipt = executor.run(transaction, trace).unwrap();

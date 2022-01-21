@@ -275,8 +275,15 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     }
 
     /// Deposits everything into an account.
-    pub fn deposit_all_buckets(&mut self, account: Address) -> &mut Self {
-        self.add_instruction(Instruction::DepositAllBuckets { account })
+    pub fn call_method_with_all_resources(
+        &mut self,
+        component_address: Address,
+        method: &str,
+    ) -> &mut Self {
+        self.add_instruction(Instruction::CallMethodWithAllResources {
+            component_address,
+            method: method.into(),
+        })
     }
 
     /// Builds a transaction.

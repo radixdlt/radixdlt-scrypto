@@ -66,8 +66,11 @@ pub enum Instruction {
     /// Drops all bucket refs.
     DropAllBucketRefs,
 
-    /// Deposits all resources from transaction context into the designated account.
-    DepositAllBuckets { account: Address },
+    /// With method with all resources from transaction context.
+    CallMethodWithAllResources {
+        component_address: Address,
+        method: String,
+    },
 
     /// Marks the end of transaction with signatures.
     /// TODO: replace public key address with signature.
@@ -148,11 +151,17 @@ impl Transaction {
                         args: checked_args,
                     });
                 }
+                Instruction::CallMethodWithAllResources {
+                    component_address,
+                    method,
+                } => {
+                    instructions.push(CheckedInstruction::CallMethodWithAllResources {
+                        component_address,
+                        method,
+                    });
+                }
                 Instruction::DropAllBucketRefs => {
                     instructions.push(CheckedInstruction::DeclareTempBucketRef);
-                }
-                Instruction::DepositAllBuckets { account } => {
-                    instructions.push(CheckedInstruction::DepositAllBuckets { account });
                 }
                 Instruction::End { signatures } => {
                     if i != self.instructions.len() - 1 {
@@ -209,8 +218,9 @@ pub enum CheckedInstruction {
         args: Vec<CheckedValue>,
     },
     DropAllBucketRefs,
-    DepositAllBuckets {
-        account: Address,
+    CallMethodWithAllResources {
+        component_address: Address,
+        method: String,
     },
 }
 
