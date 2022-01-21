@@ -517,7 +517,7 @@ mod tests {
         compile_value_ok!(r#"1u8"#, Value::U8(1), vec![]);
         compile_value_ok!(r#"1u128"#, Value::U128(1), vec![]);
         compile_value_ok!(
-            r#"Struct{Bucket("foo"), BucketRef("foo"), "bar"} "#,
+            r#"Struct({Bucket("foo"), BucketRef("foo"), "bar"})"#,
             Value::Struct(Fields::Named(vec![
                 Value::Custom(SCRYPTO_TYPE_BID, Bid(0).to_vec()),
                 Value::Custom(SCRYPTO_TYPE_RID, Rid(1).to_vec()),
@@ -529,7 +529,7 @@ mod tests {
             ]
         );
         compile_value_ok!(
-            r#"Struct(Decimal("1.0"), BigDecimal("2.0"), Hash("aa37f5a71083a9aa044fb936678bfd74f848e930d2de482a49a73540ea72aa5c"), Vault("aa37f5a71083a9aa044fb936678bfd74f848e930d2de482a49a73540ea72aa5c00000001"), LazyMap("aa37f5a71083a9aa044fb936678bfd74f848e930d2de482a49a73540ea72aa5c00000002")) "#,
+            r#"Struct((Decimal("1.0"), BigDecimal("2.0"), Hash("aa37f5a71083a9aa044fb936678bfd74f848e930d2de482a49a73540ea72aa5c"), Vault("aa37f5a71083a9aa044fb936678bfd74f848e930d2de482a49a73540ea72aa5c00000001"), LazyMap("aa37f5a71083a9aa044fb936678bfd74f848e930d2de482a49a73540ea72aa5c00000002")))"#,
             Value::Struct(Fields::Unnamed(vec![
                 Value::Custom(
                     SCRYPTO_TYPE_DECIMAL,
@@ -566,7 +566,7 @@ mod tests {
             ])),
             vec![]
         );
-        compile_value_ok!(r#"Struct"#, Value::Struct(Fields::Unit), vec![]);
+        compile_value_ok!(r#"Struct()"#, Value::Struct(Fields::Unit), vec![]);
         compile_value_ok!(
             r#"Enum(0u8, {})"#,
             Value::Enum(0, Fields::Named(vec![])),

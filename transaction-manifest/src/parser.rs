@@ -159,20 +159,26 @@ impl Parser {
     }
     pub fn parse_struct(&mut self) -> Result<Value, ParserError> {
         advance_match!(self, TokenKind::Struct);
+        advance_match!(self, TokenKind::OpenParenthesis);
 
-        if self.is_eof() {
-            return Ok(Value::Struct(Fields::Unit));
-        }
+        let fields = {
+            let t = self.peek()?;
+            match t.kind {
+                TokenKind::OpenCurlyBrace => Fields::Named(
+                    self.parse_values_any(TokenKind::OpenCurlyBrace, TokenKind::CloseCurlyBrace)?,
+                ),
+                TokenKind::OpenParenthesis => Fields::Unnamed(
+                    self.parse_values_any(TokenKind::OpenParenthesis, TokenKind::CloseParenthesis)?,
+                ),
+                TokenKind::CloseParenthesis => Fields::Unit,
+                _ => {
+                    return Err(ParserError::UnexpectedToken(t));
+                }
+            }
+        };
 
-        Ok(Value::Struct(match self.peek()?.kind {
-            TokenKind::OpenCurlyBrace => Fields::Named(
-                self.parse_values_any(TokenKind::OpenCurlyBrace, TokenKind::CloseCurlyBrace)?,
-            ),
-            TokenKind::OpenParenthesis => Fields::Unnamed(
-                self.parse_values_any(TokenKind::OpenParenthesis, TokenKind::CloseParenthesis)?,
-            ),
-            _ => Fields::Unit,
-        }))
+        advance_match!(self, TokenKind::CloseParenthesis);
+        Ok(Value::Struct(fields))
     }
 
     pub fn parse_enum(&mut self) -> Result<Value, ParserError> {
@@ -466,20 +472,20 @@ mod tests {
     #[test]
     fn test_struct() {
         parse_value_ok!(
-            r#"Struct{"Hello", 123u8}"#,
+            r#"Struct({"Hello", 123u8})"#,
             Value::Struct(Fields::Named(vec![
                 Value::String("Hello".into()),
                 Value::U8(123),
             ]))
         );
         parse_value_ok!(
-            r#"Struct("Hello", 123u8)"#,
+            r#"Struct(("Hello", 123u8))"#,
             Value::Struct(Fields::Unnamed(vec![
                 Value::String("Hello".into()),
                 Value::U8(123),
             ]))
         );
-        parse_value_ok!(r#"Struct"#, Value::Struct(Fields::Unit));
+        parse_value_ok!(r#"Struct()"#, Value::Struct(Fields::Unit));
     }
 
     #[test]
