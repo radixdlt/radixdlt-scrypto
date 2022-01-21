@@ -6,21 +6,21 @@ use scrypto::kernel::*;
 use scrypto::rust::fmt;
 use scrypto::rust::string::String;
 use scrypto::rust::string::ToString;
-use scrypto::rust::vec::Vec;
 use scrypto::rust::vec;
+use scrypto::rust::vec::Vec;
 use scrypto::types::*;
 
 use crate::engine::*;
 use crate::utils::*;
 
 /// A transaction consists a sequence of instructions.
-#[derive(Debug, Clone, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
 pub struct Transaction {
     pub instructions: Vec<Instruction>,
 }
 
 /// Represents an instruction in transaction
-#[derive(Debug, Clone, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
 pub enum Instruction {
     /// Declares a temporary bucket for later use.
     DeclareTempBucket,

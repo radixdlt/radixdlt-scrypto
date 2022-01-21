@@ -58,72 +58,60 @@ impl Parser {
         let mut instructions = Vec::<Instruction>::new();
 
         while !self.is_eof() {
-            let token = self.advance()?;
-            println!("{:?}", token);
-            match token.kind {
-                TokenKind::DeclareTempBucket => {
-                    instructions.push(Instruction::DeclareTempBucket);
-                }
-                TokenKind::DeclareTempBucketRef => {
-                    instructions.push(Instruction::DeclareTempBucketRef);
-                }
-                TokenKind::TakeFromContext => {
-                    instructions.push(Instruction::TakeFromContext {
-                        amount: self.parse_value()?,
-                        resource_address: self.parse_value()?,
-                        to: self.parse_value()?,
-                    });
-                }
-                TokenKind::BorrowFromContext => {
-                    instructions.push(Instruction::BorrowFromContext {
-                        amount: self.parse_value()?,
-                        resource_address: self.parse_value()?,
-                        to: self.parse_value()?,
-                    });
-                }
-                TokenKind::CallFunction => {
-                    instructions.push(Instruction::CallFunction {
-                        package_address: self.parse_value()?,
-                        blueprint_name: self.parse_value()?,
-                        function: self.parse_value()?,
-                        args: {
-                            let mut values = vec![];
-                            while self.peek()?.kind != TokenKind::Semicolon {
-                                values.push(self.parse_value()?);
-                            }
-                            values
-                        },
-                    });
-                }
-                TokenKind::CallMethod => {
-                    instructions.push(Instruction::CallMethod {
-                        component_address: self.parse_value()?,
-                        method: self.parse_value()?,
-                        args: {
-                            let mut values = vec![];
-                            while self.peek()?.kind != TokenKind::Semicolon {
-                                values.push(self.parse_value()?);
-                            }
-                            values
-                        },
-                    });
-                }
-                TokenKind::DropAllBucketRefs => {
-                    instructions.push(Instruction::DropAllBucketRefs);
-                }
-                TokenKind::DepositAllBuckets => {
-                    instructions.push(Instruction::DepositAllBuckets {
-                        account: self.parse_value()?,
-                    });
-                }
-                _ => {
-                    return Err(ParserError::UnexpectedToken(token));
-                }
-            }
-            advance_match!(self, TokenKind::Semicolon);
+            instructions.push(self.parse_instruction()?);
         }
 
         Ok(Transaction { instructions })
+    }
+
+    pub fn parse_instruction(&mut self) -> Result<Instruction, ParserError> {
+        let token = self.advance()?;
+        let instruction = match token.kind {
+            TokenKind::DeclareTempBucket => Instruction::DeclareTempBucket,
+            TokenKind::DeclareTempBucketRef => Instruction::DeclareTempBucketRef,
+            TokenKind::TakeFromContext => Instruction::TakeFromContext {
+                amount: self.parse_value()?,
+                resource_address: self.parse_value()?,
+                to: self.parse_value()?,
+            },
+            TokenKind::BorrowFromContext => Instruction::BorrowFromContext {
+                amount: self.parse_value()?,
+                resource_address: self.parse_value()?,
+                to: self.parse_value()?,
+            },
+            TokenKind::CallFunction => Instruction::CallFunction {
+                package_address: self.parse_value()?,
+                blueprint_name: self.parse_value()?,
+                function: self.parse_value()?,
+                args: {
+                    let mut values = vec![];
+                    while self.peek()?.kind != TokenKind::Semicolon {
+                        values.push(self.parse_value()?);
+                    }
+                    values
+                },
+            },
+            TokenKind::CallMethod => Instruction::CallMethod {
+                component_address: self.parse_value()?,
+                method: self.parse_value()?,
+                args: {
+                    let mut values = vec![];
+                    while self.peek()?.kind != TokenKind::Semicolon {
+                        values.push(self.parse_value()?);
+                    }
+                    values
+                },
+            },
+            TokenKind::DropAllBucketRefs => Instruction::DropAllBucketRefs,
+            TokenKind::DepositAllBuckets => Instruction::DepositAllBuckets {
+                account: self.parse_value()?,
+            },
+            _ => {
+                return Err(ParserError::UnexpectedToken(token));
+            }
+        };
+        advance_match!(self, TokenKind::Semicolon);
+        Ok(instruction)
     }
 
     pub fn parse_value(&mut self) -> Result<Value, ParserError> {
@@ -357,7 +345,7 @@ impl Parser {
         }
     }
 
-    fn parse_generics(&mut self, _n: usize) -> Result<Vec<Type>, ParserError> {
+    fn parse_generics(&mut self, n: usize) -> Result<Vec<Type>, ParserError> {
         advance_match!(self, TokenKind::LessThan);
         let mut types = Vec::new();
         while self.peek()?.kind != TokenKind::GreaterThan {
@@ -367,7 +355,15 @@ impl Parser {
             }
         }
         advance_match!(self, TokenKind::GreaterThan);
-        Ok(types)
+
+        if types.len() != n {
+            Err(ParserError::InvalidNumberOfTypes {
+                expected: n,
+                actual: types.len(),
+            })
+        } else {
+            Ok(types)
+        }
     }
 
     fn parse_type(&mut self) -> Result<Type, ParserError> {
@@ -414,34 +410,30 @@ impl Parser {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::lexer::Lexer;
+    use crate::lexer::{tokenize, Span};
 
-    fn lex(s: &str) -> Vec<Token> {
-        let mut lexer = Lexer::new(s);
-        let mut tokens = Vec::new();
-        loop {
-            if let Some(token) = lexer.next_token().unwrap() {
-                tokens.push(token);
-            } else {
-                break;
-            }
-        }
-        tokens
+    #[macro_export]
+    macro_rules! parse_instruction_ok {
+        ( $s:expr, $expected:expr ) => {{
+            let mut parser = Parser::new(tokenize($s).unwrap());
+            assert_eq!(parser.parse_instruction(), Ok($expected));
+            assert!(parser.is_eof());
+        }};
     }
 
     #[macro_export]
-    macro_rules! parse_ok {
+    macro_rules! parse_value_ok {
         ( $s:expr, $expected:expr ) => {{
-            let mut parser = Parser::new(lex($s));
+            let mut parser = Parser::new(tokenize($s).unwrap());
             assert_eq!(parser.parse_value(), Ok($expected));
             assert!(parser.is_eof());
         }};
     }
 
     #[macro_export]
-    macro_rules! parse_error {
+    macro_rules! parse_value_error {
         ( $s:expr, $expected:expr ) => {{
-            let mut parser = Parser::new(lex($s));
+            let mut parser = Parser::new(tokenize($s).unwrap());
             match parser.parse_value() {
                 Ok(_) => {
                     panic!("Expected {:?} but no error is thrown", $expected);
@@ -455,76 +447,76 @@ mod tests {
 
     #[test]
     fn test_literals() {
-        parse_ok!(r#"()"#, Value::Unit);
-        parse_ok!(r#"true"#, Value::Bool(true));
-        parse_ok!(r#"false"#, Value::Bool(false));
-        parse_ok!(r#"1i8"#, Value::I8(1));
-        parse_ok!(r#"1i16"#, Value::I16(1));
-        parse_ok!(r#"1i32"#, Value::I32(1));
-        parse_ok!(r#"1i64"#, Value::I64(1));
-        parse_ok!(r#"1i128"#, Value::I128(1));
-        parse_ok!(r#"1u8"#, Value::U8(1));
-        parse_ok!(r#"1u16"#, Value::U16(1));
-        parse_ok!(r#"1u32"#, Value::U32(1));
-        parse_ok!(r#"1u64"#, Value::U64(1));
-        parse_ok!(r#"1u128"#, Value::U128(1));
-        parse_ok!(r#""test""#, Value::String("test".into()));
+        parse_value_ok!(r#"()"#, Value::Unit);
+        parse_value_ok!(r#"true"#, Value::Bool(true));
+        parse_value_ok!(r#"false"#, Value::Bool(false));
+        parse_value_ok!(r#"1i8"#, Value::I8(1));
+        parse_value_ok!(r#"1i16"#, Value::I16(1));
+        parse_value_ok!(r#"1i32"#, Value::I32(1));
+        parse_value_ok!(r#"1i64"#, Value::I64(1));
+        parse_value_ok!(r#"1i128"#, Value::I128(1));
+        parse_value_ok!(r#"1u8"#, Value::U8(1));
+        parse_value_ok!(r#"1u16"#, Value::U16(1));
+        parse_value_ok!(r#"1u32"#, Value::U32(1));
+        parse_value_ok!(r#"1u64"#, Value::U64(1));
+        parse_value_ok!(r#"1u128"#, Value::U128(1));
+        parse_value_ok!(r#""test""#, Value::String("test".into()));
     }
 
     #[test]
     fn test_struct() {
-        parse_ok!(
+        parse_value_ok!(
             r#"Struct{"Hello", 123u8}"#,
             Value::Struct(Fields::Named(vec![
                 Value::String("Hello".into()),
                 Value::U8(123),
             ]))
         );
-        parse_ok!(
+        parse_value_ok!(
             r#"Struct("Hello", 123u8)"#,
             Value::Struct(Fields::Unnamed(vec![
                 Value::String("Hello".into()),
                 Value::U8(123),
             ]))
         );
-        parse_ok!(r#"Struct"#, Value::Struct(Fields::Unit));
+        parse_value_ok!(r#"Struct"#, Value::Struct(Fields::Unit));
     }
 
     #[test]
     fn test_enum() {
-        parse_ok!(
+        parse_value_ok!(
             r#"Enum(0u8, {"Hello", 123u8})"#,
             Value::Enum(
                 0,
                 Fields::Named(vec![Value::String("Hello".into()), Value::U8(123)]),
             )
         );
-        parse_ok!(
+        parse_value_ok!(
             r#"Enum(0u8, ("Hello", 123u8))"#,
             Value::Enum(
                 0,
                 Fields::Unnamed(vec![Value::String("Hello".into()), Value::U8(123)]),
             )
         );
-        parse_ok!(r#"Enum(0u8)"#, Value::Enum(0, Fields::Unit,));
+        parse_value_ok!(r#"Enum(0u8)"#, Value::Enum(0, Fields::Unit,));
     }
 
     #[test]
     fn test_option_result_box() {
-        parse_ok!(
+        parse_value_ok!(
             r#"Some("test")"#,
             Value::Option(Some(Value::String("test".into())).into())
         );
-        parse_ok!(r#"None"#, Value::Option(None.into()));
-        parse_ok!(
+        parse_value_ok!(r#"None"#, Value::Option(None.into()));
+        parse_value_ok!(
             r#"Ok("test")"#,
             Value::Result(Ok(Value::String("test".into())).into())
         );
-        parse_ok!(
+        parse_value_ok!(
             r#"Err("test")"#,
             Value::Result(Err(Value::String("test".into())).into())
         );
-        parse_ok!(
+        parse_value_ok!(
             r#"Box("test")"#,
             Value::Box(Value::String("test".into()).into())
         );
@@ -532,11 +524,11 @@ mod tests {
 
     #[test]
     fn test_array_tuple() {
-        parse_ok!(
+        parse_value_ok!(
             r#"Array<U8>(1u8, 2u8)"#,
             Value::Array(Type::U8, vec![Value::U8(1), Value::U8(2)])
         );
-        parse_ok!(
+        parse_value_ok!(
             r#"Tuple(1u8, 2u8)"#,
             Value::Tuple(vec![Value::U8(1), Value::U8(2)])
         );
@@ -544,14 +536,14 @@ mod tests {
 
     #[test]
     fn test_containers() {
-        parse_ok!(
+        parse_value_ok!(
             r#"Vec<String>("foo", "bar")"#,
             Value::Vec(
                 Type::String,
                 vec![Value::String("foo".into()), Value::String("bar".into())]
             )
         );
-        parse_ok!(
+        parse_value_ok!(
             r#"TreeSet<String>("1st", "2nd", "3rd")"#,
             Value::TreeSet(
                 Type::String,
@@ -562,7 +554,7 @@ mod tests {
                 ]
             )
         );
-        parse_ok!(
+        parse_value_ok!(
             r#"TreeMap<String, U32>("key1", 8u32, "key2", 100u32)"#,
             Value::TreeMap(
                 Type::String,
@@ -575,7 +567,7 @@ mod tests {
                 ]
             )
         );
-        parse_ok!(
+        parse_value_ok!(
             r#"HashSet<String>("1st", "2nd", "3rd")"#,
             Value::HashSet(
                 Type::String,
@@ -586,7 +578,7 @@ mod tests {
                 ]
             )
         );
-        parse_ok!(
+        parse_value_ok!(
             r#"HashMap<String, U32>("key1", 8u32, "key2", 100u32)"#,
             Value::HashMap(
                 Type::String,
@@ -602,87 +594,102 @@ mod tests {
     }
 
     #[test]
+    fn test_failures() {
+        parse_value_error!(r#"Enum(0u8"#, ParserError::UnexpectedEof);
+        parse_value_error!(
+            r#"Enum(0u8}"#,
+            ParserError::UnexpectedToken(Token {
+                kind: TokenKind::CloseCurlyBrace,
+                span: Span { start: 8, end: 9 }
+            })
+        );
+        parse_value_error!(
+            r#"Address("abc", "def")"#,
+            ParserError::InvalidNumberOfValues {
+                actual: 2,
+                expected: 1
+            }
+        );
+        parse_value_error!(
+            r#"Vec<String, String>("abc", "def")"#,
+            ParserError::InvalidNumberOfTypes {
+                actual: 2,
+                expected: 1
+            }
+        );
+    }
+
+    #[test]
     fn test_transaction() {
-        let tx_text = r#"
-DECLARE_TEMP_BUCKET;
-DECLARE_TEMP_BUCKET_REF;
-TAKE_FROM_CONTEXT  Decimal("1.0")  Address("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d")  Bucket("xrd_bucket");
-BORROW_FROM_CONTEXT  Decimal("1.0")  Address("03559905076cb3d4b9312640393a7bc6e1d4e491a8b1b62fa73a94")  BucketRef("admin_auth");
-CALL_FUNCTION  Address("01d1f50010e4102d88aacc347711491f852c515134a9ecf67ba17c")  "Airdrop"  "new"  500u32  HashMap<String, U8>("key", 1u8);
-CALL_METHOD  Address("0292566c83de7fd6b04fcc92b5e04b03228ccff040785673278ef1")  "refill"  Bucket("xrd_bucket")  BucketRef("admin_auth");
-DROP_ALL_BUCKET_REFS;
-DEPOSIT_ALL_BUCKETS  Address("02d43f479e9b2beb9df98bc3888344fc25eda181e8f710ce1bf1de");
-"#;
-        let mut parser = Parser::new(lex(tx_text));
-        let tx = parser.parse_transaction().unwrap();
-        assert_eq!(
-            tx,
-            Transaction {
-                instructions: vec![
-                    Instruction::DeclareTempBucket,
-                    Instruction::DeclareTempBucketRef,
-                    Instruction::TakeFromContext {
-                        amount: Value::Decimal(Value::String("1.0".into()).into()),
-                        resource_address: Value::Address(
-                            Value::String(
-                                "03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d".into()
-                            )
-                            .into()
-                        ),
-                        to: Value::Bucket(Value::String("xrd_bucket".into()).into()),
-                    },
-                    Instruction::BorrowFromContext {
-                        amount: Value::Decimal(Value::String("1.0".into()).into()),
-                        resource_address: Value::Address(
-                            Value::String(
-                                "03559905076cb3d4b9312640393a7bc6e1d4e491a8b1b62fa73a94".into()
-                            )
-                            .into()
-                        ),
-                        to: Value::BucketRef(Value::String("admin_auth".into()).into()),
-                    },
-                    Instruction::CallFunction {
-                        package_address: Value::Address(
-                            Value::String(
-                                "01d1f50010e4102d88aacc347711491f852c515134a9ecf67ba17c".into()
-                            )
-                            .into()
-                        ),
-                        blueprint_name: Value::String("Airdrop".into()),
-                        function: Value::String("new".into()),
-                        args: vec![
-                            Value::U32(500),
-                            Value::HashMap(
-                                Type::String,
-                                Type::U8,
-                                vec![Value::String("key".into()), Value::U8(1)]
-                            )
-                        ]
-                    },
-                    Instruction::CallMethod {
-                        component_address: Value::Address(
-                            Value::String(
-                                "0292566c83de7fd6b04fcc92b5e04b03228ccff040785673278ef1".into()
-                            )
-                            .into()
-                        ),
-                        method: Value::String("refill".into()),
-                        args: vec![
-                            Value::Bucket(Value::String("xrd_bucket".into()).into()),
-                            Value::BucketRef(Value::String("admin_auth".into()).into())
-                        ]
-                    },
-                    Instruction::DropAllBucketRefs,
-                    Instruction::DepositAllBuckets {
-                        account: Value::Address(
-                            Value::String(
-                                "02d43f479e9b2beb9df98bc3888344fc25eda181e8f710ce1bf1de".into()
-                            )
-                            .into()
-                        ),
-                    }
+        parse_instruction_ok!(r#"DECLARE_TEMP_BUCKET;"#, Instruction::DeclareTempBucket);
+        parse_instruction_ok!(
+            r#"DECLARE_TEMP_BUCKET_REF;"#,
+            Instruction::DeclareTempBucketRef
+        );
+        parse_instruction_ok!(
+            r#"TAKE_FROM_CONTEXT  Decimal("1.0")  Address("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d")  Bucket("xrd_bucket");"#,
+            Instruction::TakeFromContext {
+                amount: Value::Decimal(Value::String("1.0".into()).into()),
+                resource_address: Value::Address(
+                    Value::String("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d".into())
+                        .into()
+                ),
+                to: Value::Bucket(Value::String("xrd_bucket".into()).into()),
+            }
+        );
+        parse_instruction_ok!(
+            r#"BORROW_FROM_CONTEXT  Decimal("1.0")  Address("03559905076cb3d4b9312640393a7bc6e1d4e491a8b1b62fa73a94")  BucketRef("admin_auth");"#,
+            Instruction::BorrowFromContext {
+                amount: Value::Decimal(Value::String("1.0".into()).into()),
+                resource_address: Value::Address(
+                    Value::String("03559905076cb3d4b9312640393a7bc6e1d4e491a8b1b62fa73a94".into())
+                        .into()
+                ),
+                to: Value::BucketRef(Value::String("admin_auth".into()).into()),
+            }
+        );
+        parse_instruction_ok!(
+            r#"CALL_FUNCTION  Address("01d1f50010e4102d88aacc347711491f852c515134a9ecf67ba17c")  "Airdrop"  "new"  500u32  HashMap<String, U8>("key", 1u8);"#,
+            Instruction::CallFunction {
+                package_address: Value::Address(
+                    Value::String("01d1f50010e4102d88aacc347711491f852c515134a9ecf67ba17c".into())
+                        .into()
+                ),
+                blueprint_name: Value::String("Airdrop".into()),
+                function: Value::String("new".into()),
+                args: vec![
+                    Value::U32(500),
+                    Value::HashMap(
+                        Type::String,
+                        Type::U8,
+                        vec![Value::String("key".into()), Value::U8(1)]
+                    )
                 ]
             }
-        )
+        );
+        parse_instruction_ok!(
+            r#"CALL_METHOD  Address("0292566c83de7fd6b04fcc92b5e04b03228ccff040785673278ef1")  "refill"  Bucket("xrd_bucket")  BucketRef("admin_auth");"#,
+            Instruction::CallMethod {
+                component_address: Value::Address(
+                    Value::String("0292566c83de7fd6b04fcc92b5e04b03228ccff040785673278ef1".into())
+                        .into()
+                ),
+                method: Value::String("refill".into()),
+                args: vec![
+                    Value::Bucket(Value::String("xrd_bucket".into()).into()),
+                    Value::BucketRef(Value::String("admin_auth".into()).into())
+                ]
+            }
+        );
+        parse_instruction_ok!(r#"DROP_ALL_BUCKET_REFS;"#, Instruction::DropAllBucketRefs);
+        parse_instruction_ok!(
+            r#"DEPOSIT_ALL_BUCKETS  Address("02d43f479e9b2beb9df98bc3888344fc25eda181e8f710ce1bf1de");"#,
+            Instruction::DepositAllBuckets {
+                account: Value::Address(
+                    Value::String("02d43f479e9b2beb9df98bc3888344fc25eda181e8f710ce1bf1de".into())
+                        .into()
+                ),
+            }
+        );
     }
 }

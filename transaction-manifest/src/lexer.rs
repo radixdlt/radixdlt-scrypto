@@ -109,6 +109,19 @@ pub struct Lexer {
     current: usize,
 }
 
+pub fn tokenize(s: &str) -> Result<Vec<Token>, LexerError> {
+    let mut lexer = Lexer::new(s);
+    let mut tokens = Vec::new();
+    loop {
+        if let Some(token) = lexer.next_token()? {
+            tokens.push(token);
+        } else {
+            break;
+        }
+    }
+    Ok(tokens)
+}
+
 impl Lexer {
     pub fn new(text: &str) -> Self {
         Self {
