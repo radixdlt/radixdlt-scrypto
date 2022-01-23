@@ -44,8 +44,9 @@ blueprint! {
         }
 
         /// Withdraws resource from this account.
-        pub fn withdraw(&mut self, amount: Decimal, resource_address: Address) -> Bucket {
-            if !Context::transaction_signers().contains(&self.key) {
+        pub fn withdraw(&mut self, amount: Decimal, resource_address: Address, auth: Vec<BucketRef>) -> Bucket {
+            let is_authorized = auth.iter().any(|r| r.resource_address() == ECDSA_TOKEN);
+            if !is_authorized {
                 panic!("Not authorized! Make sure you sign transaction with the correct keys.",)
             }
 

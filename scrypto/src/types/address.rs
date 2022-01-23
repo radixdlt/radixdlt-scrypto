@@ -29,6 +29,10 @@ pub const RADIX_TOKEN: Address = Address::ResourceDef([
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4,
 ]);
 
+pub const ECDSA_TOKEN: Address = Address::ResourceDef([
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5,
+]);
+
 /// Represents an address.
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Address {
