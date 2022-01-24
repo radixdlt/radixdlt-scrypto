@@ -1,7 +1,7 @@
 use std::ffi::OsStr;
 use std::fs;
 
-use clap::{crate_version, App, Arg, ArgMatches, SubCommand};
+use clap::{crate_version, App, Arg, ArgMatches};
 use radix_engine::ledger::*;
 use radix_engine::model::*;
 use radix_engine::transaction::*;
@@ -17,29 +17,25 @@ const ARG_PATH: &str = "PATH";
 const ARG_ADDRESS: &str = "ADDRESS";
 
 /// Constructs a `publish` subcommand.
-pub fn make_publish<'a, 'b>() -> App<'a, 'b> {
-    SubCommand::with_name(CMD_PUBLISH)
+pub fn make_publish<'a>() -> App<'a> {
+    App::new(CMD_PUBLISH)
         .about("Publishes a package")
         .version(crate_version!())
         .arg(
-            Arg::with_name(ARG_PATH)
+            Arg::new(ARG_PATH)
                 .help("Specify the the path to a Scrypto package or a .wasm file.")
                 .required(true),
         )
         // options
+        .arg(Arg::new(ARG_TRACE).long("trace").help("Turn on tracing."))
         .arg(
-            Arg::with_name(ARG_TRACE)
-                .long("trace")
-                .help("Turn on tracing."),
-        )
-        .arg(
-            Arg::with_name(ARG_SIGNERS)
+            Arg::new(ARG_SIGNERS)
                 .long("signers")
                 .takes_value(true)
                 .help("Specify the transaction signers, separated by comma."),
         )
         .arg(
-            Arg::with_name(ARG_ADDRESS)
+            Arg::new(ARG_ADDRESS)
                 .long("address")
                 .takes_value(true)
                 .help("Specify the address to overwrite.")

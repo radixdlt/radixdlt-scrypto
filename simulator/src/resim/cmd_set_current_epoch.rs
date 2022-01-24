@@ -1,16 +1,16 @@
-use clap::{crate_version, App, Arg, ArgMatches, SubCommand};
+use clap::{crate_version, App, Arg, ArgMatches};
 
 use crate::resim::*;
 
 const ARG_EPOCH: &str = "EPOCH";
 
 /// Constructs a `set-current-epoch` subcommand.
-pub fn make_set_current_epoch<'a, 'b>() -> App<'a, 'b> {
-    SubCommand::with_name(CMD_SET_CURRENT_EPOCH)
+pub fn make_set_current_epoch<'a>() -> App<'a> {
+    App::new(CMD_SET_CURRENT_EPOCH)
         .about("Sets the current epoch")
         .version(crate_version!())
         .arg(
-            Arg::with_name(ARG_EPOCH)
+            Arg::new(ARG_EPOCH)
                 .help("Specify the current epoch.")
                 .required(true),
         )

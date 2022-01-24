@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use clap::{crate_version, App, Arg, ArgMatches, SubCommand};
+use clap::{crate_version, App, Arg, ArgMatches};
 
 use crate::scrypto::*;
 use crate::utils::*;
@@ -9,22 +9,18 @@ const ARG_PATH: &str = "PATH";
 const ARG_TRACE: &str = "TRACE";
 
 /// Constructs a `build` subcommand.
-pub fn make_build<'a, 'b>() -> App<'a, 'b> {
-    SubCommand::with_name(CMD_BUILD)
+pub fn make_build<'a>() -> App<'a> {
+    App::new(CMD_BUILD)
         .about("Builds a package")
         .version(crate_version!())
         .arg(
-            Arg::with_name(ARG_PATH)
+            Arg::new(ARG_PATH)
                 .long("path")
                 .takes_value(true)
                 .help("Specifies the package dir.")
                 .required(false),
         )
-        .arg(
-            Arg::with_name(ARG_TRACE)
-                .long("trace")
-                .help("Turn on tracing."),
-        )
+        .arg(Arg::new(ARG_TRACE).long("trace").help("Turn on tracing."))
 }
 
 /// Handles a `build` request.

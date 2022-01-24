@@ -1,4 +1,4 @@
-use clap::{crate_version, App, Arg, ArgMatches, SubCommand};
+use clap::{crate_version, App, Arg, ArgMatches};
 use radix_engine::transaction::*;
 
 use crate::ledger::*;
@@ -10,23 +10,19 @@ const ARG_TRACE: &str = "TRACE";
 const ARG_SIGNERS: &str = "SIGNERS";
 
 /// Constructs a `run` subcommand.
-pub fn make_run<'a, 'b>() -> App<'a, 'b> {
-    SubCommand::with_name(CMD_RUN)
+pub fn make_run<'a>() -> App<'a> {
+    App::new(CMD_RUN)
         .about("Runs a transaction manifest")
         .version(crate_version!())
         .arg(
-            Arg::with_name(ARG_TRANSACTION_MANIFEST)
+            Arg::new(ARG_TRANSACTION_MANIFEST)
                 .help("Specify the transaction manifest path.")
                 .required(true),
         )
         // options
+        .arg(Arg::new(ARG_TRACE).long("trace").help("Turn on tracing."))
         .arg(
-            Arg::with_name(ARG_TRACE)
-                .long("trace")
-                .help("Turn on tracing."),
-        )
-        .arg(
-            Arg::with_name(ARG_SIGNERS)
+            Arg::new(ARG_SIGNERS)
                 .long("signers")
                 .takes_value(true)
                 .help("Specify the transaction signers, separated by comma."),

@@ -1,4 +1,4 @@
-use clap::{crate_version, App, Arg, ArgMatches, SubCommand};
+use clap::{crate_version, App, Arg, ArgMatches};
 use radix_engine::transaction::*;
 
 use crate::ledger::*;
@@ -10,26 +10,22 @@ const ARG_NAME: &str = "BLUEPRINT_NAME";
 const ARG_TRACE: &str = "TRACE";
 
 /// Constructs a `export-abi` subcommand.
-pub fn make_export_abi<'a, 'b>() -> App<'a, 'b> {
-    SubCommand::with_name(CMD_EXPORT_ABI)
+pub fn make_export_abi<'a>() -> App<'a> {
+    App::new(CMD_EXPORT_ABI)
         .about("Exports the ABI of a blueprint")
         .version(crate_version!())
         .arg(
-            Arg::with_name(ARG_PACKAGE)
+            Arg::new(ARG_PACKAGE)
                 .help("Specify the blueprint package address.")
                 .required(true),
         )
         .arg(
-            Arg::with_name(ARG_NAME)
+            Arg::new(ARG_NAME)
                 .help("Specify the blueprint name.")
                 .required(true),
         )
         // options
-        .arg(
-            Arg::with_name(ARG_TRACE)
-                .long("trace")
-                .help("Turn on tracing."),
-        )
+        .arg(Arg::new(ARG_TRACE).long("trace").help("Turn on tracing."))
 }
 
 /// Handles a `export-abi` request.

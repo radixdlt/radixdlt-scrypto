@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use clap::{crate_version, App, Arg, ArgMatches, SubCommand};
+use clap::{crate_version, App, Arg, ArgMatches};
 
 use crate::scrypto::*;
 use crate::utils::*;
@@ -8,12 +8,12 @@ use crate::utils::*;
 const ARG_PATH: &str = "PATH";
 
 /// Constructs a `fmt` subcommand.
-pub fn make_fmt<'a, 'b>() -> App<'a, 'b> {
-    SubCommand::with_name(CMD_FMT)
+pub fn make_fmt<'a>() -> App<'a> {
+    App::new(CMD_FMT)
         .about("Format a package")
         .version(crate_version!())
         .arg(
-            Arg::with_name(ARG_PATH)
+            Arg::new(ARG_PATH)
                 .long("path")
                 .takes_value(true)
                 .help("Specifies the package dir.")

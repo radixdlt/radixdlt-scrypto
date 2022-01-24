@@ -1,4 +1,4 @@
-use clap::{crate_version, App, Arg, ArgMatches, SubCommand};
+use clap::{crate_version, App, Arg, ArgMatches};
 use radix_engine::transaction::*;
 use scrypto::rust::collections::HashMap;
 
@@ -16,57 +16,53 @@ const ARG_URL: &str = "URL";
 const ARG_ICON_URL: &str = "ICON_URL";
 
 /// Constructs a `new-badge-mutable` subcommand.
-pub fn make_new_badge_mutable<'a, 'b>() -> App<'a, 'b> {
-    SubCommand::with_name(CMD_NEW_BADGE_MUTABLE)
+pub fn make_new_badge_mutable<'a>() -> App<'a> {
+    App::new(CMD_NEW_BADGE_MUTABLE)
         .about("Creates badge resource with mutable supply")
         .version(crate_version!())
         .arg(
-            Arg::with_name(ARG_MINT_BADGE_ADDR)
+            Arg::new(ARG_MINT_BADGE_ADDR)
                 .help("Specify the mint auth resource definition address.")
                 .required(true),
         )
         // options
+        .arg(Arg::new(ARG_TRACE).long("trace").help("Turn on tracing."))
         .arg(
-            Arg::with_name(ARG_TRACE)
-                .long("trace")
-                .help("Turn on tracing."),
-        )
-        .arg(
-            Arg::with_name(ARG_SIGNERS)
+            Arg::new(ARG_SIGNERS)
                 .long("signers")
                 .takes_value(true)
                 .help("Specify the transaction signers, separated by comma."),
         )
         .arg(
-            Arg::with_name(ARG_SYMBOL)
+            Arg::new(ARG_SYMBOL)
                 .long("symbol")
                 .takes_value(true)
                 .help("Specify the symbol.")
                 .required(false),
         )
         .arg(
-            Arg::with_name(ARG_NAME)
+            Arg::new(ARG_NAME)
                 .long("name")
                 .takes_value(true)
                 .help("Specify the name.")
                 .required(false),
         )
         .arg(
-            Arg::with_name(ARG_DESCRIPTION)
+            Arg::new(ARG_DESCRIPTION)
                 .long("description")
                 .takes_value(true)
                 .help("Specify the description.")
                 .required(false),
         )
         .arg(
-            Arg::with_name(ARG_URL)
+            Arg::new(ARG_URL)
                 .long("url")
                 .takes_value(true)
                 .help("Specify the URL.")
                 .required(false),
         )
         .arg(
-            Arg::with_name(ARG_ICON_URL)
+            Arg::new(ARG_ICON_URL)
                 .long("icon-url")
                 .takes_value(true)
                 .help("Specify the icon URL.")
