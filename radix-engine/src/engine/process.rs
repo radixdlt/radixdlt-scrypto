@@ -233,12 +233,13 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         Ok(())
     }
 
+    /// Creates a bucket ref which references a virtual bucket
     pub fn create_virtual_bucket_ref(
         &mut self,
+        rid: Rid,
         bucket: Bucket
     ) {
-        let rid = self.declare_bucket_ref();
-        let bucket_id = self.track.new_bid();
+        let bucket_id = Bid(0); // mock
         let locked_bucket = LockedBucket::new(bucket_id, bucket);
         let bucket_ref = BucketRef::new(locked_bucket);
         self.bucket_refs.insert(rid, bucket_ref);

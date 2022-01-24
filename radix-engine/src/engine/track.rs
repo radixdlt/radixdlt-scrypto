@@ -7,6 +7,7 @@ use scrypto::types::*;
 use wasmi::*;
 
 use crate::engine::*;
+use crate::engine::allocator::ECDSA_TOKEN_RID;
 use crate::ledger::*;
 use crate::model::*;
 
@@ -84,7 +85,7 @@ impl<'l, L: Ledger> Track<'l, L> {
                     ids: signers
                 }
             );
-            process.create_virtual_bucket_ref(ecdsa_bucket);
+            process.create_virtual_bucket_ref(ECDSA_TOKEN_RID, ecdsa_bucket);
         }
 
         process

@@ -1,25 +1,22 @@
 use scrypto::types::*;
 use scrypto::utils::*;
 
+pub const ECDSA_TOKEN_RID: Rid = Rid(0);
+const USER_RID_START: u32 = 1024;
+
 /// An ID allocator defines how identities are generated.
 pub struct IdAllocator {
     count: u32,
+    rid_count: u32
 }
 
 impl IdAllocator {
     /// Creates an ID allocator.
     pub fn new() -> Self {
-        Self { count: 0 }
-    }
-
-    /// Returns the number of IDs that have been generated.
-    pub fn count(&self) -> u32 {
-        self.count
-    }
-
-    /// Resets the counter.
-    pub fn reset(&mut self) {
-        self.count = 0;
+        Self {
+            count: 0,
+            rid_count: 0
+        }
     }
 
     /// Creates a new package address.
@@ -78,8 +75,9 @@ impl IdAllocator {
 
     /// Creates a new bucket ref ID.
     pub fn new_rid(&mut self) -> Rid {
-        self.count += 1;
-        Rid(self.count - 1)
+        let next_rid = self.rid_count + USER_RID_START;
+        self.rid_count += 1;
+        Rid(next_rid)
     }
 
     /// Creates a new lazy map ID.

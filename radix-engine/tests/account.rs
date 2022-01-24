@@ -10,7 +10,7 @@ fn fungible_amount() -> ResourceAmount {
 }
 
 #[test]
-fn i_can_withdraw_from_my_account() {
+fn can_withdraw_from_my_account() {
     // Arrange
     let mut ledger = InMemoryLedger::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, 0, 0);
@@ -31,7 +31,7 @@ fn i_can_withdraw_from_my_account() {
 }
 
 #[test]
-fn i_cant_withdraw_from_another_account() {
+fn cannot_withdraw_from_other_account() {
     // Arrange
     let mut ledger = InMemoryLedger::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, 0, 0);
