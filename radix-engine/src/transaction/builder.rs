@@ -274,7 +274,10 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         self.add_instruction(Instruction::DropAllBucketRefs)
     }
 
-    /// Deposits everything into an account.
+    /// Calls a method with all the resources within the context.
+    ///
+    /// The callee method must have only one parameter with type `Vec<Bucket>`; otherwise,
+    /// a runtime failure is triggered.
     pub fn call_method_with_all_resources(
         &mut self,
         component_address: Address,

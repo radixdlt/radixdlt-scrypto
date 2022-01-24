@@ -16,6 +16,10 @@ pub enum GeneratorError {
     },
     InvalidAddress(String),
     InvalidDecimal(String),
+    InvalidBigDecimal(String),
+    InvalidHash(String),
+    InvalidLazyMapId(String),
+    InvalidVaultId(String),
     OddNumberOfElements(usize),
 }
 
@@ -197,7 +201,7 @@ fn generate_big_decimal(value: &ast::Value) -> Result<BigDecimal, GeneratorError
     match value {
         ast::Value::BigDecimal(inner) => match &**inner {
             ast::Value::String(s) => {
-                BigDecimal::from_str(s).map_err(|_| GeneratorError::InvalidDecimal(s.into()))
+                BigDecimal::from_str(s).map_err(|_| GeneratorError::InvalidBigDecimal(s.into()))
             }
             v @ _ => invalid_type!(v, ast::Type::String),
         },
@@ -221,11 +225,11 @@ fn generate_hash(value: &ast::Value) -> Result<H256, GeneratorError> {
     match value {
         ast::Value::Hash(inner) => match &**inner {
             ast::Value::String(s) => {
-                H256::from_str(s).map_err(|_| GeneratorError::InvalidDecimal(s.into()))
+                H256::from_str(s).map_err(|_| GeneratorError::InvalidHash(s.into()))
             }
             v @ _ => invalid_type!(v, ast::Type::String),
         },
-        v @ _ => invalid_type!(v, ast::Type::Decimal),
+        v @ _ => invalid_type!(v, ast::Type::Hash),
     }
 }
 
@@ -258,7 +262,7 @@ fn generate_lazy_map(value: &ast::Value) -> Result<Mid, GeneratorError> {
     match value {
         ast::Value::LazyMap(inner) => match &**inner {
             ast::Value::String(s) => {
-                Mid::from_str(s).map_err(|_| GeneratorError::InvalidDecimal(s.into()))
+                Mid::from_str(s).map_err(|_| GeneratorError::InvalidLazyMapId(s.into()))
             }
             v @ _ => invalid_type!(v, ast::Type::String),
         },
@@ -270,7 +274,7 @@ fn generate_vault(value: &ast::Value) -> Result<Vid, GeneratorError> {
     match value {
         ast::Value::Vault(inner) => match &**inner {
             ast::Value::String(s) => {
-                Vid::from_str(s).map_err(|_| GeneratorError::InvalidDecimal(s.into()))
+                Vid::from_str(s).map_err(|_| GeneratorError::InvalidVaultId(s.into()))
             }
             v @ _ => invalid_type!(v, ast::Type::String),
         },
