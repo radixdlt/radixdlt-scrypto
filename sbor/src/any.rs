@@ -415,6 +415,120 @@ fn decode_fields(dec: &mut Decoder) -> Result<Fields, DecodeError> {
     }
 }
 
+pub fn traverse_any<V, E>(value: &Value, visitor: &mut V) -> Result<(), E>
+where
+    V: CustomValueVisitor<Err = E>,
+{
+    match value {
+        // primitive types
+        Value::Unit
+        | Value::Bool(_)
+        | Value::I8(_)
+        | Value::I16(_)
+        | Value::I32(_)
+        | Value::I64(_)
+        | Value::I128(_)
+        | Value::U8(_)
+        | Value::U16(_)
+        | Value::U32(_)
+        | Value::U64(_)
+        | Value::U128(_)
+        | Value::String(_) => {}
+        // struct & enum
+        Value::Struct(fields) => {
+            traverse_fields(fields, visitor)?;
+        }
+        Value::Enum(_index, fields) => {
+            traverse_fields(fields, visitor)?;
+        }
+        // composite types
+        Value::Option(v) => match v.borrow() {
+            None => {}
+            Some(x) => {
+                traverse_any(x, visitor)?;
+            }
+        },
+        Value::Box(v) => {
+            traverse_any(v, visitor)?;
+        }
+        Value::Array(_, elements) => {
+            for e in elements {
+                traverse_any(e, visitor)?;
+            }
+        }
+        Value::Tuple(elements) => {
+            for e in elements {
+                traverse_any(e, visitor)?;
+            }
+        }
+        Value::Result(v) => match v.borrow() {
+            Ok(x) | Err(x) => {
+                traverse_any(x, visitor)?;
+            }
+        },
+        // collections
+        Value::Vec(_, elements) => {
+            for e in elements {
+                traverse_any(e, visitor)?;
+            }
+        }
+        Value::TreeSet(_, elements) => {
+            for e in elements {
+                traverse_any(e, visitor)?;
+            }
+        }
+        Value::HashSet(_, elements) => {
+            for e in elements {
+                traverse_any(e, visitor)?;
+            }
+        }
+        Value::TreeMap(_, _, elements) => {
+            for e in elements {
+                traverse_any(&e.0, visitor)?;
+                traverse_any(&e.1, visitor)?;
+            }
+        }
+        Value::HashMap(_, _, elements) => {
+            for e in elements {
+                traverse_any(&e.0, visitor)?;
+                traverse_any(&e.1, visitor)?;
+            }
+        }
+        // custom types
+        Value::Custom(ty, data) => {
+            visitor.visit(*ty, data)?;
+        }
+    }
+
+    Ok(())
+}
+
+pub fn traverse_fields<V, E>(fields: &Fields, visitor: &mut V) -> Result<(), E>
+where
+    V: CustomValueVisitor<Err = E>,
+{
+    match fields {
+        Fields::Named(named) => {
+            for e in named {
+                traverse_any(e, visitor)?;
+            }
+        }
+        Fields::Unnamed(unnamed) => {
+            for e in unnamed {
+                traverse_any(e, visitor)?;
+            }
+        }
+        Fields::Unit => {}
+    };
+    Ok(())
+}
+
+pub trait CustomValueVisitor {
+    type Err;
+
+    fn visit(&mut self, kind: u8, data: &[u8]) -> Result<(), Self::Err>;
+}
+
 #[cfg(test)]
 mod tests {
     use crate::rust::boxed::Box;

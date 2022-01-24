@@ -10,7 +10,7 @@ sbor = { path = "../sbor" }
 transaction-manifest = { path = "../transaction-manifest" }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = { version = "1.0" }
-clap = { version = "3.0" }
+clap = { version = "3.0", features = ["derive", "cargo"] }
 dirs = { version = "4.0" }
 colored = { version = "2.0" }
 uuid = { version = "0.8", features = ["v4"] }

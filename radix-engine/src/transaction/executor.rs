@@ -208,9 +208,9 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
                         *package_address,
                         blueprint_name.as_str(),
                         function.as_str(),
-                        args.iter().map(|a| a.bytes.clone()).collect(), // TODO: update RE interface
+                        args.iter().map(|a| a.encoded.clone()).collect(), // TODO: update RE interface
                     )
-                    .map(|rtn| Some(CheckedValue::from_trusted(rtn))),
+                    .map(|rtn| Some(CheckedValue::from_trusted(&rtn))),
                 CheckedInstruction::CallMethod {
                     component_address,
                     method,
@@ -219,9 +219,9 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
                     .call_method(
                         *component_address,
                         method.as_str(),
-                        args.iter().map(|a| a.bytes.clone()).collect(),
+                        args.iter().map(|a| a.encoded.clone()).collect(),
                     )
-                    .map(|rtn| Some(CheckedValue::from_trusted(rtn))),
+                    .map(|rtn| Some(CheckedValue::from_trusted(&rtn))),
 
                 CheckedInstruction::DropAllBucketRefs => {
                     proc.drop_bucket_refs();
@@ -234,7 +234,7 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
                     let buckets = proc.list_buckets();
                     if !buckets.is_empty() {
                         proc.call_method(*component_address, method, args!(buckets))
-                            .map(|rtn| Some(CheckedValue::from_trusted(rtn)))
+                            .map(|rtn| Some(CheckedValue::from_trusted(&rtn)))
                     } else {
                         Ok(None)
                     }

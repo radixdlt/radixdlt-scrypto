@@ -7,7 +7,7 @@ edition = "2021"
 sbor = { path = "../sbor" }
 scrypto = { path = "../scrypto" }
 radix-engine = { path = "../radix-engine" }
-clap = { version = "3.0", features = ["derive"] }
+clap = { version = "3.0", features = ["derive", "cargo"] }
 
 [lib]
 path = "src/lib.rs"
