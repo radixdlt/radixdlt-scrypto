@@ -62,14 +62,9 @@ blueprint! {
             amount: Decimal,
             resource_address: Address,
             auth: BucketRef,
+            account_auth: BucketRef
         ) -> Bucket {
-            // FIXME: Check call depth
-            // As we're statically checking transaction signers for authorization, we need to make sure
-            // the call depth is `1` (not invoked by another component/blueprint).
-
-            if !Context::transaction_signers().contains(&self.key) {
-                panic!("Not authorized! Make sure you sign transaction with the correct keys.",)
-            }
+            account_auth.check_nft_id(ECDSA_TOKEN, |id| id == &self.key.to_u128());
 
             let vault = self.vaults.get(&resource_address);
             match vault {
@@ -81,10 +76,8 @@ blueprint! {
         }
 
         /// Withdraws NFTs from this account.
-        pub fn withdraw_nfts(&mut self, ids: BTreeSet<u128>, resource_address: Address) -> Bucket {
-            if !Context::transaction_signers().contains(&self.key) {
-                panic!("Not authorized! Make sure you sign transaction with the correct keys.",)
-            }
+        pub fn withdraw_nfts(&mut self, ids: BTreeSet<u128>, resource_address: Address, account_auth: BucketRef) -> Bucket {
+            account_auth.check_nft_id(ECDSA_TOKEN, |id| id == &self.key.to_u128());
 
             let vault = self.vaults.get(&resource_address);
             match vault {
@@ -107,14 +100,9 @@ blueprint! {
             ids: BTreeSet<u128>,
             resource_address: Address,
             auth: BucketRef,
+            account_auth: BucketRef
         ) -> Bucket {
-            // FIXME: Check call depth
-            // As we're statically checking transaction signers for authorization, we need to make sure
-            // the call depth is `1` (not invoked by another component/blueprint).
-
-            if !Context::transaction_signers().contains(&self.key) {
-                panic!("Not authorized! Make sure you sign transaction with the correct keys.",)
-            }
+            account_auth.check_nft_id(ECDSA_TOKEN, |id| id == &self.key.to_u128());
 
             let vault = self.vaults.get(&resource_address);
             let bucket = match vault {

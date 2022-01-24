@@ -487,6 +487,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                 args: vec![
                     SmartValue::from(ids.clone()),
                     SmartValue::from(*resource_address),
+                    SmartValue::from(Rid(0))
                 ],
             }),
         }

@@ -95,11 +95,6 @@ impl<'l, L: Ledger> Track<'l, L> {
         self.transaction_hash
     }
 
-    /// Returns the transaction hash.
-    pub fn transaction_signers(&self) -> Vec<Address> {
-        self.transaction_signers.clone()
-    }
-
     /// Returns the current epoch.
     pub fn current_epoch(&self) -> u64 {
         self.current_epoch

@@ -67,6 +67,8 @@ impl Address {
         }
     }
 
+    // FIXME: This is a temporary interface. NFT Ids are u128, and need a
+    // simple way to map Address to the NFT Id space.
     pub fn to_u128(&self) -> u128 {
         let mut bytes: [u8; 16] = [0; 16];
         match self {
