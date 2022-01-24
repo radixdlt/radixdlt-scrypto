@@ -74,7 +74,18 @@ impl<'l, L: Ledger> Track<'l, L> {
 
     /// Start a process.
     pub fn start_process<'r>(&'r mut self, verbose: bool) -> Process<'r, 'l, L> {
-        let signers : BTreeSet<u128> = self.transaction_signers.clone().into_iter().map(|s| s.to_u128()).collect();
+        let signers : BTreeSet<u128> = self.transaction_signers.clone().into_iter()
+            .map(|address| {
+                let mut bytes: [u8; 16] = [0; 16];
+                match address {
+                    Address::Package(d) => bytes[..].copy_from_slice(&d[..16]),
+                    Address::Component(d) => bytes[..].copy_from_slice(&d[..16]),
+                    Address::ResourceDef(d) => bytes[..].copy_from_slice(&d[..16]),
+                    Address::PublicKey(d) => bytes[..].copy_from_slice(&d[..16]),
+                }
+                u128::from_be_bytes(bytes)
+            })
+            .collect();
         let mut process = Process::new(0, verbose, self);
 
         if !signers.is_empty() {

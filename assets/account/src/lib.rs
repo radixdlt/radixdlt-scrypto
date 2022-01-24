@@ -43,9 +43,22 @@ blueprint! {
             }
         }
 
+        // FIXME: This is a temporary interface. NFT Ids are u128, and need a
+        // simple way to map Address to the NFT Id space.
+        fn key_u128(&self) -> u128 {
+            let mut bytes: [u8; 16] = [0; 16];
+            match self.key {
+                Address::Package(d) => bytes[..].copy_from_slice(&d[..16]),
+                Address::Component(d) => bytes[..].copy_from_slice(&d[..16]),
+                Address::ResourceDef(d) => bytes[..].copy_from_slice(&d[..16]),
+                Address::PublicKey(d) => bytes[..].copy_from_slice(&d[..16]),
+            }
+            u128::from_be_bytes(bytes)
+        }
+
         /// Withdraws resource from this account.
         pub fn withdraw(&mut self, amount: Decimal, resource_address: Address, account_auth: BucketRef) -> Bucket {
-            account_auth.check_nft_id(ECDSA_TOKEN, |id| id == &self.key.to_u128());
+            account_auth.check_nft_id(ECDSA_TOKEN, |id| id == &self.key_u128());
 
             let vault = self.vaults.get(&resource_address);
             match vault {
@@ -64,7 +77,7 @@ blueprint! {
             auth: BucketRef,
             account_auth: BucketRef
         ) -> Bucket {
-            account_auth.check_nft_id(ECDSA_TOKEN, |id| id == &self.key.to_u128());
+            account_auth.check_nft_id(ECDSA_TOKEN, |id| id == &self.key_u128());
 
             let vault = self.vaults.get(&resource_address);
             match vault {
@@ -77,7 +90,7 @@ blueprint! {
 
         /// Withdraws NFTs from this account.
         pub fn withdraw_nfts(&mut self, ids: BTreeSet<u128>, resource_address: Address, account_auth: BucketRef) -> Bucket {
-            account_auth.check_nft_id(ECDSA_TOKEN, |id| id == &self.key.to_u128());
+            account_auth.check_nft_id(ECDSA_TOKEN, |id| id == &self.key_u128());
 
             let vault = self.vaults.get(&resource_address);
             match vault {
@@ -102,7 +115,7 @@ blueprint! {
             auth: BucketRef,
             account_auth: BucketRef
         ) -> Bucket {
-            account_auth.check_nft_id(ECDSA_TOKEN, |id| id == &self.key.to_u128());
+            account_auth.check_nft_id(ECDSA_TOKEN, |id| id == &self.key_u128());
 
             let vault = self.vaults.get(&resource_address);
             let bucket = match vault {
