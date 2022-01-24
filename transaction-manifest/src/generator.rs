@@ -9,7 +9,7 @@ use std::collections::HashMap;
 use std::str::FromStr;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum CompilerError {
+pub enum GeneratorError {
     WrongTypeOfValue {
         expected_type: Vec<ast::Type>,
         actual: ast::Value,
@@ -72,12 +72,12 @@ impl NameResolver {
     }
 }
 
-pub fn compile_transaction(tx: &ast::Transaction) -> Result<Transaction, CompilerError> {
+pub fn generate_transaction(tx: &ast::Transaction) -> Result<Transaction, GeneratorError> {
     let mut name_resolver = NameResolver::new();
     let mut other_instructions = Vec::new();
 
     for instruction in &tx.instructions {
-        if let Some(i) = compile_instruction(instruction, &mut name_resolver)? {
+        if let Some(i) = generate_instruction(instruction, &mut name_resolver)? {
             other_instructions.push(i);
         }
     }
@@ -87,10 +87,10 @@ pub fn compile_transaction(tx: &ast::Transaction) -> Result<Transaction, Compile
     Ok(Transaction { instructions })
 }
 
-pub fn compile_instruction(
+pub fn generate_instruction(
     instruction: &ast::Instruction,
     resolver: &mut NameResolver,
-) -> Result<Option<Instruction>, CompilerError> {
+) -> Result<Option<Instruction>, GeneratorError> {
     Ok(match instruction {
         ast::Instruction::DeclareTempBucket => {
             resolver.new_bucket();
@@ -105,18 +105,18 @@ pub fn compile_instruction(
             resource_address,
             to,
         } => Some(Instruction::TakeFromContext {
-            amount: compile_decimal(amount)?,
-            resource_address: compile_address(resource_address)?,
-            to: compile_bucket(to, resolver)?,
+            amount: generate_decimal(amount)?,
+            resource_address: generate_address(resource_address)?,
+            to: generate_bucket(to, resolver)?,
         }),
         ast::Instruction::BorrowFromContext {
             amount,
             resource_address,
             to,
         } => Some(Instruction::BorrowFromContext {
-            amount: compile_decimal(amount)?,
-            resource_address: compile_address(resource_address)?,
-            to: compile_bucket_ref(to, resolver)?,
+            amount: generate_decimal(amount)?,
+            resource_address: generate_address(resource_address)?,
+            to: generate_bucket_ref(to, resolver)?,
         }),
         ast::Instruction::CallFunction {
             package_address,
@@ -124,27 +124,27 @@ pub fn compile_instruction(
             function,
             args,
         } => Some(Instruction::CallFunction {
-            package_address: compile_address(package_address)?,
-            blueprint_name: compile_string(blueprint_name)?,
-            function: compile_string(function)?,
-            args: compile_args(args, resolver)?,
+            package_address: generate_address(package_address)?,
+            blueprint_name: generate_string(blueprint_name)?,
+            function: generate_string(function)?,
+            args: generate_args(args, resolver)?,
         }),
         ast::Instruction::CallMethod {
             component_address,
             method,
             args,
         } => Some(Instruction::CallMethod {
-            component_address: compile_address(component_address)?,
-            method: compile_string(method)?,
-            args: compile_args(args, resolver)?,
+            component_address: generate_address(component_address)?,
+            method: generate_string(method)?,
+            args: generate_args(args, resolver)?,
         }),
         ast::Instruction::DropAllBucketRefs => Some(Instruction::DropAllBucketRefs),
         ast::Instruction::CallMethodWithAllResources {
             component_address,
             method,
         } => Some(Instruction::CallMethodWithAllResources {
-            component_address: compile_address(component_address)?,
-            method: compile_string(method)?,
+            component_address: generate_address(component_address)?,
+            method: generate_string(method)?,
         }),
     })
 }
@@ -152,20 +152,20 @@ pub fn compile_instruction(
 #[macro_export]
 macro_rules! invalid_type {
     ( $v:expr, $($exp:expr),+ ) => {
-        Err(CompilerError::WrongTypeOfValue {
+        Err(GeneratorError::WrongTypeOfValue {
             expected_type: vec!($($exp),+),
             actual: $v.clone(),
         })
     };
 }
 
-fn compile_args(
+fn generate_args(
     values: &Vec<ast::Value>,
     resolver: &mut NameResolver,
-) -> Result<Vec<Vec<u8>>, CompilerError> {
+) -> Result<Vec<Vec<u8>>, GeneratorError> {
     let mut result = Vec::new();
     for v in values {
-        let value = compile_value(v, None, resolver)?;
+        let value = generate_value(v, None, resolver)?;
 
         let mut enc = Encoder::with_type(Vec::new());
         encode_any(None, &value, &mut enc);
@@ -174,18 +174,18 @@ fn compile_args(
     Ok(result)
 }
 
-fn compile_string(value: &ast::Value) -> Result<String, CompilerError> {
+fn generate_string(value: &ast::Value) -> Result<String, GeneratorError> {
     match value {
         ast::Value::String(s) => Ok(s.into()),
         v @ _ => invalid_type!(v, ast::Type::String),
     }
 }
 
-fn compile_decimal(value: &ast::Value) -> Result<Decimal, CompilerError> {
+fn generate_decimal(value: &ast::Value) -> Result<Decimal, GeneratorError> {
     match value {
         ast::Value::Decimal(inner) => match &**inner {
             ast::Value::String(s) => {
-                Decimal::from_str(s).map_err(|_| CompilerError::InvalidDecimal(s.into()))
+                Decimal::from_str(s).map_err(|_| GeneratorError::InvalidDecimal(s.into()))
             }
             v @ _ => invalid_type!(v, ast::Type::String),
         },
@@ -193,11 +193,11 @@ fn compile_decimal(value: &ast::Value) -> Result<Decimal, CompilerError> {
     }
 }
 
-fn compile_big_decimal(value: &ast::Value) -> Result<BigDecimal, CompilerError> {
+fn generate_big_decimal(value: &ast::Value) -> Result<BigDecimal, GeneratorError> {
     match value {
         ast::Value::BigDecimal(inner) => match &**inner {
             ast::Value::String(s) => {
-                BigDecimal::from_str(s).map_err(|_| CompilerError::InvalidDecimal(s.into()))
+                BigDecimal::from_str(s).map_err(|_| GeneratorError::InvalidDecimal(s.into()))
             }
             v @ _ => invalid_type!(v, ast::Type::String),
         },
@@ -205,11 +205,11 @@ fn compile_big_decimal(value: &ast::Value) -> Result<BigDecimal, CompilerError> 
     }
 }
 
-fn compile_address(value: &ast::Value) -> Result<Address, CompilerError> {
+fn generate_address(value: &ast::Value) -> Result<Address, GeneratorError> {
     match value {
         ast::Value::Address(inner) => match &**inner {
             ast::Value::String(s) => {
-                Address::from_str(s).map_err(|_| CompilerError::InvalidAddress(s.into()))
+                Address::from_str(s).map_err(|_| GeneratorError::InvalidAddress(s.into()))
             }
             v @ _ => invalid_type!(v, ast::Type::String),
         },
@@ -217,11 +217,11 @@ fn compile_address(value: &ast::Value) -> Result<Address, CompilerError> {
     }
 }
 
-fn compile_hash(value: &ast::Value) -> Result<H256, CompilerError> {
+fn generate_hash(value: &ast::Value) -> Result<H256, GeneratorError> {
     match value {
         ast::Value::Hash(inner) => match &**inner {
             ast::Value::String(s) => {
-                H256::from_str(s).map_err(|_| CompilerError::InvalidDecimal(s.into()))
+                H256::from_str(s).map_err(|_| GeneratorError::InvalidDecimal(s.into()))
             }
             v @ _ => invalid_type!(v, ast::Type::String),
         },
@@ -229,7 +229,7 @@ fn compile_hash(value: &ast::Value) -> Result<H256, CompilerError> {
     }
 }
 
-fn compile_bucket(value: &ast::Value, resolver: &mut NameResolver) -> Result<Bid, CompilerError> {
+fn generate_bucket(value: &ast::Value, resolver: &mut NameResolver) -> Result<Bid, GeneratorError> {
     match value {
         ast::Value::Bucket(inner) => match &**inner {
             ast::Value::U32(n) => Ok(Bid(*n)),
@@ -240,10 +240,10 @@ fn compile_bucket(value: &ast::Value, resolver: &mut NameResolver) -> Result<Bid
     }
 }
 
-fn compile_bucket_ref(
+fn generate_bucket_ref(
     value: &ast::Value,
     resolver: &mut NameResolver,
-) -> Result<Rid, CompilerError> {
+) -> Result<Rid, GeneratorError> {
     match value {
         ast::Value::BucketRef(inner) => match &**inner {
             ast::Value::U32(n) => Ok(Rid(*n)),
@@ -254,11 +254,11 @@ fn compile_bucket_ref(
     }
 }
 
-fn compile_lazy_map(value: &ast::Value) -> Result<Mid, CompilerError> {
+fn generate_lazy_map(value: &ast::Value) -> Result<Mid, GeneratorError> {
     match value {
         ast::Value::LazyMap(inner) => match &**inner {
             ast::Value::String(s) => {
-                Mid::from_str(s).map_err(|_| CompilerError::InvalidDecimal(s.into()))
+                Mid::from_str(s).map_err(|_| GeneratorError::InvalidDecimal(s.into()))
             }
             v @ _ => invalid_type!(v, ast::Type::String),
         },
@@ -266,11 +266,11 @@ fn compile_lazy_map(value: &ast::Value) -> Result<Mid, CompilerError> {
     }
 }
 
-fn compile_vault(value: &ast::Value) -> Result<Vid, CompilerError> {
+fn generate_vault(value: &ast::Value) -> Result<Vid, GeneratorError> {
     match value {
         ast::Value::Vault(inner) => match &**inner {
             ast::Value::String(s) => {
-                Vid::from_str(s).map_err(|_| CompilerError::InvalidDecimal(s.into()))
+                Vid::from_str(s).map_err(|_| GeneratorError::InvalidDecimal(s.into()))
             }
             v @ _ => invalid_type!(v, ast::Type::String),
         },
@@ -278,14 +278,14 @@ fn compile_vault(value: &ast::Value) -> Result<Vid, CompilerError> {
     }
 }
 
-fn compile_value(
+fn generate_value(
     value: &ast::Value,
     expected: Option<ast::Type>,
     resolver: &mut NameResolver,
-) -> Result<Value, CompilerError> {
+) -> Result<Value, GeneratorError> {
     if let Some(ty) = expected {
         if ty != value.kind() {
-            return Err(CompilerError::WrongTypeOfValue {
+            return Err(GeneratorError::WrongTypeOfValue {
                 expected_type: vec![ty],
                 actual: value.clone(),
             });
@@ -306,128 +306,127 @@ fn compile_value(
         ast::Value::U64(v) => Ok(Value::U64(*v)),
         ast::Value::U128(v) => Ok(Value::U128(*v)),
         ast::Value::String(v) => Ok(Value::String(v.clone())),
-        ast::Value::Struct(fields) => Ok(Value::Struct(compile_fields(fields, resolver)?)),
+        ast::Value::Struct(fields) => Ok(Value::Struct(generate_fields(fields, resolver)?)),
         ast::Value::Enum(index, fields) => {
-            Ok(Value::Enum(*index, compile_fields(fields, resolver)?))
+            Ok(Value::Enum(*index, generate_fields(fields, resolver)?))
         }
         ast::Value::Option(v) => match &**v {
             Some(inner) => Ok(Value::Option(
-                Some(compile_value(inner, None, resolver)?).into(),
+                Some(generate_value(inner, None, resolver)?).into(),
             )),
             None => Ok(Value::Option(None.into())),
         },
-        ast::Value::Box(v) => Ok(Value::Box(compile_value(v, None, resolver)?.into())),
+        ast::Value::Box(v) => Ok(Value::Box(generate_value(v, None, resolver)?.into())),
         ast::Value::Array(element_type, elements) => Ok(Value::Array(
-            compile_type(element_type),
-            compile_singletons(elements, Some(*element_type), resolver)?,
+            generate_type(element_type),
+            generate_singletons(elements, Some(*element_type), resolver)?,
         )),
         ast::Value::Tuple(elements) => {
-            Ok(Value::Tuple(compile_singletons(elements, None, resolver)?))
+            Ok(Value::Tuple(generate_singletons(elements, None, resolver)?))
         }
         ast::Value::Result(v) => match &**v {
             Ok(inner) => Ok(Value::Result(
-                Ok(compile_value(inner, None, resolver)?).into(),
+                Ok(generate_value(inner, None, resolver)?).into(),
             )),
             Err(inner) => Ok(Value::Result(
-                Err(compile_value(inner, None, resolver)?).into(),
+                Err(generate_value(inner, None, resolver)?).into(),
             )),
         },
         ast::Value::Vec(element_type, elements) => Ok(Value::Vec(
-            compile_type(element_type),
-            compile_singletons(elements, Some(*element_type), resolver)?,
+            generate_type(element_type),
+            generate_singletons(elements, Some(*element_type), resolver)?,
         )),
         ast::Value::TreeSet(element_type, elements) => Ok(Value::TreeSet(
-            compile_type(element_type),
-            compile_singletons(elements, Some(*element_type), resolver)?,
+            generate_type(element_type),
+            generate_singletons(elements, Some(*element_type), resolver)?,
         )),
         ast::Value::TreeMap(key_type, value_type, elements) => Ok(Value::TreeMap(
-            compile_type(key_type),
-            compile_type(value_type),
-            compile_pairs(elements, *key_type, *value_type, resolver)?,
+            generate_type(key_type),
+            generate_type(value_type),
+            generate_pairs(elements, *key_type, *value_type, resolver)?,
         )),
         ast::Value::HashSet(element_type, elements) => Ok(Value::HashSet(
-            compile_type(element_type),
-            compile_singletons(elements, Some(*element_type), resolver)?,
+            generate_type(element_type),
+            generate_singletons(elements, Some(*element_type), resolver)?,
         )),
         ast::Value::HashMap(key_type, value_type, elements) => Ok(Value::HashMap(
-            compile_type(key_type),
-            compile_type(value_type),
-            compile_pairs(elements, *key_type, *value_type, resolver)?,
+            generate_type(key_type),
+            generate_type(value_type),
+            generate_pairs(elements, *key_type, *value_type, resolver)?,
         )),
         ast::Value::Decimal(_) => {
-            compile_decimal(value).map(|v| Value::Custom(SCRYPTO_TYPE_DECIMAL, v.to_vec()))
+            generate_decimal(value).map(|v| Value::Custom(SCRYPTO_TYPE_DECIMAL, v.to_vec()))
         }
         ast::Value::BigDecimal(_) => {
-            compile_big_decimal(value).map(|v| Value::Custom(SCRYPTO_TYPE_BIG_DECIMAL, v.to_vec()))
+            generate_big_decimal(value).map(|v| Value::Custom(SCRYPTO_TYPE_BIG_DECIMAL, v.to_vec()))
         }
         ast::Value::Address(_) => {
-            compile_address(value).map(|v| Value::Custom(SCRYPTO_TYPE_ADDRESS, v.to_vec()))
+            generate_address(value).map(|v| Value::Custom(SCRYPTO_TYPE_ADDRESS, v.to_vec()))
         }
         ast::Value::Hash(_) => {
-            compile_hash(value).map(|v| Value::Custom(SCRYPTO_TYPE_H256, v.to_vec()))
+            generate_hash(value).map(|v| Value::Custom(SCRYPTO_TYPE_H256, v.to_vec()))
         }
         ast::Value::Bucket(_) => {
-            compile_bucket(value, resolver).map(|v| Value::Custom(SCRYPTO_TYPE_BID, v.to_vec()))
+            generate_bucket(value, resolver).map(|v| Value::Custom(SCRYPTO_TYPE_BID, v.to_vec()))
         }
-        ast::Value::BucketRef(_) => {
-            compile_bucket_ref(value, resolver).map(|v| Value::Custom(SCRYPTO_TYPE_RID, v.to_vec()))
-        }
+        ast::Value::BucketRef(_) => generate_bucket_ref(value, resolver)
+            .map(|v| Value::Custom(SCRYPTO_TYPE_RID, v.to_vec())),
         ast::Value::LazyMap(_) => {
-            compile_lazy_map(value).map(|v| Value::Custom(SCRYPTO_TYPE_MID, v.to_vec()))
+            generate_lazy_map(value).map(|v| Value::Custom(SCRYPTO_TYPE_MID, v.to_vec()))
         }
         ast::Value::Vault(_) => {
-            compile_vault(value).map(|v| Value::Custom(SCRYPTO_TYPE_VID, v.to_vec()))
+            generate_vault(value).map(|v| Value::Custom(SCRYPTO_TYPE_VID, v.to_vec()))
         }
     }
 }
 
-fn compile_fields(
+fn generate_fields(
     value: &ast::Fields,
     resolver: &mut NameResolver,
-) -> Result<Fields, CompilerError> {
+) -> Result<Fields, GeneratorError> {
     match value {
         ast::Fields::Named(fields) => {
-            Ok(Fields::Named(compile_singletons(fields, None, resolver)?))
+            Ok(Fields::Named(generate_singletons(fields, None, resolver)?))
         }
-        ast::Fields::Unnamed(fields) => {
-            Ok(Fields::Unnamed(compile_singletons(fields, None, resolver)?))
-        }
+        ast::Fields::Unnamed(fields) => Ok(Fields::Unnamed(generate_singletons(
+            fields, None, resolver,
+        )?)),
         ast::Fields::Unit => Ok(Fields::Unit),
     }
 }
 
-fn compile_singletons(
+fn generate_singletons(
     elements: &Vec<ast::Value>,
     ty: Option<ast::Type>,
     resolver: &mut NameResolver,
-) -> Result<Vec<Value>, CompilerError> {
+) -> Result<Vec<Value>, GeneratorError> {
     let mut result = vec![];
     for element in elements {
-        result.push(compile_value(element, ty, resolver)?);
+        result.push(generate_value(element, ty, resolver)?);
     }
     Ok(result)
 }
 
-fn compile_pairs(
+fn generate_pairs(
     elements: &Vec<ast::Value>,
     key_type: ast::Type,
     value_type: ast::Type,
     resolver: &mut NameResolver,
-) -> Result<Vec<(Value, Value)>, CompilerError> {
+) -> Result<Vec<(Value, Value)>, GeneratorError> {
     if elements.len() % 2 != 0 {
-        return Err(CompilerError::OddNumberOfElements(elements.len()));
+        return Err(GeneratorError::OddNumberOfElements(elements.len()));
     }
     let mut result = vec![];
     for i in 0..elements.len() / 2 {
         result.push((
-            compile_value(&elements[2 * i], Some(key_type), resolver)?,
-            compile_value(&elements[2 * i + 1], Some(value_type), resolver)?,
+            generate_value(&elements[2 * i], Some(key_type), resolver)?,
+            generate_value(&elements[2 * i + 1], Some(value_type), resolver)?,
         ));
     }
     Ok(result)
 }
 
-fn compile_type(ty: &ast::Type) -> u8 {
+fn generate_type(ty: &ast::Type) -> u8 {
     match ty {
         ast::Type::Unit => TYPE_UNIT,
         ast::Type::Bool => TYPE_BOOL,
@@ -472,24 +471,24 @@ mod tests {
     use crate::parser::Parser;
 
     #[macro_export]
-    macro_rules! compile_value_ok {
+    macro_rules! generate_value_ok {
         ( $s:expr, $expected:expr, $allocations:expr ) => {{
             let value = Parser::new(tokenize($s).unwrap()).parse_value().unwrap();
             let mut resolver = NameResolver::new();
-            assert_eq!(compile_value(&value, None, &mut resolver), Ok($expected));
+            assert_eq!(generate_value(&value, None, &mut resolver), Ok($expected));
             assert_eq!(resolver.instructions(), $allocations);
         }};
     }
 
     #[macro_export]
-    macro_rules! compile_instruction_ok {
+    macro_rules! generate_instruction_ok {
         ( $s:expr, $expected:expr, $allocations:expr ) => {{
             let instruction = Parser::new(tokenize($s).unwrap())
                 .parse_instruction()
                 .unwrap();
             let mut resolver = NameResolver::new();
             assert_eq!(
-                compile_instruction(&instruction, &mut resolver),
+                generate_instruction(&instruction, &mut resolver),
                 Ok($expected)
             );
             assert_eq!(resolver.instructions(), $allocations);
@@ -497,10 +496,10 @@ mod tests {
     }
 
     #[macro_export]
-    macro_rules! compile_value_error {
+    macro_rules! generate_value_error {
         ( $s:expr, $expected:expr ) => {{
             let value = Parser::new(tokenize($s).unwrap()).parse_value().unwrap();
-            match compile_value(&value, None, &mut NameResolver::new()) {
+            match generate_value(&value, None, &mut NameResolver::new()) {
                 Ok(_) => {
                     panic!("Expected {:?} but no error is thrown", $expected);
                 }
@@ -513,14 +512,14 @@ mod tests {
 
     #[test]
     fn test_value() {
-        compile_value_ok!(r#"()"#, Value::Unit, vec![]);
-        compile_value_ok!(r#"true"#, Value::Bool(true), vec![]);
-        compile_value_ok!(r#"false"#, Value::Bool(false), vec![]);
-        compile_value_ok!(r#"1i8"#, Value::I8(1), vec![]);
-        compile_value_ok!(r#"1i128"#, Value::I128(1), vec![]);
-        compile_value_ok!(r#"1u8"#, Value::U8(1), vec![]);
-        compile_value_ok!(r#"1u128"#, Value::U128(1), vec![]);
-        compile_value_ok!(
+        generate_value_ok!(r#"()"#, Value::Unit, vec![]);
+        generate_value_ok!(r#"true"#, Value::Bool(true), vec![]);
+        generate_value_ok!(r#"false"#, Value::Bool(false), vec![]);
+        generate_value_ok!(r#"1i8"#, Value::I8(1), vec![]);
+        generate_value_ok!(r#"1i128"#, Value::I128(1), vec![]);
+        generate_value_ok!(r#"1u8"#, Value::U8(1), vec![]);
+        generate_value_ok!(r#"1u128"#, Value::U128(1), vec![]);
+        generate_value_ok!(
             r#"Struct({Bucket("foo"), BucketRef("foo"), "bar"})"#,
             Value::Struct(Fields::Named(vec![
                 Value::Custom(SCRYPTO_TYPE_BID, Bid(0).to_vec()),
@@ -532,7 +531,7 @@ mod tests {
                 Instruction::DeclareTempBucketRef
             ]
         );
-        compile_value_ok!(
+        generate_value_ok!(
             r#"Struct((Decimal("1.0"), BigDecimal("2.0"), Hash("aa37f5a71083a9aa044fb936678bfd74f848e930d2de482a49a73540ea72aa5c"), Vault("aa37f5a71083a9aa044fb936678bfd74f848e930d2de482a49a73540ea72aa5c00000001"), LazyMap("aa37f5a71083a9aa044fb936678bfd74f848e930d2de482a49a73540ea72aa5c00000002")))"#,
             Value::Struct(Fields::Unnamed(vec![
                 Value::Custom(
@@ -570,24 +569,24 @@ mod tests {
             ])),
             vec![]
         );
-        compile_value_ok!(r#"Struct()"#, Value::Struct(Fields::Unit), vec![]);
-        compile_value_ok!(
+        generate_value_ok!(r#"Struct()"#, Value::Struct(Fields::Unit), vec![]);
+        generate_value_ok!(
             r#"Enum(0u8, {})"#,
             Value::Enum(0, Fields::Named(vec![])),
             vec![]
         );
-        compile_value_ok!(
+        generate_value_ok!(
             r#"Enum(1u8, ())"#,
             Value::Enum(1, Fields::Unnamed(vec![])),
             vec![]
         );
-        compile_value_ok!(r#"Enum(2u8)"#, Value::Enum(2, Fields::Unit), vec![]);
-        compile_value_ok!(
+        generate_value_ok!(r#"Enum(2u8)"#, Value::Enum(2, Fields::Unit), vec![]);
+        generate_value_ok!(
             r#"Box(Some("value"))"#,
             Value::Box(Value::Option(Some(Value::String("value".into())).into()).into()),
             vec![]
         );
-        compile_value_ok!(
+        generate_value_ok!(
             r#"Array<Option>(Some(1u64), None)"#,
             Value::Array(
                 TYPE_OPTION,
@@ -598,7 +597,7 @@ mod tests {
             ),
             vec![]
         );
-        compile_value_ok!(
+        generate_value_ok!(
             r#"Tuple(Ok(1u64), Err(2u64))"#,
             Value::Tuple(vec![
                 Value::Result(Ok(Value::U64(1)).into()),
@@ -606,7 +605,7 @@ mod tests {
             ]),
             vec![]
         );
-        compile_value_ok!(
+        generate_value_ok!(
             r#"HashMap<HashSet, Vec>(HashSet<U8>(1u8), Vec<U8>(2u8))"#,
             Value::HashMap(
                 TYPE_HASH_SET,
@@ -618,7 +617,7 @@ mod tests {
             ),
             vec![]
         );
-        compile_value_ok!(
+        generate_value_ok!(
             r#"TreeMap<TreeSet, Vec>(TreeSet<U8>(1u8), Vec<U8>(2u8))"#,
             Value::TreeMap(
                 TYPE_TREE_SET,
@@ -634,40 +633,40 @@ mod tests {
 
     #[test]
     fn test_failures() {
-        compile_value_error!(
+        generate_value_error!(
             r#"Address(100u32)"#,
-            CompilerError::WrongTypeOfValue {
+            GeneratorError::WrongTypeOfValue {
                 expected_type: vec![ast::Type::String],
                 actual: ast::Value::U32(100),
             }
         );
-        compile_value_error!(
+        generate_value_error!(
             r#"Address("invalid_address")"#,
-            CompilerError::InvalidAddress("invalid_address".into())
+            GeneratorError::InvalidAddress("invalid_address".into())
         );
-        compile_value_error!(
+        generate_value_error!(
             r#"Decimal("invalid_decimal")"#,
-            CompilerError::InvalidDecimal("invalid_decimal".into())
+            GeneratorError::InvalidDecimal("invalid_decimal".into())
         );
-        compile_value_error!(
+        generate_value_error!(
             r#"HashMap<String, String>("abc")"#,
-            CompilerError::OddNumberOfElements(1)
+            GeneratorError::OddNumberOfElements(1)
         );
     }
 
     #[test]
     fn test_transaction() {
-        compile_instruction_ok!(
+        generate_instruction_ok!(
             r#"DECLARE_TEMP_BUCKET;"#,
             None,
             vec![Instruction::DeclareTempBucket]
         );
-        compile_instruction_ok!(
+        generate_instruction_ok!(
             r#"DECLARE_TEMP_BUCKET_REF;"#,
             None,
             vec![Instruction::DeclareTempBucketRef]
         );
-        compile_instruction_ok!(
+        generate_instruction_ok!(
             r#"TAKE_FROM_CONTEXT  Decimal("1.0")  Address("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d")  Bucket("xrd_bucket");"#,
             Some(Instruction::TakeFromContext {
                 amount: Decimal::from(1),
@@ -679,7 +678,7 @@ mod tests {
             }),
             vec![Instruction::DeclareTempBucket]
         );
-        compile_instruction_ok!(
+        generate_instruction_ok!(
             r#"BORROW_FROM_CONTEXT  Decimal("1.0")  Address("03559905076cb3d4b9312640393a7bc6e1d4e491a8b1b62fa73a94")  BucketRef("admin_auth");"#,
             Some(Instruction::BorrowFromContext {
                 amount: Decimal::from(1),
@@ -691,7 +690,7 @@ mod tests {
             }),
             vec![Instruction::DeclareTempBucketRef]
         );
-        compile_instruction_ok!(
+        generate_instruction_ok!(
             r#"CALL_FUNCTION  Address("01d1f50010e4102d88aacc347711491f852c515134a9ecf67ba17c")  "Airdrop"  "new"  500u32  HashMap<String, U8>("key", 1u8);"#,
             Some(Instruction::CallFunction {
                 package_address: Address::from_str(
@@ -707,7 +706,7 @@ mod tests {
             }),
             vec![]
         );
-        compile_instruction_ok!(
+        generate_instruction_ok!(
             r#"CALL_METHOD  Address("0292566c83de7fd6b04fcc92b5e04b03228ccff040785673278ef1")  "refill"  Bucket("xrd_bucket")  BucketRef("admin_auth");"#,
             Some(Instruction::CallMethod {
                 component_address: Address::from_str(
@@ -722,12 +721,12 @@ mod tests {
                 Instruction::DeclareTempBucketRef
             ]
         );
-        compile_instruction_ok!(
+        generate_instruction_ok!(
             r#"DROP_ALL_BUCKET_REFS;"#,
             Some(Instruction::DropAllBucketRefs),
             vec![]
         );
-        compile_instruction_ok!(
+        generate_instruction_ok!(
             r#"CALL_METHOD_WITH_ALL_RESOURCES  Address("02d43f479e9b2beb9df98bc3888344fc25eda181e8f710ce1bf1de") "deposit_batch";"#,
             Some(Instruction::CallMethodWithAllResources {
                 component_address: Address::from_str(

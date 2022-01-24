@@ -7,3 +7,11 @@ edition = "2021"
 sbor = { path = "../sbor" }
 scrypto = { path = "../scrypto" }
 radix-engine = { path = "../radix-engine" }
+clap = { version = "3.0", features = ["derive"] }
+
+[lib]
+path = "src/lib.rs"
+
+[[bin]]
+name = "rdmc"
+path = "src/bin.rs"
