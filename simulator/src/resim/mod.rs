@@ -9,6 +9,7 @@ mod cmd_new_token_fixed;
 mod cmd_new_token_mutable;
 mod cmd_publish;
 mod cmd_reset;
+mod cmd_run;
 mod cmd_set_current_epoch;
 mod cmd_set_default_account;
 mod cmd_show;
@@ -30,6 +31,7 @@ pub use cmd_new_token_fixed::*;
 pub use cmd_new_token_mutable::*;
 pub use cmd_publish::*;
 pub use cmd_reset::*;
+pub use cmd_run::*;
 pub use cmd_set_current_epoch::*;
 pub use cmd_set_default_account::*;
 pub use cmd_show::*;
@@ -52,6 +54,7 @@ pub const CMD_MINT: &str = "mint";
 pub const CMD_TRANSFER: &str = "transfer";
 pub const CMD_PUBLISH: &str = "publish";
 pub const CMD_RESET: &str = "reset";
+pub const CMD_RUN: &str = "run";
 pub const CMD_SET_DEFAULT_ACCOUNT: &str = "set-default-account";
 pub const CMD_SET_CURRENT_EPOCH: &str = "set-current-epoch";
 pub const CMD_SHOW: &str = "show";
@@ -80,6 +83,7 @@ where
         .subcommand(make_new_account())
         .subcommand(make_publish())
         .subcommand(make_reset())
+        .subcommand(make_run())
         .subcommand(make_set_default_account())
         .subcommand(make_set_current_epoch())
         .subcommand(make_show())
@@ -100,6 +104,7 @@ where
         (CMD_NEW_ACCOUNT, Some(m)) => handle_new_account(m),
         (CMD_PUBLISH, Some(m)) => handle_publish(m),
         (CMD_RESET, Some(m)) => handle_reset(m),
+        (CMD_RUN, Some(m)) => handle_run(m),
         (CMD_SET_DEFAULT_ACCOUNT, Some(m)) => handle_set_default_account(m),
         (CMD_SET_CURRENT_EPOCH, Some(m)) => handle_set_current_epoch(m),
         (CMD_SHOW, Some(m)) => handle_show(m),
