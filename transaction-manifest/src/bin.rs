@@ -19,10 +19,18 @@ struct Args {
     input: PathBuf,
 }
 
-fn main() {
+#[derive(Debug)]
+enum Error {
+    IoError(std::io::Error),
+    CompileError(transaction_manifest::CompileError),
+}
+
+fn main() -> Result<(), Error> {
     let args = Args::parse();
 
-    let content = read_to_string(args.input).unwrap();
-    let transaction = compile(&content).unwrap();
-    write(args.output, scrypto_encode(&transaction)).unwrap();
+    let content = read_to_string(args.input).map_err(Error::IoError)?;
+    let transaction = compile(&content).map_err(Error::CompileError)?;
+    write(args.output, scrypto_encode(&transaction)).map_err(Error::IoError)?;
+
+    Ok(())
 }
