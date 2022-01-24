@@ -237,8 +237,8 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         &mut self,
         bucket: Bucket
     ) {
-        let rid = Rid(9999);//self.declare_bucket_ref();
-        let bucket_id = Bid(10000);//self.track.new_bid();
+        let rid = self.declare_bucket_ref();
+        let bucket_id = self.track.new_bid();
         let locked_bucket = LockedBucket::new(bucket_id, bucket);
         let bucket_ref = BucketRef::new(locked_bucket);
         self.bucket_refs.insert(rid, bucket_ref);

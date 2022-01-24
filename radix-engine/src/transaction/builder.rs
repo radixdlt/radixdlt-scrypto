@@ -475,7 +475,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                 args: vec![
                     SmartValue::from(*amount),
                     SmartValue::from(*resource_address),
-                    SmartValue::from(Rid(9999))
+                    SmartValue::from(Rid(0))
                 ],
             }),
             ResourceAmount::NonFungible {

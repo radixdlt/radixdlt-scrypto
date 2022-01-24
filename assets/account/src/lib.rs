@@ -45,12 +45,7 @@ blueprint! {
 
         /// Withdraws resource from this account.
         pub fn withdraw(&mut self, amount: Decimal, resource_address: Address, account_auth: BucketRef) -> Bucket {
-            let is_authorized = account_auth.resource_address() == ECDSA_TOKEN
-                && account_auth.get_nft_id() == self.key.to_u128();
-            if !is_authorized {
-                panic!("Not authorized! Make sure you sign transaction with the correct keys.",)
-            }
-            account_auth.drop();
+            account_auth.check_nft_id(ECDSA_TOKEN, |id| id == &self.key.to_u128());
 
             let vault = self.vaults.get(&resource_address);
             match vault {
