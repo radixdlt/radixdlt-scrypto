@@ -73,7 +73,24 @@ impl<'l, L: Ledger> Track<'l, L> {
 
     /// Start a process.
     pub fn start_process<'r>(&'r mut self, verbose: bool) -> Process<'r, 'l, L> {
-        Process::new(0, verbose, self)
+        let create_virtual_badges = !self.transaction_signers.is_empty();
+        let signer = self.transaction_signers.get(0).map(|s| s.to_u128());
+        let mut process = Process::new(0, verbose, self);
+
+        // Create virtual badges for ecdsa signatures
+        if create_virtual_badges {
+            let id = signer.unwrap();
+            let ecdsa_bucket = Bucket::new(
+                ECDSA_TOKEN,
+                ResourceType::NonFungible,
+                Supply::NonFungible {
+                    ids: BTreeSet::from([id])
+                }
+            );
+            process.create_virtual_bucket_ref(ecdsa_bucket);
+        }
+
+        process
     }
 
     /// Returns the transaction hash.

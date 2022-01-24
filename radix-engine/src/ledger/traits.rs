@@ -82,6 +82,19 @@ pub trait Ledger {
                 .unwrap(),
             );
 
+            self.put_resource_def(
+                ECDSA_TOKEN,
+                ResourceDef::new(
+                    ResourceType::NonFungible,
+                    HashMap::new(),
+                    0,
+                    0,
+                    HashMap::new(),
+                    &None
+                )
+                .unwrap(),
+            );
+
             // Instantiate system component
             self.put_vault(
                 XRD_VAULT_ID,

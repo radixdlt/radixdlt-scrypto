@@ -3,7 +3,6 @@ use sbor::*;
 use scrypto::abi;
 use scrypto::buffer::*;
 use scrypto::kernel::*;
-use scrypto::resource::BucketRef;
 use scrypto::resource::resource_flags::*;
 use scrypto::resource::resource_permissions::*;
 use scrypto::rust::borrow::ToOwned;
@@ -466,7 +465,6 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         resource_spec: &ResourceAmount,
         account: Address,
     ) -> &mut Self {
-        let refs: Vec<BucketRef> = vec![];
         match resource_spec {
             ResourceAmount::Fungible {
                 amount,
@@ -477,7 +475,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                 args: vec![
                     SmartValue::from(*amount),
                     SmartValue::from(*resource_address),
-                    SmartValue::from(refs)
+                    SmartValue::from(Rid(9999))
                 ],
             }),
             ResourceAmount::NonFungible {

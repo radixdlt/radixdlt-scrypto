@@ -233,6 +233,17 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         Ok(())
     }
 
+    pub fn create_virtual_bucket_ref(
+        &mut self,
+        bucket: Bucket
+    ) {
+        let rid = Rid(9999);//self.declare_bucket_ref();
+        let bucket_id = Bid(10000);//self.track.new_bid();
+        let locked_bucket = LockedBucket::new(bucket_id, bucket);
+        let bucket_ref = BucketRef::new(locked_bucket);
+        self.bucket_refs.insert(rid, bucket_ref);
+    }
+
     /// Puts buckets and bucket refs into this process.
     pub fn put_resources(
         &mut self,
@@ -255,7 +266,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         self.buckets.keys().copied().collect()
     }
 
-    /// Returns all bucket ids.
+    /// Drops all bucket refs
     pub fn drop_bucket_refs(&mut self) {
         let rids: Vec<Rid> = self.bucket_refs.keys().copied().collect();
 

@@ -67,6 +67,17 @@ impl Address {
         }
     }
 
+    pub fn to_u128(&self) -> u128 {
+        let mut bytes: [u8; 16] = [0; 16];
+        match self {
+            Self::Package(d) => bytes[..].copy_from_slice(&d[..16]),
+            Self::Component(d) => bytes[..].copy_from_slice(&d[..16]),
+            Self::ResourceDef(d) => bytes[..].copy_from_slice(&d[..16]),
+            Self::PublicKey(d) => bytes[..].copy_from_slice(&d[..16]),
+        }
+        u128::from_be_bytes(bytes)
+    }
+
     pub fn is_package(&self) -> bool {
         matches!(self, Address::Package(_))
     }

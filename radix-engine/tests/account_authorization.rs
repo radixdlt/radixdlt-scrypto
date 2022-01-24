@@ -17,6 +17,7 @@ fn withdrawing_from_account_i_own_should_succeed() {
     let transaction = TransactionBuilder::new(&executor)
         .withdraw_from_account(&resource, account)
         .deposit_all_buckets(other_account)
+        .drop_all_bucket_refs()
         .build(vec![key]).unwrap();
     let result = executor.run(transaction, false);
     assert!(result.unwrap().success);
@@ -37,6 +38,7 @@ fn withdrawing_from_account_i_dont_own_should_fail() {
     let transaction = TransactionBuilder::new(&executor)
         .withdraw_from_account(&resource, account)
         .deposit_all_buckets(other_account)
+        .drop_all_bucket_refs()
         .build(vec![other_key]).unwrap();
     let result = executor.run(transaction, false);
     assert!(!result.unwrap().success);
