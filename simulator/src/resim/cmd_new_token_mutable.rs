@@ -101,6 +101,7 @@ pub fn handle_new_token_mutable(matches: &ArgMatches) -> Result<(), Error> {
     let mut executor = TransactionExecutor::new(&mut ledger, configs.current_epoch, configs.nonce);
     let transaction = TransactionBuilder::new(&executor)
         .new_token_mutable(metadata, mint_badge_addr)
+        .drop_all_bucket_refs()
         .build(signers)
         .map_err(Error::TransactionConstructionError)?;
 
