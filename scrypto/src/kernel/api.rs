@@ -115,10 +115,8 @@ pub const GET_CALL_DATA: u32 = 0xf2;
 pub const GET_CURRENT_EPOCH: u32 = 0xf3;
 /// Retrieve transaction hash
 pub const GET_TRANSACTION_HASH: u32 = 0xf4;
-/// Retrieve transaction signers
-pub const GET_TRANSACTION_SIGNERS: u32 = 0xf5;
 /// Generate an UUID
-pub const GENERATE_UUID: u32 = 0xf6;
+pub const GENERATE_UUID: u32 = 0xf5;
 
 //==========
 // blueprint
@@ -643,11 +641,6 @@ pub struct GetTransactionHashOutput {
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct GetTransactionSignersInput {}
-
-#[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct GetTransactionSignersOutput {
-    pub transaction_signers: Vec<Address>,
-}
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct GenerateUuidInput {}

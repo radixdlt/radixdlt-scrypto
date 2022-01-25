@@ -29,6 +29,10 @@ pub const RADIX_TOKEN: Address = Address::ResourceDef([
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4,
 ]);
 
+pub const ECDSA_TOKEN: Address = Address::ResourceDef([
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5,
+]);
+
 /// Represents an address.
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Address {
@@ -62,6 +66,7 @@ impl Address {
             Self::PublicKey(d) => combine(4, d),
         }
     }
+
 
     pub fn is_package(&self) -> bool {
         matches!(self, Address::Package(_))

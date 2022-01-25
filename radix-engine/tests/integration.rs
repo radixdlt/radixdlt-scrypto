@@ -35,7 +35,7 @@ fn test_package() {
             vec![],
             Some(account),
         )
-        .build(vec![key])
+        .build(vec![])
         .unwrap();
     let receipt1 = executor.run(transaction1, true).unwrap();
     assert!(receipt1.success);
@@ -51,7 +51,7 @@ fn test_context() {
 
     let transaction1 = TransactionBuilder::new(&executor)
         .call_function(package, "ContextTest", "query", vec![], Some(account))
-        .build(vec![key])
+        .build(vec![])
         .unwrap();
     let receipt1 = executor.run(transaction1, true).unwrap();
     assert!(receipt1.success);
@@ -74,7 +74,7 @@ fn test_component() {
             vec![],
             Some(account),
         )
-        .build(vec![key])
+        .build(vec![])
         .unwrap();
     let receipt1 = executor.run(transaction1, true).unwrap();
     assert!(receipt1.success);
@@ -117,7 +117,7 @@ fn test_lazy_map() {
             vec![],
             Some(account),
         )
-        .build(vec![key])
+        .build(vec![])
         .unwrap();
     let receipt = executor.run(transaction, true).unwrap();
     assert!(receipt.success);
@@ -343,27 +343,5 @@ fn test_nft() {
         .unwrap();
     let receipt = executor.run(transaction, true).unwrap();
     println!("{:?}", receipt);
-    assert!(receipt.success);
-}
-
-#[test]
-fn test_account() {
-    let mut ledger = InMemoryLedger::with_bootstrap();
-    let mut executor = TransactionExecutor::new(&mut ledger, 0, 0);
-    let key = executor.new_public_key();
-    let account = executor.new_account(key);
-    let package = executor.publish_package(&compile("account"));
-
-    let transaction = TransactionBuilder::new(&executor)
-        .call_function(
-            package,
-            "AccountTest",
-            "account_withdraw",
-            vec![account.to_string()],
-            Some(account),
-        )
-        .build(vec![key])
-        .unwrap();
-    let receipt = executor.run(transaction, true).unwrap();
     assert!(receipt.success);
 }
