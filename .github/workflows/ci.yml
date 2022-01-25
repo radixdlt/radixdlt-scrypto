@@ -169,6 +169,17 @@ jobs:
     - name: Run bench
       run: cargo bench
       working-directory: radix-engine
+  transaction-manifest:
+    name: Run transaction manifest tests
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+    - uses: actions/checkout@v2
+    - name: Run tests
+      run: cargo test --verbose
+      working-directory: transaction-manifest
   simulator-resim:
     name: Run Simulator tests (resim)
     runs-on: ${{ matrix.os }}
