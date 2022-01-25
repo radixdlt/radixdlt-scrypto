@@ -5,7 +5,7 @@ mod loader;
 mod process;
 mod track;
 
-pub use allocator::ECDSA_TOKEN_RID;
+pub use allocator::{ECDSA_TOKEN_BID, ECDSA_TOKEN_RID};
 pub use allocator::IdAllocator;
 pub use env::{EnvModuleResolver, KERNEL_INDEX, KERNEL_NAME};
 pub use error::RuntimeError;

@@ -2,12 +2,15 @@ use scrypto::types::*;
 use scrypto::utils::*;
 
 pub const ECDSA_TOKEN_RID: Rid = Rid(0);
+pub const ECDSA_TOKEN_BID: Bid = Bid(0);
 const USER_RID_START: u32 = 1024;
+const USER_BID_START: u32 = 1024;
 
 /// An ID allocator defines how identities are generated.
 pub struct IdAllocator {
     count: u32,
-    rid_count: u32
+    rid_count: u32,
+    bid_count: u32
 }
 
 impl IdAllocator {
@@ -15,7 +18,8 @@ impl IdAllocator {
     pub fn new() -> Self {
         Self {
             count: 0,
-            rid_count: 0
+            rid_count: 0,
+            bid_count: 0
         }
     }
 
@@ -63,8 +67,9 @@ impl IdAllocator {
 
     /// Creates a new bucket ID.
     pub fn new_bid(&mut self) -> Bid {
-        self.count += 1;
-        Bid(self.count - 1)
+        let next_bid = self.bid_count + USER_BID_START;
+        self.bid_count += 1;
+        Bid(next_bid)
     }
 
     /// Creates a new vault ID.

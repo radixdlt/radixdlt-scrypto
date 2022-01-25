@@ -239,8 +239,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         rid: Rid,
         bucket: Bucket
     ) {
-        let bucket_id = Bid(0); // mock
-        let locked_bucket = LockedBucket::new(bucket_id, bucket);
+        let locked_bucket = LockedBucket::new(ECDSA_TOKEN_BID, bucket);
         let bucket_ref = BucketRef::new(locked_bucket);
         self.bucket_refs.insert(rid, bucket_ref);
     }
