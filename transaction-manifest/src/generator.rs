@@ -1,5 +1,5 @@
 use crate::ast;
-use radix_engine::transaction::*;
+use radix_engine::model::*;
 use sbor::any::{encode_any, Fields, Value};
 use sbor::type_id::*;
 use sbor::Encoder;

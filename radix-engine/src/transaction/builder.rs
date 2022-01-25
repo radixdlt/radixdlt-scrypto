@@ -15,6 +15,7 @@ use scrypto::rust::vec::Vec;
 use scrypto::types::*;
 
 use crate::engine::*;
+use crate::model::*;
 use crate::transaction::*;
 
 /// Represents some amount of resource.

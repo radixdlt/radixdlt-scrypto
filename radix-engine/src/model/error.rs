@@ -5,9 +5,9 @@ use wasmi::*;
 
 use crate::model::*;
 
-/// Represents an error occurred during transaction execution.
+/// Represents an error when validating a WASM file.
 #[derive(Debug)]
-pub enum RuntimeError {
+pub enum WasmValidationError {
     /// The wasm module is invalid.
     InvalidModule(Error),
 
@@ -19,6 +19,39 @@ pub enum RuntimeError {
 
     /// The wasm module does not have memory export.
     NoValidMemoryExport,
+}
+
+/// Represents an error when parsing a value from a byte array.
+#[derive(Debug)]
+pub enum DataValidationError {
+    DecodeError(DecodeError),
+    InvalidTypeId(u8),
+    InvalidDecimal(ParseDecimalError),
+    InvalidBigDecimal(ParseBigDecimalError),
+    InvalidAddress(ParseAddressError),
+    InvalidH256(ParseH256Error),
+    InvalidBid(ParseBidError),
+    InvalidRid(ParseRidError),
+    InvalidMid(ParseMidError),
+    InvalidVid(ParseVidError),
+}
+
+/// Represents an error when validating a transaction.
+#[derive(Debug)]
+pub enum TransactionValidationError {
+    DataValidationError(DataValidationError),
+    InvalidSignature,
+    UnexpectedEnd,
+}
+
+/// Represents an error when executing a transaction.
+#[derive(Debug)]
+pub enum RuntimeError {
+    /// The data is not a valid WASM module.
+    WasmValidationError(WasmValidationError),
+
+    /// The data is not a valid SBOR value.
+    DataValidationError(DataValidationError),
 
     /// Error when invoking an export.
     InvokeError(Error),
@@ -40,9 +73,6 @@ pub enum RuntimeError {
 
     /// Invalid request data.
     InvalidRequestData(DecodeError),
-
-    /// The data is invalid (not in SBOR format).
-    InvalidData(DecodeError),
 
     /// The requested host function does not exist.
     HostFunctionNotFound(usize),

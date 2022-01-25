@@ -18,12 +18,6 @@ pub struct TransactionExecutor<'l, L: Ledger> {
     nonce: u64,
 }
 
-/// Represents an error when executing the transaction.
-#[derive(Debug)]
-pub enum TransactionExecutionError {
-    InvalidTransaction(CheckTransactionError),
-}
-
 impl<'l, L: Ledger> AbiProvider for TransactionExecutor<'l, L> {
     fn export_abi<A: AsRef<str>>(
         &self,
@@ -156,85 +150,85 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
         &mut self,
         transaction: Transaction,
         trace: bool,
-    ) -> Result<Receipt, TransactionExecutionError> {
+    ) -> Result<Receipt, TransactionValidationError> {
         #[cfg(not(feature = "alloc"))]
         let now = std::time::Instant::now();
 
-        let check_tx = transaction
-            .check()
-            .map_err(TransactionExecutionError::InvalidTransaction)?;
+        let transaction_validated = validate_transaction(&transaction)?;
 
         let mut track = Track::new(
             self.ledger,
             self.current_epoch,
             sha256(self.nonce.to_string()),
-            check_tx.signers.clone(),
+            transaction_validated.signers.clone(),
         );
         let mut proc = track.start_process(trace);
 
         let mut results = vec![];
         let mut success = true;
-        for inst in &check_tx.instructions {
+        for inst in &transaction_validated.instructions {
             let res = match inst {
-                CheckedInstruction::DeclareTempBucket => {
+                ValidatedInstruction::DeclareTempBucket => {
                     proc.declare_bucket();
                     Ok(None)
                 }
-                CheckedInstruction::DeclareTempBucketRef => {
+                ValidatedInstruction::DeclareTempBucketRef => {
                     proc.declare_bucket_ref();
                     Ok(None)
                 }
-                CheckedInstruction::TakeFromContext {
+                ValidatedInstruction::TakeFromContext {
                     amount,
                     resource_address,
                     to,
                 } => proc
                     .take_from_context(*amount, *resource_address, *to)
                     .map(|_| None),
-                CheckedInstruction::BorrowFromContext {
+                ValidatedInstruction::BorrowFromContext {
                     amount,
                     resource_address,
                     to,
                 } => proc
                     .borrow_from_context(*amount, *resource_address, *to)
                     .map(|_| None),
-                CheckedInstruction::CallFunction {
+                ValidatedInstruction::CallFunction {
                     package_address,
                     blueprint_name,
                     function,
                     args,
                 } => proc
                     .call_function(
+                        // TODO: update interface
                         *package_address,
                         blueprint_name.as_str(),
                         function.as_str(),
-                        args.iter().map(|a| a.encoded.clone()).collect(), // TODO: update RE interface
+                        args.iter().map(|a| a.raw.clone()).collect(),
                     )
-                    .map(|rtn| Some(CheckedValue::from_trusted(&rtn))),
-                CheckedInstruction::CallMethod {
+                    .map(|rtn| Some(validate_data(&rtn).unwrap().0)), // TODO: update  interface
+                ValidatedInstruction::CallMethod {
                     component_address,
                     method,
                     args,
                 } => proc
                     .call_method(
+                        // TODO: update interface
                         *component_address,
                         method.as_str(),
-                        args.iter().map(|a| a.encoded.clone()).collect(),
+                        args.iter().map(|a| a.raw.clone()).collect(),
                     )
-                    .map(|rtn| Some(CheckedValue::from_trusted(&rtn))),
+                    .map(|rtn| Some(validate_data(&rtn).unwrap().0)), // TODO: update  interface
 
-                CheckedInstruction::DropAllBucketRefs => {
+                ValidatedInstruction::DropAllBucketRefs => {
                     proc.drop_bucket_refs();
                     Ok(None)
                 }
-                CheckedInstruction::CallMethodWithAllResources {
+                ValidatedInstruction::CallMethodWithAllResources {
                     component_address,
                     method,
                 } => {
                     let buckets = proc.list_buckets();
                     if !buckets.is_empty() {
                         proc.call_method(*component_address, method, args!(buckets))
-                            .map(|rtn| Some(CheckedValue::from_trusted(&rtn)))
+                            .map(|rtn| Some(validate_data(&rtn).unwrap().0)) // TODO: update  interface
                     } else {
                         Ok(None)
                     }
@@ -258,7 +252,7 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
         let execution_time = Some(now.elapsed().as_millis());
 
         Ok(Receipt {
-            transaction: check_tx,
+            transaction: transaction_validated,
             success,
             results,
             logs: track.logs().clone(),

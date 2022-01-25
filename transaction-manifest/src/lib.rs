@@ -3,7 +3,7 @@ pub mod generator;
 pub mod lexer;
 pub mod parser;
 
-use radix_engine::transaction::Transaction;
+use radix_engine::model::Transaction;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum CompileError {

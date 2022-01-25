@@ -1,12 +1,9 @@
 use colored::*;
-use sbor::any::*;
-use sbor::rust::boxed::Box;
 use sbor::*;
 use scrypto::buffer::*;
 use scrypto::kernel::*;
 use scrypto::rust::borrow::ToOwned;
 use scrypto::rust::collections::*;
-use scrypto::rust::convert::TryFrom;
 use scrypto::rust::fmt;
 use scrypto::rust::format;
 use scrypto::rust::rc::Rc;
@@ -552,143 +549,16 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         bf: fn(&mut Self, Bid) -> Result<Bid, RuntimeError>,
         rf: fn(&mut Self, Rid) -> Result<Rid, RuntimeError>,
     ) -> Result<Vec<u8>, RuntimeError> {
-        let value = decode_any(data).map_err(RuntimeError::InvalidData)?;
-        let transformed = self.visit(value, bf, rf)?;
+        let validation_output = validate_data(data).map_err(RuntimeError::DataValidationError)?;
 
-        let mut encoder = Encoder::with_type(Vec::with_capacity(data.len() + 512));
-        encode_any(None, &transformed, &mut encoder);
-        Ok(encoder.into())
-    }
-
-    // TODO: stack overflow
-    fn visit(
-        &mut self,
-        v: Value,
-        bf: fn(&mut Self, Bid) -> Result<Bid, RuntimeError>,
-        rf: fn(&mut Self, Rid) -> Result<Rid, RuntimeError>,
-    ) -> Result<Value, RuntimeError> {
-        match v {
-            // primitive types
-            Value::Unit
-            | Value::Bool(_)
-            | Value::I8(_)
-            | Value::I16(_)
-            | Value::I32(_)
-            | Value::I64(_)
-            | Value::I128(_)
-            | Value::U8(_)
-            | Value::U16(_)
-            | Value::U32(_)
-            | Value::U64(_)
-            | Value::U128(_)
-            | Value::String(_) => Ok(v),
-            // struct & enum
-            Value::Struct(fields) => Ok(Value::Struct(self.visit_fields(fields, bf, rf)?)),
-            Value::Enum(index, fields) => {
-                Ok(Value::Enum(index, self.visit_fields(fields, bf, rf)?))
-            }
-            // composite types
-            Value::Option(x) => match *x {
-                Some(value) => Ok(Value::Option(Box::new(Some(self.visit(value, bf, rf)?)))),
-                None => Ok(Value::Option(Box::new(None))),
-            },
-            Value::Box(value) => Ok(Value::Box(Box::new(self.visit(*value, bf, rf)?))),
-            Value::Array(ty, values) => Ok(Value::Array(ty, self.visit_vec(values, bf, rf)?)),
-            Value::Tuple(values) => Ok(Value::Tuple(self.visit_vec(values, bf, rf)?)),
-            Value::Result(x) => match *x {
-                Ok(value) => Ok(Value::Result(Box::new(Ok(self.visit(value, bf, rf)?)))),
-                Err(value) => Ok(Value::Result(Box::new(Err(self.visit(value, bf, rf)?)))),
-            },
-            // collections
-            Value::Vec(ty, values) => Ok(Value::Vec(ty, self.visit_vec(values, bf, rf)?)),
-            Value::TreeSet(ty, values) => Ok(Value::TreeSet(ty, self.visit_vec(values, bf, rf)?)),
-            Value::HashSet(ty, values) => Ok(Value::HashSet(ty, self.visit_vec(values, bf, rf)?)),
-            Value::TreeMap(ty_k, ty_v, values) => {
-                Ok(Value::TreeMap(ty_k, ty_v, self.visit_map(values, bf, rf)?))
-            }
-            Value::HashMap(ty_k, ty_v, values) => {
-                Ok(Value::HashMap(ty_k, ty_v, self.visit_map(values, bf, rf)?))
-            }
-            // custom types
-            Value::Custom(ty, data) => self.visit_custom(ty, data, bf, rf),
+        for bid in validation_output.1 {
+            bf(self, bid)?;
         }
-    }
-
-    fn visit_fields(
-        &mut self,
-        fields: Fields,
-        bf: fn(&mut Self, Bid) -> Result<Bid, RuntimeError>,
-        rf: fn(&mut Self, Rid) -> Result<Rid, RuntimeError>,
-    ) -> Result<Fields, RuntimeError> {
-        match fields {
-            Fields::Named(named) => Ok(Fields::Named(self.visit_vec(named, bf, rf)?)),
-            Fields::Unnamed(unnamed) => Ok(Fields::Unnamed(self.visit_vec(unnamed, bf, rf)?)),
-            Fields::Unit => Ok(Fields::Unit),
+        for rid in validation_output.2 {
+            rf(self, rid)?;
         }
-    }
 
-    fn visit_vec(
-        &mut self,
-        values: Vec<Value>,
-        bf: fn(&mut Self, Bid) -> Result<Bid, RuntimeError>,
-        rf: fn(&mut Self, Rid) -> Result<Rid, RuntimeError>,
-    ) -> Result<Vec<Value>, RuntimeError> {
-        let mut result = Vec::new();
-        for e in values {
-            result.push(self.visit(e, bf, rf)?);
-        }
-        Ok(result)
-    }
-
-    fn visit_map(
-        &mut self,
-        values: Vec<(Value, Value)>,
-        bf: fn(&mut Self, Bid) -> Result<Bid, RuntimeError>,
-        rf: fn(&mut Self, Rid) -> Result<Rid, RuntimeError>,
-    ) -> Result<Vec<(Value, Value)>, RuntimeError> {
-        let mut result = Vec::new();
-        for (k, v) in values {
-            result.push((self.visit(k, bf, rf)?, self.visit(v, bf, rf)?));
-        }
-        Ok(result)
-    }
-
-    fn visit_custom(
-        &mut self,
-        ty: u8,
-        data: Vec<u8>,
-        bf: fn(&mut Self, Bid) -> Result<Bid, RuntimeError>,
-        rf: fn(&mut Self, Rid) -> Result<Rid, RuntimeError>,
-    ) -> Result<Value, RuntimeError> {
-        match ty {
-            SCRYPTO_TYPE_BID => {
-                let bid = bf(
-                    self,
-                    Bid::try_from(data.as_slice()).map_err(|_| {
-                        RuntimeError::InvalidData(DecodeError::InvalidCustomData(ty))
-                    })?,
-                )?;
-                Ok(Value::Custom(ty, bid.to_vec()))
-            }
-            SCRYPTO_TYPE_RID => {
-                let rid = rf(
-                    self,
-                    Rid::try_from(data.as_slice()).map_err(|_| {
-                        RuntimeError::InvalidData(DecodeError::InvalidCustomData(ty))
-                    })?,
-                )?;
-                Ok(Value::Custom(ty, rid.to_vec()))
-            }
-            SCRYPTO_TYPE_DECIMAL
-            | SCRYPTO_TYPE_BIG_DECIMAL
-            | SCRYPTO_TYPE_ADDRESS
-            | SCRYPTO_TYPE_H256
-            | SCRYPTO_TYPE_MID
-            | SCRYPTO_TYPE_VID => Ok(Value::Custom(ty, data)),
-            _ => Err(RuntimeError::InvalidData(DecodeError::InvalidCustomData(
-                ty,
-            ))),
-        }
+        Ok(validation_output.0.raw)
     }
 
     /// Remove transient buckets from this process
@@ -876,7 +746,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         if self.track.get_package(package_address).is_some() {
             return Err(RuntimeError::PackageAlreadyExists(package_address));
         }
-        validate_module(&input.code)?;
+        validate_module(&input.code).map_err(RuntimeError::WasmValidationError)?;
 
         re_debug!(self, "New package: {:?}", package_address);
         self.track
