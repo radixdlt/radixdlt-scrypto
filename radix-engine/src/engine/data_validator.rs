@@ -7,7 +7,7 @@ use crate::model::*;
 
 pub fn validate_data(
     slice: &[u8],
-) -> Result<(ValidatedData, Vec<Bid>, Vec<Rid>), DataValidationError> {
+) -> Result<(ValidatedData, CustomValueValidator), DataValidationError> {
     let value = decode_any(slice).map_err(DataValidationError::DecodeError)?;
 
     // TODO: We need to consider if SBOR should be Scrypto-specific or general purpose.
@@ -21,8 +21,7 @@ pub fn validate_data(
             raw: slice.to_vec(),
             value,
         },
-        validator.buckets,
-        validator.bucket_refs,
+        validator
     ))
 }
 

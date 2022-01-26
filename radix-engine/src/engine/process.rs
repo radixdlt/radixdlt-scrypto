@@ -549,16 +549,17 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         bf: fn(&mut Self, Bid) -> Result<Bid, RuntimeError>,
         rf: fn(&mut Self, Rid) -> Result<Rid, RuntimeError>,
     ) -> Result<Vec<u8>, RuntimeError> {
-        let validation_output = validate_data(data).map_err(RuntimeError::DataValidationError)?;
+        let (validated, validator) =
+            validate_data(data).map_err(RuntimeError::DataValidationError)?;
 
-        for bid in validation_output.1 {
+        for bid in validator.buckets {
             bf(self, bid)?;
         }
-        for rid in validation_output.2 {
+        for rid in validator.bucket_refs {
             rf(self, rid)?;
         }
 
-        Ok(validation_output.0.raw)
+        Ok(validated.raw)
     }
 
     /// Remove transient buckets from this process

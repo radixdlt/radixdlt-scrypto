@@ -1,7 +1,7 @@
 use colored::*;
+use radix_engine::engine::*;
 use radix_engine::ledger::*;
 use radix_engine::model::*;
-use radix_engine::utils::*;
 use scrypto::types::*;
 
 use crate::utils::*;
@@ -40,16 +40,12 @@ pub fn dump_component<T: Ledger>(address: Address, ledger: &T) -> Result<(), Dis
                 c.package_address(),
                 c.blueprint_name()
             );
-            let mut vaults = vec![];
-            println!(
-                "{}: {}",
-                "State".green().bold(),
-                format_data_with_ledger(c.state(Actor::SuperUser).unwrap(), ledger, &mut vaults)
-                    .unwrap()
-            );
+            let state = c.state(Actor::SuperUser).unwrap();
+            let (state_validated, validator) = validate_data(state).unwrap();
+            println!("{}: {}", "State".green().bold(), state_validated);
 
             println!("{}:", "Resources".green().bold());
-            for (last, vid) in vaults.iter().identify_last() {
+            for (last, vid) in validator.vaults.iter().identify_last() {
                 let vault = ledger.get_vault(*vid).unwrap();
                 let amount = vault.amount(Actor::SuperUser).unwrap();
                 let resource_address = vault.resource_address(Actor::SuperUser).unwrap();
@@ -71,19 +67,17 @@ pub fn dump_component<T: Ledger>(address: Address, ledger: &T) -> Result<(), Dis
                         .unwrap_or(String::new()),
                 );
                 if let Supply::NonFungible { ids } = vault.total_supply(Actor::SuperUser).unwrap() {
-                    // TODO how to deal with the case where a vault id is referenced in the NFT
-                    let mut vaults = Vec::new();
                     for (inner_last, id) in ids.iter().identify_last() {
                         let nft = ledger.get_nft(resource_address, *id).unwrap();
+                        let (immutable_data, _) = validate_data(&nft.immutable_data()).unwrap();
+                        let (mutable_data, _) = validate_data(&nft.mutable_data()).unwrap();
                         println!(
                             "{}  {} NFT {{ id: {}, immutable_data: {}, mutable_data: {} }}",
                             if last { " " } else { "│" },
                             list_item_prefix(inner_last),
                             id,
-                            format_data_with_ledger(&nft.immutable_data(), ledger, &mut vaults)
-                                .unwrap(),
-                            format_data_with_ledger(&nft.mutable_data(), ledger, &mut vaults)
-                                .unwrap()
+                            immutable_data,
+                            mutable_data
                         );
                     }
                 }
