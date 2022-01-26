@@ -210,7 +210,7 @@ blueprint! {
             let user_id = Self::get_user_id(user_auth);
             let mut user = self.get_user(user_id, false);
 
-            let &mut synth = self.synthetics.get(&symbol).unwrap();
+            let mut synth = self.synthetics.get(&symbol).unwrap().clone();
             let global_debt = self.get_total_global_debt();
             let new_debt = self.get_asset_price(synth.asset_address) * amount;
 
