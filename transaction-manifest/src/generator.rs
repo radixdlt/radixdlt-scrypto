@@ -1,4 +1,5 @@
 use crate::ast;
+use radix_engine::engine::*;
 use radix_engine::transaction::*;
 use sbor::any::{encode_any, Fields, Value};
 use sbor::type_id::*;
@@ -25,6 +26,7 @@ pub enum GeneratorError {
 
 pub struct NameResolver {
     instructions: Vec<Instruction>,
+    id_allocator: IdAllocator,
     named_buckets: HashMap<String, Bid>,
     named_bucket_refs: HashMap<String, Rid>,
 }
@@ -33,6 +35,7 @@ impl NameResolver {
     pub fn new() -> Self {
         Self {
             instructions: Vec::new(),
+            id_allocator: IdAllocator::new(),
             named_buckets: HashMap::new(),
             named_bucket_refs: HashMap::new(),
         }
@@ -40,12 +43,12 @@ impl NameResolver {
 
     pub fn new_bucket(&mut self) -> Bid {
         self.instructions.push(Instruction::DeclareTempBucket);
-        Bid(self.instructions.len() as u32 - 1)
+        self.id_allocator.new_bid()
     }
 
     pub fn new_bucket_ref(&mut self) -> Rid {
         self.instructions.push(Instruction::DeclareTempBucketRef);
-        Rid(self.instructions.len() as u32 - 1)
+        self.id_allocator.new_rid()
     }
 
     pub fn resolve_bucket(&mut self, name: &str) -> Bid {

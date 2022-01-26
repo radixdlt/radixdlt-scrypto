@@ -6,6 +6,7 @@ mod process;
 mod track;
 
 pub use allocator::IdAllocator;
+pub use allocator::{ECDSA_TOKEN_BID, ECDSA_TOKEN_RID};
 pub use env::{EnvModuleResolver, KERNEL_INDEX, KERNEL_NAME};
 pub use error::RuntimeError;
 pub use loader::{instantiate_module, parse_module, validate_module};

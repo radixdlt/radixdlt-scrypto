@@ -45,6 +45,14 @@ impl BucketRef {
         }
     }
 
+    pub fn check_nft_id<A: Into<ResourceDef>, F: Fn(&u128) -> bool>(self, resource_def: A, f: F) {
+        if self.contains(resource_def) && self.get_nft_ids().iter().any(f) {
+            self.drop();
+        } else {
+            panic!("BucketRef check failed");
+        }
+    }
+
     /// Checks if the referenced bucket contains the given resource.
     pub fn contains<A: Into<ResourceDef>>(&self, resource_def: A) -> bool {
         let resource_def: ResourceDef = resource_def.into();

@@ -1,5 +1,4 @@
 use crate::kernel::*;
-use crate::rust::vec::Vec;
 use crate::types::*;
 
 /// A utility for accessing transaction context.
@@ -26,12 +25,5 @@ impl Context {
         let input = GetCurrentEpochInput {};
         let output: GetCurrentEpochOutput = call_kernel(GET_CURRENT_EPOCH, input);
         output.current_epoch
-    }
-
-    /// Returns the signers of this transaction.
-    pub fn transaction_signers() -> Vec<Address> {
-        let input = GetTransactionSignersInput {};
-        let output: GetTransactionSignersOutput = call_kernel(GET_TRANSACTION_SIGNERS, input);
-        output.transaction_signers
     }
 }

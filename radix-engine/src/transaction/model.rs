@@ -161,7 +161,7 @@ impl Transaction {
                     });
                 }
                 Instruction::DropAllBucketRefs => {
-                    instructions.push(CheckedInstruction::DeclareTempBucketRef);
+                    instructions.push(CheckedInstruction::DropAllBucketRefs);
                 }
                 Instruction::End { signatures } => {
                     if i != self.instructions.len() - 1 {
