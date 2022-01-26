@@ -537,7 +537,7 @@ blueprint! {
             );
 
             debug!("Mint initial shares");
-            let mutual_farm_share_resource_def = ResourceBuilder::new_fungible(DIVISIBILITY_MAXIMUM)
+            let mut mutual_farm_share_resource_def = ResourceBuilder::new_fungible(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "MutualFarm share")
                 .flags(MINTABLE | BURNABLE)
                 .badge(identity_badge_address, MAY_MINT | MAY_BURN)
