@@ -230,6 +230,13 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         Ok(())
     }
 
+    /// Creates a bucket ref which references a virtual bucket
+    pub fn create_virtual_bucket_ref(&mut self, rid: Rid, bucket: Bucket) {
+        let locked_bucket = LockedBucket::new(ECDSA_TOKEN_BID, bucket);
+        let bucket_ref = BucketRef::new(locked_bucket);
+        self.bucket_refs.insert(rid, bucket_ref);
+    }
+
     /// Puts buckets and bucket refs into this process.
     pub fn put_resources(
         &mut self,
@@ -252,7 +259,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         self.buckets.keys().copied().collect()
     }
 
-    /// Returns all bucket ids.
+    /// Drops all bucket refs
     pub fn drop_bucket_refs(&mut self) {
         let rids: Vec<Rid> = self.bucket_refs.keys().copied().collect();
 
@@ -1712,15 +1719,6 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         })
     }
 
-    fn handle_get_transaction_signers(
-        &mut self,
-        _input: GetTransactionSignersInput,
-    ) -> Result<GetTransactionSignersOutput, RuntimeError> {
-        Ok(GetTransactionSignersOutput {
-            transaction_signers: self.track.transaction_signers(),
-        })
-    }
-
     fn handle_get_current_epoch(
         &mut self,
         _input: GetCurrentEpochInput,
@@ -1827,9 +1825,6 @@ impl<'r, 'l, L: Ledger> Externals for Process<'r, 'l, L> {
                     GET_CALL_DATA => self.handle(args, Self::handle_get_call_data),
                     GET_TRANSACTION_HASH => self.handle(args, Self::handle_get_transaction_hash),
                     GET_CURRENT_EPOCH => self.handle(args, Self::handle_get_current_epoch),
-                    GET_TRANSACTION_SIGNERS => {
-                        self.handle(args, Self::handle_get_transaction_signers)
-                    }
                     GENERATE_UUID => self.handle(args, Self::handle_generate_uuid),
 
                     _ => Err(RuntimeError::InvalidRequestCode(operation).into()),

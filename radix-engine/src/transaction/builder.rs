@@ -485,7 +485,11 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
             } => self.add_instruction(Instruction::CallMethod {
                 component_address: account,
                 method: "withdraw".to_owned(),
-                args: vec![scrypto_encode(&*amount), scrypto_encode(&*resource_address)],
+                args: vec![
+                    scrypto_encode(amount),
+                    scrypto_encode(resource_address),
+                    scrypto_encode(&ECDSA_TOKEN_RID),
+                ],
             }),
             ResourceAmount::NonFungible {
                 ids,
@@ -494,8 +498,9 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                 component_address: account,
                 method: "withdraw_nfts".to_owned(),
                 args: vec![
-                    scrypto_encode(&ids.clone()),
-                    scrypto_encode(&*resource_address),
+                    scrypto_encode(ids),
+                    scrypto_encode(resource_address),
+                    scrypto_encode(&ECDSA_TOKEN_RID),
                 ],
             }),
         }

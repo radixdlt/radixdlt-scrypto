@@ -7,6 +7,7 @@ mod wasm_loader;
 mod wasm_validator;
 
 pub use allocator::IdAllocator;
+pub use allocator::{ECDSA_TOKEN_BID, ECDSA_TOKEN_RID};
 pub use data_validator::validate_data;
 pub use process::{Invocation, Process};
 pub use track::Track;

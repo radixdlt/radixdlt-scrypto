@@ -41,6 +41,7 @@ pub fn handle_new_account(matches: &ArgMatches) -> Result<(), Error> {
             None,
         )
         .new_account_with_resource(key, 1000000.into(), RADIX_TOKEN)
+        .drop_all_bucket_refs()
         .build(signers)
         .map_err(Error::TransactionConstructionError)?;
     let receipt = executor.run(transaction, trace).unwrap();

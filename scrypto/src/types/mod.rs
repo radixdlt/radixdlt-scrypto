@@ -8,7 +8,8 @@ mod rid;
 mod vid;
 
 pub use address::{
-    Address, ParseAddressError, ACCOUNT_PACKAGE, RADIX_TOKEN, SYSTEM_COMPONENT, SYSTEM_PACKAGE,
+    Address, ParseAddressError, ACCOUNT_PACKAGE, ECDSA_TOKEN, RADIX_TOKEN, SYSTEM_COMPONENT,
+    SYSTEM_PACKAGE,
 };
 pub use bid::{Bid, ParseBidError};
 pub use big_decimal::{BigDecimal, ParseBigDecimalError};

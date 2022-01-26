@@ -71,6 +71,7 @@ pub fn handle_publish(matches: &ArgMatches) -> Result<(), Error> {
             TransactionExecutor::new(&mut ledger, configs.current_epoch, configs.nonce);
         let transaction = TransactionBuilder::new(&executor)
             .publish_package(&code)
+            .drop_all_bucket_refs()
             .build(signers)
             .map_err(Error::TransactionConstructionError)?;
 

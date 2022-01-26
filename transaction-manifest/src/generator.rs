@@ -1,4 +1,5 @@
 use crate::ast;
+use radix_engine::engine::*;
 use radix_engine::model::*;
 use sbor::any::{encode_any, Fields, Value};
 use sbor::type_id::*;
@@ -25,6 +26,7 @@ pub enum GeneratorError {
 
 pub struct NameResolver {
     instructions: Vec<Instruction>,
+    id_allocator: IdAllocator,
     named_buckets: HashMap<String, Bid>,
     named_bucket_refs: HashMap<String, Rid>,
 }
@@ -33,6 +35,7 @@ impl NameResolver {
     pub fn new() -> Self {
         Self {
             instructions: Vec::new(),
+            id_allocator: IdAllocator::new(),
             named_buckets: HashMap::new(),
             named_bucket_refs: HashMap::new(),
         }
@@ -40,12 +43,12 @@ impl NameResolver {
 
     pub fn new_bucket(&mut self) -> Bid {
         self.instructions.push(Instruction::DeclareTempBucket);
-        Bid(self.instructions.len() as u32 - 1)
+        self.id_allocator.new_bid()
     }
 
     pub fn new_bucket_ref(&mut self) -> Rid {
         self.instructions.push(Instruction::DeclareTempBucketRef);
-        Rid(self.instructions.len() as u32 - 1)
+        self.id_allocator.new_rid()
     }
 
     pub fn resolve_bucket(&mut self, name: &str) -> Bid {
@@ -528,8 +531,8 @@ mod tests {
         generate_value_ok!(
             r#"Struct({Bucket("foo"), BucketRef("foo"), "bar"})"#,
             Value::Struct(Fields::Named(vec![
-                Value::Custom(SCRYPTO_TYPE_BID, Bid(0).to_vec()),
-                Value::Custom(SCRYPTO_TYPE_RID, Rid(1).to_vec()),
+                Value::Custom(SCRYPTO_TYPE_BID, Bid(1024).to_vec()),
+                Value::Custom(SCRYPTO_TYPE_RID, Rid(1024).to_vec()),
                 Value::String("bar".into())
             ])),
             vec![
@@ -680,7 +683,7 @@ mod tests {
                     "03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d"
                 )
                 .unwrap(),
-                to: Bid(0),
+                to: Bid(1024),
             }),
             vec![Instruction::DeclareTempBucket]
         );
@@ -692,7 +695,7 @@ mod tests {
                     "03559905076cb3d4b9312640393a7bc6e1d4e491a8b1b62fa73a94".into()
                 )
                 .unwrap(),
-                to: Rid(0),
+                to: Rid(1024),
             }),
             vec![Instruction::DeclareTempBucketRef]
         );
@@ -720,7 +723,7 @@ mod tests {
                 )
                 .unwrap(),
                 method: "refill".into(),
-                args: vec![scrypto_encode(&Bid(0)), scrypto_encode(&Rid(1))]
+                args: vec![scrypto_encode(&Bid(1024)), scrypto_encode(&Rid(1024))]
             }),
             vec![
                 Instruction::DeclareTempBucket,
