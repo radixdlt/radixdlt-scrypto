@@ -6,33 +6,16 @@ use scrypto::prelude::*;
 // keeps track of the amount of toys each elf created.
 blueprint! {
     struct ElfWorkshop {
-        // Vault that will contain the badge allowing this component to mint new elf_badges
-        elf_badge_minter: Vault,
-        // Resource definition of the elf badges
-        elf_badge: ResourceDef,
+        elfs: Vec<Address>,
         // Maps elf's badge to an hashmap mapping toy name to quantity
         toys: HashMap<Address, HashMap<String, u32>>
     }
 
     impl ElfWorkshop {
         pub fn new() -> Component {
-
-            // Create a badge allowing this component to mint new elf badges
-            let elf_badge_minter: Bucket = ResourceBuilder::new_fungible(DIVISIBILITY_NONE)
-                .metadata("name", "Elf badge minter")
-                .initial_supply_fungible(1);
-
-            // Define a mutable resource representing the elf badges
-            let elf_badges: ResourceDef = ResourceBuilder::new_fungible(DIVISIBILITY_NONE)
-                .metadata("name", "Elf Badge")
-                .flags(MINTABLE)
-                .badge(elf_badge_minter.resource_address(), MAY_MINT)
-                .no_initial_supply();
-
             // Instantiate the component
             Self {
-                elf_badge_minter: Vault::with_bucket(elf_badge_minter),
-                elf_badge: elf_badges,
+                elfs: Vec::new(),
                 toys: HashMap::new()
             }
             .instantiate()
@@ -41,17 +24,19 @@ blueprint! {
         pub fn become_elf(&mut self) -> Bucket {
             info!("Welcome to the factory, here is your badge");
 
-            // Mint a new badge and send it to the caller
-            // Vault.authorize is a shortcut, instead of having to take the badge from 
-            // the vault and putting it back in after.
-            self.elf_badge_minter.authorize(|badge| {
-                self.elf_badge.mint(1, badge)
-            })
+            // Create a new badge and send it to the caller
+            let elf_badge: Bucket = ResourceBuilder::new_fungible(DIVISIBILITY_NONE)
+                .metadata("name", "Elf Badge")
+                .initial_supply_fungible(1);
+
+            self.elfs.push(elf_badge.resource_address());
+
+            elf_badge
         }
 
         pub fn create_toy(&mut self, name: String, badge: BucketRef) {
             assert!(badge.amount() > Decimal::zero(), "Where is your badge ?");
-            assert!(badge.resource_def() == self.elf_badge, "That's not a valid bage !");
+            assert!(self.elfs.contains(&badge.resource_address()), "That's not a valid bage !");
             
             // The badge's address is used to identify the elf
             let elf_id = badge.resource_address();
@@ -61,11 +46,22 @@ blueprint! {
 
             // Insert the toy in the hashmap
             let elf_toys = self.toys.entry(elf_id).or_insert(HashMap::new());
-            let old_count = *elf_toys.entry(name.clone()).or_insert(0);
-            elf_toys.insert(name.clone(), old_count + 1);
-
-            info!("The total amount of {} you created is {}", name, old_count + 1)
+            elf_toys.entry(name.clone()).and_modify(|e| { *e += 1 }).or_insert(1);
         }
-        
+
+        // View the amount of toys you created
+        pub fn view_created_toys(&mut self, badge: BucketRef) {
+            assert!(badge.amount() > Decimal::zero(), "You have to provide a badge");
+            assert!(self.elfs.contains(&badge.resource_address()), "That's not a valid bage !");
+            let elf_id = badge.resource_address();
+
+            badge.drop();
+
+            let elf_toys = self.toys.get(&elf_id).unwrap();
+
+            for (toy, amount) in elf_toys.iter() {
+                info!("{} created {} times", toy, amount);
+            }
+        }
     }
 }

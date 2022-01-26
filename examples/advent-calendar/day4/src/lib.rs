@@ -33,19 +33,23 @@ blueprint! {
             (component, vec![santa_badge, owner_badge])
         }
 
-        // This line makes sure that only people presenting a 
-        // santa_badge OR an owner_badge can call this method.
-        #[auth(santa_badge, owner_badge)]
-        pub fn enter(&self) {
+        pub fn enter(&self, badge: BucketRef) {
+            assert!(badge.amount() > Decimal::zero(), "Missing badge");
+
             // Now we have access to a variable named 'auth' which is a BucketRef.
             // === Note on BucketRef
             // BucketRefs are Buckets whose ownership are not passed to the component.
             // This component can't store the provided badge in its vaults or send it to someone.
-            if auth.resource_def() == self.owner_badge {
+            if badge.resource_def() == self.owner_badge {
                 info!("Welcome home !");
-            } else if auth.resource_def() == self.santa_badge {
+            } else if badge.resource_def() == self.santa_badge {
                 info!("Hello ! Please take some cookies and milk !");
+            } else {
+                error!("You have committed crimes against Scrypto and its community. What say you in your defense ?");
             }
+
+            // Don't forget to drop BucketRefs or you will get an error !
+            badge.drop();
         }
     }
 }
