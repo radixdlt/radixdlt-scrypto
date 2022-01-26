@@ -139,7 +139,7 @@ blueprint! {
             (nft_bucket, payment)
         }
 
-        pub fn upgrade_my_card(&self, nft_bucket: Bucket) -> Bucket {
+        pub fn upgrade_my_card(&mut self, nft_bucket: Bucket) -> Bucket {
             assert!(
                 nft_bucket.amount() == 1.into(),
                 "We can upgrade only one card each time"

@@ -52,7 +52,7 @@ blueprint! {
                 .no_initial_supply();
 
             // Currently, Scrypto requires manual assignment of NFT IDs
-            let ticket_bucket = Bucket::new(my_nft_def);
+            let mut ticket_bucket = Bucket::new(my_nft_def);
             let mut manual_id = 1;
 
             // Mint the Luxury seat tokens.  These seats have an assigned seat number
@@ -117,7 +117,7 @@ blueprint! {
         }
 
         /// Passing an NFT into this function will switch it from the default Home team prediction to an Away team prediction
-        fn switch_nft_prediction(&self, nft_bucket: Bucket) -> Bucket {
+        fn switch_nft_prediction(&mut self, nft_bucket: Bucket) -> Bucket {
             // First, get the current data and change it to the desired state locally
             let mut nft_data: Ticket = nft_bucket.get_nft_data(nft_bucket.get_nft_id());
             nft_data.prediction = Team::Away;
