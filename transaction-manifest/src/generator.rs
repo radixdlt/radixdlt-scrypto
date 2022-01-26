@@ -416,16 +416,18 @@ fn generate_pairs(
     key_type: ast::Type,
     value_type: ast::Type,
     resolver: &mut NameResolver,
-) -> Result<Vec<(Value, Value)>, GeneratorError> {
+) -> Result<Vec<Value>, GeneratorError> {
     if elements.len() % 2 != 0 {
         return Err(GeneratorError::OddNumberOfElements(elements.len()));
     }
     let mut result = vec![];
     for i in 0..elements.len() / 2 {
-        result.push((
-            generate_value(&elements[2 * i], Some(key_type), resolver)?,
-            generate_value(&elements[2 * i + 1], Some(value_type), resolver)?,
-        ));
+        result.push(generate_value(&elements[2 * i], Some(key_type), resolver)?);
+        result.push(generate_value(
+            &elements[2 * i + 1],
+            Some(value_type),
+            resolver,
+        )?);
     }
     Ok(result)
 }
@@ -614,10 +616,10 @@ mod tests {
             Value::HashMap(
                 TYPE_HASH_SET,
                 TYPE_VEC,
-                vec![(
+                vec![
                     Value::HashSet(TYPE_U8, vec![Value::U8(1)]),
                     Value::Vec(TYPE_U8, vec![Value::U8(2)]),
-                )]
+                ]
             ),
             vec![]
         );
@@ -626,10 +628,10 @@ mod tests {
             Value::TreeMap(
                 TYPE_TREE_SET,
                 TYPE_VEC,
-                vec![(
+                vec![
                     Value::TreeSet(TYPE_U8, vec![Value::U8(1)]),
                     Value::Vec(TYPE_U8, vec![Value::U8(2)])
-                )]
+                ]
             ),
             vec![]
         );

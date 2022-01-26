@@ -90,7 +90,7 @@ pub fn validate_transaction(
                 });
             }
             Instruction::DropAllBucketRefs => {
-                instructions.push(ValidatedInstruction::DeclareTempBucketRef);
+                instructions.push(ValidatedInstruction::DropAllBucketRefs);
             }
             Instruction::End { signatures } => {
                 if i != transaction.instructions.len() - 1 {

@@ -1,4 +1,5 @@
 use clap::{crate_version, App, Arg, ArgMatches};
+use radix_engine::model::*;
 use radix_engine::transaction::*;
 
 use crate::ledger::*;

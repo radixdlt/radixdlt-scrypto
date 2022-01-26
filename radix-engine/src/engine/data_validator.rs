@@ -21,21 +21,25 @@ pub fn validate_data(
             raw: slice.to_vec(),
             value,
         },
-        validator.bucket_ids,
-        validator.bucket_ref_ids,
+        validator.buckets,
+        validator.bucket_refs,
     ))
 }
 
 pub struct CustomValueValidator {
-    pub bucket_ids: Vec<Bid>,
-    pub bucket_ref_ids: Vec<Rid>,
+    pub buckets: Vec<Bid>,
+    pub bucket_refs: Vec<Rid>,
+    pub vaults: Vec<Vid>,
+    pub lazy_maps: Vec<Mid>,
 }
 
 impl CustomValueValidator {
     pub fn new() -> Self {
         Self {
-            bucket_ids: Vec::new(),
-            bucket_ref_ids: Vec::new(),
+            buckets: Vec::new(),
+            bucket_refs: Vec::new(),
+            vaults: Vec::new(),
+            lazy_maps: Vec::new(),
         }
     }
 }
@@ -58,18 +62,20 @@ impl CustomValueVisitor for CustomValueValidator {
                 H256::try_from(data).map_err(DataValidationError::InvalidH256)?;
             }
             SCRYPTO_TYPE_BID => {
-                self.bucket_ids
+                self.buckets
                     .push(Bid::try_from(data).map_err(DataValidationError::InvalidBid)?);
             }
             SCRYPTO_TYPE_RID => {
-                self.bucket_ref_ids
+                self.bucket_refs
                     .push(Rid::try_from(data).map_err(DataValidationError::InvalidRid)?);
             }
             SCRYPTO_TYPE_MID => {
-                Mid::try_from(data).map_err(DataValidationError::InvalidMid)?;
+                self.lazy_maps
+                    .push(Mid::try_from(data).map_err(DataValidationError::InvalidMid)?);
             }
             SCRYPTO_TYPE_VID => {
-                Vid::try_from(data).map_err(DataValidationError::InvalidVid)?;
+                self.vaults
+                    .push(Vid::try_from(data).map_err(DataValidationError::InvalidVid)?);
             }
             _ => {
                 return Err(DataValidationError::InvalidTypeId(kind));
