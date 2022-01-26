@@ -11,7 +11,7 @@ blueprint! {
         }
 
         pub fn combine() -> Bucket {
-            let bucket1 = Self::create_test_badge(100);
+            let mut bucket1 = Self::create_test_badge(100);
             let bucket2 = bucket1.take(50);
             bucket1.put(bucket2);
             bucket1

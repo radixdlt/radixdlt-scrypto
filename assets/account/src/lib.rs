@@ -33,7 +33,7 @@ blueprint! {
         pub fn deposit(&mut self, bucket: Bucket) {
             let address = bucket.resource_address();
             match self.vaults.get(&address) {
-                Some(v) => {
+                Some(mut v) => {
                     v.put(bucket);
                 }
                 None => {
@@ -51,7 +51,7 @@ blueprint! {
 
             let vault = self.vaults.get(&resource_address);
             match vault {
-                Some(vault) => vault.take(amount),
+                Some(mut vault) => vault.take(amount),
                 None => {
                     panic!("Insufficient balance");
                 }
@@ -75,7 +75,7 @@ blueprint! {
 
             let vault = self.vaults.get(&resource_address);
             match vault {
-                Some(vault) => vault.take_with_auth(amount, auth),
+                Some(mut vault) => vault.take_with_auth(amount, auth),
                 None => {
                     panic!("Insufficient balance");
                 }
@@ -91,7 +91,7 @@ blueprint! {
             let vault = self.vaults.get(&resource_address);
             match vault {
                 Some(vault) => {
-                    let bucket = Bucket::new(resource_address);
+                    let mut bucket = Bucket::new(resource_address);
                     for id in ids {
                         bucket.put(vault.take_nft(id));
                     }
@@ -121,7 +121,7 @@ blueprint! {
             let vault = self.vaults.get(&resource_address);
             let bucket = match vault {
                 Some(vault) => {
-                    let bucket = Bucket::new(resource_address);
+                    let mut bucket = Bucket::new(resource_address);
                     for id in ids {
                         bucket.put(vault.take_nft_with_auth(id, auth.clone()));
                     }

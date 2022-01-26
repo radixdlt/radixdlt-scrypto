@@ -82,7 +82,7 @@ fn test_simple_auth() {
             [
                 {
                     "name": "pump",
-                    "mutability": "Immutable",
+                    "mutability": "Mutable",
                     "inputs": [
                         {
                             "type": "Custom",
@@ -101,7 +101,7 @@ fn test_simple_auth() {
                 },
                 {
                     "name": "airdrop",
-                    "mutability": "Immutable",
+                    "mutability": "Mutable",
                     "inputs": [
                         {
                             "type": "Custom",

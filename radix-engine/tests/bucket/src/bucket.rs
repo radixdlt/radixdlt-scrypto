@@ -16,7 +16,7 @@ blueprint! {
         }
 
         pub fn combine() -> Bucket {
-            let bucket1 = Self::create_test_token(100);
+            let mut bucket1 = Self::create_test_token(100);
             let bucket2 = bucket1.take(50);
 
             bucket1.put(bucket2);
@@ -47,7 +47,7 @@ blueprint! {
                 .flags(RESTRICTED_TRANSFER)
                 .badge(badge.resource_address(), MAY_TRANSFER)
                 .initial_supply_fungible(5);
-            let vault = Vault::with_bucket(bucket);
+            let mut vault = Vault::with_bucket(bucket);
             let bucket2 = vault.take_with_auth(1, badge.present());
             vec![badge, bucket2]
         }

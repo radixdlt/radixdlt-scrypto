@@ -21,7 +21,7 @@ blueprint! {
             let mint_badge = ResourceBuilder::new_fungible(DIVISIBILITY_NONE).initial_supply_fungible(1);
 
             // Create NFT resource with mutable supply
-            let nft_resource_def = ResourceBuilder::new_non_fungible()
+            let mut nft_resource_def = ResourceBuilder::new_non_fungible()
                 .metadata("name", "Katz's Sandwiches")
                 .flags(MINTABLE | BURNABLE | INDIVIDUAL_METADATA_MUTABLE)
                 .badge(
@@ -72,7 +72,7 @@ blueprint! {
         }
 
         pub fn update_and_get_nft() -> (Bucket, Bucket) {
-            let (mint_badge, resource_def, bucket) = Self::create_nft_mutable();
+            let (mint_badge, mut resource_def, bucket) = Self::create_nft_mutable();
             let mut data: Sandwich = resource_def.get_nft_data(0);
             assert_eq!(data.available, false);
 
@@ -85,7 +85,7 @@ blueprint! {
         }
 
         pub fn take_and_put_bucket() -> Bucket {
-            let bucket = Self::create_nft_fixed();
+            let mut bucket = Self::create_nft_fixed();
             assert_eq!(bucket.amount(), 3.into());
 
             let nft = bucket.take(1);
@@ -97,7 +97,7 @@ blueprint! {
         }
 
         pub fn take_and_put_vault() -> Bucket {
-            let vault = Vault::with_bucket(Self::create_nft_fixed());
+            let mut vault = Vault::with_bucket(Self::create_nft_fixed());
             assert_eq!(vault.amount(), 3.into());
 
             let nft = vault.take(1);
@@ -116,7 +116,7 @@ blueprint! {
         }
 
         pub fn get_nft_ids_vault() -> Bucket {
-            let vault = Vault::with_bucket(Self::create_nft_fixed());
+            let mut vault = Vault::with_bucket(Self::create_nft_fixed());
             let nft = vault.take(1);
             assert_eq!(vault.get_nft_ids(), Vec::from([2, 3]));
             assert_eq!(nft.get_nft_ids(), Vec::from([1]));
@@ -124,7 +124,7 @@ blueprint! {
         }
 
         pub fn nft_and_vault() -> (Bucket, Bucket) {
-            let (mint_badge, resource_def, bucket) = Self::create_nft_mutable();
+            let (mint_badge, mut resource_def, mut bucket) = Self::create_nft_mutable();
 
             let nft = mint_badge.authorize(|auth| {
                 resource_def.mint_nft(
