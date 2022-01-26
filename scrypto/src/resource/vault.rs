@@ -39,13 +39,13 @@ impl Vault {
 
     /// Creates an empty vault and fills it with an initial bucket of resources.
     pub fn with_bucket(bucket: Bucket) -> Self {
-        let vault = Vault::new(bucket.resource_def().address());
+        let mut vault = Vault::new(bucket.resource_def().address());
         vault.put(bucket);
         vault
     }
 
     /// Puts a bucket of resources into this vault.
-    pub fn put(&self, bucket: Bucket) {
+    pub fn put(&mut self, bucket: Bucket) {
         let input = PutIntoVaultInput {
             vid: self.vid,
             bid: bucket.into(),
@@ -54,7 +54,7 @@ impl Vault {
     }
 
     /// Takes some amount of resource from this vault into a bucket.
-    pub fn take<A: Into<Decimal>>(&self, amount: A) -> Bucket {
+    pub fn take<A: Into<Decimal>>(&mut self, amount: A) -> Bucket {
         let input = TakeFromVaultInput {
             vid: self.vid,
             amount: amount.into(),
@@ -69,7 +69,7 @@ impl Vault {
     ///
     /// This variant of `take` accepts an additional auth parameter to support resources
     /// with or without `RESTRICTED_TRANSFER` flag on.
-    pub fn take_with_auth<A: Into<Decimal>>(&self, amount: A, auth: BucketRef) -> Bucket {
+    pub fn take_with_auth<A: Into<Decimal>>(&mut self, amount: A, auth: BucketRef) -> Bucket {
         let input = TakeFromVaultInput {
             vid: self.vid,
             amount: amount.into(),
@@ -81,7 +81,7 @@ impl Vault {
     }
 
     /// Takes all resource stored in this vault.
-    pub fn take_all(&self) -> Bucket {
+    pub fn take_all(&mut self) -> Bucket {
         self.take(self.amount())
     }
 
@@ -89,7 +89,7 @@ impl Vault {
     ///
     /// This variant of `take_all` accepts an additional auth parameter to support resources
     /// with or without `RESTRICTED_TRANSFER` flag on.
-    pub fn take_all_with_auth(&self, auth: BucketRef) -> Bucket {
+    pub fn take_all_with_auth(&mut self, auth: BucketRef) -> Bucket {
         self.take_with_auth(self.amount(), auth)
     }
 
@@ -134,7 +134,7 @@ impl Vault {
     /// 3. Applies the specified function `f` with the created bucket reference;
     /// 4. Puts the `1` resource back into this vault.
     ///
-    pub fn authorize<F: FnOnce(BucketRef) -> O, O>(&self, f: F) -> O {
+    pub fn authorize<F: FnOnce(BucketRef) -> O, O>(&mut self, f: F) -> O {
         let bucket = self.take(1);
         let output = f(bucket.present());
         self.put(bucket);
@@ -152,7 +152,7 @@ impl Vault {
     /// This variant of `authorize` accepts an additional auth parameter to support resources
     /// with or without `RESTRICTED_TRANSFER` flag on.
     ///
-    pub fn authorize_with_auth<F: FnOnce(BucketRef) -> O, O>(&self, f: F, auth: BucketRef) -> O {
+    pub fn authorize_with_auth<F: FnOnce(BucketRef) -> O, O>(&mut self, f: F, auth: BucketRef) -> O {
         let bucket = self.take_with_auth(1, auth);
         let output = f(bucket.present());
         self.put(bucket);

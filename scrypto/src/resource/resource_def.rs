@@ -61,7 +61,7 @@ impl ResourceDef {
     }
 
     /// Mints fungible resources
-    pub fn mint<T: Into<Decimal>>(&self, amount: T, auth: BucketRef) -> Bucket {
+    pub fn mint<T: Into<Decimal>>(&mut self, amount: T, auth: BucketRef) -> Bucket {
         let input = MintResourceInput {
             resource_address: self.address,
             new_supply: NewSupply::Fungible {
@@ -75,7 +75,7 @@ impl ResourceDef {
     }
 
     /// Mints non-fungible resources
-    pub fn mint_nft<T: NftData>(&self, id: u128, data: T, auth: BucketRef) -> Bucket {
+    pub fn mint_nft<T: NftData>(&mut self, id: u128, data: T, auth: BucketRef) -> Bucket {
         let mut entries = HashMap::new();
         entries.insert(id, (data.immutable_data(), data.mutable_data()));
 
@@ -90,7 +90,7 @@ impl ResourceDef {
     }
 
     /// Burns a bucket of resources.
-    pub fn burn(&self, bucket: Bucket) {
+    pub fn burn(&mut self, bucket: Bucket) {
         let input = BurnResourceInput {
             bid: bucket.into(),
             auth: None,
@@ -99,7 +99,7 @@ impl ResourceDef {
     }
 
     /// Burns a bucket of resources.
-    pub fn burn_with_auth(&self, bucket: Bucket, auth: BucketRef) {
+    pub fn burn_with_auth(&mut self, bucket: Bucket, auth: BucketRef) {
         let input = BurnResourceInput {
             bid: bucket.into(),
             auth: Some(auth.into()),
@@ -180,7 +180,7 @@ impl ResourceDef {
     ///
     /// # Panics
     /// Panics if this is not an NFT resource or the specified NFT is not found.
-    pub fn update_nft_data<T: NftData>(&self, id: u128, new_data: T, auth: BucketRef) {
+    pub fn update_nft_data<T: NftData>(&mut self, id: u128, new_data: T, auth: BucketRef) {
         let input = UpdateNftMutableDataInput {
             resource_address: self.address,
             id,
@@ -191,7 +191,7 @@ impl ResourceDef {
     }
 
     /// Turns on feature flags.
-    pub fn enable_flags(&self, flags: u16, auth: BucketRef) {
+    pub fn enable_flags(&mut self, flags: u16, auth: BucketRef) {
         let input = UpdateResourceFlagsInput {
             resource_address: self.address,
             new_flags: self.flags() | flags,
@@ -201,7 +201,7 @@ impl ResourceDef {
     }
 
     /// Turns off feature flags.
-    pub fn disable_flags(&self, flags: u16, auth: BucketRef) {
+    pub fn disable_flags(&mut self, flags: u16, auth: BucketRef) {
         let input = UpdateResourceFlagsInput {
             resource_address: self.address,
             new_flags: self.flags() & !flags,
@@ -211,7 +211,7 @@ impl ResourceDef {
     }
 
     /// Locks feature flag settings.
-    pub fn lock_flags(&self, flags: u16, auth: BucketRef) {
+    pub fn lock_flags(&mut self, flags: u16, auth: BucketRef) {
         let input = UpdateResourceMutableFlagsInput {
             resource_address: self.address,
             new_mutable_flags: self.flags() & !flags,
@@ -221,7 +221,7 @@ impl ResourceDef {
             call_kernel(UPDATE_RESOURCE_MUTABLE_FLAGS, input);
     }
 
-    pub fn update_metadata(&self, new_metadata: HashMap<String, String>, auth: BucketRef) {
+    pub fn update_metadata(&mut self, new_metadata: HashMap<String, String>, auth: BucketRef) {
         let input = UpdateResourceMetadataInput {
             resource_address: self.address,
             new_metadata,

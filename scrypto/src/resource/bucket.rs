@@ -38,7 +38,7 @@ impl Bucket {
     }
 
     /// Puts resources from another bucket into this bucket.
-    pub fn put(&self, other: Self) {
+    pub fn put(&mut self, other: Self) {
         let input = PutIntoBucketInput {
             bid: self.bid,
             other: other.bid,
