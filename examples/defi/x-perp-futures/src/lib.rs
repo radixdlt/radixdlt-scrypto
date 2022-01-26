@@ -92,7 +92,7 @@ blueprint! {
         }
 
         /// Donates into this protocol.
-        pub fn donate(&self, donation: Bucket) {
+        pub fn donate(&mut self, donation: Bucket) {
             self.deposits_in_quote.put(donation);
         }
 
