@@ -5,9 +5,7 @@ use scrypto::types::*;
 
 use crate::model::*;
 
-pub fn validate_data(
-    slice: &[u8],
-) -> Result<(ValidatedData, CustomValueValidator), DataValidationError> {
+pub fn validate_data(slice: &[u8]) -> Result<ValidatedData, DataValidationError> {
     let value = decode_any(slice).map_err(DataValidationError::DecodeError)?;
 
     // TODO: We need to consider if SBOR should be Scrypto-specific or general purpose.
@@ -16,13 +14,14 @@ pub fn validate_data(
     let mut validator = CustomValueValidator::new();
     traverse_any(&value, &mut validator)?;
 
-    Ok((
-        ValidatedData {
-            raw: slice.to_vec(),
-            value,
-        },
-        validator
-    ))
+    Ok(ValidatedData {
+        raw: slice.to_vec(),
+        dom: value,
+        buckets: validator.buckets,
+        bucket_refs: validator.bucket_refs,
+        vaults: validator.vaults,
+        lazy_maps: validator.lazy_maps,
+    })
 }
 
 pub struct CustomValueValidator {

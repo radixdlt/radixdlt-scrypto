@@ -41,11 +41,11 @@ pub fn dump_component<T: Ledger>(address: Address, ledger: &T) -> Result<(), Dis
                 c.blueprint_name()
             );
             let state = c.state(Actor::SuperUser).unwrap();
-            let (state_validated, validator) = validate_data(state).unwrap();
+            let state_validated = validate_data(state).unwrap();
             println!("{}: {}", "State".green().bold(), state_validated);
 
             println!("{}:", "Resources".green().bold());
-            for (last, vid) in validator.vaults.iter().identify_last() {
+            for (last, vid) in state_validated.vaults.iter().identify_last() {
                 let vault = ledger.get_vault(*vid).unwrap();
                 let amount = vault.amount(Actor::SuperUser).unwrap();
                 let resource_address = vault.resource_address(Actor::SuperUser).unwrap();
@@ -69,8 +69,8 @@ pub fn dump_component<T: Ledger>(address: Address, ledger: &T) -> Result<(), Dis
                 if let Supply::NonFungible { ids } = vault.total_supply(Actor::SuperUser).unwrap() {
                     for (inner_last, id) in ids.iter().identify_last() {
                         let nft = ledger.get_nft(resource_address, *id).unwrap();
-                        let (immutable_data, _) = validate_data(&nft.immutable_data()).unwrap();
-                        let (mutable_data, _) = validate_data(&nft.mutable_data()).unwrap();
+                        let immutable_data = validate_data(&nft.immutable_data()).unwrap();
+                        let mutable_data = validate_data(&nft.mutable_data()).unwrap();
                         println!(
                             "{}  {} NFT {{ id: {}, immutable_data: {}, mutable_data: {} }}",
                             if last { " " } else { "│" },

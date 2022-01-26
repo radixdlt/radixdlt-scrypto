@@ -53,6 +53,9 @@ pub enum RuntimeError {
     /// The data is not a valid SBOR value.
     DataValidationError(DataValidationError),
 
+    /// Not a valid ABI.
+    AbiValidationError(DecodeError),
+
     /// Error when invoking an export.
     InvokeError(Error),
 
@@ -146,11 +149,17 @@ pub enum RuntimeError {
     /// Nft access error.
     NftError(NftError),
 
-    /// Bucket is not allowed (in component state).
+    /// Bucket is not allowed.
     BucketNotAllowed,
 
-    /// Bucket ref is not allowed (in component state).
+    /// BucketRef is not allowed.
     BucketRefNotAllowed,
+
+    /// Vault is not allowed
+    VaultNotAllowed,
+
+    /// Lazy Map is not allowed
+    LayMapNotAllowed,
 
     /// Interpreter is not started.
     InterpreterNotStarted,

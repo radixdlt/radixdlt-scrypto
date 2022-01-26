@@ -1,5 +1,5 @@
 use scrypto::abi;
-use scrypto::args;
+use scrypto::buffer::*;
 use scrypto::rust::string::ToString;
 use scrypto::rust::vec;
 use scrypto::rust::vec::Vec;
@@ -201,21 +201,16 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
                         *package_address,
                         blueprint_name.as_str(),
                         function.as_str(),
-                        args.iter().map(|a| a.raw.clone()).collect(),
+                        args.clone(),
                     )
-                    .map(|rtn| Some(validate_data(&rtn).unwrap().0)), // TODO: update  interface
+                    .map(Option::Some),
                 ValidatedInstruction::CallMethod {
                     component_address,
                     method,
                     args,
                 } => proc
-                    .call_method(
-                        // TODO: update interface
-                        *component_address,
-                        method.as_str(),
-                        args.iter().map(|a| a.raw.clone()).collect(),
-                    )
-                    .map(|rtn| Some(validate_data(&rtn).unwrap().0)), // TODO: update  interface
+                    .call_method(*component_address, method.as_str(), args.clone())
+                    .map(Option::Some),
 
                 ValidatedInstruction::DropAllBucketRefs => {
                     proc.drop_bucket_refs();
@@ -227,8 +222,12 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
                 } => {
                     let buckets = proc.list_buckets();
                     if !buckets.is_empty() {
-                        proc.call_method(*component_address, method, args!(buckets))
-                            .map(|rtn| Some(validate_data(&rtn).unwrap().0)) // TODO: update  interface
+                        proc.call_method(
+                            *component_address,
+                            method,
+                            vec![validate_data(&scrypto_encode(&buckets)).unwrap()],
+                        )
+                        .map(Option::Some)
                     } else {
                         Ok(None)
                     }

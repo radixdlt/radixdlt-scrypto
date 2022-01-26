@@ -50,8 +50,7 @@ pub fn validate_transaction(
                 for arg in args {
                     checked_args.push(
                         validate_data(&arg)
-                            .map_err(TransactionValidationError::DataValidationError)?
-                            .0,
+                            .map_err(TransactionValidationError::DataValidationError)?,
                     );
                 }
                 instructions.push(ValidatedInstruction::CallFunction {
@@ -70,8 +69,7 @@ pub fn validate_transaction(
                 for arg in args {
                     checked_args.push(
                         validate_data(&arg)
-                            .map_err(TransactionValidationError::DataValidationError)?
-                            .0,
+                            .map_err(TransactionValidationError::DataValidationError)?,
                     );
                 }
                 instructions.push(ValidatedInstruction::CallMethod {

@@ -13,14 +13,17 @@ use scrypto::types::*;
 #[derive(Clone)]
 pub struct ValidatedData {
     pub raw: Vec<u8>,
-    pub value: Value,
+    pub dom: Value,
+    pub buckets: Vec<Bid>,
+    pub bucket_refs: Vec<Rid>,
+    pub vaults: Vec<Vid>,
+    pub lazy_maps: Vec<Mid>,
 }
 
 impl fmt::Debug for ValidatedData {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        // TODO: format the value based on the tiny lang introduced by transaction manifest.
         if self.raw.len() <= 1024 {
-            write!(f, "{}", format_value(&self.value))
+            write!(f, "{}", format_value(&self.dom))
         } else {
             write!(f, "LargeValue(len: {})", self.raw.len())
         }
@@ -175,7 +178,9 @@ fn format_elements(values: &[Value]) -> String {
 fn format_custom(ty: u8, data: &[u8]) -> String {
     match ty {
         SCRYPTO_TYPE_DECIMAL => format!("Decimal(\"{}\")", Decimal::try_from(data).unwrap()),
-        SCRYPTO_TYPE_BIG_DECIMAL => format!("BigDecimal(\"{}\")", BigDecimal::try_from(data).unwrap()),
+        SCRYPTO_TYPE_BIG_DECIMAL => {
+            format!("BigDecimal(\"{}\")", BigDecimal::try_from(data).unwrap())
+        }
         SCRYPTO_TYPE_ADDRESS => format!("Address(\"{}\")", Address::try_from(data).unwrap()),
         SCRYPTO_TYPE_H256 => format!("Hash(\"{}\")", H256::try_from(data).unwrap()),
         SCRYPTO_TYPE_MID => format!("LazyMap(\"{}\")", Mid::try_from(data).unwrap()),
