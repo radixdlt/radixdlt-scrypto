@@ -9,6 +9,7 @@ mod cmd_new_token_fixed;
 mod cmd_new_token_mutable;
 mod cmd_publish;
 mod cmd_reset;
+mod cmd_run;
 mod cmd_set_current_epoch;
 mod cmd_set_default_account;
 mod cmd_show;
@@ -30,6 +31,7 @@ pub use cmd_new_token_fixed::*;
 pub use cmd_new_token_mutable::*;
 pub use cmd_publish::*;
 pub use cmd_reset::*;
+pub use cmd_run::*;
 pub use cmd_set_current_epoch::*;
 pub use cmd_set_default_account::*;
 pub use cmd_show::*;
@@ -52,6 +54,7 @@ pub const CMD_MINT: &str = "mint";
 pub const CMD_TRANSFER: &str = "transfer";
 pub const CMD_PUBLISH: &str = "publish";
 pub const CMD_RESET: &str = "reset";
+pub const CMD_RUN: &str = "run";
 pub const CMD_SET_DEFAULT_ACCOUNT: &str = "set-default-account";
 pub const CMD_SET_CURRENT_EPOCH: &str = "set-current-epoch";
 pub const CMD_SHOW: &str = "show";
@@ -80,6 +83,7 @@ where
         .subcommand(make_new_account())
         .subcommand(make_publish())
         .subcommand(make_reset())
+        .subcommand(make_run())
         .subcommand(make_set_default_account())
         .subcommand(make_set_current_epoch())
         .subcommand(make_show())
@@ -88,23 +92,24 @@ where
     let matches = app.get_matches_from(args);
 
     match matches.subcommand() {
-        (CMD_EXPORT_ABI, Some(m)) => handle_export_abi(m),
-        (CMD_CALL_FUNCTION, Some(m)) => handle_call_function(m),
-        (CMD_CALL_METHOD, Some(m)) => handle_call_method(m),
-        (CMD_NEW_TOKEN_FIXED, Some(m)) => handle_new_token_fixed(m),
-        (CMD_NEW_TOKEN_MUTABLE, Some(m)) => handle_new_token_mutable(m),
-        (CMD_NEW_BADGE_FIXED, Some(m)) => handle_new_badge_fixed(m),
-        (CMD_NEW_BADGE_MUTABLE, Some(m)) => handle_new_badge_mutable(m),
-        (CMD_MINT, Some(m)) => handle_mint(m),
-        (CMD_TRANSFER, Some(m)) => handle_transfer(m),
-        (CMD_NEW_ACCOUNT, Some(m)) => handle_new_account(m),
-        (CMD_PUBLISH, Some(m)) => handle_publish(m),
-        (CMD_RESET, Some(m)) => handle_reset(m),
-        (CMD_SET_DEFAULT_ACCOUNT, Some(m)) => handle_set_default_account(m),
-        (CMD_SET_CURRENT_EPOCH, Some(m)) => handle_set_current_epoch(m),
-        (CMD_SHOW, Some(m)) => handle_show(m),
-        (CMD_SHOW_CONFIGS, Some(m)) => handle_show_configs(m),
-        (CMD_SHOW_LEDGER, Some(m)) => handle_show_ledger(m),
+        Some((CMD_EXPORT_ABI, m)) => handle_export_abi(m),
+        Some((CMD_CALL_FUNCTION, m)) => handle_call_function(m),
+        Some((CMD_CALL_METHOD, m)) => handle_call_method(m),
+        Some((CMD_NEW_TOKEN_FIXED, m)) => handle_new_token_fixed(m),
+        Some((CMD_NEW_TOKEN_MUTABLE, m)) => handle_new_token_mutable(m),
+        Some((CMD_NEW_BADGE_FIXED, m)) => handle_new_badge_fixed(m),
+        Some((CMD_NEW_BADGE_MUTABLE, m)) => handle_new_badge_mutable(m),
+        Some((CMD_MINT, m)) => handle_mint(m),
+        Some((CMD_TRANSFER, m)) => handle_transfer(m),
+        Some((CMD_NEW_ACCOUNT, m)) => handle_new_account(m),
+        Some((CMD_PUBLISH, m)) => handle_publish(m),
+        Some((CMD_RESET, m)) => handle_reset(m),
+        Some((CMD_RUN, m)) => handle_run(m),
+        Some((CMD_SET_DEFAULT_ACCOUNT, m)) => handle_set_default_account(m),
+        Some((CMD_SET_CURRENT_EPOCH, m)) => handle_set_current_epoch(m),
+        Some((CMD_SHOW, m)) => handle_show(m),
+        Some((CMD_SHOW_CONFIGS, m)) => handle_show_configs(m),
+        Some((CMD_SHOW_LEDGER, m)) => handle_show_ledger(m),
         _ => Err(Error::MissingSubCommand),
     }
 }

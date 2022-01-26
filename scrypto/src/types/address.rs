@@ -67,7 +67,6 @@ impl Address {
         }
     }
 
-
     pub fn is_package(&self) -> bool {
         matches!(self, Address::Package(_))
     }

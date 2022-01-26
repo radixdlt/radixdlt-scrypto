@@ -90,7 +90,7 @@ pub trait Ledger {
                     0,
                     0,
                     HashMap::new(),
-                    &None
+                    &None,
                 )
                 .unwrap(),
             );

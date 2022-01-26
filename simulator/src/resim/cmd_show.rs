@@ -1,4 +1,4 @@
-use clap::{crate_version, App, Arg, ArgMatches, SubCommand};
+use clap::{crate_version, App, Arg, ArgMatches};
 use scrypto::types::*;
 
 use crate::ledger::*;
@@ -7,12 +7,12 @@ use crate::resim::*;
 const ARG_ADDRESS: &str = "ADDRESS";
 
 /// Constructs a `show` subcommand.
-pub fn make_show<'a, 'b>() -> App<'a, 'b> {
-    SubCommand::with_name(CMD_SHOW)
+pub fn make_show<'a>() -> App<'a> {
+    App::new(CMD_SHOW)
         .about("Displays the content behind an address")
         .version(crate_version!())
         .arg(
-            Arg::with_name(ARG_ADDRESS)
+            Arg::new(ARG_ADDRESS)
                 .help("Specify the address.")
                 .required(true),
         )

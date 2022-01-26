@@ -220,8 +220,8 @@ impl<T: Decode> Decode for Option<T> {
         let index = decoder.read_u8()?;
 
         match index {
-            0 => Ok(None),
-            1 => Ok(Some(T::decode(decoder)?)),
+            OPTION_TYPE_NONE => Ok(None),
+            OPTION_TYPE_SOME => Ok(Some(T::decode(decoder)?)),
             _ => Err(DecodeError::InvalidIndex(index)),
         }
     }
@@ -278,8 +278,8 @@ impl<T: Decode, E: Decode> Decode for Result<T, E> {
     fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
         let index = decoder.read_u8()?;
         match index {
-            0 => Ok(Ok(T::decode(decoder)?)),
-            1 => Ok(Err(E::decode(decoder)?)),
+            RESULT_TYPE_OK => Ok(Ok(T::decode(decoder)?)),
+            RESULT_TYPE_ERR => Ok(Err(E::decode(decoder)?)),
             _ => Err(DecodeError::InvalidIndex(index)),
         }
     }

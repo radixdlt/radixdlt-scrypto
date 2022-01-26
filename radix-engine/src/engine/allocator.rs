@@ -10,7 +10,7 @@ const USER_BID_START: u32 = 1024;
 pub struct IdAllocator {
     count: u32,
     rid_count: u32,
-    bid_count: u32
+    bid_count: u32,
 }
 
 impl IdAllocator {
@@ -19,7 +19,7 @@ impl IdAllocator {
         Self {
             count: 0,
             rid_count: 0,
-            bid_count: 0
+            bid_count: 0,
         }
     }
 

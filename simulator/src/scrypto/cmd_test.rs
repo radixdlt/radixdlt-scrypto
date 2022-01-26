@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use clap::{crate_version, App, Arg, ArgMatches, SubCommand};
+use clap::{crate_version, App, Arg, ArgMatches};
 
 use crate::scrypto::*;
 use crate::utils::*;
@@ -9,19 +9,19 @@ const ARG_ARGS: &str = "ARGS";
 const ARG_PATH: &str = "PATH";
 
 /// Constructs a `test` subcommand.
-pub fn make_test<'a, 'b>() -> App<'a, 'b> {
-    SubCommand::with_name(CMD_TEST)
+pub fn make_test<'a>() -> App<'a> {
+    App::new(CMD_TEST)
         .about("Runs tests")
         .version(crate_version!())
         .arg(
-            Arg::with_name(ARG_ARGS)
+            Arg::new(ARG_ARGS)
                 .help("Specify the arguments to test executable.")
                 .allow_hyphen_values(true)
-                .multiple(true)
+                .multiple_values(true)
                 .required(false),
         )
         .arg(
-            Arg::with_name(ARG_PATH)
+            Arg::new(ARG_PATH)
                 .long("path")
                 .takes_value(true)
                 .help("Specifies the package dir.")

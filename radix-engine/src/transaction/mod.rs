@@ -8,4 +8,7 @@ pub use abi::{AbiProvider, BasicAbiProvider};
 pub use builder::{ParseResourceAmountError, ResourceAmount, TransactionBuilder};
 pub use error::{BuildArgsError, BuildTransactionError};
 pub use executor::TransactionExecutor;
-pub use model::{Instruction, Receipt, SmartValue, Transaction};
+pub use model::{
+    CheckTransactionError, CheckedInstruction, CheckedTransaction, CheckedValue, Instruction,
+    Receipt, Transaction,
+};

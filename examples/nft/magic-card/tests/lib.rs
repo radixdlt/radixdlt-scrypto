@@ -29,7 +29,7 @@ fn test_hello() {
             vec!["2".to_owned(), format!("666,{}", RADIX_TOKEN)],
             Some(account),
         )
-        .deposit_all_buckets(account)
+        .call_method_with_all_resources(account, "deposit_batch")
         .build(vec![key])
         .unwrap();
     let receipt2 = executor.run(transaction2, false).unwrap();
@@ -45,7 +45,7 @@ fn test_hello() {
             vec![format!("1000,{}", RADIX_TOKEN)],
             Some(account),
         )
-        .deposit_all_buckets(account)
+        .call_method_with_all_resources(account, "deposit_batch")
         .build(vec![key])
         .unwrap();
     let receipt3 = executor.run(transaction3, false).unwrap();

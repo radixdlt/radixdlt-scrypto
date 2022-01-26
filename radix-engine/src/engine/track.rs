@@ -6,8 +6,8 @@ use scrypto::rust::vec::Vec;
 use scrypto::types::*;
 use wasmi::*;
 
-use crate::engine::*;
 use crate::engine::allocator::ECDSA_TOKEN_RID;
+use crate::engine::*;
 use crate::ledger::*;
 use crate::model::*;
 
@@ -74,7 +74,10 @@ impl<'l, L: Ledger> Track<'l, L> {
 
     /// Start a process.
     pub fn start_process<'r>(&'r mut self, verbose: bool) -> Process<'r, 'l, L> {
-        let signers : BTreeSet<u128> = self.transaction_signers.clone().into_iter()
+        let signers: BTreeSet<u128> = self
+            .transaction_signers
+            .clone()
+            .into_iter()
             .map(|address| {
                 let mut bytes: [u8; 16] = [0; 16];
                 match address {
@@ -92,9 +95,7 @@ impl<'l, L: Ledger> Track<'l, L> {
             let ecdsa_bucket = Bucket::new(
                 ECDSA_TOKEN,
                 ResourceType::NonFungible,
-                Supply::NonFungible {
-                    ids: signers
-                }
+                Supply::NonFungible { ids: signers },
             );
             process.create_virtual_bucket_ref(ECDSA_TOKEN_RID, ecdsa_bucket);
         }

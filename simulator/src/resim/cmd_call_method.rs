@@ -1,4 +1,4 @@
-use clap::{crate_version, App, Arg, ArgMatches, SubCommand};
+use clap::{crate_version, App, Arg, ArgMatches};
 use radix_engine::transaction::*;
 
 use crate::ledger::*;
@@ -12,33 +12,33 @@ const ARG_TRACE: &str = "TRACE";
 const ARG_SIGNERS: &str = "SIGNERS";
 
 /// Constructs a `call-method` subcommand.
-pub fn make_call_method<'a, 'b>() -> App<'a, 'b> {
-    SubCommand::with_name(CMD_CALL_METHOD)
+pub fn make_call_method<'a>() -> App<'a> {
+    App::new(CMD_CALL_METHOD)
         .about("Calls a method")
         .version(crate_version!())
         .arg(
-            Arg::with_name(ARG_COMPONENT)
+            Arg::new(ARG_COMPONENT)
                 .help("Specify the component address.")
                 .required(true),
         )
         .arg(
-            Arg::with_name(ARG_METHOD)
+            Arg::new(ARG_METHOD)
                 .help("Specify the method name.")
                 .required(true),
         )
         .arg(
-            Arg::with_name(ARG_ARGS)
+            Arg::new(ARG_ARGS)
             .help("Specify the arguments, e.g. \"5\", \"hello\", \"amount,resource_address\" for Bucket, or \"#id1,#id2,..,resource_address\" for NFT Bucket.")
-                .multiple(true),
+                .multiple_values(true),
         )
         // options
         .arg(
-            Arg::with_name(ARG_TRACE)
+            Arg::new(ARG_TRACE)
                 .long("trace")
                 .help("Turn on tracing."),
         )
         .arg(
-            Arg::with_name(ARG_SIGNERS)
+            Arg::new(ARG_SIGNERS)
                 .long("signers")
                 .takes_value(true)
                 .help("Specify the transaction signers, separated by comma."),
@@ -60,7 +60,7 @@ pub fn handle_call_method(matches: &ArgMatches) -> Result<(), Error> {
     let transaction = TransactionBuilder::new(&executor)
         .call_method(component, &method, args, Some(account.0))
         .drop_all_bucket_refs()
-        .deposit_all_buckets(account.0)
+        .call_method_with_all_resources(account.0, "deposit_batch")
         .build(signers)
         .map_err(Error::TransactionConstructionError)?;
     let receipt = executor.run(transaction, trace).unwrap();
