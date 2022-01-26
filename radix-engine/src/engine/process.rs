@@ -102,14 +102,14 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         }
     }
 
-    /// Reserves a BID.
+    /// Reserves the ID; no bucket allocated atm.
     pub fn declare_bucket(&mut self) -> Bid {
         let bid = self.track.new_bid();
         self.reserved_bids.insert(bid);
         bid
     }
 
-    /// Reserves a RID.
+    /// Reserves the ID; no bucket allocated atm.
     pub fn declare_bucket_ref(&mut self) -> Rid {
         let rid = self.track.new_rid();
         self.reserved_rids.insert(rid);
@@ -302,10 +302,10 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         // move resource based on return data
         let output = match rtn {
             RuntimeValue::I32(ptr) => {
-                let bytes = self.read_bytes(ptr)?;
-                let validated = self.validate_runtime_data(&bytes)?;
-                self.process_runtime_data(&validated, Self::move_buckets, Self::move_bucket_refs)?;
-                validated
+                let data = validate_data(&self.read_bytes(ptr)?)
+                    .map_err(RuntimeError::DataValidationError)?;
+                self.process_call_data(&data)?;
+                data
             }
             _ => {
                 return Err(RuntimeError::InvalidReturnType);
@@ -352,9 +352,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
             .get_component(component_address)
             .ok_or(RuntimeError::ComponentNotFound(component_address))?
             .clone();
-
-        let mut args_with_self =
-            vec![self.validate_runtime_data(&scrypto_encode(&component_address))?];
+        let mut args_with_self = vec![validate_data(&scrypto_encode(&component_address)).unwrap()];
         args_with_self.extend(args);
 
         self.prepare_call_function(
@@ -383,7 +381,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
     pub fn call(&mut self, invocation: Invocation) -> Result<ValidatedData, RuntimeError> {
         // move resource
         for arg in &invocation.args {
-            self.process_runtime_data(arg, Self::move_buckets, Self::move_bucket_refs)?;
+            self.process_call_data(arg)?;
         }
         let (buckets_out, bucket_refs_out) = self.take_moving_resources();
         let mut process = Process::new(self.depth + 1, self.trace, self.track);
@@ -551,57 +549,77 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
             .map(|vm| vm.memory.clone())
     }
 
-    fn validate_runtime_data(&mut self, data: &[u8]) -> Result<ValidatedData, RuntimeError> {
-        validate_data(data).map_err(RuntimeError::DataValidationError)
+    fn process_call_data(&mut self, validated: &ValidatedData) -> Result<(), RuntimeError> {
+        self.move_buckets(&validated.buckets)?;
+        self.move_bucket_refs(&validated.bucket_refs)?;
+        Ok(())
     }
-    fn process_runtime_data(
-        &mut self,
-        data: &ValidatedData,
-        bf: fn(&mut Self, Bid) -> Result<(), RuntimeError>,
-        rf: fn(&mut Self, Rid) -> Result<(), RuntimeError>,
-    ) -> Result<(), RuntimeError> {
-        for bid in &data.buckets {
-            bf(self, *bid)?;
-        }
-        for rid in &data.bucket_refs {
-            rf(self, *rid)?;
-        }
 
+    fn process_component_data(&mut self, data: &[u8]) -> Result<ValidatedData, RuntimeError> {
+        let validated = validate_data(data).map_err(RuntimeError::DataValidationError)?;
+        if !validated.buckets.is_empty() {
+            return Err(RuntimeError::BucketNotAllowed);
+        }
+        if !validated.bucket_refs.is_empty() {
+            return Err(RuntimeError::BucketRefNotAllowed);
+        }
+        Ok(validated)
+    }
+
+    fn process_map_data(&mut self, data: &[u8]) -> Result<ValidatedData, RuntimeError> {
+        let validated = validate_data(data).map_err(RuntimeError::DataValidationError)?;
+        if !validated.buckets.is_empty() {
+            return Err(RuntimeError::BucketNotAllowed);
+        }
+        if !validated.bucket_refs.is_empty() {
+            return Err(RuntimeError::BucketRefNotAllowed);
+        }
+        Ok(validated)
+    }
+
+    fn process_nft_data(&mut self, data: &[u8]) -> Result<ValidatedData, RuntimeError> {
+        let validated = validate_data(data).map_err(RuntimeError::DataValidationError)?;
+        if !validated.buckets.is_empty() {
+            return Err(RuntimeError::BucketNotAllowed);
+        }
+        if !validated.bucket_refs.is_empty() {
+            return Err(RuntimeError::BucketRefNotAllowed);
+        }
+        if !validated.lazy_maps.is_empty() {
+            return Err(RuntimeError::LazyMapNotAllowed);
+        }
+        if !validated.vaults.is_empty() {
+            return Err(RuntimeError::VaultNotAllowed);
+        }
+        Ok(validated)
+    }
+
+    /// Remove transient buckets from this process
+    fn move_buckets(&mut self, buckets: &[Bid]) -> Result<(), RuntimeError> {
+        for bid in buckets {
+            let bucket = self
+                .buckets
+                .remove(bid)
+                .or_else(|| self.temp_buckets.remove(bid))
+                .ok_or(RuntimeError::BucketNotFound(*bid))?;
+            re_debug!(self, "Moving bucket: {:?}, {:?}", bid, bucket);
+            self.moving_buckets.insert(*bid, bucket);
+        }
         Ok(())
     }
 
     /// Remove transient buckets from this process
-    fn move_buckets(&mut self, bid: Bid) -> Result<(), RuntimeError> {
-        let bucket = self
-            .buckets
-            .remove(&bid)
-            .or_else(|| self.temp_buckets.remove(&bid))
-            .ok_or(RuntimeError::BucketNotFound(bid))?;
-        re_debug!(self, "Moving bucket: {:?}, {:?}", bid, bucket);
-        self.moving_buckets.insert(bid, bucket);
+    fn move_bucket_refs(&mut self, bucket_refs: &[Rid]) -> Result<(), RuntimeError> {
+        for rid in bucket_refs {
+            let bucket_ref = self
+                .bucket_refs
+                .remove(rid)
+                .or_else(|| self.temp_bucket_refs.remove(rid))
+                .ok_or(RuntimeError::BucketRefNotFound(*rid))?;
+            re_debug!(self, "Moving bucket ref: {:?}, {:?}", rid, bucket_ref);
+            self.moving_bucket_refs.insert(*rid, bucket_ref);
+        }
         Ok(())
-    }
-
-    /// Remove transient buckets from this process
-    fn move_bucket_refs(&mut self, rid: Rid) -> Result<(), RuntimeError> {
-        let bucket_ref = self
-            .bucket_refs
-            .remove(&rid)
-            .or_else(|| self.temp_bucket_refs.remove(&rid))
-            .ok_or(RuntimeError::BucketRefNotFound(rid))?;
-        re_debug!(self, "Moving bucket ref: {:?}, {:?}", rid, bucket_ref);
-        self.moving_bucket_refs.insert(rid, bucket_ref);
-        Ok(())
-    }
-
-    /// Reject buckets
-    fn reject_buckets(&mut self, _: Bid) -> Result<(), RuntimeError> {
-        Err(RuntimeError::BucketNotAllowed)
-    }
-
-    /// Reject bucket refs
-    fn reject_bucket_refs(&mut self, _: Rid) -> Result<(), RuntimeError> {
-        Err(RuntimeError::BucketRefNotAllowed)
     }
 
     /// Send a byte array to wasm instance.
@@ -772,7 +790,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
 
         let mut validated_args = Vec::new();
         for arg in input.args {
-            validated_args.push(self.validate_runtime_data(&arg)?);
+            validated_args.push(validate_data(&arg).map_err(RuntimeError::DataValidationError)?);
         }
 
         re_debug!(
@@ -804,7 +822,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
 
         let mut validated_args = Vec::new();
         for arg in input.args {
-            validated_args.push(self.validate_runtime_data(&arg)?);
+            validated_args.push(validate_data(&arg).map_err(RuntimeError::DataValidationError)?);
         }
 
         re_debug!(
@@ -836,17 +854,15 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
             return Err(RuntimeError::ComponentAlreadyExists(component_address));
         }
 
-        let state = self.validate_runtime_data(&input.state)?;
-        let new_state =
-            self.process_runtime_data(&state, Self::reject_buckets, Self::reject_bucket_refs)?;
+        let data = self.process_component_data(&input.state)?;
         re_debug!(
             self,
             "New component: address = {:?}, state = {:?}",
             component_address,
-            new_state
+            data
         );
 
-        let component = Component::new(self.package()?, input.blueprint_name, state.raw);
+        let component = Component::new(self.package()?, input.blueprint_name, data.raw);
         self.track.put_component(component_address, component);
 
         Ok(CreateComponentOutput { component_address })
@@ -897,8 +913,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         Self::expect_component_address(input.component_address)?;
         let actor = self.authenticate()?;
 
-        let state = self.validate_runtime_data(&input.state)?;
-        self.process_runtime_data(&state, Self::reject_buckets, Self::reject_bucket_refs)?;
+        let state = self.process_component_data(&input.state)?;
         re_debug!(self, "New component state: {:?}", state);
 
         let component = self
@@ -953,10 +968,8 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         input: PutLazyMapEntryInput,
     ) -> Result<PutLazyMapEntryOutput, RuntimeError> {
         let actor = self.authenticate()?;
-        let key = self.validate_runtime_data(&input.key)?;
-        self.process_runtime_data(&key, Self::reject_buckets, Self::reject_bucket_refs)?;
-        let value = self.validate_runtime_data(&input.value)?;
-        self.process_runtime_data(&value, Self::reject_buckets, Self::reject_bucket_refs)?;
+        let key = self.process_map_data(&input.key)?;
+        let value = self.process_map_data(&input.value)?;
         re_debug!(self, "Map entry: {} => {}", key, value);
 
         let lazy_map = self
@@ -986,18 +999,8 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
                         return Err(RuntimeError::NftAlreadyExists(resource_address, id));
                     }
 
-                    let immutable_data = self.validate_runtime_data(&data.0)?;
-                    self.process_runtime_data(
-                        &immutable_data,
-                        Self::reject_buckets,
-                        Self::reject_bucket_refs,
-                    )?;
-                    let mutable_data = self.validate_runtime_data(&data.1)?;
-                    self.process_runtime_data(
-                        &mutable_data,
-                        Self::reject_buckets,
-                        Self::reject_bucket_refs,
-                    )?;
+                    let immutable_data = self.process_nft_data(&data.0)?;
+                    let mutable_data = self.process_nft_data(&data.1)?;
 
                     self.track.put_nft(
                         resource_address,
@@ -1235,16 +1238,11 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
             .check_update_nft_mutable_data_auth(actor)
             .map_err(RuntimeError::ResourceDefError)?;
         // update state
-        let mutable_data = self.validate_runtime_data(&input.new_mutable_data)?;
-        self.process_runtime_data(
-            &mutable_data,
-            Self::reject_buckets,
-            Self::reject_bucket_refs,
-        )?;
+        let data = self.process_nft_data(&input.new_mutable_data)?;
         self.track
             .get_nft_mut(input.resource_address, input.id)
             .ok_or(RuntimeError::NftNotFound(input.resource_address, input.id))?
-            .set_mutable_data(mutable_data.raw)
+            .set_mutable_data(data.raw)
             .map_err(RuntimeError::NftError)?;
 
         Ok(UpdateNftMutableDataOutput {})

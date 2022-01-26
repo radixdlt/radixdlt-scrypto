@@ -159,7 +159,7 @@ pub enum RuntimeError {
     VaultNotAllowed,
 
     /// Lazy Map is not allowed
-    LayMapNotAllowed,
+    LazyMapNotAllowed,
 
     /// Interpreter is not started.
     InterpreterNotStarted,
