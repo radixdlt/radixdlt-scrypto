@@ -72,7 +72,7 @@ blueprint! {
         pub fn toggle_transfer_freeze(&self, set_frozen: bool) {
             // Because we used "keep_auth" in our authorization macro above, we can refer to the incoming badge as "auth"
             // Note that this operation will fail if the token has reached stage 3 and the RESTRICTED_TRANSFER flag has become immutably disabled
-            let token_def = self.token_supply.resource_def();
+            let mut token_def = self.token_supply.resource_def();
             if set_frozen {
                 token_def.enable_flags(RESTRICTED_TRANSFER, auth);
                 info!("Token transfer is now RESTRICTED");
@@ -102,7 +102,7 @@ blueprint! {
                 // Advance to stage 2                
                 // Token will still be restricted transfer upon admin demand, but we will mint beyond the initial supply as required                
                 self.current_stage = 2;                
-                let token_def = self.token_supply.resource_def();
+                let mut token_def = self.token_supply.resource_def();
 
                 // Update token's metadata to reflect the current stage
                 let mut metadata = token_def.metadata();
@@ -118,7 +118,7 @@ blueprint! {
                 // Token will no longer be regulated
                 // Restricted transfer will be permanently turned off, supply will be made permanently immutable
                 self.current_stage = 3;
-                let token_def = self.token_supply.resource_def();
+                let mut token_def = self.token_supply.resource_def();
 
                 // Update token's metadata to reflect the final stage
                 let mut metadata = token_def.metadata();                
@@ -166,7 +166,7 @@ blueprint! {
                 // We will attempt to mint the shortfall
                 // If we are in stage 1 or 3, this action will fail, and it would probably be a good idea to tell the user this
                 // For the purposes of example, we will blindly attempt to mint
-                let tokens = self.internal_authority.authorize(
+                let mut tokens = self.internal_authority.authorize(
                     |auth| self.token_supply.resource_def().mint(extra_demand, auth)
                 );
                 
