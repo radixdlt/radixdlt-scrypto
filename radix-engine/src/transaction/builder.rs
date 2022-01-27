@@ -475,6 +475,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                 args: vec![
                     SmartValue::from(*amount),
                     SmartValue::from(*resource_address),
+                    SmartValue::from(ECDSA_TOKEN_RID)
                 ],
             }),
             ResourceAmount::NonFungible {
@@ -486,6 +487,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                 args: vec![
                     SmartValue::from(ids.clone()),
                     SmartValue::from(*resource_address),
+                    SmartValue::from(ECDSA_TOKEN_RID)
                 ],
             }),
         }

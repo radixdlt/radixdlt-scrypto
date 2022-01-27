@@ -7,6 +7,7 @@ use scrypto::types::*;
 use wasmi::*;
 
 use crate::engine::*;
+use crate::engine::allocator::ECDSA_TOKEN_RID;
 use crate::ledger::*;
 use crate::model::*;
 
@@ -73,17 +74,37 @@ impl<'l, L: Ledger> Track<'l, L> {
 
     /// Start a process.
     pub fn start_process<'r>(&'r mut self, verbose: bool) -> Process<'r, 'l, L> {
-        Process::new(0, verbose, self)
+        let signers : BTreeSet<u128> = self.transaction_signers.clone().into_iter()
+            .map(|address| {
+                let mut bytes: [u8; 16] = [0; 16];
+                match address {
+                    Address::Package(d) => bytes[..].copy_from_slice(&d[..16]),
+                    Address::Component(d) => bytes[..].copy_from_slice(&d[..16]),
+                    Address::ResourceDef(d) => bytes[..].copy_from_slice(&d[..16]),
+                    Address::PublicKey(d) => bytes[..].copy_from_slice(&d[..16]),
+                }
+                u128::from_be_bytes(bytes)
+            })
+            .collect();
+        let mut process = Process::new(0, verbose, self);
+
+        if !signers.is_empty() {
+            let ecdsa_bucket = Bucket::new(
+                ECDSA_TOKEN,
+                ResourceType::NonFungible,
+                Supply::NonFungible {
+                    ids: signers
+                }
+            );
+            process.create_virtual_bucket_ref(ECDSA_TOKEN_RID, ecdsa_bucket);
+        }
+
+        process
     }
 
     /// Returns the transaction hash.
     pub fn transaction_hash(&self) -> H256 {
         self.transaction_hash
-    }
-
-    /// Returns the transaction hash.
-    pub fn transaction_signers(&self) -> Vec<Address> {
-        self.transaction_signers.clone()
     }
 
     /// Returns the current epoch.
