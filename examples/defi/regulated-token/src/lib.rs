@@ -144,7 +144,7 @@ blueprint! {
 
         /// Buy a quantity of tokens, if the supply on-hand is sufficient, or if current rules permit minting additional supply.
         /// The system will *always* allow buyers to purchase available tokens, even when the token transfers are otherwise frozen
-        pub fn buy_token(&mut self, quantity: Decimal, payment: Bucket) -> (Bucket, Bucket) {
+        pub fn buy_token(&mut self, quantity: Decimal, mut payment: Bucket) -> (Bucket, Bucket) {
             assert!(quantity > 0.into(), "Can't sell you nothing or less than nothing");
             // Early birds who buy during stage 1 get a discounted rate
             let price: Decimal = if self.current_stage == 1 { 50.into() } else { 100.into() };

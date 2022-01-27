@@ -491,7 +491,7 @@ blueprint! {
             asset_symbol: String,
             asset_address: Address,
             initial_shares: Decimal,
-            initial_xrd: Bucket,
+            mut initial_xrd: Bucket,
             snx_address: Address,
             usd_address: Address,
         ) -> (Bucket, Component) {
@@ -566,7 +566,7 @@ blueprint! {
             (shares, component)
         }
 
-        pub fn deposit(&mut self, xrd: Bucket) -> (Bucket, Bucket) {
+        pub fn deposit(&mut self, mut xrd: Bucket) -> (Bucket, Bucket) {
             debug!("Fetch price info from oracle");
             let xrd_usd_price = self
                 .price_oracle
