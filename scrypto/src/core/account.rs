@@ -36,7 +36,7 @@ impl Account {
     }
 
     /// Withdraws resource fromm this account.
-    pub fn withdraw<A: Into<ResourceDef>>(&self, amount: Decimal, resource_def: A) {
+    pub fn withdraw<A: Into<ResourceDef>>(&mut self, amount: Decimal, resource_def: A) {
         let args = vec![
             scrypto_encode(&amount),
             scrypto_encode(&resource_def.into()),
@@ -45,7 +45,7 @@ impl Account {
     }
 
     /// Deposits resource to this account.
-    pub fn deposit(&self, bucket: Bucket) {
+    pub fn deposit(&mut self, bucket: Bucket) {
         let args = vec![scrypto_encode(&bucket)];
         call_method(self.address(), "deposit", args);
     }

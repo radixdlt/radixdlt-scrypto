@@ -15,7 +15,7 @@ blueprint! {
         }
 
         pub fn create_fungible_should_fail() -> (Bucket, Bucket) {
-            let bucket = ResourceBuilder::new_fungible(DIVISIBILITY_NONE).initial_supply_fungible(1);
+            let mut bucket = ResourceBuilder::new_fungible(DIVISIBILITY_NONE).initial_supply_fungible(1);
             (bucket.take(Decimal::from_str("0.1").unwrap()), bucket)
         }
 

@@ -18,7 +18,7 @@ blueprint! {
         }
 
         pub fn split() -> (Bucket, Bucket) {
-            let bucket1 = Self::create_test_badge(100);
+            let mut bucket1 = Self::create_test_badge(100);
             let bucket2 = bucket1.take(Decimal::from(5));
             (bucket1, bucket2)
         }
