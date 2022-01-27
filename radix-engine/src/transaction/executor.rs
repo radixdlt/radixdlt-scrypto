@@ -240,6 +240,11 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
             }
         }
 
+        // check resource
+        let res = proc.check_resource().map(|_| None);
+        success &= res.is_ok();
+        results.push(res);
+
         // commit state updates
         if success {
             track.commit();
