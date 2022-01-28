@@ -3,12 +3,14 @@ use sbor::{describe::Type, *};
 use crate::buffer::*;
 use crate::rust::borrow::ToOwned;
 use crate::rust::convert::TryFrom;
+use crate::rust::fmt;
+use crate::rust::str::FromStr;
 use crate::rust::vec;
 use crate::rust::vec::Vec;
 use crate::types::*;
 
 /// Represents a vault id.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Vid(pub H256, pub u32);
 
 /// Represents an error when parsing Vid.
@@ -39,6 +41,27 @@ impl TryFrom<&[u8]> for Vid {
                 u32::from_le_bytes(copy_u8_array(&slice[32..])),
             ))
         }
+    }
+}
+
+impl FromStr for Vid {
+    type Err = ParseVidError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let bytes = hex::decode(s).map_err(ParseVidError::InvalidHex)?;
+        Self::try_from(bytes.as_slice())
+    }
+}
+
+impl fmt::Debug for Vid {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", hex::encode(self.to_vec()))
+    }
+}
+
+impl fmt::Display for Vid {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", hex::encode(self.to_vec()))
     }
 }
 

@@ -22,7 +22,7 @@ fn set_up_test_env<'a, L: Ledger>(ledger: &'a mut L) -> TestEnv<'a, L> {
         .run(
             TransactionBuilder::new(&executor)
                 .new_token_fixed(HashMap::new(), 1_000_000.into())
-                .deposit_all_buckets(account)
+                .call_method_with_all_resources(account, "deposit_batch")
                 .build(vec![key])
                 .unwrap(),
             false,
@@ -40,7 +40,7 @@ fn set_up_test_env<'a, L: Ledger>(ledger: &'a mut L) -> TestEnv<'a, L> {
                     vec![usd.to_string(), "USD".to_owned()],
                     Some(account),
                 )
-                .deposit_all_buckets(account)
+                .call_method_with_all_resources(account, "deposit_batch")
                 .build(vec![key])
                 .unwrap(),
             false,
@@ -63,7 +63,7 @@ fn create_user<'a, L: Ledger>(env: &mut TestEnv<'a, L>) -> Address {
         .run(
             TransactionBuilder::new(&env.executor)
                 .call_method(env.lending_pool, "new_user", args![], Some(env.account))
-                .deposit_all_buckets(env.account)
+                .call_method_with_all_resources(env.account, "deposit_batch")
                 .build(vec![env.key])
                 .unwrap(),
             false,
@@ -84,7 +84,7 @@ fn get_user_state<'a, L: Ledger>(env: &mut TestEnv<'a, L>, user_id: Address) -> 
                     vec![user_id.to_string()],
                     Some(env.account),
                 )
-                .deposit_all_buckets(env.account)
+                .call_method_with_all_resources(env.account, "deposit_batch")
                 .build(vec![env.key])
                 .unwrap(),
             false,
@@ -113,7 +113,7 @@ fn test_deposit_and_redeem() {
                     vec![format!("{},{}", 1, user_id), format!("{},{}", 100, env.usd)],
                     Some(env.account),
                 )
-                .deposit_all_buckets(env.account)
+                .call_method_with_all_resources(env.account, "deposit_batch")
                 .build(vec![env.key])
                 .unwrap(),
             false,
@@ -144,7 +144,7 @@ fn test_deposit_and_redeem() {
                     vec!["0.05".to_string()],
                     Some(env.account),
                 )
-                .deposit_all_buckets(env.account)
+                .call_method_with_all_resources(env.account, "deposit_batch")
                 .build(vec![env.key])
                 .unwrap(),
             false,
@@ -163,7 +163,7 @@ fn test_deposit_and_redeem() {
                     vec![format!("{},{}", 1, user_id), format!("{},{}", 100, env.usd)],
                     Some(env.account),
                 )
-                .deposit_all_buckets(env.account)
+                .call_method_with_all_resources(env.account, "deposit_batch")
                 .build(vec![env.key])
                 .unwrap(),
             false,
@@ -194,7 +194,7 @@ fn test_deposit_and_redeem() {
                     vec![format!("{},{}", 1, user_id), "150".to_owned()],
                     Some(env.account),
                 )
-                .deposit_all_buckets(env.account)
+                .call_method_with_all_resources(env.account, "deposit_batch")
                 .build(vec![env.key])
                 .unwrap(),
             false,
@@ -236,7 +236,7 @@ fn test_borrow_and_repay() {
                     ],
                     Some(env.account),
                 )
-                .deposit_all_buckets(env.account)
+                .call_method_with_all_resources(env.account, "deposit_batch")
                 .build(vec![env.key])
                 .unwrap(),
             false,
@@ -267,7 +267,7 @@ fn test_borrow_and_repay() {
                     vec![format!("{},{}", 1, user_id), "100".to_owned()],
                     Some(env.account),
                 )
-                .deposit_all_buckets(env.account)
+                .call_method_with_all_resources(env.account, "deposit_batch")
                 .build(vec![env.key])
                 .unwrap(),
             false,
@@ -298,7 +298,7 @@ fn test_borrow_and_repay() {
                     vec!["0.05".to_string()],
                     Some(env.account),
                 )
-                .deposit_all_buckets(env.account)
+                .call_method_with_all_resources(env.account, "deposit_batch")
                 .build(vec![env.key])
                 .unwrap(),
             false,
@@ -317,7 +317,7 @@ fn test_borrow_and_repay() {
                     vec![format!("{},{}", 1, user_id), "100".to_owned()],
                     Some(env.account),
                 )
-                .deposit_all_buckets(env.account)
+                .call_method_with_all_resources(env.account, "deposit_batch")
                 .build(vec![env.key])
                 .unwrap(),
             false,
@@ -348,7 +348,7 @@ fn test_borrow_and_repay() {
                     vec![format!("{},{}", 1, user_id), format!("{},{}", 150, env.usd)],
                     Some(env.account),
                 )
-                .deposit_all_buckets(env.account)
+                .call_method_with_all_resources(env.account, "deposit_batch")
                 .build(vec![env.key])
                 .unwrap(),
             false,
@@ -382,7 +382,7 @@ fn test_borrow_and_repay() {
                     ],
                     Some(env.account),
                 )
-                .deposit_all_buckets(env.account)
+                .call_method_with_all_resources(env.account, "deposit_batch")
                 .build(vec![env.key])
                 .unwrap(),
             false,

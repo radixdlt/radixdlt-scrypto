@@ -32,10 +32,10 @@ where
     let matches = app.get_matches_from(args);
 
     match matches.subcommand() {
-        (CMD_NEW_PACKAGE, Some(m)) => handle_new_package(m),
-        (CMD_BUILD, Some(m)) => handle_build(m),
-        (CMD_TEST, Some(m)) => handle_test(m),
-        (CMD_FMT, Some(m)) => handle_fmt(m),
+        Some((CMD_NEW_PACKAGE, m)) => handle_new_package(m),
+        Some((CMD_BUILD, m)) => handle_build(m),
+        Some((CMD_TEST, m)) => handle_test(m),
+        Some((CMD_FMT, m)) => handle_fmt(m),
         _ => Err(Error::MissingSubCommand),
     }
 }

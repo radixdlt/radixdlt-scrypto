@@ -1,11 +1,11 @@
 use std::fs::remove_dir_all;
 
-use clap::{crate_version, App, ArgMatches, SubCommand};
+use clap::{crate_version, App, ArgMatches};
 
 use crate::resim::*;
 /// Constructs a `reset` subcommand.
-pub fn make_reset<'a, 'b>() -> App<'a, 'b> {
-    SubCommand::with_name(CMD_RESET)
+pub fn make_reset<'a>() -> App<'a> {
+    App::new(CMD_RESET)
         .about("Resets the data directory")
         .version(crate_version!())
 }

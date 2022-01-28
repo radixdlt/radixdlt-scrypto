@@ -1,0 +1,17 @@
+[package]
+name = "transaction-manifest"
+version = "0.3.0"
+edition = "2021"
+
+[dependencies]
+sbor = { path = "../sbor" }
+scrypto = { path = "../scrypto" }
+radix-engine = { path = "../radix-engine" }
+clap = { version = "3.0", features = ["derive", "cargo"] }
+
+[lib]
+path = "src/lib.rs"
+
+[[bin]]
+name = "rdmc"
+path = "src/bin.rs"

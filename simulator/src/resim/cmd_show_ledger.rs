@@ -1,4 +1,4 @@
-use clap::{crate_version, App, ArgMatches, SubCommand};
+use clap::{crate_version, App, ArgMatches};
 use colored::*;
 
 use crate::ledger::*;
@@ -6,8 +6,8 @@ use crate::resim::*;
 use crate::utils::*;
 
 /// Constructs a `show-ledger` subcommand.
-pub fn make_show_ledger<'a, 'b>() -> App<'a, 'b> {
-    SubCommand::with_name(CMD_SHOW_LEDGER)
+pub fn make_show_ledger<'a>() -> App<'a> {
+    App::new(CMD_SHOW_LEDGER)
         .about("Displays ledger summary")
         .version(crate_version!())
 }

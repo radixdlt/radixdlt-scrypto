@@ -57,7 +57,12 @@ blueprint! {
         }
 
         /// Withdraws resource from this account.
-        pub fn withdraw(&mut self, amount: Decimal, resource_address: Address, account_auth: BucketRef) -> Bucket {
+        pub fn withdraw(
+            &mut self,
+            amount: Decimal,
+            resource_address: Address,
+            account_auth: BucketRef,
+        ) -> Bucket {
             account_auth.check_nft_id(ECDSA_TOKEN, |id| id == &self.key_u128());
 
             let vault = self.vaults.get(&resource_address);
@@ -75,7 +80,7 @@ blueprint! {
             amount: Decimal,
             resource_address: Address,
             auth: BucketRef,
-            account_auth: BucketRef
+            account_auth: BucketRef,
         ) -> Bucket {
             account_auth.check_nft_id(ECDSA_TOKEN, |id| id == &self.key_u128());
 
@@ -89,7 +94,12 @@ blueprint! {
         }
 
         /// Withdraws NFTs from this account.
-        pub fn withdraw_nfts(&mut self, ids: BTreeSet<u128>, resource_address: Address, account_auth: BucketRef) -> Bucket {
+        pub fn withdraw_nfts(
+            &mut self,
+            ids: BTreeSet<u128>,
+            resource_address: Address,
+            account_auth: BucketRef,
+        ) -> Bucket {
             account_auth.check_nft_id(ECDSA_TOKEN, |id| id == &self.key_u128());
 
             let vault = self.vaults.get(&resource_address);
@@ -113,7 +123,7 @@ blueprint! {
             ids: BTreeSet<u128>,
             resource_address: Address,
             auth: BucketRef,
-            account_auth: BucketRef
+            account_auth: BucketRef,
         ) -> Bucket {
             account_auth.check_nft_id(ECDSA_TOKEN, |id| id == &self.key_u128());
 

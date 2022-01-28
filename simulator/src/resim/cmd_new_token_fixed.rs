@@ -1,4 +1,4 @@
-use clap::{crate_version, App, Arg, ArgMatches, SubCommand};
+use clap::{crate_version, App, Arg, ArgMatches};
 use radix_engine::transaction::*;
 use scrypto::rust::collections::HashMap;
 
@@ -16,57 +16,53 @@ const ARG_URL: &str = "URL";
 const ARG_ICON_URL: &str = "ICON_URL";
 
 /// Constructs a `new-token-fixed` subcommand.
-pub fn make_new_token_fixed<'a, 'b>() -> App<'a, 'b> {
-    SubCommand::with_name(CMD_NEW_TOKEN_FIXED)
+pub fn make_new_token_fixed<'a>() -> App<'a> {
+    App::new(CMD_NEW_TOKEN_FIXED)
         .about("Creates token resource with fixed supply")
         .version(crate_version!())
         .arg(
-            Arg::with_name(ARG_SUPPLY)
+            Arg::new(ARG_SUPPLY)
                 .help("Specify the total supply.")
                 .required(true),
         )
         // options
+        .arg(Arg::new(ARG_TRACE).long("trace").help("Turn on tracing."))
         .arg(
-            Arg::with_name(ARG_TRACE)
-                .long("trace")
-                .help("Turn on tracing."),
-        )
-        .arg(
-            Arg::with_name(ARG_SIGNERS)
+            Arg::new(ARG_SIGNERS)
                 .long("signers")
                 .takes_value(true)
                 .help("Specify the transaction signers, separated by comma."),
         )
         .arg(
-            Arg::with_name(ARG_SYMBOL)
+            Arg::new(ARG_SYMBOL)
                 .long("symbol")
                 .takes_value(true)
                 .help("Specify the symbol.")
                 .required(false),
         )
         .arg(
-            Arg::with_name(ARG_NAME)
+            Arg::new(ARG_NAME)
                 .long("name")
                 .takes_value(true)
                 .help("Specify the name.")
                 .required(false),
         )
         .arg(
-            Arg::with_name(ARG_DESCRIPTION)
+            Arg::new(ARG_DESCRIPTION)
                 .long("description")
                 .takes_value(true)
                 .help("Specify the description.")
                 .required(false),
         )
         .arg(
-            Arg::with_name(ARG_URL)
+            Arg::new(ARG_URL)
                 .long("url")
                 .takes_value(true)
                 .help("Specify the URL.")
                 .required(false),
         )
         .arg(
-            Arg::with_name(ARG_ICON_URL)
+            Arg::new(ARG_ICON_URL)
                 .long("icon-url")
                 .takes_value(true)
                 .help("Specify the icon URL.")
@@ -104,7 +100,7 @@ pub fn handle_new_token_fixed(matches: &ArgMatches) -> Result<(), Error> {
     let transaction = TransactionBuilder::new(&executor)
         .new_token_fixed(metadata, supply)
         .drop_all_bucket_refs()
-        .deposit_all_buckets(account.0)
+        .call_method_with_all_resources(account.0, "deposit_batch")
         .build(signers)
         .map_err(Error::TransactionConstructionError)?;
     let receipt = executor.run(transaction, trace).unwrap();

@@ -234,11 +234,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
     }
 
     /// Creates a bucket ref which references a virtual bucket
-    pub fn create_virtual_bucket_ref(
-        &mut self,
-        rid: Rid,
-        bucket: Bucket
-    ) {
+    pub fn create_virtual_bucket_ref(&mut self, rid: Rid, bucket: Bucket) {
         let locked_bucket = LockedBucket::new(ECDSA_TOKEN_BID, bucket);
         let bucket_ref = BucketRef::new(locked_bucket);
         self.bucket_refs.insert(rid, bucket_ref);

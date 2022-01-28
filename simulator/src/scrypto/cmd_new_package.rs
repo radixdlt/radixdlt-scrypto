@@ -1,4 +1,4 @@
-use clap::{crate_version, App, Arg, ArgMatches, SubCommand};
+use clap::{crate_version, App, Arg, ArgMatches};
 use std::fs;
 use std::path::*;
 
@@ -9,25 +9,25 @@ const ARG_PATH: &str = "PATH";
 const ARG_LOCAL: &str = "TRACE";
 
 /// Constructs a `new-package` subcommand.
-pub fn make_new_package<'a, 'b>() -> App<'a, 'b> {
-    SubCommand::with_name(CMD_NEW_PACKAGE)
+pub fn make_new_package<'a>() -> App<'a> {
+    App::new(CMD_NEW_PACKAGE)
         .about("Creates a package")
         .version(crate_version!())
         .arg(
-            Arg::with_name(ARG_NAME)
+            Arg::new(ARG_NAME)
                 .help("Specifies the package name.")
                 .required(true),
         )
         // options
         .arg(
-            Arg::with_name(ARG_PATH)
+            Arg::new(ARG_PATH)
                 .long("path")
                 .takes_value(true)
                 .help("Specifies the package dir.")
                 .required(false),
         )
         .arg(
-            Arg::with_name(ARG_LOCAL)
+            Arg::new(ARG_LOCAL)
                 .long("local")
                 .help("Uses local Scrypto as dependency."),
         )

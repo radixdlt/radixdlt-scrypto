@@ -15,7 +15,7 @@ fn test_hello() {
     let transaction1 = TransactionBuilder::new(&executor)
         .call_function(package, "HelloNft", "new", vec!["5".to_owned()], None)
         .drop_all_bucket_refs()
-        .deposit_all_buckets(account)
+        .call_method_with_all_resources(account, "deposit_batch")
         .build(vec![key])
         .unwrap();
     let receipt1 = executor.run(transaction1, true).unwrap();
@@ -35,7 +35,7 @@ fn test_hello() {
             Some(account),
         )
         .drop_all_bucket_refs()
-        .deposit_all_buckets(account)
+        .call_method_with_all_resources(account, "deposit_batch")
         .build(vec![key])
         .unwrap();
     let receipt2 = executor.run(transaction2, true).unwrap();
