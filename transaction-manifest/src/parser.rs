@@ -67,17 +67,21 @@ impl Parser {
     pub fn parse_instruction(&mut self) -> Result<Instruction, ParserError> {
         let token = self.advance()?;
         let instruction = match token.kind {
-            TokenKind::DeclareTempBucket => Instruction::DeclareTempBucket,
-            TokenKind::DeclareTempBucketRef => Instruction::DeclareTempBucketRef,
-            TokenKind::TakeFromContext => Instruction::TakeFromContext {
+            TokenKind::CreateTempBucket => Instruction::CreateTempBucket {
                 amount: self.parse_value()?,
                 resource_address: self.parse_value()?,
-                to: self.parse_value()?,
+                new_bucket: self.parse_value()?,
             },
-            TokenKind::BorrowFromContext => Instruction::BorrowFromContext {
-                amount: self.parse_value()?,
-                resource_address: self.parse_value()?,
-                to: self.parse_value()?,
+            TokenKind::CreateTempBucketRef => Instruction::CreateTempBucketRef {
+                bucket: self.parse_value()?,
+                new_bucket_ref: self.parse_value()?,
+            },
+            TokenKind::CloneTempBucketRef => Instruction::CloneTempBucketRef {
+                bucket_ref: self.parse_value()?,
+                new_bucket_ref: self.parse_value()?,
+            },
+            TokenKind::DropTempBucketRef => Instruction::DropTempBucketRef {
+                bucket_ref: self.parse_value()?,
             },
             TokenKind::CallFunction => Instruction::CallFunction {
                 package_address: self.parse_value()?,
@@ -102,7 +106,6 @@ impl Parser {
                     values
                 },
             },
-            TokenKind::DropAllBucketRefs => Instruction::DropAllBucketRefs,
             TokenKind::CallMethodWithAllResources => Instruction::CallMethodWithAllResources {
                 component_address: self.parse_value()?,
                 method: self.parse_value()?,
@@ -628,31 +631,35 @@ mod tests {
 
     #[test]
     fn test_transaction() {
-        parse_instruction_ok!(r#"DECLARE_TEMP_BUCKET;"#, Instruction::DeclareTempBucket);
         parse_instruction_ok!(
-            r#"DECLARE_TEMP_BUCKET_REF;"#,
-            Instruction::DeclareTempBucketRef
-        );
-        parse_instruction_ok!(
-            r#"TAKE_FROM_CONTEXT  Decimal("1.0")  Address("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d")  Bucket("xrd_bucket");"#,
-            Instruction::TakeFromContext {
+            r#"CREATE_TEMP_BUCKET  Decimal("1.0")  Address("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d")  Bucket("xrd_bucket");"#,
+            Instruction::CreateTempBucket {
                 amount: Value::Decimal(Value::String("1.0".into()).into()),
                 resource_address: Value::Address(
                     Value::String("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d".into())
                         .into()
                 ),
-                to: Value::Bucket(Value::String("xrd_bucket".into()).into()),
+                new_bucket: Value::Bucket(Value::String("xrd_bucket".into()).into()),
             }
         );
         parse_instruction_ok!(
-            r#"BORROW_FROM_CONTEXT  Decimal("1.0")  Address("03559905076cb3d4b9312640393a7bc6e1d4e491a8b1b62fa73a94")  BucketRef("admin_auth");"#,
-            Instruction::BorrowFromContext {
-                amount: Value::Decimal(Value::String("1.0".into()).into()),
-                resource_address: Value::Address(
-                    Value::String("03559905076cb3d4b9312640393a7bc6e1d4e491a8b1b62fa73a94".into())
-                        .into()
-                ),
-                to: Value::BucketRef(Value::String("admin_auth".into()).into()),
+            r#"CREATE_TEMP_BUCKET_REF  Bucket("xrd_bucket")  BucketRef("admin_auth");"#,
+            Instruction::CreateTempBucketRef {
+                bucket: Value::Bucket(Value::String("xrd_bucket".into()).into()),
+                new_bucket_ref: Value::BucketRef(Value::String("admin_auth".into()).into()),
+            }
+        );
+        parse_instruction_ok!(
+            r#"CLONE_TEMP_BUCKET_REF  BucketRef("admin_auth")  BucketRef("admin_auth2");"#,
+            Instruction::CloneTempBucketRef {
+                bucket_ref: Value::BucketRef(Value::String("admin_auth".into()).into()),
+                new_bucket_ref: Value::BucketRef(Value::String("admin_auth2".into()).into()),
+            }
+        );
+        parse_instruction_ok!(
+            r#"DROP_TEMP_BUCKET_REF BucketRef("admin_auth");"#,
+            Instruction::DropTempBucketRef {
+                bucket_ref: Value::BucketRef(Value::String("admin_auth".into()).into()),
             }
         );
         parse_instruction_ok!(
@@ -688,7 +695,6 @@ mod tests {
                 ]
             }
         );
-        parse_instruction_ok!(r#"DROP_ALL_BUCKET_REFS;"#, Instruction::DropAllBucketRefs);
         parse_instruction_ok!(
             r#"CALL_METHOD_WITH_ALL_RESOURCES  Address("02d43f479e9b2beb9df98bc3888344fc25eda181e8f710ce1bf1de") "deposit_batch";"#,
             Instruction::CallMethodWithAllResources {

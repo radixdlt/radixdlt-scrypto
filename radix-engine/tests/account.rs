@@ -14,7 +14,7 @@ fn fungible_amount() -> ResourceAmount {
 fn can_withdraw_from_my_account() {
     // Arrange
     let mut ledger = InMemoryLedger::with_bootstrap();
-    let mut executor = TransactionExecutor::new(&mut ledger, 0, 0);
+    let mut executor = TransactionExecutor::new(&mut ledger, 0, 0, false);
     let key = executor.new_public_key();
     let account = executor.new_account(key);
     let other_key = executor.new_public_key();
@@ -26,17 +26,17 @@ fn can_withdraw_from_my_account() {
         .unwrap();
 
     // Act
-    let result = executor.run(transaction, false);
+    let result = executor.run(transaction);
 
     // Assert
-    assert!(result.unwrap().success);
+    assert!(result.unwrap().error.is_none());
 }
 
 #[test]
 fn cannot_withdraw_from_other_account() {
     // Arrange
     let mut ledger = InMemoryLedger::with_bootstrap();
-    let mut executor = TransactionExecutor::new(&mut ledger, 0, 0);
+    let mut executor = TransactionExecutor::new(&mut ledger, 0, 0, false);
     let key = executor.new_public_key();
     let account = executor.new_account(key);
     let other_key = executor.new_public_key();
@@ -48,24 +48,23 @@ fn cannot_withdraw_from_other_account() {
         .unwrap();
 
     // Act
-    let result = executor.run(transaction, false);
+    let result = executor.run(transaction);
 
     // Assert
-    assert!(!result.unwrap().success);
+    assert!(!result.unwrap().error.is_none());
 }
 
 #[test]
 fn account_to_bucket_to_account() {
     // Arrange
     let mut ledger = InMemoryLedger::with_bootstrap();
-    let mut executor = TransactionExecutor::new(&mut ledger, 0, 0);
+    let mut executor = TransactionExecutor::new(&mut ledger, 0, 0, false);
     let key = executor.new_public_key();
     let account = executor.new_account(key);
     let amount = fungible_amount();
     let transaction = TransactionBuilder::new(&executor)
         .withdraw_from_account(&amount, account)
-        .declare_bucket(|builder, bid| {
-            builder.take_from_context(amount.amount(), RADIX_TOKEN, bid);
+        .create_temp_bucket(amount.amount(), RADIX_TOKEN, |builder, bid| {
             builder.add_instruction(Instruction::CallMethod {
                 component_address: account,
                 method: "deposit".to_owned(),
@@ -76,8 +75,8 @@ fn account_to_bucket_to_account() {
         .unwrap();
 
     // Act
-    let result = executor.run(transaction, false);
+    let result = executor.run(transaction);
 
     // Assert
-    assert!(result.unwrap().success);
+    assert!(result.unwrap().error.is_none());
 }

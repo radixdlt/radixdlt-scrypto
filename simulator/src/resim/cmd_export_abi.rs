@@ -36,8 +36,9 @@ pub fn handle_export_abi(matches: &ArgMatches) -> Result<(), Error> {
 
     let configs = get_configs()?;
     let mut ledger = FileBasedLedger::with_bootstrap(get_data_dir()?);
-    let executor = TransactionExecutor::new(&mut ledger, configs.current_epoch, configs.nonce);
-    let abi = executor.export_abi(package, name, trace);
+    let executor =
+        TransactionExecutor::new(&mut ledger, configs.current_epoch, configs.nonce, trace);
+    let abi = executor.export_abi(package, name);
 
     match abi {
         Err(e) => Err(Error::TransactionExecutionError(e)),

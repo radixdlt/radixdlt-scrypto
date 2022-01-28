@@ -7,7 +7,7 @@ mod wasm_loader;
 mod wasm_validator;
 
 pub use data_validator::validate_data;
-pub use id_allocator::{IdAllocator, ECDSA_TOKEN_BID, ECDSA_TOKEN_RID};
+pub use id_allocator::*;
 pub use process::{Invocation, Process};
 pub use track::Track;
 pub use wasm_env::{EnvModuleResolver, KERNEL_INDEX, KERNEL_NAME};

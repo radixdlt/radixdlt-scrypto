@@ -1,5 +1,4 @@
 use scrypto::abi;
-use scrypto::buffer::*;
 use scrypto::rust::string::ToString;
 use scrypto::rust::vec;
 use scrypto::rust::vec::Vec;
@@ -16,6 +15,7 @@ pub struct TransactionExecutor<'l, L: Ledger> {
     ledger: &'l mut L,
     current_epoch: u64,
     nonce: u64,
+    trace: bool,
 }
 
 impl<'l, L: Ledger> AbiProvider for TransactionExecutor<'l, L> {
@@ -23,22 +23,20 @@ impl<'l, L: Ledger> AbiProvider for TransactionExecutor<'l, L> {
         &self,
         package_address: Address,
         blueprint_name: A,
-        trace: bool,
     ) -> Result<abi::Blueprint, RuntimeError> {
         let p = self
             .ledger
             .get_package(package_address)
             .ok_or(RuntimeError::PackageNotFound(package_address))?;
 
-        BasicAbiProvider::new()
+        BasicAbiProvider::new(self.trace)
             .with_package(package_address, p.code().to_vec())
-            .export_abi(package_address, blueprint_name, trace)
+            .export_abi(package_address, blueprint_name)
     }
 
     fn export_abi_component(
         &self,
         component_address: Address,
-        trace: bool,
     ) -> Result<abi::Blueprint, RuntimeError> {
         let c = self
             .ledger
@@ -48,18 +46,19 @@ impl<'l, L: Ledger> AbiProvider for TransactionExecutor<'l, L> {
             .ledger
             .get_package(c.package_address())
             .ok_or(RuntimeError::PackageNotFound(c.package_address()))?;
-        BasicAbiProvider::new()
+        BasicAbiProvider::new(self.trace)
             .with_package(c.package_address(), p.code().to_vec())
-            .export_abi(c.package_address(), c.blueprint_name(), trace)
+            .export_abi(c.package_address(), c.blueprint_name())
     }
 }
 
 impl<'l, L: Ledger> TransactionExecutor<'l, L> {
-    pub fn new(ledger: &'l mut L, current_epoch: u64, nonce: u64) -> Self {
+    pub fn new(ledger: &'l mut L, current_epoch: u64, nonce: u64, trace: bool) -> Self {
         Self {
             ledger,
             current_epoch,
             nonce,
+            trace,
         }
     }
 
@@ -111,7 +110,6 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
                 .new_account_with_resource(key, free_xrd_amount, RADIX_TOKEN)
                 .build(Vec::new())
                 .unwrap(),
-            false,
         )
         .unwrap()
         .component(0)
@@ -120,23 +118,15 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
 
     /// Publishes a package.
     pub fn publish_package(&mut self, code: &[u8]) -> Address {
-        let receipt = self
-            .run(
-                TransactionBuilder::new(self)
-                    .publish_package(code)
-                    .build(Vec::new())
-                    .unwrap(),
-                false,
-            )
-            .unwrap();
-
-        if !receipt.success {
-            #[cfg(not(feature = "alloc"))]
-            println!("{:?}", receipt);
-            panic!("Failed to publish package. See receipt above.");
-        } else {
-            receipt.package(0).unwrap()
-        }
+        self.run(
+            TransactionBuilder::new(self)
+                .publish_package(code)
+                .build(Vec::new())
+                .unwrap(),
+        )
+        .unwrap()
+        .package(0)
+        .unwrap()
     }
 
     /// Publishes a package to a specified address.
@@ -148,13 +138,9 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
     /// This is a convenience method that validates and runs a transaction in one shot.
     ///
     /// You might also consider `validate()` and `execute()` in this implementation.
-    pub fn run(
-        &mut self,
-        transaction: Transaction,
-        trace: bool,
-    ) -> Result<Receipt, TransactionValidationError> {
+    pub fn run(&mut self, transaction: Transaction) -> Result<Receipt, TransactionValidationError> {
         let validated_transaction = self.validate(transaction)?;
-        let receipt = self.execute(validated_transaction, trace);
+        let receipt = self.execute(validated_transaction);
         Ok(receipt)
     }
 
@@ -165,120 +151,94 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
         validate_transaction(&transaction)
     }
 
-    pub fn execute(&mut self, validated_transaction: ValidatedTransaction, trace: bool) -> Receipt {
+    pub fn execute(&mut self, validated_transaction: ValidatedTransaction) -> Receipt {
         #[cfg(not(feature = "alloc"))]
         let now = std::time::Instant::now();
 
+        // Ledger state updates introduced by this transaction
         let mut track = Track::new(
             self.ledger,
             self.current_epoch,
             sha256(self.nonce.to_string()),
             validated_transaction.signers.clone(),
         );
-        let mut proc = track.start_process(trace);
+        let mut proc = track.start_process(self.trace);
 
-        let mut results = vec![];
-        let mut success = true;
-        for inst in &validated_transaction.instructions {
-            let res = match inst {
-                ValidatedInstruction::DeclareTempBucket => {
-                    proc.declare_bucket();
-                    Ok(None)
-                }
-                ValidatedInstruction::DeclareTempBucketRef => {
-                    proc.declare_bucket_ref();
-                    Ok(None)
-                }
-                ValidatedInstruction::TakeFromContext {
+        let mut error: Option<RuntimeError> = None;
+        let mut returns = vec![];
+        for inst in validated_transaction.clone().instructions {
+            let result = match inst {
+                ValidatedInstruction::CreateTempBucket {
                     amount,
                     resource_address,
-                    to,
-                } => proc
-                    .take_from_context(*amount, *resource_address, *to)
-                    .map(|_| None),
-                ValidatedInstruction::BorrowFromContext {
-                    amount,
-                    resource_address,
-                    to,
-                } => proc
-                    .borrow_from_context(*amount, *resource_address, *to)
-                    .map(|_| None),
+                } => proc.create_temp_bucket(amount, resource_address),
+                ValidatedInstruction::CreateTempBucketRef { bid } => {
+                    proc.create_temp_bucket_ref(bid)
+                }
+                ValidatedInstruction::CloneTempBucketRef { rid } => proc.clone_temp_bucket_ref(rid),
+                ValidatedInstruction::DropTempBucketRef { rid } => proc.drop_temp_bucket_ref(rid),
                 ValidatedInstruction::CallFunction {
                     package_address,
                     blueprint_name,
                     function,
                     args,
-                } => proc
-                    .call_function(
-                        // TODO: update interface
-                        *package_address,
-                        blueprint_name.as_str(),
-                        function.as_str(),
-                        args.clone(),
-                    )
-                    .map(Option::Some),
+                } => proc.call_function(package_address, &blueprint_name, &function, args),
                 ValidatedInstruction::CallMethod {
                     component_address,
                     method,
                     args,
-                } => proc
-                    .call_method(*component_address, method.as_str(), args.clone())
-                    .map(Option::Some),
-
-                ValidatedInstruction::DropAllBucketRefs => {
-                    proc.drop_bucket_refs();
-                    Ok(None)
-                }
+                } => proc.call_method(component_address, &method, args),
                 ValidatedInstruction::CallMethodWithAllResources {
                     component_address,
                     method,
-                } => {
-                    let buckets = proc.list_buckets();
-                    if !buckets.is_empty() {
-                        proc.call_method(
-                            *component_address,
-                            method,
-                            vec![validate_data(&scrypto_encode(&buckets)).unwrap()],
-                        )
-                        .map(Option::Some)
-                    } else {
-                        Ok(None)
-                    }
-                }
+                } => proc.call_method_with_all_resources(component_address, &method),
             };
-            success &= res.is_ok();
-            results.push(res);
-            if !success {
-                break;
+            match result {
+                Ok(data) => {
+                    returns.push(data);
+                }
+                Err(e) => {
+                    error = Some(e);
+                    break;
+                }
             }
         }
 
         // check resource
-        let res = proc.check_resource().map(|_| None);
-        success &= res.is_ok();
-        results.push(res);
+        error = error.or(match proc.check_resource() {
+            Ok(_) => None,
+            Err(e) => Some(e),
+        });
 
         // commit state updates
-        if success {
+        if error.is_none() {
             track.commit();
             self.nonce += 1;
         }
+
         #[cfg(feature = "alloc")]
         let execution_time = None;
         #[cfg(not(feature = "alloc"))]
         let execution_time = Some(now.elapsed().as_millis());
 
-        Receipt {
+        let new_entities = if error.is_none() {
+            track.new_entities().to_vec()
+        } else {
+            Vec::new()
+        };
+
+        let receipt = Receipt {
             transaction: validated_transaction,
-            success,
-            results,
+            error,
+            returns,
             logs: track.logs().clone(),
-            new_entities: if success {
-                track.new_entities().to_vec()
-            } else {
-                Vec::new()
-            },
+            new_entities,
             execution_time,
+        };
+        if self.trace {
+            #[cfg(not(feature = "alloc"))]
+            println!("{:?}", receipt);
         }
+        receipt
     }
 }

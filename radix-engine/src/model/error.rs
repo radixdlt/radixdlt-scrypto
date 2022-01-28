@@ -3,6 +3,7 @@ use scrypto::rust::fmt;
 use scrypto::types::*;
 use wasmi::*;
 
+use crate::engine::*;
 use crate::model::*;
 
 /// Represents an error when validating a WASM file.
@@ -40,6 +41,10 @@ pub enum DataValidationError {
 #[derive(Debug)]
 pub enum TransactionValidationError {
     DataValidationError(DataValidationError),
+    IdAllocatorError(IdAllocatorError),
+    TempBucketNotFound(Bid),
+    TempBucketRefNotFound(Rid),
+    TempBucketLocked(Bid),
     InvalidSignature,
     UnexpectedEnd,
 }
@@ -55,6 +60,9 @@ pub enum RuntimeError {
 
     /// Not a valid ABI.
     AbiValidationError(DecodeError),
+
+    /// Failed to allocate an ID.
+    IdAllocatorError(IdAllocatorError),
 
     /// Error when invoking an export.
     InvokeError(Error),

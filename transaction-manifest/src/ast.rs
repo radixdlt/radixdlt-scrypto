@@ -5,20 +5,24 @@ pub struct Transaction {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Instruction {
-    DeclareTempBucket,
-
-    DeclareTempBucketRef,
-
-    TakeFromContext {
+    CreateTempBucket {
         amount: Value,
         resource_address: Value,
-        to: Value,
+        new_bucket: Value,
     },
 
-    BorrowFromContext {
-        amount: Value,
-        resource_address: Value,
-        to: Value,
+    CreateTempBucketRef {
+        bucket: Value,
+        new_bucket_ref: Value,
+    },
+
+    CloneTempBucketRef {
+        bucket_ref: Value,
+        new_bucket_ref: Value,
+    },
+
+    DropTempBucketRef {
+        bucket_ref: Value,
     },
 
     CallFunction {
@@ -33,8 +37,6 @@ pub enum Instruction {
         method: Value,
         args: Vec<Value>,
     },
-
-    DropAllBucketRefs,
 
     CallMethodWithAllResources {
         component_address: Value,

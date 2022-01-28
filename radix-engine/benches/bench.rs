@@ -8,7 +8,7 @@ use scrypto::prelude::*;
 
 fn bench_transfer(b: &mut Bencher) {
     let mut ledger = InMemoryLedger::with_bootstrap();
-    let mut executor = TransactionExecutor::new(&mut ledger, 0, 0);
+    let mut executor = TransactionExecutor::new(&mut ledger, 0, 0, false);
     let key1 = executor.new_public_key();
     let account1 = executor.new_account(key1);
     let key2 = executor.new_public_key();
@@ -21,14 +21,13 @@ fn bench_transfer(b: &mut Bencher) {
             },
             account1,
         )
-        .drop_all_bucket_refs()
         .call_method_with_all_resources(account2, "deposit_batch")
         .build(vec![key1])
         .unwrap();
 
     b.iter(|| {
-        let receipt = executor.run(transaction.clone(), false).unwrap();
-        assert!(receipt.success);
+        let receipt = executor.run(transaction.clone()).unwrap();
+        assert!(receipt.error.is_none());
     });
 }
 

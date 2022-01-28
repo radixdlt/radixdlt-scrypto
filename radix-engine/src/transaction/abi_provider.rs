@@ -18,26 +18,26 @@ pub trait AbiProvider {
         &self,
         package_address: Address,
         blueprint_name: S,
-        trace: bool,
     ) -> Result<abi::Blueprint, RuntimeError>;
 
     /// Exports the ABI of the blueprint, from which the given component is instantiated.
     fn export_abi_component(
         &self,
         component_address: Address,
-        trace: bool,
     ) -> Result<abi::Blueprint, RuntimeError>;
 }
 
 /// Provides ABIs for blueprints either installed during bootstrap or added manually.
 pub struct BasicAbiProvider {
     ledger: InMemoryLedger,
+    trace: bool,
 }
 
 impl BasicAbiProvider {
-    pub fn new() -> Self {
+    pub fn new(trace: bool) -> Self {
         Self {
             ledger: InMemoryLedger::with_bootstrap(),
+            trace,
         }
     }
 
@@ -66,7 +66,6 @@ impl AbiProvider for BasicAbiProvider {
         &self,
         package_address: Address,
         blueprint_name: S,
-        trace: bool,
     ) -> Result<abi::Blueprint, RuntimeError> {
         // Deterministic transaction context
         let mut ledger = self.ledger.clone();
@@ -75,7 +74,7 @@ impl AbiProvider for BasicAbiProvider {
 
         // Start a process and run abi generator
         let mut track = Track::new(&mut ledger, current_epoch, transaction_hash, Vec::new());
-        let mut proc = track.start_process(trace);
+        let mut proc = track.start_process(self.trace);
         let output: (Vec<abi::Function>, Vec<abi::Method>) = proc
             .call_abi(package_address, blueprint_name.as_ref())
             .and_then(|rtn| scrypto_decode(&rtn.raw).map_err(RuntimeError::AbiValidationError))?;
@@ -92,7 +91,6 @@ impl AbiProvider for BasicAbiProvider {
     fn export_abi_component(
         &self,
         component_address: Address,
-        trace: bool,
     ) -> Result<abi::Blueprint, RuntimeError> {
         let component = self
             .ledger
@@ -101,7 +99,6 @@ impl AbiProvider for BasicAbiProvider {
         self.export_abi(
             component.package_address(),
             component.blueprint_name().to_owned(),
-            trace,
         )
     }
 }

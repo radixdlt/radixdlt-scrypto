@@ -31,7 +31,8 @@ pub fn handle_new_account(matches: &ArgMatches) -> Result<(), Error> {
 
     let mut configs = get_configs()?;
     let mut ledger = FileBasedLedger::with_bootstrap(get_data_dir()?);
-    let mut executor = TransactionExecutor::new(&mut ledger, configs.current_epoch, configs.nonce);
+    let mut executor =
+        TransactionExecutor::new(&mut ledger, configs.current_epoch, configs.nonce, trace);
     let key = executor.new_public_key();
     let transaction = TransactionBuilder::new(&executor)
         .call_method(
@@ -41,13 +42,12 @@ pub fn handle_new_account(matches: &ArgMatches) -> Result<(), Error> {
             None,
         )
         .new_account_with_resource(key, 1000000.into(), RADIX_TOKEN)
-        .drop_all_bucket_refs()
         .build(signers)
         .map_err(Error::TransactionConstructionError)?;
-    let receipt = executor.run(transaction, trace).unwrap();
+    let receipt = executor.run(transaction).unwrap();
     println!("{:?}", receipt);
 
-    if receipt.success {
+    if receipt.error.is_none() {
         let account = receipt.component(0).unwrap();
         println!("{}", "=".repeat(80));
         println!("A new account has been created!");

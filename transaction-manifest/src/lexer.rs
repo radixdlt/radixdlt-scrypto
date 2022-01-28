@@ -76,13 +76,12 @@ pub enum TokenKind {
     Semicolon,
 
     /* Instructions */
-    DeclareTempBucket,
-    DeclareTempBucketRef,
-    TakeFromContext,
-    BorrowFromContext,
+    CreateTempBucket,
+    CreateTempBucketRef,
+    CloneTempBucketRef,
+    DropTempBucketRef,
     CallFunction,
     CallMethod,
-    DropAllBucketRefs,
     CallMethodWithAllResources,
 }
 
@@ -369,13 +368,12 @@ impl Lexer {
             "Ok" => Ok(TokenKind::Ok),
             "Err" => Ok(TokenKind::Err),
 
-            "DECLARE_TEMP_BUCKET" => Ok(TokenKind::DeclareTempBucket),
-            "DECLARE_TEMP_BUCKET_REF" => Ok(TokenKind::DeclareTempBucketRef),
-            "TAKE_FROM_CONTEXT" => Ok(TokenKind::TakeFromContext),
-            "BORROW_FROM_CONTEXT" => Ok(TokenKind::BorrowFromContext),
+            "CREATE_TEMP_BUCKET" => Ok(TokenKind::CreateTempBucket),
+            "CREATE_TEMP_BUCKET_REF" => Ok(TokenKind::CreateTempBucketRef),
+            "CLONE_TEMP_BUCKET_REF" => Ok(TokenKind::CloneTempBucketRef),
+            "DROP_TEMP_BUCKET_REF" => Ok(TokenKind::DropTempBucketRef),
             "CALL_FUNCTION" => Ok(TokenKind::CallFunction),
             "CALL_METHOD" => Ok(TokenKind::CallMethod),
-            "DROP_ALL_BUCKET_REFS" => Ok(TokenKind::DropAllBucketRefs),
             "CALL_METHOD_WITH_ALL_RESOURCES" => Ok(TokenKind::CallMethodWithAllResources),
 
             s @ _ => Err(LexerError::UnknownIdentifier(s.into())),

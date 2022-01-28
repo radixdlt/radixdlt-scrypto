@@ -108,10 +108,8 @@ impl ResourceAmount {
 /// Utility for building transaction.
 pub struct TransactionBuilder<'a, A: AbiProvider> {
     abi_provider: &'a A,
-    /// The address allocator for calculating reserved bucket id.
-    allocator: IdAllocator,
-    /// Bucket or BucketRef reservations
-    reservations: Vec<Instruction>,
+    /// The address allocator for calculating temp object IDs.
+    id_allocator: IdAllocator,
     /// Instructions generated.
     instructions: Vec<Instruction>,
     /// Collected Errors
@@ -123,8 +121,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     pub fn new(abi_provider: &'a A) -> Self {
         Self {
             abi_provider,
-            allocator: IdAllocator::new(),
-            reservations: Vec::new(),
+            id_allocator: IdAllocator::new(TRANSACTION_OBJECT_ID_RANGE),
             instructions: Vec::new(),
             errors: Vec::new(),
         }
@@ -136,52 +133,32 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         self
     }
 
-    /// Reserves a bucket id.
-    pub fn declare_bucket<F>(&mut self, then: F) -> &mut Self
+    /// Creates a temporary bucket.
+    pub fn create_temp_bucket<F>(
+        &mut self,
+        amount: Decimal,
+        resource_address: Address,
+        then: F,
+    ) -> &mut Self
     where
         F: FnOnce(&mut Self, Bid) -> &mut Self,
     {
-        let bid = self.allocator.new_bid();
-        self.reservations.push(Instruction::DeclareTempBucket);
+        let bid = self.id_allocator.new_bid().unwrap();
+        self.add_instruction(Instruction::CreateTempBucket {
+            amount,
+            resource_address,
+        });
         then(self, bid)
     }
 
-    /// Reserves a bucket ref id.
-    pub fn declare_bucket_ref<F>(&mut self, then: F) -> &mut Self
+    /// Creates a temporary bucket ref.
+    pub fn create_temp_bucket_ref<F>(&mut self, bid: Bid, then: F) -> &mut Self
     where
         F: FnOnce(&mut Self, Rid) -> &mut Self,
     {
-        let rid = self.allocator.new_rid();
-        self.reservations.push(Instruction::DeclareTempBucketRef);
+        let rid = self.id_allocator.new_rid().unwrap();
+        self.add_instruction(Instruction::CreateTempBucketRef { bid });
         then(self, rid)
-    }
-
-    /// Creates a bucket by withdrawing resource from context.
-    pub fn take_from_context(
-        &mut self,
-        amount: Decimal,
-        resource_address: Address,
-        to: Bid,
-    ) -> &mut Self {
-        self.add_instruction(Instruction::TakeFromContext {
-            amount,
-            resource_address,
-            to,
-        })
-    }
-
-    /// Creates a bucket ref by borrowing resource from context.
-    pub fn borrow_from_context(
-        &mut self,
-        amount: Decimal,
-        resource_address: Address,
-        rid: Rid,
-    ) -> &mut Self {
-        self.add_instruction(Instruction::BorrowFromContext {
-            amount,
-            resource_address,
-            to: rid,
-        })
     }
 
     /// Calls a function.
@@ -201,7 +178,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     ) -> &mut Self {
         let result = self
             .abi_provider
-            .export_abi(package_address, blueprint_name, false)
+            .export_abi(package_address, blueprint_name)
             .map_err(|_| {
                 BuildTransactionError::FailedToExportFunctionAbi(
                     package_address,
@@ -246,7 +223,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     ) -> &mut Self {
         let result = self
             .abi_provider
-            .export_abi_component(component_address, false)
+            .export_abi_component(component_address)
             .map_err(|_| {
                 BuildTransactionError::FailedToExportMethodAbi(component_address, method.to_owned())
             })
@@ -268,11 +245,6 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         }
 
         self
-    }
-
-    /// Drops all bucket refs.
-    pub fn drop_all_bucket_refs(&mut self) -> &mut Self {
-        self.add_instruction(Instruction::DropAllBucketRefs)
     }
 
     /// Calls a method with all the resources within the context.
@@ -297,7 +269,6 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         }
 
         let mut v = Vec::new();
-        v.extend(self.reservations.clone());
         v.extend(self.instructions.clone());
         v.push(Instruction::End {
             signatures: signers, // TODO sign
@@ -427,17 +398,18 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         resource_address: Address,
         mint_badge_address: Address,
     ) -> &mut Self {
-        self.declare_bucket_ref(|builder, rid| {
-            builder.borrow_from_context(1.into(), mint_badge_address, rid);
-            builder.add_instruction(Instruction::CallFunction {
-                package_address: SYSTEM_PACKAGE,
-                blueprint_name: "System".to_owned(),
-                function: "mint".to_owned(),
-                args: vec![
-                    scrypto_encode(&amount),
-                    scrypto_encode(&resource_address),
-                    scrypto_encode(&rid),
-                ],
+        self.create_temp_bucket(1.into(), mint_badge_address, |builder, bid| {
+            builder.create_temp_bucket_ref(bid, |builder, rid| {
+                builder.add_instruction(Instruction::CallFunction {
+                    package_address: SYSTEM_PACKAGE,
+                    blueprint_name: "System".to_owned(),
+                    function: "mint".to_owned(),
+                    args: vec![
+                        scrypto_encode(&amount),
+                        scrypto_encode(&resource_address),
+                        scrypto_encode(&rid),
+                    ],
+                })
             })
         })
     }
@@ -461,8 +433,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         amount: Decimal,
         resource_address: Address,
     ) -> &mut Self {
-        self.declare_bucket(|builder, bid| {
-            builder.take_from_context(amount, resource_address, bid);
+        self.create_temp_bucket(amount, resource_address, |builder, bid| {
             builder.add_instruction(Instruction::CallFunction {
                 package_address: ACCOUNT_PACKAGE,
                 blueprint_name: "Account".to_owned(),
@@ -622,14 +593,14 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                     self.withdraw_from_account(&resource_spec, account);
                 }
                 let mut created_bid = None;
-                self.declare_bucket(|builder, bid| {
-                    created_bid = Some(bid);
-                    builder.take_from_context(
-                        resource_spec.amount(),
-                        resource_spec.resource_address(),
-                        bid,
-                    )
-                });
+                self.create_temp_bucket(
+                    resource_spec.amount(),
+                    resource_spec.resource_address(),
+                    |builder, bid| {
+                        created_bid = Some(bid);
+                        builder
+                    },
+                );
                 Ok(scrypto_encode(&created_bid.unwrap()))
             }
             SCRYPTO_NAME_RID | SCRYPTO_NAME_BUCKET_REF => {
@@ -638,14 +609,17 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                     self.withdraw_from_account(&resource_spec, account);
                 }
                 let mut created_rid = None;
-                self.declare_bucket_ref(|builder, rid| {
-                    created_rid = Some(rid);
-                    builder.borrow_from_context(
-                        resource_spec.amount(),
-                        resource_spec.resource_address(),
-                        rid,
-                    )
-                });
+                self.create_temp_bucket(
+                    resource_spec.amount(),
+                    resource_spec.resource_address(),
+                    |builder, bid| {
+                        builder.create_temp_bucket_ref(bid, |builder, rid| {
+                            created_rid = Some(rid);
+                            builder
+                        });
+                        builder
+                    },
+                );
                 Ok(scrypto_encode(&created_rid.unwrap()))
             }
             _ => Err(BuildArgsError::UnsupportedType(i, ty.clone())),

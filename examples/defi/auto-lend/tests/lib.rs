@@ -13,7 +13,7 @@ struct TestEnv<'a, L: Ledger> {
 }
 
 fn set_up_test_env<'a, L: Ledger>(ledger: &'a mut L) -> TestEnv<'a, L> {
-    let mut executor = TransactionExecutor::new(ledger, 0, 0);
+    let mut executor = TransactionExecutor::new(ledger, 0, 0, false);
     let key = executor.new_public_key();
     let account = executor.new_account(key);
     let package = executor.publish_package(include_code!("auto_lend"));
@@ -69,7 +69,7 @@ fn create_user<'a, L: Ledger>(env: &mut TestEnv<'a, L>) -> Address {
             false,
         )
         .unwrap();
-    assert!(receipt.success);
+    assert!(receipt.error.is_none());
     receipt.resource_def(0).unwrap()
 }
 
@@ -90,7 +90,7 @@ fn get_user_state<'a, L: Ledger>(env: &mut TestEnv<'a, L>, user_id: Address) -> 
             false,
         )
         .unwrap();
-    assert!(receipt.success);
+    assert!(receipt.error.is_none());
     let encoded = receipt.results.swap_remove(0).unwrap().unwrap().encoded;
     scrypto_decode(&encoded).unwrap()
 }

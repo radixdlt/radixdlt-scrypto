@@ -22,7 +22,7 @@ pub struct Track<'l, L: Ledger> {
     current_epoch: u64,
     transaction_hash: H256,
     transaction_signers: Vec<Address>,
-    id_alloc: IdAllocator,
+    id_allocator: IdAllocator,
     logs: Vec<(LogLevel, String)>,
     packages: HashMap<Address, Package>,
     components: HashMap<Address, Component>,
@@ -52,7 +52,7 @@ impl<'l, L: Ledger> Track<'l, L> {
             current_epoch,
             transaction_hash,
             transaction_signers,
-            id_alloc: IdAllocator::new(),
+            id_allocator: IdAllocator::new(USER_OBJECT_ID_RANGE),
             logs: Vec::new(),
             packages: HashMap::new(),
             components: HashMap::new(),
@@ -73,6 +73,7 @@ impl<'l, L: Ledger> Track<'l, L> {
 
     /// Start a process.
     pub fn start_process<'r>(&'r mut self, verbose: bool) -> Process<'r, 'l, L> {
+        // FIXME: This is a temp solution
         let signers: BTreeSet<u128> = self
             .transaction_signers
             .clone()
@@ -90,14 +91,12 @@ impl<'l, L: Ledger> Track<'l, L> {
             .collect();
         let mut process = Process::new(0, verbose, self);
 
-        if !signers.is_empty() {
-            let ecdsa_bucket = Bucket::new(
-                ECDSA_TOKEN,
-                ResourceType::NonFungible,
-                Supply::NonFungible { ids: signers },
-            );
-            process.create_virtual_bucket_ref(ECDSA_TOKEN_RID, ecdsa_bucket);
-        }
+        let ecdsa_bucket = Bucket::new(
+            ECDSA_TOKEN,
+            ResourceType::NonFungible,
+            Supply::NonFungible { ids: signers },
+        );
+        process.create_virtual_bucket_ref(ECDSA_TOKEN_BID, ECDSA_TOKEN_RID, ecdsa_bucket);
 
         process
     }
@@ -370,48 +369,58 @@ impl<'l, L: Ledger> Track<'l, L> {
 
     /// Creates a new package address.
     pub fn new_package_address(&mut self) -> Address {
-        let address = self.id_alloc.new_package_address(self.transaction_hash());
+        // Security Alert: ensure ID allocating will practically never fail
+        let address = self
+            .id_allocator
+            .new_package_address(self.transaction_hash())
+            .unwrap();
         self.new_entities.push(address);
         address
     }
 
     /// Creates a new component address.
     pub fn new_component_address(&mut self) -> Address {
-        let address = self.id_alloc.new_component_address(self.transaction_hash());
+        let address = self
+            .id_allocator
+            .new_component_address(self.transaction_hash())
+            .unwrap();
         self.new_entities.push(address);
         address
     }
 
     /// Creates a new resource definition address.
     pub fn new_resource_address(&mut self) -> Address {
-        let address = self.id_alloc.new_resource_address(self.transaction_hash());
+        let address = self
+            .id_allocator
+            .new_resource_address(self.transaction_hash())
+            .unwrap();
         self.new_entities.push(address);
         address
     }
 
     /// Creates a new UUID.
     pub fn new_uuid(&mut self) -> u128 {
-        self.id_alloc.new_uuid(self.transaction_hash())
+        self.id_allocator.new_uuid(self.transaction_hash()).unwrap()
     }
 
     /// Creates a new bucket ID.
     pub fn new_bid(&mut self) -> Bid {
-        self.id_alloc.new_bid()
+        self.id_allocator.new_bid().unwrap()
     }
 
     /// Creates a new vault ID.
     pub fn new_vid(&mut self) -> Vid {
-        self.id_alloc.new_vid(self.transaction_hash())
+        self.id_allocator.new_vid(self.transaction_hash()).unwrap()
     }
 
     /// Creates a new reference id.
     pub fn new_rid(&mut self) -> Rid {
-        self.id_alloc.new_rid()
+        self.id_allocator.new_rid().unwrap()
     }
 
     /// Creates a new map id.
     pub fn new_mid(&mut self) -> Mid {
-        self.id_alloc.new_mid(self.transaction_hash())
+        self.id_allocator.new_mid(self.transaction_hash()).unwrap()
     }
 
     /// Commits changes to the underlying ledger.

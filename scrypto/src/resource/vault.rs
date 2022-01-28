@@ -152,7 +152,11 @@ impl Vault {
     /// This variant of `authorize` accepts an additional auth parameter to support resources
     /// with or without `RESTRICTED_TRANSFER` flag on.
     ///
-    pub fn authorize_with_auth<F: FnOnce(BucketRef) -> O, O>(&mut self, f: F, auth: BucketRef) -> O {
+    pub fn authorize_with_auth<F: FnOnce(BucketRef) -> O, O>(
+        &mut self,
+        f: F,
+        auth: BucketRef,
+    ) -> O {
         let bucket = self.take_with_auth(1, auth);
         let output = f(bucket.present());
         self.put(bucket);

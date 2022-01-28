@@ -68,17 +68,16 @@ pub fn handle_publish(matches: &ArgMatches) -> Result<(), Error> {
         let mut configs = get_configs()?;
         let mut ledger = FileBasedLedger::with_bootstrap(get_data_dir()?);
         let mut executor =
-            TransactionExecutor::new(&mut ledger, configs.current_epoch, configs.nonce);
+            TransactionExecutor::new(&mut ledger, configs.current_epoch, configs.nonce, trace);
         let transaction = TransactionBuilder::new(&executor)
             .publish_package(&code)
-            .drop_all_bucket_refs()
             .build(signers)
             .map_err(Error::TransactionConstructionError)?;
 
-        let receipt = executor.run(transaction, trace).unwrap();
+        let receipt = executor.run(transaction).unwrap();
 
         println!("{:?}", receipt);
-        if receipt.success {
+        if receipt.error.is_none() {
             configs.nonce = executor.nonce();
             set_configs(configs)?;
             Ok(())

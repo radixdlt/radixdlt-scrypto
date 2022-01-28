@@ -6,7 +6,7 @@ use scrypto::prelude::*;
 fn test_hello() {
     // Set up environment.
     let mut ledger = InMemoryLedger::with_bootstrap();
-    let mut executor = TransactionExecutor::new(&mut ledger, 0, 0);
+    let mut executor = TransactionExecutor::new(&mut ledger, 0, 0, false);
     let key = executor.new_public_key();
     let account = executor.new_account(key);
     let package = executor.publish_package(include_code!("hello_world"));
@@ -16,19 +16,18 @@ fn test_hello() {
         .call_function(package, "Hello", "new", vec![], None)
         .build(vec![])
         .unwrap();
-    let receipt1 = executor.run(transaction1, true).unwrap();
+    let receipt1 = executor.run(transaction1).unwrap();
     println!("{:?}\n", receipt1);
-    assert!(receipt1.success);
+    assert!(receipt1.error.is_none());
 
     // Test the `free_token` method.
     let component = receipt1.component(0).unwrap();
     let transaction2 = TransactionBuilder::new(&executor)
         .call_method(component, "free_token", vec![], Some(account))
-        .drop_all_bucket_refs()
         .call_method_with_all_resources(account, "deposit_batch")
         .build(vec![])
         .unwrap();
-    let receipt2 = executor.run(transaction2, true).unwrap();
+    let receipt2 = executor.run(transaction2).unwrap();
     println!("{:?}\n", receipt2);
-    assert!(receipt2.success);
+    assert!(receipt2.error.is_none());
 }

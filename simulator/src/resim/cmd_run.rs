@@ -44,11 +44,12 @@ pub fn handle_run(matches: &ArgMatches) -> Result<(), Error> {
 
     let mut configs = get_configs()?;
     let mut ledger = FileBasedLedger::with_bootstrap(get_data_dir()?);
-    let mut executor = TransactionExecutor::new(&mut ledger, configs.current_epoch, configs.nonce);
-    let receipt = executor.run(transaction, trace).unwrap();
+    let mut executor =
+        TransactionExecutor::new(&mut ledger, configs.current_epoch, configs.nonce, trace);
+    let receipt = executor.run(transaction).unwrap();
 
     println!("{:?}", receipt);
-    if receipt.success {
+    if receipt.error.is_none() {
         configs.nonce = executor.nonce();
         set_configs(configs)?;
         Ok(())
