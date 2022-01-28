@@ -41,7 +41,7 @@ impl Vault {
         }
     }
 
-    pub fn take_nft(&mut self, id: u128, actor: Actor) -> Result<Bucket, VaultError> {
+    pub fn take_nft(&mut self, id: NftKey, actor: Actor) -> Result<Bucket, VaultError> {
         if actor.check(self.authority) {
             self.bucket
                 .take_nft(id)
@@ -51,7 +51,7 @@ impl Vault {
         }
     }
 
-    pub fn get_nft_ids(&self, actor: Actor) -> Result<Vec<u128>, VaultError> {
+    pub fn get_nft_ids(&self, actor: Actor) -> Result<Vec<NftKey>, VaultError> {
         if actor.check(self.authority) {
             self.bucket
                 .get_nft_ids()

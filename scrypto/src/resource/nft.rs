@@ -6,12 +6,12 @@ use crate::types::*;
 #[derive(Debug)]
 pub struct Nft<T: NftData> {
     resource_address: Address,
-    id: u128,
+    id: NftKey,
     data: PhantomData<T>,
 }
 
-impl<T: NftData> From<(Address, u128)> for Nft<T> {
-    fn from(tuple: (Address, u128)) -> Self {
+impl<T: NftData> From<(Address, NftKey)> for Nft<T> {
+    fn from(tuple: (Address, NftKey)) -> Self {
         Self {
             resource_address: tuple.0,
             id: tuple.1,
@@ -27,7 +27,7 @@ impl<T: NftData> Nft<T> {
     }
 
     /// Returns the NFT ID.
-    pub fn id(&self) -> u128 {
+    pub fn id(&self) -> NftKey {
         self.id
     }
 

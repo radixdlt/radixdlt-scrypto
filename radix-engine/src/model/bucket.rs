@@ -21,7 +21,7 @@ pub enum BucketError {
 pub enum Supply {
     Fungible { amount: Decimal },
 
-    NonFungible { ids: BTreeSet<u128> },
+    NonFungible { ids: BTreeSet<NftKey> },
 }
 
 /// A transient resource container.
@@ -98,7 +98,7 @@ impl Bucket {
                 }
                 Supply::NonFungible { ref mut ids } => {
                     let n: usize = quantity.to_string().parse().unwrap();
-                    let taken: BTreeSet<u128> = ids.iter().cloned().take(n).collect();
+                    let taken: BTreeSet<NftKey> = ids.iter().cloned().take(n).collect();
                     for e in &taken {
                         ids.remove(e);
                     }
@@ -112,7 +112,7 @@ impl Bucket {
         }
     }
 
-    pub fn take_nft(&mut self, id: u128) -> Result<Self, BucketError> {
+    pub fn take_nft(&mut self, id: NftKey) -> Result<Self, BucketError> {
         match &mut self.supply {
             Supply::Fungible { .. } => Err(BucketError::UnsupportedOperation),
             Supply::NonFungible { ref mut ids } => {
@@ -131,7 +131,7 @@ impl Bucket {
         }
     }
 
-    pub fn get_nft_ids(&self) -> Result<Vec<u128>, BucketError> {
+    pub fn get_nft_ids(&self) -> Result<Vec<NftKey>, BucketError> {
         match &self.supply {
             Supply::Fungible { .. } => Err(BucketError::UnsupportedOperation),
             Supply::NonFungible { ids } => Ok(ids.iter().cloned().collect()),

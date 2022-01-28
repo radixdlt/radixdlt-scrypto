@@ -111,7 +111,7 @@ impl Bucket {
     ///
     /// # Panics
     /// Panics if this is not an NFT bucket or the specified NFT is not found.
-    pub fn take_nft(&mut self, id: u128) -> Bucket {
+    pub fn take_nft(&mut self, id: NftKey) -> Bucket {
         let input = TakeNftFromBucketInput { bid: self.bid, id };
         let output: TakeNftFromBucketOutput = call_kernel(TAKE_NFT_FROM_BUCKET, input);
 
@@ -137,7 +137,7 @@ impl Bucket {
     ///
     /// # Panics
     /// Panics if this is not an NFT bucket.
-    pub fn get_nft_ids(&self) -> Vec<u128> {
+    pub fn get_nft_ids(&self) -> Vec<NftKey> {
         let input = GetNftIdsInBucketInput { bid: self.bid };
         let output: GetNftIdsInBucketOutput = call_kernel(GET_NFT_IDS_IN_BUCKET, input);
 
@@ -145,7 +145,7 @@ impl Bucket {
     }
 
     /// Get the NFT id and panic if not singleton.
-    pub fn get_nft_id(&self) -> u128 {
+    pub fn get_nft_id(&self) -> NftKey {
         let ids = self.get_nft_ids();
         assert!(ids.len() == 1, "Expect 1 NFT, but found {}", ids.len());
         ids[0]
@@ -155,7 +155,7 @@ impl Bucket {
     ///
     /// # Panics
     /// Panics if this is not an NFT bucket.
-    pub fn get_nft_data<T: NftData>(&self, id: u128) -> T {
+    pub fn get_nft_data<T: NftData>(&self, id: NftKey) -> T {
         self.resource_def().get_nft_data(id)
     }
 
@@ -163,7 +163,7 @@ impl Bucket {
     ///
     /// # Panics
     /// Panics if this is not an NFT bucket or the specified NFT is not found.
-    pub fn update_nft_data<T: NftData>(&mut self, id: u128, new_data: T, auth: BucketRef) {
+    pub fn update_nft_data<T: NftData>(&mut self, id: NftKey, new_data: T, auth: BucketRef) {
         self.resource_def().update_nft_data(id, new_data, auth)
     }
 }

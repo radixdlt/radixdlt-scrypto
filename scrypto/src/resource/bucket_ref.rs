@@ -45,7 +45,7 @@ impl BucketRef {
         }
     }
 
-    pub fn check_nft_id<A: Into<ResourceDef>, F: Fn(&u128) -> bool>(self, resource_def: A, f: F) {
+    pub fn check_nft_id<A: Into<ResourceDef>, F: Fn(&NftKey) -> bool>(self, resource_def: A, f: F) {
         if self.contains(resource_def) && self.get_nft_ids().iter().any(f) {
             self.drop();
         } else {
@@ -82,7 +82,7 @@ impl BucketRef {
     }
 
     /// Get the NFT ids in the referenced bucket.
-    pub fn get_nft_ids(&self) -> Vec<u128> {
+    pub fn get_nft_ids(&self) -> Vec<NftKey> {
         let input = GetNftIdsInBucketRefInput { rid: self.rid };
         let output: GetNftIdsInBucketRefOutput = call_kernel(GET_NFT_IDS_IN_BUCKET_REF, input);
 
@@ -90,7 +90,7 @@ impl BucketRef {
     }
 
     /// Get the NFT id and panic if not singleton.
-    pub fn get_nft_id(&self) -> u128 {
+    pub fn get_nft_id(&self) -> NftKey {
         let ids = self.get_nft_ids();
         assert!(ids.len() == 1, "Expect 1 NFT, but found {}", ids.len());
         ids[0]

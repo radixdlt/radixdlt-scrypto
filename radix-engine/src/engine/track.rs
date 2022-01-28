@@ -29,13 +29,13 @@ pub struct Track<'l, L: Ledger> {
     resource_defs: HashMap<Address, ResourceDef>,
     lazy_maps: HashMap<Mid, LazyMap>,
     vaults: HashMap<Vid, Vault>,
-    nfts: HashMap<(Address, u128), Nft>,
+    nfts: HashMap<(Address, NftKey), Nft>,
     updated_packages: HashSet<Address>,
     updated_components: HashSet<Address>,
     updated_lazy_maps: HashSet<Mid>,
     updated_resource_defs: HashSet<Address>,
     updated_vaults: HashSet<Vid>,
-    updated_nfts: HashSet<(Address, u128)>,
+    updated_nfts: HashSet<(Address, NftKey)>,
     new_entities: Vec<Address>,
     code_cache: LruCache<Address, Module>, // TODO: move to ledger level
 }
@@ -73,7 +73,7 @@ impl<'l, L: Ledger> Track<'l, L> {
 
     /// Start a process.
     pub fn start_process<'r>(&'r mut self, verbose: bool) -> Process<'r, 'l, L> {
-        let signers: BTreeSet<u128> = self
+        let signers: BTreeSet<NftKey> = self
             .transaction_signers
             .clone()
             .into_iter()
@@ -85,7 +85,7 @@ impl<'l, L: Ledger> Track<'l, L> {
                     Address::ResourceDef(d) => bytes[..].copy_from_slice(&d[..16]),
                     Address::PublicKey(d) => bytes[..].copy_from_slice(&d[..16]),
                 }
-                u128::from_be_bytes(bytes)
+                NftKey(u128::from_be_bytes(bytes))
             })
             .collect();
         let mut process = Process::new(0, verbose, self);
@@ -219,7 +219,7 @@ impl<'l, L: Ledger> Track<'l, L> {
     }
 
     /// Returns an immutable reference to a nft, if exists.
-    pub fn get_nft(&mut self, resource_address: Address, id: u128) -> Option<&Nft> {
+    pub fn get_nft(&mut self, resource_address: Address, id: NftKey) -> Option<&Nft> {
         if self.nfts.contains_key(&(resource_address, id)) {
             return self.nfts.get(&(resource_address, id));
         }
@@ -233,7 +233,7 @@ impl<'l, L: Ledger> Track<'l, L> {
     }
 
     /// Returns a mutable reference to a nft, if exists.
-    pub fn get_nft_mut(&mut self, resource_address: Address, id: u128) -> Option<&mut Nft> {
+    pub fn get_nft_mut(&mut self, resource_address: Address, id: NftKey) -> Option<&mut Nft> {
         self.updated_nfts.insert((resource_address, id));
 
         if self.nfts.contains_key(&(resource_address, id)) {
@@ -249,7 +249,7 @@ impl<'l, L: Ledger> Track<'l, L> {
     }
 
     /// Inserts a new nft.
-    pub fn put_nft(&mut self, resource_address: Address, id: u128, nft: Nft) {
+    pub fn put_nft(&mut self, resource_address: Address, id: NftKey, nft: Nft) {
         self.updated_nfts.insert((resource_address, id));
 
         self.nfts.insert((resource_address, id), nft);

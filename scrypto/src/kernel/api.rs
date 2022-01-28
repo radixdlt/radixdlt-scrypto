@@ -309,7 +309,7 @@ pub struct GetResourceTotalSupplyOutput {
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct GetNftDataInput {
     pub resource_address: Address,
-    pub id: u128,
+    pub id: NftKey,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
@@ -321,7 +321,7 @@ pub struct GetNftDataOutput {
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct UpdateNftMutableDataInput {
     pub resource_address: Address,
-    pub id: u128,
+    pub id: NftKey,
     pub new_mutable_data: Vec<u8>,
     pub auth: Rid,
 }
@@ -437,7 +437,7 @@ pub struct GetVaultResourceAddressOutput {
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct TakeNftFromVaultInput {
     pub vid: Vid,
-    pub id: u128,
+    pub id: NftKey,
     pub auth: Option<Rid>,
 }
 
@@ -453,7 +453,7 @@ pub struct GetNftIdsInVaultInput {
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct GetNftIdsInVaultOutput {
-    pub ids: Vec<u128>,
+    pub ids: Vec<NftKey>,
 }
 
 //==========
@@ -513,7 +513,7 @@ pub struct GetBucketResourceAddressOutput {
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct TakeNftFromBucketInput {
     pub bid: Bid,
-    pub id: u128,
+    pub id: NftKey,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
@@ -528,7 +528,7 @@ pub struct GetNftIdsInBucketInput {
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct GetNftIdsInBucketOutput {
-    pub ids: Vec<u128>,
+    pub ids: Vec<NftKey>,
 }
 
 //==========
@@ -580,7 +580,7 @@ pub struct GetNftIdsInBucketRefInput {
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct GetNftIdsInBucketRefOutput {
-    pub ids: Vec<u128>,
+    pub ids: Vec<NftKey>,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
