@@ -1,14 +1,11 @@
-mod abi;
+mod abi_provider;
 mod builder;
 mod error;
 mod executor;
-mod model;
+mod validator;
 
-pub use abi::{AbiProvider, BasicAbiProvider};
+pub use abi_provider::{AbiProvider, BasicAbiProvider};
 pub use builder::{ParseResourceAmountError, ResourceAmount, TransactionBuilder};
 pub use error::{BuildArgsError, BuildTransactionError};
 pub use executor::TransactionExecutor;
-pub use model::{
-    CheckTransactionError, CheckedInstruction, CheckedTransaction, CheckedValue, Instruction,
-    Receipt, Transaction,
-};
+pub use validator::validate_transaction;

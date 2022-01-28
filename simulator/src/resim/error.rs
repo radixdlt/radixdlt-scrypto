@@ -1,7 +1,7 @@
 use std::io;
 use std::num::ParseIntError;
 
-use radix_engine::engine::*;
+use radix_engine::model::*;
 use radix_engine::transaction::*;
 use sbor::*;
 use scrypto::types::*;

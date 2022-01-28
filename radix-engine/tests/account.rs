@@ -1,4 +1,5 @@
 use radix_engine::ledger::*;
+use radix_engine::model::*;
 use radix_engine::transaction::*;
 use scrypto::prelude::*;
 

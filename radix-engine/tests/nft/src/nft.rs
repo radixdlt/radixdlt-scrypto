@@ -7,11 +7,6 @@ pub struct Sandwich {
     pub available: bool,
 }
 
-#[derive(NftData)]
-pub struct VaultContainer {
-    pub vault: Vault,
-}
-
 blueprint! {
     struct NftTest;
 
@@ -123,21 +118,5 @@ blueprint! {
             nft
         }
 
-        pub fn nft_and_vault() -> (Bucket, Bucket) {
-            let (mint_badge, mut resource_def, mut bucket) = Self::create_nft_mutable();
-
-            let nft = mint_badge.authorize(|auth| {
-                resource_def.mint_nft(
-                    Uuid::generate(),
-                    VaultContainer {
-                        vault: Vault::new(RADIX_TOKEN),
-                    },
-                    auth,
-                )
-            });
-            bucket.put(nft);
-
-            (mint_badge, bucket)
-        }
     }
 }

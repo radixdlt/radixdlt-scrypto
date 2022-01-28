@@ -9,9 +9,7 @@ compile_error!("Feature `std` and `alloc` can't be enabled at the same time.");
 pub mod engine;
 /// Radix ledger abstraction.
 pub mod ledger;
-/// Radix ledger data types.
+/// Radix Engine transaction and state models.
 pub mod model;
-/// Radix Engine transaction model.
+/// Transaction builder, validator and executor.
 pub mod transaction;
-/// Utility functions.
-pub mod utils;

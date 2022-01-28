@@ -34,9 +34,9 @@ pub enum Value {
 
     Vec(u8, Vec<Value>),
     TreeSet(u8, Vec<Value>),
-    TreeMap(u8, u8, Vec<(Value, Value)>),
+    TreeMap(u8, u8, Vec<Value>),
     HashSet(u8, Vec<Value>),
-    HashMap(u8, u8, Vec<(Value, Value)>),
+    HashMap(u8, u8, Vec<Value>),
 
     Custom(u8, Vec<u8>),
 }
@@ -174,10 +174,10 @@ pub fn encode_any(ty_ctx: Option<u8>, value: &Value, enc: &mut Encoder) {
             }
             enc.write_type(*ty_k);
             enc.write_type(*ty_v);
-            enc.write_len(elements.len());
-            for (k, v) in elements {
-                encode_any(Some(*ty_k), k, enc);
-                encode_any(Some(*ty_v), v, enc);
+            enc.write_len(elements.len() / 2);
+            for pair in elements.chunks(2) {
+                encode_any(Some(*ty_k), &pair[0], enc);
+                encode_any(Some(*ty_v), &pair[1], enc);
             }
         }
         Value::HashMap(ty_k, ty_v, elements) => {
@@ -186,10 +186,10 @@ pub fn encode_any(ty_ctx: Option<u8>, value: &Value, enc: &mut Encoder) {
             }
             enc.write_type(*ty_k);
             enc.write_type(*ty_v);
-            enc.write_len(elements.len());
-            for (k, v) in elements {
-                encode_any(Some(*ty_k), k, enc);
-                encode_any(Some(*ty_v), v, enc);
+            enc.write_len(elements.len() / 2);
+            for pair in elements.chunks(2) {
+                encode_any(Some(*ty_k), &pair[0], enc);
+                encode_any(Some(*ty_v), &pair[1], enc);
             }
         }
         // custom types
@@ -357,10 +357,8 @@ fn decode_next(ty_ctx: Option<u8>, dec: &mut Decoder) -> Result<Value, DecodeErr
             // elements
             let mut elements = Vec::new();
             for _ in 0..len {
-                elements.push((
-                    decode_next(Some(key_ty), dec)?,
-                    decode_next(Some(value_ty), dec)?,
-                ));
+                elements.push(decode_next(Some(key_ty), dec)?);
+                elements.push(decode_next(Some(value_ty), dec)?);
             }
             if ty == TYPE_TREE_MAP {
                 Ok(Value::TreeMap(key_ty, value_ty, elements))
@@ -467,31 +465,13 @@ where
             }
         },
         // collections
-        Value::Vec(_, elements) => {
+        Value::Vec(_, elements)
+        | Value::TreeSet(_, elements)
+        | Value::HashSet(_, elements)
+        | Value::TreeMap(_, _, elements)
+        | Value::HashMap(_, _, elements) => {
             for e in elements {
                 traverse_any(e, visitor)?;
-            }
-        }
-        Value::TreeSet(_, elements) => {
-            for e in elements {
-                traverse_any(e, visitor)?;
-            }
-        }
-        Value::HashSet(_, elements) => {
-            for e in elements {
-                traverse_any(e, visitor)?;
-            }
-        }
-        Value::TreeMap(_, _, elements) => {
-            for e in elements {
-                traverse_any(&e.0, visitor)?;
-                traverse_any(&e.1, visitor)?;
-            }
-        }
-        Value::HashMap(_, _, elements) => {
-            for e in elements {
-                traverse_any(&e.0, visitor)?;
-                traverse_any(&e.1, visitor)?;
             }
         }
         // custom types
@@ -650,8 +630,8 @@ mod tests {
                 Value::Vec(TYPE_U32, vec![Value::U32(1), Value::U32(2),]),
                 Value::TreeSet(TYPE_U32, vec![Value::U32(1)]),
                 Value::HashSet(TYPE_U32, vec![Value::U32(2)]),
-                Value::TreeMap(TYPE_U32, TYPE_U32, vec![(Value::U32(1), Value::U32(2)),]),
-                Value::HashMap(TYPE_U32, TYPE_U32, vec![(Value::U32(1), Value::U32(2)),])
+                Value::TreeMap(TYPE_U32, TYPE_U32, vec![Value::U32(1), Value::U32(2)]),
+                Value::HashMap(TYPE_U32, TYPE_U32, vec![Value::U32(1), Value::U32(2)])
             ])),
             value
         );
