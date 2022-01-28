@@ -78,7 +78,7 @@ impl AbiProvider for BasicAbiProvider {
         let mut proc = track.start_process(trace);
         let output: (Vec<abi::Function>, Vec<abi::Method>) = proc
             .call_abi(package_address, blueprint_name.as_ref())
-            .and_then(|rtn| scrypto_decode(&rtn).map_err(RuntimeError::InvalidData))?;
+            .and_then(|rtn| scrypto_decode(&rtn.raw).map_err(RuntimeError::AbiValidationError))?;
 
         // Return ABI
         Ok(abi::Blueprint {

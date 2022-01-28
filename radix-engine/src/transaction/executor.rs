@@ -1,5 +1,5 @@
 use scrypto::abi;
-use scrypto::args;
+use scrypto::buffer::*;
 use scrypto::rust::string::ToString;
 use scrypto::rust::vec;
 use scrypto::rust::vec::Vec;
@@ -16,12 +16,6 @@ pub struct TransactionExecutor<'l, L: Ledger> {
     ledger: &'l mut L,
     current_epoch: u64,
     nonce: u64,
-}
-
-/// Represents an error when executing the transaction.
-#[derive(Debug)]
-pub enum TransactionExecutionError {
-    InvalidTransaction(CheckTransactionError),
 }
 
 impl<'l, L: Ledger> AbiProvider for TransactionExecutor<'l, L> {
@@ -151,90 +145,102 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
             .put_package(address, Package::new(code.to_vec()));
     }
 
-    /// Executes a transaction.
+    /// This is a convenience method that validates and runs a transaction in one shot.
+    ///
+    /// You might also consider `validate()` and `execute()` in this implementation.
     pub fn run(
         &mut self,
         transaction: Transaction,
         trace: bool,
-    ) -> Result<Receipt, TransactionExecutionError> {
+    ) -> Result<Receipt, TransactionValidationError> {
+        let validated_transaction = self.validate(transaction)?;
+        let receipt = self.execute(validated_transaction, trace);
+        Ok(receipt)
+    }
+
+    pub fn validate(
+        &mut self,
+        transaction: Transaction,
+    ) -> Result<ValidatedTransaction, TransactionValidationError> {
+        validate_transaction(&transaction)
+    }
+
+    pub fn execute(&mut self, validated_transaction: ValidatedTransaction, trace: bool) -> Receipt {
         #[cfg(not(feature = "alloc"))]
         let now = std::time::Instant::now();
-
-        let check_tx = transaction
-            .check()
-            .map_err(TransactionExecutionError::InvalidTransaction)?;
 
         let mut track = Track::new(
             self.ledger,
             self.current_epoch,
             sha256(self.nonce.to_string()),
-            check_tx.signers.clone(),
+            validated_transaction.signers.clone(),
         );
         let mut proc = track.start_process(trace);
 
         let mut results = vec![];
         let mut success = true;
-        for inst in &check_tx.instructions {
+        for inst in &validated_transaction.instructions {
             let res = match inst {
-                CheckedInstruction::DeclareTempBucket => {
+                ValidatedInstruction::DeclareTempBucket => {
                     proc.declare_bucket();
                     Ok(None)
                 }
-                CheckedInstruction::DeclareTempBucketRef => {
+                ValidatedInstruction::DeclareTempBucketRef => {
                     proc.declare_bucket_ref();
                     Ok(None)
                 }
-                CheckedInstruction::TakeFromContext {
+                ValidatedInstruction::TakeFromContext {
                     amount,
                     resource_address,
                     to,
                 } => proc
                     .take_from_context(*amount, *resource_address, *to)
                     .map(|_| None),
-                CheckedInstruction::BorrowFromContext {
+                ValidatedInstruction::BorrowFromContext {
                     amount,
                     resource_address,
                     to,
                 } => proc
                     .borrow_from_context(*amount, *resource_address, *to)
                     .map(|_| None),
-                CheckedInstruction::CallFunction {
+                ValidatedInstruction::CallFunction {
                     package_address,
                     blueprint_name,
                     function,
                     args,
                 } => proc
                     .call_function(
+                        // TODO: update interface
                         *package_address,
                         blueprint_name.as_str(),
                         function.as_str(),
-                        args.iter().map(|a| a.encoded.clone()).collect(), // TODO: update RE interface
+                        args.clone(),
                     )
-                    .map(|rtn| Some(CheckedValue::from_trusted(&rtn))),
-                CheckedInstruction::CallMethod {
+                    .map(Option::Some),
+                ValidatedInstruction::CallMethod {
                     component_address,
                     method,
                     args,
                 } => proc
-                    .call_method(
-                        *component_address,
-                        method.as_str(),
-                        args.iter().map(|a| a.encoded.clone()).collect(),
-                    )
-                    .map(|rtn| Some(CheckedValue::from_trusted(&rtn))),
+                    .call_method(*component_address, method.as_str(), args.clone())
+                    .map(Option::Some),
 
-                CheckedInstruction::DropAllBucketRefs => {
+                ValidatedInstruction::DropAllBucketRefs => {
                     proc.drop_bucket_refs();
                     Ok(None)
                 }
-                CheckedInstruction::CallMethodWithAllResources {
+                ValidatedInstruction::CallMethodWithAllResources {
                     component_address,
                     method,
                 } => {
                     let buckets = proc.list_buckets();
                     if !buckets.is_empty() {
-                        proc.call_method(*component_address, method, args!(buckets))
-                            .map(|rtn| Some(CheckedValue::from_trusted(&rtn)))
+                        proc.call_method(
+                            *component_address,
+                            method,
+                            vec![validate_data(&scrypto_encode(&buckets)).unwrap()],
+                        )
+                        .map(Option::Some)
                     } else {
                         Ok(None)
                     }
@@ -247,6 +253,11 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
             }
         }
 
+        // check resource
+        let res = proc.check_resource().map(|_| None);
+        success &= res.is_ok();
+        results.push(res);
+
         // commit state updates
         if success {
             track.commit();
@@ -257,8 +268,8 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
         #[cfg(not(feature = "alloc"))]
         let execution_time = Some(now.elapsed().as_millis());
 
-        Ok(Receipt {
-            transaction: check_tx,
+        Receipt {
+            transaction: validated_transaction,
             success,
             results,
             logs: track.logs().clone(),
@@ -268,6 +279,6 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
                 Vec::new()
             },
             execution_time,
-        })
+        }
     }
 }

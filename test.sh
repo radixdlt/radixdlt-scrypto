@@ -13,6 +13,7 @@ echo "Testing with std..."
 (cd scrypto-derive; cargo test)
 (cd scrypto-tests; cargo test)
 (cd radix-engine; cargo test)
+(cd transaction-manifest; cargo test)
 
 echo "Testing with no_std..."
 (cd sbor; cargo test --no-default-features --features alloc)

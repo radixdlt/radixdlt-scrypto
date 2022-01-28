@@ -1,12 +1,9 @@
 use colored::*;
-use sbor::any::*;
-use sbor::rust::boxed::Box;
 use sbor::*;
 use scrypto::buffer::*;
 use scrypto::kernel::*;
 use scrypto::rust::borrow::ToOwned;
 use scrypto::rust::collections::*;
-use scrypto::rust::convert::TryFrom;
 use scrypto::rust::fmt;
 use scrypto::rust::format;
 use scrypto::rust::rc::Rc;
@@ -82,7 +79,7 @@ pub struct Invocation {
     package_address: Address,
     export_name: String,
     function: String,
-    args: Vec<Vec<u8>>,
+    args: Vec<ValidatedData>,
 }
 
 impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
@@ -105,14 +102,14 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         }
     }
 
-    /// Reserves a BID.
+    /// Reserves the ID; no bucket allocated atm.
     pub fn declare_bucket(&mut self) -> Bid {
         let bid = self.track.new_bid();
         self.reserved_bids.insert(bid);
         bid
     }
 
-    /// Reserves a RID.
+    /// Reserves the ID; no bucket allocated atm.
     pub fn declare_bucket_ref(&mut self) -> Rid {
         let rid = self.track.new_rid();
         self.reserved_rids.insert(rid);
@@ -273,7 +270,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
     }
 
     /// Runs the given export within this process.
-    pub fn run(&mut self, invocation: Invocation) -> Result<Vec<u8>, RuntimeError> {
+    pub fn run(&mut self, invocation: Invocation) -> Result<ValidatedData, RuntimeError> {
         #[cfg(not(feature = "alloc"))]
         let now = std::time::Instant::now();
         re_info!(
@@ -305,9 +302,10 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         // move resource based on return data
         let output = match rtn {
             RuntimeValue::I32(ptr) => {
-                let bytes = self.read_bytes(ptr)?;
-                self.process_data(&bytes, Self::move_buckets, Self::move_bucket_refs)?;
-                bytes
+                let data = validate_data(&self.read_bytes(ptr)?)
+                    .map_err(RuntimeError::DataValidationError)?;
+                self.process_call_data(&data)?;
+                data
             }
             _ => {
                 return Err(RuntimeError::InvalidReturnType);
@@ -332,7 +330,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         package_address: Address,
         blueprint_name: &str,
         function: &str,
-        args: Vec<Vec<u8>>,
+        args: Vec<ValidatedData>,
     ) -> Result<Invocation, RuntimeError> {
         Ok(Invocation {
             package_address,
@@ -347,22 +345,21 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         &mut self,
         component_address: Address,
         method: &str,
-        args: Vec<Vec<u8>>,
+        args: Vec<ValidatedData>,
     ) -> Result<Invocation, RuntimeError> {
         let component = self
             .track
             .get_component(component_address)
             .ok_or(RuntimeError::ComponentNotFound(component_address))?
             .clone();
-
-        let mut self_args = vec![scrypto_encode(&component_address)];
-        self_args.extend(args);
+        let mut args_with_self = vec![validate_data(&scrypto_encode(&component_address)).unwrap()];
+        args_with_self.extend(args);
 
         self.prepare_call_function(
             component.package_address(),
             component.blueprint_name(),
             method,
-            self_args,
+            args_with_self,
         )
     }
 
@@ -381,10 +378,10 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
     }
 
     /// Calls a function/method.
-    pub fn call(&mut self, invocation: Invocation) -> Result<Vec<u8>, RuntimeError> {
+    pub fn call(&mut self, invocation: Invocation) -> Result<ValidatedData, RuntimeError> {
         // move resource
         for arg in &invocation.args {
-            self.process_data(arg, Self::move_buckets, Self::move_bucket_refs)?;
+            self.process_call_data(arg)?;
         }
         let (buckets_out, bucket_refs_out) = self.take_moving_resources();
         let mut process = Process::new(self.depth + 1, self.trace, self.track);
@@ -421,8 +418,8 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         package_address: Address,
         blueprint_name: &str,
         function: &str,
-        args: Vec<Vec<u8>>,
-    ) -> Result<Vec<u8>, RuntimeError> {
+        args: Vec<ValidatedData>,
+    ) -> Result<ValidatedData, RuntimeError> {
         re_debug!(self, "Call function started");
         let invocation =
             self.prepare_call_function(package_address, blueprint_name, function, args)?;
@@ -436,8 +433,8 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         &mut self,
         component_address: Address,
         method: &str,
-        args: Vec<Vec<u8>>,
-    ) -> Result<Vec<u8>, RuntimeError> {
+        args: Vec<ValidatedData>,
+    ) -> Result<ValidatedData, RuntimeError> {
         re_debug!(self, "Call method started");
         let invocation = self.prepare_call_method(component_address, method, args)?;
         let result = self.call(invocation);
@@ -450,7 +447,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         &mut self,
         package_address: Address,
         blueprint_name: &str,
-    ) -> Result<Vec<u8>, RuntimeError> {
+    ) -> Result<ValidatedData, RuntimeError> {
         re_debug!(self, "Call abi started");
         let invocation = self.prepare_call_abi(package_address, blueprint_name)?;
         let result = self.call(invocation);
@@ -533,7 +530,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         self.vm
             .as_ref()
             .ok_or(RuntimeError::InterpreterNotStarted)
-            .map(|vm| vm.invocation.args.clone())
+            .map(|vm| vm.invocation.args.iter().cloned().map(|v| v.raw).collect())
     }
 
     /// Return the module ref
@@ -552,184 +549,77 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
             .map(|vm| vm.memory.clone())
     }
 
-    /// Process SBOR data by applying functions on Bid and Rid.
-    fn process_data(
-        &mut self,
-        data: &[u8],
-        bf: fn(&mut Self, Bid) -> Result<Bid, RuntimeError>,
-        rf: fn(&mut Self, Rid) -> Result<Rid, RuntimeError>,
-    ) -> Result<Vec<u8>, RuntimeError> {
-        let value = decode_any(data).map_err(RuntimeError::InvalidData)?;
-        let transformed = self.visit(value, bf, rf)?;
-
-        let mut encoder = Encoder::with_type(Vec::with_capacity(data.len() + 512));
-        encode_any(None, &transformed, &mut encoder);
-        Ok(encoder.into())
+    fn process_call_data(&mut self, validated: &ValidatedData) -> Result<(), RuntimeError> {
+        self.move_buckets(&validated.buckets)?;
+        self.move_bucket_refs(&validated.bucket_refs)?;
+        Ok(())
     }
 
-    // TODO: stack overflow
-    fn visit(
-        &mut self,
-        v: Value,
-        bf: fn(&mut Self, Bid) -> Result<Bid, RuntimeError>,
-        rf: fn(&mut Self, Rid) -> Result<Rid, RuntimeError>,
-    ) -> Result<Value, RuntimeError> {
-        match v {
-            // primitive types
-            Value::Unit
-            | Value::Bool(_)
-            | Value::I8(_)
-            | Value::I16(_)
-            | Value::I32(_)
-            | Value::I64(_)
-            | Value::I128(_)
-            | Value::U8(_)
-            | Value::U16(_)
-            | Value::U32(_)
-            | Value::U64(_)
-            | Value::U128(_)
-            | Value::String(_) => Ok(v),
-            // struct & enum
-            Value::Struct(fields) => Ok(Value::Struct(self.visit_fields(fields, bf, rf)?)),
-            Value::Enum(index, fields) => {
-                Ok(Value::Enum(index, self.visit_fields(fields, bf, rf)?))
-            }
-            // composite types
-            Value::Option(x) => match *x {
-                Some(value) => Ok(Value::Option(Box::new(Some(self.visit(value, bf, rf)?)))),
-                None => Ok(Value::Option(Box::new(None))),
-            },
-            Value::Box(value) => Ok(Value::Box(Box::new(self.visit(*value, bf, rf)?))),
-            Value::Array(ty, values) => Ok(Value::Array(ty, self.visit_vec(values, bf, rf)?)),
-            Value::Tuple(values) => Ok(Value::Tuple(self.visit_vec(values, bf, rf)?)),
-            Value::Result(x) => match *x {
-                Ok(value) => Ok(Value::Result(Box::new(Ok(self.visit(value, bf, rf)?)))),
-                Err(value) => Ok(Value::Result(Box::new(Err(self.visit(value, bf, rf)?)))),
-            },
-            // collections
-            Value::Vec(ty, values) => Ok(Value::Vec(ty, self.visit_vec(values, bf, rf)?)),
-            Value::TreeSet(ty, values) => Ok(Value::TreeSet(ty, self.visit_vec(values, bf, rf)?)),
-            Value::HashSet(ty, values) => Ok(Value::HashSet(ty, self.visit_vec(values, bf, rf)?)),
-            Value::TreeMap(ty_k, ty_v, values) => {
-                Ok(Value::TreeMap(ty_k, ty_v, self.visit_map(values, bf, rf)?))
-            }
-            Value::HashMap(ty_k, ty_v, values) => {
-                Ok(Value::HashMap(ty_k, ty_v, self.visit_map(values, bf, rf)?))
-            }
-            // custom types
-            Value::Custom(ty, data) => self.visit_custom(ty, data, bf, rf),
+    fn process_component_data(&mut self, data: &[u8]) -> Result<ValidatedData, RuntimeError> {
+        let validated = validate_data(data).map_err(RuntimeError::DataValidationError)?;
+        if !validated.buckets.is_empty() {
+            return Err(RuntimeError::BucketNotAllowed);
         }
+        if !validated.bucket_refs.is_empty() {
+            return Err(RuntimeError::BucketRefNotAllowed);
+        }
+        Ok(validated)
     }
 
-    fn visit_fields(
-        &mut self,
-        fields: Fields,
-        bf: fn(&mut Self, Bid) -> Result<Bid, RuntimeError>,
-        rf: fn(&mut Self, Rid) -> Result<Rid, RuntimeError>,
-    ) -> Result<Fields, RuntimeError> {
-        match fields {
-            Fields::Named(named) => Ok(Fields::Named(self.visit_vec(named, bf, rf)?)),
-            Fields::Unnamed(unnamed) => Ok(Fields::Unnamed(self.visit_vec(unnamed, bf, rf)?)),
-            Fields::Unit => Ok(Fields::Unit),
+    fn process_map_data(&mut self, data: &[u8]) -> Result<ValidatedData, RuntimeError> {
+        let validated = validate_data(data).map_err(RuntimeError::DataValidationError)?;
+        if !validated.buckets.is_empty() {
+            return Err(RuntimeError::BucketNotAllowed);
         }
+        if !validated.bucket_refs.is_empty() {
+            return Err(RuntimeError::BucketRefNotAllowed);
+        }
+        Ok(validated)
     }
 
-    fn visit_vec(
-        &mut self,
-        values: Vec<Value>,
-        bf: fn(&mut Self, Bid) -> Result<Bid, RuntimeError>,
-        rf: fn(&mut Self, Rid) -> Result<Rid, RuntimeError>,
-    ) -> Result<Vec<Value>, RuntimeError> {
-        let mut result = Vec::new();
-        for e in values {
-            result.push(self.visit(e, bf, rf)?);
+    fn process_nft_data(&mut self, data: &[u8]) -> Result<ValidatedData, RuntimeError> {
+        let validated = validate_data(data).map_err(RuntimeError::DataValidationError)?;
+        if !validated.buckets.is_empty() {
+            return Err(RuntimeError::BucketNotAllowed);
         }
-        Ok(result)
-    }
-
-    fn visit_map(
-        &mut self,
-        values: Vec<(Value, Value)>,
-        bf: fn(&mut Self, Bid) -> Result<Bid, RuntimeError>,
-        rf: fn(&mut Self, Rid) -> Result<Rid, RuntimeError>,
-    ) -> Result<Vec<(Value, Value)>, RuntimeError> {
-        let mut result = Vec::new();
-        for (k, v) in values {
-            result.push((self.visit(k, bf, rf)?, self.visit(v, bf, rf)?));
+        if !validated.bucket_refs.is_empty() {
+            return Err(RuntimeError::BucketRefNotAllowed);
         }
-        Ok(result)
-    }
-
-    fn visit_custom(
-        &mut self,
-        ty: u8,
-        data: Vec<u8>,
-        bf: fn(&mut Self, Bid) -> Result<Bid, RuntimeError>,
-        rf: fn(&mut Self, Rid) -> Result<Rid, RuntimeError>,
-    ) -> Result<Value, RuntimeError> {
-        match ty {
-            SCRYPTO_TYPE_BID => {
-                let bid = bf(
-                    self,
-                    Bid::try_from(data.as_slice()).map_err(|_| {
-                        RuntimeError::InvalidData(DecodeError::InvalidCustomData(ty))
-                    })?,
-                )?;
-                Ok(Value::Custom(ty, bid.to_vec()))
-            }
-            SCRYPTO_TYPE_RID => {
-                let rid = rf(
-                    self,
-                    Rid::try_from(data.as_slice()).map_err(|_| {
-                        RuntimeError::InvalidData(DecodeError::InvalidCustomData(ty))
-                    })?,
-                )?;
-                Ok(Value::Custom(ty, rid.to_vec()))
-            }
-            SCRYPTO_TYPE_DECIMAL
-            | SCRYPTO_TYPE_BIG_DECIMAL
-            | SCRYPTO_TYPE_ADDRESS
-            | SCRYPTO_TYPE_H256
-            | SCRYPTO_TYPE_MID
-            | SCRYPTO_TYPE_VID => Ok(Value::Custom(ty, data)),
-            _ => Err(RuntimeError::InvalidData(DecodeError::InvalidCustomData(
-                ty,
-            ))),
+        if !validated.lazy_maps.is_empty() {
+            return Err(RuntimeError::LazyMapNotAllowed);
         }
+        if !validated.vaults.is_empty() {
+            return Err(RuntimeError::VaultNotAllowed);
+        }
+        Ok(validated)
     }
 
     /// Remove transient buckets from this process
-    fn move_buckets(&mut self, bid: Bid) -> Result<Bid, RuntimeError> {
-        let bucket = self
-            .buckets
-            .remove(&bid)
-            .or_else(|| self.temp_buckets.remove(&bid))
-            .ok_or(RuntimeError::BucketNotFound(bid))?;
-        re_debug!(self, "Moving bucket: {:?}, {:?}", bid, bucket);
-        self.moving_buckets.insert(bid, bucket);
-        Ok(bid)
+    fn move_buckets(&mut self, buckets: &[Bid]) -> Result<(), RuntimeError> {
+        for bid in buckets {
+            let bucket = self
+                .buckets
+                .remove(bid)
+                .or_else(|| self.temp_buckets.remove(bid))
+                .ok_or(RuntimeError::BucketNotFound(*bid))?;
+            re_debug!(self, "Moving bucket: {:?}, {:?}", bid, bucket);
+            self.moving_buckets.insert(*bid, bucket);
+        }
+        Ok(())
     }
 
     /// Remove transient buckets from this process
-    fn move_bucket_refs(&mut self, rid: Rid) -> Result<Rid, RuntimeError> {
-        let bucket_ref = self
-            .bucket_refs
-            .remove(&rid)
-            .or_else(|| self.temp_bucket_refs.remove(&rid))
-            .ok_or(RuntimeError::BucketRefNotFound(rid))?;
-        re_debug!(self, "Moving bucket ref: {:?}, {:?}", rid, bucket_ref);
-        self.moving_bucket_refs.insert(rid, bucket_ref);
-        Ok(rid)
-    }
-
-    /// Reject buckets
-    fn reject_buckets(&mut self, _: Bid) -> Result<Bid, RuntimeError> {
-        Err(RuntimeError::BucketNotAllowed)
-    }
-
-    /// Reject bucket refs
-    fn reject_bucket_refs(&mut self, _: Rid) -> Result<Rid, RuntimeError> {
-        Err(RuntimeError::BucketRefNotAllowed)
+    fn move_bucket_refs(&mut self, bucket_refs: &[Rid]) -> Result<(), RuntimeError> {
+        for rid in bucket_refs {
+            let bucket_ref = self
+                .bucket_refs
+                .remove(rid)
+                .or_else(|| self.temp_bucket_refs.remove(rid))
+                .ok_or(RuntimeError::BucketRefNotFound(*rid))?;
+            re_debug!(self, "Moving bucket ref: {:?}, {:?}", rid, bucket_ref);
+            self.moving_bucket_refs.insert(*rid, bucket_ref);
+        }
+        Ok(())
     }
 
     /// Send a byte array to wasm instance.
@@ -883,7 +773,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         if self.track.get_package(package_address).is_some() {
             return Err(RuntimeError::PackageAlreadyExists(package_address));
         }
-        validate_module(&input.code)?;
+        validate_module(&input.code).map_err(RuntimeError::WasmValidationError)?;
 
         re_debug!(self, "New package: {:?}", package_address);
         self.track
@@ -898,25 +788,30 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
     ) -> Result<CallFunctionOutput, RuntimeError> {
         Self::expect_package_address(input.package_address)?;
 
+        let mut validated_args = Vec::new();
+        for arg in input.args {
+            validated_args.push(validate_data(&arg).map_err(RuntimeError::DataValidationError)?);
+        }
+
         re_debug!(
             self,
             "CALL started: package = {:?}, blueprint = {:?}, function = {:?}, args = {:?}",
             input.package_address,
             input.blueprint_name,
             input.function,
-            input.args
+            validated_args
         );
 
         let invocation = self.prepare_call_function(
             input.package_address,
             &input.blueprint_name,
             input.function.as_str(),
-            input.args,
+            validated_args,
         )?;
         let result = self.call(invocation);
 
         re_debug!(self, "CALL finished");
-        Ok(CallFunctionOutput { rtn: result? })
+        Ok(CallFunctionOutput { rtn: result?.raw })
     }
 
     fn handle_call_method(
@@ -925,20 +820,28 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
     ) -> Result<CallMethodOutput, RuntimeError> {
         Self::expect_component_address(input.component_address)?;
 
+        let mut validated_args = Vec::new();
+        for arg in input.args {
+            validated_args.push(validate_data(&arg).map_err(RuntimeError::DataValidationError)?);
+        }
+
         re_debug!(
             self,
             "CALL started: component = {:?}, method = {:?}, args = {:?}",
             input.component_address,
             input.method,
-            input.args
+            validated_args
         );
 
-        let invocation =
-            self.prepare_call_method(input.component_address, input.method.as_str(), input.args)?;
+        let invocation = self.prepare_call_method(
+            input.component_address,
+            input.method.as_str(),
+            validated_args,
+        )?;
         let result = self.call(invocation);
 
         re_debug!(self, "CALL finished");
-        Ok(CallMethodOutput { rtn: result? })
+        Ok(CallMethodOutput { rtn: result?.raw })
     }
 
     fn handle_create_component(
@@ -951,16 +854,15 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
             return Err(RuntimeError::ComponentAlreadyExists(component_address));
         }
 
-        let new_state =
-            self.process_data(&input.state, Self::reject_buckets, Self::reject_bucket_refs)?;
+        let data = self.process_component_data(&input.state)?;
         re_debug!(
             self,
             "New component: address = {:?}, state = {:?}",
             component_address,
-            new_state
+            data
         );
 
-        let component = Component::new(self.package()?, input.blueprint_name, new_state);
+        let component = Component::new(self.package()?, input.blueprint_name, data.raw);
         self.track.put_component(component_address, component);
 
         Ok(CreateComponentOutput { component_address })
@@ -1011,9 +913,8 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         Self::expect_component_address(input.component_address)?;
         let actor = self.authenticate()?;
 
-        let new_state =
-            self.process_data(&input.state, Self::reject_buckets, Self::reject_bucket_refs)?;
-        re_debug!(self, "Transformed state: {:?}", new_state);
+        let state = self.process_component_data(&input.state)?;
+        re_debug!(self, "New component state: {:?}", state);
 
         let component = self
             .track
@@ -1021,7 +922,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
             .ok_or(RuntimeError::ComponentNotFound(input.component_address))?;
 
         component
-            .set_state(new_state, actor)
+            .set_state(state.raw, actor)
             .map_err(RuntimeError::ComponentError)?;
 
         Ok(PutComponentStateOutput {})
@@ -1067,13 +968,9 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         input: PutLazyMapEntryInput,
     ) -> Result<PutLazyMapEntryOutput, RuntimeError> {
         let actor = self.authenticate()?;
-
-        let new_key =
-            self.process_data(&input.key, Self::reject_buckets, Self::reject_bucket_refs)?;
-        re_debug!(self, "Transformed key: {:?}", new_key);
-        let new_value =
-            self.process_data(&input.value, Self::reject_buckets, Self::reject_bucket_refs)?;
-        re_debug!(self, "Transformed value: {:?}", new_value);
+        let key = self.process_map_data(&input.key)?;
+        let value = self.process_map_data(&input.value)?;
+        re_debug!(self, "Map entry: {} => {}", key, value);
 
         let lazy_map = self
             .track
@@ -1081,7 +978,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
             .ok_or(RuntimeError::LazyMapNotFound(input.mid))?;
 
         lazy_map
-            .set_entry(new_key, new_value, actor)
+            .set_entry(key.raw, value.raw, actor)
             .map_err(RuntimeError::LazyMapError)?;
 
         Ok(PutLazyMapEntryOutput {})
@@ -1101,15 +998,14 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
                     if self.track.get_nft(resource_address, id).is_some() {
                         return Err(RuntimeError::NftAlreadyExists(resource_address, id));
                     }
-                    let immutable_data =
-                        self.process_data(&data.0, Self::reject_buckets, Self::reject_bucket_refs)?;
-                    let mutable_data =
-                        self.process_data(&data.1, Self::reject_buckets, Self::reject_bucket_refs)?;
+
+                    let immutable_data = self.process_nft_data(&data.0)?;
+                    let mutable_data = self.process_nft_data(&data.1)?;
 
                     self.track.put_nft(
                         resource_address,
                         id,
-                        Nft::new(immutable_data, mutable_data),
+                        Nft::new(immutable_data.raw, mutable_data.raw),
                     );
                     ids.insert(id);
                 }
@@ -1342,15 +1238,11 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
             .check_update_nft_mutable_data_auth(actor)
             .map_err(RuntimeError::ResourceDefError)?;
         // update state
-        let mutable_data = self.process_data(
-            &input.new_mutable_data,
-            Self::reject_buckets,
-            Self::reject_bucket_refs,
-        )?;
+        let data = self.process_nft_data(&input.new_mutable_data)?;
         self.track
             .get_nft_mut(input.resource_address, input.id)
             .ok_or(RuntimeError::NftNotFound(input.resource_address, input.id))?
-            .set_mutable_data(mutable_data)
+            .set_mutable_data(data.raw)
             .map_err(RuntimeError::NftError)?;
 
         Ok(UpdateNftMutableDataOutput {})

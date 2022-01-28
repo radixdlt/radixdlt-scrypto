@@ -336,7 +336,6 @@ fn test_nft() {
             vec![],
             Some(account),
         )
-        .call_function(package, "NftTest", "nft_and_vault", vec![], Some(account))
         .drop_all_bucket_refs()
         .call_method_with_all_resources(account, "deposit_batch")
         .build(vec![key])
