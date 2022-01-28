@@ -145,28 +145,41 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
             .put_package(address, Package::new(code.to_vec()));
     }
 
-    /// Executes a transaction.
+    /// This is a convenience method that validates and runs a transaction in one shot.
+    ///
+    /// You might also consider `validate()` and `execute()` in this implementation.
     pub fn run(
         &mut self,
         transaction: Transaction,
         trace: bool,
     ) -> Result<Receipt, TransactionValidationError> {
+        let validated_transaction = self.validate(transaction)?;
+        let receipt = self.execute(validated_transaction, trace);
+        Ok(receipt)
+    }
+
+    pub fn validate(
+        &mut self,
+        transaction: Transaction,
+    ) -> Result<ValidatedTransaction, TransactionValidationError> {
+        validate_transaction(&transaction)
+    }
+
+    pub fn execute(&mut self, validated_transaction: ValidatedTransaction, trace: bool) -> Receipt {
         #[cfg(not(feature = "alloc"))]
         let now = std::time::Instant::now();
-
-        let transaction_validated = validate_transaction(&transaction)?;
 
         let mut track = Track::new(
             self.ledger,
             self.current_epoch,
             sha256(self.nonce.to_string()),
-            transaction_validated.signers.clone(),
+            validated_transaction.signers.clone(),
         );
         let mut proc = track.start_process(trace);
 
         let mut results = vec![];
         let mut success = true;
-        for inst in &transaction_validated.instructions {
+        for inst in &validated_transaction.instructions {
             let res = match inst {
                 ValidatedInstruction::DeclareTempBucket => {
                     proc.declare_bucket();
@@ -255,8 +268,8 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
         #[cfg(not(feature = "alloc"))]
         let execution_time = Some(now.elapsed().as_millis());
 
-        Ok(Receipt {
-            transaction: transaction_validated,
+        Receipt {
+            transaction: validated_transaction,
             success,
             results,
             logs: track.logs().clone(),
@@ -266,6 +279,6 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
                 Vec::new()
             },
             execution_time,
-        })
+        }
     }
 }

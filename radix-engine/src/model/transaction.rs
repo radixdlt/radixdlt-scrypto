@@ -3,13 +3,13 @@ use scrypto::rust::string::String;
 use scrypto::rust::vec::Vec;
 use scrypto::types::*;
 
-/// A transaction consists a sequence of instructions.
+/// Represents an unvalidated transaction.
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
 pub struct Transaction {
     pub instructions: Vec<Instruction>,
 }
 
-/// Represents an instruction in transaction
+/// Represents an unvalidated instruction in transaction
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
 pub enum Instruction {
     /// Declares a temporary bucket for later use.
