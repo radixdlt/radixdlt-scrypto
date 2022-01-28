@@ -106,7 +106,7 @@ blueprint! {
             .instantiate()
         }
 
-        pub fn buy_special_card(&mut self, id: u128, payment: Bucket) -> (Bucket, Bucket) {
+        pub fn buy_special_card(&mut self, id: u128, mut payment: Bucket) -> (Bucket, Bucket) {
             // Take our price out of the payment bucket
             let price = self.special_card_prices.remove(&id).unwrap();
             self.collected_xrd.put(payment.take(price));
@@ -118,7 +118,7 @@ blueprint! {
             (nft_bucket, payment)
         }
 
-        pub fn buy_random_card(&mut self, payment: Bucket) -> (Bucket, Bucket) {
+        pub fn buy_random_card(&mut self, mut payment: Bucket) -> (Bucket, Bucket) {
             // Take our price out of the payment bucket
             self.collected_xrd.put(payment.take(self.random_card_price));
 
@@ -139,7 +139,7 @@ blueprint! {
             (nft_bucket, payment)
         }
 
-        pub fn upgrade_my_card(&self, nft_bucket: Bucket) -> Bucket {
+        pub fn upgrade_my_card(&mut self, mut nft_bucket: Bucket) -> Bucket {
             assert!(
                 nft_bucket.amount() == 1.into(),
                 "We can upgrade only one card each time"

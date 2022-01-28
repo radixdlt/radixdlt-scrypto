@@ -52,7 +52,7 @@ blueprint! {
                 .no_initial_supply();
 
             // Currently, Scrypto requires manual assignment of NFT IDs
-            let ticket_bucket = Bucket::new(my_nft_def);
+            let mut ticket_bucket = Bucket::new(my_nft_def);
             let mut manual_id = 1;
 
             // Mint the Luxury seat tokens.  These seats have an assigned seat number
@@ -117,7 +117,7 @@ blueprint! {
         }
 
         /// Passing an NFT into this function will switch it from the default Home team prediction to an Away team prediction
-        fn switch_nft_prediction(&self, nft_bucket: Bucket) -> Bucket {
+        fn switch_nft_prediction(&mut self, mut nft_bucket: Bucket) -> Bucket {
             // First, get the current data and change it to the desired state locally
             let mut nft_data: Ticket = nft_bucket.get_nft_data(nft_bucket.get_nft_id());
             nft_data.prediction = Team::Away;
@@ -132,7 +132,7 @@ blueprint! {
         }
 
         /// Purchases a Field level ticket, switching the prediction if appropriate, and returns it along with any change
-        pub fn buy_field_ticket(&mut self, will_home_team_win: bool, payment: Bucket) -> (Bucket, Bucket) {
+        pub fn buy_field_ticket(&mut self, will_home_team_win: bool, mut payment: Bucket) -> (Bucket, Bucket) {
             self.collected_xrd.put(payment.take(self.price_field));
             let nft_bucket = self.get_ticket(Section::Field, None);
             if !will_home_team_win {
@@ -144,7 +144,7 @@ blueprint! {
         }
 
         /// Purchases a Luxury ticket with a specific desired seat, switching the prediction if appropriate, and returns it along with any change
-        pub fn buy_luxury_ticket(&mut self, seat: String, will_home_team_win: bool, payment: Bucket) -> (Bucket, Bucket) {
+        pub fn buy_luxury_ticket(&mut self, seat: String, will_home_team_win: bool, mut payment: Bucket) -> (Bucket, Bucket) {
             self.collected_xrd.put(payment.take(self.price_luxury));
             let nft_bucket = self.get_ticket(Section::Luxury, Some(seat));
             if !will_home_team_win {

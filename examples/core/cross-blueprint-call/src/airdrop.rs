@@ -21,7 +21,7 @@ blueprint! {
             .instantiate()
         }
 
-        pub fn free_token(&self) -> Bucket {
+        pub fn free_token(&mut self) -> Bucket {
             // Take 1 FreeToken and return
             self.tokens.take(1)
         }

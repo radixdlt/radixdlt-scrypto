@@ -43,7 +43,7 @@ blueprint! {
             let lp_mint_badge = ResourceBuilder::new_fungible(DIVISIBILITY_NONE)
                 .metadata("name", "LP Token Mint Auth")
                 .initial_supply_fungible(1);
-            let lp_resource_def = ResourceBuilder::new_fungible(DIVISIBILITY_MAXIMUM)
+            let mut lp_resource_def = ResourceBuilder::new_fungible(DIVISIBILITY_MAXIMUM)
                 .metadata("symbol", lp_symbol)
                 .metadata("name", lp_name)
                 .metadata("url", lp_url)
@@ -72,7 +72,7 @@ blueprint! {
 
         /// Adds liquidity to this pool and return the LP tokens representing pool shares
         /// along with any remainder.
-        pub fn add_liquidity(&self, a_tokens: Bucket, b_tokens: Bucket) -> (Bucket, Bucket) {
+        pub fn add_liquidity(&mut self, mut a_tokens: Bucket, mut b_tokens: Bucket) -> (Bucket, Bucket) {
             // Differentiate LP calculation based on whether pool is empty or not.
             let (supply_to_mint, remainder) = if self.lp_resource_def.total_supply() == 0.into() {
                 // Set initial LP tokens based on previous LP per K ratio.
@@ -115,7 +115,7 @@ blueprint! {
         }
 
         /// Removes liquidity from this pool.
-        pub fn remove_liquidity(&self, lp_tokens: Bucket) -> (Bucket, Bucket) {
+        pub fn remove_liquidity(&mut self, lp_tokens: Bucket) -> (Bucket, Bucket) {
             assert!(
                 self.lp_resource_def == lp_tokens.resource_def(),
                 "Wrong token type passed in"

@@ -186,14 +186,14 @@ blueprint! {
         /// Deposits SNX into my staking account
         pub fn stake(&mut self, user_auth: BucketRef, stake_in_snx: Bucket) {
             let user_id = Self::get_user_id(user_auth);
-            let user = self.get_user(user_id, true);
+            let mut user = self.get_user(user_id, true);
             user.snx.put(stake_in_snx);
         }
 
         /// Withdraws SNX from my staking account.
         pub fn unstake(&mut self, user_auth: BucketRef, amount: Decimal) -> Bucket {
             let user_id = Self::get_user_id(user_auth);
-            let user = self.get_user(user_id, false);
+            let mut user = self.get_user(user_id, false);
 
             let tokens = user.snx.take(amount);
             user.check_collateralization_ratio(
@@ -208,9 +208,9 @@ blueprint! {
         /// Mints synthetics tokens
         pub fn mint(&mut self, user_auth: BucketRef, amount: Decimal, symbol: String) -> Bucket {
             let user_id = Self::get_user_id(user_auth);
-            let user = self.get_user(user_id, false);
+            let mut user = self.get_user(user_id, false);
 
-            let synth = self.synthetics.get(&symbol).unwrap();
+            let mut synth = self.synthetics.get(&symbol).unwrap().clone();
             let global_debt = self.get_total_global_debt();
             let new_debt = self.get_asset_price(synth.asset_address) * amount;
 
@@ -242,7 +242,7 @@ blueprint! {
         /// Burns synthetic tokens
         pub fn burn(&mut self, user_auth: BucketRef, bucket: Bucket) {
             let user_id = Self::get_user_id(user_auth);
-            let user = self.get_user(user_id, false);
+            let mut user = self.get_user(user_id, false);
 
             let synth = self
                 .synthetics

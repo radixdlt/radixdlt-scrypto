@@ -24,12 +24,12 @@ blueprint! {
         }
 
         #[auth(admin)]
-        pub fn pump(&self, xrd: Bucket) {
+        pub fn pump(&mut self, xrd: Bucket) {
             self.reserves.put(xrd);
         }
 
         #[auth(admin, user)]
-        pub fn airdrop(&self) -> Bucket {
+        pub fn airdrop(&mut self) -> Bucket {
             self.reserves.take(1)
         }
 
@@ -82,7 +82,7 @@ fn test_simple_auth() {
             [
                 {
                     "name": "pump",
-                    "mutability": "Immutable",
+                    "mutability": "Mutable",
                     "inputs": [
                         {
                             "type": "Custom",
@@ -101,7 +101,7 @@ fn test_simple_auth() {
                 },
                 {
                     "name": "airdrop",
-                    "mutability": "Immutable",
+                    "mutability": "Mutable",
                     "inputs": [
                         {
                             "type": "Custom",

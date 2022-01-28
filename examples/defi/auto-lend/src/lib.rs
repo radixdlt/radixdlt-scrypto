@@ -122,7 +122,7 @@ blueprint! {
         }
 
         /// Repays a loan, partially or in full.
-        pub fn repay(&mut self, user_auth: BucketRef, repaid: Bucket) -> Bucket {
+        pub fn repay(&mut self, user_auth: BucketRef, mut repaid: Bucket) -> Bucket {
             let user_id = Self::get_user_id(user_auth);
 
             // Update user state

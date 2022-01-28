@@ -29,7 +29,7 @@ Documentation: https://docs.radixdlt.com/main/scrypto/introduction.html
     ```
 4. Install simulator
     ```
-    git clone git@github.com:radixdlt/radixdlt-scrypto.git
+    git clone https://github.com/radixdlt/radixdlt-scrypto.git
     cd radixdlt-scrypto
     cargo install --path ./simulator
     ```

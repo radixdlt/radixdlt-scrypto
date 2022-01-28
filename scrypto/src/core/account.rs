@@ -46,7 +46,7 @@ impl Account {
     }
 
     /// Deposits resource to this account.
-    pub fn deposit(&self, bucket: Bucket) {
+    pub fn deposit(&mut self, bucket: Bucket) {
         let args = vec![scrypto_encode(&bucket)];
         call_method(self.address(), "deposit", args);
     }

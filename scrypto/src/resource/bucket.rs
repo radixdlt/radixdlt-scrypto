@@ -38,7 +38,7 @@ impl Bucket {
     }
 
     /// Puts resources from another bucket into this bucket.
-    pub fn put(&self, other: Self) {
+    pub fn put(&mut self, other: Self) {
         let input = PutIntoBucketInput {
             bid: self.bid,
             other: other.bid,
@@ -47,7 +47,7 @@ impl Bucket {
     }
 
     /// Takes some amount of resources from this bucket.
-    pub fn take<A: Into<Decimal>>(&self, amount: A) -> Self {
+    pub fn take<A: Into<Decimal>>(&mut self, amount: A) -> Self {
         let input = TakeFromBucketInput {
             bid: self.bid,
             amount: amount.into(),
@@ -111,7 +111,7 @@ impl Bucket {
     ///
     /// # Panics
     /// Panics if this is not an NFT bucket or the specified NFT is not found.
-    pub fn take_nft(&self, id: u128) -> Bucket {
+    pub fn take_nft(&mut self, id: u128) -> Bucket {
         let input = TakeNftFromBucketInput { bid: self.bid, id };
         let output: TakeNftFromBucketOutput = call_kernel(TAKE_NFT_FROM_BUCKET, input);
 
@@ -163,7 +163,7 @@ impl Bucket {
     ///
     /// # Panics
     /// Panics if this is not an NFT bucket or the specified NFT is not found.
-    pub fn update_nft_data<T: NftData>(&self, id: u128, new_data: T, auth: BucketRef) {
+    pub fn update_nft_data<T: NftData>(&mut self, id: u128, new_data: T, auth: BucketRef) {
         self.resource_def().update_nft_data(id, new_data, auth)
     }
 }

@@ -491,7 +491,7 @@ blueprint! {
             asset_symbol: String,
             asset_address: Address,
             initial_shares: Decimal,
-            initial_xrd: Bucket,
+            mut initial_xrd: Bucket,
             snx_address: Address,
             usd_address: Address,
         ) -> (Bucket, Component) {
@@ -537,7 +537,7 @@ blueprint! {
             );
 
             debug!("Mint initial shares");
-            let mutual_farm_share_resource_def = ResourceBuilder::new_fungible(DIVISIBILITY_MAXIMUM)
+            let mut mutual_farm_share_resource_def = ResourceBuilder::new_fungible(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "MutualFarm share")
                 .flags(MINTABLE | BURNABLE)
                 .badge(identity_badge_address, MAY_MINT | MAY_BURN)
@@ -566,7 +566,7 @@ blueprint! {
             (shares, component)
         }
 
-        pub fn deposit(&mut self, xrd: Bucket) -> (Bucket, Bucket) {
+        pub fn deposit(&mut self, mut xrd: Bucket) -> (Bucket, Bucket) {
             debug!("Fetch price info from oracle");
             let xrd_usd_price = self
                 .price_oracle

@@ -40,7 +40,7 @@ blueprint! {
             .instantiate()
         }
 
-        pub fn buy_ticket(&mut self, payment: Bucket) -> (Bucket, Bucket) {
+        pub fn buy_ticket(&mut self, mut payment: Bucket) -> (Bucket, Bucket) {
             // Take our price out of the payment bucket
             self.collected_xrd.put(payment.take(self.ticket_price));
 
@@ -51,7 +51,7 @@ blueprint! {
             (ticket, payment)
         }
 
-        pub fn buy_ticket_by_id(&mut self, id: u128, payment: Bucket) -> (Bucket, Bucket) {
+        pub fn buy_ticket_by_id(&mut self, id: u128, mut payment: Bucket) -> (Bucket, Bucket) {
             // Take our price out of the payment bucket
             self.collected_xrd.put(payment.take(self.ticket_price));
 

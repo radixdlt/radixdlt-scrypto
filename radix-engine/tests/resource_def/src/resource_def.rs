@@ -15,7 +15,7 @@ blueprint! {
         }
 
         pub fn create_fungible_should_fail() -> (Bucket, Bucket) {
-            let bucket = ResourceBuilder::new_fungible(DIVISIBILITY_NONE).initial_supply_fungible(1);
+            let mut bucket = ResourceBuilder::new_fungible(DIVISIBILITY_NONE).initial_supply_fungible(1);
             (bucket.take(Decimal::from_str("0.1").unwrap()), bucket)
         }
 
@@ -31,7 +31,7 @@ blueprint! {
         }
 
         pub fn burn() -> Bucket {
-            let (badge, resource_def) = Self::create_fungible();
+            let (badge, mut resource_def) = Self::create_fungible();
             let bucket = resource_def.mint(1, badge.present());
             resource_def.burn_with_auth(bucket, badge.present());
             badge
@@ -39,7 +39,7 @@ blueprint! {
 
         pub fn update_feature_flags() -> Bucket {
             let badge = ResourceBuilder::new_fungible(DIVISIBILITY_NONE).initial_supply_fungible(1);
-            let token_resource_def = ResourceBuilder::new_fungible(DIVISIBILITY_MAXIMUM)
+            let mut token_resource_def = ResourceBuilder::new_fungible(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "TestToken")
                 .mutable_flags(MINTABLE)
                 .badge(
@@ -65,7 +65,7 @@ blueprint! {
 
         pub fn update_feature_flags_should_fail() -> Bucket {
             let badge = ResourceBuilder::new_fungible(DIVISIBILITY_NONE).initial_supply_fungible(1);
-            let token_resource_def = ResourceBuilder::new_fungible(DIVISIBILITY_MAXIMUM)
+            let mut token_resource_def = ResourceBuilder::new_fungible(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "TestToken")
                 .badge(
                     badge.resource_address(),
@@ -79,7 +79,7 @@ blueprint! {
 
         pub fn update_resource_metadata() -> Bucket {
             let badge = ResourceBuilder::new_fungible(DIVISIBILITY_NONE).initial_supply_fungible(1);
-            let token_resource_def = ResourceBuilder::new_fungible(DIVISIBILITY_MAXIMUM)
+            let mut token_resource_def = ResourceBuilder::new_fungible(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "TestToken")
                 .flags(SHARED_METADATA_MUTABLE)
                 .badge(badge.resource_address(), MAY_CHANGE_SHARED_METADATA)
