@@ -20,7 +20,7 @@ fn test_proxy_1() {
     // Test the `new` function.
     let transaction1 = TransactionBuilder::new(&executor)
         .call_function(package, "Proxy1", "new", vec![], None)
-        .build(vec![key])
+        .build(vec![])
         .unwrap();
     let receipt1 = executor.run(transaction1, true).unwrap();
     println!("{:?}\n", receipt1);
@@ -57,7 +57,7 @@ fn test_proxy_2() {
     // Test the `new` function.
     let transaction1 = TransactionBuilder::new(&executor)
         .call_function(package, "Proxy2", "new", vec![], None)
-        .build(vec![key])
+        .build(vec![])
         .unwrap();
     let receipt1 = executor.run(transaction1, true).unwrap();
     println!("{:?}\n", receipt1);

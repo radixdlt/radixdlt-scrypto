@@ -95,20 +95,38 @@ jobs:
     - name: Build hello-nft
       run: cargo build --target wasm32-unknown-unknown --release
       working-directory: examples/core/hello-nft
+    - name: Run hello-nft test
+      run: cargo test --release
+      working-directory: examples/core/hello-nft
     - name: Build hello-world
       run: cargo build --target wasm32-unknown-unknown --release
+      working-directory: examples/core/hello-world
+    - name: Run hello-world test
+      run: cargo test --release
       working-directory: examples/core/hello-world
     - name: Build cross-blueprint-call
       run: cargo build --target wasm32-unknown-unknown --release
       working-directory: examples/core/cross-blueprint-call
+    - name: Run cross-blueprint-call test
+      run: cargo test --release
+      working-directory: examples/core/cross-blueprint-call
     - name: Build flat-admin
       run: cargo build --target wasm32-unknown-unknown --release
+      working-directory: examples/core/flat-admin
+    - name: Run flat-admin test
+      run: cargo test --release
       working-directory: examples/core/flat-admin
     - name: Build managed-access
       run: cargo build --target wasm32-unknown-unknown --release
       working-directory: examples/core/managed-access
+    - name: Run managed-access test
+      run: cargo test --release
+      working-directory: examples/core/managed-access
     - name: Build gumball-machine
       run: cargo build --target wasm32-unknown-unknown --release
+      working-directory: examples/core/gumball-machine
+    - name: Run gumball-machine test
+      run: cargo test --release
       working-directory: examples/core/gumball-machine
     - name: Build no-std-lib
       run: cargo build --target wasm32-unknown-unknown --release
