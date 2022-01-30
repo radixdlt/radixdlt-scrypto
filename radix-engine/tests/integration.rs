@@ -38,7 +38,7 @@ fn test_package() {
         .build(vec![])
         .unwrap();
     let receipt1 = executor.run(transaction1).unwrap();
-    assert!(receipt1.error.is_none());
+    assert!(receipt1.result.is_ok());
 }
 
 #[test]
@@ -54,7 +54,7 @@ fn test_context() {
         .build(vec![])
         .unwrap();
     let receipt1 = executor.run(transaction1).unwrap();
-    assert!(receipt1.error.is_none());
+    assert!(receipt1.result.is_ok());
 }
 
 #[test]
@@ -77,7 +77,7 @@ fn test_component() {
         .build(vec![])
         .unwrap();
     let receipt1 = executor.run(transaction1).unwrap();
-    assert!(receipt1.error.is_none());
+    assert!(receipt1.result.is_ok());
 
     // Find the component address from receipt
     let component = receipt1.component(0).unwrap();
@@ -97,7 +97,7 @@ fn test_component() {
         .build(vec![key])
         .unwrap();
     let receipt2 = executor.run(transaction2).unwrap();
-    assert!(receipt2.error.is_none());
+    assert!(receipt2.result.is_ok());
 }
 
 #[test]
@@ -119,7 +119,7 @@ fn test_lazy_map() {
         .build(vec![])
         .unwrap();
     let receipt = executor.run(transaction).unwrap();
-    assert!(receipt.error.is_none());
+    assert!(receipt.result.is_ok());
 }
 
 #[test]
@@ -159,7 +159,7 @@ fn test_resource_def() {
         .unwrap();
     let receipt = executor.run(transaction).unwrap();
     println!("{:?}", receipt);
-    assert!(receipt.error.is_none());
+    assert!(receipt.result.is_ok());
 
     let transaction = TransactionBuilder::new(&executor)
         .call_function(
@@ -174,7 +174,7 @@ fn test_resource_def() {
         .unwrap();
     let receipt = executor.run(transaction).unwrap();
     println!("{:?}", receipt);
-    assert!(!receipt.error.is_none());
+    assert!(!receipt.result.is_ok());
 
     let transaction = TransactionBuilder::new(&executor)
         .call_function(
@@ -189,7 +189,7 @@ fn test_resource_def() {
         .unwrap();
     let receipt = executor.run(transaction).unwrap();
     println!("{:?}", receipt);
-    assert!(!receipt.error.is_none());
+    assert!(!receipt.result.is_ok());
 }
 
 #[test]
@@ -224,7 +224,7 @@ fn test_bucket() {
         .build(vec![key])
         .unwrap();
     let receipt = executor.run(transaction).unwrap();
-    assert!(receipt.error.is_none());
+    assert!(receipt.result.is_ok());
 }
 
 #[test]
@@ -244,7 +244,7 @@ fn test_badge() {
         .build(vec![key])
         .unwrap();
     let receipt = executor.run(transaction).unwrap();
-    assert!(receipt.error.is_none());
+    assert!(receipt.result.is_ok());
 }
 
 #[test]
@@ -268,7 +268,7 @@ fn test_call() {
         .build(vec![key])
         .unwrap();
     let receipt = executor.run(transaction).unwrap();
-    assert!(receipt.error.is_none());
+    assert!(receipt.result.is_ok());
 }
 
 #[test]
@@ -334,5 +334,5 @@ fn test_nft() {
         .unwrap();
     let receipt = executor.run(transaction).unwrap();
     println!("{:?}", receipt);
-    assert!(receipt.error.is_none());
+    assert!(receipt.result.is_ok());
 }

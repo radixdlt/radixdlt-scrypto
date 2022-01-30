@@ -27,7 +27,7 @@ fn bench_transfer(b: &mut Bencher) {
 
     b.iter(|| {
         let receipt = executor.run(transaction.clone()).unwrap();
-        assert!(receipt.error.is_none());
+        assert!(receipt.result.is_ok());
     });
 }
 

@@ -19,7 +19,7 @@ fn test_create_additional_admin() {
         .unwrap();
     let receipt1 = executor.run(transaction1).unwrap();
     println!("{:?}\n", receipt1);
-    assert!(receipt1.error.is_none());
+    assert!(receipt1.result.is_ok());
 
     // Test the `create_additional_admin` method.
     let flat_admin = receipt1.component(0).unwrap();
@@ -36,5 +36,5 @@ fn test_create_additional_admin() {
         .unwrap();
     let receipt2 = executor.run(transaction2).unwrap();
     println!("{:?}\n", receipt2);
-    assert!(receipt2.error.is_none());
+    assert!(receipt2.result.is_ok());
 }

@@ -27,7 +27,7 @@ fn test_withdraw_all() {
         .unwrap();
     let receipt1 = executor.run(transaction1).unwrap();
     println!("{:?}\n", receipt1);
-    assert!(receipt1.error.is_none());
+    assert!(receipt1.result.is_ok());
 
     // Test the `withdraw_all` method.
     let managed_access = receipt1.component(1).unwrap();
@@ -44,5 +44,5 @@ fn test_withdraw_all() {
         .unwrap();
     let receipt2 = executor.run(transaction2).unwrap();
     println!("{:?}\n", receipt2);
-    assert!(receipt2.error.is_none());
+    assert!(receipt2.result.is_ok());
 }

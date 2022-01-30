@@ -47,7 +47,7 @@ pub fn handle_new_account(matches: &ArgMatches) -> Result<(), Error> {
     let receipt = executor.run(transaction).unwrap();
     println!("{:?}", receipt);
 
-    if receipt.error.is_none() {
+    if receipt.result.is_ok() {
         let account = receipt.component(0).unwrap();
         println!("{}", "=".repeat(80));
         println!("A new account has been created!");

@@ -104,7 +104,7 @@ pub fn handle_new_badge_mutable(matches: &ArgMatches) -> Result<(), Error> {
     let receipt = executor.run(transaction).unwrap();
 
     println!("{:?}", receipt);
-    if receipt.error.is_none() {
+    if receipt.result.is_ok() {
         configs.nonce = executor.nonce();
         set_configs(configs)?;
         Ok(())

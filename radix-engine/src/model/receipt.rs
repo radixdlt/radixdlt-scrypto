@@ -11,8 +11,8 @@ use crate::model::*;
 /// Represents a transaction receipt.
 pub struct Receipt {
     pub transaction: ValidatedTransaction,
-    pub error: Option<RuntimeError>,
-    pub returns: Vec<ValidatedData>,
+    pub result: Result<(), RuntimeError>,
+    pub outputs: Vec<ValidatedData>,
     pub logs: Vec<(LogLevel, String)>,
     pub new_entities: Vec<Address>,
     pub execution_time: Option<u128>,
@@ -60,9 +60,9 @@ impl fmt::Debug for Receipt {
             f,
             "{} {}",
             "Transaction Status:".bold().green(),
-            match &self.error {
-                None => "SUCCESS".blue(),
-                Some(e) => e.to_string().red(),
+            match &self.result {
+                Ok(()) => "SUCCESS".blue(),
+                Err(e) => e.to_string().red(),
             }
             .bold()
         )?;
@@ -86,9 +86,9 @@ impl fmt::Debug for Receipt {
             )?;
         }
 
-        write!(f, "\n{}", "Returns:".bold().green())?;
-        for (i, result) in self.returns.iter().enumerate() {
-            write!(f, "\n{} {:?}", prefix!(i, self.returns), result)?;
+        write!(f, "\n{}", "outputs:".bold().green())?;
+        for (i, result) in self.outputs.iter().enumerate() {
+            write!(f, "\n{} {:?}", prefix!(i, self.outputs), result)?;
         }
 
         write!(f, "\n{} {}", "Logs:".bold().green(), self.logs.len())?;

@@ -70,7 +70,7 @@ fn create_user<'a, L: Ledger>(env: &mut TestEnv<'a, L>) -> Address {
             false,
         )
         .unwrap();
-    assert!(receipt.error.is_none());
+    assert!(receipt.result.is_ok());
     receipt.resource_def(0).unwrap()
 }
 
@@ -91,7 +91,7 @@ fn get_position<'a, L: Ledger>(env: &mut TestEnv<'a, L>, user_id: Address, nth: 
             false,
         )
         .unwrap();
-    assert!(receipt.error.is_none());
+    assert!(receipt.result.is_ok());
     let encoded = receipt.results.swap_remove(0).unwrap().unwrap().encoded;
     scrypto_decode(&encoded).unwrap()
 }

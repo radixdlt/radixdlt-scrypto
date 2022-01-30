@@ -62,12 +62,12 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
         }
     }
 
-    /// Returns the underlying ledger.
+    /// outputs the underlying ledger.
     pub fn ledger(&self) -> &L {
         self.ledger
     }
 
-    /// Returns the current epoch.
+    /// outputs the current epoch.
     pub fn current_epoch(&self) -> u64 {
         self.current_epoch
     }
@@ -77,7 +77,7 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
         self.current_epoch = current_epoch;
     }
 
-    /// Returns the transaction nonce.
+    /// outputs the transaction nonce.
     pub fn nonce(&self) -> u64 {
         self.nonce
     }
@@ -165,7 +165,7 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
         let mut proc = track.start_process(self.trace);
 
         let mut error: Option<RuntimeError> = None;
-        let mut returns = vec![];
+        let mut outputs = vec![];
         for inst in validated_transaction.clone().instructions {
             let result = match inst {
                 ValidatedInstruction::CreateTempBucket {
@@ -195,7 +195,7 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
             };
             match result {
                 Ok(data) => {
-                    returns.push(data);
+                    outputs.push(data);
                 }
                 Err(e) => {
                     error = Some(e);
@@ -205,7 +205,7 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
         }
 
         // check resource
-        error = error.or(match proc.check_resource() {
+        error = error.or_else(|| match proc.check_resource() {
             Ok(_) => None,
             Err(e) => Some(e),
         });
@@ -221,18 +221,15 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
         #[cfg(not(feature = "alloc"))]
         let execution_time = Some(now.elapsed().as_millis());
 
-        let new_entities = if error.is_none() {
-            track.new_entities().to_vec()
-        } else {
-            Vec::new()
-        };
-
         let receipt = Receipt {
             transaction: validated_transaction,
-            error,
-            returns,
+            result: match error {
+                Some(error) => Err(error),
+                None => Ok(()),
+            },
+            outputs,
             logs: track.logs().clone(),
-            new_entities,
+            new_entities: track.new_entities().to_vec(),
             execution_time,
         };
         if self.trace {

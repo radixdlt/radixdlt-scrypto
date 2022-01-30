@@ -29,7 +29,7 @@ fn can_withdraw_from_my_account() {
     let result = executor.run(transaction);
 
     // Assert
-    assert!(result.unwrap().error.is_none());
+    assert!(result.unwrap().result.is_ok());
 }
 
 #[test]
@@ -51,7 +51,7 @@ fn cannot_withdraw_from_other_account() {
     let result = executor.run(transaction);
 
     // Assert
-    assert!(!result.unwrap().error.is_none());
+    assert!(!result.unwrap().result.is_ok());
 }
 
 #[test]
@@ -78,5 +78,5 @@ fn account_to_bucket_to_account() {
     let result = executor.run(transaction);
 
     // Assert
-    assert!(result.unwrap().error.is_none());
+    assert!(result.unwrap().result.is_ok());
 }

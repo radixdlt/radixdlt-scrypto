@@ -19,7 +19,7 @@ fn test_hello() {
         .unwrap();
     let receipt1 = executor.run(transaction1).unwrap();
     println!("{:?}\n", receipt1);
-    assert!(receipt1.error.is_none());
+    assert!(receipt1.result.is_ok());
 
     // Test the `free_token` method.
     let component = receipt1.component(0).unwrap();
@@ -30,5 +30,5 @@ fn test_hello() {
         .unwrap();
     let receipt2 = executor.run(transaction2).unwrap();
     println!("{:?}\n", receipt2);
-    assert!(receipt2.error.is_none());
+    assert!(receipt2.result.is_ok());
 }
