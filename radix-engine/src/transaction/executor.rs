@@ -168,15 +168,13 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
         let mut outputs = vec![];
         for inst in validated_transaction.clone().instructions {
             let result = match inst {
-                ValidatedInstruction::CreateTempBucket {
+                ValidatedInstruction::CreateBucket {
                     amount,
                     resource_address,
-                } => proc.create_temp_bucket(amount, resource_address),
-                ValidatedInstruction::CreateTempBucketRef { bid } => {
-                    proc.create_temp_bucket_ref(bid)
-                }
-                ValidatedInstruction::CloneTempBucketRef { rid } => proc.clone_temp_bucket_ref(rid),
-                ValidatedInstruction::DropTempBucketRef { rid } => proc.drop_temp_bucket_ref(rid),
+                } => proc.create_bucket(amount, resource_address),
+                ValidatedInstruction::CreateBucketRef { bid } => proc.create_bucket_ref(bid),
+                ValidatedInstruction::CloneBucketRef { rid } => proc.clone_bucket_ref(rid),
+                ValidatedInstruction::DropBucketRef { rid } => proc.drop_bucket_ref(rid),
                 ValidatedInstruction::CallFunction {
                     package_address,
                     blueprint_name,

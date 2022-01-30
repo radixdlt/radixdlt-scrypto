@@ -71,12 +71,12 @@ pub struct Process<'r, 'l, L: Ledger> {
     vm: Option<Interpreter>,
     /// ID allocator for buckets and bucket refs created within transaction.
     id_allocator: IdAllocator,
-    /// Returned resources from previous CALLs.
+    /// Resources collected from previous CALLs returns.
     ///
     /// When the `depth == 0` (transaction), all returned resources from CALLs are coalesced
     /// into a map of unidentified buckets indexed by resource address, instead of moving back
     /// to `buckets`.
-    returned_resources: HashMap<Address, Bucket>,
+    collected_resources: HashMap<Address, Bucket>,
 }
 
 /// Represents an interpreter instance.
@@ -109,12 +109,12 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
             moving_bucket_refs: HashMap::new(),
             vm: None,
             id_allocator: IdAllocator::new(TRANSACTION_OBJECT_ID_RANGE),
-            returned_resources: HashMap::new(),
+            collected_resources: HashMap::new(),
         }
     }
 
     // (Transaction ONLY) Create a temporary bucket.
-    pub fn create_temp_bucket(
+    pub fn create_bucket(
         &mut self,
         amount: Decimal,
         resource_address: Address,
@@ -126,17 +126,17 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
             resource_address
         );
 
-        // LI: all buckets in `returned_resources` are non-empty
+        // LI: all buckets in ` collected_resources` are non-empty
 
         let new_bid = self
             .id_allocator
             .new_bid()
             .map_err(RuntimeError::IdAllocatorError)?;
-        let bucket = match self.returned_resources.remove(&resource_address) {
+        let bucket = match self.collected_resources.remove(&resource_address) {
             Some(mut bucket) => {
                 let to_return = bucket.take(amount).map_err(RuntimeError::BucketError)?;
                 if !bucket.amount().is_zero() {
-                    self.returned_resources.insert(resource_address, bucket);
+                    self.collected_resources.insert(resource_address, bucket);
                 }
                 Ok(to_return)
             }
@@ -147,7 +147,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
     }
 
     // (Transaction ONLY) Creates a temporary bucket ref.
-    pub fn create_temp_bucket_ref(&mut self, bid: Bid) -> Result<ValidatedData, RuntimeError> {
+    pub fn create_bucket_ref(&mut self, bid: Bid) -> Result<ValidatedData, RuntimeError> {
         re_debug!(self, "Creating bucket ref: bid = {:?}", bid);
 
         let new_rid = self
@@ -176,7 +176,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
     }
 
     // (Transaction ONLY) Clone a temporary bucket ref.
-    pub fn clone_temp_bucket_ref(&mut self, rid: Rid) -> Result<ValidatedData, RuntimeError> {
+    pub fn clone_bucket_ref(&mut self, rid: Rid) -> Result<ValidatedData, RuntimeError> {
         re_debug!(self, "Cloning bucket ref: rid = {:?}", rid);
 
         let new_rid = self
@@ -194,7 +194,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
     }
 
     // (Transaction ONLY) Clone a temporary bucket ref.
-    pub fn drop_temp_bucket_ref(&mut self, rid: Rid) -> Result<ValidatedData, RuntimeError> {
+    pub fn drop_bucket_ref(&mut self, rid: Rid) -> Result<ValidatedData, RuntimeError> {
         re_debug!(self, "Dropping bucket ref: rid = {:?}", rid);
 
         self.handle_drop_bucket_ref(DropBucketRefInput { rid })?;
@@ -209,11 +209,11 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         method: &str,
     ) -> Result<ValidatedData, RuntimeError> {
         re_debug!(self, "Call method started");
-        for (_, bucket) in self.returned_resources.clone() {
+        for (_, bucket) in self.collected_resources.clone() {
             let bid = self.track.new_bid(); // this is unbounded
             self.buckets.insert(bid, bucket);
         }
-        self.returned_resources.clear();
+        self.collected_resources.clear();
         let to_deposit: Vec<Bid> = self.buckets.keys().cloned().collect();
         let invocation = self.prepare_call_method(
             component_address,
@@ -242,10 +242,10 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
             for (_, bucket) in buckets {
                 if !bucket.amount().is_zero() {
                     let address = bucket.resource_address();
-                    if let Some(b) = self.returned_resources.get_mut(&address) {
+                    if let Some(b) = self.collected_resources.get_mut(&address) {
                         b.put(bucket).unwrap();
                     } else {
-                        self.returned_resources.insert(address, bucket);
+                        self.collected_resources.insert(address, bucket);
                     }
                 }
             }
@@ -463,11 +463,9 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
             re_warn!(self, "Dangling bucket: {:?}, {:?}", bid, bucket);
             success = false;
         }
-        for (_, bucket) in &self.returned_resources {
-            if bucket.amount() > 0.into() {
-                re_warn!(self, "Unhandled transaction resources: {:?}", bucket);
-                success = false;
-            }
+        for (_, bucket) in &self.collected_resources {
+            re_warn!(self, "Dangling resource: {:?}", bucket);
+            success = false;
         }
 
         re_debug!(self, "Resource check ended");

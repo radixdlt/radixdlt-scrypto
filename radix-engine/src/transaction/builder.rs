@@ -134,7 +134,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     }
 
     /// Creates a temporary bucket.
-    pub fn create_temp_bucket<F>(
+    pub fn create_bucket<F>(
         &mut self,
         amount: Decimal,
         resource_address: Address,
@@ -144,7 +144,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         F: FnOnce(&mut Self, Bid) -> &mut Self,
     {
         let bid = self.id_allocator.new_bid().unwrap();
-        self.add_instruction(Instruction::CreateTempBucket {
+        self.add_instruction(Instruction::CreateBucket {
             amount,
             resource_address,
         });
@@ -152,12 +152,12 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     }
 
     /// Creates a temporary bucket ref.
-    pub fn create_temp_bucket_ref<F>(&mut self, bid: Bid, then: F) -> &mut Self
+    pub fn create_bucket_ref<F>(&mut self, bid: Bid, then: F) -> &mut Self
     where
         F: FnOnce(&mut Self, Rid) -> &mut Self,
     {
         let rid = self.id_allocator.new_rid().unwrap();
-        self.add_instruction(Instruction::CreateTempBucketRef { bid });
+        self.add_instruction(Instruction::CreateBucketRef { bid });
         then(self, rid)
     }
 
@@ -398,8 +398,8 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         resource_address: Address,
         mint_badge_address: Address,
     ) -> &mut Self {
-        self.create_temp_bucket(1.into(), mint_badge_address, |builder, bid| {
-            builder.create_temp_bucket_ref(bid, |builder, rid| {
+        self.create_bucket(1.into(), mint_badge_address, |builder, bid| {
+            builder.create_bucket_ref(bid, |builder, rid| {
                 builder.add_instruction(Instruction::CallFunction {
                     package_address: SYSTEM_PACKAGE,
                     blueprint_name: "System".to_owned(),
@@ -433,7 +433,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         amount: Decimal,
         resource_address: Address,
     ) -> &mut Self {
-        self.create_temp_bucket(amount, resource_address, |builder, bid| {
+        self.create_bucket(amount, resource_address, |builder, bid| {
             builder.add_instruction(Instruction::CallFunction {
                 package_address: ACCOUNT_PACKAGE,
                 blueprint_name: "Account".to_owned(),
@@ -593,7 +593,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                     self.withdraw_from_account(&resource_spec, account);
                 }
                 let mut created_bid = None;
-                self.create_temp_bucket(
+                self.create_bucket(
                     resource_spec.amount(),
                     resource_spec.resource_address(),
                     |builder, bid| {
@@ -609,11 +609,11 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                     self.withdraw_from_account(&resource_spec, account);
                 }
                 let mut created_rid = None;
-                self.create_temp_bucket(
+                self.create_bucket(
                     resource_spec.amount(),
                     resource_spec.resource_address(),
                     |builder, bid| {
-                        builder.create_temp_bucket_ref(bid, |builder, rid| {
+                        builder.create_bucket_ref(bid, |builder, rid| {
                             created_rid = Some(rid);
                             builder
                         });

@@ -20,7 +20,7 @@ pub fn validate_transaction(
 
     for (i, inst) in transaction.instructions.iter().enumerate() {
         match inst.clone() {
-            Instruction::CreateTempBucket {
+            Instruction::CreateBucket {
                 amount,
                 resource_address,
             } => {
@@ -30,12 +30,12 @@ pub fn validate_transaction(
                         .map_err(TransactionValidationError::IdAllocatorError)?,
                     0,
                 );
-                instructions.push(ValidatedInstruction::CreateTempBucket {
+                instructions.push(ValidatedInstruction::CreateBucket {
                     amount,
                     resource_address,
                 });
             }
-            Instruction::CreateTempBucketRef { bid } => {
+            Instruction::CreateBucketRef { bid } => {
                 if !temp_buckets.contains_key(&bid) {
                     return Err(TransactionValidationError::TempBucketNotFound(bid));
                 }
@@ -46,9 +46,9 @@ pub fn validate_transaction(
                         .map_err(TransactionValidationError::IdAllocatorError)?,
                     bid,
                 );
-                instructions.push(ValidatedInstruction::CreateTempBucketRef { bid });
+                instructions.push(ValidatedInstruction::CreateBucketRef { bid });
             }
-            Instruction::CloneTempBucketRef { rid } => {
+            Instruction::CloneBucketRef { rid } => {
                 let bid = if let Some(b) = temp_bucket_refs.get(&rid) {
                     *b
                 } else {
@@ -61,9 +61,9 @@ pub fn validate_transaction(
                         .map_err(TransactionValidationError::IdAllocatorError)?,
                     bid,
                 );
-                instructions.push(ValidatedInstruction::CloneTempBucketRef { rid });
+                instructions.push(ValidatedInstruction::CloneBucketRef { rid });
             }
-            Instruction::DropTempBucketRef { rid } => {
+            Instruction::DropBucketRef { rid } => {
                 let bid = if let Some(b) = temp_bucket_refs.get(&rid) {
                     *b
                 } else {
@@ -71,7 +71,7 @@ pub fn validate_transaction(
                 };
                 temp_buckets.entry(bid).and_modify(|cnt| *cnt -= 1);
                 temp_bucket_refs.remove(&rid);
-                instructions.push(ValidatedInstruction::DropTempBucketRef { rid });
+                instructions.push(ValidatedInstruction::DropBucketRef { rid });
             }
             Instruction::CallFunction {
                 package_address,

@@ -67,20 +67,20 @@ impl Parser {
     pub fn parse_instruction(&mut self) -> Result<Instruction, ParserError> {
         let token = self.advance()?;
         let instruction = match token.kind {
-            TokenKind::CreateTempBucket => Instruction::CreateTempBucket {
+            TokenKind::CreateBucket => Instruction::CreateBucket {
                 amount: self.parse_value()?,
                 resource_address: self.parse_value()?,
                 new_bucket: self.parse_value()?,
             },
-            TokenKind::CreateTempBucketRef => Instruction::CreateTempBucketRef {
+            TokenKind::CreateBucketRef => Instruction::CreateBucketRef {
                 bucket: self.parse_value()?,
                 new_bucket_ref: self.parse_value()?,
             },
-            TokenKind::CloneTempBucketRef => Instruction::CloneTempBucketRef {
+            TokenKind::CloneBucketRef => Instruction::CloneBucketRef {
                 bucket_ref: self.parse_value()?,
                 new_bucket_ref: self.parse_value()?,
             },
-            TokenKind::DropTempBucketRef => Instruction::DropTempBucketRef {
+            TokenKind::DropBucketRef => Instruction::DropBucketRef {
                 bucket_ref: self.parse_value()?,
             },
             TokenKind::CallFunction => Instruction::CallFunction {
@@ -632,8 +632,8 @@ mod tests {
     #[test]
     fn test_transaction() {
         parse_instruction_ok!(
-            r#"CREATE_TEMP_BUCKET  Decimal("1.0")  Address("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d")  Bucket("xrd_bucket");"#,
-            Instruction::CreateTempBucket {
+            r#"CREATE_BUCKET  Decimal("1.0")  Address("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d")  Bucket("xrd_bucket");"#,
+            Instruction::CreateBucket {
                 amount: Value::Decimal(Value::String("1.0".into()).into()),
                 resource_address: Value::Address(
                     Value::String("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d".into())
@@ -643,22 +643,22 @@ mod tests {
             }
         );
         parse_instruction_ok!(
-            r#"CREATE_TEMP_BUCKET_REF  Bucket("xrd_bucket")  BucketRef("admin_auth");"#,
-            Instruction::CreateTempBucketRef {
+            r#"CREATE_BUCKET_REF  Bucket("xrd_bucket")  BucketRef("admin_auth");"#,
+            Instruction::CreateBucketRef {
                 bucket: Value::Bucket(Value::String("xrd_bucket".into()).into()),
                 new_bucket_ref: Value::BucketRef(Value::String("admin_auth".into()).into()),
             }
         );
         parse_instruction_ok!(
-            r#"CLONE_TEMP_BUCKET_REF  BucketRef("admin_auth")  BucketRef("admin_auth2");"#,
-            Instruction::CloneTempBucketRef {
+            r#"CLONE_BUCKET_REF  BucketRef("admin_auth")  BucketRef("admin_auth2");"#,
+            Instruction::CloneBucketRef {
                 bucket_ref: Value::BucketRef(Value::String("admin_auth".into()).into()),
                 new_bucket_ref: Value::BucketRef(Value::String("admin_auth2".into()).into()),
             }
         );
         parse_instruction_ok!(
-            r#"DROP_TEMP_BUCKET_REF BucketRef("admin_auth");"#,
-            Instruction::DropTempBucketRef {
+            r#"DROP_BUCKET_REF BucketRef("admin_auth");"#,
+            Instruction::DropBucketRef {
                 bucket_ref: Value::BucketRef(Value::String("admin_auth".into()).into()),
             }
         );

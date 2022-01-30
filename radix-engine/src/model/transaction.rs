@@ -13,19 +13,19 @@ pub struct Transaction {
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
 pub enum Instruction {
     /// Creates a temporary bucket by taking resources from previous CALL returns.
-    CreateTempBucket {
+    CreateBucket {
         amount: Decimal,
         resource_address: Address,
     },
 
     /// Creates a temporary bucket ref.
-    CreateTempBucketRef { bid: Bid },
+    CreateBucketRef { bid: Bid },
 
     /// Clones a temporary bucket ref.
-    CloneTempBucketRef { rid: Rid },
+    CloneBucketRef { rid: Rid },
 
     /// Drops a temporary bucket ref.
-    DropTempBucketRef { rid: Rid },
+    DropBucketRef { rid: Rid },
 
     /// Calls a blueprint function.
     ///

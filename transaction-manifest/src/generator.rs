@@ -101,7 +101,7 @@ pub fn generate_instruction(
     resolver: &mut NameResolver,
 ) -> Result<Instruction, GeneratorError> {
     Ok(match instruction {
-        ast::Instruction::CreateTempBucket {
+        ast::Instruction::CreateBucket {
             amount,
             resource_address,
             new_bucket,
@@ -111,12 +111,12 @@ pub fn generate_instruction(
                 .map_err(GeneratorError::IdAllocatorError)?;
             declare_bucket(new_bucket, resolver, bid)?;
 
-            Instruction::CreateTempBucket {
+            Instruction::CreateBucket {
                 amount: generate_decimal(amount)?,
                 resource_address: generate_address(resource_address)?,
             }
         }
-        ast::Instruction::CreateTempBucketRef {
+        ast::Instruction::CreateBucketRef {
             bucket,
             new_bucket_ref,
         } => {
@@ -125,11 +125,11 @@ pub fn generate_instruction(
                 .map_err(GeneratorError::IdAllocatorError)?;
             declare_bucket_ref(new_bucket_ref, resolver, rid)?;
 
-            Instruction::CreateTempBucketRef {
+            Instruction::CreateBucketRef {
                 bid: generate_bucket(bucket, resolver)?,
             }
         }
-        ast::Instruction::CloneTempBucketRef {
+        ast::Instruction::CloneBucketRef {
             bucket_ref,
             new_bucket_ref,
         } => {
@@ -138,11 +138,11 @@ pub fn generate_instruction(
                 .map_err(GeneratorError::IdAllocatorError)?;
             declare_bucket_ref(new_bucket_ref, resolver, rid)?;
 
-            Instruction::CloneTempBucketRef {
+            Instruction::CloneBucketRef {
                 rid: generate_bucket_ref(bucket_ref, resolver)?,
             }
         }
-        ast::Instruction::DropTempBucketRef { bucket_ref } => Instruction::DropTempBucketRef {
+        ast::Instruction::DropBucketRef { bucket_ref } => Instruction::DropBucketRef {
             rid: generate_bucket_ref(bucket_ref, resolver)?,
         },
         ast::Instruction::CallFunction {
@@ -702,8 +702,8 @@ mod tests {
     #[test]
     fn test_instructions() {
         generate_instruction_ok!(
-            r#"CREATE_TEMP_BUCKET  Decimal("1.0")  Address("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d")  Bucket("xrd_bucket");"#,
-            Instruction::CreateTempBucket {
+            r#"CREATE_BUCKET  Decimal("1.0")  Address("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d")  Bucket("xrd_bucket");"#,
+            Instruction::CreateBucket {
                 amount: Decimal::from(1),
                 resource_address: Address::from_str(
                     "03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d"
@@ -712,16 +712,16 @@ mod tests {
             }
         );
         generate_instruction_ok!(
-            r#"CREATE_TEMP_BUCKET_REF  Bucket(5u32)  BucketRef("admin_auth");"#,
-            Instruction::CreateTempBucketRef { bid: Bid(5u32) }
+            r#"CREATE_BUCKET_REF  Bucket(5u32)  BucketRef("admin_auth");"#,
+            Instruction::CreateBucketRef { bid: Bid(5u32) }
         );
         generate_instruction_ok!(
-            r#"CLONE_TEMP_BUCKET_REF  BucketRef(6u32)  BucketRef("admin_auth");"#,
-            Instruction::CloneTempBucketRef { rid: Rid(6u32) }
+            r#"CLONE_BUCKET_REF  BucketRef(6u32)  BucketRef("admin_auth");"#,
+            Instruction::CloneBucketRef { rid: Rid(6u32) }
         );
         generate_instruction_ok!(
-            r#"DROP_TEMP_BUCKET_REF  BucketRef(5u32);"#,
-            Instruction::DropTempBucketRef { rid: Rid(5u32) }
+            r#"DROP_BUCKET_REF  BucketRef(5u32);"#,
+            Instruction::DropBucketRef { rid: Rid(5u32) }
         );
         generate_instruction_ok!(
             r#"CALL_FUNCTION  Address("01d1f50010e4102d88aacc347711491f852c515134a9ecf67ba17c")  "Airdrop"  "new"  500u32  HashMap<String, U8>("key", 1u8);"#,
@@ -786,7 +786,7 @@ mod tests {
                             scrypto_encode(&Rid(1)),
                         ]
                     },
-                    Instruction::CreateTempBucket {
+                    Instruction::CreateBucket {
                         amount: Decimal::from(5),
                         resource_address: Address::from_str(
                             "030000000000000000000000000000000000000000000000000004"
@@ -801,17 +801,17 @@ mod tests {
                         method: "buy_gumball".into(),
                         args: vec![scrypto_encode(&Bid(512)),]
                     },
-                    Instruction::CreateTempBucket {
+                    Instruction::CreateBucket {
                         amount: Decimal::from(5),
                         resource_address: Address::from_str(
                             "030000000000000000000000000000000000000000000000000004"
                         )
                         .unwrap(),
                     },
-                    Instruction::CreateTempBucketRef { bid: Bid(513) },
-                    Instruction::CloneTempBucketRef { rid: Rid(514) },
-                    Instruction::DropTempBucketRef { rid: Rid(515) },
-                    Instruction::DropTempBucketRef { rid: Rid(514) },
+                    Instruction::CreateBucketRef { bid: Bid(513) },
+                    Instruction::CloneBucketRef { rid: Rid(514) },
+                    Instruction::DropBucketRef { rid: Rid(515) },
+                    Instruction::DropBucketRef { rid: Rid(514) },
                     Instruction::CallMethodWithAllResources {
                         component_address: Address::from_str(
                             "02d43f479e9b2beb9df98bc3888344fc25eda181e8f710ce1bf1de".into()

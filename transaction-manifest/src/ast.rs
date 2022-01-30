@@ -5,23 +5,23 @@ pub struct Transaction {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Instruction {
-    CreateTempBucket {
+    CreateBucket {
         amount: Value,
         resource_address: Value,
         new_bucket: Value,
     },
 
-    CreateTempBucketRef {
+    CreateBucketRef {
         bucket: Value,
         new_bucket_ref: Value,
     },
 
-    CloneTempBucketRef {
+    CloneBucketRef {
         bucket_ref: Value,
         new_bucket_ref: Value,
     },
 
-    DropTempBucketRef {
+    DropBucketRef {
         bucket_ref: Value,
     },
 

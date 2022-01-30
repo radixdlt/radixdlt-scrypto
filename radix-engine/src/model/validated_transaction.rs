@@ -12,17 +12,17 @@ pub struct ValidatedTransaction {
 
 #[derive(Debug, Clone)]
 pub enum ValidatedInstruction {
-    CreateTempBucket {
+    CreateBucket {
         amount: Decimal,
         resource_address: Address,
     },
-    CreateTempBucketRef {
+    CreateBucketRef {
         bid: Bid,
     },
-    CloneTempBucketRef {
+    CloneBucketRef {
         rid: Rid,
     },
-    DropTempBucketRef {
+    DropBucketRef {
         rid: Rid,
     },
     CallFunction {
