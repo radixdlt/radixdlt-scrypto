@@ -109,10 +109,7 @@ pub fn generate_instruction(
             let bid = id_allocator
                 .new_bid()
                 .map_err(GeneratorError::IdAllocatorError)?;
-            let name = generate_string(new_bucket)?;
-            resolver
-                .insert_bucket(name, bid)
-                .map_err(GeneratorError::NameResolverError)?;
+            declare_bucket(new_bucket, resolver, bid)?;
 
             Instruction::CreateTempBucket {
                 amount: generate_decimal(amount)?,
@@ -126,10 +123,7 @@ pub fn generate_instruction(
             let rid = id_allocator
                 .new_rid()
                 .map_err(GeneratorError::IdAllocatorError)?;
-            let name = generate_string(new_bucket_ref)?;
-            resolver
-                .insert_bucket_ref(name, rid)
-                .map_err(GeneratorError::NameResolverError)?;
+            declare_bucket_ref(new_bucket_ref, resolver, rid)?;
 
             Instruction::CreateTempBucketRef {
                 bid: generate_bucket(bucket, resolver)?,
@@ -142,10 +136,7 @@ pub fn generate_instruction(
             let rid = id_allocator
                 .new_rid()
                 .map_err(GeneratorError::IdAllocatorError)?;
-            let name = generate_string(new_bucket_ref)?;
-            resolver
-                .insert_bucket_ref(name, rid)
-                .map_err(GeneratorError::NameResolverError)?;
+            declare_bucket_ref(new_bucket_ref, resolver, rid)?;
 
             Instruction::CloneTempBucketRef {
                 rid: generate_bucket_ref(bucket_ref, resolver)?,
@@ -264,6 +255,22 @@ fn generate_hash(value: &ast::Value) -> Result<H256, GeneratorError> {
     }
 }
 
+fn declare_bucket(
+    value: &ast::Value,
+    resolver: &mut NameResolver,
+    bid: Bid,
+) -> Result<(), GeneratorError> {
+    match value {
+        ast::Value::Bucket(inner) => match &**inner {
+            ast::Value::String(name) => resolver
+                .insert_bucket(name.to_string(), bid)
+                .map_err(GeneratorError::NameResolverError),
+            v @ _ => invalid_type!(v, ast::Type::String),
+        },
+        v @ _ => invalid_type!(v, ast::Type::Bucket),
+    }
+}
+
 fn generate_bucket(value: &ast::Value, resolver: &mut NameResolver) -> Result<Bid, GeneratorError> {
     match value {
         ast::Value::Bucket(inner) => match &**inner {
@@ -274,6 +281,22 @@ fn generate_bucket(value: &ast::Value, resolver: &mut NameResolver) -> Result<Bi
             v @ _ => invalid_type!(v, ast::Type::U32, ast::Type::String),
         },
         v @ _ => invalid_type!(v, ast::Type::Bucket),
+    }
+}
+
+fn declare_bucket_ref(
+    value: &ast::Value,
+    resolver: &mut NameResolver,
+    rid: Rid,
+) -> Result<(), GeneratorError> {
+    match value {
+        ast::Value::BucketRef(inner) => match &**inner {
+            ast::Value::String(name) => resolver
+                .insert_bucket_ref(name.to_string(), rid)
+                .map_err(GeneratorError::NameResolverError),
+            v @ _ => invalid_type!(v, ast::Type::String),
+        },
+        v @ _ => invalid_type!(v, ast::Type::BucketRef),
     }
 }
 
@@ -679,7 +702,7 @@ mod tests {
     #[test]
     fn test_instructions() {
         generate_instruction_ok!(
-            r#"CREATE_TEMP_BUCKET  Decimal("1.0")  Address("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d")  "xrd_bucket";"#,
+            r#"CREATE_TEMP_BUCKET  Decimal("1.0")  Address("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d")  Bucket("xrd_bucket");"#,
             Instruction::CreateTempBucket {
                 amount: Decimal::from(1),
                 resource_address: Address::from_str(
@@ -689,11 +712,11 @@ mod tests {
             }
         );
         generate_instruction_ok!(
-            r#"CREATE_TEMP_BUCKET_REF  Bucket(5u32)  "admin_auth";"#,
+            r#"CREATE_TEMP_BUCKET_REF  Bucket(5u32)  BucketRef("admin_auth");"#,
             Instruction::CreateTempBucketRef { bid: Bid(5u32) }
         );
         generate_instruction_ok!(
-            r#"CLONE_TEMP_BUCKET_REF  BucketRef(6u32)  "admin_auth";"#,
+            r#"CLONE_TEMP_BUCKET_REF  BucketRef(6u32)  BucketRef("admin_auth");"#,
             Instruction::CloneTempBucketRef { rid: Rid(6u32) }
         );
         generate_instruction_ok!(
