@@ -209,11 +209,20 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         method: &str,
     ) -> Result<ValidatedData, RuntimeError> {
         re_debug!(self, "Call method started");
+        // 1. Move collected resource to temp buckets
         for (_, bucket) in self.collected_resources.clone() {
             let bid = self.track.new_bid(); // this is unbounded
             self.buckets.insert(bid, bucket);
         }
         self.collected_resources.clear();
+
+        // 2. Drop all bucket refs
+        let rids: Vec<Rid> = self.bucket_refs.keys().cloned().collect();
+        for rid in rids {
+            self.drop_bucket_ref(rid)?;
+        }
+
+        // 3. Call the method with all buckets
         let to_deposit: Vec<Bid> = self.buckets.keys().cloned().collect();
         let invocation = self.prepare_call_method(
             component_address,
@@ -221,6 +230,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
             vec![validate_data(&scrypto_encode(&to_deposit)).unwrap()],
         )?;
         let result = self.call(invocation);
+
         re_debug!(self, "Call method ended");
         result
     }
