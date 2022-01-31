@@ -20,7 +20,7 @@ pub fn validate_transaction(
 
     for (i, inst) in transaction.instructions.iter().enumerate() {
         match inst.clone() {
-            Instruction::CreateBucket {
+            Instruction::TakeFromContext {
                 amount,
                 resource_address,
             } => {
@@ -30,7 +30,25 @@ pub fn validate_transaction(
                         .map_err(TransactionValidationError::IdAllocatorError)?,
                     0,
                 );
-                instructions.push(ValidatedInstruction::CreateBucket {
+                instructions.push(ValidatedInstruction::TakeFromContext {
+                    amount,
+                    resource_address,
+                });
+            }
+            Instruction::TakeAllFromContext { resource_address } => {
+                temp_buckets.insert(
+                    id_allocator
+                        .new_bid()
+                        .map_err(TransactionValidationError::IdAllocatorError)?,
+                    0,
+                );
+                instructions.push(ValidatedInstruction::TakeAllFromContext { resource_address });
+            }
+            Instruction::AssertContextContains {
+                amount,
+                resource_address,
+            } => {
+                instructions.push(ValidatedInstruction::AssertContextContains {
                     amount,
                     resource_address,
                 });

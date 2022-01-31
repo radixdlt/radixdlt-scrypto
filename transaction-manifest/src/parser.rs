@@ -67,10 +67,18 @@ impl Parser {
     pub fn parse_instruction(&mut self) -> Result<Instruction, ParserError> {
         let token = self.advance()?;
         let instruction = match token.kind {
-            TokenKind::CreateBucket => Instruction::CreateBucket {
+            TokenKind::TakeFromContext => Instruction::TakeFromContext {
                 amount: self.parse_value()?,
                 resource_address: self.parse_value()?,
                 new_bucket: self.parse_value()?,
+            },
+            TokenKind::TakeAllFromContext => Instruction::TakeAllFromContext {
+                resource_address: self.parse_value()?,
+                new_bucket: self.parse_value()?,
+            },
+            TokenKind::AssertContextContains => Instruction::AssertContextContains {
+                amount: self.parse_value()?,
+                resource_address: self.parse_value()?,
             },
             TokenKind::CreateBucketRef => Instruction::CreateBucketRef {
                 bucket: self.parse_value()?,
@@ -632,14 +640,34 @@ mod tests {
     #[test]
     fn test_transaction() {
         parse_instruction_ok!(
-            r#"CREATE_BUCKET  Decimal("1.0")  Address("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d")  Bucket("xrd_bucket");"#,
-            Instruction::CreateBucket {
+            r#"TAKE_FROM_CONTEXT  Decimal("1.0")  Address("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d")  Bucket("xrd_bucket");"#,
+            Instruction::TakeFromContext {
                 amount: Value::Decimal(Value::String("1.0".into()).into()),
                 resource_address: Value::Address(
                     Value::String("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d".into())
                         .into()
                 ),
                 new_bucket: Value::Bucket(Value::String("xrd_bucket".into()).into()),
+            }
+        );
+        parse_instruction_ok!(
+            r#"TAKE_ALL_FROM_CONTEXT  Address("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d")  Bucket("xrd_bucket");"#,
+            Instruction::TakeAllFromContext {
+                resource_address: Value::Address(
+                    Value::String("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d".into())
+                        .into()
+                ),
+                new_bucket: Value::Bucket(Value::String("xrd_bucket".into()).into()),
+            }
+        );
+        parse_instruction_ok!(
+            r#"ASSERT_CONTEXT_CONTAINS  Decimal("1.0")  Address("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d");"#,
+            Instruction::AssertContextContains {
+                amount: Value::Decimal(Value::String("1.0".into()).into()),
+                resource_address: Value::Address(
+                    Value::String("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d".into())
+                        .into()
+                ),
             }
         );
         parse_instruction_ok!(

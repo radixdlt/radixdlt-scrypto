@@ -12,7 +12,14 @@ pub struct ValidatedTransaction {
 
 #[derive(Debug, Clone)]
 pub enum ValidatedInstruction {
-    CreateBucket {
+    TakeFromContext {
+        amount: Decimal,
+        resource_address: Address,
+    },
+    TakeAllFromContext {
+        resource_address: Address,
+    },
+    AssertContextContains {
         amount: Decimal,
         resource_address: Address,
     },

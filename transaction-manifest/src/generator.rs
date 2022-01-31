@@ -101,7 +101,7 @@ pub fn generate_instruction(
     resolver: &mut NameResolver,
 ) -> Result<Instruction, GeneratorError> {
     Ok(match instruction {
-        ast::Instruction::CreateBucket {
+        ast::Instruction::TakeFromContext {
             amount,
             resource_address,
             new_bucket,
@@ -111,11 +111,31 @@ pub fn generate_instruction(
                 .map_err(GeneratorError::IdAllocatorError)?;
             declare_bucket(new_bucket, resolver, bid)?;
 
-            Instruction::CreateBucket {
+            Instruction::TakeFromContext {
                 amount: generate_decimal(amount)?,
                 resource_address: generate_address(resource_address)?,
             }
         }
+        ast::Instruction::TakeAllFromContext {
+            resource_address,
+            new_bucket,
+        } => {
+            let bid = id_allocator
+                .new_bid()
+                .map_err(GeneratorError::IdAllocatorError)?;
+            declare_bucket(new_bucket, resolver, bid)?;
+
+            Instruction::TakeAllFromContext {
+                resource_address: generate_address(resource_address)?,
+            }
+        }
+        ast::Instruction::AssertContextContains {
+            amount,
+            resource_address,
+        } => Instruction::AssertContextContains {
+            amount: generate_decimal(amount)?,
+            resource_address: generate_address(resource_address)?,
+        },
         ast::Instruction::CreateBucketRef {
             bucket,
             new_bucket_ref,
@@ -702,8 +722,27 @@ mod tests {
     #[test]
     fn test_instructions() {
         generate_instruction_ok!(
-            r#"CREATE_BUCKET  Decimal("1.0")  Address("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d")  Bucket("xrd_bucket");"#,
-            Instruction::CreateBucket {
+            r#"TAKE_FROM_CONTEXT  Decimal("1.0")  Address("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d")  Bucket("xrd_bucket");"#,
+            Instruction::TakeFromContext {
+                amount: Decimal::from(1),
+                resource_address: Address::from_str(
+                    "03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d"
+                )
+                .unwrap(),
+            }
+        );
+        generate_instruction_ok!(
+            r#"TAKE_ALL_FROM_CONTEXT  Address("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d")  Bucket("xrd_bucket");"#,
+            Instruction::TakeAllFromContext {
+                resource_address: Address::from_str(
+                    "03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d"
+                )
+                .unwrap(),
+            }
+        );
+        generate_instruction_ok!(
+            r#"ASSERT_CONTEXT_CONTAINS  Decimal("1.0")  Address("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d");"#,
+            Instruction::AssertContextContains {
                 amount: Decimal::from(1),
                 resource_address: Address::from_str(
                     "03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d"
@@ -776,7 +815,7 @@ mod tests {
                         .unwrap(),
                         method: "withdraw".into(),
                         args: vec![
-                            scrypto_encode(&Decimal::from(10u32)),
+                            scrypto_encode(&Decimal::from(5u32)),
                             scrypto_encode(
                                 &Address::from_str(
                                     "030000000000000000000000000000000000000000000000000004"
@@ -786,8 +825,8 @@ mod tests {
                             scrypto_encode(&Rid(1)),
                         ]
                     },
-                    Instruction::CreateBucket {
-                        amount: Decimal::from(5),
+                    Instruction::TakeFromContext {
+                        amount: Decimal::from(2),
                         resource_address: Address::from_str(
                             "030000000000000000000000000000000000000000000000000004"
                         )
@@ -801,8 +840,21 @@ mod tests {
                         method: "buy_gumball".into(),
                         args: vec![scrypto_encode(&Bid(512)),]
                     },
-                    Instruction::CreateBucket {
-                        amount: Decimal::from(5),
+                    Instruction::AssertContextContains {
+                        amount: Decimal::from(3),
+                        resource_address: Address::from_str(
+                            "030000000000000000000000000000000000000000000000000004"
+                        )
+                        .unwrap(),
+                    },
+                    Instruction::AssertContextContains {
+                        amount: Decimal::from(1),
+                        resource_address: Address::from_str(
+                            "03aedb7960d1f87dc25138f4cd101da6c98d57323478d53c5fb951"
+                        )
+                        .unwrap(),
+                    },
+                    Instruction::TakeAllFromContext {
                         resource_address: Address::from_str(
                             "030000000000000000000000000000000000000000000000000004"
                         )

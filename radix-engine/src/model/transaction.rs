@@ -12,8 +12,17 @@ pub struct Transaction {
 /// Represents an unvalidated instruction in transaction
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
 pub enum Instruction {
-    /// Creates a temporary bucket by taking resources from previous CALL returns.
-    CreateBucket {
+    /// Creates a temporary bucket by taking resources from transaction context.
+    TakeFromContext {
+        amount: Decimal,
+        resource_address: Address,
+    },
+
+    /// Creates a temporary bucket by taking all resources of the given type from transaction context.
+    TakeAllFromContext { resource_address: Address },
+
+    /// Asserts transaction context contains the given amount of resources.
+    AssertContextContains {
         amount: Decimal,
         resource_address: Address,
     },

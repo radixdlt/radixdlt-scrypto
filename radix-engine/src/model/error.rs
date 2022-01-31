@@ -52,6 +52,9 @@ pub enum TransactionValidationError {
 /// Represents an error when executing a transaction.
 #[derive(Debug)]
 pub enum RuntimeError {
+    /// Assertion check failed.
+    AssertionFailed,
+
     /// The data is not a valid WASM module.
     WasmValidationError(WasmValidationError),
 

@@ -76,7 +76,9 @@ pub enum TokenKind {
     Semicolon,
 
     /* Instructions */
-    CreateBucket,
+    TakeFromContext,
+    TakeAllFromContext,
+    AssertContextContains,
     CreateBucketRef,
     CloneBucketRef,
     DropBucketRef,
@@ -368,7 +370,9 @@ impl Lexer {
             "Ok" => Ok(TokenKind::Ok),
             "Err" => Ok(TokenKind::Err),
 
-            "CREATE_BUCKET" => Ok(TokenKind::CreateBucket),
+            "TAKE_FROM_CONTEXT" => Ok(TokenKind::TakeFromContext),
+            "TAKE_ALL_FROM_CONTEXT" => Ok(TokenKind::TakeAllFromContext),
+            "ASSERT_CONTEXT_CONTAINS" => Ok(TokenKind::AssertContextContains),
             "CREATE_BUCKET_REF" => Ok(TokenKind::CreateBucketRef),
             "CLONE_BUCKET_REF" => Ok(TokenKind::CloneBucketRef),
             "DROP_BUCKET_REF" => Ok(TokenKind::DropBucketRef),

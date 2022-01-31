@@ -5,10 +5,20 @@ pub struct Transaction {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Instruction {
-    CreateBucket {
+    TakeFromContext {
         amount: Value,
         resource_address: Value,
         new_bucket: Value,
+    },
+
+    TakeAllFromContext {
+        resource_address: Value,
+        new_bucket: Value,
+    },
+
+    AssertContextContains {
+        amount: Value,
+        resource_address: Value,
     },
 
     CreateBucketRef {

@@ -113,10 +113,10 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         }
     }
 
-    // (Transaction ONLY) Create a temporary bucket.
-    pub fn create_bucket(
+    // (Transaction ONLY) Create a temporary bucket by taking resource from context.
+    pub fn take_from_context(
         &mut self,
-        amount: Decimal,
+        amount: Option<Decimal>,
         resource_address: Address,
     ) -> Result<ValidatedData, RuntimeError> {
         re_debug!(
@@ -134,16 +134,45 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
             .map_err(RuntimeError::IdAllocatorError)?;
         let bucket = match self.collected_resources.remove(&resource_address) {
             Some(mut bucket) => {
-                let to_return = bucket.take(amount).map_err(RuntimeError::BucketError)?;
-                if !bucket.amount().is_zero() {
-                    self.collected_resources.insert(resource_address, bucket);
+                if let Some(amount) = amount {
+                    let to_return = bucket.take(amount).map_err(RuntimeError::BucketError)?;
+                    if !bucket.amount().is_zero() {
+                        self.collected_resources.insert(resource_address, bucket);
+                    }
+                    Ok(to_return)
+                } else {
+                    Ok(bucket)
                 }
-                Ok(to_return)
             }
             None => Err(RuntimeError::BucketError(BucketError::InsufficientBalance)),
         }?;
         self.buckets.insert(new_bid, bucket);
         Ok(validate_data(&scrypto_encode(&new_bid)).unwrap())
+    }
+
+    // (Transaction ONLY) Assert context contains the given amount of resource.
+    pub fn assert_context_contains(
+        &mut self,
+        amount: Decimal,
+        resource_address: Address,
+    ) -> Result<ValidatedData, RuntimeError> {
+        re_debug!(
+            self,
+            "Asserting: amount = {:?}, resource_address = {:?}",
+            amount,
+            resource_address
+        );
+
+        let satisfied = match self.collected_resources.get(&resource_address) {
+            Some(bucket) => bucket.amount() > amount,
+            None => false,
+        };
+
+        if satisfied {
+            Ok(validate_data(&scrypto_encode(&())).unwrap())
+        } else {
+            Err(RuntimeError::AssertionFailed)
+        }
     }
 
     // (Transaction ONLY) Creates a temporary bucket ref.
