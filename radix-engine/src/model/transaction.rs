@@ -12,20 +12,20 @@ pub struct Transaction {
 /// Represents an unvalidated instruction in transaction
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
 pub enum Instruction {
-    /// Creates a temporary bucket by taking resources from transaction context.
-    TakeFromContext {
+    /// Takes resource from worktop and return a bucket.
+    TakeFromWorktop {
         amount: Decimal,
         resource_address: Address,
     },
 
-    /// Creates a temporary bucket by taking all resources of the given type from transaction context.
-    TakeAllFromContext { resource_address: Address },
+    /// Takes all resource from worktop and return a bucket.
+    TakeAllFromWorktop { resource_address: Address },
 
-    /// Puts a bucket of resource into transaction context.
-    PutIntoContext { bid: Bid },
+    /// Returns resource to worktop.
+    ReturnToWorktop { bid: Bid },
 
-    /// Asserts transaction context contains the given amount of resources.
-    AssertContextContains {
+    /// Asserts worktop contains at least this amount.
+    AssertWorktopContains {
         amount: Decimal,
         resource_address: Address,
     },

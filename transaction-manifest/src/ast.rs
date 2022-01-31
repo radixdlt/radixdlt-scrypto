@@ -5,22 +5,22 @@ pub struct Transaction {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Instruction {
-    TakeFromContext {
+    TakeFromWorktop {
         amount: Value,
         resource_address: Value,
         new_bucket: Value,
     },
 
-    TakeAllFromContext {
+    TakeAllFromWorktop {
         resource_address: Value,
         new_bucket: Value,
     },
 
-    PutIntoContext {
+    ReturnToWorktop {
         bucket: Value,
     },
 
-    AssertContextContains {
+    AssertWorktopContains {
         amount: Value,
         resource_address: Value,
     },

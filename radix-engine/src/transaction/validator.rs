@@ -20,7 +20,7 @@ pub fn validate_transaction(
 
     for (i, inst) in transaction.instructions.iter().enumerate() {
         match inst.clone() {
-            Instruction::TakeFromContext {
+            Instruction::TakeFromWorktop {
                 amount,
                 resource_address,
             } => {
@@ -30,21 +30,21 @@ pub fn validate_transaction(
                         .map_err(TransactionValidationError::IdAllocatorError)?,
                     0,
                 );
-                instructions.push(ValidatedInstruction::TakeFromContext {
+                instructions.push(ValidatedInstruction::TakeFromWorktop {
                     amount,
                     resource_address,
                 });
             }
-            Instruction::TakeAllFromContext { resource_address } => {
+            Instruction::TakeAllFromWorktop { resource_address } => {
                 buckets.insert(
                     id_allocator
                         .new_bid()
                         .map_err(TransactionValidationError::IdAllocatorError)?,
                     0,
                 );
-                instructions.push(ValidatedInstruction::TakeAllFromContext { resource_address });
+                instructions.push(ValidatedInstruction::TakeAllFromWorktop { resource_address });
             }
-            Instruction::PutIntoContext { bid } => {
+            Instruction::ReturnToWorktop { bid } => {
                 if !buckets.contains_key(&bid) {
                     return Err(TransactionValidationError::BucketNotFound(bid));
                 }
@@ -52,13 +52,13 @@ pub fn validate_transaction(
                     return Err(TransactionValidationError::BucketLocked(bid));
                 }
                 buckets.remove(&bid);
-                instructions.push(ValidatedInstruction::PutIntoContext { bid });
+                instructions.push(ValidatedInstruction::ReturnToWorktop { bid });
             }
-            Instruction::AssertContextContains {
+            Instruction::AssertWorktopContains {
                 amount,
                 resource_address,
             } => {
-                instructions.push(ValidatedInstruction::AssertContextContains {
+                instructions.push(ValidatedInstruction::AssertWorktopContains {
                     amount,
                     resource_address,
                 });

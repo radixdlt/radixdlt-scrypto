@@ -167,18 +167,18 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
         let mut outputs = vec![];
         for inst in validated_transaction.clone().instructions {
             let result = match inst {
-                ValidatedInstruction::TakeFromContext {
+                ValidatedInstruction::TakeFromWorktop {
                     amount,
                     resource_address,
-                } => proc.take_from_context(Some(amount), resource_address),
-                ValidatedInstruction::TakeAllFromContext { resource_address } => {
-                    proc.take_from_context(None, resource_address)
+                } => proc.take_from_worktop(Some(amount), resource_address),
+                ValidatedInstruction::TakeAllFromWorktop { resource_address } => {
+                    proc.take_from_worktop(None, resource_address)
                 }
-                ValidatedInstruction::PutIntoContext { bid } => proc.put_into_context(bid),
-                ValidatedInstruction::AssertContextContains {
+                ValidatedInstruction::ReturnToWorktop { bid } => proc.return_to_worktop(bid),
+                ValidatedInstruction::AssertWorktopContains {
                     amount,
                     resource_address,
-                } => proc.assert_context_contains(amount, resource_address),
+                } => proc.assert_worktop_contains(amount, resource_address),
                 ValidatedInstruction::CreateBucketRef { bid } => proc.create_bucket_ref(bid),
                 ValidatedInstruction::CloneBucketRef { rid } => proc.clone_bucket_ref(rid),
                 ValidatedInstruction::DropBucketRef { rid } => proc.drop_bucket_ref(rid),

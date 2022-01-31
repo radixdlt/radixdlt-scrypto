@@ -115,15 +115,15 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         }
     }
 
-    // (Transaction ONLY) Create a temporary bucket by taking resource from context.
-    pub fn take_from_context(
+    // (Transaction ONLY) Takes resource from worktop and return a bucket.
+    pub fn take_from_worktop(
         &mut self,
         amount: Option<Decimal>,
         resource_address: Address,
     ) -> Result<ValidatedData, RuntimeError> {
         re_debug!(
             self,
-            "(Transaction) Taking from context: amount = {:?}, resource_address = {:?}",
+            "(Transaction) Taking from worktop: amount = {:?}, resource_address = {:?}",
             amount,
             resource_address
         );
@@ -150,9 +150,9 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         Ok(validate_data(&scrypto_encode(&new_bid)).unwrap())
     }
 
-    // (Transaction ONLY) Assert context contains the given amount of resource.
-    pub fn put_into_context(&mut self, bid: Bid) -> Result<ValidatedData, RuntimeError> {
-        re_debug!(self, "(Transaction) Putting into context: bid = {:?}", bid);
+    // (Transaction ONLY) Returns resource back to worktop.
+    pub fn return_to_worktop(&mut self, bid: Bid) -> Result<ValidatedData, RuntimeError> {
+        re_debug!(self, "(Transaction) Returning to worktop: bid = {:?}", bid);
 
         let bucket = self
             .buckets
@@ -174,15 +174,15 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         Ok(validate_data(&scrypto_encode(&())).unwrap())
     }
 
-    // (Transaction ONLY) Assert context contains the given amount of resource.
-    pub fn assert_context_contains(
+    // (Transaction ONLY) Assert worktop contains at least this amount.
+    pub fn assert_worktop_contains(
         &mut self,
         amount: Decimal,
         resource_address: Address,
     ) -> Result<ValidatedData, RuntimeError> {
         re_debug!(
             self,
-            "(Transaction)  Asserting context resource: amount = {:?}, resource_address = {:?}",
+            "(Transaction)  Asserting worktop contains: amount = {:?}, resource_address = {:?}",
             amount,
             resource_address
         );
@@ -206,7 +206,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         }
     }
 
-    // (Transaction ONLY) Creates a temporary bucket ref.
+    // (Transaction ONLY) Creates a bucket ref.
     pub fn create_bucket_ref(&mut self, bid: Bid) -> Result<ValidatedData, RuntimeError> {
         re_debug!(self, "(Transaction) Creating bucket ref: bid = {:?}", bid);
 
@@ -235,7 +235,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         Ok(validate_data(&scrypto_encode(&new_rid)).unwrap())
     }
 
-    // (Transaction ONLY) Clone a temporary bucket ref.
+    // (Transaction ONLY) Clone a bucket ref.
     pub fn clone_bucket_ref(&mut self, rid: Rid) -> Result<ValidatedData, RuntimeError> {
         re_debug!(self, "(Transaction) Cloning bucket ref: rid = {:?}", rid);
 
@@ -253,7 +253,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         Ok(validate_data(&scrypto_encode(&new_rid)).unwrap())
     }
 
-    // (Transaction ONLY) Clone a temporary bucket ref.
+    // (Transaction ONLY) Drop a bucket ref.
     pub fn drop_bucket_ref(&mut self, rid: Rid) -> Result<ValidatedData, RuntimeError> {
         re_debug!(self, "(Transaction) Dropping bucket ref: rid = {:?}", rid);
 

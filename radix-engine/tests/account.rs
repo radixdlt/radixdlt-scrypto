@@ -64,7 +64,7 @@ fn account_to_bucket_to_account() {
     let amount = fungible_amount();
     let transaction = TransactionBuilder::new(&executor)
         .withdraw_from_account(&amount, account)
-        .take_from_context(amount.amount(), RADIX_TOKEN, |builder, bid| {
+        .take_from_worktop(amount.amount(), RADIX_TOKEN, |builder, bid| {
             builder.add_instruction(Instruction::CallMethod {
                 component_address: account,
                 method: "deposit".to_owned(),

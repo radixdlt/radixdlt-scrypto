@@ -101,7 +101,7 @@ pub fn generate_instruction(
     resolver: &mut NameResolver,
 ) -> Result<Instruction, GeneratorError> {
     Ok(match instruction {
-        ast::Instruction::TakeFromContext {
+        ast::Instruction::TakeFromWorktop {
             amount,
             resource_address,
             new_bucket,
@@ -111,12 +111,12 @@ pub fn generate_instruction(
                 .map_err(GeneratorError::IdAllocatorError)?;
             declare_bucket(new_bucket, resolver, bid)?;
 
-            Instruction::TakeFromContext {
+            Instruction::TakeFromWorktop {
                 amount: generate_decimal(amount)?,
                 resource_address: generate_address(resource_address)?,
             }
         }
-        ast::Instruction::TakeAllFromContext {
+        ast::Instruction::TakeAllFromWorktop {
             resource_address,
             new_bucket,
         } => {
@@ -125,17 +125,17 @@ pub fn generate_instruction(
                 .map_err(GeneratorError::IdAllocatorError)?;
             declare_bucket(new_bucket, resolver, bid)?;
 
-            Instruction::TakeAllFromContext {
+            Instruction::TakeAllFromWorktop {
                 resource_address: generate_address(resource_address)?,
             }
         }
-        ast::Instruction::PutIntoContext { bucket } => Instruction::PutIntoContext {
+        ast::Instruction::ReturnToWorktop { bucket } => Instruction::ReturnToWorktop {
             bid: generate_bucket(bucket, resolver)?,
         },
-        ast::Instruction::AssertContextContains {
+        ast::Instruction::AssertWorktopContains {
             amount,
             resource_address,
-        } => Instruction::AssertContextContains {
+        } => Instruction::AssertWorktopContains {
             amount: generate_decimal(amount)?,
             resource_address: generate_address(resource_address)?,
         },
@@ -725,8 +725,8 @@ mod tests {
     #[test]
     fn test_instructions() {
         generate_instruction_ok!(
-            r#"TAKE_FROM_CONTEXT  Decimal("1.0")  Address("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d")  Bucket("xrd_bucket");"#,
-            Instruction::TakeFromContext {
+            r#"TAKE_FROM_WORKTOP  Decimal("1.0")  Address("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d")  Bucket("xrd_bucket");"#,
+            Instruction::TakeFromWorktop {
                 amount: Decimal::from(1),
                 resource_address: Address::from_str(
                     "03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d"
@@ -735,8 +735,8 @@ mod tests {
             }
         );
         generate_instruction_ok!(
-            r#"TAKE_ALL_FROM_CONTEXT  Address("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d")  Bucket("xrd_bucket");"#,
-            Instruction::TakeAllFromContext {
+            r#"TAKE_ALL_FROM_WORKTOP  Address("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d")  Bucket("xrd_bucket");"#,
+            Instruction::TakeAllFromWorktop {
                 resource_address: Address::from_str(
                     "03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d"
                 )
@@ -744,8 +744,8 @@ mod tests {
             }
         );
         generate_instruction_ok!(
-            r#"ASSERT_CONTEXT_CONTAINS  Decimal("1.0")  Address("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d");"#,
-            Instruction::AssertContextContains {
+            r#"ASSERT_WORKTOP_CONTAINS  Decimal("1.0")  Address("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d");"#,
+            Instruction::AssertWorktopContains {
                 amount: Decimal::from(1),
                 resource_address: Address::from_str(
                     "03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d"
@@ -828,7 +828,7 @@ mod tests {
                             scrypto_encode(&Rid(1)),
                         ]
                     },
-                    Instruction::TakeFromContext {
+                    Instruction::TakeFromWorktop {
                         amount: Decimal::from(2),
                         resource_address: Address::from_str(
                             "030000000000000000000000000000000000000000000000000004"
@@ -843,21 +843,21 @@ mod tests {
                         method: "buy_gumball".into(),
                         args: vec![scrypto_encode(&Bid(512)),]
                     },
-                    Instruction::AssertContextContains {
+                    Instruction::AssertWorktopContains {
                         amount: Decimal::from(3),
                         resource_address: Address::from_str(
                             "030000000000000000000000000000000000000000000000000004"
                         )
                         .unwrap(),
                     },
-                    Instruction::AssertContextContains {
+                    Instruction::AssertWorktopContains {
                         amount: Decimal::from(1),
                         resource_address: Address::from_str(
                             "03aedb7960d1f87dc25138f4cd101da6c98d57323478d53c5fb951"
                         )
                         .unwrap(),
                     },
-                    Instruction::TakeAllFromContext {
+                    Instruction::TakeAllFromWorktop {
                         resource_address: Address::from_str(
                             "030000000000000000000000000000000000000000000000000004"
                         )
@@ -867,7 +867,7 @@ mod tests {
                     Instruction::CloneBucketRef { rid: Rid(514) },
                     Instruction::DropBucketRef { rid: Rid(515) },
                     Instruction::DropBucketRef { rid: Rid(514) },
-                    Instruction::PutIntoContext { bid: Bid(513) },
+                    Instruction::ReturnToWorktop { bid: Bid(513) },
                     Instruction::CallMethodWithAllResources {
                         component_address: Address::from_str(
                             "02d43f479e9b2beb9df98bc3888344fc25eda181e8f710ce1bf1de".into()

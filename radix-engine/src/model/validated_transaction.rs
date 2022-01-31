@@ -12,17 +12,17 @@ pub struct ValidatedTransaction {
 
 #[derive(Debug, Clone)]
 pub enum ValidatedInstruction {
-    TakeFromContext {
+    TakeFromWorktop {
         amount: Decimal,
         resource_address: Address,
     },
-    TakeAllFromContext {
+    TakeAllFromWorktop {
         resource_address: Address,
     },
-    PutIntoContext {
+    ReturnToWorktop {
         bid: Bid,
     },
-    AssertContextContains {
+    AssertWorktopContains {
         amount: Decimal,
         resource_address: Address,
     },

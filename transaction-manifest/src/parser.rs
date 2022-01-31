@@ -67,19 +67,19 @@ impl Parser {
     pub fn parse_instruction(&mut self) -> Result<Instruction, ParserError> {
         let token = self.advance()?;
         let instruction = match token.kind {
-            TokenKind::TakeFromContext => Instruction::TakeFromContext {
+            TokenKind::TakeFromWorktop => Instruction::TakeFromWorktop {
                 amount: self.parse_value()?,
                 resource_address: self.parse_value()?,
                 new_bucket: self.parse_value()?,
             },
-            TokenKind::TakeAllFromContext => Instruction::TakeAllFromContext {
+            TokenKind::TakeAllFromWorktop => Instruction::TakeAllFromWorktop {
                 resource_address: self.parse_value()?,
                 new_bucket: self.parse_value()?,
             },
-            TokenKind::PutIntoContext => Instruction::PutIntoContext {
+            TokenKind::ReturnToWorktop => Instruction::ReturnToWorktop {
                 bucket: self.parse_value()?,
             },
-            TokenKind::AssertContextContains => Instruction::AssertContextContains {
+            TokenKind::AssertWorktopContains => Instruction::AssertWorktopContains {
                 amount: self.parse_value()?,
                 resource_address: self.parse_value()?,
             },
@@ -643,8 +643,8 @@ mod tests {
     #[test]
     fn test_transaction() {
         parse_instruction_ok!(
-            r#"TAKE_FROM_CONTEXT  Decimal("1.0")  Address("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d")  Bucket("xrd_bucket");"#,
-            Instruction::TakeFromContext {
+            r#"TAKE_FROM_WORKTOP  Decimal("1.0")  Address("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d")  Bucket("xrd_bucket");"#,
+            Instruction::TakeFromWorktop {
                 amount: Value::Decimal(Value::String("1.0".into()).into()),
                 resource_address: Value::Address(
                     Value::String("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d".into())
@@ -654,8 +654,8 @@ mod tests {
             }
         );
         parse_instruction_ok!(
-            r#"TAKE_ALL_FROM_CONTEXT  Address("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d")  Bucket("xrd_bucket");"#,
-            Instruction::TakeAllFromContext {
+            r#"TAKE_ALL_FROM_WORKTOP  Address("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d")  Bucket("xrd_bucket");"#,
+            Instruction::TakeAllFromWorktop {
                 resource_address: Value::Address(
                     Value::String("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d".into())
                         .into()
@@ -664,8 +664,8 @@ mod tests {
             }
         );
         parse_instruction_ok!(
-            r#"ASSERT_CONTEXT_CONTAINS  Decimal("1.0")  Address("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d");"#,
-            Instruction::AssertContextContains {
+            r#"ASSERT_WORKTOP_CONTAINS  Decimal("1.0")  Address("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d");"#,
+            Instruction::AssertWorktopContains {
                 amount: Value::Decimal(Value::String("1.0".into()).into()),
                 resource_address: Value::Address(
                     Value::String("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d".into())

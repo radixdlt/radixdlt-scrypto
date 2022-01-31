@@ -133,8 +133,8 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         self
     }
 
-    /// Creates a temporary bucket by taking resources from transaction context.
-    pub fn take_from_context<F>(
+    /// Takes resources from worktop.
+    pub fn take_from_worktop<F>(
         &mut self,
         amount: Decimal,
         resource_address: Address,
@@ -144,20 +144,20 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         F: FnOnce(&mut Self, Bid) -> &mut Self,
     {
         let bid = self.id_allocator.new_bid().unwrap();
-        self.add_instruction(Instruction::TakeFromContext {
+        self.add_instruction(Instruction::TakeFromWorktop {
             amount,
             resource_address,
         });
         then(self, bid)
     }
 
-    /// Asserts that transaction context contains the given resource.
-    pub fn assert_context_contains(
+    /// Asserts that worktop contains at least this amount of resource.
+    pub fn assert_worktop_contains(
         &mut self,
         amount: Decimal,
         resource_address: Address,
     ) -> &mut Self {
-        self.add_instruction(Instruction::AssertContextContains {
+        self.add_instruction(Instruction::AssertWorktopContains {
             amount,
             resource_address,
         })
@@ -189,7 +189,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     /// function ABI, including resource buckets and bucket refs.
     ///
     /// If an account address is provided, resources will be withdrawn from the given account;
-    /// otherwise, they will be taken from transaction context.
+    /// otherwise, they will be taken from transaction worktop.
     pub fn call_function(
         &mut self,
         package_address: Address,
@@ -235,7 +235,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     /// method ABI, including resource buckets and bucket refs.
     ///
     /// If an account address is provided, resources will be withdrawn from the given account;
-    /// otherwise, they will be taken from transaction context.
+    /// otherwise, they will be taken from transaction worktop.
     pub fn call_method(
         &mut self,
         component_address: Address,
@@ -269,7 +269,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         self
     }
 
-    /// Calls a method with all the resources within the context.
+    /// Calls a method with all the resources on worktop.
     ///
     /// The callee method must have only one parameter with type `Vec<Bucket>`; otherwise,
     /// a runtime failure is triggered.
@@ -420,7 +420,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         resource_address: Address,
         mint_badge_address: Address,
     ) -> &mut Self {
-        self.take_from_context(1.into(), mint_badge_address, |builder, bid| {
+        self.take_from_worktop(1.into(), mint_badge_address, |builder, bid| {
             builder.create_bucket_ref(bid, |builder, rid| {
                 builder.add_instruction(Instruction::CallFunction {
                     package_address: SYSTEM_PACKAGE,
@@ -446,16 +446,16 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         })
     }
 
-    /// Creates an account with resource taken from context.
+    /// Creates an account with resource taken from transaction worktop.
     ///
-    /// Note: need to make sure the context contains the required resource.
+    /// Note: you need to make sure the worktop contains the required resource to avoid runtime error.
     pub fn new_account_with_resource(
         &mut self,
         key: Address,
         amount: Decimal,
         resource_address: Address,
     ) -> &mut Self {
-        self.take_from_context(amount, resource_address, |builder, bid| {
+        self.take_from_worktop(amount, resource_address, |builder, bid| {
             builder.add_instruction(Instruction::CallFunction {
                 package_address: ACCOUNT_PACKAGE,
                 blueprint_name: "Account".to_owned(),
@@ -615,7 +615,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                     self.withdraw_from_account(&resource_spec, account);
                 }
                 let mut created_bid = None;
-                self.take_from_context(
+                self.take_from_worktop(
                     resource_spec.amount(),
                     resource_spec.resource_address(),
                     |builder, bid| {
@@ -631,7 +631,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                     self.withdraw_from_account(&resource_spec, account);
                 }
                 let mut created_rid = None;
-                self.take_from_context(
+                self.take_from_worktop(
                     resource_spec.amount(),
                     resource_spec.resource_address(),
                     |builder, bid| {
