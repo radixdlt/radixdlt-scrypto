@@ -37,6 +37,7 @@ echo "Building examples..."
 echo "Running simulator..."
 (cd simulator; bash ./tests/resim.sh)
 (cd simulator; bash ./tests/scrypto.sh)
+(cd simulator; bash ./tests/manifest.sh)
 
 echo "Running benchmark..."
 (cd sbor-tests; cargo bench)

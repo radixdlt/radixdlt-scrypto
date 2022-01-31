@@ -211,6 +211,9 @@ jobs:
     - name: Run tests
       run: bash ./tests/resim.sh
       working-directory: simulator
+    - name: Run tests
+      run: bash ./tests/manifest.sh
+      working-directory: simulator
   simulator-scrypto:
     name: Run Simulator tests (scrypto)
     runs-on: ${{ matrix.os }}

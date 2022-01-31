@@ -226,7 +226,7 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
         #[cfg(not(feature = "alloc"))]
         let execution_time = Some(now.elapsed().as_millis());
 
-        let receipt = Receipt {
+        Receipt {
             transaction: validated_transaction,
             result: match error {
                 Some(error) => Err(error),
@@ -236,11 +236,6 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
             logs: track.logs().clone(),
             new_entities: track.new_entities().to_vec(),
             execution_time,
-        };
-        if self.trace {
-            #[cfg(not(feature = "alloc"))]
-            println!("{:?}", receipt);
         }
-        receipt
     }
 }

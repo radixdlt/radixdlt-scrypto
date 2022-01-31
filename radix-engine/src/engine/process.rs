@@ -189,15 +189,22 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
             resource_address
         );
 
-        let satisfied = match self.collected_resources.get(&resource_address) {
-            Some(bucket) => bucket.amount() > amount,
-            None => false,
+        let balance = match self.collected_resources.get(&resource_address) {
+            Some(bucket) => bucket.amount(),
+            None => Decimal::zero(),
         };
 
-        if satisfied {
-            Ok(validate_data(&scrypto_encode(&())).unwrap())
-        } else {
+        if balance < amount {
+            re_warn!(
+                self,
+                "Assertion failed: required = {}, actual = {}, resource_address = {}",
+                amount,
+                balance,
+                resource_address
+            );
             Err(RuntimeError::AssertionFailed)
+        } else {
+            Ok(validate_data(&scrypto_encode(&())).unwrap())
         }
     }
 
