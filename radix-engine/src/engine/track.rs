@@ -91,6 +91,8 @@ impl<'l, L: Ledger> Track<'l, L> {
             .collect();
         let mut process = Process::new(0, verbose, self);
 
+        // Always create a virtual bucket of signatures even if there is none.
+        // This is to make reasoning at transaction manifest & validator easier.
         let ecdsa_bucket = Bucket::new(
             ECDSA_TOKEN,
             ResourceType::NonFungible,

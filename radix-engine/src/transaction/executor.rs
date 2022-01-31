@@ -62,12 +62,12 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
         }
     }
 
-    /// outputs the underlying ledger.
+    /// Returns the underlying ledger.
     pub fn ledger(&self) -> &L {
         self.ledger
     }
 
-    /// outputs the current epoch.
+    /// Returns the current epoch.
     pub fn current_epoch(&self) -> u64 {
         self.current_epoch
     }
@@ -77,7 +77,7 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
         self.current_epoch = current_epoch;
     }
 
-    /// outputs the transaction nonce.
+    /// Returns the transaction nonce.
     pub fn nonce(&self) -> u64 {
         self.nonce
     }
@@ -155,7 +155,6 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
         #[cfg(not(feature = "alloc"))]
         let now = std::time::Instant::now();
 
-        // Ledger state updates introduced by this transaction
         let mut track = Track::new(
             self.ledger,
             self.current_epoch,

@@ -45,6 +45,10 @@ pub fn dump_component<T: Ledger>(address: Address, ledger: &T) -> Result<(), Dis
             let state_validated = validate_data(state).unwrap();
             println!("{}: {}", "State".green().bold(), state_validated);
 
+            // TODO: check authorization before dumping them.
+            // The current implementation recursively displays all referenced maps and vaults which
+            // the component may not have access to.
+
             // Dump lazy map using DFS
             // Consider using a proper Queue structure
             let mut queue: Vec<Mid> = state_validated.lazy_maps.clone();

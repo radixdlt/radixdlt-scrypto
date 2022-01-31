@@ -86,7 +86,7 @@ impl fmt::Debug for Receipt {
             )?;
         }
 
-        write!(f, "\n{}", "outputs:".bold().green())?;
+        write!(f, "\n{}", "Instruction Outputs:".bold().green())?;
         for (i, result) in self.outputs.iter().enumerate() {
             write!(f, "\n{} {:?}", prefix!(i, self.outputs), result)?;
         }
