@@ -173,6 +173,16 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         then(self, rid)
     }
 
+    /// Clones a temporary bucket ref.
+    pub fn clone_bucket_ref<F>(&mut self, rid: Rid, then: F) -> &mut Self
+    where
+        F: FnOnce(&mut Self, Rid) -> &mut Self,
+    {
+        let new_rid = self.id_allocator.new_rid().unwrap();
+        self.add_instruction(Instruction::CloneBucketRef { rid });
+        then(self, new_rid)
+    }
+
     /// Calls a function.
     ///
     /// The implementation will automatically prepare the arguments based on the
@@ -461,32 +471,32 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         resource_spec: &ResourceAmount,
         account: Address,
     ) -> &mut Self {
-        match resource_spec {
+        self.clone_bucket_ref(ECDSA_TOKEN_RID, |builder, rid| match resource_spec {
             ResourceAmount::Fungible {
                 amount,
                 resource_address,
-            } => self.add_instruction(Instruction::CallMethod {
+            } => builder.add_instruction(Instruction::CallMethod {
                 component_address: account,
                 method: "withdraw".to_owned(),
                 args: vec![
                     scrypto_encode(amount),
                     scrypto_encode(resource_address),
-                    scrypto_encode(&ECDSA_TOKEN_RID),
+                    scrypto_encode(&rid),
                 ],
             }),
             ResourceAmount::NonFungible {
                 ids,
                 resource_address,
-            } => self.add_instruction(Instruction::CallMethod {
+            } => builder.add_instruction(Instruction::CallMethod {
                 component_address: account,
                 method: "withdraw_nfts".to_owned(),
                 args: vec![
                     scrypto_encode(ids),
                     scrypto_encode(resource_address),
-                    scrypto_encode(&ECDSA_TOKEN_RID),
+                    scrypto_encode(&rid),
                 ],
             }),
-        }
+        })
     }
 
     //===============================

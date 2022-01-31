@@ -45,7 +45,7 @@ pub fn dump_component<T: Ledger>(address: Address, ledger: &T) -> Result<(), Dis
             let state_validated = validate_data(state).unwrap();
             println!("{}: {}", "State".green().bold(), state_validated);
 
-            // TODO: check authorization before dumping them.
+            // TODO: check authorization
             // The current implementation recursively displays all referenced maps and vaults which
             // the component may not have access to.
 

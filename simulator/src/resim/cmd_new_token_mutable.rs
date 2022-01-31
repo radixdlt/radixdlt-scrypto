@@ -100,15 +100,15 @@ pub fn handle_new_token_mutable(matches: &ArgMatches) -> Result<(), Error> {
         .new_token_mutable(metadata, mint_badge_addr)
         .build(signers)
         .map_err(Error::TransactionConstructionError)?;
-
-    let receipt = executor.run(transaction).unwrap();
+    let receipt = executor
+        .run(transaction)
+        .map_err(Error::TransactionValidationError)?;
 
     println!("{:?}", receipt);
     if receipt.result.is_ok() {
         configs.nonce = executor.nonce();
         set_configs(configs)?;
-        Ok(())
-    } else {
-        Err(Error::TransactionFailed)
     }
+
+    receipt.result.map_err(Error::TransactionExecutionError)
 }

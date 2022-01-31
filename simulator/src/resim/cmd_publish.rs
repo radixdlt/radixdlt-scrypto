@@ -73,16 +73,16 @@ pub fn handle_publish(matches: &ArgMatches) -> Result<(), Error> {
             .publish_package(&code)
             .build(signers)
             .map_err(Error::TransactionConstructionError)?;
-
-        let receipt = executor.run(transaction).unwrap();
+        let receipt = executor
+            .run(transaction)
+            .map_err(Error::TransactionValidationError)?;
 
         println!("{:?}", receipt);
         if receipt.result.is_ok() {
             configs.nonce = executor.nonce();
             set_configs(configs)?;
-            Ok(())
-        } else {
-            Err(Error::TransactionFailed)
         }
+
+        receipt.result.map_err(Error::TransactionExecutionError)
     }
 }

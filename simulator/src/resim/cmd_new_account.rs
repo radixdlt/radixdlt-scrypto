@@ -63,6 +63,6 @@ pub fn handle_new_account(matches: &ArgMatches) -> Result<(), Error> {
         set_configs(configs)?;
         Ok(())
     } else {
-        Err(Error::TransactionFailed)
+        receipt.result.map_err(Error::TransactionExecutionError)
     }
 }

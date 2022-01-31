@@ -42,9 +42,9 @@ pub enum DataValidationError {
 pub enum TransactionValidationError {
     DataValidationError(DataValidationError),
     IdAllocatorError(IdAllocatorError),
-    TempBucketNotFound(Bid),
-    TempBucketRefNotFound(Rid),
-    TempBucketLocked(Bid),
+    BucketNotFound(Bid),
+    BucketRefNotFound(Rid),
+    BucketLocked(Bid),
     InvalidSignature,
     UnexpectedEnd,
 }

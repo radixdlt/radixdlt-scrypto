@@ -128,8 +128,6 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
             resource_address
         );
 
-        // LI: all buckets in ` collected_resources` are non-empty
-
         let new_bid = self
             .id_allocator
             .new_bid()

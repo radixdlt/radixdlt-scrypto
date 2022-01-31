@@ -14,9 +14,9 @@ pub fn validate_transaction(
 
     // semantic analysis
     let mut id_allocator = IdAllocator::new(TRANSACTION_OBJECT_ID_RANGE);
-    let mut temp_buckets = HashMap::<Bid, usize>::new();
-    let mut temp_bucket_refs = HashMap::<Rid, Bid>::new();
-    temp_bucket_refs.insert(ECDSA_TOKEN_RID, ECDSA_TOKEN_BID);
+    let mut buckets = HashMap::<Bid, usize>::new();
+    let mut bucket_refs = HashMap::<Rid, Bid>::new();
+    bucket_refs.insert(ECDSA_TOKEN_RID, ECDSA_TOKEN_BID);
 
     for (i, inst) in transaction.instructions.iter().enumerate() {
         match inst.clone() {
@@ -24,7 +24,7 @@ pub fn validate_transaction(
                 amount,
                 resource_address,
             } => {
-                temp_buckets.insert(
+                buckets.insert(
                     id_allocator
                         .new_bid()
                         .map_err(TransactionValidationError::IdAllocatorError)?,
@@ -36,7 +36,7 @@ pub fn validate_transaction(
                 });
             }
             Instruction::TakeAllFromContext { resource_address } => {
-                temp_buckets.insert(
+                buckets.insert(
                     id_allocator
                         .new_bid()
                         .map_err(TransactionValidationError::IdAllocatorError)?,
@@ -45,13 +45,13 @@ pub fn validate_transaction(
                 instructions.push(ValidatedInstruction::TakeAllFromContext { resource_address });
             }
             Instruction::PutIntoContext { bid } => {
-                if !temp_buckets.contains_key(&bid) {
-                    return Err(TransactionValidationError::TempBucketNotFound(bid));
+                if !buckets.contains_key(&bid) {
+                    return Err(TransactionValidationError::BucketNotFound(bid));
                 }
-                if *temp_buckets.get(&bid).unwrap() != 0 {
-                    return Err(TransactionValidationError::TempBucketLocked(bid));
+                if *buckets.get(&bid).unwrap() != 0 {
+                    return Err(TransactionValidationError::BucketLocked(bid));
                 }
-                temp_buckets.remove(&bid);
+                buckets.remove(&bid);
                 instructions.push(ValidatedInstruction::PutIntoContext { bid });
             }
             Instruction::AssertContextContains {
@@ -64,11 +64,11 @@ pub fn validate_transaction(
                 });
             }
             Instruction::CreateBucketRef { bid } => {
-                if !temp_buckets.contains_key(&bid) {
-                    return Err(TransactionValidationError::TempBucketNotFound(bid));
+                if !buckets.contains_key(&bid) {
+                    return Err(TransactionValidationError::BucketNotFound(bid));
                 }
-                temp_buckets.entry(bid).and_modify(|cnt| *cnt += 1);
-                temp_bucket_refs.insert(
+                buckets.entry(bid).and_modify(|cnt| *cnt += 1);
+                bucket_refs.insert(
                     id_allocator
                         .new_rid()
                         .map_err(TransactionValidationError::IdAllocatorError)?,
@@ -77,13 +77,13 @@ pub fn validate_transaction(
                 instructions.push(ValidatedInstruction::CreateBucketRef { bid });
             }
             Instruction::CloneBucketRef { rid } => {
-                let bid = if let Some(b) = temp_bucket_refs.get(&rid) {
+                let bid = if let Some(b) = bucket_refs.get(&rid) {
                     *b
                 } else {
-                    return Err(TransactionValidationError::TempBucketRefNotFound(rid));
+                    return Err(TransactionValidationError::BucketRefNotFound(rid));
                 };
-                temp_buckets.entry(bid).and_modify(|cnt| *cnt += 1);
-                temp_bucket_refs.insert(
+                buckets.entry(bid).and_modify(|cnt| *cnt += 1);
+                bucket_refs.insert(
                     id_allocator
                         .new_rid()
                         .map_err(TransactionValidationError::IdAllocatorError)?,
@@ -92,13 +92,13 @@ pub fn validate_transaction(
                 instructions.push(ValidatedInstruction::CloneBucketRef { rid });
             }
             Instruction::DropBucketRef { rid } => {
-                let bid = if let Some(b) = temp_bucket_refs.get(&rid) {
+                let bid = if let Some(b) = bucket_refs.get(&rid) {
                     *b
                 } else {
-                    return Err(TransactionValidationError::TempBucketRefNotFound(rid));
+                    return Err(TransactionValidationError::BucketRefNotFound(rid));
                 };
-                temp_buckets.entry(bid).and_modify(|cnt| *cnt -= 1);
-                temp_bucket_refs.remove(&rid);
+                buckets.entry(bid).and_modify(|cnt| *cnt -= 1);
+                bucket_refs.remove(&rid);
                 instructions.push(ValidatedInstruction::DropBucketRef { rid });
             }
             Instruction::CallFunction {
@@ -111,7 +111,7 @@ pub fn validate_transaction(
                     package_address,
                     blueprint_name,
                     function,
-                    args: validate_args(args, &mut temp_buckets, &mut temp_bucket_refs)?,
+                    args: validate_args(args, &mut buckets, &mut bucket_refs)?,
                 });
             }
             Instruction::CallMethod {
@@ -122,14 +122,14 @@ pub fn validate_transaction(
                 instructions.push(ValidatedInstruction::CallMethod {
                     component_address,
                     method,
-                    args: validate_args(args, &mut temp_buckets, &mut temp_bucket_refs)?,
+                    args: validate_args(args, &mut buckets, &mut bucket_refs)?,
                 });
             }
             Instruction::CallMethodWithAllResources {
                 component_address,
                 method,
             } => {
-                temp_buckets.retain(|_, v| *v != 0);
+                buckets.retain(|_, v| *v != 0);
                 instructions.push(ValidatedInstruction::CallMethodWithAllResources {
                     component_address,
                     method,
@@ -152,27 +152,27 @@ pub fn validate_transaction(
 
 fn validate_args(
     args: Vec<Vec<u8>>,
-    temp_buckets: &mut HashMap<Bid, usize>,
-    temp_bucket_refs: &mut HashMap<Rid, Bid>,
+    buckets: &mut HashMap<Bid, usize>,
+    bucket_refs: &mut HashMap<Rid, Bid>,
 ) -> Result<Vec<ValidatedData>, TransactionValidationError> {
     let mut validated_args = vec![];
     for arg in args {
         let validated_arg =
             validate_data(&arg).map_err(TransactionValidationError::DataValidationError)?;
         for bid in &validated_arg.buckets {
-            if !temp_buckets.contains_key(bid) {
-                return Err(TransactionValidationError::TempBucketNotFound(*bid));
+            if !buckets.contains_key(bid) {
+                return Err(TransactionValidationError::BucketNotFound(*bid));
             }
-            if *temp_buckets.get(bid).unwrap() != 0 {
-                return Err(TransactionValidationError::TempBucketLocked(*bid));
+            if *buckets.get(bid).unwrap() != 0 {
+                return Err(TransactionValidationError::BucketLocked(*bid));
             }
-            temp_buckets.remove(bid);
+            buckets.remove(bid);
         }
         for rid in &validated_arg.bucket_refs {
-            if !temp_bucket_refs.contains_key(rid) {
-                return Err(TransactionValidationError::TempBucketRefNotFound(*rid));
+            if !bucket_refs.contains_key(rid) {
+                return Err(TransactionValidationError::BucketRefNotFound(*rid));
             }
-            temp_bucket_refs.remove(rid);
+            bucket_refs.remove(rid);
         }
         validated_args.push(validated_arg);
     }

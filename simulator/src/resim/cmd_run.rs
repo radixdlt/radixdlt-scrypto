@@ -46,14 +46,15 @@ pub fn handle_run(matches: &ArgMatches) -> Result<(), Error> {
     let mut ledger = FileBasedLedger::with_bootstrap(get_data_dir()?);
     let mut executor =
         TransactionExecutor::new(&mut ledger, configs.current_epoch, configs.nonce, trace);
-    let receipt = executor.run(transaction).unwrap();
+    let receipt = executor
+        .run(transaction)
+        .map_err(Error::TransactionValidationError)?;
 
     println!("{:?}", receipt);
     if receipt.result.is_ok() {
         configs.nonce = executor.nonce();
         set_configs(configs)?;
-        Ok(())
-    } else {
-        Err(Error::TransactionFailed)
     }
+
+    receipt.result.map_err(Error::TransactionExecutionError)
 }
