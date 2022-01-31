@@ -78,7 +78,7 @@ pub struct Process<'r, 'l, L: Ledger> {
     /// to `buckets`.
     ///
     /// Loop invariant: all buckets should be NON_EMPTY.
-    collected_resources: HashMap<Address, Bucket>,
+    worktop: HashMap<Address, Bucket>,
 }
 
 /// Represents an interpreter instance.
@@ -111,11 +111,11 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
             moving_bucket_refs: HashMap::new(),
             vm: None,
             id_allocator: IdAllocator::new(TRANSACTION_OBJECT_ID_RANGE),
-            collected_resources: HashMap::new(),
+            worktop: HashMap::new(),
         }
     }
 
-    // (Transaction ONLY) Takes resource from worktop and return a bucket.
+    // (Transaction ONLY) Takes resource from worktop and returns a bucket.
     pub fn take_from_worktop(
         &mut self,
         amount: Option<Decimal>,
@@ -132,12 +132,12 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
             .id_allocator
             .new_bid()
             .map_err(RuntimeError::IdAllocatorError)?;
-        let bucket = match self.collected_resources.remove(&resource_address) {
+        let bucket = match self.worktop.remove(&resource_address) {
             Some(mut bucket) => {
                 if let Some(amount) = amount {
                     let to_return = bucket.take(amount).map_err(RuntimeError::BucketError)?;
                     if !bucket.amount().is_zero() {
-                        self.collected_resources.insert(resource_address, bucket);
+                        self.worktop.insert(resource_address, bucket);
                     }
                     Ok(to_return)
                 } else {
@@ -160,15 +160,12 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
             .ok_or(RuntimeError::BucketNotFound(bid))?;
 
         if !bucket.amount().is_zero() {
-            if let Some(existing_bucket) =
-                self.collected_resources.get_mut(&bucket.resource_address())
-            {
+            if let Some(existing_bucket) = self.worktop.get_mut(&bucket.resource_address()) {
                 existing_bucket
                     .put(bucket)
                     .map_err(RuntimeError::BucketError)?;
             } else {
-                self.collected_resources
-                    .insert(bucket.resource_address(), bucket);
+                self.worktop.insert(bucket.resource_address(), bucket);
             }
         }
         Ok(validate_data(&scrypto_encode(&())).unwrap())
@@ -182,12 +179,12 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
     ) -> Result<ValidatedData, RuntimeError> {
         re_debug!(
             self,
-            "(Transaction)  Asserting worktop contains: amount = {:?}, resource_address = {:?}",
+            "(Transaction) Asserting worktop contains: amount = {:?}, resource_address = {:?}",
             amount,
             resource_address
         );
 
-        let balance = match self.collected_resources.get(&resource_address) {
+        let balance = match self.worktop.get(&resource_address) {
             Some(bucket) => bucket.amount(),
             None => Decimal::zero(),
         };
@@ -270,14 +267,14 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
     ) -> Result<ValidatedData, RuntimeError> {
         re_debug!(
             self,
-            "(Transaction)  Call method with all resources started"
+            "(Transaction) Calling method with all resources started"
         );
         // 1. Move collected resource to temp buckets
-        for (_, bucket) in self.collected_resources.clone() {
+        for (_, bucket) in self.worktop.clone() {
             let bid = self.track.new_bid(); // this is unbounded
             self.buckets.insert(bid, bucket);
         }
-        self.collected_resources.clear();
+        self.worktop.clear();
 
         // 2. Drop all bucket refs
         let rids: Vec<Rid> = self.bucket_refs.keys().cloned().collect();
@@ -294,7 +291,10 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         )?;
         let result = self.call(invocation);
 
-        re_debug!(self, "(Transaction) Call method with all resources ended");
+        re_debug!(
+            self,
+            "(Transaction) Calling method with all resources ended"
+        );
         result
     }
 
@@ -320,10 +320,10 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
             for (_, bucket) in buckets {
                 if !bucket.amount().is_zero() {
                     let address = bucket.resource_address();
-                    if let Some(b) = self.collected_resources.get_mut(&address) {
+                    if let Some(b) = self.worktop.get_mut(&address) {
                         b.put(bucket).unwrap();
                     } else {
-                        self.collected_resources.insert(address, bucket);
+                        self.worktop.insert(address, bucket);
                     }
                 }
             }
@@ -541,7 +541,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
             re_warn!(self, "Dangling bucket: {:?}, {:?}", bid, bucket);
             success = false;
         }
-        for (_, bucket) in &self.collected_resources {
+        for (_, bucket) in &self.worktop {
             re_warn!(self, "Dangling resource: {:?}", bucket);
             success = false;
         }

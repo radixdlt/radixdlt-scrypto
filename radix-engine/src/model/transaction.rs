@@ -12,13 +12,13 @@ pub struct Transaction {
 /// Represents an unvalidated instruction in transaction
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
 pub enum Instruction {
-    /// Takes resource from worktop and return a bucket.
+    /// Takes fixed amount resource from worktop.
     TakeFromWorktop {
         amount: Decimal,
         resource_address: Address,
     },
 
-    /// Takes all resource from worktop and return a bucket.
+    /// Takes all of a given resource from worktop.
     TakeAllFromWorktop { resource_address: Address },
 
     /// Returns resource to worktop.
@@ -30,13 +30,13 @@ pub enum Instruction {
         resource_address: Address,
     },
 
-    /// Creates a temporary bucket ref.
+    /// Creates a bucket ref.
     CreateBucketRef { bid: Bid },
 
-    /// Clones a temporary bucket ref.
+    /// Clones a bucket ref.
     CloneBucketRef { rid: Rid },
 
-    /// Drops a temporary bucket ref.
+    /// Drops a bucket ref.
     DropBucketRef { rid: Rid },
 
     /// Calls a blueprint function.

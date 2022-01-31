@@ -163,7 +163,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         })
     }
 
-    /// Creates a temporary bucket ref.
+    /// Creates a bucket ref.
     pub fn create_bucket_ref<F>(&mut self, bid: Bid, then: F) -> &mut Self
     where
         F: FnOnce(&mut Self, Rid) -> &mut Self,
@@ -173,7 +173,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         then(self, rid)
     }
 
-    /// Clones a temporary bucket ref.
+    /// Clones a bucket ref.
     pub fn clone_bucket_ref<F>(&mut self, rid: Rid, then: F) -> &mut Self
     where
         F: FnOnce(&mut Self, Rid) -> &mut Self,
