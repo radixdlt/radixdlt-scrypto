@@ -76,6 +76,9 @@ impl Parser {
                 resource_address: self.parse_value()?,
                 new_bucket: self.parse_value()?,
             },
+            TokenKind::PutIntoContext => Instruction::PutIntoContext {
+                bucket: self.parse_value()?,
+            },
             TokenKind::AssertContextContains => Instruction::AssertContextContains {
                 amount: self.parse_value()?,
                 resource_address: self.parse_value()?,

@@ -19,6 +19,9 @@ pub enum ValidatedInstruction {
     TakeAllFromContext {
         resource_address: Address,
     },
+    PutIntoContext {
+        bid: Bid,
+    },
     AssertContextContains {
         amount: Decimal,
         resource_address: Address,

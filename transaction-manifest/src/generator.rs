@@ -129,6 +129,9 @@ pub fn generate_instruction(
                 resource_address: generate_address(resource_address)?,
             }
         }
+        ast::Instruction::PutIntoContext { bucket } => Instruction::PutIntoContext {
+            bid: generate_bucket(bucket, resolver)?,
+        },
         ast::Instruction::AssertContextContains {
             amount,
             resource_address,
@@ -864,6 +867,7 @@ mod tests {
                     Instruction::CloneBucketRef { rid: Rid(514) },
                     Instruction::DropBucketRef { rid: Rid(515) },
                     Instruction::DropBucketRef { rid: Rid(514) },
+                    Instruction::PutIntoContext { bid: Bid(513) },
                     Instruction::CallMethodWithAllResources {
                         component_address: Address::from_str(
                             "02d43f479e9b2beb9df98bc3888344fc25eda181e8f710ce1bf1de".into()

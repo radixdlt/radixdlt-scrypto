@@ -10,5 +10,6 @@ CREATE_BUCKET_REF  Bucket("remaining_xrd")  BucketRef("badge1");
 CLONE_BUCKET_REF  BucketRef("badge1")  BucketRef("badge2");
 DROP_BUCKET_REF  BucketRef("badge2");
 DROP_BUCKET_REF  BucketRef("badge1");
+PUT_INTO_CONTEXT  Bucket("remaining_xrd");
 
 CALL_METHOD_WITH_ALL_RESOURCES  Address("02d43f479e9b2beb9df98bc3888344fc25eda181e8f710ce1bf1de")  "deposit_batch";

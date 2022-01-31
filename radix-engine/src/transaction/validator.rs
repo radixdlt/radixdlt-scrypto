@@ -44,6 +44,16 @@ pub fn validate_transaction(
                 );
                 instructions.push(ValidatedInstruction::TakeAllFromContext { resource_address });
             }
+            Instruction::PutIntoContext { bid } => {
+                if !temp_buckets.contains_key(&bid) {
+                    return Err(TransactionValidationError::TempBucketNotFound(bid));
+                }
+                if *temp_buckets.get(&bid).unwrap() != 0 {
+                    return Err(TransactionValidationError::TempBucketLocked(bid));
+                }
+                temp_buckets.remove(&bid);
+                instructions.push(ValidatedInstruction::PutIntoContext { bid });
+            }
             Instruction::AssertContextContains {
                 amount,
                 resource_address,

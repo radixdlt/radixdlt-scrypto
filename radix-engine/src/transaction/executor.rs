@@ -174,6 +174,7 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
                 ValidatedInstruction::TakeAllFromContext { resource_address } => {
                     proc.take_from_context(None, resource_address)
                 }
+                ValidatedInstruction::PutIntoContext { bid } => proc.put_into_context(bid),
                 ValidatedInstruction::AssertContextContains {
                     amount,
                     resource_address,

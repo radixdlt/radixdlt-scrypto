@@ -21,6 +21,9 @@ pub enum Instruction {
     /// Creates a temporary bucket by taking all resources of the given type from transaction context.
     TakeAllFromContext { resource_address: Address },
 
+    /// Puts a bucket of resource into transaction context.
+    PutIntoContext { bid: Bid },
+
     /// Asserts transaction context contains the given amount of resources.
     AssertContextContains {
         amount: Decimal,

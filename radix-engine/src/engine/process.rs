@@ -76,6 +76,8 @@ pub struct Process<'r, 'l, L: Ledger> {
     /// When the `depth == 0` (transaction), all returned resources from CALLs are coalesced
     /// into a map of unidentified buckets indexed by resource address, instead of moving back
     /// to `buckets`.
+    ///
+    /// Loop invariant: all buckets should be NON_EMPTY.
     collected_resources: HashMap<Address, Bucket>,
 }
 
@@ -121,7 +123,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
     ) -> Result<ValidatedData, RuntimeError> {
         re_debug!(
             self,
-            "Creating bucket: amount = {:?}, resource_address = {:?}",
+            "Taking from context: amount = {:?}, resource_address = {:?}",
             amount,
             resource_address
         );
@@ -148,6 +150,30 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         }?;
         self.buckets.insert(new_bid, bucket);
         Ok(validate_data(&scrypto_encode(&new_bid)).unwrap())
+    }
+
+    // (Transaction ONLY) Assert context contains the given amount of resource.
+    pub fn put_into_context(&mut self, bid: Bid) -> Result<ValidatedData, RuntimeError> {
+        re_debug!(self, "Putting into context: bid = {:?}", bid);
+
+        let bucket = self
+            .buckets
+            .remove(&bid)
+            .ok_or(RuntimeError::BucketNotFound(bid))?;
+
+        if !bucket.amount().is_zero() {
+            if let Some(existing_bucket) =
+                self.collected_resources.get_mut(&bucket.resource_address())
+            {
+                existing_bucket
+                    .put(bucket)
+                    .map_err(RuntimeError::BucketError)?;
+            } else {
+                self.collected_resources
+                    .insert(bucket.resource_address(), bucket);
+            }
+        }
+        Ok(validate_data(&scrypto_encode(&())).unwrap())
     }
 
     // (Transaction ONLY) Assert context contains the given amount of resource.

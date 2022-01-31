@@ -16,6 +16,10 @@ pub enum Instruction {
         new_bucket: Value,
     },
 
+    PutIntoContext {
+        bucket: Value,
+    },
+
     AssertContextContains {
         amount: Value,
         resource_address: Value,
