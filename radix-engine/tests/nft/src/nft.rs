@@ -27,7 +27,7 @@ blueprint! {
 
             // Mint an NFT
             let nft = nft_resource_def.mint_nft(
-                0,
+                NftKey(0),
                 Sandwich {
                     name: "Test".to_owned(),
                     available: false,
@@ -43,21 +43,21 @@ blueprint! {
                 .metadata("name", "Katz's Sandwiches")
                 .initial_supply_non_fungible([
                     (
-                        1,
+                        NftKey(1),
                         Sandwich {
                             name: "One".to_owned(),
                             available: true,
                         },
                     ),
                     (
-                        2,
+                        NftKey(2),
                         Sandwich {
                             name: "Two".to_owned(),
                             available: true,
                         },
                     ),
                     (
-                        3,
+                        NftKey(3),
                         Sandwich {
                             name: "Three".to_owned(),
                             available: true,
@@ -68,13 +68,13 @@ blueprint! {
 
         pub fn update_and_get_nft() -> (Bucket, Bucket) {
             let (mint_badge, mut resource_def, bucket) = Self::create_nft_mutable();
-            let mut data: Sandwich = resource_def.get_nft_data(0);
+            let mut data: Sandwich = resource_def.get_nft_data(NftKey(0));
             assert_eq!(data.available, false);
 
             data.available = true;
-            resource_def.update_nft_data(0, data, mint_badge.present());
+            resource_def.update_nft_data(NftKey(0), data, mint_badge.present());
 
-            let data: Sandwich = resource_def.get_nft_data(0);
+            let data: Sandwich = resource_def.get_nft_data(NftKey(0));
             assert_eq!(data.available, true);
             (mint_badge, bucket)
         }
@@ -105,16 +105,16 @@ blueprint! {
         pub fn get_nft_ids_bucket() -> (Bucket, Bucket) {
             let mut bucket = Self::create_nft_fixed();
             let nft = bucket.take(1);
-            assert_eq!(bucket.get_nft_ids(), Vec::from([2, 3]));
-            assert_eq!(nft.get_nft_ids(), Vec::from([1]));
+            assert_eq!(bucket.get_nft_ids(), Vec::from([NftKey(2), NftKey(3)]));
+            assert_eq!(nft.get_nft_ids(), Vec::from([NftKey(1)]));
             (bucket, nft)
         }
 
         pub fn get_nft_ids_vault() -> Bucket {
             let mut vault = Vault::with_bucket(Self::create_nft_fixed());
             let nft = vault.take(1);
-            assert_eq!(vault.get_nft_ids(), Vec::from([2, 3]));
-            assert_eq!(nft.get_nft_ids(), Vec::from([1]));
+            assert_eq!(vault.get_nft_ids(), Vec::from([NftKey(2), NftKey(3)]));
+            assert_eq!(nft.get_nft_ids(), Vec::from([NftKey(1)]));
             nft
         }
 

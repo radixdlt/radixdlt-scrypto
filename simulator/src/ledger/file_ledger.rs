@@ -165,12 +165,12 @@ impl Ledger for FileBasedLedger {
         )
     }
 
-    fn get_nft(&self, resource_address: Address, id: u128) -> Option<Nft> {
+    fn get_nft(&self, resource_address: Address, id: NftKey) -> Option<Nft> {
         Self::read(self.get_path(NFTS, format!("{}_{}", resource_address, id), FILE_EXT))
             .map(Self::decode)
     }
 
-    fn put_nft(&mut self, resource_address: Address, id: u128, nft: Nft) {
+    fn put_nft(&mut self, resource_address: Address, id: NftKey, nft: Nft) {
         Self::write(
             self.get_path(NFTS, format!("{}_{}", resource_address, id), FILE_EXT),
             Self::encode(&nft),
