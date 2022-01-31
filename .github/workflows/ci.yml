@@ -131,8 +131,8 @@ jobs:
     - name: Build no-std-lib
       run: cargo build --target wasm32-unknown-unknown --release
       working-directory: examples/core/no-std-lib
-  scrypto-defi-nft-examples:
-    name: Run Scrypto DeFi & NFT examples
+  scrypto-defi-examples:
+    name: Run Scrypto DeFi examples
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -141,32 +141,30 @@ jobs:
     - uses: actions/checkout@v2
     - name: Add wasm target
       run: rustup target add wasm32-unknown-unknown
-    - name: Build auto-lend
-      run: cargo build --target wasm32-unknown-unknown --release
-      working-directory: examples/defi/auto-lend
-    - name: Build mutual-farm
-      run: cargo build --target wasm32-unknown-unknown --release
-      working-directory: examples/defi/mutual-farm
-    - name: Build price-oracle
-      run: cargo build --target wasm32-unknown-unknown --release
-      working-directory: examples/defi/price-oracle
-    - name: Build radiswap
-      run: cargo build --target wasm32-unknown-unknown --release
-      working-directory: examples/defi/radiswap
-    - name: Build regulated-token
-      run: cargo build --target wasm32-unknown-unknown --release
-      working-directory: examples/defi/regulated-token
-    - name: Build synthetics
-      run: cargo build --target wasm32-unknown-unknown --release
-      working-directory: examples/defi/synthetics
-    - name: Build x-perp-futures
-      run: cargo build --target wasm32-unknown-unknown --release
-      working-directory: examples/defi/x-perp-futures
+    - name: Run demo
+      run: ./demo.sh
+      working-directory: examples/defi
+  scrypto-nft-examples:
+    name: Run Scrypto NFT examples
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+    - uses: actions/checkout@v2
+    - name: Add wasm target
+      run: rustup target add wasm32-unknown-unknown
     - name: Build magic-card
       run: cargo build --target wasm32-unknown-unknown --release
       working-directory: examples/nft/magic-card
+    - name: Build magic-card test
+      run: cargo test --release
+      working-directory: examples/nft/magic-card
     - name: Build sporting-event
       run: cargo build --target wasm32-unknown-unknown --release
+      working-directory: examples/nft/sporting-event
+    - name: Build sporting-event test
+      run: cargo test --release
       working-directory: examples/nft/sporting-event
   radix-engine:
     name: Run Radix Engine tests

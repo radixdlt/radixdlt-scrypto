@@ -123,7 +123,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
     ) -> Result<ValidatedData, RuntimeError> {
         re_debug!(
             self,
-            "Taking from context: amount = {:?}, resource_address = {:?}",
+            "(Transaction) Taking from context: amount = {:?}, resource_address = {:?}",
             amount,
             resource_address
         );
@@ -152,7 +152,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
 
     // (Transaction ONLY) Assert context contains the given amount of resource.
     pub fn put_into_context(&mut self, bid: Bid) -> Result<ValidatedData, RuntimeError> {
-        re_debug!(self, "Putting into context: bid = {:?}", bid);
+        re_debug!(self, "(Transaction) Putting into context: bid = {:?}", bid);
 
         let bucket = self
             .buckets
@@ -182,7 +182,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
     ) -> Result<ValidatedData, RuntimeError> {
         re_debug!(
             self,
-            "Asserting: amount = {:?}, resource_address = {:?}",
+            "(Transaction)  Asserting context resource: amount = {:?}, resource_address = {:?}",
             amount,
             resource_address
         );
@@ -195,7 +195,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         if balance < amount {
             re_warn!(
                 self,
-                "Assertion failed: required = {}, actual = {}, resource_address = {}",
+                "(Transaction) Assertion failed: required = {}, actual = {}, resource_address = {}",
                 amount,
                 balance,
                 resource_address
@@ -208,7 +208,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
 
     // (Transaction ONLY) Creates a temporary bucket ref.
     pub fn create_bucket_ref(&mut self, bid: Bid) -> Result<ValidatedData, RuntimeError> {
-        re_debug!(self, "Creating bucket ref: bid = {:?}", bid);
+        re_debug!(self, "(Transaction) Creating bucket ref: bid = {:?}", bid);
 
         let new_rid = self
             .id_allocator
@@ -237,7 +237,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
 
     // (Transaction ONLY) Clone a temporary bucket ref.
     pub fn clone_bucket_ref(&mut self, rid: Rid) -> Result<ValidatedData, RuntimeError> {
-        re_debug!(self, "Cloning bucket ref: rid = {:?}", rid);
+        re_debug!(self, "(Transaction) Cloning bucket ref: rid = {:?}", rid);
 
         let new_rid = self
             .id_allocator
@@ -255,7 +255,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
 
     // (Transaction ONLY) Clone a temporary bucket ref.
     pub fn drop_bucket_ref(&mut self, rid: Rid) -> Result<ValidatedData, RuntimeError> {
-        re_debug!(self, "Dropping bucket ref: rid = {:?}", rid);
+        re_debug!(self, "(Transaction) Dropping bucket ref: rid = {:?}", rid);
 
         self.handle_drop_bucket_ref(DropBucketRefInput { rid })?;
 
@@ -268,7 +268,10 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         component_address: Address,
         method: &str,
     ) -> Result<ValidatedData, RuntimeError> {
-        re_debug!(self, "Call method started");
+        re_debug!(
+            self,
+            "(Transaction)  Call method with all resources started"
+        );
         // 1. Move collected resource to temp buckets
         for (_, bucket) in self.collected_resources.clone() {
             let bid = self.track.new_bid(); // this is unbounded
@@ -291,7 +294,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         )?;
         let result = self.call(invocation);
 
-        re_debug!(self, "Call method ended");
+        re_debug!(self, "(Transaction) Call method with all resources ended");
         result
     }
 
@@ -309,8 +312,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         bucket_refs: HashMap<Rid, BucketRef>,
     ) -> Result<(), RuntimeError> {
         if self.depth == 0 {
-            // special resource handling for transaction
-            let rids: Vec<Rid> = self.bucket_refs.keys().cloned().collect();
+            let rids: Vec<Rid> = bucket_refs.keys().cloned().collect();
             self.bucket_refs.extend(bucket_refs);
             for rid in rids {
                 self.drop_bucket_ref(rid)?;
@@ -1659,7 +1661,12 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
                 .bucket_refs
                 .remove(&rid)
                 .ok_or(RuntimeError::BucketRefNotFound(rid))?;
-            re_debug!(self, "Dropping bucket ref {:?}: {:?}", rid, bucket_ref);
+            re_debug!(
+                self,
+                "Dropping bucket ref: rid = {:?}, bucket = {:?}",
+                rid,
+                bucket_ref
+            );
             (Rc::strong_count(&bucket_ref) - 1, bucket_ref.bucket_id())
         };
 
