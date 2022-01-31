@@ -242,13 +242,19 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         self.bucket_refs.insert(rid, bucket_ref);
     }
 
-    /// Puts buckets and bucket refs into this process.
-    pub fn put_resources(
+    /// Moved in buckets and bucket refs to this process.
+    pub fn move_in_resources(
         &mut self,
         buckets: HashMap<Bid, Bucket>,
         bucket_refs: HashMap<Rid, BucketRef>,
-    ) {
+    ) -> Result<(), RuntimeError> {
         if self.depth == 0 {
+            // special resource handling for transaction
+            let rids: Vec<Rid> = self.bucket_refs.keys().cloned().collect();
+            self.bucket_refs.extend(bucket_refs);
+            for rid in rids {
+                self.drop_bucket_ref(rid)?;
+            }
             for (_, bucket) in buckets {
                 if !bucket.amount().is_zero() {
                     let address = bucket.resource_address();
@@ -259,16 +265,16 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
                     }
                 }
             }
-            // We're deliberately not handling bucket refs.
-            // With REP-2, all bucket ref should be automatically dropped so no return is expected
         } else {
-            self.buckets.extend(buckets);
             self.bucket_refs.extend(bucket_refs);
+            self.buckets.extend(buckets);
         }
+
+        Ok(())
     }
 
-    /// Takes all **moving** buckets and bucket refs from this process.
-    pub fn take_moving_resources(&mut self) -> (HashMap<Bid, Bucket>, HashMap<Rid, BucketRef>) {
+    /// Moved out all marked buckets and bucket refs from this process.
+    pub fn move_out_resources(&mut self) -> (HashMap<Bid, Bucket>, HashMap<Rid, BucketRef>) {
         let buckets = self.moving_buckets.drain().collect();
         let bucket_refs = self.moving_bucket_refs.drain().collect();
         (buckets, bucket_refs)
@@ -388,17 +394,17 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         for arg in &invocation.args {
             self.process_call_data(arg)?;
         }
-        let (buckets_out, bucket_refs_out) = self.take_moving_resources();
+        let (buckets_out, bucket_refs_out) = self.move_out_resources();
         let mut process = Process::new(self.depth + 1, self.trace, self.track);
-        process.put_resources(buckets_out, bucket_refs_out);
+        process.move_in_resources(buckets_out, bucket_refs_out)?;
 
         // run the function
         let result = process.run(invocation)?;
         process.check_resource()?;
 
         // move resource
-        let (buckets_in, bucket_refs_in) = process.take_moving_resources();
-        self.put_resources(buckets_in, bucket_refs_in);
+        let (buckets_in, bucket_refs_in) = process.move_out_resources();
+        self.move_in_resources(buckets_in, bucket_refs_in)?;
 
         // scan locked buckets for some might have been unlocked by child processes
         let bids: Vec<Bid> = self
