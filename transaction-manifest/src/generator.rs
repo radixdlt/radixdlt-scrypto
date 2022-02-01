@@ -23,7 +23,7 @@ pub enum GeneratorError {
     InvalidVaultId(String),
     OddNumberOfElements(usize),
     NameResolverError(NameResolverError),
-    IdAllocatorError(IdAllocatorError),
+    IdValidatorError(IdValidatorError),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -80,14 +80,14 @@ impl NameResolver {
 }
 
 pub fn generate_transaction(tx: &ast::Transaction) -> Result<Transaction, GeneratorError> {
-    let mut id_allocator = IdAllocator::new(TRANSACTION_ID_SPACE);
+    let mut id_validator = IdValidator::new();
     let mut name_resolver = NameResolver::new();
     let mut instructions = Vec::new();
 
     for instruction in &tx.instructions {
         instructions.push(generate_instruction(
             instruction,
-            &mut id_allocator,
+            &mut id_validator,
             &mut name_resolver,
         )?);
     }
@@ -97,7 +97,7 @@ pub fn generate_transaction(tx: &ast::Transaction) -> Result<Transaction, Genera
 
 pub fn generate_instruction(
     instruction: &ast::Instruction,
-    id_allocator: &mut IdAllocator,
+    id_validator: &mut IdValidator,
     resolver: &mut NameResolver,
 ) -> Result<Instruction, GeneratorError> {
     Ok(match instruction {
@@ -106,9 +106,9 @@ pub fn generate_instruction(
             resource_address,
             new_bucket,
         } => {
-            let bid = id_allocator
-                .new_bid()
-                .map_err(GeneratorError::IdAllocatorError)?;
+            let bid = id_validator
+                .new_bucket()
+                .map_err(GeneratorError::IdValidatorError)?;
             declare_bucket(new_bucket, resolver, bid)?;
 
             Instruction::TakeFromWorktop {
@@ -120,18 +120,22 @@ pub fn generate_instruction(
             resource_address,
             new_bucket,
         } => {
-            let bid = id_allocator
-                .new_bid()
-                .map_err(GeneratorError::IdAllocatorError)?;
+            let bid = id_validator
+                .new_bucket()
+                .map_err(GeneratorError::IdValidatorError)?;
             declare_bucket(new_bucket, resolver, bid)?;
 
             Instruction::TakeAllFromWorktop {
                 resource_address: generate_address(resource_address)?,
             }
         }
-        ast::Instruction::ReturnToWorktop { bucket } => Instruction::ReturnToWorktop {
-            bid: generate_bucket(bucket, resolver)?,
-        },
+        ast::Instruction::ReturnToWorktop { bucket } => {
+            let bid = generate_bucket(bucket, resolver)?;
+            id_validator
+                .drop_bucket(bid)
+                .map_err(GeneratorError::IdValidatorError)?;
+            Instruction::ReturnToWorktop { bid }
+        }
         ast::Instruction::AssertWorktopContains {
             amount,
             resource_address,
@@ -143,58 +147,83 @@ pub fn generate_instruction(
             bucket,
             new_bucket_ref,
         } => {
-            let rid = id_allocator
-                .new_rid()
-                .map_err(GeneratorError::IdAllocatorError)?;
+            let bid = generate_bucket(bucket, resolver)?;
+            let rid = id_validator
+                .new_bucket_ref(bid)
+                .map_err(GeneratorError::IdValidatorError)?;
             declare_bucket_ref(new_bucket_ref, resolver, rid)?;
 
-            Instruction::CreateBucketRef {
-                bid: generate_bucket(bucket, resolver)?,
-            }
+            Instruction::CreateBucketRef { bid }
         }
         ast::Instruction::CloneBucketRef {
             bucket_ref,
             new_bucket_ref,
         } => {
-            let rid = id_allocator
-                .new_rid()
-                .map_err(GeneratorError::IdAllocatorError)?;
-            declare_bucket_ref(new_bucket_ref, resolver, rid)?;
+            let rid = generate_bucket_ref(bucket_ref, resolver)?;
+            let rid2 = id_validator
+                .clone_bucket_ref(rid)
+                .map_err(GeneratorError::IdValidatorError)?;
+            declare_bucket_ref(new_bucket_ref, resolver, rid2)?;
 
-            Instruction::CloneBucketRef {
-                rid: generate_bucket_ref(bucket_ref, resolver)?,
-            }
+            Instruction::CloneBucketRef { rid }
         }
-        ast::Instruction::DropBucketRef { bucket_ref } => Instruction::DropBucketRef {
-            rid: generate_bucket_ref(bucket_ref, resolver)?,
-        },
+        ast::Instruction::DropBucketRef { bucket_ref } => {
+            let rid = generate_bucket_ref(bucket_ref, resolver)?;
+            id_validator
+                .drop_bucket_ref(rid)
+                .map_err(GeneratorError::IdValidatorError)?;
+            Instruction::DropBucketRef { rid }
+        }
         ast::Instruction::CallFunction {
             package_address,
             blueprint_name,
             function,
             args,
-        } => Instruction::CallFunction {
-            package_address: generate_address(package_address)?,
-            blueprint_name: generate_string(blueprint_name)?,
-            function: generate_string(function)?,
-            args: generate_args(args, resolver)?,
-        },
+        } => {
+            let args = generate_args(args, resolver)?;
+            for arg in &args {
+                let validated_arg = validate_data(arg).unwrap();
+                id_validator
+                    .move_resources(&validated_arg)
+                    .map_err(GeneratorError::IdValidatorError)?;
+            }
+            Instruction::CallFunction {
+                package_address: generate_address(package_address)?,
+                blueprint_name: generate_string(blueprint_name)?,
+                function: generate_string(function)?,
+                args,
+            }
+        }
         ast::Instruction::CallMethod {
             component_address,
             method,
             args,
-        } => Instruction::CallMethod {
-            component_address: generate_address(component_address)?,
-            method: generate_string(method)?,
-            args: generate_args(args, resolver)?,
-        },
+        } => {
+            let args = generate_args(args, resolver)?;
+            for arg in &args {
+                let validated_arg = validate_data(arg).unwrap();
+                id_validator
+                    .move_resources(&validated_arg)
+                    .map_err(GeneratorError::IdValidatorError)?;
+            }
+            Instruction::CallMethod {
+                component_address: generate_address(component_address)?,
+                method: generate_string(method)?,
+                args,
+            }
+        }
         ast::Instruction::CallMethodWithAllResources {
             component_address,
             method,
-        } => Instruction::CallMethodWithAllResources {
-            component_address: generate_address(component_address)?,
-            method: generate_string(method)?,
-        },
+        } => {
+            id_validator
+                .move_all_resources()
+                .map_err(GeneratorError::IdValidatorError)?;
+            Instruction::CallMethodWithAllResources {
+                component_address: generate_address(component_address)?,
+                method: generate_string(method)?,
+            }
+        }
     })
 }
 
@@ -572,10 +601,10 @@ mod tests {
             let instruction = Parser::new(tokenize($s).unwrap())
                 .parse_instruction()
                 .unwrap();
-            let mut id_allocator = IdAllocator::new(TRANSACTION_ID_SPACE);
+            let mut id_validator = IdValidator::new();
             let mut resolver = NameResolver::new();
             assert_eq!(
-                generate_instruction(&instruction, &mut id_allocator, &mut resolver),
+                generate_instruction(&instruction, &mut id_validator, &mut resolver),
                 Ok($expected)
             );
         }};
@@ -754,18 +783,6 @@ mod tests {
             }
         );
         generate_instruction_ok!(
-            r#"CREATE_BUCKET_REF  Bucket(5u32)  BucketRef("admin_auth");"#,
-            Instruction::CreateBucketRef { bid: Bid(5u32) }
-        );
-        generate_instruction_ok!(
-            r#"CLONE_BUCKET_REF  BucketRef(6u32)  BucketRef("admin_auth");"#,
-            Instruction::CloneBucketRef { rid: Rid(6u32) }
-        );
-        generate_instruction_ok!(
-            r#"DROP_BUCKET_REF  BucketRef(5u32);"#,
-            Instruction::DropBucketRef { rid: Rid(5u32) }
-        );
-        generate_instruction_ok!(
             r#"CALL_FUNCTION  Address("01d1f50010e4102d88aacc347711491f852c515134a9ecf67ba17c")  "Airdrop"  "new"  500u32  HashMap<String, U8>("key", 1u8);"#,
             Instruction::CallFunction {
                 package_address: Address::from_str(
@@ -781,14 +798,14 @@ mod tests {
             }
         );
         generate_instruction_ok!(
-            r#"CALL_METHOD  Address("0292566c83de7fd6b04fcc92b5e04b03228ccff040785673278ef1")  "refill"  Bucket(1u32)  BucketRef(2u32);"#,
+            r#"CALL_METHOD  Address("0292566c83de7fd6b04fcc92b5e04b03228ccff040785673278ef1")  "refill"  BucketRef(1u32);"#,
             Instruction::CallMethod {
                 component_address: Address::from_str(
                     "0292566c83de7fd6b04fcc92b5e04b03228ccff040785673278ef1".into()
                 )
                 .unwrap(),
                 method: "refill".into(),
-                args: vec![scrypto_encode(&Bid(1)), scrypto_encode(&Rid(2))]
+                args: vec![scrypto_encode(&Rid(1))]
             }
         );
         generate_instruction_ok!(

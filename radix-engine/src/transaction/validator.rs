@@ -94,7 +94,7 @@ pub fn validate_transaction(
                 method,
             } => {
                 id_validator
-                    .drop_all()
+                    .move_all_resources()
                     .map_err(TransactionValidationError::IdValidatorError)?;
                 instructions.push(ValidatedInstruction::CallMethodWithAllResources {
                     component_address,
@@ -122,18 +122,11 @@ fn validate_args(
 ) -> Result<Vec<ValidatedData>, TransactionValidationError> {
     let mut result = vec![];
     for arg in args {
-        let a = validate_data(&arg).map_err(TransactionValidationError::DataValidationError)?;
-        for bid in &a.buckets {
-            id_validator
-                .drop_bucket(*bid)
-                .map_err(TransactionValidationError::IdValidatorError)?;
-        }
-        for rid in &a.bucket_refs {
-            id_validator
-                .drop_bucket_ref(*rid)
-                .map_err(TransactionValidationError::IdValidatorError)?;
-        }
-        result.push(a);
+        let validated_arg =
+            validate_data(&arg).map_err(TransactionValidationError::DataValidationError)?;
+        id_validator.move_resources(&validated_arg)
+        .map_err(TransactionValidationError::IdValidatorError)?;
+        result.push(validated_arg);
     }
     Ok(result)
 }

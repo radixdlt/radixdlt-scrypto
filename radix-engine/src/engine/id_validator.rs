@@ -2,6 +2,7 @@ use scrypto::rust::collections::*;
 use scrypto::types::*;
 
 use crate::engine::*;
+use crate::model::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum IdValidatorError {
@@ -93,9 +94,19 @@ impl IdValidator {
         }
     }
 
-    pub fn drop_all(&mut self) -> Result<(), IdValidatorError> {
+    pub fn move_all_resources(&mut self) -> Result<(), IdValidatorError> {
         self.bucket_refs.clear();
         self.buckets.clear();
+        Ok(())
+    }
+
+    pub fn move_resources(&mut self, arg: &ValidatedData) -> Result<(), IdValidatorError> {
+        for bid in &arg.buckets {
+            self.drop_bucket(*bid)?;
+        }
+        for rid in &arg.bucket_refs {
+            self.drop_bucket_ref(*rid)?;
+        }
         Ok(())
     }
 }
