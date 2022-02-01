@@ -27,6 +27,13 @@ impl H256 {
         result
     }
 
+    /// Returns the lower 16 bytes.
+    pub fn lower_16_bytes(&self) -> [u8; 16] {
+        let mut result = [0u8; 16];
+        result.copy_from_slice(&self.0[16..32]);
+        result
+    }
+
     pub fn to_vec(&self) -> Vec<u8> {
         self.0.to_vec()
     }

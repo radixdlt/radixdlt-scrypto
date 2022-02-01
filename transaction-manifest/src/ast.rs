@@ -5,20 +5,38 @@ pub struct Transaction {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Instruction {
-    DeclareTempBucket,
-
-    DeclareTempBucketRef,
-
-    TakeFromContext {
+    TakeFromWorktop {
         amount: Value,
         resource_address: Value,
-        to: Value,
+        new_bucket: Value,
     },
 
-    BorrowFromContext {
+    TakeAllFromWorktop {
+        resource_address: Value,
+        new_bucket: Value,
+    },
+
+    ReturnToWorktop {
+        bucket: Value,
+    },
+
+    AssertWorktopContains {
         amount: Value,
         resource_address: Value,
-        to: Value,
+    },
+
+    CreateBucketRef {
+        bucket: Value,
+        new_bucket_ref: Value,
+    },
+
+    CloneBucketRef {
+        bucket_ref: Value,
+        new_bucket_ref: Value,
+    },
+
+    DropBucketRef {
+        bucket_ref: Value,
     },
 
     CallFunction {
@@ -33,8 +51,6 @@ pub enum Instruction {
         method: Value,
         args: Vec<Value>,
     },
-
-    DropAllBucketRefs,
 
     CallMethodWithAllResources {
         component_address: Value,

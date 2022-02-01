@@ -51,19 +51,34 @@ macro_rules! re_warn {
 
 /// A process keeps track of resource movements and code execution.
 pub struct Process<'r, 'l, L: Ledger> {
+    /// The call depth
     depth: usize,
+    /// Whether to show trace messages
     trace: bool,
+    /// Transactional state updates
     track: &'r mut Track<'l, L>,
+    /// Buckets owned by this process
     buckets: HashMap<Bid, Bucket>,
+    /// Buckets owned by this process (but LOCKED because there is a reference to it)
+    buckets_locked: HashMap<Bid, BucketRef>,
+    /// Bucket references
     bucket_refs: HashMap<Rid, BucketRef>,
-    locked_buckets: HashMap<Bid, BucketRef>,
+    /// The buckets that will be moved to another process SHORTLY.
     moving_buckets: HashMap<Bid, Bucket>,
+    /// The bucket refs that will be moved to another process SHORTLY.
     moving_bucket_refs: HashMap<Rid, BucketRef>,
-    temp_buckets: HashMap<Bid, Bucket>,
-    temp_bucket_refs: HashMap<Rid, BucketRef>,
-    reserved_bids: HashSet<Bid>,
-    reserved_rids: HashSet<Rid>,
+    /// A WASM interpreter
     vm: Option<Interpreter>,
+    /// ID allocator for buckets and bucket refs created within transaction.
+    id_allocator: IdAllocator,
+    /// Resources collected from previous CALLs returns.
+    ///
+    /// When the `depth == 0` (transaction), all returned resources from CALLs are coalesced
+    /// into a map of unidentified buckets indexed by resource address, instead of moving back
+    /// to `buckets`.
+    ///
+    /// Loop invariant: all buckets should be NON_EMPTY.
+    worktop: HashMap<Address, Bucket>,
 }
 
 /// Represents an interpreter instance.
@@ -90,183 +105,235 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
             trace,
             track,
             buckets: HashMap::new(),
+            buckets_locked: HashMap::new(),
             bucket_refs: HashMap::new(),
-            locked_buckets: HashMap::new(),
             moving_buckets: HashMap::new(),
             moving_bucket_refs: HashMap::new(),
-            temp_buckets: HashMap::new(),
-            temp_bucket_refs: HashMap::new(),
-            reserved_bids: HashSet::new(),
-            reserved_rids: HashSet::new(),
             vm: None,
+            id_allocator: IdAllocator::new(IdSpace::Transaction),
+            worktop: HashMap::new(),
         }
     }
 
-    /// Reserves the ID; no bucket allocated atm.
-    pub fn declare_bucket(&mut self) -> Bid {
-        let bid = self.track.new_bid();
-        self.reserved_bids.insert(bid);
-        bid
-    }
-
-    /// Reserves the ID; no bucket allocated atm.
-    pub fn declare_bucket_ref(&mut self) -> Rid {
-        let rid = self.track.new_rid();
-        self.reserved_rids.insert(rid);
-        rid
-    }
-
-    fn withdraw_resource(
+    // (Transaction ONLY) Takes resource from worktop and returns a bucket.
+    pub fn take_from_worktop(
         &mut self,
-        amount: Decimal,
+        amount: Option<Decimal>,
         resource_address: Address,
-    ) -> Result<Bucket, RuntimeError> {
-        let definition = self
-            .track
-            .get_resource_def(resource_address)
-            .ok_or(RuntimeError::ResourceDefNotFound(resource_address))?;
+    ) -> Result<ValidatedData, RuntimeError> {
+        re_debug!(
+            self,
+            "(Transaction) Taking from worktop: amount = {:?}, resource_address = {:?}",
+            amount,
+            resource_address
+        );
 
-        let candidates: BTreeSet<Bid> = self
+        let new_bid = self
+            .id_allocator
+            .new_bid()
+            .map_err(RuntimeError::IdAllocatorError)?;
+        let bucket = match self.worktop.remove(&resource_address) {
+            Some(mut bucket) => {
+                if let Some(amount) = amount {
+                    let to_return = bucket.take(amount).map_err(RuntimeError::BucketError)?;
+                    if !bucket.amount().is_zero() {
+                        self.worktop.insert(resource_address, bucket);
+                    }
+                    Ok(to_return)
+                } else {
+                    Ok(bucket)
+                }
+            }
+            None => Err(RuntimeError::BucketError(BucketError::InsufficientBalance)),
+        }?;
+        self.buckets.insert(new_bid, bucket);
+        Ok(validate_data(&scrypto_encode(&new_bid)).unwrap())
+    }
+
+    // (Transaction ONLY) Returns resource back to worktop.
+    pub fn return_to_worktop(&mut self, bid: Bid) -> Result<ValidatedData, RuntimeError> {
+        re_debug!(self, "(Transaction) Returning to worktop: bid = {:?}", bid);
+
+        let bucket = self
             .buckets
-            .iter()
-            .filter(|(_, v)| v.resource_address() == resource_address)
-            .map(|(k, _)| *k)
-            .collect();
+            .remove(&bid)
+            .ok_or(RuntimeError::BucketNotFound(bid))?;
 
-        let mut collector = Bucket::new(
-            resource_address,
-            definition.resource_type(),
-            match definition.resource_type() {
-                ResourceType::Fungible { .. } => Supply::Fungible { amount: 0.into() },
-                ResourceType::NonFungible { .. } => Supply::NonFungible {
-                    ids: BTreeSet::new(),
-                },
-            },
-        );
-        let mut needed = amount;
-        for candidate in candidates {
-            if needed.is_zero() {
-                break;
-            }
-            let available = self.buckets.get(&candidate).unwrap().amount();
-            if available > needed {
-                re_debug!(self, "Withdrawing {:?} from {:?}", needed, candidate);
-                collector
-                    .put(
-                        self.buckets
-                            .get_mut(&candidate)
-                            .unwrap()
-                            .take(needed)
-                            .unwrap(),
-                    )
+        if !bucket.amount().is_zero() {
+            if let Some(existing_bucket) = self.worktop.get_mut(&bucket.resource_address()) {
+                existing_bucket
+                    .put(bucket)
                     .map_err(RuntimeError::BucketError)?;
-                needed = Decimal::zero();
             } else {
-                re_debug!(self, "Withdrawing all from {:?}", candidate);
-                collector
-                    .put(self.buckets.remove(&candidate).unwrap())
-                    .map_err(RuntimeError::BucketError)?;
-                needed -= available;
+                self.worktop.insert(bucket.resource_address(), bucket);
             }
         }
+        Ok(validate_data(&scrypto_encode(&())).unwrap())
+    }
 
-        if needed.is_zero() {
-            Ok(collector)
+    // (Transaction ONLY) Assert worktop contains at least this amount.
+    pub fn assert_worktop_contains(
+        &mut self,
+        amount: Decimal,
+        resource_address: Address,
+    ) -> Result<ValidatedData, RuntimeError> {
+        re_debug!(
+            self,
+            "(Transaction) Asserting worktop contains: amount = {:?}, resource_address = {:?}",
+            amount,
+            resource_address
+        );
+
+        let balance = match self.worktop.get(&resource_address) {
+            Some(bucket) => bucket.amount(),
+            None => Decimal::zero(),
+        };
+
+        if balance < amount {
+            re_warn!(
+                self,
+                "(Transaction) Assertion failed: required = {}, actual = {}, resource_address = {}",
+                amount,
+                balance,
+                resource_address
+            );
+            Err(RuntimeError::AssertionFailed)
         } else {
-            Err(RuntimeError::BucketError(BucketError::InsufficientBalance))
+            Ok(validate_data(&scrypto_encode(&())).unwrap())
         }
     }
 
-    /// Takes resource from this context to a temporary bucket.
-    pub fn take_from_context(
+    // (Transaction ONLY) Creates a bucket ref.
+    pub fn create_bucket_ref(&mut self, bid: Bid) -> Result<ValidatedData, RuntimeError> {
+        re_debug!(self, "(Transaction) Creating bucket ref: bid = {:?}", bid);
+
+        let new_rid = self
+            .id_allocator
+            .new_rid()
+            .map_err(RuntimeError::IdAllocatorError)?;
+        match self.buckets_locked.get_mut(&bid) {
+            Some(bucket_rc) => {
+                // re-borrow
+                self.bucket_refs.insert(new_rid, bucket_rc.clone());
+            }
+            None => {
+                // first time borrow
+                let bucket = BucketRef::new(LockedBucket::new(
+                    bid,
+                    self.buckets
+                        .remove(&bid)
+                        .ok_or(RuntimeError::BucketNotFound(bid))?,
+                ));
+                self.buckets_locked.insert(bid, bucket.clone());
+                self.bucket_refs.insert(new_rid, bucket);
+            }
+        };
+
+        Ok(validate_data(&scrypto_encode(&new_rid)).unwrap())
+    }
+
+    // (Transaction ONLY) Clone a bucket ref.
+    pub fn clone_bucket_ref(&mut self, rid: Rid) -> Result<ValidatedData, RuntimeError> {
+        re_debug!(self, "(Transaction) Cloning bucket ref: rid = {:?}", rid);
+
+        let new_rid = self
+            .id_allocator
+            .new_rid()
+            .map_err(RuntimeError::IdAllocatorError)?;
+        let bucket_ref = self
+            .bucket_refs
+            .get(&rid)
+            .ok_or(RuntimeError::BucketRefNotFound(rid))?
+            .clone();
+        self.bucket_refs.insert(new_rid, bucket_ref);
+
+        Ok(validate_data(&scrypto_encode(&new_rid)).unwrap())
+    }
+
+    // (Transaction ONLY) Drop a bucket ref.
+    pub fn drop_bucket_ref(&mut self, rid: Rid) -> Result<ValidatedData, RuntimeError> {
+        re_debug!(self, "(Transaction) Dropping bucket ref: rid = {:?}", rid);
+
+        self.handle_drop_bucket_ref(DropBucketRefInput { rid })?;
+
+        Ok(validate_data(&scrypto_encode(&())).unwrap())
+    }
+
+    /// (Transaction ONLY) Calls a method.
+    pub fn call_method_with_all_resources(
         &mut self,
-        amount: Decimal,
-        resource_address: Address,
-        bid: Bid,
-    ) -> Result<(), RuntimeError> {
+        component_address: Address,
+        method: &str,
+    ) -> Result<ValidatedData, RuntimeError> {
         re_debug!(
             self,
-            "Creating bucket: amount = {:?}, resource_address = {:?}, bid = {:?}",
-            amount,
-            resource_address,
-            bid
+            "(Transaction) Calling method with all resources started"
         );
-        if !self.reserved_bids.remove(&bid) {
-            return Err(RuntimeError::BucketNotReserved);
+        // 1. Move collected resource to temp buckets
+        for (_, bucket) in self.worktop.clone() {
+            let bid = self.track.new_bid(); // this is unbounded
+            self.buckets.insert(bid, bucket);
         }
-        let bucket = self.withdraw_resource(amount, resource_address)?;
-        self.temp_buckets.insert(bid, bucket);
+        self.worktop.clear();
 
-        Ok(())
-    }
+        // 2. Drop all bucket refs to unlock the buckets
+        self.drop_all_bucket_refs()?;
 
-    /// Borrows resource from this context to a temporary bucket ref.
-    ///
-    /// A bucket will be created to support the reference.
-    pub fn borrow_from_context(
-        &mut self,
-        amount: Decimal,
-        resource_address: Address,
-        rid: Rid,
-    ) -> Result<(), RuntimeError> {
+        // 3. Call the method with all buckets
+        let to_deposit: Vec<Bid> = self.buckets.keys().cloned().collect();
+        let invocation = self.prepare_call_method(
+            component_address,
+            method,
+            vec![validate_data(&scrypto_encode(&to_deposit)).unwrap()],
+        )?;
+        let result = self.call(invocation);
+
         re_debug!(
             self,
-            "Creating bucket ref: amount = {:?}, resource_def = {:?}, rid = {:?}",
-            amount,
-            resource_address,
-            rid
+            "(Transaction) Calling method with all resources ended"
         );
-        if !self.reserved_rids.remove(&rid) {
-            return Err(RuntimeError::BucketRefNotReserved);
-        }
-        let bid = self.track.new_bid();
-        let bucket = BucketRef::new(LockedBucket::new(
-            bid,
-            self.withdraw_resource(amount, resource_address)?,
-        ));
-        self.locked_buckets.insert(bid, bucket.clone());
-        self.temp_bucket_refs.insert(rid, bucket);
-
-        Ok(())
+        result
     }
 
-    /// Creates a bucket ref which references a virtual bucket
-    pub fn create_virtual_bucket_ref(&mut self, rid: Rid, bucket: Bucket) {
-        let locked_bucket = LockedBucket::new(ECDSA_TOKEN_BID, bucket);
+    /// (SYSTEM ONLY)  Creates a bucket ref which references a virtual bucket
+    pub fn create_virtual_bucket_ref(&mut self, bid: Bid, rid: Rid, bucket: Bucket) {
+        let locked_bucket = LockedBucket::new(bid, bucket);
         let bucket_ref = BucketRef::new(locked_bucket);
         self.bucket_refs.insert(rid, bucket_ref);
     }
 
-    /// Puts buckets and bucket refs into this process.
-    pub fn put_resources(
+    /// Moves buckets and bucket refs into this process.
+    pub fn move_in_resources(
         &mut self,
         buckets: HashMap<Bid, Bucket>,
         bucket_refs: HashMap<Rid, BucketRef>,
-    ) {
-        self.buckets.extend(buckets);
-        self.bucket_refs.extend(bucket_refs);
+    ) -> Result<(), RuntimeError> {
+        if self.depth == 0 {
+            assert!(bucket_refs.is_empty());
+
+            for (_, bucket) in buckets {
+                if !bucket.amount().is_zero() {
+                    let address = bucket.resource_address();
+                    if let Some(b) = self.worktop.get_mut(&address) {
+                        b.put(bucket).unwrap();
+                    } else {
+                        self.worktop.insert(address, bucket);
+                    }
+                }
+            }
+        } else {
+            self.bucket_refs.extend(bucket_refs);
+            self.buckets.extend(buckets);
+        }
+
+        Ok(())
     }
 
-    /// Takes all **moving** buckets and bucket refs from this process.
-    pub fn take_moving_resources(&mut self) -> (HashMap<Bid, Bucket>, HashMap<Rid, BucketRef>) {
+    /// Moves all marked buckets and bucket refs from this process.
+    pub fn move_out_resources(&mut self) -> (HashMap<Bid, Bucket>, HashMap<Rid, BucketRef>) {
         let buckets = self.moving_buckets.drain().collect();
         let bucket_refs = self.moving_bucket_refs.drain().collect();
         (buckets, bucket_refs)
-    }
-
-    /// Returns all bucket ids.
-    pub fn list_buckets(&mut self) -> Vec<Bid> {
-        self.buckets.keys().copied().collect()
-    }
-
-    /// Drops all bucket refs
-    pub fn drop_bucket_refs(&mut self) {
-        let rids: Vec<Rid> = self.bucket_refs.keys().copied().collect();
-
-        for rid in rids {
-            self.handle_drop_bucket_ref(DropBucketRefInput { rid })
-                .unwrap();
-        }
     }
 
     /// Runs the given export within this process.
@@ -304,7 +371,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
             RuntimeValue::I32(ptr) => {
                 let data = validate_data(&self.read_bytes(ptr)?)
                     .map_err(RuntimeError::DataValidationError)?;
-                self.process_call_data(&data)?;
+                self.process_call_data(&data, false)?;
                 data
             }
             _ => {
@@ -381,30 +448,31 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
     pub fn call(&mut self, invocation: Invocation) -> Result<ValidatedData, RuntimeError> {
         // move resource
         for arg in &invocation.args {
-            self.process_call_data(arg)?;
+            self.process_call_data(arg, true)?;
         }
-        let (buckets_out, bucket_refs_out) = self.take_moving_resources();
+        let (buckets_out, bucket_refs_out) = self.move_out_resources();
         let mut process = Process::new(self.depth + 1, self.trace, self.track);
-        process.put_resources(buckets_out, bucket_refs_out);
+        process.move_in_resources(buckets_out, bucket_refs_out)?;
 
         // run the function
         let result = process.run(invocation)?;
+        process.drop_all_bucket_refs()?;
         process.check_resource()?;
 
         // move resource
-        let (buckets_in, bucket_refs_in) = process.take_moving_resources();
-        self.put_resources(buckets_in, bucket_refs_in);
+        let (buckets_in, bucket_refs_in) = process.move_out_resources();
+        self.move_in_resources(buckets_in, bucket_refs_in)?;
 
         // scan locked buckets for some might have been unlocked by child processes
         let bids: Vec<Bid> = self
-            .locked_buckets
+            .buckets_locked
             .values()
             .filter(|v| Rc::strong_count(v) == 1)
             .map(|v| v.bucket_id())
             .collect();
         for bid in bids {
             re_debug!(self, "Changing bucket {:?} to unlocked state", bid);
-            let bucket_rc = self.locked_buckets.remove(&bid).unwrap();
+            let bucket_rc = self.buckets_locked.remove(&bid).unwrap();
             let bucket = Rc::try_unwrap(bucket_rc).unwrap();
             self.buckets.insert(bid, bucket.into());
         }
@@ -455,34 +523,30 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         result
     }
 
+    /// Drops all bucket refs owned by this process.
+    pub fn drop_all_bucket_refs(&mut self) -> Result<(), RuntimeError> {
+        let rids: Vec<Rid> = self.bucket_refs.keys().cloned().collect();
+        for rid in rids {
+            self.handle_drop_bucket_ref(DropBucketRefInput { rid })?;
+        }
+        Ok(())
+    }
+
     /// Checks resource leak.
     pub fn check_resource(&self) -> Result<(), RuntimeError> {
         re_debug!(self, "Resource check started");
         let mut success = true;
 
-        for (bid, bucket) in &self.locked_buckets {
-            re_warn!(self, "Dangling locked bucket: {:?}, {:?}", bid, bucket);
-            success = false;
-        }
         for (bid, bucket) in &self.buckets {
             re_warn!(self, "Dangling bucket: {:?}, {:?}", bid, bucket);
             success = false;
         }
-        for (rid, bucket_ref) in &self.bucket_refs {
-            re_warn!(self, "Dangling bucket ref: {:?}, {:?}", rid, bucket_ref);
+        for (bid, bucket) in &self.buckets_locked {
+            re_warn!(self, "Dangling bucket: {:?}, {:?}", bid, bucket);
             success = false;
         }
-        for (bid, bucket) in &self.temp_buckets {
-            re_warn!(self, "Dangling temp bucket: {:?}, {:?}", bid, bucket);
-            success = false;
-        }
-        for (rid, bucket_ref) in &self.temp_bucket_refs {
-            re_warn!(
-                self,
-                "Dangling temp bucket ref: {:?}, {:?}",
-                rid,
-                bucket_ref
-            );
+        for (_, bucket) in &self.worktop {
+            re_warn!(self, "Dangling resource: {:?}", bucket);
             success = false;
         }
 
@@ -549,9 +613,25 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
             .map(|vm| vm.memory.clone())
     }
 
-    fn process_call_data(&mut self, validated: &ValidatedData) -> Result<(), RuntimeError> {
+    fn process_call_data(
+        &mut self,
+        validated: &ValidatedData,
+        is_argument: bool,
+    ) -> Result<(), RuntimeError> {
         self.move_buckets(&validated.buckets)?;
-        self.move_bucket_refs(&validated.bucket_refs)?;
+        if is_argument {
+            self.move_bucket_refs(&validated.bucket_refs)?;
+        } else {
+            if !validated.bucket_refs.is_empty() {
+                return Err(RuntimeError::BucketRefNotAllowed);
+            }
+        }
+        if !validated.lazy_maps.is_empty() {
+            return Err(RuntimeError::LazyMapNotAllowed);
+        }
+        if !validated.vaults.is_empty() {
+            return Err(RuntimeError::VaultNotAllowed);
+        }
         Ok(())
     }
 
@@ -563,6 +643,8 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         if !validated.bucket_refs.is_empty() {
             return Err(RuntimeError::BucketRefNotAllowed);
         }
+        // lazy map allowed
+        // vaults allowed
         Ok(validated)
     }
 
@@ -574,6 +656,8 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         if !validated.bucket_refs.is_empty() {
             return Err(RuntimeError::BucketRefNotAllowed);
         }
+        // lazy map allowed
+        // vaults allowed
         Ok(validated)
     }
 
@@ -600,7 +684,6 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
             let bucket = self
                 .buckets
                 .remove(bid)
-                .or_else(|| self.temp_buckets.remove(bid))
                 .ok_or(RuntimeError::BucketNotFound(*bid))?;
             re_debug!(self, "Moving bucket: {:?}, {:?}", bid, bucket);
             self.moving_buckets.insert(*bid, bucket);
@@ -614,7 +697,6 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
             let bucket_ref = self
                 .bucket_refs
                 .remove(rid)
-                .or_else(|| self.temp_bucket_refs.remove(rid))
                 .ok_or(RuntimeError::BucketRefNotFound(*rid))?;
             re_debug!(self, "Moving bucket ref: {:?}, {:?}", rid, bucket_ref);
             self.moving_bucket_refs.insert(*rid, bucket_ref);
@@ -1506,7 +1588,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
             .get(&input.bid)
             .map(|b| b.amount())
             .or_else(|| {
-                self.locked_buckets
+                self.buckets_locked
                     .get(&input.bid)
                     .map(|x| x.bucket().amount())
             })
@@ -1524,7 +1606,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
             .get(&input.bid)
             .map(|b| b.resource_address())
             .or_else(|| {
-                self.locked_buckets
+                self.buckets_locked
                     .get(&input.bid)
                     .map(|x| x.bucket().resource_address())
             })
@@ -1571,7 +1653,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         let rid = self.track.new_rid();
         re_debug!(self, "Borrowing: bid = {:?}, rid = {:?}", bid, rid);
 
-        match self.locked_buckets.get_mut(&bid) {
+        match self.buckets_locked.get_mut(&bid) {
             Some(bucket_rc) => {
                 // re-borrow
                 self.bucket_refs.insert(rid, bucket_rc.clone());
@@ -1584,7 +1666,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
                         .remove(&bid)
                         .ok_or(RuntimeError::BucketNotFound(bid))?,
                 ));
-                self.locked_buckets.insert(bid, bucket.clone());
+                self.buckets_locked.insert(bid, bucket.clone());
                 self.bucket_refs.insert(rid, bucket);
             }
         }
@@ -1603,12 +1685,17 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
                 .bucket_refs
                 .remove(&rid)
                 .ok_or(RuntimeError::BucketRefNotFound(rid))?;
-            re_debug!(self, "Returning {:?}: {:?}", rid, bucket_ref);
+            re_debug!(
+                self,
+                "Dropping bucket ref: rid = {:?}, bucket = {:?}",
+                rid,
+                bucket_ref
+            );
             (Rc::strong_count(&bucket_ref) - 1, bucket_ref.bucket_id())
         };
 
         if count == 1 {
-            if let Some(b) = self.locked_buckets.remove(&bid) {
+            if let Some(b) = self.buckets_locked.remove(&bid) {
                 self.buckets.insert(bid, Rc::try_unwrap(b).unwrap().into());
             }
         }

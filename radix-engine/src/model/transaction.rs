@@ -12,27 +12,32 @@ pub struct Transaction {
 /// Represents an unvalidated instruction in transaction
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
 pub enum Instruction {
-    /// Declares a temporary bucket for later use.
-    DeclareTempBucket,
-
-    /// Declares a temporary bucket ref for later use.
-    DeclareTempBucketRef,
-
-    /// Takes resource from transaction context to a temporary bucket.
-    TakeFromContext {
+    /// Takes fixed amount resource from worktop.
+    TakeFromWorktop {
         amount: Decimal,
         resource_address: Address,
-        to: Bid,
     },
 
-    /// Borrows resource from transaction context to a temporary bucket ref.
-    ///
-    /// A bucket will be created to support the reference and it will stay within the context.
-    BorrowFromContext {
+    /// Takes all of a given resource from worktop.
+    TakeAllFromWorktop { resource_address: Address },
+
+    /// Returns resource to worktop.
+    ReturnToWorktop { bid: Bid },
+
+    /// Asserts worktop contains at least this amount.
+    AssertWorktopContains {
         amount: Decimal,
         resource_address: Address,
-        to: Rid,
     },
+
+    /// Creates a bucket ref.
+    CreateBucketRef { bid: Bid },
+
+    /// Clones a bucket ref.
+    CloneBucketRef { rid: Rid },
+
+    /// Drops a bucket ref.
+    DropBucketRef { rid: Rid },
 
     /// Calls a blueprint function.
     ///
@@ -52,9 +57,6 @@ pub enum Instruction {
         method: String,
         args: Vec<Vec<u8>>,
     },
-
-    /// Drops all bucket refs.
-    DropAllBucketRefs,
 
     /// With method with all resources from transaction context.
     CallMethodWithAllResources {

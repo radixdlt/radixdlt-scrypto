@@ -107,11 +107,10 @@ impl ResourceAmount {
 
 /// Utility for building transaction.
 pub struct TransactionBuilder<'a, A: AbiProvider> {
+    /// ABI provider for constructing arguments
     abi_provider: &'a A,
-    /// The address allocator for calculating reserved bucket id.
-    allocator: IdAllocator,
-    /// Bucket or BucketRef reservations
-    reservations: Vec<Instruction>,
+    /// ID validator for calculating transaction object id
+    id_validator: IdValidator,
     /// Instructions generated.
     instructions: Vec<Instruction>,
     /// Collected Errors
@@ -123,65 +122,105 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     pub fn new(abi_provider: &'a A) -> Self {
         Self {
             abi_provider,
-            allocator: IdAllocator::new(),
-            reservations: Vec::new(),
+            id_validator: IdValidator::new(),
             instructions: Vec::new(),
             errors: Vec::new(),
         }
     }
 
     /// Adds a raw instruction.
-    pub fn add_instruction(&mut self, inst: Instruction) -> &mut Self {
+    pub fn add_instruction(&mut self, inst: Instruction) -> (&mut Self, Option<Bid>, Option<Rid>) {
+        let mut new_bid: Option<Bid> = None;
+        let mut new_rid: Option<Rid> = None;
+
+        match inst.clone() {
+            Instruction::TakeFromWorktop { .. } => {
+                new_bid = Some(self.id_validator.new_bucket().unwrap());
+            }
+            Instruction::TakeAllFromWorktop { .. } => {
+                new_bid = Some(self.id_validator.new_bucket().unwrap());
+            }
+            Instruction::ReturnToWorktop { bid } => {
+                self.id_validator.drop_bucket(bid).unwrap();
+            }
+            Instruction::AssertWorktopContains { .. } => {}
+            Instruction::CreateBucketRef { bid } => {
+                new_rid = Some(self.id_validator.new_bucket_ref(bid).unwrap());
+            }
+            Instruction::CloneBucketRef { rid } => {
+                new_rid = Some(self.id_validator.clone_bucket_ref(rid).unwrap());
+            }
+            Instruction::DropBucketRef { rid } => {
+                self.id_validator.drop_bucket_ref(rid).unwrap();
+            }
+            Instruction::CallFunction { args, .. } | Instruction::CallMethod { args, .. } => {
+                for arg in &args {
+                    let validated_arg = validate_data(arg).unwrap();
+                    self.id_validator.move_resources(&validated_arg).unwrap();
+                }
+            }
+            Instruction::CallMethodWithAllResources { .. } => {
+                self.id_validator.move_all_resources().unwrap();
+            }
+            Instruction::End { .. } => {}
+        }
+
         self.instructions.push(inst);
-        self
+
+        (self, new_bid, new_rid)
     }
 
-    /// Reserves a bucket id.
-    pub fn declare_bucket<F>(&mut self, then: F) -> &mut Self
+    /// Takes resources from worktop.
+    pub fn take_from_worktop<F>(
+        &mut self,
+        amount: Decimal,
+        resource_address: Address,
+        then: F,
+    ) -> &mut Self
     where
         F: FnOnce(&mut Self, Bid) -> &mut Self,
     {
-        let bid = self.allocator.new_bid();
-        self.reservations.push(Instruction::DeclareTempBucket);
-        then(self, bid)
+        let (builder, bid, _) = self.add_instruction(Instruction::TakeFromWorktop {
+            amount,
+            resource_address,
+        });
+        then(builder, bid.unwrap())
     }
 
-    /// Reserves a bucket ref id.
-    pub fn declare_bucket_ref<F>(&mut self, then: F) -> &mut Self
+    /// Asserts that worktop contains at least this amount of resource.
+    pub fn assert_worktop_contains(
+        &mut self,
+        amount: Decimal,
+        resource_address: Address,
+    ) -> &mut Self {
+        self.add_instruction(Instruction::AssertWorktopContains {
+            amount,
+            resource_address,
+        })
+        .0
+    }
+
+    /// Creates a bucket ref.
+    pub fn create_bucket_ref<F>(&mut self, bid: Bid, then: F) -> &mut Self
     where
         F: FnOnce(&mut Self, Rid) -> &mut Self,
     {
-        let rid = self.allocator.new_rid();
-        self.reservations.push(Instruction::DeclareTempBucketRef);
-        then(self, rid)
+        let (builder, _, rid) = self.add_instruction(Instruction::CreateBucketRef { bid });
+        then(builder, rid.unwrap())
     }
 
-    /// Creates a bucket by withdrawing resource from context.
-    pub fn take_from_context(
-        &mut self,
-        amount: Decimal,
-        resource_address: Address,
-        to: Bid,
-    ) -> &mut Self {
-        self.add_instruction(Instruction::TakeFromContext {
-            amount,
-            resource_address,
-            to,
-        })
+    /// Clones a bucket ref.
+    pub fn clone_bucket_ref<F>(&mut self, rid: Rid, then: F) -> &mut Self
+    where
+        F: FnOnce(&mut Self, Rid) -> &mut Self,
+    {
+        let (builder, _, rid) = self.add_instruction(Instruction::CloneBucketRef { rid });
+        then(builder, rid.unwrap())
     }
 
-    /// Creates a bucket ref by borrowing resource from context.
-    pub fn borrow_from_context(
-        &mut self,
-        amount: Decimal,
-        resource_address: Address,
-        rid: Rid,
-    ) -> &mut Self {
-        self.add_instruction(Instruction::BorrowFromContext {
-            amount,
-            resource_address,
-            to: rid,
-        })
+    /// Drops a bucket ref.
+    pub fn drop_bucket_ref(&mut self, rid: Rid) -> &mut Self {
+        self.add_instruction(Instruction::DropBucketRef { rid }).0
     }
 
     /// Calls a function.
@@ -190,7 +229,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     /// function ABI, including resource buckets and bucket refs.
     ///
     /// If an account address is provided, resources will be withdrawn from the given account;
-    /// otherwise, they will be taken from transaction context.
+    /// otherwise, they will be taken from transaction worktop.
     pub fn call_function(
         &mut self,
         package_address: Address,
@@ -201,7 +240,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     ) -> &mut Self {
         let result = self
             .abi_provider
-            .export_abi(package_address, blueprint_name, false)
+            .export_abi(package_address, blueprint_name)
             .map_err(|_| {
                 BuildTransactionError::FailedToExportFunctionAbi(
                     package_address,
@@ -236,7 +275,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     /// method ABI, including resource buckets and bucket refs.
     ///
     /// If an account address is provided, resources will be withdrawn from the given account;
-    /// otherwise, they will be taken from transaction context.
+    /// otherwise, they will be taken from transaction worktop.
     pub fn call_method(
         &mut self,
         component_address: Address,
@@ -246,7 +285,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     ) -> &mut Self {
         let result = self
             .abi_provider
-            .export_abi_component(component_address, false)
+            .export_abi_component(component_address)
             .map_err(|_| {
                 BuildTransactionError::FailedToExportMethodAbi(component_address, method.to_owned())
             })
@@ -270,12 +309,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         self
     }
 
-    /// Drops all bucket refs.
-    pub fn drop_all_bucket_refs(&mut self) -> &mut Self {
-        self.add_instruction(Instruction::DropAllBucketRefs)
-    }
-
-    /// Calls a method with all the resources within the context.
+    /// Calls a method with all the resources on worktop.
     ///
     /// The callee method must have only one parameter with type `Vec<Bucket>`; otherwise,
     /// a runtime failure is triggered.
@@ -288,6 +322,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
             component_address,
             method: method.into(),
         })
+        .0
     }
 
     /// Builds a transaction.
@@ -297,7 +332,6 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         }
 
         let mut v = Vec::new();
-        v.extend(self.reservations.clone());
         v.extend(self.instructions.clone());
         v.push(Instruction::End {
             signatures: signers, // TODO sign
@@ -318,6 +352,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
             function: "publish_package".to_owned(),
             args: vec![scrypto_encode(&code.to_vec())],
         })
+        .0
     }
 
     fn single_authority(badge: Address, permission: u16) -> HashMap<Address, u16> {
@@ -348,6 +383,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                 scrypto_encode::<Option<NewSupply>>(&None),
             ],
         })
+        .0
     }
 
     /// Creates a token resource with fixed supply.
@@ -371,6 +407,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                 })),
             ],
         })
+        .0
     }
 
     /// Creates a badge resource with mutable supply.
@@ -395,6 +432,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                 scrypto_encode::<Option<NewSupply>>(&None),
             ],
         })
+        .0
     }
 
     /// Creates a badge resource with fixed supply.
@@ -418,6 +456,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                 })),
             ],
         })
+        .0
     }
 
     /// Mints resource.
@@ -427,17 +466,20 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         resource_address: Address,
         mint_badge_address: Address,
     ) -> &mut Self {
-        self.declare_bucket_ref(|builder, rid| {
-            builder.borrow_from_context(1.into(), mint_badge_address, rid);
-            builder.add_instruction(Instruction::CallFunction {
-                package_address: SYSTEM_PACKAGE,
-                blueprint_name: "System".to_owned(),
-                function: "mint".to_owned(),
-                args: vec![
-                    scrypto_encode(&amount),
-                    scrypto_encode(&resource_address),
-                    scrypto_encode(&rid),
-                ],
+        self.take_from_worktop(1.into(), mint_badge_address, |builder, bid| {
+            builder.create_bucket_ref(bid, |builder, rid| {
+                builder
+                    .add_instruction(Instruction::CallFunction {
+                        package_address: SYSTEM_PACKAGE,
+                        blueprint_name: "System".to_owned(),
+                        function: "mint".to_owned(),
+                        args: vec![
+                            scrypto_encode(&amount),
+                            scrypto_encode(&resource_address),
+                            scrypto_encode(&rid),
+                        ],
+                    })
+                    .0
             })
         })
     }
@@ -450,25 +492,27 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
             function: "new".to_owned(),
             args: vec![scrypto_encode(&key)],
         })
+        .0
     }
 
-    /// Creates an account with resource taken from context.
+    /// Creates an account with resource taken from transaction worktop.
     ///
-    /// Note: need to make sure the context contains the required resource.
+    /// Note: you need to make sure the worktop contains the required resource to avoid runtime error.
     pub fn new_account_with_resource(
         &mut self,
         key: Address,
         amount: Decimal,
         resource_address: Address,
     ) -> &mut Self {
-        self.declare_bucket(|builder, bid| {
-            builder.take_from_context(amount, resource_address, bid);
-            builder.add_instruction(Instruction::CallFunction {
-                package_address: ACCOUNT_PACKAGE,
-                blueprint_name: "Account".to_owned(),
-                function: "with_bucket".to_owned(),
-                args: vec![scrypto_encode(&key), scrypto_encode(&bid)],
-            })
+        self.take_from_worktop(amount, resource_address, |builder, bid| {
+            builder
+                .add_instruction(Instruction::CallFunction {
+                    package_address: ACCOUNT_PACKAGE,
+                    blueprint_name: "Account".to_owned(),
+                    function: "with_bucket".to_owned(),
+                    args: vec![scrypto_encode(&key), scrypto_encode(&bid)],
+                })
+                .0
         })
     }
 
@@ -478,32 +522,40 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         resource_spec: &ResourceAmount,
         account: Address,
     ) -> &mut Self {
-        match resource_spec {
+        self.clone_bucket_ref(ECDSA_TOKEN_RID, |builder, rid| match resource_spec {
             ResourceAmount::Fungible {
                 amount,
                 resource_address,
-            } => self.add_instruction(Instruction::CallMethod {
-                component_address: account,
-                method: "withdraw".to_owned(),
-                args: vec![
-                    scrypto_encode(amount),
-                    scrypto_encode(resource_address),
-                    scrypto_encode(&ECDSA_TOKEN_RID),
-                ],
-            }),
+            } => {
+                builder
+                    .add_instruction(Instruction::CallMethod {
+                        component_address: account,
+                        method: "withdraw".to_owned(),
+                        args: vec![
+                            scrypto_encode(amount),
+                            scrypto_encode(resource_address),
+                            scrypto_encode(&rid),
+                        ],
+                    })
+                    .0
+            }
             ResourceAmount::NonFungible {
                 ids,
                 resource_address,
-            } => self.add_instruction(Instruction::CallMethod {
-                component_address: account,
-                method: "withdraw_nfts".to_owned(),
-                args: vec![
-                    scrypto_encode(ids),
-                    scrypto_encode(resource_address),
-                    scrypto_encode(&ECDSA_TOKEN_RID),
-                ],
-            }),
-        }
+            } => {
+                builder
+                    .add_instruction(Instruction::CallMethod {
+                        component_address: account,
+                        method: "withdraw_nfts".to_owned(),
+                        args: vec![
+                            scrypto_encode(ids),
+                            scrypto_encode(resource_address),
+                            scrypto_encode(&rid),
+                        ],
+                    })
+                    .0
+            }
+        })
     }
 
     //===============================
@@ -622,14 +674,14 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                     self.withdraw_from_account(&resource_spec, account);
                 }
                 let mut created_bid = None;
-                self.declare_bucket(|builder, bid| {
-                    created_bid = Some(bid);
-                    builder.take_from_context(
-                        resource_spec.amount(),
-                        resource_spec.resource_address(),
-                        bid,
-                    )
-                });
+                self.take_from_worktop(
+                    resource_spec.amount(),
+                    resource_spec.resource_address(),
+                    |builder, bid| {
+                        created_bid = Some(bid);
+                        builder
+                    },
+                );
                 Ok(scrypto_encode(&created_bid.unwrap()))
             }
             SCRYPTO_NAME_RID | SCRYPTO_NAME_BUCKET_REF => {
@@ -638,14 +690,17 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                     self.withdraw_from_account(&resource_spec, account);
                 }
                 let mut created_rid = None;
-                self.declare_bucket_ref(|builder, rid| {
-                    created_rid = Some(rid);
-                    builder.borrow_from_context(
-                        resource_spec.amount(),
-                        resource_spec.resource_address(),
-                        rid,
-                    )
-                });
+                self.take_from_worktop(
+                    resource_spec.amount(),
+                    resource_spec.resource_address(),
+                    |builder, bid| {
+                        builder.create_bucket_ref(bid, |builder, rid| {
+                            created_rid = Some(rid);
+                            builder
+                        });
+                        builder
+                    },
+                );
                 Ok(scrypto_encode(&created_rid.unwrap()))
             }
             _ => Err(BuildArgsError::UnsupportedType(i, ty.clone())),

@@ -2,6 +2,7 @@ use colored::*;
 use radix_engine::engine::*;
 use radix_engine::ledger::*;
 use radix_engine::model::*;
+use scrypto::rust::collections::HashSet;
 use scrypto::types::*;
 
 use crate::utils::*;
@@ -44,48 +45,97 @@ pub fn dump_component<T: Ledger>(address: Address, ledger: &T) -> Result<(), Dis
             let state_validated = validate_data(state).unwrap();
             println!("{}: {}", "State".green().bold(), state_validated);
 
-            println!("{}:", "Resources".green().bold());
-            for (last, vid) in state_validated.vaults.iter().identify_last() {
-                let vault = ledger.get_vault(*vid).unwrap();
-                let amount = vault.amount(Actor::SuperUser).unwrap();
-                let resource_address = vault.resource_address(Actor::SuperUser).unwrap();
-                let resource_def = ledger.get_resource_def(resource_address).unwrap();
-                println!(
-                    "{} {{ amount: {}, resource_def: {}{}{} }}",
-                    list_item_prefix(last),
-                    amount,
-                    resource_address,
-                    resource_def
-                        .metadata()
-                        .get("name")
-                        .map(|name| format!(", name: \"{}\"", name))
-                        .unwrap_or(String::new()),
-                    resource_def
-                        .metadata()
-                        .get("symbol")
-                        .map(|symbol| format!(", symbol: \"{}\"", symbol))
-                        .unwrap_or(String::new()),
-                );
-                if let Supply::NonFungible { ids } = vault.total_supply(Actor::SuperUser).unwrap() {
-                    for (inner_last, id) in ids.iter().identify_last() {
-                        let nft = ledger.get_nft(resource_address, *id).unwrap();
-                        let immutable_data = validate_data(&nft.immutable_data()).unwrap();
-                        let mutable_data = validate_data(&nft.mutable_data()).unwrap();
-                        println!(
-                            "{}  {} NFT {{ id: {}, immutable_data: {}, mutable_data: {} }}",
-                            if last { " " } else { "│" },
-                            list_item_prefix(inner_last),
-                            id,
-                            immutable_data,
-                            mutable_data
-                        );
+            // TODO: check authorization
+            // The current implementation recursively displays all referenced maps and vaults which
+            // the component may not have access to.
+
+            // Dump lazy map using DFS
+            // Consider using a proper Queue structure
+            let mut queue: Vec<Mid> = state_validated.lazy_maps.clone();
+            let mut i = 0;
+            let mut maps_visited: HashSet<Mid> = HashSet::new();
+            let mut vaults_found: HashSet<Vid> = state_validated.vaults.iter().cloned().collect();
+            while i < queue.len() {
+                let mid = queue[i];
+                i += 1;
+                if maps_visited.insert(mid) {
+                    let (maps, vaults) = dump_lazy_map(mid, ledger)?;
+                    queue.extend(maps);
+                    for v in vaults {
+                        vaults_found.insert(v);
                     }
                 }
             }
-            Ok(())
+
+            // Dump resources
+            dump_resources(&vaults_found, ledger)
         }
         None => Err(DisplayError::ComponentNotFound),
     }
+}
+
+fn dump_lazy_map<T: Ledger>(mid: Mid, ledger: &T) -> Result<(Vec<Mid>, Vec<Vid>), DisplayError> {
+    let mut referenced_maps = Vec::new();
+    let mut referenced_vaults = Vec::new();
+    let map = ledger.get_lazy_map(mid).unwrap();
+    println!("{}: {}", "Lazy Map".green().bold(), mid);
+    for (last, (k, v)) in map.map().iter().identify_last() {
+        let k_validated = validate_data(k).unwrap();
+        let v_validated = validate_data(v).unwrap();
+        println!(
+            "{} {} => {}",
+            list_item_prefix(last),
+            k_validated,
+            v_validated
+        );
+        referenced_maps.extend(k_validated.lazy_maps);
+        referenced_maps.extend(v_validated.lazy_maps);
+        referenced_vaults.extend(k_validated.vaults);
+        referenced_vaults.extend(v_validated.vaults);
+    }
+    Ok((referenced_maps, referenced_vaults))
+}
+
+fn dump_resources<T: Ledger>(vaults: &HashSet<Vid>, ledger: &T) -> Result<(), DisplayError> {
+    println!("{}:", "Resources".green().bold());
+    for (last, vid) in vaults.iter().identify_last() {
+        let vault = ledger.get_vault(*vid).unwrap();
+        let amount = vault.amount(Actor::SuperUser).unwrap();
+        let resource_address = vault.resource_address(Actor::SuperUser).unwrap();
+        let resource_def = ledger.get_resource_def(resource_address).unwrap();
+        println!(
+            "{} {{ amount: {}, resource_def: {}{}{} }}",
+            list_item_prefix(last),
+            amount,
+            resource_address,
+            resource_def
+                .metadata()
+                .get("name")
+                .map(|name| format!(", name: \"{}\"", name))
+                .unwrap_or(String::new()),
+            resource_def
+                .metadata()
+                .get("symbol")
+                .map(|symbol| format!(", symbol: \"{}\"", symbol))
+                .unwrap_or(String::new()),
+        );
+        if let Supply::NonFungible { ids } = vault.total_supply(Actor::SuperUser).unwrap() {
+            for (inner_last, id) in ids.iter().identify_last() {
+                let nft = ledger.get_nft(resource_address, *id).unwrap();
+                let immutable_data = validate_data(&nft.immutable_data()).unwrap();
+                let mutable_data = validate_data(&nft.mutable_data()).unwrap();
+                println!(
+                    "{}  {} NFT {{ id: {}, immutable_data: {}, mutable_data: {} }}",
+                    if last { " " } else { "│" },
+                    list_item_prefix(inner_last),
+                    id,
+                    immutable_data,
+                    mutable_data
+                );
+            }
+        }
+    }
+    Ok(())
 }
 
 /// Dump a resource definition into console.

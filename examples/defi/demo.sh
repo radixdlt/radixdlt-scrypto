@@ -1,7 +1,11 @@
 #!/bin/bash
 
+set -x
 set -e
+
 cd "$(dirname "$0")"
+
+cargo install --path ../../simulator
 
 # reset database
 resim reset
@@ -84,6 +88,7 @@ resim call-method $price_oracle_component get_price $btc $eth
 resim call-method $price_oracle_component get_price $eth $btc
 
 # Summary
+set +x
 echo "===================================================================================="
 echo "Please assume a fixed number of decimal places for all resources: 18"
 echo "Account 1 address: $acc1_address"
@@ -113,3 +118,26 @@ echo "xPerpFutures blueprint: $perpetual_futures_package ClearingHouse"
 echo "xPerpFutures component: $perpetual_futures_component"
 echo "XRD/SNX swap: $xrd_snx_radiswap_component"
 echo "===================================================================================="
+set -x
+
+#====================
+# Test mutual farm
+#====================
+
+# Create TESLA resource with no supply
+tesla=`resim new-token-fixed --name "Tesla Token" --symbol "TESLA" 0 | tee /dev/tty | awk '/ResourceDef:/ {print $NF}'`
+resim call-method $price_oracle_component update_price $tesla $usd 1162.00  1,$price_oracle_update_auth
+resim call-method $price_oracle_component update_price $xrd $snx 0.03901819  1,$price_oracle_update_auth
+
+# Publish mutual farm package
+mutual_farm_package=`resim publish mutual-farm | tee /dev/tty | awk '/Package:/ {print $NF}'`
+
+# Instantiate mutual farm
+out=`resim call-function $mutual_farm_package MutualFarm new $price_oracle_component $xrd_snx_radiswap_component $synthetics_component "TESLA" $tesla 1000 1000000,$xrd $snx $usd | tee /dev/tty | awk '/Component:/ {print $NF}'`
+mutual_farm_component=`echo $out | cut -d " " -f2`
+resim show $mutual_farm_component
+resim show $acc1_address
+
+# Deposit another 1,000,000 XRD
+resim call-method $mutual_farm_component deposit 1000000,$xrd
+resim show $acc1_address

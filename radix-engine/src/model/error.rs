@@ -3,6 +3,7 @@ use scrypto::rust::fmt;
 use scrypto::types::*;
 use wasmi::*;
 
+use crate::engine::*;
 use crate::model::*;
 
 /// Represents an error when validating a WASM file.
@@ -40,6 +41,7 @@ pub enum DataValidationError {
 #[derive(Debug)]
 pub enum TransactionValidationError {
     DataValidationError(DataValidationError),
+    IdValidatorError(IdValidatorError),
     InvalidSignature,
     UnexpectedEnd,
 }
@@ -47,6 +49,9 @@ pub enum TransactionValidationError {
 /// Represents an error when executing a transaction.
 #[derive(Debug)]
 pub enum RuntimeError {
+    /// Assertion check failed.
+    AssertionFailed,
+
     /// The data is not a valid WASM module.
     WasmValidationError(WasmValidationError),
 
@@ -55,6 +60,9 @@ pub enum RuntimeError {
 
     /// Not a valid ABI.
     AbiValidationError(DecodeError),
+
+    /// Failed to allocate an ID.
+    IdAllocatorError(IdAllocatorError),
 
     /// Error when invoking an export.
     InvokeError(Error),

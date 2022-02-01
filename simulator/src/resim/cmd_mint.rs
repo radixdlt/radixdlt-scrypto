@@ -52,7 +52,8 @@ pub fn handle_mint(matches: &ArgMatches) -> Result<(), Error> {
     let mut configs = get_configs()?;
     let account = configs.default_account.ok_or(Error::NoDefaultAccount)?;
     let mut ledger = FileBasedLedger::with_bootstrap(get_data_dir()?);
-    let mut executor = TransactionExecutor::new(&mut ledger, configs.current_epoch, configs.nonce);
+    let mut executor =
+        TransactionExecutor::new(&mut ledger, configs.current_epoch, configs.nonce, trace);
     let transaction = TransactionBuilder::new(&executor)
         .withdraw_from_account(
             &ResourceAmount::Fungible {
@@ -62,18 +63,18 @@ pub fn handle_mint(matches: &ArgMatches) -> Result<(), Error> {
             account.0,
         )
         .mint(amount, resource_address, mint_badge_addr)
-        .drop_all_bucket_refs()
         .call_method_with_all_resources(account.0, "deposit_batch")
         .build(signers)
         .map_err(Error::TransactionConstructionError)?;
-    let receipt = executor.run(transaction, trace).unwrap();
+    let receipt = executor
+        .run(transaction)
+        .map_err(Error::TransactionValidationError)?;
 
     println!("{:?}", receipt);
-    if receipt.success {
+    if receipt.result.is_ok() {
         configs.nonce = executor.nonce();
         set_configs(configs)?;
-        Ok(())
-    } else {
-        Err(Error::TransactionFailed)
     }
+
+    receipt.result.map_err(Error::TransactionExecutionError)
 }
