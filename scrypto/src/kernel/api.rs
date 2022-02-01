@@ -243,8 +243,8 @@ pub struct PutLazyMapEntryOutput {}
 pub struct CreateResourceInput {
     pub resource_type: ResourceType,
     pub metadata: HashMap<String, String>,
-    pub flags: u16,
-    pub mutable_flags: u16,
+    pub flags: u64,
+    pub mutable_flags: u64,
     pub authorities: HashMap<Address, u16>,
     pub initial_supply: Option<NewSupply>,
 }
@@ -336,13 +336,13 @@ pub struct GetResourceFlagsInput {
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct GetResourceFlagsOutput {
-    pub flags: u16,
+    pub flags: u64,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct UpdateResourceFlagsInput {
     pub resource_address: Address,
-    pub new_flags: u16,
+    pub new_flags: u64,
     pub auth: Rid,
 }
 
@@ -356,13 +356,13 @@ pub struct GetResourceMutableFlagsInput {
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct GetResourceMutableFlagsOutput {
-    pub mutable_flags: u16,
+    pub mutable_flags: u64,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct UpdateResourceMutableFlagsInput {
     pub resource_address: Address,
-    pub new_mutable_flags: u16,
+    pub new_mutable_flags: u64,
     pub auth: Rid,
 }
 

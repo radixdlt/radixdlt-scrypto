@@ -375,7 +375,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                 scrypto_encode(&ResourceType::Fungible { divisibility: 18 }),
                 scrypto_encode(&metadata),
                 scrypto_encode(&(MINTABLE | BURNABLE)),
-                scrypto_encode(&0u16),
+                scrypto_encode(&0u64),
                 scrypto_encode(&Self::single_authority(
                     mint_badge_address,
                     MAY_MINT | MAY_BURN,
@@ -399,8 +399,8 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
             args: vec![
                 scrypto_encode(&ResourceType::Fungible { divisibility: 18 }),
                 scrypto_encode(&metadata),
-                scrypto_encode(&0u16),
-                scrypto_encode(&0u16),
+                scrypto_encode(&0u64),
+                scrypto_encode(&0u64),
                 scrypto_encode(&HashMap::<Address, u16>::new()),
                 scrypto_encode(&Some(NewSupply::Fungible {
                     amount: initial_supply.into(),
@@ -424,7 +424,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                 scrypto_encode(&ResourceType::Fungible { divisibility: 0 }),
                 scrypto_encode(&metadata),
                 scrypto_encode(&(MINTABLE | BURNABLE)),
-                scrypto_encode(&0u16),
+                scrypto_encode(&0u64),
                 scrypto_encode(&Self::single_authority(
                     mint_badge_address,
                     MAY_MINT | MAY_BURN,
@@ -448,8 +448,8 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
             args: vec![
                 scrypto_encode(&ResourceType::Fungible { divisibility: 0 }),
                 scrypto_encode(&metadata),
-                scrypto_encode(&0u16),
-                scrypto_encode(&0u16),
+                scrypto_encode(&0u64),
+                scrypto_encode(&0u64),
                 scrypto_encode(&HashMap::<Address, u16>::new()),
                 scrypto_encode(&Some(NewSupply::Fungible {
                     amount: initial_supply.into(),

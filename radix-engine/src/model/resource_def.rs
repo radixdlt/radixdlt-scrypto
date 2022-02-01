@@ -17,11 +17,12 @@ pub enum ResourceDefError {
     OperationNotAllowed,
     InvalidDivisibility,
     InvalidAmount(Decimal),
+    InvalidResourceFlags(u64),
     InvalidFlagUpdate {
-        flags: u16,
-        mutable_flags: u16,
-        new_flags: u16,
-        new_mutable_flags: u16,
+        flags: u64,
+        mutable_flags: u64,
+        new_flags: u64,
+        new_mutable_flags: u64,
     },
 }
 
@@ -30,8 +31,8 @@ pub enum ResourceDefError {
 pub struct ResourceDef {
     resource_type: ResourceType,
     metadata: HashMap<String, String>,
-    flags: u16,
-    mutable_flags: u16,
+    flags: u64,
+    mutable_flags: u64,
     authorities: HashMap<Address, u16>,
     total_supply: Decimal,
 }
@@ -40,8 +41,8 @@ impl ResourceDef {
     pub fn new(
         resource_type: ResourceType,
         metadata: HashMap<String, String>,
-        flags: u16,
-        mutable_flags: u16,
+        flags: u64,
+        mutable_flags: u64,
         authorities: HashMap<Address, u16>,
         initial_supply: &Option<NewSupply>,
     ) -> Result<Self, ResourceDefError> {
@@ -53,6 +54,14 @@ impl ResourceDef {
             authorities,
             total_supply: Decimal::zero(),
         };
+
+        if !resource_flags_are_valid(flags) {
+           return Err(ResourceDefError::InvalidResourceFlags(flags));
+        }
+
+        if !resource_flags_are_valid(mutable_flags) {
+           return Err(ResourceDefError::InvalidResourceFlags(mutable_flags));
+        }
 
         resource_def.total_supply = match (resource_type, initial_supply) {
             (ResourceType::Fungible { divisibility }, Some(NewSupply::Fungible { amount })) => {
@@ -81,11 +90,11 @@ impl ResourceDef {
         &self.metadata
     }
 
-    pub fn flags(&self) -> u16 {
+    pub fn flags(&self) -> u64 {
         self.flags
     }
 
-    pub fn mutable_flags(&self) -> u16 {
+    pub fn mutable_flags(&self) -> u64 {
         self.mutable_flags
     }
 
@@ -97,7 +106,7 @@ impl ResourceDef {
         self.total_supply
     }
 
-    pub fn is_flag_on(&self, flag: u16) -> bool {
+    pub fn is_flag_on(&self, flag: u64) -> bool {
         self.flags() & flag == flag
     }
 
@@ -153,10 +162,15 @@ impl ResourceDef {
         }
     }
 
-    pub fn update_flags(&mut self, new_flags: u16, actor: Actor) -> Result<(), ResourceDefError> {
+    pub fn update_flags(&mut self, new_flags: u64, actor: Actor) -> Result<(), ResourceDefError> {
         self.check_manage_flags_auth(actor)?;
 
         let changed = self.flags ^ new_flags;
+
+        if !resource_flags_are_valid (changed) {
+           return Err(ResourceDefError::InvalidResourceFlags(changed));
+        }
+
         if self.mutable_flags | changed != self.mutable_flags {
             return Err(ResourceDefError::InvalidFlagUpdate {
                 flags: self.flags,
@@ -172,12 +186,17 @@ impl ResourceDef {
 
     pub fn update_mutable_flags(
         &mut self,
-        new_mutable_flags: u16,
+        new_mutable_flags: u64,
         actor: Actor,
     ) -> Result<(), ResourceDefError> {
         self.check_manage_flags_auth(actor)?;
 
         let changed = self.mutable_flags ^ new_mutable_flags;
+
+        if !resource_flags_are_valid (changed) {
+            return Err(ResourceDefError::InvalidResourceFlags(changed));
+        }
+
         if self.mutable_flags | changed != self.mutable_flags {
             return Err(ResourceDefError::InvalidFlagUpdate {
                 flags: self.flags,

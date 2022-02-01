@@ -14,8 +14,8 @@ pub const DIVISIBILITY_MAXIMUM: u8 = 18;
 pub struct ResourceBuilder {
     resource_type: ResourceType,
     metadata: HashMap<String, String>,
-    flags: u16,
-    mutable_flags: u16,
+    flags: u64,
+    mutable_flags: u64,
     authorities: HashMap<Address, u16>,
 }
 
@@ -54,13 +54,13 @@ impl ResourceBuilder {
     }
 
     /// Sets the feature flags.
-    pub fn flags(&mut self, flags: u16) -> &mut Self {
+    pub fn flags(&mut self, flags: u64) -> &mut Self {
         self.flags = flags;
         self
     }
 
     /// Sets the features flags that can be updated in future.
-    pub fn mutable_flags(&mut self, mutable_flags: u16) -> &mut Self {
+    pub fn mutable_flags(&mut self, mutable_flags: u64) -> &mut Self {
         self.mutable_flags = mutable_flags;
         self
     }

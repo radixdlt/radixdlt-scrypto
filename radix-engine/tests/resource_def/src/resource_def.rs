@@ -19,7 +19,7 @@ blueprint! {
             (bucket.take(Decimal::from_str("0.1").unwrap()), bucket)
         }
 
-        pub fn query() -> (Bucket, HashMap<String, String>, u16, u16, Decimal) {
+        pub fn query() -> (Bucket, HashMap<String, String>, u64, u64, Decimal) {
             let (badge, resource_def) = Self::create_fungible();
             (
                 badge,

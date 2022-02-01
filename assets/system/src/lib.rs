@@ -17,8 +17,8 @@ blueprint! {
         pub fn new_resource(
             resource_type: ResourceType,
             metadata: HashMap<String, String>,
-            flags: u16,
-            mutable_flags: u16,
+            flags: u64,
+            mutable_flags: u64,
             authorities: HashMap<Address, u16>,
             initial_supply: Option<NewSupply>,
         ) -> (ResourceDef, Option<Bucket>) {
