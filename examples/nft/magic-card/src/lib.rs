@@ -51,7 +51,7 @@ blueprint! {
                 .metadata("name", "Russ' Magic Card Collection")
                 .initial_supply_non_fungible([
                     (
-                        NftKey::new(1u128.to_be_bytes().to_vec()),
+                        NftKey::from(1u128),
                         MagicCard {
                             color: Color::Black,
                             rarity: Rarity::MythicRare,
@@ -59,7 +59,7 @@ blueprint! {
                         },
                     ),
                     (
-                        NftKey::new(2u128.to_be_bytes().to_vec()),
+                        NftKey::from(2u128),
                         MagicCard {
                             color: Color::Green,
                             rarity: Rarity::Rare,
@@ -67,7 +67,7 @@ blueprint! {
                         },
                     ),
                     (
-                        NftKey::new(3u128.to_be_bytes().to_vec()),
+                        NftKey::from(3u128),
                         MagicCard {
                             color: Color::Red,
                             rarity: Rarity::Uncommon,
@@ -112,7 +112,7 @@ blueprint! {
             self.collected_xrd.put(payment.take(price));
 
             // Take the requested NFT
-            let key = NftKey::new(id.to_be_bytes().to_vec());
+            let key = NftKey::from(id);
             let nft_bucket = self.special_cards.take_nft(&key);
 
             // Return the NFT and change
@@ -132,7 +132,7 @@ blueprint! {
             };
             let nft_bucket = self.random_card_mint_badge.authorize(|auth| {
                 self.random_card_resource_def
-                    .mint_nft(&NftKey::new(self.random_card_id_counter.to_be_bytes().to_vec()), new_card, auth)
+                    .mint_nft(&NftKey::from(self.random_card_id_counter), new_card, auth)
             });
             self.random_card_id_counter += 1;
 
@@ -184,7 +184,7 @@ blueprint! {
             // Mint a new one.
             let new_nft_bucket = self.random_card_mint_badge.authorize(|auth| {
                 self.random_card_resource_def
-                    .mint_nft(&NftKey::new(self.random_card_id_counter.to_be_bytes().to_vec()), new_card, auth)
+                    .mint_nft(&NftKey::from(self.random_card_id_counter), new_card, auth)
             });
             self.random_card_id_counter += 1;
 

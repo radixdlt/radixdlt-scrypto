@@ -66,7 +66,7 @@ blueprint! {
                     };
                     ticket_bucket.put(
                         my_admin.authorize(
-                            |auth| ticket_bucket.resource_def().mint_nft(&NftKey::new(manual_id.to_be_bytes().to_vec()), ticket, auth)
+                            |auth| ticket_bucket.resource_def().mint_nft(&NftKey::from(manual_id), ticket, auth)
                         )
                     );
                     manual_id += 1;
@@ -83,7 +83,7 @@ blueprint! {
                 };
                 ticket_bucket.put(
                     my_admin.authorize(
-                        |auth| ticket_bucket.resource_def().mint_nft(&NftKey::new(manual_id.to_be_bytes().to_vec()), ticket, auth)
+                        |auth| ticket_bucket.resource_def().mint_nft(&NftKey::from(manual_id), ticket, auth)
                     )
                 );
             }

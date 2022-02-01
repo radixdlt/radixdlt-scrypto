@@ -22,7 +22,7 @@ blueprint! {
             let mut tickets = Vec::new();
             for row in 1..5 {
                 for column in 1..5 {
-                    tickets.push((NftKey::new(Uuid::generate().to_le_bytes().to_vec()), Ticket { row, column }));
+                    tickets.push((NftKey::from(Uuid::generate()), Ticket { row, column }));
                 }
             }
 
@@ -56,7 +56,7 @@ blueprint! {
             self.collected_xrd.put(payment.take(self.ticket_price));
 
             // Take the specific ticket
-            let ticket = self.available_tickets.take_nft(&NftKey::new(id.to_le_bytes().to_vec()));
+            let ticket = self.available_tickets.take_nft(&NftKey::from(id));
 
             // Return the ticket and change
             (ticket, payment)

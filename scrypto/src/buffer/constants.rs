@@ -16,7 +16,6 @@ pub const SCRYPTO_NAME_BID: &str = "scrypto::types::Bid";
 pub const SCRYPTO_NAME_RID: &str = "scrypto::types::Rid";
 pub const SCRYPTO_NAME_MID: &str = "scrypto::types::Mid";
 pub const SCRYPTO_NAME_VID: &str = "scrypto::types::Vid";
-pub const SCRYPTO_NAME_NFT_KEY: &str = "scrypto::types::NftKey";
 
 pub const SCRYPTO_NAME_ACCOUNT: &str = "scrypto::core::Account";
 pub const SCRYPTO_NAME_PACKAGE: &str = "scrypto::core::Package";

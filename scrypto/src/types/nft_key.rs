@@ -15,6 +15,12 @@ impl NftKey {
     }
 }
 
+impl From<u128> for NftKey {
+    fn from(u: u128) -> Self {
+        NftKey(u.to_be_bytes().to_vec())
+    }
+}
+
 impl TypeId for NftKey {
     fn type_id() -> u8 {
         SCRYPTO_TYPE_NFT_KEY
