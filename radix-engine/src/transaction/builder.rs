@@ -121,7 +121,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     pub fn new(abi_provider: &'a A) -> Self {
         Self {
             abi_provider,
-            id_allocator: IdAllocator::new(TRANSACTION_OBJECT_ID_RANGE),
+            id_allocator: IdAllocator::new(TRANSACTION_ID_SPACE),
             instructions: Vec::new(),
             errors: Vec::new(),
         }

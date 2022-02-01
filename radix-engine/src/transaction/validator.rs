@@ -1,7 +1,5 @@
-use scrypto::rust::collections::*;
 use scrypto::rust::vec;
 use scrypto::rust::vec::Vec;
-use scrypto::types::*;
 
 use crate::engine::*;
 use crate::model::*;
@@ -13,45 +11,31 @@ pub fn validate_transaction(
     let mut signers = vec![];
 
     // semantic analysis
-    let mut id_allocator = IdAllocator::new(TRANSACTION_OBJECT_ID_RANGE);
-    let mut buckets = HashMap::<Bid, usize>::new();
-    let mut bucket_refs = HashMap::<Rid, Bid>::new();
-    bucket_refs.insert(ECDSA_TOKEN_RID, ECDSA_TOKEN_BID);
-
+    let mut id_validator = IdValidator::new();
     for (i, inst) in transaction.instructions.iter().enumerate() {
         match inst.clone() {
             Instruction::TakeFromWorktop {
                 amount,
                 resource_address,
             } => {
-                buckets.insert(
-                    id_allocator
-                        .new_bid()
-                        .map_err(TransactionValidationError::IdAllocatorError)?,
-                    0,
-                );
+                id_validator
+                    .new_bucket()
+                    .map_err(TransactionValidationError::IdValidatorError)?;
                 instructions.push(ValidatedInstruction::TakeFromWorktop {
                     amount,
                     resource_address,
                 });
             }
             Instruction::TakeAllFromWorktop { resource_address } => {
-                buckets.insert(
-                    id_allocator
-                        .new_bid()
-                        .map_err(TransactionValidationError::IdAllocatorError)?,
-                    0,
-                );
+                id_validator
+                    .new_bucket()
+                    .map_err(TransactionValidationError::IdValidatorError)?;
                 instructions.push(ValidatedInstruction::TakeAllFromWorktop { resource_address });
             }
             Instruction::ReturnToWorktop { bid } => {
-                if !buckets.contains_key(&bid) {
-                    return Err(TransactionValidationError::BucketNotFound(bid));
-                }
-                if *buckets.get(&bid).unwrap() != 0 {
-                    return Err(TransactionValidationError::BucketLocked(bid));
-                }
-                buckets.remove(&bid);
+                id_validator
+                    .drop_bucket(bid)
+                    .map_err(TransactionValidationError::IdValidatorError)?;
                 instructions.push(ValidatedInstruction::ReturnToWorktop { bid });
             }
             Instruction::AssertWorktopContains {
@@ -64,41 +48,21 @@ pub fn validate_transaction(
                 });
             }
             Instruction::CreateBucketRef { bid } => {
-                if !buckets.contains_key(&bid) {
-                    return Err(TransactionValidationError::BucketNotFound(bid));
-                }
-                buckets.entry(bid).and_modify(|cnt| *cnt += 1);
-                bucket_refs.insert(
-                    id_allocator
-                        .new_rid()
-                        .map_err(TransactionValidationError::IdAllocatorError)?,
-                    bid,
-                );
+                id_validator
+                    .new_bucket_ref(bid)
+                    .map_err(TransactionValidationError::IdValidatorError)?;
                 instructions.push(ValidatedInstruction::CreateBucketRef { bid });
             }
             Instruction::CloneBucketRef { rid } => {
-                let bid = if let Some(b) = bucket_refs.get(&rid) {
-                    *b
-                } else {
-                    return Err(TransactionValidationError::BucketRefNotFound(rid));
-                };
-                buckets.entry(bid).and_modify(|cnt| *cnt += 1);
-                bucket_refs.insert(
-                    id_allocator
-                        .new_rid()
-                        .map_err(TransactionValidationError::IdAllocatorError)?,
-                    bid,
-                );
+                id_validator
+                    .clone_bucket_ref(rid)
+                    .map_err(TransactionValidationError::IdValidatorError)?;
                 instructions.push(ValidatedInstruction::CloneBucketRef { rid });
             }
             Instruction::DropBucketRef { rid } => {
-                let bid = if let Some(b) = bucket_refs.get(&rid) {
-                    *b
-                } else {
-                    return Err(TransactionValidationError::BucketRefNotFound(rid));
-                };
-                buckets.entry(bid).and_modify(|cnt| *cnt -= 1);
-                bucket_refs.remove(&rid);
+                id_validator
+                    .drop_bucket_ref(rid)
+                    .map_err(TransactionValidationError::IdValidatorError)?;
                 instructions.push(ValidatedInstruction::DropBucketRef { rid });
             }
             Instruction::CallFunction {
@@ -111,7 +75,7 @@ pub fn validate_transaction(
                     package_address,
                     blueprint_name,
                     function,
-                    args: validate_args(args, &mut buckets, &mut bucket_refs)?,
+                    args: validate_args(args, &mut id_validator)?,
                 });
             }
             Instruction::CallMethod {
@@ -122,14 +86,16 @@ pub fn validate_transaction(
                 instructions.push(ValidatedInstruction::CallMethod {
                     component_address,
                     method,
-                    args: validate_args(args, &mut buckets, &mut bucket_refs)?,
+                    args: validate_args(args, &mut id_validator)?,
                 });
             }
             Instruction::CallMethodWithAllResources {
                 component_address,
                 method,
             } => {
-                buckets.retain(|_, v| *v != 0);
+                id_validator
+                    .drop_all()
+                    .map_err(TransactionValidationError::IdValidatorError)?;
                 instructions.push(ValidatedInstruction::CallMethodWithAllResources {
                     component_address,
                     method,
@@ -152,29 +118,22 @@ pub fn validate_transaction(
 
 fn validate_args(
     args: Vec<Vec<u8>>,
-    buckets: &mut HashMap<Bid, usize>,
-    bucket_refs: &mut HashMap<Rid, Bid>,
+    id_validator: &mut IdValidator,
 ) -> Result<Vec<ValidatedData>, TransactionValidationError> {
-    let mut validated_args = vec![];
+    let mut result = vec![];
     for arg in args {
-        let validated_arg =
-            validate_data(&arg).map_err(TransactionValidationError::DataValidationError)?;
-        for bid in &validated_arg.buckets {
-            if !buckets.contains_key(bid) {
-                return Err(TransactionValidationError::BucketNotFound(*bid));
-            }
-            if *buckets.get(bid).unwrap() != 0 {
-                return Err(TransactionValidationError::BucketLocked(*bid));
-            }
-            buckets.remove(bid);
+        let a = validate_data(&arg).map_err(TransactionValidationError::DataValidationError)?;
+        for bid in &a.buckets {
+            id_validator
+                .drop_bucket(*bid)
+                .map_err(TransactionValidationError::IdValidatorError)?;
         }
-        for rid in &validated_arg.bucket_refs {
-            if !bucket_refs.contains_key(rid) {
-                return Err(TransactionValidationError::BucketRefNotFound(*rid));
-            }
-            bucket_refs.remove(rid);
+        for rid in &a.bucket_refs {
+            id_validator
+                .drop_bucket_ref(*rid)
+                .map_err(TransactionValidationError::IdValidatorError)?;
         }
-        validated_args.push(validated_arg);
+        result.push(a);
     }
-    Ok(validated_args)
+    Ok(result)
 }

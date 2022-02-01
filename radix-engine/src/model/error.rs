@@ -41,10 +41,7 @@ pub enum DataValidationError {
 #[derive(Debug)]
 pub enum TransactionValidationError {
     DataValidationError(DataValidationError),
-    IdAllocatorError(IdAllocatorError),
-    BucketNotFound(Bid),
-    BucketRefNotFound(Rid),
-    BucketLocked(Bid),
+    IdValidatorError(IdValidatorError),
     InvalidSignature,
     UnexpectedEnd,
 }

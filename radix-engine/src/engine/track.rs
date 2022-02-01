@@ -52,7 +52,7 @@ impl<'l, L: Ledger> Track<'l, L> {
             current_epoch,
             transaction_hash,
             transaction_signers,
-            id_allocator: IdAllocator::new(USER_OBJECT_ID_RANGE),
+            id_allocator: IdAllocator::new(APPLICATION_ID_SPACE),
             logs: Vec::new(),
             packages: HashMap::new(),
             components: HashMap::new(),

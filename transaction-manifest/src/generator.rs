@@ -80,7 +80,7 @@ impl NameResolver {
 }
 
 pub fn generate_transaction(tx: &ast::Transaction) -> Result<Transaction, GeneratorError> {
-    let mut id_allocator = IdAllocator::new(TRANSACTION_OBJECT_ID_RANGE);
+    let mut id_allocator = IdAllocator::new(TRANSACTION_ID_SPACE);
     let mut name_resolver = NameResolver::new();
     let mut instructions = Vec::new();
 
@@ -572,7 +572,7 @@ mod tests {
             let instruction = Parser::new(tokenize($s).unwrap())
                 .parse_instruction()
                 .unwrap();
-            let mut id_allocator = IdAllocator::new(TRANSACTION_OBJECT_ID_RANGE);
+            let mut id_allocator = IdAllocator::new(TRANSACTION_ID_SPACE);
             let mut resolver = NameResolver::new();
             assert_eq!(
                 generate_instruction(&instruction, &mut id_allocator, &mut resolver),

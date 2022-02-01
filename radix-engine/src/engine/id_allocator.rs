@@ -1,12 +1,20 @@
+use scrypto::rust::ops::Range;
 use scrypto::types::*;
 use scrypto::utils::*;
 
 pub const ECDSA_TOKEN_BID: Bid = Bid(0);
 pub const ECDSA_TOKEN_RID: Rid = Rid(1);
 
-pub const SYSTEM_OBJECT_ID_RANGE: (u32, u32) = (0, 512);
-pub const TRANSACTION_OBJECT_ID_RANGE: (u32, u32) = (512, 1024);
-pub const USER_OBJECT_ID_RANGE: (u32, u32) = (1024, u32::MAX);
+pub const SYSTEM_ID_SPACE: IdSpace = IdSpace::System(0..512);
+pub const TRANSACTION_ID_SPACE: IdSpace = IdSpace::Transaction(512..1024);
+pub const APPLICATION_ID_SPACE: IdSpace = IdSpace::Application(512..1024);
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum IdSpace {
+    System(Range<u32>),
+    Transaction(Range<u32>),
+    Application(Range<u32>),
+}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum IdAllocatorError {
@@ -15,24 +23,25 @@ pub enum IdAllocatorError {
 
 /// An ID allocator defines how identities are generated.
 pub struct IdAllocator {
-    next: u32,
-    end: u32,
+    available: Range<u32>,
 }
 
 impl IdAllocator {
     /// Creates an ID allocator.
-    pub fn new(range: (u32, u32)) -> Self {
-        assert!(range.1 > range.0);
+    pub fn new(kind: IdSpace) -> Self {
         Self {
-            next: range.0,
-            end: range.1,
+            available: match kind {
+                IdSpace::System(range) => range,
+                IdSpace::Transaction(range) => range,
+                IdSpace::Application(range) => range,
+            },
         }
     }
 
     fn next(&mut self) -> Result<u32, IdAllocatorError> {
-        if self.next < self.end {
-            let id = self.next;
-            self.next += 1;
+        if self.available.len() > 0 {
+            let id = self.available.start;
+            self.available.start += 1;
             Ok(id)
         } else {
             Err(IdAllocatorError::OutOfID)

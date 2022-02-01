@@ -110,7 +110,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
             moving_buckets: HashMap::new(),
             moving_bucket_refs: HashMap::new(),
             vm: None,
-            id_allocator: IdAllocator::new(TRANSACTION_OBJECT_ID_RANGE),
+            id_allocator: IdAllocator::new(TRANSACTION_ID_SPACE),
             worktop: HashMap::new(),
         }
     }
@@ -305,7 +305,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         self.bucket_refs.insert(rid, bucket_ref);
     }
 
-    /// Moved in buckets and bucket refs to this process.
+    /// Moves buckets and bucket refs into this process.
     pub fn move_in_resources(
         &mut self,
         buckets: HashMap<Bid, Bucket>,
@@ -335,7 +335,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         Ok(())
     }
 
-    /// Moved out all marked buckets and bucket refs from this process.
+    /// Moves all marked buckets and bucket refs from this process.
     pub fn move_out_resources(&mut self) -> (HashMap<Bid, Bucket>, HashMap<Rid, BucketRef>) {
         let buckets = self.moving_buckets.drain().collect();
         let bucket_refs = self.moving_bucket_refs.drain().collect();
