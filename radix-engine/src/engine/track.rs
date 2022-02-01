@@ -219,12 +219,12 @@ impl<'l, L: Ledger> Track<'l, L> {
     }
 
     /// Returns an immutable reference to a nft, if exists.
-    pub fn get_nft(&mut self, resource_address: Address, id: NftKey) -> Option<&Nft> {
+    pub fn get_nft(&mut self, resource_address: Address, id: &NftKey) -> Option<&Nft> {
         if self.nfts.contains_key(&(resource_address, id.clone())) {
             return self.nfts.get(&(resource_address, id.clone()));
         }
 
-        if let Some(nft) = self.ledger.get_nft(resource_address, id.clone()) {
+        if let Some(nft) = self.ledger.get_nft(resource_address, id) {
             self.nfts.insert((resource_address, id.clone()), nft);
             self.nfts.get(&(resource_address, id.clone()))
         } else {
@@ -233,14 +233,14 @@ impl<'l, L: Ledger> Track<'l, L> {
     }
 
     /// Returns a mutable reference to a nft, if exists.
-    pub fn get_nft_mut(&mut self, resource_address: Address, id: NftKey) -> Option<&mut Nft> {
+    pub fn get_nft_mut(&mut self, resource_address: Address, id: &NftKey) -> Option<&mut Nft> {
         self.updated_nfts.insert((resource_address, id.clone()));
 
         if self.nfts.contains_key(&(resource_address, id.clone())) {
             return self.nfts.get_mut(&(resource_address, id.clone()));
         }
 
-        if let Some(nft) = self.ledger.get_nft(resource_address, id.clone()) {
+        if let Some(nft) = self.ledger.get_nft(resource_address, id) {
             self.nfts.insert((resource_address, id.clone()), nft);
             self.nfts.get_mut(&(resource_address, id.clone()))
         } else {
@@ -249,7 +249,7 @@ impl<'l, L: Ledger> Track<'l, L> {
     }
 
     /// Inserts a new nft.
-    pub fn put_nft(&mut self, resource_address: Address, id: NftKey, nft: Nft) {
+    pub fn put_nft(&mut self, resource_address: Address, id: &NftKey, nft: Nft) {
         self.updated_nfts.insert((resource_address, id.clone()));
 
         self.nfts.insert((resource_address, id.clone()), nft);
@@ -444,7 +444,7 @@ impl<'l, L: Ledger> Track<'l, L> {
         for (resource_def, id) in self.updated_nfts.clone() {
             self.ledger.put_nft(
                 resource_def,
-                id.clone(),
+                &id,
                 self.nfts.get(&(resource_def, id.clone())).unwrap().clone(),
             );
         }

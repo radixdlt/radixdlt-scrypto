@@ -81,11 +81,11 @@ impl Ledger for InMemoryLedger {
         self.vaults.insert(vid, vault);
     }
 
-    fn get_nft(&self, resource_address: Address, id: NftKey) -> Option<Nft> {
-        self.nfts.get(&(resource_address, id)).cloned()
+    fn get_nft(&self, resource_address: Address, id: &NftKey) -> Option<Nft> {
+        self.nfts.get(&(resource_address, id.clone())).cloned()
     }
 
-    fn put_nft(&mut self, resource_address: Address, id: NftKey, nft: Nft) {
-        self.nfts.insert((resource_address, id), nft);
+    fn put_nft(&mut self, resource_address: Address, id: &NftKey, nft: Nft) {
+        self.nfts.insert((resource_address, id.clone()), nft);
     }
 }

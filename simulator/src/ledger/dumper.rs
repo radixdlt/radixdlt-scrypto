@@ -68,7 +68,7 @@ pub fn dump_component<T: Ledger>(address: Address, ledger: &T) -> Result<(), Dis
                 );
                 if let Supply::NonFungible { ids } = vault.total_supply(Actor::SuperUser).unwrap() {
                     for (inner_last, id) in ids.iter().identify_last() {
-                        let nft = ledger.get_nft(resource_address, id.clone()).unwrap();
+                        let nft = ledger.get_nft(resource_address, id).unwrap();
                         let immutable_data = validate_data(&nft.immutable_data()).unwrap();
                         let mutable_data = validate_data(&nft.mutable_data()).unwrap();
                         println!(
