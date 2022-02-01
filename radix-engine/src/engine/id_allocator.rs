@@ -5,15 +5,11 @@ use scrypto::utils::*;
 pub const ECDSA_TOKEN_BID: Bid = Bid(0);
 pub const ECDSA_TOKEN_RID: Rid = Rid(1);
 
-pub const SYSTEM_ID_SPACE: IdSpace = IdSpace::System(0..512);
-pub const TRANSACTION_ID_SPACE: IdSpace = IdSpace::Transaction(512..1024);
-pub const APPLICATION_ID_SPACE: IdSpace = IdSpace::Application(1024..u32::MAX);
-
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum IdSpace {
-    System(Range<u32>),
-    Transaction(Range<u32>),
-    Application(Range<u32>),
+    System,
+    Transaction,
+    Application,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -31,9 +27,9 @@ impl IdAllocator {
     pub fn new(kind: IdSpace) -> Self {
         Self {
             available: match kind {
-                IdSpace::System(range) => range,
-                IdSpace::Transaction(range) => range,
-                IdSpace::Application(range) => range,
+                IdSpace::System => (0..512),
+                IdSpace::Transaction => (512..1024),
+                IdSpace::Application => (1024..u32::MAX),
             },
         }
     }

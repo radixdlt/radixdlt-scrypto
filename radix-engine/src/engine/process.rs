@@ -110,7 +110,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
             moving_buckets: HashMap::new(),
             moving_bucket_refs: HashMap::new(),
             vm: None,
-            id_allocator: IdAllocator::new(TRANSACTION_ID_SPACE),
+            id_allocator: IdAllocator::new(IdSpace::Transaction),
             worktop: HashMap::new(),
         }
     }

@@ -23,7 +23,7 @@ impl IdValidator {
         let mut bucket_refs = HashMap::new();
         bucket_refs.insert(ECDSA_TOKEN_RID, ECDSA_TOKEN_BID);
         Self {
-            id_allocator: IdAllocator::new(TRANSACTION_ID_SPACE),
+            id_allocator: IdAllocator::new(IdSpace::Transaction),
             buckets: HashMap::new(),
             bucket_refs,
         }
