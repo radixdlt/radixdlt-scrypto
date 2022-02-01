@@ -1,48 +1,19 @@
-use std::fs;
-use std::fs::File;
-use std::io::prelude::*;
-use std::path::{Path, PathBuf};
-use std::str::FromStr;
+use std::path::{PathBuf};
 
-use rocksdb::{DB, Options};
+use rocksdb::{DB, DBWithThreadMode, Direction, IteratorMode, SingleThreaded};
 use radix_engine::ledger::*;
 use radix_engine::model::*;
 use scrypto::types::*;
 
 /// A file-based ledger that stores substates in a folder.
 pub struct FileBasedLedger {
-    root: PathBuf,
+    db: DBWithThreadMode<SingleThreaded>,
 }
-
-const PACKAGES: &str = "packages";
-const COMPONENTS: &str = "components";
-const LAZY_MAPS: &str = "lazy_maps";
-const RESOURCE_DEFS: &str = "resource_defs";
-const VAULTS: &str = "vaults";
-const NFTS: &str = "nfts";
-
-const FILE_EXT: &str = "sbor";
 
 impl FileBasedLedger {
     pub fn new(root: PathBuf) -> Self {
         let db = DB::open_default(root.as_path()).unwrap();
-        db.put(b"my key", b"my value").unwrap();
-        match db.get(b"my key") {
-            Ok(Some(value)) => println!("retrieved value {}", String::from_utf8(value).unwrap()),
-            Ok(None) => println!("value not found"),
-            Err(e) => println!("operational problem encountered: {}", e),
-        }
-
-        for folder in [PACKAGES, COMPONENTS, LAZY_MAPS, RESOURCE_DEFS, VAULTS, NFTS] {
-            let mut path = root.clone();
-            path.push(folder);
-            if !path.exists() {
-                fs::create_dir_all(&path)
-                    .unwrap_or_else(|_| panic!("Failed to create dir: {:?}", path));
-            }
-        }
-
-        Self { root }
+        Self { db }
     }
 
     pub fn with_bootstrap(root: PathBuf) -> Self {
@@ -52,59 +23,27 @@ impl FileBasedLedger {
     }
 
     pub fn list_packages(&self) -> Vec<Address> {
-        self.list_items(PACKAGES)
+        self.list_items(Address::Package([0; 26]), Address::Package([255; 26]))
     }
 
     pub fn list_components(&self) -> Vec<Address> {
-        self.list_items(COMPONENTS)
+        self.list_items(Address::Component([0; 26]), Address::Component([255; 26]))
     }
 
     pub fn list_resource_defs(&self) -> Vec<Address> {
-        self.list_items(RESOURCE_DEFS)
+        self.list_items(Address::ResourceDef([0; 26]), Address::ResourceDef([255; 26]))
     }
 
-    fn list_items(&self, kind: &str) -> Vec<Address> {
-        let mut path = self.root.clone();
-        path.push(kind);
-
-        let mut results = Vec::new();
-        for entry in fs::read_dir(path).unwrap() {
-            let entry = entry.unwrap();
-            let path = entry.path();
-            if path.is_file() {
-                let name = path.file_name().unwrap().to_str().unwrap();
-                let address = Address::from_str(&name[0..name.rfind('.').unwrap()]).unwrap();
-                results.push(address);
+    fn list_items(&self, start: Address, end: Address) -> Vec<Address> {
+        let mut iter = self.db.iterator(IteratorMode::From(&start.to_vec(), Direction::Forward));
+        let mut items = Vec::new();
+        while let Some(kv) = iter.next() {
+            if kv.0.as_ref() > &end.to_vec() {
+                break;
             }
+            items.push(Address::try_from(kv.0.as_ref()).unwrap());
         }
-        results
-    }
-
-    fn get_path<T: AsRef<str>>(&self, kind: &str, name: T, ext: &str) -> PathBuf {
-        let mut path = self.root.clone();
-        path.push(kind);
-        path.push(name.as_ref());
-        path.set_extension(ext);
-        path
-    }
-
-    fn write<P: AsRef<Path>, T: AsRef<[u8]>>(path: P, value: T) {
-        let p = path.as_ref();
-
-        File::create(p)
-            .unwrap_or_else(|_| panic!("Failed to create file: {:?}", p))
-            .write_all(value.as_ref())
-            .unwrap_or_else(|_| panic!("Failed to write file: {:?}", p));
-    }
-
-    fn read<P: AsRef<Path>>(path: P) -> Option<Vec<u8>> {
-        let p = path.as_ref();
-
-        if p.exists() {
-            Some(fs::read(p).unwrap_or_else(|_| panic!("Failed to read file: {:?}", p)))
-        } else {
-            None
-        }
+        items
     }
 
     pub fn encode<T: sbor::Encode>(v: &T) -> Vec<u8> {
@@ -118,71 +57,54 @@ impl FileBasedLedger {
 
 impl SubstateStore for FileBasedLedger {
     fn get_resource_def(&self, address: Address) -> Option<ResourceDef> {
-        Self::read(self.get_path(RESOURCE_DEFS, address.to_string(), FILE_EXT)).map(Self::decode)
+        self.db.get(address.to_vec()).unwrap().map(Self::decode)
     }
 
     fn put_resource_def(&mut self, address: Address, resource_def: ResourceDef) {
-        Self::write(
-            self.get_path(RESOURCE_DEFS, address.to_string(), FILE_EXT),
-            Self::encode(&resource_def),
-        )
+        self.db.put(address.to_vec(), Self::encode(&resource_def)).unwrap()
     }
 
     fn get_package(&self, address: Address) -> Option<Package> {
-        Self::read(self.get_path(PACKAGES, address.to_string(), FILE_EXT)).map(Self::decode)
+        self.db.get(address.to_vec()).unwrap().map(Self::decode)
     }
 
     fn put_package(&mut self, address: Address, package: Package) {
-        Self::write(
-            self.get_path(PACKAGES, address.to_string(), FILE_EXT),
-            Self::encode(&package),
-        )
+        self.db.put(address.to_vec(), Self::encode(&package)).unwrap()
     }
 
     fn get_component(&self, address: Address) -> Option<Component> {
-        Self::read(self.get_path(COMPONENTS, address.to_string(), FILE_EXT)).map(Self::decode)
+        self.db.get(address.to_vec()).unwrap().map(Self::decode)
     }
 
     fn put_component(&mut self, address: Address, component: Component) {
-        Self::write(
-            self.get_path(COMPONENTS, address.to_string(), FILE_EXT),
-            Self::encode(&component),
-        )
+        self.db.put(address.to_vec(), Self::encode(&component)).unwrap()
     }
 
     fn get_lazy_map(&self, mid: Mid) -> Option<LazyMap> {
-        Self::read(self.get_path(LAZY_MAPS, format!("{}_{}", mid.0, mid.1), FILE_EXT))
-            .map(Self::decode)
+        self.db.get(mid.to_vec()).unwrap().map(Self::decode)
     }
 
     fn put_lazy_map(&mut self, mid: Mid, lazy_map: LazyMap) {
-        Self::write(
-            self.get_path(LAZY_MAPS, format!("{}_{}", mid.0, mid.1), FILE_EXT),
-            Self::encode(&lazy_map),
-        )
+        self.db.put(mid.to_vec(), Self::encode(&lazy_map)).unwrap()
     }
 
     fn get_vault(&self, vid: Vid) -> Option<Vault> {
-        Self::read(self.get_path(VAULTS, format!("{}_{}", vid.0, vid.1), FILE_EXT))
-            .map(Self::decode)
+        self.db.get(vid.to_vec()).unwrap().map(Self::decode)
     }
 
     fn put_vault(&mut self, vid: Vid, vault: Vault) {
-        Self::write(
-            self.get_path(VAULTS, format!("{}_{}", vid.0, vid.1), FILE_EXT),
-            Self::encode(&vault),
-        )
+        self.db.put(vid.to_vec(), Self::encode(&vault)).unwrap()
     }
 
     fn get_nft(&self, resource_address: Address, key: &NftKey) -> Option<Nft> {
-        Self::read(self.get_path(NFTS, format!("{}_{}", resource_address, key), FILE_EXT))
-            .map(Self::decode)
+        let mut nft_id = resource_address.to_vec();
+        nft_id.append(&mut key.to_vec());
+        self.db.get(nft_id.to_vec()).unwrap().map(Self::decode)
     }
 
     fn put_nft(&mut self, resource_address: Address, key: &NftKey, nft: Nft) {
-        Self::write(
-            self.get_path(NFTS, format!("{}_{}", resource_address, key), FILE_EXT),
-            Self::encode(&nft),
-        )
+        let mut nft_id = resource_address.to_vec();
+        nft_id.append(&mut key.to_vec());
+        self.db.put(nft_id.to_vec(), Self::encode(&nft)).unwrap()
     }
 }
