@@ -53,7 +53,7 @@ blueprint! {
 
             // Currently, Scrypto requires manual assignment of NFT IDs
             let mut ticket_bucket = Bucket::new(my_nft_def);
-            let mut manual_id = 1;
+            let mut manual_id = 1u128;
 
             // Mint the Luxury seat tokens.  These seats have an assigned seat number
             // We will default to a prediction of the Home team winning, and purchasers may alter this when they buy their ticket
@@ -66,7 +66,7 @@ blueprint! {
                     };
                     ticket_bucket.put(
                         my_admin.authorize(
-                            |auth| ticket_bucket.resource_def().mint_nft(manual_id, ticket, auth)
+                            |auth| ticket_bucket.resource_def().mint_nft(&NftKey::from(manual_id), ticket, auth)
                         )
                     );
                     manual_id += 1;
@@ -75,7 +75,7 @@ blueprint! {
 
             // Mint the Field level seats.  These are common seating, with no seat number.  As with Luxury, they will default to a Home win prediction
             // While these tokens each will have unique IDs, they will be otherwise identical
-            for manual_id in 101..200 {
+            for manual_id in 101u128..200u128 {
                 let ticket = Ticket {
                     section: Section::Field,
                     seat: None,
@@ -83,7 +83,7 @@ blueprint! {
                 };
                 ticket_bucket.put(
                     my_admin.authorize(
-                        |auth| ticket_bucket.resource_def().mint_nft(manual_id, ticket, auth)
+                        |auth| ticket_bucket.resource_def().mint_nft(&NftKey::from(manual_id), ticket, auth)
                     )
                 );
             }
@@ -109,7 +109,7 @@ blueprint! {
             for nft in &nfts {
                 let ticket: Ticket = nft.data();
                 if ticket.section == section && ticket.seat == seat {
-                    return self.tickets.take_nft(nft.id());
+                    return self.tickets.take_nft(&nft.key());
                 }                
             };
 
@@ -119,12 +119,12 @@ blueprint! {
         /// Passing an NFT into this function will switch it from the default Home team prediction to an Away team prediction
         fn switch_nft_prediction(&mut self, mut nft_bucket: Bucket) -> Bucket {
             // First, get the current data and change it to the desired state locally
-            let mut nft_data: Ticket = nft_bucket.get_nft_data(nft_bucket.get_nft_id());
+            let mut nft_data: Ticket = nft_bucket.get_nft_data(&nft_bucket.get_nft_key());
             nft_data.prediction = Team::Away;
 
             // Then commit our updated data to our NFT
             self.admin_authority.authorize(
-                |auth| nft_bucket.update_nft_data(nft_bucket.get_nft_id(), nft_data, auth)
+                |auth| nft_bucket.update_nft_data(&nft_bucket.get_nft_key(), nft_data, auth)
             );
 
             // All done, send it back

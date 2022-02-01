@@ -29,13 +29,13 @@ pub struct Track<'l, L: Ledger> {
     resource_defs: HashMap<Address, ResourceDef>,
     lazy_maps: HashMap<Mid, LazyMap>,
     vaults: HashMap<Vid, Vault>,
-    nfts: HashMap<(Address, u128), Nft>,
+    nfts: HashMap<(Address, NftKey), Nft>,
     updated_packages: HashSet<Address>,
     updated_components: HashSet<Address>,
     updated_lazy_maps: HashSet<Mid>,
     updated_resource_defs: HashSet<Address>,
     updated_vaults: HashSet<Vid>,
-    updated_nfts: HashSet<(Address, u128)>,
+    updated_nfts: HashSet<(Address, NftKey)>,
     new_entities: Vec<Address>,
     code_cache: LruCache<Address, Module>, // TODO: move to ledger level
 }
@@ -74,19 +74,12 @@ impl<'l, L: Ledger> Track<'l, L> {
     /// Start a process.
     pub fn start_process<'r>(&'r mut self, verbose: bool) -> Process<'r, 'l, L> {
         // FIXME: This is a temp solution
-        let signers: BTreeSet<u128> = self
+        let signers: BTreeSet<NftKey> = self
             .transaction_signers
             .clone()
             .into_iter()
             .map(|address| {
-                let mut bytes: [u8; 16] = [0; 16];
-                match address {
-                    Address::Package(d) => bytes[..].copy_from_slice(&d[..16]),
-                    Address::Component(d) => bytes[..].copy_from_slice(&d[..16]),
-                    Address::ResourceDef(d) => bytes[..].copy_from_slice(&d[..16]),
-                    Address::PublicKey(d) => bytes[..].copy_from_slice(&d[..16]),
-                }
-                u128::from_be_bytes(bytes)
+                NftKey::new(address.to_vec())
             })
             .collect();
         let mut process = Process::new(0, verbose, self);
@@ -96,7 +89,7 @@ impl<'l, L: Ledger> Track<'l, L> {
         let ecdsa_bucket = Bucket::new(
             ECDSA_TOKEN,
             ResourceType::NonFungible,
-            Supply::NonFungible { ids: signers },
+            Supply::NonFungible { keys: signers },
         );
         process.create_virtual_bucket_ref(ECDSA_TOKEN_BID, ECDSA_TOKEN_RID, ecdsa_bucket);
 
@@ -220,40 +213,40 @@ impl<'l, L: Ledger> Track<'l, L> {
     }
 
     /// Returns an immutable reference to a nft, if exists.
-    pub fn get_nft(&mut self, resource_address: Address, id: u128) -> Option<&Nft> {
-        if self.nfts.contains_key(&(resource_address, id)) {
-            return self.nfts.get(&(resource_address, id));
+    pub fn get_nft(&mut self, resource_address: Address, key: &NftKey) -> Option<&Nft> {
+        if self.nfts.contains_key(&(resource_address, key.clone())) {
+            return self.nfts.get(&(resource_address, key.clone()));
         }
 
-        if let Some(nft) = self.ledger.get_nft(resource_address, id) {
-            self.nfts.insert((resource_address, id), nft);
-            self.nfts.get(&(resource_address, id))
+        if let Some(nft) = self.ledger.get_nft(resource_address, key) {
+            self.nfts.insert((resource_address, key.clone()), nft);
+            self.nfts.get(&(resource_address, key.clone()))
         } else {
             None
         }
     }
 
     /// Returns a mutable reference to a nft, if exists.
-    pub fn get_nft_mut(&mut self, resource_address: Address, id: u128) -> Option<&mut Nft> {
-        self.updated_nfts.insert((resource_address, id));
+    pub fn get_nft_mut(&mut self, resource_address: Address, key: &NftKey) -> Option<&mut Nft> {
+        self.updated_nfts.insert((resource_address, key.clone()));
 
-        if self.nfts.contains_key(&(resource_address, id)) {
-            return self.nfts.get_mut(&(resource_address, id));
+        if self.nfts.contains_key(&(resource_address, key.clone())) {
+            return self.nfts.get_mut(&(resource_address, key.clone()));
         }
 
-        if let Some(nft) = self.ledger.get_nft(resource_address, id) {
-            self.nfts.insert((resource_address, id), nft);
-            self.nfts.get_mut(&(resource_address, id))
+        if let Some(nft) = self.ledger.get_nft(resource_address, key) {
+            self.nfts.insert((resource_address, key.clone()), nft);
+            self.nfts.get_mut(&(resource_address, key.clone()))
         } else {
             None
         }
     }
 
     /// Inserts a new nft.
-    pub fn put_nft(&mut self, resource_address: Address, id: u128, nft: Nft) {
-        self.updated_nfts.insert((resource_address, id));
+    pub fn put_nft(&mut self, resource_address: Address, key: &NftKey, nft: Nft) {
+        self.updated_nfts.insert((resource_address, key.clone()));
 
-        self.nfts.insert((resource_address, id), nft);
+        self.nfts.insert((resource_address, key.clone()), nft);
     }
 
     /// Returns an immutable reference to a lazy map, if exists.
@@ -455,8 +448,8 @@ impl<'l, L: Ledger> Track<'l, L> {
         for (resource_def, id) in self.updated_nfts.clone() {
             self.ledger.put_nft(
                 resource_def,
-                id,
-                self.nfts.get(&(resource_def, id)).unwrap().clone(),
+                &id,
+                self.nfts.get(&(resource_def, id.clone())).unwrap().clone(),
             );
         }
     }

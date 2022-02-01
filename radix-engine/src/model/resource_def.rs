@@ -115,8 +115,8 @@ impl ResourceDef {
                 }
             }
             ResourceType::NonFungible => {
-                if let Supply::NonFungible { ids } = supply {
-                    self.total_supply += ids.len();
+                if let Supply::NonFungible { keys } = supply {
+                    self.total_supply += keys.len();
                     Ok(())
                 } else {
                     Err(ResourceDefError::TypeAndSupplyNotMatching)
@@ -139,12 +139,12 @@ impl ResourceDef {
                 }
             }
             ResourceType::NonFungible => {
-                if let Supply::NonFungible { ids } = supply {
+                if let Supply::NonFungible { keys } = supply {
                     // Note that the underlying NFTs are not deleted from the simulated ledger.
                     // This is not an issue when integrated with UTXO-based state model, where
                     // the UP state should have been spun down when the NFTs are withdrawn from
                     // the vault.
-                    self.total_supply -= ids.len();
+                    self.total_supply -= keys.len();
                     Ok(())
                 } else {
                     Err(ResourceDefError::TypeAndSupplyNotMatching)

@@ -1074,11 +1074,11 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         match new_supply {
             NewSupply::Fungible { amount } => Ok(Supply::Fungible { amount }),
             NewSupply::NonFungible { entries } => {
-                let mut ids = BTreeSet::new();
+                let mut keys = BTreeSet::new();
 
-                for (id, data) in entries {
-                    if self.track.get_nft(resource_address, id).is_some() {
-                        return Err(RuntimeError::NftAlreadyExists(resource_address, id));
+                for (key, data) in entries {
+                    if self.track.get_nft(resource_address, &key).is_some() {
+                        return Err(RuntimeError::NftAlreadyExists(resource_address, key.clone()));
                     }
 
                     let immutable_data = self.process_nft_data(&data.0)?;
@@ -1086,13 +1086,13 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
 
                     self.track.put_nft(
                         resource_address,
-                        id,
+                        &key,
                         Nft::new(immutable_data.raw, mutable_data.raw),
                     );
-                    ids.insert(id);
+                    keys.insert(key.clone());
                 }
 
-                Ok(Supply::NonFungible { ids })
+                Ok(Supply::NonFungible { keys })
             }
         }
     }
@@ -1322,8 +1322,8 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         // update state
         let data = self.process_nft_data(&input.new_mutable_data)?;
         self.track
-            .get_nft_mut(input.resource_address, input.id)
-            .ok_or(RuntimeError::NftNotFound(input.resource_address, input.id))?
+            .get_nft_mut(input.resource_address, &input.key)
+            .ok_or(RuntimeError::NftNotFound(input.resource_address, input.key.clone()))?
             .set_mutable_data(data.raw)
             .map_err(RuntimeError::NftError)?;
 
@@ -1336,8 +1336,8 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
     ) -> Result<GetNftDataOutput, RuntimeError> {
         let nft = self
             .track
-            .get_nft(input.resource_address, input.id)
-            .ok_or(RuntimeError::NftNotFound(input.resource_address, input.id))?;
+            .get_nft(input.resource_address, &input.key)
+            .ok_or(RuntimeError::NftNotFound(input.resource_address, input.key.clone()))?;
 
         Ok(GetNftDataOutput {
             immutable_data: nft.immutable_data(),
@@ -1380,7 +1380,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
                         amount: Decimal::zero(),
                     },
                     ResourceType::NonFungible { .. } => Supply::NonFungible {
-                        ids: BTreeSet::new(),
+                        keys: BTreeSet::new(),
                     },
                 },
             ),
@@ -1459,7 +1459,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
             .track
             .get_vault_mut(input.vid)
             .ok_or(RuntimeError::VaultNotFound(input.vid))?
-            .take_nft(input.id, actor)
+            .take_nft(&input.key, actor)
             .map_err(RuntimeError::VaultError)?;
 
         let bid = self.track.new_bid();
@@ -1470,8 +1470,8 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
 
     fn handle_get_nft_ids_in_vault(
         &mut self,
-        input: GetNftIdsInVaultInput,
-    ) -> Result<GetNftIdsInVaultOutput, RuntimeError> {
+        input: GetNftKeysInVaultInput,
+    ) -> Result<GetNftKeysInVaultOutput, RuntimeError> {
         let actor = self.authenticate()?;
 
         let vault = self
@@ -1479,8 +1479,8 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
             .get_vault(input.vid)
             .ok_or(RuntimeError::VaultNotFound(input.vid))?;
 
-        Ok(GetNftIdsInVaultOutput {
-            ids: vault.get_nft_ids(actor).map_err(RuntimeError::VaultError)?,
+        Ok(GetNftKeysInVaultOutput {
+            keys: vault.get_nft_ids(actor).map_err(RuntimeError::VaultError)?,
         })
     }
 
@@ -1535,7 +1535,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
                     amount: Decimal::zero(),
                 },
                 ResourceType::NonFungible { .. } => Supply::NonFungible {
-                    ids: BTreeSet::new(),
+                    keys: BTreeSet::new(),
                 },
             },
         );
@@ -1623,7 +1623,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
             .buckets
             .get_mut(&input.bid)
             .ok_or(RuntimeError::BucketNotFound(input.bid))?
-            .take_nft(input.id)
+            .take_nft(&input.key)
             .map_err(RuntimeError::BucketError)?;
         let bid = self.track.new_bid();
         self.buckets.insert(bid, new_bucket);
@@ -1631,17 +1631,17 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         Ok(TakeNftFromBucketOutput { bid })
     }
 
-    fn handle_get_nft_ids_in_bucket(
+    fn handle_get_nft_keys_in_bucket(
         &mut self,
-        input: GetNftIdsInBucketInput,
-    ) -> Result<GetNftIdsInBucketOutput, RuntimeError> {
+        input: GetNftKeysInBucketInput,
+    ) -> Result<GetNftKeysInBucketOutput, RuntimeError> {
         let bucket = self
             .buckets
             .get(&input.bid)
             .ok_or(RuntimeError::BucketNotFound(input.bid))?;
 
-        Ok(GetNftIdsInBucketOutput {
-            ids: bucket.get_nft_ids().map_err(RuntimeError::BucketError)?,
+        Ok(GetNftKeysInBucketOutput {
+            keys: bucket.get_nft_keys().map_err(RuntimeError::BucketError)?,
         })
     }
 
@@ -1731,19 +1731,19 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         })
     }
 
-    fn handle_get_nft_ids_in_bucket_ref(
+    fn handle_get_nft_keys_in_bucket_ref(
         &mut self,
-        input: GetNftIdsInBucketRefInput,
-    ) -> Result<GetNftIdsInBucketRefOutput, RuntimeError> {
+        input: GetNftKeysInBucketRefInput,
+    ) -> Result<GetNftKeysInBucketRefOutput, RuntimeError> {
         let bucket_ref = self
             .bucket_refs
             .get(&input.rid)
             .ok_or(RuntimeError::BucketRefNotFound(input.rid))?;
 
-        Ok(GetNftIdsInBucketRefOutput {
-            ids: bucket_ref
+        Ok(GetNftKeysInBucketRefOutput {
+            keys: bucket_ref
                 .bucket()
-                .get_nft_ids()
+                .get_nft_keys()
                 .map_err(RuntimeError::BucketError)?,
         })
     }
@@ -1882,7 +1882,7 @@ impl<'r, 'l, L: Ledger> Externals for Process<'r, 'l, L> {
                         self.handle(args, Self::handle_get_vault_resource_address)
                     }
                     TAKE_NFT_FROM_VAULT => self.handle(args, Self::handle_take_nft_from_vault),
-                    GET_NFT_IDS_IN_VAULT => self.handle(args, Self::handle_get_nft_ids_in_vault),
+                    GET_NFT_KEYS_IN_VAULT => self.handle(args, Self::handle_get_nft_ids_in_vault),
 
                     CREATE_EMPTY_BUCKET => self.handle(args, Self::handle_create_bucket),
                     PUT_INTO_BUCKET => self.handle(args, Self::handle_put_into_bucket),
@@ -1892,7 +1892,7 @@ impl<'r, 'l, L: Ledger> Externals for Process<'r, 'l, L> {
                         self.handle(args, Self::handle_get_bucket_resource_address)
                     }
                     TAKE_NFT_FROM_BUCKET => self.handle(args, Self::handle_take_nft_from_bucket),
-                    GET_NFT_IDS_IN_BUCKET => self.handle(args, Self::handle_get_nft_ids_in_bucket),
+                    GET_NFT_KEYS_IN_BUCKET => self.handle(args, Self::handle_get_nft_keys_in_bucket),
 
                     CREATE_BUCKET_REF => self.handle(args, Self::handle_create_bucket_ref),
                     DROP_BUCKET_REF => self.handle(args, Self::handle_drop_bucket_ref),
@@ -1900,8 +1900,8 @@ impl<'r, 'l, L: Ledger> Externals for Process<'r, 'l, L> {
                     GET_BUCKET_REF_RESOURCE_DEF => {
                         self.handle(args, Self::handle_get_bucket_ref_resource_def)
                     }
-                    GET_NFT_IDS_IN_BUCKET_REF => {
-                        self.handle(args, Self::handle_get_nft_ids_in_bucket_ref)
+                    GET_NFT_KEYS_IN_BUCKET_REF => {
+                        self.handle(args, Self::handle_get_nft_keys_in_bucket_ref)
                     }
                     CLONE_BUCKET_REF => self.handle(args, Self::handle_clone_bucket_ref),
 

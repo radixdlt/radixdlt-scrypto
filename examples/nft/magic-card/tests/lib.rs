@@ -14,7 +14,7 @@ fn test_hello() {
     // Test the `new` function.
     let transaction1 = TransactionBuilder::new(&executor)
         .call_function(package, "HelloNft", "new", vec![], None)
-        .build(vec![key])
+        .build(vec![])
         .unwrap();
     let receipt1 = executor.run(transaction1).unwrap();
     println!("{:?}\n", receipt1);

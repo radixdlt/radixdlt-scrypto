@@ -75,6 +75,9 @@ impl CustomValueVisitor for CustomValueValidator {
                 self.vaults
                     .push(Vid::try_from(data).map_err(DataValidationError::InvalidVid)?);
             }
+            SCRYPTO_TYPE_NFT_KEY => {
+                NftKey::try_from(data).map_err(DataValidationError::InvalidNftKey)?;
+            }
             _ => {
                 return Err(DataValidationError::InvalidTypeId(kind));
             }

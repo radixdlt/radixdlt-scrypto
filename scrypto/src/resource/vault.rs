@@ -97,10 +97,10 @@ impl Vault {
     ///
     /// # Panics
     /// Panics if this is not an NFT vault or the specified NFT is not found.
-    pub fn take_nft(&self, id: u128) -> Bucket {
+    pub fn take_nft(&self, key: &NftKey) -> Bucket {
         let input = TakeNftFromVaultInput {
             vid: self.vid,
-            id,
+            key: key.clone(),
             auth: None,
         };
         let output: TakeNftFromVaultOutput = call_kernel(TAKE_NFT_FROM_VAULT, input);
@@ -115,10 +115,10 @@ impl Vault {
     ///
     /// # Panics
     /// Panics if this is not an NFT vault or the specified NFT is not found.
-    pub fn take_nft_with_auth(&self, id: u128, auth: BucketRef) -> Bucket {
+    pub fn take_nft_with_auth(&self, key: &NftKey, auth: BucketRef) -> Bucket {
         let input = TakeNftFromVaultInput {
             vid: self.vid,
-            id,
+            key: key.clone(),
             auth: Some(auth.into()),
         };
         let output: TakeNftFromVaultOutput = call_kernel(TAKE_NFT_FROM_VAULT, input);
@@ -194,13 +194,13 @@ impl Vault {
     /// # Panics
     /// Panics if this is not an NFT vault.
     pub fn get_nfts<T: NftData>(&self) -> Vec<Nft<T>> {
-        let input = GetNftIdsInVaultInput { vid: self.vid };
-        let output: GetNftIdsInVaultOutput = call_kernel(GET_NFT_IDS_IN_VAULT, input);
+        let input = GetNftKeysInVaultInput { vid: self.vid };
+        let output: GetNftKeysInVaultOutput = call_kernel(GET_NFT_KEYS_IN_VAULT, input);
         let resource_address = self.resource_address();
         output
-            .ids
+            .keys
             .iter()
-            .map(|id| Nft::from((resource_address, *id)))
+            .map(|id| Nft::from((resource_address, id.clone())))
             .collect()
     }
 
@@ -208,25 +208,25 @@ impl Vault {
     ///
     /// # Panics
     /// Panics if this is not an NFT vault.
-    pub fn get_nft_ids(&self) -> Vec<u128> {
-        let input = GetNftIdsInVaultInput { vid: self.vid };
-        let output: GetNftIdsInVaultOutput = call_kernel(GET_NFT_IDS_IN_VAULT, input);
+    pub fn get_nft_keys(&self) -> Vec<NftKey> {
+        let input = GetNftKeysInVaultInput { vid: self.vid };
+        let output: GetNftKeysInVaultOutput = call_kernel(GET_NFT_KEYS_IN_VAULT, input);
 
-        output.ids
+        output.keys
     }
 
     /// Get the NFT id and panic if not singleton.
-    pub fn get_nft_id(&self) -> u128 {
-        let ids = self.get_nft_ids();
-        assert!(ids.len() == 1, "Expect 1 NFT, but found {}", ids.len());
-        ids[0]
+    pub fn get_nft_key(&self) -> NftKey {
+        let keys = self.get_nft_keys();
+        assert!(keys.len() == 1, "Expect 1 NFT, but found {}", keys.len());
+        keys[0].clone()
     }
 
     /// Returns the data of an NFT unit, both the immutable and mutable parts.
     ///
     /// # Panics
     /// Panics if this is not an NFT bucket.
-    pub fn get_nft_data<T: NftData>(&self, id: u128) -> T {
+    pub fn get_nft_data<T: NftData>(&self, id: &NftKey) -> T {
         self.resource_def().get_nft_data(id)
     }
 
@@ -234,7 +234,7 @@ impl Vault {
     ///
     /// # Panics
     /// Panics if this is not an NFT vault or the specified NFT is not found.
-    pub fn update_nft_data<T: NftData>(&self, id: u128, new_data: T, auth: BucketRef) {
+    pub fn update_nft_data<T: NftData>(&self, id: &NftKey, new_data: T, auth: BucketRef) {
         self.resource_def().update_nft_data(id, new_data, auth)
     }
 }

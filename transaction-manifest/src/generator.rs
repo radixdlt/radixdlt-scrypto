@@ -21,6 +21,7 @@ pub enum GeneratorError {
     InvalidHash(String),
     InvalidLazyMapId(String),
     InvalidVaultId(String),
+    InvalidNftKey(String),
     OddNumberOfElements(usize),
     NameResolverError(NameResolverError),
     IdValidatorError(IdValidatorError),
@@ -392,6 +393,18 @@ fn generate_vault(value: &ast::Value) -> Result<Vid, GeneratorError> {
     }
 }
 
+fn generate_nft_key(value: &ast::Value) -> Result<NftKey, GeneratorError> {
+    match value {
+        ast::Value::NftKey(inner) => match &**inner {
+            ast::Value::String(s) => {
+                NftKey::from_str(s).map_err(|_| GeneratorError::InvalidNftKey(s.into()))
+            }
+            v @ _ => invalid_type!(v, ast::Type::String),
+        },
+        v @ _ => invalid_type!(v, ast::Type::NftKey),
+    }
+}
+
 fn generate_value(
     value: &ast::Value,
     expected: Option<ast::Type>,
@@ -491,6 +504,9 @@ fn generate_value(
         ast::Value::Vault(_) => {
             generate_vault(value).map(|v| Value::Custom(SCRYPTO_TYPE_VID, v.to_vec()))
         }
+        ast::Value::NftKey(_) => {
+            generate_nft_key(value).map(|v| Value::Custom(SCRYPTO_TYPE_NFT_KEY, v.to_vec()))
+        }
     }
 }
 
@@ -577,6 +593,7 @@ fn generate_type(ty: &ast::Type) -> u8 {
         ast::Type::BucketRef => SCRYPTO_TYPE_RID,
         ast::Type::LazyMap => SCRYPTO_TYPE_MID,
         ast::Type::Vault => SCRYPTO_TYPE_VID,
+        ast::Type::NftKey => SCRYPTO_TYPE_NFT_KEY,
     }
 }
 

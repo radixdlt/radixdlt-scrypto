@@ -75,9 +75,9 @@ impl ResourceDef {
     }
 
     /// Mints non-fungible resources
-    pub fn mint_nft<T: NftData>(&mut self, id: u128, data: T, auth: BucketRef) -> Bucket {
+    pub fn mint_nft<T: NftData>(&mut self, key: &NftKey, data: T, auth: BucketRef) -> Bucket {
         let mut entries = HashMap::new();
-        entries.insert(id, (data.immutable_data(), data.mutable_data()));
+        entries.insert(key.clone(), (data.immutable_data(), data.mutable_data()));
 
         let input = MintResourceInput {
             resource_address: self.address,
@@ -166,10 +166,10 @@ impl ResourceDef {
     ///
     /// # Panics
     /// Panics if this is not an NFT resource or the specified NFT is not found.
-    pub fn get_nft_data<T: NftData>(&self, id: u128) -> T {
+    pub fn get_nft_data<T: NftData>(&self, key: &NftKey) -> T {
         let input = GetNftDataInput {
             resource_address: self.address,
-            id,
+            key: key.clone(),
         };
         let output: GetNftDataOutput = call_kernel(GET_NFT_DATA, input);
 
@@ -180,10 +180,10 @@ impl ResourceDef {
     ///
     /// # Panics
     /// Panics if this is not an NFT resource or the specified NFT is not found.
-    pub fn update_nft_data<T: NftData>(&mut self, id: u128, new_data: T, auth: BucketRef) {
+    pub fn update_nft_data<T: NftData>(&mut self, key: &NftKey, new_data: T, auth: BucketRef) {
         let input = UpdateNftMutableDataInput {
             resource_address: self.address,
-            id,
+            key: key.clone(),
             new_mutable_data: new_data.mutable_data(),
             auth: auth.into(),
         };

@@ -149,6 +149,7 @@ fn format_kind(kind: u8) -> String {
         SCRYPTO_TYPE_RID => "BucketRef",
         SCRYPTO_TYPE_MID => "LazyMap",
         SCRYPTO_TYPE_VID => "Vault",
+        SCRYPTO_TYPE_NFT_KEY => "NftKey",
         _ => panic!("Illegal state"),
     }
     .to_string()
@@ -187,6 +188,7 @@ fn format_custom(ty: u8, data: &[u8]) -> String {
         SCRYPTO_TYPE_BID => format!("Bucket({}u32)", Bid::try_from(data).unwrap().0),
         SCRYPTO_TYPE_RID => format!("BucketRef({}u32)", Rid::try_from(data).unwrap().0),
         SCRYPTO_TYPE_VID => format!("Vault(\"{}\")", Vid::try_from(data).unwrap()),
+        SCRYPTO_TYPE_NFT_KEY => format!("NftKey(\"{}\")", NftKey::try_from(data).unwrap()),
         _ => panic!("Illegal state"),
     }
 }

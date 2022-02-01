@@ -2,24 +2,24 @@ use scrypto::prelude::*;
 
 blueprint! {
     struct Account {
-        key: Address,
+        public_key: Address,
         vaults: LazyMap<Address, Vault>,
     }
 
     impl Account {
-        pub fn new(key: Address) -> Component {
+        pub fn new(public_key: Address) -> Component {
             Account {
-                key,
+                public_key,
                 vaults: LazyMap::new(),
             }
             .instantiate()
         }
 
-        pub fn with_bucket(key: Address, bucket: Bucket) -> Component {
+        pub fn with_bucket(public_key: Address, bucket: Bucket) -> Component {
             let vaults = LazyMap::new();
             vaults.insert(bucket.resource_address(), Vault::with_bucket(bucket));
 
-            Account { key, vaults }.instantiate()
+            Account { public_key, vaults }.instantiate()
         }
 
         /// Deposit a batch of buckets into this account
@@ -43,17 +43,8 @@ blueprint! {
             }
         }
 
-        // FIXME: This is a temporary interface. NFT Ids are u128, and need a
-        // simple way to map Address to the NFT Id space.
-        fn key_u128(&self) -> u128 {
-            let mut bytes: [u8; 16] = [0; 16];
-            match self.key {
-                Address::Package(d) => bytes[..].copy_from_slice(&d[..16]),
-                Address::Component(d) => bytes[..].copy_from_slice(&d[..16]),
-                Address::ResourceDef(d) => bytes[..].copy_from_slice(&d[..16]),
-                Address::PublicKey(d) => bytes[..].copy_from_slice(&d[..16]),
-            }
-            u128::from_be_bytes(bytes)
+        fn nft_key(&self) -> NftKey {
+            NftKey::new(self.public_key.to_vec())
         }
 
         /// Withdraws resource from this account.
@@ -63,7 +54,7 @@ blueprint! {
             resource_address: Address,
             account_auth: BucketRef,
         ) -> Bucket {
-            account_auth.check_nft_id(ECDSA_TOKEN, |id| id == &self.key_u128());
+            account_auth.check_nft_key(ECDSA_TOKEN, |key| key == &self.nft_key());
 
             let vault = self.vaults.get(&resource_address);
             match vault {
@@ -82,7 +73,7 @@ blueprint! {
             auth: BucketRef,
             account_auth: BucketRef,
         ) -> Bucket {
-            account_auth.check_nft_id(ECDSA_TOKEN, |id| id == &self.key_u128());
+            account_auth.check_nft_key(ECDSA_TOKEN, |key| key == &self.nft_key());
 
             let vault = self.vaults.get(&resource_address);
             match vault {
@@ -96,18 +87,18 @@ blueprint! {
         /// Withdraws NFTs from this account.
         pub fn withdraw_nfts(
             &mut self,
-            ids: BTreeSet<u128>,
+            keys: BTreeSet<NftKey>,
             resource_address: Address,
             account_auth: BucketRef,
         ) -> Bucket {
-            account_auth.check_nft_id(ECDSA_TOKEN, |id| id == &self.key_u128());
+            account_auth.check_nft_key(ECDSA_TOKEN, |key| key == &self.nft_key());
 
             let vault = self.vaults.get(&resource_address);
             match vault {
                 Some(vault) => {
                     let mut bucket = Bucket::new(resource_address);
-                    for id in ids {
-                        bucket.put(vault.take_nft(id));
+                    for key in keys {
+                        bucket.put(vault.take_nft(&key));
                     }
                     bucket
                 }
@@ -120,19 +111,19 @@ blueprint! {
         /// Withdraws NFTs from this account.
         pub fn withdraw_nfts_with_auth(
             &mut self,
-            ids: BTreeSet<u128>,
+            keys: BTreeSet<NftKey>,
             resource_address: Address,
             auth: BucketRef,
             account_auth: BucketRef,
         ) -> Bucket {
-            account_auth.check_nft_id(ECDSA_TOKEN, |id| id == &self.key_u128());
+            account_auth.check_nft_key(ECDSA_TOKEN, |key| key == &self.nft_key());
 
             let vault = self.vaults.get(&resource_address);
             let bucket = match vault {
                 Some(vault) => {
                     let mut bucket = Bucket::new(resource_address);
-                    for id in ids {
-                        bucket.put(vault.take_nft_with_auth(id, auth.clone()));
+                    for key in keys {
+                        bucket.put(vault.take_nft_with_auth(&key, auth.clone()));
                     }
                     bucket
                 }
