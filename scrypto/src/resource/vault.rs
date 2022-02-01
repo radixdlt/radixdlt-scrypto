@@ -204,7 +204,7 @@ impl Vault {
     ///
     /// # Panics
     /// Panics if this is not an NFT vault.
-    pub fn get_nft_ids(&self) -> Vec<NftKey> {
+    pub fn get_nft_keys(&self) -> Vec<NftKey> {
         let input = GetNftIdsInVaultInput { vid: self.vid };
         let output: GetNftIdsInVaultOutput = call_kernel(GET_NFT_IDS_IN_VAULT, input);
 
@@ -212,10 +212,10 @@ impl Vault {
     }
 
     /// Get the NFT id and panic if not singleton.
-    pub fn get_nft_id(&self) -> NftKey {
-        let ids = self.get_nft_ids();
-        assert!(ids.len() == 1, "Expect 1 NFT, but found {}", ids.len());
-        ids[0].clone()
+    pub fn get_nft_key(&self) -> NftKey {
+        let keys = self.get_nft_keys();
+        assert!(keys.len() == 1, "Expect 1 NFT, but found {}", keys.len());
+        keys[0].clone()
     }
 
     /// Returns the data of an NFT unit, both the immutable and mutable parts.

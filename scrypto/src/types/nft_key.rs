@@ -10,8 +10,8 @@ use crate::buffer::{SCRYPTO_TYPE_NFT_KEY};
 pub struct NftKey(Vec<u8>);
 
 impl NftKey {
-    pub fn from_u128(i: u128) -> NftKey {
-        NftKey(i.to_le_bytes().to_vec())
+    pub fn new(v: Vec<u8>) -> Self {
+        NftKey(v)
     }
 }
 

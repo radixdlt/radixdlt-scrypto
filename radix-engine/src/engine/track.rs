@@ -78,14 +78,7 @@ impl<'l, L: Ledger> Track<'l, L> {
             .clone()
             .into_iter()
             .map(|address| {
-                let mut bytes: [u8; 16] = [0; 16];
-                match address {
-                    Address::Package(d) => bytes[..].copy_from_slice(&d[..16]),
-                    Address::Component(d) => bytes[..].copy_from_slice(&d[..16]),
-                    Address::ResourceDef(d) => bytes[..].copy_from_slice(&d[..16]),
-                    Address::PublicKey(d) => bytes[..].copy_from_slice(&d[..16]),
-                }
-                NftKey::from_u128(u128::from_be_bytes(bytes))
+                NftKey::new(address.to_vec())
             })
             .collect();
         let mut process = Process::new(0, verbose, self);

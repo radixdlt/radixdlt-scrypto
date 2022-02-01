@@ -2,24 +2,24 @@ use scrypto::prelude::*;
 
 blueprint! {
     struct Account {
-        key: Address,
+        address: Address,
         vaults: LazyMap<Address, Vault>,
     }
 
     impl Account {
-        pub fn new(key: Address) -> Component {
+        pub fn new(address: Address) -> Component {
             Account {
-                key,
+                address,
                 vaults: LazyMap::new(),
             }
             .instantiate()
         }
 
-        pub fn with_bucket(key: Address, bucket: Bucket) -> Component {
+        pub fn with_bucket(address: Address, bucket: Bucket) -> Component {
             let vaults = LazyMap::new();
             vaults.insert(bucket.resource_address(), Vault::with_bucket(bucket));
 
-            Account { key, vaults }.instantiate()
+            Account { address, vaults }.instantiate()
         }
 
         /// Deposit a batch of buckets into this account
@@ -43,17 +43,8 @@ blueprint! {
             }
         }
 
-        // FIXME: This is a temporary interface. NFT Ids are u128, and need a
-        // simple way to map Address to the NFT Id space.
         fn nft_key(&self) -> NftKey {
-            let mut bytes: [u8; 16] = [0; 16];
-            match self.key {
-                Address::Package(d) => bytes[..].copy_from_slice(&d[..16]),
-                Address::Component(d) => bytes[..].copy_from_slice(&d[..16]),
-                Address::ResourceDef(d) => bytes[..].copy_from_slice(&d[..16]),
-                Address::PublicKey(d) => bytes[..].copy_from_slice(&d[..16]),
-            }
-            NftKey::from_u128(u128::from_be_bytes(bytes))
+            NftKey::new(self.address.to_vec())
         }
 
         /// Withdraws resource from this account.
@@ -63,7 +54,7 @@ blueprint! {
             resource_address: Address,
             account_auth: BucketRef,
         ) -> Bucket {
-            account_auth.check_nft_id(ECDSA_TOKEN, |id| id == &self.nft_key());
+            account_auth.check_nft_key(ECDSA_TOKEN, |key| key == &self.nft_key());
 
             let vault = self.vaults.get(&resource_address);
             match vault {
@@ -82,7 +73,7 @@ blueprint! {
             auth: BucketRef,
             account_auth: BucketRef,
         ) -> Bucket {
-            account_auth.check_nft_id(ECDSA_TOKEN, |id| id == &self.nft_key());
+            account_auth.check_nft_key(ECDSA_TOKEN, |key| key == &self.nft_key());
 
             let vault = self.vaults.get(&resource_address);
             match vault {
@@ -100,7 +91,7 @@ blueprint! {
             resource_address: Address,
             account_auth: BucketRef,
         ) -> Bucket {
-            account_auth.check_nft_id(ECDSA_TOKEN, |id| id == &self.nft_key());
+            account_auth.check_nft_key(ECDSA_TOKEN, |key| key == &self.nft_key());
 
             let vault = self.vaults.get(&resource_address);
             match vault {
@@ -125,7 +116,7 @@ blueprint! {
             auth: BucketRef,
             account_auth: BucketRef,
         ) -> Bucket {
-            account_auth.check_nft_id(ECDSA_TOKEN, |key| key == &self.nft_key());
+            account_auth.check_nft_key(ECDSA_TOKEN, |key| key == &self.nft_key());
 
             let vault = self.vaults.get(&resource_address);
             let bucket = match vault {
