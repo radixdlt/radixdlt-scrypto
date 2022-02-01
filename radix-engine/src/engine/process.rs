@@ -1470,8 +1470,8 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
 
     fn handle_get_nft_ids_in_vault(
         &mut self,
-        input: GetNftIdsInVaultInput,
-    ) -> Result<GetNftIdsInVaultOutput, RuntimeError> {
+        input: GetNftKeysInVaultInput,
+    ) -> Result<GetNftKeysInVaultOutput, RuntimeError> {
         let actor = self.authenticate()?;
 
         let vault = self
@@ -1479,8 +1479,8 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
             .get_vault(input.vid)
             .ok_or(RuntimeError::VaultNotFound(input.vid))?;
 
-        Ok(GetNftIdsInVaultOutput {
-            ids: vault.get_nft_ids(actor).map_err(RuntimeError::VaultError)?,
+        Ok(GetNftKeysInVaultOutput {
+            keys: vault.get_nft_ids(actor).map_err(RuntimeError::VaultError)?,
         })
     }
 
@@ -1633,15 +1633,15 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
 
     fn handle_get_nft_keys_in_bucket(
         &mut self,
-        input: GetNftIdsInBucketInput,
-    ) -> Result<GetNftIdsInBucketOutput, RuntimeError> {
+        input: GetNftKeysInBucketInput,
+    ) -> Result<GetNftKeysInBucketOutput, RuntimeError> {
         let bucket = self
             .buckets
             .get(&input.bid)
             .ok_or(RuntimeError::BucketNotFound(input.bid))?;
 
-        Ok(GetNftIdsInBucketOutput {
-            ids: bucket.get_nft_keys().map_err(RuntimeError::BucketError)?,
+        Ok(GetNftKeysInBucketOutput {
+            keys: bucket.get_nft_keys().map_err(RuntimeError::BucketError)?,
         })
     }
 
@@ -1733,15 +1733,15 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
 
     fn handle_get_nft_keys_in_bucket_ref(
         &mut self,
-        input: GetNftIdsInBucketRefInput,
-    ) -> Result<GetNftIdsInBucketRefOutput, RuntimeError> {
+        input: GetNftKeysInBucketRefInput,
+    ) -> Result<GetNftKeysInBucketRefOutput, RuntimeError> {
         let bucket_ref = self
             .bucket_refs
             .get(&input.rid)
             .ok_or(RuntimeError::BucketRefNotFound(input.rid))?;
 
-        Ok(GetNftIdsInBucketRefOutput {
-            ids: bucket_ref
+        Ok(GetNftKeysInBucketRefOutput {
+            keys: bucket_ref
                 .bucket()
                 .get_nft_keys()
                 .map_err(RuntimeError::BucketError)?,
@@ -1882,7 +1882,7 @@ impl<'r, 'l, L: Ledger> Externals for Process<'r, 'l, L> {
                         self.handle(args, Self::handle_get_vault_resource_address)
                     }
                     TAKE_NFT_FROM_VAULT => self.handle(args, Self::handle_take_nft_from_vault),
-                    GET_NFT_IDS_IN_VAULT => self.handle(args, Self::handle_get_nft_ids_in_vault),
+                    GET_NFT_KEYS_IN_VAULT => self.handle(args, Self::handle_get_nft_ids_in_vault),
 
                     CREATE_EMPTY_BUCKET => self.handle(args, Self::handle_create_bucket),
                     PUT_INTO_BUCKET => self.handle(args, Self::handle_put_into_bucket),
@@ -1892,7 +1892,7 @@ impl<'r, 'l, L: Ledger> Externals for Process<'r, 'l, L> {
                         self.handle(args, Self::handle_get_bucket_resource_address)
                     }
                     TAKE_NFT_FROM_BUCKET => self.handle(args, Self::handle_take_nft_from_bucket),
-                    GET_NFT_IDS_IN_BUCKET => self.handle(args, Self::handle_get_nft_keys_in_bucket),
+                    GET_NFT_KEYS_IN_BUCKET => self.handle(args, Self::handle_get_nft_keys_in_bucket),
 
                     CREATE_BUCKET_REF => self.handle(args, Self::handle_create_bucket_ref),
                     DROP_BUCKET_REF => self.handle(args, Self::handle_drop_bucket_ref),
@@ -1900,7 +1900,7 @@ impl<'r, 'l, L: Ledger> Externals for Process<'r, 'l, L> {
                     GET_BUCKET_REF_RESOURCE_DEF => {
                         self.handle(args, Self::handle_get_bucket_ref_resource_def)
                     }
-                    GET_NFT_IDS_IN_BUCKET_REF => {
+                    GET_NFT_KEYS_IN_BUCKET_REF => {
                         self.handle(args, Self::handle_get_nft_keys_in_bucket_ref)
                     }
                     CLONE_BUCKET_REF => self.handle(args, Self::handle_clone_bucket_ref),

@@ -123,11 +123,11 @@ impl Bucket {
     /// # Panics
     /// Panics if this is not an NFT bucket.
     pub fn get_nfts<T: NftData>(&self) -> Vec<Nft<T>> {
-        let input = GetNftIdsInBucketInput { bid: self.bid };
-        let output: GetNftIdsInBucketOutput = call_kernel(GET_NFT_IDS_IN_BUCKET, input);
+        let input = GetNftKeysInBucketInput { bid: self.bid };
+        let output: GetNftKeysInBucketOutput = call_kernel(GET_NFT_KEYS_IN_BUCKET, input);
         let resource_address = self.resource_address();
         output
-            .ids
+            .keys
             .iter()
             .map(|id| Nft::from((resource_address, id.clone())))
             .collect()
@@ -138,10 +138,10 @@ impl Bucket {
     /// # Panics
     /// Panics if this is not an NFT bucket.
     pub fn get_nft_keys(&self) -> Vec<NftKey> {
-        let input = GetNftIdsInBucketInput { bid: self.bid };
-        let output: GetNftIdsInBucketOutput = call_kernel(GET_NFT_IDS_IN_BUCKET, input);
+        let input = GetNftKeysInBucketInput { bid: self.bid };
+        let output: GetNftKeysInBucketOutput = call_kernel(GET_NFT_KEYS_IN_BUCKET, input);
 
-        output.ids
+        output.keys
     }
 
     /// Get the NFT id and panic if not singleton.

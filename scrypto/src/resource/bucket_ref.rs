@@ -83,10 +83,10 @@ impl BucketRef {
 
     /// Get the NFT ids in the referenced bucket.
     pub fn get_nft_keys(&self) -> Vec<NftKey> {
-        let input = GetNftIdsInBucketRefInput { rid: self.rid };
-        let output: GetNftIdsInBucketRefOutput = call_kernel(GET_NFT_IDS_IN_BUCKET_REF, input);
+        let input = GetNftKeysInBucketRefInput { rid: self.rid };
+        let output: GetNftKeysInBucketRefOutput = call_kernel(GET_NFT_KEYS_IN_BUCKET_REF, input);
 
-        output.ids
+        output.keys
     }
 
     /// Get the NFT id and panic if not singleton.
