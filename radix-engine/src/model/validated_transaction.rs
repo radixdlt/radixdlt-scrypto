@@ -12,17 +12,28 @@ pub struct ValidatedTransaction {
 
 #[derive(Debug, Clone)]
 pub enum ValidatedInstruction {
-    DeclareTempBucket,
-    DeclareTempBucketRef,
-    TakeFromContext {
+    TakeFromWorktop {
         amount: Decimal,
         resource_address: Address,
-        to: Bid,
     },
-    BorrowFromContext {
+    TakeAllFromWorktop {
+        resource_address: Address,
+    },
+    ReturnToWorktop {
+        bid: Bid,
+    },
+    AssertWorktopContains {
         amount: Decimal,
         resource_address: Address,
-        to: Rid,
+    },
+    CreateBucketRef {
+        bid: Bid,
+    },
+    CloneBucketRef {
+        rid: Rid,
+    },
+    DropBucketRef {
+        rid: Rid,
     },
     CallFunction {
         package_address: Address,
@@ -35,7 +46,6 @@ pub enum ValidatedInstruction {
         method: String,
         args: Vec<ValidatedData>,
     },
-    DropAllBucketRefs,
     CallMethodWithAllResources {
         component_address: Address,
         method: String,

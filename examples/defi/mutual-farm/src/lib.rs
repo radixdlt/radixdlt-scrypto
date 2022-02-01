@@ -14,7 +14,7 @@ use scrypto::prelude::*;
 import! {
 r#"
 {
-    "package": "01e61370219353678d8bfb37bce521e257d0ec29ae9a2e95d194ea",
+    "package": "014eb598fe6ed7df56a5f02950df2d7b08530d9d1081f05a6398f9",
     "name": "PriceOracle",
     "functions": [
         {
@@ -113,7 +113,7 @@ r#"
 import! {
 r#"
 {
-    "package": "01d25d4eab30b60d9951f3433b35cff52a48f8cf163b66c0a16677",
+    "package": "01e0983e33158b489e70313b77767abe80eb449e6acd46f9476328",
     "name": "SyntheticPool",
     "functions": [
         {
@@ -318,7 +318,7 @@ r#"
 import! {
 r#"
 {
-    "package": "01f91f613875b4326060eac0bcc0c98c0eaad15eb1c9c51ace0401",
+    "package": "01899b2991b37ee1bc51a84182a3752c1dc48ec3df01969d3516d3",
     "name": "Radiswap",
     "functions": [
         {

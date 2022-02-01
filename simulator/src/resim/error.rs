@@ -42,11 +42,11 @@ pub enum Error {
 
     TransactionConstructionError(BuildTransactionError),
 
+    TransactionValidationError(TransactionValidationError),
+
     TransactionExecutionError(RuntimeError),
 
     LedgerDumpError(DisplayError),
-
-    TransactionFailed,
 
     CompileError(transaction_manifest::CompileError),
 }

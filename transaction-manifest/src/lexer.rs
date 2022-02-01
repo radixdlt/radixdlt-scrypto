@@ -76,13 +76,15 @@ pub enum TokenKind {
     Semicolon,
 
     /* Instructions */
-    DeclareTempBucket,
-    DeclareTempBucketRef,
-    TakeFromContext,
-    BorrowFromContext,
+    TakeFromWorktop,
+    TakeAllFromWorktop,
+    ReturnToWorktop,
+    AssertWorktopContains,
+    CreateBucketRef,
+    CloneBucketRef,
+    DropBucketRef,
     CallFunction,
     CallMethod,
-    DropAllBucketRefs,
     CallMethodWithAllResources,
 }
 
@@ -369,13 +371,15 @@ impl Lexer {
             "Ok" => Ok(TokenKind::Ok),
             "Err" => Ok(TokenKind::Err),
 
-            "DECLARE_TEMP_BUCKET" => Ok(TokenKind::DeclareTempBucket),
-            "DECLARE_TEMP_BUCKET_REF" => Ok(TokenKind::DeclareTempBucketRef),
-            "TAKE_FROM_CONTEXT" => Ok(TokenKind::TakeFromContext),
-            "BORROW_FROM_CONTEXT" => Ok(TokenKind::BorrowFromContext),
+            "TAKE_FROM_WORKTOP" => Ok(TokenKind::TakeFromWorktop),
+            "TAKE_ALL_FROM_WORKTOP" => Ok(TokenKind::TakeAllFromWorktop),
+            "RETURN_TO_WORKTOP" => Ok(TokenKind::ReturnToWorktop),
+            "ASSERT_WORKTOP_CONTAINS" => Ok(TokenKind::AssertWorktopContains),
+            "CREATE_BUCKET_REF" => Ok(TokenKind::CreateBucketRef),
+            "CLONE_BUCKET_REF" => Ok(TokenKind::CloneBucketRef),
+            "DROP_BUCKET_REF" => Ok(TokenKind::DropBucketRef),
             "CALL_FUNCTION" => Ok(TokenKind::CallFunction),
             "CALL_METHOD" => Ok(TokenKind::CallMethod),
-            "DROP_ALL_BUCKET_REFS" => Ok(TokenKind::DropAllBucketRefs),
             "CALL_METHOD_WITH_ALL_RESOURCES" => Ok(TokenKind::CallMethodWithAllResources),
 
             s @ _ => Err(LexerError::UnknownIdentifier(s.into())),

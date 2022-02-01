@@ -1,4 +1,5 @@
 use scrypto::rust::vec;
+use scrypto::rust::vec::Vec;
 
 use crate::engine::*;
 use crate::model::*;
@@ -6,39 +7,63 @@ use crate::model::*;
 pub fn validate_transaction(
     transaction: &Transaction,
 ) -> Result<ValidatedTransaction, TransactionValidationError> {
-    // TODO should also consider semantic check, e.g. unused temp bucket/-ref.
-
     let mut instructions = vec![];
     let mut signers = vec![];
+
+    // semantic analysis
+    let mut id_validator = IdValidator::new();
     for (i, inst) in transaction.instructions.iter().enumerate() {
         match inst.clone() {
-            Instruction::DeclareTempBucket => {
-                instructions.push(ValidatedInstruction::DeclareTempBucket);
-            }
-            Instruction::DeclareTempBucketRef => {
-                instructions.push(ValidatedInstruction::DeclareTempBucketRef);
-            }
-            Instruction::TakeFromContext {
+            Instruction::TakeFromWorktop {
                 amount,
                 resource_address,
-                to,
             } => {
-                instructions.push(ValidatedInstruction::TakeFromContext {
+                id_validator
+                    .new_bucket()
+                    .map_err(TransactionValidationError::IdValidatorError)?;
+                instructions.push(ValidatedInstruction::TakeFromWorktop {
                     amount,
                     resource_address,
-                    to,
                 });
             }
-            Instruction::BorrowFromContext {
+            Instruction::TakeAllFromWorktop { resource_address } => {
+                id_validator
+                    .new_bucket()
+                    .map_err(TransactionValidationError::IdValidatorError)?;
+                instructions.push(ValidatedInstruction::TakeAllFromWorktop { resource_address });
+            }
+            Instruction::ReturnToWorktop { bid } => {
+                id_validator
+                    .drop_bucket(bid)
+                    .map_err(TransactionValidationError::IdValidatorError)?;
+                instructions.push(ValidatedInstruction::ReturnToWorktop { bid });
+            }
+            Instruction::AssertWorktopContains {
                 amount,
                 resource_address,
-                to,
             } => {
-                instructions.push(ValidatedInstruction::BorrowFromContext {
+                instructions.push(ValidatedInstruction::AssertWorktopContains {
                     amount,
                     resource_address,
-                    to,
                 });
+            }
+            Instruction::CreateBucketRef { bid } => {
+                id_validator
+                    .new_bucket_ref(bid)
+                    .map_err(TransactionValidationError::IdValidatorError)?;
+                instructions.push(ValidatedInstruction::CreateBucketRef { bid });
+            }
+            Instruction::CloneBucketRef { rid } => {
+                id_validator
+                    .clone_bucket_ref(rid)
+                    .map_err(TransactionValidationError::IdValidatorError)?;
+                instructions.push(ValidatedInstruction::CloneBucketRef { rid });
+            }
+            Instruction::DropBucketRef { rid } => {
+                id_validator
+                    .drop_bucket_ref(rid)
+                    .map_err(TransactionValidationError::IdValidatorError)?;
+                instructions.push(ValidatedInstruction::DropBucketRef { rid });
             }
             Instruction::CallFunction {
                 package_address,
@@ -46,18 +71,11 @@ pub fn validate_transaction(
                 function,
                 args,
             } => {
-                let mut checked_args = vec![];
-                for arg in args {
-                    checked_args.push(
-                        validate_data(&arg)
-                            .map_err(TransactionValidationError::DataValidationError)?,
-                    );
-                }
                 instructions.push(ValidatedInstruction::CallFunction {
                     package_address,
                     blueprint_name,
                     function,
-                    args: checked_args,
+                    args: validate_args(args, &mut id_validator)?,
                 });
             }
             Instruction::CallMethod {
@@ -65,30 +83,23 @@ pub fn validate_transaction(
                 method,
                 args,
             } => {
-                let mut checked_args = vec![];
-                for arg in args {
-                    checked_args.push(
-                        validate_data(&arg)
-                            .map_err(TransactionValidationError::DataValidationError)?,
-                    );
-                }
                 instructions.push(ValidatedInstruction::CallMethod {
                     component_address,
                     method,
-                    args: checked_args,
+                    args: validate_args(args, &mut id_validator)?,
                 });
             }
             Instruction::CallMethodWithAllResources {
                 component_address,
                 method,
             } => {
+                id_validator
+                    .move_all_resources()
+                    .map_err(TransactionValidationError::IdValidatorError)?;
                 instructions.push(ValidatedInstruction::CallMethodWithAllResources {
                     component_address,
                     method,
                 });
-            }
-            Instruction::DropAllBucketRefs => {
-                instructions.push(ValidatedInstruction::DropAllBucketRefs);
             }
             Instruction::End { signatures } => {
                 if i != transaction.instructions.len() - 1 {
@@ -103,4 +114,20 @@ pub fn validate_transaction(
         instructions,
         signers,
     })
+}
+
+fn validate_args(
+    args: Vec<Vec<u8>>,
+    id_validator: &mut IdValidator,
+) -> Result<Vec<ValidatedData>, TransactionValidationError> {
+    let mut result = vec![];
+    for arg in args {
+        let validated_arg =
+            validate_data(&arg).map_err(TransactionValidationError::DataValidationError)?;
+        id_validator
+            .move_resources(&validated_arg)
+            .map_err(TransactionValidationError::IdValidatorError)?;
+        result.push(validated_arg);
+    }
+    Ok(result)
 }

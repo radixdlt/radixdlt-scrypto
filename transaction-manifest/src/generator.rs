@@ -22,11 +22,18 @@ pub enum GeneratorError {
     InvalidLazyMapId(String),
     InvalidVaultId(String),
     OddNumberOfElements(usize),
+    NameResolverError(NameResolverError),
+    IdValidatorError(IdValidatorError),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum NameResolverError {
+    UndefinedBucket(String),
+    UndefinedBucketRef(String),
+    NamedAlreadyDefined(String),
 }
 
 pub struct NameResolver {
-    instructions: Vec<Instruction>,
-    id_allocator: IdAllocator,
     named_buckets: HashMap<String, Bid>,
     named_bucket_refs: HashMap<String, Rid>,
 }
@@ -34,125 +41,189 @@ pub struct NameResolver {
 impl NameResolver {
     pub fn new() -> Self {
         Self {
-            instructions: Vec::new(),
-            id_allocator: IdAllocator::new(),
             named_buckets: HashMap::new(),
             named_bucket_refs: HashMap::new(),
         }
     }
 
-    pub fn new_bucket(&mut self) -> Bid {
-        self.instructions.push(Instruction::DeclareTempBucket);
-        self.id_allocator.new_bid()
+    pub fn insert_bucket(&mut self, name: String, bid: Bid) -> Result<(), NameResolverError> {
+        if self.named_buckets.contains_key(&name) || self.named_bucket_refs.contains_key(&name) {
+            Err(NameResolverError::NamedAlreadyDefined(name))
+        } else {
+            self.named_buckets.insert(name, bid);
+            Ok(())
+        }
     }
 
-    pub fn new_bucket_ref(&mut self) -> Rid {
-        self.instructions.push(Instruction::DeclareTempBucketRef);
-        self.id_allocator.new_rid()
+    pub fn insert_bucket_ref(&mut self, name: String, rid: Rid) -> Result<(), NameResolverError> {
+        if self.named_buckets.contains_key(&name) || self.named_bucket_refs.contains_key(&name) {
+            Err(NameResolverError::NamedAlreadyDefined(name))
+        } else {
+            self.named_bucket_refs.insert(name, rid);
+            Ok(())
+        }
     }
 
-    pub fn resolve_bucket(&mut self, name: &str) -> Bid {
+    pub fn resolve_bucket(&mut self, name: &str) -> Result<Bid, NameResolverError> {
         match self.named_buckets.get(name).cloned() {
-            Some(bid) => bid,
-            None => {
-                let bid = self.new_bucket();
-                self.named_buckets.insert(name.to_string(), bid);
-                bid
-            }
+            Some(bid) => Ok(bid),
+            None => Err(NameResolverError::UndefinedBucket(name.into())),
         }
     }
 
-    pub fn resolve_bucket_ref(&mut self, name: &str) -> Rid {
-        // TODO warning if a single name is used for both bucket and bucket_ref.
+    pub fn resolve_bucket_ref(&mut self, name: &str) -> Result<Rid, NameResolverError> {
         match self.named_bucket_refs.get(name).cloned() {
-            Some(rid) => rid,
-            None => {
-                let rid = self.new_bucket_ref();
-                self.named_bucket_refs.insert(name.to_string(), rid);
-                rid
-            }
+            Some(rid) => Ok(rid),
+            None => Err(NameResolverError::UndefinedBucketRef(name.into())),
         }
-    }
-
-    pub fn instructions(&self) -> Vec<Instruction> {
-        self.instructions.clone()
     }
 }
 
 pub fn generate_transaction(tx: &ast::Transaction) -> Result<Transaction, GeneratorError> {
+    let mut id_validator = IdValidator::new();
     let mut name_resolver = NameResolver::new();
-    let mut other_instructions = Vec::new();
+    let mut instructions = Vec::new();
 
     for instruction in &tx.instructions {
-        if let Some(i) = generate_instruction(instruction, &mut name_resolver)? {
-            other_instructions.push(i);
-        }
+        instructions.push(generate_instruction(
+            instruction,
+            &mut id_validator,
+            &mut name_resolver,
+        )?);
     }
 
-    let mut instructions = name_resolver.instructions();
-    instructions.extend(other_instructions);
     Ok(Transaction { instructions })
 }
 
 pub fn generate_instruction(
     instruction: &ast::Instruction,
+    id_validator: &mut IdValidator,
     resolver: &mut NameResolver,
-) -> Result<Option<Instruction>, GeneratorError> {
+) -> Result<Instruction, GeneratorError> {
     Ok(match instruction {
-        ast::Instruction::DeclareTempBucket => {
-            resolver.new_bucket();
-            None
-        }
-        ast::Instruction::DeclareTempBucketRef => {
-            resolver.new_bucket_ref();
-            None
-        }
-        ast::Instruction::TakeFromContext {
+        ast::Instruction::TakeFromWorktop {
             amount,
             resource_address,
-            to,
-        } => Some(Instruction::TakeFromContext {
-            amount: generate_decimal(amount)?,
-            resource_address: generate_address(resource_address)?,
-            to: generate_bucket(to, resolver)?,
-        }),
-        ast::Instruction::BorrowFromContext {
+            new_bucket,
+        } => {
+            let bid = id_validator
+                .new_bucket()
+                .map_err(GeneratorError::IdValidatorError)?;
+            declare_bucket(new_bucket, resolver, bid)?;
+
+            Instruction::TakeFromWorktop {
+                amount: generate_decimal(amount)?,
+                resource_address: generate_address(resource_address)?,
+            }
+        }
+        ast::Instruction::TakeAllFromWorktop {
+            resource_address,
+            new_bucket,
+        } => {
+            let bid = id_validator
+                .new_bucket()
+                .map_err(GeneratorError::IdValidatorError)?;
+            declare_bucket(new_bucket, resolver, bid)?;
+
+            Instruction::TakeAllFromWorktop {
+                resource_address: generate_address(resource_address)?,
+            }
+        }
+        ast::Instruction::ReturnToWorktop { bucket } => {
+            let bid = generate_bucket(bucket, resolver)?;
+            id_validator
+                .drop_bucket(bid)
+                .map_err(GeneratorError::IdValidatorError)?;
+            Instruction::ReturnToWorktop { bid }
+        }
+        ast::Instruction::AssertWorktopContains {
             amount,
             resource_address,
-            to,
-        } => Some(Instruction::BorrowFromContext {
+        } => Instruction::AssertWorktopContains {
             amount: generate_decimal(amount)?,
             resource_address: generate_address(resource_address)?,
-            to: generate_bucket_ref(to, resolver)?,
-        }),
+        },
+        ast::Instruction::CreateBucketRef {
+            bucket,
+            new_bucket_ref,
+        } => {
+            let bid = generate_bucket(bucket, resolver)?;
+            let rid = id_validator
+                .new_bucket_ref(bid)
+                .map_err(GeneratorError::IdValidatorError)?;
+            declare_bucket_ref(new_bucket_ref, resolver, rid)?;
+
+            Instruction::CreateBucketRef { bid }
+        }
+        ast::Instruction::CloneBucketRef {
+            bucket_ref,
+            new_bucket_ref,
+        } => {
+            let rid = generate_bucket_ref(bucket_ref, resolver)?;
+            let rid2 = id_validator
+                .clone_bucket_ref(rid)
+                .map_err(GeneratorError::IdValidatorError)?;
+            declare_bucket_ref(new_bucket_ref, resolver, rid2)?;
+
+            Instruction::CloneBucketRef { rid }
+        }
+        ast::Instruction::DropBucketRef { bucket_ref } => {
+            let rid = generate_bucket_ref(bucket_ref, resolver)?;
+            id_validator
+                .drop_bucket_ref(rid)
+                .map_err(GeneratorError::IdValidatorError)?;
+            Instruction::DropBucketRef { rid }
+        }
         ast::Instruction::CallFunction {
             package_address,
             blueprint_name,
             function,
             args,
-        } => Some(Instruction::CallFunction {
-            package_address: generate_address(package_address)?,
-            blueprint_name: generate_string(blueprint_name)?,
-            function: generate_string(function)?,
-            args: generate_args(args, resolver)?,
-        }),
+        } => {
+            let args = generate_args(args, resolver)?;
+            for arg in &args {
+                let validated_arg = validate_data(arg).unwrap();
+                id_validator
+                    .move_resources(&validated_arg)
+                    .map_err(GeneratorError::IdValidatorError)?;
+            }
+            Instruction::CallFunction {
+                package_address: generate_address(package_address)?,
+                blueprint_name: generate_string(blueprint_name)?,
+                function: generate_string(function)?,
+                args,
+            }
+        }
         ast::Instruction::CallMethod {
             component_address,
             method,
             args,
-        } => Some(Instruction::CallMethod {
-            component_address: generate_address(component_address)?,
-            method: generate_string(method)?,
-            args: generate_args(args, resolver)?,
-        }),
-        ast::Instruction::DropAllBucketRefs => Some(Instruction::DropAllBucketRefs),
+        } => {
+            let args = generate_args(args, resolver)?;
+            for arg in &args {
+                let validated_arg = validate_data(arg).unwrap();
+                id_validator
+                    .move_resources(&validated_arg)
+                    .map_err(GeneratorError::IdValidatorError)?;
+            }
+            Instruction::CallMethod {
+                component_address: generate_address(component_address)?,
+                method: generate_string(method)?,
+                args,
+            }
+        }
         ast::Instruction::CallMethodWithAllResources {
             component_address,
             method,
-        } => Some(Instruction::CallMethodWithAllResources {
-            component_address: generate_address(component_address)?,
-            method: generate_string(method)?,
-        }),
+        } => {
+            id_validator
+                .move_all_resources()
+                .map_err(GeneratorError::IdValidatorError)?;
+            Instruction::CallMethodWithAllResources {
+                component_address: generate_address(component_address)?,
+                method: generate_string(method)?,
+            }
+        }
     })
 }
 
@@ -236,14 +307,48 @@ fn generate_hash(value: &ast::Value) -> Result<H256, GeneratorError> {
     }
 }
 
+fn declare_bucket(
+    value: &ast::Value,
+    resolver: &mut NameResolver,
+    bid: Bid,
+) -> Result<(), GeneratorError> {
+    match value {
+        ast::Value::Bucket(inner) => match &**inner {
+            ast::Value::String(name) => resolver
+                .insert_bucket(name.to_string(), bid)
+                .map_err(GeneratorError::NameResolverError),
+            v @ _ => invalid_type!(v, ast::Type::String),
+        },
+        v @ _ => invalid_type!(v, ast::Type::Bucket),
+    }
+}
+
 fn generate_bucket(value: &ast::Value, resolver: &mut NameResolver) -> Result<Bid, GeneratorError> {
     match value {
         ast::Value::Bucket(inner) => match &**inner {
             ast::Value::U32(n) => Ok(Bid(*n)),
-            ast::Value::String(s) => Ok(resolver.resolve_bucket(s)),
+            ast::Value::String(s) => resolver
+                .resolve_bucket(&s)
+                .map_err(GeneratorError::NameResolverError),
             v @ _ => invalid_type!(v, ast::Type::U32, ast::Type::String),
         },
         v @ _ => invalid_type!(v, ast::Type::Bucket),
+    }
+}
+
+fn declare_bucket_ref(
+    value: &ast::Value,
+    resolver: &mut NameResolver,
+    rid: Rid,
+) -> Result<(), GeneratorError> {
+    match value {
+        ast::Value::BucketRef(inner) => match &**inner {
+            ast::Value::String(name) => resolver
+                .insert_bucket_ref(name.to_string(), rid)
+                .map_err(GeneratorError::NameResolverError),
+            v @ _ => invalid_type!(v, ast::Type::String),
+        },
+        v @ _ => invalid_type!(v, ast::Type::BucketRef),
     }
 }
 
@@ -254,7 +359,9 @@ fn generate_bucket_ref(
     match value {
         ast::Value::BucketRef(inner) => match &**inner {
             ast::Value::U32(n) => Ok(Rid(*n)),
-            ast::Value::String(s) => Ok(resolver.resolve_bucket_ref(s)),
+            ast::Value::String(s) => resolver
+                .resolve_bucket_ref(&s)
+                .map_err(GeneratorError::NameResolverError),
             v @ _ => invalid_type!(v, ast::Type::U32, ast::Type::String),
         },
         v @ _ => invalid_type!(v, ast::Type::BucketRef),
@@ -481,26 +588,25 @@ mod tests {
 
     #[macro_export]
     macro_rules! generate_value_ok {
-        ( $s:expr, $expected:expr, $allocations:expr ) => {{
+        ( $s:expr, $expected:expr ) => {{
             let value = Parser::new(tokenize($s).unwrap()).parse_value().unwrap();
             let mut resolver = NameResolver::new();
             assert_eq!(generate_value(&value, None, &mut resolver), Ok($expected));
-            assert_eq!(resolver.instructions(), $allocations);
         }};
     }
 
     #[macro_export]
     macro_rules! generate_instruction_ok {
-        ( $s:expr, $expected:expr, $allocations:expr ) => {{
+        ( $s:expr, $expected:expr ) => {{
             let instruction = Parser::new(tokenize($s).unwrap())
                 .parse_instruction()
                 .unwrap();
+            let mut id_validator = IdValidator::new();
             let mut resolver = NameResolver::new();
             assert_eq!(
-                generate_instruction(&instruction, &mut resolver),
+                generate_instruction(&instruction, &mut id_validator, &mut resolver),
                 Ok($expected)
             );
-            assert_eq!(resolver.instructions(), $allocations);
         }};
     }
 
@@ -521,24 +627,20 @@ mod tests {
 
     #[test]
     fn test_value() {
-        generate_value_ok!(r#"()"#, Value::Unit, vec![]);
-        generate_value_ok!(r#"true"#, Value::Bool(true), vec![]);
-        generate_value_ok!(r#"false"#, Value::Bool(false), vec![]);
-        generate_value_ok!(r#"1i8"#, Value::I8(1), vec![]);
-        generate_value_ok!(r#"1i128"#, Value::I128(1), vec![]);
-        generate_value_ok!(r#"1u8"#, Value::U8(1), vec![]);
-        generate_value_ok!(r#"1u128"#, Value::U128(1), vec![]);
+        generate_value_ok!(r#"()"#, Value::Unit);
+        generate_value_ok!(r#"true"#, Value::Bool(true));
+        generate_value_ok!(r#"false"#, Value::Bool(false));
+        generate_value_ok!(r#"1i8"#, Value::I8(1));
+        generate_value_ok!(r#"1i128"#, Value::I128(1));
+        generate_value_ok!(r#"1u8"#, Value::U8(1));
+        generate_value_ok!(r#"1u128"#, Value::U128(1));
         generate_value_ok!(
-            r#"Struct({Bucket("foo"), BucketRef("foo"), "bar"})"#,
+            r#"Struct({Bucket(1u32), BucketRef(2u32), "bar"})"#,
             Value::Struct(Fields::Named(vec![
-                Value::Custom(SCRYPTO_TYPE_BID, Bid(1024).to_vec()),
-                Value::Custom(SCRYPTO_TYPE_RID, Rid(1024).to_vec()),
+                Value::Custom(SCRYPTO_TYPE_BID, Bid(1).to_vec()),
+                Value::Custom(SCRYPTO_TYPE_RID, Rid(2).to_vec()),
                 Value::String("bar".into())
-            ])),
-            vec![
-                Instruction::DeclareTempBucket,
-                Instruction::DeclareTempBucketRef
-            ]
+            ]))
         );
         generate_value_ok!(
             r#"Struct((Decimal("1.0"), BigDecimal("2.0"), Hash("aa37f5a71083a9aa044fb936678bfd74f848e930d2de482a49a73540ea72aa5c"), Vault("aa37f5a71083a9aa044fb936678bfd74f848e930d2de482a49a73540ea72aa5c00000001"), LazyMap("aa37f5a71083a9aa044fb936678bfd74f848e930d2de482a49a73540ea72aa5c00000002")))"#,
@@ -575,25 +677,15 @@ mod tests {
                     .unwrap()
                     .to_vec()
                 ),
-            ])),
-            vec![]
+            ]))
         );
-        generate_value_ok!(r#"Struct()"#, Value::Struct(Fields::Unit), vec![]);
-        generate_value_ok!(
-            r#"Enum(0u8, {})"#,
-            Value::Enum(0, Fields::Named(vec![])),
-            vec![]
-        );
-        generate_value_ok!(
-            r#"Enum(1u8, ())"#,
-            Value::Enum(1, Fields::Unnamed(vec![])),
-            vec![]
-        );
-        generate_value_ok!(r#"Enum(2u8)"#, Value::Enum(2, Fields::Unit), vec![]);
+        generate_value_ok!(r#"Struct()"#, Value::Struct(Fields::Unit));
+        generate_value_ok!(r#"Enum(0u8, {})"#, Value::Enum(0, Fields::Named(vec![])));
+        generate_value_ok!(r#"Enum(1u8, ())"#, Value::Enum(1, Fields::Unnamed(vec![])));
+        generate_value_ok!(r#"Enum(2u8)"#, Value::Enum(2, Fields::Unit));
         generate_value_ok!(
             r#"Box(Some("value"))"#,
-            Value::Box(Value::Option(Some(Value::String("value".into())).into()).into()),
-            vec![]
+            Value::Box(Value::Option(Some(Value::String("value".into())).into()).into())
         );
         generate_value_ok!(
             r#"Array<Option>(Some(1u64), None)"#,
@@ -603,16 +695,14 @@ mod tests {
                     Value::Option(Some(Value::U64(1)).into()),
                     Value::Option(None.into())
                 ]
-            ),
-            vec![]
+            )
         );
         generate_value_ok!(
             r#"Tuple(Ok(1u64), Err(2u64))"#,
             Value::Tuple(vec![
                 Value::Result(Ok(Value::U64(1)).into()),
                 Value::Result(Err(Value::U64(2)).into()),
-            ]),
-            vec![]
+            ])
         );
         generate_value_ok!(
             r#"HashMap<HashSet, Vec>(HashSet<U8>(1u8), Vec<U8>(2u8))"#,
@@ -623,8 +713,7 @@ mod tests {
                     Value::HashSet(TYPE_U8, vec![Value::U8(1)]),
                     Value::Vec(TYPE_U8, vec![Value::U8(2)]),
                 ]
-            ),
-            vec![]
+            )
         );
         generate_value_ok!(
             r#"TreeMap<TreeSet, Vec>(TreeSet<U8>(1u8), Vec<U8>(2u8))"#,
@@ -635,8 +724,7 @@ mod tests {
                     Value::TreeSet(TYPE_U8, vec![Value::U8(1)]),
                     Value::Vec(TYPE_U8, vec![Value::U8(2)])
                 ]
-            ),
-            vec![]
+            )
         );
     }
 
@@ -664,44 +752,39 @@ mod tests {
     }
 
     #[test]
-    fn test_transaction() {
+    fn test_instructions() {
         generate_instruction_ok!(
-            r#"DECLARE_TEMP_BUCKET;"#,
-            None,
-            vec![Instruction::DeclareTempBucket]
-        );
-        generate_instruction_ok!(
-            r#"DECLARE_TEMP_BUCKET_REF;"#,
-            None,
-            vec![Instruction::DeclareTempBucketRef]
-        );
-        generate_instruction_ok!(
-            r#"TAKE_FROM_CONTEXT  Decimal("1.0")  Address("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d")  Bucket("xrd_bucket");"#,
-            Some(Instruction::TakeFromContext {
+            r#"TAKE_FROM_WORKTOP  Decimal("1.0")  Address("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d")  Bucket("xrd_bucket");"#,
+            Instruction::TakeFromWorktop {
                 amount: Decimal::from(1),
                 resource_address: Address::from_str(
                     "03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d"
                 )
                 .unwrap(),
-                to: Bid(1024),
-            }),
-            vec![Instruction::DeclareTempBucket]
+            }
         );
         generate_instruction_ok!(
-            r#"BORROW_FROM_CONTEXT  Decimal("1.0")  Address("03559905076cb3d4b9312640393a7bc6e1d4e491a8b1b62fa73a94")  BucketRef("admin_auth");"#,
-            Some(Instruction::BorrowFromContext {
-                amount: Decimal::from(1),
+            r#"TAKE_ALL_FROM_WORKTOP  Address("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d")  Bucket("xrd_bucket");"#,
+            Instruction::TakeAllFromWorktop {
                 resource_address: Address::from_str(
-                    "03559905076cb3d4b9312640393a7bc6e1d4e491a8b1b62fa73a94".into()
+                    "03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d"
                 )
                 .unwrap(),
-                to: Rid(1024),
-            }),
-            vec![Instruction::DeclareTempBucketRef]
+            }
+        );
+        generate_instruction_ok!(
+            r#"ASSERT_WORKTOP_CONTAINS  Decimal("1.0")  Address("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d");"#,
+            Instruction::AssertWorktopContains {
+                amount: Decimal::from(1),
+                resource_address: Address::from_str(
+                    "03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d"
+                )
+                .unwrap(),
+            }
         );
         generate_instruction_ok!(
             r#"CALL_FUNCTION  Address("01d1f50010e4102d88aacc347711491f852c515134a9ecf67ba17c")  "Airdrop"  "new"  500u32  HashMap<String, U8>("key", 1u8);"#,
-            Some(Instruction::CallFunction {
+            Instruction::CallFunction {
                 package_address: Address::from_str(
                     "01d1f50010e4102d88aacc347711491f852c515134a9ecf67ba17c".into()
                 )
@@ -712,39 +795,105 @@ mod tests {
                     scrypto_encode(&500u32),
                     scrypto_encode(&HashMap::from([("key", 1u8),])),
                 ]
-            }),
-            vec![]
+            }
         );
         generate_instruction_ok!(
-            r#"CALL_METHOD  Address("0292566c83de7fd6b04fcc92b5e04b03228ccff040785673278ef1")  "refill"  Bucket("xrd_bucket")  BucketRef("admin_auth");"#,
-            Some(Instruction::CallMethod {
+            r#"CALL_METHOD  Address("0292566c83de7fd6b04fcc92b5e04b03228ccff040785673278ef1")  "refill"  BucketRef(1u32);"#,
+            Instruction::CallMethod {
                 component_address: Address::from_str(
                     "0292566c83de7fd6b04fcc92b5e04b03228ccff040785673278ef1".into()
                 )
                 .unwrap(),
                 method: "refill".into(),
-                args: vec![scrypto_encode(&Bid(1024)), scrypto_encode(&Rid(1024))]
-            }),
-            vec![
-                Instruction::DeclareTempBucket,
-                Instruction::DeclareTempBucketRef
-            ]
-        );
-        generate_instruction_ok!(
-            r#"DROP_ALL_BUCKET_REFS;"#,
-            Some(Instruction::DropAllBucketRefs),
-            vec![]
+                args: vec![scrypto_encode(&Rid(1))]
+            }
         );
         generate_instruction_ok!(
             r#"CALL_METHOD_WITH_ALL_RESOURCES  Address("02d43f479e9b2beb9df98bc3888344fc25eda181e8f710ce1bf1de") "deposit_batch";"#,
-            Some(Instruction::CallMethodWithAllResources {
+            Instruction::CallMethodWithAllResources {
                 component_address: Address::from_str(
                     "02d43f479e9b2beb9df98bc3888344fc25eda181e8f710ce1bf1de".into()
                 )
                 .unwrap(),
                 method: "deposit_batch".into(),
-            }),
-            vec![]
+            }
+        );
+    }
+
+    #[test]
+    fn test_transaction() {
+        let tx = include_str!("../examples/call.rtm");
+
+        assert_eq!(
+            crate::compile(tx).unwrap(),
+            Transaction {
+                instructions: vec![
+                    Instruction::CallMethod {
+                        component_address: Address::from_str(
+                            "02d43f479e9b2beb9df98bc3888344fc25eda181e8f710ce1bf1de".into()
+                        )
+                        .unwrap(),
+                        method: "withdraw".into(),
+                        args: vec![
+                            scrypto_encode(&Decimal::from(5u32)),
+                            scrypto_encode(
+                                &Address::from_str(
+                                    "030000000000000000000000000000000000000000000000000004"
+                                )
+                                .unwrap()
+                            ),
+                            scrypto_encode(&Rid(1)),
+                        ]
+                    },
+                    Instruction::TakeFromWorktop {
+                        amount: Decimal::from(2),
+                        resource_address: Address::from_str(
+                            "030000000000000000000000000000000000000000000000000004"
+                        )
+                        .unwrap(),
+                    },
+                    Instruction::CallMethod {
+                        component_address: Address::from_str(
+                            "0292566c83de7fd6b04fcc92b5e04b03228ccff040785673278ef1".into()
+                        )
+                        .unwrap(),
+                        method: "buy_gumball".into(),
+                        args: vec![scrypto_encode(&Bid(512)),]
+                    },
+                    Instruction::AssertWorktopContains {
+                        amount: Decimal::from(3),
+                        resource_address: Address::from_str(
+                            "030000000000000000000000000000000000000000000000000004"
+                        )
+                        .unwrap(),
+                    },
+                    Instruction::AssertWorktopContains {
+                        amount: Decimal::from(1),
+                        resource_address: Address::from_str(
+                            "03aedb7960d1f87dc25138f4cd101da6c98d57323478d53c5fb951"
+                        )
+                        .unwrap(),
+                    },
+                    Instruction::TakeAllFromWorktop {
+                        resource_address: Address::from_str(
+                            "030000000000000000000000000000000000000000000000000004"
+                        )
+                        .unwrap(),
+                    },
+                    Instruction::CreateBucketRef { bid: Bid(513) },
+                    Instruction::CloneBucketRef { rid: Rid(514) },
+                    Instruction::DropBucketRef { rid: Rid(515) },
+                    Instruction::DropBucketRef { rid: Rid(514) },
+                    Instruction::ReturnToWorktop { bid: Bid(513) },
+                    Instruction::CallMethodWithAllResources {
+                        component_address: Address::from_str(
+                            "02d43f479e9b2beb9df98bc3888344fc25eda181e8f710ce1bf1de".into()
+                        )
+                        .unwrap(),
+                        method: "deposit_batch".into(),
+                    },
+                ]
+            }
         );
     }
 }
