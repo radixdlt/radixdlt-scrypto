@@ -107,7 +107,7 @@ impl FileBasedLedger {
     }
 }
 
-impl Ledger for FileBasedLedger {
+impl SubstateStore for FileBasedLedger {
     fn get_resource_def(&self, address: Address) -> Option<ResourceDef> {
         Self::read(self.get_path(RESOURCE_DEFS, address.to_string(), FILE_EXT)).map(Self::decode)
     }

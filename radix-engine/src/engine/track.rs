@@ -17,7 +17,7 @@ use crate::model::*;
 ///
 /// Typically, a track is shared by all the processes created within a transaction.
 ///
-pub struct Track<'l, L: Ledger> {
+pub struct Track<'l, L: SubstateStore> {
     ledger: &'l mut L,
     current_epoch: u64,
     transaction_hash: H256,
@@ -40,7 +40,7 @@ pub struct Track<'l, L: Ledger> {
     code_cache: LruCache<Address, Module>, // TODO: move to ledger level
 }
 
-impl<'l, L: Ledger> Track<'l, L> {
+impl<'l, L: SubstateStore> Track<'l, L> {
     pub fn new(
         ledger: &'l mut L,
         current_epoch: u64,

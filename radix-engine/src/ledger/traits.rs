@@ -22,7 +22,7 @@ struct SystemComponentState {
 }
 
 /// A ledger stores all transactions and substates.
-pub trait Ledger {
+pub trait SubstateStore {
     fn get_resource_def(&self, address: Address) -> Option<ResourceDef>;
 
     fn put_resource_def(&mut self, address: Address, resource_def: ResourceDef);

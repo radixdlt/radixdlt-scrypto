@@ -40,7 +40,7 @@ impl Default for InMemoryLedger {
     }
 }
 
-impl Ledger for InMemoryLedger {
+impl SubstateStore for InMemoryLedger {
     fn get_resource_def(&self, address: Address) -> Option<ResourceDef> {
         self.resource_defs.get(&address).map(Clone::clone)
     }
