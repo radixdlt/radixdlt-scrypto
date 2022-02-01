@@ -19,7 +19,7 @@ pub use h256::{ParseH256Error, H256};
 pub use mid::{Mid, ParseMidError};
 pub use rid::{ParseRidError, Rid};
 pub use vid::{ParseVidError, Vid};
-pub use nft_key::NftKey;
+pub use nft_key::{ParseNftKeyError, NftKey};
 
 use crate::rust::vec::Vec;
 

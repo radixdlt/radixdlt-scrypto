@@ -35,6 +35,7 @@ pub enum DataValidationError {
     InvalidRid(ParseRidError),
     InvalidMid(ParseMidError),
     InvalidVid(ParseVidError),
+    InvalidNftKey(ParseNftKeyError),
 }
 
 /// Represents an error when validating a transaction.
