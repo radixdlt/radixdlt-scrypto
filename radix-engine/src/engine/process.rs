@@ -276,11 +276,8 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         }
         self.worktop.clear();
 
-        // 2. Drop all bucket refs
-        let rids: Vec<Rid> = self.bucket_refs.keys().cloned().collect();
-        for rid in rids {
-            self.drop_bucket_ref(rid)?;
-        }
+        // 2. Drop all bucket refs to unlock the buckets
+        self.drop_all_bucket_refs()?;
 
         // 3. Call the method with all buckets
         let to_deposit: Vec<Bid> = self.buckets.keys().cloned().collect();
@@ -312,11 +309,8 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         bucket_refs: HashMap<Rid, BucketRef>,
     ) -> Result<(), RuntimeError> {
         if self.depth == 0 {
-            let rids: Vec<Rid> = bucket_refs.keys().cloned().collect();
-            self.bucket_refs.extend(bucket_refs);
-            for rid in rids {
-                self.drop_bucket_ref(rid)?;
-            }
+            assert!(bucket_refs.is_empty());
+
             for (_, bucket) in buckets {
                 if !bucket.amount().is_zero() {
                     let address = bucket.resource_address();
@@ -377,7 +371,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
             RuntimeValue::I32(ptr) => {
                 let data = validate_data(&self.read_bytes(ptr)?)
                     .map_err(RuntimeError::DataValidationError)?;
-                self.process_call_data(&data)?;
+                self.process_call_data(&data, false)?;
                 data
             }
             _ => {
@@ -454,7 +448,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
     pub fn call(&mut self, invocation: Invocation) -> Result<ValidatedData, RuntimeError> {
         // move resource
         for arg in &invocation.args {
-            self.process_call_data(arg)?;
+            self.process_call_data(arg, true)?;
         }
         let (buckets_out, bucket_refs_out) = self.move_out_resources();
         let mut process = Process::new(self.depth + 1, self.trace, self.track);
@@ -462,6 +456,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
 
         // run the function
         let result = process.run(invocation)?;
+        process.drop_all_bucket_refs()?;
         process.check_resource()?;
 
         // move resource
@@ -526,6 +521,15 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         let result = self.call(invocation);
         re_debug!(self, "Call abi ended");
         result
+    }
+
+    /// Drops all bucket refs owned by this process.
+    pub fn drop_all_bucket_refs(&mut self) -> Result<(), RuntimeError> {
+        let rids: Vec<Rid> = self.bucket_refs.keys().cloned().collect();
+        for rid in rids {
+            self.handle_drop_bucket_ref(DropBucketRefInput { rid })?;
+        }
+        Ok(())
     }
 
     /// Checks resource leak.
@@ -609,9 +613,25 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
             .map(|vm| vm.memory.clone())
     }
 
-    fn process_call_data(&mut self, validated: &ValidatedData) -> Result<(), RuntimeError> {
+    fn process_call_data(
+        &mut self,
+        validated: &ValidatedData,
+        is_argument: bool,
+    ) -> Result<(), RuntimeError> {
         self.move_buckets(&validated.buckets)?;
-        self.move_bucket_refs(&validated.bucket_refs)?;
+        if is_argument {
+            self.move_bucket_refs(&validated.bucket_refs)?;
+        } else {
+            if !validated.bucket_refs.is_empty() {
+                return Err(RuntimeError::BucketRefNotAllowed);
+            }
+        }
+        if !validated.lazy_maps.is_empty() {
+            return Err(RuntimeError::LazyMapNotAllowed);
+        }
+        if !validated.vaults.is_empty() {
+            return Err(RuntimeError::VaultNotAllowed);
+        }
         Ok(())
     }
 
@@ -623,6 +643,8 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         if !validated.bucket_refs.is_empty() {
             return Err(RuntimeError::BucketRefNotAllowed);
         }
+        // lazy map allowed
+        // vaults allowed
         Ok(validated)
     }
 
@@ -634,6 +656,8 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         if !validated.bucket_refs.is_empty() {
             return Err(RuntimeError::BucketRefNotAllowed);
         }
+        // lazy map allowed
+        // vaults allowed
         Ok(validated)
     }
 
