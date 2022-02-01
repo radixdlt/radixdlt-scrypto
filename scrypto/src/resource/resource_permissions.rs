@@ -30,7 +30,7 @@ pub const MAY_CHANGE_SHARED_METADATA: u64 = resource_permissions!(1u32 << 6);
 pub const MAY_CHANGE_INDIVIDUAL_METADATA: u64 = resource_permissions!(1u32 << 7);
 
 /// May change mutable flags.
-pub const MAY_MANAGE_RESOURCE_FLAGS: u64 = resource_permissions!(1u32 << 7);
+pub const MAY_MANAGE_RESOURCE_FLAGS: u64 = resource_permissions!(1u32 << 8);
 
 /// All permissions.
 pub const ALL_PERMISSIONS: u64 = resource_permissions!(!0u32);
