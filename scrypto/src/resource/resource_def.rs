@@ -75,9 +75,9 @@ impl ResourceDef {
     }
 
     /// Mints non-fungible resources
-    pub fn mint_nft<T: NftData>(&mut self, id: NftKey, data: T, auth: BucketRef) -> Bucket {
+    pub fn mint_nft<T: NftData>(&mut self, key: &NftKey, data: T, auth: BucketRef) -> Bucket {
         let mut entries = HashMap::new();
-        entries.insert(id, (data.immutable_data(), data.mutable_data()));
+        entries.insert(key.clone(), (data.immutable_data(), data.mutable_data()));
 
         let input = MintResourceInput {
             resource_address: self.address,

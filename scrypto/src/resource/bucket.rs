@@ -155,16 +155,16 @@ impl Bucket {
     ///
     /// # Panics
     /// Panics if this is not an NFT bucket.
-    pub fn get_nft_data<T: NftData>(&self, id: &NftKey) -> T {
-        self.resource_def().get_nft_data(id)
+    pub fn get_nft_data<T: NftData>(&self, key: &NftKey) -> T {
+        self.resource_def().get_nft_data(key)
     }
 
     /// Updates the mutable part of the data of an NFT unit.
     ///
     /// # Panics
     /// Panics if this is not an NFT bucket or the specified NFT is not found.
-    pub fn update_nft_data<T: NftData>(&mut self, id: &NftKey, new_data: T, auth: BucketRef) {
-        self.resource_def().update_nft_data(id, new_data, auth)
+    pub fn update_nft_data<T: NftData>(&mut self, key: &NftKey, new_data: T, auth: BucketRef) {
+        self.resource_def().update_nft_data(key, new_data, auth)
     }
 }
 

@@ -27,7 +27,7 @@ blueprint! {
 
             // Mint an NFT
             let nft = nft_resource_def.mint_nft(
-                NftKey::new(vec![0]),
+                &NftKey::new(vec![0]),
                 Sandwich {
                     name: "Test".to_owned(),
                     available: false,
