@@ -2,24 +2,24 @@ use scrypto::prelude::*;
 
 blueprint! {
     struct Account {
-        address: Address,
+        public_key: Address,
         vaults: LazyMap<Address, Vault>,
     }
 
     impl Account {
-        pub fn new(address: Address) -> Component {
+        pub fn new(public_key: Address) -> Component {
             Account {
-                address,
+                public_key,
                 vaults: LazyMap::new(),
             }
             .instantiate()
         }
 
-        pub fn with_bucket(address: Address, bucket: Bucket) -> Component {
+        pub fn with_bucket(public_key: Address, bucket: Bucket) -> Component {
             let vaults = LazyMap::new();
             vaults.insert(bucket.resource_address(), Vault::with_bucket(bucket));
 
-            Account { address, vaults }.instantiate()
+            Account { public_key, vaults }.instantiate()
         }
 
         /// Deposit a batch of buckets into this account
@@ -44,7 +44,7 @@ blueprint! {
         }
 
         fn nft_key(&self) -> NftKey {
-            NftKey::new(self.address.to_vec())
+            NftKey::new(self.public_key.to_vec())
         }
 
         /// Withdraws resource from this account.
