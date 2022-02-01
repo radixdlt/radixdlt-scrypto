@@ -4,6 +4,7 @@ use std::io::prelude::*;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 
+use rocksdb::{DB, Options};
 use radix_engine::ledger::*;
 use radix_engine::model::*;
 use scrypto::types::*;
@@ -24,6 +25,14 @@ const FILE_EXT: &str = "sbor";
 
 impl FileBasedLedger {
     pub fn new(root: PathBuf) -> Self {
+        let db = DB::open_default(root.as_path()).unwrap();
+        db.put(b"my key", b"my value").unwrap();
+        match db.get(b"my key") {
+            Ok(Some(value)) => println!("retrieved value {}", String::from_utf8(value).unwrap()),
+            Ok(None) => println!("value not found"),
+            Err(e) => println!("operational problem encountered: {}", e),
+        }
+
         for folder in [PACKAGES, COMPONENTS, LAZY_MAPS, RESOURCE_DEFS, VAULTS, NFTS] {
             let mut path = root.clone();
             path.push(folder);
