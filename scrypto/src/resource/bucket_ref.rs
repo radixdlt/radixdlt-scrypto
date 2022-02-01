@@ -93,7 +93,7 @@ impl BucketRef {
     pub fn get_nft_id(&self) -> NftKey {
         let ids = self.get_nft_ids();
         assert!(ids.len() == 1, "Expect 1 NFT, but found {}", ids.len());
-        ids[0]
+        ids[0].clone()
     }
 
     /// Destroys this reference.

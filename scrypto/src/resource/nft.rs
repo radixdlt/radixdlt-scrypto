@@ -14,7 +14,7 @@ impl<T: NftData> From<(Address, NftKey)> for Nft<T> {
     fn from(tuple: (Address, NftKey)) -> Self {
         Self {
             resource_address: tuple.0,
-            id: tuple.1,
+            id: tuple.1.clone(),
             data: PhantomData,
         }
     }
@@ -28,16 +28,16 @@ impl<T: NftData> Nft<T> {
 
     /// Returns the NFT ID.
     pub fn id(&self) -> NftKey {
-        self.id
+        self.id.clone()
     }
 
     /// Returns the associated data of this unit.
     pub fn data(&self) -> T {
-        ResourceDef::from(self.resource_address()).get_nft_data(self.id)
+        ResourceDef::from(self.resource_address()).get_nft_data(&self.id)
     }
 
     /// Updates the associated data of this unit.
     pub fn update_data(&self, new_data: T, auth: BucketRef) {
-        ResourceDef::from(self.resource_address()).update_nft_data(self.id, new_data, auth);
+        ResourceDef::from(self.resource_address()).update_nft_data(&self.id, new_data, auth);
     }
 }

@@ -995,8 +995,8 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
                 let mut ids = BTreeSet::new();
 
                 for (id, data) in entries {
-                    if self.track.get_nft(resource_address, id).is_some() {
-                        return Err(RuntimeError::NftAlreadyExists(resource_address, id));
+                    if self.track.get_nft(resource_address, id.clone()).is_some() {
+                        return Err(RuntimeError::NftAlreadyExists(resource_address, id.clone()));
                     }
 
                     let immutable_data = self.process_nft_data(&data.0)?;
@@ -1004,10 +1004,10 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
 
                     self.track.put_nft(
                         resource_address,
-                        id,
+                        id.clone(),
                         Nft::new(immutable_data.raw, mutable_data.raw),
                     );
-                    ids.insert(id);
+                    ids.insert(id.clone());
                 }
 
                 Ok(Supply::NonFungible { ids })
@@ -1240,8 +1240,8 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
         // update state
         let data = self.process_nft_data(&input.new_mutable_data)?;
         self.track
-            .get_nft_mut(input.resource_address, input.id)
-            .ok_or(RuntimeError::NftNotFound(input.resource_address, input.id))?
+            .get_nft_mut(input.resource_address, input.id.clone())
+            .ok_or(RuntimeError::NftNotFound(input.resource_address, input.id.clone()))?
             .set_mutable_data(data.raw)
             .map_err(RuntimeError::NftError)?;
 
@@ -1254,8 +1254,8 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
     ) -> Result<GetNftDataOutput, RuntimeError> {
         let nft = self
             .track
-            .get_nft(input.resource_address, input.id)
-            .ok_or(RuntimeError::NftNotFound(input.resource_address, input.id))?;
+            .get_nft(input.resource_address, input.id.clone())
+            .ok_or(RuntimeError::NftNotFound(input.resource_address, input.id.clone()))?;
 
         Ok(GetNftDataOutput {
             immutable_data: nft.immutable_data(),

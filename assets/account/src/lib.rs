@@ -53,7 +53,7 @@ blueprint! {
                 Address::ResourceDef(d) => bytes[..].copy_from_slice(&d[..16]),
                 Address::PublicKey(d) => bytes[..].copy_from_slice(&d[..16]),
             }
-            NftKey(u128::from_be_bytes(bytes))
+            NftKey::from_u128(u128::from_be_bytes(bytes))
         }
 
         /// Withdraws resource from this account.

@@ -129,7 +129,7 @@ impl Bucket {
         output
             .ids
             .iter()
-            .map(|id| Nft::from((resource_address, *id)))
+            .map(|id| Nft::from((resource_address, id.clone())))
             .collect()
     }
 
@@ -148,14 +148,14 @@ impl Bucket {
     pub fn get_nft_id(&self) -> NftKey {
         let ids = self.get_nft_ids();
         assert!(ids.len() == 1, "Expect 1 NFT, but found {}", ids.len());
-        ids[0]
+        ids[0].clone()
     }
 
     /// Returns the data of an NFT unit, both the immutable and mutable parts.
     ///
     /// # Panics
     /// Panics if this is not an NFT bucket.
-    pub fn get_nft_data<T: NftData>(&self, id: NftKey) -> T {
+    pub fn get_nft_data<T: NftData>(&self, id: &NftKey) -> T {
         self.resource_def().get_nft_data(id)
     }
 
@@ -163,7 +163,7 @@ impl Bucket {
     ///
     /// # Panics
     /// Panics if this is not an NFT bucket or the specified NFT is not found.
-    pub fn update_nft_data<T: NftData>(&mut self, id: NftKey, new_data: T, auth: BucketRef) {
+    pub fn update_nft_data<T: NftData>(&mut self, id: &NftKey, new_data: T, auth: BucketRef) {
         self.resource_def().update_nft_data(id, new_data, auth)
     }
 }
