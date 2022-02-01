@@ -166,11 +166,10 @@ impl ResourceDef {
     ///
     /// # Panics
     /// Panics if this is not an NFT resource or the specified NFT is not found.
-    pub fn get_nft_data<T: NftData>(&self, id: &NftKey) -> T {
-        let key = id.clone();
+    pub fn get_nft_data<T: NftData>(&self, key: &NftKey) -> T {
         let input = GetNftDataInput {
             resource_address: self.address,
-            id: key,
+            key: key.clone(),
         };
         let output: GetNftDataOutput = call_kernel(GET_NFT_DATA, input);
 
@@ -181,10 +180,10 @@ impl ResourceDef {
     ///
     /// # Panics
     /// Panics if this is not an NFT resource or the specified NFT is not found.
-    pub fn update_nft_data<T: NftData>(&mut self, id: &NftKey, new_data: T, auth: BucketRef) {
+    pub fn update_nft_data<T: NftData>(&mut self, key: &NftKey, new_data: T, auth: BucketRef) {
         let input = UpdateNftMutableDataInput {
             resource_address: self.address,
-            id: id.clone(),
+            key: key.clone(),
             new_mutable_data: new_data.mutable_data(),
             auth: auth.into(),
         };

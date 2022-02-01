@@ -97,10 +97,10 @@ impl Vault {
     ///
     /// # Panics
     /// Panics if this is not an NFT vault or the specified NFT is not found.
-    pub fn take_nft(&self, id: NftKey) -> Bucket {
+    pub fn take_nft(&self, key: &NftKey) -> Bucket {
         let input = TakeNftFromVaultInput {
             vid: self.vid,
-            id,
+            key: key.clone(),
             auth: None,
         };
         let output: TakeNftFromVaultOutput = call_kernel(TAKE_NFT_FROM_VAULT, input);
@@ -115,10 +115,10 @@ impl Vault {
     ///
     /// # Panics
     /// Panics if this is not an NFT vault or the specified NFT is not found.
-    pub fn take_nft_with_auth(&self, id: NftKey, auth: BucketRef) -> Bucket {
+    pub fn take_nft_with_auth(&self, key: &NftKey, auth: BucketRef) -> Bucket {
         let input = TakeNftFromVaultInput {
             vid: self.vid,
-            id,
+            key: key.clone(),
             auth: Some(auth.into()),
         };
         let output: TakeNftFromVaultOutput = call_kernel(TAKE_NFT_FROM_VAULT, input);

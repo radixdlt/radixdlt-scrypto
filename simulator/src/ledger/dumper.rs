@@ -66,16 +66,16 @@ pub fn dump_component<T: Ledger>(address: Address, ledger: &T) -> Result<(), Dis
                         .map(|symbol| format!(", symbol: \"{}\"", symbol))
                         .unwrap_or(String::new()),
                 );
-                if let Supply::NonFungible { ids } = vault.total_supply(Actor::SuperUser).unwrap() {
-                    for (inner_last, id) in ids.iter().identify_last() {
-                        let nft = ledger.get_nft(resource_address, id).unwrap();
+                if let Supply::NonFungible { keys } = vault.total_supply(Actor::SuperUser).unwrap() {
+                    for (inner_last, key) in keys.iter().identify_last() {
+                        let nft = ledger.get_nft(resource_address, key).unwrap();
                         let immutable_data = validate_data(&nft.immutable_data()).unwrap();
                         let mutable_data = validate_data(&nft.mutable_data()).unwrap();
                         println!(
-                            "{}  {} NFT {{ id: {}, immutable_data: {}, mutable_data: {} }}",
+                            "{}  {} NFT {{ key: {}, immutable_data: {}, mutable_data: {} }}",
                             if last { " " } else { "│" },
                             list_item_prefix(inner_last),
-                            id,
+                            key,
                             immutable_data,
                             mutable_data
                         );

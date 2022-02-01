@@ -111,8 +111,8 @@ impl Bucket {
     ///
     /// # Panics
     /// Panics if this is not an NFT bucket or the specified NFT is not found.
-    pub fn take_nft(&mut self, id: NftKey) -> Bucket {
-        let input = TakeNftFromBucketInput { bid: self.bid, id };
+    pub fn take_nft(&mut self, key: &NftKey) -> Bucket {
+        let input = TakeNftFromBucketInput { bid: self.bid, key: key.clone() };
         let output: TakeNftFromBucketOutput = call_kernel(TAKE_NFT_FROM_BUCKET, input);
 
         output.bid.into()

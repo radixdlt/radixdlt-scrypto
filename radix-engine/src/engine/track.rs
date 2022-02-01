@@ -94,7 +94,7 @@ impl<'l, L: Ledger> Track<'l, L> {
             let ecdsa_bucket = Bucket::new(
                 ECDSA_TOKEN,
                 ResourceType::NonFungible,
-                Supply::NonFungible { ids: signers },
+                Supply::NonFungible { keys: signers },
             );
             process.create_virtual_bucket_ref(ECDSA_TOKEN_RID, ecdsa_bucket);
         }
@@ -219,40 +219,40 @@ impl<'l, L: Ledger> Track<'l, L> {
     }
 
     /// Returns an immutable reference to a nft, if exists.
-    pub fn get_nft(&mut self, resource_address: Address, id: &NftKey) -> Option<&Nft> {
-        if self.nfts.contains_key(&(resource_address, id.clone())) {
-            return self.nfts.get(&(resource_address, id.clone()));
+    pub fn get_nft(&mut self, resource_address: Address, key: &NftKey) -> Option<&Nft> {
+        if self.nfts.contains_key(&(resource_address, key.clone())) {
+            return self.nfts.get(&(resource_address, key.clone()));
         }
 
-        if let Some(nft) = self.ledger.get_nft(resource_address, id) {
-            self.nfts.insert((resource_address, id.clone()), nft);
-            self.nfts.get(&(resource_address, id.clone()))
+        if let Some(nft) = self.ledger.get_nft(resource_address, key) {
+            self.nfts.insert((resource_address, key.clone()), nft);
+            self.nfts.get(&(resource_address, key.clone()))
         } else {
             None
         }
     }
 
     /// Returns a mutable reference to a nft, if exists.
-    pub fn get_nft_mut(&mut self, resource_address: Address, id: &NftKey) -> Option<&mut Nft> {
-        self.updated_nfts.insert((resource_address, id.clone()));
+    pub fn get_nft_mut(&mut self, resource_address: Address, key: &NftKey) -> Option<&mut Nft> {
+        self.updated_nfts.insert((resource_address, key.clone()));
 
-        if self.nfts.contains_key(&(resource_address, id.clone())) {
-            return self.nfts.get_mut(&(resource_address, id.clone()));
+        if self.nfts.contains_key(&(resource_address, key.clone())) {
+            return self.nfts.get_mut(&(resource_address, key.clone()));
         }
 
-        if let Some(nft) = self.ledger.get_nft(resource_address, id) {
-            self.nfts.insert((resource_address, id.clone()), nft);
-            self.nfts.get_mut(&(resource_address, id.clone()))
+        if let Some(nft) = self.ledger.get_nft(resource_address, key) {
+            self.nfts.insert((resource_address, key.clone()), nft);
+            self.nfts.get_mut(&(resource_address, key.clone()))
         } else {
             None
         }
     }
 
     /// Inserts a new nft.
-    pub fn put_nft(&mut self, resource_address: Address, id: &NftKey, nft: Nft) {
-        self.updated_nfts.insert((resource_address, id.clone()));
+    pub fn put_nft(&mut self, resource_address: Address, key: &NftKey, nft: Nft) {
+        self.updated_nfts.insert((resource_address, key.clone()));
 
-        self.nfts.insert((resource_address, id.clone()), nft);
+        self.nfts.insert((resource_address, key.clone()), nft);
     }
 
     /// Returns an immutable reference to a lazy map, if exists.

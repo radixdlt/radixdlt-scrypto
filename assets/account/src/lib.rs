@@ -96,7 +96,7 @@ blueprint! {
         /// Withdraws NFTs from this account.
         pub fn withdraw_nfts(
             &mut self,
-            ids: BTreeSet<NftKey>,
+            keys: BTreeSet<NftKey>,
             resource_address: Address,
             account_auth: BucketRef,
         ) -> Bucket {
@@ -106,8 +106,8 @@ blueprint! {
             match vault {
                 Some(vault) => {
                     let mut bucket = Bucket::new(resource_address);
-                    for id in ids {
-                        bucket.put(vault.take_nft(id));
+                    for key in keys {
+                        bucket.put(vault.take_nft(&key));
                     }
                     bucket
                 }
@@ -120,19 +120,19 @@ blueprint! {
         /// Withdraws NFTs from this account.
         pub fn withdraw_nfts_with_auth(
             &mut self,
-            ids: BTreeSet<NftKey>,
+            keys: BTreeSet<NftKey>,
             resource_address: Address,
             auth: BucketRef,
             account_auth: BucketRef,
         ) -> Bucket {
-            account_auth.check_nft_id(ECDSA_TOKEN, |id| id == &self.nft_key());
+            account_auth.check_nft_id(ECDSA_TOKEN, |key| key == &self.nft_key());
 
             let vault = self.vaults.get(&resource_address);
             let bucket = match vault {
                 Some(vault) => {
                     let mut bucket = Bucket::new(resource_address);
-                    for id in ids {
-                        bucket.put(vault.take_nft_with_auth(id, auth.clone()));
+                    for key in keys {
+                        bucket.put(vault.take_nft_with_auth(&key, auth.clone()));
                     }
                     bucket
                 }

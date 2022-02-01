@@ -56,7 +56,7 @@ blueprint! {
             self.collected_xrd.put(payment.take(self.ticket_price));
 
             // Take the specific ticket
-            let ticket = self.available_tickets.take_nft(NftKey::from_u128(id));
+            let ticket = self.available_tickets.take_nft(&NftKey::from_u128(id));
 
             // Return the ticket and change
             (ticket, payment)
