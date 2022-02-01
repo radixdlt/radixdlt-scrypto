@@ -19,6 +19,33 @@ blueprint! {
             (bucket.take(Decimal::from_str("0.1").unwrap()), bucket)
         }
 
+        pub fn create_fungible_wrong_resource_flags_should_fail() -> ResourceDef {
+            let token_resource_def = ResourceBuilder::new_fungible(DIVISIBILITY_MAXIMUM)
+                .metadata("name", "TestToken")
+                .flags(MAY_MINT | BURNABLE)
+                .no_initial_supply();
+            token_resource_def
+        }
+
+        pub fn create_fungible_wrong_mutable_flags_should_fail() -> ResourceDef {
+            let token_resource_def = ResourceBuilder::new_fungible(DIVISIBILITY_MAXIMUM)
+                .metadata("name", "TestToken")
+                .flags(MINTABLE | BURNABLE)
+                .mutable_flags(MAY_MINT)
+                .no_initial_supply();
+            token_resource_def
+        }
+
+        pub fn create_fungible_wrong_resource_permissions_should_fail() -> (Bucket, ResourceDef) {
+            let badge = ResourceBuilder::new_fungible(DIVISIBILITY_NONE).initial_supply_fungible(1);
+            let token_resource_def = ResourceBuilder::new_fungible(DIVISIBILITY_MAXIMUM)
+                .metadata("name", "TestToken")
+                .flags(MINTABLE | BURNABLE)
+                .badge(badge.resource_address(), MINTABLE | MAY_BURN)
+                .no_initial_supply();
+            (badge, token_resource_def)
+        }
+
         pub fn query() -> (Bucket, HashMap<String, String>, u64, u64, Decimal) {
             let (badge, resource_def) = Self::create_fungible();
             (

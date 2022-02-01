@@ -190,6 +190,51 @@ fn test_resource_def() {
     let receipt = executor.run(transaction).unwrap();
     println!("{:?}", receipt);
     assert!(!receipt.result.is_ok());
+
+    let transaction = TransactionBuilder::new(&executor)
+        .call_function(
+            package,
+            "ResourceTest",
+            "create_fungible_wrong_resource_flags_should_fail",
+            vec![],
+            Some(account),
+        )
+        .call_method_with_all_resources(account, "deposit_batch")
+        .build(vec![key])
+        .unwrap();
+    let receipt = executor.run(transaction).unwrap();
+    println!("{:?}", receipt);
+    assert!(!receipt.result.is_ok());
+
+    let transaction = TransactionBuilder::new(&executor)
+        .call_function(
+            package,
+            "ResourceTest",
+            "create_fungible_wrong_mutable_flags_should_fail",
+            vec![],
+            Some(account),
+        )
+        .call_method_with_all_resources(account, "deposit_batch")
+        .build(vec![key])
+        .unwrap();
+    let receipt = executor.run(transaction).unwrap();
+    println!("{:?}", receipt);
+    assert!(!receipt.result.is_ok());
+
+    let transaction = TransactionBuilder::new(&executor)
+        .call_function(
+            package,
+            "ResourceTest",
+            "create_fungible_wrong_resource_permissions_should_fail",
+            vec![],
+            Some(account),
+        )
+        .call_method_with_all_resources(account, "deposit_batch")
+        .build(vec![key])
+        .unwrap();
+    let receipt = executor.run(transaction).unwrap();
+    println!("{:?}", receipt);
+    assert!(!receipt.result.is_ok());
 }
 
 #[test]
