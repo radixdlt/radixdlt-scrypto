@@ -355,7 +355,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         .0
     }
 
-    fn single_authority(badge: Address, permission: u16) -> HashMap<Address, u16> {
+    fn single_authority(badge: Address, permission: u64) -> HashMap<Address, u64> {
         let mut map = HashMap::new();
         map.insert(badge, permission);
         map
@@ -401,7 +401,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                 scrypto_encode(&metadata),
                 scrypto_encode(&0u64),
                 scrypto_encode(&0u64),
-                scrypto_encode(&HashMap::<Address, u16>::new()),
+                scrypto_encode(&HashMap::<Address, u64>::new()),
                 scrypto_encode(&Some(NewSupply::Fungible {
                     amount: initial_supply.into(),
                 })),
@@ -450,7 +450,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                 scrypto_encode(&metadata),
                 scrypto_encode(&0u64),
                 scrypto_encode(&0u64),
-                scrypto_encode(&HashMap::<Address, u16>::new()),
+                scrypto_encode(&HashMap::<Address, u64>::new()),
                 scrypto_encode(&Some(NewSupply::Fungible {
                     amount: initial_supply.into(),
                 })),

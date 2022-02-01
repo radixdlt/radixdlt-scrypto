@@ -19,7 +19,7 @@ blueprint! {
             metadata: HashMap<String, String>,
             flags: u64,
             mutable_flags: u64,
-            authorities: HashMap<Address, u16>,
+            authorities: HashMap<Address, u64>,
             initial_supply: Option<NewSupply>,
         ) -> (ResourceDef, Option<Bucket>) {
             ResourceDef::new(

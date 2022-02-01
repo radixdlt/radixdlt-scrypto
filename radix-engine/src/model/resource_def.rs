@@ -18,6 +18,7 @@ pub enum ResourceDefError {
     InvalidDivisibility,
     InvalidAmount(Decimal),
     InvalidResourceFlags(u64),
+    InvalidResourcePermission(u64),
     InvalidFlagUpdate {
         flags: u64,
         mutable_flags: u64,
@@ -33,7 +34,7 @@ pub struct ResourceDef {
     metadata: HashMap<String, String>,
     flags: u64,
     mutable_flags: u64,
-    authorities: HashMap<Address, u16>,
+    authorities: HashMap<Address, u64>,
     total_supply: Decimal,
 }
 
@@ -43,7 +44,7 @@ impl ResourceDef {
         metadata: HashMap<String, String>,
         flags: u64,
         mutable_flags: u64,
-        authorities: HashMap<Address, u16>,
+        authorities: HashMap<Address, u64>,
         initial_supply: &Option<NewSupply>,
     ) -> Result<Self, ResourceDefError> {
         let mut resource_def = Self {
@@ -61,6 +62,12 @@ impl ResourceDef {
 
         if !resource_flags_are_valid(mutable_flags) {
            return Err(ResourceDefError::InvalidResourceFlags(mutable_flags));
+        }
+
+        for (_, permission) in &resource_def.authorities {
+            if !resource_permissions_are_valid(*permission) {
+                return Err(ResourceDefError::InvalidResourcePermission(*permission));
+            }
         }
 
         resource_def.total_supply = match (resource_type, initial_supply) {
@@ -98,7 +105,7 @@ impl ResourceDef {
         self.mutable_flags
     }
 
-    pub fn authorities(&self) -> &HashMap<Address, u16> {
+    pub fn authorities(&self) -> &HashMap<Address, u64> {
         &self.authorities
     }
 

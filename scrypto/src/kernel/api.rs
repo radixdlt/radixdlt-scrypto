@@ -245,7 +245,7 @@ pub struct CreateResourceInput {
     pub metadata: HashMap<String, String>,
     pub flags: u64,
     pub mutable_flags: u64,
-    pub authorities: HashMap<Address, u16>,
+    pub authorities: HashMap<Address, u64>,
     pub initial_supply: Option<NewSupply>,
 }
 

@@ -16,7 +16,7 @@ pub struct ResourceBuilder {
     metadata: HashMap<String, String>,
     flags: u64,
     mutable_flags: u64,
-    authorities: HashMap<Address, u16>,
+    authorities: HashMap<Address, u64>,
 }
 
 impl ResourceBuilder {
@@ -66,7 +66,7 @@ impl ResourceBuilder {
     }
 
     /// Adds a badge for authorization.
-    pub fn badge<A: Into<ResourceDef>>(&mut self, badge_address: A, permissions: u16) -> &mut Self {
+    pub fn badge<A: Into<ResourceDef>>(&mut self, badge_address: A, permissions: u64) -> &mut Self {
         self.authorities
             .insert(badge_address.into().address(), permissions);
         self
