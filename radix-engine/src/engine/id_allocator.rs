@@ -7,7 +7,7 @@ pub const ECDSA_TOKEN_RID: Rid = Rid(1);
 
 pub const SYSTEM_ID_SPACE: IdSpace = IdSpace::System(0..512);
 pub const TRANSACTION_ID_SPACE: IdSpace = IdSpace::Transaction(512..1024);
-pub const APPLICATION_ID_SPACE: IdSpace = IdSpace::Application(512..1024);
+pub const APPLICATION_ID_SPACE: IdSpace = IdSpace::Application(1024..u32::MAX);
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum IdSpace {
