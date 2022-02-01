@@ -65,11 +65,13 @@ fn account_to_bucket_to_account() {
     let transaction = TransactionBuilder::new(&executor)
         .withdraw_from_account(&amount, account)
         .take_from_worktop(amount.amount(), RADIX_TOKEN, |builder, bid| {
-            builder.add_instruction(Instruction::CallMethod {
-                component_address: account,
-                method: "deposit".to_owned(),
-                args: vec![scrypto_encode(&bid)],
-            })
+            builder
+                .add_instruction(Instruction::CallMethod {
+                    component_address: account,
+                    method: "deposit".to_owned(),
+                    args: vec![scrypto_encode(&bid)],
+                })
+                .0
         })
         .build(vec![key])
         .unwrap();

@@ -124,8 +124,9 @@ fn validate_args(
     for arg in args {
         let validated_arg =
             validate_data(&arg).map_err(TransactionValidationError::DataValidationError)?;
-        id_validator.move_resources(&validated_arg)
-        .map_err(TransactionValidationError::IdValidatorError)?;
+        id_validator
+            .move_resources(&validated_arg)
+            .map_err(TransactionValidationError::IdValidatorError)?;
         result.push(validated_arg);
     }
     Ok(result)
