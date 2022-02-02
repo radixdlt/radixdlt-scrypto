@@ -24,3 +24,7 @@ path = "src/bin/resim.rs"
 [[bin]]
 name = "scrypto"
 path = "src/bin/scrypto.rs"
+
+[[bin]]
+name = "rtmc"
+path = "src/bin/rtmc.rs"
