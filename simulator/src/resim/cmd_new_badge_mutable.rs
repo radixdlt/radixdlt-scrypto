@@ -93,7 +93,7 @@ pub fn handle_new_badge_mutable(matches: &ArgMatches) -> Result<(), Error> {
         .and_then(|v| metadata.insert("icon_url".to_owned(), v.to_owned()));
 
     let mut configs = get_configs()?;
-    let mut ledger = FileBasedLedger::with_bootstrap(get_data_dir()?);
+    let mut ledger = RadixEngineDB::with_bootstrap(get_data_dir()?);
     let mut executor =
         TransactionExecutor::new(&mut ledger, configs.current_epoch, configs.nonce, trace);
     let transaction = TransactionBuilder::new(&executor)

@@ -43,7 +43,7 @@ pub fn handle_run(matches: &ArgMatches) -> Result<(), Error> {
     });
 
     let mut configs = get_configs()?;
-    let mut ledger = FileBasedLedger::with_bootstrap(get_data_dir()?);
+    let mut ledger = RadixEngineDB::with_bootstrap(get_data_dir()?);
     let mut executor =
         TransactionExecutor::new(&mut ledger, configs.current_epoch, configs.nonce, trace);
     let receipt = executor

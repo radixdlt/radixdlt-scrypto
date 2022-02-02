@@ -60,13 +60,13 @@ pub fn handle_publish(matches: &ArgMatches) -> Result<(), Error> {
     // Update existing package if `--address` is provided
     if let Some(a) = matches.value_of(ARG_ADDRESS) {
         let address: Address = a.parse().map_err(Error::InvalidAddress)?;
-        let mut ledger = FileBasedLedger::with_bootstrap(get_data_dir()?);
+        let mut ledger = RadixEngineDB::with_bootstrap(get_data_dir()?);
         ledger.put_package(address, Package::new(code));
         println!("Package updated!");
         Ok(())
     } else {
         let mut configs = get_configs()?;
-        let mut ledger = FileBasedLedger::with_bootstrap(get_data_dir()?);
+        let mut ledger = RadixEngineDB::with_bootstrap(get_data_dir()?);
         let mut executor =
             TransactionExecutor::new(&mut ledger, configs.current_epoch, configs.nonce, trace);
         let transaction = TransactionBuilder::new(&executor)

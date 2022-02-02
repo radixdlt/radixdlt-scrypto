@@ -26,7 +26,7 @@ pub fn handle_show(matches: &ArgMatches) -> Result<(), Error> {
         .parse()
         .map_err(Error::InvalidAddress)?;
 
-    let ledger = FileBasedLedger::with_bootstrap(get_data_dir()?);
+    let ledger = RadixEngineDB::with_bootstrap(get_data_dir()?);
     match address {
         Address::Package(_) => dump_package(address, &ledger).map_err(Error::LedgerDumpError),
         Address::Component(_) => dump_component(address, &ledger).map_err(Error::LedgerDumpError),

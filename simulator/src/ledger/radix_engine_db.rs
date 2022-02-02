@@ -5,12 +5,11 @@ use radix_engine::ledger::*;
 use radix_engine::model::*;
 use scrypto::types::*;
 
-/// A file-based ledger that stores substates in a folder.
-pub struct FileBasedLedger {
+pub struct RadixEngineDB {
     db: DBWithThreadMode<SingleThreaded>,
 }
 
-impl FileBasedLedger {
+impl RadixEngineDB {
     pub fn new(root: PathBuf) -> Self {
         let db = DB::open_default(root.as_path()).unwrap();
         Self { db }
@@ -55,7 +54,7 @@ impl FileBasedLedger {
     }
 }
 
-impl SubstateStore for FileBasedLedger {
+impl SubstateStore for RadixEngineDB {
     fn get_resource_def(&self, address: Address) -> Option<ResourceDef> {
         self.db.get(address.to_vec()).unwrap().map(Self::decode)
     }
