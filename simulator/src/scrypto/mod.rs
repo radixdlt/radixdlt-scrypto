@@ -14,7 +14,7 @@ use clap::{Parser, Subcommand};
 
 /// Create, build and test Scrypto code
 #[derive(Parser, Debug)]
-#[clap(author, version, about, long_about = None)]
+#[clap(author, version, about, long_about = None, name = "scrypto")]
 pub struct ScryptoCli {
     #[clap(subcommand)]
     command: Command,

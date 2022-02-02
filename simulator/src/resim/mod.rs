@@ -44,7 +44,7 @@ use clap::{Parser, Subcommand};
 
 /// Build fast, reward everyone, and scale without friction
 #[derive(Parser, Debug)]
-#[clap(author, version, about, long_about = None)]
+#[clap(author, version, about, long_about = None, name = "resim")]
 pub struct ResimCli {
     #[clap(subcommand)]
     command: Command,
