@@ -1,9 +1,7 @@
 use clap::Parser;
 use radix_engine::model::*;
-use radix_engine::transaction::*;
 use scrypto::types::*;
 
-use crate::ledger::*;
 use crate::resim::*;
 use std::path::PathBuf;
 
@@ -15,7 +13,7 @@ pub struct Run {
 
     /// The transaction signers
     #[clap(short, long)]
-    signers: Vec<Address>,
+    signers: Option<Vec<Address>>,
 
     /// Turn on tracing
     #[clap(short, long)]
@@ -24,31 +22,14 @@ pub struct Run {
 
 impl Run {
     pub fn run(&self) -> Result<(), Error> {
+        let mut runner = TransactionRunner::new()?;
+        let default_signers = runner.default_signers()?;
         let manifest = std::fs::read_to_string(&self.path).map_err(Error::IOError)?;
         let mut transaction =
             transaction_manifest::compile(&manifest).map_err(Error::CompileError)?;
         transaction.instructions.push(Instruction::End {
-            signatures: self.signers.clone(),
+            signatures: self.signers.clone().unwrap_or(default_signers),
         });
-
-        let mut configs = get_configs()?;
-        let mut ledger = FileBasedLedger::with_bootstrap(get_data_dir()?);
-        let mut executor = TransactionExecutor::new(
-            &mut ledger,
-            configs.current_epoch,
-            configs.nonce,
-            self.trace,
-        );
-        let receipt = executor
-            .run(transaction)
-            .map_err(Error::TransactionValidationError)?;
-
-        println!("{:?}", receipt);
-        if receipt.result.is_ok() {
-            configs.nonce = executor.nonce();
-            set_configs(configs)?;
-        }
-
-        receipt.result.map_err(Error::TransactionExecutionError)
+        runner.run_transaction(transaction, self.trace, |receipt| println!("{:?}", receipt))
     }
 }

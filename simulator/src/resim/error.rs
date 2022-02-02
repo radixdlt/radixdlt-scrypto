@@ -30,6 +30,8 @@ pub enum Error {
 
     TransactionExecutionError(RuntimeError),
 
+    AbiExportError(RuntimeError),
+
     LedgerDumpError(DisplayError),
 
     CompileError(transaction_manifest::CompileError),

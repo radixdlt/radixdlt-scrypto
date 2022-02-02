@@ -7,7 +7,7 @@ use scrypto::types::*;
 
 use crate::resim::*;
 
-/// Radix Engine configurations.
+/// Simulator configurations.
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct Configs {
     pub default_account: Option<(Address, Address)>,

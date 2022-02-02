@@ -2,7 +2,6 @@ use clap::Parser;
 use radix_engine::transaction::*;
 use scrypto::types::*;
 
-use crate::ledger::*;
 use crate::resim::*;
 
 /// Export the ABI of a blueprint
@@ -21,18 +20,11 @@ pub struct ExportAbi {
 
 impl ExportAbi {
     pub fn run(&self) -> Result<(), Error> {
-        let configs = get_configs()?;
-        let mut ledger = FileBasedLedger::with_bootstrap(get_data_dir()?);
-        let executor = TransactionExecutor::new(
-            &mut ledger,
-            configs.current_epoch,
-            configs.nonce,
-            self.trace,
-        );
-        let abi = executor.export_abi(self.package_address, &self.blueprint_name);
-
-        match abi {
-            Err(e) => Err(Error::TransactionExecutionError(e)),
+        let mut runner = TransactionRunner::new()?;
+        match runner
+            .executor(self.trace)
+            .export_abi(self.package_address, &self.blueprint_name)
+        {
             Ok(a) => {
                 println!(
                     "{}",
@@ -40,6 +32,7 @@ impl ExportAbi {
                 );
                 Ok(())
             }
+            Err(e) => Err(Error::AbiExportError(e)),
         }
     }
 }

@@ -2,7 +2,6 @@ use clap::Parser;
 use radix_engine::transaction::*;
 use scrypto::types::*;
 
-use crate::ledger::*;
 use crate::resim::*;
 
 /// Transfer resource to another account
@@ -16,7 +15,7 @@ pub struct Transfer {
 
     /// The transaction signers
     #[clap(short, long)]
-    signers: Vec<Address>,
+    signers: Option<Vec<Address>>,
 
     /// Turn on tracing
     #[clap(short, long)]
@@ -25,30 +24,14 @@ pub struct Transfer {
 
 impl Transfer {
     pub fn run(&self) -> Result<(), Error> {
-        let mut configs = get_configs()?;
-        let account = configs.default_account.ok_or(Error::NoDefaultAccount)?;
-        let mut ledger = FileBasedLedger::with_bootstrap(get_data_dir()?);
-        let mut executor = TransactionExecutor::new(
-            &mut ledger,
-            configs.current_epoch,
-            configs.nonce,
-            self.trace,
-        );
-        let transaction = TransactionBuilder::new(&executor)
-            .withdraw_from_account(&self.resource, account.0)
+        let mut runner = TransactionRunner::new()?;
+        let default_account = runner.default_account()?;
+        let default_signers = runner.default_signers()?;
+        let transaction = TransactionBuilder::new(&runner.executor(self.trace))
+            .withdraw_from_account(&self.resource, default_account)
             .call_method_with_all_resources(self.recipient, "deposit_batch")
-            .build(self.signers.clone())
+            .build(self.signers.clone().unwrap_or(default_signers))
             .map_err(Error::TransactionConstructionError)?;
-        let receipt = executor
-            .run(transaction)
-            .map_err(Error::TransactionValidationError)?;
-
-        println!("{:?}", receipt);
-        if receipt.result.is_ok() {
-            configs.nonce = executor.nonce();
-            set_configs(configs)?;
-        }
-
-        receipt.result.map_err(Error::TransactionExecutionError)
+        runner.run_transaction(transaction, self.trace, |receipt| println!("{:?}", receipt))
     }
 }

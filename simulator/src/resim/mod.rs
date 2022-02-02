@@ -41,6 +41,11 @@ pub use config::*;
 pub use error::*;
 
 use clap::{Parser, Subcommand};
+use radix_engine::model::*;
+use radix_engine::transaction::*;
+use scrypto::types::*;
+
+use crate::ledger::*;
 
 /// Build fast, reward everyone, and scale without friction
 #[derive(Parser, Debug)]
@@ -94,5 +99,62 @@ pub fn run() -> Result<(), Error> {
         Command::ShowLedger(cmd) => cmd.run(),
         Command::Show(cmd) => cmd.run(),
         Command::Transfer(cmd) => cmd.run(),
+    }
+}
+
+pub struct TransactionRunner {
+    configs: Configs,
+    ledger: FileBasedLedger,
+}
+
+impl TransactionRunner {
+    pub fn new() -> Result<Self, Error> {
+        Ok(Self {
+            configs: get_configs()?,
+            ledger: FileBasedLedger::with_bootstrap(get_data_dir()?),
+        })
+    }
+
+    pub fn default_account(&self) -> Result<Address, Error> {
+        self.configs
+            .default_account
+            .ok_or(Error::NoDefaultAccount)
+            .map(|a| a.0)
+    }
+
+    pub fn default_signers(&self) -> Result<Vec<Address>, Error> {
+        self.configs
+            .default_account
+            .ok_or(Error::NoDefaultAccount)
+            .map(|a| vec![a.1])
+    }
+
+    pub fn executor(&mut self, trace: bool) -> TransactionExecutor<FileBasedLedger> {
+        TransactionExecutor::new(
+            &mut self.ledger,
+            self.configs.current_epoch,
+            self.configs.nonce,
+            trace,
+        )
+    }
+
+    pub fn run_transaction(
+        &mut self,
+        transaction: Transaction,
+        trace: bool,
+        receipt_handler: fn(&Receipt) -> (),
+    ) -> Result<(), Error> {
+        let mut executor = self.executor(trace);
+        let receipt = executor
+            .run(transaction)
+            .map_err(Error::TransactionValidationError)?;
+        receipt_handler(&receipt);
+
+        if receipt.result.is_ok() {
+            self.configs.nonce = executor.nonce();
+            set_configs(self.configs.clone())?;
+        }
+
+        receipt.result.map_err(Error::TransactionExecutionError)
     }
 }
