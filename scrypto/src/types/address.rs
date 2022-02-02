@@ -57,6 +57,15 @@ pub enum ParseAddressError {
     InvalidType(u8),
 }
 
+impl fmt::Display for ParseAddressError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
+#[cfg(not(feature = "alloc"))]
+impl std::error::Error for ParseAddressError {}
+
 impl Address {
     pub fn to_vec(&self) -> Vec<u8> {
         match self {

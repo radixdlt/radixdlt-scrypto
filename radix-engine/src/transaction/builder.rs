@@ -19,6 +19,7 @@ use crate::model::*;
 use crate::transaction::*;
 
 /// Represents some amount of resource.
+#[derive(Debug, Clone)]
 pub enum ResourceAmount {
     Fungible {
         amount: Decimal,
@@ -38,6 +39,15 @@ pub enum ParseResourceAmountError {
     InvalidResourceAddress,
     MissingResourceAddress,
 }
+
+impl fmt::Display for ParseResourceAmountError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
+#[cfg(not(feature = "alloc"))]
+impl std::error::Error for ParseResourceAmountError {}
 
 impl FromStr for ResourceAmount {
     type Err = ParseResourceAmountError;

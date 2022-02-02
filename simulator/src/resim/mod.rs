@@ -18,7 +18,6 @@ mod cmd_show_ledger;
 mod cmd_transfer;
 mod config;
 mod error;
-mod utils;
 
 pub use cmd_call_function::*;
 pub use cmd_call_method::*;
@@ -40,76 +39,60 @@ pub use cmd_show_ledger::*;
 pub use cmd_transfer::*;
 pub use config::*;
 pub use error::*;
-pub use utils::*;
 
-pub const CMD_EXPORT_ABI: &str = "export-abi";
-pub const CMD_CALL_FUNCTION: &str = "call-function";
-pub const CMD_CALL_METHOD: &str = "call-method";
-pub const CMD_NEW_ACCOUNT: &str = "new-account";
-pub const CMD_NEW_TOKEN_FIXED: &str = "new-token-fixed";
-pub const CMD_NEW_TOKEN_MUTABLE: &str = "new-token-mutable";
-pub const CMD_NEW_BADGE_FIXED: &str = "new-badge-fixed";
-pub const CMD_NEW_BADGE_MUTABLE: &str = "new-badge-mutable";
-pub const CMD_MINT: &str = "mint";
-pub const CMD_TRANSFER: &str = "transfer";
-pub const CMD_PUBLISH: &str = "publish";
-pub const CMD_RESET: &str = "reset";
-pub const CMD_RUN: &str = "run";
-pub const CMD_SET_DEFAULT_ACCOUNT: &str = "set-default-account";
-pub const CMD_SET_CURRENT_EPOCH: &str = "set-current-epoch";
-pub const CMD_SHOW: &str = "show";
-pub const CMD_SHOW_CONFIGS: &str = "show-configs";
-pub const CMD_SHOW_LEDGER: &str = "show-ledger";
+use clap::{Parser, Subcommand};
 
-/// Runs resim CLI.
-pub fn run<I, T>(args: I) -> Result<(), Error>
-where
-    I: IntoIterator<Item = T>,
-    T: Into<std::ffi::OsString> + Clone,
-{
-    let app = clap::App::new("Radix Engine Simulator")
-        .name("resim")
-        .about("Build fast, reward everyone, and scale without friction")
-        .version(clap::crate_version!())
-        .subcommand(make_export_abi())
-        .subcommand(make_call_function())
-        .subcommand(make_call_method())
-        .subcommand(make_new_token_fixed())
-        .subcommand(make_new_token_mutable())
-        .subcommand(make_new_badge_fixed())
-        .subcommand(make_new_badge_mutable())
-        .subcommand(make_mint())
-        .subcommand(make_transfer())
-        .subcommand(make_new_account())
-        .subcommand(make_publish())
-        .subcommand(make_reset())
-        .subcommand(make_run())
-        .subcommand(make_set_default_account())
-        .subcommand(make_set_current_epoch())
-        .subcommand(make_show())
-        .subcommand(make_show_configs())
-        .subcommand(make_show_ledger());
-    let matches = app.get_matches_from(args);
+/// Build fast, reward everyone, and scale without friction
+#[derive(Parser, Debug)]
+#[clap(author, version, about, long_about = None)]
+pub struct ResimCli {
+    #[clap(subcommand)]
+    command: Command,
+}
 
-    match matches.subcommand() {
-        Some((CMD_EXPORT_ABI, m)) => handle_export_abi(m),
-        Some((CMD_CALL_FUNCTION, m)) => handle_call_function(m),
-        Some((CMD_CALL_METHOD, m)) => handle_call_method(m),
-        Some((CMD_NEW_TOKEN_FIXED, m)) => handle_new_token_fixed(m),
-        Some((CMD_NEW_TOKEN_MUTABLE, m)) => handle_new_token_mutable(m),
-        Some((CMD_NEW_BADGE_FIXED, m)) => handle_new_badge_fixed(m),
-        Some((CMD_NEW_BADGE_MUTABLE, m)) => handle_new_badge_mutable(m),
-        Some((CMD_MINT, m)) => handle_mint(m),
-        Some((CMD_TRANSFER, m)) => handle_transfer(m),
-        Some((CMD_NEW_ACCOUNT, m)) => handle_new_account(m),
-        Some((CMD_PUBLISH, m)) => handle_publish(m),
-        Some((CMD_RESET, m)) => handle_reset(m),
-        Some((CMD_RUN, m)) => handle_run(m),
-        Some((CMD_SET_DEFAULT_ACCOUNT, m)) => handle_set_default_account(m),
-        Some((CMD_SET_CURRENT_EPOCH, m)) => handle_set_current_epoch(m),
-        Some((CMD_SHOW, m)) => handle_show(m),
-        Some((CMD_SHOW_CONFIGS, m)) => handle_show_configs(m),
-        Some((CMD_SHOW_LEDGER, m)) => handle_show_ledger(m),
-        _ => Err(Error::MissingSubCommand),
+#[derive(Subcommand, Debug)]
+pub enum Command {
+    CallFunction(CallFunction),
+    CallMethod(CallMethod),
+    ExportAbi(ExportAbi),
+    Mint(Mint),
+    NewAccount(NewAccount),
+    NewBadgeFixed(NewBadgeFixed),
+    NewBadgeMutable(NewBadgeMutable),
+    NewTokenFixed(NewTokenFixed),
+    NewTokenMutable(NewTokenMutable),
+    Publish(Publish),
+    Reset(Reset),
+    Run(Run),
+    SetCurrentEpoch(SetCurrentEpoch),
+    SetDefaultAccount(SetDefaultAccount),
+    ShowConfigs(ShowConfigs),
+    ShowLedger(ShowLedger),
+    Show(Show),
+    Transfer(Transfer),
+}
+
+pub fn run() -> Result<(), Error> {
+    let cli = ResimCli::parse();
+
+    match cli.command {
+        Command::CallFunction(cmd) => cmd.run(),
+        Command::CallMethod(cmd) => cmd.run(),
+        Command::ExportAbi(cmd) => cmd.run(),
+        Command::Mint(cmd) => cmd.run(),
+        Command::NewAccount(cmd) => cmd.run(),
+        Command::NewBadgeFixed(cmd) => cmd.run(),
+        Command::NewBadgeMutable(cmd) => cmd.run(),
+        Command::NewTokenFixed(cmd) => cmd.run(),
+        Command::NewTokenMutable(cmd) => cmd.run(),
+        Command::Publish(cmd) => cmd.run(),
+        Command::Reset(cmd) => cmd.run(),
+        Command::Run(cmd) => cmd.run(),
+        Command::SetCurrentEpoch(cmd) => cmd.run(),
+        Command::SetDefaultAccount(cmd) => cmd.run(),
+        Command::ShowConfigs(cmd) => cmd.run(),
+        Command::ShowLedger(cmd) => cmd.run(),
+        Command::Show(cmd) => cmd.run(),
+        Command::Transfer(cmd) => cmd.run(),
     }
 }

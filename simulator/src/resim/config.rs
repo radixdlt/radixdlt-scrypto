@@ -27,7 +27,7 @@ impl Default for Configs {
 
 /// Returns the data directory.
 pub fn get_data_dir() -> Result<PathBuf, Error> {
-    let mut path = dirs::home_dir().ok_or(Error::MissingHomeDirectory)?;
+    let mut path = dirs::home_dir().ok_or(Error::HomeDirUnknown)?;
     path.push("scrypto-simulator");
     if !path.exists() {
         std::fs::create_dir_all(&path).map_err(Error::IOError)?;
@@ -48,7 +48,7 @@ pub fn get_configs() -> Result<Configs, Error> {
     if path.exists() {
         Ok(
             scrypto_decode(&fs::read(path).map_err(Error::IOError)?.as_ref())
-                .map_err(Error::InvalidConfig)?,
+                .map_err(Error::ConfigDecodingError)?,
         )
     } else {
         Ok(Configs::default())

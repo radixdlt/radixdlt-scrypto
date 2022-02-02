@@ -35,6 +35,15 @@ pub enum ParseDecimalError {
     InvalidLength,
 }
 
+impl fmt::Display for ParseDecimalError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
+#[cfg(not(feature = "alloc"))]
+impl std::error::Error for ParseDecimalError {}
+
 impl Decimal {
     /// The min value of `Decimal`.
     pub const MIN: Self = Self(i128::MIN);

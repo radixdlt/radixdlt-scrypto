@@ -19,6 +19,15 @@ pub enum ParseH256Error {
     InvalidLength(usize),
 }
 
+impl fmt::Display for ParseH256Error {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
+#[cfg(not(feature = "alloc"))]
+impl std::error::Error for ParseH256Error {}
+
 impl H256 {
     /// Returns the lower 26 bytes.
     pub fn lower_26_bytes(&self) -> [u8; 26] {
