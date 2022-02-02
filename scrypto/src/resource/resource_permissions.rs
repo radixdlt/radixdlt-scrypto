@@ -1,5 +1,5 @@
 const RESOURCE_PERMISSIONS_SHIFT: u8 = 32;
-const RESOURCE_PERMISSIONS_MASK: u64 = 0xfff_ffff_0000_0000;
+const RESOURCE_PERMISSIONS_MASK: u64 = 0xffff_ffff_0000_0000;
 
 macro_rules! resource_permissions {
     ( $f:expr ) => {
