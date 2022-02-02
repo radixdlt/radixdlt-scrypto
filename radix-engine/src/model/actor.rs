@@ -25,7 +25,7 @@ impl Actor {
     }
 
     // Checks if this actor is a member of the authorities and has the given permission.
-    pub fn check_permission(&self, authorities: &HashMap<Address, u16>, permission: u16) -> bool {
+    pub fn check_permission(&self, authorities: &HashMap<Address, u64>, permission: u64) -> bool {
         match self {
             Self::SuperUser => true,
             Self::Package(pkg) => {

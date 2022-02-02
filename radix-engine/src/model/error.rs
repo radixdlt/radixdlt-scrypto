@@ -35,6 +35,7 @@ pub enum DataValidationError {
     InvalidRid(ParseRidError),
     InvalidMid(ParseMidError),
     InvalidVid(ParseVidError),
+    InvalidNftKey(ParseNftKeyError),
 }
 
 /// Represents an error when validating a transaction.
@@ -110,10 +111,10 @@ pub enum RuntimeError {
     ResourceDefNotFound(Address),
 
     /// Nft does not exist.
-    NftNotFound(Address, u128),
+    NftNotFound(Address, NftKey),
 
     /// Nft already exists.
-    NftAlreadyExists(Address, u128),
+    NftAlreadyExists(Address, NftKey),
 
     /// Lazy map does not exist.
     LazyMapNotFound(Mid),

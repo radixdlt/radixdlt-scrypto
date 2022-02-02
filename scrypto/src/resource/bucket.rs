@@ -111,8 +111,11 @@ impl Bucket {
     ///
     /// # Panics
     /// Panics if this is not an NFT bucket or the specified NFT is not found.
-    pub fn take_nft(&mut self, id: u128) -> Bucket {
-        let input = TakeNftFromBucketInput { bid: self.bid, id };
+    pub fn take_nft(&mut self, key: &NftKey) -> Bucket {
+        let input = TakeNftFromBucketInput {
+            bid: self.bid,
+            key: key.clone(),
+        };
         let output: TakeNftFromBucketOutput = call_kernel(TAKE_NFT_FROM_BUCKET, input);
 
         output.bid.into()
@@ -123,13 +126,13 @@ impl Bucket {
     /// # Panics
     /// Panics if this is not an NFT bucket.
     pub fn get_nfts<T: NftData>(&self) -> Vec<Nft<T>> {
-        let input = GetNftIdsInBucketInput { bid: self.bid };
-        let output: GetNftIdsInBucketOutput = call_kernel(GET_NFT_IDS_IN_BUCKET, input);
+        let input = GetNftKeysInBucketInput { bid: self.bid };
+        let output: GetNftKeysInBucketOutput = call_kernel(GET_NFT_KEYS_IN_BUCKET, input);
         let resource_address = self.resource_address();
         output
-            .ids
+            .keys
             .iter()
-            .map(|id| Nft::from((resource_address, *id)))
+            .map(|id| Nft::from((resource_address, id.clone())))
             .collect()
     }
 
@@ -137,34 +140,34 @@ impl Bucket {
     ///
     /// # Panics
     /// Panics if this is not an NFT bucket.
-    pub fn get_nft_ids(&self) -> Vec<u128> {
-        let input = GetNftIdsInBucketInput { bid: self.bid };
-        let output: GetNftIdsInBucketOutput = call_kernel(GET_NFT_IDS_IN_BUCKET, input);
+    pub fn get_nft_keys(&self) -> Vec<NftKey> {
+        let input = GetNftKeysInBucketInput { bid: self.bid };
+        let output: GetNftKeysInBucketOutput = call_kernel(GET_NFT_KEYS_IN_BUCKET, input);
 
-        output.ids
+        output.keys
     }
 
     /// Get the NFT id and panic if not singleton.
-    pub fn get_nft_id(&self) -> u128 {
-        let ids = self.get_nft_ids();
-        assert!(ids.len() == 1, "Expect 1 NFT, but found {}", ids.len());
-        ids[0]
+    pub fn get_nft_key(&self) -> NftKey {
+        let keys = self.get_nft_keys();
+        assert!(keys.len() == 1, "Expect 1 NFT, but found {}", keys.len());
+        keys[0].clone()
     }
 
     /// Returns the data of an NFT unit, both the immutable and mutable parts.
     ///
     /// # Panics
     /// Panics if this is not an NFT bucket.
-    pub fn get_nft_data<T: NftData>(&self, id: u128) -> T {
-        self.resource_def().get_nft_data(id)
+    pub fn get_nft_data<T: NftData>(&self, key: &NftKey) -> T {
+        self.resource_def().get_nft_data(key)
     }
 
     /// Updates the mutable part of the data of an NFT unit.
     ///
     /// # Panics
     /// Panics if this is not an NFT bucket or the specified NFT is not found.
-    pub fn update_nft_data<T: NftData>(&mut self, id: u128, new_data: T, auth: BucketRef) {
-        self.resource_def().update_nft_data(id, new_data, auth)
+    pub fn update_nft_data<T: NftData>(&mut self, key: &NftKey, new_data: T, auth: BucketRef) {
+        self.resource_def().update_nft_data(key, new_data, auth)
     }
 }
 

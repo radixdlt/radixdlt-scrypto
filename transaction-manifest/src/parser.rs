@@ -168,7 +168,8 @@ impl Parser {
             | TokenKind::Bucket
             | TokenKind::BucketRef
             | TokenKind::LazyMap
-            | TokenKind::Vault => self.parse_scrypto_types(),
+            | TokenKind::Vault
+            | TokenKind::NftKey => self.parse_scrypto_types(),
             _ => Err(ParserError::UnexpectedToken(token)),
         }
     }
@@ -331,6 +332,7 @@ impl Parser {
             TokenKind::BucketRef => Ok(Value::BucketRef(self.parse_values_one()?.into())),
             TokenKind::LazyMap => Ok(Value::LazyMap(self.parse_values_one()?.into())),
             TokenKind::Vault => Ok(Value::Vault(self.parse_values_one()?.into())),
+            TokenKind::NftKey => Ok(Value::NftKey(self.parse_values_one()?.into())),
             _ => Err(ParserError::UnexpectedToken(token)),
         }
     }
@@ -423,6 +425,7 @@ impl Parser {
             TokenKind::BucketRef => Ok(Type::BucketRef),
             TokenKind::LazyMap => Ok(Type::LazyMap),
             TokenKind::Vault => Ok(Type::Vault),
+            TokenKind::NftKey => Ok(Type::NftKey),
             _ => Err(ParserError::UnexpectedToken(token)),
         }
     }
@@ -722,6 +725,20 @@ mod tests {
                 method: Value::String("refill".into()),
                 args: vec![
                     Value::Bucket(Value::String("xrd_bucket".into()).into()),
+                    Value::BucketRef(Value::String("admin_auth".into()).into())
+                ]
+            }
+        );
+        parse_instruction_ok!(
+            r#"CALL_METHOD  Address("0292566c83de7fd6b04fcc92b5e04b03228ccff040785673278ef1")  "withdraw_nft"  NftKey("00")  BucketRef("admin_auth");"#,
+            Instruction::CallMethod {
+                component_address: Value::Address(
+                    Value::String("0292566c83de7fd6b04fcc92b5e04b03228ccff040785673278ef1".into())
+                        .into()
+                ),
+                method: Value::String("withdraw_nft".into()),
+                args: vec![
+                    Value::NftKey(Value::String("00".into()).into()),
                     Value::BucketRef(Value::String("admin_auth".into()).into())
                 ]
             }

@@ -31,7 +31,7 @@ blueprint! {
         /// A vault that holds all our special cards
         special_cards: Vault,
         /// The price for each special card
-        special_card_prices: HashMap<u128, Decimal>,
+        special_card_prices: HashMap<NftKey, Decimal>,
         /// A vault that holds the mint badge
         random_card_mint_badge: Vault,
         /// The resource definition of all random cards
@@ -51,7 +51,7 @@ blueprint! {
                 .metadata("name", "Russ' Magic Card Collection")
                 .initial_supply_non_fungible([
                     (
-                        1,
+                        NftKey::from(1u128),
                         MagicCard {
                             color: Color::Black,
                             rarity: Rarity::MythicRare,
@@ -59,7 +59,7 @@ blueprint! {
                         },
                     ),
                     (
-                        2,
+                        NftKey::from(2u128),
                         MagicCard {
                             color: Color::Green,
                             rarity: Rarity::Rare,
@@ -67,7 +67,7 @@ blueprint! {
                         },
                     ),
                     (
-                        3,
+                        NftKey::from(3u128),
                         MagicCard {
                             color: Color::Red,
                             rarity: Rarity::Uncommon,
@@ -93,9 +93,9 @@ blueprint! {
             Self {
                 special_cards: Vault::with_bucket(special_cards_bucket),
                 special_card_prices: HashMap::from([
-                    (1, 500.into()),
-                    (2, 666.into()),
-                    (3, 123.into()),
+                    (NftKey::from(1u128), 500.into()),
+                    (NftKey::from(2u128), 666.into()),
+                    (NftKey::from(3u128), 123.into()),
                 ]),
                 random_card_mint_badge: Vault::with_bucket(random_card_mint_badge),
                 random_card_resource_def,
@@ -106,13 +106,13 @@ blueprint! {
             .instantiate()
         }
 
-        pub fn buy_special_card(&mut self, id: u128, mut payment: Bucket) -> (Bucket, Bucket) {
+        pub fn buy_special_card(&mut self, key: NftKey, mut payment: Bucket) -> (Bucket, Bucket) {
             // Take our price out of the payment bucket
-            let price = self.special_card_prices.remove(&id).unwrap();
+            let price = self.special_card_prices.remove(&key).unwrap();
             self.collected_xrd.put(payment.take(price));
 
             // Take the requested NFT
-            let nft_bucket = self.special_cards.take_nft(id);
+            let nft_bucket = self.special_cards.take_nft(&key);
 
             // Return the NFT and change
             (nft_bucket, payment)
@@ -131,7 +131,7 @@ blueprint! {
             };
             let nft_bucket = self.random_card_mint_badge.authorize(|auth| {
                 self.random_card_resource_def
-                    .mint_nft(self.random_card_id_counter, new_card, auth)
+                    .mint_nft(&NftKey::from(self.random_card_id_counter), new_card, auth)
             });
             self.random_card_id_counter += 1;
 
@@ -145,14 +145,14 @@ blueprint! {
                 "We can upgrade only one card each time"
             );
 
-            let nft_id = nft_bucket.get_nft_ids()[0];
+            let nft_key = &nft_bucket.get_nft_keys()[0];
 
             // Get and update the mutable data
-            let mut nft_data: MagicCard = nft_bucket.get_nft_data(nft_id);
+            let mut nft_data: MagicCard = nft_bucket.get_nft_data(nft_key);
             nft_data.level += 1;
 
             self.random_card_mint_badge
-                .authorize(|auth| nft_bucket.update_nft_data(nft_id, nft_data, auth));
+                .authorize(|auth| nft_bucket.update_nft_data(&nft_key, nft_data, auth));
 
             nft_bucket
         }
@@ -167,12 +167,12 @@ blueprint! {
                 "Only random cards can be fused"
             );
 
-            // Get the NFT IDs
-            let nft_ids = nft_bucket.get_nft_ids();
+            // Get the NFT keys
+            let nft_keys = nft_bucket.get_nft_keys();
 
             // Retrieve the NFT data.
-            let card1: MagicCard = nft_bucket.get_nft_data(nft_ids[0]);
-            let card2: MagicCard = nft_bucket.get_nft_data(nft_ids[1]);
+            let card1: MagicCard = nft_bucket.get_nft_data(&nft_keys[0]);
+            let card2: MagicCard = nft_bucket.get_nft_data(&nft_keys[1]);
             let new_card = Self::fuse_magic_cards(card1, card2);
 
             // Burn the original cards
@@ -183,7 +183,7 @@ blueprint! {
             // Mint a new one.
             let new_nft_bucket = self.random_card_mint_badge.authorize(|auth| {
                 self.random_card_resource_def
-                    .mint_nft(self.random_card_id_counter, new_card, auth)
+                    .mint_nft(&NftKey::from(self.random_card_id_counter), new_card, auth)
             });
             self.random_card_id_counter += 1;
 

@@ -26,7 +26,7 @@ pub enum Resource {
         resource_address: Address,
     },
     NonFungible {
-        ids: BTreeSet<u128>,
+        keys: BTreeSet<NftKey>,
         resource_address: Address,
     },
 }
@@ -35,7 +35,7 @@ pub enum Resource {
 #[derive(Debug, Clone)]
 pub enum ParseResourceError {
     InvalidAmount,
-    InvalidNftId,
+    InvalidNftKey,
     InvalidResourceAddress,
     MissingResourceAddress,
 }
@@ -62,20 +62,20 @@ impl FromStr for Resource {
                 .parse::<Address>()
                 .map_err(|_| ParseResourceError::InvalidResourceAddress)?;
             if tokens[0].starts_with('#') {
-                let mut ids = BTreeSet::<u128>::new();
-                for id in &tokens[..tokens.len() - 1] {
-                    if id.starts_with('#') {
-                        ids.insert(
-                            id[1..]
+                let mut keys = BTreeSet::<NftKey>::new();
+                for key in &tokens[..tokens.len() - 1] {
+                    if key.starts_with('#') {
+                        keys.insert(
+                            key[1..]
                                 .parse()
-                                .map_err(|_| ParseResourceError::InvalidNftId)?,
+                                .map_err(|_| ParseResourceError::InvalidNftKey)?,
                         );
                     } else {
-                        return Err(ParseResourceError::InvalidNftId);
+                        return Err(ParseResourceError::InvalidNftKey);
                     }
                 }
                 Ok(Resource::NonFungible {
-                    ids,
+                    keys,
                     resource_address,
                 })
             } else {
@@ -100,7 +100,7 @@ impl Resource {
     pub fn amount(&self) -> Decimal {
         match self {
             Resource::Fungible { amount, .. } => *amount,
-            Resource::NonFungible { ids, .. } => ids.len().into(),
+            Resource::NonFungible { keys, .. } => keys.len().into(),
         }
     }
     pub fn resource_address(&self) -> Address {
@@ -365,7 +365,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         .0
     }
 
-    fn single_authority(badge: Address, permission: u16) -> HashMap<Address, u16> {
+    fn single_authority(badge: Address, permission: u64) -> HashMap<Address, u64> {
         let mut map = HashMap::new();
         map.insert(badge, permission);
         map
@@ -385,7 +385,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                 scrypto_encode(&ResourceType::Fungible { divisibility: 18 }),
                 scrypto_encode(&metadata),
                 scrypto_encode(&(MINTABLE | BURNABLE)),
-                scrypto_encode(&0u16),
+                scrypto_encode(&0u64),
                 scrypto_encode(&Self::single_authority(
                     mint_badge_address,
                     MAY_MINT | MAY_BURN,
@@ -409,9 +409,9 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
             args: vec![
                 scrypto_encode(&ResourceType::Fungible { divisibility: 18 }),
                 scrypto_encode(&metadata),
-                scrypto_encode(&0u16),
-                scrypto_encode(&0u16),
-                scrypto_encode(&HashMap::<Address, u16>::new()),
+                scrypto_encode(&0u64),
+                scrypto_encode(&0u64),
+                scrypto_encode(&HashMap::<Address, u64>::new()),
                 scrypto_encode(&Some(NewSupply::Fungible {
                     amount: initial_supply.into(),
                 })),
@@ -434,7 +434,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                 scrypto_encode(&ResourceType::Fungible { divisibility: 0 }),
                 scrypto_encode(&metadata),
                 scrypto_encode(&(MINTABLE | BURNABLE)),
-                scrypto_encode(&0u16),
+                scrypto_encode(&0u64),
                 scrypto_encode(&Self::single_authority(
                     mint_badge_address,
                     MAY_MINT | MAY_BURN,
@@ -458,9 +458,9 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
             args: vec![
                 scrypto_encode(&ResourceType::Fungible { divisibility: 0 }),
                 scrypto_encode(&metadata),
-                scrypto_encode(&0u16),
-                scrypto_encode(&0u16),
-                scrypto_encode(&HashMap::<Address, u16>::new()),
+                scrypto_encode(&0u64),
+                scrypto_encode(&0u64),
+                scrypto_encode(&HashMap::<Address, u64>::new()),
                 scrypto_encode(&Some(NewSupply::Fungible {
                     amount: initial_supply.into(),
                 })),
@@ -550,7 +550,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                     .0
             }
             Resource::NonFungible {
-                ids,
+                keys,
                 resource_address,
             } => {
                 builder
@@ -558,7 +558,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                         component_address: account,
                         method: "withdraw_nfts".to_owned(),
                         args: vec![
-                            scrypto_encode(ids),
+                            scrypto_encode(keys),
                             scrypto_encode(resource_address),
                             scrypto_encode(&rid),
                         ],
@@ -674,6 +674,12 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
             SCRYPTO_NAME_H256 => {
                 let value = arg
                     .parse::<H256>()
+                    .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
+                Ok(scrypto_encode(&value))
+            }
+            SCRYPTO_NAME_NFT_KEY => {
+                let value = arg
+                    .parse::<NftKey>()
                     .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
                 Ok(scrypto_encode(&value))
             }
