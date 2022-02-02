@@ -667,6 +667,12 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                     .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
                 Ok(scrypto_encode(&value))
             }
+            SCRYPTO_NAME_NFT_KEY => {
+                let value = arg
+                    .parse::<NftKey>()
+                    .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
+                Ok(scrypto_encode(&value))
+            }
             SCRYPTO_NAME_BID | SCRYPTO_NAME_BUCKET => {
                 let resource_spec = parse_resource_spec(i, ty, arg)?;
 
