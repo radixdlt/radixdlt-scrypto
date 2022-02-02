@@ -58,6 +58,7 @@ pub enum TokenKind {
     BucketRef,
     LazyMap,
     Vault,
+    NftKey,
 
     /* Sub-types */
     Some,
@@ -365,6 +366,7 @@ impl Lexer {
             "BucketRef" => Ok(TokenKind::BucketRef),
             "LazyMap" => Ok(TokenKind::LazyMap),
             "Vault" => Ok(TokenKind::Vault),
+            "NftKey" => Ok(TokenKind::NftKey),
 
             "Some" => Ok(TokenKind::Some),
             "None" => Ok(TokenKind::None),

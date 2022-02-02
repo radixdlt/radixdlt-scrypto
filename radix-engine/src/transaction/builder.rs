@@ -25,7 +25,7 @@ pub enum ResourceAmount {
         resource_address: Address,
     },
     NonFungible {
-        ids: BTreeSet<u128>,
+        keys: BTreeSet<NftKey>,
         resource_address: Address,
     },
 }
@@ -34,7 +34,7 @@ pub enum ResourceAmount {
 #[derive(Debug, Clone)]
 pub enum ParseResourceAmountError {
     InvalidAmount,
-    InvalidNftId,
+    InvalidNftKey,
     InvalidResourceAddress,
     MissingResourceAddress,
 }
@@ -52,20 +52,20 @@ impl FromStr for ResourceAmount {
                 .parse::<Address>()
                 .map_err(|_| ParseResourceAmountError::InvalidResourceAddress)?;
             if tokens[0].starts_with('#') {
-                let mut ids = BTreeSet::<u128>::new();
-                for id in &tokens[..tokens.len() - 1] {
-                    if id.starts_with('#') {
-                        ids.insert(
-                            id[1..]
+                let mut keys = BTreeSet::<NftKey>::new();
+                for key in &tokens[..tokens.len() - 1] {
+                    if key.starts_with('#') {
+                        keys.insert(
+                            key[1..]
                                 .parse()
-                                .map_err(|_| ParseResourceAmountError::InvalidNftId)?,
+                                .map_err(|_| ParseResourceAmountError::InvalidNftKey)?,
                         );
                     } else {
-                        return Err(ParseResourceAmountError::InvalidNftId);
+                        return Err(ParseResourceAmountError::InvalidNftKey);
                     }
                 }
                 Ok(ResourceAmount::NonFungible {
-                    ids,
+                    keys,
                     resource_address,
                 })
             } else {
@@ -90,7 +90,7 @@ impl ResourceAmount {
     pub fn amount(&self) -> Decimal {
         match self {
             ResourceAmount::Fungible { amount, .. } => *amount,
-            ResourceAmount::NonFungible { ids, .. } => ids.len().into(),
+            ResourceAmount::NonFungible { keys, .. } => keys.len().into(),
         }
     }
     pub fn resource_address(&self) -> Address {
@@ -540,7 +540,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                     .0
             }
             ResourceAmount::NonFungible {
-                ids,
+                keys,
                 resource_address,
             } => {
                 builder
@@ -548,7 +548,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                         component_address: account,
                         method: "withdraw_nfts".to_owned(),
                         args: vec![
-                            scrypto_encode(ids),
+                            scrypto_encode(keys),
                             scrypto_encode(resource_address),
                             scrypto_encode(&rid),
                         ],
@@ -664,6 +664,12 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
             SCRYPTO_NAME_H256 => {
                 let value = arg
                     .parse::<H256>()
+                    .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
+                Ok(scrypto_encode(&value))
+            }
+            SCRYPTO_NAME_NFT_KEY => {
+                let value = arg
+                    .parse::<NftKey>()
                     .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
                 Ok(scrypto_encode(&value))
             }
