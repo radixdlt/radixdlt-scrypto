@@ -1,5 +1,5 @@
 mod memory;
 mod traits;
 
-pub use memory::InMemoryLedger;
+pub use memory::InMemorySubstateStore;
 pub use traits::SubstateStore;

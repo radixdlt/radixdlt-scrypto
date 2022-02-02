@@ -7,7 +7,7 @@ use radix_engine::transaction::*;
 use scrypto::prelude::*;
 
 fn bench_transfer(b: &mut Bencher) {
-    let mut ledger = InMemoryLedger::with_bootstrap();
+    let mut ledger = InMemorySubstateStore::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, 0, 0, false);
     let key1 = executor.new_public_key();
     let account1 = executor.new_account(key1);

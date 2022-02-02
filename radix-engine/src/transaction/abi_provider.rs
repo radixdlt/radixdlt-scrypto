@@ -29,14 +29,14 @@ pub trait AbiProvider {
 
 /// Provides ABIs for blueprints either installed during bootstrap or added manually.
 pub struct BasicAbiProvider {
-    ledger: InMemoryLedger,
+    ledger: InMemorySubstateStore,
     trace: bool,
 }
 
 impl BasicAbiProvider {
     pub fn new(trace: bool) -> Self {
         Self {
-            ledger: InMemoryLedger::with_bootstrap(),
+            ledger: InMemorySubstateStore::with_bootstrap(),
             trace,
         }
     }

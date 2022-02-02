@@ -3,9 +3,9 @@ use radix_engine::transaction::*;
 use scrypto::prelude::*;
 
 #[test]
-fn test_hello() {
+fn test_magic_card() {
     // Set up environment.
-    let mut ledger = InMemoryLedger::with_bootstrap();
+    let mut ledger = InMemorySubstateStore::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, 0, 0, false);
     let key = executor.new_public_key();
     let account = executor.new_account(key);
