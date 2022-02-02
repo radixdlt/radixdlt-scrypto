@@ -39,9 +39,9 @@ impl ResourceDef {
     pub fn new(
         resource_type: ResourceType,
         metadata: HashMap<String, String>,
-        flags: u16,
-        mutable_flags: u16,
-        authorities: HashMap<Address, u16>,
+        flags: u64,
+        mutable_flags: u64,
+        authorities: HashMap<Address, u64>,
         initial_supply: Option<NewSupply>,
     ) -> (ResourceDef, Option<Bucket>) {
         let input = CreateResourceInput {
@@ -128,7 +128,7 @@ impl ResourceDef {
     }
 
     /// Returns the feature flags.
-    pub fn flags(&self) -> u16 {
+    pub fn flags(&self) -> u64 {
         let input = GetResourceFlagsInput {
             resource_address: self.address,
         };
@@ -138,7 +138,7 @@ impl ResourceDef {
     }
 
     /// Returns the mutable feature flags.
-    pub fn mutable_flags(&self) -> u16 {
+    pub fn mutable_flags(&self) -> u64 {
         let input = GetResourceMutableFlagsInput {
             resource_address: self.address,
         };
@@ -191,7 +191,7 @@ impl ResourceDef {
     }
 
     /// Turns on feature flags.
-    pub fn enable_flags(&mut self, flags: u16, auth: BucketRef) {
+    pub fn enable_flags(&mut self, flags: u64, auth: BucketRef) {
         let input = UpdateResourceFlagsInput {
             resource_address: self.address,
             new_flags: self.flags() | flags,
@@ -201,7 +201,7 @@ impl ResourceDef {
     }
 
     /// Turns off feature flags.
-    pub fn disable_flags(&mut self, flags: u16, auth: BucketRef) {
+    pub fn disable_flags(&mut self, flags: u64, auth: BucketRef) {
         let input = UpdateResourceFlagsInput {
             resource_address: self.address,
             new_flags: self.flags() & !flags,
@@ -211,7 +211,7 @@ impl ResourceDef {
     }
 
     /// Locks feature flag settings.
-    pub fn lock_flags(&mut self, flags: u16, auth: BucketRef) {
+    pub fn lock_flags(&mut self, flags: u64, auth: BucketRef) {
         let input = UpdateResourceMutableFlagsInput {
             resource_address: self.address,
             new_mutable_flags: self.flags() & !flags,
