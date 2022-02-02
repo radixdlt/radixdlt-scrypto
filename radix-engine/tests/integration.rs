@@ -22,7 +22,7 @@ pub fn compile(name: &str) -> Vec<u8> {
 #[test]
 fn test_package() {
     let mut ledger = InMemoryLedger::with_bootstrap();
-    let mut executor = TransactionExecutor::new(&mut ledger, 0, 0, false);
+    let mut executor = TransactionExecutor::new(&mut ledger, false);
     let key = executor.new_public_key();
     let account = executor.new_account(key);
     let package = executor.publish_package(&compile("package"));
@@ -44,7 +44,7 @@ fn test_package() {
 #[test]
 fn test_context() {
     let mut ledger = InMemoryLedger::with_bootstrap();
-    let mut executor = TransactionExecutor::new(&mut ledger, 0, 0, false);
+    let mut executor = TransactionExecutor::new(&mut ledger, false);
     let key = executor.new_public_key();
     let account = executor.new_account(key);
     let package = executor.publish_package(&compile("context"));
@@ -60,7 +60,7 @@ fn test_context() {
 #[test]
 fn test_component() {
     let mut ledger = InMemoryLedger::with_bootstrap();
-    let mut executor = TransactionExecutor::new(&mut ledger, 0, 0, false);
+    let mut executor = TransactionExecutor::new(&mut ledger, false);
     let key = executor.new_public_key();
     let account = executor.new_account(key);
     let package = executor.publish_package(&compile("component"));
@@ -103,7 +103,7 @@ fn test_component() {
 #[test]
 fn test_lazy_map() {
     let mut ledger = InMemoryLedger::with_bootstrap();
-    let mut executor = TransactionExecutor::new(&mut ledger, 0, 0, false);
+    let mut executor = TransactionExecutor::new(&mut ledger, false);
     let key = executor.new_public_key();
     let account = executor.new_account(key);
     let package = executor.publish_package(&compile("lazy_map"));
@@ -125,7 +125,7 @@ fn test_lazy_map() {
 #[test]
 fn test_resource_def() {
     let mut ledger = InMemoryLedger::with_bootstrap();
-    let mut executor = TransactionExecutor::new(&mut ledger, 0, 0, false);
+    let mut executor = TransactionExecutor::new(&mut ledger, false);
     let key = executor.new_public_key();
     let account = executor.new_account(key);
     let package = executor.publish_package(&compile("resource_def"));
@@ -195,7 +195,7 @@ fn test_resource_def() {
 #[test]
 fn test_bucket() {
     let mut ledger = InMemoryLedger::with_bootstrap();
-    let mut executor = TransactionExecutor::new(&mut ledger, 0, 0, false);
+    let mut executor = TransactionExecutor::new(&mut ledger, false);
     let key = executor.new_public_key();
     let account = executor.new_account(key);
     let package = executor.publish_package(&compile("bucket"));
@@ -230,7 +230,7 @@ fn test_bucket() {
 #[test]
 fn test_badge() {
     let mut ledger = InMemoryLedger::with_bootstrap();
-    let mut executor = TransactionExecutor::new(&mut ledger, 0, 0, false);
+    let mut executor = TransactionExecutor::new(&mut ledger, false);
     let key = executor.new_public_key();
     let account = executor.new_account(key);
     let package = executor.publish_package(&compile("badge"));
@@ -250,7 +250,7 @@ fn test_badge() {
 #[test]
 fn test_call() {
     let mut ledger = InMemoryLedger::with_bootstrap();
-    let mut executor = TransactionExecutor::new(&mut ledger, 0, 0, false);
+    let mut executor = TransactionExecutor::new(&mut ledger, false);
     let key = executor.new_public_key();
     let account = executor.new_account(key);
     let package = executor.publish_package(&compile("call"));
@@ -274,7 +274,7 @@ fn test_call() {
 #[test]
 fn test_nft() {
     let mut ledger = InMemoryLedger::with_bootstrap();
-    let mut executor = TransactionExecutor::new(&mut ledger, 0, 0, false);
+    let mut executor = TransactionExecutor::new(&mut ledger, false);
     let key = executor.new_public_key();
     let account = executor.new_account(key);
     let package = executor.publish_package(&compile("nft"));

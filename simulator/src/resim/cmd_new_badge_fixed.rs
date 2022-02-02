@@ -42,9 +42,10 @@ pub struct NewBadgeFixed {
 
 impl NewBadgeFixed {
     pub fn run(&self) -> Result<(), Error> {
-        let mut runner = TransactionRunner::new()?;
-        let default_account = runner.default_account()?;
-        let default_signers = runner.default_signers()?;
+        let mut ledger = FileBasedLedger::with_bootstrap(get_data_dir()?);
+        let mut executor = TransactionExecutor::new(&mut ledger, self.trace);
+        let default_account = get_default_account()?;
+        let default_signers = get_default_signers()?;
         let mut metadata = HashMap::new();
         if let Some(symbol) = self.symbol.clone() {
             metadata.insert("symbol".to_string(), symbol);
@@ -61,11 +62,15 @@ impl NewBadgeFixed {
         if let Some(icon_url) = self.symbol.clone() {
             metadata.insert("icon_url".to_string(), icon_url);
         };
-        let transaction = TransactionBuilder::new(&runner.executor(self.trace))
+        let transaction = TransactionBuilder::new(&executor)
             .new_badge_fixed(metadata, self.total_supply)
             .call_method_with_all_resources(default_account, "deposit_batch")
             .build(self.signers.clone().unwrap_or(default_signers))
             .map_err(Error::TransactionConstructionError)?;
-        runner.run_transaction(transaction, self.trace, |receipt| println!("{:?}", receipt))
+        let receipt = executor
+            .run(transaction)
+            .map_err(Error::TransactionValidationError)?;
+        println!("{:?}", receipt);
+        receipt.result.map_err(Error::TransactionExecutionError)
     }
 }

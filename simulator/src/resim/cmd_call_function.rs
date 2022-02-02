@@ -30,10 +30,11 @@ pub struct CallFunction {
 
 impl CallFunction {
     pub fn run(&self) -> Result<(), Error> {
-        let mut runner = TransactionRunner::new()?;
-        let default_account = runner.default_account()?;
-        let default_signers = runner.default_signers()?;
-        let transaction = TransactionBuilder::new(&runner.executor(self.trace))
+        let mut ledger = FileBasedLedger::with_bootstrap(get_data_dir()?);
+        let mut executor = TransactionExecutor::new(&mut ledger, self.trace);
+        let default_account = get_default_account()?;
+        let default_signers = get_default_signers()?;
+        let transaction = TransactionBuilder::new(&executor)
             .call_function(
                 self.package_address,
                 &self.blueprint_name,
@@ -44,6 +45,10 @@ impl CallFunction {
             .call_method_with_all_resources(default_account, "deposit_batch")
             .build(self.signers.clone().unwrap_or(default_signers))
             .map_err(Error::TransactionConstructionError)?;
-        runner.run_transaction(transaction, self.trace, |receipt| println!("{:?}", receipt))
+        let receipt = executor
+            .run(transaction)
+            .map_err(Error::TransactionValidationError)?;
+        println!("{:?}", receipt);
+        receipt.result.map_err(Error::TransactionExecutionError)
     }
 }

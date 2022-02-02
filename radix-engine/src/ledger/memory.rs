@@ -13,6 +13,8 @@ pub struct InMemoryLedger {
     resource_defs: HashMap<Address, ResourceDef>,
     vaults: HashMap<Vid, Vault>,
     nfts: HashMap<(Address, u128), Nft>,
+    current_epoch: u64,
+    nonce: u64,
 }
 
 impl InMemoryLedger {
@@ -24,6 +26,8 @@ impl InMemoryLedger {
             resource_defs: HashMap::new(),
             vaults: HashMap::new(),
             nfts: HashMap::new(),
+            current_epoch: 0,
+            nonce: 0,
         }
     }
 
@@ -87,5 +91,21 @@ impl Ledger for InMemoryLedger {
 
     fn put_nft(&mut self, resource_address: Address, id: u128, nft: Nft) {
         self.nfts.insert((resource_address, id), nft);
+    }
+
+    fn get_epoch(&self) -> u64 {
+        self.current_epoch
+    }
+
+    fn set_epoch(&mut self, epoch: u64) {
+        self.current_epoch = epoch;
+    }
+
+    fn get_nonce(&mut self) -> u64 {
+        self.nonce
+    }
+
+    fn increase_nonce(&mut self) {
+        self.nonce += 1;
     }
 }

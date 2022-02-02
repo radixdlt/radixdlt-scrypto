@@ -8,7 +8,7 @@ use scrypto::prelude::*;
 
 fn bench_transfer(b: &mut Bencher) {
     let mut ledger = InMemoryLedger::with_bootstrap();
-    let mut executor = TransactionExecutor::new(&mut ledger, 0, 0, false);
+    let mut executor = TransactionExecutor::new(&mut ledger, false);
     let key1 = executor.new_public_key();
     let account1 = executor.new_account(key1);
     let key2 = executor.new_public_key();

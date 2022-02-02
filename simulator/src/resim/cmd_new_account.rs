@@ -18,22 +18,23 @@ pub struct NewAccount {
 
 impl NewAccount {
     pub fn run(&self) -> Result<(), Error> {
-        let mut runner = TransactionRunner::new()?;
-        let public_key = runner.executor(self.trace).new_public_key();
-        let account = runner.executor(self.trace).new_account(public_key);
+        let mut ledger = FileBasedLedger::with_bootstrap(get_data_dir()?);
+        let mut executor = TransactionExecutor::new(&mut ledger, self.trace);
+        let public_key = executor.new_public_key();
+        let account = executor.new_account(public_key);
 
-        println!("{}", "=".repeat(80));
         println!("A new account has been created!");
-        println!("Public key: {}", public_key.to_string().green());
         println!("Account address: {}", account.to_string().green());
-
-        let mut configs = get_configs()?;
-        if configs.default_account.is_none() {
-            println!("As this is the first account, it has been set as your default account.");
-            configs.default_account = Some((account, public_key));
+        println!("Public key: {}", public_key.to_string().green());
+        if get_configs()?.is_none() {
+            println!(
+                "No configuration found on system. will use the above account and public key as default."
+            );
+            set_configs(&Configs {
+                default_account: account,
+                default_signers: vec![public_key],
+            })?;
         }
-        println!("{}", "=".repeat(80));
-        set_configs(configs)?;
 
         Ok(())
     }

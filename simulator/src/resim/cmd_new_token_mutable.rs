@@ -42,8 +42,9 @@ pub struct NewTokenMutable {
 
 impl NewTokenMutable {
     pub fn run(&self) -> Result<(), Error> {
-        let mut runner = TransactionRunner::new()?;
-        let default_signers = runner.default_signers()?;
+        let mut ledger = FileBasedLedger::with_bootstrap(get_data_dir()?);
+        let mut executor = TransactionExecutor::new(&mut ledger, self.trace);
+        let default_signers = get_default_signers()?;
         let mut metadata = HashMap::new();
         if let Some(symbol) = self.symbol.clone() {
             metadata.insert("symbol".to_string(), symbol);
@@ -60,10 +61,14 @@ impl NewTokenMutable {
         if let Some(icon_url) = self.symbol.clone() {
             metadata.insert("icon_url".to_string(), icon_url);
         };
-        let transaction = TransactionBuilder::new(&runner.executor(self.trace))
+        let transaction = TransactionBuilder::new(&executor)
             .new_token_mutable(metadata, self.badge_address)
             .build(self.signers.clone().unwrap_or(default_signers))
             .map_err(Error::TransactionConstructionError)?;
-        runner.run_transaction(transaction, self.trace, |receipt| println!("{:?}", receipt))
+        let receipt = executor
+            .run(transaction)
+            .map_err(Error::TransactionValidationError)?;
+        println!("{:?}", receipt);
+        receipt.result.map_err(Error::TransactionExecutionError)
     }
 }

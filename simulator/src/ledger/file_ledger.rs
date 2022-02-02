@@ -19,12 +19,21 @@ const LAZY_MAPS: &str = "lazy_maps";
 const RESOURCE_DEFS: &str = "resource_defs";
 const VAULTS: &str = "vaults";
 const NFTS: &str = "nfts";
+const OTHERS: &str = "others";
 
 const FILE_EXT: &str = "sbor";
 
 impl FileBasedLedger {
     pub fn new(root: PathBuf) -> Self {
-        for folder in [PACKAGES, COMPONENTS, LAZY_MAPS, RESOURCE_DEFS, VAULTS, NFTS] {
+        for folder in [
+            PACKAGES,
+            COMPONENTS,
+            LAZY_MAPS,
+            RESOURCE_DEFS,
+            VAULTS,
+            NFTS,
+            OTHERS,
+        ] {
             let mut path = root.clone();
             path.push(folder);
             if !path.exists() {
@@ -174,6 +183,32 @@ impl Ledger for FileBasedLedger {
         Self::write(
             self.get_path(NFTS, format!("{}_{}", resource_address, id), FILE_EXT),
             Self::encode(&nft),
+        )
+    }
+
+    fn get_epoch(&self) -> u64 {
+        Self::read(self.get_path(OTHERS, "epoch", FILE_EXT))
+            .map(Self::decode)
+            .unwrap_or(0)
+    }
+
+    fn set_epoch(&mut self, epoch: u64) {
+        Self::write(
+            self.get_path(OTHERS, "epoch", FILE_EXT),
+            Self::encode(&epoch),
+        )
+    }
+
+    fn get_nonce(&mut self) -> u64 {
+        Self::read(self.get_path(OTHERS, "nonce", FILE_EXT))
+            .map(Self::decode)
+            .unwrap_or(0)
+    }
+
+    fn increase_nonce(&mut self) {
+        Self::write(
+            self.get_path(OTHERS, "nonce", FILE_EXT),
+            Self::encode(&(self.get_nonce() + 1)),
         )
     }
 }

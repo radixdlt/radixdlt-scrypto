@@ -14,7 +14,7 @@ struct TestEnv<'a, L: Ledger> {
 }
 
 fn set_up_test_env<'a, L: Ledger>(ledger: &'a mut L) -> TestEnv<'a, L> {
-    let mut executor = TransactionExecutor::new(ledger, 0, 0, false);
+    let mut executor = TransactionExecutor::new(ledger, false);
     let key = executor.new_public_key();
     let account = executor.new_account(key);
     let package = executor.publish_package(include_code!("x_perp_futures"));

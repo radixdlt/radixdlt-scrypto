@@ -6,7 +6,7 @@ use scrypto::prelude::*;
 fn test_proxy_1() {
     // Set up environment.
     let mut ledger = InMemoryLedger::with_bootstrap();
-    let mut executor = TransactionExecutor::new(&mut ledger, 0, 0, false);
+    let mut executor = TransactionExecutor::new(&mut ledger, false);
     let key = executor.new_public_key();
     let account = executor.new_account(key);
     let package = executor.publish_package(include_code!("cross_blueprint_call"));
@@ -42,7 +42,7 @@ fn test_proxy_1() {
 fn test_proxy_2() {
     // Set up environment.
     let mut ledger = InMemoryLedger::with_bootstrap();
-    let mut executor = TransactionExecutor::new(&mut ledger, 0, 0, false);
+    let mut executor = TransactionExecutor::new(&mut ledger, false);
     let key = executor.new_public_key();
     let account = executor.new_account(key);
     let package = executor.publish_package(include_code!("cross_blueprint_call"));

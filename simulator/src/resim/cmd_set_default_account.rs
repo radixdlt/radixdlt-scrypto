@@ -15,11 +15,12 @@ pub struct SetDefaultAccount {
 
 impl SetDefaultAccount {
     pub fn run(&self) -> Result<(), Error> {
-        let mut configs = get_configs()?;
-        configs.default_account = Some((self.address, self.public_key));
-        set_configs(configs)?;
+        set_configs(&Configs {
+            default_account: self.address,
+            default_signers: vec![self.public_key],
+        })?;
 
-        println!("Default account set!");
+        println!("Default account updated!");
         Ok(())
     }
 }

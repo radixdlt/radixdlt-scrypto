@@ -19,7 +19,6 @@ use crate::model::*;
 ///
 pub struct Track<'l, L: Ledger> {
     ledger: &'l mut L,
-    current_epoch: u64,
     transaction_hash: H256,
     transaction_signers: Vec<Address>,
     id_allocator: IdAllocator,
@@ -43,13 +42,11 @@ pub struct Track<'l, L: Ledger> {
 impl<'l, L: Ledger> Track<'l, L> {
     pub fn new(
         ledger: &'l mut L,
-        current_epoch: u64,
         transaction_hash: H256,
         transaction_signers: Vec<Address>,
     ) -> Self {
         Self {
             ledger,
-            current_epoch,
             transaction_hash,
             transaction_signers,
             id_allocator: IdAllocator::new(IdSpace::Application),
@@ -110,7 +107,7 @@ impl<'l, L: Ledger> Track<'l, L> {
 
     /// Returns the current epoch.
     pub fn current_epoch(&self) -> u64 {
-        self.current_epoch
+        self.ledger.get_epoch()
     }
 
     /// Returns the logs collected so far.
