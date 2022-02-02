@@ -3,8 +3,8 @@ use radix_engine::model::*;
 use radix_engine::transaction::*;
 use scrypto::prelude::*;
 
-fn fungible_amount() -> ResourceAmount {
-    ResourceAmount::Fungible {
+fn fungible_amount() -> Resource {
+    Resource::Fungible {
         amount: Decimal(100),
         resource_address: RADIX_TOKEN,
     }

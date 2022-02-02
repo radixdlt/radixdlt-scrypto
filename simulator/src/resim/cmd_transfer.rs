@@ -9,7 +9,7 @@ use crate::resim::*;
 #[derive(Parser, Debug)]
 pub struct Transfer {
     /// The resource to transfer, e.g. "amount,resource_address" or "#nft_id1,#nft_id2,resource_address"
-    resource: ResourceAmount,
+    resource: Resource,
 
     /// The recipient address
     recipient: Address,

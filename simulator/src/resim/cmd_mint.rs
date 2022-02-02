@@ -39,7 +39,7 @@ impl Mint {
         );
         let transaction = TransactionBuilder::new(&executor)
             .withdraw_from_account(
-                &ResourceAmount::Fungible {
+                &Resource::Fungible {
                     amount: 1.into(),
                     resource_address: self.badge_address,
                 },
