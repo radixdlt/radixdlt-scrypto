@@ -7,6 +7,7 @@ macro_rules! resource_flags {
     }
 }
 
+#[inline]
 pub fn resource_flags_are_valid(flags: u64) -> bool {
     (flags & RESOURCE_FLAGS_MASK) == flags
 }

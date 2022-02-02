@@ -7,6 +7,7 @@ macro_rules! resource_permissions {
     }
 }
 
+#[inline]
 pub fn resource_permissions_are_valid(flags: u64) -> bool {
     (flags & RESOURCE_PERMISSIONS_MASK) == flags
 }
