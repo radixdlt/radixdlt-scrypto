@@ -31,7 +31,7 @@ blueprint! {
         /// A vault that holds all our special cards
         special_cards: Vault,
         /// The price for each special card
-        special_card_prices: HashMap<u128, Decimal>,
+        special_card_prices: HashMap<NftKey, Decimal>,
         /// A vault that holds the mint badge
         random_card_mint_badge: Vault,
         /// The resource definition of all random cards
@@ -93,9 +93,9 @@ blueprint! {
             Self {
                 special_cards: Vault::with_bucket(special_cards_bucket),
                 special_card_prices: HashMap::from([
-                    (1, 500.into()),
-                    (2, 666.into()),
-                    (3, 123.into()),
+                    (NftKey::from(1u128), 500.into()),
+                    (NftKey::from(2u128), 666.into()),
+                    (NftKey::from(3u128), 123.into()),
                 ]),
                 random_card_mint_badge: Vault::with_bucket(random_card_mint_badge),
                 random_card_resource_def,
@@ -106,13 +106,12 @@ blueprint! {
             .instantiate()
         }
 
-        pub fn buy_special_card(&mut self, id: u128, mut payment: Bucket) -> (Bucket, Bucket) {
+        pub fn buy_special_card(&mut self, key: NftKey, mut payment: Bucket) -> (Bucket, Bucket) {
             // Take our price out of the payment bucket
-            let price = self.special_card_prices.remove(&id).unwrap();
+            let price = self.special_card_prices.remove(&key).unwrap();
             self.collected_xrd.put(payment.take(price));
 
             // Take the requested NFT
-            let key = NftKey::from(id);
             let nft_bucket = self.special_cards.take_nft(&key);
 
             // Return the NFT and change

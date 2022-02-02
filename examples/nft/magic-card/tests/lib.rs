@@ -26,7 +26,7 @@ fn test_magic_card() {
         .call_method(
             component,
             "buy_special_card",
-            vec!["2".to_owned(), format!("666,{}", RADIX_TOKEN)],
+            vec![hex::encode(2u128.to_be_bytes()), format!("666,{}", RADIX_TOKEN)],
             Some(account),
         )
         .call_method_with_all_resources(account, "deposit_batch")
