@@ -19,7 +19,8 @@ use crate::model::*;
 use crate::transaction::*;
 
 /// Represents some amount of resource.
-pub enum ResourceAmount {
+#[derive(Debug, Clone)]
+pub enum Resource {
     Fungible {
         amount: Decimal,
         resource_address: Address,
@@ -30,17 +31,26 @@ pub enum ResourceAmount {
     },
 }
 
-/// Represents an error when parsing `ResourceAmount` from string.
+/// Represents an error when parsing `Resource` from string.
 #[derive(Debug, Clone)]
-pub enum ParseResourceAmountError {
+pub enum ParseResourceError {
     InvalidAmount,
     InvalidNftKey,
     InvalidResourceAddress,
     MissingResourceAddress,
 }
 
-impl FromStr for ResourceAmount {
-    type Err = ParseResourceAmountError;
+impl fmt::Display for ParseResourceError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
+#[cfg(not(feature = "alloc"))]
+impl std::error::Error for ParseResourceError {}
+
+impl FromStr for Resource {
+    type Err = ParseResourceError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let tokens: Vec<&str> = s.trim().split(',').collect();
@@ -50,7 +60,7 @@ impl FromStr for ResourceAmount {
                 .last()
                 .unwrap()
                 .parse::<Address>()
-                .map_err(|_| ParseResourceAmountError::InvalidResourceAddress)?;
+                .map_err(|_| ParseResourceError::InvalidResourceAddress)?;
             if tokens[0].starts_with('#') {
                 let mut keys = BTreeSet::<NftKey>::new();
                 for key in &tokens[..tokens.len() - 1] {
@@ -58,47 +68,47 @@ impl FromStr for ResourceAmount {
                         keys.insert(
                             key[1..]
                                 .parse()
-                                .map_err(|_| ParseResourceAmountError::InvalidNftKey)?,
+                                .map_err(|_| ParseResourceError::InvalidNftKey)?,
                         );
                     } else {
-                        return Err(ParseResourceAmountError::InvalidNftKey);
+                        return Err(ParseResourceError::InvalidNftKey);
                     }
                 }
-                Ok(ResourceAmount::NonFungible {
+                Ok(Resource::NonFungible {
                     keys,
                     resource_address,
                 })
             } else {
                 if tokens.len() == 2 {
-                    Ok(ResourceAmount::Fungible {
+                    Ok(Resource::Fungible {
                         amount: tokens[0]
                             .parse()
-                            .map_err(|_| ParseResourceAmountError::InvalidAmount)?,
+                            .map_err(|_| ParseResourceError::InvalidAmount)?,
                         resource_address,
                     })
                 } else {
-                    Err(ParseResourceAmountError::InvalidAmount)
+                    Err(ParseResourceError::InvalidAmount)
                 }
             }
         } else {
-            Err(ParseResourceAmountError::MissingResourceAddress)
+            Err(ParseResourceError::MissingResourceAddress)
         }
     }
 }
 
-impl ResourceAmount {
+impl Resource {
     pub fn amount(&self) -> Decimal {
         match self {
-            ResourceAmount::Fungible { amount, .. } => *amount,
-            ResourceAmount::NonFungible { keys, .. } => keys.len().into(),
+            Resource::Fungible { amount, .. } => *amount,
+            Resource::NonFungible { keys, .. } => keys.len().into(),
         }
     }
     pub fn resource_address(&self) -> Address {
         match self {
-            ResourceAmount::Fungible {
+            Resource::Fungible {
                 resource_address, ..
             }
-            | ResourceAmount::NonFungible {
+            | Resource::NonFungible {
                 resource_address, ..
             } => *resource_address,
         }
@@ -519,11 +529,11 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     /// Withdraws resource from an account.
     pub fn withdraw_from_account(
         &mut self,
-        resource_spec: &ResourceAmount,
+        resource_spec: &Resource,
         account: Address,
     ) -> &mut Self {
         self.clone_bucket_ref(ECDSA_TOKEN_RID, |builder, rid| match resource_spec {
-            ResourceAmount::Fungible {
+            Resource::Fungible {
                 amount,
                 resource_address,
             } => {
@@ -539,7 +549,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                     })
                     .0
             }
-            ResourceAmount::NonFungible {
+            Resource::NonFungible {
                 keys,
                 resource_address,
             } => {
@@ -714,7 +724,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     }
 }
 
-fn parse_resource_spec(i: usize, ty: &Type, arg: &str) -> Result<ResourceAmount, BuildArgsError> {
-    ResourceAmount::from_str(arg)
+fn parse_resource_spec(i: usize, ty: &Type, arg: &str) -> Result<Resource, BuildArgsError> {
+    Resource::from_str(arg)
         .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))
 }

@@ -8,14 +8,14 @@ use scrypto::prelude::*;
 
 fn bench_transfer(b: &mut Bencher) {
     let mut ledger = InMemorySubstateStore::with_bootstrap();
-    let mut executor = TransactionExecutor::new(&mut ledger, 0, 0, false);
+    let mut executor = TransactionExecutor::new(&mut ledger, false);
     let key1 = executor.new_public_key();
     let account1 = executor.new_account(key1);
     let key2 = executor.new_public_key();
     let account2 = executor.new_account(key2);
     let transaction = TransactionBuilder::new(&executor)
         .withdraw_from_account(
-            &ResourceAmount::Fungible {
+            &Resource::Fungible {
                 amount: 1.into(),
                 resource_address: RADIX_TOKEN,
             },

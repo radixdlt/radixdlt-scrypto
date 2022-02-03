@@ -19,7 +19,6 @@ use crate::model::*;
 ///
 pub struct Track<'s, S: SubstateStore> {
     ledger: &'s mut S,
-    current_epoch: u64,
     transaction_hash: H256,
     transaction_signers: Vec<Address>,
     id_allocator: IdAllocator,
@@ -43,13 +42,11 @@ pub struct Track<'s, S: SubstateStore> {
 impl<'s, S: SubstateStore> Track<'s, S> {
     pub fn new(
         ledger: &'s mut S,
-        current_epoch: u64,
         transaction_hash: H256,
         transaction_signers: Vec<Address>,
     ) -> Self {
         Self {
             ledger,
-            current_epoch,
             transaction_hash,
             transaction_signers,
             id_allocator: IdAllocator::new(IdSpace::Application),
@@ -78,9 +75,7 @@ impl<'s, S: SubstateStore> Track<'s, S> {
             .transaction_signers
             .clone()
             .into_iter()
-            .map(|address| {
-                NftKey::new(address.to_vec())
-            })
+            .map(|address| NftKey::new(address.to_vec()))
             .collect();
         let mut process = Process::new(0, verbose, self);
 
@@ -103,7 +98,7 @@ impl<'s, S: SubstateStore> Track<'s, S> {
 
     /// Returns the current epoch.
     pub fn current_epoch(&self) -> u64 {
-        self.current_epoch
+        self.ledger.get_epoch()
     }
 
     /// Returns the logs collected so far.

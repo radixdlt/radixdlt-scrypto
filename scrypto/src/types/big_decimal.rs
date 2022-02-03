@@ -30,6 +30,15 @@ pub enum ParseBigDecimalError {
     InvalidLength,
 }
 
+impl fmt::Display for ParseBigDecimalError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
+#[cfg(not(feature = "alloc"))]
+impl std::error::Error for ParseBigDecimalError {}
+
 impl BigDecimal {
     /// Return a `BigDecimal` of 0.
     pub fn zero() -> Self {

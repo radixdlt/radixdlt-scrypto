@@ -6,10 +6,12 @@ use scrypto::prelude::*;
 fn test_hello() {
     // Set up environment.
     let mut ledger = InMemorySubstateStore::with_bootstrap();
-    let mut executor = TransactionExecutor::new(&mut ledger, 0, 0, false);
+    let mut executor = TransactionExecutor::new(&mut ledger, false);
     let key = executor.new_public_key();
     let account = executor.new_account(key);
-    let package = executor.publish_package(include_code!("hello_nft"));
+    let package = executor
+        .publish_package(include_code!("hello_nft"))
+        .unwrap();
 
     // Test the `new` function.
     let transaction1 = TransactionBuilder::new(&executor)

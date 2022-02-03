@@ -98,7 +98,7 @@ pub enum Type {
     BucketRef,
     LazyMap,
     Vault,
-    NftKey
+    NftKey,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

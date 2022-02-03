@@ -11,16 +11,16 @@ cargo install --path ../../simulator
 resim reset
 
 # new account
-out=`resim new-account | tee /dev/tty | awk '/Component:|Public key:/ {print $NF}'`
+out=`resim new-account | tee /dev/tty | awk '/Account address:|Public key:/ {print $NF}'`
 acc1_address=`echo $out | cut -d " " -f1`
 acc1_pub_key=`echo $out | cut -d " " -f2`
-out=`resim new-account | tee /dev/tty | awk '/Component:|Public key:/ {print $NF}'`
+out=`resim new-account | tee /dev/tty | awk '/Account address:|Public key:/ {print $NF}'`
 acc2_address=`echo $out | cut -d " " -f1`
 acc2_pub_key=`echo $out | cut -d " " -f2`
-out=`resim new-account | tee /dev/tty | awk '/Component:|Public key:/ {print $NF}'`
+out=`resim new-account | tee /dev/tty | awk '/Account address:|Public key:/ {print $NF}'`
 acc3_address=`echo $out | cut -d " " -f1`
 acc3_pub_key=`echo $out | cut -d " " -f2`
-out=`resim new-account | tee /dev/tty | awk '/Component:|Public key:/ {print $NF}'`
+out=`resim new-account | tee /dev/tty | awk '/Account address:|Public key:/ {print $NF}'`
 acc4_address=`echo $out | cut -d " " -f1`
 acc4_pub_key=`echo $out | cut -d " " -f2`
 

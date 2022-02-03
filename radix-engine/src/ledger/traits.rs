@@ -119,4 +119,15 @@ pub trait SubstateStore {
             );
         }
     }
+
+    fn get_epoch(&self) -> u64;
+
+    fn set_epoch(&mut self, epoch: u64);
+
+    // Before transaction hash is defined, we use the following TEMPORARY interfaces
+    // to introduce entropy for address derivation.
+
+    fn get_nonce(&self) -> u64;
+
+    fn increase_nonce(&mut self);
 }

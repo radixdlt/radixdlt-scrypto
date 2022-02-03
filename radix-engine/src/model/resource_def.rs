@@ -57,11 +57,11 @@ impl ResourceDef {
         };
 
         if !resource_flags_are_valid(flags) {
-           return Err(ResourceDefError::InvalidResourceFlags(flags));
+            return Err(ResourceDefError::InvalidResourceFlags(flags));
         }
 
         if !resource_flags_are_valid(mutable_flags) {
-           return Err(ResourceDefError::InvalidResourceFlags(mutable_flags));
+            return Err(ResourceDefError::InvalidResourceFlags(mutable_flags));
         }
 
         for (_, permission) in &resource_def.authorities {
@@ -174,8 +174,8 @@ impl ResourceDef {
 
         let changed = self.flags ^ new_flags;
 
-        if !resource_flags_are_valid (changed) {
-           return Err(ResourceDefError::InvalidResourceFlags(changed));
+        if !resource_flags_are_valid(changed) {
+            return Err(ResourceDefError::InvalidResourceFlags(changed));
         }
 
         if self.mutable_flags | changed != self.mutable_flags {
@@ -200,7 +200,7 @@ impl ResourceDef {
 
         let changed = self.mutable_flags ^ new_mutable_flags;
 
-        if !resource_flags_are_valid (changed) {
+        if !resource_flags_are_valid(changed) {
             return Err(ResourceDefError::InvalidResourceFlags(changed));
         }
 

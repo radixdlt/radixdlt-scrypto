@@ -34,8 +34,8 @@ echo "Building examples..."
 (cd examples/core/managed-access; cargo build --target wasm32-unknown-unknown --release; cargo test --release)
 (cd examples/core/no-std-lib; cargo build --target wasm32-unknown-unknown --release)
 (cd examples/defi; ./demo.sh)
-(cd examples/nft/magic-card; cargo test --release)
-(cd examples/nft/sporting-event; cargo test --release)
+(cd examples/nft/magic-card; cargo build --target wasm32-unknown-unknown --release; cargo test --release)
+(cd examples/nft/sporting-event; cargo build --target wasm32-unknown-unknown --release; cargo test --release)
 
 echo "Running simulator..."
 (cd simulator; bash ./tests/resim.sh)

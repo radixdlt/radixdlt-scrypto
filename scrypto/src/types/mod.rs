@@ -4,9 +4,9 @@ mod big_decimal;
 mod decimal;
 mod h256;
 mod mid;
+mod nft_key;
 mod rid;
 mod vid;
-mod nft_key;
 
 pub use address::{
     Address, ParseAddressError, ACCOUNT_PACKAGE, ECDSA_TOKEN, RADIX_TOKEN, SYSTEM_COMPONENT,
@@ -17,9 +17,9 @@ pub use big_decimal::{BigDecimal, ParseBigDecimalError};
 pub use decimal::{Decimal, ParseDecimalError};
 pub use h256::{ParseH256Error, H256};
 pub use mid::{Mid, ParseMidError};
+pub use nft_key::{NftKey, ParseNftKeyError};
 pub use rid::{ParseRidError, Rid};
 pub use vid::{ParseVidError, Vid};
-pub use nft_key::{ParseNftKeyError, NftKey};
 
 use crate::rust::vec::Vec;
 

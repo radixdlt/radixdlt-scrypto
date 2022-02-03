@@ -1,60 +1,36 @@
-use clap::{crate_version, App, Arg, ArgMatches};
+use clap::Parser;
 use radix_engine::model::*;
-use radix_engine::transaction::*;
+use scrypto::types::*;
 
-use crate::ledger::*;
 use crate::resim::*;
+use std::path::PathBuf;
 
-const ARG_TRANSACTION_MANIFEST: &str = "MANIFEST";
+/// Compile and run a transaction manifest
+#[derive(Parser, Debug)]
+pub struct Run {
+    /// the path to a transaction manifest file
+    path: PathBuf,
 
-const ARG_TRACE: &str = "TRACE";
-const ARG_SIGNERS: &str = "SIGNERS";
+    /// The transaction signers
+    #[clap(short, long)]
+    signers: Option<Vec<Address>>,
 
-/// Constructs a `run` subcommand.
-pub fn make_run<'a>() -> App<'a> {
-    App::new(CMD_RUN)
-        .about("Runs a transaction manifest")
-        .version(crate_version!())
-        .arg(
-            Arg::new(ARG_TRANSACTION_MANIFEST)
-                .help("Specify the transaction manifest path.")
-                .required(true),
-        )
-        // options
-        .arg(Arg::new(ARG_TRACE).long("trace").help("Turn on tracing."))
-        .arg(
-            Arg::new(ARG_SIGNERS)
-                .long("signers")
-                .takes_value(true)
-                .help("Specify the transaction signers, separated by comma."),
-        )
+    /// Turn on tracing
+    #[clap(short, long)]
+    trace: bool,
 }
 
-/// Handles a `run` request.
-pub fn handle_run(matches: &ArgMatches) -> Result<(), Error> {
-    let manifest_path = match_path(matches, ARG_TRANSACTION_MANIFEST)?;
-    let trace = matches.is_present(ARG_TRACE);
-    let signers = match_signers(matches, ARG_SIGNERS)?;
-
-    let manifest = std::fs::read_to_string(manifest_path).map_err(Error::IOError)?;
-    let mut transaction = transaction_manifest::compile(&manifest).map_err(Error::CompileError)?;
-    transaction.instructions.push(Instruction::End {
-        signatures: signers,
-    });
-
-    let mut configs = get_configs()?;
-    let mut ledger = RadixEngineDB::with_bootstrap(get_data_dir()?);
-    let mut executor =
-        TransactionExecutor::new(&mut ledger, configs.current_epoch, configs.nonce, trace);
-    let receipt = executor
-        .run(transaction)
-        .map_err(Error::TransactionValidationError)?;
-
-    println!("{:?}", receipt);
-    if receipt.result.is_ok() {
-        configs.nonce = executor.nonce();
-        set_configs(configs)?;
+impl Run {
+    pub fn run(&self) -> Result<(), Error> {
+        let mut ledger = RadixEngineDB::with_bootstrap(get_data_dir()?);
+        let mut executor = TransactionExecutor::new(&mut ledger, self.trace);
+        let default_signers = get_default_signers()?;
+        let manifest = std::fs::read_to_string(&self.path).map_err(Error::IOError)?;
+        let mut transaction =
+            transaction_manifest::compile(&manifest).map_err(Error::CompileError)?;
+        transaction.instructions.push(Instruction::End {
+            signatures: self.signers.clone().unwrap_or(default_signers),
+        });
+        process_transaction(transaction, &mut executor, &None)
     }
-
-    receipt.result.map_err(Error::TransactionExecutionError)
 }

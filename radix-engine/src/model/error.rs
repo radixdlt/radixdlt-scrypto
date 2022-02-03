@@ -23,7 +23,7 @@ pub enum WasmValidationError {
 }
 
 /// Represents an error when parsing a value from a byte array.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum DataValidationError {
     DecodeError(DecodeError),
     InvalidTypeId(u8),

@@ -74,7 +74,10 @@ pub fn dump_component<T: SubstateStore>(address: Address, ledger: &T) -> Result<
     }
 }
 
-fn dump_lazy_map<T: SubstateStore>(mid: Mid, ledger: &T) -> Result<(Vec<Mid>, Vec<Vid>), DisplayError> {
+fn dump_lazy_map<T: SubstateStore>(
+    mid: Mid,
+    ledger: &T,
+) -> Result<(Vec<Mid>, Vec<Vid>), DisplayError> {
     let mut referenced_maps = Vec::new();
     let mut referenced_vaults = Vec::new();
     let map = ledger.get_lazy_map(mid).unwrap();
@@ -139,7 +142,10 @@ fn dump_resources<T: SubstateStore>(vaults: &HashSet<Vid>, ledger: &T) -> Result
 }
 
 /// Dump a resource definition into console.
-pub fn dump_resource_def<T: SubstateStore>(address: Address, ledger: &T) -> Result<(), DisplayError> {
+pub fn dump_resource_def<T: SubstateStore>(
+    address: Address,
+    ledger: &T,
+) -> Result<(), DisplayError> {
     let resource_def = ledger.get_resource_def(address);
     match resource_def {
         Some(r) => {

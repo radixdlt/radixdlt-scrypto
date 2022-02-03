@@ -1,93 +1,87 @@
-use clap::{crate_version, App, Arg, ArgMatches};
+use clap::Parser;
 use std::fs;
-use std::path::*;
+use std::path::PathBuf;
 
 use crate::scrypto::*;
 
-const ARG_NAME: &str = "NAME";
-const ARG_PATH: &str = "PATH";
-const ARG_LOCAL: &str = "TRACE";
+/// Create a Scrypto package
+#[derive(Parser, Debug)]
+pub struct NewPackage {
+    /// The package name
+    package_name: String,
 
-/// Constructs a `new-package` subcommand.
-pub fn make_new_package<'a>() -> App<'a> {
-    App::new(CMD_NEW_PACKAGE)
-        .about("Creates a package")
-        .version(crate_version!())
-        .arg(
-            Arg::new(ARG_NAME)
-                .help("Specifies the package name.")
-                .required(true),
-        )
-        // options
-        .arg(
-            Arg::new(ARG_PATH)
-                .long("path")
-                .takes_value(true)
-                .help("Specifies the package dir.")
-                .required(false),
-        )
-        .arg(
-            Arg::new(ARG_LOCAL)
-                .long("local")
-                .help("Uses local Scrypto as dependency."),
-        )
+    /// The package directory
+    #[clap(long)]
+    path: Option<PathBuf>,
+
+    /// Use local Scrypto as dependency
+    #[clap(short, long)]
+    local: bool,
 }
 
-/// Handles a `new-package` request.
-pub fn handle_new_package(matches: &ArgMatches) -> Result<(), Error> {
-    let pkg_name = matches
-        .value_of(ARG_NAME)
-        .ok_or_else(|| Error::MissingArgument(ARG_NAME.to_owned()))?;
-    let lib_name = pkg_name.replace("-", "_");
-    let pkg_dir = matches.value_of(ARG_PATH).unwrap_or(pkg_name);
-    let simulator_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    let (sbor, scrypto, radix_engine) = if matches.is_present(ARG_LOCAL) {
-        let scrypto_dir = simulator_dir
-            .parent()
-            .unwrap()
-            .to_string_lossy()
-            .replace("\\", "/");
-        (
-            format!("{{ path = \"{}/sbor\" }}", scrypto_dir),
-            format!("{{ path = \"{}/scrypto\" }}", scrypto_dir),
-            format!("{{ path = \"{}/radix-engine\" }}", scrypto_dir),
-        )
-    } else {
-        let s = format!(
-            "{{ git = \"https://github.com/radixdlt/radixdlt-scrypto\", tag = \"v{}\" }}",
-            env!("CARGO_PKG_VERSION")
-        );
-        (s.clone(), s.clone(), s)
-    };
+impl NewPackage {
+    pub fn run(&self) -> Result<(), Error> {
+        let lib_name = self.package_name.replace("-", "_");
+        let path = self
+            .path
+            .clone()
+            .unwrap_or(PathBuf::from(&self.package_name));
+        let simulator_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        let (sbor, scrypto, radix_engine) = if self.local {
+            let scrypto_dir = simulator_dir
+                .parent()
+                .unwrap()
+                .to_string_lossy()
+                .replace("\\", "/");
+            (
+                format!("{{ path = \"{}/sbor\" }}", scrypto_dir),
+                format!("{{ path = \"{}/scrypto\" }}", scrypto_dir),
+                format!("{{ path = \"{}/radix-engine\" }}", scrypto_dir),
+            )
+        } else {
+            let s = format!(
+                "{{ git = \"https://github.com/radixdlt/radixdlt-scrypto\", tag = \"v{}\" }}",
+                env!("CARGO_PKG_VERSION")
+            );
+            (s.clone(), s.clone(), s)
+        };
 
-    if PathBuf::from(pkg_dir).exists() {
-        Err(Error::PackageAlreadyExists)
-    } else {
-        fs::create_dir_all(format!("{}/src", pkg_dir)).map_err(Error::IOError)?;
-        fs::create_dir_all(format!("{}/tests", pkg_dir)).map_err(Error::IOError)?;
+        if path.exists() {
+            Err(Error::PackageAlreadyExists)
+        } else {
+            fs::create_dir_all(child_of(&path, "src")).map_err(Error::IOError)?;
+            fs::create_dir_all(child_of(&path, "test")).map_err(Error::IOError)?;
 
-        fs::write(
-            PathBuf::from(format!("{}/Cargo.toml", pkg_dir)),
-            include_str!("../../../assets/template/Cargo.toml")
-                .replace("${package_name}", pkg_name)
-                .replace("${sbor}", &sbor)
-                .replace("${scrypto}", &scrypto)
-                .replace("${radix-engine}", &radix_engine),
-        )
-        .map_err(Error::IOError)?;
+            fs::write(
+                child_of(&path, "Cargo.toml"),
+                include_str!("../../../assets/template/Cargo.toml")
+                    .replace("${package_name}", &self.package_name)
+                    .replace("${sbor}", &sbor)
+                    .replace("${scrypto}", &scrypto)
+                    .replace("${radix-engine}", &radix_engine),
+            )
+            .map_err(Error::IOError)?;
 
-        fs::write(
-            PathBuf::from(format!("{}/src/lib.rs", pkg_dir)),
-            include_str!("../../../assets/template/src/lib.rs"),
-        )
-        .map_err(Error::IOError)?;
+            fs::write(
+                child_of(&child_of(&path, "src"), "lib.rs"),
+                include_str!("../../../assets/template/src/lib.rs"),
+            )
+            .map_err(Error::IOError)?;
 
-        fs::write(
-            PathBuf::from(format!("{}/tests/lib.rs", pkg_dir)),
-            include_str!("../../../assets/template/tests/lib.rs").replace("${lib_name}", &lib_name),
-        )
-        .map_err(Error::IOError)?;
+            fs::write(
+                child_of(&child_of(&path, "test"), "lib.rs"),
+                include_str!("../../../assets/template/tests/lib.rs")
+                    .replace("${lib_name}", &lib_name),
+            )
+            .map_err(Error::IOError)?;
 
-        Ok(())
+            Ok(())
+        }
     }
+}
+
+fn child_of(path: &PathBuf, name: &str) -> PathBuf {
+    let mut p = path.clone();
+    p.push(name);
+    p
 }

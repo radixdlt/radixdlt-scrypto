@@ -4,7 +4,7 @@ const RESOURCE_PERMISSIONS_MASK: u64 = 0xffff_ffff_0000_0000;
 macro_rules! resource_permissions {
     ( $f:expr ) => {
         ($f as u64) << RESOURCE_PERMISSIONS_SHIFT
-    }
+    };
 }
 
 #[inline]

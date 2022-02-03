@@ -1,15 +1,15 @@
-use core::fmt::{Display, Formatter};
-use core::fmt;
-use crate::rust::str::FromStr;
+use crate::buffer::{SCRYPTO_NAME_NFT_KEY, SCRYPTO_TYPE_NFT_KEY};
 use crate::rust::borrow::ToOwned;
+use crate::rust::str::FromStr;
 use crate::rust::vec;
 use crate::rust::vec::Vec;
+use core::fmt;
+use core::fmt::{Display, Formatter};
 use sbor::{describe::Type, *};
-use crate::buffer::{SCRYPTO_NAME_NFT_KEY, SCRYPTO_TYPE_NFT_KEY};
 
 #[derive(Debug, Clone)]
 pub enum ParseNftKeyError {
-    InvalidHex(hex::FromHexError)
+    InvalidHex(hex::FromHexError),
 }
 
 /// Represents a key for an NFT resource

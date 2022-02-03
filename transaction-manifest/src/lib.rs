@@ -1,7 +1,10 @@
 pub mod ast;
+pub mod decompiler;
 pub mod generator;
 pub mod lexer;
 pub mod parser;
+
+pub use decompiler::{decompile, DecompileError};
 
 use radix_engine::model::Transaction;
 

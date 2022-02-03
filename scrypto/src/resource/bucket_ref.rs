@@ -45,7 +45,11 @@ impl BucketRef {
         }
     }
 
-    pub fn check_nft_key<A: Into<ResourceDef>, F: Fn(&NftKey) -> bool>(self, resource_def: A, f: F) {
+    pub fn check_nft_key<A: Into<ResourceDef>, F: Fn(&NftKey) -> bool>(
+        self,
+        resource_def: A,
+        f: F,
+    ) {
         if self.contains(resource_def) && self.get_nft_keys().iter().any(f) {
             self.drop();
         } else {

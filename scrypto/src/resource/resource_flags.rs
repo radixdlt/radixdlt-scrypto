@@ -4,7 +4,7 @@ const RESOURCE_FLAGS_MASK: u64 = 0xffff_ffff;
 macro_rules! resource_flags {
     ( $f:expr ) => {
         ($f as u64) << RESOURCE_FLAGS_SHIFT
-    }
+    };
 }
 
 #[inline]

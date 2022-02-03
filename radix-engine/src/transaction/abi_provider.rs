@@ -69,11 +69,10 @@ impl AbiProvider for BasicAbiProvider {
     ) -> Result<abi::Blueprint, RuntimeError> {
         // Deterministic transaction context
         let mut ledger = self.ledger.clone();
-        let current_epoch = 0;
         let transaction_hash = sha256([]);
 
         // Start a process and run abi generator
-        let mut track = Track::new(&mut ledger, current_epoch, transaction_hash, Vec::new());
+        let mut track = Track::new(&mut ledger, transaction_hash, Vec::new());
         let mut proc = track.start_process(self.trace);
         let output: (Vec<abi::Function>, Vec<abi::Method>) = proc
             .call_abi(package_address, blueprint_name.as_ref())

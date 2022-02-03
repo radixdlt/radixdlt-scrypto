@@ -1,10 +1,8 @@
 use std::io;
-use std::num::ParseIntError;
 
 use radix_engine::model::*;
 use radix_engine::transaction::*;
 use sbor::*;
-use scrypto::types::*;
 
 use crate::ledger::*;
 use crate::utils::*;
@@ -14,23 +12,9 @@ use crate::utils::*;
 pub enum Error {
     NoDefaultAccount,
 
-    MissingHomeDirectory,
+    HomeDirUnknown,
 
-    MissingSubCommand,
-
-    MissingArgument(String),
-
-    InvalidAddress(ParseAddressError),
-
-    InvalidDecimal(ParseDecimalError),
-
-    InvalidResourceAmount(ParseResourceAmountError),
-
-    InvalidNumber(ParseIntError),
-
-    InvalidConfig(sbor::DecodeError),
-
-    InvalidSignerPublicKey,
+    ConfigDecodingError(sbor::DecodeError),
 
     IOError(io::Error),
 
@@ -46,7 +30,11 @@ pub enum Error {
 
     TransactionExecutionError(RuntimeError),
 
+    AbiExportError(RuntimeError),
+
     LedgerDumpError(DisplayError),
 
     CompileError(transaction_manifest::CompileError),
+
+    DecompileError(transaction_manifest::DecompileError),
 }

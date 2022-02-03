@@ -22,10 +22,10 @@ pub fn compile(name: &str) -> Vec<u8> {
 #[test]
 fn test_package() {
     let mut ledger = InMemorySubstateStore::with_bootstrap();
-    let mut executor = TransactionExecutor::new(&mut ledger, 0, 0, false);
+    let mut executor = TransactionExecutor::new(&mut ledger, false);
     let key = executor.new_public_key();
     let account = executor.new_account(key);
-    let package = executor.publish_package(&compile("package"));
+    let package = executor.publish_package(&compile("package")).unwrap();
 
     let transaction1 = TransactionBuilder::new(&executor)
         .call_function(
@@ -44,10 +44,10 @@ fn test_package() {
 #[test]
 fn test_context() {
     let mut ledger = InMemorySubstateStore::with_bootstrap();
-    let mut executor = TransactionExecutor::new(&mut ledger, 0, 0, false);
+    let mut executor = TransactionExecutor::new(&mut ledger, false);
     let key = executor.new_public_key();
     let account = executor.new_account(key);
-    let package = executor.publish_package(&compile("context"));
+    let package = executor.publish_package(&compile("context")).unwrap();
 
     let transaction1 = TransactionBuilder::new(&executor)
         .call_function(package, "ContextTest", "query", vec![], Some(account))
@@ -60,10 +60,10 @@ fn test_context() {
 #[test]
 fn test_component() {
     let mut ledger = InMemorySubstateStore::with_bootstrap();
-    let mut executor = TransactionExecutor::new(&mut ledger, 0, 0, false);
+    let mut executor = TransactionExecutor::new(&mut ledger, false);
     let key = executor.new_public_key();
     let account = executor.new_account(key);
-    let package = executor.publish_package(&compile("component"));
+    let package = executor.publish_package(&compile("component")).unwrap();
 
     // Create component
     let transaction1 = TransactionBuilder::new(&executor)
@@ -103,10 +103,10 @@ fn test_component() {
 #[test]
 fn test_lazy_map() {
     let mut ledger = InMemorySubstateStore::with_bootstrap();
-    let mut executor = TransactionExecutor::new(&mut ledger, 0, 0, false);
+    let mut executor = TransactionExecutor::new(&mut ledger, false);
     let key = executor.new_public_key();
     let account = executor.new_account(key);
-    let package = executor.publish_package(&compile("lazy_map"));
+    let package = executor.publish_package(&compile("lazy_map")).unwrap();
 
     let transaction = TransactionBuilder::new(&executor)
         .call_function(
@@ -125,10 +125,10 @@ fn test_lazy_map() {
 #[test]
 fn test_resource_def() {
     let mut ledger = InMemorySubstateStore::with_bootstrap();
-    let mut executor = TransactionExecutor::new(&mut ledger, 0, 0, false);
+    let mut executor = TransactionExecutor::new(&mut ledger, false);
     let key = executor.new_public_key();
     let account = executor.new_account(key);
-    let package = executor.publish_package(&compile("resource_def"));
+    let package = executor.publish_package(&compile("resource_def")).unwrap();
 
     let transaction = TransactionBuilder::new(&executor)
         .call_function(
@@ -240,10 +240,10 @@ fn test_resource_def() {
 #[test]
 fn test_bucket() {
     let mut ledger = InMemorySubstateStore::with_bootstrap();
-    let mut executor = TransactionExecutor::new(&mut ledger, 0, 0, false);
+    let mut executor = TransactionExecutor::new(&mut ledger, false);
     let key = executor.new_public_key();
     let account = executor.new_account(key);
-    let package = executor.publish_package(&compile("bucket"));
+    let package = executor.publish_package(&compile("bucket")).unwrap();
 
     let transaction = TransactionBuilder::new(&executor)
         .call_function(package, "BucketTest", "combine", vec![], Some(account))
@@ -275,10 +275,10 @@ fn test_bucket() {
 #[test]
 fn test_badge() {
     let mut ledger = InMemorySubstateStore::with_bootstrap();
-    let mut executor = TransactionExecutor::new(&mut ledger, 0, 0, false);
+    let mut executor = TransactionExecutor::new(&mut ledger, false);
     let key = executor.new_public_key();
     let account = executor.new_account(key);
-    let package = executor.publish_package(&compile("badge"));
+    let package = executor.publish_package(&compile("badge")).unwrap();
 
     let transaction = TransactionBuilder::new(&executor)
         .call_function(package, "BadgeTest", "combine", vec![], Some(account))
@@ -295,10 +295,10 @@ fn test_badge() {
 #[test]
 fn test_call() {
     let mut ledger = InMemorySubstateStore::with_bootstrap();
-    let mut executor = TransactionExecutor::new(&mut ledger, 0, 0, false);
+    let mut executor = TransactionExecutor::new(&mut ledger, false);
     let key = executor.new_public_key();
     let account = executor.new_account(key);
-    let package = executor.publish_package(&compile("call"));
+    let package = executor.publish_package(&compile("call")).unwrap();
 
     let transaction = TransactionBuilder::new(&executor)
         .call_function(package, "MoveTest", "move_bucket", vec![], Some(account))
@@ -319,10 +319,10 @@ fn test_call() {
 #[test]
 fn test_nft() {
     let mut ledger = InMemorySubstateStore::with_bootstrap();
-    let mut executor = TransactionExecutor::new(&mut ledger, 0, 0, false);
+    let mut executor = TransactionExecutor::new(&mut ledger, false);
     let key = executor.new_public_key();
     let account = executor.new_account(key);
-    let package = executor.publish_package(&compile("nft"));
+    let package = executor.publish_package(&compile("nft")).unwrap();
 
     let transaction = TransactionBuilder::new(&executor)
         .call_function(

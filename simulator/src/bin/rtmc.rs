@@ -1,9 +1,9 @@
 #[cfg(windows)]
 use colored::*;
-use simulator::resim;
+use simulator::rtmc;
 
-pub fn main() -> Result<(), resim::Error> {
+pub fn main() -> Result<(), rtmc::Error> {
     #[cfg(windows)]
     control::set_virtual_terminal(true).unwrap();
-    resim::run()
+    rtmc::run()
 }

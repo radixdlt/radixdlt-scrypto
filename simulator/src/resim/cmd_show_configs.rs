@@ -1,30 +1,28 @@
-use clap::{crate_version, App, ArgMatches};
+use clap::Parser;
 use colored::*;
 
 use crate::resim::*;
 
-/// Constructs a `show-configs` subcommand.
-pub fn make_show_configs<'a>() -> App<'a> {
-    App::new(CMD_SHOW_CONFIGS)
-        .about("Displays configurations")
-        .version(crate_version!())
-}
+/// Show simulator configurations
+#[derive(Parser, Debug)]
+pub struct ShowConfigs {}
 
-/// Handles a `show-configs` request.
-pub fn handle_show_configs(_matches: &ArgMatches) -> Result<(), Error> {
-    let configs = get_configs()?;
-
-    println!(
-        "{}: {:?}",
-        "Default Account".green().bold(),
-        configs.default_account
-    );
-    println!(
-        "{}: {}",
-        "Current Epoch".green().bold(),
-        configs.current_epoch
-    );
-    println!("{}: {}", "Nonce".green().bold(), configs.nonce);
-
-    Ok(())
+impl ShowConfigs {
+    pub fn run(&self) -> Result<(), Error> {
+        if let Some(configs) = get_configs()? {
+            println!(
+                "{}: {:?}",
+                "Default Account".green().bold(),
+                configs.default_account
+            );
+            println!(
+                "{}: {:?}",
+                "Default Signers".green().bold(),
+                configs.default_signers
+            );
+        } else {
+            println!("No configuration found");
+        }
+        Ok(())
+    }
 }

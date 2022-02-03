@@ -13,8 +13,6 @@ use crate::transaction::*;
 /// An executor that runs transactions.
 pub struct TransactionExecutor<'l, L: SubstateStore> {
     ledger: &'l mut L,
-    current_epoch: u64,
-    nonce: u64,
     trace: bool,
 }
 
@@ -53,45 +51,25 @@ impl<'l, L: SubstateStore> AbiProvider for TransactionExecutor<'l, L> {
 }
 
 impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
-    pub fn new(ledger: &'l mut L, current_epoch: u64, nonce: u64, trace: bool) -> Self {
-        Self {
-            ledger,
-            current_epoch,
-            nonce,
-            trace,
-        }
+    pub fn new(ledger: &'l mut L, trace: bool) -> Self {
+        Self { ledger, trace }
     }
 
-    /// Returns the underlying ledger.
+    /// Returns an immutable reference to the ledger.
     pub fn ledger(&self) -> &L {
         self.ledger
     }
 
-    /// Returns the current epoch.
-    pub fn current_epoch(&self) -> u64 {
-        self.current_epoch
-    }
-
-    /// Sets the current epoch.
-    pub fn set_current_epoch(&mut self, current_epoch: u64) {
-        self.current_epoch = current_epoch;
-    }
-
-    /// Returns the transaction nonce.
-    pub fn nonce(&self) -> u64 {
-        self.nonce
-    }
-
-    /// Set the transaction epoch.
-    pub fn set_nonce(&self) -> u64 {
-        self.nonce
+    /// Returns a mutable reference to the ledger.
+    pub fn ledger_mut(&mut self) -> &mut L {
+        self.ledger
     }
 
     /// Generates a new public key.
     pub fn new_public_key(&mut self) -> Address {
         let mut raw = [0u8; 33];
-        raw[1..].copy_from_slice(sha256(self.nonce.to_string()).as_ref());
-        self.nonce += 1;
+        raw[1..].copy_from_slice(sha256(self.ledger.get_nonce().to_string()).as_ref());
+        self.ledger.increase_nonce();
         Address::PublicKey(raw)
     }
 
@@ -117,16 +95,21 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
     }
 
     /// Publishes a package.
-    pub fn publish_package(&mut self, code: &[u8]) -> Address {
-        self.run(
-            TransactionBuilder::new(self)
-                .publish_package(code)
-                .build(Vec::new())
-                .unwrap(),
-        )
-        .unwrap()
-        .package(0)
-        .unwrap()
+    pub fn publish_package(&mut self, code: &[u8]) -> Result<Address, RuntimeError> {
+        let receipt = self
+            .run(
+                TransactionBuilder::new(self)
+                    .publish_package(code)
+                    .build(Vec::new())
+                    .unwrap(),
+            )
+            .unwrap();
+
+        if receipt.result.is_ok() {
+            Ok(receipt.package(0).unwrap())
+        } else {
+            Err(receipt.result.err().unwrap())
+        }
     }
 
     /// Publishes a package to a specified address.
@@ -151,21 +134,18 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
         validate_transaction(&transaction)
     }
 
-    pub fn execute(&mut self, validated_transaction: ValidatedTransaction) -> Receipt {
+    pub fn execute(&mut self, transaction: ValidatedTransaction) -> Receipt {
         #[cfg(not(feature = "alloc"))]
         let now = std::time::Instant::now();
 
-        let mut track = Track::new(
-            self.ledger,
-            self.current_epoch,
-            sha256(self.nonce.to_string()),
-            validated_transaction.signers.clone(),
-        );
+        let transaction_hash = sha256(self.ledger.get_nonce().to_string());
+        sha256(self.ledger.get_nonce().to_string());
+        let mut track = Track::new(self.ledger, transaction_hash, transaction.signers.clone());
         let mut proc = track.start_process(self.trace);
 
         let mut error: Option<RuntimeError> = None;
         let mut outputs = vec![];
-        for inst in validated_transaction.clone().instructions {
+        for inst in transaction.clone().instructions {
             let result = match inst {
                 ValidatedInstruction::TakeFromWorktop {
                     amount,
@@ -214,11 +194,13 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
             Ok(_) => None,
             Err(e) => Some(e),
         });
+        let new_entities = track.new_entities().to_vec();
+        let logs = track.logs().clone();
 
         // commit state updates
         if error.is_none() {
             track.commit();
-            self.nonce += 1;
+            self.ledger.increase_nonce();
         }
 
         #[cfg(feature = "alloc")]
@@ -227,14 +209,14 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
         let execution_time = Some(now.elapsed().as_millis());
 
         Receipt {
-            transaction: validated_transaction,
+            transaction,
             result: match error {
                 Some(error) => Err(error),
                 None => Ok(()),
             },
             outputs,
-            logs: track.logs().clone(),
-            new_entities: track.new_entities().to_vec(),
+            logs,
+            new_entities,
             execution_time,
         }
     }

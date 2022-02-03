@@ -1,77 +1,50 @@
-use clap::{crate_version, App, Arg, ArgMatches};
+use clap::Parser;
 use radix_engine::transaction::*;
+use scrypto::types::*;
 
-use crate::ledger::*;
 use crate::resim::*;
 
-const ARG_COMPONENT: &str = "COMPONENT_ADDRESS";
-const ARG_METHOD: &str = "METHOD";
-const ARG_ARGS: &str = "ARGS";
+/// Call a method
+#[derive(Parser, Debug)]
+pub struct CallMethod {
+    /// The address of the component that the method belongs to
+    component_address: Address,
 
-const ARG_TRACE: &str = "TRACE";
-const ARG_SIGNERS: &str = "SIGNERS";
+    /// The method name
+    method_name: String,
 
-/// Constructs a `call-method` subcommand.
-pub fn make_call_method<'a>() -> App<'a> {
-    App::new(CMD_CALL_METHOD)
-        .about("Calls a method")
-        .version(crate_version!())
-        .arg(
-            Arg::new(ARG_COMPONENT)
-                .help("Specify the component address.")
-                .required(true),
-        )
-        .arg(
-            Arg::new(ARG_METHOD)
-                .help("Specify the method name.")
-                .required(true),
-        )
-        .arg(
-            Arg::new(ARG_ARGS)
-            .help("Specify the arguments, e.g. \"5\", \"hello\", \"amount,resource_address\" for Bucket, or \"#id1,#id2,..,resource_address\" for NFT Bucket.")
-                .multiple_values(true),
-        )
-        // options
-        .arg(
-            Arg::new(ARG_TRACE)
-                .long("trace")
-                .help("Turn on tracing."),
-        )
-        .arg(
-            Arg::new(ARG_SIGNERS)
-                .long("signers")
-                .takes_value(true)
-                .help("Specify the transaction signers, separated by comma."),
-        )
+    /// The call arguments
+    arguments: Vec<String>,
+
+    /// The transaction signers
+    #[clap(short, long)]
+    signers: Option<Vec<Address>>,
+
+    /// Output a transaction manifest without execution
+    #[clap(short, long)]
+    manifest: Option<PathBuf>,
+
+    /// Turn on tracing
+    #[clap(short, long)]
+    trace: bool,
 }
 
-/// Handles a `call-method` request.
-pub fn handle_call_method(matches: &ArgMatches) -> Result<(), Error> {
-    let component = match_address(matches, ARG_COMPONENT)?;
-    let method = match_string(matches, ARG_METHOD)?;
-    let args = match_args(matches, ARG_ARGS)?;
-    let trace = matches.is_present(ARG_TRACE);
-    let signers = match_signers(matches, ARG_SIGNERS)?;
-
-    let mut configs = get_configs()?;
-    let account = configs.default_account.ok_or(Error::NoDefaultAccount)?;
-    let mut ledger = RadixEngineDB::with_bootstrap(get_data_dir()?);
-    let mut executor =
-        TransactionExecutor::new(&mut ledger, configs.current_epoch, configs.nonce, trace);
-    let transaction = TransactionBuilder::new(&executor)
-        .call_method(component, &method, args, Some(account.0))
-        .call_method_with_all_resources(account.0, "deposit_batch")
-        .build(signers)
-        .map_err(Error::TransactionConstructionError)?;
-    let receipt = executor
-        .run(transaction)
-        .map_err(Error::TransactionValidationError)?;
-
-    println!("{:?}", receipt);
-    if receipt.result.is_ok() {
-        configs.nonce = executor.nonce();
-        set_configs(configs)?;
+impl CallMethod {
+    pub fn run(&self) -> Result<(), Error> {
+        let mut ledger = RadixEngineDB::with_bootstrap(get_data_dir()?);
+        let mut executor = TransactionExecutor::new(&mut ledger, self.trace);
+        let default_account = get_default_account()?;
+        let default_signers = get_default_signers()?;
+        let transaction = TransactionBuilder::new(&executor)
+            .call_method(
+                self.component_address,
+                &self.method_name,
+                self.arguments.clone(),
+                Some(default_account),
+            )
+            .call_method_with_all_resources(default_account, "deposit_batch")
+            .build(self.signers.clone().unwrap_or(default_signers))
+            .map_err(Error::TransactionConstructionError)?;
+        process_transaction(transaction, &mut executor, &self.manifest)
     }
-
-    receipt.result.map_err(Error::TransactionExecutionError)
 }

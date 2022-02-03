@@ -1,9 +1,9 @@
-use std::fs;
-use std::process::Command;
 use radix_engine::ledger::*;
 use radix_engine::model::*;
 use radix_engine::transaction::*;
 use scrypto::prelude::*;
+use std::fs;
+use std::process::Command;
 
 pub fn compile(name: &str) -> Vec<u8> {
     Command::new("cargo")
@@ -16,12 +16,11 @@ pub fn compile(name: &str) -> Vec<u8> {
         name,
         name.replace("-", "_")
     ))
-        .unwrap()
+    .unwrap()
 }
 
-
-fn fungible_amount() -> ResourceAmount {
-    ResourceAmount::Fungible {
+fn fungible_amount() -> Resource {
+    Resource::Fungible {
         amount: Decimal(100),
         resource_address: RADIX_TOKEN,
     }
@@ -31,7 +30,7 @@ fn fungible_amount() -> ResourceAmount {
 fn can_withdraw_from_my_account() {
     // Arrange
     let mut ledger = InMemorySubstateStore::with_bootstrap();
-    let mut executor = TransactionExecutor::new(&mut ledger, 0, 0, false);
+    let mut executor = TransactionExecutor::new(&mut ledger, false);
     let key = executor.new_public_key();
     let account = executor.new_account(key);
     let other_key = executor.new_public_key();
@@ -53,8 +52,8 @@ fn can_withdraw_from_my_account() {
 fn can_withdraw_nft_from_my_account() {
     // Arrange
     let mut ledger = InMemorySubstateStore::with_bootstrap();
-    let mut executor = TransactionExecutor::new(&mut ledger, 0, 0, false);
-    let package = executor.publish_package(&compile("nft"));
+    let mut executor = TransactionExecutor::new(&mut ledger, false);
+    let package = executor.publish_package(&compile("nft")).unwrap();
     let key = executor.new_public_key();
     let account = executor.new_account(key);
     let other_key = executor.new_public_key();
@@ -72,9 +71,9 @@ fn can_withdraw_nft_from_my_account() {
         .unwrap();
     let receipt = executor.run(transaction).unwrap();
     let nft_address = receipt.resource_def(0).unwrap().to_owned();
-    let non_fungible_amount = ResourceAmount::NonFungible {
+    let non_fungible_amount = Resource::NonFungible {
         keys: BTreeSet::from([NftKey::from(1)]),
-        resource_address: nft_address
+        resource_address: nft_address,
     };
 
     // Act
@@ -93,7 +92,7 @@ fn can_withdraw_nft_from_my_account() {
 fn cannot_withdraw_from_other_account() {
     // Arrange
     let mut ledger = InMemorySubstateStore::with_bootstrap();
-    let mut executor = TransactionExecutor::new(&mut ledger, 0, 0, false);
+    let mut executor = TransactionExecutor::new(&mut ledger, false);
     let key = executor.new_public_key();
     let account = executor.new_account(key);
     let other_key = executor.new_public_key();
@@ -115,7 +114,7 @@ fn cannot_withdraw_from_other_account() {
 fn account_to_bucket_to_account() {
     // Arrange
     let mut ledger = InMemorySubstateStore::with_bootstrap();
-    let mut executor = TransactionExecutor::new(&mut ledger, 0, 0, false);
+    let mut executor = TransactionExecutor::new(&mut ledger, false);
     let key = executor.new_public_key();
     let account = executor.new_account(key);
     let amount = fungible_amount();

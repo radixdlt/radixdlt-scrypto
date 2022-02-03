@@ -20,6 +20,15 @@ pub enum ParseMidError {
     InvalidLength(usize),
 }
 
+impl fmt::Display for ParseMidError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
+#[cfg(not(feature = "alloc"))]
+impl std::error::Error for ParseMidError {}
+
 impl Mid {
     pub fn to_vec(&self) -> Vec<u8> {
         let mut vec = Vec::with_capacity(36);

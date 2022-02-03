@@ -1078,7 +1078,10 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
                 for (key, data) in entries {
                     if self.track.get_nft(resource_address, &key).is_some() {
-                        return Err(RuntimeError::NftAlreadyExists(resource_address, key.clone()));
+                        return Err(RuntimeError::NftAlreadyExists(
+                            resource_address,
+                            key.clone(),
+                        ));
                     }
 
                     let immutable_data = self.process_nft_data(&data.0)?;
@@ -1323,7 +1326,10 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let data = self.process_nft_data(&input.new_mutable_data)?;
         self.track
             .get_nft_mut(input.resource_address, &input.key)
-            .ok_or(RuntimeError::NftNotFound(input.resource_address, input.key.clone()))?
+            .ok_or(RuntimeError::NftNotFound(
+                input.resource_address,
+                input.key.clone(),
+            ))?
             .set_mutable_data(data.raw)
             .map_err(RuntimeError::NftError)?;
 
@@ -1337,7 +1343,10 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let nft = self
             .track
             .get_nft(input.resource_address, &input.key)
-            .ok_or(RuntimeError::NftNotFound(input.resource_address, input.key.clone()))?;
+            .ok_or(RuntimeError::NftNotFound(
+                input.resource_address,
+                input.key.clone(),
+            ))?;
 
         Ok(GetNftDataOutput {
             immutable_data: nft.immutable_data(),
@@ -1892,7 +1901,9 @@ impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
                         self.handle(args, Self::handle_get_bucket_resource_address)
                     }
                     TAKE_NFT_FROM_BUCKET => self.handle(args, Self::handle_take_nft_from_bucket),
-                    GET_NFT_KEYS_IN_BUCKET => self.handle(args, Self::handle_get_nft_keys_in_bucket),
+                    GET_NFT_KEYS_IN_BUCKET => {
+                        self.handle(args, Self::handle_get_nft_keys_in_bucket)
+                    }
 
                     CREATE_BUCKET_REF => self.handle(args, Self::handle_create_bucket_ref),
                     DROP_BUCKET_REF => self.handle(args, Self::handle_drop_bucket_ref),
