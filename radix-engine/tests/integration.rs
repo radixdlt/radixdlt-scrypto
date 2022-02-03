@@ -25,7 +25,7 @@ fn test_package() {
     let mut executor = TransactionExecutor::new(&mut ledger, false);
     let key = executor.new_public_key();
     let account = executor.new_account(key);
-    let package = executor.publish_package(&compile("package"));
+    let package = executor.publish_package(&compile("package")).unwrap();
 
     let transaction1 = TransactionBuilder::new(&executor)
         .call_function(
@@ -47,7 +47,7 @@ fn test_context() {
     let mut executor = TransactionExecutor::new(&mut ledger, false);
     let key = executor.new_public_key();
     let account = executor.new_account(key);
-    let package = executor.publish_package(&compile("context"));
+    let package = executor.publish_package(&compile("context")).unwrap();
 
     let transaction1 = TransactionBuilder::new(&executor)
         .call_function(package, "ContextTest", "query", vec![], Some(account))
@@ -63,7 +63,7 @@ fn test_component() {
     let mut executor = TransactionExecutor::new(&mut ledger, false);
     let key = executor.new_public_key();
     let account = executor.new_account(key);
-    let package = executor.publish_package(&compile("component"));
+    let package = executor.publish_package(&compile("component")).unwrap();
 
     // Create component
     let transaction1 = TransactionBuilder::new(&executor)
@@ -106,7 +106,7 @@ fn test_lazy_map() {
     let mut executor = TransactionExecutor::new(&mut ledger, false);
     let key = executor.new_public_key();
     let account = executor.new_account(key);
-    let package = executor.publish_package(&compile("lazy_map"));
+    let package = executor.publish_package(&compile("lazy_map")).unwrap();
 
     let transaction = TransactionBuilder::new(&executor)
         .call_function(
@@ -128,7 +128,7 @@ fn test_resource_def() {
     let mut executor = TransactionExecutor::new(&mut ledger, false);
     let key = executor.new_public_key();
     let account = executor.new_account(key);
-    let package = executor.publish_package(&compile("resource_def"));
+    let package = executor.publish_package(&compile("resource_def")).unwrap();
 
     let transaction = TransactionBuilder::new(&executor)
         .call_function(
@@ -243,7 +243,7 @@ fn test_bucket() {
     let mut executor = TransactionExecutor::new(&mut ledger, false);
     let key = executor.new_public_key();
     let account = executor.new_account(key);
-    let package = executor.publish_package(&compile("bucket"));
+    let package = executor.publish_package(&compile("bucket")).unwrap();
 
     let transaction = TransactionBuilder::new(&executor)
         .call_function(package, "BucketTest", "combine", vec![], Some(account))
@@ -278,7 +278,7 @@ fn test_badge() {
     let mut executor = TransactionExecutor::new(&mut ledger, false);
     let key = executor.new_public_key();
     let account = executor.new_account(key);
-    let package = executor.publish_package(&compile("badge"));
+    let package = executor.publish_package(&compile("badge")).unwrap();
 
     let transaction = TransactionBuilder::new(&executor)
         .call_function(package, "BadgeTest", "combine", vec![], Some(account))
@@ -298,7 +298,7 @@ fn test_call() {
     let mut executor = TransactionExecutor::new(&mut ledger, false);
     let key = executor.new_public_key();
     let account = executor.new_account(key);
-    let package = executor.publish_package(&compile("call"));
+    let package = executor.publish_package(&compile("call")).unwrap();
 
     let transaction = TransactionBuilder::new(&executor)
         .call_function(package, "MoveTest", "move_bucket", vec![], Some(account))
@@ -322,7 +322,7 @@ fn test_nft() {
     let mut executor = TransactionExecutor::new(&mut ledger, false);
     let key = executor.new_public_key();
     let account = executor.new_account(key);
-    let package = executor.publish_package(&compile("nft"));
+    let package = executor.publish_package(&compile("nft")).unwrap();
 
     let transaction = TransactionBuilder::new(&executor)
         .call_function(

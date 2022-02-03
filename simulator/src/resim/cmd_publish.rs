@@ -1,6 +1,4 @@
 use clap::Parser;
-use radix_engine::ledger::SubstateStore;
-use radix_engine::model::*;
 use radix_engine::transaction::*;
 use scrypto::types::*;
 use std::ffi::OsStr;
@@ -40,25 +38,21 @@ impl Publish {
         })
         .map_err(Error::IOError)?;
 
+        let mut ledger = RadixEngineDB::with_bootstrap(get_data_dir()?);
+        let mut executor = TransactionExecutor::new(&mut ledger, self.trace);
         if let Some(address) = self.address.clone() {
             // Overwrite package
-            let mut ledger = RadixEngineDB::with_bootstrap(get_data_dir()?);
-            ledger.put_package(address, Package::new(code));
+            executor.overwrite_package(address, &code);
             println!("Package updated!");
             Ok(())
         } else {
-            let mut ledger = RadixEngineDB::with_bootstrap(get_data_dir()?);
-            let mut executor = TransactionExecutor::new(&mut ledger, self.trace);
-            let default_signers = get_default_signers()?;
-            let transaction = TransactionBuilder::new(&executor)
-                .publish_package(&code)
-                .build(self.signers.clone().unwrap_or(default_signers))
-                .map_err(Error::TransactionConstructionError)?;
-            let receipt = executor
-                .run(transaction)
-                .map_err(Error::TransactionValidationError)?;
-            println!("{:?}", receipt);
-            receipt.result.map_err(Error::TransactionExecutionError)
+            match executor.publish_package(&code) {
+                Ok(address) => {
+                    println!("Package: {}", address);
+                    Ok(())
+                }
+                Err(error) => Err(Error::TransactionExecutionError(error)),
+            }
         }
     }
 }

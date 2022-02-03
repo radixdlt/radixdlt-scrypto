@@ -9,7 +9,9 @@ fn test_proxy_1() {
     let mut executor = TransactionExecutor::new(&mut ledger, false);
     let key = executor.new_public_key();
     let account = executor.new_account(key);
-    let package = executor.publish_package(include_code!("cross_blueprint_call"));
+    let package = executor
+        .publish_package(include_code!("cross_blueprint_call"))
+        .unwrap();
 
     // Airdrop blueprint.
     executor.overwrite_package(
@@ -45,7 +47,9 @@ fn test_proxy_2() {
     let mut executor = TransactionExecutor::new(&mut ledger, false);
     let key = executor.new_public_key();
     let account = executor.new_account(key);
-    let package = executor.publish_package(include_code!("cross_blueprint_call"));
+    let package = executor
+        .publish_package(include_code!("cross_blueprint_call"))
+        .unwrap();
 
     // Airdrop blueprint.
     executor.overwrite_package(

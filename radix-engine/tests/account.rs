@@ -53,7 +53,7 @@ fn can_withdraw_nft_from_my_account() {
     // Arrange
     let mut ledger = InMemorySubstateStore::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, false);
-    let package = executor.publish_package(&compile("nft"));
+    let package = executor.publish_package(&compile("nft")).unwrap();
     let key = executor.new_public_key();
     let account = executor.new_account(key);
     let other_key = executor.new_public_key();

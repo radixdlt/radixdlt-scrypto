@@ -95,16 +95,21 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
     }
 
     /// Publishes a package.
-    pub fn publish_package(&mut self, code: &[u8]) -> Address {
-        self.run(
-            TransactionBuilder::new(self)
-                .publish_package(code)
-                .build(Vec::new())
-                .unwrap(),
-        )
-        .unwrap()
-        .package(0)
-        .unwrap()
+    pub fn publish_package(&mut self, code: &[u8]) -> Result<Address, RuntimeError> {
+        let receipt = self
+            .run(
+                TransactionBuilder::new(self)
+                    .publish_package(code)
+                    .build(Vec::new())
+                    .unwrap(),
+            )
+            .unwrap();
+
+        if receipt.result.is_ok() {
+            Ok(receipt.package(0).unwrap())
+        } else {
+            Err(receipt.result.err().unwrap())
+        }
     }
 
     /// Publishes a package to a specified address.

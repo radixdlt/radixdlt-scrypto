@@ -9,7 +9,9 @@ fn test_withdraw_all() {
     let mut executor = TransactionExecutor::new(&mut ledger, false);
     let key = executor.new_public_key();
     let account = executor.new_account(key);
-    let package = executor.publish_package(include_code!("managed_access"));
+    let package = executor
+        .publish_package(include_code!("managed_access"))
+        .unwrap();
 
     // Publish FlatAdmin
     executor.overwrite_package(

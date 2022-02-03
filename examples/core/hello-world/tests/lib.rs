@@ -9,7 +9,9 @@ fn test_hello() {
     let mut executor = TransactionExecutor::new(&mut ledger, false);
     let key = executor.new_public_key();
     let account = executor.new_account(key);
-    let package = executor.publish_package(include_code!("hello_world"));
+    let package = executor
+        .publish_package(include_code!("hello_world"))
+        .unwrap();
 
     // Test the `new` function.
     let transaction1 = TransactionBuilder::new(&executor)
