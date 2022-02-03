@@ -6,8 +6,6 @@ use scrypto::types::*;
 #[derive(Debug, Clone)]
 pub enum DecompileError {
     IdValidatorError(IdValidatorError),
-    InvalidBucketId(Bid),
-    InvalidBucketRefId(Rid),
     DataValidationError(DataValidationError),
 }
 
@@ -48,10 +46,11 @@ pub fn decompile(tx: &Transaction) -> Result<String, DecompileError> {
                     .drop_bucket(bid)
                     .map_err(DecompileError::IdValidatorError)?;
                 buf.push_str(&format!(
-                    "RETURN_TO_WORKTOP Bucket(\"{}\");\n",
+                    "RETURN_TO_WORKTOP Bucket({});\n",
                     buckets
                         .get(&bid)
-                        .ok_or(DecompileError::InvalidBucketId(bid))?
+                        .map(|name| format!("\"{}\"", name))
+                        .unwrap_or(format!("{}u32", bid.0))
                 ));
             }
             Instruction::AssertWorktopContains {
@@ -70,10 +69,11 @@ pub fn decompile(tx: &Transaction) -> Result<String, DecompileError> {
                 let name = format!("badge{}", bucket_refs.len() + 1);
                 bucket_refs.insert(rid, name.clone());
                 buf.push_str(&format!(
-                    "CREATE_BUCKET_REF Bucket(\"{}\") BucketRef(\"{}\");\n",
+                    "CREATE_BUCKET_REF Bucket({}) BucketRef(\"{}\");\n",
                     buckets
                         .get(&bid)
-                        .ok_or(DecompileError::InvalidBucketId(bid))?,
+                        .map(|name| format!("\"{}\"", name))
+                        .unwrap_or(format!("{}u32", bid.0)),
                     name
                 ));
             }
@@ -84,10 +84,11 @@ pub fn decompile(tx: &Transaction) -> Result<String, DecompileError> {
                 let name = format!("badge{}", bucket_refs.len() + 1);
                 bucket_refs.insert(rid2, name.clone());
                 buf.push_str(&format!(
-                    "CLONE_BUCKET_REF BucketRef(\"{}\") BucketRef(\"{}\");\n",
+                    "CLONE_BUCKET_REF BucketRef({}) BucketRef(\"{}\");\n",
                     bucket_refs
                         .get(&rid)
-                        .ok_or(DecompileError::InvalidBucketRefId(rid))?,
+                        .map(|name| format!("\"{}\"", name))
+                        .unwrap_or(format!("{}u32", rid.0)),
                     name
                 ));
             }
@@ -96,10 +97,11 @@ pub fn decompile(tx: &Transaction) -> Result<String, DecompileError> {
                     .drop_bucket_ref(rid)
                     .map_err(DecompileError::IdValidatorError)?;
                 buf.push_str(&format!(
-                    "DROP_BUCKET_REF BucketRef(\"{}\");\n",
+                    "DROP_BUCKET_REF BucketRef({});\n",
                     bucket_refs
                         .get(&rid)
-                        .ok_or(DecompileError::InvalidBucketRefId(rid))?
+                        .map(|name| format!("\"{}\"", name))
+                        .unwrap_or(format!("{}u32", rid.0)),
                 ));
             }
             Instruction::CallFunction {
