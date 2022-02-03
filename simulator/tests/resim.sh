@@ -39,3 +39,6 @@ $resim show $package
 $resim show $component
 $resim show $account
 $resim show $account2
+
+$resim new-badge-fixed 1 --name 'MintBadge' --manifest ./target/temp.rtm
+cat ./target/temp.rtm

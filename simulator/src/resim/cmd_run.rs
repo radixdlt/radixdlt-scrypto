@@ -31,10 +31,6 @@ impl Run {
         transaction.instructions.push(Instruction::End {
             signatures: self.signers.clone().unwrap_or(default_signers),
         });
-        let receipt = executor
-            .run(transaction)
-            .map_err(Error::TransactionValidationError)?;
-        println!("{:?}", receipt);
-        receipt.result.map_err(Error::TransactionExecutionError)
+        process_transaction(transaction, &mut executor, &None)
     }
 }

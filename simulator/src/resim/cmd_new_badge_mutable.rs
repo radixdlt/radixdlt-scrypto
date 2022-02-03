@@ -31,6 +31,10 @@ pub struct NewBadgeMutable {
     #[clap(long)]
     icon_url: Option<String>,
 
+    /// Output a transaction manifest without execution
+    #[clap(short, long)]
+    manifest: Option<PathBuf>,
+
     /// The transaction signers
     #[clap(short, long)]
     signers: Option<Vec<Address>>,
@@ -49,26 +53,22 @@ impl NewBadgeMutable {
         if let Some(symbol) = self.symbol.clone() {
             metadata.insert("symbol".to_string(), symbol);
         }
-        if let Some(name) = self.symbol.clone() {
+        if let Some(name) = self.name.clone() {
             metadata.insert("name".to_string(), name);
         }
-        if let Some(description) = self.symbol.clone() {
+        if let Some(description) = self.description.clone() {
             metadata.insert("description".to_string(), description);
         }
-        if let Some(url) = self.symbol.clone() {
+        if let Some(url) = self.url.clone() {
             metadata.insert("url".to_string(), url);
         }
-        if let Some(icon_url) = self.symbol.clone() {
+        if let Some(icon_url) = self.icon_url.clone() {
             metadata.insert("icon_url".to_string(), icon_url);
         };
         let transaction = TransactionBuilder::new(&executor)
             .new_badge_mutable(metadata, self.badge_address)
             .build(self.signers.clone().unwrap_or(default_signers))
             .map_err(Error::TransactionConstructionError)?;
-        let receipt = executor
-            .run(transaction)
-            .map_err(Error::TransactionValidationError)?;
-        println!("{:?}", receipt);
-        receipt.result.map_err(Error::TransactionExecutionError)
+        process_transaction(transaction, &mut executor, &self.manifest)
     }
 }

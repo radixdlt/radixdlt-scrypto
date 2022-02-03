@@ -48,7 +48,7 @@ impl Publish {
         } else {
             match executor.publish_package(&code) {
                 Ok(address) => {
-                    println!("Package: {}", address);
+                    println!("Success! New Package: {}", address);
                     Ok(())
                 }
                 Err(error) => Err(Error::TransactionExecutionError(error)),

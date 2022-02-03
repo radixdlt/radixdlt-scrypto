@@ -35,4 +35,6 @@ pub enum Error {
     LedgerDumpError(DisplayError),
 
     CompileError(transaction_manifest::CompileError),
+
+    DecompileError(transaction_manifest::DecompileError),
 }

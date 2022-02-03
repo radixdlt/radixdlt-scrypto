@@ -13,6 +13,10 @@ pub struct Transfer {
     /// The recipient address
     recipient: Address,
 
+    /// Output a transaction manifest without execution
+    #[clap(short, long)]
+    manifest: Option<PathBuf>,
+
     /// The transaction signers
     #[clap(short, long)]
     signers: Option<Vec<Address>>,
@@ -33,10 +37,6 @@ impl Transfer {
             .call_method_with_all_resources(self.recipient, "deposit_batch")
             .build(self.signers.clone().unwrap_or(default_signers))
             .map_err(Error::TransactionConstructionError)?;
-        let receipt = executor
-            .run(transaction)
-            .map_err(Error::TransactionValidationError)?;
-        println!("{:?}", receipt);
-        receipt.result.map_err(Error::TransactionExecutionError)
+        process_transaction(transaction, &mut executor, &self.manifest)
     }
 }

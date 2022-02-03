@@ -41,7 +41,12 @@ pub use config::*;
 pub use error::*;
 
 use clap::{Parser, Subcommand};
+use radix_engine::ledger::*;
+use radix_engine::model::*;
 use radix_engine::transaction::*;
+use std::fs;
+use std::path::PathBuf;
+use transaction_manifest::decompile;
 
 use crate::ledger::*;
 
@@ -97,5 +102,25 @@ pub fn run() -> Result<(), Error> {
         Command::ShowLedger(cmd) => cmd.run(),
         Command::Show(cmd) => cmd.run(),
         Command::Transfer(cmd) => cmd.run(),
+    }
+}
+
+pub fn process_transaction<L: SubstateStore>(
+    transaction: Transaction,
+    executor: &mut TransactionExecutor<L>,
+    manifest: &Option<PathBuf>,
+) -> Result<(), Error> {
+    match manifest {
+        Some(path) => {
+            let decompiled = decompile(&transaction).map_err(Error::DecompileError)?;
+            fs::write(path, decompiled).map_err(Error::IOError)
+        }
+        None => {
+            let receipt = executor
+                .run(transaction)
+                .map_err(Error::TransactionValidationError)?;
+            println!("{:?}", receipt);
+            receipt.result.map_err(Error::TransactionExecutionError)
+        }
     }
 }
