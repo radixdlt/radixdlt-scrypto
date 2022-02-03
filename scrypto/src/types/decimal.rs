@@ -108,6 +108,44 @@ from_int!(i64);
 from_int!(i128);
 from_int!(isize);
 
+impl From<&str> for Decimal {
+    fn from(val: &str) -> Self {
+        Self::from_str(&val).unwrap()
+    }
+}
+
+impl From<String> for Decimal {
+    fn from(val: String) -> Self {
+        Self::from_str(&val).unwrap()
+    }
+}
+
+impl From<bool> for Decimal {
+    fn from(val: bool) -> Self {
+        if val {
+            Self::from(1)
+        } else {
+            Self::from(0)
+        } 
+    }
+}
+
+#[macro_export]
+macro_rules! dec {
+    
+    ($x:expr) => {
+       Decimal::from($x) 
+    };
+    
+    ($int:expr, $exponent:expr) => {
+        if (($exponent) / 1i128) < 0 {
+            Decimal(($int) * PRECISION).div(10f64.powf(-($exponent) as f64) as i128)
+        } else {
+            Decimal(($int) * PRECISION).mul(10f64.powf(($exponent) as f64) as i128)
+        }
+    };
+}
+
 //=====
 // ADD
 //=====
@@ -488,5 +526,69 @@ mod tests {
     fn test_one_and_zero() {
         assert_eq!(Decimal::one().to_string(), "1");
         assert_eq!(Decimal::zero().to_string(), "0");
+    }
+
+    #[test]
+    fn test_dec_string_decimal() {
+        assert_eq!(dec!("1.123456789012345678").to_string(), "1.123456789012345678");
+        assert_eq!(dec!("-5.6").to_string(), "-5.6");
+    }
+
+    #[test]
+    fn test_dec_string_decimal_exp() {
+        assert_eq!(dec!("1.12345678901234567".to_string() + "8").to_string(), "1.123456789012345678");
+        assert_eq!(dec!("-".to_string() + "5.6").to_string(), "-5.6");
+    }
+
+    #[test]
+    fn test_dec_string() {
+        assert_eq!(dec!("1").to_string(), "1");
+        assert_eq!(dec!("0").to_string(), "0");
+    }
+
+    #[test]
+    fn test_dec_int() {
+        assert_eq!(dec!(1).to_string(), "1");
+        assert_eq!(dec!(5).to_string(), "5");
+    }
+
+    #[test]
+    fn test_dec_int_expr() {
+        assert_eq!(dec!(1 + 2 - 2).to_string(), "1");
+        assert_eq!(dec!(5 * 3 / 3).to_string(), "5");
+    }
+
+    #[test]
+    fn test_dec_bool() {
+        assert_eq!((dec!(true)).to_string(), "1");
+        assert_eq!((dec!(false)).to_string(), "0");
+    }
+
+    #[test]
+    fn test_dec_bool_expr() {
+        assert_eq!((dec!(if 4 < 5 {true} else {false})).to_string(), "1");
+        assert_eq!((dec!(if -2 > 3 {true} else {false})).to_string(), "0");
+    }
+
+    #[test]
+    fn test_dec_rational() {
+        assert_eq!((dec!(11235, 0)).to_string(), "11235");
+        assert_eq!((dec!(11235, -2)).to_string(), "112.35");
+        assert_eq!((dec!(11235, 2)).to_string(), "1123500");
+
+        assert_eq!((dec!(112000000000000000001, -18)).to_string(),
+            "112.000000000000000001");
+        
+        assert_eq!((dec!(112000000000000000001, -18)).to_string(),
+            "112.000000000000000001");
+    }
+
+    #[test]
+    fn test_dec_rational_expr() {
+        let a = 3;
+        assert_eq!((dec!(a + 2, 5)).to_string(), "500000");
+        assert_eq!((dec!(3 + 2, 5)).to_string(), "500000");
+        assert_eq!((dec!(100 + 12, 0 - 2)).to_string(), "1.12");
+        assert_eq!((dec!(a, a - 5)).to_string(), "0.03");
     }
 }
