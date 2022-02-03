@@ -3,6 +3,8 @@ use std::path::PathBuf;
 use radix_engine::ledger::*;
 use radix_engine::model::*;
 use rocksdb::{DBWithThreadMode, Direction, IteratorMode, SingleThreaded, DB};
+use sbor::*;
+use scrypto::buffer::*;
 use scrypto::types::*;
 
 pub struct RadixEngineDB {
@@ -36,105 +38,97 @@ impl RadixEngineDB {
         )
     }
 
-    fn list_items(&self, start: Address, end: Address) -> Vec<Address> {
-        let mut iter = self
-            .db
-            .iterator(IteratorMode::From(&start.to_vec(), Direction::Forward));
+    fn list_items<K: Encode + Decode>(&self, start: K, end: K) -> Vec<K> {
+        let mut iter = self.db.iterator(IteratorMode::From(
+            &scrypto_encode(&start),
+            Direction::Forward,
+        ));
         let mut items = Vec::new();
         while let Some(kv) = iter.next() {
-            if kv.0.as_ref() > &end.to_vec() {
+            if kv.0.as_ref() > &scrypto_encode(&end) {
                 break;
             }
-            items.push(Address::try_from(kv.0.as_ref()).unwrap());
+            items.push(scrypto_decode(kv.0.as_ref()).unwrap());
         }
         items
     }
 
-    pub fn encode<T: sbor::Encode>(v: &T) -> Vec<u8> {
-        sbor::encode_with_type(Vec::with_capacity(512), v)
+    fn read<K: Encode, V: Decode>(&self, key: K) -> Option<V> {
+        self.db
+            .get(scrypto_encode(&key))
+            .unwrap()
+            .map(|bytes| scrypto_decode(&bytes).unwrap())
     }
 
-    pub fn decode<T: sbor::Decode>(bytes: Vec<u8>) -> T {
-        sbor::decode_with_type(&bytes).unwrap()
+    fn write<K: Encode, V: Encode>(&self, key: K, value: V) {
+        self.db
+            .put(scrypto_encode(&key), scrypto_encode(&value))
+            .unwrap();
     }
 }
 
 impl SubstateStore for RadixEngineDB {
     fn get_resource_def(&self, address: Address) -> Option<ResourceDef> {
-        self.db.get(address.to_vec()).unwrap().map(Self::decode)
+        self.read(address)
     }
 
     fn put_resource_def(&mut self, address: Address, resource_def: ResourceDef) {
-        self.db
-            .put(address.to_vec(), Self::encode(&resource_def))
-            .unwrap()
+        self.write(address, resource_def)
     }
 
     fn get_package(&self, address: Address) -> Option<Package> {
-        self.db.get(address.to_vec()).unwrap().map(Self::decode)
+        self.read(address)
     }
 
     fn put_package(&mut self, address: Address, package: Package) {
-        self.db
-            .put(address.to_vec(), Self::encode(&package))
-            .unwrap()
+        self.write(address, package)
     }
 
     fn get_component(&self, address: Address) -> Option<Component> {
-        self.db.get(address.to_vec()).unwrap().map(Self::decode)
+        self.read(address)
     }
 
     fn put_component(&mut self, address: Address, component: Component) {
-        self.db
-            .put(address.to_vec(), Self::encode(&component))
-            .unwrap()
+        self.write(address, component)
     }
 
     fn get_lazy_map(&self, mid: Mid) -> Option<LazyMap> {
-        self.db.get(mid.to_vec()).unwrap().map(Self::decode)
+        self.read(mid)
     }
 
     fn put_lazy_map(&mut self, mid: Mid, lazy_map: LazyMap) {
-        self.db.put(mid.to_vec(), Self::encode(&lazy_map)).unwrap()
+        self.write(mid, lazy_map)
     }
 
     fn get_vault(&self, vid: Vid) -> Option<Vault> {
-        self.db.get(vid.to_vec()).unwrap().map(Self::decode)
+        self.read(vid)
     }
 
     fn put_vault(&mut self, vid: Vid, vault: Vault) {
-        self.db.put(vid.to_vec(), Self::encode(&vault)).unwrap()
+        self.write(vid, vault)
     }
 
     fn get_nft(&self, resource_address: Address, key: &NftKey) -> Option<Nft> {
-        let mut nft_id = resource_address.to_vec();
-        nft_id.append(&mut key.to_vec());
-        self.db.get(nft_id.to_vec()).unwrap().map(Self::decode)
+        self.read((resource_address, key.clone()))
     }
 
     fn put_nft(&mut self, resource_address: Address, key: &NftKey, nft: Nft) {
-        let mut nft_id = resource_address.to_vec();
-        nft_id.append(&mut key.to_vec());
-        self.db.put(nft_id.to_vec(), Self::encode(&nft)).unwrap()
+        self.write((resource_address, key.clone()), nft)
     }
 
-    // FIXME: Key spacing is broken (list may be wrong); will fix separately.
-
     fn get_epoch(&self) -> u64 {
-        self.db.get("epoch").unwrap().map(Self::decode).unwrap_or(0)
+        self.read("epoch").unwrap_or(0)
     }
 
     fn set_epoch(&mut self, epoch: u64) {
-        self.db.put("epoch", Self::encode(&epoch)).unwrap()
+        self.write("epoch", epoch)
     }
 
     fn get_nonce(&self) -> u64 {
-        self.db.get("nonce").unwrap().map(Self::decode).unwrap_or(0)
+        self.read("nonce").unwrap_or(0)
     }
 
     fn increase_nonce(&mut self) {
-        self.db
-            .put("nonce", Self::encode(&(self.get_nonce() + 1)))
-            .unwrap()
+        self.write("nonce", self.get_nonce() + 1)
     }
 }

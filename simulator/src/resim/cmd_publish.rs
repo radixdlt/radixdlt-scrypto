@@ -1,4 +1,5 @@
 use clap::Parser;
+use colored::*;
 use radix_engine::transaction::*;
 use scrypto::types::*;
 use std::ffi::OsStr;
@@ -48,7 +49,7 @@ impl Publish {
         } else {
             match executor.publish_package(&code) {
                 Ok(address) => {
-                    println!("Success! New Package: {}", address);
+                    println!("Success! New Package: {}", address.to_string().green());
                     Ok(())
                 }
                 Err(error) => Err(Error::TransactionExecutionError(error)),

@@ -11,3 +11,4 @@ $resim reset
 $resim new-account
 $resim publish ../examples/core/gumball-machine
 $resim run ./tests/manifest.rtm
+$resim show-ledger
