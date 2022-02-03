@@ -133,11 +133,11 @@ impl From<bool> for Decimal {
 #[macro_export]
 macro_rules! dec {
     
-    ($x:expr) => {
+    ($x:literal) => {
        Decimal::from($x) 
     };
     
-    ($int:expr, $exponent:expr) => {
+    ($int:literal, $exponent:literal) => {
         if ($exponent) < 0 {
             Decimal(($int) * PRECISION)
                 .div(10i128.pow((-1i128 * ($exponent)) as u32))
@@ -537,12 +537,6 @@ mod tests {
     }
 
     #[test]
-    fn test_dec_string_decimal_exp() {
-        assert_eq!(dec!("1.12345678901234567".to_string() + "8").to_string(), "1.123456789012345678");
-        assert_eq!(dec!("-".to_string() + "5.6").to_string(), "-5.6");
-    }
-
-    #[test]
     fn test_dec_string() {
         assert_eq!(dec!("1").to_string(), "1");
         assert_eq!(dec!("0").to_string(), "0");
@@ -555,21 +549,9 @@ mod tests {
     }
 
     #[test]
-    fn test_dec_int_expr() {
-        assert_eq!(dec!(1 + 2 - 2).to_string(), "1");
-        assert_eq!(dec!(5 * 3 / 3).to_string(), "5");
-    }
-
-    #[test]
     fn test_dec_bool() {
         assert_eq!((dec!(true)).to_string(), "1");
         assert_eq!((dec!(false)).to_string(), "0");
-    }
-
-    #[test]
-    fn test_dec_bool_expr() {
-        assert_eq!((dec!(if 4 < 5 {true} else {false})).to_string(), "1");
-        assert_eq!((dec!(if -2 > 3 {true} else {false})).to_string(), "0");
     }
 
     #[test]
@@ -585,12 +567,5 @@ mod tests {
             "112.000000000000000001");
     }
 
-    #[test]
-    fn test_dec_rational_expr() {
-        let a = 3;
-        assert_eq!((dec!(a + 2, 5)).to_string(), "500000");
-        assert_eq!((dec!(3 + 2, 5)).to_string(), "500000");
-        assert_eq!((dec!(100 + 12, 0 - 2)).to_string(), "1.12");
-        assert_eq!((dec!(a, a - 5)).to_string(), "0.03");
-    }
+
 }
