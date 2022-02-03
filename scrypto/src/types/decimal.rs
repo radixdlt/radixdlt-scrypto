@@ -138,10 +138,12 @@ macro_rules! dec {
     };
     
     ($int:expr, $exponent:expr) => {
-        if (($exponent) / 1i128) < 0 {
-            Decimal(($int) * PRECISION).div(10f64.powf(-($exponent) as f64) as i128)
+        if ($exponent) < 0 {
+            Decimal(($int) * PRECISION)
+                .div(10i128.pow((-1i128 * ($exponent)) as u32))
         } else {
-            Decimal(($int) * PRECISION).mul(10f64.powf(($exponent) as f64) as i128)
+            Decimal(($int) * PRECISION)
+                .mul(10i128.pow((1i128 * ($exponent)) as u32))
         }
     };
 }
