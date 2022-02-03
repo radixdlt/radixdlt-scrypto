@@ -5,7 +5,7 @@ use scrypto::prelude::*;
 #[test]
 fn test_proxy_1() {
     // Set up environment.
-    let mut ledger = InMemoryLedger::with_bootstrap();
+    let mut ledger = InMemorySubstateStore::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, 0, 0, false);
     let key = executor.new_public_key();
     let account = executor.new_account(key);
@@ -41,7 +41,7 @@ fn test_proxy_1() {
 #[test]
 fn test_proxy_2() {
     // Set up environment.
-    let mut ledger = InMemoryLedger::with_bootstrap();
+    let mut ledger = InMemorySubstateStore::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, 0, 0, false);
     let key = executor.new_public_key();
     let account = executor.new_account(key);

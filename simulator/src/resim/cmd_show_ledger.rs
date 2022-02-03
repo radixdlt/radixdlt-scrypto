@@ -14,7 +14,7 @@ pub fn make_show_ledger<'a>() -> App<'a> {
 
 /// Handles a `show-ledger` request.
 pub fn handle_show_ledger(_matches: &ArgMatches) -> Result<(), Error> {
-    let ledger = FileBasedLedger::with_bootstrap(get_data_dir()?);
+    let ledger = RadixEngineDB::with_bootstrap(get_data_dir()?);
 
     println!("{}:", "Packages".green().bold());
     for (last, address) in ledger.list_packages().iter().identify_last() {

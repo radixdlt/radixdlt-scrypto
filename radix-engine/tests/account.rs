@@ -30,7 +30,7 @@ fn fungible_amount() -> ResourceAmount {
 #[test]
 fn can_withdraw_from_my_account() {
     // Arrange
-    let mut ledger = InMemoryLedger::with_bootstrap();
+    let mut ledger = InMemorySubstateStore::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, 0, 0, false);
     let key = executor.new_public_key();
     let account = executor.new_account(key);
@@ -52,7 +52,7 @@ fn can_withdraw_from_my_account() {
 #[test]
 fn can_withdraw_nft_from_my_account() {
     // Arrange
-    let mut ledger = InMemoryLedger::with_bootstrap();
+    let mut ledger = InMemorySubstateStore::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, 0, 0, false);
     let package = executor.publish_package(&compile("nft"));
     let key = executor.new_public_key();
@@ -92,7 +92,7 @@ fn can_withdraw_nft_from_my_account() {
 #[test]
 fn cannot_withdraw_from_other_account() {
     // Arrange
-    let mut ledger = InMemoryLedger::with_bootstrap();
+    let mut ledger = InMemorySubstateStore::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, 0, 0, false);
     let key = executor.new_public_key();
     let account = executor.new_account(key);
@@ -114,7 +114,7 @@ fn cannot_withdraw_from_other_account() {
 #[test]
 fn account_to_bucket_to_account() {
     // Arrange
-    let mut ledger = InMemoryLedger::with_bootstrap();
+    let mut ledger = InMemorySubstateStore::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, 0, 0, false);
     let key = executor.new_public_key();
     let account = executor.new_account(key);

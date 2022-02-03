@@ -35,7 +35,7 @@ pub fn handle_export_abi(matches: &ArgMatches) -> Result<(), Error> {
     let trace = matches.is_present(ARG_TRACE);
 
     let configs = get_configs()?;
-    let mut ledger = FileBasedLedger::with_bootstrap(get_data_dir()?);
+    let mut ledger = RadixEngineDB::with_bootstrap(get_data_dir()?);
     let executor =
         TransactionExecutor::new(&mut ledger, configs.current_epoch, configs.nonce, trace);
     let abi = executor.export_abi(package, name);

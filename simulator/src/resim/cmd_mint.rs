@@ -51,7 +51,7 @@ pub fn handle_mint(matches: &ArgMatches) -> Result<(), Error> {
 
     let mut configs = get_configs()?;
     let account = configs.default_account.ok_or(Error::NoDefaultAccount)?;
-    let mut ledger = FileBasedLedger::with_bootstrap(get_data_dir()?);
+    let mut ledger = RadixEngineDB::with_bootstrap(get_data_dir()?);
     let mut executor =
         TransactionExecutor::new(&mut ledger, configs.current_epoch, configs.nonce, trace);
     let transaction = TransactionBuilder::new(&executor)

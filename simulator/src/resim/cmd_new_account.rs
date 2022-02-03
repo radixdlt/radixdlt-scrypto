@@ -30,7 +30,7 @@ pub fn handle_new_account(matches: &ArgMatches) -> Result<(), Error> {
     let signers = match_signers(matches, ARG_SIGNERS)?;
 
     let mut configs = get_configs()?;
-    let mut ledger = FileBasedLedger::with_bootstrap(get_data_dir()?);
+    let mut ledger = RadixEngineDB::with_bootstrap(get_data_dir()?);
     let mut executor =
         TransactionExecutor::new(&mut ledger, configs.current_epoch, configs.nonce, trace);
     let key = executor.new_public_key();
