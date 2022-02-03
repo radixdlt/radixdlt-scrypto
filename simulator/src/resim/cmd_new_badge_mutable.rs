@@ -42,7 +42,7 @@ pub struct NewBadgeMutable {
 
 impl NewBadgeMutable {
     pub fn run(&self) -> Result<(), Error> {
-        let mut ledger = FileBasedLedger::with_bootstrap(get_data_dir()?);
+        let mut ledger = RadixEngineDB::with_bootstrap(get_data_dir()?);
         let mut executor = TransactionExecutor::new(&mut ledger, self.trace);
         let default_signers = get_default_signers()?;
         let mut metadata = HashMap::new();

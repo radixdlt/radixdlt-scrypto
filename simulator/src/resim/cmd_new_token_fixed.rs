@@ -42,7 +42,7 @@ pub struct NewTokenFixed {
 
 impl NewTokenFixed {
     pub fn run(&self) -> Result<(), Error> {
-        let mut ledger = FileBasedLedger::with_bootstrap(get_data_dir()?);
+        let mut ledger = RadixEngineDB::with_bootstrap(get_data_dir()?);
         let mut executor = TransactionExecutor::new(&mut ledger, self.trace);
         let default_account = get_default_account()?;
         let default_signers = get_default_signers()?;

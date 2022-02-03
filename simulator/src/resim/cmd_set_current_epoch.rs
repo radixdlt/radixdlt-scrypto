@@ -1,5 +1,5 @@
 use clap::Parser;
-use radix_engine::ledger::Ledger;
+use radix_engine::ledger::SubstateStore;
 
 use crate::resim::*;
 
@@ -12,7 +12,7 @@ pub struct SetCurrentEpoch {
 
 impl SetCurrentEpoch {
     pub fn run(&self) -> Result<(), Error> {
-        let mut ledger = FileBasedLedger::with_bootstrap(get_data_dir()?);
+        let mut ledger = RadixEngineDB::with_bootstrap(get_data_dir()?);
         ledger.set_epoch(self.epoch);
 
         println!("Current epoch set!");

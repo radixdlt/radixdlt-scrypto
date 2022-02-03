@@ -18,7 +18,7 @@ pub struct NewAccount {
 
 impl NewAccount {
     pub fn run(&self) -> Result<(), Error> {
-        let mut ledger = FileBasedLedger::with_bootstrap(get_data_dir()?);
+        let mut ledger = RadixEngineDB::with_bootstrap(get_data_dir()?);
         let mut executor = TransactionExecutor::new(&mut ledger, self.trace);
         let public_key = executor.new_public_key();
         let account = executor.new_account(public_key);

@@ -17,8 +17,8 @@ use crate::model::*;
 ///
 /// Typically, a track is shared by all the processes created within a transaction.
 ///
-pub struct Track<'l, L: Ledger> {
-    ledger: &'l mut L,
+pub struct Track<'s, S: SubstateStore> {
+    ledger: &'s mut S,
     transaction_hash: H256,
     transaction_signers: Vec<Address>,
     id_allocator: IdAllocator,
@@ -39,9 +39,9 @@ pub struct Track<'l, L: Ledger> {
     code_cache: LruCache<Address, Module>, // TODO: move to ledger level
 }
 
-impl<'l, L: Ledger> Track<'l, L> {
+impl<'s, S: SubstateStore> Track<'s, S> {
     pub fn new(
-        ledger: &'l mut L,
+        ledger: &'s mut S,
         transaction_hash: H256,
         transaction_signers: Vec<Address>,
     ) -> Self {
@@ -69,7 +69,7 @@ impl<'l, L: Ledger> Track<'l, L> {
     }
 
     /// Start a process.
-    pub fn start_process<'r>(&'r mut self, verbose: bool) -> Process<'r, 'l, L> {
+    pub fn start_process<'r>(&'r mut self, verbose: bool) -> Process<'r, 's, S> {
         // FIXME: This is a temp solution
         let signers: BTreeSet<NftKey> = self
             .transaction_signers

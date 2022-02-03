@@ -22,7 +22,7 @@ pub struct Run {
 
 impl Run {
     pub fn run(&self) -> Result<(), Error> {
-        let mut ledger = FileBasedLedger::with_bootstrap(get_data_dir()?);
+        let mut ledger = RadixEngineDB::with_bootstrap(get_data_dir()?);
         let mut executor = TransactionExecutor::new(&mut ledger, self.trace);
         let default_signers = get_default_signers()?;
         let manifest = std::fs::read_to_string(&self.path).map_err(Error::IOError)?;

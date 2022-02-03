@@ -13,7 +13,7 @@ pub struct Show {
 
 impl Show {
     pub fn run(&self) -> Result<(), Error> {
-        let ledger = FileBasedLedger::with_bootstrap(get_data_dir()?);
+        let ledger = RadixEngineDB::with_bootstrap(get_data_dir()?);
         match self.address {
             Address::Package(_) => {
                 dump_package(self.address, &ledger).map_err(Error::LedgerDumpError)

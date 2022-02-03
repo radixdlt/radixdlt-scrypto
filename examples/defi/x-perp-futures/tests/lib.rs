@@ -98,7 +98,7 @@ fn get_position<'a, L: Ledger>(env: &mut TestEnv<'a, L>, user_id: Address, nth: 
 
 #[test]
 fn test_long() {
-    let mut ledger = InMemoryLedger::with_bootstrap();
+    let mut ledger = InMemorySubstateStore::with_bootstrap();
     let mut env = set_up_test_env(&mut ledger);
 
     let user1 = create_user(&mut env);

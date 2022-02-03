@@ -22,7 +22,7 @@ struct SystemComponentState {
 }
 
 /// A ledger stores all transactions and substates.
-pub trait Ledger {
+pub trait SubstateStore {
     fn get_resource_def(&self, address: Address) -> Option<ResourceDef>;
 
     fn put_resource_def(&mut self, address: Address, resource_def: ResourceDef);
@@ -127,7 +127,7 @@ pub trait Ledger {
     // Before transaction hash is defined, we use the following TEMPORARY interfaces
     // to introduce entropy for address derivation.
 
-    fn get_nonce(&mut self) -> u64;
+    fn get_nonce(&self) -> u64;
 
     fn increase_nonce(&mut self);
 }

@@ -1,5 +1,5 @@
 use clap::Parser;
-use radix_engine::ledger::Ledger;
+use radix_engine::ledger::SubstateStore;
 use radix_engine::model::*;
 use radix_engine::transaction::*;
 use scrypto::types::*;
@@ -42,12 +42,12 @@ impl Publish {
 
         if let Some(address) = self.address.clone() {
             // Overwrite package
-            let mut ledger = FileBasedLedger::with_bootstrap(get_data_dir()?);
+            let mut ledger = RadixEngineDB::with_bootstrap(get_data_dir()?);
             ledger.put_package(address, Package::new(code));
             println!("Package updated!");
             Ok(())
         } else {
-            let mut ledger = FileBasedLedger::with_bootstrap(get_data_dir()?);
+            let mut ledger = RadixEngineDB::with_bootstrap(get_data_dir()?);
             let mut executor = TransactionExecutor::new(&mut ledger, self.trace);
             let default_signers = get_default_signers()?;
             let transaction = TransactionBuilder::new(&executor)

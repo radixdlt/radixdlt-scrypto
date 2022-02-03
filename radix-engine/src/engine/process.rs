@@ -50,7 +50,7 @@ macro_rules! re_warn {
 }
 
 /// A process keeps track of resource movements and code execution.
-pub struct Process<'r, 'l, L: Ledger> {
+pub struct Process<'r, 'l, L: SubstateStore> {
     /// The call depth
     depth: usize,
     /// Whether to show trace messages
@@ -97,7 +97,7 @@ pub struct Invocation {
     args: Vec<ValidatedData>,
 }
 
-impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
+impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     /// Create a new process, which is not started.
     pub fn new(depth: usize, trace: bool, track: &'r mut Track<'l, L>) -> Self {
         Self {
@@ -1836,7 +1836,7 @@ impl<'r, 'l, L: Ledger> Process<'r, 'l, L> {
     //============================
 }
 
-impl<'r, 'l, L: Ledger> Externals for Process<'r, 'l, L> {
+impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
     fn invoke_index(
         &mut self,
         index: usize,

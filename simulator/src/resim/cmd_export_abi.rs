@@ -20,7 +20,7 @@ pub struct ExportAbi {
 
 impl ExportAbi {
     pub fn run(&self) -> Result<(), Error> {
-        let mut ledger = FileBasedLedger::with_bootstrap(get_data_dir()?);
+        let mut ledger = RadixEngineDB::with_bootstrap(get_data_dir()?);
         let executor = TransactionExecutor::new(&mut ledger, self.trace);
         match executor.export_abi(self.package_address, &self.blueprint_name) {
             Ok(a) => {

@@ -11,12 +11,12 @@ use crate::model::*;
 use crate::transaction::*;
 
 /// An executor that runs transactions.
-pub struct TransactionExecutor<'l, L: Ledger> {
+pub struct TransactionExecutor<'l, L: SubstateStore> {
     ledger: &'l mut L,
     trace: bool,
 }
 
-impl<'l, L: Ledger> AbiProvider for TransactionExecutor<'l, L> {
+impl<'l, L: SubstateStore> AbiProvider for TransactionExecutor<'l, L> {
     fn export_abi<A: AsRef<str>>(
         &self,
         package_address: Address,
@@ -50,7 +50,7 @@ impl<'l, L: Ledger> AbiProvider for TransactionExecutor<'l, L> {
     }
 }
 
-impl<'l, L: Ledger> TransactionExecutor<'l, L> {
+impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
     pub fn new(ledger: &'l mut L, trace: bool) -> Self {
         Self { ledger, trace }
     }
