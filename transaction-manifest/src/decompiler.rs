@@ -120,7 +120,8 @@ pub fn decompile(tx: &Transaction) -> Result<String, DecompileError> {
                     id_validator
                         .move_resources(&validated_arg)
                         .map_err(DecompileError::IdValidatorError)?;
-                    buf.push_str(&format!(" {}", validated_arg,));
+                    buf.push(' ');
+                    buf.push_str(&format_value(&validated_arg.dom, &buckets, &bucket_refs));
                 }
                 buf.push_str(";\n");
             }
@@ -139,7 +140,8 @@ pub fn decompile(tx: &Transaction) -> Result<String, DecompileError> {
                     id_validator
                         .move_resources(&validated_arg)
                         .map_err(DecompileError::IdValidatorError)?;
-                    buf.push_str(&format!(" {}", validated_arg,));
+                    buf.push(' ');
+                    buf.push_str(&format_value(&validated_arg.dom, &buckets, &bucket_refs));
                 }
                 buf.push_str(";\n");
             }

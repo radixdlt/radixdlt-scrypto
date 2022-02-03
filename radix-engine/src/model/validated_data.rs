@@ -2,6 +2,7 @@ use sbor::any::*;
 use sbor::type_id::*;
 use scrypto::buffer::*;
 use scrypto::rust::borrow::Borrow;
+use scrypto::rust::collections::HashMap;
 use scrypto::rust::convert::TryFrom;
 use scrypto::rust::fmt;
 use scrypto::rust::format;
@@ -23,7 +24,11 @@ pub struct ValidatedData {
 impl fmt::Debug for ValidatedData {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if self.raw.len() <= 1024 {
-            write!(f, "{}", format_value(&self.dom))
+            write!(
+                f,
+                "{}",
+                format_value(&self.dom, &HashMap::new(), &HashMap::new())
+            )
         } else {
             write!(f, "LargeValue(len: {})", self.raw.len())
         }
@@ -36,7 +41,11 @@ impl fmt::Display for ValidatedData {
     }
 }
 
-fn format_value(value: &Value) -> String {
+pub fn format_value(
+    value: &Value,
+    bids: &HashMap<Bid, String>,
+    rids: &HashMap<Rid, String>,
+) -> String {
     match value {
         // primitive types
         Value::Unit => "()".to_string(),
@@ -53,9 +62,9 @@ fn format_value(value: &Value) -> String {
         Value::U128(v) => format!("{}u128", v),
         Value::String(v) => format!("\"{}\"", v),
         // struct & enum
-        Value::Struct(fields) => format!("Struct({})", format_fields(fields)),
+        Value::Struct(fields) => format!("Struct({})", format_fields(fields, bids, rids)),
         Value::Enum(index, fields) => {
-            let fields = format_fields(fields);
+            let fields = format_fields(fields, bids, rids);
             format!(
                 "Enum({}u8{}{})",
                 index,
@@ -65,52 +74,56 @@ fn format_value(value: &Value) -> String {
         }
         // rust types
         Value::Option(v) => match v.borrow() {
-            Some(x) => format!("Some({})", format_value(x)),
+            Some(x) => format!("Some({})", format_value(x, bids, rids)),
             None => "None".to_string(),
         },
-        Value::Box(v) => format!("Box({})", format_value(v.borrow())),
+        Value::Box(v) => format!("Box({})", format_value(v.borrow(), bids, rids)),
         Value::Array(kind, elements) => format!(
             "Array<{}>({})",
             format_kind(*kind),
-            format_elements(elements)
+            format_elements(elements, bids, rids)
         ),
-        Value::Tuple(elements) => format!("Tuple({})", format_elements(elements)),
+        Value::Tuple(elements) => format!("Tuple({})", format_elements(elements, bids, rids)),
         Value::Result(v) => match v.borrow() {
-            Ok(x) => format!("Ok({})", format_value(x)),
-            Err(x) => format!("Err({})", format_value(x)),
+            Ok(x) => format!("Ok({})", format_value(x, bids, rids)),
+            Err(x) => format!("Err({})", format_value(x, bids, rids)),
         },
         // collections
         Value::Vec(kind, elements) => {
-            format!("Vec<{}>({})", format_kind(*kind), format_elements(elements))
+            format!(
+                "Vec<{}>({})",
+                format_kind(*kind),
+                format_elements(elements, bids, rids)
+            )
         }
         Value::TreeSet(kind, elements) => format!(
             "TreeSet<{}>({})",
             format_kind(*kind),
-            format_elements(elements)
+            format_elements(elements, bids, rids)
         ),
         Value::HashSet(kind, elements) => format!(
             "HashSet<{}>({})",
             format_kind(*kind),
-            format_elements(elements)
+            format_elements(elements, bids, rids)
         ),
         Value::TreeMap(key, value, elements) => format!(
             "TreeMap<{}, {}>({})",
             format_kind(*key),
             format_kind(*value),
-            format_elements(elements)
+            format_elements(elements, bids, rids)
         ),
         Value::HashMap(key, value, elements) => format!(
             "HashMap<{}, {}>({})",
             format_kind(*key),
             format_kind(*value),
-            format_elements(elements)
+            format_elements(elements, bids, rids)
         ),
         // custom types
-        Value::Custom(kind, data) => format_custom(*kind, data),
+        Value::Custom(kind, data) => format_custom(*kind, data, bids, rids),
     }
 }
 
-fn format_kind(kind: u8) -> String {
+pub fn format_kind(kind: u8) -> String {
     match kind {
         // primitive types
         TYPE_UNIT => "Unit",
@@ -155,28 +168,41 @@ fn format_kind(kind: u8) -> String {
     .to_string()
 }
 
-fn format_fields(fields: &Fields) -> String {
+pub fn format_fields(
+    fields: &Fields,
+    bids: &HashMap<Bid, String>,
+    rids: &HashMap<Rid, String>,
+) -> String {
     match fields {
-        Fields::Named(named) => format!("{{{}}}", format_elements(named)),
+        Fields::Named(named) => format!("{{{}}}", format_elements(named, bids, rids)),
         Fields::Unnamed(unnamed) => {
-            format!("({})", format_elements(unnamed))
+            format!("({})", format_elements(unnamed, bids, rids))
         }
         Fields::Unit => "".into(),
     }
 }
 
-fn format_elements(values: &[Value]) -> String {
+pub fn format_elements(
+    values: &[Value],
+    bids: &HashMap<Bid, String>,
+    rids: &HashMap<Rid, String>,
+) -> String {
     let mut buf = String::new();
     for (i, x) in values.iter().enumerate() {
         if i != 0 {
             buf.push_str(", ");
         }
-        buf.push_str(format_value(x).as_str());
+        buf.push_str(format_value(x, bids, rids).as_str());
     }
     buf
 }
 
-fn format_custom(ty: u8, data: &[u8]) -> String {
+pub fn format_custom(
+    ty: u8,
+    data: &[u8],
+    bids: &HashMap<Bid, String>,
+    rids: &HashMap<Rid, String>,
+) -> String {
     match ty {
         SCRYPTO_TYPE_DECIMAL => format!("Decimal(\"{}\")", Decimal::try_from(data).unwrap()),
         SCRYPTO_TYPE_BIG_DECIMAL => {
@@ -185,8 +211,22 @@ fn format_custom(ty: u8, data: &[u8]) -> String {
         SCRYPTO_TYPE_ADDRESS => format!("Address(\"{}\")", Address::try_from(data).unwrap()),
         SCRYPTO_TYPE_H256 => format!("Hash(\"{}\")", H256::try_from(data).unwrap()),
         SCRYPTO_TYPE_MID => format!("LazyMap(\"{}\")", Mid::try_from(data).unwrap()),
-        SCRYPTO_TYPE_BID => format!("Bucket({}u32)", Bid::try_from(data).unwrap().0),
-        SCRYPTO_TYPE_RID => format!("BucketRef({}u32)", Rid::try_from(data).unwrap().0),
+        SCRYPTO_TYPE_BID => {
+            let bid = Bid::try_from(data).unwrap();
+            if let Some(name) = bids.get(&bid) {
+                format!("Bucket(\"{}\")", name)
+            } else {
+                format!("Bucket({}u32)", bid.0)
+            }
+        }
+        SCRYPTO_TYPE_RID => {
+            let rid = Rid::try_from(data).unwrap();
+            if let Some(name) = rids.get(&rid) {
+                format!("BucketRef(\"{}\")", name)
+            } else {
+                format!("BucketRef({}u32)", rid.0)
+            }
+        }
         SCRYPTO_TYPE_VID => format!("Vault(\"{}\")", Vid::try_from(data).unwrap()),
         SCRYPTO_TYPE_NFT_KEY => format!("NftKey(\"{}\")", NftKey::try_from(data).unwrap()),
         _ => panic!("Illegal state"),
