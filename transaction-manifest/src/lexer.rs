@@ -157,9 +157,20 @@ impl Lexer {
     }
 
     pub fn next_token(&mut self) -> Result<Option<Token>, LexerError> {
-        // skip whitespace
-        while !self.is_eof() && Self::is_whitespace(self.peek()?) {
-            self.advance()?;
+        // skip comment and whitespace
+        let mut in_comment = false;
+        while !self.is_eof() {
+            if in_comment {
+                if self.advance()? == '\n' {
+                    in_comment = false;
+                }
+            } else if self.peek()? == '#' {
+                in_comment = true;
+            } else if Self::is_whitespace(self.peek()?) {
+                self.advance()?;
+            } else {
+                break;
+            }
         }
 
         // check if it's the end of file
@@ -494,6 +505,16 @@ mod tests {
             vec![TokenKind::U8Literal(1), TokenKind::U32Literal(2)]
         );
         lex_error!("123", LexerError::UnexpectedEof);
+    }
+
+    #[test]
+    fn test_comment() {
+        lex_ok!("# 1u8", Vec::<TokenKind>::new());
+        lex_ok!("1u8 # comment", vec![TokenKind::U8Literal(1),]);
+        lex_ok!(
+            "# multiple\n# line\nCALL_FUNCTION",
+            vec![TokenKind::CallFunction,]
+        );
     }
 
     #[test]
