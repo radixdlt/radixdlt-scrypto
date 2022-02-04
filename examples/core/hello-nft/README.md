@@ -33,7 +33,7 @@ First, we prepare the data for each NFT unit (every ticket is associated with a 
 let mut tickets = Vec::new();
 for row in 1..5 {
     for column in 1..5 {
-        tickets.push((Uuid::generate(), Ticket { row, column }));
+        tickets.push((NftKey::from(Uuid::generate()), Ticket { row, column }));
     }
 }
 ```
