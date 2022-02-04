@@ -18,6 +18,47 @@ use crate::engine::*;
 use crate::model::*;
 use crate::transaction::*;
 
+
+#[derive(Debug, Clone)]
+pub enum ParsePublicKeyError {
+    InvalidHex(hex::FromHexError),
+    InvalidLength(usize),
+}
+
+impl fmt::Display for ParsePublicKeyError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
+#[cfg(not(feature = "alloc"))]
+impl std::error::Error for ParsePublicKeyError {}
+
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
+pub struct PublicKey(pub EcdsaPublicKey);
+
+impl FromStr for PublicKey {
+    type Err = ParsePublicKeyError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let bytes = hex::decode(s).map_err(ParsePublicKeyError::InvalidHex)?;
+        bytes.try_into().map(|k| PublicKey(k))
+            .map_err(|k| ParsePublicKeyError::InvalidLength(k.len()))
+    }
+}
+
+impl fmt::Debug for PublicKey {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", hex::encode(self.0.to_vec()))
+    }
+}
+
+impl fmt::Display for PublicKey {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", hex::encode(self.0.to_vec()))
+    }
+}
+
 /// Represents some amount of resource.
 #[derive(Debug, Clone)]
 pub enum Resource {
@@ -336,7 +377,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     }
 
     /// Builds a transaction.
-    pub fn build(&mut self, signers: Vec<Address>) -> Result<Transaction, BuildTransactionError> {
+    pub fn build(&mut self, signers: Vec<EcdsaPublicKey>) -> Result<Transaction, BuildTransactionError> {
         if !self.errors.is_empty() {
             return Err(self.errors[0].clone());
         }
@@ -510,7 +551,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     /// Note: you need to make sure the worktop contains the required resource to avoid runtime error.
     pub fn new_account_with_resource(
         &mut self,
-        key: Address,
+        key: EcdsaPublicKey,
         amount: Decimal,
         resource_address: Address,
     ) -> &mut Self {

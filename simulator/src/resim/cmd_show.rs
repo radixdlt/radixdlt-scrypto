@@ -24,7 +24,6 @@ impl Show {
             Address::ResourceDef(_) => {
                 dump_resource_def(self.address, &ledger).map_err(Error::LedgerDumpError)
             }
-            Address::PublicKey(_) => Ok(println!("Public Key: {}", self.address)),
         }
     }
 }

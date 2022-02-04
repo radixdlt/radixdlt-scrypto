@@ -66,15 +66,15 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
     }
 
     /// Generates a new public key.
-    pub fn new_public_key(&mut self) -> Address {
+    pub fn new_public_key(&mut self) -> EcdsaPublicKey {
         let mut raw = [0u8; 33];
         raw[1..].copy_from_slice(sha256(self.ledger.get_nonce().to_string()).as_ref());
         self.ledger.increase_nonce();
-        Address::PublicKey(raw)
+        raw
     }
 
     /// Creates an account with 1,000,000 XRD in balance.
-    pub fn new_account(&mut self, key: Address) -> Address {
+    pub fn new_account(&mut self, key: EcdsaPublicKey) -> Address {
         let free_xrd_amount = Decimal::from(1_000_000);
 
         self.run(

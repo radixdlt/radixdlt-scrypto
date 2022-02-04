@@ -10,14 +10,14 @@ pub struct SetDefaultAccount {
     address: Address,
 
     /// The public key for accessing the account
-    public_key: Address,
+    public_key: PublicKey,
 }
 
 impl SetDefaultAccount {
     pub fn run(&self) -> Result<(), Error> {
         set_configs(&Configs {
             default_account: self.address,
-            default_signers: vec![self.public_key],
+            default_signers: vec![self.public_key.0],
         })?;
 
         println!("Default account updated!");

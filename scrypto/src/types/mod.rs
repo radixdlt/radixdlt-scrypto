@@ -20,6 +20,7 @@ pub use mid::{Mid, ParseMidError};
 pub use nft_key::{NftKey, ParseNftKeyError};
 pub use rid::{ParseRidError, Rid};
 pub use vid::{ParseVidError, Vid};
+pub type EcdsaPublicKey = [u8; 33];
 
 use crate::rust::vec::Vec;
 

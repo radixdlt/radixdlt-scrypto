@@ -1,16 +1,11 @@
 use clap::Parser;
 use colored::*;
-use scrypto::types::*;
 
 use crate::resim::*;
 
 /// Create an account
 #[derive(Parser, Debug)]
 pub struct NewAccount {
-    /// The transaction signers
-    #[clap(short, long)]
-    signers: Option<Vec<Address>>,
-
     /// Turn on tracing
     #[clap(short, long)]
     trace: bool,
@@ -25,7 +20,7 @@ impl NewAccount {
 
         println!("A new account has been created!");
         println!("Account address: {}", account.to_string().green());
-        println!("Public key: {}", public_key.to_string().green());
+        println!("Public key: {}", PublicKey(public_key).to_string().green());
         if get_configs()?.is_none() {
             println!(
                 "No configuration found on system. will use the above account and public key as default."

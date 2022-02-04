@@ -18,7 +18,7 @@ pub struct CallMethod {
 
     /// The transaction signers
     #[clap(short, long)]
-    signers: Option<Vec<Address>>,
+    signers: Option<Vec<PublicKey>>,
 
     /// Output a transaction manifest without execution
     #[clap(short, long)]
@@ -35,6 +35,8 @@ impl CallMethod {
         let mut executor = TransactionExecutor::new(&mut ledger, self.trace);
         let default_account = get_default_account()?;
         let default_signers = get_default_signers()?;
+        let signatures = self.signers.clone().map(|v| v.into_iter().map(|k| k.0).collect())
+            .unwrap_or(default_signers);
         let transaction = TransactionBuilder::new(&executor)
             .call_method(
                 self.component_address,
@@ -43,7 +45,7 @@ impl CallMethod {
                 Some(default_account),
             )
             .call_method_with_all_resources(default_account, "deposit_batch")
-            .build(self.signers.clone().unwrap_or(default_signers))
+            .build(signatures)
             .map_err(Error::TransactionConstructionError)?;
         process_transaction(transaction, &mut executor, &self.manifest)
     }
