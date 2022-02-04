@@ -20,7 +20,7 @@ impl NewAccount {
 
         println!("A new account has been created!");
         println!("Account address: {}", account.to_string().green());
-        println!("Public key: {}", PublicKey(public_key).to_string().green());
+        println!("Public key: {}", public_key.to_string().green());
         if get_configs()?.is_none() {
             println!(
                 "No configuration found on system. will use the above account and public key as default."

@@ -75,7 +75,7 @@ impl<'s, S: SubstateStore> Track<'s, S> {
             .transaction_signers
             .clone()
             .into_iter()
-            .map(|address| NftKey::new(address.to_vec()))
+            .map(|key| NftKey::new(key.to_vec()))
             .collect();
         let mut process = Process::new(0, verbose, self);
 

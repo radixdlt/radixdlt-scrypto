@@ -70,7 +70,7 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
         let mut raw = [0u8; 33];
         raw[1..].copy_from_slice(sha256(self.ledger.get_nonce().to_string()).as_ref());
         self.ledger.increase_nonce();
-        raw
+        EcdsaPublicKey(raw)
     }
 
     /// Creates an account with 1,000,000 XRD in balance.

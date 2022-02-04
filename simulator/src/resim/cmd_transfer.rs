@@ -19,7 +19,7 @@ pub struct Transfer {
 
     /// The transaction signers
     #[clap(short, long)]
-    signers: Option<Vec<PublicKey>>,
+    signers: Option<Vec<EcdsaPublicKey>>,
 
     /// Turn on tracing
     #[clap(short, long)]
@@ -35,8 +35,7 @@ impl Transfer {
         let transaction = TransactionBuilder::new(&executor)
             .withdraw_from_account(&self.resource, default_account)
             .call_method_with_all_resources(self.recipient, "deposit_batch")
-            .build(self.signers.clone().map(|v| v.into_iter().map(|k| k.0).collect())
-                .unwrap_or(default_signers))
+            .build(self.signers.clone().unwrap_or(default_signers))
             .map_err(Error::TransactionConstructionError)?;
         process_transaction(transaction, &mut executor, &self.manifest)
     }
