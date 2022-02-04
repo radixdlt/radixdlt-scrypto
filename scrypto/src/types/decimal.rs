@@ -138,12 +138,16 @@ macro_rules! dec {
     };
     
     ($int:literal, $exponent:literal) => {
-        if ($exponent) < 0 {
-            Decimal(($int) * PRECISION)
-                .div(10i128.pow((-1i128 * ($exponent)) as u32))
+        if u32::try_from((($exponent) as i128).abs()).is_err() {
+            panic!("Overflow of arg2.");
         } else {
-            Decimal(($int) * PRECISION)
-                .mul(10i128.pow((1i128 * ($exponent)) as u32))
+            if (($exponent) as i128) < 0 {
+                Decimal(($int) * PRECISION)
+                    .div(10i128.pow((-1i128 * ($exponent)) as u32))
+            } else {
+                Decimal(($int) * PRECISION)
+                    .mul(10i128.pow((1i128 * ($exponent)) as u32))
+            }
         }
     };
 }
@@ -566,6 +570,11 @@ mod tests {
         assert_eq!((dec!(112000000000000000001, -18)).to_string(),
             "112.000000000000000001");
     }
-
-
+    
+    #[test]
+    #[should_panic(expected = "Overflow of arg2.")]
+    fn test_arg1_overflow_arg1() {
+        //u32::MAX + 1
+        dec!(1, 4_294_967_296);
+    }
 }
