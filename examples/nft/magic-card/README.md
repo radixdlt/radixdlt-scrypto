@@ -24,7 +24,7 @@ let special_cards_bucket = ResourceBuilder::new_non_fungible()
     .metadata("name", "Russ' Magic Card Collection")
     .initial_supply_non_fungible([
         (
-            1, // The ID of the first NFT, you can also use `Uuid::generate()` to create a random ID
+            NftKey::from(1u128), // The ID of the first NFT, you can also use `Uuid::generate()` to create a random ID
             MagicCard {
                 color: Color::Black,
                 rarity: Rarity::MythicRare,
@@ -32,7 +32,7 @@ let special_cards_bucket = ResourceBuilder::new_non_fungible()
             }
         ),
         (
-            2, // The ID of the second NFT
+            NftKey::from(2u128), // The ID of the second NFT
             MagicCard {
                 color: Color::Green,
                 rarity: Rarity::Rare,

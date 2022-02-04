@@ -96,8 +96,8 @@ impl ResourceBuilder {
     /// let bucket = ResourceBuilder::new_non_fungible()
     ///     .metadata("name", "TestNft")
     ///     .initial_supply_non_fungible([
-    ///         (1, "immutable_part", "mutable_part"),
-    ///         (2, "another_immutable_part", "another_mutable_part"),
+    ///         (NftKey::from(1u128), "immutable_part", "mutable_part"),
+    ///         (NftKey::from(2u128), "another_immutable_part", "another_mutable_part"),
     ///     ]);
     /// ```
     pub fn initial_supply_non_fungible<T, V>(&self, entries: T) -> Bucket
