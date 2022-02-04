@@ -50,7 +50,7 @@ impl NewPackage {
             Err(Error::PackageAlreadyExists)
         } else {
             fs::create_dir_all(child_of(&path, "src")).map_err(Error::IOError)?;
-            fs::create_dir_all(child_of(&path, "test")).map_err(Error::IOError)?;
+            fs::create_dir_all(child_of(&path, "tests")).map_err(Error::IOError)?;
 
             fs::write(
                 child_of(&path, "Cargo.toml"),
@@ -69,7 +69,7 @@ impl NewPackage {
             .map_err(Error::IOError)?;
 
             fs::write(
-                child_of(&child_of(&path, "test"), "lib.rs"),
+                child_of(&child_of(&path, "tests"), "lib.rs"),
                 include_str!("../../../assets/template/tests/lib.rs")
                     .replace("${lib_name}", &lib_name),
             )
