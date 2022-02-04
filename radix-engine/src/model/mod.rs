@@ -24,6 +24,6 @@ pub use package::Package;
 pub use receipt::Receipt;
 pub use resource_def::{ResourceDef, ResourceDefError};
 pub use transaction::{Instruction, Transaction};
-pub use validated_data::ValidatedData;
+pub use validated_data::*;
 pub use validated_transaction::{ValidatedInstruction, ValidatedTransaction};
 pub use vault::{Vault, VaultError};
