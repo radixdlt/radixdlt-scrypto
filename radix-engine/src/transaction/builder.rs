@@ -336,7 +336,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     }
 
     /// Builds a transaction.
-    pub fn build(&mut self, signers: Vec<Address>) -> Result<Transaction, BuildTransactionError> {
+    pub fn build(&mut self, signers: Vec<EcdsaPublicKey>) -> Result<Transaction, BuildTransactionError> {
         if !self.errors.is_empty() {
             return Err(self.errors[0].clone());
         }
@@ -510,7 +510,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     /// Note: you need to make sure the worktop contains the required resource to avoid runtime error.
     pub fn new_account_with_resource(
         &mut self,
-        key: Address,
+        key: EcdsaPublicKey,
         amount: Decimal,
         resource_address: Address,
     ) -> &mut Self {

@@ -20,7 +20,7 @@ use crate::model::*;
 pub struct Track<'s, S: SubstateStore> {
     ledger: &'s mut S,
     transaction_hash: H256,
-    transaction_signers: Vec<Address>,
+    transaction_signers: Vec<EcdsaPublicKey>,
     id_allocator: IdAllocator,
     logs: Vec<(LogLevel, String)>,
     packages: HashMap<Address, Package>,
@@ -43,7 +43,7 @@ impl<'s, S: SubstateStore> Track<'s, S> {
     pub fn new(
         ledger: &'s mut S,
         transaction_hash: H256,
-        transaction_signers: Vec<Address>,
+        transaction_signers: Vec<EcdsaPublicKey>,
     ) -> Self {
         Self {
             ledger,
@@ -75,7 +75,7 @@ impl<'s, S: SubstateStore> Track<'s, S> {
             .transaction_signers
             .clone()
             .into_iter()
-            .map(|address| NftKey::new(address.to_vec()))
+            .map(|key| NftKey::new(key.to_vec()))
             .collect();
         let mut process = Process::new(0, verbose, self);
 

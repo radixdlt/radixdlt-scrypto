@@ -65,6 +65,6 @@ pub enum Instruction {
     },
 
     /// Marks the end of transaction with signatures.
-    /// TODO: replace public key address with signature.
-    End { signatures: Vec<Address> },
+    /// TODO: replace public key with signature.
+    End { signatures: Vec<EcdsaPublicKey> },
 }

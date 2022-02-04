@@ -1,9 +1,9 @@
 use clap::Parser;
 use radix_engine::model::*;
-use scrypto::types::*;
 
 use crate::resim::*;
 use std::path::PathBuf;
+use scrypto::types::EcdsaPublicKey;
 
 /// Compile and run a transaction manifest
 #[derive(Parser, Debug)]
@@ -13,7 +13,7 @@ pub struct Run {
 
     /// The transaction signers
     #[clap(short, long)]
-    signers: Option<Vec<Address>>,
+    signers: Option<Vec<EcdsaPublicKey>>,
 
     /// Turn on tracing
     #[clap(short, long)]
@@ -28,9 +28,8 @@ impl Run {
         let manifest = std::fs::read_to_string(&self.path).map_err(Error::IOError)?;
         let mut transaction =
             transaction_manifest::compile(&manifest).map_err(Error::CompileError)?;
-        transaction.instructions.push(Instruction::End {
-            signatures: self.signers.clone().unwrap_or(default_signers),
-        });
+        let signatures = self.signers.clone().unwrap_or(default_signers);
+        transaction.instructions.push(Instruction::End { signatures });
         process_transaction(transaction, &mut executor, &None)
     }
 }

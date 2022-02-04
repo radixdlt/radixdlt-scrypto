@@ -19,7 +19,7 @@ pub struct Transfer {
 
     /// The transaction signers
     #[clap(short, long)]
-    signers: Option<Vec<Address>>,
+    signers: Option<Vec<EcdsaPublicKey>>,
 
     /// Turn on tracing
     #[clap(short, long)]

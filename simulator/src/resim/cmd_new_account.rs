@@ -1,16 +1,11 @@
 use clap::Parser;
 use colored::*;
-use scrypto::types::*;
 
 use crate::resim::*;
 
 /// Create an account
 #[derive(Parser, Debug)]
 pub struct NewAccount {
-    /// The transaction signers
-    #[clap(short, long)]
-    signers: Option<Vec<Address>>,
-
     /// Turn on tracing
     #[clap(short, long)]
     trace: bool,

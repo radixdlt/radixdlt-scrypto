@@ -37,7 +37,7 @@ pub struct NewBadgeMutable {
 
     /// The transaction signers
     #[clap(short, long)]
-    signers: Option<Vec<Address>>,
+    signers: Option<Vec<EcdsaPublicKey>>,
 
     /// Turn on tracing
     #[clap(short, long)]
@@ -65,9 +65,10 @@ impl NewBadgeMutable {
         if let Some(icon_url) = self.icon_url.clone() {
             metadata.insert("icon_url".to_string(), icon_url);
         };
+        let signatures = self.signers.clone().unwrap_or(default_signers);
         let transaction = TransactionBuilder::new(&executor)
             .new_badge_mutable(metadata, self.badge_address)
-            .build(self.signers.clone().unwrap_or(default_signers))
+            .build(signatures)
             .map_err(Error::TransactionConstructionError)?;
         process_transaction(transaction, &mut executor, &self.manifest)
     }

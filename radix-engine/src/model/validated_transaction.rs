@@ -7,7 +7,7 @@ use crate::model::*;
 #[derive(Debug, Clone)]
 pub struct ValidatedTransaction {
     pub instructions: Vec<ValidatedInstruction>,
-    pub signers: Vec<Address>,
+    pub signers: Vec<EcdsaPublicKey>,
 }
 
 #[derive(Debug, Clone)]

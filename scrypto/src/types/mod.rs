@@ -7,6 +7,7 @@ mod mid;
 mod nft_key;
 mod rid;
 mod vid;
+mod ecdsa_key;
 
 pub use address::{
     Address, ParseAddressError, ACCOUNT_PACKAGE, ECDSA_TOKEN, RADIX_TOKEN, SYSTEM_COMPONENT,
@@ -20,6 +21,7 @@ pub use mid::{Mid, ParseMidError};
 pub use nft_key::{NftKey, ParseNftKeyError};
 pub use rid::{ParseRidError, Rid};
 pub use vid::{ParseVidError, Vid};
+pub use ecdsa_key::EcdsaPublicKey;
 
 use crate::rust::vec::Vec;
 

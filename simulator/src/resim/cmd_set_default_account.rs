@@ -10,7 +10,7 @@ pub struct SetDefaultAccount {
     address: Address,
 
     /// The public key for accessing the account
-    public_key: Address,
+    public_key: EcdsaPublicKey,
 }
 
 impl SetDefaultAccount {

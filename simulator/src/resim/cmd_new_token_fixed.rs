@@ -37,7 +37,7 @@ pub struct NewTokenFixed {
 
     /// The transaction signers
     #[clap(short, long)]
-    signers: Option<Vec<Address>>,
+    signers: Option<Vec<EcdsaPublicKey>>,
 
     /// Turn on tracing
     #[clap(short, long)]
@@ -66,10 +66,11 @@ impl NewTokenFixed {
         if let Some(icon_url) = self.icon_url.clone() {
             metadata.insert("icon_url".to_string(), icon_url);
         };
+        let signatures = self.signers.clone().unwrap_or(default_signers);
         let transaction = TransactionBuilder::new(&executor)
             .new_token_fixed(metadata, self.total_supply)
             .call_method_with_all_resources(default_account, "deposit_batch")
-            .build(self.signers.clone().unwrap_or(default_signers))
+            .build(signatures)
             .map_err(Error::TransactionConstructionError)?;
         process_transaction(transaction, &mut executor, &self.manifest)
     }

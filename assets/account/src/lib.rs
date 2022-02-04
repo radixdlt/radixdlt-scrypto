@@ -2,12 +2,12 @@ use scrypto::prelude::*;
 
 blueprint! {
     struct Account {
-        public_key: Address,
+        public_key: EcdsaPublicKey,
         vaults: LazyMap<Address, Vault>,
     }
 
     impl Account {
-        pub fn new(public_key: Address) -> Component {
+        pub fn new(public_key: EcdsaPublicKey) -> Component {
             Account {
                 public_key,
                 vaults: LazyMap::new(),
@@ -15,7 +15,7 @@ blueprint! {
             .instantiate()
         }
 
-        pub fn with_bucket(public_key: Address, bucket: Bucket) -> Component {
+        pub fn with_bucket(public_key: EcdsaPublicKey, bucket: Bucket) -> Component {
             let vaults = LazyMap::new();
             vaults.insert(bucket.resource_address(), Vault::with_bucket(bucket));
 
