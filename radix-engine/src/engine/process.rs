@@ -661,7 +661,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         Ok(validated)
     }
 
-    fn process_nft_data(&mut self, data: &[u8]) -> Result<ValidatedData, RuntimeError> {
+    fn process_non_fungible_data(&mut self, data: &[u8]) -> Result<ValidatedData, RuntimeError> {
         let validated = validate_data(data).map_err(RuntimeError::DataValidationError)?;
         if !validated.buckets.is_empty() {
             return Err(RuntimeError::BucketNotAllowed);
@@ -1077,20 +1077,20 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 let mut keys = BTreeSet::new();
 
                 for (key, data) in entries {
-                    if self.track.get_nft(resource_address, &key).is_some() {
-                        return Err(RuntimeError::NftAlreadyExists(
+                    if self.track.get_non_fungible(resource_address, &key).is_some() {
+                        return Err(RuntimeError::NonFungibleAlreadyExists(
                             resource_address,
                             key.clone(),
                         ));
                     }
 
-                    let immutable_data = self.process_nft_data(&data.0)?;
-                    let mutable_data = self.process_nft_data(&data.1)?;
+                    let immutable_data = self.process_non_fungible_data(&data.0)?;
+                    let mutable_data = self.process_non_fungible_data(&data.1)?;
 
-                    self.track.put_nft(
+                    self.track.put_non_fungible(
                         resource_address,
                         &key,
-                        Nft::new(immutable_data.raw, mutable_data.raw),
+                        NonFungible::new(immutable_data.raw, mutable_data.raw),
                     );
                     keys.insert(key.clone());
                 }
@@ -1308,10 +1308,10 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         Ok(BurnResourceOutput {})
     }
 
-    fn handle_update_nft_mutable_data(
+    fn handle_update_non_fungible_mutable_data(
         &mut self,
-        input: UpdateNftMutableDataInput,
-    ) -> Result<UpdateNftMutableDataOutput, RuntimeError> {
+        input: UpdateNonFungibleMutableDataInput,
+    ) -> Result<UpdateNonFungibleMutableDataOutput, RuntimeError> {
         let actor = self.authenticate_with_badge(Some(input.auth))?;
 
         // obtain authorization from resource definition
@@ -1320,37 +1320,37 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .get_resource_def(input.resource_address)
             .ok_or(RuntimeError::ResourceDefNotFound(input.resource_address))?;
         resource_def
-            .check_update_nft_mutable_data_auth(actor)
+            .check_update_non_fungible_mutable_data_auth(actor)
             .map_err(RuntimeError::ResourceDefError)?;
         // update state
-        let data = self.process_nft_data(&input.new_mutable_data)?;
+        let data = self.process_non_fungible_data(&input.new_mutable_data)?;
         self.track
-            .get_nft_mut(input.resource_address, &input.key)
-            .ok_or(RuntimeError::NftNotFound(
+            .get_non_fungible_mut(input.resource_address, &input.key)
+            .ok_or(RuntimeError::NonFungibleNotFound(
                 input.resource_address,
                 input.key.clone(),
             ))?
             .set_mutable_data(data.raw)
-            .map_err(RuntimeError::NftError)?;
+            .map_err(RuntimeError::NonFungibleError)?;
 
-        Ok(UpdateNftMutableDataOutput {})
+        Ok(UpdateNonFungibleMutableDataOutput {})
     }
 
-    fn handle_get_nft_data(
+    fn handle_get_non_fungible_data(
         &mut self,
-        input: GetNftDataInput,
-    ) -> Result<GetNftDataOutput, RuntimeError> {
-        let nft = self
+        input: GetNonFungibleDataInput,
+    ) -> Result<GetNonFungibleDataOutput, RuntimeError> {
+        let non_fungible = self
             .track
-            .get_nft(input.resource_address, &input.key)
-            .ok_or(RuntimeError::NftNotFound(
+            .get_non_fungible(input.resource_address, &input.key)
+            .ok_or(RuntimeError::NonFungibleNotFound(
                 input.resource_address,
                 input.key.clone(),
             ))?;
 
-        Ok(GetNftDataOutput {
-            immutable_data: nft.immutable_data(),
-            mutable_data: nft.mutable_data(),
+        Ok(GetNonFungibleDataOutput {
+            immutable_data: non_fungible.immutable_data(),
+            mutable_data: non_fungible.mutable_data(),
         })
     }
 
@@ -1457,10 +1457,10 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         Ok(TakeFromVaultOutput { bid })
     }
 
-    fn handle_take_nft_from_vault(
+    fn handle_take_non_fungible_from_vault(
         &mut self,
-        input: TakeNftFromVaultInput,
-    ) -> Result<TakeNftFromVaultOutput, RuntimeError> {
+        input: TakeNonFungibleFromVaultInput,
+    ) -> Result<TakeNonFungibleFromVaultOutput, RuntimeError> {
         let actor = self.authenticate_with_badge(input.auth)?;
         self.check_take_from_vault_auth(input.vid, actor.clone())?;
 
@@ -1468,19 +1468,19 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .track
             .get_vault_mut(input.vid)
             .ok_or(RuntimeError::VaultNotFound(input.vid))?
-            .take_nft(&input.key, actor)
+            .take_non_fungible(&input.key, actor)
             .map_err(RuntimeError::VaultError)?;
 
         let bid = self.track.new_bid();
         self.buckets.insert(bid, new_bucket);
 
-        Ok(TakeNftFromVaultOutput { bid })
+        Ok(TakeNonFungibleFromVaultOutput { bid })
     }
 
-    fn handle_get_nft_ids_in_vault(
+    fn handle_get_non_fungible_ids_in_vault(
         &mut self,
-        input: GetNftKeysInVaultInput,
-    ) -> Result<GetNftKeysInVaultOutput, RuntimeError> {
+        input: GetNonFungibleKeysInVaultInput,
+    ) -> Result<GetNonFungibleKeysInVaultOutput, RuntimeError> {
         let actor = self.authenticate()?;
 
         let vault = self
@@ -1488,8 +1488,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .get_vault(input.vid)
             .ok_or(RuntimeError::VaultNotFound(input.vid))?;
 
-        Ok(GetNftKeysInVaultOutput {
-            keys: vault.get_nft_ids(actor).map_err(RuntimeError::VaultError)?,
+        Ok(GetNonFungibleKeysInVaultOutput {
+            keys: vault.get_non_fungible_ids(actor).map_err(RuntimeError::VaultError)?,
         })
     }
 
@@ -1624,33 +1624,33 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         Ok(GetBucketResourceAddressOutput { resource_address })
     }
 
-    fn handle_take_nft_from_bucket(
+    fn handle_take_non_fungible_from_bucket(
         &mut self,
-        input: TakeNftFromBucketInput,
-    ) -> Result<TakeNftFromBucketOutput, RuntimeError> {
+        input: TakeNonFungibleFromBucketInput,
+    ) -> Result<TakeNonFungibleFromBucketOutput, RuntimeError> {
         let new_bucket = self
             .buckets
             .get_mut(&input.bid)
             .ok_or(RuntimeError::BucketNotFound(input.bid))?
-            .take_nft(&input.key)
+            .take_non_fungible(&input.key)
             .map_err(RuntimeError::BucketError)?;
         let bid = self.track.new_bid();
         self.buckets.insert(bid, new_bucket);
 
-        Ok(TakeNftFromBucketOutput { bid })
+        Ok(TakeNonFungibleFromBucketOutput { bid })
     }
 
-    fn handle_get_nft_keys_in_bucket(
+    fn handle_get_non_fungible_keys_in_bucket(
         &mut self,
-        input: GetNftKeysInBucketInput,
-    ) -> Result<GetNftKeysInBucketOutput, RuntimeError> {
+        input: GetNonFungibleKeysInBucketInput,
+    ) -> Result<GetNonFungibleKeysInBucketOutput, RuntimeError> {
         let bucket = self
             .buckets
             .get(&input.bid)
             .ok_or(RuntimeError::BucketNotFound(input.bid))?;
 
-        Ok(GetNftKeysInBucketOutput {
-            keys: bucket.get_nft_keys().map_err(RuntimeError::BucketError)?,
+        Ok(GetNonFungibleKeysInBucketOutput {
+            keys: bucket.get_non_fungible_keys().map_err(RuntimeError::BucketError)?,
         })
     }
 
@@ -1740,19 +1740,19 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         })
     }
 
-    fn handle_get_nft_keys_in_bucket_ref(
+    fn handle_get_non_fungible_keys_in_bucket_ref(
         &mut self,
-        input: GetNftKeysInBucketRefInput,
-    ) -> Result<GetNftKeysInBucketRefOutput, RuntimeError> {
+        input: GetNonFungibleKeysInBucketRefInput,
+    ) -> Result<GetNonFungibleKeysInBucketRefOutput, RuntimeError> {
         let bucket_ref = self
             .bucket_refs
             .get(&input.rid)
             .ok_or(RuntimeError::BucketRefNotFound(input.rid))?;
 
-        Ok(GetNftKeysInBucketRefOutput {
+        Ok(GetNonFungibleKeysInBucketRefOutput {
             keys: bucket_ref
                 .bucket()
-                .get_nft_keys()
+                .get_non_fungible_keys()
                 .map_err(RuntimeError::BucketError)?,
         })
     }
@@ -1875,10 +1875,10 @@ impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
                     }
                     MINT_RESOURCE => self.handle(args, Self::handle_mint_resource),
                     BURN_RESOURCE => self.handle(args, Self::handle_burn_resource),
-                    UPDATE_NFT_MUTABLE_DATA => {
-                        self.handle(args, Self::handle_update_nft_mutable_data)
+                    UPDATE_NON_FUNGIBLE_MUTABLE_DATA => {
+                        self.handle(args, Self::handle_update_non_fungible_mutable_data)
                     }
-                    GET_NFT_DATA => self.handle(args, Self::handle_get_nft_data),
+                    GET_NON_FUNGIBLE_DATA => self.handle(args, Self::handle_get_non_fungible_data),
                     UPDATE_RESOURCE_METADATA => {
                         self.handle(args, Self::handle_update_resource_metadata)
                     }
@@ -1890,8 +1890,8 @@ impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
                     GET_VAULT_RESOURCE_ADDRESS => {
                         self.handle(args, Self::handle_get_vault_resource_address)
                     }
-                    TAKE_NFT_FROM_VAULT => self.handle(args, Self::handle_take_nft_from_vault),
-                    GET_NFT_KEYS_IN_VAULT => self.handle(args, Self::handle_get_nft_ids_in_vault),
+                    TAKE_NON_FUNGIBLE_FROM_VAULT => self.handle(args, Self::handle_take_non_fungible_from_vault),
+                    GET_NON_FUNGIBLE_KEYS_IN_VAULT => self.handle(args, Self::handle_get_non_fungible_ids_in_vault),
 
                     CREATE_EMPTY_BUCKET => self.handle(args, Self::handle_create_bucket),
                     PUT_INTO_BUCKET => self.handle(args, Self::handle_put_into_bucket),
@@ -1900,9 +1900,9 @@ impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
                     GET_BUCKET_RESOURCE_ADDRESS => {
                         self.handle(args, Self::handle_get_bucket_resource_address)
                     }
-                    TAKE_NFT_FROM_BUCKET => self.handle(args, Self::handle_take_nft_from_bucket),
-                    GET_NFT_KEYS_IN_BUCKET => {
-                        self.handle(args, Self::handle_get_nft_keys_in_bucket)
+                    TAKE_NON_FUNGIBLE_FROM_BUCKET => self.handle(args, Self::handle_take_non_fungible_from_bucket),
+                    GET_NON_FUNGIBLE_KEYS_IN_BUCKET => {
+                        self.handle(args, Self::handle_get_non_fungible_keys_in_bucket)
                     }
 
                     CREATE_BUCKET_REF => self.handle(args, Self::handle_create_bucket_ref),
@@ -1911,8 +1911,8 @@ impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
                     GET_BUCKET_REF_RESOURCE_DEF => {
                         self.handle(args, Self::handle_get_bucket_ref_resource_def)
                     }
-                    GET_NFT_KEYS_IN_BUCKET_REF => {
-                        self.handle(args, Self::handle_get_nft_keys_in_bucket_ref)
+                    GET_NON_FUNGIBLE_KEYS_IN_BUCKET_REF => {
+                        self.handle(args, Self::handle_get_non_fungible_keys_in_bucket_ref)
                     }
                     CLONE_BUCKET_REF => self.handle(args, Self::handle_clone_bucket_ref),
 

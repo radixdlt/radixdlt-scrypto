@@ -1,20 +1,20 @@
 use sbor::*;
 use scrypto::rust::vec::Vec;
 
-/// Represents an error when accessing a NFT.
+/// Represents an error when accessing a non-fungible.
 #[derive(Debug, Clone)]
-pub enum NftError {
+pub enum NonFungibleError {
     UnauthorizedAccess,
 }
 
-/// An nft is a peirece of data that is uniquely identified within a resource.
+/// An non-fungible is a piece of data that is uniquely identified within a resource.
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct Nft {
+pub struct NonFungible {
     immutable_data: Vec<u8>,
     mutable_data: Vec<u8>,
 }
 
-impl Nft {
+impl NonFungible {
     pub fn new(immutable_data: Vec<u8>, mutable_data: Vec<u8>) -> Self {
         Self {
             immutable_data,
@@ -30,7 +30,7 @@ impl Nft {
         self.mutable_data.clone()
     }
 
-    pub fn set_mutable_data(&mut self, new_mutable_data: Vec<u8>) -> Result<(), NftError> {
+    pub fn set_mutable_data(&mut self, new_mutable_data: Vec<u8>) -> Result<(), NonFungibleError> {
         self.mutable_data = new_mutable_data;
         Ok(())
     }

@@ -98,7 +98,7 @@ pub enum Type {
     BucketRef,
     LazyMap,
     Vault,
-    NftKey,
+    NonFungibleKey,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -138,7 +138,7 @@ pub enum Value {
     BucketRef(Box<Value>),
     LazyMap(Box<Value>),
     Vault(Box<Value>),
-    NftKey(Box<Value>),
+    NonFungibleKey(Box<Value>),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -186,7 +186,7 @@ impl Value {
             Value::BucketRef(_) => Type::BucketRef,
             Value::LazyMap(_) => Type::LazyMap,
             Value::Vault(_) => Type::Vault,
-            Value::NftKey(_) => Type::NftKey,
+            Value::NonFungibleKey(_) => Type::NonFungibleKey,
         }
     }
 }

@@ -8,7 +8,7 @@ NFT is just another type of resource in Scrypto, and the way to define NFTs is t
 
 To create a fixed supply of NFTs, we will need to define the NFT data structure first, like
 ```rust
-#[derive(NftData)]
+#[derive(NonFungibleData)]
 pub struct MagicCard {
     color: Color,
     rarity: Rarity,
@@ -58,10 +58,10 @@ let random_card_resource_def = ResourceBuilder::new_non_fungible()
     .no_initial_supply();
 ```
 
-Once the resource is created, we can mint NFTs with the `mint_nft` method:
+Once the resource is created, we can mint NFTs with the `mint_non_fungible` method:
 ```rust
 let nft = self.random_card_mint_badge.authorize(|auth| {
-    self.random_card_resource_def.mint_nft(
+    self.random_card_resource_def.mint_non_fungible(
         // The NFT id
         self.random_card_id_counter,
         // The NFT data
@@ -89,11 +89,11 @@ To pick a specific NFT when calling a function or method, we can use the followi
 ## Update an Existing NFT
 
 
-To update, we need to call the `update_nft_data` method on resource definition.
+To update, we need to call the `update_non_fungible_data` method on resource definition.
 
 ```rust
 let nft = self.random_card_mint_badge.authorize(|auth| {
-    self.random_card_resource_def.update_nft_data(
+    self.random_card_resource_def.update_non_fungible_data(
         // The NFT id
         self.random_card_id_counter,
         // The new NFT data

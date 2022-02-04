@@ -156,9 +156,9 @@ impl ResourceDef {
             }
             ResourceType::NonFungible => {
                 if let Supply::NonFungible { keys } = supply {
-                    // Note that the underlying NFTs are not deleted from the simulated ledger.
+                    // Note that the underlying non-fungibles are not deleted from the simulated ledger.
                     // This is not an issue when integrated with UTXO-based state model, where
-                    // the UP state should have been spun down when the NFTs are withdrawn from
+                    // the UP state should have been spun down when the non-fungibles are withdrawn from
                     // the vault.
                     self.total_supply -= keys.len();
                     Ok(())
@@ -264,7 +264,7 @@ impl ResourceDef {
         }
     }
 
-    pub fn check_update_nft_mutable_data_auth(&self, actor: Actor) -> Result<(), ResourceDefError> {
+    pub fn check_update_non_fungible_mutable_data_auth(&self, actor: Actor) -> Result<(), ResourceDefError> {
         if self.is_flag_on(INDIVIDUAL_METADATA_MUTABLE) {
             actor
                 .check_permission(self.authorities(), MAY_CHANGE_INDIVIDUAL_METADATA)

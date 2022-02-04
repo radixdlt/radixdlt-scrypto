@@ -24,8 +24,8 @@ fn is_mutable(f: &syn::Field) -> bool {
     mutable
 }
 
-pub fn handle_nft_data(input: TokenStream) -> Result<TokenStream> {
-    trace!("handle_nft_data() starts");
+pub fn handle_non_fungible_data(input: TokenStream) -> Result<TokenStream> {
+    trace!("handle_non_fungible_data() starts");
 
     let DeriveInput { ident, data, .. } = parse2(input).expect("Unable to parse input");
     let ident_str = ident.to_string();
@@ -56,7 +56,7 @@ pub fn handle_nft_data(input: TokenStream) -> Result<TokenStream> {
                     .map(|f| f.ident.clone().expect("Illegal State!").to_string());
 
                 quote! {
-                    impl ::scrypto::resource::NftData for #ident {
+                    impl ::scrypto::resource::NonFungibleData for #ident {
                         fn decode(immutable_data: &[u8], mutable_data: &[u8]) -> Result<Self, ::sbor::DecodeError> {
                             use ::sbor::{type_id::*, *};
                             let mut decoder_nm = Decoder::new(immutable_data, true);
@@ -160,10 +160,10 @@ pub fn handle_nft_data(input: TokenStream) -> Result<TokenStream> {
             return Err(Error::new(Span::call_site(), "Union is not supported!"));
         }
     };
-    trace!("handle_nft_data() finishes");
+    trace!("handle_non_fungible_data() finishes");
 
     #[cfg(feature = "trace")]
-    crate::utils::print_generated_code("NftData", &output);
+    crate::utils::print_generated_code("NonFungibleData", &output);
 
     Ok(output)
 }
@@ -180,17 +180,17 @@ mod tests {
     }
 
     #[test]
-    fn test_nft() {
+    fn test_non_fungible() {
         let input = TokenStream::from_str(
-            "pub struct AwesomeNftData { pub field_1: u32, #[scrypto(mutable)] pub field_2: String, }",
+            "pub struct AwesomeNonFungibleData { pub field_1: u32, #[scrypto(mutable)] pub field_2: String, }",
         )
         .unwrap();
-        let output = handle_nft_data(input).unwrap();
+        let output = handle_non_fungible_data(input).unwrap();
 
         assert_code_eq(
             output,
             quote! {
-                impl ::scrypto::resource::NftData for AwesomeNftData {
+                impl ::scrypto::resource::NonFungibleData for AwesomeNonFungibleData {
                     fn decode(immutable_data: &[u8], mutable_data: &[u8]) -> Result<Self, ::sbor::DecodeError> {
                         use ::sbor::{type_id::*, *};
                         let mut decoder_nm = Decoder::new(immutable_data, true);
@@ -239,7 +239,7 @@ mod tests {
                         use ::sbor::rust::vec;
                         use ::sbor::Describe;
                         ::sbor::describe::Type::Struct {
-                            name: "AwesomeNftData".to_owned(),
+                            name: "AwesomeNonFungibleData".to_owned(),
                             fields: ::sbor::describe::Fields::Named {
                                 named: vec![("field_1".to_owned(), <u32>::describe())]
                             },
@@ -250,7 +250,7 @@ mod tests {
                         use ::sbor::rust::vec;
                         use ::sbor::Describe;
                         ::sbor::describe::Type::Struct {
-                            name: "AwesomeNftData".to_owned(),
+                            name: "AwesomeNonFungibleData".to_owned(),
                             fields: ::sbor::describe::Fields::Named {
                                 named: vec![("field_2".to_owned(), <String>::describe())]
                             },

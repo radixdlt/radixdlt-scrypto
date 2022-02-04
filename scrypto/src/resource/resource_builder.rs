@@ -94,7 +94,7 @@ impl ResourceBuilder {
     /// # Example
     /// ```ignore
     /// let bucket = ResourceBuilder::new_non_fungible()
-    ///     .metadata("name", "TestNft")
+    ///     .metadata("name", "TestNonFungible")
     ///     .initial_supply_non_fungible([
     ///         (1, "immutable_part", "mutable_part"),
     ///         (2, "another_immutable_part", "another_mutable_part"),
@@ -102,8 +102,8 @@ impl ResourceBuilder {
     /// ```
     pub fn initial_supply_non_fungible<T, V>(&self, entries: T) -> Bucket
     where
-        T: IntoIterator<Item = (NftKey, V)>,
-        V: NftData,
+        T: IntoIterator<Item = (NonFungibleKey, V)>,
+        V: NonFungibleData,
     {
         self.build(Some(NewSupply::non_fungible(entries)))
             .1

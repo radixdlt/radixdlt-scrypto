@@ -61,7 +61,7 @@ The workflow of `buy_ticket` and `buy_ticket_by_id` is very similar.
 ```rust
 self.collected_xrd.put(payment.take(self.ticket_price));
 let ticket = self.available_tickets.take(1);
-// OR let ticket = self.available_tickets.take_nft(id);
+// OR let ticket = self.available_tickets.take_non_fungible(id);
 (ticket, payment)
 ```
 
@@ -69,7 +69,7 @@ Both involves
 1. Taking a payment according to pre-defined price and putting it into the `collected_xrd` vault;
 1. Taking a ticket from the `available_tickets` vault:
    * `take(1)` returns one NFT unit;
-   * `take_nft(id)` returns the specified NFT unit.
+   * `take_non_fungible(id)` returns the specified NFT unit.
 1. Returning the ticket and payment change.
 
 ## How to Play?

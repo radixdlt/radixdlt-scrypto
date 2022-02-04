@@ -12,7 +12,7 @@ pub struct InMemorySubstateStore {
     lazy_maps: HashMap<Mid, LazyMap>,
     resource_defs: HashMap<Address, ResourceDef>,
     vaults: HashMap<Vid, Vault>,
-    nfts: HashMap<(Address, NftKey), Nft>,
+    non_fungibles: HashMap<(Address, NonFungibleKey), NonFungible>,
     current_epoch: u64,
     nonce: u64,
 }
@@ -25,7 +25,7 @@ impl InMemorySubstateStore {
             lazy_maps: HashMap::new(),
             resource_defs: HashMap::new(),
             vaults: HashMap::new(),
-            nfts: HashMap::new(),
+            non_fungibles: HashMap::new(),
             current_epoch: 0,
             nonce: 0,
         }
@@ -85,12 +85,12 @@ impl SubstateStore for InMemorySubstateStore {
         self.vaults.insert(vid, vault);
     }
 
-    fn get_nft(&self, resource_address: Address, key: &NftKey) -> Option<Nft> {
-        self.nfts.get(&(resource_address, key.clone())).cloned()
+    fn get_non_fungible(&self, resource_address: Address, key: &NonFungibleKey) -> Option<NonFungible> {
+        self.non_fungibles.get(&(resource_address, key.clone())).cloned()
     }
 
-    fn put_nft(&mut self, resource_address: Address, key: &NftKey, nft: Nft) {
-        self.nfts.insert((resource_address, key.clone()), nft);
+    fn put_non_fungible(&mut self, resource_address: Address, key: &NonFungibleKey, non_fungible: NonFungible) {
+        self.non_fungibles.insert((resource_address, key.clone()), non_fungible);
     }
 
     fn get_epoch(&self) -> u64 {

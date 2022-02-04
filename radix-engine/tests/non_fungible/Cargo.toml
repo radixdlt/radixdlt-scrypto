@@ -1,5 +1,5 @@
 [package]
-name = "nft"
+name = "non_fungible"
 version = "0.1.0"
 edition = "2021"
 

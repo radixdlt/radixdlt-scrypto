@@ -124,11 +124,11 @@ fn dump_resources<T: SubstateStore>(vaults: &HashSet<Vid>, ledger: &T) -> Result
         );
         if let Supply::NonFungible { keys } = vault.total_supply(Actor::SuperUser).unwrap() {
             for (inner_last, key) in keys.iter().identify_last() {
-                let nft = ledger.get_nft(resource_address, key).unwrap();
-                let immutable_data = validate_data(&nft.immutable_data()).unwrap();
-                let mutable_data = validate_data(&nft.mutable_data()).unwrap();
+                let non_fungible = ledger.get_non_fungible(resource_address, key).unwrap();
+                let immutable_data = validate_data(&non_fungible.immutable_data()).unwrap();
+                let mutable_data = validate_data(&non_fungible.mutable_data()).unwrap();
                 println!(
-                    "{}  {} NFT {{ id: {}, immutable_data: {}, mutable_data: {} }}",
+                    "{}  {} NON_FUNGIBLE {{ id: {}, immutable_data: {}, mutable_data: {} }}",
                     if last { " " } else { "│" },
                     list_item_prefix(inner_last),
                     key,

@@ -7,7 +7,7 @@ use crate::resim::*;
 /// Transfer resource to another account
 #[derive(Parser, Debug)]
 pub struct Transfer {
-    /// The resource to transfer, e.g. "amount,resource_address" or "#nft_id1,#nft_id2,resource_address"
+    /// The resource to transfer, e.g. "amount,resource_address" or "#non_fungible_id1,#non_fungible_id2,resource_address"
     resource: Resource,
 
     /// The recipient address

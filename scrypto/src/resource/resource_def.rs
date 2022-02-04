@@ -75,7 +75,7 @@ impl ResourceDef {
     }
 
     /// Mints non-fungible resources
-    pub fn mint_nft<T: NftData>(&mut self, key: &NftKey, data: T, auth: BucketRef) -> Bucket {
+    pub fn mint_non_fungible<T: NonFungibleData>(&mut self, key: &NonFungibleKey, data: T, auth: BucketRef) -> Bucket {
         let mut entries = HashMap::new();
         entries.insert(key.clone(), (data.immutable_data(), data.mutable_data()));
 
@@ -162,32 +162,32 @@ impl ResourceDef {
         self.address
     }
 
-    /// Returns the data of an NFT unit, both the immutable and mutable parts.
+    /// Returns the data of a non-fungible unit, both the immutable and mutable parts.
     ///
     /// # Panics
-    /// Panics if this is not an NFT resource or the specified NFT is not found.
-    pub fn get_nft_data<T: NftData>(&self, key: &NftKey) -> T {
-        let input = GetNftDataInput {
+    /// Panics if this is not an non-fungible resource or the specified non-fungible is not found.
+    pub fn get_non_fungible_data<T: NonFungibleData>(&self, key: &NonFungibleKey) -> T {
+        let input = GetNonFungibleDataInput {
             resource_address: self.address,
             key: key.clone(),
         };
-        let output: GetNftDataOutput = call_kernel(GET_NFT_DATA, input);
+        let output: GetNonFungibleDataOutput = call_kernel(GET_NON_FUNGIBLE_DATA, input);
 
         scrypto_unwrap(T::decode(&output.immutable_data, &output.mutable_data))
     }
 
-    /// Updates the mutable part of an NFT unit.
+    /// Updates the mutable part of a non-fungible unit.
     ///
     /// # Panics
-    /// Panics if this is not an NFT resource or the specified NFT is not found.
-    pub fn update_nft_data<T: NftData>(&mut self, key: &NftKey, new_data: T, auth: BucketRef) {
-        let input = UpdateNftMutableDataInput {
+    /// Panics if this is not an non-fungible resource or the specified non-fungible is not found.
+    pub fn update_non_fungible_data<T: NonFungibleData>(&mut self, key: &NonFungibleKey, new_data: T, auth: BucketRef) {
+        let input = UpdateNonFungibleMutableDataInput {
             resource_address: self.address,
             key: key.clone(),
             new_mutable_data: new_data.mutable_data(),
             auth: auth.into(),
         };
-        let _: UpdateNftMutableDataOutput = call_kernel(UPDATE_NFT_MUTABLE_DATA, input);
+        let _: UpdateNonFungibleMutableDataOutput = call_kernel(UPDATE_NON_FUNGIBLE_MUTABLE_DATA, input);
     }
 
     /// Turns on feature flags.

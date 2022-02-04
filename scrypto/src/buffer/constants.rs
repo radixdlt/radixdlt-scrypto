@@ -6,7 +6,7 @@ pub const SCRYPTO_TYPE_BID: u8 = 0x84;
 pub const SCRYPTO_TYPE_RID: u8 = 0x85;
 pub const SCRYPTO_TYPE_MID: u8 = 0x86;
 pub const SCRYPTO_TYPE_VID: u8 = 0x87;
-pub const SCRYPTO_TYPE_NFT_KEY: u8 = 0x88;
+pub const SCRYPTO_TYPE_NON_FUNGIBLE_KEY: u8 = 0x88;
 
 pub const SCRYPTO_NAME_DECIMAL: &str = "scrypto::types::Decimal";
 pub const SCRYPTO_NAME_BIG_DECIMAL: &str = "scrypto::types::BigDecimal";
@@ -16,7 +16,7 @@ pub const SCRYPTO_NAME_BID: &str = "scrypto::types::Bid";
 pub const SCRYPTO_NAME_RID: &str = "scrypto::types::Rid";
 pub const SCRYPTO_NAME_MID: &str = "scrypto::types::Mid";
 pub const SCRYPTO_NAME_VID: &str = "scrypto::types::Vid";
-pub const SCRYPTO_NAME_NFT_KEY: &str = "scrypto::types::NftKey";
+pub const SCRYPTO_NAME_NON_FUNGIBLE_KEY: &str = "scrypto::types::NonFungibleKey";
 
 pub const SCRYPTO_NAME_ACCOUNT: &str = "scrypto::core::Account";
 pub const SCRYPTO_NAME_PACKAGE: &str = "scrypto::core::Package";

@@ -43,8 +43,8 @@ blueprint! {
             }
         }
 
-        fn nft_key(&self) -> NftKey {
-            NftKey::new(self.public_key.to_vec())
+        fn non_fungible_key(&self) -> NonFungibleKey {
+            NonFungibleKey::new(self.public_key.to_vec())
         }
 
         /// Withdraws resource from this account.
@@ -54,7 +54,7 @@ blueprint! {
             resource_address: Address,
             account_auth: BucketRef,
         ) -> Bucket {
-            account_auth.check_nft_key(ECDSA_TOKEN, |key| key == &self.nft_key());
+            account_auth.check_non_fungible_key(ECDSA_TOKEN, |key| key == &self.non_fungible_key());
 
             let vault = self.vaults.get(&resource_address);
             match vault {
@@ -73,7 +73,7 @@ blueprint! {
             auth: BucketRef,
             account_auth: BucketRef,
         ) -> Bucket {
-            account_auth.check_nft_key(ECDSA_TOKEN, |key| key == &self.nft_key());
+            account_auth.check_non_fungible_key(ECDSA_TOKEN, |key| key == &self.non_fungible_key());
 
             let vault = self.vaults.get(&resource_address);
             match vault {
@@ -84,21 +84,21 @@ blueprint! {
             }
         }
 
-        /// Withdraws NFTs from this account.
-        pub fn withdraw_nfts(
+        /// Withdraws non-fungibles from this account.
+        pub fn withdraw_non_fungibles(
             &mut self,
-            keys: BTreeSet<NftKey>,
+            keys: BTreeSet<NonFungibleKey>,
             resource_address: Address,
             account_auth: BucketRef,
         ) -> Bucket {
-            account_auth.check_nft_key(ECDSA_TOKEN, |key| key == &self.nft_key());
+            account_auth.check_non_fungible_key(ECDSA_TOKEN, |key| key == &self.non_fungible_key());
 
             let vault = self.vaults.get(&resource_address);
             match vault {
                 Some(vault) => {
                     let mut bucket = Bucket::new(resource_address);
                     for key in keys {
-                        bucket.put(vault.take_nft(&key));
+                        bucket.put(vault.take_non_fungible(&key));
                     }
                     bucket
                 }
@@ -108,22 +108,22 @@ blueprint! {
             }
         }
 
-        /// Withdraws NFTs from this account.
-        pub fn withdraw_nfts_with_auth(
+        /// Withdraws non-fungibles from this account.
+        pub fn withdraw_non_fungibles_with_auth(
             &mut self,
-            keys: BTreeSet<NftKey>,
+            keys: BTreeSet<NonFungibleKey>,
             resource_address: Address,
             auth: BucketRef,
             account_auth: BucketRef,
         ) -> Bucket {
-            account_auth.check_nft_key(ECDSA_TOKEN, |key| key == &self.nft_key());
+            account_auth.check_non_fungible_key(ECDSA_TOKEN, |key| key == &self.non_fungible_key());
 
             let vault = self.vaults.get(&resource_address);
             let bucket = match vault {
                 Some(vault) => {
                     let mut bucket = Bucket::new(resource_address);
                     for key in keys {
-                        bucket.put(vault.take_nft_with_auth(&key, auth.clone()));
+                        bucket.put(vault.take_non_fungible_with_auth(&key, auth.clone()));
                     }
                     bucket
                 }

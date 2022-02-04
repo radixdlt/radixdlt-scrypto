@@ -41,20 +41,20 @@ impl Vault {
         }
     }
 
-    pub fn take_nft(&mut self, key: &NftKey, actor: Actor) -> Result<Bucket, VaultError> {
+    pub fn take_non_fungible(&mut self, key: &NonFungibleKey, actor: Actor) -> Result<Bucket, VaultError> {
         if actor.check(self.authority) {
             self.bucket
-                .take_nft(key)
+                .take_non_fungible(key)
                 .map_err(VaultError::AccountingError)
         } else {
             Err(VaultError::UnauthorizedAccess)
         }
     }
 
-    pub fn get_nft_ids(&self, actor: Actor) -> Result<Vec<NftKey>, VaultError> {
+    pub fn get_non_fungible_ids(&self, actor: Actor) -> Result<Vec<NonFungibleKey>, VaultError> {
         if actor.check(self.authority) {
             self.bucket
-                .get_nft_keys()
+                .get_non_fungible_keys()
                 .map_err(VaultError::AccountingError)
         } else {
             Err(VaultError::UnauthorizedAccess)

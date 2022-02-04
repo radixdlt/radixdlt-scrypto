@@ -27,7 +27,7 @@ pub const MAY_RECALL: u64 = resource_permissions!(1u32 << 5);
 /// May change top-level resource metadata, e.g. name and symbol.
 pub const MAY_CHANGE_SHARED_METADATA: u64 = resource_permissions!(1u32 << 6);
 
-/// May change the mutable data part of an individual NFT.
+/// May change the mutable data part of an individual non-fungible.
 pub const MAY_CHANGE_INDIVIDUAL_METADATA: u64 = resource_permissions!(1u32 << 7);
 
 /// May change mutable flags.

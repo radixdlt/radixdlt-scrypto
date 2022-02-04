@@ -49,11 +49,11 @@ fn can_withdraw_from_my_account() {
 }
 
 #[test]
-fn can_withdraw_nft_from_my_account() {
+fn can_withdraw_non_fungible_from_my_account() {
     // Arrange
     let mut ledger = InMemorySubstateStore::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, false);
-    let package = executor.publish_package(&compile("nft")).unwrap();
+    let package = executor.publish_package(&compile("non_fungible")).unwrap();
     let key = executor.new_public_key();
     let account = executor.new_account(key);
     let other_key = executor.new_public_key();
@@ -61,8 +61,8 @@ fn can_withdraw_nft_from_my_account() {
     let transaction = TransactionBuilder::new(&executor)
         .call_function(
             package,
-            "NftTest",
-            "create_nft_fixed",
+            "NonFungibleTest",
+            "create_non_fungible_fixed",
             vec![],
             Some(account),
         )
@@ -70,10 +70,10 @@ fn can_withdraw_nft_from_my_account() {
         .build(vec![key])
         .unwrap();
     let receipt = executor.run(transaction).unwrap();
-    let nft_address = receipt.resource_def(0).unwrap().to_owned();
+    let non_fungible_address = receipt.resource_def(0).unwrap().to_owned();
     let non_fungible_amount = Resource::NonFungible {
-        keys: BTreeSet::from([NftKey::from(1)]),
-        resource_address: nft_address,
+        keys: BTreeSet::from([NonFungibleKey::from(1)]),
+        resource_address: non_fungible_address,
     };
 
     // Act
@@ -85,6 +85,7 @@ fn can_withdraw_nft_from_my_account() {
     let result = executor.run(transaction);
 
     // Assert
+    println!("{:?}", result);
     assert!(result.unwrap().result.is_ok());
 }
 

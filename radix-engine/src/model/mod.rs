@@ -3,7 +3,7 @@ mod bucket;
 mod component;
 mod error;
 mod lazy_map;
-mod nft;
+mod non_fungible;
 mod package;
 mod receipt;
 mod resource_def;
@@ -19,7 +19,7 @@ pub use error::{
     DataValidationError, RuntimeError, TransactionValidationError, WasmValidationError,
 };
 pub use lazy_map::{LazyMap, LazyMapError};
-pub use nft::{Nft, NftError};
+pub use non_fungible::{NonFungible, NonFungibleError};
 pub use package::Package;
 pub use receipt::Receipt;
 pub use resource_def::{ResourceDef, ResourceDefError};
