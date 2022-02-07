@@ -43,9 +43,9 @@ pub trait SubstateStore {
 
     fn put_vault(&mut self, vid: Vid, vault: Vault);
 
-    fn get_nft(&self, resource_address: Address, id: &NftKey) -> Option<Nft>;
+    fn get_non_fungible(&self, resource_address: Address, id: &NonFungibleKey) -> Option<NonFungible>;
 
-    fn put_nft(&mut self, resource_address: Address, id: &NftKey, nft: Nft);
+    fn put_non_fungible(&mut self, resource_address: Address, id: &NonFungibleKey, non_fungible: NonFungible);
 
     fn bootstrap(&mut self) {
         if self.get_package(SYSTEM_PACKAGE).is_none() {

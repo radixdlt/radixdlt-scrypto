@@ -13,7 +13,7 @@ pub enum Team {
     Away,
 }
 
-#[derive(NftData)]
+#[derive(NonFungibleData)]
 pub struct Ticket {
     /// Which seating section is this ticket for
     section: Section,
@@ -42,7 +42,7 @@ blueprint! {
                 .initial_supply_fungible(1);
 
             // Create our NFT
-            let my_nft_def = ResourceBuilder::new_non_fungible()
+            let my_non_fungible_def = ResourceBuilder::new_non_fungible()
                 .metadata("name", "Ticket to the big game")
                 .flags(MINTABLE | INDIVIDUAL_METADATA_MUTABLE)
                 .badge(
@@ -52,7 +52,7 @@ blueprint! {
                 .no_initial_supply();
 
             // Currently, Scrypto requires manual assignment of NFT IDs
-            let mut ticket_bucket = Bucket::new(my_nft_def);
+            let mut ticket_bucket = Bucket::new(my_non_fungible_def);
             let mut manual_id = 1u128;
 
             // Mint the Luxury seat tokens.  These seats have an assigned seat number
@@ -66,7 +66,7 @@ blueprint! {
                     };
                     ticket_bucket.put(
                         my_admin.authorize(
-                            |auth| ticket_bucket.resource_def().mint_nft(&NftKey::from(manual_id), ticket, auth)
+                            |auth| ticket_bucket.resource_def().mint_non_fungible(&NonFungibleKey::from(manual_id), ticket, auth)
                         )
                     );
                     manual_id += 1;
@@ -83,7 +83,7 @@ blueprint! {
                 };
                 ticket_bucket.put(
                     my_admin.authorize(
-                        |auth| ticket_bucket.resource_def().mint_nft(&NftKey::from(manual_id), ticket, auth)
+                        |auth| ticket_bucket.resource_def().mint_non_fungible(&NonFungibleKey::from(manual_id), ticket, auth)
                     )
                 );
             }
@@ -101,7 +101,7 @@ blueprint! {
 
         /// Helper function to look for a matching ticket
         fn get_ticket(&mut self, section: Section, seat: Option<String>) -> Bucket {
-            let nfts = self.tickets.get_nfts::<Ticket>();
+            let nfts = self.tickets.get_non_fungibles::<Ticket>();
             // Currently, there is no way to search for particular NFT characteristics within a bucket/vault other than iterating through all of them.
             // A better implementation of this simple use case would be to provide a way to map Luxury seat numbers to an ID deterministically,
             // and likely keep them in a separate vault from the Field tokens so that the semi-fungible Field tokens can be immediately grabbed.            
@@ -109,7 +109,7 @@ blueprint! {
             for nft in &nfts {
                 let ticket: Ticket = nft.data();
                 if ticket.section == section && ticket.seat == seat {
-                    return self.tickets.take_nft(&nft.key());
+                    return self.tickets.take_non_fungible(&nft.key());
                 }                
             };
 
@@ -119,12 +119,12 @@ blueprint! {
         /// Passing an NFT into this function will switch it from the default Home team prediction to an Away team prediction
         fn switch_nft_prediction(&mut self, mut nft_bucket: Bucket) -> Bucket {
             // First, get the current data and change it to the desired state locally
-            let mut nft_data: Ticket = nft_bucket.get_nft_data(&nft_bucket.get_nft_key());
+            let mut nft_data: Ticket = nft_bucket.get_non_fungible_data(&nft_bucket.get_non_fungible_key());
             nft_data.prediction = Team::Away;
 
             // Then commit our updated data to our NFT
             self.admin_authority.authorize(
-                |auth| nft_bucket.update_nft_data(&nft_bucket.get_nft_key(), nft_data, auth)
+                |auth| nft_bucket.update_non_fungible_data(&nft_bucket.get_non_fungible_key(), nft_data, auth)
             );
 
             // All done, send it back

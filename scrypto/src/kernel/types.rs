@@ -40,9 +40,9 @@ pub enum NewSupply {
     /// A supply of fungible resource represented by amount.
     Fungible { amount: Decimal },
 
-    /// A supply of non-fungible resource represented by a collection of NFTs keyed by ID.
+    /// A supply of non-fungible resource represented by a collection of non-fungibles, keyed by ID.
     NonFungible {
-        entries: HashMap<NftKey, (Vec<u8>, Vec<u8>)>,
+        entries: HashMap<NonFungibleKey, (Vec<u8>, Vec<u8>)>,
     },
 }
 
@@ -55,8 +55,8 @@ impl NewSupply {
 
     pub fn non_fungible<T, V>(entries: T) -> Self
     where
-        T: IntoIterator<Item = (NftKey, V)>,
-        V: NftData,
+        T: IntoIterator<Item = (NonFungibleKey, V)>,
+        V: NonFungibleData,
     {
         let mut encoded = HashMap::new();
         for (id, e) in entries {

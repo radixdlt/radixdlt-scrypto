@@ -30,7 +30,7 @@ pub const RECALLABLE: u64 = resource_flags!(1u32 << 4);
 /// Top-level resource metadata can be changed.
 pub const SHARED_METADATA_MUTABLE: u64 = resource_flags!(1u32 << 5);
 
-/// The mutable data part of an individual NFT can be modified.
+/// The mutable data part of an individual non-fungible can be modified.
 pub const INDIVIDUAL_METADATA_MUTABLE: u64 = resource_flags!(1u32 << 6);
 
 /// All resources flags.

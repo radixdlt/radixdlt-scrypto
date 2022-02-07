@@ -35,7 +35,7 @@ pub enum DataValidationError {
     InvalidRid(ParseRidError),
     InvalidMid(ParseMidError),
     InvalidVid(ParseVidError),
-    InvalidNftKey(ParseNftKeyError),
+    InvalidNonFungibleKey(ParseNonFungibleKeyError),
 }
 
 /// Represents an error when validating a transaction.
@@ -110,11 +110,11 @@ pub enum RuntimeError {
     /// Resource definition does not exist.
     ResourceDefNotFound(Address),
 
-    /// Nft does not exist.
-    NftNotFound(Address, NftKey),
+    /// Non-fungible does not exist.
+    NonFungibleNotFound(Address, NonFungibleKey),
 
-    /// Nft already exists.
-    NftAlreadyExists(Address, NftKey),
+    /// Non-fungible already exists.
+    NonFungibleAlreadyExists(Address, NonFungibleKey),
 
     /// Lazy map does not exist.
     LazyMapNotFound(Mid),
@@ -155,8 +155,8 @@ pub enum RuntimeError {
     /// Vault access error.
     VaultError(VaultError),
 
-    /// Nft access error.
-    NftError(NftError),
+    /// Non-fungible access error.
+    NonFungibleError(NonFungibleError),
 
     /// Bucket is not allowed.
     BucketNotAllowed,

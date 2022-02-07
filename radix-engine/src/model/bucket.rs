@@ -13,7 +13,7 @@ pub enum BucketError {
     InsufficientBalance,
     InvalidAmount(Decimal),
     UnsupportedOperation,
-    NftNotFound,
+    NonFungibleNotFound,
 }
 
 /// Represents the supply of resource.
@@ -21,7 +21,7 @@ pub enum BucketError {
 pub enum Supply {
     Fungible { amount: Decimal },
 
-    NonFungible { keys: BTreeSet<NftKey> },
+    NonFungible { keys: BTreeSet<NonFungibleKey> },
 }
 
 /// A transient resource container.
@@ -98,7 +98,7 @@ impl Bucket {
                 }
                 Supply::NonFungible { ref mut keys } => {
                     let n: usize = quantity.to_string().parse().unwrap();
-                    let taken: BTreeSet<NftKey> = keys.iter().cloned().take(n).collect();
+                    let taken: BTreeSet<NonFungibleKey> = keys.iter().cloned().take(n).collect();
                     for e in &taken {
                         keys.remove(e);
                     }
@@ -112,12 +112,12 @@ impl Bucket {
         }
     }
 
-    pub fn take_nft(&mut self, key: &NftKey) -> Result<Self, BucketError> {
+    pub fn take_non_fungible(&mut self, key: &NonFungibleKey) -> Result<Self, BucketError> {
         match &mut self.supply {
             Supply::Fungible { .. } => Err(BucketError::UnsupportedOperation),
             Supply::NonFungible { ref mut keys } => {
                 if !keys.contains(&key) {
-                    return Err(BucketError::NftNotFound);
+                    return Err(BucketError::NonFungibleNotFound);
                 }
                 keys.remove(&key);
                 Ok(Self::new(
@@ -131,7 +131,7 @@ impl Bucket {
         }
     }
 
-    pub fn get_nft_keys(&self) -> Result<Vec<NftKey>, BucketError> {
+    pub fn get_non_fungible_keys(&self) -> Result<Vec<NonFungibleKey>, BucketError> {
         match &self.supply {
             Supply::Fungible { .. } => Err(BucketError::UnsupportedOperation),
             Supply::NonFungible { keys } => Ok(keys.iter().cloned().collect()),

@@ -28,13 +28,13 @@ pub struct Track<'s, S: SubstateStore> {
     resource_defs: HashMap<Address, ResourceDef>,
     lazy_maps: HashMap<Mid, LazyMap>,
     vaults: HashMap<Vid, Vault>,
-    nfts: HashMap<(Address, NftKey), Nft>,
+    non_fungibles: HashMap<(Address, NonFungibleKey), NonFungible>,
     updated_packages: HashSet<Address>,
     updated_components: HashSet<Address>,
     updated_lazy_maps: HashSet<Mid>,
     updated_resource_defs: HashSet<Address>,
     updated_vaults: HashSet<Vid>,
-    updated_nfts: HashSet<(Address, NftKey)>,
+    updated_non_fungibles: HashSet<(Address, NonFungibleKey)>,
     new_entities: Vec<Address>,
     code_cache: LruCache<Address, Module>, // TODO: move to ledger level
 }
@@ -56,13 +56,13 @@ impl<'s, S: SubstateStore> Track<'s, S> {
             resource_defs: HashMap::new(),
             lazy_maps: HashMap::new(),
             vaults: HashMap::new(),
-            nfts: HashMap::new(),
+            non_fungibles: HashMap::new(),
             updated_packages: HashSet::new(),
             updated_components: HashSet::new(),
             updated_lazy_maps: HashSet::new(),
             updated_resource_defs: HashSet::new(),
             updated_vaults: HashSet::new(),
-            updated_nfts: HashSet::new(),
+            updated_non_fungibles: HashSet::new(),
             new_entities: Vec::new(),
             code_cache: LruCache::new(1024),
         }
@@ -71,11 +71,11 @@ impl<'s, S: SubstateStore> Track<'s, S> {
     /// Start a process.
     pub fn start_process<'r>(&'r mut self, verbose: bool) -> Process<'r, 's, S> {
         // FIXME: This is a temp solution
-        let signers: BTreeSet<NftKey> = self
+        let signers: BTreeSet<NonFungibleKey> = self
             .transaction_signers
             .clone()
             .into_iter()
-            .map(|key| NftKey::new(key.to_vec()))
+            .map(|key| NonFungibleKey::new(key.to_vec()))
             .collect();
         let mut process = Process::new(0, verbose, self);
 
@@ -207,41 +207,41 @@ impl<'s, S: SubstateStore> Track<'s, S> {
         self.components.insert(address, component);
     }
 
-    /// Returns an immutable reference to a nft, if exists.
-    pub fn get_nft(&mut self, resource_address: Address, key: &NftKey) -> Option<&Nft> {
-        if self.nfts.contains_key(&(resource_address, key.clone())) {
-            return self.nfts.get(&(resource_address, key.clone()));
+    /// Returns an immutable reference to a non-fungible, if exists.
+    pub fn get_non_fungible(&mut self, resource_address: Address, key: &NonFungibleKey) -> Option<&NonFungible> {
+        if self.non_fungibles.contains_key(&(resource_address, key.clone())) {
+            return self.non_fungibles.get(&(resource_address, key.clone()));
         }
 
-        if let Some(nft) = self.ledger.get_nft(resource_address, key) {
-            self.nfts.insert((resource_address, key.clone()), nft);
-            self.nfts.get(&(resource_address, key.clone()))
+        if let Some(non_fungible) = self.ledger.get_non_fungible(resource_address, key) {
+            self.non_fungibles.insert((resource_address, key.clone()), non_fungible);
+            self.non_fungibles.get(&(resource_address, key.clone()))
         } else {
             None
         }
     }
 
-    /// Returns a mutable reference to a nft, if exists.
-    pub fn get_nft_mut(&mut self, resource_address: Address, key: &NftKey) -> Option<&mut Nft> {
-        self.updated_nfts.insert((resource_address, key.clone()));
+    /// Returns a mutable reference to a non-fungible, if exists.
+    pub fn get_non_fungible_mut(&mut self, resource_address: Address, key: &NonFungibleKey) -> Option<&mut NonFungible> {
+        self.updated_non_fungibles.insert((resource_address, key.clone()));
 
-        if self.nfts.contains_key(&(resource_address, key.clone())) {
-            return self.nfts.get_mut(&(resource_address, key.clone()));
+        if self.non_fungibles.contains_key(&(resource_address, key.clone())) {
+            return self.non_fungibles.get_mut(&(resource_address, key.clone()));
         }
 
-        if let Some(nft) = self.ledger.get_nft(resource_address, key) {
-            self.nfts.insert((resource_address, key.clone()), nft);
-            self.nfts.get_mut(&(resource_address, key.clone()))
+        if let Some(non_fungible) = self.ledger.get_non_fungible(resource_address, key) {
+            self.non_fungibles.insert((resource_address, key.clone()), non_fungible);
+            self.non_fungibles.get_mut(&(resource_address, key.clone()))
         } else {
             None
         }
     }
 
-    /// Inserts a new nft.
-    pub fn put_nft(&mut self, resource_address: Address, key: &NftKey, nft: Nft) {
-        self.updated_nfts.insert((resource_address, key.clone()));
+    /// Inserts a new non-fungible.
+    pub fn put_non_fungible(&mut self, resource_address: Address, key: &NonFungibleKey, non_fungible: NonFungible) {
+        self.updated_non_fungibles.insert((resource_address, key.clone()));
 
-        self.nfts.insert((resource_address, key.clone()), nft);
+        self.non_fungibles.insert((resource_address, key.clone()), non_fungible);
     }
 
     /// Returns an immutable reference to a lazy map, if exists.
@@ -440,11 +440,11 @@ impl<'s, S: SubstateStore> Track<'s, S> {
                 .put_vault(vid, self.vaults.get(&vid).unwrap().clone());
         }
 
-        for (resource_def, id) in self.updated_nfts.clone() {
-            self.ledger.put_nft(
+        for (resource_def, id) in self.updated_non_fungibles.clone() {
+            self.ledger.put_non_fungible(
                 resource_def,
                 &id,
-                self.nfts.get(&(resource_def, id.clone())).unwrap().clone(),
+                self.non_fungibles.get(&(resource_def, id.clone())).unwrap().clone(),
             );
         }
     }

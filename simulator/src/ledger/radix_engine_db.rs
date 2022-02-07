@@ -108,12 +108,12 @@ impl SubstateStore for RadixEngineDB {
         self.write(vid, vault)
     }
 
-    fn get_nft(&self, resource_address: Address, key: &NftKey) -> Option<Nft> {
+    fn get_non_fungible(&self, resource_address: Address, key: &NonFungibleKey) -> Option<NonFungible> {
         self.read((resource_address, key.clone()))
     }
 
-    fn put_nft(&mut self, resource_address: Address, key: &NftKey, nft: Nft) {
-        self.write((resource_address, key.clone()), nft)
+    fn put_non_fungible(&mut self, resource_address: Address, key: &NonFungibleKey, non_fungible: NonFungible) {
+        self.write((resource_address, key.clone()), non_fungible)
     }
 
     fn get_epoch(&self) -> u64 {

@@ -317,60 +317,60 @@ fn test_call() {
 }
 
 #[test]
-fn test_nft() {
+fn test_non_fungible() {
     let mut ledger = InMemorySubstateStore::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, false);
     let key = executor.new_public_key();
     let account = executor.new_account(key);
-    let package = executor.publish_package(&compile("nft")).unwrap();
+    let package = executor.publish_package(&compile("non_fungible")).unwrap();
 
     let transaction = TransactionBuilder::new(&executor)
         .call_function(
             package,
-            "NftTest",
-            "create_nft_mutable",
+            "NonFungibleTest",
+            "create_non_fungible_mutable",
             vec![],
             Some(account),
         )
         .call_function(
             package,
-            "NftTest",
-            "create_nft_fixed",
+            "NonFungibleTest",
+            "create_non_fungible_fixed",
             vec![],
             Some(account),
         )
         .call_function(
             package,
-            "NftTest",
-            "update_and_get_nft",
+            "NonFungibleTest",
+            "update_and_get_non_fungible",
             vec![],
             Some(account),
         )
         .call_function(
             package,
-            "NftTest",
+            "NonFungibleTest",
             "take_and_put_bucket",
             vec![],
             Some(account),
         )
         .call_function(
             package,
-            "NftTest",
+            "NonFungibleTest",
             "take_and_put_vault",
             vec![],
             Some(account),
         )
         .call_function(
             package,
-            "NftTest",
-            "get_nft_ids_bucket",
+            "NonFungibleTest",
+            "get_non_fungible_ids_bucket",
             vec![],
             Some(account),
         )
         .call_function(
             package,
-            "NftTest",
-            "get_nft_ids_vault",
+            "NonFungibleTest",
+            "get_non_fungible_ids_vault",
             vec![],
             Some(account),
         )

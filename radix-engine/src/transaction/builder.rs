@@ -26,7 +26,7 @@ pub enum Resource {
         resource_address: Address,
     },
     NonFungible {
-        keys: BTreeSet<NftKey>,
+        keys: BTreeSet<NonFungibleKey>,
         resource_address: Address,
     },
 }
@@ -35,7 +35,7 @@ pub enum Resource {
 #[derive(Debug, Clone)]
 pub enum ParseResourceError {
     InvalidAmount,
-    InvalidNftKey,
+    InvalidNonFungibleKey,
     InvalidResourceAddress,
     MissingResourceAddress,
 }
@@ -62,16 +62,16 @@ impl FromStr for Resource {
                 .parse::<Address>()
                 .map_err(|_| ParseResourceError::InvalidResourceAddress)?;
             if tokens[0].starts_with('#') {
-                let mut keys = BTreeSet::<NftKey>::new();
+                let mut keys = BTreeSet::<NonFungibleKey>::new();
                 for key in &tokens[..tokens.len() - 1] {
                     if key.starts_with('#') {
                         keys.insert(
                             key[1..]
                                 .parse()
-                                .map_err(|_| ParseResourceError::InvalidNftKey)?,
+                                .map_err(|_| ParseResourceError::InvalidNonFungibleKey)?,
                         );
                     } else {
-                        return Err(ParseResourceError::InvalidNftKey);
+                        return Err(ParseResourceError::InvalidNonFungibleKey);
                     }
                 }
                 Ok(Resource::NonFungible {
@@ -556,7 +556,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                 builder
                     .add_instruction(Instruction::CallMethod {
                         component_address: account,
-                        method: "withdraw_nfts".to_owned(),
+                        method: "withdraw_non_fungibles".to_owned(),
                         args: vec![
                             scrypto_encode(keys),
                             scrypto_encode(resource_address),
@@ -677,9 +677,9 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                     .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
                 Ok(scrypto_encode(&value))
             }
-            SCRYPTO_NAME_NFT_KEY => {
+            SCRYPTO_NAME_NON_FUNGIBLE_KEY => {
                 let value = arg
-                    .parse::<NftKey>()
+                    .parse::<NonFungibleKey>()
                     .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
                 Ok(scrypto_encode(&value))
             }

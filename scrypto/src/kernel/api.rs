@@ -55,10 +55,10 @@ pub const UPDATE_RESOURCE_FLAGS: u32 = 0x37;
 pub const GET_RESOURCE_MUTABLE_FLAGS: u32 = 0x38;
 /// Update mutable feature flags
 pub const UPDATE_RESOURCE_MUTABLE_FLAGS: u32 = 0x39;
-/// Get the data of an NFT
-pub const GET_NFT_DATA: u32 = 0x3a;
-/// Update the data of an NFT
-pub const UPDATE_NFT_MUTABLE_DATA: u32 = 0x3b;
+/// Get the data of a non-fungible
+pub const GET_NON_FUNGIBLE_DATA: u32 = 0x3a;
+/// Update the data of a non-fungible
+pub const UPDATE_NON_FUNGIBLE_MUTABLE_DATA: u32 = 0x3b;
 /// Update resource metadata
 pub const UPDATE_RESOURCE_METADATA: u32 = 0x3c;
 
@@ -72,10 +72,10 @@ pub const TAKE_FROM_VAULT: u32 = 0x42;
 pub const GET_VAULT_AMOUNT: u32 = 0x43;
 /// Get vault resource definition
 pub const GET_VAULT_RESOURCE_ADDRESS: u32 = 0x44;
-/// Take an NFT from this vault, by key
-pub const TAKE_NFT_FROM_VAULT: u32 = 0x45;
-/// Get the IDs of all NFTs in this vault
-pub const GET_NFT_KEYS_IN_VAULT: u32 = 0x46;
+/// Take a non-fungible from this vault, by key
+pub const TAKE_NON_FUNGIBLE_FROM_VAULT: u32 = 0x45;
+/// Get the IDs of all non-fungibles in this vault
+pub const GET_NON_FUNGIBLE_KEYS_IN_VAULT: u32 = 0x46;
 
 /// Create an empty bucket
 pub const CREATE_EMPTY_BUCKET: u32 = 0x50;
@@ -87,10 +87,10 @@ pub const TAKE_FROM_BUCKET: u32 = 0x52;
 pub const GET_BUCKET_AMOUNT: u32 = 0x53;
 /// Get bucket resource definition
 pub const GET_BUCKET_RESOURCE_ADDRESS: u32 = 0x54;
-/// Take an NFT from this bucket, by key
-pub const TAKE_NFT_FROM_BUCKET: u32 = 0x55;
-/// Get the IDs of all NFTs in this bucket
-pub const GET_NFT_KEYS_IN_BUCKET: u32 = 0x56;
+/// Take a non-fungible from this bucket, by key
+pub const TAKE_NON_FUNGIBLE_FROM_BUCKET: u32 = 0x55;
+/// Get the IDs of all non-fungibles in this bucket
+pub const GET_NON_FUNGIBLE_KEYS_IN_BUCKET: u32 = 0x56;
 
 /// Obtain a bucket ref
 pub const CREATE_BUCKET_REF: u32 = 0x60;
@@ -100,8 +100,8 @@ pub const DROP_BUCKET_REF: u32 = 0x61;
 pub const GET_BUCKET_REF_AMOUNT: u32 = 0x62;
 /// Get the resource definition behind a bucket ref
 pub const GET_BUCKET_REF_RESOURCE_DEF: u32 = 0x63;
-/// Get the NFT keys in the bucket referenced
-pub const GET_NFT_KEYS_IN_BUCKET_REF: u32 = 0x64;
+/// Get the non-fungible keys in the bucket referenced
+pub const GET_NON_FUNGIBLE_KEYS_IN_BUCKET_REF: u32 = 0x64;
 /// Clone bucket ref
 pub const CLONE_BUCKET_REF: u32 = 0x65;
 
@@ -307,27 +307,27 @@ pub struct GetResourceTotalSupplyOutput {
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct GetNftDataInput {
+pub struct GetNonFungibleDataInput {
     pub resource_address: Address,
-    pub key: NftKey,
+    pub key: NonFungibleKey,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct GetNftDataOutput {
+pub struct GetNonFungibleDataOutput {
     pub immutable_data: Vec<u8>,
     pub mutable_data: Vec<u8>,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct UpdateNftMutableDataInput {
+pub struct UpdateNonFungibleMutableDataInput {
     pub resource_address: Address,
-    pub key: NftKey,
+    pub key: NonFungibleKey,
     pub new_mutable_data: Vec<u8>,
     pub auth: Rid,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct UpdateNftMutableDataOutput {}
+pub struct UpdateNonFungibleMutableDataOutput {}
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct GetResourceFlagsInput {
@@ -435,25 +435,25 @@ pub struct GetVaultResourceAddressOutput {
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct TakeNftFromVaultInput {
+pub struct TakeNonFungibleFromVaultInput {
     pub vid: Vid,
-    pub key: NftKey,
+    pub key: NonFungibleKey,
     pub auth: Option<Rid>,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct TakeNftFromVaultOutput {
+pub struct TakeNonFungibleFromVaultOutput {
     pub bid: Bid,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct GetNftKeysInVaultInput {
+pub struct GetNonFungibleKeysInVaultInput {
     pub vid: Vid,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct GetNftKeysInVaultOutput {
-    pub keys: Vec<NftKey>,
+pub struct GetNonFungibleKeysInVaultOutput {
+    pub keys: Vec<NonFungibleKey>,
 }
 
 //==========
@@ -511,24 +511,24 @@ pub struct GetBucketResourceAddressOutput {
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct TakeNftFromBucketInput {
+pub struct TakeNonFungibleFromBucketInput {
     pub bid: Bid,
-    pub key: NftKey,
+    pub key: NonFungibleKey,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct TakeNftFromBucketOutput {
-    pub bid: Bid,
-}
-
-#[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct GetNftKeysInBucketInput {
+pub struct TakeNonFungibleFromBucketOutput {
     pub bid: Bid,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct GetNftKeysInBucketOutput {
-    pub keys: Vec<NftKey>,
+pub struct GetNonFungibleKeysInBucketInput {
+    pub bid: Bid,
+}
+
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
+pub struct GetNonFungibleKeysInBucketOutput {
+    pub keys: Vec<NonFungibleKey>,
 }
 
 //==========
@@ -574,13 +574,13 @@ pub struct GetBucketRefResourceAddressOutput {
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct GetNftKeysInBucketRefInput {
+pub struct GetNonFungibleKeysInBucketRefInput {
     pub rid: Rid,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct GetNftKeysInBucketRefOutput {
-    pub keys: Vec<NftKey>,
+pub struct GetNonFungibleKeysInBucketRefOutput {
+    pub keys: Vec<NonFungibleKey>,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]

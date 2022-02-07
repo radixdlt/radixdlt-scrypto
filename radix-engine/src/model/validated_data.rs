@@ -162,7 +162,7 @@ pub fn format_kind(kind: u8) -> String {
         SCRYPTO_TYPE_RID => "BucketRef",
         SCRYPTO_TYPE_MID => "LazyMap",
         SCRYPTO_TYPE_VID => "Vault",
-        SCRYPTO_TYPE_NFT_KEY => "NftKey",
+        SCRYPTO_TYPE_NON_FUNGIBLE_KEY => "NonFungibleKey",
         _ => panic!("Illegal state"),
     }
     .to_string()
@@ -228,7 +228,7 @@ pub fn format_custom(
             }
         }
         SCRYPTO_TYPE_VID => format!("Vault(\"{}\")", Vid::try_from(data).unwrap()),
-        SCRYPTO_TYPE_NFT_KEY => format!("NftKey(\"{}\")", NftKey::try_from(data).unwrap()),
+        SCRYPTO_TYPE_NON_FUNGIBLE_KEY => format!("NonFungibleKey(\"{}\")", NonFungibleKey::try_from(data).unwrap()),
         _ => panic!("Illegal state"),
     }
 }
