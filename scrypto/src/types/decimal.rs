@@ -142,10 +142,10 @@ macro_rules! dec {
             panic!("Overflow of arg2.");
         } else {
             if (($exponent) as i128) < 0 {
-                Decimal(($int) * PRECISION)
+                Decimal::from(1i128 * ($int))
                     .div(10i128.pow((-1i128 * ($exponent)) as u32))
             } else {
-                Decimal(($int) * PRECISION)
+                Decimal::from(1i128 * ($int))
                     .mul(10i128.pow((1i128 * ($exponent)) as u32))
             }
         }
