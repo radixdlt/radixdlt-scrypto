@@ -165,7 +165,7 @@ impl ResourceDef {
     /// Returns the data of a non-fungible unit, both the immutable and mutable parts.
     ///
     /// # Panics
-    /// Panics if this is not an non-fungible resource or the specified non-fungible is not found.
+    /// Panics if this is not a non-fungible resource or the specified non-fungible is not found.
     pub fn get_non_fungible_data<T: NonFungibleData>(&self, key: &NonFungibleKey) -> T {
         let input = GetNonFungibleDataInput {
             resource_address: self.address,
@@ -179,7 +179,7 @@ impl ResourceDef {
     /// Updates the mutable part of a non-fungible unit.
     ///
     /// # Panics
-    /// Panics if this is not an non-fungible resource or the specified non-fungible is not found.
+    /// Panics if this is not a non-fungible resource or the specified non-fungible is not found.
     pub fn update_non_fungible_data<T: NonFungibleData>(&mut self, key: &NonFungibleKey, new_data: T, auth: BucketRef) {
         let input = UpdateNonFungibleMutableDataInput {
             resource_address: self.address,

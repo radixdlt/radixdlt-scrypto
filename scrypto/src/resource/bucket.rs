@@ -139,7 +139,7 @@ impl Bucket {
     /// Get all non-fungible IDs in this bucket.
     ///
     /// # Panics
-    /// Panics if this is not an non-fungible bucket.
+    /// Panics if this is not a non-fungible bucket.
     pub fn get_non_fungible_keys(&self) -> Vec<NonFungibleKey> {
         let input = GetNonFungibleKeysInBucketInput { bid: self.bid };
         let output: GetNonFungibleKeysInBucketOutput = call_kernel(GET_NON_FUNGIBLE_KEYS_IN_BUCKET, input);
@@ -157,7 +157,7 @@ impl Bucket {
     /// Returns the data of a non-fungible unit, both the immutable and mutable parts.
     ///
     /// # Panics
-    /// Panics if this is not an non-fungible bucket.
+    /// Panics if this is not a non-fungible bucket.
     pub fn get_non_fungible_data<T: NonFungibleData>(&self, key: &NonFungibleKey) -> T {
         self.resource_def().get_non_fungible_data(key)
     }

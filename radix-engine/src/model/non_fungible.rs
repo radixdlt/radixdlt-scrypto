@@ -7,7 +7,7 @@ pub enum NonFungibleError {
     UnauthorizedAccess,
 }
 
-/// An non-fungible is a piece of data that is uniquely identified within a resource.
+/// A non-fungible is a piece of data that is uniquely identified within a resource.
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct NonFungible {
     immutable_data: Vec<u8>,

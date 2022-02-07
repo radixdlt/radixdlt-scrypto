@@ -110,10 +110,10 @@ pub enum RuntimeError {
     /// Resource definition does not exist.
     ResourceDefNotFound(Address),
 
-    /// NonFungible does not exist.
+    /// Non-fungible does not exist.
     NonFungibleNotFound(Address, NonFungibleKey),
 
-    /// NonFungible already exists.
+    /// Non-fungible already exists.
     NonFungibleAlreadyExists(Address, NonFungibleKey),
 
     /// Lazy map does not exist.
@@ -155,7 +155,7 @@ pub enum RuntimeError {
     /// Vault access error.
     VaultError(VaultError),
 
-    /// NonFungible access error.
+    /// Non-fungible access error.
     NonFungibleError(NonFungibleError),
 
     /// Bucket is not allowed.

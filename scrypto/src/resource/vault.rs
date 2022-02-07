@@ -192,7 +192,7 @@ impl Vault {
     /// Returns all the non-fungible units contained.
     ///
     /// # Panics
-    /// Panics if this is not an non-fungible vault.
+    /// Panics if this is not a non-fungible vault.
     pub fn get_non_fungibles<T: NonFungibleData>(&self) -> Vec<NonFungible<T>> {
         let input = GetNonFungibleKeysInVaultInput { vid: self.vid };
         let output: GetNonFungibleKeysInVaultOutput = call_kernel(GET_NON_FUNGIBLE_KEYS_IN_VAULT, input);
@@ -225,15 +225,15 @@ impl Vault {
     /// Returns the data of a non-fungible unit, both the immutable and mutable parts.
     ///
     /// # Panics
-    /// Panics if this is not an non-fungible bucket.
+    /// Panics if this is not a non-fungible bucket.
     pub fn get_non_fungible_data<T: NonFungibleData>(&self, id: &NonFungibleKey) -> T {
         self.resource_def().get_non_fungible_data(id)
     }
 
-    /// Updates the mutable part of the data of an non-fungible unit.
+    /// Updates the mutable part of the data of a non-fungible unit.
     ///
     /// # Panics
-    /// Panics if this is not an non-fungible vault or the specified non-fungible is not found.
+    /// Panics if this is not a non-fungible vault or the specified non-fungible is not found.
     pub fn update_non_fungible_data<T: NonFungibleData>(&self, id: &NonFungibleKey, new_data: T, auth: BucketRef) {
         self.resource_def().update_non_fungible_data(id, new_data, auth)
     }

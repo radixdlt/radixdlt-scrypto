@@ -25,7 +25,7 @@ blueprint! {
                 )
                 .no_initial_supply();
 
-            // Mint an non-fungible
+            // Mint a non-fungible
             let non_fungible = non_fungible_resource_def.mint_non_fungible(
                 &NonFungibleKey::from(0u128),
                 Sandwich {

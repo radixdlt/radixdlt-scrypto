@@ -2,7 +2,7 @@ use sbor::{describe::*, *};
 
 use crate::rust::vec::Vec;
 
-/// Represents the data structure of an NonFungible.
+/// Represents the data structure of a non-fungible.
 pub trait NonFungibleData {
     /// Decodes `Self` from the serialized immutable and mutable parts.
     fn decode(immutable_data: &[u8], mutable_data: &[u8]) -> Result<Self, DecodeError>

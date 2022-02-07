@@ -16,7 +16,7 @@ pub struct CallFunction {
     /// The function name
     function_name: String,
 
-    /// The call arguments, e.g. \"5\", \"hello\", \"amount,resource_address\" for Bucket, or \"#id1,#id2,..,resource_address\" for NonFungible Bucket
+    /// The call arguments, e.g. \"5\", \"hello\", \"amount,resource_address\" for Bucket, or \"#id1,#id2,..,resource_address\" for non-fungible Bucket
     arguments: Vec<String>,
 
     /// The transaction signers
