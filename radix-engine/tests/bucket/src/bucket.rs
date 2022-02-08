@@ -1,7 +1,9 @@
 use scrypto::prelude::*;
 
 blueprint! {
-    struct BucketTest;
+    struct BucketTest {
+        vault: Vault
+    }
 
     impl BucketTest {
         fn create_test_token(amount: u32) -> Bucket {
@@ -49,6 +51,7 @@ blueprint! {
                 .initial_supply_fungible(5);
             let mut vault = Vault::with_bucket(bucket);
             let bucket2 = vault.take_with_auth(1, badge.present());
+            BucketTest { vault }.instantiate();
             vec![badge, bucket2]
         }
 
