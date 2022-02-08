@@ -68,6 +68,7 @@ pub struct Process<'r, 'l, L: SubstateStore> {
     /// The bucket refs that will be moved to another process SHORTLY.
     moving_bucket_refs: HashMap<Rid, BucketRef>,
 
+    unclaimed_lazy_maps: HashMap<Mid, LazyMap>,
     unclaimed_vaults: HashMap<Vid, Vault>,
     /// A WASM interpreter
     vm: Option<Interpreter>,
@@ -112,6 +113,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             moving_buckets: HashMap::new(),
             moving_bucket_refs: HashMap::new(),
             unclaimed_vaults: HashMap::new(),
+            unclaimed_lazy_maps: HashMap::new(),
             vm: None,
             id_allocator: IdAllocator::new(IdSpace::Transaction),
             worktop: HashMap::new(),
@@ -557,6 +559,11 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             success = false;
         }
 
+        for (mid, lazy_map) in &self.unclaimed_lazy_maps {
+            re_warn!(self, "Dangling lazy map: {:?}, {:?}", mid, lazy_map);
+            success = false;
+        }
+
         re_debug!(self, "Resource check ended");
         if success {
             Ok(())
@@ -960,6 +967,15 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             self.track.put_vault(vid, vault);
         }
 
+        for mid in data.lazy_maps {
+            // TODO: associate lazy map with component
+            let lazy_map = self
+                .unclaimed_lazy_maps
+                .remove(&mid)
+                .ok_or(RuntimeError::LazyMapNotFound(mid))?;
+            self.track.put_lazy_map(mid, lazy_map);
+        }
+
         let component = Component::new(self.package()?, input.blueprint_name, data.raw);
         self.track.put_component(component_address, component);
 
@@ -1036,7 +1052,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             return Err(RuntimeError::LazyMapAlreadyExists(mid));
         }
 
-        self.track.put_lazy_map(mid, LazyMap::new(self.package()?));
+        self.unclaimed_lazy_maps.insert(mid, LazyMap::new(self.package()?));
 
         Ok(CreateLazyMapOutput { mid })
     }
