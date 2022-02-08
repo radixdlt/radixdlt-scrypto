@@ -6,7 +6,8 @@ pub struct Data {
 
 blueprint! {
     struct VaultTest {
-        vault: Vault
+        vault: Vault,
+        vaults: LazyMap<u128, Vault>
     }
 
     impl VaultTest {
@@ -17,14 +18,27 @@ blueprint! {
             let _vault = Vault::with_bucket(bucket);
         }
 
-        pub fn new_vault_with_take() -> Component {
-            let bucket = ResourceBuilder::new_fungible(DIVISIBILITY_MAXIMUM)
+        fn new_fungible() -> Bucket {
+           ResourceBuilder::new_fungible(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "TestToken")
-                .initial_supply_fungible(1);
+                .initial_supply_fungible(1)
+        }
+
+        pub fn new_vault_into_map() -> Component {
+            let bucket = Self::new_fungible();
+            let vault = Vault::with_bucket(bucket);
+            let bucket = Self::new_fungible();
+            let vaults = LazyMap::new();
+            vaults.insert(0, Vault::with_bucket(bucket));
+            VaultTest { vault, vaults }.instantiate()
+        }
+
+        pub fn new_vault_with_take() -> Component {
+            let bucket = Self::new_fungible();
             let mut vault = Vault::with_bucket(bucket);
             let bucket = vault.take(1);
             vault.put(bucket);
-            VaultTest { vault }.instantiate()
+            VaultTest { vault, vaults: LazyMap::new() }.instantiate()
         }
 
         fn create_non_fungible_vault() -> Vault {
@@ -40,25 +54,25 @@ blueprint! {
             let mut vault = Self::create_non_fungible_vault();
             let bucket = vault.take_non_fungible(&NonFungibleKey::from(1u128));
             vault.put(bucket);
-            VaultTest { vault }.instantiate()
+            VaultTest { vault, vaults: LazyMap::new() }.instantiate()
         }
 
         pub fn new_vault_with_get_non_fungible_keys() -> Component {
             let vault = Self::create_non_fungible_vault();
             let _keys = vault.get_non_fungible_keys();
-            VaultTest { vault }.instantiate()
+            VaultTest { vault, vaults: LazyMap::new() }.instantiate()
         }
 
         pub fn new_vault_with_get_amount() -> Component {
             let vault = Self::create_non_fungible_vault();
             let _amount = vault.amount();
-            VaultTest { vault }.instantiate()
+            VaultTest { vault, vaults: LazyMap::new() }.instantiate()
         }
 
         pub fn new_vault_with_get_resource_def() -> Component {
             let vault = Self::create_non_fungible_vault();
             let _resource_def = vault.resource_def();
-            VaultTest { vault }.instantiate()
+            VaultTest { vault, vaults: LazyMap::new() }.instantiate()
         }
     }
 }
