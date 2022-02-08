@@ -1,3 +1,4 @@
+use crate::rust::string::String;
 use crate::types::*;
 use sbor::*;
 
