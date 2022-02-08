@@ -70,6 +70,8 @@ pub struct Process<'r, 'l, L: SubstateStore> {
 
     unclaimed_lazy_maps: HashMap<Mid, LazyMap>,
     unclaimed_vaults: HashMap<Vid, Vault>,
+    updating_components: HashMap<Address, ValidatedData>,
+
     /// A WASM interpreter
     vm: Option<Interpreter>,
     /// ID allocator for buckets and bucket refs created within transaction.
@@ -114,6 +116,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             moving_bucket_refs: HashMap::new(),
             unclaimed_vaults: HashMap::new(),
             unclaimed_lazy_maps: HashMap::new(),
+            updating_components: HashMap::new(),
             vm: None,
             id_allocator: IdAllocator::new(IdSpace::Transaction),
             worktop: HashMap::new(),
@@ -648,7 +651,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         Ok(())
     }
 
-    fn process_component_data(&mut self, data: &[u8]) -> Result<ValidatedData, RuntimeError> {
+    fn process_component_data(data: &[u8]) -> Result<ValidatedData, RuntimeError> {
         let validated = validate_data(data).map_err(RuntimeError::DataValidationError)?;
         if !validated.buckets.is_empty() {
             return Err(RuntimeError::BucketNotAllowed);
@@ -949,7 +952,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             return Err(RuntimeError::ComponentAlreadyExists(component_address));
         }
 
-        let data = self.process_component_data(&input.state)?;
+        let data = Self::process_component_data(&input.state)?;
         re_debug!(
             self,
             "New component: address = {:?}, state = {:?}",
@@ -1014,6 +1017,11 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .state(actor)
             .map_err(RuntimeError::ComponentError)?;
 
+        // TODO: Temporary
+        let updating_component_data = Self::process_component_data(state).unwrap();
+        let current = self.updating_components.insert(input.component_address, updating_component_data);
+        assert!(current.is_none());
+
         Ok(GetComponentStateOutput {
             state: state.to_owned(),
         })
@@ -1026,16 +1034,30 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         Self::expect_component_address(input.component_address)?;
         let actor = self.authenticate()?;
 
-        let state = self.process_component_data(&input.state)?;
-        re_debug!(self, "New component state: {:?}", state);
-
-        let component = self
-            .track
-            .get_component_mut(input.component_address)
+        let old_state = self.updating_components.remove(&input.component_address)
             .ok_or(RuntimeError::ComponentNotFound(input.component_address))?;
+        let new_state = Self::process_component_data(&input.state)?;
+        re_debug!(self, "New component state: {:?}", new_state);
 
+        // Only allow vaults to be added, never removed
+        let mut old_vaults: HashSet<Vid> = HashSet::from_iter(old_state.vaults.into_iter());
+        new_state.vaults.into_iter().try_for_each(|vid| {
+            if !old_vaults.remove(&vid) {
+                let vault = self
+                    .unclaimed_vaults
+                    .remove(&vid)
+                    .ok_or(RuntimeError::VaultNotFound(vid))?;
+                self.track.put_vault(vid, vault);
+            }
+            Ok(())
+        })?;
+        /*
+        old_vaults.into_iter().try_for_each(|vid| Err(RuntimeError::VaultRemoved(vid)))?;
+         */
+
+        let component = self.track.get_component_mut(input.component_address).unwrap();
         component
-            .set_state(state.raw, actor)
+            .set_state(new_state.raw, actor)
             .map_err(RuntimeError::ComponentError)?;
 
         Ok(PutComponentStateOutput {})

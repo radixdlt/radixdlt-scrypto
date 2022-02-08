@@ -122,6 +122,9 @@ pub enum RuntimeError {
     /// Vault does not exist.
     VaultNotFound(Vid),
 
+    /// Vault removed.
+    VaultRemoved(Vid),
+
     /// Bucket does not exist.
     BucketNotFound(Bid),
 
