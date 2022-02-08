@@ -228,7 +228,10 @@ pub fn format_custom(
             }
         }
         SCRYPTO_TYPE_VID => format!("Vault(\"{}\")", Vid::try_from(data).unwrap()),
-        SCRYPTO_TYPE_NON_FUNGIBLE_KEY => format!("NonFungibleKey(\"{}\")", NonFungibleKey::try_from(data).unwrap()),
+        SCRYPTO_TYPE_NON_FUNGIBLE_KEY => format!(
+            "NonFungibleKey(\"{}\")",
+            NonFungibleKey::try_from(data).unwrap()
+        ),
         _ => panic!("Illegal state"),
     }
 }

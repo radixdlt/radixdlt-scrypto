@@ -1,6 +1,6 @@
 use sbor::{Decode, Encode, TypeId};
 
-use crate::kernel::*;
+use crate::engine::*;
 use crate::rust::collections::HashMap;
 use crate::rust::string::String;
 use crate::rust::vec::Vec;
@@ -9,7 +9,7 @@ use crate::types::*;
 #[cfg(target_arch = "wasm32")]
 extern "C" {
     /// Entrance to Radix Engine.
-    pub fn kernel(op: u32, input_ptr: *const u8, input_len: usize) -> *mut u8;
+    pub fn radix_engine(op: u32, input_ptr: *const u8, input_len: usize) -> *mut u8;
 }
 
 /// Publish a code package
@@ -117,6 +117,8 @@ pub const GET_CURRENT_EPOCH: u32 = 0xf3;
 pub const GET_TRANSACTION_HASH: u32 = 0xf4;
 /// Generate an UUID
 pub const GENERATE_UUID: u32 = 0xf5;
+/// Retrieve the running entity
+pub const GET_ACTOR: u32 = 0xf6;
 
 //==========
 // blueprint
@@ -648,4 +650,12 @@ pub struct GenerateUuidInput {}
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct GenerateUuidOutput {
     pub uuid: u128,
+}
+
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
+pub struct GetActorInput {}
+
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
+pub struct GetActorOutput {
+    pub actor: Actor,
 }

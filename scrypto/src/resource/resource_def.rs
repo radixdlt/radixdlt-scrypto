@@ -1,7 +1,7 @@
 use sbor::{describe::Type, *};
 
 use crate::buffer::*;
-use crate::kernel::*;
+use crate::engine::*;
 use crate::resource::*;
 use crate::rust::borrow::ToOwned;
 use crate::rust::collections::HashMap;
@@ -52,7 +52,7 @@ impl ResourceDef {
             authorities,
             initial_supply,
         };
-        let output: CreateResourceOutput = call_kernel(CREATE_RESOURCE, input);
+        let output: CreateResourceOutput = call_engine(CREATE_RESOURCE, input);
 
         (
             output.resource_address.into(),
@@ -69,13 +69,18 @@ impl ResourceDef {
             },
             auth: auth.into(),
         };
-        let output: MintResourceOutput = call_kernel(MINT_RESOURCE, input);
+        let output: MintResourceOutput = call_engine(MINT_RESOURCE, input);
 
         output.bid.into()
     }
 
     /// Mints non-fungible resources
-    pub fn mint_non_fungible<T: NonFungibleData>(&mut self, key: &NonFungibleKey, data: T, auth: BucketRef) -> Bucket {
+    pub fn mint_non_fungible<T: NonFungibleData>(
+        &mut self,
+        key: &NonFungibleKey,
+        data: T,
+        auth: BucketRef,
+    ) -> Bucket {
         let mut entries = HashMap::new();
         entries.insert(key.clone(), (data.immutable_data(), data.mutable_data()));
 
@@ -84,7 +89,7 @@ impl ResourceDef {
             new_supply: NewSupply::NonFungible { entries },
             auth: auth.into(),
         };
-        let output: MintResourceOutput = call_kernel(MINT_RESOURCE, input);
+        let output: MintResourceOutput = call_engine(MINT_RESOURCE, input);
 
         output.bid.into()
     }
@@ -95,7 +100,7 @@ impl ResourceDef {
             bid: bucket.into(),
             auth: None,
         };
-        let _output: BurnResourceOutput = call_kernel(BURN_RESOURCE, input);
+        let _output: BurnResourceOutput = call_engine(BURN_RESOURCE, input);
     }
 
     /// Burns a bucket of resources.
@@ -104,7 +109,7 @@ impl ResourceDef {
             bid: bucket.into(),
             auth: Some(auth.into()),
         };
-        let _output: BurnResourceOutput = call_kernel(BURN_RESOURCE, input);
+        let _output: BurnResourceOutput = call_engine(BURN_RESOURCE, input);
     }
 
     /// Returns the resource type.
@@ -112,7 +117,7 @@ impl ResourceDef {
         let input = GetResourceTypeInput {
             resource_address: self.address,
         };
-        let output: GetResourceTypeOutput = call_kernel(GET_RESOURCE_TYPE, input);
+        let output: GetResourceTypeOutput = call_engine(GET_RESOURCE_TYPE, input);
 
         output.resource_type
     }
@@ -122,7 +127,7 @@ impl ResourceDef {
         let input = GetResourceMetadataInput {
             resource_address: self.address,
         };
-        let output: GetResourceMetadataOutput = call_kernel(GET_RESOURCE_METADATA, input);
+        let output: GetResourceMetadataOutput = call_engine(GET_RESOURCE_METADATA, input);
 
         output.metadata
     }
@@ -132,7 +137,7 @@ impl ResourceDef {
         let input = GetResourceFlagsInput {
             resource_address: self.address,
         };
-        let output: GetResourceFlagsOutput = call_kernel(GET_RESOURCE_FLAGS, input);
+        let output: GetResourceFlagsOutput = call_engine(GET_RESOURCE_FLAGS, input);
 
         output.flags
     }
@@ -142,7 +147,7 @@ impl ResourceDef {
         let input = GetResourceMutableFlagsInput {
             resource_address: self.address,
         };
-        let output: GetResourceMutableFlagsOutput = call_kernel(GET_RESOURCE_MUTABLE_FLAGS, input);
+        let output: GetResourceMutableFlagsOutput = call_engine(GET_RESOURCE_MUTABLE_FLAGS, input);
 
         output.mutable_flags
     }
@@ -152,7 +157,7 @@ impl ResourceDef {
         let input = GetResourceTotalSupplyInput {
             resource_address: self.address,
         };
-        let output: GetResourceTotalSupplyOutput = call_kernel(GET_RESOURCE_TOTAL_SUPPLY, input);
+        let output: GetResourceTotalSupplyOutput = call_engine(GET_RESOURCE_TOTAL_SUPPLY, input);
 
         output.total_supply
     }
@@ -171,7 +176,7 @@ impl ResourceDef {
             resource_address: self.address,
             key: key.clone(),
         };
-        let output: GetNonFungibleDataOutput = call_kernel(GET_NON_FUNGIBLE_DATA, input);
+        let output: GetNonFungibleDataOutput = call_engine(GET_NON_FUNGIBLE_DATA, input);
 
         scrypto_unwrap(T::decode(&output.immutable_data, &output.mutable_data))
     }
@@ -180,14 +185,20 @@ impl ResourceDef {
     ///
     /// # Panics
     /// Panics if this is not a non-fungible resource or the specified non-fungible is not found.
-    pub fn update_non_fungible_data<T: NonFungibleData>(&mut self, key: &NonFungibleKey, new_data: T, auth: BucketRef) {
+    pub fn update_non_fungible_data<T: NonFungibleData>(
+        &mut self,
+        key: &NonFungibleKey,
+        new_data: T,
+        auth: BucketRef,
+    ) {
         let input = UpdateNonFungibleMutableDataInput {
             resource_address: self.address,
             key: key.clone(),
             new_mutable_data: new_data.mutable_data(),
             auth: auth.into(),
         };
-        let _: UpdateNonFungibleMutableDataOutput = call_kernel(UPDATE_NON_FUNGIBLE_MUTABLE_DATA, input);
+        let _: UpdateNonFungibleMutableDataOutput =
+            call_engine(UPDATE_NON_FUNGIBLE_MUTABLE_DATA, input);
     }
 
     /// Turns on feature flags.
@@ -197,7 +208,7 @@ impl ResourceDef {
             new_flags: self.flags() | flags,
             auth: auth.into(),
         };
-        let _output: UpdateResourceFlagsOutput = call_kernel(UPDATE_RESOURCE_FLAGS, input);
+        let _output: UpdateResourceFlagsOutput = call_engine(UPDATE_RESOURCE_FLAGS, input);
     }
 
     /// Turns off feature flags.
@@ -207,7 +218,7 @@ impl ResourceDef {
             new_flags: self.flags() & !flags,
             auth: auth.into(),
         };
-        let _output: UpdateResourceFlagsOutput = call_kernel(UPDATE_RESOURCE_FLAGS, input);
+        let _output: UpdateResourceFlagsOutput = call_engine(UPDATE_RESOURCE_FLAGS, input);
     }
 
     /// Locks feature flag settings.
@@ -218,7 +229,7 @@ impl ResourceDef {
             auth: auth.into(),
         };
         let _output: UpdateResourceMutableFlagsOutput =
-            call_kernel(UPDATE_RESOURCE_MUTABLE_FLAGS, input);
+            call_engine(UPDATE_RESOURCE_MUTABLE_FLAGS, input);
     }
 
     pub fn update_metadata(&mut self, new_metadata: HashMap<String, String>, auth: BucketRef) {
@@ -227,7 +238,7 @@ impl ResourceDef {
             new_metadata,
             auth: auth.into(),
         };
-        let _output: UpdateResourceMetadataOutput = call_kernel(UPDATE_RESOURCE_METADATA, input);
+        let _output: UpdateResourceMetadataOutput = call_engine(UPDATE_RESOURCE_METADATA, input);
     }
 }
 

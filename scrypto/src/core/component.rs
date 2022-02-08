@@ -2,7 +2,7 @@ use sbor::{describe::Type, *};
 
 use crate::buffer::*;
 use crate::core::*;
-use crate::kernel::*;
+use crate::engine::*;
 use crate::rust::borrow::ToOwned;
 use crate::rust::vec;
 use crate::rust::vec::Vec;
@@ -47,7 +47,7 @@ impl Component {
             blueprint_name: T::blueprint_name().to_owned(),
             state: scrypto_encode(&state),
         };
-        let output: CreateComponentOutput = call_kernel(CREATE_COMPONENT, input);
+        let output: CreateComponentOutput = call_engine(CREATE_COMPONENT, input);
 
         output.component_address.into()
     }
@@ -64,7 +64,7 @@ impl Component {
         let input = GetComponentStateInput {
             component_address: self.address,
         };
-        let output: GetComponentStateOutput = call_kernel(GET_COMPONENT_STATE, input);
+        let output: GetComponentStateOutput = call_engine(GET_COMPONENT_STATE, input);
 
         scrypto_unwrap(scrypto_decode(&output.state))
     }
@@ -75,7 +75,7 @@ impl Component {
             component_address: self.address,
             state: scrypto_encode(&state),
         };
-        let _: PutComponentStateOutput = call_kernel(PUT_COMPONENT_STATE, input);
+        let _: PutComponentStateOutput = call_engine(PUT_COMPONENT_STATE, input);
     }
 
     /// Returns the blueprint that this component is instantiated from.
@@ -83,7 +83,7 @@ impl Component {
         let input = GetComponentInfoInput {
             component_address: self.address,
         };
-        let output: GetComponentInfoOutput = call_kernel(GET_COMPONENT_INFO, input);
+        let output: GetComponentInfoOutput = call_engine(GET_COMPONENT_INFO, input);
 
         Blueprint::from((output.package_address, output.blueprint_name))
     }

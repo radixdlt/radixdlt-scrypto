@@ -68,7 +68,7 @@ blueprint! {
         pub fn test_burn_freely() -> Vec<Bucket> {
             let badge = ResourceBuilder::new_fungible(DIVISIBILITY_NONE).initial_supply_fungible(1);
             let mut bucket1 = ResourceBuilder::new_fungible(DIVISIBILITY_MAXIMUM)
-                .flags(FREELY_BURNABLE)
+                .flags(BURNABLE | FREELY_BURNABLE)
                 .initial_supply_fungible(5);
             let bucket2 = bucket1.take(2);
             bucket1.burn_with_auth(badge.present());

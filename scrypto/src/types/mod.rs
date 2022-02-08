@@ -1,14 +1,16 @@
+mod actor;
 mod address;
 mod bid;
 mod big_decimal;
 mod decimal;
+mod ecdsa_key;
 mod h256;
 mod mid;
 mod non_fungible_key;
 mod rid;
 mod vid;
-mod ecdsa_key;
 
+pub use actor::Actor;
 pub use address::{
     Address, ParseAddressError, ACCOUNT_PACKAGE, ECDSA_TOKEN, RADIX_TOKEN, SYSTEM_COMPONENT,
     SYSTEM_PACKAGE,
@@ -16,12 +18,12 @@ pub use address::{
 pub use bid::{Bid, ParseBidError};
 pub use big_decimal::{BigDecimal, ParseBigDecimalError};
 pub use decimal::{Decimal, ParseDecimalError};
+pub use ecdsa_key::EcdsaPublicKey;
 pub use h256::{ParseH256Error, H256};
 pub use mid::{Mid, ParseMidError};
 pub use non_fungible_key::{NonFungibleKey, ParseNonFungibleKeyError};
 pub use rid::{ParseRidError, Rid};
 pub use vid::{ParseVidError, Vid};
-pub use ecdsa_key::EcdsaPublicKey;
 
 use crate::rust::vec::Vec;
 

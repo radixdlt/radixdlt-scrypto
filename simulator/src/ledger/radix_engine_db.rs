@@ -108,11 +108,20 @@ impl SubstateStore for RadixEngineDB {
         self.write(vid, vault)
     }
 
-    fn get_non_fungible(&self, resource_address: Address, key: &NonFungibleKey) -> Option<NonFungible> {
+    fn get_non_fungible(
+        &self,
+        resource_address: Address,
+        key: &NonFungibleKey,
+    ) -> Option<NonFungible> {
         self.read((resource_address, key.clone()))
     }
 
-    fn put_non_fungible(&mut self, resource_address: Address, key: &NonFungibleKey, non_fungible: NonFungible) {
+    fn put_non_fungible(
+        &mut self,
+        resource_address: Address,
+        key: &NonFungibleKey,
+        non_fungible: NonFungible,
+    ) {
         self.write((resource_address, key.clone()), non_fungible)
     }
 

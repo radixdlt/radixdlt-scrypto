@@ -1,6 +1,6 @@
 use sbor::*;
 use scrypto::buffer::*;
-use scrypto::kernel::*;
+use scrypto::engine::*;
 use scrypto::rust::borrow::ToOwned;
 use scrypto::rust::collections::*;
 use scrypto::types::*;
@@ -43,9 +43,18 @@ pub trait SubstateStore {
 
     fn put_vault(&mut self, vid: Vid, vault: Vault);
 
-    fn get_non_fungible(&self, resource_address: Address, id: &NonFungibleKey) -> Option<NonFungible>;
+    fn get_non_fungible(
+        &self,
+        resource_address: Address,
+        id: &NonFungibleKey,
+    ) -> Option<NonFungible>;
 
-    fn put_non_fungible(&mut self, resource_address: Address, id: &NonFungibleKey, non_fungible: NonFungible);
+    fn put_non_fungible(
+        &mut self,
+        resource_address: Address,
+        id: &NonFungibleKey,
+        non_fungible: NonFungible,
+    );
 
     fn bootstrap(&mut self) {
         if self.get_package(SYSTEM_PACKAGE).is_none() {

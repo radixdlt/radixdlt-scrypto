@@ -76,7 +76,8 @@ impl CustomValueVisitor for CustomValueValidator {
                     .push(Vid::try_from(data).map_err(DataValidationError::InvalidVid)?);
             }
             SCRYPTO_TYPE_NON_FUNGIBLE_KEY => {
-                NonFungibleKey::try_from(data).map_err(DataValidationError::InvalidNonFungibleKey)?;
+                NonFungibleKey::try_from(data)
+                    .map_err(DataValidationError::InvalidNonFungibleKey)?;
             }
             _ => {
                 return Err(DataValidationError::InvalidTypeId(kind));

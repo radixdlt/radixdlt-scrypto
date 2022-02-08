@@ -1,10 +1,10 @@
 use scrypto::rust::format;
 use wasmi::*;
 
-/// Kernel entrance function index.
-pub const KERNEL_INDEX: usize = 0;
-/// Kernel entrance function name.
-pub const KERNEL_NAME: &str = "kernel";
+/// Radix Engine entrance function index.
+pub const ENGINE_FUNCTION_INDEX: usize = 0;
+/// Radix Engine entrance function name.
+pub const ENGINE_FUNCTION_NAME: &str = "radix_engine";
 
 /// An `env` module resolver defines how symbols in `env` are resolved.
 pub struct EnvModuleResolver;
@@ -12,7 +12,7 @@ pub struct EnvModuleResolver;
 impl ModuleImportResolver for EnvModuleResolver {
     fn resolve_func(&self, field_name: &str, signature: &Signature) -> Result<FuncRef, Error> {
         match field_name {
-            KERNEL_NAME => {
+            ENGINE_FUNCTION_NAME => {
                 if signature.params() != [ValueType::I32, ValueType::I32, ValueType::I32]
                     || signature.return_type() != Some(ValueType::I32)
                 {
@@ -20,7 +20,10 @@ impl ModuleImportResolver for EnvModuleResolver {
                         "Function signature does not match".into(),
                     ));
                 }
-                Ok(FuncInstance::alloc_host(signature.clone(), KERNEL_INDEX))
+                Ok(FuncInstance::alloc_host(
+                    signature.clone(),
+                    ENGINE_FUNCTION_INDEX,
+                ))
             }
             _ => Err(Error::Instantiation(format!(
                 "Export {} not found",

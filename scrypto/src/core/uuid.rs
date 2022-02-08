@@ -1,4 +1,4 @@
-use crate::kernel::*;
+use crate::engine::*;
 
 /// A utility for UUID generation.
 #[derive(Debug)]
@@ -8,7 +8,7 @@ impl Uuid {
     /// Generates an UUID.
     pub fn generate() -> u128 {
         let input = GenerateUuidInput {};
-        let output: GenerateUuidOutput = call_kernel(GENERATE_UUID, input);
+        let output: GenerateUuidOutput = call_engine(GENERATE_UUID, input);
 
         output.uuid
     }

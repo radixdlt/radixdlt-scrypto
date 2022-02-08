@@ -1,7 +1,7 @@
-use sbor::{*};
-use crate::rust::vec::Vec;
-use crate::rust::str::FromStr;
 use crate::rust::fmt;
+use crate::rust::str::FromStr;
+use crate::rust::vec::Vec;
+use sbor::*;
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, Describe, Encode, Decode, TypeId)]
 pub struct EcdsaPublicKey(pub [u8; 33]);
@@ -18,7 +18,6 @@ pub enum ParseEcdsaPublicKeyError {
     InvalidLength(usize),
 }
 
-
 #[cfg(not(feature = "alloc"))]
 impl std::error::Error for ParseEcdsaPublicKeyError {}
 
@@ -33,7 +32,9 @@ impl FromStr for EcdsaPublicKey {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let bytes = hex::decode(s).map_err(ParseEcdsaPublicKeyError::InvalidHex)?;
-        bytes.try_into().map(|k| EcdsaPublicKey(k))
+        bytes
+            .try_into()
+            .map(|k| EcdsaPublicKey(k))
             .map_err(|k| ParseEcdsaPublicKeyError::InvalidLength(k.len()))
     }
 }
