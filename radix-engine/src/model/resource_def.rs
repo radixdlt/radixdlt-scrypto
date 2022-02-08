@@ -6,15 +6,14 @@ use scrypto::rust::collections::HashMap;
 use scrypto::rust::string::String;
 use scrypto::types::*;
 
-use crate::model::{Actor, Supply};
+use crate::model::Supply;
 
 /// Represents an error when accessing a bucket.
 #[derive(Debug, Clone)]
 pub enum ResourceDefError {
-    UnauthorizedAccess,
     TypeAndSupplyNotMatching,
-    UnsupportedOperation,
     OperationNotAllowed,
+    PermissionNotAllowed,
     InvalidDivisibility,
     InvalidAmount(Decimal),
     InvalidResourceFlags(u64),
@@ -117,8 +116,12 @@ impl ResourceDef {
         self.flags() & flag == flag
     }
 
-    pub fn mint(&mut self, supply: &Supply, actor: Actor) -> Result<(), ResourceDefError> {
-        self.check_mint_auth(actor)?;
+    pub fn mint(
+        &mut self,
+        supply: &Supply,
+        badge: Option<Address>,
+    ) -> Result<(), ResourceDefError> {
+        self.check_mint_auth(badge)?;
 
         match self.resource_type {
             ResourceType::Fungible { .. } => {
@@ -141,8 +144,8 @@ impl ResourceDef {
         }
     }
 
-    pub fn burn(&mut self, supply: Supply, actor: Actor) -> Result<(), ResourceDefError> {
-        self.check_burn_auth(actor)?;
+    pub fn burn(&mut self, supply: Supply, badge: Option<Address>) -> Result<(), ResourceDefError> {
+        self.check_burn_auth(badge)?;
 
         match self.resource_type {
             ResourceType::Fungible { .. } => {
@@ -169,8 +172,12 @@ impl ResourceDef {
         }
     }
 
-    pub fn update_flags(&mut self, new_flags: u64, actor: Actor) -> Result<(), ResourceDefError> {
-        self.check_manage_flags_auth(actor)?;
+    pub fn update_flags(
+        &mut self,
+        new_flags: u64,
+        badge: Option<Address>,
+    ) -> Result<(), ResourceDefError> {
+        self.check_manage_flags_auth(badge)?;
 
         let changed = self.flags ^ new_flags;
 
@@ -194,9 +201,9 @@ impl ResourceDef {
     pub fn update_mutable_flags(
         &mut self,
         new_mutable_flags: u64,
-        actor: Actor,
+        badge: Option<Address>,
     ) -> Result<(), ResourceDefError> {
-        self.check_manage_flags_auth(actor)?;
+        self.check_manage_flags_auth(badge)?;
 
         let changed = self.mutable_flags ^ new_mutable_flags;
 
@@ -220,45 +227,41 @@ impl ResourceDef {
     pub fn update_metadata(
         &mut self,
         new_metadata: HashMap<String, String>,
-        actor: Actor,
+        badge: Option<Address>,
     ) -> Result<(), ResourceDefError> {
-        self.check_update_metadata_auth(actor)?;
+        self.check_update_metadata_auth(badge)?;
 
         self.metadata = new_metadata;
 
         Ok(())
     }
 
-    pub fn check_take_from_vault_auth(&self, actor: Actor) -> Result<(), ResourceDefError> {
+    pub fn check_take_from_vault_auth(
+        &self,
+        badge: Option<Address>,
+    ) -> Result<(), ResourceDefError> {
         if !self.is_flag_on(RESTRICTED_TRANSFER) {
             Ok(())
         } else {
-            actor
-                .check_permission(self.authorities(), MAY_TRANSFER)
-                .then(|| ())
-                .ok_or(ResourceDefError::UnauthorizedAccess)
+            self.check_permission(badge, MAY_TRANSFER)
         }
     }
 
-    pub fn check_mint_auth(&self, actor: Actor) -> Result<(), ResourceDefError> {
+    pub fn check_mint_auth(&self, badge: Option<Address>) -> Result<(), ResourceDefError> {
         if self.is_flag_on(MINTABLE) {
-            actor
-                .check_permission(self.authorities(), MAY_MINT)
-                .then(|| ())
-                .ok_or(ResourceDefError::UnauthorizedAccess)
+            self.check_permission(badge, MAY_MINT)
         } else {
             Err(ResourceDefError::OperationNotAllowed)
         }
     }
 
-    pub fn check_burn_auth(&self, actor: Actor) -> Result<(), ResourceDefError> {
-        if self.is_flag_on(FREELY_BURNABLE) {
-            Ok(())
-        } else if self.is_flag_on(BURNABLE) {
-            actor
-                .check_permission(self.authorities(), MAY_BURN)
-                .then(|| ())
-                .ok_or(ResourceDefError::UnauthorizedAccess)
+    pub fn check_burn_auth(&self, badge: Option<Address>) -> Result<(), ResourceDefError> {
+        if self.is_flag_on(BURNABLE) {
+            if self.is_flag_on(FREELY_BURNABLE) {
+                Ok(())
+            } else {
+                self.check_permission(badge, MAY_BURN)
+            }
         } else {
             Err(ResourceDefError::OperationNotAllowed)
         }
@@ -266,34 +269,28 @@ impl ResourceDef {
 
     pub fn check_update_non_fungible_mutable_data_auth(
         &self,
-        actor: Actor,
+        badge: Option<Address>,
     ) -> Result<(), ResourceDefError> {
         if self.is_flag_on(INDIVIDUAL_METADATA_MUTABLE) {
-            actor
-                .check_permission(self.authorities(), MAY_CHANGE_INDIVIDUAL_METADATA)
-                .then(|| ())
-                .ok_or(ResourceDefError::UnauthorizedAccess)
+            self.check_permission(badge, MAY_CHANGE_INDIVIDUAL_METADATA)
         } else {
             Err(ResourceDefError::OperationNotAllowed)
         }
     }
 
-    pub fn check_update_metadata_auth(&self, actor: Actor) -> Result<(), ResourceDefError> {
+    pub fn check_update_metadata_auth(
+        &self,
+        badge: Option<Address>,
+    ) -> Result<(), ResourceDefError> {
         if self.is_flag_on(SHARED_METADATA_MUTABLE) {
-            actor
-                .check_permission(self.authorities(), MAY_CHANGE_SHARED_METADATA)
-                .then(|| ())
-                .ok_or(ResourceDefError::UnauthorizedAccess)
+            self.check_permission(badge, MAY_CHANGE_SHARED_METADATA)
         } else {
             Err(ResourceDefError::OperationNotAllowed)
         }
     }
 
-    pub fn check_manage_flags_auth(&self, actor: Actor) -> Result<(), ResourceDefError> {
-        actor
-            .check_permission(self.authorities(), MAY_MANAGE_RESOURCE_FLAGS)
-            .then(|| ())
-            .ok_or(ResourceDefError::UnauthorizedAccess)
+    pub fn check_manage_flags_auth(&self, badge: Option<Address>) -> Result<(), ResourceDefError> {
+        self.check_permission(badge, MAY_MANAGE_RESOURCE_FLAGS)
     }
 
     pub fn check_amount(&self, amount: Decimal) -> Result<(), ResourceDefError> {
@@ -304,5 +301,21 @@ impl ResourceDef {
         } else {
             Ok(())
         }
+    }
+
+    pub fn check_permission(
+        &self,
+        badge: Option<Address>,
+        permission: u64,
+    ) -> Result<(), ResourceDefError> {
+        if let Some(badge) = badge {
+            if let Some(auth) = self.authorities.get(&badge) {
+                if auth & permission == permission {
+                    return Ok(());
+                }
+            }
+        }
+
+        Err(ResourceDefError::PermissionNotAllowed)
     }
 }

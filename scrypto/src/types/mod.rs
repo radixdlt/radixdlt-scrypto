@@ -1,3 +1,4 @@
+mod actor;
 mod address;
 mod bid;
 mod big_decimal;
@@ -9,6 +10,7 @@ mod non_fungible_key;
 mod rid;
 mod vid;
 
+pub use actor::Actor;
 pub use address::{
     Address, ParseAddressError, ACCOUNT_PACKAGE, ECDSA_TOKEN, RADIX_TOKEN, SYSTEM_COMPONENT,
     SYSTEM_PACKAGE,

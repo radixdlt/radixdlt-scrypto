@@ -16,18 +16,18 @@ blueprint! {
             // We will start by creating two tokens we will use as badges and return to our instantiator
             let general_admin: Bucket = ResourceBuilder::new_fungible(DIVISIBILITY_NONE)
                 .metadata("name","RegulatedToken general admin badge")
-                .flags(FREELY_BURNABLE)
+                .flags(BURNABLE | FREELY_BURNABLE)
                 .initial_supply_fungible(1);
 
             let freeze_admin: Bucket = ResourceBuilder::new_fungible(DIVISIBILITY_NONE)
                 .metadata("name","RegulatedToken freeze-only badge")
-                .flags(FREELY_BURNABLE)
+                .flags(BURNABLE | FREELY_BURNABLE)
                 .initial_supply_fungible(1);
 
             // Next we will create a badge we'll hang on to for minting & transfer authority
             let internal_admin: Bucket = ResourceBuilder::new_fungible(DIVISIBILITY_NONE)
                 .metadata("name","RegulatedToken internal authority badge")
-                .flags(FREELY_BURNABLE)
+                .flags(BURNABLE | FREELY_BURNABLE)
                 .initial_supply_fungible(1);
 
             // Next we will create our regulated token with an initial fixed supply of 100 and the appropriate flags and permissions

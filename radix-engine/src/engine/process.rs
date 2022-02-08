@@ -91,6 +91,7 @@ pub struct Interpreter {
 /// Keeps invocation information.
 #[derive(Debug, Clone)]
 pub struct Invocation {
+    actor: Actor,
     package_address: Address,
     export_name: String,
     function: String,
@@ -400,6 +401,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         args: Vec<ValidatedData>,
     ) -> Result<Invocation, RuntimeError> {
         Ok(Invocation {
+            actor: Actor::Blueprint(package_address, blueprint_name.to_owned()),
             package_address,
             export_name: format!("{}_main", blueprint_name),
             function: function.to_owned(),
@@ -422,12 +424,13 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let mut args_with_self = vec![validate_data(&scrypto_encode(&component_address)).unwrap()];
         args_with_self.extend(args);
 
-        self.prepare_call_function(
-            component.package_address(),
-            component.blueprint_name(),
-            method,
-            args_with_self,
-        )
+        Ok(Invocation {
+            actor: Actor::Component(component_address),
+            package_address: component.package_address(),
+            export_name: format!("{}_main", component.blueprint_name()),
+            function: method.to_owned(),
+            args: args_with_self,
+        })
     }
 
     /// Prepares an ABI call.
@@ -437,6 +440,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         blueprint_name: &str,
     ) -> Result<Invocation, RuntimeError> {
         Ok(Invocation {
+            actor: Actor::Blueprint(package_address, blueprint_name.to_owned()),
             package_address: package_address,
             export_name: format!("{}_abi", blueprint_name),
             function: String::new(),
@@ -571,6 +575,14 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
         #[cfg(not(feature = "alloc"))]
         println!("{}[{:5}] {}", "  ".repeat(self.depth), l, m);
+    }
+
+    /// Return the actor
+    fn actor(&self) -> Result<Actor, RuntimeError> {
+        self.vm
+            .as_ref()
+            .ok_or(RuntimeError::InterpreterNotStarted)
+            .map(|vm| vm.invocation.actor.clone())
     }
 
     /// Return the package address
@@ -810,14 +822,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         }
     }
 
-    fn authenticate(&self) -> Result<Actor, RuntimeError> {
-        Ok(Actor::Package(self.package()?))
-    }
-
-    fn authenticate_with_badge(
-        &mut self,
-        optional_rid: Option<Rid>,
-    ) -> Result<Actor, RuntimeError> {
+    fn check_badge(&mut self, optional_rid: Option<Rid>) -> Result<Option<Address>, RuntimeError> {
         if let Some(rid) = optional_rid {
             // retrieve bucket reference
             let bucket_ref = self
@@ -834,11 +839,9 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             // drop bucket reference after use
             self.handle_drop_bucket_ref(DropBucketRefInput { rid })?;
 
-            let mut set = HashSet::new();
-            set.insert(resource_address);
-            Ok(Actor::PackageWithBadges(self.package()?, set))
+            Ok(Some(resource_address))
         } else {
-            Ok(Actor::PackageWithBadges(self.package()?, HashSet::new()))
+            Ok(None)
         }
     }
 
@@ -955,6 +958,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         input: GetComponentInfoInput,
     ) -> Result<GetComponentInfoOutput, RuntimeError> {
         Self::expect_component_address(input.component_address)?;
+        // TODO: restrict access?
 
         let component = self
             .track
@@ -972,19 +976,15 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         input: GetComponentStateInput,
     ) -> Result<GetComponentStateOutput, RuntimeError> {
         Self::expect_component_address(input.component_address)?;
-        let actor = self.authenticate()?;
+        // TODO: restrict access
 
         let component = self
             .track
             .get_component(input.component_address)
             .ok_or(RuntimeError::ComponentNotFound(input.component_address))?;
 
-        let state = component
-            .state(actor)
-            .map_err(RuntimeError::ComponentError)?;
-
         Ok(GetComponentStateOutput {
-            state: state.to_owned(),
+            state: component.state().to_owned(),
         })
     }
 
@@ -993,7 +993,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         input: PutComponentStateInput,
     ) -> Result<PutComponentStateOutput, RuntimeError> {
         Self::expect_component_address(input.component_address)?;
-        let actor = self.authenticate()?;
+        // TODO: restrict access
 
         let state = self.process_component_data(&input.state)?;
         re_debug!(self, "New component state: {:?}", state);
@@ -1003,9 +1003,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .get_component_mut(input.component_address)
             .ok_or(RuntimeError::ComponentNotFound(input.component_address))?;
 
-        component
-            .set_state(state.raw, actor)
-            .map_err(RuntimeError::ComponentError)?;
+        component.set_state(state.raw);
 
         Ok(PutComponentStateOutput {})
     }
@@ -1029,16 +1027,14 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         input: GetLazyMapEntryInput,
     ) -> Result<GetLazyMapEntryOutput, RuntimeError> {
-        let actor = self.authenticate()?;
+        // TODO: restrict access
 
         let lazy_map = self
             .track
             .get_lazy_map(input.mid)
             .ok_or(RuntimeError::LazyMapNotFound(input.mid))?;
 
-        let value = lazy_map
-            .get_entry(&input.key, actor)
-            .map_err(RuntimeError::LazyMapError)?;
+        let value = lazy_map.get_entry(&input.key);
 
         Ok(GetLazyMapEntryOutput {
             value: value.map(|e| e.to_vec()),
@@ -1049,7 +1045,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         input: PutLazyMapEntryInput,
     ) -> Result<PutLazyMapEntryOutput, RuntimeError> {
-        let actor = self.authenticate()?;
+        // TODO: restrict access
+
         let key = self.process_map_data(&input.key)?;
         let value = self.process_map_data(&input.value)?;
         re_debug!(self, "Map entry: {} => {}", key, value);
@@ -1059,9 +1056,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .get_lazy_map_mut(input.mid)
             .ok_or(RuntimeError::LazyMapNotFound(input.mid))?;
 
-        lazy_map
-            .set_entry(key.raw, value.raw, actor)
-            .map_err(RuntimeError::LazyMapError)?;
+        lazy_map.set_entry(key.raw, value.raw);
 
         Ok(PutLazyMapEntryOutput {})
     }
@@ -1200,14 +1195,14 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         input: UpdateResourceFlagsInput,
     ) -> Result<UpdateResourceFlagsOutput, RuntimeError> {
         Self::expect_resource_address(input.resource_address)?;
-        let actor = self.authenticate_with_badge(Some(input.auth))?;
+        let badge = self.check_badge(Some(input.auth))?;
 
         let resource_def = self
             .track
             .get_resource_def_mut(input.resource_address)
             .ok_or(RuntimeError::ResourceDefNotFound(input.resource_address))?;
         resource_def
-            .update_flags(input.new_flags, actor)
+            .update_flags(input.new_flags, badge)
             .map_err(RuntimeError::ResourceDefError)?;
 
         Ok(UpdateResourceFlagsOutput {})
@@ -1234,14 +1229,14 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         input: UpdateResourceMutableFlagsInput,
     ) -> Result<UpdateResourceMutableFlagsOutput, RuntimeError> {
         Self::expect_resource_address(input.resource_address)?;
-        let actor = self.authenticate_with_badge(Some(input.auth))?;
+        let badge = self.check_badge(Some(input.auth))?;
 
         let resource_def = self
             .track
             .get_resource_def_mut(input.resource_address)
             .ok_or(RuntimeError::ResourceDefNotFound(input.resource_address))?;
         resource_def
-            .update_mutable_flags(input.new_mutable_flags, actor)
+            .update_mutable_flags(input.new_mutable_flags, badge)
             .map_err(RuntimeError::ResourceDefError)?;
 
         Ok(UpdateResourceMutableFlagsOutput {})
@@ -1268,7 +1263,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         input: MintResourceInput,
     ) -> Result<MintResourceOutput, RuntimeError> {
         Self::expect_resource_address(input.resource_address)?;
-        let actor = self.authenticate_with_badge(Some(input.auth))?;
+        let badge = self.check_badge(Some(input.auth))?;
 
         // allocate resource
         let supply = self.allocate_resource(input.resource_address, input.new_supply)?;
@@ -1279,7 +1274,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .get_resource_def_mut(input.resource_address)
             .ok_or(RuntimeError::ResourceDefNotFound(input.resource_address))?;
         resource_def
-            .mint(&supply, actor)
+            .mint(&supply, badge)
             .map_err(RuntimeError::ResourceDefError)?;
 
         // wrap resource into a bucket
@@ -1294,7 +1289,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         input: BurnResourceInput,
     ) -> Result<BurnResourceOutput, RuntimeError> {
-        let actor = self.authenticate_with_badge(input.auth)?;
+        let badge = self.check_badge(input.auth)?;
 
         let bucket = self
             .buckets
@@ -1307,7 +1302,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .ok_or(RuntimeError::ResourceDefNotFound(bucket.resource_address()))?;
 
         resource_def
-            .burn(bucket.supply(), actor)
+            .burn(bucket.supply(), badge)
             .map_err(RuntimeError::ResourceDefError)?;
         Ok(BurnResourceOutput {})
     }
@@ -1316,7 +1311,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         input: UpdateNonFungibleMutableDataInput,
     ) -> Result<UpdateNonFungibleMutableDataOutput, RuntimeError> {
-        let actor = self.authenticate_with_badge(Some(input.auth))?;
+        let badge = self.check_badge(Some(input.auth))?;
 
         // obtain authorization from resource definition
         let resource_def = self
@@ -1324,7 +1319,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .get_resource_def(input.resource_address)
             .ok_or(RuntimeError::ResourceDefNotFound(input.resource_address))?;
         resource_def
-            .check_update_non_fungible_mutable_data_auth(actor)
+            .check_update_non_fungible_mutable_data_auth(badge)
             .map_err(RuntimeError::ResourceDefError)?;
         // update state
         let data = self.process_non_fungible_data(&input.new_mutable_data)?;
@@ -1334,8 +1329,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 input.resource_address,
                 input.key.clone(),
             ))?
-            .set_mutable_data(data.raw)
-            .map_err(RuntimeError::NonFungibleError)?;
+            .set_mutable_data(data.raw);
 
         Ok(UpdateNonFungibleMutableDataOutput {})
     }
@@ -1362,14 +1356,14 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         input: UpdateResourceMetadataInput,
     ) -> Result<UpdateResourceMetadataOutput, RuntimeError> {
-        let actor = self.authenticate_with_badge(Some(input.auth))?;
+        let badge = self.check_badge(Some(input.auth))?;
 
         let resource_def = self
             .track
             .get_resource_def_mut(input.resource_address)
             .ok_or(RuntimeError::ResourceDefNotFound(input.resource_address))?;
         resource_def
-            .update_metadata(input.new_metadata, actor)
+            .update_metadata(input.new_metadata, badge)
             .map_err(RuntimeError::ResourceDefError)?;
 
         Ok(UpdateResourceMetadataOutput {})
@@ -1409,7 +1403,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         input: PutIntoVaultInput,
     ) -> Result<PutIntoVaultOutput, RuntimeError> {
-        let actor = self.authenticate()?;
+        // TODO: restrict access
 
         let other = self
             .buckets
@@ -1419,25 +1413,28 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         self.track
             .get_vault_mut(input.vid)
             .ok_or(RuntimeError::VaultNotFound(input.vid))?
-            .put(other, actor)
+            .put(other)
             .map_err(RuntimeError::VaultError)?;
 
         Ok(PutIntoVaultOutput {})
     }
 
-    fn check_take_from_vault_auth(&mut self, vid: Vid, actor: Actor) -> Result<(), RuntimeError> {
+    fn check_take_from_vault_auth(
+        &mut self,
+        vid: Vid,
+        badge: Option<Address>,
+    ) -> Result<(), RuntimeError> {
         let resource_address = self
             .track
             .get_vault(vid)
             .ok_or(RuntimeError::VaultNotFound(vid))?
-            .resource_address(actor.clone())
-            .map_err(RuntimeError::VaultError)?;
+            .resource_address();
         let resource_def = self
             .track
             .get_resource_def(resource_address)
             .ok_or(RuntimeError::ResourceDefNotFound(resource_address))?;
         resource_def
-            .check_take_from_vault_auth(actor)
+            .check_take_from_vault_auth(badge)
             .map_err(RuntimeError::ResourceDefError)
     }
 
@@ -1445,14 +1442,16 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         input: TakeFromVaultInput,
     ) -> Result<TakeFromVaultOutput, RuntimeError> {
-        let actor = self.authenticate_with_badge(input.auth)?;
-        self.check_take_from_vault_auth(input.vid, actor.clone())?;
+        // TODO: restrict access
+
+        let badge = self.check_badge(input.auth)?;
+        self.check_take_from_vault_auth(input.vid.clone(), badge)?;
 
         let new_bucket = self
             .track
             .get_vault_mut(input.vid)
             .ok_or(RuntimeError::VaultNotFound(input.vid))?
-            .take(input.amount, actor)
+            .take(input.amount)
             .map_err(RuntimeError::VaultError)?;
 
         let bid = self.track.new_bid();
@@ -1465,14 +1464,16 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         input: TakeNonFungibleFromVaultInput,
     ) -> Result<TakeNonFungibleFromVaultOutput, RuntimeError> {
-        let actor = self.authenticate_with_badge(input.auth)?;
-        self.check_take_from_vault_auth(input.vid, actor.clone())?;
+        // TODO: restrict access
+
+        let badge = self.check_badge(input.auth)?;
+        self.check_take_from_vault_auth(input.vid.clone(), badge)?;
 
         let new_bucket = self
             .track
             .get_vault_mut(input.vid)
             .ok_or(RuntimeError::VaultNotFound(input.vid))?
-            .take_non_fungible(&input.key, actor)
+            .take_non_fungible(&input.key)
             .map_err(RuntimeError::VaultError)?;
 
         let bid = self.track.new_bid();
@@ -1485,7 +1486,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         input: GetNonFungibleKeysInVaultInput,
     ) -> Result<GetNonFungibleKeysInVaultOutput, RuntimeError> {
-        let actor = self.authenticate()?;
+        // TODO: restrict access
 
         let vault = self
             .track
@@ -1494,7 +1495,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
         Ok(GetNonFungibleKeysInVaultOutput {
             keys: vault
-                .get_non_fungible_ids(actor)
+                .get_non_fungible_ids()
                 .map_err(RuntimeError::VaultError)?,
         })
     }
@@ -1503,7 +1504,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         input: GetVaultDecimalInput,
     ) -> Result<GetVaultDecimalOutput, RuntimeError> {
-        let actor = self.authenticate()?;
+        // TODO: restrict access
 
         let vault = self
             .track
@@ -1511,7 +1512,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .ok_or(RuntimeError::VaultNotFound(input.vid))?;
 
         Ok(GetVaultDecimalOutput {
-            amount: vault.amount(actor).map_err(RuntimeError::VaultError)?,
+            amount: vault.amount(),
         })
     }
 
@@ -1519,7 +1520,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         input: GetVaultResourceAddressInput,
     ) -> Result<GetVaultResourceAddressOutput, RuntimeError> {
-        let actor = self.authenticate()?;
+        // TODO: restrict access
 
         let vault = self
             .track
@@ -1527,9 +1528,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .ok_or(RuntimeError::VaultNotFound(input.vid))?;
 
         Ok(GetVaultResourceAddressOutput {
-            resource_address: vault
-                .resource_address(actor)
-                .map_err(RuntimeError::VaultError)?,
+            resource_address: vault.resource_address(),
         })
     }
 
@@ -1839,6 +1838,12 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         })
     }
 
+    fn handle_get_actor(&mut self, _input: GetActorInput) -> Result<GetActorOutput, RuntimeError> {
+        Ok(GetActorOutput {
+            actor: self.actor()?,
+        })
+    }
+
     //============================
     // SYSTEM CALL HANDLERS END
     //============================
@@ -1936,6 +1941,7 @@ impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
                     GET_TRANSACTION_HASH => self.handle(args, Self::handle_get_transaction_hash),
                     GET_CURRENT_EPOCH => self.handle(args, Self::handle_get_current_epoch),
                     GENERATE_UUID => self.handle(args, Self::handle_generate_uuid),
+                    GET_ACTOR => self.handle(args, Self::handle_get_actor),
 
                     _ => Err(RuntimeError::InvalidRequestCode(operation).into()),
                 }

@@ -1,4 +1,3 @@
-mod actor;
 mod bucket;
 mod component;
 mod error;
@@ -12,14 +11,13 @@ mod validated_data;
 mod validated_transaction;
 mod vault;
 
-pub use actor::Actor;
 pub use bucket::{Bucket, BucketError, BucketRef, LockedBucket, Supply};
-pub use component::{Component, ComponentError};
+pub use component::Component;
 pub use error::{
     DataValidationError, RuntimeError, TransactionValidationError, WasmValidationError,
 };
-pub use lazy_map::{LazyMap, LazyMapError};
-pub use non_fungible::{NonFungible, NonFungibleError};
+pub use lazy_map::LazyMap;
+pub use non_fungible::NonFungible;
 pub use package::Package;
 pub use receipt::Receipt;
 pub use resource_def::{ResourceDef, ResourceDefError};

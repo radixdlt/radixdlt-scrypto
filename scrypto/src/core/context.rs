@@ -6,6 +6,14 @@ use crate::types::*;
 pub struct Context {}
 
 impl Context {
+    /// Returns the running entity, a component if within a call-method context or a
+    /// blueprint if within a call-function context.
+    pub fn actor() -> Actor {
+        let input = GetActorInput {};
+        let output: GetActorOutput = call_engine(GET_ACTOR, input);
+        output.actor
+    }
+
     /// Returns the address of the running package.
     pub fn package_address() -> Address {
         let input = GetPackageAddressInput {};

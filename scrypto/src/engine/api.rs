@@ -117,6 +117,8 @@ pub const GET_CURRENT_EPOCH: u32 = 0xf3;
 pub const GET_TRANSACTION_HASH: u32 = 0xf4;
 /// Generate an UUID
 pub const GENERATE_UUID: u32 = 0xf5;
+/// Retrieve the running entity
+pub const GET_ACTOR: u32 = 0xf6;
 
 //==========
 // blueprint
@@ -648,4 +650,12 @@ pub struct GenerateUuidInput {}
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct GenerateUuidOutput {
     pub uuid: u128,
+}
+
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
+pub struct GetActorInput {}
+
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
+pub struct GetActorOutput {
+    pub actor: Actor,
 }

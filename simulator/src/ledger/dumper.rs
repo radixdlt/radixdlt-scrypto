@@ -41,7 +41,7 @@ pub fn dump_component<T: SubstateStore>(address: Address, ledger: &T) -> Result<
                 c.package_address(),
                 c.blueprint_name()
             );
-            let state = c.state(Actor::SuperUser).unwrap();
+            let state = c.state();
             let state_validated = validate_data(state).unwrap();
             println!("{}: {}", "State".green().bold(), state_validated);
 
@@ -103,8 +103,8 @@ fn dump_resources<T: SubstateStore>(vaults: &HashSet<Vid>, ledger: &T) -> Result
     println!("{}:", "Resources".green().bold());
     for (last, vid) in vaults.iter().identify_last() {
         let vault = ledger.get_vault(*vid).unwrap();
-        let amount = vault.amount(Actor::SuperUser).unwrap();
-        let resource_address = vault.resource_address(Actor::SuperUser).unwrap();
+        let amount = vault.amount();
+        let resource_address = vault.resource_address();
         let resource_def = ledger.get_resource_def(resource_address).unwrap();
         println!(
             "{} {{ amount: {}, resource_def: {}{}{} }}",
@@ -122,7 +122,7 @@ fn dump_resources<T: SubstateStore>(vaults: &HashSet<Vid>, ledger: &T) -> Result
                 .map(|symbol| format!(", symbol: \"{}\"", symbol))
                 .unwrap_or(String::new()),
         );
-        if let Supply::NonFungible { keys } = vault.total_supply(Actor::SuperUser).unwrap() {
+        if let Supply::NonFungible { keys } = vault.total_supply() {
             for (inner_last, key) in keys.iter().identify_last() {
                 let non_fungible = ledger.get_non_fungible(resource_address, key).unwrap();
                 let immutable_data = validate_data(&non_fungible.immutable_data()).unwrap();
