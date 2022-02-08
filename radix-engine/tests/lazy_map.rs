@@ -54,3 +54,21 @@ fn create_lazy_map_and_get() {
     // Assert
     assert!(receipt.result.is_ok());
 }
+
+#[test]
+fn create_lazy_map_and_put() {
+    // Arrange
+    let mut ledger = InMemorySubstateStore::with_bootstrap();
+    let mut executor = TransactionExecutor::new(&mut ledger, false);
+    let package = executor.publish_package(&compile("lazy_map")).unwrap();
+
+    // Act
+    let transaction = TransactionBuilder::new(&executor)
+        .call_function(package, "LazyMapTest", "new_lazy_map_with_put", vec![], None)
+        .build(vec![])
+        .unwrap();
+    let receipt = executor.run(transaction).unwrap();
+
+    // Assert
+    assert!(receipt.result.is_ok());
+}

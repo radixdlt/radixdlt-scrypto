@@ -17,5 +17,11 @@ blueprint! {
             map.get(&"hello".to_owned());
             LazyMapTest { map }.instantiate()
         }
+
+        pub fn new_lazy_map_with_put() -> Component {
+            let map = LazyMap::new();
+            map.insert("hello".to_owned(), "world".to_owned());
+            LazyMapTest { map }.instantiate()
+        }
     }
 }

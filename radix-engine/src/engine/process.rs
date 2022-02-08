@@ -1087,10 +1087,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let value = self.process_map_data(&input.value)?;
         re_debug!(self, "Map entry: {} => {}", key, value);
 
-        let lazy_map = self
-            .track
-            .get_lazy_map_mut(input.mid)
-            .ok_or(RuntimeError::LazyMapNotFound(input.mid))?;
+        let lazy_map = self.get_lazy_map_mut(input.mid)?;
 
         lazy_map
             .set_entry(key.raw, value.raw, actor)
