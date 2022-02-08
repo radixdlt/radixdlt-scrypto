@@ -27,15 +27,25 @@ blueprint! {
             VaultTest { vault }.instantiate()
         }
 
-        pub fn new_vault_with_take_non_fungible() -> Component {
+        fn create_non_fungible_vault() -> Vault {
             let bucket = ResourceBuilder::new_non_fungible()
                 .metadata("name", "TestToken")
                 .initial_supply_non_fungible([
                     (NonFungibleKey::from(1u128), Data {})
                 ]);
-            let mut vault = Vault::with_bucket(bucket);
+            Vault::with_bucket(bucket)
+        }
+
+        pub fn new_vault_with_take_non_fungible() -> Component {
+            let mut vault = Self::create_non_fungible_vault();
             let bucket = vault.take_non_fungible(&NonFungibleKey::from(1u128));
             vault.put(bucket);
+            VaultTest { vault }.instantiate()
+        }
+
+        pub fn new_vault_with_get_non_fungible_keys() -> Component {
+            let vault = Self::create_non_fungible_vault();
+            let _keys = vault.get_non_fungible_keys();
             VaultTest { vault }.instantiate()
         }
     }

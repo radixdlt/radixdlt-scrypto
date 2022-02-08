@@ -1492,19 +1492,16 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         Ok(TakeNonFungibleFromVaultOutput { bid })
     }
 
-    fn handle_get_non_fungible_ids_in_vault(
+    fn handle_get_non_fungible_keys_in_vault(
         &mut self,
         input: GetNonFungibleKeysInVaultInput,
     ) -> Result<GetNonFungibleKeysInVaultOutput, RuntimeError> {
         let actor = self.authenticate()?;
-
-        let vault = self
-            .track
-            .get_vault(input.vid)
-            .ok_or(RuntimeError::VaultNotFound(input.vid))?;
+        let vault = self.get_vault_mut(input.vid)?;
+        let keys = vault.get_non_fungible_ids(actor).map_err(RuntimeError::VaultError)?;
 
         Ok(GetNonFungibleKeysInVaultOutput {
-            keys: vault.get_non_fungible_ids(actor).map_err(RuntimeError::VaultError)?,
+            keys
         })
     }
 
@@ -1906,7 +1903,7 @@ impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
                         self.handle(args, Self::handle_get_vault_resource_address)
                     }
                     TAKE_NON_FUNGIBLE_FROM_VAULT => self.handle(args, Self::handle_take_non_fungible_from_vault),
-                    GET_NON_FUNGIBLE_KEYS_IN_VAULT => self.handle(args, Self::handle_get_non_fungible_ids_in_vault),
+                    GET_NON_FUNGIBLE_KEYS_IN_VAULT => self.handle(args, Self::handle_get_non_fungible_keys_in_vault),
 
                     CREATE_EMPTY_BUCKET => self.handle(args, Self::handle_create_bucket),
                     PUT_INTO_BUCKET => self.handle(args, Self::handle_put_into_bucket),

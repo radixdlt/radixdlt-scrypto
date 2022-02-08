@@ -44,13 +44,11 @@ fn create_mutable_vault_with_take() {
     // Arrange
     let mut ledger = InMemorySubstateStore::with_bootstrap();
     let mut sut = TransactionExecutor::new(&mut ledger, false);
-    let key = sut.new_public_key();
-    let account = sut.new_account(key);
     let package = sut.publish_package(&compile("vault")).unwrap();
 
     // Act
     let transaction = TransactionBuilder::new(&sut)
-        .call_function(package, "VaultTest", "new_vault_with_take", vec![], Some(account))
+        .call_function(package, "VaultTest", "new_vault_with_take", vec![], None)
         .build(vec![])
         .unwrap();
     let receipt = sut.run(transaction).unwrap();
@@ -64,13 +62,29 @@ fn create_mutable_vault_with_take_non_fungible() {
     // Arrange
     let mut ledger = InMemorySubstateStore::with_bootstrap();
     let mut sut = TransactionExecutor::new(&mut ledger, false);
-    let key = sut.new_public_key();
-    let account = sut.new_account(key);
     let package = sut.publish_package(&compile("vault")).unwrap();
 
     // Act
     let transaction = TransactionBuilder::new(&sut)
-        .call_function(package, "VaultTest", "new_vault_with_take_non_fungible", vec![], Some(account))
+        .call_function(package, "VaultTest", "new_vault_with_take_non_fungible", vec![], None)
+        .build(vec![])
+        .unwrap();
+    let receipt = sut.run(transaction).unwrap();
+
+    // Assert
+    assert!(receipt.result.is_ok());
+}
+
+#[test]
+fn create_mutable_vault_with_get_nonfungible_keys() {
+    // Arrange
+    let mut ledger = InMemorySubstateStore::with_bootstrap();
+    let mut sut = TransactionExecutor::new(&mut ledger, false);
+    let package = sut.publish_package(&compile("vault")).unwrap();
+
+    // Act
+    let transaction = TransactionBuilder::new(&sut)
+        .call_function(package, "VaultTest", "new_vault_with_get_non_fungible_keys", vec![], None)
         .build(vec![])
         .unwrap();
     let receipt = sut.run(transaction).unwrap();
