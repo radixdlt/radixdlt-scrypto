@@ -67,11 +67,12 @@ pub struct Process<'r, 'l, L: SubstateStore> {
     moving_buckets: HashMap<Bid, Bucket>,
     /// The bucket refs that will be moved to another process SHORTLY.
     moving_bucket_refs: HashMap<Rid, BucketRef>,
-
+    /// Lazy maps which haven't been assigned to a component or lazy map yet.
     unclaimed_lazy_maps: HashMap<Mid, LazyMap>,
+    /// Vaults which haven't been assigned to a component or lazy map yet.
     unclaimed_vaults: HashMap<Vid, Vault>,
+    /// Components which have been loaded and possibly updated in the lifetime of this process.
     updating_components: HashMap<Address, ValidatedData>,
-
     /// A WASM interpreter
     vm: Option<Interpreter>,
     /// ID allocator for buckets and bucket refs created within transaction.
@@ -1041,7 +1042,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
         // Only allow vaults to be added, never removed
         let mut old_vaults: HashSet<Vid> = HashSet::from_iter(old_state.vaults.into_iter());
-        new_state.vaults.into_iter().try_for_each(|vid| {
+        for vid in new_state.vaults {
             if !old_vaults.remove(&vid) {
                 let vault = self
                     .unclaimed_vaults
@@ -1049,13 +1050,12 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     .ok_or(RuntimeError::VaultNotFound(vid))?;
                 self.track.put_vault(vid, vault);
             }
-            Ok(())
-        })?;
+        }
         old_vaults.into_iter().try_for_each(|vid| Err(RuntimeError::VaultRemoved(vid)))?;
 
         // Only allow lazy maps to be added, never removed
         let mut old_lazy_maps: HashSet<Mid> = HashSet::from_iter(old_state.lazy_maps.into_iter());
-        new_state.lazy_maps.into_iter().try_for_each(|mid| {
+        for mid in new_state.lazy_maps {
             if !old_lazy_maps.remove(&mid) {
                 let lazy_map = self
                     .unclaimed_lazy_maps
@@ -1063,8 +1063,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     .ok_or(RuntimeError::LazyMapNotFound(mid))?;
                 self.track.put_lazy_map(mid, lazy_map);
             }
-            Ok(())
-        })?;
+        }
         old_lazy_maps.into_iter().try_for_each(|mid| Err(RuntimeError::LazyMapRemoved(mid)))?;
 
         let component = self.track.get_component_mut(input.component_address).unwrap();
@@ -1124,7 +1123,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             });
 
         // Only allow vaults to be added, never removed
-        new_state.vaults.into_iter().try_for_each(|vid| {
+        for vid in new_state.vaults {
             if !old_state.0.remove(&vid) {
                 let vault = self
                     .unclaimed_vaults
@@ -1132,12 +1131,11 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     .ok_or(RuntimeError::VaultNotFound(vid))?;
                 self.track.put_vault(vid, vault);
             }
-            Ok(())
-        })?;
+        }
         old_state.0.into_iter().try_for_each(|vid| Err(RuntimeError::VaultRemoved(vid)))?;
 
         // Only allow lazy maps to be added, never removed
-        new_state.lazy_maps.into_iter().try_for_each(|mid| {
+        for mid in new_state.lazy_maps {
             if !old_state.1.remove(&mid) {
                 let lazy_map = self
                     .unclaimed_lazy_maps
@@ -1145,8 +1143,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     .ok_or(RuntimeError::LazyMapNotFound(mid))?;
                 self.track.put_lazy_map(mid, lazy_map);
             }
-            Ok(())
-        })?;
+        }
         old_state.1.into_iter().try_for_each(|mid| Err(RuntimeError::LazyMapRemoved(mid)))?;
 
         let lazy_map = self.get_lazy_map_mut(input.mid)?;
@@ -1980,7 +1977,6 @@ impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
                     GET_VAULT_RESOURCE_ADDRESS => {
                         self.handle(args, Self::handle_get_vault_resource_address)
                     }
-
                     TAKE_NON_FUNGIBLE_FROM_VAULT => {
                         self.handle(args, Self::handle_take_non_fungible_from_vault)
                     }
