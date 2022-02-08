@@ -1,12 +1,6 @@
 use sbor::*;
 use scrypto::rust::vec::Vec;
 
-/// Represents an error when accessing a non-fungible.
-#[derive(Debug, Clone)]
-pub enum NonFungibleError {
-    UnauthorizedAccess,
-}
-
 /// A non-fungible is a piece of data that is uniquely identified within a resource.
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct NonFungible {
@@ -30,8 +24,7 @@ impl NonFungible {
         self.mutable_data.clone()
     }
 
-    pub fn set_mutable_data(&mut self, new_mutable_data: Vec<u8>) -> Result<(), NonFungibleError> {
+    pub fn set_mutable_data(&mut self, new_mutable_data: Vec<u8>) {
         self.mutable_data = new_mutable_data;
-        Ok(())
     }
 }

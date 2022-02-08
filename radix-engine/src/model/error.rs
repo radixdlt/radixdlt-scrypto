@@ -143,20 +143,11 @@ pub enum RuntimeError {
     /// Bucket access error.
     BucketError(BucketError),
 
-    /// Component access error.
-    ComponentError(ComponentError),
-
-    /// Lazy map access error.
-    LazyMapError(LazyMapError),
-
     /// Bucket ref access error.
     ResourceDefError(ResourceDefError),
 
     /// Vault access error.
     VaultError(VaultError),
-
-    /// Non-fungible access error.
-    NonFungibleError(NonFungibleError),
 
     /// Bucket is not allowed.
     BucketNotAllowed,
