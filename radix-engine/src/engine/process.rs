@@ -1053,6 +1053,20 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         })?;
         old_vaults.into_iter().try_for_each(|vid| Err(RuntimeError::VaultRemoved(vid)))?;
 
+        // Only allow lazy maps to be added, never removed
+        let mut old_lazy_maps: HashSet<Mid> = HashSet::from_iter(old_state.lazy_maps.into_iter());
+        new_state.lazy_maps.into_iter().try_for_each(|mid| {
+            if !old_lazy_maps.remove(&mid) {
+                let lazy_map = self
+                    .unclaimed_lazy_maps
+                    .remove(&mid)
+                    .ok_or(RuntimeError::LazyMapNotFound(mid))?;
+                self.track.put_lazy_map(mid, lazy_map);
+            }
+            Ok(())
+        })?;
+        old_lazy_maps.into_iter().try_for_each(|mid| Err(RuntimeError::LazyMapRemoved(mid)))?;
+
         let component = self.track.get_component_mut(input.component_address).unwrap();
         component
             .set_state(new_state.raw, actor)

@@ -119,6 +119,9 @@ pub enum RuntimeError {
     /// Lazy map does not exist.
     LazyMapNotFound(Mid),
 
+    /// Lazy map removed.
+    LazyMapRemoved(Mid),
+
     /// Vault does not exist.
     VaultNotFound(Vid),
 
