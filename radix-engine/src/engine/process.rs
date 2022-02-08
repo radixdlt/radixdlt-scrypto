@@ -1482,9 +1482,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         self.check_take_from_vault_auth(input.vid, actor.clone())?;
 
         let new_bucket = self
-            .track
-            .get_vault_mut(input.vid)
-            .ok_or(RuntimeError::VaultNotFound(input.vid))?
+            .get_vault_mut(input.vid)?
             .take_non_fungible(&input.key, actor)
             .map_err(RuntimeError::VaultError)?;
 
