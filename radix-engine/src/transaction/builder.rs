@@ -2,7 +2,7 @@ use sbor::describe::*;
 use sbor::*;
 use scrypto::abi;
 use scrypto::buffer::*;
-use scrypto::kernel::*;
+use scrypto::engine::*;
 use scrypto::resource::resource_flags::*;
 use scrypto::resource::resource_permissions::*;
 use scrypto::rust::borrow::ToOwned;
@@ -336,7 +336,10 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     }
 
     /// Builds a transaction.
-    pub fn build(&mut self, signers: Vec<EcdsaPublicKey>) -> Result<Transaction, BuildTransactionError> {
+    pub fn build(
+        &mut self,
+        signers: Vec<EcdsaPublicKey>,
+    ) -> Result<Transaction, BuildTransactionError> {
         if !self.errors.is_empty() {
             return Err(self.errors[0].clone());
         }

@@ -41,7 +41,11 @@ impl Vault {
         }
     }
 
-    pub fn take_non_fungible(&mut self, key: &NonFungibleKey, actor: Actor) -> Result<Bucket, VaultError> {
+    pub fn take_non_fungible(
+        &mut self,
+        key: &NonFungibleKey,
+        actor: Actor,
+    ) -> Result<Bucket, VaultError> {
         if actor.check(self.authority) {
             self.bucket
                 .take_non_fungible(key)

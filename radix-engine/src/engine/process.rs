@@ -1,7 +1,7 @@
 use colored::*;
 use sbor::*;
 use scrypto::buffer::*;
-use scrypto::kernel::*;
+use scrypto::engine::*;
 use scrypto::rust::borrow::ToOwned;
 use scrypto::rust::collections::*;
 use scrypto::rust::fmt;
@@ -748,7 +748,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         Ok(data)
     }
 
-    /// Handle a kernel call.
+    /// Handles a system call.
     fn handle<I: Decode + fmt::Debug, O: Encode + fmt::Debug>(
         &mut self,
         args: RuntimeArgs,
@@ -1077,7 +1077,11 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 let mut keys = BTreeSet::new();
 
                 for (key, data) in entries {
-                    if self.track.get_non_fungible(resource_address, &key).is_some() {
+                    if self
+                        .track
+                        .get_non_fungible(resource_address, &key)
+                        .is_some()
+                    {
                         return Err(RuntimeError::NonFungibleAlreadyExists(
                             resource_address,
                             key.clone(),
@@ -1489,7 +1493,9 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .ok_or(RuntimeError::VaultNotFound(input.vid))?;
 
         Ok(GetNonFungibleKeysInVaultOutput {
-            keys: vault.get_non_fungible_ids(actor).map_err(RuntimeError::VaultError)?,
+            keys: vault
+                .get_non_fungible_ids(actor)
+                .map_err(RuntimeError::VaultError)?,
         })
     }
 
@@ -1650,7 +1656,9 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .ok_or(RuntimeError::BucketNotFound(input.bid))?;
 
         Ok(GetNonFungibleKeysInBucketOutput {
-            keys: bucket.get_non_fungible_keys().map_err(RuntimeError::BucketError)?,
+            keys: bucket
+                .get_non_fungible_keys()
+                .map_err(RuntimeError::BucketError)?,
         })
     }
 
@@ -1843,7 +1851,7 @@ impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
         args: RuntimeArgs,
     ) -> Result<Option<RuntimeValue>, Trap> {
         match index {
-            KERNEL_INDEX => {
+            ENGINE_FUNCTION_INDEX => {
                 let operation: u32 = args.nth_checked(0)?;
                 match operation {
                     PUBLISH_PACKAGE => self.handle(args, Self::handle_publish),
@@ -1890,8 +1898,12 @@ impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
                     GET_VAULT_RESOURCE_ADDRESS => {
                         self.handle(args, Self::handle_get_vault_resource_address)
                     }
-                    TAKE_NON_FUNGIBLE_FROM_VAULT => self.handle(args, Self::handle_take_non_fungible_from_vault),
-                    GET_NON_FUNGIBLE_KEYS_IN_VAULT => self.handle(args, Self::handle_get_non_fungible_ids_in_vault),
+                    TAKE_NON_FUNGIBLE_FROM_VAULT => {
+                        self.handle(args, Self::handle_take_non_fungible_from_vault)
+                    }
+                    GET_NON_FUNGIBLE_KEYS_IN_VAULT => {
+                        self.handle(args, Self::handle_get_non_fungible_ids_in_vault)
+                    }
 
                     CREATE_EMPTY_BUCKET => self.handle(args, Self::handle_create_bucket),
                     PUT_INTO_BUCKET => self.handle(args, Self::handle_put_into_bucket),
@@ -1900,7 +1912,9 @@ impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
                     GET_BUCKET_RESOURCE_ADDRESS => {
                         self.handle(args, Self::handle_get_bucket_resource_address)
                     }
-                    TAKE_NON_FUNGIBLE_FROM_BUCKET => self.handle(args, Self::handle_take_non_fungible_from_bucket),
+                    TAKE_NON_FUNGIBLE_FROM_BUCKET => {
+                        self.handle(args, Self::handle_take_non_fungible_from_bucket)
+                    }
                     GET_NON_FUNGIBLE_KEYS_IN_BUCKET => {
                         self.handle(args, Self::handle_get_non_fungible_keys_in_bucket)
                     }

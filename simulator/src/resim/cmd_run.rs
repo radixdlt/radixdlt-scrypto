@@ -2,8 +2,8 @@ use clap::Parser;
 use radix_engine::model::*;
 
 use crate::resim::*;
-use std::path::PathBuf;
 use scrypto::types::EcdsaPublicKey;
+use std::path::PathBuf;
 
 /// Compile and run a transaction manifest
 #[derive(Parser, Debug)]
@@ -29,7 +29,9 @@ impl Run {
         let mut transaction =
             transaction_manifest::compile(&manifest).map_err(Error::CompileError)?;
         let signatures = self.signers.clone().unwrap_or(default_signers);
-        transaction.instructions.push(Instruction::End { signatures });
+        transaction
+            .instructions
+            .push(Instruction::End { signatures });
         process_transaction(transaction, &mut executor, &None)
     }
 }

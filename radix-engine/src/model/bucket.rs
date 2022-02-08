@@ -1,5 +1,5 @@
 use sbor::*;
-use scrypto::kernel::*;
+use scrypto::engine::*;
 use scrypto::rust::collections::BTreeSet;
 use scrypto::rust::rc::Rc;
 use scrypto::rust::string::ToString;

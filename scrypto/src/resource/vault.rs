@@ -1,7 +1,7 @@
 use sbor::{describe::Type, *};
 
 use crate::buffer::*;
-use crate::kernel::*;
+use crate::engine::*;
 use crate::resource::*;
 use crate::rust::borrow::ToOwned;
 use crate::rust::vec;
@@ -32,7 +32,7 @@ impl Vault {
         let input = CreateEmptyVaultInput {
             resource_address: resource_def.into().address(),
         };
-        let output: CreateEmptyVaultOutput = call_kernel(CREATE_EMPTY_VAULT, input);
+        let output: CreateEmptyVaultOutput = call_engine(CREATE_EMPTY_VAULT, input);
 
         output.vid.into()
     }
@@ -50,7 +50,7 @@ impl Vault {
             vid: self.vid,
             bid: bucket.into(),
         };
-        let _: PutIntoVaultOutput = call_kernel(PUT_INTO_VAULT, input);
+        let _: PutIntoVaultOutput = call_engine(PUT_INTO_VAULT, input);
     }
 
     /// Takes some amount of resource from this vault into a bucket.
@@ -60,7 +60,7 @@ impl Vault {
             amount: amount.into(),
             auth: None,
         };
-        let output: TakeFromVaultOutput = call_kernel(TAKE_FROM_VAULT, input);
+        let output: TakeFromVaultOutput = call_engine(TAKE_FROM_VAULT, input);
 
         output.bid.into()
     }
@@ -75,7 +75,7 @@ impl Vault {
             amount: amount.into(),
             auth: Some(auth.into()),
         };
-        let output: TakeFromVaultOutput = call_kernel(TAKE_FROM_VAULT, input);
+        let output: TakeFromVaultOutput = call_engine(TAKE_FROM_VAULT, input);
 
         output.bid.into()
     }
@@ -103,7 +103,8 @@ impl Vault {
             key: key.clone(),
             auth: None,
         };
-        let output: TakeNonFungibleFromVaultOutput = call_kernel(TAKE_NON_FUNGIBLE_FROM_VAULT, input);
+        let output: TakeNonFungibleFromVaultOutput =
+            call_engine(TAKE_NON_FUNGIBLE_FROM_VAULT, input);
 
         output.bid.into()
     }
@@ -121,7 +122,8 @@ impl Vault {
             key: key.clone(),
             auth: Some(auth.into()),
         };
-        let output: TakeNonFungibleFromVaultOutput = call_kernel(TAKE_NON_FUNGIBLE_FROM_VAULT, input);
+        let output: TakeNonFungibleFromVaultOutput =
+            call_engine(TAKE_NON_FUNGIBLE_FROM_VAULT, input);
 
         output.bid.into()
     }
@@ -166,7 +168,7 @@ impl Vault {
     /// Returns the amount of resources within this vault.
     pub fn amount(&self) -> Decimal {
         let input = GetVaultDecimalInput { vid: self.vid };
-        let output: GetVaultDecimalOutput = call_kernel(GET_VAULT_AMOUNT, input);
+        let output: GetVaultDecimalOutput = call_engine(GET_VAULT_AMOUNT, input);
 
         output.amount
     }
@@ -174,7 +176,7 @@ impl Vault {
     /// Returns the resource definition of resources within this vault.
     pub fn resource_def(&self) -> ResourceDef {
         let input = GetVaultResourceAddressInput { vid: self.vid };
-        let output: GetVaultResourceAddressOutput = call_kernel(GET_VAULT_RESOURCE_ADDRESS, input);
+        let output: GetVaultResourceAddressOutput = call_engine(GET_VAULT_RESOURCE_ADDRESS, input);
 
         output.resource_address.into()
     }
@@ -195,7 +197,8 @@ impl Vault {
     /// Panics if this is not a non-fungible vault.
     pub fn get_non_fungibles<T: NonFungibleData>(&self) -> Vec<NonFungible<T>> {
         let input = GetNonFungibleKeysInVaultInput { vid: self.vid };
-        let output: GetNonFungibleKeysInVaultOutput = call_kernel(GET_NON_FUNGIBLE_KEYS_IN_VAULT, input);
+        let output: GetNonFungibleKeysInVaultOutput =
+            call_engine(GET_NON_FUNGIBLE_KEYS_IN_VAULT, input);
         let resource_address = self.resource_address();
         output
             .keys
@@ -210,7 +213,8 @@ impl Vault {
     /// Panics if this is not a non-fungible vault.
     pub fn get_non_fungible_keys(&self) -> Vec<NonFungibleKey> {
         let input = GetNonFungibleKeysInVaultInput { vid: self.vid };
-        let output: GetNonFungibleKeysInVaultOutput = call_kernel(GET_NON_FUNGIBLE_KEYS_IN_VAULT, input);
+        let output: GetNonFungibleKeysInVaultOutput =
+            call_engine(GET_NON_FUNGIBLE_KEYS_IN_VAULT, input);
 
         output.keys
     }
@@ -218,7 +222,11 @@ impl Vault {
     /// Get the non-fungible id and panic if not singleton.
     pub fn get_non_fungible_key(&self) -> NonFungibleKey {
         let keys = self.get_non_fungible_keys();
-        assert!(keys.len() == 1, "Expect 1 NonFungible, but found {}", keys.len());
+        assert!(
+            keys.len() == 1,
+            "Expect 1 non-fungible, but found {}",
+            keys.len()
+        );
         keys[0].clone()
     }
 
@@ -234,8 +242,14 @@ impl Vault {
     ///
     /// # Panics
     /// Panics if this is not a non-fungible vault or the specified non-fungible is not found.
-    pub fn update_non_fungible_data<T: NonFungibleData>(&self, id: &NonFungibleKey, new_data: T, auth: BucketRef) {
-        self.resource_def().update_non_fungible_data(id, new_data, auth)
+    pub fn update_non_fungible_data<T: NonFungibleData>(
+        &self,
+        id: &NonFungibleKey,
+        new_data: T,
+        auth: BucketRef,
+    ) {
+        self.resource_def()
+            .update_non_fungible_data(id, new_data, auth)
     }
 }
 

@@ -85,12 +85,24 @@ impl SubstateStore for InMemorySubstateStore {
         self.vaults.insert(vid, vault);
     }
 
-    fn get_non_fungible(&self, resource_address: Address, key: &NonFungibleKey) -> Option<NonFungible> {
-        self.non_fungibles.get(&(resource_address, key.clone())).cloned()
+    fn get_non_fungible(
+        &self,
+        resource_address: Address,
+        key: &NonFungibleKey,
+    ) -> Option<NonFungible> {
+        self.non_fungibles
+            .get(&(resource_address, key.clone()))
+            .cloned()
     }
 
-    fn put_non_fungible(&mut self, resource_address: Address, key: &NonFungibleKey, non_fungible: NonFungible) {
-        self.non_fungibles.insert((resource_address, key.clone()), non_fungible);
+    fn put_non_fungible(
+        &mut self,
+        resource_address: Address,
+        key: &NonFungibleKey,
+        non_fungible: NonFungible,
+    ) {
+        self.non_fungibles
+            .insert((resource_address, key.clone()), non_fungible);
     }
 
     fn get_epoch(&self) -> u64 {

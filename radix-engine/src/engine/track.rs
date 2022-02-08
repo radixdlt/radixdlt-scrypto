@@ -1,5 +1,5 @@
 use lru::LruCache;
-use scrypto::kernel::*;
+use scrypto::engine::*;
 use scrypto::rust::collections::*;
 use scrypto::rust::string::String;
 use scrypto::rust::vec::Vec;
@@ -208,13 +208,21 @@ impl<'s, S: SubstateStore> Track<'s, S> {
     }
 
     /// Returns an immutable reference to a non-fungible, if exists.
-    pub fn get_non_fungible(&mut self, resource_address: Address, key: &NonFungibleKey) -> Option<&NonFungible> {
-        if self.non_fungibles.contains_key(&(resource_address, key.clone())) {
+    pub fn get_non_fungible(
+        &mut self,
+        resource_address: Address,
+        key: &NonFungibleKey,
+    ) -> Option<&NonFungible> {
+        if self
+            .non_fungibles
+            .contains_key(&(resource_address, key.clone()))
+        {
             return self.non_fungibles.get(&(resource_address, key.clone()));
         }
 
         if let Some(non_fungible) = self.ledger.get_non_fungible(resource_address, key) {
-            self.non_fungibles.insert((resource_address, key.clone()), non_fungible);
+            self.non_fungibles
+                .insert((resource_address, key.clone()), non_fungible);
             self.non_fungibles.get(&(resource_address, key.clone()))
         } else {
             None
@@ -222,15 +230,24 @@ impl<'s, S: SubstateStore> Track<'s, S> {
     }
 
     /// Returns a mutable reference to a non-fungible, if exists.
-    pub fn get_non_fungible_mut(&mut self, resource_address: Address, key: &NonFungibleKey) -> Option<&mut NonFungible> {
-        self.updated_non_fungibles.insert((resource_address, key.clone()));
+    pub fn get_non_fungible_mut(
+        &mut self,
+        resource_address: Address,
+        key: &NonFungibleKey,
+    ) -> Option<&mut NonFungible> {
+        self.updated_non_fungibles
+            .insert((resource_address, key.clone()));
 
-        if self.non_fungibles.contains_key(&(resource_address, key.clone())) {
+        if self
+            .non_fungibles
+            .contains_key(&(resource_address, key.clone()))
+        {
             return self.non_fungibles.get_mut(&(resource_address, key.clone()));
         }
 
         if let Some(non_fungible) = self.ledger.get_non_fungible(resource_address, key) {
-            self.non_fungibles.insert((resource_address, key.clone()), non_fungible);
+            self.non_fungibles
+                .insert((resource_address, key.clone()), non_fungible);
             self.non_fungibles.get_mut(&(resource_address, key.clone()))
         } else {
             None
@@ -238,10 +255,17 @@ impl<'s, S: SubstateStore> Track<'s, S> {
     }
 
     /// Inserts a new non-fungible.
-    pub fn put_non_fungible(&mut self, resource_address: Address, key: &NonFungibleKey, non_fungible: NonFungible) {
-        self.updated_non_fungibles.insert((resource_address, key.clone()));
+    pub fn put_non_fungible(
+        &mut self,
+        resource_address: Address,
+        key: &NonFungibleKey,
+        non_fungible: NonFungible,
+    ) {
+        self.updated_non_fungibles
+            .insert((resource_address, key.clone()));
 
-        self.non_fungibles.insert((resource_address, key.clone()), non_fungible);
+        self.non_fungibles
+            .insert((resource_address, key.clone()), non_fungible);
     }
 
     /// Returns an immutable reference to a lazy map, if exists.
@@ -444,7 +468,10 @@ impl<'s, S: SubstateStore> Track<'s, S> {
             self.ledger.put_non_fungible(
                 resource_def,
                 &id,
-                self.non_fungibles.get(&(resource_def, id.clone())).unwrap().clone(),
+                self.non_fungibles
+                    .get(&(resource_def, id.clone()))
+                    .unwrap()
+                    .clone(),
             );
         }
     }

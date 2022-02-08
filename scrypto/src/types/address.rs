@@ -68,7 +68,7 @@ impl Address {
         match self {
             Self::Package(d) => combine(1, d),
             Self::Component(d) => combine(2, d),
-            Self::ResourceDef(d) => combine(3, d)
+            Self::ResourceDef(d) => combine(3, d),
         }
     }
 
@@ -104,7 +104,7 @@ impl TryFrom<&[u8]> for Address {
                 2 => Ok(Self::Component(copy_u8_array(&slice[1..]))),
                 3 => Ok(Self::ResourceDef(copy_u8_array(&slice[1..]))),
                 _ => Err(ParseAddressError::InvalidType(slice[0])),
-            }
+            },
             _ => Err(ParseAddressError::InvalidLength(slice.len())),
         }
     }

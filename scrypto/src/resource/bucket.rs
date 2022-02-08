@@ -1,7 +1,7 @@
 use sbor::{describe::Type, *};
 
 use crate::buffer::*;
-use crate::kernel::*;
+use crate::engine::*;
 use crate::resource::*;
 use crate::rust::borrow::ToOwned;
 use crate::rust::vec;
@@ -32,7 +32,7 @@ impl Bucket {
         let input = CreateEmptyBucketInput {
             resource_address: resource_def.into().address(),
         };
-        let output: CreateEmptyBucketOutput = call_kernel(CREATE_EMPTY_BUCKET, input);
+        let output: CreateEmptyBucketOutput = call_engine(CREATE_EMPTY_BUCKET, input);
 
         output.bid.into()
     }
@@ -43,7 +43,7 @@ impl Bucket {
             bid: self.bid,
             other: other.bid,
         };
-        let _: PutIntoBucketOutput = call_kernel(PUT_INTO_BUCKET, input);
+        let _: PutIntoBucketOutput = call_engine(PUT_INTO_BUCKET, input);
     }
 
     /// Takes some amount of resources from this bucket.
@@ -52,7 +52,7 @@ impl Bucket {
             bid: self.bid,
             amount: amount.into(),
         };
-        let output: TakeFromBucketOutput = call_kernel(TAKE_FROM_BUCKET, input);
+        let output: TakeFromBucketOutput = call_engine(TAKE_FROM_BUCKET, input);
 
         output.bid.into()
     }
@@ -60,7 +60,7 @@ impl Bucket {
     /// Creates an immutable reference to this bucket.
     pub fn present(&self) -> BucketRef {
         let input = CreateBucketRefInput { bid: self.bid };
-        let output: CreateBucketRefOutput = call_kernel(CREATE_BUCKET_REF, input);
+        let output: CreateBucketRefOutput = call_engine(CREATE_BUCKET_REF, input);
 
         output.rid.into()
     }
@@ -68,7 +68,7 @@ impl Bucket {
     /// Returns the amount of resources in this bucket.
     pub fn amount(&self) -> Decimal {
         let input = GetBucketDecimalInput { bid: self.bid };
-        let output: GetBucketDecimalOutput = call_kernel(GET_BUCKET_AMOUNT, input);
+        let output: GetBucketDecimalOutput = call_engine(GET_BUCKET_AMOUNT, input);
 
         output.amount
     }
@@ -77,7 +77,7 @@ impl Bucket {
     pub fn resource_def(&self) -> ResourceDef {
         let input = GetBucketResourceAddressInput { bid: self.bid };
         let output: GetBucketResourceAddressOutput =
-            call_kernel(GET_BUCKET_RESOURCE_ADDRESS, input);
+            call_engine(GET_BUCKET_RESOURCE_ADDRESS, input);
 
         output.resource_address.into()
     }
@@ -116,7 +116,8 @@ impl Bucket {
             bid: self.bid,
             key: key.clone(),
         };
-        let output: TakeNonFungibleFromBucketOutput = call_kernel(TAKE_NON_FUNGIBLE_FROM_BUCKET, input);
+        let output: TakeNonFungibleFromBucketOutput =
+            call_engine(TAKE_NON_FUNGIBLE_FROM_BUCKET, input);
 
         output.bid.into()
     }
@@ -127,7 +128,8 @@ impl Bucket {
     /// Panics if this is not a non-fungible bucket.
     pub fn get_non_fungibles<T: NonFungibleData>(&self) -> Vec<NonFungible<T>> {
         let input = GetNonFungibleKeysInBucketInput { bid: self.bid };
-        let output: GetNonFungibleKeysInBucketOutput = call_kernel(GET_NON_FUNGIBLE_KEYS_IN_BUCKET, input);
+        let output: GetNonFungibleKeysInBucketOutput =
+            call_engine(GET_NON_FUNGIBLE_KEYS_IN_BUCKET, input);
         let resource_address = self.resource_address();
         output
             .keys
@@ -142,7 +144,8 @@ impl Bucket {
     /// Panics if this is not a non-fungible bucket.
     pub fn get_non_fungible_keys(&self) -> Vec<NonFungibleKey> {
         let input = GetNonFungibleKeysInBucketInput { bid: self.bid };
-        let output: GetNonFungibleKeysInBucketOutput = call_kernel(GET_NON_FUNGIBLE_KEYS_IN_BUCKET, input);
+        let output: GetNonFungibleKeysInBucketOutput =
+            call_engine(GET_NON_FUNGIBLE_KEYS_IN_BUCKET, input);
 
         output.keys
     }
@@ -150,7 +153,11 @@ impl Bucket {
     /// Get the non-fungible id and panic if not singleton.
     pub fn get_non_fungible_key(&self) -> NonFungibleKey {
         let keys = self.get_non_fungible_keys();
-        assert!(keys.len() == 1, "Expect 1 NonFungible, but found {}", keys.len());
+        assert!(
+            keys.len() == 1,
+            "Expect 1 non-fungible, but found {}",
+            keys.len()
+        );
         keys[0].clone()
     }
 
@@ -166,8 +173,14 @@ impl Bucket {
     ///
     /// # Panics
     /// Panics if this is not a non-fungible bucket or the specified non-fungible resource is not found.
-    pub fn update_non_fungible_data<T: NonFungibleData>(&mut self, key: &NonFungibleKey, new_data: T, auth: BucketRef) {
-        self.resource_def().update_non_fungible_data(key, new_data, auth)
+    pub fn update_non_fungible_data<T: NonFungibleData>(
+        &mut self,
+        key: &NonFungibleKey,
+        new_data: T,
+        auth: BucketRef,
+    ) {
+        self.resource_def()
+            .update_non_fungible_data(key, new_data, auth)
     }
 }
 
