@@ -76,6 +76,30 @@ fn create_mutable_vault_into_vector() {
 }
 
 #[test]
+fn cannot_remove_vaults() {
+    // Arrange
+    let mut ledger = InMemorySubstateStore::with_bootstrap();
+    let mut sut = TransactionExecutor::new(&mut ledger, false);
+    let package = sut.publish_package(&compile("vault")).unwrap();
+    let transaction = TransactionBuilder::new(&sut)
+        .call_function(package, "VaultTest", "new_vault_into_vector", vec![], None)
+        .build(vec![])
+        .unwrap();
+    let receipt = sut.run(transaction).unwrap();
+    let component_address = receipt.new_entities.into_iter().filter(|a| a.is_component()).nth(0).unwrap();
+
+    // Act
+    let transaction = TransactionBuilder::new(&sut)
+        .call_method(component_address, "clear_vector", vec![], None)
+        .build(vec![])
+        .unwrap();
+    let receipt = sut.run(transaction).unwrap();
+
+    // Assert
+    assert!(!receipt.result.is_ok());
+}
+
+#[test]
 fn can_push_vault_into_vector() {
     // Arrange
     let mut ledger = InMemorySubstateStore::with_bootstrap();

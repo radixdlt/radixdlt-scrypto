@@ -53,6 +53,10 @@ blueprint! {
             }.instantiate()
         }
 
+        pub fn clear_vector(&mut self) -> () {
+            self.vault_vector.clear()
+        }
+
         pub fn push_vault_into_vector(&mut self) -> () {
             let bucket = Self::new_fungible();
             self.vault_vector.push(Vault::with_bucket(bucket))
