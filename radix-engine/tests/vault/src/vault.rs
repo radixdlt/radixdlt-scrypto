@@ -7,7 +7,8 @@ pub struct Data {
 blueprint! {
     struct VaultTest {
         vault: Vault,
-        vaults: LazyMap<u128, Vault>
+        vaults: LazyMap<u128, Vault>,
+        vault_vector: Vec<Vault>
     }
 
     impl VaultTest {
@@ -30,15 +31,41 @@ blueprint! {
             let bucket = Self::new_fungible();
             let vaults = LazyMap::new();
             vaults.insert(0, Vault::with_bucket(bucket));
-            VaultTest { vault, vaults }.instantiate()
+            let vault_vector = Vec::new();
+            VaultTest {
+                vault,
+                vaults,
+                vault_vector
+            }.instantiate()
         }
+
+         pub fn new_vault_into_vector() -> Component {
+            let bucket = Self::new_fungible();
+            let vault = Vault::with_bucket(bucket);
+            let bucket = Self::new_fungible();
+            let vaults = LazyMap::new();
+            let mut vault_vector = Vec::new();
+            vault_vector.push(Vault::with_bucket(bucket));
+            VaultTest {
+                vault,
+                vaults,
+                vault_vector
+            }.instantiate()
+        }
+
 
         pub fn new_vault_with_take() -> Component {
             let bucket = Self::new_fungible();
             let mut vault = Vault::with_bucket(bucket);
             let bucket = vault.take(1);
             vault.put(bucket);
-            VaultTest { vault, vaults: LazyMap::new() }.instantiate()
+            let vaults = LazyMap::new();
+            let vault_vector = Vec::new();
+            VaultTest {
+                vault,
+                vaults,
+                vault_vector
+            }.instantiate()
         }
 
         fn create_non_fungible_vault() -> Vault {
@@ -54,25 +81,49 @@ blueprint! {
             let mut vault = Self::create_non_fungible_vault();
             let bucket = vault.take_non_fungible(&NonFungibleKey::from(1u128));
             vault.put(bucket);
-            VaultTest { vault, vaults: LazyMap::new() }.instantiate()
+            let vaults = LazyMap::new();
+            let vault_vector = Vec::new();
+            VaultTest {
+                vault,
+                vaults,
+                vault_vector
+            }.instantiate()
         }
 
         pub fn new_vault_with_get_non_fungible_keys() -> Component {
             let vault = Self::create_non_fungible_vault();
             let _keys = vault.get_non_fungible_keys();
-            VaultTest { vault, vaults: LazyMap::new() }.instantiate()
+            let vaults = LazyMap::new();
+            let vault_vector = Vec::new();
+            VaultTest {
+                vault,
+                vaults,
+                vault_vector
+            }.instantiate()
         }
 
         pub fn new_vault_with_get_amount() -> Component {
             let vault = Self::create_non_fungible_vault();
             let _amount = vault.amount();
-            VaultTest { vault, vaults: LazyMap::new() }.instantiate()
+            let vaults = LazyMap::new();
+            let vault_vector = Vec::new();
+            VaultTest {
+                vault,
+                vaults,
+                vault_vector
+            }.instantiate()
         }
 
         pub fn new_vault_with_get_resource_def() -> Component {
             let vault = Self::create_non_fungible_vault();
             let _resource_def = vault.resource_def();
-            VaultTest { vault, vaults: LazyMap::new() }.instantiate()
+            let vaults = LazyMap::new();
+            let vault_vector = Vec::new();
+            VaultTest {
+                vault,
+                vaults,
+                vault_vector
+            }.instantiate()
         }
     }
 }

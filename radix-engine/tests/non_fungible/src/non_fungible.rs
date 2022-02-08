@@ -8,7 +8,9 @@ pub struct Sandwich {
 }
 
 blueprint! {
-    struct NonFungibleTest;
+    struct NonFungibleTest {
+        vault: Vault
+    }
 
     impl NonFungibleTest {
         pub fn create_non_fungible_mutable() -> (Bucket, ResourceDef, Bucket) {
@@ -99,6 +101,8 @@ blueprint! {
             assert_eq!(vault.amount(), 2.into());
             assert_eq!(non_fungible.amount(), 1.into());
 
+            NonFungibleTest { vault }.instantiate();
+
             non_fungible
         }
 
@@ -115,6 +119,9 @@ blueprint! {
             let non_fungible = vault.take(1);
             assert_eq!(vault.get_non_fungible_keys(), Vec::from([NonFungibleKey::from(2u128), NonFungibleKey::from(3u128)]));
             assert_eq!(non_fungible.get_non_fungible_keys(), Vec::from([NonFungibleKey::from(1u128)]));
+
+            NonFungibleTest { vault }.instantiate();
+
             non_fungible
         }
 
