@@ -53,6 +53,10 @@ blueprint! {
             }.instantiate()
         }
 
+        pub fn push_vault_into_vector(&mut self) -> () {
+            let bucket = Self::new_fungible();
+            self.vault_vector.push(Vault::with_bucket(bucket))
+        }
 
         pub fn new_vault_with_take() -> Component {
             let bucket = Self::new_fungible();
