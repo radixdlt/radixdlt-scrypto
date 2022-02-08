@@ -256,10 +256,12 @@ impl ResourceDef {
     }
 
     pub fn check_burn_auth(&self, badge: Option<Address>) -> Result<(), ResourceDefError> {
-        if self.is_flag_on(FREELY_BURNABLE) {
-            Ok(())
-        } else if self.is_flag_on(BURNABLE) {
-            self.check_permission(badge, MAY_BURN)
+        if self.is_flag_on(BURNABLE) {
+            if self.is_flag_on(FREELY_BURNABLE) {
+                Ok(())
+            } else {
+                self.check_permission(badge, MAY_BURN)
+            }
         } else {
             Err(ResourceDefError::OperationNotAllowed)
         }
