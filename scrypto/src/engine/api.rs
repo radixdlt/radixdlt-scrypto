@@ -117,7 +117,7 @@ pub const GET_CURRENT_EPOCH: u32 = 0xf3;
 pub const GET_TRANSACTION_HASH: u32 = 0xf4;
 /// Generate an UUID
 pub const GENERATE_UUID: u32 = 0xf5;
-/// Retrieve running entitty
+/// Retrieve the running entity
 pub const GET_ACTOR: u32 = 0xf6;
 
 //==========

@@ -6,7 +6,7 @@ use crate::types::*;
 pub struct Context {}
 
 impl Context {
-    /// Returns running entity, a component if within a call-method context or a
+    /// Returns the running entity, a component if within a call-method context or a
     /// blueprint if within a call-function context.
     pub fn actor() -> Actor {
         let input = GetActorInput {};
