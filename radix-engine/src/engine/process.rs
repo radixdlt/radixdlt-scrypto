@@ -558,7 +558,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             re_warn!(self, "Dangling vault: {:?}, {:?}", vid, vault);
             success = false;
         }
-
         for (mid, lazy_map) in &self.unclaimed_lazy_maps {
             re_warn!(self, "Dangling lazy map: {:?}, {:?}", mid, lazy_map);
             success = false;
@@ -1042,6 +1041,12 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         Ok(PutComponentStateOutput {})
     }
 
+    fn get_lazy_map_mut(&mut self, mid: Mid) -> Result<&mut LazyMap, RuntimeError> {
+        self.unclaimed_lazy_maps.get_mut(&mid)
+            .or_else(|| self.track.get_lazy_map_mut(mid))
+            .ok_or(RuntimeError::LazyMapNotFound(mid))
+    }
+
     fn handle_create_lazy_map(
         &mut self,
         _input: CreateLazyMapInput,
@@ -1062,11 +1067,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         input: GetLazyMapEntryInput,
     ) -> Result<GetLazyMapEntryOutput, RuntimeError> {
         let actor = self.authenticate()?;
-
-        let lazy_map = self
-            .track
-            .get_lazy_map(input.mid)
-            .ok_or(RuntimeError::LazyMapNotFound(input.mid))?;
+        let lazy_map = self.get_lazy_map_mut(input.mid)?;
 
         let value = lazy_map
             .get_entry(&input.key, actor)
