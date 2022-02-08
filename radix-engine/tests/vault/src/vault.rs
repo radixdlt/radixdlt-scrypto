@@ -54,5 +54,11 @@ blueprint! {
             let _amount = vault.amount();
             VaultTest { vault }.instantiate()
         }
+
+        pub fn new_vault_with_get_resource_def() -> Component {
+            let vault = Self::create_non_fungible_vault();
+            let _resource_def = vault.resource_def();
+            VaultTest { vault }.instantiate()
+        }
     }
 }

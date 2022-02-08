@@ -1522,11 +1522,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         input: GetVaultResourceAddressInput,
     ) -> Result<GetVaultResourceAddressOutput, RuntimeError> {
         let actor = self.authenticate()?;
-
-        let vault = self
-            .track
-            .get_vault(input.vid)
-            .ok_or(RuntimeError::VaultNotFound(input.vid))?;
+        let vault = self.get_vault_mut(input.vid)?;
 
         Ok(GetVaultResourceAddressOutput {
             resource_address: vault
