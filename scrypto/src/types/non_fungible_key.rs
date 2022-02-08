@@ -65,7 +65,8 @@ impl Decode for NonFungibleKey {
     fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
         let len = decoder.read_len()?;
         let slice = decoder.read_bytes(len)?;
-        Self::try_from(slice).map_err(|_| DecodeError::InvalidCustomData(SCRYPTO_TYPE_NON_FUNGIBLE_KEY))
+        Self::try_from(slice)
+            .map_err(|_| DecodeError::InvalidCustomData(SCRYPTO_TYPE_NON_FUNGIBLE_KEY))
     }
 }
 

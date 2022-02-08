@@ -1,7 +1,7 @@
 use sbor::{describe::Type, *};
 
 use crate::buffer::*;
-use crate::kernel::*;
+use crate::engine::*;
 use crate::rust::borrow::ToOwned;
 use crate::rust::marker::PhantomData;
 use crate::rust::vec;
@@ -36,7 +36,7 @@ impl<K: Encode + Decode, V: Encode + Decode> LazyMap<K, V> {
     /// Creates a new lazy map.
     pub fn new() -> Self {
         let input = CreateLazyMapInput {};
-        let output: CreateLazyMapOutput = call_kernel(CREATE_LAZY_MAP, input);
+        let output: CreateLazyMapOutput = call_engine(CREATE_LAZY_MAP, input);
 
         output.mid.into()
     }
@@ -47,7 +47,7 @@ impl<K: Encode + Decode, V: Encode + Decode> LazyMap<K, V> {
             mid: self.mid,
             key: scrypto_encode(key),
         };
-        let output: GetLazyMapEntryOutput = call_kernel(GET_LAZY_MAP_ENTRY, input);
+        let output: GetLazyMapEntryOutput = call_engine(GET_LAZY_MAP_ENTRY, input);
 
         output.value.map(|v| scrypto_unwrap(scrypto_decode(&v)))
     }
@@ -59,7 +59,7 @@ impl<K: Encode + Decode, V: Encode + Decode> LazyMap<K, V> {
             key: scrypto_encode(&key),
             value: scrypto_encode(&value),
         };
-        let _: PutLazyMapEntryOutput = call_kernel(PUT_LAZY_MAP_ENTRY, input);
+        let _: PutLazyMapEntryOutput = call_engine(PUT_LAZY_MAP_ENTRY, input);
     }
 
     /// Returns the identifier of this map.

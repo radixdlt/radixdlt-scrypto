@@ -396,9 +396,8 @@ fn generate_vault(value: &ast::Value) -> Result<Vid, GeneratorError> {
 fn generate_non_fungible_key(value: &ast::Value) -> Result<NonFungibleKey, GeneratorError> {
     match value {
         ast::Value::NonFungibleKey(inner) => match &**inner {
-            ast::Value::String(s) => {
-                NonFungibleKey::from_str(s).map_err(|_| GeneratorError::InvalidNonFungibleKey(s.into()))
-            }
+            ast::Value::String(s) => NonFungibleKey::from_str(s)
+                .map_err(|_| GeneratorError::InvalidNonFungibleKey(s.into())),
             v @ _ => invalid_type!(v, ast::Type::String),
         },
         v @ _ => invalid_type!(v, ast::Type::NonFungibleKey),
@@ -504,9 +503,8 @@ fn generate_value(
         ast::Value::Vault(_) => {
             generate_vault(value).map(|v| Value::Custom(SCRYPTO_TYPE_VID, v.to_vec()))
         }
-        ast::Value::NonFungibleKey(_) => {
-            generate_non_fungible_key(value).map(|v| Value::Custom(SCRYPTO_TYPE_NON_FUNGIBLE_KEY, v.to_vec()))
-        }
+        ast::Value::NonFungibleKey(_) => generate_non_fungible_key(value)
+            .map(|v| Value::Custom(SCRYPTO_TYPE_NON_FUNGIBLE_KEY, v.to_vec())),
     }
 }
 

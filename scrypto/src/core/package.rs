@@ -1,7 +1,7 @@
 use sbor::{describe::Type, *};
 
 use crate::buffer::*;
-use crate::kernel::*;
+use crate::engine::*;
 use crate::rust::borrow::ToOwned;
 use crate::rust::vec;
 use crate::types::*;
@@ -34,7 +34,7 @@ impl Package {
         let input = PublishPackageInput {
             code: code.to_vec(),
         };
-        let output: PublishPackageOutput = call_kernel(PUBLISH_PACKAGE, input);
+        let output: PublishPackageOutput = call_engine(PUBLISH_PACKAGE, input);
 
         output.package_address.into()
     }

@@ -1,18 +1,18 @@
 use sbor::*;
 
 use crate::buffer::*;
-use crate::kernel::*;
+use crate::engine::*;
 use crate::utils::*;
 
-/// Utility function for making a kernel call.
+/// Utility function for making a radix engine call.
 #[cfg(target_arch = "wasm32")]
-pub fn call_kernel<T: Encode, V: Decode>(op: u32, input: T) -> V {
+pub fn call_engine<T: Encode, V: Decode>(op: u32, input: T) -> V {
     unsafe {
         // 1. serialize the input
         let input_bytes = scrypto_encode(&input);
 
-        // 2. make a kernel call
-        let output_ptr = kernel(op, input_bytes.as_ptr(), input_bytes.len());
+        // 2. make a radix engine call
+        let output_ptr = radix_engine(op, input_bytes.as_ptr(), input_bytes.len());
 
         // 3. deserialize the output
         scrypto_consume(output_ptr, |slice| {
@@ -21,9 +21,9 @@ pub fn call_kernel<T: Encode, V: Decode>(op: u32, input: T) -> V {
     }
 }
 
-/// Utility function for making a kernel call.
+/// Utility function for making a radix engine call.
 #[cfg(not(target_arch = "wasm32"))]
-pub fn call_kernel<T: Encode, V: Decode>(op: u32, input: T) -> V {
+pub fn call_engine<T: Encode, V: Decode>(op: u32, input: T) -> V {
     if op == EMIT_LOG {
         let input_bytes = scrypto_encode(&input);
         #[allow(unused_variables)]

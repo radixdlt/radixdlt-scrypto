@@ -1,5 +1,5 @@
 use sbor::*;
-use scrypto::kernel::*;
+use scrypto::engine::*;
 use scrypto::resource::resource_flags::*;
 use scrypto::resource::resource_permissions::*;
 use scrypto::rust::collections::HashMap;
@@ -264,7 +264,10 @@ impl ResourceDef {
         }
     }
 
-    pub fn check_update_non_fungible_mutable_data_auth(&self, actor: Actor) -> Result<(), ResourceDefError> {
+    pub fn check_update_non_fungible_mutable_data_auth(
+        &self,
+        actor: Actor,
+    ) -> Result<(), ResourceDefError> {
         if self.is_flag_on(INDIVIDUAL_METADATA_MUTABLE) {
             actor
                 .check_permission(self.authorities(), MAY_CHANGE_INDIVIDUAL_METADATA)

@@ -1,6 +1,6 @@
 use sbor::{Decode, Encode, TypeId};
 
-use crate::kernel::*;
+use crate::engine::*;
 use crate::rust::collections::HashMap;
 use crate::rust::string::String;
 use crate::rust::vec::Vec;
@@ -9,7 +9,7 @@ use crate::types::*;
 #[cfg(target_arch = "wasm32")]
 extern "C" {
     /// Entrance to Radix Engine.
-    pub fn kernel(op: u32, input_ptr: *const u8, input_len: usize) -> *mut u8;
+    pub fn radix_engine(op: u32, input_ptr: *const u8, input_len: usize) -> *mut u8;
 }
 
 /// Publish a code package

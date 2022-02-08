@@ -21,7 +21,7 @@ pub mod buffer;
 /// Scrypto core abstractions.
 pub mod core;
 /// Radix engine APIs.
-pub mod kernel;
+pub mod engine;
 /// Scrypto preludes.
 pub mod prelude;
 /// Scrypto resource abstractions.
@@ -72,7 +72,7 @@ macro_rules! args {
 #[macro_export]
 macro_rules! error {
     ($($args: expr),+) => {{
-        ::scrypto::core::Logger::log(scrypto::kernel::LogLevel::Error, ::scrypto::rust::format!($($args),+));
+        ::scrypto::core::Logger::log(scrypto::engine::LogLevel::Error, ::scrypto::rust::format!($($args),+));
     }};
 }
 
@@ -87,7 +87,7 @@ macro_rules! error {
 #[macro_export]
 macro_rules! warn {
     ($($args: expr),+) => {{
-        ::scrypto::core::Logger::log(scrypto::kernel::LogLevel::Warn, ::scrypto::rust::format!($($args),+));
+        ::scrypto::core::Logger::log(scrypto::engine::LogLevel::Warn, ::scrypto::rust::format!($($args),+));
     }};
 }
 
@@ -102,7 +102,7 @@ macro_rules! warn {
 #[macro_export]
 macro_rules! info {
     ($($args: expr),+) => {{
-        ::scrypto::core::Logger::log(scrypto::kernel::LogLevel::Info, ::scrypto::rust::format!($($args),+));
+        ::scrypto::core::Logger::log(scrypto::engine::LogLevel::Info, ::scrypto::rust::format!($($args),+));
     }};
 }
 
@@ -117,7 +117,7 @@ macro_rules! info {
 #[macro_export]
 macro_rules! debug {
     ($($args: expr),+) => {{
-        ::scrypto::core::Logger::log(scrypto::kernel::LogLevel::Debug, ::scrypto::rust::format!($($args),+));
+        ::scrypto::core::Logger::log(scrypto::engine::LogLevel::Debug, ::scrypto::rust::format!($($args),+));
     }};
 }
 
@@ -132,7 +132,7 @@ macro_rules! debug {
 #[macro_export]
 macro_rules! trace {
     ($($args: expr),+) => {{
-        ::scrypto::core::Logger::log(scrypto::kernel::LogLevel::Trace, ::scrypto::rust::format!($($args),+));
+        ::scrypto::core::Logger::log(scrypto::engine::LogLevel::Trace, ::scrypto::rust::format!($($args),+));
     }};
 }
 

@@ -1,4 +1,4 @@
-use crate::kernel::*;
+use crate::engine::*;
 use crate::rust::string::String;
 
 /// A utility for logging messages.
@@ -9,7 +9,7 @@ impl Logger {
     /// Emits a log to console.
     pub fn log(level: LogLevel, message: String) {
         let input = EmitLogInput { level, message };
-        let _: EmitLogOutput = call_kernel(EMIT_LOG, input);
+        let _: EmitLogOutput = call_engine(EMIT_LOG, input);
     }
 
     /// Emits a trace message.
