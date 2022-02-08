@@ -1087,8 +1087,16 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let value = self.process_map_data(&input.value)?;
         re_debug!(self, "Map entry: {} => {}", key, value);
 
-        let lazy_map = self.get_lazy_map_mut(input.mid)?;
+        for vid in value.vaults {
+            // TODO: associate vault with lazy_map
+            let vault = self
+                .unclaimed_vaults
+                .remove(&vid)
+                .ok_or(RuntimeError::VaultNotFound(vid))?; // Claimed vaults should not be stored in lazy_map
+            self.track.put_vault(vid, vault);
+        }
 
+        let lazy_map = self.get_lazy_map_mut(input.mid)?;
         lazy_map
             .set_entry(key.raw, value.raw, actor)
             .map_err(RuntimeError::LazyMapError)?;
