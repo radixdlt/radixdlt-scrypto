@@ -1051,9 +1051,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             }
             Ok(())
         })?;
-        /*
         old_vaults.into_iter().try_for_each(|vid| Err(RuntimeError::VaultRemoved(vid)))?;
-         */
 
         let component = self.track.get_component_mut(input.component_address).unwrap();
         component
