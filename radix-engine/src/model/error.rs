@@ -107,6 +107,9 @@ pub enum RuntimeError {
     /// Component does not exist.
     ComponentNotFound(Address),
 
+    /// Component is already loaded
+    ComponentAlreadyLoaded(Address),
+
     /// Resource definition does not exist.
     ResourceDefNotFound(Address),
 

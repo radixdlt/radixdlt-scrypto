@@ -1020,12 +1020,10 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
         let state = component.state();
         let updating_component_data = Self::process_component_data(state).unwrap();
-        let current = self.updating_components.insert(input.component_address, updating_component_data);
-        assert!(current.is_none());
-
-        Ok(GetComponentStateOutput {
-            state: state.to_owned(),
-        })
+        let existing = self.updating_components.insert(input.component_address, updating_component_data);
+        existing.map_or(Ok(GetComponentStateOutput { state: state.to_owned() }),
+            |_| Err(RuntimeError::ComponentAlreadyLoaded(input.component_address))
+        )
     }
 
     fn handle_put_component_state(
