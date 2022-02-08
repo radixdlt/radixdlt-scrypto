@@ -67,6 +67,8 @@ pub struct Process<'r, 'l, L: SubstateStore> {
     moving_buckets: HashMap<Bid, Bucket>,
     /// The bucket refs that will be moved to another process SHORTLY.
     moving_bucket_refs: HashMap<Rid, BucketRef>,
+
+    unclaimed_vaults: HashMap<Vid, Vault>,
     /// A WASM interpreter
     vm: Option<Interpreter>,
     /// ID allocator for buckets and bucket refs created within transaction.
@@ -109,6 +111,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             bucket_refs: HashMap::new(),
             moving_buckets: HashMap::new(),
             moving_bucket_refs: HashMap::new(),
+            unclaimed_vaults: HashMap::new(),
             vm: None,
             id_allocator: IdAllocator::new(IdSpace::Transaction),
             worktop: HashMap::new(),
@@ -549,6 +552,10 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             re_warn!(self, "Dangling resource: {:?}", bucket);
             success = false;
         }
+        for (vid, vault) in &self.unclaimed_vaults {
+            re_warn!(self, "Dangling vault: {:?}, {:?}", vid, vault);
+            success = false;
+        }
 
         re_debug!(self, "Resource check ended");
         if success {
@@ -943,6 +950,15 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             component_address,
             data
         );
+
+        for vid in data.vaults {
+            // TODO: associate vault with component
+            let vault = self
+                .unclaimed_vaults
+                .remove(&vid)
+                .ok_or(RuntimeError::VaultNotFound(vid))?;
+            self.track.put_vault(vid, vault);
+        }
 
         let component = Component::new(self.package()?, input.blueprint_name, data.raw);
         self.track.put_component(component_address, component);
@@ -1396,7 +1412,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             self.package()?,
         );
         let vid = self.track.new_vid();
-        self.track.put_vault(vid, new_vault);
+        self.unclaimed_vaults.insert(vid, new_vault);
 
         Ok(CreateEmptyVaultOutput { vid })
     }
@@ -1407,15 +1423,15 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     ) -> Result<PutIntoVaultOutput, RuntimeError> {
         let actor = self.authenticate()?;
 
-        let other = self
+        let bucket = self
             .buckets
             .remove(&input.bid)
             .ok_or(RuntimeError::BucketNotFound(input.bid))?;
 
-        self.track
-            .get_vault_mut(input.vid)
+        self.unclaimed_vaults.get_mut(&input.vid)
+            .or_else(|| self.track.get_vault_mut(input.vid))
             .ok_or(RuntimeError::VaultNotFound(input.vid))?
-            .put(other, actor)
+            .put(bucket, actor)
             .map_err(RuntimeError::VaultError)?;
 
         Ok(PutIntoVaultOutput {})
