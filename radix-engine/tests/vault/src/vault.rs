@@ -39,7 +39,12 @@ blueprint! {
             }.instantiate()
         }
 
-         pub fn new_vault_into_vector() -> Component {
+        pub fn overwrite_vault_in_map(&mut self) -> () {
+            let bucket = Self::new_fungible();
+            self.vaults.insert(0, Vault::with_bucket(bucket))
+        }
+
+        pub fn new_vault_into_vector() -> Component {
             let bucket = Self::new_fungible();
             let vault = Vault::with_bucket(bucket);
             let bucket = Self::new_fungible();

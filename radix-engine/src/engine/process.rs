@@ -664,7 +664,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         Ok(validated)
     }
 
-    fn process_map_data(&mut self, data: &[u8]) -> Result<ValidatedData, RuntimeError> {
+    fn process_map_data(data: &[u8]) -> Result<ValidatedData, RuntimeError> {
         let validated = validate_data(data).map_err(RuntimeError::DataValidationError)?;
         if !validated.buckets.is_empty() {
             return Err(RuntimeError::BucketNotAllowed);
@@ -1117,31 +1117,48 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         input: PutLazyMapEntryInput,
     ) -> Result<PutLazyMapEntryOutput, RuntimeError> {
         let actor = self.authenticate()?;
-        let key = self.process_map_data(&input.key)?;
-        let value = self.process_map_data(&input.value)?;
-        re_debug!(self, "Map entry: {} => {}", key, value);
+        let key = Self::process_map_data(&input.key)?;
+        let new_state = Self::process_map_data(&input.value)?;
+        re_debug!(self, "Map entry: {} => {}", key, new_state);
 
-        for vid in value.vaults {
-            // TODO: associate vault with lazy_map
-            let vault = self
-                .unclaimed_vaults
-                .remove(&vid)
-                .ok_or(RuntimeError::VaultNotFound(vid))?; // Claimed vaults should not be stored in lazy_map
-            self.track.put_vault(vid, vault);
-        }
+        let mut old_state = self.get_lazy_map_mut(input.mid)?
+            .get_entry(&input.key, actor.clone()).map_err(RuntimeError::LazyMapError)?
+            .map_or((HashSet::new(), HashSet::new()), |e| {
+                let data = Self::process_map_data(e).unwrap();
+                let old_vaults = HashSet::from_iter(data.vaults.into_iter());
+                let old_lazy_maps = HashSet::from_iter(data.lazy_maps.into_iter());
+                (old_vaults, old_lazy_maps)
+            });
 
-        for mid in value.lazy_maps {
-            // TODO: associate lazy_map with lazy_map
-            let lazy_map = self
-                .unclaimed_lazy_maps
-                .remove(&mid)
-                .ok_or(RuntimeError::LazyMapNotFound(mid))?; // Claimed vaults should not be stored in lazy_map
-            self.track.put_lazy_map(mid, lazy_map);
-        }
+        // Only allow vaults to be added, never removed
+        new_state.vaults.into_iter().try_for_each(|vid| {
+            if !old_state.0.remove(&vid) {
+                let vault = self
+                    .unclaimed_vaults
+                    .remove(&vid)
+                    .ok_or(RuntimeError::VaultNotFound(vid))?;
+                self.track.put_vault(vid, vault);
+            }
+            Ok(())
+        })?;
+        old_state.0.into_iter().try_for_each(|vid| Err(RuntimeError::VaultRemoved(vid)))?;
+
+        // Only allow lazy maps to be added, never removed
+        new_state.lazy_maps.into_iter().try_for_each(|mid| {
+            if !old_state.1.remove(&mid) {
+                let lazy_map = self
+                    .unclaimed_lazy_maps
+                    .remove(&mid)
+                    .ok_or(RuntimeError::LazyMapNotFound(mid))?;
+                self.track.put_lazy_map(mid, lazy_map);
+            }
+            Ok(())
+        })?;
+        old_state.1.into_iter().try_for_each(|mid| Err(RuntimeError::LazyMapRemoved(mid)))?;
 
         let lazy_map = self.get_lazy_map_mut(input.mid)?;
         lazy_map
-            .set_entry(key.raw, value.raw, actor)
+            .set_entry(key.raw, new_state.raw, actor)
             .map_err(RuntimeError::LazyMapError)?;
 
         Ok(PutLazyMapEntryOutput {})
