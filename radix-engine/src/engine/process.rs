@@ -1130,6 +1130,15 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             self.track.put_vault(vid, vault);
         }
 
+        for mid in value.lazy_maps {
+            // TODO: associate lazy_map with lazy_map
+            let lazy_map = self
+                .unclaimed_lazy_maps
+                .remove(&mid)
+                .ok_or(RuntimeError::LazyMapNotFound(mid))?; // Claimed vaults should not be stored in lazy_map
+            self.track.put_lazy_map(mid, lazy_map);
+        }
+
         let lazy_map = self.get_lazy_map_mut(input.mid)?;
         lazy_map
             .set_entry(key.raw, value.raw, actor)

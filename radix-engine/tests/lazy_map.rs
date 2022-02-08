@@ -62,6 +62,30 @@ fn cannot_remove_lazy_maps() {
 }
 
 #[test]
+fn cannot_overwrite_lazy_maps() {
+    // Arrange
+    let mut ledger = InMemorySubstateStore::with_bootstrap();
+    let mut sut = TransactionExecutor::new(&mut ledger, false);
+    let package = sut.publish_package(&compile("lazy_map")).unwrap();
+    let transaction = TransactionBuilder::new(&sut)
+        .call_function(package, "LazyMapTest", "new_lazy_map_into_lazy_map", vec![], None)
+        .build(vec![])
+        .unwrap();
+    let receipt = sut.run(transaction).unwrap();
+    let component_address = receipt.new_entities.into_iter().filter(|a| a.is_component()).nth(0).unwrap();
+
+    // Act
+    let transaction = TransactionBuilder::new(&sut)
+        .call_method(component_address, "overwrite_lazy_map", vec![], None)
+        .build(vec![])
+        .unwrap();
+    let receipt = sut.run(transaction).unwrap();
+
+    // Assert
+    assert!(!receipt.result.is_ok());
+}
+
+#[test]
 fn create_lazy_map_and_get() {
     // Arrange
     let mut ledger = InMemorySubstateStore::with_bootstrap();
