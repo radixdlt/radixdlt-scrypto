@@ -48,5 +48,11 @@ blueprint! {
             let _keys = vault.get_non_fungible_keys();
             VaultTest { vault }.instantiate()
         }
+
+        pub fn new_vault_with_get_amount() -> Component {
+            let vault = Self::create_non_fungible_vault();
+            let _amount = vault.amount();
+            VaultTest { vault }.instantiate()
+        }
     }
 }

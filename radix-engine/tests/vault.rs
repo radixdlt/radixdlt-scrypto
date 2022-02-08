@@ -92,3 +92,22 @@ fn create_mutable_vault_with_get_nonfungible_keys() {
     // Assert
     assert!(receipt.result.is_ok());
 }
+
+
+#[test]
+fn create_mutable_vault_with_get_amount() {
+    // Arrange
+    let mut ledger = InMemorySubstateStore::with_bootstrap();
+    let mut sut = TransactionExecutor::new(&mut ledger, false);
+    let package = sut.publish_package(&compile("vault")).unwrap();
+
+    // Act
+    let transaction = TransactionBuilder::new(&sut)
+        .call_function(package, "VaultTest", "new_vault_with_get_amount", vec![], None)
+        .build(vec![])
+        .unwrap();
+    let receipt = sut.run(transaction).unwrap();
+
+    // Assert
+    assert!(receipt.result.is_ok());
+}
