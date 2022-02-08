@@ -91,6 +91,7 @@ pub struct Interpreter {
 /// Keeps invocation information.
 #[derive(Debug, Clone)]
 pub struct Invocation {
+    actor: Actor,
     package_address: Address,
     export_name: String,
     function: String,
@@ -400,6 +401,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         args: Vec<ValidatedData>,
     ) -> Result<Invocation, RuntimeError> {
         Ok(Invocation {
+            actor: Actor::Blueprint(package_address, blueprint_name.to_owned()),
             package_address,
             export_name: format!("{}_main", blueprint_name),
             function: function.to_owned(),
@@ -422,12 +424,13 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let mut args_with_self = vec![validate_data(&scrypto_encode(&component_address)).unwrap()];
         args_with_self.extend(args);
 
-        self.prepare_call_function(
-            component.package_address(),
-            component.blueprint_name(),
-            method,
-            args_with_self,
-        )
+        Ok(Invocation {
+            actor: Actor::Component(component_address),
+            package_address: component.package_address(),
+            export_name: format!("{}_main", component.blueprint_name()),
+            function: method.to_owned(),
+            args: args_with_self,
+        })
     }
 
     /// Prepares an ABI call.
@@ -437,6 +440,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         blueprint_name: &str,
     ) -> Result<Invocation, RuntimeError> {
         Ok(Invocation {
+            actor: Actor::Blueprint(package_address, blueprint_name.to_owned()),
             package_address: package_address,
             export_name: format!("{}_abi", blueprint_name),
             function: String::new(),
@@ -571,6 +575,14 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
         #[cfg(not(feature = "alloc"))]
         println!("{}[{:5}] {}", "  ".repeat(self.depth), l, m);
+    }
+
+    /// Return the actor
+    fn actor(&self) -> Result<Actor, RuntimeError> {
+        self.vm
+            .as_ref()
+            .ok_or(RuntimeError::InterpreterNotStarted)
+            .map(|vm| vm.invocation.actor.clone())
     }
 
     /// Return the package address
@@ -1826,6 +1838,12 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         })
     }
 
+    fn handle_get_actor(&mut self, _input: GetActorInput) -> Result<GetActorOutput, RuntimeError> {
+        Ok(GetActorOutput {
+            actor: self.actor()?,
+        })
+    }
+
     //============================
     // SYSTEM CALL HANDLERS END
     //============================
@@ -1923,6 +1941,7 @@ impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
                     GET_TRANSACTION_HASH => self.handle(args, Self::handle_get_transaction_hash),
                     GET_CURRENT_EPOCH => self.handle(args, Self::handle_get_current_epoch),
                     GENERATE_UUID => self.handle(args, Self::handle_generate_uuid),
+                    GET_ACTOR => self.handle(args, Self::handle_get_actor),
 
                     _ => Err(RuntimeError::InvalidRequestCode(operation).into()),
                 }
