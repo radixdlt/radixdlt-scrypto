@@ -1417,6 +1417,12 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         Ok(CreateEmptyVaultOutput { vid })
     }
 
+    fn get_vault_mut(&mut self, vid: Vid) -> Result<&mut Vault, RuntimeError> {
+        self.unclaimed_vaults.get_mut(&vid)
+            .or_else(|| self.track.get_vault_mut(vid))
+            .ok_or(RuntimeError::VaultNotFound(vid))
+    }
+
     fn handle_put_into_vault(
         &mut self,
         input: PutIntoVaultInput,
@@ -1428,9 +1434,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .remove(&input.bid)
             .ok_or(RuntimeError::BucketNotFound(input.bid))?;
 
-        self.unclaimed_vaults.get_mut(&input.vid)
-            .or_else(|| self.track.get_vault_mut(input.vid))
-            .ok_or(RuntimeError::VaultNotFound(input.vid))?
+        self.get_vault_mut(input.vid)?
             .put(bucket, actor)
             .map_err(RuntimeError::VaultError)?;
 
@@ -1439,11 +1443,10 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
     fn check_take_from_vault_auth(&mut self, vid: Vid, actor: Actor) -> Result<(), RuntimeError> {
         let resource_address = self
-            .track
-            .get_vault(vid)
-            .ok_or(RuntimeError::VaultNotFound(vid))?
+            .get_vault_mut(vid)?
             .resource_address(actor.clone())
             .map_err(RuntimeError::VaultError)?;
+
         let resource_def = self
             .track
             .get_resource_def(resource_address)
@@ -1461,9 +1464,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         self.check_take_from_vault_auth(input.vid, actor.clone())?;
 
         let new_bucket = self
-            .track
-            .get_vault_mut(input.vid)
-            .ok_or(RuntimeError::VaultNotFound(input.vid))?
+            .get_vault_mut(input.vid)?
             .take(input.amount, actor)
             .map_err(RuntimeError::VaultError)?;
 

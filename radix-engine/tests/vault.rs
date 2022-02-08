@@ -20,7 +20,7 @@ pub fn compile(name: &str) -> Vec<u8> {
 }
 
 #[test]
-fn dangling_vault_should_not_be_allowed() {
+fn dangling_vault_should_fail() {
     // Arrange
     let mut ledger = InMemorySubstateStore::with_bootstrap();
     let mut sut = TransactionExecutor::new(&mut ledger, false);
@@ -37,4 +37,24 @@ fn dangling_vault_should_not_be_allowed() {
 
     // Assert
     assert!(!receipt.result.is_ok());
+}
+
+#[test]
+fn create_mutable_vault_with_take() {
+    // Arrange
+    let mut ledger = InMemorySubstateStore::with_bootstrap();
+    let mut sut = TransactionExecutor::new(&mut ledger, false);
+    let key = sut.new_public_key();
+    let account = sut.new_account(key);
+    let package = sut.publish_package(&compile("vault")).unwrap();
+
+    // Act
+    let transaction = TransactionBuilder::new(&sut)
+        .call_function(package, "VaultTest", "new_vault_with_take", vec![], Some(account))
+        .build(vec![])
+        .unwrap();
+    let receipt = sut.run(transaction).unwrap();
+
+    // Assert
+    assert!(receipt.result.is_ok());
 }
