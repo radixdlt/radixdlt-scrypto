@@ -1020,9 +1020,18 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
         let state = component.state();
         let updating_component_data = Self::process_component_data(state).unwrap();
-        let existing = self.updating_components.insert(input.component_address, updating_component_data);
-        existing.map_or(Ok(GetComponentStateOutput { state: state.to_owned() }),
-            |_| Err(RuntimeError::ComponentAlreadyLoaded(input.component_address))
+        let existing = self
+            .updating_components
+            .insert(input.component_address, updating_component_data);
+        existing.map_or(
+            Ok(GetComponentStateOutput {
+                state: state.to_owned(),
+            }),
+            |_| {
+                Err(RuntimeError::ComponentAlreadyLoaded(
+                    input.component_address,
+                ))
+            },
         )
     }
 
@@ -1033,7 +1042,9 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         Self::expect_component_address(input.component_address)?;
         // TODO: restrict access
 
-        let old_state = self.updating_components.remove(&input.component_address)
+        let old_state = self
+            .updating_components
+            .remove(&input.component_address)
             .ok_or(RuntimeError::ComponentNotFound(input.component_address))?;
         let new_state = Self::process_component_data(&input.state)?;
         re_debug!(self, "New component state: {:?}", new_state);
@@ -1049,7 +1060,9 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 self.track.put_vault(vid, vault);
             }
         }
-        old_vaults.into_iter().try_for_each(|vid| Err(RuntimeError::VaultRemoved(vid)))?;
+        old_vaults
+            .into_iter()
+            .try_for_each(|vid| Err(RuntimeError::VaultRemoved(vid)))?;
 
         // Only allow lazy maps to be added, never removed
         let mut old_lazy_maps: HashSet<Mid> = HashSet::from_iter(old_state.lazy_maps.into_iter());
@@ -1062,16 +1075,22 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 self.track.put_lazy_map(mid, lazy_map);
             }
         }
-        old_lazy_maps.into_iter().try_for_each(|mid| Err(RuntimeError::LazyMapRemoved(mid)))?;
+        old_lazy_maps
+            .into_iter()
+            .try_for_each(|mid| Err(RuntimeError::LazyMapRemoved(mid)))?;
 
-        let component = self.track.get_component_mut(input.component_address).unwrap();
+        let component = self
+            .track
+            .get_component_mut(input.component_address)
+            .unwrap();
         component.set_state(new_state.raw);
 
         Ok(PutComponentStateOutput {})
     }
 
     fn get_lazy_map_mut(&mut self, mid: Mid) -> Result<&mut LazyMap, RuntimeError> {
-        self.unclaimed_lazy_maps.get_mut(&mid)
+        self.unclaimed_lazy_maps
+            .get_mut(&mid)
             .or_else(|| self.track.get_lazy_map_mut(mid))
             .ok_or(RuntimeError::LazyMapNotFound(mid))
     }
@@ -1086,7 +1105,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             return Err(RuntimeError::LazyMapAlreadyExists(mid));
         }
 
-        self.unclaimed_lazy_maps.insert(mid, LazyMap::new(self.package()?));
+        self.unclaimed_lazy_maps
+            .insert(mid, LazyMap::new(self.package()?));
 
         Ok(CreateLazyMapOutput { mid })
     }
@@ -1111,7 +1131,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let new_state = Self::process_map_data(&input.value)?;
         re_debug!(self, "Map entry: {} => {}", key, new_state);
 
-        let mut old_state = self.get_lazy_map_mut(input.mid)?
+        let mut old_state = self
+            .get_lazy_map_mut(input.mid)?
             .get_entry(&input.key)
             .map_or((HashSet::new(), HashSet::new()), |e| {
                 let data = Self::process_map_data(e).unwrap();
@@ -1130,7 +1151,10 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 self.track.put_vault(vid, vault);
             }
         }
-        old_state.0.into_iter().try_for_each(|vid| Err(RuntimeError::VaultRemoved(vid)))?;
+        old_state
+            .0
+            .into_iter()
+            .try_for_each(|vid| Err(RuntimeError::VaultRemoved(vid)))?;
 
         // Only allow lazy maps to be added, never removed
         for mid in new_state.lazy_maps {
@@ -1142,7 +1166,10 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 self.track.put_lazy_map(mid, lazy_map);
             }
         }
-        old_state.1.into_iter().try_for_each(|mid| Err(RuntimeError::LazyMapRemoved(mid)))?;
+        old_state
+            .1
+            .into_iter()
+            .try_for_each(|mid| Err(RuntimeError::LazyMapRemoved(mid)))?;
 
         let lazy_map = self.get_lazy_map_mut(input.mid)?;
         lazy_map.set_entry(key.raw, new_state.raw);
@@ -1489,7 +1516,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     }
 
     fn get_vault_mut(&mut self, vid: Vid) -> Result<&mut Vault, RuntimeError> {
-        self.unclaimed_vaults.get_mut(&vid)
+        self.unclaimed_vaults
+            .get_mut(&vid)
             .or_else(|| self.track.get_vault_mut(vid))
             .ok_or(RuntimeError::VaultNotFound(vid))
     }
@@ -1517,9 +1545,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         vid: Vid,
         badge: Option<Address>,
     ) -> Result<(), RuntimeError> {
-        let resource_address = self
-            .get_vault_mut(vid)?
-            .resource_address();
+        let resource_address = self.get_vault_mut(vid)?.resource_address();
 
         let resource_def = self
             .track
@@ -1575,11 +1601,11 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         input: GetNonFungibleKeysInVaultInput,
     ) -> Result<GetNonFungibleKeysInVaultOutput, RuntimeError> {
         let vault = self.get_vault_mut(input.vid)?;
-        let keys = vault.get_non_fungible_ids().map_err(RuntimeError::VaultError)?;
+        let keys = vault
+            .get_non_fungible_ids()
+            .map_err(RuntimeError::VaultError)?;
 
-        Ok(GetNonFungibleKeysInVaultOutput {
-            keys
-        })
+        Ok(GetNonFungibleKeysInVaultOutput { keys })
     }
 
     fn handle_get_vault_amount(

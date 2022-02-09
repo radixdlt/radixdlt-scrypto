@@ -16,7 +16,7 @@ pub fn compile(name: &str) -> Vec<u8> {
         name,
         name.replace("-", "_")
     ))
-        .unwrap()
+    .unwrap()
 }
 
 #[test]
@@ -30,7 +30,13 @@ fn dangling_vault_should_fail() {
 
     // Act
     let transaction = TransactionBuilder::new(&sut)
-        .call_function(package, "VaultTest", "dangling_vault", vec![], Some(account))
+        .call_function(
+            package,
+            "VaultTest",
+            "dangling_vault",
+            vec![],
+            Some(account),
+        )
         .build(vec![])
         .unwrap();
     let receipt = sut.run(transaction).unwrap();
@@ -68,7 +74,12 @@ fn cannot_overwrite_vault_in_map() {
         .build(vec![])
         .unwrap();
     let receipt = sut.run(transaction).unwrap();
-    let component_address = receipt.new_entities.into_iter().filter(|a| a.is_component()).nth(0).unwrap();
+    let component_address = receipt
+        .new_entities
+        .into_iter()
+        .filter(|a| a.is_component())
+        .nth(0)
+        .unwrap();
 
     // Act
     let transaction = TransactionBuilder::new(&sut)
@@ -80,7 +91,6 @@ fn cannot_overwrite_vault_in_map() {
     // Assert
     assert!(!receipt.result.is_ok());
 }
-
 
 #[test]
 fn create_mutable_vault_into_vector() {
@@ -111,7 +121,12 @@ fn cannot_remove_vaults() {
         .build(vec![])
         .unwrap();
     let receipt = sut.run(transaction).unwrap();
-    let component_address = receipt.new_entities.into_iter().filter(|a| a.is_component()).nth(0).unwrap();
+    let component_address = receipt
+        .new_entities
+        .into_iter()
+        .filter(|a| a.is_component())
+        .nth(0)
+        .unwrap();
 
     // Act
     let transaction = TransactionBuilder::new(&sut)
@@ -135,7 +150,12 @@ fn can_push_vault_into_vector() {
         .build(vec![])
         .unwrap();
     let receipt = sut.run(transaction).unwrap();
-    let component_address = receipt.new_entities.into_iter().filter(|a| a.is_component()).nth(0).unwrap();
+    let component_address = receipt
+        .new_entities
+        .into_iter()
+        .filter(|a| a.is_component())
+        .nth(0)
+        .unwrap();
 
     // Act
     let transaction = TransactionBuilder::new(&sut)
@@ -175,7 +195,13 @@ fn create_mutable_vault_with_take_non_fungible() {
 
     // Act
     let transaction = TransactionBuilder::new(&sut)
-        .call_function(package, "VaultTest", "new_vault_with_take_non_fungible", vec![], None)
+        .call_function(
+            package,
+            "VaultTest",
+            "new_vault_with_take_non_fungible",
+            vec![],
+            None,
+        )
         .build(vec![])
         .unwrap();
     let receipt = sut.run(transaction).unwrap();
@@ -193,7 +219,13 @@ fn create_mutable_vault_with_get_nonfungible_keys() {
 
     // Act
     let transaction = TransactionBuilder::new(&sut)
-        .call_function(package, "VaultTest", "new_vault_with_get_non_fungible_keys", vec![], None)
+        .call_function(
+            package,
+            "VaultTest",
+            "new_vault_with_get_non_fungible_keys",
+            vec![],
+            None,
+        )
         .build(vec![])
         .unwrap();
     let receipt = sut.run(transaction).unwrap();
@@ -201,7 +233,6 @@ fn create_mutable_vault_with_get_nonfungible_keys() {
     // Assert
     assert!(receipt.result.is_ok());
 }
-
 
 #[test]
 fn create_mutable_vault_with_get_amount() {
@@ -212,7 +243,13 @@ fn create_mutable_vault_with_get_amount() {
 
     // Act
     let transaction = TransactionBuilder::new(&sut)
-        .call_function(package, "VaultTest", "new_vault_with_get_amount", vec![], None)
+        .call_function(
+            package,
+            "VaultTest",
+            "new_vault_with_get_amount",
+            vec![],
+            None,
+        )
         .build(vec![])
         .unwrap();
     let receipt = sut.run(transaction).unwrap();
@@ -230,7 +267,13 @@ fn create_mutable_vault_with_get_resource_def() {
 
     // Act
     let transaction = TransactionBuilder::new(&sut)
-        .call_function(package, "VaultTest", "new_vault_with_get_resource_def", vec![], None)
+        .call_function(
+            package,
+            "VaultTest",
+            "new_vault_with_get_resource_def",
+            vec![],
+            None,
+        )
         .build(vec![])
         .unwrap();
     let receipt = sut.run(transaction).unwrap();
