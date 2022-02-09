@@ -107,6 +107,9 @@ pub enum RuntimeError {
     /// Component does not exist.
     ComponentNotFound(Address),
 
+    /// Component is already loaded
+    ComponentAlreadyLoaded(Address),
+
     /// Resource definition does not exist.
     ResourceDefNotFound(Address),
 
@@ -119,8 +122,14 @@ pub enum RuntimeError {
     /// Lazy map does not exist.
     LazyMapNotFound(Mid),
 
+    /// Lazy map removed.
+    LazyMapRemoved(Mid),
+
     /// Vault does not exist.
     VaultNotFound(Vid),
+
+    /// Vault removed.
+    VaultRemoved(Vid),
 
     /// Bucket does not exist.
     BucketNotFound(Bid),

@@ -101,28 +101,6 @@ fn test_component() {
 }
 
 #[test]
-fn test_lazy_map() {
-    let mut ledger = InMemorySubstateStore::with_bootstrap();
-    let mut executor = TransactionExecutor::new(&mut ledger, false);
-    let key = executor.new_public_key();
-    let account = executor.new_account(key);
-    let package = executor.publish_package(&compile("lazy_map")).unwrap();
-
-    let transaction = TransactionBuilder::new(&executor)
-        .call_function(
-            package,
-            "LazyMapTest",
-            "test_lazy_map",
-            vec![],
-            Some(account),
-        )
-        .build(vec![])
-        .unwrap();
-    let receipt = executor.run(transaction).unwrap();
-    assert!(receipt.result.is_ok());
-}
-
-#[test]
 fn test_resource_def() {
     let mut ledger = InMemorySubstateStore::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, false);

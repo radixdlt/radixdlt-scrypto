@@ -67,6 +67,12 @@ pub struct Process<'r, 'l, L: SubstateStore> {
     moving_buckets: HashMap<Bid, Bucket>,
     /// The bucket refs that will be moved to another process SHORTLY.
     moving_bucket_refs: HashMap<Rid, BucketRef>,
+    /// Lazy maps which haven't been assigned to a component or lazy map yet.
+    unclaimed_lazy_maps: HashMap<Mid, LazyMap>,
+    /// Vaults which haven't been assigned to a component or lazy map yet.
+    unclaimed_vaults: HashMap<Vid, Vault>,
+    /// Components which have been loaded and possibly updated in the lifetime of this process.
+    updating_components: HashMap<Address, ValidatedData>,
     /// A WASM interpreter
     vm: Option<Interpreter>,
     /// ID allocator for buckets and bucket refs created within transaction.
@@ -110,6 +116,9 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             bucket_refs: HashMap::new(),
             moving_buckets: HashMap::new(),
             moving_bucket_refs: HashMap::new(),
+            unclaimed_vaults: HashMap::new(),
+            unclaimed_lazy_maps: HashMap::new(),
+            updating_components: HashMap::new(),
             vm: None,
             id_allocator: IdAllocator::new(IdSpace::Transaction),
             worktop: HashMap::new(),
@@ -553,6 +562,14 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             re_warn!(self, "Dangling resource: {:?}", bucket);
             success = false;
         }
+        for (vid, vault) in &self.unclaimed_vaults {
+            re_warn!(self, "Dangling vault: {:?}, {:?}", vid, vault);
+            success = false;
+        }
+        for (mid, lazy_map) in &self.unclaimed_lazy_maps {
+            re_warn!(self, "Dangling lazy map: {:?}, {:?}", mid, lazy_map);
+            success = false;
+        }
 
         re_debug!(self, "Resource check ended");
         if success {
@@ -647,7 +664,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         Ok(())
     }
 
-    fn process_component_data(&mut self, data: &[u8]) -> Result<ValidatedData, RuntimeError> {
+    fn process_component_data(data: &[u8]) -> Result<ValidatedData, RuntimeError> {
         let validated = validate_data(data).map_err(RuntimeError::DataValidationError)?;
         if !validated.buckets.is_empty() {
             return Err(RuntimeError::BucketNotAllowed);
@@ -660,7 +677,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         Ok(validated)
     }
 
-    fn process_map_data(&mut self, data: &[u8]) -> Result<ValidatedData, RuntimeError> {
+    fn process_map_data(data: &[u8]) -> Result<ValidatedData, RuntimeError> {
         let validated = validate_data(data).map_err(RuntimeError::DataValidationError)?;
         if !validated.buckets.is_empty() {
             return Err(RuntimeError::BucketNotAllowed);
@@ -939,13 +956,31 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             return Err(RuntimeError::ComponentAlreadyExists(component_address));
         }
 
-        let data = self.process_component_data(&input.state)?;
+        let data = Self::process_component_data(&input.state)?;
         re_debug!(
             self,
             "New component: address = {:?}, state = {:?}",
             component_address,
             data
         );
+
+        for vid in data.vaults {
+            // TODO: associate vault with component
+            let vault = self
+                .unclaimed_vaults
+                .remove(&vid)
+                .ok_or(RuntimeError::VaultNotFound(vid))?;
+            self.track.put_vault(vid, vault);
+        }
+
+        for mid in data.lazy_maps {
+            // TODO: associate lazy map with component
+            let lazy_map = self
+                .unclaimed_lazy_maps
+                .remove(&mid)
+                .ok_or(RuntimeError::LazyMapNotFound(mid))?;
+            self.track.put_lazy_map(mid, lazy_map);
+        }
 
         let component = Component::new(self.package()?, input.blueprint_name, data.raw);
         self.track.put_component(component_address, component);
@@ -983,9 +1018,12 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .get_component(input.component_address)
             .ok_or(RuntimeError::ComponentNotFound(input.component_address))?;
 
-        Ok(GetComponentStateOutput {
-            state: component.state().to_owned(),
-        })
+        let state = component.state();
+        let updating_component_data = Self::process_component_data(state).unwrap();
+        let existing = self.updating_components.insert(input.component_address, updating_component_data);
+        existing.map_or(Ok(GetComponentStateOutput { state: state.to_owned() }),
+            |_| Err(RuntimeError::ComponentAlreadyLoaded(input.component_address))
+        )
     }
 
     fn handle_put_component_state(
@@ -995,17 +1033,47 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         Self::expect_component_address(input.component_address)?;
         // TODO: restrict access
 
-        let state = self.process_component_data(&input.state)?;
-        re_debug!(self, "New component state: {:?}", state);
-
-        let component = self
-            .track
-            .get_component_mut(input.component_address)
+        let old_state = self.updating_components.remove(&input.component_address)
             .ok_or(RuntimeError::ComponentNotFound(input.component_address))?;
+        let new_state = Self::process_component_data(&input.state)?;
+        re_debug!(self, "New component state: {:?}", new_state);
 
-        component.set_state(state.raw);
+        // Only allow vaults to be added, never removed
+        let mut old_vaults: HashSet<Vid> = HashSet::from_iter(old_state.vaults.into_iter());
+        for vid in new_state.vaults {
+            if !old_vaults.remove(&vid) {
+                let vault = self
+                    .unclaimed_vaults
+                    .remove(&vid)
+                    .ok_or(RuntimeError::VaultNotFound(vid))?;
+                self.track.put_vault(vid, vault);
+            }
+        }
+        old_vaults.into_iter().try_for_each(|vid| Err(RuntimeError::VaultRemoved(vid)))?;
+
+        // Only allow lazy maps to be added, never removed
+        let mut old_lazy_maps: HashSet<Mid> = HashSet::from_iter(old_state.lazy_maps.into_iter());
+        for mid in new_state.lazy_maps {
+            if !old_lazy_maps.remove(&mid) {
+                let lazy_map = self
+                    .unclaimed_lazy_maps
+                    .remove(&mid)
+                    .ok_or(RuntimeError::LazyMapNotFound(mid))?;
+                self.track.put_lazy_map(mid, lazy_map);
+            }
+        }
+        old_lazy_maps.into_iter().try_for_each(|mid| Err(RuntimeError::LazyMapRemoved(mid)))?;
+
+        let component = self.track.get_component_mut(input.component_address).unwrap();
+        component.set_state(new_state.raw);
 
         Ok(PutComponentStateOutput {})
+    }
+
+    fn get_lazy_map_mut(&mut self, mid: Mid) -> Result<&mut LazyMap, RuntimeError> {
+        self.unclaimed_lazy_maps.get_mut(&mid)
+            .or_else(|| self.track.get_lazy_map_mut(mid))
+            .ok_or(RuntimeError::LazyMapNotFound(mid))
     }
 
     fn handle_create_lazy_map(
@@ -1018,7 +1086,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             return Err(RuntimeError::LazyMapAlreadyExists(mid));
         }
 
-        self.track.put_lazy_map(mid, LazyMap::new(self.package()?));
+        self.unclaimed_lazy_maps.insert(mid, LazyMap::new(self.package()?));
 
         Ok(CreateLazyMapOutput { mid })
     }
@@ -1027,13 +1095,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         input: GetLazyMapEntryInput,
     ) -> Result<GetLazyMapEntryOutput, RuntimeError> {
-        // TODO: restrict access
-
-        let lazy_map = self
-            .track
-            .get_lazy_map(input.mid)
-            .ok_or(RuntimeError::LazyMapNotFound(input.mid))?;
-
+        let lazy_map = self.get_lazy_map_mut(input.mid)?;
         let value = lazy_map.get_entry(&input.key);
 
         Ok(GetLazyMapEntryOutput {
@@ -1045,18 +1107,45 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         input: PutLazyMapEntryInput,
     ) -> Result<PutLazyMapEntryOutput, RuntimeError> {
-        // TODO: restrict access
+        let key = Self::process_map_data(&input.key)?;
+        let new_state = Self::process_map_data(&input.value)?;
+        re_debug!(self, "Map entry: {} => {}", key, new_state);
 
-        let key = self.process_map_data(&input.key)?;
-        let value = self.process_map_data(&input.value)?;
-        re_debug!(self, "Map entry: {} => {}", key, value);
+        let mut old_state = self.get_lazy_map_mut(input.mid)?
+            .get_entry(&input.key)
+            .map_or((HashSet::new(), HashSet::new()), |e| {
+                let data = Self::process_map_data(e).unwrap();
+                let old_vaults = HashSet::from_iter(data.vaults.into_iter());
+                let old_lazy_maps = HashSet::from_iter(data.lazy_maps.into_iter());
+                (old_vaults, old_lazy_maps)
+            });
 
-        let lazy_map = self
-            .track
-            .get_lazy_map_mut(input.mid)
-            .ok_or(RuntimeError::LazyMapNotFound(input.mid))?;
+        // Only allow vaults to be added, never removed
+        for vid in new_state.vaults {
+            if !old_state.0.remove(&vid) {
+                let vault = self
+                    .unclaimed_vaults
+                    .remove(&vid)
+                    .ok_or(RuntimeError::VaultNotFound(vid))?;
+                self.track.put_vault(vid, vault);
+            }
+        }
+        old_state.0.into_iter().try_for_each(|vid| Err(RuntimeError::VaultRemoved(vid)))?;
 
-        lazy_map.set_entry(key.raw, value.raw);
+        // Only allow lazy maps to be added, never removed
+        for mid in new_state.lazy_maps {
+            if !old_state.1.remove(&mid) {
+                let lazy_map = self
+                    .unclaimed_lazy_maps
+                    .remove(&mid)
+                    .ok_or(RuntimeError::LazyMapNotFound(mid))?;
+                self.track.put_lazy_map(mid, lazy_map);
+            }
+        }
+        old_state.1.into_iter().try_for_each(|mid| Err(RuntimeError::LazyMapRemoved(mid)))?;
+
+        let lazy_map = self.get_lazy_map_mut(input.mid)?;
+        lazy_map.set_entry(key.raw, new_state.raw);
 
         Ok(PutLazyMapEntryOutput {})
     }
@@ -1394,9 +1483,15 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             self.package()?,
         );
         let vid = self.track.new_vid();
-        self.track.put_vault(vid, new_vault);
+        self.unclaimed_vaults.insert(vid, new_vault);
 
         Ok(CreateEmptyVaultOutput { vid })
+    }
+
+    fn get_vault_mut(&mut self, vid: Vid) -> Result<&mut Vault, RuntimeError> {
+        self.unclaimed_vaults.get_mut(&vid)
+            .or_else(|| self.track.get_vault_mut(vid))
+            .ok_or(RuntimeError::VaultNotFound(vid))
     }
 
     fn handle_put_into_vault(
@@ -1405,15 +1500,13 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     ) -> Result<PutIntoVaultOutput, RuntimeError> {
         // TODO: restrict access
 
-        let other = self
+        let bucket = self
             .buckets
             .remove(&input.bid)
             .ok_or(RuntimeError::BucketNotFound(input.bid))?;
 
-        self.track
-            .get_vault_mut(input.vid)
-            .ok_or(RuntimeError::VaultNotFound(input.vid))?
-            .put(other)
+        self.get_vault_mut(input.vid)?
+            .put(bucket)
             .map_err(RuntimeError::VaultError)?;
 
         Ok(PutIntoVaultOutput {})
@@ -1425,10 +1518,9 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         badge: Option<Address>,
     ) -> Result<(), RuntimeError> {
         let resource_address = self
-            .track
-            .get_vault(vid)
-            .ok_or(RuntimeError::VaultNotFound(vid))?
+            .get_vault_mut(vid)?
             .resource_address();
+
         let resource_def = self
             .track
             .get_resource_def(resource_address)
@@ -1448,9 +1540,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         self.check_take_from_vault_auth(input.vid.clone(), badge)?;
 
         let new_bucket = self
-            .track
-            .get_vault_mut(input.vid)
-            .ok_or(RuntimeError::VaultNotFound(input.vid))?
+            .get_vault_mut(input.vid)?
             .take(input.amount)
             .map_err(RuntimeError::VaultError)?;
 
@@ -1470,9 +1560,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         self.check_take_from_vault_auth(input.vid.clone(), badge)?;
 
         let new_bucket = self
-            .track
-            .get_vault_mut(input.vid)
-            .ok_or(RuntimeError::VaultNotFound(input.vid))?
+            .get_vault_mut(input.vid)?
             .take_non_fungible(&input.key)
             .map_err(RuntimeError::VaultError)?;
 
@@ -1482,21 +1570,15 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         Ok(TakeNonFungibleFromVaultOutput { bid })
     }
 
-    fn handle_get_non_fungible_ids_in_vault(
+    fn handle_get_non_fungible_keys_in_vault(
         &mut self,
         input: GetNonFungibleKeysInVaultInput,
     ) -> Result<GetNonFungibleKeysInVaultOutput, RuntimeError> {
-        // TODO: restrict access
-
-        let vault = self
-            .track
-            .get_vault(input.vid)
-            .ok_or(RuntimeError::VaultNotFound(input.vid))?;
+        let vault = self.get_vault_mut(input.vid)?;
+        let keys = vault.get_non_fungible_ids().map_err(RuntimeError::VaultError)?;
 
         Ok(GetNonFungibleKeysInVaultOutput {
-            keys: vault
-                .get_non_fungible_ids()
-                .map_err(RuntimeError::VaultError)?,
+            keys
         })
     }
 
@@ -1504,12 +1586,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         input: GetVaultDecimalInput,
     ) -> Result<GetVaultDecimalOutput, RuntimeError> {
-        // TODO: restrict access
-
-        let vault = self
-            .track
-            .get_vault(input.vid)
-            .ok_or(RuntimeError::VaultNotFound(input.vid))?;
+        let vault = self.get_vault_mut(input.vid)?;
 
         Ok(GetVaultDecimalOutput {
             amount: vault.amount(),
@@ -1520,12 +1597,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         input: GetVaultResourceAddressInput,
     ) -> Result<GetVaultResourceAddressOutput, RuntimeError> {
-        // TODO: restrict access
-
-        let vault = self
-            .track
-            .get_vault(input.vid)
-            .ok_or(RuntimeError::VaultNotFound(input.vid))?;
+        let vault = self.get_vault_mut(input.vid)?;
 
         Ok(GetVaultResourceAddressOutput {
             resource_address: vault.resource_address(),
@@ -1907,7 +1979,7 @@ impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
                         self.handle(args, Self::handle_take_non_fungible_from_vault)
                     }
                     GET_NON_FUNGIBLE_KEYS_IN_VAULT => {
-                        self.handle(args, Self::handle_get_non_fungible_ids_in_vault)
+                        self.handle(args, Self::handle_get_non_fungible_keys_in_vault)
                     }
 
                     CREATE_EMPTY_BUCKET => self.handle(args, Self::handle_create_bucket),
