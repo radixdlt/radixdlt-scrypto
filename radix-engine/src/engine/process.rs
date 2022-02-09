@@ -69,6 +69,8 @@ pub struct Process<'r, 'l, L: SubstateStore> {
     moving_bucket_refs: HashMap<Rid, BucketRef>,
     /// Lazy maps which haven't been assigned to a component or lazy map yet.
     unclaimed_lazy_maps: HashMap<Mid, LazyMap>,
+    claimed_lazy_maps: HashMap<Mid, (LazyMap, Mid)>,
+    lazy_map_descendents: HashMap<Mid, HashSet<Mid>>,
     /// Vaults which haven't been assigned to a component or lazy map yet.
     unclaimed_vaults: HashMap<Vid, Vault>,
     /// Components which have been loaded and possibly updated in the lifetime of this process.
@@ -118,6 +120,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             moving_bucket_refs: HashMap::new(),
             unclaimed_vaults: HashMap::new(),
             unclaimed_lazy_maps: HashMap::new(),
+            claimed_lazy_maps: HashMap::new(),
+            lazy_map_descendents: HashMap::new(),
             updating_components: HashMap::new(),
             vm: None,
             id_allocator: IdAllocator::new(IdSpace::Transaction),
@@ -570,6 +574,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             re_warn!(self, "Dangling lazy map: {:?}, {:?}", mid, lazy_map);
             success = false;
         }
+        assert!(self.claimed_lazy_maps.is_empty());
+        assert!(self.lazy_map_descendents.is_empty());
 
         re_debug!(self, "Resource check ended");
         if success {
@@ -980,6 +986,15 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 .remove(&mid)
                 .ok_or(RuntimeError::LazyMapNotFound(mid))?;
             self.track.put_lazy_map(mid, lazy_map);
+            match self.lazy_map_descendents.remove(&mid) {
+                Some(descendents) => {
+                    for descendent_mid in descendents {
+                        let descendent_lazy_map = self.claimed_lazy_maps.remove(&descendent_mid).unwrap().0;
+                        self.track.put_lazy_map(descendent_mid, descendent_lazy_map);
+                    }
+                },
+                None => {}
+            }
         }
 
         let component = Component::new(self.package()?, input.blueprint_name, data.raw);
@@ -1060,6 +1075,15 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     .remove(&mid)
                     .ok_or(RuntimeError::LazyMapNotFound(mid))?;
                 self.track.put_lazy_map(mid, lazy_map);
+                match self.lazy_map_descendents.remove(&mid) {
+                    Some(descendents) => {
+                        for descendent_mid in descendents {
+                            let descendent_lazy_map = self.claimed_lazy_maps.remove(&descendent_mid).unwrap().0;
+                            self.track.put_lazy_map(descendent_mid, descendent_lazy_map);
+                        }
+                    },
+                    None => {}
+                }
             }
         }
         old_lazy_maps.into_iter().try_for_each(|mid| Err(RuntimeError::LazyMapRemoved(mid)))?;
@@ -1068,12 +1092,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         component.set_state(new_state.raw);
 
         Ok(PutComponentStateOutput {})
-    }
-
-    fn get_lazy_map_mut(&mut self, mid: Mid) -> Result<&mut LazyMap, RuntimeError> {
-        self.unclaimed_lazy_maps.get_mut(&mid)
-            .or_else(|| self.track.get_lazy_map_mut(mid))
-            .ok_or(RuntimeError::LazyMapNotFound(mid))
     }
 
     fn handle_create_lazy_map(
@@ -1091,11 +1109,26 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         Ok(CreateLazyMapOutput { mid })
     }
 
+    fn get_lazy_map_mut(&mut self, mid: Mid) -> Result<(&mut LazyMap, Option<Mid>), RuntimeError> {
+        match self.unclaimed_lazy_maps.get_mut(&mid) {
+            Some(map) => Ok((map, Some(mid))),
+            None => {
+                match self.claimed_lazy_maps.get_mut(&mid) {
+                    Some((map, ancestor)) => Ok((map, Some(ancestor.clone()))),
+                    None => match self.track.get_lazy_map_mut(mid) {
+                        Some(map) => Ok((map, None)),
+                        None => Err(RuntimeError::LazyMapNotFound(mid))
+                    }
+                }
+            }
+        }
+    }
+
     fn handle_get_lazy_map_entry(
         &mut self,
         input: GetLazyMapEntryInput,
     ) -> Result<GetLazyMapEntryOutput, RuntimeError> {
-        let lazy_map = self.get_lazy_map_mut(input.mid)?;
+        let lazy_map = self.get_lazy_map_mut(input.mid)?.0;
         let value = lazy_map.get_entry(&input.key);
 
         Ok(GetLazyMapEntryOutput {
@@ -1108,10 +1141,12 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         input: PutLazyMapEntryInput,
     ) -> Result<PutLazyMapEntryOutput, RuntimeError> {
         let key = Self::process_map_data(&input.key)?;
-        let new_state = Self::process_map_data(&input.value)?;
-        re_debug!(self, "Map entry: {} => {}", key, new_state);
+        let new_entry_state = Self::process_map_data(&input.value)?;
+        re_debug!(self, "Map entry: {} => {}", key, new_entry_state);
 
-        let mut old_state = self.get_lazy_map_mut(input.mid)?
+        let lazy_map = self.get_lazy_map_mut(input.mid)?;
+        let ancestor = lazy_map.1;
+        let mut old_entry_state = lazy_map.0
             .get_entry(&input.key)
             .map_or((HashSet::new(), HashSet::new()), |e| {
                 let data = Self::process_map_data(e).unwrap();
@@ -1121,8 +1156,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             });
 
         // Only allow vaults to be added, never removed
-        for vid in new_state.vaults {
-            if !old_state.0.remove(&vid) {
+        for vid in new_entry_state.vaults {
+            if !old_entry_state.0.remove(&vid) {
                 let vault = self
                     .unclaimed_vaults
                     .remove(&vid)
@@ -1130,22 +1165,35 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 self.track.put_vault(vid, vault);
             }
         }
-        old_state.0.into_iter().try_for_each(|vid| Err(RuntimeError::VaultRemoved(vid)))?;
+        old_entry_state.0.into_iter().try_for_each(|vid| Err(RuntimeError::VaultRemoved(vid)))?;
 
         // Only allow lazy maps to be added, never removed
-        for mid in new_state.lazy_maps {
-            if !old_state.1.remove(&mid) {
+        for mid in new_entry_state.lazy_maps {
+            if !old_entry_state.1.remove(&mid) {
                 let lazy_map = self
                     .unclaimed_lazy_maps
                     .remove(&mid)
                     .ok_or(RuntimeError::LazyMapNotFound(mid))?;
-                self.track.put_lazy_map(mid, lazy_map);
+
+                match ancestor {
+                    Some(ancestor_mid) => {
+                        let old_set = self.lazy_map_descendents.remove(&mid).unwrap_or(HashSet::new());
+                        let mut new_descendent_set = self.lazy_map_descendents.remove(&ancestor_mid).unwrap_or(HashSet::new());
+                        new_descendent_set.extend(old_set);
+                        new_descendent_set.insert(mid);
+                        self.claimed_lazy_maps.insert(mid, (lazy_map, ancestor_mid));
+                        self.lazy_map_descendents.insert(ancestor_mid, new_descendent_set);
+                    },
+                    None => {
+                        self.track.put_lazy_map(mid, lazy_map);
+                    }
+                }
             }
         }
-        old_state.1.into_iter().try_for_each(|mid| Err(RuntimeError::LazyMapRemoved(mid)))?;
+        old_entry_state.1.into_iter().try_for_each(|mid| Err(RuntimeError::LazyMapRemoved(mid)))?;
 
         let lazy_map = self.get_lazy_map_mut(input.mid)?;
-        lazy_map.set_entry(key.raw, new_state.raw);
+        lazy_map.0.set_entry(key.raw, new_entry_state.raw);
 
         Ok(PutLazyMapEntryOutput {})
     }
