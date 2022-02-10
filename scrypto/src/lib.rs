@@ -22,6 +22,8 @@ pub mod abi {
 }
 /// Scrypto data encoding, decoding and exchange.
 pub mod buffer;
+/// Scrypto constants.
+pub mod constants;
 /// Scrypto core abstractions.
 pub mod core;
 /// Scrypto cryptography library.

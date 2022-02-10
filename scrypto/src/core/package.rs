@@ -9,7 +9,7 @@ use crate::types::*;
 
 /// A collection of blueprints, compiled and published as a single unit.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct Package([u8; 26]);
+pub struct Package(pub [u8; 26]);
 
 impl Package {
     /// Creates a new package.

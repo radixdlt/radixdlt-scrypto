@@ -13,7 +13,7 @@ use crate::types::*;
 
 /// Represents a resource definition.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct ResourceDef([u8; 26]);
+pub struct ResourceDef(pub [u8; 26]);
 
 impl ResourceDef {
     fn this(&self) -> Self {

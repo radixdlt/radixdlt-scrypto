@@ -22,7 +22,7 @@ pub trait ComponentState: Encode + Decode {
 
 /// An instance of a blueprint, which lives in the ledger state.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct Component([u8; 26]);
+pub struct Component(pub [u8; 26]);
 
 impl Component {
     fn this(&self) -> Self {
