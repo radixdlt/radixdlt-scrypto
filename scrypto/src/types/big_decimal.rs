@@ -106,6 +106,50 @@ from_int!(i64);
 from_int!(i128);
 from_int!(isize);
 
+impl From<&str> for BigDecimal {
+    fn from(val: &str) -> Self {
+        Self::from_str(&val).unwrap()
+    }
+}
+
+impl From<String> for BigDecimal {
+    fn from(val: String) -> Self {
+        Self::from_str(&val).unwrap()
+    }
+}
+
+impl From<bool> for BigDecimal {
+    fn from(val: bool) -> Self {
+        if val {
+            Self::from(1)
+        } else {
+            Self::from(0)
+        } 
+    }
+}
+
+#[macro_export]
+macro_rules! bdec {
+    
+    ($x:literal) => {
+       BigDecimal::from($x) 
+    };
+    
+    ($int:literal, $exponent:literal) => {
+        if u32::try_from((($exponent) as i128).abs()).is_err() {
+            panic!("Overflow of arg2.");
+        } else {
+            if (($exponent) as i128) < 0 {
+                BigDecimal::from(1i128 * ($int))
+                    .div(10i128.pow((-1i128 * ($exponent)) as u32))
+            } else {
+                BigDecimal::from(1i128 * ($int))
+                    .mul(10i128.pow((1i128 * ($exponent)) as u32))
+            }
+        }
+    };
+}
+
 //=====
 // ADD
 //=====
@@ -591,5 +635,49 @@ mod tests {
         let a = BigDecimal::from(5u32);
         let b = BigDecimal::from(7u32);
         assert_eq!((a / b).to_string(), "0.714285714285714285");
+    }
+
+    #[test]
+    fn test_bdec_string_decimal() {
+        assert_eq!(bdec!("1.123456789012345678").to_string(), "1.123456789012345678");
+        assert_eq!(bdec!("-5.6").to_string(), "-5.6");
+    }
+
+    #[test]
+    fn test_bdec_string() {
+        assert_eq!(bdec!("1").to_string(), "1");
+        assert_eq!(bdec!("0").to_string(), "0");
+    }
+
+    #[test]
+    fn test_bdec_int() {
+        assert_eq!(bdec!(1).to_string(), "1");
+        assert_eq!(bdec!(5).to_string(), "5");
+    }
+
+    #[test]
+    fn test_bdec_bool() {
+        assert_eq!((bdec!(true)).to_string(), "1");
+        assert_eq!((bdec!(false)).to_string(), "0");
+    }
+
+    #[test]
+    fn test_bdec_rational() {
+        assert_eq!((bdec!(11235, 0)).to_string(), "11235");
+        assert_eq!((bdec!(11235, -2)).to_string(), "112.35");
+        assert_eq!((bdec!(11235, 2)).to_string(), "1123500");
+
+        assert_eq!((bdec!(112000000000000000001, -18)).to_string(),
+            "112.000000000000000001");
+        
+        assert_eq!((bdec!(112000000000000000001, -18)).to_string(),
+            "112.000000000000000001");
+    }
+    
+    #[test]
+    #[should_panic(expected = "Overflow of arg2.")]
+    fn test_arg1_overflow_arg1() {
+        //u32::MAX + 1
+        bdec!(1, 4_294_967_296);
     }
 }
