@@ -59,7 +59,7 @@ pub fn dump_component<T: SubstateStore>(address: Address, ledger: &T) -> Result<
                 let mid = queue[i];
                 i += 1;
                 if maps_visited.insert(mid) {
-                    let (maps, vaults) = dump_lazy_map(&(address, mid), ledger)?;
+                    let (maps, vaults) = dump_lazy_map(&address, &mid, ledger)?;
                     queue.extend(maps);
                     for v in vaults {
                         vaults_found.insert(v);
@@ -75,13 +75,14 @@ pub fn dump_component<T: SubstateStore>(address: Address, ledger: &T) -> Result<
 }
 
 fn dump_lazy_map<T: SubstateStore>(
-    lazy_map_id: &(Address, Mid),
+    address: &Address,
+    mid: &Mid,
     ledger: &T,
 ) -> Result<(Vec<Mid>, Vec<Vid>), DisplayError> {
     let mut referenced_maps = Vec::new();
     let mut referenced_vaults = Vec::new();
-    let map = ledger.get_lazy_map(lazy_map_id).unwrap();
-    println!("{}: {:?}", "Lazy Map".green().bold(), lazy_map_id);
+    let map = ledger.get_lazy_map(address, mid).unwrap();
+    println!("{}: {:?}{:?}", "Lazy Map".green().bold(), address, mid);
     for (last, (k, v)) in map.map().iter().identify_last() {
         let k_validated = validate_data(k).unwrap();
         let v_validated = validate_data(v).unwrap();
@@ -106,7 +107,7 @@ fn dump_resources<T: SubstateStore>(
 ) -> Result<(), DisplayError> {
     println!("{}:", "Resources".green().bold());
     for (last, vid) in vaults.iter().identify_last() {
-        let vault = ledger.get_vault(&(address, vid.clone())).unwrap();
+        let vault = ledger.get_vault(&address, vid).unwrap();
         let amount = vault.amount();
         let resource_address = vault.resource_address();
         let resource_def = ledger.get_resource_def(resource_address).unwrap();

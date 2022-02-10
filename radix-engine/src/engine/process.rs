@@ -1050,8 +1050,10 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         }?;
         match self.component_state {
             ComponentState::Empty => Ok(()),
-            ComponentState::Loaded(_) => Err(RuntimeError::ComponentAlreadyLoaded(component_address)),
-            ComponentState::Saved => Err(RuntimeError::IllegalSystemCall())
+            ComponentState::Loaded(_) => {
+                Err(RuntimeError::ComponentAlreadyLoaded(component_address))
+            }
+            ComponentState::Saved => Err(RuntimeError::IllegalSystemCall()),
         }?;
 
         let component = self.track.get_component(component_address).unwrap();
@@ -1059,7 +1061,9 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let component_data = Self::process_component_data(state).unwrap();
         self.component_state = ComponentState::Loaded(component_data);
 
-        Ok(GetComponentStateOutput { state: state.to_owned() })
+        Ok(GetComponentStateOutput {
+            state: state.to_owned(),
+        })
     }
 
     fn handle_put_component_state(
@@ -1069,12 +1073,14 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let old_state = match &self.component_state {
             ComponentState::Empty => Err(RuntimeError::ComponentNotLoaded()),
             ComponentState::Loaded(old_state) => Ok(old_state),
-            ComponentState::Saved => Err(RuntimeError::IllegalSystemCall())
-        }?.to_owned();
+            ComponentState::Saved => Err(RuntimeError::IllegalSystemCall()),
+        }?
+        .to_owned();
         let component_address = match self.vm.as_ref().unwrap().invocation.actor {
             Actor::Component(component_address) => Ok(component_address),
             _ => Err(RuntimeError::IllegalSystemCall()),
-        }.unwrap();
+        }
+        .unwrap();
 
         let new_state = Self::process_component_data(&input.state)?;
         re_debug!(self, "New component state: {:?}", new_state);
@@ -1102,16 +1108,12 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     .unclaimed_lazy_maps
                     .remove(&mid)
                     .ok_or(RuntimeError::LazyMapNotFound(mid))?;
-                self.track
-                    .put_lazy_map(component_address, mid, lazy_map);
+                self.track.put_lazy_map(component_address, mid, lazy_map);
                 for descendent_mid in mids {
                     let (descendent_lazy_map, _) =
                         self.claimed_lazy_maps.remove(&descendent_mid).unwrap();
-                    self.track.put_lazy_map(
-                        component_address,
-                        descendent_mid,
-                        descendent_lazy_map,
-                    );
+                    self.track
+                        .put_lazy_map(component_address, descendent_mid, descendent_lazy_map);
                 }
 
                 for vid in vids {
@@ -1124,10 +1126,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .into_iter()
             .try_for_each(|mid| Err(RuntimeError::LazyMapRemoved(mid)))?;
 
-        let component = self
-            .track
-            .get_component_mut(component_address)
-            .unwrap();
+        let component = self.track.get_component_mut(component_address).unwrap();
         component.set_state(new_state.raw);
 
         self.component_state = ComponentState::Saved;
@@ -1162,7 +1161,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 Some((map, ancestor)) => Ok((map, ClaimedByLazyMap(ancestor.clone()))),
                 None => match self.vm.as_ref().unwrap().invocation.actor {
                     Actor::Component(component_address) => {
-                        match self.track.get_lazy_map_mut(component_address, mid) {
+                        match self.track.get_lazy_map_mut(&component_address, &mid) {
                             Some(lazy_map) => Ok((lazy_map, PartOfComponent(component_address))),
                             None => Err(RuntimeError::LazyMapNotFound(mid)),
                         }
@@ -1622,7 +1621,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 Some((vault, _)) => Ok(vault),
                 None => match self.vm.as_ref().unwrap().invocation.actor {
                     Actor::Component(component_address) => {
-                        match self.track.get_vault_mut(component_address, vid) {
+                        match self.track.get_vault_mut(&component_address, &vid) {
                             Some(vault) => Ok(vault),
                             None => Err(RuntimeError::VaultNotFound(vid)),
                         }

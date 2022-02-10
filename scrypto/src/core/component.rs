@@ -61,8 +61,7 @@ impl Component {
 
     /// Returns the state of this component.
     pub fn get_state<T: ComponentState>(&self) -> T {
-        let input = GetComponentStateInput {
-        };
+        let input = GetComponentStateInput {};
         let output: GetComponentStateOutput = call_engine(GET_COMPONENT_STATE, input);
 
         scrypto_unwrap(scrypto_decode(&output.state))

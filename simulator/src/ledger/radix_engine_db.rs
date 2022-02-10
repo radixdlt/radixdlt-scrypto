@@ -92,20 +92,20 @@ impl SubstateStore for RadixEngineDB {
         self.write(address, component)
     }
 
-    fn get_lazy_map(&self, lazy_map_id: &(Address, Mid)) -> Option<LazyMap> {
-        self.read(lazy_map_id)
+    fn get_lazy_map(&self, component_address: &Address, mid: &Mid) -> Option<LazyMap> {
+        self.read(&(component_address.clone(), mid.clone()))
     }
 
-    fn put_lazy_map(&mut self, lazy_map_id: (Address, Mid), lazy_map: LazyMap) {
-        self.write(lazy_map_id, lazy_map)
+    fn put_lazy_map(&mut self, component_address: Address, mid: Mid, lazy_map: LazyMap) {
+        self.write((component_address, mid), lazy_map)
     }
 
-    fn get_vault(&self, vault_id: &(Address, Vid)) -> Option<Vault> {
-        self.read(vault_id)
+    fn get_vault(&self, component_address: &Address, vid: &Vid) -> Option<Vault> {
+        self.read(&(component_address.clone(), vid.clone()))
     }
 
-    fn put_vault(&mut self, vault_id: (Address, Vid), vault: Vault) {
-        self.write(vault_id, vault)
+    fn put_vault(&mut self, component_address: Address, vid: Vid, vault: Vault) {
+        self.write((component_address, vid), vault)
     }
 
     fn get_non_fungible(

@@ -186,8 +186,7 @@ pub struct GetComponentInfoOutput {
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct GetComponentStateInput {
-}
+pub struct GetComponentStateInput {}
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct GetComponentStateOutput {
