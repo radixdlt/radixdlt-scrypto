@@ -82,11 +82,9 @@ pub struct Process<'r, 'l, L: SubstateStore> {
 
     /// Vaults which haven't been assigned to a component or lazy map yet.
     unclaimed_vaults: HashMap<Vid, Vault>,
-    /// Vaults which have been assigned to a lazy map
-    claimed_vaults: HashMap<Vid, Vault>,
     /// Lazy maps which haven't been assigned to a component or lazy map yet.
     /// Keeps track of vault and lazy map descendents.
-    unclaimed_lazy_maps: HashMap<Mid, (LazyMap, HashSet<Mid>, HashSet<Vid>)>,
+    unclaimed_lazy_maps: HashMap<Mid, (LazyMap, HashSet<Mid>, HashMap<Vid, Vault>)>,
     /// Lazy maps which have been assigned to a lazy map but not a component
     claimed_lazy_maps: HashMap<Mid, LazyMap>,
 
@@ -139,7 +137,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             unclaimed_lazy_maps: HashMap::new(),
             claimed_lazy_maps: HashMap::new(),
             unclaimed_vaults: HashMap::new(),
-            claimed_vaults: HashMap::new(),
             component_state: ComponentState::Empty,
             vm: None,
             id_allocator: IdAllocator::new(IdSpace::Transaction),
@@ -592,7 +589,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             re_warn!(self, "Dangling lazy map: {:?}, {:?}", mid, lazy_map);
             success = false;
         }
-        assert!(self.claimed_vaults.is_empty());
         assert!(self.claimed_lazy_maps.is_empty());
 
         re_debug!(self, "Resource check ended");
@@ -997,7 +993,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         }
 
         for mid in data.lazy_maps {
-            let (lazy_map, mids, vids) = self
+            let (lazy_map, mids, vaults) = self
                 .unclaimed_lazy_maps
                 .remove(&mid)
                 .ok_or(RuntimeError::LazyMapNotFound(mid))?;
@@ -1010,10 +1006,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     .put_lazy_map(component_address, descendent_mid, descendent_lazy_map);
             }
 
-            for vid in vids {
-                let descendent_vault = self.claimed_vaults.remove(&vid).unwrap();
-                self.track
-                    .put_vault(component_address, vid, descendent_vault);
+            for (vid, vault) in vaults {
+                self.track.put_vault(component_address, vid, vault);
             }
         }
 
@@ -1105,7 +1099,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let mut old_lazy_maps: HashSet<Mid> = HashSet::from_iter(old_state.lazy_maps.into_iter());
         for mid in new_state.lazy_maps {
             if !old_lazy_maps.remove(&mid) {
-                let (lazy_map, mids, vids) = self
+                let (lazy_map, mids, vaults) = self
                     .unclaimed_lazy_maps
                     .remove(&mid)
                     .ok_or(RuntimeError::LazyMapNotFound(mid))?;
@@ -1117,8 +1111,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                         .put_lazy_map(component_address, descendent_mid, descendent_lazy_map);
                 }
 
-                for vid in vids {
-                    let vault = self.claimed_vaults.remove(&vid).unwrap();
+                for (vid, vault) in vaults {
                     self.track.put_vault(component_address, vid, vault);
                 }
             }
@@ -1145,7 +1138,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             (
                 LazyMap::new(self.package()?),
                 HashSet::new(),
-                HashSet::new(),
+                HashMap::new(),
             ),
         );
 
@@ -1211,9 +1204,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     .ok_or(RuntimeError::VaultNotFound(vid))?;
                 match lazy_map_state {
                     Unclaimed(ancestor_mid) => {
-                        let (_, _, vids) = self.unclaimed_lazy_maps.get_mut(&ancestor_mid).unwrap();
-                        vids.insert(vid);
-                        self.claimed_vaults.insert(vid, vault);
+                        let (_, _, vaults) = self.unclaimed_lazy_maps.get_mut(&ancestor_mid).unwrap();
+                        vaults.insert(vid, vault);
                     }
                     PartOfComponent(component_address) => {
                         self.track.put_vault(component_address, vid, vault);
@@ -1235,7 +1227,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
                 match lazy_map_state {
                     Unclaimed(ancestor_mid) => {
-                        let (_, ancestor_mids, ancestor_vids) =
+                        let (_, ancestor_mids, ancestor_vaults) =
                             self.unclaimed_lazy_maps.get_mut(&ancestor_mid).unwrap();
                         ancestor_mids.insert(mid);
                         self.claimed_lazy_maps.insert(mid, lazy_map);
@@ -1245,10 +1237,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                             self.claimed_lazy_maps.insert(mid, lazy_map);
                             ancestor_mids.insert(mid);
                         }
-                        for vid in vids {
-                            let vault = self.claimed_vaults.remove(&vid).unwrap();
-                            self.claimed_vaults.insert(vid.clone(), vault);
-                            ancestor_vids.insert(vid);
+                        for (vid, vault) in vids {
+                            ancestor_vaults.insert(vid, vault);
                         }
                     }
                     PartOfComponent(component_address) => {
@@ -1258,8 +1248,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                             let lazy_map = self.claimed_lazy_maps.remove(&mid).unwrap();
                             self.track.put_lazy_map(component_address, mid, lazy_map);
                         }
-                        for vid in vids {
-                            let vault = self.claimed_vaults.remove(&vid).unwrap();
+                        for (vid, vault) in vids {
                             self.track.put_vault(component_address, vid, vault);
                         }
                     }
