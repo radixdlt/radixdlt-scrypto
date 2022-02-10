@@ -84,9 +84,7 @@ pub struct Process<'r, 'l, L: SubstateStore> {
     unclaimed_vaults: HashMap<Vid, Vault>,
     /// Lazy maps which haven't been assigned to a component or lazy map yet.
     /// Keeps track of vault and lazy map descendents.
-    unclaimed_lazy_maps: HashMap<Mid, (LazyMap, HashSet<Mid>, HashMap<Vid, Vault>)>,
-    /// Lazy maps which have been assigned to a lazy map but not a component
-    claimed_lazy_maps: HashMap<Mid, LazyMap>,
+    unclaimed_lazy_maps: HashMap<Mid, (LazyMap, HashMap<Mid, LazyMap>, HashMap<Vid, Vault>)>,
 
     /// Components which have been loaded and possibly updated in the lifetime of this process.
     component_state: ComponentState,
@@ -135,7 +133,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             moving_buckets: HashMap::new(),
             moving_bucket_refs: HashMap::new(),
             unclaimed_lazy_maps: HashMap::new(),
-            claimed_lazy_maps: HashMap::new(),
             unclaimed_vaults: HashMap::new(),
             component_state: ComponentState::Empty,
             vm: None,
@@ -589,7 +586,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             re_warn!(self, "Dangling lazy map: {:?}, {:?}", mid, lazy_map);
             success = false;
         }
-        assert!(self.claimed_lazy_maps.is_empty());
 
         re_debug!(self, "Resource check ended");
         if success {
@@ -993,17 +989,14 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         }
 
         for mid in data.lazy_maps {
-            let (lazy_map, mids, vaults) = self
+            let (lazy_map, lazy_maps, vaults) = self
                 .unclaimed_lazy_maps
                 .remove(&mid)
                 .ok_or(RuntimeError::LazyMapNotFound(mid))?;
             self.track.put_lazy_map(component_address, mid, lazy_map);
 
-            for descendent_mid in mids {
-                let descendent_lazy_map =
-                    self.claimed_lazy_maps.remove(&descendent_mid).unwrap();
-                self.track
-                    .put_lazy_map(component_address, descendent_mid, descendent_lazy_map);
+            for (child_mid, child_lazy_map) in lazy_maps {
+                self.track.put_lazy_map(component_address, child_mid, child_lazy_map);
             }
 
             for (vid, vault) in vaults {
@@ -1099,18 +1092,15 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let mut old_lazy_maps: HashSet<Mid> = HashSet::from_iter(old_state.lazy_maps.into_iter());
         for mid in new_state.lazy_maps {
             if !old_lazy_maps.remove(&mid) {
-                let (lazy_map, mids, vaults) = self
+                let (lazy_map, lazy_maps, vaults) = self
                     .unclaimed_lazy_maps
                     .remove(&mid)
                     .ok_or(RuntimeError::LazyMapNotFound(mid))?;
                 self.track.put_lazy_map(component_address, mid, lazy_map);
-                for descendent_mid in mids {
-                    let descendent_lazy_map =
-                        self.claimed_lazy_maps.remove(&descendent_mid).unwrap();
-                    self.track
-                        .put_lazy_map(component_address, descendent_mid, descendent_lazy_map);
-                }
 
+                for (child_mid, child_lazy_map) in lazy_maps {
+                    self.track.put_lazy_map(component_address, child_mid, child_lazy_map);
+                }
                 for (vid, vault) in vaults {
                     self.track.put_vault(component_address, vid, vault);
                 }
@@ -1137,7 +1127,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             mid,
             (
                 LazyMap::new(self.package()?),
-                HashSet::new(),
+                HashMap::new(),
                 HashMap::new(),
             ),
         );
@@ -1220,35 +1210,31 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         // Only allow lazy maps to be added, never removed
         for mid in new_entry_state.lazy_maps {
             if !old_entry_mids.remove(&mid) {
-                let (lazy_map, mids, vids) = self
+                let (lazy_map, lazy_maps, vaults) = self
                     .unclaimed_lazy_maps
                     .remove(&mid)
                     .ok_or(RuntimeError::LazyMapNotFound(mid))?;
 
                 match lazy_map_state {
                     Unclaimed(ancestor_mid) => {
-                        let (_, ancestor_mids, ancestor_vaults) =
+                        let (_, ancestor_lazy_maps, ancestor_vaults) =
                             self.unclaimed_lazy_maps.get_mut(&ancestor_mid).unwrap();
-                        ancestor_mids.insert(mid);
-                        self.claimed_lazy_maps.insert(mid, lazy_map);
+                        ancestor_lazy_maps.insert(mid, lazy_map);
 
-                        for mid in mids {
-                            let lazy_map = self.claimed_lazy_maps.remove(&mid).unwrap();
-                            self.claimed_lazy_maps.insert(mid, lazy_map);
-                            ancestor_mids.insert(mid);
+                        for (mid, lazy_map) in lazy_maps {
+                            ancestor_lazy_maps.insert(mid, lazy_map);
                         }
-                        for (vid, vault) in vids {
+                        for (vid, vault) in vaults {
                             ancestor_vaults.insert(vid, vault);
                         }
                     }
                     PartOfComponent(component_address) => {
                         self.track.put_lazy_map(component_address, mid, lazy_map);
 
-                        for mid in mids {
-                            let lazy_map = self.claimed_lazy_maps.remove(&mid).unwrap();
+                        for (mid, lazy_map) in lazy_maps {
                             self.track.put_lazy_map(component_address, mid, lazy_map);
                         }
-                        for (vid, vault) in vids {
+                        for (vid, vault) in vaults {
                             self.track.put_vault(component_address, vid, vault);
                         }
                     }
