@@ -268,6 +268,22 @@ impl<'s, S: SubstateStore> Track<'s, S> {
             .insert((resource_address, key.clone()), non_fungible);
     }
 
+    /// Returns an immutable reference to a lazy map, if exists.
+    pub fn get_lazy_map(&mut self, component_address: &Address, mid: &Mid) -> Option<&LazyMap> {
+        let lazy_map_id = (component_address.clone(), mid.clone());
+
+        if self.lazy_maps.contains_key(&lazy_map_id) {
+            return self.lazy_maps.get(&lazy_map_id);
+        }
+
+        if let Some(lazy_map) = self.ledger.get_lazy_map(component_address, mid) {
+            self.lazy_maps.insert(lazy_map_id, lazy_map);
+            self.lazy_maps.get(&lazy_map_id)
+        } else {
+            None
+        }
+    }
+
     /// Returns a mutable reference to a lazy map, if exists.
     pub fn get_lazy_map_mut(
         &mut self,

@@ -13,7 +13,7 @@ use scrypto::rust::vec::Vec;
 use scrypto::types::*;
 use wasmi::*;
 
-use crate::engine::process::LazyMapState::{Unclaimed, PartOfComponent};
+use crate::engine::process::LazyMapState::{Committed, Uncommitted};
 use crate::engine::*;
 use crate::ledger::*;
 use crate::model::*;
@@ -51,8 +51,8 @@ macro_rules! re_warn {
 }
 
 enum LazyMapState {
-    Unclaimed(Mid),
-    PartOfComponent(Address),
+    Uncommitted,
+    Committed { component_address: Address },
 }
 
 enum ComponentState {
@@ -68,9 +68,7 @@ struct UnclaimedLazyMap {
     child_vaults: HashMap<Vid, Vault>,
 }
 
-impl UnclaimedLazyMap {
-
-}
+impl UnclaimedLazyMap {}
 
 /// A process keeps track of resource movements and code execution.
 pub struct Process<'r, 'l, L: SubstateStore> {
@@ -973,9 +971,16 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         Ok(CallMethodOutput { rtn: result?.raw })
     }
 
-    fn move_lazy_map_into_lazy_map(&mut self, unclaimed_lazy_map: UnclaimedLazyMap, mid:Mid, mid_parent: &Mid) {
+    fn move_lazy_map_into_lazy_map(
+        &mut self,
+        unclaimed_lazy_map: UnclaimedLazyMap,
+        mid: Mid,
+        mid_parent: &Mid,
+    ) {
         let parent_lazy_map = self.unclaimed_lazy_maps.get_mut(&mid_parent).unwrap();
-        parent_lazy_map.child_lazy_maps.insert(mid, unclaimed_lazy_map.lazy_map);
+        parent_lazy_map
+            .child_lazy_maps
+            .insert(mid, unclaimed_lazy_map.lazy_map);
 
         for (mid, lazy_map) in unclaimed_lazy_map.child_lazy_maps {
             parent_lazy_map.child_lazy_maps.insert(mid, lazy_map);
@@ -985,10 +990,17 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         }
     }
 
-    fn move_lazy_map_into_component(&mut self, unclaimed_lazy_map: UnclaimedLazyMap, mid: Mid, component_address: Address) {
-        self.track.put_lazy_map(component_address, mid, unclaimed_lazy_map.lazy_map);
+    fn move_lazy_map_into_component(
+        &mut self,
+        unclaimed_lazy_map: UnclaimedLazyMap,
+        mid: Mid,
+        component_address: Address,
+    ) {
+        self.track
+            .put_lazy_map(component_address, mid, unclaimed_lazy_map.lazy_map);
         for (child_mid, child_lazy_map) in unclaimed_lazy_map.child_lazy_maps {
-            self.track.put_lazy_map(component_address, child_mid, child_lazy_map);
+            self.track
+                .put_lazy_map(component_address, child_mid, child_lazy_map);
         }
         for (vid, vault) in unclaimed_lazy_map.child_vaults {
             self.track.put_vault(component_address, vid, vault);
@@ -1146,41 +1158,53 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             UnclaimedLazyMap {
                 lazy_map: LazyMap::new(self.package()?),
                 child_lazy_maps: HashMap::new(),
-                child_vaults: HashMap::new()
-            }
+                child_vaults: HashMap::new(),
+            },
         );
 
         Ok(CreateLazyMapOutput { mid })
-    }
-
-    fn get_local_lazy_map(
-        &mut self,
-        mid: Mid,
-    ) -> Result<(&mut LazyMap, LazyMapState), RuntimeError> {
-        match self.unclaimed_lazy_maps.get_mut(&mid) {
-            Some(unclaimed_lazy_map) => Ok((&mut unclaimed_lazy_map.lazy_map, Unclaimed(mid))),
-            None => match self.vm.as_ref().unwrap().invocation.actor {
-                Actor::Component(component_address) => {
-                    match self.track.get_lazy_map_mut(&component_address, &mid) {
-                        Some(lazy_map) => Ok((lazy_map, PartOfComponent(component_address))),
-                        None => Err(RuntimeError::LazyMapNotFound(mid)),
-                    }
-                }
-                _ => Err(RuntimeError::LazyMapNotFound(mid)),
-            },
-        }
     }
 
     fn handle_get_lazy_map_entry(
         &mut self,
         input: GetLazyMapEntryInput,
     ) -> Result<GetLazyMapEntryOutput, RuntimeError> {
-        let lazy_map = self.get_local_lazy_map(input.mid)?.0;
+        let lazy_map = match self.unclaimed_lazy_maps.get_mut(&input.mid) {
+            Some(unclaimed_lazy_map) => Ok(&unclaimed_lazy_map.lazy_map),
+            None => match self.vm.as_ref().unwrap().invocation.actor {
+                Actor::Component(component_address) => {
+                    match self.track.get_lazy_map(&component_address, &input.mid) {
+                        Some(lazy_map) => Ok(lazy_map),
+                        None => Err(RuntimeError::LazyMapNotFound(input.mid)),
+                    }
+                }
+                _ => Err(RuntimeError::LazyMapNotFound(input.mid)),
+            },
+        }?;
+
         let value = lazy_map.get_entry(&input.key);
 
         Ok(GetLazyMapEntryOutput {
             value: value.map(|e| e.to_vec()),
         })
+    }
+
+    fn get_local_lazy_map_mut(
+        &mut self,
+        mid: Mid,
+    ) -> Result<(&mut LazyMap, LazyMapState), RuntimeError> {
+        match self.unclaimed_lazy_maps.get_mut(&mid) {
+            Some(unclaimed_lazy_map) => Ok((&mut unclaimed_lazy_map.lazy_map, Uncommitted)),
+            None => match self.vm.as_ref().unwrap().invocation.actor {
+                Actor::Component(component_address) => {
+                    match self.track.get_lazy_map_mut(&component_address, &mid) {
+                        Some(lazy_map) => Ok((lazy_map, Committed { component_address })),
+                        None => Err(RuntimeError::LazyMapNotFound(mid)),
+                    }
+                }
+                _ => Err(RuntimeError::LazyMapNotFound(mid)),
+            },
+        }
     }
 
     fn handle_put_lazy_map_entry(
@@ -1191,7 +1215,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let new_entry_state = Self::process_map_data(&input.value)?;
         re_debug!(self, "Map entry: {} => {}", key, new_entry_state);
 
-        let (lazy_map, lazy_map_state) = self.get_local_lazy_map(input.mid)?;
+        let (lazy_map, lazy_map_state) = self.get_local_lazy_map_mut(input.mid)?;
         let (mut old_entry_vids, mut old_entry_mids) =
             lazy_map
                 .get_entry(&key.raw)
@@ -1211,11 +1235,12 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     .remove(&vid)
                     .ok_or(RuntimeError::VaultNotFound(vid))?;
                 match lazy_map_state {
-                    Unclaimed(mid_parent) => {
-                        let unclaimed_lazy_map = self.unclaimed_lazy_maps.get_mut(&mid_parent).unwrap();
+                    Uncommitted => {
+                        let unclaimed_lazy_map =
+                            self.unclaimed_lazy_maps.get_mut(&input.mid).unwrap();
                         unclaimed_lazy_map.child_vaults.insert(vid, vault);
                     }
-                    PartOfComponent(component_address) => {
+                    Committed { component_address } => {
                         self.track.put_vault(component_address, vid, vault);
                     }
                 }
@@ -1234,10 +1259,10 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     .ok_or(RuntimeError::LazyMapNotFound(mid))?;
 
                 match lazy_map_state {
-                    Unclaimed(mid_parent) => {
-                        self.move_lazy_map_into_lazy_map(child_lazy_map, mid, &mid_parent);
+                    Uncommitted => {
+                        self.move_lazy_map_into_lazy_map(child_lazy_map, mid, &input.mid);
                     }
-                    PartOfComponent(component_address) => {
+                    Committed { component_address } => {
                         self.move_lazy_map_into_component(child_lazy_map, mid, component_address);
                     }
                 }
