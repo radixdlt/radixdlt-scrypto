@@ -68,7 +68,7 @@ pub fn dump_component<T: SubstateStore>(address: Address, ledger: &T) -> Result<
             }
 
             // Dump resources
-            dump_resources(&vaults_found, ledger)
+            dump_resources(address, &vaults_found, ledger)
         }
         None => Err(DisplayError::ComponentNotFound),
     }
@@ -99,10 +99,10 @@ fn dump_lazy_map<T: SubstateStore>(
     Ok((referenced_maps, referenced_vaults))
 }
 
-fn dump_resources<T: SubstateStore>(vaults: &HashSet<Vid>, ledger: &T) -> Result<(), DisplayError> {
+fn dump_resources<T: SubstateStore>(address: Address, vaults: &HashSet<Vid>, ledger: &T) -> Result<(), DisplayError> {
     println!("{}:", "Resources".green().bold());
     for (last, vid) in vaults.iter().identify_last() {
-        let vault = ledger.get_vault(*vid).unwrap();
+        let vault = ledger.get_vault(&(address, vid.clone())).unwrap();
         let amount = vault.amount();
         let resource_address = vault.resource_address();
         let resource_def = ledger.get_resource_def(resource_address).unwrap();

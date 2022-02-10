@@ -100,12 +100,12 @@ impl SubstateStore for RadixEngineDB {
         self.write(lazy_map_id, lazy_map)
     }
 
-    fn get_vault(&self, vid: Vid) -> Option<Vault> {
-        self.read(&vid)
+    fn get_vault(&self, vault_id: &(Address, Vid)) -> Option<Vault> {
+        self.read(vault_id)
     }
 
-    fn put_vault(&mut self, vid: Vid, vault: Vault) {
-        self.write(vid, vault)
+    fn put_vault(&mut self, vault_id: (Address, Vid), vault: Vault) {
+        self.write(vault_id, vault)
     }
 
     fn get_non_fungible(

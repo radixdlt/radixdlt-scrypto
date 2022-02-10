@@ -27,13 +27,13 @@ pub struct Track<'s, S: SubstateStore> {
     components: HashMap<Address, Component>,
     resource_defs: HashMap<Address, ResourceDef>,
     lazy_maps: HashMap<(Address, Mid), LazyMap>,
-    vaults: HashMap<Vid, Vault>,
+    vaults: HashMap<(Address, Vid), Vault>,
     non_fungibles: HashMap<(Address, NonFungibleKey), NonFungible>,
     updated_packages: HashSet<Address>,
     updated_components: HashSet<Address>,
     updated_lazy_maps: HashSet<(Address, Mid)>,
     updated_resource_defs: HashSet<Address>,
-    updated_vaults: HashSet<Vid>,
+    updated_vaults: HashSet<(Address, Vid)>,
     updated_non_fungibles: HashSet<(Address, NonFungibleKey)>,
     new_entities: Vec<Address>,
     code_cache: LruCache<Address, Module>, // TODO: move to ledger level
@@ -332,14 +332,14 @@ impl<'s, S: SubstateStore> Track<'s, S> {
 
     /// Returns an immutable reference to a vault, if exists.
     #[allow(dead_code)]
-    pub fn get_vault(&mut self, vid: Vid) -> Option<&Vault> {
-        if self.vaults.contains_key(&vid) {
-            return self.vaults.get(&vid);
+    pub fn get_vault(&mut self, vault_id: &(Address, Vid)) -> Option<&Vault> {
+        if self.vaults.contains_key(vault_id) {
+            return self.vaults.get(vault_id);
         }
 
-        if let Some(vault) = self.ledger.get_vault(vid) {
-            self.vaults.insert(vid, vault);
-            self.vaults.get(&vid)
+        if let Some(vault) = self.ledger.get_vault(vault_id) {
+            self.vaults.insert(vault_id.clone(), vault);
+            self.vaults.get(vault_id)
         } else {
             None
         }
@@ -347,15 +347,17 @@ impl<'s, S: SubstateStore> Track<'s, S> {
 
     /// Returns a mutable reference to a vault, if exists.
     pub fn get_vault_mut(&mut self, component_address: Address, vid: Vid) -> Option<&mut Vault> {
-        self.updated_vaults.insert(vid);
+        let vault_id = (component_address, vid);
 
-        if self.vaults.contains_key(&vid) {
-            return self.vaults.get_mut(&vid);
+        self.updated_vaults.insert(vault_id.clone());
+
+        if self.vaults.contains_key(&vault_id) {
+            return self.vaults.get_mut(&vault_id);
         }
 
-        if let Some(vault) = self.ledger.get_vault(vid) {
-            self.vaults.insert(vid, vault);
-            self.vaults.get_mut(&vid)
+        if let Some(vault) = self.ledger.get_vault(&vault_id) {
+            self.vaults.insert(vault_id, vault);
+            self.vaults.get_mut(&vault_id)
         } else {
             None
         }
@@ -363,9 +365,9 @@ impl<'s, S: SubstateStore> Track<'s, S> {
 
     /// Inserts a new vault.
     pub fn put_vault(&mut self, component_address: Address, vid: Vid, vault: Vault) {
-        self.updated_vaults.insert(vid);
-
-        self.vaults.insert(vid, vault);
+        let vault_id = (component_address, vid);
+        self.updated_vaults.insert(vault_id);
+        self.vaults.insert(vault_id, vault);
     }
 
     /// Creates a new package address.

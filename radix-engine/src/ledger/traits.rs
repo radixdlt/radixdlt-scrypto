@@ -39,9 +39,9 @@ pub trait SubstateStore {
 
     fn put_lazy_map(&mut self, lazy_map_id: (Address, Mid), lazy_map: LazyMap);
 
-    fn get_vault(&self, vid: Vid) -> Option<Vault>;
+    fn get_vault(&self, vault_id: &(Address, Vid)) -> Option<Vault>;
 
-    fn put_vault(&mut self, vid: Vid, vault: Vault);
+    fn put_vault(&mut self, vault_id: (Address, Vid), vault: Vault);
 
     fn get_non_fungible(
         &self,
@@ -106,7 +106,7 @@ pub trait SubstateStore {
 
             // Instantiate system component
             self.put_vault(
-                XRD_VAULT_ID,
+                (SYSTEM_COMPONENT, XRD_VAULT_ID),
                 Vault::new(
                     Bucket::new(
                         RADIX_TOKEN,

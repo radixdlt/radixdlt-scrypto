@@ -11,7 +11,7 @@ pub struct InMemorySubstateStore {
     components: HashMap<Address, Component>,
     lazy_maps: HashMap<(Address, Mid), LazyMap>,
     resource_defs: HashMap<Address, ResourceDef>,
-    vaults: HashMap<Vid, Vault>,
+    vaults: HashMap<(Address, Vid), Vault>,
     non_fungibles: HashMap<(Address, NonFungibleKey), NonFungible>,
     current_epoch: u64,
     nonce: u64,
@@ -77,12 +77,12 @@ impl SubstateStore for InMemorySubstateStore {
         self.lazy_maps.insert(lazy_map_id, lazy_map);
     }
 
-    fn get_vault(&self, vid: Vid) -> Option<Vault> {
-        self.vaults.get(&vid).map(Clone::clone)
+    fn get_vault(&self, vault_id: &(Address, Vid)) -> Option<Vault> {
+        self.vaults.get(vault_id).map(Clone::clone)
     }
 
-    fn put_vault(&mut self, vid: Vid, vault: Vault) {
-        self.vaults.insert(vid, vault);
+    fn put_vault(&mut self, vault_id: (Address, Vid), vault: Vault) {
+        self.vaults.insert(vault_id, vault);
     }
 
     fn get_non_fungible(
