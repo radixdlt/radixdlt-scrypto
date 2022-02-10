@@ -83,8 +83,9 @@ pub struct Process<'r, 'l, L: SubstateStore> {
     /// Vaults which haven't been assigned to a component or lazy map yet.
     unclaimed_vaults: HashMap<Vid, Vault>,
     /// Vaults which have been assigned to a lazy map but not a component
-    claimed_vaults: HashMap<Vid, (Vault, Mid)>,
+    claimed_vaults: HashMap<Vid, Vault>,
     /// Lazy maps which haven't been assigned to a component or lazy map yet.
+    /// Keeps track of vault and lazy map descendents.
     unclaimed_lazy_maps: HashMap<Mid, (LazyMap, HashSet<Mid>, HashSet<Vid>)>,
     /// Lazy maps which have been assigned to a lazy map but not a component
     claimed_lazy_maps: HashMap<Mid, (LazyMap, Mid)>,
@@ -1010,7 +1011,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             }
 
             for vid in vids {
-                let (descendent_vault, _) = self.claimed_vaults.remove(&vid).unwrap();
+                let descendent_vault = self.claimed_vaults.remove(&vid).unwrap();
                 self.track
                     .put_vault(component_address, vid, descendent_vault);
             }
@@ -1117,7 +1118,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 }
 
                 for vid in vids {
-                    let (vault, _) = self.claimed_vaults.remove(&vid).unwrap();
+                    let vault = self.claimed_vaults.remove(&vid).unwrap();
                     self.track.put_vault(component_address, vid, vault);
                 }
             }
@@ -1215,7 +1216,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     ClaimedByLazyMap(ancestor_mid) => {
                         let (_, _, vids) = self.unclaimed_lazy_maps.get_mut(&ancestor_mid).unwrap();
                         vids.insert(vid);
-                        self.claimed_vaults.insert(vid, (vault, ancestor_mid));
+                        self.claimed_vaults.insert(vid, vault);
                     }
                     PartOfComponent(component_address) => {
                         self.track.put_vault(component_address, vid, vault);
@@ -1248,9 +1249,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                             ancestor_mids.insert(mid);
                         }
                         for vid in vids {
-                            let (vault, _) = self.claimed_vaults.remove(&vid).unwrap();
-                            self.claimed_vaults
-                                .insert(vid.clone(), (vault, ancestor_mid));
+                            let vault = self.claimed_vaults.remove(&vid).unwrap();
+                            self.claimed_vaults.insert(vid.clone(), vault);
                             ancestor_vids.insert(vid);
                         }
                     }
@@ -1262,7 +1262,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                             self.track.put_lazy_map(component_address, mid, lazy_map);
                         }
                         for vid in vids {
-                            let (vault, _) = self.claimed_vaults.remove(&vid).unwrap();
+                            let vault = self.claimed_vaults.remove(&vid).unwrap();
                             self.track.put_vault(component_address, vid, vault);
                         }
                     }
@@ -1618,7 +1618,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         match self.unclaimed_vaults.get_mut(&vid) {
             Some(vault) => Ok(vault),
             None => match self.claimed_vaults.get_mut(&vid) {
-                Some((vault, _)) => Ok(vault),
+                Some(vault) => Ok(vault),
                 None => match self.vm.as_ref().unwrap().invocation.actor {
                     Actor::Component(component_address) => {
                         match self.track.get_vault_mut(&component_address, &vid) {
