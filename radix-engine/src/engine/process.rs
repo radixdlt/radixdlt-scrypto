@@ -1158,17 +1158,14 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     ) -> Result<(&mut LazyMap, LazyMapState), RuntimeError> {
         match self.unclaimed_lazy_maps.get_mut(&mid) {
             Some((map, _, _)) => Ok((map, ClaimedByLazyMap(mid))),
-            None => match self.claimed_lazy_maps.get_mut(&mid) {
-                Some((map, ancestor)) => Ok((map, ClaimedByLazyMap(ancestor.clone()))),
-                None => match self.vm.as_ref().unwrap().invocation.actor {
-                    Actor::Component(component_address) => {
-                        match self.track.get_lazy_map_mut(&component_address, &mid) {
-                            Some(lazy_map) => Ok((lazy_map, PartOfComponent(component_address))),
-                            None => Err(RuntimeError::LazyMapNotFound(mid)),
-                        }
+            None => match self.vm.as_ref().unwrap().invocation.actor {
+                Actor::Component(component_address) => {
+                    match self.track.get_lazy_map_mut(&component_address, &mid) {
+                        Some(lazy_map) => Ok((lazy_map, PartOfComponent(component_address))),
+                        None => Err(RuntimeError::LazyMapNotFound(mid)),
                     }
-                    _ => Err(RuntimeError::LazyMapNotFound(mid)),
-                },
+                }
+                _ => Err(RuntimeError::LazyMapNotFound(mid)),
             },
         }
     }
