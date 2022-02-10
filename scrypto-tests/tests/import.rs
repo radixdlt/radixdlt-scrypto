@@ -1,11 +1,11 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
+use scrypto::core::*;
 use scrypto::import;
 use scrypto::rust::borrow::ToOwned;
 use scrypto::rust::str::FromStr;
 use scrypto::rust::string::String;
 use scrypto::rust::vec::Vec;
-use scrypto::types::*;
 
 // base directory: `scrypto-derive`
 import! {
@@ -26,47 +26,17 @@ r#"
             "inputs": [
                 {
                     "type": "Custom",
-                    "name": "scrypto::types::Decimal",
+                    "name": "scrypto::math::Decimal",
                     "generics": []
                 },
                 {
                     "type": "Custom",
-                    "name": "scrypto::types::Address",
-                    "generics": []
-                },
-                {
-                    "type": "Custom",
-                    "name": "scrypto::types::H256",
-                    "generics": []
-                },
-                {
-                    "type": "Custom",
-                    "name": "scrypto::types::Bid",
-                    "generics": []
-                },
-                {
-                    "type": "Custom",
-                    "name": "scrypto::types::Rid",
-                    "generics": []
-                },
-                {
-                    "type": "Custom",
-                    "name": "scrypto::types::Mid",
-                    "generics": []
-                },
-                {
-                    "type": "Custom",
-                    "name": "scrypto::types::Vid",
+                    "name": "scrypto::math::BigDecimal",
                     "generics": []
                 },
                 {
                     "type": "Custom",
                     "name": "scrypto::core::Package",
-                    "generics": []
-                },
-                {
-                    "type": "Custom",
-                    "name": "scrypto::core::Blueprint",
                     "generics": []
                 },
                 {
@@ -100,11 +70,16 @@ r#"
                     "type": "Custom",
                     "name": "scrypto::resource::Vault",
                     "generics": []
+                },
+                {
+                    "type": "Custom",
+                    "name": "scrypto::resource::ResourceDef",
+                    "generics": []
                 }
             ],
             "output": {
                 "type": "Custom",
-                "name": "scrypto::resource::BucketRef",
+                "name": "scrypto::resource::Bucket",
                 "generics": []
             }
         }
@@ -212,7 +187,7 @@ r#"
 #[test]
 #[should_panic] // asserts it compiles
 fn test_import_from_abi() {
-    let instance = Simple::from(Address::from_str("").unwrap());
+    let instance = Simple::from(Component::from_str("").unwrap());
 
     let arg1 = Floor { x: 5, y: 12 };
     let arg2 = (1u8, 2u16);

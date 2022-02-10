@@ -52,16 +52,13 @@ pub fn handle_import(input: TokenStream) -> Result<TokenStream> {
 
         functions.push(parse_quote! {
             pub fn #func_indent(#(#func_args: #func_types),*) -> #func_output {
-                let package = ::scrypto::utils::scrypto_unwrap(
-                    ::scrypto::types::Address::from_str(#package)
-                );
-                let rtn = ::scrypto::core::call_function(
-                    package,
-                    #name,
+                let package = ::scrypto::core::Package::from_str(#package).unwrap();
+                let rtn = ::scrypto::core::Context::call_function(
+                    (package, #name),
                     #func_name,
                     ::scrypto::args!(#(#func_args),*)
                 );
-                ::scrypto::utils::scrypto_unwrap(::scrypto::buffer::scrypto_decode(&rtn))
+                ::scrypto::buffer::scrypto_decode(&rtn).unwrap()
             }
         });
     }
@@ -87,12 +84,12 @@ pub fn handle_import(input: TokenStream) -> Result<TokenStream> {
 
         let m = parse_quote! {
             pub fn #method_indent(&self #(, #method_args: #method_types)*) -> #method_output {
-                let rtn = ::scrypto::core::call_method(
-                    self.address,
+                let rtn = ::scrypto::core::Context::call_method(
+                    self.component,
                     #method_name,
                     ::scrypto::args!(#(#method_args),*)
                 );
-                ::scrypto::utils::scrypto_unwrap(::scrypto::buffer::scrypto_decode(&rtn))
+                ::scrypto::buffer::scrypto_decode(&rtn).unwrap()
             }
         };
         methods.push(m);
@@ -103,7 +100,7 @@ pub fn handle_import(input: TokenStream) -> Result<TokenStream> {
 
         #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode)]
         pub struct #ident {
-            address: ::scrypto::types::Address,
+            component: ::scrypto::core::Component,
         }
 
         impl #ident {
@@ -112,31 +109,17 @@ pub fn handle_import(input: TokenStream) -> Result<TokenStream> {
             #(#methods)*
         }
 
-        impl From<::scrypto::types::Address> for #ident {
-            fn from(address: ::scrypto::types::Address) -> Self {
-                Self {
-                    address
-                }
-            }
-        }
-
-        impl From<#ident> for ::scrypto::types::Address {
-            fn from(a: #ident) -> ::scrypto::types::Address {
-                a.address
-            }
-        }
-
         impl From<::scrypto::core::Component> for #ident {
             fn from(component: ::scrypto::core::Component) -> Self {
                 Self {
-                    address: component.into()
+                    component
                 }
             }
         }
 
         impl From<#ident> for ::scrypto::core::Component {
             fn from(a: #ident) -> ::scrypto::core::Component {
-                a.address.into()
+                a.component
             }
         }
     };
@@ -417,41 +400,31 @@ mod tests {
             quote! {
                 #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode)]
                 pub struct Simple {
-                    address: ::scrypto::types::Address,
+                    component: ::scrypto::core::Component,
                 }
                 impl Simple {
                     pub fn new() -> ::scrypto::core::Component {
-                        let package = ::scrypto::utils::scrypto_unwrap(::scrypto::types::Address::from_str(
+                        let package = ::scrypto::core::Package::from_str(
                             "056967d3d49213394892980af59be76e9b3e7cc4cb78237460d0c7"
-                        ));
-                        let rtn = ::scrypto::core::call_function(package, "Simple", "new", ::scrypto::args!());
-                        ::scrypto::utils::scrypto_unwrap(::scrypto::buffer::scrypto_decode(&rtn))
+                        ).unwrap();
+                        let rtn = ::scrypto::core::Context::call_function((package, "Simple"), "new", ::scrypto::args!());
+                        ::scrypto::buffer::scrypto_decode(&rtn).unwrap()
                     }
                     pub fn free_token(&self) -> ::scrypto::resource::Bucket {
-                        let rtn = ::scrypto::core::call_method(self.address, "free_token", ::scrypto::args!());
-                        ::scrypto::utils::scrypto_unwrap(::scrypto::buffer::scrypto_decode(&rtn))
-                    }
-                }
-                impl From<::scrypto::types::Address> for Simple {
-                    fn from(address: ::scrypto::types::Address) -> Self {
-                        Self { address }
-                    }
-                }
-                impl From<Simple> for ::scrypto::types::Address {
-                    fn from(a: Simple) -> ::scrypto::types::Address {
-                        a.address
+                        let rtn = ::scrypto::core::Context::call_method(self.component, "free_token", ::scrypto::args!());
+                        ::scrypto::buffer::scrypto_decode(&rtn).unwrap()
                     }
                 }
                 impl From<::scrypto::core::Component> for Simple {
                     fn from(component: ::scrypto::core::Component) -> Self {
                         Self {
-                            address: component.into()
+                            component
                         }
                     }
                 }
                 impl From<Simple> for ::scrypto::core::Component {
                     fn from(a: Simple) -> ::scrypto::core::Component {
-                        a.address.into()
+                        a.component
                     }
                 }
             },

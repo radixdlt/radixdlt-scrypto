@@ -9,12 +9,12 @@ use serde_json::{json, to_value, Value};
 blueprint! {
     struct SimpleAuth {
         admin: ResourceDef,
-        user: Address,
+        user: ResourceDef,
         reserves: Vault,
     }
 
     impl SimpleAuth {
-        pub fn new(admin: ResourceDef, user: Address) -> Component {
+        pub fn new(admin: ResourceDef, user: ResourceDef) -> Component {
             Self {
                 admin,
                 user,
@@ -68,7 +68,7 @@ fn test_simple_auth() {
                         },
                         {
                             "type": "Custom",
-                            "name": "scrypto::types::Address",
+                            "name": "scrypto::resource::ResourceDef",
                             "generics": []
                         }
                     ],
