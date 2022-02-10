@@ -26,12 +26,12 @@ pub struct Track<'s, S: SubstateStore> {
     packages: HashMap<Address, Package>,
     components: HashMap<Address, Component>,
     resource_defs: HashMap<Address, ResourceDef>,
-    lazy_maps: HashMap<Mid, LazyMap>,
+    lazy_maps: HashMap<(Address, Mid), LazyMap>,
     vaults: HashMap<Vid, Vault>,
     non_fungibles: HashMap<(Address, NonFungibleKey), NonFungible>,
     updated_packages: HashSet<Address>,
     updated_components: HashSet<Address>,
-    updated_lazy_maps: HashSet<Mid>,
+    updated_lazy_maps: HashSet<(Address, Mid)>,
     updated_resource_defs: HashSet<Address>,
     updated_vaults: HashSet<Vid>,
     updated_non_fungibles: HashSet<(Address, NonFungibleKey)>,
@@ -268,31 +268,18 @@ impl<'s, S: SubstateStore> Track<'s, S> {
             .insert((resource_address, key.clone()), non_fungible);
     }
 
-    /// Returns an immutable reference to a lazy map, if exists.
-    pub fn get_lazy_map(&mut self, mid: Mid) -> Option<&LazyMap> {
-        if self.lazy_maps.contains_key(&mid) {
-            return self.lazy_maps.get(&mid);
-        }
-
-        if let Some(lazy_map) = self.ledger.get_lazy_map(mid) {
-            self.lazy_maps.insert(mid, lazy_map);
-            self.lazy_maps.get(&mid)
-        } else {
-            None
-        }
-    }
-
     /// Returns a mutable reference to a lazy map, if exists.
     pub fn get_lazy_map_mut(&mut self, component_address: Address, mid: Mid) -> Option<&mut LazyMap> {
-        self.updated_lazy_maps.insert(mid);
+        let lazy_map_id = (component_address, mid);
+        self.updated_lazy_maps.insert(lazy_map_id.clone());
 
-        if self.lazy_maps.contains_key(&mid) {
-            return self.lazy_maps.get_mut(&mid);
+        if self.lazy_maps.contains_key(&lazy_map_id) {
+            return self.lazy_maps.get_mut(&lazy_map_id);
         }
 
-        if let Some(lazy_map) = self.ledger.get_lazy_map(mid) {
-            self.lazy_maps.insert(mid, lazy_map);
-            self.lazy_maps.get_mut(&mid)
+        if let Some(lazy_map) = self.ledger.get_lazy_map(&lazy_map_id) {
+            self.lazy_maps.insert(lazy_map_id, lazy_map);
+            self.lazy_maps.get_mut(&lazy_map_id)
         } else {
             None
         }
@@ -300,9 +287,9 @@ impl<'s, S: SubstateStore> Track<'s, S> {
 
     /// Inserts a new lazy map.
     pub fn put_lazy_map(&mut self, component_address: Address, mid: Mid, lazy_map: LazyMap) {
-        self.updated_lazy_maps.insert(mid);
-
-        self.lazy_maps.insert(mid, lazy_map);
+        let lazy_map_id = (component_address, mid);
+        self.updated_lazy_maps.insert(lazy_map_id.clone());
+        self.lazy_maps.insert(lazy_map_id, lazy_map);
     }
 
     /// Returns an immutable reference to a resource definition, if exists.

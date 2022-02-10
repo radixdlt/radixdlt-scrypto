@@ -9,7 +9,7 @@ use crate::model::*;
 pub struct InMemorySubstateStore {
     packages: HashMap<Address, Package>,
     components: HashMap<Address, Component>,
-    lazy_maps: HashMap<Mid, LazyMap>,
+    lazy_maps: HashMap<(Address, Mid), LazyMap>,
     resource_defs: HashMap<Address, ResourceDef>,
     vaults: HashMap<Vid, Vault>,
     non_fungibles: HashMap<(Address, NonFungibleKey), NonFungible>,
@@ -69,12 +69,12 @@ impl SubstateStore for InMemorySubstateStore {
         self.components.insert(address, component);
     }
 
-    fn get_lazy_map(&self, mid: Mid) -> Option<LazyMap> {
-        self.lazy_maps.get(&mid).map(Clone::clone)
+    fn get_lazy_map(&self, lazy_map_id: &(Address, Mid)) -> Option<LazyMap> {
+        self.lazy_maps.get(lazy_map_id).map(Clone::clone)
     }
 
-    fn put_lazy_map(&mut self, mid: Mid, lazy_map: LazyMap) {
-        self.lazy_maps.insert(mid, lazy_map);
+    fn put_lazy_map(&mut self, lazy_map_id: (Address, Mid), lazy_map: LazyMap) {
+        self.lazy_maps.insert(lazy_map_id, lazy_map);
     }
 
     fn get_vault(&self, vid: Vid) -> Option<Vault> {

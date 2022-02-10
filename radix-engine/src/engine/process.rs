@@ -1108,11 +1108,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         _input: CreateLazyMapInput,
     ) -> Result<CreateLazyMapOutput, RuntimeError> {
         let mid = self.track.new_mid();
-
-        if self.track.get_lazy_map(mid).is_some() {
-            return Err(RuntimeError::LazyMapAlreadyExists(mid));
-        }
-
         self.unclaimed_lazy_maps.insert(mid, LazyMap::new(self.package()?));
 
         Ok(CreateLazyMapOutput { mid })
@@ -1194,6 +1189,10 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 match ancestor {
                     ClaimedByLazyMap(ancestor_mid) => {
                         let old_set = self.lazy_map_descendents.remove(&mid).unwrap_or(HashSet::new());
+                        for mid in old_set.iter() {
+                            let old = self.claimed_lazy_maps.remove(mid).unwrap();
+                            self.claimed_lazy_maps.insert(mid.clone(), (old.0, ancestor_mid));
+                        }
                         let mut new_descendent_set = self.lazy_map_descendents.remove(&ancestor_mid).unwrap_or(HashSet::new());
                         new_descendent_set.extend(old_set);
                         new_descendent_set.insert(mid);

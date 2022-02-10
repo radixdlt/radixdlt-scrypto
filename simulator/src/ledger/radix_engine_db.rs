@@ -53,9 +53,9 @@ impl RadixEngineDB {
         items
     }
 
-    fn read<K: Encode, V: Decode>(&self, key: K) -> Option<V> {
+    fn read<K: Encode, V: Decode>(&self, key: &K) -> Option<V> {
         self.db
-            .get(scrypto_encode(&key))
+            .get(scrypto_encode(key))
             .unwrap()
             .map(|bytes| scrypto_decode(&bytes).unwrap())
     }
@@ -69,7 +69,7 @@ impl RadixEngineDB {
 
 impl SubstateStore for RadixEngineDB {
     fn get_resource_def(&self, address: Address) -> Option<ResourceDef> {
-        self.read(address)
+        self.read(&address)
     }
 
     fn put_resource_def(&mut self, address: Address, resource_def: ResourceDef) {
@@ -77,7 +77,7 @@ impl SubstateStore for RadixEngineDB {
     }
 
     fn get_package(&self, address: Address) -> Option<Package> {
-        self.read(address)
+        self.read(&address)
     }
 
     fn put_package(&mut self, address: Address, package: Package) {
@@ -85,23 +85,23 @@ impl SubstateStore for RadixEngineDB {
     }
 
     fn get_component(&self, address: Address) -> Option<Component> {
-        self.read(address)
+        self.read(&address)
     }
 
     fn put_component(&mut self, address: Address, component: Component) {
         self.write(address, component)
     }
 
-    fn get_lazy_map(&self, mid: Mid) -> Option<LazyMap> {
-        self.read(mid)
+    fn get_lazy_map(&self, lazy_map_id: &(Address, Mid)) -> Option<LazyMap> {
+        self.read(lazy_map_id)
     }
 
-    fn put_lazy_map(&mut self, mid: Mid, lazy_map: LazyMap) {
-        self.write(mid, lazy_map)
+    fn put_lazy_map(&mut self, lazy_map_id: (Address, Mid), lazy_map: LazyMap) {
+        self.write(lazy_map_id, lazy_map)
     }
 
     fn get_vault(&self, vid: Vid) -> Option<Vault> {
-        self.read(vid)
+        self.read(&vid)
     }
 
     fn put_vault(&mut self, vid: Vid, vault: Vault) {
@@ -113,7 +113,7 @@ impl SubstateStore for RadixEngineDB {
         resource_address: Address,
         key: &NonFungibleKey,
     ) -> Option<NonFungible> {
-        self.read((resource_address, key.clone()))
+        self.read(&(resource_address, key.clone()))
     }
 
     fn put_non_fungible(
@@ -126,7 +126,7 @@ impl SubstateStore for RadixEngineDB {
     }
 
     fn get_epoch(&self) -> u64 {
-        self.read("epoch").unwrap_or(0)
+        self.read(&"epoch").unwrap_or(0)
     }
 
     fn set_epoch(&mut self, epoch: u64) {
@@ -134,7 +134,7 @@ impl SubstateStore for RadixEngineDB {
     }
 
     fn get_nonce(&self) -> u64 {
-        self.read("nonce").unwrap_or(0)
+        self.read(&"nonce").unwrap_or(0)
     }
 
     fn increase_nonce(&mut self) {
