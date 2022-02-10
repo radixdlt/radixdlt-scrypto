@@ -99,7 +99,11 @@ fn dump_lazy_map<T: SubstateStore>(
     Ok((referenced_maps, referenced_vaults))
 }
 
-fn dump_resources<T: SubstateStore>(address: Address, vaults: &HashSet<Vid>, ledger: &T) -> Result<(), DisplayError> {
+fn dump_resources<T: SubstateStore>(
+    address: Address,
+    vaults: &HashSet<Vid>,
+    ledger: &T,
+) -> Result<(), DisplayError> {
     println!("{}:", "Resources".green().bold());
     for (last, vid) in vaults.iter().identify_last() {
         let vault = ledger.get_vault(&(address, vid.clone())).unwrap();

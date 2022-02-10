@@ -269,7 +269,11 @@ impl<'s, S: SubstateStore> Track<'s, S> {
     }
 
     /// Returns a mutable reference to a lazy map, if exists.
-    pub fn get_lazy_map_mut(&mut self, component_address: Address, mid: Mid) -> Option<&mut LazyMap> {
+    pub fn get_lazy_map_mut(
+        &mut self,
+        component_address: Address,
+        mid: Mid,
+    ) -> Option<&mut LazyMap> {
         let lazy_map_id = (component_address, mid);
         self.updated_lazy_maps.insert(lazy_map_id.clone());
 

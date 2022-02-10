@@ -13,8 +13,8 @@ use scrypto::rust::vec::Vec;
 use scrypto::types::*;
 use wasmi::*;
 
-use crate::engine::*;
 use crate::engine::process::LazyMapState::{ClaimedByLazyMap, PartOfComponent};
+use crate::engine::*;
 use crate::ledger::*;
 use crate::model::*;
 
@@ -52,7 +52,7 @@ macro_rules! re_warn {
 
 enum LazyMapState {
     ClaimedByLazyMap(Mid),
-    PartOfComponent(Address)
+    PartOfComponent(Address),
 }
 
 /// A process keeps track of resource movements and code execution.
@@ -74,13 +74,17 @@ pub struct Process<'r, 'l, L: SubstateStore> {
     /// The bucket refs that will be moved to another process SHORTLY.
     moving_bucket_refs: HashMap<Rid, BucketRef>,
 
-    /// Lazy maps which haven't been assigned to a component or lazy map yet.
-    unclaimed_lazy_maps: HashMap<Mid, LazyMap>,
-    claimed_lazy_maps: HashMap<Mid, (LazyMap, Mid)>,
-    lazy_map_descendents: HashMap<Mid, (HashSet<Mid>, HashSet<Vid>)>,
     /// Vaults which haven't been assigned to a component or lazy map yet.
     unclaimed_vaults: HashMap<Vid, Vault>,
+    /// Vaults which have been assigned to a lazy map but not a component
     claimed_vaults: HashMap<Vid, (Vault, Mid)>,
+    /// Lazy maps which haven't been assigned to a component or lazy map yet.
+    unclaimed_lazy_maps: HashMap<Mid, LazyMap>,
+    /// Lazy maps which have been assigned to a lazy map but not a component
+    claimed_lazy_maps: HashMap<Mid, (LazyMap, Mid)>,
+    /// Descendents of unclaimed lazy maps
+    lazy_map_descendents: HashMap<Mid, (HashSet<Mid>, HashSet<Vid>)>,
+
     /// Components which have been loaded and possibly updated in the lifetime of this process.
     loaded_components: HashMap<Address, ValidatedData>,
 
@@ -999,15 +1003,21 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             match self.lazy_map_descendents.remove(&mid) {
                 Some((mids, vids)) => {
                     for descendent_mid in mids {
-                        let descendent_lazy_map = self.claimed_lazy_maps.remove(&descendent_mid).unwrap().0;
-                        self.track.put_lazy_map(component_address, descendent_mid, descendent_lazy_map);
+                        let descendent_lazy_map =
+                            self.claimed_lazy_maps.remove(&descendent_mid).unwrap().0;
+                        self.track.put_lazy_map(
+                            component_address,
+                            descendent_mid,
+                            descendent_lazy_map,
+                        );
                     }
 
                     for vid in vids {
                         let descendent_vault = self.claimed_vaults.remove(&vid).unwrap().0;
-                        self.track.put_vault(component_address, vid, descendent_vault);
+                        self.track
+                            .put_vault(component_address, vid, descendent_vault);
                     }
-                },
+                }
                 None => {}
             }
         }
@@ -1050,9 +1060,18 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
         let state = component.state();
         let updating_component_data = Self::process_component_data(state).unwrap();
-        let existing = self.loaded_components.insert(input.component_address, updating_component_data);
-        existing.map_or(Ok(GetComponentStateOutput { state: state.to_owned() }),
-            |_| Err(RuntimeError::ComponentAlreadyLoaded(input.component_address))
+        let existing = self
+            .loaded_components
+            .insert(input.component_address, updating_component_data);
+        existing.map_or(
+            Ok(GetComponentStateOutput {
+                state: state.to_owned(),
+            }),
+            |_| {
+                Err(RuntimeError::ComponentAlreadyLoaded(
+                    input.component_address,
+                ))
+            },
         )
     }
 
@@ -1063,7 +1082,9 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         Self::expect_component_address(input.component_address)?;
         // TODO: restrict access
 
-        let old_state = self.loaded_components.remove(&input.component_address)
+        let old_state = self
+            .loaded_components
+            .remove(&input.component_address)
             .ok_or(RuntimeError::ComponentNotFound(input.component_address))?;
         let new_state = Self::process_component_data(&input.state)?;
         re_debug!(self, "New component state: {:?}", new_state);
@@ -1079,7 +1100,9 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 self.track.put_vault(input.component_address, vid, vault);
             }
         }
-        old_vaults.into_iter().try_for_each(|vid| Err(RuntimeError::VaultRemoved(vid)))?;
+        old_vaults
+            .into_iter()
+            .try_for_each(|vid| Err(RuntimeError::VaultRemoved(vid)))?;
 
         // Only allow lazy maps to be added, never removed
         let mut old_lazy_maps: HashSet<Mid> = HashSet::from_iter(old_state.lazy_maps.into_iter());
@@ -1089,26 +1112,37 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     .unclaimed_lazy_maps
                     .remove(&mid)
                     .ok_or(RuntimeError::LazyMapNotFound(mid))?;
-                self.track.put_lazy_map(input.component_address, mid, lazy_map);
+                self.track
+                    .put_lazy_map(input.component_address, mid, lazy_map);
                 match self.lazy_map_descendents.remove(&mid) {
                     Some((mids, vids)) => {
                         for descendent_mid in mids {
-                            let descendent_lazy_map = self.claimed_lazy_maps.remove(&descendent_mid).unwrap().0;
-                            self.track.put_lazy_map(input.component_address, descendent_mid, descendent_lazy_map);
+                            let descendent_lazy_map =
+                                self.claimed_lazy_maps.remove(&descendent_mid).unwrap().0;
+                            self.track.put_lazy_map(
+                                input.component_address,
+                                descendent_mid,
+                                descendent_lazy_map,
+                            );
                         }
 
                         for vid in vids {
                             let vault = self.claimed_vaults.remove(&vid).unwrap().0;
                             self.track.put_vault(input.component_address, vid, vault);
                         }
-                    },
+                    }
                     None => {}
                 }
             }
         }
-        old_lazy_maps.into_iter().try_for_each(|mid| Err(RuntimeError::LazyMapRemoved(mid)))?;
+        old_lazy_maps
+            .into_iter()
+            .try_for_each(|mid| Err(RuntimeError::LazyMapRemoved(mid)))?;
 
-        let component = self.track.get_component_mut(input.component_address).unwrap();
+        let component = self
+            .track
+            .get_component_mut(input.component_address)
+            .unwrap();
         component.set_state(new_state.raw);
 
         Ok(PutComponentStateOutput {})
@@ -1119,30 +1153,30 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         _input: CreateLazyMapInput,
     ) -> Result<CreateLazyMapOutput, RuntimeError> {
         let mid = self.track.new_mid();
-        self.unclaimed_lazy_maps.insert(mid, LazyMap::new(self.package()?));
+        self.unclaimed_lazy_maps
+            .insert(mid, LazyMap::new(self.package()?));
 
         Ok(CreateLazyMapOutput { mid })
     }
 
-    fn get_local_lazy_map(&mut self, mid: Mid) -> Result<(&mut LazyMap, LazyMapState), RuntimeError> {
+    fn get_local_lazy_map(
+        &mut self,
+        mid: Mid,
+    ) -> Result<(&mut LazyMap, LazyMapState), RuntimeError> {
         match self.unclaimed_lazy_maps.get_mut(&mid) {
             Some(map) => Ok((map, ClaimedByLazyMap(mid))),
-            None => {
-                match self.claimed_lazy_maps.get_mut(&mid) {
-                    Some((map, ancestor)) => Ok((map, ClaimedByLazyMap(ancestor.clone()))),
-                    None => {
-                        match self.vm.as_ref().unwrap().invocation.actor {
-                            Actor::Component(component_address) => {
-                                match self.track.get_lazy_map_mut(component_address, mid) {
-                                    Some(lazy_map) => Ok((lazy_map, PartOfComponent(component_address))),
-                                    None => Err(RuntimeError::LazyMapNotFound(mid))
-                                }
-                            },
-                            _ => Err(RuntimeError::LazyMapNotFound(mid))
+            None => match self.claimed_lazy_maps.get_mut(&mid) {
+                Some((map, ancestor)) => Ok((map, ClaimedByLazyMap(ancestor.clone()))),
+                None => match self.vm.as_ref().unwrap().invocation.actor {
+                    Actor::Component(component_address) => {
+                        match self.track.get_lazy_map_mut(component_address, mid) {
+                            Some(lazy_map) => Ok((lazy_map, PartOfComponent(component_address))),
+                            None => Err(RuntimeError::LazyMapNotFound(mid)),
                         }
                     }
-                }
-            }
+                    _ => Err(RuntimeError::LazyMapNotFound(mid)),
+                },
+            },
         }
     }
 
@@ -1168,14 +1202,16 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
         let lazy_map = self.get_local_lazy_map(input.mid)?;
         let ancestor = lazy_map.1;
-        let mut old_entry_state = lazy_map.0
-            .get_entry(&input.key)
-            .map_or((HashSet::new(), HashSet::new()), |e| {
-                let data = Self::process_map_data(e).unwrap();
-                let old_vaults = HashSet::from_iter(data.vaults.into_iter());
-                let old_lazy_maps = HashSet::from_iter(data.lazy_maps.into_iter());
-                (old_vaults, old_lazy_maps)
-            });
+        let mut old_entry_state =
+            lazy_map
+                .0
+                .get_entry(&input.key)
+                .map_or((HashSet::new(), HashSet::new()), |e| {
+                    let data = Self::process_map_data(e).unwrap();
+                    let old_vaults = HashSet::from_iter(data.vaults.into_iter());
+                    let old_lazy_maps = HashSet::from_iter(data.lazy_maps.into_iter());
+                    (old_vaults, old_lazy_maps)
+                });
 
         // Only allow vaults to be added, never removed
         for vid in new_entry_state.vaults {
@@ -1189,24 +1225,30 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                         match self.lazy_map_descendents.get_mut(&ancestor_mid) {
                             Some((_, vids)) => {
                                 vids.insert(vid);
-                            },
+                            }
                             None => {
-                                self.lazy_map_descendents.insert(ancestor_mid, (HashSet::new(), {
-                                    let mut mids = HashSet::new();
-                                    mids.insert(vid);
-                                    mids
-                                }));
+                                self.lazy_map_descendents.insert(
+                                    ancestor_mid,
+                                    (HashSet::new(), {
+                                        let mut mids = HashSet::new();
+                                        mids.insert(vid);
+                                        mids
+                                    }),
+                                );
                             }
                         }
                         self.claimed_vaults.insert(vid, (vault, ancestor_mid));
-                    },
+                    }
                     PartOfComponent(component_address) => {
                         self.track.put_vault(component_address, vid, vault);
                     }
                 }
             }
         }
-        old_entry_state.0.into_iter().try_for_each(|vid| Err(RuntimeError::VaultRemoved(vid)))?;
+        old_entry_state
+            .0
+            .into_iter()
+            .try_for_each(|vid| Err(RuntimeError::VaultRemoved(vid)))?;
 
         // Only allow lazy maps to be added, never removed
         for mid in new_entry_state.lazy_maps {
@@ -1218,32 +1260,42 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
                 match ancestor {
                     ClaimedByLazyMap(ancestor_mid) => {
-                        let old_set = self.lazy_map_descendents.remove(&mid)
+                        let old_set = self
+                            .lazy_map_descendents
+                            .remove(&mid)
                             .unwrap_or((HashSet::new(), HashSet::new()));
                         for mid in old_set.0.iter() {
                             let old = self.claimed_lazy_maps.remove(mid).unwrap();
-                            self.claimed_lazy_maps.insert(mid.clone(), (old.0, ancestor_mid));
+                            self.claimed_lazy_maps
+                                .insert(mid.clone(), (old.0, ancestor_mid));
                         }
                         for vid in old_set.1.iter() {
                             let old = self.claimed_vaults.remove(vid).unwrap();
-                            self.claimed_vaults.insert(vid.clone(), (old.0, ancestor_mid));
+                            self.claimed_vaults
+                                .insert(vid.clone(), (old.0, ancestor_mid));
                         }
-                        let mut new_descendent_set = self.lazy_map_descendents.remove(&ancestor_mid)
+                        let mut new_descendent_set = self
+                            .lazy_map_descendents
+                            .remove(&ancestor_mid)
                             .unwrap_or((HashSet::new(), HashSet::new()));
                         new_descendent_set.0.extend(old_set.0);
                         new_descendent_set.0.insert(mid);
                         new_descendent_set.1.extend(old_set.1);
 
                         self.claimed_lazy_maps.insert(mid, (lazy_map, ancestor_mid));
-                        self.lazy_map_descendents.insert(ancestor_mid, new_descendent_set);
-                    },
+                        self.lazy_map_descendents
+                            .insert(ancestor_mid, new_descendent_set);
+                    }
                     PartOfComponent(component_address) => {
                         self.track.put_lazy_map(component_address, mid, lazy_map);
                     }
                 }
             }
         }
-        old_entry_state.1.into_iter().try_for_each(|mid| Err(RuntimeError::LazyMapRemoved(mid)))?;
+        old_entry_state
+            .1
+            .into_iter()
+            .try_for_each(|mid| Err(RuntimeError::LazyMapRemoved(mid)))?;
 
         let lazy_map = self.get_local_lazy_map(input.mid)?;
         lazy_map.0.set_entry(key.raw, new_entry_state.raw);
@@ -1598,12 +1650,12 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     Actor::Component(component_address) => {
                         match self.track.get_vault_mut(component_address, vid) {
                             Some(vault) => Ok(vault),
-                            None => Err(RuntimeError::VaultNotFound(vid))
+                            None => Err(RuntimeError::VaultNotFound(vid)),
                         }
-                    },
-                    _ => Err(RuntimeError::VaultNotFound(vid))
-                }
-            }
+                    }
+                    _ => Err(RuntimeError::VaultNotFound(vid)),
+                },
+            },
         }
     }
 
@@ -1630,9 +1682,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         vid: Vid,
         badge: Option<Address>,
     ) -> Result<(), RuntimeError> {
-        let resource_address = self
-            .get_local_vault(vid)?
-            .resource_address();
+        let resource_address = self.get_local_vault(vid)?.resource_address();
 
         let resource_def = self
             .track
@@ -1688,11 +1738,11 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         input: GetNonFungibleKeysInVaultInput,
     ) -> Result<GetNonFungibleKeysInVaultOutput, RuntimeError> {
         let vault = self.get_local_vault(input.vid)?;
-        let keys = vault.get_non_fungible_ids().map_err(RuntimeError::VaultError)?;
+        let keys = vault
+            .get_non_fungible_ids()
+            .map_err(RuntimeError::VaultError)?;
 
-        Ok(GetNonFungibleKeysInVaultOutput {
-            keys
-        })
+        Ok(GetNonFungibleKeysInVaultOutput { keys })
     }
 
     fn handle_get_vault_amount(
