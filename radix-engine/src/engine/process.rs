@@ -82,7 +82,7 @@ pub struct Process<'r, 'l, L: SubstateStore> {
 
     /// Vaults which haven't been assigned to a component or lazy map yet.
     unclaimed_vaults: HashMap<Vid, Vault>,
-    /// Vaults which have been assigned to a lazy map but not a component
+    /// Vaults which have been assigned to a lazy map
     claimed_vaults: HashMap<Vid, Vault>,
     /// Lazy maps which haven't been assigned to a component or lazy map yet.
     /// Keeps track of vault and lazy map descendents.
@@ -1617,17 +1617,14 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     fn get_local_vault(&mut self, vid: Vid) -> Result<&mut Vault, RuntimeError> {
         match self.unclaimed_vaults.get_mut(&vid) {
             Some(vault) => Ok(vault),
-            None => match self.claimed_vaults.get_mut(&vid) {
-                Some(vault) => Ok(vault),
-                None => match self.vm.as_ref().unwrap().invocation.actor {
-                    Actor::Component(component_address) => {
-                        match self.track.get_vault_mut(&component_address, &vid) {
-                            Some(vault) => Ok(vault),
-                            None => Err(RuntimeError::VaultNotFound(vid)),
-                        }
+            None => match self.vm.as_ref().unwrap().invocation.actor {
+                Actor::Component(component_address) => {
+                    match self.track.get_vault_mut(&component_address, &vid) {
+                        Some(vault) => Ok(vault),
+                        None => Err(RuntimeError::VaultNotFound(vid)),
                     }
-                    _ => Err(RuntimeError::VaultNotFound(vid)),
-                },
+                }
+                _ => Err(RuntimeError::VaultNotFound(vid)),
             },
         }
     }
