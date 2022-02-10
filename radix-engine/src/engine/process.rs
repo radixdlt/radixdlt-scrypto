@@ -55,6 +55,12 @@ enum LazyMapState {
     PartOfComponent(Address),
 }
 
+enum ComponentState {
+    Empty,
+    Loaded(ValidatedData),
+    Saved,
+}
+
 /// A process keeps track of resource movements and code execution.
 pub struct Process<'r, 'l, L: SubstateStore> {
     /// The call depth
@@ -84,7 +90,7 @@ pub struct Process<'r, 'l, L: SubstateStore> {
     claimed_lazy_maps: HashMap<Mid, (LazyMap, Mid)>,
 
     /// Components which have been loaded and possibly updated in the lifetime of this process.
-    loaded_components: HashMap<Address, ValidatedData>,
+    component_state: ComponentState,
 
     /// A WASM interpreter
     vm: Option<Interpreter>,
@@ -133,7 +139,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             claimed_lazy_maps: HashMap::new(),
             unclaimed_vaults: HashMap::new(),
             claimed_vaults: HashMap::new(),
-            loaded_components: HashMap::new(),
+            component_state: ComponentState::Empty,
             vm: None,
             id_allocator: IdAllocator::new(IdSpace::Transaction),
             worktop: HashMap::new(),
@@ -1036,44 +1042,40 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
     fn handle_get_component_state(
         &mut self,
-        input: GetComponentStateInput,
+        _: GetComponentStateInput,
     ) -> Result<GetComponentStateOutput, RuntimeError> {
-        Self::expect_component_address(input.component_address)?;
-        // TODO: restrict access
+        let component_address = match self.vm.as_ref().unwrap().invocation.actor {
+            Actor::Component(component_address) => Ok(component_address),
+            _ => Err(RuntimeError::IllegalSystemCall()),
+        }?;
+        match self.component_state {
+            ComponentState::Empty => Ok(()),
+            ComponentState::Loaded(_) => Err(RuntimeError::ComponentAlreadyLoaded(component_address)),
+            ComponentState::Saved => Err(RuntimeError::IllegalSystemCall())
+        }?;
 
-        let component = self
-            .track
-            .get_component(input.component_address)
-            .ok_or(RuntimeError::ComponentNotFound(input.component_address))?;
-
+        let component = self.track.get_component(component_address).unwrap();
         let state = component.state();
-        let updating_component_data = Self::process_component_data(state).unwrap();
-        let existing = self
-            .loaded_components
-            .insert(input.component_address, updating_component_data);
-        existing.map_or(
-            Ok(GetComponentStateOutput {
-                state: state.to_owned(),
-            }),
-            |_| {
-                Err(RuntimeError::ComponentAlreadyLoaded(
-                    input.component_address,
-                ))
-            },
-        )
+        let component_data = Self::process_component_data(state).unwrap();
+        self.component_state = ComponentState::Loaded(component_data);
+
+        Ok(GetComponentStateOutput { state: state.to_owned() })
     }
 
     fn handle_put_component_state(
         &mut self,
         input: PutComponentStateInput,
     ) -> Result<PutComponentStateOutput, RuntimeError> {
-        Self::expect_component_address(input.component_address)?;
-        // TODO: restrict access
+        let old_state = match &self.component_state {
+            ComponentState::Empty => Err(RuntimeError::ComponentNotLoaded()),
+            ComponentState::Loaded(old_state) => Ok(old_state),
+            ComponentState::Saved => Err(RuntimeError::IllegalSystemCall())
+        }?.to_owned();
+        let component_address = match self.vm.as_ref().unwrap().invocation.actor {
+            Actor::Component(component_address) => Ok(component_address),
+            _ => Err(RuntimeError::IllegalSystemCall()),
+        }.unwrap();
 
-        let old_state = self
-            .loaded_components
-            .remove(&input.component_address)
-            .ok_or(RuntimeError::ComponentNotFound(input.component_address))?;
         let new_state = Self::process_component_data(&input.state)?;
         re_debug!(self, "New component state: {:?}", new_state);
 
@@ -1085,7 +1087,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     .unclaimed_vaults
                     .remove(&vid)
                     .ok_or(RuntimeError::VaultNotFound(vid))?;
-                self.track.put_vault(input.component_address, vid, vault);
+                self.track.put_vault(component_address, vid, vault);
             }
         }
         old_vaults
@@ -1101,12 +1103,12 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     .remove(&mid)
                     .ok_or(RuntimeError::LazyMapNotFound(mid))?;
                 self.track
-                    .put_lazy_map(input.component_address, mid, lazy_map);
+                    .put_lazy_map(component_address, mid, lazy_map);
                 for descendent_mid in mids {
                     let (descendent_lazy_map, _) =
                         self.claimed_lazy_maps.remove(&descendent_mid).unwrap();
                     self.track.put_lazy_map(
-                        input.component_address,
+                        component_address,
                         descendent_mid,
                         descendent_lazy_map,
                     );
@@ -1114,7 +1116,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
                 for vid in vids {
                     let (vault, _) = self.claimed_vaults.remove(&vid).unwrap();
-                    self.track.put_vault(input.component_address, vid, vault);
+                    self.track.put_vault(component_address, vid, vault);
                 }
             }
         }
@@ -1124,9 +1126,11 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
         let component = self
             .track
-            .get_component_mut(input.component_address)
+            .get_component_mut(component_address)
             .unwrap();
         component.set_state(new_state.raw);
+
+        self.component_state = ComponentState::Saved;
 
         Ok(PutComponentStateOutput {})
     }
