@@ -346,7 +346,7 @@ impl<'s, S: SubstateStore> Track<'s, S> {
     }
 
     /// Returns a mutable reference to a vault, if exists.
-    pub fn get_vault_mut(&mut self, vid: Vid) -> Option<&mut Vault> {
+    pub fn get_vault_mut(&mut self, component_address: Address, vid: Vid) -> Option<&mut Vault> {
         self.updated_vaults.insert(vid);
 
         if self.vaults.contains_key(&vid) {
@@ -362,7 +362,7 @@ impl<'s, S: SubstateStore> Track<'s, S> {
     }
 
     /// Inserts a new vault.
-    pub fn put_vault(&mut self, vid: Vid, vault: Vault) {
+    pub fn put_vault(&mut self, component_address: Address, vid: Vid, vault: Vault) {
         self.updated_vaults.insert(vid);
 
         self.vaults.insert(vid, vault);

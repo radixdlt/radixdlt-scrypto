@@ -77,10 +77,10 @@ pub struct Process<'r, 'l, L: SubstateStore> {
     /// Lazy maps which haven't been assigned to a component or lazy map yet.
     unclaimed_lazy_maps: HashMap<Mid, LazyMap>,
     claimed_lazy_maps: HashMap<Mid, (LazyMap, Mid)>,
-    lazy_map_descendents: HashMap<Mid, HashSet<Mid>>,
-
+    lazy_map_descendents: HashMap<Mid, (HashSet<Mid>, HashSet<Vid>)>,
     /// Vaults which haven't been assigned to a component or lazy map yet.
     unclaimed_vaults: HashMap<Vid, Vault>,
+    claimed_vaults: HashMap<Vid, (Vault, Mid)>,
     /// Components which have been loaded and possibly updated in the lifetime of this process.
     loaded_components: HashMap<Address, ValidatedData>,
 
@@ -127,10 +127,11 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             bucket_refs: HashMap::new(),
             moving_buckets: HashMap::new(),
             moving_bucket_refs: HashMap::new(),
-            unclaimed_vaults: HashMap::new(),
             unclaimed_lazy_maps: HashMap::new(),
             claimed_lazy_maps: HashMap::new(),
             lazy_map_descendents: HashMap::new(),
+            unclaimed_vaults: HashMap::new(),
+            claimed_vaults: HashMap::new(),
             loaded_components: HashMap::new(),
             vm: None,
             id_allocator: IdAllocator::new(IdSpace::Transaction),
@@ -583,6 +584,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             re_warn!(self, "Dangling lazy map: {:?}, {:?}", mid, lazy_map);
             success = false;
         }
+        assert!(self.claimed_vaults.is_empty());
         assert!(self.claimed_lazy_maps.is_empty());
         assert!(self.lazy_map_descendents.is_empty());
 
@@ -980,26 +982,30 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         );
 
         for vid in data.vaults {
-            // TODO: associate vault with component
             let vault = self
                 .unclaimed_vaults
                 .remove(&vid)
                 .ok_or(RuntimeError::VaultNotFound(vid))?;
-            self.track.put_vault(vid, vault);
+            self.track.put_vault(component_address, vid, vault);
         }
 
         for mid in data.lazy_maps {
-            // TODO: associate lazy map with component
             let lazy_map = self
                 .unclaimed_lazy_maps
                 .remove(&mid)
                 .ok_or(RuntimeError::LazyMapNotFound(mid))?;
             self.track.put_lazy_map(component_address, mid, lazy_map);
+
             match self.lazy_map_descendents.remove(&mid) {
-                Some(descendents) => {
-                    for descendent_mid in descendents {
+                Some((mids, vids)) => {
+                    for descendent_mid in mids {
                         let descendent_lazy_map = self.claimed_lazy_maps.remove(&descendent_mid).unwrap().0;
                         self.track.put_lazy_map(component_address, descendent_mid, descendent_lazy_map);
+                    }
+
+                    for vid in vids {
+                        let descendent_vault = self.claimed_vaults.remove(&vid).unwrap().0;
+                        self.track.put_vault(component_address, vid, descendent_vault);
                     }
                 },
                 None => {}
@@ -1070,7 +1076,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     .unclaimed_vaults
                     .remove(&vid)
                     .ok_or(RuntimeError::VaultNotFound(vid))?;
-                self.track.put_vault(vid, vault);
+                self.track.put_vault(input.component_address, vid, vault);
             }
         }
         old_vaults.into_iter().try_for_each(|vid| Err(RuntimeError::VaultRemoved(vid)))?;
@@ -1085,10 +1091,15 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     .ok_or(RuntimeError::LazyMapNotFound(mid))?;
                 self.track.put_lazy_map(input.component_address, mid, lazy_map);
                 match self.lazy_map_descendents.remove(&mid) {
-                    Some(descendents) => {
-                        for descendent_mid in descendents {
+                    Some((mids, vids)) => {
+                        for descendent_mid in mids {
                             let descendent_lazy_map = self.claimed_lazy_maps.remove(&descendent_mid).unwrap().0;
                             self.track.put_lazy_map(input.component_address, descendent_mid, descendent_lazy_map);
+                        }
+
+                        for vid in vids {
+                            let vault = self.claimed_vaults.remove(&vid).unwrap().0;
+                            self.track.put_vault(input.component_address, vid, vault);
                         }
                     },
                     None => {}
@@ -1173,7 +1184,26 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     .unclaimed_vaults
                     .remove(&vid)
                     .ok_or(RuntimeError::VaultNotFound(vid))?;
-                self.track.put_vault(vid, vault);
+                match ancestor {
+                    ClaimedByLazyMap(ancestor_mid) => {
+                        match self.lazy_map_descendents.get_mut(&ancestor_mid) {
+                            Some((_, vids)) => {
+                                vids.insert(vid);
+                            },
+                            None => {
+                                self.lazy_map_descendents.insert(ancestor_mid, (HashSet::new(), {
+                                    let mut mids = HashSet::new();
+                                    mids.insert(vid);
+                                    mids
+                                }));
+                            }
+                        }
+                        self.claimed_vaults.insert(vid, (vault, ancestor_mid));
+                    },
+                    PartOfComponent(component_address) => {
+                        self.track.put_vault(component_address, vid, vault);
+                    }
+                }
             }
         }
         old_entry_state.0.into_iter().try_for_each(|vid| Err(RuntimeError::VaultRemoved(vid)))?;
@@ -1188,14 +1218,22 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
                 match ancestor {
                     ClaimedByLazyMap(ancestor_mid) => {
-                        let old_set = self.lazy_map_descendents.remove(&mid).unwrap_or(HashSet::new());
-                        for mid in old_set.iter() {
+                        let old_set = self.lazy_map_descendents.remove(&mid)
+                            .unwrap_or((HashSet::new(), HashSet::new()));
+                        for mid in old_set.0.iter() {
                             let old = self.claimed_lazy_maps.remove(mid).unwrap();
                             self.claimed_lazy_maps.insert(mid.clone(), (old.0, ancestor_mid));
                         }
-                        let mut new_descendent_set = self.lazy_map_descendents.remove(&ancestor_mid).unwrap_or(HashSet::new());
-                        new_descendent_set.extend(old_set);
-                        new_descendent_set.insert(mid);
+                        for vid in old_set.1.iter() {
+                            let old = self.claimed_vaults.remove(vid).unwrap();
+                            self.claimed_vaults.insert(vid.clone(), (old.0, ancestor_mid));
+                        }
+                        let mut new_descendent_set = self.lazy_map_descendents.remove(&ancestor_mid)
+                            .unwrap_or((HashSet::new(), HashSet::new()));
+                        new_descendent_set.0.extend(old_set.0);
+                        new_descendent_set.0.insert(mid);
+                        new_descendent_set.1.extend(old_set.1);
+
                         self.claimed_lazy_maps.insert(mid, (lazy_map, ancestor_mid));
                         self.lazy_map_descendents.insert(ancestor_mid, new_descendent_set);
                     },
@@ -1551,10 +1589,22 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         Ok(CreateEmptyVaultOutput { vid })
     }
 
-    fn get_vault_mut(&mut self, vid: Vid) -> Result<&mut Vault, RuntimeError> {
-        self.unclaimed_vaults.get_mut(&vid)
-            .or_else(|| self.track.get_vault_mut(vid))
-            .ok_or(RuntimeError::VaultNotFound(vid))
+    fn get_local_vault(&mut self, vid: Vid) -> Result<&mut Vault, RuntimeError> {
+        match self.unclaimed_vaults.get_mut(&vid) {
+            Some(vault) => Ok(vault),
+            None => match self.claimed_vaults.get_mut(&vid) {
+                Some((vault, _)) => Ok(vault),
+                None => match self.vm.as_ref().unwrap().invocation.actor {
+                    Actor::Component(component_address) => {
+                        match self.track.get_vault_mut(component_address, vid) {
+                            Some(vault) => Ok(vault),
+                            None => Err(RuntimeError::VaultNotFound(vid))
+                        }
+                    },
+                    _ => Err(RuntimeError::VaultNotFound(vid))
+                }
+            }
+        }
     }
 
     fn handle_put_into_vault(
@@ -1568,7 +1618,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .remove(&input.bid)
             .ok_or(RuntimeError::BucketNotFound(input.bid))?;
 
-        self.get_vault_mut(input.vid)?
+        self.get_local_vault(input.vid)?
             .put(bucket)
             .map_err(RuntimeError::VaultError)?;
 
@@ -1581,7 +1631,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         badge: Option<Address>,
     ) -> Result<(), RuntimeError> {
         let resource_address = self
-            .get_vault_mut(vid)?
+            .get_local_vault(vid)?
             .resource_address();
 
         let resource_def = self
@@ -1603,7 +1653,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         self.check_take_from_vault_auth(input.vid.clone(), badge)?;
 
         let new_bucket = self
-            .get_vault_mut(input.vid)?
+            .get_local_vault(input.vid)?
             .take(input.amount)
             .map_err(RuntimeError::VaultError)?;
 
@@ -1623,7 +1673,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         self.check_take_from_vault_auth(input.vid.clone(), badge)?;
 
         let new_bucket = self
-            .get_vault_mut(input.vid)?
+            .get_local_vault(input.vid)?
             .take_non_fungible(&input.key)
             .map_err(RuntimeError::VaultError)?;
 
@@ -1637,7 +1687,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         input: GetNonFungibleKeysInVaultInput,
     ) -> Result<GetNonFungibleKeysInVaultOutput, RuntimeError> {
-        let vault = self.get_vault_mut(input.vid)?;
+        let vault = self.get_local_vault(input.vid)?;
         let keys = vault.get_non_fungible_ids().map_err(RuntimeError::VaultError)?;
 
         Ok(GetNonFungibleKeysInVaultOutput {
@@ -1649,7 +1699,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         input: GetVaultDecimalInput,
     ) -> Result<GetVaultDecimalOutput, RuntimeError> {
-        let vault = self.get_vault_mut(input.vid)?;
+        let vault = self.get_local_vault(input.vid)?;
 
         Ok(GetVaultDecimalOutput {
             amount: vault.amount(),
@@ -1660,7 +1710,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         input: GetVaultResourceAddressInput,
     ) -> Result<GetVaultResourceAddressOutput, RuntimeError> {
-        let vault = self.get_vault_mut(input.vid)?;
+        let vault = self.get_local_vault(input.vid)?;
 
         Ok(GetVaultResourceAddressOutput {
             resource_address: vault.resource_address(),
