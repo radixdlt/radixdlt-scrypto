@@ -2,25 +2,16 @@ use crate::core::*;
 use crate::resource::*;
 
 /// The package which defines the `System` blueprint.
-pub const SYSTEM_PACKAGE: Package = Package([
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
-]);
+pub const SYSTEM_PACKAGE: Package = Package::SYSTEM;
 
 /// The system component
-pub const SYSTEM_COMPONENT: Component = Component([
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2,
-]);
+pub const SYSTEM_COMPONENT: Component = Component::SYSTEM;
 
 /// The package that defines the `Account` blueprint.
-pub const ACCOUNT_PACKAGE: Package = Package([
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3,
-]);
+pub const ACCOUNT_PACKAGE: Package = Package::ACCOUNT;
 
 /// The XRD resource definition.
-pub const RADIX_TOKEN: ResourceDef = ResourceDef([
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4,
-]);
+pub const RADIX_TOKEN: ResourceDef = ResourceDef::RADIX_TOKEN;
 
-pub const ECDSA_TOKEN: ResourceDef = ResourceDef([
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5,
-]);
+/// The ECDSA virtual resource definition.
+pub const ECDSA_TOKEN: ResourceDef = ResourceDef::ECDSA_TOKEN;

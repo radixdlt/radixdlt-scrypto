@@ -9,9 +9,17 @@ use crate::types::*;
 
 /// A collection of blueprints, compiled and published as a single unit.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct Package(pub [u8; 26]);
+pub struct Package([u8; 26]);
 
 impl Package {
+    pub const SYSTEM: Self = Self([
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+    ]);
+
+    pub const ACCOUNT: Self = Self([
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3,
+    ]);
+
     /// Creates a new package.
     pub fn new(code: &[u8]) -> Self {
         let input = PublishPackageInput {
@@ -70,17 +78,19 @@ custom_type!(Package, CustomType::Package, Vec::new());
 // text
 //======
 
+// Before Bech32, we use a fixed prefix for text representation.
+
 impl FromStr for Package {
     type Err = ParsePackageError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let bytes = hex::decode(s).map_err(ParsePackageError::InvalidHex)?;
-        Self::try_from(bytes.as_slice())
+        Self::try_from(&bytes[1..])
     }
 }
 
 impl ToString for Package {
     fn to_string(&self) -> String {
-        hex::encode(self.0)
+        hex::encode(combine(1, &self.0))
     }
 }

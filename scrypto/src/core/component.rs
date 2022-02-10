@@ -22,9 +22,13 @@ pub trait ComponentState: Encode + Decode {
 
 /// An instance of a blueprint, which lives in the ledger state.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct Component(pub [u8; 26]);
+pub struct Component([u8; 26]);
 
 impl Component {
+    pub const SYSTEM: Self = Self([
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2,
+    ]);
+
     fn this(&self) -> Self {
         Self(self.0)
     }
@@ -124,17 +128,19 @@ custom_type!(Component, CustomType::Component, Vec::new());
 // text
 //======
 
+// Before Bech32, we use a fixed prefix for text representation.
+
 impl FromStr for Component {
     type Err = ParseComponentError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let bytes = hex::decode(s).map_err(ParseComponentError::InvalidHex)?;
-        Self::try_from(bytes.as_slice())
+        Self::try_from(&bytes[1..])
     }
 }
 
 impl ToString for Component {
     fn to_string(&self) -> String {
-        hex::encode(self.0)
+        hex::encode(combine(2, &self.0))
     }
 }

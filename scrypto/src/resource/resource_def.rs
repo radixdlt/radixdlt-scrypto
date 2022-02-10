@@ -13,9 +13,17 @@ use crate::types::*;
 
 /// Represents a resource definition.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct ResourceDef(pub [u8; 26]);
+pub struct ResourceDef([u8; 26]);
 
 impl ResourceDef {
+    pub const RADIX_TOKEN: Self = Self([
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4,
+    ]);
+
+    pub const ECDSA_TOKEN: Self = Self([
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5,
+    ]);
+
     fn this(&self) -> Self {
         Self(self.0)
     }
@@ -265,17 +273,19 @@ custom_type!(ResourceDef, CustomType::ResourceDef, Vec::new());
 // text
 //======
 
+// Before Bech32, we use a fixed prefix for text representation.
+
 impl FromStr for ResourceDef {
     type Err = ParseResourceDefError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let bytes = hex::decode(s).map_err(ParseResourceDefError::InvalidHex)?;
-        Self::try_from(bytes.as_slice())
+        Self::try_from(&bytes[1..])
     }
 }
 
 impl ToString for ResourceDef {
     fn to_string(&self) -> String {
-        hex::encode(self.0)
+        hex::encode(combine(3, &self.0))
     }
 }
