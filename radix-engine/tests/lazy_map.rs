@@ -16,7 +16,7 @@ pub fn compile(name: &str) -> Vec<u8> {
         name,
         name.replace("-", "_")
     ))
-        .unwrap()
+    .unwrap()
 }
 
 #[test]
@@ -44,11 +44,22 @@ fn cannot_remove_lazy_maps() {
     let mut sut = TransactionExecutor::new(&mut ledger, false);
     let package = sut.publish_package(&compile("lazy_map")).unwrap();
     let transaction = TransactionBuilder::new(&sut)
-        .call_function(package, "LazyMapTest", "new_lazy_map_into_vector", vec![], None)
+        .call_function(
+            package,
+            "LazyMapTest",
+            "new_lazy_map_into_vector",
+            vec![],
+            None,
+        )
         .build(vec![])
         .unwrap();
     let receipt = sut.run(transaction).unwrap();
-    let component_address = receipt.new_entities.into_iter().filter(|a| a.is_component()).nth(0).unwrap();
+    let component_address = receipt
+        .new_entities
+        .into_iter()
+        .filter(|a| a.is_component())
+        .nth(0)
+        .unwrap();
 
     // Act
     let transaction = TransactionBuilder::new(&sut)
@@ -68,11 +79,22 @@ fn cannot_overwrite_lazy_maps() {
     let mut sut = TransactionExecutor::new(&mut ledger, false);
     let package = sut.publish_package(&compile("lazy_map")).unwrap();
     let transaction = TransactionBuilder::new(&sut)
-        .call_function(package, "LazyMapTest", "new_lazy_map_into_lazy_map", vec![], None)
+        .call_function(
+            package,
+            "LazyMapTest",
+            "new_lazy_map_into_lazy_map",
+            vec![],
+            None,
+        )
         .build(vec![])
         .unwrap();
     let receipt = sut.run(transaction).unwrap();
-    let component_address = receipt.new_entities.into_iter().filter(|a| a.is_component()).nth(0).unwrap();
+    let component_address = receipt
+        .new_entities
+        .into_iter()
+        .filter(|a| a.is_component())
+        .nth(0)
+        .unwrap();
 
     // Act
     let transaction = TransactionBuilder::new(&sut)
@@ -94,7 +116,13 @@ fn create_lazy_map_and_get() {
 
     // Act
     let transaction = TransactionBuilder::new(&executor)
-        .call_function(package, "LazyMapTest", "new_lazy_map_with_get", vec![], None)
+        .call_function(
+            package,
+            "LazyMapTest",
+            "new_lazy_map_with_get",
+            vec![],
+            None,
+        )
         .build(vec![])
         .unwrap();
     let receipt = executor.run(transaction).unwrap();
@@ -112,7 +140,13 @@ fn create_lazy_map_and_put() {
 
     // Act
     let transaction = TransactionBuilder::new(&executor)
-        .call_function(package, "LazyMapTest", "new_lazy_map_with_put", vec![], None)
+        .call_function(
+            package,
+            "LazyMapTest",
+            "new_lazy_map_with_put",
+            vec![],
+            None,
+        )
         .build(vec![])
         .unwrap();
     let receipt = executor.run(transaction).unwrap();

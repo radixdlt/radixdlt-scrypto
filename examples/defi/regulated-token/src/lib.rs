@@ -68,9 +68,9 @@ blueprint! {
         }
 
         /// Either the general admin or freeze admin badge may be used to freeze or unfreeze consumer transfers of the supply
-        #[auth(admin_badge_def, freeze_badge_def, keep_auth)]
+        #[auth(admin_badge_def, freeze_badge_def)]
         pub fn toggle_transfer_freeze(&self, set_frozen: bool) {
-            // Because we used "keep_auth" in our authorization macro above, we can refer to the incoming badge as "auth"
+            // We can refer to the incoming badge as "auth"
             // Note that this operation will fail if the token has reached stage 3 and the RESTRICTED_TRANSFER flag has become immutably disabled
             let mut token_def = self.token_supply.resource_def();
             if set_frozen {
@@ -94,7 +94,7 @@ blueprint! {
             self.collected_xrd.take_all()
         }
         
-        #[auth(admin_badge_def, keep_auth)]
+        #[auth(admin_badge_def)]
         pub fn advance_stage(&mut self) {            
             assert!(self.current_stage <= 2, "Already at final stage");
 
@@ -137,9 +137,6 @@ blueprint! {
                 self.internal_authority.take_all().burn();
                 info!("Advanced to stage 3");
             }
-
-            // since we used "auth.clone() every time, we must manually drop "auth"
-            auth.drop();
         }
 
         /// Buy a quantity of tokens, if the supply on-hand is sufficient, or if current rules permit minting additional supply.

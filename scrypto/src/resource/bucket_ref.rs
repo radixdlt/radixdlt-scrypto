@@ -38,9 +38,7 @@ impl Clone for BucketRef {
 impl BucketRef {
     /// Checks if the referenced bucket contains the given resource, and aborts if not so.
     pub fn check<A: Into<ResourceDef>>(self, resource_def: A) {
-        if self.contains(resource_def) {
-            self.drop();
-        } else {
+        if !self.contains(resource_def) {
             panic!("BucketRef check failed");
         }
     }
@@ -50,9 +48,7 @@ impl BucketRef {
         resource_def: A,
         f: F,
     ) {
-        if self.contains(resource_def) && self.get_non_fungible_keys().iter().any(f) {
-            self.drop();
-        } else {
+        if !self.contains(resource_def) || !self.get_non_fungible_keys().iter().any(f) {
             panic!("BucketRef check failed");
         }
     }
