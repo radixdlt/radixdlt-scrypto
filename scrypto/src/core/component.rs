@@ -29,18 +29,11 @@ impl Component {
         Self(self.0)
     }
 
-    fn this_package() -> Package {
-        match Context::actor() {
-            Actor::Blueprint(package, _) => package,
-            Actor::Component(component) => component.blueprint().0,
-        }
-    }
-
     /// Instantiates a new component.
     pub fn new<T: ComponentState>(state: T) -> Self {
         // TODO: more thoughts are needed for this interface
         let input = CreateComponentInput {
-            blueprint: (Self::this_package(), T::blueprint_name().to_owned()),
+            blueprint: (Context::package(), T::blueprint_name().to_owned()),
             state: scrypto_encode(&state),
         };
         let output: CreateComponentOutput = call_engine(CREATE_COMPONENT, input);

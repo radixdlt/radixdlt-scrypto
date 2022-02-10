@@ -17,6 +17,14 @@ impl Context {
         output.actor
     }
 
+    /// Returns the package.
+    pub fn package() -> Package {
+        match Context::actor() {
+            Actor::Blueprint(package, _) => package,
+            Actor::Component(component) => component.blueprint().0,
+        }
+    }
+
     /// Returns the transaction hash.
     pub fn transaction_hash() -> Hash {
         let input = GetTransactionHashInput {};
@@ -40,13 +48,13 @@ impl Context {
     }
 
     /// Invokes a function on a blueprint.
-    pub fn call_function(
-        blueprint: (Package, String),
+    pub fn call_function<S: AsRef<str>>(
+        blueprint: (Package, S),
         function: &str,
         args: Vec<Vec<u8>>,
     ) -> Vec<u8> {
         let input = CallFunctionInput {
-            blueprint,
+            blueprint: (blueprint.0, blueprint.1.as_ref().to_owned()),
             function: function.to_owned(),
             args,
         };

@@ -46,7 +46,6 @@ pub enum CustomType {
     // core
     Package,
     Component,
-    ResourceDef,
     LazyMap,
 
     // crypto
@@ -61,6 +60,7 @@ pub enum CustomType {
     BucketRef,
     Vault,
     NonFungibleKey,
+    ResourceDef,
 }
 
 impl CustomType {
@@ -69,7 +69,6 @@ impl CustomType {
             // core
             CustomType::Package => 0x80,
             CustomType::Component => 0x81,
-            CustomType::ResourceDef => 0x82,
             CustomType::LazyMap => 0x83,
             // crypto
             CustomType::Hash => 0x90,
@@ -81,6 +80,7 @@ impl CustomType {
             CustomType::BucketRef => 0xb1,
             CustomType::Vault => 0xb2,
             CustomType::NonFungibleKey => 0xb3,
+            CustomType::ResourceDef => 0xb4,
         }
     }
 
@@ -89,7 +89,6 @@ impl CustomType {
             // core
             CustomType::Package => "scrypto::core::Package",
             CustomType::Component => "scrypto::core::Component",
-            CustomType::ResourceDef => "scrypto::core::ResourceDef",
             CustomType::LazyMap => "scrypto::core::LazyMap",
             // crypto
             CustomType::Hash => "scrypto::crypto::Hash",
@@ -101,6 +100,7 @@ impl CustomType {
             CustomType::BucketRef => "scrypto::resource::BucketRef",
             CustomType::Vault => "scrypto::resource::Vault",
             CustomType::NonFungibleKey => "scrypto::resource::NonFungibleKey",
+            CustomType::ResourceDef => "scrypto::resource::ResourceDef",
         }
         .to_owned()
     }
