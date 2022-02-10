@@ -119,7 +119,7 @@ blueprint! {
             account_auth.check_non_fungible_key(ECDSA_TOKEN, |key| key == &self.non_fungible_key());
 
             let vault = self.vaults.get(&resource_address);
-            let bucket = match vault {
+            match vault {
                 Some(vault) => {
                     let mut bucket = Bucket::new(resource_address);
                     for key in keys {
@@ -130,10 +130,7 @@ blueprint! {
                 None => {
                     panic!("Insufficient balance")
                 }
-            };
-
-            auth.drop();
-            bucket
+            }
         }
     }
 }

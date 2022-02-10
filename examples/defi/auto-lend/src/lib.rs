@@ -187,9 +187,7 @@ blueprint! {
         /// Parse user id from a bucket ref.
         fn get_user_id(user_auth: BucketRef) -> Address {
             assert!(user_auth.amount() > 0.into(), "Invalid user proof");
-            let user_id = user_auth.resource_address();
-            user_auth.drop();
-            user_id
+            user_auth.resource_address()
         }
     }
 }
