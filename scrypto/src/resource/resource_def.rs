@@ -1,38 +1,25 @@
 use sbor::{describe::Type, *};
 
-use crate::buffer::*;
 use crate::engine::*;
+use crate::math::*;
+use crate::misc::*;
 use crate::resource::*;
-use crate::rust::borrow::ToOwned;
 use crate::rust::collections::HashMap;
+use crate::rust::fmt;
+use crate::rust::str::FromStr;
 use crate::rust::string::String;
-use crate::rust::vec;
+use crate::rust::string::ToString;
 use crate::types::*;
-use crate::utils::*;
 
-/// Represents the definition of a resource.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ResourceDef {
-    address: Address,
-}
-
-impl From<Address> for ResourceDef {
-    fn from(address: Address) -> Self {
-        if !address.is_resource_def() {
-            panic!("{} is not a resource definition address", address);
-        }
-
-        Self { address }
-    }
-}
-
-impl From<ResourceDef> for Address {
-    fn from(a: ResourceDef) -> Address {
-        a.address
-    }
-}
+/// Represents a resource definition.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct ResourceDef([u8; 26]);
 
 impl ResourceDef {
+    fn this(&self) -> Self {
+        Self(self.0)
+    }
+
     /// Creates a resource with the given parameters.
     ///
     /// A bucket is returned iif an initial supply is provided.
@@ -41,8 +28,8 @@ impl ResourceDef {
         metadata: HashMap<String, String>,
         flags: u64,
         mutable_flags: u64,
-        authorities: HashMap<Address, u64>,
-        initial_supply: Option<NewSupply>,
+        authorities: HashMap<ResourceDef, u64>,
+        initial_supply: Option<Supply>,
     ) -> (ResourceDef, Option<Bucket>) {
         let input = CreateResourceInput {
             resource_type,
@@ -54,24 +41,21 @@ impl ResourceDef {
         };
         let output: CreateResourceOutput = call_engine(CREATE_RESOURCE, input);
 
-        (
-            output.resource_address.into(),
-            output.bucket.map(Into::into),
-        )
+        (output.resource_def, output.bucket.map(Into::into))
     }
 
     /// Mints fungible resources
     pub fn mint<T: Into<Decimal>>(&mut self, amount: T, auth: BucketRef) -> Bucket {
         let input = MintResourceInput {
-            resource_address: self.address,
-            new_supply: NewSupply::Fungible {
+            resource_def: self.this(),
+            new_supply: Supply::Fungible {
                 amount: amount.into(),
             },
             auth: auth.into(),
         };
         let output: MintResourceOutput = call_engine(MINT_RESOURCE, input);
 
-        output.bid.into()
+        output.bucket
     }
 
     /// Mints non-fungible resources
@@ -85,28 +69,25 @@ impl ResourceDef {
         entries.insert(key.clone(), (data.immutable_data(), data.mutable_data()));
 
         let input = MintResourceInput {
-            resource_address: self.address,
-            new_supply: NewSupply::NonFungible { entries },
+            resource_def: self.this(),
+            new_supply: Supply::NonFungible { entries },
             auth: auth.into(),
         };
         let output: MintResourceOutput = call_engine(MINT_RESOURCE, input);
 
-        output.bid.into()
+        output.bucket
     }
 
     /// Burns a bucket of resources.
     pub fn burn(&mut self, bucket: Bucket) {
-        let input = BurnResourceInput {
-            bid: bucket.into(),
-            auth: None,
-        };
+        let input = BurnResourceInput { bucket, auth: None };
         let _output: BurnResourceOutput = call_engine(BURN_RESOURCE, input);
     }
 
     /// Burns a bucket of resources.
     pub fn burn_with_auth(&mut self, bucket: Bucket, auth: BucketRef) {
         let input = BurnResourceInput {
-            bid: bucket.into(),
+            bucket,
             auth: Some(auth.into()),
         };
         let _output: BurnResourceOutput = call_engine(BURN_RESOURCE, input);
@@ -115,7 +96,7 @@ impl ResourceDef {
     /// Returns the resource type.
     pub fn resource_type(&self) -> ResourceType {
         let input = GetResourceTypeInput {
-            resource_address: self.address,
+            resource_def: self.this(),
         };
         let output: GetResourceTypeOutput = call_engine(GET_RESOURCE_TYPE, input);
 
@@ -125,7 +106,7 @@ impl ResourceDef {
     /// Returns the metadata associated with this resource.
     pub fn metadata(&self) -> HashMap<String, String> {
         let input = GetResourceMetadataInput {
-            resource_address: self.address,
+            resource_def: self.this(),
         };
         let output: GetResourceMetadataOutput = call_engine(GET_RESOURCE_METADATA, input);
 
@@ -135,7 +116,7 @@ impl ResourceDef {
     /// Returns the feature flags.
     pub fn flags(&self) -> u64 {
         let input = GetResourceFlagsInput {
-            resource_address: self.address,
+            resource_def: self.this(),
         };
         let output: GetResourceFlagsOutput = call_engine(GET_RESOURCE_FLAGS, input);
 
@@ -145,7 +126,7 @@ impl ResourceDef {
     /// Returns the mutable feature flags.
     pub fn mutable_flags(&self) -> u64 {
         let input = GetResourceMutableFlagsInput {
-            resource_address: self.address,
+            resource_def: self.this(),
         };
         let output: GetResourceMutableFlagsOutput = call_engine(GET_RESOURCE_MUTABLE_FLAGS, input);
 
@@ -155,16 +136,11 @@ impl ResourceDef {
     /// Returns the current supply of this resource.
     pub fn total_supply(&self) -> Decimal {
         let input = GetResourceTotalSupplyInput {
-            resource_address: self.address,
+            resource_def: self.this(),
         };
         let output: GetResourceTotalSupplyOutput = call_engine(GET_RESOURCE_TOTAL_SUPPLY, input);
 
         output.total_supply
-    }
-
-    /// Returns the address of this resource.
-    pub fn address(&self) -> Address {
-        self.address
     }
 
     /// Returns the data of a non-fungible unit, both the immutable and mutable parts.
@@ -173,12 +149,12 @@ impl ResourceDef {
     /// Panics if this is not a non-fungible resource or the specified non-fungible is not found.
     pub fn get_non_fungible_data<T: NonFungibleData>(&self, key: &NonFungibleKey) -> T {
         let input = GetNonFungibleDataInput {
-            resource_address: self.address,
+            resource_def: self.this(),
             key: key.clone(),
         };
         let output: GetNonFungibleDataOutput = call_engine(GET_NON_FUNGIBLE_DATA, input);
 
-        scrypto_unwrap(T::decode(&output.immutable_data, &output.mutable_data))
+        T::decode(&output.immutable_data, &output.mutable_data).unwrap()
     }
 
     /// Updates the mutable part of a non-fungible unit.
@@ -192,7 +168,7 @@ impl ResourceDef {
         auth: BucketRef,
     ) {
         let input = UpdateNonFungibleMutableDataInput {
-            resource_address: self.address,
+            resource_def: self.this(),
             key: key.clone(),
             new_mutable_data: new_data.mutable_data(),
             auth: auth.into(),
@@ -204,7 +180,7 @@ impl ResourceDef {
     /// Turns on feature flags.
     pub fn enable_flags(&mut self, flags: u64, auth: BucketRef) {
         let input = UpdateResourceFlagsInput {
-            resource_address: self.address,
+            resource_def: self.this(),
             new_flags: self.flags() | flags,
             auth: auth.into(),
         };
@@ -214,7 +190,7 @@ impl ResourceDef {
     /// Turns off feature flags.
     pub fn disable_flags(&mut self, flags: u64, auth: BucketRef) {
         let input = UpdateResourceFlagsInput {
-            resource_address: self.address,
+            resource_def: self.this(),
             new_flags: self.flags() & !flags,
             auth: auth.into(),
         };
@@ -224,7 +200,7 @@ impl ResourceDef {
     /// Locks feature flag settings.
     pub fn lock_flags(&mut self, flags: u64, auth: BucketRef) {
         let input = UpdateResourceMutableFlagsInput {
-            resource_address: self.address,
+            resource_def: self.this(),
             new_mutable_flags: self.flags() & !flags,
             auth: auth.into(),
         };
@@ -234,7 +210,7 @@ impl ResourceDef {
 
     pub fn update_metadata(&mut self, new_metadata: HashMap<String, String>, auth: BucketRef) {
         let input = UpdateResourceMetadataInput {
-            resource_address: self.address,
+            resource_def: self.this(),
             new_metadata,
             auth: auth.into(),
         };
@@ -243,32 +219,63 @@ impl ResourceDef {
 }
 
 //========
-// SBOR
+// error
 //========
 
-impl TypeId for ResourceDef {
-    fn type_id() -> u8 {
-        Address::type_id()
+#[derive(Debug, Clone)]
+pub enum ParseResourceDefError {
+    InvalidHex(hex::FromHexError),
+    InvalidLength(usize),
+}
+
+#[cfg(not(feature = "alloc"))]
+impl std::error::Error for ParseResourceDefError {}
+
+#[cfg(not(feature = "alloc"))]
+impl fmt::Display for ParseResourceDefError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
     }
 }
 
-impl Encode for ResourceDef {
-    fn encode_value(&self, encoder: &mut Encoder) {
-        self.address.encode_value(encoder);
-    }
-}
+//========
+// binary
+//========
 
-impl Decode for ResourceDef {
-    fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
-        Address::decode_value(decoder).map(Into::into)
-    }
-}
+impl TryFrom<&[u8]> for ResourceDef {
+    type Error = ParseResourceDefError;
 
-impl Describe for ResourceDef {
-    fn describe() -> Type {
-        Type::Custom {
-            name: SCRYPTO_NAME_RESOURCE_DEF.to_owned(),
-            generics: vec![],
+    fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
+        match slice.len() {
+            26 => Ok(Self(copy_u8_array(slice))),
+            _ => Err(ParseResourceDefError::InvalidLength(slice.len())),
         }
+    }
+}
+
+impl ResourceDef {
+    pub fn to_vec(&self) -> Vec<u8> {
+        self.0.to_vec()
+    }
+}
+
+custom_type!(ResourceDef, CustomType::ResourceDef, Vec::new());
+
+//======
+// text
+//======
+
+impl FromStr for ResourceDef {
+    type Err = ParseResourceDefError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let bytes = hex::decode(s).map_err(ParseResourceDefError::InvalidHex)?;
+        Self::try_from(bytes.as_slice())
+    }
+}
+
+impl ToString for ResourceDef {
+    fn to_string(&self) -> String {
+        hex::encode(self.0)
     }
 }

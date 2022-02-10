@@ -1,7 +1,10 @@
+use crate::core::*;
+use crate::crypto::*;
 use crate::engine::*;
-use crate::types::*;
+use crate::rust::borrow::ToOwned;
+use crate::rust::vec::Vec;
 
-/// A utility for accessing transaction context.
+/// A utility for accessing runtime.
 #[derive(Debug)]
 pub struct Context {}
 
@@ -14,15 +17,8 @@ impl Context {
         output.actor
     }
 
-    /// Returns the address of the running package.
-    pub fn package_address() -> Address {
-        let input = GetPackageAddressInput {};
-        let output: GetPackageAddressOutput = call_engine(GET_PACKAGE_ADDRESS, input);
-        output.package_address
-    }
-
     /// Returns the transaction hash.
-    pub fn transaction_hash() -> H256 {
+    pub fn transaction_hash() -> Hash {
         let input = GetTransactionHashInput {};
         let output: GetTransactionHashOutput = call_engine(GET_TRANSACTION_HASH, input);
         output.transaction_hash
@@ -33,5 +29,41 @@ impl Context {
         let input = GetCurrentEpochInput {};
         let output: GetCurrentEpochOutput = call_engine(GET_CURRENT_EPOCH, input);
         output.current_epoch
+    }
+
+    /// Generates a UUID.
+    pub fn generate_uuid() -> u128 {
+        let input = GenerateUuidInput {};
+        let output: GenerateUuidOutput = call_engine(GENERATE_UUID, input);
+
+        output.uuid
+    }
+
+    /// Invokes a function on a blueprint.
+    pub fn call_function(
+        blueprint: (Package, String),
+        function: &str,
+        args: Vec<Vec<u8>>,
+    ) -> Vec<u8> {
+        let input = CallFunctionInput {
+            blueprint,
+            function: function.to_owned(),
+            args,
+        };
+        let output: CallFunctionOutput = call_engine(CALL_FUNCTION, input);
+
+        output.rtn
+    }
+
+    /// Invokes a method on a component.
+    pub fn call_method(component: Component, method: &str, args: Vec<Vec<u8>>) -> Vec<u8> {
+        let input = CallMethodInput {
+            component,
+            method: method.to_owned(),
+            args,
+        };
+        let output: CallMethodOutput = call_engine(CALL_METHOD, input);
+
+        output.rtn
     }
 }

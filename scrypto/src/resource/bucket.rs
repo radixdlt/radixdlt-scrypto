@@ -1,47 +1,35 @@
 use sbor::{describe::Type, *};
 
-use crate::buffer::*;
 use crate::engine::*;
+use crate::math::*;
+use crate::misc::*;
 use crate::resource::*;
-use crate::rust::borrow::ToOwned;
-use crate::rust::vec;
+use crate::rust::fmt;
 use crate::rust::vec::Vec;
 use crate::types::*;
 
 /// Represents a transient resource container.
 #[derive(Debug)]
-pub struct Bucket {
-    bid: Bid,
-}
-
-impl From<Bid> for Bucket {
-    fn from(bid: Bid) -> Self {
-        Self { bid }
-    }
-}
-
-impl From<Bucket> for Bid {
-    fn from(a: Bucket) -> Bid {
-        a.bid
-    }
-}
+pub struct Bucket(u32);
 
 impl Bucket {
+    fn this(&self) -> Self {
+        Self(self.0)
+    }
+
     /// Creates a new bucket to hold resources of the given definition.
-    pub fn new<A: Into<ResourceDef>>(resource_def: A) -> Self {
-        let input = CreateEmptyBucketInput {
-            resource_address: resource_def.into().address(),
-        };
+    pub fn new(resource_def: ResourceDef) -> Self {
+        let input = CreateEmptyBucketInput { resource_def };
         let output: CreateEmptyBucketOutput = call_engine(CREATE_EMPTY_BUCKET, input);
 
-        output.bid.into()
+        output.bucket
     }
 
     /// Puts resources from another bucket into this bucket.
     pub fn put(&mut self, other: Self) {
         let input = PutIntoBucketInput {
-            bid: self.bid,
-            other: other.bid,
+            bucket: self.this(),
+            other,
         };
         let _: PutIntoBucketOutput = call_engine(PUT_INTO_BUCKET, input);
     }
@@ -49,25 +37,29 @@ impl Bucket {
     /// Takes some amount of resources from this bucket.
     pub fn take<A: Into<Decimal>>(&mut self, amount: A) -> Self {
         let input = TakeFromBucketInput {
-            bid: self.bid,
+            bucket: self.this(),
             amount: amount.into(),
         };
         let output: TakeFromBucketOutput = call_engine(TAKE_FROM_BUCKET, input);
 
-        output.bid.into()
+        output.bucket
     }
 
     /// Creates an immutable reference to this bucket.
     pub fn present(&self) -> BucketRef {
-        let input = CreateBucketRefInput { bid: self.bid };
+        let input = CreateBucketRefInput {
+            bucket: self.this(),
+        };
         let output: CreateBucketRefOutput = call_engine(CREATE_BUCKET_REF, input);
 
-        output.rid.into()
+        output.bucket_ref
     }
 
     /// Returns the amount of resources in this bucket.
     pub fn amount(&self) -> Decimal {
-        let input = GetBucketDecimalInput { bid: self.bid };
+        let input = GetBucketDecimalInput {
+            bucket: self.this(),
+        };
         let output: GetBucketDecimalOutput = call_engine(GET_BUCKET_AMOUNT, input);
 
         output.amount
@@ -75,16 +67,13 @@ impl Bucket {
 
     /// Returns the resource definition of resources in this bucket.
     pub fn resource_def(&self) -> ResourceDef {
-        let input = GetBucketResourceAddressInput { bid: self.bid };
+        let input = GetBucketResourceAddressInput {
+            bucket: self.this(),
+        };
         let output: GetBucketResourceAddressOutput =
             call_engine(GET_BUCKET_RESOURCE_ADDRESS, input);
 
-        output.resource_address.into()
-    }
-
-    /// Returns the resource definition address.
-    pub fn resource_address(&self) -> Address {
-        self.resource_def().address()
+        output.resource_def
     }
 
     /// Burns resource within this bucket.
@@ -113,13 +102,13 @@ impl Bucket {
     /// Panics if this is not a non-fungible bucket or the specified non-fungible resource is not found.
     pub fn take_non_fungible(&mut self, key: &NonFungibleKey) -> Bucket {
         let input = TakeNonFungibleFromBucketInput {
-            bid: self.bid,
+            bucket: self.this(),
             key: key.clone(),
         };
         let output: TakeNonFungibleFromBucketOutput =
             call_engine(TAKE_NON_FUNGIBLE_FROM_BUCKET, input);
 
-        output.bid.into()
+        output.bucket
     }
 
     /// Returns all the non-fungible units contained.
@@ -127,14 +116,16 @@ impl Bucket {
     /// # Panics
     /// Panics if this is not a non-fungible bucket.
     pub fn get_non_fungibles<T: NonFungibleData>(&self) -> Vec<NonFungible<T>> {
-        let input = GetNonFungibleKeysInBucketInput { bid: self.bid };
+        let input = GetNonFungibleKeysInBucketInput {
+            bucket: self.this(),
+        };
         let output: GetNonFungibleKeysInBucketOutput =
             call_engine(GET_NON_FUNGIBLE_KEYS_IN_BUCKET, input);
-        let resource_address = self.resource_address();
+        let resource_def = self.resource_def();
         output
             .keys
             .iter()
-            .map(|id| NonFungible::from((resource_address, id.clone())))
+            .map(|id| NonFungible::from((resource_def, id.clone())))
             .collect()
     }
 
@@ -143,7 +134,9 @@ impl Bucket {
     /// # Panics
     /// Panics if this is not a non-fungible bucket.
     pub fn get_non_fungible_keys(&self) -> Vec<NonFungibleKey> {
-        let input = GetNonFungibleKeysInBucketInput { bid: self.bid };
+        let input = GetNonFungibleKeysInBucketInput {
+            bucket: self.this(),
+        };
         let output: GetNonFungibleKeysInBucketOutput =
             call_engine(GET_NON_FUNGIBLE_KEYS_IN_BUCKET, input);
 
@@ -185,32 +178,43 @@ impl Bucket {
 }
 
 //========
-// SBOR
+// error
 //========
 
-impl TypeId for Bucket {
-    fn type_id() -> u8 {
-        Bid::type_id()
+#[derive(Debug, Clone)]
+pub enum ParseBucketError {
+    InvalidLength(usize),
+}
+
+#[cfg(not(feature = "alloc"))]
+impl std::error::Error for ParseBucketError {}
+
+#[cfg(not(feature = "alloc"))]
+impl fmt::Display for ParseBucketError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
     }
 }
 
-impl Encode for Bucket {
-    fn encode_value(&self, encoder: &mut Encoder) {
-        self.bid.encode_value(encoder);
-    }
-}
+//========
+// binary
+//========
 
-impl Decode for Bucket {
-    fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
-        Bid::decode_value(decoder).map(Into::into)
-    }
-}
+impl TryFrom<&[u8]> for Bucket {
+    type Error = ParseBucketError;
 
-impl Describe for Bucket {
-    fn describe() -> Type {
-        Type::Custom {
-            name: SCRYPTO_NAME_BUCKET.to_owned(),
-            generics: vec![],
+    fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
+        match slice.len() {
+            4 => Ok(Self(u32::from_le_bytes(copy_u8_array(slice)))),
+            _ => Err(ParseBucketError::InvalidLength(slice.len())),
         }
     }
 }
+
+impl Bucket {
+    pub fn to_vec(&self) -> Vec<u8> {
+        self.0.to_le_bytes().to_vec()
+    }
+}
+
+custom_type!(Bucket, CustomType::Bucket, Vec::new());

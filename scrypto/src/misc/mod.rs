@@ -1,16 +1,26 @@
-/// Unwrap a result and abort if it's a failure.
-///
-/// Different from the normal `Result::unwrap()`, this function does not dump
-/// the error details.
-pub fn scrypto_unwrap<T, E>(res: Result<T, E>) -> T {
-    match res {
-        Ok(v) => v,
-        _ => panic!("Result is an error"),
+use crate::rust::vec::Vec;
+
+/// Copies a slice to a fixed-sized array.
+pub fn copy_u8_array<const N: usize>(slice: &[u8]) -> [u8; N] {
+    if slice.len() == N {
+        let mut bytes = [0u8; N];
+        bytes.copy_from_slice(&slice[0..N]);
+        bytes
+    } else {
+        panic!("Invalid length");
     }
 }
 
-/// Set up panic hook.
-pub fn scrypto_setup_panic_hook() {
+/// Combines a u8 with a u8 slice.
+pub fn combine(ty: u8, bytes: &[u8]) -> Vec<u8> {
+    let mut v = Vec::with_capacity(1 + bytes.len());
+    v.push(ty);
+    v.extend(bytes);
+    v
+}
+
+/// Sets up panic hook.
+pub fn set_up_panic_hook() {
     #[cfg(not(feature = "alloc"))]
     std::panic::set_hook(Box::new(|info| {
         // parse message

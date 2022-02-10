@@ -1,51 +1,43 @@
 use sbor::{describe::Type, *};
 
-use crate::buffer::*;
 use crate::engine::*;
+use crate::math::*;
+use crate::misc::*;
 use crate::resource::*;
-use crate::rust::borrow::ToOwned;
-use crate::rust::vec;
+use crate::rust::fmt;
 use crate::rust::vec::Vec;
 use crate::types::*;
 
 /// Represents a reference to a bucket.
 #[derive(Debug)]
-pub struct BucketRef {
-    rid: Rid,
-}
-
-impl From<Rid> for BucketRef {
-    fn from(rid: Rid) -> Self {
-        Self { rid }
-    }
-}
-
-impl From<BucketRef> for Rid {
-    fn from(a: BucketRef) -> Rid {
-        a.rid
-    }
-}
+pub struct BucketRef(u32);
 
 impl Clone for BucketRef {
     fn clone(&self) -> Self {
-        let input = CloneBucketRefInput { rid: self.rid };
+        let input = CloneBucketRefInput {
+            bucket_ref: self.this(),
+        };
         let output: CloneBucketRefOutput = call_engine(CLONE_BUCKET_REF, input);
 
-        output.rid.into()
+        output.bucket_ref
     }
 }
 
 impl BucketRef {
+    fn this(&self) -> Self {
+        Self(self.0)
+    }
+
     /// Checks if the referenced bucket contains the given resource, and aborts if not so.
-    pub fn check<A: Into<ResourceDef>>(self, resource_def: A) {
+    pub fn check(&self, resource_def: ResourceDef) {
         if !self.contains(resource_def) {
             panic!("BucketRef check failed");
         }
     }
 
-    pub fn check_non_fungible_key<A: Into<ResourceDef>, F: Fn(&NonFungibleKey) -> bool>(
-        self,
-        resource_def: A,
+    pub fn check_non_fungible_key<F: Fn(&NonFungibleKey) -> bool>(
+        &self,
+        resource_def: ResourceDef,
         f: F,
     ) {
         if !self.contains(resource_def) || !self.get_non_fungible_keys().iter().any(f) {
@@ -54,14 +46,15 @@ impl BucketRef {
     }
 
     /// Checks if the referenced bucket contains the given resource.
-    pub fn contains<A: Into<ResourceDef>>(&self, resource_def: A) -> bool {
-        let resource_def: ResourceDef = resource_def.into();
+    pub fn contains(&self, resource_def: ResourceDef) -> bool {
         self.amount() > 0.into() && self.resource_def() == resource_def
     }
 
     /// Returns the resource amount within the bucket.
     pub fn amount(&self) -> Decimal {
-        let input = GetBucketRefDecimalInput { rid: self.rid };
+        let input = GetBucketRefDecimalInput {
+            bucket_ref: self.this(),
+        };
         let output: GetBucketRefDecimalOutput = call_engine(GET_BUCKET_REF_AMOUNT, input);
 
         output.amount
@@ -69,21 +62,20 @@ impl BucketRef {
 
     /// Returns the resource definition of resources within the bucket.
     pub fn resource_def(&self) -> ResourceDef {
-        let input = GetBucketRefResourceAddressInput { rid: self.rid };
+        let input = GetBucketRefResourceAddressInput {
+            bucket_ref: self.this(),
+        };
         let output: GetBucketRefResourceAddressOutput =
             call_engine(GET_BUCKET_REF_RESOURCE_DEF, input);
 
-        output.resource_address.into()
-    }
-
-    /// Returns the resource definition address.
-    pub fn resource_address(&self) -> Address {
-        self.resource_def().address()
+        output.resource_def
     }
 
     /// Get the non-fungible ids in the referenced bucket.
     pub fn get_non_fungible_keys(&self) -> Vec<NonFungibleKey> {
-        let input = GetNonFungibleKeysInBucketRefInput { rid: self.rid };
+        let input = GetNonFungibleKeysInBucketRefInput {
+            bucket_ref: self.this(),
+        };
         let output: GetNonFungibleKeysInBucketRefOutput =
             call_engine(GET_NON_FUNGIBLE_KEYS_IN_BUCKET_REF, input);
 
@@ -103,7 +95,7 @@ impl BucketRef {
 
     /// Destroys this reference.
     pub fn drop(self) {
-        let input = DropBucketRefInput { rid: self.rid };
+        let input = DropBucketRefInput { bucket_ref: self };
         let _: DropBucketRefOutput = call_engine(DROP_BUCKET_REF, input);
     }
 
@@ -114,32 +106,43 @@ impl BucketRef {
 }
 
 //========
-// SBOR
+// error
 //========
 
-impl TypeId for BucketRef {
-    fn type_id() -> u8 {
-        Rid::type_id()
+#[derive(Debug, Clone)]
+pub enum ParseBucketRefError {
+    InvalidLength(usize),
+}
+
+#[cfg(not(feature = "alloc"))]
+impl std::error::Error for ParseBucketRefError {}
+
+#[cfg(not(feature = "alloc"))]
+impl fmt::Display for ParseBucketRefError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
     }
 }
 
-impl Encode for BucketRef {
-    fn encode_value(&self, encoder: &mut Encoder) {
-        self.rid.encode_value(encoder);
-    }
-}
+//========
+// binary
+//========
 
-impl Decode for BucketRef {
-    fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
-        Rid::decode_value(decoder).map(Into::into)
-    }
-}
+impl TryFrom<&[u8]> for BucketRef {
+    type Error = ParseBucketRefError;
 
-impl Describe for BucketRef {
-    fn describe() -> Type {
-        Type::Custom {
-            name: SCRYPTO_NAME_BUCKET_REF.to_owned(),
-            generics: vec![],
+    fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
+        match slice.len() {
+            4 => Ok(Self(u32::from_le_bytes(copy_u8_array(slice)))),
+            _ => Err(ParseBucketRefError::InvalidLength(slice.len())),
         }
     }
 }
+
+impl BucketRef {
+    pub fn to_vec(&self) -> Vec<u8> {
+        self.0.to_le_bytes().to_vec()
+    }
+}
+
+custom_type!(BucketRef, CustomType::BucketRef, Vec::new());

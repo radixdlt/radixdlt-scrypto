@@ -1,18 +1,15 @@
 use core::ops::*;
-
 use num_bigint::BigInt;
 use num_traits::Signed;
 use sbor::{describe::Type, *};
 
-use crate::buffer::*;
-use crate::rust::borrow::ToOwned;
+use crate::misc::*;
 use crate::rust::convert::TryFrom;
 use crate::rust::fmt;
 use crate::rust::str::FromStr;
 use crate::rust::string::String;
-use crate::rust::vec;
 use crate::rust::vec::Vec;
-use crate::types::copy_u8_array;
+use crate::types::*;
 
 /// The universal precision used by `Decimal`.
 pub const PRECISION: i128 = 10i128.pow(18);
@@ -25,24 +22,6 @@ pub const PRECISION: i128 = 10i128.pow(18);
 ///
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Decimal(pub i128);
-
-/// Represents an error when parsing Decimal.
-#[derive(Debug, Clone)]
-pub enum ParseDecimalError {
-    InvalidDecimal(String),
-    InvalidChar(char),
-    UnsupportedDecimalPlace,
-    InvalidLength,
-}
-
-impl fmt::Display for ParseDecimalError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:?}", self)
-    }
-}
-
-#[cfg(not(feature = "alloc"))]
-impl std::error::Error for ParseDecimalError {}
 
 impl Decimal {
     /// The min value of `Decimal`.
@@ -59,11 +38,6 @@ impl Decimal {
     /// Returns `Decimal` of 1.
     pub fn one() -> Self {
         1.into()
-    }
-
-    /// Converts into a vector of bytes.
-    pub fn to_vec(&self) -> Vec<u8> {
-        self.0.to_le_bytes().to_vec()
     }
 
     /// Whether this decimal is zero.
@@ -149,10 +123,6 @@ macro_rules! dec {
     };
 }
 
-//=====
-// ADD
-//=====
-
 impl<T: Into<Decimal>> Add<T> for Decimal {
     type Output = Decimal;
 
@@ -161,10 +131,6 @@ impl<T: Into<Decimal>> Add<T> for Decimal {
     }
 }
 
-//=====
-// Sub
-//=====
-
 impl<T: Into<Decimal>> Sub<T> for Decimal {
     type Output = Decimal;
 
@@ -172,10 +138,6 @@ impl<T: Into<Decimal>> Sub<T> for Decimal {
         Decimal(self.0 - other.into().0)
     }
 }
-
-//=====
-// Mul
-//=====
 
 fn big_int_to_decimal(v: BigInt) -> Decimal {
     let bytes = v.to_signed_bytes_le();
@@ -203,10 +165,6 @@ impl<T: Into<Decimal>> Mul<T> for Decimal {
     }
 }
 
-//=====
-// Div
-//=====
-
 impl<T: Into<Decimal>> Div<T> for Decimal {
     type Output = Decimal;
 
@@ -218,10 +176,6 @@ impl<T: Into<Decimal>> Div<T> for Decimal {
     }
 }
 
-//=======
-// Neg
-//=======
-
 impl Neg for Decimal {
     type Output = Decimal;
 
@@ -230,19 +184,11 @@ impl Neg for Decimal {
     }
 }
 
-//===========
-// AddAssign
-//===========
-
 impl<T: Into<Decimal>> AddAssign<T> for Decimal {
     fn add_assign(&mut self, other: T) {
         self.0 += other.into().0;
     }
 }
-
-//===========
-// SubAssign
-//===========
 
 impl<T: Into<Decimal>> SubAssign<T> for Decimal {
     fn sub_assign(&mut self, other: T) {
@@ -250,19 +196,11 @@ impl<T: Into<Decimal>> SubAssign<T> for Decimal {
     }
 }
 
-//===========
-// MulAssign
-//===========
-
 impl<T: Into<Decimal>> MulAssign<T> for Decimal {
     fn mul_assign(&mut self, other: T) {
         self.0 = (self.clone() * other.into()).0;
     }
 }
-
-//===========
-// DivAssign
-//===========
 
 impl<T: Into<Decimal>> DivAssign<T> for Decimal {
     fn div_assign(&mut self, other: T) {
@@ -270,22 +208,55 @@ impl<T: Into<Decimal>> DivAssign<T> for Decimal {
     }
 }
 
-fn read_digit(c: char) -> Result<i128, ParseDecimalError> {
-    let n = c as i128;
-    if n >= 48 && n <= 48 + 9 {
-        Ok(n - 48)
-    } else {
-        Err(ParseDecimalError::InvalidChar(c))
+//========
+// error
+//========
+
+#[derive(Debug, Clone)]
+pub enum ParseDecimalError {
+    InvalidDecimal(String),
+    InvalidChar(char),
+    UnsupportedDecimalPlace,
+    InvalidLength(usize),
+}
+
+#[cfg(not(feature = "alloc"))]
+impl std::error::Error for ParseDecimalError {}
+
+#[cfg(not(feature = "alloc"))]
+impl fmt::Display for ParseDecimalError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
     }
 }
 
-fn read_dot(c: char) -> Result<(), ParseDecimalError> {
-    if c == '.' {
-        Ok(())
-    } else {
-        Err(ParseDecimalError::InvalidChar(c))
+//========
+// binary
+//========
+
+impl TryFrom<&[u8]> for Decimal {
+    type Error = ParseDecimalError;
+
+    fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
+        if slice.len() == 16 {
+            Ok(Self(i128::from_le_bytes(copy_u8_array(slice))))
+        } else {
+            Err(ParseDecimalError::InvalidLength(slice.len()))
+        }
     }
 }
+
+impl Decimal {
+    pub fn to_vec(&self) -> Vec<u8> {
+        self.0.to_le_bytes().to_vec()
+    }
+}
+
+custom_type!(Decimal, CustomType::Decimal, Vec::new());
+
+//======
+// text
+//======
 
 impl FromStr for Decimal {
     type Err = ParseDecimalError;
@@ -333,20 +304,8 @@ impl FromStr for Decimal {
     }
 }
 
-impl TryFrom<&[u8]> for Decimal {
-    type Error = ParseDecimalError;
-
-    fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
-        if slice.len() != 16 {
-            return Err(ParseDecimalError::InvalidLength);
-        };
-
-        Ok(Self(i128::from_le_bytes(copy_u8_array(slice))))
-    }
-}
-
-impl fmt::Debug for Decimal {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl ToString for Decimal {
+    fn to_string(&self) -> String {
         let mut a = self.0;
         let mut buf = String::new();
 
@@ -374,8 +333,7 @@ impl fmt::Debug for Decimal {
             }
         }
 
-        write!(
-            f,
+        format!(
             "{}{}",
             if self.is_negative() { "-" } else { "" },
             buf.chars().rev().collect::<String>()
@@ -383,41 +341,26 @@ impl fmt::Debug for Decimal {
     }
 }
 
-impl fmt::Display for Decimal {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{:?}", self)
+impl fmt::Debug for Decimal {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.to_string())
     }
 }
 
-impl TypeId for Decimal {
-    #[inline]
-    fn type_id() -> u8 {
-        SCRYPTO_TYPE_DECIMAL
+fn read_digit(c: char) -> Result<i128, ParseDecimalError> {
+    let n = c as i128;
+    if n >= 48 && n <= 48 + 9 {
+        Ok(n - 48)
+    } else {
+        Err(ParseDecimalError::InvalidChar(c))
     }
 }
 
-impl Encode for Decimal {
-    fn encode_value(&self, encoder: &mut Encoder) {
-        let bytes = self.to_vec();
-        encoder.write_len(bytes.len());
-        encoder.write_slice(&bytes);
-    }
-}
-
-impl Decode for Decimal {
-    fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
-        let len = decoder.read_len()?;
-        let slice = decoder.read_bytes(len)?;
-        Self::try_from(slice).map_err(|_| DecodeError::InvalidCustomData(SCRYPTO_TYPE_DECIMAL))
-    }
-}
-
-impl Describe for Decimal {
-    fn describe() -> Type {
-        Type::Custom {
-            name: SCRYPTO_NAME_DECIMAL.to_owned(),
-            generics: vec![],
-        }
+fn read_dot(c: char) -> Result<(), ParseDecimalError> {
+    if c == '.' {
+        Ok(())
+    } else {
+        Err(ParseDecimalError::InvalidChar(c))
     }
 }
 

@@ -1,11 +1,12 @@
-use crate::rust::string::String;
-use crate::types::*;
 use sbor::*;
+
+use crate::core::*;
+use crate::rust::string::String;
 
 /// Represents the running entity.
 #[derive(Debug, Clone, TypeId, Encode, Decode, Describe)]
 pub enum Actor {
-    Blueprint(Address, String),
+    Blueprint(Package, String),
 
-    Component(Address),
+    Component(Component),
 }

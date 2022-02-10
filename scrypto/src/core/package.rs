@@ -1,32 +1,15 @@
 use sbor::{describe::Type, *};
 
-use crate::buffer::*;
 use crate::engine::*;
-use crate::rust::borrow::ToOwned;
-use crate::rust::vec;
+use crate::misc::*;
+use crate::rust::fmt;
+use crate::rust::str::FromStr;
+use crate::rust::string::ToString;
 use crate::types::*;
 
 /// A collection of blueprints, compiled and published as a single unit.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Package {
-    address: Address,
-}
-
-impl From<Address> for Package {
-    fn from(address: Address) -> Self {
-        if !address.is_package() {
-            panic!("{} is not a package address", address);
-        }
-
-        Self { address }
-    }
-}
-
-impl From<Package> for Address {
-    fn from(a: Package) -> Address {
-        a.address
-    }
-}
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct Package([u8; 26]);
 
 impl Package {
     /// Creates a new package.
@@ -36,42 +19,68 @@ impl Package {
         };
         let output: PublishPackageOutput = call_engine(PUBLISH_PACKAGE, input);
 
-        output.package_address.into()
-    }
-
-    /// Returns the package address.
-    pub fn address(&self) -> Address {
-        self.address
+        output.package
     }
 }
 
 //========
-// SBOR
+// error
 //========
 
-impl TypeId for Package {
-    fn type_id() -> u8 {
-        Address::type_id()
+#[derive(Debug, Clone)]
+pub enum ParsePackageError {
+    InvalidHex(hex::FromHexError),
+    InvalidLength(usize),
+}
+
+#[cfg(not(feature = "alloc"))]
+impl std::error::Error for ParsePackageError {}
+
+#[cfg(not(feature = "alloc"))]
+impl fmt::Display for ParsePackageError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
     }
 }
 
-impl Encode for Package {
-    fn encode_value(&self, encoder: &mut Encoder) {
-        self.address.encode_value(encoder);
-    }
-}
+//========
+// binary
+//========
 
-impl Decode for Package {
-    fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
-        Address::decode_value(decoder).map(Into::into)
-    }
-}
+impl TryFrom<&[u8]> for Package {
+    type Error = ParsePackageError;
 
-impl Describe for Package {
-    fn describe() -> Type {
-        Type::Custom {
-            name: SCRYPTO_NAME_PACKAGE.to_owned(),
-            generics: vec![],
+    fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
+        match slice.len() {
+            26 => Ok(Self(copy_u8_array(slice))),
+            _ => Err(ParsePackageError::InvalidLength(slice.len())),
         }
+    }
+}
+
+impl Package {
+    pub fn to_vec(&self) -> Vec<u8> {
+        self.0.to_vec()
+    }
+}
+
+custom_type!(Package, CustomType::Package, Vec::new());
+
+//======
+// text
+//======
+
+impl FromStr for Package {
+    type Err = ParsePackageError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let bytes = hex::decode(s).map_err(ParsePackageError::InvalidHex)?;
+        Self::try_from(bytes.as_slice())
+    }
+}
+
+impl ToString for Package {
+    fn to_string(&self) -> String {
+        hex::encode(self.0)
     }
 }

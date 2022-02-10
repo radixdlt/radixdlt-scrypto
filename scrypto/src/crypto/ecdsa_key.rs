@@ -1,16 +1,16 @@
-use crate::rust::fmt;
-use crate::rust::str::FromStr;
-use crate::rust::vec::Vec;
 use sbor::*;
 
-#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, Describe, Encode, Decode, TypeId)]
+use crate::rust::fmt;
+use crate::rust::str::FromStr;
+
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Encode, Decode, TypeId, Describe)]
 pub struct EcdsaPublicKey(pub [u8; 33]);
 
-impl EcdsaPublicKey {
-    pub fn to_vec(&self) -> Vec<u8> {
-        self.0.clone().to_vec()
-    }
-}
+impl EcdsaPublicKey {}
+
+//======
+// error
+//======
 
 #[derive(Debug, Clone)]
 pub enum ParseEcdsaPublicKeyError {
@@ -21,9 +21,20 @@ pub enum ParseEcdsaPublicKeyError {
 #[cfg(not(feature = "alloc"))]
 impl std::error::Error for ParseEcdsaPublicKeyError {}
 
+#[cfg(not(feature = "alloc"))]
 impl fmt::Display for ParseEcdsaPublicKeyError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}", self)
+    }
+}
+
+//======
+// text
+//======
+
+impl fmt::Debug for EcdsaPublicKey {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.to_string())
     }
 }
 
@@ -39,8 +50,8 @@ impl FromStr for EcdsaPublicKey {
     }
 }
 
-impl fmt::Display for EcdsaPublicKey {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", hex::encode(self.to_vec()))
+impl ToString for EcdsaPublicKey {
+    fn to_string(&self) -> String {
+        hex::encode(self.0)
     }
 }

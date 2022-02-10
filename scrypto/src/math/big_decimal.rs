@@ -1,17 +1,14 @@
 use core::ops::*;
-
 use num_bigint::{BigInt, Sign};
 use num_traits::{sign::Signed, Zero};
 use sbor::{describe::Type, *};
 
-use crate::buffer::*;
-use crate::rust::borrow::ToOwned;
 use crate::rust::convert::TryFrom;
 use crate::rust::fmt;
 use crate::rust::str::FromStr;
 use crate::rust::string::String;
-use crate::rust::vec;
 use crate::rust::vec::Vec;
+use crate::types::*;
 
 /// The universal precision used by `BigDecimal`.
 const PRECISION: i128 = 10i128.pow(18);
@@ -19,25 +16,6 @@ const PRECISION: i128 = 10i128.pow(18);
 /// Represents a **signed**, **unbounded** fixed-point decimal, where the precision is 10^-18.
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct BigDecimal(pub BigInt);
-
-/// Represents an error when parsing decimal.
-#[derive(Debug, Clone)]
-pub enum ParseBigDecimalError {
-    InvalidBigDecimal(String),
-    InvalidSign(u8),
-    InvalidChar(char),
-    UnsupportedDecimalPlace,
-    InvalidLength,
-}
-
-impl fmt::Display for ParseBigDecimalError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:?}", self)
-    }
-}
-
-#[cfg(not(feature = "alloc"))]
-impl std::error::Error for ParseBigDecimalError {}
 
 impl BigDecimal {
     /// Return a `BigDecimal` of 0.
@@ -48,19 +26,6 @@ impl BigDecimal {
     /// Return a `BigDecimal` of 1.
     pub fn one() -> Self {
         Self(1.into())
-    }
-
-    /// Converts into a vector of bytes.
-    pub fn to_vec(&self) -> Vec<u8> {
-        let mut result = Vec::new();
-        let (sign, v) = self.0.to_bytes_le();
-        match sign {
-            Sign::NoSign => result.push(0u8),
-            Sign::Plus => result.push(1u8),
-            Sign::Minus => result.push(2u8),
-        }
-        result.extend(v);
-        result
     }
 
     /// Whether this decimal is zero.
@@ -106,10 +71,6 @@ from_int!(i64);
 from_int!(i128);
 from_int!(isize);
 
-//=====
-// ADD
-//=====
-
 impl<T: Into<BigDecimal>> Add<T> for BigDecimal {
     type Output = BigDecimal;
 
@@ -141,10 +102,6 @@ impl<'a, 'b> Add<&'a BigDecimal> for &'b BigDecimal {
         BigDecimal(self.0.clone() + other.0.clone())
     }
 }
-
-//=====
-// Sub
-//=====
 
 impl<T: Into<BigDecimal>> Sub<T> for BigDecimal {
     type Output = BigDecimal;
@@ -178,10 +135,6 @@ impl<'a, 'b> Sub<&'a BigDecimal> for &'b BigDecimal {
     }
 }
 
-//=====
-// Mul
-//=====
-
 impl<T: Into<BigDecimal>> Mul<T> for BigDecimal {
     type Output = BigDecimal;
 
@@ -213,10 +166,6 @@ impl<'a, 'b> Mul<&'a BigDecimal> for &'b BigDecimal {
         BigDecimal(self.0.clone() * other.0.clone() / PRECISION)
     }
 }
-
-//=====
-// Div
-//=====
 
 impl<T: Into<BigDecimal>> Div<T> for BigDecimal {
     type Output = BigDecimal;
@@ -250,10 +199,6 @@ impl<'a, 'b> Div<&'a BigDecimal> for &'b BigDecimal {
     }
 }
 
-//=======
-// Neg
-//=======
-
 impl Neg for BigDecimal {
     type Output = BigDecimal;
 
@@ -270,10 +215,6 @@ impl<'a> Neg for &'a BigDecimal {
     }
 }
 
-//===========
-// AddAssign
-//===========
-
 impl<T: Into<BigDecimal>> AddAssign<T> for BigDecimal {
     fn add_assign(&mut self, other: T) {
         self.0 += other.into().0;
@@ -285,10 +226,6 @@ impl<'a> AddAssign<&'a BigDecimal> for BigDecimal {
         self.0 += other.0.clone();
     }
 }
-
-//===========
-// SubAssign
-//===========
 
 impl<T: Into<BigDecimal>> SubAssign<T> for BigDecimal {
     fn sub_assign(&mut self, other: T) {
@@ -302,10 +239,6 @@ impl<'a> SubAssign<&'a BigDecimal> for BigDecimal {
     }
 }
 
-//===========
-// MulAssign
-//===========
-
 impl<T: Into<BigDecimal>> MulAssign<T> for BigDecimal {
     fn mul_assign(&mut self, other: T) {
         self.0 = self.0.clone() * other.into().0 / PRECISION;
@@ -317,10 +250,6 @@ impl<'a> MulAssign<&'a BigDecimal> for BigDecimal {
         self.0 = self.0.clone() * other.0.clone() / PRECISION;
     }
 }
-
-//===========
-// DivAssign
-//===========
 
 impl<T: Into<BigDecimal>> DivAssign<T> for BigDecimal {
     fn div_assign(&mut self, other: T) {
@@ -334,22 +263,71 @@ impl<'a> DivAssign<&'a BigDecimal> for BigDecimal {
     }
 }
 
-fn read_digit(c: char) -> Result<i128, ParseBigDecimalError> {
-    let n = c as i128;
-    if n >= 48 && n <= 48 + 9 {
-        Ok(n - 48)
-    } else {
-        Err(ParseBigDecimalError::InvalidChar(c))
+//========
+// error
+//========
+
+#[derive(Debug, Clone)]
+pub enum ParseBigDecimalError {
+    InvalidBigDecimal(String),
+    InvalidSign(u8),
+    InvalidChar(char),
+    UnsupportedDecimalPlace,
+    InvalidLength(usize),
+}
+
+#[cfg(not(feature = "alloc"))]
+impl std::error::Error for ParseBigDecimalError {}
+
+#[cfg(not(feature = "alloc"))]
+impl fmt::Display for ParseBigDecimalError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
     }
 }
 
-fn read_dot(c: char) -> Result<(), ParseBigDecimalError> {
-    if c == '.' {
-        Ok(())
-    } else {
-        Err(ParseBigDecimalError::InvalidChar(c))
+//========
+// binary
+//========
+
+impl TryFrom<&[u8]> for BigDecimal {
+    type Error = ParseBigDecimalError;
+
+    fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
+        let sign = if let Some(b) = slice.get(0) {
+            match b {
+                0 => Ok(Sign::NoSign),
+                1 => Ok(Sign::Plus),
+                2 => Ok(Sign::Minus),
+                _ => Err(ParseBigDecimalError::InvalidSign(*b)),
+            }
+        } else {
+            Err(ParseBigDecimalError::InvalidLength(0))
+        };
+
+        Ok(Self(BigInt::from_bytes_le(sign?, &slice[1..])))
     }
 }
+
+impl BigDecimal {
+    pub fn to_vec(&self) -> Vec<u8> {
+        let mut result = Vec::new();
+        let (sign, v) = self.0.to_bytes_le();
+        match sign {
+            Sign::NoSign => result.push(0u8),
+            Sign::Plus => result.push(1u8),
+            Sign::Minus => result.push(2u8),
+        }
+        result.extend(v);
+        result
+    }
+}
+
+custom_type!(BigDecimal, CustomType::BigDecimal, Vec::new());
+
+//======
+// text
+//======
 
 impl FromStr for BigDecimal {
     type Err = ParseBigDecimalError;
@@ -397,32 +375,8 @@ impl FromStr for BigDecimal {
     }
 }
 
-impl TryFrom<&[u8]> for BigDecimal {
-    type Error = ParseBigDecimalError;
-
-    fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
-        let sign = if let Some(b) = slice.get(0) {
-            match b {
-                0 => Ok(Sign::NoSign),
-                1 => Ok(Sign::Plus),
-                2 => Ok(Sign::Minus),
-                _ => Err(ParseBigDecimalError::InvalidSign(*b)),
-            }
-        } else {
-            Err(ParseBigDecimalError::InvalidLength)
-        };
-
-        Ok(Self(BigInt::from_bytes_le(sign?, &slice[1..])))
-    }
-}
-
-fn big_int_to_u32_unchecked(v: BigInt) -> u32 {
-    let (_, bytes) = v.to_bytes_le();
-    bytes[0] as u32
-}
-
-impl fmt::Debug for BigDecimal {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl ToString for BigDecimal {
+    fn to_string(&self) -> String {
         let mut a = self.0.clone();
         let mut buf = String::new();
 
@@ -450,8 +404,7 @@ impl fmt::Debug for BigDecimal {
             }
         }
 
-        write!(
-            f,
+        format!(
             "{}{}",
             if self.is_negative() { "-" } else { "" },
             buf.chars().rev().collect::<String>()
@@ -459,41 +412,31 @@ impl fmt::Debug for BigDecimal {
     }
 }
 
-impl fmt::Display for BigDecimal {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{:?}", self)
+impl fmt::Debug for BigDecimal {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.to_string())
     }
 }
 
-impl TypeId for BigDecimal {
-    #[inline]
-    fn type_id() -> u8 {
-        SCRYPTO_TYPE_BIG_DECIMAL
+fn big_int_to_u32_unchecked(v: BigInt) -> u32 {
+    let (_, bytes) = v.to_bytes_le();
+    bytes[0] as u32
+}
+
+fn read_digit(c: char) -> Result<i128, ParseBigDecimalError> {
+    let n = c as i128;
+    if n >= 48 && n <= 48 + 9 {
+        Ok(n - 48)
+    } else {
+        Err(ParseBigDecimalError::InvalidChar(c))
     }
 }
 
-impl Encode for BigDecimal {
-    fn encode_value(&self, encoder: &mut Encoder) {
-        let bytes = self.to_vec();
-        encoder.write_len(bytes.len());
-        encoder.write_slice(&bytes);
-    }
-}
-
-impl Decode for BigDecimal {
-    fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
-        let len = decoder.read_len()?;
-        let slice = decoder.read_bytes(len)?;
-        Self::try_from(slice).map_err(|_| DecodeError::InvalidCustomData(SCRYPTO_TYPE_BIG_DECIMAL))
-    }
-}
-
-impl Describe for BigDecimal {
-    fn describe() -> Type {
-        Type::Custom {
-            name: SCRYPTO_NAME_BIG_DECIMAL.to_owned(),
-            generics: vec![],
-        }
+fn read_dot(c: char) -> Result<(), ParseBigDecimalError> {
+    if c == '.' {
+        Ok(())
+    } else {
+        Err(ParseBigDecimalError::InvalidChar(c))
     }
 }
 

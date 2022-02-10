@@ -16,151 +16,39 @@ compile_error!("Either feature `std` or `alloc` must be enabled for this crate."
 #[cfg(all(feature = "std", feature = "alloc"))]
 compile_error!("Feature `std` and `alloc` can't be enabled at the same time.");
 
+/// Scrypto blueprint ABI.
+pub mod abi {
+    pub use scrypto_abi::*;
+}
 /// Scrypto data encoding, decoding and exchange.
 pub mod buffer;
 /// Scrypto core abstractions.
 pub mod core;
+/// Scrypto cryptography library.
+pub mod crypto;
 /// Radix engine APIs.
 pub mod engine;
+/// Scrypto math library.
+pub mod math;
+/// Miscellaneous functions.
+pub mod misc;
 /// Scrypto preludes.
 pub mod prelude;
 /// Scrypto resource abstractions.
 pub mod resource;
 /// A facade of types in Rust standard library.
 pub mod rust;
-/// Scrypto primitive types.
+/// Scrypto types.
 pub mod types;
-/// Utility functions.
-pub mod utils;
 
-/// Scrypto blueprint ABI.
-pub mod abi {
-    pub use scrypto_abi::*;
-}
+// Export macros
+mod macros;
+pub use macros::*;
+
+// Re-export SBOR derive.
+extern crate sbor;
+pub use sbor::{Decode, Describe, Encode, TypeId};
 
 // Re-export Scrypto derive.
 extern crate scrypto_derive;
 pub use scrypto_derive::{auth, blueprint, import, NonFungibleData};
-
-/// Encodes arguments according to Scrypto ABI.
-///
-/// # Example
-/// ```ignore
-/// use scrypto::prelude::*;
-///
-/// args!(5, "hello")
-/// ```
-#[macro_export]
-macro_rules! args {
-    ($($args: expr),*) => {
-        {
-            let mut args = ::scrypto::rust::vec::Vec::new();
-            $(args.push(scrypto::buffer::scrypto_encode(&$args));)*
-            args
-        }
-    };
-}
-
-/// Logs an `ERROR` message.
-///
-/// # Example
-/// ```ignore
-/// use scrypto::prelude::*;
-///
-/// error!("Input number: {}", 100);
-/// ```
-#[macro_export]
-macro_rules! error {
-    ($($args: expr),+) => {{
-        ::scrypto::core::Logger::log(scrypto::engine::LogLevel::Error, ::scrypto::rust::format!($($args),+));
-    }};
-}
-
-/// Logs a `WARN` message.
-///
-/// # Example
-/// ```ignore
-/// use scrypto::prelude::*;
-///
-/// warn!("Input number: {}", 100);
-/// ```
-#[macro_export]
-macro_rules! warn {
-    ($($args: expr),+) => {{
-        ::scrypto::core::Logger::log(scrypto::engine::LogLevel::Warn, ::scrypto::rust::format!($($args),+));
-    }};
-}
-
-/// Logs an `INFO` message.
-///
-/// # Example
-/// ```ignore
-/// use scrypto::prelude::*;
-///
-/// info!("Input number: {}", 100);
-/// ```
-#[macro_export]
-macro_rules! info {
-    ($($args: expr),+) => {{
-        ::scrypto::core::Logger::log(scrypto::engine::LogLevel::Info, ::scrypto::rust::format!($($args),+));
-    }};
-}
-
-/// Logs a `DEBUG` message.
-///
-/// # Example
-/// ```ignore
-/// use scrypto::prelude::*;
-///
-/// debug!("Input number: {}", 100);
-/// ```
-#[macro_export]
-macro_rules! debug {
-    ($($args: expr),+) => {{
-        ::scrypto::core::Logger::log(scrypto::engine::LogLevel::Debug, ::scrypto::rust::format!($($args),+));
-    }};
-}
-
-/// Logs a `TRACE` message.
-///
-/// # Example
-/// ```ignore
-/// use scrypto::prelude::*;
-///
-/// trace!("Input number: {}", 100);
-/// ```
-#[macro_export]
-macro_rules! trace {
-    ($($args: expr),+) => {{
-        ::scrypto::core::Logger::log(scrypto::engine::LogLevel::Trace, ::scrypto::rust::format!($($args),+));
-    }};
-}
-
-/// Includes package code as a byte array.
-///
-/// # Example
-/// ```ignore
-/// use scrypto::prelude::*;
-///
-/// let code = include_code!("lib_name");
-/// let code2 = include_code!("/path/to/package", "lib_name");
-/// ```
-#[macro_export]
-macro_rules! include_code {
-    ($lib_name: expr) => {
-        include_bytes!(concat!(
-            env!("CARGO_MANIFEST_DIR"),
-            "/target/wasm32-unknown-unknown/release/",
-            $lib_name,
-            ".wasm"
-        ))
-    };
-    ($package_dir: expr, $lib_name: expr) => {
-        include_bytes!(concat!(
-            $package_dir,
-            "/target/wasm32-unknown-unknown/release/",
-            $lib_name,
-            ".wasm"
-        ))
-    };
-}
