@@ -39,6 +39,22 @@ blueprint! {
             }.instantiate()
         }
 
+        pub fn new_vault_into_map_then_get() -> Component {
+            let bucket = Self::new_fungible();
+            let vault = Vault::new(bucket.resource_def());
+            let vaults = LazyMap::new();
+            vaults.insert(0, vault);
+            let mut vault = vaults.get(&0).unwrap();
+            vault.put(bucket);
+
+            let vault_vector = Vec::new();
+            VaultTest {
+                vault,
+                vaults,
+                vault_vector
+            }.instantiate()
+        }
+
         pub fn overwrite_vault_in_map(&mut self) -> () {
             let bucket = Self::new_fungible();
             self.vaults.insert(0, Vault::with_bucket(bucket))
