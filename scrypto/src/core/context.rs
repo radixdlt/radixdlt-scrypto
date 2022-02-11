@@ -50,12 +50,12 @@ impl Context {
     /// Invokes a function on a blueprint.
     pub fn call_function<S: AsRef<str>>(
         blueprint: (PackageRef, S),
-        function: &str,
+        function: S,
         args: Vec<Vec<u8>>,
     ) -> Vec<u8> {
         let input = CallFunctionInput {
             blueprint: (blueprint.0, blueprint.1.as_ref().to_owned()),
-            function: function.to_owned(),
+            function: function.as_ref().to_owned(),
             args,
         };
         let output: CallFunctionOutput = call_engine(CALL_FUNCTION, input);
@@ -64,10 +64,14 @@ impl Context {
     }
 
     /// Invokes a method on a component.
-    pub fn call_method(component: ComponentRef, method: &str, args: Vec<Vec<u8>>) -> Vec<u8> {
+    pub fn call_method<S: AsRef<str>>(
+        component: ComponentRef,
+        method: S,
+        args: Vec<Vec<u8>>,
+    ) -> Vec<u8> {
         let input = CallMethodInput {
             component,
-            method: method.to_owned(),
+            method: method.as_ref().to_owned(),
             args,
         };
         let output: CallMethodOutput = call_engine(CALL_METHOD, input);

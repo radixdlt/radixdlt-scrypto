@@ -1,5 +1,7 @@
 use sbor::{describe::Type, *};
 
+use crate::buffer::*;
+use crate::core::*;
 use crate::engine::*;
 use crate::misc::*;
 use crate::rust::fmt;
@@ -20,6 +22,10 @@ impl PackageRef {
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3,
     ]);
 
+    fn this(&self) -> Self {
+        Self(self.0)
+    }
+
     /// Creates a new package.
     pub fn new(code: &[u8]) -> Self {
         let input = PublishPackageInput {
@@ -28,6 +34,18 @@ impl PackageRef {
         let output: PublishPackageOutput = call_engine(PUBLISH_PACKAGE, input);
 
         output.package
+    }
+
+    /// Invokes a function on this blueprint.
+    pub fn call<T: Decode, S: AsRef<str>>(
+        &self,
+        blueprint: S,
+        function: S,
+        args: Vec<Vec<u8>>,
+    ) -> T {
+        let output = Context::call_function((self.this(), blueprint), function, args);
+
+        scrypto_decode(&output).unwrap()
     }
 }
 
