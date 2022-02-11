@@ -13,13 +13,12 @@ pub enum VaultError {
 /// A persistent resource container on ledger state.
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct Vault {
-    bucket: Bucket,
-    authority: Address,
+    bucket: Bucket
 }
 
 impl Vault {
-    pub fn new(bucket: Bucket, authority: Address) -> Self {
-        Self { bucket, authority }
+    pub fn new(bucket: Bucket) -> Self {
+        Self { bucket }
     }
 
     pub fn put(&mut self, other: Bucket) -> Result<(), VaultError> {

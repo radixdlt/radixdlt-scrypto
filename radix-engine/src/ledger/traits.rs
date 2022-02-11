@@ -115,8 +115,7 @@ pub trait SubstateStore {
                         Supply::Fungible {
                             amount: XRD_MAX_SUPPLY.into(),
                         },
-                    ),
-                    SYSTEM_PACKAGE,
+                    )
                 ),
             );
             self.put_component(

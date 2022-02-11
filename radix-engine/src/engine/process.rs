@@ -1162,7 +1162,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         self.unclaimed_lazy_maps.insert(
             mid,
             UnclaimedLazyMap {
-                lazy_map: LazyMap::new(self.package()?),
+                lazy_map: LazyMap::new(),
                 descendent_lazy_maps: HashMap::new(),
                 descendent_vaults: HashMap::new(),
             },
@@ -1580,8 +1580,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                         keys: BTreeSet::new(),
                     },
                 },
-            ),
-            self.package()?,
+            )
         );
         let vid = self.track.new_vid();
         self.unclaimed_vaults.insert(vid, new_vault);
