@@ -67,11 +67,29 @@ enum ComponentState {
 #[derive(Debug)]
 struct UnclaimedLazyMap {
     lazy_map: LazyMap,
-    child_lazy_maps: HashMap<Mid, LazyMap>,
-    child_vaults: HashMap<Vid, Vault>,
+    /// All descendents (not just direct children) of the unclaimed lazy map
+    descendent_lazy_maps: HashMap<Mid, LazyMap>,
+    descendent_vaults: HashMap<Vid, Vault>,
 }
 
-impl UnclaimedLazyMap {}
+impl UnclaimedLazyMap {
+    fn merge(
+        &mut self,
+        unclaimed_lazy_map: UnclaimedLazyMap,
+        mid: Mid,
+    ) {
+        self
+            .descendent_lazy_maps
+            .insert(mid, unclaimed_lazy_map.lazy_map);
+
+        for (mid, lazy_map) in unclaimed_lazy_map.descendent_lazy_maps {
+            self.descendent_lazy_maps.insert(mid, lazy_map);
+        }
+        for (vid, vault) in unclaimed_lazy_map.descendent_vaults {
+            self.descendent_vaults.insert(vid, vault);
+        }
+    }
+}
 
 /// A process keeps track of resource movements and code execution.
 pub struct Process<'r, 'l, L: SubstateStore> {
@@ -974,24 +992,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         Ok(CallMethodOutput { rtn: result?.raw })
     }
 
-    fn move_lazy_map_into_lazy_map(
-        &mut self,
-        unclaimed_lazy_map: UnclaimedLazyMap,
-        mid: Mid,
-        mid_parent: &Mid,
-    ) {
-        let parent_lazy_map = self.unclaimed_lazy_maps.get_mut(&mid_parent).unwrap();
-        parent_lazy_map
-            .child_lazy_maps
-            .insert(mid, unclaimed_lazy_map.lazy_map);
-
-        for (mid, lazy_map) in unclaimed_lazy_map.child_lazy_maps {
-            parent_lazy_map.child_lazy_maps.insert(mid, lazy_map);
-        }
-        for (vid, vault) in unclaimed_lazy_map.child_vaults {
-            parent_lazy_map.child_vaults.insert(vid, vault);
-        }
-    }
 
     fn move_lazy_map_into_component(
         &mut self,
@@ -999,13 +999,15 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         mid: Mid,
         component_address: Address,
     ) {
+        re_debug!(self, "Lazy Map move: lazy_map = {}, to = component({:?}) ", mid, component_address);
+
         self.track
             .put_lazy_map(component_address, mid, unclaimed_lazy_map.lazy_map);
-        for (child_mid, child_lazy_map) in unclaimed_lazy_map.child_lazy_maps {
+        for (child_mid, child_lazy_map) in unclaimed_lazy_map.descendent_lazy_maps {
             self.track
                 .put_lazy_map(component_address, child_mid, child_lazy_map);
         }
-        for (vid, vault) in unclaimed_lazy_map.child_vaults {
+        for (vid, vault) in unclaimed_lazy_map.descendent_vaults {
             self.track.put_vault(component_address, vid, vault);
         }
     }
@@ -1164,8 +1166,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             mid,
             UnclaimedLazyMap {
                 lazy_map: LazyMap::new(self.package()?),
-                child_lazy_maps: HashMap::new(),
-                child_vaults: HashMap::new(),
+                descendent_lazy_maps: HashMap::new(),
+                descendent_vaults: HashMap::new(),
             },
         );
 
@@ -1247,7 +1249,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     Uncommitted => {
                         let unclaimed_lazy_map =
                             self.unclaimed_lazy_maps.get_mut(&input.mid).unwrap();
-                        unclaimed_lazy_map.child_vaults.insert(vid, vault);
+                        unclaimed_lazy_map.descendent_vaults.insert(vid, vault);
                     }
                     Committed { component_address } => {
                         self.track.put_vault(component_address, vid, vault);
@@ -1269,7 +1271,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
                 match lazy_map_state {
                     Uncommitted => {
-                        self.move_lazy_map_into_lazy_map(child_lazy_map, mid, &input.mid);
+                        let unclaimed_lazy_map = self.unclaimed_lazy_maps.get_mut(&input.mid).unwrap();
+                        unclaimed_lazy_map.merge(child_lazy_map, mid);
                     }
                     Committed { component_address } => {
                         self.move_lazy_map_into_component(child_lazy_map, mid, component_address);
