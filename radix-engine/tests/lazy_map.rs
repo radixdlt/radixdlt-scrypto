@@ -46,7 +46,13 @@ fn create_mutable_lazy_map_into_map_and_referencing_before_storing() {
 
     // Act
     let transaction = TransactionBuilder::new(&executor)
-        .call_function(package, "LazyMapTest", "new_lazy_map_into_map_then_get", vec![], None)
+        .call_function(
+            package,
+            "LazyMapTest",
+            "new_lazy_map_into_map_then_get",
+            vec![],
+            None,
+        )
         .build(vec![])
         .unwrap();
     let receipt = executor.run(transaction).unwrap();

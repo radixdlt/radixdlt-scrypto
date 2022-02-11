@@ -72,7 +72,13 @@ fn invalid_double_ownership_of_vault() {
 
     // Act
     let transaction = TransactionBuilder::new(&sut)
-        .call_function(package, "VaultTest", "invalid_double_ownership_of_vault", vec![], None)
+        .call_function(
+            package,
+            "VaultTest",
+            "invalid_double_ownership_of_vault",
+            vec![],
+            None,
+        )
         .build(vec![])
         .unwrap();
     let receipt = sut.run(transaction).unwrap();
@@ -80,7 +86,6 @@ fn invalid_double_ownership_of_vault() {
     // Assert
     assert!(!receipt.result.is_ok());
 }
-
 
 #[test]
 fn create_mutable_vault_into_map_and_referencing_before_storing() {
@@ -91,7 +96,13 @@ fn create_mutable_vault_into_map_and_referencing_before_storing() {
 
     // Act
     let transaction = TransactionBuilder::new(&sut)
-        .call_function(package, "VaultTest", "new_vault_into_map_then_get", vec![], None)
+        .call_function(
+            package,
+            "VaultTest",
+            "new_vault_into_map_then_get",
+            vec![],
+            None,
+        )
         .build(vec![])
         .unwrap();
     let receipt = sut.run(transaction).unwrap();

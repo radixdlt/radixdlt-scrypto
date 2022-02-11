@@ -73,13 +73,8 @@ struct UnclaimedLazyMap {
 }
 
 impl UnclaimedLazyMap {
-    fn merge(
-        &mut self,
-        unclaimed_lazy_map: UnclaimedLazyMap,
-        mid: Mid,
-    ) {
-        self
-            .descendent_lazy_maps
+    fn merge(&mut self, unclaimed_lazy_map: UnclaimedLazyMap, mid: Mid) {
+        self.descendent_lazy_maps
             .insert(mid, unclaimed_lazy_map.lazy_map);
 
         for (mid, lazy_map) in unclaimed_lazy_map.descendent_lazy_maps {
@@ -992,14 +987,18 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         Ok(CallMethodOutput { rtn: result?.raw })
     }
 
-
     fn move_lazy_map_into_component(
         &mut self,
         unclaimed_lazy_map: UnclaimedLazyMap,
         mid: Mid,
         component_address: Address,
     ) {
-        re_debug!(self, "Lazy Map move: lazy_map = {}, to = component({:?}) ", mid, component_address);
+        re_debug!(
+            self,
+            "Lazy Map move: lazy_map = {}, to = component({:?}) ",
+            mid,
+            component_address
+        );
 
         self.track
             .put_lazy_map(component_address, mid, unclaimed_lazy_map.lazy_map);
@@ -1075,15 +1074,13 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         _: GetComponentStateInput,
     ) -> Result<GetComponentStateOutput, RuntimeError> {
         let component_address = match self.component_state {
-            ComponentState::Empty => {
-                match self.vm.as_ref().unwrap().invocation.actor {
-                    Actor::Component(component_address) => Ok(component_address),
-                    _ => Err(RuntimeError::IllegalSystemCall()),
-                }
+            ComponentState::Empty => match self.vm.as_ref().unwrap().invocation.actor {
+                Actor::Component(component_address) => Ok(component_address),
+                _ => Err(RuntimeError::IllegalSystemCall()),
             },
-            ComponentState::Loaded { component_address, .. } => {
-                Err(RuntimeError::ComponentAlreadyLoaded(component_address))
-            }
+            ComponentState::Loaded {
+                component_address, ..
+            } => Err(RuntimeError::ComponentAlreadyLoaded(component_address)),
             ComponentState::Saved => Err(RuntimeError::IllegalSystemCall()),
         }?;
 
@@ -1092,7 +1089,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let component_data = Self::process_component_data(state).unwrap();
         self.component_state = ComponentState::Loaded {
             component_address,
-            component_data
+            component_data,
         };
 
         Ok(GetComponentStateOutput {
@@ -1179,16 +1176,14 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         input: GetLazyMapEntryInput,
     ) -> Result<GetLazyMapEntryOutput, RuntimeError> {
         let lazy_map = match self.unclaimed_lazy_maps.get_mut(&input.mid) {
-            Some(unclaimed_lazy_map) => {
-                Ok(&unclaimed_lazy_map.lazy_map)
-            },
+            Some(unclaimed_lazy_map) => Ok(&unclaimed_lazy_map.lazy_map),
             None => match self.component_state {
-                ComponentState::Loaded { component_address, .. } => {
-                    match self.track.get_lazy_map(&component_address, &input.mid) {
-                        Some(lazy_map) => Ok(lazy_map),
-                        None => Err(RuntimeError::LazyMapNotFound(input.mid)),
-                    }
-                }
+                ComponentState::Loaded {
+                    component_address, ..
+                } => match self.track.get_lazy_map(&component_address, &input.mid) {
+                    Some(lazy_map) => Ok(lazy_map),
+                    None => Err(RuntimeError::LazyMapNotFound(input.mid)),
+                },
                 _ => Err(RuntimeError::LazyMapNotFound(input.mid)),
             },
         }?;
@@ -1199,7 +1194,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             value: value.map(|e| e.to_vec()),
         })
     }
-
 
     fn handle_put_lazy_map_entry(
         &mut self,
@@ -1229,9 +1223,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     .remove(&vid)
                     .ok_or(RuntimeError::VaultNotFound(vid))?;
                 match lazy_map_state {
-                    Uncommitted{ root } => {
-                        let unclaimed_lazy_map =
-                            self.unclaimed_lazy_maps.get_mut(&root).unwrap();
+                    Uncommitted { root } => {
+                        let unclaimed_lazy_map = self.unclaimed_lazy_maps.get_mut(&root).unwrap();
                         unclaimed_lazy_map.descendent_vaults.insert(vid, vault);
                     }
                     Committed { component_address } => {
@@ -1656,7 +1649,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     }
                     _ => Err(RuntimeError::VaultNotFound(vid)),
                 }
-            },
+            }
         }
     }
 
