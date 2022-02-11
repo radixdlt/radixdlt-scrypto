@@ -1,7 +1,7 @@
 use scrypto::prelude::*;
 
 blueprint! {
-    struct LazyMapTest {
+   struct LazyMapTest {
         map: LazyMap<String, String>,
         vector: Vec<LazyMap<String, String>>,
         lazy_maps: LazyMap<String, LazyMap<String, String>>

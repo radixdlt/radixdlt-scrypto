@@ -1175,19 +1175,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         input: GetLazyMapEntryInput,
     ) -> Result<GetLazyMapEntryOutput, RuntimeError> {
-        let lazy_map = match self.unclaimed_lazy_maps.get_mut(&input.mid) {
-            Some(unclaimed_lazy_map) => Ok(&unclaimed_lazy_map.lazy_map),
-            None => match self.component_state {
-                ComponentState::Loaded {
-                    component_address, ..
-                } => match self.track.get_lazy_map(&component_address, &input.mid) {
-                    Some(lazy_map) => Ok(lazy_map),
-                    None => Err(RuntimeError::LazyMapNotFound(input.mid)),
-                },
-                _ => Err(RuntimeError::LazyMapNotFound(input.mid)),
-            },
-        }?;
-
+        let (lazy_map, _) = self.get_local_lazy_map_mut(input.mid)?;
         let value = lazy_map.get_entry(&input.key);
 
         Ok(GetLazyMapEntryOutput {
