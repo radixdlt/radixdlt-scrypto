@@ -41,6 +41,24 @@ pub fn decompile(tx: &Transaction) -> Result<String, DecompileError> {
                     resource_address, name
                 ));
             }
+            Instruction::TakeNonFungiblesFromWorktop {
+                keys,
+                resource_address,
+            } => {
+                let bid = id_validator
+                    .new_bucket()
+                    .map_err(DecompileError::IdValidatorError)?;
+                let name = format!("bucket{}", buckets.len() + 1);
+                buckets.insert(bid, name.clone());
+                buf.push_str(&format!(
+                    "TAKE_NON_FUNGIBLES_FROM_WORKTOP TreeSet<NonFungibleKey>({}) Address(\"{}\") Bucket(\"{}\");\n",
+                    keys.iter()
+                    .map(|k| format!("NonFungibleKey(\"{}\")", k))
+                    .collect::<Vec<String>>()
+                    .join(", "),
+                    resource_address, name
+                ));
+            }
             Instruction::ReturnToWorktop { bid } => {
                 id_validator
                     .drop_bucket(bid)
@@ -171,12 +189,11 @@ mod tests {
 
     #[test]
     fn test_decompile() {
-        let original = include_str!("../examples/call.rtm");
-        let compiled = compile(original).unwrap();
+        let tx = compile(include_str!("../examples/call.rtm")).unwrap();
 
-        let decompiled = &decompile(&compiled).unwrap();
-        println!("{}", decompiled);
+        let manifest = &decompile(&tx).unwrap();
+        println!("{}", manifest);
 
-        assert_eq!(compiled, compile(decompiled).unwrap());
+        assert_eq!(compile(manifest).unwrap(), tx);
     }
 }

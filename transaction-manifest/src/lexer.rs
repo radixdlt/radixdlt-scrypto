@@ -79,6 +79,7 @@ pub enum TokenKind {
     /* Instructions */
     TakeFromWorktop,
     TakeAllFromWorktop,
+    TakeNonFungiblesFromWorktop,
     ReturnToWorktop,
     AssertWorktopContains,
     CreateBucketRef,
@@ -386,6 +387,7 @@ impl Lexer {
 
             "TAKE_FROM_WORKTOP" => Ok(TokenKind::TakeFromWorktop),
             "TAKE_ALL_FROM_WORKTOP" => Ok(TokenKind::TakeAllFromWorktop),
+            "TAKE_NON_FUNGIBLES_FROM_WORKTOP" => Ok(TokenKind::TakeNonFungiblesFromWorktop),
             "RETURN_TO_WORKTOP" => Ok(TokenKind::ReturnToWorktop),
             "ASSERT_WORKTOP_CONTAINS" => Ok(TokenKind::AssertWorktopContains),
             "CREATE_BUCKET_REF" => Ok(TokenKind::CreateBucketRef),

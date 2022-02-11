@@ -1,3 +1,4 @@
+use scrypto::rust::collections::BTreeSet;
 use scrypto::rust::string::String;
 use scrypto::rust::vec::Vec;
 use scrypto::types::*;
@@ -17,6 +18,10 @@ pub enum ValidatedInstruction {
         resource_address: Address,
     },
     TakeAllFromWorktop {
+        resource_address: Address,
+    },
+    TakeNonFungiblesFromWorktop {
+        keys: BTreeSet<NonFungibleKey>,
         resource_address: Address,
     },
     ReturnToWorktop {
