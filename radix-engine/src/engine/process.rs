@@ -64,6 +64,7 @@ enum InterpreterState {
     ComponentLoaded {
         component_address: Address,
         component_data: ValidatedData,
+        loaded_lazy_maps: HashSet<Mid>
     },
     ComponentStored,
 }
@@ -1044,7 +1045,11 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                         let component = self.track.get_component(*component_address).unwrap();
                         let state = component.state();
                         let component_data = Self::process_component_data(state).unwrap();
-                        Ok((state, InterpreterState::ComponentLoaded { component_address: *component_address, component_data }))
+                        Ok((state, InterpreterState::ComponentLoaded {
+                            component_address: *component_address,
+                            component_data,
+                            loaded_lazy_maps: HashSet::new()
+                        }))
                     }
                     _ => Err(RuntimeError::IllegalSystemCall()),
                 }?;
@@ -1065,7 +1070,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             ProcessState::Empty => Err(RuntimeError::IllegalSystemCall()),
             ProcessState::HasInterpreter { ref mut state, .. } => {
                 let next_state = match state {
-                    InterpreterState::ComponentLoaded { component_address, component_data } => {
+                    InterpreterState::ComponentLoaded { component_address, component_data, .. } => {
                         let new_state = Self::process_component_data(&input.state)?;
 
                         // Only allow vaults to be added, never removed
@@ -1146,8 +1151,45 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         input: GetLazyMapEntryInput,
     ) -> Result<GetLazyMapEntryOutput, RuntimeError> {
-        let (lazy_map, _) = self.get_local_lazy_map_mut(input.mid)?;
-        let value = lazy_map.get_entry(&input.key);
+        let value = match &mut self.process_state {
+            ProcessState::HasInterpreter { state, .. } => {
+                // TODO: Optimize to prevent iteration
+                let mut found = None;
+                for (root, unclaimed) in self.unclaimed_lazy_maps.iter_mut() {
+                    if input.mid.eq(root) {
+                        found = Some(unclaimed.lazy_map.get_entry(&input.key));
+                    }
+
+                    let lazy_map = unclaimed.descendent_lazy_maps.get_mut(&input.mid);
+                    if lazy_map.is_some() {
+                        found = Some(lazy_map.unwrap().get_entry(&input.key));
+                    }
+                }
+                match found {
+                    None => {
+                        match state {
+                            InterpreterState::ComponentLoaded { component_data, component_address, loaded_lazy_maps} => {
+                                if !component_data.lazy_maps.contains(&input.mid) && !loaded_lazy_maps.contains(&input.mid) {
+                                    return Err(RuntimeError::LazyMapNotFound(input.mid));
+                                }
+                                let lazy_map = self.track.get_lazy_map_mut(&component_address, &input.mid).unwrap();
+                                let value = lazy_map.get_entry(&input.key);
+                                if value.is_some() {
+                                    let map_data = Self::process_map_data(value.unwrap()).unwrap();
+                                    loaded_lazy_maps.extend(map_data.lazy_maps);
+                                }
+
+                                Ok(value)
+                            },
+                            _ => Err(RuntimeError::LazyMapNotFound(input.mid))
+                        }
+                    },
+                    Some(result) => Ok(result)
+                }
+            },
+            _ => Err(RuntimeError::IllegalSystemCall())
+        }?;
+
 
         Ok(GetLazyMapEntryOutput {
             value: value.map(|e| e.to_vec()),
