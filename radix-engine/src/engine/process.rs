@@ -57,7 +57,10 @@ enum LazyMapState {
 
 enum ComponentState {
     Empty,
-    Loaded(ValidatedData),
+    Loaded {
+        component_address: Address,
+        component_data: ValidatedData,
+    },
     Saved,
 }
 
@@ -141,8 +144,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             bucket_refs: HashMap::new(),
             moving_buckets: HashMap::new(),
             moving_bucket_refs: HashMap::new(),
-            unclaimed_lazy_maps: HashMap::new(),
             unclaimed_vaults: HashMap::new(),
+            unclaimed_lazy_maps: HashMap::new(),
             component_state: ComponentState::Empty,
             vm: None,
             id_allocator: IdAllocator::new(IdSpace::Transaction),
@@ -1069,13 +1072,14 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         _: GetComponentStateInput,
     ) -> Result<GetComponentStateOutput, RuntimeError> {
-        let component_address = match self.vm.as_ref().unwrap().invocation.actor {
-            Actor::Component(component_address) => Ok(component_address),
-            _ => Err(RuntimeError::IllegalSystemCall()),
-        }?;
-        match self.component_state {
-            ComponentState::Empty => Ok(()),
-            ComponentState::Loaded(_) => {
+        let component_address = match self.component_state {
+            ComponentState::Empty => {
+                match self.vm.as_ref().unwrap().invocation.actor {
+                    Actor::Component(component_address) => Ok(component_address),
+                    _ => Err(RuntimeError::IllegalSystemCall()),
+                }
+            },
+            ComponentState::Loaded { component_address, .. } => {
                 Err(RuntimeError::ComponentAlreadyLoaded(component_address))
             }
             ComponentState::Saved => Err(RuntimeError::IllegalSystemCall()),
@@ -1084,7 +1088,10 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let component = self.track.get_component(component_address).unwrap();
         let state = component.state();
         let component_data = Self::process_component_data(state).unwrap();
-        self.component_state = ComponentState::Loaded(component_data);
+        self.component_state = ComponentState::Loaded {
+            component_address,
+            component_data
+        };
 
         Ok(GetComponentStateOutput {
             state: state.to_owned(),
@@ -1097,7 +1104,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     ) -> Result<PutComponentStateOutput, RuntimeError> {
         let old_state = match &self.component_state {
             ComponentState::Empty => Err(RuntimeError::ComponentNotLoaded()),
-            ComponentState::Loaded(old_state) => Ok(old_state),
+            ComponentState::Loaded { component_data, .. } => Ok(component_data),
             ComponentState::Saved => Err(RuntimeError::IllegalSystemCall()),
         }?
         .to_owned();
@@ -1170,9 +1177,11 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         input: GetLazyMapEntryInput,
     ) -> Result<GetLazyMapEntryOutput, RuntimeError> {
         let lazy_map = match self.unclaimed_lazy_maps.get_mut(&input.mid) {
-            Some(unclaimed_lazy_map) => Ok(&unclaimed_lazy_map.lazy_map),
-            None => match self.vm.as_ref().unwrap().invocation.actor {
-                Actor::Component(component_address) => {
+            Some(unclaimed_lazy_map) => {
+                Ok(&unclaimed_lazy_map.lazy_map)
+            },
+            None => match self.component_state {
+                ComponentState::Loaded { component_address, .. } => {
                     match self.track.get_lazy_map(&component_address, &input.mid) {
                         Some(lazy_map) => Ok(lazy_map),
                         None => Err(RuntimeError::LazyMapNotFound(input.mid)),

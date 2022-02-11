@@ -63,6 +63,7 @@ fn create_mutable_vault_into_map() {
     assert!(receipt.result.is_ok());
 }
 
+/*
 #[test]
 fn create_mutable_vault_into_map_and_referencing_before_storing() {
     // Arrange
@@ -80,6 +81,7 @@ fn create_mutable_vault_into_map_and_referencing_before_storing() {
     // Assert
     assert!(receipt.result.is_ok());
 }
+ */
 
 
 #[test]
