@@ -44,8 +44,8 @@ pub(crate) use custom_type;
 /// Custom types must be encoded as `[length + bytes]`.
 pub enum CustomType {
     // core
-    Package,
-    Component,
+    PackageRef,
+    ComponentRef,
     LazyMap,
 
     // crypto
@@ -60,16 +60,16 @@ pub enum CustomType {
     BucketRef,
     Vault,
     NonFungibleKey,
-    ResourceDef,
+    ResourceDefRef,
 }
 
 impl CustomType {
     pub fn id(&self) -> u8 {
         match self {
             // core
-            CustomType::Package => 0x80,
-            CustomType::Component => 0x81,
-            CustomType::LazyMap => 0x83,
+            CustomType::PackageRef => 0x80,
+            CustomType::ComponentRef => 0x81,
+            CustomType::LazyMap => 0x82,
             // crypto
             CustomType::Hash => 0x90,
             // math
@@ -80,15 +80,15 @@ impl CustomType {
             CustomType::BucketRef => 0xb1,
             CustomType::Vault => 0xb2,
             CustomType::NonFungibleKey => 0xb3,
-            CustomType::ResourceDef => 0xb4,
+            CustomType::ResourceDefRef => 0xb4,
         }
     }
 
     pub fn name(&self) -> String {
         match self {
             // core
-            CustomType::Package => "scrypto::core::Package",
-            CustomType::Component => "scrypto::core::Component",
+            CustomType::PackageRef => "scrypto::core::PackageRef",
+            CustomType::ComponentRef => "scrypto::core::ComponentRef",
             CustomType::LazyMap => "scrypto::core::LazyMap",
             // crypto
             CustomType::Hash => "scrypto::crypto::Hash",
@@ -100,7 +100,7 @@ impl CustomType {
             CustomType::BucketRef => "scrypto::resource::BucketRef",
             CustomType::Vault => "scrypto::resource::Vault",
             CustomType::NonFungibleKey => "scrypto::resource::NonFungibleKey",
-            CustomType::ResourceDef => "scrypto::resource::ResourceDef",
+            CustomType::ResourceDefRef => "scrypto::resource::ResourceDefRef",
         }
         .to_owned()
     }

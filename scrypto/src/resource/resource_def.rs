@@ -13,9 +13,9 @@ use crate::types::*;
 
 /// Represents a resource definition.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct ResourceDef([u8; 26]);
+pub struct ResourceDefRef([u8; 26]);
 
-impl ResourceDef {
+impl ResourceDefRef {
     pub const RADIX_TOKEN: Self = Self([
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4,
     ]);
@@ -36,9 +36,9 @@ impl ResourceDef {
         metadata: HashMap<String, String>,
         flags: u64,
         mutable_flags: u64,
-        authorities: HashMap<ResourceDef, u64>,
+        authorities: HashMap<ResourceDefRef, u64>,
         initial_supply: Option<Supply>,
-    ) -> (ResourceDef, Option<Bucket>) {
+    ) -> (ResourceDefRef, Option<Bucket>) {
         let input = CreateResourceInput {
             resource_type,
             metadata,
@@ -231,16 +231,16 @@ impl ResourceDef {
 //========
 
 #[derive(Debug, Clone)]
-pub enum ParseResourceDefError {
+pub enum ParseResourceDefRefError {
     InvalidHex(hex::FromHexError),
     InvalidLength(usize),
 }
 
 #[cfg(not(feature = "alloc"))]
-impl std::error::Error for ParseResourceDefError {}
+impl std::error::Error for ParseResourceDefRefError {}
 
 #[cfg(not(feature = "alloc"))]
-impl fmt::Display for ParseResourceDefError {
+impl fmt::Display for ParseResourceDefRefError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}", self)
     }
@@ -250,24 +250,24 @@ impl fmt::Display for ParseResourceDefError {
 // binary
 //========
 
-impl TryFrom<&[u8]> for ResourceDef {
-    type Error = ParseResourceDefError;
+impl TryFrom<&[u8]> for ResourceDefRef {
+    type Error = ParseResourceDefRefError;
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
         match slice.len() {
             26 => Ok(Self(copy_u8_array(slice))),
-            _ => Err(ParseResourceDefError::InvalidLength(slice.len())),
+            _ => Err(ParseResourceDefRefError::InvalidLength(slice.len())),
         }
     }
 }
 
-impl ResourceDef {
+impl ResourceDefRef {
     pub fn to_vec(&self) -> Vec<u8> {
         self.0.to_vec()
     }
 }
 
-custom_type!(ResourceDef, CustomType::ResourceDef, Vec::new());
+custom_type!(ResourceDefRef, CustomType::ResourceDefRef, Vec::new());
 
 //======
 // text
@@ -275,16 +275,16 @@ custom_type!(ResourceDef, CustomType::ResourceDef, Vec::new());
 
 // Before Bech32, we use a fixed prefix for text representation.
 
-impl FromStr for ResourceDef {
-    type Err = ParseResourceDefError;
+impl FromStr for ResourceDefRef {
+    type Err = ParseResourceDefRefError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let bytes = hex::decode(s).map_err(ParseResourceDefError::InvalidHex)?;
+        let bytes = hex::decode(s).map_err(ParseResourceDefRefError::InvalidHex)?;
         Self::try_from(&bytes[1..])
     }
 }
 
-impl ToString for ResourceDef {
+impl ToString for ResourceDefRef {
     fn to_string(&self) -> String {
         hex::encode(combine(3, &self.0))
     }

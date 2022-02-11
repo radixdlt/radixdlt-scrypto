@@ -20,7 +20,7 @@ pub use non_fungible::NonFungible;
 pub use non_fungible_data::NonFungibleData;
 pub use non_fungible_key::NonFungibleKey;
 pub use resource_builder::{ResourceBuilder, DIVISIBILITY_MAXIMUM, DIVISIBILITY_NONE};
-pub use resource_def::ResourceDef;
+pub use resource_def::ResourceDefRef;
 pub use resource_flags::*;
 pub use resource_permissions::*;
 pub use resource_type::ResourceType;

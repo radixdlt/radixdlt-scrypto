@@ -17,14 +17,14 @@ pub trait ComponentState: Encode + Decode {
     fn blueprint_name() -> &'static str;
 
     /// Instantiates a component from this data structure.
-    fn instantiate(self) -> Component;
+    fn instantiate(self) -> ComponentRef;
 }
 
 /// An instance of a blueprint, which lives in the ledger state.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct Component([u8; 26]);
+pub struct ComponentRef([u8; 26]);
 
-impl Component {
+impl ComponentRef {
     pub const SYSTEM: Self = Self([
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2,
     ]);
@@ -72,7 +72,7 @@ impl Component {
     }
 
     /// Returns the blueprint that this component is instantiated from.
-    pub fn blueprint(&self) -> (Package, String) {
+    pub fn blueprint(&self) -> (PackageRef, String) {
         let input = GetComponentInfoInput {
             component: self.this(),
         };
@@ -86,16 +86,16 @@ impl Component {
 //========
 
 #[derive(Debug, Clone)]
-pub enum ParseComponentError {
+pub enum ParseComponentRefError {
     InvalidHex(hex::FromHexError),
     InvalidLength(usize),
 }
 
 #[cfg(not(feature = "alloc"))]
-impl std::error::Error for ParseComponentError {}
+impl std::error::Error for ParseComponentRefError {}
 
 #[cfg(not(feature = "alloc"))]
-impl fmt::Display for ParseComponentError {
+impl fmt::Display for ParseComponentRefError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}", self)
     }
@@ -105,24 +105,24 @@ impl fmt::Display for ParseComponentError {
 // binary
 //========
 
-impl TryFrom<&[u8]> for Component {
-    type Error = ParseComponentError;
+impl TryFrom<&[u8]> for ComponentRef {
+    type Error = ParseComponentRefError;
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
         match slice.len() {
             26 => Ok(Self(copy_u8_array(slice))),
-            _ => Err(ParseComponentError::InvalidLength(slice.len())),
+            _ => Err(ParseComponentRefError::InvalidLength(slice.len())),
         }
     }
 }
 
-impl Component {
+impl ComponentRef {
     pub fn to_vec(&self) -> Vec<u8> {
         self.0.to_vec()
     }
 }
 
-custom_type!(Component, CustomType::Component, Vec::new());
+custom_type!(ComponentRef, CustomType::ComponentRef, Vec::new());
 
 //======
 // text
@@ -130,16 +130,16 @@ custom_type!(Component, CustomType::Component, Vec::new());
 
 // Before Bech32, we use a fixed prefix for text representation.
 
-impl FromStr for Component {
-    type Err = ParseComponentError;
+impl FromStr for ComponentRef {
+    type Err = ParseComponentRefError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let bytes = hex::decode(s).map_err(ParseComponentError::InvalidHex)?;
+        let bytes = hex::decode(s).map_err(ParseComponentRefError::InvalidHex)?;
         Self::try_from(&bytes[1..])
     }
 }
 
-impl ToString for Component {
+impl ToString for ComponentRef {
     fn to_string(&self) -> String {
         hex::encode(combine(2, &self.0))
     }

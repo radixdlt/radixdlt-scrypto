@@ -12,7 +12,7 @@ blueprint! {
     }
 
     impl Simple {
-        pub fn new() -> Component {
+        pub fn new() -> ComponentRef {
             Self {
                 state: 0
             }.instantiate()
@@ -26,7 +26,7 @@ blueprint! {
             self.state = new_state;
         }
 
-        pub fn custom_types() -> (Decimal, Package, LazyMap<String, String>, Hash, Bucket, BucketRef, Vault) {
+        pub fn custom_types() -> (Decimal, PackageRef, LazyMap<String, String>, Hash, Bucket, BucketRef, Vault) {
             todo!()
         }
     }
@@ -51,7 +51,7 @@ fn test_simple_abi() {
                     "inputs": [],
                     "output": {
                         "type": "Custom",
-                        "name": "scrypto::core::Component",
+                        "name": "scrypto::core::ComponentRef",
                         "generics": []
                     }
                 },
@@ -68,7 +68,7 @@ fn test_simple_abi() {
                             },
                             {
                                 "type": "Custom",
-                                "name": "scrypto::core::Package",
+                                "name": "scrypto::core::PackageRef",
                                 "generics": []
                             },
                             {

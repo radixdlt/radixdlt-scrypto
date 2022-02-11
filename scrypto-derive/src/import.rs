@@ -52,7 +52,7 @@ pub fn handle_import(input: TokenStream) -> Result<TokenStream> {
 
         functions.push(parse_quote! {
             pub fn #func_indent(#(#func_args: #func_types),*) -> #func_output {
-                let package = ::scrypto::core::Package::from_str(#package).unwrap();
+                let package = ::scrypto::core::PackageRef::from_str(#package).unwrap();
                 let rtn = ::scrypto::core::Context::call_function(
                     (package, #name),
                     #func_name,
@@ -100,7 +100,7 @@ pub fn handle_import(input: TokenStream) -> Result<TokenStream> {
 
         #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode)]
         pub struct #ident {
-            component: ::scrypto::core::Component,
+            component: ::scrypto::core::ComponentRef,
         }
 
         impl #ident {
@@ -109,16 +109,16 @@ pub fn handle_import(input: TokenStream) -> Result<TokenStream> {
             #(#methods)*
         }
 
-        impl From<::scrypto::core::Component> for #ident {
-            fn from(component: ::scrypto::core::Component) -> Self {
+        impl From<::scrypto::core::ComponentRef> for #ident {
+            fn from(component: ::scrypto::core::ComponentRef) -> Self {
                 Self {
                     component
                 }
             }
         }
 
-        impl From<#ident> for ::scrypto::core::Component {
-            fn from(a: #ident) -> ::scrypto::core::Component {
+        impl From<#ident> for ::scrypto::core::ComponentRef {
+            fn from(a: #ident) -> ::scrypto::core::ComponentRef {
                 a.component
             }
         }
@@ -370,7 +370,7 @@ mod tests {
                             "inputs": [],
                             "output": {
                                 "type": "Custom",
-                                "name": "scrypto::core::Component",
+                                "name": "scrypto::core::ComponentRef",
                                 "generics": []
                             }
                         }
@@ -400,11 +400,11 @@ mod tests {
             quote! {
                 #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode)]
                 pub struct Simple {
-                    component: ::scrypto::core::Component,
+                    component: ::scrypto::core::ComponentRef,
                 }
                 impl Simple {
-                    pub fn new() -> ::scrypto::core::Component {
-                        let package = ::scrypto::core::Package::from_str(
+                    pub fn new() -> ::scrypto::core::ComponentRef {
+                        let package = ::scrypto::core::PackageRef::from_str(
                             "056967d3d49213394892980af59be76e9b3e7cc4cb78237460d0c7"
                         ).unwrap();
                         let rtn = ::scrypto::core::Context::call_function((package, "Simple"), "new", ::scrypto::args!());
@@ -415,15 +415,15 @@ mod tests {
                         ::scrypto::buffer::scrypto_decode(&rtn).unwrap()
                     }
                 }
-                impl From<::scrypto::core::Component> for Simple {
-                    fn from(component: ::scrypto::core::Component) -> Self {
+                impl From<::scrypto::core::ComponentRef> for Simple {
+                    fn from(component: ::scrypto::core::ComponentRef) -> Self {
                         Self {
                             component
                         }
                     }
                 }
-                impl From<Simple> for ::scrypto::core::Component {
-                    fn from(a: Simple) -> ::scrypto::core::Component {
+                impl From<Simple> for ::scrypto::core::ComponentRef {
+                    fn from(a: Simple) -> ::scrypto::core::ComponentRef {
                         a.component
                     }
                 }

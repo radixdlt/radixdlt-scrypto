@@ -18,7 +18,7 @@ impl Context {
     }
 
     /// Returns the package.
-    pub fn package() -> Package {
+    pub fn package() -> PackageRef {
         match Context::actor() {
             Actor::Blueprint(package, _) => package,
             Actor::Component(component) => component.blueprint().0,
@@ -49,7 +49,7 @@ impl Context {
 
     /// Invokes a function on a blueprint.
     pub fn call_function<S: AsRef<str>>(
-        blueprint: (Package, S),
+        blueprint: (PackageRef, S),
         function: &str,
         args: Vec<Vec<u8>>,
     ) -> Vec<u8> {
@@ -64,7 +64,7 @@ impl Context {
     }
 
     /// Invokes a method on a component.
-    pub fn call_method(component: Component, method: &str, args: Vec<Vec<u8>>) -> Vec<u8> {
+    pub fn call_method(component: ComponentRef, method: &str, args: Vec<Vec<u8>>) -> Vec<u8> {
         let input = CallMethodInput {
             component,
             method: method.to_owned(),

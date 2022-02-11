@@ -9,9 +9,9 @@ use crate::types::*;
 
 /// A collection of blueprints, compiled and published as a single unit.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct Package([u8; 26]);
+pub struct PackageRef([u8; 26]);
 
-impl Package {
+impl PackageRef {
     pub const SYSTEM: Self = Self([
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
     ]);
@@ -36,16 +36,16 @@ impl Package {
 //========
 
 #[derive(Debug, Clone)]
-pub enum ParsePackageError {
+pub enum ParsePackageRefError {
     InvalidHex(hex::FromHexError),
     InvalidLength(usize),
 }
 
 #[cfg(not(feature = "alloc"))]
-impl std::error::Error for ParsePackageError {}
+impl std::error::Error for ParsePackageRefError {}
 
 #[cfg(not(feature = "alloc"))]
-impl fmt::Display for ParsePackageError {
+impl fmt::Display for ParsePackageRefError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}", self)
     }
@@ -55,24 +55,24 @@ impl fmt::Display for ParsePackageError {
 // binary
 //========
 
-impl TryFrom<&[u8]> for Package {
-    type Error = ParsePackageError;
+impl TryFrom<&[u8]> for PackageRef {
+    type Error = ParsePackageRefError;
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
         match slice.len() {
             26 => Ok(Self(copy_u8_array(slice))),
-            _ => Err(ParsePackageError::InvalidLength(slice.len())),
+            _ => Err(ParsePackageRefError::InvalidLength(slice.len())),
         }
     }
 }
 
-impl Package {
+impl PackageRef {
     pub fn to_vec(&self) -> Vec<u8> {
         self.0.to_vec()
     }
 }
 
-custom_type!(Package, CustomType::Package, Vec::new());
+custom_type!(PackageRef, CustomType::PackageRef, Vec::new());
 
 //======
 // text
@@ -80,16 +80,16 @@ custom_type!(Package, CustomType::Package, Vec::new());
 
 // Before Bech32, we use a fixed prefix for text representation.
 
-impl FromStr for Package {
-    type Err = ParsePackageError;
+impl FromStr for PackageRef {
+    type Err = ParsePackageRefError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let bytes = hex::decode(s).map_err(ParsePackageError::InvalidHex)?;
+        let bytes = hex::decode(s).map_err(ParsePackageRefError::InvalidHex)?;
         Self::try_from(&bytes[1..])
     }
 }
 
-impl ToString for Package {
+impl ToString for PackageRef {
     fn to_string(&self) -> String {
         hex::encode(combine(1, &self.0))
     }

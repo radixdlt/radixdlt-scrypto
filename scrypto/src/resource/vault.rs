@@ -20,7 +20,7 @@ impl Vault {
     }
 
     /// Creates an empty vault to permanently hold resource of the given definition.
-    pub fn new(resource_def: ResourceDef) -> Self {
+    pub fn new(resource_def: ResourceDefRef) -> Self {
         let input = CreateEmptyVaultInput { resource_def };
         let output: CreateEmptyVaultOutput = call_engine(CREATE_EMPTY_VAULT, input);
 
@@ -164,7 +164,7 @@ impl Vault {
     }
 
     /// Returns the resource definition of resources within this vault.
-    pub fn resource_def(&self) -> ResourceDef {
+    pub fn resource_def(&self) -> ResourceDefRef {
         let input = GetVaultResourceAddressInput { vault: self.this() };
         let output: GetVaultResourceAddressOutput = call_engine(GET_VAULT_RESOURCE_ADDRESS, input);
 

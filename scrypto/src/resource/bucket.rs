@@ -18,7 +18,7 @@ impl Bucket {
     }
 
     /// Creates a new bucket to hold resources of the given definition.
-    pub fn new(resource_def: ResourceDef) -> Self {
+    pub fn new(resource_def: ResourceDefRef) -> Self {
         let input = CreateEmptyBucketInput { resource_def };
         let output: CreateEmptyBucketOutput = call_engine(CREATE_EMPTY_BUCKET, input);
 
@@ -66,7 +66,7 @@ impl Bucket {
     }
 
     /// Returns the resource definition of resources in this bucket.
-    pub fn resource_def(&self) -> ResourceDef {
+    pub fn resource_def(&self) -> ResourceDefRef {
         let input = GetBucketResourceAddressInput {
             bucket: self.this(),
         };

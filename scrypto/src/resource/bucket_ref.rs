@@ -29,7 +29,7 @@ impl BucketRef {
     }
 
     /// Checks if the referenced bucket contains the given resource, and aborts if not so.
-    pub fn check(&self, resource_def: ResourceDef) {
+    pub fn check(&self, resource_def: ResourceDefRef) {
         if !self.contains(resource_def) {
             panic!("BucketRef check failed");
         }
@@ -37,7 +37,7 @@ impl BucketRef {
 
     pub fn check_non_fungible_key<F: Fn(&NonFungibleKey) -> bool>(
         &self,
-        resource_def: ResourceDef,
+        resource_def: ResourceDefRef,
         f: F,
     ) {
         if !self.contains(resource_def) || !self.get_non_fungible_keys().iter().any(f) {
@@ -46,7 +46,7 @@ impl BucketRef {
     }
 
     /// Checks if the referenced bucket contains the given resource.
-    pub fn contains(&self, resource_def: ResourceDef) -> bool {
+    pub fn contains(&self, resource_def: ResourceDefRef) -> bool {
         self.amount() > 0.into() && self.resource_def() == resource_def
     }
 
@@ -61,7 +61,7 @@ impl BucketRef {
     }
 
     /// Returns the resource definition of resources within the bucket.
-    pub fn resource_def(&self) -> ResourceDef {
+    pub fn resource_def(&self) -> ResourceDefRef {
         let input = GetBucketRefResourceAddressInput {
             bucket_ref: self.this(),
         };
