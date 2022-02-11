@@ -219,7 +219,10 @@ impl Vault {
         output.keys
     }
 
-    /// Get the non-fungible id and panic if not singleton.
+    /// Returns the key of a singleton non-fungible.
+    ///
+    /// # Panic
+    /// If this vault is empty or contains more than one non-fungibles.
     pub fn get_non_fungible_key(&self) -> NonFungibleKey {
         let keys = self.get_non_fungible_keys();
         assert!(

@@ -16,6 +16,12 @@ pub enum Instruction {
         new_bucket: Value,
     },
 
+    TakeNonFungiblesFromWorktop {
+        keys: Value,
+        resource_address: Value,
+        new_bucket: Value,
+    },
+
     ReturnToWorktop {
         bucket: Value,
     },

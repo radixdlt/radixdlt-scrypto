@@ -76,6 +76,11 @@ impl Parser {
                 resource_address: self.parse_value()?,
                 new_bucket: self.parse_value()?,
             },
+            TokenKind::TakeNonFungiblesFromWorktop => Instruction::TakeNonFungiblesFromWorktop {
+                keys: self.parse_value()?,
+                resource_address: self.parse_value()?,
+                new_bucket: self.parse_value()?,
+            },
             TokenKind::ReturnToWorktop => Instruction::ReturnToWorktop {
                 bucket: self.parse_value()?,
             },
