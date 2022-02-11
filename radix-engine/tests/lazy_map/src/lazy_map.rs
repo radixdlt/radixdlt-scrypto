@@ -31,6 +31,19 @@ blueprint! {
             LazyMapTest { map, vector, lazy_maps }.instantiate()
         }
 
+        pub fn new_lazy_map_into_map_then_get() -> Component {
+            let lazy_map = LazyMap::new();
+            let lazy_maps = LazyMap::new();
+            lazy_maps.insert("hello".to_owned(), lazy_map);
+            let lazy_map = lazy_maps.get(&"hello".to_owned()).unwrap();
+            lazy_map.insert("hello".to_owned(), "hello".to_owned());
+            LazyMapTest {
+                map: LazyMap::new(),
+                vector: Vec::new(),
+                lazy_maps,
+            }.instantiate()
+        }
+
         pub fn overwrite_lazy_map(&mut self) -> () {
             self.lazy_maps.insert("hello".to_owned(), LazyMap::new())
         }

@@ -1200,23 +1200,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         })
     }
 
-    fn get_local_lazy_map_mut(
-        &mut self,
-        mid: Mid,
-    ) -> Result<(&mut LazyMap, LazyMapState), RuntimeError> {
-        match self.unclaimed_lazy_maps.get_mut(&mid) {
-            Some(unclaimed_lazy_map) => Ok((&mut unclaimed_lazy_map.lazy_map, Uncommitted)),
-            None => match self.vm.as_ref().unwrap().invocation.actor {
-                Actor::Component(component_address) => {
-                    match self.track.get_lazy_map_mut(&component_address, &mid) {
-                        Some(lazy_map) => Ok((lazy_map, Committed { component_address })),
-                        None => Err(RuntimeError::LazyMapNotFound(mid)),
-                    }
-                }
-                _ => Err(RuntimeError::LazyMapNotFound(mid)),
-            },
-        }
-    }
 
     fn handle_put_lazy_map_entry(
         &mut self,
@@ -1623,6 +1606,24 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         self.unclaimed_vaults.insert(vid, new_vault);
 
         Ok(CreateEmptyVaultOutput { vid })
+    }
+
+    fn get_local_lazy_map_mut(
+        &mut self,
+        mid: Mid,
+    ) -> Result<(&mut LazyMap, LazyMapState), RuntimeError> {
+        match self.unclaimed_lazy_maps.get_mut(&mid) {
+            Some(unclaimed_lazy_map) => Ok((&mut unclaimed_lazy_map.lazy_map, Uncommitted)),
+            None => match self.vm.as_ref().unwrap().invocation.actor {
+                Actor::Component(component_address) => {
+                    match self.track.get_lazy_map_mut(&component_address, &mid) {
+                        Some(lazy_map) => Ok((lazy_map, Committed { component_address })),
+                        None => Err(RuntimeError::LazyMapNotFound(mid)),
+                    }
+                }
+                _ => Err(RuntimeError::LazyMapNotFound(mid)),
+            },
+        }
     }
 
     fn get_local_vault(&mut self, vid: Vid) -> Result<&mut Vault, RuntimeError> {
