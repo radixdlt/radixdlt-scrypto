@@ -39,7 +39,7 @@ blueprint! {
             }.instantiate()
         }
 
-        pub fn new_vault_into_map_then_get() -> Component {
+        pub fn invalid_double_ownership_of_vault() -> Component {
             let bucket = Self::new_fungible();
             let vault = Vault::new(bucket.resource_def());
             let vaults = LazyMap::new();
@@ -50,6 +50,22 @@ blueprint! {
             let vault_vector = Vec::new();
             VaultTest {
                 vault,
+                vaults,
+                vault_vector
+            }.instantiate()
+        }
+
+        pub fn new_vault_into_map_then_get() -> Component {
+            let bucket = Self::new_fungible();
+            let vault = Vault::new(bucket.resource_def());
+            let vaults = LazyMap::new();
+            vaults.insert(0, vault);
+            let mut vault = vaults.get(&0).unwrap();
+            vault.put(bucket);
+
+            let vault_vector = Vec::new();
+            VaultTest {
+                vault: Vault::with_bucket(Self::new_fungible()),
                 vaults,
                 vault_vector
             }.instantiate()

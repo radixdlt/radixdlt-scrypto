@@ -63,7 +63,25 @@ fn create_mutable_vault_into_map() {
     assert!(receipt.result.is_ok());
 }
 
-/*
+#[test]
+fn invalid_double_ownership_of_vault() {
+    // Arrange
+    let mut ledger = InMemorySubstateStore::with_bootstrap();
+    let mut sut = TransactionExecutor::new(&mut ledger, false);
+    let package = sut.publish_package(&compile("vault")).unwrap();
+
+    // Act
+    let transaction = TransactionBuilder::new(&sut)
+        .call_function(package, "VaultTest", "invalid_double_ownership_of_vault", vec![], None)
+        .build(vec![])
+        .unwrap();
+    let receipt = sut.run(transaction).unwrap();
+
+    // Assert
+    assert!(!receipt.result.is_ok());
+}
+
+
 #[test]
 fn create_mutable_vault_into_map_and_referencing_before_storing() {
     // Arrange
@@ -81,8 +99,6 @@ fn create_mutable_vault_into_map_and_referencing_before_storing() {
     // Assert
     assert!(receipt.result.is_ok());
 }
- */
-
 
 #[test]
 fn cannot_overwrite_vault_in_map() {

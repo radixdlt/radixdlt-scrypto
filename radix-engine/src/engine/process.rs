@@ -1628,14 +1628,24 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     fn get_local_vault(&mut self, vid: Vid) -> Result<&mut Vault, RuntimeError> {
         match self.unclaimed_vaults.get_mut(&vid) {
             Some(vault) => Ok(vault),
-            None => match self.vm.as_ref().unwrap().invocation.actor {
-                Actor::Component(component_address) => {
-                    match self.track.get_vault_mut(&component_address, &vid) {
-                        Some(vault) => Ok(vault),
-                        None => Err(RuntimeError::VaultNotFound(vid)),
+            None => {
+                // TODO: Optimize to prevent iteration
+                for (_, unclaimed) in self.unclaimed_lazy_maps.iter_mut() {
+                    let vault = unclaimed.descendent_vaults.get_mut(&vid);
+                    if vault.is_some() {
+                        return Ok(vault.unwrap());
                     }
                 }
-                _ => Err(RuntimeError::VaultNotFound(vid)),
+
+                match self.vm.as_ref().unwrap().invocation.actor {
+                    Actor::Component(component_address) => {
+                        match self.track.get_vault_mut(&component_address, &vid) {
+                            Some(vault) => Ok(vault),
+                            None => Err(RuntimeError::VaultNotFound(vid)),
+                        }
+                    }
+                    _ => Err(RuntimeError::VaultNotFound(vid)),
+                }
             },
         }
     }
