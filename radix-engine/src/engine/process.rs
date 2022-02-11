@@ -51,7 +51,7 @@ macro_rules! re_warn {
 }
 
 enum LazyMapState {
-    Uncommitted,
+    Uncommitted { root: Mid },
     Committed { component_address: Address },
 }
 
@@ -1229,9 +1229,9 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     .remove(&vid)
                     .ok_or(RuntimeError::VaultNotFound(vid))?;
                 match lazy_map_state {
-                    Uncommitted => {
+                    Uncommitted{ root } => {
                         let unclaimed_lazy_map =
-                            self.unclaimed_lazy_maps.get_mut(&input.mid).unwrap();
+                            self.unclaimed_lazy_maps.get_mut(&root).unwrap();
                         unclaimed_lazy_map.descendent_vaults.insert(vid, vault);
                     }
                     Committed { component_address } => {
@@ -1253,8 +1253,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     .ok_or(RuntimeError::LazyMapNotFound(mid))?;
 
                 match lazy_map_state {
-                    Uncommitted => {
-                        let unclaimed_lazy_map = self.unclaimed_lazy_maps.get_mut(&input.mid).unwrap();
+                    Uncommitted { root } => {
+                        let unclaimed_lazy_map = self.unclaimed_lazy_maps.get_mut(&root).unwrap();
                         unclaimed_lazy_map.merge(child_lazy_map, mid);
                     }
                     Committed { component_address } => {
@@ -1612,17 +1612,26 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         mid: Mid,
     ) -> Result<(&mut LazyMap, LazyMapState), RuntimeError> {
-        match self.unclaimed_lazy_maps.get_mut(&mid) {
-            Some(unclaimed_lazy_map) => Ok((&mut unclaimed_lazy_map.lazy_map, Uncommitted)),
-            None => match self.vm.as_ref().unwrap().invocation.actor {
-                Actor::Component(component_address) => {
-                    match self.track.get_lazy_map_mut(&component_address, &mid) {
-                        Some(lazy_map) => Ok((lazy_map, Committed { component_address })),
-                        None => Err(RuntimeError::LazyMapNotFound(mid)),
-                    }
+        // TODO: Optimize to prevent iteration
+        for (root, unclaimed) in self.unclaimed_lazy_maps.iter_mut() {
+            if mid.eq(root) {
+                return Ok((&mut unclaimed.lazy_map, Uncommitted { root: root.clone() }));
+            }
+
+            let lazy_map = unclaimed.descendent_lazy_maps.get_mut(&mid);
+            if lazy_map.is_some() {
+                return Ok((lazy_map.unwrap(), Uncommitted { root: root.clone() }));
+            }
+        }
+
+        match self.vm.as_ref().unwrap().invocation.actor {
+            Actor::Component(component_address) => {
+                match self.track.get_lazy_map_mut(&component_address, &mid) {
+                    Some(lazy_map) => Ok((lazy_map, Committed { component_address })),
+                    None => Err(RuntimeError::LazyMapNotFound(mid)),
                 }
-                _ => Err(RuntimeError::LazyMapNotFound(mid)),
-            },
+            }
+            _ => Err(RuntimeError::LazyMapNotFound(mid)),
         }
     }
 
