@@ -106,7 +106,8 @@ enum InterpreterState {
     ComponentLoaded {
         component_address: Address,
         component_data: ValidatedData,
-        loaded_lazy_maps: HashSet<Mid>
+        loaded_lazy_map_refs: HashSet<Mid>,
+        loaded_vault_refs: HashSet<Vid>,
     },
     ComponentStored,
 }
@@ -171,6 +172,23 @@ impl ComponentObjectsSet {
             let lazy_map = unclaimed.descendent_lazy_maps.get_mut(mid);
             if lazy_map.is_some() {
                 return Some((root.clone(), lazy_map.unwrap()));
+            }
+        }
+
+        None
+    }
+
+    fn get_vault_mut(&mut self, vid: &Vid) -> Option<&mut Vault> {
+        let vault = self.vaults.get_mut(vid);
+        if vault.is_some() {
+            return Some(vault.unwrap());
+        }
+
+        // TODO: Optimize to prevent iteration
+        for (_, unclaimed) in self.lazy_maps.iter_mut() {
+            let vault = unclaimed.descendent_vaults.get_mut(vid);
+            if vault.is_some() {
+                return Some(vault.unwrap());
             }
         }
 
@@ -1098,7 +1116,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                         Ok((state, InterpreterState::ComponentLoaded {
                             component_address: *component_address,
                             component_data,
-                            loaded_lazy_maps: HashSet::new()
+                            loaded_lazy_map_refs: HashSet::new(),
+                            loaded_vault_refs: HashSet::new(),
                         }))
                     }
                     _ => Err(RuntimeError::IllegalSystemCall()),
@@ -1204,15 +1223,21 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 match process_owned_objects.get_lazy_map_mut(&input.mid) {
                     None => {
                         match state {
-                            InterpreterState::ComponentLoaded { component_data, component_address, loaded_lazy_maps} => {
-                                if !component_data.lazy_maps.contains(&input.mid) && !loaded_lazy_maps.contains(&input.mid) {
+                            InterpreterState::ComponentLoaded {
+                                component_data,
+                                component_address,
+                                loaded_lazy_map_refs,
+                                loaded_vault_refs,
+                            } => {
+                                if !component_data.lazy_maps.contains(&input.mid) && !loaded_lazy_map_refs.contains(&input.mid) {
                                     return Err(RuntimeError::LazyMapNotFound(input.mid));
                                 }
                                 let lazy_map = self.track.get_lazy_map_mut(&component_address, &input.mid).unwrap();
                                 let value = lazy_map.get_entry(&input.key);
                                 if value.is_some() {
                                     let map_data = Self::process_map_data(value.unwrap()).unwrap();
-                                    loaded_lazy_maps.extend(map_data.lazy_maps);
+                                    loaded_lazy_map_refs.extend(map_data.lazy_maps);
+                                    loaded_vault_refs.extend(map_data.vaults);
                                 }
 
                                 Ok(value)
@@ -1669,26 +1694,24 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     fn get_local_vault(&mut self, vid: Vid) -> Result<&mut Vault, RuntimeError> {
         match &mut self.process_state {
             ProcessState::Empty => Err(RuntimeError::IllegalSystemCall()),
-            ProcessState::HasInterpreter { vm, process_owned_objects, .. } => {
-                match process_owned_objects.vaults.get_mut(&vid) {
+            ProcessState::HasInterpreter { state, process_owned_objects, .. } => {
+                match process_owned_objects.get_vault_mut(&vid) {
                     Some(vault) => Ok(vault),
                     None => {
-                        // TODO: Optimize to prevent iteration
-                        for (_, unclaimed) in process_owned_objects.lazy_maps.iter_mut() {
-                            let vault = unclaimed.descendent_vaults.get_mut(&vid);
-                            if vault.is_some() {
-                                return Ok(vault.unwrap());
-                            }
-                        }
-
-                        match vm.invocation.actor {
-                            Actor::Component(component_address) => {
-                                match self.track.get_vault_mut(&component_address, &vid) {
-                                    Some(vault) => Ok(vault),
-                                    None => Err(RuntimeError::VaultNotFound(vid)),
+                        match state {
+                            InterpreterState::ComponentLoaded {
+                                component_data,
+                                component_address,
+                                loaded_vault_refs,
+                                ..
+                            } => {
+                                if !component_data.vaults.contains(&vid) && !loaded_vault_refs.contains(&vid) {
+                                    return Err(RuntimeError::VaultNotFound(vid));
                                 }
-                            }
-                            _ => Err(RuntimeError::VaultNotFound(vid)),
+                                let vault = self.track.get_vault_mut(&component_address, &vid).unwrap();
+                                Ok(vault)
+                            },
+                            _ => Err(RuntimeError::VaultNotFound(vid))
                         }
                     }
                 }
