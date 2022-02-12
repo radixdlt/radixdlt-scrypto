@@ -1141,17 +1141,17 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     ) -> Result<GetLazyMapEntryOutput, RuntimeError> {
         let value = match &mut self.process_state {
             ProcessState::HasInterpreter {
-                interpreter_state: state,
+                interpreter_state,
                 process_owned_objects,
                 ..
             } => match process_owned_objects.get_lazy_map_mut(&input.mid) {
-                None => match state {
+                None => match interpreter_state {
                     InterpreterState::ComponentLoaded {
-                        initial_loaded_object_refs: initial_loaded_objects,
-                        component_address,
+                        initial_loaded_object_refs,
                         additional_object_refs,
+                        component_address,
                     } => {
-                        if !initial_loaded_objects.mids.contains(&input.mid)
+                        if !initial_loaded_object_refs.mids.contains(&input.mid)
                             && !additional_object_refs.mids.contains(&input.mid)
                         {
                             return Err(RuntimeError::LazyMapNotFound(input.mid));
@@ -1186,19 +1186,29 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     ) -> Result<PutLazyMapEntryOutput, RuntimeError> {
         match &mut self.process_state {
             ProcessState::HasInterpreter {
-                vm,
+                interpreter_state,
                 process_owned_objects,
                 ..
             } => {
                 let (lazy_map, lazy_map_state) = match process_owned_objects
                     .get_lazy_map_mut(&input.mid)
                 {
-                    None => match vm.invocation.actor {
-                        Actor::Component(component_address) => {
-                            match self.track.get_lazy_map_mut(&component_address, &input.mid) {
-                                Some(lazy_map) => Ok((lazy_map, Committed { component_address })),
-                                None => Err(RuntimeError::LazyMapNotFound(input.mid)),
+                    None => match interpreter_state {
+                        InterpreterState::ComponentLoaded {
+                            initial_loaded_object_refs,
+                            additional_object_refs,
+                            component_address,
+                        } => {
+                            if !initial_loaded_object_refs.mids.contains(&input.mid)
+                                && !additional_object_refs.mids.contains(&input.mid)
+                            {
+                                return Err(RuntimeError::LazyMapNotFound(input.mid));
                             }
+                            let lazy_map = self
+                                .track
+                                .get_lazy_map_mut(&component_address, &input.mid)
+                                .unwrap();
+                            Ok(( lazy_map, Committed { component_address: *component_address }))
                         }
                         _ => Err(RuntimeError::LazyMapNotFound(input.mid)),
                     },
