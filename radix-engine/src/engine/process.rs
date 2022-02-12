@@ -1238,61 +1238,36 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 lazy_map.set_entry(key.raw, new_entry_state.raw);
 
                 // Only allow vaults to be added, never removed
+                let mut new_vids = Vec::new();
                 for vid in new_entry_state.vaults {
                     if !old_entry_vids.remove(&vid) {
-                        let vault = process_owned_objects
-                            .vaults
-                            .remove(&vid)
-                            .ok_or(RuntimeError::VaultNotFound(vid))?;
-                        match lazy_map_state {
-                            Uncommitted { root } => {
-                                let unclaimed_lazy_map =
-                                    process_owned_objects.get_unclaimed_map(&root);
-                                unclaimed_lazy_map.descendent_vaults.insert(vid, vault);
-                            }
-                            Committed { component_address } => {
-                                self.track.put_vault(component_address, vid, vault);
-                            }
-                        }
+                        new_vids.push(vid);
                     }
                 }
                 old_entry_vids
                     .into_iter()
                     .try_for_each(|vid| Err(RuntimeError::VaultRemoved(vid)))?;
-
                 // Only allow lazy maps to be added, never removed
+                let mut new_mids = Vec::new();
                 for mid in new_entry_state.lazy_maps {
                     if !old_entry_mids.remove(&mid) {
-                        let child_lazy_map = process_owned_objects
-                            .lazy_maps
-                            .remove(&mid)
-                            .ok_or(RuntimeError::LazyMapNotFound(mid))?;
-
-                        match lazy_map_state {
-                            Uncommitted { root } => {
-                                let unclaimed_lazy_map =
-                                    process_owned_objects.get_unclaimed_map(&root);
-                                unclaimed_lazy_map.merge(child_lazy_map, mid);
-                            }
-                            Committed { component_address } => {
-                                self.track.put_lazy_map(
-                                    component_address,
-                                    mid,
-                                    child_lazy_map.lazy_map,
-                                );
-                                for (child_mid, map) in child_lazy_map.descendent_lazy_maps {
-                                    self.track.put_lazy_map(component_address, child_mid, map);
-                                }
-                                for (vid, vault) in child_lazy_map.descendent_vaults {
-                                    self.track.put_vault(component_address, vid, vault);
-                                }
-                            }
-                        }
+                        new_mids.push(mid);
                     }
                 }
                 old_entry_mids
                     .into_iter()
                     .try_for_each(|mid| Err(RuntimeError::LazyMapRemoved(mid)))?;
+
+                let new_objects = process_owned_objects.take(new_vids, new_mids)?;
+
+                match lazy_map_state {
+                    Uncommitted { root } => {
+                        process_owned_objects.insert_objects_into_map(new_objects, &root);
+                    }
+                    Committed { component_address } => {
+                        self.track.insert_objects_into_component(new_objects, component_address);
+                    }
+                }
 
                 Ok(PutLazyMapEntryOutput {})
             }

@@ -13,7 +13,7 @@ pub struct UnclaimedLazyMap {
 }
 
 impl UnclaimedLazyMap {
-    pub fn merge(&mut self, unclaimed_lazy_map: UnclaimedLazyMap, mid: Mid) {
+    fn insert_map_descendent(&mut self, unclaimed_lazy_map: UnclaimedLazyMap, mid: Mid) {
         self.descendent_lazy_maps
             .insert(mid, unclaimed_lazy_map.lazy_map);
 
@@ -22,6 +22,16 @@ impl UnclaimedLazyMap {
         }
         for (vid, vault) in unclaimed_lazy_map.descendent_vaults {
             self.descendent_vaults.insert(vid, vault);
+        }
+    }
+
+    pub fn insert_descendents(&mut self, new_descendents: ComponentObjectsSet) {
+        for (vid, vault) in new_descendents.vaults {
+            self.descendent_vaults.insert(vid, vault);
+        }
+
+        for (mid, child_lazy_map) in new_descendents.lazy_maps {
+            self.insert_map_descendent(child_lazy_map, mid);
         }
     }
 }
@@ -70,8 +80,9 @@ impl ComponentObjectsSet {
         Ok(ComponentObjectsSet { vaults, lazy_maps })
     }
 
-    pub fn get_unclaimed_map(&mut self, mid: &Mid) -> &mut UnclaimedLazyMap {
-        self.lazy_maps.get_mut(mid).unwrap()
+    pub fn insert_objects_into_map(&mut self, new_objects: ComponentObjectsSet, mid: &Mid) {
+        let unclaimed_map = self.lazy_maps.get_mut(mid).unwrap();
+        unclaimed_map.insert_descendents(new_objects);
     }
 
     pub fn get_lazy_map_mut(&mut self, mid: &Mid) -> Option<(Mid, &mut LazyMap)> {
