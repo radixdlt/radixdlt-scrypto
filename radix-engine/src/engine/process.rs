@@ -77,9 +77,8 @@ enum InterpreterState {
     },
     ComponentLoaded {
         component_address: Address,
-        component_data: ValidatedData,
-        loaded_lazy_map_refs: HashSet<Mid>,
-        loaded_vault_refs: HashSet<Vid>,
+        initial_loaded_object_refs: ComponentObjectsSetRef,
+        additional_object_refs: ComponentObjectsSetRef,
     },
     ComponentStored,
 }
@@ -680,7 +679,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         Ok(())
     }
 
-    fn process_component_data(data: &[u8]) -> Result<ValidatedData, RuntimeError> {
+    fn process_component_data(data: &[u8]) -> Result<ComponentObjectsSetRef, RuntimeError> {
         let validated = validate_data(data).map_err(RuntimeError::DataValidationError)?;
         if !validated.buckets.is_empty() {
             return Err(RuntimeError::BucketNotAllowed);
@@ -690,10 +689,13 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         }
         // lazy map allowed
         // vaults allowed
-        Ok(validated)
+        Ok(ComponentObjectsSetRef {
+            mids: HashSet::from_iter(validated.lazy_maps),
+            vids: HashSet::from_iter(validated.vaults),
+        })
     }
 
-    fn process_map_data(data: &[u8]) -> Result<ValidatedData, RuntimeError> {
+    fn process_map_data(data: &[u8]) -> Result<ComponentObjectsSetRef, RuntimeError> {
         let validated = validate_data(data).map_err(RuntimeError::DataValidationError)?;
         if !validated.buckets.is_empty() {
             return Err(RuntimeError::BucketNotAllowed);
@@ -703,7 +705,10 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         }
         // lazy map allowed
         // vaults allowed
-        Ok(validated)
+        Ok(ComponentObjectsSetRef {
+            mids: HashSet::from_iter(validated.lazy_maps),
+            vids: HashSet::from_iter(validated.vaults),
+        })
     }
 
     fn process_non_fungible_data(&mut self, data: &[u8]) -> Result<ValidatedData, RuntimeError> {
@@ -994,8 +999,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 }
 
                 let data = Self::process_component_data(&input.state)?;
-
-                let new_objects = process_owned_objects.take(data.vaults, data.lazy_maps)?;
+                let new_objects = process_owned_objects.take(data)?;
 
                 self.track
                     .insert_objects_into_component(new_objects, component_address);
@@ -1003,7 +1007,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 let component = Component::new(
                     vm.invocation.package_address,
                     input.blueprint_name,
-                    data.raw,
+                    input.state,
                 );
                 self.track.put_component(component_address, component);
 
@@ -1046,14 +1050,14 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     InterpreterState::ComponentEmpty { component_address } => {
                         let component = self.track.get_component(*component_address).unwrap();
                         let state = component.state();
-                        let component_data = Self::process_component_data(state).unwrap();
+                        let initial_loaded_object_refs =
+                            Self::process_component_data(state).unwrap();
                         Ok((
                             state,
                             InterpreterState::ComponentLoaded {
                                 component_address: *component_address,
-                                component_data,
-                                loaded_lazy_map_refs: HashSet::new(),
-                                loaded_vault_refs: HashSet::new(),
+                                initial_loaded_object_refs,
+                                additional_object_refs: ComponentObjectsSetRef::new(),
                             },
                         ))
                     }
@@ -1082,45 +1086,19 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 let next_state = match state {
                     InterpreterState::ComponentLoaded {
                         component_address,
-                        component_data,
+                        initial_loaded_object_refs,
                         ..
                     } => {
-                        let new_state = Self::process_component_data(&input.state)?;
-
-                        // Only allow vaults to be added, never removed
-                        let mut old_vaults: HashSet<Vid> =
-                            HashSet::from_iter(component_data.vaults.clone().into_iter());
-                        let mut new_vids = Vec::new();
-                        for vid in new_state.vaults {
-                            if !old_vaults.remove(&vid) {
-                                new_vids.push(vid);
-                            }
-                        }
-                        old_vaults
-                            .into_iter()
-                            .try_for_each(|vid| Err(RuntimeError::VaultRemoved(vid)))?;
-
-                        // Only allow lazy maps to be added, never removed
-                        let mut new_mids = Vec::new();
-                        let mut old_lazy_maps: HashSet<Mid> =
-                            HashSet::from_iter(component_data.lazy_maps.clone().into_iter());
-                        for mid in new_state.lazy_maps {
-                            if !old_lazy_maps.remove(&mid) {
-                                new_mids.push(mid);
-                            }
-                        }
-                        old_lazy_maps
-                            .into_iter()
-                            .try_for_each(|mid| Err(RuntimeError::LazyMapRemoved(mid)))?;
-
-                        let new_objects = process_owned_objects.take(new_vids, new_mids)?;
+                        let mut new_set = Self::process_component_data(&input.state)?;
+                        new_set.remove(&initial_loaded_object_refs)?;
+                        let new_objects = process_owned_objects.take(new_set)?;
                         self.track
                             .insert_objects_into_component(new_objects, *component_address);
 
                         // TODO: Verify that process_owned_objects is empty
 
                         let component = self.track.get_component_mut(*component_address).unwrap();
-                        component.set_state(new_state.raw);
+                        component.set_state(input.state);
                         Ok(InterpreterState::ComponentStored)
                     }
                     _ => Err(RuntimeError::IllegalSystemCall()),
@@ -1169,13 +1147,12 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             } => match process_owned_objects.get_lazy_map_mut(&input.mid) {
                 None => match state {
                     InterpreterState::ComponentLoaded {
-                        component_data,
+                        initial_loaded_object_refs: initial_loaded_objects,
                         component_address,
-                        loaded_lazy_map_refs,
-                        loaded_vault_refs,
+                        additional_object_refs,
                     } => {
-                        if !component_data.lazy_maps.contains(&input.mid)
-                            && !loaded_lazy_map_refs.contains(&input.mid)
+                        if !initial_loaded_objects.mids.contains(&input.mid)
+                            && !additional_object_refs.mids.contains(&input.mid)
                         {
                             return Err(RuntimeError::LazyMapNotFound(input.mid));
                         }
@@ -1185,9 +1162,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                             .unwrap();
                         let value = lazy_map.get_entry(&input.key);
                         if value.is_some() {
-                            let map_data = Self::process_map_data(value.unwrap()).unwrap();
-                            loaded_lazy_map_refs.extend(map_data.lazy_maps);
-                            loaded_vault_refs.extend(map_data.vaults);
+                            let map_entry_objects = Self::process_map_data(value.unwrap()).unwrap();
+                            additional_object_refs.extend(map_entry_objects);
                         }
 
                         Ok(value)
@@ -1214,8 +1190,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 process_owned_objects,
                 ..
             } => {
-                let key = Self::process_map_data(&input.key)?;
-                let new_entry_state = Self::process_map_data(&input.value)?;
                 let (lazy_map, lazy_map_state) = match process_owned_objects
                     .get_lazy_map_mut(&input.mid)
                 {
@@ -1230,40 +1204,15 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     },
                     Some((root, lazy_map)) => Ok((lazy_map, Uncommitted { root })),
                 }?;
+                let mut new_entry_object_refs = Self::process_map_data(&input.value)?;
+                let old_entry_object_refs = match lazy_map.get_entry(&input.key) {
+                    None => ComponentObjectsSetRef::new(),
+                    Some(e) => Self::process_map_data(e).unwrap(),
+                };
+                lazy_map.set_entry(input.key, input.value);
 
-                let (mut old_entry_vids, mut old_entry_mids) =
-                    lazy_map
-                        .get_entry(&key.raw)
-                        .map_or((HashSet::new(), HashSet::new()), |e| {
-                            let data = Self::process_map_data(e).unwrap();
-                            let old_vaults = HashSet::from_iter(data.vaults.into_iter());
-                            let old_lazy_maps = HashSet::from_iter(data.lazy_maps.into_iter());
-                            (old_vaults, old_lazy_maps)
-                        });
-                lazy_map.set_entry(key.raw, new_entry_state.raw);
-
-                // Only allow vaults to be added, never removed
-                let mut new_vids = Vec::new();
-                for vid in new_entry_state.vaults {
-                    if !old_entry_vids.remove(&vid) {
-                        new_vids.push(vid);
-                    }
-                }
-                old_entry_vids
-                    .into_iter()
-                    .try_for_each(|vid| Err(RuntimeError::VaultRemoved(vid)))?;
-                // Only allow lazy maps to be added, never removed
-                let mut new_mids = Vec::new();
-                for mid in new_entry_state.lazy_maps {
-                    if !old_entry_mids.remove(&mid) {
-                        new_mids.push(mid);
-                    }
-                }
-                old_entry_mids
-                    .into_iter()
-                    .try_for_each(|mid| Err(RuntimeError::LazyMapRemoved(mid)))?;
-
-                let new_objects = process_owned_objects.take(new_vids, new_mids)?;
+                new_entry_object_refs.remove(&old_entry_object_refs)?;
+                let new_objects = process_owned_objects.take(new_entry_object_refs)?;
 
                 match lazy_map_state {
                     Uncommitted { root } => {
@@ -1635,13 +1584,13 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 Some(vault) => Ok(vault),
                 None => match state {
                     InterpreterState::ComponentLoaded {
-                        component_data,
                         component_address,
-                        loaded_vault_refs,
+                        initial_loaded_object_refs,
+                        additional_object_refs,
                         ..
                     } => {
-                        if !component_data.vaults.contains(&vid)
-                            && !loaded_vault_refs.contains(&vid)
+                        if !initial_loaded_object_refs.vids.contains(&vid)
+                            && !additional_object_refs.vids.contains(&vid)
                         {
                             return Err(RuntimeError::VaultNotFound(vid));
                         }

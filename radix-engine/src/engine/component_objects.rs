@@ -1,5 +1,4 @@
 use scrypto::rust::collections::*;
-use scrypto::rust::vec::Vec;
 use scrypto::types::*;
 
 use crate::model::*;
@@ -36,6 +35,42 @@ impl UnclaimedLazyMap {
     }
 }
 
+pub struct ComponentObjectsSetRef {
+    pub mids: HashSet<Mid>,
+    pub vids: HashSet<Vid>,
+}
+
+impl ComponentObjectsSetRef {
+    pub fn new() -> Self {
+        ComponentObjectsSetRef {
+            mids: HashSet::new(),
+            vids: HashSet::new(),
+        }
+    }
+
+    pub fn extend(&mut self, other: ComponentObjectsSetRef) {
+        self.mids.extend(other.mids);
+        self.vids.extend(other.vids);
+    }
+
+    pub fn remove(&mut self, other: &ComponentObjectsSetRef) -> Result<(), RuntimeError> {
+        // Only allow vaults to be added, never removed
+        for vid in &other.vids {
+            if !self.vids.remove(&vid) {
+                return Err(RuntimeError::VaultRemoved(vid.clone()));
+            }
+        }
+
+        for mid in &other.mids {
+            if !self.mids.remove(&mid) {
+                return Err(RuntimeError::LazyMapRemoved(mid.clone()));
+            }
+        }
+
+        Ok(())
+    }
+}
+
 /// Component type objects which will eventually move into a component
 pub struct ComponentObjectsSet {
     /// Lazy maps which haven't been assigned to a component or lazy map yet.
@@ -55,13 +90,12 @@ impl ComponentObjectsSet {
 
     pub fn take(
         &mut self,
-        vids: Vec<Vid>,
-        mids: Vec<Mid>,
+        other: ComponentObjectsSetRef,
     ) -> Result<ComponentObjectsSet, RuntimeError> {
         let mut vaults = HashMap::new();
         let mut lazy_maps = HashMap::new();
 
-        for vid in vids {
+        for vid in other.vids {
             let vault = self
                 .vaults
                 .remove(&vid)
@@ -69,7 +103,7 @@ impl ComponentObjectsSet {
             vaults.insert(vid, vault);
         }
 
-        for mid in mids {
+        for mid in other.mids {
             let lazy_map = self
                 .lazy_maps
                 .remove(&mid)
