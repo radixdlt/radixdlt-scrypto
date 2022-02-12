@@ -141,9 +141,13 @@ impl<'s, S: SubstateStore> Track<'s, S> {
             self.put_vault(component_address, vid, vault);
         }
         for (mid, unclaimed) in new_objects.lazy_maps {
-            self.put_lazy_map(component_address, mid, unclaimed.lazy_map);
+            for (k, v) in unclaimed.lazy_map.map {
+                self.put_lazy_map_entry(component_address, mid, k, v);
+            }
             for (child_mid, child_lazy_map) in unclaimed.descendent_lazy_maps {
-                self.put_lazy_map(component_address, child_mid, child_lazy_map);
+                for (k, v) in child_lazy_map.map {
+                    self.put_lazy_map_entry(component_address, child_mid, k, v);
+                }
             }
             for (vid, vault) in unclaimed.descendent_vaults {
                 self.put_vault(component_address, vid, vault);
@@ -1139,7 +1143,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .wasm_process_state
             .as_mut()
             .ok_or(RuntimeError::IllegalSystemCall())?;
-        let value = match wasm_process
+        let entry = match wasm_process
             .process_owned_objects
             .get_lazy_map_mut(&input.mid)
         {
@@ -1154,12 +1158,11 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     {
                         return Err(RuntimeError::LazyMapNotFound(input.mid));
                     }
-                    let lazy_map = self
+                    let value = self
                         .track
-                        .get_lazy_map(&component_address, &input.mid);
-                    let value = lazy_map.get_entry(&input.key);
+                        .get_lazy_map_entry(&component_address, &input.mid, &input.key);
                     if value.is_some() {
-                        let map_entry_objects = Self::process_map_data(value.unwrap()).unwrap();
+                        let map_entry_objects = Self::process_map_data(&value.as_ref().unwrap()).unwrap();
                         additional_object_refs.extend(map_entry_objects);
                     }
 
@@ -1167,11 +1170,11 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 }
                 _ => Err(RuntimeError::LazyMapNotFound(input.mid)),
             },
-            Some((_, lazy_map)) => Ok(lazy_map.get_entry(&input.key)),
+            Some((_, lazy_map)) => Ok(lazy_map.get_entry(&input.key).map(|v| v.to_vec())),
         }?;
 
         Ok(GetLazyMapEntryOutput {
-            value: value.map(|e| e.to_vec()),
+            value: entry
         })
     }
 
@@ -1183,7 +1186,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .wasm_process_state
             .as_mut()
             .ok_or(RuntimeError::IllegalSystemCall())?;
-        let (lazy_map, lazy_map_state) = match wasm_process
+        let (old_value, lazy_map_state) = match wasm_process
             .process_owned_objects
             .get_lazy_map_mut(&input.mid)
         {
@@ -1198,11 +1201,11 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     {
                         return Err(RuntimeError::LazyMapNotFound(input.mid));
                     }
-                    let lazy_map = self
+                    let old_value = self
                         .track
-                        .get_lazy_map_mut(&component_address, &input.mid);
+                        .get_lazy_map_entry(&component_address, &input.mid, &input.key);
                     Ok((
-                        lazy_map,
+                        old_value,
                         Committed {
                             component_address: *component_address,
                         },
@@ -1210,14 +1213,13 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 }
                 _ => Err(RuntimeError::LazyMapNotFound(input.mid)),
             },
-            Some((root, lazy_map)) => Ok((lazy_map, Uncommitted { root })),
+            Some((root, lazy_map)) => Ok((lazy_map.get_entry(&input.key).map(|v| v.to_vec()), Uncommitted { root })),
         }?;
         let mut new_entry_object_refs = Self::process_map_data(&input.value)?;
-        let old_entry_object_refs = match lazy_map.get_entry(&input.key) {
+        let old_entry_object_refs = match old_value {
             None => ComponentObjectsSetRef::new(),
-            Some(e) => Self::process_map_data(e).unwrap(),
+            Some(e) => Self::process_map_data(&e).unwrap(),
         };
-        lazy_map.set_entry(input.key, input.value);
 
         new_entry_object_refs.remove(&old_entry_object_refs)?;
         let new_objects = wasm_process
@@ -1228,11 +1230,14 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             Uncommitted { root } => {
                 wasm_process
                     .process_owned_objects
+                    .insert_lazy_map_entry(&input.mid, input.key, input.value);
+                wasm_process
+                    .process_owned_objects
                     .insert_objects_into_map(new_objects, &root);
             }
             Committed { component_address } => {
-                self.track
-                    .insert_objects_into_component(new_objects, component_address);
+                self.track.put_lazy_map_entry(component_address, input.mid, input.key, input.value);
+                self.track.insert_objects_into_component(new_objects, component_address);
             }
         }
 

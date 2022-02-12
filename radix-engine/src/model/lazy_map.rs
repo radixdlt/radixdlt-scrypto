@@ -5,7 +5,7 @@ use scrypto::rust::vec::Vec;
 /// A key-value map where keys and values are lazily loaded on-demand.
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct LazyMap {
-    map: HashMap<Vec<u8>, Vec<u8>>,
+    pub map: HashMap<Vec<u8>, Vec<u8>>,
 }
 
 impl LazyMap {

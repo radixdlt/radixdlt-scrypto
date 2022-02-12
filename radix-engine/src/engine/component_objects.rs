@@ -1,5 +1,6 @@
 use scrypto::rust::collections::*;
 use scrypto::types::*;
+use scrypto::rust::vec::Vec;
 
 use crate::model::*;
 
@@ -117,6 +118,11 @@ impl ComponentObjectsSet {
     pub fn insert_objects_into_map(&mut self, new_objects: ComponentObjectsSet, mid: &Mid) {
         let unclaimed_map = self.lazy_maps.get_mut(mid).unwrap();
         unclaimed_map.insert_descendents(new_objects);
+    }
+
+    pub fn insert_lazy_map_entry(&mut self, mid: &Mid, key: Vec<u8>, value: Vec<u8>) {
+        let (_, lazy_map) = self.get_lazy_map_mut(mid).unwrap();
+        lazy_map.set_entry(key, value);
     }
 
     pub fn get_lazy_map_mut(&mut self, mid: &Mid) -> Option<(Mid, &mut LazyMap)> {

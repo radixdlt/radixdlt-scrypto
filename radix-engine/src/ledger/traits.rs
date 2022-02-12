@@ -3,6 +3,7 @@ use scrypto::buffer::*;
 use scrypto::engine::*;
 use scrypto::rust::borrow::ToOwned;
 use scrypto::rust::collections::*;
+use scrypto::rust::vec::Vec;
 use scrypto::types::*;
 
 use crate::model::*;
@@ -32,8 +33,8 @@ pub trait SubstateStore {
     fn put_component(&mut self, address: Address, component: Component);
 
     /// Child Objects
-    fn get_lazy_map(&self, component_address: &Address, mid: &Mid) -> LazyMap;
-    fn put_lazy_map(&mut self, component_address: Address, vid: Mid, lazy_map: LazyMap);
+    fn get_lazy_map_entry(&self, component_address: &Address, mid: &Mid, key: &[u8]) -> Option<Vec<u8>>;
+    fn put_lazy_map_entry(&mut self, component_address: Address, mid: Mid, key: Vec<u8>, value: Vec<u8>);
     fn get_vault(&self, component_address: &Address, vid: &Vid) -> Vault;
     fn put_vault(&mut self, component_address: Address, vid: Vid, vault: Vault);
     fn get_non_fungible(

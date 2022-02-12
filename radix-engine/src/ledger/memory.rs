@@ -1,5 +1,6 @@
 use scrypto::rust::collections::HashMap;
 use scrypto::types::*;
+use scrypto::rust::vec::Vec;
 
 use crate::ledger::*;
 use crate::model::*;
@@ -9,7 +10,7 @@ use crate::model::*;
 pub struct InMemorySubstateStore {
     packages: HashMap<Address, Package>,
     components: HashMap<Address, Component>,
-    lazy_maps: HashMap<(Address, Mid), LazyMap>,
+    lazy_map_entries: HashMap<(Address, Mid, Vec<u8>), Vec<u8>>,
     resource_defs: HashMap<Address, ResourceDef>,
     vaults: HashMap<(Address, Vid), Vault>,
     non_fungibles: HashMap<(Address, NonFungibleKey), NonFungible>,
@@ -22,7 +23,7 @@ impl InMemorySubstateStore {
         Self {
             packages: HashMap::new(),
             components: HashMap::new(),
-            lazy_maps: HashMap::new(),
+            lazy_map_entries: HashMap::new(),
             resource_defs: HashMap::new(),
             vaults: HashMap::new(),
             non_fungibles: HashMap::new(),
@@ -69,21 +70,20 @@ impl SubstateStore for InMemorySubstateStore {
         self.components.insert(address, component);
     }
 
-    fn get_lazy_map(&self, component_address: &Address, mid: &Mid) -> LazyMap {
-        self.lazy_maps
-            .get(&(component_address.clone(), mid.clone()))
-            .map(Clone::clone)
-            .unwrap()
+    fn get_lazy_map_entry(&self, component_address: &Address, mid: &Mid, key: &[u8]) -> Option<Vec<u8>> {
+        self.lazy_map_entries
+            .get(&(component_address.clone(), mid.clone(), key.to_vec()))
+            .cloned()
     }
 
-    fn put_lazy_map(&mut self, component_address: Address, mid: Mid, lazy_map: LazyMap) {
-        self.lazy_maps.insert((component_address, mid), lazy_map);
+    fn put_lazy_map_entry(&mut self, component_address: Address, mid: Mid, key: Vec<u8>, value: Vec<u8>) {
+        self.lazy_map_entries.insert((component_address, mid, key), value);
     }
 
     fn get_vault(&self, component_address: &Address, vid: &Vid) -> Vault {
         self.vaults
             .get(&(component_address.clone(), vid.clone()))
-            .map(Clone::clone)
+            .cloned()
             .unwrap()
     }
 

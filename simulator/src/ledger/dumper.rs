@@ -48,56 +48,13 @@ pub fn dump_component<T: SubstateStore>(address: Address, ledger: &T) -> Result<
             // TODO: check authorization
             // The current implementation recursively displays all referenced maps and vaults which
             // the component may not have access to.
-
-            // Dump lazy map using DFS
-            // Consider using a proper Queue structure
-            let mut queue: Vec<Mid> = state_validated.lazy_maps.clone();
-            let mut i = 0;
-            let mut maps_visited: HashSet<Mid> = HashSet::new();
-            let mut vaults_found: HashSet<Vid> = state_validated.vaults.iter().cloned().collect();
-            while i < queue.len() {
-                let mid = queue[i];
-                i += 1;
-                if maps_visited.insert(mid) {
-                    let (maps, vaults) = dump_lazy_map(&address, &mid, ledger)?;
-                    queue.extend(maps);
-                    for v in vaults {
-                        vaults_found.insert(v);
-                    }
-                }
-            }
+            let vaults_found: HashSet<Vid> = state_validated.vaults.iter().cloned().collect();
 
             // Dump resources
             dump_resources(address, &vaults_found, ledger)
         }
         None => Err(DisplayError::ComponentNotFound),
     }
-}
-
-fn dump_lazy_map<T: SubstateStore>(
-    address: &Address,
-    mid: &Mid,
-    ledger: &T,
-) -> Result<(Vec<Mid>, Vec<Vid>), DisplayError> {
-    let mut referenced_maps = Vec::new();
-    let mut referenced_vaults = Vec::new();
-    let map = ledger.get_lazy_map(address, mid);
-    println!("{}: {:?}{:?}", "Lazy Map".green().bold(), address, mid);
-    for (last, (k, v)) in map.map().iter().identify_last() {
-        let k_validated = validate_data(k).unwrap();
-        let v_validated = validate_data(v).unwrap();
-        println!(
-            "{} {} => {}",
-            list_item_prefix(last),
-            k_validated,
-            v_validated
-        );
-        referenced_maps.extend(k_validated.lazy_maps);
-        referenced_maps.extend(v_validated.lazy_maps);
-        referenced_vaults.extend(k_validated.vaults);
-        referenced_vaults.extend(v_validated.vaults);
-    }
-    Ok((referenced_maps, referenced_vaults))
 }
 
 fn dump_resources<T: SubstateStore>(
