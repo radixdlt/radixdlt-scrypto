@@ -1080,13 +1080,10 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                         // Only allow vaults to be added, never removed
                         let mut old_vaults: HashSet<Vid> =
                             HashSet::from_iter(component_data.vaults.clone().into_iter());
+                        let mut new_vids = Vec::new();
                         for vid in new_state.vaults {
                             if !old_vaults.remove(&vid) {
-                                let vault = process_owned_objects
-                                    .vaults
-                                    .remove(&vid)
-                                    .ok_or(RuntimeError::VaultNotFound(vid))?;
-                                self.track.put_vault(*component_address, vid, vault);
+                                new_vids.push(vid);
                             }
                         }
                         old_vaults
@@ -1094,37 +1091,42 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                             .try_for_each(|vid| Err(RuntimeError::VaultRemoved(vid)))?;
 
                         // Only allow lazy maps to be added, never removed
+                        let mut new_mids = Vec::new();
                         let mut old_lazy_maps: HashSet<Mid> =
                             HashSet::from_iter(component_data.lazy_maps.clone().into_iter());
                         for mid in new_state.lazy_maps {
                             if !old_lazy_maps.remove(&mid) {
-                                let unclaimed_lazy_map = process_owned_objects
-                                    .lazy_maps
-                                    .remove(&mid)
-                                    .ok_or(RuntimeError::LazyMapNotFound(mid))?;
-                                self.track.put_lazy_map(
-                                    *component_address,
-                                    mid,
-                                    unclaimed_lazy_map.lazy_map,
-                                );
-                                for (child_mid, child_lazy_map) in
-                                    unclaimed_lazy_map.descendent_lazy_maps
-                                {
-                                    self.track.put_lazy_map(
-                                        *component_address,
-                                        child_mid,
-                                        child_lazy_map,
-                                    );
-                                }
-                                for (vid, vault) in unclaimed_lazy_map.descendent_vaults {
-                                    self.track.put_vault(*component_address, vid, vault);
-                                }
-                                //self.move_lazy_map_into_component(unclaimed_lazy_map, mid, *component_address);
+                                new_mids.push(mid);
                             }
                         }
                         old_lazy_maps
                             .into_iter()
                             .try_for_each(|mid| Err(RuntimeError::LazyMapRemoved(mid)))?;
+
+                        let new_objects = process_owned_objects.take(new_vids, new_mids)?;
+                        for (vid, vault) in new_objects.vaults {
+                            self.track.put_vault(*component_address, vid, vault);
+                        }
+
+                        for (mid, unclaimed) in new_objects.lazy_maps {
+                            self.track.put_lazy_map(
+                                *component_address,
+                                mid,
+                                unclaimed.lazy_map,
+                            );
+                            for (child_mid, child_lazy_map) in unclaimed.descendent_lazy_maps {
+                                self.track.put_lazy_map(
+                                    *component_address,
+                                    child_mid,
+                                    child_lazy_map,
+                                );
+                            }
+                            for (vid, vault) in unclaimed.descendent_vaults {
+                                self.track.put_vault(*component_address, vid, vault);
+                            }
+                        }
+
+                        // TODO: Verify that process_owned_objects is empty
 
                         let component = self.track.get_component_mut(*component_address).unwrap();
                         component.set_state(new_state.raw);
