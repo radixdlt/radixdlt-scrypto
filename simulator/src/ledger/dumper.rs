@@ -81,7 +81,7 @@ fn dump_lazy_map<T: SubstateStore>(
 ) -> Result<(Vec<Mid>, Vec<Vid>), DisplayError> {
     let mut referenced_maps = Vec::new();
     let mut referenced_vaults = Vec::new();
-    let map = ledger.get_lazy_map(address, mid).unwrap();
+    let map = ledger.get_lazy_map(address, mid);
     println!("{}: {:?}{:?}", "Lazy Map".green().bold(), address, mid);
     for (last, (k, v)) in map.map().iter().identify_last() {
         let k_validated = validate_data(k).unwrap();
@@ -107,7 +107,7 @@ fn dump_resources<T: SubstateStore>(
 ) -> Result<(), DisplayError> {
     println!("{}:", "Resources".green().bold());
     for (last, vid) in vaults.iter().identify_last() {
-        let vault = ledger.get_vault(&address, vid).unwrap();
+        let vault = ledger.get_vault(&address, vid);
         let amount = vault.amount();
         let resource_address = vault.resource_address();
         let resource_def = ledger.get_resource_def(resource_address).unwrap();

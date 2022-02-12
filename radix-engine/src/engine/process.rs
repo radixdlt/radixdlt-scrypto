@@ -1156,8 +1156,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     }
                     let lazy_map = self
                         .track
-                        .get_lazy_map_mut(&component_address, &input.mid)
-                        .unwrap();
+                        .get_lazy_map(&component_address, &input.mid);
                     let value = lazy_map.get_entry(&input.key);
                     if value.is_some() {
                         let map_entry_objects = Self::process_map_data(value.unwrap()).unwrap();
@@ -1201,8 +1200,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     }
                     let lazy_map = self
                         .track
-                        .get_lazy_map_mut(&component_address, &input.mid)
-                        .unwrap();
+                        .get_lazy_map_mut(&component_address, &input.mid);
                     Ok((
                         lazy_map,
                         Committed {
@@ -1602,7 +1600,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     {
                         return Err(RuntimeError::VaultNotFound(vid));
                     }
-                    let vault = self.track.get_vault_mut(&component_address, &vid).unwrap();
+                    let vault = self.track.get_vault_mut(&component_address, &vid);
                     Ok(vault)
                 }
                 _ => Err(RuntimeError::VaultNotFound(vid)),

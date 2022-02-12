@@ -69,20 +69,22 @@ impl SubstateStore for InMemorySubstateStore {
         self.components.insert(address, component);
     }
 
-    fn get_lazy_map(&self, component_address: &Address, mid: &Mid) -> Option<LazyMap> {
+    fn get_lazy_map(&self, component_address: &Address, mid: &Mid) -> LazyMap {
         self.lazy_maps
             .get(&(component_address.clone(), mid.clone()))
             .map(Clone::clone)
+            .unwrap()
     }
 
     fn put_lazy_map(&mut self, component_address: Address, mid: Mid, lazy_map: LazyMap) {
         self.lazy_maps.insert((component_address, mid), lazy_map);
     }
 
-    fn get_vault(&self, component_address: &Address, vid: &Vid) -> Option<Vault> {
+    fn get_vault(&self, component_address: &Address, vid: &Vid) -> Vault {
         self.vaults
             .get(&(component_address.clone(), vid.clone()))
             .map(Clone::clone)
+            .unwrap()
     }
 
     fn put_vault(&mut self, component_address: Address, vid: Vid, vault: Vault) {

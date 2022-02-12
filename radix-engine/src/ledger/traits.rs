@@ -23,32 +23,24 @@ struct SystemComponentState {
 
 /// A ledger stores all transactions and substates.
 pub trait SubstateStore {
+    /// Top Level Objects
     fn get_resource_def(&self, address: Address) -> Option<ResourceDef>;
-
     fn put_resource_def(&mut self, address: Address, resource_def: ResourceDef);
-
     fn get_package(&self, address: Address) -> Option<Package>;
-
     fn put_package(&mut self, address: Address, package: Package);
-
     fn get_component(&self, address: Address) -> Option<Component>;
-
     fn put_component(&mut self, address: Address, component: Component);
 
-    fn get_lazy_map(&self, component_address: &Address, mid: &Mid) -> Option<LazyMap>;
-
+    /// Child Objects
+    fn get_lazy_map(&self, component_address: &Address, mid: &Mid) -> LazyMap;
     fn put_lazy_map(&mut self, component_address: Address, vid: Mid, lazy_map: LazyMap);
-
-    fn get_vault(&self, component_address: &Address, vid: &Vid) -> Option<Vault>;
-
+    fn get_vault(&self, component_address: &Address, vid: &Vid) -> Vault;
     fn put_vault(&mut self, component_address: Address, vid: Vid, vault: Vault);
-
     fn get_non_fungible(
         &self,
         resource_address: Address,
         id: &NonFungibleKey,
     ) -> Option<NonFungible>;
-
     fn put_non_fungible(
         &mut self,
         resource_address: Address,
