@@ -1,6 +1,6 @@
 use scrypto::rust::collections::*;
-use scrypto::types::*;
 use scrypto::rust::vec::Vec;
+use scrypto::types::*;
 
 use crate::model::*;
 
@@ -125,7 +125,12 @@ impl ComponentObjectsSet {
         lazy_map.set_entry(key, value);
     }
 
-    pub fn get_lazy_map_mut(&mut self, mid: &Mid) -> Option<(Mid, &mut LazyMap)> {
+    pub fn get_lazy_map_entry(&mut self, mid: &Mid, key: &[u8]) -> Option<(Mid, Option<Vec<u8>>)> {
+        self.get_lazy_map_mut(mid)
+            .map(|(mid, lazy_map)| (mid, lazy_map.get_entry(key).map(|v| v.to_vec())))
+    }
+
+    fn get_lazy_map_mut(&mut self, mid: &Mid) -> Option<(Mid, &mut LazyMap)> {
         // TODO: Optimize to prevent iteration
         for (root, unclaimed) in self.lazy_maps.iter_mut() {
             if mid.eq(root) {

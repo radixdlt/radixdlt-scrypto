@@ -273,7 +273,7 @@ impl<'s, S: SubstateStore> Track<'s, S> {
         &mut self,
         component_address: &Address,
         mid: &Mid,
-        key: &[u8]
+        key: &[u8],
     ) -> Option<Vec<u8>> {
         let entry_id = (component_address.clone(), mid.clone(), key.to_vec());
         self.updated_lazy_map_entries.insert(entry_id.clone());
@@ -290,7 +290,13 @@ impl<'s, S: SubstateStore> Track<'s, S> {
     }
 
     /// Inserts a new lazy map.
-    pub fn put_lazy_map_entry(&mut self, component_address: Address, mid: Mid, key: Vec<u8>, value: Vec<u8>) {
+    pub fn put_lazy_map_entry(
+        &mut self,
+        component_address: Address,
+        mid: Mid,
+        key: Vec<u8>,
+        value: Vec<u8>,
+    ) {
         let lazy_map_id = (component_address, mid, key);
         self.updated_lazy_map_entries.insert(lazy_map_id.clone());
         self.lazy_map_entries.insert(lazy_map_id, value);
@@ -434,7 +440,8 @@ impl<'s, S: SubstateStore> Track<'s, S> {
                 .get(&(component_address, mid, key.clone()))
                 .unwrap()
                 .clone();
-            self.ledger.put_lazy_map_entry(component_address, mid, key, value);
+            self.ledger
+                .put_lazy_map_entry(component_address, mid, key, value);
         }
 
         for (component_address, vid) in self.updated_vaults.clone() {
