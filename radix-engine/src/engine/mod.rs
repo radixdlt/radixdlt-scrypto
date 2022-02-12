@@ -1,3 +1,4 @@
+mod component_objects;
 mod data_validator;
 mod id_allocator;
 mod id_validator;
@@ -7,6 +8,7 @@ mod wasm_env;
 mod wasm_loader;
 mod wasm_validator;
 
+pub use component_objects::*;
 pub use data_validator::validate_data;
 pub use id_allocator::*;
 pub use id_validator::*;
