@@ -101,6 +101,23 @@ enum LazyMapState {
     Committed { component_address: Address },
 }
 
+impl <'s, S: SubstateStore> Track<'s, S> {
+    fn insert_objects_into_component(&mut self, new_objects: ComponentObjectsSet, component_address: Address) {
+        for (vid, vault) in new_objects.vaults {
+            self.put_vault(component_address, vid, vault);
+        }
+        for (mid, unclaimed) in new_objects.lazy_maps {
+            self.put_lazy_map(component_address, mid, unclaimed.lazy_map);
+            for (child_mid, child_lazy_map) in unclaimed.descendent_lazy_maps {
+                self.put_lazy_map(component_address, child_mid, child_lazy_map);
+            }
+            for (vid, vault) in unclaimed.descendent_vaults {
+                self.put_vault(component_address, vid, vault);
+            }
+        }
+    }
+}
+
 /// A process keeps track of resource movements and code execution.
 pub struct Process<'r, 'l, L: SubstateStore> {
     /// The call depth
@@ -956,6 +973,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         Ok(CallMethodOutput { rtn: result?.raw })
     }
 
+
     fn handle_create_component(
         &mut self,
         input: CreateComponentInput,
@@ -975,20 +993,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 let data = Self::process_component_data(&input.state)?;
 
                 let new_objects = process_owned_objects.take(data.vaults, data.lazy_maps)?;
-                for (vid, vault) in new_objects.vaults {
-                    self.track.put_vault(component_address, vid, vault);
-                }
-                for (mid, unclaimed) in new_objects.lazy_maps {
-                    self.track
-                        .put_lazy_map(component_address, mid, unclaimed.lazy_map);
-                    for (child_mid, child_lazy_map) in unclaimed.descendent_lazy_maps {
-                        self.track
-                            .put_lazy_map(component_address, child_mid, child_lazy_map);
-                    }
-                    for (vid, vault) in unclaimed.descendent_vaults {
-                        self.track.put_vault(component_address, vid, vault);
-                    }
-                }
+
+                self.track.insert_objects_into_component(new_objects, component_address);
 
                 let component = Component::new(
                     vm.invocation.package_address,
@@ -1104,27 +1110,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                             .try_for_each(|mid| Err(RuntimeError::LazyMapRemoved(mid)))?;
 
                         let new_objects = process_owned_objects.take(new_vids, new_mids)?;
-                        for (vid, vault) in new_objects.vaults {
-                            self.track.put_vault(*component_address, vid, vault);
-                        }
-
-                        for (mid, unclaimed) in new_objects.lazy_maps {
-                            self.track.put_lazy_map(
-                                *component_address,
-                                mid,
-                                unclaimed.lazy_map,
-                            );
-                            for (child_mid, child_lazy_map) in unclaimed.descendent_lazy_maps {
-                                self.track.put_lazy_map(
-                                    *component_address,
-                                    child_mid,
-                                    child_lazy_map,
-                                );
-                            }
-                            for (vid, vault) in unclaimed.descendent_vaults {
-                                self.track.put_vault(*component_address, vid, vault);
-                            }
-                        }
+                        self.track.insert_objects_into_component(new_objects, *component_address);
 
                         // TODO: Verify that process_owned_objects is empty
 
