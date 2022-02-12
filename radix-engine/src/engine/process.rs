@@ -116,33 +116,54 @@ enum ProcessState {
     HasInterpreter {
         vm: Interpreter,
         state: InterpreterState,
-        process_owned_objects: ProcessOwnedObjects
+        process_owned_objects: ComponentObjectsSet
     },
 }
 
-struct ProcessOwnedObjects {
+struct ComponentObjectsSet {
     /// Lazy maps which haven't been assigned to a component or lazy map yet.
     /// Keeps track of vault and lazy map descendents.
-    unclaimed_lazy_maps: HashMap<Mid, UnclaimedLazyMap>,
+    lazy_maps: HashMap<Mid, UnclaimedLazyMap>,
     /// Vaults which haven't been assigned to a component or lazy map yet.
-    unclaimed_vaults: HashMap<Vid, Vault>,
+    vaults: HashMap<Vid, Vault>,
 }
 
-impl ProcessOwnedObjects {
+impl ComponentObjectsSet {
     fn new() -> Self {
-        ProcessOwnedObjects {
-            unclaimed_lazy_maps: HashMap::new(),
-            unclaimed_vaults: HashMap::new(),
+        ComponentObjectsSet {
+            lazy_maps: HashMap::new(),
+            vaults: HashMap::new(),
         }
     }
 
+    fn take(&mut self, vids: Vec<Vid>, mids: Vec<Mid>) -> Result<ComponentObjectsSet, RuntimeError> {
+        let mut vaults = HashMap::new();
+        let mut lazy_maps = HashMap::new();
+
+        for vid in vids {
+            let vault = self.vaults
+                .remove(&vid)
+                .ok_or(RuntimeError::VaultNotFound(vid))?;
+            vaults.insert(vid, vault);
+        }
+
+        for mid in mids {
+            let lazy_map = self.lazy_maps
+                .remove(&mid)
+                .ok_or(RuntimeError::LazyMapNotFound(mid))?;
+            lazy_maps.insert(mid, lazy_map);
+        }
+
+        Ok(ComponentObjectsSet { vaults, lazy_maps })
+    }
+
     fn get_unclaimed_map(&mut self, mid: &Mid) -> &mut UnclaimedLazyMap {
-        self.unclaimed_lazy_maps.get_mut(mid).unwrap()
+        self.lazy_maps.get_mut(mid).unwrap()
     }
 
     fn get_lazy_map_mut(&mut self, mid: &Mid) -> Option<(Mid, &mut LazyMap)> {
         // TODO: Optimize to prevent iteration
-        for (root, unclaimed) in self.unclaimed_lazy_maps.iter_mut() {
+        for (root, unclaimed) in self.lazy_maps.iter_mut() {
             if mid.eq(root) {
                 return Some((root.clone(), &mut unclaimed.lazy_map));
             }
@@ -457,7 +478,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 Actor::Blueprint(..) => InterpreterState::Blueprint,
                 Actor::Component(component_address) => InterpreterState::ComponentEmpty { component_address },
             },
-            process_owned_objects: ProcessOwnedObjects::new()
+            process_owned_objects: ComponentObjectsSet::new()
         };
 
         // run the main function
@@ -655,11 +676,11 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         }
         match &self.process_state {
             HasInterpreter { process_owned_objects, .. } => {
-                for (vid, vault) in &process_owned_objects.unclaimed_vaults {
+                for (vid, vault) in &process_owned_objects.vaults {
                     re_warn!(self, "Dangling vault: {:?}, {:?}", vid, vault);
                     success = false;
                 }
-                for (mid, lazy_map) in &process_owned_objects.unclaimed_lazy_maps {
+                for (mid, lazy_map) in &process_owned_objects.lazy_maps {
                     re_warn!(self, "Dangling lazy map: {:?}, {:?}", mid, lazy_map);
                     success = false;
                 }
@@ -1019,24 +1040,17 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 }
 
                 let data = Self::process_component_data(&input.state)?;
-                for vid in data.vaults {
-                    let vault = process_owned_objects.unclaimed_vaults
-                        .remove(&vid)
-                        .ok_or(RuntimeError::VaultNotFound(vid))?;
+
+                let new_objects = process_owned_objects.take(data.vaults, data.lazy_maps)?;
+                for (vid, vault) in new_objects.vaults {
                     self.track.put_vault(component_address, vid, vault);
                 }
-
-                for mid in data.lazy_maps {
-                    let unclaimed_lazy_map = process_owned_objects.unclaimed_lazy_maps
-                        .remove(&mid)
-                        .ok_or(RuntimeError::LazyMapNotFound(mid))?;
-                    self.track
-                        .put_lazy_map(component_address, mid, unclaimed_lazy_map.lazy_map);
-                    for (child_mid, child_lazy_map) in unclaimed_lazy_map.descendent_lazy_maps {
-                        self.track
-                            .put_lazy_map(component_address, child_mid, child_lazy_map);
+                for (mid, unclaimed) in new_objects.lazy_maps {
+                    self.track.put_lazy_map(component_address, mid, unclaimed.lazy_map);
+                    for (child_mid, child_lazy_map) in unclaimed.descendent_lazy_maps {
+                        self.track.put_lazy_map(component_address, child_mid, child_lazy_map);
                     }
-                    for (vid, vault) in unclaimed_lazy_map.descendent_vaults {
+                    for (vid, vault) in unclaimed.descendent_vaults {
                         self.track.put_vault(component_address, vid, vault);
                     }
                 }
@@ -1113,7 +1127,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                         let mut old_vaults: HashSet<Vid> = HashSet::from_iter(component_data.vaults.clone().into_iter());
                         for vid in new_state.vaults {
                             if !old_vaults.remove(&vid) {
-                                let vault = process_owned_objects.unclaimed_vaults
+                                let vault = process_owned_objects.vaults
                                     .remove(&vid)
                                     .ok_or(RuntimeError::VaultNotFound(vid))?;
                                 self.track.put_vault(*component_address, vid, vault);
@@ -1127,7 +1141,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                         let mut old_lazy_maps: HashSet<Mid> = HashSet::from_iter(component_data.lazy_maps.clone().into_iter());
                         for mid in new_state.lazy_maps {
                             if !old_lazy_maps.remove(&mid) {
-                                let unclaimed_lazy_map = process_owned_objects.unclaimed_lazy_maps
+                                let unclaimed_lazy_map = process_owned_objects.lazy_maps
                                     .remove(&mid)
                                     .ok_or(RuntimeError::LazyMapNotFound(mid))?;
                                 self.track
@@ -1167,7 +1181,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         match &mut self.process_state {
             ProcessState::HasInterpreter { process_owned_objects, .. } => {
                 let mid = self.track.new_mid();
-                process_owned_objects.unclaimed_lazy_maps.insert(
+                process_owned_objects.lazy_maps.insert(
                     mid,
                     UnclaimedLazyMap {
                         lazy_map: LazyMap::new(),
@@ -1257,7 +1271,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 // Only allow vaults to be added, never removed
                 for vid in new_entry_state.vaults {
                     if !old_entry_vids.remove(&vid) {
-                        let vault = process_owned_objects.unclaimed_vaults
+                        let vault = process_owned_objects.vaults
                             .remove(&vid)
                             .ok_or(RuntimeError::VaultNotFound(vid))?;
                         match lazy_map_state {
@@ -1278,7 +1292,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 // Only allow lazy maps to be added, never removed
                 for mid in new_entry_state.lazy_maps {
                     if !old_entry_mids.remove(&mid) {
-                        let child_lazy_map = process_owned_objects.unclaimed_lazy_maps
+                        let child_lazy_map = process_owned_objects.lazy_maps
                             .remove(&mid)
                             .ok_or(RuntimeError::LazyMapNotFound(mid))?;
 
@@ -1644,7 +1658,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     )
                 );
                 let vid = self.track.new_vid();
-                process_owned_objects.unclaimed_vaults.insert(vid, new_vault);
+                process_owned_objects.vaults.insert(vid, new_vault);
 
                 Ok(CreateEmptyVaultOutput { vid })
             }
@@ -1656,11 +1670,11 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         match &mut self.process_state {
             ProcessState::Empty => Err(RuntimeError::IllegalSystemCall()),
             ProcessState::HasInterpreter { vm, process_owned_objects, .. } => {
-                match process_owned_objects.unclaimed_vaults.get_mut(&vid) {
+                match process_owned_objects.vaults.get_mut(&vid) {
                     Some(vault) => Ok(vault),
                     None => {
                         // TODO: Optimize to prevent iteration
-                        for (_, unclaimed) in process_owned_objects.unclaimed_lazy_maps.iter_mut() {
+                        for (_, unclaimed) in process_owned_objects.lazy_maps.iter_mut() {
                             let vault = unclaimed.descendent_vaults.get_mut(&vid);
                             if vault.is_some() {
                                 return Ok(vault.unwrap());
