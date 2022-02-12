@@ -13,7 +13,7 @@ pub enum VaultError {
 /// A persistent resource container on ledger state.
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct Vault {
-    bucket: Bucket
+    bucket: Bucket,
 }
 
 impl Vault {

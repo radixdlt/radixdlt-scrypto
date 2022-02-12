@@ -108,15 +108,13 @@ pub trait SubstateStore {
             self.put_vault(
                 SYSTEM_COMPONENT,
                 XRD_VAULT_ID,
-                Vault::new(
-                    Bucket::new(
-                        RADIX_TOKEN,
-                        ResourceType::Fungible { divisibility: 18 },
-                        Supply::Fungible {
-                            amount: XRD_MAX_SUPPLY.into(),
-                        },
-                    )
-                ),
+                Vault::new(Bucket::new(
+                    RADIX_TOKEN,
+                    ResourceType::Fungible { divisibility: 18 },
+                    Supply::Fungible {
+                        amount: XRD_MAX_SUPPLY.into(),
+                    },
+                )),
             );
             self.put_component(
                 SYSTEM_COMPONENT,

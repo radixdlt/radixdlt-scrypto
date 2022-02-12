@@ -4,7 +4,6 @@ use scrypto::types::*;
 
 use crate::model::*;
 
-
 #[derive(Debug)]
 pub struct UnclaimedLazyMap {
     pub lazy_map: LazyMap,
@@ -44,19 +43,25 @@ impl ComponentObjectsSet {
         }
     }
 
-    pub fn take(&mut self, vids: Vec<Vid>, mids: Vec<Mid>) -> Result<ComponentObjectsSet, RuntimeError> {
+    pub fn take(
+        &mut self,
+        vids: Vec<Vid>,
+        mids: Vec<Mid>,
+    ) -> Result<ComponentObjectsSet, RuntimeError> {
         let mut vaults = HashMap::new();
         let mut lazy_maps = HashMap::new();
 
         for vid in vids {
-            let vault = self.vaults
+            let vault = self
+                .vaults
                 .remove(&vid)
                 .ok_or(RuntimeError::VaultNotFound(vid))?;
             vaults.insert(vid, vault);
         }
 
         for mid in mids {
-            let lazy_map = self.lazy_maps
+            let lazy_map = self
+                .lazy_maps
                 .remove(&mid)
                 .ok_or(RuntimeError::LazyMapNotFound(mid))?;
             lazy_maps.insert(mid, lazy_map);

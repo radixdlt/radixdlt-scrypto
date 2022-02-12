@@ -73,7 +73,7 @@ pub struct Invocation {
 enum InterpreterState {
     Blueprint,
     ComponentEmpty {
-        component_address: Address
+        component_address: Address,
     },
     ComponentLoaded {
         component_address: Address,
@@ -91,7 +91,7 @@ enum ProcessState {
     HasInterpreter {
         vm: Interpreter,
         interpreter_state: InterpreterState,
-        process_owned_objects: ComponentObjectsSet
+        process_owned_objects: ComponentObjectsSet,
     },
 }
 
@@ -397,9 +397,11 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             vm,
             interpreter_state: match invocation.actor {
                 Actor::Blueprint(..) => InterpreterState::Blueprint,
-                Actor::Component(component_address) => InterpreterState::ComponentEmpty { component_address },
+                Actor::Component(component_address) => {
+                    InterpreterState::ComponentEmpty { component_address }
+                }
             },
-            process_owned_objects: ComponentObjectsSet::new()
+            process_owned_objects: ComponentObjectsSet::new(),
         };
 
         // run the main function
@@ -596,7 +598,10 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             success = false;
         }
         match &self.process_state {
-            HasInterpreter { process_owned_objects, .. } => {
+            HasInterpreter {
+                process_owned_objects,
+                ..
+            } => {
                 for (vid, vault) in &process_owned_objects.vaults {
                     re_warn!(self, "Dangling vault: {:?}, {:?}", vid, vault);
                     success = false;
@@ -605,7 +610,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     re_warn!(self, "Dangling lazy map: {:?}, {:?}", mid, lazy_map);
                     success = false;
                 }
-            },
+            }
             _ => {}
         }
 
@@ -740,7 +745,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 }
 
                 Err(RuntimeError::MemoryAllocError)
-            },
+            }
             _ => Err(RuntimeError::InterpreterNotStarted),
         }
     }
@@ -750,13 +755,17 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         match &self.process_state {
             ProcessState::HasInterpreter { vm, .. } => {
                 // read length
-                let a = vm.memory.clone()
+                let a = vm
+                    .memory
+                    .clone()
                     .get(ptr as u32, 4)
                     .map_err(RuntimeError::MemoryAccessError)?;
                 let len = u32::from_le_bytes([a[0], a[1], a[2], a[3]]);
 
                 // read data
-                let data = vm.memory.clone()
+                let data = vm
+                    .memory
+                    .clone()
                     .get((ptr + 4) as u32, len as usize)
                     .map_err(RuntimeError::MemoryAccessError)?;
 
@@ -770,7 +779,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     .map_err(RuntimeError::MemoryAccessError)?;
 
                 Ok(data)
-            },
+            }
             _ => Err(RuntimeError::InterpreterNotStarted),
         }
     }
@@ -786,7 +795,9 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 let op: u32 = args.nth_checked(0)?;
                 let input_ptr: u32 = args.nth_checked(1)?;
                 let input_len: u32 = args.nth_checked(2)?;
-                let input_bytes = vm.memory.clone()
+                let input_bytes = vm
+                    .memory
+                    .clone()
                     .get(input_ptr, input_len as usize)
                     .map_err(|e| Trap::from(RuntimeError::MemoryAccessError(e)))?;
                 let input: I = scrypto_decode(&input_bytes)
@@ -812,7 +823,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 }
 
                 Ok(Some(RuntimeValue::I32(output_ptr)))
-            },
+            }
             _ => Err(Trap::from(RuntimeError::InterpreterNotStarted)),
         }
     }
@@ -953,7 +964,11 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         input: CreateComponentInput,
     ) -> Result<CreateComponentOutput, RuntimeError> {
         let component_address = match &mut self.process_state {
-            ProcessState::HasInterpreter { vm, process_owned_objects, .. } => {
+            ProcessState::HasInterpreter {
+                vm,
+                process_owned_objects,
+                ..
+            } => {
                 let component_address = self.track.new_component_address();
 
                 if self.track.get_component(component_address).is_some() {
@@ -967,21 +982,27 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     self.track.put_vault(component_address, vid, vault);
                 }
                 for (mid, unclaimed) in new_objects.lazy_maps {
-                    self.track.put_lazy_map(component_address, mid, unclaimed.lazy_map);
+                    self.track
+                        .put_lazy_map(component_address, mid, unclaimed.lazy_map);
                     for (child_mid, child_lazy_map) in unclaimed.descendent_lazy_maps {
-                        self.track.put_lazy_map(component_address, child_mid, child_lazy_map);
+                        self.track
+                            .put_lazy_map(component_address, child_mid, child_lazy_map);
                     }
                     for (vid, vault) in unclaimed.descendent_vaults {
                         self.track.put_vault(component_address, vid, vault);
                     }
                 }
 
-                let component = Component::new(vm.invocation.package_address, input.blueprint_name, data.raw);
+                let component = Component::new(
+                    vm.invocation.package_address,
+                    input.blueprint_name,
+                    data.raw,
+                );
                 self.track.put_component(component_address, component);
 
                 Ok(component_address)
             }
-            _ => Err(RuntimeError::IllegalSystemCall())
+            _ => Err(RuntimeError::IllegalSystemCall()),
         }?;
 
         Ok(CreateComponentOutput { component_address })
@@ -1010,24 +1031,30 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         _: GetComponentStateInput,
     ) -> Result<GetComponentStateOutput, RuntimeError> {
         let state = match &mut self.process_state {
-            ProcessState::HasInterpreter { interpreter_state: ref mut state, .. } => {
+            ProcessState::HasInterpreter {
+                interpreter_state: ref mut state,
+                ..
+            } => {
                 let (return_state, next_interpreter_state) = match state {
                     InterpreterState::ComponentEmpty { component_address } => {
                         let component = self.track.get_component(*component_address).unwrap();
                         let state = component.state();
                         let component_data = Self::process_component_data(state).unwrap();
-                        Ok((state, InterpreterState::ComponentLoaded {
-                            component_address: *component_address,
-                            component_data,
-                            loaded_lazy_map_refs: HashSet::new(),
-                            loaded_vault_refs: HashSet::new(),
-                        }))
+                        Ok((
+                            state,
+                            InterpreterState::ComponentLoaded {
+                                component_address: *component_address,
+                                component_data,
+                                loaded_lazy_map_refs: HashSet::new(),
+                                loaded_vault_refs: HashSet::new(),
+                            },
+                        ))
                     }
                     _ => Err(RuntimeError::IllegalSystemCall()),
                 }?;
                 *state = next_interpreter_state;
                 Ok(return_state.to_vec())
-            },
+            }
             _ => Err(RuntimeError::IllegalSystemCall()),
         }?;
 
@@ -1040,16 +1067,26 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     ) -> Result<PutComponentStateOutput, RuntimeError> {
         match &mut self.process_state {
             ProcessState::Empty => Err(RuntimeError::IllegalSystemCall()),
-            ProcessState::HasInterpreter { interpreter_state: ref mut state, process_owned_objects, .. } => {
+            ProcessState::HasInterpreter {
+                interpreter_state: ref mut state,
+                process_owned_objects,
+                ..
+            } => {
                 let next_state = match state {
-                    InterpreterState::ComponentLoaded { component_address, component_data, .. } => {
+                    InterpreterState::ComponentLoaded {
+                        component_address,
+                        component_data,
+                        ..
+                    } => {
                         let new_state = Self::process_component_data(&input.state)?;
 
                         // Only allow vaults to be added, never removed
-                        let mut old_vaults: HashSet<Vid> = HashSet::from_iter(component_data.vaults.clone().into_iter());
+                        let mut old_vaults: HashSet<Vid> =
+                            HashSet::from_iter(component_data.vaults.clone().into_iter());
                         for vid in new_state.vaults {
                             if !old_vaults.remove(&vid) {
-                                let vault = process_owned_objects.vaults
+                                let vault = process_owned_objects
+                                    .vaults
                                     .remove(&vid)
                                     .ok_or(RuntimeError::VaultNotFound(vid))?;
                                 self.track.put_vault(*component_address, vid, vault);
@@ -1060,17 +1097,27 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                             .try_for_each(|vid| Err(RuntimeError::VaultRemoved(vid)))?;
 
                         // Only allow lazy maps to be added, never removed
-                        let mut old_lazy_maps: HashSet<Mid> = HashSet::from_iter(component_data.lazy_maps.clone().into_iter());
+                        let mut old_lazy_maps: HashSet<Mid> =
+                            HashSet::from_iter(component_data.lazy_maps.clone().into_iter());
                         for mid in new_state.lazy_maps {
                             if !old_lazy_maps.remove(&mid) {
-                                let unclaimed_lazy_map = process_owned_objects.lazy_maps
+                                let unclaimed_lazy_map = process_owned_objects
+                                    .lazy_maps
                                     .remove(&mid)
                                     .ok_or(RuntimeError::LazyMapNotFound(mid))?;
-                                self.track
-                                    .put_lazy_map(*component_address, mid, unclaimed_lazy_map.lazy_map);
-                                for (child_mid, child_lazy_map) in unclaimed_lazy_map.descendent_lazy_maps {
-                                    self.track
-                                        .put_lazy_map(*component_address, child_mid, child_lazy_map);
+                                self.track.put_lazy_map(
+                                    *component_address,
+                                    mid,
+                                    unclaimed_lazy_map.lazy_map,
+                                );
+                                for (child_mid, child_lazy_map) in
+                                    unclaimed_lazy_map.descendent_lazy_maps
+                                {
+                                    self.track.put_lazy_map(
+                                        *component_address,
+                                        child_mid,
+                                        child_lazy_map,
+                                    );
                                 }
                                 for (vid, vault) in unclaimed_lazy_map.descendent_vaults {
                                     self.track.put_vault(*component_address, vid, vault);
@@ -1085,7 +1132,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                         let component = self.track.get_component_mut(*component_address).unwrap();
                         component.set_state(new_state.raw);
                         Ok(InterpreterState::ComponentStored)
-                    },
+                    }
                     _ => Err(RuntimeError::IllegalSystemCall()),
                 }?;
 
@@ -1101,7 +1148,10 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         _input: CreateLazyMapInput,
     ) -> Result<CreateLazyMapOutput, RuntimeError> {
         match &mut self.process_state {
-            ProcessState::HasInterpreter { process_owned_objects, .. } => {
+            ProcessState::HasInterpreter {
+                process_owned_objects,
+                ..
+            } => {
                 let mid = self.track.new_mid();
                 process_owned_objects.lazy_maps.insert(
                     mid,
@@ -1112,7 +1162,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     },
                 );
                 Ok(CreateLazyMapOutput { mid })
-            },
+            }
             _ => Err(RuntimeError::IllegalSystemCall()),
         }
     }
@@ -1122,38 +1172,42 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         input: GetLazyMapEntryInput,
     ) -> Result<GetLazyMapEntryOutput, RuntimeError> {
         let value = match &mut self.process_state {
-            ProcessState::HasInterpreter { interpreter_state: state, process_owned_objects, .. } => {
-                match process_owned_objects.get_lazy_map_mut(&input.mid) {
-                    None => {
-                        match state {
-                            InterpreterState::ComponentLoaded {
-                                component_data,
-                                component_address,
-                                loaded_lazy_map_refs,
-                                loaded_vault_refs,
-                            } => {
-                                if !component_data.lazy_maps.contains(&input.mid) && !loaded_lazy_map_refs.contains(&input.mid) {
-                                    return Err(RuntimeError::LazyMapNotFound(input.mid));
-                                }
-                                let lazy_map = self.track.get_lazy_map_mut(&component_address, &input.mid).unwrap();
-                                let value = lazy_map.get_entry(&input.key);
-                                if value.is_some() {
-                                    let map_data = Self::process_map_data(value.unwrap()).unwrap();
-                                    loaded_lazy_map_refs.extend(map_data.lazy_maps);
-                                    loaded_vault_refs.extend(map_data.vaults);
-                                }
-
-                                Ok(value)
-                            },
-                            _ => Err(RuntimeError::LazyMapNotFound(input.mid))
+            ProcessState::HasInterpreter {
+                interpreter_state: state,
+                process_owned_objects,
+                ..
+            } => match process_owned_objects.get_lazy_map_mut(&input.mid) {
+                None => match state {
+                    InterpreterState::ComponentLoaded {
+                        component_data,
+                        component_address,
+                        loaded_lazy_map_refs,
+                        loaded_vault_refs,
+                    } => {
+                        if !component_data.lazy_maps.contains(&input.mid)
+                            && !loaded_lazy_map_refs.contains(&input.mid)
+                        {
+                            return Err(RuntimeError::LazyMapNotFound(input.mid));
                         }
-                    },
-                    Some((_, lazy_map)) => Ok(lazy_map.get_entry(&input.key))
-                }
-            },
-            _ => Err(RuntimeError::IllegalSystemCall())
-        }?;
+                        let lazy_map = self
+                            .track
+                            .get_lazy_map_mut(&component_address, &input.mid)
+                            .unwrap();
+                        let value = lazy_map.get_entry(&input.key);
+                        if value.is_some() {
+                            let map_data = Self::process_map_data(value.unwrap()).unwrap();
+                            loaded_lazy_map_refs.extend(map_data.lazy_maps);
+                            loaded_vault_refs.extend(map_data.vaults);
+                        }
 
+                        Ok(value)
+                    }
+                    _ => Err(RuntimeError::LazyMapNotFound(input.mid)),
+                },
+                Some((_, lazy_map)) => Ok(lazy_map.get_entry(&input.key)),
+            },
+            _ => Err(RuntimeError::IllegalSystemCall()),
+        }?;
 
         Ok(GetLazyMapEntryOutput {
             value: value.map(|e| e.to_vec()),
@@ -1165,24 +1219,26 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         input: PutLazyMapEntryInput,
     ) -> Result<PutLazyMapEntryOutput, RuntimeError> {
         match &mut self.process_state {
-            ProcessState::HasInterpreter { vm, process_owned_objects, .. } => {
+            ProcessState::HasInterpreter {
+                vm,
+                process_owned_objects,
+                ..
+            } => {
                 let key = Self::process_map_data(&input.key)?;
                 let new_entry_state = Self::process_map_data(&input.value)?;
-                let (lazy_map, lazy_map_state) = match process_owned_objects.get_lazy_map_mut(&input.mid) {
-                    None => {
-                        match vm.invocation.actor {
-                            Actor::Component(component_address) => {
-                                match self.track.get_lazy_map_mut(&component_address, &input.mid) {
-                                    Some(lazy_map) => Ok((lazy_map, Committed { component_address })),
-                                    None => Err(RuntimeError::LazyMapNotFound(input.mid)),
-                                }
+                let (lazy_map, lazy_map_state) = match process_owned_objects
+                    .get_lazy_map_mut(&input.mid)
+                {
+                    None => match vm.invocation.actor {
+                        Actor::Component(component_address) => {
+                            match self.track.get_lazy_map_mut(&component_address, &input.mid) {
+                                Some(lazy_map) => Ok((lazy_map, Committed { component_address })),
+                                None => Err(RuntimeError::LazyMapNotFound(input.mid)),
                             }
-                            _ => Err(RuntimeError::LazyMapNotFound(input.mid)),
                         }
+                        _ => Err(RuntimeError::LazyMapNotFound(input.mid)),
                     },
-                    Some((root, lazy_map)) => {
-                        Ok((lazy_map, Uncommitted { root }))
-                    }
+                    Some((root, lazy_map)) => Ok((lazy_map, Uncommitted { root })),
                 }?;
 
                 let (mut old_entry_vids, mut old_entry_mids) =
@@ -1199,12 +1255,14 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 // Only allow vaults to be added, never removed
                 for vid in new_entry_state.vaults {
                     if !old_entry_vids.remove(&vid) {
-                        let vault = process_owned_objects.vaults
+                        let vault = process_owned_objects
+                            .vaults
                             .remove(&vid)
                             .ok_or(RuntimeError::VaultNotFound(vid))?;
                         match lazy_map_state {
                             Uncommitted { root } => {
-                                let unclaimed_lazy_map = process_owned_objects.get_unclaimed_map(&root);
+                                let unclaimed_lazy_map =
+                                    process_owned_objects.get_unclaimed_map(&root);
                                 unclaimed_lazy_map.descendent_vaults.insert(vid, vault);
                             }
                             Committed { component_address } => {
@@ -1220,20 +1278,25 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 // Only allow lazy maps to be added, never removed
                 for mid in new_entry_state.lazy_maps {
                     if !old_entry_mids.remove(&mid) {
-                        let child_lazy_map = process_owned_objects.lazy_maps
+                        let child_lazy_map = process_owned_objects
+                            .lazy_maps
                             .remove(&mid)
                             .ok_or(RuntimeError::LazyMapNotFound(mid))?;
 
                         match lazy_map_state {
                             Uncommitted { root } => {
-                                let unclaimed_lazy_map = process_owned_objects.get_unclaimed_map(&root);
+                                let unclaimed_lazy_map =
+                                    process_owned_objects.get_unclaimed_map(&root);
                                 unclaimed_lazy_map.merge(child_lazy_map, mid);
                             }
                             Committed { component_address } => {
-                                self.track.put_lazy_map(component_address, mid, child_lazy_map.lazy_map);
+                                self.track.put_lazy_map(
+                                    component_address,
+                                    mid,
+                                    child_lazy_map.lazy_map,
+                                );
                                 for (child_mid, map) in child_lazy_map.descendent_lazy_maps {
-                                    self.track
-                                        .put_lazy_map(component_address, child_mid, map);
+                                    self.track.put_lazy_map(component_address, child_mid, map);
                                 }
                                 for (vid, vault) in child_lazy_map.descendent_vaults {
                                     self.track.put_vault(component_address, vid, vault);
@@ -1247,8 +1310,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     .try_for_each(|mid| Err(RuntimeError::LazyMapRemoved(mid)))?;
 
                 Ok(PutLazyMapEntryOutput {})
-            },
-            _ => Err(RuntimeError::IllegalSystemCall())
+            }
+            _ => Err(RuntimeError::IllegalSystemCall()),
         }
     }
 
@@ -1565,60 +1628,63 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         input: CreateEmptyVaultInput,
     ) -> Result<CreateEmptyVaultOutput, RuntimeError> {
         match &mut self.process_state {
-            ProcessState::HasInterpreter { process_owned_objects, .. } => {
+            ProcessState::HasInterpreter {
+                process_owned_objects,
+                ..
+            } => {
                 let definition = self
                     .track
                     .get_resource_def(input.resource_address)
                     .ok_or(RuntimeError::ResourceDefNotFound(input.resource_address))?;
 
-                let new_vault = Vault::new(
-                    Bucket::new(
-                        input.resource_address,
-                        definition.resource_type(),
-                        match definition.resource_type() {
-                            ResourceType::Fungible { .. } => Supply::Fungible {
-                                amount: Decimal::zero(),
-                            },
-                            ResourceType::NonFungible { .. } => Supply::NonFungible {
-                                keys: BTreeSet::new(),
-                            },
+                let new_vault = Vault::new(Bucket::new(
+                    input.resource_address,
+                    definition.resource_type(),
+                    match definition.resource_type() {
+                        ResourceType::Fungible { .. } => Supply::Fungible {
+                            amount: Decimal::zero(),
                         },
-                    )
-                );
+                        ResourceType::NonFungible { .. } => Supply::NonFungible {
+                            keys: BTreeSet::new(),
+                        },
+                    },
+                ));
                 let vid = self.track.new_vid();
                 process_owned_objects.vaults.insert(vid, new_vault);
 
                 Ok(CreateEmptyVaultOutput { vid })
             }
-            _ => Err(RuntimeError::IllegalSystemCall())
+            _ => Err(RuntimeError::IllegalSystemCall()),
         }
     }
 
     fn get_local_vault(&mut self, vid: Vid) -> Result<&mut Vault, RuntimeError> {
         match &mut self.process_state {
             ProcessState::Empty => Err(RuntimeError::IllegalSystemCall()),
-            ProcessState::HasInterpreter { interpreter_state: state, process_owned_objects, .. } => {
-                match process_owned_objects.get_vault_mut(&vid) {
-                    Some(vault) => Ok(vault),
-                    None => {
-                        match state {
-                            InterpreterState::ComponentLoaded {
-                                component_data,
-                                component_address,
-                                loaded_vault_refs,
-                                ..
-                            } => {
-                                if !component_data.vaults.contains(&vid) && !loaded_vault_refs.contains(&vid) {
-                                    return Err(RuntimeError::VaultNotFound(vid));
-                                }
-                                let vault = self.track.get_vault_mut(&component_address, &vid).unwrap();
-                                Ok(vault)
-                            },
-                            _ => Err(RuntimeError::VaultNotFound(vid))
+            ProcessState::HasInterpreter {
+                interpreter_state: state,
+                process_owned_objects,
+                ..
+            } => match process_owned_objects.get_vault_mut(&vid) {
+                Some(vault) => Ok(vault),
+                None => match state {
+                    InterpreterState::ComponentLoaded {
+                        component_data,
+                        component_address,
+                        loaded_vault_refs,
+                        ..
+                    } => {
+                        if !component_data.vaults.contains(&vid)
+                            && !loaded_vault_refs.contains(&vid)
+                        {
+                            return Err(RuntimeError::VaultNotFound(vid));
                         }
+                        let vault = self.track.get_vault_mut(&component_address, &vid).unwrap();
+                        Ok(vault)
                     }
-                }
-            }
+                    _ => Err(RuntimeError::VaultNotFound(vid)),
+                },
+            },
         }
     }
 
@@ -1995,11 +2061,9 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         _input: GetPackageAddressInput,
     ) -> Result<GetPackageAddressOutput, RuntimeError> {
         match &self.process_state {
-            ProcessState::HasInterpreter { vm, .. } => {
-                Ok(GetPackageAddressOutput {
-                    package_address: vm.invocation.package_address
-                })
-            },
+            ProcessState::HasInterpreter { vm, .. } => Ok(GetPackageAddressOutput {
+                package_address: vm.invocation.package_address,
+            }),
             _ => Err(RuntimeError::InterpreterNotStarted),
         }
     }
@@ -2009,12 +2073,10 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         _input: GetCallDataInput,
     ) -> Result<GetCallDataOutput, RuntimeError> {
         match &self.process_state {
-            ProcessState::HasInterpreter { vm, .. } => {
-                Ok(GetCallDataOutput {
-                    function: vm.invocation.function.clone(),
-                    args: vm.invocation.args.iter().cloned().map(|v| v.raw).collect(),
-                })
-            },
+            ProcessState::HasInterpreter { vm, .. } => Ok(GetCallDataOutput {
+                function: vm.invocation.function.clone(),
+                args: vm.invocation.args.iter().cloned().map(|v| v.raw).collect(),
+            }),
             _ => Err(RuntimeError::InterpreterNotStarted),
         }
     }
@@ -2048,11 +2110,9 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
     fn handle_get_actor(&mut self, _input: GetActorInput) -> Result<GetActorOutput, RuntimeError> {
         match &self.process_state {
-            ProcessState::HasInterpreter { vm, .. } => {
-                Ok(GetActorOutput {
-                    actor: vm.invocation.actor.clone(),
-                })
-            },
+            ProcessState::HasInterpreter { vm, .. } => Ok(GetActorOutput {
+                actor: vm.invocation.actor.clone(),
+            }),
             _ => Err(RuntimeError::InterpreterNotStarted),
         }
     }
