@@ -171,7 +171,8 @@ pub struct Process<'r, 'l, L: SubstateStore> {
     /// The bucket refs that will be moved to another process SHORTLY.
     moving_bucket_refs: HashMap<Rid, BucketRef>,
 
-    /// State for the given process
+    /// State for the given wasm process, empty only on the root process
+    /// (root process cannot create components nor is a component itself)
     wasm_process_state: Option<WasmProcess>,
 
     /// ID allocator for buckets and bucket refs created within transaction.
@@ -798,20 +799,24 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     fn read_bytes(&mut self, ptr: i32) -> Result<Vec<u8>, RuntimeError> {
         let wasm_process = self.wasm_process_state.as_ref().unwrap();
         // read length
-        let a = wasm_process.vm
+        let a = wasm_process
+            .vm
             .memory
             .get(ptr as u32, 4)
             .map_err(RuntimeError::MemoryAccessError)?;
         let len = u32::from_le_bytes([a[0], a[1], a[2], a[3]]);
 
         // read data
-        let data = wasm_process.vm
+        let data = wasm_process
+            .vm
             .memory
             .get((ptr + 4) as u32, len as usize)
             .map_err(RuntimeError::MemoryAccessError)?;
 
         // free the buffer
-        wasm_process.vm.module
+        wasm_process
+            .vm
+            .module
             .invoke_export(
                 "scrypto_free",
                 &[RuntimeValue::I32(ptr as i32)],
@@ -832,7 +837,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let op: u32 = args.nth_checked(0)?;
         let input_ptr: u32 = args.nth_checked(1)?;
         let input_len: u32 = args.nth_checked(2)?;
-        let input_bytes = wasm_process.vm
+        let input_bytes = wasm_process
+            .vm
             .memory
             .get(input_ptr, input_len as usize)
             .map_err(|e| Trap::from(RuntimeError::MemoryAccessError(e)))?;
@@ -996,7 +1002,10 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         input: CreateComponentInput,
     ) -> Result<CreateComponentOutput, RuntimeError> {
-        let wasm_process = self.wasm_process_state.as_mut().ok_or(RuntimeError::IllegalSystemCall())?;
+        let wasm_process = self
+            .wasm_process_state
+            .as_mut()
+            .ok_or(RuntimeError::IllegalSystemCall())?;
         let component_address = self.track.new_component_address();
 
         if self.track.get_component(component_address).is_some() {
@@ -1041,13 +1050,15 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         _: GetComponentStateInput,
     ) -> Result<GetComponentStateOutput, RuntimeError> {
-        let wasm_process = self.wasm_process_state.as_mut().ok_or(RuntimeError::IllegalSystemCall())?;
+        let wasm_process = self
+            .wasm_process_state
+            .as_mut()
+            .ok_or(RuntimeError::IllegalSystemCall())?;
         let (return_state, next_interpreter_state) = match &wasm_process.interpreter_state {
             InterpreterState::ComponentEmpty { component_address } => {
                 let component = self.track.get_component(*component_address).unwrap();
                 let state = component.state();
-                let initial_loaded_object_refs =
-                    Self::process_component_data(state).unwrap();
+                let initial_loaded_object_refs = Self::process_component_data(state).unwrap();
                 Ok((
                     state,
                     InterpreterState::ComponentLoaded {
@@ -1061,14 +1072,19 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         }?;
         wasm_process.interpreter_state = next_interpreter_state;
         let component_state = return_state.to_vec();
-        Ok(GetComponentStateOutput { state: component_state })
+        Ok(GetComponentStateOutput {
+            state: component_state,
+        })
     }
 
     fn handle_put_component_state(
         &mut self,
         input: PutComponentStateInput,
     ) -> Result<PutComponentStateOutput, RuntimeError> {
-        let wasm_process = self.wasm_process_state.as_mut().ok_or(RuntimeError::IllegalSystemCall())?;
+        let wasm_process = self
+            .wasm_process_state
+            .as_mut()
+            .ok_or(RuntimeError::IllegalSystemCall())?;
         let next_state = match &wasm_process.interpreter_state {
             InterpreterState::ComponentLoaded {
                 component_address,
@@ -1099,7 +1115,10 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         _input: CreateLazyMapInput,
     ) -> Result<CreateLazyMapOutput, RuntimeError> {
-        let wasm_process = self.wasm_process_state.as_mut().ok_or(RuntimeError::IllegalSystemCall())?;
+        let wasm_process = self
+            .wasm_process_state
+            .as_mut()
+            .ok_or(RuntimeError::IllegalSystemCall())?;
         let mid = self.track.new_mid();
         wasm_process.process_owned_objects.lazy_maps.insert(
             mid,
@@ -1116,8 +1135,14 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         input: GetLazyMapEntryInput,
     ) -> Result<GetLazyMapEntryOutput, RuntimeError> {
-        let wasm_process = self.wasm_process_state.as_mut().ok_or(RuntimeError::IllegalSystemCall())?;
-        let value = match wasm_process.process_owned_objects.get_lazy_map_mut(&input.mid) {
+        let wasm_process = self
+            .wasm_process_state
+            .as_mut()
+            .ok_or(RuntimeError::IllegalSystemCall())?;
+        let value = match wasm_process
+            .process_owned_objects
+            .get_lazy_map_mut(&input.mid)
+        {
             None => match &mut wasm_process.interpreter_state {
                 InterpreterState::ComponentLoaded {
                     initial_loaded_object_refs,
@@ -1155,8 +1180,12 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         input: PutLazyMapEntryInput,
     ) -> Result<PutLazyMapEntryOutput, RuntimeError> {
-        let wasm_process = self.wasm_process_state.as_mut().ok_or(RuntimeError::IllegalSystemCall())?;
-        let (lazy_map, lazy_map_state) = match wasm_process.process_owned_objects
+        let wasm_process = self
+            .wasm_process_state
+            .as_mut()
+            .ok_or(RuntimeError::IllegalSystemCall())?;
+        let (lazy_map, lazy_map_state) = match wasm_process
+            .process_owned_objects
             .get_lazy_map_mut(&input.mid)
         {
             None => match &wasm_process.interpreter_state {
@@ -1174,7 +1203,12 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                         .track
                         .get_lazy_map_mut(&component_address, &input.mid)
                         .unwrap();
-                    Ok(( lazy_map, Committed { component_address: *component_address }))
+                    Ok((
+                        lazy_map,
+                        Committed {
+                            component_address: *component_address,
+                        },
+                    ))
                 }
                 _ => Err(RuntimeError::LazyMapNotFound(input.mid)),
             },
@@ -1188,11 +1222,15 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         lazy_map.set_entry(input.key, input.value);
 
         new_entry_object_refs.remove(&old_entry_object_refs)?;
-        let new_objects = wasm_process.process_owned_objects.take(new_entry_object_refs)?;
+        let new_objects = wasm_process
+            .process_owned_objects
+            .take(new_entry_object_refs)?;
 
         match lazy_map_state {
             Uncommitted { root } => {
-                wasm_process.process_owned_objects.insert_objects_into_map(new_objects, &root);
+                wasm_process
+                    .process_owned_objects
+                    .insert_objects_into_map(new_objects, &root);
             }
             Committed { component_address } => {
                 self.track
@@ -1515,7 +1553,10 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         input: CreateEmptyVaultInput,
     ) -> Result<CreateEmptyVaultOutput, RuntimeError> {
-        let wasm_process = self.wasm_process_state.as_mut().ok_or(RuntimeError::IllegalSystemCall())?;
+        let wasm_process = self
+            .wasm_process_state
+            .as_mut()
+            .ok_or(RuntimeError::IllegalSystemCall())?;
         let definition = self
             .track
             .get_resource_def(input.resource_address)
@@ -1534,13 +1575,19 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             },
         ));
         let vid = self.track.new_vid();
-        wasm_process.process_owned_objects.vaults.insert(vid, new_vault);
+        wasm_process
+            .process_owned_objects
+            .vaults
+            .insert(vid, new_vault);
 
         Ok(CreateEmptyVaultOutput { vid })
     }
 
     fn get_local_vault(&mut self, vid: Vid) -> Result<&mut Vault, RuntimeError> {
-        let wasm_process = self.wasm_process_state.as_mut().ok_or(RuntimeError::IllegalSystemCall())?;
+        let wasm_process = self
+            .wasm_process_state
+            .as_mut()
+            .ok_or(RuntimeError::IllegalSystemCall())?;
         match wasm_process.process_owned_objects.get_vault_mut(&vid) {
             Some(vault) => Ok(vault),
             None => match &wasm_process.interpreter_state {
@@ -1935,7 +1982,10 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         _input: GetPackageAddressInput,
     ) -> Result<GetPackageAddressOutput, RuntimeError> {
-        let wasm_process = self.wasm_process_state.as_ref().ok_or(RuntimeError::IllegalSystemCall())?;
+        let wasm_process = self
+            .wasm_process_state
+            .as_ref()
+            .ok_or(RuntimeError::IllegalSystemCall())?;
         Ok(GetPackageAddressOutput {
             package_address: wasm_process.vm.invocation.package_address,
         })
@@ -1945,10 +1995,20 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         _input: GetCallDataInput,
     ) -> Result<GetCallDataOutput, RuntimeError> {
-        let wasm_process = self.wasm_process_state.as_ref().ok_or(RuntimeError::InterpreterNotStarted)?;
+        let wasm_process = self
+            .wasm_process_state
+            .as_ref()
+            .ok_or(RuntimeError::InterpreterNotStarted)?;
         Ok(GetCallDataOutput {
             function: wasm_process.vm.invocation.function.clone(),
-            args: wasm_process.vm.invocation.args.iter().cloned().map(|v| v.raw).collect(),
+            args: wasm_process
+                .vm
+                .invocation
+                .args
+                .iter()
+                .cloned()
+                .map(|v| v.raw)
+                .collect(),
         })
     }
 
@@ -1980,7 +2040,10 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     }
 
     fn handle_get_actor(&mut self, _input: GetActorInput) -> Result<GetActorOutput, RuntimeError> {
-        let wasm_process = self.wasm_process_state.as_ref().ok_or(RuntimeError::InterpreterNotStarted)?;
+        let wasm_process = self
+            .wasm_process_state
+            .as_ref()
+            .ok_or(RuntimeError::InterpreterNotStarted)?;
         Ok(GetActorOutput {
             actor: wasm_process.vm.invocation.actor.clone(),
         })
