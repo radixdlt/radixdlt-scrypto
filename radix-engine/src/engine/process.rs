@@ -101,8 +101,12 @@ enum LazyMapState {
     Committed { component_address: Address },
 }
 
-impl <'s, S: SubstateStore> Track<'s, S> {
-    fn insert_objects_into_component(&mut self, new_objects: ComponentObjectsSet, component_address: Address) {
+impl<'s, S: SubstateStore> Track<'s, S> {
+    fn insert_objects_into_component(
+        &mut self,
+        new_objects: ComponentObjectsSet,
+        component_address: Address,
+    ) {
         for (vid, vault) in new_objects.vaults {
             self.put_vault(component_address, vid, vault);
         }
@@ -973,7 +977,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         Ok(CallMethodOutput { rtn: result?.raw })
     }
 
-
     fn handle_create_component(
         &mut self,
         input: CreateComponentInput,
@@ -994,7 +997,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
                 let new_objects = process_owned_objects.take(data.vaults, data.lazy_maps)?;
 
-                self.track.insert_objects_into_component(new_objects, component_address);
+                self.track
+                    .insert_objects_into_component(new_objects, component_address);
 
                 let component = Component::new(
                     vm.invocation.package_address,
@@ -1110,7 +1114,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                             .try_for_each(|mid| Err(RuntimeError::LazyMapRemoved(mid)))?;
 
                         let new_objects = process_owned_objects.take(new_vids, new_mids)?;
-                        self.track.insert_objects_into_component(new_objects, *component_address);
+                        self.track
+                            .insert_objects_into_component(new_objects, *component_address);
 
                         // TODO: Verify that process_owned_objects is empty
 
@@ -1265,7 +1270,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                         process_owned_objects.insert_objects_into_map(new_objects, &root);
                     }
                     Committed { component_address } => {
-                        self.track.insert_objects_into_component(new_objects, component_address);
+                        self.track
+                            .insert_objects_into_component(new_objects, component_address);
                     }
                 }
 
