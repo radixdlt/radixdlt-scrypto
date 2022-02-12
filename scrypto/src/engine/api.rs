@@ -186,9 +186,7 @@ pub struct GetComponentInfoOutput {
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct GetComponentStateInput {
-    pub component_address: Address,
-}
+pub struct GetComponentStateInput {}
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct GetComponentStateOutput {
@@ -197,7 +195,6 @@ pub struct GetComponentStateOutput {
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct PutComponentStateInput {
-    pub component_address: Address,
     pub state: Vec<u8>,
 }
 

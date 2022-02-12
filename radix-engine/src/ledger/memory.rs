@@ -9,9 +9,9 @@ use crate::model::*;
 pub struct InMemorySubstateStore {
     packages: HashMap<Address, Package>,
     components: HashMap<Address, Component>,
-    lazy_maps: HashMap<Mid, LazyMap>,
+    lazy_maps: HashMap<(Address, Mid), LazyMap>,
     resource_defs: HashMap<Address, ResourceDef>,
-    vaults: HashMap<Vid, Vault>,
+    vaults: HashMap<(Address, Vid), Vault>,
     non_fungibles: HashMap<(Address, NonFungibleKey), NonFungible>,
     current_epoch: u64,
     nonce: u64,
@@ -69,20 +69,24 @@ impl SubstateStore for InMemorySubstateStore {
         self.components.insert(address, component);
     }
 
-    fn get_lazy_map(&self, mid: Mid) -> Option<LazyMap> {
-        self.lazy_maps.get(&mid).map(Clone::clone)
+    fn get_lazy_map(&self, component_address: &Address, mid: &Mid) -> Option<LazyMap> {
+        self.lazy_maps
+            .get(&(component_address.clone(), mid.clone()))
+            .map(Clone::clone)
     }
 
-    fn put_lazy_map(&mut self, mid: Mid, lazy_map: LazyMap) {
-        self.lazy_maps.insert(mid, lazy_map);
+    fn put_lazy_map(&mut self, component_address: Address, mid: Mid, lazy_map: LazyMap) {
+        self.lazy_maps.insert((component_address, mid), lazy_map);
     }
 
-    fn get_vault(&self, vid: Vid) -> Option<Vault> {
-        self.vaults.get(&vid).map(Clone::clone)
+    fn get_vault(&self, component_address: &Address, vid: &Vid) -> Option<Vault> {
+        self.vaults
+            .get(&(component_address.clone(), vid.clone()))
+            .map(Clone::clone)
     }
 
-    fn put_vault(&mut self, vid: Vid, vault: Vault) {
-        self.vaults.insert(vid, vault);
+    fn put_vault(&mut self, component_address: Address, vid: Vid, vault: Vault) {
+        self.vaults.insert((component_address, vid), vault);
     }
 
     fn get_non_fungible(
