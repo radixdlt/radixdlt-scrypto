@@ -739,7 +739,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 );
 
                 if let Ok(Some(RuntimeValue::I32(ptr))) = result {
-                    if vm.memory.clone().set((ptr + 4) as u32, bytes).is_ok() {
+                    if vm.memory.set((ptr + 4) as u32, bytes).is_ok() {
                         return Ok(ptr);
                     }
                 }
@@ -757,7 +757,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 // read length
                 let a = vm
                     .memory
-                    .clone()
                     .get(ptr as u32, 4)
                     .map_err(RuntimeError::MemoryAccessError)?;
                 let len = u32::from_le_bytes([a[0], a[1], a[2], a[3]]);
@@ -765,7 +764,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 // read data
                 let data = vm
                     .memory
-                    .clone()
                     .get((ptr + 4) as u32, len as usize)
                     .map_err(RuntimeError::MemoryAccessError)?;
 
@@ -797,7 +795,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 let input_len: u32 = args.nth_checked(2)?;
                 let input_bytes = vm
                     .memory
-                    .clone()
                     .get(input_ptr, input_len as usize)
                     .map_err(|e| Trap::from(RuntimeError::MemoryAccessError(e)))?;
                 let input: I = scrypto_decode(&input_bytes)
