@@ -18,6 +18,7 @@ use crate::engine::process::ProcessState::HasInterpreter;
 use crate::engine::*;
 use crate::ledger::*;
 use crate::model::*;
+use crate::transaction::*;
 
 macro_rules! re_trace {
     ($proc:expr, $($args: expr),+) => {
@@ -249,33 +250,31 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     }
 
     // (Transaction ONLY) Takes resource from worktop and returns a bucket.
-    pub fn take_from_worktop(
-        &mut self,
-        amount: Option<Decimal>,
-        resource_address: Address,
-    ) -> Result<ValidatedData, RuntimeError> {
+    pub fn take_from_worktop(&mut self, resource: Resource) -> Result<ValidatedData, RuntimeError> {
         re_debug!(
             self,
-            "(Transaction) Taking from worktop: amount = {:?}, resource_address = {:?}",
-            amount,
-            resource_address
+            "(Transaction) Taking from worktop: resource = {:?}",
+            resource
         );
 
+        let resource_address = resource.resource_address();
         let new_bid = self
             .id_allocator
             .new_bid()
             .map_err(RuntimeError::IdAllocatorError)?;
         let bucket = match self.worktop.remove(&resource_address) {
             Some(mut bucket) => {
-                if let Some(amount) = amount {
-                    let to_return = bucket.take(amount).map_err(RuntimeError::BucketError)?;
-                    if !bucket.amount().is_zero() {
-                        self.worktop.insert(resource_address, bucket);
-                    }
-                    Ok(to_return)
-                } else {
-                    Ok(bucket)
+                let to_return = match resource {
+                    Resource::Fungible { amount, .. } => bucket.take(amount),
+                    Resource::NonFungible { keys, .. } => bucket.take_non_fungibles(&keys),
+                    Resource::All { .. } => bucket.take(bucket.amount()),
                 }
+                .map_err(RuntimeError::BucketError)?;
+
+                if !bucket.amount().is_zero() {
+                    self.worktop.insert(resource_address, bucket);
+                }
+                Ok(to_return)
             }
             None => Err(RuntimeError::BucketError(BucketError::InsufficientBalance)),
         }?;

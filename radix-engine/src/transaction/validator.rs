@@ -32,6 +32,18 @@ pub fn validate_transaction(
                     .map_err(TransactionValidationError::IdValidatorError)?;
                 instructions.push(ValidatedInstruction::TakeAllFromWorktop { resource_address });
             }
+            Instruction::TakeNonFungiblesFromWorktop {
+                keys,
+                resource_address,
+            } => {
+                id_validator
+                    .new_bucket()
+                    .map_err(TransactionValidationError::IdValidatorError)?;
+                instructions.push(ValidatedInstruction::TakeNonFungiblesFromWorktop {
+                    keys,
+                    resource_address,
+                });
+            }
             Instruction::ReturnToWorktop { bid } => {
                 id_validator
                     .drop_bucket(bid)

@@ -49,7 +49,7 @@ impl TypeId for NonFungibleKey {
 
 impl Display for NonFungibleKey {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "{:x?}", self.0)
+        write!(f, "{}", hex::encode(&self.0))
     }
 }
 

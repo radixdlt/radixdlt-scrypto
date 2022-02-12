@@ -113,19 +113,25 @@ impl Bucket {
     }
 
     pub fn take_non_fungible(&mut self, key: &NonFungibleKey) -> Result<Self, BucketError> {
+        self.take_non_fungibles(&BTreeSet::from([key.clone()]))
+    }
+
+    pub fn take_non_fungibles(
+        &mut self,
+        set: &BTreeSet<NonFungibleKey>,
+    ) -> Result<Self, BucketError> {
         match &mut self.supply {
             Supply::Fungible { .. } => Err(BucketError::UnsupportedOperation),
             Supply::NonFungible { ref mut keys } => {
-                if !keys.contains(&key) {
-                    return Err(BucketError::NonFungibleNotFound);
+                for key in set {
+                    if !keys.remove(&key) {
+                        return Err(BucketError::NonFungibleNotFound);
+                    }
                 }
-                keys.remove(&key);
                 Ok(Self::new(
                     self.resource_address,
                     self.resource_type,
-                    Supply::NonFungible {
-                        keys: BTreeSet::from([key.clone()]),
-                    },
+                    Supply::NonFungible { keys: set.clone() },
                 ))
             }
         }
