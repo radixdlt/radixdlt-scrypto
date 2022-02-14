@@ -38,6 +38,48 @@ fn dangling_lazy_map_should_fail() {
 }
 
 #[test]
+fn can_insert_in_child_nodes() {
+    // Arrange
+    let mut ledger = InMemorySubstateStore::with_bootstrap();
+    let mut executor = TransactionExecutor::new(&mut ledger, false);
+    let package = executor.publish_package(&compile("lazy_map")).unwrap();
+
+    // Act
+    let transaction = TransactionBuilder::new(&executor)
+        .call_function(package, "SuperLazyMap", "new", vec![], None)
+        .build(vec![])
+        .unwrap();
+    let receipt = executor.run(transaction).unwrap();
+
+    // Assert
+    assert!(receipt.result.is_ok());
+}
+
+#[test]
+fn create_mutable_lazy_map_into_map_and_referencing_before_storing() {
+    // Arrange
+    let mut ledger = InMemorySubstateStore::with_bootstrap();
+    let mut executor = TransactionExecutor::new(&mut ledger, false);
+    let package = executor.publish_package(&compile("lazy_map")).unwrap();
+
+    // Act
+    let transaction = TransactionBuilder::new(&executor)
+        .call_function(
+            package,
+            "LazyMapTest",
+            "new_lazy_map_into_map_then_get",
+            vec![],
+            None,
+        )
+        .build(vec![])
+        .unwrap();
+    let receipt = executor.run(transaction).unwrap();
+
+    // Assert
+    assert!(receipt.result.is_ok());
+}
+
+#[test]
 fn cannot_remove_lazy_maps() {
     // Arrange
     let mut ledger = InMemorySubstateStore::with_bootstrap();

@@ -1,7 +1,7 @@
 use scrypto::prelude::*;
 
 blueprint! {
-    struct LazyMapTest {
+   struct LazyMapTest {
         map: LazyMap<String, String>,
         vector: Vec<LazyMap<String, String>>,
         lazy_maps: LazyMap<String, LazyMap<String, String>>
@@ -29,6 +29,19 @@ blueprint! {
             let lazy_maps = LazyMap::new();
             lazy_maps.insert("hello".to_owned(), LazyMap::new());
             LazyMapTest { map, vector, lazy_maps }.instantiate()
+        }
+
+        pub fn new_lazy_map_into_map_then_get() -> Component {
+            let lazy_map = LazyMap::new();
+            let lazy_maps = LazyMap::new();
+            lazy_maps.insert("hello".to_owned(), lazy_map);
+            let lazy_map = lazy_maps.get(&"hello".to_owned()).unwrap();
+            lazy_map.insert("hello".to_owned(), "hello".to_owned());
+            LazyMapTest {
+                map: LazyMap::new(),
+                vector: Vec::new(),
+                lazy_maps,
+            }.instantiate()
         }
 
         pub fn overwrite_lazy_map(&mut self) -> () {

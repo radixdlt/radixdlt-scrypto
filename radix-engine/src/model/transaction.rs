@@ -1,4 +1,5 @@
 use sbor::*;
+use scrypto::rust::collections::BTreeSet;
 use scrypto::rust::string::String;
 use scrypto::rust::vec::Vec;
 use scrypto::types::*;
@@ -20,6 +21,12 @@ pub enum Instruction {
 
     /// Takes all of a given resource from worktop.
     TakeAllFromWorktop { resource_address: Address },
+
+    /// Takes non-fungibles from worktop.
+    TakeNonFungiblesFromWorktop {
+        keys: BTreeSet<NonFungibleKey>,
+        resource_address: Address,
+    },
 
     /// Returns resource to worktop.
     ReturnToWorktop { bid: Bid },

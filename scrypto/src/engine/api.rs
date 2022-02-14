@@ -183,10 +183,8 @@ pub struct GetComponentInfoOutput {
     pub blueprint: (PackageRef, String),
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct GetComponentStateInput {
-    pub component: ComponentRef,
-}
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
+pub struct GetComponentStateInput {}
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct GetComponentStateOutput {
@@ -195,7 +193,6 @@ pub struct GetComponentStateOutput {
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct PutComponentStateInput {
-    pub component: ComponentRef,
     pub state: Vec<u8>,
 }
 

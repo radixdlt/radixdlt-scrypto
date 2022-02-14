@@ -12,4 +12,6 @@ DROP_BUCKET_REF  BucketRef("badge2");
 DROP_BUCKET_REF  BucketRef("badge1");
 RETURN_TO_WORKTOP  Bucket("remaining_xrd");
 
+TAKE_NON_FUNGIBLES_FROM_WORKTOP TreeSet<NonFungibleKey>(NonFungibleKey("11"), NonFungibleKey("22")) Address("030000000000000000000000000000000000000000000000000004")  Bucket("nfts");
+
 CALL_METHOD_WITH_ALL_RESOURCES  Address("02d43f479e9b2beb9df98bc3888344fc25eda181e8f710ce1bf1de")  "deposit_batch";

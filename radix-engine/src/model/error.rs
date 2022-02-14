@@ -104,6 +104,12 @@ pub enum RuntimeError {
     /// Package does not exist.
     PackageNotFound(Address),
 
+    /// System call not allowed in given context.
+    IllegalSystemCall(),
+
+    /// No component has been loaded.
+    ComponentNotLoaded(),
+
     /// Component does not exist.
     ComponentNotFound(Address),
 

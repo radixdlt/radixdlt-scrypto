@@ -6,12 +6,17 @@ use sbor::type_id::*;
 use sbor::Encoder;
 use scrypto::buffer::*;
 use scrypto::types::*;
+use std::collections::BTreeSet;
 use std::collections::HashMap;
 use std::str::FromStr;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum GeneratorError {
-    WrongTypeOfValue {
+    InvalidType {
+        expected_type: ast::Type,
+        actual: ast::Type,
+    },
+    InvalidValue {
         expected_type: Vec<ast::Type>,
         actual: ast::Value,
     },
@@ -130,6 +135,21 @@ pub fn generate_instruction(
                 resource_address: generate_address(resource_address)?,
             }
         }
+        ast::Instruction::TakeNonFungiblesFromWorktop {
+            keys,
+            resource_address,
+            new_bucket,
+        } => {
+            let bid = id_validator
+                .new_bucket()
+                .map_err(GeneratorError::IdValidatorError)?;
+            declare_bucket(new_bucket, resolver, bid)?;
+
+            Instruction::TakeNonFungiblesFromWorktop {
+                keys: generate_non_fungible_keys(keys)?,
+                resource_address: generate_address(resource_address)?,
+            }
+        }
         ast::Instruction::ReturnToWorktop { bucket } => {
             let bid = generate_bucket(bucket, resolver)?;
             id_validator
@@ -231,7 +251,7 @@ pub fn generate_instruction(
 #[macro_export]
 macro_rules! invalid_type {
     ( $v:expr, $($exp:expr),+ ) => {
-        Err(GeneratorError::WrongTypeOfValue {
+        Err(GeneratorError::InvalidValue {
             expected_type: vec!($($exp),+),
             actual: $v.clone(),
         })
@@ -404,6 +424,27 @@ fn generate_non_fungible_key(value: &ast::Value) -> Result<NonFungibleKey, Gener
     }
 }
 
+fn generate_non_fungible_keys(
+    value: &ast::Value,
+) -> Result<BTreeSet<NonFungibleKey>, GeneratorError> {
+    match value {
+        ast::Value::TreeSet(kind, values) => {
+            if kind != &ast::Type::NonFungibleKey {
+                return Err(GeneratorError::InvalidType {
+                    expected_type: ast::Type::String,
+                    actual: kind.clone(),
+                });
+            }
+
+            values
+                .iter()
+                .map(|v| generate_non_fungible_key(v))
+                .collect()
+        }
+        v @ _ => invalid_type!(v, ast::Type::TreeSet),
+    }
+}
+
 fn generate_value(
     value: &ast::Value,
     expected: Option<ast::Type>,
@@ -411,7 +452,7 @@ fn generate_value(
 ) -> Result<Value, GeneratorError> {
     if let Some(ty) = expected {
         if ty != value.kind() {
-            return Err(GeneratorError::WrongTypeOfValue {
+            return Err(GeneratorError::InvalidValue {
                 expected_type: vec![ty],
                 actual: value.clone(),
             });
@@ -747,7 +788,7 @@ mod tests {
     fn test_failures() {
         generate_value_error!(
             r#"Address(100u32)"#,
-            GeneratorError::WrongTypeOfValue {
+            GeneratorError::InvalidValue {
                 expected_type: vec![ast::Type::String],
                 actual: ast::Value::U32(100),
             }
@@ -900,6 +941,16 @@ mod tests {
                     Instruction::DropBucketRef { rid: Rid(515) },
                     Instruction::DropBucketRef { rid: Rid(514) },
                     Instruction::ReturnToWorktop { bid: Bid(513) },
+                    Instruction::TakeNonFungiblesFromWorktop {
+                        keys: BTreeSet::from([
+                            NonFungibleKey::from_str("11").unwrap(),
+                            NonFungibleKey::from_str("22").unwrap(),
+                        ]),
+                        resource_address: Address::from_str(
+                            "030000000000000000000000000000000000000000000000000004"
+                        )
+                        .unwrap(),
+                    },
                     Instruction::CallMethodWithAllResources {
                         component_address: Address::from_str(
                             "02d43f479e9b2beb9df98bc3888344fc25eda181e8f710ce1bf1de".into()

@@ -129,10 +129,24 @@ impl Bucket {
             .collect()
     }
 
-    /// Get all non-fungible IDs in this bucket.
+    /// Returns the key of a singleton non-fungible.
+    ///
+    /// # Panic
+    /// If this bucket is empty or contains more than one non-fungibles.
+    pub fn get_non_fungible_key(&self) -> NonFungibleKey {
+        let keys = self.get_non_fungible_keys();
+        assert!(
+            keys.len() == 1,
+            "1 non-fungible expected, but {} found",
+            keys.len()
+        );
+        keys[0].clone()
+    }
+
+    /// Returns the keys of all non-fungibles in this bucket.
     ///
     /// # Panics
-    /// Panics if this is not a non-fungible bucket.
+    /// If this bucket is not a non-fungible bucket.
     pub fn get_non_fungible_keys(&self) -> Vec<NonFungibleKey> {
         let input = GetNonFungibleKeysInBucketInput {
             bucket: self.this(),
@@ -141,17 +155,6 @@ impl Bucket {
             call_engine(GET_NON_FUNGIBLE_KEYS_IN_BUCKET, input);
 
         output.keys
-    }
-
-    /// Get the non-fungible id and panic if not singleton.
-    pub fn get_non_fungible_key(&self) -> NonFungibleKey {
-        let keys = self.get_non_fungible_keys();
-        assert!(
-            keys.len() == 1,
-            "Expect 1 non-fungible, but found {}",
-            keys.len()
-        );
-        keys[0].clone()
     }
 
     /// Returns the data of a non-fungible unit, both the immutable and mutable parts.

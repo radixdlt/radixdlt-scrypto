@@ -150,10 +150,20 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
                 ValidatedInstruction::TakeFromWorktop {
                     amount,
                     resource_address,
-                } => proc.take_from_worktop(Some(amount), resource_address),
+                } => proc.take_from_worktop(Resource::Fungible {
+                    amount,
+                    resource_address,
+                }),
                 ValidatedInstruction::TakeAllFromWorktop { resource_address } => {
-                    proc.take_from_worktop(None, resource_address)
+                    proc.take_from_worktop(Resource::All { resource_address })
                 }
+                ValidatedInstruction::TakeNonFungiblesFromWorktop {
+                    keys,
+                    resource_address,
+                } => proc.take_from_worktop(Resource::NonFungible {
+                    keys,
+                    resource_address,
+                }),
                 ValidatedInstruction::ReturnToWorktop { bid } => proc.return_to_worktop(bid),
                 ValidatedInstruction::AssertWorktopContains {
                     amount,

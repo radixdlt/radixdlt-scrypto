@@ -64,6 +64,27 @@ pub enum CustomType {
 }
 
 impl CustomType {
+    pub fn of(id: u8) -> Option<CustomType> {
+        match id {
+            // core
+            0x80 => Some(CustomType::PackageRef),
+            0x81 => Some(CustomType::ComponentRef),
+            0x82 => Some(CustomType::LazyMap),
+            // crypto
+            0x90 => Some(CustomType::Hash),
+            // math
+            0xa0 => Some(CustomType::Decimal),
+            0xa1 => Some(CustomType::BigDecimal),
+            // resource
+            0xb0 => Some(CustomType::Bucket),
+            0xb1 => Some(CustomType::BucketRef),
+            0xb2 => Some(CustomType::Vault),
+            0xb3 => Some(CustomType::NonFungibleKey),
+            0xb4 => Some(CustomType::ResourceDefRef),
+            _ => None,
+        }
+    }
+
     pub fn id(&self) -> u8 {
         match self {
             // core

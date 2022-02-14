@@ -54,9 +54,7 @@ impl ComponentRef {
 
     /// Returns the state of this component.
     pub fn get_state<T: ComponentState>(&self) -> T {
-        let input = GetComponentStateInput {
-            component: self.this(),
-        };
+        let input = GetComponentStateInput {};
         let output: GetComponentStateOutput = call_engine(GET_COMPONENT_STATE, input);
 
         scrypto_decode(&output.state).unwrap()
@@ -65,7 +63,6 @@ impl ComponentRef {
     /// Updates the state of this component.
     pub fn put_state<T: ComponentState>(&self, state: T) {
         let input = PutComponentStateInput {
-            component: self.this(),
             state: scrypto_encode(&state),
         };
         let _: PutComponentStateOutput = call_engine(PUT_COMPONENT_STATE, input);
