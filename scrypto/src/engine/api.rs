@@ -317,6 +317,17 @@ pub struct GetNonFungibleDataOutput {
     pub mutable_data: Vec<u8>,
 }
 
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
+pub struct NonFungibleExistsInput {
+    pub resource_def_id: ResourceDefId,
+    pub key: NonFungibleKey,
+}
+
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
+pub struct NonFungibleExistsOutput {
+    pub non_fungible_exists: bool,
+}
+
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct UpdateNonFungibleMutableDataInput {
     pub resource_def_id: ResourceDefId,

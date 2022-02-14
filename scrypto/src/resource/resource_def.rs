@@ -138,18 +138,6 @@ impl ResourceDef {
         T::decode(&output.immutable_data, &output.mutable_data).unwrap()
     }
 
-    /// Checks if non-fungible unit, with certain key exists or not.
-    ///
-    pub fn non_fungible_exists(&self, key: &NonFungibleKey) -> bool {
-        let input = NonFungibleExists {
-            resource_address: self.address,
-            key: key.clone(),
-        };
-        let output: NonFungibleExists = call_engine(NON_FUNGIBLE_EXISTS, input);
-
-        scrypto_unwrap(T::decode(&output.immutable_data, &output.mutable_data))
-    }
-
     /// Updates the mutable part of a non-fungible unit.
     ///
     /// # Panics
@@ -168,6 +156,18 @@ impl ResourceDef {
         };
         let _: UpdateNonFungibleMutableDataOutput =
             call_engine(UPDATE_NON_FUNGIBLE_MUTABLE_DATA, input);
+    }
+
+    /// Checks if non-fungible unit, with certain key exists or not.
+    ///
+    pub fn non_fungible_exists(&self, key: &NonFungibleKey) -> bool {
+        let input = NonFungibleExistsInput {
+            resource_address: self.address,
+            key: key.clone(),
+        };
+        let output: NonFungibleExistsOutput = call_engine(NON_FUNGIBLE_EXISTS, input);
+
+        output.non_fungible_exists
     }
 
     /// Turns on feature flags.

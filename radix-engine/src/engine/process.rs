@@ -1552,6 +1552,19 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         })
     }
 
+    fn handle_non_fungible_exists(
+        &mut self,
+        input: NonFungibleExistsInput,
+    ) -> Result<NonFungibleExistsOutput, RuntimeError> {
+        let non_fungible = self
+            .track
+            .get_non_fungible(input.resource_address, &input.key);
+
+        Ok(NonFungibleExistsOutput {
+            non_fungible_exists: non_fungible.is_some(),
+        })
+    }
+
     fn handle_update_resource_metadata(
         &mut self,
         input: UpdateResourceMetadataInput,
@@ -2107,6 +2120,7 @@ impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
                         self.handle(args, Self::handle_update_non_fungible_mutable_data)
                     }
                     GET_NON_FUNGIBLE_DATA => self.handle(args, Self::handle_get_non_fungible_data),
+                    NON_FUNGIBLE_EXISTS => self.handle(args, Self::handle_non_fungible_exists),
                     UPDATE_RESOURCE_METADATA => {
                         self.handle(args, Self::handle_update_resource_metadata)
                     }
