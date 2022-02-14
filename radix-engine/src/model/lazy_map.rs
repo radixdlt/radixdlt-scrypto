@@ -1,20 +1,17 @@
 use sbor::*;
 use scrypto::rust::collections::*;
 use scrypto::rust::vec::Vec;
-use scrypto::types::Address;
 
 /// A key-value map where keys and values are lazily loaded on-demand.
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct LazyMap {
     map: HashMap<Vec<u8>, Vec<u8>>,
-    authority: Address,
 }
 
 impl LazyMap {
-    pub fn new(authority: Address) -> Self {
+    pub fn new() -> Self {
         Self {
             map: HashMap::new(),
-            authority,
         }
     }
 

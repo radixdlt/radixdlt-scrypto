@@ -14,12 +14,11 @@ pub enum VaultError {
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct Vault {
     bucket: Bucket,
-    authority: Address,
 }
 
 impl Vault {
-    pub fn new(bucket: Bucket, authority: Address) -> Self {
-        Self { bucket, authority }
+    pub fn new(bucket: Bucket) -> Self {
+        Self { bucket }
     }
 
     pub fn put(&mut self, other: Bucket) -> Result<(), VaultError> {
