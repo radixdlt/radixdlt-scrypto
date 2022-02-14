@@ -51,7 +51,9 @@ impl RadixEngineDB {
             if kv.0.as_ref() > inclusive_end {
                 break;
             }
-            items.push(scrypto_decode(kv.0.as_ref()).unwrap());
+            if kv.0.len() == 27 {
+                items.push(scrypto_decode(kv.0.as_ref()).unwrap());
+            }
         }
         items
     }
@@ -104,8 +106,10 @@ impl SubstateStore for RadixEngineDB {
         mid: &Mid,
         key: &[u8],
     ) -> Option<Vec<u8>> {
-        let key = &scrypto_encode(&(component_address.clone(), mid.clone(), key.to_vec()));
-        self.read(key)
+        let mut id = scrypto_encode(component_address);
+        id.extend(scrypto_encode(mid));
+        id.extend(key.to_vec());
+        self.read(&id)
     }
 
     fn put_lazy_map_entry(
@@ -115,18 +119,21 @@ impl SubstateStore for RadixEngineDB {
         key: Vec<u8>,
         value: Vec<u8>,
     ) {
-        let id = &scrypto_encode(&(component_address.clone(), mid.clone(), key.to_vec()));
-        self.write(id, value)
+        let mut id = scrypto_encode(&component_address);
+        id.extend(scrypto_encode(&mid));
+        id.extend(key);
+        self.write(&id, value)
     }
 
     fn get_vault(&self, component_address: &Address, vid: &Vid) -> Vault {
-        let id = scrypto_encode(&(component_address.clone(), vid.clone()));
-        self.read(&id)
-            .unwrap()
+        let mut id = scrypto_encode(component_address);
+        id.extend(scrypto_encode(vid));
+        self.read(&id).unwrap()
     }
 
     fn put_vault(&mut self, component_address: Address, vid: Vid, vault: Vault) {
-        let id = scrypto_encode(&(component_address.clone(), vid.clone()));
+        let mut id = scrypto_encode(&component_address);
+        id.extend(scrypto_encode(&vid));
         self.write(&id, vault)
     }
 
