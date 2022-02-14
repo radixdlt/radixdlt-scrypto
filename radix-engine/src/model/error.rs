@@ -134,6 +134,9 @@ pub enum RuntimeError {
     /// Duplicate LazyMap added
     DuplicateLazyMap(Mid),
 
+    /// Cyclic LazyMap added
+    CyclicLazyMap(Mid),
+
     /// Vault does not exist.
     VaultNotFound(Vid),
 

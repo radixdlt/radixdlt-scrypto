@@ -728,10 +728,9 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             vids.insert(vid);
         }
 
-
         // lazy map allowed
         // vaults allowed
-        Ok(ComponentObjectRefs { mids, vids, })
+        Ok(ComponentObjectRefs { mids, vids })
     }
 
     fn process_non_fungible_data(&mut self, data: &[u8]) -> Result<ValidatedData, RuntimeError> {
@@ -1222,6 +1221,14 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         lazy_map.set_entry(input.key, input.value);
 
         new_entry_object_refs.remove(&old_entry_object_refs)?;
+
+        // Check for cycles
+        if let Uncommitted { root } = lazy_map_state {
+            if new_entry_object_refs.mids.contains(&root) {
+                return Err(RuntimeError::CyclicLazyMap(root));
+            }
+        }
+
         let new_objects = wasm_process
             .process_owned_objects
             .take(new_entry_object_refs)?;

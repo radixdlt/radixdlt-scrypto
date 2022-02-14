@@ -103,10 +103,7 @@ impl ComponentObjects {
         }
     }
 
-    pub fn take(
-        &mut self,
-        other: ComponentObjectRefs,
-    ) -> Result<ComponentObjects, RuntimeError> {
+    pub fn take(&mut self, other: ComponentObjectRefs) -> Result<ComponentObjects, RuntimeError> {
         let mut vaults = HashMap::new();
         let mut lazy_maps = HashMap::new();
 
