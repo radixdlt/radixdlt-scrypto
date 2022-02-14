@@ -24,7 +24,7 @@ impl UnclaimedLazyMap {
         }
     }
 
-    pub fn insert_descendents(&mut self, new_descendents: ComponentObjectsSet) {
+    pub fn insert_descendents(&mut self, new_descendents: ComponentObjects) {
         for (vid, vault) in new_descendents.vaults {
             self.descendent_vaults.insert(vid, vault);
         }
@@ -35,25 +35,25 @@ impl UnclaimedLazyMap {
     }
 }
 
-pub struct ComponentObjectsSetRef {
+pub struct ComponentObjectRefs {
     pub mids: HashSet<Mid>,
     pub vids: HashSet<Vid>,
 }
 
-impl ComponentObjectsSetRef {
+impl ComponentObjectRefs {
     pub fn new() -> Self {
-        ComponentObjectsSetRef {
+        ComponentObjectRefs {
             mids: HashSet::new(),
             vids: HashSet::new(),
         }
     }
 
-    pub fn extend(&mut self, other: ComponentObjectsSetRef) {
+    pub fn extend(&mut self, other: ComponentObjectRefs) {
         self.mids.extend(other.mids);
         self.vids.extend(other.vids);
     }
 
-    pub fn remove(&mut self, other: &ComponentObjectsSetRef) -> Result<(), RuntimeError> {
+    pub fn remove(&mut self, other: &ComponentObjectRefs) -> Result<(), RuntimeError> {
         // Only allow vaults to be added, never removed
         for vid in &other.vids {
             if !self.vids.remove(&vid) {
@@ -72,7 +72,7 @@ impl ComponentObjectsSetRef {
 }
 
 /// Component type objects which will eventually move into a component
-pub struct ComponentObjectsSet {
+pub struct ComponentObjects {
     /// Lazy maps which haven't been assigned to a component or lazy map yet.
     /// Keeps track of vault and lazy map descendents.
     pub lazy_maps: HashMap<Mid, UnclaimedLazyMap>,
@@ -80,9 +80,9 @@ pub struct ComponentObjectsSet {
     pub vaults: HashMap<Vid, Vault>,
 }
 
-impl ComponentObjectsSet {
+impl ComponentObjects {
     pub fn new() -> Self {
-        ComponentObjectsSet {
+        ComponentObjects {
             lazy_maps: HashMap::new(),
             vaults: HashMap::new(),
         }
@@ -90,8 +90,8 @@ impl ComponentObjectsSet {
 
     pub fn take(
         &mut self,
-        other: ComponentObjectsSetRef,
-    ) -> Result<ComponentObjectsSet, RuntimeError> {
+        other: ComponentObjectRefs,
+    ) -> Result<ComponentObjects, RuntimeError> {
         let mut vaults = HashMap::new();
         let mut lazy_maps = HashMap::new();
 
@@ -111,10 +111,10 @@ impl ComponentObjectsSet {
             lazy_maps.insert(mid, lazy_map);
         }
 
-        Ok(ComponentObjectsSet { vaults, lazy_maps })
+        Ok(ComponentObjects { vaults, lazy_maps })
     }
 
-    pub fn insert_objects_into_map(&mut self, new_objects: ComponentObjectsSet, mid: &Mid) {
+    pub fn insert_objects_into_map(&mut self, new_objects: ComponentObjects, mid: &Mid) {
         let unclaimed_map = self.lazy_maps.get_mut(mid).unwrap();
         unclaimed_map.insert_descendents(new_objects);
     }

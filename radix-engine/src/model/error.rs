@@ -131,11 +131,17 @@ pub enum RuntimeError {
     /// Lazy map removed.
     LazyMapRemoved(Mid),
 
+    /// Duplicate LazyMap added
+    DuplicateLazyMap(Mid),
+
     /// Vault does not exist.
     VaultNotFound(Vid),
 
     /// Vault removed.
     VaultRemoved(Vid),
+
+    /// Duplicate Vault added
+    DuplicateVault(Vid),
 
     /// Bucket does not exist.
     BucketNotFound(Bid),
