@@ -13,21 +13,36 @@ pub struct UnclaimedLazyMap {
 }
 
 impl UnclaimedLazyMap {
+    fn insert_vault(&mut self, vid: Vid, vault: Vault) {
+        if self.descendent_vaults.contains_key(&vid) {
+            panic!("duplicate vault insertion: {}", vid);
+        }
+
+        self.descendent_vaults.insert(vid, vault);
+    }
+
+    fn insert_lazy_map(&mut self, mid: Mid, lazy_map: LazyMap) {
+        if self.descendent_lazy_maps.contains_key(&mid) {
+            panic!("duplicate map insertion: {}", mid);
+        }
+
+        self.descendent_lazy_maps.insert(mid, lazy_map);
+    }
+
     fn insert_map_descendent(&mut self, unclaimed_lazy_map: UnclaimedLazyMap, mid: Mid) {
-        self.descendent_lazy_maps
-            .insert(mid, unclaimed_lazy_map.lazy_map);
+        self.insert_lazy_map(mid, unclaimed_lazy_map.lazy_map);
 
         for (mid, lazy_map) in unclaimed_lazy_map.descendent_lazy_maps {
-            self.descendent_lazy_maps.insert(mid, lazy_map);
+            self.insert_lazy_map(mid, lazy_map);
         }
         for (vid, vault) in unclaimed_lazy_map.descendent_vaults {
-            self.descendent_vaults.insert(vid, vault);
+            self.insert_vault(vid, vault);
         }
     }
 
-    pub fn insert_descendents(&mut self, new_descendents: ComponentObjectsSet) {
+    pub fn insert_descendents(&mut self, new_descendents: ComponentObjects) {
         for (vid, vault) in new_descendents.vaults {
-            self.descendent_vaults.insert(vid, vault);
+            self.insert_vault(vid, vault);
         }
 
         for (mid, child_lazy_map) in new_descendents.lazy_maps {
@@ -36,25 +51,25 @@ impl UnclaimedLazyMap {
     }
 }
 
-pub struct ComponentObjectsSetRef {
+pub struct ComponentObjectRefs {
     pub mids: HashSet<Mid>,
     pub vids: HashSet<Vid>,
 }
 
-impl ComponentObjectsSetRef {
+impl ComponentObjectRefs {
     pub fn new() -> Self {
-        ComponentObjectsSetRef {
+        ComponentObjectRefs {
             mids: HashSet::new(),
             vids: HashSet::new(),
         }
     }
 
-    pub fn extend(&mut self, other: ComponentObjectsSetRef) {
+    pub fn extend(&mut self, other: ComponentObjectRefs) {
         self.mids.extend(other.mids);
         self.vids.extend(other.vids);
     }
 
-    pub fn remove(&mut self, other: &ComponentObjectsSetRef) -> Result<(), RuntimeError> {
+    pub fn remove(&mut self, other: &ComponentObjectRefs) -> Result<(), RuntimeError> {
         // Only allow vaults to be added, never removed
         for vid in &other.vids {
             if !self.vids.remove(&vid) {
@@ -73,7 +88,7 @@ impl ComponentObjectsSetRef {
 }
 
 /// Component type objects which will eventually move into a component
-pub struct ComponentObjectsSet {
+pub struct ComponentObjects {
     /// Lazy maps which haven't been assigned to a component or lazy map yet.
     /// Keeps track of vault and lazy map descendents.
     pub lazy_maps: HashMap<Mid, UnclaimedLazyMap>,
@@ -81,18 +96,15 @@ pub struct ComponentObjectsSet {
     pub vaults: HashMap<Vid, Vault>,
 }
 
-impl ComponentObjectsSet {
+impl ComponentObjects {
     pub fn new() -> Self {
-        ComponentObjectsSet {
+        ComponentObjects {
             lazy_maps: HashMap::new(),
             vaults: HashMap::new(),
         }
     }
 
-    pub fn take(
-        &mut self,
-        other: ComponentObjectsSetRef,
-    ) -> Result<ComponentObjectsSet, RuntimeError> {
+    pub fn take(&mut self, other: ComponentObjectRefs) -> Result<ComponentObjects, RuntimeError> {
         let mut vaults = HashMap::new();
         let mut lazy_maps = HashMap::new();
 
@@ -112,10 +124,10 @@ impl ComponentObjectsSet {
             lazy_maps.insert(mid, lazy_map);
         }
 
-        Ok(ComponentObjectsSet { vaults, lazy_maps })
+        Ok(ComponentObjects { vaults, lazy_maps })
     }
 
-    pub fn insert_objects_into_map(&mut self, new_objects: ComponentObjectsSet, mid: &Mid) {
+    pub fn insert_objects_into_map(&mut self, new_objects: ComponentObjects, mid: &Mid) {
         let unclaimed_map = self.lazy_maps.get_mut(mid).unwrap();
         unclaimed_map.insert_descendents(new_objects);
     }

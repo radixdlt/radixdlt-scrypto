@@ -76,8 +76,8 @@ enum InterpreterState {
     },
     ComponentLoaded {
         component_address: Address,
-        initial_loaded_object_refs: ComponentObjectsSetRef,
-        additional_object_refs: ComponentObjectsSetRef,
+        initial_loaded_object_refs: ComponentObjectRefs,
+        additional_object_refs: ComponentObjectRefs,
     },
     ComponentStored,
 }
@@ -90,7 +90,7 @@ struct WasmProcess {
     trace: bool,
     vm: Interpreter,
     interpreter_state: InterpreterState,
-    process_owned_objects: ComponentObjectsSet,
+    process_owned_objects: ComponentObjects,
 }
 
 impl WasmProcess {
@@ -134,7 +134,7 @@ enum LazyMapState {
 impl<'s, S: SubstateStore> Track<'s, S> {
     fn insert_objects_into_component(
         &mut self,
-        new_objects: ComponentObjectsSet,
+        new_objects: ComponentObjects,
         component_address: Address,
     ) {
         for (vid, vault) in new_objects.vaults {
@@ -459,7 +459,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     InterpreterState::ComponentEmpty { component_address }
                 }
             },
-            process_owned_objects: ComponentObjectsSet::new(),
+            process_owned_objects: ComponentObjects::new(),
         });
 
         // run the main function
@@ -706,7 +706,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         Ok(())
     }
 
-    fn process_component_data(data: &[u8]) -> Result<ComponentObjectsSetRef, RuntimeError> {
+    /// Process and parse entry data from any component object (components and maps)
+    fn process_entry_data(data: &[u8]) -> Result<ComponentObjectRefs, RuntimeError> {
         let validated = validate_data(data).map_err(RuntimeError::DataValidationError)?;
         if !validated.buckets.is_empty() {
             return Err(RuntimeError::BucketNotAllowed);
@@ -714,28 +715,26 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         if !validated.bucket_refs.is_empty() {
             return Err(RuntimeError::BucketRefNotAllowed);
         }
-        // lazy map allowed
-        // vaults allowed
-        Ok(ComponentObjectsSetRef {
-            mids: HashSet::from_iter(validated.lazy_maps),
-            vids: HashSet::from_iter(validated.vaults),
-        })
-    }
 
-    fn process_map_data(data: &[u8]) -> Result<ComponentObjectsSetRef, RuntimeError> {
-        let validated = validate_data(data).map_err(RuntimeError::DataValidationError)?;
-        if !validated.buckets.is_empty() {
-            return Err(RuntimeError::BucketNotAllowed);
+        let mut mids = HashSet::new();
+        for mid in validated.lazy_maps {
+            if mids.contains(&mid) {
+                return Err(RuntimeError::DuplicateLazyMap(mid));
+            }
+            mids.insert(mid);
         }
-        if !validated.bucket_refs.is_empty() {
-            return Err(RuntimeError::BucketRefNotAllowed);
+
+        let mut vids = HashSet::new();
+        for vid in validated.vaults {
+            if vids.contains(&vid) {
+                return Err(RuntimeError::DuplicateVault(vid));
+            }
+            vids.insert(vid);
         }
+
         // lazy map allowed
         // vaults allowed
-        Ok(ComponentObjectsSetRef {
-            mids: HashSet::from_iter(validated.lazy_maps),
-            vids: HashSet::from_iter(validated.vaults),
-        })
+        Ok(ComponentObjectRefs { mids, vids })
     }
 
     fn process_non_fungible_data(&mut self, data: &[u8]) -> Result<ValidatedData, RuntimeError> {
@@ -1016,7 +1015,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             return Err(RuntimeError::ComponentAlreadyExists(component_address));
         }
 
-        let data = Self::process_component_data(&input.state)?;
+        let data = Self::process_entry_data(&input.state)?;
         let new_objects = wasm_process.process_owned_objects.take(data)?;
 
         self.track
@@ -1062,13 +1061,13 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             InterpreterState::ComponentEmpty { component_address } => {
                 let component = self.track.get_component(*component_address).unwrap();
                 let state = component.state();
-                let initial_loaded_object_refs = Self::process_component_data(state).unwrap();
+                let initial_loaded_object_refs = Self::process_entry_data(state).unwrap();
                 Ok((
                     state,
                     InterpreterState::ComponentLoaded {
                         component_address: *component_address,
                         initial_loaded_object_refs,
-                        additional_object_refs: ComponentObjectsSetRef::new(),
+                        additional_object_refs: ComponentObjectRefs::new(),
                     },
                 ))
             }
@@ -1095,7 +1094,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 initial_loaded_object_refs,
                 ..
             } => {
-                let mut new_set = Self::process_component_data(&input.state)?;
+                let mut new_set = Self::process_entry_data(&input.state)?;
                 new_set.remove(&initial_loaded_object_refs)?;
                 let new_objects = wasm_process.process_owned_objects.take(new_set)?;
                 self.track
@@ -1163,7 +1162,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                             .get_lazy_map_entry(&component_address, &input.mid, &input.key);
                     if value.is_some() {
                         let map_entry_objects =
-                            Self::process_map_data(&value.as_ref().unwrap()).unwrap();
+                            Self::process_entry_data(&value.as_ref().unwrap()).unwrap();
                         additional_object_refs.extend(map_entry_objects);
                     }
 
@@ -1214,13 +1213,21 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             },
             Some((root, value)) => Ok((value, Uncommitted { root })),
         }?;
-        let mut new_entry_object_refs = Self::process_map_data(&input.value)?;
+        let mut new_entry_object_refs = Self::process_entry_data(&input.value)?;
         let old_entry_object_refs = match old_value {
-            None => ComponentObjectsSetRef::new(),
-            Some(e) => Self::process_map_data(&e).unwrap(),
+            None => ComponentObjectRefs::new(),
+            Some(e) => Self::process_entry_data(&e).unwrap(),
         };
 
         new_entry_object_refs.remove(&old_entry_object_refs)?;
+
+        // Check for cycles
+        if let Uncommitted { root } = lazy_map_state {
+            if new_entry_object_refs.mids.contains(&root) {
+                return Err(RuntimeError::CyclicLazyMap(root));
+            }
+        }
+
         let new_objects = wasm_process
             .process_owned_objects
             .take(new_entry_object_refs)?;
