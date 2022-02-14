@@ -12,21 +12,36 @@ pub struct UnclaimedLazyMap {
 }
 
 impl UnclaimedLazyMap {
+    fn insert_vault(&mut self, vid: Vid, vault: Vault) {
+        if self.descendent_vaults.contains_key(&vid) {
+            panic!("duplicate vault insertion: {}", vid);
+        }
+
+        self.descendent_vaults.insert(vid, vault);
+    }
+
+    fn insert_lazy_map(&mut self, mid: Mid, lazy_map: LazyMap) {
+        if self.descendent_lazy_maps.contains_key(&mid) {
+            panic!("duplicate map insertion: {}", mid);
+        }
+
+        self.descendent_lazy_maps.insert(mid, lazy_map);
+    }
+
     fn insert_map_descendent(&mut self, unclaimed_lazy_map: UnclaimedLazyMap, mid: Mid) {
-        self.descendent_lazy_maps
-            .insert(mid, unclaimed_lazy_map.lazy_map);
+        self.insert_lazy_map(mid, unclaimed_lazy_map.lazy_map);
 
         for (mid, lazy_map) in unclaimed_lazy_map.descendent_lazy_maps {
-            self.descendent_lazy_maps.insert(mid, lazy_map);
+            self.insert_lazy_map(mid, lazy_map);
         }
         for (vid, vault) in unclaimed_lazy_map.descendent_vaults {
-            self.descendent_vaults.insert(vid, vault);
+            self.insert_vault(vid, vault);
         }
     }
 
     pub fn insert_descendents(&mut self, new_descendents: ComponentObjects) {
         for (vid, vault) in new_descendents.vaults {
-            self.descendent_vaults.insert(vid, vault);
+            self.insert_vault(vid, vault);
         }
 
         for (mid, child_lazy_map) in new_descendents.lazy_maps {
