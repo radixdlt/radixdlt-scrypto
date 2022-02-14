@@ -124,27 +124,24 @@ impl From<bool> for BigDecimal {
             Self::from(1)
         } else {
             Self::from(0)
-        } 
+        }
     }
 }
 
 #[macro_export]
 macro_rules! bdec {
-    
     ($x:literal) => {
-       BigDecimal::from($x) 
+        BigDecimal::from($x)
     };
-    
+
     ($int:literal, $exponent:literal) => {
         if u32::try_from((($exponent) as i128).abs()).is_err() {
             panic!("Overflow of arg2.");
         } else {
             if (($exponent) as i128) < 0 {
-                BigDecimal::from(1i128 * ($int))
-                    .div(10i128.pow((-1i128 * ($exponent)) as u32))
+                BigDecimal::from(1i128 * ($int)).div(10i128.pow((-1i128 * ($exponent)) as u32))
             } else {
-                BigDecimal::from(1i128 * ($int))
-                    .mul(10i128.pow((1i128 * ($exponent)) as u32))
+                BigDecimal::from(1i128 * ($int)).mul(10i128.pow((1i128 * ($exponent)) as u32))
             }
         }
     };
@@ -639,7 +636,10 @@ mod tests {
 
     #[test]
     fn test_bdec_string_decimal() {
-        assert_eq!(bdec!("1.123456789012345678").to_string(), "1.123456789012345678");
+        assert_eq!(
+            bdec!("1.123456789012345678").to_string(),
+            "1.123456789012345678"
+        );
         assert_eq!(bdec!("-5.6").to_string(), "-5.6");
     }
 
@@ -667,13 +667,17 @@ mod tests {
         assert_eq!((bdec!(11235, -2)).to_string(), "112.35");
         assert_eq!((bdec!(11235, 2)).to_string(), "1123500");
 
-        assert_eq!((bdec!(112000000000000000001, -18)).to_string(),
-            "112.000000000000000001");
-        
-        assert_eq!((bdec!(112000000000000000001, -18)).to_string(),
-            "112.000000000000000001");
+        assert_eq!(
+            (bdec!(112000000000000000001, -18)).to_string(),
+            "112.000000000000000001"
+        );
+
+        assert_eq!(
+            (bdec!(112000000000000000001, -18)).to_string(),
+            "112.000000000000000001"
+        );
     }
-    
+
     #[test]
     #[should_panic(expected = "Overflow of arg2.")]
     fn test_arg1_overflow_arg1() {
