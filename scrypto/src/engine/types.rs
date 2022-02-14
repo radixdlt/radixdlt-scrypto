@@ -1,18 +1,22 @@
-/// Types (aliases to be accurate) used by radix engine.
+// Ideally, only the types listed below can be used by Radix Engine.
+// We need a better strategy to enforce this.
 
-pub type Hash = crate::crypto::Hash;
-pub type Decimal = crate::math::Decimal;
-pub type ResourceType = crate::resource::ResourceType;
-pub type Supply = crate::resource::Supply;
-pub type NonFungibleKey = crate::resource::NonFungibleKey;
-pub type Level = crate::core::Level;
-pub type Actor = crate::core::Actor;
+pub use crate::core::Actor;
+pub use crate::core::ComponentRef;
+pub use crate::core::Level;
+pub use crate::core::PackageRef;
+pub use crate::crypto::EcdsaPublicKey;
+pub use crate::crypto::Hash;
+pub use crate::math::BigDecimal;
+pub use crate::math::Decimal;
+pub use crate::resource::NonFungibleKey;
+pub use crate::resource::ResourceDefRef;
+pub use crate::resource::ResourceType;
+pub use crate::resource::Supply;
 
-pub type PackageId = [u8; 26];
-pub type BlueprintId = (PackageId, String);
-pub type ComponentId = [u8; 26];
-pub type ResourceDefId = [u8; 26];
 pub type LazyMapId = (Hash, u32);
 pub type BucketId = u32;
 pub type BucketRefId = u32;
 pub type VaultId = (Hash, u32);
+
+pub use crate::constants::*;

@@ -4,6 +4,7 @@ use crate::engine::{api::*, call_engine, types::BucketId};
 use crate::math::*;
 use crate::misc::*;
 use crate::resource::*;
+#[cfg(not(feature = "alloc"))]
 use crate::rust::fmt;
 use crate::rust::vec::Vec;
 use crate::types::*;
@@ -14,9 +15,9 @@ pub struct Bucket(pub BucketId);
 
 impl Bucket {
     /// Creates a new bucket to hold resources of the given definition.
-    pub fn new(resource_def: ResourceDefRef) -> Self {
+    pub fn new(resource_def_ref: ResourceDefRef) -> Self {
         let input = CreateEmptyBucketInput {
-            resource_def_id: resource_def.0,
+            resource_def_ref: resource_def_ref,
         };
         let output: CreateEmptyBucketOutput = call_engine(CREATE_EMPTY_BUCKET, input);
 
@@ -64,7 +65,7 @@ impl Bucket {
         let input = GetBucketResourceDefInput { bucket_id: self.0 };
         let output: GetBucketResourceDefOutput = call_engine(GET_BUCKET_RESOURCE_DEF, input);
 
-        ResourceDefRef(output.resource_def_id)
+        output.resource_def_ref
     }
 
     /// Burns resource within this bucket.

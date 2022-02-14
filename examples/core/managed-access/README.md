@@ -12,7 +12,7 @@ resim publish . --address 01ca59a8d6ea4f7efa1765cef702d14e47570c079aedd44992dd09
 Currently, importing another blueprint requires a few manual steps.  We expect to simplify this process in the future, but for now here are the steps:
 
 1. Publish the package containing the blueprint you wish to import.
-2. Export the ABI for that blueprint using the command `resim export-abi <package_address> <blueprint_name>`
+2. Export the ABI for that blueprint using the command `resim export-abi <package_ref> <blueprint_name>`
 3. Copy the output of that command, and paste it into the source file you wish to consume it from.  Enclose the content within an opening `import! {
 r#"` and enclosing `"#}` block.  Example:
 ```rust

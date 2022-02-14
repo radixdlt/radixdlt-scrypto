@@ -74,9 +74,9 @@ impl FromStr for NonFungibleKey {
     }
 }
 
-impl ToString for NonFungibleKey {
-    fn to_string(&self) -> String {
-        hex::encode(&self.0)
+impl fmt::Display for NonFungibleKey {
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        write!(f, "{}", hex::encode(&self.0))
     }
 }
 

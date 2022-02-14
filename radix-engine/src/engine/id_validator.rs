@@ -1,5 +1,5 @@
+use scrypto::engine::types::*;
 use scrypto::rust::collections::*;
-use scrypto::types::*;
 
 use crate::engine::*;
 use crate::model::*;
@@ -7,105 +7,108 @@ use crate::model::*;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum IdValidatorError {
     IdAllocatorError(IdAllocatorError),
-    BucketNotFound(Bid),
-    BucketRefNotFound(Rid),
-    BucketLocked(Bid),
+    BucketNotFound(BucketId),
+    BucketRefNotFound(BucketRefId),
+    BucketLocked(BucketId),
 }
 
 pub struct IdValidator {
     id_allocator: IdAllocator,
-    buckets: HashMap<Bid, usize>,
-    bucket_refs: HashMap<Rid, Bid>,
+    bucket_ids: HashMap<BucketId, usize>,
+    bucket_ref_ids: HashMap<BucketRefId, BucketId>,
 }
 
 impl IdValidator {
     pub fn new() -> Self {
-        let mut bucket_refs = HashMap::new();
-        bucket_refs.insert(ECDSA_TOKEN_RID, ECDSA_TOKEN_BID);
+        let mut bucket_ref_ids = HashMap::new();
+        bucket_ref_ids.insert(ECDSA_TOKEN_BUCKET_REF_ID, ECDSA_TOKEN_BUCKET_ID);
         Self {
             id_allocator: IdAllocator::new(IdSpace::Transaction),
-            buckets: HashMap::new(),
-            bucket_refs,
+            bucket_ids: HashMap::new(),
+            bucket_ref_ids,
         }
     }
 
-    pub fn new_bucket(&mut self) -> Result<Bid, IdValidatorError> {
-        let bid = self
+    pub fn new_bucket(&mut self) -> Result<BucketId, IdValidatorError> {
+        let bucket_id = self
             .id_allocator
-            .new_bid()
+            .new_bucket_id()
             .map_err(IdValidatorError::IdAllocatorError)?;
-        self.buckets.insert(bid, 0);
-        Ok(bid)
+        self.bucket_ids.insert(bucket_id, 0);
+        Ok(bucket_id)
     }
 
-    pub fn drop_bucket(&mut self, bid: Bid) -> Result<(), IdValidatorError> {
-        if let Some(cnt) = self.buckets.get(&bid) {
+    pub fn drop_bucket(&mut self, bucket_id: BucketId) -> Result<(), IdValidatorError> {
+        if let Some(cnt) = self.bucket_ids.get(&bucket_id) {
             if *cnt == 0 {
-                self.buckets.remove(&bid);
+                self.bucket_ids.remove(&bucket_id);
                 Ok(())
             } else {
-                Err(IdValidatorError::BucketLocked(bid))
+                Err(IdValidatorError::BucketLocked(bucket_id))
             }
         } else {
-            Err(IdValidatorError::BucketNotFound(bid))
+            Err(IdValidatorError::BucketNotFound(bucket_id))
         }
     }
 
-    pub fn new_bucket_ref(&mut self, bid: Bid) -> Result<Rid, IdValidatorError> {
-        if let Some(cnt) = self.buckets.get_mut(&bid) {
+    pub fn new_bucket_ref(&mut self, bucket_id: BucketId) -> Result<BucketRefId, IdValidatorError> {
+        if let Some(cnt) = self.bucket_ids.get_mut(&bucket_id) {
             *cnt += 1;
-            let rid = self
+            let bucket_ref_id = self
                 .id_allocator
-                .new_rid()
+                .new_bucket_ref_id()
                 .map_err(IdValidatorError::IdAllocatorError)?;
-            self.bucket_refs.insert(rid, bid);
-            Ok(rid)
+            self.bucket_ref_ids.insert(bucket_ref_id, bucket_id);
+            Ok(bucket_ref_id)
         } else {
-            Err(IdValidatorError::BucketNotFound(bid))
+            Err(IdValidatorError::BucketNotFound(bucket_id))
         }
     }
 
-    pub fn clone_bucket_ref(&mut self, rid: Rid) -> Result<Rid, IdValidatorError> {
-        if let Some(bid) = self.bucket_refs.get(&rid).cloned() {
+    pub fn clone_bucket_ref(
+        &mut self,
+        bucket_ref_id: BucketRefId,
+    ) -> Result<BucketRefId, IdValidatorError> {
+        if let Some(bucket_id) = self.bucket_ref_ids.get(&bucket_ref_id).cloned() {
             // for virtual badge, the corresponding bucket is not owned by transaction.
-            if let Some(cnt) = self.buckets.get_mut(&bid) {
+            if let Some(cnt) = self.bucket_ids.get_mut(&bucket_id) {
                 *cnt += 1;
             }
-            let rid = self
+            let bucket_ref_id = self
                 .id_allocator
-                .new_rid()
+                .new_bucket_ref_id()
                 .map_err(IdValidatorError::IdAllocatorError)?;
-            self.bucket_refs.insert(rid, bid);
-            Ok(rid)
+            self.bucket_ref_ids.insert(bucket_ref_id, bucket_id);
+            Ok(bucket_ref_id)
         } else {
-            Err(IdValidatorError::BucketRefNotFound(rid))
+            Err(IdValidatorError::BucketRefNotFound(bucket_ref_id))
         }
     }
 
-    pub fn drop_bucket_ref(&mut self, rid: Rid) -> Result<(), IdValidatorError> {
-        if let Some(bid) = self.bucket_refs.remove(&rid) {
+    pub fn drop_bucket_ref(&mut self, bucket_ref_id: BucketRefId) -> Result<(), IdValidatorError> {
+        if let Some(bucket_id) = self.bucket_ref_ids.remove(&bucket_ref_id) {
             // for virtual badge, the corresponding bucket is not owned by transaction.
-            if let Some(cnt) = self.buckets.get_mut(&bid) {
+            if let Some(cnt) = self.bucket_ids.get_mut(&bucket_id) {
                 *cnt -= 1;
             }
             Ok(())
         } else {
-            Err(IdValidatorError::BucketRefNotFound(rid))
+            Err(IdValidatorError::BucketRefNotFound(bucket_ref_id))
         }
     }
 
     pub fn move_all_resources(&mut self) -> Result<(), IdValidatorError> {
-        self.bucket_refs.clear();
-        self.buckets.clear();
+        self.bucket_ref_ids.clear();
+        self.bucket_ids.clear();
         Ok(())
     }
 
     pub fn move_resources(&mut self, arg: &ValidatedData) -> Result<(), IdValidatorError> {
-        for bid in &arg.buckets {
-            self.drop_bucket(*bid)?;
+        for bucket_id in &arg.bucket_ids {
+            self.drop_bucket(*bucket_id)?;
         }
-        for rid in &arg.bucket_refs {
-            self.drop_bucket_ref(*rid)?;
+        for bucket_ref_id in &arg.bucket_ref_ids {
+            self.drop_bucket_ref(*bucket_ref_id)?;
         }
         Ok(())
     }

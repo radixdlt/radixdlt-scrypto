@@ -8,12 +8,13 @@ use crate::rust::fmt;
 use crate::rust::marker::PhantomData;
 use crate::rust::str::FromStr;
 use crate::rust::vec;
+use crate::rust::vec::Vec;
 use crate::types::*;
 
 /// A scalable key-value map which loads entries on demand.
 #[derive(Debug, PartialEq, Eq)]
 pub struct LazyMap<K: Encode + Decode, V: Encode + Decode> {
-    id: LazyMapId,
+    pub id: LazyMapId,
     key: PhantomData<K>,
     value: PhantomData<V>,
 }
@@ -148,8 +149,8 @@ impl<K: Encode + Decode, V: Encode + Decode> FromStr for LazyMap<K, V> {
     }
 }
 
-impl<K: Encode + Decode, V: Encode + Decode> ToString for LazyMap<K, V> {
-    fn to_string(&self) -> String {
-        hex::encode(self.to_vec())
+impl<K: Encode + Decode, V: Encode + Decode> fmt::Display for LazyMap<K, V> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        write!(f, "{}", hex::encode(self.to_vec()))
     }
 }

@@ -16,9 +16,9 @@ pub struct Vault(pub VaultId);
 
 impl Vault {
     /// Creates an empty vault to permanently hold resource of the given definition.
-    pub fn new(resource_def: ResourceDefRef) -> Self {
+    pub fn new(resource_def_ref: ResourceDefRef) -> Self {
         let input = CreateEmptyVaultInput {
-            resource_def_id: resource_def.0,
+            resource_def_ref: resource_def_ref,
         };
         let output: CreateEmptyVaultOutput = call_engine(CREATE_EMPTY_VAULT, input);
 
@@ -166,7 +166,7 @@ impl Vault {
         let input = GetVaultResourceDefInput { vault_id: self.0 };
         let output: GetVaultResourceDefOutput = call_engine(GET_VAULT_RESOURCE_DEF, input);
 
-        ResourceDefRef(output.resource_def_id)
+        output.resource_def_ref
     }
 
     /// Checks if this vault is empty.
@@ -300,8 +300,8 @@ impl FromStr for Vault {
     }
 }
 
-impl ToString for Vault {
-    fn to_string(&self) -> String {
-        hex::encode(self.to_vec())
+impl fmt::Display for Vault {
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        write!(f, "{}", hex::encode(self.to_vec()))
     }
 }

@@ -28,7 +28,7 @@ fn set_up_test_env<'a, L: Ledger>(ledger: &'a mut L) -> TestEnv<'a, L> {
             false,
         )
         .unwrap();
-    let usd = receipt.resource_def(0).unwrap();
+    let usd = receipt.new_component_refs[0].unwrap();
 
     let receipt = executor
         .run(
@@ -70,7 +70,7 @@ fn create_user<'a, L: Ledger>(env: &mut TestEnv<'a, L>) -> Address {
         )
         .unwrap();
     assert!(receipt.result.is_ok());
-    receipt.resource_def(0).unwrap()
+    receipt.new_component_refs[0].unwrap()
 }
 
 fn get_user_state<'a, L: Ledger>(env: &mut TestEnv<'a, L>, user_id: Address) -> User {

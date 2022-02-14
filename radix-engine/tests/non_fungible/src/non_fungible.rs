@@ -13,7 +13,7 @@ blueprint! {
     }
 
     impl NonFungibleTest {
-        pub fn create_non_fungible_mutable() -> (Bucket, ResourceDef, Bucket) {
+        pub fn create_non_fungible_mutable() -> (Bucket, ResourceDefRef, Bucket) {
             // Create a mint badge
             let mint_badge = ResourceBuilder::new_fungible(DIVISIBILITY_NONE).initial_supply_fungible(1);
 

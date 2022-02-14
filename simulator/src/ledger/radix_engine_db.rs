@@ -5,7 +5,7 @@ use radix_engine::model::*;
 use rocksdb::{DBWithThreadMode, Direction, IteratorMode, SingleThreaded, DB};
 use sbor::*;
 use scrypto::buffer::*;
-use scrypto::types::*;
+use scrypto::engine::types::*;
 
 pub struct RadixEngineDB {
     db: DBWithThreadMode<SingleThreaded>,
@@ -23,19 +23,16 @@ impl RadixEngineDB {
         ledger
     }
 
-    pub fn list_packages(&self) -> Vec<Address> {
-        self.list_items(Address::Package([0; 26]), Address::Package([255; 26]))
+    pub fn list_packages(&self) -> Vec<PackageRef> {
+        self.list_items(PackageRef([0; 26]), PackageRef([255; 26]))
     }
 
-    pub fn list_components(&self) -> Vec<Address> {
-        self.list_items(Address::Component([0; 26]), Address::Component([255; 26]))
+    pub fn list_components(&self) -> Vec<ComponentRef> {
+        self.list_items(ComponentRef([0; 26]), ComponentRef([255; 26]))
     }
 
-    pub fn list_resource_defs(&self) -> Vec<Address> {
-        self.list_items(
-            Address::ResourceDef([0; 26]),
-            Address::ResourceDef([255; 26]),
-        )
+    pub fn list_resource_defs(&self) -> Vec<ResourceDefRef> {
+        self.list_items(ResourceDefRef([0; 26]), ResourceDefRef([255; 26]))
     }
 
     fn list_items<K: Encode + Decode>(&self, start: K, end: K) -> Vec<K> {
@@ -68,61 +65,66 @@ impl RadixEngineDB {
 }
 
 impl SubstateStore for RadixEngineDB {
-    fn get_resource_def(&self, address: Address) -> Option<ResourceDef> {
-        self.read(&address)
+    fn get_resource_def(&self, resource_def_ref: ResourceDefRef) -> Option<ResourceDef> {
+        self.read(&resource_def_ref)
     }
 
-    fn put_resource_def(&mut self, address: Address, resource_def: ResourceDef) {
-        self.write(address, resource_def)
+    fn put_resource_def(&mut self, resource_def_ref: ResourceDefRef, resource_def: ResourceDef) {
+        self.write(resource_def_ref, resource_def)
     }
 
-    fn get_package(&self, address: Address) -> Option<Package> {
-        self.read(&address)
+    fn get_package(&self, package_ref: PackageRef) -> Option<Package> {
+        self.read(&package_ref)
     }
 
-    fn put_package(&mut self, address: Address, package: Package) {
-        self.write(address, package)
+    fn put_package(&mut self, package_ref: PackageRef, package: Package) {
+        self.write(package_ref, package)
     }
 
-    fn get_component(&self, address: Address) -> Option<Component> {
-        self.read(&address)
+    fn get_component(&self, component_ref: ComponentRef) -> Option<Component> {
+        self.read(&component_ref)
     }
 
-    fn put_component(&mut self, address: Address, component: Component) {
-        self.write(address, component)
+    fn put_component(&mut self, component_ref: ComponentRef, component: Component) {
+        self.write(component_ref, component)
     }
 
-    fn get_lazy_map(&self, component_address: &Address, mid: &Mid) -> Option<LazyMap> {
-        self.read(&(component_address.clone(), mid.clone()))
+    fn get_lazy_map(&self, component_ref: ComponentRef, lazy_map_id: LazyMapId) -> Option<LazyMap> {
+        self.read(&(component_ref.clone(), lazy_map_id))
     }
 
-    fn put_lazy_map(&mut self, component_address: Address, mid: Mid, lazy_map: LazyMap) {
-        self.write((component_address, mid), lazy_map)
+    fn put_lazy_map(
+        &mut self,
+        component_ref: ComponentRef,
+        lazy_map_id: LazyMapId,
+        lazy_map: LazyMap,
+    ) {
+        self.write((component_ref, lazy_map_id), lazy_map)
     }
 
-    fn get_vault(&self, component_address: &Address, vid: &Vid) -> Option<Vault> {
-        self.read(&(component_address.clone(), vid.clone()))
+    fn get_vault(&self, component_ref: ComponentRef, vault_id: VaultId) -> Option<Vault> {
+        self.read(&(component_ref.clone(), vault_id.clone()))
     }
 
-    fn put_vault(&mut self, component_address: Address, vid: Vid, vault: Vault) {
-        self.write((component_address, vid), vault)
+    fn put_vault(&mut self, component_ref: ComponentRef, vault_id: VaultId, vault: Vault) {
+        self.write((component_ref, vault_id), vault)
     }
 
     fn get_non_fungible(
         &self,
-        resource_address: Address,
+        resource_def_ref: ResourceDefRef,
         key: &NonFungibleKey,
     ) -> Option<NonFungible> {
-        self.read(&(resource_address, key.clone()))
+        self.read(&(resource_def_ref, key.clone()))
     }
 
     fn put_non_fungible(
         &mut self,
-        resource_address: Address,
+        resource_def_ref: ResourceDefRef,
         key: &NonFungibleKey,
         non_fungible: NonFungible,
     ) {
-        self.write((resource_address, key.clone()), non_fungible)
+        self.write((resource_def_ref, key.clone()), non_fungible)
     }
 
     fn get_epoch(&self) -> u64 {

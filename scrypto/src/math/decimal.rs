@@ -8,6 +8,7 @@ use crate::rust::convert::TryFrom;
 use crate::rust::fmt;
 use crate::rust::str::FromStr;
 use crate::rust::string::String;
+use crate::rust::string::ToString;
 use crate::rust::vec::Vec;
 use crate::types::*;
 
@@ -304,8 +305,8 @@ impl FromStr for Decimal {
     }
 }
 
-impl ToString for Decimal {
-    fn to_string(&self) -> String {
+impl fmt::Display for Decimal {
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         let mut a = self.0;
         let mut buf = String::new();
 
@@ -333,7 +334,8 @@ impl ToString for Decimal {
             }
         }
 
-        format!(
+        write!(
+            f,
             "{}{}",
             if self.is_negative() { "-" } else { "" },
             buf.chars().rev().collect::<String>()
@@ -367,7 +369,6 @@ fn read_dot(c: char) -> Result<(), ParseDecimalError> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::rust::string::ToString;
 
     #[test]
     fn test_format() {

@@ -1,3 +1,17 @@
+use sbor::{any::*, *};
+
+use crate::core::*;
+use crate::crypto::*;
+use crate::engine::types::BucketId;
+use crate::engine::types::BucketRefId;
+use crate::math::*;
+use crate::resource::*;
+use crate::rust::borrow::ToOwned;
+use crate::rust::collections::HashMap;
+use crate::rust::format;
+use crate::rust::string::String;
+use crate::rust::vec::Vec;
+
 macro_rules! custom_type {
     ($t:ty, $ct:expr, $generics: expr) => {
         impl TypeId for $t {
@@ -42,6 +56,7 @@ pub(crate) use custom_type;
 /// must be declared as a custom type.
 ///
 /// Custom types must be encoded as `[length + bytes]`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CustomType {
     // core
     PackageRef,
@@ -63,66 +78,197 @@ pub enum CustomType {
     ResourceDefRef,
 }
 
+const MAPPING: [(CustomType, u8, &str); 11] = [
+    (CustomType::PackageRef, 0x80, "PackageRef"),
+    (CustomType::ComponentRef, 0x81, "ComponentRef"),
+    (CustomType::LazyMap, 0x82, "LazyMap"),
+    (CustomType::Hash, 0x90, "Hash"),
+    (CustomType::Decimal, 0xa1, "Decimal"),
+    (CustomType::BigDecimal, 0xa2, "BigDecimal"),
+    (CustomType::Bucket, 0xb1, "Bucket"),
+    (CustomType::BucketRef, 0xb2, "BucketRef"),
+    (CustomType::Vault, 0xb3, "Vault"),
+    (CustomType::NonFungibleKey, 0xb4, "NonFungibleKey"),
+    (CustomType::ResourceDefRef, 0xb5, "ResourceDefRef"),
+];
+
 impl CustomType {
-    pub fn of(id: u8) -> Option<CustomType> {
-        match id {
-            // core
-            0x80 => Some(CustomType::PackageRef),
-            0x81 => Some(CustomType::ComponentRef),
-            0x82 => Some(CustomType::LazyMap),
-            // crypto
-            0x90 => Some(CustomType::Hash),
-            // math
-            0xa0 => Some(CustomType::Decimal),
-            0xa1 => Some(CustomType::BigDecimal),
-            // resource
-            0xb0 => Some(CustomType::Bucket),
-            0xb1 => Some(CustomType::BucketRef),
-            0xb2 => Some(CustomType::Vault),
-            0xb3 => Some(CustomType::NonFungibleKey),
-            0xb4 => Some(CustomType::ResourceDefRef),
-            _ => None,
-        }
+    // TODO: optimize to get rid of loops
+
+    pub fn from_id(id: u8) -> Option<CustomType> {
+        MAPPING.iter().filter(|e| e.1 == id).map(|e| e.0).next()
+    }
+
+    pub fn from_name(name: &str) -> Option<CustomType> {
+        MAPPING.iter().filter(|e| e.2 == name).map(|e| e.0).next()
     }
 
     pub fn id(&self) -> u8 {
-        match self {
-            // core
-            CustomType::PackageRef => 0x80,
-            CustomType::ComponentRef => 0x81,
-            CustomType::LazyMap => 0x82,
-            // crypto
-            CustomType::Hash => 0x90,
-            // math
-            CustomType::Decimal => 0xa0,
-            CustomType::BigDecimal => 0xa1,
-            // resource
-            CustomType::Bucket => 0xb0,
-            CustomType::BucketRef => 0xb1,
-            CustomType::Vault => 0xb2,
-            CustomType::NonFungibleKey => 0xb3,
-            CustomType::ResourceDefRef => 0xb4,
-        }
+        MAPPING
+            .iter()
+            .filter(|e| e.0 == *self)
+            .map(|e| e.1)
+            .next()
+            .unwrap()
     }
 
     pub fn name(&self) -> String {
-        match self {
-            // core
-            CustomType::PackageRef => "scrypto::core::PackageRef",
-            CustomType::ComponentRef => "scrypto::core::ComponentRef",
-            CustomType::LazyMap => "scrypto::core::LazyMap",
-            // crypto
-            CustomType::Hash => "scrypto::crypto::Hash",
-            // math
-            CustomType::Decimal => "scrypto::math::Decimal",
-            CustomType::BigDecimal => "scrypto::math::BigDecimal",
-            // resource
-            CustomType::Bucket => "scrypto::resource::Bucket",
-            CustomType::BucketRef => "scrypto::resource::BucketRef",
-            CustomType::Vault => "scrypto::resource::Vault",
-            CustomType::NonFungibleKey => "scrypto::resource::NonFungibleKey",
-            CustomType::ResourceDefRef => "scrypto::resource::ResourceDefRef",
+        MAPPING
+            .iter()
+            .filter(|e| e.0 == *self)
+            .map(|e| e.2)
+            .next()
+            .unwrap()
+            .to_owned()
+    }
+}
+
+pub struct CustomValueValidator {
+    pub buckets: Vec<Bucket>,
+    pub bucket_refs: Vec<BucketRef>,
+    pub vaults: Vec<Vault>,
+    pub lazy_maps: Vec<LazyMap<(), ()>>,
+}
+
+#[derive(Debug, Clone)]
+pub enum CustomValueValidatorError {
+    DecodeError(DecodeError),
+    InvalidTypeId(u8),
+    InvalidDecimal(ParseDecimalError),
+    InvalidBigDecimal(ParseBigDecimalError),
+    InvalidPackageRef(ParsePackageRefError),
+    InvalidComponentRef(ParseComponentRefError),
+    InvalidResourceDefRef(ParseResourceDefRefError),
+    InvalidHash(ParseHashError),
+    InvalidBucket(ParseBucketError),
+    InvalidBucketRef(ParseBucketRefError),
+    InvalidLazyMap(ParseLazyMapError),
+    InvalidVault(ParseVaultError),
+    InvalidNonFungibleKey(ParseNonFungibleKeyError),
+}
+
+impl CustomValueValidator {
+    pub fn new() -> Self {
+        Self {
+            buckets: Vec::new(),
+            bucket_refs: Vec::new(),
+            vaults: Vec::new(),
+            lazy_maps: Vec::new(),
         }
-        .to_owned()
+    }
+}
+
+impl CustomValueVisitor for CustomValueValidator {
+    type Err = CustomValueValidatorError;
+
+    fn visit(&mut self, type_id: u8, data: &[u8]) -> Result<(), Self::Err> {
+        match CustomType::from_id(type_id).ok_or(Self::Err::InvalidTypeId(type_id))? {
+            CustomType::PackageRef => {
+                PackageRef::try_from(data).map_err(CustomValueValidatorError::InvalidPackageRef)?;
+            }
+            CustomType::ComponentRef => {
+                ComponentRef::try_from(data)
+                    .map_err(CustomValueValidatorError::InvalidComponentRef)?;
+            }
+            CustomType::LazyMap => {
+                self.lazy_maps.push(
+                    LazyMap::try_from(data).map_err(CustomValueValidatorError::InvalidLazyMap)?,
+                );
+            }
+            CustomType::Hash => {
+                Hash::try_from(data).map_err(CustomValueValidatorError::InvalidHash)?;
+            }
+            CustomType::Decimal => {
+                Decimal::try_from(data).map_err(CustomValueValidatorError::InvalidDecimal)?;
+            }
+            CustomType::BigDecimal => {
+                BigDecimal::try_from(data).map_err(CustomValueValidatorError::InvalidBigDecimal)?;
+            }
+            CustomType::Bucket => {
+                self.buckets.push(
+                    Bucket::try_from(data).map_err(CustomValueValidatorError::InvalidBucket)?,
+                );
+            }
+            CustomType::BucketRef => {
+                self.bucket_refs.push(
+                    BucketRef::try_from(data)
+                        .map_err(CustomValueValidatorError::InvalidBucketRef)?,
+                );
+            }
+            CustomType::Vault => {
+                self.vaults
+                    .push(Vault::try_from(data).map_err(CustomValueValidatorError::InvalidVault)?);
+            }
+            CustomType::NonFungibleKey => {
+                NonFungibleKey::try_from(data)
+                    .map_err(CustomValueValidatorError::InvalidNonFungibleKey)?;
+            }
+            CustomType::ResourceDefRef => {
+                ResourceDefRef::try_from(data)
+                    .map_err(CustomValueValidatorError::InvalidResourceDefRef)?;
+            }
+        }
+        Ok(())
+    }
+}
+
+pub struct CustomValueFormatter {}
+
+impl CustomValueFormatter {
+    /// Format a custom value (checked) using the notation introduced by Transaction Manifest.
+    ///
+    /// # Panics
+    /// If the input data or type id is invalid
+    pub fn format(
+        type_id: u8,
+        data: &[u8],
+        bucket_ids: &HashMap<BucketId, String>,
+        bucket_ref_ids: &HashMap<BucketRefId, String>,
+    ) -> String {
+        match CustomType::from_id(type_id).unwrap() {
+            CustomType::Decimal => format!("Decimal(\"{}\")", Decimal::try_from(data).unwrap()),
+            CustomType::BigDecimal => {
+                format!("BigDecimal(\"{}\")", BigDecimal::try_from(data).unwrap())
+            }
+            CustomType::PackageRef => {
+                format!("PackageRef(\"{}\")", PackageRef::try_from(data).unwrap())
+            }
+            CustomType::ComponentRef => {
+                format!(
+                    "ComponentRef(\"{}\")",
+                    ComponentRef::try_from(data).unwrap()
+                )
+            }
+            CustomType::LazyMap => format!(
+                "LazyMap(\"{}\")",
+                LazyMap::<(), ()>::try_from(data).unwrap()
+            ),
+            CustomType::Hash => format!("Hash(\"{}\")", Hash::try_from(data).unwrap()),
+            CustomType::Bucket => {
+                let bucket = Bucket::try_from(data).unwrap();
+                if let Some(name) = bucket_ids.get(&bucket.0) {
+                    format!("Bucket(\"{}\")", name)
+                } else {
+                    format!("Bucket({}u32)", bucket.0)
+                }
+            }
+            CustomType::BucketRef => {
+                let bucket_ref = BucketRef::try_from(data).unwrap();
+                if let Some(name) = bucket_ref_ids.get(&bucket_ref.0) {
+                    format!("BucketRef(\"{}\")", name)
+                } else {
+                    format!("BucketRef({}u32)", bucket_ref.0)
+                }
+            }
+            CustomType::Vault => format!("Vault(\"{}\")", Vault::try_from(data).unwrap()),
+            CustomType::NonFungibleKey => format!(
+                "NonFungibleKey(\"{}\")",
+                NonFungibleKey::try_from(data).unwrap()
+            ),
+            CustomType::ResourceDefRef => format!(
+                "ResourceDefRef(\"{}\")",
+                ResourceDefRef::try_from(data).unwrap()
+            ),
+        }
     }
 }

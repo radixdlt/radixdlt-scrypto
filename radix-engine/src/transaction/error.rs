@@ -1,6 +1,6 @@
 use sbor::describe::Type;
+use scrypto::engine::types::*;
 use scrypto::rust::string::String;
-use scrypto::types::*;
 
 /// Represents an error when parsing arguments.
 #[derive(Debug, Clone)]
@@ -28,10 +28,10 @@ pub enum BuildTransactionError {
     FailedToBuildArgs(BuildArgsError),
 
     /// Failed to export the ABI of a function.
-    FailedToExportFunctionAbi(Address, String, String),
+    FailedToExportFunctionAbi(PackageRef, String, String),
 
     /// Failed to export the ABI of a method.
-    FailedToExportMethodAbi(Address, String),
+    FailedToExportMethodAbi(ComponentRef, String),
 
     /// Account is required but not provided.
     AccountNotProvided,

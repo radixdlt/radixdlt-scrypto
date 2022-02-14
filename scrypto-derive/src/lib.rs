@@ -111,7 +111,7 @@ pub fn import(input: TokenStream) -> TokenStream {
 /// pub fn some_method(&self) {
 ///     // This is protected
 ///
-///     // To retrieve auth resource address, use `auth.resource_address()`.
+///     // To retrieve auth resource address, use `auth.resource_def_ref()`.
 /// }
 /// ```
 #[proc_macro_attribute]

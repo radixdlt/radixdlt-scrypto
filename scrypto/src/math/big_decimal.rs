@@ -7,6 +7,7 @@ use crate::rust::convert::TryFrom;
 use crate::rust::fmt;
 use crate::rust::str::FromStr;
 use crate::rust::string::String;
+use crate::rust::string::ToString;
 use crate::rust::vec::Vec;
 use crate::types::*;
 
@@ -375,8 +376,8 @@ impl FromStr for BigDecimal {
     }
 }
 
-impl ToString for BigDecimal {
-    fn to_string(&self) -> String {
+impl fmt::Display for BigDecimal {
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         let mut a = self.0.clone();
         let mut buf = String::new();
 
@@ -404,7 +405,8 @@ impl ToString for BigDecimal {
             }
         }
 
-        format!(
+        write!(
+            f,
             "{}{}",
             if self.is_negative() { "-" } else { "" },
             buf.chars().rev().collect::<String>()

@@ -1,8 +1,8 @@
 use sbor::*;
+use scrypto::engine::types::*;
 use scrypto::rust::vec::Vec;
-use scrypto::types::*;
 
-use crate::model::{Bucket, BucketError, Supply};
+use crate::model::{Bucket, BucketError, Resource};
 
 /// Represents an error when accessing a vault.
 #[derive(Debug, Clone)]
@@ -14,12 +14,11 @@ pub enum VaultError {
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct Vault {
     bucket: Bucket,
-    authority: Address,
 }
 
 impl Vault {
-    pub fn new(bucket: Bucket, authority: Address) -> Self {
-        Self { bucket, authority }
+    pub fn new(bucket: Bucket) -> Self {
+        Self { bucket }
     }
 
     pub fn put(&mut self, other: Bucket) -> Result<(), VaultError> {
@@ -44,15 +43,15 @@ impl Vault {
             .map_err(VaultError::AccountingError)
     }
 
-    pub fn total_supply(&self) -> Supply {
-        self.bucket.supply()
+    pub fn resource(&self) -> Resource {
+        self.bucket.resource()
     }
 
     pub fn amount(&self) -> Decimal {
         self.bucket.amount()
     }
 
-    pub fn resource_address(&self) -> Address {
-        self.bucket.resource_address()
+    pub fn resource_def_ref(&self) -> ResourceDefRef {
+        self.bucket.resource_def_ref()
     }
 }

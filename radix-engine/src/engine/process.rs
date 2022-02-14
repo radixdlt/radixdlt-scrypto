@@ -1,7 +1,8 @@
 use colored::*;
 use sbor::*;
 use scrypto::buffer::*;
-use scrypto::engine::*;
+use scrypto::engine::api::*;
+use scrypto::engine::types::*;
 use scrypto::rust::borrow::ToOwned;
 use scrypto::rust::collections::*;
 use scrypto::rust::fmt;
@@ -10,11 +11,11 @@ use scrypto::rust::rc::Rc;
 use scrypto::rust::string::String;
 use scrypto::rust::vec;
 use scrypto::rust::vec::Vec;
-use scrypto::types::*;
 use wasmi::*;
 
 use crate::engine::process::LazyMapState::{Committed, Uncommitted};
 use crate::engine::*;
+use crate::errors::*;
 use crate::ledger::*;
 use crate::model::*;
 use crate::transaction::*;
@@ -22,7 +23,7 @@ use crate::transaction::*;
 macro_rules! re_trace {
     ($proc:expr, $($args: expr),+) => {
         if $proc.trace {
-            $proc.log(LogLevel::Trace, format!($($args),+));
+            $proc.log(Level::Trace, format!($($args),+));
         }
     };
 }
@@ -30,7 +31,7 @@ macro_rules! re_trace {
 macro_rules! re_debug {
     ($proc:expr, $($args: expr),+) => {
         if $proc.trace {
-            $proc.log(LogLevel::Debug, format!($($args),+));
+            $proc.log(Level::Debug, format!($($args),+));
         }
     };
 }
@@ -38,7 +39,7 @@ macro_rules! re_debug {
 macro_rules! re_info {
     ($proc:expr, $($args: expr),+) => {
         if $proc.trace {
-            $proc.log(LogLevel::Info, format!($($args),+));
+            $proc.log(Level::Info, format!($($args),+));
         }
     };
 }
@@ -46,20 +47,20 @@ macro_rules! re_info {
 macro_rules! re_warn {
     ($proc:expr, $($args: expr),+) => {
         if $proc.trace {
-            $proc.log(LogLevel::Warn, format!($($args),+));
+            $proc.log(Level::Warn, format!($($args),+));
         }
     };
 }
 
 enum LazyMapState {
-    Uncommitted { root: Mid },
-    Committed { component_address: Address },
+    Uncommitted { root: LazyMapId },
+    Committed { component_ref: ComponentRef },
 }
 
 enum ComponentState {
     Empty,
     Loaded {
-        component_address: Address,
+        component_ref: ComponentRef,
         component_data: ValidatedData,
     },
     Saved,
@@ -69,20 +70,20 @@ enum ComponentState {
 struct UnclaimedLazyMap {
     lazy_map: LazyMap,
     /// All descendents (not just direct children) of the unclaimed lazy map
-    descendent_lazy_maps: HashMap<Mid, LazyMap>,
-    descendent_vaults: HashMap<Vid, Vault>,
+    descendent_lazy_maps: HashMap<LazyMapId, LazyMap>,
+    descendent_vaults: HashMap<VaultId, Vault>,
 }
 
 impl UnclaimedLazyMap {
-    fn merge(&mut self, unclaimed_lazy_map: UnclaimedLazyMap, mid: Mid) {
+    fn merge(&mut self, unclaimed_lazy_map: UnclaimedLazyMap, lazy_map_id: LazyMapId) {
         self.descendent_lazy_maps
-            .insert(mid, unclaimed_lazy_map.lazy_map);
+            .insert(lazy_map_id, unclaimed_lazy_map.lazy_map);
 
-        for (mid, lazy_map) in unclaimed_lazy_map.descendent_lazy_maps {
-            self.descendent_lazy_maps.insert(mid, lazy_map);
+        for (lazy_map_id, lazy_map) in unclaimed_lazy_map.descendent_lazy_maps {
+            self.descendent_lazy_maps.insert(lazy_map_id, lazy_map);
         }
-        for (vid, vault) in unclaimed_lazy_map.descendent_vaults {
-            self.descendent_vaults.insert(vid, vault);
+        for (vault_id, vault) in unclaimed_lazy_map.descendent_vaults {
+            self.descendent_vaults.insert(vault_id, vault);
         }
     }
 }
@@ -96,21 +97,21 @@ pub struct Process<'r, 'l, L: SubstateStore> {
     /// Transactional state updates
     track: &'r mut Track<'l, L>,
     /// Buckets owned by this process
-    buckets: HashMap<Bid, Bucket>,
+    buckets: HashMap<BucketId, Bucket>,
     /// Buckets owned by this process (but LOCKED because there is a reference to it)
-    buckets_locked: HashMap<Bid, BucketRef>,
+    buckets_locked: HashMap<BucketId, BucketRef>,
     /// Bucket references
-    bucket_refs: HashMap<Rid, BucketRef>,
+    bucket_refs: HashMap<BucketRefId, BucketRef>,
     /// The buckets that will be moved to another process SHORTLY.
-    moving_buckets: HashMap<Bid, Bucket>,
+    moving_buckets: HashMap<BucketId, Bucket>,
     /// The bucket refs that will be moved to another process SHORTLY.
-    moving_bucket_refs: HashMap<Rid, BucketRef>,
+    moving_bucket_refs: HashMap<BucketRefId, BucketRef>,
 
     /// Vaults which haven't been assigned to a component or lazy map yet.
-    unclaimed_vaults: HashMap<Vid, Vault>,
+    unclaimed_vaults: HashMap<VaultId, Vault>,
     /// Lazy maps which haven't been assigned to a component or lazy map yet.
     /// Keeps track of vault and lazy map descendents.
-    unclaimed_lazy_maps: HashMap<Mid, UnclaimedLazyMap>,
+    unclaimed_lazy_maps: HashMap<LazyMapId, UnclaimedLazyMap>,
 
     /// Components which have been loaded and possibly updated in the lifetime of this process.
     component_state: ComponentState,
@@ -126,7 +127,7 @@ pub struct Process<'r, 'l, L: SubstateStore> {
     /// to `buckets`.
     ///
     /// Loop invariant: all buckets should be NON_EMPTY.
-    worktop: HashMap<Address, Bucket>,
+    worktop: HashMap<ResourceDefRef, Bucket>,
 }
 
 /// Represents an interpreter instance.
@@ -140,7 +141,7 @@ pub struct Interpreter {
 #[derive(Debug, Clone)]
 pub struct Invocation {
     actor: Actor,
-    package_address: Address,
+    package_ref: PackageRef,
     export_name: String,
     function: String,
     args: Vec<ValidatedData>,
@@ -168,73 +169,84 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     }
 
     // (Transaction ONLY) Takes resource from worktop and returns a bucket.
-    pub fn take_from_worktop(&mut self, resource: Resource) -> Result<ValidatedData, RuntimeError> {
+    pub fn take_from_worktop(
+        &mut self,
+        resource_spec: ResourceSpecification,
+    ) -> Result<ValidatedData, RuntimeError> {
         re_debug!(
             self,
-            "(Transaction) Taking from worktop: resource = {:?}",
-            resource
+            "(Transaction) Taking from worktop: {:?}",
+            resource_spec
         );
-
-        let resource_address = resource.resource_address();
-        let new_bid = self
+        let resource_def_ref = resource_spec.resource_def_ref();
+        let new_bucket_id = self
             .id_allocator
-            .new_bid()
+            .new_bucket_id()
             .map_err(RuntimeError::IdAllocatorError)?;
-        let bucket = match self.worktop.remove(&resource_address) {
+        let bucket = match self.worktop.remove(&resource_def_ref) {
             Some(mut bucket) => {
-                let to_return = match resource {
-                    Resource::Fungible { amount, .. } => bucket.take(amount),
-                    Resource::NonFungible { keys, .. } => bucket.take_non_fungibles(&keys),
-                    Resource::All { .. } => bucket.take(bucket.amount()),
+                let to_return = match resource_spec {
+                    ResourceSpecification::Fungible { amount, .. } => bucket.take(amount),
+                    ResourceSpecification::NonFungible { keys, .. } => {
+                        bucket.take_non_fungibles(&keys)
+                    }
+                    ResourceSpecification::All { .. } => bucket.take(bucket.amount()),
                 }
                 .map_err(RuntimeError::BucketError)?;
 
                 if !bucket.amount().is_zero() {
-                    self.worktop.insert(resource_address, bucket);
+                    self.worktop.insert(resource_def_ref, bucket);
                 }
                 Ok(to_return)
             }
             None => Err(RuntimeError::BucketError(BucketError::InsufficientBalance)),
         }?;
-        self.buckets.insert(new_bid, bucket);
-        Ok(validate_data(&scrypto_encode(&new_bid)).unwrap())
+        self.buckets.insert(new_bucket_id, bucket);
+        Ok(ValidatedData::from_slice(&scrypto_encode(&new_bucket_id)).unwrap())
     }
 
     // (Transaction ONLY) Returns resource back to worktop.
-    pub fn return_to_worktop(&mut self, bid: Bid) -> Result<ValidatedData, RuntimeError> {
-        re_debug!(self, "(Transaction) Returning to worktop: bid = {:?}", bid);
+    pub fn return_to_worktop(
+        &mut self,
+        bucket_id: BucketId,
+    ) -> Result<ValidatedData, RuntimeError> {
+        re_debug!(
+            self,
+            "(Transaction) Returning to worktop: bucket_id = {:?}",
+            bucket_id
+        );
 
         let bucket = self
             .buckets
-            .remove(&bid)
-            .ok_or(RuntimeError::BucketNotFound(bid))?;
+            .remove(&bucket_id)
+            .ok_or(RuntimeError::BucketNotFound(bucket_id))?;
 
         if !bucket.amount().is_zero() {
-            if let Some(existing_bucket) = self.worktop.get_mut(&bucket.resource_address()) {
+            if let Some(existing_bucket) = self.worktop.get_mut(&bucket.resource_def_ref()) {
                 existing_bucket
                     .put(bucket)
                     .map_err(RuntimeError::BucketError)?;
             } else {
-                self.worktop.insert(bucket.resource_address(), bucket);
+                self.worktop.insert(bucket.resource_def_ref(), bucket);
             }
         }
-        Ok(validate_data(&scrypto_encode(&())).unwrap())
+        Ok(ValidatedData::from_slice(&scrypto_encode(&())).unwrap())
     }
 
     // (Transaction ONLY) Assert worktop contains at least this amount.
     pub fn assert_worktop_contains(
         &mut self,
         amount: Decimal,
-        resource_address: Address,
+        resource_def_ref: ResourceDefRef,
     ) -> Result<ValidatedData, RuntimeError> {
         re_debug!(
             self,
-            "(Transaction) Asserting worktop contains: amount = {:?}, resource_address = {:?}",
+            "(Transaction) Asserting worktop contains: amount = {:?}, resource_def_ref = {:?}",
             amount,
-            resource_address
+            resource_def_ref
         );
 
-        let balance = match self.worktop.get(&resource_address) {
+        let balance = match self.worktop.get(&resource_def_ref) {
             Some(bucket) => bucket.amount(),
             None => Decimal::zero(),
         };
@@ -242,77 +254,99 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         if balance < amount {
             re_warn!(
                 self,
-                "(Transaction) Assertion failed: required = {}, actual = {}, resource_address = {}",
+                "(Transaction) Assertion failed: required = {:?}, actual = {:?}, resource_def_ref = {:?}",
                 amount,
                 balance,
-                resource_address
+                resource_def_ref
             );
             Err(RuntimeError::AssertionFailed)
         } else {
-            Ok(validate_data(&scrypto_encode(&())).unwrap())
+            Ok(ValidatedData::from_slice(&scrypto_encode(&())).unwrap())
         }
     }
 
     // (Transaction ONLY) Creates a bucket ref.
-    pub fn create_bucket_ref(&mut self, bid: Bid) -> Result<ValidatedData, RuntimeError> {
-        re_debug!(self, "(Transaction) Creating bucket ref: bid = {:?}", bid);
+    pub fn create_bucket_ref(
+        &mut self,
+        bucket_id: BucketId,
+    ) -> Result<ValidatedData, RuntimeError> {
+        re_debug!(
+            self,
+            "(Transaction) Creating bucket ref: bucket_id = {:?}",
+            bucket_id
+        );
 
-        let new_rid = self
+        let new_bucket_ref_id = self
             .id_allocator
-            .new_rid()
+            .new_bucket_ref_id()
             .map_err(RuntimeError::IdAllocatorError)?;
-        match self.buckets_locked.get_mut(&bid) {
+        match self.buckets_locked.get_mut(&bucket_id) {
             Some(bucket_rc) => {
                 // re-borrow
-                self.bucket_refs.insert(new_rid, bucket_rc.clone());
+                self.bucket_refs
+                    .insert(new_bucket_ref_id, bucket_rc.clone());
             }
             None => {
                 // first time borrow
                 let bucket = BucketRef::new(LockedBucket::new(
-                    bid,
+                    bucket_id,
                     self.buckets
-                        .remove(&bid)
-                        .ok_or(RuntimeError::BucketNotFound(bid))?,
+                        .remove(&bucket_id)
+                        .ok_or(RuntimeError::BucketNotFound(bucket_id))?,
                 ));
-                self.buckets_locked.insert(bid, bucket.clone());
-                self.bucket_refs.insert(new_rid, bucket);
+                self.buckets_locked.insert(bucket_id, bucket.clone());
+                self.bucket_refs.insert(new_bucket_ref_id, bucket);
             }
         };
 
-        Ok(validate_data(&scrypto_encode(&new_rid)).unwrap())
+        Ok(ValidatedData::from_slice(&scrypto_encode(&new_bucket_ref_id)).unwrap())
     }
 
     // (Transaction ONLY) Clone a bucket ref.
-    pub fn clone_bucket_ref(&mut self, rid: Rid) -> Result<ValidatedData, RuntimeError> {
-        re_debug!(self, "(Transaction) Cloning bucket ref: rid = {:?}", rid);
+    pub fn clone_bucket_ref(
+        &mut self,
+        bucket_ref_id: BucketRefId,
+    ) -> Result<ValidatedData, RuntimeError> {
+        re_debug!(
+            self,
+            "(Transaction) Cloning bucket ref: bucket_ref_id = {:?}",
+            bucket_ref_id
+        );
 
-        let new_rid = self
+        let new_bucket_ref_id = self
             .id_allocator
-            .new_rid()
+            .new_bucket_ref_id()
             .map_err(RuntimeError::IdAllocatorError)?;
         let bucket_ref = self
             .bucket_refs
-            .get(&rid)
-            .ok_or(RuntimeError::BucketRefNotFound(rid))?
+            .get(&bucket_ref_id)
+            .ok_or(RuntimeError::BucketRefNotFound(bucket_ref_id))?
             .clone();
-        self.bucket_refs.insert(new_rid, bucket_ref);
+        self.bucket_refs.insert(new_bucket_ref_id, bucket_ref);
 
-        Ok(validate_data(&scrypto_encode(&new_rid)).unwrap())
+        Ok(ValidatedData::from_slice(&scrypto_encode(&new_bucket_ref_id)).unwrap())
     }
 
     // (Transaction ONLY) Drop a bucket ref.
-    pub fn drop_bucket_ref(&mut self, rid: Rid) -> Result<ValidatedData, RuntimeError> {
-        re_debug!(self, "(Transaction) Dropping bucket ref: rid = {:?}", rid);
+    pub fn drop_bucket_ref(
+        &mut self,
+        bucket_ref_id: BucketRefId,
+    ) -> Result<ValidatedData, RuntimeError> {
+        re_debug!(
+            self,
+            "(Transaction) Dropping bucket ref: bucket_ref_id = {:?}",
+            bucket_ref_id
+        );
 
-        self.handle_drop_bucket_ref(DropBucketRefInput { rid })?;
+        self.handle_drop_bucket_ref(DropBucketRefInput { bucket_ref_id })?;
 
-        Ok(validate_data(&scrypto_encode(&())).unwrap())
+        Ok(ValidatedData::from_slice(&scrypto_encode(&())).unwrap())
     }
 
     /// (Transaction ONLY) Calls a method.
     pub fn call_method_with_all_resources(
         &mut self,
-        component_address: Address,
+        component_ref: ComponentRef,
         method: &str,
     ) -> Result<ValidatedData, RuntimeError> {
         re_debug!(
@@ -321,8 +355,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         );
         // 1. Move collected resource to temp buckets
         for (_, bucket) in self.worktop.clone() {
-            let bid = self.track.new_bid(); // this is unbounded
-            self.buckets.insert(bid, bucket);
+            let bucket_id = self.track.new_bucket_id(); // this is unbounded
+            self.buckets.insert(bucket_id, bucket);
         }
         self.worktop.clear();
 
@@ -330,11 +364,16 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         self.drop_all_bucket_refs()?;
 
         // 3. Call the method with all buckets
-        let to_deposit: Vec<Bid> = self.buckets.keys().cloned().collect();
+        let to_deposit: Vec<scrypto::resource::Bucket> = self
+            .buckets
+            .keys()
+            .cloned()
+            .map(|bucket_id| scrypto::resource::Bucket(bucket_id))
+            .collect();
         let invocation = self.prepare_call_method(
-            component_address,
+            component_ref,
             method,
-            vec![validate_data(&scrypto_encode(&to_deposit)).unwrap()],
+            vec![ValidatedData::from_slice(&scrypto_encode(&to_deposit)).unwrap()],
         )?;
         let result = self.call(invocation);
 
@@ -346,24 +385,29 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     }
 
     /// (SYSTEM ONLY)  Creates a bucket ref which references a virtual bucket
-    pub fn create_virtual_bucket_ref(&mut self, bid: Bid, rid: Rid, bucket: Bucket) {
-        let locked_bucket = LockedBucket::new(bid, bucket);
+    pub fn create_virtual_bucket_ref(
+        &mut self,
+        bucket_id: BucketId,
+        bucket_ref_id: BucketRefId,
+        bucket: Bucket,
+    ) {
+        let locked_bucket = LockedBucket::new(bucket_id, bucket);
         let bucket_ref = BucketRef::new(locked_bucket);
-        self.bucket_refs.insert(rid, bucket_ref);
+        self.bucket_refs.insert(bucket_ref_id, bucket_ref);
     }
 
     /// Moves buckets and bucket refs into this process.
     pub fn move_in_resources(
         &mut self,
-        buckets: HashMap<Bid, Bucket>,
-        bucket_refs: HashMap<Rid, BucketRef>,
+        buckets: HashMap<BucketId, Bucket>,
+        bucket_refs: HashMap<BucketRefId, BucketRef>,
     ) -> Result<(), RuntimeError> {
         if self.depth == 0 {
             assert!(bucket_refs.is_empty());
 
             for (_, bucket) in buckets {
                 if !bucket.amount().is_zero() {
-                    let address = bucket.resource_address();
+                    let address = bucket.resource_def_ref();
                     if let Some(b) = self.worktop.get_mut(&address) {
                         b.put(bucket).unwrap();
                     } else {
@@ -380,7 +424,9 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     }
 
     /// Moves all marked buckets and bucket refs from this process.
-    pub fn move_out_resources(&mut self) -> (HashMap<Bid, Bucket>, HashMap<Rid, BucketRef>) {
+    pub fn move_out_resources(
+        &mut self,
+    ) -> (HashMap<BucketId, Bucket>, HashMap<BucketRefId, BucketRef>) {
         let buckets = self.moving_buckets.drain().collect();
         let bucket_refs = self.moving_bucket_refs.drain().collect();
         (buckets, bucket_refs)
@@ -393,15 +439,15 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         re_info!(
             self,
             "Run started: package = {:?}, export = {:?}",
-            invocation.package_address,
+            invocation.package_ref,
             invocation.export_name
         );
 
         // Load the code
         let (module, memory) = self
             .track
-            .load_module(invocation.package_address)
-            .ok_or(RuntimeError::PackageNotFound(invocation.package_address))?;
+            .load_module(invocation.package_ref)
+            .ok_or(RuntimeError::PackageNotFound(invocation.package_ref))?;
         let vm = Interpreter {
             invocation: invocation.clone(),
             module: module.clone(),
@@ -419,7 +465,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         // move resource based on return data
         let output = match rtn {
             RuntimeValue::I32(ptr) => {
-                let data = validate_data(&self.read_bytes(ptr)?)
+                let data = ValidatedData::from_slice(&self.read_bytes(ptr)?)
                     .map_err(RuntimeError::DataValidationError)?;
                 self.process_call_data(&data, false)?;
                 data
@@ -444,14 +490,14 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     /// Prepares a function call.
     pub fn prepare_call_function(
         &mut self,
-        package_address: Address,
+        package_ref: PackageRef,
         blueprint_name: &str,
         function: &str,
         args: Vec<ValidatedData>,
     ) -> Result<Invocation, RuntimeError> {
         Ok(Invocation {
-            actor: Actor::Blueprint(package_address, blueprint_name.to_owned()),
-            package_address,
+            actor: Actor::Blueprint(package_ref, blueprint_name.to_owned()),
+            package_ref: package_ref,
             export_name: format!("{}_main", blueprint_name),
             function: function.to_owned(),
             args,
@@ -461,21 +507,22 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     /// Prepares a method call.
     pub fn prepare_call_method(
         &mut self,
-        component_address: Address,
+        component_ref: ComponentRef,
         method: &str,
         args: Vec<ValidatedData>,
     ) -> Result<Invocation, RuntimeError> {
         let component = self
             .track
-            .get_component(component_address)
-            .ok_or(RuntimeError::ComponentNotFound(component_address))?
+            .get_component(component_ref)
+            .ok_or(RuntimeError::ComponentNotFound(component_ref))?
             .clone();
-        let mut args_with_self = vec![validate_data(&scrypto_encode(&component_address)).unwrap()];
+        let mut args_with_self =
+            vec![ValidatedData::from_slice(&scrypto_encode(&component_ref)).unwrap()];
         args_with_self.extend(args);
 
         Ok(Invocation {
-            actor: Actor::Component(component_address),
-            package_address: component.package_address(),
+            actor: Actor::Component(component_ref),
+            package_ref: component.package_ref(),
             export_name: format!("{}_main", component.blueprint_name()),
             function: method.to_owned(),
             args: args_with_self,
@@ -485,12 +532,12 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     /// Prepares an ABI call.
     pub fn prepare_call_abi(
         &mut self,
-        package_address: Address,
+        package_ref: PackageRef,
         blueprint_name: &str,
     ) -> Result<Invocation, RuntimeError> {
         Ok(Invocation {
-            actor: Actor::Blueprint(package_address, blueprint_name.to_owned()),
-            package_address: package_address,
+            actor: Actor::Blueprint(package_ref, blueprint_name.to_owned()),
+            package_ref: package_ref,
             export_name: format!("{}_abi", blueprint_name),
             function: String::new(),
             args: Vec::new(),
@@ -517,17 +564,17 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         self.move_in_resources(buckets_in, bucket_refs_in)?;
 
         // scan locked buckets for some might have been unlocked by child processes
-        let bids: Vec<Bid> = self
+        let bucket_ids: Vec<BucketId> = self
             .buckets_locked
             .values()
             .filter(|v| Rc::strong_count(v) == 1)
             .map(|v| v.bucket_id())
             .collect();
-        for bid in bids {
-            re_debug!(self, "Changing bucket {:?} to unlocked state", bid);
-            let bucket_rc = self.buckets_locked.remove(&bid).unwrap();
+        for bucket_id in bucket_ids {
+            re_debug!(self, "Changing bucket {:?} to unlocked state", bucket_id);
+            let bucket_rc = self.buckets_locked.remove(&bucket_id).unwrap();
             let bucket = Rc::try_unwrap(bucket_rc).unwrap();
-            self.buckets.insert(bid, bucket.into());
+            self.buckets.insert(bucket_id, bucket.into());
         }
 
         Ok(result)
@@ -536,14 +583,13 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     /// Calls a function.
     pub fn call_function(
         &mut self,
-        package_address: Address,
+        package_ref: PackageRef,
         blueprint_name: &str,
         function: &str,
         args: Vec<ValidatedData>,
     ) -> Result<ValidatedData, RuntimeError> {
         re_debug!(self, "Call function started");
-        let invocation =
-            self.prepare_call_function(package_address, blueprint_name, function, args)?;
+        let invocation = self.prepare_call_function(package_ref, blueprint_name, function, args)?;
         let result = self.call(invocation);
         re_debug!(self, "Call function ended");
         result
@@ -552,12 +598,12 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     /// Calls a method.
     pub fn call_method(
         &mut self,
-        component_address: Address,
+        component_ref: ComponentRef,
         method: &str,
         args: Vec<ValidatedData>,
     ) -> Result<ValidatedData, RuntimeError> {
         re_debug!(self, "Call method started");
-        let invocation = self.prepare_call_method(component_address, method, args)?;
+        let invocation = self.prepare_call_method(component_ref, method, args)?;
         let result = self.call(invocation);
         re_debug!(self, "Call method ended");
         result
@@ -566,11 +612,11 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     /// Calls the ABI generator of a blueprint.
     pub fn call_abi(
         &mut self,
-        package_address: Address,
+        package_ref: PackageRef,
         blueprint_name: &str,
     ) -> Result<ValidatedData, RuntimeError> {
         re_debug!(self, "Call abi started");
-        let invocation = self.prepare_call_abi(package_address, blueprint_name)?;
+        let invocation = self.prepare_call_abi(package_ref, blueprint_name)?;
         let result = self.call(invocation);
         re_debug!(self, "Call abi ended");
         result
@@ -578,9 +624,9 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
     /// Drops all bucket refs owned by this process.
     pub fn drop_all_bucket_refs(&mut self) -> Result<(), RuntimeError> {
-        let rids: Vec<Rid> = self.bucket_refs.keys().cloned().collect();
-        for rid in rids {
-            self.handle_drop_bucket_ref(DropBucketRefInput { rid })?;
+        let bucket_ref_ids: Vec<BucketRefId> = self.bucket_refs.keys().cloned().collect();
+        for bucket_ref_id in bucket_ref_ids {
+            self.handle_drop_bucket_ref(DropBucketRefInput { bucket_ref_id })?;
         }
         Ok(())
     }
@@ -590,24 +636,24 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         re_debug!(self, "Resource check started");
         let mut success = true;
 
-        for (bid, bucket) in &self.buckets {
-            re_warn!(self, "Dangling bucket: {:?}, {:?}", bid, bucket);
+        for (bucket_id, bucket) in &self.buckets {
+            re_warn!(self, "Dangling bucket: {:?}, {:?}", bucket_id, bucket);
             success = false;
         }
-        for (bid, bucket) in &self.buckets_locked {
-            re_warn!(self, "Dangling bucket: {:?}, {:?}", bid, bucket);
+        for (bucket_id, bucket) in &self.buckets_locked {
+            re_warn!(self, "Dangling bucket: {:?}, {:?}", bucket_id, bucket);
             success = false;
         }
         for (_, bucket) in &self.worktop {
             re_warn!(self, "Dangling resource: {:?}", bucket);
             success = false;
         }
-        for (vid, vault) in &self.unclaimed_vaults {
-            re_warn!(self, "Dangling vault: {:?}, {:?}", vid, vault);
+        for (vault_id, vault) in &self.unclaimed_vaults {
+            re_warn!(self, "Dangling vault: {:?}, {:?}", vault_id, vault);
             success = false;
         }
-        for (mid, lazy_map) in &self.unclaimed_lazy_maps {
-            re_warn!(self, "Dangling lazy map: {:?}, {:?}", mid, lazy_map);
+        for (lazy_map_id, lazy_map) in &self.unclaimed_lazy_maps {
+            re_warn!(self, "Dangling lazy map: {:?}, {:?}", lazy_map_id, lazy_map);
             success = false;
         }
 
@@ -621,13 +667,13 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
     /// Logs a message to the console.
     #[allow(unused_variables)]
-    pub fn log(&self, level: LogLevel, msg: String) {
+    pub fn log(&self, level: Level, msg: String) {
         let (l, m) = match level {
-            LogLevel::Error => ("ERROR".red(), msg.red()),
-            LogLevel::Warn => ("WARN".yellow(), msg.yellow()),
-            LogLevel::Info => ("INFO".green(), msg.green()),
-            LogLevel::Debug => ("DEBUG".cyan(), msg.cyan()),
-            LogLevel::Trace => ("TRACE".normal(), msg.normal()),
+            Level::Error => ("ERROR".red(), msg.red()),
+            Level::Warn => ("WARN".yellow(), msg.yellow()),
+            Level::Info => ("INFO".green(), msg.green()),
+            Level::Debug => ("DEBUG".cyan(), msg.cyan()),
+            Level::Trace => ("TRACE".normal(), msg.normal()),
         };
 
         #[cfg(not(feature = "alloc"))]
@@ -640,14 +686,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .as_ref()
             .ok_or(RuntimeError::InterpreterNotStarted)
             .map(|vm| vm.invocation.actor.clone())
-    }
-
-    /// Return the package address
-    fn package(&self) -> Result<Address, RuntimeError> {
-        self.vm
-            .as_ref()
-            .ok_or(RuntimeError::InterpreterNotStarted)
-            .map(|vm| vm.invocation.package_address)
     }
 
     /// Return the function name
@@ -687,29 +725,30 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         validated: &ValidatedData,
         is_argument: bool,
     ) -> Result<(), RuntimeError> {
-        self.move_buckets(&validated.buckets)?;
+        self.move_buckets(&validated.bucket_ids)?;
         if is_argument {
-            self.move_bucket_refs(&validated.bucket_refs)?;
+            self.move_bucket_refs(&validated.bucket_ref_ids)?;
         } else {
-            if !validated.bucket_refs.is_empty() {
+            if !validated.bucket_ref_ids.is_empty() {
                 return Err(RuntimeError::BucketRefNotAllowed);
             }
         }
-        if !validated.lazy_maps.is_empty() {
+        if !validated.lazy_map_ids.is_empty() {
             return Err(RuntimeError::LazyMapNotAllowed);
         }
-        if !validated.vaults.is_empty() {
+        if !validated.vault_ids.is_empty() {
             return Err(RuntimeError::VaultNotAllowed);
         }
         Ok(())
     }
 
     fn process_component_data(data: &[u8]) -> Result<ValidatedData, RuntimeError> {
-        let validated = validate_data(data).map_err(RuntimeError::DataValidationError)?;
-        if !validated.buckets.is_empty() {
+        let validated =
+            ValidatedData::from_slice(data).map_err(RuntimeError::DataValidationError)?;
+        if !validated.bucket_ids.is_empty() {
             return Err(RuntimeError::BucketNotAllowed);
         }
-        if !validated.bucket_refs.is_empty() {
+        if !validated.bucket_ref_ids.is_empty() {
             return Err(RuntimeError::BucketRefNotAllowed);
         }
         // lazy map allowed
@@ -718,11 +757,12 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     }
 
     fn process_map_data(data: &[u8]) -> Result<ValidatedData, RuntimeError> {
-        let validated = validate_data(data).map_err(RuntimeError::DataValidationError)?;
-        if !validated.buckets.is_empty() {
+        let validated =
+            ValidatedData::from_slice(data).map_err(RuntimeError::DataValidationError)?;
+        if !validated.bucket_ids.is_empty() {
             return Err(RuntimeError::BucketNotAllowed);
         }
-        if !validated.bucket_refs.is_empty() {
+        if !validated.bucket_ref_ids.is_empty() {
             return Err(RuntimeError::BucketRefNotAllowed);
         }
         // lazy map allowed
@@ -731,44 +771,50 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     }
 
     fn process_non_fungible_data(&mut self, data: &[u8]) -> Result<ValidatedData, RuntimeError> {
-        let validated = validate_data(data).map_err(RuntimeError::DataValidationError)?;
-        if !validated.buckets.is_empty() {
+        let validated =
+            ValidatedData::from_slice(data).map_err(RuntimeError::DataValidationError)?;
+        if !validated.bucket_ids.is_empty() {
             return Err(RuntimeError::BucketNotAllowed);
         }
-        if !validated.bucket_refs.is_empty() {
+        if !validated.bucket_ref_ids.is_empty() {
             return Err(RuntimeError::BucketRefNotAllowed);
         }
-        if !validated.lazy_maps.is_empty() {
+        if !validated.lazy_map_ids.is_empty() {
             return Err(RuntimeError::LazyMapNotAllowed);
         }
-        if !validated.vaults.is_empty() {
+        if !validated.vault_ids.is_empty() {
             return Err(RuntimeError::VaultNotAllowed);
         }
         Ok(validated)
     }
 
     /// Remove transient buckets from this process
-    fn move_buckets(&mut self, buckets: &[Bid]) -> Result<(), RuntimeError> {
-        for bid in buckets {
+    fn move_buckets(&mut self, buckets: &[BucketId]) -> Result<(), RuntimeError> {
+        for bucket_id in buckets {
             let bucket = self
                 .buckets
-                .remove(bid)
-                .ok_or(RuntimeError::BucketNotFound(*bid))?;
-            re_debug!(self, "Moving bucket: {:?}, {:?}", bid, bucket);
-            self.moving_buckets.insert(*bid, bucket);
+                .remove(bucket_id)
+                .ok_or(RuntimeError::BucketNotFound(*bucket_id))?;
+            re_debug!(self, "Moving bucket: {:?}, {:?}", bucket_id, bucket);
+            self.moving_buckets.insert(*bucket_id, bucket);
         }
         Ok(())
     }
 
     /// Remove transient buckets from this process
-    fn move_bucket_refs(&mut self, bucket_refs: &[Rid]) -> Result<(), RuntimeError> {
-        for rid in bucket_refs {
+    fn move_bucket_refs(&mut self, bucket_refs: &[BucketRefId]) -> Result<(), RuntimeError> {
+        for bucket_ref_id in bucket_refs {
             let bucket_ref = self
                 .bucket_refs
-                .remove(rid)
-                .ok_or(RuntimeError::BucketRefNotFound(*rid))?;
-            re_debug!(self, "Moving bucket ref: {:?}, {:?}", rid, bucket_ref);
-            self.moving_bucket_refs.insert(*rid, bucket_ref);
+                .remove(bucket_ref_id)
+                .ok_or(RuntimeError::BucketRefNotFound(*bucket_ref_id))?;
+            re_debug!(
+                self,
+                "Moving bucket ref: {:?}, {:?}",
+                bucket_ref_id,
+                bucket_ref
+            );
+            self.moving_bucket_refs.insert(*bucket_ref_id, bucket_ref);
         }
         Ok(())
     }
@@ -855,48 +901,27 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         Ok(Some(RuntimeValue::I32(output_ptr)))
     }
 
-    fn expect_package_address(address: Address) -> Result<(), RuntimeError> {
-        if address.is_package() {
-            Ok(())
-        } else {
-            Err(RuntimeError::InvalidPackageAddress(address))
-        }
-    }
-
-    fn expect_component_address(address: Address) -> Result<(), RuntimeError> {
-        if address.is_component() {
-            Ok(())
-        } else {
-            Err(RuntimeError::InvalidComponentAddress(address))
-        }
-    }
-
-    fn expect_resource_address(address: Address) -> Result<(), RuntimeError> {
-        if address.is_resource_def() {
-            Ok(())
-        } else {
-            Err(RuntimeError::InvalidResourceDefAddress(address))
-        }
-    }
-
-    fn check_badge(&mut self, optional_rid: Option<Rid>) -> Result<Option<Address>, RuntimeError> {
-        if let Some(rid) = optional_rid {
+    fn check_badge(
+        &mut self,
+        optional_bucket_ref_id: Option<BucketRefId>,
+    ) -> Result<Option<ResourceDefRef>, RuntimeError> {
+        if let Some(bucket_ref_id) = optional_bucket_ref_id {
             // retrieve bucket reference
             let bucket_ref = self
                 .bucket_refs
-                .get(&rid)
-                .ok_or(RuntimeError::BucketRefNotFound(rid))?;
+                .get(&bucket_ref_id)
+                .ok_or(RuntimeError::BucketRefNotFound(bucket_ref_id))?;
 
-            // read amount & address
+            // read amount
             if bucket_ref.bucket().amount().is_zero() {
                 return Err(RuntimeError::EmptyBucketRef);
             }
-            let resource_address = bucket_ref.bucket().resource_address();
+            let resource_def_ref = bucket_ref.bucket().resource_def_ref();
 
             // drop bucket reference after use
-            self.handle_drop_bucket_ref(DropBucketRefInput { rid })?;
+            self.handle_drop_bucket_ref(DropBucketRefInput { bucket_ref_id })?;
 
-            Ok(Some(resource_address))
+            Ok(Some(resource_def_ref))
         } else {
             Ok(None)
         }
@@ -910,42 +935,41 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         input: PublishPackageInput,
     ) -> Result<PublishPackageOutput, RuntimeError> {
-        let package_address = self.track.new_package_address();
+        let package_ref = self.track.new_package_ref();
 
-        if self.track.get_package(package_address).is_some() {
-            return Err(RuntimeError::PackageAlreadyExists(package_address));
+        if self.track.get_package(package_ref).is_some() {
+            return Err(RuntimeError::PackageAlreadyExists(package_ref));
         }
         validate_module(&input.code).map_err(RuntimeError::WasmValidationError)?;
 
-        re_debug!(self, "New package: {:?}", package_address);
+        re_debug!(self, "New package: {:?}", package_ref);
         self.track
-            .put_package(package_address, Package::new(input.code));
+            .put_package(package_ref, Package::new(input.code));
 
-        Ok(PublishPackageOutput { package_address })
+        Ok(PublishPackageOutput { package_ref })
     }
 
     fn handle_call_function(
         &mut self,
         input: CallFunctionInput,
     ) -> Result<CallFunctionOutput, RuntimeError> {
-        Self::expect_package_address(input.package_address)?;
-
         let mut validated_args = Vec::new();
         for arg in input.args {
-            validated_args.push(validate_data(&arg).map_err(RuntimeError::DataValidationError)?);
+            validated_args
+                .push(ValidatedData::from_slice(&arg).map_err(RuntimeError::DataValidationError)?);
         }
 
         re_debug!(
             self,
-            "CALL started: package = {:?}, blueprint = {:?}, function = {:?}, args = {:?}",
-            input.package_address,
+            "CALL started: package_ref = {:?}, blueprint_name = {}, function = {:?}, args = {:?}",
+            input.package_ref,
             input.blueprint_name,
             input.function,
             validated_args
         );
 
         let invocation = self.prepare_call_function(
-            input.package_address,
+            input.package_ref,
             &input.blueprint_name,
             input.function.as_str(),
             validated_args,
@@ -960,26 +984,22 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         input: CallMethodInput,
     ) -> Result<CallMethodOutput, RuntimeError> {
-        Self::expect_component_address(input.component_address)?;
-
         let mut validated_args = Vec::new();
         for arg in input.args {
-            validated_args.push(validate_data(&arg).map_err(RuntimeError::DataValidationError)?);
+            validated_args
+                .push(ValidatedData::from_slice(&arg).map_err(RuntimeError::DataValidationError)?);
         }
 
         re_debug!(
             self,
             "CALL started: component = {:?}, method = {:?}, args = {:?}",
-            input.component_address,
+            input.component_ref,
             input.method,
             validated_args
         );
 
-        let invocation = self.prepare_call_method(
-            input.component_address,
-            input.method.as_str(),
-            validated_args,
-        )?;
+        let invocation =
+            self.prepare_call_method(input.component_ref, input.method.as_str(), validated_args)?;
         let result = self.call(invocation);
 
         re_debug!(self, "CALL finished");
@@ -989,24 +1009,24 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     fn move_lazy_map_into_component(
         &mut self,
         unclaimed_lazy_map: UnclaimedLazyMap,
-        mid: Mid,
-        component_address: Address,
+        lazy_map_id: LazyMapId,
+        component_ref: ComponentRef,
     ) {
         re_debug!(
             self,
-            "Lazy Map move: lazy_map = {}, to = component({:?}) ",
-            mid,
-            component_address
+            "Lazy Map move: lazy_map = {:?}, to = component({:?}) ",
+            lazy_map_id,
+            component_ref
         );
 
         self.track
-            .put_lazy_map(component_address, mid, unclaimed_lazy_map.lazy_map);
-        for (child_mid, child_lazy_map) in unclaimed_lazy_map.descendent_lazy_maps {
+            .put_lazy_map(component_ref, lazy_map_id, unclaimed_lazy_map.lazy_map);
+        for (child_lazy_map_id, child_lazy_map) in unclaimed_lazy_map.descendent_lazy_maps {
             self.track
-                .put_lazy_map(component_address, child_mid, child_lazy_map);
+                .put_lazy_map(component_ref, child_lazy_map_id, child_lazy_map);
         }
-        for (vid, vault) in unclaimed_lazy_map.descendent_vaults {
-            self.track.put_vault(component_address, vid, vault);
+        for (vault_id, vault) in unclaimed_lazy_map.descendent_vaults {
+            self.track.put_vault(component_ref, vault_id, vault);
         }
     }
 
@@ -1014,56 +1034,53 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         input: CreateComponentInput,
     ) -> Result<CreateComponentOutput, RuntimeError> {
-        let component_address = self.track.new_component_address();
+        let component_ref = self.track.new_component_ref();
 
-        if self.track.get_component(component_address).is_some() {
-            return Err(RuntimeError::ComponentAlreadyExists(component_address));
+        if self.track.get_component(component_ref).is_some() {
+            return Err(RuntimeError::ComponentAlreadyExists(component_ref));
         }
 
         let data = Self::process_component_data(&input.state)?;
         re_debug!(
             self,
             "New component: address = {:?}, state = {:?}",
-            component_address,
+            component_ref,
             data
         );
 
-        for vid in data.vaults {
+        for vault_id in data.vault_ids {
             let vault = self
                 .unclaimed_vaults
-                .remove(&vid)
-                .ok_or(RuntimeError::VaultNotFound(vid))?;
-            self.track.put_vault(component_address, vid, vault);
+                .remove(&vault_id)
+                .ok_or(RuntimeError::VaultNotFound(vault_id))?;
+            self.track.put_vault(component_ref, vault_id, vault);
         }
 
-        for mid in data.lazy_maps {
+        for lazy_map_id in data.lazy_map_ids {
             let unclaimed_lazy_map = self
                 .unclaimed_lazy_maps
-                .remove(&mid)
-                .ok_or(RuntimeError::LazyMapNotFound(mid))?;
-            self.move_lazy_map_into_component(unclaimed_lazy_map, mid, component_address);
+                .remove(&lazy_map_id)
+                .ok_or(RuntimeError::LazyMapNotFound(lazy_map_id))?;
+            self.move_lazy_map_into_component(unclaimed_lazy_map, lazy_map_id, component_ref);
         }
 
-        let component = Component::new(self.package()?, input.blueprint_name, data.raw);
-        self.track.put_component(component_address, component);
+        let component = Component::new(input.package_ref, input.blueprint_name, data.raw);
+        self.track.put_component(component_ref, component);
 
-        Ok(CreateComponentOutput { component_address })
+        Ok(CreateComponentOutput { component_ref })
     }
 
     fn handle_get_component_info(
         &mut self,
         input: GetComponentInfoInput,
     ) -> Result<GetComponentInfoOutput, RuntimeError> {
-        Self::expect_component_address(input.component_address)?;
-        // TODO: restrict access?
-
         let component = self
             .track
-            .get_component(input.component_address)
-            .ok_or(RuntimeError::ComponentNotFound(input.component_address))?;
+            .get_component(input.component_ref)
+            .ok_or(RuntimeError::ComponentNotFound(input.component_ref))?;
 
         Ok(GetComponentInfoOutput {
-            package_address: component.package_address(),
+            package_ref: component.package_ref(),
             blueprint_name: component.blueprint_name().to_owned(),
         })
     }
@@ -1072,22 +1089,22 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         _: GetComponentStateInput,
     ) -> Result<GetComponentStateOutput, RuntimeError> {
-        let component_address = match self.component_state {
+        let component_ref = match self.component_state {
             ComponentState::Empty => match self.vm.as_ref().unwrap().invocation.actor {
-                Actor::Component(component_address) => Ok(component_address),
+                Actor::Component(component_ref) => Ok(component_ref),
                 _ => Err(RuntimeError::IllegalSystemCall()),
             },
-            ComponentState::Loaded {
-                component_address, ..
-            } => Err(RuntimeError::ComponentAlreadyLoaded(component_address)),
+            ComponentState::Loaded { component_ref, .. } => {
+                Err(RuntimeError::ComponentAlreadyLoaded(component_ref))
+            }
             ComponentState::Saved => Err(RuntimeError::IllegalSystemCall()),
         }?;
 
-        let component = self.track.get_component(component_address).unwrap();
+        let component = self.track.get_component(component_ref).unwrap();
         let state = component.state();
         let component_data = Self::process_component_data(state).unwrap();
         self.component_state = ComponentState::Loaded {
-            component_address,
+            component_ref,
             component_data,
         };
 
@@ -1106,8 +1123,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             ComponentState::Saved => Err(RuntimeError::IllegalSystemCall()),
         }?
         .to_owned();
-        let component_address = match self.vm.as_ref().unwrap().invocation.actor {
-            Actor::Component(component_address) => Ok(component_address),
+        let component_ref = match self.vm.as_ref().unwrap().invocation.actor {
+            Actor::Component(component_ref) => Ok(component_ref),
             _ => Err(RuntimeError::IllegalSystemCall()),
         }
         .unwrap();
@@ -1116,36 +1133,37 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         re_debug!(self, "New component state: {:?}", new_state);
 
         // Only allow vaults to be added, never removed
-        let mut old_vaults: HashSet<Vid> = HashSet::from_iter(old_state.vaults.into_iter());
-        for vid in new_state.vaults {
-            if !old_vaults.remove(&vid) {
+        let mut old_vaults: HashSet<VaultId> = HashSet::from_iter(old_state.vault_ids.into_iter());
+        for vault_id in new_state.vault_ids {
+            if !old_vaults.remove(&vault_id) {
                 let vault = self
                     .unclaimed_vaults
-                    .remove(&vid)
-                    .ok_or(RuntimeError::VaultNotFound(vid))?;
-                self.track.put_vault(component_address, vid, vault);
+                    .remove(&vault_id)
+                    .ok_or(RuntimeError::VaultNotFound(vault_id))?;
+                self.track.put_vault(component_ref, vault_id, vault);
             }
         }
         old_vaults
             .into_iter()
-            .try_for_each(|vid| Err(RuntimeError::VaultRemoved(vid)))?;
+            .try_for_each(|vault_id| Err(RuntimeError::VaultRemoved(vault_id)))?;
 
         // Only allow lazy maps to be added, never removed
-        let mut old_lazy_maps: HashSet<Mid> = HashSet::from_iter(old_state.lazy_maps.into_iter());
-        for mid in new_state.lazy_maps {
-            if !old_lazy_maps.remove(&mid) {
+        let mut old_lazy_maps: HashSet<LazyMapId> =
+            HashSet::from_iter(old_state.lazy_map_ids.into_iter());
+        for lazy_map_id in new_state.lazy_map_ids {
+            if !old_lazy_maps.remove(&lazy_map_id) {
                 let unclaimed_lazy_map = self
                     .unclaimed_lazy_maps
-                    .remove(&mid)
-                    .ok_or(RuntimeError::LazyMapNotFound(mid))?;
-                self.move_lazy_map_into_component(unclaimed_lazy_map, mid, component_address);
+                    .remove(&lazy_map_id)
+                    .ok_or(RuntimeError::LazyMapNotFound(lazy_map_id))?;
+                self.move_lazy_map_into_component(unclaimed_lazy_map, lazy_map_id, component_ref);
             }
         }
         old_lazy_maps
             .into_iter()
-            .try_for_each(|mid| Err(RuntimeError::LazyMapRemoved(mid)))?;
+            .try_for_each(|lazy_map_id| Err(RuntimeError::LazyMapRemoved(lazy_map_id)))?;
 
-        let component = self.track.get_component_mut(component_address).unwrap();
+        let component = self.track.get_component_mut(component_ref).unwrap();
         component.set_state(new_state.raw);
 
         self.component_state = ComponentState::Saved;
@@ -1157,24 +1175,24 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         _input: CreateLazyMapInput,
     ) -> Result<CreateLazyMapOutput, RuntimeError> {
-        let mid = self.track.new_mid();
+        let lazy_map_id = self.track.new_lazy_map_id();
         self.unclaimed_lazy_maps.insert(
-            mid,
+            lazy_map_id,
             UnclaimedLazyMap {
-                lazy_map: LazyMap::new(self.package()?),
+                lazy_map: LazyMap::new(),
                 descendent_lazy_maps: HashMap::new(),
                 descendent_vaults: HashMap::new(),
             },
         );
 
-        Ok(CreateLazyMapOutput { mid })
+        Ok(CreateLazyMapOutput { lazy_map_id })
     }
 
     fn handle_get_lazy_map_entry(
         &mut self,
         input: GetLazyMapEntryInput,
     ) -> Result<GetLazyMapEntryOutput, RuntimeError> {
-        let (lazy_map, _) = self.get_local_lazy_map_mut(input.mid)?;
+        let (lazy_map, _) = self.get_local_lazy_map_mut(input.lazy_map_id)?;
         let value = lazy_map.get_entry(&input.key);
 
         Ok(GetLazyMapEntryOutput {
@@ -1190,84 +1208,87 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let new_entry_state = Self::process_map_data(&input.value)?;
         re_debug!(self, "Map entry: {} => {}", key, new_entry_state);
 
-        let (lazy_map, lazy_map_state) = self.get_local_lazy_map_mut(input.mid)?;
-        let (mut old_entry_vids, mut old_entry_mids) =
-            lazy_map
-                .get_entry(&key.raw)
-                .map_or((HashSet::new(), HashSet::new()), |e| {
-                    let data = Self::process_map_data(e).unwrap();
-                    let old_vaults = HashSet::from_iter(data.vaults.into_iter());
-                    let old_lazy_maps = HashSet::from_iter(data.lazy_maps.into_iter());
-                    (old_vaults, old_lazy_maps)
-                });
+        let (lazy_map, lazy_map_state) = self.get_local_lazy_map_mut(input.lazy_map_id)?;
+        let (mut old_entry_vault_ids, mut old_entry_lazy_map_ids) = lazy_map
+            .get_entry(&key.raw)
+            .map_or((HashSet::new(), HashSet::new()), |e| {
+                let data = Self::process_map_data(e).unwrap();
+                let old_vaults = HashSet::from_iter(data.vault_ids.into_iter());
+                let old_lazy_maps = HashSet::from_iter(data.lazy_map_ids.into_iter());
+                (old_vaults, old_lazy_maps)
+            });
         lazy_map.set_entry(key.raw, new_entry_state.raw);
 
         // Only allow vaults to be added, never removed
-        for vid in new_entry_state.vaults {
-            if !old_entry_vids.remove(&vid) {
+        for vault_id in new_entry_state.vault_ids {
+            if !old_entry_vault_ids.remove(&vault_id) {
                 let vault = self
                     .unclaimed_vaults
-                    .remove(&vid)
-                    .ok_or(RuntimeError::VaultNotFound(vid))?;
+                    .remove(&vault_id)
+                    .ok_or(RuntimeError::VaultNotFound(vault_id))?;
                 match lazy_map_state {
                     Uncommitted { root } => {
                         let unclaimed_lazy_map = self.unclaimed_lazy_maps.get_mut(&root).unwrap();
-                        unclaimed_lazy_map.descendent_vaults.insert(vid, vault);
+                        unclaimed_lazy_map.descendent_vaults.insert(vault_id, vault);
                     }
-                    Committed { component_address } => {
-                        self.track.put_vault(component_address, vid, vault);
+                    Committed { component_ref } => {
+                        self.track.put_vault(component_ref, vault_id, vault);
                     }
                 }
             }
         }
-        old_entry_vids
+        old_entry_vault_ids
             .into_iter()
-            .try_for_each(|vid| Err(RuntimeError::VaultRemoved(vid)))?;
+            .try_for_each(|vault_id| Err(RuntimeError::VaultRemoved(vault_id)))?;
 
         // Only allow lazy maps to be added, never removed
-        for mid in new_entry_state.lazy_maps {
-            if !old_entry_mids.remove(&mid) {
+        for lazy_map_id in new_entry_state.lazy_map_ids {
+            if !old_entry_lazy_map_ids.remove(&lazy_map_id) {
                 let child_lazy_map = self
                     .unclaimed_lazy_maps
-                    .remove(&mid)
-                    .ok_or(RuntimeError::LazyMapNotFound(mid))?;
+                    .remove(&lazy_map_id)
+                    .ok_or(RuntimeError::LazyMapNotFound(lazy_map_id))?;
 
                 match lazy_map_state {
                     Uncommitted { root } => {
                         let unclaimed_lazy_map = self.unclaimed_lazy_maps.get_mut(&root).unwrap();
-                        unclaimed_lazy_map.merge(child_lazy_map, mid);
+                        unclaimed_lazy_map.merge(child_lazy_map, lazy_map_id);
                     }
-                    Committed { component_address } => {
-                        self.move_lazy_map_into_component(child_lazy_map, mid, component_address);
+                    Committed { component_ref } => {
+                        self.move_lazy_map_into_component(
+                            child_lazy_map,
+                            lazy_map_id,
+                            component_ref,
+                        );
                     }
                 }
             }
         }
-        old_entry_mids
+        old_entry_lazy_map_ids
             .into_iter()
-            .try_for_each(|mid| Err(RuntimeError::LazyMapRemoved(mid)))?;
+            .try_for_each(|lazy_map_id| Err(RuntimeError::LazyMapRemoved(lazy_map_id)))?;
 
         Ok(PutLazyMapEntryOutput {})
     }
 
     fn allocate_resource(
         &mut self,
-        resource_address: Address,
-        new_supply: NewSupply,
-    ) -> Result<Supply, RuntimeError> {
+        resource_def_ref: ResourceDefRef,
+        new_supply: Supply,
+    ) -> Result<Resource, RuntimeError> {
         match new_supply {
-            NewSupply::Fungible { amount } => Ok(Supply::Fungible { amount }),
-            NewSupply::NonFungible { entries } => {
+            Supply::Fungible { amount } => Ok(Resource::Fungible { amount }),
+            Supply::NonFungible { entries } => {
                 let mut keys = BTreeSet::new();
 
                 for (key, data) in entries {
                     if self
                         .track
-                        .get_non_fungible(resource_address, &key)
+                        .get_non_fungible(resource_def_ref, &key)
                         .is_some()
                     {
                         return Err(RuntimeError::NonFungibleAlreadyExists(
-                            resource_address,
+                            resource_def_ref,
                             key.clone(),
                         ));
                     }
@@ -1276,14 +1297,14 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     let mutable_data = self.process_non_fungible_data(&data.1)?;
 
                     self.track.put_non_fungible(
-                        resource_address,
+                        resource_def_ref,
                         &key,
                         NonFungible::new(immutable_data.raw, mutable_data.raw),
                     );
                     keys.insert(key.clone());
                 }
 
-                Ok(Supply::NonFungible { keys })
+                Ok(Resource::NonFungible { keys })
             }
         }
     }
@@ -1292,16 +1313,12 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         input: CreateResourceInput,
     ) -> Result<CreateResourceOutput, RuntimeError> {
-        for (address, _) in &input.authorities {
-            Self::expect_resource_address(*address)?;
-        }
-
         // instantiate resource definition
-        let resource_address = self.track.new_resource_address();
-        if self.track.get_resource_def(resource_address).is_some() {
-            return Err(RuntimeError::ResourceDefAlreadyExists(resource_address));
+        let resource_def_ref = self.track.new_resource_def_ref();
+        if self.track.get_resource_def(resource_def_ref).is_some() {
+            return Err(RuntimeError::ResourceDefAlreadyExists(resource_def_ref));
         }
-        re_debug!(self, "New resource definition: {:?}", resource_address);
+        re_debug!(self, "New resource definition: {:?}", resource_def_ref);
         let definition = ResourceDef::new(
             input.resource_type,
             input.metadata,
@@ -1311,23 +1328,23 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             &input.initial_supply,
         )
         .map_err(RuntimeError::ResourceDefError)?;
-        self.track.put_resource_def(resource_address, definition);
+        self.track.put_resource_def(resource_def_ref, definition);
 
         // allocate supply
-        let bucket = if let Some(initial_supply) = input.initial_supply {
-            let supply = self.allocate_resource(resource_address, initial_supply)?;
+        let bucket_id = if let Some(initial_supply) = input.initial_supply {
+            let supply = self.allocate_resource(resource_def_ref, initial_supply)?;
 
-            let bucket = Bucket::new(resource_address, input.resource_type, supply);
-            let bid = self.track.new_bid();
-            self.buckets.insert(bid, bucket);
-            Some(bid)
+            let bucket = Bucket::new(resource_def_ref, input.resource_type, supply);
+            let bucket_id = self.track.new_bucket_id();
+            self.buckets.insert(bucket_id, bucket);
+            Some(bucket_id)
         } else {
             None
         };
 
         Ok(CreateResourceOutput {
-            resource_address,
-            bucket,
+            resource_def_ref,
+            bucket_id,
         })
     }
 
@@ -1335,12 +1352,10 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         input: GetResourceMetadataInput,
     ) -> Result<GetResourceMetadataOutput, RuntimeError> {
-        Self::expect_resource_address(input.resource_address)?;
-
         let resource_def = self
             .track
-            .get_resource_def(input.resource_address)
-            .ok_or(RuntimeError::ResourceDefNotFound(input.resource_address))?;
+            .get_resource_def(input.resource_def_ref)
+            .ok_or(RuntimeError::ResourceDefNotFound(input.resource_def_ref))?;
 
         Ok(GetResourceMetadataOutput {
             metadata: resource_def.metadata().clone(),
@@ -1351,12 +1366,10 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         input: GetResourceTotalSupplyInput,
     ) -> Result<GetResourceTotalSupplyOutput, RuntimeError> {
-        Self::expect_resource_address(input.resource_address)?;
-
         let resource_def = self
             .track
-            .get_resource_def(input.resource_address)
-            .ok_or(RuntimeError::ResourceDefNotFound(input.resource_address))?;
+            .get_resource_def(input.resource_def_ref)
+            .ok_or(RuntimeError::ResourceDefNotFound(input.resource_def_ref))?;
 
         Ok(GetResourceTotalSupplyOutput {
             total_supply: resource_def.total_supply(),
@@ -1367,12 +1380,10 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         input: GetResourceFlagsInput,
     ) -> Result<GetResourceFlagsOutput, RuntimeError> {
-        Self::expect_resource_address(input.resource_address)?;
-
         let resource_def = self
             .track
-            .get_resource_def(input.resource_address)
-            .ok_or(RuntimeError::ResourceDefNotFound(input.resource_address))?;
+            .get_resource_def(input.resource_def_ref)
+            .ok_or(RuntimeError::ResourceDefNotFound(input.resource_def_ref))?;
 
         Ok(GetResourceFlagsOutput {
             flags: resource_def.flags(),
@@ -1383,13 +1394,12 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         input: UpdateResourceFlagsInput,
     ) -> Result<UpdateResourceFlagsOutput, RuntimeError> {
-        Self::expect_resource_address(input.resource_address)?;
         let badge = self.check_badge(Some(input.auth))?;
 
         let resource_def = self
             .track
-            .get_resource_def_mut(input.resource_address)
-            .ok_or(RuntimeError::ResourceDefNotFound(input.resource_address))?;
+            .get_resource_def_mut(input.resource_def_ref)
+            .ok_or(RuntimeError::ResourceDefNotFound(input.resource_def_ref))?;
         resource_def
             .update_flags(input.new_flags, badge)
             .map_err(RuntimeError::ResourceDefError)?;
@@ -1401,12 +1411,10 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         input: GetResourceMutableFlagsInput,
     ) -> Result<GetResourceMutableFlagsOutput, RuntimeError> {
-        Self::expect_resource_address(input.resource_address)?;
-
         let resource_def = self
             .track
-            .get_resource_def(input.resource_address)
-            .ok_or(RuntimeError::ResourceDefNotFound(input.resource_address))?;
+            .get_resource_def(input.resource_def_ref)
+            .ok_or(RuntimeError::ResourceDefNotFound(input.resource_def_ref))?;
 
         Ok(GetResourceMutableFlagsOutput {
             mutable_flags: resource_def.mutable_flags(),
@@ -1417,13 +1425,12 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         input: UpdateResourceMutableFlagsInput,
     ) -> Result<UpdateResourceMutableFlagsOutput, RuntimeError> {
-        Self::expect_resource_address(input.resource_address)?;
         let badge = self.check_badge(Some(input.auth))?;
 
         let resource_def = self
             .track
-            .get_resource_def_mut(input.resource_address)
-            .ok_or(RuntimeError::ResourceDefNotFound(input.resource_address))?;
+            .get_resource_def_mut(input.resource_def_ref)
+            .ok_or(RuntimeError::ResourceDefNotFound(input.resource_def_ref))?;
         resource_def
             .update_mutable_flags(input.new_mutable_flags, badge)
             .map_err(RuntimeError::ResourceDefError)?;
@@ -1435,12 +1442,10 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         input: GetResourceTypeInput,
     ) -> Result<GetResourceTypeOutput, RuntimeError> {
-        Self::expect_resource_address(input.resource_address)?;
-
         let resource_def = self
             .track
-            .get_resource_def(input.resource_address)
-            .ok_or(RuntimeError::ResourceDefNotFound(input.resource_address))?;
+            .get_resource_def(input.resource_def_ref)
+            .ok_or(RuntimeError::ResourceDefNotFound(input.resource_def_ref))?;
 
         Ok(GetResourceTypeOutput {
             resource_type: resource_def.resource_type(),
@@ -1451,27 +1456,30 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         input: MintResourceInput,
     ) -> Result<MintResourceOutput, RuntimeError> {
-        Self::expect_resource_address(input.resource_address)?;
         let badge = self.check_badge(Some(input.auth))?;
 
         // allocate resource
-        let supply = self.allocate_resource(input.resource_address, input.new_supply)?;
+        let resource = self.allocate_resource(input.resource_def_ref, input.new_supply)?;
 
         // mint resource
         let resource_def = self
             .track
-            .get_resource_def_mut(input.resource_address)
-            .ok_or(RuntimeError::ResourceDefNotFound(input.resource_address))?;
+            .get_resource_def_mut(input.resource_def_ref)
+            .ok_or(RuntimeError::ResourceDefNotFound(input.resource_def_ref))?;
         resource_def
-            .mint(&supply, badge)
+            .mint(&resource, badge)
             .map_err(RuntimeError::ResourceDefError)?;
 
         // wrap resource into a bucket
-        let bucket = Bucket::new(input.resource_address, resource_def.resource_type(), supply);
-        let bid = self.track.new_bid();
-        self.buckets.insert(bid, bucket);
+        let bucket = Bucket::new(
+            input.resource_def_ref,
+            resource_def.resource_type(),
+            resource,
+        );
+        let bucket_id = self.track.new_bucket_id();
+        self.buckets.insert(bucket_id, bucket);
 
-        Ok(MintResourceOutput { bid })
+        Ok(MintResourceOutput { bucket_id })
     }
 
     fn handle_burn_resource(
@@ -1482,16 +1490,16 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
         let bucket = self
             .buckets
-            .remove(&input.bid)
-            .ok_or(RuntimeError::BucketNotFound(input.bid))?;
+            .remove(&input.bucket_id)
+            .ok_or(RuntimeError::BucketNotFound(input.bucket_id))?;
 
         let resource_def = self
             .track
-            .get_resource_def_mut(bucket.resource_address())
-            .ok_or(RuntimeError::ResourceDefNotFound(bucket.resource_address()))?;
+            .get_resource_def_mut(bucket.resource_def_ref())
+            .ok_or(RuntimeError::ResourceDefNotFound(bucket.resource_def_ref()))?;
 
         resource_def
-            .burn(bucket.supply(), badge)
+            .burn(bucket.resource(), badge)
             .map_err(RuntimeError::ResourceDefError)?;
         Ok(BurnResourceOutput {})
     }
@@ -1505,17 +1513,17 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         // obtain authorization from resource definition
         let resource_def = self
             .track
-            .get_resource_def(input.resource_address)
-            .ok_or(RuntimeError::ResourceDefNotFound(input.resource_address))?;
+            .get_resource_def(input.resource_def_ref)
+            .ok_or(RuntimeError::ResourceDefNotFound(input.resource_def_ref))?;
         resource_def
             .check_update_non_fungible_mutable_data_auth(badge)
             .map_err(RuntimeError::ResourceDefError)?;
         // update state
         let data = self.process_non_fungible_data(&input.new_mutable_data)?;
         self.track
-            .get_non_fungible_mut(input.resource_address, &input.key)
+            .get_non_fungible_mut(input.resource_def_ref, &input.key)
             .ok_or(RuntimeError::NonFungibleNotFound(
-                input.resource_address,
+                input.resource_def_ref,
                 input.key.clone(),
             ))?
             .set_mutable_data(data.raw);
@@ -1529,9 +1537,9 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     ) -> Result<GetNonFungibleDataOutput, RuntimeError> {
         let non_fungible = self
             .track
-            .get_non_fungible(input.resource_address, &input.key)
+            .get_non_fungible(input.resource_def_ref, &input.key)
             .ok_or(RuntimeError::NonFungibleNotFound(
-                input.resource_address,
+                input.resource_def_ref,
                 input.key.clone(),
             ))?;
 
@@ -1549,8 +1557,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
         let resource_def = self
             .track
-            .get_resource_def_mut(input.resource_address)
-            .ok_or(RuntimeError::ResourceDefNotFound(input.resource_address))?;
+            .get_resource_def_mut(input.resource_def_ref)
+            .ok_or(RuntimeError::ResourceDefNotFound(input.resource_def_ref))?;
         resource_def
             .update_metadata(input.new_metadata, badge)
             .map_err(RuntimeError::ResourceDefError)?;
@@ -1564,77 +1572,79 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     ) -> Result<CreateEmptyVaultOutput, RuntimeError> {
         let definition = self
             .track
-            .get_resource_def(input.resource_address)
-            .ok_or(RuntimeError::ResourceDefNotFound(input.resource_address))?;
+            .get_resource_def(input.resource_def_ref)
+            .ok_or(RuntimeError::ResourceDefNotFound(input.resource_def_ref))?;
 
-        let new_vault = Vault::new(
-            Bucket::new(
-                input.resource_address,
-                definition.resource_type(),
-                match definition.resource_type() {
-                    ResourceType::Fungible { .. } => Supply::Fungible {
-                        amount: Decimal::zero(),
-                    },
-                    ResourceType::NonFungible { .. } => Supply::NonFungible {
-                        keys: BTreeSet::new(),
-                    },
+        let new_vault = Vault::new(Bucket::new(
+            input.resource_def_ref,
+            definition.resource_type(),
+            match definition.resource_type() {
+                ResourceType::Fungible { .. } => Resource::Fungible {
+                    amount: Decimal::zero(),
                 },
-            ),
-            self.package()?,
-        );
-        let vid = self.track.new_vid();
-        self.unclaimed_vaults.insert(vid, new_vault);
+                ResourceType::NonFungible { .. } => Resource::NonFungible {
+                    keys: BTreeSet::new(),
+                },
+            },
+        ));
+        let vault_id = self.track.new_vault_id();
+        self.unclaimed_vaults.insert(vault_id, new_vault);
 
-        Ok(CreateEmptyVaultOutput { vid })
+        Ok(CreateEmptyVaultOutput { vault_id })
     }
 
     fn get_local_lazy_map_mut(
         &mut self,
-        mid: Mid,
+        lazy_map_id: LazyMapId,
     ) -> Result<(&mut LazyMap, LazyMapState), RuntimeError> {
         // TODO: Optimize to prevent iteration
         for (root, unclaimed) in self.unclaimed_lazy_maps.iter_mut() {
-            if mid.eq(root) {
+            if lazy_map_id.eq(root) {
                 return Ok((&mut unclaimed.lazy_map, Uncommitted { root: root.clone() }));
             }
 
-            let lazy_map = unclaimed.descendent_lazy_maps.get_mut(&mid);
+            let lazy_map = unclaimed.descendent_lazy_maps.get_mut(&lazy_map_id);
             if lazy_map.is_some() {
                 return Ok((lazy_map.unwrap(), Uncommitted { root: root.clone() }));
             }
         }
 
         match self.vm.as_ref().unwrap().invocation.actor {
-            Actor::Component(component_address) => {
-                match self.track.get_lazy_map_mut(&component_address, &mid) {
-                    Some(lazy_map) => Ok((lazy_map, Committed { component_address })),
-                    None => Err(RuntimeError::LazyMapNotFound(mid)),
+            Actor::Component(component_ref) => {
+                match self.track.get_lazy_map_mut(component_ref, lazy_map_id) {
+                    Some(lazy_map) => Ok((
+                        lazy_map,
+                        Committed {
+                            component_ref: component_ref,
+                        },
+                    )),
+                    None => Err(RuntimeError::LazyMapNotFound(lazy_map_id)),
                 }
             }
-            _ => Err(RuntimeError::LazyMapNotFound(mid)),
+            _ => Err(RuntimeError::LazyMapNotFound(lazy_map_id)),
         }
     }
 
-    fn get_local_vault(&mut self, vid: Vid) -> Result<&mut Vault, RuntimeError> {
-        match self.unclaimed_vaults.get_mut(&vid) {
+    fn get_local_vault(&mut self, vault_id: VaultId) -> Result<&mut Vault, RuntimeError> {
+        match self.unclaimed_vaults.get_mut(&vault_id) {
             Some(vault) => Ok(vault),
             None => {
                 // TODO: Optimize to prevent iteration
                 for (_, unclaimed) in self.unclaimed_lazy_maps.iter_mut() {
-                    let vault = unclaimed.descendent_vaults.get_mut(&vid);
+                    let vault = unclaimed.descendent_vaults.get_mut(&vault_id);
                     if vault.is_some() {
                         return Ok(vault.unwrap());
                     }
                 }
 
                 match self.vm.as_ref().unwrap().invocation.actor {
-                    Actor::Component(component_address) => {
-                        match self.track.get_vault_mut(&component_address, &vid) {
+                    Actor::Component(component_ref) => {
+                        match self.track.get_vault_mut(component_ref, vault_id) {
                             Some(vault) => Ok(vault),
-                            None => Err(RuntimeError::VaultNotFound(vid)),
+                            None => Err(RuntimeError::VaultNotFound(vault_id)),
                         }
                     }
-                    _ => Err(RuntimeError::VaultNotFound(vid)),
+                    _ => Err(RuntimeError::VaultNotFound(vault_id)),
                 }
             }
         }
@@ -1648,10 +1658,10 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
         let bucket = self
             .buckets
-            .remove(&input.bid)
-            .ok_or(RuntimeError::BucketNotFound(input.bid))?;
+            .remove(&input.bucket_id)
+            .ok_or(RuntimeError::BucketNotFound(input.bucket_id))?;
 
-        self.get_local_vault(input.vid)?
+        self.get_local_vault(input.vault_id)?
             .put(bucket)
             .map_err(RuntimeError::VaultError)?;
 
@@ -1660,15 +1670,15 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
     fn check_take_from_vault_auth(
         &mut self,
-        vid: Vid,
-        badge: Option<Address>,
+        vault_id: VaultId,
+        badge: Option<ResourceDefRef>,
     ) -> Result<(), RuntimeError> {
-        let resource_address = self.get_local_vault(vid)?.resource_address();
+        let resource_def_ref = self.get_local_vault(vault_id)?.resource_def_ref();
 
         let resource_def = self
             .track
-            .get_resource_def(resource_address)
-            .ok_or(RuntimeError::ResourceDefNotFound(resource_address))?;
+            .get_resource_def(resource_def_ref)
+            .ok_or(RuntimeError::ResourceDefNotFound(resource_def_ref))?;
         resource_def
             .check_take_from_vault_auth(badge)
             .map_err(RuntimeError::ResourceDefError)
@@ -1681,17 +1691,17 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         // TODO: restrict access
 
         let badge = self.check_badge(input.auth)?;
-        self.check_take_from_vault_auth(input.vid.clone(), badge)?;
+        self.check_take_from_vault_auth(input.vault_id.clone(), badge)?;
 
         let new_bucket = self
-            .get_local_vault(input.vid)?
+            .get_local_vault(input.vault_id)?
             .take(input.amount)
             .map_err(RuntimeError::VaultError)?;
 
-        let bid = self.track.new_bid();
-        self.buckets.insert(bid, new_bucket);
+        let bucket_id = self.track.new_bucket_id();
+        self.buckets.insert(bucket_id, new_bucket);
 
-        Ok(TakeFromVaultOutput { bid })
+        Ok(TakeFromVaultOutput { bucket_id })
     }
 
     fn handle_take_non_fungible_from_vault(
@@ -1701,24 +1711,24 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         // TODO: restrict access
 
         let badge = self.check_badge(input.auth)?;
-        self.check_take_from_vault_auth(input.vid.clone(), badge)?;
+        self.check_take_from_vault_auth(input.vault_id.clone(), badge)?;
 
         let new_bucket = self
-            .get_local_vault(input.vid)?
+            .get_local_vault(input.vault_id)?
             .take_non_fungible(&input.key)
             .map_err(RuntimeError::VaultError)?;
 
-        let bid = self.track.new_bid();
-        self.buckets.insert(bid, new_bucket);
+        let bucket_id = self.track.new_bucket_id();
+        self.buckets.insert(bucket_id, new_bucket);
 
-        Ok(TakeNonFungibleFromVaultOutput { bid })
+        Ok(TakeNonFungibleFromVaultOutput { bucket_id })
     }
 
     fn handle_get_non_fungible_keys_in_vault(
         &mut self,
         input: GetNonFungibleKeysInVaultInput,
     ) -> Result<GetNonFungibleKeysInVaultOutput, RuntimeError> {
-        let vault = self.get_local_vault(input.vid)?;
+        let vault = self.get_local_vault(input.vault_id)?;
         let keys = vault
             .get_non_fungible_ids()
             .map_err(RuntimeError::VaultError)?;
@@ -1730,21 +1740,21 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         input: GetVaultDecimalInput,
     ) -> Result<GetVaultDecimalOutput, RuntimeError> {
-        let vault = self.get_local_vault(input.vid)?;
+        let vault = self.get_local_vault(input.vault_id)?;
 
         Ok(GetVaultDecimalOutput {
             amount: vault.amount(),
         })
     }
 
-    fn handle_get_vault_resource_address(
+    fn handle_get_vault_resource_def(
         &mut self,
-        input: GetVaultResourceAddressInput,
-    ) -> Result<GetVaultResourceAddressOutput, RuntimeError> {
-        let vault = self.get_local_vault(input.vid)?;
+        input: GetVaultResourceDefInput,
+    ) -> Result<GetVaultResourceDefOutput, RuntimeError> {
+        let vault = self.get_local_vault(input.vault_id)?;
 
-        Ok(GetVaultResourceAddressOutput {
-            resource_address: vault.resource_address(),
+        Ok(GetVaultResourceDefOutput {
+            resource_def_ref: vault.resource_def_ref(),
         })
     }
 
@@ -1754,25 +1764,25 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     ) -> Result<CreateEmptyBucketOutput, RuntimeError> {
         let definition = self
             .track
-            .get_resource_def(input.resource_address)
-            .ok_or(RuntimeError::ResourceDefNotFound(input.resource_address))?;
+            .get_resource_def(input.resource_def_ref)
+            .ok_or(RuntimeError::ResourceDefNotFound(input.resource_def_ref))?;
 
         let new_bucket = Bucket::new(
-            input.resource_address,
+            input.resource_def_ref,
             definition.resource_type(),
             match definition.resource_type() {
-                ResourceType::Fungible { .. } => Supply::Fungible {
+                ResourceType::Fungible { .. } => Resource::Fungible {
                     amount: Decimal::zero(),
                 },
-                ResourceType::NonFungible { .. } => Supply::NonFungible {
+                ResourceType::NonFungible { .. } => Resource::NonFungible {
                     keys: BTreeSet::new(),
                 },
             },
         );
-        let bid = self.track.new_bid();
-        self.buckets.insert(bid, new_bucket);
+        let bucket_id = self.track.new_bucket_id();
+        self.buckets.insert(bucket_id, new_bucket);
 
-        Ok(CreateEmptyBucketOutput { bid })
+        Ok(CreateEmptyBucketOutput { bucket_id })
     }
 
     fn handle_put_into_bucket(
@@ -1785,8 +1795,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .ok_or(RuntimeError::BucketNotFound(input.other))?;
 
         self.buckets
-            .get_mut(&input.bid)
-            .ok_or(RuntimeError::BucketNotFound(input.bid))?
+            .get_mut(&input.bucket_id)
+            .ok_or(RuntimeError::BucketNotFound(input.bucket_id))?
             .put(other)
             .map_err(RuntimeError::BucketError)?;
 
@@ -1799,14 +1809,14 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     ) -> Result<TakeFromBucketOutput, RuntimeError> {
         let new_bucket = self
             .buckets
-            .get_mut(&input.bid)
-            .ok_or(RuntimeError::BucketNotFound(input.bid))?
+            .get_mut(&input.bucket_id)
+            .ok_or(RuntimeError::BucketNotFound(input.bucket_id))?
             .take(input.amount)
             .map_err(RuntimeError::BucketError)?;
-        let bid = self.track.new_bid();
-        self.buckets.insert(bid, new_bucket);
+        let bucket_id = self.track.new_bucket_id();
+        self.buckets.insert(bucket_id, new_bucket);
 
-        Ok(TakeFromBucketOutput { bid })
+        Ok(TakeFromBucketOutput { bucket_id })
     }
 
     fn handle_get_bucket_amount(
@@ -1815,34 +1825,34 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     ) -> Result<GetBucketDecimalOutput, RuntimeError> {
         let amount = self
             .buckets
-            .get(&input.bid)
+            .get(&input.bucket_id)
             .map(|b| b.amount())
             .or_else(|| {
                 self.buckets_locked
-                    .get(&input.bid)
+                    .get(&input.bucket_id)
                     .map(|x| x.bucket().amount())
             })
-            .ok_or(RuntimeError::BucketNotFound(input.bid))?;
+            .ok_or(RuntimeError::BucketNotFound(input.bucket_id))?;
 
         Ok(GetBucketDecimalOutput { amount })
     }
 
-    fn handle_get_bucket_resource_address(
+    fn handle_get_bucket_resource_def(
         &mut self,
-        input: GetBucketResourceAddressInput,
-    ) -> Result<GetBucketResourceAddressOutput, RuntimeError> {
-        let resource_address = self
+        input: GetBucketResourceDefInput,
+    ) -> Result<GetBucketResourceDefOutput, RuntimeError> {
+        let resource_def_ref = self
             .buckets
-            .get(&input.bid)
-            .map(|b| b.resource_address())
+            .get(&input.bucket_id)
+            .map(|b| b.resource_def_ref())
             .or_else(|| {
                 self.buckets_locked
-                    .get(&input.bid)
-                    .map(|x| x.bucket().resource_address())
+                    .get(&input.bucket_id)
+                    .map(|x| x.bucket().resource_def_ref())
             })
-            .ok_or(RuntimeError::BucketNotFound(input.bid))?;
+            .ok_or(RuntimeError::BucketNotFound(input.bucket_id))?;
 
-        Ok(GetBucketResourceAddressOutput { resource_address })
+        Ok(GetBucketResourceDefOutput { resource_def_ref })
     }
 
     fn handle_take_non_fungible_from_bucket(
@@ -1851,14 +1861,14 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     ) -> Result<TakeNonFungibleFromBucketOutput, RuntimeError> {
         let new_bucket = self
             .buckets
-            .get_mut(&input.bid)
-            .ok_or(RuntimeError::BucketNotFound(input.bid))?
+            .get_mut(&input.bucket_id)
+            .ok_or(RuntimeError::BucketNotFound(input.bucket_id))?
             .take_non_fungible(&input.key)
             .map_err(RuntimeError::BucketError)?;
-        let bid = self.track.new_bid();
-        self.buckets.insert(bid, new_bucket);
+        let bucket_id = self.track.new_bucket_id();
+        self.buckets.insert(bucket_id, new_bucket);
 
-        Ok(TakeNonFungibleFromBucketOutput { bid })
+        Ok(TakeNonFungibleFromBucketOutput { bucket_id })
     }
 
     fn handle_get_non_fungible_keys_in_bucket(
@@ -1867,8 +1877,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     ) -> Result<GetNonFungibleKeysInBucketOutput, RuntimeError> {
         let bucket = self
             .buckets
-            .get(&input.bid)
-            .ok_or(RuntimeError::BucketNotFound(input.bid))?;
+            .get(&input.bucket_id)
+            .ok_or(RuntimeError::BucketNotFound(input.bucket_id))?;
 
         Ok(GetNonFungibleKeysInBucketOutput {
             keys: bucket
@@ -1881,54 +1891,60 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         input: CreateBucketRefInput,
     ) -> Result<CreateBucketRefOutput, RuntimeError> {
-        let bid = input.bid;
-        let rid = self.track.new_rid();
-        re_debug!(self, "Borrowing: bid = {:?}, rid = {:?}", bid, rid);
+        let bucket_id = input.bucket_id;
+        let bucket_ref_id = self.track.new_bucket_ref_id();
+        re_debug!(
+            self,
+            "Borrowing: bucket_id = {:?}, bucket_ref_id = {:?}",
+            bucket_id,
+            bucket_ref_id
+        );
 
-        match self.buckets_locked.get_mut(&bid) {
+        match self.buckets_locked.get_mut(&bucket_id) {
             Some(bucket_rc) => {
                 // re-borrow
-                self.bucket_refs.insert(rid, bucket_rc.clone());
+                self.bucket_refs.insert(bucket_ref_id, bucket_rc.clone());
             }
             None => {
                 // first time borrow
                 let bucket = BucketRef::new(LockedBucket::new(
-                    bid,
+                    bucket_id,
                     self.buckets
-                        .remove(&bid)
-                        .ok_or(RuntimeError::BucketNotFound(bid))?,
+                        .remove(&bucket_id)
+                        .ok_or(RuntimeError::BucketNotFound(bucket_id))?,
                 ));
-                self.buckets_locked.insert(bid, bucket.clone());
-                self.bucket_refs.insert(rid, bucket);
+                self.buckets_locked.insert(bucket_id, bucket.clone());
+                self.bucket_refs.insert(bucket_ref_id, bucket);
             }
         }
 
-        Ok(CreateBucketRefOutput { rid })
+        Ok(CreateBucketRefOutput { bucket_ref_id })
     }
 
     fn handle_drop_bucket_ref(
         &mut self,
         input: DropBucketRefInput,
     ) -> Result<DropBucketRefOutput, RuntimeError> {
-        let rid = input.rid;
+        let bucket_ref_id = input.bucket_ref_id;
 
-        let (count, bid) = {
+        let (count, bucket_id) = {
             let bucket_ref = self
                 .bucket_refs
-                .remove(&rid)
-                .ok_or(RuntimeError::BucketRefNotFound(rid))?;
+                .remove(&bucket_ref_id)
+                .ok_or(RuntimeError::BucketRefNotFound(bucket_ref_id))?;
             re_debug!(
                 self,
-                "Dropping bucket ref: rid = {:?}, bucket = {:?}",
-                rid,
+                "Dropping bucket ref: bucket_ref_id = {:?}, bucket = {:?}",
+                bucket_ref_id,
                 bucket_ref
             );
             (Rc::strong_count(&bucket_ref) - 1, bucket_ref.bucket_id())
         };
 
         if count == 1 {
-            if let Some(b) = self.buckets_locked.remove(&bid) {
-                self.buckets.insert(bid, Rc::try_unwrap(b).unwrap().into());
+            if let Some(b) = self.buckets_locked.remove(&bucket_id) {
+                self.buckets
+                    .insert(bucket_id, Rc::try_unwrap(b).unwrap().into());
             }
         }
 
@@ -1941,8 +1957,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     ) -> Result<GetBucketRefDecimalOutput, RuntimeError> {
         let bucket_ref = self
             .bucket_refs
-            .get(&input.rid)
-            .ok_or(RuntimeError::BucketRefNotFound(input.rid))?;
+            .get(&input.bucket_ref_id)
+            .ok_or(RuntimeError::BucketRefNotFound(input.bucket_ref_id))?;
 
         Ok(GetBucketRefDecimalOutput {
             amount: bucket_ref.bucket().amount(),
@@ -1951,15 +1967,15 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
     fn handle_get_bucket_ref_resource_def(
         &mut self,
-        input: GetBucketRefResourceAddressInput,
-    ) -> Result<GetBucketRefResourceAddressOutput, RuntimeError> {
+        input: GetBucketRefResourceDefInput,
+    ) -> Result<GetBucketRefResourceDefOutput, RuntimeError> {
         let bucket_ref = self
             .bucket_refs
-            .get(&input.rid)
-            .ok_or(RuntimeError::BucketRefNotFound(input.rid))?;
+            .get(&input.bucket_ref_id)
+            .ok_or(RuntimeError::BucketRefNotFound(input.bucket_ref_id))?;
 
-        Ok(GetBucketRefResourceAddressOutput {
-            resource_address: bucket_ref.bucket().resource_address(),
+        Ok(GetBucketRefResourceDefOutput {
+            resource_def_ref: bucket_ref.bucket().resource_def_ref(),
         })
     }
 
@@ -1969,8 +1985,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     ) -> Result<GetNonFungibleKeysInBucketRefOutput, RuntimeError> {
         let bucket_ref = self
             .bucket_refs
-            .get(&input.rid)
-            .ok_or(RuntimeError::BucketRefNotFound(input.rid))?;
+            .get(&input.bucket_ref_id)
+            .ok_or(RuntimeError::BucketRefNotFound(input.bucket_ref_id))?;
 
         Ok(GetNonFungibleKeysInBucketRefOutput {
             keys: bucket_ref
@@ -1986,35 +2002,28 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     ) -> Result<CloneBucketRefOutput, RuntimeError> {
         let bucket_ref = self
             .bucket_refs
-            .get(&input.rid)
-            .ok_or(RuntimeError::BucketRefNotFound(input.rid))?
+            .get(&input.bucket_ref_id)
+            .ok_or(RuntimeError::BucketRefNotFound(input.bucket_ref_id))?
             .clone();
 
-        let new_rid = self.track.new_rid();
+        let new_bucket_ref_id = self.track.new_bucket_ref_id();
         re_debug!(
             self,
-            "Cloning: rid = {:?}, new rid = {:?}",
-            input.rid,
-            new_rid
+            "Cloning: bucket_ref_id = {:?}, new bucket_ref_id = {:?}",
+            input.bucket_ref_id,
+            new_bucket_ref_id
         );
 
-        self.bucket_refs.insert(new_rid, bucket_ref);
-        Ok(CloneBucketRefOutput { rid: new_rid })
+        self.bucket_refs.insert(new_bucket_ref_id, bucket_ref);
+        Ok(CloneBucketRefOutput {
+            bucket_ref_id: new_bucket_ref_id,
+        })
     }
 
     fn handle_emit_log(&mut self, input: EmitLogInput) -> Result<EmitLogOutput, RuntimeError> {
         self.track.add_log(input.level, input.message);
 
         Ok(EmitLogOutput {})
-    }
-
-    fn handle_get_package_address(
-        &mut self,
-        _input: GetPackageAddressInput,
-    ) -> Result<GetPackageAddressOutput, RuntimeError> {
-        Ok(GetPackageAddressOutput {
-            package_address: self.package()?,
-        })
     }
 
     fn handle_get_call_data(
@@ -2116,8 +2125,8 @@ impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
                     PUT_INTO_VAULT => self.handle(args, Self::handle_put_into_vault),
                     TAKE_FROM_VAULT => self.handle(args, Self::handle_take_from_vault),
                     GET_VAULT_AMOUNT => self.handle(args, Self::handle_get_vault_amount),
-                    GET_VAULT_RESOURCE_ADDRESS => {
-                        self.handle(args, Self::handle_get_vault_resource_address)
+                    GET_VAULT_RESOURCE_DEF => {
+                        self.handle(args, Self::handle_get_vault_resource_def)
                     }
                     TAKE_NON_FUNGIBLE_FROM_VAULT => {
                         self.handle(args, Self::handle_take_non_fungible_from_vault)
@@ -2130,8 +2139,8 @@ impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
                     PUT_INTO_BUCKET => self.handle(args, Self::handle_put_into_bucket),
                     TAKE_FROM_BUCKET => self.handle(args, Self::handle_take_from_bucket),
                     GET_BUCKET_AMOUNT => self.handle(args, Self::handle_get_bucket_amount),
-                    GET_BUCKET_RESOURCE_ADDRESS => {
-                        self.handle(args, Self::handle_get_bucket_resource_address)
+                    GET_BUCKET_RESOURCE_DEF => {
+                        self.handle(args, Self::handle_get_bucket_resource_def)
                     }
                     TAKE_NON_FUNGIBLE_FROM_BUCKET => {
                         self.handle(args, Self::handle_take_non_fungible_from_bucket)
@@ -2152,7 +2161,6 @@ impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
                     CLONE_BUCKET_REF => self.handle(args, Self::handle_clone_bucket_ref),
 
                     EMIT_LOG => self.handle(args, Self::handle_emit_log),
-                    GET_PACKAGE_ADDRESS => self.handle(args, Self::handle_get_package_address),
                     GET_CALL_DATA => self.handle(args, Self::handle_get_call_data),
                     GET_TRANSACTION_HASH => self.handle(args, Self::handle_get_transaction_hash),
                     GET_CURRENT_EPOCH => self.handle(args, Self::handle_get_current_epoch),

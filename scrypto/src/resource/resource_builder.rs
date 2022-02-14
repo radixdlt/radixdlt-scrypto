@@ -65,8 +65,8 @@ impl ResourceBuilder {
     }
 
     /// Adds a badge for authorization.
-    pub fn badge(&mut self, badge: &ResourceDefRef, permissions: u64) -> &mut Self {
-        self.authorities.insert(badge.clone(), permissions);
+    pub fn badge(&mut self, badge: ResourceDefRef, permissions: u64) -> &mut Self {
+        self.authorities.insert(badge, permissions);
         self
     }
 

@@ -1,9 +1,9 @@
 use lru::LruCache;
-use scrypto::engine::*;
+use scrypto::constants::*;
+use scrypto::engine::types::*;
 use scrypto::rust::collections::*;
 use scrypto::rust::string::String;
 use scrypto::rust::vec::Vec;
-use scrypto::types::*;
 use wasmi::*;
 
 use crate::engine::*;
@@ -19,30 +19,32 @@ use crate::model::*;
 ///
 pub struct Track<'s, S: SubstateStore> {
     ledger: &'s mut S,
-    transaction_hash: H256,
+    transaction_hash: Hash,
     transaction_signers: Vec<EcdsaPublicKey>,
     id_allocator: IdAllocator,
-    logs: Vec<(LogLevel, String)>,
-    packages: HashMap<Address, Package>,
-    components: HashMap<Address, Component>,
-    resource_defs: HashMap<Address, ResourceDef>,
-    lazy_maps: HashMap<(Address, Mid), LazyMap>,
-    vaults: HashMap<(Address, Vid), Vault>,
-    non_fungibles: HashMap<(Address, NonFungibleKey), NonFungible>,
-    updated_packages: HashSet<Address>,
-    updated_components: HashSet<Address>,
-    updated_lazy_maps: HashSet<(Address, Mid)>,
-    updated_resource_defs: HashSet<Address>,
-    updated_vaults: HashSet<(Address, Vid)>,
-    updated_non_fungibles: HashSet<(Address, NonFungibleKey)>,
-    new_entities: Vec<Address>,
-    code_cache: LruCache<Address, Module>, // TODO: move to ledger level
+    logs: Vec<(Level, String)>,
+    packages: HashMap<PackageRef, Package>,
+    components: HashMap<ComponentRef, Component>,
+    resource_defs: HashMap<ResourceDefRef, ResourceDef>,
+    lazy_maps: HashMap<(ComponentRef, LazyMapId), LazyMap>,
+    vaults: HashMap<(ComponentRef, VaultId), Vault>,
+    non_fungibles: HashMap<(ResourceDefRef, NonFungibleKey), NonFungible>,
+    updated_packages: HashSet<PackageRef>,
+    updated_components: HashSet<ComponentRef>,
+    updated_lazy_maps: HashSet<(ComponentRef, LazyMapId)>,
+    updated_resource_defs: HashSet<ResourceDefRef>,
+    updated_vaults: HashSet<(ComponentRef, VaultId)>,
+    updated_non_fungibles: HashSet<(ResourceDefRef, NonFungibleKey)>,
+    new_package_refs: Vec<PackageRef>,
+    new_component_refs: Vec<ComponentRef>,
+    new_resource_def_refs: Vec<ResourceDefRef>,
+    code_cache: LruCache<PackageRef, Module>, // TODO: move to ledger level
 }
 
 impl<'s, S: SubstateStore> Track<'s, S> {
     pub fn new(
         ledger: &'s mut S,
-        transaction_hash: H256,
+        transaction_hash: Hash,
         transaction_signers: Vec<EcdsaPublicKey>,
     ) -> Self {
         Self {
@@ -63,7 +65,9 @@ impl<'s, S: SubstateStore> Track<'s, S> {
             updated_resource_defs: HashSet::new(),
             updated_vaults: HashSet::new(),
             updated_non_fungibles: HashSet::new(),
-            new_entities: Vec::new(),
+            new_package_refs: Vec::new(),
+            new_component_refs: Vec::new(),
+            new_resource_def_refs: Vec::new(),
             code_cache: LruCache::new(1024),
         }
     }
@@ -75,7 +79,7 @@ impl<'s, S: SubstateStore> Track<'s, S> {
             .transaction_signers
             .clone()
             .into_iter()
-            .map(|key| NonFungibleKey::new(key.to_vec()))
+            .map(|public_key| NonFungibleKey::new(public_key.to_vec()))
             .collect();
         let mut process = Process::new(0, verbose, self);
 
@@ -84,15 +88,19 @@ impl<'s, S: SubstateStore> Track<'s, S> {
         let ecdsa_bucket = Bucket::new(
             ECDSA_TOKEN,
             ResourceType::NonFungible,
-            Supply::NonFungible { keys: signers },
+            Resource::NonFungible { keys: signers },
         );
-        process.create_virtual_bucket_ref(ECDSA_TOKEN_BID, ECDSA_TOKEN_RID, ecdsa_bucket);
+        process.create_virtual_bucket_ref(
+            ECDSA_TOKEN_BUCKET_ID,
+            ECDSA_TOKEN_BUCKET_REF_ID,
+            ecdsa_bucket,
+        );
 
         process
     }
 
     /// Returns the transaction hash.
-    pub fn transaction_hash(&self) -> H256 {
+    pub fn transaction_hash(&self) -> Hash {
         self.transaction_hash
     }
 
@@ -102,30 +110,40 @@ impl<'s, S: SubstateStore> Track<'s, S> {
     }
 
     /// Returns the logs collected so far.
-    pub fn logs(&self) -> &Vec<(LogLevel, String)> {
+    pub fn logs(&self) -> &Vec<(Level, String)> {
         &self.logs
     }
 
-    /// Returns new entities created so far.
-    pub fn new_entities(&self) -> &[Address] {
-        &self.new_entities
+    /// Returns new packages created so far.
+    pub fn new_package_refs(&self) -> &[PackageRef] {
+        &self.new_package_refs
+    }
+
+    /// Returns new components created so far.
+    pub fn new_component_refs(&self) -> &[ComponentRef] {
+        &self.new_component_refs
+    }
+
+    /// Returns new resource defs created so far.
+    pub fn new_resource_def_refs(&self) -> &[ResourceDefRef] {
+        &self.new_resource_def_refs
     }
 
     /// Adds a log message.
-    pub fn add_log(&mut self, level: LogLevel, message: String) {
+    pub fn add_log(&mut self, level: Level, message: String) {
         self.logs.push((level, message));
     }
 
     /// Loads a module.
-    pub fn load_module(&mut self, address: Address) -> Option<(ModuleRef, MemoryRef)> {
-        match self.get_package(address).map(Clone::clone) {
+    pub fn load_module(&mut self, package_ref: PackageRef) -> Option<(ModuleRef, MemoryRef)> {
+        match self.get_package(package_ref).map(Clone::clone) {
             Some(p) => {
-                if let Some(m) = self.code_cache.get(&address) {
+                if let Some(m) = self.code_cache.get(&package_ref) {
                     Some(instantiate_module(m).unwrap())
                 } else {
                     let module = parse_module(p.code()).unwrap();
                     let inst = instantiate_module(&module).unwrap();
-                    self.code_cache.put(address, module);
+                    self.code_cache.put(package_ref, module);
                     Some(inst)
                 }
             }
@@ -134,14 +152,14 @@ impl<'s, S: SubstateStore> Track<'s, S> {
     }
 
     /// Returns an immutable reference to a package, if exists.
-    pub fn get_package(&mut self, address: Address) -> Option<&Package> {
-        if self.packages.contains_key(&address) {
-            return self.packages.get(&address);
+    pub fn get_package(&mut self, package_ref: PackageRef) -> Option<&Package> {
+        if self.packages.contains_key(&package_ref) {
+            return self.packages.get(&package_ref);
         }
 
-        if let Some(package) = self.ledger.get_package(address) {
-            self.packages.insert(address, package);
-            self.packages.get(&address)
+        if let Some(package) = self.ledger.get_package(package_ref) {
+            self.packages.insert(package_ref, package);
+            self.packages.get(&package_ref)
         } else {
             None
         }
@@ -149,81 +167,81 @@ impl<'s, S: SubstateStore> Track<'s, S> {
 
     /// Returns a mutable reference to a package, if exists.
     #[allow(dead_code)]
-    pub fn get_package_mut(&mut self, address: Address) -> Option<&mut Package> {
-        self.updated_packages.insert(address);
+    pub fn get_package_mut(&mut self, package_ref: PackageRef) -> Option<&mut Package> {
+        self.updated_packages.insert(package_ref);
 
-        if self.packages.contains_key(&address) {
-            return self.packages.get_mut(&address);
+        if self.packages.contains_key(&package_ref) {
+            return self.packages.get_mut(&package_ref);
         }
 
-        if let Some(package) = self.ledger.get_package(address) {
-            self.packages.insert(address, package);
-            self.packages.get_mut(&address)
+        if let Some(package) = self.ledger.get_package(package_ref) {
+            self.packages.insert(package_ref, package);
+            self.packages.get_mut(&package_ref)
         } else {
             None
         }
     }
 
     /// Inserts a new package.
-    pub fn put_package(&mut self, address: Address, package: Package) {
-        self.updated_packages.insert(address);
+    pub fn put_package(&mut self, package_ref: PackageRef, package: Package) {
+        self.updated_packages.insert(package_ref);
 
-        self.packages.insert(address, package);
+        self.packages.insert(package_ref, package);
     }
 
     /// Returns an immutable reference to a component, if exists.
-    pub fn get_component(&mut self, address: Address) -> Option<&Component> {
-        if self.components.contains_key(&address) {
-            return self.components.get(&address);
+    pub fn get_component(&mut self, component_ref: ComponentRef) -> Option<&Component> {
+        if self.components.contains_key(&component_ref) {
+            return self.components.get(&component_ref);
         }
 
-        if let Some(component) = self.ledger.get_component(address) {
-            self.components.insert(address, component);
-            self.components.get(&address)
+        if let Some(component) = self.ledger.get_component(component_ref) {
+            self.components.insert(component_ref, component);
+            self.components.get(&component_ref)
         } else {
             None
         }
     }
     /// Returns a mutable reference to a component, if exists.
-    pub fn get_component_mut(&mut self, address: Address) -> Option<&mut Component> {
-        self.updated_components.insert(address);
+    pub fn get_component_mut(&mut self, component_ref: ComponentRef) -> Option<&mut Component> {
+        self.updated_components.insert(component_ref);
 
-        if self.components.contains_key(&address) {
-            return self.components.get_mut(&address);
+        if self.components.contains_key(&component_ref) {
+            return self.components.get_mut(&component_ref);
         }
 
-        if let Some(component) = self.ledger.get_component(address) {
-            self.components.insert(address, component);
-            self.components.get_mut(&address)
+        if let Some(component) = self.ledger.get_component(component_ref) {
+            self.components.insert(component_ref, component);
+            self.components.get_mut(&component_ref)
         } else {
             None
         }
     }
 
     /// Inserts a new component.
-    pub fn put_component(&mut self, address: Address, component: Component) {
-        self.updated_components.insert(address);
+    pub fn put_component(&mut self, component_ref: ComponentRef, component: Component) {
+        self.updated_components.insert(component_ref);
 
-        self.components.insert(address, component);
+        self.components.insert(component_ref, component);
     }
 
     /// Returns an immutable reference to a non-fungible, if exists.
     pub fn get_non_fungible(
         &mut self,
-        resource_address: Address,
+        resource_def_ref: ResourceDefRef,
         key: &NonFungibleKey,
     ) -> Option<&NonFungible> {
         if self
             .non_fungibles
-            .contains_key(&(resource_address, key.clone()))
+            .contains_key(&(resource_def_ref, key.clone()))
         {
-            return self.non_fungibles.get(&(resource_address, key.clone()));
+            return self.non_fungibles.get(&(resource_def_ref, key.clone()));
         }
 
-        if let Some(non_fungible) = self.ledger.get_non_fungible(resource_address, key) {
+        if let Some(non_fungible) = self.ledger.get_non_fungible(resource_def_ref, key) {
             self.non_fungibles
-                .insert((resource_address, key.clone()), non_fungible);
-            self.non_fungibles.get(&(resource_address, key.clone()))
+                .insert((resource_def_ref, key.clone()), non_fungible);
+            self.non_fungibles.get(&(resource_def_ref, key.clone()))
         } else {
             None
         }
@@ -232,23 +250,23 @@ impl<'s, S: SubstateStore> Track<'s, S> {
     /// Returns a mutable reference to a non-fungible, if exists.
     pub fn get_non_fungible_mut(
         &mut self,
-        resource_address: Address,
+        resource_def_ref: ResourceDefRef,
         key: &NonFungibleKey,
     ) -> Option<&mut NonFungible> {
         self.updated_non_fungibles
-            .insert((resource_address, key.clone()));
+            .insert((resource_def_ref, key.clone()));
 
         if self
             .non_fungibles
-            .contains_key(&(resource_address, key.clone()))
+            .contains_key(&(resource_def_ref, key.clone()))
         {
-            return self.non_fungibles.get_mut(&(resource_address, key.clone()));
+            return self.non_fungibles.get_mut(&(resource_def_ref, key.clone()));
         }
 
-        if let Some(non_fungible) = self.ledger.get_non_fungible(resource_address, key) {
+        if let Some(non_fungible) = self.ledger.get_non_fungible(resource_def_ref, key) {
             self.non_fungibles
-                .insert((resource_address, key.clone()), non_fungible);
-            self.non_fungibles.get_mut(&(resource_address, key.clone()))
+                .insert((resource_def_ref, key.clone()), non_fungible);
+            self.non_fungibles.get_mut(&(resource_def_ref, key.clone()))
         } else {
             None
         }
@@ -257,28 +275,32 @@ impl<'s, S: SubstateStore> Track<'s, S> {
     /// Inserts a new non-fungible.
     pub fn put_non_fungible(
         &mut self,
-        resource_address: Address,
+        resource_def_ref: ResourceDefRef,
         key: &NonFungibleKey,
         non_fungible: NonFungible,
     ) {
         self.updated_non_fungibles
-            .insert((resource_address, key.clone()));
+            .insert((resource_def_ref, key.clone()));
 
         self.non_fungibles
-            .insert((resource_address, key.clone()), non_fungible);
+            .insert((resource_def_ref, key.clone()), non_fungible);
     }
 
     /// Returns an immutable reference to a lazy map, if exists.
-    pub fn get_lazy_map(&mut self, component_address: &Address, mid: &Mid) -> Option<&LazyMap> {
-        let lazy_map_id = (component_address.clone(), mid.clone());
+    pub fn get_lazy_map(
+        &mut self,
+        component_ref: ComponentRef,
+        lazy_map_id: LazyMapId,
+    ) -> Option<&LazyMap> {
+        let canonical_id = (component_ref, lazy_map_id);
 
-        if self.lazy_maps.contains_key(&lazy_map_id) {
-            return self.lazy_maps.get(&lazy_map_id);
+        if self.lazy_maps.contains_key(&canonical_id) {
+            return self.lazy_maps.get(&canonical_id);
         }
 
-        if let Some(lazy_map) = self.ledger.get_lazy_map(component_address, mid) {
-            self.lazy_maps.insert(lazy_map_id, lazy_map);
-            self.lazy_maps.get(&lazy_map_id)
+        if let Some(lazy_map) = self.ledger.get_lazy_map(component_ref, lazy_map_id) {
+            self.lazy_maps.insert(canonical_id, lazy_map);
+            self.lazy_maps.get(&canonical_id)
         } else {
             None
         }
@@ -287,40 +309,45 @@ impl<'s, S: SubstateStore> Track<'s, S> {
     /// Returns a mutable reference to a lazy map, if exists.
     pub fn get_lazy_map_mut(
         &mut self,
-        component_address: &Address,
-        mid: &Mid,
+        component_ref: ComponentRef,
+        lazy_map_id: LazyMapId,
     ) -> Option<&mut LazyMap> {
-        let lazy_map_id = (component_address.clone(), mid.clone());
-        self.updated_lazy_maps.insert(lazy_map_id.clone());
+        let canonical_id = (component_ref, lazy_map_id);
+        self.updated_lazy_maps.insert(canonical_id.clone());
 
-        if self.lazy_maps.contains_key(&lazy_map_id) {
-            return self.lazy_maps.get_mut(&lazy_map_id);
+        if self.lazy_maps.contains_key(&canonical_id) {
+            return self.lazy_maps.get_mut(&canonical_id);
         }
 
-        if let Some(lazy_map) = self.ledger.get_lazy_map(component_address, mid) {
-            self.lazy_maps.insert(lazy_map_id, lazy_map);
-            self.lazy_maps.get_mut(&lazy_map_id)
+        if let Some(lazy_map) = self.ledger.get_lazy_map(component_ref, lazy_map_id) {
+            self.lazy_maps.insert(canonical_id, lazy_map);
+            self.lazy_maps.get_mut(&canonical_id)
         } else {
             None
         }
     }
 
     /// Inserts a new lazy map.
-    pub fn put_lazy_map(&mut self, component_address: Address, mid: Mid, lazy_map: LazyMap) {
-        let lazy_map_id = (component_address, mid);
-        self.updated_lazy_maps.insert(lazy_map_id.clone());
-        self.lazy_maps.insert(lazy_map_id, lazy_map);
+    pub fn put_lazy_map(
+        &mut self,
+        component_ref: ComponentRef,
+        lazy_map_id: LazyMapId,
+        lazy_map: LazyMap,
+    ) {
+        let canonical_id = (component_ref, lazy_map_id);
+        self.updated_lazy_maps.insert(canonical_id.clone());
+        self.lazy_maps.insert(canonical_id, lazy_map);
     }
 
     /// Returns an immutable reference to a resource definition, if exists.
-    pub fn get_resource_def(&mut self, address: Address) -> Option<&ResourceDef> {
-        if self.resource_defs.contains_key(&address) {
-            return self.resource_defs.get(&address);
+    pub fn get_resource_def(&mut self, resource_def_ref: ResourceDefRef) -> Option<&ResourceDef> {
+        if self.resource_defs.contains_key(&resource_def_ref) {
+            return self.resource_defs.get(&resource_def_ref);
         }
 
-        if let Some(resource_def) = self.ledger.get_resource_def(address) {
-            self.resource_defs.insert(address, resource_def);
-            self.resource_defs.get(&address)
+        if let Some(resource_def) = self.ledger.get_resource_def(resource_def_ref) {
+            self.resource_defs.insert(resource_def_ref, resource_def);
+            self.resource_defs.get(&resource_def_ref)
         } else {
             None
         }
@@ -328,80 +355,91 @@ impl<'s, S: SubstateStore> Track<'s, S> {
 
     /// Returns a mutable reference to a resource definition, if exists.
     #[allow(dead_code)]
-    pub fn get_resource_def_mut(&mut self, address: Address) -> Option<&mut ResourceDef> {
-        self.updated_resource_defs.insert(address);
+    pub fn get_resource_def_mut(
+        &mut self,
+        resource_def_ref: ResourceDefRef,
+    ) -> Option<&mut ResourceDef> {
+        self.updated_resource_defs.insert(resource_def_ref);
 
-        if self.resource_defs.contains_key(&address) {
-            return self.resource_defs.get_mut(&address);
+        if self.resource_defs.contains_key(&resource_def_ref) {
+            return self.resource_defs.get_mut(&resource_def_ref);
         }
 
-        if let Some(resource_def) = self.ledger.get_resource_def(address) {
-            self.resource_defs.insert(address, resource_def);
-            self.resource_defs.get_mut(&address)
+        if let Some(resource_def) = self.ledger.get_resource_def(resource_def_ref) {
+            self.resource_defs.insert(resource_def_ref, resource_def);
+            self.resource_defs.get_mut(&resource_def_ref)
         } else {
             None
         }
     }
 
     /// Inserts a new resource definition.
-    pub fn put_resource_def(&mut self, address: Address, resource_def: ResourceDef) {
-        self.updated_resource_defs.insert(address);
+    pub fn put_resource_def(
+        &mut self,
+        resource_def_ref: ResourceDefRef,
+        resource_def: ResourceDef,
+    ) {
+        self.updated_resource_defs.insert(resource_def_ref);
 
-        self.resource_defs.insert(address, resource_def);
+        self.resource_defs.insert(resource_def_ref, resource_def);
     }
 
     /// Returns a mutable reference to a vault, if exists.
-    pub fn get_vault_mut(&mut self, component_address: &Address, vid: &Vid) -> Option<&mut Vault> {
-        let vault_id = (component_address.clone(), vid.clone());
-        self.updated_vaults.insert(vault_id.clone());
+    pub fn get_vault_mut(
+        &mut self,
+        component_ref: ComponentRef,
+        vault_id: VaultId,
+    ) -> Option<&mut Vault> {
+        let canonical_id = (component_ref.clone(), vault_id.clone());
+        self.updated_vaults.insert(canonical_id.clone());
 
-        if self.vaults.contains_key(&vault_id) {
-            return self.vaults.get_mut(&vault_id);
+        if self.vaults.contains_key(&canonical_id) {
+            return self.vaults.get_mut(&canonical_id);
         }
 
-        if let Some(vault) = self.ledger.get_vault(component_address, vid) {
-            self.vaults.insert(vault_id, vault);
-            self.vaults.get_mut(&vault_id)
+        if let Some(vault) = self.ledger.get_vault(component_ref, vault_id) {
+            self.vaults.insert(canonical_id, vault);
+            self.vaults.get_mut(&canonical_id)
         } else {
             None
         }
     }
 
     /// Inserts a new vault.
-    pub fn put_vault(&mut self, component_address: Address, vid: Vid, vault: Vault) {
-        let vault_id = (component_address, vid);
-        self.updated_vaults.insert(vault_id);
-        self.vaults.insert(vault_id, vault);
+    pub fn put_vault(&mut self, component_ref: ComponentRef, vault_id: VaultId, vault: Vault) {
+        let canonical_id = (component_ref, vault_id);
+        self.updated_vaults.insert(canonical_id);
+        self.vaults.insert(canonical_id, vault);
     }
 
     /// Creates a new package address.
-    pub fn new_package_address(&mut self) -> Address {
+    pub fn new_package_ref(&mut self) -> PackageRef {
         // Security Alert: ensure ID allocating will practically never fail
         let address = self
             .id_allocator
-            .new_package_address(self.transaction_hash())
+            .new_package_ref(self.transaction_hash())
             .unwrap();
-        self.new_entities.push(address);
+        self.new_package_refs.push(address);
         address
     }
 
     /// Creates a new component address.
-    pub fn new_component_address(&mut self) -> Address {
+    pub fn new_component_ref(&mut self) -> ComponentRef {
         let address = self
             .id_allocator
-            .new_component_address(self.transaction_hash())
+            .new_component_ref(self.transaction_hash())
             .unwrap();
-        self.new_entities.push(address);
+        self.new_component_refs.push(address);
         address
     }
 
     /// Creates a new resource definition address.
-    pub fn new_resource_address(&mut self) -> Address {
+    pub fn new_resource_def_ref(&mut self) -> ResourceDefRef {
         let address = self
             .id_allocator
-            .new_resource_address(self.transaction_hash())
+            .new_resource_def_ref(self.transaction_hash())
             .unwrap();
-        self.new_entities.push(address);
+        self.new_resource_def_refs.push(address);
         address
     }
 
@@ -411,23 +449,27 @@ impl<'s, S: SubstateStore> Track<'s, S> {
     }
 
     /// Creates a new bucket ID.
-    pub fn new_bid(&mut self) -> Bid {
-        self.id_allocator.new_bid().unwrap()
+    pub fn new_bucket_id(&mut self) -> BucketId {
+        self.id_allocator.new_bucket_id().unwrap()
     }
 
     /// Creates a new vault ID.
-    pub fn new_vid(&mut self) -> Vid {
-        self.id_allocator.new_vid(self.transaction_hash()).unwrap()
+    pub fn new_vault_id(&mut self) -> VaultId {
+        self.id_allocator
+            .new_vault_id(self.transaction_hash())
+            .unwrap()
     }
 
     /// Creates a new reference id.
-    pub fn new_rid(&mut self) -> Rid {
-        self.id_allocator.new_rid().unwrap()
+    pub fn new_bucket_ref_id(&mut self) -> BucketRefId {
+        self.id_allocator.new_bucket_ref_id().unwrap()
     }
 
     /// Creates a new map id.
-    pub fn new_mid(&mut self) -> Mid {
-        self.id_allocator.new_mid(self.transaction_hash()).unwrap()
+    pub fn new_lazy_map_id(&mut self) -> LazyMapId {
+        self.id_allocator
+            .new_lazy_map_id(self.transaction_hash())
+            .unwrap()
     }
 
     /// Commits changes to the underlying ledger.
@@ -447,18 +489,19 @@ impl<'s, S: SubstateStore> Track<'s, S> {
                 .put_resource_def(address, self.resource_defs.get(&address).unwrap().clone());
         }
 
-        for (component_address, mid) in self.updated_lazy_maps.clone() {
+        for (component_ref, lazy_map_id) in self.updated_lazy_maps.clone() {
             let lazy_map = self
                 .lazy_maps
-                .get(&(component_address, mid))
+                .get(&(component_ref, lazy_map_id))
                 .unwrap()
                 .clone();
-            self.ledger.put_lazy_map(component_address, mid, lazy_map);
+            self.ledger
+                .put_lazy_map(component_ref, lazy_map_id, lazy_map);
         }
 
-        for (component_address, vid) in self.updated_vaults.clone() {
-            let vault = self.vaults.get(&(component_address, vid)).unwrap().clone();
-            self.ledger.put_vault(component_address, vid, vault);
+        for (component_ref, vault_id) in self.updated_vaults.clone() {
+            let vault = self.vaults.get(&(component_ref, vault_id)).unwrap().clone();
+            self.ledger.put_vault(component_ref, vault_id, vault);
         }
 
         for (resource_def, id) in self.updated_non_fungibles.clone() {

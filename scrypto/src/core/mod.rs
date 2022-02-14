@@ -7,9 +7,9 @@ mod logger;
 mod package;
 
 pub use actor::Actor;
-pub use component::{ComponentRef, ComponentState};
+pub use component::{ComponentRef, ComponentState, ParseComponentRefError};
 pub use context::Context;
-pub use lazy_map::LazyMap;
+pub use lazy_map::{LazyMap, ParseLazyMapError};
 pub use level::Level;
 pub use logger::Logger;
-pub use package::PackageRef;
+pub use package::{PackageRef, ParsePackageRefError};

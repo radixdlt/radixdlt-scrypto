@@ -2,6 +2,8 @@ use sbor::*;
 
 use crate::rust::fmt;
 use crate::rust::str::FromStr;
+use crate::rust::string::ToString;
+use crate::rust::vec::Vec;
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Encode, Decode, TypeId, Describe)]
 pub struct EcdsaPublicKey(pub [u8; 33]);
@@ -29,6 +31,16 @@ impl fmt::Display for ParseEcdsaPublicKeyError {
 }
 
 //======
+// binary
+//======
+
+impl EcdsaPublicKey {
+    pub fn to_vec(&self) -> Vec<u8> {
+        self.0.to_vec()
+    }
+}
+
+//======
 // text
 //======
 
@@ -50,8 +62,8 @@ impl FromStr for EcdsaPublicKey {
     }
 }
 
-impl ToString for EcdsaPublicKey {
-    fn to_string(&self) -> String {
-        hex::encode(self.0)
+impl fmt::Display for EcdsaPublicKey {
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        write!(f, "{}", hex::encode(self.0))
     }
 }

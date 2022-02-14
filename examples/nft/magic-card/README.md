@@ -83,7 +83,7 @@ Since NFT is just another type of resource, it must be stored in either a bucket
 To pick a specific NFT when calling a function or method, we can use the following syntax:
 
 ```
-#nft_id_1,#nft_id2,resource_address
+#nft_id_1,#nft_id2,resource_def_ref
 ```
 
 ## Update an Existing NFT

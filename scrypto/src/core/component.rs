@@ -2,12 +2,12 @@ use sbor::{describe::Type, *};
 
 use crate::buffer::*;
 use crate::core::*;
-use crate::engine::{api::*, call_engine, types::ComponentId};
+use crate::engine::{api::*, call_engine};
 use crate::misc::*;
 use crate::rust::borrow::ToOwned;
 use crate::rust::fmt;
 use crate::rust::str::FromStr;
-use crate::rust::string::ToString;
+use crate::rust::string::String;
 use crate::rust::vec::Vec;
 use crate::types::*;
 
@@ -22,19 +22,20 @@ pub trait ComponentState: Encode + Decode {
 
 /// An instance of a blueprint, which lives in the ledger state.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct ComponentRef(pub ComponentId);
+pub struct ComponentRef(pub [u8; 26]);
 
 impl ComponentRef {
     /// Instantiates a new component.
     pub fn new<T: ComponentState>(state: T) -> Self {
         // TODO: more thoughts are needed for this interface
         let input = CreateComponentInput {
-            blueprint_id: (Context::package().0, T::blueprint_name().to_owned()),
+            package_ref: Context::package(),
+            blueprint_name: T::blueprint_name().to_owned(),
             state: scrypto_encode(&state),
         };
         let output: CreateComponentOutput = call_engine(CREATE_COMPONENT, input);
 
-        ComponentRef(output.component_id)
+        output.component_ref
     }
 
     /// Invokes a method on this component.
@@ -63,10 +64,10 @@ impl ComponentRef {
     /// Returns the blueprint that this component is instantiated from.
     pub fn blueprint(&self) -> (PackageRef, String) {
         let input = GetComponentInfoInput {
-            component_id: self.0,
+            component_ref: *self,
         };
         let output: GetComponentInfoOutput = call_engine(GET_COMPONENT_INFO, input);
-        (PackageRef(output.blueprint_id.0), output.blueprint_id.1)
+        (output.package_ref, output.blueprint_name)
     }
 }
 
@@ -128,8 +129,8 @@ impl FromStr for ComponentRef {
     }
 }
 
-impl ToString for ComponentRef {
-    fn to_string(&self) -> String {
-        hex::encode(combine(2, &self.0))
+impl fmt::Display for ComponentRef {
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        write!(f, "{}", hex::encode(combine(2, &self.0)))
     }
 }

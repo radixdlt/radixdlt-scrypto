@@ -71,12 +71,12 @@ scrypto test
 | Create a token with mutable supply | ``` resim new-token-mutable <minter_badge_address> ```                           |
 | Create a badge with fixed supply   | ``` resim new-badge-fixed <amount> ```                                           |
 | Create a badge with mutable supply | ``` resim new-badge-mutable <minter_badge_address> ```                           |
-| Mint resource                      | ``` resim mint <amount> <resource_address> <minter_badge_address>```             |
-| Transfer resource                  | ``` resim transfer <amount>,<resource_address> <recipient_address> ```           |
+| Mint resource                      | ``` resim mint <amount> <resource_def_ref> <minter_badge_address>```             |
+| Transfer resource                  | ``` resim transfer <amount>,<resource_def_ref> <recipient_address> ```           |
 | Publish a package                  | ``` resim publish <path_to_package_dir> ```                                      |
-| Call a function                    | ``` resim call-function <package_address> <blueprint_name> <function> <args> ``` |
-| Call a method                      | ``` resim call-method <component_address> <method> <args> ```                    |
-| Export the ABI of a blueprint      | ``` resim export-abi <package_address> <blueprint_name> ```                      |
+| Call a function                    | ``` resim call-function <package_ref> <blueprint_name> <function> <args> ``` |
+| Call a method                      | ``` resim call-method <component_ref> <method> <args> ```                    |
+| Export the ABI of a blueprint      | ``` resim export-abi <package_ref> <blueprint_name> ```                      |
 | Show info about an address         | ``` resim show <address> ```                                                     |
 | List all entities in simulator     | ``` resim show-ledger  ```                                                       |
 | Reset simulator state              | ``` resim reset ```                                                              |

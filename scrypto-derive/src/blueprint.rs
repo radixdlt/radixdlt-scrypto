@@ -417,7 +417,8 @@ fn generate_stubs(bp_ident: &Ident, items: &[ImplItem]) -> Result<TokenStream> {
                             pub fn #ident(#(#input_args: #input_types),*) -> #output {
                                 let package = ::scrypto::core::Context::package();
                                 let rtn = ::scrypto::core::Context::call_function(
-                                    (package, #bp_name),
+                                    package,
+                                    #bp_name,
                                     #name,
                                     ::scrypto::args!(#(#input_args),*)
                                 );

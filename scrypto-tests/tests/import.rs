@@ -26,27 +26,27 @@ r#"
             "inputs": [
                 {
                     "type": "Custom",
-                    "name": "scrypto::math::Decimal",
+                    "name": "Decimal",
                     "generics": []
                 },
                 {
                     "type": "Custom",
-                    "name": "scrypto::math::BigDecimal",
+                    "name": "BigDecimal",
                     "generics": []
                 },
                 {
                     "type": "Custom",
-                    "name": "scrypto::core::PackageRef",
+                    "name": "PackageRef",
                     "generics": []
                 },
                 {
                     "type": "Custom",
-                    "name": "scrypto::core::ComponentRef",
+                    "name": "ComponentRef",
                     "generics": []
                 },
                 {
                     "type": "Custom",
-                    "name": "scrypto::core::LazyMap",
+                    "name": "LazyMap",
                     "generics": [
                         {
                             "type": "String"
@@ -58,28 +58,28 @@ r#"
                 },
                 {
                     "type": "Custom",
-                    "name": "scrypto::resource::Bucket",
+                    "name": "Bucket",
                     "generics": []
                 },
                 {
                     "type": "Custom",
-                    "name": "scrypto::resource::BucketRef",
+                    "name": "BucketRef",
                     "generics": []
                 },
                 {
                     "type": "Custom",
-                    "name": "scrypto::resource::Vault",
+                    "name": "Vault",
                     "generics": []
                 },
                 {
                     "type": "Custom",
-                    "name": "scrypto::resource::ResourceDefRef",
+                    "name": "ResourceDefRef",
                     "generics": []
                 }
             ],
             "output": {
                 "type": "Custom",
-                "name": "scrypto::resource::Bucket",
+                "name": "Bucket",
                 "generics": []
             }
         }

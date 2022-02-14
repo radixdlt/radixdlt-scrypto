@@ -69,16 +69,16 @@ impl Parser {
         let instruction = match token.kind {
             TokenKind::TakeFromWorktop => Instruction::TakeFromWorktop {
                 amount: self.parse_value()?,
-                resource_address: self.parse_value()?,
+                resource_def_ref: self.parse_value()?,
                 new_bucket: self.parse_value()?,
             },
             TokenKind::TakeAllFromWorktop => Instruction::TakeAllFromWorktop {
-                resource_address: self.parse_value()?,
+                resource_def_ref: self.parse_value()?,
                 new_bucket: self.parse_value()?,
             },
             TokenKind::TakeNonFungiblesFromWorktop => Instruction::TakeNonFungiblesFromWorktop {
                 keys: self.parse_value()?,
-                resource_address: self.parse_value()?,
+                resource_def_ref: self.parse_value()?,
                 new_bucket: self.parse_value()?,
             },
             TokenKind::ReturnToWorktop => Instruction::ReturnToWorktop {
@@ -86,7 +86,7 @@ impl Parser {
             },
             TokenKind::AssertWorktopContains => Instruction::AssertWorktopContains {
                 amount: self.parse_value()?,
-                resource_address: self.parse_value()?,
+                resource_def_ref: self.parse_value()?,
             },
             TokenKind::CreateBucketRef => Instruction::CreateBucketRef {
                 bucket: self.parse_value()?,
@@ -100,7 +100,7 @@ impl Parser {
                 bucket_ref: self.parse_value()?,
             },
             TokenKind::CallFunction => Instruction::CallFunction {
-                package_address: self.parse_value()?,
+                package_ref: self.parse_value()?,
                 blueprint_name: self.parse_value()?,
                 function: self.parse_value()?,
                 args: {
@@ -112,7 +112,7 @@ impl Parser {
                 },
             },
             TokenKind::CallMethod => Instruction::CallMethod {
-                component_address: self.parse_value()?,
+                component_ref: self.parse_value()?,
                 method: self.parse_value()?,
                 args: {
                     let mut values = vec![];
@@ -123,7 +123,7 @@ impl Parser {
                 },
             },
             TokenKind::CallMethodWithAllResources => Instruction::CallMethodWithAllResources {
-                component_address: self.parse_value()?,
+                component_ref: self.parse_value()?,
                 method: self.parse_value()?,
             },
             _ => {
@@ -168,12 +168,12 @@ impl Parser {
             TokenKind::HashMap => self.parse_hash_map(),
             TokenKind::Decimal
             | TokenKind::BigDecimal
-            | TokenKind::Address
+            | TokenKind::PackageRef
+            | TokenKind::ComponentRef
+            | TokenKind::ResourceDefRef
             | TokenKind::Hash
             | TokenKind::Bucket
             | TokenKind::BucketRef
-            | TokenKind::LazyMap
-            | TokenKind::Vault
             | TokenKind::NonFungibleKey => self.parse_scrypto_types(),
             _ => Err(ParserError::UnexpectedToken(token)),
         }
@@ -331,12 +331,12 @@ impl Parser {
         match token.kind {
             TokenKind::Decimal => Ok(Value::Decimal(self.parse_values_one()?.into())),
             TokenKind::BigDecimal => Ok(Value::BigDecimal(self.parse_values_one()?.into())),
-            TokenKind::Address => Ok(Value::Address(self.parse_values_one()?.into())),
+            TokenKind::PackageRef => Ok(Value::PackageRef(self.parse_values_one()?.into())),
+            TokenKind::ComponentRef => Ok(Value::ComponentRef(self.parse_values_one()?.into())),
+            TokenKind::ResourceDefRef => Ok(Value::ResourceDefRef(self.parse_values_one()?.into())),
             TokenKind::Hash => Ok(Value::Hash(self.parse_values_one()?.into())),
             TokenKind::Bucket => Ok(Value::Bucket(self.parse_values_one()?.into())),
             TokenKind::BucketRef => Ok(Value::BucketRef(self.parse_values_one()?.into())),
-            TokenKind::LazyMap => Ok(Value::LazyMap(self.parse_values_one()?.into())),
-            TokenKind::Vault => Ok(Value::Vault(self.parse_values_one()?.into())),
             TokenKind::NonFungibleKey => Ok(Value::NonFungibleKey(self.parse_values_one()?.into())),
             _ => Err(ParserError::UnexpectedToken(token)),
         }
@@ -424,12 +424,12 @@ impl Parser {
             TokenKind::HashMap => Ok(Type::HashMap),
             TokenKind::Decimal => Ok(Type::Decimal),
             TokenKind::BigDecimal => Ok(Type::BigDecimal),
-            TokenKind::Address => Ok(Type::Address),
+            TokenKind::PackageRef => Ok(Type::PackageRef),
+            TokenKind::ComponentRef => Ok(Type::ComponentRef),
+            TokenKind::ResourceDefRef => Ok(Type::ResourceDefRef),
             TokenKind::Hash => Ok(Type::Hash),
             TokenKind::Bucket => Ok(Type::Bucket),
             TokenKind::BucketRef => Ok(Type::BucketRef),
-            TokenKind::LazyMap => Ok(Type::LazyMap),
-            TokenKind::Vault => Ok(Type::Vault),
             TokenKind::NonFungibleKey => Ok(Type::NonFungibleKey),
             _ => Err(ParserError::UnexpectedToken(token)),
         }
@@ -633,7 +633,7 @@ mod tests {
             })
         );
         parse_value_error!(
-            r#"Address("abc", "def")"#,
+            r#"PackageRef("abc", "def")"#,
             ParserError::InvalidNumberOfValues {
                 actual: 2,
                 expected: 1
@@ -651,10 +651,10 @@ mod tests {
     #[test]
     fn test_transaction() {
         parse_instruction_ok!(
-            r#"TAKE_FROM_WORKTOP  Decimal("1.0")  Address("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d")  Bucket("xrd_bucket");"#,
+            r#"TAKE_FROM_WORKTOP  Decimal("1.0")  ResourceDefRef("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d")  Bucket("xrd_bucket");"#,
             Instruction::TakeFromWorktop {
                 amount: Value::Decimal(Value::String("1.0".into()).into()),
-                resource_address: Value::Address(
+                resource_def_ref: Value::ResourceDefRef(
                     Value::String("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d".into())
                         .into()
                 ),
@@ -662,9 +662,9 @@ mod tests {
             }
         );
         parse_instruction_ok!(
-            r#"TAKE_ALL_FROM_WORKTOP  Address("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d")  Bucket("xrd_bucket");"#,
+            r#"TAKE_ALL_FROM_WORKTOP  ResourceDefRef("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d")  Bucket("xrd_bucket");"#,
             Instruction::TakeAllFromWorktop {
-                resource_address: Value::Address(
+                resource_def_ref: Value::ResourceDefRef(
                     Value::String("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d".into())
                         .into()
                 ),
@@ -672,10 +672,10 @@ mod tests {
             }
         );
         parse_instruction_ok!(
-            r#"ASSERT_WORKTOP_CONTAINS  Decimal("1.0")  Address("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d");"#,
+            r#"ASSERT_WORKTOP_CONTAINS  Decimal("1.0")  ResourceDefRef("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d");"#,
             Instruction::AssertWorktopContains {
                 amount: Value::Decimal(Value::String("1.0".into()).into()),
-                resource_address: Value::Address(
+                resource_def_ref: Value::ResourceDefRef(
                     Value::String("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d".into())
                         .into()
                 ),
@@ -702,9 +702,9 @@ mod tests {
             }
         );
         parse_instruction_ok!(
-            r#"CALL_FUNCTION  Address("01d1f50010e4102d88aacc347711491f852c515134a9ecf67ba17c")  "Airdrop"  "new"  500u32  HashMap<String, U8>("key", 1u8);"#,
+            r#"CALL_FUNCTION  PackageRef("01d1f50010e4102d88aacc347711491f852c515134a9ecf67ba17c")  "Airdrop"  "new"  500u32  HashMap<String, U8>("key", 1u8);"#,
             Instruction::CallFunction {
-                package_address: Value::Address(
+                package_ref: Value::PackageRef(
                     Value::String("01d1f50010e4102d88aacc347711491f852c515134a9ecf67ba17c".into())
                         .into()
                 ),
@@ -721,9 +721,9 @@ mod tests {
             }
         );
         parse_instruction_ok!(
-            r#"CALL_METHOD  Address("0292566c83de7fd6b04fcc92b5e04b03228ccff040785673278ef1")  "refill"  Bucket("xrd_bucket")  BucketRef("admin_auth");"#,
+            r#"CALL_METHOD  ComponentRef("0292566c83de7fd6b04fcc92b5e04b03228ccff040785673278ef1")  "refill"  Bucket("xrd_bucket")  BucketRef("admin_auth");"#,
             Instruction::CallMethod {
-                component_address: Value::Address(
+                component_ref: Value::ComponentRef(
                     Value::String("0292566c83de7fd6b04fcc92b5e04b03228ccff040785673278ef1".into())
                         .into()
                 ),
@@ -735,9 +735,9 @@ mod tests {
             }
         );
         parse_instruction_ok!(
-            r#"CALL_METHOD  Address("0292566c83de7fd6b04fcc92b5e04b03228ccff040785673278ef1")  "withdraw_non_fungible"  NonFungibleKey("00")  BucketRef("admin_auth");"#,
+            r#"CALL_METHOD  ComponentRef("0292566c83de7fd6b04fcc92b5e04b03228ccff040785673278ef1")  "withdraw_non_fungible"  NonFungibleKey("00")  BucketRef("admin_auth");"#,
             Instruction::CallMethod {
-                component_address: Value::Address(
+                component_ref: Value::ComponentRef(
                     Value::String("0292566c83de7fd6b04fcc92b5e04b03228ccff040785673278ef1".into())
                         .into()
                 ),
@@ -749,9 +749,9 @@ mod tests {
             }
         );
         parse_instruction_ok!(
-            r#"CALL_METHOD_WITH_ALL_RESOURCES  Address("02d43f479e9b2beb9df98bc3888344fc25eda181e8f710ce1bf1de") "deposit_batch";"#,
+            r#"CALL_METHOD_WITH_ALL_RESOURCES  ComponentRef("02d43f479e9b2beb9df98bc3888344fc25eda181e8f710ce1bf1de") "deposit_batch";"#,
             Instruction::CallMethodWithAllResources {
-                component_address: Value::Address(
+                component_ref: Value::ComponentRef(
                     Value::String("02d43f479e9b2beb9df98bc3888344fc25eda181e8f710ce1bf1de".into())
                         .into()
                 ),

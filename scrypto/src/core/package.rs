@@ -2,16 +2,16 @@ use sbor::{describe::Type, *};
 
 use crate::buffer::*;
 use crate::core::*;
-use crate::engine::{api::*, call_engine, types::PackageId};
+use crate::engine::{api::*, call_engine};
 use crate::misc::*;
 use crate::rust::fmt;
 use crate::rust::str::FromStr;
-use crate::rust::string::ToString;
+use crate::rust::vec::Vec;
 use crate::types::*;
 
 /// A collection of blueprints, compiled and published as a single unit.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct PackageRef(pub PackageId);
+pub struct PackageRef(pub [u8; 26]);
 
 impl PackageRef {
     /// Creates a new package.
@@ -21,17 +21,17 @@ impl PackageRef {
         };
         let output: PublishPackageOutput = call_engine(PUBLISH_PACKAGE, input);
 
-        Self(output.package_id)
+        output.package_ref
     }
 
     /// Invokes a function on this blueprint.
     pub fn call<T: Decode, S: AsRef<str>>(
         &self,
-        blueprint: S,
+        blueprint_name: S,
         function: S,
         args: Vec<Vec<u8>>,
     ) -> T {
-        let output = Context::call_function((*self, blueprint), function, args);
+        let output = Context::call_function(*self, blueprint_name, function, args);
 
         scrypto_decode(&output).unwrap()
     }
@@ -95,8 +95,8 @@ impl FromStr for PackageRef {
     }
 }
 
-impl ToString for PackageRef {
-    fn to_string(&self) -> String {
-        hex::encode(combine(1, &self.0))
+impl fmt::Display for PackageRef {
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        write!(f, "{}", hex::encode(combine(1, &self.0)))
     }
 }

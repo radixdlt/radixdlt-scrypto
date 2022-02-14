@@ -4,6 +4,7 @@ use crate::engine::{api::*, call_engine, types::BucketRefId};
 use crate::math::*;
 use crate::misc::*;
 use crate::resource::*;
+#[cfg(not(feature = "alloc"))]
 use crate::rust::fmt;
 use crate::rust::vec::Vec;
 use crate::types::*;
@@ -25,25 +26,25 @@ impl Clone for BucketRef {
 
 impl BucketRef {
     /// Checks if the referenced bucket contains the given resource, and aborts if not so.
-    pub fn check(&self, resource_def: ResourceDefRef) {
-        if !self.contains(resource_def) {
+    pub fn check(&self, resource_def_ref: ResourceDefRef) {
+        if !self.contains(resource_def_ref) {
             panic!("BucketRef check failed");
         }
     }
 
     pub fn check_non_fungible_key<F: Fn(&NonFungibleKey) -> bool>(
         &self,
-        resource_def: ResourceDefRef,
+        resource_def_ref: ResourceDefRef,
         f: F,
     ) {
-        if !self.contains(resource_def) || !self.get_non_fungible_keys().iter().any(f) {
+        if !self.contains(resource_def_ref) || !self.get_non_fungible_keys().iter().any(f) {
             panic!("BucketRef check failed");
         }
     }
 
     /// Checks if the referenced bucket contains the given resource.
-    pub fn contains(&self, resource_def: ResourceDefRef) -> bool {
-        self.amount() > 0.into() && self.resource_def() == resource_def
+    pub fn contains(&self, resource_def_ref: ResourceDefRef) -> bool {
+        self.amount() > 0.into() && self.resource_def() == resource_def_ref
     }
 
     /// Returns the resource amount within the bucket.
@@ -63,7 +64,7 @@ impl BucketRef {
         };
         let output: GetBucketRefResourceDefOutput = call_engine(GET_BUCKET_REF_RESOURCE_DEF, input);
 
-        ResourceDefRef(output.resource_def_id)
+        output.resource_def_ref
     }
 
     /// Returns the key of a singleton non-fungible.

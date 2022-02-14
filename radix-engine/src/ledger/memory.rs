@@ -1,5 +1,5 @@
+use scrypto::engine::types::*;
 use scrypto::rust::collections::HashMap;
-use scrypto::types::*;
 
 use crate::ledger::*;
 use crate::model::*;
@@ -7,12 +7,12 @@ use crate::model::*;
 /// An in-memory ledger stores all substates in host memory.
 #[derive(Debug, Clone)]
 pub struct InMemorySubstateStore {
-    packages: HashMap<Address, Package>,
-    components: HashMap<Address, Component>,
-    lazy_maps: HashMap<(Address, Mid), LazyMap>,
-    resource_defs: HashMap<Address, ResourceDef>,
-    vaults: HashMap<(Address, Vid), Vault>,
-    non_fungibles: HashMap<(Address, NonFungibleKey), NonFungible>,
+    packages: HashMap<PackageRef, Package>,
+    components: HashMap<ComponentRef, Component>,
+    lazy_maps: HashMap<(ComponentRef, LazyMapId), LazyMap>,
+    resource_defs: HashMap<ResourceDefRef, ResourceDef>,
+    vaults: HashMap<(ComponentRef, VaultId), Vault>,
+    non_fungibles: HashMap<(ResourceDefRef, NonFungibleKey), NonFungible>,
     current_epoch: u64,
     nonce: u64,
 }
@@ -45,68 +45,74 @@ impl Default for InMemorySubstateStore {
 }
 
 impl SubstateStore for InMemorySubstateStore {
-    fn get_resource_def(&self, address: Address) -> Option<ResourceDef> {
-        self.resource_defs.get(&address).map(Clone::clone)
+    fn get_resource_def(&self, resource_def_ref: ResourceDefRef) -> Option<ResourceDef> {
+        self.resource_defs.get(&resource_def_ref).map(Clone::clone)
     }
 
-    fn put_resource_def(&mut self, address: Address, resource_def: ResourceDef) {
-        self.resource_defs.insert(address, resource_def);
+    fn put_resource_def(&mut self, resource_def_ref: ResourceDefRef, resource_def: ResourceDef) {
+        self.resource_defs.insert(resource_def_ref, resource_def);
     }
 
-    fn get_package(&self, address: Address) -> Option<Package> {
-        self.packages.get(&address).map(Clone::clone)
+    fn get_package(&self, package_ref: PackageRef) -> Option<Package> {
+        self.packages.get(&package_ref).map(Clone::clone)
     }
 
-    fn put_package(&mut self, address: Address, package: Package) {
-        self.packages.insert(address, package);
+    fn put_package(&mut self, package_ref: PackageRef, package: Package) {
+        self.packages.insert(package_ref, package);
     }
 
-    fn get_component(&self, address: Address) -> Option<Component> {
-        self.components.get(&address).map(Clone::clone)
+    fn get_component(&self, component_ref: ComponentRef) -> Option<Component> {
+        self.components.get(&component_ref).map(Clone::clone)
     }
 
-    fn put_component(&mut self, address: Address, component: Component) {
-        self.components.insert(address, component);
+    fn put_component(&mut self, component_ref: ComponentRef, component: Component) {
+        self.components.insert(component_ref, component);
     }
 
-    fn get_lazy_map(&self, component_address: &Address, mid: &Mid) -> Option<LazyMap> {
+    fn get_lazy_map(&self, component_ref: ComponentRef, lazy_map_id: LazyMapId) -> Option<LazyMap> {
         self.lazy_maps
-            .get(&(component_address.clone(), mid.clone()))
+            .get(&(component_ref, lazy_map_id))
             .map(Clone::clone)
     }
 
-    fn put_lazy_map(&mut self, component_address: Address, mid: Mid, lazy_map: LazyMap) {
-        self.lazy_maps.insert((component_address, mid), lazy_map);
+    fn put_lazy_map(
+        &mut self,
+        component_ref: ComponentRef,
+        lazy_map_id: LazyMapId,
+        lazy_map: LazyMap,
+    ) {
+        self.lazy_maps
+            .insert((component_ref, lazy_map_id), lazy_map);
     }
 
-    fn get_vault(&self, component_address: &Address, vid: &Vid) -> Option<Vault> {
+    fn get_vault(&self, component_ref: ComponentRef, vault_id: VaultId) -> Option<Vault> {
         self.vaults
-            .get(&(component_address.clone(), vid.clone()))
+            .get(&(component_ref, vault_id))
             .map(Clone::clone)
     }
 
-    fn put_vault(&mut self, component_address: Address, vid: Vid, vault: Vault) {
-        self.vaults.insert((component_address, vid), vault);
+    fn put_vault(&mut self, component_ref: ComponentRef, vault_id: VaultId, vault: Vault) {
+        self.vaults.insert((component_ref, vault_id), vault);
     }
 
     fn get_non_fungible(
         &self,
-        resource_address: Address,
+        resource_def_ref: ResourceDefRef,
         key: &NonFungibleKey,
     ) -> Option<NonFungible> {
         self.non_fungibles
-            .get(&(resource_address, key.clone()))
+            .get(&(resource_def_ref, key.clone()))
             .cloned()
     }
 
     fn put_non_fungible(
         &mut self,
-        resource_address: Address,
+        resource_def_ref: ResourceDefRef,
         key: &NonFungibleKey,
         non_fungible: NonFungible,
     ) {
         self.non_fungibles
-            .insert((resource_address, key.clone()), non_fungible);
+            .insert((resource_def_ref, key.clone()), non_fungible);
     }
 
     fn get_epoch(&self) -> u64 {

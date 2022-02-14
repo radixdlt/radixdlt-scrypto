@@ -14,7 +14,7 @@ blueprint! {
             map.get(&"hello".to_owned())
         }
 
-        pub fn new_lazy_map_into_vector() -> Component {
+        pub fn new_lazy_map_into_vector() -> ComponentRef {
             let map = LazyMap::new();
             map.get(&"hello".to_owned());
             let mut vector = Vec::new();
@@ -23,7 +23,7 @@ blueprint! {
             LazyMapTest { map, vector, lazy_maps }.instantiate()
         }
 
-        pub fn new_lazy_map_into_lazy_map() -> Component {
+        pub fn new_lazy_map_into_lazy_map() -> ComponentRef {
             let map = LazyMap::new();
             let vector = Vec::new();
             let lazy_maps = LazyMap::new();
@@ -31,7 +31,7 @@ blueprint! {
             LazyMapTest { map, vector, lazy_maps }.instantiate()
         }
 
-        pub fn new_lazy_map_into_map_then_get() -> Component {
+        pub fn new_lazy_map_into_map_then_get() -> ComponentRef {
             let lazy_map = LazyMap::new();
             let lazy_maps = LazyMap::new();
             lazy_maps.insert("hello".to_owned(), lazy_map);
@@ -48,14 +48,14 @@ blueprint! {
             self.lazy_maps.insert("hello".to_owned(), LazyMap::new())
         }
 
-        pub fn new_lazy_map_with_get() -> Component {
+        pub fn new_lazy_map_with_get() -> ComponentRef {
             let map = LazyMap::new();
             map.get(&"hello".to_owned());
             let lazy_maps = LazyMap::new();
             LazyMapTest { map, vector: Vec::new(), lazy_maps }.instantiate()
         }
 
-        pub fn new_lazy_map_with_put() -> Component {
+        pub fn new_lazy_map_with_put() -> ComponentRef {
             let map = LazyMap::new();
             map.insert("hello".to_owned(), "world".to_owned());
             let lazy_maps = LazyMap::new();

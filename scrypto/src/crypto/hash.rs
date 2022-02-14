@@ -4,6 +4,7 @@ use crate::misc::*;
 use crate::rust::convert::TryFrom;
 use crate::rust::fmt;
 use crate::rust::str::FromStr;
+use crate::rust::string::ToString;
 use crate::rust::vec::Vec;
 use crate::types::*;
 
@@ -90,9 +91,9 @@ impl FromStr for Hash {
     }
 }
 
-impl ToString for Hash {
-    fn to_string(&self) -> String {
-        hex::encode(self.0)
+impl fmt::Display for Hash {
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        write!(f, "{}", hex::encode(self.0))
     }
 }
 

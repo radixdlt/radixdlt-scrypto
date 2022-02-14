@@ -1,4 +1,5 @@
 use sbor::*;
+use scrypto::engine::types::*;
 use scrypto::rust::fmt;
 use scrypto::types::*;
 use wasmi::*;
@@ -26,16 +27,7 @@ pub enum WasmValidationError {
 #[derive(Debug, Clone)]
 pub enum DataValidationError {
     DecodeError(DecodeError),
-    InvalidTypeId(u8),
-    InvalidDecimal(ParseDecimalError),
-    InvalidBigDecimal(ParseBigDecimalError),
-    InvalidAddress(ParseAddressError),
-    InvalidH256(ParseH256Error),
-    InvalidBid(ParseBidError),
-    InvalidRid(ParseRidError),
-    InvalidMid(ParseMidError),
-    InvalidVid(ParseVidError),
-    InvalidNonFungibleKey(ParseNonFungibleKeyError),
+    CustomValueValidatorError(CustomValueValidatorError),
 }
 
 /// Represents an error when validating a transaction.
@@ -90,19 +82,19 @@ pub enum RuntimeError {
     HostFunctionNotFound(usize),
 
     /// Package already exists.
-    PackageAlreadyExists(Address),
+    PackageAlreadyExists(PackageRef),
 
     /// Component already exists.
-    ComponentAlreadyExists(Address),
+    ComponentAlreadyExists(ComponentRef),
 
     /// Resource definition already exists.
-    ResourceDefAlreadyExists(Address),
+    ResourceDefAlreadyExists(ResourceDefRef),
 
     /// Resource definition already exists.
-    LazyMapAlreadyExists(Mid),
+    LazyMapAlreadyExists(LazyMapId),
 
     /// Package does not exist.
-    PackageNotFound(Address),
+    PackageNotFound(PackageRef),
 
     /// System call not allowed in given context.
     IllegalSystemCall(),
@@ -111,47 +103,37 @@ pub enum RuntimeError {
     ComponentNotLoaded(),
 
     /// Component does not exist.
-    ComponentNotFound(Address),
+    ComponentNotFound(ComponentRef),
 
     /// Component is already loaded
-    ComponentAlreadyLoaded(Address),
+    ComponentAlreadyLoaded(ComponentRef),
 
     /// Resource definition does not exist.
-    ResourceDefNotFound(Address),
+    ResourceDefNotFound(ResourceDefRef),
 
     /// Non-fungible does not exist.
-    NonFungibleNotFound(Address, NonFungibleKey),
+    NonFungibleNotFound(ResourceDefRef, NonFungibleKey),
 
     /// Non-fungible already exists.
-    NonFungibleAlreadyExists(Address, NonFungibleKey),
+    NonFungibleAlreadyExists(ResourceDefRef, NonFungibleKey),
 
     /// Lazy map does not exist.
-    LazyMapNotFound(Mid),
+    LazyMapNotFound(LazyMapId),
 
     /// Lazy map removed.
-    LazyMapRemoved(Mid),
+    LazyMapRemoved(LazyMapId),
 
     /// Vault does not exist.
-    VaultNotFound(Vid),
+    VaultNotFound(VaultId),
 
     /// Vault removed.
-    VaultRemoved(Vid),
+    VaultRemoved(VaultId),
 
     /// Bucket does not exist.
-    BucketNotFound(Bid),
+    BucketNotFound(BucketId),
 
     /// Bucket ref does not exist.
-    BucketRefNotFound(Rid),
-
-    /// Not a package address.
-    InvalidPackageAddress(Address),
-
-    /// Not a component address.
-    InvalidComponentAddress(Address),
-
-    /// Not a resource def address.
-    InvalidResourceDefAddress(Address),
-
+    BucketRefNotFound(BucketRefId),
     /// The referenced bucket contains no resource.
     EmptyBucketRef,
 
@@ -180,7 +162,7 @@ pub enum RuntimeError {
     InterpreterNotStarted,
 
     /// Invalid log level.
-    InvalidLogLevel,
+    InvalidLevel,
 
     /// The bucket id is not reserved.
     BucketNotReserved,

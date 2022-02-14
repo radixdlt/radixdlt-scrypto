@@ -22,7 +22,7 @@ pub fn compile(name: &str) -> Vec<u8> {
 #[test]
 fn test_package() {
     let mut ledger = InMemorySubstateStore::with_bootstrap();
-    let mut executor = TransactionExecutor::new(&mut ledger, false);
+    let mut executor = TransactionExecutor::new(&mut ledger, true);
     let key = executor.new_public_key();
     let account = executor.new_account(key);
     let package = executor.publish_package(&compile("package")).unwrap();
@@ -44,7 +44,7 @@ fn test_package() {
 #[test]
 fn test_context() {
     let mut ledger = InMemorySubstateStore::with_bootstrap();
-    let mut executor = TransactionExecutor::new(&mut ledger, false);
+    let mut executor = TransactionExecutor::new(&mut ledger, true);
     let key = executor.new_public_key();
     let account = executor.new_account(key);
     let package = executor.publish_package(&compile("context")).unwrap();
@@ -60,7 +60,7 @@ fn test_context() {
 #[test]
 fn test_component() {
     let mut ledger = InMemorySubstateStore::with_bootstrap();
-    let mut executor = TransactionExecutor::new(&mut ledger, false);
+    let mut executor = TransactionExecutor::new(&mut ledger, true);
     let key = executor.new_public_key();
     let account = executor.new_account(key);
     let package = executor.publish_package(&compile("component")).unwrap();
@@ -80,7 +80,7 @@ fn test_component() {
     assert!(receipt1.result.is_ok());
 
     // Find the component address from receipt
-    let component = receipt1.component(0).unwrap();
+    let component = receipt1.new_component_refs[0];
 
     // Call functions & methods
     let transaction2 = TransactionBuilder::new(&executor)
@@ -103,7 +103,7 @@ fn test_component() {
 #[test]
 fn test_resource_def() {
     let mut ledger = InMemorySubstateStore::with_bootstrap();
-    let mut executor = TransactionExecutor::new(&mut ledger, false);
+    let mut executor = TransactionExecutor::new(&mut ledger, true);
     let key = executor.new_public_key();
     let account = executor.new_account(key);
     let package = executor.publish_package(&compile("resource_def")).unwrap();
@@ -218,7 +218,7 @@ fn test_resource_def() {
 #[test]
 fn test_bucket() {
     let mut ledger = InMemorySubstateStore::with_bootstrap();
-    let mut executor = TransactionExecutor::new(&mut ledger, false);
+    let mut executor = TransactionExecutor::new(&mut ledger, true);
     let key = executor.new_public_key();
     let account = executor.new_account(key);
     let package = executor.publish_package(&compile("bucket")).unwrap();
@@ -253,7 +253,7 @@ fn test_bucket() {
 #[test]
 fn test_badge() {
     let mut ledger = InMemorySubstateStore::with_bootstrap();
-    let mut executor = TransactionExecutor::new(&mut ledger, false);
+    let mut executor = TransactionExecutor::new(&mut ledger, true);
     let key = executor.new_public_key();
     let account = executor.new_account(key);
     let package = executor.publish_package(&compile("badge")).unwrap();
@@ -273,7 +273,7 @@ fn test_badge() {
 #[test]
 fn test_call() {
     let mut ledger = InMemorySubstateStore::with_bootstrap();
-    let mut executor = TransactionExecutor::new(&mut ledger, false);
+    let mut executor = TransactionExecutor::new(&mut ledger, true);
     let key = executor.new_public_key();
     let account = executor.new_account(key);
     let package = executor.publish_package(&compile("call")).unwrap();
@@ -297,7 +297,7 @@ fn test_call() {
 #[test]
 fn test_non_fungible() {
     let mut ledger = InMemorySubstateStore::with_bootstrap();
-    let mut executor = TransactionExecutor::new(&mut ledger, false);
+    let mut executor = TransactionExecutor::new(&mut ledger, true);
     let key = executor.new_public_key();
     let account = executor.new_account(key);
     let package = executor.publish_package(&compile("non_fungible")).unwrap();

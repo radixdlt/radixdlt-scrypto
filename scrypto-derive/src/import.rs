@@ -54,7 +54,8 @@ pub fn handle_import(input: TokenStream) -> Result<TokenStream> {
             pub fn #func_indent(#(#func_args: #func_types),*) -> #func_output {
                 let package = ::scrypto::core::PackageRef::from_str(#package).unwrap();
                 let rtn = ::scrypto::core::Context::call_function(
-                    (package, #name),
+                    package,
+                    #name,
                     #func_name,
                     ::scrypto::args!(#(#func_args),*)
                 );
@@ -320,24 +321,39 @@ fn get_native_type(ty: &des::Type) -> Result<(Type, Vec<Item>)> {
             parse_quote! { HashMap<#key_type, #value_type> }
         }
         des::Type::Custom { name, generics } => {
-            if name.starts_with("scrypto::") {
-                let ty: Type = parse_str(&format!("::{}", name)).unwrap();
-                if generics.is_empty() {
-                    parse_quote! { #ty }
-                } else {
-                    let mut types = vec![];
-                    for g in generics {
-                        let (t, v) = get_native_type(g)?;
-                        types.push(t);
-                        structs.extend(v);
-                    }
-                    parse_quote! { #ty<#(#types),*> }
+            // Copying the names, rather than using the enu, to avoid cyclic dependency.
+
+            let canonical_name = match name.as_str() {
+                "PackageRef" => "::scrypto::core::PackageRef",
+                "ComponentRef" => "::scrypto::core::ComponentRef",
+                "LazyMap" => "::scrypto::core::LazyMap",
+                "Hash" => "::scrypto::crypto::Hash",
+                "Decimal" => "::scrypto::math::Decimal",
+                "BigDecimal" => "::scrypto::math::BigDecimal",
+                "Bucket" => "::scrypto::resource::Bucket",
+                "BucketRef" => "::scrypto::resource::BucketRef",
+                "Vault" => "::scrypto::resource::Vault",
+                "NonFungibleKey" => "::scrypto::resource::NonFungibleKey",
+                "ResourceDefRef" => "::scrypto::resource::ResourceDefRef",
+                _ => {
+                    return Err(Error::new(
+                        Span::call_site(),
+                        format!("Invalid custom type: {}", name),
+                    ));
                 }
+            };
+
+            let ty: Type = parse_str(canonical_name).unwrap();
+            if generics.is_empty() {
+                parse_quote! { #ty }
             } else {
-                return Err(Error::new(
-                    Span::call_site(),
-                    format!("Invalid custom type: {}", name),
-                ));
+                let mut types = vec![];
+                for g in generics {
+                    let (t, v) = get_native_type(g)?;
+                    types.push(t);
+                    structs.extend(v);
+                }
+                parse_quote! { #ty<#(#types),*> }
             }
         }
     };
@@ -370,7 +386,7 @@ mod tests {
                             "inputs": [],
                             "output": {
                                 "type": "Custom",
-                                "name": "scrypto::core::ComponentRef",
+                                "name": "ComponentRef",
                                 "generics": []
                             }
                         }
@@ -383,7 +399,7 @@ mod tests {
                             ],
                             "output": {
                                 "type": "Custom",
-                                "name": "scrypto::resource::Bucket",
+                                "name": "Bucket",
                                 "generics": []
                             }
                         }
@@ -407,7 +423,7 @@ mod tests {
                         let package = ::scrypto::core::PackageRef::from_str(
                             "056967d3d49213394892980af59be76e9b3e7cc4cb78237460d0c7"
                         ).unwrap();
-                        let rtn = ::scrypto::core::Context::call_function((package, "Simple"), "new", ::scrypto::args!());
+                        let rtn = ::scrypto::core::Context::call_function(package, "Simple", "new", ::scrypto::args!());
                         ::scrypto::buffer::scrypto_decode(&rtn).unwrap()
                     }
                     pub fn free_token(&self) -> ::scrypto::resource::Bucket {

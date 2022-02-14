@@ -1,11 +1,11 @@
 use colored::*;
-use scrypto::engine::*;
+use scrypto::engine::types::*;
 use scrypto::rust::fmt;
 use scrypto::rust::string::String;
 use scrypto::rust::string::ToString;
 use scrypto::rust::vec::Vec;
-use scrypto::types::*;
 
+use crate::errors::*;
 use crate::model::*;
 
 /// Represents a transaction receipt.
@@ -13,35 +13,11 @@ pub struct Receipt {
     pub transaction: ValidatedTransaction,
     pub result: Result<(), RuntimeError>,
     pub outputs: Vec<ValidatedData>,
-    pub logs: Vec<(LogLevel, String)>,
-    pub new_entities: Vec<Address>,
+    pub logs: Vec<(Level, String)>,
+    pub new_package_refs: Vec<PackageRef>,
+    pub new_component_refs: Vec<ComponentRef>,
+    pub new_resource_def_refs: Vec<ResourceDefRef>,
     pub execution_time: Option<u128>,
-}
-
-impl Receipt {
-    pub fn package(&self, nth: usize) -> Option<Address> {
-        self.new_entities
-            .iter()
-            .filter(|a| matches!(a, Address::Package(_)))
-            .map(Clone::clone)
-            .nth(nth)
-    }
-
-    pub fn component(&self, nth: usize) -> Option<Address> {
-        self.new_entities
-            .iter()
-            .filter(|a| matches!(a, Address::Component(_)))
-            .map(Clone::clone)
-            .nth(nth)
-    }
-
-    pub fn resource_def(&self, nth: usize) -> Option<Address> {
-        self.new_entities
-            .iter()
-            .filter(|a| matches!(a, Address::ResourceDef(_)))
-            .map(Clone::clone)
-            .nth(nth)
-    }
 }
 
 macro_rules! prefix {
@@ -94,11 +70,11 @@ impl fmt::Debug for Receipt {
         write!(f, "\n{} {}", "Logs:".bold().green(), self.logs.len())?;
         for (i, (level, msg)) in self.logs.iter().enumerate() {
             let (l, m) = match level {
-                LogLevel::Error => ("ERROR".red(), msg.red()),
-                LogLevel::Warn => ("WARN".yellow(), msg.yellow()),
-                LogLevel::Info => ("INFO".green(), msg.green()),
-                LogLevel::Debug => ("DEBUG".cyan(), msg.cyan()),
-                LogLevel::Trace => ("TRACE".normal(), msg.normal()),
+                Level::Error => ("ERROR".red(), msg.red()),
+                Level::Warn => ("WARN".yellow(), msg.yellow()),
+                Level::Info => ("INFO".green(), msg.green()),
+                Level::Debug => ("DEBUG".cyan(), msg.cyan()),
+                Level::Trace => ("TRACE".normal(), msg.normal()),
             };
             write!(f, "\n{} [{:5}] {}", prefix!(i, self.logs), l, m)?;
         }
@@ -106,16 +82,41 @@ impl fmt::Debug for Receipt {
         write!(
             f,
             "\n{} {}",
-            "New Entities:".bold().green(),
-            self.new_entities.len()
+            "New Packages:".bold().green(),
+            self.new_package_refs.len()
         )?;
-        for (i, address) in self.new_entities.iter().enumerate() {
-            let ty = match address {
-                Address::Package(_) => "Package",
-                Address::Component(_) => "Component",
-                Address::ResourceDef(_) => "ResourceDef",
-            };
-            write!(f, "\n{} {}: {}", prefix!(i, self.new_entities), ty, address)?;
+        for (i, package_ref) in self.new_package_refs.iter().enumerate() {
+            write!(f, "\n{} {}", prefix!(i, self.new_package_refs), package_ref)?;
+        }
+
+        write!(
+            f,
+            "\n{} {}",
+            "New Components:".bold().green(),
+            self.new_component_refs.len()
+        )?;
+        for (i, component_ref) in self.new_component_refs.iter().enumerate() {
+            write!(
+                f,
+                "\n{} {}",
+                prefix!(i, self.new_component_refs),
+                component_ref
+            )?;
+        }
+
+        write!(
+            f,
+            "\n{} {}",
+            "New Resource Defs:".bold().green(),
+            self.new_resource_def_refs.len()
+        )?;
+        for (i, resource_def_ref) in self.new_resource_def_refs.iter().enumerate() {
+            write!(
+                f,
+                "\n{} {}",
+                prefix!(i, self.new_resource_def_refs),
+                resource_def_ref
+            )?;
         }
 
         Ok(())

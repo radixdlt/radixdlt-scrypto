@@ -51,7 +51,7 @@ fn test_simple_abi() {
                     "inputs": [],
                     "output": {
                         "type": "Custom",
-                        "name": "scrypto::core::ComponentRef",
+                        "name": "ComponentRef",
                         "generics": []
                     }
                 },
@@ -63,17 +63,17 @@ fn test_simple_abi() {
                         "elements": [
                             {
                                 "type": "Custom",
-                                "name": "scrypto::math::Decimal",
+                                "name": "Decimal",
                                 "generics": []
                             },
                             {
                                 "type": "Custom",
-                                "name": "scrypto::core::PackageRef",
+                                "name": "PackageRef",
                                 "generics": []
                             },
                             {
                                 "type": "Custom",
-                                "name": "scrypto::core::LazyMap",
+                                "name": "LazyMap",
                                 "generics": [
                                     {
                                         "type": "String"
@@ -85,22 +85,22 @@ fn test_simple_abi() {
                             },
                             {
                                 "type": "Custom",
-                                "name": "scrypto::crypto::Hash",
+                                "name":  "Hash",
                                 "generics": []
                             },
                             {
                                 "type": "Custom",
-                                "name": "scrypto::resource::Bucket",
+                                "name": "Bucket",
                                 "generics": []
                             },
                             {
                                 "type": "Custom",
-                                "name": "scrypto::resource::BucketRef",
+                                "name": "BucketRef",
                                 "generics": []
                             },
                             {
                                 "type": "Custom",
-                                "name": "scrypto::resource::Vault",
+                                "name": "Vault",
                                 "generics": []
                             }
                         ]

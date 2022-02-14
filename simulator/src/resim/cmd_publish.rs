@@ -1,7 +1,7 @@
 use clap::Parser;
 use colored::*;
 use radix_engine::transaction::*;
-use scrypto::types::*;
+use scrypto::engine::types::*;
 use std::ffi::OsStr;
 use std::fs;
 use std::path::PathBuf;
@@ -18,11 +18,11 @@ pub struct Publish {
 
     /// The package address, for overwriting
     #[clap(long)]
-    address: Option<Address>,
+    package_ref: Option<PackageRef>,
 
     /// The transaction signers
     #[clap(short, long)]
-    signers: Option<Vec<Address>>,
+    signers: Option<Vec<EcdsaPublicKey>>,
 
     /// Turn on tracing
     #[clap(short, long)]
@@ -41,9 +41,9 @@ impl Publish {
 
         let mut ledger = RadixEngineDB::with_bootstrap(get_data_dir()?);
         let mut executor = TransactionExecutor::new(&mut ledger, self.trace);
-        if let Some(address) = self.address.clone() {
+        if let Some(package_ref) = self.package_ref.clone() {
             // Overwrite package
-            executor.overwrite_package(address, &code);
+            executor.overwrite_package(package_ref, &code);
             println!("Package updated!");
             Ok(())
         } else {

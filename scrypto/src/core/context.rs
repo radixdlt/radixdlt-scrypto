@@ -49,12 +49,14 @@ impl Context {
 
     /// Invokes a function on a blueprint.
     pub fn call_function<S: AsRef<str>>(
-        blueprint: (PackageRef, S),
+        package_ref: PackageRef,
+        blueprint_name: S,
         function: S,
         args: Vec<Vec<u8>>,
     ) -> Vec<u8> {
         let input = CallFunctionInput {
-            blueprint_id: (blueprint.0 .0, blueprint.1.as_ref().to_owned()),
+            package_ref,
+            blueprint_name: blueprint_name.as_ref().to_owned(),
             function: function.as_ref().to_owned(),
             args,
         };
@@ -65,12 +67,12 @@ impl Context {
 
     /// Invokes a method on a component.
     pub fn call_method<S: AsRef<str>>(
-        component: ComponentRef,
+        component_ref: ComponentRef,
         method: S,
         args: Vec<Vec<u8>>,
     ) -> Vec<u8> {
         let input = CallMethodInput {
-            component_id: component.0,
+            component_ref: component_ref,
             method: method.as_ref().to_owned(),
             args,
         };

@@ -14,15 +14,15 @@ pub mod resource_flags;
 /// Resource permissions.
 pub mod resource_permissions;
 
-pub use bucket::Bucket;
-pub use bucket_ref::BucketRef;
+pub use bucket::{Bucket, ParseBucketError};
+pub use bucket_ref::{BucketRef, ParseBucketRefError};
 pub use non_fungible::NonFungible;
 pub use non_fungible_data::NonFungibleData;
-pub use non_fungible_key::NonFungibleKey;
+pub use non_fungible_key::{NonFungibleKey, ParseNonFungibleKeyError};
 pub use resource_builder::{ResourceBuilder, DIVISIBILITY_MAXIMUM, DIVISIBILITY_NONE};
-pub use resource_def::ResourceDefRef;
+pub use resource_def::{ParseResourceDefRefError, ResourceDefRef};
 pub use resource_flags::*;
 pub use resource_permissions::*;
 pub use resource_type::ResourceType;
 pub use supply::Supply;
-pub use vault::Vault;
+pub use vault::{ParseVaultError, Vault};

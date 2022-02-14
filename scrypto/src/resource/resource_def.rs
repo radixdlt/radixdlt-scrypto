@@ -1,6 +1,6 @@
 use sbor::{describe::Type, *};
 
-use crate::engine::{api::*, call_engine, types::ResourceDefId};
+use crate::engine::{api::*, call_engine};
 use crate::math::*;
 use crate::misc::*;
 use crate::resource::*;
@@ -8,12 +8,12 @@ use crate::rust::collections::HashMap;
 use crate::rust::fmt;
 use crate::rust::str::FromStr;
 use crate::rust::string::String;
-use crate::rust::string::ToString;
+use crate::rust::vec::Vec;
 use crate::types::*;
 
 /// Represents a resource definition.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct ResourceDefRef(pub ResourceDefId);
+pub struct ResourceDefRef(pub [u8; 26]);
 
 impl ResourceDefRef {
     /// Creates a resource with the given parameters.
@@ -32,13 +32,13 @@ impl ResourceDefRef {
             metadata,
             flags,
             mutable_flags,
-            authorities: authorities.into_iter().map(|(k, v)| (k.0, v)).collect(),
+            authorities,
             initial_supply,
         };
         let output: CreateResourceOutput = call_engine(CREATE_RESOURCE, input);
 
         (
-            Self(output.resource_def_id),
+            output.resource_def_ref,
             output.bucket_id.map(|id| Bucket(id)),
         )
     }
@@ -46,7 +46,7 @@ impl ResourceDefRef {
     /// Mints fungible resources
     pub fn mint<T: Into<Decimal>>(&mut self, amount: T, auth: BucketRef) -> Bucket {
         let input = MintResourceInput {
-            resource_def_id: self.0,
+            resource_def_ref: *self,
             new_supply: Supply::Fungible {
                 amount: amount.into(),
             },
@@ -68,7 +68,7 @@ impl ResourceDefRef {
         entries.insert(key.clone(), (data.immutable_data(), data.mutable_data()));
 
         let input = MintResourceInput {
-            resource_def_id: self.0,
+            resource_def_ref: *self,
             new_supply: Supply::NonFungible { entries },
             auth: auth.0,
         };
@@ -98,7 +98,7 @@ impl ResourceDefRef {
     /// Returns the resource type.
     pub fn resource_type(&self) -> ResourceType {
         let input = GetResourceTypeInput {
-            resource_def_id: self.0,
+            resource_def_ref: *self,
         };
         let output: GetResourceTypeOutput = call_engine(GET_RESOURCE_TYPE, input);
 
@@ -108,7 +108,7 @@ impl ResourceDefRef {
     /// Returns the metadata associated with this resource.
     pub fn metadata(&self) -> HashMap<String, String> {
         let input = GetResourceMetadataInput {
-            resource_def_id: self.0,
+            resource_def_ref: *self,
         };
         let output: GetResourceMetadataOutput = call_engine(GET_RESOURCE_METADATA, input);
 
@@ -118,7 +118,7 @@ impl ResourceDefRef {
     /// Returns the feature flags.
     pub fn flags(&self) -> u64 {
         let input = GetResourceFlagsInput {
-            resource_def_id: self.0,
+            resource_def_ref: *self,
         };
         let output: GetResourceFlagsOutput = call_engine(GET_RESOURCE_FLAGS, input);
 
@@ -128,7 +128,7 @@ impl ResourceDefRef {
     /// Returns the mutable feature flags.
     pub fn mutable_flags(&self) -> u64 {
         let input = GetResourceMutableFlagsInput {
-            resource_def_id: self.0,
+            resource_def_ref: *self,
         };
         let output: GetResourceMutableFlagsOutput = call_engine(GET_RESOURCE_MUTABLE_FLAGS, input);
 
@@ -138,7 +138,7 @@ impl ResourceDefRef {
     /// Returns the current supply of this resource.
     pub fn total_supply(&self) -> Decimal {
         let input = GetResourceTotalSupplyInput {
-            resource_def_id: self.0,
+            resource_def_ref: *self,
         };
         let output: GetResourceTotalSupplyOutput = call_engine(GET_RESOURCE_TOTAL_SUPPLY, input);
 
@@ -151,7 +151,7 @@ impl ResourceDefRef {
     /// Panics if this is not a non-fungible resource or the specified non-fungible is not found.
     pub fn get_non_fungible_data<T: NonFungibleData>(&self, key: &NonFungibleKey) -> T {
         let input = GetNonFungibleDataInput {
-            resource_def_id: self.0,
+            resource_def_ref: *self,
             key: key.clone(),
         };
         let output: GetNonFungibleDataOutput = call_engine(GET_NON_FUNGIBLE_DATA, input);
@@ -170,7 +170,7 @@ impl ResourceDefRef {
         auth: BucketRef,
     ) {
         let input = UpdateNonFungibleMutableDataInput {
-            resource_def_id: self.0,
+            resource_def_ref: *self,
             key: key.clone(),
             new_mutable_data: new_data.mutable_data(),
             auth: auth.0,
@@ -182,7 +182,7 @@ impl ResourceDefRef {
     /// Turns on feature flags.
     pub fn enable_flags(&mut self, flags: u64, auth: BucketRef) {
         let input = UpdateResourceFlagsInput {
-            resource_def_id: self.0,
+            resource_def_ref: *self,
             new_flags: self.flags() | flags,
             auth: auth.0,
         };
@@ -192,7 +192,7 @@ impl ResourceDefRef {
     /// Turns off feature flags.
     pub fn disable_flags(&mut self, flags: u64, auth: BucketRef) {
         let input = UpdateResourceFlagsInput {
-            resource_def_id: self.0,
+            resource_def_ref: *self,
             new_flags: self.flags() & !flags,
             auth: auth.0,
         };
@@ -202,7 +202,7 @@ impl ResourceDefRef {
     /// Locks feature flag settings.
     pub fn lock_flags(&mut self, flags: u64, auth: BucketRef) {
         let input = UpdateResourceMutableFlagsInput {
-            resource_def_id: self.0,
+            resource_def_ref: *self,
             new_mutable_flags: self.flags() & !flags,
             auth: auth.0,
         };
@@ -212,7 +212,7 @@ impl ResourceDefRef {
 
     pub fn update_metadata(&mut self, new_metadata: HashMap<String, String>, auth: BucketRef) {
         let input = UpdateResourceMetadataInput {
-            resource_def_id: self.0,
+            resource_def_ref: *self,
             new_metadata,
             auth: auth.0,
         };
@@ -278,8 +278,8 @@ impl FromStr for ResourceDefRef {
     }
 }
 
-impl ToString for ResourceDefRef {
-    fn to_string(&self) -> String {
-        hex::encode(combine(3, &self.0))
+impl fmt::Display for ResourceDefRef {
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        write!(f, "{}", hex::encode(combine(3, &self.0)))
     }
 }

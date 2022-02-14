@@ -1,7 +1,7 @@
 use clap::Parser;
 use radix_engine::transaction::*;
+use scrypto::engine::types::*;
 use scrypto::rust::collections::*;
-use scrypto::types::*;
 
 use crate::resim::*;
 
@@ -9,7 +9,7 @@ use crate::resim::*;
 #[derive(Parser, Debug)]
 pub struct NewTokenMutable {
     /// The minter badge address
-    badge_address: Address,
+    badge: ResourceDefRef,
 
     /// The symbol
     #[clap(long)]
@@ -67,7 +67,7 @@ impl NewTokenMutable {
         };
         let signatures = self.signers.clone().unwrap_or(default_signers);
         let transaction = TransactionBuilder::new(&executor)
-            .new_token_mutable(metadata, self.badge_address)
+            .new_token_mutable(metadata, self.badge)
             .build(signatures)
             .map_err(Error::TransactionConstructionError)?;
         process_transaction(transaction, &mut executor, &self.manifest)

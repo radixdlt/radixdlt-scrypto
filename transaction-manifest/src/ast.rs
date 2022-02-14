@@ -7,18 +7,18 @@ pub struct Transaction {
 pub enum Instruction {
     TakeFromWorktop {
         amount: Value,
-        resource_address: Value,
+        resource_def_ref: Value,
         new_bucket: Value,
     },
 
     TakeAllFromWorktop {
-        resource_address: Value,
+        resource_def_ref: Value,
         new_bucket: Value,
     },
 
     TakeNonFungiblesFromWorktop {
         keys: Value,
-        resource_address: Value,
+        resource_def_ref: Value,
         new_bucket: Value,
     },
 
@@ -28,7 +28,7 @@ pub enum Instruction {
 
     AssertWorktopContains {
         amount: Value,
-        resource_address: Value,
+        resource_def_ref: Value,
     },
 
     CreateBucketRef {
@@ -46,20 +46,20 @@ pub enum Instruction {
     },
 
     CallFunction {
-        package_address: Value,
+        package_ref: Value,
         blueprint_name: Value,
         function: Value,
         args: Vec<Value>,
     },
 
     CallMethod {
-        component_address: Value,
+        component_ref: Value,
         method: Value,
         args: Vec<Value>,
     },
 
     CallMethodWithAllResources {
-        component_address: Value,
+        component_ref: Value,
         method: Value,
     },
 }
@@ -98,12 +98,12 @@ pub enum Type {
     /* Custom types */
     Decimal,
     BigDecimal,
-    Address,
+    PackageRef,
+    ComponentRef,
+    ResourceDefRef,
     Hash,
     Bucket,
     BucketRef,
-    LazyMap,
-    Vault,
     NonFungibleKey,
 }
 
@@ -138,12 +138,12 @@ pub enum Value {
 
     Decimal(Box<Value>),
     BigDecimal(Box<Value>),
-    Address(Box<Value>),
+    PackageRef(Box<Value>),
+    ComponentRef(Box<Value>),
+    ResourceDefRef(Box<Value>),
     Hash(Box<Value>),
     Bucket(Box<Value>),
     BucketRef(Box<Value>),
-    LazyMap(Box<Value>),
-    Vault(Box<Value>),
     NonFungibleKey(Box<Value>),
 }
 
@@ -186,12 +186,12 @@ impl Value {
             Value::HashMap(_, _, _) => Type::HashMap,
             Value::Decimal(_) => Type::Decimal,
             Value::BigDecimal(_) => Type::BigDecimal,
-            Value::Address(_) => Type::Address,
+            Value::PackageRef(_) => Type::PackageRef,
+            Value::ComponentRef(_) => Type::ComponentRef,
+            Value::ResourceDefRef(_) => Type::ResourceDefRef,
             Value::Hash(_) => Type::Hash,
             Value::Bucket(_) => Type::Bucket,
             Value::BucketRef(_) => Type::BucketRef,
-            Value::LazyMap(_) => Type::LazyMap,
-            Value::Vault(_) => Type::Vault,
             Value::NonFungibleKey(_) => Type::NonFungibleKey,
         }
     }

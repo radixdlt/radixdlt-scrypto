@@ -63,18 +63,18 @@ fn test_simple_auth() {
                     "inputs": [
                         {
                             "type": "Custom",
-                            "name": "scrypto::resource::ResourceDefRef",
+                            "name": "ResourceDefRef",
                             "generics": []
                         },
                         {
                             "type": "Custom",
-                            "name": "scrypto::resource::ResourceDefRef",
+                            "name": "ResourceDefRef",
                             "generics": []
                         }
                     ],
                     "output": {
                         "type": "Custom",
-                        "name": "scrypto::core::ComponentRef",
+                        "name": "ComponentRef",
                         "generics": []
                     }
                 }
@@ -86,12 +86,12 @@ fn test_simple_auth() {
                     "inputs": [
                         {
                             "type": "Custom",
-                            "name": "scrypto::resource::Bucket",
+                            "name": "Bucket",
                             "generics": []
                         },
                         {
                             "type": "Custom",
-                            "name": "scrypto::resource::BucketRef",
+                            "name": "BucketRef",
                             "generics": []
                         }
                     ],
@@ -105,13 +105,13 @@ fn test_simple_auth() {
                     "inputs": [
                         {
                             "type": "Custom",
-                            "name": "scrypto::resource::BucketRef",
+                            "name": "BucketRef",
                             "generics": []
                         }
                     ],
                     "output": {
                         "type": "Custom",
-                        "name": "scrypto::resource::Bucket",
+                        "name": "Bucket",
                         "generics": []
                     }
                 },
@@ -121,13 +121,13 @@ fn test_simple_auth() {
                     "inputs": [
                         {
                             "type": "Custom",
-                            "name": "scrypto::resource::BucketRef",
+                            "name": "BucketRef",
                             "generics": []
                         }
                     ],
                     "output": {
                         "type": "Custom",
-                        "name": "scrypto::resource::Bucket",
+                        "name": "Bucket",
                         "generics": []
                     }
                 }

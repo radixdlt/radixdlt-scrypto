@@ -4,8 +4,8 @@ blueprint! {
     struct PackageTest;
 
     impl PackageTest {
-        pub fn publish_package() -> Package {
-            Package::new(include_bytes!("../../../../assets/system.wasm"))
+        pub fn publish_package() -> PackageRef {
+            PackageRef::new(include_bytes!("../../../../assets/system.wasm"))
         }
     }
 }

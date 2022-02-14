@@ -1,7 +1,7 @@
 pub mod api;
 pub mod types;
 
-use crate::buffer::{scrypto_decode, scrypto_encode};
+use crate::buffer::*;
 use api::*;
 use sbor::*;
 

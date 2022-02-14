@@ -22,15 +22,15 @@ blueprint! {
 
         pub fn move_bucket() {
             let bucket = Self::create_test_token(1000);
-            let component = MoveTest { vaults: Vec::new() }.instantiate();
-            call_method(component.address(), "receive_bucket", args!(bucket));
+            let component_ref = MoveTest { vaults: Vec::new() }.instantiate();
+            Context::call_method(component_ref, "receive_bucket", args!(bucket));
         }
 
         pub fn move_bucket_ref() -> Bucket {
             let bucket = Self::create_test_token(1000);
-            let component = MoveTest { vaults: Vec::new() }.instantiate();
-            call_method(
-                component.address(),
+            let component_ref = MoveTest { vaults: Vec::new() }.instantiate();
+            Context::call_method(
+                component_ref,
                 "receive_bucket_ref",
                 args!(bucket.present()),
             );

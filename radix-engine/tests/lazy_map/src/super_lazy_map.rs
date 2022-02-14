@@ -6,7 +6,7 @@ blueprint! {
     }
 
     impl SuperLazyMap {
-        pub fn new() -> Component {
+        pub fn new() -> ComponentRef {
             let map0 = LazyMap::new();
             let map1 = LazyMap::new();
             let map2 = LazyMap::new();

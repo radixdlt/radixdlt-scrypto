@@ -1,9 +1,9 @@
 use sbor::*;
 use scrypto::buffer::*;
-use scrypto::engine::*;
+use scrypto::constants::*;
+use scrypto::engine::types::*;
 use scrypto::rust::borrow::ToOwned;
 use scrypto::rust::collections::*;
-use scrypto::types::*;
 
 use crate::model::*;
 
@@ -12,47 +12,53 @@ const XRD_NAME: &str = "Radix";
 const XRD_DESCRIPTION: &str = "The Radix Public Network's native token, used to pay the network's required transaction fees and to secure the network through staking to its validator nodes.";
 const XRD_URL: &str = "https://tokens.radixdlt.com";
 const XRD_MAX_SUPPLY: i128 = 24_000_000_000_000i128;
-const XRD_VAULT_ID: Vid = Vid(H256([0u8; 32]), 0);
+const XRD_VAULT_ID: VaultId = (Hash([0u8; 32]), 0);
+const XRD_VAULT: scrypto::resource::Vault = scrypto::resource::Vault(XRD_VAULT_ID);
 
 const SYSTEM_COMPONENT_NAME: &str = "System";
 
 #[derive(TypeId, Encode, Decode)]
 struct SystemComponentState {
-    xrd: Vid,
+    xrd: scrypto::resource::Vault,
 }
 
 /// A ledger stores all transactions and substates.
 pub trait SubstateStore {
-    fn get_resource_def(&self, address: Address) -> Option<ResourceDef>;
+    fn get_resource_def(&self, resource_def_ref: ResourceDefRef) -> Option<ResourceDef>;
 
-    fn put_resource_def(&mut self, address: Address, resource_def: ResourceDef);
+    fn put_resource_def(&mut self, resource_def_ref: ResourceDefRef, resource_def: ResourceDef);
 
-    fn get_package(&self, address: Address) -> Option<Package>;
+    fn get_package(&self, package_ref: PackageRef) -> Option<Package>;
 
-    fn put_package(&mut self, address: Address, package: Package);
+    fn put_package(&mut self, package_ref: PackageRef, package: Package);
 
-    fn get_component(&self, address: Address) -> Option<Component>;
+    fn get_component(&self, component_ref: ComponentRef) -> Option<Component>;
 
-    fn put_component(&mut self, address: Address, component: Component);
+    fn put_component(&mut self, component_ref: ComponentRef, component: Component);
 
-    fn get_lazy_map(&self, component_address: &Address, mid: &Mid) -> Option<LazyMap>;
+    fn get_lazy_map(&self, component_ref: ComponentRef, lazy_map_id: LazyMapId) -> Option<LazyMap>;
 
-    fn put_lazy_map(&mut self, component_address: Address, vid: Mid, lazy_map: LazyMap);
+    fn put_lazy_map(
+        &mut self,
+        component_ref: ComponentRef,
+        lazy_map_id: LazyMapId,
+        lazy_map: LazyMap,
+    );
 
-    fn get_vault(&self, component_address: &Address, vid: &Vid) -> Option<Vault>;
+    fn get_vault(&self, component_ref: ComponentRef, vault_id: VaultId) -> Option<Vault>;
 
-    fn put_vault(&mut self, component_address: Address, vid: Vid, vault: Vault);
+    fn put_vault(&mut self, component_ref: ComponentRef, vault_id: VaultId, vault: Vault);
 
     fn get_non_fungible(
         &self,
-        resource_address: Address,
-        id: &NonFungibleKey,
+        resource_def_ref: ResourceDefRef,
+        key: &NonFungibleKey,
     ) -> Option<NonFungible>;
 
     fn put_non_fungible(
         &mut self,
-        resource_address: Address,
-        id: &NonFungibleKey,
+        resource_def_ref: ResourceDefRef,
+        key: &NonFungibleKey,
         non_fungible: NonFungible,
     );
 
@@ -84,7 +90,7 @@ pub trait SubstateStore {
                     0,
                     0,
                     HashMap::new(),
-                    &Some(NewSupply::Fungible {
+                    &Some(Supply::Fungible {
                         amount: XRD_MAX_SUPPLY.into(),
                     }),
                 )
@@ -108,23 +114,20 @@ pub trait SubstateStore {
             self.put_vault(
                 SYSTEM_COMPONENT,
                 XRD_VAULT_ID,
-                Vault::new(
-                    Bucket::new(
-                        RADIX_TOKEN,
-                        ResourceType::Fungible { divisibility: 18 },
-                        Supply::Fungible {
-                            amount: XRD_MAX_SUPPLY.into(),
-                        },
-                    ),
-                    SYSTEM_PACKAGE,
-                ),
+                Vault::new(Bucket::new(
+                    RADIX_TOKEN,
+                    ResourceType::Fungible { divisibility: 18 },
+                    Resource::Fungible {
+                        amount: XRD_MAX_SUPPLY.into(),
+                    },
+                )),
             );
             self.put_component(
                 SYSTEM_COMPONENT,
                 Component::new(
                     SYSTEM_PACKAGE,
                     SYSTEM_COMPONENT_NAME.to_owned(),
-                    scrypto_encode(&SystemComponentState { xrd: XRD_VAULT_ID }),
+                    scrypto_encode(&SystemComponentState { xrd: XRD_VAULT }),
                 ),
             );
         }

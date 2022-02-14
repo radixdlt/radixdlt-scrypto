@@ -43,7 +43,7 @@ blueprint! {
 
         pub fn destroy_admin_badge(&mut self, to_destroy: Bucket) {
             assert!(
-                to_destroy.resource_address() == self.admin_badge.address(),
+                to_destroy.resource_def_ref() == self.admin_badge.address(),
                 "Can not destroy the contents of this bucket!"
             );
             self.admin_mint_badge

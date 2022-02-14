@@ -8,9 +8,8 @@ blueprint! {
 
     impl System {
         /// Publishes a package.
-        pub fn publish_package(code: Vec<u8>) -> Address {
-            let package = Package::new(&code);
-            package.into()
+        pub fn publish_package(code: Vec<u8>) -> PackageRef {
+            PackageRef::new(&code)
         }
 
         /// Creates a resource.
@@ -19,10 +18,10 @@ blueprint! {
             metadata: HashMap<String, String>,
             flags: u64,
             mutable_flags: u64,
-            authorities: HashMap<Address, u64>,
-            initial_supply: Option<NewSupply>,
-        ) -> (ResourceDef, Option<Bucket>) {
-            ResourceDef::new(
+            authorities: HashMap<ResourceDefRef, u64>,
+            initial_supply: Option<Supply>,
+        ) -> (ResourceDefRef, Option<Bucket>) {
+            ResourceDefRef::new(
                 resource_type,
                 metadata,
                 flags,
@@ -33,8 +32,12 @@ blueprint! {
         }
 
         /// Mints fungible resource.
-        pub fn mint(amount: Decimal, resource_address: Address, auth: BucketRef) -> Bucket {
-            ResourceDef::from(resource_address).mint(amount, auth)
+        pub fn mint(
+            amount: Decimal,
+            mut resource_def_ref: ResourceDefRef,
+            auth: BucketRef,
+        ) -> Bucket {
+            resource_def_ref.mint(amount, auth)
         }
 
         /// Gives away XRD tokens for testing.

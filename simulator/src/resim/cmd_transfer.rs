@@ -1,17 +1,17 @@
 use clap::Parser;
 use radix_engine::transaction::*;
-use scrypto::types::*;
+use scrypto::engine::types::*;
 
 use crate::resim::*;
 
 /// Transfer resource to another account
 #[derive(Parser, Debug)]
 pub struct Transfer {
-    /// The resource to transfer, e.g. "amount,resource_address" or "#non_fungible_id1,#non_fungible_id2,resource_address"
-    resource: Resource,
+    /// The resource to transfer, e.g. "amount,resource_def_ref" or "#non_fungible_id1,#non_fungible_id2,resource_def_ref"
+    resource: ResourceSpecification,
 
     /// The recipient address
-    recipient: Address,
+    recipient: ComponentRef,
 
     /// Output a transaction manifest without execution
     #[clap(short, long)]
