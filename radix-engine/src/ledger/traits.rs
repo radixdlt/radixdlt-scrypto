@@ -22,6 +22,10 @@ struct SystemComponentState {
     xrd: Vid,
 }
 
+pub trait QueryableSubstateStore {
+    fn get_lazy_map_entries(&self, component_address: &Address, mid: &Mid) -> HashMap<Vec<u8>, Vec<u8>>;
+}
+
 /// A ledger stores all transactions and substates.
 pub trait SubstateStore {
     /// Top Level Objects

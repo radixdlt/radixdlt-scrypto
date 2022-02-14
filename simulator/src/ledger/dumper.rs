@@ -57,6 +57,32 @@ pub fn dump_component<T: SubstateStore>(address: Address, ledger: &T) -> Result<
     }
 }
 
+fn dump_lazy_map<T: SubstateStore + QueryableSubstateStore>(
+    address: &Address,
+    mid: &Mid,
+    substate_store: &T,
+) -> Result<(Vec<Mid>, Vec<Vid>), DisplayError> {
+    let mut referenced_maps = Vec::new();
+    let mut referenced_vaults = Vec::new();
+    let map = substate_store.get_lazy_map_entries(address, mid).unwrap();
+    println!("{}: {:?}{:?}", "Lazy Map".green().bold(), address, mid);
+    for (last, (k, v)) in map.map().iter().identify_last() {
+        let k_validated = validate_data(k).unwrap();
+        let v_validated = validate_data(v).unwrap();
+        println!(
+            "{} {} => {}",
+            list_item_prefix(last),
+            k_validated,
+            v_validated
+        );
+        referenced_maps.extend(k_validated.lazy_maps);
+        referenced_maps.extend(v_validated.lazy_maps);
+        referenced_vaults.extend(k_validated.vaults);
+        referenced_vaults.extend(v_validated.vaults);
+    }
+    Ok((referenced_maps, referenced_vaults))
+}
+
 fn dump_resources<T: SubstateStore>(
     address: Address,
     vaults: &HashSet<Vid>,
