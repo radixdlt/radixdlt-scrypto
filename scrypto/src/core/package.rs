@@ -2,7 +2,7 @@ use sbor::{describe::Type, *};
 
 use crate::buffer::*;
 use crate::core::*;
-use crate::engine::*;
+use crate::engine::{api::*, call_engine, types::PackageId};
 use crate::misc::*;
 use crate::rust::fmt;
 use crate::rust::str::FromStr;
@@ -11,21 +11,9 @@ use crate::types::*;
 
 /// A collection of blueprints, compiled and published as a single unit.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct PackageRef([u8; 26]);
+pub struct PackageRef(pub PackageId);
 
 impl PackageRef {
-    pub const SYSTEM: Self = Self([
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
-    ]);
-
-    pub const ACCOUNT: Self = Self([
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3,
-    ]);
-
-    fn this(&self) -> Self {
-        Self(self.0)
-    }
-
     /// Creates a new package.
     pub fn new(code: &[u8]) -> Self {
         let input = PublishPackageInput {
@@ -33,7 +21,7 @@ impl PackageRef {
         };
         let output: PublishPackageOutput = call_engine(PUBLISH_PACKAGE, input);
 
-        output.package
+        Self(output.package_id)
     }
 
     /// Invokes a function on this blueprint.
@@ -43,7 +31,7 @@ impl PackageRef {
         function: S,
         args: Vec<Vec<u8>>,
     ) -> T {
-        let output = Context::call_function((self.this(), blueprint), function, args);
+        let output = Context::call_function((*self, blueprint), function, args);
 
         scrypto_decode(&output).unwrap()
     }

@@ -1,6 +1,6 @@
 use sbor::{describe::Type, *};
 
-use crate::engine::*;
+use crate::engine::{api::*, call_engine, types::BucketRefId};
 use crate::math::*;
 use crate::misc::*;
 use crate::resource::*;
@@ -10,24 +10,20 @@ use crate::types::*;
 
 /// Represents a reference to a bucket.
 #[derive(Debug)]
-pub struct BucketRef(u32);
+pub struct BucketRef(pub BucketRefId);
 
 impl Clone for BucketRef {
     fn clone(&self) -> Self {
         let input = CloneBucketRefInput {
-            bucket_ref: self.this(),
+            bucket_ref_id: self.0,
         };
         let output: CloneBucketRefOutput = call_engine(CLONE_BUCKET_REF, input);
 
-        output.bucket_ref
+        Self(output.bucket_ref_id)
     }
 }
 
 impl BucketRef {
-    fn this(&self) -> Self {
-        Self(self.0)
-    }
-
     /// Checks if the referenced bucket contains the given resource, and aborts if not so.
     pub fn check(&self, resource_def: ResourceDefRef) {
         if !self.contains(resource_def) {
@@ -53,7 +49,7 @@ impl BucketRef {
     /// Returns the resource amount within the bucket.
     pub fn amount(&self) -> Decimal {
         let input = GetBucketRefDecimalInput {
-            bucket_ref: self.this(),
+            bucket_ref_id: self.0,
         };
         let output: GetBucketRefDecimalOutput = call_engine(GET_BUCKET_REF_AMOUNT, input);
 
@@ -62,13 +58,12 @@ impl BucketRef {
 
     /// Returns the resource definition of resources within the bucket.
     pub fn resource_def(&self) -> ResourceDefRef {
-        let input = GetBucketRefResourceAddressInput {
-            bucket_ref: self.this(),
+        let input = GetBucketRefResourceDefInput {
+            bucket_ref_id: self.0,
         };
-        let output: GetBucketRefResourceAddressOutput =
-            call_engine(GET_BUCKET_REF_RESOURCE_DEF, input);
+        let output: GetBucketRefResourceDefOutput = call_engine(GET_BUCKET_REF_RESOURCE_DEF, input);
 
-        output.resource_def
+        ResourceDefRef(output.resource_def_id)
     }
 
     /// Returns the key of a singleton non-fungible.
@@ -91,7 +86,7 @@ impl BucketRef {
     /// If the bucket is not a non-fungible bucket.
     pub fn get_non_fungible_keys(&self) -> Vec<NonFungibleKey> {
         let input = GetNonFungibleKeysInBucketRefInput {
-            bucket_ref: self.this(),
+            bucket_ref_id: self.0,
         };
         let output: GetNonFungibleKeysInBucketRefOutput =
             call_engine(GET_NON_FUNGIBLE_KEYS_IN_BUCKET_REF, input);
@@ -101,7 +96,9 @@ impl BucketRef {
 
     /// Destroys this reference.
     pub fn drop(self) {
-        let input = DropBucketRefInput { bucket_ref: self };
+        let input = DropBucketRefInput {
+            bucket_ref_id: self.0,
+        };
         let _: DropBucketRefOutput = call_engine(DROP_BUCKET_REF, input);
     }
 

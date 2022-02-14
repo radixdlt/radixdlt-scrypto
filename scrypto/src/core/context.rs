@@ -1,6 +1,6 @@
 use crate::core::*;
 use crate::crypto::*;
-use crate::engine::*;
+use crate::engine::{api::*, call_engine};
 use crate::rust::borrow::ToOwned;
 use crate::rust::vec::Vec;
 
@@ -54,7 +54,7 @@ impl Context {
         args: Vec<Vec<u8>>,
     ) -> Vec<u8> {
         let input = CallFunctionInput {
-            blueprint: (blueprint.0, blueprint.1.as_ref().to_owned()),
+            blueprint_id: (blueprint.0 .0, blueprint.1.as_ref().to_owned()),
             function: function.as_ref().to_owned(),
             args,
         };
@@ -70,7 +70,7 @@ impl Context {
         args: Vec<Vec<u8>>,
     ) -> Vec<u8> {
         let input = CallMethodInput {
-            component,
+            component_id: component.0,
             method: method.as_ref().to_owned(),
             args,
         };

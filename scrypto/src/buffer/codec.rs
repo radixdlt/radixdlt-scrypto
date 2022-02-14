@@ -31,7 +31,7 @@ pub fn scrypto_decode<T: Decode>(buf: &[u8]) -> Result<T, DecodeError> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::engine::*;
+    use crate::engine::api::*;
     use crate::rust::vec;
 
     #[test]

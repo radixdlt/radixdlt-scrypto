@@ -2,7 +2,7 @@ use sbor::{describe::Type, *};
 
 use crate::buffer::*;
 use crate::core::*;
-use crate::engine::*;
+use crate::engine::{api::*, call_engine, types::ComponentId};
 use crate::misc::*;
 use crate::rust::borrow::ToOwned;
 use crate::rust::fmt;
@@ -22,32 +22,24 @@ pub trait ComponentState: Encode + Decode {
 
 /// An instance of a blueprint, which lives in the ledger state.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct ComponentRef([u8; 26]);
+pub struct ComponentRef(pub ComponentId);
 
 impl ComponentRef {
-    pub const SYSTEM: Self = Self([
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2,
-    ]);
-
-    fn this(&self) -> Self {
-        Self(self.0)
-    }
-
     /// Instantiates a new component.
     pub fn new<T: ComponentState>(state: T) -> Self {
         // TODO: more thoughts are needed for this interface
         let input = CreateComponentInput {
-            blueprint: (Context::package(), T::blueprint_name().to_owned()),
+            blueprint_id: (Context::package().0, T::blueprint_name().to_owned()),
             state: scrypto_encode(&state),
         };
         let output: CreateComponentOutput = call_engine(CREATE_COMPONENT, input);
 
-        output.component
+        ComponentRef(output.component_id)
     }
 
     /// Invokes a method on this component.
     pub fn call<T: Decode>(&self, method: &str, args: Vec<Vec<u8>>) -> T {
-        let output = Context::call_method(self.this(), method, args);
+        let output = Context::call_method(*self, method, args);
 
         scrypto_decode(&output).unwrap()
     }
@@ -71,10 +63,10 @@ impl ComponentRef {
     /// Returns the blueprint that this component is instantiated from.
     pub fn blueprint(&self) -> (PackageRef, String) {
         let input = GetComponentInfoInput {
-            component: self.this(),
+            component_id: self.0,
         };
         let output: GetComponentInfoOutput = call_engine(GET_COMPONENT_INFO, input);
-        output.blueprint
+        (PackageRef(output.blueprint_id.0), output.blueprint_id.1)
     }
 }
 

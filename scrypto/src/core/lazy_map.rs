@@ -2,7 +2,7 @@ use sbor::{describe::Type, *};
 
 use crate::buffer::*;
 use crate::crypto::*;
-use crate::engine::*;
+use crate::engine::{api::*, call_engine, types::LazyMapId};
 use crate::misc::*;
 use crate::rust::fmt;
 use crate::rust::marker::PhantomData;
@@ -13,28 +13,19 @@ use crate::types::*;
 /// A scalable key-value map which loads entries on demand.
 #[derive(Debug, PartialEq, Eq)]
 pub struct LazyMap<K: Encode + Decode, V: Encode + Decode> {
-    id: (Hash, u32),
+    id: LazyMapId,
     key: PhantomData<K>,
     value: PhantomData<V>,
 }
 
 impl<K: Encode + Decode, V: Encode + Decode> LazyMap<K, V> {
-    fn this(&self) -> LazyMap<(), ()> {
-        // generic types erased
-        LazyMap {
-            id: self.id,
-            key: PhantomData,
-            value: PhantomData,
-        }
-    }
-
     /// Creates a new lazy map.
     pub fn new() -> Self {
         let input = CreateLazyMapInput {};
         let output: CreateLazyMapOutput = call_engine(CREATE_LAZY_MAP, input);
 
         Self {
-            id: output.lazy_map.id,
+            id: output.lazy_map_id,
             key: PhantomData,
             value: PhantomData,
         }
@@ -43,7 +34,7 @@ impl<K: Encode + Decode, V: Encode + Decode> LazyMap<K, V> {
     /// Returns the value that is associated with the given key.
     pub fn get(&self, key: &K) -> Option<V> {
         let input = GetLazyMapEntryInput {
-            lazy_map: self.this(),
+            lazy_map_id: self.id,
             key: scrypto_encode(key),
         };
         let output: GetLazyMapEntryOutput = call_engine(GET_LAZY_MAP_ENTRY, input);
@@ -54,7 +45,7 @@ impl<K: Encode + Decode, V: Encode + Decode> LazyMap<K, V> {
     /// Inserts a new key-value pair into this map.
     pub fn insert(&self, key: K, value: V) {
         let input = PutLazyMapEntryInput {
-            lazy_map: self.this(),
+            lazy_map_id: self.id,
             key: scrypto_encode(&key),
             value: scrypto_encode(&value),
         };

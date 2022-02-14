@@ -1,6 +1,6 @@
 use sbor::{describe::Type, *};
 
-use crate::engine::*;
+use crate::engine::{api::*, call_engine, types::BucketId};
 use crate::math::*;
 use crate::misc::*;
 use crate::resource::*;
@@ -10,26 +10,24 @@ use crate::types::*;
 
 /// Represents a transient resource container.
 #[derive(Debug)]
-pub struct Bucket(u32);
+pub struct Bucket(pub BucketId);
 
 impl Bucket {
-    fn this(&self) -> Self {
-        Self(self.0)
-    }
-
     /// Creates a new bucket to hold resources of the given definition.
     pub fn new(resource_def: ResourceDefRef) -> Self {
-        let input = CreateEmptyBucketInput { resource_def };
+        let input = CreateEmptyBucketInput {
+            resource_def_id: resource_def.0,
+        };
         let output: CreateEmptyBucketOutput = call_engine(CREATE_EMPTY_BUCKET, input);
 
-        output.bucket
+        Self(output.bucket_id)
     }
 
     /// Puts resources from another bucket into this bucket.
     pub fn put(&mut self, other: Self) {
         let input = PutIntoBucketInput {
-            bucket: self.this(),
-            other,
+            bucket_id: self.0,
+            other: other.0,
         };
         let _: PutIntoBucketOutput = call_engine(PUT_INTO_BUCKET, input);
     }
@@ -37,29 +35,25 @@ impl Bucket {
     /// Takes some amount of resources from this bucket.
     pub fn take<A: Into<Decimal>>(&mut self, amount: A) -> Self {
         let input = TakeFromBucketInput {
-            bucket: self.this(),
+            bucket_id: self.0,
             amount: amount.into(),
         };
         let output: TakeFromBucketOutput = call_engine(TAKE_FROM_BUCKET, input);
 
-        output.bucket
+        Self(output.bucket_id)
     }
 
     /// Creates an immutable reference to this bucket.
     pub fn present(&self) -> BucketRef {
-        let input = CreateBucketRefInput {
-            bucket: self.this(),
-        };
+        let input = CreateBucketRefInput { bucket_id: self.0 };
         let output: CreateBucketRefOutput = call_engine(CREATE_BUCKET_REF, input);
 
-        output.bucket_ref
+        BucketRef(output.bucket_ref_id)
     }
 
     /// Returns the amount of resources in this bucket.
     pub fn amount(&self) -> Decimal {
-        let input = GetBucketDecimalInput {
-            bucket: self.this(),
-        };
+        let input = GetBucketDecimalInput { bucket_id: self.0 };
         let output: GetBucketDecimalOutput = call_engine(GET_BUCKET_AMOUNT, input);
 
         output.amount
@@ -67,13 +61,10 @@ impl Bucket {
 
     /// Returns the resource definition of resources in this bucket.
     pub fn resource_def(&self) -> ResourceDefRef {
-        let input = GetBucketResourceAddressInput {
-            bucket: self.this(),
-        };
-        let output: GetBucketResourceAddressOutput =
-            call_engine(GET_BUCKET_RESOURCE_ADDRESS, input);
+        let input = GetBucketResourceDefInput { bucket_id: self.0 };
+        let output: GetBucketResourceDefOutput = call_engine(GET_BUCKET_RESOURCE_DEF, input);
 
-        output.resource_def
+        ResourceDefRef(output.resource_def_id)
     }
 
     /// Burns resource within this bucket.
@@ -102,13 +93,13 @@ impl Bucket {
     /// Panics if this is not a non-fungible bucket or the specified non-fungible resource is not found.
     pub fn take_non_fungible(&mut self, key: &NonFungibleKey) -> Bucket {
         let input = TakeNonFungibleFromBucketInput {
-            bucket: self.this(),
+            bucket_id: self.0,
             key: key.clone(),
         };
         let output: TakeNonFungibleFromBucketOutput =
             call_engine(TAKE_NON_FUNGIBLE_FROM_BUCKET, input);
 
-        output.bucket
+        Self(output.bucket_id)
     }
 
     /// Returns all the non-fungible units contained.
@@ -116,9 +107,7 @@ impl Bucket {
     /// # Panics
     /// Panics if this is not a non-fungible bucket.
     pub fn get_non_fungibles<T: NonFungibleData>(&self) -> Vec<NonFungible<T>> {
-        let input = GetNonFungibleKeysInBucketInput {
-            bucket: self.this(),
-        };
+        let input = GetNonFungibleKeysInBucketInput { bucket_id: self.0 };
         let output: GetNonFungibleKeysInBucketOutput =
             call_engine(GET_NON_FUNGIBLE_KEYS_IN_BUCKET, input);
         let resource_def = self.resource_def();
@@ -148,9 +137,7 @@ impl Bucket {
     /// # Panics
     /// If this bucket is not a non-fungible bucket.
     pub fn get_non_fungible_keys(&self) -> Vec<NonFungibleKey> {
-        let input = GetNonFungibleKeysInBucketInput {
-            bucket: self.this(),
-        };
+        let input = GetNonFungibleKeysInBucketInput { bucket_id: self.0 };
         let output: GetNonFungibleKeysInBucketOutput =
             call_engine(GET_NON_FUNGIBLE_KEYS_IN_BUCKET, input);
 

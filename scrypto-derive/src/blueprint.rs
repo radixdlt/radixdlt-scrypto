@@ -74,9 +74,9 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
             ::scrypto::misc::set_up_panic_hook();
 
             // Retrieve call data
-            let calldata: ::scrypto::engine::GetCallDataOutput = ::scrypto::engine::call_engine(
-                ::scrypto::engine::GET_CALL_DATA,
-                ::scrypto::engine::GetCallDataInput {},
+            let calldata: ::scrypto::engine::api::GetCallDataOutput = ::scrypto::engine::call_engine(
+                ::scrypto::engine::api::GET_CALL_DATA,
+                ::scrypto::engine::api::GetCallDataInput {},
             );
 
             // Dispatch the call
@@ -549,9 +549,9 @@ mod tests {
                 #[no_mangle]
                 pub extern "C" fn Test_main() -> *mut u8 {
                     ::scrypto::misc::set_up_panic_hook();
-                    let calldata: ::scrypto::engine::GetCallDataOutput = ::scrypto::engine::call_engine(
-                        ::scrypto::engine::GET_CALL_DATA,
-                        ::scrypto::engine::GetCallDataInput {},
+                    let calldata: ::scrypto::engine::api::GetCallDataOutput = ::scrypto::engine::call_engine(
+                        ::scrypto::engine::api::GET_CALL_DATA,
+                        ::scrypto::engine::api::GetCallDataInput {},
                     );
                     let rtn;
                     match calldata.function.as_str() {

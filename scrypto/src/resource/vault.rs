@@ -1,7 +1,7 @@
 use sbor::{describe::Type, *};
 
 use crate::crypto::*;
-use crate::engine::*;
+use crate::engine::{api::*, call_engine, types::VaultId};
 use crate::math::*;
 use crate::misc::*;
 use crate::resource::*;
@@ -12,19 +12,17 @@ use crate::types::*;
 
 /// Represents a persistent resource container on ledger state.
 #[derive(Debug)]
-pub struct Vault(Hash, u32);
+pub struct Vault(pub VaultId);
 
 impl Vault {
-    fn this(&self) -> Self {
-        Self(self.0, self.1)
-    }
-
     /// Creates an empty vault to permanently hold resource of the given definition.
     pub fn new(resource_def: ResourceDefRef) -> Self {
-        let input = CreateEmptyVaultInput { resource_def };
+        let input = CreateEmptyVaultInput {
+            resource_def_id: resource_def.0,
+        };
         let output: CreateEmptyVaultOutput = call_engine(CREATE_EMPTY_VAULT, input);
 
-        output.vault
+        Self(output.vault_id)
     }
 
     /// Creates an empty vault and fills it with an initial bucket of resources.
@@ -37,8 +35,8 @@ impl Vault {
     /// Puts a bucket of resources into this vault.
     pub fn put(&mut self, bucket: Bucket) {
         let input = PutIntoVaultInput {
-            vault: self.this(),
-            bucket,
+            vault_id: self.0,
+            bucket_id: bucket.0,
         };
         let _: PutIntoVaultOutput = call_engine(PUT_INTO_VAULT, input);
     }
@@ -46,13 +44,13 @@ impl Vault {
     /// Takes some amount of resource from this vault into a bucket.
     pub fn take<A: Into<Decimal>>(&mut self, amount: A) -> Bucket {
         let input = TakeFromVaultInput {
-            vault: self.this(),
+            vault_id: self.0,
             amount: amount.into(),
             auth: None,
         };
         let output: TakeFromVaultOutput = call_engine(TAKE_FROM_VAULT, input);
 
-        output.bucket
+        Bucket(output.bucket_id)
     }
 
     /// Takes some amount of resource from this vault into a bucket.
@@ -61,13 +59,13 @@ impl Vault {
     /// with or without `RESTRICTED_TRANSFER` flag on.
     pub fn take_with_auth<A: Into<Decimal>>(&mut self, amount: A, auth: BucketRef) -> Bucket {
         let input = TakeFromVaultInput {
-            vault: self.this(),
+            vault_id: self.0,
             amount: amount.into(),
-            auth: Some(auth.into()),
+            auth: Some(auth.0),
         };
         let output: TakeFromVaultOutput = call_engine(TAKE_FROM_VAULT, input);
 
-        output.bucket
+        Bucket(output.bucket_id)
     }
 
     /// Takes all resource stored in this vault.
@@ -89,14 +87,14 @@ impl Vault {
     /// Panics if this is not a non-fungible vault or the specified non-fungible is not found.
     pub fn take_non_fungible(&self, key: &NonFungibleKey) -> Bucket {
         let input = TakeNonFungibleFromVaultInput {
-            vault: self.this(),
+            vault_id: self.0,
             key: key.clone(),
             auth: None,
         };
         let output: TakeNonFungibleFromVaultOutput =
             call_engine(TAKE_NON_FUNGIBLE_FROM_VAULT, input);
 
-        output.bucket
+        Bucket(output.bucket_id)
     }
 
     /// Takes a non-fungible from this vault, by id.
@@ -108,14 +106,14 @@ impl Vault {
     /// Panics if this is not a non-fungible vault or the specified non-fungible is not found.
     pub fn take_non_fungible_with_auth(&self, key: &NonFungibleKey, auth: BucketRef) -> Bucket {
         let input = TakeNonFungibleFromVaultInput {
-            vault: self.this(),
+            vault_id: self.0,
             key: key.clone(),
-            auth: Some(auth.into()),
+            auth: Some(auth.0),
         };
         let output: TakeNonFungibleFromVaultOutput =
             call_engine(TAKE_NON_FUNGIBLE_FROM_VAULT, input);
 
-        output.bucket
+        Bucket(output.bucket_id)
     }
 
     /// This is a convenience method for using the contained resource for authorization.
@@ -157,7 +155,7 @@ impl Vault {
 
     /// Returns the amount of resources within this vault.
     pub fn amount(&self) -> Decimal {
-        let input = GetVaultDecimalInput { vault: self.this() };
+        let input = GetVaultDecimalInput { vault_id: self.0 };
         let output: GetVaultDecimalOutput = call_engine(GET_VAULT_AMOUNT, input);
 
         output.amount
@@ -165,10 +163,10 @@ impl Vault {
 
     /// Returns the resource definition of resources within this vault.
     pub fn resource_def(&self) -> ResourceDefRef {
-        let input = GetVaultResourceAddressInput { vault: self.this() };
-        let output: GetVaultResourceAddressOutput = call_engine(GET_VAULT_RESOURCE_ADDRESS, input);
+        let input = GetVaultResourceDefInput { vault_id: self.0 };
+        let output: GetVaultResourceDefOutput = call_engine(GET_VAULT_RESOURCE_DEF, input);
 
-        output.resource_def
+        ResourceDefRef(output.resource_def_id)
     }
 
     /// Checks if this vault is empty.
@@ -181,7 +179,7 @@ impl Vault {
     /// # Panics
     /// Panics if this is not a non-fungible vault.
     pub fn get_non_fungibles<T: NonFungibleData>(&self) -> Vec<NonFungible<T>> {
-        let input = GetNonFungibleKeysInVaultInput { vault: self.this() };
+        let input = GetNonFungibleKeysInVaultInput { vault_id: self.0 };
         let output: GetNonFungibleKeysInVaultOutput =
             call_engine(GET_NON_FUNGIBLE_KEYS_IN_VAULT, input);
         let resource_def = self.resource_def();
@@ -197,7 +195,7 @@ impl Vault {
     /// # Panics
     /// Panics if this is not a non-fungible vault.
     pub fn get_non_fungible_keys(&self) -> Vec<NonFungibleKey> {
-        let input = GetNonFungibleKeysInVaultInput { vault: self.this() };
+        let input = GetNonFungibleKeysInVaultInput { vault_id: self.0 };
         let output: GetNonFungibleKeysInVaultOutput =
             call_engine(GET_NON_FUNGIBLE_KEYS_IN_VAULT, input);
 
@@ -270,10 +268,10 @@ impl TryFrom<&[u8]> for Vault {
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
         match slice.len() {
-            36 => Ok(Self(
+            36 => Ok(Self((
                 Hash(copy_u8_array(&slice[0..32])),
                 u32::from_le_bytes(copy_u8_array(&slice[32..])),
-            )),
+            ))),
             _ => Err(ParseVaultError::InvalidLength(slice.len())),
         }
     }
@@ -281,8 +279,8 @@ impl TryFrom<&[u8]> for Vault {
 
 impl Vault {
     pub fn to_vec(&self) -> Vec<u8> {
-        let mut v = self.0.to_vec();
-        v.extend(self.1.to_le_bytes());
+        let mut v = self.0 .0.to_vec();
+        v.extend(self.0 .1.to_le_bytes());
         v
     }
 }

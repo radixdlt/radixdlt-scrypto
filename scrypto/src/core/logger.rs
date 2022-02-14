@@ -1,5 +1,5 @@
 use crate::core::*;
-use crate::engine::*;
+use crate::engine::{api::*, call_engine};
 use crate::rust::string::String;
 
 /// A utility for logging messages.
