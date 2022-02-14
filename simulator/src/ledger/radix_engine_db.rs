@@ -1,14 +1,12 @@
-use std::collections::HashSet;
+use std::collections::HashMap;
 use std::path::PathBuf;
 
 use radix_engine::ledger::*;
 use radix_engine::model::*;
 use rocksdb::{DBWithThreadMode, Direction, IteratorMode, SingleThreaded, DB};
 use sbor::*;
-use sbor::describe::Type::HashMap;
 use scrypto::buffer::*;
 use scrypto::types::*;
-use transaction_manifest::ast::Type::HashSet;
 
 pub struct RadixEngineDB {
     db: DBWithThreadMode<SingleThreaded>,
@@ -45,10 +43,9 @@ impl RadixEngineDB {
     }
 
     fn list_items(&self, start: &[u8], inclusive_end: &[u8]) -> Vec<Address> {
-        let mut iter = self.db.iterator(IteratorMode::From(
-            start,
-            Direction::Forward,
-        ));
+        let mut iter = self
+            .db
+            .iterator(IteratorMode::From(start, Direction::Forward));
         let mut items = Vec::new();
         while let Some(kv) = iter.next() {
             if kv.0.as_ref() > inclusive_end {
@@ -69,29 +66,28 @@ impl RadixEngineDB {
     }
 
     fn write<V: Encode>(&self, key: &[u8], value: V) {
-        self.db
-            .put(key, scrypto_encode(&value))
-            .unwrap();
+        self.db.put(key, scrypto_encode(&value)).unwrap();
     }
 }
 
 impl QueryableSubstateStore for RadixEngineDB {
-    fn get_lazy_map_entries(&self, component_address: &Address, mid: &Mid) -> HashSet<Vec<u8>, Vec<u8>> {
+    fn get_lazy_map_entries(
+        &self,
+        component_address: &Address,
+        mid: &Mid,
+    ) -> HashMap<Vec<u8>, Vec<u8>> {
         let mut id = scrypto_encode(component_address);
         id.extend(scrypto_encode(mid));
 
-
-        let mut iter = self.db.iterator(IteratorMode::From(
-            &id,
-            Direction::Forward,
-        ));
+        let mut iter = self
+            .db
+            .iterator(IteratorMode::From(&id, Direction::Forward));
         let mut items = HashMap::new();
         while let Some((key, value)) = iter.next() {
             if !key.starts_with(&id) {
                 break;
             }
-            items.insert(key, value);
-            items.push(scrypto_decode(kv.0.as_ref()).unwrap());
+            items.insert(key.to_vec(), value.to_vec());
         }
         items
     }

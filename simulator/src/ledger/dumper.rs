@@ -29,7 +29,10 @@ pub fn dump_package<T: SubstateStore>(address: Address, ledger: &T) -> Result<()
 }
 
 /// Dump a component into console.
-pub fn dump_component<T: SubstateStore>(address: Address, ledger: &T) -> Result<(), DisplayError> {
+pub fn dump_component<T: SubstateStore + QueryableSubstateStore>(
+    address: Address,
+    ledger: &T,
+) -> Result<(), DisplayError> {
     let component = ledger.get_component(address);
     match component {
         Some(c) => {
@@ -45,10 +48,25 @@ pub fn dump_component<T: SubstateStore>(address: Address, ledger: &T) -> Result<
             let state_validated = validate_data(state).unwrap();
             println!("{}: {}", "State".green().bold(), state_validated);
 
-            // TODO: check authorization
             // The current implementation recursively displays all referenced maps and vaults which
             // the component may not have access to.
-            let vaults_found: HashSet<Vid> = state_validated.vaults.iter().cloned().collect();
+            // Dump lazy map using DFS
+            // Consider using a proper Queue structure
+            let mut queue: Vec<Mid> = state_validated.lazy_maps.clone();
+            let mut i = 0;
+            let mut maps_visited: HashSet<Mid> = HashSet::new();
+            let mut vaults_found: HashSet<Vid> = state_validated.vaults.iter().cloned().collect();
+            while i < queue.len() {
+                let mid = queue[i];
+                i += 1;
+                if maps_visited.insert(mid) {
+                    let (maps, vaults) = dump_lazy_map(&address, &mid, ledger)?;
+                    queue.extend(maps);
+                    for v in vaults {
+                        vaults_found.insert(v);
+                    }
+                }
+            }
 
             // Dump resources
             dump_resources(address, &vaults_found, ledger)
@@ -64,9 +82,9 @@ fn dump_lazy_map<T: SubstateStore + QueryableSubstateStore>(
 ) -> Result<(Vec<Mid>, Vec<Vid>), DisplayError> {
     let mut referenced_maps = Vec::new();
     let mut referenced_vaults = Vec::new();
-    let map = substate_store.get_lazy_map_entries(address, mid).unwrap();
+    let map = substate_store.get_lazy_map_entries(address, mid);
     println!("{}: {:?}{:?}", "Lazy Map".green().bold(), address, mid);
-    for (last, (k, v)) in map.map().iter().identify_last() {
+    for (last, (k, v)) in map.iter().identify_last() {
         let k_validated = validate_data(k).unwrap();
         let v_validated = validate_data(v).unwrap();
         println!(
