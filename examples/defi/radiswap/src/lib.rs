@@ -18,7 +18,7 @@ blueprint! {
     }
 
     impl Radiswap {
-        /// Creates a Radiswap component for token pair A/B and returns the component address
+        /// Creates a Radiswap component for token pair A/B and returns the component ref
         /// along with the initial LP tokens.
         pub fn new(
             a_tokens: Bucket,
@@ -178,7 +178,7 @@ blueprint! {
             output_tokens
         }
 
-        /// Returns the resource definition addresses of the pair.
+        /// Returns the resource definition refes of the pair.
         pub fn get_pair(&self) -> (ResourceDefRef, ResourceDefRef) {
             (
                 self.a_pool.resource_def_ref(),

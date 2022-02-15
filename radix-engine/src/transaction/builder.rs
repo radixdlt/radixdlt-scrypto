@@ -268,7 +268,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     /// The implementation will automatically prepare the arguments based on the
     /// function ABI, including resource buckets and bucket refs.
     ///
-    /// If an account address is provided, resources will be withdrawn from the given account;
+    /// If an Account component ref is provided, resources will be withdrawn from the given account;
     /// otherwise, they will be taken from transaction worktop.
     pub fn call_function(
         &mut self,
@@ -314,7 +314,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     /// The implementation will automatically prepare the arguments based on the
     /// method ABI, including resource buckets and bucket refs.
     ///
-    /// If an account address is provided, resources will be withdrawn from the given account;
+    /// If an Account component ref is provided, resources will be withdrawn from the given account;
     /// otherwise, they will be taken from transaction worktop.
     pub fn call_method(
         &mut self,

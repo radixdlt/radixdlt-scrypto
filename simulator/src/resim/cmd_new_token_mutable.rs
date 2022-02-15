@@ -8,7 +8,7 @@ use crate::resim::*;
 /// Create a token with mutable supply
 #[derive(Parser, Debug)]
 pub struct NewTokenMutable {
-    /// The minter badge address
+    /// The minter badge resource definition ref
     badge: ResourceDefRef,
 
     /// The symbol

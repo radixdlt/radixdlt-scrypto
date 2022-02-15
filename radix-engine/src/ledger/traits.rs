@@ -138,7 +138,7 @@ pub trait SubstateStore {
     fn set_epoch(&mut self, epoch: u64);
 
     // Before transaction hash is defined, we use the following TEMPORARY interfaces
-    // to introduce entropy for address derivation.
+    // to introduce entropy for id derivation.
 
     fn get_nonce(&self) -> u64;
 

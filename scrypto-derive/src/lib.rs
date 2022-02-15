@@ -68,7 +68,7 @@ pub fn blueprint(input: TokenStream) -> TokenStream {
 ///             "inputs": [],
 ///             "output": {
 ///                 "type": "Custom",
-///                 "name": "scrypto::types::Address"
+///                 "name": "ComponentRef"
 ///             }
 ///         }
 ///     ],
@@ -79,12 +79,12 @@ pub fn blueprint(input: TokenStream) -> TokenStream {
 ///             "inputs": [
 ///                 {
 ///                     "type": "Custom",
-///                     "name": "scrypto::resource::Bucket"
+///                     "name": "Bucket"
 ///                 }
 ///             ],
 ///             "output": {
 ///                 "type": "Custom",
-///                 "name": "scrypto::resource::Bucket"
+///                 "name": "Bucket"
 ///             }
 ///         }
 ///     ]
@@ -101,7 +101,7 @@ pub fn import(input: TokenStream) -> TokenStream {
 
 /// Defines the authorization rule for a method.
 ///
-/// A list of component fields of type `ResourceDef` or `Address` should be provided.
+/// A list of component fields of type `ResourceDefRef` should be provided.
 ///
 /// Caller must provide a bucket ref containing any of the associated resource.
 ///
@@ -111,7 +111,7 @@ pub fn import(input: TokenStream) -> TokenStream {
 /// pub fn some_method(&self) {
 ///     // This is protected
 ///
-///     // To retrieve auth resource address, use `auth.resource_def_ref()`.
+///     // To retrieve auth resource definition ref, use `auth.resource_def_ref()`.
 /// }
 /// ```
 #[proc_macro_attribute]

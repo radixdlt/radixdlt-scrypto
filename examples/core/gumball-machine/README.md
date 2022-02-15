@@ -16,7 +16,7 @@ Our gumball machine will hold two kinds of resources in vaults: the gumballs to 
 We'll also need to maintain the price, which we're using `Decimal` for.  `Decimal` is a bounded type appropriate for use for resource quantities.  In Scrypto, it has a fixed precision of 10<sup>-18</sup>, and a maximum value of 2<sup>96</sup>.  Unless we're selling spectacularly expensive gumballs, this should be fine.  If we wanted an unbounded type to use for quantity, we could use `BigDecimal` instead.
 
 ## Getting Ready for Instantiation
-In order to instantiate a new gumball machine, the only input we need from the caller is to set the price of each gumball.  After creation, we'll be returning the address of our new component, so we'll set our function signature up appropriately:
+In order to instantiate a new gumball machine, the only input we need from the caller is to set the price of each gumball.  After creation, we'll be returning a reference to our new component, so we'll set our function signature up appropriately:
 
 ```rust
 pub fn new(price: Decimal) -> Component {
@@ -32,7 +32,7 @@ let bucket_of_gumballs = ResourceBuilder::new_fungible(DIVISIBILITY_MAXIMUM)
   .initial_supply_fungible(100);
 ```
 
-All that's left is to populate our `GumballMachine` struct with our supply of gumballs, the user-specified price, and an empty Vault which we will force to contain XRD.  Then we'll instantiate it, which returns the address, and we'll return that to the caller.
+All that's left is to populate our `GumballMachine` struct with our supply of gumballs, the user-specified price, and an empty Vault which we will force to contain XRD.  Then we'll instantiate it, which returns the component reference, and we'll return that to the caller.
 
 ```rust
 Self {

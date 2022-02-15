@@ -4,7 +4,7 @@ blueprint! {
     struct PriceOracle {
         /// Last price of each resource pair
         prices: LazyMap<(ResourceDefRef, ResourceDefRef), Decimal>,
-        /// The admin badge resource def address
+        /// The admin badge resource definition ref
         admin_badge: ResourceDefRef,
     }
 
@@ -38,7 +38,7 @@ blueprint! {
             self.prices.insert((quote, base), Decimal::from(1) / price);
         }
 
-        /// Returns the admin badge resource def address.
+        /// Returns the admin badge resource definition ref.
         pub fn admin_badge(&self) -> ResourceDefRef {
             self.admin_badge
         }

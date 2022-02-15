@@ -463,14 +463,14 @@ blueprint! {
 
         /// Asset symbol
         asset_symbol: String,
-        /// Asset address
-        asset_address: ResourceDefRef,
-        /// Synthetic asset address
-        synth_address: ResourceDefRef,
-        /// SNX resource definition address
-        snx_address: ResourceDefRef,
-        /// USD resource definition address
-        usd_address: ResourceDefRef,
+        /// Asset resource definition
+        asset_resource_def_ref: ResourceDefRef,
+        /// Synthetic asset definition
+        synth_resource_def_ref: ResourceDefRef,
+        /// SNX resource definition
+        snx_resource_def_ref: ResourceDefRef,
+        /// USD resource definition
+        usd_resource_def_ref: ResourceDefRef,
 
         /// Radiswap for sTESLA/XRD
         radiswap: Radiswap,
@@ -485,45 +485,49 @@ blueprint! {
 
     impl MutualFarm {
         pub fn new(
-            price_oracle_address: ComponentRef,
-            xrd_snx_radiswap_address: ComponentRef,
-            synthetic_pool_address: ComponentRef,
+            price_oracle_component_ref: ComponentRef,
+            xrd_snx_swap_component_ref: ComponentRef,
+            synthetic_pool_component_ref: ComponentRef,
             asset_symbol: String,
-            asset_address: ResourceDefRef,
+            asset_resource_def_ref: ResourceDefRef,
             initial_shares: Decimal,
             mut initial_xrd: Bucket,
-            snx_address: ResourceDefRef,
-            usd_address: ResourceDefRef,
+            snx_resource_def_ref: ResourceDefRef,
+            usd_resource_def_ref: ResourceDefRef,
         ) -> (Bucket, ComponentRef) {
             debug!("Create an identity badge for accessing other components");
             let identity_badge = ResourceBuilder::new_fungible(DIVISIBILITY_NONE)
                 .metadata("name", "ID")
                 .initial_supply_fungible(1);
-            let identity_badge_address = identity_badge.resource_def_ref();
+            let identity_badge = identity_badge.resource_def_ref();
 
             debug!("Fetch price info from oracle");
-            let price_oracle: PriceOracle = price_oracle_address.into();
+            let price_oracle: PriceOracle = price_oracle_component_ref.into();
             let xrd_usd_price = price_oracle
-                .get_price(initial_xrd.resource_def_ref(), usd_address)
+                .get_price(initial_xrd.resource_def_ref(), usd_resource_def_ref)
                 .unwrap();
-            let snx_usd_price = price_oracle.get_price(snx_address, usd_address).unwrap();
-            let tesla_usd_price = price_oracle.get_price(asset_address, usd_address).unwrap();
+            let snx_usd_price = price_oracle
+                .get_price(snx_resource_def_ref, usd_resource_def_ref)
+                .unwrap();
+            let tesla_usd_price = price_oracle
+                .get_price(asset_resource_def_ref, usd_resource_def_ref)
+                .unwrap();
 
             debug!("Swap 3/4 of XRD for SNX");
-            let xrd_snx_radiswap: Radiswap = xrd_snx_radiswap_address.into();
+            let xrd_snx_radiswap: Radiswap = xrd_snx_swap_component_ref.into();
             let xrd_amount = initial_xrd.amount();
             let snx = xrd_snx_radiswap.swap(initial_xrd.take(initial_xrd.amount() * 3 / 4));
             let snx_amount = snx.amount();
 
             debug!("Deposit SNX into synthetic pool and mint sTESLA (1/10 of our SNX).");
-            let price_oracle: PriceOracle = price_oracle_address.into();
-            let synthetic_pool: SyntheticPool = synthetic_pool_address.into();
-            synthetic_pool.add_synthetic_token(asset_symbol.clone(), asset_address);
+            let price_oracle: PriceOracle = price_oracle_component_ref.into();
+            let synthetic_pool: SyntheticPool = synthetic_pool_component_ref.into();
+            synthetic_pool.add_synthetic_token(asset_symbol.clone(), asset_resource_def_ref);
             synthetic_pool.stake(identity_badge.present(), snx);
             let quantity = snx_amount * snx_usd_price / 10 / tesla_usd_price;
             let synth =
                 synthetic_pool.mint(identity_badge.present(), quantity, asset_symbol.clone());
-            let synth_address = synth.resource_def_ref();
+            let synth_resource_def_ref = synth.resource_def_ref();
 
             debug!("Set up sTESLA/XRD swap pool");
             let (radiswap_comp, lp_tokens) = Radiswap::new(
@@ -541,7 +545,7 @@ blueprint! {
                 ResourceBuilder::new_fungible(DIVISIBILITY_MAXIMUM)
                     .metadata("name", "MutualFarm share")
                     .flags(MINTABLE | BURNABLE)
-                    .badge(identity_badge_address, MAY_MINT | MAY_BURN)
+                    .badge(identity_badge, MAY_MINT | MAY_BURN)
                     .no_initial_supply();
             let shares =
                 mutual_farm_share_resource_def.mint(initial_shares, identity_badge.present());
@@ -553,10 +557,10 @@ blueprint! {
                 xrd_snx_radiswap,
                 synthetic_pool,
                 asset_symbol,
-                asset_address,
-                synth_address,
-                snx_address,
-                usd_address,
+                asset_resource_def_ref,
+                synth_resource_def_ref,
+                snx_resource_def_ref,
+                usd_resource_def_ref,
                 radiswap: radiswap_comp.into(),
                 radiswap_lp_tokens: Vault::with_bucket(lp_tokens),
                 mutual_farm_share_resource_def,
@@ -571,19 +575,19 @@ blueprint! {
             debug!("Fetch price info from oracle");
             let xrd_usd_price = self
                 .price_oracle
-                .get_price(xrd.resource_def_ref(), self.usd_address)
+                .get_price(xrd.resource_def_ref(), self.usd_resource_def_ref)
                 .unwrap();
             let snx_usd_price = self
                 .price_oracle
-                .get_price(self.snx_address, self.usd_address)
+                .get_price(self.snx_resource_def_ref, self.usd_resource_def_ref)
                 .unwrap();
             let tesla_usd_price = self
                 .price_oracle
-                .get_price(self.asset_address, self.usd_address)
+                .get_price(self.asset_resource_def_ref, self.usd_resource_def_ref)
                 .unwrap();
 
             debug!("Swap 3/4 of XRD for SNX");
-            let xrd_address = xrd.resource_def_ref();
+            let xrd_resource_def_ref = xrd.resource_def_ref();
             let xrd_amount = xrd.amount();
             let snx = self.xrd_snx_radiswap.swap(xrd.take(xrd.amount() * 3 / 4));
             let snx_amount = snx.amount();
@@ -600,11 +604,11 @@ blueprint! {
 
             debug!("Add liquidity to sTESLA/XRD swap pool");
             let (lp_tokens, mut remainder) = self.radiswap.add_liquidity(synth, xrd);
-            if remainder.resource_def_ref() == self.synth_address {
+            if remainder.resource_def_ref() == self.synth_resource_def_ref {
                 self.identity_badge.authorize(|auth| {
                     self.synthetic_pool.burn(auth, remainder);
                 });
-                remainder = Bucket::new(xrd_address);
+                remainder = Bucket::new(xrd_resource_def_ref);
             }
             self.radiswap_lp_tokens.put(lp_tokens);
 

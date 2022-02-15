@@ -412,35 +412,35 @@ impl<'s, S: SubstateStore> Track<'s, S> {
         self.vaults.insert(canonical_id, vault);
     }
 
-    /// Creates a new package address.
+    /// Creates a new package ref.
     pub fn new_package_ref(&mut self) -> PackageRef {
         // Security Alert: ensure ID allocating will practically never fail
-        let address = self
+        let package_ref = self
             .id_allocator
             .new_package_ref(self.transaction_hash())
             .unwrap();
-        self.new_package_refs.push(address);
-        address
+        self.new_package_refs.push(package_ref);
+        package_ref
     }
 
-    /// Creates a new component address.
+    /// Creates a new component ref.
     pub fn new_component_ref(&mut self) -> ComponentRef {
-        let address = self
+        let component_ref = self
             .id_allocator
             .new_component_ref(self.transaction_hash())
             .unwrap();
-        self.new_component_refs.push(address);
-        address
+        self.new_component_refs.push(component_ref);
+        component_ref
     }
 
-    /// Creates a new resource definition address.
+    /// Creates a new resource definition ref.
     pub fn new_resource_def_ref(&mut self) -> ResourceDefRef {
-        let address = self
+        let resource_def_ref = self
             .id_allocator
             .new_resource_def_ref(self.transaction_hash())
             .unwrap();
-        self.new_resource_def_refs.push(address);
-        address
+        self.new_resource_def_refs.push(resource_def_ref);
+        resource_def_ref
     }
 
     /// Creates a new UUID.
@@ -474,19 +474,25 @@ impl<'s, S: SubstateStore> Track<'s, S> {
 
     /// Commits changes to the underlying ledger.
     pub fn commit(&mut self) {
-        for address in self.updated_packages.clone() {
-            self.ledger
-                .put_package(address, self.packages.get(&address).unwrap().clone());
+        for package_ref in self.updated_packages.clone() {
+            self.ledger.put_package(
+                package_ref,
+                self.packages.get(&package_ref).unwrap().clone(),
+            );
         }
 
-        for address in self.updated_components.clone() {
-            self.ledger
-                .put_component(address, self.components.get(&address).unwrap().clone());
+        for component_ref in self.updated_components.clone() {
+            self.ledger.put_component(
+                component_ref,
+                self.components.get(&component_ref).unwrap().clone(),
+            );
         }
 
-        for address in self.updated_resource_defs.clone() {
-            self.ledger
-                .put_resource_def(address, self.resource_defs.get(&address).unwrap().clone());
+        for resource_def_ref in self.updated_resource_defs.clone() {
+            self.ledger.put_resource_def(
+                resource_def_ref,
+                self.resource_defs.get(&resource_def_ref).unwrap().clone(),
+            );
         }
 
         for (component_ref, lazy_map_id) in self.updated_lazy_maps.clone() {
@@ -504,12 +510,12 @@ impl<'s, S: SubstateStore> Track<'s, S> {
             self.ledger.put_vault(component_ref, vault_id, vault);
         }
 
-        for (resource_def, id) in self.updated_non_fungibles.clone() {
+        for (resource_def, key) in self.updated_non_fungibles.clone() {
             self.ledger.put_non_fungible(
                 resource_def,
-                &id,
+                &key,
                 self.non_fungibles
-                    .get(&(resource_def, id.clone()))
+                    .get(&(resource_def, key.clone()))
                     .unwrap()
                     .clone(),
             );

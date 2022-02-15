@@ -7,7 +7,7 @@ use crate::resim::*;
 /// Call a method
 #[derive(Parser, Debug)]
 pub struct CallMethod {
-    /// The address of the component that the method belongs to
+    /// The component that the method belongs to
     component_ref: ComponentRef,
 
     /// The method name

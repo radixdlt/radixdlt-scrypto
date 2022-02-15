@@ -8,7 +8,7 @@ use crate::resim::*;
 /// Show an entity in the ledger state
 #[derive(Parser, Debug)]
 pub struct Show {
-    /// The address of a package, component or resource definition
+    /// A package, component or resource definition ref
     reference: String,
 }
 

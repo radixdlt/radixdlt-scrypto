@@ -19,7 +19,7 @@ impl NewAccount {
         let account = executor.new_account(public_key);
 
         println!("A new account has been created!");
-        println!("Account address: {}", account.to_string().green());
+        println!("Account component ref: {}", account.to_string().green());
         println!("Public key: {}", public_key.to_string().green());
         if get_configs()?.is_none() {
             println!(

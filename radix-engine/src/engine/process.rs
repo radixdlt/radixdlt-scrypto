@@ -123,7 +123,7 @@ pub struct Process<'r, 'l, L: SubstateStore> {
     /// Resources collected from previous CALLs returns.
     ///
     /// When the `depth == 0` (transaction), all returned resources from CALLs are coalesced
-    /// into a map of unidentified buckets indexed by resource address, instead of moving back
+    /// into a map of unidentified buckets indexed by resource definition ref, instead of moving back
     /// to `buckets`.
     ///
     /// Loop invariant: all buckets should be NON_EMPTY.
@@ -420,11 +420,11 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
             for (_, bucket) in buckets {
                 if !bucket.amount().is_zero() {
-                    let address = bucket.resource_def_ref();
-                    if let Some(b) = self.worktop.get_mut(&address) {
+                    let resource_def_ref = bucket.resource_def_ref();
+                    if let Some(b) = self.worktop.get_mut(&resource_def_ref) {
                         b.put(bucket).unwrap();
                     } else {
-                        self.worktop.insert(address, bucket);
+                        self.worktop.insert(resource_def_ref, bucket);
                     }
                 }
             }
@@ -1056,7 +1056,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let data = Self::process_component_data(&input.state)?;
         re_debug!(
             self,
-            "New component: address = {}, state = {}",
+            "New component: component ref = {}, state = {}",
             component_ref,
             data
         );

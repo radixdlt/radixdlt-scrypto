@@ -7,7 +7,7 @@ use crate::resim::*;
 /// Call a function
 #[derive(Parser, Debug)]
 pub struct CallFunction {
-    /// The address of the package which the function belongs to
+    /// The package which the function belongs to
     package_ref: PackageRef,
 
     /// The name of the blueprint which the function belongs to

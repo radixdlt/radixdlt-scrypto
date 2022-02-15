@@ -9,7 +9,7 @@ In this example, we demonstrate two ways of calling a function or method defined
 If the function or method is from an already published package, we need to
 1. Export the ABI of the blueprint using tools like `resim`
     ```
-    resim export-abi <PACKAGE_ADDRESS> Airdrop
+    resim export-abi <PACKAGE_REF> Airdrop
     ```
 2. Import the ABI into our package, e.g.,
     ```rust
@@ -51,10 +51,10 @@ Once the blueprint has been imported, we can then call any of its functions, for
 let airdrop_component = Airdrop::new();
 ```
 
-To call a method, though, we need a component address, which can be parsed from string.
+To call a method, though, we need a component ref, which can be parsed from string.
 ```rust
-let address = Address::from_str("022cf5de8153aaf56ee81c032fb06c7fde0a1dc2389040d651dfc2").unwrap();
-let airdrop = Airdrop::from(address);
+let component_ref = ComponentRef::from_str("022cf5de8153aaf56ee81c032fb06c7fde0a1dc2389040d651dfc2").unwrap();
+let airdrop = Airdrop::from(component_ref);
 let received_tokens = airdrop.free_token();
 ```
 

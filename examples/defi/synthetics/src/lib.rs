@@ -127,12 +127,12 @@ blueprint! {
 
     impl SyntheticPool {
         pub fn new(
-            oracle_address: ComponentRef,
+            oracle_component_ref: ComponentRef,
             snx_resource_def: ResourceDefRef,
             usd_resource_def: ResourceDefRef,
             collateralization_threshold: Decimal,
         ) -> ComponentRef {
-            let oracle: PriceOracle = oracle_address.into();
+            let oracle: PriceOracle = oracle_component_ref.into();
             let synthetics_mint_badge = ResourceBuilder::new_fungible(DIVISIBILITY_NONE)
                 .metadata("name", "Synthetics Mint Badge")
                 .initial_supply_fungible(1);
@@ -163,7 +163,7 @@ blueprint! {
         pub fn add_synthetic_token(
             &mut self,
             asset_symbol: String,
-            asset_address: ResourceDefRef,
+            asset_resource_def_ref: ResourceDefRef,
         ) -> ResourceDefRef {
             assert!(
                 !self.synthetics.contains_key(&asset_symbol),
@@ -181,7 +181,7 @@ blueprint! {
                 .no_initial_supply();
             self.synthetics.insert(
                 asset_symbol.clone(),
-                SyntheticToken::new(asset_symbol, asset_address, token_resource_def),
+                SyntheticToken::new(asset_symbol, asset_resource_def_ref, token_resource_def),
             );
 
             token_resource_def
@@ -216,7 +216,7 @@ blueprint! {
 
             let mut synth = self.synthetics.get(&symbol).unwrap().clone();
             let global_debt = self.get_total_global_debt();
-            let new_debt = self.get_asset_price(synth.asset_address) * amount;
+            let new_debt = self.get_asset_price(synth.asset_resource_def_ref) * amount;
 
             user.global_debt_share
                 .put(self.synthetics_mint_badge.authorize(|auth| {
@@ -257,7 +257,8 @@ blueprint! {
                 .unwrap()
                 .1;
             let global_debt = self.get_total_global_debt();
-            let debt_to_remove = self.get_asset_price(synth.asset_address) * bucket.amount();
+            let debt_to_remove =
+                self.get_asset_price(synth.asset_resource_def_ref) * bucket.amount();
             let shares_to_burn = user.global_debt_share.take(
                 self.synthetics_global_debt_share_resource_def
                     .total_supply()
@@ -276,7 +277,7 @@ blueprint! {
         pub fn get_total_global_debt(&self) -> Decimal {
             let mut total = Decimal::zero();
             for (_, synth) in &self.synthetics {
-                total += self.get_asset_price(synth.asset_address)
+                total += self.get_asset_price(synth.asset_resource_def_ref)
                     * synth.token_resource_def.total_supply();
             }
             total
@@ -288,14 +289,17 @@ blueprint! {
         }
 
         /// Retrieves the prices of pair XYZ/USD
-        pub fn get_asset_price(&self, asset_address: ResourceDefRef) -> Decimal {
-            let usd_address = self.usd_resource_def;
-            if let Some(oracle_price) = self.oracle.get_price(asset_address, usd_address) {
+        pub fn get_asset_price(&self, asset_resource_def_ref: ResourceDefRef) -> Decimal {
+            let usd_resource_def_ref = self.usd_resource_def;
+            if let Some(oracle_price) = self
+                .oracle
+                .get_price(asset_resource_def_ref, usd_resource_def_ref)
+            {
                 oracle_price
             } else {
                 panic!(
                     "Failed to obtain price of {}/{}",
-                    asset_address, usd_address
+                    asset_resource_def_ref, usd_resource_def_ref
                 );
             }
         }
@@ -351,8 +355,8 @@ blueprint! {
 pub struct SyntheticToken {
     /// The symbol of the asset
     asset_symbol: String,
-    /// The resource definition address of the asset
-    asset_address: ResourceDefRef,
+    /// The resource definition ref of the asset
+    asset_resource_def_ref: ResourceDefRef,
     /// The synth (sXYZ) resource definition
     token_resource_def: ResourceDefRef,
 }
@@ -360,12 +364,12 @@ pub struct SyntheticToken {
 impl SyntheticToken {
     pub fn new(
         asset_symbol: String,
-        asset_address: ResourceDefRef,
+        asset_resource_def_ref: ResourceDefRef,
         token_resource_def: ResourceDefRef,
     ) -> Self {
         Self {
             asset_symbol,
-            asset_address,
+            asset_resource_def_ref,
             token_resource_def,
         }
     }
@@ -378,10 +382,13 @@ pub struct User {
 }
 
 impl User {
-    pub fn new(snx_address: ResourceDefRef, global_debt_share_address: ResourceDefRef) -> Self {
+    pub fn new(
+        snx_resource_def_ref: ResourceDefRef,
+        global_debt_share_resource_def_ref: ResourceDefRef,
+    ) -> Self {
         Self {
-            snx: Vault::new(snx_address),
-            global_debt_share: Vault::new(global_debt_share_address),
+            snx: Vault::new(snx_resource_def_ref),
+            global_debt_share: Vault::new(global_debt_share_resource_def_ref),
         }
     }
 

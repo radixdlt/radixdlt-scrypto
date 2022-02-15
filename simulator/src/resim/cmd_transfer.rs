@@ -10,7 +10,7 @@ pub struct Transfer {
     /// The resource to transfer, e.g. "amount,resource_def_ref" or "#non_fungible_id1,#non_fungible_id2,resource_def_ref"
     resource: ResourceSpecification,
 
-    /// The recipient address
+    /// The recipient component ref.
     recipient: ComponentRef,
 
     /// Output a transaction manifest without execution

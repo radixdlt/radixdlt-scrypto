@@ -10,10 +10,10 @@ pub struct Mint {
     /// The amount of resource to mint
     amount: Decimal,
 
-    /// The resource address
+    /// The resource definition ref
     resource_def_ref: ResourceDefRef,
 
-    /// The minter badge address
+    /// The minter badge resource definition ref
     badge: ResourceDefRef,
 
     /// The transaction signers

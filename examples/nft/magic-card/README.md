@@ -110,35 +110,35 @@ let nft = self.random_card_mint_badge.authorize(|auth| {
 
 ## How to Play?
 
-1. Create a new account, and save the account address
+1. Create a new account, and save the Account component ref
 ```
 resim new-account
 ```
-2. Publish the package, and save the package address
+2. Publish the package, and save the package ref
 ```
 resim publish .
 ```
-3. Call the `new` function to instantiate a component, and save the component address
+3. Call the `new` function to instantiate a component, and save the component ref
 ```
-resim call-function <PACKAGE_ADDRESS> HelloNft new
+resim call-function <PACKAGE_REF> HelloNft new
 ```
 4. Call the `buy_random_card` method of the component we just instantiated
 ```
-resim call-method <COMPONENT_ADDRESS> buy_random_card "1000,030000000000000000000000000000000000000000000000000004"
+resim call-method <COMPONENT_REF> buy_random_card "1000,030000000000000000000000000000000000000000000000000004"
 ```
 4. Call the `buy_random_card` method again
 ```
-resim call-method <COMPONENT_ADDRESS> buy_random_card "1000,030000000000000000000000000000000000000000000000000004"
+resim call-method <COMPONENT_REF> buy_random_card "1000,030000000000000000000000000000000000000000000000000004"
 ```
 5. Check out our balance
 ```
-resim show <ACCOUNT_ADDRESS>
+resim show <ACCOUNT_COMPONENT_REF>
 ```
 6. Fuse our random cards
 ```
-resim call-method <COMPONENT_ADDRESS> fuse_my_cards "#0,#1,03d8541671ab09116ae450d468f91e5488a9b22c705d70dcfe9e09"
+resim call-method <COMPONENT_REF> fuse_my_cards "#0,#1,03d8541671ab09116ae450d468f91e5488a9b22c705d70dcfe9e09"
 ```
 7. Check out our balance again and we should see a upgraded card
 ```
-resim show <ACCOUNT_ADDRESS>
+resim show <ACCOUNT_COMPONENT_REF>
 ```

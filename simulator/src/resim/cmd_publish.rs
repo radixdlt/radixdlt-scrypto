@@ -16,7 +16,7 @@ pub struct Publish {
     /// the path to a Scrypto package or a .wasm file
     path: PathBuf,
 
-    /// The package address, for overwriting
+    /// The package ref, for overwriting
     #[clap(long)]
     package_ref: Option<PackageRef>,
 
@@ -48,8 +48,8 @@ impl Publish {
             Ok(())
         } else {
             match executor.publish_package(&code) {
-                Ok(address) => {
-                    println!("Success! New Package: {}", address.to_string().green());
+                Ok(package_ref) => {
+                    println!("Success! New Package: {}", package_ref.to_string().green());
                     Ok(())
                 }
                 Err(error) => Err(Error::TransactionExecutionError(error)),

@@ -118,7 +118,7 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
         }
     }
 
-    /// Publishes a package to a specified address.
+    /// Overwrites a package.
     pub fn overwrite_package(&mut self, package_ref: PackageRef, code: &[u8]) {
         self.ledger
             .put_package(package_ref, Package::new(code.to_vec()));

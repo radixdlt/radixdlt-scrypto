@@ -79,7 +79,7 @@ fn test_component() {
     let receipt1 = executor.run(transaction1).unwrap();
     assert!(receipt1.result.is_ok());
 
-    // Find the component address from receipt
+    // Find the component ref from receipt
     let component = receipt1.new_component_refs[0];
 
     // Call functions & methods

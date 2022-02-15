@@ -74,27 +74,27 @@ Both involves
 
 ## How to Play?
 
-1. Create a new account, and save the account address
+1. Create a new account, and save the Account component ref
 ```
 resim new-account
 ```
-2. Publish the package, and save the package address
+2. Publish the package, and save the package ref
 ```
 resim publish .
 ```
-3. Call the `new` function to instantiate a component, and save the component address
+3. Call the `new` function to instantiate a component, and save the component ref
 ```
-resim call-function <PACKAGE_ADDRESS> HelloNft new 5
+resim call-function <PACKAGE_REF> HelloNft new 5
 ```
 4. Call the `available_ticket_ids`
 ```
-resim call-method <COMPONENT_ADDRESS> get_available_ticket_ids
+resim call-method <COMPONENT_REF> get_available_ticket_ids
 ```
 5. Call the `buy_ticket_by_id` method
 ```
-resim call-method <COMPONENT_ADDRESS> buy_ticket <TICKET_ID> "100,030000000000000000000000000000000000000000000000000004"
+resim call-method <COMPONENT_REF> buy_ticket <TICKET_ID> "100,030000000000000000000000000000000000000000000000000004"
 ```
 6. Check out our balance
 ```
-resim show <ACCOUNT_ADDRESS>
+resim show <ACCOUNT_COMPONENT_REF>
 ```

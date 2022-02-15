@@ -6,7 +6,7 @@ use crate::resim::*;
 /// Set default account
 #[derive(Parser, Debug)]
 pub struct SetDefaultAccount {
-    /// The account component address
+    /// The account component ref
     component_ref: ComponentRef,
 
     /// The public key for accessing the account

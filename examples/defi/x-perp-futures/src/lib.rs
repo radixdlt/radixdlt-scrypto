@@ -15,13 +15,13 @@ blueprint! {
 
     impl ClearingHouse {
         pub fn new(
-            quote_address: ResourceDefRef,
+            quote_resource_def_ref: ResourceDefRef,
             base_init_supply: Decimal,
             quote_init_supply: Decimal,
         ) -> ComponentRef {
             Self {
                 trader_positions: LazyMap::new(),
-                deposits_in_quote: Vault::new(quote_address),
+                deposits_in_quote: Vault::new(quote_resource_def_ref),
                 liquidation_threshold: "0.06".parse().unwrap(),
                 amm: AMM {
                     base_supply: base_init_supply,

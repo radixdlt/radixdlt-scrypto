@@ -7,7 +7,7 @@ use crate::resim::*;
 /// Export the ABI of a blueprint
 #[derive(Parser, Debug)]
 pub struct ExportAbi {
-    /// The package address
+    /// The package ref
     package_ref: PackageRef,
 
     /// The blueprint name
