@@ -10,7 +10,7 @@ blueprint! {
 
     impl PriceOracle {
         /// Creates a PriceOracle component, along with admin badges.
-        pub fn new(num_of_admins: u32) -> (Bucket, ComponentRef) {
+        pub fn instantiate_oracle(num_of_admins: u32) -> (Bucket, ComponentRef) {
             assert!(num_of_admins >= 1);
 
             let badges = ResourceBuilder::new_fungible(DIVISIBILITY_NONE)

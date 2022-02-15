@@ -33,9 +33,9 @@ blueprint! {
 
     impl AutoLend {
         /// Creates a lending pool, with single collateral.
-        pub fn new(reserve: ResourceDefRef) -> ComponentRef {
+        pub fn instantiate_autolend(reserve_resource_def_ref: ResourceDefRef) -> ComponentRef {
             Self {
-                liquidity_pool: Vault::new(reserve),
+                liquidity_pool: Vault::new(reserve_resource_def_ref),
                 min_collateral_ratio: "1.2".parse().unwrap(),
                 max_borrow_percent: "0.3".parse().unwrap(),
                 max_liquidation_percent: "0.5".parse().unwrap(),

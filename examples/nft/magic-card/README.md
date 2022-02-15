@@ -120,7 +120,7 @@ resim publish .
 ```
 3. Call the `new` function to instantiate a component, and save the component ref
 ```
-resim call-function <PACKAGE_REF> HelloNft new
+resim call-function <PACKAGE_REF> HelloNft instantiate_component
 ```
 4. Call the `buy_random_card` method of the component we just instantiated
 ```

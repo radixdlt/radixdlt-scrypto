@@ -7,7 +7,7 @@ r#"
     "name": "FlatAdmin",
     "functions": [
         {
-            "name": "new",
+            "name": "instantiate_flat_admin",
             "inputs": [
                 {
                     "type": "String"
@@ -84,9 +84,9 @@ blueprint! {
     }
 
     impl ManagedAccess {
-        pub fn new() -> (ComponentRef, Bucket) {
+        pub fn instantiate_managed_access() -> (ComponentRef, Bucket) {
             let (flat_admin_component, admin_badge) =
-                FlatAdmin::new("My Managed Access Badge".into());
+                FlatAdmin::instantiate_flat_admin("My Managed Access Badge".into());
 
             let component = Self {
                 admin_badge: admin_badge.resource_def_ref(),

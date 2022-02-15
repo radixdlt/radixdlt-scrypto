@@ -15,8 +15,8 @@ use crate::types::*;
 #[derive(PartialEq, Eq)]
 pub struct LazyMap<K: Encode + Decode, V: Encode + Decode> {
     pub id: LazyMapId,
-    key: PhantomData<K>,
-    value: PhantomData<V>,
+    pub key: PhantomData<K>,
+    pub value: PhantomData<V>,
 }
 
 impl<K: Encode + Decode, V: Encode + Decode> LazyMap<K, V> {

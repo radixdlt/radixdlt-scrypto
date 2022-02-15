@@ -8,10 +8,10 @@ blueprint! {
     }
 
     impl Proxy2 {
-        pub fn new() -> ComponentRef {
+        pub fn instantiate_proxy() -> ComponentRef {
             Self {
-                // The new() function returns a generic Component. We use `.into()` to convert it into an `Airdrop`.
-                airdrop: Airdrop::new().into(),
+                // The instantiate_airdrop() function returns a generic Component. We use `.into()` to convert it into an `Airdrop`.
+                airdrop: Airdrop::instantiate_airdrop().into(),
             }
             .instantiate()
         }

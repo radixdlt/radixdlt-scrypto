@@ -82,9 +82,9 @@ resim new-account
 ```
 resim publish .
 ```
-3. Call the `new` function to instantiate a component, and save the component ref
+3. Call the `instantiate_hello` function to instantiate a component, and save the component ref
 ```
-resim call-function <PACKAGE_REF> HelloNft new 5
+resim call-function <PACKAGE_REF> HelloNft instantiate_hello 5
 ```
 4. Call the `available_ticket_ids`
 ```

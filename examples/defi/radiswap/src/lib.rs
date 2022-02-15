@@ -20,7 +20,7 @@ blueprint! {
     impl Radiswap {
         /// Creates a Radiswap component for token pair A/B and returns the component ref
         /// along with the initial LP tokens.
-        pub fn new(
+        pub fn instantiate_pool(
             a_tokens: Bucket,
             b_tokens: Bucket,
             lp_initial_supply: Decimal,

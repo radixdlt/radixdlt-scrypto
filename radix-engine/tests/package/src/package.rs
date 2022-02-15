@@ -5,7 +5,7 @@ blueprint! {
 
     impl PackageTest {
         pub fn publish_package() -> PackageRef {
-            PackageRef::new(include_bytes!("../../../../assets/system.wasm"))
+            Context::publish_package(include_bytes!("../../../../assets/system.wasm"))
         }
     }
 }

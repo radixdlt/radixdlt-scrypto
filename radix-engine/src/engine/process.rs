@@ -52,38 +52,105 @@ macro_rules! re_warn {
     };
 }
 
+/// Represents an interpreter instance.
+pub struct Interpreter {
+    invocation: Invocation,
+    module: ModuleRef,
+    memory: MemoryRef,
+}
+
+/// Keeps invocation information.
+#[derive(Debug, Clone)]
+pub struct Invocation {
+    actor: Actor,
+    package_ref: PackageRef,
+    export_name: String,
+    function: String,
+    args: Vec<ValidatedData>,
+}
+
+/// Qualitative states for a WASM process
+#[derive(Debug)]
+enum InterpreterState {
+    Blueprint,
+    ComponentEmpty {
+        component_ref: ComponentRef,
+    },
+    ComponentLoaded {
+        component_ref: ComponentRef,
+        initial_loaded_object_refs: ComponentObjectRefs,
+        additional_object_refs: ComponentObjectRefs,
+    },
+    ComponentStored,
+}
+
+/// Top level state machine for a process. Empty currently only
+/// refers to the initial process since it doesn't run on a wasm interpreter (yet)
+struct WasmProcess {
+    /// The call depth
+    depth: usize,
+    trace: bool,
+    vm: Interpreter,
+    interpreter_state: InterpreterState,
+    process_owned_objects: ComponentObjects,
+}
+
+impl WasmProcess {
+    fn check_resource(&self) -> bool {
+        let mut success = true;
+
+        for (vault_id, vault) in &self.process_owned_objects.vaults {
+            re_warn!(self, "Dangling vault: {:?}, {:?}", vault_id, vault);
+            success = false;
+        }
+        for (lazy_map_id, lazy_map) in &self.process_owned_objects.lazy_maps {
+            re_warn!(self, "Dangling lazy map: {:?}, {:?}", lazy_map_id, lazy_map);
+            success = false;
+        }
+
+        return success;
+    }
+
+    /// Logs a message to the console.
+    #[allow(unused_variables)]
+    pub fn log(&self, level: Level, msg: String) {
+        let (l, m) = match level {
+            Level::Error => ("ERROR".red(), msg.red()),
+            Level::Warn => ("WARN".yellow(), msg.yellow()),
+            Level::Info => ("INFO".green(), msg.green()),
+            Level::Debug => ("DEBUG".cyan(), msg.cyan()),
+            Level::Trace => ("TRACE".normal(), msg.normal()),
+        };
+
+        #[cfg(not(feature = "alloc"))]
+        println!("{}[{:5}] {}", "  ".repeat(self.depth), l, m);
+    }
+}
+
+///TODO: Remove
+#[derive(Debug)]
 enum LazyMapState {
     Uncommitted { root: LazyMapId },
     Committed { component_ref: ComponentRef },
 }
 
-enum ComponentState {
-    Empty,
-    Loaded {
+impl<'s, S: SubstateStore> Track<'s, S> {
+    fn insert_objects_into_component(
+        &mut self,
+        new_objects: ComponentObjects,
         component_ref: ComponentRef,
-        component_data: ValidatedData,
-    },
-    Saved,
-}
-
-#[derive(Debug)]
-struct UnclaimedLazyMap {
-    lazy_map: LazyMap,
-    /// All descendents (not just direct children) of the unclaimed lazy map
-    descendent_lazy_maps: HashMap<LazyMapId, LazyMap>,
-    descendent_vaults: HashMap<VaultId, Vault>,
-}
-
-impl UnclaimedLazyMap {
-    fn merge(&mut self, unclaimed_lazy_map: UnclaimedLazyMap, lazy_map_id: LazyMapId) {
-        self.descendent_lazy_maps
-            .insert(lazy_map_id, unclaimed_lazy_map.lazy_map);
-
-        for (lazy_map_id, lazy_map) in unclaimed_lazy_map.descendent_lazy_maps {
-            self.descendent_lazy_maps.insert(lazy_map_id, lazy_map);
+    ) {
+        for (vault_id, vault) in new_objects.vaults {
+            self.put_vault(component_ref, vault_id, vault);
         }
-        for (vault_id, vault) in unclaimed_lazy_map.descendent_vaults {
-            self.descendent_vaults.insert(vault_id, vault);
+        for (lazy_map_id, unclaimed) in new_objects.lazy_maps {
+            self.put_lazy_map(component_ref, lazy_map_id, unclaimed.lazy_map);
+            for (child_lazy_map_id, child_lazy_map) in unclaimed.descendent_lazy_maps {
+                self.put_lazy_map(component_ref, child_lazy_map_id, child_lazy_map);
+            }
+            for (vault_id, vault) in unclaimed.descendent_vaults {
+                self.put_vault(component_ref, vault_id, vault);
+            }
         }
     }
 }
@@ -107,17 +174,10 @@ pub struct Process<'r, 'l, L: SubstateStore> {
     /// The bucket refs that will be moved to another process SHORTLY.
     moving_bucket_refs: HashMap<BucketRefId, BucketRef>,
 
-    /// Vaults which haven't been assigned to a component or lazy map yet.
-    unclaimed_vaults: HashMap<VaultId, Vault>,
-    /// Lazy maps which haven't been assigned to a component or lazy map yet.
-    /// Keeps track of vault and lazy map descendents.
-    unclaimed_lazy_maps: HashMap<LazyMapId, UnclaimedLazyMap>,
+    /// State for the given wasm process, empty only on the root process
+    /// (root process cannot create components nor is a component itself)
+    wasm_process_state: Option<WasmProcess>,
 
-    /// Components which have been loaded and possibly updated in the lifetime of this process.
-    component_state: ComponentState,
-
-    /// A WASM interpreter
-    vm: Option<Interpreter>,
     /// ID allocator for buckets and bucket refs created within transaction.
     id_allocator: IdAllocator,
     /// Resources collected from previous CALLs returns.
@@ -128,23 +188,6 @@ pub struct Process<'r, 'l, L: SubstateStore> {
     ///
     /// Loop invariant: all buckets should be NON_EMPTY.
     worktop: HashMap<ResourceDefRef, Bucket>,
-}
-
-/// Represents an interpreter instance.
-pub struct Interpreter {
-    invocation: Invocation,
-    module: ModuleRef,
-    memory: MemoryRef,
-}
-
-/// Keeps invocation information.
-#[derive(Debug, Clone)]
-pub struct Invocation {
-    actor: Actor,
-    package_ref: PackageRef,
-    export_name: String,
-    function: String,
-    args: Vec<ValidatedData>,
 }
 
 impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
@@ -159,10 +202,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             bucket_refs: HashMap::new(),
             moving_buckets: HashMap::new(),
             moving_bucket_refs: HashMap::new(),
-            unclaimed_vaults: HashMap::new(),
-            unclaimed_lazy_maps: HashMap::new(),
-            component_state: ComponentState::Empty,
-            vm: None,
+            wasm_process_state: None,
             id_allocator: IdAllocator::new(IdSpace::Transaction),
             worktop: HashMap::new(),
         }
@@ -466,7 +506,18 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             module: module.clone(),
             memory,
         };
-        self.vm = Some(vm);
+        self.wasm_process_state = Some(WasmProcess {
+            depth: self.depth,
+            trace: self.trace,
+            vm,
+            interpreter_state: match invocation.actor {
+                Actor::Blueprint(..) => InterpreterState::Blueprint,
+                Actor::Component(component_ref) => {
+                    InterpreterState::ComponentEmpty { component_ref }
+                }
+            },
+            process_owned_objects: ComponentObjects::new(),
+        });
 
         // run the main function
         let result = module.invoke_export(invocation.export_name.as_str(), &[], self);
@@ -661,13 +712,10 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             re_warn!(self, "Dangling resource: {:?}", bucket);
             success = false;
         }
-        for (vault_id, vault) in &self.unclaimed_vaults {
-            re_warn!(self, "Dangling vault: {:?}, {:?}", vault_id, vault);
-            success = false;
-        }
-        for (lazy_map_id, lazy_map) in &self.unclaimed_lazy_maps {
-            re_warn!(self, "Dangling lazy map: {:?}, {:?}", lazy_map_id, lazy_map);
-            success = false;
+        if let Some(wasm_process) = &self.wasm_process_state {
+            if !wasm_process.check_resource() {
+                success = false;
+            }
         }
 
         re_debug!(self, "Resource check ended");
@@ -693,46 +741,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         println!("{}[{:5}] {}", "  ".repeat(self.depth), l, m);
     }
 
-    /// Return the actor
-    fn actor(&self) -> Result<Actor, RuntimeError> {
-        self.vm
-            .as_ref()
-            .ok_or(RuntimeError::InterpreterNotStarted)
-            .map(|vm| vm.invocation.actor.clone())
-    }
-
-    /// Return the function name
-    fn function(&self) -> Result<String, RuntimeError> {
-        self.vm
-            .as_ref()
-            .ok_or(RuntimeError::InterpreterNotStarted)
-            .map(|vm| vm.invocation.function.clone())
-    }
-
-    /// Return the function name
-    fn args(&self) -> Result<Vec<Vec<u8>>, RuntimeError> {
-        self.vm
-            .as_ref()
-            .ok_or(RuntimeError::InterpreterNotStarted)
-            .map(|vm| vm.invocation.args.iter().cloned().map(|v| v.raw).collect())
-    }
-
-    /// Return the module ref
-    fn module(&self) -> Result<ModuleRef, RuntimeError> {
-        self.vm
-            .as_ref()
-            .ok_or(RuntimeError::InterpreterNotStarted)
-            .map(|vm| vm.module.clone())
-    }
-
-    /// Return the memory ref
-    fn memory(&self) -> Result<MemoryRef, RuntimeError> {
-        self.vm
-            .as_ref()
-            .ok_or(RuntimeError::InterpreterNotStarted)
-            .map(|vm| vm.memory.clone())
-    }
-
     fn process_call_data(
         &mut self,
         validated: &ValidatedData,
@@ -755,7 +763,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         Ok(())
     }
 
-    fn process_component_data(data: &[u8]) -> Result<ValidatedData, RuntimeError> {
+    /// Process and parse entry data from any component object (components and maps)
+    fn process_entry_data(data: &[u8]) -> Result<ComponentObjectRefs, RuntimeError> {
         let validated =
             ValidatedData::from_slice(data).map_err(RuntimeError::DataValidationError)?;
         if !validated.bucket_ids.is_empty() {
@@ -764,23 +773,29 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         if !validated.bucket_ref_ids.is_empty() {
             return Err(RuntimeError::BucketRefNotAllowed);
         }
-        // lazy map allowed
-        // vaults allowed
-        Ok(validated)
-    }
 
-    fn process_map_data(data: &[u8]) -> Result<ValidatedData, RuntimeError> {
-        let validated =
-            ValidatedData::from_slice(data).map_err(RuntimeError::DataValidationError)?;
-        if !validated.bucket_ids.is_empty() {
-            return Err(RuntimeError::BucketNotAllowed);
+        let mut lazy_map_ids = HashSet::new();
+        for lazy_map_id in validated.lazy_map_ids {
+            if lazy_map_ids.contains(&lazy_map_id) {
+                return Err(RuntimeError::DuplicateLazyMap(lazy_map_id));
+            }
+            lazy_map_ids.insert(lazy_map_id);
         }
-        if !validated.bucket_ref_ids.is_empty() {
-            return Err(RuntimeError::BucketRefNotAllowed);
+
+        let mut vault_ids = HashSet::new();
+        for vault_id in validated.vault_ids {
+            if vault_ids.contains(&vault_id) {
+                return Err(RuntimeError::DuplicateVault(vault_id));
+            }
+            vault_ids.insert(vault_id);
         }
+
         // lazy map allowed
         // vaults allowed
-        Ok(validated)
+        Ok(ComponentObjectRefs {
+            lazy_map_ids,
+            vault_ids,
+        })
     }
 
     fn process_non_fungible_data(&mut self, data: &[u8]) -> Result<ValidatedData, RuntimeError> {
@@ -834,14 +849,15 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
     /// Send a byte array to wasm instance.
     fn send_bytes(&mut self, bytes: &[u8]) -> Result<i32, RuntimeError> {
-        let result = self.module()?.invoke_export(
+        let wasm_process = self.wasm_process_state.as_ref().unwrap();
+        let result = wasm_process.vm.module.invoke_export(
             "scrypto_alloc",
             &[RuntimeValue::I32((bytes.len()) as i32)],
             &mut NopExternals,
         );
 
         if let Ok(Some(RuntimeValue::I32(ptr))) = result {
-            if self.memory()?.set((ptr + 4) as u32, bytes).is_ok() {
+            if wasm_process.vm.memory.set((ptr + 4) as u32, bytes).is_ok() {
                 return Ok(ptr);
             }
         }
@@ -851,21 +867,26 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
     /// Read a byte array from wasm instance.
     fn read_bytes(&mut self, ptr: i32) -> Result<Vec<u8>, RuntimeError> {
+        let wasm_process = self.wasm_process_state.as_ref().unwrap();
         // read length
-        let a = self
-            .memory()?
+        let a = wasm_process
+            .vm
+            .memory
             .get(ptr as u32, 4)
             .map_err(RuntimeError::MemoryAccessError)?;
         let len = u32::from_le_bytes([a[0], a[1], a[2], a[3]]);
 
         // read data
-        let data = self
-            .memory()?
+        let data = wasm_process
+            .vm
+            .memory
             .get((ptr + 4) as u32, len as usize)
             .map_err(RuntimeError::MemoryAccessError)?;
 
         // free the buffer
-        self.module()?
+        wasm_process
+            .vm
+            .module
             .invoke_export(
                 "scrypto_free",
                 &[RuntimeValue::I32(ptr as i32)],
@@ -882,11 +903,13 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         args: RuntimeArgs,
         handler: fn(&mut Self, input: I) -> Result<O, RuntimeError>,
     ) -> Result<Option<RuntimeValue>, Trap> {
+        let wasm_process = self.wasm_process_state.as_mut().unwrap();
         let op: u32 = args.nth_checked(0)?;
         let input_ptr: u32 = args.nth_checked(1)?;
         let input_len: u32 = args.nth_checked(2)?;
-        let input_bytes = self
-            .memory()?
+        let input_bytes = wasm_process
+            .vm
+            .memory
             .get(input_ptr, input_len as usize)
             .map_err(|e| Trap::from(RuntimeError::MemoryAccessError(e)))?;
         let input: I = scrypto_decode(&input_bytes)
@@ -1019,65 +1042,31 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         Ok(CallMethodOutput { rtn: result?.raw })
     }
 
-    fn move_lazy_map_into_component(
-        &mut self,
-        unclaimed_lazy_map: UnclaimedLazyMap,
-        lazy_map_id: LazyMapId,
-        component_ref: ComponentRef,
-    ) {
-        re_debug!(
-            self,
-            "Lazy Map move: lazy_map = {:?}, to = component({}) ",
-            lazy_map_id,
-            component_ref
-        );
-
-        self.track
-            .put_lazy_map(component_ref, lazy_map_id, unclaimed_lazy_map.lazy_map);
-        for (child_lazy_map_id, child_lazy_map) in unclaimed_lazy_map.descendent_lazy_maps {
-            self.track
-                .put_lazy_map(component_ref, child_lazy_map_id, child_lazy_map);
-        }
-        for (vault_id, vault) in unclaimed_lazy_map.descendent_vaults {
-            self.track.put_vault(component_ref, vault_id, vault);
-        }
-    }
-
     fn handle_create_component(
         &mut self,
         input: CreateComponentInput,
     ) -> Result<CreateComponentOutput, RuntimeError> {
+        let wasm_process = self
+            .wasm_process_state
+            .as_mut()
+            .ok_or(RuntimeError::IllegalSystemCall())?;
         let component_ref = self.track.new_component_ref();
 
         if self.track.get_component(component_ref).is_some() {
             return Err(RuntimeError::ComponentAlreadyExists(component_ref));
         }
 
-        let data = Self::process_component_data(&input.state)?;
-        re_debug!(
-            self,
-            "New component: component ref = {}, state = {}",
-            component_ref,
-            data
+        let data = Self::process_entry_data(&input.state)?;
+        let new_objects = wasm_process.process_owned_objects.take(data)?;
+
+        self.track
+            .insert_objects_into_component(new_objects, component_ref);
+
+        let component = Component::new(
+            wasm_process.vm.invocation.package_ref,
+            input.blueprint_name,
+            input.state,
         );
-
-        for vault_id in data.vault_ids {
-            let vault = self
-                .unclaimed_vaults
-                .remove(&vault_id)
-                .ok_or(RuntimeError::VaultNotFound(vault_id))?;
-            self.track.put_vault(component_ref, vault_id, vault);
-        }
-
-        for lazy_map_id in data.lazy_map_ids {
-            let unclaimed_lazy_map = self
-                .unclaimed_lazy_maps
-                .remove(&lazy_map_id)
-                .ok_or(RuntimeError::LazyMapNotFound(lazy_map_id))?;
-            self.move_lazy_map_into_component(unclaimed_lazy_map, lazy_map_id, component_ref);
-        }
-
-        let component = Component::new(input.package_ref, input.blueprint_name, data.raw);
         self.track.put_component(component_ref, component);
 
         Ok(CreateComponentOutput { component_ref })
@@ -1102,27 +1091,30 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         _: GetComponentStateInput,
     ) -> Result<GetComponentStateOutput, RuntimeError> {
-        let component_ref = match self.component_state {
-            ComponentState::Empty => match self.vm.as_ref().unwrap().invocation.actor {
-                Actor::Component(component_ref) => Ok(component_ref),
-                _ => Err(RuntimeError::IllegalSystemCall()),
-            },
-            ComponentState::Loaded { component_ref, .. } => {
-                Err(RuntimeError::ComponentAlreadyLoaded(component_ref))
+        let wasm_process = self
+            .wasm_process_state
+            .as_mut()
+            .ok_or(RuntimeError::IllegalSystemCall())?;
+        let (return_state, next_interpreter_state) = match &wasm_process.interpreter_state {
+            InterpreterState::ComponentEmpty { component_ref } => {
+                let component = self.track.get_component(*component_ref).unwrap();
+                let state = component.state();
+                let initial_loaded_object_refs = Self::process_entry_data(state).unwrap();
+                Ok((
+                    state,
+                    InterpreterState::ComponentLoaded {
+                        component_ref: *component_ref,
+                        initial_loaded_object_refs,
+                        additional_object_refs: ComponentObjectRefs::new(),
+                    },
+                ))
             }
-            ComponentState::Saved => Err(RuntimeError::IllegalSystemCall()),
+            _ => Err(RuntimeError::IllegalSystemCall()),
         }?;
-
-        let component = self.track.get_component(component_ref).unwrap();
-        let state = component.state();
-        let component_data = Self::process_component_data(state).unwrap();
-        self.component_state = ComponentState::Loaded {
-            component_ref,
-            component_data,
-        };
-
+        wasm_process.interpreter_state = next_interpreter_state;
+        let component_state = return_state.to_vec();
         Ok(GetComponentStateOutput {
-            state: state.to_owned(),
+            state: component_state,
         })
     }
 
@@ -1130,56 +1122,32 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         input: PutComponentStateInput,
     ) -> Result<PutComponentStateOutput, RuntimeError> {
-        let old_state = match &self.component_state {
-            ComponentState::Empty => Err(RuntimeError::ComponentNotLoaded()),
-            ComponentState::Loaded { component_data, .. } => Ok(component_data),
-            ComponentState::Saved => Err(RuntimeError::IllegalSystemCall()),
-        }?
-        .to_owned();
-        let component_ref = match self.vm.as_ref().unwrap().invocation.actor {
-            Actor::Component(component_ref) => Ok(component_ref),
+        let wasm_process = self
+            .wasm_process_state
+            .as_mut()
+            .ok_or(RuntimeError::IllegalSystemCall())?;
+        let next_state = match &wasm_process.interpreter_state {
+            InterpreterState::ComponentLoaded {
+                component_ref,
+                initial_loaded_object_refs,
+                ..
+            } => {
+                let mut new_set = Self::process_entry_data(&input.state)?;
+                new_set.remove(&initial_loaded_object_refs)?;
+                let new_objects = wasm_process.process_owned_objects.take(new_set)?;
+                self.track
+                    .insert_objects_into_component(new_objects, *component_ref);
+
+                // TODO: Verify that process_owned_objects is empty
+
+                let component = self.track.get_component_mut(*component_ref).unwrap();
+                component.set_state(input.state);
+                Ok(InterpreterState::ComponentStored)
+            }
             _ => Err(RuntimeError::IllegalSystemCall()),
-        }
-        .unwrap();
+        }?;
 
-        let new_state = Self::process_component_data(&input.state)?;
-        re_debug!(self, "New component state: {}", new_state);
-
-        // Only allow vaults to be added, never removed
-        let mut old_vaults: HashSet<VaultId> = HashSet::from_iter(old_state.vault_ids.into_iter());
-        for vault_id in new_state.vault_ids {
-            if !old_vaults.remove(&vault_id) {
-                let vault = self
-                    .unclaimed_vaults
-                    .remove(&vault_id)
-                    .ok_or(RuntimeError::VaultNotFound(vault_id))?;
-                self.track.put_vault(component_ref, vault_id, vault);
-            }
-        }
-        old_vaults
-            .into_iter()
-            .try_for_each(|vault_id| Err(RuntimeError::VaultRemoved(vault_id)))?;
-
-        // Only allow lazy maps to be added, never removed
-        let mut old_lazy_maps: HashSet<LazyMapId> =
-            HashSet::from_iter(old_state.lazy_map_ids.into_iter());
-        for lazy_map_id in new_state.lazy_map_ids {
-            if !old_lazy_maps.remove(&lazy_map_id) {
-                let unclaimed_lazy_map = self
-                    .unclaimed_lazy_maps
-                    .remove(&lazy_map_id)
-                    .ok_or(RuntimeError::LazyMapNotFound(lazy_map_id))?;
-                self.move_lazy_map_into_component(unclaimed_lazy_map, lazy_map_id, component_ref);
-            }
-        }
-        old_lazy_maps
-            .into_iter()
-            .try_for_each(|lazy_map_id| Err(RuntimeError::LazyMapRemoved(lazy_map_id)))?;
-
-        let component = self.track.get_component_mut(component_ref).unwrap();
-        component.set_state(new_state.raw);
-
-        self.component_state = ComponentState::Saved;
+        wasm_process.interpreter_state = next_state;
 
         Ok(PutComponentStateOutput {})
     }
@@ -1188,8 +1156,12 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         _input: CreateLazyMapInput,
     ) -> Result<CreateLazyMapOutput, RuntimeError> {
+        let wasm_process = self
+            .wasm_process_state
+            .as_mut()
+            .ok_or(RuntimeError::IllegalSystemCall())?;
         let lazy_map_id = self.track.new_lazy_map_id();
-        self.unclaimed_lazy_maps.insert(
+        wasm_process.process_owned_objects.lazy_maps.insert(
             lazy_map_id,
             UnclaimedLazyMap {
                 lazy_map: LazyMap::new(),
@@ -1197,7 +1169,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 descendent_vaults: HashMap::new(),
             },
         );
-
         Ok(CreateLazyMapOutput { lazy_map_id })
     }
 
@@ -1205,8 +1176,45 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         input: GetLazyMapEntryInput,
     ) -> Result<GetLazyMapEntryOutput, RuntimeError> {
-        let (lazy_map, _) = self.get_local_lazy_map_mut(input.lazy_map_id)?;
-        let value = lazy_map.get_entry(&input.key);
+        let wasm_process = self
+            .wasm_process_state
+            .as_mut()
+            .ok_or(RuntimeError::IllegalSystemCall())?;
+        let value = match wasm_process
+            .process_owned_objects
+            .get_lazy_map_mut(&input.lazy_map_id)
+        {
+            None => match &mut wasm_process.interpreter_state {
+                InterpreterState::ComponentLoaded {
+                    initial_loaded_object_refs,
+                    additional_object_refs,
+                    component_ref,
+                } => {
+                    if !initial_loaded_object_refs
+                        .lazy_map_ids
+                        .contains(&input.lazy_map_id)
+                        && !additional_object_refs
+                            .lazy_map_ids
+                            .contains(&input.lazy_map_id)
+                    {
+                        return Err(RuntimeError::LazyMapNotFound(input.lazy_map_id));
+                    }
+                    let lazy_map = self
+                        .track
+                        .get_lazy_map_mut(*component_ref, input.lazy_map_id)
+                        .unwrap();
+                    let value = lazy_map.get_entry(&input.key);
+                    if value.is_some() {
+                        let map_entry_objects = Self::process_entry_data(value.unwrap()).unwrap();
+                        additional_object_refs.extend(map_entry_objects);
+                    }
+
+                    Ok(value)
+                }
+                _ => Err(RuntimeError::LazyMapNotFound(input.lazy_map_id)),
+            },
+            Some((_, lazy_map)) => Ok(lazy_map.get_entry(&input.key)),
+        }?;
 
         Ok(GetLazyMapEntryOutput {
             value: value.map(|e| e.to_vec()),
@@ -1217,69 +1225,74 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         input: PutLazyMapEntryInput,
     ) -> Result<PutLazyMapEntryOutput, RuntimeError> {
-        let key = Self::process_map_data(&input.key)?;
-        let new_entry_state = Self::process_map_data(&input.value)?;
-        re_debug!(self, "Map entry: {} => {}", key, new_entry_state);
-
-        let (lazy_map, lazy_map_state) = self.get_local_lazy_map_mut(input.lazy_map_id)?;
-        let (mut old_entry_vault_ids, mut old_entry_lazy_map_ids) = lazy_map
-            .get_entry(&key.raw)
-            .map_or((HashSet::new(), HashSet::new()), |e| {
-                let data = Self::process_map_data(e).unwrap();
-                let old_vaults = HashSet::from_iter(data.vault_ids.into_iter());
-                let old_lazy_maps = HashSet::from_iter(data.lazy_map_ids.into_iter());
-                (old_vaults, old_lazy_maps)
-            });
-        lazy_map.set_entry(key.raw, new_entry_state.raw);
-
-        // Only allow vaults to be added, never removed
-        for vault_id in new_entry_state.vault_ids {
-            if !old_entry_vault_ids.remove(&vault_id) {
-                let vault = self
-                    .unclaimed_vaults
-                    .remove(&vault_id)
-                    .ok_or(RuntimeError::VaultNotFound(vault_id))?;
-                match lazy_map_state {
-                    Uncommitted { root } => {
-                        let unclaimed_lazy_map = self.unclaimed_lazy_maps.get_mut(&root).unwrap();
-                        unclaimed_lazy_map.descendent_vaults.insert(vault_id, vault);
+        let wasm_process = self
+            .wasm_process_state
+            .as_mut()
+            .ok_or(RuntimeError::IllegalSystemCall())?;
+        let (lazy_map, lazy_map_state) = match wasm_process
+            .process_owned_objects
+            .get_lazy_map_mut(&input.lazy_map_id)
+        {
+            None => match &wasm_process.interpreter_state {
+                InterpreterState::ComponentLoaded {
+                    initial_loaded_object_refs,
+                    additional_object_refs,
+                    component_ref,
+                } => {
+                    if !initial_loaded_object_refs
+                        .lazy_map_ids
+                        .contains(&input.lazy_map_id)
+                        && !additional_object_refs
+                            .lazy_map_ids
+                            .contains(&input.lazy_map_id)
+                    {
+                        return Err(RuntimeError::LazyMapNotFound(input.lazy_map_id));
                     }
-                    Committed { component_ref } => {
-                        self.track.put_vault(component_ref, vault_id, vault);
-                    }
+                    let lazy_map = self
+                        .track
+                        .get_lazy_map_mut(*component_ref, input.lazy_map_id)
+                        .unwrap();
+                    Ok((
+                        lazy_map,
+                        Committed {
+                            component_ref: *component_ref,
+                        },
+                    ))
                 }
+                _ => Err(RuntimeError::LazyMapNotFound(input.lazy_map_id)),
+            },
+            Some((root, lazy_map)) => Ok((lazy_map, Uncommitted { root })),
+        }?;
+        let mut new_entry_object_refs = Self::process_entry_data(&input.value)?;
+        let old_entry_object_refs = match lazy_map.get_entry(&input.key) {
+            None => ComponentObjectRefs::new(),
+            Some(e) => Self::process_entry_data(e).unwrap(),
+        };
+        lazy_map.set_entry(input.key, input.value);
+        new_entry_object_refs.remove(&old_entry_object_refs)?;
+
+        // Check for cycles
+        if let Uncommitted { root } = lazy_map_state {
+            if new_entry_object_refs.lazy_map_ids.contains(&root) {
+                return Err(RuntimeError::CyclicLazyMap(root));
             }
         }
-        old_entry_vault_ids
-            .into_iter()
-            .try_for_each(|vault_id| Err(RuntimeError::VaultRemoved(vault_id)))?;
 
-        // Only allow lazy maps to be added, never removed
-        for lazy_map_id in new_entry_state.lazy_map_ids {
-            if !old_entry_lazy_map_ids.remove(&lazy_map_id) {
-                let child_lazy_map = self
-                    .unclaimed_lazy_maps
-                    .remove(&lazy_map_id)
-                    .ok_or(RuntimeError::LazyMapNotFound(lazy_map_id))?;
+        let new_objects = wasm_process
+            .process_owned_objects
+            .take(new_entry_object_refs)?;
 
-                match lazy_map_state {
-                    Uncommitted { root } => {
-                        let unclaimed_lazy_map = self.unclaimed_lazy_maps.get_mut(&root).unwrap();
-                        unclaimed_lazy_map.merge(child_lazy_map, lazy_map_id);
-                    }
-                    Committed { component_ref } => {
-                        self.move_lazy_map_into_component(
-                            child_lazy_map,
-                            lazy_map_id,
-                            component_ref,
-                        );
-                    }
-                }
+        match lazy_map_state {
+            Uncommitted { root } => {
+                wasm_process
+                    .process_owned_objects
+                    .insert_objects_into_map(new_objects, &root);
+            }
+            Committed { component_ref } => {
+                self.track
+                    .insert_objects_into_component(new_objects, component_ref);
             }
         }
-        old_entry_lazy_map_ids
-            .into_iter()
-            .try_for_each(|lazy_map_id| Err(RuntimeError::LazyMapRemoved(lazy_map_id)))?;
 
         Ok(PutLazyMapEntryOutput {})
     }
@@ -1583,6 +1596,10 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         input: CreateEmptyVaultInput,
     ) -> Result<CreateEmptyVaultOutput, RuntimeError> {
+        let wasm_process = self
+            .wasm_process_state
+            .as_mut()
+            .ok_or(RuntimeError::IllegalSystemCall())?;
         let definition = self
             .track
             .get_resource_def(input.resource_def_ref)
@@ -1601,65 +1618,38 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             },
         ));
         let vault_id = self.track.new_vault_id();
-        self.unclaimed_vaults.insert(vault_id, new_vault);
+        wasm_process
+            .process_owned_objects
+            .vaults
+            .insert(vault_id, new_vault);
 
         Ok(CreateEmptyVaultOutput { vault_id })
     }
 
-    fn get_local_lazy_map_mut(
-        &mut self,
-        lazy_map_id: LazyMapId,
-    ) -> Result<(&mut LazyMap, LazyMapState), RuntimeError> {
-        // TODO: Optimize to prevent iteration
-        for (root, unclaimed) in self.unclaimed_lazy_maps.iter_mut() {
-            if lazy_map_id.eq(root) {
-                return Ok((&mut unclaimed.lazy_map, Uncommitted { root: root.clone() }));
-            }
-
-            let lazy_map = unclaimed.descendent_lazy_maps.get_mut(&lazy_map_id);
-            if lazy_map.is_some() {
-                return Ok((lazy_map.unwrap(), Uncommitted { root: root.clone() }));
-            }
-        }
-
-        match self.vm.as_ref().unwrap().invocation.actor {
-            Actor::Component(component_ref) => {
-                match self.track.get_lazy_map_mut(component_ref, lazy_map_id) {
-                    Some(lazy_map) => Ok((
-                        lazy_map,
-                        Committed {
-                            component_ref: component_ref,
-                        },
-                    )),
-                    None => Err(RuntimeError::LazyMapNotFound(lazy_map_id)),
-                }
-            }
-            _ => Err(RuntimeError::LazyMapNotFound(lazy_map_id)),
-        }
-    }
-
     fn get_local_vault(&mut self, vault_id: VaultId) -> Result<&mut Vault, RuntimeError> {
-        match self.unclaimed_vaults.get_mut(&vault_id) {
+        let wasm_process = self
+            .wasm_process_state
+            .as_mut()
+            .ok_or(RuntimeError::IllegalSystemCall())?;
+        match wasm_process.process_owned_objects.get_vault_mut(&vault_id) {
             Some(vault) => Ok(vault),
-            None => {
-                // TODO: Optimize to prevent iteration
-                for (_, unclaimed) in self.unclaimed_lazy_maps.iter_mut() {
-                    let vault = unclaimed.descendent_vaults.get_mut(&vault_id);
-                    if vault.is_some() {
-                        return Ok(vault.unwrap());
+            None => match &wasm_process.interpreter_state {
+                InterpreterState::ComponentLoaded {
+                    component_ref,
+                    initial_loaded_object_refs,
+                    additional_object_refs,
+                    ..
+                } => {
+                    if !initial_loaded_object_refs.vault_ids.contains(&vault_id)
+                        && !additional_object_refs.vault_ids.contains(&vault_id)
+                    {
+                        return Err(RuntimeError::VaultNotFound(vault_id));
                     }
+                    let vault = self.track.get_vault_mut(*component_ref, vault_id).unwrap();
+                    Ok(vault)
                 }
-
-                match self.vm.as_ref().unwrap().invocation.actor {
-                    Actor::Component(component_ref) => {
-                        match self.track.get_vault_mut(component_ref, vault_id) {
-                            Some(vault) => Ok(vault),
-                            None => Err(RuntimeError::VaultNotFound(vault_id)),
-                        }
-                    }
-                    _ => Err(RuntimeError::VaultNotFound(vault_id)),
-                }
-            }
+                _ => Err(RuntimeError::VaultNotFound(vault_id)),
+            },
         }
     }
 
@@ -2042,9 +2032,20 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         _input: GetCallDataInput,
     ) -> Result<GetCallDataOutput, RuntimeError> {
+        let wasm_process = self
+            .wasm_process_state
+            .as_ref()
+            .ok_or(RuntimeError::InterpreterNotStarted)?;
         Ok(GetCallDataOutput {
-            function: self.function()?,
-            args: self.args()?,
+            function: wasm_process.vm.invocation.function.clone(),
+            args: wasm_process
+                .vm
+                .invocation
+                .args
+                .iter()
+                .cloned()
+                .map(|v| v.raw)
+                .collect(),
         })
     }
 
@@ -2076,8 +2077,12 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     }
 
     fn handle_get_actor(&mut self, _input: GetActorInput) -> Result<GetActorOutput, RuntimeError> {
+        let wasm_process = self
+            .wasm_process_state
+            .as_ref()
+            .ok_or(RuntimeError::InterpreterNotStarted)?;
         Ok(GetActorOutput {
-            actor: self.actor()?,
+            actor: wasm_process.vm.invocation.actor.clone(),
         })
     }
 

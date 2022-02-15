@@ -126,7 +126,7 @@ blueprint! {
     }
 
     impl SyntheticPool {
-        pub fn new(
+        pub fn instantiate_pool(
             oracle_component_ref: ComponentRef,
             snx_token: ResourceDefRef,
             usd_token: ResourceDefRef,

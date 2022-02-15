@@ -17,7 +17,7 @@ blueprint! {
     }
 
     impl HelloNft {
-        pub fn new(price: Decimal) -> ComponentRef {
+        pub fn instantiate_hello_nft(price: Decimal) -> ComponentRef {
             // Prepare ticket NFT data
             let mut tickets = Vec::new();
             for row in 1..5 {

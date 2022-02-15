@@ -34,7 +34,7 @@ blueprint! {
     }
 
     impl SportingEvent {
-        pub fn new() -> ComponentRef {
+        pub fn instantiate_sporting_event() -> ComponentRef {
             // For simplicity's sake, we will just use all fixed values for our numbers of tickets and their prices, though all of those could be parameterized
 
             // We'll start by creating our admin badge which is able to create and modify our NFT

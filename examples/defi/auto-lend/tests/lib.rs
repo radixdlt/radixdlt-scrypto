@@ -37,7 +37,7 @@ fn set_up_test_env<'a, L: SubstateStore>(ledger: &'a mut L) -> TestEnv<'a, L> {
                 .call_function(
                     package,
                     "AutoLend",
-                    "new",
+                    "instantiate_autolend",
                     vec![usd.to_string(), "USD".to_owned()],
                     Some(account),
                 )

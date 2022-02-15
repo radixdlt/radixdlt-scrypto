@@ -18,7 +18,7 @@ r#"
     "name": "PriceOracle",
     "functions": [
         {
-            "name": "new",
+            "name": "instantiate_oracle",
             "inputs": [
                 {
                     "type": "U32"
@@ -117,7 +117,7 @@ r#"
     "name": "SyntheticPool",
     "functions": [
         {
-            "name": "new",
+            "name": "instantiate_pool",
             "inputs": [
                 {
                     "type": "Custom",
@@ -322,7 +322,7 @@ r#"
     "name": "Radiswap",
     "functions": [
         {
-            "name": "new",
+            "name": "instantiate_pool",
             "inputs": [
                 {
                     "type": "Custom",
@@ -484,7 +484,7 @@ blueprint! {
     }
 
     impl MutualFarm {
-        pub fn new(
+        pub fn instantiate_farm(
             price_oracle_component_ref: ComponentRef,
             xrd_snx_swap_component_ref: ComponentRef,
             synthetic_pool_component_ref: ComponentRef,
@@ -529,7 +529,7 @@ blueprint! {
             let synth_resource_def_ref = synth.resource_def_ref();
 
             debug!("Set up sTESLA/XRD swap pool");
-            let (radiswap_comp, lp_tokens) = Radiswap::new(
+            let (radiswap_comp, lp_tokens) = Radiswap::instantiate_pool(
                 synth,
                 initial_xrd,
                 1000000.into(),

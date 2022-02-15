@@ -10,7 +10,7 @@ blueprint! {
         // Implement the functions and methods which will manage those resources and data
 
         // This is a function, and can be called directly on the blueprint once deployed
-        pub fn new() -> ComponentRef {
+        pub fn instantiate_hello() -> ComponentRef {
             // Create a new token called "HelloToken," with a fixed supply of 1000, and put that supply into a bucket
             let my_bucket: Bucket = ResourceBuilder::new_fungible(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "HelloToken")

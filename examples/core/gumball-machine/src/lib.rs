@@ -9,7 +9,7 @@ blueprint! {
 
     impl GumballMachine {
         // given a price in XRD, creates a ready-to-use gumball machine
-        pub fn new(price: Decimal) -> ComponentRef {
+        pub fn instantiate_gumball_machine(price: Decimal) -> ComponentRef {
             // create a new Gumball resource, with a fixed quantity of 100
             let bucket_of_gumballs = ResourceBuilder::new_fungible(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "Gumball")

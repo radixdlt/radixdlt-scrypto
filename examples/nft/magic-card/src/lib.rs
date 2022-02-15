@@ -45,7 +45,7 @@ blueprint! {
     }
 
     impl HelloNft {
-        pub fn new() -> ComponentRef {
+        pub fn instantiate_component() -> ComponentRef {
             // Creates a fixed set of NFTs
             let special_cards_bucket = ResourceBuilder::new_non_fungible()
                 .metadata("name", "Russ' Magic Card Collection")

@@ -19,7 +19,7 @@ For user convenience, we'll also maintain the `ResourceDef` of the external admi
 Upon instantiation, we'll only ask the user to name the badge.  We'll return to the user the instantiated component, as well as the first admin badge managed by the component.
 
 ```rust
-pub fn new(badge_name: String) -> (Component, Bucket) {
+pub fn instantiate_flatadmin(badge_name: String) -> (Component, Bucket) {
 ```
 
 We'll want our supply of admin badges to be mutable.  Mutable supply resources can only be minted and burned by an appropriate authority, so we'll first create a badge to serve as that authority, and then use that new badge to create our supply of admin badges.

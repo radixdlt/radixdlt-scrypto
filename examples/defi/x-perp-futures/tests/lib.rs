@@ -38,7 +38,7 @@ fn set_up_test_env<'a, L: SubstateStore>(ledger: &'a mut L) -> TestEnv<'a, L> {
                 .call_function(
                     package,
                     "ClearingHouse",
-                    "new",
+                    "instantiate_clearing_house",
                     vec![usd.to_string(), "1".to_owned(), "99999".to_owned()],
                     Some(account),
                 )

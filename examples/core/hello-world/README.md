@@ -16,7 +16,7 @@ A *blueprint* is the code that defines a shared data structure and implementatio
 In this example, we have only one blueprint in the package called `Hello`, which defines:
 
 * The state structure of all `Hello` components (a single *vault*, which is a container for *resources*);
-* A function `new`,  which instantiates a `Hello` component;
+* A function `instantiate_hello`,  which instantiates a `Hello` component;
 * A method `free_token`, which returns a bucket of `HelloToken` each time invoked.
 
 ```rust
@@ -28,7 +28,7 @@ blueprint! {
     }
 
     impl Hello {
-         pub fn new() -> Component {
+         pub fn instantiate_hello() -> Component {
             // stripped
          }
 
@@ -78,9 +78,9 @@ resim new-account
 ```
 resim publish .
 ```
-3. Call the `new` function to instantiate a component, and save the component ref
+3. Call the `instantiate_hello` function to instantiate a component, and save the component ref
 ```
-resim call-function <PACKAGE_REF> Hello new
+resim call-function <PACKAGE_REF> Hello instantiate_hello
 ```
 4. Call the `free_token` method of the component we just instantiated
 ```

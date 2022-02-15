@@ -19,10 +19,10 @@ We'll also need to maintain the price, which we're using `Decimal` for.  `Decima
 In order to instantiate a new gumball machine, the only input we need from the caller is to set the price of each gumball.  After creation, we'll be returning a reference to our new component, so we'll set our function signature up appropriately:
 
 ```rust
-pub fn new(price: Decimal) -> Component {
+pub fn instantiate_gumball_machine(price: Decimal) -> Component {
 ```
 
-Within the `new` function, the first thing we need to do is create a new supply of gumballs which we intend to populate our new component with:
+Within the `instantiate_gumball_machine` function, the first thing we need to do is create a new supply of gumballs which we intend to populate our new component with:
 
 ```rust
 let bucket_of_gumballs = ResourceBuilder::new_fungible(DIVISIBILITY_MAXIMUM)
@@ -71,6 +71,6 @@ In order to keep this as straightforward as possible in teaching a few basic con
 
 First, we have provided no way to actually retrieve the collected XRD!  This would most appropriately be done by adding a withdrawal method, protected by an admin badge which ensures that only appropriate parties are able to perform the withdrawal.
 
-Second, there's no reason to force payment in XRD only...we could easily have changed the `new` function to accept the `ResourceDef` of the currency that we intend to collect in exchange for gumballs.
+Second, there's no reason to force payment in XRD only...we could easily have changed the `instantiate_gumball_machine` function to accept the `ResourceDef` of the currency that we intend to collect in exchange for gumballs.
 
 Third, we could allow for greater flexibility in the gumballs themselves.  We could let the instantiator define the symbol, name, and quantity...or even directly pass in the gumballs to be sold rather than creating a new resource at instantiation time.
