@@ -62,7 +62,8 @@ impl BucketRef {
         let input = GetBucketRefResourceDefInput {
             bucket_ref_id: self.0,
         };
-        let output: GetBucketRefResourceDefOutput = call_engine(GET_BUCKET_REF_RESOURCE_DEF, input);
+        let output: GetBucketRefResourceDefOutput =
+            call_engine(GET_BUCKET_REF_RESOURCE_DEF_REF, input);
 
         output.resource_def_ref
     }

@@ -1,7 +1,7 @@
 use crate::core::*;
 use crate::resource::*;
 
-/// The package which defines the `System` blueprint.
+/// The package of the system blueprint.
 pub const SYSTEM_PACKAGE: PackageRef = PackageRef([
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
 ]);
@@ -11,7 +11,7 @@ pub const SYSTEM_COMPONENT: ComponentRef = ComponentRef([
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2,
 ]);
 
-/// The package that defines the `Account` blueprint.
+/// The package of the account blueprint.
 pub const ACCOUNT_PACKAGE: PackageRef = PackageRef([
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3,
 ]);

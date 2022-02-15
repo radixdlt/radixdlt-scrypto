@@ -13,8 +13,8 @@ pub struct Mint {
     /// The resource definition ref
     resource_def_ref: ResourceDefRef,
 
-    /// The minter badge resource definition ref
-    badge: ResourceDefRef,
+    /// The minter resource definition ref
+    minter_resource_def_ref: ResourceDefRef,
 
     /// The transaction signers
     #[clap(short, long)]
@@ -40,11 +40,15 @@ impl Mint {
             .withdraw_from_account(
                 &ResourceSpecification::Fungible {
                     amount: 1.into(),
-                    resource_def_ref: self.badge,
+                    resource_def_ref: self.minter_resource_def_ref,
                 },
                 default_account,
             )
-            .mint(self.amount, self.resource_def_ref, self.badge)
+            .mint(
+                self.amount,
+                self.resource_def_ref,
+                self.minter_resource_def_ref,
+            )
             .call_method_with_all_resources(default_account, "deposit_batch")
             .build(signatures)
             .map_err(Error::TransactionConstructionError)?;

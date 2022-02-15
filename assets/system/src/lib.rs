@@ -9,7 +9,7 @@ blueprint! {
     impl System {
         /// Publishes a package.
         pub fn publish_package(code: Vec<u8>) -> PackageRef {
-            PackageRef::new(&code)
+            Context::publish_package(&code)
         }
 
         /// Creates a resource.
@@ -41,8 +41,8 @@ blueprint! {
         }
 
         /// Gives away XRD tokens for testing.
-        pub fn free_xrd(&mut self, amount: Decimal) -> Bucket {
-            self.xrd.take(amount)
+        pub fn free_xrd(&mut self) -> Bucket {
+            self.xrd.take(1_000_000)
         }
     }
 }

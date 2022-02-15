@@ -127,7 +127,7 @@ fn dump_resources<T: SubstateStore>(
         let resource_def_ref = vault.resource_def_ref();
         let resource_def = ledger.get_resource_def(resource_def_ref).unwrap();
         println!(
-            "{} {{ amount: {}, resource_def: {}{}{} }}",
+            "{} {{ amount: {}, resource definition: {}{}{} }}",
             list_item_prefix(last),
             amount,
             resource_def_ref,

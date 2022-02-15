@@ -111,9 +111,9 @@ blueprint! {
         /// The collateralization ratio one has to maintain when minting synthetics
         collateralization_threshold: Decimal,
         /// SNX resource definition
-        snx_resource_def: ResourceDefRef,
+        snx_token: ResourceDefRef,
         /// USD resource definition
-        usd_resource_def: ResourceDefRef,
+        usd_token: ResourceDefRef,
 
         /// Users
         users: LazyMap<ResourceDefRef, User>,
@@ -122,39 +122,38 @@ blueprint! {
         /// Mint badge
         synthetics_mint_badge: Vault,
         /// Global debt
-        synthetics_global_debt_share_resource_def: ResourceDefRef,
+        synthetics_global_debt_share: ResourceDefRef,
     }
 
     impl SyntheticPool {
         pub fn new(
             oracle_component_ref: ComponentRef,
-            snx_resource_def: ResourceDefRef,
-            usd_resource_def: ResourceDefRef,
+            snx_token: ResourceDefRef,
+            usd_token: ResourceDefRef,
             collateralization_threshold: Decimal,
         ) -> ComponentRef {
             let oracle: PriceOracle = oracle_component_ref.into();
             let synthetics_mint_badge = ResourceBuilder::new_fungible(DIVISIBILITY_NONE)
                 .metadata("name", "Synthetics Mint Badge")
                 .initial_supply_fungible(1);
-            let synthetics_global_debt_share_resource_def =
-                ResourceBuilder::new_fungible(DIVISIBILITY_MAXIMUM)
-                    .metadata("name", "Synthetics Global Debt")
-                    .flags(MINTABLE | BURNABLE)
-                    .badge(
-                        synthetics_mint_badge.resource_def_ref(),
-                        MAY_MINT | MAY_BURN,
-                    )
-                    .no_initial_supply();
+            let synthetics_global_debt_share = ResourceBuilder::new_fungible(DIVISIBILITY_MAXIMUM)
+                .metadata("name", "Synthetics Global Debt")
+                .flags(MINTABLE | BURNABLE)
+                .badge(
+                    synthetics_mint_badge.resource_def_ref(),
+                    MAY_MINT | MAY_BURN,
+                )
+                .no_initial_supply();
 
             Self {
                 oracle,
                 collateralization_threshold,
-                snx_resource_def,
-                usd_resource_def,
+                snx_token,
+                usd_token,
                 users: LazyMap::new(),
                 synthetics: HashMap::new(),
                 synthetics_mint_badge: Vault::with_bucket(synthetics_mint_badge),
-                synthetics_global_debt_share_resource_def,
+                synthetics_global_debt_share,
             }
             .instantiate()
         }
@@ -170,7 +169,7 @@ blueprint! {
                 "Asset already exist",
             );
 
-            let token_resource_def = ResourceBuilder::new_fungible(DIVISIBILITY_MAXIMUM)
+            let token = ResourceBuilder::new_fungible(DIVISIBILITY_MAXIMUM)
                 .metadata("name", format!("Synthetic {}", asset_symbol.clone()))
                 .metadata("symbol", format!("s{}", asset_symbol.clone()))
                 .flags(MINTABLE | BURNABLE)
@@ -181,10 +180,10 @@ blueprint! {
                 .no_initial_supply();
             self.synthetics.insert(
                 asset_symbol.clone(),
-                SyntheticToken::new(asset_symbol, asset_resource_def_ref, token_resource_def),
+                SyntheticToken::new(asset_symbol, asset_resource_def_ref, token),
             );
 
-            token_resource_def
+            token
         }
 
         /// Deposits SNX into my staking account
@@ -203,7 +202,7 @@ blueprint! {
             user.check_collateralization_ratio(
                 self.get_snx_price(),
                 self.get_total_global_debt(),
-                self.synthetics_global_debt_share_resource_def.clone(),
+                self.synthetics_global_debt_share.clone(),
                 self.collateralization_threshold,
             );
             tokens
@@ -220,26 +219,23 @@ blueprint! {
 
             user.global_debt_share
                 .put(self.synthetics_mint_badge.authorize(|auth| {
-                    self.synthetics_global_debt_share_resource_def.mint(
+                    self.synthetics_global_debt_share.mint(
                         if global_debt.is_zero() {
                             Decimal::from(100)
                         } else {
                             new_debt
-                                / (global_debt
-                                    / self
-                                        .synthetics_global_debt_share_resource_def
-                                        .total_supply())
+                                / (global_debt / self.synthetics_global_debt_share.total_supply())
                         },
                         auth,
                     )
                 }));
             let tokens = self
                 .synthetics_mint_badge
-                .authorize(|auth| synth.token_resource_def.mint(amount, auth));
+                .authorize(|auth| synth.token.mint(amount, auth));
             user.check_collateralization_ratio(
                 self.get_snx_price(),
                 self.get_total_global_debt(),
-                self.synthetics_global_debt_share_resource_def.clone(),
+                self.synthetics_global_debt_share.clone(),
                 self.collateralization_threshold,
             );
             tokens
@@ -253,17 +249,14 @@ blueprint! {
             let synth = self
                 .synthetics
                 .iter()
-                .find(|(_, v)| v.token_resource_def == bucket.resource_def_ref())
+                .find(|(_, v)| v.token == bucket.resource_def_ref())
                 .unwrap()
                 .1;
             let global_debt = self.get_total_global_debt();
             let debt_to_remove =
                 self.get_asset_price(synth.asset_resource_def_ref) * bucket.amount();
             let shares_to_burn = user.global_debt_share.take(
-                self.synthetics_global_debt_share_resource_def
-                    .total_supply()
-                    * debt_to_remove
-                    / global_debt,
+                self.synthetics_global_debt_share.total_supply() * debt_to_remove / global_debt,
             );
 
             self.synthetics_mint_badge.authorize(|auth| {
@@ -277,29 +270,27 @@ blueprint! {
         pub fn get_total_global_debt(&self) -> Decimal {
             let mut total = Decimal::zero();
             for (_, synth) in &self.synthetics {
-                total += self.get_asset_price(synth.asset_resource_def_ref)
-                    * synth.token_resource_def.total_supply();
+                total +=
+                    self.get_asset_price(synth.asset_resource_def_ref) * synth.token.total_supply();
             }
             total
         }
 
         /// Retrieves the price of pair SNX/USD
         pub fn get_snx_price(&self) -> Decimal {
-            self.get_asset_price(self.snx_resource_def)
+            self.get_asset_price(self.snx_token)
         }
 
         /// Retrieves the prices of pair XYZ/USD
         pub fn get_asset_price(&self, asset_resource_def_ref: ResourceDefRef) -> Decimal {
-            let usd_resource_def_ref = self.usd_resource_def;
-            if let Some(oracle_price) = self
-                .oracle
-                .get_price(asset_resource_def_ref, usd_resource_def_ref)
+            let usd_token_ref = self.usd_token;
+            if let Some(oracle_price) = self.oracle.get_price(asset_resource_def_ref, usd_token_ref)
             {
                 oracle_price
             } else {
                 panic!(
                     "Failed to obtain price of {}/{}",
-                    asset_resource_def_ref, usd_resource_def_ref
+                    asset_resource_def_ref, usd_token_ref
                 );
             }
         }
@@ -313,8 +304,7 @@ blueprint! {
                 self.get_snx_price(),
                 self.get_total_global_debt(),
                 user.global_debt_share.amount(),
-                self.synthetics_global_debt_share_resource_def
-                    .total_supply()
+                self.synthetics_global_debt_share.total_supply()
             )
         }
 
@@ -338,10 +328,7 @@ blueprint! {
             } else if create_if_missing {
                 self.users.insert(
                     user_id,
-                    User::new(
-                        self.snx_resource_def,
-                        self.synthetics_global_debt_share_resource_def,
-                    ),
+                    User::new(self.snx_token, self.synthetics_global_debt_share),
                 );
                 self.users.get(&user_id).unwrap()
             } else {
@@ -358,19 +345,19 @@ pub struct SyntheticToken {
     /// The resource definition ref of the asset
     asset_resource_def_ref: ResourceDefRef,
     /// The synth (sXYZ) resource definition
-    token_resource_def: ResourceDefRef,
+    token: ResourceDefRef,
 }
 
 impl SyntheticToken {
     pub fn new(
         asset_symbol: String,
         asset_resource_def_ref: ResourceDefRef,
-        token_resource_def: ResourceDefRef,
+        token: ResourceDefRef,
     ) -> Self {
         Self {
             asset_symbol,
             asset_resource_def_ref,
-            token_resource_def,
+            token,
         }
     }
 }
@@ -383,11 +370,11 @@ pub struct User {
 
 impl User {
     pub fn new(
-        snx_resource_def_ref: ResourceDefRef,
+        snx_token_ref: ResourceDefRef,
         global_debt_share_resource_def_ref: ResourceDefRef,
     ) -> Self {
         Self {
-            snx: Vault::new(snx_resource_def_ref),
+            snx: Vault::new(snx_token_ref),
             global_debt_share: Vault::new(global_debt_share_resource_def_ref),
         }
     }
@@ -397,13 +384,13 @@ impl User {
         &self,
         snx_price: Decimal,
         global_debt: Decimal,
-        global_debt_resource_def: ResourceDefRef,
+        global_debt_resource_def_ref: ResourceDefRef,
         threshold: Decimal,
     ) {
-        if !global_debt_resource_def.total_supply().is_zero() {
+        if !global_debt_resource_def_ref.total_supply().is_zero() {
             assert!(
                 self.snx.amount() * snx_price
-                    / (global_debt / global_debt_resource_def.total_supply()
+                    / (global_debt / global_debt_resource_def_ref.total_supply()
                         * self.global_debt_share.amount())
                     >= threshold,
                 "Under collateralized!",

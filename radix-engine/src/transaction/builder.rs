@@ -398,9 +398,12 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         .0
     }
 
-    fn single_authority(badge: ResourceDefRef, permission: u64) -> HashMap<ResourceDefRef, u64> {
+    fn single_authority(
+        resource_def_ref: ResourceDefRef,
+        permission: u64,
+    ) -> HashMap<ResourceDefRef, u64> {
         let mut map = HashMap::new();
-        map.insert(badge, permission);
+        map.insert(resource_def_ref, permission);
         map
     }
 
@@ -408,7 +411,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     pub fn new_token_mutable(
         &mut self,
         metadata: HashMap<String, String>,
-        badge: ResourceDefRef,
+        minter_resource_def_ref: ResourceDefRef,
     ) -> &mut Self {
         self.add_instruction(Instruction::CallFunction {
             package_ref: SYSTEM_PACKAGE,
@@ -419,7 +422,10 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                 scrypto_encode(&metadata),
                 scrypto_encode(&(MINTABLE | BURNABLE)),
                 scrypto_encode(&0u64),
-                scrypto_encode(&Self::single_authority(badge, MAY_MINT | MAY_BURN)),
+                scrypto_encode(&Self::single_authority(
+                    minter_resource_def_ref,
+                    MAY_MINT | MAY_BURN,
+                )),
                 scrypto_encode::<Option<Supply>>(&None),
             ],
         })
@@ -454,7 +460,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     pub fn new_badge_mutable(
         &mut self,
         metadata: HashMap<String, String>,
-        badge: ResourceDefRef,
+        minter_resource_def_ref: ResourceDefRef,
     ) -> &mut Self {
         self.add_instruction(Instruction::CallFunction {
             package_ref: SYSTEM_PACKAGE,
@@ -465,7 +471,10 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                 scrypto_encode(&metadata),
                 scrypto_encode(&(MINTABLE | BURNABLE)),
                 scrypto_encode(&0u64),
-                scrypto_encode(&Self::single_authority(badge, MAY_MINT | MAY_BURN)),
+                scrypto_encode(&Self::single_authority(
+                    minter_resource_def_ref,
+                    MAY_MINT | MAY_BURN,
+                )),
                 scrypto_encode::<Option<Supply>>(&None),
             ],
         })
@@ -501,12 +510,12 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         &mut self,
         amount: Decimal,
         resource_def_ref: ResourceDefRef,
-        badge: ResourceDefRef,
+        minter_resource_def_ref: ResourceDefRef,
     ) -> &mut Self {
         self.take_from_worktop(
             &ResourceSpecification::Fungible {
                 amount: 1.into(),
-                resource_def_ref: badge,
+                resource_def_ref: minter_resource_def_ref,
             },
             |builder, bucket_id| {
                 builder.create_bucket_ref(bucket_id, |builder, bucket_ref_id| {

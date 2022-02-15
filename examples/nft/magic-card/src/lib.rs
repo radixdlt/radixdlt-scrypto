@@ -35,7 +35,7 @@ blueprint! {
         /// A vault that holds the mint badge
         random_card_mint_badge: Vault,
         /// The resource definition of all random cards
-        random_card_resource_def: ResourceDefRef,
+        random_card_resource_def_ref: ResourceDefRef,
         /// The price of each random card
         random_card_price: Decimal,
         /// A counter for ID generation
@@ -80,7 +80,7 @@ blueprint! {
             let random_card_mint_badge = ResourceBuilder::new_fungible(DIVISIBILITY_NONE)
                 .metadata("name", "Random Cards Mint Badge")
                 .initial_supply_fungible(1);
-            let random_card_resource_def = ResourceBuilder::new_non_fungible()
+            let random_card_resource_def_ref = ResourceBuilder::new_non_fungible()
                 .metadata("name", "Random Cards")
                 .flags(MINTABLE | BURNABLE | INDIVIDUAL_METADATA_MUTABLE)
                 .badge(
@@ -98,7 +98,7 @@ blueprint! {
                     (NonFungibleKey::from(3u128), 123.into()),
                 ]),
                 random_card_mint_badge: Vault::with_bucket(random_card_mint_badge),
-                random_card_resource_def,
+                random_card_resource_def_ref,
                 random_card_price: 50.into(),
                 random_card_id_counter: 0,
                 collected_xrd: Vault::new(RADIX_TOKEN),
@@ -134,7 +134,7 @@ blueprint! {
                 level: random_seed as u8 % 8,
             };
             let nft_bucket = self.random_card_mint_badge.authorize(|auth| {
-                self.random_card_resource_def.mint_non_fungible(
+                self.random_card_resource_def_ref.mint_non_fungible(
                     &NonFungibleKey::from(self.random_card_id_counter),
                     new_card,
                     auth,
@@ -171,7 +171,7 @@ blueprint! {
                 "You need to pass 2 NFTs for fusion"
             );
             assert!(
-                nft_bucket.resource_def_ref() == self.random_card_resource_def,
+                nft_bucket.resource_def_ref() == self.random_card_resource_def_ref,
                 "Only random cards can be fused"
             );
 
@@ -190,7 +190,7 @@ blueprint! {
 
             // Mint a new one.
             let new_non_fungible_bucket = self.random_card_mint_badge.authorize(|auth| {
-                self.random_card_resource_def.mint_non_fungible(
+                self.random_card_resource_def_ref.mint_non_fungible(
                     &NonFungibleKey::from(self.random_card_id_counter),
                     new_card,
                     auth,

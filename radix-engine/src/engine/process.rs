@@ -2137,7 +2137,7 @@ impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
                     PUT_INTO_VAULT => self.handle(args, Self::handle_put_into_vault),
                     TAKE_FROM_VAULT => self.handle(args, Self::handle_take_from_vault),
                     GET_VAULT_AMOUNT => self.handle(args, Self::handle_get_vault_amount),
-                    GET_VAULT_RESOURCE_DEF => {
+                    GET_VAULT_RESOURCE_DEF_REF => {
                         self.handle(args, Self::handle_get_vault_resource_def)
                     }
                     TAKE_NON_FUNGIBLE_FROM_VAULT => {
@@ -2151,7 +2151,7 @@ impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
                     PUT_INTO_BUCKET => self.handle(args, Self::handle_put_into_bucket),
                     TAKE_FROM_BUCKET => self.handle(args, Self::handle_take_from_bucket),
                     GET_BUCKET_AMOUNT => self.handle(args, Self::handle_get_bucket_amount),
-                    GET_BUCKET_RESOURCE_DEF => {
+                    GET_BUCKET_RESOURCE_DEF_REF => {
                         self.handle(args, Self::handle_get_bucket_resource_def)
                     }
                     TAKE_NON_FUNGIBLE_FROM_BUCKET => {
@@ -2164,7 +2164,7 @@ impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
                     CREATE_BUCKET_REF => self.handle(args, Self::handle_create_bucket_ref),
                     DROP_BUCKET_REF => self.handle(args, Self::handle_drop_bucket_ref),
                     GET_BUCKET_REF_AMOUNT => self.handle(args, Self::handle_get_bucket_ref_amount),
-                    GET_BUCKET_REF_RESOURCE_DEF => {
+                    GET_BUCKET_REF_RESOURCE_DEF_REF => {
                         self.handle(args, Self::handle_get_bucket_ref_resource_def)
                     }
                     GET_NON_FUNGIBLE_KEYS_IN_BUCKET_REF => {

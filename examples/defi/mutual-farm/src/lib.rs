@@ -478,7 +478,7 @@ blueprint! {
         radiswap_lp_tokens: Vault,
 
         /// Mutual farm share resource definition
-        mutual_farm_share_resource_def: ResourceDefRef,
+        mutual_farm_share: ResourceDefRef,
         /// Total contribution
         total_contribution_in_usd: Decimal,
     }
@@ -540,14 +540,12 @@ blueprint! {
             );
 
             debug!("Mint initial shares");
-            let mut mutual_farm_share_resource_def =
-                ResourceBuilder::new_fungible(DIVISIBILITY_MAXIMUM)
-                    .metadata("name", "MutualFarm share")
-                    .flags(MINTABLE | BURNABLE)
-                    .badge(identity_badge.resource_def_ref(), MAY_MINT | MAY_BURN)
-                    .no_initial_supply();
-            let shares =
-                mutual_farm_share_resource_def.mint(initial_shares, identity_badge.present());
+            let mut mutual_farm_share = ResourceBuilder::new_fungible(DIVISIBILITY_MAXIMUM)
+                .metadata("name", "MutualFarm share")
+                .flags(MINTABLE | BURNABLE)
+                .badge(identity_badge.resource_def_ref(), MAY_MINT | MAY_BURN)
+                .no_initial_supply();
+            let shares = mutual_farm_share.mint(initial_shares, identity_badge.present());
 
             debug!("Instantiate MutualFund component");
             let component = Self {
@@ -562,7 +560,7 @@ blueprint! {
                 usd_resource_def_ref,
                 radiswap: radiswap_comp.into(),
                 radiswap_lp_tokens: Vault::with_bucket(lp_tokens),
-                mutual_farm_share_resource_def,
+                mutual_farm_share,
                 total_contribution_in_usd: xrd_amount * xrd_usd_price,
             }
             .instantiate();
@@ -614,13 +612,11 @@ blueprint! {
             debug!("Mint initial shares");
             let contribution = xrd_usd_price * (xrd_amount - remainder.amount());
             let num_shares_to_issue = contribution
-                / (self.total_contribution_in_usd
-                    / self.mutual_farm_share_resource_def.total_supply());
+                / (self.total_contribution_in_usd / self.mutual_farm_share.total_supply());
             self.total_contribution_in_usd += contribution;
-            let shares = self.identity_badge.authorize(|auth| {
-                self.mutual_farm_share_resource_def
-                    .mint(num_shares_to_issue, auth)
-            });
+            let shares = self
+                .identity_badge
+                .authorize(|auth| self.mutual_farm_share.mint(num_shares_to_issue, auth));
             (shares, remainder)
         }
 

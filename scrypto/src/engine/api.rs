@@ -70,7 +70,7 @@ pub const TAKE_FROM_VAULT: u32 = 0x42;
 /// Get vault resource amount
 pub const GET_VAULT_AMOUNT: u32 = 0x43;
 /// Get vault resource definition
-pub const GET_VAULT_RESOURCE_DEF: u32 = 0x44;
+pub const GET_VAULT_RESOURCE_DEF_REF: u32 = 0x44;
 /// Take a non-fungible from this vault, by key
 pub const TAKE_NON_FUNGIBLE_FROM_VAULT: u32 = 0x45;
 /// Get the IDs of all non-fungibles in this vault
@@ -85,7 +85,7 @@ pub const TAKE_FROM_BUCKET: u32 = 0x52;
 /// Get bucket resource amount
 pub const GET_BUCKET_AMOUNT: u32 = 0x53;
 /// Get bucket resource definition
-pub const GET_BUCKET_RESOURCE_DEF: u32 = 0x54;
+pub const GET_BUCKET_RESOURCE_DEF_REF: u32 = 0x54;
 /// Take a non-fungible from this bucket, by key
 pub const TAKE_NON_FUNGIBLE_FROM_BUCKET: u32 = 0x55;
 /// Get the IDs of all non-fungibles in this bucket
@@ -98,7 +98,7 @@ pub const DROP_BUCKET_REF: u32 = 0x61;
 /// Get the resource amount behind a bucket ref
 pub const GET_BUCKET_REF_AMOUNT: u32 = 0x62;
 /// Get the resource definition behind a bucket ref
-pub const GET_BUCKET_REF_RESOURCE_DEF: u32 = 0x63;
+pub const GET_BUCKET_REF_RESOURCE_DEF_REF: u32 = 0x63;
 /// Get the non-fungible keys in the bucket referenced
 pub const GET_NON_FUNGIBLE_KEYS_IN_BUCKET_REF: u32 = 0x64;
 /// Clone bucket ref

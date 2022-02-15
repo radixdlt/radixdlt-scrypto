@@ -76,20 +76,12 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
 
     /// Creates an account with 1,000,000 XRD in balance.
     pub fn new_account(&mut self, key: EcdsaPublicKey) -> ComponentRef {
-        let free_xrd_amount = Decimal::from(1_000_000);
-
         self.run(
             TransactionBuilder::new(self)
-                .call_method(
-                    SYSTEM_COMPONENT,
-                    "free_xrd",
-                    vec![free_xrd_amount.to_string()],
-                    None,
-                )
+                .call_method(SYSTEM_COMPONENT, "free_xrd", vec![], None)
                 .new_account_with_resource(
                     key,
-                    &ResourceSpecification::Fungible {
-                        amount: free_xrd_amount,
+                    &ResourceSpecification::All {
                         resource_def_ref: RADIX_TOKEN,
                     },
                 )
