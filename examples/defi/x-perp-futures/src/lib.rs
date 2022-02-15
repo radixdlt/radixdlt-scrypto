@@ -14,7 +14,7 @@ blueprint! {
     }
 
     impl ClearingHouse {
-        pub fn new(
+        pub fn instantiate_clearing_house(
             quote_address: Address,
             base_init_supply: Decimal,
             quote_init_supply: Decimal,

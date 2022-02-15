@@ -13,11 +13,12 @@ fn test_hello() {
         .publish_package(include_code!("hello_nft"))
         .unwrap();
 
-    // Test the `new` function.
+    // Test the `instantiate_hello_nft` function.
     let transaction1 = TransactionBuilder::new(&executor)
-        .call_function(package, "HelloNft", "new", vec!["5".to_owned()], None)
+        .call_function(package, "HelloNft", "instantiate_hello_nft", vec!["5".to_owned()], None)
         .call_method_with_all_resources(account, "deposit_batch")
         .build(vec![key])
+        
         .unwrap();
     let receipt1 = executor.run(transaction1).unwrap();
     println!("{:?}\n", receipt1);

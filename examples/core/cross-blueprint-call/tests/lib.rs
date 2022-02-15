@@ -19,9 +19,9 @@ fn test_proxy_1() {
         include_code!("cross_blueprint_call"),
     );
 
-    // Test the `new` function.
+    // Test the `instantiate_proxy` function.
     let transaction1 = TransactionBuilder::new(&executor)
-        .call_function(package, "Proxy1", "new", vec![], None)
+        .call_function(package, "Proxy1", "instantiate_proxy", vec![], None)
         .build(vec![])
         .unwrap();
     let receipt1 = executor.run(transaction1).unwrap();
@@ -57,9 +57,9 @@ fn test_proxy_2() {
         include_code!("cross_blueprint_call"),
     );
 
-    // Test the `new` function.
+    // Test the `instantiate_proxy` function.
     let transaction1 = TransactionBuilder::new(&executor)
-        .call_function(package, "Proxy2", "new", vec![], None)
+        .call_function(package, "Proxy2", "instantiate_proxy", vec![], None)
         .build(vec![])
         .unwrap();
     let receipt1 = executor.run(transaction1).unwrap();

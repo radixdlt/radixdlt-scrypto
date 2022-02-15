@@ -13,9 +13,9 @@ fn test_hello() {
         .publish_package(include_code!("hello_world"))
         .unwrap();
 
-    // Test the `new` function.
+    // Test the `instantiate_hello` function.
     let transaction1 = TransactionBuilder::new(&executor)
-        .call_function(package, "Hello", "new", vec![], None)
+        .call_function(package, "Hello", "instantiate_hello", vec![], None)
         .build(vec![])
         .unwrap();
     let receipt1 = executor.run(transaction1).unwrap();
