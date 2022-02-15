@@ -20,7 +20,7 @@ If the function or method is from an already published package, we need to
         "name": "Airdrop",
         "functions": [
             {
-                "name": "new",
+                "name": "instantiate_airdrop",
                 "inputs": [],
                 "output": {
                     "type": "Custom",
@@ -48,7 +48,7 @@ If the function or method is from an already published package, we need to
 Once the blueprint has been imported, we can then call any of its functions, for example,
 
 ```rust
-let airdrop_component = Airdrop::new();
+let airdrop_component = Airdrop::instantiate_airdrop();
 ```
 
 To call a method, though, we need a component address, which can be parsed from string.
