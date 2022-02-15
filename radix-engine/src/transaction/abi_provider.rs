@@ -42,7 +42,7 @@ impl BasicAbiProvider {
     }
 
     pub fn with_package(&mut self, address: Address, code: Vec<u8>) -> &mut Self {
-        self.ledger.put_package(address, Package::new(code));
+        self.ledger.put_package(&address, Package::new(code));
         self
     }
 
@@ -54,7 +54,7 @@ impl BasicAbiProvider {
         state: Vec<u8>,
     ) -> &mut Self {
         self.ledger.put_component(
-            component_address,
+            &component_address,
             Component::new(package_address, blueprint_name, state),
         );
         self
@@ -93,7 +93,7 @@ impl AbiProvider for BasicAbiProvider {
     ) -> Result<abi::Blueprint, RuntimeError> {
         let component = self
             .ledger
-            .get_component(component_address)
+            .get_component(&component_address)
             .ok_or(RuntimeError::ComponentNotFound(component_address))?;
         self.export_abi(
             component.package_address(),

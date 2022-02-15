@@ -46,28 +46,28 @@ impl Default for InMemorySubstateStore {
 }
 
 impl SubstateStore for InMemorySubstateStore {
-    fn get_resource_def(&self, address: Address) -> Option<ResourceDef> {
+    fn get_resource_def(&self, address: &Address) -> Option<ResourceDef> {
         self.resource_defs.get(&address).map(Clone::clone)
     }
 
-    fn put_resource_def(&mut self, address: Address, resource_def: ResourceDef) {
-        self.resource_defs.insert(address, resource_def);
+    fn put_resource_def(&mut self, address: &Address, resource_def: ResourceDef) {
+        self.resource_defs.insert(*address, resource_def);
     }
 
-    fn get_package(&self, address: Address) -> Option<Package> {
+    fn get_package(&self, address: &Address) -> Option<Package> {
         self.packages.get(&address).map(Clone::clone)
     }
 
-    fn put_package(&mut self, address: Address, package: Package) {
-        self.packages.insert(address, package);
+    fn put_package(&mut self, address: &Address, package: Package) {
+        self.packages.insert(*address, package);
     }
 
-    fn get_component(&self, address: Address) -> Option<Component> {
+    fn get_component(&self, address: &Address) -> Option<Component> {
         self.components.get(&address).map(Clone::clone)
     }
 
-    fn put_component(&mut self, address: Address, component: Component) {
-        self.components.insert(address, component);
+    fn put_component(&mut self, address: &Address, component: Component) {
+        self.components.insert(*address, component);
     }
 
     fn get_lazy_map_entry(
@@ -83,13 +83,13 @@ impl SubstateStore for InMemorySubstateStore {
 
     fn put_lazy_map_entry(
         &mut self,
-        component_address: Address,
-        mid: Mid,
-        key: Vec<u8>,
+        component_address: &Address,
+        mid: &Mid,
+        key: &[u8],
         value: Vec<u8>,
     ) {
         self.lazy_map_entries
-            .insert((component_address, mid, key), value);
+            .insert((component_address.clone(), mid.clone(), key.to_vec()), value);
     }
 
     fn get_vault(&self, component_address: &Address, vid: &Vid) -> Vault {
@@ -99,28 +99,28 @@ impl SubstateStore for InMemorySubstateStore {
             .unwrap()
     }
 
-    fn put_vault(&mut self, component_address: Address, vid: Vid, vault: Vault) {
-        self.vaults.insert((component_address, vid), vault);
+    fn put_vault(&mut self, component_address: &Address, vid: &Vid, vault: Vault) {
+        self.vaults.insert((component_address.clone(), vid.clone()), vault);
     }
 
     fn get_non_fungible(
         &self,
-        resource_address: Address,
+        resource_address: &Address,
         key: &NonFungibleKey,
     ) -> Option<NonFungible> {
         self.non_fungibles
-            .get(&(resource_address, key.clone()))
+            .get(&(resource_address.clone(), key.clone()))
             .cloned()
     }
 
     fn put_non_fungible(
         &mut self,
-        resource_address: Address,
+        resource_address: &Address,
         key: &NonFungibleKey,
         non_fungible: NonFungible,
     ) {
         self.non_fungibles
-            .insert((resource_address, key.clone()), non_fungible);
+            .insert((resource_address.clone(), key.clone()), non_fungible);
     }
 
     fn get_epoch(&self) -> u64 {

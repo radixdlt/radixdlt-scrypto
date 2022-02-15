@@ -33,12 +33,12 @@ pub trait QueryableSubstateStore {
 /// A ledger stores all transactions and substates.
 pub trait SubstateStore {
     /// Top Level Objects
-    fn get_resource_def(&self, address: Address) -> Option<ResourceDef>;
-    fn put_resource_def(&mut self, address: Address, resource_def: ResourceDef);
-    fn get_package(&self, address: Address) -> Option<Package>;
-    fn put_package(&mut self, address: Address, package: Package);
-    fn get_component(&self, address: Address) -> Option<Component>;
-    fn put_component(&mut self, address: Address, component: Component);
+    fn get_resource_def(&self, address: &Address) -> Option<ResourceDef>;
+    fn put_resource_def(&mut self, address: &Address, resource_def: ResourceDef);
+    fn get_package(&self, address: &Address) -> Option<Package>;
+    fn put_package(&mut self, address: &Address, package: Package);
+    fn get_component(&self, address: &Address) -> Option<Component>;
+    fn put_component(&mut self, address: &Address, component: Component);
 
     /// Child Objects
     fn get_lazy_map_entry(
@@ -49,36 +49,36 @@ pub trait SubstateStore {
     ) -> Option<Vec<u8>>;
     fn put_lazy_map_entry(
         &mut self,
-        component_address: Address,
-        mid: Mid,
-        key: Vec<u8>,
+        component_address: &Address,
+        mid: &Mid,
+        key: &[u8],
         value: Vec<u8>,
     );
     fn get_vault(&self, component_address: &Address, vid: &Vid) -> Vault;
-    fn put_vault(&mut self, component_address: Address, vid: Vid, vault: Vault);
+    fn put_vault(&mut self, component_address: &Address, vid: &Vid, vault: Vault);
     fn get_non_fungible(
         &self,
-        resource_address: Address,
+        resource_address: &Address,
         id: &NonFungibleKey,
     ) -> Option<NonFungible>;
     fn put_non_fungible(
         &mut self,
-        resource_address: Address,
+        resource_address: &Address,
         id: &NonFungibleKey,
         non_fungible: NonFungible,
     );
 
     fn bootstrap(&mut self) {
-        if self.get_package(SYSTEM_PACKAGE).is_none() {
+        if self.get_package(&SYSTEM_PACKAGE).is_none() {
             // System package
             self.put_package(
-                SYSTEM_PACKAGE,
+                &SYSTEM_PACKAGE,
                 Package::new(include_bytes!("../../../assets/system.wasm").to_vec()),
             );
 
             // Account package
             self.put_package(
-                ACCOUNT_PACKAGE,
+                &ACCOUNT_PACKAGE,
                 Package::new(include_bytes!("../../../assets/account.wasm").to_vec()),
             );
 
@@ -89,7 +89,7 @@ pub trait SubstateStore {
             metadata.insert("description".to_owned(), XRD_DESCRIPTION.to_owned());
             metadata.insert("url".to_owned(), XRD_URL.to_owned());
             self.put_resource_def(
-                RADIX_TOKEN,
+                &RADIX_TOKEN,
                 ResourceDef::new(
                     ResourceType::Fungible { divisibility: 18 },
                     metadata,
@@ -104,7 +104,7 @@ pub trait SubstateStore {
             );
 
             self.put_resource_def(
-                ECDSA_TOKEN,
+                &ECDSA_TOKEN,
                 ResourceDef::new(
                     ResourceType::NonFungible,
                     HashMap::new(),
@@ -118,8 +118,8 @@ pub trait SubstateStore {
 
             // Instantiate system component
             self.put_vault(
-                SYSTEM_COMPONENT,
-                XRD_VAULT_ID,
+                &SYSTEM_COMPONENT,
+                &XRD_VAULT_ID,
                 Vault::new(Bucket::new(
                     RADIX_TOKEN,
                     ResourceType::Fungible { divisibility: 18 },
@@ -129,7 +129,7 @@ pub trait SubstateStore {
                 )),
             );
             self.put_component(
-                SYSTEM_COMPONENT,
+                &SYSTEM_COMPONENT,
                 Component::new(
                     SYSTEM_PACKAGE,
                     SYSTEM_COMPONENT_NAME.to_owned(),

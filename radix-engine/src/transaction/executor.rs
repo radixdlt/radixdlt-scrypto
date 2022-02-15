@@ -24,7 +24,7 @@ impl<'l, L: SubstateStore> AbiProvider for TransactionExecutor<'l, L> {
     ) -> Result<abi::Blueprint, RuntimeError> {
         let p = self
             .ledger
-            .get_package(package_address)
+            .get_package(&package_address)
             .ok_or(RuntimeError::PackageNotFound(package_address))?;
 
         BasicAbiProvider::new(self.trace)
@@ -38,11 +38,11 @@ impl<'l, L: SubstateStore> AbiProvider for TransactionExecutor<'l, L> {
     ) -> Result<abi::Blueprint, RuntimeError> {
         let c = self
             .ledger
-            .get_component(component_address)
+            .get_component(&component_address)
             .ok_or(RuntimeError::ComponentNotFound(component_address))?;
         let p = self
             .ledger
-            .get_package(c.package_address())
+            .get_package(&c.package_address())
             .ok_or(RuntimeError::PackageNotFound(c.package_address()))?;
         BasicAbiProvider::new(self.trace)
             .with_package(c.package_address(), p.code().to_vec())
@@ -115,7 +115,7 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
     /// Publishes a package to a specified address.
     pub fn overwrite_package(&mut self, address: Address, code: &[u8]) {
         self.ledger
-            .put_package(address, Package::new(code.to_vec()));
+            .put_package(&address, Package::new(code.to_vec()));
     }
 
     /// This is a convenience method that validates and runs a transaction in one shot.
