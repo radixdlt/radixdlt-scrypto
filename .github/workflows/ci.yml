@@ -224,22 +224,6 @@ jobs:
     - name: Run tests
       run: bash ./tests/manifest.sh
       working-directory: simulator
-  simulator-scrypto:
-    name: Run Simulator tests (scrypto)
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest]
-    steps:
-    - uses: actions/checkout@v2
-    - name: Add wasm target
-      run: rustup target add wasm32-unknown-unknown
-    - name: Remove msys64 # Workaround to resolve link error with C:\msys64\mingw64\bin\libclang.dll
-      if: runner.os == 'Windows'
-      run: Remove-Item -LiteralPath "C:\msys64\" -Force -Recurse
-    - name: Install dependencies
-      if: runner.os == 'Windows'
-      run: choco install llvm -y
     - name: Run tests
       run: bash ./tests/scrypto.sh
       working-directory: simulator

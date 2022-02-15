@@ -82,38 +82,32 @@ impl fmt::Debug for Receipt {
         write!(
             f,
             "\n{} {}",
-            "New Packages:".bold().green(),
+            "New Entities:".bold().green(),
             self.new_package_refs.len()
+                + self.new_component_refs.len()
+                + self.new_resource_def_refs.len()
         )?;
-        for (i, package_ref) in self.new_package_refs.iter().enumerate() {
-            write!(f, "\n{} {}", prefix!(i, self.new_package_refs), package_ref)?;
-        }
 
-        write!(
-            f,
-            "\n{} {}",
-            "New Components:".bold().green(),
-            self.new_component_refs.len()
-        )?;
+        for (i, package_ref) in self.new_package_refs.iter().enumerate() {
+            write!(
+                f,
+                "\n{} Package: {}",
+                prefix!(i, self.new_package_refs),
+                package_ref
+            )?;
+        }
         for (i, component_ref) in self.new_component_refs.iter().enumerate() {
             write!(
                 f,
-                "\n{} {}",
+                "\n{} Component: {}",
                 prefix!(i, self.new_component_refs),
                 component_ref
             )?;
         }
-
-        write!(
-            f,
-            "\n{} {}",
-            "New Resource Defs:".bold().green(),
-            self.new_resource_def_refs.len()
-        )?;
         for (i, resource_def_ref) in self.new_resource_def_refs.iter().enumerate() {
             write!(
                 f,
-                "\n{} {}",
+                "\n{} ResourceDef: {}",
                 prefix!(i, self.new_resource_def_refs),
                 resource_def_ref
             )?;

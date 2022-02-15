@@ -45,6 +45,7 @@ impl PackageRef {
 pub enum ParsePackageRefError {
     InvalidHex(hex::FromHexError),
     InvalidLength(usize),
+    InvalidPrefix,
 }
 
 #[cfg(not(feature = "alloc"))]
@@ -91,6 +92,9 @@ impl FromStr for PackageRef {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let bytes = hex::decode(s).map_err(ParsePackageRefError::InvalidHex)?;
+        if bytes.get(0) != Some(&1u8) {
+            return Err(ParsePackageRefError::InvalidPrefix);
+        }
         Self::try_from(&bytes[1..])
     }
 }

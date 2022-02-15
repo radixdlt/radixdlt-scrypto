@@ -79,6 +79,7 @@ impl ComponentRef {
 pub enum ParseComponentRefError {
     InvalidHex(hex::FromHexError),
     InvalidLength(usize),
+    InvalidPrefix,
 }
 
 #[cfg(not(feature = "alloc"))]
@@ -125,6 +126,9 @@ impl FromStr for ComponentRef {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let bytes = hex::decode(s).map_err(ParseComponentRefError::InvalidHex)?;
+        if bytes.get(0) != Some(&2u8) {
+            return Err(ParseComponentRefError::InvalidPrefix);
+        }
         Self::try_from(&bytes[1..])
     }
 }

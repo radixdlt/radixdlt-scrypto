@@ -228,6 +228,7 @@ impl ResourceDefRef {
 pub enum ParseResourceDefRefError {
     InvalidHex(hex::FromHexError),
     InvalidLength(usize),
+    InvalidPrefix,
 }
 
 #[cfg(not(feature = "alloc"))]
@@ -274,6 +275,9 @@ impl FromStr for ResourceDefRef {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let bytes = hex::decode(s).map_err(ParseResourceDefRefError::InvalidHex)?;
+        if bytes.get(0) != Some(&3u8) {
+            return Err(ParseResourceDefRefError::InvalidPrefix);
+        }
         Self::try_from(&bytes[1..])
     }
 }
