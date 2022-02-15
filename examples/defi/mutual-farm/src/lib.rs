@@ -499,7 +499,6 @@ blueprint! {
             let identity_badge = ResourceBuilder::new_fungible(DIVISIBILITY_NONE)
                 .metadata("name", "ID")
                 .initial_supply_fungible(1);
-            let identity_badge = identity_badge.resource_def_ref();
 
             debug!("Fetch price info from oracle");
             let price_oracle: PriceOracle = price_oracle_component_ref.into();
@@ -545,7 +544,7 @@ blueprint! {
                 ResourceBuilder::new_fungible(DIVISIBILITY_MAXIMUM)
                     .metadata("name", "MutualFarm share")
                     .flags(MINTABLE | BURNABLE)
-                    .badge(identity_badge, MAY_MINT | MAY_BURN)
+                    .badge(identity_badge.resource_def_ref(), MAY_MINT | MAY_BURN)
                     .no_initial_supply();
             let shares =
                 mutual_farm_share_resource_def.mint(initial_shares, identity_badge.present());

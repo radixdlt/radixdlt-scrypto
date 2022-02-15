@@ -29,11 +29,7 @@ blueprint! {
         pub fn move_bucket_ref() -> Bucket {
             let bucket = Self::create_test_token(1000);
             let component_ref = MoveTest { vaults: Vec::new() }.instantiate();
-            Context::call_method(
-                component_ref,
-                "receive_bucket_ref",
-                args!(bucket.present()),
-            );
+            Context::call_method(component_ref, "receive_bucket_ref", args!(bucket.present()));
 
             bucket
         }

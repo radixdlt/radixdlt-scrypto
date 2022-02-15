@@ -7,7 +7,7 @@ blueprint! {
         pub fn query() -> (Actor, PackageRef, Hash, u64, u128) {
             (
                 Context::actor(),
-                Context::package(),
+                Context::package_ref(),
                 Context::transaction_hash(),
                 Context::current_epoch(),
                 Context::generate_uuid(),

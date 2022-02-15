@@ -1,14 +1,13 @@
 use scrypto::prelude::*;
 
 #[derive(NonFungibleData)]
-pub struct Data {
-}
+pub struct Data {}
 
 blueprint! {
     struct VaultTest {
         vault: Vault,
         vaults: LazyMap<u128, Vault>,
-        vault_vector: Vec<Vault>
+        vault_vector: Vec<Vault>,
     }
 
     impl VaultTest {
@@ -20,7 +19,7 @@ blueprint! {
         }
 
         fn new_fungible() -> Bucket {
-           ResourceBuilder::new_fungible(DIVISIBILITY_MAXIMUM)
+            ResourceBuilder::new_fungible(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "TestToken")
                 .initial_supply_fungible(1)
         }
@@ -35,8 +34,9 @@ blueprint! {
             VaultTest {
                 vault,
                 vaults,
-                vault_vector
-            }.instantiate()
+                vault_vector,
+            }
+            .instantiate()
         }
 
         pub fn invalid_double_ownership_of_vault() -> ComponentRef {
@@ -51,8 +51,9 @@ blueprint! {
             VaultTest {
                 vault,
                 vaults,
-                vault_vector
-            }.instantiate()
+                vault_vector,
+            }
+            .instantiate()
         }
 
         pub fn new_vault_into_map_then_get() -> ComponentRef {
@@ -67,8 +68,9 @@ blueprint! {
             VaultTest {
                 vault: Vault::with_bucket(Self::new_fungible()),
                 vaults,
-                vault_vector
-            }.instantiate()
+                vault_vector,
+            }
+            .instantiate()
         }
 
         pub fn overwrite_vault_in_map(&mut self) -> () {
@@ -86,8 +88,9 @@ blueprint! {
             VaultTest {
                 vault,
                 vaults,
-                vault_vector
-            }.instantiate()
+                vault_vector,
+            }
+            .instantiate()
         }
 
         pub fn clear_vector(&mut self) -> () {
@@ -109,16 +112,15 @@ blueprint! {
             VaultTest {
                 vault,
                 vaults,
-                vault_vector
-            }.instantiate()
+                vault_vector,
+            }
+            .instantiate()
         }
 
         fn create_non_fungible_vault() -> Vault {
             let bucket = ResourceBuilder::new_non_fungible()
                 .metadata("name", "TestToken")
-                .initial_supply_non_fungible([
-                    (NonFungibleKey::from(1u128), Data {})
-                ]);
+                .initial_supply_non_fungible([(NonFungibleKey::from(1u128), Data {})]);
             Vault::with_bucket(bucket)
         }
 
@@ -131,8 +133,9 @@ blueprint! {
             VaultTest {
                 vault,
                 vaults,
-                vault_vector
-            }.instantiate()
+                vault_vector,
+            }
+            .instantiate()
         }
 
         pub fn new_vault_with_get_non_fungible_keys() -> ComponentRef {
@@ -143,8 +146,9 @@ blueprint! {
             VaultTest {
                 vault,
                 vaults,
-                vault_vector
-            }.instantiate()
+                vault_vector,
+            }
+            .instantiate()
         }
 
         pub fn new_vault_with_get_amount() -> ComponentRef {
@@ -155,8 +159,9 @@ blueprint! {
             VaultTest {
                 vault,
                 vaults,
-                vault_vector
-            }.instantiate()
+                vault_vector,
+            }
+            .instantiate()
         }
 
         pub fn new_vault_with_get_resource_def() -> ComponentRef {
@@ -167,8 +172,9 @@ blueprint! {
             VaultTest {
                 vault,
                 vaults,
-                vault_vector
-            }.instantiate()
+                vault_vector,
+            }
+            .instantiate()
         }
     }
 }

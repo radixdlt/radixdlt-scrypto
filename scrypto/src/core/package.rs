@@ -2,7 +2,6 @@ use sbor::{describe::Type, *};
 
 use crate::buffer::*;
 use crate::core::*;
-use crate::engine::{api::*, call_engine};
 use crate::misc::*;
 use crate::rust::fmt;
 use crate::rust::str::FromStr;
@@ -14,17 +13,7 @@ use crate::types::*;
 pub struct PackageRef(pub [u8; 26]);
 
 impl PackageRef {
-    /// Creates a new package.
-    pub fn new(code: &[u8]) -> Self {
-        let input = PublishPackageInput {
-            code: code.to_vec(),
-        };
-        let output: PublishPackageOutput = call_engine(PUBLISH_PACKAGE, input);
-
-        output.package_ref
-    }
-
-    /// Invokes a function on this blueprint.
+    /// Invokes a function on this package.
     pub fn call<T: Decode, S: AsRef<str>>(
         &self,
         blueprint_name: S,

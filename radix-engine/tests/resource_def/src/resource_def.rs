@@ -15,7 +15,8 @@ blueprint! {
         }
 
         pub fn create_fungible_should_fail() -> (Bucket, Bucket) {
-            let mut bucket = ResourceBuilder::new_fungible(DIVISIBILITY_NONE).initial_supply_fungible(1);
+            let mut bucket =
+                ResourceBuilder::new_fungible(DIVISIBILITY_NONE).initial_supply_fungible(1);
             (bucket.take(Decimal::from_str("0.1").unwrap()), bucket)
         }
 
@@ -36,7 +37,8 @@ blueprint! {
             token_resource_def
         }
 
-        pub fn create_fungible_wrong_resource_permissions_should_fail() -> (Bucket, ResourceDefRef) {
+        pub fn create_fungible_wrong_resource_permissions_should_fail() -> (Bucket, ResourceDefRef)
+        {
             let badge = ResourceBuilder::new_fungible(DIVISIBILITY_NONE).initial_supply_fungible(1);
             let token_resource_def = ResourceBuilder::new_fungible(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "TestToken")

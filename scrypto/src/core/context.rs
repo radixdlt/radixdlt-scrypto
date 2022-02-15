@@ -1,10 +1,11 @@
+use crate::buffer::*;
 use crate::core::*;
 use crate::crypto::*;
 use crate::engine::{api::*, call_engine};
 use crate::rust::borrow::ToOwned;
 use crate::rust::vec::Vec;
 
-/// A utility for accessing runtime.
+/// A utility for accessing process context at runtime.
 #[derive(Debug)]
 pub struct Context {}
 
@@ -17,11 +18,11 @@ impl Context {
         output.actor
     }
 
-    /// Returns the package.
-    pub fn package() -> PackageRef {
+    /// Returns a reference to the package.
+    pub fn package_ref() -> PackageRef {
         match Context::actor() {
-            Actor::Blueprint(package, _) => package,
-            Actor::Component(component) => component.blueprint().0,
+            Actor::Blueprint(package_ref, _) => package_ref,
+            Actor::Component(component_ref) => component_ref.package_ref(),
         }
     }
 
@@ -79,5 +80,28 @@ impl Context {
         let output: CallMethodOutput = call_engine(CALL_METHOD, input);
 
         output.rtn
+    }
+
+    /// Instantiates a component.
+    pub fn instantiate_component<T: ComponentState>(state: T) -> ComponentRef {
+        // TODO: more thoughts are needed for this interface
+        let input = CreateComponentInput {
+            package_ref: Context::package_ref(),
+            blueprint_name: T::blueprint_name().to_owned(),
+            state: scrypto_encode(&state),
+        };
+        let output: CreateComponentOutput = call_engine(CREATE_COMPONENT, input);
+
+        output.component_ref
+    }
+
+    /// Publishes a package.
+    pub fn publish_package(code: &[u8]) -> PackageRef {
+        let input = PublishPackageInput {
+            code: code.to_vec(),
+        };
+        let output: PublishPackageOutput = call_engine(PUBLISH_PACKAGE, input);
+
+        output.package_ref
     }
 }

@@ -58,7 +58,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                     #bp_name
                 }
                 fn instantiate(self) -> ::scrypto::core::ComponentRef {
-                    ::scrypto::core::ComponentRef::new(self)
+                    ::scrypto::core::Context::instantiate_component(self)
                 }
             }
         }
@@ -415,9 +415,8 @@ fn generate_stubs(bp_ident: &Ident, items: &[ImplItem]) -> Result<TokenStream> {
                     if mutable.is_none() {
                         functions.push(parse_quote! {
                             pub fn #ident(#(#input_args: #input_types),*) -> #output {
-                                let package = ::scrypto::core::Context::package();
                                 let rtn = ::scrypto::core::Context::call_function(
-                                    package,
+                                    ::scrypto::core::Context::package_ref(),
                                     #bp_name,
                                     #name,
                                     ::scrypto::args!(#(#input_args),*)
@@ -543,7 +542,7 @@ mod tests {
                             "Test"
                         }
                         fn instantiate(self) -> ::scrypto::core::ComponentRef {
-                            ::scrypto::core::ComponentRef::new(self)
+                            ::scrypto::core::Context::instantiate_component(self)
                         }
                     }
                 }

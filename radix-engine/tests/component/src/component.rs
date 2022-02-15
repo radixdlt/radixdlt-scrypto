@@ -22,7 +22,7 @@ blueprint! {
         }
 
         pub fn get_component_info(component_ref: ComponentRef) -> (PackageRef, String) {
-            component_ref.blueprint()
+            (component_ref.package_ref(), component_ref.blueprint_name())
         }
 
         pub fn get_component_state(&self) -> String {

@@ -2,7 +2,7 @@ use scrypto::prelude::*;
 
 blueprint! {
     struct BucketTest {
-        vault: Vault
+        vault: Vault,
     }
 
     impl BucketTest {
