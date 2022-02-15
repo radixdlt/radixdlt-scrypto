@@ -11,7 +11,7 @@ r#"
             "inputs": [],
             "output": {
                 "type": "Custom",
-                "name": "scrypto::core::Component",
+                "name": "ComponentRef",
                 "generics": []
             }
         }
@@ -23,7 +23,7 @@ r#"
             "inputs": [],
             "output": {
                 "type": "Custom",
-                "name": "scrypto::resource::Bucket",
+                "name": "Bucket",
                 "generics": []
             }
         }
@@ -38,7 +38,7 @@ blueprint! {
     }
 
     impl Proxy1 {
-        pub fn new() -> Component {
+        pub fn new() -> ComponentRef {
             Self {
                 // The new() function returns a generic Component. We use `.into()` to convert it into an `Airdrop`.
                 airdrop: Airdrop::new().into(),

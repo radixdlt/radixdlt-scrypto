@@ -24,7 +24,7 @@ blueprint! {
         /// Liquidation bonus
         liquidation_bonus: Decimal,
         /// User state
-        users: LazyMap<Address, User>,
+        users: LazyMap<ResourceDefRef, User>,
         /// The interest rate of deposits, per epoch
         deposit_interest_rate: Decimal,
         /// The (stable) interest rate of loans, per epoch
@@ -33,9 +33,9 @@ blueprint! {
 
     impl AutoLend {
         /// Creates a lending pool, with single collateral.
-        pub fn new(reserve_address: Address) -> Component {
+        pub fn new(reserve_resource_def: ResourceDefRef) -> ComponentRef {
             Self {
-                liquidity_pool: Vault::new(reserve_address),
+                liquidity_pool: Vault::new(reserve_resource_def),
                 min_collateral_ratio: "1.2".parse().unwrap(),
                 max_borrow_percent: "0.3".parse().unwrap(),
                 max_liquidation_percent: "0.5".parse().unwrap(),
@@ -137,7 +137,7 @@ blueprint! {
         }
 
         /// Liquidates one user's position, if it's under collateralized.
-        pub fn liquidate(&mut self, user_id: Address, repaid: Bucket) -> Bucket {
+        pub fn liquidate(&mut self, user_id: ResourceDefRef, repaid: Bucket) -> Bucket {
             let mut user = self.get_user(user_id);
 
             // Check if the user is under collateralized
@@ -167,7 +167,7 @@ blueprint! {
         }
 
         /// Returns the current state of a user.
-        pub fn get_user(&self, user_id: Address) -> User {
+        pub fn get_user(&self, user_id: ResourceDefRef) -> User {
             match self.users.get(&user_id) {
                 Some(user) => user,
                 _ => panic!("User not found"),
@@ -185,7 +185,7 @@ blueprint! {
         }
 
         /// Parse user id from a bucket ref.
-        fn get_user_id(user_auth: BucketRef) -> Address {
+        fn get_user_id(user_auth: BucketRef) -> ResourceDefRef {
             assert!(user_auth.amount() > 0.into(), "Invalid user proof");
             user_auth.resource_def_ref()
         }

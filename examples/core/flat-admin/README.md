@@ -30,7 +30,7 @@ let admin_mint_badge = ResourceBuilder::new_fungible(DIVISIBILITY_NONE)
 let admin_badge_def = ResourceBuilder::new_fungible(DIVISIBILITY_NONE)
     .metadata("name", badge_name)
     .flags(MINTABLE | BURNABLE)
-    .badge(admin_mint_badge.resource_def(), MAY_MINT | MAY_BURN)
+    .badge(admin_mint_badge.resource_def_ref(), MAY_MINT | MAY_BURN)
     .no_initial_supply();
 ```
 

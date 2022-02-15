@@ -9,7 +9,9 @@ fn test_magic_card() {
     let mut executor = TransactionExecutor::new(&mut ledger, false);
     let key = executor.new_public_key();
     let account = executor.new_account(key);
-    let package = executor.publish_package(include_code!("magic_card")).unwrap();
+    let package = executor
+        .publish_package(include_code!("magic_card"))
+        .unwrap();
 
     // Test the `new` function.
     let transaction1 = TransactionBuilder::new(&executor)
@@ -21,12 +23,15 @@ fn test_magic_card() {
     assert!(receipt1.result.is_ok());
 
     // Test the `buy_special_card` method.
-    let component = receipt1.component(0).unwrap();
+    let component = receipt1.new_component_refs[0];
     let transaction2 = TransactionBuilder::new(&executor)
         .call_method(
             component,
             "buy_special_card",
-            vec![hex::encode(2u128.to_be_bytes()), format!("666,{}", RADIX_TOKEN)],
+            vec![
+                hex::encode(2u128.to_be_bytes()),
+                format!("666,{}", RADIX_TOKEN),
+            ],
             Some(account),
         )
         .call_method_with_all_resources(account, "deposit_batch")
@@ -37,7 +42,7 @@ fn test_magic_card() {
     assert!(receipt2.result.is_ok());
 
     // Test the `buy_special_card` method.
-    let component = receipt1.component(0).unwrap();
+    let component = receipt1.new_component_refs[0];
     let transaction3 = TransactionBuilder::new(&executor)
         .call_method(
             component,

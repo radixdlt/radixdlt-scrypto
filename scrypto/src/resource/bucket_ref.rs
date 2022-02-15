@@ -44,7 +44,7 @@ impl BucketRef {
 
     /// Checks if the referenced bucket contains the given resource.
     pub fn contains(&self, resource_def_ref: ResourceDefRef) -> bool {
-        self.amount() > 0.into() && self.resource_def() == resource_def_ref
+        self.amount() > 0.into() && self.resource_def_ref() == resource_def_ref
     }
 
     /// Returns the resource amount within the bucket.
@@ -58,7 +58,7 @@ impl BucketRef {
     }
 
     /// Returns the resource definition of resources within the bucket.
-    pub fn resource_def(&self) -> ResourceDefRef {
+    pub fn resource_def_ref(&self) -> ResourceDefRef {
         let input = GetBucketRefResourceDefInput {
             bucket_ref_id: self.0,
         };

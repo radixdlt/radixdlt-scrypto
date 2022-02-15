@@ -41,7 +41,7 @@ blueprint! {
 
         pub fn invalid_double_ownership_of_vault() -> ComponentRef {
             let bucket = Self::new_fungible();
-            let vault = Vault::new(bucket.resource_def());
+            let vault = Vault::new(bucket.resource_def_ref());
             let vaults = LazyMap::new();
             vaults.insert(0, vault);
             let mut vault = vaults.get(&0).unwrap();
@@ -57,7 +57,7 @@ blueprint! {
 
         pub fn new_vault_into_map_then_get() -> ComponentRef {
             let bucket = Self::new_fungible();
-            let vault = Vault::new(bucket.resource_def());
+            let vault = Vault::new(bucket.resource_def_ref());
             let vaults = LazyMap::new();
             vaults.insert(0, vault);
             let mut vault = vaults.get(&0).unwrap();
@@ -161,7 +161,7 @@ blueprint! {
 
         pub fn new_vault_with_get_resource_def() -> ComponentRef {
             let vault = Self::create_non_fungible_vault();
-            let _resource_def = vault.resource_def();
+            let _resource_def = vault.resource_def_ref();
             let vaults = LazyMap::new();
             let vault_vector = Vec::new();
             VaultTest {

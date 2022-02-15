@@ -17,13 +17,13 @@ blueprint! {
     }
 
     impl HelloNft {
-        pub fn new(price: Decimal) -> Component {
+        pub fn new(price: Decimal) -> ComponentRef {
             // Prepare ticket NFT data
             let mut tickets = Vec::new();
             for row in 1..5 {
                 for column in 1..5 {
                     tickets.push((
-                        NonFungibleKey::from(Uuid::generate()),
+                        NonFungibleKey::from(Context::generate_uuid()),
                         Ticket { row, column },
                     ));
                 }

@@ -57,7 +57,7 @@ That gives us everything we need to populate our `struct`, instantiate, and retu
 
 ```rust
 let component = Self {
-  admin_badge: admin_badge.resource_def(),
+  admin_badge: admin_badge.resource_def_ref(),
   flat_admin_controller: flat_admin_component.address(),
   protected_vault: Vault::new(RADIX_TOKEN),
 }

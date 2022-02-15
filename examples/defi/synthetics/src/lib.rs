@@ -3,101 +3,101 @@ use scrypto::prelude::*;
 
 import! {
 r#"
-{
-    "package": "01e61370219353678d8bfb37bce521e257d0ec29ae9a2e95d194ea",
-    "name": "PriceOracle",
-    "functions": [
-        {
-            "name": "new",
-            "inputs": [
-                {
-                    "type": "U32"
+    {
+        "package": "014eb598fe6ed7df56a5f02950df2d7b08530d9d1081f05a6398f9",
+        "name": "PriceOracle",
+        "functions": [
+            {
+                "name": "new",
+                "inputs": [
+                    {
+                        "type": "U32"
+                    }
+                ],
+                "output": {
+                    "type": "Tuple",
+                    "elements": [
+                        {
+                            "type": "Custom",
+                            "name": "Bucket",
+                            "generics": []
+                        },
+                        {
+                            "type": "Custom",
+                            "name": "ComponentRef",
+                            "generics": []
+                        }
+                    ]
                 }
-            ],
-            "output": {
-                "type": "Tuple",
-                "elements": [
+            }
+        ],
+        "methods": [
+            {
+                "name": "get_price",
+                "mutability": "Immutable",
+                "inputs": [
                     {
                         "type": "Custom",
-                        "name": "scrypto::resource::Bucket",
+                        "name": "ResourceDefRef",
                         "generics": []
                     },
                     {
                         "type": "Custom",
-                        "name": "scrypto::core::Component",
+                        "name": "ResourceDefRef",
                         "generics": []
                     }
-                ]
-            }
-        }
-    ],
-    "methods": [
-        {
-            "name": "get_price",
-            "mutability": "Immutable",
-            "inputs": [
-                {
+                ],
+                "output": {
+                    "type": "Option",
+                    "value": {
+                        "type": "Custom",
+                        "name": "Decimal",
+                        "generics": []
+                    }
+                }
+            },
+            {
+                "name": "update_price",
+                "mutability": "Immutable",
+                "inputs": [
+                    {
+                        "type": "Custom",
+                        "name": "ResourceDefRef",
+                        "generics": []
+                    },
+                    {
+                        "type": "Custom",
+                        "name": "ResourceDefRef",
+                        "generics": []
+                    },
+                    {
+                        "type": "Custom",
+                        "name": "Decimal",
+                        "generics": []
+                    },
+                    {
+                        "type": "Custom",
+                        "name": "BucketRef",
+                        "generics": []
+                    }
+                ],
+                "output": {
+                    "type": "Unit"
+                }
+            },
+            {
+                "name": "admin_badge",
+                "mutability": "Immutable",
+                "inputs": [],
+                "output": {
                     "type": "Custom",
-                    "name": "scrypto::types::Address",
-                    "generics": []
-                },
-                {
-                    "type": "Custom",
-                    "name": "scrypto::types::Address",
+                    "name": "ResourceDefRef",
                     "generics": []
                 }
-            ],
-            "output": {
-                "type": "Option",
-                "value": {
-                    "type": "Custom",
-                    "name": "scrypto::types::Decimal",
-                    "generics": []
-                }
             }
-        },
-        {
-            "name": "update_price",
-            "mutability": "Immutable",
-            "inputs": [
-                {
-                    "type": "Custom",
-                    "name": "scrypto::types::Address",
-                    "generics": []
-                },
-                {
-                    "type": "Custom",
-                    "name": "scrypto::types::Address",
-                    "generics": []
-                },
-                {
-                    "type": "Custom",
-                    "name": "scrypto::types::Decimal",
-                    "generics": []
-                },
-                {
-                    "type": "Custom",
-                    "name": "scrypto::resource::BucketRef",
-                    "generics": []
-                }
-            ],
-            "output": {
-                "type": "Unit"
-            }
-        },
-        {
-            "name": "admin_badge_address",
-            "mutability": "Immutable",
-            "inputs": [],
-            "output": {
-                "type": "Custom",
-                "name": "scrypto::types::Address",
-                "generics": []
-            }
-        }
-    ]
-}
-"#
+        ]
+    }
+    "#
 }
 
 // Main missing features:
@@ -111,38 +111,40 @@ blueprint! {
         /// The collateralization ratio one has to maintain when minting synthetics
         collateralization_threshold: Decimal,
         /// SNX resource definition
-        snx_resource_def: ResourceDef,
+        snx_resource_def: ResourceDefRef,
         /// USD resource definition
-        usd_resource_def: ResourceDef,
+        usd_resource_def: ResourceDefRef,
 
         /// Users
-        users: LazyMap<Address, User>,
+        users: LazyMap<ResourceDefRef, User>,
         /// Synthetics
         synthetics: HashMap<String, SyntheticToken>,
         /// Mint badge
         synthetics_mint_badge: Vault,
         /// Global debt
-        synthetics_global_debt_share_resource_def: ResourceDef,
+        synthetics_global_debt_share_resource_def: ResourceDefRef,
     }
 
     impl SyntheticPool {
         pub fn new(
-            oracle_address: Address,
-            snx_token_address: Address,
-            usd_token_address: Address,
+            oracle_address: ComponentRef,
+            snx_resource_def: ResourceDefRef,
+            usd_resource_def: ResourceDefRef,
             collateralization_threshold: Decimal,
-        ) -> Component {
+        ) -> ComponentRef {
             let oracle: PriceOracle = oracle_address.into();
-            let snx_resource_def: ResourceDef = snx_token_address.into();
-            let usd_resource_def: ResourceDef = usd_token_address.into();
             let synthetics_mint_badge = ResourceBuilder::new_fungible(DIVISIBILITY_NONE)
                 .metadata("name", "Synthetics Mint Badge")
                 .initial_supply_fungible(1);
-            let synthetics_global_debt_share_resource_def = ResourceBuilder::new_fungible(DIVISIBILITY_MAXIMUM)
-                .metadata("name", "Synthetics Global Debt")
-                .flags(MINTABLE | BURNABLE)
-                .badge(synthetics_mint_badge.resource_def(), MAY_MINT | MAY_BURN)
-                .no_initial_supply();
+            let synthetics_global_debt_share_resource_def =
+                ResourceBuilder::new_fungible(DIVISIBILITY_MAXIMUM)
+                    .metadata("name", "Synthetics Global Debt")
+                    .flags(MINTABLE | BURNABLE)
+                    .badge(
+                        synthetics_mint_badge.resource_def_ref(),
+                        MAY_MINT | MAY_BURN,
+                    )
+                    .no_initial_supply();
 
             Self {
                 oracle,
@@ -161,8 +163,8 @@ blueprint! {
         pub fn add_synthetic_token(
             &mut self,
             asset_symbol: String,
-            asset_address: Address,
-        ) -> Address {
+            asset_address: ResourceDefRef,
+        ) -> ResourceDefRef {
             assert!(
                 !self.synthetics.contains_key(&asset_symbol),
                 "Asset already exist",
@@ -172,15 +174,17 @@ blueprint! {
                 .metadata("name", format!("Synthetic {}", asset_symbol.clone()))
                 .metadata("symbol", format!("s{}", asset_symbol.clone()))
                 .flags(MINTABLE | BURNABLE)
-                .badge(self.synthetics_mint_badge.resource_def(), MAY_MINT | MAY_BURN)
+                .badge(
+                    self.synthetics_mint_badge.resource_def_ref(),
+                    MAY_MINT | MAY_BURN,
+                )
                 .no_initial_supply();
-            let token_address = token_resource_def.address();
             self.synthetics.insert(
                 asset_symbol.clone(),
                 SyntheticToken::new(asset_symbol, asset_address, token_resource_def),
             );
 
-            token_address
+            token_resource_def
         }
 
         /// Deposits SNX into my staking account
@@ -222,7 +226,9 @@ blueprint! {
                         } else {
                             new_debt
                                 / (global_debt
-                                    / self.synthetics_global_debt_share_resource_def.total_supply())
+                                    / self
+                                        .synthetics_global_debt_share_resource_def
+                                        .total_supply())
                         },
                         auth,
                     )
@@ -247,14 +253,16 @@ blueprint! {
             let synth = self
                 .synthetics
                 .iter()
-                .find(|(_, v)| v.token_resource_def == bucket.resource_def())
+                .find(|(_, v)| v.token_resource_def == bucket.resource_def_ref())
                 .unwrap()
                 .1;
             let global_debt = self.get_total_global_debt();
             let debt_to_remove = self.get_asset_price(synth.asset_address) * bucket.amount();
             let shares_to_burn = user.global_debt_share.take(
-                self.synthetics_global_debt_share_resource_def.total_supply() * debt_to_remove
-                    / global_debt
+                self.synthetics_global_debt_share_resource_def
+                    .total_supply()
+                    * debt_to_remove
+                    / global_debt,
             );
 
             self.synthetics_mint_badge.authorize(|auth| {
@@ -268,32 +276,32 @@ blueprint! {
         pub fn get_total_global_debt(&self) -> Decimal {
             let mut total = Decimal::zero();
             for (_, synth) in &self.synthetics {
-                total +=
-                    self.get_asset_price(synth.asset_address) * synth.token_resource_def.total_supply();
+                total += self.get_asset_price(synth.asset_address)
+                    * synth.token_resource_def.total_supply();
             }
             total
         }
 
         /// Retrieves the price of pair SNX/USD
         pub fn get_snx_price(&self) -> Decimal {
-            self.get_asset_price(self.snx_resource_def.address())
+            self.get_asset_price(self.snx_resource_def)
         }
 
         /// Retrieves the prices of pair XYZ/USD
-        pub fn get_asset_price(&self, asset_address: Address) -> Decimal {
-            let usd_address = self.usd_resource_def.address();
+        pub fn get_asset_price(&self, asset_address: ResourceDefRef) -> Decimal {
+            let usd_address = self.usd_resource_def;
             if let Some(oracle_price) = self.oracle.get_price(asset_address, usd_address) {
                 oracle_price
             } else {
                 panic!(
                     "Failed to obtain price of {}/{}",
                     asset_address, usd_address
-                ) ;
+                );
             }
         }
 
         /// Retrieves user summary.
-        pub fn get_user_summary(&mut self, user_id: Address) -> String {
+        pub fn get_user_summary(&mut self, user_id: ResourceDefRef) -> String {
             let user = self.get_user(user_id, false);
             format!(
                 "SNX balance: {}, SNX price: {}, Debt: {} * {} / {}",
@@ -301,7 +309,8 @@ blueprint! {
                 self.get_snx_price(),
                 self.get_total_global_debt(),
                 user.global_debt_share.amount(),
-                self.synthetics_global_debt_share_resource_def.total_supply()
+                self.synthetics_global_debt_share_resource_def
+                    .total_supply()
             )
         }
 
@@ -313,21 +322,21 @@ blueprint! {
         }
 
         /// Parse user id from a bucket ref.
-        fn get_user_id(user_auth: BucketRef) -> Address {
+        fn get_user_id(user_auth: BucketRef) -> ResourceDefRef {
             assert!(user_auth.amount() > 0.into(), "Invalid user proof");
             user_auth.resource_def_ref()
         }
 
         /// Retrieves user state.
-        fn get_user(&mut self, user_id: Address, create_if_missing: bool) -> User {
+        fn get_user(&mut self, user_id: ResourceDefRef, create_if_missing: bool) -> User {
             if let Some(user) = self.users.get(&user_id) {
                 user
             } else if create_if_missing {
                 self.users.insert(
                     user_id,
                     User::new(
-                        self.snx_resource_def.address(),
-                        self.synthetics_global_debt_share_resource_def.address(),
+                        self.snx_resource_def,
+                        self.synthetics_global_debt_share_resource_def,
                     ),
                 );
                 self.users.get(&user_id).unwrap()
@@ -343,16 +352,16 @@ pub struct SyntheticToken {
     /// The symbol of the asset
     asset_symbol: String,
     /// The resource definition address of the asset
-    asset_address: Address,
+    asset_address: ResourceDefRef,
     /// The synth (sXYZ) resource definition
-    token_resource_def: ResourceDef,
+    token_resource_def: ResourceDefRef,
 }
 
 impl SyntheticToken {
     pub fn new(
         asset_symbol: String,
-        asset_address: Address,
-        token_resource_def: ResourceDef,
+        asset_address: ResourceDefRef,
+        token_resource_def: ResourceDefRef,
     ) -> Self {
         Self {
             asset_symbol,
@@ -369,7 +378,7 @@ pub struct User {
 }
 
 impl User {
-    pub fn new(snx_address: Address, global_debt_share_address: Address) -> Self {
+    pub fn new(snx_address: ResourceDefRef, global_debt_share_address: ResourceDefRef) -> Self {
         Self {
             snx: Vault::new(snx_address),
             global_debt_share: Vault::new(global_debt_share_address),
@@ -381,7 +390,7 @@ impl User {
         &self,
         snx_price: Decimal,
         global_debt: Decimal,
-        global_debt_resource_def: ResourceDef,
+        global_debt_resource_def: ResourceDefRef,
         threshold: Decimal,
     ) {
         if !global_debt_resource_def.total_supply().is_zero() {

@@ -3,7 +3,7 @@ use scrypto::prelude::*;
 blueprint! {
     struct Radiswap {
         /// The resource definition of LP token.
-        lp_resource_def: ResourceDef,
+        lp_resource_def: ResourceDefRef,
         /// LP tokens mint badge.
         lp_mint_badge: Vault,
         /// The reserve for token A.
@@ -28,7 +28,7 @@ blueprint! {
             lp_name: String,
             lp_url: String,
             fee: Decimal,
-        ) -> (Component, Bucket) {
+        ) -> (ComponentRef, Bucket) {
             // Check arguments
             assert!(
                 !a_tokens.is_empty() && !b_tokens.is_empty(),
@@ -48,7 +48,7 @@ blueprint! {
                 .metadata("name", lp_name)
                 .metadata("url", lp_url)
                 .flags(MINTABLE | BURNABLE)
-                .badge(lp_mint_badge.resource_def(), MAY_MINT | MAY_BURN)
+                .badge(lp_mint_badge.resource_def_ref(), MAY_MINT | MAY_BURN)
                 .no_initial_supply();
             let lp_tokens = lp_resource_def.mint(lp_initial_supply, lp_mint_badge.present());
 
@@ -72,7 +72,11 @@ blueprint! {
 
         /// Adds liquidity to this pool and return the LP tokens representing pool shares
         /// along with any remainder.
-        pub fn add_liquidity(&mut self, mut a_tokens: Bucket, mut b_tokens: Bucket) -> (Bucket, Bucket) {
+        pub fn add_liquidity(
+            &mut self,
+            mut a_tokens: Bucket,
+            mut b_tokens: Bucket,
+        ) -> (Bucket, Bucket) {
             // Differentiate LP calculation based on whether pool is empty or not.
             let (supply_to_mint, remainder) = if self.lp_resource_def.total_supply() == 0.into() {
                 // Set initial LP tokens based on previous LP per K ratio.
@@ -117,7 +121,7 @@ blueprint! {
         /// Removes liquidity from this pool.
         pub fn remove_liquidity(&mut self, lp_tokens: Bucket) -> (Bucket, Bucket) {
             assert!(
-                self.lp_resource_def == lp_tokens.resource_def(),
+                self.lp_resource_def == lp_tokens.resource_def_ref(),
                 "Wrong token type passed in"
             );
 
@@ -142,7 +146,8 @@ blueprint! {
             // Calculate the swap fee
             let fee_amount = input_tokens.amount() * self.fee;
 
-            let output_tokens = if input_tokens.resource_def() == self.a_pool.resource_def() {
+            let output_tokens = if input_tokens.resource_def_ref() == self.a_pool.resource_def_ref()
+            {
                 // Calculate how much of token B we will return
                 let b_amount = self.b_pool.amount()
                     - self.a_pool.amount() * self.b_pool.amount()
@@ -174,7 +179,7 @@ blueprint! {
         }
 
         /// Returns the resource definition addresses of the pair.
-        pub fn get_pair(&self) -> (Address, Address) {
+        pub fn get_pair(&self) -> (ResourceDefRef, ResourceDefRef) {
             (
                 self.a_pool.resource_def_ref(),
                 self.b_pool.resource_def_ref(),

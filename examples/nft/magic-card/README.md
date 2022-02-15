@@ -52,7 +52,7 @@ let random_card_resource_def = ResourceBuilder::new_non_fungible()
     .metadata("name", "Random Cards")
     .flags(MINTABLE | BURNABLE | INDIVIDUAL_METADATA_MUTABLE)
     .badge(
-        random_card_mint_badge.resource_def(),
+        random_card_mint_badge.resource_def_ref(),
         MAY_MINT | MAY_BURN | MAY_CHANGE_INDIVIDUAL_METADATA,
     )
     .no_initial_supply();

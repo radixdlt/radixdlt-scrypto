@@ -61,7 +61,7 @@ impl Bucket {
     }
 
     /// Returns the resource definition of resources in this bucket.
-    pub fn resource_def(&self) -> ResourceDefRef {
+    pub fn resource_def_ref(&self) -> ResourceDefRef {
         let input = GetBucketResourceDefInput { bucket_id: self.0 };
         let output: GetBucketResourceDefOutput = call_engine(GET_BUCKET_RESOURCE_DEF, input);
 
@@ -70,12 +70,12 @@ impl Bucket {
 
     /// Burns resource within this bucket.
     pub fn burn(self) {
-        self.resource_def().burn(self);
+        self.resource_def_ref().burn(self);
     }
 
     /// Burns resource within this bucket.
     pub fn burn_with_auth(self, auth: BucketRef) {
-        self.resource_def().burn_with_auth(self, auth);
+        self.resource_def_ref().burn_with_auth(self, auth);
     }
 
     /// Checks if this bucket is empty.
@@ -111,7 +111,7 @@ impl Bucket {
         let input = GetNonFungibleKeysInBucketInput { bucket_id: self.0 };
         let output: GetNonFungibleKeysInBucketOutput =
             call_engine(GET_NON_FUNGIBLE_KEYS_IN_BUCKET, input);
-        let resource_def = self.resource_def();
+        let resource_def = self.resource_def_ref();
         output
             .keys
             .iter()
@@ -150,7 +150,7 @@ impl Bucket {
     /// # Panics
     /// Panics if this is not a non-fungible bucket.
     pub fn get_non_fungible_data<T: NonFungibleData>(&self, key: &NonFungibleKey) -> T {
-        self.resource_def().get_non_fungible_data(key)
+        self.resource_def_ref().get_non_fungible_data(key)
     }
 
     /// Updates the mutable part of the data of a non-fungible unit.
@@ -163,7 +163,7 @@ impl Bucket {
         new_data: T,
         auth: BucketRef,
     ) {
-        self.resource_def()
+        self.resource_def_ref()
             .update_non_fungible_data(key, new_data, auth)
     }
 }

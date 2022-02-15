@@ -18,12 +18,12 @@ r#"
                 "elements": [
                     {
                         "type": "Custom",
-                        "name": "scrypto::core::Component",
+                        "name": "ComponentRef",
                         "generics": []
                     },
                     {
                         "type": "Custom",
-                        "name": "scrypto::resource::Bucket",
+                        "name": "Bucket",
                         "generics": []
                     }
                 ]
@@ -37,13 +37,13 @@ r#"
             "inputs": [
                 {
                     "type": "Custom",
-                    "name": "scrypto::resource::BucketRef",
+                    "name": "BucketRef",
                     "generics": []
                 }
             ],
             "output": {
                 "type": "Custom",
-                "name": "scrypto::resource::Bucket",
+                "name": "Bucket",
                 "generics": []
             }
         },
@@ -53,7 +53,7 @@ r#"
             "inputs": [
                 {
                     "type": "Custom",
-                    "name": "scrypto::resource::Bucket",
+                    "name": "Bucket",
                     "generics": []
                 }
             ],
@@ -62,12 +62,12 @@ r#"
             }
         },
         {
-            "name": "get_admin_badge_address",
+            "name": "get_admin_badge",
             "mutability": "Immutable",
             "inputs": [],
             "output": {
                 "type": "Custom",
-                "name": "scrypto::types::Address",
+                "name": "ResourceDefRef",
                 "generics": []
             }
         }
@@ -78,19 +78,19 @@ r#"
 
 blueprint! {
     struct ManagedAccess {
-        admin_badge: ResourceDef,
-        flat_admin_controller: Address,
+        admin_badge: ResourceDefRef,
+        flat_admin_controller: ComponentRef,
         protected_vault: Vault,
     }
 
     impl ManagedAccess {
-        pub fn new() -> (Component, Bucket) {
+        pub fn new() -> (ComponentRef, Bucket) {
             let (flat_admin_component, admin_badge) =
                 FlatAdmin::new("My Managed Access Badge".into());
 
             let component = Self {
-                admin_badge: admin_badge.resource_def(),
-                flat_admin_controller: flat_admin_component.address(),
+                admin_badge: admin_badge.resource_def_ref(),
+                flat_admin_controller: flat_admin_component,
                 protected_vault: Vault::new(RADIX_TOKEN),
             }
             .instantiate();
@@ -106,11 +106,11 @@ blueprint! {
             self.protected_vault.put(to_deposit);
         }
 
-        pub fn get_admin_badge_address(&self) -> Address {
-            self.admin_badge.address()
+        pub fn get_admin_badge(&self) -> ResourceDefRef {
+            self.admin_badge
         }
 
-        pub fn get_flat_admin_controller_address(&self) -> Address {
+        pub fn get_flat_admin_controller(&self) -> ComponentRef {
             self.flat_admin_controller
         }
     }

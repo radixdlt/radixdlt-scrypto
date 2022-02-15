@@ -144,6 +144,12 @@ jobs:
     - name: Run demo
       run: ./demo.sh
       working-directory: examples/defi
+    - name: Run auto-lend test
+      run: cargo test --release
+      working-directory: examples/defi/auto-lend
+    - name: Run x-perp-futures test
+      run: cargo test --release
+      working-directory: examples/defi/x-perp-futures
   scrypto-nft-examples:
     name: Run Scrypto NFT examples
     runs-on: ${{ matrix.os }}

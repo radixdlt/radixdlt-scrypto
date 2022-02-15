@@ -21,7 +21,7 @@ impl<T: NonFungibleData> From<(ResourceDefRef, NonFungibleKey)> for NonFungible<
 
 impl<T: NonFungibleData> NonFungible<T> {
     /// Returns the resource definition.
-    pub fn resource_def(&self) -> ResourceDefRef {
+    pub fn resource_def_ref(&self) -> ResourceDefRef {
         self.resource_def_ref
     }
 
@@ -32,12 +32,12 @@ impl<T: NonFungibleData> NonFungible<T> {
 
     /// Returns the associated data of this unit.
     pub fn data(&self) -> T {
-        self.resource_def().get_non_fungible_data(&self.key)
+        self.resource_def_ref().get_non_fungible_data(&self.key)
     }
 
     /// Updates the associated data of this unit.
     pub fn update_data(&self, new_data: T, auth: BucketRef) {
-        self.resource_def()
+        self.resource_def_ref()
             .update_non_fungible_data(&self.key, new_data, auth);
     }
 }

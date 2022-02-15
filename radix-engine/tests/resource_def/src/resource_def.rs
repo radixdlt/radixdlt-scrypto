@@ -9,7 +9,7 @@ blueprint! {
             let token_resource_def = ResourceBuilder::new_fungible(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "TestToken")
                 .flags(MINTABLE | BURNABLE)
-                .badge(badge.resource_def(), MAY_MINT | MAY_BURN)
+                .badge(badge.resource_def_ref(), MAY_MINT | MAY_BURN)
                 .no_initial_supply();
             (badge, token_resource_def)
         }
@@ -41,7 +41,7 @@ blueprint! {
             let token_resource_def = ResourceBuilder::new_fungible(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "TestToken")
                 .flags(MINTABLE | BURNABLE)
-                .badge(badge.resource_def(), MINTABLE | MAY_BURN)
+                .badge(badge.resource_def_ref(), MINTABLE | MAY_BURN)
                 .no_initial_supply();
             (badge, token_resource_def)
         }
@@ -70,7 +70,7 @@ blueprint! {
                 .metadata("name", "TestToken")
                 .mutable_flags(MINTABLE)
                 .badge(
-                    badge.resource_def(),
+                    badge.resource_def_ref(),
                     MAY_MANAGE_RESOURCE_FLAGS | MAY_MINT,
                 )
                 .no_initial_supply();
@@ -95,7 +95,7 @@ blueprint! {
             let mut token_resource_def = ResourceBuilder::new_fungible(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "TestToken")
                 .badge(
-                    badge.resource_def(),
+                    badge.resource_def_ref(),
                     MAY_MANAGE_RESOURCE_FLAGS | MAY_MINT,
                 )
                 .no_initial_supply();
@@ -109,7 +109,7 @@ blueprint! {
             let mut token_resource_def = ResourceBuilder::new_fungible(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "TestToken")
                 .flags(SHARED_METADATA_MUTABLE)
-                .badge(badge.resource_def(), MAY_CHANGE_SHARED_METADATA)
+                .badge(badge.resource_def_ref(), MAY_CHANGE_SHARED_METADATA)
                 .no_initial_supply();
 
             let mut new_metadata = HashMap::new();

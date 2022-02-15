@@ -29,12 +29,12 @@ r#"
                 "elements": [
                     {
                         "type": "Custom",
-                        "name": "scrypto::resource::Bucket",
+                        "name": "Bucket",
                         "generics": []
                     },
                     {
                         "type": "Custom",
-                        "name": "scrypto::core::Component",
+                        "name": "ComponentRef",
                         "generics": []
                     }
                 ]
@@ -48,12 +48,12 @@ r#"
             "inputs": [
                 {
                     "type": "Custom",
-                    "name": "scrypto::types::Address",
+                    "name": "ResourceDefRef",
                     "generics": []
                 },
                 {
                     "type": "Custom",
-                    "name": "scrypto::types::Address",
+                    "name": "ResourceDefRef",
                     "generics": []
                 }
             ],
@@ -61,7 +61,7 @@ r#"
                 "type": "Option",
                 "value": {
                     "type": "Custom",
-                    "name": "scrypto::types::Decimal",
+                    "name": "Decimal",
                     "generics": []
                 }
             }
@@ -72,22 +72,22 @@ r#"
             "inputs": [
                 {
                     "type": "Custom",
-                    "name": "scrypto::types::Address",
+                    "name": "ResourceDefRef",
                     "generics": []
                 },
                 {
                     "type": "Custom",
-                    "name": "scrypto::types::Address",
+                    "name": "ResourceDefRef",
                     "generics": []
                 },
                 {
                     "type": "Custom",
-                    "name": "scrypto::types::Decimal",
+                    "name": "Decimal",
                     "generics": []
                 },
                 {
                     "type": "Custom",
-                    "name": "scrypto::resource::BucketRef",
+                    "name": "BucketRef",
                     "generics": []
                 }
             ],
@@ -96,12 +96,12 @@ r#"
             }
         },
         {
-            "name": "admin_badge_address",
+            "name": "admin_badge",
             "mutability": "Immutable",
             "inputs": [],
             "output": {
                 "type": "Custom",
-                "name": "scrypto::types::Address",
+                "name": "ResourceDefRef",
                 "generics": []
             }
         }
@@ -121,28 +121,28 @@ r#"
             "inputs": [
                 {
                     "type": "Custom",
-                    "name": "scrypto::types::Address",
+                    "name": "ComponentRef",
                     "generics": []
                 },
                 {
                     "type": "Custom",
-                    "name": "scrypto::types::Address",
+                    "name": "ResourceDefRef",
                     "generics": []
                 },
                 {
                     "type": "Custom",
-                    "name": "scrypto::types::Address",
+                    "name": "ResourceDefRef",
                     "generics": []
                 },
                 {
                     "type": "Custom",
-                    "name": "scrypto::types::Decimal",
+                    "name": "Decimal",
                     "generics": []
                 }
             ],
             "output": {
                 "type": "Custom",
-                "name": "scrypto::core::Component",
+                "name": "ComponentRef",
                 "generics": []
             }
         }
@@ -157,13 +157,13 @@ r#"
                 },
                 {
                     "type": "Custom",
-                    "name": "scrypto::types::Address",
+                    "name": "ResourceDefRef",
                     "generics": []
                 }
             ],
             "output": {
                 "type": "Custom",
-                "name": "scrypto::types::Address",
+                "name": "ResourceDefRef",
                 "generics": []
             }
         },
@@ -173,12 +173,12 @@ r#"
             "inputs": [
                 {
                     "type": "Custom",
-                    "name": "scrypto::resource::BucketRef",
+                    "name": "BucketRef",
                     "generics": []
                 },
                 {
                     "type": "Custom",
-                    "name": "scrypto::resource::Bucket",
+                    "name": "Bucket",
                     "generics": []
                 }
             ],
@@ -192,18 +192,18 @@ r#"
             "inputs": [
                 {
                     "type": "Custom",
-                    "name": "scrypto::resource::BucketRef",
+                    "name": "BucketRef",
                     "generics": []
                 },
                 {
                     "type": "Custom",
-                    "name": "scrypto::types::Decimal",
+                    "name": "Decimal",
                     "generics": []
                 }
             ],
             "output": {
                 "type": "Custom",
-                "name": "scrypto::resource::Bucket",
+                "name": "Bucket",
                 "generics": []
             }
         },
@@ -213,12 +213,12 @@ r#"
             "inputs": [
                 {
                     "type": "Custom",
-                    "name": "scrypto::resource::BucketRef",
+                    "name": "BucketRef",
                     "generics": []
                 },
                 {
                     "type": "Custom",
-                    "name": "scrypto::types::Decimal",
+                    "name": "Decimal",
                     "generics": []
                 },
                 {
@@ -227,7 +227,7 @@ r#"
             ],
             "output": {
                 "type": "Custom",
-                "name": "scrypto::resource::Bucket",
+                "name": "Bucket",
                 "generics": []
             }
         },
@@ -237,12 +237,12 @@ r#"
             "inputs": [
                 {
                     "type": "Custom",
-                    "name": "scrypto::resource::BucketRef",
+                    "name": "BucketRef",
                     "generics": []
                 },
                 {
                     "type": "Custom",
-                    "name": "scrypto::resource::Bucket",
+                    "name": "Bucket",
                     "generics": []
                 }
             ],
@@ -256,7 +256,7 @@ r#"
             "inputs": [],
             "output": {
                 "type": "Custom",
-                "name": "scrypto::types::Decimal",
+                "name": "Decimal",
                 "generics": []
             }
         },
@@ -266,7 +266,7 @@ r#"
             "inputs": [],
             "output": {
                 "type": "Custom",
-                "name": "scrypto::types::Decimal",
+                "name": "Decimal",
                 "generics": []
             }
         },
@@ -276,13 +276,13 @@ r#"
             "inputs": [
                 {
                     "type": "Custom",
-                    "name": "scrypto::types::Address",
+                    "name": "ResourceDefRef",
                     "generics": []
                 }
             ],
             "output": {
                 "type": "Custom",
-                "name": "scrypto::types::Decimal",
+                "name": "Decimal",
                 "generics": []
             }
         },
@@ -292,7 +292,7 @@ r#"
             "inputs": [
                 {
                     "type": "Custom",
-                    "name": "scrypto::types::Address",
+                    "name": "ResourceDefRef",
                     "generics": []
                 }
             ],
@@ -306,7 +306,7 @@ r#"
             "inputs": [],
             "output": {
                 "type": "Custom",
-                "name": "scrypto::resource::Bucket",
+                "name": "Bucket",
                 "generics": []
             }
         }
@@ -326,17 +326,17 @@ r#"
             "inputs": [
                 {
                     "type": "Custom",
-                    "name": "scrypto::resource::Bucket",
+                    "name": "Bucket",
                     "generics": []
                 },
                 {
                     "type": "Custom",
-                    "name": "scrypto::resource::Bucket",
+                    "name": "Bucket",
                     "generics": []
                 },
                 {
                     "type": "Custom",
-                    "name": "scrypto::types::Decimal",
+                    "name": "Decimal",
                     "generics": []
                 },
                 {
@@ -350,7 +350,7 @@ r#"
                 },
                 {
                     "type": "Custom",
-                    "name": "scrypto::types::Decimal",
+                    "name": "Decimal",
                     "generics": []
                 }
             ],
@@ -359,12 +359,12 @@ r#"
                 "elements": [
                     {
                         "type": "Custom",
-                        "name": "scrypto::core::Component",
+                        "name": "ComponentRef",
                         "generics": []
                     },
                     {
                         "type": "Custom",
-                        "name": "scrypto::resource::Bucket",
+                        "name": "Bucket",
                         "generics": []
                     }
                 ]
@@ -378,12 +378,12 @@ r#"
             "inputs": [
                 {
                     "type": "Custom",
-                    "name": "scrypto::resource::Bucket",
+                    "name": "Bucket",
                     "generics": []
                 },
                 {
                     "type": "Custom",
-                    "name": "scrypto::resource::Bucket",
+                    "name": "Bucket",
                     "generics": []
                 }
             ],
@@ -392,12 +392,12 @@ r#"
                 "elements": [
                     {
                         "type": "Custom",
-                        "name": "scrypto::resource::Bucket",
+                        "name": "Bucket",
                         "generics": []
                     },
                     {
                         "type": "Custom",
-                        "name": "scrypto::resource::Bucket",
+                        "name": "Bucket",
                         "generics": []
                     }
                 ]
@@ -409,7 +409,7 @@ r#"
             "inputs": [
                 {
                     "type": "Custom",
-                    "name": "scrypto::resource::Bucket",
+                    "name": "Bucket",
                     "generics": []
                 }
             ],
@@ -418,12 +418,12 @@ r#"
                 "elements": [
                     {
                         "type": "Custom",
-                        "name": "scrypto::resource::Bucket",
+                        "name": "Bucket",
                         "generics": []
                     },
                     {
                         "type": "Custom",
-                        "name": "scrypto::resource::Bucket",
+                        "name": "Bucket",
                         "generics": []
                     }
                 ]
@@ -435,13 +435,13 @@ r#"
             "inputs": [
                 {
                     "type": "Custom",
-                    "name": "scrypto::resource::Bucket",
+                    "name": "Bucket",
                     "generics": []
                 }
             ],
             "output": {
                 "type": "Custom",
-                "name": "scrypto::resource::Bucket",
+                "name": "Bucket",
                 "generics": []
             }
         }
@@ -464,13 +464,13 @@ blueprint! {
         /// Asset symbol
         asset_symbol: String,
         /// Asset address
-        asset_address: Address,
+        asset_address: ResourceDefRef,
         /// Synthetic asset address
-        synth_address: Address,
+        synth_address: ResourceDefRef,
         /// SNX resource definition address
-        snx_address: Address,
+        snx_address: ResourceDefRef,
         /// USD resource definition address
-        usd_address: Address,
+        usd_address: ResourceDefRef,
 
         /// Radiswap for sTESLA/XRD
         radiswap: Radiswap,
@@ -478,23 +478,23 @@ blueprint! {
         radiswap_lp_tokens: Vault,
 
         /// Mutual farm share resource definition
-        mutual_farm_share_resource_def: ResourceDef,
+        mutual_farm_share_resource_def: ResourceDefRef,
         /// Total contribution
         total_contribution_in_usd: Decimal,
     }
 
     impl MutualFarm {
         pub fn new(
-            price_oracle_address: Address,
-            xrd_snx_radiswap_address: Address,
-            synthetic_pool_address: Address,
+            price_oracle_address: ComponentRef,
+            xrd_snx_radiswap_address: ComponentRef,
+            synthetic_pool_address: ComponentRef,
             asset_symbol: String,
-            asset_address: Address,
+            asset_address: ResourceDefRef,
             initial_shares: Decimal,
             mut initial_xrd: Bucket,
-            snx_address: Address,
-            usd_address: Address,
-        ) -> (Bucket, Component) {
+            snx_address: ResourceDefRef,
+            usd_address: ResourceDefRef,
+        ) -> (Bucket, ComponentRef) {
             debug!("Create an identity badge for accessing other components");
             let identity_badge = ResourceBuilder::new_fungible(DIVISIBILITY_NONE)
                 .metadata("name", "ID")
@@ -537,11 +537,12 @@ blueprint! {
             );
 
             debug!("Mint initial shares");
-            let mut mutual_farm_share_resource_def = ResourceBuilder::new_fungible(DIVISIBILITY_MAXIMUM)
-                .metadata("name", "MutualFarm share")
-                .flags(MINTABLE | BURNABLE)
-                .badge(identity_badge_address, MAY_MINT | MAY_BURN)
-                .no_initial_supply();
+            let mut mutual_farm_share_resource_def =
+                ResourceBuilder::new_fungible(DIVISIBILITY_MAXIMUM)
+                    .metadata("name", "MutualFarm share")
+                    .flags(MINTABLE | BURNABLE)
+                    .badge(identity_badge_address, MAY_MINT | MAY_BURN)
+                    .no_initial_supply();
             let shares =
                 mutual_farm_share_resource_def.mint(initial_shares, identity_badge.present());
 
@@ -582,7 +583,7 @@ blueprint! {
                 .unwrap();
 
             debug!("Swap 3/4 of XRD for SNX");
-            let xrd_address = xrd.resource_def();
+            let xrd_address = xrd.resource_def_ref();
             let xrd_amount = xrd.amount();
             let snx = self.xrd_snx_radiswap.swap(xrd.take(xrd.amount() * 3 / 4));
             let snx_amount = snx.amount();
@@ -610,7 +611,8 @@ blueprint! {
             debug!("Mint initial shares");
             let contribution = xrd_usd_price * (xrd_amount - remainder.amount());
             let num_shares_to_issue = contribution
-                / (self.total_contribution_in_usd / self.mutual_farm_share_resource_def.total_supply());
+                / (self.total_contribution_in_usd
+                    / self.mutual_farm_share_resource_def.total_supply());
             self.total_contribution_in_usd += contribution;
             let shares = self.identity_badge.authorize(|auth| {
                 self.mutual_farm_share_resource_def

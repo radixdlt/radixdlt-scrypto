@@ -22,7 +22,7 @@ blueprint! {
                 .metadata("name", "Katz's Sandwiches")
                 .flags(MINTABLE | BURNABLE | INDIVIDUAL_METADATA_MUTABLE)
                 .badge(
-                    mint_badge.resource_def(),
+                    mint_badge.resource_def_ref(),
                     MAY_MINT | MAY_BURN | MAY_CHANGE_INDIVIDUAL_METADATA,
                 )
                 .no_initial_supply();

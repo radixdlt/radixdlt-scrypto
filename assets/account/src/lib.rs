@@ -17,7 +17,7 @@ blueprint! {
 
         pub fn with_bucket(public_key: EcdsaPublicKey, bucket: Bucket) -> ComponentRef {
             let vaults = LazyMap::new();
-            vaults.insert(bucket.resource_def(), Vault::with_bucket(bucket));
+            vaults.insert(bucket.resource_def_ref(), Vault::with_bucket(bucket));
 
             Account { public_key, vaults }.instantiate()
         }
@@ -31,7 +31,7 @@ blueprint! {
 
         /// Deposits resource into this account.
         pub fn deposit(&mut self, bucket: Bucket) {
-            let resource_def_ref = bucket.resource_def();
+            let resource_def_ref = bucket.resource_def_ref();
             match self.vaults.get(&resource_def_ref) {
                 Some(mut v) => {
                     v.put(bucket);

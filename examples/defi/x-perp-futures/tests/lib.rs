@@ -5,31 +5,32 @@ use scrypto::prelude::*;
 use x_perp_futures::Position;
 use x_perp_futures::PositionType;
 
-struct TestEnv<'a, L: Ledger> {
+struct TestEnv<'a, L: SubstateStore> {
     executor: TransactionExecutor<'a, L>,
-    key: Address,
-    account: Address,
-    usd: Address,
-    clearing_house: Address,
+    public_key: EcdsaPublicKey,
+    account: ComponentRef,
+    usd: ResourceDefRef,
+    clearing_house: ComponentRef,
 }
 
-fn set_up_test_env<'a, L: Ledger>(ledger: &'a mut L) -> TestEnv<'a, L> {
+fn set_up_test_env<'a, L: SubstateStore>(ledger: &'a mut L) -> TestEnv<'a, L> {
     let mut executor = TransactionExecutor::new(ledger, false);
-    let key = executor.new_public_key();
-    let account = executor.new_account(key);
-    let package = executor.publish_package(include_code!("x_perp_futures")).unwrap();
+    let public_key = executor.new_public_key();
+    let account = executor.new_account(public_key);
+    let package = executor
+        .publish_package(include_code!("x_perp_futures"))
+        .unwrap();
 
     let receipt = executor
         .run(
             TransactionBuilder::new(&executor)
                 .new_token_fixed(HashMap::new(), 1_000_000.into())
                 .call_method_with_all_resources(account, "deposit_batch")
-                .build(vec![key])
+                .build(vec![public_key])
                 .unwrap(),
-            false,
         )
         .unwrap();
-    let usd = receipt.new_component_refs[0].unwrap();
+    let usd = receipt.new_resource_def_refs[0];
 
     let receipt = executor
         .run(
@@ -42,39 +43,41 @@ fn set_up_test_env<'a, L: Ledger>(ledger: &'a mut L) -> TestEnv<'a, L> {
                     Some(account),
                 )
                 .call_method_with_all_resources(account, "deposit_batch")
-                .build(vec![key])
+                .build(vec![public_key])
                 .unwrap(),
-            false,
         )
         .unwrap();
-    let clearing_house = receipt.component(0).unwrap();
+    let clearing_house = receipt.new_component_refs[0];
 
     TestEnv {
         executor,
-        key,
+        public_key,
         account,
         usd,
         clearing_house,
     }
 }
 
-fn create_user<'a, L: Ledger>(env: &mut TestEnv<'a, L>) -> Address {
+fn create_user<'a, L: SubstateStore>(env: &mut TestEnv<'a, L>) -> ResourceDefRef {
     let receipt = env
         .executor
         .run(
             TransactionBuilder::new(&env.executor)
                 .call_method(env.clearing_house, "new_user", args![], Some(env.account))
                 .call_method_with_all_resources(env.account, "deposit_batch")
-                .build(vec![env.key])
+                .build(vec![env.public_key])
                 .unwrap(),
-            false,
         )
         .unwrap();
     assert!(receipt.result.is_ok());
-    receipt.new_component_refs[0].unwrap()
+    receipt.new_resource_def_refs[0]
 }
 
-fn get_position<'a, L: Ledger>(env: &mut TestEnv<'a, L>, user_id: Address, nth: usize) -> Position {
+fn get_position<'a, L: SubstateStore>(
+    env: &mut TestEnv<'a, L>,
+    user_id: ResourceDefRef,
+    nth: usize,
+) -> Position {
     let mut receipt = env
         .executor
         .run(
@@ -86,13 +89,12 @@ fn get_position<'a, L: Ledger>(env: &mut TestEnv<'a, L>, user_id: Address, nth: 
                     Some(env.account),
                 )
                 .call_method_with_all_resources(env.account, "deposit_batch")
-                .build(vec![env.key])
+                .build(vec![env.public_key])
                 .unwrap(),
-            false,
         )
         .unwrap();
     assert!(receipt.result.is_ok());
-    let encoded = receipt.results.swap_remove(0).unwrap().unwrap().encoded;
+    let encoded = receipt.outputs.swap_remove(0).raw;
     scrypto_decode(&encoded).unwrap()
 }
 
@@ -121,9 +123,8 @@ fn test_long() {
                     Some(env.account),
                 )
                 .call_method_with_all_resources(env.account, "deposit_batch")
-                .build(vec![env.key])
+                .build(vec![env.public_key])
                 .unwrap(),
-            false,
         )
         .unwrap();
     println!("{:?}", receipt);
@@ -155,9 +156,8 @@ fn test_long() {
                     Some(env.account),
                 )
                 .call_method_with_all_resources(env.account, "deposit_batch")
-                .build(vec![env.key])
+                .build(vec![env.public_key])
                 .unwrap(),
-            false,
         )
         .unwrap();
     println!("{:?}", receipt);
@@ -184,9 +184,8 @@ fn test_long() {
                     Some(env.account),
                 )
                 .call_method_with_all_resources(env.account, "deposit_batch")
-                .build(vec![env.key])
+                .build(vec![env.public_key])
                 .unwrap(),
-            false,
         )
         .unwrap();
     println!("{:?}", receipt);
@@ -194,7 +193,7 @@ fn test_long() {
 
 #[test]
 fn test_short() {
-    let mut ledger = InMemoryLedger::with_bootstrap();
+    let mut ledger = InMemorySubstateStore::with_bootstrap();
     let mut env = set_up_test_env(&mut ledger);
 
     let user1 = create_user(&mut env);
@@ -217,9 +216,8 @@ fn test_short() {
                     Some(env.account),
                 )
                 .call_method_with_all_resources(env.account, "deposit_batch")
-                .build(vec![env.key])
+                .build(vec![env.public_key])
                 .unwrap(),
-            false,
         )
         .unwrap();
     println!("{:?}", receipt);
@@ -251,9 +249,8 @@ fn test_short() {
                     Some(env.account),
                 )
                 .call_method_with_all_resources(env.account, "deposit_batch")
-                .build(vec![env.key])
+                .build(vec![env.public_key])
                 .unwrap(),
-            false,
         )
         .unwrap();
     println!("{:?}", receipt);
@@ -280,9 +277,8 @@ fn test_short() {
                     Some(env.account),
                 )
                 .call_method_with_all_resources(env.account, "deposit_batch")
-                .build(vec![env.key])
+                .build(vec![env.public_key])
                 .unwrap(),
-            false,
         )
         .unwrap();
     println!("{:?}", receipt);

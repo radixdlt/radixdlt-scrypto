@@ -746,7 +746,9 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                     created_bucket_id = Some(bucket_id);
                     builder
                 });
-                Ok(scrypto_encode(&created_bucket_id.unwrap()))
+                Ok(scrypto_encode(&scrypto::resource::Bucket(
+                    created_bucket_id.unwrap(),
+                )))
             }
             CustomType::BucketRef => {
                 let resource_spec = parse_resource_specification(i, ty, arg)?;
@@ -761,7 +763,9 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                     });
                     builder
                 });
-                Ok(scrypto_encode(&created_bucket_ref_id.unwrap()))
+                Ok(scrypto_encode(&scrypto::resource::BucketRef(
+                    created_bucket_ref_id.unwrap(),
+                )))
             }
             _ => Err(BuildArgsError::UnsupportedType(i, ty.clone())),
         }

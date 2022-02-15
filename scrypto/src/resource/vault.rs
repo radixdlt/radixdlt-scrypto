@@ -27,7 +27,7 @@ impl Vault {
 
     /// Creates an empty vault and fills it with an initial bucket of resources.
     pub fn with_bucket(bucket: Bucket) -> Self {
-        let mut vault = Vault::new(bucket.resource_def());
+        let mut vault = Vault::new(bucket.resource_def_ref());
         vault.put(bucket);
         vault
     }
@@ -162,7 +162,7 @@ impl Vault {
     }
 
     /// Returns the resource definition of resources within this vault.
-    pub fn resource_def(&self) -> ResourceDefRef {
+    pub fn resource_def_ref(&self) -> ResourceDefRef {
         let input = GetVaultResourceDefInput { vault_id: self.0 };
         let output: GetVaultResourceDefOutput = call_engine(GET_VAULT_RESOURCE_DEF, input);
 
@@ -182,7 +182,7 @@ impl Vault {
         let input = GetNonFungibleKeysInVaultInput { vault_id: self.0 };
         let output: GetNonFungibleKeysInVaultOutput =
             call_engine(GET_NON_FUNGIBLE_KEYS_IN_VAULT, input);
-        let resource_def = self.resource_def();
+        let resource_def = self.resource_def_ref();
         output
             .keys
             .iter()
@@ -221,7 +221,7 @@ impl Vault {
     /// # Panics
     /// Panics if this is not a non-fungible bucket.
     pub fn get_non_fungible_data<T: NonFungibleData>(&self, id: &NonFungibleKey) -> T {
-        self.resource_def().get_non_fungible_data(id)
+        self.resource_def_ref().get_non_fungible_data(id)
     }
 
     /// Updates the mutable part of the data of a non-fungible unit.
@@ -234,7 +234,7 @@ impl Vault {
         new_data: T,
         auth: BucketRef,
     ) {
-        self.resource_def()
+        self.resource_def_ref()
             .update_non_fungible_data(id, new_data, auth)
     }
 }

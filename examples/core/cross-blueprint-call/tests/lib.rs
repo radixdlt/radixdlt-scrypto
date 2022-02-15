@@ -15,7 +15,7 @@ fn test_proxy_1() {
 
     // Airdrop blueprint.
     executor.overwrite_package(
-        Address::from_str("01bda8686d6c2fa45dce04fac71a09b54efbc8028c23aac74bc00e").unwrap(),
+        PackageRef::from_str("01bda8686d6c2fa45dce04fac71a09b54efbc8028c23aac74bc00e").unwrap(),
         include_code!("cross_blueprint_call"),
     );
 
@@ -29,7 +29,7 @@ fn test_proxy_1() {
     assert!(receipt1.result.is_ok());
 
     // Test the `get_gumball` method.
-    let component = receipt1.component(0).unwrap();
+    let component = receipt1.new_component_refs[0];
     let transaction2 = TransactionBuilder::new(&executor)
         .call_method(component, "free_token", vec![], Some(account))
         .call_method_with_all_resources(account, "deposit_batch")
@@ -53,7 +53,7 @@ fn test_proxy_2() {
 
     // Airdrop blueprint.
     executor.overwrite_package(
-        Address::from_str("01bda8686d6c2fa45dce04fac71a09b54efbc8028c23aac74bc00e").unwrap(),
+        PackageRef::from_str("01bda8686d6c2fa45dce04fac71a09b54efbc8028c23aac74bc00e").unwrap(),
         include_code!("cross_blueprint_call"),
     );
 
@@ -67,7 +67,7 @@ fn test_proxy_2() {
     assert!(receipt1.result.is_ok());
 
     // Test the `get_gumball` method.
-    let component = receipt1.component(0).unwrap();
+    let component = receipt1.new_component_refs[0];
     let transaction2 = TransactionBuilder::new(&executor)
         .call_method(component, "free_token", vec![], Some(account))
         .call_method_with_all_resources(account, "deposit_batch")
