@@ -12,7 +12,7 @@ use crate::rust::vec::Vec;
 use crate::types::*;
 
 /// Represents a resource definition.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub struct ResourceDefRef(pub [u8; 26]);
 
 impl ResourceDefRef {
@@ -285,5 +285,11 @@ impl FromStr for ResourceDefRef {
 impl fmt::Display for ResourceDefRef {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         write!(f, "{}", hex::encode(combine(3, &self.0)))
+    }
+}
+
+impl fmt::Debug for ResourceDefRef {
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        write!(f, "{}", self)
     }
 }

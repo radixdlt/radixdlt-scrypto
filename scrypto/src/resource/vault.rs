@@ -11,7 +11,6 @@ use crate::rust::vec::Vec;
 use crate::types::*;
 
 /// Represents a persistent resource container on ledger state.
-#[derive(Debug)]
 pub struct Vault(pub VaultId);
 
 impl Vault {
@@ -303,5 +302,11 @@ impl FromStr for Vault {
 impl fmt::Display for Vault {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         write!(f, "{}", hex::encode(self.to_vec()))
+    }
+}
+
+impl fmt::Debug for Vault {
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        write!(f, "{}", self)
     }
 }

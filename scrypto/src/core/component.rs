@@ -21,7 +21,7 @@ pub trait ComponentState: Encode + Decode {
 }
 
 /// An instance of a blueprint, which lives in the ledger state.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub struct ComponentRef(pub [u8; 26]);
 
 impl ComponentRef {
@@ -136,5 +136,11 @@ impl FromStr for ComponentRef {
 impl fmt::Display for ComponentRef {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         write!(f, "{}", hex::encode(combine(2, &self.0)))
+    }
+}
+
+impl fmt::Debug for ComponentRef {
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        write!(f, "{}", self)
     }
 }

@@ -4,7 +4,6 @@ use crate::misc::*;
 use crate::rust::convert::TryFrom;
 use crate::rust::fmt;
 use crate::rust::str::FromStr;
-use crate::rust::string::ToString;
 use crate::rust::vec::Vec;
 use crate::types::*;
 
@@ -76,12 +75,6 @@ custom_type!(Hash, CustomType::Hash, Vec::new());
 // text
 //======
 
-impl fmt::Debug for Hash {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.to_string())
-    }
-}
-
 impl FromStr for Hash {
     type Err = ParseHashError;
 
@@ -94,6 +87,12 @@ impl FromStr for Hash {
 impl fmt::Display for Hash {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         write!(f, "{}", hex::encode(self.0))
+    }
+}
+
+impl fmt::Debug for Hash {
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        write!(f, "{}", self)
     }
 }
 

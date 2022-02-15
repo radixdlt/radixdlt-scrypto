@@ -202,7 +202,10 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             None => Err(RuntimeError::BucketError(BucketError::InsufficientBalance)),
         }?;
         self.buckets.insert(new_bucket_id, bucket);
-        Ok(ValidatedData::from_slice(&scrypto_encode(&new_bucket_id)).unwrap())
+        Ok(
+            ValidatedData::from_slice(&scrypto_encode(&scrypto::resource::Bucket(new_bucket_id)))
+                .unwrap(),
+        )
     }
 
     // (Transaction ONLY) Returns resource back to worktop.
@@ -212,7 +215,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     ) -> Result<ValidatedData, RuntimeError> {
         re_debug!(
             self,
-            "(Transaction) Returning to worktop: bucket_id = {:?}",
+            "(Transaction) Returning to worktop: bucket_id = {}",
             bucket_id
         );
 
@@ -241,7 +244,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     ) -> Result<ValidatedData, RuntimeError> {
         re_debug!(
             self,
-            "(Transaction) Asserting worktop contains: amount = {:?}, resource_def_ref = {:?}",
+            "(Transaction) Asserting worktop contains: amount = {}, resource_def_ref = {}",
             amount,
             resource_def_ref
         );
@@ -254,7 +257,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         if balance < amount {
             re_warn!(
                 self,
-                "(Transaction) Assertion failed: required = {:?}, actual = {:?}, resource_def_ref = {:?}",
+                "(Transaction) Assertion failed: required = {}, actual = {}, resource_def_ref = {}",
                 amount,
                 balance,
                 resource_def_ref
@@ -272,7 +275,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     ) -> Result<ValidatedData, RuntimeError> {
         re_debug!(
             self,
-            "(Transaction) Creating bucket ref: bucket_id = {:?}",
+            "(Transaction) Creating bucket ref: bucket_id = {}",
             bucket_id
         );
 
@@ -299,7 +302,12 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             }
         };
 
-        Ok(ValidatedData::from_slice(&scrypto_encode(&new_bucket_ref_id)).unwrap())
+        Ok(
+            ValidatedData::from_slice(&scrypto_encode(&scrypto::resource::BucketRef(
+                new_bucket_ref_id,
+            )))
+            .unwrap(),
+        )
     }
 
     // (Transaction ONLY) Clone a bucket ref.
@@ -309,7 +317,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     ) -> Result<ValidatedData, RuntimeError> {
         re_debug!(
             self,
-            "(Transaction) Cloning bucket ref: bucket_ref_id = {:?}",
+            "(Transaction) Cloning bucket ref: bucket_ref_id = {}",
             bucket_ref_id
         );
 
@@ -324,7 +332,12 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .clone();
         self.bucket_refs.insert(new_bucket_ref_id, bucket_ref);
 
-        Ok(ValidatedData::from_slice(&scrypto_encode(&new_bucket_ref_id)).unwrap())
+        Ok(
+            ValidatedData::from_slice(&scrypto_encode(&scrypto::resource::Bucket(
+                new_bucket_ref_id,
+            )))
+            .unwrap(),
+        )
     }
 
     // (Transaction ONLY) Drop a bucket ref.
@@ -334,7 +347,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     ) -> Result<ValidatedData, RuntimeError> {
         re_debug!(
             self,
-            "(Transaction) Dropping bucket ref: bucket_ref_id = {:?}",
+            "(Transaction) Dropping bucket ref: bucket_ref_id = {}",
             bucket_ref_id
         );
 
@@ -438,7 +451,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let now = std::time::Instant::now();
         re_info!(
             self,
-            "Run started: package = {:?}, export = {:?}",
+            "Run started: package = {}, export = {}",
             invocation.package_ref,
             invocation.export_name
         );
@@ -571,7 +584,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .map(|v| v.bucket_id())
             .collect();
         for bucket_id in bucket_ids {
-            re_debug!(self, "Changing bucket {:?} to unlocked state", bucket_id);
+            re_debug!(self, "Changing bucket {} to unlocked state", bucket_id);
             let bucket_rc = self.buckets_locked.remove(&bucket_id).unwrap();
             let bucket = Rc::try_unwrap(bucket_rc).unwrap();
             self.buckets.insert(bucket_id, bucket.into());
@@ -637,11 +650,11 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let mut success = true;
 
         for (bucket_id, bucket) in &self.buckets {
-            re_warn!(self, "Dangling bucket: {:?}, {:?}", bucket_id, bucket);
+            re_warn!(self, "Dangling bucket: {}, {:?}", bucket_id, bucket);
             success = false;
         }
         for (bucket_id, bucket) in &self.buckets_locked {
-            re_warn!(self, "Dangling bucket: {:?}, {:?}", bucket_id, bucket);
+            re_warn!(self, "Dangling bucket: {}, {:?}", bucket_id, bucket);
             success = false;
         }
         for (_, bucket) in &self.worktop {
@@ -795,7 +808,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 .buckets
                 .remove(bucket_id)
                 .ok_or(RuntimeError::BucketNotFound(*bucket_id))?;
-            re_debug!(self, "Moving bucket: {:?}, {:?}", bucket_id, bucket);
+            re_debug!(self, "Moving bucket: {}, {:?}", bucket_id, bucket);
             self.moving_buckets.insert(*bucket_id, bucket);
         }
         Ok(())
@@ -810,7 +823,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 .ok_or(RuntimeError::BucketRefNotFound(*bucket_ref_id))?;
             re_debug!(
                 self,
-                "Moving bucket ref: {:?}, {:?}",
+                "Moving bucket ref: {}, {:?}",
                 bucket_ref_id,
                 bucket_ref
             );
@@ -942,7 +955,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         }
         validate_module(&input.code).map_err(RuntimeError::WasmValidationError)?;
 
-        re_debug!(self, "New package: {:?}", package_ref);
+        re_debug!(self, "New package: {}", package_ref);
         self.track
             .put_package(package_ref, Package::new(input.code));
 
@@ -961,7 +974,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
         re_debug!(
             self,
-            "CALL started: package_ref = {:?}, blueprint_name = {}, function = {:?}, args = {:?}",
+            "CALL started: package_ref = {}, blueprint_name = {}, function = {}, args = {:?}",
             input.package_ref,
             input.blueprint_name,
             input.function,
@@ -992,7 +1005,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
         re_debug!(
             self,
-            "CALL started: component = {:?}, method = {:?}, args = {:?}",
+            "CALL started: component = {}, method = {}, args = {:?}",
             input.component_ref,
             input.method,
             validated_args
@@ -1014,7 +1027,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     ) {
         re_debug!(
             self,
-            "Lazy Map move: lazy_map = {:?}, to = component({:?}) ",
+            "Lazy Map move: lazy_map = {:?}, to = component({}) ",
             lazy_map_id,
             component_ref
         );
@@ -1043,7 +1056,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let data = Self::process_component_data(&input.state)?;
         re_debug!(
             self,
-            "New component: address = {:?}, state = {:?}",
+            "New component: address = {}, state = {}",
             component_ref,
             data
         );
@@ -1130,7 +1143,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         .unwrap();
 
         let new_state = Self::process_component_data(&input.state)?;
-        re_debug!(self, "New component state: {:?}", new_state);
+        re_debug!(self, "New component state: {}", new_state);
 
         // Only allow vaults to be added, never removed
         let mut old_vaults: HashSet<VaultId> = HashSet::from_iter(old_state.vault_ids.into_iter());
@@ -1318,7 +1331,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         if self.track.get_resource_def(resource_def_ref).is_some() {
             return Err(RuntimeError::ResourceDefAlreadyExists(resource_def_ref));
         }
-        re_debug!(self, "New resource definition: {:?}", resource_def_ref);
+        re_debug!(self, "New resource definition: {}", resource_def_ref);
         let definition = ResourceDef::new(
             input.resource_type,
             input.metadata,
@@ -1895,7 +1908,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let bucket_ref_id = self.track.new_bucket_ref_id();
         re_debug!(
             self,
-            "Borrowing: bucket_id = {:?}, bucket_ref_id = {:?}",
+            "Borrowing: bucket_id = {}, bucket_ref_id = {}",
             bucket_id,
             bucket_ref_id
         );
@@ -1934,9 +1947,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 .ok_or(RuntimeError::BucketRefNotFound(bucket_ref_id))?;
             re_debug!(
                 self,
-                "Dropping bucket ref: bucket_ref_id = {:?}, bucket = {:?}",
-                bucket_ref_id,
-                bucket_ref
+                "Dropping bucket ref: bucket_ref_id = {}",
+                bucket_ref_id
             );
             (Rc::strong_count(&bucket_ref) - 1, bucket_ref.bucket_id())
         };
@@ -2009,7 +2021,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let new_bucket_ref_id = self.track.new_bucket_ref_id();
         re_debug!(
             self,
-            "Cloning: bucket_ref_id = {:?}, new bucket_ref_id = {:?}",
+            "Cloning: bucket_ref_id = {}, new bucket_ref_id = {}",
             input.bucket_ref_id,
             new_bucket_ref_id
         );

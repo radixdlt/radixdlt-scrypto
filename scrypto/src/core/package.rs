@@ -10,7 +10,7 @@ use crate::rust::vec::Vec;
 use crate::types::*;
 
 /// A collection of blueprints, compiled and published as a single unit.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub struct PackageRef(pub [u8; 26]);
 
 impl PackageRef {
@@ -102,5 +102,11 @@ impl FromStr for PackageRef {
 impl fmt::Display for PackageRef {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         write!(f, "{}", hex::encode(combine(1, &self.0)))
+    }
+}
+
+impl fmt::Debug for PackageRef {
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        write!(f, "{}", self)
     }
 }
