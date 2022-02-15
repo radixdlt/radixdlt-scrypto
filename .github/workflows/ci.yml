@@ -93,40 +93,22 @@ jobs:
       run: cargo build --target wasm32-unknown-unknown --release
       working-directory: assets/system
     - name: Build hello-nft
-      run: cargo build --target wasm32-unknown-unknown --release
-      working-directory: examples/core/hello-nft
-    - name: Run hello-nft test
-      run: cargo test --release
+      run: cargo build --target wasm32-unknown-unknown --release && cargo test --release
       working-directory: examples/core/hello-nft
     - name: Build hello-world
-      run: cargo build --target wasm32-unknown-unknown --release
-      working-directory: examples/core/hello-world
-    - name: Run hello-world test
-      run: cargo test --release
+      run: cargo build --target wasm32-unknown-unknown --release && cargo test --release
       working-directory: examples/core/hello-world
     - name: Build cross-blueprint-call
-      run: cargo build --target wasm32-unknown-unknown --release
-      working-directory: examples/core/cross-blueprint-call
-    - name: Run cross-blueprint-call test
-      run: cargo test --release
+      run: cargo build --target wasm32-unknown-unknown --release && cargo test --release
       working-directory: examples/core/cross-blueprint-call
     - name: Build flat-admin
-      run: cargo build --target wasm32-unknown-unknown --release
-      working-directory: examples/core/flat-admin
-    - name: Run flat-admin test
-      run: cargo test --release
+      run: cargo build --target wasm32-unknown-unknown --release && cargo test --release
       working-directory: examples/core/flat-admin
     - name: Build managed-access
-      run: cargo build --target wasm32-unknown-unknown --release
-      working-directory: examples/core/managed-access
-    - name: Run managed-access test
-      run: cargo test --release
+      run: cargo build --target wasm32-unknown-unknown --release && cargo test --release
       working-directory: examples/core/managed-access
     - name: Build gumball-machine
-      run: cargo build --target wasm32-unknown-unknown --release
-      working-directory: examples/core/gumball-machine
-    - name: Run gumball-machine test
-      run: cargo test --release
+      run: cargo build --target wasm32-unknown-unknown --release && cargo test --release
       working-directory: examples/core/gumball-machine
     - name: Build no-std-lib
       run: cargo build --target wasm32-unknown-unknown --release
@@ -145,10 +127,10 @@ jobs:
       run: ./demo.sh
       working-directory: examples/defi
     - name: Run auto-lend test
-      run: cargo test --release
+      run: cargo build --target wasm32-unknown-unknown --release && cargo test --release
       working-directory: examples/defi/auto-lend
     - name: Run x-perp-futures test
-      run: cargo test --release
+      run: cargo build --target wasm32-unknown-unknown --release && cargo test --release
       working-directory: examples/defi/x-perp-futures
   scrypto-nft-examples:
     name: Run Scrypto NFT examples
@@ -161,16 +143,10 @@ jobs:
     - name: Add wasm target
       run: rustup target add wasm32-unknown-unknown
     - name: Build magic-card
-      run: cargo build --target wasm32-unknown-unknown --release
-      working-directory: examples/nft/magic-card
-    - name: Build magic-card test
-      run: cargo test --release
+      run: cargo build --target wasm32-unknown-unknown --release && cargo test --release
       working-directory: examples/nft/magic-card
     - name: Build sporting-event
-      run: cargo build --target wasm32-unknown-unknown --release
-      working-directory: examples/nft/sporting-event
-    - name: Build sporting-event test
-      run: cargo test --release
+      run: cargo build --target wasm32-unknown-unknown --release && cargo test --release
       working-directory: examples/nft/sporting-event
   radix-engine:
     name: Run Radix Engine tests
@@ -202,7 +178,7 @@ jobs:
     - name: Run tests
       run: cargo test --verbose
       working-directory: transaction-manifest
-  simulator-resim:
+  simulator:
     name: Run Simulator tests (resim)
     runs-on: ${{ matrix.os }}
     strategy:
