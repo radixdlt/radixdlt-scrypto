@@ -70,7 +70,7 @@ let vault: Vault = Vault::with_bucket(my_bucket);
 
 ## How to Play?
 
-1. Create a new account, and save the Account component ref
+1. Create a new account, and save the account component ref
 ```
 resim new-account
 ```

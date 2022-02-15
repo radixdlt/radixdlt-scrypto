@@ -110,7 +110,7 @@ let nft = self.random_card_mint_badge.authorize(|auth| {
 
 ## How to Play?
 
-1. Create a new account, and save the Account component ref
+1. Create a new account, and save the account component ref
 ```
 resim new-account
 ```
