@@ -141,11 +141,11 @@ impl<'s, S: SubstateStore> Track<'s, S> {
             self.put_vault(component_address, vid, vault);
         }
         for (mid, unclaimed) in new_objects.lazy_maps {
-            for (k, v) in unclaimed.lazy_map.map {
+            for (k, v) in unclaimed.lazy_map {
                 self.put_lazy_map_entry(component_address, mid, k, v);
             }
             for (child_mid, child_lazy_map) in unclaimed.descendent_lazy_maps {
-                for (k, v) in child_lazy_map.map {
+                for (k, v) in child_lazy_map {
                     self.put_lazy_map_entry(component_address, child_mid, k, v);
                 }
             }
@@ -1127,11 +1127,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let mid = self.track.new_mid();
         wasm_process.process_owned_objects.lazy_maps.insert(
             mid,
-            UnclaimedLazyMap {
-                lazy_map: LazyMap::new(),
-                descendent_lazy_maps: HashMap::new(),
-                descendent_vaults: HashMap::new(),
-            },
+            UnclaimedLazyMap::new()
         );
         Ok(CreateLazyMapOutput { mid })
     }
