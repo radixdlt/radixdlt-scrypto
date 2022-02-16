@@ -1,3 +1,4 @@
+use crate::core::*;
 use crate::math::*;
 use crate::resource::*;
 use crate::rust::borrow::ToOwned;
@@ -112,7 +113,7 @@ impl ResourceBuilder {
     }
 
     fn build(&self, supply: Option<Supply>) -> (ResourceDefRef, Option<Bucket>) {
-        ResourceDefRef::new(
+        Context::create_resource(
             self.resource_type,
             self.metadata.clone(),
             self.flags,

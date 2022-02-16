@@ -21,7 +21,7 @@ blueprint! {
             authorities: HashMap<ResourceDefRef, u64>,
             initial_supply: Option<Supply>,
         ) -> (ResourceDefRef, Option<Bucket>) {
-            ResourceDefRef::new(
+            Context::create_resource(
                 resource_type,
                 metadata,
                 flags,

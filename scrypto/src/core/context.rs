@@ -2,7 +2,9 @@ use crate::buffer::*;
 use crate::core::*;
 use crate::crypto::*;
 use crate::engine::{api::*, call_engine};
+use crate::resource::*;
 use crate::rust::borrow::ToOwned;
+use crate::rust::collections::HashMap;
 use crate::rust::vec::Vec;
 
 /// A utility for accessing process context at runtime.
@@ -103,5 +105,32 @@ impl Context {
         let output: PublishPackageOutput = call_engine(PUBLISH_PACKAGE, input);
 
         output.package_ref
+    }
+
+    /// Creates a resource with the given parameters.
+    ///
+    /// A bucket is returned iif an initial supply is provided.
+    pub fn create_resource(
+        resource_type: ResourceType,
+        metadata: HashMap<String, String>,
+        flags: u64,
+        mutable_flags: u64,
+        authorities: HashMap<ResourceDefRef, u64>,
+        initial_supply: Option<Supply>,
+    ) -> (ResourceDefRef, Option<Bucket>) {
+        let input = CreateResourceInput {
+            resource_type,
+            metadata,
+            flags,
+            mutable_flags,
+            authorities,
+            initial_supply,
+        };
+        let output: CreateResourceOutput = call_engine(CREATE_RESOURCE, input);
+
+        (
+            output.resource_def_ref,
+            output.bucket_id.map(|id| Bucket(id)),
+        )
     }
 }

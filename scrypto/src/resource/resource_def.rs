@@ -16,33 +16,6 @@ use crate::types::*;
 pub struct ResourceDefRef(pub [u8; 26]);
 
 impl ResourceDefRef {
-    /// Creates a resource with the given parameters.
-    ///
-    /// A bucket is returned iif an initial supply is provided.
-    pub fn new(
-        resource_type: ResourceType,
-        metadata: HashMap<String, String>,
-        flags: u64,
-        mutable_flags: u64,
-        authorities: HashMap<ResourceDefRef, u64>,
-        initial_supply: Option<Supply>,
-    ) -> (ResourceDefRef, Option<Bucket>) {
-        let input = CreateResourceInput {
-            resource_type,
-            metadata,
-            flags,
-            mutable_flags,
-            authorities,
-            initial_supply,
-        };
-        let output: CreateResourceOutput = call_engine(CREATE_RESOURCE, input);
-
-        (
-            output.resource_def_ref,
-            output.bucket_id.map(|id| Bucket(id)),
-        )
-    }
-
     /// Mints fungible resources
     pub fn mint<T: Into<Decimal>>(&mut self, amount: T, auth: BucketRef) -> Bucket {
         let input = MintResourceInput {
