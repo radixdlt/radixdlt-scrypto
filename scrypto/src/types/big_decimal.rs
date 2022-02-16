@@ -140,9 +140,9 @@ macro_rules! bdec {
         {
             let base = ::scrypto::types::BigDecimal::from($base);
             if $shift >= 0 {
-                base * 10i128.pow(u32::try_from($shift).unwrap())
+                base * 10i128.pow(u32::try_from($shift).expect("Shift overflow"))
             } else {
-                base / 10i128.pow(u32::try_from(-$shift).unwrap())
+                base / 10i128.pow(u32::try_from(-$shift).expect("Shift overflow"))
             }
         }
     };
@@ -677,5 +677,12 @@ mod tests {
             (bdec!(112000000000000000001i128, -18)).to_string(),
             "112.000000000000000001"
         );
+    }
+
+    #[test]
+    #[should_panic(expected = "Shift overflow")]
+    fn test_overflow() {
+        // u32::MAX + 1
+        bdec!(1, 4_294_967_296i128); // use explicit type to defer error to runtime
     }
 }
