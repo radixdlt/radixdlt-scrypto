@@ -6,8 +6,8 @@ pub use crate::math::*;
 pub use crate::misc::*;
 pub use crate::resource::*;
 pub use crate::{
-    args, auth, blueprint, debug, error, import, include_code, info, trace, warn, Decode, Describe,
-    Encode, NonFungibleData, TypeId,
+    args, auth, bdec, blueprint, debug, dec, error, import, include_code, info, trace, warn,
+    Decode, Describe, Encode, NonFungibleData, TypeId,
 };
 
 pub use crate::rust::borrow::ToOwned;

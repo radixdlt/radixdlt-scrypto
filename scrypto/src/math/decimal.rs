@@ -108,17 +108,18 @@ impl From<bool> for Decimal {
 #[macro_export]
 macro_rules! dec {
     ($x:literal) => {
-        Decimal::from($x)
+        ::scrypto::math::Decimal::from($x)
     };
 
-    ($int:literal, $exponent:literal) => {
-        if u32::try_from((($exponent) as i128).abs()).is_err() {
-            panic!("Overflow of arg2.");
-        } else {
-            if (($exponent) as i128) < 0 {
-                Decimal::from(1i128 * ($int)).div(10i128.pow((-1i128 * ($exponent)) as u32))
+    ($base:literal, $shift:literal) => {
+        // Base can be any type that converts into a Decimal, and shift must support
+        // comparison and `-` unary operation, enforced by rustc.
+        {
+            let base = ::scrypto::math::Decimal::from($base);
+            if $shift >= 0 {
+                base * 10i128.pow(u32::try_from($shift).unwrap())
             } else {
-                Decimal::from(1i128 * ($int)).mul(10i128.pow((1i128 * ($exponent)) as u32))
+                base / 10i128.pow(u32::try_from(-$shift).unwrap())
             }
         }
     };
@@ -509,20 +510,13 @@ mod tests {
         assert_eq!((dec!(11235, 2)).to_string(), "1123500");
 
         assert_eq!(
-            (dec!(112000000000000000001, -18)).to_string(),
+            (dec!(112000000000000000001i128, -18)).to_string(),
             "112.000000000000000001"
         );
 
         assert_eq!(
-            (dec!(112000000000000000001, -18)).to_string(),
+            (dec!(112000000000000000001i128, -18)).to_string(),
             "112.000000000000000001"
         );
-    }
-
-    #[test]
-    #[should_panic(expected = "Overflow of arg2.")]
-    fn test_arg1_overflow_arg1() {
-        //u32::MAX + 1
-        dec!(1, 4_294_967_296);
     }
 }
