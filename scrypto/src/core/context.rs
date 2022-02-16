@@ -5,6 +5,7 @@ use crate::engine::{api::*, call_engine};
 use crate::resource::*;
 use crate::rust::borrow::ToOwned;
 use crate::rust::collections::HashMap;
+use crate::rust::string::String;
 use crate::rust::vec::Vec;
 
 /// A utility for accessing process context at runtime.
