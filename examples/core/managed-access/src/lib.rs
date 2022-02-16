@@ -37,7 +37,7 @@ r#"
             "inputs": [
                 {
                     "type": "Custom",
-                    "name": "BucketRef",
+                    "name": "Proof",
                     "generics": []
                 }
             ],

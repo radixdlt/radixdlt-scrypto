@@ -17,7 +17,7 @@ pub struct ResourceDefRef(pub [u8; 26]);
 
 impl ResourceDefRef {
     /// Mints fungible resources
-    pub fn mint<T: Into<Decimal>>(&mut self, amount: T, auth: BucketRef) -> Bucket {
+    pub fn mint<T: Into<Decimal>>(&mut self, amount: T, auth: Proof) -> Bucket {
         let input = MintResourceInput {
             resource_def_ref: *self,
             new_supply: Supply::Fungible {
@@ -35,7 +35,7 @@ impl ResourceDefRef {
         &mut self,
         key: &NonFungibleKey,
         data: T,
-        auth: BucketRef,
+        auth: Proof,
     ) -> Bucket {
         let mut entries = HashMap::new();
         entries.insert(key.clone(), (data.immutable_data(), data.mutable_data()));
@@ -60,7 +60,7 @@ impl ResourceDefRef {
     }
 
     /// Burns a bucket of resources.
-    pub fn burn_with_auth(&mut self, bucket: Bucket, auth: BucketRef) {
+    pub fn burn_with_auth(&mut self, bucket: Bucket, auth: Proof) {
         let input = BurnResourceInput {
             bucket_id: bucket.0,
             auth: Some(auth.0),
@@ -140,7 +140,7 @@ impl ResourceDefRef {
         &mut self,
         key: &NonFungibleKey,
         new_data: T,
-        auth: BucketRef,
+        auth: Proof,
     ) {
         let input = UpdateNonFungibleMutableDataInput {
             resource_def_ref: *self,
@@ -153,7 +153,7 @@ impl ResourceDefRef {
     }
 
     /// Turns on feature flags.
-    pub fn enable_flags(&mut self, flags: u64, auth: BucketRef) {
+    pub fn enable_flags(&mut self, flags: u64, auth: Proof) {
         let input = UpdateResourceFlagsInput {
             resource_def_ref: *self,
             new_flags: self.flags() | flags,
@@ -163,7 +163,7 @@ impl ResourceDefRef {
     }
 
     /// Turns off feature flags.
-    pub fn disable_flags(&mut self, flags: u64, auth: BucketRef) {
+    pub fn disable_flags(&mut self, flags: u64, auth: Proof) {
         let input = UpdateResourceFlagsInput {
             resource_def_ref: *self,
             new_flags: self.flags() & !flags,
@@ -173,7 +173,7 @@ impl ResourceDefRef {
     }
 
     /// Locks feature flag settings.
-    pub fn lock_flags(&mut self, flags: u64, auth: BucketRef) {
+    pub fn lock_flags(&mut self, flags: u64, auth: Proof) {
         let input = UpdateResourceMutableFlagsInput {
             resource_def_ref: *self,
             new_mutable_flags: self.flags() & !flags,
@@ -183,7 +183,7 @@ impl ResourceDefRef {
             call_engine(UPDATE_RESOURCE_MUTABLE_FLAGS, input);
     }
 
-    pub fn update_metadata(&mut self, new_metadata: HashMap<String, String>, auth: BucketRef) {
+    pub fn update_metadata(&mut self, new_metadata: HashMap<String, String>, auth: Proof) {
         let input = UpdateResourceMetadataInput {
             resource_def_ref: *self,
             new_metadata,

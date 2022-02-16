@@ -37,20 +37,20 @@ pub enum GeneratorError {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum NameResolverError {
     UndefinedBucket(String),
-    UndefinedBucketRef(String),
+    UndefinedProof(String),
     NamedAlreadyDefined(String),
 }
 
 pub struct NameResolver {
     named_buckets: HashMap<String, BucketId>,
-    named_bucket_refs: HashMap<String, BucketRefId>,
+    named_proofs: HashMap<String, ProofId>,
 }
 
 impl NameResolver {
     pub fn new() -> Self {
         Self {
             named_buckets: HashMap::new(),
-            named_bucket_refs: HashMap::new(),
+            named_proofs: HashMap::new(),
         }
     }
 
@@ -59,7 +59,7 @@ impl NameResolver {
         name: String,
         bucket_id: BucketId,
     ) -> Result<(), NameResolverError> {
-        if self.named_buckets.contains_key(&name) || self.named_bucket_refs.contains_key(&name) {
+        if self.named_buckets.contains_key(&name) || self.named_proofs.contains_key(&name) {
             Err(NameResolverError::NamedAlreadyDefined(name))
         } else {
             self.named_buckets.insert(name, bucket_id);
@@ -67,15 +67,15 @@ impl NameResolver {
         }
     }
 
-    pub fn insert_bucket_ref(
+    pub fn insert_proof(
         &mut self,
         name: String,
-        bucket_ref_id: BucketRefId,
+        proof_id: ProofId,
     ) -> Result<(), NameResolverError> {
-        if self.named_buckets.contains_key(&name) || self.named_bucket_refs.contains_key(&name) {
+        if self.named_buckets.contains_key(&name) || self.named_proofs.contains_key(&name) {
             Err(NameResolverError::NamedAlreadyDefined(name))
         } else {
-            self.named_bucket_refs.insert(name, bucket_ref_id);
+            self.named_proofs.insert(name, proof_id);
             Ok(())
         }
     }
@@ -87,10 +87,10 @@ impl NameResolver {
         }
     }
 
-    pub fn resolve_bucket_ref(&mut self, name: &str) -> Result<BucketRefId, NameResolverError> {
-        match self.named_bucket_refs.get(name).cloned() {
-            Some(bucket_ref_id) => Ok(bucket_ref_id),
-            None => Err(NameResolverError::UndefinedBucketRef(name.into())),
+    pub fn resolve_proof(&mut self, name: &str) -> Result<ProofId, NameResolverError> {
+        match self.named_proofs.get(name).cloned() {
+            Some(proof_id) => Ok(proof_id),
+            None => Err(NameResolverError::UndefinedProof(name.into())),
         }
     }
 }
@@ -174,36 +174,30 @@ pub fn generate_instruction(
             amount: generate_decimal(amount)?,
             resource_def_ref: generate_resource_def_ref(resource_def_ref)?,
         },
-        ast::Instruction::CreateBucketRef {
-            bucket,
-            new_bucket_ref,
-        } => {
+        ast::Instruction::CreateProof { bucket, new_proof } => {
             let bucket_id = generate_bucket(bucket, resolver)?;
-            let bucket_ref_id = id_validator
-                .new_bucket_ref(bucket_id)
+            let proof_id = id_validator
+                .new_proof(bucket_id)
                 .map_err(GeneratorError::IdValidatorError)?;
-            declare_bucket_ref(new_bucket_ref, resolver, bucket_ref_id)?;
+            declare_proof(new_proof, resolver, proof_id)?;
 
-            Instruction::CreateBucketRef { bucket_id }
+            Instruction::CreateProof { bucket_id }
         }
-        ast::Instruction::CloneBucketRef {
-            bucket_ref,
-            new_bucket_ref,
-        } => {
-            let bucket_ref_id = generate_bucket_ref(bucket_ref, resolver)?;
-            let bucket_ref_id2 = id_validator
-                .clone_bucket_ref(bucket_ref_id)
+        ast::Instruction::CloneProof { proof, new_proof } => {
+            let proof_id = generate_proof(proof, resolver)?;
+            let proof_id2 = id_validator
+                .clone_proof(proof_id)
                 .map_err(GeneratorError::IdValidatorError)?;
-            declare_bucket_ref(new_bucket_ref, resolver, bucket_ref_id2)?;
+            declare_proof(new_proof, resolver, proof_id2)?;
 
-            Instruction::CloneBucketRef { bucket_ref_id }
+            Instruction::CloneProof { proof_id }
         }
-        ast::Instruction::DropBucketRef { bucket_ref } => {
-            let bucket_ref_id = generate_bucket_ref(bucket_ref, resolver)?;
+        ast::Instruction::DropProof { proof } => {
+            let proof_id = generate_proof(proof, resolver)?;
             id_validator
-                .drop_bucket_ref(bucket_ref_id)
+                .drop_proof(proof_id)
                 .map_err(GeneratorError::IdValidatorError)?;
-            Instruction::DropBucketRef { bucket_ref_id }
+            Instruction::DropProof { proof_id }
         }
         ast::Instruction::CallFunction {
             package_ref,
@@ -393,35 +387,35 @@ fn generate_bucket(
     }
 }
 
-fn declare_bucket_ref(
+fn declare_proof(
     value: &ast::Value,
     resolver: &mut NameResolver,
-    bucket_ref_id: BucketRefId,
+    proof_id: ProofId,
 ) -> Result<(), GeneratorError> {
     match value {
-        ast::Value::BucketRef(inner) => match &**inner {
+        ast::Value::Proof(inner) => match &**inner {
             ast::Value::String(name) => resolver
-                .insert_bucket_ref(name.to_string(), bucket_ref_id)
+                .insert_proof(name.to_string(), proof_id)
                 .map_err(GeneratorError::NameResolverError),
             v @ _ => invalid_type!(v, ast::Type::String),
         },
-        v @ _ => invalid_type!(v, ast::Type::BucketRef),
+        v @ _ => invalid_type!(v, ast::Type::Proof),
     }
 }
 
-fn generate_bucket_ref(
+fn generate_proof(
     value: &ast::Value,
     resolver: &mut NameResolver,
-) -> Result<BucketRefId, GeneratorError> {
+) -> Result<ProofId, GeneratorError> {
     match value {
-        ast::Value::BucketRef(inner) => match &**inner {
+        ast::Value::Proof(inner) => match &**inner {
             ast::Value::U32(n) => Ok(*n),
             ast::Value::String(s) => resolver
-                .resolve_bucket_ref(&s)
+                .resolve_proof(&s)
                 .map_err(GeneratorError::NameResolverError),
             v @ _ => invalid_type!(v, ast::Type::U32, ast::Type::String),
         },
-        v @ _ => invalid_type!(v, ast::Type::BucketRef),
+        v @ _ => invalid_type!(v, ast::Type::Proof),
     }
 }
 
@@ -553,12 +547,8 @@ fn generate_value(
                 scrypto::resource::Bucket(v).to_vec(),
             )
         }),
-        ast::Value::BucketRef(_) => generate_bucket_ref(value, resolver).map(|v| {
-            Value::Custom(
-                CustomType::BucketRef.id(),
-                scrypto::resource::BucketRef(v).to_vec(),
-            )
-        }),
+        ast::Value::Proof(_) => generate_proof(value, resolver)
+            .map(|v| Value::Custom(CustomType::Proof.id(), scrypto::resource::Proof(v).to_vec())),
         ast::Value::NonFungibleKey(_) => generate_non_fungible_key(value)
             .map(|v| Value::Custom(CustomType::NonFungibleKey.id(), v.to_vec())),
     }
@@ -646,7 +636,7 @@ fn generate_type(ty: &ast::Type) -> u8 {
         ast::Type::ResourceDefRef => CustomType::ResourceDefRef.id(),
         ast::Type::Hash => CustomType::Hash.id(),
         ast::Type::Bucket => CustomType::Bucket.id(),
-        ast::Type::BucketRef => CustomType::BucketRef.id(),
+        ast::Type::Proof => CustomType::Proof.id(),
         ast::Type::NonFungibleKey => CustomType::NonFungibleKey.id(),
     }
 }
@@ -707,16 +697,13 @@ mod tests {
         generate_value_ok!(r#"1u8"#, Value::U8(1));
         generate_value_ok!(r#"1u128"#, Value::U128(1));
         generate_value_ok!(
-            r#"Struct({Bucket(1u32), BucketRef(2u32), "bar"})"#,
+            r#"Struct({Bucket(1u32), Proof(2u32), "bar"})"#,
             Value::Struct(Fields::Named(vec![
                 Value::Custom(
                     CustomType::Bucket.id(),
                     scrypto::resource::Bucket(1).to_vec()
                 ),
-                Value::Custom(
-                    CustomType::BucketRef.id(),
-                    scrypto::resource::BucketRef(2).to_vec()
-                ),
+                Value::Custom(CustomType::Proof.id(), scrypto::resource::Proof(2).to_vec()),
                 Value::String("bar".into())
             ]))
         );
@@ -860,14 +847,14 @@ mod tests {
             }
         );
         generate_instruction_ok!(
-            r#"CALL_METHOD  ComponentRef("0292566c83de7fd6b04fcc92b5e04b03228ccff040785673278ef1")  "refill"  BucketRef(1u32);"#,
+            r#"CALL_METHOD  ComponentRef("0292566c83de7fd6b04fcc92b5e04b03228ccff040785673278ef1")  "refill"  Proof(1u32);"#,
             Instruction::CallMethod {
                 component_ref: ComponentRef::from_str(
                     "0292566c83de7fd6b04fcc92b5e04b03228ccff040785673278ef1".into()
                 )
                 .unwrap(),
                 method: "refill".into(),
-                args: vec![scrypto_encode(&scrypto::resource::BucketRef(1))]
+                args: vec![scrypto_encode(&scrypto::resource::Proof(1))]
             }
         );
         generate_instruction_ok!(
@@ -904,7 +891,7 @@ mod tests {
                                 )
                                 .unwrap()
                             ),
-                            scrypto_encode(&scrypto::resource::BucketRef(1)),
+                            scrypto_encode(&scrypto::resource::Proof(1)),
                         ]
                     },
                     Instruction::TakeFromWorktop {
@@ -942,10 +929,10 @@ mod tests {
                         )
                         .unwrap(),
                     },
-                    Instruction::CreateBucketRef { bucket_id: 513 },
-                    Instruction::CloneBucketRef { bucket_ref_id: 514 },
-                    Instruction::DropBucketRef { bucket_ref_id: 515 },
-                    Instruction::DropBucketRef { bucket_ref_id: 514 },
+                    Instruction::CreateProof { bucket_id: 513 },
+                    Instruction::CloneProof { proof_id: 514 },
+                    Instruction::DropProof { proof_id: 515 },
+                    Instruction::DropProof { proof_id: 514 },
                     Instruction::ReturnToWorktop { bucket_id: 513 },
                     Instruction::TakeNonFungiblesFromWorktop {
                         keys: BTreeSet::from([

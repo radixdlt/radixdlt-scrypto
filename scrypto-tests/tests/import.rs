@@ -63,7 +63,7 @@ r#"
                 },
                 {
                     "type": "Custom",
-                    "name": "BucketRef",
+                    "name": "Proof",
                     "generics": []
                 },
                 {

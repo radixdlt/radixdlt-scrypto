@@ -14,7 +14,7 @@ pub fn decompile(tx: &Transaction) -> Result<String, DecompileError> {
     let mut buf = String::new();
     let mut id_validator = IdValidator::new();
     let mut buckets = HashMap::<BucketId, String>::new();
-    let mut bucket_refs = HashMap::<BucketRefId, String>::new();
+    let mut proofs = HashMap::<ProofId, String>::new();
     for inst in &tx.instructions {
         match inst.clone() {
             Instruction::TakeFromWorktop {
@@ -81,14 +81,14 @@ pub fn decompile(tx: &Transaction) -> Result<String, DecompileError> {
                     amount, resource_def_ref
                 ));
             }
-            Instruction::CreateBucketRef { bucket_id } => {
-                let bucket_ref_id = id_validator
-                    .new_bucket_ref(bucket_id)
+            Instruction::CreateProof { bucket_id } => {
+                let proof_id = id_validator
+                    .new_proof(bucket_id)
                     .map_err(DecompileError::IdValidatorError)?;
-                let name = format!("badge{}", bucket_refs.len() + 1);
-                bucket_refs.insert(bucket_ref_id, name.clone());
+                let name = format!("badge{}", proofs.len() + 1);
+                proofs.insert(proof_id, name.clone());
                 buf.push_str(&format!(
-                    "CREATE_BUCKET_REF Bucket({}) BucketRef(\"{}\");\n",
+                    "CREATE_PROOF Bucket({}) Proof(\"{}\");\n",
                     buckets
                         .get(&bucket_id)
                         .map(|name| format!("\"{}\"", name))
@@ -96,31 +96,31 @@ pub fn decompile(tx: &Transaction) -> Result<String, DecompileError> {
                     name
                 ));
             }
-            Instruction::CloneBucketRef { bucket_ref_id } => {
-                let bucket_ref_id2 = id_validator
-                    .clone_bucket_ref(bucket_ref_id)
+            Instruction::CloneProof { proof_id } => {
+                let proof_id2 = id_validator
+                    .clone_proof(proof_id)
                     .map_err(DecompileError::IdValidatorError)?;
-                let name = format!("badge{}", bucket_refs.len() + 1);
-                bucket_refs.insert(bucket_ref_id2, name.clone());
+                let name = format!("badge{}", proofs.len() + 1);
+                proofs.insert(proof_id2, name.clone());
                 buf.push_str(&format!(
-                    "CLONE_BUCKET_REF BucketRef({}) BucketRef(\"{}\");\n",
-                    bucket_refs
-                        .get(&bucket_ref_id)
+                    "CLONE_PROOF Proof({}) Proof(\"{}\");\n",
+                    proofs
+                        .get(&proof_id)
                         .map(|name| format!("\"{}\"", name))
-                        .unwrap_or(format!("{}u32", bucket_ref_id)),
+                        .unwrap_or(format!("{}u32", proof_id)),
                     name
                 ));
             }
-            Instruction::DropBucketRef { bucket_ref_id } => {
+            Instruction::DropProof { proof_id } => {
                 id_validator
-                    .drop_bucket_ref(bucket_ref_id)
+                    .drop_proof(proof_id)
                     .map_err(DecompileError::IdValidatorError)?;
                 buf.push_str(&format!(
-                    "DROP_BUCKET_REF BucketRef({});\n",
-                    bucket_refs
-                        .get(&bucket_ref_id)
+                    "DROP_PROOF Proof({});\n",
+                    proofs
+                        .get(&proof_id)
                         .map(|name| format!("\"{}\"", name))
-                        .unwrap_or(format!("{}u32", bucket_ref_id)),
+                        .unwrap_or(format!("{}u32", proof_id)),
                 ));
             }
             Instruction::CallFunction {
@@ -140,7 +140,7 @@ pub fn decompile(tx: &Transaction) -> Result<String, DecompileError> {
                         .move_resources(&validated_arg)
                         .map_err(DecompileError::IdValidatorError)?;
                     buf.push(' ');
-                    buf.push_str(&format_value(&validated_arg.dom, &buckets, &bucket_refs));
+                    buf.push_str(&format_value(&validated_arg.dom, &buckets, &proofs));
                 }
                 buf.push_str(";\n");
             }
@@ -160,7 +160,7 @@ pub fn decompile(tx: &Transaction) -> Result<String, DecompileError> {
                         .move_resources(&validated_arg)
                         .map_err(DecompileError::IdValidatorError)?;
                     buf.push(' ');
-                    buf.push_str(&format_value(&validated_arg.dom, &buckets, &bucket_refs));
+                    buf.push_str(&format_value(&validated_arg.dom, &buckets, &proofs));
                 }
                 buf.push_str(";\n");
             }

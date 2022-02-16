@@ -88,16 +88,16 @@ impl Parser {
                 amount: self.parse_value()?,
                 resource_def_ref: self.parse_value()?,
             },
-            TokenKind::CreateBucketRef => Instruction::CreateBucketRef {
+            TokenKind::CreateProof => Instruction::CreateProof {
                 bucket: self.parse_value()?,
-                new_bucket_ref: self.parse_value()?,
+                new_proof: self.parse_value()?,
             },
-            TokenKind::CloneBucketRef => Instruction::CloneBucketRef {
-                bucket_ref: self.parse_value()?,
-                new_bucket_ref: self.parse_value()?,
+            TokenKind::CloneProof => Instruction::CloneProof {
+                proof: self.parse_value()?,
+                new_proof: self.parse_value()?,
             },
-            TokenKind::DropBucketRef => Instruction::DropBucketRef {
-                bucket_ref: self.parse_value()?,
+            TokenKind::DropProof => Instruction::DropProof {
+                proof: self.parse_value()?,
             },
             TokenKind::CallFunction => Instruction::CallFunction {
                 package_ref: self.parse_value()?,
@@ -173,7 +173,7 @@ impl Parser {
             | TokenKind::ResourceDefRef
             | TokenKind::Hash
             | TokenKind::Bucket
-            | TokenKind::BucketRef
+            | TokenKind::Proof
             | TokenKind::NonFungibleKey => self.parse_scrypto_types(),
             _ => Err(ParserError::UnexpectedToken(token)),
         }
@@ -336,7 +336,7 @@ impl Parser {
             TokenKind::ResourceDefRef => Ok(Value::ResourceDefRef(self.parse_values_one()?.into())),
             TokenKind::Hash => Ok(Value::Hash(self.parse_values_one()?.into())),
             TokenKind::Bucket => Ok(Value::Bucket(self.parse_values_one()?.into())),
-            TokenKind::BucketRef => Ok(Value::BucketRef(self.parse_values_one()?.into())),
+            TokenKind::Proof => Ok(Value::Proof(self.parse_values_one()?.into())),
             TokenKind::NonFungibleKey => Ok(Value::NonFungibleKey(self.parse_values_one()?.into())),
             _ => Err(ParserError::UnexpectedToken(token)),
         }
@@ -429,7 +429,7 @@ impl Parser {
             TokenKind::ResourceDefRef => Ok(Type::ResourceDefRef),
             TokenKind::Hash => Ok(Type::Hash),
             TokenKind::Bucket => Ok(Type::Bucket),
-            TokenKind::BucketRef => Ok(Type::BucketRef),
+            TokenKind::Proof => Ok(Type::Proof),
             TokenKind::NonFungibleKey => Ok(Type::NonFungibleKey),
             _ => Err(ParserError::UnexpectedToken(token)),
         }
@@ -682,23 +682,23 @@ mod tests {
             }
         );
         parse_instruction_ok!(
-            r#"CREATE_BUCKET_REF  Bucket("xrd_bucket")  BucketRef("admin_auth");"#,
-            Instruction::CreateBucketRef {
+            r#"CREATE_PROOF  Bucket("xrd_bucket")  Proof("admin_auth");"#,
+            Instruction::CreateProof {
                 bucket: Value::Bucket(Value::String("xrd_bucket".into()).into()),
-                new_bucket_ref: Value::BucketRef(Value::String("admin_auth".into()).into()),
+                new_proof: Value::Proof(Value::String("admin_auth".into()).into()),
             }
         );
         parse_instruction_ok!(
-            r#"CLONE_BUCKET_REF  BucketRef("admin_auth")  BucketRef("admin_auth2");"#,
-            Instruction::CloneBucketRef {
-                bucket_ref: Value::BucketRef(Value::String("admin_auth".into()).into()),
-                new_bucket_ref: Value::BucketRef(Value::String("admin_auth2".into()).into()),
+            r#"CLONE_PROOF  Proof("admin_auth")  Proof("admin_auth2");"#,
+            Instruction::CloneProof {
+                proof: Value::Proof(Value::String("admin_auth".into()).into()),
+                new_proof: Value::Proof(Value::String("admin_auth2".into()).into()),
             }
         );
         parse_instruction_ok!(
-            r#"DROP_BUCKET_REF BucketRef("admin_auth");"#,
-            Instruction::DropBucketRef {
-                bucket_ref: Value::BucketRef(Value::String("admin_auth".into()).into()),
+            r#"DROP_PROOF Proof("admin_auth");"#,
+            Instruction::DropProof {
+                proof: Value::Proof(Value::String("admin_auth".into()).into()),
             }
         );
         parse_instruction_ok!(
@@ -721,7 +721,7 @@ mod tests {
             }
         );
         parse_instruction_ok!(
-            r#"CALL_METHOD  ComponentRef("0292566c83de7fd6b04fcc92b5e04b03228ccff040785673278ef1")  "refill"  Bucket("xrd_bucket")  BucketRef("admin_auth");"#,
+            r#"CALL_METHOD  ComponentRef("0292566c83de7fd6b04fcc92b5e04b03228ccff040785673278ef1")  "refill"  Bucket("xrd_bucket")  Proof("admin_auth");"#,
             Instruction::CallMethod {
                 component_ref: Value::ComponentRef(
                     Value::String("0292566c83de7fd6b04fcc92b5e04b03228ccff040785673278ef1".into())
@@ -730,12 +730,12 @@ mod tests {
                 method: Value::String("refill".into()),
                 args: vec![
                     Value::Bucket(Value::String("xrd_bucket".into()).into()),
-                    Value::BucketRef(Value::String("admin_auth".into()).into())
+                    Value::Proof(Value::String("admin_auth".into()).into())
                 ]
             }
         );
         parse_instruction_ok!(
-            r#"CALL_METHOD  ComponentRef("0292566c83de7fd6b04fcc92b5e04b03228ccff040785673278ef1")  "withdraw_non_fungible"  NonFungibleKey("00")  BucketRef("admin_auth");"#,
+            r#"CALL_METHOD  ComponentRef("0292566c83de7fd6b04fcc92b5e04b03228ccff040785673278ef1")  "withdraw_non_fungible"  NonFungibleKey("00")  Proof("admin_auth");"#,
             Instruction::CallMethod {
                 component_ref: Value::ComponentRef(
                     Value::String("0292566c83de7fd6b04fcc92b5e04b03228ccff040785673278ef1".into())
@@ -744,7 +744,7 @@ mod tests {
                 method: Value::String("withdraw_non_fungible".into()),
                 args: vec![
                     Value::NonFungibleKey(Value::String("00".into()).into()),
-                    Value::BucketRef(Value::String("admin_auth".into()).into())
+                    Value::Proof(Value::String("admin_auth".into()).into())
                 ]
             }
         );

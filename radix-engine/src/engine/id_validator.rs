@@ -8,24 +8,24 @@ use crate::model::*;
 pub enum IdValidatorError {
     IdAllocatorError(IdAllocatorError),
     BucketNotFound(BucketId),
-    BucketRefNotFound(BucketRefId),
+    ProofNotFound(ProofId),
     BucketLocked(BucketId),
 }
 
 pub struct IdValidator {
     id_allocator: IdAllocator,
     bucket_ids: HashMap<BucketId, usize>,
-    bucket_ref_ids: HashMap<BucketRefId, BucketId>,
+    proof_ids: HashMap<ProofId, BucketId>,
 }
 
 impl IdValidator {
     pub fn new() -> Self {
-        let mut bucket_ref_ids = HashMap::new();
-        bucket_ref_ids.insert(ECDSA_TOKEN_BUCKET_REF_ID, ECDSA_TOKEN_BUCKET_ID);
+        let mut proof_ids = HashMap::new();
+        proof_ids.insert(ECDSA_TOKEN_PROOF_ID, ECDSA_TOKEN_BUCKET_ID);
         Self {
             id_allocator: IdAllocator::new(IdSpace::Transaction),
             bucket_ids: HashMap::new(),
-            bucket_ref_ids,
+            proof_ids,
         }
     }
 
@@ -51,54 +51,51 @@ impl IdValidator {
         }
     }
 
-    pub fn new_bucket_ref(&mut self, bucket_id: BucketId) -> Result<BucketRefId, IdValidatorError> {
+    pub fn new_proof(&mut self, bucket_id: BucketId) -> Result<ProofId, IdValidatorError> {
         if let Some(cnt) = self.bucket_ids.get_mut(&bucket_id) {
             *cnt += 1;
-            let bucket_ref_id = self
+            let proof_id = self
                 .id_allocator
-                .new_bucket_ref_id()
+                .new_proof_id()
                 .map_err(IdValidatorError::IdAllocatorError)?;
-            self.bucket_ref_ids.insert(bucket_ref_id, bucket_id);
-            Ok(bucket_ref_id)
+            self.proof_ids.insert(proof_id, bucket_id);
+            Ok(proof_id)
         } else {
             Err(IdValidatorError::BucketNotFound(bucket_id))
         }
     }
 
-    pub fn clone_bucket_ref(
-        &mut self,
-        bucket_ref_id: BucketRefId,
-    ) -> Result<BucketRefId, IdValidatorError> {
-        if let Some(bucket_id) = self.bucket_ref_ids.get(&bucket_ref_id).cloned() {
+    pub fn clone_proof(&mut self, proof_id: ProofId) -> Result<ProofId, IdValidatorError> {
+        if let Some(bucket_id) = self.proof_ids.get(&proof_id).cloned() {
             // for virtual badge, the corresponding bucket is not owned by transaction.
             if let Some(cnt) = self.bucket_ids.get_mut(&bucket_id) {
                 *cnt += 1;
             }
-            let bucket_ref_id = self
+            let proof_id = self
                 .id_allocator
-                .new_bucket_ref_id()
+                .new_proof_id()
                 .map_err(IdValidatorError::IdAllocatorError)?;
-            self.bucket_ref_ids.insert(bucket_ref_id, bucket_id);
-            Ok(bucket_ref_id)
+            self.proof_ids.insert(proof_id, bucket_id);
+            Ok(proof_id)
         } else {
-            Err(IdValidatorError::BucketRefNotFound(bucket_ref_id))
+            Err(IdValidatorError::ProofNotFound(proof_id))
         }
     }
 
-    pub fn drop_bucket_ref(&mut self, bucket_ref_id: BucketRefId) -> Result<(), IdValidatorError> {
-        if let Some(bucket_id) = self.bucket_ref_ids.remove(&bucket_ref_id) {
+    pub fn drop_proof(&mut self, proof_id: ProofId) -> Result<(), IdValidatorError> {
+        if let Some(bucket_id) = self.proof_ids.remove(&proof_id) {
             // for virtual badge, the corresponding bucket is not owned by transaction.
             if let Some(cnt) = self.bucket_ids.get_mut(&bucket_id) {
                 *cnt -= 1;
             }
             Ok(())
         } else {
-            Err(IdValidatorError::BucketRefNotFound(bucket_ref_id))
+            Err(IdValidatorError::ProofNotFound(proof_id))
         }
     }
 
     pub fn move_all_resources(&mut self) -> Result<(), IdValidatorError> {
-        self.bucket_ref_ids.clear();
+        self.proof_ids.clear();
         self.bucket_ids.clear();
         Ok(())
     }
@@ -107,8 +104,8 @@ impl IdValidator {
         for bucket_id in &arg.bucket_ids {
             self.drop_bucket(*bucket_id)?;
         }
-        for bucket_ref_id in &arg.bucket_ref_ids {
-            self.drop_bucket_ref(*bucket_ref_id)?;
+        for proof_id in &arg.proof_ids {
+            self.drop_proof(*proof_id)?;
         }
         Ok(())
     }

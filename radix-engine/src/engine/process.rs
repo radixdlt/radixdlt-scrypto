@@ -166,19 +166,19 @@ pub struct Process<'r, 'l, L: SubstateStore> {
     /// Buckets owned by this process
     buckets: HashMap<BucketId, Bucket>,
     /// Buckets owned by this process (but LOCKED because there is a reference to it)
-    buckets_locked: HashMap<BucketId, BucketRef>,
+    buckets_locked: HashMap<BucketId, Proof>,
     /// Bucket references
-    bucket_refs: HashMap<BucketRefId, BucketRef>,
+    proofs: HashMap<ProofId, Proof>,
     /// The buckets that will be moved to another process SHORTLY.
     moving_buckets: HashMap<BucketId, Bucket>,
-    /// The bucket refs that will be moved to another process SHORTLY.
-    moving_bucket_refs: HashMap<BucketRefId, BucketRef>,
+    /// The proofs that will be moved to another process SHORTLY.
+    moving_proofs: HashMap<ProofId, Proof>,
 
     /// State for the given wasm process, empty only on the root process
     /// (root process cannot create components nor is a component itself)
     wasm_process_state: Option<WasmProcess>,
 
-    /// ID allocator for buckets and bucket refs created within transaction.
+    /// ID allocator for buckets and proofs created within transaction.
     id_allocator: IdAllocator,
     /// Resources collected from previous CALLs returns.
     ///
@@ -199,9 +199,9 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             track,
             buckets: HashMap::new(),
             buckets_locked: HashMap::new(),
-            bucket_refs: HashMap::new(),
+            proofs: HashMap::new(),
             moving_buckets: HashMap::new(),
-            moving_bucket_refs: HashMap::new(),
+            moving_proofs: HashMap::new(),
             wasm_process_state: None,
             id_allocator: IdAllocator::new(IdSpace::Transaction),
             worktop: HashMap::new(),
@@ -308,90 +308,72 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         }
     }
 
-    // (Transaction ONLY) Creates a bucket ref.
-    pub fn create_bucket_ref(
-        &mut self,
-        bucket_id: BucketId,
-    ) -> Result<ValidatedData, RuntimeError> {
+    // (Transaction ONLY) Creates a proof.
+    pub fn create_proof(&mut self, bucket_id: BucketId) -> Result<ValidatedData, RuntimeError> {
         re_debug!(
             self,
-            "(Transaction) Creating bucket ref: bucket_id = {}",
+            "(Transaction) Creating proof: bucket_id = {}",
             bucket_id
         );
 
-        let new_bucket_ref_id = self
+        let new_proof_id = self
             .id_allocator
-            .new_bucket_ref_id()
+            .new_proof_id()
             .map_err(RuntimeError::IdAllocatorError)?;
         match self.buckets_locked.get_mut(&bucket_id) {
             Some(bucket_rc) => {
                 // re-borrow
-                self.bucket_refs
-                    .insert(new_bucket_ref_id, bucket_rc.clone());
+                self.proofs.insert(new_proof_id, bucket_rc.clone());
             }
             None => {
                 // first time borrow
-                let bucket = BucketRef::new(LockedBucket::new(
+                let bucket = Proof::new(LockedBucket::new(
                     bucket_id,
                     self.buckets
                         .remove(&bucket_id)
                         .ok_or(RuntimeError::BucketNotFound(bucket_id))?,
                 ));
                 self.buckets_locked.insert(bucket_id, bucket.clone());
-                self.bucket_refs.insert(new_bucket_ref_id, bucket);
+                self.proofs.insert(new_proof_id, bucket);
             }
         };
 
         Ok(
-            ValidatedData::from_slice(&scrypto_encode(&scrypto::resource::BucketRef(
-                new_bucket_ref_id,
-            )))
-            .unwrap(),
+            ValidatedData::from_slice(&scrypto_encode(&scrypto::resource::Proof(new_proof_id)))
+                .unwrap(),
         )
     }
 
-    // (Transaction ONLY) Clone a bucket ref.
-    pub fn clone_bucket_ref(
-        &mut self,
-        bucket_ref_id: BucketRefId,
-    ) -> Result<ValidatedData, RuntimeError> {
-        re_debug!(
-            self,
-            "(Transaction) Cloning bucket ref: bucket_ref_id = {}",
-            bucket_ref_id
-        );
+    // (Transaction ONLY) Clone a proof.
+    pub fn clone_proof(&mut self, proof_id: ProofId) -> Result<ValidatedData, RuntimeError> {
+        re_debug!(self, "(Transaction) Cloning proof: proof_id = {}", proof_id);
 
-        let new_bucket_ref_id = self
+        let new_proof_id = self
             .id_allocator
-            .new_bucket_ref_id()
+            .new_proof_id()
             .map_err(RuntimeError::IdAllocatorError)?;
-        let bucket_ref = self
-            .bucket_refs
-            .get(&bucket_ref_id)
-            .ok_or(RuntimeError::BucketRefNotFound(bucket_ref_id))?
+        let proof = self
+            .proofs
+            .get(&proof_id)
+            .ok_or(RuntimeError::ProofNotFound(proof_id))?
             .clone();
-        self.bucket_refs.insert(new_bucket_ref_id, bucket_ref);
+        self.proofs.insert(new_proof_id, proof);
 
         Ok(
-            ValidatedData::from_slice(&scrypto_encode(&scrypto::resource::Bucket(
-                new_bucket_ref_id,
-            )))
-            .unwrap(),
+            ValidatedData::from_slice(&scrypto_encode(&scrypto::resource::Bucket(new_proof_id)))
+                .unwrap(),
         )
     }
 
-    // (Transaction ONLY) Drop a bucket ref.
-    pub fn drop_bucket_ref(
-        &mut self,
-        bucket_ref_id: BucketRefId,
-    ) -> Result<ValidatedData, RuntimeError> {
+    // (Transaction ONLY) Drop a proof.
+    pub fn drop_proof(&mut self, proof_id: ProofId) -> Result<ValidatedData, RuntimeError> {
         re_debug!(
             self,
-            "(Transaction) Dropping bucket ref: bucket_ref_id = {}",
-            bucket_ref_id
+            "(Transaction) Dropping proof: proof_id = {}",
+            proof_id
         );
 
-        self.handle_drop_bucket_ref(DropBucketRefInput { bucket_ref_id })?;
+        self.handle_drop_proof(DropProofInput { proof_id })?;
 
         Ok(ValidatedData::from_slice(&scrypto_encode(&())).unwrap())
     }
@@ -413,8 +395,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         }
         self.worktop.clear();
 
-        // 2. Drop all bucket refs to unlock the buckets
-        self.drop_all_bucket_refs()?;
+        // 2. Drop all proofs to unlock the buckets
+        self.drop_all_proofs()?;
 
         // 3. Call the method with all buckets
         let to_deposit: Vec<scrypto::resource::Bucket> = self
@@ -437,26 +419,21 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         result
     }
 
-    /// (SYSTEM ONLY)  Creates a bucket ref which references a virtual bucket
-    pub fn create_virtual_bucket_ref(
-        &mut self,
-        bucket_id: BucketId,
-        bucket_ref_id: BucketRefId,
-        bucket: Bucket,
-    ) {
+    /// (SYSTEM ONLY)  Creates a proof which references a virtual bucket
+    pub fn create_virtual_proof(&mut self, bucket_id: BucketId, proof_id: ProofId, bucket: Bucket) {
         let locked_bucket = LockedBucket::new(bucket_id, bucket);
-        let bucket_ref = BucketRef::new(locked_bucket);
-        self.bucket_refs.insert(bucket_ref_id, bucket_ref);
+        let proof = Proof::new(locked_bucket);
+        self.proofs.insert(proof_id, proof);
     }
 
-    /// Moves buckets and bucket refs into this process.
+    /// Moves buckets and proofs into this process.
     pub fn move_in_resources(
         &mut self,
         buckets: HashMap<BucketId, Bucket>,
-        bucket_refs: HashMap<BucketRefId, BucketRef>,
+        proofs: HashMap<ProofId, Proof>,
     ) -> Result<(), RuntimeError> {
         if self.depth == 0 {
-            assert!(bucket_refs.is_empty());
+            assert!(proofs.is_empty());
 
             for (_, bucket) in buckets {
                 if !bucket.amount().is_zero() {
@@ -469,20 +446,18 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 }
             }
         } else {
-            self.bucket_refs.extend(bucket_refs);
+            self.proofs.extend(proofs);
             self.buckets.extend(buckets);
         }
 
         Ok(())
     }
 
-    /// Moves all marked buckets and bucket refs from this process.
-    pub fn move_out_resources(
-        &mut self,
-    ) -> (HashMap<BucketId, Bucket>, HashMap<BucketRefId, BucketRef>) {
+    /// Moves all marked buckets and proofs from this process.
+    pub fn move_out_resources(&mut self) -> (HashMap<BucketId, Bucket>, HashMap<ProofId, Proof>) {
         let buckets = self.moving_buckets.drain().collect();
-        let bucket_refs = self.moving_bucket_refs.drain().collect();
-        (buckets, bucket_refs)
+        let proofs = self.moving_proofs.drain().collect();
+        (buckets, proofs)
     }
 
     /// Runs the given export within this process.
@@ -614,18 +589,18 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         for arg in &invocation.args {
             self.process_call_data(arg, true)?;
         }
-        let (buckets_out, bucket_refs_out) = self.move_out_resources();
+        let (buckets_out, proofs_out) = self.move_out_resources();
         let mut process = Process::new(self.depth + 1, self.trace, self.track);
-        process.move_in_resources(buckets_out, bucket_refs_out)?;
+        process.move_in_resources(buckets_out, proofs_out)?;
 
         // run the function
         let result = process.run(invocation)?;
-        process.drop_all_bucket_refs()?;
+        process.drop_all_proofs()?;
         process.check_resource()?;
 
         // move resource
-        let (buckets_in, bucket_refs_in) = process.move_out_resources();
-        self.move_in_resources(buckets_in, bucket_refs_in)?;
+        let (buckets_in, proofs_in) = process.move_out_resources();
+        self.move_in_resources(buckets_in, proofs_in)?;
 
         // scan locked buckets for some might have been unlocked by child processes
         let bucket_ids: Vec<BucketId> = self
@@ -686,11 +661,11 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         result
     }
 
-    /// Drops all bucket refs owned by this process.
-    pub fn drop_all_bucket_refs(&mut self) -> Result<(), RuntimeError> {
-        let bucket_ref_ids: Vec<BucketRefId> = self.bucket_refs.keys().cloned().collect();
-        for bucket_ref_id in bucket_ref_ids {
-            self.handle_drop_bucket_ref(DropBucketRefInput { bucket_ref_id })?;
+    /// Drops all proofs owned by this process.
+    pub fn drop_all_proofs(&mut self) -> Result<(), RuntimeError> {
+        let proof_ids: Vec<ProofId> = self.proofs.keys().cloned().collect();
+        for proof_id in proof_ids {
+            self.handle_drop_proof(DropProofInput { proof_id })?;
         }
         Ok(())
     }
@@ -748,10 +723,10 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     ) -> Result<(), RuntimeError> {
         self.move_buckets(&validated.bucket_ids)?;
         if is_argument {
-            self.move_bucket_refs(&validated.bucket_ref_ids)?;
+            self.move_proofs(&validated.proof_ids)?;
         } else {
-            if !validated.bucket_ref_ids.is_empty() {
-                return Err(RuntimeError::BucketRefNotAllowed);
+            if !validated.proof_ids.is_empty() {
+                return Err(RuntimeError::ProofNotAllowed);
             }
         }
         if !validated.lazy_map_ids.is_empty() {
@@ -770,8 +745,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         if !validated.bucket_ids.is_empty() {
             return Err(RuntimeError::BucketNotAllowed);
         }
-        if !validated.bucket_ref_ids.is_empty() {
-            return Err(RuntimeError::BucketRefNotAllowed);
+        if !validated.proof_ids.is_empty() {
+            return Err(RuntimeError::ProofNotAllowed);
         }
 
         let mut lazy_map_ids = HashSet::new();
@@ -804,8 +779,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         if !validated.bucket_ids.is_empty() {
             return Err(RuntimeError::BucketNotAllowed);
         }
-        if !validated.bucket_ref_ids.is_empty() {
-            return Err(RuntimeError::BucketRefNotAllowed);
+        if !validated.proof_ids.is_empty() {
+            return Err(RuntimeError::ProofNotAllowed);
         }
         if !validated.lazy_map_ids.is_empty() {
             return Err(RuntimeError::LazyMapNotAllowed);
@@ -830,19 +805,14 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     }
 
     /// Remove transient buckets from this process
-    fn move_bucket_refs(&mut self, bucket_refs: &[BucketRefId]) -> Result<(), RuntimeError> {
-        for bucket_ref_id in bucket_refs {
-            let bucket_ref = self
-                .bucket_refs
-                .remove(bucket_ref_id)
-                .ok_or(RuntimeError::BucketRefNotFound(*bucket_ref_id))?;
-            re_debug!(
-                self,
-                "Moving bucket ref: {}, {:?}",
-                bucket_ref_id,
-                bucket_ref
-            );
-            self.moving_bucket_refs.insert(*bucket_ref_id, bucket_ref);
+    fn move_proofs(&mut self, proofs: &[ProofId]) -> Result<(), RuntimeError> {
+        for proof_id in proofs {
+            let proof = self
+                .proofs
+                .remove(proof_id)
+                .ok_or(RuntimeError::ProofNotFound(*proof_id))?;
+            re_debug!(self, "Moving proof: {}, {:?}", proof_id, proof);
+            self.moving_proofs.insert(*proof_id, proof);
         }
         Ok(())
     }
@@ -939,23 +909,23 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
     fn check_badge(
         &mut self,
-        optional_bucket_ref_id: Option<BucketRefId>,
+        optional_proof_id: Option<ProofId>,
     ) -> Result<Option<ResourceDefRef>, RuntimeError> {
-        if let Some(bucket_ref_id) = optional_bucket_ref_id {
-            // retrieve bucket reference
-            let bucket_ref = self
-                .bucket_refs
-                .get(&bucket_ref_id)
-                .ok_or(RuntimeError::BucketRefNotFound(bucket_ref_id))?;
+        if let Some(proof_id) = optional_proof_id {
+            // retrieve proof
+            let proof = self
+                .proofs
+                .get(&proof_id)
+                .ok_or(RuntimeError::ProofNotFound(proof_id))?;
 
             // read amount
-            if bucket_ref.bucket().amount().is_zero() {
-                return Err(RuntimeError::EmptyBucketRef);
+            if proof.bucket().amount().is_zero() {
+                return Err(RuntimeError::EmptyProof);
             }
-            let resource_def_ref = bucket_ref.bucket().resource_def_ref();
+            let resource_def_ref = proof.bucket().resource_def_ref();
 
-            // drop bucket reference after use
-            self.handle_drop_bucket_ref(DropBucketRefInput { bucket_ref_id })?;
+            // drop proof after use
+            self.handle_drop_proof(DropProofInput { proof_id })?;
 
             Ok(Some(resource_def_ref))
         } else {
@@ -1890,57 +1860,53 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         })
     }
 
-    fn handle_create_bucket_ref(
+    fn handle_create_proof(
         &mut self,
-        input: CreateBucketRefInput,
-    ) -> Result<CreateBucketRefOutput, RuntimeError> {
+        input: CreateProofInput,
+    ) -> Result<CreateProofOutput, RuntimeError> {
         let bucket_id = input.bucket_id;
-        let bucket_ref_id = self.track.new_bucket_ref_id();
+        let proof_id = self.track.new_proof_id();
         re_debug!(
             self,
-            "Borrowing: bucket_id = {}, bucket_ref_id = {}",
+            "Borrowing: bucket_id = {}, proof_id = {}",
             bucket_id,
-            bucket_ref_id
+            proof_id
         );
 
         match self.buckets_locked.get_mut(&bucket_id) {
             Some(bucket_rc) => {
                 // re-borrow
-                self.bucket_refs.insert(bucket_ref_id, bucket_rc.clone());
+                self.proofs.insert(proof_id, bucket_rc.clone());
             }
             None => {
                 // first time borrow
-                let bucket = BucketRef::new(LockedBucket::new(
+                let bucket = Proof::new(LockedBucket::new(
                     bucket_id,
                     self.buckets
                         .remove(&bucket_id)
                         .ok_or(RuntimeError::BucketNotFound(bucket_id))?,
                 ));
                 self.buckets_locked.insert(bucket_id, bucket.clone());
-                self.bucket_refs.insert(bucket_ref_id, bucket);
+                self.proofs.insert(proof_id, bucket);
             }
         }
 
-        Ok(CreateBucketRefOutput { bucket_ref_id })
+        Ok(CreateProofOutput { proof_id })
     }
 
-    fn handle_drop_bucket_ref(
+    fn handle_drop_proof(
         &mut self,
-        input: DropBucketRefInput,
-    ) -> Result<DropBucketRefOutput, RuntimeError> {
-        let bucket_ref_id = input.bucket_ref_id;
+        input: DropProofInput,
+    ) -> Result<DropProofOutput, RuntimeError> {
+        let proof_id = input.proof_id;
 
         let (count, bucket_id) = {
-            let bucket_ref = self
-                .bucket_refs
-                .remove(&bucket_ref_id)
-                .ok_or(RuntimeError::BucketRefNotFound(bucket_ref_id))?;
-            re_debug!(
-                self,
-                "Dropping bucket ref: bucket_ref_id = {}",
-                bucket_ref_id
-            );
-            (Rc::strong_count(&bucket_ref) - 1, bucket_ref.bucket_id())
+            let proof = self
+                .proofs
+                .remove(&proof_id)
+                .ok_or(RuntimeError::ProofNotFound(proof_id))?;
+            re_debug!(self, "Dropping proof: proof_id = {}", proof_id);
+            (Rc::strong_count(&proof) - 1, proof.bucket_id())
         };
 
         if count == 1 {
@@ -1950,75 +1916,75 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             }
         }
 
-        Ok(DropBucketRefOutput {})
+        Ok(DropProofOutput {})
     }
 
-    fn handle_get_bucket_ref_amount(
+    fn handle_get_proof_amount(
         &mut self,
-        input: GetBucketRefDecimalInput,
-    ) -> Result<GetBucketRefDecimalOutput, RuntimeError> {
-        let bucket_ref = self
-            .bucket_refs
-            .get(&input.bucket_ref_id)
-            .ok_or(RuntimeError::BucketRefNotFound(input.bucket_ref_id))?;
+        input: GetProofDecimalInput,
+    ) -> Result<GetProofDecimalOutput, RuntimeError> {
+        let proof = self
+            .proofs
+            .get(&input.proof_id)
+            .ok_or(RuntimeError::ProofNotFound(input.proof_id))?;
 
-        Ok(GetBucketRefDecimalOutput {
-            amount: bucket_ref.bucket().amount(),
+        Ok(GetProofDecimalOutput {
+            amount: proof.bucket().amount(),
         })
     }
 
-    fn handle_get_bucket_ref_resource_def_ref(
+    fn handle_get_proof_resource_def_ref(
         &mut self,
-        input: GetBucketRefResourceDefRefInput,
-    ) -> Result<GetBucketRefResourceDefRefOutput, RuntimeError> {
-        let bucket_ref = self
-            .bucket_refs
-            .get(&input.bucket_ref_id)
-            .ok_or(RuntimeError::BucketRefNotFound(input.bucket_ref_id))?;
+        input: GetProofResourceDefRefInput,
+    ) -> Result<GetProofResourceDefRefOutput, RuntimeError> {
+        let proof = self
+            .proofs
+            .get(&input.proof_id)
+            .ok_or(RuntimeError::ProofNotFound(input.proof_id))?;
 
-        Ok(GetBucketRefResourceDefRefOutput {
-            resource_def_ref: bucket_ref.bucket().resource_def_ref(),
+        Ok(GetProofResourceDefRefOutput {
+            resource_def_ref: proof.bucket().resource_def_ref(),
         })
     }
 
-    fn handle_get_non_fungible_keys_in_bucket_ref(
+    fn handle_get_non_fungible_keys_in_proof(
         &mut self,
-        input: GetNonFungibleKeysInBucketRefInput,
-    ) -> Result<GetNonFungibleKeysInBucketRefOutput, RuntimeError> {
-        let bucket_ref = self
-            .bucket_refs
-            .get(&input.bucket_ref_id)
-            .ok_or(RuntimeError::BucketRefNotFound(input.bucket_ref_id))?;
+        input: GetNonFungibleKeysInProofInput,
+    ) -> Result<GetNonFungibleKeysInProofOutput, RuntimeError> {
+        let proof = self
+            .proofs
+            .get(&input.proof_id)
+            .ok_or(RuntimeError::ProofNotFound(input.proof_id))?;
 
-        Ok(GetNonFungibleKeysInBucketRefOutput {
-            keys: bucket_ref
+        Ok(GetNonFungibleKeysInProofOutput {
+            keys: proof
                 .bucket()
                 .get_non_fungible_keys()
                 .map_err(RuntimeError::BucketError)?,
         })
     }
 
-    fn handle_clone_bucket_ref(
+    fn handle_clone_proof(
         &mut self,
-        input: CloneBucketRefInput,
-    ) -> Result<CloneBucketRefOutput, RuntimeError> {
-        let bucket_ref = self
-            .bucket_refs
-            .get(&input.bucket_ref_id)
-            .ok_or(RuntimeError::BucketRefNotFound(input.bucket_ref_id))?
+        input: CloneProofInput,
+    ) -> Result<CloneProofOutput, RuntimeError> {
+        let proof = self
+            .proofs
+            .get(&input.proof_id)
+            .ok_or(RuntimeError::ProofNotFound(input.proof_id))?
             .clone();
 
-        let new_bucket_ref_id = self.track.new_bucket_ref_id();
+        let new_proof_id = self.track.new_proof_id();
         re_debug!(
             self,
-            "Cloning: bucket_ref_id = {}, new bucket_ref_id = {}",
-            input.bucket_ref_id,
-            new_bucket_ref_id
+            "Cloning: proof_id = {}, new proof_id = {}",
+            input.proof_id,
+            new_proof_id
         );
 
-        self.bucket_refs.insert(new_bucket_ref_id, bucket_ref);
-        Ok(CloneBucketRefOutput {
-            bucket_ref_id: new_bucket_ref_id,
+        self.proofs.insert(new_proof_id, proof);
+        Ok(CloneProofOutput {
+            proof_id: new_proof_id,
         })
     }
 
@@ -2166,16 +2132,16 @@ impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
                         self.handle(args, Self::handle_get_non_fungible_keys_in_bucket)
                     }
 
-                    CREATE_BUCKET_REF => self.handle(args, Self::handle_create_bucket_ref),
-                    DROP_BUCKET_REF => self.handle(args, Self::handle_drop_bucket_ref),
-                    GET_BUCKET_REF_AMOUNT => self.handle(args, Self::handle_get_bucket_ref_amount),
-                    GET_BUCKET_REF_RESOURCE_DEF_REF => {
-                        self.handle(args, Self::handle_get_bucket_ref_resource_def_ref)
+                    CREATE_PROOF => self.handle(args, Self::handle_create_proof),
+                    DROP_PROOF => self.handle(args, Self::handle_drop_proof),
+                    GET_PROOF_AMOUNT => self.handle(args, Self::handle_get_proof_amount),
+                    GET_PROOF_RESOURCE_DEF_REF => {
+                        self.handle(args, Self::handle_get_proof_resource_def_ref)
                     }
-                    GET_NON_FUNGIBLE_KEYS_IN_BUCKET_REF => {
-                        self.handle(args, Self::handle_get_non_fungible_keys_in_bucket_ref)
+                    GET_NON_FUNGIBLE_KEYS_IN_PROOF => {
+                        self.handle(args, Self::handle_get_non_fungible_keys_in_proof)
                     }
-                    CLONE_BUCKET_REF => self.handle(args, Self::handle_clone_bucket_ref),
+                    CLONE_PROOF => self.handle(args, Self::handle_clone_proof),
 
                     EMIT_LOG => self.handle(args, Self::handle_emit_log),
                     GET_CALL_DATA => self.handle(args, Self::handle_get_call_data),

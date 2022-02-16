@@ -16,7 +16,7 @@ pub use crate::resource::Supply;
 
 pub type LazyMapId = (Hash, u32);
 pub type BucketId = u32;
-pub type BucketRefId = u32;
+pub type ProofId = u32;
 pub type VaultId = (Hash, u32);
 
 pub use crate::constants::*;

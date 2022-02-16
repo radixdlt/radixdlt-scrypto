@@ -18,7 +18,7 @@ pub struct ValidatedData {
     pub raw: Vec<u8>,
     pub dom: Value,
     pub bucket_ids: Vec<BucketId>,
-    pub bucket_ref_ids: Vec<BucketRefId>,
+    pub proof_ids: Vec<ProofId>,
     pub vault_ids: Vec<VaultId>,
     pub lazy_map_ids: Vec<LazyMapId>,
 }
@@ -37,7 +37,7 @@ impl ValidatedData {
             raw: slice.to_vec(),
             dom: value,
             bucket_ids: validator.buckets.iter().map(|e| e.0).collect(),
-            bucket_ref_ids: validator.bucket_refs.iter().map(|e| e.0).collect(),
+            proof_ids: validator.proofs.iter().map(|e| e.0).collect(),
             vault_ids: validator.vaults.iter().map(|e| e.0).collect(),
             lazy_map_ids: validator.lazy_maps.iter().map(|e| e.id).collect(),
         })
@@ -67,7 +67,7 @@ impl fmt::Display for ValidatedData {
 pub fn format_value(
     value: &Value,
     bucket_ids: &HashMap<BucketId, String>,
-    bucket_ref_ids: &HashMap<BucketRefId, String>,
+    proof_ids: &HashMap<ProofId, String>,
 ) -> String {
     match value {
         // primitive types
@@ -85,12 +85,11 @@ pub fn format_value(
         Value::U128(v) => format!("{}u128", v),
         Value::String(v) => format!("\"{}\"", v),
         // struct & enum
-        Value::Struct(fields) => format!(
-            "Struct({})",
-            format_fields(fields, bucket_ids, bucket_ref_ids)
-        ),
+        Value::Struct(fields) => {
+            format!("Struct({})", format_fields(fields, bucket_ids, proof_ids))
+        }
         Value::Enum(index, fields) => {
-            let fields = format_fields(fields, bucket_ids, bucket_ref_ids);
+            let fields = format_fields(fields, bucket_ids, proof_ids);
             format!(
                 "Enum({}u8{}{})",
                 index,
@@ -100,59 +99,56 @@ pub fn format_value(
         }
         // rust types
         Value::Option(v) => match v.borrow() {
-            Some(x) => format!("Some({})", format_value(x, bucket_ids, bucket_ref_ids)),
+            Some(x) => format!("Some({})", format_value(x, bucket_ids, proof_ids)),
             None => "None".to_string(),
         },
-        Value::Box(v) => format!(
-            "Box({})",
-            format_value(v.borrow(), bucket_ids, bucket_ref_ids)
-        ),
+        Value::Box(v) => format!("Box({})", format_value(v.borrow(), bucket_ids, proof_ids)),
         Value::Array(kind, elements) => format!(
             "Array<{}>({})",
             format_kind(*kind),
-            format_elements(elements, bucket_ids, bucket_ref_ids)
+            format_elements(elements, bucket_ids, proof_ids)
         ),
         Value::Tuple(elements) => format!(
             "Tuple({})",
-            format_elements(elements, bucket_ids, bucket_ref_ids)
+            format_elements(elements, bucket_ids, proof_ids)
         ),
         Value::Result(v) => match v.borrow() {
-            Ok(x) => format!("Ok({})", format_value(x, bucket_ids, bucket_ref_ids)),
-            Err(x) => format!("Err({})", format_value(x, bucket_ids, bucket_ref_ids)),
+            Ok(x) => format!("Ok({})", format_value(x, bucket_ids, proof_ids)),
+            Err(x) => format!("Err({})", format_value(x, bucket_ids, proof_ids)),
         },
         // collections
         Value::Vec(kind, elements) => {
             format!(
                 "Vec<{}>({})",
                 format_kind(*kind),
-                format_elements(elements, bucket_ids, bucket_ref_ids)
+                format_elements(elements, bucket_ids, proof_ids)
             )
         }
         Value::TreeSet(kind, elements) => format!(
             "TreeSet<{}>({})",
             format_kind(*kind),
-            format_elements(elements, bucket_ids, bucket_ref_ids)
+            format_elements(elements, bucket_ids, proof_ids)
         ),
         Value::HashSet(kind, elements) => format!(
             "HashSet<{}>({})",
             format_kind(*kind),
-            format_elements(elements, bucket_ids, bucket_ref_ids)
+            format_elements(elements, bucket_ids, proof_ids)
         ),
         Value::TreeMap(key, value, elements) => format!(
             "TreeMap<{}, {}>({})",
             format_kind(*key),
             format_kind(*value),
-            format_elements(elements, bucket_ids, bucket_ref_ids)
+            format_elements(elements, bucket_ids, proof_ids)
         ),
         Value::HashMap(key, value, elements) => format!(
             "HashMap<{}, {}>({})",
             format_kind(*key),
             format_kind(*value),
-            format_elements(elements, bucket_ids, bucket_ref_ids)
+            format_elements(elements, bucket_ids, proof_ids)
         ),
         // custom types
         Value::Custom(kind, data) => {
-            CustomValueFormatter::format(*kind, data, bucket_ids, bucket_ref_ids)
+            CustomValueFormatter::format(*kind, data, bucket_ids, proof_ids)
         }
     }
 }
@@ -200,14 +196,14 @@ pub fn format_kind(kind: u8) -> String {
 pub fn format_fields(
     fields: &Fields,
     bucket_ids: &HashMap<BucketId, String>,
-    bucket_ref_ids: &HashMap<BucketRefId, String>,
+    proof_ids: &HashMap<ProofId, String>,
 ) -> String {
     match fields {
         Fields::Named(named) => {
-            format!("{{{}}}", format_elements(named, bucket_ids, bucket_ref_ids))
+            format!("{{{}}}", format_elements(named, bucket_ids, proof_ids))
         }
         Fields::Unnamed(unnamed) => {
-            format!("({})", format_elements(unnamed, bucket_ids, bucket_ref_ids))
+            format!("({})", format_elements(unnamed, bucket_ids, proof_ids))
         }
         Fields::Unit => "".into(),
     }
@@ -216,14 +212,14 @@ pub fn format_fields(
 pub fn format_elements(
     values: &[Value],
     bucket_ids: &HashMap<BucketId, String>,
-    bucket_ref_ids: &HashMap<BucketRefId, String>,
+    proof_ids: &HashMap<ProofId, String>,
 ) -> String {
     let mut buf = String::new();
     for (i, x) in values.iter().enumerate() {
         if i != 0 {
             buf.push_str(", ");
         }
-        buf.push_str(format_value(x, bucket_ids, bucket_ref_ids).as_str());
+        buf.push_str(format_value(x, bucket_ids, proof_ids).as_str());
     }
     buf
 }

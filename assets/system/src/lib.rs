@@ -32,11 +32,7 @@ blueprint! {
         }
 
         /// Mints fungible resource.
-        pub fn mint(
-            amount: Decimal,
-            mut resource_def_ref: ResourceDefRef,
-            auth: BucketRef,
-        ) -> Bucket {
+        pub fn mint(amount: Decimal, mut resource_def_ref: ResourceDefRef, auth: Proof) -> Bucket {
             resource_def_ref.mint(amount, auth)
         }
 

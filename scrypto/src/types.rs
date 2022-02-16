@@ -3,7 +3,7 @@ use sbor::{any::*, *};
 use crate::core::*;
 use crate::crypto::*;
 use crate::engine::types::BucketId;
-use crate::engine::types::BucketRefId;
+use crate::engine::types::ProofId;
 use crate::math::*;
 use crate::resource::*;
 use crate::rust::borrow::ToOwned;
@@ -72,7 +72,7 @@ pub enum CustomType {
 
     // resource,
     Bucket,
-    BucketRef,
+    Proof,
     Vault,
     NonFungibleKey,
     ResourceDefRef,
@@ -86,7 +86,7 @@ const MAPPING: [(CustomType, u8, &str); 11] = [
     (CustomType::Decimal, 0xa1, "Decimal"),
     (CustomType::BigDecimal, 0xa2, "BigDecimal"),
     (CustomType::Bucket, 0xb1, "Bucket"),
-    (CustomType::BucketRef, 0xb2, "BucketRef"),
+    (CustomType::Proof, 0xb2, "Proof"),
     (CustomType::Vault, 0xb3, "Vault"),
     (CustomType::NonFungibleKey, 0xb4, "NonFungibleKey"),
     (CustomType::ResourceDefRef, 0xb5, "ResourceDefRef"),
@@ -125,7 +125,7 @@ impl CustomType {
 
 pub struct CustomValueValidator {
     pub buckets: Vec<Bucket>,
-    pub bucket_refs: Vec<BucketRef>,
+    pub proofs: Vec<Proof>,
     pub vaults: Vec<Vault>,
     pub lazy_maps: Vec<LazyMap<(), ()>>,
 }
@@ -141,7 +141,7 @@ pub enum CustomValueValidatorError {
     InvalidResourceDefRef(ParseResourceDefRefError),
     InvalidHash(ParseHashError),
     InvalidBucket(ParseBucketError),
-    InvalidBucketRef(ParseBucketRefError),
+    InvalidProof(ParseProofError),
     InvalidLazyMap(ParseLazyMapError),
     InvalidVault(ParseVaultError),
     InvalidNonFungibleKey(ParseNonFungibleKeyError),
@@ -151,7 +151,7 @@ impl CustomValueValidator {
     pub fn new() -> Self {
         Self {
             buckets: Vec::new(),
-            bucket_refs: Vec::new(),
+            proofs: Vec::new(),
             vaults: Vec::new(),
             lazy_maps: Vec::new(),
         }
@@ -189,11 +189,9 @@ impl CustomValueVisitor for CustomValueValidator {
                     Bucket::try_from(data).map_err(CustomValueValidatorError::InvalidBucket)?,
                 );
             }
-            CustomType::BucketRef => {
-                self.bucket_refs.push(
-                    BucketRef::try_from(data)
-                        .map_err(CustomValueValidatorError::InvalidBucketRef)?,
-                );
+            CustomType::Proof => {
+                self.proofs
+                    .push(Proof::try_from(data).map_err(CustomValueValidatorError::InvalidProof)?);
             }
             CustomType::Vault => {
                 self.vaults
@@ -223,7 +221,7 @@ impl CustomValueFormatter {
         type_id: u8,
         data: &[u8],
         bucket_ids: &HashMap<BucketId, String>,
-        bucket_ref_ids: &HashMap<BucketRefId, String>,
+        proof_ids: &HashMap<ProofId, String>,
     ) -> String {
         match CustomType::from_id(type_id).unwrap() {
             CustomType::Decimal => format!("Decimal(\"{}\")", Decimal::try_from(data).unwrap()),
@@ -252,12 +250,12 @@ impl CustomValueFormatter {
                     format!("Bucket({}u32)", bucket.0)
                 }
             }
-            CustomType::BucketRef => {
-                let bucket_ref = BucketRef::try_from(data).unwrap();
-                if let Some(name) = bucket_ref_ids.get(&bucket_ref.0) {
-                    format!("BucketRef(\"{}\")", name)
+            CustomType::Proof => {
+                let proof = Proof::try_from(data).unwrap();
+                if let Some(name) = proof_ids.get(&proof.0) {
+                    format!("Proof(\"{}\")", name)
                 } else {
-                    format!("BucketRef({}u32)", bucket_ref.0)
+                    format!("Proof({}u32)", proof.0)
                 }
             }
             CustomType::Vault => format!("Vault(\"{}\")", Vault::try_from(data).unwrap()),

@@ -31,18 +31,18 @@ pub enum Instruction {
         resource_def_ref: Value,
     },
 
-    CreateBucketRef {
+    CreateProof {
         bucket: Value,
-        new_bucket_ref: Value,
+        new_proof: Value,
     },
 
-    CloneBucketRef {
-        bucket_ref: Value,
-        new_bucket_ref: Value,
+    CloneProof {
+        proof: Value,
+        new_proof: Value,
     },
 
-    DropBucketRef {
-        bucket_ref: Value,
+    DropProof {
+        proof: Value,
     },
 
     CallFunction {
@@ -103,7 +103,7 @@ pub enum Type {
     ResourceDefRef,
     Hash,
     Bucket,
-    BucketRef,
+    Proof,
     NonFungibleKey,
 }
 
@@ -143,7 +143,7 @@ pub enum Value {
     ResourceDefRef(Box<Value>),
     Hash(Box<Value>),
     Bucket(Box<Value>),
-    BucketRef(Box<Value>),
+    Proof(Box<Value>),
     NonFungibleKey(Box<Value>),
 }
 
@@ -191,7 +191,7 @@ impl Value {
             Value::ResourceDefRef(_) => Type::ResourceDefRef,
             Value::Hash(_) => Type::Hash,
             Value::Bucket(_) => Type::Bucket,
-            Value::BucketRef(_) => Type::BucketRef,
+            Value::Proof(_) => Type::Proof,
             Value::NonFungibleKey(_) => Type::NonFungibleKey,
         }
     }

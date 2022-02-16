@@ -77,7 +77,7 @@ r#"
                     },
                     {
                         "type": "Custom",
-                        "name": "BucketRef",
+                        "name": "Proof",
                         "generics": []
                     }
                 ],
@@ -187,14 +187,14 @@ blueprint! {
         }
 
         /// Deposits SNX into my staking account
-        pub fn stake(&mut self, user_auth: BucketRef, stake_in_snx: Bucket) {
+        pub fn stake(&mut self, user_auth: Proof, stake_in_snx: Bucket) {
             let user_id = Self::get_user_id(user_auth);
             let mut user = self.get_user(user_id, true);
             user.snx.put(stake_in_snx);
         }
 
         /// Withdraws SNX from my staking account.
-        pub fn unstake(&mut self, user_auth: BucketRef, amount: Decimal) -> Bucket {
+        pub fn unstake(&mut self, user_auth: Proof, amount: Decimal) -> Bucket {
             let user_id = Self::get_user_id(user_auth);
             let mut user = self.get_user(user_id, false);
 
@@ -209,7 +209,7 @@ blueprint! {
         }
 
         /// Mints synthetics tokens
-        pub fn mint(&mut self, user_auth: BucketRef, amount: Decimal, symbol: String) -> Bucket {
+        pub fn mint(&mut self, user_auth: Proof, amount: Decimal, symbol: String) -> Bucket {
             let user_id = Self::get_user_id(user_auth);
             let mut user = self.get_user(user_id, false);
 
@@ -242,7 +242,7 @@ blueprint! {
         }
 
         /// Burns synthetic tokens
-        pub fn burn(&mut self, user_auth: BucketRef, bucket: Bucket) {
+        pub fn burn(&mut self, user_auth: Proof, bucket: Bucket) {
             let user_id = Self::get_user_id(user_auth);
             let mut user = self.get_user(user_id, false);
 
@@ -315,8 +315,8 @@ blueprint! {
                 .initial_supply_fungible(1)
         }
 
-        /// Parse user id from a bucket ref.
-        fn get_user_id(user_auth: BucketRef) -> ResourceDefRef {
+        /// Parse user id from a proof.
+        fn get_user_id(user_auth: Proof) -> ResourceDefRef {
             assert!(user_auth.amount() > 0.into(), "Invalid user proof");
             user_auth.resource_def_ref()
         }

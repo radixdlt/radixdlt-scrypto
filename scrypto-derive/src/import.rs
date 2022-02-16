@@ -330,7 +330,7 @@ fn get_native_type(ty: &des::Type) -> Result<(Type, Vec<Item>)> {
                 "Decimal" => "::scrypto::math::Decimal",
                 "BigDecimal" => "::scrypto::math::BigDecimal",
                 "Bucket" => "::scrypto::resource::Bucket",
-                "BucketRef" => "::scrypto::resource::BucketRef",
+                "Proof" => "::scrypto::resource::Proof",
                 "Vault" => "::scrypto::resource::Vault",
                 "NonFungibleKey" => "::scrypto::resource::NonFungibleKey",
                 "ResourceDefRef" => "::scrypto::resource::ResourceDefRef",

@@ -280,13 +280,7 @@ fn test_call() {
 
     let transaction = TransactionBuilder::new(&executor)
         .call_function(package, "MoveTest", "move_bucket", vec![], Some(account))
-        .call_function(
-            package,
-            "MoveTest",
-            "move_bucket_ref",
-            vec![],
-            Some(account),
-        )
+        .call_function(package, "MoveTest", "move_proof", vec![], Some(account))
         .call_method_with_all_resources(account, "deposit_batch")
         .build(vec![key])
         .unwrap();

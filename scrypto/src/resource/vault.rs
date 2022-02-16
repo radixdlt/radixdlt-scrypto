@@ -56,7 +56,7 @@ impl Vault {
     ///
     /// This variant of `take` accepts an additional auth parameter to support resources
     /// with or without `RESTRICTED_TRANSFER` flag on.
-    pub fn take_with_auth<A: Into<Decimal>>(&mut self, amount: A, auth: BucketRef) -> Bucket {
+    pub fn take_with_auth<A: Into<Decimal>>(&mut self, amount: A, auth: Proof) -> Bucket {
         let input = TakeFromVaultInput {
             vault_id: self.0,
             amount: amount.into(),
@@ -76,7 +76,7 @@ impl Vault {
     ///
     /// This variant of `take_all` accepts an additional auth parameter to support resources
     /// with or without `RESTRICTED_TRANSFER` flag on.
-    pub fn take_all_with_auth(&mut self, auth: BucketRef) -> Bucket {
+    pub fn take_all_with_auth(&mut self, auth: Proof) -> Bucket {
         self.take_with_auth(self.amount(), auth)
     }
 
@@ -103,7 +103,7 @@ impl Vault {
     ///
     /// # Panics
     /// Panics if this is not a non-fungible vault or the specified non-fungible is not found.
-    pub fn take_non_fungible_with_auth(&self, key: &NonFungibleKey, auth: BucketRef) -> Bucket {
+    pub fn take_non_fungible_with_auth(&self, key: &NonFungibleKey, auth: Proof) -> Bucket {
         let input = TakeNonFungibleFromVaultInput {
             vault_id: self.0,
             key: key.clone(),
@@ -119,11 +119,11 @@ impl Vault {
     ///
     /// It conducts the following actions in one shot:
     /// 1. Takes `1` resource from this vault into a bucket;
-    /// 2. Creates a `BucketRef`.
-    /// 3. Applies the specified function `f` with the created bucket reference;
+    /// 2. Creates a `Proof`.
+    /// 3. Applies the specified function `f` with the created proof;
     /// 4. Puts the `1` resource back into this vault.
     ///
-    pub fn authorize<F: FnOnce(BucketRef) -> O, O>(&mut self, f: F) -> O {
+    pub fn authorize<F: FnOnce(Proof) -> O, O>(&mut self, f: F) -> O {
         let bucket = self.take(1);
         let output = f(bucket.present());
         self.put(bucket);
@@ -134,18 +134,14 @@ impl Vault {
     ///
     /// It conducts the following actions in one shot:
     /// 1. Takes `1` resource from this vault into a bucket;
-    /// 2. Creates a `BucketRef`.
-    /// 3. Applies the specified function `f` with the created bucket reference;
+    /// 2. Creates a `Proof`.
+    /// 3. Applies the specified function `f` with the created proof;
     /// 4. Puts the `1` resource back into this vault.
     ///
     /// This variant of `authorize` accepts an additional auth parameter to support resources
     /// with or without `RESTRICTED_TRANSFER` flag on.
     ///
-    pub fn authorize_with_auth<F: FnOnce(BucketRef) -> O, O>(
-        &mut self,
-        f: F,
-        auth: BucketRef,
-    ) -> O {
+    pub fn authorize_with_auth<F: FnOnce(Proof) -> O, O>(&mut self, f: F, auth: Proof) -> O {
         let bucket = self.take_with_auth(1, auth);
         let output = f(bucket.present());
         self.put(bucket);
@@ -231,7 +227,7 @@ impl Vault {
         &self,
         id: &NonFungibleKey,
         new_data: T,
-        auth: BucketRef,
+        auth: Proof,
     ) {
         self.resource_def_ref()
             .update_non_fungible_data(id, new_data, auth)

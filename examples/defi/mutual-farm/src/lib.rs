@@ -87,7 +87,7 @@ r#"
                 },
                 {
                     "type": "Custom",
-                    "name": "BucketRef",
+                    "name": "Proof",
                     "generics": []
                 }
             ],
@@ -173,7 +173,7 @@ r#"
             "inputs": [
                 {
                     "type": "Custom",
-                    "name": "BucketRef",
+                    "name": "Proof",
                     "generics": []
                 },
                 {
@@ -192,7 +192,7 @@ r#"
             "inputs": [
                 {
                     "type": "Custom",
-                    "name": "BucketRef",
+                    "name": "Proof",
                     "generics": []
                 },
                 {
@@ -213,7 +213,7 @@ r#"
             "inputs": [
                 {
                     "type": "Custom",
-                    "name": "BucketRef",
+                    "name": "Proof",
                     "generics": []
                 },
                 {
@@ -237,7 +237,7 @@ r#"
             "inputs": [
                 {
                     "type": "Custom",
-                    "name": "BucketRef",
+                    "name": "Proof",
                     "generics": []
                 },
                 {

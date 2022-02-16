@@ -34,7 +34,7 @@ blueprint! {
         /// Creates a position.
         pub fn new_position(
             &mut self,
-            user_auth: BucketRef,
+            user_auth: Proof,
             margin: Bucket,
             leverage: Decimal,
             position_type: String, // TODO: make CLI support enum
@@ -59,7 +59,7 @@ blueprint! {
         }
 
         /// Settles a position.
-        pub fn settle_position(&mut self, user_auth: BucketRef, nth: usize) -> Bucket {
+        pub fn settle_position(&mut self, user_auth: Proof, nth: usize) -> Bucket {
             let user_id = Self::get_user_id(user_auth);
             self.settle_internal(user_id, nth)
         }
@@ -103,8 +103,8 @@ blueprint! {
                 .initial_supply_fungible(1)
         }
 
-        /// Parse user id from a bucket ref.
-        fn get_user_id(user_auth: BucketRef) -> ResourceDefRef {
+        /// Parse user id from a proof.
+        fn get_user_id(user_auth: Proof) -> ResourceDefRef {
             assert!(user_auth.amount() > 0.into(), "Invalid user proof");
             user_auth.resource_def_ref()
         }

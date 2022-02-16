@@ -1,6 +1,6 @@
 use sbor::{describe::Type, *};
 
-use crate::engine::{api::*, call_engine, types::BucketRefId};
+use crate::engine::{api::*, call_engine, types::ProofId};
 use crate::math::*;
 use crate::misc::*;
 use crate::resource::*;
@@ -11,24 +11,22 @@ use crate::types::*;
 
 /// Represents a reference to a bucket.
 #[derive(Debug)]
-pub struct BucketRef(pub BucketRefId);
+pub struct Proof(pub ProofId);
 
-impl Clone for BucketRef {
+impl Clone for Proof {
     fn clone(&self) -> Self {
-        let input = CloneBucketRefInput {
-            bucket_ref_id: self.0,
-        };
-        let output: CloneBucketRefOutput = call_engine(CLONE_BUCKET_REF, input);
+        let input = CloneProofInput { proof_id: self.0 };
+        let output: CloneProofOutput = call_engine(CLONE_PROOF, input);
 
-        Self(output.bucket_ref_id)
+        Self(output.proof_id)
     }
 }
 
-impl BucketRef {
+impl Proof {
     /// Checks if the referenced bucket contains the given resource, and aborts if not so.
     pub fn check(&self, resource_def_ref: ResourceDefRef) {
         if !self.contains(resource_def_ref) {
-            panic!("BucketRef check failed");
+            panic!("Proof check failed");
         }
     }
 
@@ -38,7 +36,7 @@ impl BucketRef {
         f: F,
     ) {
         if !self.contains(resource_def_ref) || !self.get_non_fungible_keys().iter().any(f) {
-            panic!("BucketRef check failed");
+            panic!("Proof check failed");
         }
     }
 
@@ -49,21 +47,16 @@ impl BucketRef {
 
     /// Returns the resource amount within the bucket.
     pub fn amount(&self) -> Decimal {
-        let input = GetBucketRefDecimalInput {
-            bucket_ref_id: self.0,
-        };
-        let output: GetBucketRefDecimalOutput = call_engine(GET_BUCKET_REF_AMOUNT, input);
+        let input = GetProofDecimalInput { proof_id: self.0 };
+        let output: GetProofDecimalOutput = call_engine(GET_PROOF_AMOUNT, input);
 
         output.amount
     }
 
     /// Returns the resource definition of resources within the bucket.
     pub fn resource_def_ref(&self) -> ResourceDefRef {
-        let input = GetBucketRefResourceDefRefInput {
-            bucket_ref_id: self.0,
-        };
-        let output: GetBucketRefResourceDefRefOutput =
-            call_engine(GET_BUCKET_REF_RESOURCE_DEF_REF, input);
+        let input = GetProofResourceDefRefInput { proof_id: self.0 };
+        let output: GetProofResourceDefRefOutput = call_engine(GET_PROOF_RESOURCE_DEF_REF, input);
 
         output.resource_def_ref
     }
@@ -87,21 +80,17 @@ impl BucketRef {
     /// # Panics
     /// If the bucket is not a non-fungible bucket.
     pub fn get_non_fungible_keys(&self) -> Vec<NonFungibleKey> {
-        let input = GetNonFungibleKeysInBucketRefInput {
-            bucket_ref_id: self.0,
-        };
-        let output: GetNonFungibleKeysInBucketRefOutput =
-            call_engine(GET_NON_FUNGIBLE_KEYS_IN_BUCKET_REF, input);
+        let input = GetNonFungibleKeysInProofInput { proof_id: self.0 };
+        let output: GetNonFungibleKeysInProofOutput =
+            call_engine(GET_NON_FUNGIBLE_KEYS_IN_PROOF, input);
 
         output.keys
     }
 
     /// Destroys this reference.
     pub fn drop(self) {
-        let input = DropBucketRefInput {
-            bucket_ref_id: self.0,
-        };
-        let _: DropBucketRefOutput = call_engine(DROP_BUCKET_REF, input);
+        let input = DropProofInput { proof_id: self.0 };
+        let _: DropProofOutput = call_engine(DROP_PROOF, input);
     }
 
     /// Checks if the referenced bucket is empty.
@@ -115,15 +104,15 @@ impl BucketRef {
 //========
 
 #[derive(Debug, Clone)]
-pub enum ParseBucketRefError {
+pub enum ParseProofError {
     InvalidLength(usize),
 }
 
 #[cfg(not(feature = "alloc"))]
-impl std::error::Error for ParseBucketRefError {}
+impl std::error::Error for ParseProofError {}
 
 #[cfg(not(feature = "alloc"))]
-impl fmt::Display for ParseBucketRefError {
+impl fmt::Display for ParseProofError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}", self)
     }
@@ -133,21 +122,21 @@ impl fmt::Display for ParseBucketRefError {
 // binary
 //========
 
-impl TryFrom<&[u8]> for BucketRef {
-    type Error = ParseBucketRefError;
+impl TryFrom<&[u8]> for Proof {
+    type Error = ParseProofError;
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
         match slice.len() {
             4 => Ok(Self(u32::from_le_bytes(copy_u8_array(slice)))),
-            _ => Err(ParseBucketRefError::InvalidLength(slice.len())),
+            _ => Err(ParseProofError::InvalidLength(slice.len())),
         }
     }
 }
 
-impl BucketRef {
+impl Proof {
     pub fn to_vec(&self) -> Vec<u8> {
         self.0.to_le_bytes().to_vec()
     }
 }
 
-custom_type!(BucketRef, CustomType::BucketRef, Vec::new());
+custom_type!(Proof, CustomType::Proof, Vec::new());

@@ -216,7 +216,7 @@ fn generate_dispatcher(bp_ident: &Ident, items: &[ImplItem]) -> Result<(Vec<Expr
                 {
                     let stmt: Stmt = parse_quote! {
                         let auth =
-                            ::scrypto::buffer::scrypto_decode::<::scrypto::resource::BucketRef>(&calldata.args[#i])
+                            ::scrypto::buffer::scrypto_decode::<::scrypto::resource::Proof>(&calldata.args[#i])
                             .unwrap();
                     };
                     trace!("Generated stmt: {}", quote! { #stmt });
@@ -307,7 +307,7 @@ fn generate_abi(bp_ident: &Ident, items: &[ImplItem]) -> Result<(Vec<Expr>, Vec<
                         .is_some()
                     {
                         inputs.push(quote! {
-                            <::scrypto::resource::BucketRef>::describe()
+                            <::scrypto::resource::Proof>::describe()
                         });
                     }
 
@@ -403,7 +403,7 @@ fn generate_stubs(bp_ident: &Ident, items: &[ImplItem]) -> Result<TokenStream> {
                     }) {
                         input_args.push(Ident::new("auth", auth.span()));
                         input_types.push(parse_quote! {
-                            ::scrypto::resource::BucketRef
+                            ::scrypto::resource::Proof
                         });
                     }
 
@@ -561,7 +561,7 @@ mod tests {
                                     &calldata.args[0usize]
                                 ).unwrap();
                             let auth =
-                                ::scrypto::buffer::scrypto_decode::<::scrypto::resource::BucketRef>(&calldata.args[1usize])
+                                ::scrypto::buffer::scrypto_decode::<::scrypto::resource::Proof>(&calldata.args[1usize])
                                 .unwrap( );
                             let state: blueprint::Test = arg0.get_state();
                             rtn = ::scrypto::buffer::scrypto_encode_for_radix_engine(&blueprint::Test::x(&state, auth));
@@ -584,7 +584,7 @@ mod tests {
                         name: "x".to_owned(),
                         mutability: ::scrypto::abi::Mutability::Immutable,
                         inputs: vec![
-                            <::scrypto::resource::BucketRef>::describe()
+                            <::scrypto::resource::Proof>::describe()
                         ],
                         output: <u32>::describe(),
                     }];
@@ -597,7 +597,7 @@ mod tests {
                     component_ref: ::scrypto::core::ComponentRef,
                 }
                 impl Test {
-                    pub fn x(&self, auth: ::scrypto::resource::BucketRef) -> u32 {
+                    pub fn x(&self, auth: ::scrypto::resource::Proof) -> u32 {
                         let rtn = ::scrypto::core::Context::call_method(self.component_ref, "x", ::scrypto::args!(auth));
                         ::scrypto::buffer::scrypto_decode(&rtn).unwrap()
                     }

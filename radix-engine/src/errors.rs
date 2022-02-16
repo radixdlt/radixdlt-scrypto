@@ -142,9 +142,9 @@ pub enum RuntimeError {
     BucketNotFound(BucketId),
 
     /// Bucket ref does not exist.
-    BucketRefNotFound(BucketRefId),
+    ProofNotFound(ProofId),
     /// The referenced bucket contains no resource.
-    EmptyBucketRef,
+    EmptyProof,
 
     /// Bucket access error.
     BucketError(BucketError),
@@ -158,8 +158,8 @@ pub enum RuntimeError {
     /// Bucket is not allowed.
     BucketNotAllowed,
 
-    /// BucketRef is not allowed.
-    BucketRefNotAllowed,
+    /// Proof is not allowed.
+    ProofNotAllowed,
 
     /// Vault is not allowed
     VaultNotAllowed,
@@ -176,8 +176,8 @@ pub enum RuntimeError {
     /// The bucket id is not reserved.
     BucketNotReserved,
 
-    /// The bucket ref id is not reserved.
-    BucketRefNotReserved,
+    /// The proof id is not reserved.
+    ProofNotReserved,
 
     /// Resource check failure.
     ResourceCheckFailure,

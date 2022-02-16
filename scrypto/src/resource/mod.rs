@@ -1,8 +1,8 @@
 mod bucket;
-mod bucket_ref;
 mod non_fungible;
 mod non_fungible_data;
 mod non_fungible_key;
+mod proof;
 mod resource_builder;
 mod resource_def;
 mod resource_type;
@@ -15,10 +15,10 @@ pub mod resource_flags;
 pub mod resource_permissions;
 
 pub use bucket::{Bucket, ParseBucketError};
-pub use bucket_ref::{BucketRef, ParseBucketRefError};
 pub use non_fungible::NonFungible;
 pub use non_fungible_data::NonFungibleData;
 pub use non_fungible_key::{NonFungibleKey, ParseNonFungibleKeyError};
+pub use proof::{ParseProofError, Proof};
 pub use resource_builder::{ResourceBuilder, DIVISIBILITY_MAXIMUM, DIVISIBILITY_NONE};
 pub use resource_def::{ParseResourceDefRefError, ResourceDefRef};
 pub use resource_flags::*;

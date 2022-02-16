@@ -16,7 +16,7 @@ blueprint! {
             self.vaults.push(Vault::with_bucket(t));
         }
 
-        pub fn receive_bucket_ref(&self, t: BucketRef) {
+        pub fn receive_proof(&self, t: Proof) {
             t.drop();
         }
 
@@ -26,10 +26,10 @@ blueprint! {
             Context::call_method(component_ref, "receive_bucket", args!(bucket));
         }
 
-        pub fn move_bucket_ref() -> Bucket {
+        pub fn move_proof() -> Bucket {
             let bucket = Self::create_test_token(1000);
             let component_ref = MoveTest { vaults: Vec::new() }.instantiate();
-            Context::call_method(component_ref, "receive_bucket_ref", args!(bucket.present()));
+            Context::call_method(component_ref, "receive_proof", args!(bucket.present()));
 
             bucket
         }

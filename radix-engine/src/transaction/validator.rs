@@ -60,23 +60,23 @@ pub fn validate_transaction(
                     resource_def_ref,
                 });
             }
-            Instruction::CreateBucketRef { bucket_id } => {
+            Instruction::CreateProof { bucket_id } => {
                 id_validator
-                    .new_bucket_ref(bucket_id)
+                    .new_proof(bucket_id)
                     .map_err(TransactionValidationError::IdValidatorError)?;
-                instructions.push(ValidatedInstruction::CreateBucketRef { bucket_id });
+                instructions.push(ValidatedInstruction::CreateProof { bucket_id });
             }
-            Instruction::CloneBucketRef { bucket_ref_id } => {
+            Instruction::CloneProof { proof_id } => {
                 id_validator
-                    .clone_bucket_ref(bucket_ref_id)
+                    .clone_proof(proof_id)
                     .map_err(TransactionValidationError::IdValidatorError)?;
-                instructions.push(ValidatedInstruction::CloneBucketRef { bucket_ref_id });
+                instructions.push(ValidatedInstruction::CloneProof { proof_id });
             }
-            Instruction::DropBucketRef { bucket_ref_id } => {
+            Instruction::DropProof { proof_id } => {
                 id_validator
-                    .drop_bucket_ref(bucket_ref_id)
+                    .drop_proof(proof_id)
                     .map_err(TransactionValidationError::IdValidatorError)?;
-                instructions.push(ValidatedInstruction::DropBucketRef { bucket_ref_id });
+                instructions.push(ValidatedInstruction::DropProof { proof_id });
             }
             Instruction::CallFunction {
                 package_ref,

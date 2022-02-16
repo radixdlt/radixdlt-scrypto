@@ -39,18 +39,18 @@ pub enum Instruction {
         resource_def_ref: ResourceDefRef,
     },
 
-    /// Creates a bucket ref.
-    CreateBucketRef { bucket_id: BucketId },
+    /// Creates a proof.
+    CreateProof { bucket_id: BucketId },
 
-    /// Clones a bucket ref.
-    CloneBucketRef { bucket_ref_id: BucketRefId },
+    /// Clones a proof.
+    CloneProof { proof_id: ProofId },
 
-    /// Drops a bucket ref.
-    DropBucketRef { bucket_ref_id: BucketRefId },
+    /// Drops a proof.
+    DropProof { proof_id: ProofId },
 
     /// Calls a blueprint function.
     ///
-    /// Buckets and bucket refs in arguments moves from transaction context to the callee.
+    /// Buckets and proofs in arguments moves from transaction context to the callee.
     CallFunction {
         package_ref: PackageRef,
         blueprint_name: String,
@@ -60,7 +60,7 @@ pub enum Instruction {
 
     /// Calls a component method.
     ///
-    /// Buckets and bucket refs in arguments moves from transaction context to the callee.
+    /// Buckets and proofs in arguments moves from transaction context to the callee.
     CallMethod {
         component_ref: ComponentRef,
         method: String,
@@ -104,14 +104,14 @@ pub enum ValidatedInstruction {
         amount: Decimal,
         resource_def_ref: ResourceDefRef,
     },
-    CreateBucketRef {
+    CreateProof {
         bucket_id: BucketId,
     },
-    CloneBucketRef {
-        bucket_ref_id: BucketRefId,
+    CloneProof {
+        proof_id: ProofId,
     },
-    DropBucketRef {
-        bucket_ref_id: BucketRefId,
+    DropProof {
+        proof_id: ProofId,
     },
     CallFunction {
         package_ref: PackageRef,

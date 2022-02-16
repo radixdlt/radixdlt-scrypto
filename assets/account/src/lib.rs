@@ -52,7 +52,7 @@ blueprint! {
             &mut self,
             amount: Decimal,
             resource_def_ref: ResourceDefRef,
-            account_auth: BucketRef,
+            account_auth: Proof,
         ) -> Bucket {
             account_auth.check_non_fungible_key(ECDSA_TOKEN, |key| key == &self.non_fungible_key());
 
@@ -70,8 +70,8 @@ blueprint! {
             &mut self,
             amount: Decimal,
             resource_def_ref: ResourceDefRef,
-            auth: BucketRef,
-            account_auth: BucketRef,
+            auth: Proof,
+            account_auth: Proof,
         ) -> Bucket {
             account_auth.check_non_fungible_key(ECDSA_TOKEN, |key| key == &self.non_fungible_key());
 
@@ -89,7 +89,7 @@ blueprint! {
             &mut self,
             keys: BTreeSet<NonFungibleKey>,
             resource_def_ref: ResourceDefRef,
-            account_auth: BucketRef,
+            account_auth: Proof,
         ) -> Bucket {
             account_auth.check_non_fungible_key(ECDSA_TOKEN, |key| key == &self.non_fungible_key());
 
@@ -113,8 +113,8 @@ blueprint! {
             &mut self,
             keys: BTreeSet<NonFungibleKey>,
             resource_def_ref: ResourceDefRef,
-            auth: BucketRef,
-            account_auth: BucketRef,
+            auth: Proof,
+            account_auth: Proof,
         ) -> Bucket {
             account_auth.check_non_fungible_key(ECDSA_TOKEN, |key| key == &self.non_fungible_key());
 

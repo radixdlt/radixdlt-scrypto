@@ -26,7 +26,7 @@ blueprint! {
             self.state = new_state;
         }
 
-        pub fn custom_types() -> (Decimal, PackageRef, LazyMap<String, String>, Hash, Bucket, BucketRef, Vault) {
+        pub fn custom_types() -> (Decimal, PackageRef, LazyMap<String, String>, Hash, Bucket, Proof, Vault) {
             todo!()
         }
     }
@@ -95,7 +95,7 @@ fn test_simple_abi() {
                             },
                             {
                                 "type": "Custom",
-                                "name": "BucketRef",
+                                "name": "Proof",
                                 "generics": []
                             },
                             {

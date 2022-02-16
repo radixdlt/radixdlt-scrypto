@@ -9,7 +9,7 @@ mod resource_def;
 mod transaction;
 mod vault;
 
-pub use bucket::{Bucket, BucketError, BucketRef, LockedBucket, Resource};
+pub use bucket::{Bucket, BucketError, LockedBucket, Proof, Resource};
 pub use component::Component;
 pub use data::{format_value, ValidatedData};
 pub use lazy_map::LazyMap;

@@ -91,18 +91,18 @@ pub const TAKE_NON_FUNGIBLE_FROM_BUCKET: u32 = 0x55;
 /// Get the IDs of all non-fungibles in this bucket
 pub const GET_NON_FUNGIBLE_KEYS_IN_BUCKET: u32 = 0x56;
 
-/// Obtain a bucket ref
-pub const CREATE_BUCKET_REF: u32 = 0x60;
-/// Drop a bucket ref
-pub const DROP_BUCKET_REF: u32 = 0x61;
-/// Get the resource amount behind a bucket ref
-pub const GET_BUCKET_REF_AMOUNT: u32 = 0x62;
-/// Get the resource definition behind a bucket ref
-pub const GET_BUCKET_REF_RESOURCE_DEF_REF: u32 = 0x63;
-/// Get the non-fungible keys in the bucket referenced
-pub const GET_NON_FUNGIBLE_KEYS_IN_BUCKET_REF: u32 = 0x64;
-/// Clone bucket ref
-pub const CLONE_BUCKET_REF: u32 = 0x65;
+/// Obtain a proof
+pub const CREATE_PROOF: u32 = 0x60;
+/// Drop a proof
+pub const DROP_PROOF: u32 = 0x61;
+/// Get the resource amount behind a proof
+pub const GET_PROOF_AMOUNT: u32 = 0x62;
+/// Get the resource definition behind a proof
+pub const GET_PROOF_RESOURCE_DEF_REF: u32 = 0x63;
+/// Get the non-fungible keys in the proofd
+pub const GET_NON_FUNGIBLE_KEYS_IN_PROOF: u32 = 0x64;
+/// Clone proof
+pub const CLONE_PROOF: u32 = 0x65;
 
 /// Log a message
 pub const EMIT_LOG: u32 = 0xf0;
@@ -256,7 +256,7 @@ pub struct CreateResourceOutput {
 pub struct MintResourceInput {
     pub resource_def_ref: ResourceDefRef,
     pub new_supply: Supply,
-    pub auth: BucketRefId,
+    pub auth: ProofId,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
@@ -267,7 +267,7 @@ pub struct MintResourceOutput {
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct BurnResourceInput {
     pub bucket_id: BucketId,
-    pub auth: Option<BucketRefId>,
+    pub auth: Option<ProofId>,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
@@ -320,7 +320,7 @@ pub struct UpdateNonFungibleMutableDataInput {
     pub resource_def_ref: ResourceDefRef,
     pub key: NonFungibleKey,
     pub new_mutable_data: Vec<u8>,
-    pub auth: BucketRefId,
+    pub auth: ProofId,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
@@ -340,7 +340,7 @@ pub struct GetResourceFlagsOutput {
 pub struct UpdateResourceFlagsInput {
     pub resource_def_ref: ResourceDefRef,
     pub new_flags: u64,
-    pub auth: BucketRefId,
+    pub auth: ProofId,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
@@ -360,7 +360,7 @@ pub struct GetResourceMutableFlagsOutput {
 pub struct UpdateResourceMutableFlagsInput {
     pub resource_def_ref: ResourceDefRef,
     pub new_mutable_flags: u64,
-    pub auth: BucketRefId,
+    pub auth: ProofId,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
@@ -370,7 +370,7 @@ pub struct UpdateResourceMutableFlagsOutput {}
 pub struct UpdateResourceMetadataInput {
     pub resource_def_ref: ResourceDefRef,
     pub new_metadata: HashMap<String, String>,
-    pub auth: BucketRefId,
+    pub auth: ProofId,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
@@ -403,7 +403,7 @@ pub struct PutIntoVaultOutput {}
 pub struct TakeFromVaultInput {
     pub vault_id: VaultId,
     pub amount: Decimal,
-    pub auth: Option<BucketRefId>,
+    pub auth: Option<ProofId>,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
@@ -435,7 +435,7 @@ pub struct GetVaultResourceDefRefOutput {
 pub struct TakeNonFungibleFromVaultInput {
     pub vault_id: VaultId,
     pub key: NonFungibleKey,
-    pub auth: Option<BucketRefId>,
+    pub auth: Option<ProofId>,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
@@ -529,65 +529,65 @@ pub struct GetNonFungibleKeysInBucketOutput {
 }
 
 //==========
-// bucket ref
+// proof
 //==========
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct CreateBucketRefInput {
+pub struct CreateProofInput {
     pub bucket_id: BucketId,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct CreateBucketRefOutput {
-    pub bucket_ref_id: BucketRefId,
+pub struct CreateProofOutput {
+    pub proof_id: ProofId,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct DropBucketRefInput {
-    pub bucket_ref_id: BucketRefId,
+pub struct DropProofInput {
+    pub proof_id: ProofId,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct DropBucketRefOutput {}
+pub struct DropProofOutput {}
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct GetBucketRefDecimalInput {
-    pub bucket_ref_id: BucketRefId,
+pub struct GetProofDecimalInput {
+    pub proof_id: ProofId,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct GetBucketRefDecimalOutput {
+pub struct GetProofDecimalOutput {
     pub amount: Decimal,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct GetBucketRefResourceDefRefInput {
-    pub bucket_ref_id: BucketRefId,
+pub struct GetProofResourceDefRefInput {
+    pub proof_id: ProofId,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct GetBucketRefResourceDefRefOutput {
+pub struct GetProofResourceDefRefOutput {
     pub resource_def_ref: ResourceDefRef,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct GetNonFungibleKeysInBucketRefInput {
-    pub bucket_ref_id: BucketRefId,
+pub struct GetNonFungibleKeysInProofInput {
+    pub proof_id: ProofId,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct GetNonFungibleKeysInBucketRefOutput {
+pub struct GetNonFungibleKeysInProofOutput {
     pub keys: Vec<NonFungibleKey>,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct CloneBucketRefInput {
-    pub bucket_ref_id: BucketRefId,
+pub struct CloneProofInput {
+    pub proof_id: ProofId,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct CloneBucketRefOutput {
-    pub bucket_ref_id: BucketRefId,
+pub struct CloneProofOutput {
+    pub proof_id: ProofId,
 }
 
 //=======

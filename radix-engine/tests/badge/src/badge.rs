@@ -25,8 +25,8 @@ blueprint! {
 
         pub fn borrow() -> Bucket {
             let bucket = Self::create_test_badge(100);
-            let bucket_ref = bucket.present();
-            bucket_ref.drop();
+            let proof = bucket.present();
+            proof.drop();
             bucket
         }
 

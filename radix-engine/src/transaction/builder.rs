@@ -148,9 +148,9 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     pub fn add_instruction(
         &mut self,
         inst: Instruction,
-    ) -> (&mut Self, Option<BucketId>, Option<BucketRefId>) {
+    ) -> (&mut Self, Option<BucketId>, Option<ProofId>) {
         let mut new_bucket_id: Option<BucketId> = None;
-        let mut new_bucket_ref_id: Option<BucketRefId> = None;
+        let mut new_proof_id: Option<ProofId> = None;
 
         match inst.clone() {
             Instruction::TakeFromWorktop { .. } => {
@@ -166,15 +166,14 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                 self.id_validator.drop_bucket(bucket_id).unwrap();
             }
             Instruction::AssertWorktopContains { .. } => {}
-            Instruction::CreateBucketRef { bucket_id } => {
-                new_bucket_ref_id = Some(self.id_validator.new_bucket_ref(bucket_id).unwrap());
+            Instruction::CreateProof { bucket_id } => {
+                new_proof_id = Some(self.id_validator.new_proof(bucket_id).unwrap());
             }
-            Instruction::CloneBucketRef { bucket_ref_id } => {
-                new_bucket_ref_id =
-                    Some(self.id_validator.clone_bucket_ref(bucket_ref_id).unwrap());
+            Instruction::CloneProof { proof_id } => {
+                new_proof_id = Some(self.id_validator.clone_proof(proof_id).unwrap());
             }
-            Instruction::DropBucketRef { bucket_ref_id } => {
-                self.id_validator.drop_bucket_ref(bucket_ref_id).unwrap();
+            Instruction::DropProof { proof_id } => {
+                self.id_validator.drop_proof(proof_id).unwrap();
             }
             Instruction::CallFunction { args, .. } | Instruction::CallMethod { args, .. } => {
                 for arg in &args {
@@ -190,7 +189,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
 
         self.instructions.push(inst);
 
-        (self, new_bucket_id, new_bucket_ref_id)
+        (self, new_bucket_id, new_proof_id)
     }
 
     /// Takes resources from worktop.
@@ -237,36 +236,33 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         .0
     }
 
-    /// Creates a bucket ref.
-    pub fn create_bucket_ref<F>(&mut self, bucket_id: BucketId, then: F) -> &mut Self
+    /// Creates a proof.
+    pub fn create_proof<F>(&mut self, bucket_id: BucketId, then: F) -> &mut Self
     where
-        F: FnOnce(&mut Self, BucketRefId) -> &mut Self,
+        F: FnOnce(&mut Self, ProofId) -> &mut Self,
     {
-        let (builder, _, bucket_ref_id) =
-            self.add_instruction(Instruction::CreateBucketRef { bucket_id });
-        then(builder, bucket_ref_id.unwrap())
+        let (builder, _, proof_id) = self.add_instruction(Instruction::CreateProof { bucket_id });
+        then(builder, proof_id.unwrap())
     }
 
-    /// Clones a bucket ref.
-    pub fn clone_bucket_ref<F>(&mut self, bucket_ref_id: BucketRefId, then: F) -> &mut Self
+    /// Clones a proof.
+    pub fn clone_proof<F>(&mut self, proof_id: ProofId, then: F) -> &mut Self
     where
-        F: FnOnce(&mut Self, BucketRefId) -> &mut Self,
+        F: FnOnce(&mut Self, ProofId) -> &mut Self,
     {
-        let (builder, _, bucket_ref_id) =
-            self.add_instruction(Instruction::CloneBucketRef { bucket_ref_id });
-        then(builder, bucket_ref_id.unwrap())
+        let (builder, _, proof_id) = self.add_instruction(Instruction::CloneProof { proof_id });
+        then(builder, proof_id.unwrap())
     }
 
-    /// Drops a bucket ref.
-    pub fn drop_bucket_ref(&mut self, bucket_ref_id: BucketRefId) -> &mut Self {
-        self.add_instruction(Instruction::DropBucketRef { bucket_ref_id })
-            .0
+    /// Drops a proof.
+    pub fn drop_proof(&mut self, proof_id: ProofId) -> &mut Self {
+        self.add_instruction(Instruction::DropProof { proof_id }).0
     }
 
     /// Calls a function.
     ///
     /// The implementation will automatically prepare the arguments based on the
-    /// function ABI, including resource buckets and bucket refs.
+    /// function ABI, including resource buckets and proofs.
     ///
     /// If an Account component ref is provided, resources will be withdrawn from the given account;
     /// otherwise, they will be taken from transaction worktop.
@@ -312,7 +308,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     /// Calls a method.
     ///
     /// The implementation will automatically prepare the arguments based on the
-    /// method ABI, including resource buckets and bucket refs.
+    /// method ABI, including resource buckets and proofs.
     ///
     /// If an Account component ref is provided, resources will be withdrawn from the given account;
     /// otherwise, they will be taken from transaction worktop.
@@ -518,7 +514,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                 resource_def_ref: minter_resource_def_ref,
             },
             |builder, bucket_id| {
-                builder.create_bucket_ref(bucket_id, |builder, bucket_ref_id| {
+                builder.create_proof(bucket_id, |builder, proof_id| {
                     builder
                         .add_instruction(Instruction::CallFunction {
                             package_ref: SYSTEM_PACKAGE,
@@ -527,7 +523,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                             args: vec![
                                 scrypto_encode(&amount),
                                 scrypto_encode(&resource_def_ref),
-                                scrypto_encode(&scrypto::resource::BucketRef(bucket_ref_id)),
+                                scrypto_encode(&scrypto::resource::Proof(proof_id)),
                             ],
                         })
                         .0
@@ -576,8 +572,9 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         resource_spec: &ResourceSpecification,
         account: ComponentRef,
     ) -> &mut Self {
-        self.clone_bucket_ref(ECDSA_TOKEN_BUCKET_REF_ID, |builder, bucket_ref_id| {
-            match resource_spec {
+        self.clone_proof(
+            ECDSA_TOKEN_PROOF_ID,
+            |builder, proof_id| match resource_spec {
                 ResourceSpecification::Fungible {
                     amount,
                     resource_def_ref,
@@ -589,7 +586,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                             args: vec![
                                 scrypto_encode(amount),
                                 scrypto_encode(resource_def_ref),
-                                scrypto_encode(&scrypto::resource::BucketRef(bucket_ref_id)),
+                                scrypto_encode(&scrypto::resource::Proof(proof_id)),
                             ],
                         })
                         .0
@@ -605,7 +602,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                             args: vec![
                                 scrypto_encode(keys),
                                 scrypto_encode(resource_def_ref),
-                                scrypto_encode(&scrypto::resource::BucketRef(bucket_ref_id)),
+                                scrypto_encode(&scrypto::resource::Proof(proof_id)),
                             ],
                         })
                         .0
@@ -613,8 +610,8 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                 ResourceSpecification::All { .. } => {
                     panic!("Withdrawing all from account is not supported!");
                 }
-            }
-        })
+            },
+        )
     }
 
     //===============================
@@ -759,21 +756,21 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                     created_bucket_id.unwrap(),
                 )))
             }
-            CustomType::BucketRef => {
+            CustomType::Proof => {
                 let resource_spec = parse_resource_specification(i, ty, arg)?;
                 if let Some(account) = account {
                     self.withdraw_from_account(&resource_spec, account);
                 }
-                let mut created_bucket_ref_id = None;
+                let mut created_proof_id = None;
                 self.take_from_worktop(&resource_spec, |builder, bucket_id| {
-                    builder.create_bucket_ref(bucket_id, |builder, bucket_ref_id| {
-                        created_bucket_ref_id = Some(bucket_ref_id);
+                    builder.create_proof(bucket_id, |builder, proof_id| {
+                        created_proof_id = Some(proof_id);
                         builder
                     });
                     builder
                 });
-                Ok(scrypto_encode(&scrypto::resource::BucketRef(
-                    created_bucket_ref_id.unwrap(),
+                Ok(scrypto_encode(&scrypto::resource::Proof(
+                    created_proof_id.unwrap(),
                 )))
             }
             _ => Err(BuildArgsError::UnsupportedType(i, ty.clone())),

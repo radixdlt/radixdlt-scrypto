@@ -3,7 +3,7 @@ use scrypto::engine::types::*;
 use scrypto::rust::ops::Range;
 
 pub const ECDSA_TOKEN_BUCKET_ID: BucketId = 0;
-pub const ECDSA_TOKEN_BUCKET_REF_ID: BucketRefId = 1;
+pub const ECDSA_TOKEN_PROOF_ID: ProofId = 1;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum IdSpace {
@@ -86,8 +86,8 @@ impl IdAllocator {
         Ok(self.next()?)
     }
 
-    /// Creates a new bucket ref ID.
-    pub fn new_bucket_ref_id(&mut self) -> Result<BucketRefId, IdAllocatorError> {
+    /// Creates a new proof ID.
+    pub fn new_proof_id(&mut self) -> Result<ProofId, IdAllocatorError> {
         Ok(self.next()?)
     }
 

@@ -36,7 +36,7 @@ impl<T: NonFungibleData> NonFungible<T> {
     }
 
     /// Updates the associated data of this unit.
-    pub fn update_data(&self, new_data: T, auth: BucketRef) {
+    pub fn update_data(&self, new_data: T, auth: Proof) {
         self.resource_def_ref()
             .update_non_fungible_data(&self.key, new_data, auth);
     }

@@ -169,15 +169,9 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
                     amount,
                     resource_def_ref,
                 } => proc.assert_worktop_contains(amount, resource_def_ref),
-                ValidatedInstruction::CreateBucketRef { bucket_id } => {
-                    proc.create_bucket_ref(bucket_id)
-                }
-                ValidatedInstruction::CloneBucketRef { bucket_ref_id } => {
-                    proc.clone_bucket_ref(bucket_ref_id)
-                }
-                ValidatedInstruction::DropBucketRef { bucket_ref_id } => {
-                    proc.drop_bucket_ref(bucket_ref_id)
-                }
+                ValidatedInstruction::CreateProof { bucket_id } => proc.create_proof(bucket_id),
+                ValidatedInstruction::CloneProof { proof_id } => proc.clone_proof(proof_id),
+                ValidatedInstruction::DropProof { proof_id } => proc.drop_proof(proof_id),
                 ValidatedInstruction::CallFunction {
                     package_ref,
                     blueprint_name,

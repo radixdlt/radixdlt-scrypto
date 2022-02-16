@@ -55,7 +55,7 @@ blueprint! {
         }
 
         /// Deposits into the liquidity pool and start earning interest.
-        pub fn deposit(&mut self, user_auth: BucketRef, reserve_tokens: Bucket) {
+        pub fn deposit(&mut self, user_auth: Proof, reserve_tokens: Bucket) {
             let user_id = Self::get_user_id(user_auth);
             let amount = reserve_tokens.amount();
 
@@ -82,7 +82,7 @@ blueprint! {
         }
 
         /// Redeems the underlying assets, partially or in full.
-        pub fn redeem(&mut self, user_auth: BucketRef, amount: Decimal) -> Bucket {
+        pub fn redeem(&mut self, user_auth: Proof, amount: Decimal) -> Bucket {
             let user_id = Self::get_user_id(user_auth);
 
             // Update user state
@@ -102,7 +102,7 @@ blueprint! {
         }
 
         /// Borrows the specified amount from lending pool
-        pub fn borrow(&mut self, user_auth: BucketRef, requested: Decimal) -> Bucket {
+        pub fn borrow(&mut self, user_auth: Proof, requested: Decimal) -> Bucket {
             let user_id = Self::get_user_id(user_auth);
 
             assert!(
@@ -122,7 +122,7 @@ blueprint! {
         }
 
         /// Repays a loan, partially or in full.
-        pub fn repay(&mut self, user_auth: BucketRef, mut repaid: Bucket) -> Bucket {
+        pub fn repay(&mut self, user_auth: Proof, mut repaid: Bucket) -> Bucket {
             let user_id = Self::get_user_id(user_auth);
 
             // Update user state
@@ -184,8 +184,8 @@ blueprint! {
             self.borrow_interest_rate = rate;
         }
 
-        /// Parse user id from a bucket ref.
-        fn get_user_id(user_auth: BucketRef) -> ResourceDefRef {
+        /// Parse user id from a proof.
+        fn get_user_id(user_auth: Proof) -> ResourceDefRef {
             assert!(user_auth.amount() > 0.into(), "Invalid user proof");
             user_auth.resource_def_ref()
         }

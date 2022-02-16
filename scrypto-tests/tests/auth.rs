@@ -91,7 +91,7 @@ fn test_simple_auth() {
                         },
                         {
                             "type": "Custom",
-                            "name": "BucketRef",
+                            "name": "Proof",
                             "generics": []
                         }
                     ],
@@ -105,7 +105,7 @@ fn test_simple_auth() {
                     "inputs": [
                         {
                             "type": "Custom",
-                            "name": "BucketRef",
+                            "name": "Proof",
                             "generics": []
                         }
                     ],
@@ -121,7 +121,7 @@ fn test_simple_auth() {
                     "inputs": [
                         {
                             "type": "Custom",
-                            "name": "BucketRef",
+                            "name": "Proof",
                             "generics": []
                         }
                     ],

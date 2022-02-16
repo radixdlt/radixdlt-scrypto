@@ -45,11 +45,11 @@ impl Bucket {
     }
 
     /// Creates an immutable reference to this bucket.
-    pub fn present(&self) -> BucketRef {
-        let input = CreateBucketRefInput { bucket_id: self.0 };
-        let output: CreateBucketRefOutput = call_engine(CREATE_BUCKET_REF, input);
+    pub fn present(&self) -> Proof {
+        let input = CreateProofInput { bucket_id: self.0 };
+        let output: CreateProofOutput = call_engine(CREATE_PROOF, input);
 
-        BucketRef(output.bucket_ref_id)
+        Proof(output.proof_id)
     }
 
     /// Returns the amount of resources in this bucket.
@@ -74,7 +74,7 @@ impl Bucket {
     }
 
     /// Burns resource within this bucket.
-    pub fn burn_with_auth(self, auth: BucketRef) {
+    pub fn burn_with_auth(self, auth: Proof) {
         self.resource_def_ref().burn_with_auth(self, auth);
     }
 
@@ -84,7 +84,7 @@ impl Bucket {
     }
 
     /// Uses resources in this bucket as authorization for an operation.
-    pub fn authorize<F: FnOnce(BucketRef) -> O, O>(&self, f: F) -> O {
+    pub fn authorize<F: FnOnce(Proof) -> O, O>(&self, f: F) -> O {
         f(self.present())
     }
 
@@ -161,7 +161,7 @@ impl Bucket {
         &mut self,
         key: &NonFungibleKey,
         new_data: T,
-        auth: BucketRef,
+        auth: Proof,
     ) {
         self.resource_def_ref()
             .update_non_fungible_data(key, new_data, auth)

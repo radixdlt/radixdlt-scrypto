@@ -90,11 +90,7 @@ impl<'s, S: SubstateStore> Track<'s, S> {
             ResourceType::NonFungible,
             Resource::NonFungible { keys: signers },
         );
-        process.create_virtual_bucket_ref(
-            ECDSA_TOKEN_BUCKET_ID,
-            ECDSA_TOKEN_BUCKET_REF_ID,
-            ecdsa_bucket,
-        );
+        process.create_virtual_proof(ECDSA_TOKEN_BUCKET_ID, ECDSA_TOKEN_PROOF_ID, ecdsa_bucket);
 
         process
     }
@@ -461,8 +457,8 @@ impl<'s, S: SubstateStore> Track<'s, S> {
     }
 
     /// Creates a new reference id.
-    pub fn new_bucket_ref_id(&mut self) -> BucketRefId {
-        self.id_allocator.new_bucket_ref_id().unwrap()
+    pub fn new_proof_id(&mut self) -> ProofId {
+        self.id_allocator.new_proof_id().unwrap()
     }
 
     /// Creates a new map id.

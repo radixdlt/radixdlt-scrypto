@@ -103,7 +103,7 @@ pub fn import(input: TokenStream) -> TokenStream {
 ///
 /// A list of component fields of type `ResourceDefRef` should be provided.
 ///
-/// Caller must provide a bucket ref containing any of the associated resource.
+/// Caller must provide a proof containing any of the associated resource.
 ///
 /// # Example
 /// ```ignore

@@ -39,7 +39,7 @@ pub struct LockedBucket {
 }
 
 /// A reference to a bucket.
-pub type BucketRef = Rc<LockedBucket>;
+pub type Proof = Rc<LockedBucket>;
 
 impl Bucket {
     pub fn new(
