@@ -80,8 +80,8 @@ impl AbiProvider for BasicAbiProvider {
 
         // Return ABI
         Ok(abi::Blueprint {
-            package: package_ref.to_string(),
-            name: blueprint_name.to_owned(),
+            package_ref: package_ref.to_string(),
+            blueprint_name: blueprint_name.to_owned(),
             functions: output.0,
             methods: output.1,
         })

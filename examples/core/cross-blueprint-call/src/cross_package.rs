@@ -3,8 +3,8 @@ use scrypto::prelude::*;
 import! {
 r#"
 {
-    "package": "01bda8686d6c2fa45dce04fac71a09b54efbc8028c23aac74bc00e",
-    "name": "Airdrop",
+    "package_ref": "01bda8686d6c2fa45dce04fac71a09b54efbc8028c23aac74bc00e",
+    "blueprint_name": "Airdrop",
     "functions": [
         {
             "name": "instantiate_airdrop",

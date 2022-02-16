@@ -175,7 +175,7 @@ blueprint! {
             output_tokens
         }
 
-        /// Returns the resource definition refes of the pair.
+        /// Returns the resource definition refs of the pair.
         pub fn get_pair(&self) -> (ResourceDefRef, ResourceDefRef) {
             (
                 self.a_pool.resource_def_ref(),

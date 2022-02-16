@@ -44,7 +44,7 @@ impl IdAllocator {
         }
     }
 
-    /// Creates a new package id.
+    /// Creates a new package ref.
     pub fn new_package_ref(
         &mut self,
         transaction_hash: Hash,
@@ -54,7 +54,7 @@ impl IdAllocator {
         Ok(PackageRef(sha256_twice(data).lower_26_bytes()))
     }
 
-    /// Creates a new component id.
+    /// Creates a new component ref.
     pub fn new_component_ref(
         &mut self,
         transaction_hash: Hash,
@@ -64,7 +64,7 @@ impl IdAllocator {
         Ok(ComponentRef(sha256_twice(data).lower_26_bytes()))
     }
 
-    /// Creates a new resource def id.
+    /// Creates a new resource def ref.
     pub fn new_resource_def_ref(
         &mut self,
         transaction_hash: Hash,

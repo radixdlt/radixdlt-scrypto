@@ -162,8 +162,8 @@ impl Vault {
 
     /// Returns the resource definition of resources within this vault.
     pub fn resource_def_ref(&self) -> ResourceDefRef {
-        let input = GetVaultResourceDefInput { vault_id: self.0 };
-        let output: GetVaultResourceDefOutput = call_engine(GET_VAULT_RESOURCE_DEF_REF, input);
+        let input = GetVaultResourceDefRefInput { vault_id: self.0 };
+        let output: GetVaultResourceDefRefOutput = call_engine(GET_VAULT_RESOURCE_DEF_REF, input);
 
         output.resource_def_ref
     }

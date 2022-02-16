@@ -60,8 +60,8 @@ pub fn blueprint(input: TokenStream) -> TokenStream {
 /// import! {
 /// r#"
 /// {
-///     "package": "01a405d3129b61e86c51c3168d553d2ffd7a3f0bd2f66b5a3e9876",
-///     "name": "GumballMachine",
+///     "package_ref": "01a405d3129b61e86c51c3168d553d2ffd7a3f0bd2f66b5a3e9876",
+///     "blueprint_name": "GumballMachine",
 ///     "functions": [
 ///         {
 ///             "name": "new",

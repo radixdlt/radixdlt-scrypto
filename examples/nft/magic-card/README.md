@@ -118,7 +118,7 @@ resim new-account
 ```
 resim publish .
 ```
-3. Call the `new` function to instantiate a component, and save the component ref
+3. Call the `instantiate_component` function to instantiate a component, and save the component ref
 ```
 resim call-function <PACKAGE_REF> HelloNft instantiate_component
 ```

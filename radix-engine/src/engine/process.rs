@@ -1750,13 +1750,13 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         })
     }
 
-    fn handle_get_vault_resource_def(
+    fn handle_get_vault_resource_def_ref(
         &mut self,
-        input: GetVaultResourceDefInput,
-    ) -> Result<GetVaultResourceDefOutput, RuntimeError> {
+        input: GetVaultResourceDefRefInput,
+    ) -> Result<GetVaultResourceDefRefOutput, RuntimeError> {
         let vault = self.get_local_vault(input.vault_id)?;
 
-        Ok(GetVaultResourceDefOutput {
+        Ok(GetVaultResourceDefRefOutput {
             resource_def_ref: vault.resource_def_ref(),
         })
     }
@@ -1840,10 +1840,10 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         Ok(GetBucketDecimalOutput { amount })
     }
 
-    fn handle_get_bucket_resource_def(
+    fn handle_get_bucket_resource_def_ref(
         &mut self,
-        input: GetBucketResourceDefInput,
-    ) -> Result<GetBucketResourceDefOutput, RuntimeError> {
+        input: GetBucketResourceDefRefInput,
+    ) -> Result<GetBucketResourceDefRefOutput, RuntimeError> {
         let resource_def_ref = self
             .buckets
             .get(&input.bucket_id)
@@ -1855,7 +1855,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             })
             .ok_or(RuntimeError::BucketNotFound(input.bucket_id))?;
 
-        Ok(GetBucketResourceDefOutput { resource_def_ref })
+        Ok(GetBucketResourceDefRefOutput { resource_def_ref })
     }
 
     fn handle_take_non_fungible_from_bucket(
@@ -1967,16 +1967,16 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         })
     }
 
-    fn handle_get_bucket_ref_resource_def(
+    fn handle_get_bucket_ref_resource_def_ref(
         &mut self,
-        input: GetBucketRefResourceDefInput,
-    ) -> Result<GetBucketRefResourceDefOutput, RuntimeError> {
+        input: GetBucketRefResourceDefRefInput,
+    ) -> Result<GetBucketRefResourceDefRefOutput, RuntimeError> {
         let bucket_ref = self
             .bucket_refs
             .get(&input.bucket_ref_id)
             .ok_or(RuntimeError::BucketRefNotFound(input.bucket_ref_id))?;
 
-        Ok(GetBucketRefResourceDefOutput {
+        Ok(GetBucketRefResourceDefRefOutput {
             resource_def_ref: bucket_ref.bucket().resource_def_ref(),
         })
     }
@@ -2143,7 +2143,7 @@ impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
                     TAKE_FROM_VAULT => self.handle(args, Self::handle_take_from_vault),
                     GET_VAULT_AMOUNT => self.handle(args, Self::handle_get_vault_amount),
                     GET_VAULT_RESOURCE_DEF_REF => {
-                        self.handle(args, Self::handle_get_vault_resource_def)
+                        self.handle(args, Self::handle_get_vault_resource_def_ref)
                     }
                     TAKE_NON_FUNGIBLE_FROM_VAULT => {
                         self.handle(args, Self::handle_take_non_fungible_from_vault)
@@ -2157,7 +2157,7 @@ impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
                     TAKE_FROM_BUCKET => self.handle(args, Self::handle_take_from_bucket),
                     GET_BUCKET_AMOUNT => self.handle(args, Self::handle_get_bucket_amount),
                     GET_BUCKET_RESOURCE_DEF_REF => {
-                        self.handle(args, Self::handle_get_bucket_resource_def)
+                        self.handle(args, Self::handle_get_bucket_resource_def_ref)
                     }
                     TAKE_NON_FUNGIBLE_FROM_BUCKET => {
                         self.handle(args, Self::handle_take_non_fungible_from_bucket)
@@ -2170,7 +2170,7 @@ impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
                     DROP_BUCKET_REF => self.handle(args, Self::handle_drop_bucket_ref),
                     GET_BUCKET_REF_AMOUNT => self.handle(args, Self::handle_get_bucket_ref_amount),
                     GET_BUCKET_REF_RESOURCE_DEF_REF => {
-                        self.handle(args, Self::handle_get_bucket_ref_resource_def)
+                        self.handle(args, Self::handle_get_bucket_ref_resource_def_ref)
                     }
                     GET_NON_FUNGIBLE_KEYS_IN_BUCKET_REF => {
                         self.handle(args, Self::handle_get_non_fungible_keys_in_bucket_ref)

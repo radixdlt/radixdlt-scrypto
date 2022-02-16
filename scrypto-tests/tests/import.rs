@@ -11,8 +11,8 @@ use scrypto::rust::vec::Vec;
 import! {
 r#"
 {
-    "package": "056967d3d49213394892980af59be76e9b3e7cc4cb78237460d0c7",
-    "name": "Simple",
+    "package_ref": "056967d3d49213394892980af59be76e9b3e7cc4cb78237460d0c7",
+    "blueprint_name": "Simple",
     "functions": [
         {
             "name": "stateless_func",

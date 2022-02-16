@@ -428,7 +428,7 @@ fn generate_stubs(bp_ident: &Ident, items: &[ImplItem]) -> Result<TokenStream> {
                         methods.push(parse_quote! {
                             pub fn #ident(&self #(, #input_args: #input_types)*) -> #output {
                                 let rtn = ::scrypto::core::Context::call_method(
-                                    self.component,
+                                    self.component_ref,
                                     #name,
                                     ::scrypto::args!(#(#input_args),*)
                                 );
@@ -450,7 +450,7 @@ fn generate_stubs(bp_ident: &Ident, items: &[ImplItem]) -> Result<TokenStream> {
     let output = quote! {
         #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode)]
         pub struct #bp_ident {
-            component: ::scrypto::core::ComponentRef,
+            component_ref: ::scrypto::core::ComponentRef,
         }
 
         impl #bp_ident {
@@ -460,16 +460,16 @@ fn generate_stubs(bp_ident: &Ident, items: &[ImplItem]) -> Result<TokenStream> {
         }
 
         impl From<::scrypto::core::ComponentRef> for #bp_ident {
-            fn from(component: ::scrypto::core::ComponentRef) -> Self {
+            fn from(component_ref: ::scrypto::core::ComponentRef) -> Self {
                 Self {
-                    component
+                    component_ref
                 }
             }
         }
 
         impl From<#bp_ident> for ::scrypto::core::ComponentRef {
             fn from(a: #bp_ident) -> ::scrypto::core::ComponentRef {
-                a.component
+                a.component_ref
             }
         }
     };
@@ -594,22 +594,22 @@ mod tests {
                 }
                 #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode)]
                 pub struct Test {
-                    component: ::scrypto::core::ComponentRef,
+                    component_ref: ::scrypto::core::ComponentRef,
                 }
                 impl Test {
                     pub fn x(&self, auth: ::scrypto::resource::BucketRef) -> u32 {
-                        let rtn = ::scrypto::core::Context::call_method(self.component, "x", ::scrypto::args!(auth));
+                        let rtn = ::scrypto::core::Context::call_method(self.component_ref, "x", ::scrypto::args!(auth));
                         ::scrypto::buffer::scrypto_decode(&rtn).unwrap()
                     }
                 }
                 impl From<::scrypto::core::ComponentRef> for Test {
-                    fn from(component: ::scrypto::core::ComponentRef) -> Self {
-                        Self { component }
+                    fn from(component_ref: ::scrypto::core::ComponentRef) -> Self {
+                        Self { component_ref }
                     }
                 }
                 impl From<Test> for ::scrypto::core::ComponentRef {
                     fn from(a: Test) -> ::scrypto::core::ComponentRef {
-                        a.component
+                        a.component_ref
                     }
                 }
             },

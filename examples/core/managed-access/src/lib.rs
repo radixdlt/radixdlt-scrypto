@@ -3,8 +3,8 @@ use scrypto::prelude::*;
 import! {
 r#"
 {
-    "package": "01ca59a8d6ea4f7efa1765cef702d14e47570c079aedd44992dd09",
-    "name": "FlatAdmin",
+    "package_ref": "01ca59a8d6ea4f7efa1765cef702d14e47570c079aedd44992dd09",
+    "blueprint_name": "FlatAdmin",
     "functions": [
         {
             "name": "instantiate_flat_admin",

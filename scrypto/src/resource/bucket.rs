@@ -62,8 +62,8 @@ impl Bucket {
 
     /// Returns the resource definition of resources in this bucket.
     pub fn resource_def_ref(&self) -> ResourceDefRef {
-        let input = GetBucketResourceDefInput { bucket_id: self.0 };
-        let output: GetBucketResourceDefOutput = call_engine(GET_BUCKET_RESOURCE_DEF_REF, input);
+        let input = GetBucketResourceDefRefInput { bucket_id: self.0 };
+        let output: GetBucketResourceDefRefOutput = call_engine(GET_BUCKET_RESOURCE_DEF_REF, input);
 
         output.resource_def_ref
     }

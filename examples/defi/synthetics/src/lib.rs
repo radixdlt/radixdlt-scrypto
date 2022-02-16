@@ -4,8 +4,8 @@ use scrypto::prelude::*;
 import! {
 r#"
     {
-        "package": "014eb598fe6ed7df56a5f02950df2d7b08530d9d1081f05a6398f9",
-        "name": "PriceOracle",
+        "package_ref": "014eb598fe6ed7df56a5f02950df2d7b08530d9d1081f05a6398f9",
+        "blueprint_name": "PriceOracle",
         "functions": [
             {
                 "name": "new",
@@ -384,13 +384,13 @@ impl User {
         &self,
         snx_price: Decimal,
         global_debt: Decimal,
-        global_debt_resource_def_ref: ResourceDefRef,
+        resource_def_ref: ResourceDefRef,
         threshold: Decimal,
     ) {
-        if !global_debt_resource_def_ref.total_supply().is_zero() {
+        if !resource_def_ref.total_supply().is_zero() {
             assert!(
                 self.snx.amount() * snx_price
-                    / (global_debt / global_debt_resource_def_ref.total_supply()
+                    / (global_debt / resource_def_ref.total_supply()
                         * self.global_debt_share.amount())
                     >= threshold,
                 "Under collateralized!",

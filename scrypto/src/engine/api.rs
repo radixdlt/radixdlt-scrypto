@@ -106,7 +106,7 @@ pub const CLONE_BUCKET_REF: u32 = 0x65;
 
 /// Log a message
 pub const EMIT_LOG: u32 = 0xf0;
-/// Generate an UUID
+/// Generate a UUID
 pub const GENERATE_UUID: u32 = 0xf1;
 /// Retrieve call data
 pub const GET_CALL_DATA: u32 = 0xf2;
@@ -422,12 +422,12 @@ pub struct GetVaultDecimalOutput {
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct GetVaultResourceDefInput {
+pub struct GetVaultResourceDefRefInput {
     pub vault_id: VaultId,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct GetVaultResourceDefOutput {
+pub struct GetVaultResourceDefRefOutput {
     pub resource_def_ref: ResourceDefRef,
 }
 
@@ -498,12 +498,12 @@ pub struct GetBucketDecimalOutput {
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct GetBucketResourceDefInput {
+pub struct GetBucketResourceDefRefInput {
     pub bucket_id: BucketId,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct GetBucketResourceDefOutput {
+pub struct GetBucketResourceDefRefOutput {
     pub resource_def_ref: ResourceDefRef,
 }
 
@@ -561,12 +561,12 @@ pub struct GetBucketRefDecimalOutput {
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct GetBucketRefResourceDefInput {
+pub struct GetBucketRefResourceDefRefInput {
     pub bucket_ref_id: BucketRefId,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct GetBucketRefResourceDefOutput {
+pub struct GetBucketRefResourceDefRefOutput {
     pub resource_def_ref: ResourceDefRef,
 }
 

@@ -14,8 +14,8 @@ use scrypto::prelude::*;
 import! {
 r#"
 {
-    "package": "014eb598fe6ed7df56a5f02950df2d7b08530d9d1081f05a6398f9",
-    "name": "PriceOracle",
+    "package_ref": "014eb598fe6ed7df56a5f02950df2d7b08530d9d1081f05a6398f9",
+    "blueprint_name": "PriceOracle",
     "functions": [
         {
             "name": "instantiate_oracle",
@@ -113,8 +113,8 @@ r#"
 import! {
 r#"
 {
-    "package": "01e0983e33158b489e70313b77767abe80eb449e6acd46f9476328",
-    "name": "SyntheticPool",
+    "package_ref": "01e0983e33158b489e70313b77767abe80eb449e6acd46f9476328",
+    "blueprint_name": "SyntheticPool",
     "functions": [
         {
             "name": "instantiate_pool",
@@ -318,8 +318,8 @@ r#"
 import! {
 r#"
 {
-    "package": "01899b2991b37ee1bc51a84182a3752c1dc48ec3df01969d3516d3",
-    "name": "Radiswap",
+    "package_ref": "01899b2991b37ee1bc51a84182a3752c1dc48ec3df01969d3516d3",
+    "blueprint_name": "Radiswap",
     "functions": [
         {
             "name": "instantiate_pool",
@@ -465,7 +465,7 @@ blueprint! {
         asset_symbol: String,
         /// Asset resource definition
         asset_resource_def_ref: ResourceDefRef,
-        /// Synthetic asset definition
+        /// Synthetic resource definition
         synth_resource_def_ref: ResourceDefRef,
         /// SNX resource definition
         snx_resource_def_ref: ResourceDefRef,
@@ -485,9 +485,9 @@ blueprint! {
 
     impl MutualFarm {
         pub fn instantiate_farm(
-            price_oracle_component_ref: ComponentRef,
-            xrd_snx_swap_component_ref: ComponentRef,
-            synthetic_pool_component_ref: ComponentRef,
+            price_oracle: ComponentRef,
+            xrd_snx_radiswap: ComponentRef,
+            synthetic_pool: ComponentRef,
             asset_symbol: String,
             asset_resource_def_ref: ResourceDefRef,
             initial_shares: Decimal,
@@ -501,7 +501,7 @@ blueprint! {
                 .initial_supply_fungible(1);
 
             debug!("Fetch price info from oracle");
-            let price_oracle: PriceOracle = price_oracle_component_ref.into();
+            let price_oracle: PriceOracle = price_oracle.into();
             let xrd_usd_price = price_oracle
                 .get_price(initial_xrd.resource_def_ref(), usd_resource_def_ref)
                 .unwrap();
@@ -513,14 +513,14 @@ blueprint! {
                 .unwrap();
 
             debug!("Swap 3/4 of XRD for SNX");
-            let xrd_snx_radiswap: Radiswap = xrd_snx_swap_component_ref.into();
+            let xrd_snx_radiswap: Radiswap = xrd_snx_radiswap.into();
             let xrd_amount = initial_xrd.amount();
             let snx = xrd_snx_radiswap.swap(initial_xrd.take(initial_xrd.amount() * 3 / 4));
             let snx_amount = snx.amount();
 
             debug!("Deposit SNX into synthetic pool and mint sTESLA (1/10 of our SNX).");
-            let price_oracle: PriceOracle = price_oracle_component_ref.into();
-            let synthetic_pool: SyntheticPool = synthetic_pool_component_ref.into();
+            let price_oracle: PriceOracle = price_oracle.into();
+            let synthetic_pool: SyntheticPool = synthetic_pool.into();
             synthetic_pool.add_synthetic_token(asset_symbol.clone(), asset_resource_def_ref);
             synthetic_pool.stake(identity_badge.present(), snx);
             let quantity = snx_amount * snx_usd_price / 10 / tesla_usd_price;
