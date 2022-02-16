@@ -357,12 +357,14 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             self,
             "(Transaction) Calling method with all resources started"
         );
+
         // 1. Move collected resource to temp buckets
-        for (_, bucket) in self.worktop.clone() {
+        let resource_addresses: Vec<Address> = self.worktop.iter().map(|(k, _)| k).cloned().collect();
+        for addr in resource_addresses {
             let bid = self.track.new_bid(); // this is unbounded
+            let bucket = self.worktop.remove(&addr).unwrap();
             self.buckets.insert(bid, bucket);
         }
-        self.worktop.clear();
 
         // 2. Drop all bucket refs to unlock the buckets
         self.drop_all_bucket_refs()?;
