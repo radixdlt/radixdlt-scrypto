@@ -4,9 +4,8 @@ blueprint! {
     struct ContextTest;
 
     impl ContextTest {
-        pub fn query() -> (Actor, PackageRef, Hash, u64, u128) {
+        pub fn query() -> (PackageRef, Hash, u64, u128) {
             (
-                Context::actor(),
                 Context::package_ref(),
                 Context::transaction_hash(),
                 Context::current_epoch(),
