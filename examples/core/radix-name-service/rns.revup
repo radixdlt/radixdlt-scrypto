@@ -1,0 +1,83 @@
+// Reset the simulator
+reset
+
+// Publish the package
+publish . -> package
+
+// Create a new account to administer the RNS component
+new-account -> admin_account
+
+// Instantiate a new RNS component
+// The component is instantiated with the following parameters:
+// deposit_per_year=50, fee_address_update=10 and fee_renewal_per_year=25 (all values are in XRD)
+call-function $package RadixNameService new 50 10 25 -> admin_badge _ name_resource component
+
+// Simulate that a user comes along and uses the RNS component
+new-account -> user_account user_pubkey
+set-default-account $user_account $user_pubkey
+
+// Simulate that the user registers the name "satoshi.xrd" to point to his account address.
+// The name is reserved for 10 years which requires a refundable deposit of $XRD 500
+call-method $component register_name satoshi.xrd $user_account 10 500,$tokenXRD
+
+// Display the user's account
+show $user_account
+// Taking a look at the account, please note that the user is now the owner of a DomainName NFT that represents his
+// ownership of the "satoshi.xrd" name:
+// Resources:
+// ├─ { amount: 999500, resource_def: 030000000000000000000000000000000000000000000000000004, name: "Radix", symbol: "XRD" }
+// └─ { amount: 1, resource_def: 03d8541671ab09116ae450d468f91e5488a9b22c705d70dcfe9e09, name: "DomainName" }
+//   └─ NFT { id: 339715316826500606461318410874891739268, immutable_data: Struct {  }, mutable_data: Struct { 02b8dd9f4232ce3c00dcb3496956fb57096d5d50763b989ca56f3b, 150000, 500 } }
+// It has an ID of 339715316826500606461318410874891739268 because that is, what "satoshi.xrd" is hashed to.
+// Next, in the mutable_data part there are 3 values:
+// - the address that the name maps to (02b8dd9f4232ce3c00dcb3496956fb57096d5d50763b989ca56f3b)
+// - The last epoch in which the mapping is valid (150000)
+// - The amount of XRD that has been deposited when registering this name (500)
+
+// Call the lookup_address method for "satoshi.xrd" and observer that the name maps to
+// 02b8dd9f4232ce3c00dcb3496956fb57096d5d50763b989ca56f3b, which is indeed the account address of the user.
+// You will find this address in the "Results" section of the transaction receipt.
+call-method $component lookup_address satoshi.xrd
+
+// Now, simulate that the user creates another account to which future payments should be directed to
+new-account -> new_user_account
+
+// The name mapping can be changed by calling the update_address method on the RNS component
+// The parameters to this method are:
+// 1: A BucketRef with the DomainName NFT that demonstrates the user's ownership of the name and his right to change
+// the mapped address (#339715316826500606461318410874891739268,$name_resource)
+// 2: The address of the newly created account ($new_user_account)
+// 3: A bucket that contains the fee for the name update (10,$tokenXRD)
+call-method $component update_address #339715316826500606461318410874891739268,$name_resource $new_user_account 10,$tokenXRD
+
+// Call the lookup_address method one more time to see that the mapping has changed
+// and that the name "satoshi.xrd" now points to the user's new account
+// (02fbffedd2e0f3d0f3c5381b57b02c0f3b30bad1c57120f1c334bd).
+call-method $component lookup_address satoshi.xrd
+
+// To simulate a renewal of the name mapping, call the renew_name method.
+// The method must be called with the following parameters:
+// 1: A BucketRef with the DomainName NFT that demonstrates the user's ownership of the name and his right to change
+// the mapped address (#339715316826500606461318410874891739268,$name_resource)
+// 2: The number of years for which the name should be renewed (10)
+// 3: A bucket that contains the fee for the name renewal (250,$tokenXRD)
+call-method $component renew_name #339715316826500606461318410874891739268,$name_resource 10 250,$tokenXRD
+
+// Again, display the user's account and note that the name is now reserved until epoch 300000.
+// Please also note that the DomainName NFT is still owned by the user's initial account, even though the name
+// mapping points to the address of the user's new account. Ownership of a DomainName NFT is decoupled from
+// the actual address it maps to.
+show $user_account
+
+// Finally, simulate that the user decides he now longer needs the domain name and wants to unregister it.
+// This is done by calling the unregister_name method with a single argument.
+// This argument has to be a Bucket (not BucketRef) containing the DomainName NFT that should be unregistered
+// (#339715316826500606461318410874891739268,$name_resource).
+// In exchange for the DomainName NFT the user gets refunded his initial deposit of $XRD 500.
+// All other fees are kept by the RNS component.
+call-method $component unregister_name #339715316826500606461318410874891739268,$name_resource
+
+// Display the user's account one last time.
+// The NFT is gone and the users account holds exactly $XRD 999740. He initially deposited $XRD 500, which he got back,
+// but he payed another $XRD 10 to change the address and $XRD 250 to renew the name for 10 years.
+show $user_account

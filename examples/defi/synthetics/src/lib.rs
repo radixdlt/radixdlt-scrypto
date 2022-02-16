@@ -8,7 +8,7 @@ r#"
     "name": "PriceOracle",
     "functions": [
         {
-            "name": "new",
+            "name": "instantiate_oracle",
             "inputs": [
                 {
                     "type": "U32"
@@ -126,7 +126,7 @@ blueprint! {
     }
 
     impl SyntheticPool {
-        pub fn new(
+        pub fn instantiate_pool(
             oracle_address: Address,
             snx_token_address: Address,
             usd_token_address: Address,
@@ -384,7 +384,7 @@ impl User {
         global_debt_resource_def: ResourceDef,
         threshold: Decimal,
     ) {
-        if !global_debt_resource_def.total_supply().is_zero() {
+        if !global_debt_resource_def.total_supply().is_zero() && !self.global_debt_share.amount().is_zero() {
             assert!(
                 self.snx.amount() * snx_price
                     / (global_debt / global_debt_resource_def.total_supply()

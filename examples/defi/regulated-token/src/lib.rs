@@ -12,7 +12,7 @@ blueprint! {
 
     impl RegulatedToken {
         
-        pub fn new() -> (Component, Bucket, Bucket) {                        
+        pub fn instantiate_regulated_token() -> (Component, Bucket, Bucket) {                        
             // We will start by creating two tokens we will use as badges and return to our instantiator
             let general_admin: Bucket = ResourceBuilder::new_fungible(DIVISIBILITY_NONE)
                 .metadata("name","RegulatedToken general admin badge")

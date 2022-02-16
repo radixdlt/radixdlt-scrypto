@@ -11,9 +11,9 @@ fn test_hello() {
     let account = executor.new_account(key);
     let package = executor.publish_package(include_code!("${lib_name}")).unwrap();
 
-    // Test the `new` function.
+    // Test the `instantiate_hello` function.
     let transaction1 = TransactionBuilder::new(&executor)
-        .call_function(package, "Hello", "new", vec![], None)
+        .call_function(package, "Hello", "instantiate_hello", vec![], None)
         .call_method_with_all_resources(account, "deposit_batch")
         .build(vec![key])
         .unwrap();

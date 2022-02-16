@@ -445,7 +445,7 @@ impl<'s, S: SubstateStore> Track<'s, S> {
         }
 
         for (component_address, vid) in self.updated_vaults.clone() {
-            let vault = self.vaults.get(&(component_address, vid)).unwrap().clone();
+            let vault = self.vaults.remove(&(component_address, vid)).unwrap();
             self.ledger.put_vault(component_address, vid, vault);
         }
 
