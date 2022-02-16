@@ -23,6 +23,8 @@ pub use core::marker;
 #[cfg(feature = "alloc")]
 pub use core::mem;
 #[cfg(feature = "alloc")]
+pub use core::ops;
+#[cfg(feature = "alloc")]
 pub use core::ptr;
 
 #[cfg(not(feature = "alloc"))]
@@ -39,6 +41,8 @@ pub use std::format;
 pub use std::marker;
 #[cfg(not(feature = "alloc"))]
 pub use std::mem;
+#[cfg(not(feature = "alloc"))]
+pub use std::ops;
 #[cfg(not(feature = "alloc"))]
 pub use std::ptr;
 #[cfg(not(feature = "alloc"))]

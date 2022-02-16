@@ -1,7 +1,7 @@
 use sbor::{describe::Type, *};
 
 use crate::buffer::*;
-use crate::kernel::*;
+use crate::engine::*;
 use crate::resource::*;
 use crate::rust::borrow::ToOwned;
 use crate::rust::vec;
@@ -32,35 +32,35 @@ impl Vault {
         let input = CreateEmptyVaultInput {
             resource_address: resource_def.into().address(),
         };
-        let output: CreateEmptyVaultOutput = call_kernel(CREATE_EMPTY_VAULT, input);
+        let output: CreateEmptyVaultOutput = call_engine(CREATE_EMPTY_VAULT, input);
 
         output.vid.into()
     }
 
     /// Creates an empty vault and fills it with an initial bucket of resources.
     pub fn with_bucket(bucket: Bucket) -> Self {
-        let vault = Vault::new(bucket.resource_def().address());
+        let mut vault = Vault::new(bucket.resource_def().address());
         vault.put(bucket);
         vault
     }
 
     /// Puts a bucket of resources into this vault.
-    pub fn put(&self, bucket: Bucket) {
+    pub fn put(&mut self, bucket: Bucket) {
         let input = PutIntoVaultInput {
             vid: self.vid,
             bid: bucket.into(),
         };
-        let _: PutIntoVaultOutput = call_kernel(PUT_INTO_VAULT, input);
+        let _: PutIntoVaultOutput = call_engine(PUT_INTO_VAULT, input);
     }
 
     /// Takes some amount of resource from this vault into a bucket.
-    pub fn take<A: Into<Decimal>>(&self, amount: A) -> Bucket {
+    pub fn take<A: Into<Decimal>>(&mut self, amount: A) -> Bucket {
         let input = TakeFromVaultInput {
             vid: self.vid,
             amount: amount.into(),
             auth: None,
         };
-        let output: TakeFromVaultOutput = call_kernel(TAKE_FROM_VAULT, input);
+        let output: TakeFromVaultOutput = call_engine(TAKE_FROM_VAULT, input);
 
         output.bid.into()
     }
@@ -69,19 +69,19 @@ impl Vault {
     ///
     /// This variant of `take` accepts an additional auth parameter to support resources
     /// with or without `RESTRICTED_TRANSFER` flag on.
-    pub fn take_with_auth<A: Into<Decimal>>(&self, amount: A, auth: BucketRef) -> Bucket {
+    pub fn take_with_auth<A: Into<Decimal>>(&mut self, amount: A, auth: BucketRef) -> Bucket {
         let input = TakeFromVaultInput {
             vid: self.vid,
             amount: amount.into(),
             auth: Some(auth.into()),
         };
-        let output: TakeFromVaultOutput = call_kernel(TAKE_FROM_VAULT, input);
+        let output: TakeFromVaultOutput = call_engine(TAKE_FROM_VAULT, input);
 
         output.bid.into()
     }
 
     /// Takes all resource stored in this vault.
-    pub fn take_all(&self) -> Bucket {
+    pub fn take_all(&mut self) -> Bucket {
         self.take(self.amount())
     }
 
@@ -89,39 +89,41 @@ impl Vault {
     ///
     /// This variant of `take_all` accepts an additional auth parameter to support resources
     /// with or without `RESTRICTED_TRANSFER` flag on.
-    pub fn take_all_with_auth(&self, auth: BucketRef) -> Bucket {
+    pub fn take_all_with_auth(&mut self, auth: BucketRef) -> Bucket {
         self.take_with_auth(self.amount(), auth)
     }
 
-    /// Takes an NFT from this vault, by id.
+    /// Takes a non-fungible from this vault, by id.
     ///
     /// # Panics
-    /// Panics if this is not an NFT vault or the specified NFT is not found.
-    pub fn take_nft(&self, id: u128) -> Bucket {
-        let input = TakeNftFromVaultInput {
+    /// Panics if this is not a non-fungible vault or the specified non-fungible is not found.
+    pub fn take_non_fungible(&self, key: &NonFungibleKey) -> Bucket {
+        let input = TakeNonFungibleFromVaultInput {
             vid: self.vid,
-            id,
+            key: key.clone(),
             auth: None,
         };
-        let output: TakeNftFromVaultOutput = call_kernel(TAKE_NFT_FROM_VAULT, input);
+        let output: TakeNonFungibleFromVaultOutput =
+            call_engine(TAKE_NON_FUNGIBLE_FROM_VAULT, input);
 
         output.bid.into()
     }
 
-    /// Takes an NFT from this vault, by id.
+    /// Takes a non-fungible from this vault, by id.
     ///
-    /// This variant of `take_nft` accepts an additional auth parameter to support resources
+    /// This variant of `take_non_fungible` accepts an additional auth parameter to support resources
     /// with or without `RESTRICTED_TRANSFER` flag on.
     ///
     /// # Panics
-    /// Panics if this is not an NFT vault or the specified NFT is not found.
-    pub fn take_nft_with_auth(&self, id: u128, auth: BucketRef) -> Bucket {
-        let input = TakeNftFromVaultInput {
+    /// Panics if this is not a non-fungible vault or the specified non-fungible is not found.
+    pub fn take_non_fungible_with_auth(&self, key: &NonFungibleKey, auth: BucketRef) -> Bucket {
+        let input = TakeNonFungibleFromVaultInput {
             vid: self.vid,
-            id,
+            key: key.clone(),
             auth: Some(auth.into()),
         };
-        let output: TakeNftFromVaultOutput = call_kernel(TAKE_NFT_FROM_VAULT, input);
+        let output: TakeNonFungibleFromVaultOutput =
+            call_engine(TAKE_NON_FUNGIBLE_FROM_VAULT, input);
 
         output.bid.into()
     }
@@ -134,7 +136,7 @@ impl Vault {
     /// 3. Applies the specified function `f` with the created bucket reference;
     /// 4. Puts the `1` resource back into this vault.
     ///
-    pub fn authorize<F: FnOnce(BucketRef) -> O, O>(&self, f: F) -> O {
+    pub fn authorize<F: FnOnce(BucketRef) -> O, O>(&mut self, f: F) -> O {
         let bucket = self.take(1);
         let output = f(bucket.present());
         self.put(bucket);
@@ -152,7 +154,11 @@ impl Vault {
     /// This variant of `authorize` accepts an additional auth parameter to support resources
     /// with or without `RESTRICTED_TRANSFER` flag on.
     ///
-    pub fn authorize_with_auth<F: FnOnce(BucketRef) -> O, O>(&self, f: F, auth: BucketRef) -> O {
+    pub fn authorize_with_auth<F: FnOnce(BucketRef) -> O, O>(
+        &mut self,
+        f: F,
+        auth: BucketRef,
+    ) -> O {
         let bucket = self.take_with_auth(1, auth);
         let output = f(bucket.present());
         self.put(bucket);
@@ -162,7 +168,7 @@ impl Vault {
     /// Returns the amount of resources within this vault.
     pub fn amount(&self) -> Decimal {
         let input = GetVaultDecimalInput { vid: self.vid };
-        let output: GetVaultDecimalOutput = call_kernel(GET_VAULT_AMOUNT, input);
+        let output: GetVaultDecimalOutput = call_engine(GET_VAULT_AMOUNT, input);
 
         output.amount
     }
@@ -170,7 +176,7 @@ impl Vault {
     /// Returns the resource definition of resources within this vault.
     pub fn resource_def(&self) -> ResourceDef {
         let input = GetVaultResourceAddressInput { vid: self.vid };
-        let output: GetVaultResourceAddressOutput = call_kernel(GET_VAULT_RESOURCE_ADDRESS, input);
+        let output: GetVaultResourceAddressOutput = call_engine(GET_VAULT_RESOURCE_ADDRESS, input);
 
         output.resource_address.into()
     }
@@ -185,53 +191,68 @@ impl Vault {
         self.amount() == 0.into()
     }
 
-    /// Returns all the NFT units contained.
+    /// Returns all the non-fungible units contained.
     ///
     /// # Panics
-    /// Panics if this is not an NFT vault.
-    pub fn get_nfts<T: NftData>(&self) -> Vec<Nft<T>> {
-        let input = GetNftIdsInVaultInput { vid: self.vid };
-        let output: GetNftIdsInVaultOutput = call_kernel(GET_NFT_IDS_IN_VAULT, input);
+    /// Panics if this is not a non-fungible vault.
+    pub fn get_non_fungibles<T: NonFungibleData>(&self) -> Vec<NonFungible<T>> {
+        let input = GetNonFungibleKeysInVaultInput { vid: self.vid };
+        let output: GetNonFungibleKeysInVaultOutput =
+            call_engine(GET_NON_FUNGIBLE_KEYS_IN_VAULT, input);
         let resource_address = self.resource_address();
         output
-            .ids
+            .keys
             .iter()
-            .map(|id| Nft::from((resource_address, *id)))
+            .map(|id| NonFungible::from((resource_address, id.clone())))
             .collect()
     }
 
-    /// Get all NFT IDs in this vault.
+    /// Get all non-fungible IDs in this vault.
     ///
     /// # Panics
-    /// Panics if this is not an NFT vault.
-    pub fn get_nft_ids(&self) -> Vec<u128> {
-        let input = GetNftIdsInVaultInput { vid: self.vid };
-        let output: GetNftIdsInVaultOutput = call_kernel(GET_NFT_IDS_IN_VAULT, input);
+    /// Panics if this is not a non-fungible vault.
+    pub fn get_non_fungible_keys(&self) -> Vec<NonFungibleKey> {
+        let input = GetNonFungibleKeysInVaultInput { vid: self.vid };
+        let output: GetNonFungibleKeysInVaultOutput =
+            call_engine(GET_NON_FUNGIBLE_KEYS_IN_VAULT, input);
 
-        output.ids
+        output.keys
     }
 
-    /// Get the NFT id and panic if not singleton.
-    pub fn get_nft_id(&self) -> u128 {
-        let ids = self.get_nft_ids();
-        assert!(ids.len() == 1, "Expect 1 NFT, but found {}", ids.len());
-        ids[0]
+    /// Returns the key of a singleton non-fungible.
+    ///
+    /// # Panic
+    /// If this vault is empty or contains more than one non-fungibles.
+    pub fn get_non_fungible_key(&self) -> NonFungibleKey {
+        let keys = self.get_non_fungible_keys();
+        assert!(
+            keys.len() == 1,
+            "Expect 1 non-fungible, but found {}",
+            keys.len()
+        );
+        keys[0].clone()
     }
 
-    /// Returns the data of an NFT unit, both the immutable and mutable parts.
+    /// Returns the data of a non-fungible unit, both the immutable and mutable parts.
     ///
     /// # Panics
-    /// Panics if this is not an NFT bucket.
-    pub fn get_nft_data<T: NftData>(&self, id: u128) -> T {
-        self.resource_def().get_nft_data(id)
+    /// Panics if this is not a non-fungible bucket.
+    pub fn get_non_fungible_data<T: NonFungibleData>(&self, id: &NonFungibleKey) -> T {
+        self.resource_def().get_non_fungible_data(id)
     }
 
-    /// Updates the mutable part of the data of an NFT unit.
+    /// Updates the mutable part of the data of a non-fungible unit.
     ///
     /// # Panics
-    /// Panics if this is not an NFT vault or the specified NFT is not found.
-    pub fn update_nft_data<T: NftData>(&self, id: u128, new_data: T, auth: BucketRef) {
-        self.resource_def().update_nft_data(id, new_data, auth)
+    /// Panics if this is not a non-fungible vault or the specified non-fungible is not found.
+    pub fn update_non_fungible_data<T: NonFungibleData>(
+        &self,
+        id: &NonFungibleKey,
+        new_data: T,
+        auth: BucketRef,
+    ) {
+        self.resource_def()
+            .update_non_fungible_data(id, new_data, auth)
     }
 }
 

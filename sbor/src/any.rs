@@ -34,9 +34,9 @@ pub enum Value {
 
     Vec(u8, Vec<Value>),
     TreeSet(u8, Vec<Value>),
-    TreeMap(u8, u8, Vec<(Value, Value)>),
+    TreeMap(u8, u8, Vec<Value>),
     HashSet(u8, Vec<Value>),
-    HashMap(u8, u8, Vec<(Value, Value)>),
+    HashMap(u8, u8, Vec<Value>),
 
     Custom(u8, Vec<u8>),
 }
@@ -174,10 +174,10 @@ pub fn encode_any(ty_ctx: Option<u8>, value: &Value, enc: &mut Encoder) {
             }
             enc.write_type(*ty_k);
             enc.write_type(*ty_v);
-            enc.write_len(elements.len());
-            for (k, v) in elements {
-                encode_any(Some(*ty_k), k, enc);
-                encode_any(Some(*ty_v), v, enc);
+            enc.write_len(elements.len() / 2);
+            for pair in elements.chunks(2) {
+                encode_any(Some(*ty_k), &pair[0], enc);
+                encode_any(Some(*ty_v), &pair[1], enc);
             }
         }
         Value::HashMap(ty_k, ty_v, elements) => {
@@ -186,10 +186,10 @@ pub fn encode_any(ty_ctx: Option<u8>, value: &Value, enc: &mut Encoder) {
             }
             enc.write_type(*ty_k);
             enc.write_type(*ty_v);
-            enc.write_len(elements.len());
-            for (k, v) in elements {
-                encode_any(Some(*ty_k), k, enc);
-                encode_any(Some(*ty_v), v, enc);
+            enc.write_len(elements.len() / 2);
+            for pair in elements.chunks(2) {
+                encode_any(Some(*ty_k), &pair[0], enc);
+                encode_any(Some(*ty_v), &pair[1], enc);
             }
         }
         // custom types
@@ -206,21 +206,21 @@ pub fn encode_any(ty_ctx: Option<u8>, value: &Value, enc: &mut Encoder) {
 fn encode_fields(fields: &Fields, enc: &mut Encoder) {
     match fields {
         Fields::Named(named) => {
-            enc.write_type(TYPE_FIELDS_NAMED);
+            enc.write_u8(FIELDS_TYPE_NAMED);
             enc.write_len(named.len());
             for e in named {
                 encode_any(None, e, enc);
             }
         }
         Fields::Unnamed(unnamed) => {
-            enc.write_type(TYPE_FIELDS_UNNAMED);
+            enc.write_u8(FIELDS_TYPE_UNNAMED);
             enc.write_len(unnamed.len());
             for e in unnamed {
                 encode_any(None, e, enc);
             }
         }
         Fields::Unit => {
-            enc.write_type(TYPE_FIELDS_UNIT);
+            enc.write_u8(FIELDS_TYPE_UNIT);
         }
     }
 }
@@ -357,10 +357,8 @@ fn decode_next(ty_ctx: Option<u8>, dec: &mut Decoder) -> Result<Value, DecodeErr
             // elements
             let mut elements = Vec::new();
             for _ in 0..len {
-                elements.push((
-                    decode_next(Some(key_ty), dec)?,
-                    decode_next(Some(value_ty), dec)?,
-                ));
+                elements.push(decode_next(Some(key_ty), dec)?);
+                elements.push(decode_next(Some(value_ty), dec)?);
             }
             if ty == TYPE_TREE_MAP {
                 Ok(Value::TreeMap(key_ty, value_ty, elements))
@@ -387,7 +385,7 @@ fn decode_next(ty_ctx: Option<u8>, dec: &mut Decoder) -> Result<Value, DecodeErr
 fn decode_fields(dec: &mut Decoder) -> Result<Fields, DecodeError> {
     let ty = dec.read_type()?;
     match ty {
-        TYPE_FIELDS_NAMED => {
+        FIELDS_TYPE_NAMED => {
             //length
             let len = dec.read_len()?;
             // named fields
@@ -397,7 +395,7 @@ fn decode_fields(dec: &mut Decoder) -> Result<Fields, DecodeError> {
             }
             Ok(Fields::Named(named))
         }
-        TYPE_FIELDS_UNNAMED => {
+        FIELDS_TYPE_UNNAMED => {
             //length
             let len = dec.read_len()?;
             // named fields
@@ -407,12 +405,108 @@ fn decode_fields(dec: &mut Decoder) -> Result<Fields, DecodeError> {
             }
             Ok(Fields::Unnamed(unnamed))
         }
-        TYPE_FIELDS_UNIT => Ok(Fields::Unit),
+        FIELDS_TYPE_UNIT => Ok(Fields::Unit),
         _ => Err(DecodeError::InvalidType {
             expected: None,
             actual: ty,
         }),
     }
+}
+
+pub fn traverse_any<V, E>(value: &Value, visitor: &mut V) -> Result<(), E>
+where
+    V: CustomValueVisitor<Err = E>,
+{
+    match value {
+        // primitive types
+        Value::Unit
+        | Value::Bool(_)
+        | Value::I8(_)
+        | Value::I16(_)
+        | Value::I32(_)
+        | Value::I64(_)
+        | Value::I128(_)
+        | Value::U8(_)
+        | Value::U16(_)
+        | Value::U32(_)
+        | Value::U64(_)
+        | Value::U128(_)
+        | Value::String(_) => {}
+        // struct & enum
+        Value::Struct(fields) => {
+            traverse_fields(fields, visitor)?;
+        }
+        Value::Enum(_index, fields) => {
+            traverse_fields(fields, visitor)?;
+        }
+        // composite types
+        Value::Option(v) => match v.borrow() {
+            None => {}
+            Some(x) => {
+                traverse_any(x, visitor)?;
+            }
+        },
+        Value::Box(v) => {
+            traverse_any(v, visitor)?;
+        }
+        Value::Array(_, elements) => {
+            for e in elements {
+                traverse_any(e, visitor)?;
+            }
+        }
+        Value::Tuple(elements) => {
+            for e in elements {
+                traverse_any(e, visitor)?;
+            }
+        }
+        Value::Result(v) => match v.borrow() {
+            Ok(x) | Err(x) => {
+                traverse_any(x, visitor)?;
+            }
+        },
+        // collections
+        Value::Vec(_, elements)
+        | Value::TreeSet(_, elements)
+        | Value::HashSet(_, elements)
+        | Value::TreeMap(_, _, elements)
+        | Value::HashMap(_, _, elements) => {
+            for e in elements {
+                traverse_any(e, visitor)?;
+            }
+        }
+        // custom types
+        Value::Custom(ty, data) => {
+            visitor.visit(*ty, data)?;
+        }
+    }
+
+    Ok(())
+}
+
+pub fn traverse_fields<V, E>(fields: &Fields, visitor: &mut V) -> Result<(), E>
+where
+    V: CustomValueVisitor<Err = E>,
+{
+    match fields {
+        Fields::Named(named) => {
+            for e in named {
+                traverse_any(e, visitor)?;
+            }
+        }
+        Fields::Unnamed(unnamed) => {
+            for e in unnamed {
+                traverse_any(e, visitor)?;
+            }
+        }
+        Fields::Unit => {}
+    };
+    Ok(())
+}
+
+pub trait CustomValueVisitor {
+    type Err;
+
+    fn visit(&mut self, kind: u8, data: &[u8]) -> Result<(), Self::Err>;
 }
 
 #[cfg(test)]
@@ -536,8 +630,8 @@ mod tests {
                 Value::Vec(TYPE_U32, vec![Value::U32(1), Value::U32(2),]),
                 Value::TreeSet(TYPE_U32, vec![Value::U32(1)]),
                 Value::HashSet(TYPE_U32, vec![Value::U32(2)]),
-                Value::TreeMap(TYPE_U32, TYPE_U32, vec![(Value::U32(1), Value::U32(2)),]),
-                Value::HashMap(TYPE_U32, TYPE_U32, vec![(Value::U32(1), Value::U32(2)),])
+                Value::TreeMap(TYPE_U32, TYPE_U32, vec![Value::U32(1), Value::U32(2)]),
+                Value::HashMap(TYPE_U32, TYPE_U32, vec![Value::U32(1), Value::U32(2)])
             ])),
             value
         );

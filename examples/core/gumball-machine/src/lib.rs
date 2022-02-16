@@ -9,7 +9,7 @@ blueprint! {
 
     impl GumballMachine {
         // given a price in XRD, creates a ready-to-use gumball machine
-        pub fn new(price: Decimal) -> Component {
+        pub fn instantiate_gumball_machine(price: Decimal) -> Component {
             // create a new Gumball resource, with a fixed quantity of 100
             let bucket_of_gumballs = ResourceBuilder::new_fungible(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "Gumball")
@@ -30,7 +30,7 @@ blueprint! {
             self.price
         }
 
-        pub fn buy_gumball(&mut self, payment: Bucket) -> (Bucket, Bucket) {
+        pub fn buy_gumball(&mut self, mut payment: Bucket) -> (Bucket, Bucket) {
             // take our price in XRD out of the payment
             // if the caller has sent too few, or sent something other than XRD, they'll get a runtime error
             let our_share = payment.take(self.price);

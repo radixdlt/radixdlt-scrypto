@@ -1,5 +1,4 @@
 use scrypto::abi;
-use scrypto::args;
 use scrypto::rust::string::ToString;
 use scrypto::rust::vec;
 use scrypto::rust::vec::Vec;
@@ -12,39 +11,30 @@ use crate::model::*;
 use crate::transaction::*;
 
 /// An executor that runs transactions.
-pub struct TransactionExecutor<'l, L: Ledger> {
+pub struct TransactionExecutor<'l, L: SubstateStore> {
     ledger: &'l mut L,
-    current_epoch: u64,
-    nonce: u64,
+    trace: bool,
 }
 
-/// Represents an error when executing the transaction.
-#[derive(Debug)]
-pub enum TransactionExecutionError {
-    MissingEndInstruction,
-}
-
-impl<'l, L: Ledger> AbiProvider for TransactionExecutor<'l, L> {
+impl<'l, L: SubstateStore> AbiProvider for TransactionExecutor<'l, L> {
     fn export_abi<A: AsRef<str>>(
         &self,
         package_address: Address,
         blueprint_name: A,
-        trace: bool,
     ) -> Result<abi::Blueprint, RuntimeError> {
         let p = self
             .ledger
             .get_package(package_address)
             .ok_or(RuntimeError::PackageNotFound(package_address))?;
 
-        BasicAbiProvider::new()
+        BasicAbiProvider::new(self.trace)
             .with_package(package_address, p.code().to_vec())
-            .export_abi(package_address, blueprint_name, trace)
+            .export_abi(package_address, blueprint_name)
     }
 
     fn export_abi_component(
         &self,
         component_address: Address,
-        trace: bool,
     ) -> Result<abi::Blueprint, RuntimeError> {
         let c = self
             .ledger
@@ -54,56 +44,37 @@ impl<'l, L: Ledger> AbiProvider for TransactionExecutor<'l, L> {
             .ledger
             .get_package(c.package_address())
             .ok_or(RuntimeError::PackageNotFound(c.package_address()))?;
-        BasicAbiProvider::new()
+        BasicAbiProvider::new(self.trace)
             .with_package(c.package_address(), p.code().to_vec())
-            .export_abi(c.package_address(), c.blueprint_name(), trace)
+            .export_abi(c.package_address(), c.blueprint_name())
     }
 }
 
-impl<'l, L: Ledger> TransactionExecutor<'l, L> {
-    pub fn new(ledger: &'l mut L, current_epoch: u64, nonce: u64) -> Self {
-        Self {
-            ledger,
-            current_epoch,
-            nonce,
-        }
+impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
+    pub fn new(ledger: &'l mut L, trace: bool) -> Self {
+        Self { ledger, trace }
     }
 
-    /// Returns the underlying ledger.
+    /// Returns an immutable reference to the ledger.
     pub fn ledger(&self) -> &L {
         self.ledger
     }
 
-    /// Returns the current epoch.
-    pub fn current_epoch(&self) -> u64 {
-        self.current_epoch
-    }
-
-    /// Sets the current epoch.
-    pub fn set_current_epoch(&mut self, current_epoch: u64) {
-        self.current_epoch = current_epoch;
-    }
-
-    /// Returns the transaction nonce.
-    pub fn nonce(&self) -> u64 {
-        self.nonce
-    }
-
-    /// Set the transaction epoch.
-    pub fn set_nonce(&self) -> u64 {
-        self.nonce
+    /// Returns a mutable reference to the ledger.
+    pub fn ledger_mut(&mut self) -> &mut L {
+        self.ledger
     }
 
     /// Generates a new public key.
-    pub fn new_public_key(&mut self) -> Address {
+    pub fn new_public_key(&mut self) -> EcdsaPublicKey {
         let mut raw = [0u8; 33];
-        raw[1..].copy_from_slice(sha256(self.nonce.to_string()).as_ref());
-        self.nonce += 1;
-        Address::PublicKey(raw)
+        raw[1..].copy_from_slice(sha256(self.ledger.get_nonce().to_string()).as_ref());
+        self.ledger.increase_nonce();
+        EcdsaPublicKey(raw)
     }
 
     /// Creates an account with 1,000,000 XRD in balance.
-    pub fn new_account(&mut self, key: Address) -> Address {
+    pub fn new_account(&mut self, key: EcdsaPublicKey) -> Address {
         let free_xrd_amount = Decimal::from(1_000_000);
 
         self.run(
@@ -117,7 +88,6 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
                 .new_account_with_resource(key, free_xrd_amount, RADIX_TOKEN)
                 .build(Vec::new())
                 .unwrap(),
-            false,
         )
         .unwrap()
         .component(0)
@@ -125,23 +95,20 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
     }
 
     /// Publishes a package.
-    pub fn publish_package(&mut self, code: &[u8]) -> Address {
+    pub fn publish_package(&mut self, code: &[u8]) -> Result<Address, RuntimeError> {
         let receipt = self
             .run(
                 TransactionBuilder::new(self)
                     .publish_package(code)
                     .build(Vec::new())
                     .unwrap(),
-                false,
             )
             .unwrap();
 
-        if !receipt.success {
-            #[cfg(not(feature = "alloc"))]
-            println!("{:?}", receipt);
-            panic!("Failed to publish package. See receipt above.");
+        if receipt.result.is_ok() {
+            Ok(receipt.package(0).unwrap())
         } else {
-            receipt.package(0).unwrap()
+            Err(receipt.result.err().unwrap())
         }
     }
 
@@ -151,124 +118,116 @@ impl<'l, L: Ledger> TransactionExecutor<'l, L> {
             .put_package(address, Package::new(code.to_vec()));
     }
 
-    /// Executes a transaction.
-    pub fn run(
+    /// This is a convenience method that validates and runs a transaction in one shot.
+    ///
+    /// You might also consider `validate()` and `execute()` in this implementation.
+    pub fn run(&mut self, transaction: Transaction) -> Result<Receipt, TransactionValidationError> {
+        let validated_transaction = self.validate(transaction)?;
+        let receipt = self.execute(validated_transaction);
+        Ok(receipt)
+    }
+
+    pub fn validate(
         &mut self,
         transaction: Transaction,
-        trace: bool,
-    ) -> Result<Receipt, TransactionExecutionError> {
+    ) -> Result<ValidatedTransaction, TransactionValidationError> {
+        validate_transaction(&transaction)
+    }
+
+    pub fn execute(&mut self, transaction: ValidatedTransaction) -> Receipt {
         #[cfg(not(feature = "alloc"))]
         let now = std::time::Instant::now();
 
-        let signers = if let Some(Instruction::End { signers }) = transaction.instructions.last() {
-            // TODO: check all signer addresses are public key; eventually should be computed from signature.
-            signers.clone()
-        } else {
-            return Err(TransactionExecutionError::MissingEndInstruction);
-        };
+        let transaction_hash = sha256(self.ledger.get_nonce().to_string());
+        sha256(self.ledger.get_nonce().to_string());
+        let mut track = Track::new(self.ledger, transaction_hash, transaction.signers.clone());
+        let mut proc = track.start_process(self.trace);
 
-        let mut track = Track::new(
-            self.ledger,
-            self.current_epoch,
-            sha256(self.nonce.to_string()),
-            signers,
-        );
-        let mut proc = track.start_process(trace);
-
-        let mut results = vec![];
-        let mut success = true;
-        for inst in &transaction.instructions {
-            let res = match inst {
-                Instruction::DeclareTempBucket => {
-                    proc.declare_bucket();
-                    Ok(None)
-                }
-                Instruction::DeclareTempBucketRef => {
-                    proc.declare_bucket_ref();
-                    Ok(None)
-                }
-                Instruction::TakeFromContext {
+        let mut error: Option<RuntimeError> = None;
+        let mut outputs = vec![];
+        for inst in transaction.clone().instructions {
+            let result = match inst {
+                ValidatedInstruction::TakeFromWorktop {
                     amount,
                     resource_address,
-                    to,
-                } => proc
-                    .take_from_context(*amount, *resource_address, *to)
-                    .map(|_| None),
-                Instruction::BorrowFromContext {
+                } => proc.take_from_worktop(Resource::Fungible {
                     amount,
                     resource_address,
-                    to,
-                } => proc
-                    .borrow_from_context(*amount, *resource_address, *to)
-                    .map(|_| None),
-                Instruction::CallFunction {
+                }),
+                ValidatedInstruction::TakeAllFromWorktop { resource_address } => {
+                    proc.take_from_worktop(Resource::All { resource_address })
+                }
+                ValidatedInstruction::TakeNonFungiblesFromWorktop {
+                    keys,
+                    resource_address,
+                } => proc.take_from_worktop(Resource::NonFungible {
+                    keys,
+                    resource_address,
+                }),
+                ValidatedInstruction::ReturnToWorktop { bid } => proc.return_to_worktop(bid),
+                ValidatedInstruction::AssertWorktopContains {
+                    amount,
+                    resource_address,
+                } => proc.assert_worktop_contains(amount, resource_address),
+                ValidatedInstruction::CreateBucketRef { bid } => proc.create_bucket_ref(bid),
+                ValidatedInstruction::CloneBucketRef { rid } => proc.clone_bucket_ref(rid),
+                ValidatedInstruction::DropBucketRef { rid } => proc.drop_bucket_ref(rid),
+                ValidatedInstruction::CallFunction {
                     package_address,
                     blueprint_name,
                     function,
                     args,
-                } => proc
-                    .call_function(
-                        *package_address,
-                        blueprint_name.as_str(),
-                        function.as_str(),
-                        args.iter().map(|v| v.encoded.clone()).collect(),
-                    )
-                    .map(|rtn| Some(SmartValue { encoded: rtn })),
-                Instruction::CallMethod {
+                } => proc.call_function(package_address, &blueprint_name, &function, args),
+                ValidatedInstruction::CallMethod {
                     component_address,
                     method,
                     args,
-                } => proc
-                    .call_method(
-                        *component_address,
-                        method.as_str(),
-                        args.iter().map(|v| v.encoded.clone()).collect(),
-                    )
-                    .map(|rtn| Some(SmartValue { encoded: rtn })),
-
-                Instruction::DropAllBucketRefs => {
-                    proc.drop_bucket_refs();
-                    Ok(None)
-                }
-                Instruction::DepositAllBuckets { account } => {
-                    let buckets = proc.list_buckets();
-                    if !buckets.is_empty() {
-                        proc.call_method(*account, "deposit_batch", args!(buckets))
-                            .map(|rtn| Some(SmartValue { encoded: rtn }))
-                    } else {
-                        Ok(None)
-                    }
-                }
-                Instruction::End { .. } => proc.check_resource().map(|_| None),
+                } => proc.call_method(component_address, &method, args),
+                ValidatedInstruction::CallMethodWithAllResources {
+                    component_address,
+                    method,
+                } => proc.call_method_with_all_resources(component_address, &method),
             };
-            success &= res.is_ok();
-            results.push(res);
-            if !success {
-                break;
+            match result {
+                Ok(data) => {
+                    outputs.push(data);
+                }
+                Err(e) => {
+                    error = Some(e);
+                    break;
+                }
             }
         }
 
+        // check resource
+        error = error.or_else(|| match proc.check_resource() {
+            Ok(_) => None,
+            Err(e) => Some(e),
+        });
+        let new_entities = track.new_entities().to_vec();
+        let logs = track.logs().clone();
+
         // commit state updates
-        if success {
+        if error.is_none() {
             track.commit();
-            self.nonce += 1;
+            self.ledger.increase_nonce();
         }
+
         #[cfg(feature = "alloc")]
         let execution_time = None;
         #[cfg(not(feature = "alloc"))]
         let execution_time = Some(now.elapsed().as_millis());
 
-        Ok(Receipt {
+        Receipt {
             transaction,
-            success,
-            results,
-            logs: track.logs().clone(),
-            new_entities: if success {
-                track.new_entities().to_vec()
-            } else {
-                Vec::new()
+            result: match error {
+                Some(error) => Err(error),
+                None => Ok(()),
             },
+            outputs,
+            logs,
+            new_entities,
             execution_time,
-        })
+        }
     }
 }

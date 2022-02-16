@@ -1,7 +1,7 @@
 use sbor::{describe::Type, *};
 
 use crate::buffer::*;
-use crate::kernel::*;
+use crate::engine::*;
 use crate::resource::*;
 use crate::rust::borrow::ToOwned;
 use crate::rust::collections::HashMap;
@@ -39,9 +39,9 @@ impl ResourceDef {
     pub fn new(
         resource_type: ResourceType,
         metadata: HashMap<String, String>,
-        flags: u16,
-        mutable_flags: u16,
-        authorities: HashMap<Address, u16>,
+        flags: u64,
+        mutable_flags: u64,
+        authorities: HashMap<Address, u64>,
         initial_supply: Option<NewSupply>,
     ) -> (ResourceDef, Option<Bucket>) {
         let input = CreateResourceInput {
@@ -52,7 +52,7 @@ impl ResourceDef {
             authorities,
             initial_supply,
         };
-        let output: CreateResourceOutput = call_kernel(CREATE_RESOURCE, input);
+        let output: CreateResourceOutput = call_engine(CREATE_RESOURCE, input);
 
         (
             output.resource_address.into(),
@@ -61,7 +61,7 @@ impl ResourceDef {
     }
 
     /// Mints fungible resources
-    pub fn mint<T: Into<Decimal>>(&self, amount: T, auth: BucketRef) -> Bucket {
+    pub fn mint<T: Into<Decimal>>(&mut self, amount: T, auth: BucketRef) -> Bucket {
         let input = MintResourceInput {
             resource_address: self.address,
             new_supply: NewSupply::Fungible {
@@ -69,42 +69,47 @@ impl ResourceDef {
             },
             auth: auth.into(),
         };
-        let output: MintResourceOutput = call_kernel(MINT_RESOURCE, input);
+        let output: MintResourceOutput = call_engine(MINT_RESOURCE, input);
 
         output.bid.into()
     }
 
     /// Mints non-fungible resources
-    pub fn mint_nft<T: NftData>(&self, id: u128, data: T, auth: BucketRef) -> Bucket {
+    pub fn mint_non_fungible<T: NonFungibleData>(
+        &mut self,
+        key: &NonFungibleKey,
+        data: T,
+        auth: BucketRef,
+    ) -> Bucket {
         let mut entries = HashMap::new();
-        entries.insert(id, (data.immutable_data(), data.mutable_data()));
+        entries.insert(key.clone(), (data.immutable_data(), data.mutable_data()));
 
         let input = MintResourceInput {
             resource_address: self.address,
             new_supply: NewSupply::NonFungible { entries },
             auth: auth.into(),
         };
-        let output: MintResourceOutput = call_kernel(MINT_RESOURCE, input);
+        let output: MintResourceOutput = call_engine(MINT_RESOURCE, input);
 
         output.bid.into()
     }
 
     /// Burns a bucket of resources.
-    pub fn burn(&self, bucket: Bucket) {
+    pub fn burn(&mut self, bucket: Bucket) {
         let input = BurnResourceInput {
             bid: bucket.into(),
             auth: None,
         };
-        let _output: BurnResourceOutput = call_kernel(BURN_RESOURCE, input);
+        let _output: BurnResourceOutput = call_engine(BURN_RESOURCE, input);
     }
 
     /// Burns a bucket of resources.
-    pub fn burn_with_auth(&self, bucket: Bucket, auth: BucketRef) {
+    pub fn burn_with_auth(&mut self, bucket: Bucket, auth: BucketRef) {
         let input = BurnResourceInput {
             bid: bucket.into(),
             auth: Some(auth.into()),
         };
-        let _output: BurnResourceOutput = call_kernel(BURN_RESOURCE, input);
+        let _output: BurnResourceOutput = call_engine(BURN_RESOURCE, input);
     }
 
     /// Returns the resource type.
@@ -112,7 +117,7 @@ impl ResourceDef {
         let input = GetResourceTypeInput {
             resource_address: self.address,
         };
-        let output: GetResourceTypeOutput = call_kernel(GET_RESOURCE_TYPE, input);
+        let output: GetResourceTypeOutput = call_engine(GET_RESOURCE_TYPE, input);
 
         output.resource_type
     }
@@ -122,27 +127,27 @@ impl ResourceDef {
         let input = GetResourceMetadataInput {
             resource_address: self.address,
         };
-        let output: GetResourceMetadataOutput = call_kernel(GET_RESOURCE_METADATA, input);
+        let output: GetResourceMetadataOutput = call_engine(GET_RESOURCE_METADATA, input);
 
         output.metadata
     }
 
     /// Returns the feature flags.
-    pub fn flags(&self) -> u16 {
+    pub fn flags(&self) -> u64 {
         let input = GetResourceFlagsInput {
             resource_address: self.address,
         };
-        let output: GetResourceFlagsOutput = call_kernel(GET_RESOURCE_FLAGS, input);
+        let output: GetResourceFlagsOutput = call_engine(GET_RESOURCE_FLAGS, input);
 
         output.flags
     }
 
     /// Returns the mutable feature flags.
-    pub fn mutable_flags(&self) -> u16 {
+    pub fn mutable_flags(&self) -> u64 {
         let input = GetResourceMutableFlagsInput {
             resource_address: self.address,
         };
-        let output: GetResourceMutableFlagsOutput = call_kernel(GET_RESOURCE_MUTABLE_FLAGS, input);
+        let output: GetResourceMutableFlagsOutput = call_engine(GET_RESOURCE_MUTABLE_FLAGS, input);
 
         output.mutable_flags
     }
@@ -152,7 +157,7 @@ impl ResourceDef {
         let input = GetResourceTotalSupplyInput {
             resource_address: self.address,
         };
-        let output: GetResourceTotalSupplyOutput = call_kernel(GET_RESOURCE_TOTAL_SUPPLY, input);
+        let output: GetResourceTotalSupplyOutput = call_engine(GET_RESOURCE_TOTAL_SUPPLY, input);
 
         output.total_supply
     }
@@ -162,72 +167,78 @@ impl ResourceDef {
         self.address
     }
 
-    /// Returns the data of an NFT unit, both the immutable and mutable parts.
+    /// Returns the data of a non-fungible unit, both the immutable and mutable parts.
     ///
     /// # Panics
-    /// Panics if this is not an NFT resource or the specified NFT is not found.
-    pub fn get_nft_data<T: NftData>(&self, id: u128) -> T {
-        let input = GetNftDataInput {
+    /// Panics if this is not a non-fungible resource or the specified non-fungible is not found.
+    pub fn get_non_fungible_data<T: NonFungibleData>(&self, key: &NonFungibleKey) -> T {
+        let input = GetNonFungibleDataInput {
             resource_address: self.address,
-            id,
+            key: key.clone(),
         };
-        let output: GetNftDataOutput = call_kernel(GET_NFT_DATA, input);
+        let output: GetNonFungibleDataOutput = call_engine(GET_NON_FUNGIBLE_DATA, input);
 
         scrypto_unwrap(T::decode(&output.immutable_data, &output.mutable_data))
     }
 
-    /// Updates the mutable part of an NFT unit.
+    /// Updates the mutable part of a non-fungible unit.
     ///
     /// # Panics
-    /// Panics if this is not an NFT resource or the specified NFT is not found.
-    pub fn update_nft_data<T: NftData>(&self, id: u128, new_data: T, auth: BucketRef) {
-        let input = UpdateNftMutableDataInput {
+    /// Panics if this is not a non-fungible resource or the specified non-fungible is not found.
+    pub fn update_non_fungible_data<T: NonFungibleData>(
+        &mut self,
+        key: &NonFungibleKey,
+        new_data: T,
+        auth: BucketRef,
+    ) {
+        let input = UpdateNonFungibleMutableDataInput {
             resource_address: self.address,
-            id,
+            key: key.clone(),
             new_mutable_data: new_data.mutable_data(),
             auth: auth.into(),
         };
-        let _: UpdateNftMutableDataOutput = call_kernel(UPDATE_NFT_MUTABLE_DATA, input);
+        let _: UpdateNonFungibleMutableDataOutput =
+            call_engine(UPDATE_NON_FUNGIBLE_MUTABLE_DATA, input);
     }
 
     /// Turns on feature flags.
-    pub fn enable_flags(&self, flags: u16, auth: BucketRef) {
+    pub fn enable_flags(&mut self, flags: u64, auth: BucketRef) {
         let input = UpdateResourceFlagsInput {
             resource_address: self.address,
             new_flags: self.flags() | flags,
             auth: auth.into(),
         };
-        let _output: UpdateResourceFlagsOutput = call_kernel(UPDATE_RESOURCE_FLAGS, input);
+        let _output: UpdateResourceFlagsOutput = call_engine(UPDATE_RESOURCE_FLAGS, input);
     }
 
     /// Turns off feature flags.
-    pub fn disable_flags(&self, flags: u16, auth: BucketRef) {
+    pub fn disable_flags(&mut self, flags: u64, auth: BucketRef) {
         let input = UpdateResourceFlagsInput {
             resource_address: self.address,
             new_flags: self.flags() & !flags,
             auth: auth.into(),
         };
-        let _output: UpdateResourceFlagsOutput = call_kernel(UPDATE_RESOURCE_FLAGS, input);
+        let _output: UpdateResourceFlagsOutput = call_engine(UPDATE_RESOURCE_FLAGS, input);
     }
 
     /// Locks feature flag settings.
-    pub fn lock_flags(&self, flags: u16, auth: BucketRef) {
+    pub fn lock_flags(&mut self, flags: u64, auth: BucketRef) {
         let input = UpdateResourceMutableFlagsInput {
             resource_address: self.address,
             new_mutable_flags: self.flags() & !flags,
             auth: auth.into(),
         };
         let _output: UpdateResourceMutableFlagsOutput =
-            call_kernel(UPDATE_RESOURCE_MUTABLE_FLAGS, input);
+            call_engine(UPDATE_RESOURCE_MUTABLE_FLAGS, input);
     }
 
-    pub fn update_metadata(&self, new_metadata: HashMap<String, String>, auth: BucketRef) {
+    pub fn update_metadata(&mut self, new_metadata: HashMap<String, String>, auth: BucketRef) {
         let input = UpdateResourceMetadataInput {
             resource_address: self.address,
             new_metadata,
             auth: auth.into(),
         };
-        let _output: UpdateResourceMetadataOutput = call_kernel(UPDATE_RESOURCE_METADATA, input);
+        let _output: UpdateResourceMetadataOutput = call_engine(UPDATE_RESOURCE_METADATA, input);
     }
 }
 

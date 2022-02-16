@@ -1,6 +1,6 @@
 use sbor::*;
 use scrypto::buffer::*;
-use scrypto::kernel::*;
+use scrypto::engine::*;
 use scrypto::rust::borrow::ToOwned;
 use scrypto::rust::collections::*;
 use scrypto::types::*;
@@ -22,7 +22,7 @@ struct SystemComponentState {
 }
 
 /// A ledger stores all transactions and substates.
-pub trait Ledger {
+pub trait SubstateStore {
     fn get_resource_def(&self, address: Address) -> Option<ResourceDef>;
 
     fn put_resource_def(&mut self, address: Address, resource_def: ResourceDef);
@@ -35,17 +35,26 @@ pub trait Ledger {
 
     fn put_component(&mut self, address: Address, component: Component);
 
-    fn get_lazy_map(&self, mid: Mid) -> Option<LazyMap>;
+    fn get_lazy_map(&self, component_address: &Address, mid: &Mid) -> Option<LazyMap>;
 
-    fn put_lazy_map(&mut self, mid: Mid, lazy_map: LazyMap);
+    fn put_lazy_map(&mut self, component_address: Address, vid: Mid, lazy_map: LazyMap);
 
-    fn get_vault(&self, vid: Vid) -> Option<Vault>;
+    fn get_vault(&self, component_address: &Address, vid: &Vid) -> Option<Vault>;
 
-    fn put_vault(&mut self, vid: Vid, vault: Vault);
+    fn put_vault(&mut self, component_address: Address, vid: Vid, vault: Vault);
 
-    fn get_nft(&self, resource_address: Address, id: u128) -> Option<Nft>;
+    fn get_non_fungible(
+        &self,
+        resource_address: Address,
+        id: &NonFungibleKey,
+    ) -> Option<NonFungible>;
 
-    fn put_nft(&mut self, resource_address: Address, id: u128, nft: Nft);
+    fn put_non_fungible(
+        &mut self,
+        resource_address: Address,
+        id: &NonFungibleKey,
+        non_fungible: NonFungible,
+    );
 
     fn bootstrap(&mut self) {
         if self.get_package(SYSTEM_PACKAGE).is_none() {
@@ -82,19 +91,30 @@ pub trait Ledger {
                 .unwrap(),
             );
 
+            self.put_resource_def(
+                ECDSA_TOKEN,
+                ResourceDef::new(
+                    ResourceType::NonFungible,
+                    HashMap::new(),
+                    0,
+                    0,
+                    HashMap::new(),
+                    &None,
+                )
+                .unwrap(),
+            );
+
             // Instantiate system component
             self.put_vault(
+                SYSTEM_COMPONENT,
                 XRD_VAULT_ID,
-                Vault::new(
-                    Bucket::new(
-                        RADIX_TOKEN,
-                        ResourceType::Fungible { divisibility: 18 },
-                        Supply::Fungible {
-                            amount: XRD_MAX_SUPPLY.into(),
-                        },
-                    ),
-                    SYSTEM_PACKAGE,
-                ),
+                Vault::new(Bucket::new(
+                    RADIX_TOKEN,
+                    ResourceType::Fungible { divisibility: 18 },
+                    Supply::Fungible {
+                        amount: XRD_MAX_SUPPLY.into(),
+                    },
+                )),
             );
             self.put_component(
                 SYSTEM_COMPONENT,
@@ -106,4 +126,15 @@ pub trait Ledger {
             );
         }
     }
+
+    fn get_epoch(&self) -> u64;
+
+    fn set_epoch(&mut self, epoch: u64);
+
+    // Before transaction hash is defined, we use the following TEMPORARY interfaces
+    // to introduce entropy for address derivation.
+
+    fn get_nonce(&self) -> u64;
+
+    fn increase_nonce(&mut self);
 }

@@ -11,3 +11,9 @@ Cargo.lock
 
 # Flamegraph profiles
 flamegraph.svg
+
+# IntelliJ
+.idea/
+
+# Emacs
+*~

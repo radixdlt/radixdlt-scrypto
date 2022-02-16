@@ -1,6 +1,6 @@
 use scrypto::prelude::*;
 
-#[derive(NftData)]
+#[derive(NonFungibleData)]
 pub struct Ticket {
     pub row: u32,
     pub column: u32,
@@ -17,12 +17,15 @@ blueprint! {
     }
 
     impl HelloNft {
-        pub fn new(price: Decimal) -> Component {
+        pub fn instantiate_hello_nft(price: Decimal) -> Component {
             // Prepare ticket NFT data
             let mut tickets = Vec::new();
             for row in 1..5 {
                 for column in 1..5 {
-                    tickets.push((Uuid::generate(), Ticket { row, column }));
+                    tickets.push((
+                        NonFungibleKey::from(Uuid::generate()),
+                        Ticket { row, column },
+                    ));
                 }
             }
 
@@ -40,7 +43,7 @@ blueprint! {
             .instantiate()
         }
 
-        pub fn buy_ticket(&mut self, payment: Bucket) -> (Bucket, Bucket) {
+        pub fn buy_ticket(&mut self, mut payment: Bucket) -> (Bucket, Bucket) {
             // Take our price out of the payment bucket
             self.collected_xrd.put(payment.take(self.ticket_price));
 
@@ -51,19 +54,21 @@ blueprint! {
             (ticket, payment)
         }
 
-        pub fn buy_ticket_by_id(&mut self, id: u128, payment: Bucket) -> (Bucket, Bucket) {
+        pub fn buy_ticket_by_id(&mut self, id: u128, mut payment: Bucket) -> (Bucket, Bucket) {
             // Take our price out of the payment bucket
             self.collected_xrd.put(payment.take(self.ticket_price));
 
             // Take the specific ticket
-            let ticket = self.available_tickets.take_nft(id);
+            let ticket = self
+                .available_tickets
+                .take_non_fungible(&NonFungibleKey::from(id));
 
             // Return the ticket and change
             (ticket, payment)
         }
 
-        pub fn available_ticket_ids(&self) -> Vec<u128> {
-            self.available_tickets.get_nft_ids()
+        pub fn available_ticket_ids(&self) -> Vec<NonFungibleKey> {
+            self.available_tickets.get_non_fungible_keys()
         }
     }
 }

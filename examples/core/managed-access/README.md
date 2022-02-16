@@ -43,14 +43,14 @@ The only state we need to maintain is the aforementioned vault, and the `Resourc
 ## Getting Ready for Instantiation
 In order to instantiate, we'll require no parameters and return to the caller a tuple containing the newly instantiated component, and a bucket containing the first admin badge created by our `FlatAdmin` badge manager:
 ```rust
-pub fn new() -> (Component, Bucket) {
+pub fn instantiate_managed_access() -> (Component, Bucket) {
 ```
 
 Our first step will be to instantiate a `FlatAdmin` component, and store the results of that instantiation.
 
 ```rust
 let (flat_admin_component, admin_badge) =
-  FlatAdmin::new("My Managed Access Badge".into());
+  FlatAdmin::instantiate_flat_admin("My Managed Access Badge".into());
 ```
 
 That gives us everything we need to populate our `struct`, instantiate, and return the results to our caller:

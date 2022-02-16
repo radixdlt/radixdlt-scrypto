@@ -7,8 +7,8 @@ pub fn scrypto_encode<T: Encode + ?Sized>(v: &T) -> Vec<u8> {
     sbor::encode_with_type(Vec::with_capacity(512), v)
 }
 
-/// Encodes a data structure into byte array for kernel.
-pub fn scrypto_encode_for_kernel<T: Encode + ?Sized>(v: &T) -> Vec<u8> {
+/// Encodes a data structure into byte array for radix engine.
+pub fn scrypto_encode_for_radix_engine<T: Encode + ?Sized>(v: &T) -> Vec<u8> {
     // create a buffer and pre-append with length (0).
     let mut buf = Vec::with_capacity(512);
     buf.extend(&[0u8; 4]);
@@ -33,7 +33,7 @@ mod tests {
     use sbor::*;
 
     use crate::buffer::*;
-    use crate::kernel::*;
+    use crate::engine::*;
     use crate::resource::*;
     use crate::rust::borrow::ToOwned;
     use crate::rust::string::String;
@@ -43,18 +43,16 @@ mod tests {
     #[test]
     fn test_serialization() {
         let obj = PutComponentStateInput {
-            component_address: Address::Component([1u8; 26]),
             state: scrypto_encode(&"test".to_owned()),
         };
         let encoded = crate::buffer::scrypto_encode(&obj);
         let decoded = crate::buffer::scrypto_decode::<PutComponentStateInput>(&encoded).unwrap();
-        assert_eq!(decoded.component_address, Address::Component([1u8; 26]));
         assert_eq!(scrypto_decode::<String>(&decoded.state).unwrap(), "test");
     }
 
     #[test]
-    fn test_encode_for_kernel() {
-        let encoded = crate::buffer::scrypto_encode_for_kernel("abc");
+    fn test_encode_for_radix_engine() {
+        let encoded = crate::buffer::scrypto_encode_for_radix_engine("abc");
         assert_eq!(vec![8, 0, 0, 0, 12, 3, 0, 0, 0, 97, 98, 99], encoded);
     }
 

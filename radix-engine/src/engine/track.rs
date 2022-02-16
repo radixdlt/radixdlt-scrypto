@@ -1,5 +1,5 @@
 use lru::LruCache;
-use scrypto::kernel::*;
+use scrypto::engine::*;
 use scrypto::rust::collections::*;
 use scrypto::rust::string::String;
 use scrypto::rust::vec::Vec;
@@ -17,63 +17,78 @@ use crate::model::*;
 ///
 /// Typically, a track is shared by all the processes created within a transaction.
 ///
-pub struct Track<'l, L: Ledger> {
-    ledger: &'l mut L,
-    current_epoch: u64,
+pub struct Track<'s, S: SubstateStore> {
+    ledger: &'s mut S,
     transaction_hash: H256,
-    transaction_signers: Vec<Address>,
-    id_alloc: IdAllocator,
+    transaction_signers: Vec<EcdsaPublicKey>,
+    id_allocator: IdAllocator,
     logs: Vec<(LogLevel, String)>,
     packages: HashMap<Address, Package>,
     components: HashMap<Address, Component>,
     resource_defs: HashMap<Address, ResourceDef>,
-    lazy_maps: HashMap<Mid, LazyMap>,
-    vaults: HashMap<Vid, Vault>,
-    nfts: HashMap<(Address, u128), Nft>,
+    lazy_maps: HashMap<(Address, Mid), LazyMap>,
+    vaults: HashMap<(Address, Vid), Vault>,
+    non_fungibles: HashMap<(Address, NonFungibleKey), NonFungible>,
     updated_packages: HashSet<Address>,
     updated_components: HashSet<Address>,
-    updated_lazy_maps: HashSet<Mid>,
+    updated_lazy_maps: HashSet<(Address, Mid)>,
     updated_resource_defs: HashSet<Address>,
-    updated_vaults: HashSet<Vid>,
-    updated_nfts: HashSet<(Address, u128)>,
+    updated_vaults: HashSet<(Address, Vid)>,
+    updated_non_fungibles: HashSet<(Address, NonFungibleKey)>,
     new_entities: Vec<Address>,
     code_cache: LruCache<Address, Module>, // TODO: move to ledger level
 }
 
-impl<'l, L: Ledger> Track<'l, L> {
+impl<'s, S: SubstateStore> Track<'s, S> {
     pub fn new(
-        ledger: &'l mut L,
-        current_epoch: u64,
+        ledger: &'s mut S,
         transaction_hash: H256,
-        transaction_signers: Vec<Address>,
+        transaction_signers: Vec<EcdsaPublicKey>,
     ) -> Self {
         Self {
             ledger,
-            current_epoch,
             transaction_hash,
             transaction_signers,
-            id_alloc: IdAllocator::new(),
+            id_allocator: IdAllocator::new(IdSpace::Application),
             logs: Vec::new(),
             packages: HashMap::new(),
             components: HashMap::new(),
             resource_defs: HashMap::new(),
             lazy_maps: HashMap::new(),
             vaults: HashMap::new(),
-            nfts: HashMap::new(),
+            non_fungibles: HashMap::new(),
             updated_packages: HashSet::new(),
             updated_components: HashSet::new(),
             updated_lazy_maps: HashSet::new(),
             updated_resource_defs: HashSet::new(),
             updated_vaults: HashSet::new(),
-            updated_nfts: HashSet::new(),
+            updated_non_fungibles: HashSet::new(),
             new_entities: Vec::new(),
             code_cache: LruCache::new(1024),
         }
     }
 
     /// Start a process.
-    pub fn start_process<'r>(&'r mut self, verbose: bool) -> Process<'r, 'l, L> {
-        Process::new(0, verbose, self)
+    pub fn start_process<'r>(&'r mut self, verbose: bool) -> Process<'r, 's, S> {
+        // FIXME: This is a temp solution
+        let signers: BTreeSet<NonFungibleKey> = self
+            .transaction_signers
+            .clone()
+            .into_iter()
+            .map(|key| NonFungibleKey::new(key.to_vec()))
+            .collect();
+        let mut process = Process::new(0, verbose, self);
+
+        // Always create a virtual bucket of signatures even if there is none.
+        // This is to make reasoning at transaction manifest & validator easier.
+        let ecdsa_bucket = Bucket::new(
+            ECDSA_TOKEN,
+            ResourceType::NonFungible,
+            Supply::NonFungible { keys: signers },
+        );
+        process.create_virtual_bucket_ref(ECDSA_TOKEN_BID, ECDSA_TOKEN_RID, ecdsa_bucket);
+
+        process
     }
 
     /// Returns the transaction hash.
@@ -81,14 +96,9 @@ impl<'l, L: Ledger> Track<'l, L> {
         self.transaction_hash
     }
 
-    /// Returns the transaction hash.
-    pub fn transaction_signers(&self) -> Vec<Address> {
-        self.transaction_signers.clone()
-    }
-
     /// Returns the current epoch.
     pub fn current_epoch(&self) -> u64 {
-        self.current_epoch
+        self.ledger.get_epoch()
     }
 
     /// Returns the logs collected so far.
@@ -197,78 +207,109 @@ impl<'l, L: Ledger> Track<'l, L> {
         self.components.insert(address, component);
     }
 
-    /// Returns an immutable reference to a nft, if exists.
-    pub fn get_nft(&mut self, resource_address: Address, id: u128) -> Option<&Nft> {
-        if self.nfts.contains_key(&(resource_address, id)) {
-            return self.nfts.get(&(resource_address, id));
+    /// Returns an immutable reference to a non-fungible, if exists.
+    pub fn get_non_fungible(
+        &mut self,
+        resource_address: Address,
+        key: &NonFungibleKey,
+    ) -> Option<&NonFungible> {
+        if self
+            .non_fungibles
+            .contains_key(&(resource_address, key.clone()))
+        {
+            return self.non_fungibles.get(&(resource_address, key.clone()));
         }
 
-        if let Some(nft) = self.ledger.get_nft(resource_address, id) {
-            self.nfts.insert((resource_address, id), nft);
-            self.nfts.get(&(resource_address, id))
+        if let Some(non_fungible) = self.ledger.get_non_fungible(resource_address, key) {
+            self.non_fungibles
+                .insert((resource_address, key.clone()), non_fungible);
+            self.non_fungibles.get(&(resource_address, key.clone()))
         } else {
             None
         }
     }
 
-    /// Returns a mutable reference to a nft, if exists.
-    pub fn get_nft_mut(&mut self, resource_address: Address, id: u128) -> Option<&mut Nft> {
-        self.updated_nfts.insert((resource_address, id));
+    /// Returns a mutable reference to a non-fungible, if exists.
+    pub fn get_non_fungible_mut(
+        &mut self,
+        resource_address: Address,
+        key: &NonFungibleKey,
+    ) -> Option<&mut NonFungible> {
+        self.updated_non_fungibles
+            .insert((resource_address, key.clone()));
 
-        if self.nfts.contains_key(&(resource_address, id)) {
-            return self.nfts.get_mut(&(resource_address, id));
+        if self
+            .non_fungibles
+            .contains_key(&(resource_address, key.clone()))
+        {
+            return self.non_fungibles.get_mut(&(resource_address, key.clone()));
         }
 
-        if let Some(nft) = self.ledger.get_nft(resource_address, id) {
-            self.nfts.insert((resource_address, id), nft);
-            self.nfts.get_mut(&(resource_address, id))
+        if let Some(non_fungible) = self.ledger.get_non_fungible(resource_address, key) {
+            self.non_fungibles
+                .insert((resource_address, key.clone()), non_fungible);
+            self.non_fungibles.get_mut(&(resource_address, key.clone()))
         } else {
             None
         }
     }
 
-    /// Inserts a new nft.
-    pub fn put_nft(&mut self, resource_address: Address, id: u128, nft: Nft) {
-        self.updated_nfts.insert((resource_address, id));
+    /// Inserts a new non-fungible.
+    pub fn put_non_fungible(
+        &mut self,
+        resource_address: Address,
+        key: &NonFungibleKey,
+        non_fungible: NonFungible,
+    ) {
+        self.updated_non_fungibles
+            .insert((resource_address, key.clone()));
 
-        self.nfts.insert((resource_address, id), nft);
+        self.non_fungibles
+            .insert((resource_address, key.clone()), non_fungible);
     }
 
     /// Returns an immutable reference to a lazy map, if exists.
-    pub fn get_lazy_map(&mut self, mid: Mid) -> Option<&LazyMap> {
-        if self.lazy_maps.contains_key(&mid) {
-            return self.lazy_maps.get(&mid);
+    pub fn get_lazy_map(&mut self, component_address: &Address, mid: &Mid) -> Option<&LazyMap> {
+        let lazy_map_id = (component_address.clone(), mid.clone());
+
+        if self.lazy_maps.contains_key(&lazy_map_id) {
+            return self.lazy_maps.get(&lazy_map_id);
         }
 
-        if let Some(lazy_map) = self.ledger.get_lazy_map(mid) {
-            self.lazy_maps.insert(mid, lazy_map);
-            self.lazy_maps.get(&mid)
+        if let Some(lazy_map) = self.ledger.get_lazy_map(component_address, mid) {
+            self.lazy_maps.insert(lazy_map_id, lazy_map);
+            self.lazy_maps.get(&lazy_map_id)
         } else {
             None
         }
     }
 
     /// Returns a mutable reference to a lazy map, if exists.
-    pub fn get_lazy_map_mut(&mut self, mid: Mid) -> Option<&mut LazyMap> {
-        self.updated_lazy_maps.insert(mid);
+    pub fn get_lazy_map_mut(
+        &mut self,
+        component_address: &Address,
+        mid: &Mid,
+    ) -> Option<&mut LazyMap> {
+        let lazy_map_id = (component_address.clone(), mid.clone());
+        self.updated_lazy_maps.insert(lazy_map_id.clone());
 
-        if self.lazy_maps.contains_key(&mid) {
-            return self.lazy_maps.get_mut(&mid);
+        if self.lazy_maps.contains_key(&lazy_map_id) {
+            return self.lazy_maps.get_mut(&lazy_map_id);
         }
 
-        if let Some(lazy_map) = self.ledger.get_lazy_map(mid) {
-            self.lazy_maps.insert(mid, lazy_map);
-            self.lazy_maps.get_mut(&mid)
+        if let Some(lazy_map) = self.ledger.get_lazy_map(component_address, mid) {
+            self.lazy_maps.insert(lazy_map_id, lazy_map);
+            self.lazy_maps.get_mut(&lazy_map_id)
         } else {
             None
         }
     }
 
     /// Inserts a new lazy map.
-    pub fn put_lazy_map(&mut self, mid: Mid, lazy_map: LazyMap) {
-        self.updated_lazy_maps.insert(mid);
-
-        self.lazy_maps.insert(mid, lazy_map);
+    pub fn put_lazy_map(&mut self, component_address: Address, mid: Mid, lazy_map: LazyMap) {
+        let lazy_map_id = (component_address, mid);
+        self.updated_lazy_maps.insert(lazy_map_id.clone());
+        self.lazy_maps.insert(lazy_map_id, lazy_map);
     }
 
     /// Returns an immutable reference to a resource definition, if exists.
@@ -309,88 +350,84 @@ impl<'l, L: Ledger> Track<'l, L> {
         self.resource_defs.insert(address, resource_def);
     }
 
-    /// Returns an immutable reference to a vault, if exists.
-    #[allow(dead_code)]
-    pub fn get_vault(&mut self, vid: Vid) -> Option<&Vault> {
-        if self.vaults.contains_key(&vid) {
-            return self.vaults.get(&vid);
-        }
-
-        if let Some(vault) = self.ledger.get_vault(vid) {
-            self.vaults.insert(vid, vault);
-            self.vaults.get(&vid)
-        } else {
-            None
-        }
-    }
-
     /// Returns a mutable reference to a vault, if exists.
-    pub fn get_vault_mut(&mut self, vid: Vid) -> Option<&mut Vault> {
-        self.updated_vaults.insert(vid);
+    pub fn get_vault_mut(&mut self, component_address: &Address, vid: &Vid) -> Option<&mut Vault> {
+        let vault_id = (component_address.clone(), vid.clone());
+        self.updated_vaults.insert(vault_id.clone());
 
-        if self.vaults.contains_key(&vid) {
-            return self.vaults.get_mut(&vid);
+        if self.vaults.contains_key(&vault_id) {
+            return self.vaults.get_mut(&vault_id);
         }
 
-        if let Some(vault) = self.ledger.get_vault(vid) {
-            self.vaults.insert(vid, vault);
-            self.vaults.get_mut(&vid)
+        if let Some(vault) = self.ledger.get_vault(component_address, vid) {
+            self.vaults.insert(vault_id, vault);
+            self.vaults.get_mut(&vault_id)
         } else {
             None
         }
     }
 
     /// Inserts a new vault.
-    pub fn put_vault(&mut self, vid: Vid, vault: Vault) {
-        self.updated_vaults.insert(vid);
-
-        self.vaults.insert(vid, vault);
+    pub fn put_vault(&mut self, component_address: Address, vid: Vid, vault: Vault) {
+        let vault_id = (component_address, vid);
+        self.updated_vaults.insert(vault_id);
+        self.vaults.insert(vault_id, vault);
     }
 
     /// Creates a new package address.
     pub fn new_package_address(&mut self) -> Address {
-        let address = self.id_alloc.new_package_address(self.transaction_hash());
+        // Security Alert: ensure ID allocating will practically never fail
+        let address = self
+            .id_allocator
+            .new_package_address(self.transaction_hash())
+            .unwrap();
         self.new_entities.push(address);
         address
     }
 
     /// Creates a new component address.
     pub fn new_component_address(&mut self) -> Address {
-        let address = self.id_alloc.new_component_address(self.transaction_hash());
+        let address = self
+            .id_allocator
+            .new_component_address(self.transaction_hash())
+            .unwrap();
         self.new_entities.push(address);
         address
     }
 
     /// Creates a new resource definition address.
     pub fn new_resource_address(&mut self) -> Address {
-        let address = self.id_alloc.new_resource_address(self.transaction_hash());
+        let address = self
+            .id_allocator
+            .new_resource_address(self.transaction_hash())
+            .unwrap();
         self.new_entities.push(address);
         address
     }
 
     /// Creates a new UUID.
     pub fn new_uuid(&mut self) -> u128 {
-        self.id_alloc.new_uuid(self.transaction_hash())
+        self.id_allocator.new_uuid(self.transaction_hash()).unwrap()
     }
 
     /// Creates a new bucket ID.
     pub fn new_bid(&mut self) -> Bid {
-        self.id_alloc.new_bid()
+        self.id_allocator.new_bid().unwrap()
     }
 
     /// Creates a new vault ID.
     pub fn new_vid(&mut self) -> Vid {
-        self.id_alloc.new_vid(self.transaction_hash())
+        self.id_allocator.new_vid(self.transaction_hash()).unwrap()
     }
 
     /// Creates a new reference id.
     pub fn new_rid(&mut self) -> Rid {
-        self.id_alloc.new_rid()
+        self.id_allocator.new_rid().unwrap()
     }
 
     /// Creates a new map id.
     pub fn new_mid(&mut self) -> Mid {
-        self.id_alloc.new_mid(self.transaction_hash())
+        self.id_allocator.new_mid(self.transaction_hash()).unwrap()
     }
 
     /// Commits changes to the underlying ledger.
@@ -410,21 +447,28 @@ impl<'l, L: Ledger> Track<'l, L> {
                 .put_resource_def(address, self.resource_defs.get(&address).unwrap().clone());
         }
 
-        for mid in self.updated_lazy_maps.clone() {
-            self.ledger
-                .put_lazy_map(mid, self.lazy_maps.get(&mid).unwrap().clone());
+        for (component_address, mid) in self.updated_lazy_maps.clone() {
+            let lazy_map = self
+                .lazy_maps
+                .get(&(component_address, mid))
+                .unwrap()
+                .clone();
+            self.ledger.put_lazy_map(component_address, mid, lazy_map);
         }
 
-        for vid in self.updated_vaults.clone() {
-            self.ledger
-                .put_vault(vid, self.vaults.get(&vid).unwrap().clone());
+        for (component_address, vid) in self.updated_vaults.clone() {
+            let vault = self.vaults.get(&(component_address, vid)).unwrap().clone();
+            self.ledger.put_vault(component_address, vid, vault);
         }
 
-        for (resource_def, id) in self.updated_nfts.clone() {
-            self.ledger.put_nft(
+        for (resource_def, id) in self.updated_non_fungibles.clone() {
+            self.ledger.put_non_fungible(
                 resource_def,
-                id,
-                self.nfts.get(&(resource_def, id)).unwrap().clone(),
+                &id,
+                self.non_fungibles
+                    .get(&(resource_def, id.clone()))
+                    .unwrap()
+                    .clone(),
             );
         }
     }

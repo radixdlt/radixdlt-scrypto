@@ -10,7 +10,7 @@ blueprint! {
     }
 
     impl Airdrop {
-        pub fn new() -> Component {
+        pub fn instantiate_airdrop() -> Component {
             Self {
                 tokens: Vault::with_bucket(
                     ResourceBuilder::new_fungible(DIVISIBILITY_MAXIMUM)
@@ -21,7 +21,7 @@ blueprint! {
             .instantiate()
         }
 
-        pub fn free_token(&self) -> Bucket {
+        pub fn free_token(&mut self) -> Bucket {
             // Take 1 FreeToken and return
             self.tokens.take(1)
         }

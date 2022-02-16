@@ -5,22 +5,24 @@ use scrypto::prelude::*;
 #[test]
 fn test_hello() {
     // Set up environment.
-    let mut ledger = InMemoryLedger::with_bootstrap();
-    let mut executor = TransactionExecutor::new(&mut ledger, 0, 0);
+    let mut ledger = InMemorySubstateStore::with_bootstrap();
+    let mut executor = TransactionExecutor::new(&mut ledger, false);
     let key = executor.new_public_key();
     let account = executor.new_account(key);
-    let package = executor.publish_package(include_code!("hello_nft"));
-
-    // Test the `new` function.
-    let transaction1 = TransactionBuilder::new(&executor)
-        .call_function(package, "HelloNft", "new", vec!["5".to_owned()], None)
-        .drop_all_bucket_refs()
-        .deposit_all_buckets(account)
-        .build(vec![key])
+    let package = executor
+        .publish_package(include_code!("hello_nft"))
         .unwrap();
-    let receipt1 = executor.run(transaction1, true).unwrap();
+
+    // Test the `instantiate_hello_nft` function.
+    let transaction1 = TransactionBuilder::new(&executor)
+        .call_function(package, "HelloNft", "instantiate_hello_nft", vec!["5".to_owned()], None)
+        .call_method_with_all_resources(account, "deposit_batch")
+        .build(vec![key])
+        
+        .unwrap();
+    let receipt1 = executor.run(transaction1).unwrap();
     println!("{:?}\n", receipt1);
-    assert!(receipt1.success);
+    assert!(receipt1.result.is_ok());
 
     // Test the `buy_ticket_by_id` method.
     let component = receipt1.component(0).unwrap();
@@ -29,16 +31,15 @@ fn test_hello() {
             component,
             "buy_ticket_by_id",
             vec![
-                "19263377484785923007266988645735551278".to_owned(),
+                "328550132818421743010213967181621860355".to_owned(),
                 "10,030000000000000000000000000000000000000000000000000004".to_owned(),
             ],
             Some(account),
         )
-        .drop_all_bucket_refs()
-        .deposit_all_buckets(account)
+        .call_method_with_all_resources(account, "deposit_batch")
         .build(vec![key])
         .unwrap();
-    let receipt2 = executor.run(transaction2, true).unwrap();
+    let receipt2 = executor.run(transaction2).unwrap();
     println!("{:?}\n", receipt2);
-    assert!(receipt2.success);
+    assert!(receipt2.result.is_ok());
 }

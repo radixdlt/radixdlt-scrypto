@@ -30,6 +30,15 @@ pub enum ParseBigDecimalError {
     InvalidLength,
 }
 
+impl fmt::Display for ParseBigDecimalError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
+#[cfg(not(feature = "alloc"))]
+impl std::error::Error for ParseBigDecimalError {}
+
 impl BigDecimal {
     /// Return a `BigDecimal` of 0.
     pub fn zero() -> Self {
@@ -96,6 +105,48 @@ from_int!(i32);
 from_int!(i64);
 from_int!(i128);
 from_int!(isize);
+
+impl From<&str> for BigDecimal {
+    fn from(val: &str) -> Self {
+        Self::from_str(&val).unwrap()
+    }
+}
+
+impl From<String> for BigDecimal {
+    fn from(val: String) -> Self {
+        Self::from_str(&val).unwrap()
+    }
+}
+
+impl From<bool> for BigDecimal {
+    fn from(val: bool) -> Self {
+        if val {
+            Self::from(1)
+        } else {
+            Self::from(0)
+        }
+    }
+}
+
+#[macro_export]
+macro_rules! bdec {
+    ($x:literal) => {
+        ::scrypto::types::BigDecimal::from($x)
+    };
+
+    ($base:literal, $shift:literal) => {
+        // Base can be any type that converts into a BigDecimal, and shift must support
+        // comparison and `-` unary operation, enforced by rustc.
+        {
+            let base = ::scrypto::types::BigDecimal::from($base);
+            if $shift >= 0 {
+                base * 10i128.pow(u32::try_from($shift).expect("Shift overflow"))
+            } else {
+                base / 10i128.pow(u32::try_from(-$shift).expect("Shift overflow"))
+            }
+        }
+    };
+}
 
 //=====
 // ADD
@@ -582,5 +633,56 @@ mod tests {
         let a = BigDecimal::from(5u32);
         let b = BigDecimal::from(7u32);
         assert_eq!((a / b).to_string(), "0.714285714285714285");
+    }
+
+    #[test]
+    fn test_bdec_string_decimal() {
+        assert_eq!(
+            bdec!("1.123456789012345678").to_string(),
+            "1.123456789012345678"
+        );
+        assert_eq!(bdec!("-5.6").to_string(), "-5.6");
+    }
+
+    #[test]
+    fn test_bdec_string() {
+        assert_eq!(bdec!("1").to_string(), "1");
+        assert_eq!(bdec!("0").to_string(), "0");
+    }
+
+    #[test]
+    fn test_bdec_int() {
+        assert_eq!(bdec!(1).to_string(), "1");
+        assert_eq!(bdec!(5).to_string(), "5");
+    }
+
+    #[test]
+    fn test_bdec_bool() {
+        assert_eq!((bdec!(true)).to_string(), "1");
+        assert_eq!((bdec!(false)).to_string(), "0");
+    }
+
+    #[test]
+    fn test_bdec_rational() {
+        assert_eq!((bdec!(11235, 0)).to_string(), "11235");
+        assert_eq!((bdec!(11235, -2)).to_string(), "112.35");
+        assert_eq!((bdec!(11235, 2)).to_string(), "1123500");
+
+        assert_eq!(
+            (bdec!(112000000000000000001i128, -18)).to_string(),
+            "112.000000000000000001"
+        );
+
+        assert_eq!(
+            (bdec!(112000000000000000001i128, -18)).to_string(),
+            "112.000000000000000001"
+        );
+    }
+
+    #[test]
+    #[should_panic(expected = "Shift overflow")]
+    fn test_overflow() {
+        // u32::MAX + 1
+        bdec!(1, 4_294_967_296i128); // use explicit type to defer error to runtime
     }
 }

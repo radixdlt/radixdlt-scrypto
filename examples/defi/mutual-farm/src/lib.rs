@@ -14,11 +14,11 @@ use scrypto::prelude::*;
 import! {
 r#"
 {
-    "package": "01e61370219353678d8bfb37bce521e257d0ec29ae9a2e95d194ea",
+    "package": "014eb598fe6ed7df56a5f02950df2d7b08530d9d1081f05a6398f9",
     "name": "PriceOracle",
     "functions": [
         {
-            "name": "new",
+            "name": "instantiate_oracle",
             "inputs": [
                 {
                     "type": "U32"
@@ -113,11 +113,11 @@ r#"
 import! {
 r#"
 {
-    "package": "01d25d4eab30b60d9951f3433b35cff52a48f8cf163b66c0a16677",
+    "package": "01e0983e33158b489e70313b77767abe80eb449e6acd46f9476328",
     "name": "SyntheticPool",
     "functions": [
         {
-            "name": "new",
+            "name": "instantiate_pool",
             "inputs": [
                 {
                     "type": "Custom",
@@ -318,11 +318,11 @@ r#"
 import! {
 r#"
 {
-    "package": "01f91f613875b4326060eac0bcc0c98c0eaad15eb1c9c51ace0401",
+    "package": "01899b2991b37ee1bc51a84182a3752c1dc48ec3df01969d3516d3",
     "name": "Radiswap",
     "functions": [
         {
-            "name": "new",
+            "name": "instantiate_pool",
             "inputs": [
                 {
                     "type": "Custom",
@@ -484,14 +484,14 @@ blueprint! {
     }
 
     impl MutualFarm {
-        pub fn new(
+        pub fn instantiate_farm(
             price_oracle_address: Address,
             xrd_snx_radiswap_address: Address,
             synthetic_pool_address: Address,
             asset_symbol: String,
             asset_address: Address,
             initial_shares: Decimal,
-            initial_xrd: Bucket,
+            mut initial_xrd: Bucket,
             snx_address: Address,
             usd_address: Address,
         ) -> (Bucket, Component) {
@@ -526,7 +526,7 @@ blueprint! {
             let synth_address = synth.resource_address();
 
             debug!("Set up sTESLA/XRD swap pool");
-            let (radiswap_comp, lp_tokens) = Radiswap::new(
+            let (radiswap_comp, lp_tokens) = Radiswap::instantiate_pool(
                 synth,
                 initial_xrd,
                 1000000.into(),
@@ -537,7 +537,7 @@ blueprint! {
             );
 
             debug!("Mint initial shares");
-            let mutual_farm_share_resource_def = ResourceBuilder::new_fungible(DIVISIBILITY_MAXIMUM)
+            let mut mutual_farm_share_resource_def = ResourceBuilder::new_fungible(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "MutualFarm share")
                 .flags(MINTABLE | BURNABLE)
                 .badge(identity_badge_address, MAY_MINT | MAY_BURN)
@@ -566,7 +566,7 @@ blueprint! {
             (shares, component)
         }
 
-        pub fn deposit(&mut self, xrd: Bucket) -> (Bucket, Bucket) {
+        pub fn deposit(&mut self, mut xrd: Bucket) -> (Bucket, Bucket) {
             debug!("Fetch price info from oracle");
             let xrd_usd_price = self
                 .price_oracle

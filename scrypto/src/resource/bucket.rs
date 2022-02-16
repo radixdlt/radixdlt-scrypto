@@ -1,7 +1,7 @@
 use sbor::{describe::Type, *};
 
 use crate::buffer::*;
-use crate::kernel::*;
+use crate::engine::*;
 use crate::resource::*;
 use crate::rust::borrow::ToOwned;
 use crate::rust::vec;
@@ -32,27 +32,27 @@ impl Bucket {
         let input = CreateEmptyBucketInput {
             resource_address: resource_def.into().address(),
         };
-        let output: CreateEmptyBucketOutput = call_kernel(CREATE_EMPTY_BUCKET, input);
+        let output: CreateEmptyBucketOutput = call_engine(CREATE_EMPTY_BUCKET, input);
 
         output.bid.into()
     }
 
     /// Puts resources from another bucket into this bucket.
-    pub fn put(&self, other: Self) {
+    pub fn put(&mut self, other: Self) {
         let input = PutIntoBucketInput {
             bid: self.bid,
             other: other.bid,
         };
-        let _: PutIntoBucketOutput = call_kernel(PUT_INTO_BUCKET, input);
+        let _: PutIntoBucketOutput = call_engine(PUT_INTO_BUCKET, input);
     }
 
     /// Takes some amount of resources from this bucket.
-    pub fn take<A: Into<Decimal>>(&self, amount: A) -> Self {
+    pub fn take<A: Into<Decimal>>(&mut self, amount: A) -> Self {
         let input = TakeFromBucketInput {
             bid: self.bid,
             amount: amount.into(),
         };
-        let output: TakeFromBucketOutput = call_kernel(TAKE_FROM_BUCKET, input);
+        let output: TakeFromBucketOutput = call_engine(TAKE_FROM_BUCKET, input);
 
         output.bid.into()
     }
@@ -60,7 +60,7 @@ impl Bucket {
     /// Creates an immutable reference to this bucket.
     pub fn present(&self) -> BucketRef {
         let input = CreateBucketRefInput { bid: self.bid };
-        let output: CreateBucketRefOutput = call_kernel(CREATE_BUCKET_REF, input);
+        let output: CreateBucketRefOutput = call_engine(CREATE_BUCKET_REF, input);
 
         output.rid.into()
     }
@@ -68,7 +68,7 @@ impl Bucket {
     /// Returns the amount of resources in this bucket.
     pub fn amount(&self) -> Decimal {
         let input = GetBucketDecimalInput { bid: self.bid };
-        let output: GetBucketDecimalOutput = call_kernel(GET_BUCKET_AMOUNT, input);
+        let output: GetBucketDecimalOutput = call_engine(GET_BUCKET_AMOUNT, input);
 
         output.amount
     }
@@ -77,7 +77,7 @@ impl Bucket {
     pub fn resource_def(&self) -> ResourceDef {
         let input = GetBucketResourceAddressInput { bid: self.bid };
         let output: GetBucketResourceAddressOutput =
-            call_kernel(GET_BUCKET_RESOURCE_ADDRESS, input);
+            call_engine(GET_BUCKET_RESOURCE_ADDRESS, input);
 
         output.resource_address.into()
     }
@@ -107,64 +107,83 @@ impl Bucket {
         f(self.present())
     }
 
-    /// Takes an NFT from this bucket, by id.
+    /// Takes a non-fungible from this bucket, by id.
     ///
     /// # Panics
-    /// Panics if this is not an NFT bucket or the specified NFT is not found.
-    pub fn take_nft(&self, id: u128) -> Bucket {
-        let input = TakeNftFromBucketInput { bid: self.bid, id };
-        let output: TakeNftFromBucketOutput = call_kernel(TAKE_NFT_FROM_BUCKET, input);
+    /// Panics if this is not a non-fungible bucket or the specified non-fungible resource is not found.
+    pub fn take_non_fungible(&mut self, key: &NonFungibleKey) -> Bucket {
+        let input = TakeNonFungibleFromBucketInput {
+            bid: self.bid,
+            key: key.clone(),
+        };
+        let output: TakeNonFungibleFromBucketOutput =
+            call_engine(TAKE_NON_FUNGIBLE_FROM_BUCKET, input);
 
         output.bid.into()
     }
 
-    /// Returns all the NFT units contained.
+    /// Returns all the non-fungible units contained.
     ///
     /// # Panics
-    /// Panics if this is not an NFT bucket.
-    pub fn get_nfts<T: NftData>(&self) -> Vec<Nft<T>> {
-        let input = GetNftIdsInBucketInput { bid: self.bid };
-        let output: GetNftIdsInBucketOutput = call_kernel(GET_NFT_IDS_IN_BUCKET, input);
+    /// Panics if this is not a non-fungible bucket.
+    pub fn get_non_fungibles<T: NonFungibleData>(&self) -> Vec<NonFungible<T>> {
+        let input = GetNonFungibleKeysInBucketInput { bid: self.bid };
+        let output: GetNonFungibleKeysInBucketOutput =
+            call_engine(GET_NON_FUNGIBLE_KEYS_IN_BUCKET, input);
         let resource_address = self.resource_address();
         output
-            .ids
+            .keys
             .iter()
-            .map(|id| Nft::from((resource_address, *id)))
+            .map(|id| NonFungible::from((resource_address, id.clone())))
             .collect()
     }
 
-    /// Get all NFT IDs in this bucket.
+    /// Returns the key of a singleton non-fungible.
     ///
-    /// # Panics
-    /// Panics if this is not an NFT bucket.
-    pub fn get_nft_ids(&self) -> Vec<u128> {
-        let input = GetNftIdsInBucketInput { bid: self.bid };
-        let output: GetNftIdsInBucketOutput = call_kernel(GET_NFT_IDS_IN_BUCKET, input);
-
-        output.ids
+    /// # Panic
+    /// If this bucket is empty or contains more than one non-fungibles.
+    pub fn get_non_fungible_key(&self) -> NonFungibleKey {
+        let keys = self.get_non_fungible_keys();
+        assert!(
+            keys.len() == 1,
+            "1 non-fungible expected, but {} found",
+            keys.len()
+        );
+        keys[0].clone()
     }
 
-    /// Get the NFT id and panic if not singleton.
-    pub fn get_nft_id(&self) -> u128 {
-        let ids = self.get_nft_ids();
-        assert!(ids.len() == 1, "Expect 1 NFT, but found {}", ids.len());
-        ids[0]
-    }
-
-    /// Returns the data of an NFT unit, both the immutable and mutable parts.
+    /// Returns the keys of all non-fungibles in this bucket.
     ///
     /// # Panics
-    /// Panics if this is not an NFT bucket.
-    pub fn get_nft_data<T: NftData>(&self, id: u128) -> T {
-        self.resource_def().get_nft_data(id)
+    /// If this bucket is not a non-fungible bucket.
+    pub fn get_non_fungible_keys(&self) -> Vec<NonFungibleKey> {
+        let input = GetNonFungibleKeysInBucketInput { bid: self.bid };
+        let output: GetNonFungibleKeysInBucketOutput =
+            call_engine(GET_NON_FUNGIBLE_KEYS_IN_BUCKET, input);
+
+        output.keys
     }
 
-    /// Updates the mutable part of the data of an NFT unit.
+    /// Returns the data of a non-fungible unit, both the immutable and mutable parts.
     ///
     /// # Panics
-    /// Panics if this is not an NFT bucket or the specified NFT is not found.
-    pub fn update_nft_data<T: NftData>(&self, id: u128, new_data: T, auth: BucketRef) {
-        self.resource_def().update_nft_data(id, new_data, auth)
+    /// Panics if this is not a non-fungible bucket.
+    pub fn get_non_fungible_data<T: NonFungibleData>(&self, key: &NonFungibleKey) -> T {
+        self.resource_def().get_non_fungible_data(key)
+    }
+
+    /// Updates the mutable part of the data of a non-fungible unit.
+    ///
+    /// # Panics
+    /// Panics if this is not a non-fungible bucket or the specified non-fungible resource is not found.
+    pub fn update_non_fungible_data<T: NonFungibleData>(
+        &mut self,
+        key: &NonFungibleKey,
+        new_data: T,
+        auth: BucketRef,
+    ) {
+        self.resource_def()
+            .update_non_fungible_data(key, new_data, auth)
     }
 }
 

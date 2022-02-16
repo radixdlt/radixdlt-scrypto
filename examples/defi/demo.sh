@@ -1,22 +1,26 @@
 #!/bin/bash
 
+set -x
 set -e
+
 cd "$(dirname "$0")"
+
+cargo install --path ../../simulator
 
 # reset database
 resim reset
 
 # new account
-out=`resim new-account | tee /dev/tty | awk '/Component:|Public key:/ {print $NF}'`
+out=`resim new-account | tee /dev/tty | awk '/Account address:|Public key:/ {print $NF}'`
 acc1_address=`echo $out | cut -d " " -f1`
 acc1_pub_key=`echo $out | cut -d " " -f2`
-out=`resim new-account | tee /dev/tty | awk '/Component:|Public key:/ {print $NF}'`
+out=`resim new-account | tee /dev/tty | awk '/Account address:|Public key:/ {print $NF}'`
 acc2_address=`echo $out | cut -d " " -f1`
 acc2_pub_key=`echo $out | cut -d " " -f2`
-out=`resim new-account | tee /dev/tty | awk '/Component:|Public key:/ {print $NF}'`
+out=`resim new-account | tee /dev/tty | awk '/Account address:|Public key:/ {print $NF}'`
 acc3_address=`echo $out | cut -d " " -f1`
 acc3_pub_key=`echo $out | cut -d " " -f2`
-out=`resim new-account | tee /dev/tty | awk '/Component:|Public key:/ {print $NF}'`
+out=`resim new-account | tee /dev/tty | awk '/Account address:|Public key:/ {print $NF}'`
 acc4_address=`echo $out | cut -d " " -f1`
 acc4_pub_key=`echo $out | cut -d " " -f2`
 
@@ -49,7 +53,7 @@ resim mint 114841533.01 $snx $acc1_mint_badge
 
 # publish PriceOracle
 price_oracle_package=`resim publish ./price-oracle | tee /dev/tty | awk '/Package:/ {print $NF}'`
-out=`resim call-function $price_oracle_package PriceOracle new 1 | tee /dev/tty | awk '/Component:|ResourceDef:/ {print $NF}'`
+out=`resim call-function $price_oracle_package PriceOracle instantiate_oracle 1 | tee /dev/tty | awk '/Component:|ResourceDef:/ {print $NF}'`
 price_oracle_update_auth=`echo $out | cut -d " " -f1`
 price_oracle_component=`echo $out | cut -d " " -f2`
 
@@ -58,18 +62,18 @@ radiswap_package=`resim publish ./radiswap | tee /dev/tty | awk '/Package:/ {pri
 
 # publish AutoLend
 auto_lend_package=`resim publish ./auto-lend | tee /dev/tty | awk '/Package:/ {print $NF}'`
-auto_lend_component=`resim call-function $auto_lend_package AutoLend new $xrd | tee /dev/tty | awk '/Component:/ {print $NF}'`
+auto_lend_component=`resim call-function $auto_lend_package AutoLend instantiate_autolend $xrd | tee /dev/tty | awk '/Component:/ {print $NF}'`
 
 # publish Synthetics
 synthetics_package=`resim publish ./synthetics | tee /dev/tty | awk '/Package:/ {print $NF}'`
-synthetics_component=`resim call-function $synthetics_package SyntheticPool new $price_oracle_component $snx $usd 4 | tee /dev/tty | awk '/Component:/ {print $NF}'`
+synthetics_component=`resim call-function $synthetics_package SyntheticPool instantiate_pool $price_oracle_component $snx $usd 4 | tee /dev/tty | awk '/Component:/ {print $NF}'`
 
 # publish xPerpFutures
 perpetual_futures_package=`resim publish ./x-perp-futures | tee /dev/tty | awk '/Package:/ {print $NF}'`
-perpetual_futures_component=`resim call-function $perpetual_futures_package ClearingHouse new $usd 100 45 | tee /dev/tty | awk '/Component:/ {print $NF}'`
+perpetual_futures_component=`resim call-function $perpetual_futures_package ClearingHouse instantiate_clearing_house $usd 100 45 | tee /dev/tty | awk '/Component:/ {print $NF}'`
 
 # Set up swap pools
-xrd_snx_radiswap_component=`resim call-function $radiswap_package Radiswap new 1000000,$xrd 38271,$snx 1000000 LPT LPToken https://www.example.com/ 0.001 | tee /dev/tty | awk '/Component:/ {print $NF}'`
+xrd_snx_radiswap_component=`resim call-function $radiswap_package Radiswap instantiate_pool 1000000,$xrd 38271,$snx 1000000 LPT LPToken https://www.example.com/ 0.001 | tee /dev/tty | awk '/Component:/ {print $NF}'`
 
 # Update price
 resim call-method $price_oracle_component update_price $btc $usd 57523  1,$price_oracle_update_auth
@@ -84,6 +88,7 @@ resim call-method $price_oracle_component get_price $btc $eth
 resim call-method $price_oracle_component get_price $eth $btc
 
 # Summary
+set +x
 echo "===================================================================================="
 echo "Please assume a fixed number of decimal places for all resources: 18"
 echo "Account 1 address: $acc1_address"
@@ -113,3 +118,26 @@ echo "xPerpFutures blueprint: $perpetual_futures_package ClearingHouse"
 echo "xPerpFutures component: $perpetual_futures_component"
 echo "XRD/SNX swap: $xrd_snx_radiswap_component"
 echo "===================================================================================="
+set -x
+
+#====================
+# Test mutual farm
+#====================
+
+# Create TESLA resource with no supply
+tesla=`resim new-token-fixed --name "Tesla Token" --symbol "TESLA" 0 | tee /dev/tty | awk '/ResourceDef:/ {print $NF}'`
+resim call-method $price_oracle_component update_price $tesla $usd 1162.00  1,$price_oracle_update_auth
+resim call-method $price_oracle_component update_price $xrd $snx 0.03901819  1,$price_oracle_update_auth
+
+# Publish mutual farm package
+mutual_farm_package=`resim publish mutual-farm | tee /dev/tty | awk '/Package:/ {print $NF}'`
+
+# Instantiate mutual farm
+out=`resim call-function $mutual_farm_package MutualFarm instantiate_farm $price_oracle_component $xrd_snx_radiswap_component $synthetics_component "TESLA" $tesla 1000 1000000,$xrd $snx $usd | tee /dev/tty | awk '/Component:/ {print $NF}'`
+mutual_farm_component=`echo $out | cut -d " " -f2`
+resim show $mutual_farm_component
+resim show $acc1_address
+
+# Deposit another 1,000,000 XRD
+resim call-method $mutual_farm_component deposit 1000000,$xrd
+resim show $acc1_address

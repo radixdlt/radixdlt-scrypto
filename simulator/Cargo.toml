@@ -1,20 +1,22 @@
 [package]
 name = "simulator"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2021"
 
 [dependencies]
 radix-engine = { path = "../radix-engine" }
 scrypto = { path = "../scrypto", features = ["serde_std"] }
 sbor = { path = "../sbor" }
+transaction-manifest = { path = "../transaction-manifest" }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = { version = "1.0" }
-clap = { version = "2.33" }
+clap = { version = "3.0", features = ["derive", "cargo"] }
 dirs = { version = "4.0" }
 colored = { version = "2.0" }
 uuid = { version = "0.8", features = ["v4"] }
 hex = { version = "0.4" }
 cargo_toml = { version = "0.10" }
+rocksdb = { git = "https://github.com/rust-rocksdb/rust-rocksdb", tag = "v0.17.0" }
 
 [[bin]]
 name = "resim"
@@ -23,3 +25,7 @@ path = "src/bin/resim.rs"
 [[bin]]
 name = "scrypto"
 path = "src/bin/scrypto.rs"
+
+[[bin]]
+name = "rtmc"
+path = "src/bin/rtmc.rs"

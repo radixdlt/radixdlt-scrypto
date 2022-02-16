@@ -74,9 +74,9 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
             ::scrypto::utils::scrypto_setup_panic_hook();
 
             // Retrieve call data
-            let calldata: ::scrypto::kernel::GetCallDataOutput = ::scrypto::kernel::call_kernel(
-                ::scrypto::kernel::GET_CALL_DATA,
-                ::scrypto::kernel::GetCallDataInput {},
+            let calldata: ::scrypto::engine::GetCallDataOutput = ::scrypto::engine::call_engine(
+                ::scrypto::engine::GET_CALL_DATA,
+                ::scrypto::engine::GetCallDataInput {},
             );
 
             // Dispatch the call
@@ -110,7 +110,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
             let output = (functions, methods);
 
             // serialize the output
-            let output_bytes = ::scrypto::buffer::scrypto_encode_for_kernel(&output);
+            let output_bytes = ::scrypto::buffer::scrypto_encode_for_radix_engine(&output);
 
             // return the output wrapped in a radix-style buffer
             ::scrypto::buffer::scrypto_wrap(output_bytes)
@@ -234,7 +234,7 @@ fn generate_dispatcher(bp_ident: &Ident, items: &[ImplItem]) -> Result<(Vec<Expr
                 }
                 // call the function
                 let stmt: Stmt = parse_quote! {
-                    rtn = ::scrypto::buffer::scrypto_encode_for_kernel(
+                    rtn = ::scrypto::buffer::scrypto_encode_for_radix_engine(
                         &blueprint::#bp_ident::#fn_ident(#(#args),*)
                     );
                 };
@@ -567,9 +567,9 @@ mod tests {
                 #[no_mangle]
                 pub extern "C" fn Test_main() -> *mut u8 {
                     ::scrypto::utils::scrypto_setup_panic_hook();
-                    let calldata: ::scrypto::kernel::GetCallDataOutput = ::scrypto::kernel::call_kernel(
-                        ::scrypto::kernel::GET_CALL_DATA,
-                        ::scrypto::kernel::GetCallDataInput {},
+                    let calldata: ::scrypto::engine::GetCallDataOutput = ::scrypto::engine::call_engine(
+                        ::scrypto::engine::GET_CALL_DATA,
+                        ::scrypto::engine::GetCallDataInput {},
                     );
                     let rtn;
                     match calldata.function.as_str() {
@@ -583,7 +583,7 @@ mod tests {
                                 ::scrypto::buffer::scrypto_decode::<::scrypto::resource::BucketRef>(&calldata.args[1usize])
                             );
                             let state: blueprint::Test = arg0.get_state();
-                            rtn = ::scrypto::buffer::scrypto_encode_for_kernel(&blueprint::Test::x(&state, auth));
+                            rtn = ::scrypto::buffer::scrypto_encode_for_radix_engine(&blueprint::Test::x(&state, auth));
                         }
                         _ => {
                             panic!("Function/method not fund")
@@ -608,7 +608,7 @@ mod tests {
                         output: <u32>::describe(),
                     }];
                     let output = (functions, methods);
-                    let output_bytes = ::scrypto::buffer::scrypto_encode_for_kernel(&output);
+                    let output_bytes = ::scrypto::buffer::scrypto_encode_for_radix_engine(&output);
                     ::scrypto::buffer::scrypto_wrap(output_bytes)
                 }
                 #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode)]

@@ -14,11 +14,11 @@ wasm-opt \
   -Os -g \
   --strip-debug --strip-dwarf --strip-producers \
   -o ./account.wasm \
-  ./account/target/wasm32-unknown-unknown/release/out.wasm
+  ./account/target/wasm32-unknown-unknown/release/account.wasm
 wasm-opt \
   -Os -g \
   --strip-debug --strip-dwarf --strip-producers \
   -o ./system.wasm \
-  ./system/target/wasm32-unknown-unknown/release/out.wasm
+  ./system/target/wasm32-unknown-unknown/release/system.wasm
 
 echo "Done!"

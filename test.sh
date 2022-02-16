@@ -13,6 +13,7 @@ echo "Testing with std..."
 (cd scrypto-derive; cargo test)
 (cd scrypto-tests; cargo test)
 (cd radix-engine; cargo test)
+(cd transaction-manifest; cargo test)
 
 echo "Testing with no_std..."
 (cd sbor; cargo test --no-default-features --features alloc)
@@ -32,10 +33,14 @@ echo "Building examples..."
 (cd examples/core/hello-world; cargo build --target wasm32-unknown-unknown --release; cargo test --release)
 (cd examples/core/managed-access; cargo build --target wasm32-unknown-unknown --release; cargo test --release)
 (cd examples/core/no-std-lib; cargo build --target wasm32-unknown-unknown --release)
+(cd examples/defi; ./demo.sh)
+(cd examples/nft/magic-card; cargo build --target wasm32-unknown-unknown --release; cargo test --release)
+(cd examples/nft/sporting-event; cargo build --target wasm32-unknown-unknown --release; cargo test --release)
 
 echo "Running simulator..."
 (cd simulator; bash ./tests/resim.sh)
 (cd simulator; bash ./tests/scrypto.sh)
+(cd simulator; bash ./tests/manifest.sh)
 
 echo "Running benchmark..."
 (cd sbor-tests; cargo bench)

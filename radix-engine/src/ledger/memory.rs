@@ -6,16 +6,18 @@ use crate::model::*;
 
 /// An in-memory ledger stores all substates in host memory.
 #[derive(Debug, Clone)]
-pub struct InMemoryLedger {
+pub struct InMemorySubstateStore {
     packages: HashMap<Address, Package>,
     components: HashMap<Address, Component>,
-    lazy_maps: HashMap<Mid, LazyMap>,
+    lazy_maps: HashMap<(Address, Mid), LazyMap>,
     resource_defs: HashMap<Address, ResourceDef>,
-    vaults: HashMap<Vid, Vault>,
-    nfts: HashMap<(Address, u128), Nft>,
+    vaults: HashMap<(Address, Vid), Vault>,
+    non_fungibles: HashMap<(Address, NonFungibleKey), NonFungible>,
+    current_epoch: u64,
+    nonce: u64,
 }
 
-impl InMemoryLedger {
+impl InMemorySubstateStore {
     pub fn new() -> Self {
         Self {
             packages: HashMap::new(),
@@ -23,7 +25,9 @@ impl InMemoryLedger {
             lazy_maps: HashMap::new(),
             resource_defs: HashMap::new(),
             vaults: HashMap::new(),
-            nfts: HashMap::new(),
+            non_fungibles: HashMap::new(),
+            current_epoch: 0,
+            nonce: 0,
         }
     }
 
@@ -34,13 +38,13 @@ impl InMemoryLedger {
     }
 }
 
-impl Default for InMemoryLedger {
+impl Default for InMemorySubstateStore {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl Ledger for InMemoryLedger {
+impl SubstateStore for InMemorySubstateStore {
     fn get_resource_def(&self, address: Address) -> Option<ResourceDef> {
         self.resource_defs.get(&address).map(Clone::clone)
     }
@@ -65,27 +69,59 @@ impl Ledger for InMemoryLedger {
         self.components.insert(address, component);
     }
 
-    fn get_lazy_map(&self, mid: Mid) -> Option<LazyMap> {
-        self.lazy_maps.get(&mid).map(Clone::clone)
+    fn get_lazy_map(&self, component_address: &Address, mid: &Mid) -> Option<LazyMap> {
+        self.lazy_maps
+            .get(&(component_address.clone(), mid.clone()))
+            .map(Clone::clone)
     }
 
-    fn put_lazy_map(&mut self, mid: Mid, lazy_map: LazyMap) {
-        self.lazy_maps.insert(mid, lazy_map);
+    fn put_lazy_map(&mut self, component_address: Address, mid: Mid, lazy_map: LazyMap) {
+        self.lazy_maps.insert((component_address, mid), lazy_map);
     }
 
-    fn get_vault(&self, vid: Vid) -> Option<Vault> {
-        self.vaults.get(&vid).map(Clone::clone)
+    fn get_vault(&self, component_address: &Address, vid: &Vid) -> Option<Vault> {
+        self.vaults
+            .get(&(component_address.clone(), vid.clone()))
+            .map(Clone::clone)
     }
 
-    fn put_vault(&mut self, vid: Vid, vault: Vault) {
-        self.vaults.insert(vid, vault);
+    fn put_vault(&mut self, component_address: Address, vid: Vid, vault: Vault) {
+        self.vaults.insert((component_address, vid), vault);
     }
 
-    fn get_nft(&self, resource_address: Address, id: u128) -> Option<Nft> {
-        self.nfts.get(&(resource_address, id)).cloned()
+    fn get_non_fungible(
+        &self,
+        resource_address: Address,
+        key: &NonFungibleKey,
+    ) -> Option<NonFungible> {
+        self.non_fungibles
+            .get(&(resource_address, key.clone()))
+            .cloned()
     }
 
-    fn put_nft(&mut self, resource_address: Address, id: u128, nft: Nft) {
-        self.nfts.insert((resource_address, id), nft);
+    fn put_non_fungible(
+        &mut self,
+        resource_address: Address,
+        key: &NonFungibleKey,
+        non_fungible: NonFungible,
+    ) {
+        self.non_fungibles
+            .insert((resource_address, key.clone()), non_fungible);
+    }
+
+    fn get_epoch(&self) -> u64 {
+        self.current_epoch
+    }
+
+    fn set_epoch(&mut self, epoch: u64) {
+        self.current_epoch = epoch;
+    }
+
+    fn get_nonce(&self) -> u64 {
+        self.nonce
+    }
+
+    fn increase_nonce(&mut self) {
+        self.nonce += 1;
     }
 }

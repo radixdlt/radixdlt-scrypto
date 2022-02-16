@@ -33,7 +33,7 @@ blueprint! {
 
     impl AutoLend {
         /// Creates a lending pool, with single collateral.
-        pub fn new(reserve_address: Address) -> Component {
+        pub fn instantiate_autolend(reserve_address: Address) -> Component {
             Self {
                 liquidity_pool: Vault::new(reserve_address),
                 min_collateral_ratio: "1.2".parse().unwrap(),
@@ -122,7 +122,7 @@ blueprint! {
         }
 
         /// Repays a loan, partially or in full.
-        pub fn repay(&mut self, user_auth: BucketRef, repaid: Bucket) -> Bucket {
+        pub fn repay(&mut self, user_auth: BucketRef, mut repaid: Bucket) -> Bucket {
             let user_id = Self::get_user_id(user_auth);
 
             // Update user state
@@ -187,9 +187,7 @@ blueprint! {
         /// Parse user id from a bucket ref.
         fn get_user_id(user_auth: BucketRef) -> Address {
             assert!(user_auth.amount() > 0.into(), "Invalid user proof");
-            let user_id = user_auth.resource_address();
-            user_auth.drop();
-            user_id
+            user_auth.resource_address()
         }
     }
 }

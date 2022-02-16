@@ -3,7 +3,7 @@
 use sbor::describe::*;
 use scrypto::prelude::*;
 
-#[derive(NftData, Debug, Eq, PartialEq)]
+#[derive(NonFungibleData, Debug, Eq, PartialEq)]
 pub struct Sample {
     pub a: u32,
     #[scrypto(mutable)]
@@ -11,7 +11,7 @@ pub struct Sample {
 }
 
 #[test]
-fn test_nft_data() {
+fn test_non_fungible_data() {
     let instance = Sample {
         a: 1,
         b: "Test".to_owned(),

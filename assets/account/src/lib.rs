@@ -2,24 +2,24 @@ use scrypto::prelude::*;
 
 blueprint! {
     struct Account {
-        key: Address,
+        public_key: EcdsaPublicKey,
         vaults: LazyMap<Address, Vault>,
     }
 
     impl Account {
-        pub fn new(key: Address) -> Component {
+        pub fn new(public_key: EcdsaPublicKey) -> Component {
             Account {
-                key,
+                public_key,
                 vaults: LazyMap::new(),
             }
             .instantiate()
         }
 
-        pub fn with_bucket(key: Address, bucket: Bucket) -> Component {
+        pub fn with_bucket(public_key: EcdsaPublicKey, bucket: Bucket) -> Component {
             let vaults = LazyMap::new();
             vaults.insert(bucket.resource_address(), Vault::with_bucket(bucket));
 
-            Account { key, vaults }.instantiate()
+            Account { public_key, vaults }.instantiate()
         }
 
         /// Deposit a batch of buckets into this account
@@ -33,7 +33,7 @@ blueprint! {
         pub fn deposit(&mut self, bucket: Bucket) {
             let address = bucket.resource_address();
             match self.vaults.get(&address) {
-                Some(v) => {
+                Some(mut v) => {
                     v.put(bucket);
                 }
                 None => {
@@ -43,15 +43,22 @@ blueprint! {
             }
         }
 
+        fn non_fungible_key(&self) -> NonFungibleKey {
+            NonFungibleKey::new(self.public_key.to_vec())
+        }
+
         /// Withdraws resource from this account.
-        pub fn withdraw(&mut self, amount: Decimal, resource_address: Address) -> Bucket {
-            if !Context::transaction_signers().contains(&self.key) {
-                panic!("Not authorized! Make sure you sign transaction with the correct keys.",)
-            }
+        pub fn withdraw(
+            &mut self,
+            amount: Decimal,
+            resource_address: Address,
+            account_auth: BucketRef,
+        ) -> Bucket {
+            account_auth.check_non_fungible_key(ECDSA_TOKEN, |key| key == &self.non_fungible_key());
 
             let vault = self.vaults.get(&resource_address);
             match vault {
-                Some(vault) => vault.take(amount),
+                Some(mut vault) => vault.take(amount),
                 None => {
                     panic!("Insufficient balance");
                 }
@@ -64,36 +71,34 @@ blueprint! {
             amount: Decimal,
             resource_address: Address,
             auth: BucketRef,
+            account_auth: BucketRef,
         ) -> Bucket {
-            // FIXME: Check call depth
-            // As we're statically checking transaction signers for authorization, we need to make sure
-            // the call depth is `1` (not invoked by another component/blueprint).
-
-            if !Context::transaction_signers().contains(&self.key) {
-                panic!("Not authorized! Make sure you sign transaction with the correct keys.",)
-            }
+            account_auth.check_non_fungible_key(ECDSA_TOKEN, |key| key == &self.non_fungible_key());
 
             let vault = self.vaults.get(&resource_address);
             match vault {
-                Some(vault) => vault.take_with_auth(amount, auth),
+                Some(mut vault) => vault.take_with_auth(amount, auth),
                 None => {
                     panic!("Insufficient balance");
                 }
             }
         }
 
-        /// Withdraws NFTs from this account.
-        pub fn withdraw_nfts(&mut self, ids: BTreeSet<u128>, resource_address: Address) -> Bucket {
-            if !Context::transaction_signers().contains(&self.key) {
-                panic!("Not authorized! Make sure you sign transaction with the correct keys.",)
-            }
+        /// Withdraws non-fungibles from this account.
+        pub fn withdraw_non_fungibles(
+            &mut self,
+            keys: BTreeSet<NonFungibleKey>,
+            resource_address: Address,
+            account_auth: BucketRef,
+        ) -> Bucket {
+            account_auth.check_non_fungible_key(ECDSA_TOKEN, |key| key == &self.non_fungible_key());
 
             let vault = self.vaults.get(&resource_address);
             match vault {
                 Some(vault) => {
-                    let bucket = Bucket::new(resource_address);
-                    for id in ids {
-                        bucket.put(vault.take_nft(id));
+                    let mut bucket = Bucket::new(resource_address);
+                    for key in keys {
+                        bucket.put(vault.take_non_fungible(&key));
                     }
                     bucket
                 }
@@ -103,37 +108,29 @@ blueprint! {
             }
         }
 
-        /// Withdraws NFTs from this account.
-        pub fn withdraw_nfts_with_auth(
+        /// Withdraws non-fungibles from this account.
+        pub fn withdraw_non_fungibles_with_auth(
             &mut self,
-            ids: BTreeSet<u128>,
+            keys: BTreeSet<NonFungibleKey>,
             resource_address: Address,
             auth: BucketRef,
+            account_auth: BucketRef,
         ) -> Bucket {
-            // FIXME: Check call depth
-            // As we're statically checking transaction signers for authorization, we need to make sure
-            // the call depth is `1` (not invoked by another component/blueprint).
-
-            if !Context::transaction_signers().contains(&self.key) {
-                panic!("Not authorized! Make sure you sign transaction with the correct keys.",)
-            }
+            account_auth.check_non_fungible_key(ECDSA_TOKEN, |key| key == &self.non_fungible_key());
 
             let vault = self.vaults.get(&resource_address);
-            let bucket = match vault {
+            match vault {
                 Some(vault) => {
-                    let bucket = Bucket::new(resource_address);
-                    for id in ids {
-                        bucket.put(vault.take_nft_with_auth(id, auth.clone()));
+                    let mut bucket = Bucket::new(resource_address);
+                    for key in keys {
+                        bucket.put(vault.take_non_fungible_with_auth(&key, auth.clone()));
                     }
                     bucket
                 }
                 None => {
                     panic!("Insufficient balance")
                 }
-            };
-
-            auth.drop();
-            bucket
+            }
         }
     }
 }

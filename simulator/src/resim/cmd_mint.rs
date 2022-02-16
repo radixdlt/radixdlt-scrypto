@@ -1,83 +1,53 @@
-use clap::{crate_version, App, Arg, ArgMatches, SubCommand};
+use clap::Parser;
 use radix_engine::transaction::*;
+use scrypto::types::*;
 
-use crate::ledger::*;
 use crate::resim::*;
 
-const ARG_AMOUNT: &str = "AMOUNT";
-const ARG_RESOURCE_ADDRESS: &str = "RESOURCE_ADDRESS";
-const ARG_MINT_BADGE_ADDR: &str = "MINT_BADGE_ADDRESS";
+/// Mint resource
+#[derive(Parser, Debug)]
+pub struct Mint {
+    /// The amount of resource to mint
+    amount: Decimal,
 
-const ARG_TRACE: &str = "TRACE";
-const ARG_SIGNERS: &str = "SIGNERS";
+    /// The resource address
+    resource_address: Address,
 
-/// Constructs a `mint` subcommand.
-pub fn make_mint<'a, 'b>() -> App<'a, 'b> {
-    SubCommand::with_name(CMD_MINT)
-        .about("Mints resource")
-        .version(crate_version!())
-        .arg(
-            Arg::with_name(ARG_AMOUNT)
-                .help("Specify the amount to mint.")
-                .required(true),
-        )
-        .arg(
-            Arg::with_name(ARG_RESOURCE_ADDRESS)
-                .help("Specify the resource definition address.")
-                .required(true),
-        )
-        .arg(
-            Arg::with_name(ARG_MINT_BADGE_ADDR)
-                .help("Specify the mint auth resource definition address.")
-                .required(true),
-        )
-        // options
-        .arg(
-            Arg::with_name(ARG_TRACE)
-                .long("trace")
-                .help("Turn on tracing."),
-        )
-        .arg(
-            Arg::with_name(ARG_SIGNERS)
-                .long("signers")
-                .takes_value(true)
-                .help("Specify the transaction signers, separated by comma."),
-        )
+    /// The minter badge address
+    badge_address: Address,
+
+    /// The transaction signers
+    #[clap(short, long)]
+    signers: Option<Vec<EcdsaPublicKey>>,
+
+    /// Output a transaction manifest without execution
+    #[clap(short, long)]
+    manifest: Option<PathBuf>,
+
+    /// Turn on tracing
+    #[clap(short, long)]
+    trace: bool,
 }
 
-/// Handles a `mint` request.
-pub fn handle_mint(matches: &ArgMatches) -> Result<(), Error> {
-    let amount = match_amount(matches, ARG_AMOUNT)?;
-    let resource_address = match_address(matches, ARG_RESOURCE_ADDRESS)?;
-    let mint_badge_addr = match_address(matches, ARG_MINT_BADGE_ADDR)?;
-    let trace = matches.is_present(ARG_TRACE);
-    let signers = match_signers(matches, ARG_SIGNERS)?;
-
-    let mut configs = get_configs()?;
-    let account = configs.default_account.ok_or(Error::NoDefaultAccount)?;
-    let mut ledger = FileBasedLedger::with_bootstrap(get_data_dir()?);
-    let mut executor = TransactionExecutor::new(&mut ledger, configs.current_epoch, configs.nonce);
-    let transaction = TransactionBuilder::new(&executor)
-        .withdraw_from_account(
-            &ResourceAmount::Fungible {
-                amount: 1.into(),
-                resource_address: mint_badge_addr,
-            },
-            account.0,
-        )
-        .mint(amount, resource_address, mint_badge_addr)
-        .drop_all_bucket_refs()
-        .deposit_all_buckets(account.0)
-        .build(signers)
-        .map_err(Error::TransactionConstructionError)?;
-    let receipt = executor.run(transaction, trace).unwrap();
-
-    println!("{:?}", receipt);
-    if receipt.success {
-        configs.nonce = executor.nonce();
-        set_configs(configs)?;
-        Ok(())
-    } else {
-        Err(Error::TransactionFailed)
+impl Mint {
+    pub fn run(&self) -> Result<(), Error> {
+        let mut ledger = RadixEngineDB::with_bootstrap(get_data_dir()?);
+        let mut executor = TransactionExecutor::new(&mut ledger, self.trace);
+        let default_account = get_default_account()?;
+        let default_signers = get_default_signers()?;
+        let signatures = self.signers.clone().unwrap_or(default_signers);
+        let transaction = TransactionBuilder::new(&executor)
+            .withdraw_from_account(
+                &Resource::Fungible {
+                    amount: 1.into(),
+                    resource_address: self.badge_address,
+                },
+                default_account,
+            )
+            .mint(self.amount, self.resource_address, self.badge_address)
+            .call_method_with_all_resources(default_account, "deposit_batch")
+            .build(signatures)
+            .map_err(Error::TransactionConstructionError)?;
+        process_transaction(transaction, &mut executor, &self.manifest)
     }
 }

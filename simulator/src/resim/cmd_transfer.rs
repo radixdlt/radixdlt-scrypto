@@ -1,69 +1,42 @@
-use clap::{crate_version, App, Arg, ArgMatches, SubCommand};
+use clap::Parser;
 use radix_engine::transaction::*;
+use scrypto::types::*;
 
-use crate::ledger::*;
 use crate::resim::*;
 
-const ARG_RESOURCE: &str = "RESOURCE";
-const ARG_RECIPIENT_ADDRESS: &str = "RECIPIENT_ADDRESS";
+/// Transfer resource to another account
+#[derive(Parser, Debug)]
+pub struct Transfer {
+    /// The resource to transfer, e.g. "amount,resource_address" or "#non_fungible_id1,#non_fungible_id2,resource_address"
+    resource: Resource,
 
-const ARG_TRACE: &str = "TRACE";
-const ARG_SIGNERS: &str = "SIGNERS";
+    /// The recipient address
+    recipient: Address,
 
-/// Constructs a `transfer` subcommand.
-pub fn make_transfer<'a, 'b>() -> App<'a, 'b> {
-    SubCommand::with_name(CMD_TRANSFER)
-        .about("Transfers resource to another account")
-        .version(crate_version!())
-        .arg(
-            Arg::with_name(ARG_RESOURCE)
-                .help("Specify the resource to transfer, e.g. \"amount,resource_address\" or \"#nft_id1,#nft_id2,..,resource_address\".")
-                .required(true),
-        )
-        .arg(
-            Arg::with_name(ARG_RECIPIENT_ADDRESS)
-                .help("Specify the recipient address.")
-                .required(true),
-        )
-        // options
-        .arg(
-            Arg::with_name(ARG_TRACE)
-                .long("trace")
-                .help("Turn on tracing."),
-        )
-        .arg(
-            Arg::with_name(ARG_SIGNERS)
-                .long("signers")
-                .takes_value(true)
-                .help("Specify the transaction signers, separated by comma."),
-        )
+    /// Output a transaction manifest without execution
+    #[clap(short, long)]
+    manifest: Option<PathBuf>,
+
+    /// The transaction signers
+    #[clap(short, long)]
+    signers: Option<Vec<EcdsaPublicKey>>,
+
+    /// Turn on tracing
+    #[clap(short, long)]
+    trace: bool,
 }
 
-/// Handles a `transfer` request.
-pub fn handle_transfer(matches: &ArgMatches) -> Result<(), Error> {
-    let resource = match_resource(matches, ARG_RESOURCE)?;
-    let recipient = match_address(matches, ARG_RECIPIENT_ADDRESS)?;
-    let trace = matches.is_present(ARG_TRACE);
-    let signers = match_signers(matches, ARG_SIGNERS)?;
-
-    let mut configs = get_configs()?;
-    let account = configs.default_account.ok_or(Error::NoDefaultAccount)?;
-    let mut ledger = FileBasedLedger::with_bootstrap(get_data_dir()?);
-    let mut executor = TransactionExecutor::new(&mut ledger, configs.current_epoch, configs.nonce);
-    let transaction = TransactionBuilder::new(&executor)
-        .withdraw_from_account(&resource, account.0)
-        .drop_all_bucket_refs()
-        .deposit_all_buckets(recipient)
-        .build(signers)
-        .map_err(Error::TransactionConstructionError)?;
-    let receipt = executor.run(transaction, trace).unwrap();
-
-    println!("{:?}", receipt);
-    if receipt.success {
-        configs.nonce = executor.nonce();
-        set_configs(configs)?;
-        Ok(())
-    } else {
-        Err(Error::TransactionFailed)
+impl Transfer {
+    pub fn run(&self) -> Result<(), Error> {
+        let mut ledger = RadixEngineDB::with_bootstrap(get_data_dir()?);
+        let mut executor = TransactionExecutor::new(&mut ledger, self.trace);
+        let default_account = get_default_account()?;
+        let default_signers = get_default_signers()?;
+        let transaction = TransactionBuilder::new(&executor)
+            .withdraw_from_account(&self.resource, default_account)
+            .call_method_with_all_resources(self.recipient, "deposit_batch")
+            .build(self.signers.clone().unwrap_or(default_signers))
+            .map_err(Error::TransactionConstructionError)?;
+        process_transaction(transaction, &mut executor, &self.manifest)
     }
 }

@@ -1,7 +1,9 @@
 use scrypto::prelude::*;
 
 blueprint! {
-    struct BucketTest;
+    struct BucketTest {
+        vault: Vault
+    }
 
     impl BucketTest {
         fn create_test_token(amount: u32) -> Bucket {
@@ -16,7 +18,7 @@ blueprint! {
         }
 
         pub fn combine() -> Bucket {
-            let bucket1 = Self::create_test_token(100);
+            let mut bucket1 = Self::create_test_token(100);
             let bucket2 = bucket1.take(50);
 
             bucket1.put(bucket2);
@@ -24,7 +26,7 @@ blueprint! {
         }
 
         pub fn split() -> (Bucket, Bucket) {
-            let bucket1 = Self::create_test_token(100);
+            let mut bucket1 = Self::create_test_token(100);
             let bucket2 = bucket1.take(Decimal::from(5));
             (bucket1, bucket2)
         }
@@ -47,8 +49,9 @@ blueprint! {
                 .flags(RESTRICTED_TRANSFER)
                 .badge(badge.resource_address(), MAY_TRANSFER)
                 .initial_supply_fungible(5);
-            let vault = Vault::with_bucket(bucket);
+            let mut vault = Vault::with_bucket(bucket);
             let bucket2 = vault.take_with_auth(1, badge.present());
+            BucketTest { vault }.instantiate();
             vec![badge, bucket2]
         }
 
@@ -64,8 +67,8 @@ blueprint! {
 
         pub fn test_burn_freely() -> Vec<Bucket> {
             let badge = ResourceBuilder::new_fungible(DIVISIBILITY_NONE).initial_supply_fungible(1);
-            let bucket1 = ResourceBuilder::new_fungible(DIVISIBILITY_MAXIMUM)
-                .flags(FREELY_BURNABLE)
+            let mut bucket1 = ResourceBuilder::new_fungible(DIVISIBILITY_MAXIMUM)
+                .flags(BURNABLE | FREELY_BURNABLE)
                 .initial_supply_fungible(5);
             let bucket2 = bucket1.take(2);
             bucket1.burn_with_auth(badge.present());

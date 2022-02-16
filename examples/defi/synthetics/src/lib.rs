@@ -8,7 +8,7 @@ r#"
     "name": "PriceOracle",
     "functions": [
         {
-            "name": "new",
+            "name": "instantiate_oracle",
             "inputs": [
                 {
                     "type": "U32"
@@ -126,7 +126,7 @@ blueprint! {
     }
 
     impl SyntheticPool {
-        pub fn new(
+        pub fn instantiate_pool(
             oracle_address: Address,
             snx_token_address: Address,
             usd_token_address: Address,
@@ -186,14 +186,14 @@ blueprint! {
         /// Deposits SNX into my staking account
         pub fn stake(&mut self, user_auth: BucketRef, stake_in_snx: Bucket) {
             let user_id = Self::get_user_id(user_auth);
-            let user = self.get_user(user_id, true);
+            let mut user = self.get_user(user_id, true);
             user.snx.put(stake_in_snx);
         }
 
         /// Withdraws SNX from my staking account.
         pub fn unstake(&mut self, user_auth: BucketRef, amount: Decimal) -> Bucket {
             let user_id = Self::get_user_id(user_auth);
-            let user = self.get_user(user_id, false);
+            let mut user = self.get_user(user_id, false);
 
             let tokens = user.snx.take(amount);
             user.check_collateralization_ratio(
@@ -208,9 +208,9 @@ blueprint! {
         /// Mints synthetics tokens
         pub fn mint(&mut self, user_auth: BucketRef, amount: Decimal, symbol: String) -> Bucket {
             let user_id = Self::get_user_id(user_auth);
-            let user = self.get_user(user_id, false);
+            let mut user = self.get_user(user_id, false);
 
-            let synth = self.synthetics.get(&symbol).unwrap();
+            let mut synth = self.synthetics.get(&symbol).unwrap().clone();
             let global_debt = self.get_total_global_debt();
             let new_debt = self.get_asset_price(synth.asset_address) * amount;
 
@@ -242,7 +242,7 @@ blueprint! {
         /// Burns synthetic tokens
         pub fn burn(&mut self, user_auth: BucketRef, bucket: Bucket) {
             let user_id = Self::get_user_id(user_auth);
-            let user = self.get_user(user_id, false);
+            let mut user = self.get_user(user_id, false);
 
             let synth = self
                 .synthetics
@@ -315,9 +315,7 @@ blueprint! {
         /// Parse user id from a bucket ref.
         fn get_user_id(user_auth: BucketRef) -> Address {
             assert!(user_auth.amount() > 0.into(), "Invalid user proof");
-            let user_id = user_auth.resource_address();
-            user_auth.drop();
-            user_id
+            user_auth.resource_address()
         }
 
         /// Retrieves user state.
@@ -386,7 +384,7 @@ impl User {
         global_debt_resource_def: ResourceDef,
         threshold: Decimal,
     ) {
-        if !global_debt_resource_def.total_supply().is_zero() {
+        if !global_debt_resource_def.total_supply().is_zero() && !self.global_debt_share.amount().is_zero() {
             assert!(
                 self.snx.amount() * snx_price
                     / (global_debt / global_debt_resource_def.total_supply()

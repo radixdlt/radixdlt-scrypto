@@ -7,13 +7,13 @@ blueprint! {
     }
 
     impl FlatAdmin {
-        pub fn new(badge_name: String) -> (Component, Bucket) {
+        pub fn instantiate_flat_admin(badge_name: String) -> (Component, Bucket) {
             // Create a badge for internal use which will hold mint/burn authority for the admin badge we will soon create
             let admin_mint_badge =
                 ResourceBuilder::new_fungible(DIVISIBILITY_NONE).initial_supply_fungible(1);
 
             // Create the ResourceDef for a mutable supply admin badge
-            let admin_badge_def = ResourceBuilder::new_fungible(DIVISIBILITY_NONE)
+            let mut admin_badge_def = ResourceBuilder::new_fungible(DIVISIBILITY_NONE)
                 .metadata("name", badge_name)
                 .flags(MINTABLE | BURNABLE)
                 .badge(admin_mint_badge.resource_def(), MAY_MINT | MAY_BURN)
@@ -35,13 +35,13 @@ blueprint! {
 
         // Any existing admin may create another admin token
         #[auth(admin_badge)]
-        pub fn create_additional_admin(&self) -> Bucket {
+        pub fn create_additional_admin(&mut self) -> Bucket {
             // The "authorize" method provides a convenient shortcut to make use of the mint authority badge within our vault without removing it
             self.admin_mint_badge
                 .authorize(|auth| self.admin_badge.mint(1, auth))
         }
 
-        pub fn destroy_admin_badge(&self, to_destroy: Bucket) {
+        pub fn destroy_admin_badge(&mut self, to_destroy: Bucket) {
             assert!(
                 to_destroy.resource_address() == self.admin_badge.address(),
                 "Can not destroy the contents of this bucket!"

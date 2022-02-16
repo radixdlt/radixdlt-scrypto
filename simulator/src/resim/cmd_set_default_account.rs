@@ -1,39 +1,26 @@
-use clap::{crate_version, App, Arg, ArgMatches, SubCommand};
+use clap::Parser;
+use scrypto::types::*;
 
 use crate::resim::*;
 
-const ARG_ADDRESS: &str = "ADDRESS";
-const ARG_PUBLIC_KEY: &str = "PUBLIC_KEY";
+/// Set default account
+#[derive(Parser, Debug)]
+pub struct SetDefaultAccount {
+    /// The account component address
+    address: Address,
 
-/// Constructs a `set-default-account` subcommand.
-pub fn make_set_default_account<'a, 'b>() -> App<'a, 'b> {
-    SubCommand::with_name(CMD_SET_DEFAULT_ACCOUNT)
-        .about("Sets the default account")
-        .version(crate_version!())
-        .arg(
-            Arg::with_name(ARG_ADDRESS)
-                .help("Specify the account address.")
-                .required(true),
-        )
-        .arg(
-            Arg::with_name(ARG_PUBLIC_KEY)
-                .help("Specify the account public key.")
-                .required(true),
-        )
+    /// The public key for accessing the account
+    public_key: EcdsaPublicKey,
 }
 
-/// Handles a `set-default-account` request.
-pub fn handle_set_default_account(matches: &ArgMatches) -> Result<(), Error> {
-    let address = match_address(matches, ARG_ADDRESS)?;
-    let public_key = match_address(matches, ARG_PUBLIC_KEY)?;
-    if !public_key.is_public_key() {
-        return Err(Error::InvalidSignerPublicKey);
+impl SetDefaultAccount {
+    pub fn run(&self) -> Result<(), Error> {
+        set_configs(&Configs {
+            default_account: self.address,
+            default_signers: vec![self.public_key],
+        })?;
+
+        println!("Default account updated!");
+        Ok(())
     }
-
-    let mut configs = get_configs()?;
-    configs.default_account = Some((address, public_key));
-    set_configs(configs)?;
-
-    println!("Default account set!");
-    Ok(())
 }

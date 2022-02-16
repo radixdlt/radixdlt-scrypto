@@ -4,28 +4,27 @@ use scrypto::prelude::*;
 
 use auto_lend::User;
 
-struct TestEnv<'a, L: Ledger> {
+struct TestEnv<'a, L: SubstateStore> {
     executor: TransactionExecutor<'a, L>,
-    key: Address,
+    key: EcdsaPublicKey,
     account: Address,
     usd: Address,
     lending_pool: Address,
 }
 
-fn set_up_test_env<'a, L: Ledger>(ledger: &'a mut L) -> TestEnv<'a, L> {
-    let mut executor = TransactionExecutor::new(ledger, 0, 0);
+fn set_up_test_env<'a, L: SubstateStore>(ledger: &'a mut L) -> TestEnv<'a, L> {
+    let mut executor = TransactionExecutor::new(ledger, false);
     let key = executor.new_public_key();
     let account = executor.new_account(key);
-    let package = executor.publish_package(include_code!("auto_lend"));
+    let package = executor.publish_package(include_code!("auto_lend")).unwrap();
 
     let receipt = executor
         .run(
             TransactionBuilder::new(&executor)
                 .new_token_fixed(HashMap::new(), 1_000_000.into())
-                .deposit_all_buckets(account)
+                .call_method_with_all_resources(account, "deposit_batch")
                 .build(vec![key])
-                .unwrap(),
-            false,
+                .unwrap()
         )
         .unwrap();
     let usd = receipt.resource_def(0).unwrap();
@@ -36,14 +35,13 @@ fn set_up_test_env<'a, L: Ledger>(ledger: &'a mut L) -> TestEnv<'a, L> {
                 .call_function(
                     package,
                     "AutoLend",
-                    "new",
+                    "instantiate_autolend",
                     vec![usd.to_string(), "USD".to_owned()],
                     Some(account),
                 )
-                .deposit_all_buckets(account)
+                .call_method_with_all_resources(account, "deposit_batch")
                 .build(vec![key])
-                .unwrap(),
-            false,
+                .unwrap()
         )
         .unwrap();
     let lending_pool = receipt.component(0).unwrap();
@@ -57,23 +55,22 @@ fn set_up_test_env<'a, L: Ledger>(ledger: &'a mut L) -> TestEnv<'a, L> {
     }
 }
 
-fn create_user<'a, L: Ledger>(env: &mut TestEnv<'a, L>) -> Address {
+fn create_user<'a, L: SubstateStore>(env: &mut TestEnv<'a, L>) -> Address {
     let receipt = env
         .executor
         .run(
             TransactionBuilder::new(&env.executor)
                 .call_method(env.lending_pool, "new_user", args![], Some(env.account))
-                .deposit_all_buckets(env.account)
+                .call_method_with_all_resources(env.account, "deposit_batch")
                 .build(vec![env.key])
-                .unwrap(),
-            false,
+                .unwrap()
         )
         .unwrap();
-    assert!(receipt.success);
+    assert!(receipt.result.is_ok());
     receipt.resource_def(0).unwrap()
 }
 
-fn get_user_state<'a, L: Ledger>(env: &mut TestEnv<'a, L>, user_id: Address) -> User {
+fn get_user_state<'a, L: SubstateStore>(env: &mut TestEnv<'a, L>, user_id: Address) -> User {
     let mut receipt = env
         .executor
         .run(
@@ -84,20 +81,19 @@ fn get_user_state<'a, L: Ledger>(env: &mut TestEnv<'a, L>, user_id: Address) -> 
                     vec![user_id.to_string()],
                     Some(env.account),
                 )
-                .deposit_all_buckets(env.account)
+                .call_method_with_all_resources(env.account, "deposit_batch")
                 .build(vec![env.key])
-                .unwrap(),
-            false,
+                .unwrap()
         )
         .unwrap();
-    assert!(receipt.success);
-    let encoded = receipt.results.swap_remove(0).unwrap().unwrap().encoded;
+    assert!(receipt.result.is_ok());
+    let encoded = receipt.outputs.swap_remove(0).raw;
     scrypto_decode(&encoded).unwrap()
 }
 
 #[test]
 fn test_deposit_and_redeem() {
-    let mut ledger = InMemoryLedger::with_bootstrap();
+    let mut ledger = InMemorySubstateStore::with_bootstrap();
     let mut env = set_up_test_env(&mut ledger);
 
     let user_id = create_user(&mut env);
@@ -113,10 +109,9 @@ fn test_deposit_and_redeem() {
                     vec![format!("{},{}", 1, user_id), format!("{},{}", 100, env.usd)],
                     Some(env.account),
                 )
-                .deposit_all_buckets(env.account)
+                .call_method_with_all_resources(env.account, "deposit_batch")
                 .build(vec![env.key])
-                .unwrap(),
-            false,
+                .unwrap()
         )
         .unwrap();
     println!("{:?}", receipt);
@@ -144,10 +139,9 @@ fn test_deposit_and_redeem() {
                     vec!["0.05".to_string()],
                     Some(env.account),
                 )
-                .deposit_all_buckets(env.account)
+                .call_method_with_all_resources(env.account, "deposit_batch")
                 .build(vec![env.key])
-                .unwrap(),
-            false,
+                .unwrap()
         )
         .unwrap();
     println!("{:?}", receipt);
@@ -163,10 +157,9 @@ fn test_deposit_and_redeem() {
                     vec![format!("{},{}", 1, user_id), format!("{},{}", 100, env.usd)],
                     Some(env.account),
                 )
-                .deposit_all_buckets(env.account)
+                .call_method_with_all_resources(env.account, "deposit_batch")
                 .build(vec![env.key])
-                .unwrap(),
-            false,
+                .unwrap()
         )
         .unwrap();
     println!("{:?}", receipt);
@@ -194,10 +187,9 @@ fn test_deposit_and_redeem() {
                     vec![format!("{},{}", 1, user_id), "150".to_owned()],
                     Some(env.account),
                 )
-                .deposit_all_buckets(env.account)
+                .call_method_with_all_resources(env.account, "deposit_batch")
                 .build(vec![env.key])
-                .unwrap(),
-            false,
+                .unwrap()
         )
         .unwrap();
     println!("{:?}", receipt);
@@ -217,7 +209,7 @@ fn test_deposit_and_redeem() {
 
 #[test]
 fn test_borrow_and_repay() {
-    let mut ledger = InMemoryLedger::with_bootstrap();
+    let mut ledger = InMemorySubstateStore::with_bootstrap();
     let mut env = set_up_test_env(&mut ledger);
 
     let user_id = create_user(&mut env);
@@ -236,10 +228,9 @@ fn test_borrow_and_repay() {
                     ],
                     Some(env.account),
                 )
-                .deposit_all_buckets(env.account)
+                .call_method_with_all_resources(env.account, "deposit_batch")
                 .build(vec![env.key])
-                .unwrap(),
-            false,
+                .unwrap()
         )
         .unwrap();
     println!("{:?}", receipt);
@@ -267,10 +258,9 @@ fn test_borrow_and_repay() {
                     vec![format!("{},{}", 1, user_id), "100".to_owned()],
                     Some(env.account),
                 )
-                .deposit_all_buckets(env.account)
+                .call_method_with_all_resources(env.account, "deposit_batch")
                 .build(vec![env.key])
-                .unwrap(),
-            false,
+                .unwrap()
         )
         .unwrap();
     println!("{:?}", receipt);
@@ -298,10 +288,9 @@ fn test_borrow_and_repay() {
                     vec!["0.05".to_string()],
                     Some(env.account),
                 )
-                .deposit_all_buckets(env.account)
+                .call_method_with_all_resources(env.account, "deposit_batch")
                 .build(vec![env.key])
-                .unwrap(),
-            false,
+                .unwrap()
         )
         .unwrap();
     println!("{:?}", receipt);
@@ -317,10 +306,9 @@ fn test_borrow_and_repay() {
                     vec![format!("{},{}", 1, user_id), "100".to_owned()],
                     Some(env.account),
                 )
-                .deposit_all_buckets(env.account)
+                .call_method_with_all_resources(env.account, "deposit_batch")
                 .build(vec![env.key])
-                .unwrap(),
-            false,
+                .unwrap()
         )
         .unwrap();
     println!("{:?}", receipt);
@@ -348,10 +336,9 @@ fn test_borrow_and_repay() {
                     vec![format!("{},{}", 1, user_id), format!("{},{}", 150, env.usd)],
                     Some(env.account),
                 )
-                .deposit_all_buckets(env.account)
+                .call_method_with_all_resources(env.account, "deposit_batch")
                 .build(vec![env.key])
-                .unwrap(),
-            false,
+                .unwrap()
         )
         .unwrap();
     println!("{:?}", receipt);
@@ -382,10 +369,9 @@ fn test_borrow_and_repay() {
                     ],
                     Some(env.account),
                 )
-                .deposit_all_buckets(env.account)
+                .call_method_with_all_resources(env.account, "deposit_batch")
                 .build(vec![env.key])
-                .unwrap(),
-            false,
+                .unwrap()
         )
         .unwrap();
     println!("{:?}", receipt);

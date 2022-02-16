@@ -1,4 +1,4 @@
-use crate::kernel::*;
+use crate::engine::*;
 use crate::rust::borrow::ToOwned;
 use crate::rust::vec::Vec;
 use crate::types::*;
@@ -16,7 +16,7 @@ pub fn call_function(
         function: function.to_owned(),
         args,
     };
-    let output: CallFunctionOutput = call_kernel(CALL_FUNCTION, input);
+    let output: CallFunctionOutput = call_engine(CALL_FUNCTION, input);
 
     output.rtn
 }
@@ -28,7 +28,7 @@ pub fn call_method(component_address: Address, method: &str, args: Vec<Vec<u8>>)
         method: method.to_owned(),
         args,
     };
-    let output: CallMethodOutput = call_kernel(CALL_METHOD, input);
+    let output: CallMethodOutput = call_engine(CALL_METHOD, input);
 
     output.rtn
 }

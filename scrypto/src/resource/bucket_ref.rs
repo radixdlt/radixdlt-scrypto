@@ -1,7 +1,7 @@
 use sbor::{describe::Type, *};
 
 use crate::buffer::*;
-use crate::kernel::*;
+use crate::engine::*;
 use crate::resource::*;
 use crate::rust::borrow::ToOwned;
 use crate::rust::vec;
@@ -29,7 +29,7 @@ impl From<BucketRef> for Rid {
 impl Clone for BucketRef {
     fn clone(&self) -> Self {
         let input = CloneBucketRefInput { rid: self.rid };
-        let output: CloneBucketRefOutput = call_kernel(CLONE_BUCKET_REF, input);
+        let output: CloneBucketRefOutput = call_engine(CLONE_BUCKET_REF, input);
 
         output.rid.into()
     }
@@ -38,9 +38,17 @@ impl Clone for BucketRef {
 impl BucketRef {
     /// Checks if the referenced bucket contains the given resource, and aborts if not so.
     pub fn check<A: Into<ResourceDef>>(self, resource_def: A) {
-        if self.contains(resource_def) {
-            self.drop();
-        } else {
+        if !self.contains(resource_def) {
+            panic!("BucketRef check failed");
+        }
+    }
+
+    pub fn check_non_fungible_key<A: Into<ResourceDef>, F: Fn(&NonFungibleKey) -> bool>(
+        self,
+        resource_def: A,
+        f: F,
+    ) {
+        if !self.contains(resource_def) || !self.get_non_fungible_keys().iter().any(f) {
             panic!("BucketRef check failed");
         }
     }
@@ -54,7 +62,7 @@ impl BucketRef {
     /// Returns the resource amount within the bucket.
     pub fn amount(&self) -> Decimal {
         let input = GetBucketRefDecimalInput { rid: self.rid };
-        let output: GetBucketRefDecimalOutput = call_kernel(GET_BUCKET_REF_AMOUNT, input);
+        let output: GetBucketRefDecimalOutput = call_engine(GET_BUCKET_REF_AMOUNT, input);
 
         output.amount
     }
@@ -63,7 +71,7 @@ impl BucketRef {
     pub fn resource_def(&self) -> ResourceDef {
         let input = GetBucketRefResourceAddressInput { rid: self.rid };
         let output: GetBucketRefResourceAddressOutput =
-            call_kernel(GET_BUCKET_REF_RESOURCE_DEF, input);
+            call_engine(GET_BUCKET_REF_RESOURCE_DEF, input);
 
         output.resource_address.into()
     }
@@ -73,25 +81,36 @@ impl BucketRef {
         self.resource_def().address()
     }
 
-    /// Get the NFT ids in the referenced bucket.
-    pub fn get_nft_ids(&self) -> Vec<u128> {
-        let input = GetNftIdsInBucketRefInput { rid: self.rid };
-        let output: GetNftIdsInBucketRefOutput = call_kernel(GET_NFT_IDS_IN_BUCKET_REF, input);
-
-        output.ids
+    /// Returns the key of a singleton non-fungible.
+    ///
+    /// # Panic
+    /// If the bucket is empty or contains more than one non-fungibles.
+    pub fn get_non_fungible_key(&self) -> NonFungibleKey {
+        let keys = self.get_non_fungible_keys();
+        assert!(
+            keys.len() == 1,
+            "1 non-fungible expected, but {} found",
+            keys.len()
+        );
+        keys[0].clone()
     }
 
-    /// Get the NFT id and panic if not singleton.
-    pub fn get_nft_id(&self) -> u128 {
-        let ids = self.get_nft_ids();
-        assert!(ids.len() == 1, "Expect 1 NFT, but found {}", ids.len());
-        ids[0]
+    /// Returns the keys of all non-fungibles in this bucket.
+    ///
+    /// # Panics
+    /// If the bucket is not a non-fungible bucket.
+    pub fn get_non_fungible_keys(&self) -> Vec<NonFungibleKey> {
+        let input = GetNonFungibleKeysInBucketRefInput { rid: self.rid };
+        let output: GetNonFungibleKeysInBucketRefOutput =
+            call_engine(GET_NON_FUNGIBLE_KEYS_IN_BUCKET_REF, input);
+
+        output.keys
     }
 
     /// Destroys this reference.
     pub fn drop(self) {
         let input = DropBucketRefInput { rid: self.rid };
-        let _: DropBucketRefOutput = call_kernel(DROP_BUCKET_REF, input);
+        let _: DropBucketRefOutput = call_engine(DROP_BUCKET_REF, input);
     }
 
     /// Checks if the referenced bucket is empty.

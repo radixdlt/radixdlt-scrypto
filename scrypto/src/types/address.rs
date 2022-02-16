@@ -29,6 +29,10 @@ pub const RADIX_TOKEN: Address = Address::ResourceDef([
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4,
 ]);
 
+pub const ECDSA_TOKEN: Address = Address::ResourceDef([
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5,
+]);
+
 /// Represents an address.
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Address {
@@ -40,9 +44,6 @@ pub enum Address {
 
     /// Represents a resource definition.
     ResourceDef([u8; 26]),
-
-    /// Represents a public key
-    PublicKey([u8; 33]),
 }
 
 /// Represents an error when parsing Address.
@@ -53,13 +54,21 @@ pub enum ParseAddressError {
     InvalidType(u8),
 }
 
+impl fmt::Display for ParseAddressError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
+#[cfg(not(feature = "alloc"))]
+impl std::error::Error for ParseAddressError {}
+
 impl Address {
     pub fn to_vec(&self) -> Vec<u8> {
         match self {
             Self::Package(d) => combine(1, d),
             Self::Component(d) => combine(2, d),
             Self::ResourceDef(d) => combine(3, d),
-            Self::PublicKey(d) => combine(4, d),
         }
     }
 
@@ -73,10 +82,6 @@ impl Address {
 
     pub fn is_resource_def(&self) -> bool {
         matches!(self, Address::ResourceDef(_))
-    }
-
-    pub fn is_public_key(&self) -> bool {
-        matches!(self, Address::PublicKey(_))
     }
 }
 
@@ -98,10 +103,6 @@ impl TryFrom<&[u8]> for Address {
                 1 => Ok(Self::Package(copy_u8_array(&slice[1..]))),
                 2 => Ok(Self::Component(copy_u8_array(&slice[1..]))),
                 3 => Ok(Self::ResourceDef(copy_u8_array(&slice[1..]))),
-                _ => Err(ParseAddressError::InvalidType(slice[0])),
-            },
-            34 => match slice[0] {
-                4 => Ok(Self::PublicKey(copy_u8_array(&slice[1..]))),
                 _ => Err(ParseAddressError::InvalidType(slice[0])),
             },
             _ => Err(ParseAddressError::InvalidLength(slice.len())),

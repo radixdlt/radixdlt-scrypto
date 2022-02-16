@@ -1,5 +1,5 @@
 use sbor::*;
-use scrypto::kernel::*;
+use scrypto::engine::*;
 use scrypto::rust::collections::BTreeSet;
 use scrypto::rust::rc::Rc;
 use scrypto::rust::string::ToString;
@@ -13,7 +13,7 @@ pub enum BucketError {
     InsufficientBalance,
     InvalidAmount(Decimal),
     UnsupportedOperation,
-    NftNotFound,
+    NonFungibleNotFound,
 }
 
 /// Represents the supply of resource.
@@ -21,7 +21,7 @@ pub enum BucketError {
 pub enum Supply {
     Fungible { amount: Decimal },
 
-    NonFungible { ids: BTreeSet<u128> },
+    NonFungible { keys: BTreeSet<NonFungibleKey> },
 }
 
 /// A transient resource container.
@@ -65,14 +65,14 @@ impl Bucket {
                     };
                     *amount = *amount + other_amount;
                 }
-                Supply::NonFungible { ref mut ids } => {
-                    let other_ids = match other.supply() {
+                Supply::NonFungible { ref mut keys } => {
+                    let other_keys = match other.supply() {
                         Supply::Fungible { .. } => {
                             panic!("Illegal state!")
                         }
-                        Supply::NonFungible { ids } => ids,
+                        Supply::NonFungible { keys } => keys,
                     };
-                    ids.extend(other_ids);
+                    keys.extend(other_keys);
                 }
             }
             Ok(())
@@ -96,45 +96,51 @@ impl Bucket {
                         Supply::Fungible { amount: quantity },
                     ))
                 }
-                Supply::NonFungible { ref mut ids } => {
+                Supply::NonFungible { ref mut keys } => {
                     let n: usize = quantity.to_string().parse().unwrap();
-                    let taken: BTreeSet<u128> = ids.iter().cloned().take(n).collect();
+                    let taken: BTreeSet<NonFungibleKey> = keys.iter().cloned().take(n).collect();
                     for e in &taken {
-                        ids.remove(e);
+                        keys.remove(e);
                     }
                     Ok(Self::new(
                         self.resource_address,
                         self.resource_type,
-                        Supply::NonFungible { ids: taken },
+                        Supply::NonFungible { keys: taken },
                     ))
                 }
             }
         }
     }
 
-    pub fn take_nft(&mut self, id: u128) -> Result<Self, BucketError> {
+    pub fn take_non_fungible(&mut self, key: &NonFungibleKey) -> Result<Self, BucketError> {
+        self.take_non_fungibles(&BTreeSet::from([key.clone()]))
+    }
+
+    pub fn take_non_fungibles(
+        &mut self,
+        set: &BTreeSet<NonFungibleKey>,
+    ) -> Result<Self, BucketError> {
         match &mut self.supply {
             Supply::Fungible { .. } => Err(BucketError::UnsupportedOperation),
-            Supply::NonFungible { ref mut ids } => {
-                if !ids.contains(&id) {
-                    return Err(BucketError::NftNotFound);
+            Supply::NonFungible { ref mut keys } => {
+                for key in set {
+                    if !keys.remove(&key) {
+                        return Err(BucketError::NonFungibleNotFound);
+                    }
                 }
-                ids.remove(&id);
                 Ok(Self::new(
                     self.resource_address,
                     self.resource_type,
-                    Supply::NonFungible {
-                        ids: BTreeSet::from([id]),
-                    },
+                    Supply::NonFungible { keys: set.clone() },
                 ))
             }
         }
     }
 
-    pub fn get_nft_ids(&self) -> Result<Vec<u128>, BucketError> {
+    pub fn get_non_fungible_keys(&self) -> Result<Vec<NonFungibleKey>, BucketError> {
         match &self.supply {
             Supply::Fungible { .. } => Err(BucketError::UnsupportedOperation),
-            Supply::NonFungible { ids } => Ok(ids.iter().cloned().collect()),
+            Supply::NonFungible { keys } => Ok(keys.iter().cloned().collect()),
         }
     }
 
@@ -145,7 +151,7 @@ impl Bucket {
     pub fn amount(&self) -> Decimal {
         match &self.supply {
             Supply::Fungible { amount } => *amount,
-            Supply::NonFungible { ids } => ids.len().into(),
+            Supply::NonFungible { keys } => keys.len().into(),
         }
     }
 

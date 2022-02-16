@@ -3,6 +3,8 @@ use crate::rust::collections::*;
 use crate::rust::string::String;
 use crate::rust::vec::Vec;
 
+// TODO: fine-tune the codes
+
 // primitive types
 pub const TYPE_UNIT: u8 = 0x00;
 pub const TYPE_BOOL: u8 = 0x01;
@@ -20,9 +22,6 @@ pub const TYPE_STRING: u8 = 0x0c;
 // enum and struct
 pub const TYPE_STRUCT: u8 = 0x10;
 pub const TYPE_ENUM: u8 = 0x11;
-pub const TYPE_FIELDS_NAMED: u8 = 0x12;
-pub const TYPE_FIELDS_UNNAMED: u8 = 0x13;
-pub const TYPE_FIELDS_UNIT: u8 = 0x14;
 // composite types
 pub const TYPE_OPTION: u8 = 0x20;
 pub const TYPE_BOX: u8 = 0x21;
@@ -37,6 +36,15 @@ pub const TYPE_HASH_SET: u8 = 0x33;
 pub const TYPE_HASH_MAP: u8 = 0x34;
 // custom types start from 0x80 and values are encoded as `len + data`
 pub const TYPE_CUSTOM_START: u8 = 0x80;
+
+// Sub type index
+pub const OPTION_TYPE_NONE: u8 = 0x00;
+pub const OPTION_TYPE_SOME: u8 = 0x01;
+pub const RESULT_TYPE_OK: u8 = 0x00;
+pub const RESULT_TYPE_ERR: u8 = 0x01;
+pub const FIELDS_TYPE_NAMED: u8 = 0x12;
+pub const FIELDS_TYPE_UNNAMED: u8 = 0x13;
+pub const FIELDS_TYPE_UNIT: u8 = 0x14;
 
 /// A SBOR type ID.
 pub trait TypeId {
