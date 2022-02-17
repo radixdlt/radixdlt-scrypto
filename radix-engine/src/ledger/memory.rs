@@ -1,5 +1,7 @@
+use scrypto::buffer::*;
 use scrypto::engine::types::*;
 use scrypto::rust::collections::HashMap;
+use scrypto::rust::vec::Vec;
 
 use crate::ledger::*;
 use crate::model::*;
@@ -11,7 +13,7 @@ pub struct InMemorySubstateStore {
     components: HashMap<ComponentRef, Component>,
     lazy_maps: HashMap<(ComponentRef, LazyMapId), LazyMap>,
     resource_defs: HashMap<ResourceDefRef, ResourceDef>,
-    vaults: HashMap<(ComponentRef, VaultId), Vault>,
+    vaults: HashMap<(ComponentRef, VaultId), Vec<u8>>,
     non_fungibles: HashMap<(ResourceDefRef, NonFungibleKey), NonFungible>,
     current_epoch: u64,
     nonce: u64,
@@ -87,12 +89,13 @@ impl SubstateStore for InMemorySubstateStore {
 
     fn get_vault(&self, component_ref: ComponentRef, vault_id: VaultId) -> Option<Vault> {
         self.vaults
-            .get(&(component_ref, vault_id))
-            .map(Clone::clone)
+            .get(&(component_ref.clone(), vault_id.clone()))
+            .map(|data| scrypto_decode(data).unwrap())
     }
 
     fn put_vault(&mut self, component_ref: ComponentRef, vault_id: VaultId, vault: Vault) {
-        self.vaults.insert((component_ref, vault_id), vault);
+        let data = scrypto_encode(&vault);
+        self.vaults.insert((component_ref, vault_id), data);
     }
 
     fn get_non_fungible(

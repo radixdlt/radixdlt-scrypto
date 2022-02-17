@@ -12,6 +12,7 @@ Documentation: https://docs.radixdlt.com/main/scrypto/introduction.html
    * Windows:
        * Download and install [`rustup-init.exe`](https://win.rustup.rs/x86_64)
        * Install "Desktop development with C++" with [Build Tools for Visual Studio 2019](https://visualstudio.microsoft.com/thank-you-downloading-visual-studio/?sku=BuildTools&rel=16)
+       * Install [LLVM 13.0.1](https://github.com/llvm/llvm-project/releases/download/llvmorg-13.0.1/LLVM-13.0.1-win64.exe) (make sure you tick the option that adds LLVM to the system PATH)
    * Linux and macOS:
        ```
        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh

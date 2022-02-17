@@ -24,7 +24,7 @@ pub enum Resource {
 }
 
 /// A transient resource container.
-#[derive(Debug, Clone, TypeId, Encode, Decode)]
+#[derive(Debug, TypeId, Encode, Decode)]
 pub struct Bucket {
     resource_def_ref: ResourceDefRef,
     resource_type: ResourceType,
@@ -32,7 +32,7 @@ pub struct Bucket {
 }
 
 /// A bucket becomes locked after a borrow operation.
-#[derive(Debug, Clone, TypeId, Encode, Decode)]
+#[derive(Debug, TypeId, Encode, Decode)]
 pub struct LockedBucket {
     bucket_id: BucketId,
     bucket: Bucket,
