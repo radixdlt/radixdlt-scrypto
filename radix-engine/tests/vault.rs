@@ -24,7 +24,6 @@ fn non_existent_vault_in_component_creation_should_fail() {
     // Arrange
     let mut ledger = InMemorySubstateStore::with_bootstrap();
     let mut sut = TransactionExecutor::new(&mut ledger, false);
-    let key = sut.new_public_key();
     let package = sut.publish_package(&compile("vault")).unwrap();
 
     // Act
@@ -32,7 +31,7 @@ fn non_existent_vault_in_component_creation_should_fail() {
         .call_function(
             package,
             "NonExistentVault",
-            "create_non_existent_vault",
+            "create_component_with_non_existent_vault",
             vec![],
             None,
         )
@@ -44,6 +43,44 @@ fn non_existent_vault_in_component_creation_should_fail() {
     // Assert
     assert!(!result.is_ok());
 }
+
+#[test]
+fn non_existent_vault_in_committed_component_should_fail() {
+    // Arrange
+    let mut ledger = InMemorySubstateStore::with_bootstrap();
+    let mut sut = TransactionExecutor::new(&mut ledger, false);
+    let package = sut.publish_package(&compile("vault")).unwrap();
+    let result = TransactionBuilder::new(&sut)
+        .call_function(
+            package,
+            "NonExistentVault",
+            "new",
+            vec![],
+            None,
+        )
+        .build(vec![]);
+    let transaction = result.unwrap();
+    let receipt = sut.run(transaction).unwrap();
+    let component_address = receipt
+        .new_entities
+        .into_iter()
+        .filter(|a| a.is_component())
+        .nth(0)
+        .unwrap();
+
+    // Act
+    let transaction = TransactionBuilder::new(&sut)
+        .call_method(component_address, "create_non_existent_vault", vec![], None)
+        .build(vec![])
+        .unwrap();
+    let receipt = sut.run(transaction).unwrap();
+
+    // Assert
+    let result = &receipt.result;
+    assert!(!result.is_ok());
+}
+
+
 
 #[test]
 fn dangling_vault_should_fail() {
