@@ -36,8 +36,8 @@ echo "Building examples..."
 (cd examples/nft/magic-card; cargo build --target wasm32-unknown-unknown --release; cargo test --release)
 (cd examples/nft/sporting-event; cargo build --target wasm32-unknown-unknown --release; cargo test --release)
 (cd examples/defi; ./demo.sh)
-(cd examples/nft/auto-lend; cargo build --target wasm32-unknown-unknown --release; cargo test --release)
-(cd examples/nft/x-perp-futures; cargo build --target wasm32-unknown-unknown --release; cargo test --release)
+(cd examples/defi/auto-lend; cargo build --target wasm32-unknown-unknown --release; cargo test --release)
+(cd examples/defi/x-perp-futures; cargo build --target wasm32-unknown-unknown --release; cargo test --release)
 
 
 echo "Running simulator..."
