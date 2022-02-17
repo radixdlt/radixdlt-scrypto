@@ -363,7 +363,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         );
 
         // 1. Move collected resource to temp buckets
-        let resource_addresses: Vec<Address> = self.worktop.iter().map(|(k, _)| k).cloned().collect();
+        let resource_addresses: Vec<Address> =
+            self.worktop.iter().map(|(k, _)| k).cloned().collect();
         for addr in resource_addresses {
             let bid = self.track.new_bid(); // this is unbounded
             let bucket = self.worktop.remove(&addr).unwrap();
@@ -1125,10 +1126,10 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .as_mut()
             .ok_or(RuntimeError::IllegalSystemCall())?;
         let mid = self.track.new_mid();
-        wasm_process.process_owned_objects.lazy_maps.insert(
-            mid,
-            UnclaimedLazyMap::new()
-        );
+        wasm_process
+            .process_owned_objects
+            .lazy_maps
+            .insert(mid, UnclaimedLazyMap::new());
         Ok(CreateLazyMapOutput { mid })
     }
 

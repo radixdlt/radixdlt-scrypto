@@ -86,12 +86,7 @@ fn dump_lazy_map<T: SubstateStore + QueryableSubstateStore>(
     println!("{}: {:?}{:?}", "Lazy Map".green().bold(), address, mid);
     for (last, (k, v)) in map.iter().identify_last() {
         let v_validated = validate_data(v).unwrap();
-        println!(
-            "{} {:?} => {}",
-            list_item_prefix(last),
-            k,
-            v_validated
-        );
+        println!("{} {:?} => {}", list_item_prefix(last), k, v_validated);
         referenced_maps.extend(v_validated.lazy_maps);
         referenced_vaults.extend(v_validated.vaults);
     }

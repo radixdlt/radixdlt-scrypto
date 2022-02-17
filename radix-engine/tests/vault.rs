@@ -20,6 +20,32 @@ pub fn compile(name: &str) -> Vec<u8> {
 }
 
 #[test]
+fn non_existent_vault_in_component_creation_should_fail() {
+    // Arrange
+    let mut ledger = InMemorySubstateStore::with_bootstrap();
+    let mut sut = TransactionExecutor::new(&mut ledger, false);
+    let key = sut.new_public_key();
+    let package = sut.publish_package(&compile("vault")).unwrap();
+
+    // Act
+    let result = TransactionBuilder::new(&sut)
+        .call_function(
+            package,
+            "NonExistentVault",
+            "create_non_existent_vault",
+            vec![],
+            None,
+        )
+        .build(vec![]);
+    let transaction = result.unwrap();
+    let receipt = sut.run(transaction).unwrap();
+    let result = &receipt.result;
+
+    // Assert
+    assert!(!result.is_ok());
+}
+
+#[test]
 fn dangling_vault_should_fail() {
     // Arrange
     let mut ledger = InMemorySubstateStore::with_bootstrap();
