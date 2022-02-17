@@ -51,7 +51,7 @@ impl Vault {
         self.bucket.amount()
     }
 
-    pub fn resource_def_ref(&self) -> ResourceDefRef {
-        self.bucket.resource_def_ref()
+    pub fn resource_def_id(&self) -> ResourceDefId {
+        self.bucket.resource_def_id()
     }
 }

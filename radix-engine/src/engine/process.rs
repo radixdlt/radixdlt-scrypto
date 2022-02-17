@@ -63,7 +63,7 @@ pub struct Interpreter {
 #[derive(Debug, Clone)]
 pub struct Invocation {
     actor: Actor,
-    package_ref: PackageRef,
+    package_id: PackageId,
     export_name: String,
     function: String,
     args: Vec<ValidatedData>,
@@ -74,10 +74,10 @@ pub struct Invocation {
 enum InterpreterState {
     Blueprint,
     ComponentEmpty {
-        component_ref: ComponentRef,
+        component_id: ComponentId,
     },
     ComponentLoaded {
-        component_ref: ComponentRef,
+        component_id: ComponentId,
         initial_loaded_object_refs: ComponentObjectRefs,
         additional_object_refs: ComponentObjectRefs,
     },
@@ -131,25 +131,25 @@ impl WasmProcess {
 #[derive(Debug)]
 enum LazyMapState {
     Uncommitted { root: LazyMapId },
-    Committed { component_ref: ComponentRef },
+    Committed { component_id: ComponentId },
 }
 
 impl<'s, S: SubstateStore> Track<'s, S> {
     fn insert_objects_into_component(
         &mut self,
         new_objects: ComponentObjects,
-        component_ref: ComponentRef,
+        component_id: ComponentId,
     ) {
         for (vault_id, vault) in new_objects.vaults {
-            self.put_vault(component_ref, vault_id, vault);
+            self.put_vault(component_id, vault_id, vault);
         }
         for (lazy_map_id, unclaimed) in new_objects.lazy_maps {
-            self.put_lazy_map(component_ref, lazy_map_id, unclaimed.lazy_map);
+            self.put_lazy_map(component_id, lazy_map_id, unclaimed.lazy_map);
             for (child_lazy_map_id, child_lazy_map) in unclaimed.descendent_lazy_maps {
-                self.put_lazy_map(component_ref, child_lazy_map_id, child_lazy_map);
+                self.put_lazy_map(component_id, child_lazy_map_id, child_lazy_map);
             }
             for (vault_id, vault) in unclaimed.descendent_vaults {
-                self.put_vault(component_ref, vault_id, vault);
+                self.put_vault(component_id, vault_id, vault);
             }
         }
     }
@@ -165,9 +165,9 @@ pub struct Process<'r, 'l, L: SubstateStore> {
     track: &'r mut Track<'l, L>,
     /// Buckets owned by this process
     buckets: HashMap<BucketId, Bucket>,
-    /// Buckets owned by this process (but LOCKED because there is a reference to it)
+    /// Buckets owned by this process (but LOCKED because there is a bucket proof to it)
     buckets_locked: HashMap<BucketId, Proof>,
-    /// Bucket references
+    /// Bucket proofs
     proofs: HashMap<ProofId, Proof>,
     /// The buckets that will be moved to another process SHORTLY.
     moving_buckets: HashMap<BucketId, Bucket>,
@@ -183,11 +183,11 @@ pub struct Process<'r, 'l, L: SubstateStore> {
     /// Resources collected from previous CALLs returns.
     ///
     /// When the `depth == 0` (transaction), all returned resources from CALLs are coalesced
-    /// into a map of unidentified buckets indexed by resource definition ref, instead of moving back
+    /// into a map of unidentified buckets indexed by resource definition ID, instead of moving back
     /// to `buckets`.
     ///
     /// Loop invariant: all buckets should be NON_EMPTY.
-    worktop: HashMap<ResourceDefRef, Bucket>,
+    worktop: HashMap<ResourceDefId, Bucket>,
 }
 
 impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
@@ -218,12 +218,12 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             "(Transaction) Taking from worktop: {:?}",
             resource_spec
         );
-        let resource_def_ref = resource_spec.resource_def_ref();
+        let resource_def_id = resource_spec.resource_def_id();
         let new_bucket_id = self
             .id_allocator
             .new_bucket_id()
             .map_err(RuntimeError::IdAllocatorError)?;
-        let bucket = match self.worktop.remove(&resource_def_ref) {
+        let bucket = match self.worktop.remove(&resource_def_id) {
             Some(mut bucket) => {
                 let to_return = match resource_spec {
                     ResourceSpecification::Fungible { amount, .. } => bucket.take(amount),
@@ -235,7 +235,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 .map_err(RuntimeError::BucketError)?;
 
                 if !bucket.amount().is_zero() {
-                    self.worktop.insert(resource_def_ref, bucket);
+                    self.worktop.insert(resource_def_id, bucket);
                 }
                 Ok(to_return)
             }
@@ -265,12 +265,12 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .ok_or(RuntimeError::BucketNotFound(bucket_id))?;
 
         if !bucket.amount().is_zero() {
-            if let Some(existing_bucket) = self.worktop.get_mut(&bucket.resource_def_ref()) {
+            if let Some(existing_bucket) = self.worktop.get_mut(&bucket.resource_def_id()) {
                 existing_bucket
                     .put(bucket)
                     .map_err(RuntimeError::BucketError)?;
             } else {
-                self.worktop.insert(bucket.resource_def_ref(), bucket);
+                self.worktop.insert(bucket.resource_def_id(), bucket);
             }
         }
         Ok(ValidatedData::from_slice(&scrypto_encode(&())).unwrap())
@@ -280,16 +280,16 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     pub fn assert_worktop_contains(
         &mut self,
         amount: Decimal,
-        resource_def_ref: ResourceDefRef,
+        resource_def_id: ResourceDefId,
     ) -> Result<ValidatedData, RuntimeError> {
         re_debug!(
             self,
-            "(Transaction) Asserting worktop contains: amount = {}, resource_def_ref = {}",
+            "(Transaction) Asserting worktop contains: amount = {}, resource_def_id = {}",
             amount,
-            resource_def_ref
+            resource_def_id
         );
 
-        let balance = match self.worktop.get(&resource_def_ref) {
+        let balance = match self.worktop.get(&resource_def_id) {
             Some(bucket) => bucket.amount(),
             None => Decimal::zero(),
         };
@@ -297,10 +297,10 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         if balance < amount {
             re_warn!(
                 self,
-                "(Transaction) Assertion failed: required = {}, actual = {}, resource_def_ref = {}",
+                "(Transaction) Assertion failed: required = {}, actual = {}, resource_def_id = {}",
                 amount,
                 balance,
-                resource_def_ref
+                resource_def_id
             );
             Err(RuntimeError::AssertionFailed)
         } else {
@@ -381,7 +381,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     /// (Transaction ONLY) Calls a method.
     pub fn call_method_with_all_resources(
         &mut self,
-        component_ref: ComponentRef,
+        component_id: ComponentId,
         method: &str,
     ) -> Result<ValidatedData, RuntimeError> {
         re_debug!(
@@ -390,9 +390,9 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         );
 
         // 1. Move collected resource to temp buckets
-        let resource_def_refs: Vec<ResourceDefRef> =
+        let resource_def_ids: Vec<ResourceDefId> =
             self.worktop.iter().map(|(k, _)| k).cloned().collect();
-        for addr in resource_def_refs {
+        for addr in resource_def_ids {
             let bucket_id = self.track.new_bucket_id(); // this is unbounded
             let bucket = self.worktop.remove(&addr).unwrap();
             self.buckets.insert(bucket_id, bucket);
@@ -409,7 +409,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .map(|bucket_id| scrypto::resource::Bucket(bucket_id))
             .collect();
         let invocation = self.prepare_call_method(
-            component_ref,
+            component_id,
             method,
             vec![ValidatedData::from_slice(&scrypto_encode(&to_deposit)).unwrap()],
         )?;
@@ -440,11 +440,11 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
             for (_, bucket) in buckets {
                 if !bucket.amount().is_zero() {
-                    let resource_def_ref = bucket.resource_def_ref();
-                    if let Some(b) = self.worktop.get_mut(&resource_def_ref) {
+                    let resource_def_id = bucket.resource_def_id();
+                    if let Some(b) = self.worktop.get_mut(&resource_def_id) {
                         b.put(bucket).unwrap();
                     } else {
-                        self.worktop.insert(resource_def_ref, bucket);
+                        self.worktop.insert(resource_def_id, bucket);
                     }
                 }
             }
@@ -470,15 +470,15 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         re_info!(
             self,
             "Run started: package = {}, export = {}",
-            invocation.package_ref,
+            invocation.package_id,
             invocation.export_name
         );
 
         // Load the code
         let (module, memory) = self
             .track
-            .load_module(invocation.package_ref)
-            .ok_or(RuntimeError::PackageNotFound(invocation.package_ref))?;
+            .load_module(invocation.package_id)
+            .ok_or(RuntimeError::PackageNotFound(invocation.package_id))?;
         let vm = Interpreter {
             invocation: invocation.clone(),
             module: module.clone(),
@@ -490,9 +490,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             vm,
             interpreter_state: match invocation.actor {
                 Actor::Blueprint(..) => InterpreterState::Blueprint,
-                Actor::Component(component_ref) => {
-                    InterpreterState::ComponentEmpty { component_ref }
-                }
+                Actor::Component(component_id) => InterpreterState::ComponentEmpty { component_id },
             },
             process_owned_objects: ComponentObjects::new(),
         });
@@ -532,14 +530,14 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     /// Prepares a function call.
     pub fn prepare_call_function(
         &mut self,
-        package_ref: PackageRef,
+        package_id: PackageId,
         blueprint_name: &str,
         function: &str,
         args: Vec<ValidatedData>,
     ) -> Result<Invocation, RuntimeError> {
         Ok(Invocation {
-            actor: Actor::Blueprint(package_ref, blueprint_name.to_owned()),
-            package_ref: package_ref,
+            actor: Actor::Blueprint(package_id, blueprint_name.to_owned()),
+            package_id: package_id,
             export_name: format!("{}_main", blueprint_name),
             function: function.to_owned(),
             args,
@@ -549,22 +547,22 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     /// Prepares a method call.
     pub fn prepare_call_method(
         &mut self,
-        component_ref: ComponentRef,
+        component_id: ComponentId,
         method: &str,
         args: Vec<ValidatedData>,
     ) -> Result<Invocation, RuntimeError> {
         let component = self
             .track
-            .get_component(component_ref)
-            .ok_or(RuntimeError::ComponentNotFound(component_ref))?
+            .get_component(component_id)
+            .ok_or(RuntimeError::ComponentNotFound(component_id))?
             .clone();
         let mut args_with_self =
-            vec![ValidatedData::from_slice(&scrypto_encode(&component_ref)).unwrap()];
+            vec![ValidatedData::from_slice(&scrypto_encode(&component_id)).unwrap()];
         args_with_self.extend(args);
 
         Ok(Invocation {
-            actor: Actor::Component(component_ref),
-            package_ref: component.package_ref(),
+            actor: Actor::Component(component_id),
+            package_id: component.package_id(),
             export_name: format!("{}_main", component.blueprint_name()),
             function: method.to_owned(),
             args: args_with_self,
@@ -574,12 +572,12 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     /// Prepares an ABI call.
     pub fn prepare_call_abi(
         &mut self,
-        package_ref: PackageRef,
+        package_id: PackageId,
         blueprint_name: &str,
     ) -> Result<Invocation, RuntimeError> {
         Ok(Invocation {
-            actor: Actor::Blueprint(package_ref, blueprint_name.to_owned()),
-            package_ref: package_ref,
+            actor: Actor::Blueprint(package_id, blueprint_name.to_owned()),
+            package_id: package_id,
             export_name: format!("{}_abi", blueprint_name),
             function: String::new(),
             args: Vec::new(),
@@ -625,13 +623,13 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     /// Calls a function.
     pub fn call_function(
         &mut self,
-        package_ref: PackageRef,
+        package_id: PackageId,
         blueprint_name: &str,
         function: &str,
         args: Vec<ValidatedData>,
     ) -> Result<ValidatedData, RuntimeError> {
         re_debug!(self, "Call function started");
-        let invocation = self.prepare_call_function(package_ref, blueprint_name, function, args)?;
+        let invocation = self.prepare_call_function(package_id, blueprint_name, function, args)?;
         let result = self.call(invocation);
         re_debug!(self, "Call function ended");
         result
@@ -640,12 +638,12 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     /// Calls a method.
     pub fn call_method(
         &mut self,
-        component_ref: ComponentRef,
+        component_id: ComponentId,
         method: &str,
         args: Vec<ValidatedData>,
     ) -> Result<ValidatedData, RuntimeError> {
         re_debug!(self, "Call method started");
-        let invocation = self.prepare_call_method(component_ref, method, args)?;
+        let invocation = self.prepare_call_method(component_id, method, args)?;
         let result = self.call(invocation);
         re_debug!(self, "Call method ended");
         result
@@ -654,11 +652,11 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     /// Calls the ABI generator of a blueprint.
     pub fn call_abi(
         &mut self,
-        package_ref: PackageRef,
+        package_id: PackageId,
         blueprint_name: &str,
     ) -> Result<ValidatedData, RuntimeError> {
         re_debug!(self, "Call abi started");
-        let invocation = self.prepare_call_abi(package_ref, blueprint_name)?;
+        let invocation = self.prepare_call_abi(package_id, blueprint_name)?;
         let result = self.call(invocation);
         re_debug!(self, "Call abi ended");
         result
@@ -913,7 +911,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     fn check_badge(
         &mut self,
         optional_proof_id: Option<ProofId>,
-    ) -> Result<Option<ResourceDefRef>, RuntimeError> {
+    ) -> Result<Option<ResourceDefId>, RuntimeError> {
         if let Some(proof_id) = optional_proof_id {
             // retrieve proof
             let proof = self
@@ -925,12 +923,12 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             if proof.bucket().amount().is_zero() {
                 return Err(RuntimeError::EmptyProof);
             }
-            let resource_def_ref = proof.bucket().resource_def_ref();
+            let resource_def_id = proof.bucket().resource_def_id();
 
             // drop proof after use
             self.handle_drop_proof(DropProofInput { proof_id })?;
 
-            Ok(Some(resource_def_ref))
+            Ok(Some(resource_def_id))
         } else {
             Ok(None)
         }
@@ -944,18 +942,17 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         input: PublishPackageInput,
     ) -> Result<PublishPackageOutput, RuntimeError> {
-        let package_ref = self.track.new_package_ref();
+        let package_id = self.track.new_package_id();
 
-        if self.track.get_package(package_ref).is_some() {
-            return Err(RuntimeError::PackageAlreadyExists(package_ref));
+        if self.track.get_package(package_id).is_some() {
+            return Err(RuntimeError::PackageAlreadyExists(package_id));
         }
         validate_module(&input.code).map_err(RuntimeError::WasmValidationError)?;
 
-        re_debug!(self, "New package: {}", package_ref);
-        self.track
-            .put_package(package_ref, Package::new(input.code));
+        re_debug!(self, "New package: {}", package_id);
+        self.track.put_package(package_id, Package::new(input.code));
 
-        Ok(PublishPackageOutput { package_ref })
+        Ok(PublishPackageOutput { package_id })
     }
 
     fn handle_call_function(
@@ -970,15 +967,15 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
         re_debug!(
             self,
-            "CALL started: package_ref = {}, blueprint_name = {}, function = {}, args = {:?}",
-            input.package_ref,
+            "CALL started: package_id = {}, blueprint_name = {}, function = {}, args = {:?}",
+            input.package_id,
             input.blueprint_name,
             input.function,
             validated_args
         );
 
         let invocation = self.prepare_call_function(
-            input.package_ref,
+            input.package_id,
             &input.blueprint_name,
             input.function.as_str(),
             validated_args,
@@ -1002,13 +999,13 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         re_debug!(
             self,
             "CALL started: component = {}, method = {}, args = {:?}",
-            input.component_ref,
+            input.component_id,
             input.method,
             validated_args
         );
 
         let invocation =
-            self.prepare_call_method(input.component_ref, input.method.as_str(), validated_args)?;
+            self.prepare_call_method(input.component_id, input.method.as_str(), validated_args)?;
         let result = self.call(invocation);
 
         re_debug!(self, "CALL finished");
@@ -1023,26 +1020,26 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .wasm_process_state
             .as_mut()
             .ok_or(RuntimeError::IllegalSystemCall())?;
-        let component_ref = self.track.new_component_ref();
+        let component_id = self.track.new_component_id();
 
-        if self.track.get_component(component_ref).is_some() {
-            return Err(RuntimeError::ComponentAlreadyExists(component_ref));
+        if self.track.get_component(component_id).is_some() {
+            return Err(RuntimeError::ComponentAlreadyExists(component_id));
         }
 
         let data = Self::process_entry_data(&input.state)?;
         let new_objects = wasm_process.process_owned_objects.take(data)?;
 
         self.track
-            .insert_objects_into_component(new_objects, component_ref);
+            .insert_objects_into_component(new_objects, component_id);
 
         let component = Component::new(
-            wasm_process.vm.invocation.package_ref,
+            wasm_process.vm.invocation.package_id,
             input.blueprint_name,
             input.state,
         );
-        self.track.put_component(component_ref, component);
+        self.track.put_component(component_id, component);
 
-        Ok(CreateComponentOutput { component_ref })
+        Ok(CreateComponentOutput { component_id })
     }
 
     fn handle_get_component_info(
@@ -1051,11 +1048,11 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     ) -> Result<GetComponentInfoOutput, RuntimeError> {
         let component = self
             .track
-            .get_component(input.component_ref)
-            .ok_or(RuntimeError::ComponentNotFound(input.component_ref))?;
+            .get_component(input.component_id)
+            .ok_or(RuntimeError::ComponentNotFound(input.component_id))?;
 
         Ok(GetComponentInfoOutput {
-            package_ref: component.package_ref(),
+            package_id: component.package_id(),
             blueprint_name: component.blueprint_name().to_owned(),
         })
     }
@@ -1069,14 +1066,14 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .as_mut()
             .ok_or(RuntimeError::IllegalSystemCall())?;
         let (return_state, next_interpreter_state) = match &wasm_process.interpreter_state {
-            InterpreterState::ComponentEmpty { component_ref } => {
-                let component = self.track.get_component(*component_ref).unwrap();
+            InterpreterState::ComponentEmpty { component_id } => {
+                let component = self.track.get_component(*component_id).unwrap();
                 let state = component.state();
                 let initial_loaded_object_refs = Self::process_entry_data(state).unwrap();
                 Ok((
                     state,
                     InterpreterState::ComponentLoaded {
-                        component_ref: *component_ref,
+                        component_id: *component_id,
                         initial_loaded_object_refs,
                         additional_object_refs: ComponentObjectRefs::new(),
                     },
@@ -1101,7 +1098,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .ok_or(RuntimeError::IllegalSystemCall())?;
         let next_state = match &wasm_process.interpreter_state {
             InterpreterState::ComponentLoaded {
-                component_ref,
+                component_id,
                 initial_loaded_object_refs,
                 ..
             } => {
@@ -1109,11 +1106,11 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 new_set.remove(&initial_loaded_object_refs)?;
                 let new_objects = wasm_process.process_owned_objects.take(new_set)?;
                 self.track
-                    .insert_objects_into_component(new_objects, *component_ref);
+                    .insert_objects_into_component(new_objects, *component_id);
 
                 // TODO: Verify that process_owned_objects is empty
 
-                let component = self.track.get_component_mut(*component_ref).unwrap();
+                let component = self.track.get_component_mut(*component_id).unwrap();
                 component.set_state(input.state);
                 Ok(InterpreterState::ComponentStored)
             }
@@ -1161,7 +1158,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 InterpreterState::ComponentLoaded {
                     initial_loaded_object_refs,
                     additional_object_refs,
-                    component_ref,
+                    component_id,
                 } => {
                     if !initial_loaded_object_refs
                         .lazy_map_ids
@@ -1174,7 +1171,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     }
                     let lazy_map = self
                         .track
-                        .get_lazy_map_mut(*component_ref, input.lazy_map_id)
+                        .get_lazy_map_mut(*component_id, input.lazy_map_id)
                         .unwrap();
                     let value = lazy_map.get_entry(&input.key);
                     if value.is_some() {
@@ -1210,7 +1207,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 InterpreterState::ComponentLoaded {
                     initial_loaded_object_refs,
                     additional_object_refs,
-                    component_ref,
+                    component_id,
                 } => {
                     if !initial_loaded_object_refs
                         .lazy_map_ids
@@ -1223,12 +1220,12 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     }
                     let lazy_map = self
                         .track
-                        .get_lazy_map_mut(*component_ref, input.lazy_map_id)
+                        .get_lazy_map_mut(*component_id, input.lazy_map_id)
                         .unwrap();
                     Ok((
                         lazy_map,
                         Committed {
-                            component_ref: *component_ref,
+                            component_id: *component_id,
                         },
                     ))
                 }
@@ -1261,9 +1258,9 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     .process_owned_objects
                     .insert_objects_into_map(new_objects, &root);
             }
-            Committed { component_ref } => {
+            Committed { component_id } => {
                 self.track
-                    .insert_objects_into_component(new_objects, component_ref);
+                    .insert_objects_into_component(new_objects, component_id);
             }
         }
 
@@ -1272,7 +1269,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
     fn allocate_resource(
         &mut self,
-        resource_def_ref: ResourceDefRef,
+        resource_def_id: ResourceDefId,
         new_supply: Supply,
     ) -> Result<Resource, RuntimeError> {
         match new_supply {
@@ -1281,13 +1278,9 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 let mut keys = BTreeSet::new();
 
                 for (key, data) in entries {
-                    if self
-                        .track
-                        .get_non_fungible(resource_def_ref, &key)
-                        .is_some()
-                    {
+                    if self.track.get_non_fungible(resource_def_id, &key).is_some() {
                         return Err(RuntimeError::NonFungibleAlreadyExists(
-                            resource_def_ref,
+                            resource_def_id,
                             key.clone(),
                         ));
                     }
@@ -1296,7 +1289,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     let mutable_data = self.process_non_fungible_data(&data.1)?;
 
                     self.track.put_non_fungible(
-                        resource_def_ref,
+                        resource_def_id,
                         &key,
                         NonFungible::new(immutable_data.raw, mutable_data.raw),
                     );
@@ -1313,11 +1306,11 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         input: CreateResourceInput,
     ) -> Result<CreateResourceOutput, RuntimeError> {
         // instantiate resource definition
-        let resource_def_ref = self.track.new_resource_def_ref();
-        if self.track.get_resource_def(resource_def_ref).is_some() {
-            return Err(RuntimeError::ResourceDefAlreadyExists(resource_def_ref));
+        let resource_def_id = self.track.new_resource_def_id();
+        if self.track.get_resource_def(resource_def_id).is_some() {
+            return Err(RuntimeError::ResourceDefAlreadyExists(resource_def_id));
         }
-        re_debug!(self, "New resource definition: {}", resource_def_ref);
+        re_debug!(self, "New resource definition: {}", resource_def_id);
         let definition = ResourceDef::new(
             input.resource_type,
             input.metadata,
@@ -1327,13 +1320,13 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             &input.initial_supply,
         )
         .map_err(RuntimeError::ResourceDefError)?;
-        self.track.put_resource_def(resource_def_ref, definition);
+        self.track.put_resource_def(resource_def_id, definition);
 
         // allocate supply
         let bucket_id = if let Some(initial_supply) = input.initial_supply {
-            let supply = self.allocate_resource(resource_def_ref, initial_supply)?;
+            let supply = self.allocate_resource(resource_def_id, initial_supply)?;
 
-            let bucket = Bucket::new(resource_def_ref, input.resource_type, supply);
+            let bucket = Bucket::new(resource_def_id, input.resource_type, supply);
             let bucket_id = self.track.new_bucket_id();
             self.buckets.insert(bucket_id, bucket);
             Some(bucket_id)
@@ -1342,7 +1335,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         };
 
         Ok(CreateResourceOutput {
-            resource_def_ref,
+            resource_def_id,
             bucket_id,
         })
     }
@@ -1353,8 +1346,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     ) -> Result<GetResourceMetadataOutput, RuntimeError> {
         let resource_def = self
             .track
-            .get_resource_def(input.resource_def_ref)
-            .ok_or(RuntimeError::ResourceDefNotFound(input.resource_def_ref))?;
+            .get_resource_def(input.resource_def_id)
+            .ok_or(RuntimeError::ResourceDefNotFound(input.resource_def_id))?;
 
         Ok(GetResourceMetadataOutput {
             metadata: resource_def.metadata().clone(),
@@ -1367,8 +1360,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     ) -> Result<GetResourceTotalSupplyOutput, RuntimeError> {
         let resource_def = self
             .track
-            .get_resource_def(input.resource_def_ref)
-            .ok_or(RuntimeError::ResourceDefNotFound(input.resource_def_ref))?;
+            .get_resource_def(input.resource_def_id)
+            .ok_or(RuntimeError::ResourceDefNotFound(input.resource_def_id))?;
 
         Ok(GetResourceTotalSupplyOutput {
             total_supply: resource_def.total_supply(),
@@ -1381,8 +1374,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     ) -> Result<GetResourceFlagsOutput, RuntimeError> {
         let resource_def = self
             .track
-            .get_resource_def(input.resource_def_ref)
-            .ok_or(RuntimeError::ResourceDefNotFound(input.resource_def_ref))?;
+            .get_resource_def(input.resource_def_id)
+            .ok_or(RuntimeError::ResourceDefNotFound(input.resource_def_id))?;
 
         Ok(GetResourceFlagsOutput {
             flags: resource_def.flags(),
@@ -1397,8 +1390,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
         let resource_def = self
             .track
-            .get_resource_def_mut(input.resource_def_ref)
-            .ok_or(RuntimeError::ResourceDefNotFound(input.resource_def_ref))?;
+            .get_resource_def_mut(input.resource_def_id)
+            .ok_or(RuntimeError::ResourceDefNotFound(input.resource_def_id))?;
         resource_def
             .update_flags(input.new_flags, badge)
             .map_err(RuntimeError::ResourceDefError)?;
@@ -1412,8 +1405,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     ) -> Result<GetResourceMutableFlagsOutput, RuntimeError> {
         let resource_def = self
             .track
-            .get_resource_def(input.resource_def_ref)
-            .ok_or(RuntimeError::ResourceDefNotFound(input.resource_def_ref))?;
+            .get_resource_def(input.resource_def_id)
+            .ok_or(RuntimeError::ResourceDefNotFound(input.resource_def_id))?;
 
         Ok(GetResourceMutableFlagsOutput {
             mutable_flags: resource_def.mutable_flags(),
@@ -1428,8 +1421,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
         let resource_def = self
             .track
-            .get_resource_def_mut(input.resource_def_ref)
-            .ok_or(RuntimeError::ResourceDefNotFound(input.resource_def_ref))?;
+            .get_resource_def_mut(input.resource_def_id)
+            .ok_or(RuntimeError::ResourceDefNotFound(input.resource_def_id))?;
         resource_def
             .update_mutable_flags(input.new_mutable_flags, badge)
             .map_err(RuntimeError::ResourceDefError)?;
@@ -1443,8 +1436,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     ) -> Result<GetResourceTypeOutput, RuntimeError> {
         let resource_def = self
             .track
-            .get_resource_def(input.resource_def_ref)
-            .ok_or(RuntimeError::ResourceDefNotFound(input.resource_def_ref))?;
+            .get_resource_def(input.resource_def_id)
+            .ok_or(RuntimeError::ResourceDefNotFound(input.resource_def_id))?;
 
         Ok(GetResourceTypeOutput {
             resource_type: resource_def.resource_type(),
@@ -1458,20 +1451,20 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let badge = self.check_badge(Some(input.auth))?;
 
         // allocate resource
-        let resource = self.allocate_resource(input.resource_def_ref, input.new_supply)?;
+        let resource = self.allocate_resource(input.resource_def_id, input.new_supply)?;
 
         // mint resource
         let resource_def = self
             .track
-            .get_resource_def_mut(input.resource_def_ref)
-            .ok_or(RuntimeError::ResourceDefNotFound(input.resource_def_ref))?;
+            .get_resource_def_mut(input.resource_def_id)
+            .ok_or(RuntimeError::ResourceDefNotFound(input.resource_def_id))?;
         resource_def
             .mint(&resource, badge)
             .map_err(RuntimeError::ResourceDefError)?;
 
         // wrap resource into a bucket
         let bucket = Bucket::new(
-            input.resource_def_ref,
+            input.resource_def_id,
             resource_def.resource_type(),
             resource,
         );
@@ -1494,8 +1487,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
         let resource_def = self
             .track
-            .get_resource_def_mut(bucket.resource_def_ref())
-            .ok_or(RuntimeError::ResourceDefNotFound(bucket.resource_def_ref()))?;
+            .get_resource_def_mut(bucket.resource_def_id())
+            .ok_or(RuntimeError::ResourceDefNotFound(bucket.resource_def_id()))?;
 
         resource_def
             .burn(bucket.resource(), badge)
@@ -1512,17 +1505,17 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         // obtain authorization from resource definition
         let resource_def = self
             .track
-            .get_resource_def(input.resource_def_ref)
-            .ok_or(RuntimeError::ResourceDefNotFound(input.resource_def_ref))?;
+            .get_resource_def(input.resource_def_id)
+            .ok_or(RuntimeError::ResourceDefNotFound(input.resource_def_id))?;
         resource_def
             .check_update_non_fungible_mutable_data_auth(badge)
             .map_err(RuntimeError::ResourceDefError)?;
         // update state
         let data = self.process_non_fungible_data(&input.new_mutable_data)?;
         self.track
-            .get_non_fungible_mut(input.resource_def_ref, &input.key)
+            .get_non_fungible_mut(input.resource_def_id, &input.key)
             .ok_or(RuntimeError::NonFungibleNotFound(
-                input.resource_def_ref,
+                input.resource_def_id,
                 input.key.clone(),
             ))?
             .set_mutable_data(data.raw);
@@ -1536,9 +1529,9 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     ) -> Result<GetNonFungibleDataOutput, RuntimeError> {
         let non_fungible = self
             .track
-            .get_non_fungible(input.resource_def_ref, &input.key)
+            .get_non_fungible(input.resource_def_id, &input.key)
             .ok_or(RuntimeError::NonFungibleNotFound(
-                input.resource_def_ref,
+                input.resource_def_id,
                 input.key.clone(),
             ))?;
 
@@ -1556,8 +1549,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
         let resource_def = self
             .track
-            .get_resource_def_mut(input.resource_def_ref)
-            .ok_or(RuntimeError::ResourceDefNotFound(input.resource_def_ref))?;
+            .get_resource_def_mut(input.resource_def_id)
+            .ok_or(RuntimeError::ResourceDefNotFound(input.resource_def_id))?;
         resource_def
             .update_metadata(input.new_metadata, badge)
             .map_err(RuntimeError::ResourceDefError)?;
@@ -1575,11 +1568,11 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .ok_or(RuntimeError::IllegalSystemCall())?;
         let definition = self
             .track
-            .get_resource_def(input.resource_def_ref)
-            .ok_or(RuntimeError::ResourceDefNotFound(input.resource_def_ref))?;
+            .get_resource_def(input.resource_def_id)
+            .ok_or(RuntimeError::ResourceDefNotFound(input.resource_def_id))?;
 
         let new_vault = Vault::new(Bucket::new(
-            input.resource_def_ref,
+            input.resource_def_id,
             definition.resource_type(),
             match definition.resource_type() {
                 ResourceType::Fungible { .. } => Resource::Fungible {
@@ -1608,7 +1601,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             Some(vault) => Ok(vault),
             None => match &wasm_process.interpreter_state {
                 InterpreterState::ComponentLoaded {
-                    component_ref,
+                    component_id,
                     initial_loaded_object_refs,
                     additional_object_refs,
                     ..
@@ -1618,7 +1611,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     {
                         return Err(RuntimeError::VaultNotFound(vault_id));
                     }
-                    let vault = self.track.get_vault_mut(*component_ref, vault_id).unwrap();
+                    let vault = self.track.get_vault_mut(*component_id, vault_id).unwrap();
                     Ok(vault)
                 }
                 _ => Err(RuntimeError::VaultNotFound(vault_id)),
@@ -1647,14 +1640,14 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     fn check_take_from_vault_auth(
         &mut self,
         vault_id: VaultId,
-        badge: Option<ResourceDefRef>,
+        badge: Option<ResourceDefId>,
     ) -> Result<(), RuntimeError> {
-        let resource_def_ref = self.get_local_vault(vault_id)?.resource_def_ref();
+        let resource_def_id = self.get_local_vault(vault_id)?.resource_def_id();
 
         let resource_def = self
             .track
-            .get_resource_def(resource_def_ref)
-            .ok_or(RuntimeError::ResourceDefNotFound(resource_def_ref))?;
+            .get_resource_def(resource_def_id)
+            .ok_or(RuntimeError::ResourceDefNotFound(resource_def_id))?;
         resource_def
             .check_take_from_vault_auth(badge)
             .map_err(RuntimeError::ResourceDefError)
@@ -1723,14 +1716,14 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         })
     }
 
-    fn handle_get_vault_resource_def_ref(
+    fn handle_get_vault_resource_def_id(
         &mut self,
-        input: GetVaultResourceDefRefInput,
-    ) -> Result<GetVaultResourceDefRefOutput, RuntimeError> {
+        input: GetVaultResourceDefIdInput,
+    ) -> Result<GetVaultResourceDefIdOutput, RuntimeError> {
         let vault = self.get_local_vault(input.vault_id)?;
 
-        Ok(GetVaultResourceDefRefOutput {
-            resource_def_ref: vault.resource_def_ref(),
+        Ok(GetVaultResourceDefIdOutput {
+            resource_def_id: vault.resource_def_id(),
         })
     }
 
@@ -1740,11 +1733,11 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     ) -> Result<CreateEmptyBucketOutput, RuntimeError> {
         let definition = self
             .track
-            .get_resource_def(input.resource_def_ref)
-            .ok_or(RuntimeError::ResourceDefNotFound(input.resource_def_ref))?;
+            .get_resource_def(input.resource_def_id)
+            .ok_or(RuntimeError::ResourceDefNotFound(input.resource_def_id))?;
 
         let new_bucket = Bucket::new(
-            input.resource_def_ref,
+            input.resource_def_id,
             definition.resource_type(),
             match definition.resource_type() {
                 ResourceType::Fungible { .. } => Resource::Fungible {
@@ -1813,22 +1806,22 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         Ok(GetBucketDecimalOutput { amount })
     }
 
-    fn handle_get_bucket_resource_def_ref(
+    fn handle_get_bucket_resource_def_id(
         &mut self,
-        input: GetBucketResourceDefRefInput,
-    ) -> Result<GetBucketResourceDefRefOutput, RuntimeError> {
-        let resource_def_ref = self
+        input: GetBucketResourceDefIdInput,
+    ) -> Result<GetBucketResourceDefIdOutput, RuntimeError> {
+        let resource_def_id = self
             .buckets
             .get(&input.bucket_id)
-            .map(|b| b.resource_def_ref())
+            .map(|b| b.resource_def_id())
             .or_else(|| {
                 self.buckets_locked
                     .get(&input.bucket_id)
-                    .map(|x| x.bucket().resource_def_ref())
+                    .map(|x| x.bucket().resource_def_id())
             })
             .ok_or(RuntimeError::BucketNotFound(input.bucket_id))?;
 
-        Ok(GetBucketResourceDefRefOutput { resource_def_ref })
+        Ok(GetBucketResourceDefIdOutput { resource_def_id })
     }
 
     fn handle_take_non_fungible_from_bucket(
@@ -1936,17 +1929,17 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         })
     }
 
-    fn handle_get_proof_resource_def_ref(
+    fn handle_get_proof_resource_def_id(
         &mut self,
-        input: GetProofResourceDefRefInput,
-    ) -> Result<GetProofResourceDefRefOutput, RuntimeError> {
+        input: GetProofResourceDefIdInput,
+    ) -> Result<GetProofResourceDefIdOutput, RuntimeError> {
         let proof = self
             .proofs
             .get(&input.proof_id)
             .ok_or(RuntimeError::ProofNotFound(input.proof_id))?;
 
-        Ok(GetProofResourceDefRefOutput {
-            resource_def_ref: proof.bucket().resource_def_ref(),
+        Ok(GetProofResourceDefIdOutput {
+            resource_def_id: proof.bucket().resource_def_id(),
         })
     }
 
@@ -2111,8 +2104,8 @@ impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
                     PUT_INTO_VAULT => self.handle(args, Self::handle_put_into_vault),
                     TAKE_FROM_VAULT => self.handle(args, Self::handle_take_from_vault),
                     GET_VAULT_AMOUNT => self.handle(args, Self::handle_get_vault_amount),
-                    GET_VAULT_RESOURCE_DEF_REF => {
-                        self.handle(args, Self::handle_get_vault_resource_def_ref)
+                    GET_VAULT_RESOURCE_DEF_ID => {
+                        self.handle(args, Self::handle_get_vault_resource_def_id)
                     }
                     TAKE_NON_FUNGIBLE_FROM_VAULT => {
                         self.handle(args, Self::handle_take_non_fungible_from_vault)
@@ -2125,8 +2118,8 @@ impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
                     PUT_INTO_BUCKET => self.handle(args, Self::handle_put_into_bucket),
                     TAKE_FROM_BUCKET => self.handle(args, Self::handle_take_from_bucket),
                     GET_BUCKET_AMOUNT => self.handle(args, Self::handle_get_bucket_amount),
-                    GET_BUCKET_RESOURCE_DEF_REF => {
-                        self.handle(args, Self::handle_get_bucket_resource_def_ref)
+                    GET_BUCKET_RESOURCE_DEF_ID => {
+                        self.handle(args, Self::handle_get_bucket_resource_def_id)
                     }
                     TAKE_NON_FUNGIBLE_FROM_BUCKET => {
                         self.handle(args, Self::handle_take_non_fungible_from_bucket)
@@ -2138,8 +2131,8 @@ impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
                     CREATE_PROOF => self.handle(args, Self::handle_create_proof),
                     DROP_PROOF => self.handle(args, Self::handle_drop_proof),
                     GET_PROOF_AMOUNT => self.handle(args, Self::handle_get_proof_amount),
-                    GET_PROOF_RESOURCE_DEF_REF => {
-                        self.handle(args, Self::handle_get_proof_resource_def_ref)
+                    GET_PROOF_RESOURCE_DEF_ID => {
+                        self.handle(args, Self::handle_get_proof_resource_def_id)
                     }
                     GET_NON_FUNGIBLE_KEYS_IN_PROOF => {
                         self.handle(args, Self::handle_get_non_fungible_keys_in_proof)

@@ -7,9 +7,9 @@ use auto_lend::User;
 struct TestEnv<'a, L: SubstateStore> {
     executor: TransactionExecutor<'a, L>,
     public_key: EcdsaPublicKey,
-    account: ComponentRef,
-    usd: ResourceDefRef,
-    lending_pool: ComponentRef,
+    account: ComponentId,
+    usd: ResourceDefId,
+    lending_pool: ComponentId,
 }
 
 fn set_up_test_env<'a, L: SubstateStore>(ledger: &'a mut L) -> TestEnv<'a, L> {
@@ -29,7 +29,7 @@ fn set_up_test_env<'a, L: SubstateStore>(ledger: &'a mut L) -> TestEnv<'a, L> {
                 .unwrap(),
         )
         .unwrap();
-    let usd = receipt.new_resource_def_refs[0];
+    let usd = receipt.new_resource_def_ids[0];
 
     let receipt = executor
         .run(
@@ -46,7 +46,7 @@ fn set_up_test_env<'a, L: SubstateStore>(ledger: &'a mut L) -> TestEnv<'a, L> {
                 .unwrap(),
         )
         .unwrap();
-    let lending_pool = receipt.new_component_refs[0];
+    let lending_pool = receipt.new_component_ids[0];
 
     TestEnv {
         executor,
@@ -57,7 +57,7 @@ fn set_up_test_env<'a, L: SubstateStore>(ledger: &'a mut L) -> TestEnv<'a, L> {
     }
 }
 
-fn create_user<'a, L: SubstateStore>(env: &mut TestEnv<'a, L>) -> ResourceDefRef {
+fn create_user<'a, L: SubstateStore>(env: &mut TestEnv<'a, L>) -> ResourceDefId {
     let receipt = env
         .executor
         .run(
@@ -69,10 +69,10 @@ fn create_user<'a, L: SubstateStore>(env: &mut TestEnv<'a, L>) -> ResourceDefRef
         )
         .unwrap();
     assert!(receipt.result.is_ok());
-    receipt.new_resource_def_refs[0]
+    receipt.new_resource_def_ids[0]
 }
 
-fn get_user_state<'a, L: SubstateStore>(env: &mut TestEnv<'a, L>, user_id: ResourceDefRef) -> User {
+fn get_user_state<'a, L: SubstateStore>(env: &mut TestEnv<'a, L>, user_id: ResourceDefId) -> User {
     let mut receipt = env
         .executor
         .run(

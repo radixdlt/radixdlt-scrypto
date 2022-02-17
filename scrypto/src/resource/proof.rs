@@ -9,7 +9,7 @@ use crate::rust::fmt;
 use crate::rust::vec::Vec;
 use crate::types::*;
 
-/// Represents a reference to a bucket.
+/// Represents a proof of owning some resource.
 #[derive(Debug)]
 pub struct Proof(pub ProofId);
 
@@ -24,25 +24,25 @@ impl Clone for Proof {
 
 impl Proof {
     /// Checks if the referenced bucket contains the given resource, and aborts if not so.
-    pub fn check(&self, resource_def_ref: ResourceDefRef) {
-        if !self.contains(resource_def_ref) {
+    pub fn check(&self, resource_def_id: ResourceDefId) {
+        if !self.contains(resource_def_id) {
             panic!("Proof check failed");
         }
     }
 
     pub fn check_non_fungible_key<F: Fn(&NonFungibleKey) -> bool>(
         &self,
-        resource_def_ref: ResourceDefRef,
+        resource_def_id: ResourceDefId,
         f: F,
     ) {
-        if !self.contains(resource_def_ref) || !self.get_non_fungible_keys().iter().any(f) {
+        if !self.contains(resource_def_id) || !self.get_non_fungible_keys().iter().any(f) {
             panic!("Proof check failed");
         }
     }
 
     /// Checks if the referenced bucket contains the given resource.
-    pub fn contains(&self, resource_def_ref: ResourceDefRef) -> bool {
-        self.amount() > 0.into() && self.resource_def_ref() == resource_def_ref
+    pub fn contains(&self, resource_def_id: ResourceDefId) -> bool {
+        self.amount() > 0.into() && self.resource_def_id() == resource_def_id
     }
 
     /// Returns the resource amount within the bucket.
@@ -54,11 +54,11 @@ impl Proof {
     }
 
     /// Returns the resource definition of resources within the bucket.
-    pub fn resource_def_ref(&self) -> ResourceDefRef {
-        let input = GetProofResourceDefRefInput { proof_id: self.0 };
-        let output: GetProofResourceDefRefOutput = call_engine(GET_PROOF_RESOURCE_DEF_REF, input);
+    pub fn resource_def_id(&self) -> ResourceDefId {
+        let input = GetProofResourceDefIdInput { proof_id: self.0 };
+        let output: GetProofResourceDefIdOutput = call_engine(GET_PROOF_RESOURCE_DEF_ID, input);
 
-        output.resource_def_ref
+        output.resource_def_id
     }
 
     /// Returns the key of a singleton non-fungible.
@@ -87,7 +87,7 @@ impl Proof {
         output.keys
     }
 
-    /// Destroys this reference.
+    /// Destroys this proof.
     pub fn drop(self) {
         let input = DropProofInput { proof_id: self.0 };
         let _: DropProofOutput = call_engine(DROP_PROOF, input);

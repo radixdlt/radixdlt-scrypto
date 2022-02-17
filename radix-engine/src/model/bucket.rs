@@ -26,7 +26,7 @@ pub enum Resource {
 /// A transient resource container.
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct Bucket {
-    resource_def_ref: ResourceDefRef,
+    resource_def_id: ResourceDefId,
     resource_type: ResourceType,
     resource: Resource,
 }
@@ -38,24 +38,24 @@ pub struct LockedBucket {
     bucket: Bucket,
 }
 
-/// A reference to a bucket.
+/// A bucket proof
 pub type Proof = Rc<LockedBucket>;
 
 impl Bucket {
     pub fn new(
-        resource_def_ref: ResourceDefRef,
+        resource_def_id: ResourceDefId,
         resource_type: ResourceType,
         resource: Resource,
     ) -> Self {
         Self {
-            resource_def_ref,
+            resource_def_id,
             resource_type,
             resource,
         }
     }
 
     pub fn put(&mut self, other: Self) -> Result<(), BucketError> {
-        if self.resource_def_ref != other.resource_def_ref {
+        if self.resource_def_id != other.resource_def_id {
             Err(BucketError::ResourceNotMatching)
         } else {
             match &mut self.resource {
@@ -94,7 +94,7 @@ impl Bucket {
                         amount: *amount - quantity,
                     };
                     Ok(Self::new(
-                        self.resource_def_ref,
+                        self.resource_def_id,
                         self.resource_type,
                         Resource::Fungible { amount: quantity },
                     ))
@@ -106,7 +106,7 @@ impl Bucket {
                         keys.remove(e);
                     }
                     Ok(Self::new(
-                        self.resource_def_ref,
+                        self.resource_def_id,
                         self.resource_type,
                         Resource::NonFungible { keys: taken },
                     ))
@@ -132,7 +132,7 @@ impl Bucket {
                     }
                 }
                 Ok(Self::new(
-                    self.resource_def_ref,
+                    self.resource_def_id,
                     self.resource_type,
                     Resource::NonFungible { keys: set.clone() },
                 ))
@@ -158,8 +158,8 @@ impl Bucket {
         }
     }
 
-    pub fn resource_def_ref(&self) -> ResourceDefRef {
-        self.resource_def_ref
+    pub fn resource_def_id(&self) -> ResourceDefId {
+        self.resource_def_id
     }
 
     fn check_amount(amount: Decimal, divisibility: u8) -> Result<(), BucketError> {

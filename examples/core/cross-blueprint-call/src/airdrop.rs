@@ -10,7 +10,7 @@ blueprint! {
     }
 
     impl Airdrop {
-        pub fn instantiate_airdrop() -> ComponentRef {
+        pub fn instantiate_airdrop() -> ComponentId {
             Self {
                 tokens: Vault::with_bucket(
                     ResourceBuilder::new_fungible(DIVISIBILITY_MAXIMUM)

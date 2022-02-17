@@ -3,7 +3,7 @@ use scrypto::prelude::*;
 import! {
 r#"
 {
-    "package_ref": "01ca59a8d6ea4f7efa1765cef702d14e47570c079aedd44992dd09",
+    "package_id": "01ca59a8d6ea4f7efa1765cef702d14e47570c079aedd44992dd09",
     "blueprint_name": "FlatAdmin",
     "functions": [
         {
@@ -18,7 +18,7 @@ r#"
                 "elements": [
                     {
                         "type": "Custom",
-                        "name": "ComponentRef",
+                        "name": "ComponentId",
                         "generics": []
                     },
                     {
@@ -67,7 +67,7 @@ r#"
             "inputs": [],
             "output": {
                 "type": "Custom",
-                "name": "ResourceDefRef",
+                "name": "ResourceDefId",
                 "generics": []
             }
         }
@@ -78,18 +78,18 @@ r#"
 
 blueprint! {
     struct ManagedAccess {
-        admin_badge: ResourceDefRef,
-        flat_admin_controller: ComponentRef,
+        admin_badge: ResourceDefId,
+        flat_admin_controller: ComponentId,
         protected_vault: Vault,
     }
 
     impl ManagedAccess {
-        pub fn instantiate_managed_access() -> (ComponentRef, Bucket) {
+        pub fn instantiate_managed_access() -> (ComponentId, Bucket) {
             let (flat_admin_component, admin_badge) =
                 FlatAdmin::instantiate_flat_admin("My Managed Access Badge".into());
 
             let component = Self {
-                admin_badge: admin_badge.resource_def_ref(),
+                admin_badge: admin_badge.resource_def_id(),
                 flat_admin_controller: flat_admin_component,
                 protected_vault: Vault::new(RADIX_TOKEN),
             }
@@ -106,11 +106,11 @@ blueprint! {
             self.protected_vault.put(to_deposit);
         }
 
-        pub fn get_admin_badge(&self) -> ResourceDefRef {
+        pub fn get_admin_badge(&self) -> ResourceDefId {
             self.admin_badge
         }
 
-        pub fn get_flat_admin_controller(&self) -> ComponentRef {
+        pub fn get_flat_admin_controller(&self) -> ComponentId {
             self.flat_admin_controller
         }
     }

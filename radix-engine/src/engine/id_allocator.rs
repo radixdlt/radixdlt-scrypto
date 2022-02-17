@@ -44,34 +44,34 @@ impl IdAllocator {
         }
     }
 
-    /// Creates a new package ref.
-    pub fn new_package_ref(
+    /// Creates a new package ID.
+    pub fn new_package_id(
         &mut self,
         transaction_hash: Hash,
-    ) -> Result<PackageRef, IdAllocatorError> {
+    ) -> Result<PackageId, IdAllocatorError> {
         let mut data = transaction_hash.to_vec();
         data.extend(self.next()?.to_le_bytes());
-        Ok(PackageRef(sha256_twice(data).lower_26_bytes()))
+        Ok(PackageId(sha256_twice(data).lower_26_bytes()))
     }
 
-    /// Creates a new component ref.
-    pub fn new_component_ref(
+    /// Creates a new component ID.
+    pub fn new_component_id(
         &mut self,
         transaction_hash: Hash,
-    ) -> Result<ComponentRef, IdAllocatorError> {
+    ) -> Result<ComponentId, IdAllocatorError> {
         let mut data = transaction_hash.to_vec();
         data.extend(self.next()?.to_le_bytes());
-        Ok(ComponentRef(sha256_twice(data).lower_26_bytes()))
+        Ok(ComponentId(sha256_twice(data).lower_26_bytes()))
     }
 
-    /// Creates a new resource def ref.
-    pub fn new_resource_def_ref(
+    /// Creates a new resource definition ID.
+    pub fn new_resource_def_id(
         &mut self,
         transaction_hash: Hash,
-    ) -> Result<ResourceDefRef, IdAllocatorError> {
+    ) -> Result<ResourceDefId, IdAllocatorError> {
         let mut data = transaction_hash.to_vec();
         data.extend(self.next()?.to_le_bytes());
-        Ok(ResourceDefRef(sha256_twice(data).lower_26_bytes()))
+        Ok(ResourceDefId(sha256_twice(data).lower_26_bytes()))
     }
 
     /// Creates a new UUID.

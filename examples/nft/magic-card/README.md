@@ -52,7 +52,7 @@ let random_card_resource_def = ResourceBuilder::new_non_fungible()
     .metadata("name", "Random Cards")
     .flags(MINTABLE | BURNABLE | INDIVIDUAL_METADATA_MUTABLE)
     .badge(
-        random_card_mint_badge.resource_def_ref(),
+        random_card_mint_badge.resource_def_id(),
         MAY_MINT | MAY_BURN | MAY_CHANGE_INDIVIDUAL_METADATA,
     )
     .no_initial_supply();
@@ -83,7 +83,7 @@ Since NFT is just another type of resource, it must be stored in either a bucket
 To pick a specific NFT when calling a function or method, we can use the following syntax:
 
 ```
-#nft_id_1,#nft_id2,resource_def_ref
+#nft_id_1,#nft_id2,resource_def_id
 ```
 
 ## Update an Existing NFT
@@ -110,35 +110,35 @@ let nft = self.random_card_mint_badge.authorize(|auth| {
 
 ## How to Play?
 
-1. Create a new account, and save the account component ref
+1. Create a new account, and save the account component ID
 ```
 resim new-account
 ```
-2. Publish the package, and save the package ref
+2. Publish the package, and save the package ID
 ```
 resim publish .
 ```
-3. Call the `instantiate_component` function to instantiate a component, and save the component ref
+3. Call the `instantiate_component` function to instantiate a component, and save the component ID
 ```
-resim call-function <PACKAGE_REF> HelloNft instantiate_component
+resim call-function <PACKAGE_ID> HelloNft instantiate_component
 ```
 4. Call the `buy_random_card` method of the component we just instantiated
 ```
-resim call-method <COMPONENT_REF> buy_random_card "1000,030000000000000000000000000000000000000000000000000004"
+resim call-method <COMPONENT_ID> buy_random_card "1000,030000000000000000000000000000000000000000000000000004"
 ```
 4. Call the `buy_random_card` method again
 ```
-resim call-method <COMPONENT_REF> buy_random_card "1000,030000000000000000000000000000000000000000000000000004"
+resim call-method <COMPONENT_ID> buy_random_card "1000,030000000000000000000000000000000000000000000000000004"
 ```
 5. Check out our balance
 ```
-resim show <ACCOUNT_COMPONENT_REF>
+resim show <ACCOUNT_COMPONENT_ID>
 ```
 6. Fuse our random cards
 ```
-resim call-method <COMPONENT_REF> fuse_my_cards "#0,#1,03d8541671ab09116ae450d468f91e5488a9b22c705d70dcfe9e09"
+resim call-method <COMPONENT_ID> fuse_my_cards "#0,#1,03d8541671ab09116ae450d468f91e5488a9b22c705d70dcfe9e09"
 ```
 7. Check out our balance again and we should see a upgraded card
 ```
-resim show <ACCOUNT_COMPONENT_REF>
+resim show <ACCOUNT_COMPONENT_ID>
 ```

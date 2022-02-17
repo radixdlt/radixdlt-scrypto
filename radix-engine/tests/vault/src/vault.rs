@@ -24,7 +24,7 @@ blueprint! {
                 .initial_supply_fungible(1)
         }
 
-        pub fn new_vault_into_map() -> ComponentRef {
+        pub fn new_vault_into_map() -> ComponentId {
             let bucket = Self::new_fungible();
             let vault = Vault::with_bucket(bucket);
             let bucket = Self::new_fungible();
@@ -39,9 +39,9 @@ blueprint! {
             .instantiate()
         }
 
-        pub fn invalid_double_ownership_of_vault() -> ComponentRef {
+        pub fn invalid_double_ownership_of_vault() -> ComponentId {
             let bucket = Self::new_fungible();
-            let vault = Vault::new(bucket.resource_def_ref());
+            let vault = Vault::new(bucket.resource_def_id());
             let vaults = LazyMap::new();
             vaults.insert(0, vault);
             let mut vault = vaults.get(&0).unwrap();
@@ -56,9 +56,9 @@ blueprint! {
             .instantiate()
         }
 
-        pub fn new_vault_into_map_then_get() -> ComponentRef {
+        pub fn new_vault_into_map_then_get() -> ComponentId {
             let bucket = Self::new_fungible();
-            let vault = Vault::new(bucket.resource_def_ref());
+            let vault = Vault::new(bucket.resource_def_id());
             let vaults = LazyMap::new();
             vaults.insert(0, vault);
             let mut vault = vaults.get(&0).unwrap();
@@ -78,7 +78,7 @@ blueprint! {
             self.vaults.insert(0, Vault::with_bucket(bucket))
         }
 
-        pub fn new_vault_into_vector() -> ComponentRef {
+        pub fn new_vault_into_vector() -> ComponentId {
             let bucket = Self::new_fungible();
             let vault = Vault::with_bucket(bucket);
             let bucket = Self::new_fungible();
@@ -102,7 +102,7 @@ blueprint! {
             self.vault_vector.push(Vault::with_bucket(bucket))
         }
 
-        pub fn new_vault_with_take() -> ComponentRef {
+        pub fn new_vault_with_take() -> ComponentId {
             let bucket = Self::new_fungible();
             let mut vault = Vault::with_bucket(bucket);
             let bucket = vault.take(1);
@@ -124,7 +124,7 @@ blueprint! {
             Vault::with_bucket(bucket)
         }
 
-        pub fn new_vault_with_take_non_fungible() -> ComponentRef {
+        pub fn new_vault_with_take_non_fungible() -> ComponentId {
             let mut vault = Self::create_non_fungible_vault();
             let bucket = vault.take_non_fungible(&NonFungibleKey::from(1u128));
             vault.put(bucket);
@@ -138,7 +138,7 @@ blueprint! {
             .instantiate()
         }
 
-        pub fn new_vault_with_get_non_fungible_keys() -> ComponentRef {
+        pub fn new_vault_with_get_non_fungible_keys() -> ComponentId {
             let vault = Self::create_non_fungible_vault();
             let _keys = vault.get_non_fungible_keys();
             let vaults = LazyMap::new();
@@ -151,7 +151,7 @@ blueprint! {
             .instantiate()
         }
 
-        pub fn new_vault_with_get_amount() -> ComponentRef {
+        pub fn new_vault_with_get_amount() -> ComponentId {
             let vault = Self::create_non_fungible_vault();
             let _amount = vault.amount();
             let vaults = LazyMap::new();
@@ -164,9 +164,9 @@ blueprint! {
             .instantiate()
         }
 
-        pub fn new_vault_with_get_resource_def() -> ComponentRef {
+        pub fn new_vault_with_get_resource_def() -> ComponentId {
             let vault = Self::create_non_fungible_vault();
-            let _resource_def = vault.resource_def_ref();
+            let _resource_def = vault.resource_def_id();
             let vaults = LazyMap::new();
             let vault_vector = Vec::new();
             VaultTest {

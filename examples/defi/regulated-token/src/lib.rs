@@ -6,12 +6,12 @@ blueprint! {
         internal_authority: Vault,
         collected_xrd: Vault,
         current_stage: u8,
-        admin_badge_def: ResourceDefRef,
-        freeze_badge_def: ResourceDefRef,
+        admin_badge_def: ResourceDefId,
+        freeze_badge_def: ResourceDefId,
     }
 
     impl RegulatedToken {
-        pub fn instantiate_regulated_token() -> (ComponentRef, Bucket, Bucket) {
+        pub fn instantiate_regulated_token() -> (ComponentId, Bucket, Bucket) {
             // We will start by creating two tokens we will use as badges and return to our instantiator
             let general_admin: Bucket = ResourceBuilder::new_fungible(DIVISIBILITY_NONE)
                 .metadata("name", "RegulatedToken general admin badge")
@@ -39,9 +39,9 @@ blueprint! {
                 )
                 .flags(SHARED_METADATA_MUTABLE | RESTRICTED_TRANSFER)
                 .mutable_flags(MINTABLE | SHARED_METADATA_MUTABLE | RESTRICTED_TRANSFER)
-                .badge(general_admin.resource_def_ref(), ALL_PERMISSIONS)
-                .badge(freeze_admin.resource_def_ref(), MAY_MANAGE_RESOURCE_FLAGS)
-                .badge(internal_admin.resource_def_ref(), MAY_MINT | MAY_TRANSFER)
+                .badge(general_admin.resource_def_id(), ALL_PERMISSIONS)
+                .badge(freeze_admin.resource_def_id(), MAY_MANAGE_RESOURCE_FLAGS)
+                .badge(internal_admin.resource_def_id(), MAY_MINT | MAY_TRANSFER)
                 .initial_supply_fungible(100);
 
             let component = Self {
@@ -49,8 +49,8 @@ blueprint! {
                 internal_authority: Vault::with_bucket(internal_admin),
                 collected_xrd: Vault::new(RADIX_TOKEN),
                 current_stage: 1,
-                admin_badge_def: general_admin.resource_def_ref(),
-                freeze_badge_def: freeze_admin.resource_def_ref(),
+                admin_badge_def: general_admin.resource_def_id(),
+                freeze_badge_def: freeze_admin.resource_def_id(),
             }
             .instantiate();
 
@@ -65,7 +65,7 @@ blueprint! {
         pub fn toggle_transfer_freeze(&self, set_frozen: bool) {
             // We can refer to the incoming badge as "auth"
             // Note that this operation will fail if the token has reached stage 3 and the RESTRICTED_TRANSFER flag has become immutably disabled
-            let mut token_def = self.token_supply.resource_def_ref();
+            let mut token_def = self.token_supply.resource_def_id();
             if set_frozen {
                 token_def.enable_flags(RESTRICTED_TRANSFER, auth);
                 info!("Token transfer is now RESTRICTED");
@@ -94,7 +94,7 @@ blueprint! {
                 // Advance to stage 2
                 // Token will still be restricted transfer upon admin demand, but we will mint beyond the initial supply as required
                 self.current_stage = 2;
-                let mut token_def = self.token_supply.resource_def_ref();
+                let mut token_def = self.token_supply.resource_def_id();
 
                 // Update token's metadata to reflect the current stage
                 let mut metadata = token_def.metadata();
@@ -112,7 +112,7 @@ blueprint! {
                 // Token will no longer be regulated
                 // Restricted transfer will be permanently turned off, supply will be made permanently immutable
                 self.current_stage = 3;
-                let mut token_def = self.token_supply.resource_def_ref();
+                let mut token_def = self.token_supply.resource_def_id();
 
                 // Update token's metadata to reflect the final stage
                 let mut metadata = token_def.metadata();
@@ -169,11 +169,9 @@ blueprint! {
                 // We will attempt to mint the shortfall
                 // If we are in stage 1 or 3, this action will fail, and it would probably be a good idea to tell the user this
                 // For the purposes of example, we will blindly attempt to mint
-                let mut tokens = self.internal_authority.authorize(|auth| {
-                    self.token_supply
-                        .resource_def_ref()
-                        .mint(extra_demand, auth)
-                });
+                let mut tokens = self
+                    .internal_authority
+                    .authorize(|auth| self.token_supply.resource_def_id().mint(extra_demand, auth));
 
                 // Combine the new tokens with whatever was left in supply to meet the full quantity
                 let existing_tokens = self

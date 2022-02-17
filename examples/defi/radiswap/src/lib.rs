@@ -3,7 +3,7 @@ use scrypto::prelude::*;
 blueprint! {
     struct Radiswap {
         /// The resource definition of LP token.
-        lp_token: ResourceDefRef,
+        lp_token: ResourceDefId,
         /// LP tokens mint badge.
         lp_mint_badge: Vault,
         /// The reserve for token A.
@@ -18,7 +18,7 @@ blueprint! {
     }
 
     impl Radiswap {
-        /// Creates a Radiswap component for token pair A/B and returns the component ref
+        /// Creates a Radiswap component for token pair A/B and returns the component ID
         /// along with the initial LP tokens.
         pub fn instantiate_pool(
             a_tokens: Bucket,
@@ -28,7 +28,7 @@ blueprint! {
             lp_name: String,
             lp_url: String,
             fee: Decimal,
-        ) -> (ComponentRef, Bucket) {
+        ) -> (ComponentId, Bucket) {
             // Check arguments
             assert!(
                 !a_tokens.is_empty() && !b_tokens.is_empty(),
@@ -48,7 +48,7 @@ blueprint! {
                 .metadata("name", lp_name)
                 .metadata("url", lp_url)
                 .flags(MINTABLE | BURNABLE)
-                .badge(lp_mint_badge.resource_def_ref(), MAY_MINT | MAY_BURN)
+                .badge(lp_mint_badge.resource_def_id(), MAY_MINT | MAY_BURN)
                 .no_initial_supply();
             let lp_tokens = lp_token.mint(lp_initial_supply, lp_mint_badge.present());
 
@@ -118,7 +118,7 @@ blueprint! {
         /// Removes liquidity from this pool.
         pub fn remove_liquidity(&mut self, lp_tokens: Bucket) -> (Bucket, Bucket) {
             assert!(
-                self.lp_token == lp_tokens.resource_def_ref(),
+                self.lp_token == lp_tokens.resource_def_id(),
                 "Wrong token type passed in"
             );
 
@@ -143,8 +143,7 @@ blueprint! {
             // Calculate the swap fee
             let fee_amount = input_tokens.amount() * self.fee;
 
-            let output_tokens = if input_tokens.resource_def_ref() == self.a_pool.resource_def_ref()
-            {
+            let output_tokens = if input_tokens.resource_def_id() == self.a_pool.resource_def_id() {
                 // Calculate how much of token B we will return
                 let b_amount = self.b_pool.amount()
                     - self.a_pool.amount() * self.b_pool.amount()
@@ -175,12 +174,9 @@ blueprint! {
             output_tokens
         }
 
-        /// Returns the resource definition refs of the pair.
-        pub fn get_pair(&self) -> (ResourceDefRef, ResourceDefRef) {
-            (
-                self.a_pool.resource_def_ref(),
-                self.b_pool.resource_def_ref(),
-            )
+        /// Returns the resource definition IDs of the pair.
+        pub fn get_pair(&self) -> (ResourceDefId, ResourceDefId) {
+            (self.a_pool.resource_def_id(), self.b_pool.resource_def_id())
         }
     }
 }

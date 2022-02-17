@@ -10,9 +10,9 @@ use crate::types::*;
 
 /// A collection of blueprints, compiled and published as a single unit.
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
-pub struct PackageRef(pub [u8; 26]);
+pub struct PackageId(pub [u8; 26]);
 
-impl PackageRef {
+impl PackageId {
     /// Invokes a function on this package.
     pub fn call<T: Decode, S: AsRef<str>>(
         &self,
@@ -31,17 +31,17 @@ impl PackageRef {
 //========
 
 #[derive(Debug, Clone)]
-pub enum ParsePackageRefError {
+pub enum ParsePackageIdError {
     InvalidHex(hex::FromHexError),
     InvalidLength(usize),
     InvalidPrefix,
 }
 
 #[cfg(not(feature = "alloc"))]
-impl std::error::Error for ParsePackageRefError {}
+impl std::error::Error for ParsePackageIdError {}
 
 #[cfg(not(feature = "alloc"))]
-impl fmt::Display for ParsePackageRefError {
+impl fmt::Display for ParsePackageIdError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}", self)
     }
@@ -51,24 +51,24 @@ impl fmt::Display for ParsePackageRefError {
 // binary
 //========
 
-impl TryFrom<&[u8]> for PackageRef {
-    type Error = ParsePackageRefError;
+impl TryFrom<&[u8]> for PackageId {
+    type Error = ParsePackageIdError;
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
         match slice.len() {
             26 => Ok(Self(copy_u8_array(slice))),
-            _ => Err(ParsePackageRefError::InvalidLength(slice.len())),
+            _ => Err(ParsePackageIdError::InvalidLength(slice.len())),
         }
     }
 }
 
-impl PackageRef {
+impl PackageId {
     pub fn to_vec(&self) -> Vec<u8> {
         self.0.to_vec()
     }
 }
 
-custom_type!(PackageRef, CustomType::PackageRef, Vec::new());
+custom_type!(PackageId, CustomType::PackageId, Vec::new());
 
 //======
 // text
@@ -76,25 +76,25 @@ custom_type!(PackageRef, CustomType::PackageRef, Vec::new());
 
 // Before Bech32, we use a fixed prefix for text representation.
 
-impl FromStr for PackageRef {
-    type Err = ParsePackageRefError;
+impl FromStr for PackageId {
+    type Err = ParsePackageIdError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let bytes = hex::decode(s).map_err(ParsePackageRefError::InvalidHex)?;
+        let bytes = hex::decode(s).map_err(ParsePackageIdError::InvalidHex)?;
         if bytes.get(0) != Some(&1u8) {
-            return Err(ParsePackageRefError::InvalidPrefix);
+            return Err(ParsePackageIdError::InvalidPrefix);
         }
         Self::try_from(&bytes[1..])
     }
 }
 
-impl fmt::Display for PackageRef {
+impl fmt::Display for PackageId {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         write!(f, "{}", hex::encode(combine(1, &self.0)))
     }
 }
 
-impl fmt::Debug for PackageRef {
+impl fmt::Debug for PackageId {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         write!(f, "{}", self)
     }

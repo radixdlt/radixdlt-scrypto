@@ -23,7 +23,7 @@ fn test_magic_card() {
     assert!(receipt1.result.is_ok());
 
     // Test the `buy_special_card` method.
-    let component = receipt1.new_component_refs[0];
+    let component = receipt1.new_component_ids[0];
     let transaction2 = TransactionBuilder::new(&executor)
         .call_method(
             component,
@@ -42,7 +42,7 @@ fn test_magic_card() {
     assert!(receipt2.result.is_ok());
 
     // Test the `buy_special_card` method.
-    let component = receipt1.new_component_refs[0];
+    let component = receipt1.new_component_ids[0];
     let transaction3 = TransactionBuilder::new(&executor)
         .call_method(
             component,

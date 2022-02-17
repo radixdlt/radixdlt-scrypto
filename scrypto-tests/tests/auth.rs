@@ -8,13 +8,13 @@ use serde_json::{json, to_value, Value};
 
 blueprint! {
     struct SimpleAuth {
-        admin: ResourceDefRef,
-        user: ResourceDefRef,
+        admin: ResourceDefId,
+        user: ResourceDefId,
         reserves: Vault,
     }
 
     impl SimpleAuth {
-        pub fn new(admin: ResourceDefRef, user: ResourceDefRef) -> ComponentRef {
+        pub fn new(admin: ResourceDefId, user: ResourceDefId) -> ComponentId {
             Self {
                 admin,
                 user,
@@ -63,18 +63,18 @@ fn test_simple_auth() {
                     "inputs": [
                         {
                             "type": "Custom",
-                            "name": "ResourceDefRef",
+                            "name": "ResourceDefId",
                             "generics": []
                         },
                         {
                             "type": "Custom",
-                            "name": "ResourceDefRef",
+                            "name": "ResourceDefId",
                             "generics": []
                         }
                     ],
                     "output": {
                         "type": "Custom",
-                        "name": "ComponentRef",
+                        "name": "ComponentId",
                         "generics": []
                     }
                 }

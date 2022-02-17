@@ -23,24 +23,24 @@ use crate::transaction::*;
 pub enum ResourceSpecification {
     Fungible {
         amount: Decimal,
-        resource_def_ref: ResourceDefRef,
+        resource_def_id: ResourceDefId,
     },
     NonFungible {
         keys: BTreeSet<NonFungibleKey>,
-        resource_def_ref: ResourceDefRef,
+        resource_def_id: ResourceDefId,
     },
     All {
-        resource_def_ref: ResourceDefRef,
+        resource_def_id: ResourceDefId,
     },
 }
 
 /// Represents an error when parsing `Resource` from string.
 #[derive(Debug, Clone)]
 pub enum ParseResourceSpecificationError {
-    MissingResourceDefRef,
+    MissingResourceDefId,
     InvalidAmount,
     InvalidNftId,
-    InvalidResourceDefRef,
+    InvalidResourceDefId,
 }
 
 impl fmt::Display for ParseResourceSpecificationError {
@@ -59,11 +59,11 @@ impl FromStr for ResourceSpecification {
         let tokens: Vec<&str> = s.trim().split(',').collect();
 
         if tokens.len() >= 2 {
-            let resource_def_ref = tokens
+            let resource_def_id = tokens
                 .last()
                 .unwrap()
-                .parse::<ResourceDefRef>()
-                .map_err(|_| ParseResourceSpecificationError::InvalidResourceDefRef)?;
+                .parse::<ResourceDefId>()
+                .map_err(|_| ParseResourceSpecificationError::InvalidResourceDefId)?;
             if tokens[0].starts_with('#') {
                 let mut keys = BTreeSet::<NonFungibleKey>::new();
                 for key in &tokens[..tokens.len() - 1] {
@@ -79,7 +79,7 @@ impl FromStr for ResourceSpecification {
                 }
                 Ok(ResourceSpecification::NonFungible {
                     keys,
-                    resource_def_ref,
+                    resource_def_id,
                 })
             } else {
                 if tokens.len() == 2 {
@@ -87,14 +87,14 @@ impl FromStr for ResourceSpecification {
                         amount: tokens[0]
                             .parse()
                             .map_err(|_| ParseResourceSpecificationError::InvalidAmount)?,
-                        resource_def_ref,
+                        resource_def_id,
                     })
                 } else {
                     Err(ParseResourceSpecificationError::InvalidAmount)
                 }
             }
         } else {
-            Err(ParseResourceSpecificationError::MissingResourceDefRef)
+            Err(ParseResourceSpecificationError::MissingResourceDefId)
         }
     }
 }
@@ -108,15 +108,15 @@ impl ResourceSpecification {
         }
     }
 
-    pub fn resource_def_ref(&self) -> ResourceDefRef {
+    pub fn resource_def_id(&self) -> ResourceDefId {
         match self {
             ResourceSpecification::Fungible {
-                resource_def_ref, ..
+                resource_def_id, ..
             }
             | ResourceSpecification::NonFungible {
-                resource_def_ref, ..
+                resource_def_id, ..
             }
-            | ResourceSpecification::All { resource_def_ref } => *resource_def_ref,
+            | ResourceSpecification::All { resource_def_id } => *resource_def_id,
         }
     }
 }
@@ -204,20 +204,20 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         let (builder, bucket_id, _) = match resource_spec.clone() {
             ResourceSpecification::Fungible {
                 amount,
-                resource_def_ref,
+                resource_def_id,
             } => self.add_instruction(Instruction::TakeFromWorktop {
                 amount,
-                resource_def_ref,
+                resource_def_id,
             }),
             ResourceSpecification::NonFungible {
                 keys,
-                resource_def_ref,
+                resource_def_id,
             } => self.add_instruction(Instruction::TakeNonFungiblesFromWorktop {
                 keys,
-                resource_def_ref,
+                resource_def_id,
             }),
-            ResourceSpecification::All { resource_def_ref } => {
-                self.add_instruction(Instruction::TakeAllFromWorktop { resource_def_ref })
+            ResourceSpecification::All { resource_def_id } => {
+                self.add_instruction(Instruction::TakeAllFromWorktop { resource_def_id })
             }
         };
         then(builder, bucket_id.unwrap())
@@ -227,11 +227,11 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     pub fn assert_worktop_contains(
         &mut self,
         amount: Decimal,
-        resource_def_ref: ResourceDefRef,
+        resource_def_id: ResourceDefId,
     ) -> &mut Self {
         self.add_instruction(Instruction::AssertWorktopContains {
             amount,
-            resource_def_ref,
+            resource_def_id,
         })
         .0
     }
@@ -264,22 +264,22 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     /// The implementation will automatically prepare the arguments based on the
     /// function ABI, including resource buckets and proofs.
     ///
-    /// If an Account component ref is provided, resources will be withdrawn from the given account;
+    /// If an Account component ID is provided, resources will be withdrawn from the given account;
     /// otherwise, they will be taken from transaction worktop.
     pub fn call_function(
         &mut self,
-        package_ref: PackageRef,
+        package_id: PackageId,
         blueprint_name: &str,
         function: &str,
         args: Vec<String>,
-        account: Option<ComponentRef>,
+        account: Option<ComponentId>,
     ) -> &mut Self {
         let result = self
             .abi_provider
-            .export_abi(package_ref, blueprint_name)
+            .export_abi(package_id, blueprint_name)
             .map_err(|_| {
                 BuildTransactionError::FailedToExportFunctionAbi(
-                    package_ref,
+                    package_id,
                     blueprint_name.to_owned(),
                     function.to_owned(),
                 )
@@ -293,7 +293,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         match result {
             Ok(args) => {
                 self.add_instruction(Instruction::CallFunction {
-                    package_ref,
+                    package_id,
                     blueprint_name: blueprint_name.to_owned(),
                     function: function.to_owned(),
                     args,
@@ -310,20 +310,20 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     /// The implementation will automatically prepare the arguments based on the
     /// method ABI, including resource buckets and proofs.
     ///
-    /// If an Account component ref is provided, resources will be withdrawn from the given account;
+    /// If an Account component ID is provided, resources will be withdrawn from the given account;
     /// otherwise, they will be taken from transaction worktop.
     pub fn call_method(
         &mut self,
-        component_ref: ComponentRef,
+        component_id: ComponentId,
         method: &str,
         args: Vec<String>,
-        account: Option<ComponentRef>,
+        account: Option<ComponentId>,
     ) -> &mut Self {
         let result = self
             .abi_provider
-            .export_abi_component(component_ref)
+            .export_abi_component(component_id)
             .map_err(|_| {
-                BuildTransactionError::FailedToExportMethodAbi(component_ref, method.to_owned())
+                BuildTransactionError::FailedToExportMethodAbi(component_id, method.to_owned())
             })
             .and_then(|abi| Self::find_method_abi(&abi, method))
             .and_then(|m| {
@@ -334,7 +334,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         match result {
             Ok(args) => {
                 self.add_instruction(Instruction::CallMethod {
-                    component_ref,
+                    component_id,
                     method: method.to_owned(),
                     args,
                 });
@@ -351,11 +351,11 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     /// a runtime failure is triggered.
     pub fn call_method_with_all_resources(
         &mut self,
-        component_ref: ComponentRef,
+        component_id: ComponentId,
         method: &str,
     ) -> &mut Self {
         self.add_instruction(Instruction::CallMethodWithAllResources {
-            component_ref,
+            component_id,
             method: method.into(),
         })
         .0
@@ -386,7 +386,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     /// Publishes a package.
     pub fn publish_package(&mut self, code: &[u8]) -> &mut Self {
         self.add_instruction(Instruction::CallFunction {
-            package_ref: SYSTEM_PACKAGE,
+            package_id: SYSTEM_PACKAGE,
             blueprint_name: "System".to_owned(),
             function: "publish_package".to_owned(),
             args: vec![scrypto_encode(&code.to_vec())],
@@ -395,11 +395,11 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     }
 
     fn single_authority(
-        resource_def_ref: ResourceDefRef,
+        resource_def_id: ResourceDefId,
         permission: u64,
-    ) -> HashMap<ResourceDefRef, u64> {
+    ) -> HashMap<ResourceDefId, u64> {
         let mut map = HashMap::new();
-        map.insert(resource_def_ref, permission);
+        map.insert(resource_def_id, permission);
         map
     }
 
@@ -407,10 +407,10 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     pub fn new_token_mutable(
         &mut self,
         metadata: HashMap<String, String>,
-        minter_resource_def_ref: ResourceDefRef,
+        minter_resource_def_id: ResourceDefId,
     ) -> &mut Self {
         self.add_instruction(Instruction::CallFunction {
-            package_ref: SYSTEM_PACKAGE,
+            package_id: SYSTEM_PACKAGE,
             blueprint_name: "System".to_owned(),
             function: "new_resource".to_owned(),
             args: vec![
@@ -419,7 +419,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                 scrypto_encode(&(MINTABLE | BURNABLE)),
                 scrypto_encode(&0u64),
                 scrypto_encode(&Self::single_authority(
-                    minter_resource_def_ref,
+                    minter_resource_def_id,
                     MAY_MINT | MAY_BURN,
                 )),
                 scrypto_encode::<Option<Supply>>(&None),
@@ -435,7 +435,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         initial_supply: Decimal,
     ) -> &mut Self {
         self.add_instruction(Instruction::CallFunction {
-            package_ref: SYSTEM_PACKAGE,
+            package_id: SYSTEM_PACKAGE,
             blueprint_name: "System".to_owned(),
             function: "new_resource".to_owned(),
             args: vec![
@@ -443,7 +443,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                 scrypto_encode(&metadata),
                 scrypto_encode(&0u64),
                 scrypto_encode(&0u64),
-                scrypto_encode(&HashMap::<ResourceDefRef, u64>::new()),
+                scrypto_encode(&HashMap::<ResourceDefId, u64>::new()),
                 scrypto_encode(&Some(Supply::Fungible {
                     amount: initial_supply.into(),
                 })),
@@ -456,10 +456,10 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     pub fn new_badge_mutable(
         &mut self,
         metadata: HashMap<String, String>,
-        minter_resource_def_ref: ResourceDefRef,
+        minter_resource_def_id: ResourceDefId,
     ) -> &mut Self {
         self.add_instruction(Instruction::CallFunction {
-            package_ref: SYSTEM_PACKAGE,
+            package_id: SYSTEM_PACKAGE,
             blueprint_name: "System".to_owned(),
             function: "new_resource".to_owned(),
             args: vec![
@@ -468,7 +468,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                 scrypto_encode(&(MINTABLE | BURNABLE)),
                 scrypto_encode(&0u64),
                 scrypto_encode(&Self::single_authority(
-                    minter_resource_def_ref,
+                    minter_resource_def_id,
                     MAY_MINT | MAY_BURN,
                 )),
                 scrypto_encode::<Option<Supply>>(&None),
@@ -484,7 +484,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         initial_supply: Decimal,
     ) -> &mut Self {
         self.add_instruction(Instruction::CallFunction {
-            package_ref: SYSTEM_PACKAGE,
+            package_id: SYSTEM_PACKAGE,
             blueprint_name: "System".to_owned(),
             function: "new_resource".to_owned(),
             args: vec![
@@ -492,7 +492,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                 scrypto_encode(&metadata),
                 scrypto_encode(&0u64),
                 scrypto_encode(&0u64),
-                scrypto_encode(&HashMap::<ResourceDefRef, u64>::new()),
+                scrypto_encode(&HashMap::<ResourceDefId, u64>::new()),
                 scrypto_encode(&Some(Supply::Fungible {
                     amount: initial_supply.into(),
                 })),
@@ -505,24 +505,24 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     pub fn mint(
         &mut self,
         amount: Decimal,
-        resource_def_ref: ResourceDefRef,
-        minter_resource_def_ref: ResourceDefRef,
+        resource_def_id: ResourceDefId,
+        minter_resource_def_id: ResourceDefId,
     ) -> &mut Self {
         self.take_from_worktop(
             &ResourceSpecification::Fungible {
                 amount: 1.into(),
-                resource_def_ref: minter_resource_def_ref,
+                resource_def_id: minter_resource_def_id,
             },
             |builder, bucket_id| {
                 builder.create_proof(bucket_id, |builder, proof_id| {
                     builder
                         .add_instruction(Instruction::CallFunction {
-                            package_ref: SYSTEM_PACKAGE,
+                            package_id: SYSTEM_PACKAGE,
                             blueprint_name: "System".to_owned(),
                             function: "mint".to_owned(),
                             args: vec![
                                 scrypto_encode(&amount),
-                                scrypto_encode(&resource_def_ref),
+                                scrypto_encode(&resource_def_id),
                                 scrypto_encode(&scrypto::resource::Proof(proof_id)),
                             ],
                         })
@@ -535,7 +535,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     /// Creates an account.
     pub fn new_account(&mut self, public_key: EcdsaPublicKey) -> &mut Self {
         self.add_instruction(Instruction::CallFunction {
-            package_ref: ACCOUNT_PACKAGE,
+            package_id: ACCOUNT_PACKAGE,
             blueprint_name: "Account".to_owned(),
             function: "new".to_owned(),
             args: vec![scrypto_encode(&public_key)],
@@ -554,7 +554,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         self.take_from_worktop(resource_spec, |builder, bucket_id| {
             builder
                 .add_instruction(Instruction::CallFunction {
-                    package_ref: ACCOUNT_PACKAGE,
+                    package_id: ACCOUNT_PACKAGE,
                     blueprint_name: "Account".to_owned(),
                     function: "with_bucket".to_owned(),
                     args: vec![
@@ -570,22 +570,22 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     pub fn withdraw_from_account(
         &mut self,
         resource_spec: &ResourceSpecification,
-        account: ComponentRef,
+        account: ComponentId,
     ) -> &mut Self {
         self.clone_proof(
             ECDSA_TOKEN_PROOF_ID,
             |builder, proof_id| match resource_spec {
                 ResourceSpecification::Fungible {
                     amount,
-                    resource_def_ref,
+                    resource_def_id,
                 } => {
                     builder
                         .add_instruction(Instruction::CallMethod {
-                            component_ref: account,
+                            component_id: account,
                             method: "withdraw".to_owned(),
                             args: vec![
                                 scrypto_encode(amount),
-                                scrypto_encode(resource_def_ref),
+                                scrypto_encode(resource_def_id),
                                 scrypto_encode(&scrypto::resource::Proof(proof_id)),
                             ],
                         })
@@ -593,15 +593,15 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                 }
                 ResourceSpecification::NonFungible {
                     keys,
-                    resource_def_ref,
+                    resource_def_id,
                 } => {
                     builder
                         .add_instruction(Instruction::CallMethod {
-                            component_ref: account,
+                            component_id: account,
                             method: "withdraw_non_fungibles".to_owned(),
                             args: vec![
                                 scrypto_encode(keys),
-                                scrypto_encode(resource_def_ref),
+                                scrypto_encode(resource_def_id),
                                 scrypto_encode(&scrypto::resource::Proof(proof_id)),
                             ],
                         })
@@ -644,7 +644,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         &mut self,
         types: &[Type],
         args: Vec<String>,
-        account: Option<ComponentRef>,
+        account: Option<ComponentId>,
     ) -> Result<Vec<Vec<u8>>, BuildArgsError> {
         let mut encoded = Vec::new();
 
@@ -696,7 +696,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         ty: &Type,
         arg: &str,
         name: &str,
-        account: Option<ComponentRef>,
+        account: Option<ComponentId>,
     ) -> Result<Vec<u8>, BuildArgsError> {
         match CustomType::from_name(name).ok_or(BuildArgsError::UnsupportedType(i, ty.clone()))? {
             CustomType::Decimal => {
@@ -711,21 +711,21 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                     .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
                 Ok(scrypto_encode(&value))
             }
-            CustomType::PackageRef => {
+            CustomType::PackageId => {
                 let value = arg
-                    .parse::<PackageRef>()
+                    .parse::<PackageId>()
                     .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
                 Ok(scrypto_encode(&value))
             }
-            CustomType::ComponentRef => {
+            CustomType::ComponentId => {
                 let value = arg
-                    .parse::<ComponentRef>()
+                    .parse::<ComponentId>()
                     .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
                 Ok(scrypto_encode(&value))
             }
-            CustomType::ResourceDefRef => {
+            CustomType::ResourceDefId => {
                 let value = arg
-                    .parse::<ResourceDefRef>()
+                    .parse::<ResourceDefId>()
                     .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
                 Ok(scrypto_encode(&value))
             }

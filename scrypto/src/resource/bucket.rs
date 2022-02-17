@@ -15,9 +15,9 @@ pub struct Bucket(pub BucketId);
 
 impl Bucket {
     /// Creates a new bucket to hold resources of the given definition.
-    pub fn new(resource_def_ref: ResourceDefRef) -> Self {
+    pub fn new(resource_def_id: ResourceDefId) -> Self {
         let input = CreateEmptyBucketInput {
-            resource_def_ref: resource_def_ref,
+            resource_def_id: resource_def_id,
         };
         let output: CreateEmptyBucketOutput = call_engine(CREATE_EMPTY_BUCKET, input);
 
@@ -44,7 +44,7 @@ impl Bucket {
         Self(output.bucket_id)
     }
 
-    /// Creates an immutable reference to this bucket.
+    /// Creates an ownership proof of this bucket.
     pub fn present(&self) -> Proof {
         let input = CreateProofInput { bucket_id: self.0 };
         let output: CreateProofOutput = call_engine(CREATE_PROOF, input);
@@ -61,21 +61,21 @@ impl Bucket {
     }
 
     /// Returns the resource definition of resources in this bucket.
-    pub fn resource_def_ref(&self) -> ResourceDefRef {
-        let input = GetBucketResourceDefRefInput { bucket_id: self.0 };
-        let output: GetBucketResourceDefRefOutput = call_engine(GET_BUCKET_RESOURCE_DEF_REF, input);
+    pub fn resource_def_id(&self) -> ResourceDefId {
+        let input = GetBucketResourceDefIdInput { bucket_id: self.0 };
+        let output: GetBucketResourceDefIdOutput = call_engine(GET_BUCKET_RESOURCE_DEF_ID, input);
 
-        output.resource_def_ref
+        output.resource_def_id
     }
 
     /// Burns resource within this bucket.
     pub fn burn(self) {
-        self.resource_def_ref().burn(self);
+        self.resource_def_id().burn(self);
     }
 
     /// Burns resource within this bucket.
     pub fn burn_with_auth(self, auth: Proof) {
-        self.resource_def_ref().burn_with_auth(self, auth);
+        self.resource_def_id().burn_with_auth(self, auth);
     }
 
     /// Checks if this bucket is empty.
@@ -111,7 +111,7 @@ impl Bucket {
         let input = GetNonFungibleKeysInBucketInput { bucket_id: self.0 };
         let output: GetNonFungibleKeysInBucketOutput =
             call_engine(GET_NON_FUNGIBLE_KEYS_IN_BUCKET, input);
-        let resource_def = self.resource_def_ref();
+        let resource_def = self.resource_def_id();
         output
             .keys
             .iter()
@@ -150,7 +150,7 @@ impl Bucket {
     /// # Panics
     /// Panics if this is not a non-fungible bucket.
     pub fn get_non_fungible_data<T: NonFungibleData>(&self, key: &NonFungibleKey) -> T {
-        self.resource_def_ref().get_non_fungible_data(key)
+        self.resource_def_id().get_non_fungible_data(key)
     }
 
     /// Updates the mutable part of the data of a non-fungible unit.
@@ -163,7 +163,7 @@ impl Bucket {
         new_data: T,
         auth: Proof,
     ) {
-        self.resource_def_ref()
+        self.resource_def_id()
             .update_non_fungible_data(key, new_data, auth)
     }
 }

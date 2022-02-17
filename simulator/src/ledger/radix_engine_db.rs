@@ -23,16 +23,16 @@ impl RadixEngineDB {
         ledger
     }
 
-    pub fn list_packages(&self) -> Vec<PackageRef> {
-        self.list_items(PackageRef([0; 26]), PackageRef([255; 26]))
+    pub fn list_packages(&self) -> Vec<PackageId> {
+        self.list_items(PackageId([0; 26]), PackageId([255; 26]))
     }
 
-    pub fn list_components(&self) -> Vec<ComponentRef> {
-        self.list_items(ComponentRef([0; 26]), ComponentRef([255; 26]))
+    pub fn list_components(&self) -> Vec<ComponentId> {
+        self.list_items(ComponentId([0; 26]), ComponentId([255; 26]))
     }
 
-    pub fn list_resource_defs(&self) -> Vec<ResourceDefRef> {
-        self.list_items(ResourceDefRef([0; 26]), ResourceDefRef([255; 26]))
+    pub fn list_resource_defs(&self) -> Vec<ResourceDefId> {
+        self.list_items(ResourceDefId([0; 26]), ResourceDefId([255; 26]))
     }
 
     fn list_items<K: Encode + Decode>(&self, start: K, end: K) -> Vec<K> {
@@ -65,66 +65,66 @@ impl RadixEngineDB {
 }
 
 impl SubstateStore for RadixEngineDB {
-    fn get_resource_def(&self, resource_def_ref: ResourceDefRef) -> Option<ResourceDef> {
-        self.read(&resource_def_ref)
+    fn get_resource_def(&self, resource_def_id: ResourceDefId) -> Option<ResourceDef> {
+        self.read(&resource_def_id)
     }
 
-    fn put_resource_def(&mut self, resource_def_ref: ResourceDefRef, resource_def: ResourceDef) {
-        self.write(resource_def_ref, resource_def)
+    fn put_resource_def(&mut self, resource_def_id: ResourceDefId, resource_def: ResourceDef) {
+        self.write(resource_def_id, resource_def)
     }
 
-    fn get_package(&self, package_ref: PackageRef) -> Option<Package> {
-        self.read(&package_ref)
+    fn get_package(&self, package_id: PackageId) -> Option<Package> {
+        self.read(&package_id)
     }
 
-    fn put_package(&mut self, package_ref: PackageRef, package: Package) {
-        self.write(package_ref, package)
+    fn put_package(&mut self, package_id: PackageId, package: Package) {
+        self.write(package_id, package)
     }
 
-    fn get_component(&self, component_ref: ComponentRef) -> Option<Component> {
-        self.read(&component_ref)
+    fn get_component(&self, component_id: ComponentId) -> Option<Component> {
+        self.read(&component_id)
     }
 
-    fn put_component(&mut self, component_ref: ComponentRef, component: Component) {
-        self.write(component_ref, component)
+    fn put_component(&mut self, component_id: ComponentId, component: Component) {
+        self.write(component_id, component)
     }
 
-    fn get_lazy_map(&self, component_ref: ComponentRef, lazy_map_id: LazyMapId) -> Option<LazyMap> {
-        self.read(&(component_ref.clone(), lazy_map_id))
+    fn get_lazy_map(&self, component_id: ComponentId, lazy_map_id: LazyMapId) -> Option<LazyMap> {
+        self.read(&(component_id.clone(), lazy_map_id))
     }
 
     fn put_lazy_map(
         &mut self,
-        component_ref: ComponentRef,
+        component_id: ComponentId,
         lazy_map_id: LazyMapId,
         lazy_map: LazyMap,
     ) {
-        self.write((component_ref, lazy_map_id), lazy_map)
+        self.write((component_id, lazy_map_id), lazy_map)
     }
 
-    fn get_vault(&self, component_ref: ComponentRef, vault_id: VaultId) -> Option<Vault> {
-        self.read(&(component_ref.clone(), vault_id.clone()))
+    fn get_vault(&self, component_id: ComponentId, vault_id: VaultId) -> Option<Vault> {
+        self.read(&(component_id.clone(), vault_id.clone()))
     }
 
-    fn put_vault(&mut self, component_ref: ComponentRef, vault_id: VaultId, vault: Vault) {
-        self.write((component_ref, vault_id), vault)
+    fn put_vault(&mut self, component_id: ComponentId, vault_id: VaultId, vault: Vault) {
+        self.write((component_id, vault_id), vault)
     }
 
     fn get_non_fungible(
         &self,
-        resource_def_ref: ResourceDefRef,
+        resource_def_id: ResourceDefId,
         key: &NonFungibleKey,
     ) -> Option<NonFungible> {
-        self.read(&(resource_def_ref, key.clone()))
+        self.read(&(resource_def_id, key.clone()))
     }
 
     fn put_non_fungible(
         &mut self,
-        resource_def_ref: ResourceDefRef,
+        resource_def_id: ResourceDefId,
         key: &NonFungibleKey,
         non_fungible: NonFungible,
     ) {
-        self.write((resource_def_ref, key.clone()), non_fungible)
+        self.write((resource_def_id, key.clone()), non_fungible)
     }
 
     fn get_epoch(&self) -> u64 {

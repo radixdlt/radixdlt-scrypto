@@ -16,7 +16,7 @@ pub struct ResourceBuilder {
     metadata: HashMap<String, String>,
     flags: u64,
     mutable_flags: u64,
-    authorities: HashMap<ResourceDefRef, u64>,
+    authorities: HashMap<ResourceDefId, u64>,
 }
 
 impl ResourceBuilder {
@@ -66,7 +66,7 @@ impl ResourceBuilder {
     }
 
     /// Adds a badge for authorization.
-    pub fn badge(&mut self, badge: ResourceDefRef, permissions: u64) -> &mut Self {
+    pub fn badge(&mut self, badge: ResourceDefId, permissions: u64) -> &mut Self {
         self.authorities.insert(badge, permissions);
         self
     }
@@ -108,11 +108,11 @@ impl ResourceBuilder {
     }
 
     /// Creates resource with no initial supply.
-    pub fn no_initial_supply(&self) -> ResourceDefRef {
+    pub fn no_initial_supply(&self) -> ResourceDefId {
         self.build(None).0
     }
 
-    fn build(&self, supply: Option<Supply>) -> (ResourceDefRef, Option<Bucket>) {
+    fn build(&self, supply: Option<Supply>) -> (ResourceDefId, Option<Bucket>) {
         Context::create_resource(
             self.resource_type,
             self.metadata.clone(),

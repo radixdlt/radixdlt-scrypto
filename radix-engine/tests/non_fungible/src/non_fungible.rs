@@ -13,7 +13,7 @@ blueprint! {
     }
 
     impl NonFungibleTest {
-        pub fn create_non_fungible_mutable() -> (Bucket, ResourceDefRef, Bucket) {
+        pub fn create_non_fungible_mutable() -> (Bucket, ResourceDefId, Bucket) {
             // Create a mint badge
             let mint_badge =
                 ResourceBuilder::new_fungible(DIVISIBILITY_NONE).initial_supply_fungible(1);
@@ -23,7 +23,7 @@ blueprint! {
                 .metadata("name", "Katz's Sandwiches")
                 .flags(MINTABLE | BURNABLE | INDIVIDUAL_METADATA_MUTABLE)
                 .badge(
-                    mint_badge.resource_def_ref(),
+                    mint_badge.resource_def_id(),
                     MAY_MINT | MAY_BURN | MAY_CHANGE_INDIVIDUAL_METADATA,
                 )
                 .no_initial_supply();

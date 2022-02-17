@@ -19,7 +19,7 @@ pub fn decompile(tx: &Transaction) -> Result<String, DecompileError> {
         match inst.clone() {
             Instruction::TakeFromWorktop {
                 amount,
-                resource_def_ref,
+                resource_def_id,
             } => {
                 let bucket_id = id_validator
                     .new_bucket()
@@ -27,24 +27,24 @@ pub fn decompile(tx: &Transaction) -> Result<String, DecompileError> {
                 let name = format!("bucket{}", buckets.len() + 1);
                 buckets.insert(bucket_id, name.clone());
                 buf.push_str(&format!(
-                    "TAKE_FROM_WORKTOP Decimal(\"{}\") ResourceDefRef(\"{}\") Bucket(\"{}\");\n",
-                    amount, resource_def_ref, name
+                    "TAKE_FROM_WORKTOP Decimal(\"{}\") ResourceDefId(\"{}\") Bucket(\"{}\");\n",
+                    amount, resource_def_id, name
                 ));
             }
-            Instruction::TakeAllFromWorktop { resource_def_ref } => {
+            Instruction::TakeAllFromWorktop { resource_def_id } => {
                 let bucket_id = id_validator
                     .new_bucket()
                     .map_err(DecompileError::IdValidatorError)?;
                 let name = format!("bucket{}", buckets.len() + 1);
                 buckets.insert(bucket_id, name.clone());
                 buf.push_str(&format!(
-                    "TAKE_ALL_FROM_WORKTOP ResourceDefRef(\"{}\") Bucket(\"{}\");\n",
-                    resource_def_ref, name
+                    "TAKE_ALL_FROM_WORKTOP ResourceDefId(\"{}\") Bucket(\"{}\");\n",
+                    resource_def_id, name
                 ));
             }
             Instruction::TakeNonFungiblesFromWorktop {
                 keys,
-                resource_def_ref,
+                resource_def_id,
             } => {
                 let bucket_id = id_validator
                     .new_bucket()
@@ -52,12 +52,12 @@ pub fn decompile(tx: &Transaction) -> Result<String, DecompileError> {
                 let name = format!("bucket{}", buckets.len() + 1);
                 buckets.insert(bucket_id, name.clone());
                 buf.push_str(&format!(
-                    "TAKE_NON_FUNGIBLES_FROM_WORKTOP TreeSet<NonFungibleKey>({}) ResourceDefRef(\"{}\") Bucket(\"{}\");\n",
+                    "TAKE_NON_FUNGIBLES_FROM_WORKTOP TreeSet<NonFungibleKey>({}) ResourceDefId(\"{}\") Bucket(\"{}\");\n",
                     keys.iter()
                     .map(|k| format!("NonFungibleKey(\"{}\")", k))
                     .collect::<Vec<String>>()
                     .join(", "),
-                    resource_def_ref, name
+                    resource_def_id, name
                 ));
             }
             Instruction::ReturnToWorktop { bucket_id } => {
@@ -74,11 +74,11 @@ pub fn decompile(tx: &Transaction) -> Result<String, DecompileError> {
             }
             Instruction::AssertWorktopContains {
                 amount,
-                resource_def_ref,
+                resource_def_id,
             } => {
                 buf.push_str(&format!(
-                    "ASSERT_WORKTOP_CONTAINS Decimal(\"{}\") ResourceDefRef(\"{}\");\n",
-                    amount, resource_def_ref
+                    "ASSERT_WORKTOP_CONTAINS Decimal(\"{}\") ResourceDefId(\"{}\");\n",
+                    amount, resource_def_id
                 ));
             }
             Instruction::CreateProof { bucket_id } => {
@@ -124,14 +124,14 @@ pub fn decompile(tx: &Transaction) -> Result<String, DecompileError> {
                 ));
             }
             Instruction::CallFunction {
-                package_ref,
+                package_id,
                 blueprint_name,
                 function,
                 args,
             } => {
                 buf.push_str(&format!(
-                    "CALL_FUNCTION PackageRef(\"{}\") \"{}\" \"{}\"",
-                    package_ref, blueprint_name, function
+                    "CALL_FUNCTION PackageId(\"{}\") \"{}\" \"{}\"",
+                    package_id, blueprint_name, function
                 ));
                 for arg in args {
                     let validated_arg = ValidatedData::from_slice(&arg)
@@ -145,13 +145,13 @@ pub fn decompile(tx: &Transaction) -> Result<String, DecompileError> {
                 buf.push_str(";\n");
             }
             Instruction::CallMethod {
-                component_ref,
+                component_id,
                 method,
                 args,
             } => {
                 buf.push_str(&format!(
-                    "CALL_METHOD ComponentRef(\"{}\") \"{}\"",
-                    component_ref, method
+                    "CALL_METHOD ComponentId(\"{}\") \"{}\"",
+                    component_id, method
                 ));
                 for arg in args {
                     let validated_arg = ValidatedData::from_slice(&arg)
@@ -165,15 +165,15 @@ pub fn decompile(tx: &Transaction) -> Result<String, DecompileError> {
                 buf.push_str(";\n");
             }
             Instruction::CallMethodWithAllResources {
-                component_ref,
+                component_id,
                 method,
             } => {
                 id_validator
                     .move_all_resources()
                     .map_err(DecompileError::IdValidatorError)?;
                 buf.push_str(&format!(
-                    "CALL_METHOD_WITH_ALL_RESOURCES ComponentRef(\"{}\") \"{}\";\n",
-                    component_ref, method
+                    "CALL_METHOD_WITH_ALL_RESOURCES ComponentId(\"{}\") \"{}\";\n",
+                    component_id, method
                 ));
             }
             Instruction::End { .. } => {}

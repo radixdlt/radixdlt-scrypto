@@ -7,11 +7,11 @@ use crate::resim::*;
 /// Transfer resource to another account
 #[derive(Parser, Debug)]
 pub struct Transfer {
-    /// The resource to transfer, e.g. "amount,resource_def_ref" or "#non_fungible_id1,#non_fungible_id2,resource_def_ref"
+    /// The resource to transfer, e.g. "amount,resource_def_id" or "#non_fungible_id1,#non_fungible_id2,resource_def_id"
     resource: ResourceSpecification,
 
-    /// The recipient component ref.
-    recipient: ComponentRef,
+    /// The recipient component ID.
+    recipient: ComponentId,
 
     /// Output a transaction manifest without execution
     #[clap(short, long)]

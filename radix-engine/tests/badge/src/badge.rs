@@ -30,9 +30,9 @@ blueprint! {
             bucket
         }
 
-        pub fn query() -> (Decimal, ResourceDefRef, Bucket) {
+        pub fn query() -> (Decimal, ResourceDefId, Bucket) {
             let bucket = Self::create_test_badge(100);
-            (bucket.amount(), bucket.resource_def_ref(), bucket)
+            (bucket.amount(), bucket.resource_def_id(), bucket)
         }
     }
 }

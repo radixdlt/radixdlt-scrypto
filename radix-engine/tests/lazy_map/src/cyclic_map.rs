@@ -9,7 +9,7 @@ blueprint! {
     }
 
     impl CyclicMap {
-        pub fn new() -> ComponentRef {
+        pub fn new() -> ComponentId {
             let map0 = LazyMap::new();
             let map1 = LazyMap::new();
             map0.insert(1u32, map1);
@@ -28,7 +28,7 @@ blueprint! {
             CyclicMap { maps: map0 }.instantiate()
         }
 
-        pub fn new_self_cyclic() -> ComponentRef {
+        pub fn new_self_cyclic() -> ComponentId {
             let map0 = LazyMap::new();
 
             let input = PutLazyMapEntryInput {

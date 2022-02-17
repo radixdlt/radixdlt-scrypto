@@ -13,7 +13,7 @@ blueprint! {
                 .initial_supply_fungible(amount)
         }
 
-        pub fn create_component() -> ComponentRef {
+        pub fn create_component() -> ComponentId {
             Self {
                 test_vault: Vault::with_bucket(Self::create_test_token(1000)),
                 secret: "Secret".to_owned(),
@@ -21,8 +21,8 @@ blueprint! {
             .instantiate()
         }
 
-        pub fn get_component_info(component_ref: ComponentRef) -> (PackageRef, String) {
-            (component_ref.package_ref(), component_ref.blueprint_name())
+        pub fn get_component_info(component_id: ComponentId) -> (PackageId, String) {
+            (component_id.package_id(), component_id.blueprint_name())
         }
 
         pub fn get_component_state(&self) -> String {

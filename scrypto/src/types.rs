@@ -59,8 +59,8 @@ pub(crate) use custom_type;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CustomType {
     // core
-    PackageRef,
-    ComponentRef,
+    PackageId,
+    ComponentId,
     LazyMap,
 
     // crypto
@@ -75,12 +75,12 @@ pub enum CustomType {
     Proof,
     Vault,
     NonFungibleKey,
-    ResourceDefRef,
+    ResourceDefId,
 }
 
 const MAPPING: [(CustomType, u8, &str); 11] = [
-    (CustomType::PackageRef, 0x80, "PackageRef"),
-    (CustomType::ComponentRef, 0x81, "ComponentRef"),
+    (CustomType::PackageId, 0x80, "PackageId"),
+    (CustomType::ComponentId, 0x81, "ComponentId"),
     (CustomType::LazyMap, 0x82, "LazyMap"),
     (CustomType::Hash, 0x90, "Hash"),
     (CustomType::Decimal, 0xa1, "Decimal"),
@@ -89,7 +89,7 @@ const MAPPING: [(CustomType, u8, &str); 11] = [
     (CustomType::Proof, 0xb2, "Proof"),
     (CustomType::Vault, 0xb3, "Vault"),
     (CustomType::NonFungibleKey, 0xb4, "NonFungibleKey"),
-    (CustomType::ResourceDefRef, 0xb5, "ResourceDefRef"),
+    (CustomType::ResourceDefId, 0xb5, "ResourceDefId"),
 ];
 
 impl CustomType {
@@ -136,9 +136,9 @@ pub enum CustomValueValidatorError {
     InvalidTypeId(u8),
     InvalidDecimal(ParseDecimalError),
     InvalidBigDecimal(ParseBigDecimalError),
-    InvalidPackageRef(ParsePackageRefError),
-    InvalidComponentRef(ParseComponentRefError),
-    InvalidResourceDefRef(ParseResourceDefRefError),
+    InvalidPackageId(ParsePackageIdError),
+    InvalidComponentId(ParseComponentIdError),
+    InvalidResourceDefId(ParseResourceDefIdError),
     InvalidHash(ParseHashError),
     InvalidBucket(ParseBucketError),
     InvalidProof(ParseProofError),
@@ -163,12 +163,12 @@ impl CustomValueVisitor for CustomValueValidator {
 
     fn visit(&mut self, type_id: u8, data: &[u8]) -> Result<(), Self::Err> {
         match CustomType::from_id(type_id).ok_or(Self::Err::InvalidTypeId(type_id))? {
-            CustomType::PackageRef => {
-                PackageRef::try_from(data).map_err(CustomValueValidatorError::InvalidPackageRef)?;
+            CustomType::PackageId => {
+                PackageId::try_from(data).map_err(CustomValueValidatorError::InvalidPackageId)?;
             }
-            CustomType::ComponentRef => {
-                ComponentRef::try_from(data)
-                    .map_err(CustomValueValidatorError::InvalidComponentRef)?;
+            CustomType::ComponentId => {
+                ComponentId::try_from(data)
+                    .map_err(CustomValueValidatorError::InvalidComponentId)?;
             }
             CustomType::LazyMap => {
                 self.lazy_maps.push(
@@ -201,9 +201,9 @@ impl CustomValueVisitor for CustomValueValidator {
                 NonFungibleKey::try_from(data)
                     .map_err(CustomValueValidatorError::InvalidNonFungibleKey)?;
             }
-            CustomType::ResourceDefRef => {
-                ResourceDefRef::try_from(data)
-                    .map_err(CustomValueValidatorError::InvalidResourceDefRef)?;
+            CustomType::ResourceDefId => {
+                ResourceDefId::try_from(data)
+                    .map_err(CustomValueValidatorError::InvalidResourceDefId)?;
             }
         }
         Ok(())
@@ -228,14 +228,11 @@ impl CustomValueFormatter {
             CustomType::BigDecimal => {
                 format!("BigDecimal(\"{}\")", BigDecimal::try_from(data).unwrap())
             }
-            CustomType::PackageRef => {
-                format!("PackageRef(\"{}\")", PackageRef::try_from(data).unwrap())
+            CustomType::PackageId => {
+                format!("PackageId(\"{}\")", PackageId::try_from(data).unwrap())
             }
-            CustomType::ComponentRef => {
-                format!(
-                    "ComponentRef(\"{}\")",
-                    ComponentRef::try_from(data).unwrap()
-                )
+            CustomType::ComponentId => {
+                format!("ComponentId(\"{}\")", ComponentId::try_from(data).unwrap())
             }
             CustomType::LazyMap => format!(
                 "LazyMap(\"{}\")",
@@ -263,9 +260,9 @@ impl CustomValueFormatter {
                 "NonFungibleKey(\"{}\")",
                 NonFungibleKey::try_from(data).unwrap()
             ),
-            CustomType::ResourceDefRef => format!(
-                "ResourceDefRef(\"{}\")",
-                ResourceDefRef::try_from(data).unwrap()
+            CustomType::ResourceDefId => format!(
+                "ResourceDefId(\"{}\")",
+                ResourceDefId::try_from(data).unwrap()
             ),
         }
     }

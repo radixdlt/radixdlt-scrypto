@@ -7,18 +7,18 @@ pub struct Transaction {
 pub enum Instruction {
     TakeFromWorktop {
         amount: Value,
-        resource_def_ref: Value,
+        resource_def_id: Value,
         new_bucket: Value,
     },
 
     TakeAllFromWorktop {
-        resource_def_ref: Value,
+        resource_def_id: Value,
         new_bucket: Value,
     },
 
     TakeNonFungiblesFromWorktop {
         keys: Value,
-        resource_def_ref: Value,
+        resource_def_id: Value,
         new_bucket: Value,
     },
 
@@ -28,7 +28,7 @@ pub enum Instruction {
 
     AssertWorktopContains {
         amount: Value,
-        resource_def_ref: Value,
+        resource_def_id: Value,
     },
 
     CreateProof {
@@ -46,20 +46,20 @@ pub enum Instruction {
     },
 
     CallFunction {
-        package_ref: Value,
+        package_id: Value,
         blueprint_name: Value,
         function: Value,
         args: Vec<Value>,
     },
 
     CallMethod {
-        component_ref: Value,
+        component_id: Value,
         method: Value,
         args: Vec<Value>,
     },
 
     CallMethodWithAllResources {
-        component_ref: Value,
+        component_id: Value,
         method: Value,
     },
 }
@@ -98,9 +98,9 @@ pub enum Type {
     /* Custom types */
     Decimal,
     BigDecimal,
-    PackageRef,
-    ComponentRef,
-    ResourceDefRef,
+    PackageId,
+    ComponentId,
+    ResourceDefId,
     Hash,
     Bucket,
     Proof,
@@ -138,9 +138,9 @@ pub enum Value {
 
     Decimal(Box<Value>),
     BigDecimal(Box<Value>),
-    PackageRef(Box<Value>),
-    ComponentRef(Box<Value>),
-    ResourceDefRef(Box<Value>),
+    PackageId(Box<Value>),
+    ComponentId(Box<Value>),
+    ResourceDefId(Box<Value>),
     Hash(Box<Value>),
     Bucket(Box<Value>),
     Proof(Box<Value>),
@@ -186,9 +186,9 @@ impl Value {
             Value::HashMap(_, _, _) => Type::HashMap,
             Value::Decimal(_) => Type::Decimal,
             Value::BigDecimal(_) => Type::BigDecimal,
-            Value::PackageRef(_) => Type::PackageRef,
-            Value::ComponentRef(_) => Type::ComponentRef,
-            Value::ResourceDefRef(_) => Type::ResourceDefRef,
+            Value::PackageId(_) => Type::PackageId,
+            Value::ComponentId(_) => Type::ComponentId,
+            Value::ResourceDefId(_) => Type::ResourceDefId,
             Value::Hash(_) => Type::Hash,
             Value::Bucket(_) => Type::Bucket,
             Value::Proof(_) => Type::Proof,

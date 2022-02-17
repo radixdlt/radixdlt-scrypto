@@ -20,34 +20,34 @@ pub struct TransactionExecutor<'l, L: SubstateStore> {
 impl<'l, L: SubstateStore> AbiProvider for TransactionExecutor<'l, L> {
     fn export_abi(
         &self,
-        package_ref: PackageRef,
+        package_id: PackageId,
         blueprint_name: &str,
     ) -> Result<abi::Blueprint, RuntimeError> {
         let package = self
             .ledger
-            .get_package(package_ref)
-            .ok_or(RuntimeError::PackageNotFound(package_ref))?;
+            .get_package(package_id)
+            .ok_or(RuntimeError::PackageNotFound(package_id))?;
 
         BasicAbiProvider::new(self.trace)
-            .with_package(package_ref, package.code().to_vec())
-            .export_abi(package_ref, blueprint_name)
+            .with_package(package_id, package.code().to_vec())
+            .export_abi(package_id, blueprint_name)
     }
 
     fn export_abi_component(
         &self,
-        component_ref: ComponentRef,
+        component_id: ComponentId,
     ) -> Result<abi::Blueprint, RuntimeError> {
         let component = self
             .ledger
-            .get_component(component_ref)
-            .ok_or(RuntimeError::ComponentNotFound(component_ref))?;
+            .get_component(component_id)
+            .ok_or(RuntimeError::ComponentNotFound(component_id))?;
         let package = self
             .ledger
-            .get_package(component.package_ref())
-            .ok_or(RuntimeError::PackageNotFound(component.package_ref()))?;
+            .get_package(component.package_id())
+            .ok_or(RuntimeError::PackageNotFound(component.package_id()))?;
         BasicAbiProvider::new(self.trace)
-            .with_package(component.package_ref(), package.code().to_vec())
-            .export_abi(component.package_ref(), component.blueprint_name())
+            .with_package(component.package_id(), package.code().to_vec())
+            .export_abi(component.package_id(), component.blueprint_name())
     }
 }
 
@@ -75,25 +75,25 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
     }
 
     /// Creates an account with 1,000,000 XRD in balance.
-    pub fn new_account(&mut self, key: EcdsaPublicKey) -> ComponentRef {
+    pub fn new_account(&mut self, key: EcdsaPublicKey) -> ComponentId {
         self.run(
             TransactionBuilder::new(self)
                 .call_method(SYSTEM_COMPONENT, "free_xrd", vec![], None)
                 .new_account_with_resource(
                     key,
                     &ResourceSpecification::All {
-                        resource_def_ref: RADIX_TOKEN,
+                        resource_def_id: RADIX_TOKEN,
                     },
                 )
                 .build(Vec::new())
                 .unwrap(),
         )
         .unwrap()
-        .new_component_refs[0]
+        .new_component_ids[0]
     }
 
     /// Publishes a package.
-    pub fn publish_package(&mut self, code: &[u8]) -> Result<PackageRef, RuntimeError> {
+    pub fn publish_package(&mut self, code: &[u8]) -> Result<PackageId, RuntimeError> {
         let receipt = self
             .run(
                 TransactionBuilder::new(self)
@@ -104,16 +104,16 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
             .unwrap();
 
         if receipt.result.is_ok() {
-            Ok(receipt.new_package_refs[0])
+            Ok(receipt.new_package_ids[0])
         } else {
             Err(receipt.result.err().unwrap())
         }
     }
 
     /// Overwrites a package.
-    pub fn overwrite_package(&mut self, package_ref: PackageRef, code: &[u8]) {
+    pub fn overwrite_package(&mut self, package_id: PackageId, code: &[u8]) {
         self.ledger
-            .put_package(package_ref, Package::new(code.to_vec()));
+            .put_package(package_id, Package::new(code.to_vec()));
     }
 
     /// This is a convenience method that validates and runs a transaction in one shot.
@@ -147,46 +147,46 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
             let result = match inst {
                 ValidatedInstruction::TakeFromWorktop {
                     amount,
-                    resource_def_ref,
+                    resource_def_id,
                 } => proc.take_from_worktop(ResourceSpecification::Fungible {
                     amount,
-                    resource_def_ref,
+                    resource_def_id,
                 }),
-                ValidatedInstruction::TakeAllFromWorktop { resource_def_ref } => {
-                    proc.take_from_worktop(ResourceSpecification::All { resource_def_ref })
+                ValidatedInstruction::TakeAllFromWorktop { resource_def_id } => {
+                    proc.take_from_worktop(ResourceSpecification::All { resource_def_id })
                 }
                 ValidatedInstruction::TakeNonFungiblesFromWorktop {
                     keys,
-                    resource_def_ref,
+                    resource_def_id,
                 } => proc.take_from_worktop(ResourceSpecification::NonFungible {
                     keys,
-                    resource_def_ref,
+                    resource_def_id,
                 }),
                 ValidatedInstruction::ReturnToWorktop { bucket_id } => {
                     proc.return_to_worktop(bucket_id)
                 }
                 ValidatedInstruction::AssertWorktopContains {
                     amount,
-                    resource_def_ref,
-                } => proc.assert_worktop_contains(amount, resource_def_ref),
+                    resource_def_id,
+                } => proc.assert_worktop_contains(amount, resource_def_id),
                 ValidatedInstruction::CreateProof { bucket_id } => proc.create_proof(bucket_id),
                 ValidatedInstruction::CloneProof { proof_id } => proc.clone_proof(proof_id),
                 ValidatedInstruction::DropProof { proof_id } => proc.drop_proof(proof_id),
                 ValidatedInstruction::CallFunction {
-                    package_ref,
+                    package_id,
                     blueprint_name,
                     function,
                     args,
-                } => proc.call_function(package_ref, &blueprint_name, &function, args),
+                } => proc.call_function(package_id, &blueprint_name, &function, args),
                 ValidatedInstruction::CallMethod {
-                    component_ref,
+                    component_id,
                     method,
                     args,
-                } => proc.call_method(component_ref, &method, args),
+                } => proc.call_method(component_id, &method, args),
                 ValidatedInstruction::CallMethodWithAllResources {
-                    component_ref,
+                    component_id,
                     method,
-                } => proc.call_method_with_all_resources(component_ref, &method),
+                } => proc.call_method_with_all_resources(component_id, &method),
             };
             match result {
                 Ok(data) => {
@@ -204,9 +204,9 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
             Ok(_) => None,
             Err(e) => Some(e),
         });
-        let new_package_refs = track.new_package_refs().to_vec();
-        let new_component_refs = track.new_component_refs().to_vec();
-        let new_resource_def_refs = track.new_resource_def_refs().to_vec();
+        let new_package_ids = track.new_package_ids().to_vec();
+        let new_component_ids = track.new_component_ids().to_vec();
+        let new_resource_def_ids = track.new_resource_def_ids().to_vec();
         let logs = track.logs().clone();
 
         // commit state updates
@@ -228,9 +228,9 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
             },
             outputs,
             logs,
-            new_package_refs,
-            new_component_refs,
-            new_resource_def_refs,
+            new_package_ids,
+            new_component_ids,
+            new_resource_def_ids,
             execution_time,
         }
     }

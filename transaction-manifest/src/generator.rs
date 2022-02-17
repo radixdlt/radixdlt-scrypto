@@ -20,9 +20,9 @@ pub enum GeneratorError {
         expected_type: Vec<ast::Type>,
         actual: ast::Value,
     },
-    InvalidPackageRef(String),
-    InvalidComponentRef(String),
-    InvalidResourceDefRef(String),
+    InvalidPackageId(String),
+    InvalidComponentId(String),
+    InvalidResourceDefId(String),
     InvalidDecimal(String),
     InvalidBigDecimal(String),
     InvalidHash(String),
@@ -119,7 +119,7 @@ pub fn generate_instruction(
     Ok(match instruction {
         ast::Instruction::TakeFromWorktop {
             amount,
-            resource_def_ref,
+            resource_def_id,
             new_bucket,
         } => {
             let bucket_id = id_validator
@@ -129,11 +129,11 @@ pub fn generate_instruction(
 
             Instruction::TakeFromWorktop {
                 amount: generate_decimal(amount)?,
-                resource_def_ref: generate_resource_def_ref(resource_def_ref)?,
+                resource_def_id: generate_resource_def_id(resource_def_id)?,
             }
         }
         ast::Instruction::TakeAllFromWorktop {
-            resource_def_ref,
+            resource_def_id,
             new_bucket,
         } => {
             let bucket_id = id_validator
@@ -142,12 +142,12 @@ pub fn generate_instruction(
             declare_bucket(new_bucket, resolver, bucket_id)?;
 
             Instruction::TakeAllFromWorktop {
-                resource_def_ref: generate_resource_def_ref(resource_def_ref)?,
+                resource_def_id: generate_resource_def_id(resource_def_id)?,
             }
         }
         ast::Instruction::TakeNonFungiblesFromWorktop {
             keys,
-            resource_def_ref,
+            resource_def_id,
             new_bucket,
         } => {
             let bucket_id = id_validator
@@ -157,7 +157,7 @@ pub fn generate_instruction(
 
             Instruction::TakeNonFungiblesFromWorktop {
                 keys: generate_non_fungible_keys(keys)?,
-                resource_def_ref: generate_resource_def_ref(resource_def_ref)?,
+                resource_def_id: generate_resource_def_id(resource_def_id)?,
             }
         }
         ast::Instruction::ReturnToWorktop { bucket } => {
@@ -169,10 +169,10 @@ pub fn generate_instruction(
         }
         ast::Instruction::AssertWorktopContains {
             amount,
-            resource_def_ref,
+            resource_def_id,
         } => Instruction::AssertWorktopContains {
             amount: generate_decimal(amount)?,
-            resource_def_ref: generate_resource_def_ref(resource_def_ref)?,
+            resource_def_id: generate_resource_def_id(resource_def_id)?,
         },
         ast::Instruction::CreateProof { bucket, new_proof } => {
             let bucket_id = generate_bucket(bucket, resolver)?;
@@ -200,7 +200,7 @@ pub fn generate_instruction(
             Instruction::DropProof { proof_id }
         }
         ast::Instruction::CallFunction {
-            package_ref,
+            package_id,
             blueprint_name,
             function,
             args,
@@ -213,14 +213,14 @@ pub fn generate_instruction(
                     .map_err(GeneratorError::IdValidatorError)?;
             }
             Instruction::CallFunction {
-                package_ref: generate_package_ref(package_ref)?,
+                package_id: generate_package_id(package_id)?,
                 blueprint_name: generate_string(blueprint_name)?,
                 function: generate_string(function)?,
                 args,
             }
         }
         ast::Instruction::CallMethod {
-            component_ref,
+            component_id,
             method,
             args,
         } => {
@@ -232,20 +232,20 @@ pub fn generate_instruction(
                     .map_err(GeneratorError::IdValidatorError)?;
             }
             Instruction::CallMethod {
-                component_ref: generate_component_ref(component_ref)?,
+                component_id: generate_component_id(component_id)?,
                 method: generate_string(method)?,
                 args,
             }
         }
         ast::Instruction::CallMethodWithAllResources {
-            component_ref,
+            component_id,
             method,
         } => {
             id_validator
                 .move_all_resources()
                 .map_err(GeneratorError::IdValidatorError)?;
             Instruction::CallMethodWithAllResources {
-                component_ref: generate_component_ref(component_ref)?,
+                component_id: generate_component_id(component_id)?,
                 method: generate_string(method)?,
             }
         }
@@ -308,38 +308,38 @@ fn generate_big_decimal(value: &ast::Value) -> Result<BigDecimal, GeneratorError
     }
 }
 
-fn generate_package_ref(value: &ast::Value) -> Result<PackageRef, GeneratorError> {
+fn generate_package_id(value: &ast::Value) -> Result<PackageId, GeneratorError> {
     match value {
-        ast::Value::PackageRef(inner) => match &**inner {
+        ast::Value::PackageId(inner) => match &**inner {
             ast::Value::String(s) => {
-                PackageRef::from_str(s).map_err(|_| GeneratorError::InvalidPackageRef(s.into()))
+                PackageId::from_str(s).map_err(|_| GeneratorError::InvalidPackageId(s.into()))
             }
             v @ _ => invalid_type!(v, ast::Type::String),
         },
-        v @ _ => invalid_type!(v, ast::Type::PackageRef),
+        v @ _ => invalid_type!(v, ast::Type::PackageId),
     }
 }
 
-fn generate_component_ref(value: &ast::Value) -> Result<ComponentRef, GeneratorError> {
+fn generate_component_id(value: &ast::Value) -> Result<ComponentId, GeneratorError> {
     match value {
-        ast::Value::ComponentRef(inner) => match &**inner {
+        ast::Value::ComponentId(inner) => match &**inner {
             ast::Value::String(s) => {
-                ComponentRef::from_str(s).map_err(|_| GeneratorError::InvalidComponentRef(s.into()))
+                ComponentId::from_str(s).map_err(|_| GeneratorError::InvalidComponentId(s.into()))
             }
             v @ _ => invalid_type!(v, ast::Type::String),
         },
-        v @ _ => invalid_type!(v, ast::Type::ComponentRef),
+        v @ _ => invalid_type!(v, ast::Type::ComponentId),
     }
 }
 
-fn generate_resource_def_ref(value: &ast::Value) -> Result<ResourceDefRef, GeneratorError> {
+fn generate_resource_def_id(value: &ast::Value) -> Result<ResourceDefId, GeneratorError> {
     match value {
-        ast::Value::ResourceDefRef(inner) => match &**inner {
-            ast::Value::String(s) => ResourceDefRef::from_str(s)
-                .map_err(|_| GeneratorError::InvalidResourceDefRef(s.into())),
+        ast::Value::ResourceDefId(inner) => match &**inner {
+            ast::Value::String(s) => ResourceDefId::from_str(s)
+                .map_err(|_| GeneratorError::InvalidResourceDefId(s.into())),
             v @ _ => invalid_type!(v, ast::Type::String),
         },
-        v @ _ => invalid_type!(v, ast::Type::ResourceDefRef),
+        v @ _ => invalid_type!(v, ast::Type::ResourceDefId),
     }
 }
 
@@ -532,12 +532,12 @@ fn generate_value(
         }
         ast::Value::BigDecimal(_) => generate_big_decimal(value)
             .map(|v| Value::Custom(CustomType::BigDecimal.id(), v.to_vec())),
-        ast::Value::PackageRef(_) => generate_package_ref(value)
-            .map(|v| Value::Custom(CustomType::PackageRef.id(), v.to_vec())),
-        ast::Value::ComponentRef(_) => generate_component_ref(value)
-            .map(|v| Value::Custom(CustomType::ComponentRef.id(), v.to_vec())),
-        ast::Value::ResourceDefRef(_) => generate_resource_def_ref(value)
-            .map(|v| Value::Custom(CustomType::ResourceDefRef.id(), v.to_vec())),
+        ast::Value::PackageId(_) => generate_package_id(value)
+            .map(|v| Value::Custom(CustomType::PackageId.id(), v.to_vec())),
+        ast::Value::ComponentId(_) => generate_component_id(value)
+            .map(|v| Value::Custom(CustomType::ComponentId.id(), v.to_vec())),
+        ast::Value::ResourceDefId(_) => generate_resource_def_id(value)
+            .map(|v| Value::Custom(CustomType::ResourceDefId.id(), v.to_vec())),
         ast::Value::Hash(_) => {
             generate_hash(value).map(|v| Value::Custom(CustomType::Hash.id(), v.to_vec()))
         }
@@ -631,9 +631,9 @@ fn generate_type(ty: &ast::Type) -> u8 {
         ast::Type::HashMap => TYPE_HASH_MAP,
         ast::Type::Decimal => CustomType::Decimal.id(),
         ast::Type::BigDecimal => CustomType::BigDecimal.id(),
-        ast::Type::PackageRef => CustomType::PackageRef.id(),
-        ast::Type::ComponentRef => CustomType::ComponentRef.id(),
-        ast::Type::ResourceDefRef => CustomType::ResourceDefRef.id(),
+        ast::Type::PackageId => CustomType::PackageId.id(),
+        ast::Type::ComponentId => CustomType::ComponentId.id(),
+        ast::Type::ResourceDefId => CustomType::ResourceDefId.id(),
         ast::Type::Hash => CustomType::Hash.id(),
         ast::Type::Bucket => CustomType::Bucket.id(),
         ast::Type::Proof => CustomType::Proof.id(),
@@ -780,15 +780,15 @@ mod tests {
     #[test]
     fn test_failures() {
         generate_value_error!(
-            r#"ComponentRef(100u32)"#,
+            r#"ComponentId(100u32)"#,
             GeneratorError::InvalidValue {
                 expected_type: vec![ast::Type::String],
                 actual: ast::Value::U32(100),
             }
         );
         generate_value_error!(
-            r#"PackageRef("invalid_package_ref")"#,
-            GeneratorError::InvalidPackageRef("invalid_package_ref".into())
+            r#"PackageId("invalid_package_id")"#,
+            GeneratorError::InvalidPackageId("invalid_package_id".into())
         );
         generate_value_error!(
             r#"Decimal("invalid_decimal")"#,
@@ -803,38 +803,38 @@ mod tests {
     #[test]
     fn test_instructions() {
         generate_instruction_ok!(
-            r#"TAKE_FROM_WORKTOP  Decimal("1.0")  ResourceDefRef("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d")  Bucket("xrd_bucket");"#,
+            r#"TAKE_FROM_WORKTOP  Decimal("1.0")  ResourceDefId("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d")  Bucket("xrd_bucket");"#,
             Instruction::TakeFromWorktop {
                 amount: Decimal::from(1),
-                resource_def_ref: ResourceDefRef::from_str(
+                resource_def_id: ResourceDefId::from_str(
                     "03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d"
                 )
                 .unwrap(),
             }
         );
         generate_instruction_ok!(
-            r#"TAKE_ALL_FROM_WORKTOP  ResourceDefRef("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d")  Bucket("xrd_bucket");"#,
+            r#"TAKE_ALL_FROM_WORKTOP  ResourceDefId("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d")  Bucket("xrd_bucket");"#,
             Instruction::TakeAllFromWorktop {
-                resource_def_ref: ResourceDefRef::from_str(
+                resource_def_id: ResourceDefId::from_str(
                     "03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d"
                 )
                 .unwrap(),
             }
         );
         generate_instruction_ok!(
-            r#"ASSERT_WORKTOP_CONTAINS  Decimal("1.0")  ResourceDefRef("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d");"#,
+            r#"ASSERT_WORKTOP_CONTAINS  Decimal("1.0")  ResourceDefId("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d");"#,
             Instruction::AssertWorktopContains {
                 amount: Decimal::from(1),
-                resource_def_ref: ResourceDefRef::from_str(
+                resource_def_id: ResourceDefId::from_str(
                     "03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d"
                 )
                 .unwrap(),
             }
         );
         generate_instruction_ok!(
-            r#"CALL_FUNCTION  PackageRef("01d1f50010e4102d88aacc347711491f852c515134a9ecf67ba17c")  "Airdrop"  "new"  500u32  HashMap<String, U8>("key", 1u8);"#,
+            r#"CALL_FUNCTION  PackageId("01d1f50010e4102d88aacc347711491f852c515134a9ecf67ba17c")  "Airdrop"  "new"  500u32  HashMap<String, U8>("key", 1u8);"#,
             Instruction::CallFunction {
-                package_ref: PackageRef::from_str(
+                package_id: PackageId::from_str(
                     "01d1f50010e4102d88aacc347711491f852c515134a9ecf67ba17c".into()
                 )
                 .unwrap(),
@@ -847,9 +847,9 @@ mod tests {
             }
         );
         generate_instruction_ok!(
-            r#"CALL_METHOD  ComponentRef("0292566c83de7fd6b04fcc92b5e04b03228ccff040785673278ef1")  "refill"  Proof(1u32);"#,
+            r#"CALL_METHOD  ComponentId("0292566c83de7fd6b04fcc92b5e04b03228ccff040785673278ef1")  "refill"  Proof(1u32);"#,
             Instruction::CallMethod {
-                component_ref: ComponentRef::from_str(
+                component_id: ComponentId::from_str(
                     "0292566c83de7fd6b04fcc92b5e04b03228ccff040785673278ef1".into()
                 )
                 .unwrap(),
@@ -858,9 +858,9 @@ mod tests {
             }
         );
         generate_instruction_ok!(
-            r#"CALL_METHOD_WITH_ALL_RESOURCES  ComponentRef("02d43f479e9b2beb9df98bc3888344fc25eda181e8f710ce1bf1de") "deposit_batch";"#,
+            r#"CALL_METHOD_WITH_ALL_RESOURCES  ComponentId("02d43f479e9b2beb9df98bc3888344fc25eda181e8f710ce1bf1de") "deposit_batch";"#,
             Instruction::CallMethodWithAllResources {
-                component_ref: ComponentRef::from_str(
+                component_id: ComponentId::from_str(
                     "02d43f479e9b2beb9df98bc3888344fc25eda181e8f710ce1bf1de".into()
                 )
                 .unwrap(),
@@ -878,7 +878,7 @@ mod tests {
             Transaction {
                 instructions: vec![
                     Instruction::CallMethod {
-                        component_ref: ComponentRef::from_str(
+                        component_id: ComponentId::from_str(
                             "02d43f479e9b2beb9df98bc3888344fc25eda181e8f710ce1bf1de".into()
                         )
                         .unwrap(),
@@ -886,7 +886,7 @@ mod tests {
                         args: vec![
                             scrypto_encode(&Decimal::from(5u32)),
                             scrypto_encode(
-                                &ResourceDefRef::from_str(
+                                &ResourceDefId::from_str(
                                     "030000000000000000000000000000000000000000000000000004"
                                 )
                                 .unwrap()
@@ -896,13 +896,13 @@ mod tests {
                     },
                     Instruction::TakeFromWorktop {
                         amount: Decimal::from(2),
-                        resource_def_ref: ResourceDefRef::from_str(
+                        resource_def_id: ResourceDefId::from_str(
                             "030000000000000000000000000000000000000000000000000004"
                         )
                         .unwrap(),
                     },
                     Instruction::CallMethod {
-                        component_ref: ComponentRef::from_str(
+                        component_id: ComponentId::from_str(
                             "0292566c83de7fd6b04fcc92b5e04b03228ccff040785673278ef1".into()
                         )
                         .unwrap(),
@@ -911,20 +911,20 @@ mod tests {
                     },
                     Instruction::AssertWorktopContains {
                         amount: Decimal::from(3),
-                        resource_def_ref: ResourceDefRef::from_str(
+                        resource_def_id: ResourceDefId::from_str(
                             "030000000000000000000000000000000000000000000000000004"
                         )
                         .unwrap(),
                     },
                     Instruction::AssertWorktopContains {
                         amount: Decimal::from(1),
-                        resource_def_ref: ResourceDefRef::from_str(
+                        resource_def_id: ResourceDefId::from_str(
                             "03aedb7960d1f87dc25138f4cd101da6c98d57323478d53c5fb951"
                         )
                         .unwrap(),
                     },
                     Instruction::TakeAllFromWorktop {
-                        resource_def_ref: ResourceDefRef::from_str(
+                        resource_def_id: ResourceDefId::from_str(
                             "030000000000000000000000000000000000000000000000000004"
                         )
                         .unwrap(),
@@ -939,13 +939,13 @@ mod tests {
                             NonFungibleKey::from_str("11").unwrap(),
                             NonFungibleKey::from_str("22").unwrap(),
                         ]),
-                        resource_def_ref: ResourceDefRef::from_str(
+                        resource_def_id: ResourceDefId::from_str(
                             "030000000000000000000000000000000000000000000000000004"
                         )
                         .unwrap(),
                     },
                     Instruction::CallMethodWithAllResources {
-                        component_ref: ComponentRef::from_str(
+                        component_id: ComponentId::from_str(
                             "02d43f479e9b2beb9df98bc3888344fc25eda181e8f710ce1bf1de".into()
                         )
                         .unwrap(),

@@ -18,16 +18,16 @@ pub enum Instruction {
     /// Takes fixed amount resource from worktop.
     TakeFromWorktop {
         amount: Decimal,
-        resource_def_ref: ResourceDefRef,
+        resource_def_id: ResourceDefId,
     },
 
     /// Takes all of a given resource from worktop.
-    TakeAllFromWorktop { resource_def_ref: ResourceDefRef },
+    TakeAllFromWorktop { resource_def_id: ResourceDefId },
 
     /// Takes non-fungibles from worktop.
     TakeNonFungiblesFromWorktop {
         keys: BTreeSet<NonFungibleKey>,
-        resource_def_ref: ResourceDefRef,
+        resource_def_id: ResourceDefId,
     },
 
     /// Returns resource to worktop.
@@ -36,7 +36,7 @@ pub enum Instruction {
     /// Asserts worktop contains at least this amount.
     AssertWorktopContains {
         amount: Decimal,
-        resource_def_ref: ResourceDefRef,
+        resource_def_id: ResourceDefId,
     },
 
     /// Creates a proof.
@@ -52,7 +52,7 @@ pub enum Instruction {
     ///
     /// Buckets and proofs in arguments moves from transaction context to the callee.
     CallFunction {
-        package_ref: PackageRef,
+        package_id: PackageId,
         blueprint_name: String,
         function: String,
         args: Vec<Vec<u8>>,
@@ -62,14 +62,14 @@ pub enum Instruction {
     ///
     /// Buckets and proofs in arguments moves from transaction context to the callee.
     CallMethod {
-        component_ref: ComponentRef,
+        component_id: ComponentId,
         method: String,
         args: Vec<Vec<u8>>,
     },
 
     /// With method with all resources from transaction context.
     CallMethodWithAllResources {
-        component_ref: ComponentRef,
+        component_id: ComponentId,
         method: String,
     },
 
@@ -88,21 +88,21 @@ pub struct ValidatedTransaction {
 pub enum ValidatedInstruction {
     TakeFromWorktop {
         amount: Decimal,
-        resource_def_ref: ResourceDefRef,
+        resource_def_id: ResourceDefId,
     },
     TakeAllFromWorktop {
-        resource_def_ref: ResourceDefRef,
+        resource_def_id: ResourceDefId,
     },
     TakeNonFungiblesFromWorktop {
         keys: BTreeSet<NonFungibleKey>,
-        resource_def_ref: ResourceDefRef,
+        resource_def_id: ResourceDefId,
     },
     ReturnToWorktop {
         bucket_id: BucketId,
     },
     AssertWorktopContains {
         amount: Decimal,
-        resource_def_ref: ResourceDefRef,
+        resource_def_id: ResourceDefId,
     },
     CreateProof {
         bucket_id: BucketId,
@@ -114,18 +114,18 @@ pub enum ValidatedInstruction {
         proof_id: ProofId,
     },
     CallFunction {
-        package_ref: PackageRef,
+        package_id: PackageId,
         blueprint_name: String,
         function: String,
         args: Vec<ValidatedData>,
     },
     CallMethod {
-        component_ref: ComponentRef,
+        component_id: ComponentId,
         method: String,
         args: Vec<ValidatedData>,
     },
     CallMethodWithAllResources {
-        component_ref: ComponentRef,
+        component_id: ComponentId,
         method: String,
     },
 }

@@ -34,7 +34,7 @@ blueprint! {
     }
 
     impl SportingEvent {
-        pub fn instantiate_sporting_event() -> ComponentRef {
+        pub fn instantiate_sporting_event() -> ComponentId {
             // For simplicity's sake, we will just use all fixed values for our numbers of tickets and their prices, though all of those could be parameterized
 
             // We'll start by creating our admin badge which is able to create and modify our NFT
@@ -46,7 +46,7 @@ blueprint! {
                 .metadata("name", "Ticket to the big game")
                 .flags(MINTABLE | INDIVIDUAL_METADATA_MUTABLE)
                 .badge(
-                    my_admin.resource_def_ref(),
+                    my_admin.resource_def_id(),
                     MAY_MINT | MAY_CHANGE_INDIVIDUAL_METADATA,
                 )
                 .no_initial_supply();
@@ -65,7 +65,7 @@ blueprint! {
                         prediction: Team::Home,
                     };
                     ticket_bucket.put(my_admin.authorize(|auth| {
-                        ticket_bucket.resource_def_ref().mint_non_fungible(
+                        ticket_bucket.resource_def_id().mint_non_fungible(
                             &NonFungibleKey::from(manual_id),
                             ticket,
                             auth,
@@ -84,7 +84,7 @@ blueprint! {
                     prediction: Team::Home,
                 };
                 ticket_bucket.put(my_admin.authorize(|auth| {
-                    ticket_bucket.resource_def_ref().mint_non_fungible(
+                    ticket_bucket.resource_def_id().mint_non_fungible(
                         &NonFungibleKey::from(manual_id),
                         ticket,
                         auth,

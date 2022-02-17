@@ -82,19 +82,19 @@ pub enum RuntimeError {
     HostFunctionNotFound(usize),
 
     /// Package already exists.
-    PackageAlreadyExists(PackageRef),
+    PackageAlreadyExists(PackageId),
 
     /// Component already exists.
-    ComponentAlreadyExists(ComponentRef),
+    ComponentAlreadyExists(ComponentId),
 
     /// Resource definition already exists.
-    ResourceDefAlreadyExists(ResourceDefRef),
+    ResourceDefAlreadyExists(ResourceDefId),
 
     /// Resource definition already exists.
     LazyMapAlreadyExists(LazyMapId),
 
     /// Package does not exist.
-    PackageNotFound(PackageRef),
+    PackageNotFound(PackageId),
 
     /// System call not allowed in given context.
     IllegalSystemCall(),
@@ -103,19 +103,19 @@ pub enum RuntimeError {
     ComponentNotLoaded(),
 
     /// Component does not exist.
-    ComponentNotFound(ComponentRef),
+    ComponentNotFound(ComponentId),
 
     /// Component is already loaded
-    ComponentAlreadyLoaded(ComponentRef),
+    ComponentAlreadyLoaded(ComponentId),
 
     /// Resource definition does not exist.
-    ResourceDefNotFound(ResourceDefRef),
+    ResourceDefNotFound(ResourceDefId),
 
     /// Non-fungible does not exist.
-    NonFungibleNotFound(ResourceDefRef, NonFungibleKey),
+    NonFungibleNotFound(ResourceDefId, NonFungibleKey),
 
     /// Non-fungible already exists.
-    NonFungibleAlreadyExists(ResourceDefRef, NonFungibleKey),
+    NonFungibleAlreadyExists(ResourceDefId, NonFungibleKey),
 
     /// Lazy map does not exist.
     LazyMapNotFound(LazyMapId),
@@ -141,15 +141,16 @@ pub enum RuntimeError {
     /// Bucket does not exist.
     BucketNotFound(BucketId),
 
-    /// Bucket ref does not exist.
+    /// Proof does not exist.
     ProofNotFound(ProofId),
-    /// The referenced bucket contains no resource.
+
+    /// The bucket contains no resource.
     EmptyProof,
 
     /// Bucket access error.
     BucketError(BucketError),
 
-    /// Bucket ref access error.
+    /// Resource definition access error.
     ResourceDefError(ResourceDefError),
 
     /// Vault access error.

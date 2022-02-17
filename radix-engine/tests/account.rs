@@ -22,7 +22,7 @@ pub fn compile(name: &str) -> Vec<u8> {
 fn fungible_amount() -> ResourceSpecification {
     ResourceSpecification::Fungible {
         amount: Decimal(100),
-        resource_def_ref: RADIX_TOKEN,
+        resource_def_id: RADIX_TOKEN,
     }
 }
 
@@ -70,10 +70,10 @@ fn can_withdraw_non_fungible_from_my_account() {
         .build(vec![key])
         .unwrap();
     let receipt = executor.run(transaction).unwrap();
-    let non_fungible_resource_def_ref = receipt.new_resource_def_refs[0];
+    let non_fungible_resource_def_id = receipt.new_resource_def_ids[0];
     let non_fungible_amount = ResourceSpecification::NonFungible {
         keys: BTreeSet::from([NonFungibleKey::from(1)]),
-        resource_def_ref: non_fungible_resource_def_ref,
+        resource_def_id: non_fungible_resource_def_id,
     };
 
     // Act
@@ -124,7 +124,7 @@ fn account_to_bucket_to_account() {
         .take_from_worktop(&amount, |builder, bucket_id| {
             builder
                 .add_instruction(Instruction::CallMethod {
-                    component_ref: account,
+                    component_id: account,
                     method: "deposit".to_owned(),
                     args: vec![scrypto_encode(&scrypto::resource::Bucket(bucket_id))],
                 })

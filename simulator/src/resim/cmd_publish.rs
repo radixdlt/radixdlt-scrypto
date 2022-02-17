@@ -16,9 +16,9 @@ pub struct Publish {
     /// the path to a Scrypto package or a .wasm file
     path: PathBuf,
 
-    /// The package ref, for overwriting
+    /// The package ID, for overwriting
     #[clap(long)]
-    package_ref: Option<PackageRef>,
+    package_id: Option<PackageId>,
 
     /// The transaction signers
     #[clap(short, long)]
@@ -41,15 +41,15 @@ impl Publish {
 
         let mut ledger = RadixEngineDB::with_bootstrap(get_data_dir()?);
         let mut executor = TransactionExecutor::new(&mut ledger, self.trace);
-        if let Some(package_ref) = self.package_ref.clone() {
+        if let Some(package_id) = self.package_id.clone() {
             // Overwrite package
-            executor.overwrite_package(package_ref, &code);
+            executor.overwrite_package(package_id, &code);
             println!("Package updated!");
             Ok(())
         } else {
             match executor.publish_package(&code) {
-                Ok(package_ref) => {
-                    println!("Success! New Package: {}", package_ref.to_string().green());
+                Ok(package_id) => {
+                    println!("Success! New Package: {}", package_id.to_string().green());
                     Ok(())
                 }
                 Err(error) => Err(Error::TransactionExecutionError(error)),

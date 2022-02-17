@@ -20,7 +20,7 @@ pub use non_fungible_data::NonFungibleData;
 pub use non_fungible_key::{NonFungibleKey, ParseNonFungibleKeyError};
 pub use proof::{ParseProofError, Proof};
 pub use resource_builder::{ResourceBuilder, DIVISIBILITY_MAXIMUM, DIVISIBILITY_NONE};
-pub use resource_def::{ParseResourceDefRefError, ResourceDefRef};
+pub use resource_def::{ParseResourceDefIdError, ResourceDefId};
 pub use resource_flags::*;
 pub use resource_permissions::*;
 pub use resource_type::ResourceType;

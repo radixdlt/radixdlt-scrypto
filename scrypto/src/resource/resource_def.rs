@@ -13,13 +13,13 @@ use crate::types::*;
 
 /// Represents a resource definition.
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
-pub struct ResourceDefRef(pub [u8; 26]);
+pub struct ResourceDefId(pub [u8; 26]);
 
-impl ResourceDefRef {
+impl ResourceDefId {
     /// Mints fungible resources
     pub fn mint<T: Into<Decimal>>(&mut self, amount: T, auth: Proof) -> Bucket {
         let input = MintResourceInput {
-            resource_def_ref: *self,
+            resource_def_id: *self,
             new_supply: Supply::Fungible {
                 amount: amount.into(),
             },
@@ -41,7 +41,7 @@ impl ResourceDefRef {
         entries.insert(key.clone(), (data.immutable_data(), data.mutable_data()));
 
         let input = MintResourceInput {
-            resource_def_ref: *self,
+            resource_def_id: *self,
             new_supply: Supply::NonFungible { entries },
             auth: auth.0,
         };
@@ -71,7 +71,7 @@ impl ResourceDefRef {
     /// Returns the resource type.
     pub fn resource_type(&self) -> ResourceType {
         let input = GetResourceTypeInput {
-            resource_def_ref: *self,
+            resource_def_id: *self,
         };
         let output: GetResourceTypeOutput = call_engine(GET_RESOURCE_TYPE, input);
 
@@ -81,7 +81,7 @@ impl ResourceDefRef {
     /// Returns the metadata associated with this resource.
     pub fn metadata(&self) -> HashMap<String, String> {
         let input = GetResourceMetadataInput {
-            resource_def_ref: *self,
+            resource_def_id: *self,
         };
         let output: GetResourceMetadataOutput = call_engine(GET_RESOURCE_METADATA, input);
 
@@ -91,7 +91,7 @@ impl ResourceDefRef {
     /// Returns the feature flags.
     pub fn flags(&self) -> u64 {
         let input = GetResourceFlagsInput {
-            resource_def_ref: *self,
+            resource_def_id: *self,
         };
         let output: GetResourceFlagsOutput = call_engine(GET_RESOURCE_FLAGS, input);
 
@@ -101,7 +101,7 @@ impl ResourceDefRef {
     /// Returns the mutable feature flags.
     pub fn mutable_flags(&self) -> u64 {
         let input = GetResourceMutableFlagsInput {
-            resource_def_ref: *self,
+            resource_def_id: *self,
         };
         let output: GetResourceMutableFlagsOutput = call_engine(GET_RESOURCE_MUTABLE_FLAGS, input);
 
@@ -111,7 +111,7 @@ impl ResourceDefRef {
     /// Returns the current supply of this resource.
     pub fn total_supply(&self) -> Decimal {
         let input = GetResourceTotalSupplyInput {
-            resource_def_ref: *self,
+            resource_def_id: *self,
         };
         let output: GetResourceTotalSupplyOutput = call_engine(GET_RESOURCE_TOTAL_SUPPLY, input);
 
@@ -124,7 +124,7 @@ impl ResourceDefRef {
     /// Panics if this is not a non-fungible resource or the specified non-fungible is not found.
     pub fn get_non_fungible_data<T: NonFungibleData>(&self, key: &NonFungibleKey) -> T {
         let input = GetNonFungibleDataInput {
-            resource_def_ref: *self,
+            resource_def_id: *self,
             key: key.clone(),
         };
         let output: GetNonFungibleDataOutput = call_engine(GET_NON_FUNGIBLE_DATA, input);
@@ -143,7 +143,7 @@ impl ResourceDefRef {
         auth: Proof,
     ) {
         let input = UpdateNonFungibleMutableDataInput {
-            resource_def_ref: *self,
+            resource_def_id: *self,
             key: key.clone(),
             new_mutable_data: new_data.mutable_data(),
             auth: auth.0,
@@ -155,7 +155,7 @@ impl ResourceDefRef {
     /// Turns on feature flags.
     pub fn enable_flags(&mut self, flags: u64, auth: Proof) {
         let input = UpdateResourceFlagsInput {
-            resource_def_ref: *self,
+            resource_def_id: *self,
             new_flags: self.flags() | flags,
             auth: auth.0,
         };
@@ -165,7 +165,7 @@ impl ResourceDefRef {
     /// Turns off feature flags.
     pub fn disable_flags(&mut self, flags: u64, auth: Proof) {
         let input = UpdateResourceFlagsInput {
-            resource_def_ref: *self,
+            resource_def_id: *self,
             new_flags: self.flags() & !flags,
             auth: auth.0,
         };
@@ -175,7 +175,7 @@ impl ResourceDefRef {
     /// Locks feature flag settings.
     pub fn lock_flags(&mut self, flags: u64, auth: Proof) {
         let input = UpdateResourceMutableFlagsInput {
-            resource_def_ref: *self,
+            resource_def_id: *self,
             new_mutable_flags: self.flags() & !flags,
             auth: auth.0,
         };
@@ -185,7 +185,7 @@ impl ResourceDefRef {
 
     pub fn update_metadata(&mut self, new_metadata: HashMap<String, String>, auth: Proof) {
         let input = UpdateResourceMetadataInput {
-            resource_def_ref: *self,
+            resource_def_id: *self,
             new_metadata,
             auth: auth.0,
         };
@@ -198,17 +198,17 @@ impl ResourceDefRef {
 //========
 
 #[derive(Debug, Clone)]
-pub enum ParseResourceDefRefError {
+pub enum ParseResourceDefIdError {
     InvalidHex(hex::FromHexError),
     InvalidLength(usize),
     InvalidPrefix,
 }
 
 #[cfg(not(feature = "alloc"))]
-impl std::error::Error for ParseResourceDefRefError {}
+impl std::error::Error for ParseResourceDefIdError {}
 
 #[cfg(not(feature = "alloc"))]
-impl fmt::Display for ParseResourceDefRefError {
+impl fmt::Display for ParseResourceDefIdError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}", self)
     }
@@ -218,24 +218,24 @@ impl fmt::Display for ParseResourceDefRefError {
 // binary
 //========
 
-impl TryFrom<&[u8]> for ResourceDefRef {
-    type Error = ParseResourceDefRefError;
+impl TryFrom<&[u8]> for ResourceDefId {
+    type Error = ParseResourceDefIdError;
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
         match slice.len() {
             26 => Ok(Self(copy_u8_array(slice))),
-            _ => Err(ParseResourceDefRefError::InvalidLength(slice.len())),
+            _ => Err(ParseResourceDefIdError::InvalidLength(slice.len())),
         }
     }
 }
 
-impl ResourceDefRef {
+impl ResourceDefId {
     pub fn to_vec(&self) -> Vec<u8> {
         self.0.to_vec()
     }
 }
 
-custom_type!(ResourceDefRef, CustomType::ResourceDefRef, Vec::new());
+custom_type!(ResourceDefId, CustomType::ResourceDefId, Vec::new());
 
 //======
 // text
@@ -243,25 +243,25 @@ custom_type!(ResourceDefRef, CustomType::ResourceDefRef, Vec::new());
 
 // Before Bech32, we use a fixed prefix for text representation.
 
-impl FromStr for ResourceDefRef {
-    type Err = ParseResourceDefRefError;
+impl FromStr for ResourceDefId {
+    type Err = ParseResourceDefIdError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let bytes = hex::decode(s).map_err(ParseResourceDefRefError::InvalidHex)?;
+        let bytes = hex::decode(s).map_err(ParseResourceDefIdError::InvalidHex)?;
         if bytes.get(0) != Some(&3u8) {
-            return Err(ParseResourceDefRefError::InvalidPrefix);
+            return Err(ParseResourceDefIdError::InvalidPrefix);
         }
         Self::try_from(&bytes[1..])
     }
 }
 
-impl fmt::Display for ResourceDefRef {
+impl fmt::Display for ResourceDefId {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         write!(f, "{}", hex::encode(combine(3, &self.0)))
     }
 }
 
-impl fmt::Debug for ResourceDefRef {
+impl fmt::Debug for ResourceDefId {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         write!(f, "{}", self)
     }

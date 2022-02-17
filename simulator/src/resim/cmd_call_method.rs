@@ -8,7 +8,7 @@ use crate::resim::*;
 #[derive(Parser, Debug)]
 pub struct CallMethod {
     /// The component that the method belongs to
-    component_ref: ComponentRef,
+    component_id: ComponentId,
 
     /// The method name
     method_name: String,
@@ -38,7 +38,7 @@ impl CallMethod {
         let signatures = self.signers.clone().unwrap_or(default_signers);
         let transaction = TransactionBuilder::new(&executor)
             .call_method(
-                self.component_ref,
+                self.component_id,
                 &self.method_name,
                 self.arguments.clone(),
                 Some(default_account),

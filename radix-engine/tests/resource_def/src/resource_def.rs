@@ -4,12 +4,12 @@ blueprint! {
     struct ResourceTest;
 
     impl ResourceTest {
-        pub fn create_fungible() -> (Bucket, ResourceDefRef) {
+        pub fn create_fungible() -> (Bucket, ResourceDefId) {
             let badge = ResourceBuilder::new_fungible(DIVISIBILITY_NONE).initial_supply_fungible(1);
             let token_resource_def = ResourceBuilder::new_fungible(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "TestToken")
                 .flags(MINTABLE | BURNABLE)
-                .badge(badge.resource_def_ref(), MAY_MINT | MAY_BURN)
+                .badge(badge.resource_def_id(), MAY_MINT | MAY_BURN)
                 .no_initial_supply();
             (badge, token_resource_def)
         }
@@ -20,7 +20,7 @@ blueprint! {
             (bucket.take(Decimal::from_str("0.1").unwrap()), bucket)
         }
 
-        pub fn create_fungible_wrong_resource_flags_should_fail() -> ResourceDefRef {
+        pub fn create_fungible_wrong_resource_flags_should_fail() -> ResourceDefId {
             let token_resource_def = ResourceBuilder::new_fungible(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "TestToken")
                 .flags(MAY_MINT | BURNABLE)
@@ -28,7 +28,7 @@ blueprint! {
             token_resource_def
         }
 
-        pub fn create_fungible_wrong_mutable_flags_should_fail() -> ResourceDefRef {
+        pub fn create_fungible_wrong_mutable_flags_should_fail() -> ResourceDefId {
             let token_resource_def = ResourceBuilder::new_fungible(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "TestToken")
                 .flags(MINTABLE | BURNABLE)
@@ -37,13 +37,13 @@ blueprint! {
             token_resource_def
         }
 
-        pub fn create_fungible_wrong_resource_permissions_should_fail() -> (Bucket, ResourceDefRef)
+        pub fn create_fungible_wrong_resource_permissions_should_fail() -> (Bucket, ResourceDefId)
         {
             let badge = ResourceBuilder::new_fungible(DIVISIBILITY_NONE).initial_supply_fungible(1);
             let token_resource_def = ResourceBuilder::new_fungible(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "TestToken")
                 .flags(MINTABLE | BURNABLE)
-                .badge(badge.resource_def_ref(), MINTABLE | MAY_BURN)
+                .badge(badge.resource_def_id(), MINTABLE | MAY_BURN)
                 .no_initial_supply();
             (badge, token_resource_def)
         }
@@ -72,7 +72,7 @@ blueprint! {
                 .metadata("name", "TestToken")
                 .mutable_flags(MINTABLE)
                 .badge(
-                    badge.resource_def_ref(),
+                    badge.resource_def_id(),
                     MAY_MANAGE_RESOURCE_FLAGS | MAY_MINT,
                 )
                 .no_initial_supply();
@@ -97,7 +97,7 @@ blueprint! {
             let mut token_resource_def = ResourceBuilder::new_fungible(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "TestToken")
                 .badge(
-                    badge.resource_def_ref(),
+                    badge.resource_def_id(),
                     MAY_MANAGE_RESOURCE_FLAGS | MAY_MINT,
                 )
                 .no_initial_supply();
@@ -111,7 +111,7 @@ blueprint! {
             let mut token_resource_def = ResourceBuilder::new_fungible(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "TestToken")
                 .flags(SHARED_METADATA_MUTABLE)
-                .badge(badge.resource_def_ref(), MAY_CHANGE_SHARED_METADATA)
+                .badge(badge.resource_def_id(), MAY_CHANGE_SHARED_METADATA)
                 .no_initial_supply();
 
             let mut new_metadata = HashMap::new();

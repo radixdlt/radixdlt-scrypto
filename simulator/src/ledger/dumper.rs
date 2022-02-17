@@ -16,13 +16,13 @@ pub enum DisplayError {
 
 /// Dump a package into console.
 pub fn dump_package<T: SubstateStore>(
-    package_ref: PackageRef,
+    package_id: PackageId,
     ledger: &T,
 ) -> Result<(), DisplayError> {
-    let package = ledger.get_package(package_ref);
+    let package = ledger.get_package(package_id);
     match package {
         Some(b) => {
-            println!("{}: {}", "Package".green().bold(), package_ref.to_string());
+            println!("{}: {}", "Package".green().bold(), package_id.to_string());
             println!("{}: {} bytes", "Code size".green().bold(), b.code().len());
             Ok(())
         }
@@ -32,22 +32,22 @@ pub fn dump_package<T: SubstateStore>(
 
 /// Dump a component into console.
 pub fn dump_component<T: SubstateStore>(
-    component_ref: ComponentRef,
+    component_id: ComponentId,
     ledger: &T,
 ) -> Result<(), DisplayError> {
-    let component = ledger.get_component(component_ref);
+    let component = ledger.get_component(component_id);
     match component {
         Some(c) => {
             println!(
                 "{}: {}",
                 "Component".green().bold(),
-                component_ref.to_string()
+                component_id.to_string()
             );
 
             println!(
-                "{}: {{ package_ref: {}, blueprint_name: \"{}\" }}",
+                "{}: {{ package_id: {}, blueprint_name: \"{}\" }}",
                 "Blueprint".green().bold(),
-                c.package_ref(),
+                c.package_id(),
                 c.blueprint_name()
             );
             let state = c.state();
@@ -69,7 +69,7 @@ pub fn dump_component<T: SubstateStore>(
                 let lazy_map_id = queue[i];
                 i += 1;
                 if maps_visited.insert(lazy_map_id) {
-                    let (maps, vaults) = dump_lazy_map(component_ref, lazy_map_id, ledger)?;
+                    let (maps, vaults) = dump_lazy_map(component_id, lazy_map_id, ledger)?;
                     queue.extend(maps);
                     for v in vaults {
                         vaults_found.insert(v);
@@ -78,24 +78,24 @@ pub fn dump_component<T: SubstateStore>(
             }
 
             // Dump resources
-            dump_resources(component_ref, &vaults_found, ledger)
+            dump_resources(component_id, &vaults_found, ledger)
         }
         None => Err(DisplayError::ComponentNotFound),
     }
 }
 
 fn dump_lazy_map<T: SubstateStore>(
-    component_ref: ComponentRef,
+    component_id: ComponentId,
     lazy_map_id: LazyMapId,
     ledger: &T,
 ) -> Result<(Vec<LazyMapId>, Vec<VaultId>), DisplayError> {
     let mut referenced_maps = Vec::new();
     let mut referenced_vaults = Vec::new();
-    let map = ledger.get_lazy_map(component_ref, lazy_map_id).unwrap();
+    let map = ledger.get_lazy_map(component_id, lazy_map_id).unwrap();
     println!(
         "{}: {:?}{:?}",
         "Lazy Map".green().bold(),
-        component_ref,
+        component_id,
         lazy_map_id
     );
     for (last, (k, v)) in map.map().iter().identify_last() {
@@ -116,21 +116,21 @@ fn dump_lazy_map<T: SubstateStore>(
 }
 
 fn dump_resources<T: SubstateStore>(
-    component_ref: ComponentRef,
+    component_id: ComponentId,
     vaults: &HashSet<VaultId>,
     ledger: &T,
 ) -> Result<(), DisplayError> {
     println!("{}:", "Resources".green().bold());
     for (last, vault_id) in vaults.iter().identify_last() {
-        let vault = ledger.get_vault(component_ref, *vault_id).unwrap();
+        let vault = ledger.get_vault(component_id, *vault_id).unwrap();
         let amount = vault.amount();
-        let resource_def_ref = vault.resource_def_ref();
-        let resource_def = ledger.get_resource_def(resource_def_ref).unwrap();
+        let resource_def_id = vault.resource_def_id();
+        let resource_def = ledger.get_resource_def(resource_def_id).unwrap();
         println!(
             "{} {{ amount: {}, resource definition: {}{}{} }}",
             list_item_prefix(last),
             amount,
-            resource_def_ref,
+            resource_def_id,
             resource_def
                 .metadata()
                 .get("name")
@@ -144,7 +144,7 @@ fn dump_resources<T: SubstateStore>(
         );
         if let Resource::NonFungible { keys } = vault.resource() {
             for (inner_last, key) in keys.iter().identify_last() {
-                let non_fungible = ledger.get_non_fungible(resource_def_ref, key).unwrap();
+                let non_fungible = ledger.get_non_fungible(resource_def_id, key).unwrap();
                 let immutable_data =
                     ValidatedData::from_slice(&non_fungible.immutable_data()).unwrap();
                 let mutable_data = ValidatedData::from_slice(&non_fungible.mutable_data()).unwrap();
@@ -164,10 +164,10 @@ fn dump_resources<T: SubstateStore>(
 
 /// Dump a resource definition into console.
 pub fn dump_resource_def<T: SubstateStore>(
-    resource_def_ref: ResourceDefRef,
+    resource_def_id: ResourceDefId,
     ledger: &T,
 ) -> Result<(), DisplayError> {
-    let resource_def = ledger.get_resource_def(resource_def_ref);
+    let resource_def = ledger.get_resource_def(resource_def_id);
     match resource_def {
         Some(r) => {
             println!(

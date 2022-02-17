@@ -67,18 +67,18 @@ scrypto test
 | Action                             | Command                                                                                           |
 |------------------------------------|---------------------------------------------------------------------------------------------------|
 | Create an account                  | ``` resim new-account ```                                                                         |
-| Change the default account         | ``` resim set-default-account <account_component_ref> <account_public_key>```                     |
+| Change the default account         | ``` resim set-default-account <account_component_id> <account_public_key>```                     |
 | Create a token with fixed supply   | ``` resim new-token-fixed <amount> ```                                                            |
-| Create a token with mutable supply | ``` resim new-token-mutable <minter_resource_def_ref> ```                                         |
+| Create a token with mutable supply | ``` resim new-token-mutable <minter_resource_def_id> ```                                         |
 | Create a badge with fixed supply   | ``` resim new-badge-fixed <amount> ```                                                            |
-| Create a badge with mutable supply | ``` resim new-badge-mutable <minter_resource_def_ref> ```                                         |
-| Mint resource                      | ``` resim mint <amount> <resource_def_ref> <minter_resource_def_ref>```                           |
-| Transfer resource                  | ``` resim transfer <amount_or_non_fungible_keys>,<resource_def_ref> <recipient_component_ref> ``` |
+| Create a badge with mutable supply | ``` resim new-badge-mutable <minter_resource_def_id> ```                                         |
+| Mint resource                      | ``` resim mint <amount> <resource_def_id> <minter_resource_def_id>```                           |
+| Transfer resource                  | ``` resim transfer <amount_or_non_fungible_keys>,<resource_def_id> <recipient_component_id> ``` |
 | Publish a package                  | ``` resim publish <path_to_package_dir> ```                                                       |
-| Call a function                    | ``` resim call-function <package_ref> <blueprint_name> <function> <args> ```                      |
-| Call a method                      | ``` resim call-method <component_ref> <method> <args> ```                                         |
-| Export the ABI of a blueprint      | ``` resim export-abi <package_ref> <blueprint_name> ```                                           |
-| Show info about an entity          | ``` resim show <reference> ```                                                                      |
+| Call a function                    | ``` resim call-function <package_id> <blueprint_name> <function> <args> ```                      |
+| Call a method                      | ``` resim call-method <component_id> <method> <args> ```                                         |
+| Export the ABI of a blueprint      | ``` resim export-abi <package_id> <blueprint_name> ```                                           |
+| Show info about an entity          | ``` resim show <id> ```                                                                      |
 | List all entities in simulator     | ``` resim show-ledger  ```                                                                        |
 | Reset simulator state              | ``` resim reset ```                                                                               |
 

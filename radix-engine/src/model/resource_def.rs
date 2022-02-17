@@ -32,7 +32,7 @@ pub struct ResourceDef {
     metadata: HashMap<String, String>,
     flags: u64,
     mutable_flags: u64,
-    authorities: HashMap<ResourceDefRef, u64>,
+    authorities: HashMap<ResourceDefId, u64>,
     total_supply: Decimal,
 }
 
@@ -42,7 +42,7 @@ impl ResourceDef {
         metadata: HashMap<String, String>,
         flags: u64,
         mutable_flags: u64,
-        authorities: HashMap<ResourceDefRef, u64>,
+        authorities: HashMap<ResourceDefId, u64>,
         initial_supply: &Option<Supply>,
     ) -> Result<Self, ResourceDefError> {
         let mut resource_def = Self {
@@ -103,7 +103,7 @@ impl ResourceDef {
         self.mutable_flags
     }
 
-    pub fn authorities(&self) -> &HashMap<ResourceDefRef, u64> {
+    pub fn authorities(&self) -> &HashMap<ResourceDefId, u64> {
         &self.authorities
     }
 
@@ -118,7 +118,7 @@ impl ResourceDef {
     pub fn mint(
         &mut self,
         supply: &Resource,
-        badge: Option<ResourceDefRef>,
+        badge: Option<ResourceDefId>,
     ) -> Result<(), ResourceDefError> {
         self.check_mint_auth(badge)?;
 
@@ -146,7 +146,7 @@ impl ResourceDef {
     pub fn burn(
         &mut self,
         resource: Resource,
-        badge: Option<ResourceDefRef>,
+        badge: Option<ResourceDefId>,
     ) -> Result<(), ResourceDefError> {
         self.check_burn_auth(badge)?;
 
@@ -178,7 +178,7 @@ impl ResourceDef {
     pub fn update_flags(
         &mut self,
         new_flags: u64,
-        badge: Option<ResourceDefRef>,
+        badge: Option<ResourceDefId>,
     ) -> Result<(), ResourceDefError> {
         self.check_manage_flags_auth(badge)?;
 
@@ -204,7 +204,7 @@ impl ResourceDef {
     pub fn update_mutable_flags(
         &mut self,
         new_mutable_flags: u64,
-        badge: Option<ResourceDefRef>,
+        badge: Option<ResourceDefId>,
     ) -> Result<(), ResourceDefError> {
         self.check_manage_flags_auth(badge)?;
 
@@ -230,7 +230,7 @@ impl ResourceDef {
     pub fn update_metadata(
         &mut self,
         new_metadata: HashMap<String, String>,
-        badge: Option<ResourceDefRef>,
+        badge: Option<ResourceDefId>,
     ) -> Result<(), ResourceDefError> {
         self.check_update_metadata_auth(badge)?;
 
@@ -241,7 +241,7 @@ impl ResourceDef {
 
     pub fn check_take_from_vault_auth(
         &self,
-        badge: Option<ResourceDefRef>,
+        badge: Option<ResourceDefId>,
     ) -> Result<(), ResourceDefError> {
         if !self.is_flag_on(RESTRICTED_TRANSFER) {
             Ok(())
@@ -250,7 +250,7 @@ impl ResourceDef {
         }
     }
 
-    pub fn check_mint_auth(&self, badge: Option<ResourceDefRef>) -> Result<(), ResourceDefError> {
+    pub fn check_mint_auth(&self, badge: Option<ResourceDefId>) -> Result<(), ResourceDefError> {
         if self.is_flag_on(MINTABLE) {
             self.check_permission(badge, MAY_MINT)
         } else {
@@ -258,7 +258,7 @@ impl ResourceDef {
         }
     }
 
-    pub fn check_burn_auth(&self, badge: Option<ResourceDefRef>) -> Result<(), ResourceDefError> {
+    pub fn check_burn_auth(&self, badge: Option<ResourceDefId>) -> Result<(), ResourceDefError> {
         if self.is_flag_on(BURNABLE) {
             if self.is_flag_on(FREELY_BURNABLE) {
                 Ok(())
@@ -272,7 +272,7 @@ impl ResourceDef {
 
     pub fn check_update_non_fungible_mutable_data_auth(
         &self,
-        badge: Option<ResourceDefRef>,
+        badge: Option<ResourceDefId>,
     ) -> Result<(), ResourceDefError> {
         if self.is_flag_on(INDIVIDUAL_METADATA_MUTABLE) {
             self.check_permission(badge, MAY_CHANGE_INDIVIDUAL_METADATA)
@@ -283,7 +283,7 @@ impl ResourceDef {
 
     pub fn check_update_metadata_auth(
         &self,
-        badge: Option<ResourceDefRef>,
+        badge: Option<ResourceDefId>,
     ) -> Result<(), ResourceDefError> {
         if self.is_flag_on(SHARED_METADATA_MUTABLE) {
             self.check_permission(badge, MAY_CHANGE_SHARED_METADATA)
@@ -294,7 +294,7 @@ impl ResourceDef {
 
     pub fn check_manage_flags_auth(
         &self,
-        badge: Option<ResourceDefRef>,
+        badge: Option<ResourceDefId>,
     ) -> Result<(), ResourceDefError> {
         self.check_permission(badge, MAY_MANAGE_RESOURCE_FLAGS)
     }
@@ -311,7 +311,7 @@ impl ResourceDef {
 
     pub fn check_permission(
         &self,
-        badge: Option<ResourceDefRef>,
+        badge: Option<ResourceDefId>,
         permission: u64,
     ) -> Result<(), ResourceDefError> {
         if let Some(badge) = badge {

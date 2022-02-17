@@ -21,11 +21,11 @@ impl Context {
         output.actor
     }
 
-    /// Returns a reference to the package.
-    pub fn package_ref() -> PackageRef {
+    /// Returns the package ID.
+    pub fn package_id() -> PackageId {
         match Context::actor() {
-            Actor::Blueprint(package_ref, _) => package_ref,
-            Actor::Component(component_ref) => component_ref.package_ref(),
+            Actor::Blueprint(package_id, _) => package_id,
+            Actor::Component(component_id) => component_id.package_id(),
         }
     }
 
@@ -53,13 +53,13 @@ impl Context {
 
     /// Invokes a function on a blueprint.
     pub fn call_function<S: AsRef<str>>(
-        package_ref: PackageRef,
+        package_id: PackageId,
         blueprint_name: S,
         function: S,
         args: Vec<Vec<u8>>,
     ) -> Vec<u8> {
         let input = CallFunctionInput {
-            package_ref,
+            package_id,
             blueprint_name: blueprint_name.as_ref().to_owned(),
             function: function.as_ref().to_owned(),
             args,
@@ -71,12 +71,12 @@ impl Context {
 
     /// Invokes a method on a component.
     pub fn call_method<S: AsRef<str>>(
-        component_ref: ComponentRef,
+        component_id: ComponentId,
         method: S,
         args: Vec<Vec<u8>>,
     ) -> Vec<u8> {
         let input = CallMethodInput {
-            component_ref: component_ref,
+            component_id: component_id,
             method: method.as_ref().to_owned(),
             args,
         };
@@ -86,26 +86,26 @@ impl Context {
     }
 
     /// Instantiates a component.
-    pub fn instantiate_component<T: ComponentState>(state: T) -> ComponentRef {
+    pub fn instantiate_component<T: ComponentState>(state: T) -> ComponentId {
         // TODO: more thoughts are needed for this interface
         let input = CreateComponentInput {
-            package_ref: Context::package_ref(),
+            package_id: Context::package_id(),
             blueprint_name: T::blueprint_name().to_owned(),
             state: scrypto_encode(&state),
         };
         let output: CreateComponentOutput = call_engine(CREATE_COMPONENT, input);
 
-        output.component_ref
+        output.component_id
     }
 
     /// Publishes a package.
-    pub fn publish_package(code: &[u8]) -> PackageRef {
+    pub fn publish_package(code: &[u8]) -> PackageId {
         let input = PublishPackageInput {
             code: code.to_vec(),
         };
         let output: PublishPackageOutput = call_engine(PUBLISH_PACKAGE, input);
 
-        output.package_ref
+        output.package_id
     }
 
     /// Creates a resource with the given parameters.
@@ -116,9 +116,9 @@ impl Context {
         metadata: HashMap<String, String>,
         flags: u64,
         mutable_flags: u64,
-        authorities: HashMap<ResourceDefRef, u64>,
+        authorities: HashMap<ResourceDefId, u64>,
         initial_supply: Option<Supply>,
-    ) -> (ResourceDefRef, Option<Bucket>) {
+    ) -> (ResourceDefId, Option<Bucket>) {
         let input = CreateResourceInput {
             resource_type,
             metadata,
@@ -130,7 +130,7 @@ impl Context {
         let output: CreateResourceOutput = call_engine(CREATE_RESOURCE, input);
 
         (
-            output.resource_def_ref,
+            output.resource_def_id,
             output.bucket_id.map(|id| Bucket(id)),
         )
     }

@@ -1,18 +1,18 @@
 # Managed Access
 This example demonstrates the use of the `FlatAdmin` blueprint to manage access in another blueprint.
 
-Note that in order for this example to function, you will have to publish the package containing the `FlatAdmin` blueprint to your simulator to a specific package ref (or change the package ref imported near the top of `lib.rs` in this package).
+Note that in order for this example to function, you will have to publish the package containing the `FlatAdmin` blueprint to your simulator to a specific package ID (or change the package ID imported near the top of `lib.rs` in this package).
 
-If you wish to publish `FlatAdmin` to the appropriate package ref, switch to that directory and run:
+If you wish to publish `FlatAdmin` to the appropriate package ID, switch to that directory and run:
 ```bash
-resim publish . --package-ref 01ca59a8d6ea4f7efa1765cef702d14e47570c079aedd44992dd09
+resim publish . --package-id 01ca59a8d6ea4f7efa1765cef702d14e47570c079aedd44992dd09
 ```
 
 ## Importing & Calling a Blueprint
 Currently, importing another blueprint requires a few manual steps.  We expect to simplify this process in the future, but for now here are the steps:
 
 1. Publish the package containing the blueprint you wish to import.
-2. Export the ABI for that blueprint using the command `resim export-abi <package_ref> <blueprint_name>`
+2. Export the ABI for that blueprint using the command `resim export-abi <package_id> <blueprint_name>`
 3. Copy the output of that command, and paste it into the source file you wish to consume it from.  Enclose the content within an opening `import! {
 r#"` and enclosing `"#}` block.  Example:
 ```rust
@@ -30,15 +30,15 @@ Now you'll be able to call functions on that blueprint like so: `FlatAdmin::some
 ## Resources and Data
 ```rust
 struct ManagedAccess {
-  admin_badge: ResourceDefRef,
-  flat_admin_controller: ComponentRef,
+  admin_badge: ResourceDefId,
+  flat_admin_controller: ComponentId,
   protected_vault: Vault
 }
 ```
 
 Our instantiated component will maintain a single vault which stores XRD.  Anyone may deposit to the vault, but only a caller in possession of an admin badge may withdraw from it.
 
-The only state we need to maintain is the aforementioned vault, and the `ResourceDef` of the badge used for authorization.  As a convenience for the user, we will also store the reference to the `FlatAdmin` component which manages the supply of those badges.
+The only state we need to maintain is the aforementioned vault, and the `ResourceDef` of the badge used for authorization.  As a convenience for the user, we will also store the ID of the `FlatAdmin` component which manages the supply of those badges.
 
 ## Getting Ready for Instantiation
 In order to instantiate, we'll require no parameters and return to the caller a tuple containing the newly instantiated component, and a bucket containing the first admin badge created by our `FlatAdmin` badge manager:
@@ -57,7 +57,7 @@ That gives us everything we need to populate our `struct`, instantiate, and retu
 
 ```rust
 let component = Self {
-  admin_badge: admin_badge.resource_def_ref(),
+  admin_badge: admin_badge.resource_def_id(),
   flat_admin_controller: flat_admin_component.into(),
   protected_vault: Vault::new(RADIX_TOKEN),
 }
@@ -82,11 +82,11 @@ pub fn deposit(&mut self, to_deposit: Bucket) {
   self.protected_vault.put(to_deposit);
 }
 
-pub fn get_admin_badge(&self) -> ResourceDefRef {
+pub fn get_admin_badge(&self) -> ResourceDefId {
   self.admin_badge
 }
 
-pub fn get_flat_admin_controller(&self) -> ComponentRef {
+pub fn get_flat_admin_controller(&self) -> ComponentId {
   self.flat_admin_controller
 }
 ```

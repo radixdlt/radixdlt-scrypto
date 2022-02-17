@@ -38,5 +38,5 @@ pub enum Error {
 
     DecompileError(transaction_manifest::DecompileError),
 
-    InvalidReference(String),
+    InvalidId(String),
 }

@@ -2,15 +2,15 @@
 // We need a better strategy to enforce this.
 
 pub use crate::core::Actor;
-pub use crate::core::ComponentRef;
+pub use crate::core::ComponentId;
 pub use crate::core::Level;
-pub use crate::core::PackageRef;
+pub use crate::core::PackageId;
 pub use crate::crypto::EcdsaPublicKey;
 pub use crate::crypto::Hash;
 pub use crate::math::BigDecimal;
 pub use crate::math::Decimal;
 pub use crate::resource::NonFungibleKey;
-pub use crate::resource::ResourceDefRef;
+pub use crate::resource::ResourceDefId;
 pub use crate::resource::ResourceType;
 pub use crate::resource::Supply;
 

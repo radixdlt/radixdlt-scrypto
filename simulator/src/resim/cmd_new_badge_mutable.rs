@@ -8,8 +8,8 @@ use crate::resim::*;
 /// Create a badge with mutable supply
 #[derive(Parser, Debug)]
 pub struct NewBadgeMutable {
-    /// The minter resource definition ref
-    minter_resource_def_ref: ResourceDefRef,
+    /// The minter resource definition ID
+    minter_resource_def_id: ResourceDefId,
 
     /// The symbol
     #[clap(long)]
@@ -67,7 +67,7 @@ impl NewBadgeMutable {
         };
         let signatures = self.signers.clone().unwrap_or(default_signers);
         let transaction = TransactionBuilder::new(&executor)
-            .new_badge_mutable(metadata, self.minter_resource_def_ref)
+            .new_badge_mutable(metadata, self.minter_resource_def_id)
             .build(signatures)
             .map_err(Error::TransactionConstructionError)?;
         process_transaction(transaction, &mut executor, &self.manifest)

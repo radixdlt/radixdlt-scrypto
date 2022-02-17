@@ -17,7 +17,7 @@ fn bench_transfer(b: &mut Bencher) {
         .withdraw_from_account(
             &ResourceSpecification::Fungible {
                 amount: 1.into(),
-                resource_def_ref: RADIX_TOKEN,
+                resource_def_id: RADIX_TOKEN,
             },
             account1,
         )

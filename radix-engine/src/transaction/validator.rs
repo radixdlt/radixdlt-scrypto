@@ -17,32 +17,32 @@ pub fn validate_transaction(
         match inst.clone() {
             Instruction::TakeFromWorktop {
                 amount,
-                resource_def_ref,
+                resource_def_id,
             } => {
                 id_validator
                     .new_bucket()
                     .map_err(TransactionValidationError::IdValidatorError)?;
                 instructions.push(ValidatedInstruction::TakeFromWorktop {
                     amount,
-                    resource_def_ref,
+                    resource_def_id,
                 });
             }
-            Instruction::TakeAllFromWorktop { resource_def_ref } => {
+            Instruction::TakeAllFromWorktop { resource_def_id } => {
                 id_validator
                     .new_bucket()
                     .map_err(TransactionValidationError::IdValidatorError)?;
-                instructions.push(ValidatedInstruction::TakeAllFromWorktop { resource_def_ref });
+                instructions.push(ValidatedInstruction::TakeAllFromWorktop { resource_def_id });
             }
             Instruction::TakeNonFungiblesFromWorktop {
                 keys,
-                resource_def_ref,
+                resource_def_id,
             } => {
                 id_validator
                     .new_bucket()
                     .map_err(TransactionValidationError::IdValidatorError)?;
                 instructions.push(ValidatedInstruction::TakeNonFungiblesFromWorktop {
                     keys,
-                    resource_def_ref,
+                    resource_def_id,
                 });
             }
             Instruction::ReturnToWorktop { bucket_id } => {
@@ -53,11 +53,11 @@ pub fn validate_transaction(
             }
             Instruction::AssertWorktopContains {
                 amount,
-                resource_def_ref,
+                resource_def_id,
             } => {
                 instructions.push(ValidatedInstruction::AssertWorktopContains {
                     amount,
-                    resource_def_ref,
+                    resource_def_id,
                 });
             }
             Instruction::CreateProof { bucket_id } => {
@@ -79,38 +79,38 @@ pub fn validate_transaction(
                 instructions.push(ValidatedInstruction::DropProof { proof_id });
             }
             Instruction::CallFunction {
-                package_ref,
+                package_id,
                 blueprint_name,
                 function,
                 args,
             } => {
                 instructions.push(ValidatedInstruction::CallFunction {
-                    package_ref,
+                    package_id,
                     blueprint_name,
                     function,
                     args: validate_args(args, &mut id_validator)?,
                 });
             }
             Instruction::CallMethod {
-                component_ref,
+                component_id,
                 method,
                 args,
             } => {
                 instructions.push(ValidatedInstruction::CallMethod {
-                    component_ref,
+                    component_id,
                     method,
                     args: validate_args(args, &mut id_validator)?,
                 });
             }
             Instruction::CallMethodWithAllResources {
-                component_ref,
+                component_id,
                 method,
             } => {
                 id_validator
                     .move_all_resources()
                     .map_err(TransactionValidationError::IdValidatorError)?;
                 instructions.push(ValidatedInstruction::CallMethodWithAllResources {
-                    component_ref,
+                    component_id,
                     method,
                 });
             }

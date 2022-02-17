@@ -14,7 +14,7 @@ use scrypto::prelude::*;
 import! {
 r#"
 {
-    "package_ref": "014eb598fe6ed7df56a5f02950df2d7b08530d9d1081f05a6398f9",
+    "package_id": "014eb598fe6ed7df56a5f02950df2d7b08530d9d1081f05a6398f9",
     "blueprint_name": "PriceOracle",
     "functions": [
         {
@@ -34,7 +34,7 @@ r#"
                     },
                     {
                         "type": "Custom",
-                        "name": "ComponentRef",
+                        "name": "ComponentId",
                         "generics": []
                     }
                 ]
@@ -48,12 +48,12 @@ r#"
             "inputs": [
                 {
                     "type": "Custom",
-                    "name": "ResourceDefRef",
+                    "name": "ResourceDefId",
                     "generics": []
                 },
                 {
                     "type": "Custom",
-                    "name": "ResourceDefRef",
+                    "name": "ResourceDefId",
                     "generics": []
                 }
             ],
@@ -72,12 +72,12 @@ r#"
             "inputs": [
                 {
                     "type": "Custom",
-                    "name": "ResourceDefRef",
+                    "name": "ResourceDefId",
                     "generics": []
                 },
                 {
                     "type": "Custom",
-                    "name": "ResourceDefRef",
+                    "name": "ResourceDefId",
                     "generics": []
                 },
                 {
@@ -101,7 +101,7 @@ r#"
             "inputs": [],
             "output": {
                 "type": "Custom",
-                "name": "ResourceDefRef",
+                "name": "ResourceDefId",
                 "generics": []
             }
         }
@@ -113,7 +113,7 @@ r#"
 import! {
 r#"
 {
-    "package_ref": "01e0983e33158b489e70313b77767abe80eb449e6acd46f9476328",
+    "package_id": "01e0983e33158b489e70313b77767abe80eb449e6acd46f9476328",
     "blueprint_name": "SyntheticPool",
     "functions": [
         {
@@ -121,17 +121,17 @@ r#"
             "inputs": [
                 {
                     "type": "Custom",
-                    "name": "ComponentRef",
+                    "name": "ComponentId",
                     "generics": []
                 },
                 {
                     "type": "Custom",
-                    "name": "ResourceDefRef",
+                    "name": "ResourceDefId",
                     "generics": []
                 },
                 {
                     "type": "Custom",
-                    "name": "ResourceDefRef",
+                    "name": "ResourceDefId",
                     "generics": []
                 },
                 {
@@ -142,7 +142,7 @@ r#"
             ],
             "output": {
                 "type": "Custom",
-                "name": "ComponentRef",
+                "name": "ComponentId",
                 "generics": []
             }
         }
@@ -157,13 +157,13 @@ r#"
                 },
                 {
                     "type": "Custom",
-                    "name": "ResourceDefRef",
+                    "name": "ResourceDefId",
                     "generics": []
                 }
             ],
             "output": {
                 "type": "Custom",
-                "name": "ResourceDefRef",
+                "name": "ResourceDefId",
                 "generics": []
             }
         },
@@ -276,7 +276,7 @@ r#"
             "inputs": [
                 {
                     "type": "Custom",
-                    "name": "ResourceDefRef",
+                    "name": "ResourceDefId",
                     "generics": []
                 }
             ],
@@ -292,7 +292,7 @@ r#"
             "inputs": [
                 {
                     "type": "Custom",
-                    "name": "ResourceDefRef",
+                    "name": "ResourceDefId",
                     "generics": []
                 }
             ],
@@ -318,7 +318,7 @@ r#"
 import! {
 r#"
 {
-    "package_ref": "01899b2991b37ee1bc51a84182a3752c1dc48ec3df01969d3516d3",
+    "package_id": "01899b2991b37ee1bc51a84182a3752c1dc48ec3df01969d3516d3",
     "blueprint_name": "Radiswap",
     "functions": [
         {
@@ -359,7 +359,7 @@ r#"
                 "elements": [
                     {
                         "type": "Custom",
-                        "name": "ComponentRef",
+                        "name": "ComponentId",
                         "generics": []
                     },
                     {
@@ -464,13 +464,13 @@ blueprint! {
         /// Asset symbol
         asset_symbol: String,
         /// Asset resource definition
-        asset_resource_def_ref: ResourceDefRef,
+        asset_resource_def_id: ResourceDefId,
         /// Synthetic resource definition
-        synth_resource_def_ref: ResourceDefRef,
+        synth_resource_def_id: ResourceDefId,
         /// SNX resource definition
-        snx_resource_def_ref: ResourceDefRef,
+        snx_resource_def_id: ResourceDefId,
         /// USD resource definition
-        usd_resource_def_ref: ResourceDefRef,
+        usd_resource_def_id: ResourceDefId,
 
         /// Radiswap for sTESLA/XRD
         radiswap: Radiswap,
@@ -478,23 +478,23 @@ blueprint! {
         radiswap_lp_tokens: Vault,
 
         /// Mutual farm share resource definition
-        mutual_farm_share: ResourceDefRef,
+        mutual_farm_share: ResourceDefId,
         /// Total contribution
         total_contribution_in_usd: Decimal,
     }
 
     impl MutualFarm {
         pub fn instantiate_farm(
-            price_oracle: ComponentRef,
-            xrd_snx_radiswap: ComponentRef,
-            synthetic_pool: ComponentRef,
+            price_oracle: ComponentId,
+            xrd_snx_radiswap: ComponentId,
+            synthetic_pool: ComponentId,
             asset_symbol: String,
-            asset_resource_def_ref: ResourceDefRef,
+            asset_resource_def_id: ResourceDefId,
             initial_shares: Decimal,
             mut initial_xrd: Bucket,
-            snx_resource_def_ref: ResourceDefRef,
-            usd_resource_def_ref: ResourceDefRef,
-        ) -> (Bucket, ComponentRef) {
+            snx_resource_def_id: ResourceDefId,
+            usd_resource_def_id: ResourceDefId,
+        ) -> (Bucket, ComponentId) {
             debug!("Create an identity badge for accessing other components");
             let identity_badge = ResourceBuilder::new_fungible(DIVISIBILITY_NONE)
                 .metadata("name", "ID")
@@ -503,13 +503,13 @@ blueprint! {
             debug!("Fetch price info from oracle");
             let price_oracle: PriceOracle = price_oracle.into();
             let xrd_usd_price = price_oracle
-                .get_price(initial_xrd.resource_def_ref(), usd_resource_def_ref)
+                .get_price(initial_xrd.resource_def_id(), usd_resource_def_id)
                 .unwrap();
             let snx_usd_price = price_oracle
-                .get_price(snx_resource_def_ref, usd_resource_def_ref)
+                .get_price(snx_resource_def_id, usd_resource_def_id)
                 .unwrap();
             let tesla_usd_price = price_oracle
-                .get_price(asset_resource_def_ref, usd_resource_def_ref)
+                .get_price(asset_resource_def_id, usd_resource_def_id)
                 .unwrap();
 
             debug!("Swap 3/4 of XRD for SNX");
@@ -521,12 +521,12 @@ blueprint! {
             debug!("Deposit SNX into synthetic pool and mint sTESLA (1/10 of our SNX).");
             let price_oracle: PriceOracle = price_oracle.into();
             let synthetic_pool: SyntheticPool = synthetic_pool.into();
-            synthetic_pool.add_synthetic_token(asset_symbol.clone(), asset_resource_def_ref);
+            synthetic_pool.add_synthetic_token(asset_symbol.clone(), asset_resource_def_id);
             synthetic_pool.stake(identity_badge.present(), snx);
             let quantity = snx_amount * snx_usd_price / 10 / tesla_usd_price;
             let synth =
                 synthetic_pool.mint(identity_badge.present(), quantity, asset_symbol.clone());
-            let synth_resource_def_ref = synth.resource_def_ref();
+            let synth_resource_def_id = synth.resource_def_id();
 
             debug!("Set up sTESLA/XRD swap pool");
             let (radiswap_comp, lp_tokens) = Radiswap::instantiate_pool(
@@ -543,7 +543,7 @@ blueprint! {
             let mut mutual_farm_share = ResourceBuilder::new_fungible(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "MutualFarm share")
                 .flags(MINTABLE | BURNABLE)
-                .badge(identity_badge.resource_def_ref(), MAY_MINT | MAY_BURN)
+                .badge(identity_badge.resource_def_id(), MAY_MINT | MAY_BURN)
                 .no_initial_supply();
             let shares = mutual_farm_share.mint(initial_shares, identity_badge.present());
 
@@ -554,10 +554,10 @@ blueprint! {
                 xrd_snx_radiswap,
                 synthetic_pool,
                 asset_symbol,
-                asset_resource_def_ref,
-                synth_resource_def_ref,
-                snx_resource_def_ref,
-                usd_resource_def_ref,
+                asset_resource_def_id,
+                synth_resource_def_id,
+                snx_resource_def_id,
+                usd_resource_def_id,
                 radiswap: radiswap_comp.into(),
                 radiswap_lp_tokens: Vault::with_bucket(lp_tokens),
                 mutual_farm_share,
@@ -572,19 +572,19 @@ blueprint! {
             debug!("Fetch price info from oracle");
             let xrd_usd_price = self
                 .price_oracle
-                .get_price(xrd.resource_def_ref(), self.usd_resource_def_ref)
+                .get_price(xrd.resource_def_id(), self.usd_resource_def_id)
                 .unwrap();
             let snx_usd_price = self
                 .price_oracle
-                .get_price(self.snx_resource_def_ref, self.usd_resource_def_ref)
+                .get_price(self.snx_resource_def_id, self.usd_resource_def_id)
                 .unwrap();
             let tesla_usd_price = self
                 .price_oracle
-                .get_price(self.asset_resource_def_ref, self.usd_resource_def_ref)
+                .get_price(self.asset_resource_def_id, self.usd_resource_def_id)
                 .unwrap();
 
             debug!("Swap 3/4 of XRD for SNX");
-            let xrd_resource_def_ref = xrd.resource_def_ref();
+            let xrd_resource_def_id = xrd.resource_def_id();
             let xrd_amount = xrd.amount();
             let snx = self.xrd_snx_radiswap.swap(xrd.take(xrd.amount() * 3 / 4));
             let snx_amount = snx.amount();
@@ -601,11 +601,11 @@ blueprint! {
 
             debug!("Add liquidity to sTESLA/XRD swap pool");
             let (lp_tokens, mut remainder) = self.radiswap.add_liquidity(synth, xrd);
-            if remainder.resource_def_ref() == self.synth_resource_def_ref {
+            if remainder.resource_def_id() == self.synth_resource_def_id {
                 self.identity_badge.authorize(|auth| {
                     self.synthetic_pool.burn(auth, remainder);
                 });
-                remainder = Bucket::new(xrd_resource_def_ref);
+                remainder = Bucket::new(xrd_resource_def_id);
             }
             self.radiswap_lp_tokens.put(lp_tokens);
 

@@ -6,22 +6,22 @@ use scrypto::rust::vec::Vec;
 /// A component is an instance of blueprint.
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct Component {
-    package_ref: PackageRef,
+    package_id: PackageId,
     blueprint_name: String,
     state: Vec<u8>,
 }
 
 impl Component {
-    pub fn new(package_ref: PackageRef, blueprint_name: String, state: Vec<u8>) -> Self {
+    pub fn new(package_id: PackageId, blueprint_name: String, state: Vec<u8>) -> Self {
         Self {
-            package_ref,
+            package_id,
             blueprint_name,
             state,
         }
     }
 
-    pub fn package_ref(&self) -> PackageRef {
-        self.package_ref
+    pub fn package_id(&self) -> PackageId {
+        self.package_id
     }
 
     pub fn blueprint_name(&self) -> &str {

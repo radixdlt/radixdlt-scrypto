@@ -24,7 +24,7 @@ pub fn handle_import(input: TokenStream) -> Result<TokenStream> {
     };
     trace!("Parsed ABI: {:?}", blueprint);
 
-    let package_ref = blueprint.package_ref;
+    let package_id = blueprint.package_id;
     let blueprint_name = blueprint.blueprint_name;
     let ident = format_ident!("{}", blueprint_name);
     trace!("Blueprint name: {}", blueprint_name);
@@ -53,7 +53,7 @@ pub fn handle_import(input: TokenStream) -> Result<TokenStream> {
         functions.push(parse_quote! {
             pub fn #func_indent(#(#func_args: #func_types),*) -> #func_output {
                 let rtn = ::scrypto::core::Context::call_function(
-                    ::scrypto::core::PackageRef::from_str(#package_ref).unwrap(),
+                    ::scrypto::core::PackageId::from_str(#package_id).unwrap(),
                     #blueprint_name,
                     #func_name,
                     ::scrypto::args!(#(#func_args),*)
@@ -85,7 +85,7 @@ pub fn handle_import(input: TokenStream) -> Result<TokenStream> {
         let m = parse_quote! {
             pub fn #method_indent(&self #(, #method_args: #method_types)*) -> #method_output {
                 let rtn = ::scrypto::core::Context::call_method(
-                    self.component_ref,
+                    self.component_id,
                     #method_name,
                     ::scrypto::args!(#(#method_args),*)
                 );
@@ -100,7 +100,7 @@ pub fn handle_import(input: TokenStream) -> Result<TokenStream> {
 
         #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode)]
         pub struct #ident {
-            component_ref: ::scrypto::core::ComponentRef,
+            component_id: ::scrypto::core::ComponentId,
         }
 
         impl #ident {
@@ -109,17 +109,17 @@ pub fn handle_import(input: TokenStream) -> Result<TokenStream> {
             #(#methods)*
         }
 
-        impl From<::scrypto::core::ComponentRef> for #ident {
-            fn from(component_ref: ::scrypto::core::ComponentRef) -> Self {
+        impl From<::scrypto::core::ComponentId> for #ident {
+            fn from(component_id: ::scrypto::core::ComponentId) -> Self {
                 Self {
-                    component_ref
+                    component_id
                 }
             }
         }
 
-        impl From<#ident> for ::scrypto::core::ComponentRef {
-            fn from(a: #ident) -> ::scrypto::core::ComponentRef {
-                a.component_ref
+        impl From<#ident> for ::scrypto::core::ComponentId {
+            fn from(a: #ident) -> ::scrypto::core::ComponentId {
+                a.component_id
             }
         }
     };
@@ -323,8 +323,8 @@ fn get_native_type(ty: &des::Type) -> Result<(Type, Vec<Item>)> {
             // Copying the names to avoid cyclic dependency.
 
             let canonical_name = match name.as_str() {
-                "PackageRef" => "::scrypto::core::PackageRef",
-                "ComponentRef" => "::scrypto::core::ComponentRef",
+                "PackageId" => "::scrypto::core::PackageId",
+                "ComponentId" => "::scrypto::core::ComponentId",
                 "LazyMap" => "::scrypto::core::LazyMap",
                 "Hash" => "::scrypto::crypto::Hash",
                 "Decimal" => "::scrypto::math::Decimal",
@@ -333,7 +333,7 @@ fn get_native_type(ty: &des::Type) -> Result<(Type, Vec<Item>)> {
                 "Proof" => "::scrypto::resource::Proof",
                 "Vault" => "::scrypto::resource::Vault",
                 "NonFungibleKey" => "::scrypto::resource::NonFungibleKey",
-                "ResourceDefRef" => "::scrypto::resource::ResourceDefRef",
+                "ResourceDefId" => "::scrypto::resource::ResourceDefId",
                 _ => {
                     return Err(Error::new(
                         Span::call_site(),
@@ -377,7 +377,7 @@ mod tests {
             r###"
                 r#"
                 {
-                    "package_ref": "056967d3d49213394892980af59be76e9b3e7cc4cb78237460d0c7",
+                    "package_id": "056967d3d49213394892980af59be76e9b3e7cc4cb78237460d0c7",
                     "blueprint_name": "Simple",
                     "functions": [
                         {
@@ -385,7 +385,7 @@ mod tests {
                             "inputs": [],
                             "output": {
                                 "type": "Custom",
-                                "name": "ComponentRef",
+                                "name": "ComponentId",
                                 "generics": []
                             }
                         }
@@ -415,12 +415,12 @@ mod tests {
             quote! {
                 #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode)]
                 pub struct Simple {
-                    component_ref: ::scrypto::core::ComponentRef,
+                    component_id: ::scrypto::core::ComponentId,
                 }
                 impl Simple {
-                    pub fn new() -> ::scrypto::core::ComponentRef {
+                    pub fn new() -> ::scrypto::core::ComponentId {
                         let rtn = ::scrypto::core::Context::call_function(
-                            ::scrypto::core::PackageRef::from_str("056967d3d49213394892980af59be76e9b3e7cc4cb78237460d0c7").unwrap(),
+                            ::scrypto::core::PackageId::from_str("056967d3d49213394892980af59be76e9b3e7cc4cb78237460d0c7").unwrap(),
                             "Simple",
                             "new",
                             ::scrypto::args!()
@@ -429,23 +429,23 @@ mod tests {
                     }
                     pub fn free_token(&self) -> ::scrypto::resource::Bucket {
                         let rtn = ::scrypto::core::Context::call_method(
-                            self.component_ref,
+                            self.component_id,
                             "free_token",
                             ::scrypto::args!()
                         );
                         ::scrypto::buffer::scrypto_decode(&rtn).unwrap()
                     }
                 }
-                impl From<::scrypto::core::ComponentRef> for Simple {
-                    fn from(component_ref: ::scrypto::core::ComponentRef) -> Self {
+                impl From<::scrypto::core::ComponentId> for Simple {
+                    fn from(component_id: ::scrypto::core::ComponentId) -> Self {
                         Self {
-                            component_ref
+                            component_id
                         }
                     }
                 }
-                impl From<Simple> for ::scrypto::core::ComponentRef {
-                    fn from(a: Simple) -> ::scrypto::core::ComponentRef {
-                        a.component_ref
+                impl From<Simple> for ::scrypto::core::ComponentId {
+                    fn from(a: Simple) -> ::scrypto::core::ComponentId {
+                        a.component_id
                     }
                 }
             },

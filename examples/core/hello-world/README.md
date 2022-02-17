@@ -70,23 +70,23 @@ let vault: Vault = Vault::with_bucket(my_bucket);
 
 ## How to Play?
 
-1. Create a new account, and save the account component ref
+1. Create a new account, and save the account component ID
 ```
 resim new-account
 ```
-2. Publish the package, and save the package ref
+2. Publish the package, and save the package ID
 ```
 resim publish .
 ```
-3. Call the `instantiate_hello` function to instantiate a component, and save the component ref
+3. Call the `instantiate_hello` function to instantiate a component, and save the component ID
 ```
-resim call-function <PACKAGE_REF> Hello instantiate_hello
+resim call-function <PACKAGE_ID> Hello instantiate_hello
 ```
 4. Call the `free_token` method of the component we just instantiated
 ```
-resim call-method <COMPONENT_REF> free_token
+resim call-method <COMPONENT_ID> free_token
 ```
 5. Check out our balance
 ```
-resim show <ACCOUNT_COMPONENT_REF>
+resim show <ACCOUNT_COMPONENT_ID>
 ```

@@ -14,9 +14,9 @@ pub struct Receipt {
     pub result: Result<(), RuntimeError>,
     pub outputs: Vec<ValidatedData>,
     pub logs: Vec<(Level, String)>,
-    pub new_package_refs: Vec<PackageRef>,
-    pub new_component_refs: Vec<ComponentRef>,
-    pub new_resource_def_refs: Vec<ResourceDefRef>,
+    pub new_package_ids: Vec<PackageId>,
+    pub new_component_ids: Vec<ComponentId>,
+    pub new_resource_def_ids: Vec<ResourceDefId>,
     pub execution_time: Option<u128>,
 }
 
@@ -83,33 +83,33 @@ impl fmt::Debug for Receipt {
             f,
             "\n{} {}",
             "New Entities:".bold().green(),
-            self.new_package_refs.len()
-                + self.new_component_refs.len()
-                + self.new_resource_def_refs.len()
+            self.new_package_ids.len()
+                + self.new_component_ids.len()
+                + self.new_resource_def_ids.len()
         )?;
 
-        for (i, package_ref) in self.new_package_refs.iter().enumerate() {
+        for (i, package_id) in self.new_package_ids.iter().enumerate() {
             write!(
                 f,
                 "\n{} Package: {}",
-                prefix!(i, self.new_package_refs),
-                package_ref
+                prefix!(i, self.new_package_ids),
+                package_id
             )?;
         }
-        for (i, component_ref) in self.new_component_refs.iter().enumerate() {
+        for (i, component_id) in self.new_component_ids.iter().enumerate() {
             write!(
                 f,
                 "\n{} Component: {}",
-                prefix!(i, self.new_component_refs),
-                component_ref
+                prefix!(i, self.new_component_ids),
+                component_id
             )?;
         }
-        for (i, resource_def_ref) in self.new_resource_def_refs.iter().enumerate() {
+        for (i, resource_def_id) in self.new_resource_def_ids.iter().enumerate() {
             write!(
                 f,
                 "\n{} ResourceDef: {}",
-                prefix!(i, self.new_resource_def_refs),
-                resource_def_ref
+                prefix!(i, self.new_resource_def_ids),
+                resource_def_id
             )?;
         }
 

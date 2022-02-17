@@ -122,11 +122,11 @@ fn cannot_overwrite_vault_in_map() {
         .build(vec![])
         .unwrap();
     let receipt = sut.run(transaction).unwrap();
-    let component_ref = receipt.new_component_refs[0];
+    let component_id = receipt.new_component_ids[0];
 
     // Act
     let transaction = TransactionBuilder::new(&sut)
-        .call_method(component_ref, "overwrite_vault_in_map", vec![], None)
+        .call_method(component_id, "overwrite_vault_in_map", vec![], None)
         .build(vec![])
         .unwrap();
     let receipt = sut.run(transaction).unwrap();
@@ -164,11 +164,11 @@ fn cannot_remove_vaults() {
         .build(vec![])
         .unwrap();
     let receipt = sut.run(transaction).unwrap();
-    let component_ref = receipt.new_component_refs[0];
+    let component_id = receipt.new_component_ids[0];
 
     // Act
     let transaction = TransactionBuilder::new(&sut)
-        .call_method(component_ref, "clear_vector", vec![], None)
+        .call_method(component_id, "clear_vector", vec![], None)
         .build(vec![])
         .unwrap();
     let receipt = sut.run(transaction).unwrap();
@@ -188,11 +188,11 @@ fn can_push_vault_into_vector() {
         .build(vec![])
         .unwrap();
     let receipt = sut.run(transaction).unwrap();
-    let component_ref = receipt.new_component_refs[0];
+    let component_id = receipt.new_component_ids[0];
 
     // Act
     let transaction = TransactionBuilder::new(&sut)
-        .call_method(component_ref, "push_vault_into_vector", vec![], None)
+        .call_method(component_id, "push_vault_into_vector", vec![], None)
         .build(vec![])
         .unwrap();
     let receipt = sut.run(transaction).unwrap();

@@ -24,40 +24,40 @@ struct SystemComponentState {
 
 /// A ledger stores all transactions and substates.
 pub trait SubstateStore {
-    fn get_resource_def(&self, resource_def_ref: ResourceDefRef) -> Option<ResourceDef>;
+    fn get_resource_def(&self, resource_def_id: ResourceDefId) -> Option<ResourceDef>;
 
-    fn put_resource_def(&mut self, resource_def_ref: ResourceDefRef, resource_def: ResourceDef);
+    fn put_resource_def(&mut self, resource_def_id: ResourceDefId, resource_def: ResourceDef);
 
-    fn get_package(&self, package_ref: PackageRef) -> Option<Package>;
+    fn get_package(&self, package_id: PackageId) -> Option<Package>;
 
-    fn put_package(&mut self, package_ref: PackageRef, package: Package);
+    fn put_package(&mut self, package_id: PackageId, package: Package);
 
-    fn get_component(&self, component_ref: ComponentRef) -> Option<Component>;
+    fn get_component(&self, component_id: ComponentId) -> Option<Component>;
 
-    fn put_component(&mut self, component_ref: ComponentRef, component: Component);
+    fn put_component(&mut self, component_id: ComponentId, component: Component);
 
-    fn get_lazy_map(&self, component_ref: ComponentRef, lazy_map_id: LazyMapId) -> Option<LazyMap>;
+    fn get_lazy_map(&self, component_id: ComponentId, lazy_map_id: LazyMapId) -> Option<LazyMap>;
 
     fn put_lazy_map(
         &mut self,
-        component_ref: ComponentRef,
+        component_id: ComponentId,
         lazy_map_id: LazyMapId,
         lazy_map: LazyMap,
     );
 
-    fn get_vault(&self, component_ref: ComponentRef, vault_id: VaultId) -> Option<Vault>;
+    fn get_vault(&self, component_id: ComponentId, vault_id: VaultId) -> Option<Vault>;
 
-    fn put_vault(&mut self, component_ref: ComponentRef, vault_id: VaultId, vault: Vault);
+    fn put_vault(&mut self, component_id: ComponentId, vault_id: VaultId, vault: Vault);
 
     fn get_non_fungible(
         &self,
-        resource_def_ref: ResourceDefRef,
+        resource_def_id: ResourceDefId,
         key: &NonFungibleKey,
     ) -> Option<NonFungible>;
 
     fn put_non_fungible(
         &mut self,
-        resource_def_ref: ResourceDefRef,
+        resource_def_id: ResourceDefId,
         key: &NonFungibleKey,
         non_fungible: NonFungible,
     );

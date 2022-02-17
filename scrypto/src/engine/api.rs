@@ -70,7 +70,7 @@ pub const TAKE_FROM_VAULT: u32 = 0x42;
 /// Get vault resource amount
 pub const GET_VAULT_AMOUNT: u32 = 0x43;
 /// Get vault resource definition
-pub const GET_VAULT_RESOURCE_DEF_REF: u32 = 0x44;
+pub const GET_VAULT_RESOURCE_DEF_ID: u32 = 0x44;
 /// Take a non-fungible from this vault, by key
 pub const TAKE_NON_FUNGIBLE_FROM_VAULT: u32 = 0x45;
 /// Get the IDs of all non-fungibles in this vault
@@ -85,7 +85,7 @@ pub const TAKE_FROM_BUCKET: u32 = 0x52;
 /// Get bucket resource amount
 pub const GET_BUCKET_AMOUNT: u32 = 0x53;
 /// Get bucket resource definition
-pub const GET_BUCKET_RESOURCE_DEF_REF: u32 = 0x54;
+pub const GET_BUCKET_RESOURCE_DEF_ID: u32 = 0x54;
 /// Take a non-fungible from this bucket, by key
 pub const TAKE_NON_FUNGIBLE_FROM_BUCKET: u32 = 0x55;
 /// Get the IDs of all non-fungibles in this bucket
@@ -98,7 +98,7 @@ pub const DROP_PROOF: u32 = 0x61;
 /// Get the resource amount behind a proof
 pub const GET_PROOF_AMOUNT: u32 = 0x62;
 /// Get the resource definition behind a proof
-pub const GET_PROOF_RESOURCE_DEF_REF: u32 = 0x63;
+pub const GET_PROOF_RESOURCE_DEF_ID: u32 = 0x63;
 /// Get the non-fungible keys in the proofd
 pub const GET_NON_FUNGIBLE_KEYS_IN_PROOF: u32 = 0x64;
 /// Clone proof
@@ -128,12 +128,12 @@ pub struct PublishPackageInput {
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct PublishPackageOutput {
-    pub package_ref: PackageRef,
+    pub package_id: PackageId,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct CallFunctionInput {
-    pub package_ref: PackageRef,
+    pub package_id: PackageId,
     pub blueprint_name: String,
     pub function: String,
     pub args: Vec<Vec<u8>>,
@@ -146,7 +146,7 @@ pub struct CallFunctionOutput {
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct CallMethodInput {
-    pub component_ref: ComponentRef,
+    pub component_id: ComponentId,
     pub method: String,
     pub args: Vec<Vec<u8>>,
 }
@@ -162,24 +162,24 @@ pub struct CallMethodOutput {
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct CreateComponentInput {
-    pub package_ref: PackageRef,
+    pub package_id: PackageId,
     pub blueprint_name: String,
     pub state: Vec<u8>,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct CreateComponentOutput {
-    pub component_ref: ComponentRef,
+    pub component_id: ComponentId,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct GetComponentInfoInput {
-    pub component_ref: ComponentRef,
+    pub component_id: ComponentId,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct GetComponentInfoOutput {
-    pub package_ref: PackageRef,
+    pub package_id: PackageId,
     pub blueprint_name: String,
 }
 
@@ -242,19 +242,19 @@ pub struct CreateResourceInput {
     pub metadata: HashMap<String, String>,
     pub flags: u64,
     pub mutable_flags: u64,
-    pub authorities: HashMap<ResourceDefRef, u64>,
+    pub authorities: HashMap<ResourceDefId, u64>,
     pub initial_supply: Option<Supply>,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct CreateResourceOutput {
-    pub resource_def_ref: ResourceDefRef,
+    pub resource_def_id: ResourceDefId,
     pub bucket_id: Option<BucketId>,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct MintResourceInput {
-    pub resource_def_ref: ResourceDefRef,
+    pub resource_def_id: ResourceDefId,
     pub new_supply: Supply,
     pub auth: ProofId,
 }
@@ -275,7 +275,7 @@ pub struct BurnResourceOutput {}
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct GetResourceMetadataInput {
-    pub resource_def_ref: ResourceDefRef,
+    pub resource_def_id: ResourceDefId,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
@@ -285,7 +285,7 @@ pub struct GetResourceMetadataOutput {
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct GetResourceTypeInput {
-    pub resource_def_ref: ResourceDefRef,
+    pub resource_def_id: ResourceDefId,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
@@ -295,7 +295,7 @@ pub struct GetResourceTypeOutput {
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct GetResourceTotalSupplyInput {
-    pub resource_def_ref: ResourceDefRef,
+    pub resource_def_id: ResourceDefId,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
@@ -305,7 +305,7 @@ pub struct GetResourceTotalSupplyOutput {
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct GetNonFungibleDataInput {
-    pub resource_def_ref: ResourceDefRef,
+    pub resource_def_id: ResourceDefId,
     pub key: NonFungibleKey,
 }
 
@@ -317,7 +317,7 @@ pub struct GetNonFungibleDataOutput {
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct UpdateNonFungibleMutableDataInput {
-    pub resource_def_ref: ResourceDefRef,
+    pub resource_def_id: ResourceDefId,
     pub key: NonFungibleKey,
     pub new_mutable_data: Vec<u8>,
     pub auth: ProofId,
@@ -328,7 +328,7 @@ pub struct UpdateNonFungibleMutableDataOutput {}
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct GetResourceFlagsInput {
-    pub resource_def_ref: ResourceDefRef,
+    pub resource_def_id: ResourceDefId,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
@@ -338,7 +338,7 @@ pub struct GetResourceFlagsOutput {
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct UpdateResourceFlagsInput {
-    pub resource_def_ref: ResourceDefRef,
+    pub resource_def_id: ResourceDefId,
     pub new_flags: u64,
     pub auth: ProofId,
 }
@@ -348,7 +348,7 @@ pub struct UpdateResourceFlagsOutput {}
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct GetResourceMutableFlagsInput {
-    pub resource_def_ref: ResourceDefRef,
+    pub resource_def_id: ResourceDefId,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
@@ -358,7 +358,7 @@ pub struct GetResourceMutableFlagsOutput {
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct UpdateResourceMutableFlagsInput {
-    pub resource_def_ref: ResourceDefRef,
+    pub resource_def_id: ResourceDefId,
     pub new_mutable_flags: u64,
     pub auth: ProofId,
 }
@@ -368,7 +368,7 @@ pub struct UpdateResourceMutableFlagsOutput {}
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct UpdateResourceMetadataInput {
-    pub resource_def_ref: ResourceDefRef,
+    pub resource_def_id: ResourceDefId,
     pub new_metadata: HashMap<String, String>,
     pub auth: ProofId,
 }
@@ -382,7 +382,7 @@ pub struct UpdateResourceMetadataOutput {}
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct CreateEmptyVaultInput {
-    pub resource_def_ref: ResourceDefRef,
+    pub resource_def_id: ResourceDefId,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
@@ -422,13 +422,13 @@ pub struct GetVaultDecimalOutput {
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct GetVaultResourceDefRefInput {
+pub struct GetVaultResourceDefIdInput {
     pub vault_id: VaultId,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct GetVaultResourceDefRefOutput {
-    pub resource_def_ref: ResourceDefRef,
+pub struct GetVaultResourceDefIdOutput {
+    pub resource_def_id: ResourceDefId,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
@@ -459,7 +459,7 @@ pub struct GetNonFungibleKeysInVaultOutput {
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct CreateEmptyBucketInput {
-    pub resource_def_ref: ResourceDefRef,
+    pub resource_def_id: ResourceDefId,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
@@ -498,13 +498,13 @@ pub struct GetBucketDecimalOutput {
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct GetBucketResourceDefRefInput {
+pub struct GetBucketResourceDefIdInput {
     pub bucket_id: BucketId,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct GetBucketResourceDefRefOutput {
-    pub resource_def_ref: ResourceDefRef,
+pub struct GetBucketResourceDefIdOutput {
+    pub resource_def_id: ResourceDefId,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
@@ -561,13 +561,13 @@ pub struct GetProofDecimalOutput {
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct GetProofResourceDefRefInput {
+pub struct GetProofResourceDefIdInput {
     pub proof_id: ProofId,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct GetProofResourceDefRefOutput {
-    pub resource_def_ref: ResourceDefRef,
+pub struct GetProofResourceDefIdOutput {
+    pub resource_def_id: ResourceDefId,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
