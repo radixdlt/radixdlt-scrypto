@@ -49,19 +49,21 @@ blueprint! {
 
         pub fn query() -> (Bucket, HashMap<String, String>, u64, u64, Decimal) {
             let (badge, resource_def_id) = Self::create_fungible();
+            let resource_def = resource_def!(resource_def_id);
             (
                 badge,
-                resource_def!(resource_def_id).metadata(),
-                resource_def!(resource_def_id).flags(),
-                resource_def!(resource_def_id).mutable_flags(),
-                resource_def!(resource_def_id).total_supply(),
+                resource_def.metadata(),
+                resource_def.flags(),
+                resource_def.mutable_flags(),
+                resource_def.total_supply(),
             )
         }
 
         pub fn burn() -> Bucket {
             let (badge, resource_def_id) = Self::create_fungible();
-            let bucket = resource_def!(resource_def_id).mint(1, badge.present());
-            resource_def!(resource_def_id).burn_with_auth(bucket, badge.present());
+            let resource_def = resource_def!(resource_def_id);
+            let bucket = resource_def.mint(1, badge.present());
+            resource_def.burn_with_auth(bucket, badge.present());
             badge
         }
 
