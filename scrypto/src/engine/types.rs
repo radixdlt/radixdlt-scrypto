@@ -1,10 +1,10 @@
 // Ideally, only the types listed below can be used by Radix Engine.
 // We need a better strategy to enforce this.
 
+pub use crate::component::ComponentId;
+pub use crate::component::PackageId;
 pub use crate::core::Actor;
-pub use crate::core::ComponentId;
 pub use crate::core::Level;
-pub use crate::core::PackageId;
 pub use crate::crypto::EcdsaPublicKey;
 pub use crate::crypto::Hash;
 pub use crate::math::BigDecimal;

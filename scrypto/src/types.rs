@@ -1,6 +1,6 @@
 use sbor::{any::*, *};
 
-use crate::core::*;
+use crate::component::*;
 use crate::crypto::*;
 use crate::engine::types::BucketId;
 use crate::engine::types::ProofId;
@@ -58,7 +58,7 @@ pub(crate) use custom_type;
 /// Custom types must be encoded as `[length + bytes]`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CustomType {
-    // core
+    // component
     PackageId,
     ComponentId,
     LazyMap,

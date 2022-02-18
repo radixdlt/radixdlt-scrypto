@@ -1,4 +1,4 @@
-use crate::core::*;
+use crate::component::*;
 use crate::resource::*;
 
 /// The package of the system blueprint.

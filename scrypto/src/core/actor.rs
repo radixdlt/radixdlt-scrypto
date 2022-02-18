@@ -1,6 +1,6 @@
 use sbor::*;
 
-use crate::core::*;
+use crate::component::*;
 use crate::rust::string::String;
 
 /// Represents the running entity.

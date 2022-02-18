@@ -9,7 +9,7 @@ blueprint! {
     impl System {
         /// Publishes a package.
         pub fn publish_package(code: Vec<u8>) -> PackageId {
-            Context::publish_package(&code)
+            publish_package(&code)
         }
 
         /// Creates a resource.
@@ -21,7 +21,7 @@ blueprint! {
             authorities: HashMap<ResourceDefId, u64>,
             initial_supply: Option<Supply>,
         ) -> (ResourceDefId, Option<Bucket>) {
-            Context::create_resource(
+            create_resource(
                 resource_type,
                 metadata,
                 flags,

@@ -22,9 +22,11 @@ pub mod abi {
 }
 /// Scrypto data encoding, decoding and exchange.
 pub mod buffer;
+/// Scrypto component library.
+pub mod component;
 /// Scrypto constants.
 pub mod constants;
-/// Scrypto core abstractions.
+/// Scrypto core library, mainly process and transaction context.
 pub mod core;
 /// Scrypto cryptography library.
 pub mod crypto;
@@ -36,11 +38,11 @@ pub mod math;
 pub mod misc;
 /// Scrypto preludes.
 pub mod prelude;
-/// Scrypto resource abstractions.
+/// Scrypto resource library.
 pub mod resource;
 /// A facade of types in Rust standard library.
 pub mod rust;
-/// Scrypto types.
+/// Scrypto custom types.
 pub mod types;
 
 // Export macros

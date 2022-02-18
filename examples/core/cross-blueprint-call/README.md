@@ -24,7 +24,7 @@ If the function or method is from an already published package, we need to
                 "inputs": [],
                 "output": {
                     "type": "Custom",
-                    "name": "scrypto::core::Component",
+                    "name": "ComponentId",
                     "generics": []
                 }
             }
@@ -36,7 +36,7 @@ If the function or method is from an already published package, we need to
                 "inputs": [],
                 "output": {
                     "type": "Custom",
-                    "name": "scrypto::resource::Bucket",
+                    "name": "Bucket",
                     "generics": []
                 }
             }

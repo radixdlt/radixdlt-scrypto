@@ -23,7 +23,7 @@ blueprint! {
             for row in 1..5 {
                 for column in 1..5 {
                     tickets.push((
-                        NonFungibleKey::from(Context::generate_uuid()),
+                        NonFungibleKey::from(Process::generate_uuid()),
                         Ticket { row, column },
                     ));
                 }

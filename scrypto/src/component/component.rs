@@ -1,6 +1,7 @@
 use sbor::{describe::Type, *};
 
 use crate::buffer::*;
+use crate::component::*;
 use crate::core::*;
 use crate::engine::{api::*, call_engine};
 use crate::misc::*;
@@ -26,7 +27,7 @@ pub struct ComponentId(pub [u8; 26]);
 impl ComponentId {
     /// Invokes a method on this component.
     pub fn call<T: Decode>(&self, method: &str, args: Vec<Vec<u8>>) -> T {
-        let output = Context::call_method(*self, method, args);
+        let output = Process::call_method(*self, method, args);
 
         scrypto_decode(&output).unwrap()
     }

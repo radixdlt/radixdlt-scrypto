@@ -95,7 +95,7 @@ blueprint! {
             let hash = Self::hash_name(name);
             let deposit_amount = self.deposit_per_year * Decimal::from(reserve_years);
             let last_valid_epoch =
-                Context::current_epoch() + EPOCHS_PER_YEAR * u64::from(reserve_years);
+                Transaction::current_epoch() + EPOCHS_PER_YEAR * u64::from(reserve_years);
 
             assert!(
                 deposit.amount() >= deposit_amount,

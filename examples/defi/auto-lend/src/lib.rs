@@ -71,8 +71,8 @@ blueprint! {
                     borrow_balance: Decimal::zero(),
                     deposit_interest_rate,
                     borrow_interest_rate: Decimal::zero(),
-                    deposit_last_update: Context::current_epoch(),
-                    borrow_last_update: Context::current_epoch(),
+                    deposit_last_update: Transaction::current_epoch(),
+                    borrow_last_update: Transaction::current_epoch(),
                 },
             };
 
@@ -239,7 +239,7 @@ impl User {
         let interest =
             self.deposit_balance * self.deposit_interest_rate * self.deposit_time_elapsed();
         self.deposit_balance += interest;
-        self.deposit_last_update = Context::current_epoch();
+        self.deposit_last_update = Transaction::current_epoch();
 
         // Calculate the aggregated interest of previous deposits & the new deposit
         self.deposit_interest_rate = (self.deposit_balance * self.deposit_interest_rate
@@ -262,7 +262,7 @@ impl User {
         // Increase borrow balance by interests accrued
         let interest = self.borrow_balance * self.borrow_interest_rate * self.borrow_time_elapsed();
         self.borrow_balance += interest;
-        self.borrow_last_update = Context::current_epoch();
+        self.borrow_last_update = Transaction::current_epoch();
 
         // Calculate the aggregated interest of previous borrows & the new borrow
         self.borrow_interest_rate = (self.borrow_balance * self.borrow_interest_rate
@@ -277,7 +277,7 @@ impl User {
         // Increase borrow balance by interests accrued
         let interest = self.borrow_balance * self.borrow_interest_rate * self.borrow_time_elapsed();
         self.borrow_balance += interest;
-        self.borrow_last_update = Context::current_epoch();
+        self.borrow_last_update = Transaction::current_epoch();
 
         // Repay the loan
         if self.borrow_balance < amount {
@@ -304,11 +304,11 @@ impl User {
 
     fn deposit_time_elapsed(&self) -> u64 {
         // +1 is for demo purpose only
-        Context::current_epoch() - self.deposit_last_update + 1
+        Transaction::current_epoch() - self.deposit_last_update + 1
     }
 
     fn borrow_time_elapsed(&self) -> u64 {
         // +1 is for demo purpose only
-        Context::current_epoch() - self.borrow_last_update + 1
+        Transaction::current_epoch() - self.borrow_last_update + 1
     }
 }

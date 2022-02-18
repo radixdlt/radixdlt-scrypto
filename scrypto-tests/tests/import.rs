@@ -1,6 +1,6 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use scrypto::core::*;
+use scrypto::component::*;
 use scrypto::import;
 use scrypto::rust::borrow::ToOwned;
 use scrypto::rust::str::FromStr;
