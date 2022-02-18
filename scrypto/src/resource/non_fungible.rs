@@ -1,4 +1,5 @@
 use crate::resource::*;
+use crate::resource_def;
 use crate::rust::marker::PhantomData;
 
 /// Represents a non-fungible unit.
@@ -32,12 +33,11 @@ impl<T: NonFungibleData> NonFungible<T> {
 
     /// Returns the associated data of this unit.
     pub fn data(&self) -> T {
-        self.resource_def_id().get_non_fungible_data(&self.key)
+        resource_def!(self.resource_def_id()).get_non_fungible_data(&self.key)
     }
 
     /// Updates the associated data of this unit.
     pub fn update_data(&self, new_data: T, auth: Proof) {
-        self.resource_def_id()
-            .update_non_fungible_data(&self.key, new_data, auth);
+        resource_def!(self.resource_def_id()).update_non_fungible_data(&self.key, new_data, auth);
     }
 }

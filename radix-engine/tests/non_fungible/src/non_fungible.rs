@@ -19,7 +19,7 @@ blueprint! {
                 ResourceBuilder::new_fungible(DIVISIBILITY_NONE).initial_supply_fungible(1);
 
             // Create non-fungible resource with mutable supply
-            let mut non_fungible_resource_def = ResourceBuilder::new_non_fungible()
+            let non_fungible_id = ResourceBuilder::new_non_fungible()
                 .metadata("name", "Katz's Sandwiches")
                 .flags(MINTABLE | BURNABLE | INDIVIDUAL_METADATA_MUTABLE)
                 .badge(
@@ -29,7 +29,7 @@ blueprint! {
                 .no_initial_supply();
 
             // Mint a non-fungible
-            let non_fungible = non_fungible_resource_def.mint_non_fungible(
+            let non_fungible = resource_def!(non_fungible_id).mint_non_fungible(
                 &NonFungibleKey::from(0u128),
                 Sandwich {
                     name: "Test".to_owned(),
@@ -38,7 +38,7 @@ blueprint! {
                 mint_badge.present(),
             );
 
-            (mint_badge, non_fungible_resource_def, non_fungible)
+            (mint_badge, non_fungible_id, non_fungible)
         }
 
         pub fn create_non_fungible_fixed() -> Bucket {
@@ -70,19 +70,20 @@ blueprint! {
         }
 
         pub fn update_and_get_non_fungible() -> (Bucket, Bucket) {
-            let (mint_badge, mut resource_def, bucket) = Self::create_non_fungible_mutable();
+            let (mint_badge, resource_def_id, bucket) = Self::create_non_fungible_mutable();
             let mut data: Sandwich =
-                resource_def.get_non_fungible_data(&NonFungibleKey::from(0u128));
+                resource_def!(resource_def_id).get_non_fungible_data(&NonFungibleKey::from(0u128));
             assert_eq!(data.available, false);
 
             data.available = true;
-            resource_def.update_non_fungible_data(
+            resource_def!(resource_def_id).update_non_fungible_data(
                 &NonFungibleKey::from(0u128),
                 data,
                 mint_badge.present(),
             );
 
-            let data: Sandwich = resource_def.get_non_fungible_data(&NonFungibleKey::from(0u128));
+            let data: Sandwich =
+                resource_def!(resource_def_id).get_non_fungible_data(&NonFungibleKey::from(0u128));
             assert_eq!(data.available, true);
             (mint_badge, bucket)
         }

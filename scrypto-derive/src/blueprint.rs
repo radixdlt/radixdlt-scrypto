@@ -58,7 +58,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                     #bp_name
                 }
                 fn instantiate(self) -> ::scrypto::component::ComponentId {
-                    ::scrypto::component::instantiate_component(
+                    ::scrypto::component::component_system().instantiate_component(
                         ::scrypto::core::Process::package_id(),
                         self
                     )
@@ -75,6 +75,10 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
         pub extern "C" fn #dispatcher_ident() -> *mut u8 {
             // Set up panic hook
             ::scrypto::misc::set_up_panic_hook();
+
+            // Set up component and resource subsystems;
+            ::scrypto::component::init_component_system(::scrypto::component::ComponentSystem::new());
+            ::scrypto::resource::init_resource_system(::scrypto::resource::ResourceSystem::new());
 
             // Retrieve call data
             let calldata: ::scrypto::engine::api::GetCallDataOutput = ::scrypto::engine::call_engine(
@@ -183,13 +187,13 @@ fn generate_dispatcher(bp_ident: &Ident, items: &[ImplItem]) -> Result<(Vec<Expr
                             // Generate a `Stmt` for loading the component state
                             assert!(get_state.is_none(), "Can have at most 1 self reference");
                             get_state = Some(parse_quote! {
-                                let #mutability state: blueprint::#bp_ident = #arg.get_state();
+                                let #mutability state: blueprint::#bp_ident = component!(#arg).get_state();
                             });
 
                             // Generate a `Stmt` for writing back component state
                             if mutability.is_some() {
                                 put_state = Some(parse_quote! {
-                                    #arg.put_state(state);
+                                    ::scrypto::component!(#arg).put_state(state);
                                 });
                             }
                         }
@@ -545,7 +549,7 @@ mod tests {
                             "Test"
                         }
                         fn instantiate(self) -> ::scrypto::component::ComponentId {
-                            ::scrypto::component::instantiate_component(
+                            ::scrypto::component::component_system().instantiate_component(
                                 ::scrypto::core::Process::package_id(),
                                 self
                             )
@@ -555,6 +559,8 @@ mod tests {
                 #[no_mangle]
                 pub extern "C" fn Test_main() -> *mut u8 {
                     ::scrypto::misc::set_up_panic_hook();
+                    ::scrypto::component::init_component_system(::scrypto::component::ComponentSystem::new());
+                    ::scrypto::resource::init_resource_system(::scrypto::resource::ResourceSystem::new());
                     let calldata: ::scrypto::engine::api::GetCallDataOutput = ::scrypto::engine::call_engine(
                         ::scrypto::engine::api::GET_CALL_DATA,
                         ::scrypto::engine::api::GetCallDataInput {},
@@ -569,7 +575,7 @@ mod tests {
                             let auth =
                                 ::scrypto::buffer::scrypto_decode::<::scrypto::resource::Proof>(&calldata.args[1usize])
                                 .unwrap( );
-                            let state: blueprint::Test = arg0.get_state();
+                            let state: blueprint::Test = component!(arg0).get_state();
                             rtn = ::scrypto::buffer::scrypto_encode_for_radix_engine(&blueprint::Test::x(&state, auth));
                         }
                         _ => {

@@ -9,7 +9,7 @@ blueprint! {
     impl System {
         /// Publishes a package.
         pub fn publish_package(code: Vec<u8>) -> PackageId {
-            publish_package(&code)
+            component_system().publish_package(&code)
         }
 
         /// Creates a resource.
@@ -21,7 +21,7 @@ blueprint! {
             authorities: HashMap<ResourceDefId, u64>,
             initial_supply: Option<Supply>,
         ) -> (ResourceDefId, Option<Bucket>) {
-            create_resource(
+            resource_system().instantiate_resource_definition(
                 resource_type,
                 metadata,
                 flags,
@@ -32,8 +32,8 @@ blueprint! {
         }
 
         /// Mints fungible resource.
-        pub fn mint(amount: Decimal, mut resource_def_id: ResourceDefId, auth: Proof) -> Bucket {
-            resource_def_id.mint(amount, auth)
+        pub fn mint(amount: Decimal, resource_def_id: ResourceDefId, auth: Proof) -> Bucket {
+            resource_def!(resource_def_id).mint(amount, auth)
         }
 
         /// Gives away XRD tokens for testing.

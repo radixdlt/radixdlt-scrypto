@@ -1,2 +1,2 @@
-pub mod bucket;
 pub mod badge;
+pub mod bucket;

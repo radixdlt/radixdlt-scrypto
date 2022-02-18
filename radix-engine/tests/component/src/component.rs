@@ -22,7 +22,10 @@ blueprint! {
         }
 
         pub fn get_component_info(component_id: ComponentId) -> (PackageId, String) {
-            (component_id.package_id(), component_id.blueprint_name())
+            (
+                component!(component_id).package_id(),
+                component!(component_id).blueprint_name(),
+            )
         }
 
         pub fn get_component_state(&self) -> String {

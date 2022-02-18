@@ -24,10 +24,15 @@ pub trait ComponentState: Encode + Decode {
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub struct ComponentId(pub [u8; 26]);
 
-impl ComponentId {
+impl ComponentId {}
+
+#[derive(Debug)]
+pub struct Component(pub(crate) ComponentId);
+
+impl Component {
     /// Invokes a method on this component.
     pub fn call<T: Decode>(&self, method: &str, args: Vec<Vec<u8>>) -> T {
-        let output = Process::call_method(*self, method, args);
+        let output = Process::call_method(self.0, method, args);
 
         scrypto_decode(&output).unwrap()
     }
@@ -51,7 +56,7 @@ impl ComponentId {
     /// Returns the package ID of this component.
     pub fn package_id(&self) -> PackageId {
         let input = GetComponentInfoInput {
-            component_id: *self,
+            component_id: self.0,
         };
         let output: GetComponentInfoOutput = call_engine(GET_COMPONENT_INFO, input);
         output.package_id
@@ -60,7 +65,7 @@ impl ComponentId {
     /// Returns the blueprint name of this component.
     pub fn blueprint_name(&self) -> String {
         let input = GetComponentInfoInput {
-            component_id: *self,
+            component_id: self.0,
         };
         let output: GetComponentInfoOutput = call_engine(GET_COMPONENT_INFO, input);
         output.blueprint_name

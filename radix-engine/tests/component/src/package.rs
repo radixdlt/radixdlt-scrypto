@@ -5,7 +5,7 @@ blueprint! {
 
     impl PackageTest {
         pub fn publish() -> PackageId {
-            publish_package(include_bytes!("../../../../assets/system.wasm"))
+            component_system().publish_package(include_bytes!("../../../../assets/system.wasm"))
         }
     }
 }

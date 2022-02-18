@@ -4,6 +4,7 @@ use crate::engine::{api::*, call_engine, types::BucketId};
 use crate::math::*;
 use crate::misc::*;
 use crate::resource::*;
+use crate::resource_def;
 #[cfg(not(feature = "alloc"))]
 use crate::rust::fmt;
 use crate::rust::vec::Vec;
@@ -70,12 +71,12 @@ impl Bucket {
 
     /// Burns resource within this bucket.
     pub fn burn(self) {
-        self.resource_def_id().burn(self);
+        resource_def!(self.resource_def_id()).burn(self);
     }
 
     /// Burns resource within this bucket.
     pub fn burn_with_auth(self, auth: Proof) {
-        self.resource_def_id().burn_with_auth(self, auth);
+        resource_def!(self.resource_def_id()).burn_with_auth(self, auth);
     }
 
     /// Checks if this bucket is empty.
@@ -111,11 +112,11 @@ impl Bucket {
         let input = GetNonFungibleKeysInBucketInput { bucket_id: self.0 };
         let output: GetNonFungibleKeysInBucketOutput =
             call_engine(GET_NON_FUNGIBLE_KEYS_IN_BUCKET, input);
-        let resource_def = self.resource_def_id();
+        let resource_def_id = self.resource_def_id();
         output
             .keys
             .iter()
-            .map(|id| NonFungible::from((resource_def, id.clone())))
+            .map(|key| NonFungible::from((resource_def_id, key.clone())))
             .collect()
     }
 
@@ -150,7 +151,7 @@ impl Bucket {
     /// # Panics
     /// Panics if this is not a non-fungible bucket.
     pub fn get_non_fungible_data<T: NonFungibleData>(&self, key: &NonFungibleKey) -> T {
-        self.resource_def_id().get_non_fungible_data(key)
+        resource_def!(self.resource_def_id()).get_non_fungible_data(key)
     }
 
     /// Updates the mutable part of the data of a non-fungible unit.
@@ -163,8 +164,7 @@ impl Bucket {
         new_data: T,
         auth: Proof,
     ) {
-        self.resource_def_id()
-            .update_non_fungible_data(key, new_data, auth)
+        resource_def!(self.resource_def_id()).update_non_fungible_data(key, new_data, auth)
     }
 }
 
