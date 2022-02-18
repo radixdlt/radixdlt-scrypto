@@ -60,17 +60,14 @@ impl ResourceSystem {
     }
 }
 
-#[allow(dead_code)]
 static mut RESOURCE_SYSTEM: Option<ResourceSystem> = None;
 
 /// Initializes resource subsystem.
-#[allow(dead_code)]
 pub fn init_resource_system(system: ResourceSystem) {
     unsafe { RESOURCE_SYSTEM = Some(system) }
 }
 
 /// Returns the resource subsystem.
-#[allow(dead_code)]
 pub fn resource_system() -> &'static mut ResourceSystem {
     unsafe { RESOURCE_SYSTEM.as_mut().unwrap() }
 }

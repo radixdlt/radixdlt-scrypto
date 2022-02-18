@@ -19,7 +19,6 @@ pub struct ComponentSystem {
 
 impl ComponentSystem {
     /// Creates a component system.
-    #[allow(dead_code)]
     pub fn new() -> Self {
         Self {
             packages: HashMap::new(),
@@ -68,17 +67,14 @@ impl ComponentSystem {
     }
 }
 
-#[allow(dead_code)]
 static mut COMPONENT_SYSTEM: Option<ComponentSystem> = None;
 
 /// Initializes component subsystem.
-#[allow(dead_code)]
 pub fn init_component_system(system: ComponentSystem) {
     unsafe { COMPONENT_SYSTEM = Some(system) }
 }
 
 /// Returns the component subsystem.
-#[allow(dead_code)]
 pub fn component_system() -> &'static mut ComponentSystem {
     unsafe { COMPONENT_SYSTEM.as_mut().unwrap() }
 }
