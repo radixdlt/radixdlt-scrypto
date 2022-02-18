@@ -29,6 +29,7 @@ pub use vault::{ParseVaultError, Vault};
 
 use crate::engine::{api::*, call_engine};
 use crate::rust::collections::HashMap;
+use crate::rust::string::String;
 
 /// Creates a resource with the given parameters.
 ///

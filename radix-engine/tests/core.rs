@@ -41,7 +41,7 @@ fn test_call() {
     let mut executor = TransactionExecutor::new(&mut ledger, true);
     let key = executor.new_public_key();
     let account = executor.new_account(key);
-    let package = executor.publish_package(&compile("call")).unwrap();
+    let package = executor.publish_package(&compile("core")).unwrap();
 
     let transaction = TransactionBuilder::new(&executor)
         .call_function(package, "MoveTest", "move_bucket", vec![], Some(account))

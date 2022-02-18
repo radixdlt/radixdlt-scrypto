@@ -8,6 +8,7 @@ pub use package::{PackageId, ParsePackageIdError};
 
 use crate::buffer::*;
 use crate::engine::{api::*, call_engine};
+use crate::rust::borrow::ToOwned;
 
 /// Instantiates a component.
 pub fn instantiate_component<T: ComponentState>(package_id: PackageId, state: T) -> ComponentId {
