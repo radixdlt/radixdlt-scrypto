@@ -74,8 +74,8 @@ jobs:
     - name: Run tests (no_std)
       run: cargo test --verbose --no-default-features --features alloc
       working-directory: scrypto-tests
-  scrypto-core-examples:
-    name: Run Scrypto core examples
+  scrypto-examples:
+    name: Run Scrypto examples
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -92,62 +92,9 @@ jobs:
     - name: Build system
       run: cargo build --target wasm32-unknown-unknown --release
       working-directory: assets/system
-    - name: Test hello-nft
+    - name: Build and test hello-world
       run: cargo build --target wasm32-unknown-unknown --release && cargo test --release
-      working-directory: examples/core/hello-nft
-    - name: Test hello-world
-      run: cargo build --target wasm32-unknown-unknown --release && cargo test --release
-      working-directory: examples/core/hello-world
-    - name: Test cross-blueprint-call
-      run: cargo build --target wasm32-unknown-unknown --release && cargo test --release
-      working-directory: examples/core/cross-blueprint-call
-    - name: Test flat-admin
-      run: cargo build --target wasm32-unknown-unknown --release && cargo test --release
-      working-directory: examples/core/flat-admin
-    - name: Test managed-access
-      run: cargo build --target wasm32-unknown-unknown --release && cargo test --release
-      working-directory: examples/core/managed-access
-    - name: Test gumball-machine
-      run: cargo build --target wasm32-unknown-unknown --release && cargo test --release
-      working-directory: examples/core/gumball-machine
-    - name: Build no-std-lib
-      run: cargo build --target wasm32-unknown-unknown --release
-      working-directory: examples/core/no-std-lib
-  scrypto-defi-examples:
-    name: Run Scrypto DeFi examples
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest]
-    steps:
-    - uses: actions/checkout@v2
-    - name: Add wasm target
-      run: rustup target add wasm32-unknown-unknown
-    - name: Run demo
-      run: ./demo.sh
-      working-directory: examples/defi
-    - name: Test auto-lend
-      run: cargo build --target wasm32-unknown-unknown --release && cargo test --release
-      working-directory: examples/defi/auto-lend
-    - name: Test x-perp-futures
-      run: cargo build --target wasm32-unknown-unknown --release && cargo test --release
-      working-directory: examples/defi/x-perp-futures
-  scrypto-nft-examples:
-    name: Run Scrypto NFT examples
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest]
-    steps:
-    - uses: actions/checkout@v2
-    - name: Add wasm target
-      run: rustup target add wasm32-unknown-unknown
-    - name: Test magic-card
-      run: cargo build --target wasm32-unknown-unknown --release && cargo test --release
-      working-directory: examples/nft/magic-card
-    - name: Test sporting-event
-      run: cargo build --target wasm32-unknown-unknown --release && cargo test --release
-      working-directory: examples/nft/sporting-event
+      working-directory: examples/hello-world
   radix-engine:
     name: Run Radix Engine tests
     runs-on: ${{ matrix.os }}
