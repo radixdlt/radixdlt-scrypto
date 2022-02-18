@@ -4,6 +4,7 @@ use crate::engine::{api::*, call_engine};
 use crate::math::*;
 use crate::misc::*;
 use crate::resource::*;
+use crate::rust::borrow::ToOwned;
 use crate::rust::collections::HashMap;
 use crate::rust::fmt;
 use crate::rust::str::FromStr;
@@ -202,9 +203,9 @@ impl ResourceDef {
 // error
 //========
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ParseResourceDefIdError {
-    InvalidHex(hex::FromHexError),
+    InvalidHex(String),
     InvalidLength(usize),
     InvalidPrefix,
 }
@@ -252,7 +253,8 @@ impl FromStr for ResourceDefId {
     type Err = ParseResourceDefIdError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let bytes = hex::decode(s).map_err(ParseResourceDefIdError::InvalidHex)?;
+        let bytes =
+            hex::decode(s).map_err(|_| ParseResourceDefIdError::InvalidHex(s.to_owned()))?;
         if bytes.get(0) != Some(&3u8) {
             return Err(ParseResourceDefIdError::InvalidPrefix);
         }

@@ -1,7 +1,9 @@
 use sbor::{describe::Type, *};
 
+use crate::rust::borrow::ToOwned;
 use crate::rust::fmt;
 use crate::rust::str::FromStr;
+use crate::rust::string::String;
 use crate::rust::string::ToString;
 use crate::rust::vec::Vec;
 use crate::types::*;
@@ -26,9 +28,9 @@ impl From<u128> for NonFungibleKey {
 // error
 //========
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ParseNonFungibleKeyError {
-    InvalidHex(hex::FromHexError),
+    InvalidHex(String),
 }
 
 #[cfg(not(feature = "alloc"))]
@@ -69,7 +71,8 @@ impl FromStr for NonFungibleKey {
     type Err = ParseNonFungibleKeyError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let bytes = hex::decode(s).map_err(ParseNonFungibleKeyError::InvalidHex)?;
+        let bytes =
+            hex::decode(s).map_err(|_| ParseNonFungibleKeyError::InvalidHex(s.to_owned()))?;
         Self::try_from(bytes.as_slice())
     }
 }

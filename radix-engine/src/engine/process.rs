@@ -86,6 +86,7 @@ enum InterpreterState {
 
 /// Top level state machine for a process. Empty currently only
 /// refers to the initial process since it doesn't run on a wasm interpreter (yet)
+#[allow(dead_code)]
 struct WasmProcess {
     /// The call depth
     depth: usize,

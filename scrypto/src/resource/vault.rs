@@ -6,8 +6,10 @@ use crate::math::*;
 use crate::misc::*;
 use crate::resource::*;
 use crate::resource_def;
+use crate::rust::borrow::ToOwned;
 use crate::rust::fmt;
 use crate::rust::str::FromStr;
+use crate::rust::string::String;
 use crate::rust::vec::Vec;
 use crate::types::*;
 
@@ -238,9 +240,9 @@ impl Vault {
 // error
 //========
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ParseVaultError {
-    InvalidHex(hex::FromHexError),
+    InvalidHex(String),
     InvalidLength(usize),
 }
 
@@ -290,7 +292,7 @@ impl FromStr for Vault {
     type Err = ParseVaultError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let bytes = hex::decode(s).map_err(ParseVaultError::InvalidHex)?;
+        let bytes = hex::decode(s).map_err(|_| ParseVaultError::InvalidHex(s.to_owned()))?;
         Self::try_from(bytes.as_slice())
     }
 }

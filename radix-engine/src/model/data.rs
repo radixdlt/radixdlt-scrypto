@@ -13,7 +13,7 @@ use scrypto::types::*;
 
 use crate::errors::DataValidationError;
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct ValidatedData {
     pub raw: Vec<u8>,
     pub dom: Value,

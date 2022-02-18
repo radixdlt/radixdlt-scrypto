@@ -172,7 +172,7 @@ impl Bucket {
 // error
 //========
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ParseBucketError {
     InvalidLength(usize),
 }

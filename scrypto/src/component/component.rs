@@ -5,6 +5,7 @@ use crate::component::*;
 use crate::core::*;
 use crate::engine::{api::*, call_engine};
 use crate::misc::*;
+use crate::rust::borrow::ToOwned;
 use crate::rust::fmt;
 use crate::rust::str::FromStr;
 use crate::rust::string::String;
@@ -76,9 +77,9 @@ impl Component {
 // error
 //========
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ParseComponentIdError {
-    InvalidHex(hex::FromHexError),
+    InvalidHex(String),
     InvalidLength(usize),
     InvalidPrefix,
 }
@@ -126,7 +127,7 @@ impl FromStr for ComponentId {
     type Err = ParseComponentIdError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let bytes = hex::decode(s).map_err(ParseComponentIdError::InvalidHex)?;
+        let bytes = hex::decode(s).map_err(|_| ParseComponentIdError::InvalidHex(s.to_owned()))?;
         if bytes.get(0) != Some(&2u8) {
             return Err(ParseComponentIdError::InvalidPrefix);
         }

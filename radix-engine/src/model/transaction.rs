@@ -78,13 +78,13 @@ pub enum Instruction {
     End { signatures: Vec<EcdsaPublicKey> },
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ValidatedTransaction {
     pub instructions: Vec<ValidatedInstruction>,
     pub signers: Vec<EcdsaPublicKey>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ValidatedInstruction {
     TakeFromWorktop {
         amount: Decimal,
