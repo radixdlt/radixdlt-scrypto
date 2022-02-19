@@ -23,7 +23,13 @@ fn test_withdraw_all() {
 
     // Test the `instantiate_managed_access` function.
     let transaction1 = TransactionBuilder::new(&executor)
-        .call_function(package, "ManagedAccess", "instantiate_managed_access", vec![], None)
+        .call_function(
+            package,
+            "ManagedAccess",
+            "instantiate_managed_access",
+            vec![],
+            None,
+        )
         .call_method_with_all_resources(account, "deposit_batch")
         .build(vec![key])
         .unwrap();

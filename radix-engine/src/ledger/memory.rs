@@ -1,7 +1,7 @@
 use scrypto::prelude::scrypto_decode;
 use scrypto::prelude::scrypto_encode;
-use scrypto::rust::vec::Vec;
 use scrypto::rust::collections::HashMap;
+use scrypto::rust::vec::Vec;
 use scrypto::types::*;
 
 use crate::ledger::*;
@@ -12,7 +12,7 @@ use crate::model::*;
 pub struct InMemorySubstateStore {
     packages: HashMap<Address, Package>,
     components: HashMap<Address, Component>,
-    lazy_maps: HashMap<(Address, Mid), LazyMap>,
+    lazy_map_entries: HashMap<(Address, Mid, Vec<u8>), Vec<u8>>,
     resource_defs: HashMap<Address, ResourceDef>,
     vaults: HashMap<(Address, Vid), Vec<u8>>,
     non_fungibles: HashMap<(Address, NonFungibleKey), NonFungible>,
@@ -25,7 +25,7 @@ impl InMemorySubstateStore {
         Self {
             packages: HashMap::new(),
             components: HashMap::new(),
-            lazy_maps: HashMap::new(),
+            lazy_map_entries: HashMap::new(),
             resource_defs: HashMap::new(),
             vaults: HashMap::new(),
             non_fungibles: HashMap::new(),
@@ -72,20 +72,33 @@ impl SubstateStore for InMemorySubstateStore {
         self.components.insert(address, component);
     }
 
-    fn get_lazy_map(&self, component_address: &Address, mid: &Mid) -> Option<LazyMap> {
-        self.lazy_maps
-            .get(&(component_address.clone(), mid.clone()))
-            .map(Clone::clone)
+    fn get_lazy_map_entry(
+        &self,
+        component_address: &Address,
+        mid: &Mid,
+        key: &[u8],
+    ) -> Option<Vec<u8>> {
+        self.lazy_map_entries
+            .get(&(component_address.clone(), mid.clone(), key.to_vec()))
+            .cloned()
     }
 
-    fn put_lazy_map(&mut self, component_address: Address, mid: Mid, lazy_map: LazyMap) {
-        self.lazy_maps.insert((component_address, mid), lazy_map);
+    fn put_lazy_map_entry(
+        &mut self,
+        component_address: Address,
+        mid: Mid,
+        key: Vec<u8>,
+        value: Vec<u8>,
+    ) {
+        self.lazy_map_entries
+            .insert((component_address, mid, key), value);
     }
 
-    fn get_vault(&self, component_address: &Address, vid: &Vid) -> Option<Vault> {
+    fn get_vault(&self, component_address: &Address, vid: &Vid) -> Vault {
         self.vaults
             .get(&(component_address.clone(), vid.clone()))
             .map(|data| scrypto_decode(data).unwrap())
+            .unwrap()
     }
 
     fn put_vault(&mut self, component_address: Address, vid: Vid, vault: Vault) {

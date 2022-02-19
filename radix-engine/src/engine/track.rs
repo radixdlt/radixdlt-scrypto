@@ -26,12 +26,12 @@ pub struct Track<'s, S: SubstateStore> {
     packages: HashMap<Address, Package>,
     components: HashMap<Address, Component>,
     resource_defs: HashMap<Address, ResourceDef>,
-    lazy_maps: HashMap<(Address, Mid), LazyMap>,
+    lazy_map_entries: HashMap<(Address, Mid, Vec<u8>), Vec<u8>>,
     vaults: HashMap<(Address, Vid), Vault>,
     non_fungibles: HashMap<(Address, NonFungibleKey), NonFungible>,
     updated_packages: HashSet<Address>,
     updated_components: HashSet<Address>,
-    updated_lazy_maps: HashSet<(Address, Mid)>,
+    updated_lazy_map_entries: HashSet<(Address, Mid, Vec<u8>)>,
     updated_resource_defs: HashSet<Address>,
     updated_vaults: HashSet<(Address, Vid)>,
     updated_non_fungibles: HashSet<(Address, NonFungibleKey)>,
@@ -54,12 +54,12 @@ impl<'s, S: SubstateStore> Track<'s, S> {
             packages: HashMap::new(),
             components: HashMap::new(),
             resource_defs: HashMap::new(),
-            lazy_maps: HashMap::new(),
+            lazy_map_entries: HashMap::new(),
             vaults: HashMap::new(),
             non_fungibles: HashMap::new(),
             updated_packages: HashSet::new(),
             updated_components: HashSet::new(),
-            updated_lazy_maps: HashSet::new(),
+            updated_lazy_map_entries: HashSet::new(),
             updated_resource_defs: HashSet::new(),
             updated_vaults: HashSet::new(),
             updated_non_fungibles: HashSet::new(),
@@ -268,48 +268,38 @@ impl<'s, S: SubstateStore> Track<'s, S> {
             .insert((resource_address, key.clone()), non_fungible);
     }
 
-    /// Returns an immutable reference to a lazy map, if exists.
-    pub fn get_lazy_map(&mut self, component_address: &Address, mid: &Mid) -> Option<&LazyMap> {
-        let lazy_map_id = (component_address.clone(), mid.clone());
-
-        if self.lazy_maps.contains_key(&lazy_map_id) {
-            return self.lazy_maps.get(&lazy_map_id);
-        }
-
-        if let Some(lazy_map) = self.ledger.get_lazy_map(component_address, mid) {
-            self.lazy_maps.insert(lazy_map_id, lazy_map);
-            self.lazy_maps.get(&lazy_map_id)
-        } else {
-            None
-        }
-    }
-
-    /// Returns a mutable reference to a lazy map, if exists.
-    pub fn get_lazy_map_mut(
+    /// Returns a mutable reference to a lazy map
+    pub fn get_lazy_map_entry(
         &mut self,
         component_address: &Address,
         mid: &Mid,
-    ) -> Option<&mut LazyMap> {
-        let lazy_map_id = (component_address.clone(), mid.clone());
-        self.updated_lazy_maps.insert(lazy_map_id.clone());
+        key: &[u8],
+    ) -> Option<Vec<u8>> {
+        let entry_id = (component_address.clone(), mid.clone(), key.to_vec());
+        self.updated_lazy_map_entries.insert(entry_id.clone());
 
-        if self.lazy_maps.contains_key(&lazy_map_id) {
-            return self.lazy_maps.get_mut(&lazy_map_id);
+        if self.lazy_map_entries.contains_key(&entry_id) {
+            return Some(self.lazy_map_entries.get(&entry_id).unwrap().clone());
         }
 
-        if let Some(lazy_map) = self.ledger.get_lazy_map(component_address, mid) {
-            self.lazy_maps.insert(lazy_map_id, lazy_map);
-            self.lazy_maps.get_mut(&lazy_map_id)
-        } else {
-            None
+        let value = self.ledger.get_lazy_map_entry(component_address, mid, key);
+        if let Some(ref entry_bytes) = value {
+            self.lazy_map_entries.insert(entry_id, entry_bytes.clone());
         }
+        value
     }
 
     /// Inserts a new lazy map.
-    pub fn put_lazy_map(&mut self, component_address: Address, mid: Mid, lazy_map: LazyMap) {
-        let lazy_map_id = (component_address, mid);
-        self.updated_lazy_maps.insert(lazy_map_id.clone());
-        self.lazy_maps.insert(lazy_map_id, lazy_map);
+    pub fn put_lazy_map_entry(
+        &mut self,
+        component_address: Address,
+        mid: Mid,
+        key: Vec<u8>,
+        value: Vec<u8>,
+    ) {
+        let lazy_map_id = (component_address, mid, key);
+        self.updated_lazy_map_entries.insert(lazy_map_id.clone());
+        self.lazy_map_entries.insert(lazy_map_id, value);
     }
 
     /// Returns an immutable reference to a resource definition, if exists.
@@ -351,20 +341,17 @@ impl<'s, S: SubstateStore> Track<'s, S> {
     }
 
     /// Returns a mutable reference to a vault, if exists.
-    pub fn get_vault_mut(&mut self, component_address: &Address, vid: &Vid) -> Option<&mut Vault> {
+    pub fn get_vault_mut(&mut self, component_address: &Address, vid: &Vid) -> &mut Vault {
         let vault_id = (component_address.clone(), vid.clone());
         self.updated_vaults.insert(vault_id.clone());
 
         if self.vaults.contains_key(&vault_id) {
-            return self.vaults.get_mut(&vault_id);
+            return self.vaults.get_mut(&vault_id).unwrap();
         }
 
-        if let Some(vault) = self.ledger.get_vault(component_address, vid) {
-            self.vaults.insert(vault_id, vault);
-            self.vaults.get_mut(&vault_id)
-        } else {
-            None
-        }
+        let vault = self.ledger.get_vault(component_address, vid);
+        self.vaults.insert(vault_id, vault);
+        self.vaults.get_mut(&vault_id).unwrap()
     }
 
     /// Inserts a new vault.
@@ -447,13 +434,14 @@ impl<'s, S: SubstateStore> Track<'s, S> {
                 .put_resource_def(address, self.resource_defs.get(&address).unwrap().clone());
         }
 
-        for (component_address, mid) in self.updated_lazy_maps.clone() {
-            let lazy_map = self
-                .lazy_maps
-                .get(&(component_address, mid))
+        for (component_address, mid, key) in self.updated_lazy_map_entries.clone() {
+            let value = self
+                .lazy_map_entries
+                .get(&(component_address, mid, key.clone()))
                 .unwrap()
                 .clone();
-            self.ledger.put_lazy_map(component_address, mid, lazy_map);
+            self.ledger
+                .put_lazy_map_entry(component_address, mid, key, value);
         }
 
         for (component_address, vid) in self.updated_vaults.clone() {

@@ -15,7 +15,13 @@ fn test_create_additional_admin() {
 
     // Test the `instantiate_flat_admin` function.
     let transaction1 = TransactionBuilder::new(&executor)
-        .call_function(package, "FlatAdmin", "instantiate_flat_admin", vec!["test".to_string()], None)
+        .call_function(
+            package,
+            "FlatAdmin",
+            "instantiate_flat_admin",
+            vec!["test".to_string()],
+            None,
+        )
         .call_method_with_all_resources(account, "deposit_batch")
         .build(vec![key])
         .unwrap();

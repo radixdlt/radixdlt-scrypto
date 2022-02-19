@@ -1,17 +1,26 @@
 use scrypto::rust::collections::*;
+use scrypto::rust::vec::Vec;
 use scrypto::types::*;
 
 use crate::model::*;
 
 #[derive(Debug)]
 pub struct UnclaimedLazyMap {
-    pub lazy_map: LazyMap,
+    pub lazy_map: HashMap<Vec<u8>, Vec<u8>>,
     /// All descendents (not just direct children) of the unclaimed lazy map
-    pub descendent_lazy_maps: HashMap<Mid, LazyMap>,
+    pub descendent_lazy_maps: HashMap<Mid, HashMap<Vec<u8>, Vec<u8>>>,
     pub descendent_vaults: HashMap<Vid, Vault>,
 }
 
 impl UnclaimedLazyMap {
+    pub fn new() -> Self {
+        UnclaimedLazyMap {
+            lazy_map: HashMap::new(),
+            descendent_lazy_maps: HashMap::new(),
+            descendent_vaults: HashMap::new(),
+        }
+    }
+
     fn insert_vault(&mut self, vid: Vid, vault: Vault) {
         if self.descendent_vaults.contains_key(&vid) {
             panic!("duplicate vault insertion: {}", vid);
@@ -20,7 +29,7 @@ impl UnclaimedLazyMap {
         self.descendent_vaults.insert(vid, vault);
     }
 
-    fn insert_lazy_map(&mut self, mid: Mid, lazy_map: LazyMap) {
+    fn insert_lazy_map(&mut self, mid: Mid, lazy_map: HashMap<Vec<u8>, Vec<u8>>) {
         if self.descendent_lazy_maps.contains_key(&mid) {
             panic!("duplicate map insertion: {}", mid);
         }
@@ -131,7 +140,17 @@ impl ComponentObjects {
         unclaimed_map.insert_descendents(new_objects);
     }
 
-    pub fn get_lazy_map_mut(&mut self, mid: &Mid) -> Option<(Mid, &mut LazyMap)> {
+    pub fn insert_lazy_map_entry(&mut self, mid: &Mid, key: Vec<u8>, value: Vec<u8>) {
+        let (_, lazy_map) = self.get_lazy_map_mut(mid).unwrap();
+        lazy_map.insert(key, value);
+    }
+
+    pub fn get_lazy_map_entry(&mut self, mid: &Mid, key: &[u8]) -> Option<(Mid, Option<Vec<u8>>)> {
+        self.get_lazy_map_mut(mid)
+            .map(|(mid, lazy_map)| (mid, lazy_map.get(key).map(|v| v.to_vec())))
+    }
+
+    fn get_lazy_map_mut(&mut self, mid: &Mid) -> Option<(Mid, &mut HashMap<Vec<u8>, Vec<u8>>)> {
         // TODO: Optimize to prevent iteration
         for (root, unclaimed) in self.lazy_maps.iter_mut() {
             if mid.eq(root) {

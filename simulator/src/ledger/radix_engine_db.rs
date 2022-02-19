@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::path::PathBuf;
 
 use radix_engine::ledger::*;
@@ -24,88 +25,137 @@ impl RadixEngineDB {
     }
 
     pub fn list_packages(&self) -> Vec<Address> {
-        self.list_items(Address::Package([0; 26]), Address::Package([255; 26]))
+        let start = &scrypto_encode(&Address::Package([0; 26]));
+        let end = &scrypto_encode(&Address::Package([255; 26]));
+        self.list_items(start, end)
     }
 
     pub fn list_components(&self) -> Vec<Address> {
-        self.list_items(Address::Component([0; 26]), Address::Component([255; 26]))
+        let start = &scrypto_encode(&Address::Component([0; 26]));
+        let end = &scrypto_encode(&Address::Component([255; 26]));
+        self.list_items(start, end)
     }
 
     pub fn list_resource_defs(&self) -> Vec<Address> {
-        self.list_items(
-            Address::ResourceDef([0; 26]),
-            Address::ResourceDef([255; 26]),
-        )
+        let start = &scrypto_encode(&Address::ResourceDef([0; 26]));
+        let end = &scrypto_encode(&Address::ResourceDef([255; 26]));
+        self.list_items(start, end)
     }
 
-    fn list_items<K: Encode + Decode>(&self, start: K, end: K) -> Vec<K> {
-        let mut iter = self.db.iterator(IteratorMode::From(
-            &scrypto_encode(&start),
-            Direction::Forward,
-        ));
+    fn list_items(&self, start: &[u8], inclusive_end: &[u8]) -> Vec<Address> {
+        let mut iter = self
+            .db
+            .iterator(IteratorMode::From(start, Direction::Forward));
         let mut items = Vec::new();
         while let Some(kv) = iter.next() {
-            if kv.0.as_ref() > &scrypto_encode(&end) {
+            if kv.0.as_ref() > inclusive_end {
                 break;
             }
-            items.push(scrypto_decode(kv.0.as_ref()).unwrap());
+            if kv.0.len() == 27 {
+                items.push(scrypto_decode(kv.0.as_ref()).unwrap());
+            }
         }
         items
     }
 
-    fn read<K: Encode, V: Decode>(&self, key: &K) -> Option<V> {
+    fn read<V: Decode>(&self, key: &[u8]) -> Option<V> {
         self.db
-            .get(scrypto_encode(key))
+            .get(key)
             .unwrap()
             .map(|bytes| scrypto_decode(&bytes).unwrap())
     }
 
-    fn write<K: Encode, V: Encode>(&self, key: K, value: V) {
-        self.db
-            .put(scrypto_encode(&key), scrypto_encode(&value))
-            .unwrap();
+    fn write<V: Encode>(&self, key: &[u8], value: V) {
+        self.db.put(key, scrypto_encode(&value)).unwrap();
+    }
+}
+
+impl QueryableSubstateStore for RadixEngineDB {
+    fn get_lazy_map_entries(
+        &self,
+        component_address: &Address,
+        mid: &Mid,
+    ) -> HashMap<Vec<u8>, Vec<u8>> {
+        let mut id = scrypto_encode(component_address);
+        id.extend(scrypto_encode(mid));
+
+        let mut iter = self
+            .db
+            .iterator(IteratorMode::From(&id, Direction::Forward));
+        let mut items = HashMap::new();
+        while let Some((key, value)) = iter.next() {
+            if !key.starts_with(&id) {
+                break;
+            }
+            items.insert(key.to_vec(), value.to_vec());
+        }
+        items
     }
 }
 
 impl SubstateStore for RadixEngineDB {
     fn get_resource_def(&self, address: Address) -> Option<ResourceDef> {
-        self.read(&address)
+        self.read(&scrypto_encode(&address))
     }
 
     fn put_resource_def(&mut self, address: Address, resource_def: ResourceDef) {
-        self.write(address, resource_def)
+        let key = &scrypto_encode(&address);
+        self.write(key, resource_def)
     }
 
     fn get_package(&self, address: Address) -> Option<Package> {
-        self.read(&address)
+        self.read(&scrypto_encode(&address))
     }
 
     fn put_package(&mut self, address: Address, package: Package) {
-        self.write(address, package)
+        let key = &scrypto_encode(&address);
+        self.write(key, package)
     }
 
     fn get_component(&self, address: Address) -> Option<Component> {
-        self.read(&address)
+        self.read(&scrypto_encode(&address))
     }
 
     fn put_component(&mut self, address: Address, component: Component) {
-        self.write(address, component)
+        let key = &scrypto_encode(&address);
+        self.write(key, component)
     }
 
-    fn get_lazy_map(&self, component_address: &Address, mid: &Mid) -> Option<LazyMap> {
-        self.read(&(component_address.clone(), mid.clone()))
+    fn get_lazy_map_entry(
+        &self,
+        component_address: &Address,
+        mid: &Mid,
+        key: &[u8],
+    ) -> Option<Vec<u8>> {
+        let mut id = scrypto_encode(component_address);
+        id.extend(scrypto_encode(mid));
+        id.extend(key.to_vec());
+        self.read(&id)
     }
 
-    fn put_lazy_map(&mut self, component_address: Address, mid: Mid, lazy_map: LazyMap) {
-        self.write((component_address, mid), lazy_map)
+    fn put_lazy_map_entry(
+        &mut self,
+        component_address: Address,
+        mid: Mid,
+        key: Vec<u8>,
+        value: Vec<u8>,
+    ) {
+        let mut id = scrypto_encode(&component_address);
+        id.extend(scrypto_encode(&mid));
+        id.extend(key);
+        self.write(&id, value)
     }
 
-    fn get_vault(&self, component_address: &Address, vid: &Vid) -> Option<Vault> {
-        self.read(&(component_address.clone(), vid.clone()))
+    fn get_vault(&self, component_address: &Address, vid: &Vid) -> Vault {
+        let mut id = scrypto_encode(component_address);
+        id.extend(scrypto_encode(vid));
+        self.read(&id).unwrap()
     }
 
     fn put_vault(&mut self, component_address: Address, vid: Vid, vault: Vault) {
-        self.write((component_address, vid), vault)
+        let mut id = scrypto_encode(&component_address);
+        id.extend(scrypto_encode(&vid));
+        self.write(&id, vault)
     }
 
     fn get_non_fungible(
@@ -113,7 +163,8 @@ impl SubstateStore for RadixEngineDB {
         resource_address: Address,
         key: &NonFungibleKey,
     ) -> Option<NonFungible> {
-        self.read(&(resource_address, key.clone()))
+        let id = scrypto_encode(&(resource_address, key.clone()));
+        self.read(&id)
     }
 
     fn put_non_fungible(
@@ -122,22 +173,27 @@ impl SubstateStore for RadixEngineDB {
         key: &NonFungibleKey,
         non_fungible: NonFungible,
     ) {
-        self.write((resource_address, key.clone()), non_fungible)
+        let id = scrypto_encode(&(resource_address, key.clone()));
+        self.write(&id, non_fungible)
     }
 
     fn get_epoch(&self) -> u64 {
-        self.read(&"epoch").unwrap_or(0)
+        let id = scrypto_encode(&"epoch");
+        self.read(&id).unwrap_or(0)
     }
 
     fn set_epoch(&mut self, epoch: u64) {
-        self.write("epoch", epoch)
+        let id = scrypto_encode(&"epoch");
+        self.write(&id, epoch)
     }
 
     fn get_nonce(&self) -> u64 {
-        self.read(&"nonce").unwrap_or(0)
+        let id = scrypto_encode(&"nonce");
+        self.read(&id).unwrap_or(0)
     }
 
     fn increase_nonce(&mut self) {
-        self.write("nonce", self.get_nonce() + 1)
+        let id = scrypto_encode(&"nonce");
+        self.write(&id, self.get_nonce() + 1)
     }
 }
