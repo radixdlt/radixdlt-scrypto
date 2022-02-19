@@ -1,5 +1,7 @@
 use lru::LruCache;
+use scrypto::buffer::scrypto_decode;
 use scrypto::engine::*;
+use scrypto::prelude::scrypto_encode;
 use scrypto::rust::collections::*;
 use scrypto::rust::string::String;
 use scrypto::rust::vec::Vec;
@@ -18,7 +20,7 @@ use crate::model::*;
 /// Typically, a track is shared by all the processes created within a transaction.
 ///
 pub struct Track<'s, S: SubstateStore> {
-    ledger: &'s mut S,
+    substate_store: &'s mut S,
     transaction_hash: H256,
     transaction_signers: Vec<EcdsaPublicKey>,
     id_allocator: IdAllocator,
@@ -42,7 +44,7 @@ impl<'s, S: SubstateStore> Track<'s, S> {
         transaction_signers: Vec<EcdsaPublicKey>,
     ) -> Self {
         Self {
-            ledger,
+            substate_store: ledger,
             transaction_hash,
             transaction_signers,
             id_allocator: IdAllocator::new(IdSpace::Application),
@@ -88,7 +90,7 @@ impl<'s, S: SubstateStore> Track<'s, S> {
 
     /// Returns the current epoch.
     pub fn current_epoch(&self) -> u64 {
-        self.ledger.get_epoch()
+        self.substate_store.get_epoch()
     }
 
     /// Returns the logs collected so far.
@@ -129,7 +131,7 @@ impl<'s, S: SubstateStore> Track<'s, S> {
             return self.packages.get(&address);
         }
 
-        if let Some(package) = self.ledger.get_package(&address) {
+        if let Some(package) = self.substate_store.get_package(&address) {
             self.packages.insert(address, package);
             self.packages.get(&address)
         } else {
@@ -144,7 +146,7 @@ impl<'s, S: SubstateStore> Track<'s, S> {
             return self.packages.get_mut(&address);
         }
 
-        if let Some(package) = self.ledger.get_package(&address) {
+        if let Some(package) = self.substate_store.get_package(&address) {
             self.packages.insert(address, package);
             self.packages.get_mut(&address)
         } else {
@@ -163,7 +165,7 @@ impl<'s, S: SubstateStore> Track<'s, S> {
             return self.components.get(&address);
         }
 
-        if let Some(component) = self.ledger.get_component(&address) {
+        if let Some(component) = self.substate_store.get_component(&address) {
             self.components.insert(address, component);
             self.components.get(&address)
         } else {
@@ -176,7 +178,7 @@ impl<'s, S: SubstateStore> Track<'s, S> {
             return self.components.get_mut(&address);
         }
 
-        if let Some(component) = self.ledger.get_component(&address) {
+        if let Some(component) = self.substate_store.get_component(&address) {
             self.components.insert(address, component);
             self.components.get_mut(&address)
         } else {
@@ -202,7 +204,7 @@ impl<'s, S: SubstateStore> Track<'s, S> {
             return self.non_fungibles.get(&(resource_address, key.clone()));
         }
 
-        if let Some(non_fungible) = self.ledger.get_non_fungible(&resource_address, &key) {
+        if let Some(non_fungible) = self.substate_store.get_non_fungible(&resource_address, &key) {
             self.non_fungibles
                 .insert((resource_address, key.clone()), non_fungible);
             self.non_fungibles.get(&(resource_address, key.clone()))
@@ -224,7 +226,7 @@ impl<'s, S: SubstateStore> Track<'s, S> {
             return self.non_fungibles.get_mut(&(resource_address, key.clone()));
         }
 
-        if let Some(non_fungible) = self.ledger.get_non_fungible(&resource_address, &key) {
+        if let Some(non_fungible) = self.substate_store.get_non_fungible(&resource_address, &key) {
             self.non_fungibles
                 .insert((resource_address, key.clone()), non_fungible);
             self.non_fungibles.get_mut(&(resource_address, key.clone()))
@@ -257,7 +259,7 @@ impl<'s, S: SubstateStore> Track<'s, S> {
             return Some(self.lazy_map_entries.get(&entry_id).unwrap().clone());
         }
 
-        let value = self.ledger.get_lazy_map_entry(component_address, mid, key);
+        let value = self.substate_store.get_lazy_map_entry(component_address, mid, key);
         if let Some(ref entry_bytes) = value {
             self.lazy_map_entries.insert(entry_id, entry_bytes.clone());
         }
@@ -276,13 +278,18 @@ impl<'s, S: SubstateStore> Track<'s, S> {
         self.lazy_map_entries.insert(lazy_map_id, value);
     }
 
+    fn get_resource_def_internal(&self, address: &Address) -> Option<ResourceDef> {
+        self.substate_store.get_substate(address)
+            .and_then(|v| scrypto_decode(&v).map(|r| Some(r)).unwrap_or(None))
+    }
+
     /// Returns an immutable reference to a resource definition, if exists.
     pub fn get_resource_def(&mut self, address: Address) -> Option<&ResourceDef> {
         if self.resource_defs.contains_key(&address) {
             return self.resource_defs.get(&address);
         }
 
-        if let Some(resource_def) = self.ledger.get_resource_def(&address) {
+        if let Some(resource_def) = self.get_resource_def_internal(&address) {
             self.resource_defs.insert(address, resource_def);
             self.resource_defs.get(&address)
         } else {
@@ -297,7 +304,7 @@ impl<'s, S: SubstateStore> Track<'s, S> {
             return self.resource_defs.get_mut(&address);
         }
 
-        if let Some(resource_def) = self.ledger.get_resource_def(&address) {
+        if let Some(resource_def) = self.get_resource_def_internal(&address) {
             self.resource_defs.insert(address, resource_def);
             self.resource_defs.get_mut(&address)
         } else {
@@ -318,7 +325,7 @@ impl<'s, S: SubstateStore> Track<'s, S> {
             return self.vaults.get_mut(&vault_id).unwrap();
         }
 
-        let vault = self.ledger.get_vault(component_address, vid);
+        let vault = self.substate_store.get_vault(component_address, vid);
         self.vaults.insert(vault_id, vault);
         self.vaults.get_mut(&vault_id).unwrap()
     }
@@ -392,40 +399,41 @@ impl<'s, S: SubstateStore> Track<'s, S> {
         let package_addresses: Vec<Address> = self.packages.iter().map(|(address, _)| address.clone()).collect();
         for package_address in package_addresses {
             let package = self.packages.remove(&package_address).unwrap();
-            self.ledger.put_package(&package_address, package);
+            self.substate_store.put_package(&package_address, package);
         }
 
         let component_addresses: Vec<Address> = self.components.iter().map(|(address, _)| address.clone()).collect();
         for component_address in component_addresses {
             let component = self.components.remove(&component_address).unwrap();
-            self.ledger.put_component(&component_address, component);
+            self.substate_store.put_component(&component_address, component);
         }
 
         let resource_def_addresses: Vec<Address> = self.resource_defs.iter().map(|(address, _)| address.clone()).collect();
         for resource_def_address in resource_def_addresses {
             let resource_def = self.resource_defs.remove(&resource_def_address).unwrap();
-            self.ledger.put_resource_def(&resource_def_address, resource_def);
+            let value = &scrypto_encode(&resource_def);
+            self.substate_store.put_substate(&resource_def_address, value);
         }
 
         let entry_ids: Vec<(Address, Mid, Vec<u8>)> = self.lazy_map_entries.iter().map(|(id, _)| id.clone()).collect();
         for entry_id in entry_ids {
             let entry = self.lazy_map_entries.remove(&entry_id).unwrap();
             let (component_address, mid, key) = entry_id;
-            self.ledger.put_lazy_map_entry(&component_address, &mid, &key, entry);
+            self.substate_store.put_lazy_map_entry(&component_address, &mid, &key, entry);
         }
 
         let vault_ids: Vec<(Address, Vid)> = self.vaults.iter().map(|(id, _)| id.clone()).collect();
         for vault_id in vault_ids {
             let vault = self.vaults.remove(&vault_id).unwrap();
             let (component_address, vid) = vault_id;
-            self.ledger.put_vault(&component_address, &vid, vault);
+            self.substate_store.put_vault(&component_address, &vid, vault);
         }
 
         let non_fungible_ids: Vec<(Address, NonFungibleKey)> = self.non_fungibles.iter().map(|(id, _)| id.clone()).collect();
         for non_fungible_id in non_fungible_ids {
             let non_fungible = self.non_fungibles.remove(&non_fungible_id).unwrap();
             let (resource_address, non_fungible_key) = non_fungible_id;
-            self.ledger.put_non_fungible(&resource_address, &non_fungible_key, non_fungible);
+            self.substate_store.put_non_fungible(&resource_address, &non_fungible_key, non_fungible);
         }
     }
 }

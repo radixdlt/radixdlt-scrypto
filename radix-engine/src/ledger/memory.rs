@@ -13,7 +13,7 @@ pub struct InMemorySubstateStore {
     packages: HashMap<Address, Package>,
     components: HashMap<Address, Component>,
     lazy_map_entries: HashMap<(Address, Mid, Vec<u8>), Vec<u8>>,
-    resource_defs: HashMap<Address, ResourceDef>,
+    resource_defs: HashMap<Address, Vec<u8>>,
     vaults: HashMap<(Address, Vid), Vec<u8>>,
     non_fungibles: HashMap<(Address, NonFungibleKey), NonFungible>,
     current_epoch: u64,
@@ -48,12 +48,12 @@ impl Default for InMemorySubstateStore {
 }
 
 impl SubstateStore for InMemorySubstateStore {
-    fn get_resource_def(&self, address: &Address) -> Option<ResourceDef> {
-        self.resource_defs.get(&address).map(Clone::clone)
+    fn get_substate(&self, address: &Address) -> Option<Vec<u8>> {
+        self.resource_defs.get(address).cloned()
     }
 
-    fn put_resource_def(&mut self, address: &Address, resource_def: ResourceDef) {
-        self.resource_defs.insert(*address, resource_def);
+    fn put_substate(&mut self, address: &Address, substate: &[u8]) {
+        self.resource_defs.insert(*address, substate.to_vec());
     }
 
     fn get_package(&self, address: &Address) -> Option<Package> {

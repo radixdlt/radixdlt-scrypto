@@ -1,4 +1,5 @@
 use colored::*;
+use scrypto::buffer::scrypto_decode;
 use radix_engine::engine::*;
 use radix_engine::ledger::*;
 use radix_engine::model::*;
@@ -103,7 +104,7 @@ fn dump_resources<T: SubstateStore>(
         let vault = ledger.get_vault(&address, vid);
         let amount = vault.amount();
         let resource_address = vault.resource_address();
-        let resource_def = ledger.get_resource_def(&resource_address).unwrap();
+        let resource_def: ResourceDef = scrypto_decode(&ledger.get_substate(&resource_address).unwrap()).unwrap();
         println!(
             "{} {{ amount: {}, resource_def: {}{}{} }}",
             list_item_prefix(last),
@@ -144,7 +145,7 @@ pub fn dump_resource_def<T: SubstateStore>(
     address: Address,
     ledger: &T,
 ) -> Result<(), DisplayError> {
-    let resource_def = ledger.get_resource_def(&address);
+    let resource_def: Option<ResourceDef> = scrypto_decode(&ledger.get_substate(&address).unwrap()).unwrap();
     match resource_def {
         Some(r) => {
             println!(

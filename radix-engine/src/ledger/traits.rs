@@ -32,9 +32,10 @@ pub trait QueryableSubstateStore {
 
 /// A ledger stores all transactions and substates.
 pub trait SubstateStore {
+    fn get_substate(&self, address: &Address) -> Option<Vec<u8>>;
+    fn put_substate(&mut self, address: &Address, substate: &[u8]);
+
     /// Top Level Objects
-    fn get_resource_def(&self, address: &Address) -> Option<ResourceDef>;
-    fn put_resource_def(&mut self, address: &Address, resource_def: ResourceDef);
     fn get_package(&self, address: &Address) -> Option<Package>;
     fn put_package(&mut self, address: &Address, package: Package);
     fn get_component(&self, address: &Address) -> Option<Component>;
@@ -88,33 +89,28 @@ pub trait SubstateStore {
             metadata.insert("name".to_owned(), XRD_NAME.to_owned());
             metadata.insert("description".to_owned(), XRD_DESCRIPTION.to_owned());
             metadata.insert("url".to_owned(), XRD_URL.to_owned());
-            self.put_resource_def(
-                &RADIX_TOKEN,
-                ResourceDef::new(
-                    ResourceType::Fungible { divisibility: 18 },
-                    metadata,
-                    0,
-                    0,
-                    HashMap::new(),
-                    &Some(NewSupply::Fungible {
-                        amount: XRD_MAX_SUPPLY.into(),
-                    }),
-                )
-                .unwrap(),
-            );
 
-            self.put_resource_def(
-                &ECDSA_TOKEN,
-                ResourceDef::new(
-                    ResourceType::NonFungible,
-                    HashMap::new(),
-                    0,
-                    0,
-                    HashMap::new(),
-                    &None,
-                )
-                .unwrap(),
-            );
+            let xrd = ResourceDef::new(
+                ResourceType::Fungible { divisibility: 18 },
+                metadata,
+                0,
+                0,
+                HashMap::new(),
+                &Some(NewSupply::Fungible {
+                    amount: XRD_MAX_SUPPLY.into(),
+                }),
+            ).unwrap();
+            self.put_substate(&RADIX_TOKEN, &scrypto_encode(&xrd));
+            let ecdsa_token = ResourceDef::new(
+                ResourceType::NonFungible,
+                HashMap::new(),
+                0,
+                0,
+                HashMap::new(),
+                &None,
+            ).unwrap();
+
+            self.put_substate(&ECDSA_TOKEN, &scrypto_encode(&ecdsa_token));
 
             // Instantiate system component
             self.put_vault(
