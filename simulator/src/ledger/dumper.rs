@@ -31,7 +31,7 @@ pub fn dump_package<T: SubstateStore>(
 }
 
 /// Dump a component into console.
-pub fn dump_component<T: SubstateStore>(
+pub fn dump_component<T: SubstateStore + QueryableSubstateStore>(
     component_id: ComponentId,
     ledger: &T,
 ) -> Result<(), DisplayError> {
@@ -54,10 +54,8 @@ pub fn dump_component<T: SubstateStore>(
             let state_validated = ValidatedData::from_slice(state).unwrap();
             println!("{}: {}", "State".green().bold(), state_validated);
 
-            // TODO: check authorization
             // The current implementation recursively displays all referenced maps and vaults which
             // the component may not have access to.
-
             // Dump lazy map using DFS
             // Consider using a proper Queue structure
             let mut queue: Vec<LazyMapId> = state_validated.lazy_map_ids.clone();
@@ -69,7 +67,7 @@ pub fn dump_component<T: SubstateStore>(
                 let lazy_map_id = queue[i];
                 i += 1;
                 if maps_visited.insert(lazy_map_id) {
-                    let (maps, vaults) = dump_lazy_map(component_id, lazy_map_id, ledger)?;
+                    let (maps, vaults) = dump_lazy_map(component_id, &lazy_map_id, ledger)?;
                     queue.extend(maps);
                     for v in vaults {
                         vaults_found.insert(v);
@@ -84,32 +82,24 @@ pub fn dump_component<T: SubstateStore>(
     }
 }
 
-fn dump_lazy_map<T: SubstateStore>(
+fn dump_lazy_map<T: SubstateStore + QueryableSubstateStore>(
     component_id: ComponentId,
-    lazy_map_id: LazyMapId,
-    ledger: &T,
+    lazy_map_id: &LazyMapId,
+    substate_store: &T,
 ) -> Result<(Vec<LazyMapId>, Vec<VaultId>), DisplayError> {
     let mut referenced_maps = Vec::new();
     let mut referenced_vaults = Vec::new();
-    let map = ledger.get_lazy_map(component_id, lazy_map_id).unwrap();
+    let map = substate_store.get_lazy_map_entries(component_id, lazy_map_id);
     println!(
         "{}: {:?}{:?}",
         "Lazy Map".green().bold(),
         component_id,
         lazy_map_id
     );
-    for (last, (k, v)) in map.map().iter().identify_last() {
-        let k_validated = ValidatedData::from_slice(k).unwrap();
+    for (last, (k, v)) in map.iter().identify_last() {
         let v_validated = ValidatedData::from_slice(v).unwrap();
-        println!(
-            "{} {} => {}",
-            list_item_prefix(last),
-            k_validated,
-            v_validated
-        );
-        referenced_maps.extend(k_validated.lazy_map_ids);
+        println!("{} {:?} => {}", list_item_prefix(last), k, v_validated);
         referenced_maps.extend(v_validated.lazy_map_ids);
-        referenced_vaults.extend(k_validated.vault_ids);
         referenced_vaults.extend(v_validated.vault_ids);
     }
     Ok((referenced_maps, referenced_vaults))
@@ -122,7 +112,7 @@ fn dump_resources<T: SubstateStore>(
 ) -> Result<(), DisplayError> {
     println!("{}:", "Resources".green().bold());
     for (last, vault_id) in vaults.iter().identify_last() {
-        let vault = ledger.get_vault(component_id, *vault_id).unwrap();
+        let vault = ledger.get_vault(component_id, vault_id);
         let amount = vault.amount();
         let resource_def_id = vault.resource_def_id();
         let resource_def = ledger.get_resource_def(resource_def_id).unwrap();

@@ -4,6 +4,7 @@ use scrypto::constants::*;
 use scrypto::engine::types::*;
 use scrypto::rust::borrow::ToOwned;
 use scrypto::rust::collections::*;
+use scrypto::rust::vec::Vec;
 
 use crate::model::*;
 
@@ -22,39 +23,45 @@ struct SystemComponentState {
     xrd: scrypto::resource::Vault,
 }
 
+pub trait QueryableSubstateStore {
+    fn get_lazy_map_entries(
+        &self,
+        component_id: ComponentId,
+        lazy_map_id: &LazyMapId,
+    ) -> HashMap<Vec<u8>, Vec<u8>>;
+}
+
 /// A ledger stores all transactions and substates.
 pub trait SubstateStore {
+    /// Top Level Objects
     fn get_resource_def(&self, resource_def_id: ResourceDefId) -> Option<ResourceDef>;
-
     fn put_resource_def(&mut self, resource_def_id: ResourceDefId, resource_def: ResourceDef);
-
     fn get_package(&self, package_id: PackageId) -> Option<Package>;
-
     fn put_package(&mut self, package_id: PackageId, package: Package);
-
     fn get_component(&self, component_id: ComponentId) -> Option<Component>;
-
     fn put_component(&mut self, component_id: ComponentId, component: Component);
 
-    fn get_lazy_map(&self, component_id: ComponentId, lazy_map_id: LazyMapId) -> Option<LazyMap>;
-
-    fn put_lazy_map(
+    /// Child Objects
+    fn get_lazy_map_entry(
+        &self,
+        component_id: ComponentId,
+        lazy_map_id: &LazyMapId,
+        key: &[u8],
+    ) -> Option<Vec<u8>>;
+    fn put_lazy_map_entry(
         &mut self,
         component_id: ComponentId,
         lazy_map_id: LazyMapId,
-        lazy_map: LazyMap,
+        key: Vec<u8>,
+        value: Vec<u8>,
     );
-
-    fn get_vault(&self, component_id: ComponentId, vault_id: VaultId) -> Option<Vault>;
-
+    fn get_vault(&self, component_id: ComponentId, vault_id: &VaultId) -> Vault;
     fn put_vault(&mut self, component_id: ComponentId, vault_id: VaultId, vault: Vault);
-
     fn get_non_fungible(
         &self,
         resource_def_id: ResourceDefId,
         key: &NonFungibleKey,
     ) -> Option<NonFungible>;
-
     fn put_non_fungible(
         &mut self,
         resource_def_id: ResourceDefId,

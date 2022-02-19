@@ -11,7 +11,7 @@ use crate::model::*;
 pub struct InMemorySubstateStore {
     packages: HashMap<PackageId, Package>,
     components: HashMap<ComponentId, Component>,
-    lazy_maps: HashMap<(ComponentId, LazyMapId), LazyMap>,
+    lazy_map_entries: HashMap<(ComponentId, LazyMapId, Vec<u8>), Vec<u8>>,
     resource_defs: HashMap<ResourceDefId, ResourceDef>,
     vaults: HashMap<(ComponentId, VaultId), Vec<u8>>,
     non_fungibles: HashMap<(ResourceDefId, NonFungibleKey), NonFungible>,
@@ -24,7 +24,7 @@ impl InMemorySubstateStore {
         Self {
             packages: HashMap::new(),
             components: HashMap::new(),
-            lazy_maps: HashMap::new(),
+            lazy_map_entries: HashMap::new(),
             resource_defs: HashMap::new(),
             vaults: HashMap::new(),
             non_fungibles: HashMap::new(),
@@ -71,25 +71,33 @@ impl SubstateStore for InMemorySubstateStore {
         self.components.insert(component_id, component);
     }
 
-    fn get_lazy_map(&self, component_id: ComponentId, lazy_map_id: LazyMapId) -> Option<LazyMap> {
-        self.lazy_maps
-            .get(&(component_id, lazy_map_id))
-            .map(Clone::clone)
+    fn get_lazy_map_entry(
+        &self,
+        component_id: ComponentId,
+        lazy_map_id: &LazyMapId,
+        key: &[u8],
+    ) -> Option<Vec<u8>> {
+        self.lazy_map_entries
+            .get(&(component_id.clone(), lazy_map_id.clone(), key.to_vec()))
+            .cloned()
     }
 
-    fn put_lazy_map(
+    fn put_lazy_map_entry(
         &mut self,
         component_id: ComponentId,
         lazy_map_id: LazyMapId,
-        lazy_map: LazyMap,
+        key: Vec<u8>,
+        value: Vec<u8>,
     ) {
-        self.lazy_maps.insert((component_id, lazy_map_id), lazy_map);
+        self.lazy_map_entries
+            .insert((component_id, lazy_map_id, key), value);
     }
 
-    fn get_vault(&self, component_id: ComponentId, vault_id: VaultId) -> Option<Vault> {
+    fn get_vault(&self, component_id: ComponentId, vault_id: &VaultId) -> Vault {
         self.vaults
             .get(&(component_id.clone(), vault_id.clone()))
             .map(|data| scrypto_decode(data).unwrap())
+            .unwrap()
     }
 
     fn put_vault(&mut self, component_id: ComponentId, vault_id: VaultId, vault: Vault) {

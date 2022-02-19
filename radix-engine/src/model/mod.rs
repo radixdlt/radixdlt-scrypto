@@ -1,7 +1,6 @@
 mod bucket;
 mod component;
 mod data;
-mod lazy_map;
 mod non_fungible;
 mod package;
 mod receipt;
@@ -12,7 +11,6 @@ mod vault;
 pub use bucket::{Bucket, BucketError, LockedBucket, Proof, Resource};
 pub use component::Component;
 pub use data::{format_value, ValidatedData};
-pub use lazy_map::LazyMap;
 pub use non_fungible::NonFungible;
 pub use package::Package;
 pub use receipt::Receipt;

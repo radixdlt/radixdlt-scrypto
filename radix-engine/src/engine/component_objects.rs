@@ -1,18 +1,27 @@
 use scrypto::engine::types::*;
 use scrypto::rust::collections::*;
+use scrypto::rust::vec::Vec;
 
 use crate::errors::*;
 use crate::model::*;
 
 #[derive(Debug)]
 pub struct UnclaimedLazyMap {
-    pub lazy_map: LazyMap,
+    pub lazy_map: HashMap<Vec<u8>, Vec<u8>>,
     /// All descendents (not just direct children) of the unclaimed lazy map
-    pub descendent_lazy_maps: HashMap<LazyMapId, LazyMap>,
+    pub descendent_lazy_maps: HashMap<LazyMapId, HashMap<Vec<u8>, Vec<u8>>>,
     pub descendent_vaults: HashMap<VaultId, Vault>,
 }
 
 impl UnclaimedLazyMap {
+    pub fn new() -> Self {
+        UnclaimedLazyMap {
+            lazy_map: HashMap::new(),
+            descendent_lazy_maps: HashMap::new(),
+            descendent_vaults: HashMap::new(),
+        }
+    }
+
     fn insert_vault(&mut self, vault_id: VaultId, vault: Vault) {
         if self.descendent_vaults.contains_key(&vault_id) {
             panic!("duplicate vault insertion: {:?}", vault_id);
@@ -21,7 +30,7 @@ impl UnclaimedLazyMap {
         self.descendent_vaults.insert(vault_id, vault);
     }
 
-    fn insert_lazy_map(&mut self, lazy_map_id: LazyMapId, lazy_map: LazyMap) {
+    fn insert_lazy_map(&mut self, lazy_map_id: LazyMapId, lazy_map: HashMap<Vec<u8>, Vec<u8>>) {
         if self.descendent_lazy_maps.contains_key(&lazy_map_id) {
             panic!("duplicate map insertion: {:?}", lazy_map_id);
         }
@@ -142,10 +151,24 @@ impl ComponentObjects {
         unclaimed_map.insert_descendents(new_objects);
     }
 
-    pub fn get_lazy_map_mut(
+    pub fn insert_lazy_map_entry(&mut self, lazy_map_id: &LazyMapId, key: Vec<u8>, value: Vec<u8>) {
+        let (_, lazy_map) = self.get_lazy_map_mut(lazy_map_id).unwrap();
+        lazy_map.insert(key, value);
+    }
+
+    pub fn get_lazy_map_entry(
         &mut self,
         lazy_map_id: &LazyMapId,
-    ) -> Option<(LazyMapId, &mut LazyMap)> {
+        key: &[u8],
+    ) -> Option<(LazyMapId, Option<Vec<u8>>)> {
+        self.get_lazy_map_mut(lazy_map_id)
+            .map(|(lazy_map_id, lazy_map)| (lazy_map_id, lazy_map.get(key).map(|v| v.to_vec())))
+    }
+
+    fn get_lazy_map_mut(
+        &mut self,
+        lazy_map_id: &LazyMapId,
+    ) -> Option<(LazyMapId, &mut HashMap<Vec<u8>, Vec<u8>>)> {
         // TODO: Optimize to prevent iteration
         for (root, unclaimed) in self.lazy_maps.iter_mut() {
             if lazy_map_id.eq(root) {
