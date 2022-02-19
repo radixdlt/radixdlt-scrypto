@@ -99,18 +99,9 @@ impl SubstateStore for RadixEngineDB {
         self.write(&scrypto_encode(address), substate);
     }
 
-    fn get_package(&self, address: &Address) -> Option<Package> {
-        self.read(&scrypto_encode(address)).map(|v| scrypto_decode(&v).unwrap())
-    }
-
-    fn put_package(&mut self, address: &Address, package: Package) {
-        let key = &scrypto_encode(address);
-        let value = &scrypto_encode(&package);
-        self.write(key, value)
-    }
-
     fn get_component(&self, address: &Address) -> Option<Component> {
-        self.read(&scrypto_encode(address)).map(|v| scrypto_decode(&v).unwrap())
+        self.read(&scrypto_encode(address))
+            .map(|v| scrypto_decode(&v).unwrap())
     }
 
     fn put_component(&mut self, address: &Address, component: Component) {
@@ -148,9 +139,7 @@ impl SubstateStore for RadixEngineDB {
     fn get_vault(&self, component_address: &Address, vid: &Vid) -> Vault {
         let mut id = scrypto_encode(component_address);
         id.extend(scrypto_encode(vid));
-        self.read(&id)
-            .map(|v| scrypto_decode(&v).unwrap())
-            .unwrap()
+        self.read(&id).map(|v| scrypto_decode(&v).unwrap()).unwrap()
     }
 
     fn put_vault(&mut self, component_address: &Address, vid: &Vid, vault: Vault) {
@@ -166,8 +155,7 @@ impl SubstateStore for RadixEngineDB {
         key: &NonFungibleKey,
     ) -> Option<NonFungible> {
         let id = scrypto_encode(&(resource_address.clone(), key.clone()));
-        self.read(&id)
-            .map(|v| scrypto_decode(&v).unwrap())
+        self.read(&id).map(|v| scrypto_decode(&v).unwrap())
     }
 
     fn put_non_fungible(

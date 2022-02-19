@@ -36,8 +36,6 @@ pub trait SubstateStore {
     fn put_substate(&mut self, address: &Address, substate: &[u8]);
 
     /// Top Level Objects
-    fn get_package(&self, address: &Address) -> Option<Package>;
-    fn put_package(&mut self, address: &Address, package: Package);
     fn get_component(&self, address: &Address) -> Option<Component>;
     fn put_component(&mut self, address: &Address, component: Component);
 
@@ -70,18 +68,19 @@ pub trait SubstateStore {
     );
 
     fn bootstrap(&mut self) {
-        if self.get_package(&SYSTEM_PACKAGE).is_none() {
+        let package: Option<Package> = self
+            .get_substate(&SYSTEM_PACKAGE)
+            .map(|v| scrypto_decode(&v).unwrap());
+        if package.is_none() {
             // System package
-            self.put_package(
-                &SYSTEM_PACKAGE,
-                Package::new(include_bytes!("../../../assets/system.wasm").to_vec()),
-            );
+            let system_package =
+                Package::new(include_bytes!("../../../assets/system.wasm").to_vec());
+            self.put_substate(&SYSTEM_PACKAGE, &scrypto_encode(&system_package));
 
             // Account package
-            self.put_package(
-                &ACCOUNT_PACKAGE,
-                Package::new(include_bytes!("../../../assets/account.wasm").to_vec()),
-            );
+            let account_package =
+                Package::new(include_bytes!("../../../assets/account.wasm").to_vec());
+            self.put_substate(&ACCOUNT_PACKAGE, &scrypto_encode(&account_package));
 
             // Radix token resource definition
             let mut metadata = HashMap::new();
@@ -99,7 +98,8 @@ pub trait SubstateStore {
                 &Some(NewSupply::Fungible {
                     amount: XRD_MAX_SUPPLY.into(),
                 }),
-            ).unwrap();
+            )
+            .unwrap();
             self.put_substate(&RADIX_TOKEN, &scrypto_encode(&xrd));
             let ecdsa_token = ResourceDef::new(
                 ResourceType::NonFungible,
@@ -108,7 +108,8 @@ pub trait SubstateStore {
                 0,
                 HashMap::new(),
                 &None,
-            ).unwrap();
+            )
+            .unwrap();
 
             self.put_substate(&ECDSA_TOKEN, &scrypto_encode(&ecdsa_token));
 

@@ -1,4 +1,5 @@
 use lru::LruCache;
+use sbor::Decode;
 use scrypto::buffer::scrypto_decode;
 use scrypto::engine::*;
 use scrypto::prelude::scrypto_encode;
@@ -131,7 +132,7 @@ impl<'s, S: SubstateStore> Track<'s, S> {
             return self.packages.get(&address);
         }
 
-        if let Some(package) = self.substate_store.get_package(&address) {
+        if let Some(package) = self.get_substate(&address) {
             self.packages.insert(address, package);
             self.packages.get(&address)
         } else {
@@ -146,7 +147,7 @@ impl<'s, S: SubstateStore> Track<'s, S> {
             return self.packages.get_mut(&address);
         }
 
-        if let Some(package) = self.substate_store.get_package(&address) {
+        if let Some(package) = self.get_substate(&address) {
             self.packages.insert(address, package);
             self.packages.get_mut(&address)
         } else {
@@ -204,7 +205,10 @@ impl<'s, S: SubstateStore> Track<'s, S> {
             return self.non_fungibles.get(&(resource_address, key.clone()));
         }
 
-        if let Some(non_fungible) = self.substate_store.get_non_fungible(&resource_address, &key) {
+        if let Some(non_fungible) = self
+            .substate_store
+            .get_non_fungible(&resource_address, &key)
+        {
             self.non_fungibles
                 .insert((resource_address, key.clone()), non_fungible);
             self.non_fungibles.get(&(resource_address, key.clone()))
@@ -226,7 +230,10 @@ impl<'s, S: SubstateStore> Track<'s, S> {
             return self.non_fungibles.get_mut(&(resource_address, key.clone()));
         }
 
-        if let Some(non_fungible) = self.substate_store.get_non_fungible(&resource_address, &key) {
+        if let Some(non_fungible) = self
+            .substate_store
+            .get_non_fungible(&resource_address, &key)
+        {
             self.non_fungibles
                 .insert((resource_address, key.clone()), non_fungible);
             self.non_fungibles.get_mut(&(resource_address, key.clone()))
@@ -259,7 +266,9 @@ impl<'s, S: SubstateStore> Track<'s, S> {
             return Some(self.lazy_map_entries.get(&entry_id).unwrap().clone());
         }
 
-        let value = self.substate_store.get_lazy_map_entry(component_address, mid, key);
+        let value = self
+            .substate_store
+            .get_lazy_map_entry(component_address, mid, key);
         if let Some(ref entry_bytes) = value {
             self.lazy_map_entries.insert(entry_id, entry_bytes.clone());
         }
@@ -278,8 +287,9 @@ impl<'s, S: SubstateStore> Track<'s, S> {
         self.lazy_map_entries.insert(lazy_map_id, value);
     }
 
-    fn get_resource_def_internal(&self, address: &Address) -> Option<ResourceDef> {
-        self.substate_store.get_substate(address)
+    fn get_substate<T: Decode>(&self, address: &Address) -> Option<T> {
+        self.substate_store
+            .get_substate(address)
             .and_then(|v| scrypto_decode(&v).map(|r| Some(r)).unwrap_or(None))
     }
 
@@ -289,7 +299,7 @@ impl<'s, S: SubstateStore> Track<'s, S> {
             return self.resource_defs.get(&address);
         }
 
-        if let Some(resource_def) = self.get_resource_def_internal(&address) {
+        if let Some(resource_def) = self.get_substate(&address) {
             self.resource_defs.insert(address, resource_def);
             self.resource_defs.get(&address)
         } else {
@@ -304,7 +314,7 @@ impl<'s, S: SubstateStore> Track<'s, S> {
             return self.resource_defs.get_mut(&address);
         }
 
-        if let Some(resource_def) = self.get_resource_def_internal(&address) {
+        if let Some(resource_def) = self.get_substate(&address) {
             self.resource_defs.insert(address, resource_def);
             self.resource_defs.get_mut(&address)
         } else {
@@ -392,48 +402,76 @@ impl<'s, S: SubstateStore> Track<'s, S> {
         self.id_allocator.new_mid(self.transaction_hash()).unwrap()
     }
 
-
     /// Commits changes to the underlying ledger.
     /// Currently none of these objects are deleted so all commits are puts
     pub fn commit(&mut self) {
-        let package_addresses: Vec<Address> = self.packages.iter().map(|(address, _)| address.clone()).collect();
+        let package_addresses: Vec<Address> = self
+            .packages
+            .iter()
+            .map(|(address, _)| address.clone())
+            .collect();
         for package_address in package_addresses {
             let package = self.packages.remove(&package_address).unwrap();
-            self.substate_store.put_package(&package_address, package);
+            let value = &scrypto_encode(&package);
+            self.substate_store.put_substate(&package_address, value);
         }
 
-        let component_addresses: Vec<Address> = self.components.iter().map(|(address, _)| address.clone()).collect();
+        let component_addresses: Vec<Address> = self
+            .components
+            .iter()
+            .map(|(address, _)| address.clone())
+            .collect();
         for component_address in component_addresses {
             let component = self.components.remove(&component_address).unwrap();
-            self.substate_store.put_component(&component_address, component);
+            self.substate_store
+                .put_component(&component_address, component);
         }
 
-        let resource_def_addresses: Vec<Address> = self.resource_defs.iter().map(|(address, _)| address.clone()).collect();
+        let resource_def_addresses: Vec<Address> = self
+            .resource_defs
+            .iter()
+            .map(|(address, _)| address.clone())
+            .collect();
         for resource_def_address in resource_def_addresses {
             let resource_def = self.resource_defs.remove(&resource_def_address).unwrap();
             let value = &scrypto_encode(&resource_def);
-            self.substate_store.put_substate(&resource_def_address, value);
+            self.substate_store
+                .put_substate(&resource_def_address, value);
         }
 
-        let entry_ids: Vec<(Address, Mid, Vec<u8>)> = self.lazy_map_entries.iter().map(|(id, _)| id.clone()).collect();
+        let entry_ids: Vec<(Address, Mid, Vec<u8>)> = self
+            .lazy_map_entries
+            .iter()
+            .map(|(id, _)| id.clone())
+            .collect();
         for entry_id in entry_ids {
             let entry = self.lazy_map_entries.remove(&entry_id).unwrap();
             let (component_address, mid, key) = entry_id;
-            self.substate_store.put_lazy_map_entry(&component_address, &mid, &key, entry);
+            self.substate_store
+                .put_lazy_map_entry(&component_address, &mid, &key, entry);
         }
 
         let vault_ids: Vec<(Address, Vid)> = self.vaults.iter().map(|(id, _)| id.clone()).collect();
         for vault_id in vault_ids {
             let vault = self.vaults.remove(&vault_id).unwrap();
             let (component_address, vid) = vault_id;
-            self.substate_store.put_vault(&component_address, &vid, vault);
+            self.substate_store
+                .put_vault(&component_address, &vid, vault);
         }
 
-        let non_fungible_ids: Vec<(Address, NonFungibleKey)> = self.non_fungibles.iter().map(|(id, _)| id.clone()).collect();
+        let non_fungible_ids: Vec<(Address, NonFungibleKey)> = self
+            .non_fungibles
+            .iter()
+            .map(|(id, _)| id.clone())
+            .collect();
         for non_fungible_id in non_fungible_ids {
             let non_fungible = self.non_fungibles.remove(&non_fungible_id).unwrap();
             let (resource_address, non_fungible_key) = non_fungible_id;
-            self.substate_store.put_non_fungible(&resource_address, &non_fungible_key, non_fungible);
+            self.substate_store.put_non_fungible(
+                &resource_address,
+                &non_fungible_key,
+                non_fungible,
+            );
         }
     }
 }

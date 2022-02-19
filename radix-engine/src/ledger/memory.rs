@@ -10,10 +10,9 @@ use crate::model::*;
 /// An in-memory ledger stores all substates in host memory.
 #[derive(Debug, Clone)]
 pub struct InMemorySubstateStore {
-    packages: HashMap<Address, Package>,
+    substates: HashMap<Address, Vec<u8>>,
     components: HashMap<Address, Component>,
     lazy_map_entries: HashMap<(Address, Mid, Vec<u8>), Vec<u8>>,
-    resource_defs: HashMap<Address, Vec<u8>>,
     vaults: HashMap<(Address, Vid), Vec<u8>>,
     non_fungibles: HashMap<(Address, NonFungibleKey), NonFungible>,
     current_epoch: u64,
@@ -23,10 +22,9 @@ pub struct InMemorySubstateStore {
 impl InMemorySubstateStore {
     pub fn new() -> Self {
         Self {
-            packages: HashMap::new(),
             components: HashMap::new(),
             lazy_map_entries: HashMap::new(),
-            resource_defs: HashMap::new(),
+            substates: HashMap::new(),
             vaults: HashMap::new(),
             non_fungibles: HashMap::new(),
             current_epoch: 0,
@@ -49,19 +47,11 @@ impl Default for InMemorySubstateStore {
 
 impl SubstateStore for InMemorySubstateStore {
     fn get_substate(&self, address: &Address) -> Option<Vec<u8>> {
-        self.resource_defs.get(address).cloned()
+        self.substates.get(address).cloned()
     }
 
     fn put_substate(&mut self, address: &Address, substate: &[u8]) {
-        self.resource_defs.insert(*address, substate.to_vec());
-    }
-
-    fn get_package(&self, address: &Address) -> Option<Package> {
-        self.packages.get(&address).map(Clone::clone)
-    }
-
-    fn put_package(&mut self, address: &Address, package: Package) {
-        self.packages.insert(*address, package);
+        self.substates.insert(*address, substate.to_vec());
     }
 
     fn get_component(&self, address: &Address) -> Option<Component> {
@@ -90,8 +80,10 @@ impl SubstateStore for InMemorySubstateStore {
         key: &[u8],
         value: Vec<u8>,
     ) {
-        self.lazy_map_entries
-            .insert((component_address.clone(), mid.clone(), key.to_vec()), value);
+        self.lazy_map_entries.insert(
+            (component_address.clone(), mid.clone(), key.to_vec()),
+            value,
+        );
     }
 
     fn get_vault(&self, component_address: &Address, vid: &Vid) -> Vault {
@@ -103,7 +95,8 @@ impl SubstateStore for InMemorySubstateStore {
 
     fn put_vault(&mut self, component_address: &Address, vid: &Vid, vault: Vault) {
         let data = scrypto_encode(&vault);
-        self.vaults.insert((component_address.clone(), vid.clone()), data);
+        self.vaults
+            .insert((component_address.clone(), vid.clone()), data);
     }
 
     fn get_non_fungible(

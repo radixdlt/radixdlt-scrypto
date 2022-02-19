@@ -1,4 +1,5 @@
 use scrypto::abi;
+use scrypto::prelude::{scrypto_decode, scrypto_encode};
 use scrypto::rust::string::ToString;
 use scrypto::rust::vec;
 use scrypto::rust::vec::Vec;
@@ -22,9 +23,10 @@ impl<'l, L: SubstateStore> AbiProvider for TransactionExecutor<'l, L> {
         package_address: Address,
         blueprint_name: A,
     ) -> Result<abi::Blueprint, RuntimeError> {
-        let p = self
+        let p: Package = self
             .ledger
-            .get_package(&package_address)
+            .get_substate(&package_address)
+            .and_then(|v| scrypto_decode(&v).map(|p| Some(p)).unwrap_or(None))
             .ok_or(RuntimeError::PackageNotFound(package_address))?;
 
         BasicAbiProvider::new(self.trace)
@@ -40,9 +42,10 @@ impl<'l, L: SubstateStore> AbiProvider for TransactionExecutor<'l, L> {
             .ledger
             .get_component(&component_address)
             .ok_or(RuntimeError::ComponentNotFound(component_address))?;
-        let p = self
+        let p: Package = self
             .ledger
-            .get_package(&c.package_address())
+            .get_substate(&c.package_address())
+            .and_then(|v| scrypto_decode(&v).map(|p| Some(p)).unwrap_or(None))
             .ok_or(RuntimeError::PackageNotFound(c.package_address()))?;
         BasicAbiProvider::new(self.trace)
             .with_package(c.package_address(), p.code().to_vec())
@@ -114,8 +117,8 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
 
     /// Publishes a package to a specified address.
     pub fn overwrite_package(&mut self, address: Address, code: &[u8]) {
-        self.ledger
-            .put_package(&address, Package::new(code.to_vec()));
+        let value = &scrypto_encode(&Package::new(code.to_vec()));
+        self.ledger.put_substate(&address, value);
     }
 
     /// This is a convenience method that validates and runs a transaction in one shot.

@@ -42,7 +42,8 @@ impl BasicAbiProvider {
     }
 
     pub fn with_package(&mut self, address: Address, code: Vec<u8>) -> &mut Self {
-        self.ledger.put_package(&address, Package::new(code));
+        let value = &scrypto_encode(&Package::new(code));
+        self.ledger.put_substate(&address, value);
         self
     }
 
