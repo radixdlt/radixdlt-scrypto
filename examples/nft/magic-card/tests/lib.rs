@@ -11,9 +11,9 @@ fn test_magic_card() {
     let account = executor.new_account(key);
     let package = executor.publish_package(include_code!("magic_card")).unwrap();
 
-    // Test the `new` function.
+    // Test the `instantiate_component` function.
     let transaction1 = TransactionBuilder::new(&executor)
-        .call_function(package, "HelloNft", "new", vec![], None)
+        .call_function(package, "HelloNft", "instantiate_component", vec![], None)
         .build(vec![])
         .unwrap();
     let receipt1 = executor.run(transaction1).unwrap();

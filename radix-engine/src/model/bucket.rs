@@ -25,7 +25,7 @@ pub enum Supply {
 }
 
 /// A transient resource container.
-#[derive(Debug, Clone, TypeId, Encode, Decode)]
+#[derive(Debug, TypeId, Encode, Decode)]
 pub struct Bucket {
     resource_address: Address,
     resource_type: ResourceType,
@@ -33,7 +33,7 @@ pub struct Bucket {
 }
 
 /// A bucket becomes locked after a borrow operation.
-#[derive(Debug, Clone, TypeId, Encode, Decode)]
+#[derive(Debug, TypeId, Encode, Decode)]
 pub struct LockedBucket {
     bucket_id: Bid,
     bucket: Bucket,

@@ -141,11 +141,11 @@ impl<'s, S: SubstateStore> Track<'s, S> {
             self.put_vault(component_address, vid, vault);
         }
         for (mid, unclaimed) in new_objects.lazy_maps {
-            for (k, v) in unclaimed.lazy_map.map {
+            for (k, v) in unclaimed.lazy_map {
                 self.put_lazy_map_entry(component_address, mid, k, v);
             }
             for (child_mid, child_lazy_map) in unclaimed.descendent_lazy_maps {
-                for (k, v) in child_lazy_map.map {
+                for (k, v) in child_lazy_map {
                     self.put_lazy_map_entry(component_address, child_mid, k, v);
                 }
             }
@@ -361,12 +361,15 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             self,
             "(Transaction) Calling method with all resources started"
         );
+
         // 1. Move collected resource to temp buckets
-        for (_, bucket) in self.worktop.clone() {
+        let resource_addresses: Vec<Address> =
+            self.worktop.iter().map(|(k, _)| k).cloned().collect();
+        for addr in resource_addresses {
             let bid = self.track.new_bid(); // this is unbounded
+            let bucket = self.worktop.remove(&addr).unwrap();
             self.buckets.insert(bid, bucket);
         }
-        self.worktop.clear();
 
         // 2. Drop all bucket refs to unlock the buckets
         self.drop_all_bucket_refs()?;
@@ -1123,14 +1126,10 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .as_mut()
             .ok_or(RuntimeError::IllegalSystemCall())?;
         let mid = self.track.new_mid();
-        wasm_process.process_owned_objects.lazy_maps.insert(
-            mid,
-            UnclaimedLazyMap {
-                lazy_map: LazyMap::new(),
-                descendent_lazy_maps: HashMap::new(),
-                descendent_vaults: HashMap::new(),
-            },
-        );
+        wasm_process
+            .process_owned_objects
+            .lazy_maps
+            .insert(mid, UnclaimedLazyMap::new());
         Ok(CreateLazyMapOutput { mid })
     }
 

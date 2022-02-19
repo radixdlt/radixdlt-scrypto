@@ -118,9 +118,9 @@ resim new-account
 ```
 resim publish .
 ```
-3. Call the `new` function to instantiate a component, and save the component address
+3. Call the `instantiate_component` function to instantiate a component, and save the component address
 ```
-resim call-function <PACKAGE_ADDRESS> HelloNft new
+resim call-function <PACKAGE_ADDRESS> HelloNft instantiate_component
 ```
 4. Call the `buy_random_card` method of the component we just instantiated
 ```

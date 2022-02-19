@@ -17,7 +17,7 @@ pub enum DisplayError {
 
 /// Dump a package into console.
 pub fn dump_package<T: SubstateStore>(address: Address, ledger: &T) -> Result<(), DisplayError> {
-    let package = ledger.get_package(address);
+    let package = ledger.get_package(&address);
     match package {
         Some(b) => {
             println!("{}: {}", "Package".green().bold(), address.to_string());
@@ -33,7 +33,7 @@ pub fn dump_component<T: SubstateStore + QueryableSubstateStore>(
     address: Address,
     ledger: &T,
 ) -> Result<(), DisplayError> {
-    let component = ledger.get_component(address);
+    let component = ledger.get_component(&address);
     match component {
         Some(c) => {
             println!("{}: {}", "Component".green().bold(), address.to_string());
@@ -86,12 +86,7 @@ fn dump_lazy_map<T: SubstateStore + QueryableSubstateStore>(
     println!("{}: {:?}{:?}", "Lazy Map".green().bold(), address, mid);
     for (last, (k, v)) in map.iter().identify_last() {
         let v_validated = validate_data(v).unwrap();
-        println!(
-            "{} {:?} => {}",
-            list_item_prefix(last),
-            k,
-            v_validated
-        );
+        println!("{} {:?} => {}", list_item_prefix(last), k, v_validated);
         referenced_maps.extend(v_validated.lazy_maps);
         referenced_vaults.extend(v_validated.vaults);
     }
@@ -108,7 +103,7 @@ fn dump_resources<T: SubstateStore>(
         let vault = ledger.get_vault(&address, vid);
         let amount = vault.amount();
         let resource_address = vault.resource_address();
-        let resource_def = ledger.get_resource_def(resource_address).unwrap();
+        let resource_def = ledger.get_resource_def(&resource_address).unwrap();
         println!(
             "{} {{ amount: {}, resource_def: {}{}{} }}",
             list_item_prefix(last),
@@ -127,7 +122,7 @@ fn dump_resources<T: SubstateStore>(
         );
         if let Supply::NonFungible { keys } = vault.total_supply() {
             for (inner_last, key) in keys.iter().identify_last() {
-                let non_fungible = ledger.get_non_fungible(resource_address, key).unwrap();
+                let non_fungible = ledger.get_non_fungible(&resource_address, key).unwrap();
                 let immutable_data = validate_data(&non_fungible.immutable_data()).unwrap();
                 let mutable_data = validate_data(&non_fungible.mutable_data()).unwrap();
                 println!(
@@ -149,7 +144,7 @@ pub fn dump_resource_def<T: SubstateStore>(
     address: Address,
     ledger: &T,
 ) -> Result<(), DisplayError> {
-    let resource_def = ledger.get_resource_def(address);
+    let resource_def = ledger.get_resource_def(&address);
     match resource_def {
         Some(r) => {
             println!(

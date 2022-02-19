@@ -7,7 +7,7 @@ r#"
     "name": "Airdrop",
     "functions": [
         {
-            "name": "new",
+            "name": "instantiate_airdrop",
             "inputs": [],
             "output": {
                 "type": "Custom",
@@ -38,10 +38,10 @@ blueprint! {
     }
 
     impl Proxy1 {
-        pub fn new() -> Component {
+        pub fn instantiate_proxy() -> Component {
             Self {
-                // The new() function returns a generic Component. We use `.into()` to convert it into an `Airdrop`.
-                airdrop: Airdrop::new().into(),
+                // The instantiate_airdrop() function returns a generic Component. We use `.into()` to convert it into an `Airdrop`.
+                airdrop: Airdrop::instantiate_airdrop().into(),
             }
             .instantiate()
         }
