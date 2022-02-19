@@ -39,6 +39,13 @@ fn test_non_fungible() {
         .call_function(
             package,
             "NonFungibleTest",
+            "non_fungible_exists",
+            vec![],
+            Some(account),
+        )
+        .call_function(
+            package,
+            "NonFungibleTest",
             "take_and_put_bucket",
             vec![],
             Some(account),

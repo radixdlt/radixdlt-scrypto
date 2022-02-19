@@ -88,6 +88,13 @@ blueprint! {
             (mint_badge, bucket)
         }
 
+        pub fn non_fungible_exists() -> (Bucket, Bucket) {
+            let (mint_badge, resource_def, bucket) = Self::create_non_fungible_mutable();
+            assert_eq!(resource_def.non_fungible_exists(&NonFungibleKey::from(0u128)), true);
+            assert_eq!(resource_def.non_fungible_exists(&NonFungibleKey::from(1u128)), false);
+            (mint_badge, bucket)
+        }
+
         pub fn take_and_put_bucket() -> Bucket {
             let mut bucket = Self::create_non_fungible_fixed();
             assert_eq!(bucket.amount(), 3.into());
