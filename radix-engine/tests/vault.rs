@@ -80,6 +80,30 @@ fn non_existent_vault_in_committed_component_should_fail() {
     assert!(!result.is_ok());
 }
 
+#[test]
+fn non_existent_vault_in_lazy_map_creation_should_fail() {
+    // Arrange
+    let mut ledger = InMemorySubstateStore::with_bootstrap();
+    let mut sut = TransactionExecutor::new(&mut ledger, false);
+    let package = sut.publish_package(&compile("vault")).unwrap();
+
+    // Act
+    let result = TransactionBuilder::new(&sut)
+        .call_function(
+            package,
+            "NonExistentVault",
+            "create_lazy_map_with_non_existent_vault",
+            vec![],
+            None,
+        )
+        .build(vec![]);
+    let transaction = result.unwrap();
+    let receipt = sut.run(transaction).unwrap();
+    let result = &receipt.result;
+
+    // Assert
+    assert!(!result.is_ok());
+}
 
 
 #[test]
