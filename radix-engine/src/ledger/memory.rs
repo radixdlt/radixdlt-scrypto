@@ -11,7 +11,6 @@ use crate::model::*;
 #[derive(Debug, Clone)]
 pub struct InMemorySubstateStore {
     substates: HashMap<Address, Vec<u8>>,
-    components: HashMap<Address, Component>,
     lazy_map_entries: HashMap<(Address, Mid, Vec<u8>), Vec<u8>>,
     vaults: HashMap<(Address, Vid), Vec<u8>>,
     non_fungibles: HashMap<(Address, NonFungibleKey), NonFungible>,
@@ -22,7 +21,6 @@ pub struct InMemorySubstateStore {
 impl InMemorySubstateStore {
     pub fn new() -> Self {
         Self {
-            components: HashMap::new(),
             lazy_map_entries: HashMap::new(),
             substates: HashMap::new(),
             vaults: HashMap::new(),
@@ -52,14 +50,6 @@ impl SubstateStore for InMemorySubstateStore {
 
     fn put_substate(&mut self, address: &Address, substate: &[u8]) {
         self.substates.insert(*address, substate.to_vec());
-    }
-
-    fn get_component(&self, address: &Address) -> Option<Component> {
-        self.components.get(&address).map(Clone::clone)
-    }
-
-    fn put_component(&mut self, address: &Address, component: Component) {
-        self.components.insert(*address, component);
     }
 
     fn get_lazy_map_entry(

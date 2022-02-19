@@ -38,9 +38,10 @@ impl<'l, L: SubstateStore> AbiProvider for TransactionExecutor<'l, L> {
         &self,
         component_address: Address,
     ) -> Result<abi::Blueprint, RuntimeError> {
-        let c = self
+        let c: Component = self
             .ledger
-            .get_component(&component_address)
+            .get_substate(&component_address)
+            .and_then(|v| scrypto_decode(&v).map(|p| Some(p)).unwrap_or(None))
             .ok_or(RuntimeError::ComponentNotFound(component_address))?;
         let p: Package = self
             .ledger

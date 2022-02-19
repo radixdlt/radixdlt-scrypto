@@ -36,7 +36,9 @@ pub fn dump_component<T: SubstateStore + QueryableSubstateStore>(
     address: Address,
     ledger: &T,
 ) -> Result<(), DisplayError> {
-    let component = ledger.get_component(&address);
+    let component: Option<Component> = ledger
+        .get_substate(&address)
+        .map(|v| scrypto_decode(&v).unwrap());
     match component {
         Some(c) => {
             println!("{}: {}", "Component".green().bold(), address.to_string());

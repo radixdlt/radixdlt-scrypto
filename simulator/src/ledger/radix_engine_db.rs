@@ -99,17 +99,6 @@ impl SubstateStore for RadixEngineDB {
         self.write(&scrypto_encode(address), substate);
     }
 
-    fn get_component(&self, address: &Address) -> Option<Component> {
-        self.read(&scrypto_encode(address))
-            .map(|v| scrypto_decode(&v).unwrap())
-    }
-
-    fn put_component(&mut self, address: &Address, component: Component) {
-        let key = &scrypto_encode(address);
-        let value = &scrypto_encode(&component);
-        self.write(key, value)
-    }
-
     fn get_lazy_map_entry(
         &self,
         component_address: &Address,

@@ -35,10 +35,6 @@ pub trait SubstateStore {
     fn get_substate(&self, address: &Address) -> Option<Vec<u8>>;
     fn put_substate(&mut self, address: &Address, substate: &[u8]);
 
-    /// Top Level Objects
-    fn get_component(&self, address: &Address) -> Option<Component>;
-    fn put_component(&mut self, address: &Address, component: Component);
-
     /// Child Objects
     fn get_lazy_map_entry(
         &self,
@@ -125,14 +121,13 @@ pub trait SubstateStore {
                     },
                 )),
             );
-            self.put_component(
-                &SYSTEM_COMPONENT,
-                Component::new(
-                    SYSTEM_PACKAGE,
-                    SYSTEM_COMPONENT_NAME.to_owned(),
-                    scrypto_encode(&SystemComponentState { xrd: XRD_VAULT_ID }),
-                ),
+
+            let system_component = Component::new(
+                SYSTEM_PACKAGE,
+                SYSTEM_COMPONENT_NAME.to_owned(),
+                scrypto_encode(&SystemComponentState { xrd: XRD_VAULT_ID }),
             );
+            self.put_substate(&SYSTEM_COMPONENT, &scrypto_encode(&system_component));
         }
     }
 

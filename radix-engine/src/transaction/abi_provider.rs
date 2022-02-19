@@ -54,10 +54,8 @@ impl BasicAbiProvider {
         blueprint_name: String,
         state: Vec<u8>,
     ) -> &mut Self {
-        self.ledger.put_component(
-            &component_address,
-            Component::new(package_address, blueprint_name, state),
-        );
+        let value = &scrypto_encode(&Component::new(package_address, blueprint_name, state));
+        self.ledger.put_substate(&component_address, value);
         self
     }
 }
@@ -92,9 +90,10 @@ impl AbiProvider for BasicAbiProvider {
         &self,
         component_address: Address,
     ) -> Result<abi::Blueprint, RuntimeError> {
-        let component = self
+        let component: Component = self
             .ledger
-            .get_component(&component_address)
+            .get_substate(&component_address)
+            .and_then(|v| scrypto_decode(&v).map(|p| Some(p)).unwrap_or(None))
             .ok_or(RuntimeError::ComponentNotFound(component_address))?;
         self.export_abi(
             component.package_address(),

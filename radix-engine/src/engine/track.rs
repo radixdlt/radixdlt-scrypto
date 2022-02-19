@@ -166,20 +166,21 @@ impl<'s, S: SubstateStore> Track<'s, S> {
             return self.components.get(&address);
         }
 
-        if let Some(component) = self.substate_store.get_component(&address) {
+        if let Some(component) = self.get_substate(&address) {
             self.components.insert(address, component);
             self.components.get(&address)
         } else {
             None
         }
     }
+
     /// Returns a mutable reference to a component, if exists.
     pub fn get_component_mut(&mut self, address: Address) -> Option<&mut Component> {
         if self.components.contains_key(&address) {
             return self.components.get_mut(&address);
         }
 
-        if let Some(component) = self.substate_store.get_component(&address) {
+        if let Some(component) = self.get_substate(&address) {
             self.components.insert(address, component);
             self.components.get_mut(&address)
         } else {
@@ -423,8 +424,8 @@ impl<'s, S: SubstateStore> Track<'s, S> {
             .collect();
         for component_address in component_addresses {
             let component = self.components.remove(&component_address).unwrap();
-            self.substate_store
-                .put_component(&component_address, component);
+            let value = &scrypto_encode(&component);
+            self.substate_store.put_substate(&component_address, value);
         }
 
         let resource_def_addresses: Vec<Address> = self
