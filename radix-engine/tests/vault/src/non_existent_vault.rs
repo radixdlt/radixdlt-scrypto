@@ -33,5 +33,9 @@ blueprint! {
                 vaults,
             }.instantiate()
         }
+
+        pub fn create_non_existent_vault_in_lazy_map(&mut self) {
+            self.vaults.insert(0, Vid(Context::transaction_hash(), 1025));
+        }
     }
 }
