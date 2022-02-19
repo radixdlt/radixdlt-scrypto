@@ -1,16 +1,15 @@
 use scrypto::prelude::*;
-use scrypto::engine::types::*;
 
 blueprint! {
     struct NonExistentVault {
-        vault: Option<VaultId>,
-        vaults: LazyMap<u128, VaultId>,
+        vault: Option<Vault>,
+        vaults: LazyMap<u128, Vault>,
     }
 
      impl NonExistentVault {
         pub fn create_component_with_non_existent_vault() -> ComponentId {
             NonExistentVault {
-                vault: Option::Some((Transaction::transaction_hash(), 1025)),
+                vault: Option::Some(Vault((Transaction::transaction_hash(), 1025))),
                 vaults: LazyMap::new(),
             }.instantiate()
         }
@@ -23,12 +22,12 @@ blueprint! {
         }
 
         pub fn create_non_existent_vault(&mut self) {
-            self.vault = Option::Some((Transaction::transaction_hash(), 1025))
+            self.vault = Option::Some(Vault((Transaction::transaction_hash(), 1025)))
         }
 
         pub fn create_lazy_map_with_non_existent_vault() -> ComponentId {
             let vaults = LazyMap::new();
-            vaults.insert(0, (Transaction::transaction_hash(), 1025));
+            vaults.insert(0, Vault((Transaction::transaction_hash(), 1025)));
             NonExistentVault {
                 vault: Option::None,
                 vaults,
@@ -36,7 +35,7 @@ blueprint! {
         }
 
         pub fn create_non_existent_vault_in_lazy_map(&mut self) {
-            self.vaults.insert(0, (Transaction::transaction_hash(), 1025));
+            self.vaults.insert(0, Vault((Transaction::transaction_hash(), 1025)));
         }
     }
 }
