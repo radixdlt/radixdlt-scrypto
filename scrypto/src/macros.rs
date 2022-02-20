@@ -92,30 +92,54 @@ macro_rules! trace {
     }};
 }
 
-/// Includes package code as a byte array.
+/// Compiles a Scrypto package and returns the output WASM file.
 ///
 /// # Example
 /// ```ignore
 /// use scrypto::prelude::*;
 ///
-/// let code = include_code!("lib_name");
-/// let code2 = include_code!("/path/to/package", "lib_name");
+/// let wasm1 = compile_package!();
+/// let wasm2 = compile_package!("/path/to/package");
 /// ```
 #[macro_export]
-macro_rules! include_code {
-    ($lib_name: expr) => {
+macro_rules! compile_package {
+    ($wasm_name: expr) => {
+        ::scrypto::misc::compile_package(env!("CARGO_MANIFEST_DIR"), $wasm_name)
+    };
+    ($package_dir: expr, $wasm_name: expr) => {
+        ::scrypto::misc::compile_package($package_dir, $wasm_name)
+    };
+}
+
+/// Returns a static reference to a package WASM file.
+///
+/// Notes:
+/// * This macro will NOT compile the package, thus a pre-requisite compile step
+/// may be required;
+/// * Normally, the wasm WASM name is the package name with `-` replaced with `_`.
+///
+/// # Example
+/// ```ignore
+/// use scrypto::prelude::*;
+///
+/// let wasm1 = include_package!("foo_bar");
+/// let wasm2 = include_package!("/path/to/package", "foo_bar");
+/// ```
+#[macro_export]
+macro_rules! include_package {
+    ($wasm_name: expr) => {
         include_bytes!(concat!(
             env!("CARGO_MANIFEST_DIR"),
             "/target/wasm32-unknown-unknown/release/",
-            $lib_name,
+            $wasm_name,
             ".wasm"
         ))
     };
-    ($package_dir: expr, $lib_name: expr) => {
+    ($package_dir: expr, $wasm_name: expr) => {
         include_bytes!(concat!(
             $package_dir,
             "/target/wasm32-unknown-unknown/release/",
-            $lib_name,
+            $wasm_name,
             ".wasm"
         ))
     };

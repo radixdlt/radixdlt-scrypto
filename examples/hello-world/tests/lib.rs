@@ -10,7 +10,7 @@ fn test_hello() {
     let key = executor.new_public_key();
     let account = executor.new_account(key);
     let package = executor
-        .publish_package(include_code!("hello_world"))
+        .publish_package(compile_package!("hello_world"))
         .unwrap();
 
     // Test the `instantiate_hello` function.

@@ -2,21 +2,9 @@ use radix_engine::ledger::*;
 use radix_engine::model::*;
 use radix_engine::transaction::*;
 use scrypto::prelude::*;
-use std::fs;
-use std::process::Command;
 
 pub fn compile(name: &str) -> Vec<u8> {
-    Command::new("cargo")
-        .current_dir(format!("./tests/{}", name))
-        .args(["build", "--target", "wasm32-unknown-unknown", "--release"])
-        .status()
-        .unwrap();
-    fs::read(format!(
-        "./tests/{}/target/wasm32-unknown-unknown/release/{}.wasm",
-        name,
-        name.replace("-", "_")
-    ))
-    .unwrap()
+    compile_package!(format!("./tests/{}", name), name)
 }
 
 fn fungible_amount() -> ResourceSpecification {
