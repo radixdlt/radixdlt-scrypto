@@ -99,30 +99,16 @@ impl SubstateStore for RadixEngineDB {
         self.write(&scrypto_encode(address), substate);
     }
 
-    fn get_lazy_map_entry(
-        &self,
-        component_address: &Address,
-        mid: &Mid,
-        key: &[u8],
-    ) -> Option<Vec<u8>> {
-        let mut id = scrypto_encode(component_address);
-        id.extend(scrypto_encode(mid));
+    fn get_child_substate(&self, address: &Address, key: &[u8]) -> Option<Vec<u8>> {
+        let mut id = scrypto_encode(address);
         id.extend(key.to_vec());
         self.read(&id)
     }
 
-    fn put_lazy_map_entry(
-        &mut self,
-        component_address: &Address,
-        mid: &Mid,
-        key: &[u8],
-        value: Vec<u8>,
-    ) {
-        let mut id = scrypto_encode(component_address);
-        id.extend(scrypto_encode(mid));
-        id.extend(key);
-
-        self.write(&id, &value)
+    fn put_child_substate(&mut self, address: &Address, key: &[u8], substate: &[u8]) {
+        let mut id = scrypto_encode(address);
+        id.extend(key.to_vec());
+        self.write(&id, substate);
     }
 
     fn get_vault(&self, component_address: &Address, vid: &Vid) -> Vault {

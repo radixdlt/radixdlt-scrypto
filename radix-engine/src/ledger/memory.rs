@@ -11,7 +11,7 @@ use crate::model::*;
 #[derive(Debug, Clone)]
 pub struct InMemorySubstateStore {
     substates: HashMap<Address, Vec<u8>>,
-    lazy_map_entries: HashMap<(Address, Mid, Vec<u8>), Vec<u8>>,
+    child_substates: HashMap<(Address, Vec<u8>), Vec<u8>>,
     vaults: HashMap<(Address, Vid), Vec<u8>>,
     non_fungibles: HashMap<(Address, NonFungibleKey), NonFungible>,
     current_epoch: u64,
@@ -21,8 +21,8 @@ pub struct InMemorySubstateStore {
 impl InMemorySubstateStore {
     pub fn new() -> Self {
         Self {
-            lazy_map_entries: HashMap::new(),
             substates: HashMap::new(),
+            child_substates: HashMap::new(),
             vaults: HashMap::new(),
             non_fungibles: HashMap::new(),
             current_epoch: 0,
@@ -52,28 +52,16 @@ impl SubstateStore for InMemorySubstateStore {
         self.substates.insert(*address, substate.to_vec());
     }
 
-    fn get_lazy_map_entry(
-        &self,
-        component_address: &Address,
-        mid: &Mid,
-        key: &[u8],
-    ) -> Option<Vec<u8>> {
-        self.lazy_map_entries
-            .get(&(component_address.clone(), mid.clone(), key.to_vec()))
-            .cloned()
+    fn get_child_substate(&self, address: &Address, key: &[u8]) -> Option<Vec<u8>> {
+        let mut id = scrypto_encode(address);
+        id.extend(key.to_vec());
+        self.child_substates.get(&(*address, id)).cloned()
     }
 
-    fn put_lazy_map_entry(
-        &mut self,
-        component_address: &Address,
-        mid: &Mid,
-        key: &[u8],
-        value: Vec<u8>,
-    ) {
-        self.lazy_map_entries.insert(
-            (component_address.clone(), mid.clone(), key.to_vec()),
-            value,
-        );
+    fn put_child_substate(&mut self, address: &Address, key: &[u8], substate: &[u8]) {
+        let mut id = scrypto_encode(address);
+        id.extend(key.to_vec());
+        self.child_substates.insert((*address, id), substate.to_vec());
     }
 
     fn get_vault(&self, component_address: &Address, vid: &Vid) -> Vault {

@@ -267,9 +267,10 @@ impl<'s, S: SubstateStore> Track<'s, S> {
             return Some(self.lazy_map_entries.get(&entry_id).unwrap().clone());
         }
 
-        let value = self
-            .substate_store
-            .get_lazy_map_entry(component_address, mid, key);
+        let mut child_key = scrypto_encode(mid);
+        child_key.extend(key.to_vec());
+
+        let value = self.substate_store.get_child_substate(component_address, &child_key);
         if let Some(ref entry_bytes) = value {
             self.lazy_map_entries.insert(entry_id, entry_bytes.clone());
         }
@@ -448,8 +449,9 @@ impl<'s, S: SubstateStore> Track<'s, S> {
         for entry_id in entry_ids {
             let entry = self.lazy_map_entries.remove(&entry_id).unwrap();
             let (component_address, mid, key) = entry_id;
-            self.substate_store
-                .put_lazy_map_entry(&component_address, &mid, &key, entry);
+            let mut child_key = scrypto_encode(&mid);
+            child_key.extend(key);
+            self.substate_store.put_child_substate(&component_address, &child_key, &entry);
         }
 
         let vault_ids: Vec<(Address, Vid)> = self.vaults.iter().map(|(id, _)| id.clone()).collect();
