@@ -6,19 +6,21 @@ blueprint! {
         vaults: LazyMap<u128, Vault>,
     }
 
-     impl NonExistentVault {
+    impl NonExistentVault {
         pub fn create_component_with_non_existent_vault() -> ComponentId {
             NonExistentVault {
                 vault: Option::Some(Vault((Transaction::transaction_hash(), 1025))),
                 vaults: LazyMap::new(),
-            }.instantiate()
+            }
+            .instantiate()
         }
 
         pub fn new() -> ComponentId {
             NonExistentVault {
                 vault: Option::None,
                 vaults: LazyMap::new(),
-            }.instantiate()
+            }
+            .instantiate()
         }
 
         pub fn create_non_existent_vault(&mut self) {
@@ -31,11 +33,13 @@ blueprint! {
             NonExistentVault {
                 vault: Option::None,
                 vaults,
-            }.instantiate()
+            }
+            .instantiate()
         }
 
         pub fn create_non_existent_vault_in_lazy_map(&mut self) {
-            self.vaults.insert(0, Vault((Transaction::transaction_hash(), 1025)));
+            self.vaults
+                .insert(0, Vault((Transaction::transaction_hash(), 1025)));
         }
     }
 }
