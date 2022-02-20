@@ -21,7 +21,7 @@ pub struct NewPackage {
 
 impl NewPackage {
     pub fn run(&self) -> Result<(), Error> {
-        let lib_name = self.package_name.replace("-", "_");
+        let wasm_name = self.package_name.replace("-", "_");
         let path = self
             .path
             .clone()
@@ -71,7 +71,7 @@ impl NewPackage {
             fs::write(
                 child_of(&child_of(&path, "tests"), "lib.rs"),
                 include_str!("../../../assets/template/tests/lib.rs")
-                    .replace("${lib_name}", &lib_name),
+                    .replace("${wasm_name}", &wasm_name),
             )
             .map_err(Error::IOError)?;
 

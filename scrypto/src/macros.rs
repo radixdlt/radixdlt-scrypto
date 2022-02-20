@@ -92,30 +92,63 @@ macro_rules! trace {
     }};
 }
 
-/// Includes package code as a byte array.
+/// Compiles a Scrypto package and returns the output WASM file as byte array.
+///
+/// Notes:
+/// * This macro only works when `std` is linked;
+/// * The WASM file name is normally the package name with `-` replaced with `_`.
 ///
 /// # Example
 /// ```ignore
 /// use scrypto::prelude::*;
 ///
-/// let code = include_code!("lib_name");
-/// let code2 = include_code!("/path/to/package", "lib_name");
+/// // This package
+/// let wasm1 = compile_package!("wasm_name");
+///
+/// // Another package
+/// let wasm2 = compile_package!("/path/to/package", "wasm_name");
 /// ```
 #[macro_export]
-macro_rules! include_code {
-    ($lib_name: expr) => {
+macro_rules! compile_package {
+    ($wasm_name: expr) => {
+        ::scrypto::misc::compile_package(env!("CARGO_MANIFEST_DIR"), $wasm_name)
+    };
+    ($package_dir: expr, $wasm_name: expr) => {
+        ::scrypto::misc::compile_package($package_dir, $wasm_name)
+    };
+}
+
+/// Includes the WASM file of a Scrypto package.
+///
+/// Notes:
+/// * This macro will NOT compile the package;
+/// * The WASM file name is normally the package name with `-` replaced with `_`.
+///
+/// # Example
+/// ```ignore
+/// use scrypto::prelude::*;
+///
+/// // This package
+/// let wasm1 = include_package!("wasm_name");
+///
+/// // Another package
+/// let wasm2 = include_package!("/path/to/package", "wasm_name");
+/// ```
+#[macro_export]
+macro_rules! include_package {
+    ($wasm_name: expr) => {
         include_bytes!(concat!(
             env!("CARGO_MANIFEST_DIR"),
             "/target/wasm32-unknown-unknown/release/",
-            $lib_name,
+            $wasm_name,
             ".wasm"
         ))
     };
-    ($package_dir: expr, $lib_name: expr) => {
+    ($package_dir: expr, $wasm_name: expr) => {
         include_bytes!(concat!(
             $package_dir,
             "/target/wasm32-unknown-unknown/release/",
-            $lib_name,
+            $wasm_name,
             ".wasm"
         ))
     };

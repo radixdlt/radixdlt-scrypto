@@ -93,11 +93,11 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
     }
 
     /// Publishes a package.
-    pub fn publish_package(&mut self, code: &[u8]) -> Result<PackageId, RuntimeError> {
+    pub fn publish_package<T: AsRef<[u8]>>(&mut self, code: T) -> Result<PackageId, RuntimeError> {
         let receipt = self
             .run(
                 TransactionBuilder::new(self)
-                    .publish_package(code)
+                    .publish_package(code.as_ref())
                     .build(Vec::new())
                     .unwrap(),
             )
