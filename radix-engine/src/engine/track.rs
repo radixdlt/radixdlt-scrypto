@@ -41,12 +41,12 @@ pub struct Track<'s, S: SubstateStore> {
 
 impl<'s, S: SubstateStore> Track<'s, S> {
     pub fn new(
-        ledger: &'s mut S,
+        substate_store: &'s mut S,
         transaction_hash: H256,
         transaction_signers: Vec<EcdsaPublicKey>,
     ) -> Self {
         Self {
-            substate_store: ledger,
+            substate_store,
             transaction_hash,
             transaction_signers,
             id_allocator: IdAllocator::new(IdSpace::Application),

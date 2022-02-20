@@ -18,7 +18,10 @@ pub enum DisplayError {
 }
 
 /// Dump a package into console.
-pub fn dump_package<T: SubstateStore>(address: Address, substate_store: &T) -> Result<(), DisplayError> {
+pub fn dump_package<T: SubstateStore>(
+    address: Address,
+    substate_store: &T,
+) -> Result<(), DisplayError> {
     let package: Option<Package> = substate_store
         .get_substate(&address)
         .map(|v| scrypto_decode(&v).unwrap());

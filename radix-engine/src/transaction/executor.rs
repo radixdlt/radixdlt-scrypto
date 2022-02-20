@@ -46,8 +46,8 @@ impl<'l, L: SubstateStore> AbiProvider for TransactionExecutor<'l, L> {
         let p: Package = self
             .substate_store
             .get_substate(&c.package_address())
-            .and_then(|v| scrypto_decode(&v).map(|p| Some(p)).unwrap_or(None))
-            .ok_or(RuntimeError::PackageNotFound(c.package_address()))?;
+            .map(|v| scrypto_decode(&v).unwrap())
+            .unwrap();
         BasicAbiProvider::new(self.trace)
             .with_package(c.package_address(), p.code().to_vec())
             .export_abi(c.package_address(), c.blueprint_name())
@@ -55,17 +55,20 @@ impl<'l, L: SubstateStore> AbiProvider for TransactionExecutor<'l, L> {
 }
 
 impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
-    pub fn new(ledger: &'l mut L, trace: bool) -> Self {
-        Self { substate_store: ledger, trace }
+    pub fn new(substate_store: &'l mut L, trace: bool) -> Self {
+        Self {
+            substate_store,
+            trace,
+        }
     }
 
     /// Returns an immutable reference to the ledger.
-    pub fn ledger(&self) -> &L {
+    pub fn substate_store(&self) -> &L {
         self.substate_store
     }
 
     /// Returns a mutable reference to the ledger.
-    pub fn ledger_mut(&mut self) -> &mut L {
+    pub fn substate_store_mut(&mut self) -> &mut L {
         self.substate_store
     }
 
@@ -144,7 +147,11 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
 
         let transaction_hash = sha256(self.substate_store.get_nonce().to_string());
         sha256(self.substate_store.get_nonce().to_string());
-        let mut track = Track::new(self.substate_store, transaction_hash, transaction.signers.clone());
+        let mut track = Track::new(
+            self.substate_store,
+            transaction_hash,
+            transaction.signers.clone(),
+        );
         let mut proc = track.start_process(self.trace);
 
         let mut error: Option<RuntimeError> = None;

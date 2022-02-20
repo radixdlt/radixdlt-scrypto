@@ -33,9 +33,9 @@ pub trait QueryableSubstateStore {
 /// A ledger stores all transactions and substates.
 pub trait SubstateStore {
     fn get_substate(&self, address: &Address) -> Option<Vec<u8>>;
-    fn put_substate(&mut self, address: &Address, substate: &[u8]);
-
     fn get_child_substate(&self, address: &Address, key: &[u8]) -> Option<Vec<u8>>;
+
+    fn put_substate(&mut self, address: &Address, substate: &[u8]);
     fn put_child_substate(&mut self, address: &Address, key: &[u8], substate: &[u8]);
 
     fn bootstrap(&mut self) {
