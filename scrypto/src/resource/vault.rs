@@ -5,8 +5,11 @@ use crate::engine::{api::*, call_engine, types::VaultId};
 use crate::math::*;
 use crate::misc::*;
 use crate::resource::*;
+use crate::resource_def;
+use crate::rust::borrow::ToOwned;
 use crate::rust::fmt;
 use crate::rust::str::FromStr;
+use crate::rust::string::String;
 use crate::rust::vec::Vec;
 use crate::types::*;
 
@@ -177,11 +180,11 @@ impl Vault {
         let input = GetNonFungibleKeysInVaultInput { vault_id: self.0 };
         let output: GetNonFungibleKeysInVaultOutput =
             call_engine(GET_NON_FUNGIBLE_KEYS_IN_VAULT, input);
-        let resource_def = self.resource_def_id();
+        let resource_def_id = self.resource_def_id();
         output
             .keys
             .iter()
-            .map(|id| NonFungible::from((resource_def, id.clone())))
+            .map(|key| NonFungible::from((resource_def_id, key.clone())))
             .collect()
     }
 
@@ -216,7 +219,7 @@ impl Vault {
     /// # Panics
     /// Panics if this is not a non-fungible bucket.
     pub fn get_non_fungible_data<T: NonFungibleData>(&self, id: &NonFungibleKey) -> T {
-        self.resource_def_id().get_non_fungible_data(id)
+        resource_def!(self.resource_def_id()).get_non_fungible_data(id)
     }
 
     /// Updates the mutable part of the data of a non-fungible unit.
@@ -229,8 +232,7 @@ impl Vault {
         new_data: T,
         auth: Proof,
     ) {
-        self.resource_def_id()
-            .update_non_fungible_data(id, new_data, auth)
+        resource_def!(self.resource_def_id()).update_non_fungible_data(id, new_data, auth)
     }
 }
 
@@ -238,9 +240,9 @@ impl Vault {
 // error
 //========
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ParseVaultError {
-    InvalidHex(hex::FromHexError),
+    InvalidHex(String),
     InvalidLength(usize),
 }
 
@@ -290,7 +292,7 @@ impl FromStr for Vault {
     type Err = ParseVaultError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let bytes = hex::decode(s).map_err(ParseVaultError::InvalidHex)?;
+        let bytes = hex::decode(s).map_err(|_| ParseVaultError::InvalidHex(s.to_owned()))?;
         Self::try_from(bytes.as_slice())
     }
 }

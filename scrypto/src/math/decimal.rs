@@ -214,7 +214,7 @@ impl<T: Into<Decimal>> DivAssign<T> for Decimal {
 // error
 //========
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ParseDecimalError {
     InvalidDecimal(String),
     InvalidChar(char),

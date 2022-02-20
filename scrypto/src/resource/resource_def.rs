@@ -4,6 +4,7 @@ use crate::engine::{api::*, call_engine};
 use crate::math::*;
 use crate::misc::*;
 use crate::resource::*;
+use crate::rust::borrow::ToOwned;
 use crate::rust::collections::HashMap;
 use crate::rust::fmt;
 use crate::rust::str::FromStr;
@@ -15,11 +16,16 @@ use crate::types::*;
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub struct ResourceDefId(pub [u8; 26]);
 
-impl ResourceDefId {
+impl ResourceDefId {}
+
+#[derive(Debug)]
+pub struct ResourceDef(pub(crate) ResourceDefId);
+
+impl ResourceDef {
     /// Mints fungible resources
-    pub fn mint<T: Into<Decimal>>(&mut self, amount: T, auth: Proof) -> Bucket {
+    pub fn mint<T: Into<Decimal>>(&self, amount: T, auth: Proof) -> Bucket {
         let input = MintResourceInput {
-            resource_def_id: *self,
+            resource_def_id: self.0,
             new_supply: Supply::Fungible {
                 amount: amount.into(),
             },
@@ -32,7 +38,7 @@ impl ResourceDefId {
 
     /// Mints non-fungible resources
     pub fn mint_non_fungible<T: NonFungibleData>(
-        &mut self,
+        &self,
         key: &NonFungibleKey,
         data: T,
         auth: Proof,
@@ -41,7 +47,7 @@ impl ResourceDefId {
         entries.insert(key.clone(), (data.immutable_data(), data.mutable_data()));
 
         let input = MintResourceInput {
-            resource_def_id: *self,
+            resource_def_id: self.0,
             new_supply: Supply::NonFungible { entries },
             auth: auth.0,
         };
@@ -51,7 +57,7 @@ impl ResourceDefId {
     }
 
     /// Burns a bucket of resources.
-    pub fn burn(&mut self, bucket: Bucket) {
+    pub fn burn(&self, bucket: Bucket) {
         let input = BurnResourceInput {
             bucket_id: bucket.0,
             auth: None,
@@ -60,7 +66,7 @@ impl ResourceDefId {
     }
 
     /// Burns a bucket of resources.
-    pub fn burn_with_auth(&mut self, bucket: Bucket, auth: Proof) {
+    pub fn burn_with_auth(&self, bucket: Bucket, auth: Proof) {
         let input = BurnResourceInput {
             bucket_id: bucket.0,
             auth: Some(auth.0),
@@ -71,7 +77,7 @@ impl ResourceDefId {
     /// Returns the resource type.
     pub fn resource_type(&self) -> ResourceType {
         let input = GetResourceTypeInput {
-            resource_def_id: *self,
+            resource_def_id: self.0,
         };
         let output: GetResourceTypeOutput = call_engine(GET_RESOURCE_TYPE, input);
 
@@ -81,7 +87,7 @@ impl ResourceDefId {
     /// Returns the metadata associated with this resource.
     pub fn metadata(&self) -> HashMap<String, String> {
         let input = GetResourceMetadataInput {
-            resource_def_id: *self,
+            resource_def_id: self.0,
         };
         let output: GetResourceMetadataOutput = call_engine(GET_RESOURCE_METADATA, input);
 
@@ -91,7 +97,7 @@ impl ResourceDefId {
     /// Returns the feature flags.
     pub fn flags(&self) -> u64 {
         let input = GetResourceFlagsInput {
-            resource_def_id: *self,
+            resource_def_id: self.0,
         };
         let output: GetResourceFlagsOutput = call_engine(GET_RESOURCE_FLAGS, input);
 
@@ -101,7 +107,7 @@ impl ResourceDefId {
     /// Returns the mutable feature flags.
     pub fn mutable_flags(&self) -> u64 {
         let input = GetResourceMutableFlagsInput {
-            resource_def_id: *self,
+            resource_def_id: self.0,
         };
         let output: GetResourceMutableFlagsOutput = call_engine(GET_RESOURCE_MUTABLE_FLAGS, input);
 
@@ -111,7 +117,7 @@ impl ResourceDefId {
     /// Returns the current supply of this resource.
     pub fn total_supply(&self) -> Decimal {
         let input = GetResourceTotalSupplyInput {
-            resource_def_id: *self,
+            resource_def_id: self.0,
         };
         let output: GetResourceTotalSupplyOutput = call_engine(GET_RESOURCE_TOTAL_SUPPLY, input);
 
@@ -124,7 +130,7 @@ impl ResourceDefId {
     /// Panics if this is not a non-fungible resource or the specified non-fungible is not found.
     pub fn get_non_fungible_data<T: NonFungibleData>(&self, key: &NonFungibleKey) -> T {
         let input = GetNonFungibleDataInput {
-            resource_def_id: *self,
+            resource_def_id: self.0,
             key: key.clone(),
         };
         let output: GetNonFungibleDataOutput = call_engine(GET_NON_FUNGIBLE_DATA, input);
@@ -137,13 +143,13 @@ impl ResourceDefId {
     /// # Panics
     /// Panics if this is not a non-fungible resource or the specified non-fungible is not found.
     pub fn update_non_fungible_data<T: NonFungibleData>(
-        &mut self,
+        &self,
         key: &NonFungibleKey,
         new_data: T,
         auth: Proof,
     ) {
         let input = UpdateNonFungibleMutableDataInput {
-            resource_def_id: *self,
+            resource_def_id: self.0,
             key: key.clone(),
             new_mutable_data: new_data.mutable_data(),
             auth: auth.0,
@@ -153,9 +159,9 @@ impl ResourceDefId {
     }
 
     /// Turns on feature flags.
-    pub fn enable_flags(&mut self, flags: u64, auth: Proof) {
+    pub fn enable_flags(&self, flags: u64, auth: Proof) {
         let input = UpdateResourceFlagsInput {
-            resource_def_id: *self,
+            resource_def_id: self.0,
             new_flags: self.flags() | flags,
             auth: auth.0,
         };
@@ -163,9 +169,9 @@ impl ResourceDefId {
     }
 
     /// Turns off feature flags.
-    pub fn disable_flags(&mut self, flags: u64, auth: Proof) {
+    pub fn disable_flags(&self, flags: u64, auth: Proof) {
         let input = UpdateResourceFlagsInput {
-            resource_def_id: *self,
+            resource_def_id: self.0,
             new_flags: self.flags() & !flags,
             auth: auth.0,
         };
@@ -173,9 +179,9 @@ impl ResourceDefId {
     }
 
     /// Locks feature flag settings.
-    pub fn lock_flags(&mut self, flags: u64, auth: Proof) {
+    pub fn lock_flags(&self, flags: u64, auth: Proof) {
         let input = UpdateResourceMutableFlagsInput {
-            resource_def_id: *self,
+            resource_def_id: self.0,
             new_mutable_flags: self.flags() & !flags,
             auth: auth.0,
         };
@@ -183,9 +189,9 @@ impl ResourceDefId {
             call_engine(UPDATE_RESOURCE_MUTABLE_FLAGS, input);
     }
 
-    pub fn update_metadata(&mut self, new_metadata: HashMap<String, String>, auth: Proof) {
+    pub fn update_metadata(&self, new_metadata: HashMap<String, String>, auth: Proof) {
         let input = UpdateResourceMetadataInput {
-            resource_def_id: *self,
+            resource_def_id: self.0,
             new_metadata,
             auth: auth.0,
         };
@@ -197,9 +203,9 @@ impl ResourceDefId {
 // error
 //========
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ParseResourceDefIdError {
-    InvalidHex(hex::FromHexError),
+    InvalidHex(String),
     InvalidLength(usize),
     InvalidPrefix,
 }
@@ -247,7 +253,8 @@ impl FromStr for ResourceDefId {
     type Err = ParseResourceDefIdError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let bytes = hex::decode(s).map_err(ParseResourceDefIdError::InvalidHex)?;
+        let bytes =
+            hex::decode(s).map_err(|_| ParseResourceDefIdError::InvalidHex(s.to_owned()))?;
         if bytes.get(0) != Some(&3u8) {
             return Err(ParseResourceDefIdError::InvalidPrefix);
         }

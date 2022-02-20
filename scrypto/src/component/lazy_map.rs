@@ -4,9 +4,11 @@ use crate::buffer::*;
 use crate::crypto::*;
 use crate::engine::{api::*, call_engine, types::LazyMapId};
 use crate::misc::*;
+use crate::rust::borrow::ToOwned;
 use crate::rust::fmt;
 use crate::rust::marker::PhantomData;
 use crate::rust::str::FromStr;
+use crate::rust::string::String;
 use crate::rust::vec;
 use crate::rust::vec::Vec;
 use crate::types::*;
@@ -58,9 +60,9 @@ impl<K: Encode + Decode, V: Encode + Decode> LazyMap<K, V> {
 // error
 //========
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ParseLazyMapError {
-    InvalidHex(hex::FromHexError),
+    InvalidHex(String),
     InvalidLength(usize),
 }
 
@@ -144,7 +146,7 @@ impl<K: Encode + Decode, V: Encode + Decode> FromStr for LazyMap<K, V> {
     type Err = ParseLazyMapError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let bytes = hex::decode(s).map_err(ParseLazyMapError::InvalidHex)?;
+        let bytes = hex::decode(s).map_err(|_| ParseLazyMapError::InvalidHex(s.to_owned()))?;
         Self::try_from(bytes.as_slice())
     }
 }

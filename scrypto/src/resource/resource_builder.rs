@@ -112,7 +112,7 @@ impl ResourceBuilder {
     }
 
     fn build(&self, supply: Option<Supply>) -> (ResourceDefId, Option<Bucket>) {
-        create_resource(
+        resource_system().instantiate_resource_definition(
             self.resource_type,
             self.metadata.clone(),
             self.flags,

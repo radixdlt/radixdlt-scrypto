@@ -3,8 +3,10 @@ use sbor::{describe::Type, *};
 use crate::buffer::*;
 use crate::core::*;
 use crate::misc::*;
+use crate::rust::borrow::ToOwned;
 use crate::rust::fmt;
 use crate::rust::str::FromStr;
+use crate::rust::string::String;
 use crate::rust::vec::Vec;
 use crate::types::*;
 
@@ -12,7 +14,12 @@ use crate::types::*;
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub struct PackageId(pub [u8; 26]);
 
-impl PackageId {
+impl PackageId {}
+
+#[derive(Debug)]
+pub struct Package(pub(crate) PackageId);
+
+impl Package {
     /// Invokes a function on this package.
     pub fn call<T: Decode, S: AsRef<str>>(
         &self,
@@ -20,7 +27,7 @@ impl PackageId {
         function: S,
         args: Vec<Vec<u8>>,
     ) -> T {
-        let output = Process::call_function(*self, blueprint_name, function, args);
+        let output = Process::call_function(self.0, blueprint_name, function, args);
 
         scrypto_decode(&output).unwrap()
     }
@@ -30,9 +37,9 @@ impl PackageId {
 // error
 //========
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ParsePackageIdError {
-    InvalidHex(hex::FromHexError),
+    InvalidHex(String),
     InvalidLength(usize),
     InvalidPrefix,
 }
@@ -80,7 +87,7 @@ impl FromStr for PackageId {
     type Err = ParsePackageIdError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let bytes = hex::decode(s).map_err(ParsePackageIdError::InvalidHex)?;
+        let bytes = hex::decode(s).map_err(|_| ParsePackageIdError::InvalidHex(s.to_owned()))?;
         if bytes.get(0) != Some(&1u8) {
             return Err(ParsePackageIdError::InvalidPrefix);
         }

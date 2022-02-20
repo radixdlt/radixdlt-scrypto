@@ -310,7 +310,7 @@ impl<'a> DivAssign<&'a BigDecimal> for BigDecimal {
 // error
 //========
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ParseBigDecimalError {
     InvalidBigDecimal(String),
     InvalidSign(u8),

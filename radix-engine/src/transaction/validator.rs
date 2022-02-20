@@ -140,7 +140,68 @@ fn validate_args(
         id_validator
             .move_resources(&validated_arg)
             .map_err(TransactionValidationError::IdValidatorError)?;
+        if let Some(vault_id) = validated_arg.vault_ids.first() {
+            return Err(TransactionValidationError::VaultNotAllowed(
+                vault_id.clone(),
+            ));
+        }
+        if let Some(lazy_map_id) = validated_arg.lazy_map_ids.first() {
+            return Err(TransactionValidationError::LazyMapNotAllowed(
+                lazy_map_id.clone(),
+            ));
+        }
         result.push(validated_arg);
     }
     Ok(result)
+}
+
+#[cfg(test)]
+mod tests {
+    // Note this useful idiom: importing names from outer (for mod tests) scope.
+    use super::*;
+    use scrypto::buffer::*;
+    use scrypto::engine::types::*;
+    use scrypto::rust::borrow::ToOwned;
+    use scrypto::rust::marker::PhantomData;
+
+    #[test]
+    fn should_reject_transaction_passing_vault() {
+        assert_eq!(
+            validate_transaction(&Transaction {
+                instructions: vec![Instruction::CallMethod {
+                    component_id: ComponentId([1u8; 26]),
+                    method: "test".to_owned(),
+                    args: vec![scrypto_encode(&scrypto::resource::Vault((
+                        Hash([2u8; 32]),
+                        0,
+                    )))],
+                }],
+            }),
+            Err(TransactionValidationError::VaultNotAllowed((
+                Hash([2u8; 32]),
+                0,
+            ))),
+        );
+    }
+
+    #[test]
+    fn should_reject_transaction_passing_lazy_map() {
+        assert_eq!(
+            validate_transaction(&Transaction {
+                instructions: vec![Instruction::CallMethod {
+                    component_id: ComponentId([1u8; 26]),
+                    method: "test".to_owned(),
+                    args: vec![scrypto_encode(&scrypto::component::LazyMap::<(), ()> {
+                        id: (Hash([2u8; 32]), 0,),
+                        key: PhantomData,
+                        value: PhantomData,
+                    })],
+                }],
+            }),
+            Err(TransactionValidationError::LazyMapNotAllowed((
+                Hash([2u8; 32]),
+                0,
+            ))),
+        );
+    }
 }

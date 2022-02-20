@@ -130,7 +130,7 @@ pub struct CustomValueValidator {
     pub lazy_maps: Vec<LazyMap<(), ()>>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum CustomValueValidatorError {
     DecodeError(DecodeError),
     InvalidTypeId(u8),

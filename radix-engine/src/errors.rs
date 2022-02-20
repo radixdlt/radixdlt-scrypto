@@ -24,17 +24,19 @@ pub enum WasmValidationError {
 }
 
 /// Represents an error when parsing a value from a byte array.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum DataValidationError {
     DecodeError(DecodeError),
     CustomValueValidatorError(CustomValueValidatorError),
 }
 
 /// Represents an error when validating a transaction.
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum TransactionValidationError {
     DataValidationError(DataValidationError),
     IdValidatorError(IdValidatorError),
+    VaultNotAllowed(VaultId),
+    LazyMapNotAllowed(LazyMapId),
     InvalidSignature,
     UnexpectedEnd,
 }

@@ -1,9 +1,11 @@
 use sbor::{describe::Type, *};
 
 use crate::misc::*;
+use crate::rust::borrow::ToOwned;
 use crate::rust::convert::TryFrom;
 use crate::rust::fmt;
 use crate::rust::str::FromStr;
+use crate::rust::string::String;
 use crate::rust::vec::Vec;
 use crate::types::*;
 
@@ -31,9 +33,9 @@ impl Hash {
 // error
 //========
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ParseHashError {
-    InvalidHex(hex::FromHexError),
+    InvalidHex(String),
     InvalidLength(usize),
 }
 
@@ -79,7 +81,7 @@ impl FromStr for Hash {
     type Err = ParseHashError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let bytes = hex::decode(s).map_err(ParseHashError::InvalidHex)?;
+        let bytes = hex::decode(s).map_err(|_| ParseHashError::InvalidHex(s.to_owned()))?;
         Self::try_from(bytes.as_slice())
     }
 }

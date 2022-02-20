@@ -103,7 +103,7 @@ impl Proof {
 // error
 //========
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ParseProofError {
     InvalidLength(usize),
 }
