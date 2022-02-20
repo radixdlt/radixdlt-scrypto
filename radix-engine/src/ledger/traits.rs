@@ -38,19 +38,6 @@ pub trait SubstateStore {
     fn get_child_substate(&self, address: &Address, key: &[u8]) -> Option<Vec<u8>>;
     fn put_child_substate(&mut self, address: &Address, key: &[u8], substate: &[u8]);
 
-    /// Child Objects
-    fn get_non_fungible(
-        &self,
-        resource_address: &Address,
-        id: &NonFungibleKey,
-    ) -> Option<NonFungible>;
-    fn put_non_fungible(
-        &mut self,
-        resource_address: &Address,
-        id: &NonFungibleKey,
-        non_fungible: NonFungible,
-    );
-
     fn bootstrap(&mut self) {
         let package: Option<Package> = self
             .get_substate(&SYSTEM_PACKAGE)
@@ -103,7 +90,8 @@ pub trait SubstateStore {
                 ResourceType::Fungible { divisibility: 18 },
                 Supply::Fungible {
                     amount: XRD_MAX_SUPPLY.into(),
-                }));
+                },
+            ));
             self.put_child_substate(
                 &SYSTEM_COMPONENT,
                 &scrypto_encode(&XRD_VAULT_ID),

@@ -111,26 +111,6 @@ impl SubstateStore for RadixEngineDB {
         self.write(&id, substate);
     }
 
-    fn get_non_fungible(
-        &self,
-        resource_address: &Address,
-        key: &NonFungibleKey,
-    ) -> Option<NonFungible> {
-        let id = scrypto_encode(&(resource_address.clone(), key.clone()));
-        self.read(&id).map(|v| scrypto_decode(&v).unwrap())
-    }
-
-    fn put_non_fungible(
-        &mut self,
-        resource_address: &Address,
-        key: &NonFungibleKey,
-        non_fungible: NonFungible,
-    ) {
-        let id = scrypto_encode(&(resource_address.clone(), key.clone()));
-        let value = scrypto_encode(&non_fungible);
-        self.write(&id, &value)
-    }
-
     fn get_epoch(&self) -> u64 {
         let id = scrypto_encode(&"epoch");
         self.read(&id)

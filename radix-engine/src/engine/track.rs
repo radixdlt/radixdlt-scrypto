@@ -205,11 +205,9 @@ impl<'s, S: SubstateStore> Track<'s, S> {
         {
             return self.non_fungibles.get(&(resource_address, key.clone()));
         }
+        let child_key = &scrypto_encode(key);
 
-        if let Some(non_fungible) = self
-            .substate_store
-            .get_non_fungible(&resource_address, &key)
-        {
+        if let Some(non_fungible) = self.get_child_substate(&resource_address, child_key) {
             self.non_fungibles
                 .insert((resource_address, key.clone()), non_fungible);
             self.non_fungibles.get(&(resource_address, key.clone()))
@@ -231,10 +229,8 @@ impl<'s, S: SubstateStore> Track<'s, S> {
             return self.non_fungibles.get_mut(&(resource_address, key.clone()));
         }
 
-        if let Some(non_fungible) = self
-            .substate_store
-            .get_non_fungible(&resource_address, &key)
-        {
+        let child_key = &scrypto_encode(key);
+        if let Some(non_fungible) = self.get_child_substate(&resource_address, child_key) {
             self.non_fungibles
                 .insert((resource_address, key.clone()), non_fungible);
             self.non_fungibles.get_mut(&(resource_address, key.clone()))
@@ -270,7 +266,9 @@ impl<'s, S: SubstateStore> Track<'s, S> {
         let mut child_key = scrypto_encode(mid);
         child_key.extend(key.to_vec());
 
-        let value = self.substate_store.get_child_substate(component_address, &child_key);
+        let value = self
+            .substate_store
+            .get_child_substate(component_address, &child_key);
         if let Some(ref entry_bytes) = value {
             self.lazy_map_entries.insert(entry_id, entry_bytes.clone());
         }
@@ -344,7 +342,9 @@ impl<'s, S: SubstateStore> Track<'s, S> {
         }
 
         let vault_key = scrypto_encode(vid);
-        let vault: Vault = self.get_child_substate(component_address, &vault_key).unwrap();
+        let vault: Vault = self
+            .get_child_substate(component_address, &vault_key)
+            .unwrap();
         self.vaults.insert(vault_id, vault);
         self.vaults.get_mut(&vault_id).unwrap()
     }
@@ -458,7 +458,8 @@ impl<'s, S: SubstateStore> Track<'s, S> {
             let (component_address, mid, key) = entry_id;
             let mut child_key = scrypto_encode(&mid);
             child_key.extend(key);
-            self.substate_store.put_child_substate(&component_address, &child_key, &entry);
+            self.substate_store
+                .put_child_substate(&component_address, &child_key, &entry);
         }
 
         let vault_ids: Vec<(Address, Vid)> = self.vaults.iter().map(|(id, _)| id.clone()).collect();
@@ -466,7 +467,11 @@ impl<'s, S: SubstateStore> Track<'s, S> {
             let vault = self.vaults.remove(&vault_id).unwrap();
             let (component_address, vid) = vault_id;
             let child_key = scrypto_encode(&vid);
-            self.substate_store.put_child_substate(&component_address, &child_key, &scrypto_encode(&vault));
+            self.substate_store.put_child_substate(
+                &component_address,
+                &child_key,
+                &scrypto_encode(&vault),
+            );
         }
 
         let non_fungible_ids: Vec<(Address, NonFungibleKey)> = self
@@ -477,10 +482,11 @@ impl<'s, S: SubstateStore> Track<'s, S> {
         for non_fungible_id in non_fungible_ids {
             let non_fungible = self.non_fungibles.remove(&non_fungible_id).unwrap();
             let (resource_address, non_fungible_key) = non_fungible_id;
-            self.substate_store.put_non_fungible(
+            let child_key = scrypto_encode(&non_fungible_key);
+            self.substate_store.put_child_substate(
                 &resource_address,
-                &non_fungible_key,
-                non_fungible,
+                &child_key,
+                &scrypto_encode(&non_fungible),
             );
         }
     }

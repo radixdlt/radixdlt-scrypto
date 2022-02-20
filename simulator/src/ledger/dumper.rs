@@ -3,6 +3,7 @@ use radix_engine::engine::*;
 use radix_engine::ledger::*;
 use radix_engine::model::*;
 use scrypto::buffer::scrypto_decode;
+use scrypto::prelude::scrypto_encode;
 use scrypto::rust::collections::HashSet;
 use scrypto::types::*;
 
@@ -106,7 +107,10 @@ fn dump_resources<T: SubstateStore>(
     println!("{}:", "Resources".green().bold());
     for (last, vid) in vaults.iter().identify_last() {
         let vault_key = vid.to_vec();
-        let vault: Vault = ledger.get_child_substate(&address, &vault_key).map(|v| scrypto_decode(&v).unwrap()).unwrap();
+        let vault: Vault = ledger
+            .get_child_substate(&address, &vault_key)
+            .map(|v| scrypto_decode(&v).unwrap())
+            .unwrap();
 
         let amount = vault.amount();
         let resource_address = vault.resource_address();
@@ -130,7 +134,14 @@ fn dump_resources<T: SubstateStore>(
         );
         if let Supply::NonFungible { keys } = vault.total_supply() {
             for (inner_last, key) in keys.iter().identify_last() {
-                let non_fungible = ledger.get_non_fungible(&resource_address, key).unwrap();
+                let child_key = scrypto_encode(key);
+                let non_fungible: NonFungible = scrypto_decode(
+                    &ledger
+                        .get_child_substate(&resource_address, &child_key)
+                        .unwrap(),
+                )
+                .unwrap();
+
                 let immutable_data = validate_data(&non_fungible.immutable_data()).unwrap();
                 let mutable_data = validate_data(&non_fungible.mutable_data()).unwrap();
                 println!(
