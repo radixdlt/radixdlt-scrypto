@@ -29,21 +29,21 @@ pub trait AbiProvider {
 
 /// Provides ABIs for blueprints either installed during bootstrap or added manually.
 pub struct BasicAbiProvider {
-    ledger: InMemorySubstateStore,
+    substate_store: InMemorySubstateStore,
     trace: bool,
 }
 
 impl BasicAbiProvider {
     pub fn new(trace: bool) -> Self {
         Self {
-            ledger: InMemorySubstateStore::with_bootstrap(),
+            substate_store: InMemorySubstateStore::with_bootstrap(),
             trace,
         }
     }
 
     pub fn with_package(&mut self, address: Address, code: Vec<u8>) -> &mut Self {
         let value = &scrypto_encode(&Package::new(code));
-        self.ledger.put_substate(&address, value);
+        self.substate_store.put_substate(&address, value);
         self
     }
 
@@ -55,7 +55,7 @@ impl BasicAbiProvider {
         state: Vec<u8>,
     ) -> &mut Self {
         let value = &scrypto_encode(&Component::new(package_address, blueprint_name, state));
-        self.ledger.put_substate(&component_address, value);
+        self.substate_store.put_substate(&component_address, value);
         self
     }
 }
@@ -67,7 +67,7 @@ impl AbiProvider for BasicAbiProvider {
         blueprint_name: S,
     ) -> Result<abi::Blueprint, RuntimeError> {
         // Deterministic transaction context
-        let mut ledger = self.ledger.clone();
+        let mut ledger = self.substate_store.clone();
         let transaction_hash = sha256([]);
 
         // Start a process and run abi generator
@@ -91,7 +91,7 @@ impl AbiProvider for BasicAbiProvider {
         component_address: Address,
     ) -> Result<abi::Blueprint, RuntimeError> {
         let component: Component = self
-            .ledger
+            .substate_store
             .get_substate(&component_address)
             .and_then(|v| scrypto_decode(&v).map(|p| Some(p)).unwrap_or(None))
             .ok_or(RuntimeError::ComponentNotFound(component_address))?;

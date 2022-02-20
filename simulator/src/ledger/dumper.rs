@@ -18,8 +18,8 @@ pub enum DisplayError {
 }
 
 /// Dump a package into console.
-pub fn dump_package<T: SubstateStore>(address: Address, ledger: &T) -> Result<(), DisplayError> {
-    let package: Option<Package> = ledger
+pub fn dump_package<T: SubstateStore>(address: Address, substate_store: &T) -> Result<(), DisplayError> {
+    let package: Option<Package> = substate_store
         .get_substate(&address)
         .map(|v| scrypto_decode(&v).unwrap());
     match package {
@@ -35,9 +35,9 @@ pub fn dump_package<T: SubstateStore>(address: Address, ledger: &T) -> Result<()
 /// Dump a component into console.
 pub fn dump_component<T: SubstateStore + QueryableSubstateStore>(
     address: Address,
-    ledger: &T,
+    substate_store: &T,
 ) -> Result<(), DisplayError> {
-    let component: Option<Component> = ledger
+    let component: Option<Component> = substate_store
         .get_substate(&address)
         .map(|v| scrypto_decode(&v).unwrap());
     match component {
@@ -66,7 +66,7 @@ pub fn dump_component<T: SubstateStore + QueryableSubstateStore>(
                 let mid = queue[i];
                 i += 1;
                 if maps_visited.insert(mid) {
-                    let (maps, vaults) = dump_lazy_map(&address, &mid, ledger)?;
+                    let (maps, vaults) = dump_lazy_map(&address, &mid, substate_store)?;
                     queue.extend(maps);
                     for v in vaults {
                         vaults_found.insert(v);
@@ -75,7 +75,7 @@ pub fn dump_component<T: SubstateStore + QueryableSubstateStore>(
             }
 
             // Dump resources
-            dump_resources(address, &vaults_found, ledger)
+            dump_resources(address, &vaults_found, substate_store)
         }
         None => Err(DisplayError::ComponentNotFound),
     }
@@ -102,12 +102,12 @@ fn dump_lazy_map<T: SubstateStore + QueryableSubstateStore>(
 fn dump_resources<T: SubstateStore>(
     address: Address,
     vaults: &HashSet<Vid>,
-    ledger: &T,
+    substate_store: &T,
 ) -> Result<(), DisplayError> {
     println!("{}:", "Resources".green().bold());
     for (last, vid) in vaults.iter().identify_last() {
         let vault_key = vid.to_vec();
-        let vault: Vault = ledger
+        let vault: Vault = substate_store
             .get_child_substate(&address, &vault_key)
             .map(|v| scrypto_decode(&v).unwrap())
             .unwrap();
@@ -115,7 +115,7 @@ fn dump_resources<T: SubstateStore>(
         let amount = vault.amount();
         let resource_address = vault.resource_address();
         let resource_def: ResourceDef =
-            scrypto_decode(&ledger.get_substate(&resource_address).unwrap()).unwrap();
+            scrypto_decode(&substate_store.get_substate(&resource_address).unwrap()).unwrap();
         println!(
             "{} {{ amount: {}, resource_def: {}{}{} }}",
             list_item_prefix(last),
@@ -136,7 +136,7 @@ fn dump_resources<T: SubstateStore>(
             for (inner_last, key) in keys.iter().identify_last() {
                 let child_key = scrypto_encode(key);
                 let non_fungible: NonFungible = scrypto_decode(
-                    &ledger
+                    &substate_store
                         .get_child_substate(&resource_address, &child_key)
                         .unwrap(),
                 )
@@ -161,10 +161,10 @@ fn dump_resources<T: SubstateStore>(
 /// Dump a resource definition into console.
 pub fn dump_resource_def<T: SubstateStore>(
     address: Address,
-    ledger: &T,
+    substate_store: &T,
 ) -> Result<(), DisplayError> {
     let resource_def: Option<ResourceDef> =
-        scrypto_decode(&ledger.get_substate(&address).unwrap()).unwrap();
+        scrypto_decode(&substate_store.get_substate(&address).unwrap()).unwrap();
     match resource_def {
         Some(r) => {
             println!(
