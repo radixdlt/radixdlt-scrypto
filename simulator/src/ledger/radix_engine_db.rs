@@ -111,19 +111,6 @@ impl SubstateStore for RadixEngineDB {
         self.write(&id, substate);
     }
 
-    fn get_vault(&self, component_address: &Address, vid: &Vid) -> Vault {
-        let mut id = scrypto_encode(component_address);
-        id.extend(scrypto_encode(vid));
-        self.read(&id).map(|v| scrypto_decode(&v).unwrap()).unwrap()
-    }
-
-    fn put_vault(&mut self, component_address: &Address, vid: &Vid, vault: Vault) {
-        let mut id = scrypto_encode(component_address);
-        id.extend(scrypto_encode(vid));
-        let value = scrypto_encode(&vault);
-        self.write(&id, &value)
-    }
-
     fn get_non_fungible(
         &self,
         resource_address: &Address,

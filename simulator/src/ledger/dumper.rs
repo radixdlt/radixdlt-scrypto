@@ -105,7 +105,9 @@ fn dump_resources<T: SubstateStore>(
 ) -> Result<(), DisplayError> {
     println!("{}:", "Resources".green().bold());
     for (last, vid) in vaults.iter().identify_last() {
-        let vault = ledger.get_vault(&address, vid);
+        let vault_key = vid.to_vec();
+        let vault: Vault = ledger.get_child_substate(&address, &vault_key).map(|v| scrypto_decode(&v).unwrap()).unwrap();
+
         let amount = vault.amount();
         let resource_address = vault.resource_address();
         let resource_def: ResourceDef =

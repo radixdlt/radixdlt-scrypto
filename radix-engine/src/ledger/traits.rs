@@ -39,8 +39,6 @@ pub trait SubstateStore {
     fn put_child_substate(&mut self, address: &Address, key: &[u8], substate: &[u8]);
 
     /// Child Objects
-    fn get_vault(&self, component_address: &Address, vid: &Vid) -> Vault;
-    fn put_vault(&mut self, component_address: &Address, vid: &Vid, vault: Vault);
     fn get_non_fungible(
         &self,
         resource_address: &Address,
@@ -100,16 +98,16 @@ pub trait SubstateStore {
             self.put_substate(&ECDSA_TOKEN, &scrypto_encode(&ecdsa_token));
 
             // Instantiate system component
-            self.put_vault(
+            let system_vault = Vault::new(Bucket::new(
+                RADIX_TOKEN,
+                ResourceType::Fungible { divisibility: 18 },
+                Supply::Fungible {
+                    amount: XRD_MAX_SUPPLY.into(),
+                }));
+            self.put_child_substate(
                 &SYSTEM_COMPONENT,
-                &XRD_VAULT_ID,
-                Vault::new(Bucket::new(
-                    RADIX_TOKEN,
-                    ResourceType::Fungible { divisibility: 18 },
-                    Supply::Fungible {
-                        amount: XRD_MAX_SUPPLY.into(),
-                    },
-                )),
+                &scrypto_encode(&XRD_VAULT_ID),
+                &scrypto_encode(&system_vault),
             );
 
             let system_component = Component::new(
