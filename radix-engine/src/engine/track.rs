@@ -1,5 +1,6 @@
 use lru::LruCache;
 use sbor::Decode;
+use sbor::Encode;
 use scrypto::buffer::scrypto_decode;
 use scrypto::engine::*;
 use scrypto::prelude::scrypto_encode;
@@ -126,6 +127,30 @@ impl<'s, S: SubstateStore> Track<'s, S> {
         }
     }
 
+    fn get_substate<T: Decode>(&self, address: &Address) -> Option<T> {
+        self.substate_store
+            .get_substate(address)
+            .and_then(|v| scrypto_decode(&v).map(|r| Some(r)).unwrap_or(None))
+    }
+
+    fn get_child_substate<K: Encode, T: Decode>(&self, address: &Address, key: &K) -> Option<T> {
+        let child_key = &scrypto_encode(key);
+        self.substate_store
+            .get_child_substate(address, child_key)
+            .and_then(|v| scrypto_decode(&v).map(|r| Some(r)).unwrap_or(None))
+    }
+
+    fn put_substate<V: Encode>(&mut self, address: &Address, value: &V) {
+        self.substate_store
+            .put_substate(address, &scrypto_encode(value));
+    }
+
+    fn put_child_substate<K: Encode, V: Encode>(&mut self, address: &Address, key: &K, value: &V) {
+        let child_key = &scrypto_encode(key);
+        self.substate_store
+            .put_child_substate(address, child_key, &scrypto_encode(value));
+    }
+
     /// Returns an immutable reference to a package, if exists.
     pub fn get_package(&mut self, address: Address) -> Option<&Package> {
         if self.packages.contains_key(&address) {
@@ -205,9 +230,7 @@ impl<'s, S: SubstateStore> Track<'s, S> {
         {
             return self.non_fungibles.get(&(resource_address, key.clone()));
         }
-        let child_key = &scrypto_encode(key);
-
-        if let Some(non_fungible) = self.get_child_substate(&resource_address, child_key) {
+        if let Some(non_fungible) = self.get_child_substate(&resource_address, key) {
             self.non_fungibles
                 .insert((resource_address, key.clone()), non_fungible);
             self.non_fungibles.get(&(resource_address, key.clone()))
@@ -229,8 +252,7 @@ impl<'s, S: SubstateStore> Track<'s, S> {
             return self.non_fungibles.get_mut(&(resource_address, key.clone()));
         }
 
-        let child_key = &scrypto_encode(key);
-        if let Some(non_fungible) = self.get_child_substate(&resource_address, child_key) {
+        if let Some(non_fungible) = self.get_child_substate(&resource_address, key) {
             self.non_fungibles
                 .insert((resource_address, key.clone()), non_fungible);
             self.non_fungibles.get_mut(&(resource_address, key.clone()))
@@ -266,9 +288,7 @@ impl<'s, S: SubstateStore> Track<'s, S> {
         let mut child_key = scrypto_encode(mid);
         child_key.extend(key.to_vec());
 
-        let value = self
-            .substate_store
-            .get_child_substate(component_address, &child_key);
+        let value: Option<Vec<u8>> = self.get_child_substate(component_address, &child_key);
         if let Some(ref entry_bytes) = value {
             self.lazy_map_entries.insert(entry_id, entry_bytes.clone());
         }
@@ -285,18 +305,6 @@ impl<'s, S: SubstateStore> Track<'s, S> {
     ) {
         let lazy_map_id = (component_address, mid, key);
         self.lazy_map_entries.insert(lazy_map_id, value);
-    }
-
-    fn get_substate<T: Decode>(&self, address: &Address) -> Option<T> {
-        self.substate_store
-            .get_substate(address)
-            .and_then(|v| scrypto_decode(&v).map(|r| Some(r)).unwrap_or(None))
-    }
-
-    fn get_child_substate<T: Decode>(&self, address: &Address, key: &[u8]) -> Option<T> {
-        self.substate_store
-            .get_child_substate(address, key)
-            .and_then(|v| scrypto_decode(&v).map(|r| Some(r)).unwrap_or(None))
     }
 
     /// Returns an immutable reference to a resource definition, if exists.
@@ -341,10 +349,7 @@ impl<'s, S: SubstateStore> Track<'s, S> {
             return self.vaults.get_mut(&vault_id).unwrap();
         }
 
-        let vault_key = scrypto_encode(vid);
-        let vault: Vault = self
-            .get_child_substate(component_address, &vault_key)
-            .unwrap();
+        let vault: Vault = self.get_child_substate(component_address, vid).unwrap();
         self.vaults.insert(vault_id, vault);
         self.vaults.get_mut(&vault_id).unwrap()
     }
@@ -421,8 +426,7 @@ impl<'s, S: SubstateStore> Track<'s, S> {
             .collect();
         for package_address in package_addresses {
             let package = self.packages.remove(&package_address).unwrap();
-            let value = &scrypto_encode(&package);
-            self.substate_store.put_substate(&package_address, value);
+            self.put_substate(&package_address, &package);
         }
 
         let component_addresses: Vec<Address> = self
@@ -432,8 +436,7 @@ impl<'s, S: SubstateStore> Track<'s, S> {
             .collect();
         for component_address in component_addresses {
             let component = self.components.remove(&component_address).unwrap();
-            let value = &scrypto_encode(&component);
-            self.substate_store.put_substate(&component_address, value);
+            self.put_substate(&component_address, &component);
         }
 
         let resource_def_addresses: Vec<Address> = self
@@ -443,9 +446,7 @@ impl<'s, S: SubstateStore> Track<'s, S> {
             .collect();
         for resource_def_address in resource_def_addresses {
             let resource_def = self.resource_defs.remove(&resource_def_address).unwrap();
-            let value = &scrypto_encode(&resource_def);
-            self.substate_store
-                .put_substate(&resource_def_address, value);
+            self.put_substate(&resource_def_address, &resource_def);
         }
 
         let entry_ids: Vec<(Address, Mid, Vec<u8>)> = self
@@ -458,20 +459,14 @@ impl<'s, S: SubstateStore> Track<'s, S> {
             let (component_address, mid, key) = entry_id;
             let mut child_key = scrypto_encode(&mid);
             child_key.extend(key);
-            self.substate_store
-                .put_child_substate(&component_address, &child_key, &entry);
+            self.put_child_substate(&component_address, &child_key, &entry);
         }
 
         let vault_ids: Vec<(Address, Vid)> = self.vaults.iter().map(|(id, _)| id.clone()).collect();
         for vault_id in vault_ids {
             let vault = self.vaults.remove(&vault_id).unwrap();
             let (component_address, vid) = vault_id;
-            let child_key = scrypto_encode(&vid);
-            self.substate_store.put_child_substate(
-                &component_address,
-                &child_key,
-                &scrypto_encode(&vault),
-            );
+            self.put_child_substate(&component_address, &vid, &vault);
         }
 
         let non_fungible_ids: Vec<(Address, NonFungibleKey)> = self
@@ -482,12 +477,7 @@ impl<'s, S: SubstateStore> Track<'s, S> {
         for non_fungible_id in non_fungible_ids {
             let non_fungible = self.non_fungibles.remove(&non_fungible_id).unwrap();
             let (resource_address, non_fungible_key) = non_fungible_id;
-            let child_key = scrypto_encode(&non_fungible_key);
-            self.substate_store.put_child_substate(
-                &resource_address,
-                &child_key,
-                &scrypto_encode(&non_fungible),
-            );
+            self.put_child_substate(&resource_address, &non_fungible_key, &non_fungible);
         }
     }
 }
