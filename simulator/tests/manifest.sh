@@ -9,6 +9,6 @@ resim="cargo run --bin resim $@ --"
 
 $resim reset
 $resim new-account
-$resim publish ../examples/core/gumball-machine
+$resim publish ../examples/hello-world
 $resim run ./tests/manifest.rtm
 $resim show-ledger

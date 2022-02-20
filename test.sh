@@ -23,22 +23,10 @@ echo "Testing with no_std..."
 (cd scrypto-tests; cargo test --no-default-features --features alloc)
 (cd radix-engine; cargo test --no-default-features --features alloc)
 
-echo "Building examples..."
+echo "Building assets and examples..."
 (cd assets/account; cargo build --target wasm32-unknown-unknown --release; cargo test --release)
 (cd assets/system; cargo build --target wasm32-unknown-unknown --release; cargo test --release)
-(cd examples/core/cross-blueprint-call; cargo build --target wasm32-unknown-unknown --release; cargo test --release)
-(cd examples/core/flat-admin; cargo build --target wasm32-unknown-unknown --release; cargo test --release)
-(cd examples/core/gumball-machine; cargo build --target wasm32-unknown-unknown --release; cargo test --release)
-(cd examples/core/hello-nft; cargo build --target wasm32-unknown-unknown --release; cargo test --release)
-(cd examples/core/hello-world; cargo build --target wasm32-unknown-unknown --release; cargo test --release)
-(cd examples/core/managed-access; cargo build --target wasm32-unknown-unknown --release; cargo test --release)
-(cd examples/core/no-std-lib; cargo build --target wasm32-unknown-unknown --release)
-(cd examples/nft/magic-card; cargo build --target wasm32-unknown-unknown --release; cargo test --release)
-(cd examples/nft/sporting-event; cargo build --target wasm32-unknown-unknown --release; cargo test --release)
-(cd examples/defi; ./demo.sh)
-(cd examples/defi/auto-lend; cargo build --target wasm32-unknown-unknown --release; cargo test --release)
-(cd examples/defi/x-perp-futures; cargo build --target wasm32-unknown-unknown --release; cargo test --release)
-
+(cd examples/hello-world; cargo build --target wasm32-unknown-unknown --release; cargo test --release)
 
 echo "Running simulator..."
 (cd simulator; bash ./tests/resim.sh)

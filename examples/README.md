@@ -1,0 +1,1 @@
+Examples have been relocated to https://github.com/radixdlt/scrypto-examples.
