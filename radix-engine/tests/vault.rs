@@ -55,16 +55,11 @@ fn non_existent_vault_in_committed_component_should_fail() {
         .build(vec![]);
     let transaction = result.unwrap();
     let receipt = sut.run(transaction).unwrap();
-    let component_address = receipt
-        .new_entities
-        .into_iter()
-        .filter(|a| a.is_component())
-        .nth(0)
-        .unwrap();
+    let component_id = receipt.new_component_ids[0];
 
     // Act
     let transaction = TransactionBuilder::new(&sut)
-        .call_method(component_address, "create_non_existent_vault", vec![], None)
+        .call_method(component_id, "create_non_existent_vault", vec![], None)
         .build(vec![])
         .unwrap();
     let receipt = sut.run(transaction).unwrap();
@@ -110,17 +105,12 @@ fn non_existent_vault_in_committed_lazy_map_should_fail() {
         .build(vec![]);
     let transaction = result.unwrap();
     let receipt = sut.run(transaction).unwrap();
-    let component_address = receipt
-        .new_entities
-        .into_iter()
-        .filter(|a| a.is_component())
-        .nth(0)
-        .unwrap();
+    let component_id = receipt.new_component_ids[0];
 
     // Act
     let transaction = TransactionBuilder::new(&sut)
         .call_method(
-            component_address,
+            component_id,
             "create_non_existent_vault_in_lazy_map",
             vec![],
             None,
@@ -138,7 +128,7 @@ fn non_existent_vault_in_committed_lazy_map_should_fail() {
 fn dangling_vault_should_fail() {
     // Arrange
     let mut ledger = InMemorySubstateStore::with_bootstrap();
-    let mut sut = TransactionExecutor::new(&mut ledger, false);
+    let mut sut = TransactionExecutor::new(&mut ledger, true);
     let key = sut.new_public_key();
     let account = sut.new_account(key);
     let package = sut.publish_package(&compile("vault")).unwrap();
@@ -164,7 +154,7 @@ fn dangling_vault_should_fail() {
 fn create_mutable_vault_into_map() {
     // Arrange
     let mut ledger = InMemorySubstateStore::with_bootstrap();
-    let mut sut = TransactionExecutor::new(&mut ledger, false);
+    let mut sut = TransactionExecutor::new(&mut ledger, true);
     let package = sut.publish_package(&compile("vault")).unwrap();
 
     // Act
@@ -182,7 +172,7 @@ fn create_mutable_vault_into_map() {
 fn invalid_double_ownership_of_vault() {
     // Arrange
     let mut ledger = InMemorySubstateStore::with_bootstrap();
-    let mut sut = TransactionExecutor::new(&mut ledger, false);
+    let mut sut = TransactionExecutor::new(&mut ledger, true);
     let package = sut.publish_package(&compile("vault")).unwrap();
 
     // Act
@@ -206,7 +196,7 @@ fn invalid_double_ownership_of_vault() {
 fn create_mutable_vault_into_map_and_referencing_before_storing() {
     // Arrange
     let mut ledger = InMemorySubstateStore::with_bootstrap();
-    let mut sut = TransactionExecutor::new(&mut ledger, false);
+    let mut sut = TransactionExecutor::new(&mut ledger, true);
     let package = sut.publish_package(&compile("vault")).unwrap();
 
     // Act
@@ -230,23 +220,18 @@ fn create_mutable_vault_into_map_and_referencing_before_storing() {
 fn cannot_overwrite_vault_in_map() {
     // Arrange
     let mut ledger = InMemorySubstateStore::with_bootstrap();
-    let mut sut = TransactionExecutor::new(&mut ledger, false);
+    let mut sut = TransactionExecutor::new(&mut ledger, true);
     let package = sut.publish_package(&compile("vault")).unwrap();
     let transaction = TransactionBuilder::new(&sut)
         .call_function(package, "VaultTest", "new_vault_into_map", vec![], None)
         .build(vec![])
         .unwrap();
     let receipt = sut.run(transaction).unwrap();
-    let component_address = receipt
-        .new_entities
-        .into_iter()
-        .filter(|a| a.is_component())
-        .nth(0)
-        .unwrap();
+    let component_id = receipt.new_component_ids[0];
 
     // Act
     let transaction = TransactionBuilder::new(&sut)
-        .call_method(component_address, "overwrite_vault_in_map", vec![], None)
+        .call_method(component_id, "overwrite_vault_in_map", vec![], None)
         .build(vec![])
         .unwrap();
     let receipt = sut.run(transaction).unwrap();
@@ -259,7 +244,7 @@ fn cannot_overwrite_vault_in_map() {
 fn create_mutable_vault_into_vector() {
     // Arrange
     let mut ledger = InMemorySubstateStore::with_bootstrap();
-    let mut sut = TransactionExecutor::new(&mut ledger, false);
+    let mut sut = TransactionExecutor::new(&mut ledger, true);
     let package = sut.publish_package(&compile("vault")).unwrap();
 
     // Act
@@ -277,23 +262,18 @@ fn create_mutable_vault_into_vector() {
 fn cannot_remove_vaults() {
     // Arrange
     let mut ledger = InMemorySubstateStore::with_bootstrap();
-    let mut sut = TransactionExecutor::new(&mut ledger, false);
+    let mut sut = TransactionExecutor::new(&mut ledger, true);
     let package = sut.publish_package(&compile("vault")).unwrap();
     let transaction = TransactionBuilder::new(&sut)
         .call_function(package, "VaultTest", "new_vault_into_vector", vec![], None)
         .build(vec![])
         .unwrap();
     let receipt = sut.run(transaction).unwrap();
-    let component_address = receipt
-        .new_entities
-        .into_iter()
-        .filter(|a| a.is_component())
-        .nth(0)
-        .unwrap();
+    let component_id = receipt.new_component_ids[0];
 
     // Act
     let transaction = TransactionBuilder::new(&sut)
-        .call_method(component_address, "clear_vector", vec![], None)
+        .call_method(component_id, "clear_vector", vec![], None)
         .build(vec![])
         .unwrap();
     let receipt = sut.run(transaction).unwrap();
@@ -306,23 +286,18 @@ fn cannot_remove_vaults() {
 fn can_push_vault_into_vector() {
     // Arrange
     let mut ledger = InMemorySubstateStore::with_bootstrap();
-    let mut sut = TransactionExecutor::new(&mut ledger, false);
+    let mut sut = TransactionExecutor::new(&mut ledger, true);
     let package = sut.publish_package(&compile("vault")).unwrap();
     let transaction = TransactionBuilder::new(&sut)
         .call_function(package, "VaultTest", "new_vault_into_vector", vec![], None)
         .build(vec![])
         .unwrap();
     let receipt = sut.run(transaction).unwrap();
-    let component_address = receipt
-        .new_entities
-        .into_iter()
-        .filter(|a| a.is_component())
-        .nth(0)
-        .unwrap();
+    let component_id = receipt.new_component_ids[0];
 
     // Act
     let transaction = TransactionBuilder::new(&sut)
-        .call_method(component_address, "push_vault_into_vector", vec![], None)
+        .call_method(component_id, "push_vault_into_vector", vec![], None)
         .build(vec![])
         .unwrap();
     let receipt = sut.run(transaction).unwrap();
@@ -335,7 +310,7 @@ fn can_push_vault_into_vector() {
 fn create_mutable_vault_with_take() {
     // Arrange
     let mut ledger = InMemorySubstateStore::with_bootstrap();
-    let mut sut = TransactionExecutor::new(&mut ledger, false);
+    let mut sut = TransactionExecutor::new(&mut ledger, true);
     let package = sut.publish_package(&compile("vault")).unwrap();
 
     // Act
@@ -353,7 +328,7 @@ fn create_mutable_vault_with_take() {
 fn create_mutable_vault_with_take_non_fungible() {
     // Arrange
     let mut ledger = InMemorySubstateStore::with_bootstrap();
-    let mut sut = TransactionExecutor::new(&mut ledger, false);
+    let mut sut = TransactionExecutor::new(&mut ledger, true);
     let package = sut.publish_package(&compile("vault")).unwrap();
 
     // Act
@@ -377,7 +352,7 @@ fn create_mutable_vault_with_take_non_fungible() {
 fn create_mutable_vault_with_get_nonfungible_keys() {
     // Arrange
     let mut ledger = InMemorySubstateStore::with_bootstrap();
-    let mut sut = TransactionExecutor::new(&mut ledger, false);
+    let mut sut = TransactionExecutor::new(&mut ledger, true);
     let package = sut.publish_package(&compile("vault")).unwrap();
 
     // Act
@@ -401,7 +376,7 @@ fn create_mutable_vault_with_get_nonfungible_keys() {
 fn create_mutable_vault_with_get_amount() {
     // Arrange
     let mut ledger = InMemorySubstateStore::with_bootstrap();
-    let mut sut = TransactionExecutor::new(&mut ledger, false);
+    let mut sut = TransactionExecutor::new(&mut ledger, true);
     let package = sut.publish_package(&compile("vault")).unwrap();
 
     // Act
@@ -425,7 +400,7 @@ fn create_mutable_vault_with_get_amount() {
 fn create_mutable_vault_with_get_resource_def() {
     // Arrange
     let mut ledger = InMemorySubstateStore::with_bootstrap();
-    let mut sut = TransactionExecutor::new(&mut ledger, false);
+    let mut sut = TransactionExecutor::new(&mut ledger, true);
     let package = sut.publish_package(&compile("vault")).unwrap();
 
     // Act

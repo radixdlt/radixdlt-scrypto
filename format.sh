@@ -24,6 +24,14 @@ cd "$(dirname "$0")"
 (cd examples/core/hello-nft; scrypto fmt)
 (cd examples/core/hello-world; scrypto fmt)
 (cd examples/core/managed-access; scrypto fmt)
-(cd examples/core/no-std-lib; scrypto fmt)
+(cd examples/nft/magic-card; scrypto fmt)
+(cd examples/nft/sporting-event; scrypto fmt)
+(cd examples/defi/auto-lend; scrypto fmt)
+(cd examples/defi/mutual-farm; scrypto fmt)
+(cd examples/defi/price-oracle; scrypto fmt)
+(cd examples/defi/radiswap; scrypto fmt)
+(cd examples/defi/regulated-token; scrypto fmt)
+(cd examples/defi/synthetics; scrypto fmt)
+(cd examples/defi/x-perp-futures; scrypto fmt)
 
 echo "All packages have been formatted."

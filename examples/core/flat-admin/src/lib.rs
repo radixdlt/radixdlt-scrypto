@@ -3,11 +3,11 @@ use scrypto::prelude::*;
 blueprint! {
     struct FlatAdmin {
         admin_mint_badge: Vault,
-        admin_badge: ResourceDef,
+        admin_badge: ResourceDefId,
     }
 
     impl FlatAdmin {
-        pub fn instantiate_flat_admin(badge_name: String) -> (Component, Bucket) {
+        pub fn instantiate_flat_admin(badge_name: String) -> (ComponentId, Bucket) {
             // Create a badge for internal use which will hold mint/burn authority for the admin badge we will soon create
             let admin_mint_badge =
                 ResourceBuilder::new_fungible(DIVISIBILITY_NONE).initial_supply_fungible(1);
@@ -16,7 +16,7 @@ blueprint! {
             let mut admin_badge_def = ResourceBuilder::new_fungible(DIVISIBILITY_NONE)
                 .metadata("name", badge_name)
                 .flags(MINTABLE | BURNABLE)
-                .badge(admin_mint_badge.resource_def(), MAY_MINT | MAY_BURN)
+                .badge(admin_mint_badge.resource_def_id(), MAY_MINT | MAY_BURN)
                 .no_initial_supply();
 
             // Using our minting authority badge, mint a single admin badge
@@ -43,15 +43,15 @@ blueprint! {
 
         pub fn destroy_admin_badge(&mut self, to_destroy: Bucket) {
             assert!(
-                to_destroy.resource_address() == self.admin_badge.address(),
+                to_destroy.resource_def_id() == self.admin_badge,
                 "Can not destroy the contents of this bucket!"
             );
             self.admin_mint_badge
                 .authorize(|auth| self.admin_badge.burn_with_auth(to_destroy, auth))
         }
 
-        pub fn get_admin_badge_address(&self) -> Address {
-            self.admin_badge.address()
+        pub fn get_admin_badge(&self) -> ResourceDefId {
+            self.admin_badge
         }
     }
 }

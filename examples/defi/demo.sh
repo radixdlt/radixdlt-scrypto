@@ -11,17 +11,17 @@ cargo install --path ../../simulator
 resim reset
 
 # new account
-out=`resim new-account | tee /dev/tty | awk '/Account address:|Public key:/ {print $NF}'`
-acc1_address=`echo $out | cut -d " " -f1`
+out=`resim new-account | tee /dev/tty | awk '/Account component ID:|Public key:/ {print $NF}'`
+acc1_component_id=`echo $out | cut -d " " -f1`
 acc1_pub_key=`echo $out | cut -d " " -f2`
-out=`resim new-account | tee /dev/tty | awk '/Account address:|Public key:/ {print $NF}'`
-acc2_address=`echo $out | cut -d " " -f1`
+out=`resim new-account | tee /dev/tty | awk '/Account component ID:|Public key:/ {print $NF}'`
+acc2_component_id=`echo $out | cut -d " " -f1`
 acc2_pub_key=`echo $out | cut -d " " -f2`
-out=`resim new-account | tee /dev/tty | awk '/Account address:|Public key:/ {print $NF}'`
-acc3_address=`echo $out | cut -d " " -f1`
+out=`resim new-account | tee /dev/tty | awk '/Account component ID:|Public key:/ {print $NF}'`
+acc3_component_id=`echo $out | cut -d " " -f1`
 acc3_pub_key=`echo $out | cut -d " " -f2`
-out=`resim new-account | tee /dev/tty | awk '/Account address:|Public key:/ {print $NF}'`
-acc4_address=`echo $out | cut -d " " -f1`
+out=`resim new-account | tee /dev/tty | awk '/Account component ID:|Public key:/ {print $NF}'`
+acc4_component_id=`echo $out | cut -d " " -f1`
 acc4_pub_key=`echo $out | cut -d " " -f2`
 
 # generate acc1_mint_badge token
@@ -54,8 +54,8 @@ resim mint 114841533.01 $snx $acc1_mint_badge
 # publish PriceOracle
 price_oracle_package=`resim publish ./price-oracle | tee /dev/tty | awk '/Package:/ {print $NF}'`
 out=`resim call-function $price_oracle_package PriceOracle instantiate_oracle 1 | tee /dev/tty | awk '/Component:|ResourceDef:/ {print $NF}'`
-price_oracle_update_auth=`echo $out | cut -d " " -f1`
-price_oracle_component=`echo $out | cut -d " " -f2`
+price_oracle_component=`echo $out | cut -d " " -f1`
+price_oracle_update_auth=`echo $out | cut -d " " -f2`
 
 # publish Radiswap
 radiswap_package=`resim publish ./radiswap | tee /dev/tty | awk '/Package:/ {print $NF}'`
@@ -91,14 +91,14 @@ resim call-method $price_oracle_component get_price $eth $btc
 set +x
 echo "===================================================================================="
 echo "Please assume a fixed number of decimal places for all resources: 18"
-echo "Account 1 address: $acc1_address"
+echo "Account 1 component ID: $acc1_component_id"
 echo "Account 1 public key: $acc1_pub_key"
 echo "Account 1 mint auth: $acc1_mint_badge"
-echo "Account 2 address: $acc2_address"
+echo "Account 2 component ID: $acc2_component_id"
 echo "Account 2 public key: $acc2_pub_key"
-echo "Account 3 address: $acc3_address"
+echo "Account 3 component ID: $acc3_component_id"
 echo "Account 3 public key: $acc3_pub_key"
-echo "Account 4 address: $acc4_address"
+echo "Account 4 component ID: $acc4_component_id"
 echo "Account 4 public key: $acc4_pub_key"
 echo "BTC: $btc"
 echo "ETH: $eth"
@@ -136,8 +136,8 @@ mutual_farm_package=`resim publish mutual-farm | tee /dev/tty | awk '/Package:/ 
 out=`resim call-function $mutual_farm_package MutualFarm instantiate_farm $price_oracle_component $xrd_snx_radiswap_component $synthetics_component "TESLA" $tesla 1000 1000000,$xrd $snx $usd | tee /dev/tty | awk '/Component:/ {print $NF}'`
 mutual_farm_component=`echo $out | cut -d " " -f2`
 resim show $mutual_farm_component
-resim show $acc1_address
+resim show $acc1_component_id
 
 # Deposit another 1,000,000 XRD
 resim call-method $mutual_farm_component deposit 1000000,$xrd
-resim show $acc1_address
+resim show $acc1_component_id

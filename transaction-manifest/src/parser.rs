@@ -69,16 +69,16 @@ impl Parser {
         let instruction = match token.kind {
             TokenKind::TakeFromWorktop => Instruction::TakeFromWorktop {
                 amount: self.parse_value()?,
-                resource_address: self.parse_value()?,
+                resource_def_id: self.parse_value()?,
                 new_bucket: self.parse_value()?,
             },
             TokenKind::TakeAllFromWorktop => Instruction::TakeAllFromWorktop {
-                resource_address: self.parse_value()?,
+                resource_def_id: self.parse_value()?,
                 new_bucket: self.parse_value()?,
             },
             TokenKind::TakeNonFungiblesFromWorktop => Instruction::TakeNonFungiblesFromWorktop {
                 keys: self.parse_value()?,
-                resource_address: self.parse_value()?,
+                resource_def_id: self.parse_value()?,
                 new_bucket: self.parse_value()?,
             },
             TokenKind::ReturnToWorktop => Instruction::ReturnToWorktop {
@@ -86,21 +86,21 @@ impl Parser {
             },
             TokenKind::AssertWorktopContains => Instruction::AssertWorktopContains {
                 amount: self.parse_value()?,
-                resource_address: self.parse_value()?,
+                resource_def_id: self.parse_value()?,
             },
-            TokenKind::CreateBucketRef => Instruction::CreateBucketRef {
+            TokenKind::CreateProof => Instruction::CreateProof {
                 bucket: self.parse_value()?,
-                new_bucket_ref: self.parse_value()?,
+                new_proof: self.parse_value()?,
             },
-            TokenKind::CloneBucketRef => Instruction::CloneBucketRef {
-                bucket_ref: self.parse_value()?,
-                new_bucket_ref: self.parse_value()?,
+            TokenKind::CloneProof => Instruction::CloneProof {
+                proof: self.parse_value()?,
+                new_proof: self.parse_value()?,
             },
-            TokenKind::DropBucketRef => Instruction::DropBucketRef {
-                bucket_ref: self.parse_value()?,
+            TokenKind::DropProof => Instruction::DropProof {
+                proof: self.parse_value()?,
             },
             TokenKind::CallFunction => Instruction::CallFunction {
-                package_address: self.parse_value()?,
+                package_id: self.parse_value()?,
                 blueprint_name: self.parse_value()?,
                 function: self.parse_value()?,
                 args: {
@@ -112,7 +112,7 @@ impl Parser {
                 },
             },
             TokenKind::CallMethod => Instruction::CallMethod {
-                component_address: self.parse_value()?,
+                component_id: self.parse_value()?,
                 method: self.parse_value()?,
                 args: {
                     let mut values = vec![];
@@ -123,7 +123,7 @@ impl Parser {
                 },
             },
             TokenKind::CallMethodWithAllResources => Instruction::CallMethodWithAllResources {
-                component_address: self.parse_value()?,
+                component_id: self.parse_value()?,
                 method: self.parse_value()?,
             },
             _ => {
@@ -168,12 +168,12 @@ impl Parser {
             TokenKind::HashMap => self.parse_hash_map(),
             TokenKind::Decimal
             | TokenKind::BigDecimal
-            | TokenKind::Address
+            | TokenKind::PackageId
+            | TokenKind::ComponentId
+            | TokenKind::ResourceDefId
             | TokenKind::Hash
             | TokenKind::Bucket
-            | TokenKind::BucketRef
-            | TokenKind::LazyMap
-            | TokenKind::Vault
+            | TokenKind::Proof
             | TokenKind::NonFungibleKey => self.parse_scrypto_types(),
             _ => Err(ParserError::UnexpectedToken(token)),
         }
@@ -331,12 +331,12 @@ impl Parser {
         match token.kind {
             TokenKind::Decimal => Ok(Value::Decimal(self.parse_values_one()?.into())),
             TokenKind::BigDecimal => Ok(Value::BigDecimal(self.parse_values_one()?.into())),
-            TokenKind::Address => Ok(Value::Address(self.parse_values_one()?.into())),
+            TokenKind::PackageId => Ok(Value::PackageId(self.parse_values_one()?.into())),
+            TokenKind::ComponentId => Ok(Value::ComponentId(self.parse_values_one()?.into())),
+            TokenKind::ResourceDefId => Ok(Value::ResourceDefId(self.parse_values_one()?.into())),
             TokenKind::Hash => Ok(Value::Hash(self.parse_values_one()?.into())),
             TokenKind::Bucket => Ok(Value::Bucket(self.parse_values_one()?.into())),
-            TokenKind::BucketRef => Ok(Value::BucketRef(self.parse_values_one()?.into())),
-            TokenKind::LazyMap => Ok(Value::LazyMap(self.parse_values_one()?.into())),
-            TokenKind::Vault => Ok(Value::Vault(self.parse_values_one()?.into())),
+            TokenKind::Proof => Ok(Value::Proof(self.parse_values_one()?.into())),
             TokenKind::NonFungibleKey => Ok(Value::NonFungibleKey(self.parse_values_one()?.into())),
             _ => Err(ParserError::UnexpectedToken(token)),
         }
@@ -424,12 +424,12 @@ impl Parser {
             TokenKind::HashMap => Ok(Type::HashMap),
             TokenKind::Decimal => Ok(Type::Decimal),
             TokenKind::BigDecimal => Ok(Type::BigDecimal),
-            TokenKind::Address => Ok(Type::Address),
+            TokenKind::PackageId => Ok(Type::PackageId),
+            TokenKind::ComponentId => Ok(Type::ComponentId),
+            TokenKind::ResourceDefId => Ok(Type::ResourceDefId),
             TokenKind::Hash => Ok(Type::Hash),
             TokenKind::Bucket => Ok(Type::Bucket),
-            TokenKind::BucketRef => Ok(Type::BucketRef),
-            TokenKind::LazyMap => Ok(Type::LazyMap),
-            TokenKind::Vault => Ok(Type::Vault),
+            TokenKind::Proof => Ok(Type::Proof),
             TokenKind::NonFungibleKey => Ok(Type::NonFungibleKey),
             _ => Err(ParserError::UnexpectedToken(token)),
         }
@@ -633,7 +633,7 @@ mod tests {
             })
         );
         parse_value_error!(
-            r#"Address("abc", "def")"#,
+            r#"PackageId("abc", "def")"#,
             ParserError::InvalidNumberOfValues {
                 actual: 2,
                 expected: 1
@@ -651,10 +651,10 @@ mod tests {
     #[test]
     fn test_transaction() {
         parse_instruction_ok!(
-            r#"TAKE_FROM_WORKTOP  Decimal("1.0")  Address("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d")  Bucket("xrd_bucket");"#,
+            r#"TAKE_FROM_WORKTOP  Decimal("1.0")  ResourceDefId("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d")  Bucket("xrd_bucket");"#,
             Instruction::TakeFromWorktop {
                 amount: Value::Decimal(Value::String("1.0".into()).into()),
-                resource_address: Value::Address(
+                resource_def_id: Value::ResourceDefId(
                     Value::String("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d".into())
                         .into()
                 ),
@@ -662,9 +662,9 @@ mod tests {
             }
         );
         parse_instruction_ok!(
-            r#"TAKE_ALL_FROM_WORKTOP  Address("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d")  Bucket("xrd_bucket");"#,
+            r#"TAKE_ALL_FROM_WORKTOP  ResourceDefId("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d")  Bucket("xrd_bucket");"#,
             Instruction::TakeAllFromWorktop {
-                resource_address: Value::Address(
+                resource_def_id: Value::ResourceDefId(
                     Value::String("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d".into())
                         .into()
                 ),
@@ -672,39 +672,39 @@ mod tests {
             }
         );
         parse_instruction_ok!(
-            r#"ASSERT_WORKTOP_CONTAINS  Decimal("1.0")  Address("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d");"#,
+            r#"ASSERT_WORKTOP_CONTAINS  Decimal("1.0")  ResourceDefId("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d");"#,
             Instruction::AssertWorktopContains {
                 amount: Value::Decimal(Value::String("1.0".into()).into()),
-                resource_address: Value::Address(
+                resource_def_id: Value::ResourceDefId(
                     Value::String("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d".into())
                         .into()
                 ),
             }
         );
         parse_instruction_ok!(
-            r#"CREATE_BUCKET_REF  Bucket("xrd_bucket")  BucketRef("admin_auth");"#,
-            Instruction::CreateBucketRef {
+            r#"CREATE_PROOF  Bucket("xrd_bucket")  Proof("admin_auth");"#,
+            Instruction::CreateProof {
                 bucket: Value::Bucket(Value::String("xrd_bucket".into()).into()),
-                new_bucket_ref: Value::BucketRef(Value::String("admin_auth".into()).into()),
+                new_proof: Value::Proof(Value::String("admin_auth".into()).into()),
             }
         );
         parse_instruction_ok!(
-            r#"CLONE_BUCKET_REF  BucketRef("admin_auth")  BucketRef("admin_auth2");"#,
-            Instruction::CloneBucketRef {
-                bucket_ref: Value::BucketRef(Value::String("admin_auth".into()).into()),
-                new_bucket_ref: Value::BucketRef(Value::String("admin_auth2".into()).into()),
+            r#"CLONE_PROOF  Proof("admin_auth")  Proof("admin_auth2");"#,
+            Instruction::CloneProof {
+                proof: Value::Proof(Value::String("admin_auth".into()).into()),
+                new_proof: Value::Proof(Value::String("admin_auth2".into()).into()),
             }
         );
         parse_instruction_ok!(
-            r#"DROP_BUCKET_REF BucketRef("admin_auth");"#,
-            Instruction::DropBucketRef {
-                bucket_ref: Value::BucketRef(Value::String("admin_auth".into()).into()),
+            r#"DROP_PROOF Proof("admin_auth");"#,
+            Instruction::DropProof {
+                proof: Value::Proof(Value::String("admin_auth".into()).into()),
             }
         );
         parse_instruction_ok!(
-            r#"CALL_FUNCTION  Address("01d1f50010e4102d88aacc347711491f852c515134a9ecf67ba17c")  "Airdrop"  "new"  500u32  HashMap<String, U8>("key", 1u8);"#,
+            r#"CALL_FUNCTION  PackageId("01d1f50010e4102d88aacc347711491f852c515134a9ecf67ba17c")  "Airdrop"  "new"  500u32  HashMap<String, U8>("key", 1u8);"#,
             Instruction::CallFunction {
-                package_address: Value::Address(
+                package_id: Value::PackageId(
                     Value::String("01d1f50010e4102d88aacc347711491f852c515134a9ecf67ba17c".into())
                         .into()
                 ),
@@ -721,37 +721,37 @@ mod tests {
             }
         );
         parse_instruction_ok!(
-            r#"CALL_METHOD  Address("0292566c83de7fd6b04fcc92b5e04b03228ccff040785673278ef1")  "refill"  Bucket("xrd_bucket")  BucketRef("admin_auth");"#,
+            r#"CALL_METHOD  ComponentId("0292566c83de7fd6b04fcc92b5e04b03228ccff040785673278ef1")  "refill"  Bucket("xrd_bucket")  Proof("admin_auth");"#,
             Instruction::CallMethod {
-                component_address: Value::Address(
+                component_id: Value::ComponentId(
                     Value::String("0292566c83de7fd6b04fcc92b5e04b03228ccff040785673278ef1".into())
                         .into()
                 ),
                 method: Value::String("refill".into()),
                 args: vec![
                     Value::Bucket(Value::String("xrd_bucket".into()).into()),
-                    Value::BucketRef(Value::String("admin_auth".into()).into())
+                    Value::Proof(Value::String("admin_auth".into()).into())
                 ]
             }
         );
         parse_instruction_ok!(
-            r#"CALL_METHOD  Address("0292566c83de7fd6b04fcc92b5e04b03228ccff040785673278ef1")  "withdraw_non_fungible"  NonFungibleKey("00")  BucketRef("admin_auth");"#,
+            r#"CALL_METHOD  ComponentId("0292566c83de7fd6b04fcc92b5e04b03228ccff040785673278ef1")  "withdraw_non_fungible"  NonFungibleKey("00")  Proof("admin_auth");"#,
             Instruction::CallMethod {
-                component_address: Value::Address(
+                component_id: Value::ComponentId(
                     Value::String("0292566c83de7fd6b04fcc92b5e04b03228ccff040785673278ef1".into())
                         .into()
                 ),
                 method: Value::String("withdraw_non_fungible".into()),
                 args: vec![
                     Value::NonFungibleKey(Value::String("00".into()).into()),
-                    Value::BucketRef(Value::String("admin_auth".into()).into())
+                    Value::Proof(Value::String("admin_auth".into()).into())
                 ]
             }
         );
         parse_instruction_ok!(
-            r#"CALL_METHOD_WITH_ALL_RESOURCES  Address("02d43f479e9b2beb9df98bc3888344fc25eda181e8f710ce1bf1de") "deposit_batch";"#,
+            r#"CALL_METHOD_WITH_ALL_RESOURCES  ComponentId("02d43f479e9b2beb9df98bc3888344fc25eda181e8f710ce1bf1de") "deposit_batch";"#,
             Instruction::CallMethodWithAllResources {
-                component_address: Value::Address(
+                component_id: Value::ComponentId(
                     Value::String("02d43f479e9b2beb9df98bc3888344fc25eda181e8f710ce1bf1de".into())
                         .into()
                 ),

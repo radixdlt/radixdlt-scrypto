@@ -8,7 +8,7 @@ cd "$(dirname "$0")/../"
 # Set up environment
 #====================
 
-acc1_address='0293c502780e23621475989d707cd8128e4506362e5fed6ac0c00a'
+acc1_component_id='0293c502780e23621475989d707cd8128e4506362e5fed6ac0c00a'
 acc1_pub_key='005feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9'
 acc1_mint_badge='031773788de8e4d2947d6592605302d4820ad060ceab06eb2d4711'
 btc='03aedb7960d1f87dc25138f4cd101da6c98d57323478d53c5fb951'

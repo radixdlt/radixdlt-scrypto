@@ -3,15 +3,15 @@ use scrypto::prelude::*;
 import! {
 r#"
 {
-    "package": "01bda8686d6c2fa45dce04fac71a09b54efbc8028c23aac74bc00e",
-    "name": "Airdrop",
+    "package_id": "01bda8686d6c2fa45dce04fac71a09b54efbc8028c23aac74bc00e",
+    "blueprint_name": "Airdrop",
     "functions": [
         {
             "name": "instantiate_airdrop",
             "inputs": [],
             "output": {
                 "type": "Custom",
-                "name": "scrypto::core::Component",
+                "name": "ComponentId",
                 "generics": []
             }
         }
@@ -23,7 +23,7 @@ r#"
             "inputs": [],
             "output": {
                 "type": "Custom",
-                "name": "scrypto::resource::Bucket",
+                "name": "Bucket",
                 "generics": []
             }
         }
@@ -38,7 +38,7 @@ blueprint! {
     }
 
     impl Proxy1 {
-        pub fn instantiate_proxy() -> Component {
+        pub fn instantiate_proxy() -> ComponentId {
             Self {
                 // The instantiate_airdrop() function returns a generic Component. We use `.into()` to convert it into an `Airdrop`.
                 airdrop: Airdrop::instantiate_airdrop().into(),

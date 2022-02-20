@@ -9,22 +9,22 @@ In this example, we demonstrate two ways of calling a function or method defined
 If the function or method is from an already published package, we need to
 1. Export the ABI of the blueprint using tools like `resim`
     ```
-    resim export-abi <PACKAGE_ADDRESS> Airdrop
+    resim export-abi <PACKAGE_ID> Airdrop
     ```
 2. Import the ABI into our package, e.g.,
     ```rust
     import! {
     r#"
     {
-        "package": "01bda8686d6c2fa45dce04fac71a09b54efbc8028c23aac74bc00e",
-        "name": "Airdrop",
+        "package_id": "01bda8686d6c2fa45dce04fac71a09b54efbc8028c23aac74bc00e",
+        "blueprint_name": "Airdrop",
         "functions": [
             {
                 "name": "instantiate_airdrop",
                 "inputs": [],
                 "output": {
                     "type": "Custom",
-                    "name": "scrypto::core::Component",
+                    "name": "ComponentId",
                     "generics": []
                 }
             }
@@ -36,7 +36,7 @@ If the function or method is from an already published package, we need to
                 "inputs": [],
                 "output": {
                     "type": "Custom",
-                    "name": "scrypto::resource::Bucket",
+                    "name": "Bucket",
                     "generics": []
                 }
             }
@@ -51,10 +51,10 @@ Once the blueprint has been imported, we can then call any of its functions, for
 let airdrop_component = Airdrop::instantiate_airdrop();
 ```
 
-To call a method, though, we need a component address, which can be parsed from string.
+To call a method, though, we need a component ID, which can be parsed from string.
 ```rust
-let address = Address::from_str("022cf5de8153aaf56ee81c032fb06c7fde0a1dc2389040d651dfc2").unwrap();
-let airdrop = Airdrop::from(address);
+let component_id = ComponentId::from_str("022cf5de8153aaf56ee81c032fb06c7fde0a1dc2389040d651dfc2").unwrap();
+let airdrop = Airdrop::from(component_id);
 let received_tokens = airdrop.free_token();
 ```
 

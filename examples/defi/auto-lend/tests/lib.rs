@@ -6,28 +6,30 @@ use auto_lend::User;
 
 struct TestEnv<'a, L: SubstateStore> {
     executor: TransactionExecutor<'a, L>,
-    key: EcdsaPublicKey,
-    account: Address,
-    usd: Address,
-    lending_pool: Address,
+    public_key: EcdsaPublicKey,
+    account: ComponentId,
+    usd: ResourceDefId,
+    lending_pool: ComponentId,
 }
 
 fn set_up_test_env<'a, L: SubstateStore>(ledger: &'a mut L) -> TestEnv<'a, L> {
     let mut executor = TransactionExecutor::new(ledger, false);
-    let key = executor.new_public_key();
-    let account = executor.new_account(key);
-    let package = executor.publish_package(include_code!("auto_lend")).unwrap();
+    let public_key = executor.new_public_key();
+    let account = executor.new_account(public_key);
+    let package = executor
+        .publish_package(include_code!("auto_lend"))
+        .unwrap();
 
     let receipt = executor
         .run(
             TransactionBuilder::new(&executor)
                 .new_token_fixed(HashMap::new(), 1_000_000.into())
                 .call_method_with_all_resources(account, "deposit_batch")
-                .build(vec![key])
-                .unwrap()
+                .build(vec![public_key])
+                .unwrap(),
         )
         .unwrap();
-    let usd = receipt.resource_def(0).unwrap();
+    let usd = receipt.new_resource_def_ids[0];
 
     let receipt = executor
         .run(
@@ -40,37 +42,37 @@ fn set_up_test_env<'a, L: SubstateStore>(ledger: &'a mut L) -> TestEnv<'a, L> {
                     Some(account),
                 )
                 .call_method_with_all_resources(account, "deposit_batch")
-                .build(vec![key])
-                .unwrap()
+                .build(vec![public_key])
+                .unwrap(),
         )
         .unwrap();
-    let lending_pool = receipt.component(0).unwrap();
+    let lending_pool = receipt.new_component_ids[0];
 
     TestEnv {
         executor,
-        key,
+        public_key,
         account,
         usd,
         lending_pool,
     }
 }
 
-fn create_user<'a, L: SubstateStore>(env: &mut TestEnv<'a, L>) -> Address {
+fn create_user<'a, L: SubstateStore>(env: &mut TestEnv<'a, L>) -> ResourceDefId {
     let receipt = env
         .executor
         .run(
             TransactionBuilder::new(&env.executor)
                 .call_method(env.lending_pool, "new_user", args![], Some(env.account))
                 .call_method_with_all_resources(env.account, "deposit_batch")
-                .build(vec![env.key])
-                .unwrap()
+                .build(vec![env.public_key])
+                .unwrap(),
         )
         .unwrap();
     assert!(receipt.result.is_ok());
-    receipt.resource_def(0).unwrap()
+    receipt.new_resource_def_ids[0]
 }
 
-fn get_user_state<'a, L: SubstateStore>(env: &mut TestEnv<'a, L>, user_id: Address) -> User {
+fn get_user_state<'a, L: SubstateStore>(env: &mut TestEnv<'a, L>, user_id: ResourceDefId) -> User {
     let mut receipt = env
         .executor
         .run(
@@ -82,8 +84,8 @@ fn get_user_state<'a, L: SubstateStore>(env: &mut TestEnv<'a, L>, user_id: Addre
                     Some(env.account),
                 )
                 .call_method_with_all_resources(env.account, "deposit_batch")
-                .build(vec![env.key])
-                .unwrap()
+                .build(vec![env.public_key])
+                .unwrap(),
         )
         .unwrap();
     assert!(receipt.result.is_ok());
@@ -110,8 +112,8 @@ fn test_deposit_and_redeem() {
                     Some(env.account),
                 )
                 .call_method_with_all_resources(env.account, "deposit_batch")
-                .build(vec![env.key])
-                .unwrap()
+                .build(vec![env.public_key])
+                .unwrap(),
         )
         .unwrap();
     println!("{:?}", receipt);
@@ -140,8 +142,8 @@ fn test_deposit_and_redeem() {
                     Some(env.account),
                 )
                 .call_method_with_all_resources(env.account, "deposit_batch")
-                .build(vec![env.key])
-                .unwrap()
+                .build(vec![env.public_key])
+                .unwrap(),
         )
         .unwrap();
     println!("{:?}", receipt);
@@ -158,8 +160,8 @@ fn test_deposit_and_redeem() {
                     Some(env.account),
                 )
                 .call_method_with_all_resources(env.account, "deposit_batch")
-                .build(vec![env.key])
-                .unwrap()
+                .build(vec![env.public_key])
+                .unwrap(),
         )
         .unwrap();
     println!("{:?}", receipt);
@@ -188,8 +190,8 @@ fn test_deposit_and_redeem() {
                     Some(env.account),
                 )
                 .call_method_with_all_resources(env.account, "deposit_batch")
-                .build(vec![env.key])
-                .unwrap()
+                .build(vec![env.public_key])
+                .unwrap(),
         )
         .unwrap();
     println!("{:?}", receipt);
@@ -229,8 +231,8 @@ fn test_borrow_and_repay() {
                     Some(env.account),
                 )
                 .call_method_with_all_resources(env.account, "deposit_batch")
-                .build(vec![env.key])
-                .unwrap()
+                .build(vec![env.public_key])
+                .unwrap(),
         )
         .unwrap();
     println!("{:?}", receipt);
@@ -259,8 +261,8 @@ fn test_borrow_and_repay() {
                     Some(env.account),
                 )
                 .call_method_with_all_resources(env.account, "deposit_batch")
-                .build(vec![env.key])
-                .unwrap()
+                .build(vec![env.public_key])
+                .unwrap(),
         )
         .unwrap();
     println!("{:?}", receipt);
@@ -289,8 +291,8 @@ fn test_borrow_and_repay() {
                     Some(env.account),
                 )
                 .call_method_with_all_resources(env.account, "deposit_batch")
-                .build(vec![env.key])
-                .unwrap()
+                .build(vec![env.public_key])
+                .unwrap(),
         )
         .unwrap();
     println!("{:?}", receipt);
@@ -307,8 +309,8 @@ fn test_borrow_and_repay() {
                     Some(env.account),
                 )
                 .call_method_with_all_resources(env.account, "deposit_batch")
-                .build(vec![env.key])
-                .unwrap()
+                .build(vec![env.public_key])
+                .unwrap(),
         )
         .unwrap();
     println!("{:?}", receipt);
@@ -337,8 +339,8 @@ fn test_borrow_and_repay() {
                     Some(env.account),
                 )
                 .call_method_with_all_resources(env.account, "deposit_batch")
-                .build(vec![env.key])
-                .unwrap()
+                .build(vec![env.public_key])
+                .unwrap(),
         )
         .unwrap();
     println!("{:?}", receipt);
@@ -370,8 +372,8 @@ fn test_borrow_and_repay() {
                     Some(env.account),
                 )
                 .call_method_with_all_resources(env.account, "deposit_batch")
-                .build(vec![env.key])
-                .unwrap()
+                .build(vec![env.public_key])
+                .unwrap(),
         )
         .unwrap();
     println!("{:?}", receipt);

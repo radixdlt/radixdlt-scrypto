@@ -30,8 +30,8 @@ fn test_create_additional_admin() {
     assert!(receipt1.result.is_ok());
 
     // Test the `create_additional_admin` method.
-    let flat_admin = receipt1.component(0).unwrap();
-    let admin_badge = receipt1.resource_def(1).unwrap();
+    let flat_admin = receipt1.new_component_ids[0];
+    let admin_badge = receipt1.new_resource_def_ids[1];
     let transaction2 = TransactionBuilder::new(&executor)
         .call_method(
             flat_admin,

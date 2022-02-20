@@ -4,7 +4,7 @@ use scrypto::prelude::*;
 blueprint! {
     struct ClearingHouse {
         /// All traders' positions
-        trader_positions: LazyMap<Address, Vec<Position>>,
+        trader_positions: LazyMap<ResourceDefId, Vec<Position>>,
         /// Deposit vault
         deposits_in_quote: Vault,
         /// Liquidation threshold
@@ -15,13 +15,13 @@ blueprint! {
 
     impl ClearingHouse {
         pub fn instantiate_clearing_house(
-            quote_address: Address,
+            quote_resource_def_id: ResourceDefId,
             base_init_supply: Decimal,
             quote_init_supply: Decimal,
-        ) -> Component {
+        ) -> ComponentId {
             Self {
                 trader_positions: LazyMap::new(),
-                deposits_in_quote: Vault::new(quote_address),
+                deposits_in_quote: Vault::new(quote_resource_def_id),
                 liquidation_threshold: "0.06".parse().unwrap(),
                 amm: AMM {
                     base_supply: base_init_supply,
@@ -34,7 +34,7 @@ blueprint! {
         /// Creates a position.
         pub fn new_position(
             &mut self,
-            user_auth: BucketRef,
+            user_auth: Proof,
             margin: Bucket,
             leverage: Decimal,
             position_type: String, // TODO: make CLI support enum
@@ -59,13 +59,13 @@ blueprint! {
         }
 
         /// Settles a position.
-        pub fn settle_position(&mut self, user_auth: BucketRef, nth: usize) -> Bucket {
+        pub fn settle_position(&mut self, user_auth: Proof, nth: usize) -> Bucket {
             let user_id = Self::get_user_id(user_auth);
             self.settle_internal(user_id, nth)
         }
 
         /// Liquidate a position.
-        pub fn liquidate(&mut self, user_id: Address, nth: usize) -> Bucket {
+        pub fn liquidate(&mut self, user_id: ResourceDefId, nth: usize) -> Bucket {
             assert!(
                 self.get_margin_ratio(user_id, nth) <= self.liquidation_threshold,
                 "Position can't be liquidated"
@@ -80,13 +80,13 @@ blueprint! {
         }
 
         /// Returns the n-th position of a user
-        pub fn get_position(&self, user_id: Address, nth: usize) -> Position {
+        pub fn get_position(&self, user_id: ResourceDefId, nth: usize) -> Position {
             let positions = self.trader_positions.get(&user_id).unwrap();
             positions.get(nth).unwrap().clone()
         }
 
         /// Returns the margin ratio of a specific position
-        pub fn get_margin_ratio(&self, user_id: Address, nth: usize) -> Decimal {
+        pub fn get_margin_ratio(&self, user_id: ResourceDefId, nth: usize) -> Decimal {
             let position = self.get_position(user_id, nth);
             self.amm.get_margin_ratio(&position)
         }
@@ -103,13 +103,13 @@ blueprint! {
                 .initial_supply_fungible(1)
         }
 
-        /// Parse user id from a bucket ref.
-        fn get_user_id(user_auth: BucketRef) -> Address {
+        /// Parse user id from a proof.
+        fn get_user_id(user_auth: Proof) -> ResourceDefId {
             assert!(user_auth.amount() > 0.into(), "Invalid user proof");
-            user_auth.resource_address()
+            user_auth.resource_def_id()
         }
 
-        fn settle_internal(&mut self, user_id: Address, nth: usize) -> Bucket {
+        fn settle_internal(&mut self, user_id: ResourceDefId, nth: usize) -> Bucket {
             let mut positions = self.trader_positions.get(&user_id).unwrap();
             let position = positions.get(nth).unwrap();
 

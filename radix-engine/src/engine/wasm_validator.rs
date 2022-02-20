@@ -1,7 +1,7 @@
 use wasmi::*;
 
 use crate::engine::*;
-use crate::model::*;
+use crate::errors::*;
 
 /// Parses a WASM module.
 pub fn parse_module(code: &[u8]) -> Result<Module, WasmValidationError> {

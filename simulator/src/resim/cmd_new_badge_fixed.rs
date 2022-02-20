@@ -1,7 +1,7 @@
 use clap::Parser;
 use radix_engine::transaction::*;
+use scrypto::engine::types::*;
 use scrypto::rust::collections::*;
-use scrypto::types::*;
 
 use crate::resim::*;
 

@@ -1,7 +1,7 @@
 use wasmi::*;
 
 use crate::engine::*;
-use crate::model::*;
+use crate::errors::*;
 
 /// Instantiates a WASM module.
 pub fn instantiate_module(module: &Module) -> Result<(ModuleRef, MemoryRef), WasmValidationError> {

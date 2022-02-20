@@ -1,9 +1,8 @@
-use crate::engine::*;
+use crate::math::*;
 use crate::resource::*;
 use crate::rust::borrow::ToOwned;
 use crate::rust::collections::HashMap;
 use crate::rust::string::String;
-use crate::types::*;
 
 /// Not divisible.
 pub const DIVISIBILITY_NONE: u8 = 0;
@@ -16,7 +15,7 @@ pub struct ResourceBuilder {
     metadata: HashMap<String, String>,
     flags: u64,
     mutable_flags: u64,
-    authorities: HashMap<Address, u64>,
+    authorities: HashMap<ResourceDefId, u64>,
 }
 
 impl ResourceBuilder {
@@ -66,14 +65,13 @@ impl ResourceBuilder {
     }
 
     /// Adds a badge for authorization.
-    pub fn badge<A: Into<ResourceDef>>(&mut self, badge_address: A, permissions: u64) -> &mut Self {
-        self.authorities
-            .insert(badge_address.into().address(), permissions);
+    pub fn badge(&mut self, badge: ResourceDefId, permissions: u64) -> &mut Self {
+        self.authorities.insert(badge, permissions);
         self
     }
 
     /// Creates resource with the given initial supply.
-    pub fn initial_supply(&self, supply: NewSupply) -> Bucket {
+    pub fn initial_supply(&self, supply: Supply) -> Bucket {
         self.build(Some(supply)).1.unwrap()
     }
 
@@ -86,7 +84,7 @@ impl ResourceBuilder {
     ///     .initial_supply_fungible(5);
     /// ```
     pub fn initial_supply_fungible<T: Into<Decimal>>(&self, amount: T) -> Bucket {
-        self.build(Some(NewSupply::fungible(amount))).1.unwrap()
+        self.build(Some(Supply::fungible(amount))).1.unwrap()
     }
 
     /// Creates resource with the given initial non-fungible supply.
@@ -105,18 +103,16 @@ impl ResourceBuilder {
         T: IntoIterator<Item = (NonFungibleKey, V)>,
         V: NonFungibleData,
     {
-        self.build(Some(NewSupply::non_fungible(entries)))
-            .1
-            .unwrap()
+        self.build(Some(Supply::non_fungible(entries))).1.unwrap()
     }
 
     /// Creates resource with no initial supply.
-    pub fn no_initial_supply(&self) -> ResourceDef {
+    pub fn no_initial_supply(&self) -> ResourceDefId {
         self.build(None).0
     }
 
-    fn build(&self, supply: Option<NewSupply>) -> (ResourceDef, Option<Bucket>) {
-        ResourceDef::new(
+    fn build(&self, supply: Option<Supply>) -> (ResourceDefId, Option<Bucket>) {
+        create_resource(
             self.resource_type,
             self.metadata.clone(),
             self.flags,

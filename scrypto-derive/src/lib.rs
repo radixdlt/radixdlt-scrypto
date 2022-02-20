@@ -60,15 +60,15 @@ pub fn blueprint(input: TokenStream) -> TokenStream {
 /// import! {
 /// r#"
 /// {
-///     "package": "01a405d3129b61e86c51c3168d553d2ffd7a3f0bd2f66b5a3e9876",
-///     "name": "GumballMachine",
+///     "package_id": "01a405d3129b61e86c51c3168d553d2ffd7a3f0bd2f66b5a3e9876",
+///     "blueprint_name": "GumballMachine",
 ///     "functions": [
 ///         {
 ///             "name": "new",
 ///             "inputs": [],
 ///             "output": {
 ///                 "type": "Custom",
-///                 "name": "scrypto::types::Address"
+///                 "name": "ComponentId"
 ///             }
 ///         }
 ///     ],
@@ -79,12 +79,12 @@ pub fn blueprint(input: TokenStream) -> TokenStream {
 ///             "inputs": [
 ///                 {
 ///                     "type": "Custom",
-///                     "name": "scrypto::resource::Bucket"
+///                     "name": "Bucket"
 ///                 }
 ///             ],
 ///             "output": {
 ///                 "type": "Custom",
-///                 "name": "scrypto::resource::Bucket"
+///                 "name": "Bucket"
 ///             }
 ///         }
 ///     ]
@@ -101,9 +101,9 @@ pub fn import(input: TokenStream) -> TokenStream {
 
 /// Defines the authorization rule for a method.
 ///
-/// A list of component fields of type `ResourceDef` or `Address` should be provided.
+/// A list of component fields of type `ResourceDefId` should be provided.
 ///
-/// Caller must provide a bucket ref containing any of the associated resource.
+/// Caller must provide a proof containing any of the associated resource.
 ///
 /// # Example
 /// ```ignore
@@ -111,7 +111,7 @@ pub fn import(input: TokenStream) -> TokenStream {
 /// pub fn some_method(&self) {
 ///     // This is protected
 ///
-///     // To retrieve auth resource address, use `auth.resource_address()`.
+///     // To retrieve auth resource definition ID, use `auth.resource_def_id()`.
 /// }
 /// ```
 #[proc_macro_attribute]

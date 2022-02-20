@@ -8,13 +8,13 @@ use serde_json::{json, to_value, Value};
 
 blueprint! {
     struct SimpleAuth {
-        admin: ResourceDef,
-        user: Address,
+        admin: ResourceDefId,
+        user: ResourceDefId,
         reserves: Vault,
     }
 
     impl SimpleAuth {
-        pub fn new(admin: ResourceDef, user: Address) -> Component {
+        pub fn new(admin: ResourceDefId, user: ResourceDefId) -> ComponentId {
             Self {
                 admin,
                 user,
@@ -63,18 +63,18 @@ fn test_simple_auth() {
                     "inputs": [
                         {
                             "type": "Custom",
-                            "name": "scrypto::resource::ResourceDef",
+                            "name": "ResourceDefId",
                             "generics": []
                         },
                         {
                             "type": "Custom",
-                            "name": "scrypto::types::Address",
+                            "name": "ResourceDefId",
                             "generics": []
                         }
                     ],
                     "output": {
                         "type": "Custom",
-                        "name": "scrypto::core::Component",
+                        "name": "ComponentId",
                         "generics": []
                     }
                 }
@@ -86,12 +86,12 @@ fn test_simple_auth() {
                     "inputs": [
                         {
                             "type": "Custom",
-                            "name": "scrypto::resource::Bucket",
+                            "name": "Bucket",
                             "generics": []
                         },
                         {
                             "type": "Custom",
-                            "name": "scrypto::resource::BucketRef",
+                            "name": "Proof",
                             "generics": []
                         }
                     ],
@@ -105,13 +105,13 @@ fn test_simple_auth() {
                     "inputs": [
                         {
                             "type": "Custom",
-                            "name": "scrypto::resource::BucketRef",
+                            "name": "Proof",
                             "generics": []
                         }
                     ],
                     "output": {
                         "type": "Custom",
-                        "name": "scrypto::resource::Bucket",
+                        "name": "Bucket",
                         "generics": []
                     }
                 },
@@ -121,13 +121,13 @@ fn test_simple_auth() {
                     "inputs": [
                         {
                             "type": "Custom",
-                            "name": "scrypto::resource::BucketRef",
+                            "name": "Proof",
                             "generics": []
                         }
                     ],
                     "output": {
                         "type": "Custom",
-                        "name": "scrypto::resource::Bucket",
+                        "name": "Bucket",
                         "generics": []
                     }
                 }

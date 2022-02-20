@@ -3,7 +3,7 @@ use scrypto::prelude::*;
 blueprint! {
     struct Radiswap {
         /// The resource definition of LP token.
-        lp_resource_def: ResourceDef,
+        lp_token: ResourceDefId,
         /// LP tokens mint badge.
         lp_mint_badge: Vault,
         /// The reserve for token A.
@@ -18,7 +18,7 @@ blueprint! {
     }
 
     impl Radiswap {
-        /// Creates a Radiswap component for token pair A/B and returns the component address
+        /// Creates a Radiswap component for token pair A/B and returns the component ID
         /// along with the initial LP tokens.
         pub fn instantiate_pool(
             a_tokens: Bucket,
@@ -28,7 +28,7 @@ blueprint! {
             lp_name: String,
             lp_url: String,
             fee: Decimal,
-        ) -> (Component, Bucket) {
+        ) -> (ComponentId, Bucket) {
             // Check arguments
             assert!(
                 !a_tokens.is_empty() && !b_tokens.is_empty(),
@@ -43,21 +43,21 @@ blueprint! {
             let lp_mint_badge = ResourceBuilder::new_fungible(DIVISIBILITY_NONE)
                 .metadata("name", "LP Token Mint Auth")
                 .initial_supply_fungible(1);
-            let mut lp_resource_def = ResourceBuilder::new_fungible(DIVISIBILITY_MAXIMUM)
+            let mut lp_token = ResourceBuilder::new_fungible(DIVISIBILITY_MAXIMUM)
                 .metadata("symbol", lp_symbol)
                 .metadata("name", lp_name)
                 .metadata("url", lp_url)
                 .flags(MINTABLE | BURNABLE)
-                .badge(lp_mint_badge.resource_def(), MAY_MINT | MAY_BURN)
+                .badge(lp_mint_badge.resource_def_id(), MAY_MINT | MAY_BURN)
                 .no_initial_supply();
-            let lp_tokens = lp_resource_def.mint(lp_initial_supply, lp_mint_badge.present());
+            let lp_tokens = lp_token.mint(lp_initial_supply, lp_mint_badge.present());
 
             // ratio = initial supply / (x * y) = initial supply / k
             let lp_per_asset_ratio = lp_initial_supply / (a_tokens.amount() * b_tokens.amount());
 
             // Instantiate our Radiswap component
             let radiswap = Self {
-                lp_resource_def,
+                lp_token,
                 lp_mint_badge: Vault::with_bucket(lp_mint_badge),
                 a_pool: Vault::with_bucket(a_tokens),
                 b_pool: Vault::with_bucket(b_tokens),
@@ -72,9 +72,13 @@ blueprint! {
 
         /// Adds liquidity to this pool and return the LP tokens representing pool shares
         /// along with any remainder.
-        pub fn add_liquidity(&mut self, mut a_tokens: Bucket, mut b_tokens: Bucket) -> (Bucket, Bucket) {
+        pub fn add_liquidity(
+            &mut self,
+            mut a_tokens: Bucket,
+            mut b_tokens: Bucket,
+        ) -> (Bucket, Bucket) {
             // Differentiate LP calculation based on whether pool is empty or not.
-            let (supply_to_mint, remainder) = if self.lp_resource_def.total_supply() == 0.into() {
+            let (supply_to_mint, remainder) = if self.lp_token.total_supply() == 0.into() {
                 // Set initial LP tokens based on previous LP per K ratio.
                 let supply_to_mint =
                     self.lp_per_asset_ratio * a_tokens.amount() * b_tokens.amount();
@@ -99,16 +103,13 @@ blueprint! {
                         .put(a_tokens.take(self.a_pool.amount() * b_ratio));
                     (b_ratio, a_tokens)
                 };
-                (
-                    self.lp_resource_def.total_supply() * actual_ratio,
-                    remainder,
-                )
+                (self.lp_token.total_supply() * actual_ratio, remainder)
             };
 
             // Mint LP tokens according to the share the provider is contributing
             let lp_tokens = self
                 .lp_mint_badge
-                .authorize(|auth| self.lp_resource_def.mint(supply_to_mint, auth));
+                .authorize(|auth| self.lp_token.mint(supply_to_mint, auth));
 
             // Return the LP tokens along with any remainder
             (lp_tokens, remainder)
@@ -117,12 +118,12 @@ blueprint! {
         /// Removes liquidity from this pool.
         pub fn remove_liquidity(&mut self, lp_tokens: Bucket) -> (Bucket, Bucket) {
             assert!(
-                self.lp_resource_def == lp_tokens.resource_def(),
+                self.lp_token == lp_tokens.resource_def_id(),
                 "Wrong token type passed in"
             );
 
             // Calculate the share based on the input LP tokens.
-            let share = lp_tokens.amount() / self.lp_resource_def.total_supply();
+            let share = lp_tokens.amount() / self.lp_token.total_supply();
 
             // Withdraw the correct amounts of tokens A and B from reserves
             let a_withdrawn = self.a_pool.take(self.a_pool.amount() * share);
@@ -142,7 +143,7 @@ blueprint! {
             // Calculate the swap fee
             let fee_amount = input_tokens.amount() * self.fee;
 
-            let output_tokens = if input_tokens.resource_def() == self.a_pool.resource_def() {
+            let output_tokens = if input_tokens.resource_def_id() == self.a_pool.resource_def_id() {
                 // Calculate how much of token B we will return
                 let b_amount = self.b_pool.amount()
                     - self.a_pool.amount() * self.b_pool.amount()
@@ -168,17 +169,14 @@ blueprint! {
 
             // Accrued fees change the raio
             self.lp_per_asset_ratio =
-                self.lp_resource_def.total_supply() / (self.a_pool.amount() * self.b_pool.amount());
+                self.lp_token.total_supply() / (self.a_pool.amount() * self.b_pool.amount());
 
             output_tokens
         }
 
-        /// Returns the resource definition addresses of the pair.
-        pub fn get_pair(&self) -> (Address, Address) {
-            (
-                self.a_pool.resource_address(),
-                self.b_pool.resource_address(),
-            )
+        /// Returns the resource definition IDs of the pair.
+        pub fn get_pair(&self) -> (ResourceDefId, ResourceDefId) {
+            (self.a_pool.resource_def_id(), self.b_pool.resource_def_id())
         }
     }
 }

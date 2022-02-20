@@ -7,28 +7,30 @@ use x_perp_futures::PositionType;
 
 struct TestEnv<'a, L: SubstateStore> {
     executor: TransactionExecutor<'a, L>,
-    key: EcdsaPublicKey,
-    account: Address,
-    usd: Address,
-    clearing_house: Address,
+    public_key: EcdsaPublicKey,
+    account: ComponentId,
+    usd: ResourceDefId,
+    clearing_house: ComponentId,
 }
 
 fn set_up_test_env<'a, L: SubstateStore>(ledger: &'a mut L) -> TestEnv<'a, L> {
     let mut executor = TransactionExecutor::new(ledger, false);
-    let key = executor.new_public_key();
-    let account = executor.new_account(key);
-    let package = executor.publish_package(include_code!("x_perp_futures")).unwrap();
+    let public_key = executor.new_public_key();
+    let account = executor.new_account(public_key);
+    let package = executor
+        .publish_package(include_code!("x_perp_futures"))
+        .unwrap();
 
     let receipt = executor
         .run(
             TransactionBuilder::new(&executor)
                 .new_token_fixed(HashMap::new(), 1_000_000.into())
                 .call_method_with_all_resources(account, "deposit_batch")
-                .build(vec![key])
-                .unwrap()
+                .build(vec![public_key])
+                .unwrap(),
         )
         .unwrap();
-    let usd = receipt.resource_def(0).unwrap();
+    let usd = receipt.new_resource_def_ids[0];
 
     let receipt = executor
         .run(
@@ -41,37 +43,41 @@ fn set_up_test_env<'a, L: SubstateStore>(ledger: &'a mut L) -> TestEnv<'a, L> {
                     Some(account),
                 )
                 .call_method_with_all_resources(account, "deposit_batch")
-                .build(vec![key])
-                .unwrap()
+                .build(vec![public_key])
+                .unwrap(),
         )
         .unwrap();
-    let clearing_house = receipt.component(0).unwrap();
+    let clearing_house = receipt.new_component_ids[0];
 
     TestEnv {
         executor,
-        key,
+        public_key,
         account,
         usd,
         clearing_house,
     }
 }
 
-fn create_user<'a, L: SubstateStore>(env: &mut TestEnv<'a, L>) -> Address {
+fn create_user<'a, L: SubstateStore>(env: &mut TestEnv<'a, L>) -> ResourceDefId {
     let receipt = env
         .executor
         .run(
             TransactionBuilder::new(&env.executor)
                 .call_method(env.clearing_house, "new_user", args![], Some(env.account))
                 .call_method_with_all_resources(env.account, "deposit_batch")
-                .build(vec![env.key])
-                .unwrap()
+                .build(vec![env.public_key])
+                .unwrap(),
         )
         .unwrap();
     assert!(receipt.result.is_ok());
-    receipt.resource_def(0).unwrap()
+    receipt.new_resource_def_ids[0]
 }
 
-fn get_position<'a, L: SubstateStore>(env: &mut TestEnv<'a, L>, user_id: Address, nth: usize) -> Position {
+fn get_position<'a, L: SubstateStore>(
+    env: &mut TestEnv<'a, L>,
+    user_id: ResourceDefId,
+    nth: usize,
+) -> Position {
     let mut receipt = env
         .executor
         .run(
@@ -83,8 +89,8 @@ fn get_position<'a, L: SubstateStore>(env: &mut TestEnv<'a, L>, user_id: Address
                     Some(env.account),
                 )
                 .call_method_with_all_resources(env.account, "deposit_batch")
-                .build(vec![env.key])
-                .unwrap()
+                .build(vec![env.public_key])
+                .unwrap(),
         )
         .unwrap();
     assert!(receipt.result.is_ok());
@@ -117,8 +123,8 @@ fn test_long() {
                     Some(env.account),
                 )
                 .call_method_with_all_resources(env.account, "deposit_batch")
-                .build(vec![env.key])
-                .unwrap()
+                .build(vec![env.public_key])
+                .unwrap(),
         )
         .unwrap();
     println!("{:?}", receipt);
@@ -150,8 +156,8 @@ fn test_long() {
                     Some(env.account),
                 )
                 .call_method_with_all_resources(env.account, "deposit_batch")
-                .build(vec![env.key])
-                .unwrap()
+                .build(vec![env.public_key])
+                .unwrap(),
         )
         .unwrap();
     println!("{:?}", receipt);
@@ -178,8 +184,8 @@ fn test_long() {
                     Some(env.account),
                 )
                 .call_method_with_all_resources(env.account, "deposit_batch")
-                .build(vec![env.key])
-                .unwrap()
+                .build(vec![env.public_key])
+                .unwrap(),
         )
         .unwrap();
     println!("{:?}", receipt);
@@ -210,8 +216,8 @@ fn test_short() {
                     Some(env.account),
                 )
                 .call_method_with_all_resources(env.account, "deposit_batch")
-                .build(vec![env.key])
-                .unwrap()
+                .build(vec![env.public_key])
+                .unwrap(),
         )
         .unwrap();
     println!("{:?}", receipt);
@@ -243,8 +249,8 @@ fn test_short() {
                     Some(env.account),
                 )
                 .call_method_with_all_resources(env.account, "deposit_batch")
-                .build(vec![env.key])
-                .unwrap()
+                .build(vec![env.public_key])
+                .unwrap(),
         )
         .unwrap();
     println!("{:?}", receipt);
@@ -271,8 +277,8 @@ fn test_short() {
                     Some(env.account),
                 )
                 .call_method_with_all_resources(env.account, "deposit_batch")
-                .build(vec![env.key])
-                .unwrap()
+                .build(vec![env.public_key])
+                .unwrap(),
         )
         .unwrap();
     println!("{:?}", receipt);

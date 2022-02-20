@@ -38,8 +38,8 @@ fn test_withdraw_all() {
     assert!(receipt1.result.is_ok());
 
     // Test the `withdraw_all` method.
-    let managed_access = receipt1.component(1).unwrap();
-    let admin_badge = receipt1.resource_def(1).unwrap();
+    let managed_access = receipt1.new_component_ids[1];
+    let admin_badge = receipt1.new_resource_def_ids[1];
     let transaction2 = TransactionBuilder::new(&executor)
         .call_method(
             managed_access,
