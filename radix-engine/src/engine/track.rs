@@ -152,24 +152,11 @@ impl<'s, S: SubstateStore> Track<'s, S> {
         }
     }
 
-    /// Returns a mutable reference to a package, if exists.
-    #[allow(dead_code)]
-    pub fn get_package_mut(&mut self, package_id: PackageId) -> Option<&mut Package> {
-        if self.packages.contains_key(&package_id) {
-            return self.packages.get_mut(&package_id);
-        }
-
-        if let Some(package) = self.substate_store.get_decoded_substate(&package_id) {
-            self.packages.insert(package_id, package);
-            self.packages.get_mut(&package_id)
-        } else {
-            None
-        }
-    }
-
     /// Inserts a new package.
-    pub fn put_package(&mut self, package_id: PackageId, package: Package) {
+    pub fn create_package(&mut self, package: Package) -> PackageId {
+        let package_id = self.new_package_id();
         self.packages.insert(package_id, package);
+        package_id
     }
 
     /// Returns an immutable reference to a component, if exists.
@@ -201,8 +188,10 @@ impl<'s, S: SubstateStore> Track<'s, S> {
     }
 
     /// Inserts a new component.
-    pub fn put_component(&mut self, component_id: ComponentId, component: Component) {
+    pub fn create_component(&mut self, component: Component) -> ComponentId {
+        let component_id = self.new_component_id();
         self.components.insert(component_id, component);
+        component_id
     }
 
     /// Returns an immutable reference to a non-fungible, if exists.
@@ -336,8 +325,10 @@ impl<'s, S: SubstateStore> Track<'s, S> {
     }
 
     /// Inserts a new resource definition.
-    pub fn put_resource_def(&mut self, resource_def_id: ResourceDefId, resource_def: ResourceDef) {
+    pub fn create_resource_def(&mut self, resource_def: ResourceDef) -> ResourceDefId {
+        let resource_def_id = self.new_resource_def_id();
         self.resource_defs.insert(resource_def_id, resource_def);
+        resource_def_id
     }
 
     /// Returns a mutable reference to a vault, if exists.
@@ -363,7 +354,7 @@ impl<'s, S: SubstateStore> Track<'s, S> {
     }
 
     /// Creates a new package ID.
-    pub fn new_package_id(&mut self) -> PackageId {
+    fn new_package_id(&mut self) -> PackageId {
         // Security Alert: ensure ID allocating will practically never fail
         let package_id = self
             .id_allocator
@@ -374,7 +365,7 @@ impl<'s, S: SubstateStore> Track<'s, S> {
     }
 
     /// Creates a new component ID.
-    pub fn new_component_id(&mut self) -> ComponentId {
+    fn new_component_id(&mut self) -> ComponentId {
         let component_id = self
             .id_allocator
             .new_component_id(self.transaction_hash())
@@ -384,7 +375,7 @@ impl<'s, S: SubstateStore> Track<'s, S> {
     }
 
     /// Creates a new resource definition ID.
-    pub fn new_resource_def_id(&mut self) -> ResourceDefId {
+    fn new_resource_def_id(&mut self) -> ResourceDefId {
         let resource_def_id = self
             .id_allocator
             .new_resource_def_id(self.transaction_hash())

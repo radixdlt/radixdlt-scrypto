@@ -947,15 +947,10 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         input: PublishPackageInput,
     ) -> Result<PublishPackageOutput, RuntimeError> {
-        let package_id = self.track.new_package_id();
 
-        if self.track.get_package(package_id).is_some() {
-            return Err(RuntimeError::PackageAlreadyExists(package_id));
-        }
         validate_module(&input.code).map_err(RuntimeError::WasmValidationError)?;
 
-        re_debug!(self, "New package: {}", package_id);
-        self.track.put_package(package_id, Package::new(input.code));
+        let package_id = self.track.create_package(Package::new(input.code));
 
         Ok(PublishPackageOutput { package_id })
     }
@@ -1025,24 +1020,17 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .wasm_process_state
             .as_mut()
             .ok_or(RuntimeError::IllegalSystemCall())?;
-        let component_id = self.track.new_component_id();
-
-        if self.track.get_component(component_id).is_some() {
-            return Err(RuntimeError::ComponentAlreadyExists(component_id));
-        }
 
         let data = Self::process_entry_data(&input.state)?;
         let new_objects = wasm_process.process_owned_objects.take(data)?;
-
-        self.track
-            .insert_objects_into_component(new_objects, component_id);
-
         let component = Component::new(
             wasm_process.vm.invocation.package_id,
             input.blueprint_name,
             input.state,
         );
-        self.track.put_component(component_id, component);
+        let component_id = self.track.create_component(component);
+        self.track
+            .insert_objects_into_component(new_objects, component_id);
 
         Ok(CreateComponentOutput { component_id })
     }
@@ -1317,11 +1305,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         input: CreateResourceInput,
     ) -> Result<CreateResourceOutput, RuntimeError> {
         // instantiate resource definition
-        let resource_def_id = self.track.new_resource_def_id();
-        if self.track.get_resource_def(resource_def_id).is_some() {
-            return Err(RuntimeError::ResourceDefAlreadyExists(resource_def_id));
-        }
-        re_debug!(self, "New resource definition: {}", resource_def_id);
         let definition = ResourceDef::new(
             input.resource_type,
             input.metadata,
@@ -1331,12 +1314,13 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             &input.initial_supply,
         )
         .map_err(RuntimeError::ResourceDefError)?;
-        self.track.put_resource_def(resource_def_id, definition);
+
+        let resource_def_id = self.track.create_resource_def(definition);
+        re_debug!(self, "New resource definition: {}", resource_def_id);
 
         // allocate supply
         let bucket_id = if let Some(initial_supply) = input.initial_supply {
             let supply = self.allocate_resource(resource_def_id, initial_supply)?;
-
             let bucket = Bucket::new(resource_def_id, input.resource_type, supply);
             let bucket_id = self.track.new_bucket_id();
             self.buckets.insert(bucket_id, bucket);
