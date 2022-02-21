@@ -34,25 +34,70 @@ pub trait QueryableSubstateStore {
 /// A ledger stores all transactions and substates.
 pub trait SubstateStore {
     fn get_substate<T: Encode>(&self, address: &T) -> Option<Vec<u8>>;
-    fn get_child_substate<T: Encode>(&self, address: &T, key: &[u8]) -> Option<Vec<u8>>;
-
     fn put_substate<T: Encode>(&mut self, address: &T, substate: &[u8]);
+    fn get_child_substate<T: Encode>(&self, address: &T, key: &[u8]) -> Option<Vec<u8>>;
     fn put_child_substate<T: Encode>(&mut self, address: &T, key: &[u8], substate: &[u8]);
 
+    // Temporary Encoded/Decoded interface
+    fn get_decoded_substate<A: Encode, T: Decode>(&self, address: &A) -> Option<T> {
+        self.get_substate(address)
+            .map(|v| scrypto_decode(&v).unwrap())
+    }
+    fn put_encoded_substate<A: Encode, V: Encode>(&mut self, address: &A, value: &V) {
+        self.put_substate(address, &scrypto_encode(value));
+    }
+    fn get_decoded_child_substate<A: Encode, K: Encode, T: Decode>(
+        &self,
+        address: &A,
+        key: &K,
+    ) -> Option<T> {
+        let child_key = &scrypto_encode(key);
+        self.get_child_substate(address, child_key)
+            .map(|v| scrypto_decode(&v).unwrap())
+    }
+    fn put_encoded_child_substate<A: Encode, K: Encode, V: Encode>(
+        &mut self,
+        address: &A,
+        key: &K,
+        value: &V,
+    ) {
+        let child_key = &scrypto_encode(key);
+        self.put_child_substate(address, child_key, &scrypto_encode(value));
+    }
+    fn put_encoded_grand_child_substate<A: Encode, C: Encode>(
+        &mut self,
+        address: &A,
+        child_key: &C,
+        grand_child_key: &[u8],
+        value: &[u8],
+    ) {
+        let mut key = scrypto_encode(child_key);
+        key.extend(grand_child_key.to_vec());
+        self.put_child_substate(address, &key, value);
+    }
+    fn get_decoded_grand_child_substate<A: Encode, C: Encode>(
+        &self,
+        address: &A,
+        child_key: &C,
+        grand_child_key: &[u8],
+    ) -> Option<Vec<u8>> {
+        let mut key = scrypto_encode(child_key);
+        key.extend(grand_child_key.to_vec());
+        self.get_child_substate(address, &key)
+    }
+
     fn bootstrap(&mut self) {
-        let package: Option<Package> = self
-            .get_substate(&SYSTEM_PACKAGE)
-            .map(|v| scrypto_decode(&v).unwrap());
+        let package: Option<Package> = self.get_decoded_substate(&SYSTEM_PACKAGE);
         if package.is_none() {
             // System package
             let system_package =
                 Package::new(include_bytes!("../../../assets/system.wasm").to_vec());
-            self.put_substate(&SYSTEM_PACKAGE, &scrypto_encode(&system_package));
+            self.put_encoded_substate(&SYSTEM_PACKAGE, &system_package);
 
             // Account package
             let account_package =
                 Package::new(include_bytes!("../../../assets/account.wasm").to_vec());
-            self.put_substate(&ACCOUNT_PACKAGE, &scrypto_encode(&account_package));
+            self.put_encoded_substate(&ACCOUNT_PACKAGE, &account_package);
 
             // Radix token resource definition
             let mut metadata = HashMap::new();
@@ -72,7 +117,8 @@ pub trait SubstateStore {
                 }),
             )
             .unwrap();
-            self.put_substate(&RADIX_TOKEN, &scrypto_encode(&xrd));
+            self.put_encoded_substate(&RADIX_TOKEN, &xrd);
+
             let ecdsa_token = ResourceDef::new(
                 ResourceType::NonFungible,
                 HashMap::new(),
@@ -82,8 +128,7 @@ pub trait SubstateStore {
                 &None,
             )
             .unwrap();
-
-            self.put_substate(&ECDSA_TOKEN, &scrypto_encode(&ecdsa_token));
+            self.put_encoded_substate(&ECDSA_TOKEN, &ecdsa_token);
 
             // Instantiate system component
             let system_vault = Vault::new(Bucket::new(
@@ -93,18 +138,14 @@ pub trait SubstateStore {
                     amount: XRD_MAX_SUPPLY.into(),
                 },
             ));
-            self.put_child_substate(
-                &SYSTEM_COMPONENT,
-                &scrypto_encode(&XRD_VAULT_ID),
-                &scrypto_encode(&system_vault),
-            );
+            self.put_encoded_child_substate(&SYSTEM_COMPONENT, &XRD_VAULT_ID, &system_vault);
 
             let system_component = Component::new(
                 SYSTEM_PACKAGE,
                 SYSTEM_COMPONENT_NAME.to_owned(),
                 scrypto_encode(&SystemComponentState { xrd: XRD_VAULT }),
             );
-            self.put_substate(&SYSTEM_COMPONENT, &scrypto_encode(&system_component));
+            self.put_encoded_substate(&SYSTEM_COMPONENT, &system_component);
         }
     }
 

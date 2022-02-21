@@ -1,7 +1,6 @@
 use scrypto::abi;
 use scrypto::crypto::sha256;
 use scrypto::engine::types::*;
-use scrypto::prelude::{scrypto_decode, scrypto_encode};
 use scrypto::rust::string::ToString;
 use scrypto::rust::vec;
 use scrypto::rust::vec::Vec;
@@ -26,8 +25,7 @@ impl<'l, L: SubstateStore> AbiProvider for TransactionExecutor<'l, L> {
     ) -> Result<abi::Blueprint, RuntimeError> {
         let package: Package = self
             .substate_store
-            .get_substate(&package_id)
-            .and_then(|v| scrypto_decode(&v).map(|p| Some(p)).unwrap_or(None))
+            .get_decoded_substate(&package_id)
             .ok_or(RuntimeError::PackageNotFound(package_id))?;
 
         BasicAbiProvider::new(self.trace)
@@ -41,13 +39,11 @@ impl<'l, L: SubstateStore> AbiProvider for TransactionExecutor<'l, L> {
     ) -> Result<abi::Blueprint, RuntimeError> {
         let component: Component = self
             .substate_store
-            .get_substate(&component_id)
-            .and_then(|v| scrypto_decode(&v).map(|p| Some(p)).unwrap_or(None))
+            .get_decoded_substate(&component_id)
             .ok_or(RuntimeError::ComponentNotFound(component_id))?;
         let package: Package = self
             .substate_store
-            .get_substate(&component.package_id())
-            .map(|v| scrypto_decode(&v).unwrap())
+            .get_decoded_substate(&component.package_id())
             .unwrap();
         BasicAbiProvider::new(self.trace)
             .with_package(component.package_id(), package.code().to_vec())
@@ -119,8 +115,9 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
 
     /// Overwrites a package.
     pub fn overwrite_package(&mut self, package_id: PackageId, code: &[u8]) {
-        let value = &scrypto_encode(&Package::new(code.to_vec()));
-        self.substate_store.put_substate(&package_id, value);
+        let package = Package::new(code.to_vec());
+        self.substate_store
+            .put_encoded_substate(&package_id, &package);
     }
 
     /// This is a convenience method that validates and runs a transaction in one shot.

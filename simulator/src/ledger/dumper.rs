@@ -1,9 +1,7 @@
 use colored::*;
 use radix_engine::ledger::*;
 use radix_engine::model::*;
-use scrypto::buffer::scrypto_decode;
 use scrypto::engine::types::*;
-use scrypto::prelude::scrypto_encode;
 use scrypto::rust::collections::HashSet;
 
 use crate::utils::*;
@@ -21,9 +19,7 @@ pub fn dump_package<T: SubstateStore>(
     package_id: PackageId,
     substate_store: &T,
 ) -> Result<(), DisplayError> {
-    let package: Option<Package> = substate_store
-        .get_substate(&package_id)
-        .map(|v| scrypto_decode(&v).unwrap());
+    let package: Option<Package> = substate_store.get_decoded_substate(&package_id);
     match package {
         Some(b) => {
             println!("{}: {}", "Package".green().bold(), package_id.to_string());
@@ -39,9 +35,7 @@ pub fn dump_component<T: SubstateStore + QueryableSubstateStore>(
     component_id: ComponentId,
     substate_store: &T,
 ) -> Result<(), DisplayError> {
-    let component: Option<Component> = substate_store
-        .get_substate(&component_id)
-        .map(|v| scrypto_decode(&v).unwrap());
+    let component: Option<Component> = substate_store.get_decoded_substate(&component_id);
     match component {
         Some(c) => {
             println!(
@@ -124,16 +118,15 @@ fn dump_resources<T: SubstateStore>(
 ) -> Result<(), DisplayError> {
     println!("{}:", "Resources".green().bold());
     for (last, vault_id) in vaults.iter().identify_last() {
-        let vault_key = scrypto_encode(vault_id);
         let vault: Vault = substate_store
-            .get_child_substate(&component_id, &vault_key)
-            .map(|v| scrypto_decode(&v).unwrap())
+            .get_decoded_child_substate(&component_id, vault_id)
             .unwrap();
 
         let amount = vault.amount();
         let resource_def_id = vault.resource_def_id();
-        let resource_def: ResourceDef =
-            scrypto_decode(&substate_store.get_substate(&resource_def_id).unwrap()).unwrap();
+        let resource_def: ResourceDef = substate_store
+            .get_decoded_substate(&resource_def_id)
+            .unwrap();
         println!(
             "{} {{ amount: {}, resource definition: {}{}{} }}",
             list_item_prefix(last),
@@ -152,13 +145,9 @@ fn dump_resources<T: SubstateStore>(
         );
         if let Resource::NonFungible { keys } = vault.resource() {
             for (inner_last, key) in keys.iter().identify_last() {
-                let child_key = scrypto_encode(key);
-                let non_fungible: NonFungible = scrypto_decode(
-                    &substate_store
-                        .get_child_substate(&resource_def_id, &child_key)
-                        .unwrap(),
-                )
-                .unwrap();
+                let non_fungible: NonFungible = substate_store
+                    .get_decoded_child_substate(&resource_def_id, key)
+                    .unwrap();
 
                 let immutable_data =
                     ValidatedData::from_slice(&non_fungible.immutable_data()).unwrap();
@@ -182,8 +171,9 @@ pub fn dump_resource_def<T: SubstateStore>(
     resource_def_id: ResourceDefId,
     substate_store: &T,
 ) -> Result<(), DisplayError> {
-    let resource_def: Option<ResourceDef> =
-        scrypto_decode(&substate_store.get_substate(&resource_def_id).unwrap()).unwrap();
+    let resource_def: Option<ResourceDef> = substate_store
+        .get_decoded_substate(&resource_def_id)
+        .unwrap();
     match resource_def {
         Some(r) => {
             println!(
