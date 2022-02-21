@@ -1,5 +1,5 @@
 use sbor::Encode;
-use scrypto::prelude::scrypto_encode;
+use scrypto::buffer::scrypto_encode;
 use scrypto::rust::collections::HashMap;
 use scrypto::rust::vec::Vec;
 
