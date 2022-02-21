@@ -75,6 +75,7 @@ impl QueryableSubstateStore for RadixEngineDB {
     ) -> HashMap<Vec<u8>, Vec<u8>> {
         let mut id = scrypto_encode(&component_id);
         id.extend(scrypto_encode(lazy_map_id));
+        let key_size = id.len();
 
         let mut iter = self
             .db
@@ -84,7 +85,9 @@ impl QueryableSubstateStore for RadixEngineDB {
             if !key.starts_with(&id) {
                 break;
             }
-            items.insert(key.to_vec(), value.to_vec());
+
+            let local_key = key.split_at(key_size).1.to_vec();
+            items.insert(local_key, value.to_vec());
         }
         items
     }
