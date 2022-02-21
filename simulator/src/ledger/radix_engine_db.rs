@@ -2,8 +2,8 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 
 use radix_engine::ledger::*;
-use radix_engine::model::*;
 use rocksdb::{DBWithThreadMode, Direction, IteratorMode, SingleThreaded, DB};
+use sbor::Encode;
 use scrypto::buffer::*;
 use scrypto::types::*;
 
@@ -91,21 +91,21 @@ impl QueryableSubstateStore for RadixEngineDB {
 }
 
 impl SubstateStore for RadixEngineDB {
-    fn get_substate(&self, address: &Address) -> Option<Vec<u8>> {
+    fn get_substate<T: Encode>(&self, address: &T) -> Option<Vec<u8>> {
         self.read(&scrypto_encode(address))
     }
 
-    fn put_substate(&mut self, address: &Address, substate: &[u8]) {
+    fn put_substate<T: Encode>(&mut self, address: &T, substate: &[u8]) {
         self.write(&scrypto_encode(address), substate);
     }
 
-    fn get_child_substate(&self, address: &Address, key: &[u8]) -> Option<Vec<u8>> {
+    fn get_child_substate<T: Encode>(&self, address: &T, key: &[u8]) -> Option<Vec<u8>> {
         let mut id = scrypto_encode(address);
         id.extend(key.to_vec());
         self.read(&id)
     }
 
-    fn put_child_substate(&mut self, address: &Address, key: &[u8], substate: &[u8]) {
+    fn put_child_substate<T: Encode>(&mut self, address: &T, key: &[u8], substate: &[u8]) {
         let mut id = scrypto_encode(address);
         id.extend(key.to_vec());
         self.write(&id, substate);

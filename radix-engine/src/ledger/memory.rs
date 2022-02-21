@@ -1,15 +1,15 @@
+use sbor::Encode;
 use scrypto::prelude::scrypto_encode;
 use scrypto::rust::collections::HashMap;
 use scrypto::rust::vec::Vec;
-use scrypto::types::*;
 
 use crate::ledger::*;
 
 /// An in-memory ledger stores all substates in host memory.
 #[derive(Debug, Clone)]
 pub struct InMemorySubstateStore {
-    substates: HashMap<Address, Vec<u8>>,
-    child_substates: HashMap<(Address, Vec<u8>), Vec<u8>>,
+    substates: HashMap<Vec<u8>, Vec<u8>>,
+    child_substates: HashMap<Vec<u8>, Vec<u8>>,
     current_epoch: u64,
     nonce: u64,
 }
@@ -38,25 +38,25 @@ impl Default for InMemorySubstateStore {
 }
 
 impl SubstateStore for InMemorySubstateStore {
-    fn get_substate(&self, address: &Address) -> Option<Vec<u8>> {
-        self.substates.get(address).cloned()
+    fn get_substate<T: Encode>(&self, address: &T) -> Option<Vec<u8>> {
+        self.substates.get(&scrypto_encode(address)).cloned()
     }
 
-    fn put_substate(&mut self, address: &Address, substate: &[u8]) {
-        self.substates.insert(*address, substate.to_vec());
+    fn put_substate<T: Encode>(&mut self, address: &T, substate: &[u8]) {
+        self.substates
+            .insert(scrypto_encode(address), substate.to_vec());
     }
 
-    fn get_child_substate(&self, address: &Address, key: &[u8]) -> Option<Vec<u8>> {
+    fn get_child_substate<T: Encode>(&self, address: &T, key: &[u8]) -> Option<Vec<u8>> {
         let mut id = scrypto_encode(address);
         id.extend(key.to_vec());
-        self.child_substates.get(&(*address, id)).cloned()
+        self.child_substates.get(&id).cloned()
     }
 
-    fn put_child_substate(&mut self, address: &Address, key: &[u8], substate: &[u8]) {
+    fn put_child_substate<T: Encode>(&mut self, address: &T, key: &[u8], substate: &[u8]) {
         let mut id = scrypto_encode(address);
         id.extend(key.to_vec());
-        self.child_substates
-            .insert((*address, id), substate.to_vec());
+        self.child_substates.insert(id, substate.to_vec());
     }
 
     fn get_epoch(&self) -> u64 {
