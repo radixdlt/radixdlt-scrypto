@@ -947,7 +947,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         input: PublishPackageInput,
     ) -> Result<PublishPackageOutput, RuntimeError> {
-
         validate_module(&input.code).map_err(RuntimeError::WasmValidationError)?;
 
         let package_id = self.track.create_package(Package::new(input.code));

@@ -32,9 +32,6 @@ pub struct Track<'s, S: SubstateStore> {
     packages: HashMap<PackageId, SubstateUpdate<Package>>,
     components: HashMap<ComponentId, SubstateUpdate<Component>>,
     resource_defs: HashMap<ResourceDefId, SubstateUpdate<ResourceDef>>,
-    new_package_ids: Vec<PackageId>,
-    new_component_ids: Vec<ComponentId>,
-    new_resource_def_ids: Vec<ResourceDefId>,
 
     lazy_map_entries: HashMap<(ComponentId, LazyMapId, Vec<u8>), Vec<u8>>,
     vaults: HashMap<(ComponentId, VaultId), Vault>,
@@ -59,9 +56,6 @@ impl<'s, S: SubstateStore> Track<'s, S> {
             components: HashMap::new(),
             resource_defs: HashMap::new(),
             lazy_map_entries: HashMap::new(),
-            new_package_ids: Vec::new(),
-            new_component_ids: Vec::new(),
-            new_resource_def_ids: Vec::new(),
             vaults: HashMap::new(),
             non_fungibles: HashMap::new(),
             code_cache: LruCache::new(1024),
@@ -107,18 +101,36 @@ impl<'s, S: SubstateStore> Track<'s, S> {
     }
 
     /// Returns new packages created so far.
-    pub fn new_package_ids(&self) -> &[PackageId] {
-        &self.new_package_ids
+    pub fn new_package_ids(&self) -> Vec<PackageId> {
+        let mut package_ids = Vec::new();
+        for (package_id, update) in self.packages.iter() {
+            if update.is_new {
+                package_ids.push(package_id.clone());
+            }
+        }
+        package_ids
     }
 
     /// Returns new components created so far.
-    pub fn new_component_ids(&self) -> &[ComponentId] {
-        &self.new_component_ids
+    pub fn new_component_ids(&self) -> Vec<ComponentId> {
+        let mut component_ids = Vec::new();
+        for (component_id, update) in self.components.iter() {
+            if update.is_new {
+                component_ids.push(component_id.clone());
+            }
+        }
+        component_ids
     }
 
     /// Returns new resource defs created so far.
-    pub fn new_resource_def_ids(&self) -> &[ResourceDefId] {
-        &self.new_resource_def_ids
+    pub fn new_resource_def_ids(&self) -> Vec<ResourceDefId> {
+        let mut resource_def_ids = Vec::new();
+        for (resource_def_id, update) in self.resource_defs.iter() {
+            if update.is_new {
+                resource_def_ids.push(resource_def_id.clone());
+            }
+        }
+        resource_def_ids
     }
 
     /// Adds a log message.
@@ -150,7 +162,13 @@ impl<'s, S: SubstateStore> Track<'s, S> {
         }
 
         if let Some(package) = self.substate_store.get_decoded_substate(&package_id) {
-            self.packages.insert(package_id, SubstateUpdate { is_new: false, value: package });
+            self.packages.insert(
+                package_id,
+                SubstateUpdate {
+                    is_new: false,
+                    value: package,
+                },
+            );
             self.packages.get(&package_id).map(|p| &p.value)
         } else {
             None
@@ -160,7 +178,13 @@ impl<'s, S: SubstateStore> Track<'s, S> {
     /// Inserts a new package.
     pub fn create_package(&mut self, package: Package) -> PackageId {
         let package_id = self.new_package_id();
-        self.packages.insert(package_id, SubstateUpdate { is_new: true, value: package });
+        self.packages.insert(
+            package_id,
+            SubstateUpdate {
+                is_new: true,
+                value: package,
+            },
+        );
         package_id
     }
 
@@ -171,7 +195,13 @@ impl<'s, S: SubstateStore> Track<'s, S> {
         }
 
         if let Some(component) = self.substate_store.get_decoded_substate(&component_id) {
-            self.components.insert(component_id, SubstateUpdate { is_new: false, value: component });
+            self.components.insert(
+                component_id,
+                SubstateUpdate {
+                    is_new: false,
+                    value: component,
+                },
+            );
             self.components.get(&component_id).map(|c| &c.value)
         } else {
             None
@@ -185,7 +215,13 @@ impl<'s, S: SubstateStore> Track<'s, S> {
         }
 
         if let Some(component) = self.substate_store.get_decoded_substate(&component_id) {
-            self.components.insert(component_id, SubstateUpdate { is_new: false, value: component });
+            self.components.insert(
+                component_id,
+                SubstateUpdate {
+                    is_new: false,
+                    value: component,
+                },
+            );
             self.components.get_mut(&component_id).map(|c| &mut c.value)
         } else {
             None
@@ -195,7 +231,13 @@ impl<'s, S: SubstateStore> Track<'s, S> {
     /// Inserts a new component.
     pub fn create_component(&mut self, component: Component) -> ComponentId {
         let component_id = self.new_component_id();
-        self.components.insert(component_id, SubstateUpdate { is_new: true, value: component });
+        self.components.insert(
+            component_id,
+            SubstateUpdate {
+                is_new: true,
+                value: component,
+            },
+        );
         component_id
     }
 
@@ -304,7 +346,13 @@ impl<'s, S: SubstateStore> Track<'s, S> {
         }
 
         if let Some(resource_def) = self.substate_store.get_decoded_substate(&resource_def_id) {
-            self.resource_defs.insert(resource_def_id, SubstateUpdate { is_new: false, value: resource_def });
+            self.resource_defs.insert(
+                resource_def_id,
+                SubstateUpdate {
+                    is_new: false,
+                    value: resource_def,
+                },
+            );
             self.resource_defs.get(&resource_def_id).map(|r| &r.value)
         } else {
             None
@@ -318,12 +366,23 @@ impl<'s, S: SubstateStore> Track<'s, S> {
         resource_def_id: ResourceDefId,
     ) -> Option<&mut ResourceDef> {
         if self.resource_defs.contains_key(&resource_def_id) {
-            return self.resource_defs.get_mut(&resource_def_id).map(|r| &mut r.value)
+            return self
+                .resource_defs
+                .get_mut(&resource_def_id)
+                .map(|r| &mut r.value);
         }
 
         if let Some(resource_def) = self.substate_store.get_decoded_substate(&resource_def_id) {
-            self.resource_defs.insert(resource_def_id, SubstateUpdate { is_new: false, value: resource_def });
-            self.resource_defs.get_mut(&resource_def_id).map(|r| &mut r.value)
+            self.resource_defs.insert(
+                resource_def_id,
+                SubstateUpdate {
+                    is_new: false,
+                    value: resource_def,
+                },
+            );
+            self.resource_defs
+                .get_mut(&resource_def_id)
+                .map(|r| &mut r.value)
         } else {
             None
         }
@@ -332,7 +391,13 @@ impl<'s, S: SubstateStore> Track<'s, S> {
     /// Inserts a new resource definition.
     pub fn create_resource_def(&mut self, resource_def: ResourceDef) -> ResourceDefId {
         let resource_def_id = self.new_resource_def_id();
-        self.resource_defs.insert(resource_def_id, SubstateUpdate { is_new: false, value: resource_def });
+        self.resource_defs.insert(
+            resource_def_id,
+            SubstateUpdate {
+                is_new: true,
+                value: resource_def,
+            },
+        );
         resource_def_id
     }
 
@@ -365,7 +430,6 @@ impl<'s, S: SubstateStore> Track<'s, S> {
             .id_allocator
             .new_package_id(self.transaction_hash())
             .unwrap();
-        self.new_package_ids.push(package_id);
         package_id
     }
 
@@ -375,7 +439,6 @@ impl<'s, S: SubstateStore> Track<'s, S> {
             .id_allocator
             .new_component_id(self.transaction_hash())
             .unwrap();
-        self.new_component_ids.push(component_id);
         component_id
     }
 
@@ -385,7 +448,6 @@ impl<'s, S: SubstateStore> Track<'s, S> {
             .id_allocator
             .new_resource_def_id(self.transaction_hash())
             .unwrap();
-        self.new_resource_def_ids.push(resource_def_id);
         resource_def_id
     }
 

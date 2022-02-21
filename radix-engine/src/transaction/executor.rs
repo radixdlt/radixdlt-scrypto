@@ -212,9 +212,9 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
             Ok(_) => None,
             Err(e) => Some(e),
         });
-        let new_package_ids = track.new_package_ids().to_vec();
-        let new_component_ids = track.new_component_ids().to_vec();
-        let new_resource_def_ids = track.new_resource_def_ids().to_vec();
+        let new_package_ids = track.new_package_ids();
+        let new_component_ids = track.new_component_ids();
+        let new_resource_def_ids = track.new_resource_def_ids();
         let logs = track.logs().clone();
 
         // commit state updates
