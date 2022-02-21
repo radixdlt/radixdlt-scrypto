@@ -18,37 +18,34 @@ use crate::model::*;
 /// Typically, a track is shared by all the processes created within a transaction.
 ///
 pub struct Track<'s, S: SubstateStore> {
-    ledger: &'s mut S,
+    substate_store: &'s mut S,
     transaction_hash: Hash,
     transaction_signers: Vec<EcdsaPublicKey>,
     id_allocator: IdAllocator,
     logs: Vec<(Level, String)>,
+
     packages: HashMap<PackageId, Package>,
     components: HashMap<ComponentId, Component>,
     resource_defs: HashMap<ResourceDefId, ResourceDef>,
     lazy_map_entries: HashMap<(ComponentId, LazyMapId, Vec<u8>), Vec<u8>>,
     vaults: HashMap<(ComponentId, VaultId), Vault>,
     non_fungibles: HashMap<(ResourceDefId, NonFungibleKey), NonFungible>,
-    updated_packages: HashSet<PackageId>,
-    updated_components: HashSet<ComponentId>,
-    updated_lazy_map_entries: HashSet<(ComponentId, LazyMapId, Vec<u8>)>,
-    updated_resource_defs: HashSet<ResourceDefId>,
-    updated_vaults: HashSet<(ComponentId, VaultId)>,
-    updated_non_fungibles: HashSet<(ResourceDefId, NonFungibleKey)>,
+
     new_package_ids: Vec<PackageId>,
     new_component_ids: Vec<ComponentId>,
     new_resource_def_ids: Vec<ResourceDefId>,
+
     code_cache: LruCache<PackageId, Module>, // TODO: move to ledger level
 }
 
 impl<'s, S: SubstateStore> Track<'s, S> {
     pub fn new(
-        ledger: &'s mut S,
+        substate_store: &'s mut S,
         transaction_hash: Hash,
         transaction_signers: Vec<EcdsaPublicKey>,
     ) -> Self {
         Self {
-            ledger,
+            substate_store,
             transaction_hash,
             transaction_signers,
             id_allocator: IdAllocator::new(IdSpace::Application),
@@ -57,17 +54,11 @@ impl<'s, S: SubstateStore> Track<'s, S> {
             components: HashMap::new(),
             resource_defs: HashMap::new(),
             lazy_map_entries: HashMap::new(),
-            vaults: HashMap::new(),
-            non_fungibles: HashMap::new(),
-            updated_packages: HashSet::new(),
-            updated_components: HashSet::new(),
-            updated_lazy_map_entries: HashSet::new(),
-            updated_resource_defs: HashSet::new(),
-            updated_vaults: HashSet::new(),
-            updated_non_fungibles: HashSet::new(),
             new_package_ids: Vec::new(),
             new_component_ids: Vec::new(),
             new_resource_def_ids: Vec::new(),
+            vaults: HashMap::new(),
+            non_fungibles: HashMap::new(),
             code_cache: LruCache::new(1024),
         }
     }
@@ -102,7 +93,7 @@ impl<'s, S: SubstateStore> Track<'s, S> {
 
     /// Returns the current epoch.
     pub fn current_epoch(&self) -> u64 {
-        self.ledger.get_epoch()
+        self.substate_store.get_epoch()
     }
 
     /// Returns the logs collected so far.
@@ -153,7 +144,7 @@ impl<'s, S: SubstateStore> Track<'s, S> {
             return self.packages.get(&package_id);
         }
 
-        if let Some(package) = self.ledger.get_package(package_id) {
+        if let Some(package) = self.substate_store.get_decoded_substate(&package_id) {
             self.packages.insert(package_id, package);
             self.packages.get(&package_id)
         } else {
@@ -164,13 +155,11 @@ impl<'s, S: SubstateStore> Track<'s, S> {
     /// Returns a mutable reference to a package, if exists.
     #[allow(dead_code)]
     pub fn get_package_mut(&mut self, package_id: PackageId) -> Option<&mut Package> {
-        self.updated_packages.insert(package_id);
-
         if self.packages.contains_key(&package_id) {
             return self.packages.get_mut(&package_id);
         }
 
-        if let Some(package) = self.ledger.get_package(package_id) {
+        if let Some(package) = self.substate_store.get_decoded_substate(&package_id) {
             self.packages.insert(package_id, package);
             self.packages.get_mut(&package_id)
         } else {
@@ -180,8 +169,6 @@ impl<'s, S: SubstateStore> Track<'s, S> {
 
     /// Inserts a new package.
     pub fn put_package(&mut self, package_id: PackageId, package: Package) {
-        self.updated_packages.insert(package_id);
-
         self.packages.insert(package_id, package);
     }
 
@@ -191,22 +178,21 @@ impl<'s, S: SubstateStore> Track<'s, S> {
             return self.components.get(&component_id);
         }
 
-        if let Some(component) = self.ledger.get_component(component_id) {
+        if let Some(component) = self.substate_store.get_decoded_substate(&component_id) {
             self.components.insert(component_id, component);
             self.components.get(&component_id)
         } else {
             None
         }
     }
+
     /// Returns a mutable reference to a component, if exists.
     pub fn get_component_mut(&mut self, component_id: ComponentId) -> Option<&mut Component> {
-        self.updated_components.insert(component_id);
-
         if self.components.contains_key(&component_id) {
             return self.components.get_mut(&component_id);
         }
 
-        if let Some(component) = self.ledger.get_component(component_id) {
+        if let Some(component) = self.substate_store.get_decoded_substate(&component_id) {
             self.components.insert(component_id, component);
             self.components.get_mut(&component_id)
         } else {
@@ -216,8 +202,6 @@ impl<'s, S: SubstateStore> Track<'s, S> {
 
     /// Inserts a new component.
     pub fn put_component(&mut self, component_id: ComponentId, component: Component) {
-        self.updated_components.insert(component_id);
-
         self.components.insert(component_id, component);
     }
 
@@ -234,7 +218,10 @@ impl<'s, S: SubstateStore> Track<'s, S> {
             return self.non_fungibles.get(&(resource_def_id, key.clone()));
         }
 
-        if let Some(non_fungible) = self.ledger.get_non_fungible(resource_def_id, key) {
+        if let Some(non_fungible) = self
+            .substate_store
+            .get_decoded_child_substate(&resource_def_id, key)
+        {
             self.non_fungibles
                 .insert((resource_def_id, key.clone()), non_fungible);
             self.non_fungibles.get(&(resource_def_id, key.clone()))
@@ -249,9 +236,6 @@ impl<'s, S: SubstateStore> Track<'s, S> {
         resource_def_id: ResourceDefId,
         key: &NonFungibleKey,
     ) -> Option<&mut NonFungible> {
-        self.updated_non_fungibles
-            .insert((resource_def_id, key.clone()));
-
         if self
             .non_fungibles
             .contains_key(&(resource_def_id, key.clone()))
@@ -259,7 +243,10 @@ impl<'s, S: SubstateStore> Track<'s, S> {
             return self.non_fungibles.get_mut(&(resource_def_id, key.clone()));
         }
 
-        if let Some(non_fungible) = self.ledger.get_non_fungible(resource_def_id, key) {
+        if let Some(non_fungible) = self
+            .substate_store
+            .get_decoded_child_substate(&resource_def_id, key)
+        {
             self.non_fungibles
                 .insert((resource_def_id, key.clone()), non_fungible);
             self.non_fungibles.get_mut(&(resource_def_id, key.clone()))
@@ -275,9 +262,6 @@ impl<'s, S: SubstateStore> Track<'s, S> {
         key: &NonFungibleKey,
         non_fungible: NonFungible,
     ) {
-        self.updated_non_fungibles
-            .insert((resource_def_id, key.clone()));
-
         self.non_fungibles
             .insert((resource_def_id, key.clone()), non_fungible);
     }
@@ -290,15 +274,17 @@ impl<'s, S: SubstateStore> Track<'s, S> {
         key: &[u8],
     ) -> Option<Vec<u8>> {
         let entry_id = (component_id.clone(), lazy_map_id.clone(), key.to_vec());
-        self.updated_lazy_map_entries.insert(entry_id.clone());
 
         if self.lazy_map_entries.contains_key(&entry_id) {
             return Some(self.lazy_map_entries.get(&entry_id).unwrap().clone());
         }
 
-        let value = self
-            .ledger
-            .get_lazy_map_entry(component_id, lazy_map_id, key);
+        let grand_child_key = key.to_vec();
+        let value = self.substate_store.get_decoded_grand_child_substate(
+            &component_id,
+            lazy_map_id,
+            &grand_child_key,
+        );
         if let Some(ref entry_bytes) = value {
             self.lazy_map_entries.insert(entry_id, entry_bytes.clone());
         }
@@ -313,9 +299,8 @@ impl<'s, S: SubstateStore> Track<'s, S> {
         key: Vec<u8>,
         value: Vec<u8>,
     ) {
-        let lazy_map_id = (component_id, lazy_map_id, key);
-        self.updated_lazy_map_entries.insert(lazy_map_id.clone());
-        self.lazy_map_entries.insert(lazy_map_id, value);
+        let canonical_id = (component_id, lazy_map_id, key);
+        self.lazy_map_entries.insert(canonical_id, value);
     }
 
     /// Returns an immutable reference to a resource definition, if exists.
@@ -324,7 +309,7 @@ impl<'s, S: SubstateStore> Track<'s, S> {
             return self.resource_defs.get(&resource_def_id);
         }
 
-        if let Some(resource_def) = self.ledger.get_resource_def(resource_def_id) {
+        if let Some(resource_def) = self.substate_store.get_decoded_substate(&resource_def_id) {
             self.resource_defs.insert(resource_def_id, resource_def);
             self.resource_defs.get(&resource_def_id)
         } else {
@@ -338,13 +323,11 @@ impl<'s, S: SubstateStore> Track<'s, S> {
         &mut self,
         resource_def_id: ResourceDefId,
     ) -> Option<&mut ResourceDef> {
-        self.updated_resource_defs.insert(resource_def_id);
-
         if self.resource_defs.contains_key(&resource_def_id) {
             return self.resource_defs.get_mut(&resource_def_id);
         }
 
-        if let Some(resource_def) = self.ledger.get_resource_def(resource_def_id) {
+        if let Some(resource_def) = self.substate_store.get_decoded_substate(&resource_def_id) {
             self.resource_defs.insert(resource_def_id, resource_def);
             self.resource_defs.get_mut(&resource_def_id)
         } else {
@@ -354,21 +337,21 @@ impl<'s, S: SubstateStore> Track<'s, S> {
 
     /// Inserts a new resource definition.
     pub fn put_resource_def(&mut self, resource_def_id: ResourceDefId, resource_def: ResourceDef) {
-        self.updated_resource_defs.insert(resource_def_id);
-
         self.resource_defs.insert(resource_def_id, resource_def);
     }
 
     /// Returns a mutable reference to a vault, if exists.
-    pub fn get_vault_mut(&mut self, component_id: ComponentId, vault_id: &VaultId) -> &mut Vault {
-        let canonical_id = (component_id.clone(), vault_id.clone());
-        self.updated_vaults.insert(canonical_id.clone());
+    pub fn get_vault_mut(&mut self, component_id: &ComponentId, vid: &VaultId) -> &mut Vault {
+        let canonical_id = (component_id.clone(), vid.clone());
 
         if self.vaults.contains_key(&canonical_id) {
             return self.vaults.get_mut(&canonical_id).unwrap();
         }
 
-        let vault = self.ledger.get_vault(component_id, &vault_id);
+        let vault: Vault = self
+            .substate_store
+            .get_decoded_child_substate(component_id, vid)
+            .unwrap();
         self.vaults.insert(canonical_id, vault);
         self.vaults.get_mut(&canonical_id).unwrap()
     }
@@ -376,7 +359,6 @@ impl<'s, S: SubstateStore> Track<'s, S> {
     /// Inserts a new vault.
     pub fn put_vault(&mut self, component_id: ComponentId, vault_id: VaultId, vault: Vault) {
         let canonical_id = (component_id, vault_id);
-        self.updated_vaults.insert(canonical_id);
         self.vaults.insert(canonical_id, vault);
     }
 
@@ -441,49 +423,78 @@ impl<'s, S: SubstateStore> Track<'s, S> {
     }
 
     /// Commits changes to the underlying ledger.
+    /// Currently none of these objects are deleted so all commits are puts
     pub fn commit(&mut self) {
-        for package_id in self.updated_packages.clone() {
-            self.ledger
-                .put_package(package_id, self.packages.get(&package_id).unwrap().clone());
+        let package_ids: Vec<PackageId> = self
+            .packages
+            .iter()
+            .map(|(address, _)| address.clone())
+            .collect();
+        for package_id in package_ids {
+            let package = self.packages.remove(&package_id).unwrap();
+            self.substate_store
+                .put_encoded_substate(&package_id, &package);
         }
 
-        for component_id in self.updated_components.clone() {
-            self.ledger.put_component(
-                component_id,
-                self.components.get(&component_id).unwrap().clone(),
-            );
+        let component_ids: Vec<ComponentId> = self
+            .components
+            .iter()
+            .map(|(address, _)| address.clone())
+            .collect();
+        for component_id in component_ids {
+            let component = self.components.remove(&component_id).unwrap();
+            self.substate_store
+                .put_encoded_substate(&component_id, &component);
         }
 
-        for resource_def_id in self.updated_resource_defs.clone() {
-            self.ledger.put_resource_def(
-                resource_def_id,
-                self.resource_defs.get(&resource_def_id).unwrap().clone(),
-            );
+        let resource_def_ids: Vec<ResourceDefId> = self
+            .resource_defs
+            .iter()
+            .map(|(address, _)| address.clone())
+            .collect();
+        for resource_def_id in resource_def_ids {
+            let resource_def = self.resource_defs.remove(&resource_def_id).unwrap();
+            self.substate_store
+                .put_encoded_substate(&resource_def_id, &resource_def);
         }
 
-        for (component_id, lazy_map_id, key) in self.updated_lazy_map_entries.clone() {
-            let value = self
-                .lazy_map_entries
-                .get(&(component_id, lazy_map_id, key.clone()))
-                .unwrap()
-                .clone();
-            self.ledger
-                .put_lazy_map_entry(component_id, lazy_map_id, key, value);
-        }
-
-        for (component_id, vault_id) in self.updated_vaults.clone() {
-            let vault = self.vaults.remove(&(component_id, vault_id)).unwrap();
-            self.ledger.put_vault(component_id, vault_id, vault);
-        }
-
-        for (resource_def, key) in self.updated_non_fungibles.clone() {
-            self.ledger.put_non_fungible(
-                resource_def,
+        let entry_ids: Vec<(ComponentId, LazyMapId, Vec<u8>)> = self
+            .lazy_map_entries
+            .iter()
+            .map(|(id, _)| id.clone())
+            .collect();
+        for entry_id in entry_ids {
+            let entry = self.lazy_map_entries.remove(&entry_id).unwrap();
+            let (component_id, lazy_map_id, key) = entry_id;
+            self.substate_store.put_encoded_grand_child_substate(
+                &component_id,
+                &lazy_map_id,
                 &key,
-                self.non_fungibles
-                    .get(&(resource_def, key.clone()))
-                    .unwrap()
-                    .clone(),
+                &entry,
+            );
+        }
+
+        let vault_ids: Vec<(ComponentId, VaultId)> =
+            self.vaults.iter().map(|(id, _)| id.clone()).collect();
+        for vault_id in vault_ids {
+            let vault = self.vaults.remove(&vault_id).unwrap();
+            let (component_id, vault_id) = vault_id;
+            self.substate_store
+                .put_encoded_child_substate(&component_id, &vault_id, &vault);
+        }
+
+        let non_fungible_ids: Vec<(ResourceDefId, NonFungibleKey)> = self
+            .non_fungibles
+            .iter()
+            .map(|(id, _)| id.clone())
+            .collect();
+        for non_fungible_id in non_fungible_ids {
+            let non_fungible = self.non_fungibles.remove(&non_fungible_id).unwrap();
+            let (resource_def_id, non_fungible_key) = non_fungible_id;
+            self.substate_store.put_encoded_child_substate(
+                &resource_def_id,
+                &non_fungible_key,
+                &non_fungible,
             );
         }
     }

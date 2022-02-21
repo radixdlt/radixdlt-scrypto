@@ -29,20 +29,21 @@ pub trait AbiProvider {
 
 /// Provides ABIs for blueprints either installed during bootstrap or added manually.
 pub struct BasicAbiProvider {
-    ledger: InMemorySubstateStore,
+    substate_store: InMemorySubstateStore,
     trace: bool,
 }
 
 impl BasicAbiProvider {
     pub fn new(trace: bool) -> Self {
         Self {
-            ledger: InMemorySubstateStore::with_bootstrap(),
+            substate_store: InMemorySubstateStore::with_bootstrap(),
             trace,
         }
     }
 
     pub fn with_package(&mut self, package_id: PackageId, code: Vec<u8>) -> &mut Self {
-        self.ledger.put_package(package_id, Package::new(code));
+        self.substate_store
+            .put_encoded_substate(&package_id, &Package::new(code));
         self
     }
 
@@ -53,10 +54,9 @@ impl BasicAbiProvider {
         blueprint_name: &str,
         component_state: Vec<u8>,
     ) -> &mut Self {
-        self.ledger.put_component(
-            component_id,
-            Component::new(package_id, blueprint_name.to_owned(), component_state),
-        );
+        let component = Component::new(package_id, blueprint_name.to_owned(), component_state);
+        self.substate_store
+            .put_encoded_substate(&component_id, &component);
         self
     }
 }
@@ -68,7 +68,7 @@ impl AbiProvider for BasicAbiProvider {
         blueprint_name: &str,
     ) -> Result<abi::Blueprint, RuntimeError> {
         // Deterministic transaction context
-        let mut ledger = self.ledger.clone();
+        let mut ledger = self.substate_store.clone();
         let transaction_hash = sha256([]);
 
         // Start a process and run abi generator
@@ -91,9 +91,9 @@ impl AbiProvider for BasicAbiProvider {
         &self,
         component_id: ComponentId,
     ) -> Result<abi::Blueprint, RuntimeError> {
-        let component = self
-            .ledger
-            .get_component(component_id)
+        let component: Component = self
+            .substate_store
+            .get_decoded_substate(&component_id)
             .ok_or(RuntimeError::ComponentNotFound(component_id))?;
         self.export_abi(component.package_id(), component.blueprint_name())
     }

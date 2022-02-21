@@ -1622,7 +1622,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     {
                         return Err(RuntimeError::VaultNotFound(vault_id));
                     }
-                    let vault = self.track.get_vault_mut(*component_id, &vault_id);
+                    let vault = self.track.get_vault_mut(component_id, &vault_id);
                     Ok(vault)
                 }
                 _ => Err(RuntimeError::VaultNotFound(vault_id)),

@@ -13,7 +13,7 @@ use crate::transaction::*;
 
 /// An executor that runs transactions.
 pub struct TransactionExecutor<'l, L: SubstateStore> {
-    ledger: &'l mut L,
+    substate_store: &'l mut L,
     trace: bool,
 }
 
@@ -23,9 +23,9 @@ impl<'l, L: SubstateStore> AbiProvider for TransactionExecutor<'l, L> {
         package_id: PackageId,
         blueprint_name: &str,
     ) -> Result<abi::Blueprint, RuntimeError> {
-        let package = self
-            .ledger
-            .get_package(package_id)
+        let package: Package = self
+            .substate_store
+            .get_decoded_substate(&package_id)
             .ok_or(RuntimeError::PackageNotFound(package_id))?;
 
         BasicAbiProvider::new(self.trace)
@@ -37,14 +37,14 @@ impl<'l, L: SubstateStore> AbiProvider for TransactionExecutor<'l, L> {
         &self,
         component_id: ComponentId,
     ) -> Result<abi::Blueprint, RuntimeError> {
-        let component = self
-            .ledger
-            .get_component(component_id)
+        let component: Component = self
+            .substate_store
+            .get_decoded_substate(&component_id)
             .ok_or(RuntimeError::ComponentNotFound(component_id))?;
-        let package = self
-            .ledger
-            .get_package(component.package_id())
-            .ok_or(RuntimeError::PackageNotFound(component.package_id()))?;
+        let package: Package = self
+            .substate_store
+            .get_decoded_substate(&component.package_id())
+            .unwrap();
         BasicAbiProvider::new(self.trace)
             .with_package(component.package_id(), package.code().to_vec())
             .export_abi(component.package_id(), component.blueprint_name())
@@ -52,25 +52,28 @@ impl<'l, L: SubstateStore> AbiProvider for TransactionExecutor<'l, L> {
 }
 
 impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
-    pub fn new(ledger: &'l mut L, trace: bool) -> Self {
-        Self { ledger, trace }
+    pub fn new(substate_store: &'l mut L, trace: bool) -> Self {
+        Self {
+            substate_store,
+            trace,
+        }
     }
 
     /// Returns an immutable reference to the ledger.
-    pub fn ledger(&self) -> &L {
-        self.ledger
+    pub fn substate_store(&self) -> &L {
+        self.substate_store
     }
 
     /// Returns a mutable reference to the ledger.
-    pub fn ledger_mut(&mut self) -> &mut L {
-        self.ledger
+    pub fn substate_store_mut(&mut self) -> &mut L {
+        self.substate_store
     }
 
     /// Generates a new public key.
     pub fn new_public_key(&mut self) -> EcdsaPublicKey {
         let mut raw = [0u8; 33];
-        raw[1..].copy_from_slice(&sha256(self.ledger.get_nonce().to_string()).0);
-        self.ledger.increase_nonce();
+        raw[1..].copy_from_slice(&sha256(self.substate_store.get_nonce().to_string()).0);
+        self.substate_store.increase_nonce();
         EcdsaPublicKey(raw)
     }
 
@@ -112,8 +115,9 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
 
     /// Overwrites a package.
     pub fn overwrite_package(&mut self, package_id: PackageId, code: &[u8]) {
-        self.ledger
-            .put_package(package_id, Package::new(code.to_vec()));
+        let package = Package::new(code.to_vec());
+        self.substate_store
+            .put_encoded_substate(&package_id, &package);
     }
 
     /// This is a convenience method that validates and runs a transaction in one shot.
@@ -136,9 +140,13 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
         #[cfg(not(feature = "alloc"))]
         let now = std::time::Instant::now();
 
-        let transaction_hash = sha256(self.ledger.get_nonce().to_string());
-        sha256(self.ledger.get_nonce().to_string());
-        let mut track = Track::new(self.ledger, transaction_hash, transaction.signers.clone());
+        let transaction_hash = sha256(self.substate_store.get_nonce().to_string());
+        sha256(self.substate_store.get_nonce().to_string());
+        let mut track = Track::new(
+            self.substate_store,
+            transaction_hash,
+            transaction.signers.clone(),
+        );
         let mut proc = track.start_process(self.trace);
 
         let mut error: Option<RuntimeError> = None;
@@ -212,7 +220,7 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
         // commit state updates
         if error.is_none() {
             track.commit();
-            self.ledger.increase_nonce();
+            self.substate_store.increase_nonce();
         }
 
         #[cfg(feature = "alloc")]
