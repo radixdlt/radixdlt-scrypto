@@ -21,12 +21,12 @@ echo "Testing with no_std..."
 (cd scrypto; cargo test --no-default-features --features alloc)
 (cd scrypto-abi; cargo test --no-default-features --features alloc)
 (cd scrypto-tests; cargo test --no-default-features --features alloc)
-(cd radix-engine; cargo test --no-default-features --features alloc)
 
 echo "Building assets and examples..."
 (cd assets/account; cargo build --target wasm32-unknown-unknown --release; cargo test --release)
 (cd assets/system; cargo build --target wasm32-unknown-unknown --release; cargo test --release)
 (cd examples/hello-world; cargo build --target wasm32-unknown-unknown --release; cargo test --release)
+(cd examples/no-std; cargo build --target wasm32-unknown-unknown --release; cargo test --release)
 
 echo "Running simulator..."
 (cd simulator; bash ./tests/resim.sh)

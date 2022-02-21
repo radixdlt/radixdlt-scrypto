@@ -9,7 +9,7 @@ fn test_hello() {
     let mut executor = TransactionExecutor::new(&mut ledger, false);
     let key = executor.new_public_key();
     let account = executor.new_account(key);
-    let package = executor.publish_package(include_code!("${lib_name}")).unwrap();
+    let package = executor.publish_package(compile_package!("${wasm_name}")).unwrap();
 
     // Test the `instantiate_hello` function.
     let transaction1 = TransactionBuilder::new(&executor)
