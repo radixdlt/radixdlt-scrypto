@@ -1,12 +1,11 @@
 use sbor::*;
-use scrypto::engine::*;
+use scrypto::engine::types::*;
 use scrypto::resource::resource_flags::*;
 use scrypto::resource::resource_permissions::*;
 use scrypto::rust::collections::HashMap;
 use scrypto::rust::string::String;
-use scrypto::types::*;
 
-use crate::model::Supply;
+use crate::model::Resource;
 
 /// Represents an error when accessing a bucket.
 #[derive(Debug, Clone)]
@@ -33,7 +32,7 @@ pub struct ResourceDef {
     metadata: HashMap<String, String>,
     flags: u64,
     mutable_flags: u64,
-    authorities: HashMap<Address, u64>,
+    authorities: HashMap<ResourceDefId, u64>,
     total_supply: Decimal,
 }
 
@@ -43,8 +42,8 @@ impl ResourceDef {
         metadata: HashMap<String, String>,
         flags: u64,
         mutable_flags: u64,
-        authorities: HashMap<Address, u64>,
-        initial_supply: &Option<NewSupply>,
+        authorities: HashMap<ResourceDefId, u64>,
+        initial_supply: &Option<Supply>,
     ) -> Result<Self, ResourceDefError> {
         let mut resource_def = Self {
             resource_type,
@@ -70,7 +69,7 @@ impl ResourceDef {
         }
 
         resource_def.total_supply = match (resource_type, initial_supply) {
-            (ResourceType::Fungible { divisibility }, Some(NewSupply::Fungible { amount })) => {
+            (ResourceType::Fungible { divisibility }, Some(Supply::Fungible { amount })) => {
                 if divisibility > 18 {
                     Err(ResourceDefError::InvalidDivisibility)
                 } else {
@@ -78,7 +77,7 @@ impl ResourceDef {
                     Ok(*amount)
                 }
             }
-            (ResourceType::NonFungible, Some(NewSupply::NonFungible { entries })) => {
+            (ResourceType::NonFungible, Some(Supply::NonFungible { entries })) => {
                 Ok(entries.len().into())
             }
             (_, None) => Ok(0.into()),
@@ -104,7 +103,7 @@ impl ResourceDef {
         self.mutable_flags
     }
 
-    pub fn authorities(&self) -> &HashMap<Address, u64> {
+    pub fn authorities(&self) -> &HashMap<ResourceDefId, u64> {
         &self.authorities
     }
 
@@ -118,14 +117,14 @@ impl ResourceDef {
 
     pub fn mint(
         &mut self,
-        supply: &Supply,
-        badge: Option<Address>,
+        supply: &Resource,
+        badge: Option<ResourceDefId>,
     ) -> Result<(), ResourceDefError> {
         self.check_mint_auth(badge)?;
 
         match self.resource_type {
             ResourceType::Fungible { .. } => {
-                if let Supply::Fungible { amount } = supply {
+                if let Resource::Fungible { amount } = supply {
                     self.check_amount(*amount)?;
                     self.total_supply += *amount;
                     Ok(())
@@ -134,7 +133,7 @@ impl ResourceDef {
                 }
             }
             ResourceType::NonFungible => {
-                if let Supply::NonFungible { keys } = supply {
+                if let Resource::NonFungible { keys } = supply {
                     self.total_supply += keys.len();
                     Ok(())
                 } else {
@@ -144,12 +143,16 @@ impl ResourceDef {
         }
     }
 
-    pub fn burn(&mut self, supply: Supply, badge: Option<Address>) -> Result<(), ResourceDefError> {
+    pub fn burn(
+        &mut self,
+        resource: Resource,
+        badge: Option<ResourceDefId>,
+    ) -> Result<(), ResourceDefError> {
         self.check_burn_auth(badge)?;
 
         match self.resource_type {
             ResourceType::Fungible { .. } => {
-                if let Supply::Fungible { amount } = supply {
+                if let Resource::Fungible { amount } = resource {
                     self.check_amount(amount)?;
                     self.total_supply -= amount;
                     Ok(())
@@ -158,7 +161,7 @@ impl ResourceDef {
                 }
             }
             ResourceType::NonFungible => {
-                if let Supply::NonFungible { keys } = supply {
+                if let Resource::NonFungible { keys } = resource {
                     // Note that the underlying non-fungibles are not deleted from the simulated ledger.
                     // This is not an issue when integrated with UTXO-based state model, where
                     // the UP state should have been spun down when the non-fungibles are withdrawn from
@@ -175,7 +178,7 @@ impl ResourceDef {
     pub fn update_flags(
         &mut self,
         new_flags: u64,
-        badge: Option<Address>,
+        badge: Option<ResourceDefId>,
     ) -> Result<(), ResourceDefError> {
         self.check_manage_flags_auth(badge)?;
 
@@ -201,7 +204,7 @@ impl ResourceDef {
     pub fn update_mutable_flags(
         &mut self,
         new_mutable_flags: u64,
-        badge: Option<Address>,
+        badge: Option<ResourceDefId>,
     ) -> Result<(), ResourceDefError> {
         self.check_manage_flags_auth(badge)?;
 
@@ -227,7 +230,7 @@ impl ResourceDef {
     pub fn update_metadata(
         &mut self,
         new_metadata: HashMap<String, String>,
-        badge: Option<Address>,
+        badge: Option<ResourceDefId>,
     ) -> Result<(), ResourceDefError> {
         self.check_update_metadata_auth(badge)?;
 
@@ -238,7 +241,7 @@ impl ResourceDef {
 
     pub fn check_take_from_vault_auth(
         &self,
-        badge: Option<Address>,
+        badge: Option<ResourceDefId>,
     ) -> Result<(), ResourceDefError> {
         if !self.is_flag_on(RESTRICTED_TRANSFER) {
             Ok(())
@@ -247,7 +250,7 @@ impl ResourceDef {
         }
     }
 
-    pub fn check_mint_auth(&self, badge: Option<Address>) -> Result<(), ResourceDefError> {
+    pub fn check_mint_auth(&self, badge: Option<ResourceDefId>) -> Result<(), ResourceDefError> {
         if self.is_flag_on(MINTABLE) {
             self.check_permission(badge, MAY_MINT)
         } else {
@@ -255,7 +258,7 @@ impl ResourceDef {
         }
     }
 
-    pub fn check_burn_auth(&self, badge: Option<Address>) -> Result<(), ResourceDefError> {
+    pub fn check_burn_auth(&self, badge: Option<ResourceDefId>) -> Result<(), ResourceDefError> {
         if self.is_flag_on(BURNABLE) {
             if self.is_flag_on(FREELY_BURNABLE) {
                 Ok(())
@@ -269,7 +272,7 @@ impl ResourceDef {
 
     pub fn check_update_non_fungible_mutable_data_auth(
         &self,
-        badge: Option<Address>,
+        badge: Option<ResourceDefId>,
     ) -> Result<(), ResourceDefError> {
         if self.is_flag_on(INDIVIDUAL_METADATA_MUTABLE) {
             self.check_permission(badge, MAY_CHANGE_INDIVIDUAL_METADATA)
@@ -280,7 +283,7 @@ impl ResourceDef {
 
     pub fn check_update_metadata_auth(
         &self,
-        badge: Option<Address>,
+        badge: Option<ResourceDefId>,
     ) -> Result<(), ResourceDefError> {
         if self.is_flag_on(SHARED_METADATA_MUTABLE) {
             self.check_permission(badge, MAY_CHANGE_SHARED_METADATA)
@@ -289,7 +292,10 @@ impl ResourceDef {
         }
     }
 
-    pub fn check_manage_flags_auth(&self, badge: Option<Address>) -> Result<(), ResourceDefError> {
+    pub fn check_manage_flags_auth(
+        &self,
+        badge: Option<ResourceDefId>,
+    ) -> Result<(), ResourceDefError> {
         self.check_permission(badge, MAY_MANAGE_RESOURCE_FLAGS)
     }
 
@@ -305,7 +311,7 @@ impl ResourceDef {
 
     pub fn check_permission(
         &self,
-        badge: Option<Address>,
+        badge: Option<ResourceDefId>,
         permission: u64,
     ) -> Result<(), ResourceDefError> {
         if let Some(badge) = badge {

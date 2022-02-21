@@ -7,18 +7,18 @@ pub struct Transaction {
 pub enum Instruction {
     TakeFromWorktop {
         amount: Value,
-        resource_address: Value,
+        resource_def_id: Value,
         new_bucket: Value,
     },
 
     TakeAllFromWorktop {
-        resource_address: Value,
+        resource_def_id: Value,
         new_bucket: Value,
     },
 
     TakeNonFungiblesFromWorktop {
         keys: Value,
-        resource_address: Value,
+        resource_def_id: Value,
         new_bucket: Value,
     },
 
@@ -28,38 +28,38 @@ pub enum Instruction {
 
     AssertWorktopContains {
         amount: Value,
-        resource_address: Value,
+        resource_def_id: Value,
     },
 
-    CreateBucketRef {
+    CreateProof {
         bucket: Value,
-        new_bucket_ref: Value,
+        new_proof: Value,
     },
 
-    CloneBucketRef {
-        bucket_ref: Value,
-        new_bucket_ref: Value,
+    CloneProof {
+        proof: Value,
+        new_proof: Value,
     },
 
-    DropBucketRef {
-        bucket_ref: Value,
+    DropProof {
+        proof: Value,
     },
 
     CallFunction {
-        package_address: Value,
+        package_id: Value,
         blueprint_name: Value,
         function: Value,
         args: Vec<Value>,
     },
 
     CallMethod {
-        component_address: Value,
+        component_id: Value,
         method: Value,
         args: Vec<Value>,
     },
 
     CallMethodWithAllResources {
-        component_address: Value,
+        component_id: Value,
         method: Value,
     },
 }
@@ -98,12 +98,12 @@ pub enum Type {
     /* Custom types */
     Decimal,
     BigDecimal,
-    Address,
+    PackageId,
+    ComponentId,
+    ResourceDefId,
     Hash,
     Bucket,
-    BucketRef,
-    LazyMap,
-    Vault,
+    Proof,
     NonFungibleKey,
 }
 
@@ -138,12 +138,12 @@ pub enum Value {
 
     Decimal(Box<Value>),
     BigDecimal(Box<Value>),
-    Address(Box<Value>),
+    PackageId(Box<Value>),
+    ComponentId(Box<Value>),
+    ResourceDefId(Box<Value>),
     Hash(Box<Value>),
     Bucket(Box<Value>),
-    BucketRef(Box<Value>),
-    LazyMap(Box<Value>),
-    Vault(Box<Value>),
+    Proof(Box<Value>),
     NonFungibleKey(Box<Value>),
 }
 
@@ -186,12 +186,12 @@ impl Value {
             Value::HashMap(_, _, _) => Type::HashMap,
             Value::Decimal(_) => Type::Decimal,
             Value::BigDecimal(_) => Type::BigDecimal,
-            Value::Address(_) => Type::Address,
+            Value::PackageId(_) => Type::PackageId,
+            Value::ComponentId(_) => Type::ComponentId,
+            Value::ResourceDefId(_) => Type::ResourceDefId,
             Value::Hash(_) => Type::Hash,
             Value::Bucket(_) => Type::Bucket,
-            Value::BucketRef(_) => Type::BucketRef,
-            Value::LazyMap(_) => Type::LazyMap,
-            Value::Vault(_) => Type::Vault,
+            Value::Proof(_) => Type::Proof,
             Value::NonFungibleKey(_) => Type::NonFungibleKey,
         }
     }

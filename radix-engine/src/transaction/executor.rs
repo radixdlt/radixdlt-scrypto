@@ -1,12 +1,13 @@
 use scrypto::abi;
+use scrypto::crypto::sha256;
+use scrypto::engine::types::*;
 use scrypto::prelude::{scrypto_decode, scrypto_encode};
 use scrypto::rust::string::ToString;
 use scrypto::rust::vec;
 use scrypto::rust::vec::Vec;
-use scrypto::types::*;
-use scrypto::utils::*;
 
 use crate::engine::*;
+use crate::errors::*;
 use crate::ledger::*;
 use crate::model::*;
 use crate::transaction::*;
@@ -18,39 +19,39 @@ pub struct TransactionExecutor<'l, L: SubstateStore> {
 }
 
 impl<'l, L: SubstateStore> AbiProvider for TransactionExecutor<'l, L> {
-    fn export_abi<A: AsRef<str>>(
+    fn export_abi(
         &self,
-        package_address: Address,
-        blueprint_name: A,
+        package_id: PackageId,
+        blueprint_name: &str,
     ) -> Result<abi::Blueprint, RuntimeError> {
-        let p: Package = self
+        let package: Package = self
             .substate_store
-            .get_substate(&package_address)
+            .get_substate(&package_id)
             .and_then(|v| scrypto_decode(&v).map(|p| Some(p)).unwrap_or(None))
-            .ok_or(RuntimeError::PackageNotFound(package_address))?;
+            .ok_or(RuntimeError::PackageNotFound(package_id))?;
 
         BasicAbiProvider::new(self.trace)
-            .with_package(package_address, p.code().to_vec())
-            .export_abi(package_address, blueprint_name)
+            .with_package(package_id, package.code().to_vec())
+            .export_abi(package_id, blueprint_name)
     }
 
     fn export_abi_component(
         &self,
-        component_address: Address,
+        component_id: ComponentId,
     ) -> Result<abi::Blueprint, RuntimeError> {
-        let c: Component = self
+        let component: Component = self
             .substate_store
-            .get_substate(&component_address)
+            .get_substate(&component_id)
             .and_then(|v| scrypto_decode(&v).map(|p| Some(p)).unwrap_or(None))
-            .ok_or(RuntimeError::ComponentNotFound(component_address))?;
-        let p: Package = self
+            .ok_or(RuntimeError::ComponentNotFound(component_id))?;
+        let package: Package = self
             .substate_store
-            .get_substate(&c.package_address())
+            .get_substate(&component.package_id())
             .map(|v| scrypto_decode(&v).unwrap())
             .unwrap();
         BasicAbiProvider::new(self.trace)
-            .with_package(c.package_address(), p.code().to_vec())
-            .export_abi(c.package_address(), c.blueprint_name())
+            .with_package(component.package_id(), package.code().to_vec())
+            .export_abi(component.package_id(), component.blueprint_name())
     }
 }
 
@@ -75,54 +76,51 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
     /// Generates a new public key.
     pub fn new_public_key(&mut self) -> EcdsaPublicKey {
         let mut raw = [0u8; 33];
-        raw[1..].copy_from_slice(sha256(self.substate_store.get_nonce().to_string()).as_ref());
+        raw[1..].copy_from_slice(&sha256(self.substate_store.get_nonce().to_string()).0);
         self.substate_store.increase_nonce();
         EcdsaPublicKey(raw)
     }
 
     /// Creates an account with 1,000,000 XRD in balance.
-    pub fn new_account(&mut self, key: EcdsaPublicKey) -> Address {
-        let free_xrd_amount = Decimal::from(1_000_000);
-
+    pub fn new_account(&mut self, key: EcdsaPublicKey) -> ComponentId {
         self.run(
             TransactionBuilder::new(self)
-                .call_method(
-                    SYSTEM_COMPONENT,
-                    "free_xrd",
-                    vec![free_xrd_amount.to_string()],
-                    None,
+                .call_method(SYSTEM_COMPONENT, "free_xrd", vec![], None)
+                .new_account_with_resource(
+                    key,
+                    &ResourceSpecification::All {
+                        resource_def_id: RADIX_TOKEN,
+                    },
                 )
-                .new_account_with_resource(key, free_xrd_amount, RADIX_TOKEN)
                 .build(Vec::new())
                 .unwrap(),
         )
         .unwrap()
-        .component(0)
-        .unwrap()
+        .new_component_ids[0]
     }
 
     /// Publishes a package.
-    pub fn publish_package(&mut self, code: &[u8]) -> Result<Address, RuntimeError> {
+    pub fn publish_package<T: AsRef<[u8]>>(&mut self, code: T) -> Result<PackageId, RuntimeError> {
         let receipt = self
             .run(
                 TransactionBuilder::new(self)
-                    .publish_package(code)
+                    .publish_package(code.as_ref())
                     .build(Vec::new())
                     .unwrap(),
             )
             .unwrap();
 
         if receipt.result.is_ok() {
-            Ok(receipt.package(0).unwrap())
+            Ok(receipt.new_package_ids[0])
         } else {
             Err(receipt.result.err().unwrap())
         }
     }
 
-    /// Publishes a package to a specified address.
-    pub fn overwrite_package(&mut self, address: Address, code: &[u8]) {
+    /// Overwrites a package.
+    pub fn overwrite_package(&mut self, package_id: PackageId, code: &[u8]) {
         let value = &scrypto_encode(&Package::new(code.to_vec()));
-        self.substate_store.put_substate(&address, value);
+        self.substate_store.put_substate(&package_id, value);
     }
 
     /// This is a convenience method that validates and runs a transaction in one shot.
@@ -160,44 +158,46 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
             let result = match inst {
                 ValidatedInstruction::TakeFromWorktop {
                     amount,
-                    resource_address,
-                } => proc.take_from_worktop(Resource::Fungible {
+                    resource_def_id,
+                } => proc.take_from_worktop(ResourceSpecification::Fungible {
                     amount,
-                    resource_address,
+                    resource_def_id,
                 }),
-                ValidatedInstruction::TakeAllFromWorktop { resource_address } => {
-                    proc.take_from_worktop(Resource::All { resource_address })
+                ValidatedInstruction::TakeAllFromWorktop { resource_def_id } => {
+                    proc.take_from_worktop(ResourceSpecification::All { resource_def_id })
                 }
                 ValidatedInstruction::TakeNonFungiblesFromWorktop {
                     keys,
-                    resource_address,
-                } => proc.take_from_worktop(Resource::NonFungible {
+                    resource_def_id,
+                } => proc.take_from_worktop(ResourceSpecification::NonFungible {
                     keys,
-                    resource_address,
+                    resource_def_id,
                 }),
-                ValidatedInstruction::ReturnToWorktop { bid } => proc.return_to_worktop(bid),
+                ValidatedInstruction::ReturnToWorktop { bucket_id } => {
+                    proc.return_to_worktop(bucket_id)
+                }
                 ValidatedInstruction::AssertWorktopContains {
                     amount,
-                    resource_address,
-                } => proc.assert_worktop_contains(amount, resource_address),
-                ValidatedInstruction::CreateBucketRef { bid } => proc.create_bucket_ref(bid),
-                ValidatedInstruction::CloneBucketRef { rid } => proc.clone_bucket_ref(rid),
-                ValidatedInstruction::DropBucketRef { rid } => proc.drop_bucket_ref(rid),
+                    resource_def_id,
+                } => proc.assert_worktop_contains(amount, resource_def_id),
+                ValidatedInstruction::CreateProof { bucket_id } => proc.create_proof(bucket_id),
+                ValidatedInstruction::CloneProof { proof_id } => proc.clone_proof(proof_id),
+                ValidatedInstruction::DropProof { proof_id } => proc.drop_proof(proof_id),
                 ValidatedInstruction::CallFunction {
-                    package_address,
+                    package_id,
                     blueprint_name,
                     function,
                     args,
-                } => proc.call_function(package_address, &blueprint_name, &function, args),
+                } => proc.call_function(package_id, &blueprint_name, &function, args),
                 ValidatedInstruction::CallMethod {
-                    component_address,
+                    component_id,
                     method,
                     args,
-                } => proc.call_method(component_address, &method, args),
+                } => proc.call_method(component_id, &method, args),
                 ValidatedInstruction::CallMethodWithAllResources {
-                    component_address,
+                    component_id,
                     method,
-                } => proc.call_method_with_all_resources(component_address, &method),
+                } => proc.call_method_with_all_resources(component_id, &method),
             };
             match result {
                 Ok(data) => {
@@ -215,7 +215,9 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
             Ok(_) => None,
             Err(e) => Some(e),
         });
-        let new_entities = track.new_entities().to_vec();
+        let new_package_ids = track.new_package_ids().to_vec();
+        let new_component_ids = track.new_component_ids().to_vec();
+        let new_resource_def_ids = track.new_resource_def_ids().to_vec();
         let logs = track.logs().clone();
 
         // commit state updates
@@ -237,7 +239,9 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
             },
             outputs,
             logs,
-            new_entities,
+            new_package_ids,
+            new_component_ids,
+            new_resource_def_ids,
             execution_time,
         }
     }

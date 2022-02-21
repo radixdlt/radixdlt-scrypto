@@ -1,9 +1,9 @@
 use clap::Parser;
 use radix_engine::model::*;
+use scrypto::engine::types::*;
+use std::path::PathBuf;
 
 use crate::resim::*;
-use scrypto::types::EcdsaPublicKey;
-use std::path::PathBuf;
 
 /// Compile and run a transaction manifest
 #[derive(Parser, Debug)]

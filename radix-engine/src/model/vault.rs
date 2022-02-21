@@ -1,8 +1,8 @@
 use sbor::*;
+use scrypto::engine::types::*;
 use scrypto::rust::vec::Vec;
-use scrypto::types::*;
 
-use crate::model::{Bucket, BucketError, Supply};
+use crate::model::{Bucket, BucketError, Resource};
 
 /// Represents an error when accessing a vault.
 #[derive(Debug, Clone)]
@@ -43,15 +43,15 @@ impl Vault {
             .map_err(VaultError::AccountingError)
     }
 
-    pub fn total_supply(&self) -> Supply {
-        self.bucket.supply()
+    pub fn resource(&self) -> Resource {
+        self.bucket.resource()
     }
 
     pub fn amount(&self) -> Decimal {
         self.bucket.amount()
     }
 
-    pub fn resource_address(&self) -> Address {
-        self.bucket.resource_address()
+    pub fn resource_def_id(&self) -> ResourceDefId {
+        self.bucket.resource_def_id()
     }
 }

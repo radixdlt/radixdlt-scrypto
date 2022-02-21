@@ -18,12 +18,7 @@ cd "$(dirname "$0")"
 
 (cd assets/account; scrypto fmt)
 (cd assets/system; scrypto fmt)
-(cd examples/core/cross-blueprint-call; scrypto fmt)
-(cd examples/core/flat-admin; scrypto fmt)
-(cd examples/core/gumball-machine; scrypto fmt)
-(cd examples/core/hello-nft; scrypto fmt)
-(cd examples/core/hello-world; scrypto fmt)
-(cd examples/core/managed-access; scrypto fmt)
-(cd examples/core/no-std-lib; scrypto fmt)
+(cd examples; find . -maxdepth 1 -type d \( ! -name . \) -exec bash -c "cd '{}' && scrypto fmt" \;)
+(cd radix-engine/tests; find . -maxdepth 1 -type d \( ! -name . \) -exec bash -c "cd '{}' && scrypto fmt" \;)
 
 echo "All packages have been formatted."

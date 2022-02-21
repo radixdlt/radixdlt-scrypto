@@ -1,10 +1,10 @@
 use sbor::*;
 use scrypto::buffer::*;
-use scrypto::engine::*;
+use scrypto::constants::*;
+use scrypto::engine::types::*;
 use scrypto::rust::borrow::ToOwned;
 use scrypto::rust::collections::*;
 use scrypto::rust::vec::Vec;
-use scrypto::types::*;
 
 use crate::model::*;
 
@@ -13,20 +13,21 @@ const XRD_NAME: &str = "Radix";
 const XRD_DESCRIPTION: &str = "The Radix Public Network's native token, used to pay the network's required transaction fees and to secure the network through staking to its validator nodes.";
 const XRD_URL: &str = "https://tokens.radixdlt.com";
 const XRD_MAX_SUPPLY: i128 = 24_000_000_000_000i128;
-const XRD_VAULT_ID: Vid = Vid(H256([0u8; 32]), 0);
+const XRD_VAULT_ID: VaultId = (Hash([0u8; 32]), 0);
+const XRD_VAULT: scrypto::resource::Vault = scrypto::resource::Vault(XRD_VAULT_ID);
 
 const SYSTEM_COMPONENT_NAME: &str = "System";
 
 #[derive(TypeId, Encode, Decode)]
 struct SystemComponentState {
-    xrd: Vid,
+    xrd: scrypto::resource::Vault,
 }
 
 pub trait QueryableSubstateStore {
     fn get_lazy_map_entries(
         &self,
-        component_address: &Address,
-        mid: &Mid,
+        component_id: ComponentId,
+        lazy_map_id: &LazyMapId,
     ) -> HashMap<Vec<u8>, Vec<u8>>;
 }
 
@@ -66,7 +67,7 @@ pub trait SubstateStore {
                 0,
                 0,
                 HashMap::new(),
-                &Some(NewSupply::Fungible {
+                &Some(Supply::Fungible {
                     amount: XRD_MAX_SUPPLY.into(),
                 }),
             )
@@ -88,7 +89,7 @@ pub trait SubstateStore {
             let system_vault = Vault::new(Bucket::new(
                 RADIX_TOKEN,
                 ResourceType::Fungible { divisibility: 18 },
-                Supply::Fungible {
+                Resource::Fungible {
                     amount: XRD_MAX_SUPPLY.into(),
                 },
             ));
@@ -101,7 +102,7 @@ pub trait SubstateStore {
             let system_component = Component::new(
                 SYSTEM_PACKAGE,
                 SYSTEM_COMPONENT_NAME.to_owned(),
-                scrypto_encode(&SystemComponentState { xrd: XRD_VAULT_ID }),
+                scrypto_encode(&SystemComponentState { xrd: XRD_VAULT }),
             );
             self.put_substate(&SYSTEM_COMPONENT, &scrypto_encode(&system_component));
         }
@@ -112,7 +113,7 @@ pub trait SubstateStore {
     fn set_epoch(&mut self, epoch: u64);
 
     // Before transaction hash is defined, we use the following TEMPORARY interfaces
-    // to introduce entropy for address derivation.
+    // to introduce entropy for id derivation.
 
     fn get_nonce(&self) -> u64;
 

@@ -5,7 +5,7 @@ mod executor;
 mod validator;
 
 pub use abi_provider::{AbiProvider, BasicAbiProvider};
-pub use builder::{ParseResourceError, Resource, TransactionBuilder};
+pub use builder::{ParseResourceSpecificationError, ResourceSpecification, TransactionBuilder};
 pub use error::{BuildArgsError, BuildTransactionError};
 pub use executor::TransactionExecutor;
 pub use validator::validate_transaction;

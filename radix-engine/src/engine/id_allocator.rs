@@ -1,9 +1,9 @@
+use scrypto::crypto::sha256_twice;
+use scrypto::engine::types::*;
 use scrypto::rust::ops::Range;
-use scrypto::types::*;
-use scrypto::utils::*;
 
-pub const ECDSA_TOKEN_BID: Bid = Bid(0);
-pub const ECDSA_TOKEN_RID: Rid = Rid(1);
+pub const ECDSA_TOKEN_BUCKET_ID: BucketId = 0;
+pub const ECDSA_TOKEN_PROOF_ID: ProofId = 1;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum IdSpace {
@@ -44,60 +44,63 @@ impl IdAllocator {
         }
     }
 
-    /// Creates a new package address.
-    pub fn new_package_address(
+    /// Creates a new package ID.
+    pub fn new_package_id(
         &mut self,
-        transaction_hash: H256,
-    ) -> Result<Address, IdAllocatorError> {
-        let mut data = transaction_hash.as_ref().to_vec();
+        transaction_hash: Hash,
+    ) -> Result<PackageId, IdAllocatorError> {
+        let mut data = transaction_hash.to_vec();
         data.extend(self.next()?.to_le_bytes());
-        Ok(Address::Package(sha256_twice(data).lower_26_bytes()))
+        Ok(PackageId(sha256_twice(data).lower_26_bytes()))
     }
 
-    /// Creates a new component address.
-    pub fn new_component_address(
+    /// Creates a new component ID.
+    pub fn new_component_id(
         &mut self,
-        transaction_hash: H256,
-    ) -> Result<Address, IdAllocatorError> {
-        let mut data = transaction_hash.as_ref().to_vec();
+        transaction_hash: Hash,
+    ) -> Result<ComponentId, IdAllocatorError> {
+        let mut data = transaction_hash.to_vec();
         data.extend(self.next()?.to_le_bytes());
-        Ok(Address::Component(sha256_twice(data).lower_26_bytes()))
+        Ok(ComponentId(sha256_twice(data).lower_26_bytes()))
     }
 
-    /// Creates a new resource def address.
-    pub fn new_resource_address(
+    /// Creates a new resource definition ID.
+    pub fn new_resource_def_id(
         &mut self,
-        transaction_hash: H256,
-    ) -> Result<Address, IdAllocatorError> {
-        let mut data = transaction_hash.as_ref().to_vec();
+        transaction_hash: Hash,
+    ) -> Result<ResourceDefId, IdAllocatorError> {
+        let mut data = transaction_hash.to_vec();
         data.extend(self.next()?.to_le_bytes());
-        Ok(Address::ResourceDef(sha256_twice(data).lower_26_bytes()))
+        Ok(ResourceDefId(sha256_twice(data).lower_26_bytes()))
     }
 
     /// Creates a new UUID.
-    pub fn new_uuid(&mut self, transaction_hash: H256) -> Result<u128, IdAllocatorError> {
-        let mut data = transaction_hash.as_ref().to_vec();
+    pub fn new_uuid(&mut self, transaction_hash: Hash) -> Result<u128, IdAllocatorError> {
+        let mut data = transaction_hash.to_vec();
         data.extend(self.next()?.to_le_bytes());
         Ok(u128::from_le_bytes(sha256_twice(data).lower_16_bytes()))
     }
 
     /// Creates a new bucket ID.
-    pub fn new_bid(&mut self) -> Result<Bid, IdAllocatorError> {
-        Ok(Bid(self.next()?))
+    pub fn new_bucket_id(&mut self) -> Result<BucketId, IdAllocatorError> {
+        Ok(self.next()?)
     }
 
-    /// Creates a new bucket ref ID.
-    pub fn new_rid(&mut self) -> Result<Rid, IdAllocatorError> {
-        Ok(Rid(self.next()?))
+    /// Creates a new proof ID.
+    pub fn new_proof_id(&mut self) -> Result<ProofId, IdAllocatorError> {
+        Ok(self.next()?)
     }
 
     /// Creates a new vault ID.
-    pub fn new_vid(&mut self, transaction_hash: H256) -> Result<Vid, IdAllocatorError> {
-        Ok(Vid(transaction_hash, self.next()?))
+    pub fn new_vault_id(&mut self, transaction_hash: Hash) -> Result<VaultId, IdAllocatorError> {
+        Ok((transaction_hash, self.next()?))
     }
 
     /// Creates a new lazy map ID.
-    pub fn new_mid(&mut self, transaction_hash: H256) -> Result<Mid, IdAllocatorError> {
-        Ok(Mid(transaction_hash, self.next()?))
+    pub fn new_lazy_map_id(
+        &mut self,
+        transaction_hash: Hash,
+    ) -> Result<LazyMapId, IdAllocatorError> {
+        Ok((transaction_hash, self.next()?))
     }
 }

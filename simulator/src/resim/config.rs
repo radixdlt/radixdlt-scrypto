@@ -3,14 +3,14 @@ use std::path::PathBuf;
 
 use sbor::*;
 use scrypto::buffer::*;
-use scrypto::types::*;
+use scrypto::engine::types::*;
 
 use crate::resim::*;
 
 /// Simulator configurations.
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct Configs {
-    pub default_account: Address,
+    pub default_account: ComponentId,
     pub default_signers: Vec<EcdsaPublicKey>,
 }
 
@@ -48,7 +48,7 @@ pub fn set_configs(configs: &Configs) -> Result<(), Error> {
     fs::write(path, scrypto_encode(configs)).map_err(Error::IOError)
 }
 
-pub fn get_default_account() -> Result<Address, Error> {
+pub fn get_default_account() -> Result<ComponentId, Error> {
     get_configs()?
         .ok_or(Error::NoDefaultAccount)
         .map(|config| config.default_account)

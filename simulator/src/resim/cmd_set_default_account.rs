@@ -1,13 +1,13 @@
 use clap::Parser;
-use scrypto::types::*;
+use scrypto::engine::types::*;
 
 use crate::resim::*;
 
 /// Set default account
 #[derive(Parser, Debug)]
 pub struct SetDefaultAccount {
-    /// The account component address
-    address: Address,
+    /// The account component ID
+    component_id: ComponentId,
 
     /// The public key for accessing the account
     public_key: EcdsaPublicKey,
@@ -16,7 +16,7 @@ pub struct SetDefaultAccount {
 impl SetDefaultAccount {
     pub fn run(&self) -> Result<(), Error> {
         set_configs(&Configs {
-            default_account: self.address,
+            default_account: self.component_id,
             default_signers: vec![self.public_key],
         })?;
 

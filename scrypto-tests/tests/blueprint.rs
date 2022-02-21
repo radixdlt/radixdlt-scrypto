@@ -12,7 +12,7 @@ blueprint! {
     }
 
     impl Simple {
-        pub fn new() -> Component {
+        pub fn new() -> ComponentId {
             Self {
                 state: 0
             }.instantiate()
@@ -26,15 +26,7 @@ blueprint! {
             self.state = new_state;
         }
 
-        pub fn custom_types_1() -> (Decimal, Address, H256, Bid, Rid, Mid, Vid) {
-            todo!()
-        }
-
-        pub fn custom_types_2() -> (Package, Blueprint, Component, LazyMap<String, String>) {
-            todo!()
-        }
-
-        pub fn custom_types_3() -> (Bucket, BucketRef, Vault) {
+        pub fn custom_types() -> (Decimal, PackageId, LazyMap<String, String>, Hash, Bucket, Proof, Vault) {
             todo!()
         }
     }
@@ -59,78 +51,29 @@ fn test_simple_abi() {
                     "inputs": [],
                     "output": {
                         "type": "Custom",
-                        "name": "scrypto::core::Component",
+                        "name": "ComponentId",
                         "generics": []
                     }
                 },
                 {
-                    "name": "custom_types_1",
+                    "name": "custom_types",
                     "inputs": [],
                     "output": {
                         "type": "Tuple",
                         "elements": [
                             {
                                 "type": "Custom",
-                                "name": "scrypto::types::Decimal",
+                                "name": "Decimal",
                                 "generics": []
                             },
                             {
                                 "type": "Custom",
-                                "name": "scrypto::types::Address",
+                                "name": "PackageId",
                                 "generics": []
                             },
                             {
                                 "type": "Custom",
-                                "name": "scrypto::types::H256",
-                                "generics": []
-                            },
-                            {
-                                "type": "Custom",
-                                "name": "scrypto::types::Bid",
-                                "generics": []
-                            },
-                            {
-                                "type": "Custom",
-                                "name": "scrypto::types::Rid",
-                                "generics": []
-                            },
-                            {
-                                "type": "Custom",
-                                "name": "scrypto::types::Mid",
-                                "generics": []
-                            },
-                            {
-                                "type": "Custom",
-                                "name": "scrypto::types::Vid",
-                                "generics": []
-                            }
-                        ]
-                    }
-                },
-                {
-                    "name": "custom_types_2",
-                    "inputs": [],
-                    "output": {
-                        "type": "Tuple",
-                        "elements": [
-                            {
-                                "type": "Custom",
-                                "name": "scrypto::core::Package",
-                                "generics": []
-                            },
-                            {
-                                "type": "Custom",
-                                "name": "scrypto::core::Blueprint",
-                                "generics": []
-                            },
-                            {
-                                "type": "Custom",
-                                "name": "scrypto::core::Component",
-                                "generics": []
-                            },
-                            {
-                                "type": "Custom",
-                                "name": "scrypto::core::LazyMap",
+                                "name": "LazyMap",
                                 "generics": [
                                     {
                                         "type": "String"
@@ -139,29 +82,25 @@ fn test_simple_abi() {
                                         "type": "String"
                                     }
                                 ]
-                            }
-                        ]
-                    }
-                },
-                {
-                    "name": "custom_types_3",
-                    "inputs": [],
-                    "output": {
-                        "type": "Tuple",
-                        "elements": [
+                            },
                             {
                                 "type": "Custom",
-                                "name": "scrypto::resource::Bucket",
+                                "name":  "Hash",
                                 "generics": []
                             },
                             {
                                 "type": "Custom",
-                                "name": "scrypto::resource::BucketRef",
+                                "name": "Bucket",
                                 "generics": []
                             },
                             {
                                 "type": "Custom",
-                                "name": "scrypto::resource::Vault",
+                                "name": "Proof",
+                                "generics": []
+                            },
+                            {
+                                "type": "Custom",
+                                "name": "Vault",
                                 "generics": []
                             }
                         ]

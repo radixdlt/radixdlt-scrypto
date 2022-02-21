@@ -1,7 +1,8 @@
 use radix_engine::engine::*;
+use radix_engine::errors::*;
 use radix_engine::model::*;
+use scrypto::engine::types::*;
 use scrypto::rust::collections::*;
-use scrypto::types::*;
 
 #[derive(Debug, Clone)]
 pub enum DecompileError {
@@ -12,167 +13,167 @@ pub enum DecompileError {
 pub fn decompile(tx: &Transaction) -> Result<String, DecompileError> {
     let mut buf = String::new();
     let mut id_validator = IdValidator::new();
-    let mut buckets = HashMap::<Bid, String>::new();
-    let mut bucket_refs = HashMap::<Rid, String>::new();
+    let mut buckets = HashMap::<BucketId, String>::new();
+    let mut proofs = HashMap::<ProofId, String>::new();
     for inst in &tx.instructions {
         match inst.clone() {
             Instruction::TakeFromWorktop {
                 amount,
-                resource_address,
+                resource_def_id,
             } => {
-                let bid = id_validator
+                let bucket_id = id_validator
                     .new_bucket()
                     .map_err(DecompileError::IdValidatorError)?;
                 let name = format!("bucket{}", buckets.len() + 1);
-                buckets.insert(bid, name.clone());
+                buckets.insert(bucket_id, name.clone());
                 buf.push_str(&format!(
-                    "TAKE_FROM_WORKTOP Decimal(\"{}\") Address(\"{}\") Bucket(\"{}\");\n",
-                    amount, resource_address, name
+                    "TAKE_FROM_WORKTOP Decimal(\"{}\") ResourceDefId(\"{}\") Bucket(\"{}\");\n",
+                    amount, resource_def_id, name
                 ));
             }
-            Instruction::TakeAllFromWorktop { resource_address } => {
-                let bid = id_validator
+            Instruction::TakeAllFromWorktop { resource_def_id } => {
+                let bucket_id = id_validator
                     .new_bucket()
                     .map_err(DecompileError::IdValidatorError)?;
                 let name = format!("bucket{}", buckets.len() + 1);
-                buckets.insert(bid, name.clone());
+                buckets.insert(bucket_id, name.clone());
                 buf.push_str(&format!(
-                    "TAKE_ALL_FROM_WORKTOP Address(\"{}\") Bucket(\"{}\");\n",
-                    resource_address, name
+                    "TAKE_ALL_FROM_WORKTOP ResourceDefId(\"{}\") Bucket(\"{}\");\n",
+                    resource_def_id, name
                 ));
             }
             Instruction::TakeNonFungiblesFromWorktop {
                 keys,
-                resource_address,
+                resource_def_id,
             } => {
-                let bid = id_validator
+                let bucket_id = id_validator
                     .new_bucket()
                     .map_err(DecompileError::IdValidatorError)?;
                 let name = format!("bucket{}", buckets.len() + 1);
-                buckets.insert(bid, name.clone());
+                buckets.insert(bucket_id, name.clone());
                 buf.push_str(&format!(
-                    "TAKE_NON_FUNGIBLES_FROM_WORKTOP TreeSet<NonFungibleKey>({}) Address(\"{}\") Bucket(\"{}\");\n",
+                    "TAKE_NON_FUNGIBLES_FROM_WORKTOP TreeSet<NonFungibleKey>({}) ResourceDefId(\"{}\") Bucket(\"{}\");\n",
                     keys.iter()
                     .map(|k| format!("NonFungibleKey(\"{}\")", k))
                     .collect::<Vec<String>>()
                     .join(", "),
-                    resource_address, name
+                    resource_def_id, name
                 ));
             }
-            Instruction::ReturnToWorktop { bid } => {
+            Instruction::ReturnToWorktop { bucket_id } => {
                 id_validator
-                    .drop_bucket(bid)
+                    .drop_bucket(bucket_id)
                     .map_err(DecompileError::IdValidatorError)?;
                 buf.push_str(&format!(
                     "RETURN_TO_WORKTOP Bucket({});\n",
                     buckets
-                        .get(&bid)
+                        .get(&bucket_id)
                         .map(|name| format!("\"{}\"", name))
-                        .unwrap_or(format!("{}u32", bid.0))
+                        .unwrap_or(format!("{}u32", bucket_id))
                 ));
             }
             Instruction::AssertWorktopContains {
                 amount,
-                resource_address,
+                resource_def_id,
             } => {
                 buf.push_str(&format!(
-                    "ASSERT_WORKTOP_CONTAINS Decimal(\"{}\") Address(\"{}\");\n",
-                    amount, resource_address
+                    "ASSERT_WORKTOP_CONTAINS Decimal(\"{}\") ResourceDefId(\"{}\");\n",
+                    amount, resource_def_id
                 ));
             }
-            Instruction::CreateBucketRef { bid } => {
-                let rid = id_validator
-                    .new_bucket_ref(bid)
+            Instruction::CreateProof { bucket_id } => {
+                let proof_id = id_validator
+                    .new_proof(bucket_id)
                     .map_err(DecompileError::IdValidatorError)?;
-                let name = format!("badge{}", bucket_refs.len() + 1);
-                bucket_refs.insert(rid, name.clone());
+                let name = format!("badge{}", proofs.len() + 1);
+                proofs.insert(proof_id, name.clone());
                 buf.push_str(&format!(
-                    "CREATE_BUCKET_REF Bucket({}) BucketRef(\"{}\");\n",
+                    "CREATE_PROOF Bucket({}) Proof(\"{}\");\n",
                     buckets
-                        .get(&bid)
+                        .get(&bucket_id)
                         .map(|name| format!("\"{}\"", name))
-                        .unwrap_or(format!("{}u32", bid.0)),
+                        .unwrap_or(format!("{}u32", bucket_id)),
                     name
                 ));
             }
-            Instruction::CloneBucketRef { rid } => {
-                let rid2 = id_validator
-                    .clone_bucket_ref(rid)
+            Instruction::CloneProof { proof_id } => {
+                let proof_id2 = id_validator
+                    .clone_proof(proof_id)
                     .map_err(DecompileError::IdValidatorError)?;
-                let name = format!("badge{}", bucket_refs.len() + 1);
-                bucket_refs.insert(rid2, name.clone());
+                let name = format!("badge{}", proofs.len() + 1);
+                proofs.insert(proof_id2, name.clone());
                 buf.push_str(&format!(
-                    "CLONE_BUCKET_REF BucketRef({}) BucketRef(\"{}\");\n",
-                    bucket_refs
-                        .get(&rid)
+                    "CLONE_PROOF Proof({}) Proof(\"{}\");\n",
+                    proofs
+                        .get(&proof_id)
                         .map(|name| format!("\"{}\"", name))
-                        .unwrap_or(format!("{}u32", rid.0)),
+                        .unwrap_or(format!("{}u32", proof_id)),
                     name
                 ));
             }
-            Instruction::DropBucketRef { rid } => {
+            Instruction::DropProof { proof_id } => {
                 id_validator
-                    .drop_bucket_ref(rid)
+                    .drop_proof(proof_id)
                     .map_err(DecompileError::IdValidatorError)?;
                 buf.push_str(&format!(
-                    "DROP_BUCKET_REF BucketRef({});\n",
-                    bucket_refs
-                        .get(&rid)
+                    "DROP_PROOF Proof({});\n",
+                    proofs
+                        .get(&proof_id)
                         .map(|name| format!("\"{}\"", name))
-                        .unwrap_or(format!("{}u32", rid.0)),
+                        .unwrap_or(format!("{}u32", proof_id)),
                 ));
             }
             Instruction::CallFunction {
-                package_address,
+                package_id,
                 blueprint_name,
                 function,
                 args,
             } => {
                 buf.push_str(&format!(
-                    "CALL_FUNCTION Address(\"{}\") \"{}\" \"{}\"",
-                    package_address, blueprint_name, function
+                    "CALL_FUNCTION PackageId(\"{}\") \"{}\" \"{}\"",
+                    package_id, blueprint_name, function
                 ));
                 for arg in args {
-                    let validated_arg =
-                        validate_data(&arg).map_err(DecompileError::DataValidationError)?;
+                    let validated_arg = ValidatedData::from_slice(&arg)
+                        .map_err(DecompileError::DataValidationError)?;
                     id_validator
                         .move_resources(&validated_arg)
                         .map_err(DecompileError::IdValidatorError)?;
                     buf.push(' ');
-                    buf.push_str(&format_value(&validated_arg.dom, &buckets, &bucket_refs));
+                    buf.push_str(&format_value(&validated_arg.dom, &buckets, &proofs));
                 }
                 buf.push_str(";\n");
             }
             Instruction::CallMethod {
-                component_address,
+                component_id,
                 method,
                 args,
             } => {
                 buf.push_str(&format!(
-                    "CALL_METHOD Address(\"{}\") \"{}\"",
-                    component_address, method
+                    "CALL_METHOD ComponentId(\"{}\") \"{}\"",
+                    component_id, method
                 ));
                 for arg in args {
-                    let validated_arg =
-                        validate_data(&arg).map_err(DecompileError::DataValidationError)?;
+                    let validated_arg = ValidatedData::from_slice(&arg)
+                        .map_err(DecompileError::DataValidationError)?;
                     id_validator
                         .move_resources(&validated_arg)
                         .map_err(DecompileError::IdValidatorError)?;
                     buf.push(' ');
-                    buf.push_str(&format_value(&validated_arg.dom, &buckets, &bucket_refs));
+                    buf.push_str(&format_value(&validated_arg.dom, &buckets, &proofs));
                 }
                 buf.push_str(";\n");
             }
             Instruction::CallMethodWithAllResources {
-                component_address,
+                component_id,
                 method,
             } => {
                 id_validator
                     .move_all_resources()
                     .map_err(DecompileError::IdValidatorError)?;
                 buf.push_str(&format!(
-                    "CALL_METHOD_WITH_ALL_RESOURCES Address(\"{}\") \"{}\";\n",
-                    component_address, method
+                    "CALL_METHOD_WITH_ALL_RESOURCES ComponentId(\"{}\") \"{}\";\n",
+                    component_id, method
                 ));
             }
             Instruction::End { .. } => {}

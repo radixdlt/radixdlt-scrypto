@@ -1,6 +1,6 @@
 use clap::Parser;
 use radix_engine::transaction::*;
-use scrypto::types::*;
+use scrypto::engine::types::*;
 
 use crate::resim::*;
 
@@ -10,11 +10,11 @@ pub struct Mint {
     /// The amount of resource to mint
     amount: Decimal,
 
-    /// The resource address
-    resource_address: Address,
+    /// The resource definition ID
+    resource_def_id: ResourceDefId,
 
-    /// The minter badge address
-    badge_address: Address,
+    /// The minter resource definition ID
+    minter_resource_def_id: ResourceDefId,
 
     /// The transaction signers
     #[clap(short, long)]
@@ -38,13 +38,17 @@ impl Mint {
         let signatures = self.signers.clone().unwrap_or(default_signers);
         let transaction = TransactionBuilder::new(&executor)
             .withdraw_from_account(
-                &Resource::Fungible {
+                &ResourceSpecification::Fungible {
                     amount: 1.into(),
-                    resource_address: self.badge_address,
+                    resource_def_id: self.minter_resource_def_id,
                 },
                 default_account,
             )
-            .mint(self.amount, self.resource_address, self.badge_address)
+            .mint(
+                self.amount,
+                self.resource_def_id,
+                self.minter_resource_def_id,
+            )
             .call_method_with_all_resources(default_account, "deposit_batch")
             .build(signatures)
             .map_err(Error::TransactionConstructionError)?;

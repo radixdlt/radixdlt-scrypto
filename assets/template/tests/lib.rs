@@ -9,7 +9,7 @@ fn test_hello() {
     let mut executor = TransactionExecutor::new(&mut ledger, false);
     let key = executor.new_public_key();
     let account = executor.new_account(key);
-    let package = executor.publish_package(include_code!("${lib_name}")).unwrap();
+    let package = executor.publish_package(compile_package!("${wasm_name}")).unwrap();
 
     // Test the `instantiate_hello` function.
     let transaction1 = TransactionBuilder::new(&executor)
@@ -22,7 +22,7 @@ fn test_hello() {
     assert!(receipt1.result.is_ok());
 
     // Test the `free_token` method.
-    let component = receipt1.component(0).unwrap();
+    let component = receipt1.new_component_ids[0];
     let transaction2 = TransactionBuilder::new(&executor)
         .call_method(component, "free_token", vec![], Some(account))
         .call_method_with_all_resources(account, "deposit_batch")

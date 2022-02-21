@@ -3,9 +3,9 @@ use std::path::PathBuf;
 
 use radix_engine::ledger::*;
 use rocksdb::{DBWithThreadMode, Direction, IteratorMode, SingleThreaded, DB};
-use sbor::Encode;
+use sbor::{Decode, Encode};
 use scrypto::buffer::*;
-use scrypto::types::*;
+use scrypto::engine::types::*;
 
 pub struct RadixEngineDB {
     db: DBWithThreadMode<SingleThreaded>,
@@ -23,25 +23,25 @@ impl RadixEngineDB {
         ledger
     }
 
-    pub fn list_packages(&self) -> Vec<Address> {
-        let start = &scrypto_encode(&Address::Package([0; 26]));
-        let end = &scrypto_encode(&Address::Package([255; 26]));
+    pub fn list_packages(&self) -> Vec<PackageId> {
+        let start = &scrypto_encode(&PackageId([0; 26]));
+        let end = &scrypto_encode(&PackageId([255; 26]));
         self.list_items(start, end)
     }
 
-    pub fn list_components(&self) -> Vec<Address> {
-        let start = &scrypto_encode(&Address::Component([0; 26]));
-        let end = &scrypto_encode(&Address::Component([255; 26]));
+    pub fn list_components(&self) -> Vec<ComponentId> {
+        let start = &scrypto_encode(&ComponentId([0; 26]));
+        let end = &scrypto_encode(&ComponentId([255; 26]));
         self.list_items(start, end)
     }
 
-    pub fn list_resource_defs(&self) -> Vec<Address> {
-        let start = &scrypto_encode(&Address::ResourceDef([0; 26]));
-        let end = &scrypto_encode(&Address::ResourceDef([255; 26]));
+    pub fn list_resource_defs(&self) -> Vec<ResourceDefId> {
+        let start = &scrypto_encode(&ResourceDefId([0; 26]));
+        let end = &scrypto_encode(&ResourceDefId([255; 26]));
         self.list_items(start, end)
     }
 
-    fn list_items(&self, start: &[u8], inclusive_end: &[u8]) -> Vec<Address> {
+    fn list_items<T: Decode>(&self, start: &[u8], inclusive_end: &[u8]) -> Vec<T> {
         let mut iter = self
             .db
             .iterator(IteratorMode::From(start, Direction::Forward));
@@ -70,11 +70,11 @@ impl RadixEngineDB {
 impl QueryableSubstateStore for RadixEngineDB {
     fn get_lazy_map_entries(
         &self,
-        component_address: &Address,
-        mid: &Mid,
+        component_id: ComponentId,
+        lazy_map_id: &LazyMapId,
     ) -> HashMap<Vec<u8>, Vec<u8>> {
-        let mut id = scrypto_encode(component_address);
-        id.extend(scrypto_encode(mid));
+        let mut id = scrypto_encode(&component_id);
+        id.extend(scrypto_encode(lazy_map_id));
 
         let mut iter = self
             .db

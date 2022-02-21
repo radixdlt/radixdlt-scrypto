@@ -2,11 +2,11 @@ use scrypto::prelude::*;
 
 blueprint! {
     struct SuperLazyMap {
-        maps: LazyMap<u32, LazyMap<u32, LazyMap<u32, LazyMap<String, String>>>>
+        maps: LazyMap<u32, LazyMap<u32, LazyMap<u32, LazyMap<String, String>>>>,
     }
 
     impl SuperLazyMap {
-        pub fn new() -> Component {
+        pub fn new() -> ComponentId {
             let map0 = LazyMap::new();
             let map1 = LazyMap::new();
             let map2 = LazyMap::new();
@@ -20,9 +20,7 @@ blueprint! {
             let map3 = map2.get(&3u32).unwrap();
             map3.insert(4u32, map4);
 
-            SuperLazyMap {
-                maps: map0
-            }.instantiate()
+            SuperLazyMap { maps: map0 }.instantiate()
         }
     }
 }

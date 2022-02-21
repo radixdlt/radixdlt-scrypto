@@ -41,7 +41,7 @@ pub fn handle_auth(attr: TokenStream, item: TokenStream) -> Result<TokenStream> 
     let f_ident = f.sig.ident;
     let mut f_inputs: Vec<FnArg> = f.sig.inputs.iter().map(Clone::clone).collect();
     f_inputs.push(parse_quote! {
-        auth: ::scrypto::resource::BucketRef
+        auth: ::scrypto::resource::Proof
     });
     let f_output = f.sig.output;
     if let Some(a) = f_attrs
@@ -94,7 +94,7 @@ mod tests {
             output,
             quote! {
                 #[other]
-                pub fn x(&self, auth: ::scrypto::resource::BucketRef) -> u32 {
+                pub fn x(&self, auth: ::scrypto::resource::Proof) -> u32 {
                     if !(auth.contains(self.foo.clone()) || auth.contains(self.bar.clone())) {
                         panic!("Not authorized!")
                     }

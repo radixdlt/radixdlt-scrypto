@@ -1,15 +1,16 @@
+use scrypto::engine::types::*;
 use scrypto::rust::collections::*;
 use scrypto::rust::vec::Vec;
-use scrypto::types::*;
 
+use crate::errors::*;
 use crate::model::*;
 
 #[derive(Debug)]
 pub struct UnclaimedLazyMap {
     pub lazy_map: HashMap<Vec<u8>, Vec<u8>>,
     /// All descendents (not just direct children) of the unclaimed lazy map
-    pub descendent_lazy_maps: HashMap<Mid, HashMap<Vec<u8>, Vec<u8>>>,
-    pub descendent_vaults: HashMap<Vid, Vault>,
+    pub descendent_lazy_maps: HashMap<LazyMapId, HashMap<Vec<u8>, Vec<u8>>>,
+    pub descendent_vaults: HashMap<VaultId, Vault>,
 }
 
 impl UnclaimedLazyMap {
@@ -21,73 +22,78 @@ impl UnclaimedLazyMap {
         }
     }
 
-    fn insert_vault(&mut self, vid: Vid, vault: Vault) {
-        if self.descendent_vaults.contains_key(&vid) {
-            panic!("duplicate vault insertion: {}", vid);
+    fn insert_vault(&mut self, vault_id: VaultId, vault: Vault) {
+        if self.descendent_vaults.contains_key(&vault_id) {
+            panic!("duplicate vault insertion: {:?}", vault_id);
         }
 
-        self.descendent_vaults.insert(vid, vault);
+        self.descendent_vaults.insert(vault_id, vault);
     }
 
-    fn insert_lazy_map(&mut self, mid: Mid, lazy_map: HashMap<Vec<u8>, Vec<u8>>) {
-        if self.descendent_lazy_maps.contains_key(&mid) {
-            panic!("duplicate map insertion: {}", mid);
+    fn insert_lazy_map(&mut self, lazy_map_id: LazyMapId, lazy_map: HashMap<Vec<u8>, Vec<u8>>) {
+        if self.descendent_lazy_maps.contains_key(&lazy_map_id) {
+            panic!("duplicate map insertion: {:?}", lazy_map_id);
         }
 
-        self.descendent_lazy_maps.insert(mid, lazy_map);
+        self.descendent_lazy_maps.insert(lazy_map_id, lazy_map);
     }
 
-    fn insert_map_descendent(&mut self, unclaimed_lazy_map: UnclaimedLazyMap, mid: Mid) {
-        self.insert_lazy_map(mid, unclaimed_lazy_map.lazy_map);
+    fn insert_map_descendent(
+        &mut self,
+        unclaimed_lazy_map: UnclaimedLazyMap,
+        lazy_map_id: LazyMapId,
+    ) {
+        self.insert_lazy_map(lazy_map_id, unclaimed_lazy_map.lazy_map);
 
-        for (mid, lazy_map) in unclaimed_lazy_map.descendent_lazy_maps {
-            self.insert_lazy_map(mid, lazy_map);
+        for (lazy_map_id, lazy_map) in unclaimed_lazy_map.descendent_lazy_maps {
+            self.insert_lazy_map(lazy_map_id, lazy_map);
         }
-        for (vid, vault) in unclaimed_lazy_map.descendent_vaults {
-            self.insert_vault(vid, vault);
+        for (vault_id, vault) in unclaimed_lazy_map.descendent_vaults {
+            self.insert_vault(vault_id, vault);
         }
     }
 
     pub fn insert_descendents(&mut self, new_descendents: ComponentObjects) {
-        for (vid, vault) in new_descendents.vaults {
-            self.insert_vault(vid, vault);
+        for (vault_id, vault) in new_descendents.vaults {
+            self.insert_vault(vault_id, vault);
         }
 
-        for (mid, child_lazy_map) in new_descendents.lazy_maps {
-            self.insert_map_descendent(child_lazy_map, mid);
+        for (lazy_map_id, child_lazy_map) in new_descendents.lazy_maps {
+            self.insert_map_descendent(child_lazy_map, lazy_map_id);
         }
     }
 }
 
+#[derive(Debug)]
 pub struct ComponentObjectRefs {
-    pub mids: HashSet<Mid>,
-    pub vids: HashSet<Vid>,
+    pub lazy_map_ids: HashSet<LazyMapId>,
+    pub vault_ids: HashSet<VaultId>,
 }
 
 impl ComponentObjectRefs {
     pub fn new() -> Self {
         ComponentObjectRefs {
-            mids: HashSet::new(),
-            vids: HashSet::new(),
+            lazy_map_ids: HashSet::new(),
+            vault_ids: HashSet::new(),
         }
     }
 
     pub fn extend(&mut self, other: ComponentObjectRefs) {
-        self.mids.extend(other.mids);
-        self.vids.extend(other.vids);
+        self.lazy_map_ids.extend(other.lazy_map_ids);
+        self.vault_ids.extend(other.vault_ids);
     }
 
     pub fn remove(&mut self, other: &ComponentObjectRefs) -> Result<(), RuntimeError> {
         // Only allow vaults to be added, never removed
-        for vid in &other.vids {
-            if !self.vids.remove(&vid) {
-                return Err(RuntimeError::VaultRemoved(vid.clone()));
+        for vault_id in &other.vault_ids {
+            if !self.vault_ids.remove(&vault_id) {
+                return Err(RuntimeError::VaultRemoved(vault_id.clone()));
             }
         }
 
-        for mid in &other.mids {
-            if !self.mids.remove(&mid) {
-                return Err(RuntimeError::LazyMapRemoved(mid.clone()));
+        for lazy_map_id in &other.lazy_map_ids {
+            if !self.lazy_map_ids.remove(&lazy_map_id) {
+                return Err(RuntimeError::LazyMapRemoved(lazy_map_id.clone()));
             }
         }
 
@@ -96,12 +102,13 @@ impl ComponentObjectRefs {
 }
 
 /// Component type objects which will eventually move into a component
+#[derive(Debug)]
 pub struct ComponentObjects {
     /// Lazy maps which haven't been assigned to a component or lazy map yet.
     /// Keeps track of vault and lazy map descendents.
-    pub lazy_maps: HashMap<Mid, UnclaimedLazyMap>,
+    pub lazy_maps: HashMap<LazyMapId, UnclaimedLazyMap>,
     /// Vaults which haven't been assigned to a component or lazy map yet.
-    pub vaults: HashMap<Vid, Vault>,
+    pub vaults: HashMap<VaultId, Vault>,
 }
 
 impl ComponentObjects {
@@ -116,48 +123,59 @@ impl ComponentObjects {
         let mut vaults = HashMap::new();
         let mut lazy_maps = HashMap::new();
 
-        for vid in other.vids {
+        for vault_id in other.vault_ids {
             let vault = self
                 .vaults
-                .remove(&vid)
-                .ok_or(RuntimeError::VaultNotFound(vid))?;
-            vaults.insert(vid, vault);
+                .remove(&vault_id)
+                .ok_or(RuntimeError::VaultNotFound(vault_id))?;
+            vaults.insert(vault_id, vault);
         }
 
-        for mid in other.mids {
+        for lazy_map_id in other.lazy_map_ids {
             let lazy_map = self
                 .lazy_maps
-                .remove(&mid)
-                .ok_or(RuntimeError::LazyMapNotFound(mid))?;
-            lazy_maps.insert(mid, lazy_map);
+                .remove(&lazy_map_id)
+                .ok_or(RuntimeError::LazyMapNotFound(lazy_map_id))?;
+            lazy_maps.insert(lazy_map_id, lazy_map);
         }
 
         Ok(ComponentObjects { vaults, lazy_maps })
     }
 
-    pub fn insert_objects_into_map(&mut self, new_objects: ComponentObjects, mid: &Mid) {
-        let unclaimed_map = self.lazy_maps.get_mut(mid).unwrap();
+    pub fn insert_objects_into_map(
+        &mut self,
+        new_objects: ComponentObjects,
+        lazy_map_id: &LazyMapId,
+    ) {
+        let unclaimed_map = self.lazy_maps.get_mut(lazy_map_id).unwrap();
         unclaimed_map.insert_descendents(new_objects);
     }
 
-    pub fn insert_lazy_map_entry(&mut self, mid: &Mid, key: Vec<u8>, value: Vec<u8>) {
-        let (_, lazy_map) = self.get_lazy_map_mut(mid).unwrap();
+    pub fn insert_lazy_map_entry(&mut self, lazy_map_id: &LazyMapId, key: Vec<u8>, value: Vec<u8>) {
+        let (_, lazy_map) = self.get_lazy_map_mut(lazy_map_id).unwrap();
         lazy_map.insert(key, value);
     }
 
-    pub fn get_lazy_map_entry(&mut self, mid: &Mid, key: &[u8]) -> Option<(Mid, Option<Vec<u8>>)> {
-        self.get_lazy_map_mut(mid)
-            .map(|(mid, lazy_map)| (mid, lazy_map.get(key).map(|v| v.to_vec())))
+    pub fn get_lazy_map_entry(
+        &mut self,
+        lazy_map_id: &LazyMapId,
+        key: &[u8],
+    ) -> Option<(LazyMapId, Option<Vec<u8>>)> {
+        self.get_lazy_map_mut(lazy_map_id)
+            .map(|(lazy_map_id, lazy_map)| (lazy_map_id, lazy_map.get(key).map(|v| v.to_vec())))
     }
 
-    fn get_lazy_map_mut(&mut self, mid: &Mid) -> Option<(Mid, &mut HashMap<Vec<u8>, Vec<u8>>)> {
+    fn get_lazy_map_mut(
+        &mut self,
+        lazy_map_id: &LazyMapId,
+    ) -> Option<(LazyMapId, &mut HashMap<Vec<u8>, Vec<u8>>)> {
         // TODO: Optimize to prevent iteration
         for (root, unclaimed) in self.lazy_maps.iter_mut() {
-            if mid.eq(root) {
+            if lazy_map_id.eq(root) {
                 return Some((root.clone(), &mut unclaimed.lazy_map));
             }
 
-            let lazy_map = unclaimed.descendent_lazy_maps.get_mut(mid);
+            let lazy_map = unclaimed.descendent_lazy_maps.get_mut(lazy_map_id);
             if lazy_map.is_some() {
                 return Some((root.clone(), lazy_map.unwrap()));
             }
@@ -166,15 +184,15 @@ impl ComponentObjects {
         None
     }
 
-    pub fn get_vault_mut(&mut self, vid: &Vid) -> Option<&mut Vault> {
-        let vault = self.vaults.get_mut(vid);
+    pub fn get_vault_mut(&mut self, vault_id: &VaultId) -> Option<&mut Vault> {
+        let vault = self.vaults.get_mut(vault_id);
         if vault.is_some() {
             return Some(vault.unwrap());
         }
 
         // TODO: Optimize to prevent iteration
         for (_, unclaimed) in self.lazy_maps.iter_mut() {
-            let vault = unclaimed.descendent_vaults.get_mut(vid);
+            let vault = unclaimed.descendent_vaults.get_mut(vault_id);
             if vault.is_some() {
                 return Some(vault.unwrap());
             }

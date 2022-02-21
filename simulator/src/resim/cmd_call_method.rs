@@ -1,14 +1,14 @@
 use clap::Parser;
 use radix_engine::transaction::*;
-use scrypto::types::*;
+use scrypto::engine::types::*;
 
 use crate::resim::*;
 
 /// Call a method
 #[derive(Parser, Debug)]
 pub struct CallMethod {
-    /// The address of the component that the method belongs to
-    component_address: Address,
+    /// The component that the method belongs to
+    component_id: ComponentId,
 
     /// The method name
     method_name: String,
@@ -38,7 +38,7 @@ impl CallMethod {
         let signatures = self.signers.clone().unwrap_or(default_signers);
         let transaction = TransactionBuilder::new(&executor)
             .call_method(
-                self.component_address,
+                self.component_id,
                 &self.method_name,
                 self.arguments.clone(),
                 Some(default_account),

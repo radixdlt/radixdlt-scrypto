@@ -8,7 +8,7 @@ use crate::rust::vec::Vec;
 use crate::type_id::*;
 
 /// Represents an error ocurred during decoding.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum DecodeError {
     Underflow { required: usize, remaining: usize },
 

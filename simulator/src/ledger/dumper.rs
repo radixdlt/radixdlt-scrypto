@@ -1,11 +1,10 @@
 use colored::*;
-use radix_engine::engine::*;
 use radix_engine::ledger::*;
 use radix_engine::model::*;
 use scrypto::buffer::scrypto_decode;
+use scrypto::engine::types::*;
 use scrypto::prelude::scrypto_encode;
 use scrypto::rust::collections::HashSet;
-use scrypto::types::*;
 
 use crate::utils::*;
 
@@ -19,15 +18,15 @@ pub enum DisplayError {
 
 /// Dump a package into console.
 pub fn dump_package<T: SubstateStore>(
-    address: Address,
+    package_id: PackageId,
     substate_store: &T,
 ) -> Result<(), DisplayError> {
     let package: Option<Package> = substate_store
-        .get_substate(&address)
+        .get_substate(&package_id)
         .map(|v| scrypto_decode(&v).unwrap());
     match package {
         Some(b) => {
-            println!("{}: {}", "Package".green().bold(), address.to_string());
+            println!("{}: {}", "Package".green().bold(), package_id.to_string());
             println!("{}: {} bytes", "Code size".green().bold(), b.code().len());
             Ok(())
         }
@@ -37,39 +36,44 @@ pub fn dump_package<T: SubstateStore>(
 
 /// Dump a component into console.
 pub fn dump_component<T: SubstateStore + QueryableSubstateStore>(
-    address: Address,
+    component_id: ComponentId,
     substate_store: &T,
 ) -> Result<(), DisplayError> {
     let component: Option<Component> = substate_store
-        .get_substate(&address)
+        .get_substate(&component_id)
         .map(|v| scrypto_decode(&v).unwrap());
     match component {
         Some(c) => {
-            println!("{}: {}", "Component".green().bold(), address.to_string());
+            println!(
+                "{}: {}",
+                "Component".green().bold(),
+                component_id.to_string()
+            );
 
             println!(
-                "{}: {{ package_address: {}, blueprint_name: \"{}\" }}",
+                "{}: {{ package_id: {}, blueprint_name: \"{}\" }}",
                 "Blueprint".green().bold(),
-                c.package_address(),
+                c.package_id(),
                 c.blueprint_name()
             );
             let state = c.state();
-            let state_validated = validate_data(state).unwrap();
+            let state_validated = ValidatedData::from_slice(state).unwrap();
             println!("{}: {}", "State".green().bold(), state_validated);
 
             // The current implementation recursively displays all referenced maps and vaults which
             // the component may not have access to.
             // Dump lazy map using DFS
             // Consider using a proper Queue structure
-            let mut queue: Vec<Mid> = state_validated.lazy_maps.clone();
+            let mut queue: Vec<LazyMapId> = state_validated.lazy_map_ids.clone();
             let mut i = 0;
-            let mut maps_visited: HashSet<Mid> = HashSet::new();
-            let mut vaults_found: HashSet<Vid> = state_validated.vaults.iter().cloned().collect();
+            let mut maps_visited: HashSet<LazyMapId> = HashSet::new();
+            let mut vaults_found: HashSet<VaultId> =
+                state_validated.vault_ids.iter().cloned().collect();
             while i < queue.len() {
-                let mid = queue[i];
+                let lazy_map_id = queue[i];
                 i += 1;
-                if maps_visited.insert(mid) {
-                    let (maps, vaults) = dump_lazy_map(&address, &mid, substate_store)?;
+                if maps_visited.insert(lazy_map_id) {
+                    let (maps, vaults) = dump_lazy_map(component_id, &lazy_map_id, substate_store)?;
                     queue.extend(maps);
                     for v in vaults {
                         vaults_found.insert(v);
@@ -78,52 +82,57 @@ pub fn dump_component<T: SubstateStore + QueryableSubstateStore>(
             }
 
             // Dump resources
-            dump_resources(address, &vaults_found, substate_store)
+            dump_resources(component_id, &vaults_found, substate_store)
         }
         None => Err(DisplayError::ComponentNotFound),
     }
 }
 
 fn dump_lazy_map<T: SubstateStore + QueryableSubstateStore>(
-    address: &Address,
-    mid: &Mid,
+    component_id: ComponentId,
+    lazy_map_id: &LazyMapId,
     substate_store: &T,
-) -> Result<(Vec<Mid>, Vec<Vid>), DisplayError> {
+) -> Result<(Vec<LazyMapId>, Vec<VaultId>), DisplayError> {
     let mut referenced_maps = Vec::new();
     let mut referenced_vaults = Vec::new();
-    let map = substate_store.get_lazy_map_entries(address, mid);
-    println!("{}: {:?}{:?}", "Lazy Map".green().bold(), address, mid);
+    let map = substate_store.get_lazy_map_entries(component_id, lazy_map_id);
+    println!(
+        "{}: {:?}{:?}",
+        "Lazy Map".green().bold(),
+        component_id,
+        lazy_map_id
+    );
     for (last, (k, v)) in map.iter().identify_last() {
-        let v_validated = validate_data(v).unwrap();
+        let v_validated = ValidatedData::from_slice(v).unwrap();
         println!("{} {:?} => {}", list_item_prefix(last), k, v_validated);
-        referenced_maps.extend(v_validated.lazy_maps);
-        referenced_vaults.extend(v_validated.vaults);
+        referenced_maps.extend(v_validated.lazy_map_ids);
+        referenced_vaults.extend(v_validated.vault_ids);
     }
     Ok((referenced_maps, referenced_vaults))
 }
 
 fn dump_resources<T: SubstateStore>(
-    address: Address,
-    vaults: &HashSet<Vid>,
+    component_id: ComponentId,
+    vaults: &HashSet<VaultId>,
     substate_store: &T,
 ) -> Result<(), DisplayError> {
     println!("{}:", "Resources".green().bold());
-    for (last, vid) in vaults.iter().identify_last() {
-        let vault_key = vid.to_vec();
+    for (last, vault_id) in vaults.iter().identify_last() {
+        let vault_key = scrypto_encode(vault_id);
         let vault: Vault = substate_store
-            .get_child_substate(&address, &vault_key)
+            .get_child_substate(&component_id, &vault_key)
             .map(|v| scrypto_decode(&v).unwrap())
             .unwrap();
 
         let amount = vault.amount();
-        let resource_address = vault.resource_address();
+        let resource_def_id = vault.resource_def_id();
         let resource_def: ResourceDef =
-            scrypto_decode(&substate_store.get_substate(&resource_address).unwrap()).unwrap();
+            scrypto_decode(&substate_store.get_substate(&resource_def_id).unwrap()).unwrap();
         println!(
-            "{} {{ amount: {}, resource_def: {}{}{} }}",
+            "{} {{ amount: {}, resource definition: {}{}{} }}",
             list_item_prefix(last),
             amount,
-            resource_address,
+            resource_def_id,
             resource_def
                 .metadata()
                 .get("name")
@@ -135,18 +144,19 @@ fn dump_resources<T: SubstateStore>(
                 .map(|symbol| format!(", symbol: \"{}\"", symbol))
                 .unwrap_or(String::new()),
         );
-        if let Supply::NonFungible { keys } = vault.total_supply() {
+        if let Resource::NonFungible { keys } = vault.resource() {
             for (inner_last, key) in keys.iter().identify_last() {
                 let child_key = scrypto_encode(key);
                 let non_fungible: NonFungible = scrypto_decode(
                     &substate_store
-                        .get_child_substate(&resource_address, &child_key)
+                        .get_child_substate(&resource_def_id, &child_key)
                         .unwrap(),
                 )
                 .unwrap();
 
-                let immutable_data = validate_data(&non_fungible.immutable_data()).unwrap();
-                let mutable_data = validate_data(&non_fungible.mutable_data()).unwrap();
+                let immutable_data =
+                    ValidatedData::from_slice(&non_fungible.immutable_data()).unwrap();
+                let mutable_data = ValidatedData::from_slice(&non_fungible.mutable_data()).unwrap();
                 println!(
                     "{}  {} NON_FUNGIBLE {{ id: {}, immutable_data: {}, mutable_data: {} }}",
                     if last { " " } else { "│" },
@@ -163,11 +173,11 @@ fn dump_resources<T: SubstateStore>(
 
 /// Dump a resource definition into console.
 pub fn dump_resource_def<T: SubstateStore>(
-    address: Address,
+    resource_def_id: ResourceDefId,
     substate_store: &T,
 ) -> Result<(), DisplayError> {
     let resource_def: Option<ResourceDef> =
-        scrypto_decode(&substate_store.get_substate(&address).unwrap()).unwrap();
+        scrypto_decode(&substate_store.get_substate(&resource_def_id).unwrap()).unwrap();
     match resource_def {
         Some(r) => {
             println!(
