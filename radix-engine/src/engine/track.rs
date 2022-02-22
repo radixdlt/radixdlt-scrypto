@@ -302,17 +302,16 @@ impl<'s, S: SubstateStore> Track<'s, S> {
             .insert((resource_def_id, key.clone()), non_fungible);
     }
 
-    /// Returns a mutable reference to a lazy map
     pub fn get_lazy_map_entry(
         &mut self,
         component_id: ComponentId,
         lazy_map_id: &LazyMapId,
         key: &[u8],
     ) -> Option<Vec<u8>> {
-        let entry_id = (component_id.clone(), lazy_map_id.clone(), key.to_vec());
+        let canonical_id = (component_id.clone(), lazy_map_id.clone(), key.to_vec());
 
-        if self.lazy_map_entries.contains_key(&entry_id) {
-            return Some(self.lazy_map_entries.get(&entry_id).unwrap().clone());
+        if self.lazy_map_entries.contains_key(&canonical_id) {
+            return Some(self.lazy_map_entries.get(&canonical_id).unwrap().clone());
         }
 
         let grand_child_key = key.to_vec();
@@ -322,12 +321,11 @@ impl<'s, S: SubstateStore> Track<'s, S> {
             &grand_child_key,
         );
         if let Some(ref entry_bytes) = value {
-            self.lazy_map_entries.insert(entry_id, entry_bytes.clone());
+            self.lazy_map_entries.insert(canonical_id, entry_bytes.clone());
         }
         value
     }
 
-    /// Inserts a new lazy map.
     pub fn put_lazy_map_entry(
         &mut self,
         component_id: ComponentId,

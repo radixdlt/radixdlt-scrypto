@@ -8,7 +8,7 @@ use crate::ledger::*;
 /// An in-memory ledger stores all substates in host memory.
 #[derive(Debug, Clone)]
 pub struct InMemorySubstateStore {
-    substates: HashMap<Vec<u8>, Vec<u8>>,
+    substates: HashMap<Vec<u8>, (Vec<u8>, u64)>,
     child_substates: HashMap<Vec<u8>, Vec<u8>>,
     current_epoch: u64,
     nonce: u64,
@@ -38,13 +38,13 @@ impl Default for InMemorySubstateStore {
 }
 
 impl SubstateStore for InMemorySubstateStore {
-    fn get_substate<T: Encode>(&self, address: &T) -> Option<Vec<u8>> {
+    fn get_substate<T: Encode>(&self, address: &T) -> Option<(Vec<u8>, u64)> {
         self.substates.get(&scrypto_encode(address)).cloned()
     }
 
-    fn put_substate<T: Encode>(&mut self, address: &T, substate: &[u8]) {
+    fn put_substate<T: Encode>(&mut self, address: &T, substate: &[u8], phys_id: u64) {
         self.substates
-            .insert(scrypto_encode(address), substate.to_vec());
+            .insert(scrypto_encode(address), (substate.to_vec(), phys_id));
     }
 
     fn get_child_substate<T: Encode>(&self, address: &T, key: &[u8]) -> Option<Vec<u8>> {
