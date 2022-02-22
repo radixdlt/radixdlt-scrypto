@@ -162,7 +162,7 @@ impl ResourceDef {
     ///
     pub fn non_fungible_exists(&self, key: &NonFungibleKey) -> bool {
         let input = NonFungibleExistsInput {
-            resource_address: self.address,
+            resource_def_id: self.0,
             key: key.clone(),
         };
         let output: NonFungibleExistsOutput = call_engine(NON_FUNGIBLE_EXISTS, input);
