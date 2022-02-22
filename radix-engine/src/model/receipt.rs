@@ -1,3 +1,4 @@
+use crate::engine::CommitReceipt;
 use colored::*;
 use scrypto::engine::types::*;
 use scrypto::rust::fmt;
@@ -10,6 +11,7 @@ use crate::model::*;
 
 /// Represents a transaction receipt.
 pub struct Receipt {
+    pub commit_receipt: Option<CommitReceipt>,
     pub transaction: ValidatedTransaction,
     pub result: Result<(), RuntimeError>,
     pub outputs: Vec<ValidatedData>,

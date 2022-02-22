@@ -224,10 +224,13 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
         let logs = track.logs().clone();
 
         // commit state updates
-        if error.is_none() {
-            track.commit();
+        let commit_receipt = if error.is_none() {
+            let receipt = track.commit();
             self.substate_store.increase_nonce();
-        }
+            Some(receipt)
+        } else {
+            None
+        };
 
         #[cfg(feature = "alloc")]
         let execution_time = None;
@@ -235,6 +238,7 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
         let execution_time = Some(now.elapsed().as_millis());
 
         Receipt {
+            commit_receipt,
             transaction,
             result: match error {
                 Some(error) => Err(error),

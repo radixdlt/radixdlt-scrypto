@@ -10,6 +10,28 @@ use crate::engine::*;
 use crate::ledger::*;
 use crate::model::*;
 
+pub struct CommitReceipt {
+    pub down_substates: HashSet<u64>,
+    pub up_substates: Vec<u64>,
+}
+
+impl CommitReceipt {
+    fn new() -> Self {
+        CommitReceipt {
+            down_substates: HashSet::new(),
+            up_substates: Vec::new(),
+        }
+    }
+
+    fn down(&mut self, id: u64) {
+        self.down_substates.insert(id);
+    }
+
+    fn up(&mut self, id: u64) {
+        self.up_substates.push(id);
+    }
+}
+
 struct SubstateUpdate<T> {
     prev_id: Option<u64>,
     value: T,
@@ -487,7 +509,9 @@ impl<'s, S: SubstateStore> Track<'s, S> {
 
     /// Commits changes to the underlying ledger.
     /// Currently none of these objects are deleted so all commits are puts
-    pub fn commit(&mut self) {
+    pub fn commit(&mut self) -> CommitReceipt {
+        let mut receipt = CommitReceipt::new();
+
         let package_ids: Vec<PackageId> = self
             .packages
             .iter()
@@ -495,11 +519,15 @@ impl<'s, S: SubstateStore> Track<'s, S> {
             .collect();
         for package_id in package_ids {
             let package = self.packages.remove(&package_id).unwrap();
-            self.substate_store.put_encoded_substate(
-                &package_id,
-                &package.value,
-                self.substate_store.get_nonce(),
-            );
+
+            if let Some(prev_id) = package.prev_id {
+                receipt.down(prev_id);
+            }
+            let phys_id = self.substate_store.get_nonce();
+            receipt.up(phys_id);
+
+            self.substate_store
+                .put_encoded_substate(&package_id, &package.value, phys_id);
         }
 
         let component_ids: Vec<ComponentId> = self
@@ -509,11 +537,15 @@ impl<'s, S: SubstateStore> Track<'s, S> {
             .collect();
         for component_id in component_ids {
             let component = self.components.remove(&component_id).unwrap();
-            self.substate_store.put_encoded_substate(
-                &component_id,
-                &component.value,
-                self.substate_store.get_nonce(),
-            );
+
+            if let Some(prev_id) = component.prev_id {
+                receipt.down(prev_id);
+            }
+            let phys_id = self.substate_store.get_nonce();
+            receipt.up(phys_id);
+
+            self.substate_store
+                .put_encoded_substate(&component_id, &component.value, phys_id);
         }
 
         let resource_def_ids: Vec<ResourceDefId> = self
@@ -523,10 +555,17 @@ impl<'s, S: SubstateStore> Track<'s, S> {
             .collect();
         for resource_def_id in resource_def_ids {
             let resource_def = self.resource_defs.remove(&resource_def_id).unwrap();
+
+            if let Some(prev_id) = resource_def.prev_id {
+                receipt.down(prev_id);
+            }
+            let phys_id = self.substate_store.get_nonce();
+            receipt.up(phys_id);
+
             self.substate_store.put_encoded_substate(
                 &resource_def_id,
                 &resource_def.value,
-                self.substate_store.get_nonce(),
+                phys_id,
             );
         }
 
@@ -569,5 +608,7 @@ impl<'s, S: SubstateStore> Track<'s, S> {
                 &non_fungible,
             );
         }
+
+        receipt
     }
 }
