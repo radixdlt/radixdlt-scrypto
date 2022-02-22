@@ -31,21 +31,28 @@ pub trait QueryableSubstateStore {
     ) -> HashMap<Vec<u8>, Vec<u8>>;
 }
 
+#[derive(Clone, Debug)]
+pub struct Substate {
+    pub value: Vec<u8>,
+    pub phys_id: u64,
+}
+
 /// A ledger stores all transactions and substates.
 pub trait SubstateStore {
-    fn get_substate<T: Encode>(&self, address: &T) -> Option<(Vec<u8>, u64)>;
-    fn put_substate<T: Encode>(&mut self, address: &T, substate: &[u8], phys_id: u64);
+    fn get_substate<T: Encode>(&self, address: &T) -> Option<Substate>;
+    fn put_substate<T: Encode>(&mut self, address: &T, substate: Substate);
+
     fn get_child_substate<T: Encode>(&self, address: &T, key: &[u8]) -> Option<Vec<u8>>;
     fn put_child_substate<T: Encode>(&mut self, address: &T, key: &[u8], substate: &[u8]);
 
     // Temporary Encoded/Decoded interface
     fn get_decoded_substate<A: Encode, T: Decode>(&self, address: &A) -> Option<T> {
         self.get_substate(address)
-            .map(|(v, _)| scrypto_decode(&v).unwrap())
+            .map(|s| scrypto_decode(&s.value).unwrap())
     }
     fn put_encoded_substate<A: Encode, V: Encode>(&mut self, address: &A, value: &V) {
         let phys_id = self.get_nonce();
-        self.put_substate(address, &scrypto_encode(value), phys_id);
+        self.put_substate(address, Substate { value: scrypto_encode(value), phys_id });
     }
     fn get_decoded_child_substate<A: Encode, K: Encode, T: Decode>(
         &self,

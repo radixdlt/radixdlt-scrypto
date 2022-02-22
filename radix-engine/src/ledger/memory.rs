@@ -4,11 +4,12 @@ use scrypto::rust::collections::HashMap;
 use scrypto::rust::vec::Vec;
 
 use crate::ledger::*;
+use crate::ledger::traits::Substate;
 
 /// An in-memory ledger stores all substates in host memory.
 #[derive(Debug, Clone)]
 pub struct InMemorySubstateStore {
-    substates: HashMap<Vec<u8>, (Vec<u8>, u64)>,
+    substates: HashMap<Vec<u8>, Substate>,
     child_substates: HashMap<Vec<u8>, Vec<u8>>,
     current_epoch: u64,
     nonce: u64,
@@ -38,13 +39,13 @@ impl Default for InMemorySubstateStore {
 }
 
 impl SubstateStore for InMemorySubstateStore {
-    fn get_substate<T: Encode>(&self, address: &T) -> Option<(Vec<u8>, u64)> {
+    fn get_substate<T: Encode>(&self, address: &T) -> Option<Substate> {
         self.substates.get(&scrypto_encode(address)).cloned()
     }
 
-    fn put_substate<T: Encode>(&mut self, address: &T, substate: &[u8], phys_id: u64) {
+    fn put_substate<T: Encode>(&mut self, address: &T, substate: Substate) {
         self.substates
-            .insert(scrypto_encode(address), (substate.to_vec(), phys_id));
+            .insert(scrypto_encode(address), substate);
     }
 
     fn get_child_substate<T: Encode>(&self, address: &T, key: &[u8]) -> Option<Vec<u8>> {
