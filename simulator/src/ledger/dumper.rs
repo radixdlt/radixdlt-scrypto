@@ -19,7 +19,9 @@ pub fn dump_package<T: SubstateStore>(
     package_id: PackageId,
     substate_store: &T,
 ) -> Result<(), DisplayError> {
-    let package: Option<Package> = substate_store.get_decoded_substate(&package_id);
+    let package: Option<Package> = substate_store
+        .get_decoded_substate(&package_id)
+        .map(|(package, _)| package);
     match package {
         Some(b) => {
             println!("{}: {}", "Package".green().bold(), package_id.to_string());
@@ -35,7 +37,9 @@ pub fn dump_component<T: SubstateStore + QueryableSubstateStore>(
     component_id: ComponentId,
     substate_store: &T,
 ) -> Result<(), DisplayError> {
-    let component: Option<Component> = substate_store.get_decoded_substate(&component_id);
+    let component: Option<Component> = substate_store
+        .get_decoded_substate(&component_id)
+        .map(|(component, _)| component);
     match component {
         Some(c) => {
             println!(
@@ -126,6 +130,7 @@ fn dump_resources<T: SubstateStore>(
         let resource_def_id = vault.resource_def_id();
         let resource_def: ResourceDef = substate_store
             .get_decoded_substate(&resource_def_id)
+            .map(|(resource, _)| resource)
             .unwrap();
         println!(
             "{} {{ amount: {}, resource definition: {}{}{} }}",
@@ -173,6 +178,7 @@ pub fn dump_resource_def<T: SubstateStore>(
 ) -> Result<(), DisplayError> {
     let resource_def: Option<ResourceDef> = substate_store
         .get_decoded_substate(&resource_def_id)
+        .map(|(resource, _)| resource)
         .unwrap();
     match resource_def {
         Some(r) => {

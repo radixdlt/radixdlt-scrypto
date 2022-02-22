@@ -11,7 +11,7 @@ use crate::ledger::*;
 use crate::model::*;
 
 struct SubstateUpdate<T> {
-    is_new: bool,
+    prev_id: Option<u64>,
     value: T,
 }
 
@@ -104,7 +104,7 @@ impl<'s, S: SubstateStore> Track<'s, S> {
     pub fn new_package_ids(&self) -> Vec<PackageId> {
         let mut package_ids = Vec::new();
         for (package_id, update) in self.packages.iter() {
-            if update.is_new {
+            if let None = update.prev_id {
                 package_ids.push(package_id.clone());
             }
         }
@@ -115,7 +115,7 @@ impl<'s, S: SubstateStore> Track<'s, S> {
     pub fn new_component_ids(&self) -> Vec<ComponentId> {
         let mut component_ids = Vec::new();
         for (component_id, update) in self.components.iter() {
-            if update.is_new {
+            if let None = update.prev_id {
                 component_ids.push(component_id.clone());
             }
         }
@@ -126,7 +126,7 @@ impl<'s, S: SubstateStore> Track<'s, S> {
     pub fn new_resource_def_ids(&self) -> Vec<ResourceDefId> {
         let mut resource_def_ids = Vec::new();
         for (resource_def_id, update) in self.resource_defs.iter() {
-            if update.is_new {
+            if let None = update.prev_id {
                 resource_def_ids.push(resource_def_id.clone());
             }
         }
@@ -161,11 +161,11 @@ impl<'s, S: SubstateStore> Track<'s, S> {
             return self.packages.get(&package_id).map(|p| &p.value);
         }
 
-        if let Some(package) = self.substate_store.get_decoded_substate(&package_id) {
+        if let Some((package, phys_id)) = self.substate_store.get_decoded_substate(&package_id) {
             self.packages.insert(
                 package_id,
                 SubstateUpdate {
-                    is_new: false,
+                    prev_id: Some(phys_id),
                     value: package,
                 },
             );
@@ -181,7 +181,7 @@ impl<'s, S: SubstateStore> Track<'s, S> {
         self.packages.insert(
             package_id,
             SubstateUpdate {
-                is_new: true,
+                prev_id: None,
                 value: package,
             },
         );
@@ -194,11 +194,12 @@ impl<'s, S: SubstateStore> Track<'s, S> {
             return self.components.get(&component_id).map(|c| &c.value);
         }
 
-        if let Some(component) = self.substate_store.get_decoded_substate(&component_id) {
+        if let Some((component, phys_id)) = self.substate_store.get_decoded_substate(&component_id)
+        {
             self.components.insert(
                 component_id,
                 SubstateUpdate {
-                    is_new: false,
+                    prev_id: Some(phys_id),
                     value: component,
                 },
             );
@@ -214,11 +215,12 @@ impl<'s, S: SubstateStore> Track<'s, S> {
             return self.components.get_mut(&component_id).map(|c| &mut c.value);
         }
 
-        if let Some(component) = self.substate_store.get_decoded_substate(&component_id) {
+        if let Some((component, phys_id)) = self.substate_store.get_decoded_substate(&component_id)
+        {
             self.components.insert(
                 component_id,
                 SubstateUpdate {
-                    is_new: false,
+                    prev_id: Some(phys_id),
                     value: component,
                 },
             );
@@ -234,7 +236,7 @@ impl<'s, S: SubstateStore> Track<'s, S> {
         self.components.insert(
             component_id,
             SubstateUpdate {
-                is_new: true,
+                prev_id: None,
                 value: component,
             },
         );
@@ -321,7 +323,8 @@ impl<'s, S: SubstateStore> Track<'s, S> {
             &grand_child_key,
         );
         if let Some(ref entry_bytes) = value {
-            self.lazy_map_entries.insert(canonical_id, entry_bytes.clone());
+            self.lazy_map_entries
+                .insert(canonical_id, entry_bytes.clone());
         }
         value
     }
@@ -343,11 +346,13 @@ impl<'s, S: SubstateStore> Track<'s, S> {
             return self.resource_defs.get(&resource_def_id).map(|r| &r.value);
         }
 
-        if let Some(resource_def) = self.substate_store.get_decoded_substate(&resource_def_id) {
+        if let Some((resource_def, phys_id)) =
+            self.substate_store.get_decoded_substate(&resource_def_id)
+        {
             self.resource_defs.insert(
                 resource_def_id,
                 SubstateUpdate {
-                    is_new: false,
+                    prev_id: Some(phys_id),
                     value: resource_def,
                 },
             );
@@ -370,11 +375,13 @@ impl<'s, S: SubstateStore> Track<'s, S> {
                 .map(|r| &mut r.value);
         }
 
-        if let Some(resource_def) = self.substate_store.get_decoded_substate(&resource_def_id) {
+        if let Some((resource_def, phys_id)) =
+            self.substate_store.get_decoded_substate(&resource_def_id)
+        {
             self.resource_defs.insert(
                 resource_def_id,
                 SubstateUpdate {
-                    is_new: false,
+                    prev_id: Some(phys_id),
                     value: resource_def,
                 },
             );
@@ -392,7 +399,7 @@ impl<'s, S: SubstateStore> Track<'s, S> {
         self.resource_defs.insert(
             resource_def_id,
             SubstateUpdate {
-                is_new: true,
+                prev_id: None,
                 value: resource_def,
             },
         );
@@ -488,8 +495,11 @@ impl<'s, S: SubstateStore> Track<'s, S> {
             .collect();
         for package_id in package_ids {
             let package = self.packages.remove(&package_id).unwrap();
-            self.substate_store
-                .put_encoded_substate(&package_id, &package.value);
+            self.substate_store.put_encoded_substate(
+                &package_id,
+                &package.value,
+                self.substate_store.get_nonce(),
+            );
         }
 
         let component_ids: Vec<ComponentId> = self
@@ -499,8 +509,11 @@ impl<'s, S: SubstateStore> Track<'s, S> {
             .collect();
         for component_id in component_ids {
             let component = self.components.remove(&component_id).unwrap();
-            self.substate_store
-                .put_encoded_substate(&component_id, &component.value);
+            self.substate_store.put_encoded_substate(
+                &component_id,
+                &component.value,
+                self.substate_store.get_nonce(),
+            );
         }
 
         let resource_def_ids: Vec<ResourceDefId> = self
@@ -510,8 +523,11 @@ impl<'s, S: SubstateStore> Track<'s, S> {
             .collect();
         for resource_def_id in resource_def_ids {
             let resource_def = self.resource_defs.remove(&resource_def_id).unwrap();
-            self.substate_store
-                .put_encoded_substate(&resource_def_id, &resource_def.value);
+            self.substate_store.put_encoded_substate(
+                &resource_def_id,
+                &resource_def.value,
+                self.substate_store.get_nonce(),
+            );
         }
 
         let entry_ids: Vec<(ComponentId, LazyMapId, Vec<u8>)> = self

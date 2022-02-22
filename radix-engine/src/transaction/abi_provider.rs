@@ -42,8 +42,11 @@ impl BasicAbiProvider {
     }
 
     pub fn with_package(&mut self, package_id: PackageId, code: Vec<u8>) -> &mut Self {
-        self.substate_store
-            .put_encoded_substate(&package_id, &Package::new(code));
+        self.substate_store.put_encoded_substate(
+            &package_id,
+            &Package::new(code),
+            self.substate_store.get_nonce(),
+        );
         self
     }
 
@@ -55,8 +58,11 @@ impl BasicAbiProvider {
         component_state: Vec<u8>,
     ) -> &mut Self {
         let component = Component::new(package_id, blueprint_name.to_owned(), component_state);
-        self.substate_store
-            .put_encoded_substate(&component_id, &component);
+        self.substate_store.put_encoded_substate(
+            &component_id,
+            &component,
+            self.substate_store.get_nonce(),
+        );
         self
     }
 }
@@ -94,6 +100,7 @@ impl AbiProvider for BasicAbiProvider {
         let component: Component = self
             .substate_store
             .get_decoded_substate(&component_id)
+            .map(|(component, _)| component)
             .ok_or(RuntimeError::ComponentNotFound(component_id))?;
         self.export_abi(component.package_id(), component.blueprint_name())
     }

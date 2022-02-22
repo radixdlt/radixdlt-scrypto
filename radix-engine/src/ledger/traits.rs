@@ -46,13 +46,18 @@ pub trait SubstateStore {
     fn put_child_substate<T: Encode>(&mut self, address: &T, key: &[u8], substate: &[u8]);
 
     // Temporary Encoded/Decoded interface
-    fn get_decoded_substate<A: Encode, T: Decode>(&self, address: &A) -> Option<T> {
+    fn get_decoded_substate<A: Encode, T: Decode>(&self, address: &A) -> Option<(T, u64)> {
         self.get_substate(address)
-            .map(|s| scrypto_decode(&s.value).unwrap())
+            .map(|s| (scrypto_decode(&s.value).unwrap(), s.phys_id))
     }
-    fn put_encoded_substate<A: Encode, V: Encode>(&mut self, address: &A, value: &V) {
-        let phys_id = self.get_nonce();
-        self.put_substate(address, Substate { value: scrypto_encode(value), phys_id });
+    fn put_encoded_substate<A: Encode, V: Encode>(&mut self, address: &A, value: &V, phys_id: u64) {
+        self.put_substate(
+            address,
+            Substate {
+                value: scrypto_encode(value),
+                phys_id,
+            },
+        );
     }
     fn get_decoded_child_substate<A: Encode, K: Encode, T: Decode>(
         &self,
@@ -95,17 +100,19 @@ pub trait SubstateStore {
     }
 
     fn bootstrap(&mut self) {
-        let package: Option<Package> = self.get_decoded_substate(&SYSTEM_PACKAGE);
+        let package: Option<Package> = self
+            .get_decoded_substate(&SYSTEM_PACKAGE)
+            .map(|(package, _)| package);
         if package.is_none() {
             // System package
             let system_package =
                 Package::new(include_bytes!("../../../assets/system.wasm").to_vec());
-            self.put_encoded_substate(&SYSTEM_PACKAGE, &system_package);
+            self.put_encoded_substate(&SYSTEM_PACKAGE, &system_package, self.get_nonce());
 
             // Account package
             let account_package =
                 Package::new(include_bytes!("../../../assets/account.wasm").to_vec());
-            self.put_encoded_substate(&ACCOUNT_PACKAGE, &account_package);
+            self.put_encoded_substate(&ACCOUNT_PACKAGE, &account_package, self.get_nonce());
 
             // Radix token resource definition
             let mut metadata = HashMap::new();
@@ -125,7 +132,7 @@ pub trait SubstateStore {
                 }),
             )
             .unwrap();
-            self.put_encoded_substate(&RADIX_TOKEN, &xrd);
+            self.put_encoded_substate(&RADIX_TOKEN, &xrd, self.get_nonce());
 
             let ecdsa_token = ResourceDef::new(
                 ResourceType::NonFungible,
@@ -136,7 +143,7 @@ pub trait SubstateStore {
                 &None,
             )
             .unwrap();
-            self.put_encoded_substate(&ECDSA_TOKEN, &ecdsa_token);
+            self.put_encoded_substate(&ECDSA_TOKEN, &ecdsa_token, self.get_nonce());
 
             // Instantiate system component
             let system_vault = Vault::new(Bucket::new(
@@ -153,7 +160,7 @@ pub trait SubstateStore {
                 SYSTEM_COMPONENT_NAME.to_owned(),
                 scrypto_encode(&SystemComponentState { xrd: XRD_VAULT }),
             );
-            self.put_encoded_substate(&SYSTEM_COMPONENT, &system_component);
+            self.put_encoded_substate(&SYSTEM_COMPONENT, &system_component, self.get_nonce());
         }
     }
 

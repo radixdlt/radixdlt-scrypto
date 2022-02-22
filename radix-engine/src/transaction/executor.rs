@@ -26,6 +26,7 @@ impl<'l, L: SubstateStore> AbiProvider for TransactionExecutor<'l, L> {
         let package: Package = self
             .substate_store
             .get_decoded_substate(&package_id)
+            .map(|(package, _)| package)
             .ok_or(RuntimeError::PackageNotFound(package_id))?;
 
         BasicAbiProvider::new(self.trace)
@@ -40,10 +41,12 @@ impl<'l, L: SubstateStore> AbiProvider for TransactionExecutor<'l, L> {
         let component: Component = self
             .substate_store
             .get_decoded_substate(&component_id)
+            .map(|(component, _)| component)
             .ok_or(RuntimeError::ComponentNotFound(component_id))?;
         let package: Package = self
             .substate_store
             .get_decoded_substate(&component.package_id())
+            .map(|(package, _)| package)
             .unwrap();
         BasicAbiProvider::new(self.trace)
             .with_package(component.package_id(), package.code().to_vec())
@@ -116,8 +119,11 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
     /// Overwrites a package.
     pub fn overwrite_package(&mut self, package_id: PackageId, code: &[u8]) {
         let package = Package::new(code.to_vec());
-        self.substate_store
-            .put_encoded_substate(&package_id, &package);
+        self.substate_store.put_encoded_substate(
+            &package_id,
+            &package,
+            self.substate_store.get_nonce(),
+        );
     }
 
     /// This is a convenience method that validates and runs a transaction in one shot.
