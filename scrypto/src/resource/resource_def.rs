@@ -158,6 +158,18 @@ impl ResourceDef {
             call_engine(UPDATE_NON_FUNGIBLE_MUTABLE_DATA, input);
     }
 
+    /// Checks if non-fungible unit, with certain key exists or not.
+    ///
+    pub fn non_fungible_exists(&self, key: &NonFungibleKey) -> bool {
+        let input = NonFungibleExistsInput {
+            resource_def_id: self.0,
+            key: key.clone(),
+        };
+        let output: NonFungibleExistsOutput = call_engine(NON_FUNGIBLE_EXISTS, input);
+
+        output.non_fungible_exists
+    }
+
     /// Turns on feature flags.
     pub fn enable_flags(&self, flags: u64, auth: Proof) {
         let input = UpdateResourceFlagsInput {
