@@ -1,0 +1,7 @@
+CALL_METHOD Address("0236ca00316c8eb5ad51b0cb5e3f232cb871803a85ec3847b36bb4") "withdraw" Decimal("1.0") Address("03467d8a533602e8cba096a92098b42f1a3c00e764bccee4ac1b63") BucketRef(1u32);
+TAKE_FROM_WORKTOP Decimal("1.0") Address("03467d8a533602e8cba096a92098b42f1a3c00e764bccee4ac1b63") Bucket("shareholder_badge_bucket");
+CREATE_BUCKET_REF Bucket("shareholder_badge_bucket") BucketRef("shareholder_badge_bucket_ref");
+
+CALL_METHOD Address("026273d5754d78080aabeeead8a9d0e01986e35b672c28c52e80de") "withdraw_xrd" BucketRef("shareholder_badge_bucket_ref");
+
+CALL_METHOD_WITH_ALL_RESOURCES Address("0236ca00316c8eb5ad51b0cb5e3f232cb871803a85ec3847b36bb4") "deposit_batch";
