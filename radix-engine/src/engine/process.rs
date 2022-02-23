@@ -1558,7 +1558,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     ) -> Result<NonFungibleExistsOutput, RuntimeError> {
         let non_fungible = self
             .track
-            .get_non_fungible(input.resource_address, &input.key);
+            .get_non_fungible(input.resource_def_id, &input.key);
 
         Ok(NonFungibleExistsOutput {
             non_fungible_exists: non_fungible.is_some(),
