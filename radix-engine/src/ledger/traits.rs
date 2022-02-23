@@ -31,7 +31,7 @@ pub trait QueryableSubstateStore {
     ) -> HashMap<Vec<u8>, Vec<u8>>;
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Encode, Decode, TypeId)]
 pub struct Substate {
     pub value: Vec<u8>,
     pub phys_id: u64,
