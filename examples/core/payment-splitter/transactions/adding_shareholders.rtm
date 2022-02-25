@@ -1,0 +1,26 @@
+CALL_METHOD Address("0293c502780e23621475989d707cd8128e4506362e5fed6ac0c00a") "withdraw" Decimal("1.0") Address("03aedb7960d1f87dc25138f4cd101da6c98d57323478d53c5fb951")  BucketRef(1u32);
+TAKE_FROM_WORKTOP Decimal("1.0") Address("03aedb7960d1f87dc25138f4cd101da6c98d57323478d53c5fb951") Bucket("admin_badge_bucket");
+CREATE_BUCKET_REF Bucket("admin_badge_bucket") BucketRef("admin_badge_bucket_ref0");
+
+CLONE_BUCKET_REF BucketRef("admin_badge_bucket_ref0") BucketRef("admin_badge_bucket_ref1");
+CLONE_BUCKET_REF BucketRef("admin_badge_bucket_ref0") BucketRef("admin_badge_bucket_ref2");
+CLONE_BUCKET_REF BucketRef("admin_badge_bucket_ref0") BucketRef("admin_badge_bucket_ref3");
+
+CALL_METHOD Address("026273d5754d78080aabeeead8a9d0e01986e35b672c28c52e80de") "add_shareholder" Address("0293c502780e23621475989d707cd8128e4506362e5fed6ac0c00a") Decimal("148.00") BucketRef("admin_badge_bucket_ref0");
+CALL_METHOD Address("026273d5754d78080aabeeead8a9d0e01986e35b672c28c52e80de") "add_shareholder" Address("0236ca00316c8eb5ad51b0cb5e3f232cb871803a85ec3847b36bb4") Decimal("111.00") BucketRef("admin_badge_bucket_ref1");
+CALL_METHOD Address("026273d5754d78080aabeeead8a9d0e01986e35b672c28c52e80de") "add_shareholder" Address("02a2a79aa613da237bcda37fd79af36e09eadd195976092cb24696") Decimal("139.00") BucketRef("admin_badge_bucket_ref2");
+CALL_METHOD Address("026273d5754d78080aabeeead8a9d0e01986e35b672c28c52e80de") "add_shareholder" Address("028409720f1810e607a090de34f2399f722f96f71324fcac9347fc") Decimal("94.00") BucketRef("admin_badge_bucket_ref3");
+
+CALL_METHOD Address("0293c502780e23621475989d707cd8128e4506362e5fed6ac0c00a") "deposit" Bucket("admin_badge_bucket");
+
+TAKE_NON_FUNGIBLES_FROM_WORKTOP TreeSet<NonFungibleKey>(NonFungibleKey("00000000000000000000000000000000")) Address("03467d8a533602e8cba096a92098b42f1a3c00e764bccee4ac1b63") Bucket("badge_0");
+CALL_METHOD Address("0293c502780e23621475989d707cd8128e4506362e5fed6ac0c00a") "deposit" Bucket("badge_0");
+
+TAKE_NON_FUNGIBLES_FROM_WORKTOP TreeSet<NonFungibleKey>(NonFungibleKey("00000000000000000000000000000001")) Address("03467d8a533602e8cba096a92098b42f1a3c00e764bccee4ac1b63") Bucket("badge_1");
+CALL_METHOD Address("0236ca00316c8eb5ad51b0cb5e3f232cb871803a85ec3847b36bb4") "deposit" Bucket("badge_1");
+
+TAKE_NON_FUNGIBLES_FROM_WORKTOP TreeSet<NonFungibleKey>(NonFungibleKey("00000000000000000000000000000002")) Address("03467d8a533602e8cba096a92098b42f1a3c00e764bccee4ac1b63") Bucket("badge_2");
+CALL_METHOD Address("02a2a79aa613da237bcda37fd79af36e09eadd195976092cb24696") "deposit" Bucket("badge_2");
+
+TAKE_NON_FUNGIBLES_FROM_WORKTOP TreeSet<NonFungibleKey>(NonFungibleKey("00000000000000000000000000000003")) Address("03467d8a533602e8cba096a92098b42f1a3c00e764bccee4ac1b63") Bucket("badge_3");
+CALL_METHOD Address("028409720f1810e607a090de34f2399f722f96f71324fcac9347fc") "deposit" Bucket("badge_3");
