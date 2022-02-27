@@ -845,18 +845,18 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     fn read_bytes(&mut self, ptr: i32) -> Result<Vec<u8>, RuntimeError> {
         let wasm_process = self.wasm_process_state.as_ref().unwrap();
         // read length
-        let a = wasm_process
+        let len: u32 = wasm_process
             .vm
             .memory
-            .get(ptr as u32, 4)
+            .get_value(ptr as u32)
             .map_err(RuntimeError::MemoryAccessError)?;
-        let len = u32::from_le_bytes([a[0], a[1], a[2], a[3]]);
 
-        // read data
-        let data = wasm_process
+        // SECURITY: meter before allocating memory
+        let mut data = vec![0u8; len as usize];
+        wasm_process
             .vm
             .memory
-            .get((ptr + 4) as u32, len as usize)
+            .get_into((ptr + 4) as u32, &mut data)
             .map_err(RuntimeError::MemoryAccessError)?;
 
         // free the buffer
@@ -870,7 +870,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             )
             .map_err(RuntimeError::MemoryAccessError)?;
 
-        Ok(data)
+        Ok(data.to_vec())
     }
 
     /// Handles a system call.
@@ -883,10 +883,12 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let op: u32 = args.nth_checked(0)?;
         let input_ptr: u32 = args.nth_checked(1)?;
         let input_len: u32 = args.nth_checked(2)?;
-        let input_bytes = wasm_process
+        // SECURITY: bill before allocating memory
+        let mut input_bytes = vec![0u8; input_len as usize];
+        wasm_process
             .vm
             .memory
-            .get(input_ptr, input_len as usize)
+            .get_into(input_ptr, &mut input_bytes)
             .map_err(|e| Trap::from(RuntimeError::MemoryAccessError(e)))?;
         let input: I = scrypto_decode(&input_bytes)
             .map_err(|e| Trap::from(RuntimeError::InvalidRequestData(e)))?;

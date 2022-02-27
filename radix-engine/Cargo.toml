@@ -6,7 +6,7 @@ edition = "2021"
 [dependencies]
 sbor = { path = "../sbor", default-features = false }
 scrypto = { path = "../scrypto", default-features = false}
-wasmi = { version = "0.9", default-features = false, features = ["vec_memory"] }
+wasmi = { version = "0.11.0", default-features = false, features = ["virtual_memory"] }
 colored = { version = "2.0", default-features = false }
 lru = { version = "0.7" }
 bencher = { version = "0.1.5" }
@@ -20,4 +20,4 @@ harness = false
 # You should enable either `std` or `alloc`
 default = ["std"]
 std = ["sbor/std", "scrypto/std", "wasmi/std"]
-alloc = ["sbor/alloc", "scrypto/alloc", "wasmi/core"]
+alloc = ["sbor/alloc", "scrypto/alloc"]
