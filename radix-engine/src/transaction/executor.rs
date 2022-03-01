@@ -26,6 +26,7 @@ impl<'l, L: SubstateStore> AbiProvider for TransactionExecutor<'l, L> {
         let package: Package = self
             .substate_store
             .get_decoded_substate(&package_id)
+            .map(|(package, _)| package)
             .ok_or(RuntimeError::PackageNotFound(package_id))?;
 
         BasicAbiProvider::new(self.trace)
@@ -40,10 +41,12 @@ impl<'l, L: SubstateStore> AbiProvider for TransactionExecutor<'l, L> {
         let component: Component = self
             .substate_store
             .get_decoded_substate(&component_id)
+            .map(|(component, _)| component)
             .ok_or(RuntimeError::ComponentNotFound(component_id))?;
         let package: Package = self
             .substate_store
             .get_decoded_substate(&component.package_id())
+            .map(|(package, _)| package)
             .unwrap();
         BasicAbiProvider::new(self.trace)
             .with_package(component.package_id(), package.code().to_vec())
@@ -116,8 +119,11 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
     /// Overwrites a package.
     pub fn overwrite_package(&mut self, package_id: PackageId, code: &[u8]) {
         let package = Package::new(code.to_vec());
-        self.substate_store
-            .put_encoded_substate(&package_id, &package);
+        self.substate_store.put_encoded_substate(
+            &package_id,
+            &package,
+            self.substate_store.get_nonce(),
+        );
     }
 
     /// This is a convenience method that validates and runs a transaction in one shot.
@@ -212,16 +218,19 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
             Ok(_) => None,
             Err(e) => Some(e),
         });
-        let new_package_ids = track.new_package_ids().to_vec();
-        let new_component_ids = track.new_component_ids().to_vec();
-        let new_resource_def_ids = track.new_resource_def_ids().to_vec();
+        let new_package_ids = track.new_package_ids();
+        let new_component_ids = track.new_component_ids();
+        let new_resource_def_ids = track.new_resource_def_ids();
         let logs = track.logs().clone();
 
         // commit state updates
-        if error.is_none() {
-            track.commit();
+        let commit_receipt = if error.is_none() {
+            let receipt = track.commit();
             self.substate_store.increase_nonce();
-        }
+            Some(receipt)
+        } else {
+            None
+        };
 
         #[cfg(feature = "alloc")]
         let execution_time = None;
@@ -229,6 +238,7 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
         let execution_time = Some(now.elapsed().as_millis());
 
         Receipt {
+            commit_receipt,
             transaction,
             result: match error {
                 Some(error) => Err(error),

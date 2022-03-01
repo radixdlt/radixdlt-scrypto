@@ -83,15 +83,6 @@ pub enum RuntimeError {
     /// The requested host function does not exist.
     HostFunctionNotFound(usize),
 
-    /// Package already exists.
-    PackageAlreadyExists(PackageId),
-
-    /// Component already exists.
-    ComponentAlreadyExists(ComponentId),
-
-    /// Resource definition already exists.
-    ResourceDefAlreadyExists(ResourceDefId),
-
     /// Resource definition already exists.
     LazyMapAlreadyExists(LazyMapId),
 

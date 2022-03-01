@@ -94,12 +94,13 @@ impl QueryableSubstateStore for RadixEngineDB {
 }
 
 impl SubstateStore for RadixEngineDB {
-    fn get_substate<T: Encode>(&self, address: &T) -> Option<Vec<u8>> {
+    fn get_substate<T: Encode>(&self, address: &T) -> Option<Substate> {
         self.read(&scrypto_encode(address))
+            .map(|b| scrypto_decode(&b).unwrap())
     }
 
-    fn put_substate<T: Encode>(&mut self, address: &T, substate: &[u8]) {
-        self.write(&scrypto_encode(address), substate);
+    fn put_substate<T: Encode>(&mut self, address: &T, substate: Substate) {
+        self.write(&scrypto_encode(address), &scrypto_encode(&substate));
     }
 
     fn get_child_substate<T: Encode>(&self, address: &T, key: &[u8]) -> Option<Vec<u8>> {
