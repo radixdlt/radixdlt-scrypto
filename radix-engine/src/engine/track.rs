@@ -375,6 +375,7 @@ impl<'s, S: SubstateStore> Track<'s, S> {
         if let Some(entry) = self.lazy_map_entries.get_mut(&canonical_id) {
             entry.value = value;
         } else {
+            // TODO: Virtual Down
             self.lazy_map_entries.insert(canonical_id, SubstateUpdate { prev_id: None, value });
         }
     }
