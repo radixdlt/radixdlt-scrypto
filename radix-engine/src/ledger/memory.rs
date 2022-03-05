@@ -10,7 +10,7 @@ use crate::ledger::*;
 #[derive(Debug, Clone)]
 pub struct InMemorySubstateStore {
     substates: HashMap<Vec<u8>, Substate>,
-    child_substates: HashMap<Vec<u8>, Vec<u8>>,
+    child_substates: HashMap<Vec<u8>, Substate>,
     current_epoch: u64,
     nonce: u64,
 }
@@ -47,16 +47,16 @@ impl SubstateStore for InMemorySubstateStore {
         self.substates.insert(scrypto_encode(address), substate);
     }
 
-    fn get_child_substate<T: Encode>(&self, address: &T, key: &[u8]) -> Option<Vec<u8>> {
+    fn get_child_substate<T: Encode>(&self, address: &T, key: &[u8]) -> Option<Substate> {
         let mut id = scrypto_encode(address);
         id.extend(key.to_vec());
         self.child_substates.get(&id).cloned()
     }
 
-    fn put_child_substate<T: Encode>(&mut self, address: &T, key: &[u8], substate: &[u8]) {
+    fn put_child_substate<T: Encode>(&mut self, address: &T, key: &[u8], substate: Substate) {
         let mut id = scrypto_encode(address);
         id.extend(key.to_vec());
-        self.child_substates.insert(id, substate.to_vec());
+        self.child_substates.insert(id, substate);
     }
 
     fn get_epoch(&self) -> u64 {
