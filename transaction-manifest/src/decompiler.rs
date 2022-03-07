@@ -81,14 +81,14 @@ pub fn decompile(tx: &Transaction) -> Result<String, DecompileError> {
                     amount, resource_def_id
                 ));
             }
-            Instruction::CreateProof { bucket_id } => {
+            Instruction::CreateBucketProof { bucket_id } => {
                 let proof_id = id_validator
                     .new_proof(bucket_id)
                     .map_err(DecompileError::IdValidatorError)?;
                 let name = format!("badge{}", proofs.len() + 1);
                 proofs.insert(proof_id, name.clone());
                 buf.push_str(&format!(
-                    "CREATE_PROOF Bucket({}) Proof(\"{}\");\n",
+                    "CREATE_BUCKET_PROOF Bucket({}) Proof(\"{}\");\n",
                     buckets
                         .get(&bucket_id)
                         .map(|name| format!("\"{}\"", name))

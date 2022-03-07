@@ -40,7 +40,7 @@ pub enum Instruction {
     },
 
     /// Creates a proof.
-    CreateProof { bucket_id: BucketId },
+    CreateBucketProof { bucket_id: BucketId },
 
     /// Clones a proof.
     CloneProof { proof_id: ProofId },
@@ -104,7 +104,7 @@ pub enum ValidatedInstruction {
         amount: Decimal,
         resource_def_id: ResourceDefId,
     },
-    CreateProof {
+    CreateBucketProof {
         bucket_id: BucketId,
     },
     CloneProof {

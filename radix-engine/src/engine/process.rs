@@ -314,7 +314,10 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     }
 
     // (Transaction ONLY) Creates a proof.
-    pub fn create_proof(&mut self, bucket_id: BucketId) -> Result<ValidatedData, RuntimeError> {
+    pub fn create_bucket_proof(
+        &mut self,
+        bucket_id: BucketId,
+    ) -> Result<ValidatedData, RuntimeError> {
         re_debug!(
             self,
             "(Transaction) Creating proof: bucket_id = {}",
@@ -1716,11 +1719,11 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
     fn handle_get_vault_amount(
         &mut self,
-        input: GetVaultDecimalInput,
-    ) -> Result<GetVaultDecimalOutput, RuntimeError> {
+        input: GetVaultAmountInput,
+    ) -> Result<GetVaultAmountOutput, RuntimeError> {
         let vault = self.get_local_vault(input.vault_id)?;
 
-        Ok(GetVaultDecimalOutput {
+        Ok(GetVaultAmountOutput {
             amount: vault.amount(),
         })
     }
@@ -1799,8 +1802,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
     fn handle_get_bucket_amount(
         &mut self,
-        input: GetBucketDecimalInput,
-    ) -> Result<GetBucketDecimalOutput, RuntimeError> {
+        input: GetBucketAmountInput,
+    ) -> Result<GetBucketAmountOutput, RuntimeError> {
         let amount = self
             .buckets
             .get(&input.bucket_id)
@@ -1812,7 +1815,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             })
             .ok_or(RuntimeError::BucketNotFound(input.bucket_id))?;
 
-        Ok(GetBucketDecimalOutput { amount })
+        Ok(GetBucketAmountOutput { amount })
     }
 
     fn handle_get_bucket_resource_def_id(
@@ -1865,10 +1868,10 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         })
     }
 
-    fn handle_create_proof(
+    fn handle_create_bucket_proof(
         &mut self,
-        input: CreateProofInput,
-    ) -> Result<CreateProofOutput, RuntimeError> {
+        input: CreateBucketProofInput,
+    ) -> Result<CreateBucketProofOutput, RuntimeError> {
         let bucket_id = input.bucket_id;
         let proof_id = self.track.new_proof_id();
         re_debug!(
@@ -1896,7 +1899,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             }
         }
 
-        Ok(CreateProofOutput { proof_id })
+        Ok(CreateBucketProofOutput { proof_id })
     }
 
     fn handle_drop_proof(
@@ -1926,14 +1929,14 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
     fn handle_get_proof_amount(
         &mut self,
-        input: GetProofDecimalInput,
-    ) -> Result<GetProofDecimalOutput, RuntimeError> {
+        input: GetProofAmountInput,
+    ) -> Result<GetProofAmountOutput, RuntimeError> {
         let proof = self
             .proofs
             .get(&input.proof_id)
             .ok_or(RuntimeError::ProofNotFound(input.proof_id))?;
 
-        Ok(GetProofDecimalOutput {
+        Ok(GetProofAmountOutput {
             amount: proof.bucket().amount(),
         })
     }
@@ -2138,7 +2141,7 @@ impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
                         self.handle(args, Self::handle_get_non_fungible_keys_in_bucket)
                     }
 
-                    CREATE_PROOF => self.handle(args, Self::handle_create_proof),
+                    CREATE_BUCKET_PROOF => self.handle(args, Self::handle_create_bucket_proof),
                     DROP_PROOF => self.handle(args, Self::handle_drop_proof),
                     GET_PROOF_AMOUNT => self.handle(args, Self::handle_get_proof_amount),
                     GET_PROOF_RESOURCE_DEF_ID => {

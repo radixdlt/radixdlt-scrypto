@@ -166,7 +166,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                 self.id_validator.drop_bucket(bucket_id).unwrap();
             }
             Instruction::AssertWorktopContains { .. } => {}
-            Instruction::CreateProof { bucket_id } => {
+            Instruction::CreateBucketProof { bucket_id } => {
                 new_proof_id = Some(self.id_validator.new_proof(bucket_id).unwrap());
             }
             Instruction::CloneProof { proof_id } => {
@@ -237,11 +237,12 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     }
 
     /// Creates a proof.
-    pub fn create_proof<F>(&mut self, bucket_id: BucketId, then: F) -> &mut Self
+    pub fn create_bucket_proof<F>(&mut self, bucket_id: BucketId, then: F) -> &mut Self
     where
         F: FnOnce(&mut Self, ProofId) -> &mut Self,
     {
-        let (builder, _, proof_id) = self.add_instruction(Instruction::CreateProof { bucket_id });
+        let (builder, _, proof_id) =
+            self.add_instruction(Instruction::CreateBucketProof { bucket_id });
         then(builder, proof_id.unwrap())
     }
 
@@ -514,7 +515,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                 resource_def_id: minter_resource_def_id,
             },
             |builder, bucket_id| {
-                builder.create_proof(bucket_id, |builder, proof_id| {
+                builder.create_bucket_proof(bucket_id, |builder, proof_id| {
                     builder
                         .add_instruction(Instruction::CallFunction {
                             package_id: SYSTEM_PACKAGE,
@@ -763,7 +764,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                 }
                 let mut created_proof_id = None;
                 self.take_from_worktop(&resource_spec, |builder, bucket_id| {
-                    builder.create_proof(bucket_id, |builder, proof_id| {
+                    builder.create_bucket_proof(bucket_id, |builder, proof_id| {
                         created_proof_id = Some(proof_id);
                         builder
                     });

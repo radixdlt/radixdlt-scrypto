@@ -47,16 +47,16 @@ impl Bucket {
 
     /// Creates an ownership proof of this bucket.
     pub fn present(&self) -> Proof {
-        let input = CreateProofInput { bucket_id: self.0 };
-        let output: CreateProofOutput = call_engine(CREATE_PROOF, input);
+        let input = CreateBucketProofInput { bucket_id: self.0 };
+        let output: CreateBucketProofOutput = call_engine(CREATE_BUCKET_PROOF, input);
 
         Proof(output.proof_id)
     }
 
     /// Returns the amount of resources in this bucket.
     pub fn amount(&self) -> Decimal {
-        let input = GetBucketDecimalInput { bucket_id: self.0 };
-        let output: GetBucketDecimalOutput = call_engine(GET_BUCKET_AMOUNT, input);
+        let input = GetBucketAmountInput { bucket_id: self.0 };
+        let output: GetBucketAmountOutput = call_engine(GET_BUCKET_AMOUNT, input);
 
         output.amount
     }

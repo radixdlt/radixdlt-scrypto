@@ -47,8 +47,8 @@ impl Proof {
 
     /// Returns the resource amount within the bucket.
     pub fn amount(&self) -> Decimal {
-        let input = GetProofDecimalInput { proof_id: self.0 };
-        let output: GetProofDecimalOutput = call_engine(GET_PROOF_AMOUNT, input);
+        let input = GetProofAmountInput { proof_id: self.0 };
+        let output: GetProofAmountOutput = call_engine(GET_PROOF_AMOUNT, input);
 
         output.amount
     }

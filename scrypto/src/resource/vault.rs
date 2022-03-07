@@ -153,8 +153,8 @@ impl Vault {
 
     /// Returns the amount of resources within this vault.
     pub fn amount(&self) -> Decimal {
-        let input = GetVaultDecimalInput { vault_id: self.0 };
-        let output: GetVaultDecimalOutput = call_engine(GET_VAULT_AMOUNT, input);
+        let input = GetVaultAmountInput { vault_id: self.0 };
+        let output: GetVaultAmountOutput = call_engine(GET_VAULT_AMOUNT, input);
 
         output.amount
     }
