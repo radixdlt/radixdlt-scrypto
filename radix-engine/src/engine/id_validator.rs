@@ -73,7 +73,7 @@ impl IdValidator {
 
     pub fn clone_proof(&mut self, proof_id: ProofId) -> Result<ProofId, IdValidatorError> {
         if let Some(optional_bucket_id) = self.proof_ids.get(&proof_id).cloned() {
-            // for virtual badge proofs and proofs taken from proof worktop, the corresponding bucket is unknown.
+            // for virtual badge proofs and proofs taken from auth worktop, the corresponding bucket is unknown.
             if let Some(bucket_id) = &optional_bucket_id {
                 if let Some(cnt) = self.bucket_ids.get_mut(bucket_id) {
                     *cnt += 1;
@@ -92,7 +92,7 @@ impl IdValidator {
 
     pub fn drop_proof(&mut self, proof_id: ProofId) -> Result<(), IdValidatorError> {
         if let Some(optional_bucket_id) = self.proof_ids.remove(&proof_id) {
-            // for virtual badge proofs and proofs taken from proof worktop, the corresponding bucket is unknown.
+            // for virtual badge proofs and proofs taken from auth worktop, the corresponding bucket is unknown.
             if let Some(bucket_id) = &optional_bucket_id {
                 if let Some(cnt) = self.bucket_ids.get_mut(bucket_id) {
                     *cnt -= 1;

@@ -60,17 +60,17 @@ pub fn validate_transaction(
                     resource_def_id,
                 });
             }
-            Instruction::TakeFromProofWorktop { index } => {
+            Instruction::TakeFromAuthWorktop { index } => {
                 id_validator
                     .new_proof(None)
                     .map_err(TransactionValidationError::IdValidatorError)?;
-                instructions.push(ValidatedInstruction::TakeFromProofWorktop { index });
+                instructions.push(ValidatedInstruction::TakeFromAuthWorktop { index });
             }
-            Instruction::PutOnProofWorktop { proof_id } => {
+            Instruction::PutOnAuthWorktop { proof_id } => {
                 id_validator
                     .drop_proof(proof_id)
                     .map_err(TransactionValidationError::IdValidatorError)?;
-                instructions.push(ValidatedInstruction::PutOnProofWorktop { proof_id });
+                instructions.push(ValidatedInstruction::PutOnAuthWorktop { proof_id });
             }
             Instruction::CreateBucketProof { bucket_id } => {
                 id_validator

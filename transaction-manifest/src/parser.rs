@@ -88,11 +88,11 @@ impl Parser {
                 amount: self.parse_value()?,
                 resource_def_id: self.parse_value()?,
             },
-            TokenKind::TakeFromProofWorktop => Instruction::TakeFromProofWorktop {
+            TokenKind::TakeFromAuthWorktop => Instruction::TakeFromAuthWorktop {
                 index: self.parse_value()?,
                 new_proof: self.parse_value()?,
             },
-            TokenKind::PutOnProofWorktop => Instruction::PutOnProofWorktop {
+            TokenKind::PutOnAuthWorktop => Instruction::PutOnAuthWorktop {
                 proof: self.parse_value()?,
             },
             TokenKind::CreateBucketProof => Instruction::CreateBucketProof {

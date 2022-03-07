@@ -31,12 +31,12 @@ pub enum Instruction {
         resource_def_id: Value,
     },
 
-    TakeFromProofWorktop {
+    TakeFromAuthWorktop {
         index: Value,
         new_proof: Value,
     },
 
-    PutOnProofWorktop {
+    PutOnAuthWorktop {
         proof: Value,
     },
 

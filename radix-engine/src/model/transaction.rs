@@ -39,11 +39,11 @@ pub enum Instruction {
         resource_def_id: ResourceDefId,
     },
 
-    /// Takes from the proof worktop.
-    TakeFromProofWorktop { index: u32 },
+    /// Takes from the auth worktop.
+    TakeFromAuthWorktop { index: u32 },
 
-    /// Put a proof on the proof worktop.
-    PutOnProofWorktop { proof_id: ProofId },
+    /// Put a proof on the auth worktop.
+    PutOnAuthWorktop { proof_id: ProofId },
 
     /// Creates a proof.
     CreateBucketProof { bucket_id: BucketId },
@@ -110,10 +110,10 @@ pub enum ValidatedInstruction {
         amount: Decimal,
         resource_def_id: ResourceDefId,
     },
-    TakeFromProofWorktop {
+    TakeFromAuthWorktop {
         index: u32,
     },
-    PutOnProofWorktop {
+    PutOnAuthWorktop {
         proof_id: ProofId,
     },
     CreateBucketProof {

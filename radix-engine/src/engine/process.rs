@@ -196,7 +196,7 @@ pub struct Process<'r, 'l, L: SubstateStore> {
     /// Proofs collected from previous returns or self.
     ///
     /// All proofs in the collection are used for system-authorization.
-    proof_worktop: Vec<Proof>,
+    auth_worktop: Vec<Proof>,
 }
 
 impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
@@ -214,7 +214,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             wasm_process_state: None,
             id_allocator: IdAllocator::new(IdSpace::Transaction),
             worktop: HashMap::new(),
-            proof_worktop: Vec::new(),
+            auth_worktop: Vec::new(),
         }
     }
 
@@ -318,13 +318,13 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         }
     }
 
-    // (Transaction ONLY) Takes a proof from the proof worktop.
-    pub fn take_from_proof_worktop(&mut self, index: usize) -> Result<ValidatedData, RuntimeError> {
-        re_debug!(self, "(Transaction) Taking from proof worktop: {:?}", index);
-        if index >= self.proof_worktop.len() {
+    // (Transaction ONLY) Takes a proof from the auth worktop.
+    pub fn take_from_auth_worktop(&mut self, index: usize) -> Result<ValidatedData, RuntimeError> {
+        re_debug!(self, "(Transaction) Taking from auth worktop: {:?}", index);
+        if index >= self.auth_worktop.len() {
             return Err(RuntimeError::IndexOutOfBounds {
                 index,
-                max: self.proof_worktop.len() - 1,
+                max: self.auth_worktop.len() - 1,
             });
         }
 
@@ -332,7 +332,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .id_allocator
             .new_proof_id()
             .map_err(RuntimeError::IdAllocatorError)?;
-        let proof = self.proof_worktop.remove(index);
+        let proof = self.auth_worktop.remove(index);
         self.proofs.insert(new_proof_id, proof);
         Ok(
             ValidatedData::from_slice(&scrypto_encode(&scrypto::resource::Bucket(new_proof_id)))
@@ -340,14 +340,14 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         )
     }
 
-    // (Transaction ONLY) Puts a proof onto the proof worktop.
-    pub fn put_on_proof_worktop(
+    // (Transaction ONLY) Puts a proof onto the auth worktop.
+    pub fn put_on_auth_worktop(
         &mut self,
         proof_id: ProofId,
     ) -> Result<ValidatedData, RuntimeError> {
         re_debug!(
             self,
-            "(Transaction) Returning to proof worktop: proof_id = {}",
+            "(Transaction) Returning to auth worktop: proof_id = {}",
             proof_id
         );
 
@@ -356,7 +356,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .remove(&proof_id)
             .ok_or(RuntimeError::ProofNotFound(proof_id))?;
 
-        self.proof_worktop.push(proof);
+        self.auth_worktop.push(proof);
         Ok(ValidatedData::from_slice(&scrypto_encode(&())).unwrap())
     }
 
