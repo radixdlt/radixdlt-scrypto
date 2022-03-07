@@ -31,6 +31,15 @@ pub enum Instruction {
         resource_def_id: Value,
     },
 
+    TakeFromProofWorktop {
+        index: Value,
+        new_proof: Value,
+    },
+
+    PutOnProofWorktop {
+        proof: Value,
+    },
+
     CreateBucketProof {
         bucket: Value,
         new_proof: Value,

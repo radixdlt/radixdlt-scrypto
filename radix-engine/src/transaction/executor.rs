@@ -179,6 +179,12 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
                 ValidatedInstruction::ReturnToWorktop { bucket_id } => {
                     proc.return_to_worktop(bucket_id)
                 }
+                ValidatedInstruction::TakeFromProofWorktop { index } => {
+                    proc.take_from_proof_worktop(index as usize)
+                }
+                ValidatedInstruction::PutOnProofWorktop { proof_id } => {
+                    proc.put_on_proof_worktop(proof_id)
+                }
                 ValidatedInstruction::AssertWorktopContains {
                     amount,
                     resource_def_id,
