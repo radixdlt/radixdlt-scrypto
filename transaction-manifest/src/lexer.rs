@@ -76,6 +76,9 @@ pub enum TokenKind {
     Comma,
     Semicolon,
 
+    /* Special types */
+    Blob,
+
     /* Instructions */
     TakeFromWorktop,
     TakeAllFromWorktop,
@@ -385,6 +388,8 @@ impl Lexer {
             "None" => Ok(TokenKind::None),
             "Ok" => Ok(TokenKind::Ok),
             "Err" => Ok(TokenKind::Err),
+
+            "Blob" => Ok(TokenKind::Blob),
 
             "TAKE_FROM_WORKTOP" => Ok(TokenKind::TakeFromWorktop),
             "TAKE_ALL_FROM_WORKTOP" => Ok(TokenKind::TakeAllFromWorktop),
