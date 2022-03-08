@@ -178,20 +178,9 @@ pub fn decompile(tx: &Transaction) -> Result<String, DecompileError> {
             }
             Instruction::PublishPackage { code } => {
                 buf.push_str(&format!(
-                    "PUBLISH_PACKAGE {}",
-                    format_value(
-                        &sbor::any::Value::Vec(
-                            sbor::type_id::TYPE_U8,
-                            code.iter()
-                                .cloned()
-                                .map(|b| sbor::any::Value::U8(b))
-                                .collect()
-                        ),
-                        &HashMap::new(),
-                        &HashMap::new()
-                    )
+                    "PUBLISH_PACKAGE Blob(\"{}\");\n",
+                    base64::encode(&code)
                 ));
-                buf.push_str(";\n");
             }
             Instruction::End { .. } => {}
         }
