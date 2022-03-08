@@ -60,11 +60,11 @@ pub fn validate_transaction(
                     resource_def_id,
                 });
             }
-            Instruction::CreateProof { bucket_id } => {
+            Instruction::CreateBucketProof { bucket_id } => {
                 id_validator
                     .new_proof(bucket_id)
                     .map_err(TransactionValidationError::IdValidatorError)?;
-                instructions.push(ValidatedInstruction::CreateProof { bucket_id });
+                instructions.push(ValidatedInstruction::CreateBucketProof { bucket_id });
             }
             Instruction::CloneProof { proof_id } => {
                 id_validator

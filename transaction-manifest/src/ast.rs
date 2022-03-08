@@ -31,7 +31,7 @@ pub enum Instruction {
         resource_def_id: Value,
     },
 
-    CreateProof {
+    CreateBucketProof {
         bucket: Value,
         new_proof: Value,
     },

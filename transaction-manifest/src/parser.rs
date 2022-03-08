@@ -88,7 +88,7 @@ impl Parser {
                 amount: self.parse_value()?,
                 resource_def_id: self.parse_value()?,
             },
-            TokenKind::CreateProof => Instruction::CreateProof {
+            TokenKind::CreateBucketProof => Instruction::CreateBucketProof {
                 bucket: self.parse_value()?,
                 new_proof: self.parse_value()?,
             },
@@ -682,8 +682,8 @@ mod tests {
             }
         );
         parse_instruction_ok!(
-            r#"CREATE_PROOF  Bucket("xrd_bucket")  Proof("admin_auth");"#,
-            Instruction::CreateProof {
+            r#"CREATE_BUCKET_PROOF  Bucket("xrd_bucket")  Proof("admin_auth");"#,
+            Instruction::CreateBucketProof {
                 bucket: Value::Bucket(Value::String("xrd_bucket".into()).into()),
                 new_proof: Value::Proof(Value::String("admin_auth".into()).into()),
             }

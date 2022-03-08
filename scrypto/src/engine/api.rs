@@ -93,18 +93,20 @@ pub const TAKE_NON_FUNGIBLE_FROM_BUCKET: u32 = 0x55;
 /// Get the IDs of all non-fungibles in this bucket
 pub const GET_NON_FUNGIBLE_KEYS_IN_BUCKET: u32 = 0x56;
 
-/// Obtain a proof
-pub const CREATE_PROOF: u32 = 0x60;
-/// Drop a proof
-pub const DROP_PROOF: u32 = 0x61;
-/// Get the resource amount behind a proof
-pub const GET_PROOF_AMOUNT: u32 = 0x62;
-/// Get the resource definition behind a proof
-pub const GET_PROOF_RESOURCE_DEF_ID: u32 = 0x63;
-/// Get the non-fungible keys in the proofd
-pub const GET_NON_FUNGIBLE_KEYS_IN_PROOF: u32 = 0x64;
+/// Create a bucket proof
+pub const CREATE_BUCKET_PROOF: u32 = 0x60;
+/// Create a vault proof
+pub const CREATE_VAULT_PROOF: u32 = 0x61;
 /// Clone proof
-pub const CLONE_PROOF: u32 = 0x65;
+pub const CLONE_PROOF: u32 = 0x62;
+/// Drop a proof
+pub const DROP_PROOF: u32 = 0x63;
+/// Get the resource amount behind a proof
+pub const GET_PROOF_AMOUNT: u32 = 0x64;
+/// Get the resource definition behind a proof
+pub const GET_PROOF_RESOURCE_DEF_ID: u32 = 0x65;
+/// Get the non-fungible keys in the proof
+pub const GET_NON_FUNGIBLE_KEYS_IN_PROOF: u32 = 0x66;
 
 /// Log a message
 pub const EMIT_LOG: u32 = 0xf0;
@@ -425,12 +427,12 @@ pub struct TakeFromVaultOutput {
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct GetVaultDecimalInput {
+pub struct GetVaultAmountInput {
     pub vault_id: VaultId,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct GetVaultDecimalOutput {
+pub struct GetVaultAmountOutput {
     pub amount: Decimal,
 }
 
@@ -501,12 +503,12 @@ pub struct TakeFromBucketOutput {
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct GetBucketDecimalInput {
+pub struct GetBucketAmountInput {
     pub bucket_id: BucketId,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct GetBucketDecimalOutput {
+pub struct GetBucketAmountOutput {
     pub amount: Decimal,
 }
 
@@ -546,12 +548,12 @@ pub struct GetNonFungibleKeysInBucketOutput {
 //==========
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct CreateProofInput {
+pub struct CreateBucketProofInput {
     pub bucket_id: BucketId,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct CreateProofOutput {
+pub struct CreateBucketProofOutput {
     pub proof_id: ProofId,
 }
 
@@ -564,12 +566,12 @@ pub struct DropProofInput {
 pub struct DropProofOutput {}
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct GetProofDecimalInput {
+pub struct GetProofAmountInput {
     pub proof_id: ProofId,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct GetProofDecimalOutput {
+pub struct GetProofAmountOutput {
     pub amount: Decimal,
 }
 

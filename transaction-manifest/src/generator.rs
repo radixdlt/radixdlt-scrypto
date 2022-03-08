@@ -174,14 +174,14 @@ pub fn generate_instruction(
             amount: generate_decimal(amount)?,
             resource_def_id: generate_resource_def_id(resource_def_id)?,
         },
-        ast::Instruction::CreateProof { bucket, new_proof } => {
+        ast::Instruction::CreateBucketProof { bucket, new_proof } => {
             let bucket_id = generate_bucket(bucket, resolver)?;
             let proof_id = id_validator
                 .new_proof(bucket_id)
                 .map_err(GeneratorError::IdValidatorError)?;
             declare_proof(new_proof, resolver, proof_id)?;
 
-            Instruction::CreateProof { bucket_id }
+            Instruction::CreateBucketProof { bucket_id }
         }
         ast::Instruction::CloneProof { proof, new_proof } => {
             let proof_id = generate_proof(proof, resolver)?;
@@ -929,7 +929,7 @@ mod tests {
                         )
                         .unwrap(),
                     },
-                    Instruction::CreateProof { bucket_id: 513 },
+                    Instruction::CreateBucketProof { bucket_id: 513 },
                     Instruction::CloneProof { proof_id: 514 },
                     Instruction::DropProof { proof_id: 515 },
                     Instruction::DropProof { proof_id: 514 },
