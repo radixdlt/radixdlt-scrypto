@@ -126,6 +126,9 @@ impl Parser {
                 component_id: self.parse_value()?,
                 method: self.parse_value()?,
             },
+            TokenKind::PublishPackage => Instruction::PublishPackage {
+                code: self.parse_value()?,
+            },
             _ => {
                 return Err(ParserError::UnexpectedToken(token));
             }

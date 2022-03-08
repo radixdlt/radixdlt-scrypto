@@ -73,6 +73,9 @@ pub enum Instruction {
         method: String,
     },
 
+    /// Publishes a package.
+    PublishPackage { code: Vec<u8> },
+
     /// Marks the end of transaction with signatures.
     /// TODO: replace public key with signature.
     End { signatures: Vec<EcdsaPublicKey> },
@@ -127,5 +130,8 @@ pub enum ValidatedInstruction {
     CallMethodWithAllResources {
         component_id: ComponentId,
         method: String,
+    },
+    PublishPackage {
+        code: Vec<u8>,
     },
 }

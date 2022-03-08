@@ -62,6 +62,10 @@ pub enum Instruction {
         component_id: Value,
         method: Value,
     },
+
+    PublishPackage {
+        code: Value,
+    },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

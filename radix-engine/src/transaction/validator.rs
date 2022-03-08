@@ -114,6 +114,9 @@ pub fn validate_transaction(
                     method,
                 });
             }
+            Instruction::PublishPackage { code } => {
+                instructions.push(ValidatedInstruction::PublishPackage { code });
+            }
             Instruction::End { signatures } => {
                 if i != transaction.instructions.len() - 1 {
                     return Err(TransactionValidationError::UnexpectedEnd);
