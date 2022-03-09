@@ -509,19 +509,6 @@ fn generate_non_fungible_keys(
     }
 }
 
-fn generate_blob(value: &ast::Value) -> Result<Value, GeneratorError> {
-    match value {
-        ast::Value::Blob(bytes) => {
-            let mut elements = Vec::new();
-            for b in bytes {
-                elements.push(Value::U8(*b));
-            }
-            Ok(Value::Vec(TYPE_U8, elements))
-        }
-        v @ _ => invalid_type!(v, ast::Type::Blob),
-    }
-}
-
 fn generate_value(
     value: &ast::Value,
     expected: Option<ast::Type>,
@@ -622,7 +609,16 @@ fn generate_value(
             .map(|v| Value::Custom(CustomType::Proof.id(), scrypto::resource::Proof(v).to_vec())),
         ast::Value::NonFungibleKey(_) => generate_non_fungible_key(value)
             .map(|v| Value::Custom(CustomType::NonFungibleKey.id(), v.to_vec())),
-        ast::Value::Blob(_) => generate_blob(value),
+        ast::Value::Blob(_) => match value {
+            ast::Value::Blob(bytes) => {
+                let mut elements = Vec::new();
+                for b in bytes {
+                    elements.push(Value::U8(*b));
+                }
+                Ok(Value::Vec(TYPE_U8, elements))
+            }
+            v @ _ => invalid_type!(v, ast::Type::Blob),
+        },
     }
 }
 

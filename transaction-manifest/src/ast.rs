@@ -119,7 +119,7 @@ pub enum Type {
     Proof,
     NonFungibleKey,
 
-    /* Special Types */
+    /* Blob is a convenient way of producing `Vec<u8>` */
     Blob,
 }
 

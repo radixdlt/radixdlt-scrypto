@@ -76,7 +76,7 @@ pub enum TokenKind {
     Comma,
     Semicolon,
 
-    /* Special types */
+    /* Blob is a convenient way of producing `Vec<u8>` */
     Blob,
 
     /* Instructions */
