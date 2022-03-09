@@ -83,7 +83,7 @@ pub fn decompile(tx: &Transaction) -> Result<String, DecompileError> {
             }
             Instruction::TakeFromAuthWorktop { index } => {
                 let proof_id = id_validator
-                    .new_proof(None)
+                    .new_proof(ProofKind::RuntimeProof)
                     .map_err(DecompileError::IdValidatorError)?;
                 let name = format!("proof{}", proofs.len() + 1);
                 proofs.insert(proof_id, name.clone());
@@ -106,7 +106,7 @@ pub fn decompile(tx: &Transaction) -> Result<String, DecompileError> {
             }
             Instruction::CreateBucketProof { bucket_id } => {
                 let proof_id = id_validator
-                    .new_proof(Some(bucket_id))
+                    .new_proof(ProofKind::BucketProof(bucket_id))
                     .map_err(DecompileError::IdValidatorError)?;
                 let name = format!("badge{}", proofs.len() + 1);
                 proofs.insert(proof_id, name.clone());

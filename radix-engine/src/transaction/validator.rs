@@ -62,7 +62,7 @@ pub fn validate_transaction(
             }
             Instruction::TakeFromAuthWorktop { index } => {
                 id_validator
-                    .new_proof(None)
+                    .new_proof(ProofKind::RuntimeProof)
                     .map_err(TransactionValidationError::IdValidatorError)?;
                 instructions.push(ValidatedInstruction::TakeFromAuthWorktop { index });
             }
@@ -74,7 +74,7 @@ pub fn validate_transaction(
             }
             Instruction::CreateBucketProof { bucket_id } => {
                 id_validator
-                    .new_proof(Some(bucket_id))
+                    .new_proof(ProofKind::BucketProof(bucket_id))
                     .map_err(TransactionValidationError::IdValidatorError)?;
                 instructions.push(ValidatedInstruction::CreateBucketProof { bucket_id });
             }

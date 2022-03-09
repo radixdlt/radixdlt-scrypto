@@ -167,13 +167,21 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
             }
             Instruction::AssertWorktopContains { .. } => {}
             Instruction::TakeFromAuthWorktop { .. } => {
-                new_proof_id = Some(self.id_validator.new_proof(None).unwrap());
+                new_proof_id = Some(
+                    self.id_validator
+                        .new_proof(ProofKind::RuntimeProof)
+                        .unwrap(),
+                );
             }
             Instruction::PutOnAuthWorktop { proof_id } => {
                 self.id_validator.drop_proof(proof_id).unwrap();
             }
             Instruction::CreateBucketProof { bucket_id } => {
-                new_proof_id = Some(self.id_validator.new_proof(Some(bucket_id)).unwrap());
+                new_proof_id = Some(
+                    self.id_validator
+                        .new_proof(ProofKind::BucketProof(bucket_id))
+                        .unwrap(),
+                );
             }
             Instruction::CloneProof { proof_id } => {
                 new_proof_id = Some(self.id_validator.clone_proof(proof_id).unwrap());

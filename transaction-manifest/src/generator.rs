@@ -176,7 +176,7 @@ pub fn generate_instruction(
         },
         ast::Instruction::TakeFromAuthWorktop { index, new_proof } => {
             let proof_id = id_validator
-                .new_proof(None)
+                .new_proof(ProofKind::RuntimeProof)
                 .map_err(GeneratorError::IdValidatorError)?;
             declare_proof(new_proof, resolver, proof_id)?;
 
@@ -194,7 +194,7 @@ pub fn generate_instruction(
         ast::Instruction::CreateBucketProof { bucket, new_proof } => {
             let bucket_id = generate_bucket(bucket, resolver)?;
             let proof_id = id_validator
-                .new_proof(Some(bucket_id))
+                .new_proof(ProofKind::BucketProof(bucket_id))
                 .map_err(GeneratorError::IdValidatorError)?;
             declare_proof(new_proof, resolver, proof_id)?;
 
