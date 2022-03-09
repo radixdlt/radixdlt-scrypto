@@ -174,10 +174,27 @@ pub fn generate_instruction(
             amount: generate_decimal(amount)?,
             resource_def_id: generate_resource_def_id(resource_def_id)?,
         },
+        ast::Instruction::TakeFromAuthWorktop { index, new_proof } => {
+            let proof_id = id_validator
+                .new_proof(ProofKind::RuntimeProof)
+                .map_err(GeneratorError::IdValidatorError)?;
+            declare_proof(new_proof, resolver, proof_id)?;
+
+            Instruction::TakeFromAuthWorktop {
+                index: generate_u32(index)?,
+            }
+        }
+        ast::Instruction::PutOnAuthWorktop { proof } => {
+            let proof_id = generate_proof(proof, resolver)?;
+            id_validator
+                .drop_proof(proof_id)
+                .map_err(GeneratorError::IdValidatorError)?;
+            Instruction::PutOnAuthWorktop { proof_id }
+        }
         ast::Instruction::CreateBucketProof { bucket, new_proof } => {
             let bucket_id = generate_bucket(bucket, resolver)?;
             let proof_id = id_validator
-                .new_proof(bucket_id)
+                .new_proof(ProofKind::BucketProof(bucket_id))
                 .map_err(GeneratorError::IdValidatorError)?;
             declare_proof(new_proof, resolver, proof_id)?;
 
@@ -315,6 +332,13 @@ fn generate_bytes(value: &ast::Value) -> Result<Vec<u8>, GeneratorError> {
             }
         }
         v @ _ => invalid_type!(v, ast::Type::Vec, ast::Type::Blob),
+    }
+}
+
+fn generate_u32(value: &ast::Value) -> Result<u32, GeneratorError> {
+    match value {
+        ast::Value::U32(v) => Ok(*v),
+        v @ _ => invalid_type!(v, ast::Type::U32),
     }
 }
 
@@ -996,8 +1020,10 @@ mod tests {
                     },
                     Instruction::CreateBucketProof { bucket_id: 513 },
                     Instruction::CloneProof { proof_id: 514 },
-                    Instruction::DropProof { proof_id: 515 },
                     Instruction::DropProof { proof_id: 514 },
+                    Instruction::PutOnAuthWorktop { proof_id: 515 },
+                    Instruction::TakeFromAuthWorktop { index: 0 },
+                    Instruction::DropProof { proof_id: 516 },
                     Instruction::ReturnToWorktop { bucket_id: 513 },
                     Instruction::TakeNonFungiblesFromWorktop {
                         keys: BTreeSet::from([

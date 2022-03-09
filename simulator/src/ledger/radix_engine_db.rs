@@ -103,16 +103,16 @@ impl SubstateStore for RadixEngineDB {
         self.write(&scrypto_encode(address), &scrypto_encode(&substate));
     }
 
-    fn get_child_substate<T: Encode>(&self, address: &T, key: &[u8]) -> Option<Vec<u8>> {
+    fn get_child_substate<T: Encode>(&self, address: &T, key: &[u8]) -> Option<Substate> {
         let mut id = scrypto_encode(address);
         id.extend(key.to_vec());
-        self.read(&id)
+        self.read(&id).map(|b| scrypto_decode(&b).unwrap())
     }
 
-    fn put_child_substate<T: Encode>(&mut self, address: &T, key: &[u8], substate: &[u8]) {
+    fn put_child_substate<T: Encode>(&mut self, address: &T, key: &[u8], substate: Substate) {
         let mut id = scrypto_encode(address);
         id.extend(key.to_vec());
-        self.write(&id, substate);
+        self.write(&id, &scrypto_encode(&substate));
     }
 
     fn get_epoch(&self) -> u64 {

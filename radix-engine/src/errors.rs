@@ -83,9 +83,6 @@ pub enum RuntimeError {
     /// The requested host function does not exist.
     HostFunctionNotFound(usize),
 
-    /// Resource definition already exists.
-    LazyMapAlreadyExists(LazyMapId),
-
     /// Package does not exist.
     PackageNotFound(PackageId),
 
@@ -167,14 +164,11 @@ pub enum RuntimeError {
     /// Invalid log level.
     InvalidLevel,
 
-    /// The bucket id is not reserved.
-    BucketNotReserved,
-
-    /// The proof id is not reserved.
-    ProofNotReserved,
-
     /// Resource check failure.
     ResourceCheckFailure,
+
+    /// Index out of bounds.
+    IndexOutOfBounds { index: usize, max: usize },
 }
 
 impl fmt::Display for RuntimeError {

@@ -185,7 +185,7 @@ pub struct Process<'r, 'l, L: SubstateStore> {
 
     /// ID allocator for buckets and proofs created within transaction.
     id_allocator: IdAllocator,
-    /// Resources collected from previous CALLs returns.
+    /// Resources collected from previous returns or self.
     ///
     /// When the `depth == 0` (transaction), all returned resources from CALLs are coalesced
     /// into a map of unidentified buckets indexed by resource definition ID, instead of moving back
@@ -193,6 +193,10 @@ pub struct Process<'r, 'l, L: SubstateStore> {
     ///
     /// Loop invariant: all buckets should be NON_EMPTY.
     worktop: HashMap<ResourceDefId, Bucket>,
+    /// Proofs collected from previous returns or self.
+    ///
+    /// All proofs in the collection are used for system-authorization.
+    auth_worktop: Vec<Proof>,
 }
 
 impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
@@ -210,6 +214,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             wasm_process_state: None,
             id_allocator: IdAllocator::new(IdSpace::Transaction),
             worktop: HashMap::new(),
+            auth_worktop: Vec::new(),
         }
     }
 
@@ -311,6 +316,48 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         } else {
             Ok(ValidatedData::from_slice(&scrypto_encode(&())).unwrap())
         }
+    }
+
+    // (Transaction ONLY) Takes a proof from the auth worktop.
+    pub fn take_from_auth_worktop(&mut self, index: usize) -> Result<ValidatedData, RuntimeError> {
+        re_debug!(self, "(Transaction) Taking from auth worktop: {:?}", index);
+        if index >= self.auth_worktop.len() {
+            return Err(RuntimeError::IndexOutOfBounds {
+                index,
+                max: self.auth_worktop.len() - 1,
+            });
+        }
+
+        let new_proof_id = self
+            .id_allocator
+            .new_proof_id()
+            .map_err(RuntimeError::IdAllocatorError)?;
+        let proof = self.auth_worktop.remove(index);
+        self.proofs.insert(new_proof_id, proof);
+        Ok(
+            ValidatedData::from_slice(&scrypto_encode(&scrypto::resource::Bucket(new_proof_id)))
+                .unwrap(),
+        )
+    }
+
+    // (Transaction ONLY) Puts a proof onto the auth worktop.
+    pub fn put_on_auth_worktop(
+        &mut self,
+        proof_id: ProofId,
+    ) -> Result<ValidatedData, RuntimeError> {
+        re_debug!(
+            self,
+            "(Transaction) Returning to auth worktop: proof_id = {}",
+            proof_id
+        );
+
+        let proof = self
+            .proofs
+            .remove(&proof_id)
+            .ok_or(RuntimeError::ProofNotFound(proof_id))?;
+
+        self.auth_worktop.push(proof);
+        Ok(ValidatedData::from_slice(&scrypto_encode(&())).unwrap())
     }
 
     // (Transaction ONLY) Creates a proof.

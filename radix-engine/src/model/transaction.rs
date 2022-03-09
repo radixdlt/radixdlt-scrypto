@@ -39,6 +39,12 @@ pub enum Instruction {
         resource_def_id: ResourceDefId,
     },
 
+    /// Takes from the auth worktop.
+    TakeFromAuthWorktop { index: u32 },
+
+    /// Put a proof on the auth worktop.
+    PutOnAuthWorktop { proof_id: ProofId },
+
     /// Creates a proof.
     CreateBucketProof { bucket_id: BucketId },
 
@@ -106,6 +112,12 @@ pub enum ValidatedInstruction {
     AssertWorktopContains {
         amount: Decimal,
         resource_def_id: ResourceDefId,
+    },
+    TakeFromAuthWorktop {
+        index: u32,
+    },
+    PutOnAuthWorktop {
+        proof_id: ProofId,
     },
     CreateBucketProof {
         bucket_id: BucketId,
