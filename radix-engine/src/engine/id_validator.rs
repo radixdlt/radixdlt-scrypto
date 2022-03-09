@@ -12,16 +12,26 @@ pub enum IdValidatorError {
     BucketLocked(BucketId),
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ProofKind {
+    /// Proof of virtual bucket.
+    VirtualProof,
+    /// Bucket proof.
+    BucketProof(BucketId),
+    /// Proof taken from auth worktop.
+    RuntimeProof,
+}
+
 pub struct IdValidator {
     id_allocator: IdAllocator,
     bucket_ids: HashMap<BucketId, usize>,
-    proof_ids: HashMap<ProofId, BucketId>,
+    proof_ids: HashMap<ProofId, ProofKind>,
 }
 
 impl IdValidator {
     pub fn new() -> Self {
         let mut proof_ids = HashMap::new();
-        proof_ids.insert(ECDSA_TOKEN_PROOF_ID, ECDSA_TOKEN_BUCKET_ID);
+        proof_ids.insert(ECDSA_TOKEN_PROOF_ID, ProofKind::VirtualProof);
         Self {
             id_allocator: IdAllocator::new(IdSpace::Transaction),
             bucket_ids: HashMap::new(),
@@ -51,31 +61,40 @@ impl IdValidator {
         }
     }
 
-    pub fn new_proof(&mut self, bucket_id: BucketId) -> Result<ProofId, IdValidatorError> {
-        if let Some(cnt) = self.bucket_ids.get_mut(&bucket_id) {
-            *cnt += 1;
-            let proof_id = self
-                .id_allocator
-                .new_proof_id()
-                .map_err(IdValidatorError::IdAllocatorError)?;
-            self.proof_ids.insert(proof_id, bucket_id);
-            Ok(proof_id)
-        } else {
-            Err(IdValidatorError::BucketNotFound(bucket_id))
+    pub fn new_proof(&mut self, kind: ProofKind) -> Result<ProofId, IdValidatorError> {
+        match &kind {
+            ProofKind::BucketProof(bucket_id) => {
+                if let Some(cnt) = self.bucket_ids.get_mut(bucket_id) {
+                    *cnt += 1;
+                } else {
+                    return Err(IdValidatorError::BucketNotFound(*bucket_id));
+                }
+            }
+            ProofKind::RuntimeProof | ProofKind::VirtualProof => {}
         }
+
+        let proof_id = self
+            .id_allocator
+            .new_proof_id()
+            .map_err(IdValidatorError::IdAllocatorError)?;
+        self.proof_ids.insert(proof_id, kind);
+        Ok(proof_id)
     }
 
     pub fn clone_proof(&mut self, proof_id: ProofId) -> Result<ProofId, IdValidatorError> {
-        if let Some(bucket_id) = self.proof_ids.get(&proof_id).cloned() {
-            // for virtual badge, the corresponding bucket is not owned by transaction.
-            if let Some(cnt) = self.bucket_ids.get_mut(&bucket_id) {
-                *cnt += 1;
+        if let Some(kind) = self.proof_ids.get(&proof_id).cloned() {
+            if let ProofKind::BucketProof(bucket_id) = kind {
+                if let Some(cnt) = self.bucket_ids.get_mut(&bucket_id) {
+                    *cnt += 1;
+                } else {
+                    panic!("Illegal state");
+                }
             }
             let proof_id = self
                 .id_allocator
                 .new_proof_id()
                 .map_err(IdValidatorError::IdAllocatorError)?;
-            self.proof_ids.insert(proof_id, bucket_id);
+            self.proof_ids.insert(proof_id, kind);
             Ok(proof_id)
         } else {
             Err(IdValidatorError::ProofNotFound(proof_id))
@@ -83,10 +102,13 @@ impl IdValidator {
     }
 
     pub fn drop_proof(&mut self, proof_id: ProofId) -> Result<(), IdValidatorError> {
-        if let Some(bucket_id) = self.proof_ids.remove(&proof_id) {
-            // for virtual badge, the corresponding bucket is not owned by transaction.
-            if let Some(cnt) = self.bucket_ids.get_mut(&bucket_id) {
-                *cnt -= 1;
+        if let Some(kind) = self.proof_ids.remove(&proof_id) {
+            if let ProofKind::BucketProof(bucket_id) = kind {
+                if let Some(cnt) = self.bucket_ids.get_mut(&bucket_id) {
+                    *cnt -= 1;
+                } else {
+                    panic!("Illegal state");
+                }
             }
             Ok(())
         } else {
