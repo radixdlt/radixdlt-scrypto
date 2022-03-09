@@ -42,8 +42,8 @@ pub trait SubstateStore {
     fn get_substate<T: Encode>(&self, address: &T) -> Option<Substate>;
     fn put_substate<T: Encode>(&mut self, address: &T, substate: Substate);
 
-    fn get_child_substate<T: Encode>(&self, address: &T, key: &[u8]) -> Option<Vec<u8>>;
-    fn put_child_substate<T: Encode>(&mut self, address: &T, key: &[u8], substate: &[u8]);
+    fn get_child_substate<T: Encode>(&self, address: &T, key: &[u8]) -> Option<Substate>;
+    fn put_child_substate<T: Encode>(&mut self, address: &T, key: &[u8], substate: Substate);
 
     // Temporary Encoded/Decoded interface
     fn get_decoded_substate<A: Encode, T: Decode>(&self, address: &A) -> Option<(T, u64)> {
@@ -63,19 +63,34 @@ pub trait SubstateStore {
         &self,
         address: &A,
         key: &K,
-    ) -> Option<T> {
+    ) -> Option<(T, u64)> {
         let child_key = &scrypto_encode(key);
         self.get_child_substate(address, child_key)
-            .map(|v| scrypto_decode(&v).unwrap())
+            .map(|s| (scrypto_decode(&s.value).unwrap(), s.phys_id))
     }
     fn put_encoded_child_substate<A: Encode, K: Encode, V: Encode>(
         &mut self,
         address: &A,
         key: &K,
         value: &V,
+        phys_id: u64
     ) {
         let child_key = &scrypto_encode(key);
-        self.put_child_substate(address, child_key, &scrypto_encode(value));
+        self.put_child_substate(address, child_key, Substate {
+            value: scrypto_encode(value),
+            phys_id
+        });
+    }
+    fn get_decoded_grand_child_substate<A: Encode, C: Encode>(
+        &self,
+        address: &A,
+        child_key: &C,
+        grand_child_key: &[u8],
+    ) -> Option<(Vec<u8>, u64)> {
+        let mut key = scrypto_encode(child_key);
+        key.extend(grand_child_key.to_vec());
+        self.get_child_substate(address, &key)
+            .map(|s| (s.value, s.phys_id))
     }
     fn put_encoded_grand_child_substate<A: Encode, C: Encode>(
         &mut self,
@@ -83,20 +98,14 @@ pub trait SubstateStore {
         child_key: &C,
         grand_child_key: &[u8],
         value: &[u8],
+        phys_id: u64
     ) {
         let mut key = scrypto_encode(child_key);
         key.extend(grand_child_key.to_vec());
-        self.put_child_substate(address, &key, value);
-    }
-    fn get_decoded_grand_child_substate<A: Encode, C: Encode>(
-        &self,
-        address: &A,
-        child_key: &C,
-        grand_child_key: &[u8],
-    ) -> Option<Vec<u8>> {
-        let mut key = scrypto_encode(child_key);
-        key.extend(grand_child_key.to_vec());
-        self.get_child_substate(address, &key)
+        self.put_child_substate(address, &key, Substate {
+            value: value.to_vec(),
+            phys_id
+        });
     }
 
     fn bootstrap(&mut self) {
@@ -153,7 +162,7 @@ pub trait SubstateStore {
                     amount: XRD_MAX_SUPPLY.into(),
                 },
             ));
-            self.put_encoded_child_substate(&SYSTEM_COMPONENT, &XRD_VAULT_ID, &system_vault);
+            self.put_encoded_child_substate(&SYSTEM_COMPONENT, &XRD_VAULT_ID, &system_vault, self.get_nonce());
 
             let system_component = Component::new(
                 SYSTEM_PACKAGE,

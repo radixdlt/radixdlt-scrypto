@@ -124,7 +124,7 @@ fn dump_resources<T: SubstateStore>(
     for (last, vault_id) in vaults.iter().identify_last() {
         let vault: Vault = substate_store
             .get_decoded_child_substate(&component_id, vault_id)
-            .unwrap();
+            .unwrap().0;
 
         let amount = vault.amount();
         let resource_def_id = vault.resource_def_id();
@@ -152,7 +152,7 @@ fn dump_resources<T: SubstateStore>(
             for (inner_last, key) in keys.iter().identify_last() {
                 let non_fungible: NonFungible = substate_store
                     .get_decoded_child_substate(&resource_def_id, key)
-                    .unwrap();
+                    .unwrap().0;
 
                 let immutable_data =
                     ValidatedData::from_slice(&non_fungible.immutable_data()).unwrap();
