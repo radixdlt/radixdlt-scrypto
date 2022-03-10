@@ -73,13 +73,17 @@ pub trait SubstateStore {
         address: &A,
         key: &K,
         value: &V,
-        phys_id: u64
+        phys_id: u64,
     ) {
         let child_key = &scrypto_encode(key);
-        self.put_child_substate(address, child_key, Substate {
-            value: scrypto_encode(value),
-            phys_id
-        });
+        self.put_child_substate(
+            address,
+            child_key,
+            Substate {
+                value: scrypto_encode(value),
+                phys_id,
+            },
+        );
     }
     fn get_decoded_grand_child_substate<A: Encode, C: Encode>(
         &self,
@@ -98,14 +102,18 @@ pub trait SubstateStore {
         child_key: &C,
         grand_child_key: &[u8],
         value: &[u8],
-        phys_id: u64
+        phys_id: u64,
     ) {
         let mut key = scrypto_encode(child_key);
         key.extend(grand_child_key.to_vec());
-        self.put_child_substate(address, &key, Substate {
-            value: value.to_vec(),
-            phys_id
-        });
+        self.put_child_substate(
+            address,
+            &key,
+            Substate {
+                value: value.to_vec(),
+                phys_id,
+            },
+        );
     }
 
     fn bootstrap(&mut self) {
@@ -162,7 +170,12 @@ pub trait SubstateStore {
                     amount: XRD_MAX_SUPPLY.into(),
                 },
             ));
-            self.put_encoded_child_substate(&SYSTEM_COMPONENT, &XRD_VAULT_ID, &system_vault, self.get_nonce());
+            self.put_encoded_child_substate(
+                &SYSTEM_COMPONENT,
+                &XRD_VAULT_ID,
+                &system_vault,
+                self.get_nonce(),
+            );
 
             let system_component = Component::new(
                 SYSTEM_PACKAGE,
