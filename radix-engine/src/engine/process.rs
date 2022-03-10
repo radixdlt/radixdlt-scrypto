@@ -73,15 +73,12 @@ pub struct Invocation {
 #[derive(Debug)]
 enum InterpreterState {
     Blueprint,
-    ComponentEmpty {
+    Component {
         component_id: ComponentId,
-    },
-    ComponentLoaded {
-        component_id: ComponentId,
+        state: Vec<u8>,
         initial_loaded_object_refs: ComponentObjectRefs,
         additional_object_refs: ComponentObjectRefs,
     },
-    ComponentStored,
 }
 
 /// Top level state machine for a process. Empty currently only
@@ -545,7 +542,18 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             vm,
             interpreter_state: match invocation.actor {
                 Actor::Blueprint(..) => InterpreterState::Blueprint,
-                Actor::Component(component_id) => InterpreterState::ComponentEmpty { component_id },
+                Actor::Component(component_id) => {
+                    let component = self.track.get_component(component_id.clone()).unwrap();
+                    let initial_loaded_object_refs =
+                        Self::process_entry_data(component.state()).unwrap();
+                    let state = component.state().to_vec();
+                    InterpreterState::Component {
+                        state,
+                        component_id,
+                        initial_loaded_object_refs,
+                        additional_object_refs: ComponentObjectRefs::new(),
+                    }
+                }
             },
             process_owned_objects: ComponentObjects::new(),
         });
@@ -1109,27 +1117,12 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .wasm_process_state
             .as_mut()
             .ok_or(RuntimeError::IllegalSystemCall())?;
-        let (return_state, next_interpreter_state) = match &wasm_process.interpreter_state {
-            InterpreterState::ComponentEmpty { component_id } => {
-                let component = self.track.get_component(*component_id).unwrap();
-                let state = component.state();
-                let initial_loaded_object_refs = Self::process_entry_data(state).unwrap();
-                Ok((
-                    state,
-                    InterpreterState::ComponentLoaded {
-                        component_id: *component_id,
-                        initial_loaded_object_refs,
-                        additional_object_refs: ComponentObjectRefs::new(),
-                    },
-                ))
-            }
+        let return_state = match &wasm_process.interpreter_state {
+            InterpreterState::Component { state, .. } => Ok(state),
             _ => Err(RuntimeError::IllegalSystemCall()),
         }?;
-        wasm_process.interpreter_state = next_interpreter_state;
-        let component_state = return_state.to_vec();
-        Ok(GetComponentStateOutput {
-            state: component_state,
-        })
+        let state = return_state.to_vec();
+        Ok(GetComponentStateOutput { state })
     }
 
     fn handle_put_component_state(
@@ -1140,8 +1133,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .wasm_process_state
             .as_mut()
             .ok_or(RuntimeError::IllegalSystemCall())?;
-        let next_state = match &wasm_process.interpreter_state {
-            InterpreterState::ComponentLoaded {
+        match &wasm_process.interpreter_state {
+            InterpreterState::Component {
                 component_id,
                 initial_loaded_object_refs,
                 ..
@@ -1156,12 +1149,10 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
                 let component = self.track.get_component_mut(*component_id).unwrap();
                 component.set_state(input.state);
-                Ok(InterpreterState::ComponentStored)
+                Ok(())
             }
             _ => Err(RuntimeError::IllegalSystemCall()),
         }?;
-
-        wasm_process.interpreter_state = next_state;
 
         Ok(PutComponentStateOutput {})
     }
@@ -1195,10 +1186,11 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .get_lazy_map_entry(&input.lazy_map_id, &input.key)
         {
             None => match &mut wasm_process.interpreter_state {
-                InterpreterState::ComponentLoaded {
+                InterpreterState::Component {
                     initial_loaded_object_refs,
                     additional_object_refs,
                     component_id,
+                    ..
                 } => {
                     if !initial_loaded_object_refs
                         .lazy_map_ids
@@ -1243,10 +1235,11 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .get_lazy_map_entry(&input.lazy_map_id, &input.key)
         {
             None => match &wasm_process.interpreter_state {
-                InterpreterState::ComponentLoaded {
+                InterpreterState::Component {
                     initial_loaded_object_refs,
                     additional_object_refs,
                     component_id,
+                    ..
                 } => {
                     if !initial_loaded_object_refs
                         .lazy_map_ids
@@ -1659,7 +1652,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         match wasm_process.process_owned_objects.get_vault_mut(&vault_id) {
             Some(vault) => Ok(vault),
             None => match &wasm_process.interpreter_state {
-                InterpreterState::ComponentLoaded {
+                InterpreterState::Component {
                     component_id,
                     initial_loaded_object_refs,
                     additional_object_refs,
