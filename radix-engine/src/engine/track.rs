@@ -282,8 +282,13 @@ impl<'s, S: SubstateStore> Track<'s, S> {
             .substate_store
             .get_decoded_child_substate(&resource_def_id, key)
         {
-            self.non_fungibles
-                .insert(canonical_id.clone(), SubstateUpdate { prev_id: Some(phys_id), value: non_fungible });
+            self.non_fungibles.insert(
+                canonical_id.clone(),
+                SubstateUpdate {
+                    prev_id: Some(phys_id),
+                    value: non_fungible,
+                },
+            );
             self.non_fungibles.get(&canonical_id).map(|s| &s.value)
         } else {
             None
@@ -299,16 +304,26 @@ impl<'s, S: SubstateStore> Track<'s, S> {
         let canonical_id = (resource_def_id, key.clone());
 
         if self.non_fungibles.contains_key(&canonical_id) {
-            return self.non_fungibles.get_mut(&canonical_id).map(|s| &mut s.value);
+            return self
+                .non_fungibles
+                .get_mut(&canonical_id)
+                .map(|s| &mut s.value);
         }
 
         if let Some((non_fungible, phys_id)) = self
             .substate_store
             .get_decoded_child_substate(&resource_def_id, key)
         {
+            self.non_fungibles.insert(
+                canonical_id.clone(),
+                SubstateUpdate {
+                    prev_id: Some(phys_id),
+                    value: non_fungible,
+                },
+            );
             self.non_fungibles
-                .insert(canonical_id.clone(), SubstateUpdate { prev_id: Some(phys_id), value: non_fungible });
-            self.non_fungibles.get_mut(&canonical_id).map(|s| &mut s.value)
+                .get_mut(&canonical_id)
+                .map(|s| &mut s.value)
         } else {
             None
         }
@@ -321,8 +336,13 @@ impl<'s, S: SubstateStore> Track<'s, S> {
         key: &NonFungibleKey,
         non_fungible: NonFungible,
     ) {
-        self.non_fungibles
-            .insert((resource_def_id, key.clone()), SubstateUpdate { prev_id: None, value: non_fungible });
+        self.non_fungibles.insert(
+            (resource_def_id, key.clone()),
+            SubstateUpdate {
+                prev_id: None,
+                value: non_fungible,
+            },
+        );
     }
 
     pub fn get_lazy_map_entry(
@@ -334,7 +354,12 @@ impl<'s, S: SubstateStore> Track<'s, S> {
         let canonical_id = (component_id.clone(), lazy_map_id.clone(), key.to_vec());
 
         if self.lazy_map_entries.contains_key(&canonical_id) {
-            return Some(self.lazy_map_entries.get(&canonical_id).map(|r| r.value.clone()).unwrap());
+            return Some(
+                self.lazy_map_entries
+                    .get(&canonical_id)
+                    .map(|r| r.value.clone())
+                    .unwrap(),
+            );
         }
 
         let grand_child_key = key.to_vec();
@@ -344,8 +369,13 @@ impl<'s, S: SubstateStore> Track<'s, S> {
             &grand_child_key,
         );
         if let Some((ref entry_bytes, phys_id)) = value {
-            self.lazy_map_entries
-                .insert(canonical_id, SubstateUpdate { prev_id: Some(phys_id), value: entry_bytes.clone() });
+            self.lazy_map_entries.insert(
+                canonical_id,
+                SubstateUpdate {
+                    prev_id: Some(phys_id),
+                    value: entry_bytes.clone(),
+                },
+            );
         }
         value.map(|r| r.0)
     }
@@ -366,8 +396,13 @@ impl<'s, S: SubstateStore> Track<'s, S> {
                 &key,
             );
             if let Some((_, phys_id)) = entry {
-                self.lazy_map_entries
-                    .insert(canonical_id, SubstateUpdate { prev_id: Some(phys_id), value });
+                self.lazy_map_entries.insert(
+                    canonical_id,
+                    SubstateUpdate {
+                        prev_id: Some(phys_id),
+                        value,
+                    },
+                );
                 return;
             }
         }
@@ -376,7 +411,13 @@ impl<'s, S: SubstateStore> Track<'s, S> {
             entry.value = value;
         } else {
             // TODO: Virtual Down
-            self.lazy_map_entries.insert(canonical_id, SubstateUpdate { prev_id: None, value });
+            self.lazy_map_entries.insert(
+                canonical_id,
+                SubstateUpdate {
+                    prev_id: None,
+                    value,
+                },
+            );
         }
     }
 
@@ -451,21 +492,40 @@ impl<'s, S: SubstateStore> Track<'s, S> {
         let canonical_id = (component_id.clone(), vid.clone());
 
         if self.vaults.contains_key(&canonical_id) {
-            return self.vaults.get_mut(&canonical_id).map(|r| &mut r.value).unwrap();
+            return self
+                .vaults
+                .get_mut(&canonical_id)
+                .map(|r| &mut r.value)
+                .unwrap();
         }
 
         let (vault, phys_id) = self
             .substate_store
             .get_decoded_child_substate(component_id, vid)
             .unwrap();
-        self.vaults.insert(canonical_id, SubstateUpdate { prev_id: Some(phys_id), value: vault });
-        self.vaults.get_mut(&canonical_id).map(|r| &mut r.value).unwrap()
+        self.vaults.insert(
+            canonical_id,
+            SubstateUpdate {
+                prev_id: Some(phys_id),
+                value: vault,
+            },
+        );
+        self.vaults
+            .get_mut(&canonical_id)
+            .map(|r| &mut r.value)
+            .unwrap()
     }
 
     /// Inserts a new vault.
     pub fn put_vault(&mut self, component_id: ComponentId, vault_id: VaultId, vault: Vault) {
         let canonical_id = (component_id, vault_id);
-        self.vaults.insert(canonical_id, SubstateUpdate { prev_id: None, value: vault });
+        self.vaults.insert(
+            canonical_id,
+            SubstateUpdate {
+                prev_id: None,
+                value: vault,
+            },
+        );
     }
 
     /// Creates a new package ID.
@@ -606,7 +666,7 @@ impl<'s, S: SubstateStore> Track<'s, S> {
                 &lazy_map_id,
                 &key,
                 &entry.value,
-                phys_id
+                phys_id,
             );
         }
 
@@ -625,7 +685,7 @@ impl<'s, S: SubstateStore> Track<'s, S> {
                 &component_id,
                 &vault_id,
                 &vault.value,
-                phys_id
+                phys_id,
             );
         }
 
@@ -647,7 +707,7 @@ impl<'s, S: SubstateStore> Track<'s, S> {
                 &resource_def_id,
                 &non_fungible_key,
                 &non_fungible.value,
-                phys_id
+                phys_id,
             );
         }
 

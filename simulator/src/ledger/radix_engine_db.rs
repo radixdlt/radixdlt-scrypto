@@ -106,8 +106,7 @@ impl SubstateStore for RadixEngineDB {
     fn get_child_substate<T: Encode>(&self, address: &T, key: &[u8]) -> Option<Substate> {
         let mut id = scrypto_encode(address);
         id.extend(key.to_vec());
-        self.read(&id)
-            .map(|b| scrypto_decode(&b).unwrap())
+        self.read(&id).map(|b| scrypto_decode(&b).unwrap())
     }
 
     fn put_child_substate<T: Encode>(&mut self, address: &T, key: &[u8], substate: Substate) {
