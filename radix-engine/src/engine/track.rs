@@ -268,10 +268,7 @@ impl<'s, S: SubstateStore> Track<'s, S> {
     }
 
     /// Returns an immutable reference to a non-fungible, if exists.
-    pub fn get_non_fungible(
-        &mut self,
-        non_fungible_id: &NonFungibleId
-    ) -> Option<&NonFungible> {
+    pub fn get_non_fungible(&mut self, non_fungible_id: &NonFungibleId) -> Option<&NonFungible> {
         if self.non_fungibles.contains_key(non_fungible_id) {
             return self.non_fungibles.get(non_fungible_id).map(|s| &s.value);
         }
@@ -296,7 +293,7 @@ impl<'s, S: SubstateStore> Track<'s, S> {
     /// Returns a mutable reference to a non-fungible, if exists.
     pub fn get_non_fungible_mut(
         &mut self,
-        non_fungible_id: &NonFungibleId
+        non_fungible_id: &NonFungibleId,
     ) -> Option<&mut NonFungible> {
         if self.non_fungibles.contains_key(non_fungible_id) {
             return self
@@ -325,11 +322,7 @@ impl<'s, S: SubstateStore> Track<'s, S> {
     }
 
     /// Inserts a new non-fungible.
-    pub fn put_non_fungible(
-        &mut self,
-        non_fungible_id: NonFungibleId,
-        non_fungible: NonFungible,
-    ) {
+    pub fn put_non_fungible(&mut self, non_fungible_id: NonFungibleId, non_fungible: NonFungible) {
         self.non_fungibles.insert(
             non_fungible_id,
             SubstateUpdate {

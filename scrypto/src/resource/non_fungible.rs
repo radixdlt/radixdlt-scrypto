@@ -9,7 +9,6 @@ pub struct NonFungible<T: NonFungibleData> {
     data: PhantomData<T>,
 }
 
-
 impl<T: NonFungibleData> From<NonFungibleId> for NonFungible<T> {
     fn from(id: NonFungibleId) -> Self {
         Self {

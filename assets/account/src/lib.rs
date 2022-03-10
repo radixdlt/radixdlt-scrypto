@@ -2,14 +2,17 @@ use scrypto::prelude::*;
 
 blueprint! {
     struct Account {
-        public_key: EcdsaPublicKey,
+        auth_id: NonFungibleId,
         vaults: LazyMap<ResourceDefId, Vault>,
     }
 
     impl Account {
         pub fn new(public_key: EcdsaPublicKey) -> ComponentId {
+            let key = NonFungibleKey::new(public_key.to_vec());
+            let auth_id = NonFungibleId::new(ECDSA_TOKEN, key);
+
             Account {
-                public_key,
+                auth_id,
                 vaults: LazyMap::new(),
             }
             .instantiate()
@@ -19,7 +22,10 @@ blueprint! {
             let vaults = LazyMap::new();
             vaults.insert(bucket.resource_def_id(), Vault::with_bucket(bucket));
 
-            Account { public_key, vaults }.instantiate()
+            let key = NonFungibleKey::new(public_key.to_vec());
+            let auth_id = NonFungibleId::new(ECDSA_TOKEN, key);
+
+            Account { auth_id, vaults }.instantiate()
         }
 
         /// Deposit a batch of buckets into this account
@@ -43,10 +49,6 @@ blueprint! {
             }
         }
 
-        fn non_fungible_key(&self) -> NonFungibleKey {
-            NonFungibleKey::new(self.public_key.to_vec())
-        }
-
         /// Withdraws resource from this account.
         pub fn withdraw(
             &mut self,
@@ -54,7 +56,7 @@ blueprint! {
             resource_def_id: ResourceDefId,
             account_auth: Proof,
         ) -> Bucket {
-            account_auth.check_non_fungible_key(ECDSA_TOKEN, |key| key == &self.non_fungible_key());
+            account_auth.check_non_fungible_id(&self.auth_id);
 
             let vault = self.vaults.get(&resource_def_id);
             match vault {
@@ -73,7 +75,7 @@ blueprint! {
             auth: Proof,
             account_auth: Proof,
         ) -> Bucket {
-            account_auth.check_non_fungible_key(ECDSA_TOKEN, |key| key == &self.non_fungible_key());
+            account_auth.check_non_fungible_id(&self.auth_id);
 
             let vault = self.vaults.get(&resource_def_id);
             match vault {
@@ -91,7 +93,7 @@ blueprint! {
             resource_def_id: ResourceDefId,
             account_auth: Proof,
         ) -> Bucket {
-            account_auth.check_non_fungible_key(ECDSA_TOKEN, |key| key == &self.non_fungible_key());
+            account_auth.check_non_fungible_id(&self.auth_id);
 
             let vault = self.vaults.get(&resource_def_id);
             match vault {
@@ -116,7 +118,7 @@ blueprint! {
             auth: Proof,
             account_auth: Proof,
         ) -> Bucket {
-            account_auth.check_non_fungible_key(ECDSA_TOKEN, |key| key == &self.non_fungible_key());
+            account_auth.check_non_fungible_id(&self.auth_id);
 
             let vault = self.vaults.get(&resource_def_id);
             match vault {

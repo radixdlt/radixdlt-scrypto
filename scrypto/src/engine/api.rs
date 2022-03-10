@@ -310,7 +310,7 @@ pub struct GetResourceTotalSupplyOutput {
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct GetNonFungibleDataInput {
-    pub non_fungible_id: NonFungibleId
+    pub non_fungible_id: NonFungibleId,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
@@ -321,7 +321,7 @@ pub struct GetNonFungibleDataOutput {
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct NonFungibleExistsInput {
-    pub non_fungible_id: NonFungibleId
+    pub non_fungible_id: NonFungibleId,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]

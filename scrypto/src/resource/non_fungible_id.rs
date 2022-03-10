@@ -6,14 +6,14 @@ use crate::resource::*;
 #[derive(Debug, Clone, PartialEq, Eq, Hash, TypeId, Encode, Decode)]
 pub struct NonFungibleId {
     resource_def_id: ResourceDefId,
-    key: NonFungibleKey
+    key: NonFungibleKey,
 }
 
 impl NonFungibleId {
     pub fn new(resource_def_id: ResourceDefId, key: NonFungibleKey) -> Self {
         Self {
             resource_def_id,
-            key
+            key,
         }
     }
 

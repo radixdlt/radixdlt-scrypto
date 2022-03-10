@@ -1332,7 +1332,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
                     self.track.put_non_fungible(
                         non_fungible_id,
-                        NonFungible::new(immutable_data.raw, mutable_data.raw)
+                        NonFungible::new(immutable_data.raw, mutable_data.raw),
                     );
                     keys.insert(key);
                 }
@@ -1552,9 +1552,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let data = self.process_non_fungible_data(&input.new_mutable_data)?;
         self.track
             .get_non_fungible_mut(&input.non_fungible_id)
-            .ok_or(RuntimeError::NonFungibleNotFound(
-                input.non_fungible_id
-            ))?
+            .ok_or(RuntimeError::NonFungibleNotFound(input.non_fungible_id))?
             .set_mutable_data(data.raw);
 
         Ok(UpdateNonFungibleMutableDataOutput {})
@@ -1567,9 +1565,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let non_fungible = self
             .track
             .get_non_fungible(&input.non_fungible_id)
-            .ok_or(RuntimeError::NonFungibleNotFound(
-                input.non_fungible_id
-            ))?;
+            .ok_or(RuntimeError::NonFungibleNotFound(input.non_fungible_id))?;
 
         Ok(GetNonFungibleDataOutput {
             immutable_data: non_fungible.immutable_data(),
@@ -1581,9 +1577,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         input: NonFungibleExistsInput,
     ) -> Result<NonFungibleExistsOutput, RuntimeError> {
-        let non_fungible = self
-            .track
-            .get_non_fungible(&input.non_fungible_id);
+        let non_fungible = self.track.get_non_fungible(&input.non_fungible_id);
 
         Ok(NonFungibleExistsOutput {
             non_fungible_exists: non_fungible.is_some(),
