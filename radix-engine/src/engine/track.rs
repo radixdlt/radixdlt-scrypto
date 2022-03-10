@@ -1,6 +1,7 @@
 use lru::LruCache;
 use scrypto::constants::*;
 use scrypto::engine::types::*;
+use scrypto::prelude::NonFungibleId;
 use scrypto::rust::collections::*;
 use scrypto::rust::string::String;
 use scrypto::rust::vec::Vec;
@@ -56,7 +57,7 @@ pub struct Track<'s, S: SubstateStore> {
     resource_defs: HashMap<ResourceDefId, SubstateUpdate<ResourceDef>>,
 
     vaults: HashMap<(ComponentId, VaultId), SubstateUpdate<Vault>>,
-    non_fungibles: HashMap<(ResourceDefId, NonFungibleKey), SubstateUpdate<NonFungible>>,
+    non_fungibles: HashMap<NonFungibleId, SubstateUpdate<NonFungible>>,
 
     lazy_map_entries: HashMap<(ComponentId, LazyMapId, Vec<u8>), SubstateUpdate<Vec<u8>>>,
 
@@ -269,27 +270,24 @@ impl<'s, S: SubstateStore> Track<'s, S> {
     /// Returns an immutable reference to a non-fungible, if exists.
     pub fn get_non_fungible(
         &mut self,
-        resource_def_id: ResourceDefId,
-        key: &NonFungibleKey,
+        non_fungible_id: &NonFungibleId
     ) -> Option<&NonFungible> {
-        let canonical_id = (resource_def_id, key.clone());
-
-        if self.non_fungibles.contains_key(&canonical_id) {
-            return self.non_fungibles.get(&canonical_id).map(|s| &s.value);
+        if self.non_fungibles.contains_key(non_fungible_id) {
+            return self.non_fungibles.get(non_fungible_id).map(|s| &s.value);
         }
 
         if let Some((non_fungible, phys_id)) = self
             .substate_store
-            .get_decoded_child_substate(&resource_def_id, key)
+            .get_decoded_child_substate(&non_fungible_id.resource_def_id(), &non_fungible_id.key())
         {
             self.non_fungibles.insert(
-                canonical_id.clone(),
+                non_fungible_id.clone(),
                 SubstateUpdate {
                     prev_id: Some(phys_id),
                     value: non_fungible,
                 },
             );
-            self.non_fungibles.get(&canonical_id).map(|s| &s.value)
+            self.non_fungibles.get(non_fungible_id).map(|s| &s.value)
         } else {
             None
         }
@@ -298,31 +296,28 @@ impl<'s, S: SubstateStore> Track<'s, S> {
     /// Returns a mutable reference to a non-fungible, if exists.
     pub fn get_non_fungible_mut(
         &mut self,
-        resource_def_id: ResourceDefId,
-        key: &NonFungibleKey,
+        non_fungible_id: &NonFungibleId
     ) -> Option<&mut NonFungible> {
-        let canonical_id = (resource_def_id, key.clone());
-
-        if self.non_fungibles.contains_key(&canonical_id) {
+        if self.non_fungibles.contains_key(non_fungible_id) {
             return self
                 .non_fungibles
-                .get_mut(&canonical_id)
+                .get_mut(non_fungible_id)
                 .map(|s| &mut s.value);
         }
 
         if let Some((non_fungible, phys_id)) = self
             .substate_store
-            .get_decoded_child_substate(&resource_def_id, key)
+            .get_decoded_child_substate(&non_fungible_id.resource_def_id(), &non_fungible_id.key())
         {
             self.non_fungibles.insert(
-                canonical_id.clone(),
+                non_fungible_id.clone(),
                 SubstateUpdate {
                     prev_id: Some(phys_id),
                     value: non_fungible,
                 },
             );
             self.non_fungibles
-                .get_mut(&canonical_id)
+                .get_mut(non_fungible_id)
                 .map(|s| &mut s.value)
         } else {
             None
@@ -332,12 +327,11 @@ impl<'s, S: SubstateStore> Track<'s, S> {
     /// Inserts a new non-fungible.
     pub fn put_non_fungible(
         &mut self,
-        resource_def_id: ResourceDefId,
-        key: &NonFungibleKey,
+        non_fungible_id: NonFungibleId,
         non_fungible: NonFungible,
     ) {
         self.non_fungibles.insert(
-            (resource_def_id, key.clone()),
+            non_fungible_id,
             SubstateUpdate {
                 prev_id: None,
                 value: non_fungible,
@@ -422,22 +416,22 @@ impl<'s, S: SubstateStore> Track<'s, S> {
     }
 
     /// Returns an immutable reference to a resource definition, if exists.
-    pub fn get_resource_def(&mut self, resource_def_id: ResourceDefId) -> Option<&ResourceDef> {
-        if self.resource_defs.contains_key(&resource_def_id) {
-            return self.resource_defs.get(&resource_def_id).map(|r| &r.value);
+    pub fn get_resource_def(&mut self, resource_def_id: &ResourceDefId) -> Option<&ResourceDef> {
+        if self.resource_defs.contains_key(resource_def_id) {
+            return self.resource_defs.get(resource_def_id).map(|r| &r.value);
         }
 
         if let Some((resource_def, phys_id)) =
-            self.substate_store.get_decoded_substate(&resource_def_id)
+            self.substate_store.get_decoded_substate(resource_def_id)
         {
             self.resource_defs.insert(
-                resource_def_id,
+                resource_def_id.clone(),
                 SubstateUpdate {
                     prev_id: Some(phys_id),
                     value: resource_def,
                 },
             );
-            self.resource_defs.get(&resource_def_id).map(|r| &r.value)
+            self.resource_defs.get(resource_def_id).map(|r| &r.value)
         } else {
             None
         }
@@ -447,27 +441,27 @@ impl<'s, S: SubstateStore> Track<'s, S> {
     #[allow(dead_code)]
     pub fn get_resource_def_mut(
         &mut self,
-        resource_def_id: ResourceDefId,
+        resource_def_id: &ResourceDefId,
     ) -> Option<&mut ResourceDef> {
-        if self.resource_defs.contains_key(&resource_def_id) {
+        if self.resource_defs.contains_key(resource_def_id) {
             return self
                 .resource_defs
-                .get_mut(&resource_def_id)
+                .get_mut(resource_def_id)
                 .map(|r| &mut r.value);
         }
 
         if let Some((resource_def, phys_id)) =
-            self.substate_store.get_decoded_substate(&resource_def_id)
+            self.substate_store.get_decoded_substate(resource_def_id)
         {
             self.resource_defs.insert(
-                resource_def_id,
+                resource_def_id.clone(),
                 SubstateUpdate {
                     prev_id: Some(phys_id),
                     value: resource_def,
                 },
             );
             self.resource_defs
-                .get_mut(&resource_def_id)
+                .get_mut(resource_def_id)
                 .map(|r| &mut r.value)
         } else {
             None
@@ -689,7 +683,7 @@ impl<'s, S: SubstateStore> Track<'s, S> {
             );
         }
 
-        let non_fungible_ids: Vec<(ResourceDefId, NonFungibleKey)> = self
+        let non_fungible_ids: Vec<NonFungibleId> = self
             .non_fungibles
             .iter()
             .map(|(id, _)| id.clone())
@@ -702,10 +696,9 @@ impl<'s, S: SubstateStore> Track<'s, S> {
             let phys_id = self.substate_store.get_nonce();
             receipt.up(phys_id);
 
-            let (resource_def_id, non_fungible_key) = non_fungible_id;
             self.substate_store.put_encoded_child_substate(
-                &resource_def_id,
-                &non_fungible_key,
+                &non_fungible_id.resource_def_id(),
+                &non_fungible_id.key(),
                 &non_fungible.value,
                 phys_id,
             );

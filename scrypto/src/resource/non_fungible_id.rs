@@ -1,7 +1,9 @@
+use sbor::*;
+
 use crate::resource::*;
 
 /// Identifier for a non-fungible unit.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, TypeId, Encode, Decode)]
 pub struct NonFungibleId {
     resource_def_id: ResourceDefId,
     key: NonFungibleKey

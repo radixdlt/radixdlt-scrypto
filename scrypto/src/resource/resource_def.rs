@@ -130,8 +130,7 @@ impl ResourceDef {
     /// Panics if this is not a non-fungible resource or the specified non-fungible is not found.
     pub fn get_non_fungible_data<T: NonFungibleData>(&self, key: &NonFungibleKey) -> T {
         let input = GetNonFungibleDataInput {
-            resource_def_id: self.0,
-            key: key.clone(),
+            non_fungible_id: NonFungibleId::new(self.0, key.clone())
         };
         let output: GetNonFungibleDataOutput = call_engine(GET_NON_FUNGIBLE_DATA, input);
 
@@ -149,8 +148,7 @@ impl ResourceDef {
         auth: Proof,
     ) {
         let input = UpdateNonFungibleMutableDataInput {
-            resource_def_id: self.0,
-            key: key.clone(),
+            non_fungible_id: NonFungibleId::new(self.0, key.clone()),
             new_mutable_data: new_data.mutable_data(),
             auth: auth.0,
         };
@@ -162,8 +160,7 @@ impl ResourceDef {
     ///
     pub fn non_fungible_exists(&self, key: &NonFungibleKey) -> bool {
         let input = NonFungibleExistsInput {
-            resource_def_id: self.0,
-            key: key.clone(),
+            non_fungible_id: NonFungibleId::new(self.0, key.clone())
         };
         let output: NonFungibleExistsOutput = call_engine(NON_FUNGIBLE_EXISTS, input);
 
