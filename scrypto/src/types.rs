@@ -74,7 +74,7 @@ pub enum CustomType {
     Bucket,
     Proof,
     Vault,
-    NonFungibleKey,
+    NonFungibleId,
     ResourceDefId,
 }
 
@@ -88,7 +88,7 @@ const MAPPING: [(CustomType, u8, &str); 11] = [
     (CustomType::Bucket, 0xb1, "Bucket"),
     (CustomType::Proof, 0xb2, "Proof"),
     (CustomType::Vault, 0xb3, "Vault"),
-    (CustomType::NonFungibleKey, 0xb4, "NonFungibleKey"),
+    (CustomType::NonFungibleId, 0xb4, "NonFungibleId"),
     (CustomType::ResourceDefId, 0xb5, "ResourceDefId"),
 ];
 
@@ -144,7 +144,7 @@ pub enum CustomValueValidatorError {
     InvalidProof(ParseProofError),
     InvalidLazyMap(ParseLazyMapError),
     InvalidVault(ParseVaultError),
-    InvalidNonFungibleKey(ParseNonFungibleKeyError),
+    InvalidNonFungibleId(ParseNonFungibleIdError),
 }
 
 impl CustomValueValidator {
@@ -197,9 +197,9 @@ impl CustomValueVisitor for CustomValueValidator {
                 self.vaults
                     .push(Vault::try_from(data).map_err(CustomValueValidatorError::InvalidVault)?);
             }
-            CustomType::NonFungibleKey => {
-                NonFungibleKey::try_from(data)
-                    .map_err(CustomValueValidatorError::InvalidNonFungibleKey)?;
+            CustomType::NonFungibleId => {
+                NonFungibleId::try_from(data)
+                    .map_err(CustomValueValidatorError::InvalidNonFungibleId)?;
             }
             CustomType::ResourceDefId => {
                 ResourceDefId::try_from(data)
@@ -256,9 +256,9 @@ impl CustomValueFormatter {
                 }
             }
             CustomType::Vault => format!("Vault(\"{}\")", Vault::try_from(data).unwrap()),
-            CustomType::NonFungibleKey => format!(
-                "NonFungibleKey(\"{}\")",
-                NonFungibleKey::try_from(data).unwrap()
+            CustomType::NonFungibleId => format!(
+                "NonFungibleId(\"{}\")",
+                NonFungibleId::try_from(data).unwrap()
             ),
             CustomType::ResourceDefId => format!(
                 "ResourceDefId(\"{}\")",

@@ -58,7 +58,7 @@ pub enum TokenKind {
     Hash,
     Bucket,
     Proof,
-    NonFungibleKey,
+    NonFungibleId,
 
     /* Sub-types */
     Some,
@@ -380,7 +380,7 @@ impl Lexer {
             "Hash" => Ok(TokenKind::Hash),
             "Bucket" => Ok(TokenKind::Bucket),
             "Proof" => Ok(TokenKind::Proof),
-            "NonFungibleKey" => Ok(TokenKind::NonFungibleKey),
+            "NonFungibleId" => Ok(TokenKind::NonFungibleId),
 
             "Some" => Ok(TokenKind::Some),
             "None" => Ok(TokenKind::None),

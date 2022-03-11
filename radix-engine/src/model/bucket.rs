@@ -20,7 +20,7 @@ pub enum BucketError {
 pub enum Resource {
     Fungible { amount: Decimal },
 
-    NonFungible { keys: BTreeSet<NonFungibleKey> },
+    NonFungible { keys: BTreeSet<NonFungibleId> },
 }
 
 /// A transient resource container.
@@ -101,7 +101,7 @@ impl Bucket {
                 }
                 Resource::NonFungible { ref mut keys } => {
                     let n: usize = quantity.to_string().parse().unwrap();
-                    let taken: BTreeSet<NonFungibleKey> = keys.iter().cloned().take(n).collect();
+                    let taken: BTreeSet<NonFungibleId> = keys.iter().cloned().take(n).collect();
                     for e in &taken {
                         keys.remove(e);
                     }
@@ -115,13 +115,13 @@ impl Bucket {
         }
     }
 
-    pub fn take_non_fungible(&mut self, key: &NonFungibleKey) -> Result<Self, BucketError> {
+    pub fn take_non_fungible(&mut self, key: &NonFungibleId) -> Result<Self, BucketError> {
         self.take_non_fungibles(&BTreeSet::from([key.clone()]))
     }
 
     pub fn take_non_fungibles(
         &mut self,
-        set: &BTreeSet<NonFungibleKey>,
+        set: &BTreeSet<NonFungibleId>,
     ) -> Result<Self, BucketError> {
         match &mut self.resource {
             Resource::Fungible { .. } => Err(BucketError::UnsupportedOperation),
@@ -140,7 +140,7 @@ impl Bucket {
         }
     }
 
-    pub fn get_non_fungible_keys(&self) -> Result<Vec<NonFungibleKey>, BucketError> {
+    pub fn get_non_fungible_keys(&self) -> Result<Vec<NonFungibleId>, BucketError> {
         match &self.resource {
             Resource::Fungible { .. } => Err(BucketError::UnsupportedOperation),
             Resource::NonFungible { keys } => Ok(keys.iter().cloned().collect()),

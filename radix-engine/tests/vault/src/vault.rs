@@ -120,13 +120,13 @@ blueprint! {
         fn create_non_fungible_vault() -> Vault {
             let bucket = ResourceBuilder::new_non_fungible()
                 .metadata("name", "TestToken")
-                .initial_supply_non_fungible([(NonFungibleKey::from(1u128), Data {})]);
+                .initial_supply_non_fungible([(NonFungibleId::from(1u128), Data {})]);
             Vault::with_bucket(bucket)
         }
 
         pub fn new_vault_with_take_non_fungible() -> ComponentId {
             let mut vault = Self::create_non_fungible_vault();
-            let bucket = vault.take_non_fungible(&NonFungibleKey::from(1u128));
+            let bucket = vault.take_non_fungible(&NonFungibleId::from(1u128));
             vault.put(bucket);
             let vaults = LazyMap::new();
             let vault_vector = Vec::new();

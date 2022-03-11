@@ -113,7 +113,7 @@ pub enum Type {
     Hash,
     Bucket,
     Proof,
-    NonFungibleKey,
+    NonFungibleId,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -153,7 +153,7 @@ pub enum Value {
     Hash(Box<Value>),
     Bucket(Box<Value>),
     Proof(Box<Value>),
-    NonFungibleKey(Box<Value>),
+    NonFungibleId(Box<Value>),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -201,7 +201,7 @@ impl Value {
             Value::Hash(_) => Type::Hash,
             Value::Bucket(_) => Type::Bucket,
             Value::Proof(_) => Type::Proof,
-            Value::NonFungibleKey(_) => Type::NonFungibleKey,
+            Value::NonFungibleId(_) => Type::NonFungibleId,
         }
     }
 }

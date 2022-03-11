@@ -93,7 +93,7 @@ impl Bucket {
     ///
     /// # Panics
     /// Panics if this is not a non-fungible bucket or the specified non-fungible resource is not found.
-    pub fn take_non_fungible(&mut self, key: &NonFungibleKey) -> Bucket {
+    pub fn take_non_fungible(&mut self, key: &NonFungibleId) -> Bucket {
         let input = TakeNonFungibleFromBucketInput {
             bucket_id: self.0,
             key: key.clone(),
@@ -124,7 +124,7 @@ impl Bucket {
     ///
     /// # Panic
     /// If this bucket is empty or contains more than one non-fungibles.
-    pub fn get_non_fungible_key(&self) -> NonFungibleKey {
+    pub fn get_non_fungible_key(&self) -> NonFungibleId {
         let keys = self.get_non_fungible_keys();
         assert!(
             keys.len() == 1,
@@ -138,7 +138,7 @@ impl Bucket {
     ///
     /// # Panics
     /// If this bucket is not a non-fungible bucket.
-    pub fn get_non_fungible_keys(&self) -> Vec<NonFungibleKey> {
+    pub fn get_non_fungible_keys(&self) -> Vec<NonFungibleId> {
         let input = GetNonFungibleKeysInBucketInput { bucket_id: self.0 };
         let output: GetNonFungibleKeysInBucketOutput =
             call_engine(GET_NON_FUNGIBLE_KEYS_IN_BUCKET, input);
@@ -150,7 +150,7 @@ impl Bucket {
     ///
     /// # Panics
     /// Panics if this is not a non-fungible bucket.
-    pub fn get_non_fungible_data<T: NonFungibleData>(&self, key: &NonFungibleKey) -> T {
+    pub fn get_non_fungible_data<T: NonFungibleData>(&self, key: &NonFungibleId) -> T {
         resource_def!(self.resource_def_id()).get_non_fungible_data(key)
     }
 
@@ -160,7 +160,7 @@ impl Bucket {
     /// Panics if this is not a non-fungible bucket or the specified non-fungible resource is not found.
     pub fn update_non_fungible_data<T: NonFungibleData>(
         &mut self,
-        key: &NonFungibleKey,
+        key: &NonFungibleId,
         new_data: T,
         auth: Proof,
     ) {

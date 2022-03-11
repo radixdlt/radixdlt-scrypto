@@ -447,7 +447,7 @@ pub struct GetVaultResourceDefIdOutput {
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct TakeNonFungibleFromVaultInput {
     pub vault_id: VaultId,
-    pub key: NonFungibleKey,
+    pub key: NonFungibleId,
     pub auth: Option<ProofId>,
 }
 
@@ -463,7 +463,7 @@ pub struct GetNonFungibleKeysInVaultInput {
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct GetNonFungibleKeysInVaultOutput {
-    pub keys: Vec<NonFungibleKey>,
+    pub keys: Vec<NonFungibleId>,
 }
 
 //==========
@@ -523,7 +523,7 @@ pub struct GetBucketResourceDefIdOutput {
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct TakeNonFungibleFromBucketInput {
     pub bucket_id: BucketId,
-    pub key: NonFungibleKey,
+    pub key: NonFungibleId,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
@@ -538,7 +538,7 @@ pub struct GetNonFungibleKeysInBucketInput {
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct GetNonFungibleKeysInBucketOutput {
-    pub keys: Vec<NonFungibleKey>,
+    pub keys: Vec<NonFungibleId>,
 }
 
 //==========
@@ -590,7 +590,7 @@ pub struct GetNonFungibleKeysInProofInput {
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct GetNonFungibleKeysInProofOutput {
-    pub keys: Vec<NonFungibleKey>,
+    pub keys: Vec<NonFungibleId>,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]

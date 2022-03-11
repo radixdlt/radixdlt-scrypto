@@ -66,7 +66,7 @@ impl Proof {
     ///
     /// # Panic
     /// If the bucket is empty or contains more than one non-fungibles.
-    pub fn get_non_fungible_key(&self) -> NonFungibleKey {
+    pub fn get_non_fungible_key(&self) -> NonFungibleId {
         let keys = self.get_non_fungible_keys();
         assert!(
             keys.len() == 1,
@@ -80,7 +80,7 @@ impl Proof {
     ///
     /// # Panics
     /// If the bucket is not a non-fungible bucket.
-    pub fn get_non_fungible_keys(&self) -> Vec<NonFungibleKey> {
+    pub fn get_non_fungible_keys(&self) -> Vec<NonFungibleId> {
         let input = GetNonFungibleKeysInProofInput { proof_id: self.0 };
         let output: GetNonFungibleKeysInProofOutput =
             call_engine(GET_NON_FUNGIBLE_KEYS_IN_PROOF, input);

@@ -87,7 +87,7 @@ impl Vault {
     ///
     /// # Panics
     /// Panics if this is not a non-fungible vault or the specified non-fungible is not found.
-    pub fn take_non_fungible(&self, key: &NonFungibleKey) -> Bucket {
+    pub fn take_non_fungible(&self, key: &NonFungibleId) -> Bucket {
         let input = TakeNonFungibleFromVaultInput {
             vault_id: self.0,
             key: key.clone(),
@@ -106,7 +106,7 @@ impl Vault {
     ///
     /// # Panics
     /// Panics if this is not a non-fungible vault or the specified non-fungible is not found.
-    pub fn take_non_fungible_with_auth(&self, key: &NonFungibleKey, auth: Proof) -> Bucket {
+    pub fn take_non_fungible_with_auth(&self, key: &NonFungibleId, auth: Proof) -> Bucket {
         let input = TakeNonFungibleFromVaultInput {
             vault_id: self.0,
             key: key.clone(),
@@ -192,7 +192,7 @@ impl Vault {
     ///
     /// # Panics
     /// Panics if this is not a non-fungible vault.
-    pub fn get_non_fungible_keys(&self) -> Vec<NonFungibleKey> {
+    pub fn get_non_fungible_keys(&self) -> Vec<NonFungibleId> {
         let input = GetNonFungibleKeysInVaultInput { vault_id: self.0 };
         let output: GetNonFungibleKeysInVaultOutput =
             call_engine(GET_NON_FUNGIBLE_KEYS_IN_VAULT, input);
@@ -204,7 +204,7 @@ impl Vault {
     ///
     /// # Panic
     /// If this vault is empty or contains more than one non-fungibles.
-    pub fn get_non_fungible_key(&self) -> NonFungibleKey {
+    pub fn get_non_fungible_key(&self) -> NonFungibleId {
         let keys = self.get_non_fungible_keys();
         assert!(
             keys.len() == 1,
@@ -218,7 +218,7 @@ impl Vault {
     ///
     /// # Panics
     /// Panics if this is not a non-fungible bucket.
-    pub fn get_non_fungible_data<T: NonFungibleData>(&self, id: &NonFungibleKey) -> T {
+    pub fn get_non_fungible_data<T: NonFungibleData>(&self, id: &NonFungibleId) -> T {
         resource_def!(self.resource_def_id()).get_non_fungible_data(id)
     }
 
@@ -228,7 +228,7 @@ impl Vault {
     /// Panics if this is not a non-fungible vault or the specified non-fungible is not found.
     pub fn update_non_fungible_data<T: NonFungibleData>(
         &self,
-        id: &NonFungibleKey,
+        id: &NonFungibleId,
         new_data: T,
         auth: Proof,
     ) {

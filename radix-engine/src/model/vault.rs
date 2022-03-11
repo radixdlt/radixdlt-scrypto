@@ -31,13 +31,13 @@ impl Vault {
             .map_err(VaultError::AccountingError)
     }
 
-    pub fn take_non_fungible(&mut self, key: &NonFungibleKey) -> Result<Bucket, VaultError> {
+    pub fn take_non_fungible(&mut self, key: &NonFungibleId) -> Result<Bucket, VaultError> {
         self.bucket
             .take_non_fungible(key)
             .map_err(VaultError::AccountingError)
     }
 
-    pub fn get_non_fungible_ids(&self) -> Result<Vec<NonFungibleKey>, VaultError> {
+    pub fn get_non_fungible_ids(&self) -> Result<Vec<NonFungibleId>, VaultError> {
         self.bucket
             .get_non_fungible_keys()
             .map_err(VaultError::AccountingError)

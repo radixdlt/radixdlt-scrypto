@@ -8,7 +8,7 @@ blueprint! {
 
     impl Account {
         pub fn new(public_key: EcdsaPublicKey) -> ComponentId {
-            let key = NonFungibleKey::new(public_key.to_vec());
+            let key = NonFungibleId::new(public_key.to_vec());
             let auth = NonFungibleAddress::new(ECDSA_TOKEN, key);
 
             Account {
@@ -22,7 +22,7 @@ blueprint! {
             let vaults = LazyMap::new();
             vaults.insert(bucket.resource_def_id(), Vault::with_bucket(bucket));
 
-            let key = NonFungibleKey::new(public_key.to_vec());
+            let key = NonFungibleId::new(public_key.to_vec());
             let auth = NonFungibleAddress::new(ECDSA_TOKEN, key);
 
             Account { auth, vaults }.instantiate()
@@ -89,7 +89,7 @@ blueprint! {
         /// Withdraws non-fungibles from this account.
         pub fn withdraw_non_fungibles(
             &mut self,
-            keys: BTreeSet<NonFungibleKey>,
+            keys: BTreeSet<NonFungibleId>,
             resource_def_id: ResourceDefId,
             account_auth: Proof,
         ) -> Bucket {
@@ -113,7 +113,7 @@ blueprint! {
         /// Withdraws non-fungibles from this account.
         pub fn withdraw_non_fungibles_with_auth(
             &mut self,
-            keys: BTreeSet<NonFungibleKey>,
+            keys: BTreeSet<NonFungibleId>,
             resource_def_id: ResourceDefId,
             auth: Proof,
             account_auth: Proof,

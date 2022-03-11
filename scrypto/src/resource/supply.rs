@@ -13,7 +13,7 @@ pub enum Supply {
 
     /// A supply of non-fungible resources, represented by non-fungible key and data pairs
     NonFungible {
-        entries: HashMap<NonFungibleKey, (Vec<u8>, Vec<u8>)>,
+        entries: HashMap<NonFungibleId, (Vec<u8>, Vec<u8>)>,
     },
 }
 
@@ -26,7 +26,7 @@ impl Supply {
 
     pub fn non_fungible<T, V>(entries: T) -> Self
     where
-        T: IntoIterator<Item = (NonFungibleKey, V)>,
+        T: IntoIterator<Item = (NonFungibleId, V)>,
         V: NonFungibleData,
     {
         let mut encoded = HashMap::new();

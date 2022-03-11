@@ -39,7 +39,7 @@ impl ResourceDef {
     /// Mints non-fungible resources
     pub fn mint_non_fungible<T: NonFungibleData>(
         &self,
-        key: &NonFungibleKey,
+        key: &NonFungibleId,
         data: T,
         auth: Proof,
     ) -> Bucket {
@@ -128,7 +128,7 @@ impl ResourceDef {
     ///
     /// # Panics
     /// Panics if this is not a non-fungible resource or the specified non-fungible is not found.
-    pub fn get_non_fungible_data<T: NonFungibleData>(&self, key: &NonFungibleKey) -> T {
+    pub fn get_non_fungible_data<T: NonFungibleData>(&self, key: &NonFungibleId) -> T {
         let input = GetNonFungibleDataInput {
             non_fungible_id: NonFungibleAddress::new(self.0, key.clone()),
         };
@@ -143,7 +143,7 @@ impl ResourceDef {
     /// Panics if this is not a non-fungible resource or the specified non-fungible is not found.
     pub fn update_non_fungible_data<T: NonFungibleData>(
         &self,
-        key: &NonFungibleKey,
+        key: &NonFungibleId,
         new_data: T,
         auth: Proof,
     ) {
@@ -158,7 +158,7 @@ impl ResourceDef {
 
     /// Checks if non-fungible unit, with certain key exists or not.
     ///
-    pub fn non_fungible_exists(&self, key: &NonFungibleKey) -> bool {
+    pub fn non_fungible_exists(&self, key: &NonFungibleId) -> bool {
         let input = NonFungibleExistsInput {
             non_fungible_id: NonFungibleAddress::new(self.0, key.clone()),
         };

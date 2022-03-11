@@ -25,7 +25,7 @@ impl<T: NonFungibleData> NonFungible<T> {
     }
 
     /// Returns the non-fungible ID.
-    pub fn key(&self) -> NonFungibleKey {
+    pub fn key(&self) -> NonFungibleId {
         self.address.key()
     }
 

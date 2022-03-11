@@ -28,7 +28,7 @@ pub enum GeneratorError {
     InvalidHash(String),
     InvalidLazyMapId(String),
     InvalidVaultId(String),
-    InvalidNonFungibleKey(String),
+    InvalidNonFungibleId(String),
     OddNumberOfElements(usize),
     NameResolverError(NameResolverError),
     IdValidatorError(IdValidatorError),
@@ -443,23 +443,23 @@ fn generate_proof(
     }
 }
 
-fn generate_non_fungible_key(value: &ast::Value) -> Result<NonFungibleKey, GeneratorError> {
+fn generate_non_fungible_key(value: &ast::Value) -> Result<NonFungibleId, GeneratorError> {
     match value {
-        ast::Value::NonFungibleKey(inner) => match &**inner {
-            ast::Value::String(s) => NonFungibleKey::from_str(s)
-                .map_err(|_| GeneratorError::InvalidNonFungibleKey(s.into())),
+        ast::Value::NonFungibleId(inner) => match &**inner {
+            ast::Value::String(s) => NonFungibleId::from_str(s)
+                .map_err(|_| GeneratorError::InvalidNonFungibleId(s.into())),
             v @ _ => invalid_type!(v, ast::Type::String),
         },
-        v @ _ => invalid_type!(v, ast::Type::NonFungibleKey),
+        v @ _ => invalid_type!(v, ast::Type::NonFungibleId),
     }
 }
 
 fn generate_non_fungible_keys(
     value: &ast::Value,
-) -> Result<BTreeSet<NonFungibleKey>, GeneratorError> {
+) -> Result<BTreeSet<NonFungibleId>, GeneratorError> {
     match value {
         ast::Value::TreeSet(kind, values) => {
-            if kind != &ast::Type::NonFungibleKey {
+            if kind != &ast::Type::NonFungibleId {
                 return Err(GeneratorError::InvalidType {
                     expected_type: ast::Type::String,
                     actual: kind.clone(),
@@ -573,8 +573,8 @@ fn generate_value(
         }),
         ast::Value::Proof(_) => generate_proof(value, resolver)
             .map(|v| Value::Custom(CustomType::Proof.id(), scrypto::resource::Proof(v).to_vec())),
-        ast::Value::NonFungibleKey(_) => generate_non_fungible_key(value)
-            .map(|v| Value::Custom(CustomType::NonFungibleKey.id(), v.to_vec())),
+        ast::Value::NonFungibleId(_) => generate_non_fungible_key(value)
+            .map(|v| Value::Custom(CustomType::NonFungibleId.id(), v.to_vec())),
     }
 }
 
@@ -661,7 +661,7 @@ fn generate_type(ty: &ast::Type) -> u8 {
         ast::Type::Hash => CustomType::Hash.id(),
         ast::Type::Bucket => CustomType::Bucket.id(),
         ast::Type::Proof => CustomType::Proof.id(),
-        ast::Type::NonFungibleKey => CustomType::NonFungibleKey.id(),
+        ast::Type::NonFungibleId => CustomType::NonFungibleId.id(),
     }
 }
 
@@ -962,8 +962,8 @@ mod tests {
                     Instruction::ReturnToWorktop { bucket_id: 513 },
                     Instruction::TakeNonFungiblesFromWorktop {
                         keys: BTreeSet::from([
-                            NonFungibleKey::from_str("11").unwrap(),
-                            NonFungibleKey::from_str("22").unwrap(),
+                            NonFungibleId::from_str("11").unwrap(),
+                            NonFungibleId::from_str("22").unwrap(),
                         ]),
                         resource_def_id: ResourceDefId::from_str(
                             "030000000000000000000000000000000000000000000000000004"

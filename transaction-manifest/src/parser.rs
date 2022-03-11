@@ -181,7 +181,7 @@ impl Parser {
             | TokenKind::Hash
             | TokenKind::Bucket
             | TokenKind::Proof
-            | TokenKind::NonFungibleKey => self.parse_scrypto_types(),
+            | TokenKind::NonFungibleId => self.parse_scrypto_types(),
             _ => Err(ParserError::UnexpectedToken(token)),
         }
     }
@@ -344,7 +344,7 @@ impl Parser {
             TokenKind::Hash => Ok(Value::Hash(self.parse_values_one()?.into())),
             TokenKind::Bucket => Ok(Value::Bucket(self.parse_values_one()?.into())),
             TokenKind::Proof => Ok(Value::Proof(self.parse_values_one()?.into())),
-            TokenKind::NonFungibleKey => Ok(Value::NonFungibleKey(self.parse_values_one()?.into())),
+            TokenKind::NonFungibleId => Ok(Value::NonFungibleId(self.parse_values_one()?.into())),
             _ => Err(ParserError::UnexpectedToken(token)),
         }
     }
@@ -437,7 +437,7 @@ impl Parser {
             TokenKind::Hash => Ok(Type::Hash),
             TokenKind::Bucket => Ok(Type::Bucket),
             TokenKind::Proof => Ok(Type::Proof),
-            TokenKind::NonFungibleKey => Ok(Type::NonFungibleKey),
+            TokenKind::NonFungibleId => Ok(Type::NonFungibleId),
             _ => Err(ParserError::UnexpectedToken(token)),
         }
     }
@@ -742,7 +742,7 @@ mod tests {
             }
         );
         parse_instruction_ok!(
-            r#"CALL_METHOD  ComponentId("0292566c83de7fd6b04fcc92b5e04b03228ccff040785673278ef1")  "withdraw_non_fungible"  NonFungibleKey("00")  Proof("admin_auth");"#,
+            r#"CALL_METHOD  ComponentId("0292566c83de7fd6b04fcc92b5e04b03228ccff040785673278ef1")  "withdraw_non_fungible"  NonFungibleId("00")  Proof("admin_auth");"#,
             Instruction::CallMethod {
                 component_id: Value::ComponentId(
                     Value::String("0292566c83de7fd6b04fcc92b5e04b03228ccff040785673278ef1".into())
@@ -750,7 +750,7 @@ mod tests {
                 ),
                 method: Value::String("withdraw_non_fungible".into()),
                 args: vec![
-                    Value::NonFungibleKey(Value::String("00".into()).into()),
+                    Value::NonFungibleId(Value::String("00".into()).into()),
                     Value::Proof(Value::String("admin_auth".into()).into())
                 ]
             }

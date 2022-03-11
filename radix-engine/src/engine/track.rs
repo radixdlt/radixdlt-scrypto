@@ -89,11 +89,11 @@ impl<'s, S: SubstateStore> Track<'s, S> {
     /// Start a process.
     pub fn start_process<'r>(&'r mut self, verbose: bool) -> Process<'r, 's, S> {
         // FIXME: This is a temp solution
-        let signers: BTreeSet<NonFungibleKey> = self
+        let signers: BTreeSet<NonFungibleId> = self
             .transaction_signers
             .clone()
             .into_iter()
-            .map(|public_key| NonFungibleKey::new(public_key.to_vec()))
+            .map(|public_key| NonFungibleId::new(public_key.to_vec()))
             .collect();
         let mut process = Process::new(0, verbose, self);
 
@@ -268,7 +268,10 @@ impl<'s, S: SubstateStore> Track<'s, S> {
     }
 
     /// Returns an immutable reference to a non-fungible, if exists.
-    pub fn get_non_fungible(&mut self, non_fungible_id: &NonFungibleAddress) -> Option<&NonFungible> {
+    pub fn get_non_fungible(
+        &mut self,
+        non_fungible_id: &NonFungibleAddress,
+    ) -> Option<&NonFungible> {
         if self.non_fungibles.contains_key(non_fungible_id) {
             return self.non_fungibles.get(non_fungible_id).map(|s| &s.value);
         }
@@ -322,7 +325,11 @@ impl<'s, S: SubstateStore> Track<'s, S> {
     }
 
     /// Inserts a new non-fungible.
-    pub fn put_non_fungible(&mut self, non_fungible_id: NonFungibleAddress, non_fungible: NonFungible) {
+    pub fn put_non_fungible(
+        &mut self,
+        non_fungible_id: NonFungibleAddress,
+        non_fungible: NonFungible,
+    ) {
         self.non_fungibles.insert(
             non_fungible_id,
             SubstateUpdate {

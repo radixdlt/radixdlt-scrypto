@@ -10,17 +10,17 @@ use crate::types::*;
 
 /// Represents a key for a non-fungible resource
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct NonFungibleKey(Vec<u8>);
+pub struct NonFungibleId(Vec<u8>);
 
-impl NonFungibleKey {
+impl NonFungibleId {
     pub fn new(v: Vec<u8>) -> Self {
-        NonFungibleKey(v)
+        NonFungibleId(v)
     }
 }
 
-impl From<u128> for NonFungibleKey {
+impl From<u128> for NonFungibleId {
     fn from(u: u128) -> Self {
-        NonFungibleKey(u.to_be_bytes().to_vec())
+        NonFungibleId(u.to_be_bytes().to_vec())
     }
 }
 
@@ -29,15 +29,15 @@ impl From<u128> for NonFungibleKey {
 //========
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ParseNonFungibleKeyError {
+pub enum ParseNonFungibleIdError {
     InvalidHex(String),
 }
 
 #[cfg(not(feature = "alloc"))]
-impl std::error::Error for ParseNonFungibleKeyError {}
+impl std::error::Error for ParseNonFungibleIdError {}
 
 #[cfg(not(feature = "alloc"))]
-impl fmt::Display for ParseNonFungibleKeyError {
+impl fmt::Display for ParseNonFungibleIdError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}", self)
     }
@@ -47,43 +47,43 @@ impl fmt::Display for ParseNonFungibleKeyError {
 // binary
 //========
 
-impl TryFrom<&[u8]> for NonFungibleKey {
-    type Error = ParseNonFungibleKeyError;
+impl TryFrom<&[u8]> for NonFungibleId {
+    type Error = ParseNonFungibleIdError;
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
         Ok(Self(slice.to_vec()))
     }
 }
 
-impl NonFungibleKey {
+impl NonFungibleId {
     pub fn to_vec(&self) -> Vec<u8> {
         self.0.clone()
     }
 }
 
-custom_type!(NonFungibleKey, CustomType::NonFungibleKey, Vec::new());
+custom_type!(NonFungibleId, CustomType::NonFungibleId, Vec::new());
 
 //======
 // text
 //======
 
-impl FromStr for NonFungibleKey {
-    type Err = ParseNonFungibleKeyError;
+impl FromStr for NonFungibleId {
+    type Err = ParseNonFungibleIdError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let bytes =
-            hex::decode(s).map_err(|_| ParseNonFungibleKeyError::InvalidHex(s.to_owned()))?;
+            hex::decode(s).map_err(|_| ParseNonFungibleIdError::InvalidHex(s.to_owned()))?;
         Self::try_from(bytes.as_slice())
     }
 }
 
-impl fmt::Display for NonFungibleKey {
+impl fmt::Display for NonFungibleId {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         write!(f, "{}", hex::encode(&self.0))
     }
 }
 
-impl fmt::Debug for NonFungibleKey {
+impl fmt::Debug for NonFungibleId {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", self.to_string())
     }
