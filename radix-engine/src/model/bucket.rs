@@ -20,7 +20,7 @@ pub enum BucketError {
 pub enum Resource {
     Fungible { amount: Decimal },
 
-    NonFungible { keys: BTreeSet<NonFungibleId> },
+    NonFungible { ids: BTreeSet<NonFungibleId> },
 }
 
 /// A transient resource container.
@@ -68,14 +68,14 @@ impl Bucket {
                     };
                     *amount = *amount + other_amount;
                 }
-                Resource::NonFungible { ref mut keys } => {
-                    let other_keys = match other.resource() {
+                Resource::NonFungible { ref mut ids } => {
+                    let other_ids = match other.resource() {
                         Resource::Fungible { .. } => {
                             panic!("Illegal state!")
                         }
-                        Resource::NonFungible { keys } => keys,
+                        Resource::NonFungible { ids } => ids,
                     };
-                    keys.extend(other_keys);
+                    ids.extend(other_ids);
                 }
             }
             Ok(())
@@ -99,16 +99,16 @@ impl Bucket {
                         Resource::Fungible { amount: quantity },
                     ))
                 }
-                Resource::NonFungible { ref mut keys } => {
+                Resource::NonFungible { ref mut ids } => {
                     let n: usize = quantity.to_string().parse().unwrap();
-                    let taken: BTreeSet<NonFungibleId> = keys.iter().cloned().take(n).collect();
+                    let taken: BTreeSet<NonFungibleId> = ids.iter().cloned().take(n).collect();
                     for e in &taken {
-                        keys.remove(e);
+                        ids.remove(e);
                     }
                     Ok(Self::new(
                         self.resource_def_id,
                         self.resource_type,
-                        Resource::NonFungible { keys: taken },
+                        Resource::NonFungible { ids: taken },
                     ))
                 }
             }
@@ -125,25 +125,25 @@ impl Bucket {
     ) -> Result<Self, BucketError> {
         match &mut self.resource {
             Resource::Fungible { .. } => Err(BucketError::UnsupportedOperation),
-            Resource::NonFungible { ref mut keys } => {
-                for key in set {
-                    if !keys.remove(&key) {
+            Resource::NonFungible { ref mut ids } => {
+                for id in set {
+                    if !ids.remove(&id) {
                         return Err(BucketError::NonFungibleNotFound);
                     }
                 }
                 Ok(Self::new(
                     self.resource_def_id,
                     self.resource_type,
-                    Resource::NonFungible { keys: set.clone() },
+                    Resource::NonFungible { ids: set.clone() },
                 ))
             }
         }
     }
 
-    pub fn get_non_fungible_keys(&self) -> Result<Vec<NonFungibleId>, BucketError> {
+    pub fn get_non_fungible_ids(&self) -> Result<Vec<NonFungibleId>, BucketError> {
         match &self.resource {
             Resource::Fungible { .. } => Err(BucketError::UnsupportedOperation),
-            Resource::NonFungible { keys } => Ok(keys.iter().cloned().collect()),
+            Resource::NonFungible { ids } => Ok(ids.iter().cloned().collect()),
         }
     }
 
@@ -154,7 +154,7 @@ impl Bucket {
     pub fn amount(&self) -> Decimal {
         match &self.resource {
             Resource::Fungible { amount } => *amount,
-            Resource::NonFungible { keys } => keys.len().into(),
+            Resource::NonFungible { ids } => ids.len().into(),
         }
     }
 

@@ -156,7 +156,7 @@ pub fn generate_instruction(
             declare_bucket(new_bucket, resolver, bucket_id)?;
 
             Instruction::TakeNonFungiblesFromWorktop {
-                keys: generate_non_fungible_keys(keys)?,
+                keys: generate_non_fungible_ids(keys)?,
                 resource_def_id: generate_resource_def_id(resource_def_id)?,
             }
         }
@@ -443,7 +443,7 @@ fn generate_proof(
     }
 }
 
-fn generate_non_fungible_key(value: &ast::Value) -> Result<NonFungibleId, GeneratorError> {
+fn generate_non_fungible_id(value: &ast::Value) -> Result<NonFungibleId, GeneratorError> {
     match value {
         ast::Value::NonFungibleId(inner) => match &**inner {
             ast::Value::String(s) => NonFungibleId::from_str(s)
@@ -454,7 +454,7 @@ fn generate_non_fungible_key(value: &ast::Value) -> Result<NonFungibleId, Genera
     }
 }
 
-fn generate_non_fungible_keys(
+fn generate_non_fungible_ids(
     value: &ast::Value,
 ) -> Result<BTreeSet<NonFungibleId>, GeneratorError> {
     match value {
@@ -466,10 +466,7 @@ fn generate_non_fungible_keys(
                 });
             }
 
-            values
-                .iter()
-                .map(|v| generate_non_fungible_key(v))
-                .collect()
+            values.iter().map(|v| generate_non_fungible_id(v)).collect()
         }
         v @ _ => invalid_type!(v, ast::Type::TreeSet),
     }
@@ -573,7 +570,7 @@ fn generate_value(
         }),
         ast::Value::Proof(_) => generate_proof(value, resolver)
             .map(|v| Value::Custom(CustomType::Proof.id(), scrypto::resource::Proof(v).to_vec())),
-        ast::Value::NonFungibleId(_) => generate_non_fungible_key(value)
+        ast::Value::NonFungibleId(_) => generate_non_fungible_id(value)
             .map(|v| Value::Custom(CustomType::NonFungibleId.id(), v.to_vec())),
     }
 }

@@ -74,10 +74,10 @@ pub const TAKE_FROM_VAULT: u32 = 0x42;
 pub const GET_VAULT_AMOUNT: u32 = 0x43;
 /// Get vault resource definition
 pub const GET_VAULT_RESOURCE_DEF_ID: u32 = 0x44;
-/// Take a non-fungible from this vault, by key
+/// Take a non-fungible from this vault, by id
 pub const TAKE_NON_FUNGIBLE_FROM_VAULT: u32 = 0x45;
 /// Get the IDs of all non-fungibles in this vault
-pub const GET_NON_FUNGIBLE_KEYS_IN_VAULT: u32 = 0x46;
+pub const GET_NON_FUNGIBLE_IDS_IN_VAULT: u32 = 0x46;
 
 /// Create an empty bucket
 pub const CREATE_EMPTY_BUCKET: u32 = 0x50;
@@ -89,10 +89,10 @@ pub const TAKE_FROM_BUCKET: u32 = 0x52;
 pub const GET_BUCKET_AMOUNT: u32 = 0x53;
 /// Get bucket resource definition
 pub const GET_BUCKET_RESOURCE_DEF_ID: u32 = 0x54;
-/// Take a non-fungible from this bucket, by key
+/// Take a non-fungible from this bucket, by id
 pub const TAKE_NON_FUNGIBLE_FROM_BUCKET: u32 = 0x55;
 /// Get the IDs of all non-fungibles in this bucket
-pub const GET_NON_FUNGIBLE_KEYS_IN_BUCKET: u32 = 0x56;
+pub const GET_NON_FUNGIBLE_IDS_IN_BUCKET: u32 = 0x56;
 
 /// Create a bucket proof
 pub const CREATE_BUCKET_PROOF: u32 = 0x60;
@@ -106,8 +106,8 @@ pub const DROP_PROOF: u32 = 0x63;
 pub const GET_PROOF_AMOUNT: u32 = 0x64;
 /// Get the resource definition behind a proof
 pub const GET_PROOF_RESOURCE_DEF_ID: u32 = 0x65;
-/// Get the non-fungible keys in the proof
-pub const GET_NON_FUNGIBLE_KEYS_IN_PROOF: u32 = 0x66;
+/// Get the non-fungible ids in the proof
+pub const GET_NON_FUNGIBLE_IDS_IN_PROOF: u32 = 0x66;
 
 /// Log a message
 pub const EMIT_LOG: u32 = 0xf0;
@@ -447,7 +447,7 @@ pub struct GetVaultResourceDefIdOutput {
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct TakeNonFungibleFromVaultInput {
     pub vault_id: VaultId,
-    pub key: NonFungibleId,
+    pub non_fungible_id: NonFungibleId,
     pub auth: Option<ProofId>,
 }
 
@@ -457,13 +457,13 @@ pub struct TakeNonFungibleFromVaultOutput {
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct GetNonFungibleKeysInVaultInput {
+pub struct GetNonFungibleIdsInVaultInput {
     pub vault_id: VaultId,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct GetNonFungibleKeysInVaultOutput {
-    pub keys: Vec<NonFungibleId>,
+pub struct GetNonFungibleIdsInVaultOutput {
+    pub non_fungible_ids: Vec<NonFungibleId>,
 }
 
 //==========
@@ -523,7 +523,7 @@ pub struct GetBucketResourceDefIdOutput {
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct TakeNonFungibleFromBucketInput {
     pub bucket_id: BucketId,
-    pub key: NonFungibleId,
+    pub non_fungible_id: NonFungibleId,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
@@ -532,13 +532,13 @@ pub struct TakeNonFungibleFromBucketOutput {
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct GetNonFungibleKeysInBucketInput {
+pub struct GetNonFungibleIdsInBucketInput {
     pub bucket_id: BucketId,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct GetNonFungibleKeysInBucketOutput {
-    pub keys: Vec<NonFungibleId>,
+pub struct GetNonFungibleIdsInBucketOutput {
+    pub non_fungible_ids: Vec<NonFungibleId>,
 }
 
 //==========
@@ -584,13 +584,13 @@ pub struct GetProofResourceDefIdOutput {
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct GetNonFungibleKeysInProofInput {
+pub struct GetNonFungibleIdsInProofInput {
     pub proof_id: ProofId,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct GetNonFungibleKeysInProofOutput {
-    pub keys: Vec<NonFungibleId>,
+pub struct GetNonFungibleIdsInProofOutput {
+    pub non_fungible_ids: Vec<NonFungibleId>,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]

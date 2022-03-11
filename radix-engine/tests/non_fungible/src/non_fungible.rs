@@ -130,11 +130,11 @@ blueprint! {
             let mut bucket = Self::create_non_fungible_fixed();
             let non_fungible = bucket.take(1);
             assert_eq!(
-                bucket.get_non_fungible_keys(),
+                bucket.get_non_fungible_ids(),
                 Vec::from([NonFungibleId::from(2u128), NonFungibleId::from(3u128)])
             );
             assert_eq!(
-                non_fungible.get_non_fungible_keys(),
+                non_fungible.get_non_fungible_ids(),
                 Vec::from([NonFungibleId::from(1u128)])
             );
             (bucket, non_fungible)
@@ -144,11 +144,11 @@ blueprint! {
             let mut vault = Vault::with_bucket(Self::create_non_fungible_fixed());
             let non_fungible = vault.take(1);
             assert_eq!(
-                vault.get_non_fungible_keys(),
+                vault.get_non_fungible_ids(),
                 Vec::from([NonFungibleId::from(2u128), NonFungibleId::from(3u128)])
             );
             assert_eq!(
-                non_fungible.get_non_fungible_keys(),
+                non_fungible.get_non_fungible_ids(),
                 Vec::from([NonFungibleId::from(1u128)])
             );
 

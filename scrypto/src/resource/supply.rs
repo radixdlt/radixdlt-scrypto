@@ -11,7 +11,7 @@ pub enum Supply {
     /// A supply of fungible resources, represented by amount
     Fungible { amount: Decimal },
 
-    /// A supply of non-fungible resources, represented by non-fungible key and data pairs
+    /// A supply of non-fungible resources, represented by non-fungible id and data pairs
     NonFungible {
         entries: HashMap<NonFungibleId, (Vec<u8>, Vec<u8>)>,
     },

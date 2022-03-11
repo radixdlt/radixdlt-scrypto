@@ -87,10 +87,10 @@ impl Vault {
     ///
     /// # Panics
     /// Panics if this is not a non-fungible vault or the specified non-fungible is not found.
-    pub fn take_non_fungible(&self, key: &NonFungibleId) -> Bucket {
+    pub fn take_non_fungible(&self, non_fungible_id: &NonFungibleId) -> Bucket {
         let input = TakeNonFungibleFromVaultInput {
             vault_id: self.0,
-            key: key.clone(),
+            non_fungible_id: non_fungible_id.clone(),
             auth: None,
         };
         let output: TakeNonFungibleFromVaultOutput =
@@ -106,10 +106,14 @@ impl Vault {
     ///
     /// # Panics
     /// Panics if this is not a non-fungible vault or the specified non-fungible is not found.
-    pub fn take_non_fungible_with_auth(&self, key: &NonFungibleId, auth: Proof) -> Bucket {
+    pub fn take_non_fungible_with_auth(
+        &self,
+        non_fungible_id: &NonFungibleId,
+        auth: Proof,
+    ) -> Bucket {
         let input = TakeNonFungibleFromVaultInput {
             vault_id: self.0,
-            key: key.clone(),
+            non_fungible_id: non_fungible_id.clone(),
             auth: Some(auth.0),
         };
         let output: TakeNonFungibleFromVaultOutput =
@@ -177,14 +181,14 @@ impl Vault {
     /// # Panics
     /// Panics if this is not a non-fungible vault.
     pub fn get_non_fungibles<T: NonFungibleData>(&self) -> Vec<NonFungible<T>> {
-        let input = GetNonFungibleKeysInVaultInput { vault_id: self.0 };
-        let output: GetNonFungibleKeysInVaultOutput =
-            call_engine(GET_NON_FUNGIBLE_KEYS_IN_VAULT, input);
+        let input = GetNonFungibleIdsInVaultInput { vault_id: self.0 };
+        let output: GetNonFungibleIdsInVaultOutput =
+            call_engine(GET_NON_FUNGIBLE_IDS_IN_VAULT, input);
         let resource_def_id = self.resource_def_id();
         output
-            .keys
+            .non_fungible_ids
             .iter()
-            .map(|key| NonFungible::from(NonFungibleAddress::new(resource_def_id, key.clone())))
+            .map(|id| NonFungible::from(NonFungibleAddress::new(resource_def_id, id.clone())))
             .collect()
     }
 
@@ -192,26 +196,26 @@ impl Vault {
     ///
     /// # Panics
     /// Panics if this is not a non-fungible vault.
-    pub fn get_non_fungible_keys(&self) -> Vec<NonFungibleId> {
-        let input = GetNonFungibleKeysInVaultInput { vault_id: self.0 };
-        let output: GetNonFungibleKeysInVaultOutput =
-            call_engine(GET_NON_FUNGIBLE_KEYS_IN_VAULT, input);
+    pub fn get_non_fungible_ids(&self) -> Vec<NonFungibleId> {
+        let input = GetNonFungibleIdsInVaultInput { vault_id: self.0 };
+        let output: GetNonFungibleIdsInVaultOutput =
+            call_engine(GET_NON_FUNGIBLE_IDS_IN_VAULT, input);
 
-        output.keys
+        output.non_fungible_ids
     }
 
-    /// Returns the key of a singleton non-fungible.
+    /// Returns the id of a singleton non-fungible.
     ///
     /// # Panic
     /// If this vault is empty or contains more than one non-fungibles.
-    pub fn get_non_fungible_key(&self) -> NonFungibleId {
-        let keys = self.get_non_fungible_keys();
+    pub fn get_non_fungible_id(&self) -> NonFungibleId {
+        let non_fungible_ids = self.get_non_fungible_ids();
         assert!(
-            keys.len() == 1,
+            non_fungible_ids.len() == 1,
             "Expect 1 non-fungible, but found {}",
-            keys.len()
+            non_fungible_ids.len()
         );
-        keys[0].clone()
+        non_fungible_ids[0].clone()
     }
 
     /// Returns the data of a non-fungible unit, both the immutable and mutable parts.

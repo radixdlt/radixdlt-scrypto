@@ -22,7 +22,7 @@ impl NonFungibleAddress {
         self.resource_def_id
     }
 
-    /// Returns the non-fungible key.
+    /// Returns the non-fungible id.
     pub fn non_fungible_id(&self) -> NonFungibleId {
         self.non_fungible_id.clone()
     }

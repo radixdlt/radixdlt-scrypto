@@ -1319,11 +1319,10 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         match new_supply {
             Supply::Fungible { amount } => Ok(Resource::Fungible { amount }),
             Supply::NonFungible { entries } => {
-                let mut keys = BTreeSet::new();
+                let mut ids = BTreeSet::new();
 
-                for (key, data) in entries {
-                    let non_fungible_address =
-                        NonFungibleAddress::new(resource_def_id, key.clone());
+                for (id, data) in entries {
+                    let non_fungible_address = NonFungibleAddress::new(resource_def_id, id.clone());
                     if self.track.get_non_fungible(&non_fungible_address).is_some() {
                         return Err(RuntimeError::NonFungibleAlreadyExists(non_fungible_address));
                     }
@@ -1335,10 +1334,10 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                         non_fungible_address,
                         NonFungible::new(immutable_data.raw, mutable_data.raw),
                     );
-                    keys.insert(key);
+                    ids.insert(id);
                 }
 
-                Ok(Resource::NonFungible { keys })
+                Ok(Resource::NonFungible { ids })
             }
         }
     }
@@ -1627,7 +1626,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     amount: Decimal::zero(),
                 },
                 ResourceType::NonFungible { .. } => Resource::NonFungible {
-                    keys: BTreeSet::new(),
+                    ids: BTreeSet::new(),
                 },
             },
         ));
@@ -1732,7 +1731,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
         let new_bucket = self
             .get_local_vault(input.vault_id)?
-            .take_non_fungible(&input.key)
+            .take_non_fungible(&input.non_fungible_id)
             .map_err(RuntimeError::VaultError)?;
 
         let bucket_id = self.track.new_bucket_id();
@@ -1741,16 +1740,16 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         Ok(TakeNonFungibleFromVaultOutput { bucket_id })
     }
 
-    fn handle_get_non_fungible_keys_in_vault(
+    fn handle_get_non_fungible_ids_in_vault(
         &mut self,
-        input: GetNonFungibleKeysInVaultInput,
-    ) -> Result<GetNonFungibleKeysInVaultOutput, RuntimeError> {
+        input: GetNonFungibleIdsInVaultInput,
+    ) -> Result<GetNonFungibleIdsInVaultOutput, RuntimeError> {
         let vault = self.get_local_vault(input.vault_id)?;
-        let keys = vault
+        let non_fungible_ids = vault
             .get_non_fungible_ids()
             .map_err(RuntimeError::VaultError)?;
 
-        Ok(GetNonFungibleKeysInVaultOutput { keys })
+        Ok(GetNonFungibleIdsInVaultOutput { non_fungible_ids })
     }
 
     fn handle_get_vault_amount(
@@ -1792,7 +1791,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     amount: Decimal::zero(),
                 },
                 ResourceType::NonFungible { .. } => Resource::NonFungible {
-                    keys: BTreeSet::new(),
+                    ids: BTreeSet::new(),
                 },
             },
         );
@@ -1880,7 +1879,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .buckets
             .get_mut(&input.bucket_id)
             .ok_or(RuntimeError::BucketNotFound(input.bucket_id))?
-            .take_non_fungible(&input.key)
+            .take_non_fungible(&input.non_fungible_id)
             .map_err(RuntimeError::BucketError)?;
         let bucket_id = self.track.new_bucket_id();
         self.buckets.insert(bucket_id, new_bucket);
@@ -1888,18 +1887,18 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         Ok(TakeNonFungibleFromBucketOutput { bucket_id })
     }
 
-    fn handle_get_non_fungible_keys_in_bucket(
+    fn handle_get_non_fungible_ids_in_bucket(
         &mut self,
-        input: GetNonFungibleKeysInBucketInput,
-    ) -> Result<GetNonFungibleKeysInBucketOutput, RuntimeError> {
+        input: GetNonFungibleIdsInBucketInput,
+    ) -> Result<GetNonFungibleIdsInBucketOutput, RuntimeError> {
         let bucket = self
             .buckets
             .get(&input.bucket_id)
             .ok_or(RuntimeError::BucketNotFound(input.bucket_id))?;
 
-        Ok(GetNonFungibleKeysInBucketOutput {
-            keys: bucket
-                .get_non_fungible_keys()
+        Ok(GetNonFungibleIdsInBucketOutput {
+            non_fungible_ids: bucket
+                .get_non_fungible_ids()
                 .map_err(RuntimeError::BucketError)?,
         })
     }
@@ -1993,17 +1992,17 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
     fn handle_get_non_fungible_keys_in_proof(
         &mut self,
-        input: GetNonFungibleKeysInProofInput,
-    ) -> Result<GetNonFungibleKeysInProofOutput, RuntimeError> {
+        input: GetNonFungibleIdsInProofInput,
+    ) -> Result<GetNonFungibleIdsInProofOutput, RuntimeError> {
         let proof = self
             .proofs
             .get(&input.proof_id)
             .ok_or(RuntimeError::ProofNotFound(input.proof_id))?;
 
-        Ok(GetNonFungibleKeysInProofOutput {
-            keys: proof
+        Ok(GetNonFungibleIdsInProofOutput {
+            non_fungible_ids: proof
                 .bucket()
-                .get_non_fungible_keys()
+                .get_non_fungible_ids()
                 .map_err(RuntimeError::BucketError)?,
         })
     }
@@ -2159,8 +2158,8 @@ impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
                     TAKE_NON_FUNGIBLE_FROM_VAULT => {
                         self.handle(args, Self::handle_take_non_fungible_from_vault)
                     }
-                    GET_NON_FUNGIBLE_KEYS_IN_VAULT => {
-                        self.handle(args, Self::handle_get_non_fungible_keys_in_vault)
+                    GET_NON_FUNGIBLE_IDS_IN_VAULT => {
+                        self.handle(args, Self::handle_get_non_fungible_ids_in_vault)
                     }
 
                     CREATE_EMPTY_BUCKET => self.handle(args, Self::handle_create_bucket),
@@ -2173,8 +2172,8 @@ impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
                     TAKE_NON_FUNGIBLE_FROM_BUCKET => {
                         self.handle(args, Self::handle_take_non_fungible_from_bucket)
                     }
-                    GET_NON_FUNGIBLE_KEYS_IN_BUCKET => {
-                        self.handle(args, Self::handle_get_non_fungible_keys_in_bucket)
+                    GET_NON_FUNGIBLE_IDS_IN_BUCKET => {
+                        self.handle(args, Self::handle_get_non_fungible_ids_in_bucket)
                     }
 
                     CREATE_BUCKET_PROOF => self.handle(args, Self::handle_create_bucket_proof),
@@ -2183,7 +2182,7 @@ impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
                     GET_PROOF_RESOURCE_DEF_ID => {
                         self.handle(args, Self::handle_get_proof_resource_def_id)
                     }
-                    GET_NON_FUNGIBLE_KEYS_IN_PROOF => {
+                    GET_NON_FUNGIBLE_IDS_IN_PROOF => {
                         self.handle(args, Self::handle_get_non_fungible_keys_in_proof)
                     }
                     CLONE_PROOF => self.handle(args, Self::handle_clone_proof),

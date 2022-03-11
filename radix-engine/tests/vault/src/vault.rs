@@ -138,9 +138,9 @@ blueprint! {
             .instantiate()
         }
 
-        pub fn new_vault_with_get_non_fungible_keys() -> ComponentId {
+        pub fn new_vault_with_get_non_fungible_ids() -> ComponentId {
             let vault = Self::create_non_fungible_vault();
-            let _keys = vault.get_non_fungible_keys();
+            let _ids = vault.get_non_fungible_ids();
             let vaults = LazyMap::new();
             let vault_vector = Vec::new();
             VaultTest {

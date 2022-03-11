@@ -347,7 +347,7 @@ fn create_mutable_vault_with_get_nonfungible_keys() {
         .call_function(
             package,
             "VaultTest",
-            "new_vault_with_get_non_fungible_keys",
+            "new_vault_with_get_non_fungible_ids",
             vec![],
             None,
         )

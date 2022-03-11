@@ -33,7 +33,7 @@ impl Proof {
     pub fn check_non_fungible_address(&self, non_fungible_address: &NonFungibleAddress) {
         self.check(non_fungible_address.resource_def_id());
         if !self
-            .get_non_fungible_keys()
+            .get_non_fungible_ids()
             .iter()
             .any(|k| k.eq(&non_fungible_address.non_fungible_id()))
         {
@@ -66,8 +66,8 @@ impl Proof {
     ///
     /// # Panic
     /// If the bucket is empty or contains more than one non-fungibles.
-    pub fn get_non_fungible_key(&self) -> NonFungibleId {
-        let keys = self.get_non_fungible_keys();
+    pub fn get_non_fungible_id(&self) -> NonFungibleId {
+        let keys = self.get_non_fungible_ids();
         assert!(
             keys.len() == 1,
             "1 non-fungible expected, but {} found",
@@ -80,12 +80,12 @@ impl Proof {
     ///
     /// # Panics
     /// If the bucket is not a non-fungible bucket.
-    pub fn get_non_fungible_keys(&self) -> Vec<NonFungibleId> {
-        let input = GetNonFungibleKeysInProofInput { proof_id: self.0 };
-        let output: GetNonFungibleKeysInProofOutput =
-            call_engine(GET_NON_FUNGIBLE_KEYS_IN_PROOF, input);
+    pub fn get_non_fungible_ids(&self) -> Vec<NonFungibleId> {
+        let input = GetNonFungibleIdsInProofInput { proof_id: self.0 };
+        let output: GetNonFungibleIdsInProofOutput =
+            call_engine(GET_NON_FUNGIBLE_IDS_IN_PROOF, input);
 
-        output.keys
+        output.non_fungible_ids
     }
 
     /// Destroys this proof.

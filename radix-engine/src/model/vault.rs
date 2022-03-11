@@ -39,7 +39,7 @@ impl Vault {
 
     pub fn get_non_fungible_ids(&self) -> Result<Vec<NonFungibleId>, VaultError> {
         self.bucket
-            .get_non_fungible_keys()
+            .get_non_fungible_ids()
             .map_err(VaultError::AccountingError)
     }
 
