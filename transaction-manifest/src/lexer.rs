@@ -76,6 +76,9 @@ pub enum TokenKind {
     Comma,
     Semicolon,
 
+    /* Blob is a convenient way of producing `Vec<u8>` */
+    Blob,
+
     /* Instructions */
     TakeFromWorktop,
     TakeAllFromWorktop,
@@ -90,6 +93,7 @@ pub enum TokenKind {
     CallFunction,
     CallMethod,
     CallMethodWithAllResources,
+    PublishPackage,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -387,6 +391,8 @@ impl Lexer {
             "Ok" => Ok(TokenKind::Ok),
             "Err" => Ok(TokenKind::Err),
 
+            "Blob" => Ok(TokenKind::Blob),
+
             "TAKE_FROM_WORKTOP" => Ok(TokenKind::TakeFromWorktop),
             "TAKE_ALL_FROM_WORKTOP" => Ok(TokenKind::TakeAllFromWorktop),
             "TAKE_NON_FUNGIBLES_FROM_WORKTOP" => Ok(TokenKind::TakeNonFungiblesFromWorktop),
@@ -400,6 +406,7 @@ impl Lexer {
             "CALL_FUNCTION" => Ok(TokenKind::CallFunction),
             "CALL_METHOD" => Ok(TokenKind::CallMethod),
             "CALL_METHOD_WITH_ALL_RESOURCES" => Ok(TokenKind::CallMethodWithAllResources),
+            "PUBLISH_PACKAGE" => Ok(TokenKind::PublishPackage),
 
             s @ _ => Err(LexerError::UnknownIdentifier(s.into())),
         }

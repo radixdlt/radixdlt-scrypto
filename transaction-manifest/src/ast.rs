@@ -71,6 +71,10 @@ pub enum Instruction {
         component_id: Value,
         method: Value,
     },
+
+    PublishPackage {
+        code: Value,
+    },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -114,6 +118,9 @@ pub enum Type {
     Bucket,
     Proof,
     NonFungibleKey,
+
+    /* Blob is a convenient way of producing `Vec<u8>` */
+    Blob,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -154,6 +161,8 @@ pub enum Value {
     Bucket(Box<Value>),
     Proof(Box<Value>),
     NonFungibleKey(Box<Value>),
+
+    Blob(Vec<u8>),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -202,6 +211,7 @@ impl Value {
             Value::Bucket(_) => Type::Bucket,
             Value::Proof(_) => Type::Proof,
             Value::NonFungibleKey(_) => Type::NonFungibleKey,
+            Value::Blob(_) => Type::Vec,
         }
     }
 }
