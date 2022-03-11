@@ -168,6 +168,9 @@ pub enum RuntimeError {
     /// Resource check failure.
     ResourceCheckFailure,
 
+    // System Authorization Failure
+    NotAuthorized,
+
     /// Index out of bounds.
     IndexOutOfBounds { index: usize, max: usize },
 }

@@ -542,20 +542,23 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             trace: self.trace,
             vm,
             interpreter_state: match invocation.actor {
-                Actor::Blueprint(..) => InterpreterState::Blueprint,
+                Actor::Blueprint(..) => Ok(InterpreterState::Blueprint),
                 Actor::Component(component_id) => {
                     let component = self.track.get_component(component_id.clone()).unwrap();
+                    component.check_auth(&invocation.function, &self.auth_worktop)?;
+
                     let initial_loaded_object_refs =
                         Self::process_entry_data(component.state()).unwrap();
                     let state = component.state().to_vec();
-                    InterpreterState::Component {
+                    let component = InterpreterState::Component {
                         state,
                         component_id,
                         initial_loaded_object_refs,
                         additional_object_refs: ComponentObjectRefs::new(),
-                    }
+                    };
+                    Ok(component)
                 }
-            },
+            }?,
             process_owned_objects: ComponentObjects::new(),
         });
 
@@ -1087,6 +1090,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             wasm_process.vm.invocation.package_id,
             input.blueprint_name,
             input.state,
+            HashMap::new(),
         );
         let component_id = self.track.create_component(component);
         self.track
