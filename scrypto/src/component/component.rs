@@ -5,11 +5,13 @@ use crate::component::*;
 use crate::core::*;
 use crate::engine::{api::*, call_engine};
 use crate::misc::*;
+use crate::prelude::NonFungibleAddress;
 use crate::rust::borrow::ToOwned;
 use crate::rust::fmt;
 use crate::rust::str::FromStr;
 use crate::rust::string::String;
 use crate::rust::vec::Vec;
+use crate::rust::collections::HashMap;
 use crate::types::*;
 
 /// Represents the state of a component.
@@ -19,6 +21,9 @@ pub trait ComponentState: Encode + Decode {
 
     /// Instantiates a component from this data structure.
     fn instantiate(self) -> ComponentId;
+
+    /// Instantiates a component from this data structure along with authorization rules
+    fn instantiate_with_auth(self, sys_auth: HashMap<String, NonFungibleAddress>) -> ComponentId;
 }
 
 /// An instance of a blueprint, which lives in the ledger state.

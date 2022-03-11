@@ -60,6 +60,14 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                 fn instantiate(self) -> ::scrypto::component::ComponentId {
                     ::scrypto::component::component_system().instantiate_component(
                         ::scrypto::core::Process::package_id(),
+                        HashMap::new(),
+                        self
+                    )
+                }
+                fn instantiate_with_auth(self, sys_auth: HashMap<String, NonFungibleAddress>) -> ::scrypto::component::ComponentId {
+                    ::scrypto::component::component_system().instantiate_component(
+                        ::scrypto::core::Process::package_id(),
+                        sys_auth,
                         self
                     )
                 }
@@ -551,6 +559,14 @@ mod tests {
                         fn instantiate(self) -> ::scrypto::component::ComponentId {
                             ::scrypto::component::component_system().instantiate_component(
                                 ::scrypto::core::Process::package_id(),
+                                HashMap::new(),
+                                self
+                            )
+                        }
+                        fn instantiate_with_auth(self, sys_auth: HashMap<String, NonFungibleAddress>) -> ::scrypto::component::ComponentId {
+                            ::scrypto::component::component_system().instantiate_component(
+                                ::scrypto::core::Process::package_id(),
+                                sys_auth,
                                 self
                             )
                         }
