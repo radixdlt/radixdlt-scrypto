@@ -1,7 +1,7 @@
 use sbor::*;
 
 use crate::engine::types::*;
-use crate::prelude::NonFungibleId;
+use crate::prelude::NonFungibleAddress;
 use crate::rust::collections::HashMap;
 use crate::rust::string::String;
 use crate::rust::vec::Vec;
@@ -310,7 +310,7 @@ pub struct GetResourceTotalSupplyOutput {
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct GetNonFungibleDataInput {
-    pub non_fungible_id: NonFungibleId,
+    pub non_fungible_id: NonFungibleAddress,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
@@ -321,7 +321,7 @@ pub struct GetNonFungibleDataOutput {
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct NonFungibleExistsInput {
-    pub non_fungible_id: NonFungibleId,
+    pub non_fungible_id: NonFungibleAddress,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
@@ -331,7 +331,7 @@ pub struct NonFungibleExistsOutput {
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct UpdateNonFungibleMutableDataInput {
-    pub non_fungible_id: NonFungibleId,
+    pub non_fungible_id: NonFungibleAddress,
     pub new_mutable_data: Vec<u8>,
     pub auth: ProofId,
 }

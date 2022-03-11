@@ -5,14 +5,14 @@ use crate::rust::marker::PhantomData;
 /// Represents a non-fungible unit.
 #[derive(Debug)]
 pub struct NonFungible<T: NonFungibleData> {
-    id: NonFungibleId,
+    address: NonFungibleAddress,
     data: PhantomData<T>,
 }
 
-impl<T: NonFungibleData> From<NonFungibleId> for NonFungible<T> {
-    fn from(id: NonFungibleId) -> Self {
+impl<T: NonFungibleData> From<NonFungibleAddress> for NonFungible<T> {
+    fn from(address: NonFungibleAddress) -> Self {
         Self {
-            id,
+            address,
             data: PhantomData,
         }
     }
@@ -21,12 +21,12 @@ impl<T: NonFungibleData> From<NonFungibleId> for NonFungible<T> {
 impl<T: NonFungibleData> NonFungible<T> {
     /// Returns the resource definition.
     pub fn resource_def_id(&self) -> ResourceDefId {
-        self.id.resource_def_id()
+        self.address.resource_def_id()
     }
 
     /// Returns the non-fungible ID.
     pub fn key(&self) -> NonFungibleKey {
-        self.id.key()
+        self.address.key()
     }
 
     /// Returns the associated data of this unit.

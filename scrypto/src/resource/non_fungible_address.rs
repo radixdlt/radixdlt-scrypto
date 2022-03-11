@@ -4,12 +4,12 @@ use crate::resource::*;
 
 /// Identifier for a non-fungible unit.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, TypeId, Encode, Decode)]
-pub struct NonFungibleId {
+pub struct NonFungibleAddress {
     resource_def_id: ResourceDefId,
     key: NonFungibleKey,
 }
 
-impl NonFungibleId {
+impl NonFungibleAddress {
     pub fn new(resource_def_id: ResourceDefId, key: NonFungibleKey) -> Self {
         Self {
             resource_def_id,

@@ -184,7 +184,7 @@ impl Vault {
         output
             .keys
             .iter()
-            .map(|key| NonFungible::from(NonFungibleId::new(resource_def_id, key.clone())))
+            .map(|key| NonFungible::from(NonFungibleAddress::new(resource_def_id, key.clone())))
             .collect()
     }
 

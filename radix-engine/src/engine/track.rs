@@ -1,7 +1,7 @@
 use lru::LruCache;
 use scrypto::constants::*;
 use scrypto::engine::types::*;
-use scrypto::prelude::NonFungibleId;
+use scrypto::prelude::NonFungibleAddress;
 use scrypto::rust::collections::*;
 use scrypto::rust::string::String;
 use scrypto::rust::vec::Vec;
@@ -57,7 +57,7 @@ pub struct Track<'s, S: SubstateStore> {
     resource_defs: HashMap<ResourceDefId, SubstateUpdate<ResourceDef>>,
 
     vaults: HashMap<(ComponentId, VaultId), SubstateUpdate<Vault>>,
-    non_fungibles: HashMap<NonFungibleId, SubstateUpdate<NonFungible>>,
+    non_fungibles: HashMap<NonFungibleAddress, SubstateUpdate<NonFungible>>,
 
     lazy_map_entries: HashMap<(ComponentId, LazyMapId, Vec<u8>), SubstateUpdate<Vec<u8>>>,
 
@@ -268,7 +268,7 @@ impl<'s, S: SubstateStore> Track<'s, S> {
     }
 
     /// Returns an immutable reference to a non-fungible, if exists.
-    pub fn get_non_fungible(&mut self, non_fungible_id: &NonFungibleId) -> Option<&NonFungible> {
+    pub fn get_non_fungible(&mut self, non_fungible_id: &NonFungibleAddress) -> Option<&NonFungible> {
         if self.non_fungibles.contains_key(non_fungible_id) {
             return self.non_fungibles.get(non_fungible_id).map(|s| &s.value);
         }
@@ -293,7 +293,7 @@ impl<'s, S: SubstateStore> Track<'s, S> {
     /// Returns a mutable reference to a non-fungible, if exists.
     pub fn get_non_fungible_mut(
         &mut self,
-        non_fungible_id: &NonFungibleId,
+        non_fungible_id: &NonFungibleAddress,
     ) -> Option<&mut NonFungible> {
         if self.non_fungibles.contains_key(non_fungible_id) {
             return self
@@ -322,7 +322,7 @@ impl<'s, S: SubstateStore> Track<'s, S> {
     }
 
     /// Inserts a new non-fungible.
-    pub fn put_non_fungible(&mut self, non_fungible_id: NonFungibleId, non_fungible: NonFungible) {
+    pub fn put_non_fungible(&mut self, non_fungible_id: NonFungibleAddress, non_fungible: NonFungible) {
         self.non_fungibles.insert(
             non_fungible_id,
             SubstateUpdate {
@@ -676,7 +676,7 @@ impl<'s, S: SubstateStore> Track<'s, S> {
             );
         }
 
-        let non_fungible_ids: Vec<NonFungibleId> = self
+        let non_fungible_ids: Vec<NonFungibleAddress> = self
             .non_fungibles
             .iter()
             .map(|(id, _)| id.clone())

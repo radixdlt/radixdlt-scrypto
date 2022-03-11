@@ -30,12 +30,12 @@ impl Proof {
         }
     }
 
-    pub fn check_non_fungible_id(&self, non_fungible_id: &NonFungibleId) {
-        self.check(non_fungible_id.resource_def_id());
+    pub fn check_non_fungible_address(&self, non_fungible_address: &NonFungibleAddress) {
+        self.check(non_fungible_address.resource_def_id());
         if !self
             .get_non_fungible_keys()
             .iter()
-            .any(|k| k.eq(&non_fungible_id.key()))
+            .any(|k| k.eq(&non_fungible_address.key()))
         {
             panic!("Proof check failed");
         }

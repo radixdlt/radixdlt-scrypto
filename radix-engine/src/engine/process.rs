@@ -3,7 +3,7 @@ use sbor::*;
 use scrypto::buffer::*;
 use scrypto::engine::api::*;
 use scrypto::engine::types::*;
-use scrypto::prelude::NonFungibleId;
+use scrypto::prelude::NonFungibleAddress;
 use scrypto::rust::borrow::ToOwned;
 use scrypto::rust::collections::*;
 use scrypto::rust::fmt;
@@ -1322,7 +1322,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 let mut keys = BTreeSet::new();
 
                 for (key, data) in entries {
-                    let non_fungible_id = NonFungibleId::new(resource_def_id, key.clone());
+                    let non_fungible_id = NonFungibleAddress::new(resource_def_id, key.clone());
                     if self.track.get_non_fungible(&non_fungible_id).is_some() {
                         return Err(RuntimeError::NonFungibleAlreadyExists(non_fungible_id));
                     }

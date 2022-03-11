@@ -1,6 +1,6 @@
 use sbor::*;
 use scrypto::engine::types::*;
-use scrypto::prelude::NonFungibleId;
+use scrypto::prelude::NonFungibleAddress;
 use scrypto::rust::fmt;
 use scrypto::types::*;
 use wasmi::*;
@@ -103,10 +103,10 @@ pub enum RuntimeError {
     ResourceDefNotFound(ResourceDefId),
 
     /// Non-fungible does not exist.
-    NonFungibleNotFound(NonFungibleId),
+    NonFungibleNotFound(NonFungibleAddress),
 
     /// Non-fungible already exists.
-    NonFungibleAlreadyExists(NonFungibleId),
+    NonFungibleAlreadyExists(NonFungibleAddress),
 
     /// Lazy map does not exist.
     LazyMapNotFound(LazyMapId),
