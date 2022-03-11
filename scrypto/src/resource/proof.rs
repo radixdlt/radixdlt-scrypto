@@ -35,7 +35,7 @@ impl Proof {
         if !self
             .get_non_fungible_keys()
             .iter()
-            .any(|k| k.eq(&non_fungible_address.key()))
+            .any(|k| k.eq(&non_fungible_address.non_fungible_id()))
         {
             panic!("Proof check failed");
         }

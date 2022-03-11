@@ -6,14 +6,14 @@ use crate::resource::*;
 #[derive(Debug, Clone, PartialEq, Eq, Hash, TypeId, Encode, Decode)]
 pub struct NonFungibleAddress {
     resource_def_id: ResourceDefId,
-    key: NonFungibleId,
+    non_fungible_id: NonFungibleId,
 }
 
 impl NonFungibleAddress {
-    pub fn new(resource_def_id: ResourceDefId, key: NonFungibleId) -> Self {
+    pub fn new(resource_def_id: ResourceDefId, non_fungible_id: NonFungibleId) -> Self {
         Self {
             resource_def_id,
-            key,
+            non_fungible_id,
         }
     }
 
@@ -23,7 +23,7 @@ impl NonFungibleAddress {
     }
 
     /// Returns the non-fungible key.
-    pub fn key(&self) -> NonFungibleId {
-        self.key.clone()
+    pub fn non_fungible_id(&self) -> NonFungibleId {
+        self.non_fungible_id.clone()
     }
 }

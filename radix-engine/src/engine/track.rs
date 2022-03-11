@@ -281,7 +281,7 @@ impl<'s, S: SubstateStore> Track<'s, S> {
 
         if let Some((non_fungible, phys_id)) = self.substate_store.get_decoded_child_substate(
             &non_fungible_address.resource_def_id(),
-            &non_fungible_address.key(),
+            &non_fungible_address.non_fungible_id(),
         ) {
             self.non_fungibles.insert(
                 non_fungible_address.clone(),
@@ -312,7 +312,7 @@ impl<'s, S: SubstateStore> Track<'s, S> {
 
         if let Some((non_fungible, phys_id)) = self.substate_store.get_decoded_child_substate(
             &non_fungible_address.resource_def_id(),
-            &non_fungible_address.key(),
+            &non_fungible_address.non_fungible_id(),
         ) {
             self.non_fungibles.insert(
                 non_fungible_address.clone(),
@@ -703,7 +703,7 @@ impl<'s, S: SubstateStore> Track<'s, S> {
 
             self.substate_store.put_encoded_child_substate(
                 &non_fungible_address.resource_def_id(),
-                &non_fungible_address.key(),
+                &non_fungible_address.non_fungible_id(),
                 &non_fungible.value,
                 phys_id,
             );
