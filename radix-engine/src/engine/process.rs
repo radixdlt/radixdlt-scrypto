@@ -1322,16 +1322,17 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 let mut keys = BTreeSet::new();
 
                 for (key, data) in entries {
-                    let non_fungible_id = NonFungibleAddress::new(resource_def_id, key.clone());
-                    if self.track.get_non_fungible(&non_fungible_id).is_some() {
-                        return Err(RuntimeError::NonFungibleAlreadyExists(non_fungible_id));
+                    let non_fungible_address =
+                        NonFungibleAddress::new(resource_def_id, key.clone());
+                    if self.track.get_non_fungible(&non_fungible_address).is_some() {
+                        return Err(RuntimeError::NonFungibleAlreadyExists(non_fungible_address));
                     }
 
                     let immutable_data = self.process_non_fungible_data(&data.0)?;
                     let mutable_data = self.process_non_fungible_data(&data.1)?;
 
                     self.track.put_non_fungible(
-                        non_fungible_id,
+                        non_fungible_address,
                         NonFungible::new(immutable_data.raw, mutable_data.raw),
                     );
                     keys.insert(key);
@@ -1538,7 +1539,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         input: UpdateNonFungibleMutableDataInput,
     ) -> Result<UpdateNonFungibleMutableDataOutput, RuntimeError> {
         let badge = self.check_badge(Some(input.auth))?;
-        let resource_def_id = input.non_fungible_id.resource_def_id();
+        let resource_def_id = input.non_fungible_address.resource_def_id();
 
         // obtain authorization from resource definition
         let resource_def = self
@@ -1551,8 +1552,10 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         // update state
         let data = self.process_non_fungible_data(&input.new_mutable_data)?;
         self.track
-            .get_non_fungible_mut(&input.non_fungible_id)
-            .ok_or(RuntimeError::NonFungibleNotFound(input.non_fungible_id))?
+            .get_non_fungible_mut(&input.non_fungible_address)
+            .ok_or(RuntimeError::NonFungibleNotFound(
+                input.non_fungible_address,
+            ))?
             .set_mutable_data(data.raw);
 
         Ok(UpdateNonFungibleMutableDataOutput {})
@@ -1564,8 +1567,10 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     ) -> Result<GetNonFungibleDataOutput, RuntimeError> {
         let non_fungible = self
             .track
-            .get_non_fungible(&input.non_fungible_id)
-            .ok_or(RuntimeError::NonFungibleNotFound(input.non_fungible_id))?;
+            .get_non_fungible(&input.non_fungible_address)
+            .ok_or(RuntimeError::NonFungibleNotFound(
+                input.non_fungible_address,
+            ))?;
 
         Ok(GetNonFungibleDataOutput {
             immutable_data: non_fungible.immutable_data(),
@@ -1577,7 +1582,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         input: NonFungibleExistsInput,
     ) -> Result<NonFungibleExistsOutput, RuntimeError> {
-        let non_fungible = self.track.get_non_fungible(&input.non_fungible_id);
+        let non_fungible = self.track.get_non_fungible(&input.non_fungible_address);
 
         Ok(NonFungibleExistsOutput {
             non_fungible_exists: non_fungible.is_some(),

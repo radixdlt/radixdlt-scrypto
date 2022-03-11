@@ -270,24 +270,29 @@ impl<'s, S: SubstateStore> Track<'s, S> {
     /// Returns an immutable reference to a non-fungible, if exists.
     pub fn get_non_fungible(
         &mut self,
-        non_fungible_id: &NonFungibleAddress,
+        non_fungible_address: &NonFungibleAddress,
     ) -> Option<&NonFungible> {
-        if self.non_fungibles.contains_key(non_fungible_id) {
-            return self.non_fungibles.get(non_fungible_id).map(|s| &s.value);
+        if self.non_fungibles.contains_key(non_fungible_address) {
+            return self
+                .non_fungibles
+                .get(non_fungible_address)
+                .map(|s| &s.value);
         }
 
-        if let Some((non_fungible, phys_id)) = self
-            .substate_store
-            .get_decoded_child_substate(&non_fungible_id.resource_def_id(), &non_fungible_id.key())
-        {
+        if let Some((non_fungible, phys_id)) = self.substate_store.get_decoded_child_substate(
+            &non_fungible_address.resource_def_id(),
+            &non_fungible_address.key(),
+        ) {
             self.non_fungibles.insert(
-                non_fungible_id.clone(),
+                non_fungible_address.clone(),
                 SubstateUpdate {
                     prev_id: Some(phys_id),
                     value: non_fungible,
                 },
             );
-            self.non_fungibles.get(non_fungible_id).map(|s| &s.value)
+            self.non_fungibles
+                .get(non_fungible_address)
+                .map(|s| &s.value)
         } else {
             None
         }
@@ -296,28 +301,28 @@ impl<'s, S: SubstateStore> Track<'s, S> {
     /// Returns a mutable reference to a non-fungible, if exists.
     pub fn get_non_fungible_mut(
         &mut self,
-        non_fungible_id: &NonFungibleAddress,
+        non_fungible_address: &NonFungibleAddress,
     ) -> Option<&mut NonFungible> {
-        if self.non_fungibles.contains_key(non_fungible_id) {
+        if self.non_fungibles.contains_key(non_fungible_address) {
             return self
                 .non_fungibles
-                .get_mut(non_fungible_id)
+                .get_mut(non_fungible_address)
                 .map(|s| &mut s.value);
         }
 
-        if let Some((non_fungible, phys_id)) = self
-            .substate_store
-            .get_decoded_child_substate(&non_fungible_id.resource_def_id(), &non_fungible_id.key())
-        {
+        if let Some((non_fungible, phys_id)) = self.substate_store.get_decoded_child_substate(
+            &non_fungible_address.resource_def_id(),
+            &non_fungible_address.key(),
+        ) {
             self.non_fungibles.insert(
-                non_fungible_id.clone(),
+                non_fungible_address.clone(),
                 SubstateUpdate {
                     prev_id: Some(phys_id),
                     value: non_fungible,
                 },
             );
             self.non_fungibles
-                .get_mut(non_fungible_id)
+                .get_mut(non_fungible_address)
                 .map(|s| &mut s.value)
         } else {
             None
@@ -327,11 +332,11 @@ impl<'s, S: SubstateStore> Track<'s, S> {
     /// Inserts a new non-fungible.
     pub fn put_non_fungible(
         &mut self,
-        non_fungible_id: NonFungibleAddress,
+        non_fungible_address: NonFungibleAddress,
         non_fungible: NonFungible,
     ) {
         self.non_fungibles.insert(
-            non_fungible_id,
+            non_fungible_address,
             SubstateUpdate {
                 prev_id: None,
                 value: non_fungible,
@@ -683,13 +688,13 @@ impl<'s, S: SubstateStore> Track<'s, S> {
             );
         }
 
-        let non_fungible_ids: Vec<NonFungibleAddress> = self
+        let non_fungible_addresses: Vec<NonFungibleAddress> = self
             .non_fungibles
             .iter()
             .map(|(id, _)| id.clone())
             .collect();
-        for non_fungible_id in non_fungible_ids {
-            let non_fungible = self.non_fungibles.remove(&non_fungible_id).unwrap();
+        for non_fungible_address in non_fungible_addresses {
+            let non_fungible = self.non_fungibles.remove(&non_fungible_address).unwrap();
             if let Some(prev_id) = non_fungible.prev_id {
                 receipt.down(prev_id);
             }
@@ -697,8 +702,8 @@ impl<'s, S: SubstateStore> Track<'s, S> {
             receipt.up(phys_id);
 
             self.substate_store.put_encoded_child_substate(
-                &non_fungible_id.resource_def_id(),
-                &non_fungible_id.key(),
+                &non_fungible_address.resource_def_id(),
+                &non_fungible_address.key(),
                 &non_fungible.value,
                 phys_id,
             );
