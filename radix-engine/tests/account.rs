@@ -14,6 +14,27 @@ fn fungible_amount() -> ResourceSpecification {
     }
 }
 
+fn create_non_fungible_resource(executor: &mut TransactionExecutor<InMemorySubstateStore>, account: ComponentId) -> ResourceSpecification {
+    let package = executor.publish_package(&compile("non_fungible")).unwrap();
+    let transaction = TransactionBuilder::new(executor)
+        .call_function(
+            package,
+            "NonFungibleTest",
+            "create_non_fungible_fixed",
+            vec![],
+            Some(account),
+        )
+        .call_method_with_all_resources(account, "deposit_batch")
+        .build(vec![])
+        .unwrap();
+    let receipt = executor.run(transaction).unwrap();
+    let non_fungible_resource_def_id = receipt.new_resource_def_ids[0];
+    ResourceSpecification::NonFungible {
+        keys: BTreeSet::from([NonFungibleId::from(1)]),
+        resource_def_id: non_fungible_resource_def_id,
+    }
+}
+
 #[test]
 fn can_withdraw_from_my_account() {
     // Arrange
@@ -39,26 +60,9 @@ fn can_withdraw_non_fungible_from_my_account() {
     // Arrange
     let mut ledger = InMemorySubstateStore::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, true);
-    let package = executor.publish_package(&compile("non_fungible")).unwrap();
     let (key, account) = executor.new_public_key_with_account();
     let (_, other_account) = executor.new_public_key_with_account();
-    let transaction = TransactionBuilder::new(&executor)
-        .call_function(
-            package,
-            "NonFungibleTest",
-            "create_non_fungible_fixed",
-            vec![],
-            Some(account),
-        )
-        .call_method_with_all_resources(account, "deposit_batch")
-        .build(vec![key])
-        .unwrap();
-    let receipt = executor.run(transaction).unwrap();
-    let non_fungible_resource_def_id = receipt.new_resource_def_ids[0];
-    let non_fungible_amount = ResourceSpecification::NonFungible {
-        keys: BTreeSet::from([NonFungibleId::from(1)]),
-        resource_def_id: non_fungible_resource_def_id,
-    };
+    let non_fungible_amount = create_non_fungible_resource(&mut executor, account);
 
     // Act
     let transaction = TransactionBuilder::new(&executor)
