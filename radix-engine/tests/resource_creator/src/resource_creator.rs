@@ -12,6 +12,15 @@ blueprint! {
     }
 
     impl ResourceCreator {
+        pub fn create_restricted_transfer() -> (Bucket, Bucket) {
+            let auth_bucket = Self::create_non_fungible_fixed();
+            let token_bucket = ResourceBuilder::new_fungible(0)
+                .flags(RESTRICTED_TRANSFER)
+                .badge(auth_bucket.resource_def_id(), MAY_TRANSFER)
+                .initial_supply_fungible(5);
+            (auth_bucket, token_bucket)
+        }
+
         pub fn create_non_fungible_fixed() -> Bucket {
             ResourceBuilder::new_non_fungible()
                 .metadata("name", "Katz's Sandwiches")
