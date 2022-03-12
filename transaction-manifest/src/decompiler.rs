@@ -52,9 +52,9 @@ pub fn decompile(tx: &Transaction) -> Result<String, DecompileError> {
                 let name = format!("bucket{}", buckets.len() + 1);
                 buckets.insert(bucket_id, name.clone());
                 buf.push_str(&format!(
-                    "TAKE_NON_FUNGIBLES_FROM_WORKTOP TreeSet<NonFungibleKey>({}) ResourceDefId(\"{}\") Bucket(\"{}\");\n",
+                    "TAKE_NON_FUNGIBLES_FROM_WORKTOP TreeSet<NonFungibleId>({}) ResourceDefId(\"{}\") Bucket(\"{}\");\n",
                     keys.iter()
-                    .map(|k| format!("NonFungibleKey(\"{}\")", k))
+                    .map(|k| format!("NonFungibleId(\"{}\")", k))
                     .collect::<Vec<String>>()
                     .join(", "),
                     resource_def_id, name

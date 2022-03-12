@@ -332,7 +332,7 @@ fn get_native_type(ty: &des::Type) -> Result<(Type, Vec<Item>)> {
                 "Bucket" => "::scrypto::resource::Bucket",
                 "Proof" => "::scrypto::resource::Proof",
                 "Vault" => "::scrypto::resource::Vault",
-                "NonFungibleKey" => "::scrypto::resource::NonFungibleKey",
+                "NonFungibleId" => "::scrypto::resource::NonFungibleId",
                 "ResourceDefId" => "::scrypto::resource::ResourceDefId",
                 _ => {
                     return Err(Error::new(

@@ -30,7 +30,7 @@ blueprint! {
 
             // Mint a non-fungible
             let non_fungible = resource_def!(resource_def_id).mint_non_fungible(
-                &NonFungibleKey::from(0u128),
+                &NonFungibleId::from(0u128),
                 Sandwich {
                     name: "Test".to_owned(),
                     available: false,
@@ -46,21 +46,21 @@ blueprint! {
                 .metadata("name", "Katz's Sandwiches")
                 .initial_supply_non_fungible([
                     (
-                        NonFungibleKey::from(1u128),
+                        NonFungibleId::from(1u128),
                         Sandwich {
                             name: "One".to_owned(),
                             available: true,
                         },
                     ),
                     (
-                        NonFungibleKey::from(2u128),
+                        NonFungibleId::from(2u128),
                         Sandwich {
                             name: "Two".to_owned(),
                             available: true,
                         },
                     ),
                     (
-                        NonFungibleKey::from(3u128),
+                        NonFungibleId::from(3u128),
                         Sandwich {
                             name: "Three".to_owned(),
                             available: true,
@@ -72,18 +72,18 @@ blueprint! {
         pub fn update_and_get_non_fungible() -> (Bucket, Bucket) {
             let (mint_badge, resource_def_id, bucket) = Self::create_non_fungible_mutable();
             let mut data: Sandwich =
-                resource_def!(resource_def_id).get_non_fungible_data(&NonFungibleKey::from(0u128));
+                resource_def!(resource_def_id).get_non_fungible_data(&NonFungibleId::from(0u128));
             assert_eq!(data.available, false);
 
             data.available = true;
             resource_def!(resource_def_id).update_non_fungible_data(
-                &NonFungibleKey::from(0u128),
+                &NonFungibleId::from(0u128),
                 data,
                 mint_badge.present(),
             );
 
             let data: Sandwich =
-                resource_def!(resource_def_id).get_non_fungible_data(&NonFungibleKey::from(0u128));
+                resource_def!(resource_def_id).get_non_fungible_data(&NonFungibleId::from(0u128));
             assert_eq!(data.available, true);
             (mint_badge, bucket)
         }
@@ -91,11 +91,11 @@ blueprint! {
         pub fn non_fungible_exists() -> (Bucket, Bucket) {
             let (mint_badge, resource_def_id, bucket) = Self::create_non_fungible_mutable();
             assert_eq!(
-                resource_def!(resource_def_id).non_fungible_exists(&NonFungibleKey::from(0u128)),
+                resource_def!(resource_def_id).non_fungible_exists(&NonFungibleId::from(0u128)),
                 true
             );
             assert_eq!(
-                resource_def!(resource_def_id).non_fungible_exists(&NonFungibleKey::from(1u128)),
+                resource_def!(resource_def_id).non_fungible_exists(&NonFungibleId::from(1u128)),
                 false
             );
             (mint_badge, bucket)
@@ -130,12 +130,12 @@ blueprint! {
             let mut bucket = Self::create_non_fungible_fixed();
             let non_fungible = bucket.take(1);
             assert_eq!(
-                bucket.get_non_fungible_keys(),
-                Vec::from([NonFungibleKey::from(2u128), NonFungibleKey::from(3u128)])
+                bucket.get_non_fungible_ids(),
+                Vec::from([NonFungibleId::from(2u128), NonFungibleId::from(3u128)])
             );
             assert_eq!(
-                non_fungible.get_non_fungible_keys(),
-                Vec::from([NonFungibleKey::from(1u128)])
+                non_fungible.get_non_fungible_ids(),
+                Vec::from([NonFungibleId::from(1u128)])
             );
             (bucket, non_fungible)
         }
@@ -144,12 +144,12 @@ blueprint! {
             let mut vault = Vault::with_bucket(Self::create_non_fungible_fixed());
             let non_fungible = vault.take(1);
             assert_eq!(
-                vault.get_non_fungible_keys(),
-                Vec::from([NonFungibleKey::from(2u128), NonFungibleKey::from(3u128)])
+                vault.get_non_fungible_ids(),
+                Vec::from([NonFungibleId::from(2u128), NonFungibleId::from(3u128)])
             );
             assert_eq!(
-                non_fungible.get_non_fungible_keys(),
-                Vec::from([NonFungibleKey::from(1u128)])
+                non_fungible.get_non_fungible_ids(),
+                Vec::from([NonFungibleId::from(1u128)])
             );
 
             NonFungibleTest { vault }.instantiate();

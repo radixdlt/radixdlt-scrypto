@@ -26,7 +26,7 @@ pub enum ResourceSpecification {
         resource_def_id: ResourceDefId,
     },
     NonFungible {
-        keys: BTreeSet<NonFungibleKey>,
+        keys: BTreeSet<NonFungibleId>,
         resource_def_id: ResourceDefId,
     },
     All {
@@ -65,7 +65,7 @@ impl FromStr for ResourceSpecification {
                 .parse::<ResourceDefId>()
                 .map_err(|_| ParseResourceSpecificationError::InvalidResourceDefId)?;
             if tokens[0].starts_with('#') {
-                let mut keys = BTreeSet::<NonFungibleKey>::new();
+                let mut keys = BTreeSet::<NonFungibleId>::new();
                 for key in &tokens[..tokens.len() - 1] {
                     if key.starts_with('#') {
                         keys.insert(
@@ -747,9 +747,9 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                     .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
                 Ok(scrypto_encode(&value))
             }
-            CustomType::NonFungibleKey => {
+            CustomType::NonFungibleId => {
                 let value = arg
-                    .parse::<NonFungibleKey>()
+                    .parse::<NonFungibleId>()
                     .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
                 Ok(scrypto_encode(&value))
             }

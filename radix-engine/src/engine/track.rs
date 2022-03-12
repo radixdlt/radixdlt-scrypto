@@ -89,11 +89,11 @@ impl<'s, S: SubstateStore> Track<'s, S> {
     /// Start a process.
     pub fn start_process<'r>(&'r mut self, verbose: bool) -> Process<'r, 's, S> {
         // FIXME: This is a temp solution
-        let signers: BTreeSet<NonFungibleKey> = self
+        let signers: BTreeSet<NonFungibleId> = self
             .transaction_signers
             .clone()
             .into_iter()
-            .map(|public_key| NonFungibleKey::new(public_key.to_vec()))
+            .map(|public_key| NonFungibleId::new(public_key.to_vec()))
             .collect();
         let mut process = Process::new(0, verbose, self);
 
@@ -102,7 +102,7 @@ impl<'s, S: SubstateStore> Track<'s, S> {
         let ecdsa_bucket = Bucket::new(
             ECDSA_TOKEN,
             ResourceType::NonFungible,
-            Resource::NonFungible { keys: signers },
+            Resource::NonFungible { ids: signers },
         );
         process.create_virtual_proof(ECDSA_TOKEN_BUCKET_ID, ECDSA_TOKEN_PROOF_ID, ecdsa_bucket);
 
@@ -273,13 +273,16 @@ impl<'s, S: SubstateStore> Track<'s, S> {
         non_fungible_address: &NonFungibleAddress,
     ) -> Option<&NonFungible> {
         if self.non_fungibles.contains_key(non_fungible_address) {
-            return self.non_fungibles.get(non_fungible_address).map(|s| &s.value);
+            return self
+                .non_fungibles
+                .get(non_fungible_address)
+                .map(|s| &s.value);
         }
 
-        if let Some((non_fungible, phys_id)) = self
-            .substate_store
-            .get_decoded_child_substate(&non_fungible_address.resource_def_id(), &non_fungible_address.key())
-        {
+        if let Some((non_fungible, phys_id)) = self.substate_store.get_decoded_child_substate(
+            &non_fungible_address.resource_def_id(),
+            &non_fungible_address.non_fungible_id(),
+        ) {
             self.non_fungibles.insert(
                 non_fungible_address.clone(),
                 SubstateUpdate {
@@ -287,7 +290,9 @@ impl<'s, S: SubstateStore> Track<'s, S> {
                     value: non_fungible,
                 },
             );
-            self.non_fungibles.get(non_fungible_address).map(|s| &s.value)
+            self.non_fungibles
+                .get(non_fungible_address)
+                .map(|s| &s.value)
         } else {
             None
         }
@@ -305,10 +310,10 @@ impl<'s, S: SubstateStore> Track<'s, S> {
                 .map(|s| &mut s.value);
         }
 
-        if let Some((non_fungible, phys_id)) = self
-            .substate_store
-            .get_decoded_child_substate(&non_fungible_address.resource_def_id(), &non_fungible_address.key())
-        {
+        if let Some((non_fungible, phys_id)) = self.substate_store.get_decoded_child_substate(
+            &non_fungible_address.resource_def_id(),
+            &non_fungible_address.non_fungible_id(),
+        ) {
             self.non_fungibles.insert(
                 non_fungible_address.clone(),
                 SubstateUpdate {
@@ -698,7 +703,7 @@ impl<'s, S: SubstateStore> Track<'s, S> {
 
             self.substate_store.put_encoded_child_substate(
                 &non_fungible_address.resource_def_id(),
-                &non_fungible_address.key(),
+                &non_fungible_address.non_fungible_id(),
                 &non_fungible.value,
                 phys_id,
             );

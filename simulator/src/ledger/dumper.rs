@@ -149,10 +149,10 @@ fn dump_resources<T: SubstateStore>(
                 .map(|symbol| format!(", symbol: \"{}\"", symbol))
                 .unwrap_or(String::new()),
         );
-        if let Resource::NonFungible { keys } = vault.resource() {
-            for (inner_last, key) in keys.iter().identify_last() {
+        if let Resource::NonFungible { ids } = vault.resource() {
+            for (inner_last, id) in ids.iter().identify_last() {
                 let non_fungible: NonFungible = substate_store
-                    .get_decoded_child_substate(&resource_def_id, key)
+                    .get_decoded_child_substate(&resource_def_id, id)
                     .unwrap()
                     .0;
 
@@ -163,7 +163,7 @@ fn dump_resources<T: SubstateStore>(
                     "{}  {} NON_FUNGIBLE {{ id: {}, immutable_data: {}, mutable_data: {} }}",
                     if last { " " } else { "│" },
                     list_item_prefix(inner_last),
-                    key,
+                    id,
                     immutable_data,
                     mutable_data
                 );

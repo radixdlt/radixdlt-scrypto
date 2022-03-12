@@ -26,7 +26,7 @@ pub enum Instruction {
 
     /// Takes non-fungibles from worktop.
     TakeNonFungiblesFromWorktop {
-        keys: BTreeSet<NonFungibleKey>,
+        keys: BTreeSet<NonFungibleId>,
         resource_def_id: ResourceDefId,
     },
 
@@ -103,7 +103,7 @@ pub enum ValidatedInstruction {
         resource_def_id: ResourceDefId,
     },
     TakeNonFungiblesFromWorktop {
-        keys: BTreeSet<NonFungibleKey>,
+        keys: BTreeSet<NonFungibleId>,
         resource_def_id: ResourceDefId,
     },
     ReturnToWorktop {

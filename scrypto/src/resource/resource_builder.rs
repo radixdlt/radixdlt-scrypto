@@ -100,7 +100,7 @@ impl ResourceBuilder {
     /// ```
     pub fn initial_supply_non_fungible<T, V>(&self, entries: T) -> Bucket
     where
-        T: IntoIterator<Item = (NonFungibleKey, V)>,
+        T: IntoIterator<Item = (NonFungibleId, V)>,
         V: NonFungibleData,
     {
         self.build(Some(Supply::non_fungible(entries))).1.unwrap()

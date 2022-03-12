@@ -25,8 +25,8 @@ impl<T: NonFungibleData> NonFungible<T> {
     }
 
     /// Returns the non-fungible ID.
-    pub fn key(&self) -> NonFungibleKey {
-        self.address.key()
+    pub fn key(&self) -> NonFungibleId {
+        self.address.non_fungible_id()
     }
 
     /// Returns the associated data of this unit.

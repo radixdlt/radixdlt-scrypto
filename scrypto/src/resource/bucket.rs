@@ -93,10 +93,10 @@ impl Bucket {
     ///
     /// # Panics
     /// Panics if this is not a non-fungible bucket or the specified non-fungible resource is not found.
-    pub fn take_non_fungible(&mut self, key: &NonFungibleKey) -> Bucket {
+    pub fn take_non_fungible(&mut self, non_fungible_id: &NonFungibleId) -> Bucket {
         let input = TakeNonFungibleFromBucketInput {
             bucket_id: self.0,
-            key: key.clone(),
+            non_fungible_id: non_fungible_id.clone(),
         };
         let output: TakeNonFungibleFromBucketOutput =
             call_engine(TAKE_NON_FUNGIBLE_FROM_BUCKET, input);
@@ -109,49 +109,49 @@ impl Bucket {
     /// # Panics
     /// Panics if this is not a non-fungible bucket.
     pub fn get_non_fungibles<T: NonFungibleData>(&self) -> Vec<NonFungible<T>> {
-        let input = GetNonFungibleKeysInBucketInput { bucket_id: self.0 };
-        let output: GetNonFungibleKeysInBucketOutput =
-            call_engine(GET_NON_FUNGIBLE_KEYS_IN_BUCKET, input);
+        let input = GetNonFungibleIdsInBucketInput { bucket_id: self.0 };
+        let output: GetNonFungibleIdsInBucketOutput =
+            call_engine(GET_NON_FUNGIBLE_IDS_IN_BUCKET, input);
         let resource_def_id = self.resource_def_id();
         output
-            .keys
+            .non_fungible_ids
             .iter()
-            .map(|key| NonFungible::from(NonFungibleAddress::new(resource_def_id, key.clone())))
+            .map(|id| NonFungible::from(NonFungibleAddress::new(resource_def_id, id.clone())))
             .collect()
     }
 
-    /// Returns the key of a singleton non-fungible.
+    /// Returns the id of a singleton non-fungible.
     ///
     /// # Panic
     /// If this bucket is empty or contains more than one non-fungibles.
-    pub fn get_non_fungible_key(&self) -> NonFungibleKey {
-        let keys = self.get_non_fungible_keys();
+    pub fn get_non_fungible_id(&self) -> NonFungibleId {
+        let non_fungible_ids = self.get_non_fungible_ids();
         assert!(
-            keys.len() == 1,
+            non_fungible_ids.len() == 1,
             "1 non-fungible expected, but {} found",
-            keys.len()
+            non_fungible_ids.len()
         );
-        keys[0].clone()
+        non_fungible_ids[0].clone()
     }
 
-    /// Returns the keys of all non-fungibles in this bucket.
+    /// Returns the ids of all non-fungibles in this bucket.
     ///
     /// # Panics
     /// If this bucket is not a non-fungible bucket.
-    pub fn get_non_fungible_keys(&self) -> Vec<NonFungibleKey> {
-        let input = GetNonFungibleKeysInBucketInput { bucket_id: self.0 };
-        let output: GetNonFungibleKeysInBucketOutput =
-            call_engine(GET_NON_FUNGIBLE_KEYS_IN_BUCKET, input);
+    pub fn get_non_fungible_ids(&self) -> Vec<NonFungibleId> {
+        let input = GetNonFungibleIdsInBucketInput { bucket_id: self.0 };
+        let output: GetNonFungibleIdsInBucketOutput =
+            call_engine(GET_NON_FUNGIBLE_IDS_IN_BUCKET, input);
 
-        output.keys
+        output.non_fungible_ids
     }
 
     /// Returns the data of a non-fungible unit, both the immutable and mutable parts.
     ///
     /// # Panics
     /// Panics if this is not a non-fungible bucket.
-    pub fn get_non_fungible_data<T: NonFungibleData>(&self, key: &NonFungibleKey) -> T {
-        resource_def!(self.resource_def_id()).get_non_fungible_data(key)
+    pub fn get_non_fungible_data<T: NonFungibleData>(&self, non_fungible_id: &NonFungibleId) -> T {
+        resource_def!(self.resource_def_id()).get_non_fungible_data(non_fungible_id)
     }
 
     /// Updates the mutable part of the data of a non-fungible unit.
@@ -160,11 +160,15 @@ impl Bucket {
     /// Panics if this is not a non-fungible bucket or the specified non-fungible resource is not found.
     pub fn update_non_fungible_data<T: NonFungibleData>(
         &mut self,
-        key: &NonFungibleKey,
+        non_fungible_id: &NonFungibleId,
         new_data: T,
         auth: Proof,
     ) {
-        resource_def!(self.resource_def_id()).update_non_fungible_data(key, new_data, auth)
+        resource_def!(self.resource_def_id()).update_non_fungible_data(
+            non_fungible_id,
+            new_data,
+            auth,
+        )
     }
 }
 

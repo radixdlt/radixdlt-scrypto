@@ -14,7 +14,7 @@ TAKE_FROM_AUTH_WORKTOP 0u32 Proof("badge3");
 DROP_PROOF  Proof("badge3");
 RETURN_TO_WORKTOP  Bucket("remaining_xrd");
 
-TAKE_NON_FUNGIBLES_FROM_WORKTOP TreeSet<NonFungibleKey>(NonFungibleKey("11"), NonFungibleKey("22")) ResourceDefId("030000000000000000000000000000000000000000000000000004")  Bucket("nfts");
+TAKE_NON_FUNGIBLES_FROM_WORKTOP TreeSet<NonFungibleId>(NonFungibleId("11"), NonFungibleId("22")) ResourceDefId("030000000000000000000000000000000000000000000000000004")  Bucket("nfts");
 
 CALL_METHOD_WITH_ALL_RESOURCES  ComponentId("02d43f479e9b2beb9df98bc3888344fc25eda181e8f710ce1bf1de")  "deposit_batch";
 
