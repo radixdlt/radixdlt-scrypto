@@ -209,6 +209,7 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
                     component_id,
                     method,
                 } => proc.call_method_with_all_resources(component_id, &method),
+                ValidatedInstruction::PublishPackage { code } => proc.publish_package(code),
             };
             match result {
                 Ok(data) => {
