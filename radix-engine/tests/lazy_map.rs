@@ -1,7 +1,7 @@
+use radix_engine::errors::RuntimeError;
 use radix_engine::ledger::*;
 use radix_engine::transaction::*;
 use scrypto::prelude::*;
-use radix_engine::errors::RuntimeError;
 
 pub fn compile(name: &str) -> Vec<u8> {
     compile_package!(format!("./tests/{}", name), name.replace("-", "_"))
