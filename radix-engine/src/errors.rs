@@ -112,13 +112,13 @@ pub enum RuntimeError {
     LazyMapNotFound(LazyMapId),
 
     /// Lazy map removed.
-    LazyMapRemoved(LazyMapId),
+    LazyMapRemoved(),
 
     /// Duplicate LazyMap added
     DuplicateLazyMap(LazyMapId),
 
     /// Cyclic LazyMap added
-    CyclicLazyMap(LazyMapId),
+    CyclicLazyMap(),
 
     /// Vault does not exist.
     VaultNotFound(VaultId),

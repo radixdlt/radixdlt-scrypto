@@ -93,7 +93,7 @@ impl ComponentObjectRefs {
 
         for lazy_map_id in &other.lazy_map_ids {
             if !self.lazy_map_ids.remove(&lazy_map_id) {
-                return Err(RuntimeError::LazyMapRemoved(lazy_map_id.clone()));
+                return Err(RuntimeError::LazyMapRemoved());
             }
         }
 

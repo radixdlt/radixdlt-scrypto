@@ -1293,7 +1293,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         // Check for cycles
         if let Uncommitted { root } = lazy_map_state {
             if new_entry_object_refs.lazy_map_ids.contains(&root) {
-                return Err(RuntimeError::CyclicLazyMap(root));
+                return Err(RuntimeError::CyclicLazyMap());
             }
         }
 

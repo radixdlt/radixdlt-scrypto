@@ -2,6 +2,7 @@ use radix_engine::ledger::*;
 use radix_engine::model::*;
 use radix_engine::transaction::*;
 use scrypto::prelude::*;
+use radix_engine::errors::RuntimeError;
 
 pub fn compile(name: &str) -> Vec<u8> {
     compile_package!(format!("./tests/{}", name), name.replace("-", "_"))
@@ -93,10 +94,11 @@ fn cannot_withdraw_from_other_account() {
         .unwrap();
 
     // Act
-    let result = executor.run(transaction);
+    let result = executor.run(transaction).unwrap();
 
     // Assert
-    assert!(!result.unwrap().result.is_ok());
+    let runtime_error = result.result.expect_err("Should be runtime error");
+    assert_eq!(runtime_error, RuntimeError::InvokeError());
 }
 
 #[test]
