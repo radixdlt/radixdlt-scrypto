@@ -1672,12 +1672,12 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     if !initial_loaded_object_refs.vault_ids.contains(&vault_id)
                         && !additional_object_refs.vault_ids.contains(&vault_id)
                     {
-                        return Err(RuntimeError::VaultNotFound(vault_id));
+                        return Err(RuntimeError::VaultNotFound());
                     }
                     let vault = self.track.get_vault_mut(component_id, &vault_id);
                     Ok(vault)
                 }
-                _ => Err(RuntimeError::VaultNotFound(vault_id)),
+                _ => Err(RuntimeError::VaultNotFound()),
             },
         }
     }

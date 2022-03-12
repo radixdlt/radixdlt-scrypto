@@ -121,10 +121,10 @@ pub enum RuntimeError {
     CyclicLazyMap(),
 
     /// Vault does not exist.
-    VaultNotFound(VaultId),
+    VaultNotFound(),
 
     /// Vault removed.
-    VaultRemoved(VaultId),
+    VaultRemoved(),
 
     /// Duplicate Vault added
     DuplicateVault(VaultId),

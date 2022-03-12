@@ -87,7 +87,7 @@ impl ComponentObjectRefs {
         // Only allow vaults to be added, never removed
         for vault_id in &other.vault_ids {
             if !self.vault_ids.remove(&vault_id) {
-                return Err(RuntimeError::VaultRemoved(vault_id.clone()));
+                return Err(RuntimeError::VaultRemoved());
             }
         }
 
@@ -127,7 +127,7 @@ impl ComponentObjects {
             let vault = self
                 .vaults
                 .remove(&vault_id)
-                .ok_or(RuntimeError::VaultNotFound(vault_id))?;
+                .ok_or(RuntimeError::VaultNotFound())?;
             vaults.insert(vault_id, vault);
         }
 
