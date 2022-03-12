@@ -5,7 +5,7 @@ use scrypto::rust::vec::Vec;
 use crate::model::{Bucket, BucketError, Resource};
 
 /// Represents an error when accessing a vault.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum VaultError {
     AccountingError(BucketError),
 }

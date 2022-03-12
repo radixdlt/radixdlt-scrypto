@@ -5,7 +5,7 @@ use crate::errors::*;
 
 /// Parses a WASM module.
 pub fn parse_module(code: &[u8]) -> Result<Module, WasmValidationError> {
-    Module::from_buffer(code).map_err(WasmValidationError::InvalidModule)
+    Module::from_buffer(code).map_err(|_| WasmValidationError::InvalidModule())
 }
 
 /// Validates a WASM module.
@@ -23,7 +23,7 @@ pub fn validate_module(code: &[u8]) -> Result<(), WasmValidationError> {
         &parsed,
         &ImportsBuilder::new().with_resolver("env", &EnvModuleResolver),
     )
-    .map_err(WasmValidationError::InvalidModule)?;
+    .map_err(|_| WasmValidationError::InvalidModule())?;
 
     // Check start function
     if instance.has_start() {

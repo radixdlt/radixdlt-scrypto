@@ -10,7 +10,7 @@ pub fn instantiate_module(module: &Module) -> Result<(ModuleRef, MemoryRef), Was
         module,
         &ImportsBuilder::new().with_resolver("env", &EnvModuleResolver),
     )
-    .map_err(WasmValidationError::InvalidModule)?
+    .map_err(|_| WasmValidationError::InvalidModule())?
     .assert_no_start();
 
     // Find memory export

@@ -1,3 +1,4 @@
+use radix_engine::errors::RuntimeError;
 use radix_engine::ledger::*;
 use radix_engine::transaction::*;
 use scrypto::prelude::*;
@@ -25,10 +26,10 @@ fn non_existent_vault_in_component_creation_should_fail() {
         .build(vec![]);
     let transaction = result.unwrap();
     let receipt = sut.run(transaction).unwrap();
-    let result = &receipt.result;
 
     // Assert
-    assert!(!result.is_ok());
+    let runtime_error = receipt.result.expect_err("Should be runtime error");
+    assert_eq!(runtime_error, RuntimeError::VaultNotFound());
 }
 
 #[test]
@@ -52,8 +53,8 @@ fn non_existent_vault_in_committed_component_should_fail() {
     let receipt = sut.run(transaction).unwrap();
 
     // Assert
-    let result = &receipt.result;
-    assert!(!result.is_ok());
+    let runtime_error = receipt.result.expect_err("Should be runtime error");
+    assert_eq!(runtime_error, RuntimeError::VaultNotFound());
 }
 
 #[test]
@@ -75,10 +76,10 @@ fn non_existent_vault_in_lazy_map_creation_should_fail() {
         .build(vec![]);
     let transaction = result.unwrap();
     let receipt = sut.run(transaction).unwrap();
-    let result = &receipt.result;
 
     // Assert
-    assert!(!result.is_ok());
+    let runtime_error = receipt.result.expect_err("Should be runtime error");
+    assert_eq!(runtime_error, RuntimeError::VaultNotFound());
 }
 
 #[test]
@@ -107,8 +108,8 @@ fn non_existent_vault_in_committed_lazy_map_should_fail() {
     let receipt = sut.run(transaction).unwrap();
 
     // Assert
-    let result = &receipt.result;
-    assert!(!result.is_ok());
+    let runtime_error = receipt.result.expect_err("Should be runtime error");
+    assert_eq!(runtime_error, RuntimeError::VaultNotFound());
 }
 
 #[test]
@@ -134,7 +135,8 @@ fn dangling_vault_should_fail() {
     let receipt = sut.run(transaction).unwrap();
 
     // Assert
-    assert!(!receipt.result.is_ok());
+    let runtime_error = receipt.result.expect_err("Should be runtime error");
+    assert_eq!(runtime_error, RuntimeError::ResourceCheckFailure);
 }
 
 #[test]
@@ -176,7 +178,8 @@ fn invalid_double_ownership_of_vault() {
     let receipt = sut.run(transaction).unwrap();
 
     // Assert
-    assert!(!receipt.result.is_ok());
+    let runtime_error = receipt.result.expect_err("Should be runtime error");
+    assert_eq!(runtime_error, RuntimeError::VaultNotFound());
 }
 
 #[test]
@@ -224,7 +227,8 @@ fn cannot_overwrite_vault_in_map() {
     let receipt = sut.run(transaction).unwrap();
 
     // Assert
-    assert!(!receipt.result.is_ok());
+    let runtime_error = receipt.result.expect_err("Should be runtime error");
+    assert_eq!(runtime_error, RuntimeError::VaultRemoved());
 }
 
 #[test]
@@ -266,7 +270,8 @@ fn cannot_remove_vaults() {
     let receipt = sut.run(transaction).unwrap();
 
     // Assert
-    assert!(!receipt.result.is_ok());
+    let runtime_error = receipt.result.expect_err("Should be runtime error");
+    assert_eq!(runtime_error, RuntimeError::VaultRemoved());
 }
 
 #[test]

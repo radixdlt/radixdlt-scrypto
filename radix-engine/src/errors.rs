@@ -9,10 +9,10 @@ use crate::engine::*;
 use crate::model::*;
 
 /// Represents an error when validating a WASM file.
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum WasmValidationError {
     /// The wasm module is invalid.
-    InvalidModule(Error),
+    InvalidModule(),
 
     /// The wasm module contains a start function.
     StartFunctionNotAllowed,
@@ -43,7 +43,7 @@ pub enum TransactionValidationError {
 }
 
 /// Represents an error when executing a transaction.
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum RuntimeError {
     /// Assertion check failed.
     AssertionFailed,
@@ -61,10 +61,10 @@ pub enum RuntimeError {
     IdAllocatorError(IdAllocatorError),
 
     /// Error when invoking an export.
-    InvokeError(Error),
+    InvokeError(),
 
     /// Error when accessing the program memory.
-    MemoryAccessError(Error),
+    MemoryAccessError(),
 
     /// Error when allocating memory in program.
     MemoryAllocError,
@@ -112,19 +112,19 @@ pub enum RuntimeError {
     LazyMapNotFound(LazyMapId),
 
     /// Lazy map removed.
-    LazyMapRemoved(LazyMapId),
+    LazyMapRemoved(),
 
     /// Duplicate LazyMap added
     DuplicateLazyMap(LazyMapId),
 
     /// Cyclic LazyMap added
-    CyclicLazyMap(LazyMapId),
+    CyclicLazyMap(),
 
     /// Vault does not exist.
-    VaultNotFound(VaultId),
+    VaultNotFound(),
 
     /// Vault removed.
-    VaultRemoved(VaultId),
+    VaultRemoved(),
 
     /// Duplicate Vault added
     DuplicateVault(VaultId),
