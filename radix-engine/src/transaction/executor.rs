@@ -98,6 +98,13 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
         .new_component_ids[0]
     }
 
+    /// Creates a new public key and account associated with it
+    pub fn new_public_key_with_account(&mut self) -> (EcdsaPublicKey, ComponentId) {
+        let key = self.new_public_key();
+        let account = self.new_account(key);
+        (key, account)
+    }
+
     /// Publishes a package.
     pub fn publish_package<T: AsRef<[u8]>>(&mut self, code: T) -> Result<PackageId, RuntimeError> {
         let receipt = self
