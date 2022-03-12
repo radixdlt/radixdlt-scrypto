@@ -475,6 +475,16 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         result
     }
 
+    /// (Transaction ONLY) Publishes a package.
+    pub fn publish_package(&mut self, code: Vec<u8>) -> Result<ValidatedData, RuntimeError> {
+        re_debug!(self, "(Transaction) Publishing a package");
+
+        validate_module(&code).map_err(RuntimeError::WasmValidationError)?;
+        let package_id = self.track.create_package(Package::new(code));
+
+        Ok(ValidatedData::from_slice(&scrypto_encode(&package_id)).unwrap())
+    }
+
     /// (SYSTEM ONLY)  Creates a proof which references a virtual bucket
     pub fn create_virtual_proof(&mut self, bucket_id: BucketId, proof_id: ProofId, bucket: Bucket) {
         let locked_bucket = LockedBucket::new(bucket_id, bucket);

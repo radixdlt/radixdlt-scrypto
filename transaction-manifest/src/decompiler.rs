@@ -199,6 +199,12 @@ pub fn decompile(tx: &Transaction) -> Result<String, DecompileError> {
                     component_id, method
                 ));
             }
+            Instruction::PublishPackage { code } => {
+                buf.push_str(&format!(
+                    "PUBLISH_PACKAGE Blob(\"{}\");\n",
+                    base64::encode(&code)
+                ));
+            }
             Instruction::End { .. } => {}
         }
     }

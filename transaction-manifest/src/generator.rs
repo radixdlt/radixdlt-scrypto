@@ -266,6 +266,9 @@ pub fn generate_instruction(
                 method: generate_string(method)?,
             }
         }
+        ast::Instruction::PublishPackage { code } => Instruction::PublishPackage {
+            code: generate_bytes(code)?,
+        },
     })
 }
 
@@ -298,6 +301,37 @@ fn generate_string(value: &ast::Value) -> Result<String, GeneratorError> {
     match value {
         ast::Value::String(s) => Ok(s.into()),
         v @ _ => invalid_type!(v, ast::Type::String),
+    }
+}
+
+fn generate_bytes(value: &ast::Value) -> Result<Vec<u8>, GeneratorError> {
+    match value {
+        ast::Value::Blob(bytes) => Ok(bytes.clone()),
+        ast::Value::Vec(ty, values) => {
+            if ty == &ast::Type::U8 {
+                let mut result = Vec::new();
+                for v in values {
+                    match v {
+                        ast::Value::U8(num) => {
+                            result.push(*num);
+                        }
+                        _ => {
+                            return Err(GeneratorError::InvalidValue {
+                                expected_type: vec![ast::Type::U8],
+                                actual: v.clone(),
+                            })
+                        }
+                    }
+                }
+                Ok(result)
+            } else {
+                Err(GeneratorError::InvalidType {
+                    expected_type: ast::Type::U8,
+                    actual: *ty,
+                })
+            }
+        }
+        v @ _ => invalid_type!(v, ast::Type::Vec, ast::Type::Blob),
     }
 }
 
@@ -572,6 +606,16 @@ fn generate_value(
             .map(|v| Value::Custom(CustomType::Proof.id(), scrypto::resource::Proof(v).to_vec())),
         ast::Value::NonFungibleId(_) => generate_non_fungible_id(value)
             .map(|v| Value::Custom(CustomType::NonFungibleId.id(), v.to_vec())),
+        ast::Value::Blob(_) => match value {
+            ast::Value::Blob(bytes) => {
+                let mut elements = Vec::new();
+                for b in bytes {
+                    elements.push(Value::U8(*b));
+                }
+                Ok(Value::Vec(TYPE_U8, elements))
+            }
+            v @ _ => invalid_type!(v, ast::Type::Blob),
+        },
     }
 }
 
@@ -659,6 +703,7 @@ fn generate_type(ty: &ast::Type) -> u8 {
         ast::Type::Bucket => CustomType::Bucket.id(),
         ast::Type::Proof => CustomType::Proof.id(),
         ast::Type::NonFungibleId => CustomType::NonFungibleId.id(),
+        ast::Type::Blob => TYPE_VEC,
     }
 }
 
@@ -893,6 +938,22 @@ mod tests {
     #[test]
     fn test_transaction() {
         let tx = include_str!("../examples/call.rtm");
+        let code = vec![
+            0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00, 0x04, 0x05, 0x01, 0x70, 0x01, 0x01,
+            0x01, 0x05, 0x03, 0x01, 0x00, 0x10, 0x06, 0x19, 0x03, 0x7f, 0x01, 0x41, 0x80, 0x80,
+            0xc0, 0x00, 0x0b, 0x7f, 0x00, 0x41, 0x80, 0x80, 0xc0, 0x00, 0x0b, 0x7f, 0x00, 0x41,
+            0x80, 0x80, 0xc0, 0x00, 0x0b, 0x07, 0x25, 0x03, 0x06, 0x6d, 0x65, 0x6d, 0x6f, 0x72,
+            0x79, 0x02, 0x00, 0x0a, 0x5f, 0x5f, 0x64, 0x61, 0x74, 0x61, 0x5f, 0x65, 0x6e, 0x64,
+            0x03, 0x01, 0x0b, 0x5f, 0x5f, 0x68, 0x65, 0x61, 0x70, 0x5f, 0x62, 0x61, 0x73, 0x65,
+            0x03, 0x02, 0x00, 0x19, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x07, 0x12, 0x01, 0x00, 0x0f,
+            0x5f, 0x5f, 0x73, 0x74, 0x61, 0x63, 0x6b, 0x5f, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x65,
+            0x72, 0x00, 0x4d, 0x09, 0x70, 0x72, 0x6f, 0x64, 0x75, 0x63, 0x65, 0x72, 0x73, 0x02,
+            0x08, 0x6c, 0x61, 0x6e, 0x67, 0x75, 0x61, 0x67, 0x65, 0x01, 0x04, 0x52, 0x75, 0x73,
+            0x74, 0x00, 0x0c, 0x70, 0x72, 0x6f, 0x63, 0x65, 0x73, 0x73, 0x65, 0x64, 0x2d, 0x62,
+            0x79, 0x01, 0x05, 0x72, 0x75, 0x73, 0x74, 0x63, 0x1d, 0x31, 0x2e, 0x35, 0x39, 0x2e,
+            0x30, 0x20, 0x28, 0x39, 0x64, 0x31, 0x62, 0x32, 0x31, 0x30, 0x36, 0x65, 0x20, 0x32,
+            0x30, 0x32, 0x32, 0x2d, 0x30, 0x32, 0x2d, 0x32, 0x33, 0x29,
+        ];
 
         assert_eq!(
             crate::compile(tx).unwrap(),
@@ -974,6 +1035,8 @@ mod tests {
                         .unwrap(),
                         method: "deposit_batch".into(),
                     },
+                    Instruction::PublishPackage { code: code.clone() },
+                    Instruction::PublishPackage { code: code.clone() }
                 ]
             }
         );

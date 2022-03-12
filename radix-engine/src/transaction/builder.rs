@@ -198,7 +198,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
             Instruction::CallMethodWithAllResources { .. } => {
                 self.id_validator.move_all_resources().unwrap();
             }
-            Instruction::End { .. } => {}
+            Instruction::PublishPackage { .. } | Instruction::End { .. } => {}
         }
 
         self.instructions.push(inst);
@@ -400,11 +400,8 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
 
     /// Publishes a package.
     pub fn publish_package(&mut self, code: &[u8]) -> &mut Self {
-        self.add_instruction(Instruction::CallFunction {
-            package_id: SYSTEM_PACKAGE,
-            blueprint_name: "System".to_owned(),
-            function: "publish_package".to_owned(),
-            args: vec![scrypto_encode(&code.to_vec())],
+        self.add_instruction(Instruction::PublishPackage {
+            code: code.to_vec(),
         })
         .0
     }
