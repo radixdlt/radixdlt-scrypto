@@ -3,6 +3,7 @@ use sbor::*;
 use scrypto::buffer::*;
 use scrypto::engine::api::*;
 use scrypto::engine::types::*;
+use scrypto::prelude::NonFungibleAddress;
 use scrypto::rust::borrow::ToOwned;
 use scrypto::rust::collections::*;
 use scrypto::rust::fmt;
@@ -1331,22 +1332,20 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 let mut keys = BTreeSet::new();
 
                 for (key, data) in entries {
-                    if self.track.get_non_fungible(resource_def_id, &key).is_some() {
-                        return Err(RuntimeError::NonFungibleAlreadyExists(
-                            resource_def_id,
-                            key.clone(),
-                        ));
+                    let non_fungible_address =
+                        NonFungibleAddress::new(resource_def_id, key.clone());
+                    if self.track.get_non_fungible(&non_fungible_address).is_some() {
+                        return Err(RuntimeError::NonFungibleAlreadyExists(non_fungible_address));
                     }
 
                     let immutable_data = self.process_non_fungible_data(&data.0)?;
                     let mutable_data = self.process_non_fungible_data(&data.1)?;
 
                     self.track.put_non_fungible(
-                        resource_def_id,
-                        &key,
+                        non_fungible_address,
                         NonFungible::new(immutable_data.raw, mutable_data.raw),
                     );
-                    keys.insert(key.clone());
+                    keys.insert(key);
                 }
 
                 Ok(Resource::NonFungible { keys })
@@ -1395,7 +1394,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     ) -> Result<GetResourceMetadataOutput, RuntimeError> {
         let resource_def = self
             .track
-            .get_resource_def(input.resource_def_id)
+            .get_resource_def(&input.resource_def_id)
             .ok_or(RuntimeError::ResourceDefNotFound(input.resource_def_id))?;
 
         Ok(GetResourceMetadataOutput {
@@ -1409,7 +1408,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     ) -> Result<GetResourceTotalSupplyOutput, RuntimeError> {
         let resource_def = self
             .track
-            .get_resource_def(input.resource_def_id)
+            .get_resource_def(&input.resource_def_id)
             .ok_or(RuntimeError::ResourceDefNotFound(input.resource_def_id))?;
 
         Ok(GetResourceTotalSupplyOutput {
@@ -1423,7 +1422,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     ) -> Result<GetResourceFlagsOutput, RuntimeError> {
         let resource_def = self
             .track
-            .get_resource_def(input.resource_def_id)
+            .get_resource_def(&input.resource_def_id)
             .ok_or(RuntimeError::ResourceDefNotFound(input.resource_def_id))?;
 
         Ok(GetResourceFlagsOutput {
@@ -1439,7 +1438,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
         let resource_def = self
             .track
-            .get_resource_def_mut(input.resource_def_id)
+            .get_resource_def_mut(&input.resource_def_id)
             .ok_or(RuntimeError::ResourceDefNotFound(input.resource_def_id))?;
         resource_def
             .update_flags(input.new_flags, badge)
@@ -1454,7 +1453,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     ) -> Result<GetResourceMutableFlagsOutput, RuntimeError> {
         let resource_def = self
             .track
-            .get_resource_def(input.resource_def_id)
+            .get_resource_def(&input.resource_def_id)
             .ok_or(RuntimeError::ResourceDefNotFound(input.resource_def_id))?;
 
         Ok(GetResourceMutableFlagsOutput {
@@ -1470,7 +1469,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
         let resource_def = self
             .track
-            .get_resource_def_mut(input.resource_def_id)
+            .get_resource_def_mut(&input.resource_def_id)
             .ok_or(RuntimeError::ResourceDefNotFound(input.resource_def_id))?;
         resource_def
             .update_mutable_flags(input.new_mutable_flags, badge)
@@ -1485,7 +1484,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     ) -> Result<GetResourceTypeOutput, RuntimeError> {
         let resource_def = self
             .track
-            .get_resource_def(input.resource_def_id)
+            .get_resource_def(&input.resource_def_id)
             .ok_or(RuntimeError::ResourceDefNotFound(input.resource_def_id))?;
 
         Ok(GetResourceTypeOutput {
@@ -1505,7 +1504,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         // mint resource
         let resource_def = self
             .track
-            .get_resource_def_mut(input.resource_def_id)
+            .get_resource_def_mut(&input.resource_def_id)
             .ok_or(RuntimeError::ResourceDefNotFound(input.resource_def_id))?;
         resource_def
             .mint(&resource, badge)
@@ -1536,7 +1535,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
         let resource_def = self
             .track
-            .get_resource_def_mut(bucket.resource_def_id())
+            .get_resource_def_mut(&bucket.resource_def_id())
             .ok_or(RuntimeError::ResourceDefNotFound(bucket.resource_def_id()))?;
 
         resource_def
@@ -1550,22 +1549,22 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         input: UpdateNonFungibleMutableDataInput,
     ) -> Result<UpdateNonFungibleMutableDataOutput, RuntimeError> {
         let badge = self.check_badge(Some(input.auth))?;
+        let resource_def_id = input.non_fungible_address.resource_def_id();
 
         // obtain authorization from resource definition
         let resource_def = self
             .track
-            .get_resource_def(input.resource_def_id)
-            .ok_or(RuntimeError::ResourceDefNotFound(input.resource_def_id))?;
+            .get_resource_def(&resource_def_id)
+            .ok_or(RuntimeError::ResourceDefNotFound(resource_def_id))?;
         resource_def
             .check_update_non_fungible_mutable_data_auth(badge)
             .map_err(RuntimeError::ResourceDefError)?;
         // update state
         let data = self.process_non_fungible_data(&input.new_mutable_data)?;
         self.track
-            .get_non_fungible_mut(input.resource_def_id, &input.key)
+            .get_non_fungible_mut(&input.non_fungible_address)
             .ok_or(RuntimeError::NonFungibleNotFound(
-                input.resource_def_id,
-                input.key.clone(),
+                input.non_fungible_address,
             ))?
             .set_mutable_data(data.raw);
 
@@ -1578,10 +1577,9 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     ) -> Result<GetNonFungibleDataOutput, RuntimeError> {
         let non_fungible = self
             .track
-            .get_non_fungible(input.resource_def_id, &input.key)
+            .get_non_fungible(&input.non_fungible_address)
             .ok_or(RuntimeError::NonFungibleNotFound(
-                input.resource_def_id,
-                input.key.clone(),
+                input.non_fungible_address,
             ))?;
 
         Ok(GetNonFungibleDataOutput {
@@ -1594,9 +1592,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         input: NonFungibleExistsInput,
     ) -> Result<NonFungibleExistsOutput, RuntimeError> {
-        let non_fungible = self
-            .track
-            .get_non_fungible(input.resource_def_id, &input.key);
+        let non_fungible = self.track.get_non_fungible(&input.non_fungible_address);
 
         Ok(NonFungibleExistsOutput {
             non_fungible_exists: non_fungible.is_some(),
@@ -1611,7 +1607,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
         let resource_def = self
             .track
-            .get_resource_def_mut(input.resource_def_id)
+            .get_resource_def_mut(&input.resource_def_id)
             .ok_or(RuntimeError::ResourceDefNotFound(input.resource_def_id))?;
         resource_def
             .update_metadata(input.new_metadata, badge)
@@ -1630,7 +1626,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .ok_or(RuntimeError::IllegalSystemCall())?;
         let definition = self
             .track
-            .get_resource_def(input.resource_def_id)
+            .get_resource_def(&input.resource_def_id)
             .ok_or(RuntimeError::ResourceDefNotFound(input.resource_def_id))?;
 
         let new_vault = Vault::new(Bucket::new(
@@ -1708,7 +1704,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
         let resource_def = self
             .track
-            .get_resource_def(resource_def_id)
+            .get_resource_def(&resource_def_id)
             .ok_or(RuntimeError::ResourceDefNotFound(resource_def_id))?;
         resource_def
             .check_take_from_vault_auth(badge)
@@ -1795,7 +1791,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     ) -> Result<CreateEmptyBucketOutput, RuntimeError> {
         let definition = self
             .track
-            .get_resource_def(input.resource_def_id)
+            .get_resource_def(&input.resource_def_id)
             .ok_or(RuntimeError::ResourceDefNotFound(input.resource_def_id))?;
 
         let new_bucket = Bucket::new(

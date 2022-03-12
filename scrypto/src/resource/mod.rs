@@ -1,5 +1,6 @@
 mod bucket;
 mod non_fungible;
+mod non_fungible_address;
 mod non_fungible_data;
 mod non_fungible_key;
 mod proof;
@@ -17,6 +18,7 @@ pub mod resource_permissions;
 
 pub use bucket::{Bucket, ParseBucketError};
 pub use non_fungible::NonFungible;
+pub use non_fungible_address::NonFungibleAddress;
 pub use non_fungible_data::NonFungibleData;
 pub use non_fungible_key::{NonFungibleKey, ParseNonFungibleKeyError};
 pub use proof::{ParseProofError, Proof};
