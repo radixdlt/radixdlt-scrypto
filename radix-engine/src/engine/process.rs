@@ -195,6 +195,8 @@ pub struct Process<'r, 'l, L: SubstateStore> {
     ///
     /// All proofs in the collection are used for system-authorization.
     auth_worktop: Vec<Proof>,
+    /// The caller's auth worktop
+    caller_auth_worktop: &'r [Proof],
 }
 
 impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
@@ -213,6 +215,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             id_allocator: IdAllocator::new(IdSpace::Transaction),
             worktop: HashMap::new(),
             auth_worktop: Vec::new(),
+            caller_auth_worktop: &[],
         }
     }
 
@@ -527,11 +530,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     }
 
     /// Runs the given export within this process.
-    pub fn run(
-        &mut self,
-        invocation: Invocation,
-        caller_auth_worktop: &[Proof],
-    ) -> Result<ValidatedData, RuntimeError> {
+    pub fn run(&mut self, invocation: Invocation) -> Result<ValidatedData, RuntimeError> {
         #[cfg(not(feature = "alloc"))]
         let now = std::time::Instant::now();
         re_info!(
@@ -559,7 +558,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 Actor::Blueprint(..) => Ok(InterpreterState::Blueprint),
                 Actor::Component(component_id) => {
                     let component = self.track.get_component(component_id.clone()).unwrap();
-                    component.check_auth(&invocation.function, caller_auth_worktop)?;
+                    component.check_auth(&invocation.function, self.caller_auth_worktop)?;
 
                     let initial_loaded_object_refs =
                         Self::process_entry_data(component.state()).unwrap();
@@ -673,10 +672,11 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         }
         let (buckets_out, proofs_out) = self.move_out_resources();
         let mut process = Process::new(self.depth + 1, self.trace, self.track);
+        process.caller_auth_worktop = &self.auth_worktop;
         process.move_in_resources(buckets_out, proofs_out)?;
 
         // run the function
-        let result = process.run(invocation, &self.auth_worktop)?;
+        let result = process.run(invocation)?;
         process.drop_all_proofs()?;
         process.check_resource()?;
 
