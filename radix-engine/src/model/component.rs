@@ -1,12 +1,12 @@
+use crate::errors::RuntimeError;
+use crate::errors::RuntimeError::NotAuthorized;
+use crate::model::Proof;
 use sbor::*;
 use scrypto::engine::types::*;
 use scrypto::prelude::NonFungibleAddress;
 use scrypto::rust::collections::*;
 use scrypto::rust::string::String;
 use scrypto::rust::vec::Vec;
-use crate::errors::RuntimeError;
-use crate::errors::RuntimeError::NotAuthorized;
-use crate::model::Proof;
 
 /// A component is an instance of blueprint.
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
@@ -34,7 +34,10 @@ impl Component {
 
     pub fn check_auth(&self, function: &str, proofs: &[Proof]) -> Result<(), RuntimeError> {
         if let Some(auth_address) = self.sys_auth.get(function) {
-            if !proofs.iter().any(|p| p.bucket().contains_non_fungible_address(auth_address)) {
+            if !proofs
+                .iter()
+                .any(|p| p.bucket().contains_non_fungible_address(auth_address))
+            {
                 return Err(NotAuthorized);
             }
         }

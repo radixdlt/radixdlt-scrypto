@@ -46,8 +46,7 @@ impl Proof {
             return false;
         }
 
-        self
-            .get_non_fungible_ids()
+        self.get_non_fungible_ids()
             .iter()
             .any(|k| k.eq(&non_fungible_address.non_fungible_id()))
     }

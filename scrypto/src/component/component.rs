@@ -7,11 +7,11 @@ use crate::engine::{api::*, call_engine};
 use crate::misc::*;
 use crate::prelude::NonFungibleAddress;
 use crate::rust::borrow::ToOwned;
+use crate::rust::collections::HashMap;
 use crate::rust::fmt;
 use crate::rust::str::FromStr;
 use crate::rust::string::String;
 use crate::rust::vec::Vec;
-use crate::rust::collections::HashMap;
 use crate::types::*;
 
 /// Represents the state of a component.

@@ -155,11 +155,9 @@ impl Bucket {
 
         match self.get_non_fungible_ids() {
             Err(_) => false,
-            Ok(non_fungible_ids) => {
-                non_fungible_ids
-                    .iter()
-                    .any(|k| k.eq(&non_fungible_address.non_fungible_id()))
-            }
+            Ok(non_fungible_ids) => non_fungible_ids
+                .iter()
+                .any(|k| k.eq(&non_fungible_address.non_fungible_id())),
         }
     }
 

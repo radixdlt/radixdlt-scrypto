@@ -63,7 +63,7 @@ impl ComponentSystem {
             package_id,
             blueprint_name: T::blueprint_name().to_owned(),
             state: scrypto_encode(&state),
-            sys_auth
+            sys_auth,
         };
         let output: CreateComponentOutput = call_engine(CREATE_COMPONENT, input);
 
