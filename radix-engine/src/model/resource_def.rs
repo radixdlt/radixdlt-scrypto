@@ -3,8 +3,8 @@ use scrypto::engine::types::*;
 use scrypto::resource::resource_flags::*;
 use scrypto::resource::resource_permissions::*;
 use scrypto::rust::collections::HashMap;
-use scrypto::rust::vec::Vec;
 use scrypto::rust::string::String;
+use scrypto::rust::vec::Vec;
 
 use crate::model::{Proof, Resource};
 

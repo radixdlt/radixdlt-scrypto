@@ -419,7 +419,7 @@ pub struct PutIntoVaultOutput {}
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct TakeFromVaultInput {
     pub vault_id: VaultId,
-    pub amount: Decimal
+    pub amount: Decimal,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
@@ -612,12 +612,10 @@ pub struct PushOntoAuthWorktopInput {
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct PushOntoAuthWorkTopOutput {
-}
+pub struct PushOntoAuthWorkTopOutput {}
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct PopFromAuthWorktopInput {
-}
+pub struct PopFromAuthWorktopInput {}
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct PopFromAuthWorkTopOutput {

@@ -44,7 +44,8 @@ blueprint! {
         }
 
         pub fn test_restricted_transfer() -> Vec<Bucket> {
-            let auth_bucket = ResourceBuilder::new_fungible(DIVISIBILITY_NONE).initial_supply_fungible(1);
+            let auth_bucket =
+                ResourceBuilder::new_fungible(DIVISIBILITY_NONE).initial_supply_fungible(1);
             let bucket = ResourceBuilder::new_fungible(DIVISIBILITY_MAXIMUM)
                 .flags(RESTRICTED_TRANSFER)
                 .badge(auth_bucket.resource_def_id(), MAY_TRANSFER)

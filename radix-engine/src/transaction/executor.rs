@@ -188,14 +188,16 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
                     proc.return_to_worktop(bucket_id)
                 }
                 ValidatedInstruction::PopFromAuthWorktop {} => {
-                    proc.pop_from_auth_worktop()
-                        .map(|proof_id| ValidatedData::from_slice(&scrypto_encode(&scrypto::resource::Bucket(proof_id)))
-                            .unwrap())
-                },
-                ValidatedInstruction::PushOntoAuthWorktop { proof_id } => {
-                    proc.push_onto_auth_worktop(proof_id)
-                        .map(|_| ValidatedData::from_slice(&scrypto_encode(&())).unwrap())
+                    proc.pop_from_auth_worktop().map(|proof_id| {
+                        ValidatedData::from_slice(&scrypto_encode(&scrypto::resource::Bucket(
+                            proof_id,
+                        )))
+                        .unwrap()
+                    })
                 }
+                ValidatedInstruction::PushOntoAuthWorktop { proof_id } => proc
+                    .push_onto_auth_worktop(proof_id)
+                    .map(|_| ValidatedData::from_slice(&scrypto_encode(&())).unwrap()),
                 ValidatedInstruction::AssertWorktopContains {
                     amount,
                     resource_def_id,
