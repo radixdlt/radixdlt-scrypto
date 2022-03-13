@@ -10,8 +10,7 @@ pub fn compile(name: &str) -> Vec<u8> {
 fn test_package() {
     let mut ledger = InMemorySubstateStore::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, true);
-    let key = executor.new_public_key();
-    let account = executor.new_account(key);
+    let (_, account) = executor.new_public_key_with_account();
     let package = executor.publish_package(&compile("component")).unwrap();
 
     let transaction1 = TransactionBuilder::new(&executor)
@@ -26,8 +25,7 @@ fn test_package() {
 fn test_component() {
     let mut ledger = InMemorySubstateStore::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, true);
-    let key = executor.new_public_key();
-    let account = executor.new_account(key);
+    let (key, account) = executor.new_public_key_with_account();
     let package = executor.publish_package(&compile("component")).unwrap();
 
     // Create component

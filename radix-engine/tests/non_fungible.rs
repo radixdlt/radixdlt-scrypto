@@ -10,8 +10,7 @@ pub fn compile(name: &str) -> Vec<u8> {
 fn test_non_fungible() {
     let mut ledger = InMemorySubstateStore::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, true);
-    let key = executor.new_public_key();
-    let account = executor.new_account(key);
+    let (key, account) = executor.new_public_key_with_account();
     let package = executor.publish_package(&compile("non_fungible")).unwrap();
 
     let transaction = TransactionBuilder::new(&executor)
