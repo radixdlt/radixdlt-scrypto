@@ -260,6 +260,19 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         then(builder, proof_id.unwrap())
     }
 
+    pub fn push_auth(&mut self, proof_id: ProofId) -> &mut Self {
+        self.add_instruction(Instruction::PushOntoAuthWorktop { proof_id });
+        self
+    }
+
+    pub fn pop_auth<F>(&mut self, then: F) -> &mut Self
+    where
+        F: FnOnce(&mut Self, ProofId) -> &mut Self,
+    {
+        let (builder, _, proof_id) = self.add_instruction(Instruction::PopFromAuthWorktop {});
+        then(builder, proof_id.unwrap())
+    }
+
     /// Clones a proof.
     pub fn clone_proof<F>(&mut self, proof_id: ProofId, then: F) -> &mut Self
     where
