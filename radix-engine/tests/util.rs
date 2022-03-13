@@ -2,8 +2,7 @@ use radix_engine::ledger::*;
 use radix_engine::transaction::*;
 use scrypto::prelude::*;
 
-pub struct TestUtil {
-}
+pub struct TestUtil {}
 
 impl TestUtil {
     pub fn publish_package(

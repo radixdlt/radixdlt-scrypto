@@ -1,11 +1,11 @@
 mod util;
 
+use crate::util::TestUtil;
 use radix_engine::errors::RuntimeError;
 use radix_engine::ledger::*;
 use radix_engine::model::*;
 use radix_engine::transaction::*;
 use scrypto::prelude::*;
-use crate::util::TestUtil;
 
 fn fungible_amount() -> ResourceSpecification {
     ResourceSpecification::Fungible {
@@ -13,7 +13,6 @@ fn fungible_amount() -> ResourceSpecification {
         resource_def_id: RADIX_TOKEN,
     }
 }
-
 
 #[test]
 fn can_withdraw_from_my_account() {
@@ -89,7 +88,8 @@ fn cannot_withdraw_restricted_transfer_from_my_account_with_no_auth() {
     let mut executor = TransactionExecutor::new(&mut ledger, true);
     let (key, account) = executor.new_public_key_with_account();
     let (_, other_account) = executor.new_public_key_with_account();
-    let (_, token_resource_def_id) = TestUtil::create_restricted_transfer_token(&mut executor, account);
+    let (_, token_resource_def_id) =
+        TestUtil::create_restricted_transfer_token(&mut executor, account);
     let fungible_amount = ResourceSpecification::Fungible {
         amount: Decimal::one(),
         resource_def_id: token_resource_def_id,

@@ -1,10 +1,10 @@
 pub mod util;
 
+use crate::util::TestUtil;
+use radix_engine::errors::RuntimeError;
 use radix_engine::ledger::*;
 use radix_engine::transaction::*;
 use scrypto::prelude::*;
-use radix_engine::errors::RuntimeError;
-use crate::util::TestUtil;
 
 #[test]
 fn cannot_make_cross_component_call_without_authorization() {
@@ -16,9 +16,13 @@ fn cannot_make_cross_component_call_without_authorization() {
     let auth_id = NonFungibleId::from(1);
     let package = TestUtil::publish_package(&mut executor, "component");
     let transaction = TransactionBuilder::new(&executor)
-        .call_function(package, "CrossComponent", "create_component_with_auth", vec![
-            auth.to_string(), auth_id.to_string()
-        ], None)
+        .call_function(
+            package,
+            "CrossComponent",
+            "create_component_with_auth",
+            vec![auth.to_string(), auth_id.to_string()],
+            None,
+        )
         .build(vec![])
         .unwrap();
     let receipt = executor.run(transaction).unwrap();
@@ -35,7 +39,12 @@ fn cannot_make_cross_component_call_without_authorization() {
 
     // Act
     let transaction = TransactionBuilder::new(&executor)
-        .call_method(my_component, "cross_component_call", vec![secured_component.to_string()], None)
+        .call_method(
+            my_component,
+            "cross_component_call",
+            vec![secured_component.to_string()],
+            None,
+        )
         .build(vec![])
         .unwrap();
     let receipt = executor.run(transaction).unwrap();
@@ -55,9 +64,13 @@ fn can_make_cross_component_call_with_authorization() {
     let auth_id = NonFungibleId::from(1);
     let package = TestUtil::publish_package(&mut executor, "component");
     let transaction = TransactionBuilder::new(&executor)
-        .call_function(package, "CrossComponent", "create_component_with_auth", vec![
-            auth.to_string(), auth_id.to_string()
-        ], None)
+        .call_function(
+            package,
+            "CrossComponent",
+            "create_component_with_auth",
+            vec![auth.to_string(), auth_id.to_string()],
+            None,
+        )
         .build(vec![])
         .unwrap();
     let receipt = executor.run(transaction).unwrap();
@@ -86,7 +99,12 @@ fn can_make_cross_component_call_with_authorization() {
 
     // Act
     let transaction = TransactionBuilder::new(&executor)
-        .call_method(my_component, "cross_component_call", vec![secured_component.to_string()], None)
+        .call_method(
+            my_component,
+            "cross_component_call",
+            vec![secured_component.to_string()],
+            None,
+        )
         .build(vec![])
         .unwrap();
     let receipt = executor.run(transaction).unwrap();
