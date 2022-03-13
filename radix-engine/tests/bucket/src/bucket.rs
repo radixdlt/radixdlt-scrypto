@@ -44,15 +44,17 @@ blueprint! {
         }
 
         pub fn test_restricted_transfer() -> Vec<Bucket> {
-            let badge = ResourceBuilder::new_fungible(DIVISIBILITY_NONE).initial_supply_fungible(1);
+            let auth_bucket = ResourceBuilder::new_fungible(DIVISIBILITY_NONE).initial_supply_fungible(1);
             let bucket = ResourceBuilder::new_fungible(DIVISIBILITY_MAXIMUM)
                 .flags(RESTRICTED_TRANSFER)
-                .badge(badge.resource_def_id(), MAY_TRANSFER)
+                .badge(auth_bucket.resource_def_id(), MAY_TRANSFER)
                 .initial_supply_fungible(5);
             let mut vault = Vault::with_bucket(bucket);
-            let bucket2 = vault.take_with_auth(1, badge.present());
+
+            let token_bucket = authorize(&auth_bucket, || vault.take(1));
+
             BucketTest { vault }.instantiate();
-            vec![badge, bucket2]
+            vec![auth_bucket, token_bucket]
         }
 
         pub fn test_burn() -> Vec<Bucket> {

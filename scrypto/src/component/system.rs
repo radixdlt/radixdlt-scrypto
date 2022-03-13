@@ -1,7 +1,7 @@
 use crate::buffer::*;
 use crate::component::*;
 use crate::engine::{api::*, call_engine};
-use crate::prelude::NonFungibleAddress;
+use crate::prelude::{Bucket, NonFungibleAddress};
 use crate::prelude::String;
 use crate::rust::borrow::ToOwned;
 use crate::rust::collections::*;
@@ -81,6 +81,26 @@ pub fn init_component_system(system: ComponentSystem) {
 /// Returns the component subsystem.
 pub fn component_system() -> &'static mut ComponentSystem {
     unsafe { COMPONENT_SYSTEM.as_mut().unwrap() }
+}
+
+pub fn authorize<F,O>(bucket: &Bucket, func: F) -> O where F: FnOnce() -> O {
+    let input = CreateBucketProofInput {
+        bucket_id: bucket.0
+    };
+    let output: CreateBucketProofOutput = call_engine(CREATE_BUCKET_PROOF, input);
+
+    let input = PushOntoAuthWorktopInput { proof_id: output.proof_id };
+    let _: PushOntoAuthWorkTopOutput = call_engine(PUSH_ONTO_AUTH_WORKTOP, input);
+
+    let return_value = func();
+
+    let input = PopFromAuthWorktopInput { };
+    let output: PopFromAuthWorkTopOutput = call_engine(POP_FROM_AUTH_WORKTOP, input);
+
+    let input = DropProofInput { proof_id: output.proof_id };
+    let _: DropProofOutput = call_engine(DROP_PROOF, input);
+
+    return_value
 }
 
 /// This macro creates a `&Package` from a `PackageId` via the

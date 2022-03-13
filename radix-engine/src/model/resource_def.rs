@@ -3,9 +3,10 @@ use scrypto::engine::types::*;
 use scrypto::resource::resource_flags::*;
 use scrypto::resource::resource_permissions::*;
 use scrypto::rust::collections::HashMap;
+use scrypto::rust::vec::Vec;
 use scrypto::rust::string::String;
 
-use crate::model::Resource;
+use crate::model::{Proof, Resource};
 
 /// Represents an error when accessing a bucket.
 #[derive(Debug, Clone, PartialEq)]
@@ -241,12 +242,12 @@ impl ResourceDef {
 
     pub fn check_take_from_vault_auth(
         &self,
-        badge: Option<ResourceDefId>,
+        proofs: Vec<&[Proof]>,
     ) -> Result<(), ResourceDefError> {
         if !self.is_flag_on(RESTRICTED_TRANSFER) {
             Ok(())
         } else {
-            self.check_permission(badge, MAY_TRANSFER)
+            self.check_proof_permission(proofs, MAY_TRANSFER)
         }
     }
 
@@ -318,6 +319,25 @@ impl ResourceDef {
             if let Some(auth) = self.authorities.get(&badge) {
                 if auth & permission == permission {
                     return Ok(());
+                }
+            }
+        }
+
+        Err(ResourceDefError::PermissionNotAllowed)
+    }
+
+    pub fn check_proof_permission(
+        &self,
+        proofs_vector: Vec<&[Proof]>,
+        permission: u64,
+    ) -> Result<(), ResourceDefError> {
+        for proofs in proofs_vector {
+            for p in proofs {
+                let proof_resource_def_id = p.bucket().resource_def_id();
+                if let Some(auth) = self.authorities.get(&proof_resource_def_id) {
+                    if auth & permission == permission {
+                        return Ok(());
+                    }
                 }
             }
         }

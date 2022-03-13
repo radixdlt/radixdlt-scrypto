@@ -48,7 +48,6 @@ impl Vault {
         let input = TakeFromVaultInput {
             vault_id: self.0,
             amount: amount.into(),
-            auth: None,
         };
         let output: TakeFromVaultOutput = call_engine(TAKE_FROM_VAULT, input);
 
@@ -63,7 +62,6 @@ impl Vault {
         let input = TakeFromVaultInput {
             vault_id: self.0,
             amount: amount.into(),
-            auth: Some(auth.0),
         };
         let output: TakeFromVaultOutput = call_engine(TAKE_FROM_VAULT, input);
 

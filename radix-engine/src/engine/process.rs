@@ -342,7 +342,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     ) -> Result<(), RuntimeError> {
         re_debug!(
             self,
-            "Returning to auth worktop: proof_id = {}",
+            "Pushing auth: proof_id = {}",
             proof_id
         );
 
@@ -1706,7 +1706,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     fn check_take_from_vault_auth(
         &mut self,
         vault_id: &VaultId,
-        badge: Option<ResourceDefId>,
     ) -> Result<(), RuntimeError> {
         let resource_def_id = self.get_local_vault(vault_id)?.resource_def_id();
 
@@ -1715,7 +1714,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .get_resource_def(&resource_def_id)
             .ok_or(RuntimeError::ResourceDefNotFound(resource_def_id))?;
         resource_def
-            .check_take_from_vault_auth(badge)
+            .check_take_from_vault_auth(vec![self.caller_auth_worktop, &self.auth_worktop])
             .map_err(RuntimeError::ResourceDefError)
     }
 
@@ -1723,10 +1722,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         input: TakeFromVaultInput,
     ) -> Result<TakeFromVaultOutput, RuntimeError> {
-        // TODO: restrict access
-
-        let badge = self.check_badge(input.auth)?;
-        self.check_take_from_vault_auth(&input.vault_id, badge)?;
+        self.check_take_from_vault_auth(&input.vault_id)?;
 
         let new_bucket = self
             .get_local_vault(&input.vault_id)?
@@ -1743,10 +1739,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         input: TakeNonFungibleFromVaultInput,
     ) -> Result<TakeNonFungibleFromVaultOutput, RuntimeError> {
-        // TODO: restrict access
-
-        let badge = self.check_badge(input.auth)?;
-        self.check_take_from_vault_auth(&input.vault_id, badge)?;
+        self.check_take_from_vault_auth(&input.vault_id)?;
 
         let new_bucket = self
             .get_local_vault(&input.vault_id)?
