@@ -171,11 +171,7 @@ pub enum RuntimeError {
     // System Authorization Failure
     NotAuthorized,
 
-    /// Index out of bounds.
-    IndexOutOfBounds {
-        index: usize,
-        max: usize,
-    },
+    EmptyAuthWorkTop,
 }
 
 impl fmt::Display for RuntimeError {

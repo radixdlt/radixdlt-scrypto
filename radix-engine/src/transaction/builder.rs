@@ -166,14 +166,14 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                 self.id_validator.drop_bucket(bucket_id).unwrap();
             }
             Instruction::AssertWorktopContains { .. } => {}
-            Instruction::TakeFromAuthWorktop { .. } => {
+            Instruction::PopFromAuthWorktop { .. } => {
                 new_proof_id = Some(
                     self.id_validator
                         .new_proof(ProofKind::RuntimeProof)
                         .unwrap(),
                 );
             }
-            Instruction::PutOnAuthWorktop { proof_id } => {
+            Instruction::PushOntoAuthWorktop { proof_id } => {
                 self.id_validator.drop_proof(proof_id).unwrap();
             }
             Instruction::CreateBucketProof { bucket_id } => {
