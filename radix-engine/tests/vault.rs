@@ -117,8 +117,7 @@ fn dangling_vault_should_fail() {
     // Arrange
     let mut ledger = InMemorySubstateStore::with_bootstrap();
     let mut sut = TransactionExecutor::new(&mut ledger, true);
-    let key = sut.new_public_key();
-    let account = sut.new_account(key);
+    let (_, account) = sut.new_public_key_with_account();
     let package = sut.publish_package(&compile("vault")).unwrap();
 
     // Act
