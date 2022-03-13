@@ -24,9 +24,21 @@ blueprint! {
             .instantiate()
         }
 
-        pub fn cross_component_call(&self, component_id: ComponentId) -> String {
+        pub fn put_auth(&mut self, mut auth_bucket: Vec<Bucket>) {
+            self.auth_vault = Some(Vault::with_bucket(auth_bucket.remove(0)));
+        }
+
+        pub fn cross_component_call(&mut self, component_id: ComponentId) -> String {
             let other_component = component!(component_id);
-            other_component.call("get_component_state", vec![])
+            match &mut self.auth_vault {
+                Some(vault) => {
+                    let auth_bucket = vault.take_all();
+                    let value = authorize(&auth_bucket, || other_component.call("get_component_state", vec![]));
+                    vault.put(auth_bucket);
+                    value
+                },
+                None => other_component.call("get_component_state", vec![])
+            }
         }
 
         pub fn get_component_state(&self) -> String {
