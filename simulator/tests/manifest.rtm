@@ -11,7 +11,7 @@ CREATE_BUCKET_PROOF Bucket("remaining_xrd") Proof("badge1");
 CLONE_PROOF Proof("badge1") Proof("badge2");
 DROP_PROOF Proof("badge1");
 PUT_ON_AUTH_WORKTOP Proof("badge2");
-TAKE_FROM_AUTH_WORKTOP 0u32 Proof("badge3");
+TAKE_FROM_AUTH_WORKTOP Proof("badge3");
 DROP_PROOF  Proof("badge3");
 RETURN_TO_WORKTOP Bucket("remaining_xrd");
 

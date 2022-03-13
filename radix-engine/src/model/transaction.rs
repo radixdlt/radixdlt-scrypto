@@ -40,7 +40,7 @@ pub enum Instruction {
     },
 
     /// Takes from the auth worktop.
-    TakeFromAuthWorktop { index: u32 },
+    TakeFromAuthWorktop,
 
     /// Put a proof on the auth worktop.
     PutOnAuthWorktop { proof_id: ProofId },
@@ -113,9 +113,7 @@ pub enum ValidatedInstruction {
         amount: Decimal,
         resource_def_id: ResourceDefId,
     },
-    TakeFromAuthWorktop {
-        index: u32,
-    },
+    TakeFromAuthWorktop,
     PutOnAuthWorktop {
         proof_id: ProofId,
     },

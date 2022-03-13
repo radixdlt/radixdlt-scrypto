@@ -32,7 +32,6 @@ pub enum Instruction {
     },
 
     TakeFromAuthWorktop {
-        index: Value,
         new_proof: Value,
     },
 

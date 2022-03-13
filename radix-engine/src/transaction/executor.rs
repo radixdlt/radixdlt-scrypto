@@ -179,8 +179,8 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
                 ValidatedInstruction::ReturnToWorktop { bucket_id } => {
                     proc.return_to_worktop(bucket_id)
                 }
-                ValidatedInstruction::TakeFromAuthWorktop { index } => {
-                    proc.take_from_auth_worktop(index as usize)
+                ValidatedInstruction::TakeFromAuthWorktop { } => {
+                    proc.take_from_auth_worktop()
                 }
                 ValidatedInstruction::PutOnAuthWorktop { proof_id } => {
                     proc.put_on_auth_worktop(proof_id)

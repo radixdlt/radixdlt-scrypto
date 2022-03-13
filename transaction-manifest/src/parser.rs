@@ -90,7 +90,6 @@ impl Parser {
                 resource_def_id: self.parse_value()?,
             },
             TokenKind::TakeFromAuthWorktop => Instruction::TakeFromAuthWorktop {
-                index: self.parse_value()?,
                 new_proof: self.parse_value()?,
             },
             TokenKind::PutOnAuthWorktop => Instruction::PutOnAuthWorktop {

@@ -81,15 +81,15 @@ pub fn decompile(tx: &Transaction) -> Result<String, DecompileError> {
                     amount, resource_def_id
                 ));
             }
-            Instruction::TakeFromAuthWorktop { index } => {
+            Instruction::TakeFromAuthWorktop => {
                 let proof_id = id_validator
                     .new_proof(ProofKind::RuntimeProof)
                     .map_err(DecompileError::IdValidatorError)?;
                 let name = format!("proof{}", proofs.len() + 1);
                 proofs.insert(proof_id, name.clone());
                 buf.push_str(&format!(
-                    "TAKE_FROM_AUTH_WORKTOP {}u32 Proof(\"{}\");\n",
-                    index, name
+                    "TAKE_FROM_AUTH_WORKTOP Proof(\"{}\");\n",
+                    name
                 ));
             }
             Instruction::PutOnAuthWorktop { proof_id } => {

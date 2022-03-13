@@ -60,11 +60,11 @@ pub fn validate_transaction(
                     resource_def_id,
                 });
             }
-            Instruction::TakeFromAuthWorktop { index } => {
+            Instruction::TakeFromAuthWorktop => {
                 id_validator
                     .new_proof(ProofKind::RuntimeProof)
                     .map_err(TransactionValidationError::IdValidatorError)?;
-                instructions.push(ValidatedInstruction::TakeFromAuthWorktop { index });
+                instructions.push(ValidatedInstruction::TakeFromAuthWorktop);
             }
             Instruction::PutOnAuthWorktop { proof_id } => {
                 id_validator

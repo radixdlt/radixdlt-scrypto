@@ -168,8 +168,7 @@ pub enum RuntimeError {
     /// Resource check failure.
     ResourceCheckFailure,
 
-    /// Index out of bounds.
-    IndexOutOfBounds { index: usize, max: usize },
+    EmptyAuthWorkTop,
 }
 
 impl fmt::Display for RuntimeError {
