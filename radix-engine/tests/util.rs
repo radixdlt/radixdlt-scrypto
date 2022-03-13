@@ -6,6 +6,13 @@ pub struct TestUtil {
 }
 
 impl TestUtil {
+    pub fn publish_package(
+        executor: &mut TransactionExecutor<InMemorySubstateStore>,
+        name: &str,
+    ) -> PackageId {
+        executor.publish_package(&Self::compile(name)).unwrap()
+    }
+
     pub fn compile(name: &str) -> Vec<u8> {
         compile_package!(format!("./tests/{}", name), name.replace("-", "_"))
     }
@@ -16,9 +23,7 @@ impl TestUtil {
     ) -> (ResourceDefId, ResourceDefId) {
         let auth_resource_def_id = Self::create_non_fungible_resource(executor, account);
 
-        let package = executor
-            .publish_package(&Self::compile("resource_creator"))
-            .unwrap();
+        let package = Self::publish_package(executor, "resource_creator");
         let transaction = TransactionBuilder::new(executor)
             .call_function(
                 package,
@@ -38,9 +43,7 @@ impl TestUtil {
         executor: &mut TransactionExecutor<InMemorySubstateStore>,
         account: ComponentId,
     ) -> ResourceDefId {
-        let package = executor
-            .publish_package(&Self::compile("resource_creator"))
-            .unwrap();
+        let package = Self::publish_package(executor, "resource_creator");
         let transaction = TransactionBuilder::new(executor)
             .call_function(
                 package,
