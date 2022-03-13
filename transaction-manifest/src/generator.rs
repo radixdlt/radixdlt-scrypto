@@ -174,20 +174,20 @@ pub fn generate_instruction(
             amount: generate_decimal(amount)?,
             resource_def_id: generate_resource_def_id(resource_def_id)?,
         },
-        ast::Instruction::TakeFromAuthWorktop { new_proof } => {
+        ast::Instruction::PopFromAuthWorktop { new_proof } => {
             let proof_id = id_validator
                 .new_proof(ProofKind::RuntimeProof)
                 .map_err(GeneratorError::IdValidatorError)?;
             declare_proof(new_proof, resolver, proof_id)?;
 
-            Instruction::TakeFromAuthWorktop
+            Instruction::PopFromAuthWorktop
         }
-        ast::Instruction::PutOnAuthWorktop { proof } => {
+        ast::Instruction::PushOntoAuthWorktop { proof } => {
             let proof_id = generate_proof(proof, resolver)?;
             id_validator
                 .drop_proof(proof_id)
                 .map_err(GeneratorError::IdValidatorError)?;
-            Instruction::PutOnAuthWorktop { proof_id }
+            Instruction::PushOntoAuthWorktop { proof_id }
         }
         ast::Instruction::CreateBucketProof { bucket, new_proof } => {
             let bucket_id = generate_bucket(bucket, resolver)?;
@@ -1005,8 +1005,8 @@ mod tests {
                     Instruction::CreateBucketProof { bucket_id: 513 },
                     Instruction::CloneProof { proof_id: 514 },
                     Instruction::DropProof { proof_id: 514 },
-                    Instruction::PutOnAuthWorktop { proof_id: 515 },
-                    Instruction::TakeFromAuthWorktop,
+                    Instruction::PushOntoAuthWorktop { proof_id: 515 },
+                    Instruction::PopFromAuthWorktop,
                     Instruction::DropProof { proof_id: 516 },
                     Instruction::ReturnToWorktop { bucket_id: 513 },
                     Instruction::TakeNonFungiblesFromWorktop {

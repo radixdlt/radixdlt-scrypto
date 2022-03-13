@@ -31,11 +31,11 @@ pub enum Instruction {
         resource_def_id: Value,
     },
 
-    TakeFromAuthWorktop {
+    PopFromAuthWorktop {
         new_proof: Value,
     },
 
-    PutOnAuthWorktop {
+    PushOntoAuthWorktop {
         proof: Value,
     },
 

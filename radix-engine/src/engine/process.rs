@@ -317,7 +317,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     }
 
     // (Transaction ONLY) Takes a proof from the auth worktop.
-    pub fn take_from_auth_worktop(&mut self) -> Result<ValidatedData, RuntimeError> {
+    pub fn pop_from_auth_worktop(&mut self) -> Result<ValidatedData, RuntimeError> {
         re_debug!(self, "(Transaction) Taking from auth worktop");
         if self.auth_worktop.is_empty() {
             return Err(RuntimeError::EmptyAuthWorkTop);
@@ -336,7 +336,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     }
 
     // (Transaction ONLY) Puts a proof onto the auth worktop.
-    pub fn put_on_auth_worktop(
+    pub fn push_onto_auth_worktop(
         &mut self,
         proof_id: ProofId,
     ) -> Result<ValidatedData, RuntimeError> {

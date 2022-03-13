@@ -60,17 +60,17 @@ pub fn validate_transaction(
                     resource_def_id,
                 });
             }
-            Instruction::TakeFromAuthWorktop => {
+            Instruction::PopFromAuthWorktop => {
                 id_validator
                     .new_proof(ProofKind::RuntimeProof)
                     .map_err(TransactionValidationError::IdValidatorError)?;
-                instructions.push(ValidatedInstruction::TakeFromAuthWorktop);
+                instructions.push(ValidatedInstruction::PopFromAuthWorktop);
             }
-            Instruction::PutOnAuthWorktop { proof_id } => {
+            Instruction::PushOntoAuthWorktop { proof_id } => {
                 id_validator
                     .drop_proof(proof_id)
                     .map_err(TransactionValidationError::IdValidatorError)?;
-                instructions.push(ValidatedInstruction::PutOnAuthWorktop { proof_id });
+                instructions.push(ValidatedInstruction::PushOntoAuthWorktop { proof_id });
             }
             Instruction::CreateBucketProof { bucket_id } => {
                 id_validator
