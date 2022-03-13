@@ -67,30 +67,6 @@ impl Vault {
         let input = TakeNonFungibleFromVaultInput {
             vault_id: self.0,
             non_fungible_id: non_fungible_id.clone(),
-            auth: None,
-        };
-        let output: TakeNonFungibleFromVaultOutput =
-            call_engine(TAKE_NON_FUNGIBLE_FROM_VAULT, input);
-
-        Bucket(output.bucket_id)
-    }
-
-    /// Takes a non-fungible from this vault, by id.
-    ///
-    /// This variant of `take_non_fungible` accepts an additional auth parameter to support resources
-    /// with or without `RESTRICTED_TRANSFER` flag on.
-    ///
-    /// # Panics
-    /// Panics if this is not a non-fungible vault or the specified non-fungible is not found.
-    pub fn take_non_fungible_with_auth(
-        &self,
-        non_fungible_id: &NonFungibleId,
-        auth: Proof,
-    ) -> Bucket {
-        let input = TakeNonFungibleFromVaultInput {
-            vault_id: self.0,
-            non_fungible_id: non_fungible_id.clone(),
-            auth: Some(auth.0),
         };
         let output: TakeNonFungibleFromVaultOutput =
             call_engine(TAKE_NON_FUNGIBLE_FROM_VAULT, input);

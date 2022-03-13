@@ -451,7 +451,6 @@ pub struct GetVaultResourceDefIdOutput {
 pub struct TakeNonFungibleFromVaultInput {
     pub vault_id: VaultId,
     pub non_fungible_id: NonFungibleId,
-    pub auth: Option<ProofId>,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
