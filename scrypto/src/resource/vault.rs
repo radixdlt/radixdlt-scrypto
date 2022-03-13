@@ -54,31 +54,9 @@ impl Vault {
         Bucket(output.bucket_id)
     }
 
-    /// Takes some amount of resource from this vault into a bucket.
-    ///
-    /// This variant of `take` accepts an additional auth parameter to support resources
-    /// with or without `RESTRICTED_TRANSFER` flag on.
-    pub fn take_with_auth<A: Into<Decimal>>(&mut self, amount: A, auth: Proof) -> Bucket {
-        let input = TakeFromVaultInput {
-            vault_id: self.0,
-            amount: amount.into(),
-        };
-        let output: TakeFromVaultOutput = call_engine(TAKE_FROM_VAULT, input);
-
-        Bucket(output.bucket_id)
-    }
-
     /// Takes all resource stored in this vault.
     pub fn take_all(&mut self) -> Bucket {
         self.take(self.amount())
-    }
-
-    /// Takes all resource stored in this vault.
-    ///
-    /// This variant of `take_all` accepts an additional auth parameter to support resources
-    /// with or without `RESTRICTED_TRANSFER` flag on.
-    pub fn take_all_with_auth(&mut self, auth: Proof) -> Bucket {
-        self.take_with_auth(self.amount(), auth)
     }
 
     /// Takes a non-fungible from this vault, by id.
@@ -130,24 +108,6 @@ impl Vault {
     ///
     pub fn authorize<F: FnOnce(Proof) -> O, O>(&mut self, f: F) -> O {
         let bucket = self.take(1);
-        let output = f(bucket.present());
-        self.put(bucket);
-        output
-    }
-
-    /// This is a convenience method for using the contained resource for authorization.
-    ///
-    /// It conducts the following actions in one shot:
-    /// 1. Takes `1` resource from this vault into a bucket;
-    /// 2. Creates a `Proof`.
-    /// 3. Applies the specified function `f` with the created proof;
-    /// 4. Puts the `1` resource back into this vault.
-    ///
-    /// This variant of `authorize` accepts an additional auth parameter to support resources
-    /// with or without `RESTRICTED_TRANSFER` flag on.
-    ///
-    pub fn authorize_with_auth<F: FnOnce(Proof) -> O, O>(&mut self, f: F, auth: Proof) -> O {
-        let bucket = self.take_with_auth(1, auth);
         let output = f(bucket.present());
         self.put(bucket);
         output
