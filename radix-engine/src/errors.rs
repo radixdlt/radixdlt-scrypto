@@ -61,10 +61,10 @@ pub enum RuntimeError {
     IdAllocatorError(IdAllocatorError),
 
     /// Error when invoking an export.
-    InvokeError(),
+    InvokeError,
 
     /// Error when accessing the program memory.
-    MemoryAccessError(),
+    MemoryAccessError,
 
     /// Error when allocating memory in program.
     MemoryAllocError,
@@ -88,10 +88,7 @@ pub enum RuntimeError {
     PackageNotFound(PackageId),
 
     /// System call not allowed in given context.
-    IllegalSystemCall(),
-
-    /// No component has been loaded.
-    ComponentNotLoaded(),
+    IllegalSystemCall,
 
     /// Component does not exist.
     ComponentNotFound(ComponentId),
@@ -112,19 +109,19 @@ pub enum RuntimeError {
     LazyMapNotFound(LazyMapId),
 
     /// Lazy map removed.
-    LazyMapRemoved(),
+    LazyMapRemoved(LazyMapId),
 
     /// Duplicate LazyMap added
     DuplicateLazyMap(LazyMapId),
 
     /// Cyclic LazyMap added
-    CyclicLazyMap(),
+    CyclicLazyMap(LazyMapId),
 
     /// Vault does not exist.
-    VaultNotFound(),
+    VaultNotFound(VaultId),
 
     /// Vault removed.
-    VaultRemoved(),
+    VaultRemoved(VaultId),
 
     /// Duplicate Vault added
     DuplicateVault(VaultId),
@@ -168,7 +165,10 @@ pub enum RuntimeError {
     /// Resource check failure.
     ResourceCheckFailure,
 
-    // System Authorization Failure
+    /// AuthWorktop is empty when trying to pop
+    EmptyAuthWorkTop,
+
+    /// System Authorization Failure
     NotAuthorized,
 
     /// Index out of bounds.
