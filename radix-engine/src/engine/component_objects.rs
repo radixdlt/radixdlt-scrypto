@@ -87,13 +87,13 @@ impl ComponentObjectRefs {
         // Only allow vaults to be added, never removed
         for vault_id in &other.vault_ids {
             if !self.vault_ids.remove(&vault_id) {
-                return Err(RuntimeError::VaultRemoved());
+                return Err(RuntimeError::VaultRemoved(*vault_id));
             }
         }
 
         for lazy_map_id in &other.lazy_map_ids {
             if !self.lazy_map_ids.remove(&lazy_map_id) {
-                return Err(RuntimeError::LazyMapRemoved());
+                return Err(RuntimeError::LazyMapRemoved(*lazy_map_id));
             }
         }
 
@@ -127,7 +127,7 @@ impl ComponentObjects {
             let vault = self
                 .vaults
                 .remove(&vault_id)
-                .ok_or(RuntimeError::VaultNotFound())?;
+                .ok_or(RuntimeError::VaultNotFound(vault_id))?;
             vaults.insert(vault_id, vault);
         }
 
