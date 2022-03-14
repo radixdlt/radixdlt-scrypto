@@ -25,6 +25,13 @@ blueprint! {
                 .initial_supply_fungible(5)
         }
 
+        pub fn create_restricted_burn(auth: ResourceDefId) -> Bucket {
+            ResourceBuilder::new_fungible(0)
+                .flags(BURNABLE)
+                .badge(auth, MAY_BURN)
+                .initial_supply_fungible(5)
+        }
+
         pub fn create_non_fungible_fixed() -> Bucket {
             ResourceBuilder::new_non_fungible()
                 .metadata("name", "Katz's Sandwiches")
