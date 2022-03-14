@@ -18,6 +18,13 @@ blueprint! {
                 .initial_supply_fungible(5)
         }
 
+        pub fn create_restricted_mint(auth: ResourceDefId) -> Bucket {
+            ResourceBuilder::new_fungible(0)
+                .flags(MINTABLE)
+                .badge(auth, MAY_MINT)
+                .initial_supply_fungible(5)
+        }
+
         pub fn create_non_fungible_fixed() -> Bucket {
             ResourceBuilder::new_non_fungible()
                 .metadata("name", "Katz's Sandwiches")
