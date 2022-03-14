@@ -8,7 +8,7 @@ mod resource_def;
 mod transaction;
 mod vault;
 
-pub use bucket::{Bucket, BucketError, LockedBucket, Proof, Resource};
+pub use bucket::{Bucket, BucketError, Proof, Resource, ResourceAmount};
 pub use component::Component;
 pub use data::{format_value, ValidatedData};
 pub use non_fungible::NonFungible;

@@ -102,7 +102,7 @@ impl<'s, S: SubstateStore> Track<'s, S> {
         let ecdsa_bucket = Bucket::new(
             ECDSA_TOKEN,
             ResourceType::NonFungible,
-            Resource::NonFungible { ids: signers },
+            Resource::non_fungible(signers),
         );
         process.create_virtual_proof(ECDSA_TOKEN_BUCKET_ID, ECDSA_TOKEN_PROOF_ID, ecdsa_bucket);
 

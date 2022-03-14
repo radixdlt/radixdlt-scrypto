@@ -5,7 +5,7 @@ use scrypto::resource::resource_permissions::*;
 use scrypto::rust::collections::HashMap;
 use scrypto::rust::string::String;
 
-use crate::model::Resource;
+use crate::model::{Resource, ResourceAmount};
 
 /// Represents an error when accessing a bucket.
 #[derive(Debug, Clone)]
@@ -124,17 +124,17 @@ impl ResourceDef {
 
         match self.resource_type {
             ResourceType::Fungible { .. } => {
-                if let Resource::Fungible { amount } = supply {
-                    self.check_amount(*amount)?;
-                    self.total_supply += *amount;
+                if let Resource::Fungible { liquid_amount, .. } = supply {
+                    self.check_amount(*liquid_amount)?;
+                    self.total_supply += *liquid_amount;
                     Ok(())
                 } else {
                     Err(ResourceDefError::TypeAndSupplyNotMatching)
                 }
             }
             ResourceType::NonFungible => {
-                if let Resource::NonFungible { ids } = supply {
-                    self.total_supply += ids.len();
+                if let Resource::NonFungible { liquid_ids, .. } = supply {
+                    self.total_supply += liquid_ids.len();
                     Ok(())
                 } else {
                     Err(ResourceDefError::TypeAndSupplyNotMatching)
@@ -145,34 +145,13 @@ impl ResourceDef {
 
     pub fn burn(
         &mut self,
-        resource: Resource,
+        amount: ResourceAmount,
         badge: Option<ResourceDefId>,
     ) -> Result<(), ResourceDefError> {
         self.check_burn_auth(badge)?;
 
-        match self.resource_type {
-            ResourceType::Fungible { .. } => {
-                if let Resource::Fungible { amount } = resource {
-                    self.check_amount(amount)?;
-                    self.total_supply -= amount;
-                    Ok(())
-                } else {
-                    Err(ResourceDefError::TypeAndSupplyNotMatching)
-                }
-            }
-            ResourceType::NonFungible => {
-                if let Resource::NonFungible { ids } = resource {
-                    // Note that the underlying non-fungibles are not deleted from the simulated ledger.
-                    // This is not an issue when integrated with UTXO-based state model, where
-                    // the UP state should have been spun down when the non-fungibles are withdrawn from
-                    // the vault.
-                    self.total_supply -= ids.len();
-                    Ok(())
-                } else {
-                    Err(ResourceDefError::TypeAndSupplyNotMatching)
-                }
-            }
-        }
+        self.total_supply -= amount.quantity();
+        Ok(())
     }
 
     pub fn update_flags(

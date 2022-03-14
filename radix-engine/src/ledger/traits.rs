@@ -166,9 +166,7 @@ pub trait SubstateStore {
             let system_vault = Vault::new(Bucket::new(
                 RADIX_TOKEN,
                 ResourceType::Fungible { divisibility: 18 },
-                Resource::Fungible {
-                    amount: XRD_MAX_SUPPLY.into(),
-                },
+                Resource::fungible(XRD_MAX_SUPPLY.into()),
             ));
             self.put_encoded_child_substate(
                 &SYSTEM_COMPONENT,

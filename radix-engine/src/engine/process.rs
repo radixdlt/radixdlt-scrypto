@@ -166,10 +166,9 @@ pub struct Process<'r, 'l, L: SubstateStore> {
     trace: bool,
     /// Transactional state updates
     track: &'r mut Track<'l, L>,
+
     /// Buckets owned by this process
-    buckets: HashMap<BucketId, Bucket>,
-    /// Buckets owned by this process (but LOCKED because there is a bucket proof to it)
-    buckets_locked: HashMap<BucketId, Proof>,
+    buckets: HashMap<BucketId, Rc<Bucket>>,
     /// Bucket proofs
     proofs: HashMap<ProofId, Proof>,
     /// The buckets that will be moved to another process SHORTLY.
@@ -190,7 +189,7 @@ pub struct Process<'r, 'l, L: SubstateStore> {
     /// to `buckets`.
     ///
     /// Loop invariant: all buckets should be NON_EMPTY.
-    worktop: HashMap<ResourceDefId, Bucket>,
+    worktop: HashMap<ResourceDefId, Rc<Bucket>>,
     /// Proofs collected from previous returns or self.
     ///
     /// All proofs in the collection are used for system-authorization.
@@ -205,7 +204,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             trace,
             track,
             buckets: HashMap::new(),
-            buckets_locked: HashMap::new(),
             proofs: HashMap::new(),
             moving_buckets: HashMap::new(),
             moving_proofs: HashMap::new(),
@@ -234,22 +232,34 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let bucket = match self.worktop.remove(&resource_def_id) {
             Some(mut bucket) => {
                 let to_return = match resource_spec {
-                    ResourceSpecification::Fungible { amount, .. } => bucket.take(amount),
-                    ResourceSpecification::NonFungible { keys, .. } => {
-                        bucket.take_non_fungibles(&keys)
+                    ResourceSpecification::Fungible { amount, .. } => {
+                        let new_bucket = Rc::get_mut(&mut bucket)
+                            .ok_or(RuntimeError::ResourceLocked)?
+                            .take(amount);
+                        if !bucket.liquid_amount().quantity().is_zero() {
+                            self.worktop.insert(resource_def_id, bucket);
+                        }
+                        new_bucket
                     }
-                    ResourceSpecification::All { .. } => bucket.take(bucket.amount()),
+                    ResourceSpecification::NonFungible { keys, .. } => {
+                        let new_bucket = Rc::get_mut(&mut bucket)
+                            .ok_or(RuntimeError::ResourceLocked)?
+                            .take_non_fungibles(&keys);
+                        if !bucket.liquid_amount().quantity().is_zero() {
+                            self.worktop.insert(resource_def_id, bucket);
+                        }
+                        new_bucket
+                    }
+                    ResourceSpecification::All { .. } => {
+                        Ok(Rc::try_unwrap(bucket).map_err(|_| RuntimeError::ResourceLocked)?)
+                    }
                 }
                 .map_err(RuntimeError::BucketError)?;
-
-                if !bucket.amount().is_zero() {
-                    self.worktop.insert(resource_def_id, bucket);
-                }
                 Ok(to_return)
             }
             None => Err(RuntimeError::BucketError(BucketError::InsufficientBalance)),
         }?;
-        self.buckets.insert(new_bucket_id, bucket);
+        self.buckets.insert(new_bucket_id, Rc::new(bucket));
         Ok(
             ValidatedData::from_slice(&scrypto_encode(&scrypto::resource::Bucket(new_bucket_id)))
                 .unwrap(),
@@ -272,10 +282,11 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .remove(&bucket_id)
             .ok_or(RuntimeError::BucketNotFound(bucket_id))?;
 
-        if !bucket.amount().is_zero() {
+        if !bucket.liquid_amount().quantity().is_zero() {
             if let Some(existing_bucket) = self.worktop.get_mut(&bucket.resource_def_id()) {
-                existing_bucket
-                    .put(bucket)
+                Rc::get_mut(existing_bucket)
+                    .ok_or(RuntimeError::ResourceLocked)?
+                    .put(Rc::try_unwrap(bucket).map_err(|_| RuntimeError::ResourceLocked)?)
                     .map_err(RuntimeError::BucketError)?;
             } else {
                 self.worktop.insert(bucket.resource_def_id(), bucket);
@@ -298,7 +309,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         );
 
         let balance = match self.worktop.get(&resource_def_id) {
-            Some(bucket) => bucket.amount(),
+            Some(bucket) => bucket.liquid_amount().quantity(),
             None => Decimal::zero(),
         };
 
@@ -373,23 +384,13 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .id_allocator
             .new_proof_id()
             .map_err(RuntimeError::IdAllocatorError)?;
-        match self.buckets_locked.get_mut(&bucket_id) {
-            Some(bucket_rc) => {
-                // re-borrow
-                self.proofs.insert(new_proof_id, bucket_rc.clone());
-            }
-            None => {
-                // first time borrow
-                let bucket = Proof::new(LockedBucket::new(
-                    bucket_id,
-                    self.buckets
-                        .remove(&bucket_id)
-                        .ok_or(RuntimeError::BucketNotFound(bucket_id))?,
-                ));
-                self.buckets_locked.insert(bucket_id, bucket.clone());
-                self.proofs.insert(new_proof_id, bucket);
-            }
-        };
+
+        let bucket = self
+            .buckets
+            .get_mut(&bucket_id)
+            .ok_or(RuntimeError::BucketNotFound(bucket_id))?;
+        let proof = Proof::from_bucket(bucket.clone());
+        self.proofs.insert(new_proof_id, proof);
 
         Ok(
             ValidatedData::from_slice(&scrypto_encode(&scrypto::resource::Proof(new_proof_id)))
@@ -426,7 +427,9 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             proof_id
         );
 
-        self.handle_drop_proof(DropProofInput { proof_id })?;
+        self.proofs
+            .remove(&proof_id)
+            .ok_or(RuntimeError::ProofNotFound(proof_id))?;
 
         Ok(ValidatedData::from_slice(&scrypto_encode(&())).unwrap())
     }
@@ -442,7 +445,10 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             "(Transaction) Calling method with all resources started"
         );
 
-        // 1. Move collected resource to temp buckets
+        // 1. Drop all proofs to unlock the buckets
+        self.drop_all_proofs()?;
+
+        // 2. Move collected resource to temp buckets
         let resource_def_ids: Vec<ResourceDefId> =
             self.worktop.iter().map(|(k, _)| k).cloned().collect();
         for id in resource_def_ids {
@@ -450,9 +456,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             let bucket = self.worktop.remove(&id).unwrap();
             self.buckets.insert(bucket_id, bucket);
         }
-
-        // 2. Drop all proofs to unlock the buckets
-        self.drop_all_proofs()?;
 
         // 3. Call the method with all buckets
         let to_deposit: Vec<scrypto::resource::Bucket> = self
@@ -486,9 +489,13 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     }
 
     /// (SYSTEM ONLY)  Creates a proof which references a virtual bucket
-    pub fn create_virtual_proof(&mut self, bucket_id: BucketId, proof_id: ProofId, bucket: Bucket) {
-        let locked_bucket = LockedBucket::new(bucket_id, bucket);
-        let proof = Proof::new(locked_bucket);
+    pub fn create_virtual_proof(
+        &mut self,
+        _bucket_id: BucketId,
+        proof_id: ProofId,
+        bucket: Bucket,
+    ) {
+        let proof = Proof::from_bucket(Rc::new(bucket));
         self.proofs.insert(proof_id, proof);
     }
 
@@ -502,18 +509,23 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             assert!(proofs.is_empty());
 
             for (_, bucket) in buckets {
-                if !bucket.amount().is_zero() {
+                if !bucket.liquid_amount().quantity().is_zero() {
                     let resource_def_id = bucket.resource_def_id();
                     if let Some(b) = self.worktop.get_mut(&resource_def_id) {
-                        b.put(bucket).unwrap();
+                        Rc::get_mut(b)
+                            .ok_or(RuntimeError::ResourceLocked)?
+                            .put(bucket)
+                            .unwrap();
                     } else {
-                        self.worktop.insert(resource_def_id, bucket);
+                        self.worktop.insert(resource_def_id, Rc::new(bucket));
                     }
                 }
             }
         } else {
             self.proofs.extend(proofs);
-            self.buckets.extend(buckets);
+            for (bucket_id, bucket) in buckets {
+                self.buckets.insert(bucket_id, Rc::new(bucket));
+            }
         }
 
         Ok(())
@@ -677,20 +689,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let (buckets_in, proofs_in) = process.move_out_resources();
         self.move_in_resources(buckets_in, proofs_in)?;
 
-        // scan locked buckets for some might have been unlocked by child processes
-        let bucket_ids: Vec<BucketId> = self
-            .buckets_locked
-            .values()
-            .filter(|v| Rc::strong_count(v) == 1)
-            .map(|v| v.bucket_id())
-            .collect();
-        for bucket_id in bucket_ids {
-            re_debug!(self, "Changing bucket {} to unlocked state", bucket_id);
-            let bucket_rc = self.buckets_locked.remove(&bucket_id).unwrap();
-            let bucket = Rc::try_unwrap(bucket_rc).unwrap();
-            self.buckets.insert(bucket_id, bucket.into());
-        }
-
         Ok(result)
     }
 
@@ -740,7 +738,9 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     pub fn drop_all_proofs(&mut self) -> Result<(), RuntimeError> {
         let proof_ids: Vec<ProofId> = self.proofs.keys().cloned().collect();
         for proof_id in proof_ids {
-            self.handle_drop_proof(DropProofInput { proof_id })?;
+            self.proofs
+                .remove(&proof_id)
+                .ok_or(RuntimeError::ProofNotFound(proof_id))?;
         }
         Ok(())
     }
@@ -751,10 +751,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let mut success = true;
 
         for (bucket_id, bucket) in &self.buckets {
-            re_warn!(self, "Dangling bucket: {}, {:?}", bucket_id, bucket);
-            success = false;
-        }
-        for (bucket_id, bucket) in &self.buckets_locked {
             re_warn!(self, "Dangling bucket: {}, {:?}", bucket_id, bucket);
             success = false;
         }
@@ -874,7 +870,10 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 .remove(bucket_id)
                 .ok_or(RuntimeError::BucketNotFound(*bucket_id))?;
             re_debug!(self, "Moving bucket: {}, {:?}", bucket_id, bucket);
-            self.moving_buckets.insert(*bucket_id, bucket);
+            self.moving_buckets.insert(
+                *bucket_id,
+                Rc::try_unwrap(bucket).map_err(|_| RuntimeError::ResourceLocked)?,
+            );
         }
         Ok(())
     }
@@ -996,10 +995,10 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 .ok_or(RuntimeError::ProofNotFound(proof_id))?;
 
             // read amount
-            if proof.bucket().amount().is_zero() {
+            if proof.total_amount().quantity().is_zero() {
                 return Err(RuntimeError::EmptyProof);
             }
-            let resource_def_id = proof.bucket().resource_def_id();
+            let resource_def_id = proof.resource_def_id();
 
             // drop proof after use
             self.handle_drop_proof(DropProofInput { proof_id })?;
@@ -1327,7 +1326,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         new_supply: Supply,
     ) -> Result<Resource, RuntimeError> {
         match new_supply {
-            Supply::Fungible { amount } => Ok(Resource::Fungible { amount }),
+            Supply::Fungible { amount } => Ok(Resource::fungible(amount)),
             Supply::NonFungible { entries } => {
                 let mut ids = BTreeSet::new();
 
@@ -1347,7 +1346,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     ids.insert(id);
                 }
 
-                Ok(Resource::NonFungible { ids })
+                Ok(Resource::non_fungible(ids))
             }
         }
     }
@@ -1375,7 +1374,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             let supply = self.allocate_resource(resource_def_id, initial_supply)?;
             let bucket = Bucket::new(resource_def_id, input.resource_type, supply);
             let bucket_id = self.track.new_bucket_id();
-            self.buckets.insert(bucket_id, bucket);
+            self.buckets.insert(bucket_id, Rc::new(bucket));
             Some(bucket_id)
         } else {
             None
@@ -1516,7 +1515,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             resource,
         );
         let bucket_id = self.track.new_bucket_id();
-        self.buckets.insert(bucket_id, bucket);
+        self.buckets.insert(bucket_id, Rc::new(bucket));
 
         Ok(MintResourceOutput { bucket_id })
     }
@@ -1538,7 +1537,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .ok_or(RuntimeError::ResourceDefNotFound(bucket.resource_def_id()))?;
 
         resource_def
-            .burn(bucket.resource(), badge)
+            .burn(bucket.liquid_amount(), badge)
             .map_err(RuntimeError::ResourceDefError)?;
         Ok(BurnResourceOutput {})
     }
@@ -1632,12 +1631,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             input.resource_def_id,
             definition.resource_type(),
             match definition.resource_type() {
-                ResourceType::Fungible { .. } => Resource::Fungible {
-                    amount: Decimal::zero(),
-                },
-                ResourceType::NonFungible { .. } => Resource::NonFungible {
-                    ids: BTreeSet::new(),
-                },
+                ResourceType::Fungible { .. } => Resource::fungible(0.into()),
+                ResourceType::NonFungible { .. } => Resource::non_fungible(BTreeSet::new()),
             },
         ));
         let vault_id = self.track.new_vault_id();
@@ -1688,7 +1683,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .ok_or(RuntimeError::BucketNotFound(input.bucket_id))?;
 
         self.get_local_vault(input.vault_id)?
-            .put(bucket)
+            .put(Rc::try_unwrap(bucket).map_err(|_| RuntimeError::ResourceLocked)?)
             .map_err(RuntimeError::VaultError)?;
 
         Ok(PutIntoVaultOutput {})
@@ -1725,7 +1720,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .map_err(RuntimeError::VaultError)?;
 
         let bucket_id = self.track.new_bucket_id();
-        self.buckets.insert(bucket_id, new_bucket);
+        self.buckets.insert(bucket_id, Rc::new(new_bucket));
 
         Ok(TakeFromVaultOutput { bucket_id })
     }
@@ -1745,7 +1740,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .map_err(RuntimeError::VaultError)?;
 
         let bucket_id = self.track.new_bucket_id();
-        self.buckets.insert(bucket_id, new_bucket);
+        self.buckets.insert(bucket_id, Rc::new(new_bucket));
 
         Ok(TakeNonFungibleFromVaultOutput { bucket_id })
     }
@@ -1756,8 +1751,11 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     ) -> Result<GetNonFungibleIdsInVaultOutput, RuntimeError> {
         let vault = self.get_local_vault(input.vault_id)?;
         let non_fungible_ids = vault
-            .get_non_fungible_ids()
-            .map_err(RuntimeError::VaultError)?;
+            .liquid_amount()
+            .non_fungible_ids()
+            .map_err(|_| RuntimeError::NotNonFungibleResource)?
+            .into_iter()
+            .collect();
 
         Ok(GetNonFungibleIdsInVaultOutput { non_fungible_ids })
     }
@@ -1769,7 +1767,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let vault = self.get_local_vault(input.vault_id)?;
 
         Ok(GetVaultAmountOutput {
-            amount: vault.amount(),
+            amount: vault.liquid_amount().quantity(),
         })
     }
 
@@ -1797,16 +1795,12 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             input.resource_def_id,
             definition.resource_type(),
             match definition.resource_type() {
-                ResourceType::Fungible { .. } => Resource::Fungible {
-                    amount: Decimal::zero(),
-                },
-                ResourceType::NonFungible { .. } => Resource::NonFungible {
-                    ids: BTreeSet::new(),
-                },
+                ResourceType::Fungible { .. } => Resource::fungible(0.into()),
+                ResourceType::NonFungible { .. } => Resource::non_fungible(BTreeSet::new()),
             },
         );
         let bucket_id = self.track.new_bucket_id();
-        self.buckets.insert(bucket_id, new_bucket);
+        self.buckets.insert(bucket_id, Rc::new(new_bucket));
 
         Ok(CreateEmptyBucketOutput { bucket_id })
     }
@@ -1820,11 +1814,14 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .remove(&input.other)
             .ok_or(RuntimeError::BucketNotFound(input.other))?;
 
-        self.buckets
-            .get_mut(&input.bucket_id)
-            .ok_or(RuntimeError::BucketNotFound(input.bucket_id))?
-            .put(other)
-            .map_err(RuntimeError::BucketError)?;
+        Rc::get_mut(
+            self.buckets
+                .get_mut(&input.bucket_id)
+                .ok_or(RuntimeError::BucketNotFound(input.bucket_id))?,
+        )
+        .ok_or(RuntimeError::ResourceLocked)?
+        .put(Rc::try_unwrap(other).map_err(|_| RuntimeError::ResourceLocked)?)
+        .map_err(RuntimeError::BucketError)?;
 
         Ok(PutIntoBucketOutput {})
     }
@@ -1833,14 +1830,16 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         input: TakeFromBucketInput,
     ) -> Result<TakeFromBucketOutput, RuntimeError> {
-        let new_bucket = self
-            .buckets
-            .get_mut(&input.bucket_id)
-            .ok_or(RuntimeError::BucketNotFound(input.bucket_id))?
-            .take(input.amount)
-            .map_err(RuntimeError::BucketError)?;
+        let new_bucket = Rc::get_mut(
+            self.buckets
+                .get_mut(&input.bucket_id)
+                .ok_or(RuntimeError::BucketNotFound(input.bucket_id))?,
+        )
+        .ok_or(RuntimeError::ResourceLocked)?
+        .take(input.amount)
+        .map_err(RuntimeError::BucketError)?;
         let bucket_id = self.track.new_bucket_id();
-        self.buckets.insert(bucket_id, new_bucket);
+        self.buckets.insert(bucket_id, Rc::new(new_bucket));
 
         Ok(TakeFromBucketOutput { bucket_id })
     }
@@ -1852,12 +1851,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let amount = self
             .buckets
             .get(&input.bucket_id)
-            .map(|b| b.amount())
-            .or_else(|| {
-                self.buckets_locked
-                    .get(&input.bucket_id)
-                    .map(|x| x.bucket().amount())
-            })
+            .map(|b| b.liquid_amount().quantity())
             .ok_or(RuntimeError::BucketNotFound(input.bucket_id))?;
 
         Ok(GetBucketAmountOutput { amount })
@@ -1871,11 +1865,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .buckets
             .get(&input.bucket_id)
             .map(|b| b.resource_def_id())
-            .or_else(|| {
-                self.buckets_locked
-                    .get(&input.bucket_id)
-                    .map(|x| x.bucket().resource_def_id())
-            })
             .ok_or(RuntimeError::BucketNotFound(input.bucket_id))?;
 
         Ok(GetBucketResourceDefIdOutput { resource_def_id })
@@ -1885,14 +1874,16 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         input: TakeNonFungibleFromBucketInput,
     ) -> Result<TakeNonFungibleFromBucketOutput, RuntimeError> {
-        let new_bucket = self
-            .buckets
-            .get_mut(&input.bucket_id)
-            .ok_or(RuntimeError::BucketNotFound(input.bucket_id))?
-            .take_non_fungible(&input.non_fungible_id)
-            .map_err(RuntimeError::BucketError)?;
+        let new_bucket = Rc::get_mut(
+            self.buckets
+                .get_mut(&input.bucket_id)
+                .ok_or(RuntimeError::BucketNotFound(input.bucket_id))?,
+        )
+        .ok_or(RuntimeError::ResourceLocked)?
+        .take_non_fungible(&input.non_fungible_id)
+        .map_err(RuntimeError::BucketError)?;
         let bucket_id = self.track.new_bucket_id();
-        self.buckets.insert(bucket_id, new_bucket);
+        self.buckets.insert(bucket_id, Rc::new(new_bucket));
 
         Ok(TakeNonFungibleFromBucketOutput { bucket_id })
     }
@@ -1908,8 +1899,11 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
         Ok(GetNonFungibleIdsInBucketOutput {
             non_fungible_ids: bucket
-                .get_non_fungible_ids()
-                .map_err(RuntimeError::BucketError)?,
+                .liquid_amount()
+                .non_fungible_ids()
+                .map_err(|_| RuntimeError::NotNonFungibleResource)?
+                .into_iter()
+                .collect(),
         })
     }
 
@@ -1918,33 +1912,28 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         input: CreateBucketProofInput,
     ) -> Result<CreateBucketProofOutput, RuntimeError> {
         let bucket_id = input.bucket_id;
-        let proof_id = self.track.new_proof_id();
+        let new_proof_id = self
+            .id_allocator
+            .new_proof_id()
+            .map_err(RuntimeError::IdAllocatorError)?;
+
         re_debug!(
             self,
             "Borrowing: bucket_id = {}, proof_id = {}",
             bucket_id,
-            proof_id
+            new_proof_id
         );
 
-        match self.buckets_locked.get_mut(&bucket_id) {
-            Some(bucket_rc) => {
-                // re-borrow
-                self.proofs.insert(proof_id, bucket_rc.clone());
-            }
-            None => {
-                // first time borrow
-                let bucket = Proof::new(LockedBucket::new(
-                    bucket_id,
-                    self.buckets
-                        .remove(&bucket_id)
-                        .ok_or(RuntimeError::BucketNotFound(bucket_id))?,
-                ));
-                self.buckets_locked.insert(bucket_id, bucket.clone());
-                self.proofs.insert(proof_id, bucket);
-            }
-        }
+        let bucket = self
+            .buckets
+            .get_mut(&bucket_id)
+            .ok_or(RuntimeError::BucketNotFound(bucket_id))?;
+        let proof = Proof::from_bucket(bucket.clone());
+        self.proofs.insert(new_proof_id, proof);
 
-        Ok(CreateBucketProofOutput { proof_id })
+        Ok(CreateBucketProofOutput {
+            proof_id: new_proof_id,
+        })
     }
 
     fn handle_drop_proof(
@@ -1953,21 +1942,9 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     ) -> Result<DropProofOutput, RuntimeError> {
         let proof_id = input.proof_id;
 
-        let (count, bucket_id) = {
-            let proof = self
-                .proofs
-                .remove(&proof_id)
-                .ok_or(RuntimeError::ProofNotFound(proof_id))?;
-            re_debug!(self, "Dropping proof: proof_id = {}", proof_id);
-            (Rc::strong_count(&proof) - 1, proof.bucket_id())
-        };
-
-        if count == 1 {
-            if let Some(b) = self.buckets_locked.remove(&bucket_id) {
-                self.buckets
-                    .insert(bucket_id, Rc::try_unwrap(b).unwrap().into());
-            }
-        }
+        self.proofs
+            .remove(&proof_id)
+            .ok_or(RuntimeError::ProofNotFound(proof_id))?;
 
         Ok(DropProofOutput {})
     }
@@ -1982,7 +1959,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .ok_or(RuntimeError::ProofNotFound(input.proof_id))?;
 
         Ok(GetProofAmountOutput {
-            amount: proof.bucket().amount(),
+            amount: proof.total_amount().quantity(),
         })
     }
 
@@ -1996,7 +1973,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .ok_or(RuntimeError::ProofNotFound(input.proof_id))?;
 
         Ok(GetProofResourceDefIdOutput {
-            resource_def_id: proof.bucket().resource_def_id(),
+            resource_def_id: proof.resource_def_id(),
         })
     }
 
@@ -2011,9 +1988,11 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
         Ok(GetNonFungibleIdsInProofOutput {
             non_fungible_ids: proof
-                .bucket()
-                .get_non_fungible_ids()
-                .map_err(RuntimeError::BucketError)?,
+                .total_amount()
+                .non_fungible_ids()
+                .map_err(|_| RuntimeError::NotNonFungibleResource)?
+                .into_iter()
+                .collect(),
         })
     }
 

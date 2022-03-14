@@ -1,13 +1,12 @@
 use sbor::*;
 use scrypto::engine::types::*;
-use scrypto::rust::vec::Vec;
 
-use crate::model::{Bucket, BucketError, Resource};
+use crate::model::{Bucket, BucketError, ResourceAmount};
 
 /// Represents an error when accessing a vault.
 #[derive(Debug, Clone)]
 pub enum VaultError {
-    AccountingError(BucketError),
+    BucketError(BucketError),
 }
 
 /// A persistent resource container on ledger state.
@@ -22,36 +21,28 @@ impl Vault {
     }
 
     pub fn put(&mut self, other: Bucket) -> Result<(), VaultError> {
-        self.bucket.put(other).map_err(VaultError::AccountingError)
+        self.bucket.put(other).map_err(VaultError::BucketError)
     }
 
     pub fn take(&mut self, amount: Decimal) -> Result<Bucket, VaultError> {
-        self.bucket
-            .take(amount)
-            .map_err(VaultError::AccountingError)
+        self.bucket.take(amount).map_err(VaultError::BucketError)
     }
 
     pub fn take_non_fungible(&mut self, key: &NonFungibleId) -> Result<Bucket, VaultError> {
         self.bucket
             .take_non_fungible(key)
-            .map_err(VaultError::AccountingError)
+            .map_err(VaultError::BucketError)
     }
 
-    pub fn get_non_fungible_ids(&self) -> Result<Vec<NonFungibleId>, VaultError> {
-        self.bucket
-            .get_non_fungible_ids()
-            .map_err(VaultError::AccountingError)
-    }
-
-    pub fn resource(&self) -> Resource {
-        self.bucket.resource()
-    }
-
-    pub fn amount(&self) -> Decimal {
-        self.bucket.amount()
+    pub fn liquid_amount(&self) -> ResourceAmount {
+        self.bucket.liquid_amount()
     }
 
     pub fn resource_def_id(&self) -> ResourceDefId {
         self.bucket.resource_def_id()
+    }
+
+    pub fn resource_type(&self) -> ResourceType {
+        self.bucket.resource_type()
     }
 }

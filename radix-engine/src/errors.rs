@@ -170,6 +170,12 @@ pub enum RuntimeError {
 
     /// Index out of bounds.
     IndexOutOfBounds { index: usize, max: usize },
+
+    /// The resource is locked due to proof generated on top of it
+    ResourceLocked,
+
+    /// Not non-fungible resource
+    NotNonFungibleResource,
 }
 
 impl fmt::Display for RuntimeError {
