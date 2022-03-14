@@ -1647,7 +1647,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     fn check_resource_auth(
         &mut self,
         resource_def_id: &ResourceDefId,
-        transition: ResourceTransition,
+        transition: ResourceControllerMethod,
     ) -> Result<(), RuntimeError> {
         let resource_def = self
             .track
@@ -1666,7 +1666,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         input: MintResourceInput,
     ) -> Result<MintResourceOutput, RuntimeError> {
         // Auth
-        self.check_resource_auth(&input.resource_def_id, ResourceTransition::Mint)?;
+        self.check_resource_auth(&input.resource_def_id, ResourceControllerMethod::Mint)?;
 
         // allocate resource
         let resource = self.allocate_resource(input.resource_def_id, input.new_supply)?;
@@ -1701,7 +1701,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .buckets
             .remove(&input.bucket_id)
             .ok_or(RuntimeError::BucketNotFound(input.bucket_id))?;
-        self.check_resource_auth(&bucket.resource_def_id(), ResourceTransition::Burn)?;
+        self.check_resource_auth(&bucket.resource_def_id(), ResourceControllerMethod::Burn)?;
 
         // Burn
         let resource_def = self
@@ -1720,7 +1720,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         input: TakeFromVaultInput,
     ) -> Result<TakeFromVaultOutput, RuntimeError> {
         let resource_def_id = self.get_local_vault(&input.vault_id)?.resource_def_id();
-        self.check_resource_auth(&resource_def_id, ResourceTransition::Take)?;
+        self.check_resource_auth(&resource_def_id, ResourceControllerMethod::TakeFromVault)?;
 
         let new_bucket = self
             .get_local_vault(&input.vault_id)?
@@ -1738,7 +1738,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         input: TakeNonFungibleFromVaultInput,
     ) -> Result<TakeNonFungibleFromVaultOutput, RuntimeError> {
         let resource_def_id = self.get_local_vault(&input.vault_id)?.resource_def_id();
-        self.check_resource_auth(&resource_def_id, ResourceTransition::Take)?;
+        self.check_resource_auth(&resource_def_id, ResourceControllerMethod::TakeFromVault)?;
 
         let new_bucket = self
             .get_local_vault(&input.vault_id)?

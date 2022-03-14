@@ -8,10 +8,10 @@ use scrypto::rust::vec::Vec;
 
 use crate::model::{Proof, Resource};
 
-pub enum ResourceTransition {
+pub enum ResourceControllerMethod {
     Mint,
     Burn,
-    Take,
+    TakeFromVault,
 }
 
 /// Represents an error when accessing a bucket.
@@ -236,18 +236,18 @@ impl ResourceDef {
 
     pub fn check_auth(
         &self,
-        transition: ResourceTransition,
+        transition: ResourceControllerMethod,
         proofs: Vec<&[Proof]>,
     ) -> Result<(), ResourceDefError> {
         match transition {
-            ResourceTransition::Mint => {
+            ResourceControllerMethod::Mint => {
                 if self.is_flag_on(MINTABLE) {
                     self.check_proof_permission(proofs, MAY_MINT)
                 } else {
                     Err(ResourceDefError::OperationNotAllowed)
                 }
             }
-            ResourceTransition::Burn => {
+            ResourceControllerMethod::Burn => {
                 if self.is_flag_on(BURNABLE) {
                     if self.is_flag_on(FREELY_BURNABLE) {
                         Ok(())
@@ -258,7 +258,7 @@ impl ResourceDef {
                     Err(ResourceDefError::OperationNotAllowed)
                 }
             }
-            ResourceTransition::Take => {
+            ResourceControllerMethod::TakeFromVault => {
                 if !self.is_flag_on(RESTRICTED_TRANSFER) {
                     Ok(())
                 } else {
