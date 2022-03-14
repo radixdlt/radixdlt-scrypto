@@ -571,7 +571,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 match e.into_host_error() {
                     // Pass-through runtime errors
                     Some(host_error) => *host_error.downcast::<RuntimeError>().unwrap(),
-                    None => RuntimeError::InvokeError(),
+                    None => RuntimeError::InvokeError,
                 }
             })?
             .ok_or(RuntimeError::NoReturnData)?;
@@ -919,7 +919,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .vm
             .memory
             .get_value(ptr as u32)
-            .map_err(|_| RuntimeError::MemoryAccessError())?;
+            .map_err(|_| RuntimeError::MemoryAccessError)?;
 
         // SECURITY: meter before allocating memory
         let mut data = vec![0u8; len as usize];
@@ -927,7 +927,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .vm
             .memory
             .get_into((ptr + 4) as u32, &mut data)
-            .map_err(|_| RuntimeError::MemoryAccessError())?;
+            .map_err(|_| RuntimeError::MemoryAccessError)?;
 
         // free the buffer
         wasm_process
@@ -938,7 +938,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 &[RuntimeValue::I32(ptr as i32)],
                 &mut NopExternals,
             )
-            .map_err(|_| RuntimeError::MemoryAccessError())?;
+            .map_err(|_| RuntimeError::MemoryAccessError)?;
 
         Ok(data.to_vec())
     }
@@ -959,7 +959,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .vm
             .memory
             .get_into(input_ptr, &mut input_bytes)
-            .map_err(|_| Trap::from(RuntimeError::MemoryAccessError()))?;
+            .map_err(|_| Trap::from(RuntimeError::MemoryAccessError))?;
         let input: I = scrypto_decode(&input_bytes)
             .map_err(|e| Trap::from(RuntimeError::InvalidRequestData(e)))?;
         if input_len <= 1024 {
@@ -1090,7 +1090,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let wasm_process = self
             .wasm_process_state
             .as_mut()
-            .ok_or(RuntimeError::IllegalSystemCall())?;
+            .ok_or(RuntimeError::IllegalSystemCall)?;
 
         let data = Self::process_entry_data(&input.state)?;
         let new_objects = wasm_process.process_owned_objects.take(data)?;
@@ -1129,10 +1129,10 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let wasm_process = self
             .wasm_process_state
             .as_mut()
-            .ok_or(RuntimeError::IllegalSystemCall())?;
+            .ok_or(RuntimeError::IllegalSystemCall)?;
         let return_state = match &wasm_process.interpreter_state {
             InterpreterState::Component { state, .. } => Ok(state),
-            _ => Err(RuntimeError::IllegalSystemCall()),
+            _ => Err(RuntimeError::IllegalSystemCall),
         }?;
         let state = return_state.to_vec();
         Ok(GetComponentStateOutput { state })
@@ -1145,7 +1145,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let wasm_process = self
             .wasm_process_state
             .as_mut()
-            .ok_or(RuntimeError::IllegalSystemCall())?;
+            .ok_or(RuntimeError::IllegalSystemCall)?;
         match &wasm_process.interpreter_state {
             InterpreterState::Component {
                 component_id,
@@ -1164,7 +1164,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 component.set_state(input.state);
                 Ok(())
             }
-            _ => Err(RuntimeError::IllegalSystemCall()),
+            _ => Err(RuntimeError::IllegalSystemCall),
         }?;
 
         Ok(PutComponentStateOutput {})
@@ -1177,7 +1177,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let wasm_process = self
             .wasm_process_state
             .as_mut()
-            .ok_or(RuntimeError::IllegalSystemCall())?;
+            .ok_or(RuntimeError::IllegalSystemCall)?;
         let lazy_map_id = self.track.new_lazy_map_id();
         wasm_process
             .process_owned_objects
@@ -1193,7 +1193,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let wasm_process = self
             .wasm_process_state
             .as_mut()
-            .ok_or(RuntimeError::IllegalSystemCall())?;
+            .ok_or(RuntimeError::IllegalSystemCall)?;
         let entry = match wasm_process
             .process_owned_objects
             .get_lazy_map_entry(&input.lazy_map_id, &input.key)
@@ -1242,7 +1242,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let wasm_process = self
             .wasm_process_state
             .as_mut()
-            .ok_or(RuntimeError::IllegalSystemCall())?;
+            .ok_or(RuntimeError::IllegalSystemCall)?;
         let (old_value, lazy_map_state) = match wasm_process
             .process_owned_objects
             .get_lazy_map_entry(&input.lazy_map_id, &input.key)
@@ -1289,7 +1289,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         // Check for cycles
         if let Uncommitted { root } = lazy_map_state {
             if new_entry_object_refs.lazy_map_ids.contains(&root) {
-                return Err(RuntimeError::CyclicLazyMap());
+                return Err(RuntimeError::CyclicLazyMap(root));
             }
         }
 
@@ -1572,7 +1572,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let wasm_process = self
             .wasm_process_state
             .as_mut()
-            .ok_or(RuntimeError::IllegalSystemCall())?;
+            .ok_or(RuntimeError::IllegalSystemCall)?;
         let definition = self
             .track
             .get_resource_def(&input.resource_def_id)
@@ -1603,7 +1603,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let wasm_process = self
             .wasm_process_state
             .as_mut()
-            .ok_or(RuntimeError::IllegalSystemCall())?;
+            .ok_or(RuntimeError::IllegalSystemCall)?;
         match wasm_process.process_owned_objects.get_vault_mut(vault_id) {
             Some(vault) => Ok(vault),
             None => match &wasm_process.interpreter_state {
@@ -1616,12 +1616,12 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     if !initial_loaded_object_refs.vault_ids.contains(vault_id)
                         && !additional_object_refs.vault_ids.contains(vault_id)
                     {
-                        return Err(RuntimeError::VaultNotFound());
+                        return Err(RuntimeError::VaultNotFound(*vault_id));
                     }
                     let vault = self.track.get_vault_mut(component_id, vault_id);
                     Ok(vault)
                 }
-                _ => Err(RuntimeError::VaultNotFound()),
+                _ => Err(RuntimeError::VaultNotFound(*vault_id)),
             },
         }
     }
