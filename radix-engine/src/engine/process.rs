@@ -1095,7 +1095,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let wasm_process = self
             .wasm_process_state
             .as_mut()
-            .ok_or(RuntimeError::IllegalSystemCall())?;
+            .ok_or(RuntimeError::IllegalSystemCall)?;
 
         let data = Self::process_entry_data(&input.state)?;
         let new_objects = wasm_process.process_owned_objects.take(data)?;
@@ -1133,10 +1133,10 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let wasm_process = self
             .wasm_process_state
             .as_mut()
-            .ok_or(RuntimeError::IllegalSystemCall())?;
+            .ok_or(RuntimeError::IllegalSystemCall)?;
         let return_state = match &wasm_process.interpreter_state {
             InterpreterState::Component { state, .. } => Ok(state),
-            _ => Err(RuntimeError::IllegalSystemCall()),
+            _ => Err(RuntimeError::IllegalSystemCall),
         }?;
         let state = return_state.to_vec();
         Ok(GetComponentStateOutput { state })
@@ -1149,7 +1149,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let wasm_process = self
             .wasm_process_state
             .as_mut()
-            .ok_or(RuntimeError::IllegalSystemCall())?;
+            .ok_or(RuntimeError::IllegalSystemCall)?;
         match &wasm_process.interpreter_state {
             InterpreterState::Component {
                 component_id,
@@ -1168,7 +1168,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 component.set_state(input.state);
                 Ok(())
             }
-            _ => Err(RuntimeError::IllegalSystemCall()),
+            _ => Err(RuntimeError::IllegalSystemCall),
         }?;
 
         Ok(PutComponentStateOutput {})
@@ -1181,7 +1181,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let wasm_process = self
             .wasm_process_state
             .as_mut()
-            .ok_or(RuntimeError::IllegalSystemCall())?;
+            .ok_or(RuntimeError::IllegalSystemCall)?;
         let lazy_map_id = self.track.new_lazy_map_id();
         wasm_process
             .process_owned_objects
@@ -1197,7 +1197,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let wasm_process = self
             .wasm_process_state
             .as_mut()
-            .ok_or(RuntimeError::IllegalSystemCall())?;
+            .ok_or(RuntimeError::IllegalSystemCall)?;
         let entry = match wasm_process
             .process_owned_objects
             .get_lazy_map_entry(&input.lazy_map_id, &input.key)
@@ -1246,7 +1246,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let wasm_process = self
             .wasm_process_state
             .as_mut()
-            .ok_or(RuntimeError::IllegalSystemCall())?;
+            .ok_or(RuntimeError::IllegalSystemCall)?;
         let (old_value, lazy_map_state) = match wasm_process
             .process_owned_objects
             .get_lazy_map_entry(&input.lazy_map_id, &input.key)
@@ -1628,7 +1628,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let wasm_process = self
             .wasm_process_state
             .as_mut()
-            .ok_or(RuntimeError::IllegalSystemCall())?;
+            .ok_or(RuntimeError::IllegalSystemCall)?;
         let definition = self
             .track
             .get_resource_def(&input.resource_def_id)
@@ -1659,7 +1659,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let wasm_process = self
             .wasm_process_state
             .as_mut()
-            .ok_or(RuntimeError::IllegalSystemCall())?;
+            .ok_or(RuntimeError::IllegalSystemCall)?;
         match wasm_process.process_owned_objects.get_vault_mut(&vault_id) {
             Some(vault) => Ok(vault),
             None => match &wasm_process.interpreter_state {
@@ -1672,12 +1672,12 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     if !initial_loaded_object_refs.vault_ids.contains(&vault_id)
                         && !additional_object_refs.vault_ids.contains(&vault_id)
                     {
-                        return Err(RuntimeError::VaultNotFound());
+                        return Err(RuntimeError::VaultNotFound(vault_id));
                     }
                     let vault = self.track.get_vault_mut(component_id, &vault_id);
                     Ok(vault)
                 }
-                _ => Err(RuntimeError::VaultNotFound()),
+                _ => Err(RuntimeError::VaultNotFound(vault_id)),
             },
         }
     }

@@ -29,7 +29,10 @@ fn non_existent_vault_in_component_creation_should_fail() {
 
     // Assert
     let runtime_error = receipt.result.expect_err("Should be runtime error");
-    assert_eq!(runtime_error, RuntimeError::VaultNotFound());
+    match runtime_error {
+        RuntimeError::VaultNotFound(_) => {}
+        _ => panic!("Should be vault not found error"),
+    }
 }
 
 #[test]
@@ -54,7 +57,10 @@ fn non_existent_vault_in_committed_component_should_fail() {
 
     // Assert
     let runtime_error = receipt.result.expect_err("Should be runtime error");
-    assert_eq!(runtime_error, RuntimeError::VaultNotFound());
+    match runtime_error {
+        RuntimeError::VaultNotFound(_) => {}
+        _ => panic!("Should be vault not found error"),
+    }
 }
 
 #[test]
@@ -79,7 +85,10 @@ fn non_existent_vault_in_lazy_map_creation_should_fail() {
 
     // Assert
     let runtime_error = receipt.result.expect_err("Should be runtime error");
-    assert_eq!(runtime_error, RuntimeError::VaultNotFound());
+    match runtime_error {
+        RuntimeError::VaultNotFound(_) => {}
+        _ => panic!("Should be vault not found error"),
+    }
 }
 
 #[test]
@@ -109,7 +118,10 @@ fn non_existent_vault_in_committed_lazy_map_should_fail() {
 
     // Assert
     let runtime_error = receipt.result.expect_err("Should be runtime error");
-    assert_eq!(runtime_error, RuntimeError::VaultNotFound());
+    match runtime_error {
+        RuntimeError::VaultNotFound(_) => {}
+        _ => panic!("Should be vault not found error"),
+    }
 }
 
 #[test]
@@ -179,7 +191,10 @@ fn invalid_double_ownership_of_vault() {
 
     // Assert
     let runtime_error = receipt.result.expect_err("Should be runtime error");
-    assert_eq!(runtime_error, RuntimeError::VaultNotFound());
+    match runtime_error {
+        RuntimeError::VaultNotFound(_) => {}
+        _ => panic!("Should be vault not found error"),
+    }
 }
 
 #[test]
@@ -228,7 +243,10 @@ fn cannot_overwrite_vault_in_map() {
 
     // Assert
     let runtime_error = receipt.result.expect_err("Should be runtime error");
-    assert_eq!(runtime_error, RuntimeError::VaultRemoved());
+    match runtime_error {
+        RuntimeError::VaultRemoved(_) => {}
+        _ => panic!("Should be vault not found error"),
+    }
 }
 
 #[test]
@@ -271,7 +289,10 @@ fn cannot_remove_vaults() {
 
     // Assert
     let runtime_error = receipt.result.expect_err("Should be runtime error");
-    assert_eq!(runtime_error, RuntimeError::VaultRemoved());
+    match runtime_error {
+        RuntimeError::VaultRemoved(_) => {}
+        _ => panic!("Should be vault not found error"),
+    }
 }
 
 #[test]
