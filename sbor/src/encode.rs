@@ -272,6 +272,8 @@ impl<K: Encode, V: Encode> Encode for HashMap<K, V> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::rust::borrow::ToOwned;
+    use crate::rust::vec;
 
     fn do_encoding(enc: &mut Encoder) {
         ().encode(enc);

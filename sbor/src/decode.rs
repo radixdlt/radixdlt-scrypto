@@ -385,6 +385,8 @@ impl<K: Decode + Hash + Eq, V: Decode> Decode for HashMap<K, V> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::rust::borrow::ToOwned;
+    use crate::rust::vec;
 
     fn assert_decoding(dec: &mut Decoder) {
         <()>::decode(dec).unwrap();
