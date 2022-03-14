@@ -165,7 +165,10 @@ pub enum RuntimeError {
     /// Resource check failure.
     ResourceCheckFailure,
 
-    // System Authorization Failure
+    /// AuthWorktop is empty when trying to pop
+    EmptyAuthWorkTop,
+
+    /// System Authorization Failure
     NotAuthorized,
 
     /// Index out of bounds.

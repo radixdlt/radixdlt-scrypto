@@ -320,20 +320,17 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     }
 
     // (Transaction ONLY) Takes a proof from the auth worktop.
-    pub fn take_from_auth_worktop(&mut self, index: usize) -> Result<ValidatedData, RuntimeError> {
-        re_debug!(self, "(Transaction) Taking from auth worktop: {:?}", index);
-        if index >= self.auth_worktop.len() {
-            return Err(RuntimeError::IndexOutOfBounds {
-                index,
-                max: self.auth_worktop.len() - 1,
-            });
+    pub fn pop_from_auth_worktop(&mut self) -> Result<ValidatedData, RuntimeError> {
+        re_debug!(self, "(Transaction) Taking from auth worktop");
+        if self.auth_worktop.is_empty() {
+            return Err(RuntimeError::EmptyAuthWorkTop);
         }
 
         let new_proof_id = self
             .id_allocator
             .new_proof_id()
             .map_err(RuntimeError::IdAllocatorError)?;
-        let proof = self.auth_worktop.remove(index);
+        let proof = self.auth_worktop.remove(self.auth_worktop.len() - 1);
         self.proofs.insert(new_proof_id, proof);
         Ok(
             ValidatedData::from_slice(&scrypto_encode(&scrypto::resource::Bucket(new_proof_id)))
@@ -342,7 +339,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     }
 
     // (Transaction ONLY) Puts a proof onto the auth worktop.
-    pub fn put_on_auth_worktop(
+    pub fn push_onto_auth_worktop(
         &mut self,
         proof_id: ProofId,
     ) -> Result<ValidatedData, RuntimeError> {
