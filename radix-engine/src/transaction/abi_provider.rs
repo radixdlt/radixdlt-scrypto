@@ -49,22 +49,6 @@ impl BasicAbiProvider {
         );
         self
     }
-
-    pub fn with_component(
-        &mut self,
-        component_id: ComponentId,
-        package_id: PackageId,
-        blueprint_name: &str,
-        component_state: Vec<u8>,
-    ) -> &mut Self {
-        let component = Component::new(package_id, blueprint_name.to_owned(), component_state);
-        self.substate_store.put_encoded_substate(
-            &component_id,
-            &component,
-            self.substate_store.get_nonce(),
-        );
-        self
-    }
 }
 
 impl AbiProvider for BasicAbiProvider {

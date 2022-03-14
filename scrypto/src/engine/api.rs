@@ -170,6 +170,7 @@ pub struct CreateComponentInput {
     pub package_id: PackageId,
     pub blueprint_name: String,
     pub state: Vec<u8>,
+    pub sys_auth: HashMap<String, NonFungibleAddress>,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]

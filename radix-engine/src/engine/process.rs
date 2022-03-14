@@ -195,6 +195,8 @@ pub struct Process<'r, 'l, L: SubstateStore> {
     ///
     /// All proofs in the collection are used for system-authorization.
     auth_worktop: Vec<Proof>,
+    /// The caller's auth worktop
+    caller_auth_worktop: &'r [Proof],
 }
 
 impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
@@ -213,6 +215,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             id_allocator: IdAllocator::new(IdSpace::Transaction),
             worktop: HashMap::new(),
             auth_worktop: Vec::new(),
+            caller_auth_worktop: &[],
         }
     }
 
@@ -552,20 +555,23 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             trace: self.trace,
             vm,
             interpreter_state: match invocation.actor {
-                Actor::Blueprint(..) => InterpreterState::Blueprint,
+                Actor::Blueprint(..) => Ok(InterpreterState::Blueprint),
                 Actor::Component(component_id) => {
                     let component = self.track.get_component(component_id.clone()).unwrap();
+                    component.check_auth(&invocation.function, self.caller_auth_worktop)?;
+
                     let initial_loaded_object_refs =
                         Self::process_entry_data(component.state()).unwrap();
                     let state = component.state().to_vec();
-                    InterpreterState::Component {
+                    let component = InterpreterState::Component {
                         state,
                         component_id,
                         initial_loaded_object_refs,
                         additional_object_refs: ComponentObjectRefs::new(),
-                    }
+                    };
+                    Ok(component)
                 }
-            },
+            }?,
             process_owned_objects: ComponentObjects::new(),
         });
 
@@ -672,6 +678,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         }
         let (buckets_out, proofs_out) = self.move_out_resources();
         let mut process = Process::new(self.depth + 1, self.trace, self.track);
+        process.caller_auth_worktop = &self.auth_worktop;
         process.move_in_resources(buckets_out, proofs_out)?;
 
         // run the function
@@ -1103,6 +1110,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             wasm_process.vm.invocation.package_id,
             input.blueprint_name,
             input.state,
+            input.sys_auth,
         );
         let component_id = self.track.create_component(component);
         self.track

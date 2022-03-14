@@ -181,6 +181,7 @@ pub trait SubstateStore {
                 SYSTEM_PACKAGE,
                 SYSTEM_COMPONENT_NAME.to_owned(),
                 scrypto_encode(&SystemComponentState { xrd: XRD_VAULT }),
+                HashMap::new(),
             );
             self.put_encoded_substate(&SYSTEM_COMPONENT, &system_component, self.get_nonce());
         }
