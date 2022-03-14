@@ -7,7 +7,7 @@ use scrypto::rust::string::ToString;
 use scrypto::rust::vec::Vec;
 
 /// Represents an error when accessing a bucket.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum BucketError {
     ResourceNotMatching,
     InsufficientBalance,
