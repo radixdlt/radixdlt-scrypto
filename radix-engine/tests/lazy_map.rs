@@ -84,7 +84,10 @@ fn cyclic_map_fails_execution() {
 
     // Assert
     let runtime_error = receipt.result.expect_err("Should be runtime error");
-    assert_eq!(runtime_error, RuntimeError::CyclicLazyMap());
+    match runtime_error {
+        RuntimeError::CyclicLazyMap(_) => {},
+        _ => panic!("Should be a cyclic lazy map error")
+    }
 }
 
 #[test]
@@ -103,7 +106,10 @@ fn self_cyclic_map_fails_execution() {
 
     // Assert
     let runtime_error = receipt.result.expect_err("Should be runtime error");
-    assert_eq!(runtime_error, RuntimeError::CyclicLazyMap());
+    match runtime_error {
+        RuntimeError::CyclicLazyMap(_) => {},
+        _ => panic!("Should be a cyclic lazy map error")
+    }
 }
 
 #[test]

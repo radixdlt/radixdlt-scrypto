@@ -577,7 +577,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 match e.into_host_error() {
                     // Pass-through runtime errors
                     Some(host_error) => *host_error.downcast::<RuntimeError>().unwrap(),
-                    None => RuntimeError::InvokeError(),
+                    None => RuntimeError::InvokeError,
                 }
             })?
             .ok_or(RuntimeError::NoReturnData)?;
@@ -924,7 +924,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .vm
             .memory
             .get_value(ptr as u32)
-            .map_err(|_| RuntimeError::MemoryAccessError())?;
+            .map_err(|_| RuntimeError::MemoryAccessError)?;
 
         // SECURITY: meter before allocating memory
         let mut data = vec![0u8; len as usize];
@@ -932,7 +932,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .vm
             .memory
             .get_into((ptr + 4) as u32, &mut data)
-            .map_err(|_| RuntimeError::MemoryAccessError())?;
+            .map_err(|_| RuntimeError::MemoryAccessError)?;
 
         // free the buffer
         wasm_process
@@ -943,7 +943,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 &[RuntimeValue::I32(ptr as i32)],
                 &mut NopExternals,
             )
-            .map_err(|_| RuntimeError::MemoryAccessError())?;
+            .map_err(|_| RuntimeError::MemoryAccessError)?;
 
         Ok(data.to_vec())
     }
@@ -964,7 +964,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .vm
             .memory
             .get_into(input_ptr, &mut input_bytes)
-            .map_err(|_| Trap::from(RuntimeError::MemoryAccessError()))?;
+            .map_err(|_| Trap::from(RuntimeError::MemoryAccessError))?;
         let input: I = scrypto_decode(&input_bytes)
             .map_err(|e| Trap::from(RuntimeError::InvalidRequestData(e)))?;
         if input_len <= 1024 {
@@ -1293,7 +1293,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         // Check for cycles
         if let Uncommitted { root } = lazy_map_state {
             if new_entry_object_refs.lazy_map_ids.contains(&root) {
-                return Err(RuntimeError::CyclicLazyMap());
+                return Err(RuntimeError::CyclicLazyMap(root));
             }
         }
 

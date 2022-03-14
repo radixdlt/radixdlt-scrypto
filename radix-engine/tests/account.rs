@@ -98,7 +98,7 @@ fn cannot_withdraw_from_other_account() {
 
     // Assert
     let runtime_error = result.result.expect_err("Should be runtime error");
-    assert_eq!(runtime_error, RuntimeError::InvokeError());
+    assert_eq!(runtime_error, RuntimeError::InvokeError);
 }
 
 #[test]

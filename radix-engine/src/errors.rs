@@ -61,10 +61,10 @@ pub enum RuntimeError {
     IdAllocatorError(IdAllocatorError),
 
     /// Error when invoking an export.
-    InvokeError(),
+    InvokeError,
 
     /// Error when accessing the program memory.
-    MemoryAccessError(),
+    MemoryAccessError,
 
     /// Error when allocating memory in program.
     MemoryAllocError,
@@ -118,7 +118,7 @@ pub enum RuntimeError {
     DuplicateLazyMap(LazyMapId),
 
     /// Cyclic LazyMap added
-    CyclicLazyMap(),
+    CyclicLazyMap(LazyMapId),
 
     /// Vault does not exist.
     VaultNotFound(),
