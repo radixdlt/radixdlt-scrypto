@@ -84,7 +84,10 @@ fn cyclic_map_fails_execution() {
 
     // Assert
     let runtime_error = receipt.result.expect_err("Should be runtime error");
-    assert_eq!(runtime_error, RuntimeError::CyclicLazyMap());
+    match runtime_error {
+        RuntimeError::CyclicLazyMap(_) => {}
+        _ => panic!("Should be a cyclic lazy map error"),
+    }
 }
 
 #[test]
@@ -103,7 +106,10 @@ fn self_cyclic_map_fails_execution() {
 
     // Assert
     let runtime_error = receipt.result.expect_err("Should be runtime error");
-    assert_eq!(runtime_error, RuntimeError::CyclicLazyMap());
+    match runtime_error {
+        RuntimeError::CyclicLazyMap(_) => {}
+        _ => panic!("Should be a cyclic lazy map error"),
+    }
 }
 
 #[test]
@@ -134,7 +140,10 @@ fn cannot_remove_lazy_maps() {
 
     // Assert
     let runtime_error = receipt.result.expect_err("Should be runtime error");
-    assert_eq!(runtime_error, RuntimeError::LazyMapRemoved());
+    match runtime_error {
+        RuntimeError::LazyMapRemoved(_) => {}
+        _ => panic!("Should be lazy map removed error"),
+    }
 }
 
 #[test]
@@ -165,7 +174,10 @@ fn cannot_overwrite_lazy_maps() {
 
     // Assert
     let runtime_error = receipt.result.expect_err("Should be runtime error");
-    assert_eq!(runtime_error, RuntimeError::LazyMapRemoved());
+    match runtime_error {
+        RuntimeError::LazyMapRemoved(_) => {}
+        _ => panic!("Should be lazy map removed error"),
+    }
 }
 
 #[test]
