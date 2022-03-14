@@ -2,6 +2,7 @@ use scrypto::engine::types::*;
 use scrypto::rust::collections::BTreeSet;
 use scrypto::rust::collections::HashMap;
 use scrypto::rust::rc::Rc;
+use scrypto::rust::vec::Vec;
 
 use crate::model::Bucket;
 use crate::model::{ResourceContainer, ResourceError};
