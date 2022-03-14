@@ -1696,7 +1696,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let non_fungible_ids = vault
             .liquid_amount()
             .non_fungible_ids()
-            .map_err(|_| RuntimeError::NotNonFungibleResource)?
+            .map_err(|_| RuntimeError::UnsupportedOperation)?
             .into_iter()
             .collect();
 
@@ -1837,7 +1837,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             non_fungible_ids: bucket
                 .liquid_amount()
                 .non_fungible_ids()
-                .map_err(|_| RuntimeError::NotNonFungibleResource)?
+                .map_err(|_| RuntimeError::UnsupportedOperation)?
                 .into_iter()
                 .collect(),
         })
@@ -1929,7 +1929,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             non_fungible_ids: proof
                 .total_amount()
                 .non_fungible_ids()
-                .map_err(|_| RuntimeError::NotNonFungibleResource)?
+                .map_err(|_| RuntimeError::UnsupportedOperation)?
                 .into_iter()
                 .collect(),
         })
