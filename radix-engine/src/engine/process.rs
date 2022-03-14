@@ -184,11 +184,12 @@ pub struct Process<'r, 'l, L: SubstateStore> {
     /// Resources collected from previous returns or self.
     ///
     /// When the `depth == 0` (transaction), all returned resources from CALLs are coalesced
-    /// into a map of unidentified buckets indexed by resource definition ID, instead of moving back
-    /// to `buckets`.
+    /// into a map of unidentified resource container indexed by resource definition ID.
     ///
     /// Loop invariant: all buckets should be NON_EMPTY.
-    worktop: HashMap<ResourceDefId, Bucket>,
+    ///
+    /// TODO: move to a dedicated structure
+    worktop: HashMap<ResourceDefId, ResourceContainer>,
     /// Proofs collected from previous returns or self.
     ///
     /// All proofs in the collection are used for system-authorization.
@@ -228,37 +229,38 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .id_allocator
             .new_bucket_id()
             .map_err(RuntimeError::IdAllocatorError)?;
-        let bucket = match self.worktop.remove(&resource_def_id) {
-            Some(mut bucket) => {
-                let to_return = match resource_spec {
-                    ResourceSpecification::Fungible { amount, .. } => {
-                        let new_bucket = bucket.take(amount);
-                        if !bucket.liquid_amount().quantity().is_zero() {
-                            self.worktop.insert(resource_def_id, bucket);
-                        }
-                        new_bucket
+        if let Some(mut container) = self.worktop.remove(&resource_def_id) {
+            let new_container = match resource_spec {
+                ResourceSpecification::Fungible { amount, .. } => {
+                    let result = container.take(amount);
+                    if !container.liquid_amount().quantity().is_zero() {
+                        self.worktop.insert(resource_def_id, container);
                     }
-                    ResourceSpecification::NonFungible { keys, .. } => {
-                        let new_bucket = bucket.take_non_fungibles(&keys);
-                        if !bucket.liquid_amount().quantity().is_zero() {
-                            self.worktop.insert(resource_def_id, bucket);
-                        }
-                        new_bucket
-                    }
-                    ResourceSpecification::All { .. } => Ok(bucket),
+                    result
                 }
-                .map_err(RuntimeError::BucketError)?;
-                Ok(to_return)
+                ResourceSpecification::NonFungible { keys, .. } => {
+                    let result = container.take_non_fungibles(&keys);
+                    if !container.liquid_amount().quantity().is_zero() {
+                        self.worktop.insert(resource_def_id, container);
+                    }
+                    result
+                }
+                ResourceSpecification::All { .. } => Ok(container),
             }
-            None => Err(RuntimeError::BucketError(BucketError::ResourceError(
-                ResourceError::InsufficientBalance,
-            ))),
-        }?;
-        self.buckets.insert(new_bucket_id, bucket);
-        Ok(
-            ValidatedData::from_slice(&scrypto_encode(&scrypto::resource::Bucket(new_bucket_id)))
+            .map_err(RuntimeError::WorktopError)?;
+            self.buckets
+                .insert(new_bucket_id, Bucket::new(new_container));
+            Ok(
+                ValidatedData::from_slice(&scrypto_encode(&scrypto::resource::Bucket(
+                    new_bucket_id,
+                )))
                 .unwrap(),
-        )
+            )
+        } else {
+            Err(RuntimeError::WorktopError(
+                ResourceError::InsufficientBalance,
+            ))
+        }
     }
 
     // (Transaction ONLY) Returns resource back to worktop.
@@ -278,12 +280,14 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .ok_or(RuntimeError::BucketNotFound(bucket_id))?;
 
         if !bucket.liquid_amount().quantity().is_zero() {
-            if let Some(existing_bucket) = self.worktop.get_mut(&bucket.resource_def_id()) {
-                existing_bucket
-                    .put(bucket)
-                    .map_err(RuntimeError::BucketError)?;
+            let resource_def_id = bucket.resource_def_id();
+            let container = bucket.own_container().map_err(RuntimeError::BucketError)?;
+            if let Some(existing_container) = self.worktop.get_mut(&resource_def_id) {
+                existing_container
+                    .put(container)
+                    .map_err(RuntimeError::WorktopError)?;
             } else {
-                self.worktop.insert(bucket.resource_def_id(), bucket);
+                self.worktop.insert(resource_def_id, container);
             }
         }
         Ok(ValidatedData::from_slice(&scrypto_encode(&())).unwrap())
@@ -450,8 +454,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             self.worktop.iter().map(|(k, _)| k).cloned().collect();
         for id in resource_def_ids {
             let bucket_id = self.track.new_bucket_id(); // this is unbounded
-            let bucket = self.worktop.remove(&id).unwrap();
-            self.buckets.insert(bucket_id, bucket);
+            let container = self.worktop.remove(&id).unwrap();
+            self.buckets.insert(bucket_id, Bucket::new(container));
         }
 
         // 3. Call the method with all buckets
@@ -506,10 +510,13 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             for (_, bucket) in buckets {
                 if !bucket.liquid_amount().quantity().is_zero() {
                     let resource_def_id = bucket.resource_def_id();
-                    if let Some(b) = self.worktop.get_mut(&resource_def_id) {
-                        b.put(bucket).unwrap();
+                    let container = bucket.own_container().map_err(RuntimeError::BucketError)?;
+                    if let Some(existing_container) = self.worktop.get_mut(&resource_def_id) {
+                        existing_container
+                            .put(container)
+                            .map_err(RuntimeError::WorktopError)?;
                     } else {
-                        self.worktop.insert(resource_def_id, bucket);
+                        self.worktop.insert(resource_def_id, container);
                     }
                 }
             }
