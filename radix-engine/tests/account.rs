@@ -60,7 +60,7 @@ fn can_withdraw_non_fungible_from_my_account() {
     let receipt = executor.run(transaction).unwrap();
     let non_fungible_resource_def_id = receipt.new_resource_def_ids[0];
     let non_fungible_amount = ResourceSpecification::NonFungible {
-        keys: BTreeSet::from([NonFungibleId::from(1)]),
+        ids: BTreeSet::from([NonFungibleId::from(1)]),
         resource_def_id: non_fungible_resource_def_id,
     };
 

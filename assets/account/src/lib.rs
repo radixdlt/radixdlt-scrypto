@@ -89,7 +89,7 @@ blueprint! {
         /// Withdraws non-fungibles from this account.
         pub fn withdraw_non_fungibles(
             &mut self,
-            keys: BTreeSet<NonFungibleId>,
+            ids: BTreeSet<NonFungibleId>,
             resource_def_id: ResourceDefId,
             account_auth: Proof,
         ) -> Bucket {
@@ -99,8 +99,8 @@ blueprint! {
             match vault {
                 Some(vault) => {
                     let mut bucket = Bucket::new(resource_def_id);
-                    for key in keys {
-                        bucket.put(vault.take_non_fungible(&key));
+                    for id in ids {
+                        bucket.put(vault.take_non_fungible(&id));
                     }
                     bucket
                 }
@@ -113,7 +113,7 @@ blueprint! {
         /// Withdraws non-fungibles from this account.
         pub fn withdraw_non_fungibles_with_auth(
             &mut self,
-            keys: BTreeSet<NonFungibleId>,
+            ids: BTreeSet<NonFungibleId>,
             resource_def_id: ResourceDefId,
             auth: Proof,
             account_auth: Proof,
@@ -124,8 +124,8 @@ blueprint! {
             match vault {
                 Some(vault) => {
                     let mut bucket = Bucket::new(resource_def_id);
-                    for key in keys {
-                        bucket.put(vault.take_non_fungible_with_auth(&key, auth.clone()));
+                    for id in ids {
+                        bucket.put(vault.take_non_fungible_with_auth(&id, auth.clone()));
                     }
                     bucket
                 }

@@ -78,7 +78,7 @@ impl Parser {
                 new_bucket: self.parse_value()?,
             },
             TokenKind::TakeNonFungiblesFromWorktop => Instruction::TakeNonFungiblesFromWorktop {
-                keys: self.parse_value()?,
+                ids: self.parse_value()?,
                 resource_def_id: self.parse_value()?,
                 new_bucket: self.parse_value()?,
             },

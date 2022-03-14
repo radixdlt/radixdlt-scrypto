@@ -182,17 +182,8 @@ pub struct Process<'r, 'l, L: SubstateStore> {
     /// ID allocator for buckets and proofs created within transaction.
     id_allocator: IdAllocator,
     /// Resources collected from previous returns or self.
-    ///
-    /// When the `depth == 0` (transaction), all returned resources from CALLs are coalesced
-    /// into a map of unidentified resource container indexed by resource definition ID.
-    ///
-    /// Loop invariant: all buckets should be NON_EMPTY.
-    ///
-    /// TODO: move to a dedicated structure
-    worktop: HashMap<ResourceDefId, ResourceContainer>,
-    /// Proofs collected from previous returns or self.
-    ///
-    /// All proofs in the collection are used for system-authorization.
+    worktop: Worktop,
+    /// Proofs collected from previous returns or self. Also used for system authorization.
     auth_worktop: Vec<Proof>,
 }
 
@@ -209,7 +200,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             moving_proofs: HashMap::new(),
             wasm_process_state: None,
             id_allocator: IdAllocator::new(IdSpace::Transaction),
-            worktop: HashMap::new(),
+            worktop: Worktop::new(),
             auth_worktop: Vec::new(),
         }
     }
@@ -229,38 +220,21 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .id_allocator
             .new_bucket_id()
             .map_err(RuntimeError::IdAllocatorError)?;
-        if let Some(mut container) = self.worktop.remove(&resource_def_id) {
-            let new_container = match resource_spec {
-                ResourceSpecification::Fungible { amount, .. } => {
-                    let result = container.take(amount);
-                    if !container.liquid_amount().quantity().is_zero() {
-                        self.worktop.insert(resource_def_id, container);
-                    }
-                    result
-                }
-                ResourceSpecification::NonFungible { keys, .. } => {
-                    let result = container.take_non_fungibles(&keys);
-                    if !container.liquid_amount().quantity().is_zero() {
-                        self.worktop.insert(resource_def_id, container);
-                    }
-                    result
-                }
-                ResourceSpecification::All { .. } => Ok(container),
+        let bucket = match resource_spec {
+            ResourceSpecification::Fungible { amount, .. } => {
+                self.worktop.take(amount, resource_def_id)
             }
-            .map_err(RuntimeError::WorktopError)?;
-            self.buckets
-                .insert(new_bucket_id, Bucket::new(new_container));
-            Ok(
-                ValidatedData::from_slice(&scrypto_encode(&scrypto::resource::Bucket(
-                    new_bucket_id,
-                )))
-                .unwrap(),
-            )
-        } else {
-            Err(RuntimeError::WorktopError(
-                ResourceError::InsufficientBalance,
-            ))
+            ResourceSpecification::NonFungible { ids, .. } => {
+                self.worktop.take_non_fungibles(&ids, resource_def_id)
+            }
+            ResourceSpecification::All { .. } => self.worktop.take_all(resource_def_id),
         }
+        .map_err(RuntimeError::WorktopError)?;
+        self.buckets.insert(new_bucket_id, bucket);
+        Ok(
+            ValidatedData::from_slice(&scrypto_encode(&scrypto::resource::Bucket(new_bucket_id)))
+                .unwrap(),
+        )
     }
 
     // (Transaction ONLY) Returns resource back to worktop.
@@ -278,18 +252,9 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .buckets
             .remove(&bucket_id)
             .ok_or(RuntimeError::BucketNotFound(bucket_id))?;
-
-        if !bucket.liquid_amount().quantity().is_zero() {
-            let resource_def_id = bucket.resource_def_id();
-            let container = bucket.own_container().map_err(RuntimeError::BucketError)?;
-            if let Some(existing_container) = self.worktop.get_mut(&resource_def_id) {
-                existing_container
-                    .put(container)
-                    .map_err(RuntimeError::WorktopError)?;
-            } else {
-                self.worktop.insert(resource_def_id, container);
-            }
-        }
+        self.worktop
+            .put(bucket)
+            .map_err(RuntimeError::WorktopError)?;
         Ok(ValidatedData::from_slice(&scrypto_encode(&())).unwrap())
     }
 
@@ -306,19 +271,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             resource_def_id
         );
 
-        let balance = match self.worktop.get(&resource_def_id) {
-            Some(bucket) => bucket.liquid_amount().quantity(),
-            None => Decimal::zero(),
-        };
-
-        if balance < amount {
-            re_warn!(
-                self,
-                "(Transaction) Assertion failed: required = {}, actual = {}, resource_def_id = {}",
-                amount,
-                balance,
-                resource_def_id
-            );
+        if !self.worktop.contains(amount, resource_def_id) {
             Err(RuntimeError::AssertionFailed)
         } else {
             Ok(ValidatedData::from_slice(&scrypto_encode(&())).unwrap())
@@ -450,12 +403,13 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         self.drop_all_proofs()?;
 
         // 2. Move collected resource to temp buckets
-        let resource_def_ids: Vec<ResourceDefId> =
-            self.worktop.iter().map(|(k, _)| k).cloned().collect();
-        for id in resource_def_ids {
+        for id in self.worktop.resource_def_ids() {
             let bucket_id = self.track.new_bucket_id(); // this is unbounded
-            let container = self.worktop.remove(&id).unwrap();
-            self.buckets.insert(bucket_id, Bucket::new(container));
+            let bucket = self
+                .worktop
+                .take_all(id)
+                .map_err(RuntimeError::WorktopError)?;
+            self.buckets.insert(bucket_id, bucket);
         }
 
         // 3. Call the method with all buckets
@@ -508,17 +462,9 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             assert!(proofs.is_empty());
 
             for (_, bucket) in buckets {
-                if !bucket.liquid_amount().quantity().is_zero() {
-                    let resource_def_id = bucket.resource_def_id();
-                    let container = bucket.own_container().map_err(RuntimeError::BucketError)?;
-                    if let Some(existing_container) = self.worktop.get_mut(&resource_def_id) {
-                        existing_container
-                            .put(container)
-                            .map_err(RuntimeError::WorktopError)?;
-                    } else {
-                        self.worktop.insert(resource_def_id, container);
-                    }
-                }
+                self.worktop
+                    .put(bucket)
+                    .map_err(RuntimeError::WorktopError)?;
             }
         } else {
             self.proofs.extend(proofs);
@@ -750,8 +696,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             re_warn!(self, "Dangling bucket: {}, {:?}", bucket_id, bucket);
             success = false;
         }
-        for (_, bucket) in &self.worktop {
-            re_warn!(self, "Dangling resource: {:?}", bucket);
+        for resource_def_id in &self.worktop.resource_def_ids() {
+            re_warn!(self, "Dangling resource on worktop: {:?}", resource_def_id);
             success = false;
         }
         if let Some(wasm_process) = &self.wasm_process_state {
@@ -1970,7 +1916,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         })
     }
 
-    fn handle_get_non_fungible_keys_in_proof(
+    fn handle_get_non_fungible_ids_in_proof(
         &mut self,
         input: GetNonFungibleIdsInProofInput,
     ) -> Result<GetNonFungibleIdsInProofOutput, RuntimeError> {
@@ -2165,7 +2111,7 @@ impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
                         self.handle(args, Self::handle_get_proof_resource_def_id)
                     }
                     GET_NON_FUNGIBLE_IDS_IN_PROOF => {
-                        self.handle(args, Self::handle_get_non_fungible_keys_in_proof)
+                        self.handle(args, Self::handle_get_non_fungible_ids_in_proof)
                     }
                     CLONE_PROOF => self.handle(args, Self::handle_clone_proof),
 

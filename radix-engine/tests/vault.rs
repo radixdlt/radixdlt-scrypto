@@ -336,7 +336,7 @@ fn create_mutable_vault_with_take_non_fungible() {
 }
 
 #[test]
-fn create_mutable_vault_with_get_nonfungible_keys() {
+fn create_mutable_vault_with_get_nonfungible_ids() {
     // Arrange
     let mut ledger = InMemorySubstateStore::with_bootstrap();
     let mut sut = TransactionExecutor::new(&mut ledger, true);

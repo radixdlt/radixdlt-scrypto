@@ -26,7 +26,7 @@ pub enum ResourceSpecification {
         resource_def_id: ResourceDefId,
     },
     NonFungible {
-        keys: BTreeSet<NonFungibleId>,
+        ids: BTreeSet<NonFungibleId>,
         resource_def_id: ResourceDefId,
     },
     All {
@@ -65,10 +65,10 @@ impl FromStr for ResourceSpecification {
                 .parse::<ResourceDefId>()
                 .map_err(|_| ParseResourceSpecificationError::InvalidResourceDefId)?;
             if tokens[0].starts_with('#') {
-                let mut keys = BTreeSet::<NonFungibleId>::new();
+                let mut ids = BTreeSet::<NonFungibleId>::new();
                 for key in &tokens[..tokens.len() - 1] {
                     if key.starts_with('#') {
-                        keys.insert(
+                        ids.insert(
                             key[1..]
                                 .parse()
                                 .map_err(|_| ParseResourceSpecificationError::InvalidNftId)?,
@@ -78,7 +78,7 @@ impl FromStr for ResourceSpecification {
                     }
                 }
                 Ok(ResourceSpecification::NonFungible {
-                    keys,
+                    ids,
                     resource_def_id,
                 })
             } else {
@@ -103,7 +103,7 @@ impl ResourceSpecification {
     pub fn amount(&self) -> Option<Decimal> {
         match self {
             ResourceSpecification::Fungible { amount, .. } => Some(*amount),
-            ResourceSpecification::NonFungible { keys, .. } => Some(keys.len().into()),
+            ResourceSpecification::NonFungible { ids, .. } => Some(ids.len().into()),
             ResourceSpecification::All { .. } => None,
         }
     }
@@ -224,10 +224,10 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                 resource_def_id,
             }),
             ResourceSpecification::NonFungible {
-                keys,
+                ids,
                 resource_def_id,
             } => self.add_instruction(Instruction::TakeNonFungiblesFromWorktop {
-                keys,
+                ids,
                 resource_def_id,
             }),
             ResourceSpecification::All { resource_def_id } => {
@@ -604,7 +604,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                         .0
                 }
                 ResourceSpecification::NonFungible {
-                    keys,
+                    ids,
                     resource_def_id,
                 } => {
                     builder
@@ -612,7 +612,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                             component_id: account,
                             method: "withdraw_non_fungibles".to_owned(),
                             args: vec![
-                                scrypto_encode(keys),
+                                scrypto_encode(ids),
                                 scrypto_encode(resource_def_id),
                                 scrypto_encode(&scrypto::resource::Proof(proof_id)),
                             ],

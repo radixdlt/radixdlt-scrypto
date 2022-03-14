@@ -147,6 +147,9 @@ pub enum RuntimeError {
     /// Vault access error.
     VaultError(VaultError),
 
+    /// Worktop access error.
+    WorktopError(WorktopError),
+
     /// Bucket is not allowed.
     BucketNotAllowed,
 
@@ -176,9 +179,6 @@ pub enum RuntimeError {
 
     /// Not non-fungible resource.
     NotNonFungibleResource,
-
-    /// Represents error when accessing worktop.
-    WorktopError(ResourceError),
 }
 
 impl fmt::Display for RuntimeError {

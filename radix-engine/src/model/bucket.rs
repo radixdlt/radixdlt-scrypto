@@ -28,7 +28,7 @@ impl Bucket {
     pub fn put(&mut self, other: Bucket) -> Result<(), BucketError> {
         let this_container = self.borrow_container()?;
         let other_container = other
-            .own_container()
+            .take_container()
             .map_err(|_| BucketError::OtherBucketLocked)?;
 
         this_container
@@ -86,7 +86,7 @@ impl Bucket {
     }
 
     /// Takes the ownership of the container
-    pub fn own_container(self) -> Result<ResourceContainer, BucketError> {
+    pub fn take_container(self) -> Result<ResourceContainer, BucketError> {
         Ok(Rc::try_unwrap(self.container).map_err(|_| BucketError::BucketLocked)?)
     }
 }

@@ -30,7 +30,7 @@ impl Vault {
     pub fn put(&mut self, other: Bucket) -> Result<(), VaultError> {
         let this_container = self.borrow_container()?;
         let other_container = other
-            .own_container()
+            .take_container()
             .map_err(|_| VaultError::OtherBucketLocked)?;
 
         this_container
@@ -88,7 +88,7 @@ impl Vault {
     }
 
     /// Takes the ownership of the container
-    pub fn own_container(self) -> Result<ResourceContainer, VaultError> {
+    pub fn take_container(self) -> Result<ResourceContainer, VaultError> {
         Ok(Rc::try_unwrap(self.container).map_err(|_| VaultError::VaultLocked)?)
     }
 }

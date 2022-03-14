@@ -34,14 +34,14 @@ pub fn validate_transaction(
                 instructions.push(ValidatedInstruction::TakeAllFromWorktop { resource_def_id });
             }
             Instruction::TakeNonFungiblesFromWorktop {
-                keys,
+                ids,
                 resource_def_id,
             } => {
                 id_validator
                     .new_bucket()
                     .map_err(TransactionValidationError::IdValidatorError)?;
                 instructions.push(ValidatedInstruction::TakeNonFungiblesFromWorktop {
-                    keys,
+                    ids,
                     resource_def_id,
                 });
             }

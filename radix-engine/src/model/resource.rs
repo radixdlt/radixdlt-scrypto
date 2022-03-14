@@ -58,9 +58,16 @@ pub struct ResourceContainer {
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]
 pub enum ResourceContainerId {
+    /// For named bucket
     Bucket(BucketId),
+    /// For vault
     Vault(VaultId),
-    Worktop(BucketId),
+
+    /// For the specific resource on the n-th worktop
+    Worktop {
+        depth: u32,
+        resource_def_id: ResourceDefId,
+    },
 }
 
 #[derive(Debug, Clone)]
@@ -188,8 +195,8 @@ impl ResourceContainer {
         match &mut self.resource {
             Resource::Fungible { .. } => Err(ResourceError::UnsupportedOperation),
             Resource::NonFungible { liquid_ids, .. } => {
-                for key in ids {
-                    if !liquid_ids.remove(&key) {
+                for id in ids {
+                    if !liquid_ids.remove(&id) {
                         return Err(ResourceError::InsufficientBalance);
                     }
                 }

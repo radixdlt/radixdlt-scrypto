@@ -146,7 +146,7 @@ pub fn generate_instruction(
             }
         }
         ast::Instruction::TakeNonFungiblesFromWorktop {
-            keys,
+            ids,
             resource_def_id,
             new_bucket,
         } => {
@@ -156,7 +156,7 @@ pub fn generate_instruction(
             declare_bucket(new_bucket, resolver, bucket_id)?;
 
             Instruction::TakeNonFungiblesFromWorktop {
-                keys: generate_non_fungible_ids(keys)?,
+                ids: generate_non_fungible_ids(ids)?,
                 resource_def_id: generate_resource_def_id(resource_def_id)?,
             }
         }
@@ -1019,7 +1019,7 @@ mod tests {
                     Instruction::DropProof { proof_id: 516 },
                     Instruction::ReturnToWorktop { bucket_id: 513 },
                     Instruction::TakeNonFungiblesFromWorktop {
-                        keys: BTreeSet::from([
+                        ids: BTreeSet::from([
                             NonFungibleId::from_str("11").unwrap(),
                             NonFungibleId::from_str("22").unwrap(),
                         ]),
