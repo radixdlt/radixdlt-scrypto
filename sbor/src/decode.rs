@@ -3,6 +3,7 @@ use crate::rust::collections::*;
 use crate::rust::hash::Hash;
 use crate::rust::mem::MaybeUninit;
 use crate::rust::ptr::copy;
+use crate::rust::rc::Rc;
 use crate::rust::string::String;
 use crate::rust::vec::Vec;
 use crate::type_id::*;
@@ -231,6 +232,13 @@ impl<T: Decode> Decode for Box<T> {
     fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
         let v = T::decode(decoder)?;
         Ok(Box::new(v))
+    }
+}
+
+impl<T: Decode> Decode for Rc<T> {
+    fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
+        let v = T::decode(decoder)?;
+        Ok(Rc::new(v))
     }
 }
 
