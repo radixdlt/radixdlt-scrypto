@@ -541,16 +541,12 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
             |builder, bucket_id| {
                 builder.create_bucket_proof(bucket_id, |builder, proof_id| {
                     builder.push_auth(proof_id);
-                    builder
-                        .add_instruction(Instruction::CallFunction {
-                            package_id: SYSTEM_PACKAGE,
-                            blueprint_name: "System".to_owned(),
-                            function: "mint".to_owned(),
-                            args: vec![
-                                scrypto_encode(&amount),
-                                scrypto_encode(&resource_def_id),
-                            ],
-                        });
+                    builder.add_instruction(Instruction::CallFunction {
+                        package_id: SYSTEM_PACKAGE,
+                        blueprint_name: "System".to_owned(),
+                        function: "mint".to_owned(),
+                        args: vec![scrypto_encode(&amount), scrypto_encode(&resource_def_id)],
+                    });
                     builder.pop_auth(|builder, proof_id| builder.drop_proof(proof_id))
                 })
             },

@@ -8,6 +8,11 @@ use scrypto::rust::vec::Vec;
 
 use crate::model::{Proof, Resource};
 
+pub enum ResourceTransition {
+    Mint,
+    Take,
+}
+
 /// Represents an error when accessing a bucket.
 #[derive(Debug, Clone, PartialEq)]
 pub enum ResourceDefError {
@@ -116,10 +121,7 @@ impl ResourceDef {
         self.flags() & flag == flag
     }
 
-    pub fn mint(
-        &mut self,
-        supply: &Resource,
-    ) -> Result<(), ResourceDefError> {
+    pub fn mint(&mut self, supply: &Resource) -> Result<(), ResourceDefError> {
         match self.resource_type {
             ResourceType::Fungible { .. } => {
                 if let Resource::Fungible { amount } = supply {
@@ -237,22 +239,26 @@ impl ResourceDef {
         Ok(())
     }
 
-    pub fn check_take_from_vault_auth(
+    pub fn check_auth(
         &self,
+        transition: ResourceTransition,
         proofs: Vec<&[Proof]>,
     ) -> Result<(), ResourceDefError> {
-        if !self.is_flag_on(RESTRICTED_TRANSFER) {
-            Ok(())
-        } else {
-            self.check_proof_permission(proofs, MAY_TRANSFER)
-        }
-    }
-
-    pub fn check_mint_auth(&self, proofs: Vec<&[Proof]>) -> Result<(), ResourceDefError> {
-        if self.is_flag_on(MINTABLE) {
-            self.check_proof_permission(proofs, MAY_MINT)
-        } else {
-            Err(ResourceDefError::OperationNotAllowed)
+        match transition {
+            ResourceTransition::Mint => {
+                if self.is_flag_on(MINTABLE) {
+                    self.check_proof_permission(proofs, MAY_MINT)
+                } else {
+                    Err(ResourceDefError::OperationNotAllowed)
+                }
+            }
+            ResourceTransition::Take => {
+                if !self.is_flag_on(RESTRICTED_TRANSFER) {
+                    Ok(())
+                } else {
+                    self.check_proof_permission(proofs, MAY_TRANSFER)
+                }
+            }
         }
     }
 

@@ -1,10 +1,10 @@
 pub mod test_runner;
 
-use crate::test_runner::{TestRunner};
+use crate::test_runner::TestRunner;
 use radix_engine::errors::RuntimeError;
+use radix_engine::ledger::InMemorySubstateStore;
 use radix_engine::transaction::*;
 use scrypto::prelude::*;
-use radix_engine::ledger::InMemorySubstateStore;
 
 #[test]
 fn cannot_make_cross_component_call_without_authorization() {
@@ -15,7 +15,8 @@ fn cannot_make_cross_component_call_without_authorization() {
     let auth = test_runner.create_non_fungible_resource(account.clone());
     let auth_id = NonFungibleId::from(1);
     let package = test_runner.publish_package("component");
-    let transaction = test_runner.new_transaction_builder()
+    let transaction = test_runner
+        .new_transaction_builder()
         .call_function(
             package,
             "CrossComponent",
@@ -29,7 +30,8 @@ fn cannot_make_cross_component_call_without_authorization() {
     assert!(receipt.result.is_ok());
     let secured_component = receipt.new_component_ids[0];
 
-    let transaction = test_runner.new_transaction_builder()
+    let transaction = test_runner
+        .new_transaction_builder()
         .call_function(package, "CrossComponent", "create_component", vec![], None)
         .build(vec![])
         .unwrap();
@@ -38,7 +40,8 @@ fn cannot_make_cross_component_call_without_authorization() {
     let my_component = receipt.new_component_ids[0];
 
     // Act
-    let transaction = test_runner.new_transaction_builder()
+    let transaction = test_runner
+        .new_transaction_builder()
         .call_method(
             my_component,
             "cross_component_call",
@@ -63,7 +66,8 @@ fn can_make_cross_component_call_with_authorization() {
     let auth = test_runner.create_non_fungible_resource(account.clone());
     let auth_id = NonFungibleId::from(1);
     let package = test_runner.publish_package("component");
-    let transaction = test_runner.new_transaction_builder()
+    let transaction = test_runner
+        .new_transaction_builder()
         .call_function(
             package,
             "CrossComponent",
@@ -77,7 +81,8 @@ fn can_make_cross_component_call_with_authorization() {
     assert!(receipt.result.is_ok());
     let secured_component = receipt.new_component_ids[0];
 
-    let transaction = test_runner.new_transaction_builder()
+    let transaction = test_runner
+        .new_transaction_builder()
         .call_function(package, "CrossComponent", "create_component", vec![], None)
         .build(vec![])
         .unwrap();
@@ -89,7 +94,8 @@ fn can_make_cross_component_call_with_authorization() {
         keys: BTreeSet::from([auth_id]),
         resource_def_id: auth,
     };
-    let transaction = test_runner.new_transaction_builder()
+    let transaction = test_runner
+        .new_transaction_builder()
         .withdraw_from_account(&auth_amount, account)
         .call_method_with_all_resources(my_component, "put_auth")
         .build(vec![])
@@ -98,7 +104,8 @@ fn can_make_cross_component_call_with_authorization() {
     assert!(receipt.result.is_ok());
 
     // Act
-    let transaction = test_runner.new_transaction_builder()
+    let transaction = test_runner
+        .new_transaction_builder()
         .call_method(
             my_component,
             "cross_component_call",

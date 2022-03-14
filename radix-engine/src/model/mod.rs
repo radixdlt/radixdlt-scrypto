@@ -14,6 +14,6 @@ pub use data::{format_value, ValidatedData};
 pub use non_fungible::NonFungible;
 pub use package::Package;
 pub use receipt::Receipt;
-pub use resource_def::{ResourceDef, ResourceDefError};
+pub use resource_def::{ResourceDef, ResourceDefError, ResourceTransition};
 pub use transaction::{Instruction, Transaction, ValidatedInstruction, ValidatedTransaction};
 pub use vault::{Vault, VaultError};

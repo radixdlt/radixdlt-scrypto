@@ -1493,7 +1493,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         })
     }
 
-
     fn handle_burn_resource(
         &mut self,
         input: BurnResourceInput,
@@ -1667,23 +1666,20 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         Ok(PutIntoVaultOutput {})
     }
 
-    fn check_mint_auth(&mut self, resource_def_id: &ResourceDefId) -> Result<(), RuntimeError> {
+    fn check_resource_auth(
+        &mut self,
+        resource_def_id: &ResourceDefId,
+        transition: ResourceTransition,
+    ) -> Result<(), RuntimeError> {
         let resource_def = self
             .track
             .get_resource_def(&resource_def_id)
             .ok_or(RuntimeError::ResourceDefNotFound(resource_def_id.clone()))?;
         resource_def
-            .check_mint_auth(vec![self.caller_auth_worktop, &self.auth_worktop])
-            .map_err(RuntimeError::ResourceDefError)
-    }
-
-    fn check_take_from_vault_auth(&mut self, resource_def_id: &ResourceDefId) -> Result<(), RuntimeError> {
-        let resource_def = self
-            .track
-            .get_resource_def(&resource_def_id)
-            .ok_or(RuntimeError::ResourceDefNotFound(resource_def_id.clone()))?;
-        resource_def
-            .check_take_from_vault_auth(vec![self.caller_auth_worktop, &self.auth_worktop])
+            .check_auth(
+                transition,
+                vec![self.caller_auth_worktop, &self.auth_worktop],
+            )
             .map_err(RuntimeError::ResourceDefError)
     }
 
@@ -1692,7 +1688,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         input: MintResourceInput,
     ) -> Result<MintResourceOutput, RuntimeError> {
         // Auth
-        self.check_mint_auth(&input.resource_def_id)?;
+        self.check_resource_auth(&input.resource_def_id, ResourceTransition::Mint)?;
 
         // allocate resource
         let resource = self.allocate_resource(input.resource_def_id, input.new_supply)?;
@@ -1723,7 +1719,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         input: TakeFromVaultInput,
     ) -> Result<TakeFromVaultOutput, RuntimeError> {
         let resource_def_id = self.get_local_vault(&input.vault_id)?.resource_def_id();
-        self.check_take_from_vault_auth(&resource_def_id)?;
+        self.check_resource_auth(&resource_def_id, ResourceTransition::Take)?;
 
         let new_bucket = self
             .get_local_vault(&input.vault_id)?
@@ -1741,7 +1737,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         input: TakeNonFungibleFromVaultInput,
     ) -> Result<TakeNonFungibleFromVaultOutput, RuntimeError> {
         let resource_def_id = self.get_local_vault(&input.vault_id)?.resource_def_id();
-        self.check_take_from_vault_auth(&resource_def_id)?;
+        self.check_resource_auth(&resource_def_id, ResourceTransition::Take)?;
 
         let new_bucket = self
             .get_local_vault(&input.vault_id)?
