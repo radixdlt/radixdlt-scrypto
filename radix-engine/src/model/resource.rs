@@ -22,6 +22,7 @@ pub enum ResourceError {
 /// Represents the contained resource.
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub enum Resource {
+    // TODO: update resource state based on proofs.
     Fungible {
         /// The locked amounts and the corresponding times of being locked.
         locked_amounts: BTreeMap<Decimal, usize>,

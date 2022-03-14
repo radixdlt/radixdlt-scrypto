@@ -127,7 +127,7 @@ fn dump_resources<T: SubstateStore>(
             .unwrap()
             .0;
 
-        let amount = vault.amount();
+        let amount = vault.liquid_amount().quantity();
         let resource_def_id = vault.resource_def_id();
         let resource_def: ResourceDef = substate_store
             .get_decoded_substate(&resource_def_id)
@@ -149,7 +149,7 @@ fn dump_resources<T: SubstateStore>(
                 .map(|symbol| format!(", symbol: \"{}\"", symbol))
                 .unwrap_or(String::new()),
         );
-        if let Resource::NonFungible { ids } = vault.resource() {
+        if let ResourceAmount::NonFungible { ids } = vault.liquid_amount() {
             for (inner_last, id) in ids.iter().identify_last() {
                 let non_fungible: NonFungible = substate_store
                     .get_decoded_child_substate(&resource_def_id, id)
