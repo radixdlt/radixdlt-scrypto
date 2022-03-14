@@ -540,6 +540,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
             },
             |builder, bucket_id| {
                 builder.create_bucket_proof(bucket_id, |builder, proof_id| {
+                    builder.push_auth(proof_id);
                     builder
                         .add_instruction(Instruction::CallFunction {
                             package_id: SYSTEM_PACKAGE,
@@ -548,10 +549,9 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                             args: vec![
                                 scrypto_encode(&amount),
                                 scrypto_encode(&resource_def_id),
-                                scrypto_encode(&scrypto::resource::Proof(proof_id)),
                             ],
-                        })
-                        .0
+                        });
+                    builder.pop_auth(|builder, proof_id| builder.drop_proof(proof_id))
                 })
             },
         )

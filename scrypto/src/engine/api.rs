@@ -265,7 +265,6 @@ pub struct CreateResourceOutput {
 pub struct MintResourceInput {
     pub resource_def_id: ResourceDefId,
     pub new_supply: Supply,
-    pub auth: ProofId,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]

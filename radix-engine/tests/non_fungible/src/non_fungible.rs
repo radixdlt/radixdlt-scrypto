@@ -29,14 +29,15 @@ blueprint! {
                 .no_initial_supply();
 
             // Mint a non-fungible
-            let non_fungible = resource_def!(resource_def_id).mint_non_fungible(
-                &NonFungibleId::from(0u128),
-                Sandwich {
-                    name: "Test".to_owned(),
-                    available: false,
-                },
-                mint_badge.present(),
-            );
+            let non_fungible = authorize(&mint_badge, || {
+                 resource_def!(resource_def_id).mint_non_fungible(
+                    &NonFungibleId::from(0u128),
+                    Sandwich {
+                        name: "Test".to_owned(),
+                        available: false,
+                    },
+                )
+            });
 
             (mint_badge, resource_def_id, non_fungible)
         }

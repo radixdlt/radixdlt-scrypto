@@ -32,8 +32,8 @@ blueprint! {
         }
 
         /// Mints fungible resource.
-        pub fn mint(amount: Decimal, resource_def_id: ResourceDefId, auth: Proof) -> Bucket {
-            resource_def!(resource_def_id).mint(amount, auth)
+        pub fn mint(amount: Decimal, resource_def_id: ResourceDefId) -> Bucket {
+            resource_def!(resource_def_id).mint(amount)
         }
 
         /// Gives away XRD tokens for testing.

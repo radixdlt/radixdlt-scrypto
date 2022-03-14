@@ -1493,35 +1493,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         })
     }
 
-    fn handle_mint_resource(
-        &mut self,
-        input: MintResourceInput,
-    ) -> Result<MintResourceOutput, RuntimeError> {
-        let badge = self.check_badge(Some(input.auth))?;
-
-        // allocate resource
-        let resource = self.allocate_resource(input.resource_def_id, input.new_supply)?;
-
-        // mint resource
-        let resource_def = self
-            .track
-            .get_resource_def_mut(&input.resource_def_id)
-            .ok_or(RuntimeError::ResourceDefNotFound(input.resource_def_id))?;
-        resource_def
-            .mint(&resource, badge)
-            .map_err(RuntimeError::ResourceDefError)?;
-
-        // wrap resource into a bucket
-        let bucket = Bucket::new(
-            input.resource_def_id,
-            resource_def.resource_type(),
-            resource,
-        );
-        let bucket_id = self.track.new_bucket_id();
-        self.buckets.insert(bucket_id, bucket);
-
-        Ok(MintResourceOutput { bucket_id })
-    }
 
     fn handle_burn_resource(
         &mut self,
@@ -1696,23 +1667,63 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         Ok(PutIntoVaultOutput {})
     }
 
-    fn check_take_from_vault_auth(&mut self, vault_id: &VaultId) -> Result<(), RuntimeError> {
-        let resource_def_id = self.get_local_vault(vault_id)?.resource_def_id();
-
+    fn check_mint_auth(&mut self, resource_def_id: &ResourceDefId) -> Result<(), RuntimeError> {
         let resource_def = self
             .track
             .get_resource_def(&resource_def_id)
-            .ok_or(RuntimeError::ResourceDefNotFound(resource_def_id))?;
+            .ok_or(RuntimeError::ResourceDefNotFound(resource_def_id.clone()))?;
+        resource_def
+            .check_mint_auth(vec![self.caller_auth_worktop, &self.auth_worktop])
+            .map_err(RuntimeError::ResourceDefError)
+    }
+
+    fn check_take_from_vault_auth(&mut self, resource_def_id: &ResourceDefId) -> Result<(), RuntimeError> {
+        let resource_def = self
+            .track
+            .get_resource_def(&resource_def_id)
+            .ok_or(RuntimeError::ResourceDefNotFound(resource_def_id.clone()))?;
         resource_def
             .check_take_from_vault_auth(vec![self.caller_auth_worktop, &self.auth_worktop])
             .map_err(RuntimeError::ResourceDefError)
+    }
+
+    fn handle_mint_resource(
+        &mut self,
+        input: MintResourceInput,
+    ) -> Result<MintResourceOutput, RuntimeError> {
+        // Auth
+        self.check_mint_auth(&input.resource_def_id)?;
+
+        // allocate resource
+        let resource = self.allocate_resource(input.resource_def_id, input.new_supply)?;
+
+        // mint resource
+        let resource_def = self
+            .track
+            .get_resource_def_mut(&input.resource_def_id)
+            .ok_or(RuntimeError::ResourceDefNotFound(input.resource_def_id))?;
+        resource_def
+            .mint(&resource)
+            .map_err(RuntimeError::ResourceDefError)?;
+
+        // wrap resource into a bucket
+        let bucket = Bucket::new(
+            input.resource_def_id,
+            resource_def.resource_type(),
+            resource,
+        );
+        let bucket_id = self.track.new_bucket_id();
+        self.buckets.insert(bucket_id, bucket);
+
+        Ok(MintResourceOutput { bucket_id })
     }
 
     fn handle_take_from_vault(
         &mut self,
         input: TakeFromVaultInput,
     ) -> Result<TakeFromVaultOutput, RuntimeError> {
-        self.check_take_from_vault_auth(&input.vault_id)?;
+        let resource_def_id = self.get_local_vault(&input.vault_id)?.resource_def_id();
+        self.check_take_from_vault_auth(&resource_def_id)?;
 
         let new_bucket = self
             .get_local_vault(&input.vault_id)?
@@ -1729,7 +1740,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         input: TakeNonFungibleFromVaultInput,
     ) -> Result<TakeNonFungibleFromVaultOutput, RuntimeError> {
-        self.check_take_from_vault_auth(&input.vault_id)?;
+        let resource_def_id = self.get_local_vault(&input.vault_id)?.resource_def_id();
+        self.check_take_from_vault_auth(&resource_def_id)?;
 
         let new_bucket = self
             .get_local_vault(&input.vault_id)?

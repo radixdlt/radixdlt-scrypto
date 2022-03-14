@@ -1,9 +1,38 @@
+pub mod test_runner;
+
 use radix_engine::ledger::*;
 use radix_engine::transaction::*;
 use scrypto::prelude::*;
+use crate::test_runner::TestRunner;
 
 pub fn compile(name: &str) -> Vec<u8> {
     compile_package!(format!("./tests/{}", name), name.replace("-", "_"))
+}
+
+#[test]
+fn create_non_fungible_mutable() {
+    // Arrange
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(&mut substate_store);
+    let (_, account) = test_runner.new_public_key_with_account();
+    let package = test_runner.publish_package("non_fungible");
+
+    // Act
+    let transaction = test_runner.new_transaction_builder()
+        .call_function(
+            package,
+            "NonFungibleTest",
+            "create_non_fungible_mutable",
+            vec![],
+            Some(account),
+        )
+        .call_method_with_all_resources(account, "deposit_batch")
+        .build(vec![])
+        .unwrap();
+    let receipt = test_runner.run(transaction);
+
+    // Assert
+    assert!(receipt.result.is_ok());
 }
 
 #[test]
@@ -14,13 +43,6 @@ fn test_non_fungible() {
     let package = executor.publish_package(&compile("non_fungible")).unwrap();
 
     let transaction = TransactionBuilder::new(&executor)
-        .call_function(
-            package,
-            "NonFungibleTest",
-            "create_non_fungible_mutable",
-            vec![],
-            Some(account),
-        )
         .call_function(
             package,
             "NonFungibleTest",

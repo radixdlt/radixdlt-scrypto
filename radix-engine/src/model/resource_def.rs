@@ -119,10 +119,7 @@ impl ResourceDef {
     pub fn mint(
         &mut self,
         supply: &Resource,
-        badge: Option<ResourceDefId>,
     ) -> Result<(), ResourceDefError> {
-        self.check_mint_auth(badge)?;
-
         match self.resource_type {
             ResourceType::Fungible { .. } => {
                 if let Resource::Fungible { amount } = supply {
@@ -251,9 +248,9 @@ impl ResourceDef {
         }
     }
 
-    pub fn check_mint_auth(&self, badge: Option<ResourceDefId>) -> Result<(), ResourceDefError> {
+    pub fn check_mint_auth(&self, proofs: Vec<&[Proof]>) -> Result<(), ResourceDefError> {
         if self.is_flag_on(MINTABLE) {
-            self.check_permission(badge, MAY_MINT)
+            self.check_proof_permission(proofs, MAY_MINT)
         } else {
             Err(ResourceDefError::OperationNotAllowed)
         }

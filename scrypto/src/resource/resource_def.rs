@@ -23,13 +23,12 @@ pub struct ResourceDef(pub(crate) ResourceDefId);
 
 impl ResourceDef {
     /// Mints fungible resources
-    pub fn mint<T: Into<Decimal>>(&self, amount: T, auth: Proof) -> Bucket {
+    pub fn mint<T: Into<Decimal>>(&self, amount: T) -> Bucket {
         let input = MintResourceInput {
             resource_def_id: self.0,
             new_supply: Supply::Fungible {
                 amount: amount.into(),
             },
-            auth: auth.0,
         };
         let output: MintResourceOutput = call_engine(MINT_RESOURCE, input);
 
@@ -41,7 +40,6 @@ impl ResourceDef {
         &self,
         key: &NonFungibleId,
         data: T,
-        auth: Proof,
     ) -> Bucket {
         let mut entries = HashMap::new();
         entries.insert(key.clone(), (data.immutable_data(), data.mutable_data()));
@@ -49,7 +47,6 @@ impl ResourceDef {
         let input = MintResourceInput {
             resource_def_id: self.0,
             new_supply: Supply::NonFungible { entries },
-            auth: auth.0,
         };
         let output: MintResourceOutput = call_engine(MINT_RESOURCE, input);
 
