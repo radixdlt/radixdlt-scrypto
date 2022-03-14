@@ -53,16 +53,6 @@ impl ResourceDef {
     pub fn burn(&self, bucket: Bucket) {
         let input = BurnResourceInput {
             bucket_id: bucket.0,
-            auth: None,
-        };
-        let _output: BurnResourceOutput = call_engine(BURN_RESOURCE, input);
-    }
-
-    /// Burns a bucket of resources.
-    pub fn burn_with_auth(&self, bucket: Bucket, auth: Proof) {
-        let input = BurnResourceInput {
-            bucket_id: bucket.0,
-            auth: Some(auth.0),
         };
         let _output: BurnResourceOutput = call_engine(BURN_RESOURCE, input);
     }

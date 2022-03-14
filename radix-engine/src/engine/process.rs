@@ -1493,28 +1493,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         })
     }
 
-    fn handle_burn_resource(
-        &mut self,
-        input: BurnResourceInput,
-    ) -> Result<BurnResourceOutput, RuntimeError> {
-        let badge = self.check_badge(input.auth)?;
-
-        let bucket = self
-            .buckets
-            .remove(&input.bucket_id)
-            .ok_or(RuntimeError::BucketNotFound(input.bucket_id))?;
-
-        let resource_def = self
-            .track
-            .get_resource_def_mut(&bucket.resource_def_id())
-            .ok_or(RuntimeError::ResourceDefNotFound(bucket.resource_def_id()))?;
-
-        resource_def
-            .burn(bucket.resource(), badge)
-            .map_err(RuntimeError::ResourceDefError)?;
-        Ok(BurnResourceOutput {})
-    }
-
     fn handle_update_non_fungible_mutable_data(
         &mut self,
         input: UpdateNonFungibleMutableDataInput,
@@ -1712,6 +1690,29 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         self.buckets.insert(bucket_id, bucket);
 
         Ok(MintResourceOutput { bucket_id })
+    }
+
+    fn handle_burn_resource(
+        &mut self,
+        input: BurnResourceInput,
+    ) -> Result<BurnResourceOutput, RuntimeError> {
+        // Auth
+        let bucket = self
+            .buckets
+            .remove(&input.bucket_id)
+            .ok_or(RuntimeError::BucketNotFound(input.bucket_id))?;
+        self.check_resource_auth(&bucket.resource_def_id(), ResourceTransition::Burn)?;
+
+        // Burn
+        let resource_def = self
+            .track
+            .get_resource_def_mut(&bucket.resource_def_id())
+            .ok_or(RuntimeError::ResourceDefNotFound(bucket.resource_def_id()))?;
+        resource_def
+            .burn(bucket.resource())
+            .map_err(RuntimeError::ResourceDefError)?;
+
+        Ok(BurnResourceOutput {})
     }
 
     fn handle_take_from_vault(

@@ -10,6 +10,7 @@ use crate::model::{Proof, Resource};
 
 pub enum ResourceTransition {
     Mint,
+    Burn,
     Take,
 }
 
@@ -143,13 +144,7 @@ impl ResourceDef {
         }
     }
 
-    pub fn burn(
-        &mut self,
-        resource: Resource,
-        badge: Option<ResourceDefId>,
-    ) -> Result<(), ResourceDefError> {
-        self.check_burn_auth(badge)?;
-
+    pub fn burn(&mut self, resource: Resource) -> Result<(), ResourceDefError> {
         match self.resource_type {
             ResourceType::Fungible { .. } => {
                 if let Resource::Fungible { amount } = resource {
@@ -252,6 +247,17 @@ impl ResourceDef {
                     Err(ResourceDefError::OperationNotAllowed)
                 }
             }
+            ResourceTransition::Burn => {
+                if self.is_flag_on(BURNABLE) {
+                    if self.is_flag_on(FREELY_BURNABLE) {
+                        Ok(())
+                    } else {
+                        self.check_proof_permission(proofs, MAY_BURN)
+                    }
+                } else {
+                    Err(ResourceDefError::OperationNotAllowed)
+                }
+            }
             ResourceTransition::Take => {
                 if !self.is_flag_on(RESTRICTED_TRANSFER) {
                     Ok(())
@@ -259,18 +265,6 @@ impl ResourceDef {
                     self.check_proof_permission(proofs, MAY_TRANSFER)
                 }
             }
-        }
-    }
-
-    pub fn check_burn_auth(&self, badge: Option<ResourceDefId>) -> Result<(), ResourceDefError> {
-        if self.is_flag_on(BURNABLE) {
-            if self.is_flag_on(FREELY_BURNABLE) {
-                Ok(())
-            } else {
-                self.check_permission(badge, MAY_BURN)
-            }
-        } else {
-            Err(ResourceDefError::OperationNotAllowed)
         }
     }
 

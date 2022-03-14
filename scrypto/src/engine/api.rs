@@ -275,7 +275,6 @@ pub struct MintResourceOutput {
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct BurnResourceInput {
     pub bucket_id: BucketId,
-    pub auth: Option<ProofId>,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]

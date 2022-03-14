@@ -74,11 +74,6 @@ impl Bucket {
         resource_def!(self.resource_def_id()).burn(self);
     }
 
-    /// Burns resource within this bucket.
-    pub fn burn_with_auth(self, auth: Proof) {
-        resource_def!(self.resource_def_id()).burn_with_auth(self, auth);
-    }
-
     /// Checks if this bucket is empty.
     pub fn is_empty(&self) -> bool {
         self.amount() == 0.into()
