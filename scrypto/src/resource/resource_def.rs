@@ -151,21 +151,19 @@ impl ResourceDef {
     }
 
     /// Turns on feature flags.
-    pub fn enable_flags(&self, flags: u64, auth: Proof) {
+    pub fn enable_flags(&self, flags: u64) {
         let input = UpdateResourceFlagsInput {
             resource_def_id: self.0,
             new_flags: self.flags() | flags,
-            auth: auth.0,
         };
         let _output: UpdateResourceFlagsOutput = call_engine(UPDATE_RESOURCE_FLAGS, input);
     }
 
     /// Turns off feature flags.
-    pub fn disable_flags(&self, flags: u64, auth: Proof) {
+    pub fn disable_flags(&self, flags: u64) {
         let input = UpdateResourceFlagsInput {
             resource_def_id: self.0,
             new_flags: self.flags() & !flags,
-            auth: auth.0,
         };
         let _output: UpdateResourceFlagsOutput = call_engine(UPDATE_RESOURCE_FLAGS, input);
     }

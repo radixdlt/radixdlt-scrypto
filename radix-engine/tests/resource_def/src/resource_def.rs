@@ -81,13 +81,15 @@ blueprint! {
                     )
                     .no_initial_supply());
 
-            token_resource_def.enable_flags(MINTABLE, badge.present());
-            assert!(token_resource_def.flags() & MINTABLE == MINTABLE);
-            assert!(token_resource_def.mutable_flags() & MINTABLE == MINTABLE);
+            authorize(&badge, || {
+                token_resource_def.enable_flags(MINTABLE);
+                assert!(token_resource_def.flags() & MINTABLE == MINTABLE);
+                assert!(token_resource_def.mutable_flags() & MINTABLE == MINTABLE);
 
-            token_resource_def.disable_flags(MINTABLE, badge.present());
-            assert!(token_resource_def.flags() & MINTABLE == 0);
-            assert!(token_resource_def.mutable_flags() & MINTABLE == MINTABLE);
+                token_resource_def.disable_flags(MINTABLE);
+                assert!(token_resource_def.flags() & MINTABLE == 0);
+                assert!(token_resource_def.mutable_flags() & MINTABLE == MINTABLE);
+            });
 
             token_resource_def.lock_flags(MINTABLE, badge.present());
             assert!(token_resource_def.flags() & MINTABLE == 0);
@@ -107,7 +109,7 @@ blueprint! {
                     )
                     .no_initial_supply());
 
-            token_resource_def.enable_flags(MINTABLE, badge.present());
+            authorize(&badge, || token_resource_def.enable_flags(MINTABLE));
             badge
         }
 

@@ -12,6 +12,7 @@ pub enum ResourceControllerMethod {
     Mint,
     Burn,
     TakeFromVault,
+    UpdateFlags,
 }
 
 /// Represents an error when accessing a bucket.
@@ -170,31 +171,6 @@ impl ResourceDef {
         }
     }
 
-    pub fn update_flags(
-        &mut self,
-        new_flags: u64,
-        badge: Option<ResourceDefId>,
-    ) -> Result<(), ResourceDefError> {
-        self.check_manage_flags_auth(badge)?;
-
-        let changed = self.flags ^ new_flags;
-
-        if !resource_flags_are_valid(changed) {
-            return Err(ResourceDefError::InvalidResourceFlags(changed));
-        }
-
-        if self.mutable_flags | changed != self.mutable_flags {
-            return Err(ResourceDefError::InvalidFlagUpdate {
-                flags: self.flags,
-                mutable_flags: self.mutable_flags,
-                new_flags,
-                new_mutable_flags: self.mutable_flags,
-            });
-        }
-        self.flags = new_flags;
-
-        Ok(())
-    }
 
     pub fn update_mutable_flags(
         &mut self,
@@ -265,7 +241,33 @@ impl ResourceDef {
                     self.check_proof_permission(proofs, MAY_TRANSFER)
                 }
             }
+            ResourceControllerMethod::UpdateFlags => {
+                self.check_proof_permission(proofs, MAY_MANAGE_RESOURCE_FLAGS)
+            }
         }
+    }
+
+    pub fn update_flags(
+        &mut self,
+        new_flags: u64,
+    ) -> Result<(), ResourceDefError> {
+        let changed = self.flags ^ new_flags;
+
+        if !resource_flags_are_valid(changed) {
+            return Err(ResourceDefError::InvalidResourceFlags(changed));
+        }
+
+        if self.mutable_flags | changed != self.mutable_flags {
+            return Err(ResourceDefError::InvalidFlagUpdate {
+                flags: self.flags,
+                mutable_flags: self.mutable_flags,
+                new_flags,
+                new_mutable_flags: self.mutable_flags,
+            });
+        }
+        self.flags = new_flags;
+
+        Ok(())
     }
 
     pub fn check_update_non_fungible_mutable_data_auth(
