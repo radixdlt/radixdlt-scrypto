@@ -1,3 +1,4 @@
+use radix_engine::errors::RuntimeError;
 use radix_engine::ledger::*;
 use radix_engine::model::*;
 use radix_engine::transaction::*;
@@ -93,10 +94,11 @@ fn cannot_withdraw_from_other_account() {
         .unwrap();
 
     // Act
-    let result = executor.run(transaction);
+    let result = executor.run(transaction).unwrap();
 
     // Assert
-    assert!(!result.unwrap().result.is_ok());
+    let runtime_error = result.result.expect_err("Should be runtime error");
+    assert_eq!(runtime_error, RuntimeError::NotAuthorized);
 }
 
 #[test]

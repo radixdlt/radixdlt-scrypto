@@ -1,5 +1,10 @@
+use crate::errors::RuntimeError;
+use crate::errors::RuntimeError::NotAuthorized;
+use crate::model::Proof;
 use sbor::*;
 use scrypto::engine::types::*;
+use scrypto::prelude::NonFungibleAddress;
+use scrypto::rust::collections::*;
 use scrypto::rust::string::String;
 use scrypto::rust::vec::Vec;
 
@@ -9,15 +14,35 @@ pub struct Component {
     package_id: PackageId,
     blueprint_name: String,
     state: Vec<u8>,
+    sys_auth: HashMap<String, NonFungibleAddress>,
 }
 
 impl Component {
-    pub fn new(package_id: PackageId, blueprint_name: String, state: Vec<u8>) -> Self {
+    pub fn new(
+        package_id: PackageId,
+        blueprint_name: String,
+        state: Vec<u8>,
+        sys_auth: HashMap<String, NonFungibleAddress>,
+    ) -> Self {
         Self {
             package_id,
             blueprint_name,
             state,
+            sys_auth,
         }
+    }
+
+    pub fn check_auth(&self, function: &str, proofs: &[Proof]) -> Result<(), RuntimeError> {
+        if let Some(auth_address) = self.sys_auth.get(function) {
+            if !proofs
+                .iter()
+                .any(|p| p.bucket().contains_non_fungible_address(auth_address))
+            {
+                return Err(NotAuthorized);
+            }
+        }
+
+        Ok(())
     }
 
     pub fn package_id(&self) -> PackageId {

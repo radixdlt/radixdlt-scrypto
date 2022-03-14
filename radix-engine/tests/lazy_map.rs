@@ -1,3 +1,4 @@
+use radix_engine::errors::RuntimeError;
 use radix_engine::ledger::*;
 use radix_engine::transaction::*;
 use scrypto::prelude::*;
@@ -21,7 +22,8 @@ fn dangling_lazy_map_should_fail() {
     let receipt = executor.run(transaction).unwrap();
 
     // Assert
-    assert!(!receipt.result.is_ok());
+    let runtime_error = receipt.result.expect_err("Should be runtime error");
+    assert_eq!(runtime_error, RuntimeError::ResourceCheckFailure);
 }
 
 #[test]
@@ -81,7 +83,11 @@ fn cyclic_map_fails_execution() {
     let receipt = executor.run(transaction).unwrap();
 
     // Assert
-    assert!(!receipt.result.is_ok());
+    let runtime_error = receipt.result.expect_err("Should be runtime error");
+    match runtime_error {
+        RuntimeError::CyclicLazyMap(_) => {}
+        _ => panic!("Should be a cyclic lazy map error"),
+    }
 }
 
 #[test]
@@ -99,7 +105,11 @@ fn self_cyclic_map_fails_execution() {
     let receipt = executor.run(transaction).unwrap();
 
     // Assert
-    assert!(!receipt.result.is_ok());
+    let runtime_error = receipt.result.expect_err("Should be runtime error");
+    match runtime_error {
+        RuntimeError::CyclicLazyMap(_) => {}
+        _ => panic!("Should be a cyclic lazy map error"),
+    }
 }
 
 #[test]
@@ -129,7 +139,11 @@ fn cannot_remove_lazy_maps() {
     let receipt = sut.run(transaction).unwrap();
 
     // Assert
-    assert!(!receipt.result.is_ok());
+    let runtime_error = receipt.result.expect_err("Should be runtime error");
+    match runtime_error {
+        RuntimeError::LazyMapRemoved(_) => {}
+        _ => panic!("Should be lazy map removed error"),
+    }
 }
 
 #[test]
@@ -159,7 +173,11 @@ fn cannot_overwrite_lazy_maps() {
     let receipt = sut.run(transaction).unwrap();
 
     // Assert
-    assert!(!receipt.result.is_ok());
+    let runtime_error = receipt.result.expect_err("Should be runtime error");
+    match runtime_error {
+        RuntimeError::LazyMapRemoved(_) => {}
+        _ => panic!("Should be lazy map removed error"),
+    }
 }
 
 #[test]

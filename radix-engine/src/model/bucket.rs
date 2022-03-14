@@ -1,12 +1,13 @@
 use sbor::*;
 use scrypto::engine::types::*;
+use scrypto::prelude::NonFungibleAddress;
 use scrypto::rust::collections::BTreeSet;
 use scrypto::rust::rc::Rc;
 use scrypto::rust::string::ToString;
 use scrypto::rust::vec::Vec;
 
 /// Represents an error when accessing a bucket.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum BucketError {
     ResourceNotMatching,
     InsufficientBalance,
@@ -144,6 +145,19 @@ impl Bucket {
         match &self.resource {
             Resource::Fungible { .. } => Err(BucketError::UnsupportedOperation),
             Resource::NonFungible { ids } => Ok(ids.iter().cloned().collect()),
+        }
+    }
+
+    pub fn contains_non_fungible_address(&self, non_fungible_address: &NonFungibleAddress) -> bool {
+        if self.resource_def_id != non_fungible_address.resource_def_id() {
+            return false;
+        }
+
+        match self.get_non_fungible_ids() {
+            Err(_) => false,
+            Ok(non_fungible_ids) => non_fungible_ids
+                .iter()
+                .any(|k| k.eq(&non_fungible_address.non_fungible_id())),
         }
     }
 
