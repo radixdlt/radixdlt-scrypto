@@ -237,7 +237,7 @@ impl<T: Decode> Decode for Box<T> {
 
 impl<T: Decode> Decode for Rc<T> {
     fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
-        let v = T::decode(decoder)?;
+        let v = T::decode_value(decoder)?;
         Ok(Rc::new(v))
     }
 }
@@ -384,14 +384,7 @@ impl<K: Decode + Hash + Eq, V: Decode> Decode for HashMap<K, V> {
 
 #[cfg(test)]
 mod tests {
-    use crate::rust::borrow::ToOwned;
-    use crate::rust::boxed::Box;
-    use crate::rust::collections::*;
-    use crate::rust::string::String;
-    use crate::rust::vec;
-    use crate::rust::vec::Vec;
-
-    use super::{Decode, Decoder};
+    use super::*;
 
     fn assert_decoding(dec: &mut Decoder) {
         <()>::decode(dec).unwrap();
@@ -487,5 +480,13 @@ mod tests {
         ];
         let mut dec = Decoder::no_type(&bytes);
         assert_decoding(&mut dec);
+    }
+
+    #[test]
+    pub fn test_decode_rc() {
+        let bytes = vec![7u8, 5u8];
+        let mut dec = Decoder::with_type(&bytes);
+        let x = <Rc<u8>>::decode(&mut dec).unwrap();
+        assert_eq!(Rc::new(5u8), x);
     }
 }

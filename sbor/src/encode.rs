@@ -271,14 +271,7 @@ impl<K: Encode, V: Encode> Encode for HashMap<K, V> {
 
 #[cfg(test)]
 mod tests {
-    use crate::rust::borrow::ToOwned;
-    use crate::rust::boxed::Box;
-    use crate::rust::collections::*;
-    use crate::rust::string::String;
-    use crate::rust::vec;
-    use crate::rust::vec::Vec;
-
-    use super::{Encode, Encoder};
+    use super::*;
 
     fn do_encoding(enc: &mut Encoder) {
         ().encode(enc);
@@ -381,5 +374,14 @@ mod tests {
             ],
             bytes
         );
+    }
+
+    #[test]
+    pub fn test_encode_rc() {
+        let x = crate::rust::rc::Rc::new(5u8);
+        let mut enc = Encoder::with_type(Vec::with_capacity(512));
+        x.encode(&mut enc);
+        let bytes: Vec<u8> = enc.into();
+        assert_eq!(bytes, vec![7, 5])
     }
 }
