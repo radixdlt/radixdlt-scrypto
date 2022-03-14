@@ -34,9 +34,8 @@ impl Worktop {
             .take_container()
             .map_err(|_| WorktopError::OtherBucketLocked)?;
 
-        if let Some(container) = self.containers.get_mut(&resource_def_id) {
-            Rc::get_mut(container)
-                .ok_or(WorktopError::ResourceContainerLocked)?
+        if let Some(container) = self.borrow_container(resource_def_id)? {
+            container
                 .put(other_container)
                 .map_err(WorktopError::ResourceError)
         } else {
@@ -51,11 +50,8 @@ impl Worktop {
         amount: Decimal,
         resource_def_id: ResourceDefId,
     ) -> Result<Bucket, WorktopError> {
-        if let Some(container) = self.containers.get_mut(&resource_def_id) {
-            Rc::get_mut(container)
-                .ok_or(WorktopError::ResourceContainerLocked)?
-                .take(amount)
-                .map(Bucket::new)
+        if let Some(container) = self.borrow_container(resource_def_id)? {
+            container.take(amount).map(Bucket::new)
         } else {
             Err(ResourceError::InsufficientBalance)
         }
@@ -75,11 +71,8 @@ impl Worktop {
         ids: &BTreeSet<NonFungibleId>,
         resource_def_id: ResourceDefId,
     ) -> Result<Bucket, WorktopError> {
-        if let Some(container) = self.containers.get_mut(&resource_def_id) {
-            Rc::get_mut(container)
-                .ok_or(WorktopError::ResourceContainerLocked)?
-                .take_non_fungibles(ids)
-                .map(Bucket::new)
+        if let Some(container) = self.borrow_container(resource_def_id)? {
+            container.take_non_fungibles(ids).map(Bucket::new)
         } else {
             Err(ResourceError::InsufficientBalance)
         }
@@ -87,16 +80,13 @@ impl Worktop {
     }
 
     pub fn take_all(&mut self, resource_def_id: ResourceDefId) -> Result<Bucket, WorktopError> {
-        if let Some(container) = self.containers.remove(&resource_def_id) {
-            Ok(Bucket::new(
-                Rc::try_unwrap(container).map_err(|_| WorktopError::ResourceContainerLocked)?,
-            ))
+        if let Some(container) = self.take_container(resource_def_id)? {
+            Ok(Bucket::new(container))
         } else {
             // TODO: a better approach would be to return an empty bucket
-            Err(WorktopError::ResourceError(
-                ResourceError::InsufficientBalance,
-            ))
+            Err(ResourceError::InsufficientBalance)
         }
+        .map_err(WorktopError::ResourceError)
     }
 
     pub fn resource_def_ids(&self) -> Vec<ResourceDefId> {
@@ -115,6 +105,42 @@ impl Worktop {
             container.liquid_amount().quantity() >= amount
         } else {
             false
+        }
+    }
+
+    /// Creates another `Rc<ResourceContainer>` to the container of given resource
+    pub fn reference_container(
+        &self,
+        resource_def_id: ResourceDefId,
+    ) -> Option<Rc<ResourceContainer>> {
+        self.containers.get(&resource_def_id).map(Clone::clone)
+    }
+
+    /// Creates a mutable reference to the container of given resource
+    pub fn borrow_container(
+        &mut self,
+        resource_def_id: ResourceDefId,
+    ) -> Result<Option<&mut ResourceContainer>, WorktopError> {
+        if let Some(container) = self.containers.get_mut(&resource_def_id) {
+            Ok(Some(
+                Rc::get_mut(container).ok_or(WorktopError::ResourceContainerLocked)?,
+            ))
+        } else {
+            Ok(None)
+        }
+    }
+
+    /// Takes the ownership of the container of given resource
+    pub fn take_container(
+        &mut self,
+        resource_def_id: ResourceDefId,
+    ) -> Result<Option<ResourceContainer>, WorktopError> {
+        if let Some(container) = self.containers.remove(&resource_def_id) {
+            Ok(Some(
+                Rc::try_unwrap(container).map_err(|_| WorktopError::ResourceContainerLocked)?,
+            ))
+        } else {
+            Ok(None)
         }
     }
 }
