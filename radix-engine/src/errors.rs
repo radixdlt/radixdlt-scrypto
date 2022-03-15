@@ -174,8 +174,8 @@ pub enum RuntimeError {
     /// Index out of bounds.
     IndexOutOfBounds { index: usize, max: usize },
 
-    /// Operation not supported.
-    UnsupportedOperation,
+    /// Non-fungible operation on fungible resource is not allowed
+    NonFungibleOperationNotAllowed,
 }
 
 impl fmt::Display for RuntimeError {

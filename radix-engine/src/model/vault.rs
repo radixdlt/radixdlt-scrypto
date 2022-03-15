@@ -4,12 +4,12 @@ use scrypto::rust::collections::BTreeSet;
 use scrypto::rust::rc::Rc;
 
 use crate::model::Bucket;
-use crate::model::{ResourceAmount, ResourceContainer, ResourceError};
+use crate::model::{ResourceAmount, ResourceContainer, ResourceContainerError};
 
 /// Represents an error when accessing a vault.
 #[derive(Debug, Clone)]
 pub enum VaultError {
-    ResourceError(ResourceError),
+    ResourceContainerError(ResourceContainerError),
     VaultLocked,
     OtherBucketLocked,
 }
@@ -35,7 +35,7 @@ impl Vault {
 
         this_container
             .put(other_container)
-            .map_err(VaultError::ResourceError)
+            .map_err(VaultError::ResourceContainerError)
     }
 
     pub fn take(&mut self, amount: Decimal) -> Result<Bucket, VaultError> {
@@ -44,7 +44,7 @@ impl Vault {
         Ok(Bucket::new(
             this_container
                 .take(amount)
-                .map_err(VaultError::ResourceError)?,
+                .map_err(VaultError::ResourceContainerError)?,
         ))
     }
 
@@ -61,7 +61,7 @@ impl Vault {
         Ok(Bucket::new(
             this_container
                 .take_non_fungibles(ids)
-                .map_err(VaultError::ResourceError)?,
+                .map_err(VaultError::ResourceContainerError)?,
         ))
     }
 

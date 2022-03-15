@@ -127,7 +127,7 @@ fn dump_resources<T: SubstateStore>(
             .unwrap()
             .0;
 
-        let amount = vault.liquid_amount().quantity();
+        let amount = vault.liquid_amount().as_quantity();
         let resource_def_id = vault.resource_def_id();
         let resource_def: ResourceDef = substate_store
             .get_decoded_substate(&resource_def_id)

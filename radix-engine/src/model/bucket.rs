@@ -2,12 +2,12 @@ use scrypto::engine::types::*;
 use scrypto::rust::collections::BTreeSet;
 use scrypto::rust::rc::Rc;
 
-use crate::model::{ResourceAmount, ResourceContainer, ResourceError};
+use crate::model::{ResourceAmount, ResourceContainer, ResourceContainerError};
 
 /// Represents an error when accessing a bucket.
 #[derive(Debug, Clone)]
 pub enum BucketError {
-    ResourceError(ResourceError),
+    ResourceContainerError(ResourceContainerError),
     BucketLocked,
     OtherBucketLocked,
 }
@@ -33,7 +33,7 @@ impl Bucket {
 
         this_container
             .put(other_container)
-            .map_err(BucketError::ResourceError)
+            .map_err(BucketError::ResourceContainerError)
     }
 
     pub fn take(&mut self, amount: Decimal) -> Result<Bucket, BucketError> {
@@ -42,7 +42,7 @@ impl Bucket {
         Ok(Bucket::new(
             this_container
                 .take(amount)
-                .map_err(BucketError::ResourceError)?,
+                .map_err(BucketError::ResourceContainerError)?,
         ))
     }
 
@@ -59,7 +59,7 @@ impl Bucket {
         Ok(Bucket::new(
             this_container
                 .take_non_fungibles(ids)
-                .map_err(BucketError::ResourceError)?,
+                .map_err(BucketError::ResourceContainerError)?,
         ))
     }
 

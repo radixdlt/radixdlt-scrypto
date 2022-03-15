@@ -934,7 +934,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 .ok_or(RuntimeError::ProofNotFound(proof_id))?;
 
             // read amount
-            if proof.total_amount().quantity().is_zero() {
+            if proof.total_amount().as_quantity().is_zero() {
                 return Err(RuntimeError::EmptyProof);
             }
             let resource_def_id = proof.resource_def_id();
@@ -1263,12 +1263,40 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         resource_def_id: ResourceDefId,
         new_supply: Supply,
-    ) -> Result<Resource, RuntimeError> {
+        badge: Option<ResourceDefId>,
+        initial_supply: bool,
+    ) -> Result<ResourceContainerState, RuntimeError> {
+        let resource_def = self
+            .track
+            .get_resource_def_mut(&resource_def_id)
+            .ok_or(RuntimeError::ResourceDefNotFound(resource_def_id))?;
         match new_supply {
-            Supply::Fungible { amount } => Ok(Resource::fungible(amount)),
-            Supply::NonFungible { entries } => {
-                let mut ids = BTreeSet::new();
+            Supply::Fungible { amount } => {
+                // Notify resource manager
+                resource_def
+                    .mint(&ResourceAmount::Fungible { amount }, badge, initial_supply)
+                    .map_err(RuntimeError::ResourceDefError)?;
 
+                // Allocate fungible
+                Ok(ResourceContainerState::fungible(
+                    amount,
+                    resource_def.resource_type().divisibility(),
+                ))
+            }
+            Supply::NonFungible { entries } => {
+                // Notify resource manager
+                resource_def
+                    .mint(
+                        &ResourceAmount::NonFungible {
+                            ids: entries.keys().cloned().collect(),
+                        },
+                        badge,
+                        initial_supply,
+                    )
+                    .map_err(RuntimeError::ResourceDefError)?;
+
+                // Allocate non-fungibles
+                let mut ids = BTreeSet::new();
                 for (id, data) in entries {
                     let non_fungible_address = NonFungibleAddress::new(resource_def_id, id.clone());
                     if self.track.get_non_fungible(&non_fungible_address).is_some() {
@@ -1285,7 +1313,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     ids.insert(id);
                 }
 
-                Ok(Resource::non_fungible(ids))
+                Ok(ResourceContainerState::non_fungible(ids))
             }
         }
     }
@@ -1294,27 +1322,23 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         input: CreateResourceInput,
     ) -> Result<CreateResourceOutput, RuntimeError> {
-        // instantiate resource definition
-        let definition = ResourceDef::new(
+        let resource_def = ResourceDef::new(
             input.resource_type,
             input.metadata,
             input.flags,
             input.mutable_flags,
             input.authorities,
-            &input.initial_supply,
+            0.into(),
         )
         .map_err(RuntimeError::ResourceDefError)?;
 
-        let resource_def_id = self.track.create_resource_def(definition);
+        let resource_def_id = self.track.create_resource_def(resource_def);
         re_debug!(self, "New resource definition: {}", resource_def_id);
 
-        // allocate supply
         let bucket_id = if let Some(initial_supply) = input.initial_supply {
-            let supply = self.allocate_resource(resource_def_id, initial_supply)?;
             let bucket = Bucket::new(ResourceContainer::new(
                 resource_def_id,
-                input.resource_type,
-                supply,
+                self.allocate_resource(resource_def_id, initial_supply, None, true)?,
             ));
             let bucket_id = self.track.new_bucket_id();
             self.buckets.insert(bucket_id, bucket);
@@ -1439,23 +1463,10 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     ) -> Result<MintResourceOutput, RuntimeError> {
         let badge = self.check_badge(Some(input.auth))?;
 
-        // allocate resource
-        let resource = self.allocate_resource(input.resource_def_id, input.new_supply)?;
-
-        // mint resource
-        let resource_def = self
-            .track
-            .get_resource_def_mut(&input.resource_def_id)
-            .ok_or(RuntimeError::ResourceDefNotFound(input.resource_def_id))?;
-        resource_def
-            .mint(&resource, badge)
-            .map_err(RuntimeError::ResourceDefError)?;
-
         // wrap resource into a bucket
         let bucket = Bucket::new(ResourceContainer::new(
             input.resource_def_id,
-            resource_def.resource_type(),
-            resource,
+            self.allocate_resource(input.resource_def_id, input.new_supply, badge, false)?,
         ));
         let bucket_id = self.track.new_bucket_id();
         self.buckets.insert(bucket_id, bucket);
@@ -1572,10 +1583,14 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
         let new_vault = Vault::new(ResourceContainer::new(
             input.resource_def_id,
-            definition.resource_type(),
             match definition.resource_type() {
-                ResourceType::Fungible { .. } => Resource::fungible(0.into()),
-                ResourceType::NonFungible { .. } => Resource::non_fungible(BTreeSet::new()),
+                ResourceType::Fungible { .. } => ResourceContainerState::fungible(
+                    0.into(),
+                    definition.resource_type().divisibility(),
+                ),
+                ResourceType::NonFungible { .. } => {
+                    ResourceContainerState::non_fungible(BTreeSet::new())
+                }
             },
         ));
         let vault_id = self.track.new_vault_id();
@@ -1695,8 +1710,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let vault = self.get_local_vault(input.vault_id)?;
         let non_fungible_ids = vault
             .liquid_amount()
-            .non_fungible_ids()
-            .map_err(|_| RuntimeError::UnsupportedOperation)?
+            .as_non_fungible_ids()
+            .ok_or(RuntimeError::NonFungibleOperationNotAllowed)?
             .into_iter()
             .collect();
 
@@ -1710,7 +1725,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let vault = self.get_local_vault(input.vault_id)?;
 
         Ok(GetVaultAmountOutput {
-            amount: vault.liquid_amount().quantity(),
+            amount: vault.liquid_amount().as_quantity(),
         })
     }
 
@@ -1736,10 +1751,14 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
         let new_bucket = Bucket::new(ResourceContainer::new(
             input.resource_def_id,
-            definition.resource_type(),
             match definition.resource_type() {
-                ResourceType::Fungible { .. } => Resource::fungible(0.into()),
-                ResourceType::NonFungible { .. } => Resource::non_fungible(BTreeSet::new()),
+                ResourceType::Fungible { .. } => ResourceContainerState::fungible(
+                    0.into(),
+                    definition.resource_type().divisibility(),
+                ),
+                ResourceType::NonFungible { .. } => {
+                    ResourceContainerState::non_fungible(BTreeSet::new())
+                }
             },
         ));
         let bucket_id = self.track.new_bucket_id();
@@ -1789,7 +1808,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let amount = self
             .buckets
             .get(&input.bucket_id)
-            .map(|b| b.liquid_amount().quantity())
+            .map(|b| b.liquid_amount().as_quantity())
             .ok_or(RuntimeError::BucketNotFound(input.bucket_id))?;
 
         Ok(GetBucketAmountOutput { amount })
@@ -1836,8 +1855,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         Ok(GetNonFungibleIdsInBucketOutput {
             non_fungible_ids: bucket
                 .liquid_amount()
-                .non_fungible_ids()
-                .map_err(|_| RuntimeError::UnsupportedOperation)?
+                .as_non_fungible_ids()
+                .ok_or(RuntimeError::NonFungibleOperationNotAllowed)?
                 .into_iter()
                 .collect(),
         })
@@ -1898,7 +1917,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .ok_or(RuntimeError::ProofNotFound(input.proof_id))?;
 
         Ok(GetProofAmountOutput {
-            amount: proof.total_amount().quantity(),
+            amount: proof.total_amount().as_quantity(),
         })
     }
 
@@ -1928,8 +1947,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         Ok(GetNonFungibleIdsInProofOutput {
             non_fungible_ids: proof
                 .total_amount()
-                .non_fungible_ids()
-                .map_err(|_| RuntimeError::UnsupportedOperation)?
+                .as_non_fungible_ids()
+                .ok_or(RuntimeError::NonFungibleOperationNotAllowed)?
                 .into_iter()
                 .collect(),
         })

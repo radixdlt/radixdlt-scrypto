@@ -101,8 +101,7 @@ impl<'s, S: SubstateStore> Track<'s, S> {
         // This is to make reasoning at transaction manifest & validator easier.
         let ecdsa_bucket = Bucket::new(ResourceContainer::new(
             ECDSA_TOKEN,
-            ResourceType::NonFungible,
-            Resource::non_fungible(signers),
+            ResourceContainerState::non_fungible(signers),
         ));
         process.create_virtual_proof(ECDSA_TOKEN_BUCKET_ID, ECDSA_TOKEN_PROOF_ID, ecdsa_bucket);
 

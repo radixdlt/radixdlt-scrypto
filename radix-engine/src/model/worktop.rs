@@ -5,12 +5,12 @@ use scrypto::rust::rc::Rc;
 use scrypto::rust::vec::Vec;
 
 use crate::model::Bucket;
-use crate::model::{ResourceContainer, ResourceError};
+use crate::model::{ResourceContainer, ResourceContainerError};
 
 /// Represents an error when accessing a Worktop.
 #[derive(Debug, Clone)]
 pub enum WorktopError {
-    ResourceError(ResourceError),
+    ResourceContainerError(ResourceContainerError),
     ResourceContainerLocked,
     OtherBucketLocked,
 }
@@ -37,7 +37,7 @@ impl Worktop {
         if let Some(container) = self.borrow_container(resource_def_id)? {
             container
                 .put(other_container)
-                .map_err(WorktopError::ResourceError)
+                .map_err(WorktopError::ResourceContainerError)
         } else {
             self.containers
                 .insert(resource_def_id, Rc::new(other_container));
@@ -53,9 +53,9 @@ impl Worktop {
         if let Some(container) = self.borrow_container(resource_def_id)? {
             container.take(amount).map(Bucket::new)
         } else {
-            Err(ResourceError::InsufficientBalance)
+            Err(ResourceContainerError::InsufficientBalance)
         }
-        .map_err(WorktopError::ResourceError)
+        .map_err(WorktopError::ResourceContainerError)
     }
 
     pub fn take_non_fungible(
@@ -74,9 +74,9 @@ impl Worktop {
         if let Some(container) = self.borrow_container(resource_def_id)? {
             container.take_non_fungibles(ids).map(Bucket::new)
         } else {
-            Err(ResourceError::InsufficientBalance)
+            Err(ResourceContainerError::InsufficientBalance)
         }
-        .map_err(WorktopError::ResourceError)
+        .map_err(WorktopError::ResourceContainerError)
     }
 
     pub fn take_all(&mut self, resource_def_id: ResourceDefId) -> Result<Bucket, WorktopError> {
@@ -84,16 +84,16 @@ impl Worktop {
             Ok(Bucket::new(container))
         } else {
             // TODO: a better approach would be to return an empty bucket
-            Err(ResourceError::InsufficientBalance)
+            Err(ResourceContainerError::InsufficientBalance)
         }
-        .map_err(WorktopError::ResourceError)
+        .map_err(WorktopError::ResourceContainerError)
     }
 
     pub fn resource_def_ids(&self) -> Vec<ResourceDefId> {
         let mut result = Vec::new();
         for (id, container) in &self.containers {
             // This is to make implementation agnostic.
-            if container.liquid_amount().quantity() > 0.into() {
+            if container.liquid_amount().as_quantity() > 0.into() {
                 result.push(*id);
             }
         }
@@ -102,7 +102,7 @@ impl Worktop {
 
     pub fn contains(&self, amount: Decimal, resource_def_id: ResourceDefId) -> bool {
         if let Some(container) = self.containers.get(&resource_def_id) {
-            container.liquid_amount().quantity() >= amount
+            container.liquid_amount().as_quantity() >= amount
         } else {
             false
         }
