@@ -1515,22 +1515,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         })
     }
 
-    fn handle_update_resource_metadata(
-        &mut self,
-        input: UpdateResourceMetadataInput,
-    ) -> Result<UpdateResourceMetadataOutput, RuntimeError> {
-        let badge = self.check_badge(Some(input.auth))?;
-
-        let resource_def = self
-            .track
-            .get_resource_def_mut(&input.resource_def_id)
-            .ok_or(RuntimeError::ResourceDefNotFound(input.resource_def_id))?;
-        resource_def
-            .update_metadata(input.new_metadata, badge)
-            .map_err(RuntimeError::ResourceDefError)?;
-
-        Ok(UpdateResourceMetadataOutput {})
-    }
 
     fn handle_create_vault(
         &mut self,
@@ -1670,6 +1654,28 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .map_err(RuntimeError::ResourceDefError)?;
 
         Ok(UpdateResourceMutableFlagsOutput {})
+    }
+
+    fn handle_update_resource_metadata(
+        &mut self,
+        input: UpdateResourceMetadataInput,
+    ) -> Result<UpdateResourceMetadataOutput, RuntimeError> {
+        // Auth
+        self.check_resource_auth(
+            &input.resource_def_id,
+            ResourceControllerMethod::UpdateMetadata,
+        )?;
+
+        // State update
+        let resource_def = self
+            .track
+            .get_resource_def_mut(&input.resource_def_id)
+            .ok_or(RuntimeError::ResourceDefNotFound(input.resource_def_id))?;
+        resource_def
+            .update_metadata(input.new_metadata)
+            .map_err(RuntimeError::ResourceDefError)?;
+
+        Ok(UpdateResourceMetadataOutput {})
     }
 
     fn handle_mint_resource(

@@ -178,11 +178,10 @@ impl ResourceDef {
             call_engine(UPDATE_RESOURCE_MUTABLE_FLAGS, input);
     }
 
-    pub fn update_metadata(&self, new_metadata: HashMap<String, String>, auth: Proof) {
+    pub fn update_metadata(&self, new_metadata: HashMap<String, String>) {
         let input = UpdateResourceMetadataInput {
             resource_def_id: self.0,
             new_metadata,
-            auth: auth.0,
         };
         let _output: UpdateResourceMetadataOutput = call_engine(UPDATE_RESOURCE_METADATA, input);
     }

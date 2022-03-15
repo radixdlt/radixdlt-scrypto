@@ -383,7 +383,6 @@ pub struct UpdateResourceMutableFlagsOutput {}
 pub struct UpdateResourceMetadataInput {
     pub resource_def_id: ResourceDefId,
     pub new_metadata: HashMap<String, String>,
-    pub auth: ProofId,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]

@@ -124,8 +124,10 @@ blueprint! {
 
             let mut new_metadata = HashMap::new();
             new_metadata.insert("a".to_owned(), "b".to_owned());
-            token_resource_def.update_metadata(new_metadata.clone(), badge.present());
-            assert_eq!(token_resource_def.metadata(), new_metadata);
+            authorize(&badge, || {
+                token_resource_def.update_metadata(new_metadata.clone());
+                assert_eq!(token_resource_def.metadata(), new_metadata);
+            });
 
             badge
         }

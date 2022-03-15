@@ -14,6 +14,7 @@ pub enum ResourceControllerMethod {
     TakeFromVault,
     UpdateFlags,
     UpdateMutableFlags,
+    UpdateMetadata,
 }
 
 /// Represents an error when accessing a bucket.
@@ -195,10 +196,7 @@ impl ResourceDef {
     pub fn update_metadata(
         &mut self,
         new_metadata: HashMap<String, String>,
-        badge: Option<ResourceDefId>,
     ) -> Result<(), ResourceDefError> {
-        self.check_update_metadata_auth(badge)?;
-
         self.metadata = new_metadata;
 
         Ok(())
@@ -239,6 +237,13 @@ impl ResourceDef {
             | ResourceControllerMethod::UpdateMutableFlags => {
                 self.check_proof_permission(proofs, MAY_MANAGE_RESOURCE_FLAGS)
             }
+            ResourceControllerMethod::UpdateMetadata => {
+                if self.is_flag_on(SHARED_METADATA_MUTABLE) {
+                    self.check_proof_permission(proofs, MAY_CHANGE_SHARED_METADATA)
+                } else {
+                    Err(ResourceDefError::OperationNotAllowed)
+                }
+            }
         }
     }
 
@@ -268,17 +273,6 @@ impl ResourceDef {
     ) -> Result<(), ResourceDefError> {
         if self.is_flag_on(INDIVIDUAL_METADATA_MUTABLE) {
             self.check_permission(badge, MAY_CHANGE_INDIVIDUAL_METADATA)
-        } else {
-            Err(ResourceDefError::OperationNotAllowed)
-        }
-    }
-
-    pub fn check_update_metadata_auth(
-        &self,
-        badge: Option<ResourceDefId>,
-    ) -> Result<(), ResourceDefError> {
-        if self.is_flag_on(SHARED_METADATA_MUTABLE) {
-            self.check_permission(badge, MAY_CHANGE_SHARED_METADATA)
         } else {
             Err(ResourceDefError::OperationNotAllowed)
         }
