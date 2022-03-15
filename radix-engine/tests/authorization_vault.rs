@@ -47,7 +47,7 @@ fn can_withdraw_restricted_transfer_from_my_account_with_auth() {
 
     // Act
     let auth_amount = ResourceSpecification::NonFungible {
-        keys: BTreeSet::from([NonFungibleId::from(1)]),
+        ids: BTreeSet::from([NonFungibleId::from(1)]),
         resource_def_id: auth_resource_def_id,
     };
     let fungible_amount = ResourceSpecification::Fungible {

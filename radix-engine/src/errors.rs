@@ -144,6 +144,9 @@ pub enum RuntimeError {
     /// Vault access error.
     VaultError(VaultError),
 
+    /// Worktop access error.
+    WorktopError(WorktopError),
+
     /// Bucket is not allowed.
     BucketNotAllowed,
 
@@ -172,10 +175,10 @@ pub enum RuntimeError {
     NotAuthorized,
 
     /// Index out of bounds.
-    IndexOutOfBounds {
-        index: usize,
-        max: usize,
-    },
+    IndexOutOfBounds { index: usize, max: usize },
+
+    /// Non-fungible operation on fungible resource is not allowed
+    NonFungibleOperationNotAllowed,
 }
 
 impl fmt::Display for RuntimeError {

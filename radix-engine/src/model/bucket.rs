@@ -1,206 +1,106 @@
-use sbor::*;
 use scrypto::engine::types::*;
 use scrypto::prelude::NonFungibleAddress;
 use scrypto::rust::collections::BTreeSet;
 use scrypto::rust::rc::Rc;
-use scrypto::rust::string::ToString;
-use scrypto::rust::vec::Vec;
+
+use crate::model::{ResourceAmount, ResourceContainer, ResourceContainerError};
 
 /// Represents an error when accessing a bucket.
 #[derive(Debug, Clone, PartialEq)]
 pub enum BucketError {
-    ResourceNotMatching,
-    InsufficientBalance,
-    InvalidAmount(Decimal),
-    UnsupportedOperation,
-    NonFungibleNotFound,
-}
-
-/// Represents the contained resource.
-#[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub enum Resource {
-    Fungible { amount: Decimal },
-
-    NonFungible { ids: BTreeSet<NonFungibleId> },
+    ResourceContainerError(ResourceContainerError),
+    BucketLocked,
+    OtherBucketLocked,
 }
 
 /// A transient resource container.
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug)]
 pub struct Bucket {
-    resource_def_id: ResourceDefId,
-    resource_type: ResourceType,
-    resource: Resource,
+    container: Rc<ResourceContainer>,
 }
-
-/// A bucket becomes locked after a borrow operation.
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct LockedBucket {
-    bucket_id: BucketId,
-    bucket: Bucket,
-}
-
-/// A bucket proof
-pub type Proof = Rc<LockedBucket>;
 
 impl Bucket {
-    pub fn new(
-        resource_def_id: ResourceDefId,
-        resource_type: ResourceType,
-        resource: Resource,
-    ) -> Self {
+    pub fn new(container: ResourceContainer) -> Self {
         Self {
-            resource_def_id,
-            resource_type,
-            resource,
+            container: Rc::new(container),
         }
     }
 
-    pub fn put(&mut self, other: Self) -> Result<(), BucketError> {
-        if self.resource_def_id != other.resource_def_id {
-            Err(BucketError::ResourceNotMatching)
-        } else {
-            match &mut self.resource {
-                Resource::Fungible { ref mut amount } => {
-                    let other_amount = match other.resource() {
-                        Resource::Fungible { amount } => amount,
-                        Resource::NonFungible { .. } => {
-                            panic!("Illegal state!")
-                        }
-                    };
-                    *amount = *amount + other_amount;
-                }
-                Resource::NonFungible { ref mut ids } => {
-                    let other_ids = match other.resource() {
-                        Resource::Fungible { .. } => {
-                            panic!("Illegal state!")
-                        }
-                        Resource::NonFungible { ids } => ids,
-                    };
-                    ids.extend(other_ids);
-                }
-            }
-            Ok(())
-        }
+    pub fn put(&mut self, other: Bucket) -> Result<(), BucketError> {
+        let this_container = self.borrow_container()?;
+        let other_container = other
+            .take_container()
+            .map_err(|_| BucketError::OtherBucketLocked)?;
+
+        this_container
+            .put(other_container)
+            .map_err(BucketError::ResourceContainerError)
     }
 
-    pub fn take(&mut self, quantity: Decimal) -> Result<Self, BucketError> {
-        Self::check_amount(quantity, self.resource_type.divisibility())?;
+    pub fn take(&mut self, amount: Decimal) -> Result<Bucket, BucketError> {
+        let this_container = self.borrow_container()?;
 
-        if self.amount() < quantity {
-            Err(BucketError::InsufficientBalance)
-        } else {
-            match &mut self.resource {
-                Resource::Fungible { amount } => {
-                    self.resource = Resource::Fungible {
-                        amount: *amount - quantity,
-                    };
-                    Ok(Self::new(
-                        self.resource_def_id,
-                        self.resource_type,
-                        Resource::Fungible { amount: quantity },
-                    ))
-                }
-                Resource::NonFungible { ref mut ids } => {
-                    let n: usize = quantity.to_string().parse().unwrap();
-                    let taken: BTreeSet<NonFungibleId> = ids.iter().cloned().take(n).collect();
-                    for e in &taken {
-                        ids.remove(e);
-                    }
-                    Ok(Self::new(
-                        self.resource_def_id,
-                        self.resource_type,
-                        Resource::NonFungible { ids: taken },
-                    ))
-                }
-            }
-        }
+        Ok(Bucket::new(
+            this_container
+                .take(amount)
+                .map_err(BucketError::ResourceContainerError)?,
+        ))
     }
 
-    pub fn take_non_fungible(&mut self, key: &NonFungibleId) -> Result<Self, BucketError> {
-        self.take_non_fungibles(&BTreeSet::from([key.clone()]))
+    pub fn take_non_fungible(&mut self, id: &NonFungibleId) -> Result<Bucket, BucketError> {
+        self.take_non_fungibles(&BTreeSet::from([id.clone()]))
     }
 
     pub fn take_non_fungibles(
         &mut self,
-        set: &BTreeSet<NonFungibleId>,
-    ) -> Result<Self, BucketError> {
-        match &mut self.resource {
-            Resource::Fungible { .. } => Err(BucketError::UnsupportedOperation),
-            Resource::NonFungible { ref mut ids } => {
-                for id in set {
-                    if !ids.remove(&id) {
-                        return Err(BucketError::NonFungibleNotFound);
-                    }
-                }
-                Ok(Self::new(
-                    self.resource_def_id,
-                    self.resource_type,
-                    Resource::NonFungible { ids: set.clone() },
-                ))
-            }
-        }
-    }
+        ids: &BTreeSet<NonFungibleId>,
+    ) -> Result<Bucket, BucketError> {
+        let this_container = self.borrow_container()?;
 
-    pub fn get_non_fungible_ids(&self) -> Result<Vec<NonFungibleId>, BucketError> {
-        match &self.resource {
-            Resource::Fungible { .. } => Err(BucketError::UnsupportedOperation),
-            Resource::NonFungible { ids } => Ok(ids.iter().cloned().collect()),
-        }
+        Ok(Bucket::new(
+            this_container
+                .take_non_fungibles(ids)
+                .map_err(BucketError::ResourceContainerError)?,
+        ))
     }
 
     pub fn contains_non_fungible_address(&self, non_fungible_address: &NonFungibleAddress) -> bool {
-        if self.resource_def_id != non_fungible_address.resource_def_id() {
+        if self.resource_def_id() != non_fungible_address.resource_def_id() {
             return false;
         }
 
-        match self.get_non_fungible_ids() {
-            Err(_) => false,
-            Ok(non_fungible_ids) => non_fungible_ids
+        match self.container.liquid_amount().as_non_fungible_ids() {
+            None => false,
+            Some(non_fungible_ids) => non_fungible_ids
                 .iter()
                 .any(|k| k.eq(&non_fungible_address.non_fungible_id())),
         }
     }
 
-    pub fn resource(&self) -> Resource {
-        self.resource.clone()
-    }
-
-    pub fn amount(&self) -> Decimal {
-        match &self.resource {
-            Resource::Fungible { amount } => *amount,
-            Resource::NonFungible { ids } => ids.len().into(),
-        }
+    pub fn liquid_amount(&self) -> ResourceAmount {
+        self.container.liquid_amount()
     }
 
     pub fn resource_def_id(&self) -> ResourceDefId {
-        self.resource_def_id
+        self.container.resource_def_id()
     }
 
-    fn check_amount(amount: Decimal, divisibility: u8) -> Result<(), BucketError> {
-        if !amount.is_negative() && amount.0 % 10i128.pow((18 - divisibility).into()) != 0.into() {
-            Err(BucketError::InvalidAmount(amount))
-        } else {
-            Ok(())
-        }
-    }
-}
-
-impl LockedBucket {
-    pub fn new(bucket_id: BucketId, bucket: Bucket) -> Self {
-        Self { bucket_id, bucket }
+    pub fn resource_type(&self) -> ResourceType {
+        self.container.resource_type()
     }
 
-    pub fn bucket_id(&self) -> BucketId {
-        self.bucket_id
+    /// Creates another `Rc<ResourceContainer>` to the container
+    pub fn reference_container(&self) -> Rc<ResourceContainer> {
+        self.container.clone()
     }
 
-    pub fn bucket(&self) -> &Bucket {
-        &self.bucket
+    /// Creates a mutable reference to the container
+    pub fn borrow_container(&mut self) -> Result<&mut ResourceContainer, BucketError> {
+        Ok(Rc::get_mut(&mut self.container).ok_or(BucketError::BucketLocked)?)
     }
-}
 
-impl From<LockedBucket> for Bucket {
-    fn from(b: LockedBucket) -> Self {
-        b.bucket
+    /// Takes the ownership of the container
+    pub fn take_container(self) -> Result<ResourceContainer, BucketError> {
+        Ok(Rc::try_unwrap(self.container).map_err(|_| BucketError::BucketLocked)?)
     }
 }

@@ -21,6 +21,3 @@ harness = false
 default = ["std"]
 std = ["sbor/std", "scrypto/std", "wasmi/std"]
 alloc = ["sbor/alloc", "scrypto/alloc"]
-
-[target.'cfg(not(target_os = "windows"))'.features]
-default = ["wasmi/virtual_memory"]

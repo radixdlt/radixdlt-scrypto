@@ -178,10 +178,10 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
                     proc.take_from_worktop(ResourceSpecification::All { resource_def_id })
                 }
                 ValidatedInstruction::TakeNonFungiblesFromWorktop {
-                    keys,
+                    ids,
                     resource_def_id,
                 } => proc.take_from_worktop(ResourceSpecification::NonFungible {
-                    keys,
+                    ids,
                     resource_def_id,
                 }),
                 ValidatedInstruction::ReturnToWorktop { bucket_id } => {

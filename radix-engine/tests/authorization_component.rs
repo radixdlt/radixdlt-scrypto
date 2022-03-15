@@ -86,7 +86,7 @@ fn can_make_cross_component_call_with_authorization() {
     let my_component = receipt.new_component_ids[0];
 
     let auth_amount = ResourceSpecification::NonFungible {
-        keys: BTreeSet::from([auth_id]),
+        ids: BTreeSet::from([auth_id]),
         resource_def_id: auth,
     };
     let transaction = test_runner.new_transaction_builder()
