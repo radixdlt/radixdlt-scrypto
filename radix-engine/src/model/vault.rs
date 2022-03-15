@@ -1,57 +1,94 @@
 use sbor::*;
 use scrypto::engine::types::*;
-use scrypto::rust::vec::Vec;
+use scrypto::rust::collections::BTreeSet;
+use scrypto::rust::rc::Rc;
 
-use crate::model::{Bucket, BucketError, Resource};
+use crate::model::Bucket;
+use crate::model::{ResourceAmount, ResourceContainer, ResourceContainerError};
 
 /// Represents an error when accessing a vault.
 #[derive(Debug, Clone, PartialEq)]
 pub enum VaultError {
-    AccountingError(BucketError),
+    ResourceContainerError(ResourceContainerError),
+    VaultLocked,
+    OtherBucketLocked,
 }
 
-/// A persistent resource container on ledger state.
+/// A persistent resource container.
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct Vault {
-    bucket: Bucket,
+    container: Rc<ResourceContainer>,
 }
 
 impl Vault {
-    pub fn new(bucket: Bucket) -> Self {
-        Self { bucket }
+    pub fn new(container: ResourceContainer) -> Self {
+        Self {
+            container: Rc::new(container),
+        }
     }
 
     pub fn put(&mut self, other: Bucket) -> Result<(), VaultError> {
-        self.bucket.put(other).map_err(VaultError::AccountingError)
+        let this_container = self.borrow_container()?;
+        let other_container = other
+            .take_container()
+            .map_err(|_| VaultError::OtherBucketLocked)?;
+
+        this_container
+            .put(other_container)
+            .map_err(VaultError::ResourceContainerError)
     }
 
     pub fn take(&mut self, amount: Decimal) -> Result<Bucket, VaultError> {
-        self.bucket
-            .take(amount)
-            .map_err(VaultError::AccountingError)
+        let this_container = self.borrow_container()?;
+
+        Ok(Bucket::new(
+            this_container
+                .take(amount)
+                .map_err(VaultError::ResourceContainerError)?,
+        ))
     }
 
-    pub fn take_non_fungible(&mut self, key: &NonFungibleId) -> Result<Bucket, VaultError> {
-        self.bucket
-            .take_non_fungible(key)
-            .map_err(VaultError::AccountingError)
+    pub fn take_non_fungible(&mut self, id: &NonFungibleId) -> Result<Bucket, VaultError> {
+        self.take_non_fungibles(&BTreeSet::from([id.clone()]))
     }
 
-    pub fn get_non_fungible_ids(&self) -> Result<Vec<NonFungibleId>, VaultError> {
-        self.bucket
-            .get_non_fungible_ids()
-            .map_err(VaultError::AccountingError)
+    pub fn take_non_fungibles(
+        &mut self,
+        ids: &BTreeSet<NonFungibleId>,
+    ) -> Result<Bucket, VaultError> {
+        let this_container = self.borrow_container()?;
+
+        Ok(Bucket::new(
+            this_container
+                .take_non_fungibles(ids)
+                .map_err(VaultError::ResourceContainerError)?,
+        ))
     }
 
-    pub fn resource(&self) -> Resource {
-        self.bucket.resource()
-    }
-
-    pub fn amount(&self) -> Decimal {
-        self.bucket.amount()
+    pub fn liquid_amount(&self) -> ResourceAmount {
+        self.container.liquid_amount()
     }
 
     pub fn resource_def_id(&self) -> ResourceDefId {
-        self.bucket.resource_def_id()
+        self.container.resource_def_id()
+    }
+
+    pub fn resource_type(&self) -> ResourceType {
+        self.container.resource_type()
+    }
+
+    /// Creates another `Rc<ResourceContainer>` to the container
+    pub fn reference_container(&self) -> Rc<ResourceContainer> {
+        self.container.clone()
+    }
+
+    /// Creates a mutable reference to the container
+    pub fn borrow_container(&mut self) -> Result<&mut ResourceContainer, VaultError> {
+        Ok(Rc::get_mut(&mut self.container).ok_or(VaultError::VaultLocked)?)
+    }
+
+    /// Takes the ownership of the container
+    pub fn take_container(self) -> Result<ResourceContainer, VaultError> {
+        Ok(Rc::try_unwrap(self.container).map_err(|_| VaultError::VaultLocked)?)
     }
 }

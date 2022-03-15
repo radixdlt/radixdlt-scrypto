@@ -5,19 +5,19 @@ use crate::resource::*;
 use crate::rust::collections::HashMap;
 use crate::rust::vec::Vec;
 
-/// Represents some supply of resource.
+/// Represents the minting parameters
 #[derive(Debug, Clone, TypeId, Encode, Decode, Describe)]
-pub enum Supply {
-    /// A supply of fungible resources, represented by amount
+pub enum MintParams {
+    /// To mint fungible resource, represented by an amount
     Fungible { amount: Decimal },
 
-    /// A supply of non-fungible resources, represented by non-fungible id and data pairs
+    /// To mint non-fungible resource, represented by non-fungible id and data pairs
     NonFungible {
         entries: HashMap<NonFungibleId, (Vec<u8>, Vec<u8>)>,
     },
 }
 
-impl Supply {
+impl MintParams {
     pub fn fungible<T: Into<Decimal>>(amount: T) -> Self {
         Self::Fungible {
             amount: amount.into(),

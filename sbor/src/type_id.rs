@@ -1,5 +1,6 @@
 use crate::rust::boxed::Box;
 use crate::rust::collections::*;
+use crate::rust::rc::Rc;
 use crate::rust::string::String;
 use crate::rust::vec::Vec;
 
@@ -144,6 +145,13 @@ impl<T: TypeId> TypeId for Box<T> {
     #[inline]
     fn type_id() -> u8 {
         TYPE_BOX
+    }
+}
+
+impl<T: TypeId> TypeId for Rc<T> {
+    #[inline]
+    fn type_id() -> u8 {
+        T::type_id()
     }
 }
 

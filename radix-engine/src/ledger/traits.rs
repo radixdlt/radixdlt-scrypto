@@ -144,9 +144,7 @@ pub trait SubstateStore {
                 0,
                 0,
                 HashMap::new(),
-                &Some(Supply::Fungible {
-                    amount: XRD_MAX_SUPPLY.into(),
-                }),
+                XRD_MAX_SUPPLY.into(),
             )
             .unwrap();
             self.put_encoded_substate(&RADIX_TOKEN, &xrd, self.get_nonce());
@@ -157,18 +155,15 @@ pub trait SubstateStore {
                 0,
                 0,
                 HashMap::new(),
-                &None,
+                0.into(),
             )
             .unwrap();
             self.put_encoded_substate(&ECDSA_TOKEN, &ecdsa_token, self.get_nonce());
 
             // Instantiate system component
-            let system_vault = Vault::new(Bucket::new(
+            let system_vault = Vault::new(ResourceContainer::new(
                 RADIX_TOKEN,
-                ResourceType::Fungible { divisibility: 18 },
-                Resource::Fungible {
-                    amount: XRD_MAX_SUPPLY.into(),
-                },
+                ResourceContainerState::fungible(XRD_MAX_SUPPLY.into(), 18),
             ));
             self.put_encoded_child_substate(
                 &SYSTEM_COMPONENT,

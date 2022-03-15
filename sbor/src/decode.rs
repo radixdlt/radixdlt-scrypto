@@ -3,6 +3,7 @@ use crate::rust::collections::*;
 use crate::rust::hash::Hash;
 use crate::rust::mem::MaybeUninit;
 use crate::rust::ptr::copy;
+use crate::rust::rc::Rc;
 use crate::rust::string::String;
 use crate::rust::vec::Vec;
 use crate::type_id::*;
@@ -234,6 +235,13 @@ impl<T: Decode> Decode for Box<T> {
     }
 }
 
+impl<T: Decode> Decode for Rc<T> {
+    fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
+        let v = T::decode_value(decoder)?;
+        Ok(Rc::new(v))
+    }
+}
+
 impl<T: Decode, const N: usize> Decode for [T; N] {
     fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
         decoder.check_type(T::type_id())?;
@@ -376,14 +384,9 @@ impl<K: Decode + Hash + Eq, V: Decode> Decode for HashMap<K, V> {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
     use crate::rust::borrow::ToOwned;
-    use crate::rust::boxed::Box;
-    use crate::rust::collections::*;
-    use crate::rust::string::String;
     use crate::rust::vec;
-    use crate::rust::vec::Vec;
-
-    use super::{Decode, Decoder};
 
     fn assert_decoding(dec: &mut Decoder) {
         <()>::decode(dec).unwrap();
@@ -479,5 +482,13 @@ mod tests {
         ];
         let mut dec = Decoder::no_type(&bytes);
         assert_decoding(&mut dec);
+    }
+
+    #[test]
+    pub fn test_decode_rc() {
+        let bytes = vec![7u8, 5u8];
+        let mut dec = Decoder::with_type(&bytes);
+        let x = <Rc<u8>>::decode(&mut dec).unwrap();
+        assert_eq!(Rc::new(5u8), x);
     }
 }

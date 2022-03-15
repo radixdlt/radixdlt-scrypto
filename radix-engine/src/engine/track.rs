@@ -99,13 +99,14 @@ impl<'s, S: SubstateStore> Track<'s, S> {
 
         // Always create a virtual bucket of signatures even if there is none.
         // This is to make reasoning at transaction manifest & validator easier.
-        let ecdsa_bucket = Bucket::new(
+        let ecdsa_bucket = Bucket::new(ResourceContainer::new(
             ECDSA_TOKEN,
-            ResourceType::NonFungible,
-            Resource::NonFungible { ids: signers },
-        );
+            ResourceContainerState::non_fungible(signers),
+        ));
         process.create_virtual_proof(ECDSA_TOKEN_BUCKET_ID, ECDSA_TOKEN_PROOF_ID, ecdsa_bucket);
-        process.push_onto_auth_worktop(ECDSA_TOKEN_PROOF_ID).unwrap();
+        process
+            .push_onto_auth_worktop(ECDSA_TOKEN_PROOF_ID)
+            .unwrap();
 
         process
     }
