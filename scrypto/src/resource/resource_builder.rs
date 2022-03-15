@@ -71,8 +71,8 @@ impl ResourceBuilder {
     }
 
     /// Creates resource with the given initial supply.
-    pub fn initial_supply(&self, supply: Supply) -> Bucket {
-        self.build(Some(supply)).1.unwrap()
+    pub fn initial_supply(&self, mint_params: MintParams) -> Bucket {
+        self.build(Some(mint_params)).1.unwrap()
     }
 
     /// Creates resource with the given initial fungible supply.
@@ -84,7 +84,7 @@ impl ResourceBuilder {
     ///     .initial_supply_fungible(5);
     /// ```
     pub fn initial_supply_fungible<T: Into<Decimal>>(&self, amount: T) -> Bucket {
-        self.build(Some(Supply::fungible(amount))).1.unwrap()
+        self.build(Some(MintParams::fungible(amount))).1.unwrap()
     }
 
     /// Creates resource with the given initial non-fungible supply.
@@ -103,7 +103,9 @@ impl ResourceBuilder {
         T: IntoIterator<Item = (NonFungibleId, V)>,
         V: NonFungibleData,
     {
-        self.build(Some(Supply::non_fungible(entries))).1.unwrap()
+        self.build(Some(MintParams::non_fungible(entries)))
+            .1
+            .unwrap()
     }
 
     /// Creates resource with no initial supply.
@@ -111,14 +113,14 @@ impl ResourceBuilder {
         self.build(None).0
     }
 
-    fn build(&self, supply: Option<Supply>) -> (ResourceDefId, Option<Bucket>) {
+    fn build(&self, mint_params: Option<MintParams>) -> (ResourceDefId, Option<Bucket>) {
         resource_system().instantiate_resource_definition(
             self.resource_type,
             self.metadata.clone(),
             self.flags,
             self.mutable_flags,
             self.authorities.clone(),
-            supply,
+            mint_params,
         )
     }
 }

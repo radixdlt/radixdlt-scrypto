@@ -34,10 +34,13 @@ impl Component {
 
     pub fn check_auth(&self, function: &str, proofs: &[Proof]) -> Result<(), RuntimeError> {
         if let Some(auth_address) = self.sys_auth.get(function) {
-            if !proofs
-                .iter()
-                .any(|p| p.bucket().contains_non_fungible_address(auth_address))
-            {
+            if !proofs.iter().any(|p| {
+                p.resource_def_id() == auth_address.resource_def_id()
+                    && match p.total_amount().as_non_fungible_ids() {
+                        Some(ids) => ids.contains(&auth_address.non_fungible_id()),
+                        None => false,
+                    }
+            }) {
                 return Err(NotAuthorized);
             }
         }

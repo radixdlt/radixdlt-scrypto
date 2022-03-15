@@ -43,7 +43,7 @@ fn can_withdraw_non_fungible_from_my_account() {
     let (_, other_account) = executor.new_public_key_with_account();
     let resource_def_id = TestUtil::create_non_fungible_resource(&mut executor, account);
     let non_fungible_amount = ResourceSpecification::NonFungible {
-        keys: BTreeSet::from([NonFungibleId::from(1)]),
+        ids: BTreeSet::from([NonFungibleId::from(1)]),
         resource_def_id,
     };
 

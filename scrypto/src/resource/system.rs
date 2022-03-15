@@ -41,7 +41,7 @@ impl ResourceSystem {
         flags: u64,
         mutable_flags: u64,
         authorities: HashMap<ResourceDefId, u64>,
-        initial_supply: Option<Supply>,
+        mint_params: Option<MintParams>,
     ) -> (ResourceDefId, Option<Bucket>) {
         let input = CreateResourceInput {
             resource_type,
@@ -49,7 +49,7 @@ impl ResourceSystem {
             flags,
             mutable_flags,
             authorities,
-            initial_supply,
+            mint_params,
         };
         let output: CreateResourceOutput = call_engine(CREATE_RESOURCE, input);
 
