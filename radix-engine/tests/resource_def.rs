@@ -14,8 +14,7 @@ fn test_resource_def() {
     // Arrange
     let mut ledger = InMemorySubstateStore::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, true);
-    let key = executor.new_public_key();
-    let account = executor.new_account(key);
+    let (key, account) = executor.new_public_key_with_account();
     let package = executor.publish_package(&compile("resource_def")).unwrap();
 
     // Act
@@ -58,8 +57,7 @@ fn take_with_bad_granularity_should_fail() {
     // Arrange
     let mut ledger = InMemorySubstateStore::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, true);
-    let key = executor.new_public_key();
-    let account = executor.new_account(key);
+    let (key, account) = executor.new_public_key_with_account();
     let package = executor.publish_package(&compile("resource_def")).unwrap();
 
     // Act
@@ -91,8 +89,7 @@ fn update_feature_flags_should_fail() {
     // Arrange
     let mut ledger = InMemorySubstateStore::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, true);
-    let key = executor.new_public_key();
-    let account = executor.new_account(key);
+    let (key, account) = executor.new_public_key_with_account();
     let package = executor.publish_package(&compile("resource_def")).unwrap();
 
     // Act
@@ -127,8 +124,7 @@ fn create_fungible_with_bad_resource_flags_should_fail() {
     // Arrange
     let mut ledger = InMemorySubstateStore::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, true);
-    let key = executor.new_public_key();
-    let account = executor.new_account(key);
+    let (key, account) = executor.new_public_key_with_account();
     let package = executor.publish_package(&compile("resource_def")).unwrap();
 
     // Act
@@ -158,8 +154,7 @@ fn create_fungible_with_bad_mutable_flags_should_fail() {
     // Arrange
     let mut ledger = InMemorySubstateStore::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, true);
-    let key = executor.new_public_key();
-    let account = executor.new_account(key);
+    let (key, account) = executor.new_public_key_with_account();
     let package = executor.publish_package(&compile("resource_def")).unwrap();
 
     // Act
@@ -189,8 +184,7 @@ fn create_fungible_with_bad_resource_permissions_should_fail() {
     // Arrange
     let mut ledger = InMemorySubstateStore::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, true);
-    let key = executor.new_public_key();
-    let account = executor.new_account(key);
+    let (key, account) = executor.new_public_key_with_account();
     let package = executor.publish_package(&compile("resource_def")).unwrap();
 
     // Act
