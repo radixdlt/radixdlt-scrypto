@@ -249,7 +249,7 @@ pub struct CreateResourceInput {
     pub flags: u64,
     pub mutable_flags: u64,
     pub authorities: HashMap<ResourceDefId, u64>,
-    pub initial_supply: Option<Supply>,
+    pub mint_params: Option<MintParams>,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
@@ -261,7 +261,7 @@ pub struct CreateResourceOutput {
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct MintResourceInput {
     pub resource_def_id: ResourceDefId,
-    pub new_supply: Supply,
+    pub mint_params: MintParams,
     pub auth: ProofId,
 }
 

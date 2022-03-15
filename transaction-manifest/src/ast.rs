@@ -17,7 +17,7 @@ pub enum Instruction {
     },
 
     TakeNonFungiblesFromWorktop {
-        keys: Value,
+        ids: Value,
         resource_def_id: Value,
         new_bucket: Value,
     },
