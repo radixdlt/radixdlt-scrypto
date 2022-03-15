@@ -84,12 +84,12 @@ where
     let input = PushOntoAuthWorktopInput {
         proof_id: output.proof_id,
     };
-    let _: PushOntoAuthWorkTopOutput = call_engine(PUSH_ONTO_AUTH_WORKTOP, input);
+    let _: PushOntoAuthWorktopOutput = call_engine(PUSH_ONTO_AUTH_WORKTOP, input);
 
     let return_value = func();
 
     let input = PopFromAuthWorktopInput {};
-    let output: PopFromAuthWorkTopOutput = call_engine(POP_FROM_AUTH_WORKTOP, input);
+    let output: PopFromAuthWorktopOutput = call_engine(POP_FROM_AUTH_WORKTOP, input);
 
     let input = DropProofInput {
         proof_id: output.proof_id,

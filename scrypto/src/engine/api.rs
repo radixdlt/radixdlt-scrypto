@@ -613,13 +613,13 @@ pub struct PushOntoAuthWorktopInput {
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct PushOntoAuthWorkTopOutput {}
+pub struct PushOntoAuthWorktopOutput {}
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct PopFromAuthWorktopInput {}
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct PopFromAuthWorkTopOutput {
+pub struct PopFromAuthWorktopOutput {
     pub proof_id: ProofId,
 }
 

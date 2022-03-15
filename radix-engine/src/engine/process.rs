@@ -2046,17 +2046,17 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     fn handle_push_onto_auth_worktop(
         &mut self,
         input: PushOntoAuthWorktopInput,
-    ) -> Result<PushOntoAuthWorkTopOutput, RuntimeError> {
+    ) -> Result<PushOntoAuthWorktopOutput, RuntimeError> {
         self.push_onto_auth_worktop(input.proof_id)
-            .map(|_| PushOntoAuthWorkTopOutput {})
+            .map(|_| PushOntoAuthWorktopOutput {})
     }
 
     fn handle_pop_from_auth_worktop(
         &mut self,
         _input: PopFromAuthWorktopInput,
-    ) -> Result<PopFromAuthWorkTopOutput, RuntimeError> {
+    ) -> Result<PopFromAuthWorktopOutput, RuntimeError> {
         self.pop_from_auth_worktop()
-            .map(|proof_id| PopFromAuthWorkTopOutput { proof_id })
+            .map(|proof_id| PopFromAuthWorktopOutput { proof_id })
     }
 
     fn handle_emit_log(&mut self, input: EmitLogInput) -> Result<EmitLogOutput, RuntimeError> {
