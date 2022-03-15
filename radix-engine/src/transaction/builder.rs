@@ -434,7 +434,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                     minter_resource_def_id,
                     MAY_MINT | MAY_BURN,
                 )),
-                scrypto_encode::<Option<Supply>>(&None),
+                scrypto_encode::<Option<MintParams>>(&None),
             ],
         })
         .0
@@ -456,7 +456,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                 scrypto_encode(&0u64),
                 scrypto_encode(&0u64),
                 scrypto_encode(&HashMap::<ResourceDefId, u64>::new()),
-                scrypto_encode(&Some(Supply::Fungible {
+                scrypto_encode(&Some(MintParams::Fungible {
                     amount: initial_supply.into(),
                 })),
             ],
@@ -483,7 +483,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                     minter_resource_def_id,
                     MAY_MINT | MAY_BURN,
                 )),
-                scrypto_encode::<Option<Supply>>(&None),
+                scrypto_encode::<Option<MintParams>>(&None),
             ],
         })
         .0
@@ -505,7 +505,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                 scrypto_encode(&0u64),
                 scrypto_encode(&0u64),
                 scrypto_encode(&HashMap::<ResourceDefId, u64>::new()),
-                scrypto_encode(&Some(Supply::Fungible {
+                scrypto_encode(&Some(MintParams::Fungible {
                     amount: initial_supply.into(),
                 })),
             ],

@@ -26,7 +26,7 @@ impl ResourceDef {
     pub fn mint<T: Into<Decimal>>(&self, amount: T, auth: Proof) -> Bucket {
         let input = MintResourceInput {
             resource_def_id: self.0,
-            new_supply: Supply::Fungible {
+            mint_params: MintParams::Fungible {
                 amount: amount.into(),
             },
             auth: auth.0,
@@ -48,7 +48,7 @@ impl ResourceDef {
 
         let input = MintResourceInput {
             resource_def_id: self.0,
-            new_supply: Supply::NonFungible { entries },
+            mint_params: MintParams::NonFungible { entries },
             auth: auth.0,
         };
         let output: MintResourceOutput = call_engine(MINT_RESOURCE, input);

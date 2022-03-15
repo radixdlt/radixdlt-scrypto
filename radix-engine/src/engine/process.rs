@@ -1273,7 +1273,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     fn allocate_resource(
         &mut self,
         resource_def_id: ResourceDefId,
-        new_supply: Supply,
+        mint_params: MintParams,
         badge: Option<ResourceDefId>,
         initial_supply: bool,
     ) -> Result<ResourceContainerState, RuntimeError> {
@@ -1281,8 +1281,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .track
             .get_resource_def_mut(&resource_def_id)
             .ok_or(RuntimeError::ResourceDefNotFound(resource_def_id))?;
-        match new_supply {
-            Supply::Fungible { amount } => {
+        match mint_params {
+            MintParams::Fungible { amount } => {
                 // Notify resource manager
                 resource_def
                     .mint(&ResourceAmount::Fungible { amount }, badge, initial_supply)
@@ -1294,7 +1294,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     resource_def.resource_type().divisibility(),
                 ))
             }
-            Supply::NonFungible { entries } => {
+            MintParams::NonFungible { entries } => {
                 // Notify resource manager
                 resource_def
                     .mint(
@@ -1346,10 +1346,10 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let resource_def_id = self.track.create_resource_def(resource_def);
         re_debug!(self, "New resource definition: {}", resource_def_id);
 
-        let bucket_id = if let Some(initial_supply) = input.initial_supply {
+        let bucket_id = if let Some(mint_params) = input.mint_params {
             let bucket = Bucket::new(ResourceContainer::new(
                 resource_def_id,
-                self.allocate_resource(resource_def_id, initial_supply, None, true)?,
+                self.allocate_resource(resource_def_id, mint_params, None, true)?,
             ));
             let bucket_id = self.track.new_bucket_id();
             self.buckets.insert(bucket_id, bucket);
@@ -1477,7 +1477,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         // wrap resource into a bucket
         let bucket = Bucket::new(ResourceContainer::new(
             input.resource_def_id,
-            self.allocate_resource(input.resource_def_id, input.new_supply, badge, false)?,
+            self.allocate_resource(input.resource_def_id, input.mint_params, badge, false)?,
         ));
         let bucket_id = self.track.new_bucket_id();
         self.buckets.insert(bucket_id, bucket);
