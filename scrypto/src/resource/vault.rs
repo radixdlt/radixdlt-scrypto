@@ -48,22 +48,6 @@ impl Vault {
         let input = TakeFromVaultInput {
             vault_id: self.0,
             amount: amount.into(),
-            auth: None,
-        };
-        let output: TakeFromVaultOutput = call_engine(TAKE_FROM_VAULT, input);
-
-        Bucket(output.bucket_id)
-    }
-
-    /// Takes some amount of resource from this vault into a bucket.
-    ///
-    /// This variant of `take` accepts an additional auth parameter to support resources
-    /// with or without `RESTRICTED_TRANSFER` flag on.
-    pub fn take_with_auth<A: Into<Decimal>>(&mut self, amount: A, auth: Proof) -> Bucket {
-        let input = TakeFromVaultInput {
-            vault_id: self.0,
-            amount: amount.into(),
-            auth: Some(auth.0),
         };
         let output: TakeFromVaultOutput = call_engine(TAKE_FROM_VAULT, input);
 
@@ -75,14 +59,6 @@ impl Vault {
         self.take(self.amount())
     }
 
-    /// Takes all resource stored in this vault.
-    ///
-    /// This variant of `take_all` accepts an additional auth parameter to support resources
-    /// with or without `RESTRICTED_TRANSFER` flag on.
-    pub fn take_all_with_auth(&mut self, auth: Proof) -> Bucket {
-        self.take_with_auth(self.amount(), auth)
-    }
-
     /// Takes a non-fungible from this vault, by id.
     ///
     /// # Panics
@@ -91,30 +67,6 @@ impl Vault {
         let input = TakeNonFungibleFromVaultInput {
             vault_id: self.0,
             non_fungible_id: non_fungible_id.clone(),
-            auth: None,
-        };
-        let output: TakeNonFungibleFromVaultOutput =
-            call_engine(TAKE_NON_FUNGIBLE_FROM_VAULT, input);
-
-        Bucket(output.bucket_id)
-    }
-
-    /// Takes a non-fungible from this vault, by id.
-    ///
-    /// This variant of `take_non_fungible` accepts an additional auth parameter to support resources
-    /// with or without `RESTRICTED_TRANSFER` flag on.
-    ///
-    /// # Panics
-    /// Panics if this is not a non-fungible vault or the specified non-fungible is not found.
-    pub fn take_non_fungible_with_auth(
-        &self,
-        non_fungible_id: &NonFungibleId,
-        auth: Proof,
-    ) -> Bucket {
-        let input = TakeNonFungibleFromVaultInput {
-            vault_id: self.0,
-            non_fungible_id: non_fungible_id.clone(),
-            auth: Some(auth.0),
         };
         let output: TakeNonFungibleFromVaultOutput =
             call_engine(TAKE_NON_FUNGIBLE_FROM_VAULT, input);
@@ -132,24 +84,6 @@ impl Vault {
     ///
     pub fn authorize<F: FnOnce(Proof) -> O, O>(&mut self, f: F) -> O {
         let bucket = self.take(1);
-        let output = f(bucket.present());
-        self.put(bucket);
-        output
-    }
-
-    /// This is a convenience method for using the contained resource for authorization.
-    ///
-    /// It conducts the following actions in one shot:
-    /// 1. Takes `1` resource from this vault into a bucket;
-    /// 2. Creates a `Proof`.
-    /// 3. Applies the specified function `f` with the created proof;
-    /// 4. Puts the `1` resource back into this vault.
-    ///
-    /// This variant of `authorize` accepts an additional auth parameter to support resources
-    /// with or without `RESTRICTED_TRANSFER` flag on.
-    ///
-    pub fn authorize_with_auth<F: FnOnce(Proof) -> O, O>(&mut self, f: F, auth: Proof) -> O {
-        let bucket = self.take_with_auth(1, auth);
         let output = f(bucket.present());
         self.put(bucket);
         output

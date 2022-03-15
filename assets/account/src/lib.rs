@@ -59,22 +59,6 @@ blueprint! {
             }
         }
 
-        /// Withdraws resource from this account.
-        pub fn withdraw_with_auth(
-            &mut self,
-            amount: Decimal,
-            resource_def_id: ResourceDefId,
-            auth: Proof,
-        ) -> Bucket {
-            let vault = self.vaults.get(&resource_def_id);
-            match vault {
-                Some(mut vault) => vault.take_with_auth(amount, auth),
-                None => {
-                    panic!("Insufficient balance");
-                }
-            }
-        }
-
         /// Withdraws non-fungibles from this account.
         pub fn withdraw_non_fungibles(
             &mut self,
@@ -92,28 +76,6 @@ blueprint! {
                 }
                 None => {
                     panic!("Insufficient balance");
-                }
-            }
-        }
-
-        /// Withdraws non-fungibles from this account.
-        pub fn withdraw_non_fungibles_with_auth(
-            &mut self,
-            ids: BTreeSet<NonFungibleId>,
-            resource_def_id: ResourceDefId,
-            auth: Proof,
-        ) -> Bucket {
-            let vault = self.vaults.get(&resource_def_id);
-            match vault {
-                Some(vault) => {
-                    let mut bucket = Bucket::new(resource_def_id);
-                    for id in ids {
-                        bucket.put(vault.take_non_fungible_with_auth(&id, auth.clone()));
-                    }
-                    bucket
-                }
-                None => {
-                    panic!("Insufficient balance")
                 }
             }
         }

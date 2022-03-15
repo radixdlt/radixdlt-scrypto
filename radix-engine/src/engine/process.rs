@@ -299,7 +299,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
     // Puts a proof onto the auth worktop.
     pub fn push_onto_auth_worktop(&mut self, proof_id: ProofId) -> Result<(), RuntimeError> {
-        re_debug!(self, "Returning to auth worktop: proof_id = {}", proof_id);
+        re_debug!(self, "Pushing auth: proof_id = {}", proof_id);
 
         let proof = self
             .proofs
@@ -1649,11 +1649,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         Ok(PutIntoVaultOutput {})
     }
 
-    fn check_take_from_vault_auth(
-        &mut self,
-        vault_id: &VaultId,
-        badge: Option<ResourceDefId>,
-    ) -> Result<(), RuntimeError> {
+    fn check_take_from_vault_auth(&mut self, vault_id: &VaultId) -> Result<(), RuntimeError> {
         let resource_def_id = self.get_local_vault(vault_id)?.resource_def_id();
 
         let resource_def = self
@@ -1661,7 +1657,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .get_resource_def(&resource_def_id)
             .ok_or(RuntimeError::ResourceDefNotFound(resource_def_id))?;
         resource_def
-            .check_take_from_vault_auth(badge)
+            .check_take_from_vault_auth(vec![self.caller_auth_worktop, &self.auth_worktop])
             .map_err(RuntimeError::ResourceDefError)
     }
 
@@ -1669,10 +1665,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         input: TakeFromVaultInput,
     ) -> Result<TakeFromVaultOutput, RuntimeError> {
-        // TODO: restrict access
-
-        let badge = self.check_badge(input.auth)?;
-        self.check_take_from_vault_auth(&input.vault_id, badge)?;
+        self.check_take_from_vault_auth(&input.vault_id)?;
 
         let new_bucket = self
             .get_local_vault(&input.vault_id)?
@@ -1689,10 +1682,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         input: TakeNonFungibleFromVaultInput,
     ) -> Result<TakeNonFungibleFromVaultOutput, RuntimeError> {
-        // TODO: restrict access
-
-        let badge = self.check_badge(input.auth)?;
-        self.check_take_from_vault_auth(&input.vault_id, badge)?;
+        self.check_take_from_vault_auth(&input.vault_id)?;
 
         let new_bucket = self
             .get_local_vault(&input.vault_id)?
