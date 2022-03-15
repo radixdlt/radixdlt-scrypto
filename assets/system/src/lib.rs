@@ -19,7 +19,7 @@ blueprint! {
             flags: u64,
             mutable_flags: u64,
             authorities: HashMap<ResourceDefId, u64>,
-            initial_supply: Option<Supply>,
+            initial_supply: Option<MintParams>,
         ) -> (ResourceDefId, Option<Bucket>) {
             resource_system().instantiate_resource_definition(
                 resource_type,

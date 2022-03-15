@@ -72,16 +72,16 @@ impl Proof {
     /// # Panic
     /// If the bucket is empty or contains more than one non-fungibles.
     pub fn get_non_fungible_id(&self) -> NonFungibleId {
-        let keys = self.get_non_fungible_ids();
+        let ids = self.get_non_fungible_ids();
         assert!(
-            keys.len() == 1,
+            ids.len() == 1,
             "1 non-fungible expected, but {} found",
-            keys.len()
+            ids.len()
         );
-        keys[0].clone()
+        ids[0].clone()
     }
 
-    /// Returns the keys of all non-fungibles in this bucket.
+    /// Returns the ids of all non-fungibles in this bucket.
     ///
     /// # Panics
     /// If the bucket is not a non-fungible bucket.

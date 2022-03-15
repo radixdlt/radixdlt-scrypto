@@ -62,15 +62,15 @@ blueprint! {
         /// Withdraws non-fungibles from this account.
         pub fn withdraw_non_fungibles(
             &mut self,
-            keys: BTreeSet<NonFungibleId>,
+            ids: BTreeSet<NonFungibleId>,
             resource_def_id: ResourceDefId,
         ) -> Bucket {
             let vault = self.vaults.get(&resource_def_id);
             match vault {
                 Some(vault) => {
                     let mut bucket = Bucket::new(resource_def_id);
-                    for key in keys {
-                        bucket.put(vault.take_non_fungible(&key));
+                    for id in ids {
+                        bucket.put(vault.take_non_fungible(&id));
                     }
                     bucket
                 }

@@ -41,7 +41,7 @@ impl ResourceSystem {
         flags: u64,
         mutable_flags: u64,
         authorities: HashMap<ResourceDefId, u64>,
-        initial_supply: Option<Supply>,
+        mint_params: Option<MintParams>,
     ) -> (ResourceDefId, Option<Bucket>) {
         let input = CreateResourceInput {
             resource_type,
@@ -49,7 +49,7 @@ impl ResourceSystem {
             flags,
             mutable_flags,
             authorities,
-            initial_supply,
+            mint_params,
         };
         let output: CreateResourceOutput = call_engine(CREATE_RESOURCE, input);
 
@@ -84,12 +84,12 @@ where
     let input = PushOntoAuthWorktopInput {
         proof_id: output.proof_id,
     };
-    let _: PushOntoAuthWorkTopOutput = call_engine(PUSH_ONTO_AUTH_WORKTOP, input);
+    let _: PushOntoAuthWorktopOutput = call_engine(PUSH_ONTO_AUTH_WORKTOP, input);
 
     let return_value = func();
 
     let input = PopFromAuthWorktopInput {};
-    let output: PopFromAuthWorkTopOutput = call_engine(POP_FROM_AUTH_WORKTOP, input);
+    let output: PopFromAuthWorktopOutput = call_engine(POP_FROM_AUTH_WORKTOP, input);
 
     let input = DropProofInput {
         proof_id: output.proof_id,
