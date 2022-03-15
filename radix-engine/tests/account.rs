@@ -1,64 +1,17 @@
+mod util;
+
+use crate::util::TestUtil;
 use radix_engine::errors::RuntimeError;
 use radix_engine::ledger::*;
 use radix_engine::model::*;
 use radix_engine::transaction::*;
 use scrypto::prelude::*;
 
-pub fn compile(name: &str) -> Vec<u8> {
-    compile_package!(format!("./tests/{}", name), name.replace("-", "_"))
-}
-
 fn fungible_amount() -> ResourceSpecification {
     ResourceSpecification::Fungible {
         amount: Decimal(100),
         resource_def_id: RADIX_TOKEN,
     }
-}
-
-fn create_restricted_transfer_token(
-    executor: &mut TransactionExecutor<InMemorySubstateStore>,
-    account: ComponentId,
-) -> (ResourceDefId, ResourceDefId) {
-    let auth_resource_def_id = create_non_fungible_resource(executor, account);
-
-    let package = executor
-        .publish_package(&compile("resource_creator"))
-        .unwrap();
-    let transaction = TransactionBuilder::new(executor)
-        .call_function(
-            package,
-            "ResourceCreator",
-            "create_restricted_transfer",
-            vec![auth_resource_def_id.to_string()],
-            Some(account),
-        )
-        .call_method_with_all_resources(account, "deposit_batch")
-        .build(vec![])
-        .unwrap();
-    let receipt = executor.run(transaction).unwrap();
-    (auth_resource_def_id, receipt.new_resource_def_ids[0])
-}
-
-fn create_non_fungible_resource(
-    executor: &mut TransactionExecutor<InMemorySubstateStore>,
-    account: ComponentId,
-) -> ResourceDefId {
-    let package = executor
-        .publish_package(&compile("resource_creator"))
-        .unwrap();
-    let transaction = TransactionBuilder::new(executor)
-        .call_function(
-            package,
-            "ResourceCreator",
-            "create_non_fungible_fixed",
-            vec![],
-            Some(account),
-        )
-        .call_method_with_all_resources(account, "deposit_batch")
-        .build(vec![])
-        .unwrap();
-    let receipt = executor.run(transaction).unwrap();
-    receipt.new_resource_def_ids[0]
 }
 
 #[test]
@@ -88,7 +41,7 @@ fn can_withdraw_non_fungible_from_my_account() {
     let mut executor = TransactionExecutor::new(&mut ledger, true);
     let (key, account) = executor.new_public_key_with_account();
     let (_, other_account) = executor.new_public_key_with_account();
-    let resource_def_id = create_non_fungible_resource(&mut executor, account);
+    let resource_def_id = TestUtil::create_non_fungible_resource(&mut executor, account);
     let non_fungible_amount = ResourceSpecification::NonFungible {
         ids: BTreeSet::from([NonFungibleId::from(1)]),
         resource_def_id,
@@ -135,7 +88,8 @@ fn cannot_withdraw_restricted_transfer_from_my_account_with_no_auth() {
     let mut executor = TransactionExecutor::new(&mut ledger, true);
     let (key, account) = executor.new_public_key_with_account();
     let (_, other_account) = executor.new_public_key_with_account();
-    let (_, token_resource_def_id) = create_restricted_transfer_token(&mut executor, account);
+    let (_, token_resource_def_id) =
+        TestUtil::create_restricted_transfer_token(&mut executor, account);
     let fungible_amount = ResourceSpecification::Fungible {
         amount: Decimal::one(),
         resource_def_id: token_resource_def_id,

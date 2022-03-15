@@ -28,5 +28,5 @@ pub use resource_def::{ParseResourceDefIdError, ResourceDef, ResourceDefId};
 pub use resource_flags::*;
 pub use resource_permissions::*;
 pub use resource_type::ResourceType;
-pub use system::{init_resource_system, resource_system, ResourceSystem};
+pub use system::{authorize, init_resource_system, resource_system, ResourceSystem};
 pub use vault::{ParseVaultError, Vault};
