@@ -1660,12 +1660,12 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         Ok(CreateEmptyVaultOutput { vault_id })
     }
 
-    fn get_local_vault(&mut self, vault_id: VaultId) -> Result<&mut Vault, RuntimeError> {
+    fn get_local_vault(&mut self, vault_id: &VaultId) -> Result<&mut Vault, RuntimeError> {
         let wasm_process = self
             .wasm_process_state
             .as_mut()
             .ok_or(RuntimeError::IllegalSystemCall)?;
-        match wasm_process.process_owned_objects.get_vault_mut(&vault_id) {
+        match wasm_process.process_owned_objects.get_vault_mut(vault_id) {
             Some(vault) => Ok(vault),
             None => match &wasm_process.interpreter_state {
                 InterpreterState::Component {
@@ -1674,15 +1674,15 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     additional_object_refs,
                     ..
                 } => {
-                    if !initial_loaded_object_refs.vault_ids.contains(&vault_id)
-                        && !additional_object_refs.vault_ids.contains(&vault_id)
+                    if !initial_loaded_object_refs.vault_ids.contains(vault_id)
+                        && !additional_object_refs.vault_ids.contains(vault_id)
                     {
-                        return Err(RuntimeError::VaultNotFound(vault_id));
+                        return Err(RuntimeError::VaultNotFound(*vault_id));
                     }
-                    let vault = self.track.get_vault_mut(component_id, &vault_id);
+                    let vault = self.track.get_vault_mut(component_id, vault_id);
                     Ok(vault)
                 }
-                _ => Err(RuntimeError::VaultNotFound(vault_id)),
+                _ => Err(RuntimeError::VaultNotFound(*vault_id)),
             },
         }
     }
@@ -1698,7 +1698,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .remove(&input.bucket_id)
             .ok_or(RuntimeError::BucketNotFound(input.bucket_id))?;
 
-        self.get_local_vault(input.vault_id)?
+        self.get_local_vault(&input.vault_id)?
             .put(bucket)
             .map_err(RuntimeError::VaultError)?;
 
@@ -1707,7 +1707,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
     fn check_take_from_vault_auth(
         &mut self,
-        vault_id: VaultId,
+        vault_id: &VaultId,
         badge: Option<ResourceDefId>,
     ) -> Result<(), RuntimeError> {
         let resource_def_id = self.get_local_vault(vault_id)?.resource_def_id();
@@ -1728,10 +1728,10 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         // TODO: restrict access
 
         let badge = self.check_badge(input.auth)?;
-        self.check_take_from_vault_auth(input.vault_id.clone(), badge)?;
+        self.check_take_from_vault_auth(&input.vault_id, badge)?;
 
         let new_bucket = self
-            .get_local_vault(input.vault_id)?
+            .get_local_vault(&input.vault_id)?
             .take(input.amount)
             .map_err(RuntimeError::VaultError)?;
 
@@ -1748,10 +1748,10 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         // TODO: restrict access
 
         let badge = self.check_badge(input.auth)?;
-        self.check_take_from_vault_auth(input.vault_id.clone(), badge)?;
+        self.check_take_from_vault_auth(&input.vault_id, badge)?;
 
         let new_bucket = self
-            .get_local_vault(input.vault_id)?
+            .get_local_vault(&input.vault_id)?
             .take_non_fungible(&input.non_fungible_id)
             .map_err(RuntimeError::VaultError)?;
 
@@ -1765,7 +1765,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         input: GetNonFungibleIdsInVaultInput,
     ) -> Result<GetNonFungibleIdsInVaultOutput, RuntimeError> {
-        let vault = self.get_local_vault(input.vault_id)?;
+        let vault = self.get_local_vault(&input.vault_id)?;
         let non_fungible_ids = vault
             .get_non_fungible_ids()
             .map_err(RuntimeError::VaultError)?;
@@ -1777,7 +1777,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         input: GetVaultAmountInput,
     ) -> Result<GetVaultAmountOutput, RuntimeError> {
-        let vault = self.get_local_vault(input.vault_id)?;
+        let vault = self.get_local_vault(&input.vault_id)?;
 
         Ok(GetVaultAmountOutput {
             amount: vault.amount(),
@@ -1788,7 +1788,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         input: GetVaultResourceDefIdInput,
     ) -> Result<GetVaultResourceDefIdOutput, RuntimeError> {
-        let vault = self.get_local_vault(input.vault_id)?;
+        let vault = self.get_local_vault(&input.vault_id)?;
 
         Ok(GetVaultResourceDefIdOutput {
             resource_def_id: vault.resource_def_id(),

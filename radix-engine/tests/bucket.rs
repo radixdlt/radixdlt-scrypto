@@ -10,8 +10,7 @@ pub fn compile(name: &str) -> Vec<u8> {
 fn test_bucket() {
     let mut ledger = InMemorySubstateStore::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, true);
-    let key = executor.new_public_key();
-    let account = executor.new_account(key);
+    let (key, account) = executor.new_public_key_with_account();
     let package = executor.publish_package(&compile("bucket")).unwrap();
 
     let transaction = TransactionBuilder::new(&executor)
@@ -45,8 +44,7 @@ fn test_bucket() {
 fn test_bucket_of_badges() {
     let mut ledger = InMemorySubstateStore::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, true);
-    let key = executor.new_public_key();
-    let account = executor.new_account(key);
+    let (key, account) = executor.new_public_key_with_account();
     let package = executor.publish_package(&compile("bucket")).unwrap();
 
     let transaction = TransactionBuilder::new(&executor)
