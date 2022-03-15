@@ -60,10 +60,10 @@ impl Worktop {
 
     pub fn take_non_fungible(
         &mut self,
-        key: &NonFungibleId,
+        id: &NonFungibleId,
         resource_def_id: ResourceDefId,
     ) -> Result<Bucket, WorktopError> {
-        self.take_non_fungibles(&BTreeSet::from([key.clone()]), resource_def_id)
+        self.take_non_fungibles(&BTreeSet::from([id.clone()]), resource_def_id)
     }
 
     pub fn take_non_fungibles(

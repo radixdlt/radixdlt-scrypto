@@ -48,8 +48,8 @@ impl Vault {
         ))
     }
 
-    pub fn take_non_fungible(&mut self, key: &NonFungibleId) -> Result<Bucket, VaultError> {
-        self.take_non_fungibles(&BTreeSet::from([key.clone()]))
+    pub fn take_non_fungible(&mut self, id: &NonFungibleId) -> Result<Bucket, VaultError> {
+        self.take_non_fungibles(&BTreeSet::from([id.clone()]))
     }
 
     pub fn take_non_fungibles(
