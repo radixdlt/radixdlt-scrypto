@@ -189,7 +189,7 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
                 }
                 ValidatedInstruction::PopFromAuthWorktop {} => {
                     proc.pop_from_auth_worktop().map(|proof_id| {
-                        ValidatedData::from_slice(&scrypto_encode(&scrypto::resource::Bucket(
+                        ValidatedData::from_slice(&scrypto_encode(&scrypto::resource::Proof(
                             proof_id,
                         )))
                         .unwrap()
