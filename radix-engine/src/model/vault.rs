@@ -4,7 +4,7 @@ use scrypto::rust::collections::BTreeSet;
 use scrypto::rust::rc::Rc;
 
 use crate::model::Bucket;
-use crate::model::{ResourceAmount, ResourceContainer, ResourceContainerError};
+use crate::model::{ResourceContainer, ResourceContainerError};
 
 /// Represents an error when accessing a vault.
 #[derive(Debug, Clone, PartialEq)]

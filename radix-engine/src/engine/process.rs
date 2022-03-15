@@ -18,7 +18,6 @@ use crate::engine::*;
 use crate::errors::*;
 use crate::ledger::*;
 use crate::model::*;
-use crate::transaction::*;
 
 macro_rules! re_trace {
     ($proc:expr, $($args: expr),+) => {
@@ -211,26 +210,21 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     // (Transaction ONLY) Takes resource from worktop and returns a bucket.
     pub fn take_from_worktop(
         &mut self,
-        resource_spec: ResourceSpecification,
+        resource: ResourceDeterminer,
     ) -> Result<ValidatedData, RuntimeError> {
-        re_debug!(
-            self,
-            "(Transaction) Taking from worktop: {:?}",
-            resource_spec
-        );
-        let resource_def_id = resource_spec.resource_def_id();
+        re_debug!(self, "(Transaction) Taking from worktop: {:?}", resource);
         let new_bucket_id = self
             .id_allocator
             .new_bucket_id()
             .map_err(RuntimeError::IdAllocatorError)?;
-        let bucket = match resource_spec {
-            ResourceSpecification::Fungible { amount, .. } => {
-                self.worktop.take(amount, resource_def_id)
-            }
-            ResourceSpecification::NonFungible { ids, .. } => {
-                self.worktop.take_non_fungibles(&ids, resource_def_id)
-            }
-            ResourceSpecification::All { .. } => self.worktop.take_all(resource_def_id),
+        let bucket = match resource {
+            ResourceDeterminer::Some(amount, resource_def_id) => match amount {
+                ResourceAmount::Fungible { amount } => self.worktop.take(amount, resource_def_id),
+                ResourceAmount::NonFungible { ids } => {
+                    self.worktop.take_non_fungibles(&ids, resource_def_id)
+                }
+            },
+            ResourceDeterminer::All(resource_def_id) => self.worktop.take_all(resource_def_id),
         }
         .map_err(RuntimeError::WorktopError)?;
         self.buckets.insert(new_bucket_id, bucket);

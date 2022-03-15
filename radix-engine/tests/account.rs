@@ -8,11 +8,13 @@ pub fn compile(name: &str) -> Vec<u8> {
     compile_package!(format!("./tests/{}", name), name.replace("-", "_"))
 }
 
-fn fungible_amount() -> ResourceSpecification {
-    ResourceSpecification::Fungible {
-        amount: Decimal(100),
-        resource_def_id: RADIX_TOKEN,
-    }
+fn fungible_amount() -> ResourceDeterminer {
+    ResourceDeterminer::Some(
+        ResourceAmount::Fungible {
+            amount: Decimal(100),
+        },
+        RADIX_TOKEN,
+    )
 }
 
 #[test]
@@ -60,10 +62,12 @@ fn can_withdraw_non_fungible_from_my_account() {
         .unwrap();
     let receipt = executor.run(transaction).unwrap();
     let non_fungible_resource_def_id = receipt.new_resource_def_ids[0];
-    let non_fungible_amount = ResourceSpecification::NonFungible {
-        ids: BTreeSet::from([NonFungibleId::from(1)]),
-        resource_def_id: non_fungible_resource_def_id,
-    };
+    let non_fungible_amount = ResourceDeterminer::Some(
+        ResourceAmount::NonFungible {
+            ids: BTreeSet::from([NonFungibleId::from(1)]),
+        },
+        non_fungible_resource_def_id,
+    );
 
     // Act
     let transaction = TransactionBuilder::new(&executor)

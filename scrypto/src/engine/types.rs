@@ -11,7 +11,9 @@ pub use crate::math::BigDecimal;
 pub use crate::math::Decimal;
 pub use crate::resource::MintParams;
 pub use crate::resource::NonFungibleId;
+pub use crate::resource::ResourceAmount;
 pub use crate::resource::ResourceDefId;
+pub use crate::resource::ResourceDeterminer;
 pub use crate::resource::ResourceType;
 
 pub type LazyMapId = (Hash, u32);

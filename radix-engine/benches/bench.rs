@@ -15,10 +15,7 @@ fn bench_transfer(b: &mut Bencher) {
     let account2 = executor.new_account(key2);
     let transaction = TransactionBuilder::new(&executor)
         .withdraw_from_account(
-            &ResourceSpecification::Fungible {
-                amount: 1.into(),
-                resource_def_id: RADIX_TOKEN,
-            },
+            &ResourceDeterminer::Some(ResourceAmount::Fungible { amount: 1.into() }, RADIX_TOKEN),
             account1,
         )
         .call_method_with_all_resources(account2, "deposit_batch")

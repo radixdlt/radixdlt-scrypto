@@ -5,8 +5,6 @@ use scrypto::resource::resource_permissions::*;
 use scrypto::rust::collections::HashMap;
 use scrypto::rust::string::String;
 
-use crate::model::ResourceAmount;
-
 /// Represents an error when accessing a bucket.
 #[derive(Debug, Clone, PartialEq)]
 pub enum ResourceDefError {
