@@ -15,6 +15,7 @@ pub enum ResourceControllerMethod {
     UpdateFlags,
     UpdateMutableFlags,
     UpdateMetadata,
+    UpdateNonFungibleMutableData,
 }
 
 /// Represents an error when accessing a bucket.
@@ -95,6 +96,58 @@ impl ResourceDef {
         }?;
 
         Ok(resource_def)
+    }
+
+    pub fn check_auth(
+        &self,
+        transition: ResourceControllerMethod,
+        proofs: Vec<&[Proof]>,
+    ) -> Result<(), ResourceDefError> {
+        match transition {
+            ResourceControllerMethod::Mint => {
+                if self.is_flag_on(MINTABLE) {
+                    self.check_proof_permission(proofs, MAY_MINT)
+                } else {
+                    Err(ResourceDefError::OperationNotAllowed)
+                }
+            }
+            ResourceControllerMethod::Burn => {
+                if self.is_flag_on(BURNABLE) {
+                    if self.is_flag_on(FREELY_BURNABLE) {
+                        Ok(())
+                    } else {
+                        self.check_proof_permission(proofs, MAY_BURN)
+                    }
+                } else {
+                    Err(ResourceDefError::OperationNotAllowed)
+                }
+            }
+            ResourceControllerMethod::TakeFromVault => {
+                if !self.is_flag_on(RESTRICTED_TRANSFER) {
+                    Ok(())
+                } else {
+                    self.check_proof_permission(proofs, MAY_TRANSFER)
+                }
+            }
+            ResourceControllerMethod::UpdateFlags
+            | ResourceControllerMethod::UpdateMutableFlags => {
+                self.check_proof_permission(proofs, MAY_MANAGE_RESOURCE_FLAGS)
+            }
+            ResourceControllerMethod::UpdateMetadata => {
+                if self.is_flag_on(SHARED_METADATA_MUTABLE) {
+                    self.check_proof_permission(proofs, MAY_CHANGE_SHARED_METADATA)
+                } else {
+                    Err(ResourceDefError::OperationNotAllowed)
+                }
+            }
+            ResourceControllerMethod::UpdateNonFungibleMutableData => {
+                if self.is_flag_on(INDIVIDUAL_METADATA_MUTABLE) {
+                    self.check_proof_permission(proofs, MAY_CHANGE_INDIVIDUAL_METADATA)
+                } else {
+                    Err(ResourceDefError::OperationNotAllowed)
+                }
+            }
+        }
     }
 
     pub fn resource_type(&self) -> ResourceType {
@@ -202,51 +255,6 @@ impl ResourceDef {
         Ok(())
     }
 
-    pub fn check_auth(
-        &self,
-        transition: ResourceControllerMethod,
-        proofs: Vec<&[Proof]>,
-    ) -> Result<(), ResourceDefError> {
-        match transition {
-            ResourceControllerMethod::Mint => {
-                if self.is_flag_on(MINTABLE) {
-                    self.check_proof_permission(proofs, MAY_MINT)
-                } else {
-                    Err(ResourceDefError::OperationNotAllowed)
-                }
-            }
-            ResourceControllerMethod::Burn => {
-                if self.is_flag_on(BURNABLE) {
-                    if self.is_flag_on(FREELY_BURNABLE) {
-                        Ok(())
-                    } else {
-                        self.check_proof_permission(proofs, MAY_BURN)
-                    }
-                } else {
-                    Err(ResourceDefError::OperationNotAllowed)
-                }
-            }
-            ResourceControllerMethod::TakeFromVault => {
-                if !self.is_flag_on(RESTRICTED_TRANSFER) {
-                    Ok(())
-                } else {
-                    self.check_proof_permission(proofs, MAY_TRANSFER)
-                }
-            }
-            ResourceControllerMethod::UpdateFlags
-            | ResourceControllerMethod::UpdateMutableFlags => {
-                self.check_proof_permission(proofs, MAY_MANAGE_RESOURCE_FLAGS)
-            }
-            ResourceControllerMethod::UpdateMetadata => {
-                if self.is_flag_on(SHARED_METADATA_MUTABLE) {
-                    self.check_proof_permission(proofs, MAY_CHANGE_SHARED_METADATA)
-                } else {
-                    Err(ResourceDefError::OperationNotAllowed)
-                }
-            }
-        }
-    }
-
     pub fn update_flags(&mut self, new_flags: u64) -> Result<(), ResourceDefError> {
         let changed = self.flags ^ new_flags;
 
@@ -267,17 +275,6 @@ impl ResourceDef {
         Ok(())
     }
 
-    pub fn check_update_non_fungible_mutable_data_auth(
-        &self,
-        badge: Option<ResourceDefId>,
-    ) -> Result<(), ResourceDefError> {
-        if self.is_flag_on(INDIVIDUAL_METADATA_MUTABLE) {
-            self.check_permission(badge, MAY_CHANGE_INDIVIDUAL_METADATA)
-        } else {
-            Err(ResourceDefError::OperationNotAllowed)
-        }
-    }
-
     pub fn check_amount(&self, amount: Decimal) -> Result<(), ResourceDefError> {
         let divisibility = self.resource_type.divisibility();
 
@@ -288,23 +285,7 @@ impl ResourceDef {
         }
     }
 
-    pub fn check_permission(
-        &self,
-        badge: Option<ResourceDefId>,
-        permission: u64,
-    ) -> Result<(), ResourceDefError> {
-        if let Some(badge) = badge {
-            if let Some(auth) = self.authorities.get(&badge) {
-                if auth & permission == permission {
-                    return Ok(());
-                }
-            }
-        }
-
-        Err(ResourceDefError::PermissionNotAllowed)
-    }
-
-    pub fn check_proof_permission(
+    fn check_proof_permission(
         &self,
         proofs_vector: Vec<&[Proof]>,
         permission: u64,

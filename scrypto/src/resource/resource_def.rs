@@ -124,16 +124,10 @@ impl ResourceDef {
     ///
     /// # Panics
     /// Panics if this is not a non-fungible resource or the specified non-fungible is not found.
-    pub fn update_non_fungible_data<T: NonFungibleData>(
-        &self,
-        key: &NonFungibleId,
-        new_data: T,
-        auth: Proof,
-    ) {
+    pub fn update_non_fungible_data<T: NonFungibleData>(&self, key: &NonFungibleId, new_data: T) {
         let input = UpdateNonFungibleMutableDataInput {
             non_fungible_address: NonFungibleAddress::new(self.0, key.clone()),
             new_mutable_data: new_data.mutable_data(),
-            auth: auth.0,
         };
         let _: UpdateNonFungibleMutableDataOutput =
             call_engine(UPDATE_NON_FUNGIBLE_MUTABLE_DATA, input);

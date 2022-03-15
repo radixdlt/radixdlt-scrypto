@@ -157,13 +157,8 @@ impl Bucket {
         &mut self,
         non_fungible_id: &NonFungibleId,
         new_data: T,
-        auth: Proof,
     ) {
-        resource_def!(self.resource_def_id()).update_non_fungible_data(
-            non_fungible_id,
-            new_data,
-            auth,
-        )
+        resource_def!(self.resource_def_id()).update_non_fungible_data(non_fungible_id, new_data)
     }
 }
 

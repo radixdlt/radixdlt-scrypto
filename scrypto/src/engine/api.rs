@@ -335,7 +335,6 @@ pub struct NonFungibleExistsOutput {
 pub struct UpdateNonFungibleMutableDataInput {
     pub non_fungible_address: NonFungibleAddress,
     pub new_mutable_data: Vec<u8>,
-    pub auth: ProofId,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]

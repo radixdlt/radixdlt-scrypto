@@ -77,11 +77,12 @@ blueprint! {
             assert_eq!(data.available, false);
 
             data.available = true;
-            resource_def!(resource_def_id).update_non_fungible_data(
-                &NonFungibleId::from(0u128),
-                data,
-                mint_badge.present(),
-            );
+            authorize(&mint_badge, || {
+                resource_def!(resource_def_id).update_non_fungible_data(
+                    &NonFungibleId::from(0u128),
+                    data,
+                );
+            });
 
             let data: Sandwich =
                 resource_def!(resource_def_id).get_non_fungible_data(&NonFungibleId::from(0u128));
