@@ -43,7 +43,7 @@ pub fn decompile(tx: &Transaction) -> Result<String, DecompileError> {
                 ));
             }
             Instruction::TakeNonFungiblesFromWorktop {
-                keys,
+                ids,
                 resource_def_id,
             } => {
                 let bucket_id = id_validator
@@ -53,7 +53,7 @@ pub fn decompile(tx: &Transaction) -> Result<String, DecompileError> {
                 buckets.insert(bucket_id, name.clone());
                 buf.push_str(&format!(
                     "TAKE_NON_FUNGIBLES_FROM_WORKTOP TreeSet<NonFungibleId>({}) ResourceDefId(\"{}\") Bucket(\"{}\");\n",
-                    keys.iter()
+                    ids.iter()
                     .map(|k| format!("NonFungibleId(\"{}\")", k))
                     .collect::<Vec<String>>()
                     .join(", "),

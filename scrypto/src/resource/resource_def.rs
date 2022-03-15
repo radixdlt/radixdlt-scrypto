@@ -26,7 +26,7 @@ impl ResourceDef {
     pub fn mint<T: Into<Decimal>>(&self, amount: T) -> Bucket {
         let input = MintResourceInput {
             resource_def_id: self.0,
-            new_supply: Supply::Fungible {
+            mint_params: MintParams::Fungible {
                 amount: amount.into(),
             },
         };
@@ -36,13 +36,17 @@ impl ResourceDef {
     }
 
     /// Mints non-fungible resources
-    pub fn mint_non_fungible<T: NonFungibleData>(&self, key: &NonFungibleId, data: T) -> Bucket {
+    pub fn mint_non_fungible<T: NonFungibleData>(
+        &self,
+        id: &NonFungibleId,
+        data: T,
+    ) -> Bucket {
         let mut entries = HashMap::new();
-        entries.insert(key.clone(), (data.immutable_data(), data.mutable_data()));
+        entries.insert(id.clone(), (data.immutable_data(), data.mutable_data()));
 
         let input = MintResourceInput {
             resource_def_id: self.0,
-            new_supply: Supply::NonFungible { entries },
+            mint_params: MintParams::NonFungible { entries },
         };
         let output: MintResourceOutput = call_engine(MINT_RESOURCE, input);
 
@@ -111,9 +115,9 @@ impl ResourceDef {
     ///
     /// # Panics
     /// Panics if this is not a non-fungible resource or the specified non-fungible is not found.
-    pub fn get_non_fungible_data<T: NonFungibleData>(&self, key: &NonFungibleId) -> T {
+    pub fn get_non_fungible_data<T: NonFungibleData>(&self, id: &NonFungibleId) -> T {
         let input = GetNonFungibleDataInput {
-            non_fungible_address: NonFungibleAddress::new(self.0, key.clone()),
+            non_fungible_address: NonFungibleAddress::new(self.0, id.clone()),
         };
         let output: GetNonFungibleDataOutput = call_engine(GET_NON_FUNGIBLE_DATA, input);
 
@@ -124,9 +128,9 @@ impl ResourceDef {
     ///
     /// # Panics
     /// Panics if this is not a non-fungible resource or the specified non-fungible is not found.
-    pub fn update_non_fungible_data<T: NonFungibleData>(&self, key: &NonFungibleId, new_data: T) {
+    pub fn update_non_fungible_data<T: NonFungibleData>(&self, id: &NonFungibleId, new_data: T) {
         let input = UpdateNonFungibleMutableDataInput {
-            non_fungible_address: NonFungibleAddress::new(self.0, key.clone()),
+            non_fungible_address: NonFungibleAddress::new(self.0, id.clone()),
             new_mutable_data: new_data.mutable_data(),
         };
         let _: UpdateNonFungibleMutableDataOutput =
@@ -135,9 +139,9 @@ impl ResourceDef {
 
     /// Checks if non-fungible unit, with certain key exists or not.
     ///
-    pub fn non_fungible_exists(&self, key: &NonFungibleId) -> bool {
+    pub fn non_fungible_exists(&self, id: &NonFungibleId) -> bool {
         let input = NonFungibleExistsInput {
-            non_fungible_address: NonFungibleAddress::new(self.0, key.clone()),
+            non_fungible_address: NonFungibleAddress::new(self.0, id.clone()),
         };
         let output: NonFungibleExistsOutput = call_engine(NON_FUNGIBLE_EXISTS, input);
 
