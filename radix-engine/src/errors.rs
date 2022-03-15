@@ -172,10 +172,7 @@ pub enum RuntimeError {
     NotAuthorized,
 
     /// Index out of bounds.
-    IndexOutOfBounds {
-        index: usize,
-        max: usize,
-    },
+    IndexOutOfBounds { index: usize, max: usize },
 }
 
 impl fmt::Display for RuntimeError {

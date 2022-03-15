@@ -109,7 +109,8 @@ fn can_burn_with_auth() {
     let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(&mut substate_store);
     let (key, account) = test_runner.new_public_key_with_account();
-    let (auth_token_resource_def_id, token_resource_def_id) = test_runner.create_restricted_burn_token(account);
+    let (auth_token_resource_def_id, token_resource_def_id) =
+        test_runner.create_restricted_burn_token(account);
 
     // Act
     let auth_amount = ResourceSpecification::Fungible {

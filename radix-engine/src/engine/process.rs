@@ -1431,7 +1431,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         })
     }
 
-
     fn handle_get_resource_mutable_flags(
         &mut self,
         input: GetResourceMutableFlagsInput,
@@ -1446,22 +1445,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         })
     }
 
-    fn handle_update_resource_mutable_flags(
-        &mut self,
-        input: UpdateResourceMutableFlagsInput,
-    ) -> Result<UpdateResourceMutableFlagsOutput, RuntimeError> {
-        let badge = self.check_badge(Some(input.auth))?;
-
-        let resource_def = self
-            .track
-            .get_resource_def_mut(&input.resource_def_id)
-            .ok_or(RuntimeError::ResourceDefNotFound(input.resource_def_id))?;
-        resource_def
-            .update_mutable_flags(input.new_mutable_flags, badge)
-            .map_err(RuntimeError::ResourceDefError)?;
-
-        Ok(UpdateResourceMutableFlagsOutput {})
-    }
 
     fn handle_get_resource_type(
         &mut self,
@@ -1650,7 +1633,10 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         input: UpdateResourceFlagsInput,
     ) -> Result<UpdateResourceFlagsOutput, RuntimeError> {
         // Auth
-        self.check_resource_auth(&input.resource_def_id, ResourceControllerMethod::UpdateFlags)?;
+        self.check_resource_auth(
+            &input.resource_def_id,
+            ResourceControllerMethod::UpdateFlags,
+        )?;
 
         // State Update
         let resource_def = self
@@ -1662,6 +1648,28 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .map_err(RuntimeError::ResourceDefError)?;
 
         Ok(UpdateResourceFlagsOutput {})
+    }
+
+    fn handle_update_resource_mutable_flags(
+        &mut self,
+        input: UpdateResourceMutableFlagsInput,
+    ) -> Result<UpdateResourceMutableFlagsOutput, RuntimeError> {
+        // Auth
+        self.check_resource_auth(
+            &input.resource_def_id,
+            ResourceControllerMethod::UpdateMutableFlags,
+        )?;
+
+        // State Update
+        let resource_def = self
+            .track
+            .get_resource_def_mut(&input.resource_def_id)
+            .ok_or(RuntimeError::ResourceDefNotFound(input.resource_def_id))?;
+        resource_def
+            .update_mutable_flags(input.new_mutable_flags)
+            .map_err(RuntimeError::ResourceDefError)?;
+
+        Ok(UpdateResourceMutableFlagsOutput {})
     }
 
     fn handle_mint_resource(

@@ -374,7 +374,6 @@ pub struct GetResourceMutableFlagsOutput {
 pub struct UpdateResourceMutableFlagsInput {
     pub resource_def_id: ResourceDefId,
     pub new_mutable_flags: u64,
-    pub auth: ProofId,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]

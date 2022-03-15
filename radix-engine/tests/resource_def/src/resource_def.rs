@@ -89,11 +89,11 @@ blueprint! {
                 token_resource_def.disable_flags(MINTABLE);
                 assert!(token_resource_def.flags() & MINTABLE == 0);
                 assert!(token_resource_def.mutable_flags() & MINTABLE == MINTABLE);
-            });
 
-            token_resource_def.lock_flags(MINTABLE, badge.present());
-            assert!(token_resource_def.flags() & MINTABLE == 0);
-            assert!(token_resource_def.mutable_flags() & MINTABLE == 0);
+                token_resource_def.lock_flags(MINTABLE);
+                assert!(token_resource_def.flags() & MINTABLE == 0);
+                assert!(token_resource_def.mutable_flags() & MINTABLE == 0);
+            });
 
             badge
         }

@@ -13,6 +13,7 @@ pub enum ResourceControllerMethod {
     Burn,
     TakeFromVault,
     UpdateFlags,
+    UpdateMutableFlags,
 }
 
 /// Represents an error when accessing a bucket.
@@ -171,14 +172,7 @@ impl ResourceDef {
         }
     }
 
-
-    pub fn update_mutable_flags(
-        &mut self,
-        new_mutable_flags: u64,
-        badge: Option<ResourceDefId>,
-    ) -> Result<(), ResourceDefError> {
-        self.check_manage_flags_auth(badge)?;
-
+    pub fn update_mutable_flags(&mut self, new_mutable_flags: u64) -> Result<(), ResourceDefError> {
         let changed = self.mutable_flags ^ new_mutable_flags;
 
         if !resource_flags_are_valid(changed) {
@@ -241,16 +235,14 @@ impl ResourceDef {
                     self.check_proof_permission(proofs, MAY_TRANSFER)
                 }
             }
-            ResourceControllerMethod::UpdateFlags => {
+            ResourceControllerMethod::UpdateFlags
+            | ResourceControllerMethod::UpdateMutableFlags => {
                 self.check_proof_permission(proofs, MAY_MANAGE_RESOURCE_FLAGS)
             }
         }
     }
 
-    pub fn update_flags(
-        &mut self,
-        new_flags: u64,
-    ) -> Result<(), ResourceDefError> {
+    pub fn update_flags(&mut self, new_flags: u64) -> Result<(), ResourceDefError> {
         let changed = self.flags ^ new_flags;
 
         if !resource_flags_are_valid(changed) {
@@ -290,13 +282,6 @@ impl ResourceDef {
         } else {
             Err(ResourceDefError::OperationNotAllowed)
         }
-    }
-
-    pub fn check_manage_flags_auth(
-        &self,
-        badge: Option<ResourceDefId>,
-    ) -> Result<(), ResourceDefError> {
-        self.check_permission(badge, MAY_MANAGE_RESOURCE_FLAGS)
     }
 
     pub fn check_amount(&self, amount: Decimal) -> Result<(), ResourceDefError> {

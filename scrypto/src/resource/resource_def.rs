@@ -169,11 +169,10 @@ impl ResourceDef {
     }
 
     /// Locks feature flag settings.
-    pub fn lock_flags(&self, flags: u64, auth: Proof) {
+    pub fn lock_flags(&self, flags: u64) {
         let input = UpdateResourceMutableFlagsInput {
             resource_def_id: self.0,
             new_mutable_flags: self.flags() & !flags,
-            auth: auth.0,
         };
         let _output: UpdateResourceMutableFlagsOutput =
             call_engine(UPDATE_RESOURCE_MUTABLE_FLAGS, input);

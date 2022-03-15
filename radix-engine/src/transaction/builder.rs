@@ -554,21 +554,17 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     }
 
     /// Burns a resource.
-    pub fn burn(
-        &mut self,
-        resource_specification: &ResourceSpecification,
-    ) -> &mut Self {
-        self.take_from_worktop(
-            resource_specification,
-            |builder, bucket_id| {
-                builder.add_instruction(Instruction::CallFunction {
+    pub fn burn(&mut self, resource_specification: &ResourceSpecification) -> &mut Self {
+        self.take_from_worktop(resource_specification, |builder, bucket_id| {
+            builder
+                .add_instruction(Instruction::CallFunction {
                     package_id: SYSTEM_PACKAGE,
                     blueprint_name: "System".to_owned(),
                     function: "burn".to_owned(),
                     args: vec![scrypto_encode(&scrypto::resource::Bucket(bucket_id))],
-                }).0
-            }
-        )
+                })
+                .0
+        })
     }
 
     /// Creates an account.
