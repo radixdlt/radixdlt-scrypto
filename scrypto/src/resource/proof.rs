@@ -31,12 +31,7 @@ impl Proof {
     }
 
     pub fn check_non_fungible_address(&self, non_fungible_address: &NonFungibleAddress) {
-        self.check(non_fungible_address.resource_def_id());
-        if !self
-            .get_non_fungible_ids()
-            .iter()
-            .any(|k| k.eq(&non_fungible_address.non_fungible_id()))
-        {
+        if !self.contains_non_fungible_address(non_fungible_address) {
             panic!("Proof check failed");
         }
     }
@@ -44,6 +39,16 @@ impl Proof {
     /// Checks if the referenced bucket contains the given resource.
     pub fn contains(&self, resource_def_id: ResourceDefId) -> bool {
         self.amount() > 0.into() && self.resource_def_id() == resource_def_id
+    }
+
+    pub fn contains_non_fungible_address(&self, non_fungible_address: &NonFungibleAddress) -> bool {
+        if !self.contains(non_fungible_address.resource_def_id()) {
+            return false;
+        }
+
+        self.get_non_fungible_ids()
+            .iter()
+            .any(|k| k.eq(&non_fungible_address.non_fungible_id()))
     }
 
     /// Returns the resource amount within the bucket.

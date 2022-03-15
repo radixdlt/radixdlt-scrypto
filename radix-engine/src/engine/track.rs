@@ -104,6 +104,9 @@ impl<'s, S: SubstateStore> Track<'s, S> {
             ResourceContainerState::non_fungible(signers),
         ));
         process.create_virtual_proof(ECDSA_TOKEN_BUCKET_ID, ECDSA_TOKEN_PROOF_ID, ecdsa_bucket);
+        process
+            .push_onto_auth_worktop(ECDSA_TOKEN_PROOF_ID)
+            .unwrap();
 
         process
     }

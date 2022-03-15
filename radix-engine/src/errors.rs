@@ -9,10 +9,10 @@ use crate::engine::*;
 use crate::model::*;
 
 /// Represents an error when validating a WASM file.
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum WasmValidationError {
     /// The wasm module is invalid.
-    InvalidModule(Error),
+    InvalidModule(),
 
     /// The wasm module contains a start function.
     StartFunctionNotAllowed,
@@ -43,7 +43,7 @@ pub enum TransactionValidationError {
 }
 
 /// Represents an error when executing a transaction.
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum RuntimeError {
     /// Assertion check failed.
     AssertionFailed,
@@ -61,10 +61,10 @@ pub enum RuntimeError {
     IdAllocatorError(IdAllocatorError),
 
     /// Error when invoking an export.
-    InvokeError(Error),
+    InvokeError,
 
     /// Error when accessing the program memory.
-    MemoryAccessError(Error),
+    MemoryAccessError,
 
     /// Error when allocating memory in program.
     MemoryAllocError,
@@ -88,10 +88,7 @@ pub enum RuntimeError {
     PackageNotFound(PackageId),
 
     /// System call not allowed in given context.
-    IllegalSystemCall(),
-
-    /// No component has been loaded.
-    ComponentNotLoaded(),
+    IllegalSystemCall,
 
     /// Component does not exist.
     ComponentNotFound(ComponentId),
@@ -170,6 +167,12 @@ pub enum RuntimeError {
 
     /// Resource check failure.
     ResourceCheckFailure,
+
+    /// AuthWorktop is empty when trying to pop
+    EmptyAuthWorkTop,
+
+    /// System Authorization Failure
+    NotAuthorized,
 
     /// Index out of bounds.
     IndexOutOfBounds { index: usize, max: usize },

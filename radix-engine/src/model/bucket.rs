@@ -1,11 +1,12 @@
 use scrypto::engine::types::*;
+use scrypto::prelude::NonFungibleAddress;
 use scrypto::rust::collections::BTreeSet;
 use scrypto::rust::rc::Rc;
 
 use crate::model::{ResourceAmount, ResourceContainer, ResourceContainerError};
 
 /// Represents an error when accessing a bucket.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum BucketError {
     ResourceContainerError(ResourceContainerError),
     BucketLocked,
@@ -61,6 +62,19 @@ impl Bucket {
                 .take_non_fungibles(ids)
                 .map_err(BucketError::ResourceContainerError)?,
         ))
+    }
+
+    pub fn contains_non_fungible_address(&self, non_fungible_address: &NonFungibleAddress) -> bool {
+        if self.resource_def_id() != non_fungible_address.resource_def_id() {
+            return false;
+        }
+
+        match self.container.liquid_amount().as_non_fungible_ids() {
+            None => false,
+            Some(non_fungible_ids) => non_fungible_ids
+                .iter()
+                .any(|k| k.eq(&non_fungible_address.non_fungible_id())),
+        }
     }
 
     pub fn liquid_amount(&self) -> ResourceAmount {

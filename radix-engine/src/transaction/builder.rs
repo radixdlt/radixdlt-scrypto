@@ -166,14 +166,14 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                 self.id_validator.drop_bucket(bucket_id).unwrap();
             }
             Instruction::AssertWorktopContains { .. } => {}
-            Instruction::TakeFromAuthWorktop { .. } => {
+            Instruction::PopFromAuthWorktop { .. } => {
                 new_proof_id = Some(
                     self.id_validator
                         .new_proof(ProofKind::RuntimeProof)
                         .unwrap(),
                 );
             }
-            Instruction::PutOnAuthWorktop { proof_id } => {
+            Instruction::PushOntoAuthWorktop { proof_id } => {
                 self.id_validator.drop_proof(proof_id).unwrap();
             }
             Instruction::CreateBucketProof { bucket_id } => {
@@ -584,46 +584,33 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         resource_spec: &ResourceSpecification,
         account: ComponentId,
     ) -> &mut Self {
-        self.clone_proof(
-            ECDSA_TOKEN_PROOF_ID,
-            |builder, proof_id| match resource_spec {
-                ResourceSpecification::Fungible {
-                    amount,
-                    resource_def_id,
-                } => {
-                    builder
-                        .add_instruction(Instruction::CallMethod {
-                            component_id: account,
-                            method: "withdraw".to_owned(),
-                            args: vec![
-                                scrypto_encode(amount),
-                                scrypto_encode(resource_def_id),
-                                scrypto_encode(&scrypto::resource::Proof(proof_id)),
-                            ],
-                        })
-                        .0
-                }
-                ResourceSpecification::NonFungible {
-                    ids,
-                    resource_def_id,
-                } => {
-                    builder
-                        .add_instruction(Instruction::CallMethod {
-                            component_id: account,
-                            method: "withdraw_non_fungibles".to_owned(),
-                            args: vec![
-                                scrypto_encode(ids),
-                                scrypto_encode(resource_def_id),
-                                scrypto_encode(&scrypto::resource::Proof(proof_id)),
-                            ],
-                        })
-                        .0
-                }
-                ResourceSpecification::All { .. } => {
-                    panic!("Withdrawing all from account is not supported!");
-                }
-            },
-        )
+        match resource_spec {
+            ResourceSpecification::Fungible {
+                amount,
+                resource_def_id,
+            } => {
+                self.add_instruction(Instruction::CallMethod {
+                    component_id: account,
+                    method: "withdraw".to_owned(),
+                    args: vec![scrypto_encode(amount), scrypto_encode(resource_def_id)],
+                })
+                .0
+            }
+            ResourceSpecification::NonFungible {
+                ids,
+                resource_def_id,
+            } => {
+                self.add_instruction(Instruction::CallMethod {
+                    component_id: account,
+                    method: "withdraw_non_fungibles".to_owned(),
+                    args: vec![scrypto_encode(ids), scrypto_encode(resource_def_id)],
+                })
+                .0
+            }
+            ResourceSpecification::All { .. } => {
+                panic!("Withdrawing all from account is not supported!");
+            }
+        }
     }
 
     //===============================

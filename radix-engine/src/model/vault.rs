@@ -7,7 +7,7 @@ use crate::model::Bucket;
 use crate::model::{ResourceAmount, ResourceContainer, ResourceContainerError};
 
 /// Represents an error when accessing a vault.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum VaultError {
     ResourceContainerError(ResourceContainerError),
     VaultLocked,

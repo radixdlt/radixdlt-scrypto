@@ -7,7 +7,7 @@ use scrypto::rust::rc::Rc;
 use scrypto::rust::string::ToString;
 
 /// Represents an error when manipulating resources in a container.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ResourceContainerError {
     /// Resource addresses do not match
     ResourceAddressNotMatching,

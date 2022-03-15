@@ -8,7 +8,7 @@ use crate::model::Bucket;
 use crate::model::{ResourceContainer, ResourceContainerError};
 
 /// Represents an error when accessing a Worktop.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum WorktopError {
     ResourceContainerError(ResourceContainerError),
     ResourceContainerLocked,

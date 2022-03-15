@@ -8,7 +8,7 @@ use scrypto::rust::string::String;
 use crate::model::ResourceAmount;
 
 /// Represents an error when accessing a bucket.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum ResourceDefError {
     ResourceTypeNotMatching,
     OperationNotAllowed,

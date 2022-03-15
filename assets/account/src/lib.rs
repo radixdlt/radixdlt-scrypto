@@ -2,7 +2,6 @@ use scrypto::prelude::*;
 
 blueprint! {
     struct Account {
-        auth: NonFungibleAddress,
         vaults: LazyMap<ResourceDefId, Vault>,
     }
 
@@ -12,10 +11,9 @@ blueprint! {
             let auth = NonFungibleAddress::new(ECDSA_TOKEN, key);
 
             Account {
-                auth,
                 vaults: LazyMap::new(),
             }
-            .instantiate()
+            .instantiate_with_auth(HashMap::from([("withdraw".to_string(), auth)]))
         }
 
         pub fn with_bucket(public_key: EcdsaPublicKey, bucket: Bucket) -> ComponentId {
@@ -25,7 +23,8 @@ blueprint! {
             let key = NonFungibleId::new(public_key.to_vec());
             let auth = NonFungibleAddress::new(ECDSA_TOKEN, key);
 
-            Account { auth, vaults }.instantiate()
+            Account { vaults }
+                .instantiate_with_auth(HashMap::from([("withdraw".to_string(), auth)]))
         }
 
         /// Deposit a batch of buckets into this account
@@ -50,14 +49,7 @@ blueprint! {
         }
 
         /// Withdraws resource from this account.
-        pub fn withdraw(
-            &mut self,
-            amount: Decimal,
-            resource_def_id: ResourceDefId,
-            account_auth: Proof,
-        ) -> Bucket {
-            account_auth.check_non_fungible_address(&self.auth);
-
+        pub fn withdraw(&mut self, amount: Decimal, resource_def_id: ResourceDefId) -> Bucket {
             let vault = self.vaults.get(&resource_def_id);
             match vault {
                 Some(mut vault) => vault.take(amount),
@@ -73,10 +65,7 @@ blueprint! {
             amount: Decimal,
             resource_def_id: ResourceDefId,
             auth: Proof,
-            account_auth: Proof,
         ) -> Bucket {
-            account_auth.check_non_fungible_address(&self.auth);
-
             let vault = self.vaults.get(&resource_def_id);
             match vault {
                 Some(mut vault) => vault.take_with_auth(amount, auth),
@@ -91,10 +80,7 @@ blueprint! {
             &mut self,
             ids: BTreeSet<NonFungibleId>,
             resource_def_id: ResourceDefId,
-            account_auth: Proof,
         ) -> Bucket {
-            account_auth.check_non_fungible_address(&self.auth);
-
             let vault = self.vaults.get(&resource_def_id);
             match vault {
                 Some(vault) => {
@@ -116,10 +102,7 @@ blueprint! {
             ids: BTreeSet<NonFungibleId>,
             resource_def_id: ResourceDefId,
             auth: Proof,
-            account_auth: Proof,
         ) -> Bucket {
-            account_auth.check_non_fungible_address(&self.auth);
-
             let vault = self.vaults.get(&resource_def_id);
             match vault {
                 Some(vault) => {

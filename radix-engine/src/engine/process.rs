@@ -185,6 +185,8 @@ pub struct Process<'r, 'l, L: SubstateStore> {
     worktop: Worktop,
     /// Proofs collected from previous returns or self. Also used for system authorization.
     auth_worktop: Vec<Proof>,
+    /// The caller's auth worktop
+    caller_auth_worktop: &'r [Proof],
 }
 
 impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
@@ -202,6 +204,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             id_allocator: IdAllocator::new(IdSpace::Transaction),
             worktop: Worktop::new(),
             auth_worktop: Vec::new(),
+            caller_auth_worktop: &[],
         }
     }
 
@@ -279,20 +282,17 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     }
 
     // (Transaction ONLY) Takes a proof from the auth worktop.
-    pub fn take_from_auth_worktop(&mut self, index: usize) -> Result<ValidatedData, RuntimeError> {
-        re_debug!(self, "(Transaction) Taking from auth worktop: {:?}", index);
-        if index >= self.auth_worktop.len() {
-            return Err(RuntimeError::IndexOutOfBounds {
-                index,
-                max: self.auth_worktop.len() - 1,
-            });
+    pub fn pop_from_auth_worktop(&mut self) -> Result<ValidatedData, RuntimeError> {
+        re_debug!(self, "(Transaction) Taking from auth worktop");
+        if self.auth_worktop.is_empty() {
+            return Err(RuntimeError::EmptyAuthWorkTop);
         }
 
         let new_proof_id = self
             .id_allocator
             .new_proof_id()
             .map_err(RuntimeError::IdAllocatorError)?;
-        let proof = self.auth_worktop.remove(index);
+        let proof = self.auth_worktop.remove(self.auth_worktop.len() - 1);
         self.proofs.insert(new_proof_id, proof);
         Ok(
             ValidatedData::from_slice(&scrypto_encode(&scrypto::resource::Bucket(new_proof_id)))
@@ -301,7 +301,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     }
 
     // (Transaction ONLY) Puts a proof onto the auth worktop.
-    pub fn put_on_auth_worktop(
+    pub fn push_onto_auth_worktop(
         &mut self,
         proof_id: ProofId,
     ) -> Result<ValidatedData, RuntimeError> {
@@ -506,20 +506,23 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             trace: self.trace,
             vm,
             interpreter_state: match invocation.actor {
-                Actor::Blueprint(..) => InterpreterState::Blueprint,
+                Actor::Blueprint(..) => Ok(InterpreterState::Blueprint),
                 Actor::Component(component_id) => {
                     let component = self.track.get_component(component_id.clone()).unwrap();
+                    component.check_auth(&invocation.function, self.caller_auth_worktop)?;
+
                     let initial_loaded_object_refs =
                         Self::process_entry_data(component.state()).unwrap();
                     let state = component.state().to_vec();
-                    InterpreterState::Component {
+                    let component = InterpreterState::Component {
                         state,
                         component_id,
                         initial_loaded_object_refs,
                         additional_object_refs: ComponentObjectRefs::new(),
-                    }
+                    };
+                    Ok(component)
                 }
-            },
+            }?,
             process_owned_objects: ComponentObjects::new(),
         });
 
@@ -527,7 +530,13 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let result = module.invoke_export(invocation.export_name.as_str(), &[], self);
         re_debug!(self, "Invoke result: {:?}", result);
         let rtn = result
-            .map_err(RuntimeError::InvokeError)?
+            .map_err(|e| {
+                match e.into_host_error() {
+                    // Pass-through runtime errors
+                    Some(host_error) => *host_error.downcast::<RuntimeError>().unwrap(),
+                    None => RuntimeError::InvokeError,
+                }
+            })?
             .ok_or(RuntimeError::NoReturnData)?;
 
         // move resource based on return data
@@ -620,6 +629,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         }
         let (buckets_out, proofs_out) = self.move_out_resources();
         let mut process = Process::new(self.depth + 1, self.trace, self.track);
+        process.caller_auth_worktop = &self.auth_worktop;
         process.move_in_resources(buckets_out, proofs_out)?;
 
         // run the function
@@ -856,7 +866,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .vm
             .memory
             .get_value(ptr as u32)
-            .map_err(RuntimeError::MemoryAccessError)?;
+            .map_err(|_| RuntimeError::MemoryAccessError)?;
 
         // SECURITY: meter before allocating memory
         let mut data = vec![0u8; len as usize];
@@ -864,7 +874,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .vm
             .memory
             .get_into((ptr + 4) as u32, &mut data)
-            .map_err(RuntimeError::MemoryAccessError)?;
+            .map_err(|_| RuntimeError::MemoryAccessError)?;
 
         // free the buffer
         wasm_process
@@ -875,7 +885,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 &[RuntimeValue::I32(ptr as i32)],
                 &mut NopExternals,
             )
-            .map_err(RuntimeError::MemoryAccessError)?;
+            .map_err(|_| RuntimeError::MemoryAccessError)?;
 
         Ok(data.to_vec())
     }
@@ -896,7 +906,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .vm
             .memory
             .get_into(input_ptr, &mut input_bytes)
-            .map_err(|e| Trap::from(RuntimeError::MemoryAccessError(e)))?;
+            .map_err(|_| Trap::from(RuntimeError::MemoryAccessError))?;
         let input: I = scrypto_decode(&input_bytes)
             .map_err(|e| Trap::from(RuntimeError::InvalidRequestData(e)))?;
         if input_len <= 1024 {
@@ -1027,7 +1037,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let wasm_process = self
             .wasm_process_state
             .as_mut()
-            .ok_or(RuntimeError::IllegalSystemCall())?;
+            .ok_or(RuntimeError::IllegalSystemCall)?;
 
         let data = Self::process_entry_data(&input.state)?;
         let new_objects = wasm_process.process_owned_objects.take(data)?;
@@ -1035,6 +1045,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             wasm_process.vm.invocation.package_id,
             input.blueprint_name,
             input.state,
+            input.sys_auth,
         );
         let component_id = self.track.create_component(component);
         self.track
@@ -1065,10 +1076,10 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let wasm_process = self
             .wasm_process_state
             .as_mut()
-            .ok_or(RuntimeError::IllegalSystemCall())?;
+            .ok_or(RuntimeError::IllegalSystemCall)?;
         let return_state = match &wasm_process.interpreter_state {
             InterpreterState::Component { state, .. } => Ok(state),
-            _ => Err(RuntimeError::IllegalSystemCall()),
+            _ => Err(RuntimeError::IllegalSystemCall),
         }?;
         let state = return_state.to_vec();
         Ok(GetComponentStateOutput { state })
@@ -1081,7 +1092,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let wasm_process = self
             .wasm_process_state
             .as_mut()
-            .ok_or(RuntimeError::IllegalSystemCall())?;
+            .ok_or(RuntimeError::IllegalSystemCall)?;
         match &wasm_process.interpreter_state {
             InterpreterState::Component {
                 component_id,
@@ -1100,7 +1111,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 component.set_state(input.state);
                 Ok(())
             }
-            _ => Err(RuntimeError::IllegalSystemCall()),
+            _ => Err(RuntimeError::IllegalSystemCall),
         }?;
 
         Ok(PutComponentStateOutput {})
@@ -1113,7 +1124,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let wasm_process = self
             .wasm_process_state
             .as_mut()
-            .ok_or(RuntimeError::IllegalSystemCall())?;
+            .ok_or(RuntimeError::IllegalSystemCall)?;
         let lazy_map_id = self.track.new_lazy_map_id();
         wasm_process
             .process_owned_objects
@@ -1129,7 +1140,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let wasm_process = self
             .wasm_process_state
             .as_mut()
-            .ok_or(RuntimeError::IllegalSystemCall())?;
+            .ok_or(RuntimeError::IllegalSystemCall)?;
         let entry = match wasm_process
             .process_owned_objects
             .get_lazy_map_entry(&input.lazy_map_id, &input.key)
@@ -1178,7 +1189,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let wasm_process = self
             .wasm_process_state
             .as_mut()
-            .ok_or(RuntimeError::IllegalSystemCall())?;
+            .ok_or(RuntimeError::IllegalSystemCall)?;
         let (old_value, lazy_map_state) = match wasm_process
             .process_owned_objects
             .get_lazy_map_entry(&input.lazy_map_id, &input.key)
@@ -1575,7 +1586,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let wasm_process = self
             .wasm_process_state
             .as_mut()
-            .ok_or(RuntimeError::IllegalSystemCall())?;
+            .ok_or(RuntimeError::IllegalSystemCall)?;
         let definition = self
             .track
             .get_resource_def(&input.resource_def_id)
@@ -1606,7 +1617,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let wasm_process = self
             .wasm_process_state
             .as_mut()
-            .ok_or(RuntimeError::IllegalSystemCall())?;
+            .ok_or(RuntimeError::IllegalSystemCall)?;
         match wasm_process.process_owned_objects.get_vault_mut(&vault_id) {
             Some(vault) => Ok(vault),
             None => match &wasm_process.interpreter_state {
