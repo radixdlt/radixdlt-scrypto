@@ -1,3 +1,4 @@
+#[rustfmt::skip]
 pub mod test_runner;
 
 use crate::test_runner::TestRunner;

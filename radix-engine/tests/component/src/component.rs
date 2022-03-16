@@ -13,7 +13,10 @@ blueprint! {
                 .initial_supply_fungible(amount)
         }
 
-        pub fn create_component_with_auth(resource_def_id: ResourceDefId, non_fungible_id: NonFungibleId) -> ComponentId {
+        pub fn create_component_with_auth(
+            resource_def_id: ResourceDefId,
+            non_fungible_id: NonFungibleId,
+        ) -> ComponentId {
             let auth = NonFungibleAddress::new(resource_def_id, non_fungible_id);
 
             Self {
