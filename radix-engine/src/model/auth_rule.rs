@@ -17,6 +17,10 @@ impl AuthRule {
         }
     }
 
+    pub fn non_fungible_address(&self) -> &NonFungibleAddress {
+        &self.non_fungible_address
+    }
+
     pub fn check(&self, proofs: &[Proof]) -> Result<(), RuntimeError> {
         if !proofs.iter().any(|p| {
             p.resource_def_id() == self.non_fungible_address.resource_def_id()

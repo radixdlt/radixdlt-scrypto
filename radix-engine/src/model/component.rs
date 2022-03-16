@@ -1,5 +1,4 @@
-use crate::errors::RuntimeError;
-use crate::model::{AuthRule, Proof};
+use crate::model::{AuthRule};
 use sbor::*;
 use scrypto::engine::types::*;
 use scrypto::rust::collections::*;
@@ -30,11 +29,8 @@ impl Component {
         }
     }
 
-    pub fn check_auth(&self, function: &str, proofs: &[Proof]) -> Result<(), RuntimeError> {
-        match self.sys_auth.get(function) {
-            Some(auth_rule) => auth_rule.check(proofs),
-            None => Ok(()),
-        }
+    pub fn sys_auth(&self) -> &HashMap<String, AuthRule> {
+        &self.sys_auth
     }
 
     pub fn package_id(&self) -> PackageId {

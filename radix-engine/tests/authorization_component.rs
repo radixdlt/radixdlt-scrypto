@@ -2,9 +2,10 @@ pub mod test_runner;
 
 use crate::test_runner::TestRunner;
 use radix_engine::errors::RuntimeError;
-use radix_engine::ledger::InMemorySubstateStore;
+use radix_engine::ledger::{InMemorySubstateStore, SubstateStore};
 use radix_engine::transaction::*;
 use scrypto::prelude::*;
+use radix_engine::model::Component;
 
 #[test]
 fn cannot_make_cross_component_call_without_authorization() {
@@ -55,6 +56,14 @@ fn cannot_make_cross_component_call_without_authorization() {
     // Assert
     let runtime_error = receipt.result.expect_err("Should be error");
     assert_eq!(runtime_error, RuntimeError::NotAuthorized);
+    let component_state: Component = substate_store.get_decoded_substate(&secured_component)
+        .map(|(c, id)| c)
+        .unwrap();
+    let auth_address = NonFungibleAddress::new(auth, auth_id);
+    match component_state.sys_auth().get("get_component_state") {
+        Some(auth_rule) => assert_eq!(*auth_rule.non_fungible_address(), auth_address),
+        None => panic!("Expected auth rule on component state")
+    };
 }
 
 #[test]
@@ -91,7 +100,7 @@ fn can_make_cross_component_call_with_authorization() {
     let my_component = receipt.new_component_ids[0];
 
     let auth_amount = ResourceSpecification::NonFungible {
-        ids: BTreeSet::from([auth_id]),
+        ids: BTreeSet::from([auth_id.clone()]),
         resource_def_id: auth,
     };
     let transaction = test_runner
@@ -118,4 +127,12 @@ fn can_make_cross_component_call_with_authorization() {
 
     // Assert
     assert!(receipt.result.is_ok());
+    let component_state: Component = substate_store.get_decoded_substate(&secured_component)
+        .map(|(c, id)| c)
+        .unwrap();
+    let auth_address = NonFungibleAddress::new(auth, auth_id);
+    match component_state.sys_auth().get("get_component_state") {
+        Some(auth_rule) => assert_eq!(*auth_rule.non_fungible_address(), auth_address),
+        None => panic!("Expected auth rule on component state")
+    };
 }

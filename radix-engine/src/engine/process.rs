@@ -500,7 +500,13 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 Actor::Blueprint(..) => Ok(InterpreterState::Blueprint),
                 Actor::Component(component_id) => {
                     let component = self.track.get_component(component_id.clone()).unwrap();
-                    component.check_auth(&invocation.function, self.caller_auth_worktop)?;
+
+                    // Auth check
+                    let method_auth = component.sys_auth().get(&invocation.function);
+                    match method_auth {
+                        Some(auth_rule) => auth_rule.check(self.caller_auth_worktop),
+                        None => Ok(()),
+                    }?;
 
                     let initial_loaded_object_refs =
                         Self::process_entry_data(component.state()).unwrap();
