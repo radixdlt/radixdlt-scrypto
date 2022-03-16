@@ -504,7 +504,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     // Auth check
                     let method_auth = component.sys_auth().get(&invocation.function);
                     match method_auth {
-                        Some(auth_rule) => auth_rule.check(vec![self.caller_auth_worktop]),
+                        Some(auth_rule) => auth_rule.check(&[self.caller_auth_worktop]),
                         None => Ok(()),
                     }?;
 
