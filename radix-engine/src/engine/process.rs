@@ -1018,8 +1018,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let component = Component::new(
             wasm_process.vm.invocation.package_id,
             input.blueprint_name,
-            input.state,
             sys_auth,
+            input.state,
         );
         let component_id = self.track.create_component(component);
         self.track

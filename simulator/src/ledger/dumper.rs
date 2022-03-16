@@ -54,6 +54,20 @@ pub fn dump_component<T: SubstateStore + QueryableSubstateStore>(
                 c.package_id(),
                 c.blueprint_name()
             );
+
+            println!(
+                "{}",
+                "Authorization".green().bold()
+            );
+            for (last, (k, v)) in c.sys_auth().iter().identify_last() {
+                println!(
+                    "{} {:?} => {:?}",
+                    list_item_prefix(last),
+                    k,
+                    v
+                );
+            }
+
             let state = c.state();
             let state_validated = ValidatedData::from_slice(state).unwrap();
             println!("{}: {}", "State".green().bold(), state_validated);
