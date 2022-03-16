@@ -1,3 +1,4 @@
+#[rustfmt::skip]
 mod util;
 
 use crate::util::TestUtil;
