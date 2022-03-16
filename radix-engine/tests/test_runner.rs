@@ -1,8 +1,8 @@
 use radix_engine::ledger::*;
-use radix_engine::transaction::*;
-use scrypto::prelude::*;
 use radix_engine::model::Receipt;
 use radix_engine::model::Transaction;
+use radix_engine::transaction::*;
+use scrypto::prelude::*;
 
 pub struct TestRunner<'l> {
     executor: TransactionExecutor<'l, InMemorySubstateStore>,
@@ -12,12 +12,12 @@ impl<'l> TestRunner<'l> {
     pub fn new(ledger: &'l mut InMemorySubstateStore) -> Self {
         let executor = TransactionExecutor::new(ledger, true);
 
-        Self {
-            executor
-        }
+        Self { executor }
     }
 
-    pub fn new_transaction_builder(&self) -> TransactionBuilder<TransactionExecutor<InMemorySubstateStore>> {
+    pub fn new_transaction_builder(
+        &self,
+    ) -> TransactionBuilder<TransactionExecutor<InMemorySubstateStore>> {
         TransactionBuilder::new(&self.executor)
     }
 
@@ -29,10 +29,7 @@ impl<'l> TestRunner<'l> {
         self.executor.run(transaction).unwrap()
     }
 
-    pub fn publish_package(
-        &mut self,
-        name: &str,
-    ) -> PackageId {
+    pub fn publish_package(&mut self, name: &str) -> PackageId {
         self.executor.publish_package(&Self::compile(name)).unwrap()
     }
 
@@ -62,10 +59,7 @@ impl<'l> TestRunner<'l> {
         (auth_resource_def_id, receipt.new_resource_def_ids[0])
     }
 
-    pub fn create_non_fungible_resource(
-        &mut self,
-        account: ComponentId,
-    ) -> ResourceDefId {
+    pub fn create_non_fungible_resource(&mut self, account: ComponentId) -> ResourceDefId {
         let package = self.publish_package("resource_creator");
         let transaction = TransactionBuilder::new(&self.executor)
             .call_function(

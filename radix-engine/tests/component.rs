@@ -1,8 +1,9 @@
+#[rustfmt::skip]
 pub mod test_runner;
 
-use scrypto::prelude::*;
-use radix_engine::ledger::InMemorySubstateStore;
 use crate::test_runner::TestRunner;
+use radix_engine::ledger::InMemorySubstateStore;
+use scrypto::prelude::*;
 
 #[test]
 fn test_package() {
@@ -11,7 +12,8 @@ fn test_package() {
     let (_, account) = test_runner.new_public_key_with_account();
     let package = test_runner.publish_package("component");
 
-    let transaction1 = test_runner.new_transaction_builder()
+    let transaction1 = test_runner
+        .new_transaction_builder()
         .call_function(package, "PackageTest", "publish", vec![], Some(account))
         .build(vec![])
         .unwrap();
@@ -27,7 +29,8 @@ fn test_component() {
     let package = test_runner.publish_package("component");
 
     // Create component
-    let transaction1 = test_runner.new_transaction_builder()
+    let transaction1 = test_runner
+        .new_transaction_builder()
         .call_function(
             package,
             "ComponentTest",
@@ -44,7 +47,8 @@ fn test_component() {
     let component = receipt1.new_component_ids[0];
 
     // Call functions & methods
-    let transaction2 = test_runner.new_transaction_builder()
+    let transaction2 = test_runner
+        .new_transaction_builder()
         .call_function(
             package,
             "ComponentTest",

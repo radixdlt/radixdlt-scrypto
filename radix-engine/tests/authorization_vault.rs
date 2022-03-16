@@ -1,11 +1,12 @@
+#[rustfmt::skip]
 pub mod test_runner;
 
-use crate::test_runner::{TestRunner};
+use crate::test_runner::TestRunner;
 use radix_engine::errors::RuntimeError;
+use radix_engine::ledger::InMemorySubstateStore;
 use radix_engine::model::*;
 use radix_engine::transaction::*;
 use scrypto::prelude::*;
-use radix_engine::ledger::InMemorySubstateStore;
 
 #[test]
 fn cannot_withdraw_restricted_transfer_from_my_account_with_no_auth() {
@@ -21,7 +22,8 @@ fn cannot_withdraw_restricted_transfer_from_my_account_with_no_auth() {
         amount: Decimal::one(),
         resource_def_id: token_resource_def_id,
     };
-    let transaction = test_runner.new_transaction_builder()
+    let transaction = test_runner
+        .new_transaction_builder()
         .withdraw_from_account(&fungible_amount, account)
         .call_method_with_all_resources(other_account, "deposit_batch")
         .build(vec![key])
@@ -43,7 +45,8 @@ fn can_withdraw_restricted_transfer_from_my_account_with_auth() {
     let mut test_runner = TestRunner::new(&mut substate_store);
     let (key, account) = test_runner.new_public_key_with_account();
     let (_, other_account) = test_runner.new_public_key_with_account();
-    let (auth_resource_def_id, token_resource_def_id) = test_runner.create_restricted_transfer_token(account);
+    let (auth_resource_def_id, token_resource_def_id) =
+        test_runner.create_restricted_transfer_token(account);
 
     // Act
     let auth_amount = ResourceSpecification::NonFungible {
@@ -54,7 +57,8 @@ fn can_withdraw_restricted_transfer_from_my_account_with_auth() {
         amount: Decimal::one(),
         resource_def_id: token_resource_def_id,
     };
-    let transaction = test_runner.new_transaction_builder()
+    let transaction = test_runner
+        .new_transaction_builder()
         .withdraw_from_account(&auth_amount, account)
         .take_from_worktop(&auth_amount, |builder, bucket_id| {
             builder.create_bucket_proof(bucket_id, |builder, proof_id| builder.push_auth(proof_id))

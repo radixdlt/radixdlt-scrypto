@@ -1,11 +1,12 @@
+#[rustfmt::skip]
 pub mod test_runner;
 
-use crate::test_runner::{TestRunner};
+use crate::test_runner::TestRunner;
 use radix_engine::errors::RuntimeError;
+use radix_engine::ledger::InMemorySubstateStore;
 use radix_engine::model::*;
 use radix_engine::transaction::*;
 use scrypto::prelude::*;
-use radix_engine::ledger::InMemorySubstateStore;
 
 fn fungible_amount() -> ResourceSpecification {
     ResourceSpecification::Fungible {
@@ -23,7 +24,8 @@ fn can_withdraw_from_my_account() {
     let (_, other_account) = test_runner.new_public_key_with_account();
 
     // Act
-    let transaction = test_runner.new_transaction_builder()
+    let transaction = test_runner
+        .new_transaction_builder()
         .withdraw_from_account(&fungible_amount(), account)
         .call_method_with_all_resources(other_account, "deposit_batch")
         .build(vec![key])
@@ -48,7 +50,8 @@ fn can_withdraw_non_fungible_from_my_account() {
         ids: BTreeSet::from([NonFungibleId::from(1)]),
         resource_def_id,
     };
-    let transaction = test_runner.new_transaction_builder()
+    let transaction = test_runner
+        .new_transaction_builder()
         .withdraw_from_account(&non_fungible_amount, account)
         .call_method_with_all_resources(other_account, "deposit_batch")
         .build(vec![key])
@@ -66,7 +69,8 @@ fn cannot_withdraw_from_other_account() {
     let mut test_runner = TestRunner::new(&mut substate_store);
     let (_, account) = test_runner.new_public_key_with_account();
     let (other_key, other_account) = test_runner.new_public_key_with_account();
-    let transaction = test_runner.new_transaction_builder()
+    let transaction = test_runner
+        .new_transaction_builder()
         .withdraw_from_account(&fungible_amount(), account)
         .call_method_with_all_resources(other_account, "deposit_batch")
         .build(vec![other_key])
@@ -87,7 +91,8 @@ fn account_to_bucket_to_account() {
     let mut test_runner = TestRunner::new(&mut substate_store);
     let (key, account) = test_runner.new_public_key_with_account();
     let amount = fungible_amount();
-    let transaction = test_runner.new_transaction_builder()
+    let transaction = test_runner
+        .new_transaction_builder()
         .withdraw_from_account(&amount, account)
         .take_from_worktop(&amount, |builder, bucket_id| {
             builder
