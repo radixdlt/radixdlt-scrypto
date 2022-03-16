@@ -162,10 +162,7 @@ impl ResourceDef {
         self.flags() & flag == flag
     }
 
-    pub fn mint(
-        &mut self,
-        amount: &ResourceAmount,
-    ) -> Result<(), ResourceDefError> {
+    pub fn mint(&mut self, amount: &ResourceAmount) -> Result<(), ResourceDefError> {
         match (self.resource_type, amount) {
             (ResourceType::Fungible { .. }, ResourceAmount::Fungible { .. })
             | (ResourceType::NonFungible, ResourceAmount::NonFungible { .. }) => {
@@ -176,10 +173,7 @@ impl ResourceDef {
         }
     }
 
-    pub fn burn(
-        &mut self,
-        amount: ResourceAmount,
-    ) -> Result<(), ResourceDefError> {
+    pub fn burn(&mut self, amount: ResourceAmount) -> Result<(), ResourceDefError> {
         match (self.resource_type, &amount) {
             (ResourceType::Fungible { .. }, ResourceAmount::Fungible { .. })
             | (ResourceType::NonFungible, ResourceAmount::NonFungible { .. }) => {

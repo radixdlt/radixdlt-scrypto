@@ -1,9 +1,10 @@
+#[rustfmt::skip]
 pub mod test_runner;
 
+use crate::test_runner::TestRunner;
 use radix_engine::ledger::*;
 use radix_engine::transaction::*;
 use scrypto::prelude::*;
-use crate::test_runner::TestRunner;
 
 pub fn compile(name: &str) -> Vec<u8> {
     compile_package!(format!("./tests/{}", name), name.replace("-", "_"))
@@ -18,7 +19,8 @@ fn create_non_fungible_mutable() {
     let package = test_runner.publish_package("non_fungible");
 
     // Act
-    let transaction = test_runner.new_transaction_builder()
+    let transaction = test_runner
+        .new_transaction_builder()
         .call_function(
             package,
             "NonFungibleTest",

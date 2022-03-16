@@ -1260,11 +1260,9 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             MintParams::NonFungible { entries } => {
                 // Notify resource manager
                 resource_def
-                    .mint(
-                        &ResourceAmount::NonFungible {
-                            ids: entries.keys().cloned().collect(),
-                        },
-                    )
+                    .mint(&ResourceAmount::NonFungible {
+                        ids: entries.keys().cloned().collect(),
+                    })
                     .map_err(RuntimeError::ResourceDefError)?;
 
                 // Allocate non-fungibles
