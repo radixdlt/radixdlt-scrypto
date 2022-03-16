@@ -2,6 +2,7 @@ use sbor::*;
 use scrypto::engine::types::*;
 use scrypto::resource::resource_flags::*;
 use scrypto::resource::resource_permissions::*;
+use scrypto::rust::collections::BTreeSet;
 use scrypto::rust::collections::HashMap;
 use scrypto::rust::string::String;
 use scrypto::rust::vec::Vec;
@@ -11,7 +12,7 @@ use crate::model::Proof;
 /// Represents an error when accessing a bucket.
 #[derive(Debug, Clone, PartialEq)]
 pub enum ResourceDefError {
-    ResourceTypeNotMatching,
+    TypeAndAmountNotMatching,
     OperationNotAllowed,
     PermissionNotAllowed,
     InvalidDivisibility,
@@ -24,6 +25,7 @@ pub enum ResourceDefError {
         new_flags: u64,
         new_mutable_flags: u64,
     },
+    AmountError(AmountError),
 }
 
 /// The definition of a resource.
@@ -34,7 +36,7 @@ pub struct ResourceDef {
     flags: u64,
     mutable_flags: u64,
     authorities: HashMap<ResourceDefId, u64>,
-    total_supply: Decimal,
+    total_supply: Amount,
 }
 
 impl ResourceDef {
@@ -44,17 +46,7 @@ impl ResourceDef {
         flags: u64,
         mutable_flags: u64,
         authorities: HashMap<ResourceDefId, u64>,
-        total_supply: Decimal,
     ) -> Result<Self, ResourceDefError> {
-        let resource_def = Self {
-            resource_type,
-            metadata,
-            flags,
-            mutable_flags,
-            authorities,
-            total_supply,
-        };
-
         if !resource_flags_are_valid(flags) {
             return Err(ResourceDefError::InvalidResourceFlags(flags));
         }
@@ -63,13 +55,27 @@ impl ResourceDef {
             return Err(ResourceDefError::InvalidResourceFlags(mutable_flags));
         }
 
-        for (_, permission) in &resource_def.authorities {
+        for (_, permission) in &authorities {
             if !resource_permissions_are_valid(*permission) {
                 return Err(ResourceDefError::InvalidResourcePermission(*permission));
             }
         }
 
-        Ok(resource_def)
+        let total_supply = match resource_type {
+            ResourceType::Fungible { .. } => Amount::Fungible { amount: 0.into() },
+            ResourceType::NonFungible => Amount::NonFungible {
+                ids: BTreeSet::new(),
+            },
+        };
+
+        Ok(Self {
+            resource_type,
+            metadata,
+            flags,
+            mutable_flags,
+            authorities,
+            total_supply,
+        })
     }
 
     pub fn resource_type(&self) -> ResourceType {
@@ -93,7 +99,7 @@ impl ResourceDef {
     }
 
     pub fn total_supply(&self) -> Decimal {
-        self.total_supply
+        self.total_supply.as_quantity()
     }
 
     pub fn is_flag_on(&self, flag: u64) -> bool {
@@ -104,37 +110,27 @@ impl ResourceDef {
         &mut self,
         amount: &Amount,
         badge: Option<ResourceDefId>,
-        initial_supply: bool,
+        is_initial_supply: bool,
     ) -> Result<(), ResourceDefError> {
-        if !initial_supply {
+        if !is_initial_supply {
             self.check_mint_auth(badge)?;
         }
 
-        match (self.resource_type, amount) {
-            (ResourceType::Fungible { .. }, Amount::Fungible { .. })
-            | (ResourceType::NonFungible, Amount::NonFungible { .. }) => {
-                self.total_supply += amount.as_quantity();
-                Ok(())
-            }
-            _ => Err(ResourceDefError::ResourceTypeNotMatching),
-        }
+        self.total_supply
+            .add(amount)
+            .map_err(ResourceDefError::AmountError)
     }
 
     pub fn burn(
         &mut self,
-        amount: Amount,
+        amount: &Amount,
         badge: Option<ResourceDefId>,
     ) -> Result<(), ResourceDefError> {
         self.check_burn_auth(badge)?;
 
-        match (self.resource_type, &amount) {
-            (ResourceType::Fungible { .. }, Amount::Fungible { .. })
-            | (ResourceType::NonFungible, Amount::NonFungible { .. }) => {
-                self.total_supply -= amount.as_quantity();
-                Ok(())
-            }
-            _ => Err(ResourceDefError::ResourceTypeNotMatching),
-        }
+        self.total_supply
+            .subtract(amount)
+            .map_err(ResourceDefError::AmountError)
     }
 
     pub fn update_flags(

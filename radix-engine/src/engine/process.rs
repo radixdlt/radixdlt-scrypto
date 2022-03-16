@@ -1287,7 +1287,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         resource_def_id: ResourceDefId,
         mint_params: MintParams,
         badge: Option<ResourceDefId>,
-        initial_supply: bool,
+        is_initial_supply: bool,
     ) -> Result<ResourceContainerState, RuntimeError> {
         let resource_def = self
             .track
@@ -1297,7 +1297,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             MintParams::Fungible { amount } => {
                 // Notify resource manager
                 resource_def
-                    .mint(&Amount::Fungible { amount }, badge, initial_supply)
+                    .mint(&Amount::Fungible { amount }, badge, is_initial_supply)
                     .map_err(RuntimeError::ResourceDefError)?;
 
                 // Allocate fungible
@@ -1314,7 +1314,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                             ids: entries.keys().cloned().collect(),
                         },
                         badge,
-                        initial_supply,
+                        is_initial_supply,
                     )
                     .map_err(RuntimeError::ResourceDefError)?;
 
@@ -1351,7 +1351,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             input.flags,
             input.mutable_flags,
             input.authorities,
-            0.into(),
         )
         .map_err(RuntimeError::ResourceDefError)?;
 
@@ -1514,7 +1513,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .ok_or(RuntimeError::ResourceDefNotFound(bucket.resource_def_id()))?;
 
         resource_def
-            .burn(bucket.liquid_amount(), badge)
+            .burn(&bucket.liquid_amount(), badge)
             .map_err(RuntimeError::ResourceDefError)?;
         Ok(BurnResourceOutput {})
     }
@@ -1724,7 +1723,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let non_fungible_ids = vault
             .liquid_amount()
             .as_non_fungible_ids()
-            .ok_or(RuntimeError::NonFungibleOperationNotAllowed)?
+            .map_err(RuntimeError::AmountError)?
             .into_iter()
             .collect();
 
@@ -1869,7 +1868,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             non_fungible_ids: bucket
                 .liquid_amount()
                 .as_non_fungible_ids()
-                .ok_or(RuntimeError::NonFungibleOperationNotAllowed)?
+                .map_err(RuntimeError::AmountError)?
                 .into_iter()
                 .collect(),
         })
@@ -1961,7 +1960,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             non_fungible_ids: proof
                 .total_amount()
                 .as_non_fungible_ids()
-                .ok_or(RuntimeError::NonFungibleOperationNotAllowed)?
+                .map_err(RuntimeError::AmountError)?
                 .into_iter()
                 .collect(),
         })

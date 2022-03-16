@@ -70,8 +70,8 @@ impl Bucket {
         }
 
         match self.container.liquid_amount().as_non_fungible_ids() {
-            None => false,
-            Some(non_fungible_ids) => non_fungible_ids
+            Err(_) => false,
+            Ok(non_fungible_ids) => non_fungible_ids
                 .iter()
                 .any(|k| k.eq(&non_fungible_address.non_fungible_id())),
         }

@@ -9,12 +9,12 @@ pub use crate::crypto::EcdsaPublicKey;
 pub use crate::crypto::Hash;
 pub use crate::math::BigDecimal;
 pub use crate::math::Decimal;
-pub use crate::resource::Amount;
 pub use crate::resource::MintParams;
 pub use crate::resource::NonFungibleId;
 pub use crate::resource::ResourceDefId;
 pub use crate::resource::ResourceSpecifier;
 pub use crate::resource::ResourceType;
+pub use crate::resource::{Amount, AmountError};
 
 pub type LazyMapId = (Hash, u32);
 pub type BucketId = u32;

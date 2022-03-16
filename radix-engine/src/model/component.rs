@@ -37,8 +37,8 @@ impl Component {
             if !proofs.iter().any(|p| {
                 p.resource_def_id() == auth_address.resource_def_id()
                     && match p.total_amount().as_non_fungible_ids() {
-                        Some(ids) => ids.contains(&auth_address.non_fungible_id()),
-                        None => false,
+                        Ok(ids) => ids.contains(&auth_address.non_fungible_id()),
+                        Err(_) => false,
                     }
             }) {
                 return Err(NotAuthorized);

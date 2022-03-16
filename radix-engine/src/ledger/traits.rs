@@ -138,13 +138,20 @@ pub trait SubstateStore {
             metadata.insert("description".to_owned(), XRD_DESCRIPTION.to_owned());
             metadata.insert("url".to_owned(), XRD_URL.to_owned());
 
-            let xrd = ResourceDef::new(
+            let mut xrd = ResourceDef::new(
                 ResourceType::Fungible { divisibility: 18 },
                 metadata,
                 0,
                 0,
                 HashMap::new(),
-                XRD_MAX_SUPPLY.into(),
+            )
+            .unwrap();
+            xrd.mint(
+                &Amount::Fungible {
+                    amount: XRD_MAX_SUPPLY.into(),
+                },
+                None,
+                true,
             )
             .unwrap();
             self.put_encoded_substate(&RADIX_TOKEN, &xrd, self.get_nonce());
@@ -155,7 +162,6 @@ pub trait SubstateStore {
                 0,
                 0,
                 HashMap::new(),
-                0.into(),
             )
             .unwrap();
             self.put_encoded_substate(&ECDSA_TOKEN, &ecdsa_token, self.get_nonce());
