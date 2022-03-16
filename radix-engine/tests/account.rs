@@ -7,8 +7,8 @@ use radix_engine::model::*;
 use radix_engine::transaction::*;
 use scrypto::prelude::*;
 
-fn fungible_amount() -> ResourceDeterminer {
-    ResourceDeterminer::Some(
+fn fungible_amount() -> ResourceSpecifier {
+    ResourceSpecifier::Some(
         Amount::Fungible {
             amount: Decimal(100),
         },
@@ -44,7 +44,7 @@ fn can_withdraw_non_fungible_from_my_account() {
     let (key, account) = executor.new_public_key_with_account();
     let (_, other_account) = executor.new_public_key_with_account();
     let resource_def_id = TestUtil::create_non_fungible_resource(&mut executor, account);
-    let non_fungible_amount = ResourceDeterminer::Some(
+    let non_fungible_amount = ResourceSpecifier::Some(
         Amount::NonFungible {
             ids: BTreeSet::from([NonFungibleId::from(1)]),
         },
@@ -94,7 +94,7 @@ fn cannot_withdraw_restricted_transfer_from_my_account_with_no_auth() {
     let (_, other_account) = executor.new_public_key_with_account();
     let (_, token_resource_def_id) =
         TestUtil::create_restricted_transfer_token(&mut executor, account);
-    let fungible_amount = ResourceDeterminer::Some(
+    let fungible_amount = ResourceSpecifier::Some(
         Amount::Fungible {
             amount: Decimal::one(),
         },
@@ -126,13 +126,13 @@ fn can_withdraw_restricted_transfer_from_my_account_with_auth() {
     let (_, other_account) = executor.new_public_key_with_account();
     let (auth_resource_def_id, token_resource_def_id) =
         TestUtil::create_restricted_transfer_token(&mut executor, account);
-    let auth_amount = ResourceDeterminer::Some(
+    let auth_amount = ResourceSpecifier::Some(
         Amount::NonFungible {
             ids: BTreeSet::from([NonFungibleId::from(1)]),
         },
         auth_resource_def_id,
     );
-    let fungible_amount = ResourceDeterminer::Some(
+    let fungible_amount = ResourceSpecifier::Some(
         Amount::Fungible {
             amount: Decimal::one(),
         },

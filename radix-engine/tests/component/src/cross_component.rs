@@ -7,7 +7,10 @@ blueprint! {
     }
 
     impl CrossComponent {
-        pub fn create_component_with_auth(resource_def_id: ResourceDefId, non_fungible_id: NonFungibleId) -> ComponentId {
+        pub fn create_component_with_auth(
+            resource_def_id: ResourceDefId,
+            non_fungible_id: NonFungibleId,
+        ) -> ComponentId {
             let auth = NonFungibleAddress::new(resource_def_id, non_fungible_id);
             Self {
                 secret: "Secret".to_owned(),
@@ -33,11 +36,13 @@ blueprint! {
             match &mut self.auth_vault {
                 Some(vault) => {
                     let auth_bucket = vault.take_all();
-                    let value = authorize(&auth_bucket, || other_component.call("get_component_state", vec![]));
+                    let value = authorize(&auth_bucket, || {
+                        other_component.call("get_component_state", vec![])
+                    });
                     vault.put(auth_bucket);
                     value
-                },
-                None => other_component.call("get_component_state", vec![])
+                }
+                None => other_component.call("get_component_state", vec![]),
             }
         }
 

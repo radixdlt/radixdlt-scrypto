@@ -13,7 +13,7 @@ pub use crate::resource::Amount;
 pub use crate::resource::MintParams;
 pub use crate::resource::NonFungibleId;
 pub use crate::resource::ResourceDefId;
-pub use crate::resource::ResourceDeterminer;
+pub use crate::resource::ResourceSpecifier;
 pub use crate::resource::ResourceType;
 
 pub type LazyMapId = (Hash, u32);

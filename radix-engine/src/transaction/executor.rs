@@ -86,7 +86,7 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
         self.run(
             TransactionBuilder::new(self)
                 .call_method(SYSTEM_COMPONENT, "free_xrd", vec![], None)
-                .new_account_with_resource(key, &ResourceDeterminer::All(RADIX_TOKEN))
+                .new_account_with_resource(key, &ResourceSpecifier::All(RADIX_TOKEN))
                 .build(Vec::new())
                 .unwrap(),
         )
@@ -165,17 +165,17 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
                 ValidatedInstruction::TakeFromWorktop {
                     amount,
                     resource_def_id,
-                } => proc.take_from_worktop(ResourceDeterminer::Some(
+                } => proc.take_from_worktop(ResourceSpecifier::Some(
                     Amount::Fungible { amount },
                     resource_def_id,
                 )),
                 ValidatedInstruction::TakeAllFromWorktop { resource_def_id } => {
-                    proc.take_from_worktop(ResourceDeterminer::All(resource_def_id))
+                    proc.take_from_worktop(ResourceSpecifier::All(resource_def_id))
                 }
                 ValidatedInstruction::TakeNonFungiblesFromWorktop {
                     ids,
                     resource_def_id,
-                } => proc.take_from_worktop(ResourceDeterminer::Some(
+                } => proc.take_from_worktop(ResourceSpecifier::Some(
                     Amount::NonFungible { ids },
                     resource_def_id,
                 )),

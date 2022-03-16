@@ -104,12 +104,12 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     }
 
     /// Takes resources from worktop.
-    pub fn take_from_worktop<F>(&mut self, resource: &ResourceDeterminer, then: F) -> &mut Self
+    pub fn take_from_worktop<F>(&mut self, resource: &ResourceSpecifier, then: F) -> &mut Self
     where
         F: FnOnce(&mut Self, BucketId) -> &mut Self,
     {
         let (builder, bucket_id, _) = match resource.clone() {
-            ResourceDeterminer::Some(amount, resource_def_id) => match amount {
+            ResourceSpecifier::Some(amount, resource_def_id) => match amount {
                 Amount::Fungible { amount } => self.add_instruction(Instruction::TakeFromWorktop {
                     amount,
                     resource_def_id,
@@ -121,7 +121,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                     })
                 }
             },
-            ResourceDeterminer::All(resource_def_id) => {
+            ResourceSpecifier::All(resource_def_id) => {
                 self.add_instruction(Instruction::TakeAllFromWorktop { resource_def_id })
             }
         };
@@ -425,7 +425,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         minter_resource_def_id: ResourceDefId,
     ) -> &mut Self {
         self.take_from_worktop(
-            &ResourceDeterminer::Some(
+            &ResourceSpecifier::Some(
                 Amount::Fungible { amount: 1.into() },
                 minter_resource_def_id,
             ),
@@ -465,7 +465,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     pub fn new_account_with_resource(
         &mut self,
         key: EcdsaPublicKey,
-        resource: &ResourceDeterminer,
+        resource: &ResourceSpecifier,
     ) -> &mut Self {
         self.take_from_worktop(resource, |builder, bucket_id| {
             builder
@@ -485,11 +485,11 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     /// Withdraws resource from an account.
     pub fn withdraw_from_account(
         &mut self,
-        resource: &ResourceDeterminer,
+        resource: &ResourceSpecifier,
         account: ComponentId,
     ) -> &mut Self {
         match resource {
-            ResourceDeterminer::Some(amount, resource_def_id) => match amount {
+            ResourceSpecifier::Some(amount, resource_def_id) => match amount {
                 Amount::Fungible { amount } => {
                     self.add_instruction(Instruction::CallMethod {
                         component_id: account,
@@ -507,7 +507,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                     .0
                 }
             },
-            ResourceDeterminer::All(..) => {
+            ResourceSpecifier::All(..) => {
                 panic!("Withdrawing all from account is not supported!");
             }
         }
@@ -681,7 +681,7 @@ fn parse_resource_determiner(
     i: usize,
     ty: &Type,
     arg: &str,
-) -> Result<ResourceDeterminer, BuildArgsError> {
-    ResourceDeterminer::from_str(arg)
+) -> Result<ResourceSpecifier, BuildArgsError> {
+    ResourceSpecifier::from_str(arg)
         .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))
 }

@@ -85,7 +85,7 @@ fn can_make_cross_component_call_with_authorization() {
     assert!(receipt.result.is_ok());
     let my_component = receipt.new_component_ids[0];
 
-    let auth_amount = ResourceDeterminer::Some(
+    let auth_amount = ResourceSpecifier::Some(
         Amount::NonFungible {
             ids: BTreeSet::from([auth_id]),
         },

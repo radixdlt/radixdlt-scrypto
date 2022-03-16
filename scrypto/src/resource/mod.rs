@@ -28,7 +28,7 @@ pub use proof::{ParseProofError, Proof};
 pub use resource_amount::Amount;
 pub use resource_builder::{ResourceBuilder, DIVISIBILITY_MAXIMUM, DIVISIBILITY_NONE};
 pub use resource_def::{ParseResourceDefIdError, ResourceDef, ResourceDefId};
-pub use resource_determiner::ResourceDeterminer;
+pub use resource_determiner::ResourceSpecifier;
 pub use resource_flags::*;
 pub use resource_permissions::*;
 pub use resource_type::ResourceType;

@@ -210,7 +210,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     // (Transaction ONLY) Takes resource from worktop and returns a bucket.
     pub fn take_from_worktop(
         &mut self,
-        resource: ResourceDeterminer,
+        resource: ResourceSpecifier,
     ) -> Result<ValidatedData, RuntimeError> {
         re_debug!(self, "(Transaction) Taking from worktop: {:?}", resource);
         let new_bucket_id = self
@@ -218,13 +218,13 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .new_bucket_id()
             .map_err(RuntimeError::IdAllocatorError)?;
         let bucket = match resource {
-            ResourceDeterminer::Some(amount, resource_def_id) => match amount {
+            ResourceSpecifier::Some(amount, resource_def_id) => match amount {
                 Amount::Fungible { amount } => self.worktop.take(amount, resource_def_id),
                 Amount::NonFungible { ids } => {
                     self.worktop.take_non_fungibles(&ids, resource_def_id)
                 }
             },
-            ResourceDeterminer::All(resource_def_id) => self.worktop.take_all(resource_def_id),
+            ResourceSpecifier::All(resource_def_id) => self.worktop.take_all(resource_def_id),
         }
         .map_err(RuntimeError::WorktopError)?;
         self.buckets.insert(new_bucket_id, bucket);
