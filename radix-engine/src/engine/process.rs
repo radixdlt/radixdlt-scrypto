@@ -237,17 +237,19 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                             .track
                             .get_resource_def(&resource_def_id)
                             .ok_or(RuntimeError::ResourceDefNotFound(resource_def_id))?;
-                        Bucket::new(ResourceContainer::new(
-                            resource_def_id,
-                            match resource_def.resource_type() {
-                                ResourceType::Fungible { divisibility } => {
-                                    ResourceContainerState::fungible(0.into(), divisibility)
-                                }
-                                ResourceType::NonFungible => {
-                                    ResourceContainerState::non_fungible(BTreeSet::new())
-                                }
-                            },
-                        ))
+                        Bucket::new(match resource_def.resource_type() {
+                            ResourceType::Fungible { divisibility } => {
+                                ResourceContainer::new_fungible(
+                                    resource_def_id,
+                                    divisibility,
+                                    Decimal::zero(),
+                                )
+                            }
+                            ResourceType::NonFungible => ResourceContainer::new_non_fungible(
+                                resource_def_id,
+                                BTreeSet::new(),
+                            ),
+                        })
                     }
                 }
             }
@@ -1288,7 +1290,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         mint_params: MintParams,
         badge: Option<ResourceDefId>,
         is_initial_supply: bool,
-    ) -> Result<ResourceContainerState, RuntimeError> {
+    ) -> Result<ResourceContainer, RuntimeError> {
         let resource_def = self
             .track
             .get_resource_def_mut(&resource_def_id)
@@ -1301,9 +1303,10 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     .map_err(RuntimeError::ResourceDefError)?;
 
                 // Allocate fungible
-                Ok(ResourceContainerState::fungible(
-                    amount,
+                Ok(ResourceContainer::new_fungible(
+                    resource_def_id,
                     resource_def.resource_type().divisibility(),
+                    amount,
                 ))
             }
             MintParams::NonFungible { entries } => {
@@ -1336,7 +1339,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     ids.insert(id);
                 }
 
-                Ok(ResourceContainerState::non_fungible(ids))
+                Ok(ResourceContainer::new_non_fungible(resource_def_id, ids))
             }
         }
     }
@@ -1358,10 +1361,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         re_debug!(self, "New resource definition: {}", resource_def_id);
 
         let bucket_id = if let Some(mint_params) = input.mint_params {
-            let bucket = Bucket::new(ResourceContainer::new(
-                resource_def_id,
-                self.allocate_resource(resource_def_id, mint_params, None, true)?,
-            ));
+            let bucket =
+                Bucket::new(self.allocate_resource(resource_def_id, mint_params, None, true)?);
             let bucket_id = self.track.new_bucket_id();
             self.buckets.insert(bucket_id, bucket);
             Some(bucket_id)
@@ -1486,10 +1487,12 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let badge = self.check_badge(Some(input.auth))?;
 
         // wrap resource into a bucket
-        let bucket = Bucket::new(ResourceContainer::new(
+        let bucket = Bucket::new(self.allocate_resource(
             input.resource_def_id,
-            self.allocate_resource(input.resource_def_id, input.mint_params, badge, false)?,
-        ));
+            input.mint_params,
+            badge,
+            false,
+        )?);
         let bucket_id = self.track.new_bucket_id();
         self.buckets.insert(bucket_id, bucket);
 
@@ -1603,17 +1606,9 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .get_resource_def(&input.resource_def_id)
             .ok_or(RuntimeError::ResourceDefNotFound(input.resource_def_id))?;
 
-        let new_vault = Vault::new(ResourceContainer::new(
+        let new_vault = Vault::new(ResourceContainer::new_empty(
             input.resource_def_id,
-            match definition.resource_type() {
-                ResourceType::Fungible { .. } => ResourceContainerState::fungible(
-                    0.into(),
-                    definition.resource_type().divisibility(),
-                ),
-                ResourceType::NonFungible { .. } => {
-                    ResourceContainerState::non_fungible(BTreeSet::new())
-                }
-            },
+            definition.resource_type(),
         ));
         let vault_id = self.track.new_vault_id();
         wasm_process
@@ -1761,17 +1756,9 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .get_resource_def(&input.resource_def_id)
             .ok_or(RuntimeError::ResourceDefNotFound(input.resource_def_id))?;
 
-        let new_bucket = Bucket::new(ResourceContainer::new(
+        let new_bucket = Bucket::new(ResourceContainer::new_empty(
             input.resource_def_id,
-            match definition.resource_type() {
-                ResourceType::Fungible { .. } => ResourceContainerState::fungible(
-                    0.into(),
-                    definition.resource_type().divisibility(),
-                ),
-                ResourceType::NonFungible { .. } => {
-                    ResourceContainerState::non_fungible(BTreeSet::new())
-                }
-            },
+            definition.resource_type(),
         ));
         let bucket_id = self.track.new_bucket_id();
         self.buckets.insert(bucket_id, new_bucket);

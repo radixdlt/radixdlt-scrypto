@@ -167,9 +167,10 @@ pub trait SubstateStore {
             self.put_encoded_substate(&ECDSA_TOKEN, &ecdsa_token, self.get_nonce());
 
             // Instantiate system component
-            let system_vault = Vault::new(ResourceContainer::new(
+            let system_vault = Vault::new(ResourceContainer::new_fungible(
                 RADIX_TOKEN,
-                ResourceContainerState::fungible(XRD_MAX_SUPPLY.into(), 18),
+                18,
+                XRD_MAX_SUPPLY.into(),
             ));
             self.put_encoded_child_substate(
                 &SYSTEM_COMPONENT,
