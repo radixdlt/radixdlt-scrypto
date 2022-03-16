@@ -25,7 +25,7 @@ pub use non_fungible_address::NonFungibleAddress;
 pub use non_fungible_data::NonFungibleData;
 pub use non_fungible_id::{NonFungibleId, ParseNonFungibleIdError};
 pub use proof::{ParseProofError, Proof};
-pub use resource_amount::ResourceAmount;
+pub use resource_amount::Amount;
 pub use resource_builder::{ResourceBuilder, DIVISIBILITY_MAXIMUM, DIVISIBILITY_NONE};
 pub use resource_def::{ParseResourceDefIdError, ResourceDef, ResourceDefId};
 pub use resource_determiner::ResourceDeterminer;

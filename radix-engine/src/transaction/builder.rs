@@ -110,13 +110,11 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     {
         let (builder, bucket_id, _) = match resource.clone() {
             ResourceDeterminer::Some(amount, resource_def_id) => match amount {
-                ResourceAmount::Fungible { amount } => {
-                    self.add_instruction(Instruction::TakeFromWorktop {
-                        amount,
-                        resource_def_id,
-                    })
-                }
-                ResourceAmount::NonFungible { ids } => {
+                Amount::Fungible { amount } => self.add_instruction(Instruction::TakeFromWorktop {
+                    amount,
+                    resource_def_id,
+                }),
+                Amount::NonFungible { ids } => {
                     self.add_instruction(Instruction::TakeNonFungiblesFromWorktop {
                         ids,
                         resource_def_id,
@@ -415,7 +413,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     ) -> &mut Self {
         self.take_from_worktop(
             &ResourceDeterminer::Some(
-                ResourceAmount::Fungible { amount: 1.into() },
+                Amount::Fungible { amount: 1.into() },
                 minter_resource_def_id,
             ),
             |builder, bucket_id| {
@@ -479,7 +477,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     ) -> &mut Self {
         match resource {
             ResourceDeterminer::Some(amount, resource_def_id) => match amount {
-                ResourceAmount::Fungible { amount } => {
+                Amount::Fungible { amount } => {
                     self.add_instruction(Instruction::CallMethod {
                         component_id: account,
                         method: "withdraw".to_owned(),
@@ -487,7 +485,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                     })
                     .0
                 }
-                ResourceAmount::NonFungible { ids } => {
+                Amount::NonFungible { ids } => {
                     self.add_instruction(Instruction::CallMethod {
                         component_id: account,
                         method: "withdraw_non_fungibles".to_owned(),

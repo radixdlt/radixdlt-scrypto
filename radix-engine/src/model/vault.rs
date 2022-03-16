@@ -65,7 +65,7 @@ impl Vault {
         ))
     }
 
-    pub fn liquid_amount(&self) -> ResourceAmount {
+    pub fn liquid_amount(&self) -> Amount {
         self.container.liquid_amount()
     }
 

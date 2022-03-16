@@ -39,7 +39,7 @@ impl Mint {
         let transaction = TransactionBuilder::new(&executor)
             .withdraw_from_account(
                 &ResourceDeterminer::Some(
-                    ResourceAmount::Fungible { amount: 1.into() },
+                    Amount::Fungible { amount: 1.into() },
                     self.minter_resource_def_id,
                 ),
                 default_account,

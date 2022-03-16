@@ -10,7 +10,7 @@ use crate::rust::vec::Vec;
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub enum ResourceDeterminer {
     /// Some specific amount
-    Some(ResourceAmount, ResourceDefId),
+    Some(Amount, ResourceDefId),
 
     /// All of the specified resource within the context.
     All(ResourceDefId),
@@ -62,13 +62,13 @@ impl FromStr for ResourceDeterminer {
                     }
                 }
                 Ok(ResourceDeterminer::Some(
-                    ResourceAmount::NonFungible { ids },
+                    Amount::NonFungible { ids },
                     resource_def_id,
                 ))
             } else {
                 if tokens.len() == 2 {
                     Ok(ResourceDeterminer::Some(
-                        ResourceAmount::Fungible {
+                        Amount::Fungible {
                             amount: tokens[0]
                                 .parse()
                                 .map_err(|_| ParseResourceDeterminerError::InvalidAmount)?,
@@ -86,7 +86,7 @@ impl FromStr for ResourceDeterminer {
 }
 
 impl ResourceDeterminer {
-    pub fn amount(&self) -> Option<ResourceAmount> {
+    pub fn amount(&self) -> Option<Amount> {
         match self {
             ResourceDeterminer::Some(amount, ..) => Some(amount.clone()),
             ResourceDeterminer::All(..) => None,

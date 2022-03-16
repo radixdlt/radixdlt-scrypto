@@ -219,8 +219,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .map_err(RuntimeError::IdAllocatorError)?;
         let bucket = match resource {
             ResourceDeterminer::Some(amount, resource_def_id) => match amount {
-                ResourceAmount::Fungible { amount } => self.worktop.take(amount, resource_def_id),
-                ResourceAmount::NonFungible { ids } => {
+                Amount::Fungible { amount } => self.worktop.take(amount, resource_def_id),
+                Amount::NonFungible { ids } => {
                     self.worktop.take_non_fungibles(&ids, resource_def_id)
                 }
             },
@@ -1279,7 +1279,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             MintParams::Fungible { amount } => {
                 // Notify resource manager
                 resource_def
-                    .mint(&ResourceAmount::Fungible { amount }, badge, initial_supply)
+                    .mint(&Amount::Fungible { amount }, badge, initial_supply)
                     .map_err(RuntimeError::ResourceDefError)?;
 
                 // Allocate fungible
@@ -1292,7 +1292,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 // Notify resource manager
                 resource_def
                     .mint(
-                        &ResourceAmount::NonFungible {
+                        &Amount::NonFungible {
                             ids: entries.keys().cloned().collect(),
                         },
                         badge,

@@ -71,10 +71,10 @@ pub struct Proof {
     /// Restricted proof can't be moved down along the call stack (growing down).
     restricted: bool,
     /// The total amount for optimization purpose
-    total_amount: ResourceAmount,
+    total_amount: Amount,
     /// The sub-amounts (to be extended)
     #[allow(dead_code)]
-    amounts: HashMap<ResourceContainerId, (Rc<ResourceContainer>, ResourceAmount)>,
+    amounts: HashMap<ResourceContainerId, (Rc<ResourceContainer>, Amount)>,
 }
 
 impl ResourceContainerState {
@@ -115,13 +115,13 @@ impl ResourceContainer {
         match (&mut self.state, other.liquid_amount()) {
             (
                 ResourceContainerState::Fungible { liquid_amount, .. },
-                ResourceAmount::Fungible { amount },
+                Amount::Fungible { amount },
             ) => {
                 *liquid_amount = *liquid_amount + amount;
             }
             (
                 ResourceContainerState::NonFungible { liquid_ids, .. },
-                ResourceAmount::NonFungible { ids },
+                Amount::NonFungible { ids },
             ) => {
                 liquid_ids.extend(ids);
             }
@@ -190,12 +190,12 @@ impl ResourceContainer {
         }
     }
 
-    pub fn liquid_amount(&self) -> ResourceAmount {
+    pub fn liquid_amount(&self) -> Amount {
         match &self.state {
-            ResourceContainerState::Fungible { liquid_amount, .. } => ResourceAmount::Fungible {
+            ResourceContainerState::Fungible { liquid_amount, .. } => Amount::Fungible {
                 amount: liquid_amount.clone(),
             },
-            ResourceContainerState::NonFungible { liquid_ids, .. } => ResourceAmount::NonFungible {
+            ResourceContainerState::NonFungible { liquid_ids, .. } => Amount::NonFungible {
                 ids: liquid_ids.clone(),
             },
         }
@@ -260,7 +260,7 @@ impl Proof {
         self.resource_type
     }
 
-    pub fn total_amount(&self) -> ResourceAmount {
+    pub fn total_amount(&self) -> Amount {
         self.total_amount.clone()
     }
 

@@ -99,7 +99,7 @@ impl ResourceDef {
 
     pub fn mint(
         &mut self,
-        amount: &ResourceAmount,
+        amount: &Amount,
         badge: Option<ResourceDefId>,
         initial_supply: bool,
     ) -> Result<(), ResourceDefError> {
@@ -108,8 +108,8 @@ impl ResourceDef {
         }
 
         match (self.resource_type, amount) {
-            (ResourceType::Fungible { .. }, ResourceAmount::Fungible { .. })
-            | (ResourceType::NonFungible, ResourceAmount::NonFungible { .. }) => {
+            (ResourceType::Fungible { .. }, Amount::Fungible { .. })
+            | (ResourceType::NonFungible, Amount::NonFungible { .. }) => {
                 self.total_supply += amount.as_quantity();
                 Ok(())
             }
@@ -119,14 +119,14 @@ impl ResourceDef {
 
     pub fn burn(
         &mut self,
-        amount: ResourceAmount,
+        amount: Amount,
         badge: Option<ResourceDefId>,
     ) -> Result<(), ResourceDefError> {
         self.check_burn_auth(badge)?;
 
         match (self.resource_type, &amount) {
-            (ResourceType::Fungible { .. }, ResourceAmount::Fungible { .. })
-            | (ResourceType::NonFungible, ResourceAmount::NonFungible { .. }) => {
+            (ResourceType::Fungible { .. }, Amount::Fungible { .. })
+            | (ResourceType::NonFungible, Amount::NonFungible { .. }) => {
                 self.total_supply -= amount.as_quantity();
                 Ok(())
             }

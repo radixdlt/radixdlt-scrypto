@@ -165,7 +165,7 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
                     amount,
                     resource_def_id,
                 } => proc.take_from_worktop(ResourceDeterminer::Some(
-                    ResourceAmount::Fungible { amount },
+                    Amount::Fungible { amount },
                     resource_def_id,
                 )),
                 ValidatedInstruction::TakeAllFromWorktop { resource_def_id } => {
@@ -175,7 +175,7 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
                     ids,
                     resource_def_id,
                 } => proc.take_from_worktop(ResourceDeterminer::Some(
-                    ResourceAmount::NonFungible { ids },
+                    Amount::NonFungible { ids },
                     resource_def_id,
                 )),
                 ValidatedInstruction::ReturnToWorktop { bucket_id } => {

@@ -10,7 +10,7 @@ pub fn compile(name: &str) -> Vec<u8> {
 
 fn fungible_amount() -> ResourceDeterminer {
     ResourceDeterminer::Some(
-        ResourceAmount::Fungible {
+        Amount::Fungible {
             amount: Decimal(100),
         },
         RADIX_TOKEN,
@@ -92,7 +92,7 @@ fn can_withdraw_non_fungible_from_my_account() {
     let (_, other_account) = executor.new_public_key_with_account();
     let resource_def_id = create_non_fungible_resource(&mut executor, account);
     let non_fungible_amount = ResourceDeterminer::Some(
-        ResourceAmount::NonFungible {
+        Amount::NonFungible {
             ids: BTreeSet::from([NonFungibleId::from(1)]),
         },
         resource_def_id,
@@ -141,7 +141,7 @@ fn cannot_withdraw_restricted_transfer_from_my_account_with_no_auth() {
     let (_, other_account) = executor.new_public_key_with_account();
     let (_, token_resource_def_id) = create_restricted_transfer_token(&mut executor, account);
     let fungible_amount = ResourceDeterminer::Some(
-        ResourceAmount::Fungible {
+        Amount::Fungible {
             amount: Decimal::one(),
         },
         token_resource_def_id,
