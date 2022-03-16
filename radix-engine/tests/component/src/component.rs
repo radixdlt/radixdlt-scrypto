@@ -20,7 +20,7 @@ blueprint! {
                 test_vault: Vault::with_bucket(Self::create_test_token(1000)),
                 secret: "Secret".to_owned(),
             }
-            .instantiate_with_auth(HashMap::from([("get_component_info".to_string(), auth)]))
+            .instantiate_with_auth(HashMap::from([("get_component_info".to_string(), AuthRule::Just(auth))]))
         }
 
         pub fn create_component() -> ComponentId {

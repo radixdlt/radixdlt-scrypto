@@ -1,3 +1,4 @@
+mod auth_rule;
 mod bucket;
 mod mint_params;
 mod non_fungible;
@@ -16,6 +17,7 @@ pub mod resource_flags;
 /// Resource permissions.
 pub mod resource_permissions;
 
+pub use auth_rule::AuthRule;
 pub use bucket::{Bucket, ParseBucketError};
 pub use mint_params::MintParams;
 pub use non_fungible::NonFungible;
