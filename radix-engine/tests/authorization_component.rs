@@ -5,7 +5,7 @@ use radix_engine::errors::RuntimeError;
 use radix_engine::ledger::{InMemorySubstateStore, SubstateStore};
 use radix_engine::transaction::*;
 use scrypto::prelude::*;
-use radix_engine::model::Component;
+use radix_engine::model::{AuthRule, Component};
 
 #[test]
 fn cannot_make_cross_component_call_without_authorization() {
@@ -57,12 +57,12 @@ fn cannot_make_cross_component_call_without_authorization() {
     let runtime_error = receipt.result.expect_err("Should be error");
     assert_eq!(runtime_error, RuntimeError::NotAuthorized);
     let component_state: Component = substate_store.get_decoded_substate(&secured_component)
-        .map(|(c, id)| c)
+        .map(|(c, _)| c)
         .unwrap();
     let auth_address = NonFungibleAddress::new(auth, auth_id);
     match component_state.sys_auth().get("get_component_state") {
-        Some(auth_rule) => assert_eq!(*auth_rule.non_fungible_address(), auth_address),
-        None => panic!("Expected auth rule on component state")
+        Some(AuthRule::Just(non_fungible_address)) => assert_eq!(*non_fungible_address, auth_address),
+        _ => panic!("Expected auth rule on component state")
     };
 }
 
@@ -128,11 +128,11 @@ fn can_make_cross_component_call_with_authorization() {
     // Assert
     assert!(receipt.result.is_ok());
     let component_state: Component = substate_store.get_decoded_substate(&secured_component)
-        .map(|(c, id)| c)
+        .map(|(c, _)| c)
         .unwrap();
     let auth_address = NonFungibleAddress::new(auth, auth_id);
     match component_state.sys_auth().get("get_component_state") {
-        Some(auth_rule) => assert_eq!(*auth_rule.non_fungible_address(), auth_address),
-        None => panic!("Expected auth rule on component state")
+        Some(AuthRule::Just(non_fungible_address)) => assert_eq!(*non_fungible_address, auth_address),
+        _ => panic!("Expected auth rule on component state")
     };
 }

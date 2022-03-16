@@ -1013,7 +1013,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let data = Self::process_entry_data(&input.state)?;
         let new_objects = wasm_process.process_owned_objects.take(data)?;
         let sys_auth: HashMap<String, AuthRule> = input.sys_auth.into_iter()
-            .map(|(name, addr)| (name, AuthRule::new(addr)))
+            .map(|(name, addr)| (name, AuthRule::just(addr)))
             .collect();
         let component = Component::new(
             wasm_process.vm.invocation.package_id,
