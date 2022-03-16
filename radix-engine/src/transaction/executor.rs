@@ -1,4 +1,5 @@
 use scrypto::abi;
+use scrypto::buffer::scrypto_encode;
 use scrypto::crypto::sha256;
 use scrypto::engine::types::*;
 use scrypto::rust::string::ToString;
@@ -181,10 +182,17 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
                 ValidatedInstruction::ReturnToWorktop { bucket_id } => {
                     proc.return_to_worktop(bucket_id)
                 }
-                ValidatedInstruction::PopFromAuthWorktop {} => proc.pop_from_auth_worktop(),
-                ValidatedInstruction::PushOntoAuthWorktop { proof_id } => {
-                    proc.push_onto_auth_worktop(proof_id)
+                ValidatedInstruction::PopFromAuthWorktop {} => {
+                    proc.pop_from_auth_worktop().map(|proof_id| {
+                        ValidatedData::from_slice(&scrypto_encode(&scrypto::resource::Proof(
+                            proof_id,
+                        )))
+                        .unwrap()
+                    })
                 }
+                ValidatedInstruction::PushOntoAuthWorktop { proof_id } => proc
+                    .push_onto_auth_worktop(proof_id)
+                    .map(|_| ValidatedData::from_slice(&scrypto_encode(&())).unwrap()),
                 ValidatedInstruction::AssertWorktopContains {
                     amount,
                     resource_def_id,

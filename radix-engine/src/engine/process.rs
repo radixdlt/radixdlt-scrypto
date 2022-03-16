@@ -275,9 +275,9 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         }
     }
 
-    // (Transaction ONLY) Takes a proof from the auth worktop.
-    pub fn pop_from_auth_worktop(&mut self) -> Result<ValidatedData, RuntimeError> {
-        re_debug!(self, "(Transaction) Taking from auth worktop");
+    // Takes a proof from the auth worktop.
+    pub fn pop_from_auth_worktop(&mut self) -> Result<ProofId, RuntimeError> {
+        re_debug!(self, "Taking from auth worktop");
         if self.auth_worktop.is_empty() {
             return Err(RuntimeError::EmptyAuthWorkTop);
         }
@@ -288,22 +288,12 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .map_err(RuntimeError::IdAllocatorError)?;
         let proof = self.auth_worktop.remove(self.auth_worktop.len() - 1);
         self.proofs.insert(new_proof_id, proof);
-        Ok(
-            ValidatedData::from_slice(&scrypto_encode(&scrypto::resource::Bucket(new_proof_id)))
-                .unwrap(),
-        )
+        Ok(new_proof_id)
     }
 
-    // (Transaction ONLY) Puts a proof onto the auth worktop.
-    pub fn push_onto_auth_worktop(
-        &mut self,
-        proof_id: ProofId,
-    ) -> Result<ValidatedData, RuntimeError> {
-        re_debug!(
-            self,
-            "(Transaction) Returning to auth worktop: proof_id = {}",
-            proof_id
-        );
+    // Puts a proof onto the auth worktop.
+    pub fn push_onto_auth_worktop(&mut self, proof_id: ProofId) -> Result<(), RuntimeError> {
+        re_debug!(self, "Pushing auth: proof_id = {}", proof_id);
 
         let proof = self
             .proofs
@@ -311,7 +301,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .ok_or(RuntimeError::ProofNotFound(proof_id))?;
 
         self.auth_worktop.push(proof);
-        Ok(ValidatedData::from_slice(&scrypto_encode(&())).unwrap())
+
+        Ok(())
     }
 
     // (Transaction ONLY) Creates a proof.
@@ -1652,11 +1643,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         Ok(PutIntoVaultOutput {})
     }
 
-    fn check_take_from_vault_auth(
-        &mut self,
-        vault_id: &VaultId,
-        badge: Option<ResourceDefId>,
-    ) -> Result<(), RuntimeError> {
+    fn check_take_from_vault_auth(&mut self, vault_id: &VaultId) -> Result<(), RuntimeError> {
         let resource_def_id = self.get_local_vault(vault_id)?.resource_def_id();
 
         let resource_def = self
@@ -1664,7 +1651,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .get_resource_def(&resource_def_id)
             .ok_or(RuntimeError::ResourceDefNotFound(resource_def_id))?;
         resource_def
-            .check_take_from_vault_auth(badge)
+            .check_take_from_vault_auth(vec![self.caller_auth_worktop, &self.auth_worktop])
             .map_err(RuntimeError::ResourceDefError)
     }
 
@@ -1672,10 +1659,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         input: TakeFromVaultInput,
     ) -> Result<TakeFromVaultOutput, RuntimeError> {
-        // TODO: restrict access
-
-        let badge = self.check_badge(input.auth)?;
-        self.check_take_from_vault_auth(&input.vault_id, badge)?;
+        self.check_take_from_vault_auth(&input.vault_id)?;
 
         let new_bucket = self
             .get_local_vault(&input.vault_id)?
@@ -1692,10 +1676,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         input: TakeNonFungibleFromVaultInput,
     ) -> Result<TakeNonFungibleFromVaultOutput, RuntimeError> {
-        // TODO: restrict access
-
-        let badge = self.check_badge(input.auth)?;
-        self.check_take_from_vault_auth(&input.vault_id, badge)?;
+        self.check_take_from_vault_auth(&input.vault_id)?;
 
         let new_bucket = self
             .get_local_vault(&input.vault_id)?
@@ -1983,6 +1964,22 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         })
     }
 
+    fn handle_push_onto_auth_worktop(
+        &mut self,
+        input: PushOntoAuthWorktopInput,
+    ) -> Result<PushOntoAuthWorktopOutput, RuntimeError> {
+        self.push_onto_auth_worktop(input.proof_id)
+            .map(|_| PushOntoAuthWorktopOutput {})
+    }
+
+    fn handle_pop_from_auth_worktop(
+        &mut self,
+        _input: PopFromAuthWorktopInput,
+    ) -> Result<PopFromAuthWorktopOutput, RuntimeError> {
+        self.pop_from_auth_worktop()
+            .map(|proof_id| PopFromAuthWorktopOutput { proof_id })
+    }
+
     fn handle_emit_log(&mut self, input: EmitLogInput) -> Result<EmitLogOutput, RuntimeError> {
         self.track.add_log(input.level, input.message);
 
@@ -2138,6 +2135,10 @@ impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
                         self.handle(args, Self::handle_get_non_fungible_ids_in_proof)
                     }
                     CLONE_PROOF => self.handle(args, Self::handle_clone_proof),
+                    PUSH_ONTO_AUTH_WORKTOP => {
+                        self.handle(args, Self::handle_push_onto_auth_worktop)
+                    }
+                    POP_FROM_AUTH_WORKTOP => self.handle(args, Self::handle_pop_from_auth_worktop),
 
                     EMIT_LOG => self.handle(args, Self::handle_emit_log),
                     GET_CALL_DATA => self.handle(args, Self::handle_get_call_data),

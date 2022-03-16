@@ -109,6 +109,9 @@ pub const GET_PROOF_RESOURCE_DEF_ID: u32 = 0x65;
 /// Get the non-fungible ids in the proof
 pub const GET_NON_FUNGIBLE_IDS_IN_PROOF: u32 = 0x66;
 
+pub const PUSH_ONTO_AUTH_WORKTOP: u32 = 0x67;
+pub const POP_FROM_AUTH_WORKTOP: u32 = 0x68;
+
 /// Log a message
 pub const EMIT_LOG: u32 = 0xf0;
 /// Generate a UUID
@@ -417,7 +420,6 @@ pub struct PutIntoVaultOutput {}
 pub struct TakeFromVaultInput {
     pub vault_id: VaultId,
     pub amount: Decimal,
-    pub auth: Option<ProofId>,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
@@ -449,7 +451,6 @@ pub struct GetVaultResourceDefIdOutput {
 pub struct TakeNonFungibleFromVaultInput {
     pub vault_id: VaultId,
     pub non_fungible_id: NonFungibleId,
-    pub auth: Option<ProofId>,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
@@ -601,6 +602,22 @@ pub struct CloneProofInput {
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct CloneProofOutput {
+    pub proof_id: ProofId,
+}
+
+#[derive(Debug, TypeId, Encode, Decode)]
+pub struct PushOntoAuthWorktopInput {
+    pub proof_id: ProofId,
+}
+
+#[derive(Debug, TypeId, Encode, Decode)]
+pub struct PushOntoAuthWorktopOutput {}
+
+#[derive(Debug, TypeId, Encode, Decode)]
+pub struct PopFromAuthWorktopInput {}
+
+#[derive(Debug, TypeId, Encode, Decode)]
+pub struct PopFromAuthWorktopOutput {
     pub proof_id: ProofId,
 }
 
