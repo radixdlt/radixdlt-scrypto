@@ -1,6 +1,8 @@
 use sbor::any::*;
 use sbor::type_id::*;
+use sbor::Encode;
 
+use scrypto::buffer::scrypto_encode;
 use scrypto::engine::types::*;
 use scrypto::rust::borrow::Borrow;
 use scrypto::rust::collections::HashMap;
@@ -41,6 +43,10 @@ impl ValidatedData {
             vault_ids: validator.vaults.iter().map(|e| e.0).collect(),
             lazy_map_ids: validator.lazy_maps.iter().map(|e| e.id).collect(),
         })
+    }
+
+    pub fn from_value<T: Encode>(value: &T) -> Self {
+        ValidatedData::from_slice(&scrypto_encode(value)).unwrap()
     }
 }
 

@@ -10,6 +10,8 @@ pub enum AmountError {
     CantAddNonFungibleToFungible,
     CantSubtractNonFungibleFromFungible,
     CantSubtractFungibleFromNonFungible,
+    CantCompareNonFungibleWithFungible,
+    CantCompareFungibleWithNonFungible,
     Underflow,
 }
 
@@ -96,5 +98,28 @@ impl Amount {
             }
         };
         Ok(())
+    }
+
+    pub fn is_superset(&self, other: &Self) -> Result<bool, AmountError> {
+        match self {
+            Amount::Fungible { amount } => {
+                let other_amount = match other {
+                    Amount::Fungible { amount } => amount.clone(),
+                    Amount::NonFungible { .. } => {
+                        return Err(AmountError::CantCompareFungibleWithNonFungible);
+                    }
+                };
+                Ok(amount > &other_amount)
+            }
+            Amount::NonFungible { ids } => {
+                let other_ids = match other {
+                    Amount::Fungible { .. } => {
+                        return Err(AmountError::CantCompareNonFungibleWithFungible);
+                    }
+                    Amount::NonFungible { ids } => ids,
+                };
+                Ok(ids.is_superset(&other_ids))
+            }
+        }
     }
 }

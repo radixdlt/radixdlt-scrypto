@@ -1,5 +1,4 @@
 use scrypto::abi;
-use scrypto::buffer::scrypto_encode;
 use scrypto::crypto::sha256;
 use scrypto::engine::types::*;
 use scrypto::rust::string::ToString;
@@ -182,26 +181,29 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
                 ValidatedInstruction::ReturnToWorktop { bucket_id } => {
                     proc.return_to_worktop(bucket_id)
                 }
-                ValidatedInstruction::PopFromAuthWorktop {} => {
-                    proc.pop_from_auth_worktop().map(|proof_id| {
-                        ValidatedData::from_slice(&scrypto_encode(&scrypto::resource::Proof(
-                            proof_id,
-                        )))
-                        .unwrap()
-                    })
-                }
+                ValidatedInstruction::PopFromAuthWorktop {} => proc
+                    .pop_from_auth_worktop()
+                    .map(|proof_id| ValidatedData::from_value(&scrypto::resource::Proof(proof_id))),
                 ValidatedInstruction::PushOntoAuthWorktop { proof_id } => proc
                     .push_onto_auth_worktop(proof_id)
-                    .map(|_| ValidatedData::from_slice(&scrypto_encode(&())).unwrap()),
+                    .map(|_| ValidatedData::from_value(&())),
                 ValidatedInstruction::AssertWorktopContains {
                     amount,
                     resource_def_id,
                 } => proc.assert_worktop_contains(amount, resource_def_id),
                 ValidatedInstruction::CreateBucketProof { bucket_id } => {
-                    proc.create_bucket_proof(bucket_id)
+                    proc.create_bucket_proof(bucket_id).map(|proof_id| {
+                        ValidatedData::from_value(&scrypto::resource::Bucket(proof_id))
+                    })
                 }
-                ValidatedInstruction::CloneProof { proof_id } => proc.clone_proof(proof_id),
-                ValidatedInstruction::DropProof { proof_id } => proc.drop_proof(proof_id),
+                ValidatedInstruction::CloneProof { proof_id } => {
+                    proc.clone_proof(proof_id).map(|proof_id| {
+                        ValidatedData::from_value(&scrypto::resource::Bucket(proof_id))
+                    })
+                }
+                ValidatedInstruction::DropProof { proof_id } => proc
+                    .drop_proof(proof_id)
+                    .map(|_| ValidatedData::from_value(&())),
                 ValidatedInstruction::CallFunction {
                     package_id,
                     blueprint_name,

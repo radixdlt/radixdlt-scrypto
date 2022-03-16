@@ -12,7 +12,6 @@ use crate::model::Proof;
 /// Represents an error when accessing a bucket.
 #[derive(Debug, Clone, PartialEq)]
 pub enum ResourceDefError {
-    TypeAndAmountNotMatching,
     OperationNotAllowed,
     PermissionNotAllowed,
     InvalidDivisibility,

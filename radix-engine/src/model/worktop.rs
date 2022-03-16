@@ -1,7 +1,6 @@
 use scrypto::engine::types::*;
 use scrypto::rust::collections::BTreeSet;
 use scrypto::rust::collections::HashMap;
-use scrypto::rust::rc::Rc;
 use scrypto::rust::vec::Vec;
 
 use crate::model::Bucket;
@@ -18,7 +17,7 @@ pub enum WorktopError {
 /// Worktop collects resources from function or method returns.
 #[derive(Debug)]
 pub struct Worktop {
-    containers: HashMap<ResourceDefId, Rc<ResourceContainer>>,
+    containers: HashMap<ResourceDefId, ResourceContainer>,
 }
 
 impl Worktop {
@@ -30,17 +29,13 @@ impl Worktop {
 
     pub fn put(&mut self, other: Bucket) -> Result<(), WorktopError> {
         let resource_def_id = other.resource_def_id();
-        let other_container = other
-            .take_container()
-            .map_err(|_| WorktopError::OtherBucketLocked)?;
-
-        if let Some(container) = self.borrow_container(resource_def_id)? {
+        if let Some(container) = self.borrow_container(resource_def_id) {
             container
-                .put(other_container)
+                .put(other.into_container())
                 .map_err(WorktopError::ResourceContainerError)
         } else {
             self.containers
-                .insert(resource_def_id, Rc::new(other_container));
+                .insert(resource_def_id, other.into_container());
             Ok(())
         }
     }
@@ -50,7 +45,7 @@ impl Worktop {
         amount: Decimal,
         resource_def_id: ResourceDefId,
     ) -> Result<Bucket, WorktopError> {
-        if let Some(container) = self.borrow_container(resource_def_id)? {
+        if let Some(container) = self.borrow_container(resource_def_id) {
             container.take(amount).map(Bucket::new)
         } else {
             Err(ResourceContainerError::InsufficientBalance)
@@ -71,7 +66,7 @@ impl Worktop {
         ids: &BTreeSet<NonFungibleId>,
         resource_def_id: ResourceDefId,
     ) -> Result<Bucket, WorktopError> {
-        if let Some(container) = self.borrow_container(resource_def_id)? {
+        if let Some(container) = self.borrow_container(resource_def_id) {
             container.take_non_fungibles(ids).map(Bucket::new)
         } else {
             Err(ResourceContainerError::InsufficientBalance)
@@ -79,22 +74,12 @@ impl Worktop {
         .map_err(WorktopError::ResourceContainerError)
     }
 
-    pub fn take_all(
-        &mut self,
-        resource_def_id: ResourceDefId,
-    ) -> Result<Option<Bucket>, WorktopError> {
-        Ok(self.take_container(resource_def_id)?.map(Bucket::new))
+    pub fn take_all(&mut self, resource_def_id: ResourceDefId) -> Option<Bucket> {
+        self.take_container(resource_def_id).map(Bucket::new)
     }
 
     pub fn resource_def_ids(&self) -> Vec<ResourceDefId> {
-        let mut result = Vec::new();
-        for (id, container) in &self.containers {
-            // This is to make implementation agnostic.
-            if container.liquid_amount().as_quantity() > 0.into() {
-                result.push(*id);
-            }
-        }
-        result
+        self.containers.keys().cloned().collect()
     }
 
     pub fn contains(&self, amount: Decimal, resource_def_id: ResourceDefId) -> bool {
@@ -105,39 +90,14 @@ impl Worktop {
         }
     }
 
-    /// Creates another `Rc<ResourceContainer>` to the container of given resource
-    pub fn reference_container(
-        &self,
-        resource_def_id: ResourceDefId,
-    ) -> Option<Rc<ResourceContainer>> {
-        self.containers.get(&resource_def_id).map(Clone::clone)
-    }
-
-    /// Creates a mutable reference to the container of given resource
     pub fn borrow_container(
         &mut self,
         resource_def_id: ResourceDefId,
-    ) -> Result<Option<&mut ResourceContainer>, WorktopError> {
-        if let Some(container) = self.containers.get_mut(&resource_def_id) {
-            Ok(Some(
-                Rc::get_mut(container).ok_or(WorktopError::ResourceContainerLocked)?,
-            ))
-        } else {
-            Ok(None)
-        }
+    ) -> Option<&mut ResourceContainer> {
+        self.containers.get_mut(&resource_def_id)
     }
 
-    /// Takes the ownership of the container of given resource
-    pub fn take_container(
-        &mut self,
-        resource_def_id: ResourceDefId,
-    ) -> Result<Option<ResourceContainer>, WorktopError> {
-        if let Some(container) = self.containers.remove(&resource_def_id) {
-            Ok(Some(
-                Rc::try_unwrap(container).map_err(|_| WorktopError::ResourceContainerLocked)?,
-            ))
-        } else {
-            Ok(None)
-        }
+    pub fn take_container(&mut self, resource_def_id: ResourceDefId) -> Option<ResourceContainer> {
+        self.containers.remove(&resource_def_id)
     }
 }

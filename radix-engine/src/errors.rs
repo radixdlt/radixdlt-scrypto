@@ -147,6 +147,9 @@ pub enum RuntimeError {
     /// Worktop access error.
     WorktopError(WorktopError),
 
+    /// Error when generating or accessing proof.
+    ProofError(ProofError),
+
     /// Bucket is not allowed.
     BucketNotAllowed,
 
@@ -179,6 +182,9 @@ pub enum RuntimeError {
 
     /// Error when dealing with amounts.
     AmountError(AmountError),
+
+    /// Can't move a locked bucket.
+    CantMoveLockedBucket,
 }
 
 impl fmt::Display for RuntimeError {

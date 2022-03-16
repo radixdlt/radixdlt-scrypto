@@ -1,7 +1,6 @@
 use sbor::*;
 use scrypto::engine::types::*;
 use scrypto::rust::collections::BTreeSet;
-use scrypto::rust::rc::Rc;
 
 use crate::model::Bucket;
 use crate::model::{ResourceContainer, ResourceContainerError};
@@ -17,32 +16,23 @@ pub enum VaultError {
 /// A persistent resource container.
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct Vault {
-    container: Rc<ResourceContainer>,
+    container: ResourceContainer,
 }
 
 impl Vault {
     pub fn new(container: ResourceContainer) -> Self {
-        Self {
-            container: Rc::new(container),
-        }
+        Self { container }
     }
 
     pub fn put(&mut self, other: Bucket) -> Result<(), VaultError> {
-        let this_container = self.borrow_container()?;
-        let other_container = other
-            .take_container()
-            .map_err(|_| VaultError::OtherBucketLocked)?;
-
-        this_container
-            .put(other_container)
+        self.container
+            .put(other.into_container())
             .map_err(VaultError::ResourceContainerError)
     }
 
     pub fn take(&mut self, amount: Decimal) -> Result<Bucket, VaultError> {
-        let this_container = self.borrow_container()?;
-
         Ok(Bucket::new(
-            this_container
+            self.container
                 .take(amount)
                 .map_err(VaultError::ResourceContainerError)?,
         ))
@@ -56,10 +46,8 @@ impl Vault {
         &mut self,
         ids: &BTreeSet<NonFungibleId>,
     ) -> Result<Bucket, VaultError> {
-        let this_container = self.borrow_container()?;
-
         Ok(Bucket::new(
-            this_container
+            self.container
                 .take_non_fungibles(ids)
                 .map_err(VaultError::ResourceContainerError)?,
         ))
@@ -77,18 +65,7 @@ impl Vault {
         self.container.resource_type()
     }
 
-    /// Creates another `Rc<ResourceContainer>` to the container
-    pub fn reference_container(&self) -> Rc<ResourceContainer> {
-        self.container.clone()
-    }
-
-    /// Creates a mutable reference to the container
-    pub fn borrow_container(&mut self) -> Result<&mut ResourceContainer, VaultError> {
-        Ok(Rc::get_mut(&mut self.container).ok_or(VaultError::VaultLocked)?)
-    }
-
-    /// Takes the ownership of the container
-    pub fn take_container(self) -> Result<ResourceContainer, VaultError> {
-        Ok(Rc::try_unwrap(self.container).map_err(|_| VaultError::VaultLocked)?)
+    pub fn borrow_container(&mut self) -> &mut ResourceContainer {
+        &mut self.container
     }
 }

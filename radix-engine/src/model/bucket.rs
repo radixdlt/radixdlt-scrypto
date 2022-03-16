@@ -1,7 +1,6 @@
 use scrypto::engine::types::*;
 use scrypto::prelude::NonFungibleAddress;
 use scrypto::rust::collections::BTreeSet;
-use scrypto::rust::rc::Rc;
 
 use crate::model::{ResourceContainer, ResourceContainerError};
 
@@ -16,32 +15,23 @@ pub enum BucketError {
 /// A transient resource container.
 #[derive(Debug)]
 pub struct Bucket {
-    container: Rc<ResourceContainer>,
+    container: ResourceContainer,
 }
 
 impl Bucket {
     pub fn new(container: ResourceContainer) -> Self {
-        Self {
-            container: Rc::new(container),
-        }
+        Self { container }
     }
 
     pub fn put(&mut self, other: Bucket) -> Result<(), BucketError> {
-        let this_container = self.borrow_container()?;
-        let other_container = other
-            .take_container()
-            .map_err(|_| BucketError::OtherBucketLocked)?;
-
-        this_container
-            .put(other_container)
+        self.container
+            .put(other.into_container())
             .map_err(BucketError::ResourceContainerError)
     }
 
     pub fn take(&mut self, amount: Decimal) -> Result<Bucket, BucketError> {
-        let this_container = self.borrow_container()?;
-
         Ok(Bucket::new(
-            this_container
+            self.container
                 .take(amount)
                 .map_err(BucketError::ResourceContainerError)?,
         ))
@@ -55,10 +45,8 @@ impl Bucket {
         &mut self,
         ids: &BTreeSet<NonFungibleId>,
     ) -> Result<Bucket, BucketError> {
-        let this_container = self.borrow_container()?;
-
         Ok(Bucket::new(
-            this_container
+            self.container
                 .take_non_fungibles(ids)
                 .map_err(BucketError::ResourceContainerError)?,
         ))
@@ -89,18 +77,15 @@ impl Bucket {
         self.container.resource_type()
     }
 
-    /// Creates another `Rc<ResourceContainer>` to the container
-    pub fn reference_container(&self) -> Rc<ResourceContainer> {
-        self.container.clone()
+    pub fn is_locked(&self) -> bool {
+        self.container.is_locked()
     }
 
-    /// Creates a mutable reference to the container
-    pub fn borrow_container(&mut self) -> Result<&mut ResourceContainer, BucketError> {
-        Ok(Rc::get_mut(&mut self.container).ok_or(BucketError::BucketLocked)?)
+    pub fn borrow_container(&mut self) -> &mut ResourceContainer {
+        &mut self.container
     }
 
-    /// Takes the ownership of the container
-    pub fn take_container(self) -> Result<ResourceContainer, BucketError> {
-        Ok(Rc::try_unwrap(self.container).map_err(|_| BucketError::BucketLocked)?)
+    pub fn into_container(self) -> ResourceContainer {
+        self.container
     }
 }
