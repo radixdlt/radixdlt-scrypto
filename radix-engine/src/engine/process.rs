@@ -504,7 +504,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     // Auth check
                     let method_auth = component.sys_auth().get(&invocation.function);
                     match method_auth {
-                        Some(auth_rule) => auth_rule.check(self.caller_auth_worktop),
+                        Some(auth_rule) => auth_rule.check(vec![self.caller_auth_worktop]),
                         None => Ok(()),
                     }?;
 
@@ -1015,7 +1015,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let sys_auth: HashMap<String, AuthRule> = input.sys_auth.into_iter()
             .map(|(name, auth_rule)| {
                 match auth_rule {
-                    ::scrypto::resource::AuthRule::Just(addr) => (name, AuthRule::just(addr))
+                    ::scrypto::resource::AuthRule::Just(addr) => (name, AuthRule::just_non_fungible(addr))
                 }
             })
             .collect();
