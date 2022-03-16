@@ -223,10 +223,35 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 Amount::NonFungible { ids } => {
                     self.worktop.take_non_fungibles(&ids, resource_def_id)
                 }
-            },
-            ResourceSpecifier::All(resource_def_id) => self.worktop.take_all(resource_def_id),
-        }
-        .map_err(RuntimeError::WorktopError)?;
+            }
+            .map_err(RuntimeError::WorktopError)?,
+            ResourceSpecifier::All(resource_def_id) => {
+                match self
+                    .worktop
+                    .take_all(resource_def_id)
+                    .map_err(RuntimeError::WorktopError)?
+                {
+                    Some(bucket) => bucket,
+                    None => {
+                        let resource_def = self
+                            .track
+                            .get_resource_def(&resource_def_id)
+                            .ok_or(RuntimeError::ResourceDefNotFound(resource_def_id))?;
+                        Bucket::new(ResourceContainer::new(
+                            resource_def_id,
+                            match resource_def.resource_type() {
+                                ResourceType::Fungible { divisibility } => {
+                                    ResourceContainerState::fungible(0.into(), divisibility)
+                                }
+                                ResourceType::NonFungible => {
+                                    ResourceContainerState::non_fungible(BTreeSet::new())
+                                }
+                            },
+                        ))
+                    }
+                }
+            }
+        };
         self.buckets.insert(new_bucket_id, bucket);
         Ok(
             ValidatedData::from_slice(&scrypto_encode(&scrypto::resource::Bucket(new_bucket_id)))
@@ -389,12 +414,14 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
         // 2. Move collected resource to temp buckets
         for id in self.worktop.resource_def_ids() {
-            let bucket_id = self.track.new_bucket_id(); // this is unbounded
-            let bucket = self
+            if let Some(bucket) = self
                 .worktop
                 .take_all(id)
-                .map_err(RuntimeError::WorktopError)?;
-            self.buckets.insert(bucket_id, bucket);
+                .map_err(RuntimeError::WorktopError)?
+            {
+                let bucket_id = self.track.new_bucket_id();
+                self.buckets.insert(bucket_id, bucket);
+            }
         }
 
         // 3. Call the method with all buckets

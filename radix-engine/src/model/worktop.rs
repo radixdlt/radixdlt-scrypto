@@ -79,14 +79,11 @@ impl Worktop {
         .map_err(WorktopError::ResourceContainerError)
     }
 
-    pub fn take_all(&mut self, resource_def_id: ResourceDefId) -> Result<Bucket, WorktopError> {
-        if let Some(container) = self.take_container(resource_def_id)? {
-            Ok(Bucket::new(container))
-        } else {
-            // TODO: a better approach would be to return an empty bucket
-            Err(ResourceContainerError::InsufficientBalance)
-        }
-        .map_err(WorktopError::ResourceContainerError)
+    pub fn take_all(
+        &mut self,
+        resource_def_id: ResourceDefId,
+    ) -> Result<Option<Bucket>, WorktopError> {
+        Ok(self.take_container(resource_def_id)?.map(Bucket::new))
     }
 
     pub fn resource_def_ids(&self) -> Vec<ResourceDefId> {

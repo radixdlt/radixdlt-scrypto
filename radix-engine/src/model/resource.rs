@@ -54,7 +54,6 @@ pub enum ResourceContainerId {
     Bucket(BucketId),
     /// For vault
     Vault(VaultId),
-
     /// For the specific resource on the n-th worktop
     Worktop {
         depth: u32,
@@ -159,13 +158,6 @@ impl ResourceContainer {
                 ))
             }
         }
-    }
-
-    pub fn take_non_fungible(
-        &mut self,
-        id: &NonFungibleId,
-    ) -> Result<Self, ResourceContainerError> {
-        self.take_non_fungibles(&BTreeSet::from([id.clone()]))
     }
 
     pub fn take_non_fungibles(
