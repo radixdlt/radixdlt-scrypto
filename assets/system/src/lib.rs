@@ -31,12 +31,17 @@ blueprint! {
             )
         }
 
-        /// Mints fungible resource.
-        pub fn mint(amount: Decimal, resource_def_id: ResourceDefId, auth: Proof) -> Bucket {
-            resource_def!(resource_def_id).mint(amount, auth)
+        /// Mints fungible resource. TODO: Remove
+        pub fn mint(amount: Decimal, resource_def_id: ResourceDefId) -> Bucket {
+            resource_def!(resource_def_id).mint(amount)
         }
 
-        /// Gives away XRD tokens for testing.
+        /// Burns bucket. TODO: Remove
+        pub fn burn(bucket: Bucket) {
+            bucket.burn()
+        }
+
+        /// Gives away XRD tokens for testing. TODO: Remove
         pub fn free_xrd(&mut self) -> Bucket {
             self.xrd.take(1_000_000)
         }

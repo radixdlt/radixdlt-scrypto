@@ -232,7 +232,7 @@ impl ResourceContainer {
         }
     }
 
-    pub fn unlock(&mut self, amount: Amount) -> Result<(), ResourceContainerError> {
+    pub fn unlock(&mut self, _amount: Amount) -> Result<(), ResourceContainerError> {
         todo!()
     }
 

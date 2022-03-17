@@ -23,13 +23,12 @@ pub struct ResourceDef(pub(crate) ResourceDefId);
 
 impl ResourceDef {
     /// Mints fungible resources
-    pub fn mint<T: Into<Decimal>>(&self, amount: T, auth: Proof) -> Bucket {
+    pub fn mint<T: Into<Decimal>>(&self, amount: T) -> Bucket {
         let input = MintResourceInput {
             resource_def_id: self.0,
             mint_params: MintParams::Fungible {
                 amount: amount.into(),
             },
-            auth: auth.0,
         };
         let output: MintResourceOutput = call_engine(MINT_RESOURCE, input);
 
@@ -37,19 +36,13 @@ impl ResourceDef {
     }
 
     /// Mints non-fungible resources
-    pub fn mint_non_fungible<T: NonFungibleData>(
-        &self,
-        id: &NonFungibleId,
-        data: T,
-        auth: Proof,
-    ) -> Bucket {
+    pub fn mint_non_fungible<T: NonFungibleData>(&self, id: &NonFungibleId, data: T) -> Bucket {
         let mut entries = HashMap::new();
         entries.insert(id.clone(), (data.immutable_data(), data.mutable_data()));
 
         let input = MintResourceInput {
             resource_def_id: self.0,
             mint_params: MintParams::NonFungible { entries },
-            auth: auth.0,
         };
         let output: MintResourceOutput = call_engine(MINT_RESOURCE, input);
 
@@ -60,16 +53,6 @@ impl ResourceDef {
     pub fn burn(&self, bucket: Bucket) {
         let input = BurnResourceInput {
             bucket_id: bucket.0,
-            auth: None,
-        };
-        let _output: BurnResourceOutput = call_engine(BURN_RESOURCE, input);
-    }
-
-    /// Burns a bucket of resources.
-    pub fn burn_with_auth(&self, bucket: Bucket, auth: Proof) {
-        let input = BurnResourceInput {
-            bucket_id: bucket.0,
-            auth: Some(auth.0),
         };
         let _output: BurnResourceOutput = call_engine(BURN_RESOURCE, input);
     }
@@ -141,16 +124,10 @@ impl ResourceDef {
     ///
     /// # Panics
     /// Panics if this is not a non-fungible resource or the specified non-fungible is not found.
-    pub fn update_non_fungible_data<T: NonFungibleData>(
-        &self,
-        id: &NonFungibleId,
-        new_data: T,
-        auth: Proof,
-    ) {
+    pub fn update_non_fungible_data<T: NonFungibleData>(&self, id: &NonFungibleId, new_data: T) {
         let input = UpdateNonFungibleMutableDataInput {
             non_fungible_address: NonFungibleAddress::new(self.0, id.clone()),
             new_mutable_data: new_data.mutable_data(),
-            auth: auth.0,
         };
         let _: UpdateNonFungibleMutableDataOutput =
             call_engine(UPDATE_NON_FUNGIBLE_MUTABLE_DATA, input);
@@ -168,41 +145,37 @@ impl ResourceDef {
     }
 
     /// Turns on feature flags.
-    pub fn enable_flags(&self, flags: u64, auth: Proof) {
+    pub fn enable_flags(&self, flags: u64) {
         let input = UpdateResourceFlagsInput {
             resource_def_id: self.0,
             new_flags: self.flags() | flags,
-            auth: auth.0,
         };
         let _output: UpdateResourceFlagsOutput = call_engine(UPDATE_RESOURCE_FLAGS, input);
     }
 
     /// Turns off feature flags.
-    pub fn disable_flags(&self, flags: u64, auth: Proof) {
+    pub fn disable_flags(&self, flags: u64) {
         let input = UpdateResourceFlagsInput {
             resource_def_id: self.0,
             new_flags: self.flags() & !flags,
-            auth: auth.0,
         };
         let _output: UpdateResourceFlagsOutput = call_engine(UPDATE_RESOURCE_FLAGS, input);
     }
 
     /// Locks feature flag settings.
-    pub fn lock_flags(&self, flags: u64, auth: Proof) {
+    pub fn lock_flags(&self, flags: u64) {
         let input = UpdateResourceMutableFlagsInput {
             resource_def_id: self.0,
             new_mutable_flags: self.flags() & !flags,
-            auth: auth.0,
         };
         let _output: UpdateResourceMutableFlagsOutput =
             call_engine(UPDATE_RESOURCE_MUTABLE_FLAGS, input);
     }
 
-    pub fn update_metadata(&self, new_metadata: HashMap<String, String>, auth: Proof) {
+    pub fn update_metadata(&self, new_metadata: HashMap<String, String>) {
         let input = UpdateResourceMetadataInput {
             resource_def_id: self.0,
             new_metadata,
-            auth: auth.0,
         };
         let _output: UpdateResourceMetadataOutput = call_engine(UPDATE_RESOURCE_METADATA, input);
     }

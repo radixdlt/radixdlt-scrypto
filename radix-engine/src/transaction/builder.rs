@@ -431,21 +431,31 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
             ),
             |builder, bucket_id| {
                 builder.create_bucket_proof(bucket_id, |builder, proof_id| {
-                    builder
-                        .add_instruction(Instruction::CallFunction {
-                            package_id: SYSTEM_PACKAGE,
-                            blueprint_name: "System".to_owned(),
-                            function: "mint".to_owned(),
-                            args: vec![
-                                scrypto_encode(&amount),
-                                scrypto_encode(&resource_def_id),
-                                scrypto_encode(&scrypto::resource::Proof(proof_id)),
-                            ],
-                        })
-                        .0
+                    builder.push_auth(proof_id);
+                    builder.add_instruction(Instruction::CallFunction {
+                        package_id: SYSTEM_PACKAGE,
+                        blueprint_name: "System".to_owned(),
+                        function: "mint".to_owned(),
+                        args: vec![scrypto_encode(&amount), scrypto_encode(&resource_def_id)],
+                    });
+                    builder.pop_auth(|builder, proof_id| builder.drop_proof(proof_id))
                 })
             },
         )
+    }
+
+    /// Burns a resource.
+    pub fn burn(&mut self, resource: &ResourceSpecifier) -> &mut Self {
+        self.take_from_worktop(resource, |builder, bucket_id| {
+            builder
+                .add_instruction(Instruction::CallFunction {
+                    package_id: SYSTEM_PACKAGE,
+                    blueprint_name: "System".to_owned(),
+                    function: "burn".to_owned(),
+                    args: vec![scrypto_encode(&scrypto::resource::Bucket(bucket_id))],
+                })
+                .0
+        })
     }
 
     /// Creates an account.

@@ -9,6 +9,16 @@ use scrypto::rust::vec::Vec;
 
 use crate::model::Proof;
 
+pub enum ResourceControllerMethod {
+    Mint,
+    Burn,
+    TakeFromVault,
+    UpdateFlags,
+    UpdateMutableFlags,
+    UpdateMetadata,
+    UpdateNonFungibleMutableData,
+}
+
 /// Represents an error when accessing a bucket.
 #[derive(Debug, Clone, PartialEq)]
 pub enum ResourceDefError {
@@ -77,6 +87,58 @@ impl ResourceDef {
         })
     }
 
+    pub fn check_auth(
+        &self,
+        transition: ResourceControllerMethod,
+        proofs: Vec<&[Proof]>,
+    ) -> Result<(), ResourceDefError> {
+        match transition {
+            ResourceControllerMethod::Mint => {
+                if self.is_flag_on(MINTABLE) {
+                    self.check_proof_permission(proofs, MAY_MINT)
+                } else {
+                    Err(ResourceDefError::OperationNotAllowed)
+                }
+            }
+            ResourceControllerMethod::Burn => {
+                if self.is_flag_on(BURNABLE) {
+                    if self.is_flag_on(FREELY_BURNABLE) {
+                        Ok(())
+                    } else {
+                        self.check_proof_permission(proofs, MAY_BURN)
+                    }
+                } else {
+                    Err(ResourceDefError::OperationNotAllowed)
+                }
+            }
+            ResourceControllerMethod::TakeFromVault => {
+                if !self.is_flag_on(RESTRICTED_TRANSFER) {
+                    Ok(())
+                } else {
+                    self.check_proof_permission(proofs, MAY_TRANSFER)
+                }
+            }
+            ResourceControllerMethod::UpdateFlags
+            | ResourceControllerMethod::UpdateMutableFlags => {
+                self.check_proof_permission(proofs, MAY_MANAGE_RESOURCE_FLAGS)
+            }
+            ResourceControllerMethod::UpdateMetadata => {
+                if self.is_flag_on(SHARED_METADATA_MUTABLE) {
+                    self.check_proof_permission(proofs, MAY_CHANGE_SHARED_METADATA)
+                } else {
+                    Err(ResourceDefError::OperationNotAllowed)
+                }
+            }
+            ResourceControllerMethod::UpdateNonFungibleMutableData => {
+                if self.is_flag_on(INDIVIDUAL_METADATA_MUTABLE) {
+                    self.check_proof_permission(proofs, MAY_CHANGE_INDIVIDUAL_METADATA)
+                } else {
+                    Err(ResourceDefError::OperationNotAllowed)
+                }
+            }
+        }
+    }
+
     pub fn resource_type(&self) -> ResourceType {
         self.resource_type
     }
@@ -105,66 +167,19 @@ impl ResourceDef {
         self.flags() & flag == flag
     }
 
-    pub fn mint(
-        &mut self,
-        amount: &Amount,
-        badge: Option<ResourceDefId>,
-        is_initial_supply: bool,
-    ) -> Result<(), ResourceDefError> {
-        if !is_initial_supply {
-            self.check_mint_auth(badge)?;
-        }
-
+    pub fn mint(&mut self, amount: &Amount) -> Result<(), ResourceDefError> {
         self.total_supply
             .add(amount)
             .map_err(ResourceDefError::AmountError)
     }
 
-    pub fn burn(
-        &mut self,
-        amount: &Amount,
-        badge: Option<ResourceDefId>,
-    ) -> Result<(), ResourceDefError> {
-        self.check_burn_auth(badge)?;
-
+    pub fn burn(&mut self, amount: &Amount) -> Result<(), ResourceDefError> {
         self.total_supply
             .subtract(amount)
             .map_err(ResourceDefError::AmountError)
     }
 
-    pub fn update_flags(
-        &mut self,
-        new_flags: u64,
-        badge: Option<ResourceDefId>,
-    ) -> Result<(), ResourceDefError> {
-        self.check_manage_flags_auth(badge)?;
-
-        let changed = self.flags ^ new_flags;
-
-        if !resource_flags_are_valid(changed) {
-            return Err(ResourceDefError::InvalidResourceFlags(changed));
-        }
-
-        if self.mutable_flags | changed != self.mutable_flags {
-            return Err(ResourceDefError::InvalidFlagUpdate {
-                flags: self.flags,
-                mutable_flags: self.mutable_flags,
-                new_flags,
-                new_mutable_flags: self.mutable_flags,
-            });
-        }
-        self.flags = new_flags;
-
-        Ok(())
-    }
-
-    pub fn update_mutable_flags(
-        &mut self,
-        new_mutable_flags: u64,
-        badge: Option<ResourceDefId>,
-    ) -> Result<(), ResourceDefError> {
-        self.check_manage_flags_auth(badge)?;
-
+    pub fn update_mutable_flags(&mut self, new_mutable_flags: u64) -> Result<(), ResourceDefError> {
         let changed = self.mutable_flags ^ new_mutable_flags;
 
         if !resource_flags_are_valid(changed) {
@@ -187,73 +202,30 @@ impl ResourceDef {
     pub fn update_metadata(
         &mut self,
         new_metadata: HashMap<String, String>,
-        badge: Option<ResourceDefId>,
     ) -> Result<(), ResourceDefError> {
-        self.check_update_metadata_auth(badge)?;
-
         self.metadata = new_metadata;
 
         Ok(())
     }
 
-    pub fn check_take_from_vault_auth(
-        &self,
-        proofs: Vec<&[Proof]>,
-    ) -> Result<(), ResourceDefError> {
-        if !self.is_flag_on(RESTRICTED_TRANSFER) {
-            Ok(())
-        } else {
-            self.check_proof_permission(proofs, MAY_TRANSFER)
-        }
-    }
+    pub fn update_flags(&mut self, new_flags: u64) -> Result<(), ResourceDefError> {
+        let changed = self.flags ^ new_flags;
 
-    pub fn check_mint_auth(&self, badge: Option<ResourceDefId>) -> Result<(), ResourceDefError> {
-        if self.is_flag_on(MINTABLE) {
-            self.check_permission(badge, MAY_MINT)
-        } else {
-            Err(ResourceDefError::OperationNotAllowed)
+        if !resource_flags_are_valid(changed) {
+            return Err(ResourceDefError::InvalidResourceFlags(changed));
         }
-    }
 
-    pub fn check_burn_auth(&self, badge: Option<ResourceDefId>) -> Result<(), ResourceDefError> {
-        if self.is_flag_on(BURNABLE) {
-            if self.is_flag_on(FREELY_BURNABLE) {
-                Ok(())
-            } else {
-                self.check_permission(badge, MAY_BURN)
-            }
-        } else {
-            Err(ResourceDefError::OperationNotAllowed)
+        if self.mutable_flags | changed != self.mutable_flags {
+            return Err(ResourceDefError::InvalidFlagUpdate {
+                flags: self.flags,
+                mutable_flags: self.mutable_flags,
+                new_flags,
+                new_mutable_flags: self.mutable_flags,
+            });
         }
-    }
+        self.flags = new_flags;
 
-    pub fn check_update_non_fungible_mutable_data_auth(
-        &self,
-        badge: Option<ResourceDefId>,
-    ) -> Result<(), ResourceDefError> {
-        if self.is_flag_on(INDIVIDUAL_METADATA_MUTABLE) {
-            self.check_permission(badge, MAY_CHANGE_INDIVIDUAL_METADATA)
-        } else {
-            Err(ResourceDefError::OperationNotAllowed)
-        }
-    }
-
-    pub fn check_update_metadata_auth(
-        &self,
-        badge: Option<ResourceDefId>,
-    ) -> Result<(), ResourceDefError> {
-        if self.is_flag_on(SHARED_METADATA_MUTABLE) {
-            self.check_permission(badge, MAY_CHANGE_SHARED_METADATA)
-        } else {
-            Err(ResourceDefError::OperationNotAllowed)
-        }
-    }
-
-    pub fn check_manage_flags_auth(
-        &self,
-        badge: Option<ResourceDefId>,
-    ) -> Result<(), ResourceDefError> {
-        self.check_permission(badge, MAY_MANAGE_RESOURCE_FLAGS)
+        Ok(())
     }
 
     pub fn check_amount(&self, amount: Decimal) -> Result<(), ResourceDefError> {
@@ -266,23 +238,7 @@ impl ResourceDef {
         }
     }
 
-    pub fn check_permission(
-        &self,
-        badge: Option<ResourceDefId>,
-        permission: u64,
-    ) -> Result<(), ResourceDefError> {
-        if let Some(badge) = badge {
-            if let Some(auth) = self.authorities.get(&badge) {
-                if auth & permission == permission {
-                    return Ok(());
-                }
-            }
-        }
-
-        Err(ResourceDefError::PermissionNotAllowed)
-    }
-
-    pub fn check_proof_permission(
+    fn check_proof_permission(
         &self,
         proofs_vector: Vec<&[Proof]>,
         permission: u64,

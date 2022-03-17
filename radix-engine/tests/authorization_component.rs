@@ -1,22 +1,22 @@
 #[rustfmt::skip]
-mod util;
+pub mod test_runner;
 
-use crate::util::TestUtil;
+use crate::test_runner::TestRunner;
 use radix_engine::errors::RuntimeError;
-use radix_engine::ledger::*;
-use radix_engine::transaction::*;
+use radix_engine::ledger::InMemorySubstateStore;
 use scrypto::prelude::*;
 
 #[test]
 fn cannot_make_cross_component_call_without_authorization() {
     // Arrange
-    let mut ledger = InMemorySubstateStore::with_bootstrap();
-    let mut executor = TransactionExecutor::new(&mut ledger, true);
-    let (_, account) = executor.new_public_key_with_account();
-    let auth = TestUtil::create_non_fungible_resource(&mut executor, account.clone());
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(&mut substate_store);
+    let (_, account) = test_runner.new_public_key_with_account();
+    let auth = test_runner.create_non_fungible_resource(account.clone());
     let auth_id = NonFungibleId::from(1);
-    let package = TestUtil::publish_package(&mut executor, "component");
-    let transaction = TransactionBuilder::new(&executor)
+    let package = test_runner.publish_package("component");
+    let transaction = test_runner
+        .new_transaction_builder()
         .call_function(
             package,
             "CrossComponent",
@@ -26,20 +26,22 @@ fn cannot_make_cross_component_call_without_authorization() {
         )
         .build(vec![])
         .unwrap();
-    let receipt = executor.run(transaction).unwrap();
+    let receipt = test_runner.run(transaction);
     assert!(receipt.result.is_ok());
     let secured_component = receipt.new_component_ids[0];
 
-    let transaction = TransactionBuilder::new(&executor)
+    let transaction = test_runner
+        .new_transaction_builder()
         .call_function(package, "CrossComponent", "create_component", vec![], None)
         .build(vec![])
         .unwrap();
-    let receipt = executor.run(transaction).unwrap();
+    let receipt = test_runner.run(transaction);
     assert!(receipt.result.is_ok());
     let my_component = receipt.new_component_ids[0];
 
     // Act
-    let transaction = TransactionBuilder::new(&executor)
+    let transaction = test_runner
+        .new_transaction_builder()
         .call_method(
             my_component,
             "cross_component_call",
@@ -48,7 +50,7 @@ fn cannot_make_cross_component_call_without_authorization() {
         )
         .build(vec![])
         .unwrap();
-    let receipt = executor.run(transaction).unwrap();
+    let receipt = test_runner.run(transaction);
 
     // Assert
     let runtime_error = receipt.result.expect_err("Should be error");
@@ -58,13 +60,14 @@ fn cannot_make_cross_component_call_without_authorization() {
 #[test]
 fn can_make_cross_component_call_with_authorization() {
     // Arrange
-    let mut ledger = InMemorySubstateStore::with_bootstrap();
-    let mut executor = TransactionExecutor::new(&mut ledger, true);
-    let (_, account) = executor.new_public_key_with_account();
-    let auth = TestUtil::create_non_fungible_resource(&mut executor, account.clone());
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(&mut substate_store);
+    let (_, account) = test_runner.new_public_key_with_account();
+    let auth = test_runner.create_non_fungible_resource(account.clone());
     let auth_id = NonFungibleId::from(1);
-    let package = TestUtil::publish_package(&mut executor, "component");
-    let transaction = TransactionBuilder::new(&executor)
+    let package = test_runner.publish_package("component");
+    let transaction = test_runner
+        .new_transaction_builder()
         .call_function(
             package,
             "CrossComponent",
@@ -74,15 +77,16 @@ fn can_make_cross_component_call_with_authorization() {
         )
         .build(vec![])
         .unwrap();
-    let receipt = executor.run(transaction).unwrap();
+    let receipt = test_runner.run(transaction);
     assert!(receipt.result.is_ok());
     let secured_component = receipt.new_component_ids[0];
 
-    let transaction = TransactionBuilder::new(&executor)
+    let transaction = test_runner
+        .new_transaction_builder()
         .call_function(package, "CrossComponent", "create_component", vec![], None)
         .build(vec![])
         .unwrap();
-    let receipt = executor.run(transaction).unwrap();
+    let receipt = test_runner.run(transaction);
     assert!(receipt.result.is_ok());
     let my_component = receipt.new_component_ids[0];
 
@@ -92,16 +96,18 @@ fn can_make_cross_component_call_with_authorization() {
         },
         auth,
     );
-    let transaction = TransactionBuilder::new(&executor)
+    let transaction = test_runner
+        .new_transaction_builder()
         .withdraw_from_account(&auth_amount, account)
         .call_method_with_all_resources(my_component, "put_auth")
         .build(vec![])
         .unwrap();
-    let receipt = executor.run(transaction).unwrap();
+    let receipt = test_runner.run(transaction);
     assert!(receipt.result.is_ok());
 
     // Act
-    let transaction = TransactionBuilder::new(&executor)
+    let transaction = test_runner
+        .new_transaction_builder()
         .call_method(
             my_component,
             "cross_component_call",
@@ -110,7 +116,7 @@ fn can_make_cross_component_call_with_authorization() {
         )
         .build(vec![])
         .unwrap();
-    let receipt = executor.run(transaction).unwrap();
+    let receipt = test_runner.run(transaction);
 
     // Assert
     assert!(receipt.result.is_ok());

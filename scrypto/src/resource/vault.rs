@@ -164,13 +164,8 @@ impl Vault {
     ///
     /// # Panics
     /// Panics if this is not a non-fungible vault or the specified non-fungible is not found.
-    pub fn update_non_fungible_data<T: NonFungibleData>(
-        &self,
-        id: &NonFungibleId,
-        new_data: T,
-        auth: Proof,
-    ) {
-        resource_def!(self.resource_def_id()).update_non_fungible_data(id, new_data, auth)
+    pub fn update_non_fungible_data<T: NonFungibleData>(&self, id: &NonFungibleId, new_data: T) {
+        resource_def!(self.resource_def_id()).update_non_fungible_data(id, new_data)
     }
 }
 

@@ -29,14 +29,15 @@ blueprint! {
                 .no_initial_supply();
 
             // Mint a non-fungible
-            let non_fungible = resource_def!(resource_def_id).mint_non_fungible(
-                &NonFungibleId::from(0u128),
-                Sandwich {
-                    name: "Test".to_owned(),
-                    available: false,
-                },
-                mint_badge.present(),
-            );
+            let non_fungible = authorize(&mint_badge, || {
+                resource_def!(resource_def_id).mint_non_fungible(
+                    &NonFungibleId::from(0u128),
+                    Sandwich {
+                        name: "Test".to_owned(),
+                        available: false,
+                    },
+                )
+            });
 
             (mint_badge, resource_def_id, non_fungible)
         }
@@ -76,11 +77,10 @@ blueprint! {
             assert_eq!(data.available, false);
 
             data.available = true;
-            resource_def!(resource_def_id).update_non_fungible_data(
-                &NonFungibleId::from(0u128),
-                data,
-                mint_badge.present(),
-            );
+            authorize(&mint_badge, || {
+                resource_def!(resource_def_id)
+                    .update_non_fungible_data(&NonFungibleId::from(0u128), data);
+            });
 
             let data: Sandwich =
                 resource_def!(resource_def_id).get_non_fungible_data(&NonFungibleId::from(0u128));

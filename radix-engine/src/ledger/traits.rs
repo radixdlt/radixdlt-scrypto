@@ -146,13 +146,9 @@ pub trait SubstateStore {
                 HashMap::new(),
             )
             .unwrap();
-            xrd.mint(
-                &Amount::Fungible {
-                    amount: XRD_MAX_SUPPLY.into(),
-                },
-                None,
-                true,
-            )
+            xrd.mint(&Amount::Fungible {
+                amount: XRD_MAX_SUPPLY.into(),
+            })
             .unwrap();
             self.put_encoded_substate(&RADIX_TOKEN, &xrd, self.get_nonce());
 

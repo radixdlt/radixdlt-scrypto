@@ -1,35 +1,36 @@
 #[rustfmt::skip]
-mod util;
+pub mod test_runner;
 
-use crate::util::TestUtil;
-use radix_engine::ledger::*;
-use radix_engine::transaction::*;
+use crate::test_runner::TestRunner;
+use radix_engine::ledger::InMemorySubstateStore;
 use scrypto::prelude::*;
 
 #[test]
 fn test_package() {
-    let mut ledger = InMemorySubstateStore::with_bootstrap();
-    let mut executor = TransactionExecutor::new(&mut ledger, true);
-    let (_, account) = executor.new_public_key_with_account();
-    let package = TestUtil::publish_package(&mut executor, "component");
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(&mut substate_store);
+    let (_, account) = test_runner.new_public_key_with_account();
+    let package = test_runner.publish_package("component");
 
-    let transaction1 = TransactionBuilder::new(&executor)
+    let transaction1 = test_runner
+        .new_transaction_builder()
         .call_function(package, "PackageTest", "publish", vec![], Some(account))
         .build(vec![])
         .unwrap();
-    let receipt1 = executor.run(transaction1).unwrap();
+    let receipt1 = test_runner.run(transaction1);
     assert!(receipt1.result.is_ok());
 }
 
 #[test]
 fn test_component() {
-    let mut ledger = InMemorySubstateStore::with_bootstrap();
-    let mut executor = TransactionExecutor::new(&mut ledger, true);
-    let (key, account) = executor.new_public_key_with_account();
-    let package = TestUtil::publish_package(&mut executor, "component");
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(&mut substate_store);
+    let (key, account) = test_runner.new_public_key_with_account();
+    let package = test_runner.publish_package("component");
 
     // Create component
-    let transaction1 = TransactionBuilder::new(&executor)
+    let transaction1 = test_runner
+        .new_transaction_builder()
         .call_function(
             package,
             "ComponentTest",
@@ -39,14 +40,15 @@ fn test_component() {
         )
         .build(vec![])
         .unwrap();
-    let receipt1 = executor.run(transaction1).unwrap();
+    let receipt1 = test_runner.run(transaction1);
     assert!(receipt1.result.is_ok());
 
     // Find the component ID from receipt
     let component = receipt1.new_component_ids[0];
 
     // Call functions & methods
-    let transaction2 = TransactionBuilder::new(&executor)
+    let transaction2 = test_runner
+        .new_transaction_builder()
         .call_function(
             package,
             "ComponentTest",
@@ -59,6 +61,6 @@ fn test_component() {
         .call_method_with_all_resources(account, "deposit_batch")
         .build(vec![key])
         .unwrap();
-    let receipt2 = executor.run(transaction2).unwrap();
+    let receipt2 = test_runner.run(transaction2);
     assert!(receipt2.result.is_ok());
 }
