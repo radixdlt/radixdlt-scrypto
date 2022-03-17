@@ -209,7 +209,6 @@ pub fn dump_resource_def<T: SubstateStore>(
             }
             println!("{}: {}", "Flags".green().bold(), r.flags());
             println!("{}: {}", "Mutable Flags".green().bold(), r.mutable_flags());
-            println!("{}: {:?}", "Authorities".green().bold(), r.authorities());
             println!("{}: {}", "Total Supply".green().bold(), r.total_supply());
             Ok(())
         }

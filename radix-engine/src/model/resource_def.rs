@@ -1,3 +1,4 @@
+use enum_map::{Enum, enum_map, EnumMap};
 use sbor::*;
 use scrypto::engine::types::*;
 use scrypto::resource::resource_flags::*;
@@ -5,9 +6,13 @@ use scrypto::resource::resource_permissions::*;
 use scrypto::rust::collections::HashMap;
 use scrypto::rust::string::String;
 use scrypto::rust::vec::Vec;
+use scrypto::rust::vec;
+use scrypto::rust::mem;
 
-use crate::model::{Proof, ResourceAmount};
+use crate::model::{AuthRule, Proof, ResourceAmount};
+use crate::model::ResourceControllerMethod::{Burn, Mint, TakeFromVault, UpdateFlags, UpdateMetadata, UpdateMutableFlags, UpdateNonFungibleMutableData};
 
+#[derive(Clone, Copy, Debug, Enum)]
 pub enum ResourceControllerMethod {
     Mint,
     Burn,
@@ -73,9 +78,41 @@ impl ResourceDef {
             return Err(ResourceDefError::InvalidResourceFlags(mutable_flags));
         }
 
-        for (_, permission) in &resource_def.authorities {
+        let permission_map: HashMap<u64, Vec<ResourceControllerMethod>> = HashMap::from([
+            (MAY_MINT, vec![Mint]),
+            (MAY_BURN, vec![Burn]),
+            (MAY_TRANSFER, vec![TakeFromVault]),
+            (MAY_MANAGE_RESOURCE_FLAGS, vec![UpdateFlags, UpdateMutableFlags]),
+            (MAY_CHANGE_SHARED_METADATA, vec![UpdateMetadata]),
+            (MAY_CHANGE_INDIVIDUAL_METADATA, vec![UpdateNonFungibleMutableData]),
+        ]);
+
+        let mut auth_rules: EnumMap<ResourceControllerMethod, Option<AuthRule>> = enum_map! {
+            ResourceControllerMethod::Mint => Option::None,
+            ResourceControllerMethod::Burn => Option::None,
+            ResourceControllerMethod::TakeFromVault => Option::None,
+            ResourceControllerMethod::UpdateFlags => Option::None,
+            ResourceControllerMethod::UpdateMutableFlags => Option::None,
+            ResourceControllerMethod::UpdateMetadata => Option::None,
+            ResourceControllerMethod::UpdateNonFungibleMutableData => Option::None,
+        };
+
+        for (resource_def_id, permission) in &resource_def.authorities {
             if !resource_permissions_are_valid(*permission) {
                 return Err(ResourceDefError::InvalidResourcePermission(*permission));
+            }
+
+            for (flag, methods) in permission_map.iter() {
+                if permission & flag != 0 {
+                    for method in methods {
+                        let cur_rule = mem::replace(&mut auth_rules[*method], None);
+                        let new_rule = AuthRule::JustResource(*resource_def_id);
+                        auth_rules[*method] = match cur_rule {
+                            None => Some(new_rule),
+                            Some(cur_rule) => Some(cur_rule.or(new_rule))
+                        };
+                    }
+                }
             }
         }
 
@@ -148,10 +185,6 @@ impl ResourceDef {
 
     pub fn mutable_flags(&self) -> u64 {
         self.mutable_flags
-    }
-
-    pub fn authorities(&self) -> &HashMap<ResourceDefId, u64> {
-        &self.authorities
     }
 
     pub fn total_supply(&self) -> Decimal {
