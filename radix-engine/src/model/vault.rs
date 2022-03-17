@@ -1,38 +1,41 @@
 use sbor::*;
 use scrypto::engine::types::*;
+use scrypto::rust::cell::{Ref, RefCell, RefMut};
 use scrypto::rust::collections::BTreeSet;
+use scrypto::rust::rc::Rc;
 
-use crate::model::Bucket;
+use crate::model::{Bucket, BucketError};
 use crate::model::{ResourceContainer, ResourceContainerError};
 
 /// Represents an error when accessing a vault.
 #[derive(Debug, Clone, PartialEq)]
 pub enum VaultError {
     ResourceContainerError(ResourceContainerError),
-    VaultLocked,
-    OtherBucketLocked,
+    BucketError(BucketError),
 }
 
 /// A persistent resource container.
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct Vault {
-    container: ResourceContainer,
+    container: Rc<RefCell<ResourceContainer>>,
 }
 
 impl Vault {
     pub fn new(container: ResourceContainer) -> Self {
-        Self { container }
+        Self {
+            container: Rc::new(RefCell::new(container)),
+        }
     }
 
     pub fn put(&mut self, other: Bucket) -> Result<(), VaultError> {
-        self.container
-            .put(other.into_container())
+        self.borrow_container_mut()
+            .put(other.into_container().map_err(VaultError::BucketError)?)
             .map_err(VaultError::ResourceContainerError)
     }
 
     pub fn take(&mut self, amount: Decimal) -> Result<Bucket, VaultError> {
         Ok(Bucket::new(
-            self.container
+            self.borrow_container_mut()
                 .take(amount)
                 .map_err(VaultError::ResourceContainerError)?,
         ))
@@ -47,29 +50,33 @@ impl Vault {
         ids: &BTreeSet<NonFungibleId>,
     ) -> Result<Bucket, VaultError> {
         Ok(Bucket::new(
-            self.container
+            self.borrow_container_mut()
                 .take_non_fungibles(ids)
                 .map_err(VaultError::ResourceContainerError)?,
         ))
     }
 
     pub fn liquid_amount(&self) -> Amount {
-        self.container.liquid_amount()
+        self.borrow_container().liquid_amount()
     }
 
     pub fn resource_def_id(&self) -> ResourceDefId {
-        self.container.resource_def_id()
+        self.borrow_container().resource_def_id()
     }
 
     pub fn resource_type(&self) -> ResourceType {
-        self.container.resource_type()
+        self.borrow_container().resource_type()
     }
 
-    pub fn borrow_container(&self) -> &ResourceContainer {
-        &self.container
+    pub fn borrow_container(&self) -> Ref<ResourceContainer> {
+        self.container.borrow()
     }
 
-    pub fn borrow_container_mut(&mut self) -> &mut ResourceContainer {
-        &mut self.container
+    pub fn borrow_container_mut(&mut self) -> RefMut<ResourceContainer> {
+        self.container.borrow_mut()
+    }
+
+    pub fn refer_container(&self) -> Rc<RefCell<ResourceContainer>> {
+        self.container.clone()
     }
 }

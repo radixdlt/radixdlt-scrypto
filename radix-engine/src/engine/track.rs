@@ -97,13 +97,22 @@ impl<'s, S: SubstateStore> Track<'s, S> {
             .collect();
         let mut process = Process::new(0, verbose, self);
 
-        // Always create a virtual bucket of signatures even if there is none.
-        // This is to make reasoning at transaction manifest & validator easier.
-        let ecdsa_bucket = Bucket::new(ResourceContainer::new_non_fungible(ECDSA_TOKEN, signers));
-        process.create_virtual_proof(ECDSA_TOKEN_BUCKET_ID, ECDSA_TOKEN_PROOF_ID, ecdsa_bucket);
-        process
-            .push_onto_auth_worktop(ECDSA_TOKEN_PROOF_ID)
-            .unwrap();
+        // With the latest change, proof amount can't be zero, thus a virtual proof is created
+        // only if there are signers.
+        //
+        // Transactions that refer to the signature virtual proof will pass static check
+        // but will fail at runtime, if there are no signers.
+        //
+        // TODO: possible to update static check to reject them early?
+        if !signers.is_empty() {
+            // Proofs can't be zero amount
+            let ecdsa_bucket =
+                Bucket::new(ResourceContainer::new_non_fungible(ECDSA_TOKEN, signers));
+            process.create_virtual_proof(ECDSA_TOKEN_PROOF_ID, ecdsa_bucket);
+            process
+                .push_onto_auth_worktop(ECDSA_TOKEN_PROOF_ID)
+                .unwrap();
+        }
 
         process
     }

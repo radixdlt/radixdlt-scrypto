@@ -18,10 +18,6 @@ pub enum ResourceContainerError {
     FungibleOperationNotAllowed,
     /// Non-fungible operation on fungible resource is not allowed
     NonFungibleOperationNotAllowed,
-    /// The other container is locked, thus can't be put into this container
-    ContainerLocked,
-    /// Generating zero-amount proof is not allowed
-    ZeroAmountProofNotAllowed,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
@@ -45,35 +41,6 @@ pub enum ResourceContainer {
         /// The liquid non-fungible ids.
         liquid_ids: BTreeSet<NonFungibleId>,
     },
-}
-
-#[derive(Debug, Clone, Hash, PartialEq, Eq)]
-pub enum ResourceContainerId {
-    /// For a vault on ledger state
-    Vault(VaultId),
-    /// For a bucket on the n-th worktop
-    Bucket(usize, BucketId),
-    /// For a resource container on the n-th worktop
-    Worktop(usize, ResourceDefId),
-}
-
-#[derive(Debug)]
-pub struct Proof {
-    /// The resource definition id
-    resource_def_id: ResourceDefId,
-    /// The resource type
-    resource_type: ResourceType,
-    /// Restricted proof can't be moved down along the call stack (growing down).
-    restricted: bool,
-    /// The total amount for optimization purpose
-    total_amount: Amount,
-    /// The sub-amounts (to be extended)
-    amounts: HashMap<ResourceContainerId, Amount>,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ProofError {
-    SupportContainerError(ResourceContainerError),
 }
 
 impl ResourceContainer {
@@ -109,10 +76,8 @@ impl ResourceContainer {
             return Err(ResourceContainerError::ResourceAddressNotMatching);
         }
 
-        // check container lock status
-        if other.is_locked() {
-            return Err(ResourceContainerError::ContainerLocked);
-        }
+        // Invariant: owned container should always be free
+        assert!(!other.is_locked());
 
         // add the other bucket into liquid pool
         match (self, other.liquid_amount()) {
@@ -364,58 +329,5 @@ impl ResourceContainer {
         } else {
             Ok(())
         }
-    }
-}
-
-impl Proof {
-    // TODO: partial proof
-    // TODO: multiple containers
-    // TODO: mixed types of container
-
-    pub fn new(
-        resource_container_id: ResourceContainerId,
-        resource_container: &mut ResourceContainer,
-    ) -> Result<Self, ProofError> {
-        let resource_def_id = resource_container.resource_def_id();
-        let resource_type = resource_container.resource_type();
-
-        // lock the full amount
-        let total_amount = resource_container.total_amount();
-        resource_container
-            .lock(&total_amount)
-            .map_err(ProofError::SupportContainerError)?;
-
-        // record the supporting container
-        let mut amounts = HashMap::new();
-        amounts.insert(resource_container_id, total_amount.clone());
-
-        // generate proof
-        Ok(Self {
-            resource_def_id,
-            resource_type,
-            restricted: false,
-            total_amount,
-            amounts,
-        })
-    }
-
-    pub fn resource_def_id(&self) -> ResourceDefId {
-        self.resource_def_id
-    }
-
-    pub fn resource_type(&self) -> ResourceType {
-        self.resource_type
-    }
-
-    pub fn total_amount(&self) -> Amount {
-        self.total_amount.clone()
-    }
-
-    pub fn is_restricted(&self) -> bool {
-        self.restricted
-    }
-
-    pub fn amounts(&mut self) -> &mut HashMap<ResourceContainerId, Amount> {
-        &mut self.amounts
     }
 }

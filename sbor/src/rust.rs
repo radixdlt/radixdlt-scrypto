@@ -6,13 +6,13 @@ pub use alloc::borrow;
 #[cfg(feature = "alloc")]
 pub use alloc::boxed;
 #[cfg(feature = "alloc")]
-pub use alloc::cell;
-#[cfg(feature = "alloc")]
 pub use alloc::rc;
 #[cfg(feature = "alloc")]
 pub use alloc::string;
 #[cfg(feature = "alloc")]
 pub use alloc::vec;
+#[cfg(feature = "alloc")]
+pub use core::cell;
 #[cfg(feature = "alloc")]
 pub use core::convert;
 #[cfg(feature = "alloc")]
