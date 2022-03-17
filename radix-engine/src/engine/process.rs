@@ -1533,10 +1533,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         input: UpdateResourceFlagsInput,
     ) -> Result<UpdateResourceFlagsOutput, RuntimeError> {
         // Auth
-        self.check_resource_auth(
-            &input.resource_def_id,
-            "update_flags",
-        )?;
+        self.check_resource_auth(&input.resource_def_id, "update_flags")?;
 
         // State Update
         let resource_def = self
@@ -1555,10 +1552,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         input: UpdateResourceMutableFlagsInput,
     ) -> Result<UpdateResourceMutableFlagsOutput, RuntimeError> {
         // Auth
-        self.check_resource_auth(
-            &input.resource_def_id,
-            "update_mutable_flags",
-        )?;
+        self.check_resource_auth(&input.resource_def_id, "update_mutable_flags")?;
 
         // State Update
         let resource_def = self
@@ -1577,10 +1571,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         input: UpdateResourceMetadataInput,
     ) -> Result<UpdateResourceMetadataOutput, RuntimeError> {
         // Auth
-        self.check_resource_auth(
-            &input.resource_def_id,
-            "update_metadata",
-        )?;
+        self.check_resource_auth(&input.resource_def_id, "update_metadata")?;
 
         // State update
         let resource_def = self
@@ -1600,10 +1591,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     ) -> Result<UpdateNonFungibleMutableDataOutput, RuntimeError> {
         // Auth
         let resource_def_id = input.non_fungible_address.resource_def_id();
-        self.check_resource_auth(
-            &resource_def_id,
-            "update_non_fungible_mutable_data",
-        )?;
+        self.check_resource_auth(&resource_def_id, "update_non_fungible_mutable_data")?;
 
         // update state
         let data = self.process_non_fungible_data(&input.new_mutable_data)?;

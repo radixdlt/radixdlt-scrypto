@@ -55,17 +55,9 @@ pub fn dump_component<T: SubstateStore + QueryableSubstateStore>(
                 c.blueprint_name()
             );
 
-            println!(
-                "{}",
-                "Authorization".green().bold()
-            );
+            println!("{}", "Authorization".green().bold());
             for (last, (k, v)) in c.sys_auth().iter().identify_last() {
-                println!(
-                    "{} {:?} => {:?}",
-                    list_item_prefix(last),
-                    k,
-                    v
-                );
+                println!("{} {:?} => {:?}", list_item_prefix(last), k, v);
             }
 
             let state = c.state();
