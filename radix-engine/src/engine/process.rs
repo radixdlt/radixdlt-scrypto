@@ -207,16 +207,33 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         }
     }
 
+    fn new_bucket_id(&mut self) -> Result<BucketId, RuntimeError> {
+        if self.depth == 0 {
+            self.id_allocator
+                .new_bucket_id()
+                .map_err(RuntimeError::IdAllocatorError)
+        } else {
+            Ok(self.track.new_bucket_id())
+        }
+    }
+
+    fn new_proof_id(&mut self) -> Result<ProofId, RuntimeError> {
+        if self.depth == 0 {
+            self.id_allocator
+                .new_proof_id()
+                .map_err(RuntimeError::IdAllocatorError)
+        } else {
+            Ok(self.track.new_proof_id())
+        }
+    }
+
     // (Transaction ONLY) Takes resource from worktop and returns a bucket.
     pub fn take_from_worktop(
         &mut self,
         resource: ResourceSpecifier,
     ) -> Result<ValidatedData, RuntimeError> {
         re_debug!(self, "(Transaction) Taking from worktop: {:?}", resource);
-        let new_bucket_id = self
-            .id_allocator
-            .new_bucket_id()
-            .map_err(RuntimeError::IdAllocatorError)?;
+        let new_bucket_id = self.new_bucket_id()?;
         let bucket = match resource {
             ResourceSpecifier::Some(amount, resource_def_id) => match amount {
                 Amount::Fungible { amount } => self.worktop.take(amount, resource_def_id),
@@ -299,10 +316,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             return Err(RuntimeError::EmptyAuthWorkTop);
         }
 
-        let new_proof_id = self
-            .id_allocator
-            .new_proof_id()
-            .map_err(RuntimeError::IdAllocatorError)?;
+        let new_proof_id = self.new_proof_id()?;
         let proof = self.auth_worktop.remove(self.auth_worktop.len() - 1);
         self.proofs.insert(new_proof_id, proof);
         Ok(new_proof_id)
@@ -326,18 +340,11 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     pub fn create_bucket_proof(&mut self, bucket_id: BucketId) -> Result<ProofId, RuntimeError> {
         re_debug!(self, "Creating proof: bucket_id = {}", bucket_id);
 
+        let new_proof_id = self.new_proof_id()?;
         let bucket = self
             .buckets
             .get_mut(&bucket_id)
             .ok_or(RuntimeError::BucketNotFound(bucket_id))?;
-
-        let new_proof_id = if self.depth == 0 {
-            self.id_allocator
-                .new_proof_id()
-                .map_err(RuntimeError::IdAllocatorError)?
-        } else {
-            self.track.new_proof_id()
-        };
         let new_proof = Proof::new(bucket.refer_container()).map_err(RuntimeError::ProofError)?;
         self.proofs.insert(new_proof_id, new_proof);
 
@@ -348,18 +355,11 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     pub fn clone_proof(&mut self, proof_id: ProofId) -> Result<ProofId, RuntimeError> {
         re_debug!(self, "Cloning proof: proof_id = {}", proof_id);
 
+        let new_proof_id = self.new_proof_id()?;
         let proof = self
             .proofs
             .get(&proof_id)
             .ok_or(RuntimeError::ProofNotFound(proof_id))?;
-
-        let new_proof_id = if self.depth == 0 {
-            self.id_allocator
-                .new_proof_id()
-                .map_err(RuntimeError::IdAllocatorError)?
-        } else {
-            self.track.new_proof_id()
-        };
         let new_proof = proof.clone();
         self.proofs.insert(new_proof_id, new_proof);
 
@@ -1321,7 +1321,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
         let bucket_id = if let Some(mint_params) = input.mint_params {
             let bucket = Bucket::new(self.allocate_resource(resource_def_id, mint_params)?);
-            let bucket_id = self.track.new_bucket_id();
+            let bucket_id = self.new_bucket_id()?;
             self.buckets.insert(bucket_id, bucket);
             Some(bucket_id)
         } else {
@@ -1618,7 +1618,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
         // wrap resource into a bucket
         let bucket = Bucket::new(self.allocate_resource(input.resource_def_id, input.mint_params)?);
-        let bucket_id = self.track.new_bucket_id();
+        let bucket_id = self.new_bucket_id()?;
         self.buckets.insert(bucket_id, bucket);
 
         Ok(MintResourceOutput { bucket_id })
@@ -1659,7 +1659,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .take(input.amount)
             .map_err(RuntimeError::VaultError)?;
 
-        let bucket_id = self.track.new_bucket_id();
+        let bucket_id = self.new_bucket_id()?;
         self.buckets.insert(bucket_id, new_bucket);
 
         Ok(TakeFromVaultOutput { bucket_id })
@@ -1677,7 +1677,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .take_non_fungible(&input.non_fungible_id)
             .map_err(RuntimeError::VaultError)?;
 
-        let bucket_id = self.track.new_bucket_id();
+        let bucket_id = self.new_bucket_id()?;
         self.buckets.insert(bucket_id, new_bucket);
 
         Ok(TakeNonFungibleFromVaultOutput { bucket_id })
@@ -1733,7 +1733,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             input.resource_def_id,
             definition.resource_type(),
         ));
-        let bucket_id = self.track.new_bucket_id();
+        let bucket_id = self.new_bucket_id()?;
         self.buckets.insert(bucket_id, new_bucket);
 
         Ok(CreateEmptyBucketOutput { bucket_id })
@@ -1767,7 +1767,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .ok_or(RuntimeError::BucketNotFound(input.bucket_id))?
             .take(input.amount)
             .map_err(RuntimeError::BucketError)?;
-        let bucket_id = self.track.new_bucket_id();
+        let bucket_id = self.new_bucket_id()?;
         self.buckets.insert(bucket_id, new_bucket);
 
         Ok(TakeFromBucketOutput { bucket_id })
@@ -1809,7 +1809,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .ok_or(RuntimeError::BucketNotFound(input.bucket_id))?
             .take_non_fungible(&input.non_fungible_id)
             .map_err(RuntimeError::BucketError)?;
-        let bucket_id = self.track.new_bucket_id();
+        let bucket_id = self.new_bucket_id()?;
         self.buckets.insert(bucket_id, new_bucket);
 
         Ok(TakeNonFungibleFromBucketOutput { bucket_id })

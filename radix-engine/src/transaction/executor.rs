@@ -191,16 +191,12 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
                     amount,
                     resource_def_id,
                 } => proc.assert_worktop_contains(amount, resource_def_id),
-                ValidatedInstruction::CreateBucketProof { bucket_id } => {
-                    proc.create_bucket_proof(bucket_id).map(|proof_id| {
-                        ValidatedData::from_value(&scrypto::resource::Proof(proof_id))
-                    })
-                }
-                ValidatedInstruction::CloneProof { proof_id } => {
-                    proc.clone_proof(proof_id).map(|proof_id| {
-                        ValidatedData::from_value(&scrypto::resource::Proof(proof_id))
-                    })
-                }
+                ValidatedInstruction::CreateBucketProof { bucket_id } => proc
+                    .create_bucket_proof(bucket_id)
+                    .map(|proof_id| ValidatedData::from_value(&scrypto::resource::Proof(proof_id))),
+                ValidatedInstruction::CloneProof { proof_id } => proc
+                    .clone_proof(proof_id)
+                    .map(|proof_id| ValidatedData::from_value(&scrypto::resource::Proof(proof_id))),
                 ValidatedInstruction::DropProof { proof_id } => proc
                     .drop_proof(proof_id)
                     .map(|_| ValidatedData::from_value(&())),
