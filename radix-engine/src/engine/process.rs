@@ -923,32 +923,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         Ok(Some(RuntimeValue::I32(output_ptr)))
     }
 
-    fn check_badge(
-        &mut self,
-        optional_proof_id: Option<ProofId>,
-    ) -> Result<Option<ResourceDefId>, RuntimeError> {
-        if let Some(proof_id) = optional_proof_id {
-            // retrieve proof
-            let proof = self
-                .proofs
-                .get(&proof_id)
-                .ok_or(RuntimeError::ProofNotFound(proof_id))?;
-
-            // read amount
-            if proof.total_amount().as_quantity().is_zero() {
-                return Err(RuntimeError::EmptyProof);
-            }
-            let resource_def_id = proof.resource_def_id();
-
-            // drop proof after use
-            self.handle_drop_proof(DropProofInput { proof_id })?;
-
-            Ok(Some(resource_def_id))
-        } else {
-            Ok(None)
-        }
-    }
-
     //============================
     // SYSTEM CALL HANDLERS START
     //============================
@@ -1265,8 +1239,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         resource_def_id: ResourceDefId,
         mint_params: MintParams,
-        badge: Option<ResourceDefId>,
-        initial_supply: bool,
     ) -> Result<ResourceContainerState, RuntimeError> {
         let resource_def = self
             .track
@@ -1276,7 +1248,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             MintParams::Fungible { amount } => {
                 // Notify resource manager
                 resource_def
-                    .mint(&ResourceAmount::Fungible { amount }, badge, initial_supply)
+                    .mint(&ResourceAmount::Fungible { amount })
                     .map_err(RuntimeError::ResourceDefError)?;
 
                 // Allocate fungible
@@ -1288,13 +1260,9 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             MintParams::NonFungible { entries } => {
                 // Notify resource manager
                 resource_def
-                    .mint(
-                        &ResourceAmount::NonFungible {
-                            ids: entries.keys().cloned().collect(),
-                        },
-                        badge,
-                        initial_supply,
-                    )
+                    .mint(&ResourceAmount::NonFungible {
+                        ids: entries.keys().cloned().collect(),
+                    })
                     .map_err(RuntimeError::ResourceDefError)?;
 
                 // Allocate non-fungibles
@@ -1340,7 +1308,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let bucket_id = if let Some(mint_params) = input.mint_params {
             let bucket = Bucket::new(ResourceContainer::new(
                 resource_def_id,
-                self.allocate_resource(resource_def_id, mint_params, None, true)?,
+                self.allocate_resource(resource_def_id, mint_params)?,
             ));
             let bucket_id = self.track.new_bucket_id();
             self.buckets.insert(bucket_id, bucket);
@@ -1397,23 +1365,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         })
     }
 
-    fn handle_update_resource_flags(
-        &mut self,
-        input: UpdateResourceFlagsInput,
-    ) -> Result<UpdateResourceFlagsOutput, RuntimeError> {
-        let badge = self.check_badge(Some(input.auth))?;
-
-        let resource_def = self
-            .track
-            .get_resource_def_mut(&input.resource_def_id)
-            .ok_or(RuntimeError::ResourceDefNotFound(input.resource_def_id))?;
-        resource_def
-            .update_flags(input.new_flags, badge)
-            .map_err(RuntimeError::ResourceDefError)?;
-
-        Ok(UpdateResourceFlagsOutput {})
-    }
-
     fn handle_get_resource_mutable_flags(
         &mut self,
         input: GetResourceMutableFlagsInput,
@@ -1428,23 +1379,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         })
     }
 
-    fn handle_update_resource_mutable_flags(
-        &mut self,
-        input: UpdateResourceMutableFlagsInput,
-    ) -> Result<UpdateResourceMutableFlagsOutput, RuntimeError> {
-        let badge = self.check_badge(Some(input.auth))?;
-
-        let resource_def = self
-            .track
-            .get_resource_def_mut(&input.resource_def_id)
-            .ok_or(RuntimeError::ResourceDefNotFound(input.resource_def_id))?;
-        resource_def
-            .update_mutable_flags(input.new_mutable_flags, badge)
-            .map_err(RuntimeError::ResourceDefError)?;
-
-        Ok(UpdateResourceMutableFlagsOutput {})
-    }
-
     fn handle_get_resource_type(
         &mut self,
         input: GetResourceTypeInput,
@@ -1457,72 +1391,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         Ok(GetResourceTypeOutput {
             resource_type: resource_def.resource_type(),
         })
-    }
-
-    fn handle_mint_resource(
-        &mut self,
-        input: MintResourceInput,
-    ) -> Result<MintResourceOutput, RuntimeError> {
-        let badge = self.check_badge(Some(input.auth))?;
-
-        // wrap resource into a bucket
-        let bucket = Bucket::new(ResourceContainer::new(
-            input.resource_def_id,
-            self.allocate_resource(input.resource_def_id, input.mint_params, badge, false)?,
-        ));
-        let bucket_id = self.track.new_bucket_id();
-        self.buckets.insert(bucket_id, bucket);
-
-        Ok(MintResourceOutput { bucket_id })
-    }
-
-    fn handle_burn_resource(
-        &mut self,
-        input: BurnResourceInput,
-    ) -> Result<BurnResourceOutput, RuntimeError> {
-        let badge = self.check_badge(input.auth)?;
-
-        let bucket = self
-            .buckets
-            .remove(&input.bucket_id)
-            .ok_or(RuntimeError::BucketNotFound(input.bucket_id))?;
-
-        let resource_def = self
-            .track
-            .get_resource_def_mut(&bucket.resource_def_id())
-            .ok_or(RuntimeError::ResourceDefNotFound(bucket.resource_def_id()))?;
-
-        resource_def
-            .burn(bucket.liquid_amount(), badge)
-            .map_err(RuntimeError::ResourceDefError)?;
-        Ok(BurnResourceOutput {})
-    }
-
-    fn handle_update_non_fungible_mutable_data(
-        &mut self,
-        input: UpdateNonFungibleMutableDataInput,
-    ) -> Result<UpdateNonFungibleMutableDataOutput, RuntimeError> {
-        let badge = self.check_badge(Some(input.auth))?;
-        let resource_def_id = input.non_fungible_address.resource_def_id();
-
-        // obtain authorization from resource definition
-        let resource_def = self
-            .track
-            .get_resource_def(&resource_def_id)
-            .ok_or(RuntimeError::ResourceDefNotFound(resource_def_id))?;
-        resource_def
-            .check_update_non_fungible_mutable_data_auth(badge)
-            .map_err(RuntimeError::ResourceDefError)?;
-        // update state
-        let data = self.process_non_fungible_data(&input.new_mutable_data)?;
-        self.track
-            .get_non_fungible_mut(&input.non_fungible_address)
-            .ok_or(RuntimeError::NonFungibleNotFound(
-                input.non_fungible_address,
-            ))?
-            .set_mutable_data(data.raw);
-
-        Ok(UpdateNonFungibleMutableDataOutput {})
     }
 
     fn handle_get_non_fungible_data(
@@ -1551,23 +1419,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         Ok(NonFungibleExistsOutput {
             non_fungible_exists: non_fungible.is_some(),
         })
-    }
-
-    fn handle_update_resource_metadata(
-        &mut self,
-        input: UpdateResourceMetadataInput,
-    ) -> Result<UpdateResourceMetadataOutput, RuntimeError> {
-        let badge = self.check_badge(Some(input.auth))?;
-
-        let resource_def = self
-            .track
-            .get_resource_def_mut(&input.resource_def_id)
-            .ok_or(RuntimeError::ResourceDefNotFound(input.resource_def_id))?;
-        resource_def
-            .update_metadata(input.new_metadata, badge)
-            .map_err(RuntimeError::ResourceDefError)?;
-
-        Ok(UpdateResourceMetadataOutput {})
     }
 
     fn handle_create_vault(
@@ -1649,23 +1500,159 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         Ok(PutIntoVaultOutput {})
     }
 
-    fn check_take_from_vault_auth(&mut self, vault_id: &VaultId) -> Result<(), RuntimeError> {
-        let resource_def_id = self.get_local_vault(vault_id)?.resource_def_id();
-
+    fn check_resource_auth(
+        &mut self,
+        resource_def_id: &ResourceDefId,
+        transition: ResourceControllerMethod,
+    ) -> Result<(), RuntimeError> {
         let resource_def = self
             .track
             .get_resource_def(&resource_def_id)
-            .ok_or(RuntimeError::ResourceDefNotFound(resource_def_id))?;
+            .ok_or(RuntimeError::ResourceDefNotFound(resource_def_id.clone()))?;
         resource_def
-            .check_take_from_vault_auth(vec![self.caller_auth_worktop, &self.auth_worktop])
+            .check_auth(
+                transition,
+                vec![self.caller_auth_worktop, &self.auth_worktop],
+            )
             .map_err(RuntimeError::ResourceDefError)
+    }
+
+    fn handle_update_resource_flags(
+        &mut self,
+        input: UpdateResourceFlagsInput,
+    ) -> Result<UpdateResourceFlagsOutput, RuntimeError> {
+        // Auth
+        self.check_resource_auth(
+            &input.resource_def_id,
+            ResourceControllerMethod::UpdateFlags,
+        )?;
+
+        // State Update
+        let resource_def = self
+            .track
+            .get_resource_def_mut(&input.resource_def_id)
+            .ok_or(RuntimeError::ResourceDefNotFound(input.resource_def_id))?;
+        resource_def
+            .update_flags(input.new_flags)
+            .map_err(RuntimeError::ResourceDefError)?;
+
+        Ok(UpdateResourceFlagsOutput {})
+    }
+
+    fn handle_update_resource_mutable_flags(
+        &mut self,
+        input: UpdateResourceMutableFlagsInput,
+    ) -> Result<UpdateResourceMutableFlagsOutput, RuntimeError> {
+        // Auth
+        self.check_resource_auth(
+            &input.resource_def_id,
+            ResourceControllerMethod::UpdateMutableFlags,
+        )?;
+
+        // State Update
+        let resource_def = self
+            .track
+            .get_resource_def_mut(&input.resource_def_id)
+            .ok_or(RuntimeError::ResourceDefNotFound(input.resource_def_id))?;
+        resource_def
+            .update_mutable_flags(input.new_mutable_flags)
+            .map_err(RuntimeError::ResourceDefError)?;
+
+        Ok(UpdateResourceMutableFlagsOutput {})
+    }
+
+    fn handle_update_resource_metadata(
+        &mut self,
+        input: UpdateResourceMetadataInput,
+    ) -> Result<UpdateResourceMetadataOutput, RuntimeError> {
+        // Auth
+        self.check_resource_auth(
+            &input.resource_def_id,
+            ResourceControllerMethod::UpdateMetadata,
+        )?;
+
+        // State update
+        let resource_def = self
+            .track
+            .get_resource_def_mut(&input.resource_def_id)
+            .ok_or(RuntimeError::ResourceDefNotFound(input.resource_def_id))?;
+        resource_def
+            .update_metadata(input.new_metadata)
+            .map_err(RuntimeError::ResourceDefError)?;
+
+        Ok(UpdateResourceMetadataOutput {})
+    }
+
+    fn handle_update_non_fungible_mutable_data(
+        &mut self,
+        input: UpdateNonFungibleMutableDataInput,
+    ) -> Result<UpdateNonFungibleMutableDataOutput, RuntimeError> {
+        // Auth
+        let resource_def_id = input.non_fungible_address.resource_def_id();
+        self.check_resource_auth(
+            &resource_def_id,
+            ResourceControllerMethod::UpdateNonFungibleMutableData,
+        )?;
+
+        // update state
+        let data = self.process_non_fungible_data(&input.new_mutable_data)?;
+        self.track
+            .get_non_fungible_mut(&input.non_fungible_address)
+            .ok_or(RuntimeError::NonFungibleNotFound(
+                input.non_fungible_address,
+            ))?
+            .set_mutable_data(data.raw);
+
+        Ok(UpdateNonFungibleMutableDataOutput {})
+    }
+
+    fn handle_mint_resource(
+        &mut self,
+        input: MintResourceInput,
+    ) -> Result<MintResourceOutput, RuntimeError> {
+        // Auth
+        self.check_resource_auth(&input.resource_def_id, ResourceControllerMethod::Mint)?;
+
+        // wrap resource into a bucket
+        let bucket = Bucket::new(ResourceContainer::new(
+            input.resource_def_id,
+            self.allocate_resource(input.resource_def_id, input.mint_params)?,
+        ));
+        let bucket_id = self.track.new_bucket_id();
+        self.buckets.insert(bucket_id, bucket);
+
+        Ok(MintResourceOutput { bucket_id })
+    }
+
+    fn handle_burn_resource(
+        &mut self,
+        input: BurnResourceInput,
+    ) -> Result<BurnResourceOutput, RuntimeError> {
+        // Auth
+        let bucket = self
+            .buckets
+            .remove(&input.bucket_id)
+            .ok_or(RuntimeError::BucketNotFound(input.bucket_id))?;
+        self.check_resource_auth(&bucket.resource_def_id(), ResourceControllerMethod::Burn)?;
+
+        // Burn
+        let resource_def = self
+            .track
+            .get_resource_def_mut(&bucket.resource_def_id())
+            .ok_or(RuntimeError::ResourceDefNotFound(bucket.resource_def_id()))?;
+
+        resource_def
+            .burn(bucket.liquid_amount())
+            .map_err(RuntimeError::ResourceDefError)?;
+        Ok(BurnResourceOutput {})
     }
 
     fn handle_take_from_vault(
         &mut self,
         input: TakeFromVaultInput,
     ) -> Result<TakeFromVaultOutput, RuntimeError> {
-        self.check_take_from_vault_auth(&input.vault_id)?;
+        let resource_def_id = self.get_local_vault(&input.vault_id)?.resource_def_id();
+        self.check_resource_auth(&resource_def_id, ResourceControllerMethod::TakeFromVault)?;
 
         let new_bucket = self
             .get_local_vault(&input.vault_id)?
@@ -1682,7 +1669,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         input: TakeNonFungibleFromVaultInput,
     ) -> Result<TakeNonFungibleFromVaultOutput, RuntimeError> {
-        self.check_take_from_vault_auth(&input.vault_id)?;
+        let resource_def_id = self.get_local_vault(&input.vault_id)?.resource_def_id();
+        self.check_resource_auth(&resource_def_id, ResourceControllerMethod::TakeFromVault)?;
 
         let new_bucket = self
             .get_local_vault(&input.vault_id)?

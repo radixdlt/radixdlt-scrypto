@@ -265,7 +265,6 @@ pub struct CreateResourceOutput {
 pub struct MintResourceInput {
     pub resource_def_id: ResourceDefId,
     pub mint_params: MintParams,
-    pub auth: ProofId,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
@@ -276,7 +275,6 @@ pub struct MintResourceOutput {
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct BurnResourceInput {
     pub bucket_id: BucketId,
-    pub auth: Option<ProofId>,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
@@ -337,7 +335,6 @@ pub struct NonFungibleExistsOutput {
 pub struct UpdateNonFungibleMutableDataInput {
     pub non_fungible_address: NonFungibleAddress,
     pub new_mutable_data: Vec<u8>,
-    pub auth: ProofId,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
@@ -357,7 +354,6 @@ pub struct GetResourceFlagsOutput {
 pub struct UpdateResourceFlagsInput {
     pub resource_def_id: ResourceDefId,
     pub new_flags: u64,
-    pub auth: ProofId,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
@@ -377,7 +373,6 @@ pub struct GetResourceMutableFlagsOutput {
 pub struct UpdateResourceMutableFlagsInput {
     pub resource_def_id: ResourceDefId,
     pub new_mutable_flags: u64,
-    pub auth: ProofId,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
@@ -387,7 +382,6 @@ pub struct UpdateResourceMutableFlagsOutput {}
 pub struct UpdateResourceMetadataInput {
     pub resource_def_id: ResourceDefId,
     pub new_metadata: HashMap<String, String>,
-    pub auth: ProofId,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]

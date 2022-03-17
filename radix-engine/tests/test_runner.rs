@@ -37,6 +37,49 @@ impl<'l> TestRunner<'l> {
         compile_package!(format!("./tests/{}", name), name.replace("-", "_"))
     }
 
+    pub fn create_restricted_mint_token(
+        &mut self,
+        account: ComponentId,
+    ) -> (ResourceDefId, ResourceDefId) {
+        let auth_resource_def_id = self.create_non_fungible_resource(account);
+
+        let package = self.publish_package("resource_creator");
+        let transaction = TransactionBuilder::new(&self.executor)
+            .call_function(
+                package,
+                "ResourceCreator",
+                "create_restricted_mint",
+                vec![auth_resource_def_id.to_string()],
+                Some(account),
+            )
+            .call_method_with_all_resources(account, "deposit_batch")
+            .build(vec![])
+            .unwrap();
+        let receipt = self.executor.run(transaction).unwrap();
+        (auth_resource_def_id, receipt.new_resource_def_ids[0])
+    }
+
+    pub fn create_restricted_burn_token(
+        &mut self,
+        account: ComponentId,
+    ) -> (ResourceDefId, ResourceDefId) {
+        let auth_resource_def_id = self.create_non_fungible_resource(account);
+        let package = self.publish_package("resource_creator");
+        let transaction = TransactionBuilder::new(&self.executor)
+            .call_function(
+                package,
+                "ResourceCreator",
+                "create_restricted_burn",
+                vec![auth_resource_def_id.to_string()],
+                Some(account),
+            )
+            .call_method_with_all_resources(account, "deposit_batch")
+            .build(vec![])
+            .unwrap();
+        let receipt = self.executor.run(transaction).unwrap();
+        (auth_resource_def_id, receipt.new_resource_def_ids[0])
+    }
+
     pub fn create_restricted_transfer_token(
         &mut self,
         account: ComponentId,

@@ -62,8 +62,10 @@ blueprint! {
         pub fn burn() -> Bucket {
             let (badge, resource_def_id) = Self::create_fungible();
             let resource_def = resource_def!(resource_def_id);
-            let bucket = resource_def.mint(1, badge.present());
-            resource_def.burn_with_auth(bucket, badge.present());
+            authorize(&badge, || {
+                let bucket: Bucket = resource_def.mint(1);
+                resource_def.burn(bucket)
+            });
             badge
         }
 
@@ -79,17 +81,19 @@ blueprint! {
                     )
                     .no_initial_supply());
 
-            token_resource_def.enable_flags(MINTABLE, badge.present());
-            assert!(token_resource_def.flags() & MINTABLE == MINTABLE);
-            assert!(token_resource_def.mutable_flags() & MINTABLE == MINTABLE);
+            authorize(&badge, || {
+                token_resource_def.enable_flags(MINTABLE);
+                assert!(token_resource_def.flags() & MINTABLE == MINTABLE);
+                assert!(token_resource_def.mutable_flags() & MINTABLE == MINTABLE);
 
-            token_resource_def.disable_flags(MINTABLE, badge.present());
-            assert!(token_resource_def.flags() & MINTABLE == 0);
-            assert!(token_resource_def.mutable_flags() & MINTABLE == MINTABLE);
+                token_resource_def.disable_flags(MINTABLE);
+                assert!(token_resource_def.flags() & MINTABLE == 0);
+                assert!(token_resource_def.mutable_flags() & MINTABLE == MINTABLE);
 
-            token_resource_def.lock_flags(MINTABLE, badge.present());
-            assert!(token_resource_def.flags() & MINTABLE == 0);
-            assert!(token_resource_def.mutable_flags() & MINTABLE == 0);
+                token_resource_def.lock_flags(MINTABLE);
+                assert!(token_resource_def.flags() & MINTABLE == 0);
+                assert!(token_resource_def.mutable_flags() & MINTABLE == 0);
+            });
 
             badge
         }
@@ -105,7 +109,7 @@ blueprint! {
                     )
                     .no_initial_supply());
 
-            token_resource_def.enable_flags(MINTABLE, badge.present());
+            authorize(&badge, || token_resource_def.enable_flags(MINTABLE));
             badge
         }
 
@@ -120,8 +124,10 @@ blueprint! {
 
             let mut new_metadata = HashMap::new();
             new_metadata.insert("a".to_owned(), "b".to_owned());
-            token_resource_def.update_metadata(new_metadata.clone(), badge.present());
-            assert_eq!(token_resource_def.metadata(), new_metadata);
+            authorize(&badge, || {
+                token_resource_def.update_metadata(new_metadata.clone());
+                assert_eq!(token_resource_def.metadata(), new_metadata);
+            });
 
             badge
         }
