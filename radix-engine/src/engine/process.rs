@@ -294,7 +294,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
     // Takes a proof from the auth worktop.
     pub fn pop_from_auth_worktop(&mut self) -> Result<ProofId, RuntimeError> {
-        re_debug!(self, "Taking from auth worktop");
+        re_debug!(self, "Popping from auth worktop");
         if self.auth_worktop.is_empty() {
             return Err(RuntimeError::EmptyAuthWorkTop);
         }
@@ -310,7 +310,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
     // Puts a proof onto the auth worktop.
     pub fn push_onto_auth_worktop(&mut self, proof_id: ProofId) -> Result<(), RuntimeError> {
-        re_debug!(self, "Pushing auth: proof_id = {}", proof_id);
+        re_debug!(self, "Pushing onto auth worktop: proof_id = {}", proof_id);
 
         let proof = self
             .proofs
@@ -337,7 +337,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .ok_or(RuntimeError::BucketNotFound(bucket_id))?;
         let proof = Proof::new(
             ResourceContainerId::Bucket(self.depth, bucket_id),
-            bucket.borrow_container(),
+            bucket.borrow_container_mut(),
         )
         .map_err(RuntimeError::ProofError)?;
         self.proofs.insert(new_proof_id, proof);
@@ -349,18 +349,12 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     pub fn clone_proof(&mut self, proof_id: ProofId) -> Result<ProofId, RuntimeError> {
         re_debug!(self, "Cloning proof: proof_id = {}", proof_id);
 
-        let new_proof_id = self
-            .id_allocator
-            .new_proof_id()
-            .map_err(RuntimeError::IdAllocatorError)?;
-        let proof = self
+        let _proof = self
             .proofs
             .get(&proof_id)
-            .ok_or(RuntimeError::ProofNotFound(proof_id))?
-            .clone();
-        self.proofs.insert(new_proof_id, proof);
+            .ok_or(RuntimeError::ProofNotFound(proof_id))?;
 
-        Ok(new_proof_id)
+        todo!("Cloning is broken ATM")
     }
 
     // Drop a proof.
@@ -394,8 +388,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                             .get_mut(&bucket_id)
                             .expect("The bucket should be owned by this process, otherwise bug!");
                         bucket
-                            .borrow_container()
-                            .unlock(amount)
+                            .borrow_container_mut()
+                            .unlock(&amount)
                             .expect("Should be able to unlock the amount, otherwise bug!");
                     } else {
                         is_settled = false;
@@ -406,8 +400,10 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         }
 
         if is_settled {
+            re_debug!(self, "Proof has been fully destructed!");
             None
         } else {
+            re_debug!(self, "Proof was partially settled!");
             Some(proof)
         }
     }
@@ -474,7 +470,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     ) {
         let proof = Proof::new(
             ResourceContainerId::Bucket(self.depth, bucket_id),
-            bucket.borrow_container(),
+            bucket.borrow_container_mut(),
         )
         .unwrap();
         self.proofs.insert(proof_id, proof);
@@ -750,9 +746,19 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             re_warn!(self, "Dangling bucket: {}, {:?}", bucket_id, bucket);
             success = false;
         }
-        for resource_def_id in &self.worktop.resource_def_ids() {
-            re_warn!(self, "Dangling resource on worktop: {:?}", resource_def_id);
-            success = false;
+        for resource_def_id in self.worktop.resource_def_ids() {
+            if let Some(container) = self.worktop.borrow_container(resource_def_id) {
+                let total_amount = container.total_amount();
+                if !total_amount.is_zero() {
+                    re_warn!(
+                        self,
+                        "Dangling resource on worktop: {}, {:?}",
+                        resource_def_id,
+                        total_amount
+                    );
+                    success = false;
+                }
+            }
         }
         if let Some(wasm_process) = &self.wasm_process_state {
             if !wasm_process.check_resource() {

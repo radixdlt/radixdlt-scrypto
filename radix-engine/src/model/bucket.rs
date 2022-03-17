@@ -81,7 +81,11 @@ impl Bucket {
         self.container.is_locked()
     }
 
-    pub fn borrow_container(&mut self) -> &mut ResourceContainer {
+    pub fn borrow_container(&self) -> &ResourceContainer {
+        &self.container
+    }
+
+    pub fn borrow_container_mut(&mut self) -> &mut ResourceContainer {
         &mut self.container
     }
 

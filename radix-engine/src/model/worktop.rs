@@ -29,7 +29,7 @@ impl Worktop {
 
     pub fn put(&mut self, other: Bucket) -> Result<(), WorktopError> {
         let resource_def_id = other.resource_def_id();
-        if let Some(container) = self.borrow_container(resource_def_id) {
+        if let Some(container) = self.borrow_container_mut(resource_def_id) {
             container
                 .put(other.into_container())
                 .map_err(WorktopError::ResourceContainerError)
@@ -45,7 +45,7 @@ impl Worktop {
         amount: Decimal,
         resource_def_id: ResourceDefId,
     ) -> Result<Bucket, WorktopError> {
-        if let Some(container) = self.borrow_container(resource_def_id) {
+        if let Some(container) = self.borrow_container_mut(resource_def_id) {
             container.take(amount).map(Bucket::new)
         } else {
             Err(ResourceContainerError::InsufficientBalance)
@@ -66,7 +66,7 @@ impl Worktop {
         ids: &BTreeSet<NonFungibleId>,
         resource_def_id: ResourceDefId,
     ) -> Result<Bucket, WorktopError> {
-        if let Some(container) = self.borrow_container(resource_def_id) {
+        if let Some(container) = self.borrow_container_mut(resource_def_id) {
             container.take_non_fungibles(ids).map(Bucket::new)
         } else {
             Err(ResourceContainerError::InsufficientBalance)
@@ -90,7 +90,11 @@ impl Worktop {
         }
     }
 
-    pub fn borrow_container(
+    pub fn borrow_container(&self, resource_def_id: ResourceDefId) -> Option<&ResourceContainer> {
+        self.containers.get(&resource_def_id)
+    }
+
+    pub fn borrow_container_mut(
         &mut self,
         resource_def_id: ResourceDefId,
     ) -> Option<&mut ResourceContainer> {
