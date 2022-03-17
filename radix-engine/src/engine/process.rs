@@ -1015,11 +1015,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let sys_auth: HashMap<String, AuthRule> = input
             .sys_auth
             .into_iter()
-            .map(|(name, auth_rule)| match auth_rule {
-                ::scrypto::resource::AuthRule::Just(addr) => {
-                    (name, AuthRule::JustNonFungible(addr))
-                }
-            })
+            .map(|(name, auth_rule)| (name, AuthRule::from(auth_rule)))
             .collect();
         let component = Component::new(
             wasm_process.vm.invocation.package_id,

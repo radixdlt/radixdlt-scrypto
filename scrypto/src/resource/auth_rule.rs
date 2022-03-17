@@ -1,14 +1,16 @@
 use crate::resource::*;
+use crate::rust::vec::Vec;
 use sbor::*;
 
 /// Authorization Rule
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub enum AuthRule {
-    Just(NonFungibleAddress),
+    NonFungible(NonFungibleAddress),
+    OneOf(Vec<AuthRule>),
 }
 
 impl AuthRule {
     pub fn just(non_fungible_address: NonFungibleAddress) -> Self {
-        AuthRule::Just(non_fungible_address)
+        AuthRule::NonFungible(non_fungible_address)
     }
 }

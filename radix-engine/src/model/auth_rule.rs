@@ -17,6 +17,15 @@ pub enum AuthRule {
     AllowAll,
 }
 
+impl From<scrypto::resource::AuthRule> for AuthRule {
+    fn from(auth_rule: scrypto::prelude::AuthRule) -> Self {
+        match auth_rule {
+            ::scrypto::resource::AuthRule::NonFungible(addr) => AuthRule::JustNonFungible(addr),
+            ::scrypto::resource::AuthRule::OneOf(auth_rules) => AuthRule::OneOf(auth_rules.into_iter().map(AuthRule::from).collect())
+        }
+    }
+}
+
 impl AuthRule {
     pub fn or(self, other: AuthRule) -> Self {
         match self {

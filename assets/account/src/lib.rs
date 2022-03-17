@@ -15,7 +15,7 @@ blueprint! {
             }
             .instantiate_with_auth(HashMap::from([(
                 "withdraw".to_string(),
-                AuthRule::Just(auth_address),
+                AuthRule::NonFungible(auth_address),
             )]))
         }
 
@@ -28,7 +28,7 @@ blueprint! {
 
             Account { vaults }.instantiate_with_auth(HashMap::from([(
                 "withdraw".to_string(),
-                AuthRule::Just(auth_address),
+                AuthRule::NonFungible(auth_address),
             )]))
         }
 
