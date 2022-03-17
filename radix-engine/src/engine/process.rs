@@ -18,6 +18,7 @@ use crate::engine::*;
 use crate::errors::*;
 use crate::ledger::*;
 use crate::model::*;
+use crate::transaction::*;
 
 macro_rules! re_trace {
     ($proc:expr, $($args: expr),+) => {
@@ -235,13 +236,14 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         re_debug!(self, "(Transaction) Taking from worktop: {:?}", resource);
         let new_bucket_id = self.new_bucket_id()?;
         let bucket = match resource {
-            ResourceSpecifier::Some(amount, resource_def_id) => match amount {
-                Amount::Fungible { amount } => self.worktop.take(amount, resource_def_id),
-                Amount::NonFungible { ids } => {
-                    self.worktop.take_non_fungibles(&ids, resource_def_id)
-                }
-            }
-            .map_err(RuntimeError::WorktopError)?,
+            ResourceSpecifier::Amount(amount, resource_def_id) => self
+                .worktop
+                .take(amount, resource_def_id)
+                .map_err(RuntimeError::WorktopError)?,
+            ResourceSpecifier::Ids(ids, resource_def_id) => self
+                .worktop
+                .take_non_fungibles(&ids, resource_def_id)
+                .map_err(RuntimeError::WorktopError)?,
             ResourceSpecifier::All(resource_def_id) => {
                 match self
                     .worktop
@@ -1266,10 +1268,12 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .ok_or(RuntimeError::ResourceDefNotFound(resource_def_id))?;
         match mint_params {
             MintParams::Fungible { amount } => {
+                if !matches!(resource_def.resource_type(), ResourceType::Fungible { .. }) {
+                    return Err(RuntimeError::InvalidMintParams);
+                }
+
                 // Notify resource manager
-                resource_def
-                    .mint(&Amount::Fungible { amount })
-                    .map_err(RuntimeError::ResourceDefError)?;
+                resource_def.mint(amount);
 
                 // Allocate fungible
                 Ok(ResourceContainer::new_fungible(
@@ -1279,12 +1283,15 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 ))
             }
             MintParams::NonFungible { entries } => {
+                if !matches!(
+                    resource_def.resource_type(),
+                    ResourceType::NonFungible { .. }
+                ) {
+                    return Err(RuntimeError::InvalidMintParams);
+                }
+
                 // Notify resource manager
-                resource_def
-                    .mint(&Amount::NonFungible {
-                        ids: entries.keys().cloned().collect(),
-                    })
-                    .map_err(RuntimeError::ResourceDefError)?;
+                resource_def.mint(entries.len().into());
 
                 // Allocate non-fungibles
                 let mut ids = BTreeSet::new();
@@ -1647,9 +1654,11 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .get_resource_def_mut(&bucket.resource_def_id())
             .ok_or(RuntimeError::ResourceDefNotFound(bucket.resource_def_id()))?;
 
-        resource_def
-            .burn(&bucket.liquid_amount())
-            .map_err(RuntimeError::ResourceDefError)?;
+        if bucket.is_locked() {
+            return Err(RuntimeError::CantBurnLockedBucket);
+        }
+        resource_def.burn(bucket.total_amount());
+
         Ok(BurnResourceOutput {})
     }
 
@@ -1695,9 +1704,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     ) -> Result<GetNonFungibleIdsInVaultOutput, RuntimeError> {
         let vault = self.get_local_vault(&input.vault_id)?;
         let non_fungible_ids = vault
-            .liquid_amount()
-            .as_non_fungible_ids()
-            .map_err(RuntimeError::AmountError)?
+            .total_ids()
+            .map_err(RuntimeError::VaultError)?
             .into_iter()
             .collect();
 
@@ -1711,7 +1719,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let vault = self.get_local_vault(&input.vault_id)?;
 
         Ok(GetVaultAmountOutput {
-            amount: vault.liquid_amount().as_quantity(),
+            amount: vault.total_amount(),
         })
     }
 
@@ -1786,7 +1794,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let amount = self
             .buckets
             .get(&input.bucket_id)
-            .map(|b| b.liquid_amount().as_quantity())
+            .map(|b| b.total_amount())
             .ok_or(RuntimeError::BucketNotFound(input.bucket_id))?;
 
         Ok(GetBucketAmountOutput { amount })
@@ -1832,9 +1840,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
         Ok(GetNonFungibleIdsInBucketOutput {
             non_fungible_ids: bucket
-                .liquid_amount()
-                .as_non_fungible_ids()
-                .map_err(RuntimeError::AmountError)?
+                .total_ids()
+                .map_err(RuntimeError::BucketError)?
                 .into_iter()
                 .collect(),
         })
@@ -1868,7 +1875,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .ok_or(RuntimeError::ProofNotFound(input.proof_id))?;
 
         Ok(GetProofAmountOutput {
-            amount: proof.total_amount().as_quantity(),
+            amount: proof.total_amount(),
         })
     }
 
@@ -1897,9 +1904,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
         Ok(GetNonFungibleIdsInProofOutput {
             non_fungible_ids: proof
-                .total_amount()
-                .as_non_fungible_ids()
-                .map_err(RuntimeError::AmountError)?
+                .total_ids()
+                .map_err(RuntimeError::ProofError)?
                 .into_iter()
                 .collect(),
         })

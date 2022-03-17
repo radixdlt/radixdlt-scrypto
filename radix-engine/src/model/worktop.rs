@@ -89,7 +89,7 @@ impl Worktop {
 
     pub fn contains(&self, amount: Decimal, resource_def_id: ResourceDefId) -> bool {
         if let Some(container) = self.borrow_container(resource_def_id) {
-            container.liquid_amount().as_quantity() >= amount
+            container.liquid_amount() >= amount
         } else {
             false
         }

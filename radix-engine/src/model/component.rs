@@ -36,7 +36,7 @@ impl Component {
         if let Some(auth_address) = self.sys_auth.get(function) {
             if !proofs.iter().any(|p| {
                 p.resource_def_id() == auth_address.resource_def_id()
-                    && match p.total_amount().as_non_fungible_ids() {
+                    && match p.total_ids() {
                         Ok(ids) => ids.contains(&auth_address.non_fungible_id()),
                         Err(_) => false,
                     }

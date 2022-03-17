@@ -56,16 +56,26 @@ impl Vault {
         ))
     }
 
-    pub fn liquid_amount(&self) -> Amount {
-        self.borrow_container().liquid_amount()
-    }
-
     pub fn resource_def_id(&self) -> ResourceDefId {
         self.borrow_container().resource_def_id()
     }
 
     pub fn resource_type(&self) -> ResourceType {
         self.borrow_container().resource_type()
+    }
+
+    pub fn total_amount(&self) -> Decimal {
+        self.borrow_container().total_amount()
+    }
+
+    pub fn total_ids(&self) -> Result<BTreeSet<NonFungibleId>, VaultError> {
+        self.borrow_container()
+            .total_ids()
+            .map_err(VaultError::ResourceContainerError)
+    }
+
+    pub fn is_locked(&self) -> bool {
+        self.borrow_container().is_locked()
     }
 
     pub fn borrow_container(&self) -> Ref<ResourceContainer> {

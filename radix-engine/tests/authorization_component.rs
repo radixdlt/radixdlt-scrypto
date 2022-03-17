@@ -4,6 +4,7 @@ pub mod test_runner;
 use crate::test_runner::TestRunner;
 use radix_engine::errors::RuntimeError;
 use radix_engine::ledger::InMemorySubstateStore;
+use radix_engine::transaction::ResourceSpecifier;
 use scrypto::prelude::*;
 
 #[test]
@@ -90,12 +91,7 @@ fn can_make_cross_component_call_with_authorization() {
     assert!(receipt.result.is_ok());
     let my_component = receipt.new_component_ids[0];
 
-    let auth_amount = ResourceSpecifier::Some(
-        Amount::NonFungible {
-            ids: BTreeSet::from([auth_id]),
-        },
-        auth,
-    );
+    let auth_amount = ResourceSpecifier::Ids(BTreeSet::from([auth_id]), auth);
     let transaction = test_runner
         .new_transaction_builder()
         .withdraw_from_account(&auth_amount, account)

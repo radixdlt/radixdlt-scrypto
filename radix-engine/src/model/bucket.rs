@@ -60,20 +60,12 @@ impl Bucket {
             return false;
         }
 
-        match self
-            .borrow_container()
-            .liquid_amount()
-            .as_non_fungible_ids()
-        {
+        match self.borrow_container().total_ids() {
             Err(_) => false,
             Ok(non_fungible_ids) => non_fungible_ids
                 .iter()
                 .any(|k| k.eq(&non_fungible_address.non_fungible_id())),
         }
-    }
-
-    pub fn liquid_amount(&self) -> Amount {
-        self.borrow_container().liquid_amount()
     }
 
     pub fn resource_def_id(&self) -> ResourceDefId {
@@ -82,6 +74,16 @@ impl Bucket {
 
     pub fn resource_type(&self) -> ResourceType {
         self.borrow_container().resource_type()
+    }
+
+    pub fn total_amount(&self) -> Decimal {
+        self.borrow_container().total_amount()
+    }
+
+    pub fn total_ids(&self) -> Result<BTreeSet<NonFungibleId>, BucketError> {
+        self.borrow_container()
+            .total_ids()
+            .map_err(BucketError::ResourceContainerError)
     }
 
     pub fn is_locked(&self) -> bool {

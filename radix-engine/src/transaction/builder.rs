@@ -1,3 +1,6 @@
+use crate::engine::*;
+use crate::model::*;
+use crate::transaction::*;
 use sbor::describe::*;
 use sbor::*;
 use scrypto::abi;
@@ -6,6 +9,7 @@ use scrypto::engine::types::*;
 use scrypto::resource::resource_flags::*;
 use scrypto::resource::resource_permissions::*;
 use scrypto::rust::borrow::ToOwned;
+use scrypto::rust::collections::BTreeSet;
 use scrypto::rust::collections::*;
 use scrypto::rust::fmt;
 use scrypto::rust::str::FromStr;
@@ -14,9 +18,82 @@ use scrypto::rust::vec;
 use scrypto::rust::vec::Vec;
 use scrypto::types::*;
 
-use crate::engine::*;
-use crate::model::*;
-use crate::transaction::*;
+/// Specify how much resource to be used for creating buckets.
+///
+/// THIS IS USED BY TRANSACTION BUILDER ONLY!
+///
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
+pub enum ResourceSpecifier {
+    Amount(Decimal, ResourceDefId),
+
+    Ids(BTreeSet<NonFungibleId>, ResourceDefId),
+
+    All(ResourceDefId),
+}
+
+/// Represents an error when parsing `Resource` from string.
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub enum ParseResourceSpecifierError {
+    MissingResourceDefId,
+    InvalidAmount,
+    InvalidNonFungibleId,
+    InvalidResourceDefId,
+}
+
+impl fmt::Display for ParseResourceSpecifierError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
+#[cfg(not(feature = "alloc"))]
+impl std::error::Error for ParseResourceSpecifierError {}
+
+// Currently used by resim only.
+// TODO: extend to support manifest use case.
+impl FromStr for ResourceSpecifier {
+    type Err = ParseResourceSpecifierError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let tokens: Vec<&str> = s.trim().split(',').collect();
+
+        if tokens.len() >= 2 {
+            let resource_def_id = tokens
+                .last()
+                .unwrap()
+                .parse::<ResourceDefId>()
+                .map_err(|_| ParseResourceSpecifierError::InvalidResourceDefId)?;
+            if tokens[0].starts_with('#') {
+                let mut ids = BTreeSet::<NonFungibleId>::new();
+                for key in &tokens[..tokens.len() - 1] {
+                    if key.starts_with('#') {
+                        ids.insert(
+                            key[1..]
+                                .parse()
+                                .map_err(|_| ParseResourceSpecifierError::InvalidNonFungibleId)?,
+                        );
+                    } else {
+                        return Err(ParseResourceSpecifierError::InvalidNonFungibleId);
+                    }
+                }
+                Ok(ResourceSpecifier::Ids(ids, resource_def_id))
+            } else {
+                if tokens.len() == 2 {
+                    Ok(ResourceSpecifier::Amount(
+                        tokens[0]
+                            .parse()
+                            .map_err(|_| ParseResourceSpecifierError::InvalidAmount)?,
+                        resource_def_id,
+                    ))
+                } else {
+                    Err(ParseResourceSpecifierError::InvalidAmount)
+                }
+            }
+        } else {
+            Err(ParseResourceSpecifierError::MissingResourceDefId)
+        }
+    }
+}
 
 /// Utility for building transaction.
 pub struct TransactionBuilder<'a, A: AbiProvider> {
@@ -108,23 +185,21 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     where
         F: FnOnce(&mut Self, BucketId) -> &mut Self,
     {
-        let (builder, bucket_id, _) = match resource.clone() {
-            ResourceSpecifier::Some(amount, resource_def_id) => match amount {
-                Amount::Fungible { amount } => self.add_instruction(Instruction::TakeFromWorktop {
-                    amount,
-                    resource_def_id,
-                }),
-                Amount::NonFungible { ids } => {
-                    self.add_instruction(Instruction::TakeNonFungiblesFromWorktop {
-                        ids,
-                        resource_def_id,
-                    })
-                }
+        let (builder, bucket_id, _) = self.add_instruction(match resource.clone() {
+            ResourceSpecifier::Amount(amount, resource_def_id) => Instruction::TakeFromWorktop {
+                amount,
+                resource_def_id,
             },
-            ResourceSpecifier::All(resource_def_id) => {
-                self.add_instruction(Instruction::TakeAllFromWorktop { resource_def_id })
+            ResourceSpecifier::Ids(ids, resource_def_id) => {
+                Instruction::TakeNonFungiblesFromWorktop {
+                    ids,
+                    resource_def_id,
+                }
             }
-        };
+            ResourceSpecifier::All(resource_def_id) => {
+                Instruction::TakeAllFromWorktop { resource_def_id }
+            }
+        });
         then(builder, bucket_id.unwrap())
     }
 
@@ -425,10 +500,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         minter_resource_def_id: ResourceDefId,
     ) -> &mut Self {
         self.take_from_worktop(
-            &ResourceSpecifier::Some(
-                Amount::Fungible { amount: 1.into() },
-                minter_resource_def_id,
-            ),
+            &ResourceSpecifier::Amount(1.into(), minter_resource_def_id),
             |builder, bucket_id| {
                 builder.create_bucket_proof(bucket_id, |builder, proof_id| {
                     builder.push_auth(proof_id);
@@ -499,27 +571,23 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         account: ComponentId,
     ) -> &mut Self {
         match resource {
-            ResourceSpecifier::Some(amount, resource_def_id) => match amount {
-                Amount::Fungible { amount } => {
-                    self.add_instruction(Instruction::CallMethod {
-                        component_id: account,
-                        method: "withdraw".to_owned(),
-                        args: vec![scrypto_encode(amount), scrypto_encode(resource_def_id)],
-                    })
-                    .0
-                }
-                Amount::NonFungible { ids } => {
-                    self.add_instruction(Instruction::CallMethod {
-                        component_id: account,
-                        method: "withdraw_non_fungibles".to_owned(),
-                        args: vec![scrypto_encode(ids), scrypto_encode(resource_def_id)],
-                    })
-                    .0
-                }
-            },
-            ResourceSpecifier::All(..) => {
-                panic!("Withdrawing all from account is not supported!");
+            ResourceSpecifier::Amount(amount, resource_def_id) => {
+                self.add_instruction(Instruction::CallMethod {
+                    component_id: account,
+                    method: "withdraw".to_owned(),
+                    args: vec![scrypto_encode(amount), scrypto_encode(resource_def_id)],
+                })
+                .0
             }
+            ResourceSpecifier::Ids(ids, resource_def_id) => {
+                self.add_instruction(Instruction::CallMethod {
+                    component_id: account,
+                    method: "withdraw_non_fungibles".to_owned(),
+                    args: vec![scrypto_encode(ids), scrypto_encode(resource_def_id)],
+                })
+                .0
+            }
+            ResourceSpecifier::All(_) => panic!("Withdrawing all from account is not supported!"),
         }
     }
 

@@ -164,20 +164,14 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
                 ValidatedInstruction::TakeFromWorktop {
                     amount,
                     resource_def_id,
-                } => proc.take_from_worktop(ResourceSpecifier::Some(
-                    Amount::Fungible { amount },
-                    resource_def_id,
-                )),
+                } => proc.take_from_worktop(ResourceSpecifier::Amount(amount, resource_def_id)),
                 ValidatedInstruction::TakeAllFromWorktop { resource_def_id } => {
                     proc.take_from_worktop(ResourceSpecifier::All(resource_def_id))
                 }
                 ValidatedInstruction::TakeNonFungiblesFromWorktop {
                     ids,
                     resource_def_id,
-                } => proc.take_from_worktop(ResourceSpecifier::Some(
-                    Amount::NonFungible { ids },
-                    resource_def_id,
-                )),
+                } => proc.take_from_worktop(ResourceSpecifier::Ids(ids, resource_def_id)),
                 ValidatedInstruction::ReturnToWorktop { bucket_id } => {
                     proc.return_to_worktop(bucket_id)
                 }

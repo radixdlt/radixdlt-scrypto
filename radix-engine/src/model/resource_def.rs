@@ -2,7 +2,6 @@ use sbor::*;
 use scrypto::engine::types::*;
 use scrypto::resource::resource_flags::*;
 use scrypto::resource::resource_permissions::*;
-use scrypto::rust::collections::BTreeSet;
 use scrypto::rust::collections::HashMap;
 use scrypto::rust::string::String;
 use scrypto::rust::vec::Vec;
@@ -34,7 +33,6 @@ pub enum ResourceDefError {
         new_flags: u64,
         new_mutable_flags: u64,
     },
-    AmountError(AmountError),
 }
 
 /// The definition of a resource.
@@ -45,7 +43,7 @@ pub struct ResourceDef {
     flags: u64,
     mutable_flags: u64,
     authorities: HashMap<ResourceDefId, u64>,
-    total_supply: Amount,
+    total_supply: Decimal,
 }
 
 impl ResourceDef {
@@ -70,20 +68,13 @@ impl ResourceDef {
             }
         }
 
-        let total_supply = match resource_type {
-            ResourceType::Fungible { .. } => Amount::Fungible { amount: 0.into() },
-            ResourceType::NonFungible => Amount::NonFungible {
-                ids: BTreeSet::new(),
-            },
-        };
-
         Ok(Self {
             resource_type,
             metadata,
             flags,
             mutable_flags,
             authorities,
-            total_supply,
+            total_supply: 0.into(),
         })
     }
 
@@ -160,23 +151,19 @@ impl ResourceDef {
     }
 
     pub fn total_supply(&self) -> Decimal {
-        self.total_supply.as_quantity()
+        self.total_supply
     }
 
     pub fn is_flag_on(&self, flag: u64) -> bool {
         self.flags() & flag == flag
     }
 
-    pub fn mint(&mut self, amount: &Amount) -> Result<(), ResourceDefError> {
-        self.total_supply
-            .add(amount)
-            .map_err(ResourceDefError::AmountError)
+    pub fn mint(&mut self, amount: Decimal) {
+        self.total_supply += amount;
     }
 
-    pub fn burn(&mut self, amount: &Amount) -> Result<(), ResourceDefError> {
-        self.total_supply
-            .subtract(amount)
-            .map_err(ResourceDefError::AmountError)
+    pub fn burn(&mut self, amount: Decimal) {
+        self.total_supply -= amount;
     }
 
     pub fn update_mutable_flags(&mut self, new_mutable_flags: u64) -> Result<(), ResourceDefError> {

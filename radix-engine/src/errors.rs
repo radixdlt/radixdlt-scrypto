@@ -180,11 +180,14 @@ pub enum RuntimeError {
     /// Index out of bounds.
     IndexOutOfBounds { index: usize, max: usize },
 
-    /// Error when dealing with amounts.
-    AmountError(AmountError),
-
     /// Can't move a locked bucket.
     CantMoveLockedBucket,
+
+    /// Mint parameters are invalid
+    InvalidMintParams,
+
+    /// Can't burn locked bucket.
+    CantBurnLockedBucket,
 }
 
 impl fmt::Display for RuntimeError {
