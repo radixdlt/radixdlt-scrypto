@@ -1,5 +1,5 @@
-use sbor::*;
 use crate::resource::*;
+use sbor::*;
 
 /// Authorization Rule
 #[derive(Debug, Clone, TypeId, Encode, Decode)]

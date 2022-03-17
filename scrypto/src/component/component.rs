@@ -5,7 +5,7 @@ use crate::component::*;
 use crate::core::*;
 use crate::engine::{api::*, call_engine};
 use crate::misc::*;
-use crate::prelude::{AuthRule};
+use crate::prelude::AuthRule;
 use crate::rust::borrow::ToOwned;
 use crate::rust::collections::HashMap;
 use crate::rust::fmt;

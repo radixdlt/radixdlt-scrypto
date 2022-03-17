@@ -1012,10 +1012,12 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
         let data = Self::process_entry_data(&input.state)?;
         let new_objects = wasm_process.process_owned_objects.take(data)?;
-        let sys_auth: HashMap<String, AuthRule> = input.sys_auth.into_iter()
-            .map(|(name, auth_rule)| {
-                match auth_rule {
-                    ::scrypto::resource::AuthRule::Just(addr) => (name, AuthRule::just_non_fungible(addr))
+        let sys_auth: HashMap<String, AuthRule> = input
+            .sys_auth
+            .into_iter()
+            .map(|(name, auth_rule)| match auth_rule {
+                ::scrypto::resource::AuthRule::Just(addr) => {
+                    (name, AuthRule::just_non_fungible(addr))
                 }
             })
             .collect();
@@ -1273,11 +1275,9 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             MintParams::NonFungible { entries } => {
                 // Notify resource manager
                 resource_def
-                    .mint(
-                        &ResourceAmount::NonFungible {
-                            ids: entries.keys().cloned().collect(),
-                        },
-                    )
+                    .mint(&ResourceAmount::NonFungible {
+                        ids: entries.keys().cloned().collect(),
+                    })
                     .map_err(RuntimeError::ResourceDefError)?;
 
                 // Allocate non-fungibles
@@ -1524,12 +1524,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .track
             .get_resource_def(&resource_def_id)
             .ok_or(RuntimeError::ResourceDefNotFound(resource_def_id.clone()))?;
-        resource_def
-            .check_auth(
-                transition,
-                vec![self.caller_auth_worktop, &self.auth_worktop],
-            )
-            .map_err(RuntimeError::ResourceDefError)
+        resource_def.check_auth(transition, &[self.caller_auth_worktop, &self.auth_worktop])
     }
 
     fn handle_update_resource_flags(

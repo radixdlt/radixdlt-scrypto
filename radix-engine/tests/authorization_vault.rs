@@ -3,7 +3,6 @@ pub mod test_runner;
 use crate::test_runner::TestRunner;
 use radix_engine::errors::RuntimeError;
 use radix_engine::ledger::InMemorySubstateStore;
-use radix_engine::model::*;
 use radix_engine::transaction::*;
 use scrypto::prelude::*;
 
@@ -31,10 +30,7 @@ fn cannot_withdraw_restricted_transfer_from_my_account_with_no_auth() {
 
     // Assert
     let err = receipt.result.expect_err("Should be a runtime error");
-    assert_eq!(
-        err,
-        RuntimeError::ResourceDefError(ResourceDefError::PermissionNotAllowed)
-    );
+    assert_eq!(err, RuntimeError::NotAuthorized);
 }
 
 #[test]

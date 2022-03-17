@@ -11,7 +11,6 @@ colored = { version = "2.0", default-features = false }
 lru = { version = "0.7" }
 bencher = { version = "0.1.5" }
 hex = { version = "0.4", default-features = false }
-enum-map = { version = "2.0.3" }
 
 [[bench]]
 name = "bench"

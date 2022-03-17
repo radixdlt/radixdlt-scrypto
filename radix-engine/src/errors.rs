@@ -173,9 +173,13 @@ pub enum RuntimeError {
 
     /// System Authorization Failure
     NotAuthorized,
+    UnsupportedOperation,
 
     /// Index out of bounds.
-    IndexOutOfBounds { index: usize, max: usize },
+    IndexOutOfBounds {
+        index: usize,
+        max: usize,
+    },
 
     /// Non-fungible operation on fungible resource is not allowed
     NonFungibleOperationNotAllowed,

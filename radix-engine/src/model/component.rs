@@ -1,4 +1,4 @@
-use crate::model::{AuthRule};
+use crate::model::AuthRule;
 use sbor::*;
 use scrypto::engine::types::*;
 use scrypto::rust::collections::*;
