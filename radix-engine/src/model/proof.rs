@@ -1,6 +1,8 @@
 use scrypto::engine::types::*;
 use scrypto::rust::cell::RefCell;
 use scrypto::rust::rc::Rc;
+use scrypto::rust::vec;
+use scrypto::rust::vec::Vec;
 
 use crate::model::{ResourceContainer, ResourceContainerError};
 

@@ -331,10 +331,13 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .get_mut(&bucket_id)
             .ok_or(RuntimeError::BucketNotFound(bucket_id))?;
 
-        let new_proof_id = self
-            .id_allocator
-            .new_proof_id()
-            .map_err(RuntimeError::IdAllocatorError)?;
+        let new_proof_id = if self.depth == 0 {
+            self.id_allocator
+                .new_proof_id()
+                .map_err(RuntimeError::IdAllocatorError)?
+        } else {
+            self.track.new_proof_id()
+        };
         let new_proof = Proof::new(bucket.refer_container()).map_err(RuntimeError::ProofError)?;
         self.proofs.insert(new_proof_id, new_proof);
 
@@ -350,7 +353,13 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .get(&proof_id)
             .ok_or(RuntimeError::ProofNotFound(proof_id))?;
 
-        let new_proof_id = self.track.new_proof_id();
+        let new_proof_id = if self.depth == 0 {
+            self.id_allocator
+                .new_proof_id()
+                .map_err(RuntimeError::IdAllocatorError)?
+        } else {
+            self.track.new_proof_id()
+        };
         let new_proof = proof.clone();
         self.proofs.insert(new_proof_id, new_proof);
 
