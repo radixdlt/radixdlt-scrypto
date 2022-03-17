@@ -1017,7 +1017,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .into_iter()
             .map(|(name, auth_rule)| match auth_rule {
                 ::scrypto::resource::AuthRule::Just(addr) => {
-                    (name, AuthRule::just_non_fungible(addr))
+                    (name, AuthRule::JustNonFungible(addr))
                 }
             })
             .collect();
@@ -1518,13 +1518,14 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     fn check_resource_auth(
         &mut self,
         resource_def_id: &ResourceDefId,
-        transition: ResourceControllerMethod,
+        transition: &str,
     ) -> Result<(), RuntimeError> {
         let resource_def = self
             .track
             .get_resource_def(&resource_def_id)
             .ok_or(RuntimeError::ResourceDefNotFound(resource_def_id.clone()))?;
-        resource_def.check_auth(transition, &[self.caller_auth_worktop, &self.auth_worktop])
+        let auth_rule = resource_def.get_auth(transition)?;
+        auth_rule.check(&[self.caller_auth_worktop, &self.auth_worktop])
     }
 
     fn handle_update_resource_flags(
@@ -1534,7 +1535,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         // Auth
         self.check_resource_auth(
             &input.resource_def_id,
-            ResourceControllerMethod::UpdateFlags,
+            "update_flags",
         )?;
 
         // State Update
@@ -1556,7 +1557,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         // Auth
         self.check_resource_auth(
             &input.resource_def_id,
-            ResourceControllerMethod::UpdateMutableFlags,
+            "update_mutable_flags",
         )?;
 
         // State Update
@@ -1578,7 +1579,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         // Auth
         self.check_resource_auth(
             &input.resource_def_id,
-            ResourceControllerMethod::UpdateMetadata,
+            "update_metadata",
         )?;
 
         // State update
@@ -1601,7 +1602,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let resource_def_id = input.non_fungible_address.resource_def_id();
         self.check_resource_auth(
             &resource_def_id,
-            ResourceControllerMethod::UpdateNonFungibleMutableData,
+            "update_non_fungible_mutable_data",
         )?;
 
         // update state
@@ -1621,7 +1622,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         input: MintResourceInput,
     ) -> Result<MintResourceOutput, RuntimeError> {
         // Auth
-        self.check_resource_auth(&input.resource_def_id, ResourceControllerMethod::Mint)?;
+        self.check_resource_auth(&input.resource_def_id, "mint")?;
 
         // wrap resource into a bucket
         let bucket = Bucket::new(ResourceContainer::new(
@@ -1643,7 +1644,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .buckets
             .remove(&input.bucket_id)
             .ok_or(RuntimeError::BucketNotFound(input.bucket_id))?;
-        self.check_resource_auth(&bucket.resource_def_id(), ResourceControllerMethod::Burn)?;
+        self.check_resource_auth(&bucket.resource_def_id(), "burn")?;
 
         // Burn
         let resource_def = self
@@ -1662,7 +1663,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         input: TakeFromVaultInput,
     ) -> Result<TakeFromVaultOutput, RuntimeError> {
         let resource_def_id = self.get_local_vault(&input.vault_id)?.resource_def_id();
-        self.check_resource_auth(&resource_def_id, ResourceControllerMethod::TakeFromVault)?;
+        self.check_resource_auth(&resource_def_id, "take_from_vault")?;
 
         let new_bucket = self
             .get_local_vault(&input.vault_id)?
@@ -1680,7 +1681,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         input: TakeNonFungibleFromVaultInput,
     ) -> Result<TakeNonFungibleFromVaultOutput, RuntimeError> {
         let resource_def_id = self.get_local_vault(&input.vault_id)?.resource_def_id();
-        self.check_resource_auth(&resource_def_id, ResourceControllerMethod::TakeFromVault)?;
+        self.check_resource_auth(&resource_def_id, "take_from_vault")?;
 
         let new_bucket = self
             .get_local_vault(&input.vault_id)?

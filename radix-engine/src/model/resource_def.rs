@@ -5,20 +5,11 @@ use scrypto::prelude::ToString;
 use scrypto::resource::resource_flags::*;
 use scrypto::resource::resource_permissions::*;
 use scrypto::rust::collections::HashMap;
+use scrypto::rust::mem;
 use scrypto::rust::string::String;
 
-use crate::model::{AuthRule, Proof, ResourceAmount};
-
-#[derive(Clone, Copy, Debug)]
-pub enum ResourceControllerMethod {
-    Mint,
-    Burn,
-    TakeFromVault,
-    UpdateFlags,
-    UpdateMutableFlags,
-    UpdateMetadata,
-    UpdateNonFungibleMutableData,
-}
+use crate::model::resource_def::Flag::{IsNotSet, IsSet, True};
+use crate::model::{AuthRule, ResourceAmount};
 
 /// Represents an error when accessing a bucket.
 #[derive(Debug, Clone, PartialEq)]
@@ -38,6 +29,48 @@ pub enum ResourceDefError {
     },
 }
 
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
+enum Flag {
+    IsSet(u64),
+    IsNotSet(u64),
+    True,
+}
+
+impl Flag {
+    fn get(&self, flags: u64) -> bool {
+        match self {
+            IsSet(flag) => flags & flag > 0,
+            IsNotSet(flag) => flags & flag == 0,
+            True => true,
+        }
+    }
+}
+
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
+pub struct MethodState {
+    enabled: Flag,
+    use_auth: Flag,
+    auth_rule: AuthRule,
+}
+
+impl MethodState {
+    fn new(enabled: Flag, use_auth: Flag) -> Self {
+        MethodState {
+            enabled,
+            use_auth,
+            auth_rule: AuthRule::NoAuth,
+        }
+    }
+
+    fn is_enabled(&self, flags: u64) -> bool {
+        self.enabled.get(flags)
+    }
+
+    fn use_auth(&self, flags: u64) -> bool {
+        self.use_auth.get(flags)
+    }
+}
+
 /// The definition of a resource.
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct ResourceDef {
@@ -45,7 +78,7 @@ pub struct ResourceDef {
     metadata: HashMap<String, String>,
     flags: u64,
     mutable_flags: u64,
-    auth_rules: HashMap<String, AuthRule>,
+    method_states: HashMap<String, MethodState>,
     total_supply: Decimal,
 }
 
@@ -81,16 +114,28 @@ impl ResourceDef {
             return Err(ResourceDefError::InvalidResourceFlags(mutable_flags));
         }
 
-        let mut auth_rules: HashMap<String, AuthRule> = HashMap::new();
-        auth_rules.insert("mint".to_string(), AuthRule::Empty);
-        auth_rules.insert("burn".to_string(), AuthRule::Empty);
-        auth_rules.insert("take_from_vault".to_string(), AuthRule::Empty);
-        auth_rules.insert("update_flags".to_string(), AuthRule::Empty);
-        auth_rules.insert("update_mutable_flags".to_string(), AuthRule::Empty);
-        auth_rules.insert("update_metadata".to_string(), AuthRule::Empty);
-        auth_rules.insert(
+        let mut method_states: HashMap<String, MethodState> = HashMap::new();
+        method_states.insert("mint".to_string(), MethodState::new(IsSet(MINTABLE), True));
+        method_states.insert(
+            "burn".to_string(),
+            MethodState::new(IsSet(BURNABLE), IsNotSet(FREELY_BURNABLE)),
+        );
+        method_states.insert(
+            "take_from_vault".to_string(),
+            MethodState::new(True, IsSet(RESTRICTED_TRANSFER)),
+        );
+        method_states.insert("update_flags".to_string(), MethodState::new(True, True));
+        method_states.insert(
+            "update_mutable_flags".to_string(),
+            MethodState::new(True, True),
+        );
+        method_states.insert(
+            "update_metadata".to_string(),
+            MethodState::new(IsSet(SHARED_METADATA_MUTABLE), True),
+        );
+        method_states.insert(
             "update_non_fungible_mutable_data".to_string(),
-            AuthRule::Empty,
+            MethodState::new(IsSet(INDIVIDUAL_METADATA_MUTABLE), True),
         );
 
         for (resource_def_id, permission) in authorities {
@@ -101,9 +146,10 @@ impl ResourceDef {
             for (flag, methods) in PERMISSION_MAP.iter() {
                 if permission & flag != 0 {
                     for method in methods.iter() {
-                        let cur_rule = auth_rules.remove(*method).unwrap();
+                        let method_state = method_states.get_mut(*method).unwrap();
+                        let cur_rule = mem::replace(&mut method_state.auth_rule, AuthRule::NoAuth);
                         let new_rule = AuthRule::JustResource(resource_def_id);
-                        auth_rules.insert((*method).to_string(), cur_rule.or(new_rule));
+                        method_state.auth_rule = cur_rule.or(new_rule);
                     }
                 }
             }
@@ -114,73 +160,23 @@ impl ResourceDef {
             metadata,
             flags,
             mutable_flags,
-            auth_rules,
+            method_states,
             total_supply,
         };
 
         Ok(resource_def)
     }
 
-    pub fn check_auth(
-        &self,
-        transition: ResourceControllerMethod,
-        proofs: &[&[Proof]],
-    ) -> Result<(), RuntimeError> {
-        match transition {
-            ResourceControllerMethod::Mint => {
-                if self.is_flag_on(MINTABLE) {
-                    self.auth_rules.get("mint").unwrap().check(proofs)
-                } else {
+    pub fn get_auth(&self, method_name: &str) -> Result<&AuthRule, RuntimeError> {
+        match self.method_states.get(method_name) {
+            None => Err(RuntimeError::UnsupportedOperation),
+            Some(method_state) => {
+                if !method_state.is_enabled(self.flags) {
                     Err(RuntimeError::UnsupportedOperation)
-                }
-            }
-            ResourceControllerMethod::Burn => {
-                if self.is_flag_on(BURNABLE) {
-                    if self.is_flag_on(FREELY_BURNABLE) {
-                        Ok(())
-                    } else {
-                        self.auth_rules.get("burn").unwrap().check(proofs)
-                    }
+                } else if method_state.use_auth(self.flags) {
+                    Ok(&method_state.auth_rule)
                 } else {
-                    Err(RuntimeError::UnsupportedOperation)
-                }
-            }
-            ResourceControllerMethod::TakeFromVault => {
-                if !self.is_flag_on(RESTRICTED_TRANSFER) {
-                    Ok(())
-                } else {
-                    self.auth_rules
-                        .get("take_from_vault")
-                        .unwrap()
-                        .check(proofs)
-                }
-            }
-            ResourceControllerMethod::UpdateFlags => {
-                self.auth_rules.get("update_flags").unwrap().check(proofs)
-            }
-            ResourceControllerMethod::UpdateMutableFlags => self
-                .auth_rules
-                .get("update_mutable_flags")
-                .unwrap()
-                .check(proofs),
-            ResourceControllerMethod::UpdateMetadata => {
-                if self.is_flag_on(SHARED_METADATA_MUTABLE) {
-                    self.auth_rules
-                        .get("update_metadata")
-                        .unwrap()
-                        .check(proofs)
-                } else {
-                    Err(RuntimeError::UnsupportedOperation)
-                }
-            }
-            ResourceControllerMethod::UpdateNonFungibleMutableData => {
-                if self.is_flag_on(INDIVIDUAL_METADATA_MUTABLE) {
-                    self.auth_rules
-                        .get("update_non_fungible_mutable_data")
-                        .unwrap()
-                        .check(proofs)
-                } else {
-                    Err(RuntimeError::UnsupportedOperation)
+                    Ok(&AuthRule::AllowAll)
                 }
             }
         }

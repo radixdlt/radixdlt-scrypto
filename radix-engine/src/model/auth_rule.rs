@@ -1,6 +1,6 @@
 use crate::errors::RuntimeError;
 use crate::errors::RuntimeError::NotAuthorized;
-use crate::model::AuthRule::Or;
+use crate::model::AuthRule::OneOf;
 use crate::model::Proof;
 use sbor::*;
 use scrypto::prelude::{NonFungibleAddress, ResourceDefId};
@@ -12,24 +12,22 @@ use scrypto::rust::vec::Vec;
 pub enum AuthRule {
     JustNonFungible(NonFungibleAddress),
     JustResource(ResourceDefId),
-    Or(Vec<AuthRule>),
-    Empty,
+    OneOf(Vec<AuthRule>),
+    NoAuth,
+    AllowAll,
 }
 
 impl AuthRule {
-    pub fn just_non_fungible(non_fungible_address: NonFungibleAddress) -> Self {
-        AuthRule::JustNonFungible(non_fungible_address)
-    }
-
     pub fn or(self, other: AuthRule) -> Self {
         match self {
-            AuthRule::JustNonFungible(_) => Or(vec![self, other]),
-            AuthRule::JustResource(_) => Or(vec![self, other]),
-            AuthRule::Or(mut rules) => {
+            AuthRule::JustNonFungible(_) => OneOf(vec![self, other]),
+            AuthRule::JustResource(_) => OneOf(vec![self, other]),
+            AuthRule::OneOf(mut rules) => {
                 rules.push(other);
-                Or(rules)
+                OneOf(rules)
             }
-            AuthRule::Empty => other,
+            AuthRule::NoAuth => other,
+            AuthRule::AllowAll => self,
         }
     }
 
@@ -64,7 +62,7 @@ impl AuthRule {
 
                 Err(NotAuthorized)
             }
-            AuthRule::Or(rules) => {
+            AuthRule::OneOf(rules) => {
                 for rule in rules {
                     if rule.check(proofs_vector).is_ok() {
                         return Ok(());
@@ -73,7 +71,8 @@ impl AuthRule {
 
                 Err(NotAuthorized)
             }
-            AuthRule::Empty => Err(NotAuthorized),
+            AuthRule::NoAuth => Err(NotAuthorized),
+            AuthRule::AllowAll => Ok(()),
         }
     }
 }
