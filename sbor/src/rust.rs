@@ -6,6 +6,8 @@ pub use alloc::borrow;
 #[cfg(feature = "alloc")]
 pub use alloc::boxed;
 #[cfg(feature = "alloc")]
+pub use alloc::cell;
+#[cfg(feature = "alloc")]
 pub use alloc::rc;
 #[cfg(feature = "alloc")]
 pub use alloc::string;
@@ -24,6 +26,8 @@ pub use core::ptr;
 pub use std::borrow;
 #[cfg(not(feature = "alloc"))]
 pub use std::boxed;
+#[cfg(not(feature = "alloc"))]
+pub use std::cell;
 #[cfg(not(feature = "alloc"))]
 pub use std::convert;
 #[cfg(not(feature = "alloc"))]
