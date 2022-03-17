@@ -30,7 +30,7 @@ blueprint! {
 
             // Mint a non-fungible
             let non_fungible = authorize(&mint_badge, || {
-                 resource_def!(resource_def_id).mint_non_fungible(
+                resource_def!(resource_def_id).mint_non_fungible(
                     &NonFungibleId::from(0u128),
                     Sandwich {
                         name: "Test".to_owned(),
@@ -78,10 +78,8 @@ blueprint! {
 
             data.available = true;
             authorize(&mint_badge, || {
-                resource_def!(resource_def_id).update_non_fungible_data(
-                    &NonFungibleId::from(0u128),
-                    data,
-                );
+                resource_def!(resource_def_id)
+                    .update_non_fungible_data(&NonFungibleId::from(0u128), data);
             });
 
             let data: Sandwich =
