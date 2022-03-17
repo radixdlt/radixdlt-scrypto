@@ -49,8 +49,6 @@ impl fmt::Display for ParseResourceSpecifierError {
 #[cfg(not(feature = "alloc"))]
 impl std::error::Error for ParseResourceSpecifierError {}
 
-// Currently used by resim only.
-// TODO: extend to support manifest use case.
 impl FromStr for ResourceSpecifier {
     type Err = ParseResourceSpecifierError;
 
@@ -719,7 +717,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                 Ok(scrypto_encode(&value))
             }
             CustomType::Bucket => {
-                let resource_spec = parse_resource_determiner(i, ty, arg)?;
+                let resource_spec = parse_resource_specifier(i, ty, arg)?;
 
                 if let Some(account) = account {
                     self.withdraw_from_account(&resource_spec, account);
@@ -734,7 +732,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                 )))
             }
             CustomType::Proof => {
-                let resource_spec = parse_resource_determiner(i, ty, arg)?;
+                let resource_spec = parse_resource_specifier(i, ty, arg)?;
                 if let Some(account) = account {
                     self.withdraw_from_account(&resource_spec, account);
                 }
@@ -755,7 +753,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     }
 }
 
-fn parse_resource_determiner(
+fn parse_resource_specifier(
     i: usize,
     ty: &Type,
     arg: &str,

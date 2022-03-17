@@ -41,6 +41,7 @@ impl Proof {
     // TODO: mixed types of container
     // TODO: restricted proof
     // TODO: proof auto drop
+    // TODO: thorough test partial/full/composite proofs
 
     pub fn new(container: Rc<RefCell<ResourceContainer>>) -> Result<Self, ProofError> {
         let resource_def_id = container.borrow().resource_def_id();
@@ -93,11 +94,11 @@ impl Proof {
                 LockedAmountOrIds::Amount(amount) => container
                     .borrow_mut()
                     .lock_amount(amount.clone())
-                    .expect("Cloning should  always be possible"),
+                    .expect("Cloning should always be possible"),
                 LockedAmountOrIds::Ids(ids) => container
                     .borrow_mut()
                     .lock_ids(ids)
-                    .expect("Cloning should  always be possible"),
+                    .expect("Cloning should always be possible"),
             };
         }
 
