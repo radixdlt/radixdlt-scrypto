@@ -3,7 +3,7 @@ use crate::rust::vec::Vec;
 use sbor::*;
 
 /// Authorization Rule
-#[derive(Debug, Clone, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, Describe, TypeId, Encode, Decode)]
 pub enum AuthRule {
     NonFungible(NonFungibleAddress),
     OneOf(Vec<AuthRule>),

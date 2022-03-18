@@ -6,6 +6,7 @@ use scrypto::prelude::NonFungibleAddress;
 use scrypto::rust::string::ToString;
 use scrypto::rust::vec;
 use scrypto::rust::vec::Vec;
+use scrypto::resource::AuthRule;
 
 use crate::engine::*;
 use crate::errors::*;
@@ -83,12 +84,12 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
     }
 
     /// Creates an account with 1,000,000 XRD in balance.
-    pub fn new_account(&mut self, auth_address: &NonFungibleAddress) -> ComponentId {
+    pub fn new_account(&mut self, auth_rule: &AuthRule) -> ComponentId {
         self.run(
             TransactionBuilder::new(self)
                 .call_method(SYSTEM_COMPONENT, "free_xrd", vec![], None)
                 .new_account_with_resource(
-                    auth_address,
+                    auth_rule,
                     &ResourceSpecification::All {
                         resource_def_id: RADIX_TOKEN,
                     },
@@ -105,7 +106,8 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
         let key = self.new_public_key();
         let id = NonFungibleId::new(key.to_vec());
         let auth_address = NonFungibleAddress::new(ECDSA_TOKEN, id);
-        let account = self.new_account(&auth_address);
+        let auth_rule = AuthRule::NonFungible(auth_address);
+        let account = self.new_account(&auth_rule);
         (key, account)
     }
 
