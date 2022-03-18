@@ -29,7 +29,7 @@ blueprint! {
         pub fn move_proof() -> Bucket {
             let bucket = Self::create_test_token(1000);
             let component_id = MoveTest { vaults: Vec::new() }.instantiate();
-            Process::call_method(component_id, "receive_proof", args!(bucket.present()));
+            Process::call_method(component_id, "receive_proof", args!(bucket.create_proof()));
 
             bucket
         }

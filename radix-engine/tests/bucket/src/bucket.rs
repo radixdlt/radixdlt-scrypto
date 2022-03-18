@@ -10,7 +10,7 @@ blueprint! {
             let bucket = ResourceBuilder::new_fungible(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "TestToken")
                 .initial_supply_fungible(amount);
-            let proof1 = bucket.present();
+            let proof1 = bucket.create_proof();
             let proof2 = proof1.clone();
             proof1.drop();
             proof2.drop();
@@ -33,7 +33,7 @@ blueprint! {
 
         pub fn borrow() -> Bucket {
             let bucket = Self::create_test_token(100);
-            let proof = bucket.present();
+            let proof = bucket.create_proof();
             proof.drop();
             bucket
         }
