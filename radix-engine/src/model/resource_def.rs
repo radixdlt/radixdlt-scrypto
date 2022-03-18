@@ -63,6 +63,16 @@ impl MethodState {
         }
     }
 
+    fn get_auth(&self, flags: u64) -> &AuthRule {
+        if !self.is_enabled(flags) {
+            &AuthRule::Private
+        } else if self.use_auth(flags) {
+            &self.auth_rule
+        } else {
+            &AuthRule::Public
+        }
+    }
+
     fn is_enabled(&self, flags: u64) -> bool {
         self.enabled.matches(flags)
     }
@@ -153,6 +163,7 @@ impl ResourceDef {
                         method_state.auth_rule = match cur_rule {
                             AuthRule::Public => AuthRule::Protected(new_rule),
                             AuthRule::Protected(rule) => AuthRule::Protected(rule.or(new_rule)),
+                            AuthRule::Private => AuthRule::Private,
                         };
                     }
                 }
@@ -174,15 +185,7 @@ impl ResourceDef {
     pub fn get_auth(&self, method_name: &str) -> Result<&AuthRule, RuntimeError> {
         match self.method_states.get(method_name) {
             None => Err(RuntimeError::UnsupportedOperation),
-            Some(method_state) => {
-                if !method_state.is_enabled(self.flags) {
-                    Err(RuntimeError::UnsupportedOperation)
-                } else if method_state.use_auth(self.flags) {
-                    Ok(&method_state.auth_rule)
-                } else {
-                    Ok(&AuthRule::Public)
-                }
-            }
+            Some(method_state) => Ok(method_state.get_auth(self.flags)),
         }
     }
 

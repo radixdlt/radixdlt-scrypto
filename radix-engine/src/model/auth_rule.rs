@@ -84,6 +84,7 @@ impl From<scrypto::resource::AuthRule> for Rule {
 pub enum AuthRule {
     Protected(Rule),
     Public,
+    Private,
 }
 
 impl AuthRule {
@@ -91,6 +92,7 @@ impl AuthRule {
         match self {
             AuthRule::Protected(rule) => rule.check(proofs_vector),
             AuthRule::Public => Ok(()),
+            AuthRule::Private => Err(RuntimeError::UnsupportedOperation),
         }
     }
 }
