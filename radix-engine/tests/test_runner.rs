@@ -21,7 +21,9 @@ impl<'l> TestRunner<'l> {
         TransactionBuilder::new(&self.executor)
     }
 
-    pub fn new_public_key_and_non_fungible_address(&mut self) -> (EcdsaPublicKey, NonFungibleAddress) {
+    pub fn new_public_key_and_non_fungible_address(
+        &mut self,
+    ) -> (EcdsaPublicKey, NonFungibleAddress) {
         let key = self.executor.new_public_key();
         let id = NonFungibleId::new(key.to_vec());
         let non_fungible_address = NonFungibleAddress::new(ECDSA_TOKEN, id);

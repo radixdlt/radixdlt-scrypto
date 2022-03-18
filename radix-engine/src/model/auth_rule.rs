@@ -2,6 +2,7 @@ use crate::errors::RuntimeError;
 use crate::errors::RuntimeError::NotAuthorized;
 use crate::model::Proof;
 use sbor::*;
+use scrypto::math::Decimal;
 use scrypto::prelude::{NonFungibleAddress, ResourceDefId};
 use scrypto::rust::vec;
 use scrypto::rust::vec::Vec;
@@ -10,6 +11,7 @@ use scrypto::rust::vec::Vec;
 pub enum Rule {
     NonFungible(NonFungibleAddress),
     AnyOfResource(ResourceDefId),
+    SomeOfResource(Decimal, ResourceDefId),
     OneOf(Vec<Rule>),
 }
 
@@ -17,7 +19,12 @@ impl From<scrypto::resource::AuthRule> for Rule {
     fn from(auth_rule: scrypto::prelude::AuthRule) -> Self {
         match auth_rule {
             ::scrypto::resource::AuthRule::NonFungible(addr) => Rule::NonFungible(addr),
-            ::scrypto::resource::AuthRule::AnyOfResource(resource_def_id) => Rule::AnyOfResource(resource_def_id),
+            ::scrypto::resource::AuthRule::AnyOfResource(resource_def_id) => {
+                Rule::AnyOfResource(resource_def_id)
+            }
+            ::scrypto::resource::AuthRule::SomeOfResource(amount, resource_def_id) => {
+                Rule::SomeOfResource(amount, resource_def_id)
+            }
             ::scrypto::resource::AuthRule::OneOf(auth_rules) => {
                 Rule::OneOf(auth_rules.into_iter().map(Rule::from).collect())
             }
@@ -30,6 +37,7 @@ impl Rule {
         match self {
             Rule::NonFungible(_) => Rule::OneOf(vec![self, other]),
             Rule::AnyOfResource(_) => Rule::OneOf(vec![self, other]),
+            Rule::SomeOfResource(_, _) => Rule::OneOf(vec![self, other]),
             Rule::OneOf(mut rules) => {
                 rules.push(other);
                 Rule::OneOf(rules)
@@ -61,6 +69,20 @@ impl Rule {
                     for p in proofs.iter() {
                         let proof_resource_def_id = p.resource_def_id();
                         if proof_resource_def_id == *resource_def_id {
+                            return Ok(());
+                        }
+                    }
+                }
+
+                Err(NotAuthorized)
+            }
+            Rule::SomeOfResource(amount, resource_def_id) => {
+                for proofs in proofs_vector {
+                    for p in proofs.iter() {
+                        let proof_resource_def_id = p.resource_def_id();
+                        if proof_resource_def_id == *resource_def_id
+                            && p.total_amount().as_quantity() >= *amount
+                        {
                             return Ok(());
                         }
                     }
