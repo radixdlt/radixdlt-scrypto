@@ -13,6 +13,18 @@ pub enum Rule {
     OneOf(Vec<Rule>),
 }
 
+impl From<scrypto::resource::AuthRule> for Rule {
+    fn from(auth_rule: scrypto::prelude::AuthRule) -> Self {
+        match auth_rule {
+            ::scrypto::resource::AuthRule::NonFungible(addr) => Rule::NonFungible(addr),
+            ::scrypto::resource::AuthRule::AnyOfResource(resource_def_id) => Rule::AnyOfResource(resource_def_id),
+            ::scrypto::resource::AuthRule::OneOf(auth_rules) => {
+                Rule::OneOf(auth_rules.into_iter().map(Rule::from).collect())
+            }
+        }
+    }
+}
+
 impl Rule {
     pub fn or(self, other: Rule) -> Self {
         match self {
@@ -64,17 +76,6 @@ impl Rule {
                 }
 
                 Err(NotAuthorized)
-            }
-        }
-    }
-}
-
-impl From<scrypto::resource::AuthRule> for Rule {
-    fn from(auth_rule: scrypto::prelude::AuthRule) -> Self {
-        match auth_rule {
-            ::scrypto::resource::AuthRule::NonFungible(addr) => Rule::NonFungible(addr),
-            ::scrypto::resource::AuthRule::OneOf(auth_rules) => {
-                Rule::OneOf(auth_rules.into_iter().map(Rule::from).collect())
             }
         }
     }
