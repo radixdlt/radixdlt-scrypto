@@ -173,7 +173,9 @@ pub enum RuntimeError {
 
     /// System Authorization Failure
     NotAuthorized,
-    UnsupportedOperation,
+
+    /// Method does not exist
+    UnsupportedMethod,
 
     /// Index out of bounds.
     IndexOutOfBounds {

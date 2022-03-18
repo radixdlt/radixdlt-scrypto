@@ -29,6 +29,13 @@ impl Component {
         }
     }
 
+    pub fn get_auth(&self, method_name: &str) -> &AuthRule {
+        match self.auth_rules.get(method_name) {
+            Some(auth_rule) => auth_rule,
+            None => &AuthRule::Public,
+        }
+    }
+
     pub fn auth_rules(&self) -> &HashMap<String, AuthRule> {
         &self.auth_rules
     }

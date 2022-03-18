@@ -85,6 +85,7 @@ pub enum AuthRule {
     Protected(Rule),
     Public,
     Private,
+    Unsupported,
 }
 
 impl AuthRule {
@@ -92,7 +93,8 @@ impl AuthRule {
         match self {
             AuthRule::Protected(rule) => rule.check(proofs_vector),
             AuthRule::Public => Ok(()),
-            AuthRule::Private => Err(RuntimeError::UnsupportedOperation),
+            AuthRule::Private => Err(RuntimeError::NotAuthorized),
+            AuthRule::Unsupported => Err(RuntimeError::UnsupportedMethod),
         }
     }
 }

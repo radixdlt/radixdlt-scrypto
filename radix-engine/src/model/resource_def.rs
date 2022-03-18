@@ -1,4 +1,3 @@
-use crate::errors::RuntimeError;
 use sbor::*;
 use scrypto::engine::types::*;
 use scrypto::prelude::ToString;
@@ -163,7 +162,7 @@ impl ResourceDef {
                         method_state.auth_rule = match cur_rule {
                             AuthRule::Public => AuthRule::Protected(new_rule),
                             AuthRule::Protected(rule) => AuthRule::Protected(rule.or(new_rule)),
-                            AuthRule::Private => AuthRule::Private,
+                            _ => panic!("Should never get here."),
                         };
                     }
                 }
@@ -182,10 +181,10 @@ impl ResourceDef {
         Ok(resource_def)
     }
 
-    pub fn get_auth(&self, method_name: &str) -> Result<&AuthRule, RuntimeError> {
+    pub fn get_auth(&self, method_name: &str) -> &AuthRule {
         match self.method_states.get(method_name) {
-            None => Err(RuntimeError::UnsupportedOperation),
-            Some(method_state) => Ok(method_state.get_auth(self.flags)),
+            None => &AuthRule::Unsupported,
+            Some(method_state) => method_state.get_auth(self.flags),
         }
     }
 

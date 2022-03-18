@@ -502,12 +502,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     let component = self.track.get_component(component_id.clone()).unwrap();
 
                     // Auth check
-                    let method_auth = component.auth_rules().get(&invocation.function);
-                    match method_auth {
-                        Some(auth_rule) => auth_rule.check(&[self.caller_auth_worktop]),
-                        None => Ok(()),
-                    }?;
-
+                    let method_auth = component.get_auth(&invocation.function);
+                    method_auth.check(&[self.caller_auth_worktop])?;
                     let initial_loaded_object_refs =
                         Self::process_entry_data(component.state()).unwrap();
                     let state = component.state().to_vec();
@@ -1520,7 +1516,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .track
             .get_resource_def(&resource_def_id)
             .ok_or(RuntimeError::ResourceDefNotFound(resource_def_id.clone()))?;
-        let auth_rule = resource_def.get_auth(transition)?;
+        let auth_rule = resource_def.get_auth(transition);
         auth_rule.check(&[self.caller_auth_worktop, &self.auth_worktop])
     }
 
