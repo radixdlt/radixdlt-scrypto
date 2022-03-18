@@ -93,6 +93,16 @@ impl FromStr for ResourceSpecifier {
     }
 }
 
+impl ResourceSpecifier {
+    pub fn resource_def_id(&self) -> ResourceDefId {
+        match self {
+            Self::Amount(_, resource_def_id)
+            | Self::Ids(_, resource_def_id)
+            | Self::All(resource_def_id) => *resource_def_id,
+        }
+    }
+}
+
 /// Utility for building transaction.
 pub struct TransactionBuilder<'a, A: AbiProvider> {
     /// ABI provider for constructing arguments
@@ -224,12 +234,12 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         then(builder, proof_id.unwrap())
     }
 
-    pub fn push_auth(&mut self, proof_id: ProofId) -> &mut Self {
+    pub fn push_onto_worktop(&mut self, proof_id: ProofId) -> &mut Self {
         self.add_instruction(Instruction::PushOntoAuthWorktop { proof_id });
         self
     }
 
-    pub fn pop_auth<F>(&mut self, then: F) -> &mut Self
+    pub fn pop_from_auth_worktop<F>(&mut self, then: F) -> &mut Self
     where
         F: FnOnce(&mut Self, ProofId) -> &mut Self,
     {
@@ -371,10 +381,6 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         Ok(Transaction { instructions: v })
     }
 
-    //===============================
-    // complex instruction below
-    //===============================
-
     /// Publishes a package.
     pub fn publish_package(&mut self, code: &[u8]) -> &mut Self {
         self.add_instruction(Instruction::PublishPackage {
@@ -501,14 +507,14 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
             &ResourceSpecifier::Amount(1.into(), minter_resource_def_id),
             |builder, bucket_id| {
                 builder.create_bucket_proof(bucket_id, |builder, proof_id| {
-                    builder.push_auth(proof_id);
+                    builder.push_onto_worktop(proof_id);
                     builder.add_instruction(Instruction::CallFunction {
                         package_id: SYSTEM_PACKAGE,
                         blueprint_name: "System".to_owned(),
                         function: "mint".to_owned(),
                         args: vec![scrypto_encode(&amount), scrypto_encode(&resource_def_id)],
                     });
-                    builder.pop_auth(|builder, proof_id| builder.drop_proof(proof_id))
+                    builder.pop_from_auth_worktop(|builder, proof_id| builder.drop_proof(proof_id))
                 })
             },
         )
@@ -587,6 +593,20 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
             }
             ResourceSpecifier::All(_) => panic!("Withdrawing all from account is not supported!"),
         }
+    }
+
+    /// Creates resource proof from an account.
+    pub fn create_proof_from_account(
+        &mut self,
+        resource_def_id: ResourceDefId,
+        account: ComponentId,
+    ) -> &mut Self {
+        self.add_instruction(Instruction::CallMethod {
+            component_id: account,
+            method: "create_proof".to_owned(),
+            args: vec![scrypto_encode(&resource_def_id)],
+        })
+        .0
     }
 
     //===============================
@@ -717,13 +737,13 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                 Ok(scrypto_encode(&value))
             }
             CustomType::Bucket => {
-                let resource_spec = parse_resource_specifier(i, ty, arg)?;
+                let resource_specifier = parse_resource_specifier(i, ty, arg)?;
 
                 if let Some(account) = account {
-                    self.withdraw_from_account(&resource_spec, account);
+                    self.withdraw_from_account(&resource_specifier, account);
                 }
                 let mut created_bucket_id = None;
-                self.take_from_worktop(&resource_spec, |builder, bucket_id| {
+                self.take_from_worktop(&resource_specifier, |builder, bucket_id| {
                     created_bucket_id = Some(bucket_id);
                     builder
                 });
@@ -732,16 +752,15 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                 )))
             }
             CustomType::Proof => {
-                let resource_spec = parse_resource_specifier(i, ty, arg)?;
+                let resource_specifier = parse_resource_specifier(i, ty, arg)?;
                 if let Some(account) = account {
-                    self.withdraw_from_account(&resource_spec, account);
+                    self.create_proof_from_account(resource_specifier.resource_def_id(), account);
+                } else {
+                    // TODO: create proof from auth worktop OR worktop?
                 }
                 let mut created_proof_id = None;
-                self.take_from_worktop(&resource_spec, |builder, bucket_id| {
-                    builder.create_bucket_proof(bucket_id, |builder, proof_id| {
-                        created_proof_id = Some(proof_id);
-                        builder
-                    });
+                self.pop_from_auth_worktop(|builder, proof_id| {
+                    created_proof_id = Some(proof_id);
                     builder
                 });
                 Ok(scrypto_encode(&scrypto::resource::Proof(

@@ -54,7 +54,7 @@ blueprint! {
             match vault {
                 Some(mut vault) => vault.take(amount),
                 None => {
-                    panic!("Insufficient balance");
+                    panic!("No such resource in account");
                 }
             }
         }
@@ -75,7 +75,20 @@ blueprint! {
                     bucket
                 }
                 None => {
-                    panic!("Insufficient balance");
+                    panic!("No such resource in account");
+                }
+            }
+        }
+
+        /// Create proof of all the specified resource
+        ///
+        /// TODO: add amount quantifier
+        pub fn create_proof(&self, resource_def_id: ResourceDefId) -> Proof {
+            let vault = self.vaults.get(&resource_def_id);
+            match vault {
+                Some(vault) => vault.create_proof(),
+                None => {
+                    panic!("No such resource in account");
                 }
             }
         }

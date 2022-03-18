@@ -20,7 +20,7 @@ pub struct Proof {
     resource_def_id: ResourceDefId,
     /// The resource type
     resource_type: ResourceType,
-    /// Restricted proof can't be moved down along the call stack (growing down).
+    /// Restricted proof can't be moved.
     restricted: bool,
     /// The total amount, for optimization purpose
     locked_in_total: LockedAmountOrIds,
@@ -39,7 +39,6 @@ impl Proof {
     // TODO: partial proof
     // TODO: multiple containers
     // TODO: mixed types of container
-    // TODO: restricted proof
     // TODO: proof auto drop
     // TODO: thorough test partial/full/composite proofs
 
@@ -124,6 +123,10 @@ impl Proof {
                     .expect("Unlocking should always be possible"),
             };
         }
+    }
+
+    pub fn change_to_restricted(&mut self) {
+        self.restricted = true;
     }
 
     pub fn resource_def_id(&self) -> ResourceDefId {

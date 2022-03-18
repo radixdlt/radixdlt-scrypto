@@ -333,6 +333,10 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .remove(&proof_id)
             .ok_or(RuntimeError::ProofNotFound(proof_id))?;
 
+        if proof.is_restricted() {
+            return Err(RuntimeError::CantMoveRestrictedProof(proof_id));
+        }
+
         self.auth_worktop.push(proof);
 
         Ok(())
@@ -470,14 +474,18 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         proofs: HashMap<ProofId, Proof>,
     ) -> Result<(), RuntimeError> {
         if self.depth == 0 {
-            assert!(proofs.is_empty());
-
+            // buckets are aggregated by worktop
             for (_, bucket) in buckets {
                 self.worktop
                     .put(bucket)
                     .map_err(RuntimeError::WorktopError)?;
             }
+            // proofs are accumulated by auth worktop
+            for (_, proof) in proofs {
+                self.auth_worktop.push(proof);
+            }
         } else {
+            // for component, received bucket and proofs go to the "buckets" and "proofs" areas.
             self.proofs.extend(proofs);
             self.buckets.extend(buckets);
         }
@@ -556,7 +564,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             RuntimeValue::I32(ptr) => {
                 let data = ValidatedData::from_slice(&self.read_bytes(ptr)?)
                     .map_err(RuntimeError::DataValidationError)?;
-                self.process_call_data(&data, false)?;
+                self.process_return_data(&data)?;
                 data
             }
             _ => {
@@ -637,7 +645,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     pub fn call(&mut self, invocation: Invocation) -> Result<ValidatedData, RuntimeError> {
         // move resource
         for arg in &invocation.args {
-            self.process_call_data(arg, true)?;
+            self.process_call_data(arg)?;
         }
         let (buckets_out, proofs_out) = self.move_out_resources();
         let mut process = Process::new(self.depth + 1, self.trace, self.track);
@@ -761,19 +769,21 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         println!("{}[{:5}] {}", "  ".repeat(self.depth), l, m);
     }
 
-    fn process_call_data(
-        &mut self,
-        validated: &ValidatedData,
-        is_argument: bool,
-    ) -> Result<(), RuntimeError> {
+    fn process_call_data(&mut self, validated: &ValidatedData) -> Result<(), RuntimeError> {
         self.move_buckets(&validated.bucket_ids)?;
-        if is_argument {
-            self.move_proofs(&validated.proof_ids)?;
-        } else {
-            if !validated.proof_ids.is_empty() {
-                return Err(RuntimeError::ProofNotAllowed);
-            }
+        self.move_proofs(&validated.proof_ids, true)?;
+        if !validated.lazy_map_ids.is_empty() {
+            return Err(RuntimeError::LazyMapNotAllowed);
         }
+        if !validated.vault_ids.is_empty() {
+            return Err(RuntimeError::VaultNotAllowed);
+        }
+        Ok(())
+    }
+
+    fn process_return_data(&mut self, validated: &ValidatedData) -> Result<(), RuntimeError> {
+        self.move_buckets(&validated.bucket_ids)?;
+        self.move_proofs(&validated.proof_ids, false)?;
         if !validated.lazy_map_ids.is_empty() {
             return Err(RuntimeError::LazyMapNotAllowed);
         }
@@ -853,12 +863,22 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     }
 
     /// Remove transient buckets from this process
-    fn move_proofs(&mut self, proofs: &[ProofId]) -> Result<(), RuntimeError> {
+    fn move_proofs(
+        &mut self,
+        proofs: &[ProofId],
+        change_to_restricted: bool,
+    ) -> Result<(), RuntimeError> {
         for proof_id in proofs {
-            let proof = self
+            let mut proof = self
                 .proofs
                 .remove(proof_id)
                 .ok_or(RuntimeError::ProofNotFound(*proof_id))?;
+            if proof.is_restricted() {
+                return Err(RuntimeError::CantMoveRestrictedProof(*proof_id));
+            }
+            if change_to_restricted {
+                proof.change_to_restricted();
+            }
             re_debug!(self, "Moving proof: {}, {:?}", proof_id, proof);
             self.moving_proofs.insert(*proof_id, proof);
         }

@@ -188,6 +188,9 @@ pub enum RuntimeError {
 
     /// Can't burn locked bucket.
     CantBurnLockedBucket,
+
+    /// Can't move restricted proof.
+    CantMoveRestrictedProof(ProofId),
 }
 
 impl fmt::Display for RuntimeError {
