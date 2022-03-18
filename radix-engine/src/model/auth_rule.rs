@@ -12,6 +12,7 @@ pub enum Rule {
     NonFungible(NonFungibleAddress),
     AnyOfResource(ResourceDefId),
     SomeOfResource(Decimal, ResourceDefId),
+    AllOf(Vec<Rule>),
     OneOf(Vec<Rule>),
 }
 
@@ -24,6 +25,9 @@ impl From<scrypto::resource::AuthRule> for Rule {
             }
             ::scrypto::resource::AuthRule::SomeOfResource(amount, resource_def_id) => {
                 Rule::SomeOfResource(amount, resource_def_id)
+            }
+            ::scrypto::resource::AuthRule::AllOf(auth_rules) => {
+                Rule::AllOf(auth_rules.into_iter().map(Rule::from).collect())
             }
             ::scrypto::resource::AuthRule::OneOf(auth_rules) => {
                 Rule::OneOf(auth_rules.into_iter().map(Rule::from).collect())
@@ -38,6 +42,7 @@ impl Rule {
             Rule::NonFungible(_) => Rule::OneOf(vec![self, other]),
             Rule::AnyOfResource(_) => Rule::OneOf(vec![self, other]),
             Rule::SomeOfResource(_, _) => Rule::OneOf(vec![self, other]),
+            Rule::AllOf(rules) => Rule::OneOf(vec![Rule::AllOf(rules), other]),
             Rule::OneOf(mut rules) => {
                 rules.push(other);
                 Rule::OneOf(rules)
@@ -89,6 +94,15 @@ impl Rule {
                 }
 
                 Err(NotAuthorized)
+            }
+            Rule::AllOf(rules) => {
+                for rule in rules {
+                    if rule.check(proofs_vector).is_err() {
+                        return Err(NotAuthorized);
+                    }
+                }
+
+                Ok(())
             }
             Rule::OneOf(rules) => {
                 for rule in rules {

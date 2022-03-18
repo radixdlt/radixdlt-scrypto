@@ -9,5 +9,6 @@ pub enum AuthRule {
     NonFungible(NonFungibleAddress),
     AnyOfResource(ResourceDefId),
     SomeOfResource(Decimal, ResourceDefId),
+    AllOf(Vec<AuthRule>),
     OneOf(Vec<AuthRule>),
 }
