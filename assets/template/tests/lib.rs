@@ -7,8 +7,7 @@ fn test_hello() {
     // Set up environment.
     let mut ledger = InMemorySubstateStore::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, false);
-    let key = executor.new_public_key();
-    let account = executor.new_account(key);
+    let (key, account) = executor.new_public_key_with_account();
     let package = executor.publish_package(compile_package!("${wasm_name}")).unwrap();
 
     // Test the `instantiate_hello` function.

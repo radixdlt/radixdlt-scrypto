@@ -10,8 +10,7 @@ fn test_say_hello() {
     // Set up environment.
     let mut ledger = InMemorySubstateStore::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, false);
-    let public_key = executor.new_public_key();
-    let account = executor.new_account(public_key);
+    let (public_key, account) = executor.new_public_key_with_account();
     let package = executor
         .publish_package(include_package!("no_std"))
         .unwrap();

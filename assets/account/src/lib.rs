@@ -6,10 +6,7 @@ blueprint! {
     }
 
     impl Account {
-        pub fn new(public_key: EcdsaPublicKey) -> ComponentId {
-            let key = NonFungibleId::new(public_key.to_vec());
-            let auth_address = NonFungibleAddress::new(ECDSA_TOKEN, key);
-
+        pub fn new(auth_address: NonFungibleAddress) -> ComponentId {
             Account {
                 vaults: LazyMap::new(),
             }
@@ -19,13 +16,9 @@ blueprint! {
             )]))
         }
 
-        pub fn with_bucket(public_key: EcdsaPublicKey, bucket: Bucket) -> ComponentId {
+        pub fn with_bucket(auth_address: NonFungibleAddress, bucket: Bucket) -> ComponentId {
             let vaults = LazyMap::new();
             vaults.insert(bucket.resource_def_id(), Vault::with_bucket(bucket));
-
-            let key = NonFungibleId::new(public_key.to_vec());
-            let auth_address = NonFungibleAddress::new(ECDSA_TOKEN, key);
-
             Account { vaults }.instantiate_with_auth(HashMap::from([(
                 "withdraw".to_string(),
                 AuthRule::NonFungible(auth_address),

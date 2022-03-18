@@ -9,10 +9,8 @@ use scrypto::prelude::*;
 fn bench_transfer(b: &mut Bencher) {
     let mut ledger = InMemorySubstateStore::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, false);
-    let key1 = executor.new_public_key();
-    let account1 = executor.new_account(key1);
-    let key2 = executor.new_public_key();
-    let account2 = executor.new_account(key2);
+    let (key1, account1) = executor.new_public_key_with_account();
+    let (_, account2) = executor.new_public_key_with_account();
     let transaction = TransactionBuilder::new(&executor)
         .withdraw_from_account(
             &ResourceSpecification::Fungible {

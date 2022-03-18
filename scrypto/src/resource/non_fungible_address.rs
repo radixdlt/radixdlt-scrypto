@@ -51,7 +51,8 @@ impl TryFrom<&[u8]> for NonFungibleAddress {
         let non_fungible_id = NonFungibleId::try_from(non_fungible_id_slice)
             .map_err(|_| ParseNonFungibleAddressError::Invalid)?;
         Ok(NonFungibleAddress {
-            resource_def_id, non_fungible_id
+            resource_def_id,
+            non_fungible_id,
         })
     }
 }
@@ -65,7 +66,11 @@ impl NonFungibleAddress {
     }
 }
 
-custom_type!(NonFungibleAddress, CustomType::NonFungibleAddress, Vec::new());
+custom_type!(
+    NonFungibleAddress,
+    CustomType::NonFungibleAddress,
+    Vec::new()
+);
 
 //======
 // text

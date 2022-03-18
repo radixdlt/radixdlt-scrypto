@@ -2,6 +2,7 @@ use scrypto::abi;
 use scrypto::buffer::scrypto_encode;
 use scrypto::crypto::sha256;
 use scrypto::engine::types::*;
+use scrypto::prelude::NonFungibleAddress;
 use scrypto::rust::string::ToString;
 use scrypto::rust::vec;
 use scrypto::rust::vec::Vec;
@@ -82,12 +83,12 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
     }
 
     /// Creates an account with 1,000,000 XRD in balance.
-    pub fn new_account(&mut self, key: EcdsaPublicKey) -> ComponentId {
+    pub fn new_account(&mut self, auth_address: &NonFungibleAddress) -> ComponentId {
         self.run(
             TransactionBuilder::new(self)
                 .call_method(SYSTEM_COMPONENT, "free_xrd", vec![], None)
                 .new_account_with_resource(
-                    key,
+                    auth_address,
                     &ResourceSpecification::All {
                         resource_def_id: RADIX_TOKEN,
                     },
@@ -102,7 +103,9 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
     /// Creates a new public key and account associated with it
     pub fn new_public_key_with_account(&mut self) -> (EcdsaPublicKey, ComponentId) {
         let key = self.new_public_key();
-        let account = self.new_account(key);
+        let id = NonFungibleId::new(key.to_vec());
+        let auth_address = NonFungibleAddress::new(ECDSA_TOKEN, id);
+        let account = self.new_account(&auth_address);
         (key, account)
     }
 
