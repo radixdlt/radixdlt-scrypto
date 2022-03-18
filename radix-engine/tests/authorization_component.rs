@@ -62,7 +62,10 @@ fn cannot_make_cross_component_call_without_authorization() {
         .map(|(c, _)| c)
         .unwrap();
     let auth_address = NonFungibleAddress::new(auth, auth_id);
-    assert_eq!(component_state.get_auth("get_component_state"), &AuthRule::Protected(Rule::NonFungible(auth_address)));
+    assert_eq!(
+        component_state.get_auth("get_component_state"),
+        &AuthRule::Protected(Rule::NonFungible(auth_address))
+    );
 }
 
 #[test]
@@ -131,5 +134,8 @@ fn can_make_cross_component_call_with_authorization() {
         .map(|(c, _)| c)
         .unwrap();
     let auth_address = NonFungibleAddress::new(auth, auth_id);
-    assert_eq!(component_state.get_auth("get_component_state"), &AuthRule::Protected(Rule::NonFungible(auth_address)));
+    assert_eq!(
+        component_state.get_auth("get_component_state"),
+        &AuthRule::Protected(Rule::NonFungible(auth_address))
+    );
 }

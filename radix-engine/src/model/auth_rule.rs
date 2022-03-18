@@ -13,7 +13,6 @@ pub enum Rule {
     OneOf(Vec<Rule>),
 }
 
-
 impl Rule {
     pub fn or(self, other: Rule) -> Self {
         match self {
@@ -34,9 +33,9 @@ impl Rule {
                         let proof_resource_def_id = p.resource_def_id();
                         if proof_resource_def_id == non_fungible_address.resource_def_id()
                             && match p.total_amount().as_non_fungible_ids() {
-                            Some(ids) => ids.contains(&non_fungible_address.non_fungible_id()),
-                            None => false,
-                        }
+                                Some(ids) => ids.contains(&non_fungible_address.non_fungible_id()),
+                                None => false,
+                            }
                         {
                             return Ok(());
                         }
@@ -74,7 +73,9 @@ impl From<scrypto::resource::AuthRule> for Rule {
     fn from(auth_rule: scrypto::prelude::AuthRule) -> Self {
         match auth_rule {
             ::scrypto::resource::AuthRule::NonFungible(addr) => Rule::NonFungible(addr),
-            ::scrypto::resource::AuthRule::OneOf(auth_rules) => Rule::OneOf(auth_rules.into_iter().map(Rule::from).collect()),
+            ::scrypto::resource::AuthRule::OneOf(auth_rules) => {
+                Rule::OneOf(auth_rules.into_iter().map(Rule::from).collect())
+            }
         }
     }
 }

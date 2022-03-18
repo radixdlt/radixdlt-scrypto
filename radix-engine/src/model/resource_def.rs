@@ -7,9 +7,9 @@ use scrypto::rust::collections::HashMap;
 use scrypto::rust::mem;
 use scrypto::rust::string::String;
 
-use crate::model::resource_def::FlagCondition::{IsNotSet, IsSet, AlwaysTrue};
-use crate::model::{AuthRule, ResourceAmount};
 use crate::model::auth_rule::Rule;
+use crate::model::resource_def::FlagCondition::{AlwaysTrue, IsNotSet, IsSet};
+use crate::model::{AuthRule, ResourceAmount};
 
 /// Represents an error when accessing a bucket.
 #[derive(Debug, Clone, PartialEq)]
@@ -125,7 +125,10 @@ impl ResourceDef {
         }
 
         let mut method_states: HashMap<String, MethodState> = HashMap::new();
-        method_states.insert("mint".to_string(), MethodState::new(IsSet(MINTABLE), AlwaysTrue));
+        method_states.insert(
+            "mint".to_string(),
+            MethodState::new(IsSet(MINTABLE), AlwaysTrue),
+        );
         method_states.insert(
             "burn".to_string(),
             MethodState::new(IsSet(BURNABLE), IsNotSet(FREELY_BURNABLE)),
@@ -134,7 +137,10 @@ impl ResourceDef {
             "take_from_vault".to_string(),
             MethodState::new(AlwaysTrue, IsSet(RESTRICTED_TRANSFER)),
         );
-        method_states.insert("update_flags".to_string(), MethodState::new(AlwaysTrue, AlwaysTrue));
+        method_states.insert(
+            "update_flags".to_string(),
+            MethodState::new(AlwaysTrue, AlwaysTrue),
+        );
         method_states.insert(
             "update_mutable_flags".to_string(),
             MethodState::new(AlwaysTrue, AlwaysTrue),
