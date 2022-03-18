@@ -76,25 +76,9 @@ pub fn authorize<F, O>(bucket: &Bucket, func: F) -> O
 where
     F: FnOnce() -> O,
 {
-    let input = CreateBucketProofInput {
-        bucket_id: bucket.0,
-    };
-    let output: CreateBucketProofOutput = call_engine(CREATE_BUCKET_PROOF, input);
-
-    let input = PushOntoAuthWorktopInput {
-        proof_id: output.proof_id,
-    };
-    let _: PushOntoAuthWorktopOutput = call_engine(PUSH_ONTO_AUTH_WORKTOP, input);
-
+    AuthWorktop::push(bucket.create_proof());
     let return_value = func();
-
-    let input = PopFromAuthWorktopInput {};
-    let output: PopFromAuthWorktopOutput = call_engine(POP_FROM_AUTH_WORKTOP, input);
-
-    let input = DropProofInput {
-        proof_id: output.proof_id,
-    };
-    let _: DropProofOutput = call_engine(DROP_PROOF, input);
+    AuthWorktop::pop().drop();
 
     return_value
 }
