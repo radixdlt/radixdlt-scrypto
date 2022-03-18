@@ -8,7 +8,7 @@ use scrypto::rust::collections::HashMap;
 use scrypto::rust::mem;
 use scrypto::rust::string::String;
 
-use crate::model::resource_def::Flag::{IsNotSet, IsSet, True};
+use crate::model::resource_def::FlagCondition::{IsNotSet, IsSet, AlwaysTrue};
 use crate::model::{AuthRule, ResourceAmount};
 
 /// Represents an error when accessing a bucket.
@@ -30,44 +30,44 @@ pub enum ResourceDefError {
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
-enum Flag {
+enum FlagCondition {
     IsSet(u64),
     IsNotSet(u64),
-    True,
+    AlwaysTrue,
 }
 
-impl Flag {
-    fn get(&self, flags: u64) -> bool {
+impl FlagCondition {
+    fn matches(&self, flags: u64) -> bool {
         match self {
             IsSet(flag) => flags & flag > 0,
             IsNotSet(flag) => flags & flag == 0,
-            True => true,
+            AlwaysTrue => true,
         }
     }
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct MethodState {
-    enabled: Flag,
-    use_auth: Flag,
+    enabled: FlagCondition,
+    use_auth: FlagCondition,
     auth_rule: AuthRule,
 }
 
 impl MethodState {
-    fn new(enabled: Flag, use_auth: Flag) -> Self {
+    fn new(enabled: FlagCondition, use_auth: FlagCondition) -> Self {
         MethodState {
             enabled,
             use_auth,
-            auth_rule: AuthRule::NoAuth,
+            auth_rule: AuthRule::Public,
         }
     }
 
     fn is_enabled(&self, flags: u64) -> bool {
-        self.enabled.get(flags)
+        self.enabled.matches(flags)
     }
 
     fn use_auth(&self, flags: u64) -> bool {
-        self.use_auth.get(flags)
+        self.use_auth.matches(flags)
     }
 }
 
@@ -115,27 +115,27 @@ impl ResourceDef {
         }
 
         let mut method_states: HashMap<String, MethodState> = HashMap::new();
-        method_states.insert("mint".to_string(), MethodState::new(IsSet(MINTABLE), True));
+        method_states.insert("mint".to_string(), MethodState::new(IsSet(MINTABLE), AlwaysTrue));
         method_states.insert(
             "burn".to_string(),
             MethodState::new(IsSet(BURNABLE), IsNotSet(FREELY_BURNABLE)),
         );
         method_states.insert(
             "take_from_vault".to_string(),
-            MethodState::new(True, IsSet(RESTRICTED_TRANSFER)),
+            MethodState::new(AlwaysTrue, IsSet(RESTRICTED_TRANSFER)),
         );
-        method_states.insert("update_flags".to_string(), MethodState::new(True, True));
+        method_states.insert("update_flags".to_string(), MethodState::new(AlwaysTrue, AlwaysTrue));
         method_states.insert(
             "update_mutable_flags".to_string(),
-            MethodState::new(True, True),
+            MethodState::new(AlwaysTrue, AlwaysTrue),
         );
         method_states.insert(
             "update_metadata".to_string(),
-            MethodState::new(IsSet(SHARED_METADATA_MUTABLE), True),
+            MethodState::new(IsSet(SHARED_METADATA_MUTABLE), AlwaysTrue),
         );
         method_states.insert(
             "update_non_fungible_mutable_data".to_string(),
-            MethodState::new(IsSet(INDIVIDUAL_METADATA_MUTABLE), True),
+            MethodState::new(IsSet(INDIVIDUAL_METADATA_MUTABLE), AlwaysTrue),
         );
 
         for (resource_def_id, permission) in authorities {
@@ -147,9 +147,12 @@ impl ResourceDef {
                 if permission & flag != 0 {
                     for method in methods.iter() {
                         let method_state = method_states.get_mut(*method).unwrap();
-                        let cur_rule = mem::replace(&mut method_state.auth_rule, AuthRule::NoAuth);
-                        let new_rule = AuthRule::JustResource(resource_def_id);
-                        method_state.auth_rule = cur_rule.or(new_rule);
+                        let cur_rule = mem::replace(&mut method_state.auth_rule, AuthRule::Public);
+                        let new_rule = AuthRule::AnyOfResource(resource_def_id);
+                        method_state.auth_rule = match cur_rule {
+                            AuthRule::Public => new_rule,
+                            non_public_rule => non_public_rule.or(new_rule),
+                        };
                     }
                 }
             }
@@ -176,7 +179,7 @@ impl ResourceDef {
                 } else if method_state.use_auth(self.flags) {
                     Ok(&method_state.auth_rule)
                 } else {
-                    Ok(&AuthRule::AllowAll)
+                    Ok(&AuthRule::Public)
                 }
             }
         }

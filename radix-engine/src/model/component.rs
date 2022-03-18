@@ -10,7 +10,7 @@ use scrypto::rust::vec::Vec;
 pub struct Component {
     package_id: PackageId,
     blueprint_name: String,
-    sys_auth: HashMap<String, AuthRule>,
+    auth_rules: HashMap<String, AuthRule>,
     state: Vec<u8>,
 }
 
@@ -18,19 +18,19 @@ impl Component {
     pub fn new(
         package_id: PackageId,
         blueprint_name: String,
-        sys_auth: HashMap<String, AuthRule>,
+        auth_rules: HashMap<String, AuthRule>,
         state: Vec<u8>,
     ) -> Self {
         Self {
             package_id,
             blueprint_name,
-            sys_auth,
+            auth_rules,
             state,
         }
     }
 
-    pub fn sys_auth(&self) -> &HashMap<String, AuthRule> {
-        &self.sys_auth
+    pub fn auth_rules(&self) -> &HashMap<String, AuthRule> {
+        &self.auth_rules
     }
 
     pub fn package_id(&self) -> PackageId {

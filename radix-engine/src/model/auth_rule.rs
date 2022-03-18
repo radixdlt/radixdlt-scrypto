@@ -10,17 +10,16 @@ use scrypto::rust::vec::Vec;
 /// Authorization Rule
 #[derive(Debug, Clone, PartialEq, Eq, Hash, TypeId, Encode, Decode)]
 pub enum AuthRule {
-    JustNonFungible(NonFungibleAddress),
-    JustResource(ResourceDefId),
+    NonFungible(NonFungibleAddress),
+    AnyOfResource(ResourceDefId),
     OneOf(Vec<AuthRule>),
-    NoAuth,
-    AllowAll,
+    Public,
 }
 
 impl From<scrypto::resource::AuthRule> for AuthRule {
     fn from(auth_rule: scrypto::prelude::AuthRule) -> Self {
         match auth_rule {
-            ::scrypto::resource::AuthRule::NonFungible(addr) => AuthRule::JustNonFungible(addr),
+            ::scrypto::resource::AuthRule::NonFungible(addr) => AuthRule::NonFungible(addr),
             ::scrypto::resource::AuthRule::OneOf(auth_rules) => AuthRule::OneOf(auth_rules.into_iter().map(AuthRule::from).collect())
         }
     }
@@ -29,20 +28,19 @@ impl From<scrypto::resource::AuthRule> for AuthRule {
 impl AuthRule {
     pub fn or(self, other: AuthRule) -> Self {
         match self {
-            AuthRule::JustNonFungible(_) => OneOf(vec![self, other]),
-            AuthRule::JustResource(_) => OneOf(vec![self, other]),
+            AuthRule::NonFungible(_) => OneOf(vec![self, other]),
+            AuthRule::AnyOfResource(_) => OneOf(vec![self, other]),
             AuthRule::OneOf(mut rules) => {
                 rules.push(other);
                 OneOf(rules)
             }
-            AuthRule::NoAuth => other,
-            AuthRule::AllowAll => self,
+            AuthRule::Public => self,
         }
     }
 
     pub fn check(&self, proofs_vector: &[&[Proof]]) -> Result<(), RuntimeError> {
         match self {
-            AuthRule::JustNonFungible(non_fungible_address) => {
+            AuthRule::NonFungible(non_fungible_address) => {
                 for proofs in proofs_vector {
                     for p in proofs.iter() {
                         let proof_resource_def_id = p.resource_def_id();
@@ -59,7 +57,7 @@ impl AuthRule {
 
                 Err(NotAuthorized)
             }
-            AuthRule::JustResource(resource_def_id) => {
+            AuthRule::AnyOfResource(resource_def_id) => {
                 for proofs in proofs_vector {
                     for p in proofs.iter() {
                         let proof_resource_def_id = p.resource_def_id();
@@ -80,8 +78,7 @@ impl AuthRule {
 
                 Err(NotAuthorized)
             }
-            AuthRule::NoAuth => Err(NotAuthorized),
-            AuthRule::AllowAll => Ok(()),
+            AuthRule::Public => Ok(()),
         }
     }
 }
