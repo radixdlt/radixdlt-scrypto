@@ -10,6 +10,7 @@ use scrypto::rust::string::String;
 
 use crate::model::resource_def::FlagCondition::{IsNotSet, IsSet, AlwaysTrue};
 use crate::model::{AuthRule, ResourceAmount};
+use crate::model::auth_rule::Rule;
 
 /// Represents an error when accessing a bucket.
 #[derive(Debug, Clone, PartialEq)]
@@ -148,10 +149,10 @@ impl ResourceDef {
                     for method in methods.iter() {
                         let method_state = method_states.get_mut(*method).unwrap();
                         let cur_rule = mem::replace(&mut method_state.auth_rule, AuthRule::Public);
-                        let new_rule = AuthRule::AnyOfResource(resource_def_id);
+                        let new_rule = Rule::AnyOfResource(resource_def_id);
                         method_state.auth_rule = match cur_rule {
-                            AuthRule::Public => new_rule,
-                            non_public_rule => non_public_rule.or(new_rule),
+                            AuthRule::Public => AuthRule::Protected(new_rule),
+                            AuthRule::Protected(rule) => AuthRule::Protected(rule.or(new_rule)),
                         };
                     }
                 }

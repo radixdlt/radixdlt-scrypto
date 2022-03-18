@@ -1,54 +1,42 @@
 use crate::errors::RuntimeError;
 use crate::errors::RuntimeError::NotAuthorized;
-use crate::model::AuthRule::OneOf;
 use crate::model::Proof;
 use sbor::*;
 use scrypto::prelude::{NonFungibleAddress, ResourceDefId};
 use scrypto::rust::vec;
 use scrypto::rust::vec::Vec;
 
-/// Authorization Rule
 #[derive(Debug, Clone, PartialEq, Eq, Hash, TypeId, Encode, Decode)]
-pub enum AuthRule {
+pub enum Rule {
     NonFungible(NonFungibleAddress),
     AnyOfResource(ResourceDefId),
-    OneOf(Vec<AuthRule>),
-    Public,
+    OneOf(Vec<Rule>),
 }
 
-impl From<scrypto::resource::AuthRule> for AuthRule {
-    fn from(auth_rule: scrypto::prelude::AuthRule) -> Self {
-        match auth_rule {
-            ::scrypto::resource::AuthRule::NonFungible(addr) => AuthRule::NonFungible(addr),
-            ::scrypto::resource::AuthRule::OneOf(auth_rules) => AuthRule::OneOf(auth_rules.into_iter().map(AuthRule::from).collect())
-        }
-    }
-}
 
-impl AuthRule {
-    pub fn or(self, other: AuthRule) -> Self {
+impl Rule {
+    pub fn or(self, other: Rule) -> Self {
         match self {
-            AuthRule::NonFungible(_) => OneOf(vec![self, other]),
-            AuthRule::AnyOfResource(_) => OneOf(vec![self, other]),
-            AuthRule::OneOf(mut rules) => {
+            Rule::NonFungible(_) => Rule::OneOf(vec![self, other]),
+            Rule::AnyOfResource(_) => Rule::OneOf(vec![self, other]),
+            Rule::OneOf(mut rules) => {
                 rules.push(other);
-                OneOf(rules)
+                Rule::OneOf(rules)
             }
-            AuthRule::Public => self,
         }
     }
 
     pub fn check(&self, proofs_vector: &[&[Proof]]) -> Result<(), RuntimeError> {
         match self {
-            AuthRule::NonFungible(non_fungible_address) => {
+            Rule::NonFungible(non_fungible_address) => {
                 for proofs in proofs_vector {
                     for p in proofs.iter() {
                         let proof_resource_def_id = p.resource_def_id();
                         if proof_resource_def_id == non_fungible_address.resource_def_id()
                             && match p.total_amount().as_non_fungible_ids() {
-                                Some(ids) => ids.contains(&non_fungible_address.non_fungible_id()),
-                                None => false,
-                            }
+                            Some(ids) => ids.contains(&non_fungible_address.non_fungible_id()),
+                            None => false,
+                        }
                         {
                             return Ok(());
                         }
@@ -57,7 +45,7 @@ impl AuthRule {
 
                 Err(NotAuthorized)
             }
-            AuthRule::AnyOfResource(resource_def_id) => {
+            Rule::AnyOfResource(resource_def_id) => {
                 for proofs in proofs_vector {
                     for p in proofs.iter() {
                         let proof_resource_def_id = p.resource_def_id();
@@ -69,7 +57,7 @@ impl AuthRule {
 
                 Err(NotAuthorized)
             }
-            AuthRule::OneOf(rules) => {
+            Rule::OneOf(rules) => {
                 for rule in rules {
                     if rule.check(proofs_vector).is_ok() {
                         return Ok(());
@@ -78,6 +66,30 @@ impl AuthRule {
 
                 Err(NotAuthorized)
             }
+        }
+    }
+}
+
+impl From<scrypto::resource::AuthRule> for Rule {
+    fn from(auth_rule: scrypto::prelude::AuthRule) -> Self {
+        match auth_rule {
+            ::scrypto::resource::AuthRule::NonFungible(addr) => Rule::NonFungible(addr),
+            ::scrypto::resource::AuthRule::OneOf(auth_rules) => Rule::OneOf(auth_rules.into_iter().map(Rule::from).collect()),
+        }
+    }
+}
+
+/// Authorization Rule
+#[derive(Debug, Clone, PartialEq, Eq, Hash, TypeId, Encode, Decode)]
+pub enum AuthRule {
+    Protected(Rule),
+    Public,
+}
+
+impl AuthRule {
+    pub fn check(&self, proofs_vector: &[&[Proof]]) -> Result<(), RuntimeError> {
+        match self {
+            AuthRule::Protected(rule) => rule.check(proofs_vector),
             AuthRule::Public => Ok(()),
         }
     }
