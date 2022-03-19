@@ -50,7 +50,7 @@ impl RadixEngineDB {
             if kv.0.as_ref() > inclusive_end {
                 break;
             }
-            if kv.0.len() == 27 {
+            if kv.0.len() == start.len() {
                 items.push(scrypto_decode(kv.0.as_ref()).unwrap());
             }
         }
@@ -87,7 +87,8 @@ impl QueryableSubstateStore for RadixEngineDB {
             }
 
             let local_key = key.split_at(key_size).1.to_vec();
-            items.insert(local_key, value.to_vec());
+            let substate: Substate = scrypto_decode(&value.to_vec()).unwrap();
+            items.insert(local_key, substate.value);
         }
         items
     }
