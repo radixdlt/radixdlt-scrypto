@@ -6,7 +6,7 @@ use radix_engine::errors::RuntimeError;
 use radix_engine::ledger::InMemorySubstateStore;
 use radix_engine::transaction::*;
 use scrypto::prelude::*;
-use scrypto::{any_of, all_of, min_n_of, amount_of};
+use scrypto::{all_of, amount_of, any_of, min_n_of};
 
 #[test]
 fn can_withdraw_from_my_1_of_2_account_with_key0_sign() {
@@ -137,7 +137,12 @@ fn can_withdraw_from_my_2_of_3_account_with_2_signatures() {
     let (_, non_fungible_address0) = test_runner.new_public_key_and_non_fungible_address();
     let (key1, non_fungible_address1) = test_runner.new_public_key_and_non_fungible_address();
     let (key2, non_fungible_address2) = test_runner.new_public_key_and_non_fungible_address();
-    let auth_rule_2_of_3 = min_n_of!(2, non_fungible_address0, non_fungible_address1, non_fungible_address2);
+    let auth_rule_2_of_3 = min_n_of!(
+        2,
+        non_fungible_address0,
+        non_fungible_address1,
+        non_fungible_address2
+    );
     let account = test_runner.new_account(&auth_rule_2_of_3);
     let (_, other_account) = test_runner.new_public_key_with_account();
 

@@ -1,4 +1,3 @@
-use scrypto::{abi, any_of};
 use scrypto::buffer::scrypto_encode;
 use scrypto::crypto::sha256;
 use scrypto::engine::types::*;
@@ -7,6 +6,7 @@ use scrypto::resource::AuthRule;
 use scrypto::rust::string::ToString;
 use scrypto::rust::vec;
 use scrypto::rust::vec::Vec;
+use scrypto::{abi, any_of};
 
 use crate::engine::*;
 use crate::errors::*;

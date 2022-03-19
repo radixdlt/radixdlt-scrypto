@@ -1,6 +1,6 @@
 use crate::resource::*;
-use crate::rust::vec::Vec;
 use crate::rust::vec;
+use crate::rust::vec::Vec;
 use sbor::*;
 use scrypto::math::Decimal;
 
@@ -81,7 +81,7 @@ macro_rules! min_n_of {
 }
 #[macro_export]
 macro_rules! amount_of {
-    ($amount:expr, $resource:expr) => (
+    ($amount:expr, $resource:expr) => {
         AuthRule::SomeOfResource($amount, $resource)
-    );
+    };
 }
