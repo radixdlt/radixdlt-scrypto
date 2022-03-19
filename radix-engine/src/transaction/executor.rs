@@ -1,4 +1,4 @@
-use scrypto::abi;
+use scrypto::{abi, any_of};
 use scrypto::buffer::scrypto_encode;
 use scrypto::crypto::sha256;
 use scrypto::engine::types::*;
@@ -106,7 +106,7 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
         let key = self.new_public_key();
         let id = NonFungibleId::new(key.to_vec());
         let auth_address = NonFungibleAddress::new(ECDSA_TOKEN, id);
-        let auth_rule = AuthRule::NonFungible(auth_address);
+        let auth_rule = any_of!(auth_address);
         let account = self.new_account(&auth_rule);
         (key, account)
     }
