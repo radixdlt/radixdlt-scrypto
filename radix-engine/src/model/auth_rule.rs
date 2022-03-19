@@ -14,6 +14,7 @@ pub enum Rule {
     SomeOfResource(Decimal, ResourceDefId),
     AllOf(Vec<Rule>),
     OneOf(Vec<Rule>),
+    CountOf { count: u8, rules: Vec<Rule> },
 }
 
 impl From<scrypto::resource::AuthRule> for Rule {
@@ -32,6 +33,10 @@ impl From<scrypto::resource::AuthRule> for Rule {
             ::scrypto::resource::AuthRule::OneOf(auth_rules) => {
                 Rule::OneOf(auth_rules.into_iter().map(Rule::from).collect())
             }
+            ::scrypto::resource::AuthRule::CountOf { count, rules } => Rule::CountOf {
+                count,
+                rules: rules.into_iter().map(Rule::from).collect(),
+            },
         }
     }
 }
@@ -42,11 +47,12 @@ impl Rule {
             Rule::NonFungible(_) => Rule::OneOf(vec![self, other]),
             Rule::AnyOfResource(_) => Rule::OneOf(vec![self, other]),
             Rule::SomeOfResource(_, _) => Rule::OneOf(vec![self, other]),
-            Rule::AllOf(rules) => Rule::OneOf(vec![Rule::AllOf(rules), other]),
+            Rule::AllOf(_) => Rule::OneOf(vec![self, other]),
             Rule::OneOf(mut rules) => {
                 rules.push(other);
                 Rule::OneOf(rules)
             }
+            Rule::CountOf { count: _, rules: _ } => Rule::OneOf(vec![self, other]),
         }
     }
 
@@ -108,6 +114,19 @@ impl Rule {
                 for rule in rules {
                     if rule.check(proofs_vector).is_ok() {
                         return Ok(());
+                    }
+                }
+
+                Err(NotAuthorized)
+            }
+            Rule::CountOf { count, rules } => {
+                let mut left = count.clone();
+                for rule in rules {
+                    if rule.check(proofs_vector).is_ok() {
+                        left -= 1;
+                        if left == 0 {
+                            return Ok(());
+                        }
                     }
                 }
 

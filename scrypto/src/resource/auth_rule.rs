@@ -11,4 +11,5 @@ pub enum AuthRule {
     SomeOfResource(Decimal, ResourceDefId),
     AllOf(Vec<AuthRule>),
     OneOf(Vec<AuthRule>),
+    CountOf { count: u8, rules: Vec<AuthRule> },
 }

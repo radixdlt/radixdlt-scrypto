@@ -6,7 +6,9 @@ use radix_engine::errors::RuntimeError;
 use radix_engine::ledger::InMemorySubstateStore;
 use radix_engine::transaction::*;
 use scrypto::prelude::*;
-use scrypto::resource::AuthRule::{AllOf, AnyOfResource, NonFungible, OneOf, SomeOfResource};
+use scrypto::resource::AuthRule::{
+    AllOf, AnyOfResource, CountOf, NonFungible, OneOf, SomeOfResource,
+};
 
 #[test]
 fn can_withdraw_from_my_1_of_2_account_with_key0_sign() {
@@ -139,6 +141,44 @@ fn cannot_withdraw_from_my_2_of_2_account_with_single_signature() {
     // Assert
     let error = receipt.result.expect_err("Should be an error");
     assert_eq!(error, RuntimeError::NotAuthorized);
+}
+
+#[test]
+fn can_withdraw_from_my_2_of_3_account_with_2_signatures() {
+    // Arrange
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(&mut substate_store);
+    let (_, non_fungible_address0) = test_runner.new_public_key_and_non_fungible_address();
+    let (key1, non_fungible_address1) = test_runner.new_public_key_and_non_fungible_address();
+    let (key2, non_fungible_address2) = test_runner.new_public_key_and_non_fungible_address();
+    let auth_rule_2_of_3 = CountOf {
+        count: 2,
+        rules: vec![
+            NonFungible(non_fungible_address0),
+            NonFungible(non_fungible_address1),
+            NonFungible(non_fungible_address2),
+        ],
+    };
+    let account = test_runner.new_account(&auth_rule_2_of_3);
+    let (_, other_account) = test_runner.new_public_key_with_account();
+
+    // Act
+    let transaction = test_runner
+        .new_transaction_builder()
+        .withdraw_from_account(
+            &ResourceSpecification::Fungible {
+                amount: Decimal(100),
+                resource_def_id: RADIX_TOKEN,
+            },
+            account,
+        )
+        .call_method_with_all_resources(other_account, "deposit_batch")
+        .build(vec![key1, key2])
+        .unwrap();
+    let receipt = test_runner.run(transaction);
+
+    // Assert
+    receipt.result.expect("Should be okay");
 }
 
 #[test]
