@@ -1,7 +1,7 @@
-mod auth_rule;
 mod bucket;
 mod component;
 mod data;
+mod method_authorization;
 mod non_fungible;
 mod package;
 mod proof;
@@ -12,10 +12,10 @@ mod transaction;
 mod vault;
 mod worktop;
 
-pub use auth_rule::AuthRule;
 pub use bucket::{Bucket, BucketError};
 pub use component::Component;
 pub use data::{format_value, ValidatedData};
+pub use method_authorization::MethodAuthorization;
 pub use non_fungible::NonFungible;
 pub use package::Package;
 pub use proof::*;

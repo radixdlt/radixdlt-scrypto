@@ -4,26 +4,26 @@ use crate::model::Proof;
 use sbor::*;
 use scrypto::prelude::ProofRule;
 
-/// Authorization Rule
+/// Snode which verifies authorization of a method call
 #[derive(Debug, Clone, PartialEq, Eq, Hash, TypeId, Encode, Decode)]
-pub enum AuthRule {
+pub enum MethodAuthorization {
     Protected(ProofRule),
     Public,
     Private,
     Unsupported,
 }
 
-impl AuthRule {
+impl MethodAuthorization {
     pub fn check(&self, proofs_vector: &[&[Proof]]) -> Result<(), RuntimeError> {
         match self {
-            AuthRule::Protected(rule) => Self::check_proof_rule(rule, proofs_vector),
-            AuthRule::Public => Ok(()),
-            AuthRule::Private => Err(RuntimeError::NotAuthorized),
-            AuthRule::Unsupported => Err(RuntimeError::UnsupportedMethod),
+            MethodAuthorization::Protected(rule) => Self::check_proof_rule(rule, proofs_vector),
+            MethodAuthorization::Public => Ok(()),
+            MethodAuthorization::Private => Err(RuntimeError::NotAuthorized),
+            MethodAuthorization::Unsupported => Err(RuntimeError::UnsupportedMethod),
         }
     }
 
-    pub fn check_proof_rule(
+    fn check_proof_rule(
         proof_rule: &ProofRule,
         proofs_vector: &[&[Proof]],
     ) -> Result<(), RuntimeError> {

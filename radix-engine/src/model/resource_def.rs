@@ -8,7 +8,7 @@ use scrypto::rust::mem;
 use scrypto::rust::string::String;
 
 use crate::model::resource_def::FlagCondition::{AlwaysTrue, IsNotSet, IsSet};
-use crate::model::AuthRule;
+use crate::model::MethodAuthorization;
 
 /// Represents an error when accessing a bucket.
 #[derive(Debug, Clone, PartialEq)]
@@ -48,7 +48,7 @@ impl FlagCondition {
 pub struct MethodState {
     enabled: FlagCondition,
     use_auth: FlagCondition,
-    auth_rule: AuthRule,
+    auth: MethodAuthorization,
 }
 
 impl MethodState {
@@ -56,17 +56,17 @@ impl MethodState {
         MethodState {
             enabled,
             use_auth,
-            auth_rule: AuthRule::Public,
+            auth: MethodAuthorization::Public,
         }
     }
 
-    fn get_auth(&self, flags: u64) -> &AuthRule {
+    fn get_auth(&self, flags: u64) -> &MethodAuthorization {
         if !self.is_enabled(flags) {
-            &AuthRule::Private
+            &MethodAuthorization::Private
         } else if self.use_auth(flags) {
-            &self.auth_rule
+            &self.auth
         } else {
-            &AuthRule::Public
+            &MethodAuthorization::Public
         }
     }
 
@@ -160,11 +160,14 @@ impl ResourceDef {
                 if permission & flag != 0 {
                     for method in methods.iter() {
                         let method_state = method_states.get_mut(*method).unwrap();
-                        let cur_rule = mem::replace(&mut method_state.auth_rule, AuthRule::Public);
+                        let cur_rule =
+                            mem::replace(&mut method_state.auth, MethodAuthorization::Public);
                         let new_rule = ProofRule::AnyOfResource(resource_def_id);
-                        method_state.auth_rule = match cur_rule {
-                            AuthRule::Public => AuthRule::Protected(new_rule),
-                            AuthRule::Protected(rule) => AuthRule::Protected(rule.or(new_rule)),
+                        method_state.auth = match cur_rule {
+                            MethodAuthorization::Public => MethodAuthorization::Protected(new_rule),
+                            MethodAuthorization::Protected(rule) => {
+                                MethodAuthorization::Protected(rule.or(new_rule))
+                            }
                             _ => panic!("Should never get here."),
                         };
                     }
@@ -184,9 +187,9 @@ impl ResourceDef {
         Ok(resource_def)
     }
 
-    pub fn get_auth(&self, method_name: &str) -> &AuthRule {
+    pub fn get_auth(&self, method_name: &str) -> &MethodAuthorization {
         match self.method_states.get(method_name) {
-            None => &AuthRule::Unsupported,
+            None => &MethodAuthorization::Unsupported,
             Some(method_state) => method_state.get_auth(self.flags),
         }
     }
