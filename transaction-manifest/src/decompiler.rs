@@ -105,7 +105,7 @@ pub fn decompile(tx: &Transaction) -> Result<String, DecompileError> {
                 let proof_id = id_validator
                     .new_proof(ProofKind::BucketProof(bucket_id))
                     .map_err(DecompileError::IdValidatorError)?;
-                let name = format!("badge{}", proofs.len() + 1);
+                let name = format!("proof{}", proofs.len() + 1);
                 proofs.insert(proof_id, name.clone());
                 buf.push_str(&format!(
                     "CREATE_BUCKET_PROOF Bucket({}) Proof(\"{}\");\n",
@@ -120,7 +120,7 @@ pub fn decompile(tx: &Transaction) -> Result<String, DecompileError> {
                 let proof_id2 = id_validator
                     .clone_proof(proof_id)
                     .map_err(DecompileError::IdValidatorError)?;
-                let name = format!("badge{}", proofs.len() + 1);
+                let name = format!("proof{}", proofs.len() + 1);
                 proofs.insert(proof_id2, name.clone());
                 buf.push_str(&format!(
                     "CLONE_PROOF Proof({}) Proof(\"{}\");\n",

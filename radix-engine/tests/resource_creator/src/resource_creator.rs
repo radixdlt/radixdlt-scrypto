@@ -11,24 +11,24 @@ blueprint! {
     struct ResourceCreator {}
 
     impl ResourceCreator {
-        pub fn create_restricted_transfer(auth: ResourceDefId) -> Bucket {
+        pub fn create_restricted_transfer(badge_resource_def_id: ResourceDefId) -> Bucket {
             ResourceBuilder::new_fungible(0)
                 .flags(RESTRICTED_TRANSFER)
-                .badge(auth, MAY_TRANSFER)
+                .badge(badge_resource_def_id, MAY_TRANSFER)
                 .initial_supply_fungible(5)
         }
 
-        pub fn create_restricted_mint(auth: ResourceDefId) -> Bucket {
+        pub fn create_restricted_mint(badge_resource_def_id: ResourceDefId) -> Bucket {
             ResourceBuilder::new_fungible(0)
                 .flags(MINTABLE)
-                .badge(auth, MAY_MINT)
+                .badge(badge_resource_def_id, MAY_MINT)
                 .initial_supply_fungible(5)
         }
 
-        pub fn create_restricted_burn(auth: ResourceDefId) -> Bucket {
+        pub fn create_restricted_burn(badge_resource_def_id: ResourceDefId) -> Bucket {
             ResourceBuilder::new_fungible(0)
                 .flags(BURNABLE)
-                .badge(auth, MAY_BURN)
+                .badge(badge_resource_def_id, MAY_BURN)
                 .initial_supply_fungible(5)
         }
 
