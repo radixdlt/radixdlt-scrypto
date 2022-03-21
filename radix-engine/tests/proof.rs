@@ -5,29 +5,6 @@ use crate::test_runner::TestRunner;
 use radix_engine::ledger::InMemorySubstateStore;
 use scrypto::prelude::*;
 
-fn instantiate_vault_proof_component(
-    test_runner: &mut TestRunner,
-    package_id: PackageId,
-    resource_def_id: ResourceDefId,
-    account: ComponentId,
-    key: EcdsaPublicKey,
-) -> ComponentId {
-    let transaction = test_runner
-        .new_transaction_builder()
-        .call_function(
-            package_id,
-            "VaultProof",
-            "new",
-            vec![format!("1,{}", resource_def_id)],
-            Some(account),
-        )
-        .call_method_with_all_resources(account, "deposit_batch")
-        .build(vec![key])
-        .unwrap();
-    let receipt = test_runner.run(transaction);
-    receipt.new_component_ids[0]
-}
-
 #[test]
 fn can_create_clone_and_drop_bucket_proof() {
     // Arrange
@@ -65,10 +42,11 @@ fn can_create_clone_and_drop_vault_proof() {
     let (key, account) = test_runner.new_public_key_with_account();
     let resource_def_id = test_runner.create_non_fungible_resource(account);
     let package_id = test_runner.publish_package("proof");
-    let component_id = instantiate_vault_proof_component(
-        &mut test_runner,
+    let component_id = test_runner.instantiate_component(
         package_id,
-        resource_def_id,
+        "VaultProof",
+        "new",
+        vec![format!("1,{}", resource_def_id)],
         account,
         key,
     );
@@ -133,10 +111,11 @@ fn can_use_vault_for_authorization() {
     let (auth_resource_def_id, burnable_resource_def_id) =
         test_runner.create_restricted_burn_token(account);
     let package_id = test_runner.publish_package("proof");
-    let component_id = instantiate_vault_proof_component(
-        &mut test_runner,
+    let component_id = test_runner.instantiate_component(
         package_id,
-        auth_resource_def_id,
+        "VaultProof",
+        "new",
+        vec![format!("1,{}", auth_resource_def_id)],
         account,
         key,
     );

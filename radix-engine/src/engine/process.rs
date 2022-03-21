@@ -391,7 +391,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
         let new_proof_id = self.new_proof_id()?;
         let vault = self.get_local_vault(&vault_id)?;
-        let new_proof = Proof::new(vault.refer_container()).map_err(RuntimeError::ProofError)?;
+        let new_proof =
+            Proof::new(vault.create_reference_for_proof()).map_err(RuntimeError::ProofError)?;
         self.proofs.insert(new_proof_id, new_proof);
 
         Ok(new_proof_id)
