@@ -81,20 +81,20 @@ pub fn decompile(tx: &Transaction) -> Result<String, DecompileError> {
                     amount, resource_def_id
                 ));
             }
-            Instruction::PopFromAuthWorktop => {
+            Instruction::PopFromAuthZone => {
                 let proof_id = id_validator
                     .new_proof(ProofKind::RuntimeProof)
                     .map_err(DecompileError::IdValidatorError)?;
                 let name = format!("proof{}", proofs.len() + 1);
                 proofs.insert(proof_id, name.clone());
-                buf.push_str(&format!("POP_FROM_AUTH_WORKTOP Proof(\"{}\");\n", name));
+                buf.push_str(&format!("POP_FROM_AUTH_ZONE Proof(\"{}\");\n", name));
             }
-            Instruction::PushOntoAuthWorktop { proof_id } => {
+            Instruction::PushOntoAuthZone { proof_id } => {
                 id_validator
                     .drop_proof(proof_id)
                     .map_err(DecompileError::IdValidatorError)?;
                 buf.push_str(&format!(
-                    "PUSH_ONTO_AUTH_WORKTOP Proof({});\n",
+                    "PUSH_ONTO_AUTH_ZONE Proof({});\n",
                     proofs
                         .get(&proof_id)
                         .map(|name| format!("\"{}\"", name))

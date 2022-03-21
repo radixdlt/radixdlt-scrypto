@@ -76,9 +76,9 @@ pub fn authorize<F, O>(bucket: &Bucket, func: F) -> O
 where
     F: FnOnce() -> O,
 {
-    AuthWorktop::push(bucket.create_proof());
+    AuthZone::push(bucket.create_proof());
     let return_value = func();
-    AuthWorktop::pop().drop();
+    AuthZone::pop().drop();
 
     return_value
 }

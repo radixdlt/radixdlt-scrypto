@@ -89,10 +89,10 @@ impl Parser {
                 amount: self.parse_value()?,
                 resource_def_id: self.parse_value()?,
             },
-            TokenKind::PopFromAuthWorktop => Instruction::PopFromAuthWorktop {
+            TokenKind::PopFromAuthZone => Instruction::PopFromAuthZone {
                 new_proof: self.parse_value()?,
             },
-            TokenKind::PushOntoAuthWorktop => Instruction::PushOntoAuthWorktop {
+            TokenKind::PushOntoAuthZone => Instruction::PushOntoAuthZone {
                 proof: self.parse_value()?,
             },
             TokenKind::CreateBucketProof => Instruction::CreateBucketProof {

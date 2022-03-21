@@ -148,14 +148,14 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                 self.id_validator.drop_bucket(bucket_id).unwrap();
             }
             Instruction::AssertWorktopContains { .. } => {}
-            Instruction::PopFromAuthWorktop { .. } => {
+            Instruction::PopFromAuthZone { .. } => {
                 new_proof_id = Some(
                     self.id_validator
                         .new_proof(ProofKind::RuntimeProof)
                         .unwrap(),
                 );
             }
-            Instruction::PushOntoAuthWorktop { proof_id } => {
+            Instruction::PushOntoAuthZone { proof_id } => {
                 self.id_validator.drop_proof(proof_id).unwrap();
             }
             Instruction::CreateBucketProof { bucket_id } => {
@@ -234,16 +234,16 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         then(builder, proof_id.unwrap())
     }
 
-    pub fn push_onto_auth_worktop(&mut self, proof_id: ProofId) -> &mut Self {
-        self.add_instruction(Instruction::PushOntoAuthWorktop { proof_id });
+    pub fn push_onto_auth_zone(&mut self, proof_id: ProofId) -> &mut Self {
+        self.add_instruction(Instruction::PushOntoAuthZone { proof_id });
         self
     }
 
-    pub fn pop_from_auth_worktop<F>(&mut self, then: F) -> &mut Self
+    pub fn pop_from_auth_zone<F>(&mut self, then: F) -> &mut Self
     where
         F: FnOnce(&mut Self, ProofId) -> &mut Self,
     {
-        let (builder, _, proof_id) = self.add_instruction(Instruction::PopFromAuthWorktop {});
+        let (builder, _, proof_id) = self.add_instruction(Instruction::PopFromAuthZone {});
         then(builder, proof_id.unwrap())
     }
 
@@ -507,14 +507,14 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
             &ResourceSpecifier::Amount(1.into(), minter_resource_def_id),
             |builder, bucket_id| {
                 builder.create_bucket_proof(bucket_id, |builder, proof_id| {
-                    builder.push_onto_auth_worktop(proof_id);
+                    builder.push_onto_auth_zone(proof_id);
                     builder.add_instruction(Instruction::CallFunction {
                         package_id: SYSTEM_PACKAGE,
                         blueprint_name: "System".to_owned(),
                         function: "mint".to_owned(),
                         args: vec![scrypto_encode(&amount), scrypto_encode(&resource_def_id)],
                     });
-                    builder.pop_from_auth_worktop(|builder, proof_id| builder.drop_proof(proof_id))
+                    builder.pop_from_auth_zone(|builder, proof_id| builder.drop_proof(proof_id))
                 })
             },
         )
@@ -756,10 +756,10 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                 if let Some(account) = account {
                     self.create_proof_from_account(resource_specifier.resource_def_id(), account);
                 } else {
-                    // TODO: create proof from auth worktop OR worktop?
+                    // TODO: create proof from auth zone OR worktop?
                 }
                 let mut created_proof_id = None;
-                self.pop_from_auth_worktop(|builder, proof_id| {
+                self.pop_from_auth_zone(|builder, proof_id| {
                     created_proof_id = Some(proof_id);
                     builder
                 });
