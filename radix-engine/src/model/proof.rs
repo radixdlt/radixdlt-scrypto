@@ -111,7 +111,7 @@ impl Proof {
         }
     }
 
-    pub fn settle(self) {
+    pub fn drop(self) {
         for (container, amount_or_ids) in self.locked_in_details {
             match amount_or_ids {
                 LockedAmountOrIds::Amount(amount) => container
