@@ -147,6 +147,9 @@ pub enum RuntimeError {
     /// Worktop access error.
     WorktopError(WorktopError),
 
+    /// Error when generating or accessing proof.
+    ProofError(ProofError),
+
     /// Bucket is not allowed.
     BucketNotAllowed,
 
@@ -180,8 +183,14 @@ pub enum RuntimeError {
     /// Index out of bounds.
     IndexOutOfBounds { index: usize, max: usize },
 
-    /// Non-fungible operation on fungible resource is not allowed
-    NonFungibleOperationNotAllowed,
+    /// Can't move a locked bucket.
+    CantMoveLockedBucket,
+
+    /// Mint parameters are invalid
+    InvalidMintParams,
+
+    /// Can't burn locked bucket.
+    CantBurnLockedBucket,
 }
 
 impl fmt::Display for RuntimeError {

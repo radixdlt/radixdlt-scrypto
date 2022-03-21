@@ -1,4 +1,5 @@
 use crate::rust::boxed::Box;
+use crate::rust::cell::RefCell;
 use crate::rust::collections::*;
 use crate::rust::rc::Rc;
 use crate::rust::string::String;
@@ -149,6 +150,13 @@ impl<T: TypeId> TypeId for Box<T> {
 }
 
 impl<T: TypeId> TypeId for Rc<T> {
+    #[inline]
+    fn type_id() -> u8 {
+        T::type_id()
+    }
+}
+
+impl<T: TypeId> TypeId for RefCell<T> {
     #[inline]
     fn type_id() -> u8 {
         T::type_id()

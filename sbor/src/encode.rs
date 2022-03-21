@@ -1,4 +1,5 @@
 use crate::rust::boxed::Box;
+use crate::rust::cell::RefCell;
 use crate::rust::collections::*;
 use crate::rust::ptr::copy;
 use crate::rust::string::String;
@@ -150,6 +151,12 @@ impl<T: Encode> Encode for Option<T> {
 impl<T: Encode> Encode for Box<T> {
     fn encode_value(&self, encoder: &mut Encoder) {
         self.as_ref().encode(encoder);
+    }
+}
+
+impl<T: Encode> Encode for RefCell<T> {
+    fn encode_value(&self, encoder: &mut Encoder) {
+        self.borrow().encode_value(encoder);
     }
 }
 
@@ -381,6 +388,15 @@ mod tests {
     #[test]
     pub fn test_encode_rc() {
         let x = crate::rust::rc::Rc::new(5u8);
+        let mut enc = Encoder::with_type(Vec::with_capacity(512));
+        x.encode(&mut enc);
+        let bytes: Vec<u8> = enc.into();
+        assert_eq!(bytes, vec![7, 5])
+    }
+
+    #[test]
+    pub fn test_encode_ref_cell() {
+        let x = crate::rust::cell::RefCell::new(5u8);
         let mut enc = Encoder::with_type(Vec::with_capacity(512));
         x.encode(&mut enc);
         let bytes: Vec<u8> = enc.into();

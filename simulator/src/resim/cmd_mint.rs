@@ -38,10 +38,7 @@ impl Mint {
         let signatures = self.signers.clone().unwrap_or(default_signers);
         let transaction = TransactionBuilder::new(&executor)
             .withdraw_from_account(
-                &ResourceSpecification::Fungible {
-                    amount: 1.into(),
-                    resource_def_id: self.minter_resource_def_id,
-                },
+                &ResourceSpecifier::Amount(1.into(), self.minter_resource_def_id),
                 default_account,
             )
             .mint(

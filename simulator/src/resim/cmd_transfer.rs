@@ -8,7 +8,7 @@ use crate::resim::*;
 #[derive(Parser, Debug)]
 pub struct Transfer {
     /// The resource to transfer, e.g. "amount,resource_def_id" or "#non_fungible_id1,#non_fungible_id2,resource_def_id"
-    resource: ResourceSpecification,
+    resource: ResourceSpecifier,
 
     /// The recipient component ID.
     recipient: ComponentId,

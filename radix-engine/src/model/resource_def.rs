@@ -9,12 +9,11 @@ use scrypto::rust::string::String;
 
 use crate::model::auth_rule::Rule;
 use crate::model::resource_def::FlagCondition::{AlwaysTrue, IsNotSet, IsSet};
-use crate::model::{AuthRule, ResourceAmount};
+use crate::model::AuthRule;
 
 /// Represents an error when accessing a bucket.
 #[derive(Debug, Clone, PartialEq)]
 pub enum ResourceDefError {
-    ResourceTypeNotMatching,
     OperationNotAllowed,
     PermissionNotAllowed,
     InvalidDivisibility,
@@ -114,7 +113,6 @@ impl ResourceDef {
         flags: u64,
         mutable_flags: u64,
         authorities: HashMap<ResourceDefId, u64>,
-        total_supply: Decimal,
     ) -> Result<Self, ResourceDefError> {
         if !resource_flags_are_valid(flags) {
             return Err(ResourceDefError::InvalidResourceFlags(flags));
@@ -181,7 +179,7 @@ impl ResourceDef {
             flags,
             mutable_flags,
             method_states,
-            total_supply,
+            total_supply: 0.into(),
         };
 
         Ok(resource_def)
@@ -218,26 +216,12 @@ impl ResourceDef {
         self.flags() & flag == flag
     }
 
-    pub fn mint(&mut self, amount: &ResourceAmount) -> Result<(), ResourceDefError> {
-        match (self.resource_type, amount) {
-            (ResourceType::Fungible { .. }, ResourceAmount::Fungible { .. })
-            | (ResourceType::NonFungible, ResourceAmount::NonFungible { .. }) => {
-                self.total_supply += amount.as_quantity();
-                Ok(())
-            }
-            _ => Err(ResourceDefError::ResourceTypeNotMatching),
-        }
+    pub fn mint(&mut self, amount: Decimal) {
+        self.total_supply += amount;
     }
 
-    pub fn burn(&mut self, amount: ResourceAmount) -> Result<(), ResourceDefError> {
-        match (self.resource_type, &amount) {
-            (ResourceType::Fungible { .. }, ResourceAmount::Fungible { .. })
-            | (ResourceType::NonFungible, ResourceAmount::NonFungible { .. }) => {
-                self.total_supply -= amount.as_quantity();
-                Ok(())
-            }
-            _ => Err(ResourceDefError::ResourceTypeNotMatching),
-        }
+    pub fn burn(&mut self, amount: Decimal) {
+        self.total_supply -= amount;
     }
 
     pub fn update_mutable_flags(&mut self, new_mutable_flags: u64) -> Result<(), ResourceDefError> {
