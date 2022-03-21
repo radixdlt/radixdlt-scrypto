@@ -5,7 +5,7 @@ use sbor::*;
 use scrypto::math::Decimal;
 
 /// Authorization Rule
-#[derive(Debug, Clone, Describe, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Describe, TypeId, Encode, Decode)]
 pub enum ProofRule {
     NonFungible(NonFungibleAddress),
     AnyOfResource(ResourceDefId),

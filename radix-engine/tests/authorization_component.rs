@@ -4,7 +4,7 @@ pub mod test_runner;
 use crate::test_runner::TestRunner;
 use radix_engine::errors::RuntimeError;
 use radix_engine::ledger::{InMemorySubstateStore, SubstateStore};
-use radix_engine::model::{AuthRule, Component, Rule};
+use radix_engine::model::{AuthRule, Component};
 use radix_engine::transaction::*;
 use scrypto::prelude::*;
 
@@ -64,7 +64,7 @@ fn cannot_make_cross_component_call_without_authorization() {
     let auth_address = NonFungibleAddress::new(auth, auth_id);
     assert_eq!(
         component_state.get_auth("get_component_state"),
-        &AuthRule::Protected(Rule::NonFungible(auth_address))
+        &AuthRule::Protected(ProofRule::NonFungible(auth_address))
     );
 }
 
@@ -136,6 +136,6 @@ fn can_make_cross_component_call_with_authorization() {
     let auth_address = NonFungibleAddress::new(auth, auth_id);
     assert_eq!(
         component_state.get_auth("get_component_state"),
-        &AuthRule::Protected(Rule::NonFungible(auth_address))
+        &AuthRule::Protected(ProofRule::NonFungible(auth_address))
     );
 }

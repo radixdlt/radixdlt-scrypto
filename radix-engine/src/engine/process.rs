@@ -1011,7 +1011,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let sys_auth: HashMap<String, AuthRule> = input
             .sys_auth
             .into_iter()
-            .map(|(name, auth_rule)| (name, AuthRule::Protected(Rule::from(auth_rule))))
+            .map(|(name, proof_rule)| (name, AuthRule::Protected(proof_rule)))
             .collect();
         let component = Component::new(
             wasm_process.vm.invocation.package_id,

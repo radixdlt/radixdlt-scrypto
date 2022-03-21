@@ -11,7 +11,7 @@ mod transaction;
 mod vault;
 mod worktop;
 
-pub use auth_rule::{AuthRule, Rule};
+pub use auth_rule::{AuthRule};
 pub use bucket::{Bucket, BucketError};
 pub use component::Component;
 pub use data::{format_value, ValidatedData};

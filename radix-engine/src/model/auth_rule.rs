@@ -2,65 +2,12 @@ use crate::errors::RuntimeError;
 use crate::errors::RuntimeError::NotAuthorized;
 use crate::model::Proof;
 use sbor::*;
-use scrypto::math::Decimal;
-use scrypto::prelude::{NonFungibleAddress, ResourceDefId};
-use scrypto::rust::vec;
-use scrypto::rust::vec::Vec;
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash, TypeId, Encode, Decode)]
-pub enum Rule {
-    NonFungible(NonFungibleAddress),
-    AnyOfResource(ResourceDefId),
-    SomeOfResource(Decimal, ResourceDefId),
-    AllOf(Vec<Rule>),
-    OneOf(Vec<Rule>),
-    CountOf { count: u8, rules: Vec<Rule> },
-}
-
-impl From<scrypto::resource::ProofRule> for Rule {
-    fn from(auth_rule: scrypto::prelude::ProofRule) -> Self {
-        match auth_rule {
-            ::scrypto::resource::ProofRule::NonFungible(addr) => Rule::NonFungible(addr),
-            ::scrypto::resource::ProofRule::AnyOfResource(resource_def_id) => {
-                Rule::AnyOfResource(resource_def_id)
-            }
-            ::scrypto::resource::ProofRule::SomeOfResource(amount, resource_def_id) => {
-                Rule::SomeOfResource(amount, resource_def_id)
-            }
-            ::scrypto::resource::ProofRule::AllOf(auth_rules) => {
-                Rule::AllOf(auth_rules.into_iter().map(Rule::from).collect())
-            }
-            ::scrypto::resource::ProofRule::OneOf(auth_rules) => {
-                Rule::OneOf(auth_rules.into_iter().map(Rule::from).collect())
-            }
-            ::scrypto::resource::ProofRule::CountOf { count, rules } => Rule::CountOf {
-                count,
-                rules: rules.into_iter().map(Rule::from).collect(),
-            },
-        }
-    }
-}
-
-impl Rule {
-    pub fn or(self, other: Rule) -> Self {
-        match self {
-            Rule::NonFungible(_) => Rule::OneOf(vec![self, other]),
-            Rule::AnyOfResource(_) => Rule::OneOf(vec![self, other]),
-            Rule::SomeOfResource(_, _) => Rule::OneOf(vec![self, other]),
-            Rule::AllOf(_) => Rule::OneOf(vec![self, other]),
-            Rule::OneOf(mut rules) => {
-                rules.push(other);
-                Rule::OneOf(rules)
-            }
-            Rule::CountOf { count: _, rules: _ } => Rule::OneOf(vec![self, other]),
-        }
-    }
-}
+use scrypto::prelude::{ProofRule};
 
 /// Authorization Rule
 #[derive(Debug, Clone, PartialEq, Eq, Hash, TypeId, Encode, Decode)]
 pub enum AuthRule {
-    Protected(Rule),
+    Protected(ProofRule),
     Public,
     Private,
     Unsupported,
@@ -76,9 +23,9 @@ impl AuthRule {
         }
     }
 
-    pub fn check_proof_rule(proof_rule: &Rule, proofs_vector: &[&[Proof]]) -> Result<(), RuntimeError> {
+    pub fn check_proof_rule(proof_rule: &ProofRule, proofs_vector: &[&[Proof]]) -> Result<(), RuntimeError> {
         match proof_rule {
-            Rule::NonFungible(non_fungible_address) => {
+            ProofRule::NonFungible(non_fungible_address) => {
                 for proofs in proofs_vector {
                     for p in proofs.iter() {
                         let proof_resource_def_id = p.resource_def_id();
@@ -95,7 +42,7 @@ impl AuthRule {
 
                 Err(NotAuthorized)
             }
-            Rule::AnyOfResource(resource_def_id) => {
+            ProofRule::AnyOfResource(resource_def_id) => {
                 for proofs in proofs_vector {
                     for p in proofs.iter() {
                         let proof_resource_def_id = p.resource_def_id();
@@ -107,7 +54,7 @@ impl AuthRule {
 
                 Err(NotAuthorized)
             }
-            Rule::SomeOfResource(amount, resource_def_id) => {
+            ProofRule::SomeOfResource(amount, resource_def_id) => {
                 for proofs in proofs_vector {
                     for p in proofs.iter() {
                         let proof_resource_def_id = p.resource_def_id();
@@ -121,7 +68,7 @@ impl AuthRule {
 
                 Err(NotAuthorized)
             }
-            Rule::AllOf(rules) => {
+            ProofRule::AllOf(rules) => {
                 for rule in rules {
                     if Self::check_proof_rule(rule, proofs_vector).is_err() {
                         return Err(NotAuthorized);
@@ -130,7 +77,7 @@ impl AuthRule {
 
                 Ok(())
             }
-            Rule::OneOf(rules) => {
+            ProofRule::OneOf(rules) => {
                 for rule in rules {
                     if Self::check_proof_rule(rule, proofs_vector).is_ok() {
                         return Ok(());
@@ -139,7 +86,7 @@ impl AuthRule {
 
                 Err(NotAuthorized)
             }
-            Rule::CountOf { count, rules } => {
+            ProofRule::CountOf { count, rules } => {
                 let mut left = count.clone();
                 for rule in rules {
                     if Self::check_proof_rule(rule, proofs_vector).is_ok() {
