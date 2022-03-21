@@ -90,15 +90,11 @@ impl Bucket {
         self.borrow_container().is_locked()
     }
 
-    pub fn borrow_container(&self) -> Ref<ResourceContainer> {
-        self.container.borrow()
+    pub fn is_empty(&self) -> bool {
+        self.borrow_container().is_empty()
     }
 
-    pub fn borrow_container_mut(&mut self) -> RefMut<ResourceContainer> {
-        self.container.borrow_mut()
-    }
-
-    pub fn refer_container(&self) -> Rc<RefCell<ResourceContainer>> {
+    pub fn create_reference_for_proof(&self) -> Rc<RefCell<ResourceContainer>> {
         self.container.clone()
     }
 
@@ -106,5 +102,13 @@ impl Bucket {
         Rc::try_unwrap(self.container)
             .map_err(|_| BucketError::ResourceContainerLocked)
             .map(|c| c.into_inner())
+    }
+
+    fn borrow_container(&self) -> Ref<ResourceContainer> {
+        self.container.borrow()
+    }
+
+    fn borrow_container_mut(&mut self) -> RefMut<ResourceContainer> {
+        self.container.borrow_mut()
     }
 }

@@ -89,20 +89,46 @@ impl Worktop {
 
     pub fn contains(&self, amount: Decimal, resource_def_id: ResourceDefId) -> bool {
         if let Some(container) = self.borrow_container(resource_def_id) {
-            container.liquid_amount() >= amount
+            container.total_amount() >= amount
         } else {
             false
         }
     }
 
-    pub fn borrow_container(
+    pub fn is_locked(&self) -> bool {
+        for resource_def_id in self.resource_def_ids() {
+            if let Some(container) = self.borrow_container(resource_def_id) {
+                if container.is_locked() {
+                    return true;
+                }
+            }
+        }
+        false
+    }
+
+    pub fn is_empty(&self) -> bool {
+        for resource_def_id in self.resource_def_ids() {
+            if let Some(container) = self.borrow_container(resource_def_id) {
+                if !container.total_amount().is_zero() {
+                    return false;
+                }
+            }
+        }
+        true
+    }
+
+    pub fn create_reference_for_proof(
         &self,
         resource_def_id: ResourceDefId,
-    ) -> Option<Ref<ResourceContainer>> {
+    ) -> Option<Rc<RefCell<ResourceContainer>>> {
+        self.containers.get(&resource_def_id).map(Clone::clone)
+    }
+
+    fn borrow_container(&self, resource_def_id: ResourceDefId) -> Option<Ref<ResourceContainer>> {
         self.containers.get(&resource_def_id).map(|c| c.borrow())
     }
 
-    pub fn borrow_container_mut(
+    fn borrow_container_mut(
         &mut self,
         resource_def_id: ResourceDefId,
     ) -> Option<RefMut<ResourceContainer>> {
@@ -111,14 +137,7 @@ impl Worktop {
             .map(|c| c.borrow_mut())
     }
 
-    pub fn refer_container(
-        &self,
-        resource_def_id: ResourceDefId,
-    ) -> Option<Rc<RefCell<ResourceContainer>>> {
-        self.containers.get(&resource_def_id).map(Clone::clone)
-    }
-
-    pub fn take_container(
+    fn take_container(
         &mut self,
         resource_def_id: ResourceDefId,
     ) -> Result<Option<ResourceContainer>, WorktopError> {
