@@ -78,15 +78,19 @@ impl Vault {
         self.borrow_container().is_locked()
     }
 
-    pub fn borrow_container(&self) -> Ref<ResourceContainer> {
+    pub fn is_empty(&self) -> bool {
+        self.borrow_container().is_empty()
+    }
+
+    pub fn create_reference_for_proof(&self) -> Rc<RefCell<ResourceContainer>> {
+        self.container.clone()
+    }
+
+    fn borrow_container(&self) -> Ref<ResourceContainer> {
         self.container.borrow()
     }
 
-    pub fn borrow_container_mut(&mut self) -> RefMut<ResourceContainer> {
+    fn borrow_container_mut(&mut self) -> RefMut<ResourceContainer> {
         self.container.borrow_mut()
-    }
-
-    pub fn refer_container(&self) -> Rc<RefCell<ResourceContainer>> {
-        self.container.clone()
     }
 }

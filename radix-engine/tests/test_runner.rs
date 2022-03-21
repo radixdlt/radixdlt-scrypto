@@ -118,4 +118,29 @@ impl<'l> TestRunner<'l> {
         let receipt = self.executor.run(transaction).unwrap();
         receipt.new_resource_def_ids[0]
     }
+
+    pub fn instantiate_component(
+        &mut self,
+        package_id: PackageId,
+        blueprint_name: &str,
+        function_name: &str,
+        args: Vec<String>,
+        account: ComponentId,
+        key: EcdsaPublicKey,
+    ) -> ComponentId {
+        let transaction = self
+            .new_transaction_builder()
+            .call_function(
+                package_id,
+                blueprint_name,
+                function_name,
+                args,
+                Some(account),
+            )
+            .call_method_with_all_resources(account, "deposit_batch")
+            .build(vec![key])
+            .unwrap();
+        let receipt = self.run(transaction);
+        receipt.new_component_ids[0]
+    }
 }

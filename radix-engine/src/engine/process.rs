@@ -18,7 +18,6 @@ use crate::engine::*;
 use crate::errors::*;
 use crate::ledger::*;
 use crate::model::*;
-use crate::transaction::*;
 
 macro_rules! re_trace {
     ($proc:expr, $($args: expr),+) => {
@@ -228,46 +227,78 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         }
     }
 
-    // (Transaction ONLY) Takes resource from worktop and returns a bucket.
+    // (Transaction ONLY) Takes resource by amount from worktop and returns a bucket.
     pub fn take_from_worktop(
         &mut self,
-        resource: ResourceSpecifier,
-    ) -> Result<ValidatedData, RuntimeError> {
-        re_debug!(self, "(Transaction) Taking from worktop: {:?}", resource);
+        amount: Decimal,
+        resource_def_id: ResourceDefId,
+    ) -> Result<BucketId, RuntimeError> {
+        re_debug!(
+            self,
+            "(Transaction) Taking from worktop: {}, {}",
+            amount,
+            resource_def_id
+        );
         let new_bucket_id = self.new_bucket_id()?;
-        let bucket = match resource {
-            ResourceSpecifier::Amount(amount, resource_def_id) => self
-                .worktop
-                .take(amount, resource_def_id)
-                .map_err(RuntimeError::WorktopError)?,
-            ResourceSpecifier::Ids(ids, resource_def_id) => self
-                .worktop
-                .take_non_fungibles(&ids, resource_def_id)
-                .map_err(RuntimeError::WorktopError)?,
-            ResourceSpecifier::All(resource_def_id) => {
-                match self
-                    .worktop
-                    .take_all(resource_def_id)
-                    .map_err(RuntimeError::WorktopError)?
-                {
-                    Some(bucket) => bucket,
-                    None => {
-                        let resource_def = self
-                            .track
-                            .get_resource_def(&resource_def_id)
-                            .ok_or(RuntimeError::ResourceDefNotFound(resource_def_id))?;
-                        Bucket::new(ResourceContainer::new_empty(
-                            resource_def_id,
-                            resource_def.resource_type(),
-                        ))
-                    }
-                }
+        let new_bucket = self
+            .worktop
+            .take(amount, resource_def_id)
+            .map_err(RuntimeError::WorktopError)?;
+        self.buckets.insert(new_bucket_id, new_bucket);
+        Ok(new_bucket_id)
+    }
+
+    // (Transaction ONLY) Takes resource by non-fungible IDs from worktop and returns a bucket.
+    pub fn take_non_fungibles_from_worktop(
+        &mut self,
+        ids: BTreeSet<NonFungibleId>,
+        resource_def_id: ResourceDefId,
+    ) -> Result<BucketId, RuntimeError> {
+        re_debug!(
+            self,
+            "(Transaction) Taking from worktop: {:?}, {}",
+            ids,
+            resource_def_id
+        );
+        let new_bucket_id = self.new_bucket_id()?;
+        let new_bucket = self
+            .worktop
+            .take_non_fungibles(&ids, resource_def_id)
+            .map_err(RuntimeError::WorktopError)?;
+        self.buckets.insert(new_bucket_id, new_bucket);
+        Ok(new_bucket_id)
+    }
+
+    // (Transaction ONLY) Takes resource by resource def ID from worktop and returns a bucket.
+    pub fn take_all_from_worktop(
+        &mut self,
+        resource_def_id: ResourceDefId,
+    ) -> Result<BucketId, RuntimeError> {
+        re_debug!(
+            self,
+            "(Transaction) Taking from worktop: ALL, {}",
+            resource_def_id
+        );
+        let new_bucket_id = self.new_bucket_id()?;
+        let new_bucket = match self
+            .worktop
+            .take_all(resource_def_id)
+            .map_err(RuntimeError::WorktopError)?
+        {
+            Some(bucket) => bucket,
+            None => {
+                let resource_def = self
+                    .track
+                    .get_resource_def(&resource_def_id)
+                    .ok_or(RuntimeError::ResourceDefNotFound(resource_def_id))?;
+                Bucket::new(ResourceContainer::new_empty(
+                    resource_def_id,
+                    resource_def.resource_type(),
+                ))
             }
         };
-        self.buckets.insert(new_bucket_id, bucket);
-        Ok(ValidatedData::from_value(&scrypto::resource::Bucket(
-            new_bucket_id,
-        )))
+        self.buckets.insert(new_bucket_id, new_bucket);
+        Ok(new_bucket_id)
     }
 
     // (Transaction ONLY) Returns resource back to worktop.
@@ -351,7 +382,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .buckets
             .get_mut(&bucket_id)
             .ok_or(RuntimeError::BucketNotFound(bucket_id))?;
-        let new_proof = Proof::new(bucket.refer_container()).map_err(RuntimeError::ProofError)?;
+        let new_proof =
+            Proof::new(bucket.create_reference_for_proof()).map_err(RuntimeError::ProofError)?;
         self.proofs.insert(new_proof_id, new_proof);
 
         Ok(new_proof_id)
@@ -363,7 +395,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
         let new_proof_id = self.new_proof_id()?;
         let vault = self.get_local_vault(&vault_id)?;
-        let new_proof = Proof::new(vault.refer_container()).map_err(RuntimeError::ProofError)?;
+        let new_proof =
+            Proof::new(vault.create_reference_for_proof()).map_err(RuntimeError::ProofError)?;
         self.proofs.insert(new_proof_id, new_proof);
 
         Ok(new_proof_id)
@@ -393,7 +426,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .remove(&proof_id)
             .ok_or(RuntimeError::ProofNotFound(proof_id))?;
 
-        proof.settle();
+        proof.drop();
 
         Ok(())
     }
@@ -463,7 +496,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
     /// (SYSTEM ONLY)  Creates a proof which references a virtual bucket
     pub fn create_virtual_proof(&mut self, proof_id: ProofId, bucket: Bucket) {
-        let proof = Proof::new(bucket.refer_container()).unwrap();
+        let proof = Proof::new(bucket.create_reference_for_proof()).unwrap();
         self.proofs.insert(proof_id, proof);
     }
 
@@ -726,19 +759,9 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             re_warn!(self, "Dangling bucket: {}, {:?}", bucket_id, bucket);
             success = false;
         }
-        for resource_def_id in self.worktop.resource_def_ids() {
-            if let Some(container) = self.worktop.borrow_container(resource_def_id) {
-                let total_amount = container.total_amount();
-                if !total_amount.is_zero() {
-                    re_warn!(
-                        self,
-                        "Dangling resource on worktop: {}, {:?}",
-                        resource_def_id,
-                        total_amount
-                    );
-                    success = false;
-                }
-            }
+        if !self.worktop.is_empty() {
+            re_warn!(self, "Resource worktop is not empty");
+            success = false;
         }
         if let Some(wasm_process) = &self.wasm_process_state {
             if !wasm_process.check_resource() {
@@ -1298,12 +1321,13 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .track
             .get_resource_def_mut(&resource_def_id)
             .ok_or(RuntimeError::ResourceDefNotFound(resource_def_id))?;
+
+        if !mint_params.is_same_type(&resource_def.resource_type()) {
+            return Err(RuntimeError::InvalidMintParams);
+        }
+
         match mint_params {
             MintParams::Fungible { amount } => {
-                if !matches!(resource_def.resource_type(), ResourceType::Fungible { .. }) {
-                    return Err(RuntimeError::InvalidMintParams);
-                }
-
                 // Notify resource manager
                 resource_def.mint(amount);
 
@@ -1315,13 +1339,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 ))
             }
             MintParams::NonFungible { entries } => {
-                if !matches!(
-                    resource_def.resource_type(),
-                    ResourceType::NonFungible { .. }
-                ) {
-                    return Err(RuntimeError::InvalidMintParams);
-                }
-
                 // Notify resource manager
                 resource_def.mint(entries.len().into());
 
