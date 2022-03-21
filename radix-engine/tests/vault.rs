@@ -15,7 +15,7 @@ fn non_existent_vault_in_component_creation_should_fail() {
     let package = sut.publish_package(&compile("vault")).unwrap();
 
     // Act
-    let result = TransactionBuilder::new(&sut)
+    let transaction = TransactionBuilder::new(&sut)
         .call_function(
             package,
             "NonExistentVault",
@@ -23,8 +23,7 @@ fn non_existent_vault_in_component_creation_should_fail() {
             vec![],
             None,
         )
-        .build(vec![]);
-    let transaction = result.unwrap();
+        .build(vec![]).unwrap();
     let receipt = sut.run(transaction).unwrap();
 
     // Assert
@@ -41,10 +40,10 @@ fn non_existent_vault_in_committed_component_should_fail() {
     let mut ledger = InMemorySubstateStore::with_bootstrap();
     let mut sut = TransactionExecutor::new(&mut ledger, false);
     let package = sut.publish_package(&compile("vault")).unwrap();
-    let result = TransactionBuilder::new(&sut)
+    let transaction = TransactionBuilder::new(&sut)
         .call_function(package, "NonExistentVault", "new", vec![], None)
-        .build(vec![]);
-    let transaction = result.unwrap();
+        .build(vec![])
+        .unwrap();
     let receipt = sut.run(transaction).unwrap();
     let component_id = receipt.new_component_ids[0];
 
@@ -71,7 +70,7 @@ fn non_existent_vault_in_lazy_map_creation_should_fail() {
     let package = sut.publish_package(&compile("vault")).unwrap();
 
     // Act
-    let result = TransactionBuilder::new(&sut)
+    let transaction = TransactionBuilder::new(&sut)
         .call_function(
             package,
             "NonExistentVault",
@@ -79,8 +78,8 @@ fn non_existent_vault_in_lazy_map_creation_should_fail() {
             vec![],
             None,
         )
-        .build(vec![]);
-    let transaction = result.unwrap();
+        .build(vec![])
+        .unwrap();
     let receipt = sut.run(transaction).unwrap();
 
     // Assert
@@ -97,10 +96,10 @@ fn non_existent_vault_in_committed_lazy_map_should_fail() {
     let mut ledger = InMemorySubstateStore::with_bootstrap();
     let mut sut = TransactionExecutor::new(&mut ledger, false);
     let package = sut.publish_package(&compile("vault")).unwrap();
-    let result = TransactionBuilder::new(&sut)
+    let transaction = TransactionBuilder::new(&sut)
         .call_function(package, "NonExistentVault", "new", vec![], None)
-        .build(vec![]);
-    let transaction = result.unwrap();
+        .build(vec![])
+        .unwrap();
     let receipt = sut.run(transaction).unwrap();
     let component_id = receipt.new_component_ids[0];
 
