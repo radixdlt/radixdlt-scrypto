@@ -11,12 +11,15 @@ blueprint! {
             resource_def_id: ResourceDefId,
             non_fungible_id: NonFungibleId,
         ) -> ComponentId {
-            let auth = NonFungibleAddress::new(resource_def_id, non_fungible_id);
+            let auth_address = NonFungibleAddress::new(resource_def_id, non_fungible_id);
             Self {
                 secret: "Secret".to_owned(),
                 auth_vault: None,
             }
-            .instantiate_with_auth(HashMap::from([("get_component_state".to_string(), auth)]))
+            .instantiate_with_auth(HashMap::from([(
+                "get_component_state".to_string(),
+                AuthRule::NonFungible(auth_address),
+            )]))
         }
 
         pub fn create_component() -> ComponentId {

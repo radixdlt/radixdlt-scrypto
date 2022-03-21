@@ -1,3 +1,4 @@
+mod auth_rule;
 mod bucket;
 mod component;
 mod data;
@@ -11,6 +12,7 @@ mod transaction;
 mod vault;
 mod worktop;
 
+pub use auth_rule::{AuthRule, Rule};
 pub use bucket::{Bucket, BucketError};
 pub use component::Component;
 pub use data::{format_value, ValidatedData};
@@ -19,7 +21,7 @@ pub use package::Package;
 pub use proof::*;
 pub use receipt::Receipt;
 pub use resource::*;
-pub use resource_def::{ResourceControllerMethod, ResourceDef, ResourceDefError};
+pub use resource_def::{ResourceDef, ResourceDefError};
 pub use transaction::{Instruction, Transaction, ValidatedInstruction, ValidatedTransaction};
 pub use vault::{Vault, VaultError};
 pub use worktop::{Worktop, WorktopError};
