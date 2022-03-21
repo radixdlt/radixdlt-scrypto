@@ -6,14 +6,14 @@ blueprint! {
     }
 
     impl Account {
-        pub fn new(auth_rule: AuthRule) -> ComponentId {
+        pub fn new(auth_rule: ProofRule) -> ComponentId {
             Account {
                 vaults: LazyMap::new(),
             }
             .instantiate_with_auth(HashMap::from([("withdraw".to_string(), auth_rule)]))
         }
 
-        pub fn with_bucket(auth_rule: AuthRule, bucket: Bucket) -> ComponentId {
+        pub fn with_bucket(auth_rule: ProofRule, bucket: Bucket) -> ComponentId {
             let vaults = LazyMap::new();
             vaults.insert(bucket.resource_def_id(), Vault::with_bucket(bucket));
             Account { vaults }

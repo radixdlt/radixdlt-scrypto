@@ -2,7 +2,7 @@ use scrypto::buffer::scrypto_encode;
 use scrypto::crypto::sha256;
 use scrypto::engine::types::*;
 use scrypto::prelude::NonFungibleAddress;
-use scrypto::resource::AuthRule;
+use scrypto::resource::ProofRule;
 use scrypto::rust::string::ToString;
 use scrypto::rust::vec;
 use scrypto::rust::vec::Vec;
@@ -84,7 +84,7 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
     }
 
     /// Creates an account with 1,000,000 XRD in balance.
-    pub fn new_account(&mut self, auth_rule: &AuthRule) -> ComponentId {
+    pub fn new_account(&mut self, auth_rule: &ProofRule) -> ComponentId {
         self.run(
             TransactionBuilder::new(self)
                 .call_method(SYSTEM_COMPONENT, "free_xrd", vec![], None)

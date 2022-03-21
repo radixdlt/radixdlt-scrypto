@@ -5,7 +5,7 @@ use scrypto::buffer::*;
 use scrypto::engine::types::*;
 use scrypto::resource::resource_flags::*;
 use scrypto::resource::resource_permissions::*;
-use scrypto::resource::AuthRule;
+use scrypto::resource::ProofRule;
 use scrypto::rust::borrow::ToOwned;
 use scrypto::rust::collections::*;
 use scrypto::rust::fmt;
@@ -569,7 +569,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     }
 
     /// Creates an account.
-    pub fn new_account(&mut self, auth_rule: &AuthRule) -> &mut Self {
+    pub fn new_account(&mut self, auth_rule: &ProofRule) -> &mut Self {
         self.add_instruction(Instruction::CallFunction {
             package_id: ACCOUNT_PACKAGE,
             blueprint_name: "Account".to_owned(),
@@ -584,7 +584,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     /// Note: you need to make sure the worktop contains the required resource to avoid runtime error.
     pub fn new_account_with_resource(
         &mut self,
-        auth_rule: &AuthRule,
+        auth_rule: &ProofRule,
         resource_spec: &ResourceSpecification,
     ) -> &mut Self {
         self.take_from_worktop(resource_spec, |builder, bucket_id| {

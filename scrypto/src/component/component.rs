@@ -5,7 +5,7 @@ use crate::component::*;
 use crate::core::*;
 use crate::engine::{api::*, call_engine};
 use crate::misc::*;
-use crate::prelude::AuthRule;
+use crate::prelude::ProofRule;
 use crate::rust::borrow::ToOwned;
 use crate::rust::collections::HashMap;
 use crate::rust::fmt;
@@ -23,7 +23,7 @@ pub trait ComponentState: Encode + Decode {
     fn instantiate(self) -> ComponentId;
 
     /// Instantiates a component from this data structure along with authorization rules
-    fn instantiate_with_auth(self, sys_auth: HashMap<String, AuthRule>) -> ComponentId;
+    fn instantiate_with_auth(self, sys_auth: HashMap<String, ProofRule>) -> ComponentId;
 }
 
 /// An instance of a blueprint, which lives in the ledger state.
