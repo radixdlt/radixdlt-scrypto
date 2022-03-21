@@ -139,6 +139,10 @@ impl ResourceContainer {
     pub fn lock_amount(&mut self, amount: Decimal) -> Result<(), ResourceContainerError> {
         // TODO do we allow locking non-fungibles in a fungible way?
 
+        // check amount granularity
+        let divisibility = self.resource_type().divisibility();
+        Self::check_amount(amount, divisibility)?;
+
         match self {
             Self::Fungible {
                 locked_amounts,
