@@ -1,7 +1,7 @@
 use radix_engine::errors::RuntimeError;
 use radix_engine::ledger::*;
 use radix_engine::model::ResourceDefError::InvalidFlagUpdate;
-use radix_engine::model::{BucketError, ResourceContainerError, ResourceDefError};
+use radix_engine::model::{ResourceContainerError, ResourceDefError};
 use radix_engine::transaction::*;
 use scrypto::prelude::*;
 
@@ -78,8 +78,9 @@ fn take_with_bad_granularity_should_fail() {
     let runtime_error = receipt.result.expect_err("Should be runtime error");
     assert_eq!(
         runtime_error,
-        RuntimeError::BucketError(BucketError::ResourceContainerError(
-            ResourceContainerError::InvalidAmount(Decimal::from("0.1"), 0)
+        RuntimeError::BucketError(ResourceContainerError::InvalidAmount(
+            Decimal::from("0.1"),
+            0
         ))
     );
 }

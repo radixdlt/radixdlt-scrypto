@@ -382,8 +382,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .buckets
             .get_mut(&bucket_id)
             .ok_or(RuntimeError::BucketNotFound(bucket_id))?;
-        let new_proof =
-            Proof::new(bucket.create_reference_for_proof()).map_err(RuntimeError::ProofError)?;
+        let new_proof = bucket.create_proof().map_err(RuntimeError::BucketError)?;
         self.proofs.insert(new_proof_id, new_proof);
 
         Ok(new_proof_id)
@@ -395,8 +394,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
         let new_proof_id = self.new_proof_id()?;
         let vault = self.get_local_vault(&vault_id)?;
-        let new_proof =
-            Proof::new(vault.create_reference_for_proof()).map_err(RuntimeError::ProofError)?;
+        let new_proof = vault.create_proof().map_err(RuntimeError::VaultError)?;
         self.proofs.insert(new_proof_id, new_proof);
 
         Ok(new_proof_id)
@@ -495,9 +493,14 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     }
 
     /// (SYSTEM ONLY)  Creates a proof which references a virtual bucket
-    pub fn create_virtual_proof(&mut self, proof_id: ProofId, bucket: Bucket) {
-        let proof = Proof::new(bucket.create_reference_for_proof()).unwrap();
+    pub fn create_virtual_proof(
+        &mut self,
+        proof_id: ProofId,
+        mut bucket: Bucket,
+    ) -> Result<(), RuntimeError> {
+        let proof = bucket.create_proof().map_err(RuntimeError::BucketError)?;
         self.proofs.insert(proof_id, proof);
+        Ok(())
     }
 
     /// Moves buckets and proofs into this process.

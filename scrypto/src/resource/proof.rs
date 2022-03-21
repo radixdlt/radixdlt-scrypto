@@ -23,26 +23,14 @@ impl Clone for Proof {
 }
 
 impl Proof {
-    /// Checks if the referenced bucket contains the given resource, and aborts if not so.
-    pub fn check(&self, resource_def_id: ResourceDefId) {
-        if !self.contains(resource_def_id) {
-            panic!("Proof check failed");
-        }
+    /// Whether provides an ownership proof to at least the given amount of the resource.
+    pub fn contains(&self, amount: Decimal, resource_def_id: ResourceDefId) -> bool {
+        self.resource_def_id() == resource_def_id && self.amount() > amount
     }
 
-    pub fn check_non_fungible_address(&self, non_fungible_address: &NonFungibleAddress) {
-        if !self.contains_non_fungible_address(non_fungible_address) {
-            panic!("Proof check failed");
-        }
-    }
-
-    /// Checks if the referenced bucket contains the given resource.
-    pub fn contains(&self, resource_def_id: ResourceDefId) -> bool {
-        self.amount() > 0.into() && self.resource_def_id() == resource_def_id
-    }
-
-    pub fn contains_non_fungible_address(&self, non_fungible_address: &NonFungibleAddress) -> bool {
-        if !self.contains(non_fungible_address.resource_def_id()) {
+    /// Whether provides an ownership proof to the specified non-fungible.
+    pub fn contains_non_fungible(&self, non_fungible_address: &NonFungibleAddress) -> bool {
+        if self.resource_def_id() != non_fungible_address.resource_def_id() {
             return false;
         }
 
