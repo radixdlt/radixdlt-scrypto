@@ -23,7 +23,7 @@ fn can_withdraw_from_my_1_of_2_account_with_key0_sign() {
     let transaction = test_runner
         .new_transaction_builder()
         .withdraw_from_account(
-            &ResourceSpecifier::Amount( Decimal(100), RADIX_TOKEN),
+            &ResourceSpecifier::Amount(Decimal(100), RADIX_TOKEN),
             account,
         )
         .call_method_with_all_resources(other_account, "deposit_batch")
@@ -77,7 +77,7 @@ fn can_withdraw_from_my_2_of_2_account_with_both_signatures() {
     let transaction = test_runner
         .new_transaction_builder()
         .withdraw_from_account(
-            &ResourceSpecifier::Amount( Decimal(100), RADIX_TOKEN),
+            &ResourceSpecifier::Amount(Decimal(100), RADIX_TOKEN),
             account,
         )
         .call_method_with_all_resources(other_account, "deposit_batch")

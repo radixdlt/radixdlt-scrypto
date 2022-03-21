@@ -1,7 +1,7 @@
 use sbor::*;
 
 use crate::engine::types::*;
-use crate::prelude::{ProofRule, NonFungibleAddress};
+use crate::prelude::{NonFungibleAddress, ProofRule};
 use crate::rust::collections::HashMap;
 use crate::rust::string::String;
 use crate::rust::vec::Vec;

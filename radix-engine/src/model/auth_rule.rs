@@ -2,7 +2,7 @@ use crate::errors::RuntimeError;
 use crate::errors::RuntimeError::NotAuthorized;
 use crate::model::Proof;
 use sbor::*;
-use scrypto::prelude::{ProofRule};
+use scrypto::prelude::ProofRule;
 
 /// Authorization Rule
 #[derive(Debug, Clone, PartialEq, Eq, Hash, TypeId, Encode, Decode)]
@@ -23,7 +23,10 @@ impl AuthRule {
         }
     }
 
-    pub fn check_proof_rule(proof_rule: &ProofRule, proofs_vector: &[&[Proof]]) -> Result<(), RuntimeError> {
+    pub fn check_proof_rule(
+        proof_rule: &ProofRule,
+        proofs_vector: &[&[Proof]],
+    ) -> Result<(), RuntimeError> {
         match proof_rule {
             ProofRule::NonFungible(non_fungible_address) => {
                 for proofs in proofs_vector {
@@ -58,8 +61,7 @@ impl AuthRule {
                 for proofs in proofs_vector {
                     for p in proofs.iter() {
                         let proof_resource_def_id = p.resource_def_id();
-                        if proof_resource_def_id == *resource_def_id
-                            && p.total_amount() >= *amount
+                        if proof_resource_def_id == *resource_def_id && p.total_amount() >= *amount
                         {
                             return Ok(());
                         }
