@@ -17,10 +17,7 @@ fn cannot_mint_with_wrong_auth() {
     let (_, token_resource_def_id) = test_runner.create_restricted_mint_token(account);
 
     // Act
-    let fungible_amount = ResourceSpecification::Fungible {
-        amount: Decimal::one(),
-        resource_def_id: random_resource_def_id,
-    };
+    let fungible_amount = ResourceSpecifier::Amount(Decimal::one(), random_resource_def_id);
     let transaction = test_runner
         .new_transaction_builder()
         .withdraw_from_account(&fungible_amount, account)
@@ -49,10 +46,7 @@ fn can_mint_with_right_auth() {
         test_runner.create_restricted_mint_token(account);
 
     // Act
-    let fungible_amount = ResourceSpecification::Fungible {
-        amount: Decimal::one(),
-        resource_def_id: auth_token_resource_def_id,
-    };
+    let fungible_amount = ResourceSpecifier::Amount(Decimal::one(), auth_token_resource_def_id);
     let transaction = test_runner
         .new_transaction_builder()
         .withdraw_from_account(&fungible_amount, account)
@@ -79,10 +73,7 @@ fn cannot_burn_with_no_auth() {
     let (_, token_resource_def_id) = test_runner.create_restricted_burn_token(account);
 
     // Act
-    let fungible_amount = ResourceSpecification::Fungible {
-        amount: Decimal::one(),
-        resource_def_id: token_resource_def_id,
-    };
+    let fungible_amount = ResourceSpecifier::Amount(Decimal::one(), token_resource_def_id);
     let transaction = test_runner
         .new_transaction_builder()
         .withdraw_from_account(&fungible_amount, account)
@@ -107,14 +98,8 @@ fn can_burn_with_auth() {
         test_runner.create_restricted_burn_token(account);
 
     // Act
-    let auth_amount = ResourceSpecification::Fungible {
-        amount: Decimal::one(),
-        resource_def_id: auth_token_resource_def_id,
-    };
-    let burn_amount = ResourceSpecification::Fungible {
-        amount: Decimal::one(),
-        resource_def_id: token_resource_def_id,
-    };
+    let auth_amount = ResourceSpecifier::Amount(Decimal::one(), auth_token_resource_def_id);
+    let burn_amount = ResourceSpecifier::Amount(Decimal::one(), token_resource_def_id);
     let transaction = test_runner
         .new_transaction_builder()
         .withdraw_from_account(&auth_amount, account)

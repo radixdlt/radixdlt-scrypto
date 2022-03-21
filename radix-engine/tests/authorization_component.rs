@@ -101,10 +101,7 @@ fn can_make_cross_component_call_with_authorization() {
     assert!(receipt.result.is_ok());
     let my_component = receipt.new_component_ids[0];
 
-    let auth_amount = ResourceSpecification::NonFungible {
-        ids: BTreeSet::from([auth_id.clone()]),
-        resource_def_id: auth,
-    };
+    let auth_amount = ResourceSpecifier::Ids(BTreeSet::from([auth_id.clone()]), auth);
     let transaction = test_runner
         .new_transaction_builder()
         .withdraw_from_account(&auth_amount, account)

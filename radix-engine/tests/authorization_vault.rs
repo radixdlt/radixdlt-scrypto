@@ -17,10 +17,7 @@ fn cannot_withdraw_restricted_transfer_from_my_account_with_no_auth() {
     let (_, token_resource_def_id) = test_runner.create_restricted_transfer_token(account);
 
     // Act
-    let fungible_amount = ResourceSpecification::Fungible {
-        amount: Decimal::one(),
-        resource_def_id: token_resource_def_id,
-    };
+    let fungible_amount = ResourceSpecifier::Amount(Decimal::one(), token_resource_def_id);
     let transaction = test_runner
         .new_transaction_builder()
         .withdraw_from_account(&fungible_amount, account)
@@ -45,14 +42,11 @@ fn can_withdraw_restricted_transfer_from_my_account_with_auth() {
         test_runner.create_restricted_transfer_token(account);
 
     // Act
-    let auth_amount = ResourceSpecification::NonFungible {
-        ids: BTreeSet::from([NonFungibleId::from(1)]),
-        resource_def_id: auth_resource_def_id,
-    };
-    let fungible_amount = ResourceSpecification::Fungible {
-        amount: Decimal::one(),
-        resource_def_id: token_resource_def_id,
-    };
+    let auth_amount = ResourceSpecifier::Ids(
+        BTreeSet::from([NonFungibleId::from(1)]),
+        auth_resource_def_id,
+    );
+    let fungible_amount = ResourceSpecifier::Amount(Decimal::one(), token_resource_def_id);
     let transaction = test_runner
         .new_transaction_builder()
         .withdraw_from_account(&auth_amount, account)

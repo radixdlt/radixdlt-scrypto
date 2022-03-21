@@ -1,4 +1,5 @@
 use crate::rust::boxed::Box;
+use crate::rust::cell::RefCell;
 use crate::rust::collections::*;
 use crate::rust::hash::Hash;
 use crate::rust::mem::MaybeUninit;
@@ -239,6 +240,13 @@ impl<T: Decode> Decode for Rc<T> {
     fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
         let v = T::decode_value(decoder)?;
         Ok(Rc::new(v))
+    }
+}
+
+impl<T: Decode> Decode for RefCell<T> {
+    fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
+        let v = T::decode_value(decoder)?;
+        Ok(RefCell::new(v))
     }
 }
 
@@ -490,5 +498,13 @@ mod tests {
         let mut dec = Decoder::with_type(&bytes);
         let x = <Rc<u8>>::decode(&mut dec).unwrap();
         assert_eq!(Rc::new(5u8), x);
+    }
+
+    #[test]
+    pub fn test_decode_ref_cell() {
+        let bytes = vec![7u8, 5u8];
+        let mut dec = Decoder::with_type(&bytes);
+        let x = <RefCell<u8>>::decode(&mut dec).unwrap();
+        assert_eq!(RefCell::new(5u8), x);
     }
 }

@@ -30,10 +30,10 @@ impl AuthRule {
                     for p in proofs.iter() {
                         let proof_resource_def_id = p.resource_def_id();
                         if proof_resource_def_id == non_fungible_address.resource_def_id()
-                            && match p.total_amount().as_non_fungible_ids() {
-                            Some(ids) => ids.contains(&non_fungible_address.non_fungible_id()),
-                            None => false,
-                        }
+                            && match p.total_ids() {
+                                Ok(ids) => ids.contains(&non_fungible_address.non_fungible_id()),
+                                Err(_) => false,
+                            }
                         {
                             return Ok(());
                         }
@@ -59,7 +59,7 @@ impl AuthRule {
                     for p in proofs.iter() {
                         let proof_resource_def_id = p.resource_def_id();
                         if proof_resource_def_id == *resource_def_id
-                            && p.total_amount().as_quantity() >= *amount
+                            && p.total_amount() >= *amount
                         {
                             return Ok(());
                         }

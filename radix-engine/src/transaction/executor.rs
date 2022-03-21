@@ -1,4 +1,3 @@
-use scrypto::buffer::scrypto_encode;
 use scrypto::crypto::sha256;
 use scrypto::engine::types::*;
 use scrypto::prelude::NonFungibleAddress;
@@ -88,12 +87,7 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
         self.run(
             TransactionBuilder::new(self)
                 .call_method(SYSTEM_COMPONENT, "free_xrd", vec![], None)
-                .new_account_with_resource(
-                    auth_rule,
-                    &ResourceSpecification::All {
-                        resource_def_id: RADIX_TOKEN,
-                    },
-                )
+                .new_account_with_resource(auth_rule, &ResourceSpecifier::All(RADIX_TOKEN))
                 .build(Vec::new())
                 .unwrap(),
         )
@@ -175,43 +169,46 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
                 ValidatedInstruction::TakeFromWorktop {
                     amount,
                     resource_def_id,
-                } => proc.take_from_worktop(ResourceSpecification::Fungible {
-                    amount,
-                    resource_def_id,
-                }),
-                ValidatedInstruction::TakeAllFromWorktop { resource_def_id } => {
-                    proc.take_from_worktop(ResourceSpecification::All { resource_def_id })
-                }
+                } => proc
+                    .take_from_worktop(amount, resource_def_id)
+                    .map(|bucket_id| {
+                        ValidatedData::from_value(&scrypto::resource::Bucket(bucket_id))
+                    }),
+                ValidatedInstruction::TakeAllFromWorktop { resource_def_id } => proc
+                    .take_all_from_worktop(resource_def_id)
+                    .map(|bucket_id| {
+                        ValidatedData::from_value(&scrypto::resource::Bucket(bucket_id))
+                    }),
                 ValidatedInstruction::TakeNonFungiblesFromWorktop {
                     ids,
                     resource_def_id,
-                } => proc.take_from_worktop(ResourceSpecification::NonFungible {
-                    ids,
-                    resource_def_id,
-                }),
+                } => proc
+                    .take_non_fungibles_from_worktop(ids, resource_def_id)
+                    .map(|bucket_id| {
+                        ValidatedData::from_value(&scrypto::resource::Bucket(bucket_id))
+                    }),
                 ValidatedInstruction::ReturnToWorktop { bucket_id } => {
                     proc.return_to_worktop(bucket_id)
                 }
-                ValidatedInstruction::PopFromAuthWorktop {} => {
-                    proc.pop_from_auth_worktop().map(|proof_id| {
-                        ValidatedData::from_slice(&scrypto_encode(&scrypto::resource::Proof(
-                            proof_id,
-                        )))
-                        .unwrap()
-                    })
-                }
+                ValidatedInstruction::PopFromAuthWorktop {} => proc
+                    .pop_from_auth_worktop()
+                    .map(|proof_id| ValidatedData::from_value(&scrypto::resource::Proof(proof_id))),
                 ValidatedInstruction::PushOntoAuthWorktop { proof_id } => proc
                     .push_onto_auth_worktop(proof_id)
-                    .map(|_| ValidatedData::from_slice(&scrypto_encode(&())).unwrap()),
+                    .map(|_| ValidatedData::from_value(&())),
                 ValidatedInstruction::AssertWorktopContains {
                     amount,
                     resource_def_id,
                 } => proc.assert_worktop_contains(amount, resource_def_id),
-                ValidatedInstruction::CreateBucketProof { bucket_id } => {
-                    proc.create_bucket_proof(bucket_id)
-                }
-                ValidatedInstruction::CloneProof { proof_id } => proc.clone_proof(proof_id),
-                ValidatedInstruction::DropProof { proof_id } => proc.drop_proof(proof_id),
+                ValidatedInstruction::CreateBucketProof { bucket_id } => proc
+                    .create_bucket_proof(bucket_id)
+                    .map(|proof_id| ValidatedData::from_value(&scrypto::resource::Proof(proof_id))),
+                ValidatedInstruction::CloneProof { proof_id } => proc
+                    .clone_proof(proof_id)
+                    .map(|proof_id| ValidatedData::from_value(&scrypto::resource::Proof(proof_id))),
+                ValidatedInstruction::DropProof { proof_id } => proc
+                    .drop_proof(proof_id)
+                    .map(|_| ValidatedData::from_value(&())),
                 ValidatedInstruction::CallFunction {
                     package_id,
                     blueprint_name,

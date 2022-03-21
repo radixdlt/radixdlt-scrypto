@@ -3,6 +3,7 @@ use radix_engine::ledger::*;
 use radix_engine::model::*;
 use scrypto::engine::types::*;
 use scrypto::rust::collections::HashSet;
+use std::collections::VecDeque;
 
 use crate::utils::*;
 
@@ -61,28 +62,17 @@ pub fn dump_component<T: SubstateStore + QueryableSubstateStore>(
             }
 
             let state = c.state();
-            let state_validated = ValidatedData::from_slice(state).unwrap();
-            println!("{}: {}", "State".green().bold(), state_validated);
+            let state_data = ValidatedData::from_slice(state).unwrap();
+            println!("{}: {}", "State".green().bold(), state_data);
 
-            // The current implementation recursively displays all referenced maps and vaults which
-            // the component may not have access to.
-            // Dump lazy map using DFS
-            // Consider using a proper Queue structure
-            let mut queue: Vec<LazyMapId> = state_validated.lazy_map_ids.clone();
-            let mut i = 0;
-            let mut maps_visited: HashSet<LazyMapId> = HashSet::new();
-            let mut vaults_found: HashSet<VaultId> =
-                state_validated.vault_ids.iter().cloned().collect();
-            while i < queue.len() {
-                let lazy_map_id = queue[i];
-                i += 1;
-                if maps_visited.insert(lazy_map_id) {
-                    let (maps, vaults) = dump_lazy_map(component_id, &lazy_map_id, substate_store)?;
-                    queue.extend(maps);
-                    for v in vaults {
-                        vaults_found.insert(v);
-                    }
-                }
+            // Find all vaults owned by the component, assuming a tree structure.
+            let mut vaults_found: HashSet<VaultId> = state_data.vault_ids.iter().cloned().collect();
+            let mut queue: VecDeque<LazyMapId> = state_data.lazy_map_ids.iter().cloned().collect();
+            while !queue.is_empty() {
+                let lazy_map_id = queue.pop_front().unwrap();
+                let (maps, vaults) = dump_lazy_map(component_id, &lazy_map_id, substate_store)?;
+                queue.extend(maps);
+                vaults_found.extend(vaults);
             }
 
             // Dump resources
@@ -110,7 +100,7 @@ fn dump_lazy_map<T: SubstateStore + QueryableSubstateStore>(
         let k_validated = ValidatedData::from_slice(k).unwrap();
         let v_validated = ValidatedData::from_slice(v).unwrap();
         println!(
-            "{} {:?} => {}",
+            "{} {} => {}",
             list_item_prefix(last),
             k_validated,
             v_validated
@@ -133,7 +123,7 @@ fn dump_resources<T: SubstateStore>(
             .unwrap()
             .0;
 
-        let amount = vault.liquid_amount().as_quantity();
+        let amount = vault.total_amount();
         let resource_def_id = vault.resource_def_id();
         let resource_def: ResourceDef = substate_store
             .get_decoded_substate(&resource_def_id)
@@ -155,7 +145,8 @@ fn dump_resources<T: SubstateStore>(
                 .map(|symbol| format!(", symbol: \"{}\"", symbol))
                 .unwrap_or(String::new()),
         );
-        if let ResourceAmount::NonFungible { ids } = vault.liquid_amount() {
+        if matches!(resource_def.resource_type(), ResourceType::NonFungible) {
+            let ids = vault.total_ids().unwrap();
             for (inner_last, id) in ids.iter().identify_last() {
                 let non_fungible: NonFungible = substate_store
                     .get_decoded_child_substate(&resource_def_id, id)

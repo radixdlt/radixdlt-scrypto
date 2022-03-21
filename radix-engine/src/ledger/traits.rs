@@ -138,15 +138,15 @@ pub trait SubstateStore {
             metadata.insert("description".to_owned(), XRD_DESCRIPTION.to_owned());
             metadata.insert("url".to_owned(), XRD_URL.to_owned());
 
-            let xrd = ResourceDef::new(
+            let mut xrd = ResourceDef::new(
                 ResourceType::Fungible { divisibility: 18 },
                 metadata,
                 0,
                 0,
                 HashMap::new(),
-                XRD_MAX_SUPPLY.into(),
             )
             .unwrap();
+            xrd.mint(XRD_MAX_SUPPLY.into());
             self.put_encoded_substate(&RADIX_TOKEN, &xrd, self.get_nonce());
 
             let ecdsa_token = ResourceDef::new(
@@ -155,15 +155,15 @@ pub trait SubstateStore {
                 0,
                 0,
                 HashMap::new(),
-                0.into(),
             )
             .unwrap();
             self.put_encoded_substate(&ECDSA_TOKEN, &ecdsa_token, self.get_nonce());
 
             // Instantiate system component
-            let system_vault = Vault::new(ResourceContainer::new(
+            let system_vault = Vault::new(ResourceContainer::new_fungible(
                 RADIX_TOKEN,
-                ResourceContainerState::fungible(XRD_MAX_SUPPLY.into(), 18),
+                18,
+                XRD_MAX_SUPPLY.into(),
             ));
             self.put_encoded_child_substate(
                 &SYSTEM_COMPONENT,

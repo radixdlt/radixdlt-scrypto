@@ -8,13 +8,6 @@ use radix_engine::model::*;
 use radix_engine::transaction::*;
 use scrypto::prelude::*;
 
-fn fungible_amount() -> ResourceSpecification {
-    ResourceSpecification::Fungible {
-        amount: Decimal(100),
-        resource_def_id: RADIX_TOKEN,
-    }
-}
-
 #[test]
 fn can_withdraw_from_my_account() {
     // Arrange
@@ -26,7 +19,10 @@ fn can_withdraw_from_my_account() {
     // Act
     let transaction = test_runner
         .new_transaction_builder()
-        .withdraw_from_account(&fungible_amount(), account)
+        .withdraw_from_account(
+            &ResourceSpecifier::Amount(Decimal(100), RADIX_TOKEN),
+            account,
+        )
         .call_method_with_all_resources(other_account, "deposit_batch")
         .build(vec![key])
         .unwrap();
@@ -46,10 +42,8 @@ fn can_withdraw_non_fungible_from_my_account() {
     let resource_def_id = test_runner.create_non_fungible_resource(account);
 
     // Act
-    let non_fungible_amount = ResourceSpecification::NonFungible {
-        ids: BTreeSet::from([NonFungibleId::from(1)]),
-        resource_def_id,
-    };
+    let non_fungible_amount =
+        ResourceSpecifier::Ids(BTreeSet::from([NonFungibleId::from(1)]), resource_def_id);
     let transaction = test_runner
         .new_transaction_builder()
         .withdraw_from_account(&non_fungible_amount, account)
@@ -71,7 +65,10 @@ fn cannot_withdraw_from_other_account() {
     let (other_key, other_account) = test_runner.new_public_key_with_account();
     let transaction = test_runner
         .new_transaction_builder()
-        .withdraw_from_account(&fungible_amount(), account)
+        .withdraw_from_account(
+            &ResourceSpecifier::Amount(Decimal(100), RADIX_TOKEN),
+            account,
+        )
         .call_method_with_all_resources(other_account, "deposit_batch")
         .build(vec![other_key])
         .unwrap();
@@ -90,7 +87,7 @@ fn account_to_bucket_to_account() {
     let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(&mut substate_store);
     let (key, account) = test_runner.new_public_key_with_account();
-    let amount = fungible_amount();
+    let amount = ResourceSpecifier::Amount(Decimal(100), RADIX_TOKEN);
     let transaction = test_runner
         .new_transaction_builder()
         .withdraw_from_account(&amount, account)

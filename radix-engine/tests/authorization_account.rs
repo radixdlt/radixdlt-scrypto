@@ -23,10 +23,7 @@ fn can_withdraw_from_my_1_of_2_account_with_key0_sign() {
     let transaction = test_runner
         .new_transaction_builder()
         .withdraw_from_account(
-            &ResourceSpecification::Fungible {
-                amount: Decimal(100),
-                resource_def_id: RADIX_TOKEN,
-            },
+            &ResourceSpecifier::Amount( Decimal(100), RADIX_TOKEN),
             account,
         )
         .call_method_with_all_resources(other_account, "deposit_batch")
@@ -53,10 +50,7 @@ fn can_withdraw_from_my_1_of_2_account_with_key1_sign() {
     let transaction = test_runner
         .new_transaction_builder()
         .withdraw_from_account(
-            &ResourceSpecification::Fungible {
-                amount: Decimal(100),
-                resource_def_id: RADIX_TOKEN,
-            },
+            &ResourceSpecifier::Amount(Decimal(100), RADIX_TOKEN),
             account,
         )
         .call_method_with_all_resources(other_account, "deposit_batch")
@@ -83,10 +77,7 @@ fn can_withdraw_from_my_2_of_2_account_with_both_signatures() {
     let transaction = test_runner
         .new_transaction_builder()
         .withdraw_from_account(
-            &ResourceSpecification::Fungible {
-                amount: Decimal(100),
-                resource_def_id: RADIX_TOKEN,
-            },
+            &ResourceSpecifier::Amount( Decimal(100), RADIX_TOKEN),
             account,
         )
         .call_method_with_all_resources(other_account, "deposit_batch")
@@ -113,10 +104,7 @@ fn cannot_withdraw_from_my_2_of_2_account_with_single_signature() {
     let transaction = test_runner
         .new_transaction_builder()
         .withdraw_from_account(
-            &ResourceSpecification::Fungible {
-                amount: Decimal(100),
-                resource_def_id: RADIX_TOKEN,
-            },
+            &ResourceSpecifier::Amount(Decimal(100), RADIX_TOKEN),
             account,
         )
         .call_method_with_all_resources(other_account, "deposit_batch")
@@ -150,10 +138,7 @@ fn can_withdraw_from_my_2_of_3_account_with_2_signatures() {
     let transaction = test_runner
         .new_transaction_builder()
         .withdraw_from_account(
-            &ResourceSpecification::Fungible {
-                amount: Decimal(100),
-                resource_def_id: RADIX_TOKEN,
-            },
+            &ResourceSpecifier::Amount(Decimal(100), RADIX_TOKEN),
             account,
         )
         .call_method_with_all_resources(other_account, "deposit_batch")
@@ -179,18 +164,12 @@ fn can_withdraw_from_my_any_xrd_auth_account_with_no_signature() {
         .new_transaction_builder()
         .call_method(SYSTEM_COMPONENT, "free_xrd", vec![], None)
         .take_from_worktop(
-            &ResourceSpecification::Fungible {
-                amount: Decimal(1),
-                resource_def_id: RADIX_TOKEN,
-            },
+            &ResourceSpecifier::Amount(Decimal(1), RADIX_TOKEN),
             |builder, bucket_id| {
                 builder.create_bucket_proof(bucket_id, |builder, proof_id| {
                     builder.push_auth(proof_id);
                     builder.withdraw_from_account(
-                        &ResourceSpecification::Fungible {
-                            amount: Decimal(100),
-                            resource_def_id: RADIX_TOKEN,
-                        },
+                        &ResourceSpecifier::Amount(Decimal(100), RADIX_TOKEN),
                         account,
                     );
                     builder.pop_auth(|builder, proof_id| builder.drop_proof(proof_id));
@@ -222,18 +201,12 @@ fn can_withdraw_from_my_any_xrd_auth_account_with_right_amount_of_proof() {
         .new_transaction_builder()
         .call_method(SYSTEM_COMPONENT, "free_xrd", vec![], None)
         .take_from_worktop(
-            &ResourceSpecification::Fungible {
-                amount: Decimal(1),
-                resource_def_id: RADIX_TOKEN,
-            },
+            &ResourceSpecifier::Amount(Decimal(1), RADIX_TOKEN),
             |builder, bucket_id| {
                 builder.create_bucket_proof(bucket_id, |builder, proof_id| {
                     builder.push_auth(proof_id);
                     builder.withdraw_from_account(
-                        &ResourceSpecification::Fungible {
-                            amount: Decimal(100),
-                            resource_def_id: RADIX_TOKEN,
-                        },
+                        &ResourceSpecifier::Amount(Decimal(100), RADIX_TOKEN),
                         account,
                     );
                     builder.pop_auth(|builder, proof_id| builder.drop_proof(proof_id));
@@ -265,18 +238,12 @@ fn cannot_withdraw_from_my_any_xrd_auth_account_with_less_than_amount_of_proof()
         .new_transaction_builder()
         .call_method(SYSTEM_COMPONENT, "free_xrd", vec![], None)
         .take_from_worktop(
-            &ResourceSpecification::Fungible {
-                amount: Decimal::from("0.9"),
-                resource_def_id: RADIX_TOKEN,
-            },
+            &ResourceSpecifier::Amount(Decimal::from("0.9"), RADIX_TOKEN),
             |builder, bucket_id| {
                 builder.create_bucket_proof(bucket_id, |builder, proof_id| {
                     builder.push_auth(proof_id);
                     builder.withdraw_from_account(
-                        &ResourceSpecification::Fungible {
-                            amount: Decimal::from(100),
-                            resource_def_id: RADIX_TOKEN,
-                        },
+                        &ResourceSpecifier::Amount(Decimal::from(100), RADIX_TOKEN),
                         account,
                     );
                     builder.pop_auth(|builder, proof_id| builder.drop_proof(proof_id));

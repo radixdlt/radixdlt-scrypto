@@ -36,4 +36,11 @@ impl MintParams {
 
         Self::NonFungible { entries: encoded }
     }
+
+    pub fn is_same_type(&self, resource_type: &ResourceType) -> bool {
+        match self {
+            Self::Fungible { .. } => matches!(resource_type, ResourceType::Fungible { .. }),
+            Self::NonFungible { .. } => matches!(resource_type, ResourceType::NonFungible),
+        }
+    }
 }
