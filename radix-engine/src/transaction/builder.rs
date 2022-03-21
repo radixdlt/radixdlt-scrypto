@@ -234,7 +234,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         then(builder, proof_id.unwrap())
     }
 
-    pub fn push_onto_worktop(&mut self, proof_id: ProofId) -> &mut Self {
+    pub fn push_onto_auth_worktop(&mut self, proof_id: ProofId) -> &mut Self {
         self.add_instruction(Instruction::PushOntoAuthWorktop { proof_id });
         self
     }
@@ -507,7 +507,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
             &ResourceSpecifier::Amount(1.into(), minter_resource_def_id),
             |builder, bucket_id| {
                 builder.create_bucket_proof(bucket_id, |builder, proof_id| {
-                    builder.push_onto_worktop(proof_id);
+                    builder.push_onto_auth_worktop(proof_id);
                     builder.add_instruction(Instruction::CallFunction {
                         package_id: SYSTEM_PACKAGE,
                         blueprint_name: "System".to_owned(),
