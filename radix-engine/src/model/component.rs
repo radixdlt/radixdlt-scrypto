@@ -1,9 +1,6 @@
-use crate::errors::RuntimeError;
-use crate::errors::RuntimeError::NotAuthorized;
-use crate::model::Proof;
+use crate::model::AuthRule;
 use sbor::*;
 use scrypto::engine::types::*;
-use scrypto::prelude::NonFungibleAddress;
 use scrypto::rust::collections::*;
 use scrypto::rust::string::String;
 use scrypto::rust::vec::Vec;
@@ -13,39 +10,34 @@ use scrypto::rust::vec::Vec;
 pub struct Component {
     package_id: PackageId,
     blueprint_name: String,
+    auth_rules: HashMap<String, AuthRule>,
     state: Vec<u8>,
-    sys_auth: HashMap<String, NonFungibleAddress>,
 }
 
 impl Component {
     pub fn new(
         package_id: PackageId,
         blueprint_name: String,
+        auth_rules: HashMap<String, AuthRule>,
         state: Vec<u8>,
-        sys_auth: HashMap<String, NonFungibleAddress>,
     ) -> Self {
         Self {
             package_id,
             blueprint_name,
+            auth_rules,
             state,
-            sys_auth,
         }
     }
 
-    pub fn check_auth(&self, function: &str, proofs: &[Proof]) -> Result<(), RuntimeError> {
-        if let Some(auth_address) = self.sys_auth.get(function) {
-            if !proofs.iter().any(|p| {
-                p.resource_def_id() == auth_address.resource_def_id()
-                    && match p.total_amount().as_non_fungible_ids() {
-                        Some(ids) => ids.contains(&auth_address.non_fungible_id()),
-                        None => false,
-                    }
-            }) {
-                return Err(NotAuthorized);
-            }
+    pub fn get_auth(&self, method_name: &str) -> &AuthRule {
+        match self.auth_rules.get(method_name) {
+            Some(auth_rule) => auth_rule,
+            None => &AuthRule::Public,
         }
+    }
 
-        Ok(())
+    pub fn auth_rules(&self) -> &HashMap<String, AuthRule> {
+        &self.auth_rules
     }
 
     pub fn package_id(&self) -> PackageId {

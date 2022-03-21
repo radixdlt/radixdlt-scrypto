@@ -500,8 +500,10 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 Actor::Blueprint(..) => Ok(InterpreterState::Blueprint),
                 Actor::Component(component_id) => {
                     let component = self.track.get_component(component_id.clone()).unwrap();
-                    component.check_auth(&invocation.function, self.caller_auth_worktop)?;
 
+                    // Auth check
+                    let method_auth = component.get_auth(&invocation.function);
+                    method_auth.check(&[self.caller_auth_worktop])?;
                     let initial_loaded_object_refs =
                         Self::process_entry_data(component.state()).unwrap();
                     let state = component.state().to_vec();
@@ -1006,11 +1008,16 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
         let data = Self::process_entry_data(&input.state)?;
         let new_objects = wasm_process.process_owned_objects.take(data)?;
+        let sys_auth: HashMap<String, AuthRule> = input
+            .sys_auth
+            .into_iter()
+            .map(|(name, auth_rule)| (name, AuthRule::Protected(Rule::from(auth_rule))))
+            .collect();
         let component = Component::new(
             wasm_process.vm.invocation.package_id,
             input.blueprint_name,
+            sys_auth,
             input.state,
-            input.sys_auth,
         );
         let component_id = self.track.create_component(component);
         self.track
@@ -1503,18 +1510,14 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     fn check_resource_auth(
         &mut self,
         resource_def_id: &ResourceDefId,
-        transition: ResourceControllerMethod,
+        transition: &str,
     ) -> Result<(), RuntimeError> {
         let resource_def = self
             .track
             .get_resource_def(&resource_def_id)
             .ok_or(RuntimeError::ResourceDefNotFound(resource_def_id.clone()))?;
-        resource_def
-            .check_auth(
-                transition,
-                vec![self.caller_auth_worktop, &self.auth_worktop],
-            )
-            .map_err(RuntimeError::ResourceDefError)
+        let auth_rule = resource_def.get_auth(transition);
+        auth_rule.check(&[self.caller_auth_worktop, &self.auth_worktop])
     }
 
     fn handle_update_resource_flags(
@@ -1522,10 +1525,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         input: UpdateResourceFlagsInput,
     ) -> Result<UpdateResourceFlagsOutput, RuntimeError> {
         // Auth
-        self.check_resource_auth(
-            &input.resource_def_id,
-            ResourceControllerMethod::UpdateFlags,
-        )?;
+        self.check_resource_auth(&input.resource_def_id, "update_flags")?;
 
         // State Update
         let resource_def = self
@@ -1544,10 +1544,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         input: UpdateResourceMutableFlagsInput,
     ) -> Result<UpdateResourceMutableFlagsOutput, RuntimeError> {
         // Auth
-        self.check_resource_auth(
-            &input.resource_def_id,
-            ResourceControllerMethod::UpdateMutableFlags,
-        )?;
+        self.check_resource_auth(&input.resource_def_id, "update_mutable_flags")?;
 
         // State Update
         let resource_def = self
@@ -1566,10 +1563,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         input: UpdateResourceMetadataInput,
     ) -> Result<UpdateResourceMetadataOutput, RuntimeError> {
         // Auth
-        self.check_resource_auth(
-            &input.resource_def_id,
-            ResourceControllerMethod::UpdateMetadata,
-        )?;
+        self.check_resource_auth(&input.resource_def_id, "update_metadata")?;
 
         // State update
         let resource_def = self
@@ -1589,10 +1583,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     ) -> Result<UpdateNonFungibleMutableDataOutput, RuntimeError> {
         // Auth
         let resource_def_id = input.non_fungible_address.resource_def_id();
-        self.check_resource_auth(
-            &resource_def_id,
-            ResourceControllerMethod::UpdateNonFungibleMutableData,
-        )?;
+        self.check_resource_auth(&resource_def_id, "update_non_fungible_mutable_data")?;
 
         // update state
         let data = self.process_non_fungible_data(&input.new_mutable_data)?;
@@ -1611,7 +1602,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         input: MintResourceInput,
     ) -> Result<MintResourceOutput, RuntimeError> {
         // Auth
-        self.check_resource_auth(&input.resource_def_id, ResourceControllerMethod::Mint)?;
+        self.check_resource_auth(&input.resource_def_id, "mint")?;
 
         // wrap resource into a bucket
         let bucket = Bucket::new(ResourceContainer::new(
@@ -1633,7 +1624,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .buckets
             .remove(&input.bucket_id)
             .ok_or(RuntimeError::BucketNotFound(input.bucket_id))?;
-        self.check_resource_auth(&bucket.resource_def_id(), ResourceControllerMethod::Burn)?;
+        self.check_resource_auth(&bucket.resource_def_id(), "burn")?;
 
         // Burn
         let resource_def = self
@@ -1652,7 +1643,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         input: TakeFromVaultInput,
     ) -> Result<TakeFromVaultOutput, RuntimeError> {
         let resource_def_id = self.get_local_vault(&input.vault_id)?.resource_def_id();
-        self.check_resource_auth(&resource_def_id, ResourceControllerMethod::TakeFromVault)?;
+        self.check_resource_auth(&resource_def_id, "take_from_vault")?;
 
         let new_bucket = self
             .get_local_vault(&input.vault_id)?
@@ -1670,7 +1661,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         input: TakeNonFungibleFromVaultInput,
     ) -> Result<TakeNonFungibleFromVaultOutput, RuntimeError> {
         let resource_def_id = self.get_local_vault(&input.vault_id)?.resource_def_id();
-        self.check_resource_auth(&resource_def_id, ResourceControllerMethod::TakeFromVault)?;
+        self.check_resource_auth(&resource_def_id, "take_from_vault")?;
 
         let new_bucket = self
             .get_local_vault(&input.vault_id)?

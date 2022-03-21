@@ -55,6 +55,12 @@ pub fn dump_component<T: SubstateStore + QueryableSubstateStore>(
                 c.package_id(),
                 c.blueprint_name()
             );
+
+            println!("{}", "Authorization".green().bold());
+            for (last, (k, v)) in c.auth_rules().iter().identify_last() {
+                println!("{} {:?} => {:?}", list_item_prefix(last), k, v);
+            }
+
             let state = c.state();
             let state_data = ValidatedData::from_slice(state).unwrap();
             println!("{}: {}", "State".green().bold(), state_data);
@@ -185,7 +191,6 @@ pub fn dump_resource_def<T: SubstateStore>(
             }
             println!("{}: {}", "Flags".green().bold(), r.flags());
             println!("{}: {}", "Mutable Flags".green().bold(), r.mutable_flags());
-            println!("{}: {:?}", "Authorities".green().bold(), r.authorities());
             println!("{}: {}", "Total Supply".green().bold(), r.total_supply());
             Ok(())
         }
