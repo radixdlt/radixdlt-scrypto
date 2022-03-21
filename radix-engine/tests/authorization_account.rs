@@ -15,8 +15,8 @@ fn can_withdraw_from_my_1_of_2_account_with_key0_sign() {
     let mut test_runner = TestRunner::new(&mut substate_store);
     let (key0, auth0) = test_runner.new_public_key_and_non_fungible_address();
     let (_, auth1) = test_runner.new_public_key_and_non_fungible_address();
-    let auth_rule_1_of_2 = any_of!(auth0, auth1);
-    let account = test_runner.new_account(&auth_rule_1_of_2);
+    let auth_1_of_2 = any_of!(auth0, auth1);
+    let account = test_runner.new_account(&auth_1_of_2);
     let (_, other_account) = test_runner.new_public_key_with_account();
 
     // Act
@@ -42,8 +42,8 @@ fn can_withdraw_from_my_1_of_2_account_with_key1_sign() {
     let mut test_runner = TestRunner::new(&mut substate_store);
     let (_, non_fungible_address0) = test_runner.new_public_key_and_non_fungible_address();
     let (key1, non_fungible_address1) = test_runner.new_public_key_and_non_fungible_address();
-    let auth_rule_1_of_2 = any_of!(non_fungible_address0, non_fungible_address1);
-    let account = test_runner.new_account(&auth_rule_1_of_2);
+    let auth_1_of_2 = any_of!(non_fungible_address0, non_fungible_address1);
+    let account = test_runner.new_account(&auth_1_of_2);
     let (_, other_account) = test_runner.new_public_key_with_account();
 
     // Act
@@ -69,8 +69,8 @@ fn can_withdraw_from_my_2_of_2_account_with_both_signatures() {
     let mut test_runner = TestRunner::new(&mut substate_store);
     let (key0, non_fungible_address0) = test_runner.new_public_key_and_non_fungible_address();
     let (key1, non_fungible_address1) = test_runner.new_public_key_and_non_fungible_address();
-    let auth_rule_2_of_2 = all_of!(non_fungible_address0, non_fungible_address1);
-    let account = test_runner.new_account(&auth_rule_2_of_2);
+    let auth_2_of_2 = all_of!(non_fungible_address0, non_fungible_address1);
+    let account = test_runner.new_account(&auth_2_of_2);
     let (_, other_account) = test_runner.new_public_key_with_account();
 
     // Act
@@ -96,8 +96,8 @@ fn cannot_withdraw_from_my_2_of_2_account_with_single_signature() {
     let mut test_runner = TestRunner::new(&mut substate_store);
     let (_, non_fungible_address0) = test_runner.new_public_key_and_non_fungible_address();
     let (key1, non_fungible_address1) = test_runner.new_public_key_and_non_fungible_address();
-    let auth_rule_2_of_2 = all_of!(non_fungible_address0, non_fungible_address1);
-    let account = test_runner.new_account(&auth_rule_2_of_2);
+    let auth_2_of_2 = all_of!(non_fungible_address0, non_fungible_address1);
+    let account = test_runner.new_account(&auth_2_of_2);
     let (_, other_account) = test_runner.new_public_key_with_account();
 
     // Act
@@ -125,13 +125,13 @@ fn can_withdraw_from_my_2_of_3_account_with_2_signatures() {
     let (_, non_fungible_address0) = test_runner.new_public_key_and_non_fungible_address();
     let (key1, non_fungible_address1) = test_runner.new_public_key_and_non_fungible_address();
     let (key2, non_fungible_address2) = test_runner.new_public_key_and_non_fungible_address();
-    let auth_rule_2_of_3 = min_n_of!(
+    let auth_2_of_3 = min_n_of!(
         2,
         non_fungible_address0,
         non_fungible_address1,
         non_fungible_address2
     );
-    let account = test_runner.new_account(&auth_rule_2_of_3);
+    let account = test_runner.new_account(&auth_2_of_3);
     let (_, other_account) = test_runner.new_public_key_with_account();
 
     // Act
@@ -155,8 +155,8 @@ fn can_withdraw_from_my_any_xrd_auth_account_with_no_signature() {
     // Arrange
     let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(&mut substate_store);
-    let xrd_auth_rule = any_of!(RADIX_TOKEN);
-    let account = test_runner.new_account(&xrd_auth_rule);
+    let xrd_auth = any_of!(RADIX_TOKEN);
+    let account = test_runner.new_account(&xrd_auth);
     let (_, other_account) = test_runner.new_public_key_with_account();
 
     // Act
@@ -192,8 +192,8 @@ fn can_withdraw_from_my_any_xrd_auth_account_with_right_amount_of_proof() {
     // Arrange
     let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(&mut substate_store);
-    let xrd_auth_rule = amount_of!(Decimal(1), RADIX_TOKEN);
-    let account = test_runner.new_account(&xrd_auth_rule);
+    let xrd_auth = amount_of!(Decimal(1), RADIX_TOKEN);
+    let account = test_runner.new_account(&xrd_auth);
     let (_, other_account) = test_runner.new_public_key_with_account();
 
     // Act
@@ -229,8 +229,8 @@ fn cannot_withdraw_from_my_any_xrd_auth_account_with_less_than_amount_of_proof()
     // Arrange
     let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(&mut substate_store);
-    let xrd_auth_rule = amount_of!(Decimal::from(1), RADIX_TOKEN);
-    let account = test_runner.new_account(&xrd_auth_rule);
+    let xrd_auth = amount_of!(Decimal::from(1), RADIX_TOKEN);
+    let account = test_runner.new_account(&xrd_auth);
     let (_, other_account) = test_runner.new_public_key_with_account();
 
     // Act

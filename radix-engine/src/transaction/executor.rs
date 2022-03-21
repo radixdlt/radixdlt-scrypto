@@ -83,11 +83,11 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
     }
 
     /// Creates an account with 1,000,000 XRD in balance.
-    pub fn new_account(&mut self, auth_rule: &ProofRule) -> ComponentId {
+    pub fn new_account(&mut self, withdraw_auth: &ProofRule) -> ComponentId {
         self.run(
             TransactionBuilder::new(self)
                 .call_method(SYSTEM_COMPONENT, "free_xrd", vec![], None)
-                .new_account_with_resource(auth_rule, &ResourceSpecifier::All(RADIX_TOKEN))
+                .new_account_with_resource(withdraw_auth, &ResourceSpecifier::All(RADIX_TOKEN))
                 .build(Vec::new())
                 .unwrap(),
         )
@@ -100,8 +100,8 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
         let key = self.new_public_key();
         let id = NonFungibleId::new(key.to_vec());
         let auth_address = NonFungibleAddress::new(ECDSA_TOKEN, id);
-        let auth_rule = any_of!(auth_address);
-        let account = self.new_account(&auth_rule);
+        let withdraw_auth = any_of!(auth_address);
+        let account = self.new_account(&withdraw_auth);
         (key, account)
     }
 
