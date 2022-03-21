@@ -270,11 +270,12 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         let result = self
             .abi_provider
             .export_abi(package_id, blueprint_name)
-            .map_err(|_| {
+            .map_err(|e| {
                 BuildTransactionError::FailedToExportFunctionAbi(
                     package_id,
                     blueprint_name.to_owned(),
                     function.to_owned(),
+                    e
                 )
             })
             .and_then(|abi| Self::find_function_abi(&abi, function))
@@ -358,9 +359,9 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     pub fn build(
         &mut self,
         signers: Vec<EcdsaPublicKey>,
-    ) -> Result<Transaction, BuildTransactionError> {
+    ) -> Result<Transaction, &BuildTransactionError> {
         if !self.errors.is_empty() {
-            return Err(self.errors[0].clone());
+            return Err(&self.errors[0]);
         }
 
         let mut v = Vec::new();

@@ -1,12 +1,22 @@
 #[rustfmt::skip]
 pub mod test_runner;
 
+use sbor::decode_any;
+use scrypto::any_of;
 use crate::test_runner::TestRunner;
 use radix_engine::errors::RuntimeError;
 use radix_engine::ledger::{InMemorySubstateStore, SubstateStore};
-use radix_engine::model::{Component, MethodAuthorization};
+use radix_engine::model::{Component, format_value, MethodAuthorization};
 use radix_engine::transaction::*;
 use scrypto::prelude::*;
+
+#[macro_export]
+macro_rules! to_sbor_string {
+    ($v:expr) => ({
+        let value = decode_any(&scrypto_encode($v)).unwrap();
+        format_value(&value, &HashMap::new(), &HashMap::new())
+    })
+}
 
 #[test]
 fn cannot_make_cross_component_call_without_authorization() {
@@ -16,6 +26,10 @@ fn cannot_make_cross_component_call_without_authorization() {
     let (_, account) = test_runner.new_public_key_with_account();
     let auth = test_runner.create_non_fungible_resource(account.clone());
     let auth_id = NonFungibleId::from(1);
+    let auth_address = NonFungibleAddress::new(auth, auth_id);
+    let proof_rule = any_of!(auth_address.clone());
+    let auth_string = to_sbor_string!(&proof_rule);
+
     let package = test_runner.publish_package("component");
     let transaction = test_runner
         .new_transaction_builder()
@@ -23,7 +37,7 @@ fn cannot_make_cross_component_call_without_authorization() {
             package,
             "CrossComponent",
             "create_component_with_auth",
-            vec![auth.to_string(), auth_id.to_string()],
+            vec![auth_string],
             None,
         )
         .build(vec![])
@@ -61,7 +75,6 @@ fn cannot_make_cross_component_call_without_authorization() {
         .get_decoded_substate(&secured_component)
         .map(|(c, _)| c)
         .unwrap();
-    let auth_address = NonFungibleAddress::new(auth, auth_id);
     assert_eq!(
         component_state.get_auth("get_component_state"),
         &MethodAuthorization::Protected(ProofRule::NonFungible(auth_address))
@@ -76,6 +89,10 @@ fn can_make_cross_component_call_with_authorization() {
     let (_, account) = test_runner.new_public_key_with_account();
     let auth = test_runner.create_non_fungible_resource(account.clone());
     let auth_id = NonFungibleId::from(1);
+    let auth_address = NonFungibleAddress::new(auth, auth_id.clone());
+    let proof_rule = any_of!(auth_address.clone());
+    let auth_string = to_sbor_string!(&proof_rule);
+
     let package = test_runner.publish_package("component");
     let transaction = test_runner
         .new_transaction_builder()
@@ -83,7 +100,7 @@ fn can_make_cross_component_call_with_authorization() {
             package,
             "CrossComponent",
             "create_component_with_auth",
-            vec![auth.to_string(), auth_id.to_string()],
+            vec![auth_string],
             None,
         )
         .build(vec![])
@@ -130,7 +147,6 @@ fn can_make_cross_component_call_with_authorization() {
         .get_decoded_substate(&secured_component)
         .map(|(c, _)| c)
         .unwrap();
-    let auth_address = NonFungibleAddress::new(auth, auth_id);
     assert_eq!(
         component_state.get_auth("get_component_state"),
         &MethodAuthorization::Protected(ProofRule::NonFungible(auth_address))

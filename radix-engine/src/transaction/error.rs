@@ -1,6 +1,7 @@
 use sbor::describe::Type;
 use scrypto::engine::types::*;
 use scrypto::rust::string::String;
+use crate::errors::RuntimeError;
 
 /// Represents an error when parsing arguments.
 #[derive(Debug, Clone)]
@@ -16,7 +17,7 @@ pub enum BuildArgsError {
 }
 
 /// Represents an error when building a transaction.
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub enum BuildTransactionError {
     /// The given blueprint function does not exist.
     FunctionNotFound(String),
@@ -28,7 +29,7 @@ pub enum BuildTransactionError {
     FailedToBuildArgs(BuildArgsError),
 
     /// Failed to export the ABI of a function.
-    FailedToExportFunctionAbi(PackageId, String, String),
+    FailedToExportFunctionAbi(PackageId, String, String, RuntimeError),
 
     /// Failed to export the ABI of a method.
     FailedToExportMethodAbi(ComponentId, String),

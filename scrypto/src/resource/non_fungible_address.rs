@@ -2,6 +2,7 @@ use sbor::{describe::Type, *};
 
 use crate::resource::*;
 use crate::rust::fmt;
+use crate::rust::str::FromStr;
 use crate::types::*;
 
 use crate::rust::vec::Vec;
@@ -76,9 +77,19 @@ custom_type!(
 // text
 //======
 
+impl FromStr for NonFungibleAddress {
+    type Err = ParseNonFungibleAddressError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let bytes =
+            hex::decode(s).map_err(|_| ParseNonFungibleAddressError::Invalid)?;
+        Self::try_from(bytes.as_slice())
+    }
+}
+
 impl fmt::Display for NonFungibleAddress {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        write!(f, "{}:{}", self.resource_def_id, self.non_fungible_id)
+        write!(f, "{}{}", self.resource_def_id, self.non_fungible_id)
     }
 }
 

@@ -8,17 +8,15 @@ blueprint! {
 
     impl CrossComponent {
         pub fn create_component_with_auth(
-            resource_def_id: ResourceDefId,
-            non_fungible_id: NonFungibleId,
+            proof_rule: ProofRule,
         ) -> ComponentId {
-            let auth_address = NonFungibleAddress::new(resource_def_id, non_fungible_id);
             Self {
                 secret: "Secret".to_owned(),
                 auth_vault: None,
             }
             .instantiate_with_auth(HashMap::from([(
                 "get_component_state".to_string(),
-                ProofRule::NonFungible(auth_address),
+                proof_rule,
             )]))
         }
 
