@@ -1065,16 +1065,11 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
         let data = Self::process_entry_data(&input.state)?;
         let new_objects = wasm_process.process_owned_objects.take(data)?;
-        let sys_auth: HashMap<String, MethodAuthorization> = input
-            .authorization
-            .to_map()
-            .into_iter()
-            .map(|(name, proof_rule)| (name, MethodAuthorization::Protected(proof_rule)))
-            .collect();
+        let authorization = input.authorization.to_map();
         let component = Component::new(
             wasm_process.vm.invocation.package_id,
             input.blueprint_name,
-            sys_auth,
+            authorization,
             input.state,
         );
         let component_id = self.track.create_component(component);

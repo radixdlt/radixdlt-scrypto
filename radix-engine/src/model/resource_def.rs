@@ -1,11 +1,12 @@
 use sbor::*;
 use scrypto::engine::types::*;
-use scrypto::prelude::{ProofRule, ToString};
+use scrypto::prelude::{ToString};
 use scrypto::resource::resource_flags::*;
 use scrypto::resource::resource_permissions::*;
 use scrypto::rust::collections::HashMap;
 use scrypto::rust::mem;
 use scrypto::rust::string::String;
+use crate::model::method_authorization::HardProofRule;
 
 use crate::model::resource_def::FlagCondition::{AlwaysTrue, IsNotSet, IsSet};
 use crate::model::MethodAuthorization;
@@ -162,7 +163,7 @@ impl ResourceDef {
                         let method_state = method_states.get_mut(*method).unwrap();
                         let cur_rule =
                             mem::replace(&mut method_state.auth, MethodAuthorization::Public);
-                        let new_rule: ProofRule = resource_def_id.into();
+                        let new_rule= HardProofRule::from_soft_rule(resource_def_id.into());
                         method_state.auth = match cur_rule {
                             MethodAuthorization::Public => MethodAuthorization::Protected(new_rule),
                             MethodAuthorization::Protected(rule) => {

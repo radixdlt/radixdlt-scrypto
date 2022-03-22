@@ -67,7 +67,7 @@ fn cannot_make_cross_component_call_without_authorization() {
         .unwrap();
     assert_eq!(
         component_state.get_auth("get_component_state"),
-        &MethodAuthorization::Protected(auth_address.into())
+        MethodAuthorization::Protected(auth_address.into())
     );
 }
 
@@ -138,6 +138,6 @@ fn can_make_cross_component_call_with_authorization() {
         .unwrap();
     assert_eq!(
         component_state.get_auth("get_component_state"),
-        &MethodAuthorization::Protected(auth_address.into())
+        MethodAuthorization::Protected(auth_address.into())
     );
 }

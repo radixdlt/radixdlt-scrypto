@@ -1,16 +1,18 @@
 use crate::model::MethodAuthorization;
 use sbor::*;
 use scrypto::engine::types::*;
+use scrypto::resource::ProofRule;
 use scrypto::rust::collections::*;
 use scrypto::rust::string::String;
 use scrypto::rust::vec::Vec;
+use crate::model::method_authorization::HardProofRule;
 
 /// A component is an instance of blueprint.
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct Component {
     package_id: PackageId,
     blueprint_name: String,
-    auth_rules: HashMap<String, MethodAuthorization>,
+    auth_rules: HashMap<String, ProofRule>,
     state: Vec<u8>,
 }
 
@@ -18,7 +20,7 @@ impl Component {
     pub fn new(
         package_id: PackageId,
         blueprint_name: String,
-        auth_rules: HashMap<String, MethodAuthorization>,
+        auth_rules: HashMap<String, ProofRule>,
         state: Vec<u8>,
     ) -> Self {
         Self {
@@ -29,14 +31,14 @@ impl Component {
         }
     }
 
-    pub fn get_auth(&self, method_name: &str) -> &MethodAuthorization {
+    pub fn get_auth(&self, method_name: &str) -> MethodAuthorization {
         match self.auth_rules.get(method_name) {
-            Some(auth_rule) => auth_rule,
-            None => &MethodAuthorization::Public,
+            Some(proof_rule) => MethodAuthorization::Protected(HardProofRule::from_soft_rule(proof_rule.clone())),
+            None => MethodAuthorization::Public,
         }
     }
 
-    pub fn auth_rules(&self) -> &HashMap<String, MethodAuthorization> {
+    pub fn auth_rules(&self) -> &HashMap<String, ProofRule> {
         &self.auth_rules
     }
 
