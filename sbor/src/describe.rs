@@ -38,10 +38,6 @@ pub enum Type {
         value: Box<Type>,
     },
 
-    Box {
-        value: Box<Type>,
-    },
-
     Array {
         element: Box<Type>,
         length: u16,
@@ -120,16 +116,30 @@ pub enum Fields {
     Unit,
 }
 
-/// A data structure that can be described using SBOR types.
+/// A data structure that can be described using SBOR type model.
 pub trait Describe {
     fn describe() -> Type;
 }
+
+/// Marks a type that does not introduce indirection.
+///
+/// In Rust, all types are non-recursive and sized at compile time. The only way
+/// to support recursion is through indirection (e.g., a `Box`, `Rc`, or `&`).
+///
+/// This trait is designed to mark the types that do not introduce indirection,
+/// thus safe to describe recursively.
+pub trait NoIndirection {}
+
+/// A helper method to check if a given type implements the `NoIndirection`
+/// trait at compile time.
+pub fn require_no_indirection<T: NoIndirection>() {}
 
 impl Describe for () {
     fn describe() -> Type {
         Type::Unit
     }
 }
+impl NoIndirection for () {}
 
 macro_rules! describe_basic_type {
     ($type:ident, $type_id:expr) => {
@@ -138,6 +148,7 @@ macro_rules! describe_basic_type {
                 $type_id
             }
         }
+        impl NoIndirection for $type {}
     };
 }
 
@@ -152,10 +163,8 @@ describe_basic_type!(u16, Type::U16);
 describe_basic_type!(u32, Type::U32);
 describe_basic_type!(u64, Type::U64);
 describe_basic_type!(u128, Type::U128);
-
 describe_basic_type!(isize, Type::I32);
 describe_basic_type!(usize, Type::U32);
-
 describe_basic_type!(str, Type::String);
 describe_basic_type!(String, Type::String);
 
@@ -167,15 +176,7 @@ impl<T: Describe> Describe for Option<T> {
         }
     }
 }
-
-impl<T: Describe> Describe for Box<T> {
-    fn describe() -> Type {
-        let ty = T::describe();
-        Type::Box {
-            value: Box::new(ty),
-        }
-    }
-}
+impl<T: NoIndirection> NoIndirection for Option<T> {}
 
 impl<T: Describe, const N: usize> Describe for [T; N] {
     fn describe() -> Type {
@@ -186,6 +187,7 @@ impl<T: Describe, const N: usize> Describe for [T; N] {
         }
     }
 }
+impl<T: NoIndirection, const N: usize> NoIndirection for [T; N] {}
 
 macro_rules! describe_tuple {
     ($($name:ident)+) => {
@@ -194,6 +196,7 @@ macro_rules! describe_tuple {
                 Type::Tuple { elements: vec![ $($name::describe(),)* ] }
             }
         }
+        impl<$($name: NoIndirection),+> NoIndirection for ($($name,)+) {}
     };
 }
 
@@ -217,6 +220,7 @@ impl<T: Describe, E: Describe> Describe for Result<T, E> {
         }
     }
 }
+impl<T: NoIndirection, E: NoIndirection> NoIndirection for Result<T, E> {}
 
 impl<T: Describe> Describe for Vec<T> {
     fn describe() -> Type {
@@ -226,6 +230,7 @@ impl<T: Describe> Describe for Vec<T> {
         }
     }
 }
+// Vec<T> introduces indirection
 
 impl<T: Describe> Describe for BTreeSet<T> {
     fn describe() -> Type {
@@ -235,6 +240,7 @@ impl<T: Describe> Describe for BTreeSet<T> {
         }
     }
 }
+// BTreeSet<T> introduces indirection
 
 impl<K: Describe, V: Describe> Describe for BTreeMap<K, V> {
     fn describe() -> Type {
@@ -246,6 +252,7 @@ impl<K: Describe, V: Describe> Describe for BTreeMap<K, V> {
         }
     }
 }
+// BTreeMap<K, V> introduces indirection
 
 impl<T: Describe> Describe for HashSet<T> {
     fn describe() -> Type {
@@ -255,6 +262,7 @@ impl<T: Describe> Describe for HashSet<T> {
         }
     }
 }
+// HashSet<T> introduces indirection
 
 impl<K: Describe, V: Describe> Describe for HashMap<K, V> {
     fn describe() -> Type {
@@ -266,6 +274,7 @@ impl<K: Describe, V: Describe> Describe for HashMap<K, V> {
         }
     }
 }
+// HashMap<K, V> introduces indirection
 
 #[cfg(test)]
 mod tests {
@@ -318,6 +327,28 @@ mod tests {
                 elements: vec![Type::U8, Type::U128]
             },
             <(u8, u128)>::describe(),
+        );
+    }
+
+    #[test]
+    pub fn test_option_of_vec() {
+        assert_eq!(
+            Type::Option {
+                value: Box::new(Type::Vec {
+                    element: Box::new(Type::String)
+                })
+            },
+            <Option<Vec<String>>>::describe(),
+        );
+    }
+
+    #[test]
+    pub fn test_vec() {
+        assert_eq!(
+            Type::Vec {
+                element: Box::new(Type::String)
+            },
+            <Vec<String>>::describe(),
         );
     }
 }

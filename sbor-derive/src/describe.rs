@@ -23,15 +23,14 @@ pub fn handle_describe(input: TokenStream) -> Result<TokenStream> {
             syn::Fields::Named(FieldsNamed { named, .. }) => {
                 // ns: not skipped
                 let ns: Vec<&Field> = named.iter().filter(|f| !is_skipped(f)).collect();
-
                 let names = ns.iter().map(|f| {
                     f.ident
                         .clone()
                         .expect("All fields must be named")
                         .to_string()
                 });
-                let types = ns.iter().map(|f| &f.ty);
-
+                let types1 = ns.iter().map(|f| &f.ty);
+                let types2 = ns.iter().map(|f| &f.ty);
                 quote! {
                     impl ::sbor::Describe for #ident {
                         fn describe() -> ::sbor::describe::Type {
@@ -39,21 +38,23 @@ pub fn handle_describe(input: TokenStream) -> Result<TokenStream> {
                             use ::sbor::rust::vec;
                             use ::sbor::Describe;
 
+                            #(::sbor::describe::require_no_indirection::<#types1>();)*
                             ::sbor::describe::Type::Struct {
                                 name: #ident_str.to_owned(),
                                 fields: ::sbor::describe::Fields::Named {
-                                    named: vec![#((#names.to_owned(), <#types>::describe())),*]
+                                    named: vec![#((#names.to_owned(), <#types2>::describe())),*]
                                 },
                             }
                         }
+                    }
+                    impl ::sbor::NoIndirection for #ident {
                     }
                 }
             }
             syn::Fields::Unnamed(FieldsUnnamed { unnamed, .. }) => {
                 let ns: Vec<&Field> = unnamed.iter().filter(|f| !is_skipped(f)).collect();
-
-                let types = ns.iter().map(|f| &f.ty);
-
+                let types1 = ns.iter().map(|f| &f.ty);
+                let types2 = ns.iter().map(|f| &f.ty);
                 quote! {
                     impl ::sbor::Describe for #ident {
                         fn describe() -> ::sbor::describe::Type {
@@ -61,13 +62,16 @@ pub fn handle_describe(input: TokenStream) -> Result<TokenStream> {
                             use ::sbor::rust::vec;
                             use ::sbor::Describe;
 
+                            #(::sbor::describe::require_no_indirection::<#types1>();)*
                             ::sbor::describe::Type::Struct {
                                 name: #ident_str.to_owned(),
                                 fields: ::sbor::describe::Fields::Unnamed {
-                                    unnamed: vec![#(<#types>::describe()),*]
+                                    unnamed: vec![#(<#types2>::describe()),*]
                                 },
                             }
                         }
+                    }
+                    impl ::sbor::NoIndirection for #ident {
                     }
                 }
             }
@@ -83,6 +87,8 @@ pub fn handle_describe(input: TokenStream) -> Result<TokenStream> {
                             }
                         }
                     }
+                    impl ::sbor::NoIndirection for #ident {
+                    }
                 }
             }
         },
@@ -94,32 +100,32 @@ pub fn handle_describe(input: TokenStream) -> Result<TokenStream> {
                 match f {
                     syn::Fields::Named(FieldsNamed { named, .. }) => {
                         let ns: Vec<&Field> = named.iter().filter(|f| !is_skipped(f)).collect();
-
                         let names = ns.iter().map(|f| {
                             f.ident
                                 .clone()
                                 .expect("All fields must be named")
                                 .to_string()
                         });
-                        let types = ns.iter().map(|f| &f.ty);
-
+                        let types1 = ns.iter().map(|f| &f.ty);
+                        let types2 = ns.iter().map(|f| &f.ty);
                         quote! {
                             {
+                                #(::sbor::describe::require_no_indirection::<#types1>();)*
                                 ::sbor::describe::Fields::Named {
-                                    named: vec![#((#names.to_owned(), <#types>::describe())),*]
+                                    named: vec![#((#names.to_owned(), <#types2>::describe())),*]
                                 }
                             }
                         }
                     }
                     syn::Fields::Unnamed(FieldsUnnamed { unnamed, .. }) => {
                         let ns: Vec<&Field> = unnamed.iter().filter(|f| !is_skipped(f)).collect();
-
-                        let types = ns.iter().map(|f| &f.ty);
-
+                        let types1 = ns.iter().map(|f| &f.ty);
+                        let types2 = ns.iter().map(|f| &f.ty);
                         quote! {
                             {
+                                #(::sbor::describe::require_no_indirection::<#types1>();)*
                                 ::sbor::describe::Fields::Unnamed {
-                                    unnamed: vec![#(<#types>::describe()),*]
+                                    unnamed: vec![#(<#types2>::describe()),*]
                                 }
                             }
                         }
@@ -151,6 +157,8 @@ pub fn handle_describe(input: TokenStream) -> Result<TokenStream> {
                             ]
                         }
                     }
+                }
+                impl ::sbor::NoIndirection for #ident {
                 }
             }
         }
@@ -191,6 +199,7 @@ mod tests {
                         use ::sbor::rust::vec;
                         use ::sbor::Describe;
 
+                        ::sbor::describe::require_no_indirection::<u32>();
                         ::sbor::describe::Type::Struct {
                             name: "Test".to_owned(),
                             fields: ::sbor::describe::Fields::Named {
@@ -198,6 +207,8 @@ mod tests {
                             },
                         }
                     }
+                }
+                impl ::sbor::NoIndirection for Test {
                 }
             },
         );
@@ -227,18 +238,22 @@ mod tests {
                                 ::sbor::describe::Variant {
                                     name: "B".to_owned(),
                                     fields: {
+                                        ::sbor::describe::require_no_indirection::<u32>();
                                         ::sbor::describe::Fields::Unnamed { unnamed: vec![<u32>::describe()] }
                                     }
                                 },
                                 ::sbor::describe::Variant {
                                     name: "C".to_owned(),
                                     fields: {
+                                        ::sbor::describe::require_no_indirection::<u8>();
                                         ::sbor::describe::Fields::Named { named: vec![("x".to_owned(), <u8>::describe())] }
                                     }
                                 }
                             ]
                         }
                     }
+                }
+                impl ::sbor::NoIndirection for Test {
                 }
             },
         );
@@ -263,6 +278,8 @@ mod tests {
                             fields: ::sbor::describe::Fields::Named { named: vec![] },
                         }
                     }
+                }
+                impl ::sbor::NoIndirection for Test {
                 }
             },
         );
@@ -306,6 +323,8 @@ mod tests {
                             ]
                         }
                     }
+                }
+                impl ::sbor::NoIndirection for Test {
                 }
             },
         );

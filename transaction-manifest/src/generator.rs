@@ -535,7 +535,6 @@ fn generate_value(
             )),
             None => Ok(Value::Option(None.into())),
         },
-        ast::Value::Box(v) => Ok(Value::Box(generate_value(v, None, resolver)?.into())),
         ast::Value::Array(element_type, elements) => Ok(Value::Array(
             generate_type(element_type),
             generate_singletons(elements, Some(*element_type), resolver)?,
@@ -676,7 +675,6 @@ fn generate_type(ty: &ast::Type) -> u8 {
         ast::Type::Struct => TYPE_STRUCT,
         ast::Type::Enum => TYPE_ENUM,
         ast::Type::Option => TYPE_OPTION,
-        ast::Type::Box => TYPE_BOX,
         ast::Type::Array => TYPE_ARRAY,
         ast::Type::Tuple => TYPE_TUPLE,
         ast::Type::Result => TYPE_RESULT,
