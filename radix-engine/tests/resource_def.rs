@@ -19,26 +19,11 @@ fn test_resource_def() {
 
     // Act
     let transaction = TransactionBuilder::new(&executor)
-        .call_function(
-            package,
-            "ResourceTest",
-            "create_fungible",
-            vec![],
-        )
+        .call_function(package, "ResourceTest", "create_fungible", vec![])
         .call_function(package, "ResourceTest", "query", vec![])
         .call_function(package, "ResourceTest", "burn", vec![])
-        .call_function(
-            package,
-            "ResourceTest",
-            "update_feature_flags",
-            vec![],
-        )
-        .call_function(
-            package,
-            "ResourceTest",
-            "update_resource_metadata",
-            vec![],
-        )
+        .call_function(package, "ResourceTest", "update_feature_flags", vec![])
+        .call_function(package, "ResourceTest", "update_resource_metadata", vec![])
         .call_method_with_all_resources(account, "deposit_batch")
         .build(vec![key])
         .unwrap();

@@ -118,12 +118,7 @@ fn cannot_remove_lazy_maps() {
     let mut sut = TransactionExecutor::new(&mut ledger, true);
     let package = sut.publish_package(&compile("lazy_map")).unwrap();
     let transaction = TransactionBuilder::new(&sut)
-        .call_function(
-            package,
-            "LazyMapTest",
-            "new_lazy_map_into_vector",
-            vec![],
-        )
+        .call_function(package, "LazyMapTest", "new_lazy_map_into_vector", vec![])
         .build(vec![])
         .unwrap();
     let receipt = sut.run(transaction).unwrap();
@@ -151,12 +146,7 @@ fn cannot_overwrite_lazy_maps() {
     let mut sut = TransactionExecutor::new(&mut ledger, true);
     let package = sut.publish_package(&compile("lazy_map")).unwrap();
     let transaction = TransactionBuilder::new(&sut)
-        .call_function(
-            package,
-            "LazyMapTest",
-            "new_lazy_map_into_lazy_map",
-            vec![],
-        )
+        .call_function(package, "LazyMapTest", "new_lazy_map_into_lazy_map", vec![])
         .build(vec![])
         .unwrap();
     let receipt = sut.run(transaction).unwrap();
@@ -186,12 +176,7 @@ fn create_lazy_map_and_get() {
 
     // Act
     let transaction = TransactionBuilder::new(&executor)
-        .call_function(
-            package,
-            "LazyMapTest",
-            "new_lazy_map_with_get",
-            vec![],
-        )
+        .call_function(package, "LazyMapTest", "new_lazy_map_with_get", vec![])
         .build(vec![])
         .unwrap();
     let receipt = executor.run(transaction).unwrap();
@@ -209,12 +194,7 @@ fn create_lazy_map_and_put() {
 
     // Act
     let transaction = TransactionBuilder::new(&executor)
-        .call_function(
-            package,
-            "LazyMapTest",
-            "new_lazy_map_with_put",
-            vec![],
-        )
+        .call_function(package, "LazyMapTest", "new_lazy_map_with_put", vec![])
         .build(vec![])
         .unwrap();
     let receipt = executor.run(transaction).unwrap();

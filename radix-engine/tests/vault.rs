@@ -104,7 +104,11 @@ fn non_existent_vault_in_committed_lazy_map_should_fail() {
 
     // Act
     let transaction = TransactionBuilder::new(&sut)
-        .call_method(component_id, "create_non_existent_vault_in_lazy_map", vec![])
+        .call_method(
+            component_id,
+            "create_non_existent_vault_in_lazy_map",
+            vec![],
+        )
         .build(vec![])
         .unwrap();
     let receipt = sut.run(transaction).unwrap();
@@ -126,12 +130,7 @@ fn dangling_vault_should_fail() {
 
     // Act
     let transaction = TransactionBuilder::new(&sut)
-        .call_function(
-            package,
-            "VaultTest",
-            "dangling_vault",
-            vec![],
-        )
+        .call_function(package, "VaultTest", "dangling_vault", vec![])
         .build(vec![])
         .unwrap();
     let receipt = sut.run(transaction).unwrap();
@@ -195,12 +194,7 @@ fn create_mutable_vault_into_map_and_referencing_before_storing() {
 
     // Act
     let transaction = TransactionBuilder::new(&sut)
-        .call_function(
-            package,
-            "VaultTest",
-            "new_vault_into_map_then_get",
-            vec![],
-        )
+        .call_function(package, "VaultTest", "new_vault_into_map_then_get", vec![])
         .build(vec![])
         .unwrap();
     let receipt = sut.run(transaction).unwrap();
@@ -380,12 +374,7 @@ fn create_mutable_vault_with_get_amount() {
 
     // Act
     let transaction = TransactionBuilder::new(&sut)
-        .call_function(
-            package,
-            "VaultTest",
-            "new_vault_with_get_amount",
-            vec![],
-        )
+        .call_function(package, "VaultTest", "new_vault_with_get_amount", vec![])
         .build(vec![])
         .unwrap();
     let receipt = sut.run(transaction).unwrap();

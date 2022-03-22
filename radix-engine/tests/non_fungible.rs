@@ -56,24 +56,9 @@ fn test_non_fungible() {
             "update_and_get_non_fungible",
             vec![],
         )
-        .call_function(
-            package,
-            "NonFungibleTest",
-            "non_fungible_exists",
-            vec![],
-        )
-        .call_function(
-            package,
-            "NonFungibleTest",
-            "take_and_put_bucket",
-            vec![],
-        )
-        .call_function(
-            package,
-            "NonFungibleTest",
-            "take_and_put_vault",
-            vec![],
-        )
+        .call_function(package, "NonFungibleTest", "non_fungible_exists", vec![])
+        .call_function(package, "NonFungibleTest", "take_and_put_bucket", vec![])
+        .call_function(package, "NonFungibleTest", "take_and_put_vault", vec![])
         .call_function(
             package,
             "NonFungibleTest",

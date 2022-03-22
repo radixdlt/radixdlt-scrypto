@@ -30,12 +30,7 @@ fn test_component() {
     // Create component
     let transaction1 = test_runner
         .new_transaction_builder()
-        .call_function(
-            package,
-            "ComponentTest",
-            "create_component",
-            vec![],
-        )
+        .call_function(package, "ComponentTest", "create_component", vec![])
         .build(vec![])
         .unwrap();
     let receipt1 = test_runner.run(transaction1);
