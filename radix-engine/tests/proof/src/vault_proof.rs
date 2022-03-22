@@ -35,8 +35,8 @@ blueprint! {
             // auto dropped here
         }
 
-        pub fn receive_proof_and_move_to_auth_worktop(proof: Proof) {
-            AuthWorktop::push(proof); // should fail here
+        pub fn receive_proof_and_move_to_auth_zone(proof: Proof) {
+            AuthZone::push(proof); // should fail here
         }
     }
 }

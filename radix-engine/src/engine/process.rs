@@ -185,9 +185,9 @@ pub struct Process<'r, 'l, L: SubstateStore> {
     /// Resources collected from previous returns or self.
     worktop: Worktop,
     /// Proofs collected from previous returns or self. Also used for system authorization.
-    auth_worktop: Vec<Proof>,
-    /// The caller's auth worktop
-    caller_auth_worktop: &'r [Proof],
+    auth_zone: Vec<Proof>,
+    /// The caller's auth zone
+    caller_auth_zone: &'r [Proof],
 }
 
 impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
@@ -202,8 +202,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             wasm_process_state: None,
             id_allocator: IdAllocator::new(IdSpace::Transaction),
             worktop: Worktop::new(),
-            auth_worktop: Vec::new(),
-            caller_auth_worktop: &[],
+            auth_zone: Vec::new(),
+            caller_auth_zone: &[],
         }
     }
 
@@ -342,22 +342,22 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         }
     }
 
-    // Takes a proof from the auth worktop.
-    pub fn pop_from_auth_worktop(&mut self) -> Result<ProofId, RuntimeError> {
-        re_debug!(self, "Popping from auth worktop");
-        if self.auth_worktop.is_empty() {
-            return Err(RuntimeError::EmptyAuthWorkTop);
+    // Takes a proof from the auth zone.
+    pub fn pop_from_auth_zone(&mut self) -> Result<ProofId, RuntimeError> {
+        re_debug!(self, "Popping from auth zone");
+        if self.auth_zone.is_empty() {
+            return Err(RuntimeError::EmptyAuthZone);
         }
 
         let new_proof_id = self.new_proof_id()?;
-        let proof = self.auth_worktop.remove(self.auth_worktop.len() - 1);
+        let proof = self.auth_zone.remove(self.auth_zone.len() - 1);
         self.proofs.insert(new_proof_id, proof);
         Ok(new_proof_id)
     }
 
-    // Puts a proof onto the auth worktop.
-    pub fn push_onto_auth_worktop(&mut self, proof_id: ProofId) -> Result<(), RuntimeError> {
-        re_debug!(self, "Pushing onto auth worktop: proof_id = {}", proof_id);
+    // Puts a proof onto the auth zone.
+    pub fn push_onto_auth_zone(&mut self, proof_id: ProofId) -> Result<(), RuntimeError> {
+        re_debug!(self, "Pushing onto auth zone: proof_id = {}", proof_id);
 
         let proof = self
             .proofs
@@ -368,7 +368,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             return Err(RuntimeError::CantMoveRestrictedProof(proof_id));
         }
 
-        self.auth_worktop.push(proof);
+        self.auth_zone.push(proof);
         Ok(())
     }
 
@@ -531,7 +531,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
                     // Auth check
                     let method_auth = component.get_auth(&invocation.function);
-                    method_auth.check(&[self.caller_auth_worktop])?;
+                    method_auth.check(&[self.caller_auth_zone])?;
                     let initial_loaded_object_refs =
                         Self::process_entry_data(component.state()).unwrap();
                     let state = component.state().to_vec();
@@ -655,7 +655,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
         // start a new process
         let mut process = Process::new(self.depth + 1, self.trace, self.track);
-        process.caller_auth_worktop = &self.auth_worktop;
+        process.caller_auth_zone = &self.auth_zone;
 
         // move buckets and proofs to the new process.
         process.receive_buckets(moving_buckets)?;
@@ -913,7 +913,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         if self.depth == 0 {
             // proofs are accumulated by auth worktop
             for (_, proof) in proofs {
-                self.auth_worktop.push(proof);
+                self.auth_zone.push(proof);
             }
         } else {
             // for component, received buckets go to the "proofs" areas.
@@ -1597,7 +1597,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .get_resource_def(&resource_def_id)
             .ok_or(RuntimeError::ResourceDefNotFound(resource_def_id.clone()))?;
         let auth_rule = resource_def.get_auth(transition);
-        auth_rule.check(&[self.caller_auth_worktop, &self.auth_worktop])
+        auth_rule.check(&[self.caller_auth_zone, &self.auth_zone])
     }
 
     fn handle_update_resource_flags(
@@ -1984,20 +1984,20 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         })
     }
 
-    fn handle_push_onto_auth_worktop(
+    fn handle_push_onto_auth_zone(
         &mut self,
-        input: PushOntoAuthWorktopInput,
-    ) -> Result<PushOntoAuthWorktopOutput, RuntimeError> {
-        self.push_onto_auth_worktop(input.proof_id)
-            .map(|_| PushOntoAuthWorktopOutput {})
+        input: PushOntoAuthZoneInput,
+    ) -> Result<PushOntoAuthZoneOutput, RuntimeError> {
+        self.push_onto_auth_zone(input.proof_id)
+            .map(|_| PushOntoAuthZoneOutput {})
     }
 
-    fn handle_pop_from_auth_worktop(
+    fn handle_pop_from_auth_zone(
         &mut self,
-        _input: PopFromAuthWorktopInput,
-    ) -> Result<PopFromAuthWorktopOutput, RuntimeError> {
-        self.pop_from_auth_worktop()
-            .map(|proof_id| PopFromAuthWorktopOutput { proof_id })
+        _input: PopFromAuthZoneInput,
+    ) -> Result<PopFromAuthZoneOutput, RuntimeError> {
+        self.pop_from_auth_zone()
+            .map(|proof_id| PopFromAuthZoneOutput { proof_id })
     }
 
     fn handle_emit_log(&mut self, input: EmitLogInput) -> Result<EmitLogOutput, RuntimeError> {
@@ -2156,10 +2156,8 @@ impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
                         self.handle(args, Self::handle_get_non_fungible_ids_in_proof)
                     }
                     CLONE_PROOF => self.handle(args, Self::handle_clone_proof),
-                    PUSH_ONTO_AUTH_WORKTOP => {
-                        self.handle(args, Self::handle_push_onto_auth_worktop)
-                    }
-                    POP_FROM_AUTH_WORKTOP => self.handle(args, Self::handle_pop_from_auth_worktop),
+                    PUSH_ONTO_AUTH_ZONE => self.handle(args, Self::handle_push_onto_auth_zone),
+                    POP_FROM_AUTH_ZONE => self.handle(args, Self::handle_pop_from_auth_zone),
 
                     EMIT_LOG => self.handle(args, Self::handle_emit_log),
                     GET_CALL_DATA => self.handle(args, Self::handle_get_call_data),

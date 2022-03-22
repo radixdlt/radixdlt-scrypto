@@ -190,11 +190,11 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
                 ValidatedInstruction::ReturnToWorktop { bucket_id } => {
                     proc.return_to_worktop(bucket_id)
                 }
-                ValidatedInstruction::PopFromAuthWorktop {} => proc
-                    .pop_from_auth_worktop()
+                ValidatedInstruction::PopFromAuthZone {} => proc
+                    .pop_from_auth_zone()
                     .map(|proof_id| ValidatedData::from_value(&scrypto::resource::Proof(proof_id))),
-                ValidatedInstruction::PushOntoAuthWorktop { proof_id } => proc
-                    .push_onto_auth_worktop(proof_id)
+                ValidatedInstruction::PushOntoAuthZone { proof_id } => proc
+                    .push_onto_auth_zone(proof_id)
                     .map(|_| ValidatedData::from_value(&())),
                 ValidatedInstruction::AssertWorktopContains {
                     amount,

@@ -181,7 +181,7 @@ fn cant_move_restricted_proof() {
         .parse_args_and_call_function(
             package_id,
             "VaultProof",
-            "receive_proof_and_move_to_auth_worktop",
+            "receive_proof_and_move_to_auth_zone",
             vec![format!("1,{}", resource_def_id), "1".to_owned()],
             Some(account),
         )

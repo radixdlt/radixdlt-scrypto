@@ -106,9 +106,9 @@ fn can_burn_with_auth() {
         .withdraw_from_account(&burn_amount, account)
         .take_from_worktop(&auth_amount, |builder, bucket_id| {
             builder.create_bucket_proof(bucket_id, |builder, proof_id| {
-                builder.push_onto_auth_worktop(proof_id);
+                builder.push_onto_auth_zone(proof_id);
                 builder.burn(&burn_amount);
-                builder.pop_from_auth_worktop(|builder, proof_id| builder.drop_proof(proof_id))
+                builder.pop_from_auth_zone(|builder, proof_id| builder.drop_proof(proof_id))
             })
         })
         .call_method_with_all_resources(account, "deposit_batch")

@@ -39,11 +39,11 @@ pub enum Instruction {
         resource_def_id: ResourceDefId,
     },
 
-    /// Takes from the auth worktop.
-    PopFromAuthWorktop,
+    /// Takes from the auth zone.
+    PopFromAuthZone,
 
-    /// Put a proof on the auth worktop.
-    PushOntoAuthWorktop { proof_id: ProofId },
+    /// Put a proof on the auth zone.
+    PushOntoAuthZone { proof_id: ProofId },
 
     /// Creates a proof.
     CreateBucketProof { bucket_id: BucketId },
@@ -113,8 +113,8 @@ pub enum ValidatedInstruction {
         amount: Decimal,
         resource_def_id: ResourceDefId,
     },
-    PopFromAuthWorktop,
-    PushOntoAuthWorktop {
+    PopFromAuthZone,
+    PushOntoAuthZone {
         proof_id: ProofId,
     },
     CreateBucketProof {
