@@ -1,3 +1,4 @@
+mod auth_rule;
 mod auth_worktop;
 mod bucket;
 mod mint_params;
@@ -17,6 +18,7 @@ pub mod resource_flags;
 /// Resource permissions.
 pub mod resource_permissions;
 
+pub use auth_rule::AuthRule;
 pub use auth_worktop::AuthWorktop;
 pub use bucket::{Bucket, ParseBucketError};
 pub use mint_params::MintParams;

@@ -177,6 +177,9 @@ pub enum RuntimeError {
     /// System Authorization Failure
     NotAuthorized,
 
+    /// Method does not exist
+    UnsupportedMethod,
+
     /// Index out of bounds.
     IndexOutOfBounds { index: usize, max: usize },
 
