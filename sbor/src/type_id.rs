@@ -26,7 +26,6 @@ pub const TYPE_STRUCT: u8 = 0x10;
 pub const TYPE_ENUM: u8 = 0x11;
 // composite types
 pub const TYPE_OPTION: u8 = 0x20;
-pub const TYPE_BOX: u8 = 0x21;
 pub const TYPE_ARRAY: u8 = 0x22;
 pub const TYPE_TUPLE: u8 = 0x23;
 pub const TYPE_RESULT: u8 = 0x24;
@@ -145,7 +144,7 @@ impl<T: TypeId> TypeId for Option<T> {
 impl<T: TypeId> TypeId for Box<T> {
     #[inline]
     fn type_id() -> u8 {
-        TYPE_BOX
+        T::type_id()
     }
 }
 

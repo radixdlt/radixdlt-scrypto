@@ -150,7 +150,7 @@ impl<T: Encode> Encode for Option<T> {
 
 impl<T: Encode> Encode for Box<T> {
     fn encode_value(&self, encoder: &mut Encoder) {
-        self.as_ref().encode(encoder);
+        self.as_ref().encode_value(encoder);
     }
 }
 
@@ -298,7 +298,6 @@ mod tests {
         "hello".encode(enc);
 
         Some(1u32).encode(enc);
-        Box::new(1u32).encode(enc);
         [1u32, 2u32, 3u32].encode(enc);
         (1u32, 2u32).encode(enc);
         Result::<u32, String>::Ok(1u32).encode(enc);
@@ -337,7 +336,6 @@ mod tests {
                 11, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // u128
                 12, 5, 0, 0, 0, 104, 101, 108, 108, 111, // string
                 32, 1, 9, 1, 0, 0, 0, // option
-                33, 9, 1, 0, 0, 0, // box
                 34, 9, 3, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, // array
                 35, 2, 0, 0, 0, 9, 1, 0, 0, 0, 9, 2, 0, 0, 0, // tuple
                 36, 0, 9, 1, 0, 0, 0, // result
@@ -372,7 +370,6 @@ mod tests {
                 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // u128
                 5, 0, 0, 0, 104, 101, 108, 108, 111, // string
                 1, 1, 0, 0, 0, // option
-                1, 0, 0, 0, // box
                 3, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, // array
                 2, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, // tuple
                 0, 1, 0, 0, 0, // result
@@ -383,6 +380,15 @@ mod tests {
             ],
             bytes
         );
+    }
+
+    #[test]
+    pub fn test_encode_box() {
+        let x = Box::new(5u8);
+        let mut enc = Encoder::with_type(Vec::with_capacity(512));
+        x.encode(&mut enc);
+        let bytes: Vec<u8> = enc.into();
+        assert_eq!(bytes, vec![7, 5])
     }
 
     #[test]
