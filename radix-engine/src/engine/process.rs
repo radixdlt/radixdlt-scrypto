@@ -369,7 +369,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         Ok(())
     }
 
-    // Creates a proof.
+    // Creates a bucket proof.
     pub fn create_bucket_proof(&mut self, bucket_id: BucketId) -> Result<ProofId, RuntimeError> {
         re_debug!(self, "Creating proof: bucket_id = {}", bucket_id);
 
@@ -380,6 +380,19 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .ok_or(RuntimeError::BucketNotFound(bucket_id))?;
         let new_proof =
             Proof::new(bucket.create_reference_for_proof()).map_err(RuntimeError::ProofError)?;
+        self.proofs.insert(new_proof_id, new_proof);
+
+        Ok(new_proof_id)
+    }
+
+    // Creates a vault proof.
+    pub fn create_vault_proof(&mut self, vault_id: VaultId) -> Result<ProofId, RuntimeError> {
+        re_debug!(self, "Creating proof: vault_id = {:?}", vault_id);
+
+        let new_proof_id = self.new_proof_id()?;
+        let vault = self.get_local_vault(&vault_id)?;
+        let new_proof =
+            Proof::new(vault.create_reference_for_proof()).map_err(RuntimeError::ProofError)?;
         self.proofs.insert(new_proof_id, new_proof);
 
         Ok(new_proof_id)
@@ -1864,6 +1877,15 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         })
     }
 
+    fn handle_create_vault_proof(
+        &mut self,
+        input: CreateVaultProofInput,
+    ) -> Result<CreateVaultProofOutput, RuntimeError> {
+        Ok(CreateVaultProofOutput {
+            proof_id: self.create_vault_proof(input.vault_id)?,
+        })
+    }
+
     fn handle_drop_proof(
         &mut self,
         input: DropProofInput,
@@ -2090,6 +2112,7 @@ impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
                     }
 
                     CREATE_BUCKET_PROOF => self.handle(args, Self::handle_create_bucket_proof),
+                    CREATE_VAULT_PROOF => self.handle(args, Self::handle_create_vault_proof),
                     DROP_PROOF => self.handle(args, Self::handle_drop_proof),
                     GET_PROOF_AMOUNT => self.handle(args, Self::handle_get_proof_amount),
                     GET_PROOF_RESOURCE_DEF_ID => {
