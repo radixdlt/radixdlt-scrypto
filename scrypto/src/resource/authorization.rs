@@ -14,13 +14,26 @@ impl ComponentAuthorization {
         ComponentAuthorization(HashMap::new())
     }
 
-    pub fn single_auth(method_name: &str, proof_rule: ProofRule) -> Self {
-        let mut map = HashMap::new();
-        map.insert(method_name.to_string(), proof_rule);
-        ComponentAuthorization(map)
+    pub fn insert(&mut self, method_name: &str, proof_rule: ProofRule) {
+        self.0.insert(method_name.to_string(), proof_rule);
     }
 
     pub fn to_map(self) -> HashMap<String, ProofRule> {
         self.0
     }
+}
+
+#[macro_export]
+macro_rules! component_authorization {
+  {$($k: expr => $v: expr),* $(,)?} => {
+    {
+      let mut authorization = ::scrypto::resource::ComponentAuthorization::new();
+
+      $(
+        authorization.insert($k, $v);
+      )*
+
+      authorization
+    }
+  };
 }

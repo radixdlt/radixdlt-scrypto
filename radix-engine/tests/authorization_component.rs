@@ -6,7 +6,7 @@ use radix_engine::errors::RuntimeError;
 use radix_engine::ledger::{InMemorySubstateStore, SubstateStore};
 use radix_engine::model::{Component, MethodAuthorization};
 use radix_engine::transaction::*;
-use scrypto::any_of;
+use scrypto::{any_of, component_authorization};
 use scrypto::prelude::*;
 
 #[test]
@@ -18,9 +18,9 @@ fn cannot_make_cross_component_call_without_authorization() {
     let auth = test_runner.create_non_fungible_resource(account.clone());
     let auth_id = NonFungibleId::from(1);
     let auth_address = NonFungibleAddress::new(auth, auth_id);
-    let method_authorization = ComponentAuthorization::single_auth(
-        "get_component_state", any_of!(auth_address.clone())
-    );
+    let method_authorization = component_authorization! {
+        "get_component_state" => any_of!(auth_address.clone())
+    };
 
     let package_id = test_runner.publish_package("component");
     let transaction = test_runner
@@ -80,9 +80,9 @@ fn can_make_cross_component_call_with_authorization() {
     let auth = test_runner.create_non_fungible_resource(account.clone());
     let auth_id = NonFungibleId::from(1);
     let auth_address = NonFungibleAddress::new(auth, auth_id.clone());
-    let method_authorization = ComponentAuthorization::single_auth(
-        "get_component_state", any_of!(auth_address.clone())
-    );
+    let method_authorization = component_authorization! {
+        "get_component_state" => any_of!(auth_address.clone())
+    };
 
     let package_id = test_runner.publish_package("component");
     let transaction = test_runner
