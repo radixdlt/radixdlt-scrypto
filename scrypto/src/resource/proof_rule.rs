@@ -4,11 +4,28 @@ use crate::rust::vec::Vec;
 use sbor::*;
 use scrypto::math::Decimal;
 
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Describe, TypeId, Encode, Decode)]
+pub enum ProofRuleResource {
+    NonFungible(NonFungibleAddress),
+    Resource(ResourceDefId),
+}
+
+impl From<NonFungibleAddress> for ProofRuleResource {
+    fn from(non_fungible_address: NonFungibleAddress) -> Self {
+        ProofRuleResource::NonFungible(non_fungible_address)
+    }
+}
+
+impl From<ResourceDefId> for ProofRuleResource {
+    fn from(resource_def_id: ResourceDefId) -> Self {
+        ProofRuleResource::Resource(resource_def_id)
+    }
+}
+
 /// Authorization Rule
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Describe, TypeId, Encode, Decode)]
 pub enum ProofRule {
-    NonFungible(NonFungibleAddress),
-    AnyOfResource(ResourceDefId),
+    This(ProofRuleResource),
     SomeOfResource(Decimal, ResourceDefId),
     AllOf(Vec<ProofRule>),
     OneOf(Vec<ProofRule>),
@@ -18,8 +35,7 @@ pub enum ProofRule {
 impl ProofRule {
     pub fn or(self, other: ProofRule) -> Self {
         match self {
-            ProofRule::NonFungible(_) => ProofRule::OneOf(vec![self, other]),
-            ProofRule::AnyOfResource(_) => ProofRule::OneOf(vec![self, other]),
+            ProofRule::This(_) => ProofRule::OneOf(vec![self, other]),
             ProofRule::SomeOfResource(_, _) => ProofRule::OneOf(vec![self, other]),
             ProofRule::AllOf(_) => ProofRule::OneOf(vec![self, other]),
             ProofRule::OneOf(mut rules) => {
@@ -33,13 +49,13 @@ impl ProofRule {
 
 impl From<NonFungibleAddress> for ProofRule {
     fn from(non_fungible_address: NonFungibleAddress) -> Self {
-        ProofRule::NonFungible(non_fungible_address)
+        ProofRule::This(non_fungible_address.into())
     }
 }
 
 impl From<ResourceDefId> for ProofRule {
     fn from(resource_def_id: ResourceDefId) -> Self {
-        ProofRule::AnyOfResource(resource_def_id)
+        ProofRule::This(resource_def_id.into())
     }
 }
 

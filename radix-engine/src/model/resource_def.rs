@@ -162,7 +162,7 @@ impl ResourceDef {
                         let method_state = method_states.get_mut(*method).unwrap();
                         let cur_rule =
                             mem::replace(&mut method_state.auth, MethodAuthorization::Public);
-                        let new_rule = ProofRule::AnyOfResource(resource_def_id);
+                        let new_rule: ProofRule = resource_def_id.into();
                         method_state.auth = match cur_rule {
                             MethodAuthorization::Public => MethodAuthorization::Protected(new_rule),
                             MethodAuthorization::Protected(rule) => {

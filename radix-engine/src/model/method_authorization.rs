@@ -2,7 +2,7 @@ use crate::errors::RuntimeError;
 use crate::errors::RuntimeError::NotAuthorized;
 use crate::model::Proof;
 use sbor::*;
-use scrypto::prelude::ProofRule;
+use scrypto::prelude::{ProofRule, ProofRuleResource};
 
 /// Snode which verifies authorization of a method call
 #[derive(Debug, Clone, PartialEq, Eq, Hash, TypeId, Encode, Decode)]
@@ -28,34 +28,38 @@ impl MethodAuthorization {
         proofs_vector: &[&[Proof]],
     ) -> Result<(), RuntimeError> {
         match proof_rule {
-            ProofRule::NonFungible(non_fungible_address) => {
-                for proofs in proofs_vector {
-                    for p in proofs.iter() {
-                        let proof_resource_def_id = p.resource_def_id();
-                        if proof_resource_def_id == non_fungible_address.resource_def_id()
-                            && match p.total_ids() {
-                                Ok(ids) => ids.contains(&non_fungible_address.non_fungible_id()),
-                                Err(_) => false,
+            ProofRule::This(proof_rule_resource) => {
+                match proof_rule_resource {
+                    ProofRuleResource::NonFungible(non_fungible_address) => {
+                        for proofs in proofs_vector {
+                            for p in proofs.iter() {
+                                let proof_resource_def_id = p.resource_def_id();
+                                if proof_resource_def_id == non_fungible_address.resource_def_id()
+                                    && match p.total_ids() {
+                                    Ok(ids) => ids.contains(&non_fungible_address.non_fungible_id()),
+                                    Err(_) => false,
+                                }
+                                {
+                                    return Ok(());
+                                }
                             }
-                        {
-                            return Ok(());
                         }
+
+                        Err(NotAuthorized)
+                    }
+                    ProofRuleResource::Resource(resource_def_id) => {
+                        for proofs in proofs_vector {
+                            for p in proofs.iter() {
+                                let proof_resource_def_id = p.resource_def_id();
+                                if proof_resource_def_id == *resource_def_id {
+                                    return Ok(());
+                                }
+                            }
+                        }
+
+                        Err(NotAuthorized)
                     }
                 }
-
-                Err(NotAuthorized)
-            }
-            ProofRule::AnyOfResource(resource_def_id) => {
-                for proofs in proofs_vector {
-                    for p in proofs.iter() {
-                        let proof_resource_def_id = p.resource_def_id();
-                        if proof_resource_def_id == *resource_def_id {
-                            return Ok(());
-                        }
-                    }
-                }
-
-                Err(NotAuthorized)
             }
             ProofRule::SomeOfResource(amount, resource_def_id) => {
                 for proofs in proofs_vector {
