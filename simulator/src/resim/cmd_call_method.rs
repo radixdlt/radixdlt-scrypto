@@ -37,7 +37,7 @@ impl CallMethod {
         let default_signers = get_default_signers()?;
         let signatures = self.signers.clone().unwrap_or(default_signers);
         let transaction = TransactionBuilder::new(&executor)
-            .call_method(
+            .parse_args_and_call_method(
                 self.component_id,
                 &self.method_name,
                 self.arguments.clone(),

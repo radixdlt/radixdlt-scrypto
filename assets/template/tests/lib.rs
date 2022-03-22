@@ -12,7 +12,7 @@ fn test_hello() {
 
     // Test the `instantiate_hello` function.
     let transaction1 = TransactionBuilder::new(&executor)
-        .call_function(package, "Hello", "instantiate_hello", vec![], None)
+        .call_function(package, "Hello", "instantiate_hello", vec![])
         .call_method_with_all_resources(account, "deposit_batch")
         .build(vec![key])
         .unwrap();
@@ -23,7 +23,7 @@ fn test_hello() {
     // Test the `free_token` method.
     let component = receipt1.new_component_ids[0];
     let transaction2 = TransactionBuilder::new(&executor)
-        .call_method(component, "free_token", vec![], Some(account))
+        .call_method(component, "free_token", vec![])
         .call_method_with_all_resources(account, "deposit_batch")
         .build(vec![key])
         .unwrap();

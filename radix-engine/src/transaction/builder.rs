@@ -252,6 +252,22 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         self.add_instruction(Instruction::DropProof { proof_id }).0
     }
 
+    pub fn call_function(
+        &mut self,
+        package_id: PackageId,
+        blueprint_name: &str,
+        function: &str,
+        args: Vec<Vec<u8>>,
+    ) -> &mut Self {
+        self.add_instruction(Instruction::CallFunction {
+            package_id,
+            blueprint_name: blueprint_name.to_owned(),
+            function: function.to_owned(),
+            args,
+        });
+        self
+    }
+
     /// Calls a function.
     ///
     /// The implementation will automatically prepare the arguments based on the
@@ -259,7 +275,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     ///
     /// If an Account component ID is provided, resources will be withdrawn from the given account;
     /// otherwise, they will be taken from transaction worktop.
-    pub fn call_function(
+    pub fn parse_args_and_call_function(
         &mut self,
         package_id: PackageId,
         blueprint_name: &str,
@@ -270,11 +286,12 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         let result = self
             .abi_provider
             .export_abi(package_id, blueprint_name)
-            .map_err(|_| {
+            .map_err(|e| {
                 BuildTransactionError::FailedToExportFunctionAbi(
                     package_id,
                     blueprint_name.to_owned(),
                     function.to_owned(),
+                    e,
                 )
             })
             .and_then(|abi| Self::find_function_abi(&abi, function))
@@ -298,6 +315,20 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         self
     }
 
+    pub fn call_method(
+        &mut self,
+        component_id: ComponentId,
+        method: &str,
+        args: Vec<Vec<u8>>,
+    ) -> &mut Self {
+        self.add_instruction(Instruction::CallMethod {
+            component_id,
+            method: method.to_owned(),
+            args,
+        });
+        self
+    }
+
     /// Calls a method.
     ///
     /// The implementation will automatically prepare the arguments based on the
@@ -305,7 +336,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     ///
     /// If an Account component ID is provided, resources will be withdrawn from the given account;
     /// otherwise, they will be taken from transaction worktop.
-    pub fn call_method(
+    pub fn parse_args_and_call_method(
         &mut self,
         component_id: ComponentId,
         method: &str,

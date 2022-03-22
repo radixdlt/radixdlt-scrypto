@@ -26,7 +26,6 @@ fn create_non_fungible_mutable() {
             "NonFungibleTest",
             "create_non_fungible_mutable",
             vec![],
-            Some(account),
         )
         .call_method_with_all_resources(account, "deposit_batch")
         .build(vec![])
@@ -50,49 +49,27 @@ fn test_non_fungible() {
             "NonFungibleTest",
             "create_non_fungible_fixed",
             vec![],
-            Some(account),
         )
         .call_function(
             package,
             "NonFungibleTest",
             "update_and_get_non_fungible",
             vec![],
-            Some(account),
         )
-        .call_function(
-            package,
-            "NonFungibleTest",
-            "non_fungible_exists",
-            vec![],
-            Some(account),
-        )
-        .call_function(
-            package,
-            "NonFungibleTest",
-            "take_and_put_bucket",
-            vec![],
-            Some(account),
-        )
-        .call_function(
-            package,
-            "NonFungibleTest",
-            "take_and_put_vault",
-            vec![],
-            Some(account),
-        )
+        .call_function(package, "NonFungibleTest", "non_fungible_exists", vec![])
+        .call_function(package, "NonFungibleTest", "take_and_put_bucket", vec![])
+        .call_function(package, "NonFungibleTest", "take_and_put_vault", vec![])
         .call_function(
             package,
             "NonFungibleTest",
             "get_non_fungible_ids_bucket",
             vec![],
-            Some(account),
         )
         .call_function(
             package,
             "NonFungibleTest",
             "get_non_fungible_ids_vault",
             vec![],
-            Some(account),
         )
         .call_method_with_all_resources(account, "deposit_batch")
         .build(vec![key])

@@ -17,7 +17,7 @@ fn can_create_clone_and_drop_bucket_proof() {
     // Act
     let transaction = test_runner
         .new_transaction_builder()
-        .call_function(
+        .parse_args_and_call_function(
             package_id,
             "BucketProof",
             "create_clone_drop_bucket_proof",
@@ -57,8 +57,7 @@ fn can_create_clone_and_drop_vault_proof() {
         .call_method(
             component_id,
             "create_clone_drop_vault_proof",
-            vec!["1".to_owned()],
-            None,
+            vec![scrypto_encode(&Decimal::from(1))],
         )
         .build(vec![])
         .unwrap();
@@ -82,7 +81,7 @@ fn can_use_bucket_for_authorization() {
     // Act
     let transaction = test_runner
         .new_transaction_builder()
-        .call_function(
+        .parse_args_and_call_function(
             package_id,
             "BucketProof",
             "use_bucket_proof_for_auth",
@@ -123,7 +122,7 @@ fn can_use_vault_for_authorization() {
     // Act
     let transaction = test_runner
         .new_transaction_builder()
-        .call_method(
+        .parse_args_and_call_method(
             component_id,
             "use_vault_proof_for_auth",
             vec![format!("1,{}", burnable_resource_def_id)],

@@ -6,6 +6,7 @@ use radix_engine::errors::RuntimeError;
 use radix_engine::ledger::{InMemorySubstateStore, SubstateStore};
 use radix_engine::model::{Component, MethodAuthorization};
 use radix_engine::transaction::*;
+use scrypto::any_of;
 use scrypto::prelude::*;
 
 #[test]
@@ -16,15 +17,17 @@ fn cannot_make_cross_component_call_without_authorization() {
     let (_, account) = test_runner.new_public_key_with_account();
     let auth = test_runner.create_non_fungible_resource(account.clone());
     let auth_id = NonFungibleId::from(1);
-    let package = test_runner.publish_package("component");
+    let auth_address = NonFungibleAddress::new(auth, auth_id);
+    let proof_rule = any_of!(auth_address.clone());
+
+    let package_id = test_runner.publish_package("component");
     let transaction = test_runner
         .new_transaction_builder()
         .call_function(
-            package,
+            package_id,
             "CrossComponent",
             "create_component_with_auth",
-            vec![auth.to_string(), auth_id.to_string()],
-            None,
+            vec![scrypto_encode(&proof_rule)],
         )
         .build(vec![])
         .unwrap();
@@ -34,7 +37,7 @@ fn cannot_make_cross_component_call_without_authorization() {
 
     let transaction = test_runner
         .new_transaction_builder()
-        .call_function(package, "CrossComponent", "create_component", vec![], None)
+        .call_function(package_id, "CrossComponent", "create_component", vec![])
         .build(vec![])
         .unwrap();
     let receipt = test_runner.run(transaction);
@@ -47,8 +50,7 @@ fn cannot_make_cross_component_call_without_authorization() {
         .call_method(
             my_component,
             "cross_component_call",
-            vec![secured_component.to_string()],
-            None,
+            vec![scrypto_encode(&secured_component)],
         )
         .build(vec![])
         .unwrap();
@@ -61,7 +63,6 @@ fn cannot_make_cross_component_call_without_authorization() {
         .get_decoded_substate(&secured_component)
         .map(|(c, _)| c)
         .unwrap();
-    let auth_address = NonFungibleAddress::new(auth, auth_id);
     assert_eq!(
         component_state.get_auth("get_component_state"),
         &MethodAuthorization::Protected(ProofRule::NonFungible(auth_address))
@@ -76,15 +77,17 @@ fn can_make_cross_component_call_with_authorization() {
     let (_, account) = test_runner.new_public_key_with_account();
     let auth = test_runner.create_non_fungible_resource(account.clone());
     let auth_id = NonFungibleId::from(1);
-    let package = test_runner.publish_package("component");
+    let auth_address = NonFungibleAddress::new(auth, auth_id.clone());
+    let proof_rule = any_of!(auth_address.clone());
+
+    let package_id = test_runner.publish_package("component");
     let transaction = test_runner
         .new_transaction_builder()
         .call_function(
-            package,
+            package_id,
             "CrossComponent",
             "create_component_with_auth",
-            vec![auth.to_string(), auth_id.to_string()],
-            None,
+            vec![scrypto_encode(&proof_rule)],
         )
         .build(vec![])
         .unwrap();
@@ -94,7 +97,7 @@ fn can_make_cross_component_call_with_authorization() {
 
     let transaction = test_runner
         .new_transaction_builder()
-        .call_function(package, "CrossComponent", "create_component", vec![], None)
+        .call_function(package_id, "CrossComponent", "create_component", vec![])
         .build(vec![])
         .unwrap();
     let receipt = test_runner.run(transaction);
@@ -117,8 +120,7 @@ fn can_make_cross_component_call_with_authorization() {
         .call_method(
             my_component,
             "cross_component_call",
-            vec![secured_component.to_string()],
-            None,
+            vec![scrypto_encode(&secured_component)],
         )
         .build(vec![])
         .unwrap();
@@ -130,7 +132,6 @@ fn can_make_cross_component_call_with_authorization() {
         .get_decoded_substate(&secured_component)
         .map(|(c, _)| c)
         .unwrap();
-    let auth_address = NonFungibleAddress::new(auth, auth_id);
     assert_eq!(
         component_state.get_auth("get_component_state"),
         &MethodAuthorization::Protected(ProofRule::NonFungible(auth_address))
