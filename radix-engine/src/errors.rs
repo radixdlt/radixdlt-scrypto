@@ -9,7 +9,7 @@ use crate::engine::*;
 use crate::model::*;
 
 /// Represents an error when validating a WASM file.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum WasmValidationError {
     /// The wasm module is invalid.
     InvalidModule(),
@@ -43,7 +43,7 @@ pub enum TransactionValidationError {
 }
 
 /// Represents an error when executing a transaction.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum RuntimeError {
     /// Assertion check failed.
     AssertionFailed,
@@ -176,6 +176,9 @@ pub enum RuntimeError {
 
     /// System Authorization Failure
     NotAuthorized,
+
+    /// Method does not exist
+    UnsupportedMethod,
 
     /// Index out of bounds.
     IndexOutOfBounds { index: usize, max: usize },

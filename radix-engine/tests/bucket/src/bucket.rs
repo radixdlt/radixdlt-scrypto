@@ -52,7 +52,7 @@ blueprint! {
                 .initial_supply_fungible(5);
             let mut vault = Vault::with_bucket(bucket);
 
-            let token_bucket = authorize(&auth_bucket, || vault.take(1));
+            let token_bucket = auth_bucket.authorize(|| vault.take(1));
 
             BucketTest { vault }.instantiate();
             vec![auth_bucket, token_bucket]
@@ -64,7 +64,7 @@ blueprint! {
                 .flags(BURNABLE)
                 .badge(badge.resource_def_id(), MAY_BURN)
                 .initial_supply_fungible(5);
-            authorize(&badge, || bucket.burn());
+            badge.authorize(|| bucket.burn());
             vec![badge]
         }
 
@@ -74,7 +74,7 @@ blueprint! {
                 .flags(BURNABLE | FREELY_BURNABLE)
                 .initial_supply_fungible(5);
             let bucket2 = bucket1.take(2);
-            authorize(&badge, || bucket1.burn());
+            badge.authorize(|| bucket1.burn());
             bucket2.burn();
             vec![badge]
         }
