@@ -6,18 +6,18 @@ blueprint! {
     }
 
     impl Account {
-        pub fn new(withdraw_auth: ProofRule) -> ComponentId {
+        pub fn new(withdraw_rule: ProofRule) -> ComponentId {
             Account {
                 vaults: LazyMap::new(),
             }
-            .instantiate_with_auth(HashMap::from([("withdraw".to_string(), withdraw_auth)]))
+            .instantiate_with_auth(ComponentAuthorization::single_auth("withdraw", withdraw_rule))
         }
 
-        pub fn with_bucket(withdraw_auth: ProofRule, bucket: Bucket) -> ComponentId {
+        pub fn with_bucket(withdraw_rule: ProofRule, bucket: Bucket) -> ComponentId {
             let vaults = LazyMap::new();
             vaults.insert(bucket.resource_def_id(), Vault::with_bucket(bucket));
             Account { vaults }
-                .instantiate_with_auth(HashMap::from([("withdraw".to_string(), withdraw_auth)]))
+                .instantiate_with_auth(ComponentAuthorization::single_auth("withdraw", withdraw_rule))
         }
 
         /// Deposit a batch of buckets into this account

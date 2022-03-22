@@ -18,7 +18,9 @@ fn cannot_make_cross_component_call_without_authorization() {
     let auth = test_runner.create_non_fungible_resource(account.clone());
     let auth_id = NonFungibleId::from(1);
     let auth_address = NonFungibleAddress::new(auth, auth_id);
-    let proof_rule = any_of!(auth_address.clone());
+    let method_authorization = ComponentAuthorization::single_auth(
+        "get_component_state", any_of!(auth_address.clone())
+    );
 
     let package_id = test_runner.publish_package("component");
     let transaction = test_runner
@@ -27,7 +29,7 @@ fn cannot_make_cross_component_call_without_authorization() {
             package_id,
             "CrossComponent",
             "create_component_with_auth",
-            vec![scrypto_encode(&proof_rule)],
+            vec![scrypto_encode(&method_authorization)],
         )
         .build(vec![])
         .unwrap();
@@ -78,7 +80,9 @@ fn can_make_cross_component_call_with_authorization() {
     let auth = test_runner.create_non_fungible_resource(account.clone());
     let auth_id = NonFungibleId::from(1);
     let auth_address = NonFungibleAddress::new(auth, auth_id.clone());
-    let proof_rule = any_of!(auth_address.clone());
+    let method_authorization = ComponentAuthorization::single_auth(
+        "get_component_state", any_of!(auth_address.clone())
+    );
 
     let package_id = test_runner.publish_package("component");
     let transaction = test_runner
@@ -87,7 +91,7 @@ fn can_make_cross_component_call_with_authorization() {
             package_id,
             "CrossComponent",
             "create_component_with_auth",
-            vec![scrypto_encode(&proof_rule)],
+            vec![scrypto_encode(&method_authorization)],
         )
         .build(vec![])
         .unwrap();

@@ -1,4 +1,5 @@
 mod bucket;
+mod authorization;
 mod mint_params;
 mod non_fungible;
 mod non_fungible_address;
@@ -18,6 +19,7 @@ pub mod resource_flags;
 pub mod resource_permissions;
 
 pub use bucket::{Bucket, ParseBucketError};
+pub use authorization::ComponentAuthorization;
 pub use mint_params::MintParams;
 pub use non_fungible::NonFungible;
 pub use non_fungible_address::{NonFungibleAddress, ParseNonFungibleAddressError};
