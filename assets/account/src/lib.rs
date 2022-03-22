@@ -6,30 +6,18 @@ blueprint! {
     }
 
     impl Account {
-        pub fn new(public_key: EcdsaPublicKey) -> ComponentId {
-            let key = NonFungibleId::new(public_key.to_vec());
-            let auth_address = NonFungibleAddress::new(ECDSA_TOKEN, key);
-
+        pub fn new(withdraw_auth: ProofRule) -> ComponentId {
             Account {
                 vaults: LazyMap::new(),
             }
-            .instantiate_with_auth(HashMap::from([(
-                "withdraw".to_string(),
-                AuthRule::NonFungible(auth_address),
-            )]))
+            .instantiate_with_auth(HashMap::from([("withdraw".to_string(), withdraw_auth)]))
         }
 
-        pub fn with_bucket(public_key: EcdsaPublicKey, bucket: Bucket) -> ComponentId {
+        pub fn with_bucket(withdraw_auth: ProofRule, bucket: Bucket) -> ComponentId {
             let vaults = LazyMap::new();
             vaults.insert(bucket.resource_def_id(), Vault::with_bucket(bucket));
-
-            let key = NonFungibleId::new(public_key.to_vec());
-            let auth_address = NonFungibleAddress::new(ECDSA_TOKEN, key);
-
-            Account { vaults }.instantiate_with_auth(HashMap::from([(
-                "withdraw".to_string(),
-                AuthRule::NonFungible(auth_address),
-            )]))
+            Account { vaults }
+                .instantiate_with_auth(HashMap::from([("withdraw".to_string(), withdraw_auth)]))
         }
 
         /// Deposit a batch of buckets into this account

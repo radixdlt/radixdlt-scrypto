@@ -25,7 +25,7 @@ blueprint! {
             }
             .instantiate_with_auth(HashMap::from([(
                 "get_component_info".to_string(),
-                AuthRule::NonFungible(auth),
+                ProofRule::NonFungible(auth),
             )]))
         }
 

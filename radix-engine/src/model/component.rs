@@ -1,4 +1,4 @@
-use crate::model::AuthRule;
+use crate::model::MethodAuthorization;
 use sbor::*;
 use scrypto::engine::types::*;
 use scrypto::rust::collections::*;
@@ -10,7 +10,7 @@ use scrypto::rust::vec::Vec;
 pub struct Component {
     package_id: PackageId,
     blueprint_name: String,
-    auth_rules: HashMap<String, AuthRule>,
+    auth_rules: HashMap<String, MethodAuthorization>,
     state: Vec<u8>,
 }
 
@@ -18,7 +18,7 @@ impl Component {
     pub fn new(
         package_id: PackageId,
         blueprint_name: String,
-        auth_rules: HashMap<String, AuthRule>,
+        auth_rules: HashMap<String, MethodAuthorization>,
         state: Vec<u8>,
     ) -> Self {
         Self {
@@ -29,14 +29,14 @@ impl Component {
         }
     }
 
-    pub fn get_auth(&self, method_name: &str) -> &AuthRule {
+    pub fn get_auth(&self, method_name: &str) -> &MethodAuthorization {
         match self.auth_rules.get(method_name) {
             Some(auth_rule) => auth_rule,
-            None => &AuthRule::Public,
+            None => &MethodAuthorization::Public,
         }
     }
 
-    pub fn auth_rules(&self) -> &HashMap<String, AuthRule> {
+    pub fn auth_rules(&self) -> &HashMap<String, MethodAuthorization> {
         &self.auth_rules
     }
 
