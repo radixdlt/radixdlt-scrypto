@@ -1,9 +1,11 @@
-use scrypto::abi;
 use scrypto::crypto::sha256;
 use scrypto::engine::types::*;
+use scrypto::prelude::NonFungibleAddress;
+use scrypto::resource::ProofRule;
 use scrypto::rust::string::ToString;
 use scrypto::rust::vec;
 use scrypto::rust::vec::Vec;
+use scrypto::{abi, any_of};
 
 use crate::engine::*;
 use crate::errors::*;
@@ -81,11 +83,11 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
     }
 
     /// Creates an account with 1,000,000 XRD in balance.
-    pub fn new_account(&mut self, key: EcdsaPublicKey) -> ComponentId {
+    pub fn new_account(&mut self, withdraw_auth: &ProofRule) -> ComponentId {
         self.run(
             TransactionBuilder::new(self)
-                .call_method(SYSTEM_COMPONENT, "free_xrd", vec![], None)
-                .new_account_with_resource(key, &ResourceSpecifier::All(RADIX_TOKEN))
+                .call_method(SYSTEM_COMPONENT, "free_xrd", vec![])
+                .new_account_with_resource(withdraw_auth, &ResourceSpecifier::All(RADIX_TOKEN))
                 .build(Vec::new())
                 .unwrap(),
         )
@@ -96,7 +98,10 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
     /// Creates a new public key and account associated with it
     pub fn new_public_key_with_account(&mut self) -> (EcdsaPublicKey, ComponentId) {
         let key = self.new_public_key();
-        let account = self.new_account(key);
+        let id = NonFungibleId::new(key.to_vec());
+        let auth_address = NonFungibleAddress::new(ECDSA_TOKEN, id);
+        let withdraw_auth = any_of!(auth_address);
+        let account = self.new_account(&withdraw_auth);
         (key, account)
     }
 

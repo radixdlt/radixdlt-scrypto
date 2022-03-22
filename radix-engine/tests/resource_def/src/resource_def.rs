@@ -62,7 +62,7 @@ blueprint! {
         pub fn burn() -> Bucket {
             let (badge, resource_def_id) = Self::create_fungible();
             let resource_def = resource_def!(resource_def_id);
-            authorize(&badge, || {
+            badge.authorize(|| {
                 let bucket: Bucket = resource_def.mint(1);
                 resource_def.burn(bucket)
             });
@@ -81,7 +81,7 @@ blueprint! {
                     )
                     .no_initial_supply());
 
-            authorize(&badge, || {
+            badge.authorize(|| {
                 token_resource_def.enable_flags(MINTABLE);
                 assert!(token_resource_def.flags() & MINTABLE == MINTABLE);
                 assert!(token_resource_def.mutable_flags() & MINTABLE == MINTABLE);
@@ -109,7 +109,7 @@ blueprint! {
                     )
                     .no_initial_supply());
 
-            authorize(&badge, || token_resource_def.enable_flags(MINTABLE));
+            badge.authorize(|| token_resource_def.enable_flags(MINTABLE));
             badge
         }
 
@@ -124,7 +124,7 @@ blueprint! {
 
             let mut new_metadata = HashMap::new();
             new_metadata.insert("a".to_owned(), "b".to_owned());
-            authorize(&badge, || {
+            badge.authorize(|| {
                 token_resource_def.update_metadata(new_metadata.clone());
                 assert_eq!(token_resource_def.metadata(), new_metadata);
             });
