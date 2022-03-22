@@ -5,7 +5,7 @@ use crate::rust::string::String;
 use crate::rust::string::ToString;
 use sbor::*;
 
-/// Authorization Rule
+/// Method authorization rules for a component
 #[derive(Debug, Clone, PartialEq, Describe, TypeId, Encode, Decode)]
 pub struct ComponentAuthorization(HashMap<String, ProofRule>);
 
