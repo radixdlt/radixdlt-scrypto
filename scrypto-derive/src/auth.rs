@@ -58,7 +58,7 @@ pub fn handle_auth(attr: TokenStream, item: TokenStream) -> Result<TokenStream> 
     let output = quote! {
         #(#f_attrs)*
         #f_vis fn #f_ident (#(#f_inputs),*) #f_output {
-            if !(#(proof.resource_def_id() == self.#allowed_badges.clone())||*) {
+            if !(#(proof.contains(self.#allowed_badges.clone()))||*) {
                 panic!("Not authorized!")
             }
 
@@ -95,7 +95,7 @@ mod tests {
             quote! {
                 #[other]
                 pub fn x(&self, proof: ::scrypto::resource::Proof) -> u32 {
-                    if !(proof.resource_def_id() == self.foo.clone() || proof.resource_def_id() == self.bar.clone()) {
+                    if !(proof.contains(self.foo.clone()) || proof.contains(self.bar.clone())) {
                         panic!("Not authorized!")
                     }
                     {

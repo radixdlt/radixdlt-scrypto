@@ -24,12 +24,17 @@ impl Clone for Proof {
 }
 
 impl Proof {
-    /// Whether provides an ownership proof to at least the given amount of the resource.
-    pub fn contains(&self, amount: Decimal, resource_def_id: ResourceDefId) -> bool {
+    /// Whether this proof includes an ownership proof of any of the given resource.
+    pub fn contains(&self, resource_def_id: ResourceDefId) -> bool {
+        self.resource_def_id() == resource_def_id
+    }
+
+    /// Whether this proof includes an ownership proof of at least the given amount of resource.
+    pub fn contains_resource(&self, amount: Decimal, resource_def_id: ResourceDefId) -> bool {
         self.resource_def_id() == resource_def_id && self.amount() > amount
     }
 
-    /// Whether provides an ownership proof to the specified non-fungible.
+    /// Whether this proof includes an ownership proof of the given non-fungible.
     pub fn contains_non_fungible(&self, non_fungible_address: &NonFungibleAddress) -> bool {
         if self.resource_def_id() != non_fungible_address.resource_def_id() {
             return false;

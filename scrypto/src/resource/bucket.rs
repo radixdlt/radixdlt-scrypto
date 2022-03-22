@@ -54,7 +54,7 @@ impl Bucket {
         Proof(output.proof_id)
     }
 
-    /// Creates an ownership proof of this bucket.
+    /// Creates an ownership proof of this bucket, by amount.
     pub fn create_proof_by_amount(&self, amount: Decimal) -> Proof {
         let input = CreateBucketProofByAmountInput {
             bucket_id: self.0,
@@ -66,7 +66,7 @@ impl Bucket {
         Proof(output.proof_id)
     }
 
-    /// Creates an ownership proof of this bucket.
+    /// Creates an ownership proof of this bucket, by non-fungible ID set.
     pub fn create_proof_by_ids(&self, ids: &BTreeSet<NonFungibleId>) -> Proof {
         let input = CreateBucketProofByIdsInput {
             bucket_id: self.0,

@@ -83,7 +83,7 @@ impl Vault {
         Proof(output.proof_id)
     }
 
-    /// Creates an ownership proof of this vault.
+    /// Creates an ownership proof of this vault, by amount.
     pub fn create_proof_by_amount(&self, amount: Decimal) -> Proof {
         let input = CreateVaultProofByAmountInput {
             vault_id: self.0,
@@ -95,7 +95,7 @@ impl Vault {
         Proof(output.proof_id)
     }
 
-    /// Creates an ownership proof of this vault.
+    /// Creates an ownership proof of this vault, by non-fungible ID set.
     pub fn create_proof_by_ids(&self, ids: &BTreeSet<NonFungibleId>) -> Proof {
         let input = CreateVaultProofByIdsInput {
             vault_id: self.0,
