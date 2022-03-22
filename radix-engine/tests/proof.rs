@@ -2,6 +2,7 @@
 pub mod test_runner;
 
 use crate::test_runner::TestRunner;
+use radix_engine::errors::RuntimeError;
 use radix_engine::ledger::InMemorySubstateStore;
 use scrypto::prelude::*;
 
@@ -135,4 +136,63 @@ fn can_use_vault_for_authorization() {
 
     // Assert
     assert!(receipt.result.is_ok());
+}
+
+#[test]
+fn can_create_proof_from_account_and_pass_on() {
+    // Arrange
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(&mut substate_store);
+    let (key, account) = test_runner.new_public_key_with_account();
+    let resource_def_id = test_runner.create_non_fungible_resource(account);
+    let package_id = test_runner.publish_package("proof");
+
+    // Act
+    let transaction = test_runner
+        .new_transaction_builder()
+        .parse_args_and_call_function(
+            package_id,
+            "VaultProof",
+            "receive_proof",
+            vec![format!("1,{}", resource_def_id), "1".to_owned()],
+            Some(account),
+        )
+        .build(vec![key])
+        .unwrap();
+    let receipt = test_runner.run(transaction);
+    println!("{:?}", receipt);
+
+    // Assert
+    assert!(receipt.result.is_ok());
+}
+
+#[test]
+fn cant_move_restricted_proof() {
+    // Arrange
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(&mut substate_store);
+    let (key, account) = test_runner.new_public_key_with_account();
+    let resource_def_id = test_runner.create_non_fungible_resource(account);
+    let package_id = test_runner.publish_package("proof");
+
+    // Act
+    let transaction = test_runner
+        .new_transaction_builder()
+        .parse_args_and_call_function(
+            package_id,
+            "VaultProof",
+            "receive_proof_and_move_to_auth_worktop",
+            vec![format!("1,{}", resource_def_id), "1".to_owned()],
+            Some(account),
+        )
+        .build(vec![key])
+        .unwrap();
+    let receipt = test_runner.run(transaction);
+    println!("{:?}", receipt);
+
+    // Assert
+    assert!(matches!(
+        receipt.result,
+        Err(RuntimeError::CantMoveRestrictedProof(512))
+    ));
 }

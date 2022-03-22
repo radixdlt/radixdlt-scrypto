@@ -51,10 +51,12 @@ fn can_withdraw_restricted_transfer_from_my_account_with_auth() {
         .new_transaction_builder()
         .withdraw_from_account(&auth_amount, account)
         .take_from_worktop(&auth_amount, |builder, bucket_id| {
-            builder.create_bucket_proof(bucket_id, |builder, proof_id| builder.push_auth(proof_id))
+            builder.create_bucket_proof(bucket_id, |builder, proof_id| {
+                builder.push_onto_auth_worktop(proof_id)
+            })
         })
         .withdraw_from_account(&fungible_amount, account)
-        .pop_auth(|builder, proof_id| builder.drop_proof(proof_id))
+        .pop_from_auth_worktop(|builder, proof_id| builder.drop_proof(proof_id))
         .call_method_with_all_resources(other_account, "deposit_batch")
         .build(vec![key])
         .unwrap();

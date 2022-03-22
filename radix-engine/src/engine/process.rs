@@ -156,6 +156,12 @@ impl<'s, S: SubstateStore> Track<'s, S> {
     }
 }
 
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub enum MoveMethod {
+    AsReturn,
+    AsArgument,
+}
+
 /// A process keeps track of resource movements and code execution.
 pub struct Process<'r, 'l, L: SubstateStore> {
     /// The call depth
@@ -169,10 +175,6 @@ pub struct Process<'r, 'l, L: SubstateStore> {
     buckets: HashMap<BucketId, Bucket>,
     /// Bucket proofs
     proofs: HashMap<ProofId, Proof>,
-    /// The buckets that will be moved to another process SHORTLY.
-    moving_buckets: HashMap<BucketId, Bucket>,
-    /// The proofs that will be moved to another process SHORTLY.
-    moving_proofs: HashMap<ProofId, Proof>,
 
     /// State for the given wasm process, empty only on the root process
     /// (root process cannot create components nor is a component itself)
@@ -197,8 +199,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             track,
             buckets: HashMap::new(),
             proofs: HashMap::new(),
-            moving_buckets: HashMap::new(),
-            moving_proofs: HashMap::new(),
             wasm_process_state: None,
             id_allocator: IdAllocator::new(IdSpace::Transaction),
             worktop: Worktop::new(),
@@ -364,8 +364,11 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .remove(&proof_id)
             .ok_or(RuntimeError::ProofNotFound(proof_id))?;
 
-        self.auth_worktop.push(proof);
+        if proof.is_restricted() {
+            return Err(RuntimeError::CantMoveRestrictedProof(proof_id));
+        }
 
+        self.auth_worktop.push(proof);
         Ok(())
     }
 
@@ -496,35 +499,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         self.proofs.insert(proof_id, proof);
     }
 
-    /// Moves buckets and proofs into this process.
-    pub fn move_in_resources(
-        &mut self,
-        buckets: HashMap<BucketId, Bucket>,
-        proofs: HashMap<ProofId, Proof>,
-    ) -> Result<(), RuntimeError> {
-        if self.depth == 0 {
-            assert!(proofs.is_empty());
-
-            for (_, bucket) in buckets {
-                self.worktop
-                    .put(bucket)
-                    .map_err(RuntimeError::WorktopError)?;
-            }
-        } else {
-            self.proofs.extend(proofs);
-            self.buckets.extend(buckets);
-        }
-
-        Ok(())
-    }
-
-    /// Moves all marked buckets and proofs from this process.
-    pub fn move_out_resources(&mut self) -> (HashMap<BucketId, Bucket>, HashMap<ProofId, Proof>) {
-        let buckets = self.moving_buckets.drain().collect();
-        let proofs = self.moving_proofs.drain().collect();
-        (buckets, proofs)
-    }
-
     /// Runs the given export within this process.
     pub fn run(&mut self, invocation: Invocation) -> Result<ValidatedData, RuntimeError> {
         #[cfg(not(feature = "alloc"))]
@@ -591,7 +565,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             RuntimeValue::I32(ptr) => {
                 let data = ValidatedData::from_slice(&self.read_bytes(ptr)?)
                     .map_err(RuntimeError::DataValidationError)?;
-                self.process_call_data(&data, false)?;
+                self.process_return_data(&data)?;
                 data
             }
             _ => {
@@ -670,23 +644,37 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
     /// Calls a function/method.
     pub fn call(&mut self, invocation: Invocation) -> Result<ValidatedData, RuntimeError> {
-        // move resource
+        // figure out what buckets and proofs to move from this process
+        let mut moving_buckets = HashMap::new();
+        let mut moving_proofs = HashMap::new();
         for arg in &invocation.args {
-            self.process_call_data(arg, true)?;
+            self.process_call_data(arg)?;
+            moving_buckets.extend(self.send_buckets(&arg.bucket_ids)?);
+            moving_proofs.extend(self.send_proofs(&arg.proof_ids, MoveMethod::AsArgument)?);
         }
-        let (buckets_out, proofs_out) = self.move_out_resources();
+
+        // start a new process
         let mut process = Process::new(self.depth + 1, self.trace, self.track);
         process.caller_auth_worktop = &self.auth_worktop;
-        process.move_in_resources(buckets_out, proofs_out)?;
 
-        // run the function
+        // move buckets and proofs to the new process.
+        process.receive_buckets(moving_buckets)?;
+        process.receive_proofs(moving_proofs)?;
+
+        // invoke the main function
         let result = process.run(invocation)?;
+
+        // figure out what buckets and resources to move from the new process
+        let moving_buckets = process.send_buckets(&result.bucket_ids)?;
+        let moving_proofs = process.send_proofs(&result.proof_ids, MoveMethod::AsReturn)?;
+
+        // drop proofs and check resource leak
         process.drop_all_proofs()?;
         process.check_resource()?;
 
-        // move resource
-        let (buckets_in, proofs_in) = process.move_out_resources();
-        self.move_in_resources(buckets_in, proofs_in)?;
+        // move buckets and proofs to this process.
+        self.receive_buckets(moving_buckets)?;
+        self.receive_proofs(moving_proofs)?;
 
         Ok(result)
     }
@@ -786,19 +774,17 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         println!("{}[{:5}] {}", "  ".repeat(self.depth), l, m);
     }
 
-    fn process_call_data(
-        &mut self,
-        validated: &ValidatedData,
-        is_argument: bool,
-    ) -> Result<(), RuntimeError> {
-        self.move_buckets(&validated.bucket_ids)?;
-        if is_argument {
-            self.move_proofs(&validated.proof_ids)?;
-        } else {
-            if !validated.proof_ids.is_empty() {
-                return Err(RuntimeError::ProofNotAllowed);
-            }
+    fn process_call_data(&mut self, validated: &ValidatedData) -> Result<(), RuntimeError> {
+        if !validated.lazy_map_ids.is_empty() {
+            return Err(RuntimeError::LazyMapNotAllowed);
         }
+        if !validated.vault_ids.is_empty() {
+            return Err(RuntimeError::VaultNotAllowed);
+        }
+        Ok(())
+    }
+
+    fn process_return_data(&mut self, validated: &ValidatedData) -> Result<(), RuntimeError> {
         if !validated.lazy_map_ids.is_empty() {
             return Err(RuntimeError::LazyMapNotAllowed);
         }
@@ -861,9 +847,13 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         Ok(validated)
     }
 
-    /// Remove transient buckets from this process
-    fn move_buckets(&mut self, buckets: &[BucketId]) -> Result<(), RuntimeError> {
-        for bucket_id in buckets {
+    /// Sends buckets to another component/blueprint, either as argument or return
+    fn send_buckets(
+        &mut self,
+        bucket_ids: &[BucketId],
+    ) -> Result<HashMap<BucketId, Bucket>, RuntimeError> {
+        let mut buckets = HashMap::new();
+        for bucket_id in bucket_ids {
             let bucket = self
                 .buckets
                 .remove(bucket_id)
@@ -872,21 +862,66 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             if bucket.is_locked() {
                 return Err(RuntimeError::CantMoveLockedBucket);
             }
-            self.moving_buckets.insert(*bucket_id, bucket);
+            buckets.insert(*bucket_id, bucket);
         }
+        Ok(buckets)
+    }
+
+    /// Receives buckets from another component/blueprint, either as argument or return
+    fn receive_buckets(&mut self, buckets: HashMap<BucketId, Bucket>) -> Result<(), RuntimeError> {
+        if self.depth == 0 {
+            // buckets are aggregated by worktop
+            for (_, bucket) in buckets {
+                self.worktop
+                    .put(bucket)
+                    .map_err(RuntimeError::WorktopError)?;
+            }
+        } else {
+            // for component, received buckets go to the "buckets" areas.
+            self.buckets.extend(buckets);
+        }
+
         Ok(())
     }
 
-    /// Remove transient buckets from this process
-    fn move_proofs(&mut self, proofs: &[ProofId]) -> Result<(), RuntimeError> {
-        for proof_id in proofs {
-            let proof = self
+    /// Sends proofs to another component/blueprint, either as argument or return
+    fn send_proofs(
+        &mut self,
+        proof_ids: &[ProofId],
+        method: MoveMethod,
+    ) -> Result<HashMap<ProofId, Proof>, RuntimeError> {
+        let mut proofs = HashMap::new();
+        for proof_id in proof_ids {
+            let mut proof = self
                 .proofs
                 .remove(proof_id)
                 .ok_or(RuntimeError::ProofNotFound(*proof_id))?;
             re_debug!(self, "Moving proof: {}, {:?}", proof_id, proof);
-            self.moving_proofs.insert(*proof_id, proof);
+            if proof.is_restricted() {
+                return Err(RuntimeError::CantMoveRestrictedProof(*proof_id));
+            }
+            if matches!(method, MoveMethod::AsArgument) {
+                proof.change_to_restricted();
+            }
+            proofs.insert(*proof_id, proof);
         }
+        Ok(proofs)
+    }
+
+    /// Receives proofs from another component/blueprint, either as argument or return
+    fn receive_proofs(&mut self, proofs: HashMap<ProofId, Proof>) -> Result<(), RuntimeError> {
+        if self.depth == 0 {
+            // proofs are accumulated by auth worktop
+            for (_, proof) in proofs {
+                self.auth_worktop.push(proof);
+            }
+        } else {
+            // for component, received buckets go to the "proofs" areas.
+            for (proof_id, proof) in proofs {
+                self.proofs.insert(proof_id, proof);
+            }
+        }
+
         Ok(())
     }
 
