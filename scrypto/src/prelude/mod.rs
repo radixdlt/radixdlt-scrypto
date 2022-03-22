@@ -9,7 +9,7 @@ pub use crate::resource::*;
 pub use crate::{
     args, auth, bdec, blueprint, compile_package, component, debug, dec, error, import,
     include_package, info, package, resource_def, trace, warn, Decode, Describe, Encode,
-    NonFungibleData, TypeId, component_authorization
+    NonFungibleData, TypeId, component_authorization, any_of, all_of
 };
 
 pub use crate::rust::borrow::ToOwned;

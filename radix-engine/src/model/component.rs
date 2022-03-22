@@ -1,11 +1,14 @@
 use crate::model::{MethodAuthorization, ValidatedData};
 use sbor::*;
-use sbor::any::Value;
+use sbor::any::{Fields, Value};
 use scrypto::engine::types::*;
+use scrypto::prelude::NonFungibleAddress;
 use scrypto::resource::ProofRule;
 use scrypto::rust::collections::*;
 use scrypto::rust::string::String;
 use scrypto::rust::vec::Vec;
+use scrypto::rust::vec;
+use scrypto::types::CustomType;
 use crate::model::method_authorization::HardProofRule;
 
 /// A component is an instance of blueprint.
@@ -34,7 +37,33 @@ impl Component {
 
     fn to_hard_rule(proof_rule: &ProofRule, dom: &Value) -> HardProofRule {
         match proof_rule {
-            ProofRule::FromComponent(_) => panic!("Not yet implemented."),
+            ProofRule::FromComponent(field_index) => {
+                match dom {
+                    Value::Struct(fields) => {
+                        match fields {
+                            Fields::Named(values) | Fields::Unnamed(values) => {
+                                let value = values.get(*field_index).unwrap();
+                                match value {
+                                    Value::Custom(type_id, bytes) => {
+                                        match CustomType::from_id(*type_id).unwrap() {
+                                            CustomType::ResourceDefId => {
+                                                HardProofRule::from(ResourceDefId::try_from(bytes.as_slice()).unwrap())
+                                            }
+                                            CustomType::NonFungibleAddress => {
+                                                HardProofRule::from(NonFungibleAddress::try_from(bytes.as_slice()).unwrap())
+                                            }
+                                            _ => HardProofRule::OneOf(vec![])
+                                        }
+                                    }
+                                    _ => HardProofRule::OneOf(vec![])
+                                }
+                            },
+                            Fields::Unit => HardProofRule::OneOf(vec![])
+                        }
+                    }
+                    _ => HardProofRule::OneOf(vec![])
+                }
+            },
             ProofRule::This(proof_rule_resource) => HardProofRule::This(proof_rule_resource.clone()),
             ProofRule::SomeOfResource(amount, resource_def_id) => HardProofRule::SomeOfResource(*amount, *resource_def_id),
             ProofRule::AllOf(rules) => {
