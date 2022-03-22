@@ -275,7 +275,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                     package_id,
                     blueprint_name.to_owned(),
                     function.to_owned(),
-                    e
+                    e,
                 )
             })
             .and_then(|abi| Self::find_function_abi(&abi, function))
@@ -359,9 +359,9 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     pub fn build(
         &mut self,
         signers: Vec<EcdsaPublicKey>,
-    ) -> Result<Transaction, &BuildTransactionError> {
+    ) -> Result<Transaction, BuildTransactionError> {
         if !self.errors.is_empty() {
-            return Err(&self.errors[0]);
+            return Err(self.errors[0].clone());
         }
 
         let mut v = Vec::new();

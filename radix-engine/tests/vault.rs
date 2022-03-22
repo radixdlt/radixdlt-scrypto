@@ -23,7 +23,8 @@ fn non_existent_vault_in_component_creation_should_fail() {
             vec![],
             None,
         )
-        .build(vec![]).unwrap();
+        .build(vec![])
+        .unwrap();
     let receipt = sut.run(transaction).unwrap();
 
     // Assert

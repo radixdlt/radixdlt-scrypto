@@ -81,8 +81,7 @@ impl FromStr for NonFungibleAddress {
     type Err = ParseNonFungibleAddressError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let bytes =
-            hex::decode(s).map_err(|_| ParseNonFungibleAddressError::Invalid)?;
+        let bytes = hex::decode(s).map_err(|_| ParseNonFungibleAddressError::Invalid)?;
         Self::try_from(bytes.as_slice())
     }
 }
