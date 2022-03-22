@@ -62,8 +62,7 @@ impl<'l> TestRunner<'l> {
                 package,
                 "ResourceCreator",
                 "create_restricted_mint",
-                vec![auth_resource_def_id.to_string()],
-                Some(account),
+                vec![scrypto_encode(&auth_resource_def_id)],
             )
             .call_method_with_all_resources(account, "deposit_batch")
             .build(vec![])
@@ -83,8 +82,7 @@ impl<'l> TestRunner<'l> {
                 package,
                 "ResourceCreator",
                 "create_restricted_burn",
-                vec![auth_resource_def_id.to_string()],
-                Some(account),
+                vec![scrypto_encode(&auth_resource_def_id)],
             )
             .call_method_with_all_resources(account, "deposit_batch")
             .build(vec![])
@@ -105,8 +103,7 @@ impl<'l> TestRunner<'l> {
                 package,
                 "ResourceCreator",
                 "create_restricted_transfer",
-                vec![auth_resource_def_id.to_string()],
-                Some(account),
+                vec![scrypto_encode(&auth_resource_def_id)],
             )
             .call_method_with_all_resources(account, "deposit_batch")
             .build(vec![])
@@ -123,7 +120,6 @@ impl<'l> TestRunner<'l> {
                 "ResourceCreator",
                 "create_non_fungible_fixed",
                 vec![],
-                Some(account),
             )
             .call_method_with_all_resources(account, "deposit_batch")
             .build(vec![])

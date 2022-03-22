@@ -4,7 +4,7 @@ pub mod test_runner;
 use crate::test_runner::TestRunner;
 use radix_engine::errors::RuntimeError;
 use radix_engine::ledger::{InMemorySubstateStore, SubstateStore};
-use radix_engine::model::{Component, Instruction, MethodAuthorization};
+use radix_engine::model::{Component, MethodAuthorization};
 use radix_engine::transaction::*;
 use scrypto::any_of;
 use scrypto::prelude::*;
@@ -23,7 +23,7 @@ fn cannot_make_cross_component_call_without_authorization() {
     let package_id = test_runner.publish_package("component");
     let transaction = test_runner
         .new_transaction_builder()
-        .call_function_raw(
+        .call_function(
             package_id,
             "CrossComponent",
             "create_component_with_auth",
@@ -37,7 +37,7 @@ fn cannot_make_cross_component_call_without_authorization() {
 
     let transaction = test_runner
         .new_transaction_builder()
-        .call_function_raw(package_id, "CrossComponent", "create_component", vec![])
+        .call_function(package_id, "CrossComponent", "create_component", vec![])
         .build(vec![])
         .unwrap();
     let receipt = test_runner.run(transaction);
@@ -47,7 +47,7 @@ fn cannot_make_cross_component_call_without_authorization() {
     // Act
     let transaction = test_runner
         .new_transaction_builder()
-        .call_method_raw(
+        .call_method(
             my_component,
             "cross_component_call",
             vec![scrypto_encode(&secured_component)],
@@ -83,7 +83,7 @@ fn can_make_cross_component_call_with_authorization() {
     let package_id = test_runner.publish_package("component");
     let transaction = test_runner
         .new_transaction_builder()
-        .call_function_raw(
+        .call_function(
             package_id,
             "CrossComponent",
             "create_component_with_auth",
@@ -97,7 +97,7 @@ fn can_make_cross_component_call_with_authorization() {
 
     let transaction = test_runner
         .new_transaction_builder()
-        .call_function_raw(package_id, "CrossComponent", "create_component", vec![])
+        .call_function(package_id, "CrossComponent", "create_component", vec![])
         .build(vec![])
         .unwrap();
     let receipt = test_runner.run(transaction);
@@ -117,7 +117,7 @@ fn can_make_cross_component_call_with_authorization() {
     // Act
     let transaction = test_runner
         .new_transaction_builder()
-        .call_method_raw(
+        .call_method(
             my_component,
             "cross_component_call",
             vec![scrypto_encode(&secured_component)],

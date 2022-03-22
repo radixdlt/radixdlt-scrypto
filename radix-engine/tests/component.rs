@@ -9,12 +9,11 @@ use scrypto::prelude::*;
 fn test_package() {
     let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(&mut substate_store);
-    let (_, account) = test_runner.new_public_key_with_account();
     let package = test_runner.publish_package("component");
 
     let transaction1 = test_runner
         .new_transaction_builder()
-        .call_function(package, "PackageTest", "publish", vec![], Some(account))
+        .call_function(package, "PackageTest", "publish", vec![])
         .build(vec![])
         .unwrap();
     let receipt1 = test_runner.run(transaction1);
@@ -36,7 +35,6 @@ fn test_component() {
             "ComponentTest",
             "create_component",
             vec![],
-            Some(account),
         )
         .build(vec![])
         .unwrap();
@@ -53,11 +51,10 @@ fn test_component() {
             package,
             "ComponentTest",
             "get_component_info",
-            vec![component.to_string()],
-            Some(account),
+            vec![scrypto_encode(&component)],
         )
-        .call_method(component, "get_component_state", vec![], Some(account))
-        .call_method(component, "put_component_state", vec![], Some(account))
+        .call_method(component, "get_component_state", vec![])
+        .call_method(component, "put_component_state", vec![])
         .call_method_with_all_resources(account, "deposit_batch")
         .build(vec![key])
         .unwrap();

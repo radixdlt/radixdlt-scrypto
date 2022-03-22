@@ -86,7 +86,7 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
     pub fn new_account(&mut self, withdraw_auth: &ProofRule) -> ComponentId {
         self.run(
             TransactionBuilder::new(self)
-                .call_method(SYSTEM_COMPONENT, "free_xrd", vec![], None)
+                .call_method(SYSTEM_COMPONENT, "free_xrd", vec![])
                 .new_account_with_resource(withdraw_auth, &ResourceSpecifier::All(RADIX_TOKEN))
                 .build(Vec::new())
                 .unwrap(),

@@ -16,7 +16,7 @@ fn dangling_lazy_map_should_fail() {
 
     // Act
     let transaction = TransactionBuilder::new(&executor)
-        .call_function(package, "LazyMapTest", "dangling_lazy_map", vec![], None)
+        .call_function(package, "LazyMapTest", "dangling_lazy_map", vec![])
         .build(vec![])
         .unwrap();
     let receipt = executor.run(transaction).unwrap();
@@ -35,7 +35,7 @@ fn can_insert_in_child_nodes() {
 
     // Act
     let transaction = TransactionBuilder::new(&executor)
-        .call_function(package, "SuperLazyMap", "new", vec![], None)
+        .call_function(package, "SuperLazyMap", "new", vec![])
         .build(vec![])
         .unwrap();
     let receipt = executor.run(transaction).unwrap();
@@ -58,7 +58,6 @@ fn create_mutable_lazy_map_into_map_and_referencing_before_storing() {
             "LazyMapTest",
             "new_lazy_map_into_map_then_get",
             vec![],
-            None,
         )
         .build(vec![])
         .unwrap();
@@ -77,7 +76,7 @@ fn cyclic_map_fails_execution() {
 
     // Act
     let transaction = TransactionBuilder::new(&executor)
-        .call_function(package, "CyclicMap", "new", vec![], None)
+        .call_function(package, "CyclicMap", "new", vec![])
         .build(vec![])
         .unwrap();
     let receipt = executor.run(transaction).unwrap();
@@ -99,7 +98,7 @@ fn self_cyclic_map_fails_execution() {
 
     // Act
     let transaction = TransactionBuilder::new(&executor)
-        .call_function(package, "CyclicMap", "new_self_cyclic", vec![], None)
+        .call_function(package, "CyclicMap", "new_self_cyclic", vec![])
         .build(vec![])
         .unwrap();
     let receipt = executor.run(transaction).unwrap();
@@ -124,7 +123,6 @@ fn cannot_remove_lazy_maps() {
             "LazyMapTest",
             "new_lazy_map_into_vector",
             vec![],
-            None,
         )
         .build(vec![])
         .unwrap();
@@ -133,7 +131,7 @@ fn cannot_remove_lazy_maps() {
 
     // Act
     let transaction = TransactionBuilder::new(&sut)
-        .call_method(component_id, "clear_vector", vec![], None)
+        .call_method(component_id, "clear_vector", vec![])
         .build(vec![])
         .unwrap();
     let receipt = sut.run(transaction).unwrap();
@@ -158,7 +156,6 @@ fn cannot_overwrite_lazy_maps() {
             "LazyMapTest",
             "new_lazy_map_into_lazy_map",
             vec![],
-            None,
         )
         .build(vec![])
         .unwrap();
@@ -167,7 +164,7 @@ fn cannot_overwrite_lazy_maps() {
 
     // Act
     let transaction = TransactionBuilder::new(&sut)
-        .call_method(component_id, "overwrite_lazy_map", vec![], None)
+        .call_method(component_id, "overwrite_lazy_map", vec![])
         .build(vec![])
         .unwrap();
     let receipt = sut.run(transaction).unwrap();
@@ -194,7 +191,6 @@ fn create_lazy_map_and_get() {
             "LazyMapTest",
             "new_lazy_map_with_get",
             vec![],
-            None,
         )
         .build(vec![])
         .unwrap();
@@ -218,7 +214,6 @@ fn create_lazy_map_and_put() {
             "LazyMapTest",
             "new_lazy_map_with_put",
             vec![],
-            None,
         )
         .build(vec![])
         .unwrap();

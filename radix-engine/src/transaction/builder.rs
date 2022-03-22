@@ -252,7 +252,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         self.add_instruction(Instruction::DropProof { proof_id }).0
     }
 
-    pub fn call_function_raw(
+    pub fn call_function(
         &mut self,
         package_id: PackageId,
         blueprint_name: &str,
@@ -275,7 +275,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     ///
     /// If an Account component ID is provided, resources will be withdrawn from the given account;
     /// otherwise, they will be taken from transaction worktop.
-    pub fn call_function(
+    pub fn parse_args_and_call_function(
         &mut self,
         package_id: PackageId,
         blueprint_name: &str,
@@ -315,7 +315,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         self
     }
 
-    pub fn call_method_raw(
+    pub fn call_method(
         &mut self,
         component_id: ComponentId,
         method: &str,
@@ -336,7 +336,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     ///
     /// If an Account component ID is provided, resources will be withdrawn from the given account;
     /// otherwise, they will be taken from transaction worktop.
-    pub fn call_method(
+    pub fn parse_args_and_call_method(
         &mut self,
         component_id: ComponentId,
         method: &str,
