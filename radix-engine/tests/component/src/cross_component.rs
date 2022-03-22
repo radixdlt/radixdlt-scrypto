@@ -35,9 +35,8 @@ blueprint! {
             match &mut self.auth_vault {
                 Some(vault) => {
                     let auth_bucket = vault.take_all();
-                    let value = authorize(&auth_bucket, || {
-                        other_component.call("get_component_state", vec![])
-                    });
+                    let value = auth_bucket
+                        .authorize(|| other_component.call("get_component_state", vec![]));
                     vault.put(auth_bucket);
                     value
                 }

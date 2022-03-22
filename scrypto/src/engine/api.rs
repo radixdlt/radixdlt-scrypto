@@ -552,6 +552,16 @@ pub struct CreateBucketProofOutput {
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
+pub struct CreateVaultProofInput {
+    pub vault_id: VaultId,
+}
+
+#[derive(Debug, TypeId, Encode, Decode)]
+pub struct CreateVaultProofOutput {
+    pub proof_id: ProofId,
+}
+
+#[derive(Debug, TypeId, Encode, Decode)]
 pub struct DropProofInput {
     pub proof_id: ProofId,
 }

@@ -74,18 +74,19 @@ impl Vault {
         Bucket(output.bucket_id)
     }
 
-    /// This is a convenience method for using the contained resource for authorization.
-    ///
-    /// It conducts the following actions in one shot:
-    /// 1. Takes `1` resource from this vault into a bucket;
-    /// 2. Creates a `Proof`.
-    /// 3. Applies the specified function `f` with the created proof;
-    /// 4. Puts the `1` resource back into this vault.
-    ///
-    pub fn authorize<F: FnOnce(Proof) -> O, O>(&mut self, f: F) -> O {
-        let bucket = self.take(1);
-        let output = f(bucket.present());
-        self.put(bucket);
+    /// Creates an ownership proof of this vault.
+    pub fn create_proof(&self) -> Proof {
+        let input = CreateVaultProofInput { vault_id: self.0 };
+        let output: CreateVaultProofOutput = call_engine(CREATE_VAULT_PROOF, input);
+
+        Proof(output.proof_id)
+    }
+
+    /// Uses resources in this vault as authorization for an operation.
+    pub fn authorize<F: FnOnce() -> O, O>(&self, f: F) -> O {
+        AuthWorktop::push(self.create_proof());
+        let output = f();
+        AuthWorktop::pop().drop();
         output
     }
 

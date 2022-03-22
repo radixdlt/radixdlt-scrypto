@@ -1,3 +1,4 @@
+mod auth_worktop;
 mod bucket;
 mod mint_params;
 mod non_fungible;
@@ -17,6 +18,7 @@ pub mod resource_flags;
 /// Resource permissions.
 pub mod resource_permissions;
 
+pub use auth_worktop::AuthWorktop;
 pub use bucket::{Bucket, ParseBucketError};
 pub use mint_params::MintParams;
 pub use non_fungible::NonFungible;
@@ -30,5 +32,5 @@ pub use resource_def::{ParseResourceDefIdError, ResourceDef, ResourceDefId};
 pub use resource_flags::*;
 pub use resource_permissions::*;
 pub use resource_type::ResourceType;
-pub use system::{authorize, init_resource_system, resource_system, ResourceSystem};
+pub use system::{init_resource_system, resource_system, ResourceSystem};
 pub use vault::{ParseVaultError, Vault};
