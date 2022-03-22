@@ -1,6 +1,7 @@
 use sbor::*;
 
 use crate::engine::types::*;
+use crate::resource::{NonFungibleAddress, ProofRule};
 use crate::rust::collections::BTreeSet;
 use crate::rust::collections::HashMap;
 use crate::rust::string::String;
@@ -188,7 +189,7 @@ pub struct CreateComponentInput {
     pub package_id: PackageId,
     pub blueprint_name: String,
     pub state: Vec<u8>,
-    pub sys_auth: HashMap<String, NonFungibleAddress>,
+    pub sys_auth: HashMap<String, ProofRule>,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]

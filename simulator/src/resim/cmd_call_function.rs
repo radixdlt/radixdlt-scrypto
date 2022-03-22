@@ -40,7 +40,7 @@ impl CallFunction {
         let default_signers = get_default_signers()?;
         let signatures = self.signers.clone().unwrap_or(default_signers);
         let transaction = TransactionBuilder::new(&executor)
-            .call_function(
+            .parse_args_and_call_function(
                 self.package_id,
                 &self.blueprint_name,
                 &self.function_name,

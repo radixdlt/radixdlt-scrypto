@@ -8,6 +8,7 @@ use scrypto::buffer::*;
 use scrypto::engine::types::*;
 use scrypto::resource::resource_flags::*;
 use scrypto::resource::resource_permissions::*;
+use scrypto::resource::ProofRule;
 use scrypto::rust::borrow::ToOwned;
 use scrypto::rust::collections::BTreeSet;
 use scrypto::rust::collections::*;
@@ -261,6 +262,22 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         self.add_instruction(Instruction::DropProof { proof_id }).0
     }
 
+    pub fn call_function(
+        &mut self,
+        package_id: PackageId,
+        blueprint_name: &str,
+        function: &str,
+        args: Vec<Vec<u8>>,
+    ) -> &mut Self {
+        self.add_instruction(Instruction::CallFunction {
+            package_id,
+            blueprint_name: blueprint_name.to_owned(),
+            function: function.to_owned(),
+            args,
+        });
+        self
+    }
+
     /// Calls a function.
     ///
     /// The implementation will automatically prepare the arguments based on the
@@ -268,7 +285,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     ///
     /// If an Account component ID is provided, resources will be withdrawn from the given account;
     /// otherwise, they will be taken from transaction worktop.
-    pub fn call_function(
+    pub fn parse_args_and_call_function(
         &mut self,
         package_id: PackageId,
         blueprint_name: &str,
@@ -279,11 +296,12 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         let result = self
             .abi_provider
             .export_abi(package_id, blueprint_name)
-            .map_err(|_| {
+            .map_err(|e| {
                 BuildTransactionError::FailedToExportFunctionAbi(
                     package_id,
                     blueprint_name.to_owned(),
                     function.to_owned(),
+                    e,
                 )
             })
             .and_then(|abi| Self::find_function_abi(&abi, function))
@@ -307,17 +325,15 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         self
     }
 
-    pub fn call_function_without_abi(
+    pub fn call_method(
         &mut self,
-        package_id: PackageId,
-        blueprint_name: &str,
-        function: &str,
+        component_id: ComponentId,
+        method: &str,
         args: Vec<Vec<u8>>,
     ) -> &mut Self {
-        self.add_instruction(Instruction::CallFunction {
-            package_id,
-            blueprint_name: blueprint_name.to_owned(),
-            function: function.to_owned(),
+        self.add_instruction(Instruction::CallMethod {
+            component_id,
+            method: method.to_owned(),
             args,
         });
         self
@@ -330,7 +346,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     ///
     /// If an Account component ID is provided, resources will be withdrawn from the given account;
     /// otherwise, they will be taken from transaction worktop.
-    pub fn call_method(
+    pub fn parse_args_and_call_method(
         &mut self,
         component_id: ComponentId,
         method: &str,
@@ -360,20 +376,6 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
             Err(e) => self.errors.push(e),
         }
 
-        self
-    }
-
-    pub fn call_method_without_abi(
-        &mut self,
-        component_id: ComponentId,
-        method: &str,
-        args: Vec<Vec<u8>>,
-    ) -> &mut Self {
-        self.add_instruction(Instruction::CallMethod {
-            component_id,
-            method: method.to_owned(),
-            args,
-        });
         self
     }
 
@@ -565,12 +567,12 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     }
 
     /// Creates an account.
-    pub fn new_account(&mut self, public_key: EcdsaPublicKey) -> &mut Self {
+    pub fn new_account(&mut self, withdraw_auth: &ProofRule) -> &mut Self {
         self.add_instruction(Instruction::CallFunction {
             package_id: ACCOUNT_PACKAGE,
             blueprint_name: "Account".to_owned(),
             function: "new".to_owned(),
-            args: vec![scrypto_encode(&public_key)],
+            args: vec![scrypto_encode(withdraw_auth)],
         })
         .0
     }
@@ -580,7 +582,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     /// Note: you need to make sure the worktop contains the required resource to avoid runtime error.
     pub fn new_account_with_resource(
         &mut self,
-        key: EcdsaPublicKey,
+        withdraw_auth: &ProofRule,
         resource: &ResourceSpecifier,
     ) -> &mut Self {
         self.take_from_worktop(resource, |builder, bucket_id| {
@@ -590,7 +592,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                     blueprint_name: "Account".to_owned(),
                     function: "with_bucket".to_owned(),
                     args: vec![
-                        scrypto_encode(&key),
+                        scrypto_encode(withdraw_auth),
                         scrypto_encode(&scrypto::resource::Bucket(bucket_id)),
                     ],
                 })

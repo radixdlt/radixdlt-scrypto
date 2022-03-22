@@ -75,10 +75,11 @@ pub enum CustomType {
     Proof,
     Vault,
     NonFungibleId,
+    NonFungibleAddress,
     ResourceDefId,
 }
 
-const MAPPING: [(CustomType, u8, &str); 11] = [
+const MAPPING: [(CustomType, u8, &str); 12] = [
     (CustomType::PackageId, 0x80, "PackageId"),
     (CustomType::ComponentId, 0x81, "ComponentId"),
     (CustomType::LazyMap, 0x82, "LazyMap"),
@@ -89,7 +90,8 @@ const MAPPING: [(CustomType, u8, &str); 11] = [
     (CustomType::Proof, 0xb2, "Proof"),
     (CustomType::Vault, 0xb3, "Vault"),
     (CustomType::NonFungibleId, 0xb4, "NonFungibleId"),
-    (CustomType::ResourceDefId, 0xb5, "ResourceDefId"),
+    (CustomType::NonFungibleAddress, 0xb5, "NonFungibleAddress"),
+    (CustomType::ResourceDefId, 0xb6, "ResourceDefId"),
 ];
 
 impl CustomType {
@@ -145,6 +147,7 @@ pub enum CustomValueValidatorError {
     InvalidLazyMap(ParseLazyMapError),
     InvalidVault(ParseVaultError),
     InvalidNonFungibleId(ParseNonFungibleIdError),
+    InvalidNonFungibleAddress(ParseNonFungibleAddressError),
 }
 
 impl CustomValueValidator {
@@ -200,6 +203,10 @@ impl CustomValueVisitor for CustomValueValidator {
             CustomType::NonFungibleId => {
                 NonFungibleId::try_from(data)
                     .map_err(CustomValueValidatorError::InvalidNonFungibleId)?;
+            }
+            CustomType::NonFungibleAddress => {
+                NonFungibleAddress::try_from(data)
+                    .map_err(CustomValueValidatorError::InvalidNonFungibleAddress)?;
             }
             CustomType::ResourceDefId => {
                 ResourceDefId::try_from(data)
@@ -259,6 +266,10 @@ impl CustomValueFormatter {
             CustomType::NonFungibleId => format!(
                 "NonFungibleId(\"{}\")",
                 NonFungibleId::try_from(data).unwrap()
+            ),
+            CustomType::NonFungibleAddress => format!(
+                "NonFungibleAddress(\"{}\")",
+                NonFungibleAddress::try_from(data).unwrap()
             ),
             CustomType::ResourceDefId => format!(
                 "ResourceDefId(\"{}\")",

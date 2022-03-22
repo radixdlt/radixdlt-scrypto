@@ -13,19 +13,6 @@ blueprint! {
                 .initial_supply_fungible(amount)
         }
 
-        pub fn create_component_with_auth(
-            resource_def_id: ResourceDefId,
-            non_fungible_id: NonFungibleId,
-        ) -> ComponentId {
-            let auth = NonFungibleAddress::new(resource_def_id, non_fungible_id);
-
-            Self {
-                test_vault: Vault::with_bucket(Self::create_test_token(1000)),
-                secret: "Secret".to_owned(),
-            }
-            .instantiate_with_auth(HashMap::from([("get_component_info".to_string(), auth)]))
-        }
-
         pub fn create_component() -> ComponentId {
             Self {
                 test_vault: Vault::with_bucket(Self::create_test_token(1000)),

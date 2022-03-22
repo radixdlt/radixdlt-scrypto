@@ -15,8 +15,7 @@ impl NewAccount {
     pub fn run(&self) -> Result<(), Error> {
         let mut ledger = RadixEngineDB::with_bootstrap(get_data_dir()?);
         let mut executor = TransactionExecutor::new(&mut ledger, self.trace);
-        let public_key = executor.new_public_key();
-        let account = executor.new_account(public_key);
+        let (public_key, account) = executor.new_public_key_with_account();
 
         println!("A new account has been created!");
         println!("Account component ID: {}", account.to_string().green());
