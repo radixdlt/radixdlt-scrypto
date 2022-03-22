@@ -23,13 +23,12 @@ fn cannot_make_cross_component_call_without_authorization() {
     let package_id = test_runner.publish_package("component");
     let transaction = test_runner
         .new_transaction_builder()
-        .add_instruction(Instruction::CallFunction {
+        .call_function_raw(
             package_id,
-            blueprint_name: "CrossComponent".to_owned(),
-            function: "create_component_with_auth".to_owned(),
-            args: vec![scrypto_encode(&proof_rule)],
-        })
-        .0
+            "CrossComponent",
+            "create_component_with_auth",
+            vec![scrypto_encode(&proof_rule)],
+        )
         .build(vec![])
         .unwrap();
     let receipt = test_runner.run(transaction);
@@ -38,13 +37,7 @@ fn cannot_make_cross_component_call_without_authorization() {
 
     let transaction = test_runner
         .new_transaction_builder()
-        .add_instruction(Instruction::CallFunction {
-            package_id,
-            blueprint_name: "CrossComponent".to_owned(),
-            function: "create_component".to_owned(),
-            args: vec![],
-        })
-        .0
+        .call_function_raw(package_id, "CrossComponent", "create_component", vec![])
         .build(vec![])
         .unwrap();
     let receipt = test_runner.run(transaction);
@@ -54,12 +47,11 @@ fn cannot_make_cross_component_call_without_authorization() {
     // Act
     let transaction = test_runner
         .new_transaction_builder()
-        .add_instruction(Instruction::CallMethod {
-            component_id: my_component,
-            method: "cross_component_call".to_owned(),
-            args: vec![scrypto_encode(&secured_component)],
-        })
-        .0
+        .call_method_raw(
+            my_component,
+            "cross_component_call",
+            vec![scrypto_encode(&secured_component)],
+        )
         .build(vec![])
         .unwrap();
     let receipt = test_runner.run(transaction);
@@ -91,13 +83,12 @@ fn can_make_cross_component_call_with_authorization() {
     let package_id = test_runner.publish_package("component");
     let transaction = test_runner
         .new_transaction_builder()
-        .add_instruction(Instruction::CallFunction {
+        .call_function_raw(
             package_id,
-            blueprint_name: "CrossComponent".to_owned(),
-            function: "create_component_with_auth".to_owned(),
-            args: vec![scrypto_encode(&proof_rule)],
-        })
-        .0
+            "CrossComponent",
+            "create_component_with_auth",
+            vec![scrypto_encode(&proof_rule)],
+        )
         .build(vec![])
         .unwrap();
     let receipt = test_runner.run(transaction);
@@ -106,13 +97,7 @@ fn can_make_cross_component_call_with_authorization() {
 
     let transaction = test_runner
         .new_transaction_builder()
-        .add_instruction(Instruction::CallFunction {
-            package_id,
-            blueprint_name: "CrossComponent".to_owned(),
-            function: "create_component".to_owned(),
-            args: vec![],
-        })
-        .0
+        .call_function_raw(package_id, "CrossComponent", "create_component", vec![])
         .build(vec![])
         .unwrap();
     let receipt = test_runner.run(transaction);
@@ -132,12 +117,11 @@ fn can_make_cross_component_call_with_authorization() {
     // Act
     let transaction = test_runner
         .new_transaction_builder()
-        .add_instruction(Instruction::CallMethod {
-            component_id: my_component,
-            method: "cross_component_call".to_owned(),
-            args: vec![scrypto_encode(&secured_component)],
-        })
-        .0
+        .call_method_raw(
+            my_component,
+            "cross_component_call",
+            vec![scrypto_encode(&secured_component)],
+        )
         .build(vec![])
         .unwrap();
     let receipt = test_runner.run(transaction);
