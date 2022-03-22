@@ -46,11 +46,19 @@ impl Bucket {
     }
 
     /// Creates an ownership proof of this bucket.
-    pub fn present(&self) -> Proof {
+    pub fn create_proof(&self) -> Proof {
         let input = CreateBucketProofInput { bucket_id: self.0 };
         let output: CreateBucketProofOutput = call_engine(CREATE_BUCKET_PROOF, input);
 
         Proof(output.proof_id)
+    }
+
+    /// Uses resources in this bucket as authorization for an operation.
+    pub fn authorize<F: FnOnce() -> O, O>(&self, f: F) -> O {
+        AuthWorktop::push(self.create_proof());
+        let output = f();
+        AuthWorktop::pop().drop();
+        output
     }
 
     /// Returns the amount of resources in this bucket.
@@ -77,11 +85,6 @@ impl Bucket {
     /// Checks if this bucket is empty.
     pub fn is_empty(&self) -> bool {
         self.amount() == 0.into()
-    }
-
-    /// Uses resources in this bucket as authorization for an operation.
-    pub fn authorize<F: FnOnce(Proof) -> O, O>(&self, f: F) -> O {
-        f(self.present())
     }
 
     /// Takes a non-fungible from this bucket, by id.

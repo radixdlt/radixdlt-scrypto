@@ -10,7 +10,7 @@ blueprint! {
             let bucket = ResourceBuilder::new_fungible(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "TestToken")
                 .initial_supply_fungible(amount);
-            let proof1 = bucket.present();
+            let proof1 = bucket.create_proof();
             let proof2 = proof1.clone();
             proof1.drop();
             proof2.drop();
@@ -33,7 +33,7 @@ blueprint! {
 
         pub fn borrow() -> Bucket {
             let bucket = Self::create_test_token(100);
-            let proof = bucket.present();
+            let proof = bucket.create_proof();
             proof.drop();
             bucket
         }
@@ -52,7 +52,7 @@ blueprint! {
                 .initial_supply_fungible(5);
             let mut vault = Vault::with_bucket(bucket);
 
-            let token_bucket = authorize(&auth_bucket, || vault.take(1));
+            let token_bucket = auth_bucket.authorize(|| vault.take(1));
 
             BucketTest { vault }.instantiate();
             vec![auth_bucket, token_bucket]
@@ -64,7 +64,7 @@ blueprint! {
                 .flags(BURNABLE)
                 .badge(badge.resource_def_id(), MAY_BURN)
                 .initial_supply_fungible(5);
-            authorize(&badge, || bucket.burn());
+            badge.authorize(|| bucket.burn());
             vec![badge]
         }
 
@@ -74,7 +74,7 @@ blueprint! {
                 .flags(BURNABLE | FREELY_BURNABLE)
                 .initial_supply_fungible(5);
             let bucket2 = bucket1.take(2);
-            authorize(&badge, || bucket1.burn());
+            badge.authorize(|| bucket1.burn());
             bucket2.burn();
             vec![badge]
         }
