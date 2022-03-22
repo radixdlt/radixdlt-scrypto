@@ -35,30 +35,44 @@ impl Component {
         }
     }
 
+    fn get_from_vector<'a>(path: &'a [usize], values: &'a [Value]) -> Option<&'a Value> {
+        let (index_slice, extended_path) = path.split_at(1);
+        let index = index_slice[0];
+        values.get(index).and_then(|value| Self::get_from_value(extended_path, value))
+    }
+
+    fn get_from_fields<'a>(path: &'a [usize], fields: &'a Fields) -> Option<&'a Value> {
+        match fields {
+            Fields::Named(values) | Fields::Unnamed(values) => Self::get_from_vector(path, values),
+            Fields::Unit => Option::None,
+        }
+    }
+
+    fn get_from_value<'a>(path: &'a [usize], value: &'a Value) -> Option<&'a Value> {
+        if path.is_empty() {
+            return Option::Some(value);
+        }
+
+        match value {
+            Value::Struct(fields) | Value::Enum(_, fields) => Self::get_from_fields(path, fields),
+            Value::Array(_, values) | Value::Vec(_, values) => Self::get_from_vector(path, values),
+            _ => Option::None,
+        }
+    }
+
     fn to_hard_rule(proof_rule: &ProofRule, dom: &Value) -> HardProofRule {
         match proof_rule {
             ProofRule::FromComponent(field_index) => {
-                match dom {
-                    Value::Struct(fields) => {
-                        match fields {
-                            Fields::Named(values) | Fields::Unnamed(values) => {
-                                let value = values.get(*field_index).unwrap();
-                                match value {
-                                    Value::Custom(type_id, bytes) => {
-                                        match CustomType::from_id(*type_id).unwrap() {
-                                            CustomType::ResourceDefId => {
-                                                HardProofRule::from(ResourceDefId::try_from(bytes.as_slice()).unwrap())
-                                            }
-                                            CustomType::NonFungibleAddress => {
-                                                HardProofRule::from(NonFungibleAddress::try_from(bytes.as_slice()).unwrap())
-                                            }
-                                            _ => HardProofRule::OneOf(vec![])
-                                        }
-                                    }
-                                    _ => HardProofRule::OneOf(vec![])
-                                }
-                            },
-                            Fields::Unit => HardProofRule::OneOf(vec![])
+                match Self::get_from_value(&[*field_index], dom) {
+                    Some(Value::Custom(type_id, bytes)) => {
+                        match CustomType::from_id(*type_id).unwrap() {
+                            CustomType::ResourceDefId => {
+                                HardProofRule::from(ResourceDefId::try_from(bytes.as_slice()).unwrap())
+                            }
+                            CustomType::NonFungibleAddress => {
+                                HardProofRule::from(NonFungibleAddress::try_from(bytes.as_slice()).unwrap())
+                            }
+                            _ => HardProofRule::OneOf(vec![])
                         }
                     }
                     _ => HardProofRule::OneOf(vec![])
