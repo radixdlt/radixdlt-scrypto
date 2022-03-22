@@ -307,6 +307,22 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         self
     }
 
+    pub fn call_function_without_abi(
+        &mut self,
+        package_id: PackageId,
+        blueprint_name: &str,
+        function: &str,
+        args: Vec<Vec<u8>>,
+    ) -> &mut Self {
+        self.add_instruction(Instruction::CallFunction {
+            package_id,
+            blueprint_name: blueprint_name.to_owned(),
+            function: function.to_owned(),
+            args,
+        });
+        self
+    }
+
     /// Calls a method.
     ///
     /// The implementation will automatically prepare the arguments based on the
@@ -344,6 +360,20 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
             Err(e) => self.errors.push(e),
         }
 
+        self
+    }
+
+    pub fn call_method_without_abi(
+        &mut self,
+        component_id: ComponentId,
+        method: &str,
+        args: Vec<Vec<u8>>,
+    ) -> &mut Self {
+        self.add_instruction(Instruction::CallMethod {
+            component_id,
+            method: method.to_owned(),
+            args,
+        });
         self
     }
 

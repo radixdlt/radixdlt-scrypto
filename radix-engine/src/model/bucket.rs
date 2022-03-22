@@ -59,7 +59,7 @@ impl Bucket {
             return Err(ResourceContainerError::CantCreateEmptyProof);
         }
 
-        // lock the full amount
+        // lock the specified amount
         self.borrow_container_mut().lock_amount(amount)?;
 
         // produce proof
@@ -81,7 +81,7 @@ impl Bucket {
             return Err(ResourceContainerError::CantCreateEmptyProof);
         }
 
-        // lock the full amount
+        // lock the specified id set
         self.borrow_container_mut().lock_ids(ids)?;
 
         // produce proof

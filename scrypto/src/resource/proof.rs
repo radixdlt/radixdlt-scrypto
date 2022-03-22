@@ -4,6 +4,7 @@ use crate::engine::{api::*, call_engine, types::ProofId};
 use crate::math::*;
 use crate::misc::*;
 use crate::resource::*;
+use crate::rust::collections::BTreeSet;
 #[cfg(not(feature = "alloc"))]
 use crate::rust::fmt;
 use crate::rust::vec::Vec;
@@ -66,14 +67,14 @@ impl Proof {
             "1 non-fungible expected, but {} found",
             ids.len()
         );
-        ids[0].clone()
+        ids.into_iter().next().unwrap()
     }
 
     /// Returns the ids of all non-fungibles in this bucket.
     ///
     /// # Panics
     /// If the bucket is not a non-fungible bucket.
-    pub fn get_non_fungible_ids(&self) -> Vec<NonFungibleId> {
+    pub fn get_non_fungible_ids(&self) -> BTreeSet<NonFungibleId> {
         let input = GetNonFungibleIdsInProofInput { proof_id: self.0 };
         let output: GetNonFungibleIdsInProofOutput =
             call_engine(GET_NON_FUNGIBLE_IDS_IN_PROOF, input);

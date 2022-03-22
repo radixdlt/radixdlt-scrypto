@@ -60,7 +60,8 @@ impl Bucket {
             bucket_id: self.0,
             amount,
         };
-        let output: CreateBucketProofByAmountOutput = call_engine(CREATE_BUCKET_PROOF, input);
+        let output: CreateBucketProofByAmountOutput =
+            call_engine(CREATE_BUCKET_PROOF_BY_AMOUNT, input);
 
         Proof(output.proof_id)
     }
@@ -71,7 +72,7 @@ impl Bucket {
             bucket_id: self.0,
             ids: ids.clone(),
         };
-        let output: CreateBucketProofByIdsOutput = call_engine(CREATE_BUCKET_PROOF, input);
+        let output: CreateBucketProofByIdsOutput = call_engine(CREATE_BUCKET_PROOF_BY_IDS, input);
 
         Proof(output.proof_id)
     }
@@ -152,14 +153,14 @@ impl Bucket {
             "1 non-fungible expected, but {} found",
             non_fungible_ids.len()
         );
-        non_fungible_ids[0].clone()
+        non_fungible_ids.into_iter().next().unwrap()
     }
 
     /// Returns the ids of all non-fungibles in this bucket.
     ///
     /// # Panics
     /// If this bucket is not a non-fungible bucket.
-    pub fn get_non_fungible_ids(&self) -> Vec<NonFungibleId> {
+    pub fn get_non_fungible_ids(&self) -> BTreeSet<NonFungibleId> {
         let input = GetNonFungibleIdsInBucketInput { bucket_id: self.0 };
         let output: GetNonFungibleIdsInBucketOutput =
             call_engine(GET_NON_FUNGIBLE_IDS_IN_BUCKET, input);

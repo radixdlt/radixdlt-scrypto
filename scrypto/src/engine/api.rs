@@ -97,21 +97,21 @@ pub const GET_NON_FUNGIBLE_IDS_IN_BUCKET: u32 = 0x56;
 /// Create a bucket proof
 pub const CREATE_BUCKET_PROOF: u32 = 0x60;
 /// Create a bucket proof by amount
-pub const CREATE_BUCKET_BY_AMOUNT_PROOF: u32 = 0x61;
+pub const CREATE_BUCKET_PROOF_BY_AMOUNT: u32 = 0x61;
 /// Create a bucket proof by ids
-pub const CREATE_BUCKET_BY_IDS_PROOF: u32 = 0x62;
+pub const CREATE_BUCKET_PROOF_BY_IDS: u32 = 0x62;
 /// Create a vault proof
 pub const CREATE_VAULT_PROOF: u32 = 0x63;
 /// Create a vault proof by amount
-pub const CREATE_VAULT_BY_AMOUNT_PROOF: u32 = 0x64;
+pub const CREATE_VAULT_PROOF_BY_AMOUNT: u32 = 0x64;
 /// Create a vault proof by ids
-pub const CREATE_VAULT_BY_IDS_PROOF: u32 = 0x65;
+pub const CREATE_VAULT_PROOF_BY_IDS: u32 = 0x65;
 /// Create an auth zone proof
 pub const CREATE_AUTH_ZONE_PROOF: u32 = 0x66;
 /// Create an auth zone proof by amount
-pub const CREATE_AUTH_ZONE_BY_AMOUNT_PROOF: u32 = 0x67;
+pub const CREATE_AUTH_ZONE_PROOF_BY_AMOUNT: u32 = 0x67;
 /// Create an auth zone proof by ids
-pub const CREATE_AUTH_ZONE_BY_IDS_PROOF: u32 = 0x68;
+pub const CREATE_AUTH_ZONE_PROOF_BY_IDS: u32 = 0x68;
 /// Clone proof
 pub const CLONE_PROOF: u32 = 0x69;
 /// Drop a proof
@@ -474,7 +474,7 @@ pub struct GetNonFungibleIdsInVaultInput {
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct GetNonFungibleIdsInVaultOutput {
-    pub non_fungible_ids: Vec<NonFungibleId>,
+    pub non_fungible_ids: BTreeSet<NonFungibleId>,
 }
 
 //==========
@@ -549,7 +549,7 @@ pub struct GetNonFungibleIdsInBucketInput {
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct GetNonFungibleIdsInBucketOutput {
-    pub non_fungible_ids: Vec<NonFungibleId>,
+    pub non_fungible_ids: BTreeSet<NonFungibleId>,
 }
 
 //==========
@@ -655,7 +655,7 @@ pub struct GetNonFungibleIdsInProofInput {
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct GetNonFungibleIdsInProofOutput {
-    pub non_fungible_ids: Vec<NonFungibleId>,
+    pub non_fungible_ids: BTreeSet<NonFungibleId>,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]

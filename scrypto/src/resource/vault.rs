@@ -89,7 +89,8 @@ impl Vault {
             vault_id: self.0,
             amount,
         };
-        let output: CreateVaultProofByAmountOutput = call_engine(CREATE_VAULT_PROOF, input);
+        let output: CreateVaultProofByAmountOutput =
+            call_engine(CREATE_VAULT_PROOF_BY_AMOUNT, input);
 
         Proof(output.proof_id)
     }
@@ -100,7 +101,7 @@ impl Vault {
             vault_id: self.0,
             ids: ids.clone(),
         };
-        let output: CreateVaultProofByIdsOutput = call_engine(CREATE_VAULT_PROOF, input);
+        let output: CreateVaultProofByIdsOutput = call_engine(CREATE_VAULT_PROOF_BY_IDS, input);
 
         Proof(output.proof_id)
     }
@@ -154,7 +155,7 @@ impl Vault {
     ///
     /// # Panics
     /// Panics if this is not a non-fungible vault.
-    pub fn get_non_fungible_ids(&self) -> Vec<NonFungibleId> {
+    pub fn get_non_fungible_ids(&self) -> BTreeSet<NonFungibleId> {
         let input = GetNonFungibleIdsInVaultInput { vault_id: self.0 };
         let output: GetNonFungibleIdsInVaultOutput =
             call_engine(GET_NON_FUNGIBLE_IDS_IN_VAULT, input);
@@ -173,7 +174,7 @@ impl Vault {
             "Expect 1 non-fungible, but found {}",
             non_fungible_ids.len()
         );
-        non_fungible_ids[0].clone()
+        non_fungible_ids.into_iter().next().unwrap()
     }
 
     /// Returns the data of a non-fungible unit, both the immutable and mutable parts.
