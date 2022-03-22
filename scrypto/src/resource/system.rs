@@ -72,17 +72,6 @@ pub fn resource_system() -> &'static mut ResourceSystem {
     unsafe { RESOURCE_SYSTEM.as_mut().unwrap() }
 }
 
-pub fn authorize<F, O>(bucket: &Bucket, func: F) -> O
-where
-    F: FnOnce() -> O,
-{
-    AuthWorktop::push(bucket.create_proof());
-    let return_value = func();
-    AuthWorktop::pop().drop();
-
-    return_value
-}
-
 /// This macro creates a `&ResourceDef` from a `ResourceDefId` via the
 /// Radix Engine resource subsystem.
 #[macro_export]
