@@ -31,9 +31,31 @@ impl Component {
         }
     }
 
+    fn to_hard_rule(proof_rule: &ProofRule) -> HardProofRule {
+        match proof_rule {
+            ProofRule::FromComponent(_) => panic!("Not yet implemented."),
+            ProofRule::This(proof_rule_resource) => HardProofRule::This(proof_rule_resource.clone()),
+            ProofRule::SomeOfResource(amount, resource_def_id) => HardProofRule::SomeOfResource(*amount, *resource_def_id),
+            ProofRule::AllOf(rules) => {
+                let hard_rules = rules.into_iter().map(Self::to_hard_rule).collect();
+                HardProofRule::AllOf(hard_rules)
+            },
+            ProofRule::OneOf(rules) => {
+                let hard_rules = rules.into_iter().map(Self::to_hard_rule).collect();
+                HardProofRule::OneOf(hard_rules)
+            },
+            ProofRule::CountOf { count, rules } => {
+                let hard_rules = rules.into_iter().map(Self::to_hard_rule).collect();
+                HardProofRule::CountOf { count: *count, rules: hard_rules }
+            },
+        }
+    }
+
     pub fn get_auth(&self, method_name: &str) -> MethodAuthorization {
         match self.auth_rules.get(method_name) {
-            Some(proof_rule) => MethodAuthorization::Protected(HardProofRule::from_soft_rule(proof_rule.clone())),
+            Some(proof_rule) => {
+                MethodAuthorization::Protected(Self::to_hard_rule(proof_rule))
+            },
             None => MethodAuthorization::Public,
         }
     }

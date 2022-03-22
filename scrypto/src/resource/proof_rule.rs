@@ -26,6 +26,7 @@ impl From<ResourceDefId> for ProofRuleResource {
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Describe, TypeId, Encode, Decode)]
 pub enum ProofRule {
     This(ProofRuleResource),
+    FromComponent(usize),
     SomeOfResource(Decimal, ResourceDefId),
     AllOf(Vec<ProofRule>),
     OneOf(Vec<ProofRule>),
@@ -36,6 +37,7 @@ impl ProofRule {
     pub fn or(self, other: ProofRule) -> Self {
         match self {
             ProofRule::This(_) => ProofRule::OneOf(vec![self, other]),
+            ProofRule::FromComponent(_) => ProofRule::OneOf(vec![self, other]),
             ProofRule::SomeOfResource(_, _) => ProofRule::OneOf(vec![self, other]),
             ProofRule::AllOf(_) => ProofRule::OneOf(vec![self, other]),
             ProofRule::OneOf(mut rules) => {
@@ -44,6 +46,12 @@ impl ProofRule {
             }
             ProofRule::CountOf { count: _, rules: _ } => ProofRule::OneOf(vec![self, other]),
         }
+    }
+}
+
+impl From<usize> for ProofRule {
+    fn from(field_index: usize) -> Self {
+        ProofRule::FromComponent(field_index)
     }
 }
 

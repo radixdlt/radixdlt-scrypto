@@ -3,7 +3,7 @@ use crate::errors::RuntimeError::NotAuthorized;
 use crate::model::Proof;
 use sbor::*;
 use scrypto::math::Decimal;
-use scrypto::prelude::{NonFungibleAddress, ProofRule, ProofRuleResource, ResourceDefId};
+use scrypto::prelude::{NonFungibleAddress, ProofRuleResource, ResourceDefId};
 use scrypto::rust::vec::Vec;
 use scrypto::rust::vec;
 
@@ -29,25 +29,6 @@ impl From<ResourceDefId> for HardProofRule {
 }
 
 impl HardProofRule {
-    pub fn from_soft_rule(proof_rule: ProofRule) -> Self {
-        match proof_rule {
-            ProofRule::This(proof_rule_resource) => HardProofRule::This(proof_rule_resource),
-            ProofRule::SomeOfResource(amount, resource_def_id) => HardProofRule::SomeOfResource(amount, resource_def_id),
-            ProofRule::AllOf(rules) => {
-                let hard_rules = rules.into_iter().map(HardProofRule::from_soft_rule).collect();
-                HardProofRule::AllOf(hard_rules)
-            },
-            ProofRule::OneOf(rules) => {
-                let hard_rules = rules.into_iter().map(HardProofRule::from_soft_rule).collect();
-                HardProofRule::OneOf(hard_rules)
-            },
-            ProofRule::CountOf { count, rules } => {
-                let hard_rules = rules.into_iter().map(HardProofRule::from_soft_rule).collect();
-                HardProofRule::CountOf { count, rules: hard_rules }
-            },
-        }
-    }
-
     pub fn or(self, other: HardProofRule) -> Self {
         match self {
             HardProofRule::This(_) => HardProofRule::OneOf(vec![self, other]),
