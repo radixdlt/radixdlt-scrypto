@@ -66,7 +66,7 @@ fn cannot_make_cross_component_call_without_authorization() {
         .map(|(c, _)| c)
         .unwrap();
     assert_eq!(
-        component_state.get_auth("get_component_state"),
+        component_state.initialize_method("get_component_state").1,
         MethodAuthorization::Protected(auth_address.into())
     );
 }
@@ -137,7 +137,7 @@ fn can_make_cross_component_call_with_authorization() {
         .map(|(c, _)| c)
         .unwrap();
     assert_eq!(
-        component_state.get_auth("get_component_state"),
+        component_state.initialize_method("get_component_state").1,
         MethodAuthorization::Protected(auth_address.into())
     );
 }

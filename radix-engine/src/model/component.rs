@@ -1,5 +1,6 @@
-use crate::model::MethodAuthorization;
+use crate::model::{MethodAuthorization, ValidatedData};
 use sbor::*;
+use sbor::any::Value;
 use scrypto::engine::types::*;
 use scrypto::resource::ProofRule;
 use scrypto::rust::collections::*;
@@ -31,33 +32,36 @@ impl Component {
         }
     }
 
-    fn to_hard_rule(proof_rule: &ProofRule) -> HardProofRule {
+    fn to_hard_rule(proof_rule: &ProofRule, dom: &Value) -> HardProofRule {
         match proof_rule {
             ProofRule::FromComponent(_) => panic!("Not yet implemented."),
             ProofRule::This(proof_rule_resource) => HardProofRule::This(proof_rule_resource.clone()),
             ProofRule::SomeOfResource(amount, resource_def_id) => HardProofRule::SomeOfResource(*amount, *resource_def_id),
             ProofRule::AllOf(rules) => {
-                let hard_rules = rules.into_iter().map(Self::to_hard_rule).collect();
+                let hard_rules = rules.into_iter().map(|proof_rule| Self::to_hard_rule(proof_rule, dom)).collect();
                 HardProofRule::AllOf(hard_rules)
             },
             ProofRule::OneOf(rules) => {
-                let hard_rules = rules.into_iter().map(Self::to_hard_rule).collect();
+                let hard_rules = rules.into_iter().map(|proof_rule| Self::to_hard_rule(proof_rule, dom)).collect();
                 HardProofRule::OneOf(hard_rules)
             },
             ProofRule::CountOf { count, rules } => {
-                let hard_rules = rules.into_iter().map(Self::to_hard_rule).collect();
+                let hard_rules = rules.into_iter().map(|proof_rule| Self::to_hard_rule(proof_rule, dom)).collect();
                 HardProofRule::CountOf { count: *count, rules: hard_rules }
             },
         }
     }
 
-    pub fn get_auth(&self, method_name: &str) -> MethodAuthorization {
-        match self.auth_rules.get(method_name) {
+    pub fn initialize_method(&self, method_name: &str) -> (ValidatedData, MethodAuthorization) {
+        let data = ValidatedData::from_slice(&self.state).unwrap();
+        let authorization = match self.auth_rules.get(method_name) {
             Some(proof_rule) => {
-                MethodAuthorization::Protected(Self::to_hard_rule(proof_rule))
+                MethodAuthorization::Protected(Self::to_hard_rule(proof_rule, &data.dom))
             },
             None => MethodAuthorization::Public,
-        }
+        };
+
+        (data, authorization)
     }
 
     pub fn auth_rules(&self) -> &HashMap<String, ProofRule> {
