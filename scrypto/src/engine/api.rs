@@ -1,7 +1,7 @@
 use sbor::*;
 
 use crate::engine::types::*;
-use crate::prelude::NonFungibleAddress;
+use crate::rust::collections::BTreeSet;
 use crate::rust::collections::HashMap;
 use crate::rust::string::String;
 use crate::rust::vec::Vec;
@@ -96,21 +96,36 @@ pub const GET_NON_FUNGIBLE_IDS_IN_BUCKET: u32 = 0x56;
 
 /// Create a bucket proof
 pub const CREATE_BUCKET_PROOF: u32 = 0x60;
+/// Create a bucket proof by amount
+pub const CREATE_BUCKET_BY_AMOUNT_PROOF: u32 = 0x61;
+/// Create a bucket proof by ids
+pub const CREATE_BUCKET_BY_IDS_PROOF: u32 = 0x62;
 /// Create a vault proof
-pub const CREATE_VAULT_PROOF: u32 = 0x61;
+pub const CREATE_VAULT_PROOF: u32 = 0x63;
+/// Create a vault proof by amount
+pub const CREATE_VAULT_BY_AMOUNT_PROOF: u32 = 0x64;
+/// Create a vault proof by ids
+pub const CREATE_VAULT_BY_IDS_PROOF: u32 = 0x65;
+/// Create an auth zone proof
+pub const CREATE_AUTH_ZONE_PROOF: u32 = 0x66;
+/// Create an auth zone proof by amount
+pub const CREATE_AUTH_ZONE_BY_AMOUNT_PROOF: u32 = 0x67;
+/// Create an auth zone proof by ids
+pub const CREATE_AUTH_ZONE_BY_IDS_PROOF: u32 = 0x68;
 /// Clone proof
-pub const CLONE_PROOF: u32 = 0x62;
+pub const CLONE_PROOF: u32 = 0x69;
 /// Drop a proof
-pub const DROP_PROOF: u32 = 0x63;
+pub const DROP_PROOF: u32 = 0x6A;
 /// Get the resource amount behind a proof
-pub const GET_PROOF_AMOUNT: u32 = 0x64;
+pub const GET_PROOF_AMOUNT: u32 = 0x6B;
 /// Get the resource definition behind a proof
-pub const GET_PROOF_RESOURCE_DEF_ID: u32 = 0x65;
+pub const GET_PROOF_RESOURCE_DEF_ID: u32 = 0x6C;
 /// Get the non-fungible ids in the proof
-pub const GET_NON_FUNGIBLE_IDS_IN_PROOF: u32 = 0x66;
-
-pub const PUSH_ONTO_AUTH_ZONE: u32 = 0x67;
-pub const POP_FROM_AUTH_ZONE: u32 = 0x68;
+pub const GET_NON_FUNGIBLE_IDS_IN_PROOF: u32 = 0x6D;
+/// Push a proof onto auth zone
+pub const PUSH_ONTO_AUTH_ZONE: u32 = 0x6E;
+/// Pop a proof from auth zone
+pub const POP_FROM_AUTH_ZONE: u32 = 0x6F;
 
 /// Log a message
 pub const EMIT_LOG: u32 = 0xf0;
@@ -552,12 +567,56 @@ pub struct CreateBucketProofOutput {
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
+pub struct CreateBucketProofByAmountInput {
+    pub bucket_id: BucketId,
+    pub amount: Decimal,
+}
+
+#[derive(Debug, TypeId, Encode, Decode)]
+pub struct CreateBucketProofByAmountOutput {
+    pub proof_id: ProofId,
+}
+
+#[derive(Debug, TypeId, Encode, Decode)]
+pub struct CreateBucketProofByIdsInput {
+    pub bucket_id: BucketId,
+    pub ids: BTreeSet<NonFungibleId>,
+}
+
+#[derive(Debug, TypeId, Encode, Decode)]
+pub struct CreateBucketProofByIdsOutput {
+    pub proof_id: ProofId,
+}
+
+#[derive(Debug, TypeId, Encode, Decode)]
 pub struct CreateVaultProofInput {
     pub vault_id: VaultId,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct CreateVaultProofOutput {
+    pub proof_id: ProofId,
+}
+
+#[derive(Debug, TypeId, Encode, Decode)]
+pub struct CreateVaultProofByAmountInput {
+    pub vault_id: VaultId,
+    pub amount: Decimal,
+}
+
+#[derive(Debug, TypeId, Encode, Decode)]
+pub struct CreateVaultProofByAmountOutput {
+    pub proof_id: ProofId,
+}
+
+#[derive(Debug, TypeId, Encode, Decode)]
+pub struct CreateVaultProofByIdsInput {
+    pub vault_id: VaultId,
+    pub ids: BTreeSet<NonFungibleId>,
+}
+
+#[derive(Debug, TypeId, Encode, Decode)]
+pub struct CreateVaultProofByIdsOutput {
     pub proof_id: ProofId,
 }
 

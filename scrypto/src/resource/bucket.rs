@@ -5,6 +5,7 @@ use crate::math::*;
 use crate::misc::*;
 use crate::resource::*;
 use crate::resource_def;
+use crate::rust::collections::BTreeSet;
 #[cfg(not(feature = "alloc"))]
 use crate::rust::fmt;
 use crate::rust::vec::Vec;
@@ -49,6 +50,28 @@ impl Bucket {
     pub fn create_proof(&self) -> Proof {
         let input = CreateBucketProofInput { bucket_id: self.0 };
         let output: CreateBucketProofOutput = call_engine(CREATE_BUCKET_PROOF, input);
+
+        Proof(output.proof_id)
+    }
+
+    /// Creates an ownership proof of this bucket.
+    pub fn create_proof_by_amount(&self, amount: Decimal) -> Proof {
+        let input = CreateBucketProofByAmountInput {
+            bucket_id: self.0,
+            amount,
+        };
+        let output: CreateBucketProofByAmountOutput = call_engine(CREATE_BUCKET_PROOF, input);
+
+        Proof(output.proof_id)
+    }
+
+    /// Creates an ownership proof of this bucket.
+    pub fn create_proof_by_ids(&self, ids: &BTreeSet<NonFungibleId>) -> Proof {
+        let input = CreateBucketProofByIdsInput {
+            bucket_id: self.0,
+            ids: ids.clone(),
+        };
+        let output: CreateBucketProofByIdsOutput = call_engine(CREATE_BUCKET_PROOF, input);
 
         Proof(output.proof_id)
     }

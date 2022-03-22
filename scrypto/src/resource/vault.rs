@@ -7,6 +7,7 @@ use crate::misc::*;
 use crate::resource::*;
 use crate::resource_def;
 use crate::rust::borrow::ToOwned;
+use crate::rust::collections::BTreeSet;
 use crate::rust::fmt;
 use crate::rust::str::FromStr;
 use crate::rust::string::String;
@@ -78,6 +79,28 @@ impl Vault {
     pub fn create_proof(&self) -> Proof {
         let input = CreateVaultProofInput { vault_id: self.0 };
         let output: CreateVaultProofOutput = call_engine(CREATE_VAULT_PROOF, input);
+
+        Proof(output.proof_id)
+    }
+
+    /// Creates an ownership proof of this vault.
+    pub fn create_proof_by_amount(&self, amount: Decimal) -> Proof {
+        let input = CreateVaultProofByAmountInput {
+            vault_id: self.0,
+            amount,
+        };
+        let output: CreateVaultProofByAmountOutput = call_engine(CREATE_VAULT_PROOF, input);
+
+        Proof(output.proof_id)
+    }
+
+    /// Creates an ownership proof of this vault.
+    pub fn create_proof_by_ids(&self, ids: &BTreeSet<NonFungibleId>) -> Proof {
+        let input = CreateVaultProofByIdsInput {
+            vault_id: self.0,
+            ids: ids.clone(),
+        };
+        let output: CreateVaultProofByIdsOutput = call_engine(CREATE_VAULT_PROOF, input);
 
         Proof(output.proof_id)
     }

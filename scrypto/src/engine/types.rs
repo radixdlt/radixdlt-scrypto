@@ -10,6 +10,7 @@ pub use crate::crypto::Hash;
 pub use crate::math::BigDecimal;
 pub use crate::math::Decimal;
 pub use crate::resource::MintParams;
+pub use crate::resource::NonFungibleAddress;
 pub use crate::resource::NonFungibleId;
 pub use crate::resource::ResourceDefId;
 pub use crate::resource::ResourceType;
