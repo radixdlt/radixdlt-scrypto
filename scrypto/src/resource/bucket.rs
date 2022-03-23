@@ -5,6 +5,7 @@ use crate::math::*;
 use crate::misc::*;
 use crate::resource::*;
 use crate::resource_def;
+use crate::rust::collections::BTreeSet;
 #[cfg(not(feature = "alloc"))]
 use crate::rust::fmt;
 use crate::rust::vec::Vec;
@@ -129,14 +130,14 @@ impl Bucket {
             "1 non-fungible expected, but {} found",
             non_fungible_ids.len()
         );
-        non_fungible_ids[0].clone()
+        non_fungible_ids.into_iter().next().unwrap()
     }
 
     /// Returns the ids of all non-fungibles in this bucket.
     ///
     /// # Panics
     /// If this bucket is not a non-fungible bucket.
-    pub fn get_non_fungible_ids(&self) -> Vec<NonFungibleId> {
+    pub fn get_non_fungible_ids(&self) -> BTreeSet<NonFungibleId> {
         let input = GetNonFungibleIdsInBucketInput { bucket_id: self.0 };
         let output: GetNonFungibleIdsInBucketOutput =
             call_engine(GET_NON_FUNGIBLE_IDS_IN_BUCKET, input);

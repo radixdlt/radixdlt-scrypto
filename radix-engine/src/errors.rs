@@ -135,17 +135,17 @@ pub enum RuntimeError {
     /// The bucket contains no resource.
     EmptyProof,
 
-    /// Bucket access error.
-    BucketError(BucketError),
-
     /// Resource definition access error.
     ResourceDefError(ResourceDefError),
 
+    /// Bucket access error.
+    BucketError(ResourceContainerError),
+
     /// Vault access error.
-    VaultError(VaultError),
+    VaultError(ResourceContainerError),
 
     /// Worktop access error.
-    WorktopError(WorktopError),
+    WorktopError(ResourceContainerError),
 
     /// Error when generating or accessing proof.
     ProofError(ProofError),

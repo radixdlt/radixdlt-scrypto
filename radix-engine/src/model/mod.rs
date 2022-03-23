@@ -12,7 +12,7 @@ mod transaction;
 mod vault;
 mod worktop;
 
-pub use bucket::{Bucket, BucketError};
+pub use bucket::Bucket;
 pub use component::Component;
 pub use data::{format_value, ValidatedData};
 pub use method_authorization::MethodAuthorization;
@@ -23,5 +23,5 @@ pub use receipt::Receipt;
 pub use resource::*;
 pub use resource_def::{ResourceDef, ResourceDefError};
 pub use transaction::{Instruction, Transaction, ValidatedInstruction, ValidatedTransaction};
-pub use vault::{Vault, VaultError};
-pub use worktop::{Worktop, WorktopError};
+pub use vault::Vault;
+pub use worktop::Worktop;
