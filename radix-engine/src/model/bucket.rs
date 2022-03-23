@@ -73,7 +73,6 @@ impl Bucket {
         // produce proof
         Ok(Proof::new(
             self.resource_def_id(),
-            self.resource_type(),
             false,
             AmountOrIds::Amount(amount),
             vec![(
@@ -100,7 +99,6 @@ impl Bucket {
         // produce proof
         Ok(Proof::new(
             self.resource_def_id(),
-            self.resource_type(),
             false,
             AmountOrIds::Ids(ids.clone()),
             vec![(

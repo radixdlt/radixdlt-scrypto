@@ -2,6 +2,7 @@ use scrypto::engine::types::*;
 use scrypto::resource::NonFungibleId;
 use scrypto::rust::cell::RefCell;
 use scrypto::rust::collections::BTreeSet;
+use scrypto::rust::collections::HashMap;
 use scrypto::rust::rc::Rc;
 use scrypto::rust::vec::Vec;
 
@@ -13,12 +14,26 @@ pub enum AmountOrIds {
     Ids(BTreeSet<NonFungibleId>),
 }
 
+impl AmountOrIds {
+    pub fn as_amount(&self) -> Decimal {
+        match self {
+            Self::Amount(amount) => amount.clone(),
+            Self::Ids(ids) => ids.len().into(),
+        }
+    }
+
+    pub fn as_ids(&self) -> Result<BTreeSet<NonFungibleId>, ProofError> {
+        match self {
+            Self::Amount(_) => Err(ProofError::NonFungibleOperationNotAllowed),
+            Self::Ids(ids) => Ok(ids.clone()),
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct Proof {
     /// The resource definition id.
     resource_def_id: ResourceDefId,
-    /// The resource type.
-    resource_type: ResourceType,
     /// Restricted proof can't be moved.
     restricted: bool,
     /// The total amount, for optimization purpose.
@@ -27,7 +42,7 @@ pub struct Proof {
     locked_details: Vec<(Rc<RefCell<ResourceContainer>>, ProofSourceId, AmountOrIds)>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Hash, Eq, PartialEq)]
 pub enum ProofSourceId {
     Bucket(BucketId),
     Vault(VaultId),
@@ -40,37 +55,90 @@ pub enum ProofError {
     ResourceContainerError(ResourceContainerError),
     /// Can't generate zero-amount or empty non-fungible set proofs.
     EmptyProofNotAllowed,
+    /// The base proofs are not enough to cover the requested amount or non-fungible ids.
+    InsufficientBaseProofs,
     /// Can't apply a non-fungible operation on fungible proofs.
     NonFungibleOperationNotAllowed,
 }
 
 impl Proof {
-    // TODO: composite proofs
     // TODO: proof auto drop
     // TODO: thorough test partial/full/composite proofs
 
     pub fn new(
         resource_def_id: ResourceDefId,
-        resource_type: ResourceType,
         restricted: bool,
         locked_total: AmountOrIds,
         locked_details: Vec<(Rc<RefCell<ResourceContainer>>, ProofSourceId, AmountOrIds)>,
     ) -> Proof {
         Self {
             resource_def_id,
-            resource_type,
             restricted,
             locked_total,
             locked_details,
         }
     }
 
-    pub fn compose_by_amount(
+    pub fn create_proof_by_amount(
         proofs: &[Proof],
         amount: Decimal,
         resource_def_id: ResourceDefId,
     ) -> Result<Proof, ProofError> {
-        todo!()
+        // calculate the max locked amount (by the input proofs) in each container
+        let mut allowance = HashMap::<ProofSourceId, Decimal>::new();
+        for proof in proofs {
+            if proof.resource_def_id == resource_def_id && !proof.is_restricted() {
+                for (_, source_id, amount_or_ids) in &proof.locked_details {
+                    if let Some(amount) = allowance.get_mut(source_id) {
+                        *amount = Decimal::max(*amount, amount_or_ids.as_amount());
+                    } else {
+                        allowance.insert(source_id.clone(), amount_or_ids.as_amount());
+                    }
+                }
+            }
+        }
+
+        // check if the allowance satisfied the requested amount
+        let max = allowance
+            .values()
+            .cloned()
+            .reduce(|a, b| a + b)
+            .unwrap_or_default();
+        if amount > max {
+            return Err(ProofError::InsufficientBaseProofs);
+        }
+
+        // lock all relevant containers
+        //
+        // This is not an efficient way of producing proofs, in terms of number of state updates
+        // to the resource containers. However, this is the simplest to explain as no
+        // resource container selection algorithm is required. All the ref count increases by 1.
+        //
+        // If this turns to be performance bottleneck, should start with containers where the
+        // largest amount has been locked, and only lock the requested amount.
+        //
+        let mut locked_details = Vec::new();
+        for proof in proofs {
+            if proof.resource_def_id == resource_def_id {
+                for entry in &proof.locked_details {
+                    entry
+                        .0
+                        .borrow_mut()
+                        .lock_amount(entry.2.as_amount())
+                        .map_err(ProofError::ResourceContainerError)
+                        .expect("Should always be able to lock the same amount");
+                    locked_details.push(entry.clone());
+                }
+            }
+        }
+
+        // issue a new proof
+        Ok(Proof::new(
+            resource_def_id,
+            false,
+            AmountOrIds::Amount(amount),
+            locked_details,
+        ))
     }
 
     pub fn compose_by_ids(
@@ -78,7 +146,55 @@ impl Proof {
         ids: BTreeSet<NonFungibleId>,
         resource_def_id: ResourceDefId,
     ) -> Result<Proof, ProofError> {
-        todo!()
+        // calculate the max locked amount (by the input proofs) in each container
+        let mut allowance = HashMap::<ProofSourceId, BTreeSet<NonFungibleId>>::new();
+        for proof in proofs {
+            if proof.resource_def_id == resource_def_id && !proof.is_restricted() {
+                for (_, source_id, amount_or_ids) in &proof.locked_details {
+                    if let Some(ids) = allowance.get_mut(source_id) {
+                        ids.extend(amount_or_ids.as_ids()?);
+                    } else {
+                        allowance.insert(source_id.clone(), amount_or_ids.as_ids()?);
+                    }
+                }
+            }
+        }
+
+        // check if the allowance satisfied the requested amount
+        let mut max = BTreeSet::<NonFungibleId>::new();
+        for (_, value) in allowance {
+            max.extend(value);
+        }
+        if !max.is_superset(&ids) {
+            return Err(ProofError::InsufficientBaseProofs);
+        }
+
+        // lock all relevant resources
+        //
+        // See `compose_by_amount` for performance notes.
+        //
+        let mut locked_details = Vec::new();
+        for proof in proofs {
+            if proof.resource_def_id == resource_def_id {
+                for entry in &proof.locked_details {
+                    entry
+                        .0
+                        .borrow_mut()
+                        .lock_ids(&entry.2.as_ids()?)
+                        .map_err(ProofError::ResourceContainerError)
+                        .expect("Should always be able to lock the same non-fungibles");
+                    locked_details.push(entry.clone());
+                }
+            }
+        }
+
+        // issue a new proof
+        Ok(Proof::new(
+            resource_def_id,
+            false,
+            AmountOrIds::Ids(ids),
+            locked_details,
+        ))
     }
 
     pub fn clone(&self) -> Self {
@@ -97,7 +213,6 @@ impl Proof {
 
         Self {
             resource_def_id: self.resource_def_id,
-            resource_type: self.resource_type,
             restricted: self.restricted,
             locked_total: self.locked_total.clone(),
             locked_details: self.locked_details.clone(),
@@ -125,10 +240,6 @@ impl Proof {
 
     pub fn resource_def_id(&self) -> ResourceDefId {
         self.resource_def_id
-    }
-
-    pub fn resource_type(&self) -> ResourceType {
-        self.resource_type
     }
 
     pub fn total_amount(&self) -> Decimal {

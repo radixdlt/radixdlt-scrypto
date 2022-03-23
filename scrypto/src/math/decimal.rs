@@ -24,6 +24,12 @@ pub const PRECISION: i128 = 10i128.pow(18);
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Decimal(pub i128);
 
+impl Default for Decimal {
+    fn default() -> Self {
+        Self::zero()
+    }
+}
+
 impl Decimal {
     /// The min value of `Decimal`.
     pub const MIN: Self = Self(i128::MIN);
@@ -59,6 +65,22 @@ impl Decimal {
     /// Returns the absolute value.
     pub fn abs(&self) -> Decimal {
         Decimal(self.0.abs())
+    }
+
+    pub fn max(a: Self, b: Self) -> Self {
+        if a >= b {
+            a
+        } else {
+            b
+        }
+    }
+
+    pub fn min(a: Self, b: Self) -> Self {
+        if a <= b {
+            a
+        } else {
+            b
+        }
     }
 }
 
