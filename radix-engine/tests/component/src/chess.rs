@@ -8,7 +8,7 @@ blueprint! {
     impl Chess {
         pub fn create_game(players: [NonFungibleAddress; 2]) -> ComponentId {
             Self { players }.instantiate_with_auth(component_authorization! {
-                "make_move" => any_of!(vec![0, 0]),
+                "make_move" => any_of!(component_self("0/0")),
             })
         }
 

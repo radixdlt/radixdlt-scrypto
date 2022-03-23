@@ -75,14 +75,24 @@ impl From<ResourceDefId> for ProofRule {
 
 #[macro_export]
 macro_rules! any_of {
+    (component_self($path_str:expr)) => ({
+        let path: Vec<usize> = $path_str.split('/').map(|s| s.parse::<usize>().unwrap()).collect();
+        let auth: ProofRule = path.into();
+        auth
+    });
     ($rule:expr) => ({
         let auth: ProofRule = $rule.into();
         auth
     });
+    (component_self($path_str:expr), $($right:expr),+) => ({
+        let path: Vec<usize> = $path_str.split('/').map(|s| s.parse::<usize>().unwrap()).collect();
+        let auth: ProofRule = path.into();
+        auth.or(any_of!($($right),+))
+    });
     ($left:expr, $($right:expr),+) => ({
         let auth: ProofRule = $left.into();
         auth.or(any_of!($($right),+))
-    })
+    });
 }
 
 #[macro_export]
