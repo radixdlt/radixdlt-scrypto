@@ -29,12 +29,18 @@ impl From<Vec<usize>> for ProofRuleResource {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Describe, TypeId, Encode, Decode)]
+pub enum ProofRuleResourceList {
+    StaticList(Vec<ProofRuleResource>),
+    FromComponent(Vec<usize>),
+}
+
 /// Authorization Rule
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Describe, TypeId, Encode, Decode)]
 pub enum ProofRule {
     This(ProofRuleResource),
     SomeOfResource(Decimal, ProofRuleResource),
-    CountOf { count: u8, resources: Vec<ProofRuleResource> },
+    CountOf (u8, ProofRuleResourceList),
     AllOf(Vec<ProofRule>),
     OneOf(Vec<ProofRule>),
 }
@@ -49,7 +55,7 @@ impl ProofRule {
                 rules.push(other);
                 ProofRule::OneOf(rules)
             }
-            ProofRule::CountOf { count: _, resources: _ } => ProofRule::OneOf(vec![self, other]),
+            ProofRule::CountOf(_, _) => ProofRule::OneOf(vec![self, other]),
         }
     }
 }
@@ -102,25 +108,23 @@ macro_rules! all_of {
 }
 
 #[macro_export]
+macro_rules! resource_list {
+  ($($resource: expr),*) => ({
+      let mut list: Vec<ProofRuleResource> = Vec::new();
+      $(
+        list.push($resource.into());
+      )*
+      ::scrypto::resource::ProofRuleResourceList::StaticList(list)
+  });
+}
+
+#[macro_export]
 macro_rules! min_n_of {
-    ($count:expr, $resource:expr) => (
-        ProofRule::CountOf {
-            count: $count,
-            resources: vec![$resource.into()]
-        }
-    );
-    ($count:expr, $left:expr, $($right:expr),+) => ({
-        let mut auth = min_n_of!($count, $($right),+);
-        match auth {
-            // TODO: retain original order
-            ProofRule::CountOf { count, mut resources } => {
-                resources.push($left.into());
-                ProofRule::CountOf { count, resources }
-            },
-            _ => panic!("Should never get here.")
-        }
+    ($count:expr, $($right:expr),+) => ({
+        ::scrypto::resource::ProofRule::CountOf($count, resource_list!($($right),+))
     })
 }
+
 #[macro_export]
 macro_rules! amount_of {
     ($amount:expr, $resource:expr) => {

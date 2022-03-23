@@ -71,10 +71,7 @@ pub enum HardProofRule {
     SomeOfResource(Decimal, HardProofRuleResource),
     AllOf(Vec<HardProofRule>),
     OneOf(Vec<HardProofRule>),
-    CountOf {
-        count: u8,
-        resources: Vec<HardProofRuleResource>,
-    },
+    CountOf(u8, Vec<HardProofRuleResource>),
 }
 
 impl HardProofRule {
@@ -87,7 +84,7 @@ impl HardProofRule {
                 rules.push(other);
                 HardProofRule::OneOf(rules)
             }
-            HardProofRule::CountOf { count: _, resources: _ } => {
+            HardProofRule::CountOf(_, _) => {
                 HardProofRule::OneOf(vec![self, other])
             }
         }
@@ -127,7 +124,7 @@ impl HardProofRule {
 
                 Err(NotAuthorized)
             }
-            HardProofRule::CountOf { count, resources } => {
+            HardProofRule::CountOf(count, resources) => {
                 let mut left = count.clone();
                 for resource in resources {
                     if resource.check(proofs_vector) {

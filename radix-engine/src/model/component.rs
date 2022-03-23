@@ -3,7 +3,7 @@ use crate::model::{MethodAuthorization, ValidatedData};
 use sbor::any::{Fields, Value};
 use sbor::*;
 use scrypto::engine::types::*;
-use scrypto::prelude::{NonFungibleAddress, ProofRuleResource};
+use scrypto::prelude::{NonFungibleAddress, ProofRuleResource, ProofRuleResourceList};
 use scrypto::resource::ProofRule;
 use scrypto::rust::collections::*;
 use scrypto::rust::string::String;
@@ -62,6 +62,47 @@ impl Component {
         }
     }
 
+
+    fn soft_to_hard_resource_list(list: &ProofRuleResourceList, dom: &Value) -> Vec<HardProofRuleResource> {
+        match list {
+            ProofRuleResourceList::StaticList(resources) => {
+                let mut hard_resources = Vec::new();
+                for soft_resource in resources {
+                    if let Some(resource) = Self::soft_to_hard_resource(soft_resource, dom) {
+                        hard_resources.push(resource);
+                    }
+                }
+                hard_resources
+            }
+            ProofRuleResourceList::FromComponent(path) => {
+                match Self::get_from_value(path, dom) {
+                    Some(Value::Vec(type_id, values)) => {
+                        match CustomType::from_id(*type_id).unwrap() {
+                            CustomType::ResourceDefId => {
+                                values.iter().map(|v| {
+                                    if let Value::Custom(_, bytes) = v {
+                                        return ResourceDefId::try_from(bytes.as_slice()).unwrap().into();
+                                    }
+                                    panic!("Unexpected type");
+                                }).collect()
+                            },
+                            CustomType::NonFungibleAddress => {
+                                values.iter().map(|v| {
+                                    if let Value::Custom(_, bytes) = v {
+                                        return NonFungibleAddress::try_from(bytes.as_slice()).unwrap().into();
+                                    }
+                                    panic!("Unexpected type");
+                                }).collect()
+                            },
+                            _ => vec![]
+                        }
+                    }
+                    _ => vec![]
+                }
+            }
+        }
+    }
+
     fn soft_to_hard_resource(proof_rule_resource: &ProofRuleResource, dom: &Value) -> Option<HardProofRuleResource> {
         match proof_rule_resource {
             ProofRuleResource::FromComponent(path) => {
@@ -109,17 +150,9 @@ impl Component {
                     .collect();
                 HardProofRule::OneOf(hard_rules)
             }
-            ProofRule::CountOf { count, resources } => {
-                let mut hard_resources = Vec::new();
-                for soft_resource in resources {
-                    if let Some(resource) = Self::soft_to_hard_resource(soft_resource, dom) {
-                        hard_resources.push(resource);
-                    }
-                }
-                HardProofRule::CountOf {
-                    count: *count,
-                    resources: hard_resources,
-                }
+            ProofRule::CountOf(count, resources) => {
+                let hard_resources = Self::soft_to_hard_resource_list(resources, dom);
+                HardProofRule::CountOf(*count, hard_resources)
             }
         }
     }
