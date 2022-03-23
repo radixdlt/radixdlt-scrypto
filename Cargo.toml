@@ -1,0 +1,14 @@
+[workspace]
+
+members = [
+	"radix-engine",
+	"sbor",
+	"sbor-derive",
+	"sbor-tests",
+	"scrypto",
+	"scrypto-abi",
+	"scrypto-derive",
+	"scrypto-tests",
+	"simulator",
+	"transaction-manifest",
+]
