@@ -140,6 +140,10 @@ impl ResourceContainer {
         }
     }
 
+    pub fn take_all(&mut self) -> Result<Self, ResourceContainerError> {
+        self.take(self.liquid_amount())
+    }
+
     pub fn lock_amount(&mut self, amount: Decimal) -> Result<(), ResourceContainerError> {
         // TODO do we allow locking non-fungibles in a fungible way?
 

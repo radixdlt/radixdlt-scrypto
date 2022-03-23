@@ -24,7 +24,14 @@ pub struct Proof {
     /// The total amount, for optimization purpose.
     locked_total: AmountOrIds,
     /// The containers that supports this proof.
-    locked_details: Vec<(Rc<RefCell<ResourceContainer>>, AmountOrIds)>,
+    locked_details: Vec<(Rc<RefCell<ResourceContainer>>, ProofSourceId, AmountOrIds)>,
+}
+
+#[derive(Debug, Clone)]
+pub enum ProofSourceId {
+    Bucket(BucketId),
+    Vault(VaultId),
+    Worktop(u32, ResourceDefId),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -47,7 +54,7 @@ impl Proof {
         resource_type: ResourceType,
         restricted: bool,
         locked_total: AmountOrIds,
-        locked_details: Vec<(Rc<RefCell<ResourceContainer>>, AmountOrIds)>,
+        locked_details: Vec<(Rc<RefCell<ResourceContainer>>, ProofSourceId, AmountOrIds)>,
     ) -> Proof {
         Self {
             resource_def_id,
@@ -58,8 +65,24 @@ impl Proof {
         }
     }
 
+    pub fn compose_by_amount(
+        proofs: &[Proof],
+        amount: Decimal,
+        resource_def_id: ResourceDefId,
+    ) -> Result<Proof, ProofError> {
+        todo!()
+    }
+
+    pub fn compose_by_ids(
+        proofs: &[Proof],
+        ids: BTreeSet<NonFungibleId>,
+        resource_def_id: ResourceDefId,
+    ) -> Result<Proof, ProofError> {
+        todo!()
+    }
+
     pub fn clone(&self) -> Self {
-        for (container, amount_or_ids) in &self.locked_details {
+        for (container, _, amount_or_ids) in &self.locked_details {
             match amount_or_ids {
                 AmountOrIds::Amount(amount) => container
                     .borrow_mut()
@@ -82,7 +105,7 @@ impl Proof {
     }
 
     pub fn drop(self) {
-        for (container, amount_or_ids) in self.locked_details {
+        for (container, _, amount_or_ids) in self.locked_details {
             match amount_or_ids {
                 AmountOrIds::Amount(amount) => container
                     .borrow_mut()

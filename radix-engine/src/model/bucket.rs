@@ -4,7 +4,7 @@ use scrypto::rust::collections::BTreeSet;
 use scrypto::rust::rc::Rc;
 use scrypto::rust::vec;
 
-use crate::model::{AmountOrIds, Proof, ResourceContainer, ResourceContainerError};
+use crate::model::{AmountOrIds, Proof, ProofSourceId, ResourceContainer, ResourceContainerError};
 
 /// A transient resource container.
 #[derive(Debug)]
@@ -43,16 +43,24 @@ impl Bucket {
         ))
     }
 
-    pub fn create_proof(&mut self) -> Result<Proof, ResourceContainerError> {
+    pub fn create_proof(
+        &mut self,
+        proof_source_id: ProofSourceId,
+    ) -> Result<Proof, ResourceContainerError> {
         match self.resource_type() {
-            ResourceType::Fungible { .. } => self.create_proof_by_amount(self.total_amount()),
-            ResourceType::NonFungible => self.create_proof_by_ids(&self.total_ids()?),
+            ResourceType::Fungible { .. } => {
+                self.create_proof_by_amount(self.total_amount(), proof_source_id)
+            }
+            ResourceType::NonFungible => {
+                self.create_proof_by_ids(&self.total_ids()?, proof_source_id)
+            }
         }
     }
 
     pub fn create_proof_by_amount(
         &mut self,
         amount: Decimal,
+        proof_source_id: ProofSourceId,
     ) -> Result<Proof, ResourceContainerError> {
         // do not allow empty proof
         if amount.is_zero() {
@@ -68,13 +76,18 @@ impl Bucket {
             self.resource_type(),
             false,
             AmountOrIds::Amount(amount),
-            vec![(self.container.clone(), AmountOrIds::Amount(amount))],
+            vec![(
+                self.container.clone(),
+                proof_source_id,
+                AmountOrIds::Amount(amount),
+            )],
         ))
     }
 
     pub fn create_proof_by_ids(
         &mut self,
         ids: &BTreeSet<NonFungibleId>,
+        proof_source_id: ProofSourceId,
     ) -> Result<Proof, ResourceContainerError> {
         // do not allow empty proof
         if ids.is_empty() {
@@ -90,7 +103,11 @@ impl Bucket {
             self.resource_type(),
             false,
             AmountOrIds::Ids(ids.clone()),
-            vec![(self.container.clone(), AmountOrIds::Ids(ids.clone()))],
+            vec![(
+                self.container.clone(),
+                proof_source_id,
+                AmountOrIds::Ids(ids.clone()),
+            )],
         ))
     }
 
