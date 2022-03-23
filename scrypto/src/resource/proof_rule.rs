@@ -26,7 +26,7 @@ impl From<ResourceDefId> for ProofRuleResource {
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Describe, TypeId, Encode, Decode)]
 pub enum ProofRule {
     This(ProofRuleResource),
-    FromComponent(usize),
+    FromComponent(Vec<usize>),
     SomeOfResource(Decimal, ResourceDefId),
     AllOf(Vec<ProofRule>),
     OneOf(Vec<ProofRule>),
@@ -50,8 +50,14 @@ impl ProofRule {
 }
 
 impl From<usize> for ProofRule {
-    fn from(field_index: usize) -> Self {
-        ProofRule::FromComponent(field_index)
+    fn from(single_path: usize) -> Self {
+        ProofRule::FromComponent(vec![single_path])
+    }
+}
+
+impl From<Vec<usize>> for ProofRule {
+    fn from(path: Vec<usize>) -> Self {
+        ProofRule::FromComponent(path)
     }
 }
 

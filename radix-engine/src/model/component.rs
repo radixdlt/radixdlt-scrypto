@@ -62,8 +62,8 @@ impl Component {
 
     fn to_hard_rule(proof_rule: &ProofRule, dom: &Value) -> HardProofRule {
         match proof_rule {
-            ProofRule::FromComponent(field_index) => {
-                match Self::get_from_value(&[*field_index], dom) {
+            ProofRule::FromComponent(path) => {
+                match Self::get_from_value(path, dom) {
                     Some(Value::Custom(type_id, bytes)) => {
                         match CustomType::from_id(*type_id).unwrap() {
                             CustomType::ResourceDefId => {
