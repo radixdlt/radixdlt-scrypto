@@ -136,12 +136,9 @@ impl Component {
                     None => HardProofRule::OneOf(vec![]),
                 }
             }
-            ProofRule::AllOf(rules) => {
-                let hard_rules = rules
-                    .into_iter()
-                    .map(|proof_rule| Self::soft_to_hard_rule(proof_rule, dom))
-                    .collect();
-                HardProofRule::AllOf(hard_rules)
+            ProofRule::AllOf(resources) => {
+                let hard_resources = Self::soft_to_hard_resource_list(resources, dom);
+                HardProofRule::AllOf(hard_resources)
             }
             ProofRule::OneOf(rules) => {
                 let hard_rules = rules

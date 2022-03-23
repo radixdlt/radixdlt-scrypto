@@ -69,7 +69,7 @@ impl From<ResourceDefId> for HardProofRuleResource {
 pub enum HardProofRule {
     This(HardProofRuleResource),
     SomeOfResource(Decimal, HardProofRuleResource),
-    AllOf(Vec<HardProofRule>),
+    AllOf(Vec<HardProofRuleResource>),
     OneOf(Vec<HardProofRule>),
     CountOf(u8, Vec<HardProofRuleResource>),
 }
@@ -106,9 +106,9 @@ impl HardProofRule {
                     Err(NotAuthorized)
                 }
             }
-            HardProofRule::AllOf(rules) => {
-                for rule in rules {
-                    if rule.check(proofs_vector).is_err() {
+            HardProofRule::AllOf(resources) => {
+                for resource in resources {
+                    if !resource.check(proofs_vector) {
                         return Err(NotAuthorized);
                     }
                 }

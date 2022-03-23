@@ -40,8 +40,8 @@ pub enum ProofRuleResourceList {
 pub enum ProofRule {
     This(ProofRuleResource),
     SomeOfResource(Decimal, ProofRuleResource),
-    CountOf (u8, ProofRuleResourceList),
-    AllOf(Vec<ProofRule>),
+    CountOf(u8, ProofRuleResourceList),
+    AllOf(ProofRuleResourceList),
     OneOf(Vec<ProofRule>),
 }
 
@@ -95,19 +95,6 @@ macro_rules! any_of {
 }
 
 #[macro_export]
-macro_rules! all_of {
-    ($resource:expr) => ({
-        let resource: ::scrypto::resource::ProofRuleResource = $resource.into();
-        ::scrypto::resource::ProofRule::This(resource)
-    });
-    ($left:expr, $($right:expr),+) => ({
-        let resource: ::scrypto::resource::ProofRuleResource = $left.into();
-        let auth = ::scrypto::resource::ProofRule::This(resource);
-        ::scrypto::resource::ProofRule::AllOf(vec![auth, all_of!($($right),+)])
-    });
-}
-
-#[macro_export]
 macro_rules! resource_list {
   ($($resource: expr),*) => ({
       let mut list: Vec<ProofRuleResource> = Vec::new();
@@ -119,9 +106,16 @@ macro_rules! resource_list {
 }
 
 #[macro_export]
+macro_rules! all_of {
+    ($($resource:expr),*) => ({
+        ::scrypto::resource::ProofRule::AllOf(resource_list!($($resource),+))
+    });
+}
+
+#[macro_export]
 macro_rules! min_n_of {
-    ($count:expr, $($right:expr),+) => ({
-        ::scrypto::resource::ProofRule::CountOf($count, resource_list!($($right),+))
+    ($count:expr, $($resource:expr),+) => ({
+        ::scrypto::resource::ProofRule::CountOf($count, resource_list!($($resource),+))
     })
 }
 
