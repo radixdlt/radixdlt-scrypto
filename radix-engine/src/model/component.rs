@@ -1,15 +1,15 @@
+use crate::model::method_authorization::HardProofRule;
 use crate::model::{MethodAuthorization, ValidatedData};
-use sbor::*;
 use sbor::any::{Fields, Value};
+use sbor::*;
 use scrypto::engine::types::*;
 use scrypto::prelude::NonFungibleAddress;
 use scrypto::resource::ProofRule;
 use scrypto::rust::collections::*;
 use scrypto::rust::string::String;
-use scrypto::rust::vec::Vec;
 use scrypto::rust::vec;
+use scrypto::rust::vec::Vec;
 use scrypto::types::CustomType;
-use crate::model::method_authorization::HardProofRule;
 
 /// A component is an instance of blueprint.
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
@@ -38,7 +38,9 @@ impl Component {
     fn get_from_vector<'a>(path: &'a [usize], values: &'a [Value]) -> Option<&'a Value> {
         let (index_slice, extended_path) = path.split_at(1);
         let index = index_slice[0];
-        values.get(index).and_then(|value| Self::get_from_value(extended_path, value))
+        values
+            .get(index)
+            .and_then(|value| Self::get_from_value(extended_path, value))
     }
 
     fn get_from_fields<'a>(path: &'a [usize], fields: &'a Fields) -> Option<&'a Value> {
@@ -62,36 +64,50 @@ impl Component {
 
     fn to_hard_rule(proof_rule: &ProofRule, dom: &Value) -> HardProofRule {
         match proof_rule {
-            ProofRule::FromComponent(path) => {
-                match Self::get_from_value(path, dom) {
-                    Some(Value::Custom(type_id, bytes)) => {
-                        match CustomType::from_id(*type_id).unwrap() {
-                            CustomType::ResourceDefId => {
-                                HardProofRule::from(ResourceDefId::try_from(bytes.as_slice()).unwrap())
-                            }
-                            CustomType::NonFungibleAddress => {
-                                HardProofRule::from(NonFungibleAddress::try_from(bytes.as_slice()).unwrap())
-                            }
-                            _ => HardProofRule::OneOf(vec![])
+            ProofRule::FromComponent(path) => match Self::get_from_value(path, dom) {
+                Some(Value::Custom(type_id, bytes)) => {
+                    match CustomType::from_id(*type_id).unwrap() {
+                        CustomType::ResourceDefId => {
+                            HardProofRule::from(ResourceDefId::try_from(bytes.as_slice()).unwrap())
                         }
+                        CustomType::NonFungibleAddress => HardProofRule::from(
+                            NonFungibleAddress::try_from(bytes.as_slice()).unwrap(),
+                        ),
+                        _ => HardProofRule::OneOf(vec![]),
                     }
-                    _ => HardProofRule::OneOf(vec![])
                 }
+                _ => HardProofRule::OneOf(vec![]),
             },
-            ProofRule::This(proof_rule_resource) => HardProofRule::This(proof_rule_resource.clone()),
-            ProofRule::SomeOfResource(amount, resource_def_id) => HardProofRule::SomeOfResource(*amount, *resource_def_id),
+            ProofRule::This(proof_rule_resource) => {
+                HardProofRule::This(proof_rule_resource.clone())
+            }
+            ProofRule::SomeOfResource(amount, resource_def_id) => {
+                HardProofRule::SomeOfResource(*amount, *resource_def_id)
+            }
             ProofRule::AllOf(rules) => {
-                let hard_rules = rules.into_iter().map(|proof_rule| Self::to_hard_rule(proof_rule, dom)).collect();
+                let hard_rules = rules
+                    .into_iter()
+                    .map(|proof_rule| Self::to_hard_rule(proof_rule, dom))
+                    .collect();
                 HardProofRule::AllOf(hard_rules)
-            },
+            }
             ProofRule::OneOf(rules) => {
-                let hard_rules = rules.into_iter().map(|proof_rule| Self::to_hard_rule(proof_rule, dom)).collect();
+                let hard_rules = rules
+                    .into_iter()
+                    .map(|proof_rule| Self::to_hard_rule(proof_rule, dom))
+                    .collect();
                 HardProofRule::OneOf(hard_rules)
-            },
+            }
             ProofRule::CountOf { count, rules } => {
-                let hard_rules = rules.into_iter().map(|proof_rule| Self::to_hard_rule(proof_rule, dom)).collect();
-                HardProofRule::CountOf { count: *count, rules: hard_rules }
-            },
+                let hard_rules = rules
+                    .into_iter()
+                    .map(|proof_rule| Self::to_hard_rule(proof_rule, dom))
+                    .collect();
+                HardProofRule::CountOf {
+                    count: *count,
+                    rules: hard_rules,
+                }
+            }
         }
     }
 
@@ -100,7 +116,7 @@ impl Component {
         let authorization = match self.auth_rules.get(method_name) {
             Some(proof_rule) => {
                 MethodAuthorization::Protected(Self::to_hard_rule(proof_rule, &data.dom))
-            },
+            }
             None => MethodAuthorization::Public,
         };
 

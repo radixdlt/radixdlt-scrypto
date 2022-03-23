@@ -4,8 +4,8 @@ use crate::model::Proof;
 use sbor::*;
 use scrypto::math::Decimal;
 use scrypto::prelude::{NonFungibleAddress, ProofRuleResource, ResourceDefId};
-use scrypto::rust::vec::Vec;
 use scrypto::rust::vec;
+use scrypto::rust::vec::Vec;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, TypeId, Encode, Decode)]
 pub enum HardProofRule {
@@ -13,7 +13,10 @@ pub enum HardProofRule {
     SomeOfResource(Decimal, ResourceDefId),
     AllOf(Vec<HardProofRule>),
     OneOf(Vec<HardProofRule>),
-    CountOf { count: u8, rules: Vec<HardProofRule> },
+    CountOf {
+        count: u8,
+        rules: Vec<HardProofRule>,
+    },
 }
 
 impl From<NonFungibleAddress> for HardProofRule {
@@ -38,45 +41,47 @@ impl HardProofRule {
                 rules.push(other);
                 HardProofRule::OneOf(rules)
             }
-            HardProofRule::CountOf { count: _, rules: _ } => HardProofRule::OneOf(vec![self, other]),
+            HardProofRule::CountOf { count: _, rules: _ } => {
+                HardProofRule::OneOf(vec![self, other])
+            }
         }
     }
 
     pub fn check(&self, proofs_vector: &[&[Proof]]) -> Result<(), RuntimeError> {
         match self {
-            HardProofRule::This(proof_rule_resource) => {
-                match proof_rule_resource {
-                    ProofRuleResource::NonFungible(non_fungible_address) => {
-                        for proofs in proofs_vector {
-                            for p in proofs.iter() {
-                                let proof_resource_def_id = p.resource_def_id();
-                                if proof_resource_def_id == non_fungible_address.resource_def_id()
-                                    && match p.total_ids() {
-                                    Ok(ids) => ids.contains(&non_fungible_address.non_fungible_id()),
+            HardProofRule::This(proof_rule_resource) => match proof_rule_resource {
+                ProofRuleResource::NonFungible(non_fungible_address) => {
+                    for proofs in proofs_vector {
+                        for p in proofs.iter() {
+                            let proof_resource_def_id = p.resource_def_id();
+                            if proof_resource_def_id == non_fungible_address.resource_def_id()
+                                && match p.total_ids() {
+                                    Ok(ids) => {
+                                        ids.contains(&non_fungible_address.non_fungible_id())
+                                    }
                                     Err(_) => false,
                                 }
-                                {
-                                    return Ok(());
-                                }
+                            {
+                                return Ok(());
                             }
                         }
-
-                        Err(NotAuthorized)
                     }
-                    ProofRuleResource::Resource(resource_def_id) => {
-                        for proofs in proofs_vector {
-                            for p in proofs.iter() {
-                                let proof_resource_def_id = p.resource_def_id();
-                                if proof_resource_def_id == *resource_def_id {
-                                    return Ok(());
-                                }
-                            }
-                        }
 
-                        Err(NotAuthorized)
-                    }
+                    Err(NotAuthorized)
                 }
-            }
+                ProofRuleResource::Resource(resource_def_id) => {
+                    for proofs in proofs_vector {
+                        for p in proofs.iter() {
+                            let proof_resource_def_id = p.resource_def_id();
+                            if proof_resource_def_id == *resource_def_id {
+                                return Ok(());
+                            }
+                        }
+                    }
+
+                    Err(NotAuthorized)
+                }
+            },
             HardProofRule::SomeOfResource(amount, resource_def_id) => {
                 for proofs in proofs_vector {
                     for p in proofs.iter() {

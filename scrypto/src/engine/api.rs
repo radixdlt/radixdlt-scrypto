@@ -2,7 +2,7 @@ use sbor::*;
 use scrypto::prelude::ComponentAuthorization;
 
 use crate::engine::types::*;
-use crate::prelude::{NonFungibleAddress};
+use crate::prelude::NonFungibleAddress;
 use crate::rust::collections::HashMap;
 use crate::rust::string::String;
 use crate::rust::vec::Vec;
