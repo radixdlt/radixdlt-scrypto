@@ -18,7 +18,7 @@ pub enum ProofKind {
     VirtualProof,
     /// Bucket proof.
     BucketProof(BucketId),
-    /// Proof taken from auth worktop.
+    /// Proof taken from auth zone.
     RuntimeProof,
 }
 

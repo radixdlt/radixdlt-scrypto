@@ -167,12 +167,12 @@ fn can_withdraw_from_my_any_xrd_auth_account_with_no_signature() {
             &ResourceSpecifier::Amount(Decimal(1), RADIX_TOKEN),
             |builder, bucket_id| {
                 builder.create_bucket_proof(bucket_id, |builder, proof_id| {
-                    builder.push_auth(proof_id);
+                    builder.push_onto_auth_zone(proof_id);
                     builder.withdraw_from_account(
                         &ResourceSpecifier::Amount(Decimal(100), RADIX_TOKEN),
                         account,
                     );
-                    builder.pop_auth(|builder, proof_id| builder.drop_proof(proof_id));
+                    builder.pop_from_auth_zone(|builder, proof_id| builder.drop_proof(proof_id));
                     builder
                 });
                 builder
@@ -204,12 +204,12 @@ fn can_withdraw_from_my_any_xrd_auth_account_with_right_amount_of_proof() {
             &ResourceSpecifier::Amount(Decimal(1), RADIX_TOKEN),
             |builder, bucket_id| {
                 builder.create_bucket_proof(bucket_id, |builder, proof_id| {
-                    builder.push_auth(proof_id);
+                    builder.push_onto_auth_zone(proof_id);
                     builder.withdraw_from_account(
                         &ResourceSpecifier::Amount(Decimal(100), RADIX_TOKEN),
                         account,
                     );
-                    builder.pop_auth(|builder, proof_id| builder.drop_proof(proof_id));
+                    builder.pop_from_auth_zone(|builder, proof_id| builder.drop_proof(proof_id));
                     builder
                 });
                 builder
@@ -241,12 +241,12 @@ fn cannot_withdraw_from_my_any_xrd_auth_account_with_less_than_amount_of_proof()
             &ResourceSpecifier::Amount(Decimal::from("0.9"), RADIX_TOKEN),
             |builder, bucket_id| {
                 builder.create_bucket_proof(bucket_id, |builder, proof_id| {
-                    builder.push_auth(proof_id);
+                    builder.push_onto_auth_zone(proof_id);
                     builder.withdraw_from_account(
                         &ResourceSpecifier::Amount(Decimal::from(100), RADIX_TOKEN),
                         account,
                     );
-                    builder.pop_auth(|builder, proof_id| builder.drop_proof(proof_id));
+                    builder.pop_from_auth_zone(|builder, proof_id| builder.drop_proof(proof_id));
                     builder
                 });
                 builder

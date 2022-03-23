@@ -30,5 +30,13 @@ blueprint! {
                 to_burn.burn();
             });
         }
+
+        pub fn receive_proof(_proof: Proof) {
+            // auto dropped here
+        }
+
+        pub fn receive_proof_and_move_to_auth_zone(proof: Proof) {
+            AuthZone::push(proof); // should fail here
+        }
     }
 }
