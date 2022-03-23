@@ -8,38 +8,28 @@ use scrypto::rust::vec::Vec;
 
 use crate::model::{ResourceContainer, ResourceContainerError};
 
-#[derive(Debug, Clone)]
-pub enum AmountOrIds {
-    Amount(Decimal),
-    Ids(BTreeSet<NonFungibleId>),
-}
-
-impl AmountOrIds {
-    pub fn as_amount(&self) -> Decimal {
-        match self {
-            Self::Amount(amount) => amount.clone(),
-            Self::Ids(ids) => ids.len().into(),
-        }
-    }
-
-    pub fn as_ids(&self) -> Result<BTreeSet<NonFungibleId>, ProofError> {
-        match self {
-            Self::Amount(_) => Err(ProofError::NonFungibleOperationNotAllowed),
-            Self::Ids(ids) => Ok(ids.clone()),
-        }
-    }
-}
-
 #[derive(Debug)]
-pub struct Proof {
-    /// The resource definition id.
-    resource_def_id: ResourceDefId,
-    /// Restricted proof can't be moved.
-    restricted: bool,
-    /// The total amount, for optimization purpose.
-    locked_total: AmountOrIds,
-    /// The containers that supports this proof.
-    locked_details: Vec<(Rc<RefCell<ResourceContainer>>, ProofSourceId, AmountOrIds)>,
+pub enum Proof {
+    Fungible {
+        /// The resource definition id.
+        resource_def_id: ResourceDefId,
+        /// Restricted proof can't be moved.
+        restricted: bool,
+        /// The total amount this proof proves
+        amount: Decimal,
+        /// The proof sources
+        sources: HashMap<ProofSourceId, (Rc<RefCell<ResourceContainer>>, Decimal)>,
+    },
+    NonFungible {
+        /// The resource definition id.
+        resource_def_id: ResourceDefId,
+        /// Restricted proof can't be moved.
+        restricted: bool,
+        /// The total non-fungible IDs this proof proves
+        ids: BTreeSet<NonFungibleId>,
+        /// The proof sources
+        sources: HashMap<ProofSourceId, (Rc<RefCell<ResourceContainer>>, BTreeSet<NonFungibleId>)>,
+    },
 }
 
 #[derive(Debug, Clone, Hash, Eq, PartialEq)]
@@ -59,27 +49,47 @@ pub enum ProofError {
     InsufficientBaseProofs,
     /// Can't apply a non-fungible operation on fungible proofs.
     NonFungibleOperationNotAllowed,
+    /// Can't apply a fungible operation on non-fungible proofs.
+    FungibleOperationNotAllowed,
 }
 
 impl Proof {
     // TODO: proof auto drop
     // TODO: thorough test partial/full/composite proofs
 
-    pub fn new(
+    pub fn new_fungible(
         resource_def_id: ResourceDefId,
         restricted: bool,
-        locked_total: AmountOrIds,
-        locked_details: Vec<(Rc<RefCell<ResourceContainer>>, ProofSourceId, AmountOrIds)>,
+        amount: Decimal,
+        sources: HashMap<ProofSourceId, (Rc<RefCell<ResourceContainer>>, Decimal)>,
     ) -> Result<Proof, ProofError> {
-        if locked_total.as_amount().is_zero() {
+        if amount.is_zero() {
             return Err(ProofError::EmptyProofNotAllowed);
         }
 
-        Ok(Self {
+        Ok(Self::Fungible {
             resource_def_id,
             restricted,
-            locked_total,
-            locked_details,
+            amount,
+            sources,
+        })
+    }
+
+    pub fn new_non_fungible(
+        resource_def_id: ResourceDefId,
+        restricted: bool,
+        ids: BTreeSet<NonFungibleId>,
+        sources: HashMap<ProofSourceId, (Rc<RefCell<ResourceContainer>>, BTreeSet<NonFungibleId>)>,
+    ) -> Result<Proof, ProofError> {
+        if ids.is_empty() {
+            return Err(ProofError::EmptyProofNotAllowed);
+        }
+
+        Ok(Self::NonFungible {
+            resource_def_id,
+            restricted,
+            ids,
+            sources,
         })
     }
 
@@ -87,18 +97,30 @@ impl Proof {
         proofs: &[Proof],
         amount: Decimal,
         resource_def_id: ResourceDefId,
+        resource_type: ResourceType,
     ) -> Result<Proof, ProofError> {
+        if matches!(resource_type, ResourceType::NonFungible) {
+            return Err(ProofError::FungibleOperationNotAllowed);
+        }
+
         // calculate the max locked amount (by the input proofs) in each container
         let mut allowance = HashMap::<ProofSourceId, Decimal>::new();
         for proof in proofs {
-            if proof.resource_def_id == resource_def_id && !proof.is_restricted() {
-                for (_, source_id, amount_or_ids) in &proof.locked_details {
-                    if let Some(amount) = allowance.get_mut(source_id) {
-                        *amount = Decimal::max(*amount, amount_or_ids.as_amount());
-                    } else {
-                        allowance.insert(source_id.clone(), amount_or_ids.as_amount());
+            if proof.resource_def_id() != resource_def_id || proof.is_restricted() {
+                continue;
+            }
+
+            match proof {
+                Proof::Fungible { sources, .. } => {
+                    for (source_id, (_, amount)) in sources {
+                        if let Some(existing) = allowance.get_mut(source_id) {
+                            *existing = Decimal::max(*existing, amount.clone());
+                        } else {
+                            allowance.insert(source_id.clone(), amount.clone());
+                        }
                     }
                 }
+                Proof::NonFungible { .. } => panic!("Illegal state"),
             }
         }
 
@@ -118,49 +140,62 @@ impl Proof {
         // to the resource containers. However, this is the simplest to explain as no
         // resource container selection algorithm is required. All the ref count increases by 1.
         //
-        // If this turns to be performance bottleneck, should start with containers where the
+        // If this turns to be a performance bottleneck, should start with containers where the
         // largest amount has been locked, and only lock the requested amount.
         //
-        let mut locked_details = Vec::new();
+        let mut new_sources = HashMap::new();
         for proof in proofs {
-            if proof.resource_def_id == resource_def_id {
-                for entry in &proof.locked_details {
-                    entry
-                        .0
-                        .borrow_mut()
-                        .lock_amount(entry.2.as_amount())
-                        .map_err(ProofError::ResourceContainerError)
-                        .expect("Should always be able to lock the same amount");
-                    locked_details.push(entry.clone());
+            if proof.resource_def_id() != resource_def_id || proof.is_restricted() {
+                continue;
+            }
+
+            match proof {
+                Proof::Fungible { sources, .. } => {
+                    for (source_id, (container, amount)) in sources {
+                        container
+                            .borrow_mut()
+                            .lock_amount(amount.clone())
+                            .map_err(ProofError::ResourceContainerError)
+                            .expect("Should always be able to lock the same amount");
+                        new_sources.insert(source_id.clone(), (container.clone(), amount.clone()));
+                    }
                 }
+                Proof::NonFungible { .. } => panic!("Illegal state"),
             }
         }
 
         // issue a new proof
-        Proof::new(
-            resource_def_id,
-            false,
-            AmountOrIds::Amount(amount),
-            locked_details,
-        )
+        Proof::new_fungible(resource_def_id, false, amount, new_sources)
     }
 
     pub fn compose_by_ids(
         proofs: &[Proof],
         ids: BTreeSet<NonFungibleId>,
         resource_def_id: ResourceDefId,
+        resource_type: ResourceType,
     ) -> Result<Proof, ProofError> {
+        if matches!(resource_type, ResourceType::Fungible { .. }) {
+            return Err(ProofError::NonFungibleOperationNotAllowed);
+        }
+
         // calculate the max locked amount (by the input proofs) in each container
         let mut allowance = HashMap::<ProofSourceId, BTreeSet<NonFungibleId>>::new();
         for proof in proofs {
-            if proof.resource_def_id == resource_def_id && !proof.is_restricted() {
-                for (_, source_id, amount_or_ids) in &proof.locked_details {
-                    if let Some(ids) = allowance.get_mut(source_id) {
-                        ids.extend(amount_or_ids.as_ids()?);
-                    } else {
-                        allowance.insert(source_id.clone(), amount_or_ids.as_ids()?);
+            if proof.resource_def_id() != resource_def_id || proof.is_restricted() {
+                continue;
+            }
+
+            match proof {
+                Proof::NonFungible { sources, .. } => {
+                    for (source_id, (_, ids)) in sources {
+                        if let Some(ids) = allowance.get_mut(source_id) {
+                            ids.extend(ids.clone());
+                        } else {
+                            allowance.insert(source_id.clone(), ids.clone());
+                        }
                     }
                 }
+                Proof::Fungible { .. } => panic!("Illegal state"),
             }
         }
 
@@ -177,90 +212,133 @@ impl Proof {
         //
         // See `compose_by_amount` for performance notes.
         //
-        let mut locked_details = Vec::new();
+        let mut new_sources = HashMap::new();
         for proof in proofs {
-            if proof.resource_def_id == resource_def_id {
-                for entry in &proof.locked_details {
-                    entry
-                        .0
-                        .borrow_mut()
-                        .lock_ids(&entry.2.as_ids()?)
-                        .map_err(ProofError::ResourceContainerError)
-                        .expect("Should always be able to lock the same non-fungibles");
-                    locked_details.push(entry.clone());
+            if proof.resource_def_id() != resource_def_id || proof.is_restricted() {
+                continue;
+            }
+
+            match proof {
+                Proof::NonFungible { sources, .. } => {
+                    for (source_id, (container, ids)) in sources {
+                        container
+                            .borrow_mut()
+                            .lock_ids(ids)
+                            .map_err(ProofError::ResourceContainerError)
+                            .expect("Should always be able to lock the same amount");
+                        new_sources.insert(source_id.clone(), (container.clone(), ids.clone()));
+                    }
                 }
+                Proof::Fungible { .. } => panic!("Illegal state"),
             }
         }
 
         // issue a new proof
-        Proof::new(
-            resource_def_id,
-            false,
-            AmountOrIds::Ids(ids),
-            locked_details,
-        )
+        Proof::new_non_fungible(resource_def_id, false, ids, new_sources)
     }
 
     pub fn clone(&self) -> Self {
-        for (container, _, amount_or_ids) in &self.locked_details {
-            match amount_or_ids {
-                AmountOrIds::Amount(amount) => container
-                    .borrow_mut()
-                    .lock_amount(amount.clone())
-                    .expect("Cloning should always be possible"),
-                AmountOrIds::Ids(ids) => container
-                    .borrow_mut()
-                    .lock_ids(ids)
-                    .expect("Cloning should always be possible"),
-            };
-        }
+        match self {
+            Self::Fungible {
+                resource_def_id,
+                restricted,
+                amount,
+                sources,
+            } => {
+                for (container, amount) in sources.values() {
+                    container
+                        .borrow_mut()
+                        .lock_amount(amount.clone())
+                        .expect("Cloning should always be possible");
+                }
 
-        Self {
-            resource_def_id: self.resource_def_id,
-            restricted: self.restricted,
-            locked_total: self.locked_total.clone(),
-            locked_details: self.locked_details.clone(),
+                Self::Fungible {
+                    resource_def_id: resource_def_id.clone(),
+                    restricted: restricted.clone(),
+                    amount: amount.clone(),
+                    sources: sources.clone(),
+                }
+            }
+            Self::NonFungible {
+                resource_def_id,
+                restricted,
+                ids,
+                sources,
+            } => {
+                for (container, amount) in sources.values() {
+                    container
+                        .borrow_mut()
+                        .lock_ids(ids)
+                        .expect("Cloning should always be possible");
+                }
+
+                Self::NonFungible {
+                    resource_def_id: resource_def_id.clone(),
+                    restricted: restricted.clone(),
+                    ids: ids.clone(),
+                    sources: sources.clone(),
+                }
+            }
         }
     }
 
     pub fn drop(self) {
-        for (container, _, amount_or_ids) in self.locked_details {
-            match amount_or_ids {
-                AmountOrIds::Amount(amount) => container
-                    .borrow_mut()
-                    .unlock_amount(amount)
-                    .expect("Unlocking should always be possible"),
-                AmountOrIds::Ids(ids) => container
-                    .borrow_mut()
-                    .unlock_ids(&ids)
-                    .expect("Unlocking should always be possible"),
-            };
+        match self {
+            Self::Fungible { sources, .. } => {
+                for (container, amount) in sources.values() {
+                    container
+                        .borrow_mut()
+                        .unlock_amount(amount.clone())
+                        .expect("Unlocking should always be possible");
+                }
+            }
+            Self::NonFungible { sources, .. } => {
+                for (container, ids) in sources.values() {
+                    container
+                        .borrow_mut()
+                        .unlock_ids(ids)
+                        .expect("Unlocking should always be possible");
+                }
+            }
         }
     }
 
     pub fn change_to_restricted(&mut self) {
-        self.restricted = true;
+        match self {
+            Self::Fungible { restricted, .. } | Self::NonFungible { restricted, .. } => {
+                *restricted = true;
+            }
+        }
     }
 
     pub fn resource_def_id(&self) -> ResourceDefId {
-        self.resource_def_id
+        match self {
+            Self::Fungible {
+                resource_def_id, ..
+            }
+            | Self::NonFungible {
+                resource_def_id, ..
+            } => resource_def_id.clone(),
+        }
     }
 
     pub fn total_amount(&self) -> Decimal {
-        match &self.locked_total {
-            AmountOrIds::Amount(amount) => amount.clone(),
-            AmountOrIds::Ids(ids) => ids.len().into(),
+        match self {
+            Self::Fungible { amount, .. } => amount.clone(),
+            Self::NonFungible { ids, .. } => ids.len().into(),
         }
     }
 
     pub fn total_ids(&self) -> Result<BTreeSet<NonFungibleId>, ProofError> {
-        match &self.locked_total {
-            AmountOrIds::Amount(_) => Err(ProofError::NonFungibleOperationNotAllowed),
-            AmountOrIds::Ids(ids) => Ok(ids.clone()),
+        match self {
+            Self::Fungible { amount, .. } => Err(ProofError::NonFungibleOperationNotAllowed),
+            Self::NonFungible { ids, .. } => Ok(ids.clone()),
         }
     }
 
     pub fn is_restricted(&self) -> bool {
-        self.restricted
+        match self {
+            Self::Fungible { restricted, .. } | Self::NonFungible { restricted, .. } => *restricted,
+        }
     }
 }
