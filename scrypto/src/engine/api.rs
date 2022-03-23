@@ -42,28 +42,30 @@ pub const CREATE_RESOURCE: u32 = 0x30;
 pub const MINT_RESOURCE: u32 = 0x31;
 /// Burn resource
 pub const BURN_RESOURCE: u32 = 0x32;
-/// Get resource type
-pub const GET_RESOURCE_TYPE: u32 = 0x33;
-/// Get resource metadata
-pub const GET_RESOURCE_METADATA: u32 = 0x34;
-/// Get resource supply
-pub const GET_RESOURCE_TOTAL_SUPPLY: u32 = 0x35;
-/// Get feature flags
-pub const GET_RESOURCE_FLAGS: u32 = 0x36;
-/// Update feature flags
-pub const UPDATE_RESOURCE_FLAGS: u32 = 0x37;
-/// Get mutable feature flags
-pub const GET_RESOURCE_MUTABLE_FLAGS: u32 = 0x38;
-/// Update mutable feature flags
-pub const UPDATE_RESOURCE_MUTABLE_FLAGS: u32 = 0x39;
-/// Get the data of a non-fungible
-pub const GET_NON_FUNGIBLE_DATA: u32 = 0x3a;
-/// Update the data of a non-fungible
-pub const UPDATE_NON_FUNGIBLE_MUTABLE_DATA: u32 = 0x3b;
+/// Update non-fungible metadata
+pub const UPDATE_NON_FUNGIBLE_MUTABLE_DATA: u32 = 0x33;
 /// Update resource metadata
-pub const UPDATE_RESOURCE_METADATA: u32 = 0x3c;
+pub const UPDATE_RESOURCE_METADATA: u32 = 0x34;
+/// Enable feature flags
+pub const ENABLE_FLAGS: u32 = 0x35;
+/// Disable feature flags
+pub const DISABLE_FLAGS: u32 = 0x36;
+/// Lock feature flags
+pub const LOCK_FLAGS: u32 = 0x37;
+/// Get resource type
+pub const GET_RESOURCE_TYPE: u32 = 0x38;
+/// Get resource metadata
+pub const GET_RESOURCE_METADATA: u32 = 0x39;
+/// Get resource supply
+pub const GET_RESOURCE_TOTAL_SUPPLY: u32 = 0x3a;
+/// Get feature flags
+pub const GET_RESOURCE_FLAGS: u32 = 0x3b;
+/// Get mutable feature flags
+pub const GET_RESOURCE_MUTABLE_FLAGS: u32 = 0x3c;
+/// Get the data of a non-fungible
+pub const GET_NON_FUNGIBLE_DATA: u32 = 0x3d;
 /// Check if non-fungible resource with id exists
-pub const NON_FUNGIBLE_EXISTS: u32 = 0x3d;
+pub const NON_FUNGIBLE_EXISTS: u32 = 0x3e;
 
 /// Create an empty vault
 pub const CREATE_EMPTY_VAULT: u32 = 0x40;
@@ -367,13 +369,31 @@ pub struct GetResourceFlagsOutput {
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct UpdateResourceFlagsInput {
+pub struct EnableFlagsInput {
     pub resource_def_id: ResourceDefId,
-    pub new_flags: u64,
+    pub flags: u64,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct UpdateResourceFlagsOutput {}
+pub struct EnableFlagsOutput {}
+
+#[derive(Debug, TypeId, Encode, Decode)]
+pub struct DisableFlagsInput {
+    pub resource_def_id: ResourceDefId,
+    pub flags: u64,
+}
+
+#[derive(Debug, TypeId, Encode, Decode)]
+pub struct DisableFlagsOutput {}
+
+#[derive(Debug, TypeId, Encode, Decode)]
+pub struct LockFlagsInput {
+    pub resource_def_id: ResourceDefId,
+    pub flags: u64,
+}
+
+#[derive(Debug, TypeId, Encode, Decode)]
+pub struct LockFlagsOutput {}
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct GetResourceMutableFlagsInput {
@@ -384,15 +404,6 @@ pub struct GetResourceMutableFlagsInput {
 pub struct GetResourceMutableFlagsOutput {
     pub mutable_flags: u64,
 }
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct UpdateResourceMutableFlagsInput {
-    pub resource_def_id: ResourceDefId,
-    pub new_mutable_flags: u64,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct UpdateResourceMutableFlagsOutput {}
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct UpdateResourceMetadataInput {
