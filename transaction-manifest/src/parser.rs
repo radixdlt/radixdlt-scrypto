@@ -167,7 +167,6 @@ impl Parser {
             TokenKind::Struct => self.parse_struct(),
             TokenKind::Enum => self.parse_enum(),
             TokenKind::Some | TokenKind::None => self.parse_option(),
-            TokenKind::Box => self.parse_box(),
             TokenKind::Array => self.parse_array(),
             TokenKind::Tuple => self.parse_tuple(),
             TokenKind::Ok | TokenKind::Err => self.parse_result(),
@@ -255,11 +254,6 @@ impl Parser {
             TokenKind::None => Ok(Value::Option(None.into())),
             _ => Err(ParserError::UnexpectedToken(token)),
         }
-    }
-
-    pub fn parse_box(&mut self) -> Result<Value, ParserError> {
-        advance_match!(self, TokenKind::Box);
-        Ok(Value::Box(self.parse_values_one()?.into()))
     }
 
     pub fn parse_array(&mut self) -> Result<Value, ParserError> {
@@ -438,7 +432,6 @@ impl Parser {
             TokenKind::Struct => Ok(Type::Struct),
             TokenKind::Enum => Ok(Type::Enum),
             TokenKind::Option => Ok(Type::Option),
-            TokenKind::Box => Ok(Type::Box),
             TokenKind::Array => Ok(Type::Array),
             TokenKind::Tuple => Ok(Type::Tuple),
             TokenKind::Result => Ok(Type::Result),
@@ -569,10 +562,6 @@ mod tests {
         parse_value_ok!(
             r#"Err("test")"#,
             Value::Result(Err(Value::String("test".into())).into())
-        );
-        parse_value_ok!(
-            r#"Box("test")"#,
-            Value::Box(Value::String("test".into()).into())
         );
     }
 
