@@ -1988,24 +1988,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         })
     }
 
-    fn handle_create_bucket_proof_by_amount(
-        &mut self,
-        input: CreateBucketProofByAmountInput,
-    ) -> Result<CreateBucketProofByAmountOutput, RuntimeError> {
-        Ok(CreateBucketProofByAmountOutput {
-            proof_id: self.create_bucket_proof_by_amount(input.bucket_id, input.amount)?,
-        })
-    }
-
-    fn handle_create_bucket_proof_by_ids(
-        &mut self,
-        input: CreateBucketProofByIdsInput,
-    ) -> Result<CreateBucketProofByIdsOutput, RuntimeError> {
-        Ok(CreateBucketProofByIdsOutput {
-            proof_id: self.create_bucket_proof_by_ids(input.bucket_id, &input.ids)?,
-        })
-    }
-
     fn handle_create_vault_proof(
         &mut self,
         input: CreateVaultProofInput,
@@ -2259,12 +2241,6 @@ impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
                     }
 
                     CREATE_BUCKET_PROOF => self.handle(args, Self::handle_create_bucket_proof),
-                    CREATE_BUCKET_PROOF_BY_AMOUNT => {
-                        self.handle(args, Self::handle_create_bucket_proof_by_amount)
-                    }
-                    CREATE_BUCKET_PROOF_BY_IDS => {
-                        self.handle(args, Self::handle_create_bucket_proof_by_ids)
-                    }
                     CREATE_VAULT_PROOF => self.handle(args, Self::handle_create_vault_proof),
                     CREATE_VAULT_PROOF_BY_AMOUNT => {
                         self.handle(args, Self::handle_create_vault_proof_by_amount)

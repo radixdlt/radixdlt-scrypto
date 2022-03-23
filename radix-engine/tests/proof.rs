@@ -4,7 +4,6 @@ pub mod test_runner;
 use crate::test_runner::TestRunner;
 use radix_engine::errors::RuntimeError;
 use radix_engine::ledger::InMemorySubstateStore;
-use radix_engine::transaction::ResourceSpecifier;
 use scrypto::prelude::*;
 
 #[test]
@@ -25,82 +24,6 @@ fn can_create_clone_and_drop_bucket_proof() {
             "create_clone_drop_bucket_proof",
             vec![format!("1,{}", resource_def_id), "1".to_owned()],
             Some(account),
-        )
-        .call_method_with_all_resources(account, "deposit_batch")
-        .build(vec![key])
-        .unwrap();
-    let receipt = test_runner.run(transaction);
-    println!("{:?}", receipt);
-
-    // Assert
-    assert!(receipt.result.is_ok());
-}
-
-#[test]
-fn can_create_clone_and_drop_bucket_proof_by_amount() {
-    // Arrange
-    let mut substate_store = InMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(&mut substate_store);
-    let (key, account) = test_runner.new_public_key_with_account();
-    let resource_def_id = test_runner.create_fungible_resource(account);
-    let package_id = test_runner.publish_package("proof");
-
-    // Act
-    let transaction = test_runner
-        .new_transaction_builder()
-        .parse_args_and_call_function(
-            package_id,
-            "BucketProof",
-            "create_clone_drop_bucket_proof_by_amount",
-            vec![
-                format!("3,{}", resource_def_id),
-                "3".to_owned(),
-                "1".to_owned(),
-            ],
-            Some(account),
-        )
-        .call_method_with_all_resources(account, "deposit_batch")
-        .build(vec![key])
-        .unwrap();
-    let receipt = test_runner.run(transaction);
-    println!("{:?}", receipt);
-
-    // Assert
-    assert!(receipt.result.is_ok());
-}
-
-#[test]
-fn can_create_clone_and_drop_bucket_proof_by_ids() {
-    // Arrange
-    let mut substate_store = InMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(&mut substate_store);
-    let (key, account) = test_runner.new_public_key_with_account();
-    let resource_def_id = test_runner.create_non_fungible_resource(account);
-    let package_id = test_runner.publish_package("proof");
-
-    // Act
-    let total_ids = BTreeSet::from([
-        NonFungibleId::from(1),
-        NonFungibleId::from(2),
-        NonFungibleId::from(3),
-    ]);
-    let proof_ids = BTreeSet::from([NonFungibleId::from(2)]);
-    let transaction = test_runner
-        .new_transaction_builder()
-        .withdraw_from_account(
-            &ResourceSpecifier::Ids(total_ids.clone(), resource_def_id),
-            account,
-        )
-        .take_from_worktop(
-            &ResourceSpecifier::Ids(total_ids.clone(), resource_def_id),
-            |builder, bucket_id| {
-                builder.call_function(
-                    package_id,
-                    "BucketProof",
-                    "create_clone_drop_bucket_proof_by_ids",
-                    args![scrypto::resource::Bucket(bucket_id), total_ids, proof_ids],
-                )
-            },
         )
         .call_method_with_all_resources(account, "deposit_batch")
         .build(vec![key])
