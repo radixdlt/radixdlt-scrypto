@@ -42,22 +42,7 @@ pub enum ProofRule {
     SomeOfResource(Decimal, ProofRuleResource),
     CountOf(u8, ProofRuleResourceList),
     AllOf(ProofRuleResourceList),
-    OneOf(Vec<ProofRule>),
-}
-
-impl ProofRule {
-    pub fn or(self, other: ProofRule) -> Self {
-        match self {
-            ProofRule::This(_) => ProofRule::OneOf(vec![self, other]),
-            ProofRule::SomeOfResource(_, _) => ProofRule::OneOf(vec![self, other]),
-            ProofRule::AllOf(_) => ProofRule::OneOf(vec![self, other]),
-            ProofRule::OneOf(mut rules) => {
-                rules.push(other);
-                ProofRule::OneOf(rules)
-            }
-            ProofRule::CountOf(_, _) => ProofRule::OneOf(vec![self, other]),
-        }
-    }
+    AnyOf(ProofRuleResourceList),
 }
 
 impl From<NonFungibleAddress> for ProofRule {
@@ -76,33 +61,33 @@ impl From<ResourceDefId> for ProofRule {
 macro_rules! self_ref {
     ($path_str:expr) => ({
         let path: Vec<usize> = $path_str.split('/').map(|s| s.parse::<usize>().unwrap()).collect();
-        let auth: ::scrypto::resource::ProofRuleResource = path.into();
-        auth
-    });
-}
-
-#[macro_export]
-macro_rules! any_of {
-    ($resource:expr) => ({
-        let resource: ::scrypto::resource::ProofRuleResource = $resource.into();
-        ::scrypto::resource::ProofRule::This(resource)
-    });
-    ($left:expr, $($right:expr),+) => ({
-        let resource: ::scrypto::resource::ProofRuleResource = $left.into();
-        let auth = ::scrypto::resource::ProofRule::This(resource);
-        auth.or(any_of!($($right),+))
+        path
     });
 }
 
 #[macro_export]
 macro_rules! resource_list {
   ($($resource: expr),*) => ({
-      let mut list: Vec<ProofRuleResource> = Vec::new();
+      let mut list: Vec<::scrypto::resource::ProofRuleResource> = Vec::new();
       $(
         list.push($resource.into());
       )*
       ::scrypto::resource::ProofRuleResourceList::StaticList(list)
   });
+}
+
+#[macro_export]
+macro_rules! this {
+    ($resource:expr) => ({
+        ::scrypto::resource::ProofRule::This($resource.into())
+    });
+}
+
+#[macro_export]
+macro_rules! any_of {
+    ($($resource:expr),*) => ({
+        ::scrypto::resource::ProofRule::AnyOf(resource_list!($($resource),+))
+    });
 }
 
 #[macro_export]

@@ -7,7 +7,6 @@ use radix_engine::ledger::{InMemorySubstateStore, SubstateStore};
 use radix_engine::model::{Component, HardProofRule, MethodAuthorization};
 use radix_engine::transaction::*;
 use scrypto::prelude::*;
-use scrypto::{any_of, component_authorization};
 
 #[test]
 fn cannot_make_cross_component_call_without_authorization() {
@@ -19,7 +18,7 @@ fn cannot_make_cross_component_call_without_authorization() {
     let auth_id = NonFungibleId::from(1);
     let auth_address = NonFungibleAddress::new(auth, auth_id);
     let method_authorization = component_authorization! {
-        "get_component_state" => any_of!(auth_address.clone())
+        "get_component_state" => this!(auth_address.clone())
     };
 
     let package_id = test_runner.publish_package("component");
@@ -81,7 +80,7 @@ fn can_make_cross_component_call_with_authorization() {
     let auth_id = NonFungibleId::from(1);
     let auth_address = NonFungibleAddress::new(auth, auth_id.clone());
     let method_authorization = component_authorization! {
-        "get_component_state" => any_of!(auth_address.clone())
+        "get_component_state" => this!(auth_address.clone())
     };
 
     let package_id = test_runner.publish_package("component");

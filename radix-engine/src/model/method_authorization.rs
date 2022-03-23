@@ -4,7 +4,6 @@ use crate::model::Proof;
 use sbor::*;
 use scrypto::math::Decimal;
 use scrypto::prelude::{NonFungibleAddress, ResourceDefId};
-use scrypto::rust::vec;
 use scrypto::rust::vec::Vec;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, TypeId, Encode, Decode)]
@@ -70,26 +69,11 @@ pub enum HardProofRule {
     This(HardProofRuleResource),
     SomeOfResource(Decimal, HardProofRuleResource),
     AllOf(Vec<HardProofRuleResource>),
-    OneOf(Vec<HardProofRule>),
+    AnyOf(Vec<HardProofRuleResource>),
     CountOf(u8, Vec<HardProofRuleResource>),
 }
 
 impl HardProofRule {
-    pub fn or(self, other: HardProofRule) -> Self {
-        match self {
-            HardProofRule::This(_) => HardProofRule::OneOf(vec![self, other]),
-            HardProofRule::SomeOfResource(_, _) => HardProofRule::OneOf(vec![self, other]),
-            HardProofRule::AllOf(_) => HardProofRule::OneOf(vec![self, other]),
-            HardProofRule::OneOf(mut rules) => {
-                rules.push(other);
-                HardProofRule::OneOf(rules)
-            }
-            HardProofRule::CountOf(_, _) => {
-                HardProofRule::OneOf(vec![self, other])
-            }
-        }
-    }
-
     pub fn check(&self, proofs_vector: &[&[Proof]]) -> Result<(), RuntimeError> {
         match self {
             HardProofRule::This(resource) => {
@@ -115,9 +99,9 @@ impl HardProofRule {
 
                 Ok(())
             }
-            HardProofRule::OneOf(rules) => {
-                for rule in rules {
-                    if rule.check(proofs_vector).is_ok() {
+            HardProofRule::AnyOf(resources) => {
+                for resource in resources {
+                    if resource.check(proofs_vector) {
                         return Ok(());
                     }
                 }

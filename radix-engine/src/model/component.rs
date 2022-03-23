@@ -127,25 +127,22 @@ impl Component {
             ProofRule::This(proof_rule_resource) => {
                 match Self::soft_to_hard_resource(proof_rule_resource, dom) {
                     Some(resource) => HardProofRule::This(resource),
-                    None => HardProofRule::OneOf(vec![]),
+                    None => HardProofRule::AnyOf(vec![]),
                 }
             }
             ProofRule::SomeOfResource(amount, proof_rule_resource) => {
                 match Self::soft_to_hard_resource(proof_rule_resource, dom) {
                     Some(resource) => HardProofRule::SomeOfResource(*amount, resource),
-                    None => HardProofRule::OneOf(vec![]),
+                    None => HardProofRule::AnyOf(vec![]),
                 }
             }
             ProofRule::AllOf(resources) => {
                 let hard_resources = Self::soft_to_hard_resource_list(resources, dom);
                 HardProofRule::AllOf(hard_resources)
             }
-            ProofRule::OneOf(rules) => {
-                let hard_rules = rules
-                    .into_iter()
-                    .map(|proof_rule| Self::soft_to_hard_rule(proof_rule, dom))
-                    .collect();
-                HardProofRule::OneOf(hard_rules)
+            ProofRule::AnyOf(resources) => {
+                let hard_resources = Self::soft_to_hard_resource_list(resources, dom);
+                HardProofRule::AnyOf(hard_resources)
             }
             ProofRule::CountOf(count, resources) => {
                 let hard_resources = Self::soft_to_hard_resource_list(resources, dom);

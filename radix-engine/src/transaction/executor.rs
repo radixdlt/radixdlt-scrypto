@@ -5,7 +5,7 @@ use scrypto::resource::ProofRule;
 use scrypto::rust::string::ToString;
 use scrypto::rust::vec;
 use scrypto::rust::vec::Vec;
-use scrypto::{abi, any_of};
+use scrypto::{abi, any_of, resource_list};
 
 use crate::engine::*;
 use crate::errors::*;

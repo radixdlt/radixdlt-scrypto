@@ -5,6 +5,7 @@ use scrypto::resource::resource_flags::*;
 use scrypto::resource::resource_permissions::*;
 use scrypto::rust::collections::HashMap;
 use scrypto::rust::mem;
+use scrypto::rust::vec;
 use scrypto::rust::string::String;
 use crate::model::method_authorization::HardProofRule;
 
@@ -163,11 +164,11 @@ impl ResourceDef {
                         let method_state = method_states.get_mut(*method).unwrap();
                         let cur_rule =
                             mem::replace(&mut method_state.auth, MethodAuthorization::Public);
-                        let new_rule = HardProofRule::This(resource_def_id.into());
                         method_state.auth = match cur_rule {
-                            MethodAuthorization::Public => MethodAuthorization::Protected(new_rule),
-                            MethodAuthorization::Protected(rule) => {
-                                MethodAuthorization::Protected(rule.or(new_rule))
+                            MethodAuthorization::Public => MethodAuthorization::Protected(HardProofRule::AnyOf(vec![resource_def_id.into()])),
+                            MethodAuthorization::Protected(HardProofRule::AnyOf(mut resources)) => {
+                                resources.push(resource_def_id.into());
+                                MethodAuthorization::Protected(HardProofRule::AnyOf(resources))
                             }
                             _ => panic!("Should never get here."),
                         };
