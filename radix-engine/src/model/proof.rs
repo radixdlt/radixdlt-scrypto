@@ -70,13 +70,17 @@ impl Proof {
         restricted: bool,
         locked_total: AmountOrIds,
         locked_details: Vec<(Rc<RefCell<ResourceContainer>>, ProofSourceId, AmountOrIds)>,
-    ) -> Proof {
-        Self {
+    ) -> Result<Proof, ProofError> {
+        if locked_total.as_amount().is_zero() {
+            return Err(ProofError::EmptyProofNotAllowed);
+        }
+
+        Ok(Self {
             resource_def_id,
             restricted,
             locked_total,
             locked_details,
-        }
+        })
     }
 
     pub fn create_proof_by_amount(
@@ -133,12 +137,12 @@ impl Proof {
         }
 
         // issue a new proof
-        Ok(Proof::new(
+        Proof::new(
             resource_def_id,
             false,
             AmountOrIds::Amount(amount),
             locked_details,
-        ))
+        )
     }
 
     pub fn compose_by_ids(
@@ -189,12 +193,12 @@ impl Proof {
         }
 
         // issue a new proof
-        Ok(Proof::new(
+        Proof::new(
             resource_def_id,
             false,
             AmountOrIds::Ids(ids),
             locked_details,
-        ))
+        )
     }
 
     pub fn clone(&self) -> Self {
