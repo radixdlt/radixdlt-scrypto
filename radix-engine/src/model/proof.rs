@@ -4,7 +4,6 @@ use scrypto::rust::cell::RefCell;
 use scrypto::rust::collections::BTreeSet;
 use scrypto::rust::collections::HashMap;
 use scrypto::rust::rc::Rc;
-use scrypto::rust::vec::Vec;
 
 use crate::model::{ResourceContainer, ResourceContainerError};
 
@@ -16,8 +15,8 @@ pub enum Proof {
         /// Restricted proof can't be moved.
         restricted: bool,
         /// The total amount this proof proves
-        amount: Decimal,
-        /// The proof sources
+        total_amount: Decimal,
+        /// The proof sources (the sum of which may exceed total amount)
         sources: HashMap<ProofSourceId, (Rc<RefCell<ResourceContainer>>, Decimal)>,
     },
     NonFungible {
@@ -26,8 +25,8 @@ pub enum Proof {
         /// Restricted proof can't be moved.
         restricted: bool,
         /// The total non-fungible IDs this proof proves
-        ids: BTreeSet<NonFungibleId>,
-        /// The proof sources
+        total_ids: BTreeSet<NonFungibleId>,
+        /// The proof sources (the sum of which may exceed total ids)
         sources: HashMap<ProofSourceId, (Rc<RefCell<ResourceContainer>>, BTreeSet<NonFungibleId>)>,
     },
 }
@@ -60,17 +59,17 @@ impl Proof {
     pub fn new_fungible(
         resource_def_id: ResourceDefId,
         restricted: bool,
-        amount: Decimal,
+        total_amount: Decimal,
         sources: HashMap<ProofSourceId, (Rc<RefCell<ResourceContainer>>, Decimal)>,
     ) -> Result<Proof, ProofError> {
-        if amount.is_zero() {
+        if total_amount.is_zero() {
             return Err(ProofError::EmptyProofNotAllowed);
         }
 
         Ok(Self::Fungible {
             resource_def_id,
             restricted,
-            amount,
+            total_amount,
             sources,
         })
     }
@@ -78,24 +77,24 @@ impl Proof {
     pub fn new_non_fungible(
         resource_def_id: ResourceDefId,
         restricted: bool,
-        ids: BTreeSet<NonFungibleId>,
+        total_ids: BTreeSet<NonFungibleId>,
         sources: HashMap<ProofSourceId, (Rc<RefCell<ResourceContainer>>, BTreeSet<NonFungibleId>)>,
     ) -> Result<Proof, ProofError> {
-        if ids.is_empty() {
+        if total_ids.is_empty() {
             return Err(ProofError::EmptyProofNotAllowed);
         }
 
         Ok(Self::NonFungible {
             resource_def_id,
             restricted,
-            ids,
+            total_ids,
             sources,
         })
     }
 
     pub fn create_proof_by_amount(
         proofs: &[Proof],
-        amount: Decimal,
+        total_amount: Decimal,
         resource_def_id: ResourceDefId,
         resource_type: ResourceType,
     ) -> Result<Proof, ProofError> {
@@ -130,7 +129,7 @@ impl Proof {
             .cloned()
             .reduce(|a, b| a + b)
             .unwrap_or_default();
-        if amount > max {
+        if total_amount > max {
             return Err(ProofError::InsufficientBaseProofs);
         }
 
@@ -165,12 +164,12 @@ impl Proof {
         }
 
         // issue a new proof
-        Proof::new_fungible(resource_def_id, false, amount, new_sources)
+        Proof::new_fungible(resource_def_id, false, total_amount, new_sources)
     }
 
     pub fn compose_by_ids(
         proofs: &[Proof],
-        ids: BTreeSet<NonFungibleId>,
+        total_ids: BTreeSet<NonFungibleId>,
         resource_def_id: ResourceDefId,
         resource_type: ResourceType,
     ) -> Result<Proof, ProofError> {
@@ -204,7 +203,7 @@ impl Proof {
         for (_, value) in allowance {
             max.extend(value);
         }
-        if !max.is_superset(&ids) {
+        if !max.is_superset(&total_ids) {
             return Err(ProofError::InsufficientBaseProofs);
         }
 
@@ -234,7 +233,7 @@ impl Proof {
         }
 
         // issue a new proof
-        Proof::new_non_fungible(resource_def_id, false, ids, new_sources)
+        Proof::new_non_fungible(resource_def_id, false, total_ids, new_sources)
     }
 
     pub fn clone(&self) -> Self {
@@ -242,7 +241,7 @@ impl Proof {
             Self::Fungible {
                 resource_def_id,
                 restricted,
-                amount,
+                total_amount,
                 sources,
             } => {
                 for (container, amount) in sources.values() {
@@ -255,17 +254,17 @@ impl Proof {
                 Self::Fungible {
                     resource_def_id: resource_def_id.clone(),
                     restricted: restricted.clone(),
-                    amount: amount.clone(),
+                    total_amount: total_amount.clone(),
                     sources: sources.clone(),
                 }
             }
             Self::NonFungible {
                 resource_def_id,
                 restricted,
-                ids,
+                total_ids,
                 sources,
             } => {
-                for (container, amount) in sources.values() {
+                for (container, ids) in sources.values() {
                     container
                         .borrow_mut()
                         .lock_ids(ids)
@@ -275,7 +274,7 @@ impl Proof {
                 Self::NonFungible {
                     resource_def_id: resource_def_id.clone(),
                     restricted: restricted.clone(),
-                    ids: ids.clone(),
+                    total_ids: total_ids.clone(),
                     sources: sources.clone(),
                 }
             }
@@ -324,15 +323,15 @@ impl Proof {
 
     pub fn total_amount(&self) -> Decimal {
         match self {
-            Self::Fungible { amount, .. } => amount.clone(),
-            Self::NonFungible { ids, .. } => ids.len().into(),
+            Self::Fungible { total_amount, .. } => total_amount.clone(),
+            Self::NonFungible { total_ids, .. } => total_ids.len().into(),
         }
     }
 
     pub fn total_ids(&self) -> Result<BTreeSet<NonFungibleId>, ProofError> {
         match self {
-            Self::Fungible { amount, .. } => Err(ProofError::NonFungibleOperationNotAllowed),
-            Self::NonFungible { ids, .. } => Ok(ids.clone()),
+            Self::Fungible { .. } => Err(ProofError::NonFungibleOperationNotAllowed),
+            Self::NonFungible { total_ids, .. } => Ok(total_ids.clone()),
         }
     }
 

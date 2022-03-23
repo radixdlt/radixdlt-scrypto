@@ -2,12 +2,11 @@ use sbor::*;
 use scrypto::engine::types::*;
 use scrypto::rust::cell::{Ref, RefCell, RefMut};
 use scrypto::rust::collections::BTreeSet;
+use scrypto::rust::collections::HashMap;
 use scrypto::rust::rc::Rc;
-use scrypto::rust::vec;
 
 use crate::model::{
-    AmountOrIds, Bucket, Proof, ProofError, ProofSourceId, ResourceContainer,
-    ResourceContainerError,
+    Bucket, Proof, ProofError, ProofSourceId, ResourceContainer, ResourceContainerError,
 };
 /// A persistent resource container.
 #[derive(Debug, TypeId, Encode, Decode)]
@@ -68,16 +67,9 @@ impl Vault {
             .map_err(ProofError::ResourceContainerError)?;
 
         // produce proof
-        Proof::new(
-            self.resource_def_id(),
-            false,
-            AmountOrIds::Amount(amount),
-            vec![(
-                self.container.clone(),
-                proof_source_id,
-                AmountOrIds::Amount(amount),
-            )],
-        )
+        let mut sources = HashMap::new();
+        sources.insert(proof_source_id, (self.container.clone(), amount.clone()));
+        Proof::new_fungible(self.resource_def_id(), false, amount.clone(), sources)
     }
 
     pub fn create_proof_by_ids(
@@ -91,16 +83,9 @@ impl Vault {
             .map_err(ProofError::ResourceContainerError)?;
 
         // produce proof
-        Proof::new(
-            self.resource_def_id(),
-            false,
-            AmountOrIds::Ids(ids.clone()),
-            vec![(
-                self.container.clone(),
-                proof_source_id,
-                AmountOrIds::Ids(ids.clone()),
-            )],
-        )
+        let mut sources = HashMap::new();
+        sources.insert(proof_source_id, (self.container.clone(), ids.clone()));
+        Proof::new_non_fungible(self.resource_def_id(), false, ids.clone(), sources)
     }
 
     pub fn resource_def_id(&self) -> ResourceDefId {
