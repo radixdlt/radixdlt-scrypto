@@ -8,6 +8,7 @@ use scrypto::math::Decimal;
 pub enum ProofRuleResource {
     NonFungible(NonFungibleAddress),
     Resource(ResourceDefId),
+    FromComponent(Vec<usize>),
 }
 
 impl From<NonFungibleAddress> for ProofRuleResource {
@@ -22,11 +23,16 @@ impl From<ResourceDefId> for ProofRuleResource {
     }
 }
 
+impl From<Vec<usize>> for ProofRuleResource {
+    fn from(path: Vec<usize>) -> Self {
+        ProofRuleResource::FromComponent(path)
+    }
+}
+
 /// Authorization Rule
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Describe, TypeId, Encode, Decode)]
 pub enum ProofRule {
     This(ProofRuleResource),
-    FromComponent(Vec<usize>),
     SomeOfResource(Decimal, ResourceDefId),
     AllOf(Vec<ProofRule>),
     OneOf(Vec<ProofRule>),
@@ -37,7 +43,6 @@ impl ProofRule {
     pub fn or(self, other: ProofRule) -> Self {
         match self {
             ProofRule::This(_) => ProofRule::OneOf(vec![self, other]),
-            ProofRule::FromComponent(_) => ProofRule::OneOf(vec![self, other]),
             ProofRule::SomeOfResource(_, _) => ProofRule::OneOf(vec![self, other]),
             ProofRule::AllOf(_) => ProofRule::OneOf(vec![self, other]),
             ProofRule::OneOf(mut rules) => {
@@ -46,18 +51,6 @@ impl ProofRule {
             }
             ProofRule::CountOf { count: _, rules: _ } => ProofRule::OneOf(vec![self, other]),
         }
-    }
-}
-
-impl From<usize> for ProofRule {
-    fn from(single_path: usize) -> Self {
-        ProofRule::FromComponent(vec![single_path])
-    }
-}
-
-impl From<Vec<usize>> for ProofRule {
-    fn from(path: Vec<usize>) -> Self {
-        ProofRule::FromComponent(path)
     }
 }
 
@@ -74,36 +67,38 @@ impl From<ResourceDefId> for ProofRule {
 }
 
 #[macro_export]
+macro_rules! self_ref {
+    ($path_str:expr) => ({
+        let path: Vec<usize> = $path_str.split('/').map(|s| s.parse::<usize>().unwrap()).collect();
+        let auth: ::scrypto::resource::ProofRuleResource = path.into();
+        auth
+    });
+}
+
+#[macro_export]
 macro_rules! any_of {
-    (component_self($path_str:expr)) => ({
-        let path: Vec<usize> = $path_str.split('/').map(|s| s.parse::<usize>().unwrap()).collect();
-        let auth: ProofRule = path.into();
-        auth
-    });
-    ($rule:expr) => ({
-        let auth: ProofRule = $rule.into();
-        auth
-    });
-    (component_self($path_str:expr), $($right:expr),+) => ({
-        let path: Vec<usize> = $path_str.split('/').map(|s| s.parse::<usize>().unwrap()).collect();
-        let auth: ProofRule = path.into();
-        auth.or(any_of!($($right),+))
+    ($resource:expr) => ({
+        let resource: ::scrypto::resource::ProofRuleResource = $resource.into();
+        ::scrypto::resource::ProofRule::This(resource)
     });
     ($left:expr, $($right:expr),+) => ({
-        let auth: ProofRule = $left.into();
+        let resource: ::scrypto::resource::ProofRuleResource = $left.into();
+        let auth = ::scrypto::resource::ProofRule::This(resource);
         auth.or(any_of!($($right),+))
     });
 }
 
 #[macro_export]
 macro_rules! all_of {
-    ($rule:expr) => ({
-        let auth: ProofRule = $rule.into();
-        auth
+    ($resource:expr) => ({
+        let resource: ::scrypto::resource::ProofRuleResource = $resource.into();
+        ::scrypto::resource::ProofRule::This(resource)
     });
-    ($left:expr, $($right:expr),+) => (
-        ProofRule::AllOf(vec![$left.into(), all_of!($($right),+)])
-    );
+    ($left:expr, $($right:expr),+) => ({
+        let resource: ::scrypto::resource::ProofRuleResource = $left.into();
+        let auth = ::scrypto::resource::ProofRule::This(resource);
+        ::scrypto::resource::ProofRule::AllOf(vec![auth, all_of!($($right),+)])
+    });
 }
 
 #[macro_export]

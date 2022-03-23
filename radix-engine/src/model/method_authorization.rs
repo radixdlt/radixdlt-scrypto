@@ -3,13 +3,19 @@ use crate::errors::RuntimeError::NotAuthorized;
 use crate::model::Proof;
 use sbor::*;
 use scrypto::math::Decimal;
-use scrypto::prelude::{NonFungibleAddress, ProofRuleResource, ResourceDefId};
+use scrypto::prelude::{NonFungibleAddress, ResourceDefId};
 use scrypto::rust::vec;
 use scrypto::rust::vec::Vec;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, TypeId, Encode, Decode)]
+pub enum HardProofRuleResource {
+    NonFungible(NonFungibleAddress),
+    Resource(ResourceDefId),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, TypeId, Encode, Decode)]
 pub enum HardProofRule {
-    This(ProofRuleResource),
+    This(HardProofRuleResource),
     SomeOfResource(Decimal, ResourceDefId),
     AllOf(Vec<HardProofRule>),
     OneOf(Vec<HardProofRule>),
@@ -21,13 +27,13 @@ pub enum HardProofRule {
 
 impl From<NonFungibleAddress> for HardProofRule {
     fn from(non_fungible_address: NonFungibleAddress) -> Self {
-        HardProofRule::This(non_fungible_address.into())
+        HardProofRule::This(HardProofRuleResource::NonFungible(non_fungible_address.into()))
     }
 }
 
 impl From<ResourceDefId> for HardProofRule {
     fn from(resource_def_id: ResourceDefId) -> Self {
-        HardProofRule::This(resource_def_id.into())
+        HardProofRule::This(HardProofRuleResource::Resource(resource_def_id.into()))
     }
 }
 
@@ -50,7 +56,7 @@ impl HardProofRule {
     pub fn check(&self, proofs_vector: &[&[Proof]]) -> Result<(), RuntimeError> {
         match self {
             HardProofRule::This(proof_rule_resource) => match proof_rule_resource {
-                ProofRuleResource::NonFungible(non_fungible_address) => {
+                HardProofRuleResource::NonFungible(non_fungible_address) => {
                     for proofs in proofs_vector {
                         for p in proofs.iter() {
                             let proof_resource_def_id = p.resource_def_id();
@@ -69,7 +75,7 @@ impl HardProofRule {
 
                     Err(NotAuthorized)
                 }
-                ProofRuleResource::Resource(resource_def_id) => {
+                HardProofRuleResource::Resource(resource_def_id) => {
                     for proofs in proofs_vector {
                         for p in proofs.iter() {
                             let proof_resource_def_id = p.resource_def_id();

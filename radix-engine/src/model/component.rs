@@ -1,9 +1,9 @@
-use crate::model::method_authorization::HardProofRule;
+use crate::model::method_authorization::{HardProofRule, HardProofRuleResource};
 use crate::model::{MethodAuthorization, ValidatedData};
 use sbor::any::{Fields, Value};
 use sbor::*;
 use scrypto::engine::types::*;
-use scrypto::prelude::NonFungibleAddress;
+use scrypto::prelude::{NonFungibleAddress, ProofRuleResource};
 use scrypto::resource::ProofRule;
 use scrypto::rust::collections::*;
 use scrypto::rust::string::String;
@@ -64,22 +64,27 @@ impl Component {
 
     fn to_hard_rule(proof_rule: &ProofRule, dom: &Value) -> HardProofRule {
         match proof_rule {
-            ProofRule::FromComponent(path) => match Self::get_from_value(path, dom) {
-                Some(Value::Custom(type_id, bytes)) => {
-                    match CustomType::from_id(*type_id).unwrap() {
-                        CustomType::ResourceDefId => {
-                            HardProofRule::from(ResourceDefId::try_from(bytes.as_slice()).unwrap())
-                        }
-                        CustomType::NonFungibleAddress => HardProofRule::from(
-                            NonFungibleAddress::try_from(bytes.as_slice()).unwrap(),
-                        ),
-                        _ => HardProofRule::OneOf(vec![]),
-                    }
-                }
-                _ => HardProofRule::OneOf(vec![]),
-            },
             ProofRule::This(proof_rule_resource) => {
-                HardProofRule::This(proof_rule_resource.clone())
+                match proof_rule_resource {
+                    ProofRuleResource::FromComponent(path) => {
+                        match Self::get_from_value(path, dom) {
+                            Some(Value::Custom(type_id, bytes)) => {
+                                match CustomType::from_id(*type_id).unwrap() {
+                                    CustomType::ResourceDefId => {
+                                        HardProofRule::from(ResourceDefId::try_from(bytes.as_slice()).unwrap())
+                                    }
+                                    CustomType::NonFungibleAddress => HardProofRule::from(
+                                        NonFungibleAddress::try_from(bytes.as_slice()).unwrap(),
+                                    ),
+                                    _ => HardProofRule::OneOf(vec![]),
+                                }
+                            }
+                            _ => HardProofRule::OneOf(vec![]),
+                        }
+                    },
+                    ProofRuleResource::NonFungible(non_fungible_address) => HardProofRule::This(HardProofRuleResource::NonFungible(non_fungible_address.clone())),
+                    ProofRuleResource::Resource(resource_def_id) => HardProofRule::This(HardProofRuleResource::Resource(resource_def_id.clone())),
+                }
             }
             ProofRule::SomeOfResource(amount, resource_def_id) => {
                 HardProofRule::SomeOfResource(*amount, *resource_def_id)
