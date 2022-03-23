@@ -3,8 +3,7 @@ use crate::model::{MethodAuthorization, ValidatedData};
 use sbor::any::{Fields, Value};
 use sbor::*;
 use scrypto::engine::types::*;
-use scrypto::prelude::{NonFungibleAddress, ProofRuleResource, ProofRuleResourceList};
-use scrypto::resource::ProofRule;
+use scrypto::resource::{ProofRule, NonFungibleAddress, ProofRuleResource, ProofRuleResourceList, SborRelPath};
 use scrypto::rust::collections::*;
 use scrypto::rust::string::String;
 use scrypto::rust::vec;
@@ -35,22 +34,21 @@ impl Component {
         }
     }
 
-    fn get_from_vector<'a>(path: &'a [usize], values: &'a [Value]) -> Option<&'a Value> {
-        let (index_slice, extended_path) = path.split_at(1);
-        let index = index_slice[0];
+    fn get_from_vector<'a>(path: SborRelPath<'a>, values: &'a [Value]) -> Option<&'a Value> {
+        let (index, next_path) = path.pop();
         values
             .get(index)
-            .and_then(|value| Self::get_from_value(extended_path, value))
+            .and_then(|value| Self::get_from_value(next_path, value))
     }
 
-    fn get_from_fields<'a>(path: &'a [usize], fields: &'a Fields) -> Option<&'a Value> {
+    fn get_from_fields<'a>(path: SborRelPath<'a>, fields: &'a Fields) -> Option<&'a Value> {
         match fields {
             Fields::Named(values) | Fields::Unnamed(values) => Self::get_from_vector(path, values),
             Fields::Unit => Option::None,
         }
     }
 
-    fn get_from_value<'a>(path: &'a [usize], value: &'a Value) -> Option<&'a Value> {
+    fn get_from_value<'a>(path: SborRelPath<'a>, value: &'a Value) -> Option<&'a Value> {
         if path.is_empty() {
             return Option::Some(value);
         }
@@ -61,7 +59,6 @@ impl Component {
             _ => Option::None,
         }
     }
-
 
     fn soft_to_hard_resource_list(list: &ProofRuleResourceList, dom: &Value) -> Vec<HardProofRuleResource> {
         match list {
@@ -75,7 +72,7 @@ impl Component {
                 hard_resources
             }
             ProofRuleResourceList::FromComponent(path) => {
-                match Self::get_from_value(path, dom) {
+                match Self::get_from_value(path.rel_path(), dom) {
                     Some(Value::Vec(type_id, values)) => {
                         match CustomType::from_id(*type_id).unwrap() {
                             CustomType::ResourceDefId => {
@@ -106,7 +103,7 @@ impl Component {
     fn soft_to_hard_resource(proof_rule_resource: &ProofRuleResource, dom: &Value) -> Option<HardProofRuleResource> {
         match proof_rule_resource {
             ProofRuleResource::FromComponent(path) => {
-                match Self::get_from_value(path, dom) {
+                match Self::get_from_value(path.rel_path(), dom) {
                     Some(Value::Custom(type_id, bytes)) => {
                         match CustomType::from_id(*type_id).unwrap() {
                             CustomType::ResourceDefId => Option::Some(ResourceDefId::try_from(bytes.as_slice()).unwrap().into()),
@@ -130,7 +127,7 @@ impl Component {
                     None => HardProofRule::AnyOf(vec![]),
                 }
             }
-            ProofRule::SomeOfResource(amount, proof_rule_resource) => {
+            ProofRule::AmountOf(amount, proof_rule_resource) => {
                 match Self::soft_to_hard_resource(proof_rule_resource, dom) {
                     Some(resource) => HardProofRule::SomeOfResource(*amount, resource),
                     None => HardProofRule::AnyOf(vec![]),

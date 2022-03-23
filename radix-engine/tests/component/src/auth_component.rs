@@ -8,8 +8,8 @@ blueprint! {
     impl AuthComponent {
         pub fn create_component(some_non_fungible: NonFungibleAddress) -> ComponentId {
             Self { some_non_fungible }.instantiate_with_auth(component_authorization! {
-                "get_secret" => any_of!(self_ref!("0")),
-                "update_auth" => any_of!(self_ref!("0")),
+                "get_secret" => any_of!(SborPath::from("0")),
+                "update_auth" => any_of!(SborPath::from("0")),
             })
         }
 

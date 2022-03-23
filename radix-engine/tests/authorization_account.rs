@@ -6,7 +6,7 @@ use radix_engine::errors::RuntimeError;
 use radix_engine::ledger::InMemorySubstateStore;
 use radix_engine::transaction::*;
 use scrypto::prelude::*;
-use scrypto::{all_of, amount_of, any_of, min_n_of, resource_list};
+use scrypto::{all_of, min_amount_of, any_of, min_n_of, resource_list};
 
 #[test]
 fn can_withdraw_from_my_1_of_2_account_with_key0_sign() {
@@ -192,7 +192,7 @@ fn can_withdraw_from_my_any_xrd_auth_account_with_right_amount_of_proof() {
     // Arrange
     let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(&mut substate_store);
-    let xrd_auth = amount_of!(Decimal(1), RADIX_TOKEN);
+    let xrd_auth = min_amount_of!(Decimal(1), RADIX_TOKEN);
     let account = test_runner.new_account(&xrd_auth);
     let (_, other_account) = test_runner.new_public_key_with_account();
 
@@ -229,7 +229,7 @@ fn cannot_withdraw_from_my_any_xrd_auth_account_with_less_than_amount_of_proof()
     // Arrange
     let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(&mut substate_store);
-    let xrd_auth = amount_of!(Decimal::from(1), RADIX_TOKEN);
+    let xrd_auth = min_amount_of!(Decimal::from(1), RADIX_TOKEN);
     let account = test_runner.new_account(&xrd_auth);
     let (_, other_account) = test_runner.new_public_key_with_account();
 
