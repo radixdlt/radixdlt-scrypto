@@ -89,8 +89,11 @@ impl Component {
                     None => HardProofRule::OneOf(vec![]),
                 }
             }
-            ProofRule::SomeOfResource(amount, resource_def_id) => {
-                HardProofRule::SomeOfResource(*amount, *resource_def_id)
+            ProofRule::SomeOfResource(amount, proof_rule_resource) => {
+                match Self::soft_to_hard_resource(proof_rule_resource, dom) {
+                    Some(resource) => HardProofRule::SomeOfResource(*amount, resource),
+                    None => HardProofRule::OneOf(vec![]),
+                }
             }
             ProofRule::AllOf(rules) => {
                 let hard_rules = rules

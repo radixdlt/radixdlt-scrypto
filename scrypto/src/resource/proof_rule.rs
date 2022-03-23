@@ -33,7 +33,7 @@ impl From<Vec<usize>> for ProofRuleResource {
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Describe, TypeId, Encode, Decode)]
 pub enum ProofRule {
     This(ProofRuleResource),
-    SomeOfResource(Decimal, ResourceDefId),
+    SomeOfResource(Decimal, ProofRuleResource),
     CountOf { count: u8, resources: Vec<ProofRuleResource> },
     AllOf(Vec<ProofRule>),
     OneOf(Vec<ProofRule>),
@@ -124,6 +124,6 @@ macro_rules! min_n_of {
 #[macro_export]
 macro_rules! amount_of {
     ($amount:expr, $resource:expr) => {
-        ProofRule::SomeOfResource($amount, $resource)
+        ProofRule::SomeOfResource($amount, $resource.into())
     };
 }
