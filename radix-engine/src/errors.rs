@@ -171,8 +171,8 @@ pub enum RuntimeError {
     /// Resource check failure.
     ResourceCheckFailure,
 
-    /// AuthWorktop is empty when trying to pop
-    EmptyAuthWorkTop,
+    /// AuthZone is empty when trying to pop
+    EmptyAuthZone,
 
     /// System Authorization Failure
     NotAuthorized,
@@ -191,6 +191,9 @@ pub enum RuntimeError {
 
     /// Can't burn locked bucket.
     CantBurnLockedBucket,
+
+    /// Can't move restricted proof.
+    CantMoveRestrictedProof(ProofId),
 }
 
 impl fmt::Display for RuntimeError {

@@ -110,8 +110,8 @@ pub const GET_PROOF_RESOURCE_DEF_ID: u32 = 0x65;
 /// Get the non-fungible ids in the proof
 pub const GET_NON_FUNGIBLE_IDS_IN_PROOF: u32 = 0x66;
 
-pub const PUSH_ONTO_AUTH_WORKTOP: u32 = 0x67;
-pub const POP_FROM_AUTH_WORKTOP: u32 = 0x68;
+pub const PUSH_ONTO_AUTH_ZONE: u32 = 0x67;
+pub const POP_FROM_AUTH_ZONE: u32 = 0x68;
 
 /// Log a message
 pub const EMIT_LOG: u32 = 0xf0;
@@ -611,18 +611,18 @@ pub struct CloneProofOutput {
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct PushOntoAuthWorktopInput {
+pub struct PushOntoAuthZoneInput {
     pub proof_id: ProofId,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct PushOntoAuthWorktopOutput {}
+pub struct PushOntoAuthZoneOutput {}
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct PopFromAuthWorktopInput {}
+pub struct PopFromAuthZoneInput {}
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct PopFromAuthWorktopOutput {
+pub struct PopFromAuthZoneOutput {
     pub proof_id: ProofId,
 }
 

@@ -109,9 +109,7 @@ impl<'s, S: SubstateStore> Track<'s, S> {
             let ecdsa_bucket =
                 Bucket::new(ResourceContainer::new_non_fungible(ECDSA_TOKEN, signers));
             process.create_virtual_proof(ECDSA_TOKEN_PROOF_ID, ecdsa_bucket);
-            process
-                .push_onto_auth_worktop(ECDSA_TOKEN_PROOF_ID)
-                .unwrap();
+            process.push_onto_auth_zone(ECDSA_TOKEN_PROOF_ID).unwrap();
         }
 
         process

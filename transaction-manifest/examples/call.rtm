@@ -6,12 +6,12 @@ ASSERT_WORKTOP_CONTAINS Decimal("3.0") ResourceDefId("03000000000000000000000000
 ASSERT_WORKTOP_CONTAINS Decimal("1.0") ResourceDefId("03aedb7960d1f87dc25138f4cd101da6c98d57323478d53c5fb951");
 
 TAKE_ALL_FROM_WORKTOP ResourceDefId("030000000000000000000000000000000000000000000000000004")  Bucket("remaining_xrd");
-CREATE_BUCKET_PROOF  Bucket("remaining_xrd")  Proof("badge1");
-CLONE_PROOF  Proof("badge1")  Proof("badge2");
-DROP_PROOF  Proof("badge1");
-PUSH_ONTO_AUTH_WORKTOP Proof("badge2");
-POP_FROM_AUTH_WORKTOP Proof("badge3");
-DROP_PROOF  Proof("badge3");
+CREATE_BUCKET_PROOF  Bucket("remaining_xrd")  Proof("proof1");
+CLONE_PROOF  Proof("proof1")  Proof("proof2");
+DROP_PROOF  Proof("proof1");
+PUSH_ONTO_AUTH_ZONE Proof("proof2");
+POP_FROM_AUTH_ZONE Proof("proof3");
+DROP_PROOF  Proof("proof3");
 RETURN_TO_WORKTOP  Bucket("remaining_xrd");
 
 TAKE_NON_FUNGIBLES_FROM_WORKTOP TreeSet<NonFungibleId>(NonFungibleId("11"), NonFungibleId("22")) ResourceDefId("030000000000000000000000000000000000000000000000000004")  Bucket("nfts");
