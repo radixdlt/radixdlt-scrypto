@@ -4,7 +4,7 @@ pub mod test_runner;
 use crate::test_runner::TestRunner;
 use radix_engine::errors::RuntimeError;
 use radix_engine::ledger::{InMemorySubstateStore, SubstateStore};
-use radix_engine::model::{Component, MethodAuthorization};
+use radix_engine::model::{Component, HardProofRule, MethodAuthorization};
 use radix_engine::transaction::*;
 use scrypto::prelude::*;
 use scrypto::{any_of, component_authorization};
@@ -67,7 +67,7 @@ fn cannot_make_cross_component_call_without_authorization() {
         .unwrap();
     assert_eq!(
         component_state.initialize_method("get_component_state").1,
-        MethodAuthorization::Protected(auth_address.into())
+        MethodAuthorization::Protected(HardProofRule::This(auth_address.into()))
     );
 }
 
@@ -138,6 +138,6 @@ fn can_make_cross_component_call_with_authorization() {
         .unwrap();
     assert_eq!(
         component_state.initialize_method("get_component_state").1,
-        MethodAuthorization::Protected(auth_address.into())
+        MethodAuthorization::Protected(HardProofRule::This(auth_address.into()))
     );
 }

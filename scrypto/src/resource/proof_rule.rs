@@ -34,9 +34,9 @@ impl From<Vec<usize>> for ProofRuleResource {
 pub enum ProofRule {
     This(ProofRuleResource),
     SomeOfResource(Decimal, ResourceDefId),
+    CountOf { count: u8, resources: Vec<ProofRuleResource> },
     AllOf(Vec<ProofRule>),
     OneOf(Vec<ProofRule>),
-    CountOf { count: u8, rules: Vec<ProofRule> },
 }
 
 impl ProofRule {
@@ -49,7 +49,7 @@ impl ProofRule {
                 rules.push(other);
                 ProofRule::OneOf(rules)
             }
-            ProofRule::CountOf { count: _, rules: _ } => ProofRule::OneOf(vec![self, other]),
+            ProofRule::CountOf { count: _, resources: _ } => ProofRule::OneOf(vec![self, other]),
         }
     }
 }
@@ -103,19 +103,19 @@ macro_rules! all_of {
 
 #[macro_export]
 macro_rules! min_n_of {
-    ($count:expr, $rule:expr) => (
+    ($count:expr, $resource:expr) => (
         ProofRule::CountOf {
             count: $count,
-            rules: vec![$rule.into()]
+            resources: vec![$resource.into()]
         }
     );
     ($count:expr, $left:expr, $($right:expr),+) => ({
         let mut auth = min_n_of!($count, $($right),+);
         match auth {
             // TODO: retain original order
-            ProofRule::CountOf { count, mut rules } => {
-                rules.push($left.into());
-                ProofRule::CountOf { count, rules }
+            ProofRule::CountOf { count, mut resources } => {
+                resources.push($left.into());
+                ProofRule::CountOf { count, resources }
             },
             _ => panic!("Should never get here.")
         }

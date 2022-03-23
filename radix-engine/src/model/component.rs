@@ -62,28 +62,31 @@ impl Component {
         }
     }
 
-    fn to_hard_rule(proof_rule: &ProofRule, dom: &Value) -> HardProofRule {
+    fn soft_to_hard_resource(proof_rule_resource: &ProofRuleResource, dom: &Value) -> Option<HardProofRuleResource> {
+        match proof_rule_resource {
+            ProofRuleResource::FromComponent(path) => {
+                match Self::get_from_value(path, dom) {
+                    Some(Value::Custom(type_id, bytes)) => {
+                        match CustomType::from_id(*type_id).unwrap() {
+                            CustomType::ResourceDefId => Option::Some(ResourceDefId::try_from(bytes.as_slice()).unwrap().into()),
+                            CustomType::NonFungibleAddress => Option::Some(NonFungibleAddress::try_from(bytes.as_slice()).unwrap().into()),
+                            _ => Option::None
+                        }
+                    }
+                    _ => Option::None
+                }
+            },
+            ProofRuleResource::NonFungible(non_fungible_address) => Some(HardProofRuleResource::NonFungible(non_fungible_address.clone())),
+            ProofRuleResource::Resource(resource_def_id) => Some(HardProofRuleResource::Resource(resource_def_id.clone())),
+        }
+    }
+
+    fn soft_to_hard_rule(proof_rule: &ProofRule, dom: &Value) -> HardProofRule {
         match proof_rule {
             ProofRule::This(proof_rule_resource) => {
-                match proof_rule_resource {
-                    ProofRuleResource::FromComponent(path) => {
-                        match Self::get_from_value(path, dom) {
-                            Some(Value::Custom(type_id, bytes)) => {
-                                match CustomType::from_id(*type_id).unwrap() {
-                                    CustomType::ResourceDefId => {
-                                        HardProofRule::from(ResourceDefId::try_from(bytes.as_slice()).unwrap())
-                                    }
-                                    CustomType::NonFungibleAddress => HardProofRule::from(
-                                        NonFungibleAddress::try_from(bytes.as_slice()).unwrap(),
-                                    ),
-                                    _ => HardProofRule::OneOf(vec![]),
-                                }
-                            }
-                            _ => HardProofRule::OneOf(vec![]),
-                        }
-                    },
-                    ProofRuleResource::NonFungible(non_fungible_address) => HardProofRule::This(HardProofRuleResource::NonFungible(non_fungible_address.clone())),
-                    ProofRuleResource::Resource(resource_def_id) => HardProofRule::This(HardProofRuleResource::Resource(resource_def_id.clone())),
+                match Self::soft_to_hard_resource(proof_rule_resource, dom) {
+                    Some(resource) => HardProofRule::This(resource),
+                    None => HardProofRule::OneOf(vec![]),
                 }
             }
             ProofRule::SomeOfResource(amount, resource_def_id) => {
@@ -92,25 +95,27 @@ impl Component {
             ProofRule::AllOf(rules) => {
                 let hard_rules = rules
                     .into_iter()
-                    .map(|proof_rule| Self::to_hard_rule(proof_rule, dom))
+                    .map(|proof_rule| Self::soft_to_hard_rule(proof_rule, dom))
                     .collect();
                 HardProofRule::AllOf(hard_rules)
             }
             ProofRule::OneOf(rules) => {
                 let hard_rules = rules
                     .into_iter()
-                    .map(|proof_rule| Self::to_hard_rule(proof_rule, dom))
+                    .map(|proof_rule| Self::soft_to_hard_rule(proof_rule, dom))
                     .collect();
                 HardProofRule::OneOf(hard_rules)
             }
-            ProofRule::CountOf { count, rules } => {
-                let hard_rules = rules
-                    .into_iter()
-                    .map(|proof_rule| Self::to_hard_rule(proof_rule, dom))
-                    .collect();
+            ProofRule::CountOf { count, resources } => {
+                let mut hard_resources = Vec::new();
+                for soft_resource in resources {
+                    if let Some(resource) = Self::soft_to_hard_resource(soft_resource, dom) {
+                        hard_resources.push(resource);
+                    }
+                }
                 HardProofRule::CountOf {
                     count: *count,
-                    rules: hard_rules,
+                    resources: hard_resources,
                 }
             }
         }
@@ -120,7 +125,7 @@ impl Component {
         let data = ValidatedData::from_slice(&self.state).unwrap();
         let authorization = match self.auth_rules.get(method_name) {
             Some(proof_rule) => {
-                MethodAuthorization::Protected(Self::to_hard_rule(proof_rule, &data.dom))
+                MethodAuthorization::Protected(Self::soft_to_hard_rule(proof_rule, &data.dom))
             }
             None => MethodAuthorization::Public,
         };

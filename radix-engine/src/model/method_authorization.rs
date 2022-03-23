@@ -13,6 +13,56 @@ pub enum HardProofRuleResource {
     Resource(ResourceDefId),
 }
 
+impl HardProofRuleResource {
+    pub fn check(&self, proofs_vector: &[&[Proof]]) -> Result<(), RuntimeError> {
+        match self {
+            HardProofRuleResource::NonFungible(non_fungible_address) => {
+                for proofs in proofs_vector {
+                    for p in proofs.iter() {
+                        let proof_resource_def_id = p.resource_def_id();
+                        if proof_resource_def_id == non_fungible_address.resource_def_id()
+                            && match p.total_ids() {
+                            Ok(ids) => {
+                                ids.contains(&non_fungible_address.non_fungible_id())
+                            }
+                            Err(_) => false,
+                        }
+                        {
+                            return Ok(());
+                        }
+                    }
+                }
+
+                Err(NotAuthorized)
+            }
+            HardProofRuleResource::Resource(resource_def_id) => {
+                for proofs in proofs_vector {
+                    for p in proofs.iter() {
+                        let proof_resource_def_id = p.resource_def_id();
+                        if proof_resource_def_id == *resource_def_id {
+                            return Ok(());
+                        }
+                    }
+                }
+
+                Err(NotAuthorized)
+            }
+        }
+    }
+}
+
+impl From<NonFungibleAddress> for HardProofRuleResource {
+    fn from(non_fungible_address: NonFungibleAddress) -> Self {
+        HardProofRuleResource::NonFungible(non_fungible_address)
+    }
+}
+
+impl From<ResourceDefId> for HardProofRuleResource {
+    fn from(resource_def_id: ResourceDefId) -> Self {
+        HardProofRuleResource::Resource(resource_def_id)
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash, TypeId, Encode, Decode)]
 pub enum HardProofRule {
     This(HardProofRuleResource),
@@ -21,20 +71,8 @@ pub enum HardProofRule {
     OneOf(Vec<HardProofRule>),
     CountOf {
         count: u8,
-        rules: Vec<HardProofRule>,
+        resources: Vec<HardProofRuleResource>,
     },
-}
-
-impl From<NonFungibleAddress> for HardProofRule {
-    fn from(non_fungible_address: NonFungibleAddress) -> Self {
-        HardProofRule::This(HardProofRuleResource::NonFungible(non_fungible_address.into()))
-    }
-}
-
-impl From<ResourceDefId> for HardProofRule {
-    fn from(resource_def_id: ResourceDefId) -> Self {
-        HardProofRule::This(HardProofRuleResource::Resource(resource_def_id.into()))
-    }
 }
 
 impl HardProofRule {
@@ -47,7 +85,7 @@ impl HardProofRule {
                 rules.push(other);
                 HardProofRule::OneOf(rules)
             }
-            HardProofRule::CountOf { count: _, rules: _ } => {
+            HardProofRule::CountOf { count: _, resources: _ } => {
                 HardProofRule::OneOf(vec![self, other])
             }
         }
@@ -55,39 +93,7 @@ impl HardProofRule {
 
     pub fn check(&self, proofs_vector: &[&[Proof]]) -> Result<(), RuntimeError> {
         match self {
-            HardProofRule::This(proof_rule_resource) => match proof_rule_resource {
-                HardProofRuleResource::NonFungible(non_fungible_address) => {
-                    for proofs in proofs_vector {
-                        for p in proofs.iter() {
-                            let proof_resource_def_id = p.resource_def_id();
-                            if proof_resource_def_id == non_fungible_address.resource_def_id()
-                                && match p.total_ids() {
-                                    Ok(ids) => {
-                                        ids.contains(&non_fungible_address.non_fungible_id())
-                                    }
-                                    Err(_) => false,
-                                }
-                            {
-                                return Ok(());
-                            }
-                        }
-                    }
-
-                    Err(NotAuthorized)
-                }
-                HardProofRuleResource::Resource(resource_def_id) => {
-                    for proofs in proofs_vector {
-                        for p in proofs.iter() {
-                            let proof_resource_def_id = p.resource_def_id();
-                            if proof_resource_def_id == *resource_def_id {
-                                return Ok(());
-                            }
-                        }
-                    }
-
-                    Err(NotAuthorized)
-                }
-            },
+            HardProofRule::This(proof_rule_resource) => proof_rule_resource.check(proofs_vector),
             HardProofRule::SomeOfResource(amount, resource_def_id) => {
                 for proofs in proofs_vector {
                     for p in proofs.iter() {
@@ -119,10 +125,10 @@ impl HardProofRule {
 
                 Err(NotAuthorized)
             }
-            HardProofRule::CountOf { count, rules } => {
+            HardProofRule::CountOf { count, resources } => {
                 let mut left = count.clone();
-                for rule in rules {
-                    if rule.check(proofs_vector).is_ok() {
+                for resource in resources {
+                    if resource.check(proofs_vector).is_ok() {
                         left -= 1;
                         if left == 0 {
                             return Ok(());
