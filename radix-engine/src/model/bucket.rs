@@ -4,7 +4,7 @@ use scrypto::rust::collections::BTreeSet;
 use scrypto::rust::rc::Rc;
 use scrypto::rust::vec;
 
-use crate::model::{AmountOrIds, Proof, ResourceContainer, ResourceContainerError};
+use crate::model::{AmountOrIds, Proof, ProofError, ResourceContainer, ResourceContainerError};
 
 /// A transient resource container.
 #[derive(Debug)]
@@ -43,55 +43,46 @@ impl Bucket {
         ))
     }
 
-    pub fn create_proof(&mut self) -> Result<Proof, ResourceContainerError> {
+    pub fn create_proof(&mut self) -> Result<Proof, ProofError> {
         match self.resource_type() {
             ResourceType::Fungible { .. } => self.create_proof_by_amount(self.total_amount()),
-            ResourceType::NonFungible => self.create_proof_by_ids(&self.total_ids()?),
+            ResourceType::NonFungible => self.create_proof_by_ids(&self.total_ids().unwrap()),
         }
     }
 
-    pub fn create_proof_by_amount(
-        &mut self,
-        amount: Decimal,
-    ) -> Result<Proof, ResourceContainerError> {
-        // do not allow empty proof
-        if amount.is_zero() {
-            return Err(ResourceContainerError::CantCreateEmptyProof);
-        }
-
+    pub fn create_proof_by_amount(&mut self, amount: Decimal) -> Result<Proof, ProofError> {
         // lock the specified amount
-        self.borrow_container_mut().lock_amount(amount)?;
+        self.borrow_container_mut()
+            .lock_amount(amount)
+            .map_err(ProofError::ResourceContainerError)?;
 
         // produce proof
-        Ok(Proof::new(
+        Proof::new(
             self.resource_def_id(),
             self.resource_type(),
             false,
             AmountOrIds::Amount(amount),
             vec![(self.container.clone(), AmountOrIds::Amount(amount))],
-        ))
+        )
     }
 
     pub fn create_proof_by_ids(
         &mut self,
         ids: &BTreeSet<NonFungibleId>,
-    ) -> Result<Proof, ResourceContainerError> {
-        // do not allow empty proof
-        if ids.is_empty() {
-            return Err(ResourceContainerError::CantCreateEmptyProof);
-        }
-
+    ) -> Result<Proof, ProofError> {
         // lock the specified id set
-        self.borrow_container_mut().lock_ids(ids)?;
+        self.borrow_container_mut()
+            .lock_ids(ids)
+            .map_err(ProofError::ResourceContainerError)?;
 
         // produce proof
-        Ok(Proof::new(
+        Proof::new(
             self.resource_def_id(),
             self.resource_type(),
             false,
             AmountOrIds::Ids(ids.clone()),
             vec![(self.container.clone(), AmountOrIds::Ids(ids.clone()))],
-        ))
+        )
     }
 
     pub fn resource_def_id(&self) -> ResourceDefId {
