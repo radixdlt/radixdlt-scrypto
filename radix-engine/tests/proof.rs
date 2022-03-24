@@ -70,6 +70,81 @@ fn can_create_clone_and_drop_vault_proof() {
 }
 
 #[test]
+fn can_create_clone_and_drop_vault_proof_by_amount() {
+    // Arrange
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(&mut substate_store);
+    let (key, account) = test_runner.new_public_key_with_account();
+    let resource_def_id = test_runner.create_fungible_resource(account);
+    let package_id = test_runner.publish_package("proof");
+    let component_id = test_runner.instantiate_component(
+        package_id,
+        "VaultProof",
+        "new",
+        vec![format!("3,{}", resource_def_id)],
+        account,
+        key,
+    );
+
+    // Act
+    let transaction = test_runner
+        .new_transaction_builder()
+        .parse_args_and_call_method(
+            component_id,
+            "create_clone_drop_vault_proof_by_amount",
+            vec!["3".to_owned(), "1".to_owned()],
+            None,
+        )
+        .build(vec![])
+        .unwrap();
+    let receipt = test_runner.run(transaction);
+    println!("{:?}", receipt);
+
+    // Assert
+    assert!(receipt.result.is_ok());
+}
+
+#[test]
+fn can_create_clone_and_drop_vault_proof_by_ids() {
+    // Arrange
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(&mut substate_store);
+    let (key, account) = test_runner.new_public_key_with_account();
+    let resource_def_id = test_runner.create_non_fungible_resource(account);
+    let package_id = test_runner.publish_package("proof");
+    let component_id = test_runner.instantiate_component(
+        package_id,
+        "VaultProof",
+        "new",
+        vec![format!("3,{}", resource_def_id)],
+        account,
+        key,
+    );
+
+    // Act
+    let total_ids = BTreeSet::from([
+        NonFungibleId::from(1),
+        NonFungibleId::from(2),
+        NonFungibleId::from(3),
+    ]);
+    let proof_ids = BTreeSet::from([NonFungibleId::from(2)]);
+    let transaction = test_runner
+        .new_transaction_builder()
+        .call_method(
+            component_id,
+            "create_clone_drop_vault_proof_by_ids",
+            args![total_ids, proof_ids],
+        )
+        .build(vec![])
+        .unwrap();
+    let receipt = test_runner.run(transaction);
+    println!("{:?}", receipt);
+
+    // Assert
+    assert!(receipt.result.is_ok());
+}
+
+#[test]
 fn can_use_bucket_for_authorization() {
     // Arrange
     let mut substate_store = InMemorySubstateStore::with_bootstrap();

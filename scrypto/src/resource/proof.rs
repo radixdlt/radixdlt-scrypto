@@ -4,6 +4,7 @@ use crate::engine::{api::*, call_engine, types::ProofId};
 use crate::math::*;
 use crate::misc::*;
 use crate::resource::*;
+use crate::rust::collections::BTreeSet;
 #[cfg(not(feature = "alloc"))]
 use crate::rust::fmt;
 use crate::rust::vec::Vec;
@@ -23,26 +24,19 @@ impl Clone for Proof {
 }
 
 impl Proof {
-    /// Checks if the referenced bucket contains the given resource, and aborts if not so.
-    pub fn check(&self, resource_def_id: ResourceDefId) {
-        if !self.contains(resource_def_id) {
-            panic!("Proof check failed");
-        }
-    }
-
-    pub fn check_non_fungible_address(&self, non_fungible_address: &NonFungibleAddress) {
-        if !self.contains_non_fungible_address(non_fungible_address) {
-            panic!("Proof check failed");
-        }
-    }
-
-    /// Checks if the referenced bucket contains the given resource.
+    /// Whether this proof includes an ownership proof of any of the given resource.
     pub fn contains(&self, resource_def_id: ResourceDefId) -> bool {
-        self.amount() > 0.into() && self.resource_def_id() == resource_def_id
+        self.resource_def_id() == resource_def_id
     }
 
-    pub fn contains_non_fungible_address(&self, non_fungible_address: &NonFungibleAddress) -> bool {
-        if !self.contains(non_fungible_address.resource_def_id()) {
+    /// Whether this proof includes an ownership proof of at least the given amount of resource.
+    pub fn contains_resource(&self, amount: Decimal, resource_def_id: ResourceDefId) -> bool {
+        self.resource_def_id() == resource_def_id && self.amount() > amount
+    }
+
+    /// Whether this proof includes an ownership proof of the given non-fungible.
+    pub fn contains_non_fungible(&self, non_fungible_address: &NonFungibleAddress) -> bool {
+        if self.resource_def_id() != non_fungible_address.resource_def_id() {
             return false;
         }
 
@@ -78,14 +72,14 @@ impl Proof {
             "1 non-fungible expected, but {} found",
             ids.len()
         );
-        ids[0].clone()
+        ids.into_iter().next().unwrap()
     }
 
     /// Returns the ids of all non-fungibles in this bucket.
     ///
     /// # Panics
     /// If the bucket is not a non-fungible bucket.
-    pub fn get_non_fungible_ids(&self) -> Vec<NonFungibleId> {
+    pub fn get_non_fungible_ids(&self) -> BTreeSet<NonFungibleId> {
         let input = GetNonFungibleIdsInProofInput { proof_id: self.0 };
         let output: GetNonFungibleIdsInProofOutput =
             call_engine(GET_NON_FUNGIBLE_IDS_IN_PROOF, input);

@@ -231,7 +231,7 @@ impl<T: Decode> Decode for Option<T> {
 
 impl<T: Decode> Decode for Box<T> {
     fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
-        let v = T::decode(decoder)?;
+        let v = T::decode_value(decoder)?;
         Ok(Box::new(v))
     }
 }
@@ -412,7 +412,6 @@ mod tests {
         assert_eq!("hello", <String>::decode(dec).unwrap());
 
         assert_eq!(Some(1u32), <Option<u32>>::decode(dec).unwrap());
-        assert_eq!(Box::new(1u32), <Box<u32>>::decode(dec).unwrap());
         assert_eq!([1u32, 2u32, 3u32], <[u32; 3]>::decode(dec).unwrap());
         assert_eq!((1u32, 2u32), <(u32, u32)>::decode(dec).unwrap());
         assert_eq!(Ok(1u32), <Result<u32, String>>::decode(dec).unwrap());
@@ -449,7 +448,6 @@ mod tests {
             11, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // u128
             12, 5, 0, 0, 0, 104, 101, 108, 108, 111, // string
             32, 1, 9, 1, 0, 0, 0, // option
-            33, 9, 1, 0, 0, 0, // box
             34, 9, 3, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, // array
             35, 2, 0, 0, 0, 9, 1, 0, 0, 0, 9, 2, 0, 0, 0, // tuple
             36, 0, 9, 1, 0, 0, 0, // result
@@ -479,7 +477,6 @@ mod tests {
             1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // u128
             5, 0, 0, 0, 104, 101, 108, 108, 111, // string
             1, 1, 0, 0, 0, // option
-            1, 0, 0, 0, // box
             3, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, // array
             2, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, // tuple
             0, 1, 0, 0, 0, // result
@@ -490,6 +487,14 @@ mod tests {
         ];
         let mut dec = Decoder::no_type(&bytes);
         assert_decoding(&mut dec);
+    }
+
+    #[test]
+    pub fn test_decode_box() {
+        let bytes = vec![7u8, 5u8];
+        let mut dec = Decoder::with_type(&bytes);
+        let x = <Box<u8>>::decode(&mut dec).unwrap();
+        assert_eq!(Box::new(5u8), x);
     }
 
     #[test]

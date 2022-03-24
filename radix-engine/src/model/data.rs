@@ -108,7 +108,6 @@ pub fn format_value(
             Some(x) => format!("Some({})", format_value(x, bucket_ids, proof_ids)),
             None => "None".to_string(),
         },
-        Value::Box(v) => format!("Box({})", format_value(v.borrow(), bucket_ids, proof_ids)),
         Value::Array(kind, elements) => format!(
             "Array<{}>({})",
             format_kind(*kind),
@@ -183,7 +182,6 @@ pub fn format_kind(kind: u8) -> String {
         TYPE_STRUCT => "Struct",
         TYPE_ENUM => "Enum",
         TYPE_OPTION => "Option",
-        TYPE_BOX => "Box",
         TYPE_ARRAY => "Array",
         TYPE_TUPLE => "Tuple",
         TYPE_RESULT => "Result",

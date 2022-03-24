@@ -59,5 +59,11 @@ blueprint! {
                     ),
                 ])
         }
+
+        pub fn create_fungible_fixed() -> Bucket {
+            ResourceBuilder::new_fungible(DIVISIBILITY_MAXIMUM)
+                .metadata("name", "SUPER TOKEN")
+                .initial_supply_fungible(100)
+        }
     }
 }

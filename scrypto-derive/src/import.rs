@@ -252,12 +252,6 @@ fn get_native_type(ty: &des::Type) -> Result<(Type, Vec<Item>)> {
 
             parse_quote! { Option<#new_type> }
         }
-        des::Type::Box { value } => {
-            let (new_type, new_structs) = get_native_type(value)?;
-            structs.extend(new_structs);
-
-            parse_quote! { Box<#new_type> }
-        }
         des::Type::Tuple { elements } => {
             let mut types: Vec<Type> = vec![];
 

@@ -128,6 +128,17 @@ impl<'l> TestRunner<'l> {
         receipt.new_resource_def_ids[0]
     }
 
+    pub fn create_fungible_resource(&mut self, account: ComponentId) -> ResourceDefId {
+        let package = self.publish_package("resource_creator");
+        let transaction = TransactionBuilder::new(&self.executor)
+            .call_function(package, "ResourceCreator", "create_fungible_fixed", vec![])
+            .call_method_with_all_resources(account, "deposit_batch")
+            .build(vec![])
+            .unwrap();
+        let receipt = self.executor.run(transaction).unwrap();
+        receipt.new_resource_def_ids[0]
+    }
+
     pub fn instantiate_component(
         &mut self,
         package_id: PackageId,

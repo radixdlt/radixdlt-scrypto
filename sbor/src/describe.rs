@@ -38,10 +38,6 @@ pub enum Type {
         value: Box<Type>,
     },
 
-    Box {
-        value: Box<Type>,
-    },
-
     Array {
         element: Box<Type>,
         length: u16,
@@ -163,15 +159,6 @@ impl<T: Describe> Describe for Option<T> {
     fn describe() -> Type {
         let ty = T::describe();
         Type::Option {
-            value: Box::new(ty),
-        }
-    }
-}
-
-impl<T: Describe> Describe for Box<T> {
-    fn describe() -> Type {
-        let ty = T::describe();
-        Type::Box {
             value: Box::new(ty),
         }
     }
