@@ -4,7 +4,6 @@ pub mod test_runner;
 use crate::test_runner::TestRunner;
 use radix_engine::errors::RuntimeError;
 use radix_engine::ledger::InMemorySubstateStore;
-use scrypto::min_n_of;
 use scrypto::prelude::*;
 
 #[test]
@@ -190,7 +189,7 @@ fn test_dynamic_authlist(
             package,
             "AuthListComponent",
             "create_component",
-            vec![scrypto_encode(&list), scrypto_encode(&authorization)],
+            args!(list, authorization),
         )
         .build(vec![])
         .unwrap();
@@ -228,13 +227,23 @@ fn dynamic_this_should_fail_on_dynamic_list() {
     };
     let signers = vec![key0, key1, key2];
 
-    test_dynamic_authlist(
-        &mut test_runner,
-        list,
-        authorization,
-        signers,
-        false,
-    );
+    test_dynamic_authlist(&mut test_runner, list, authorization, signers, false);
+}
+
+#[test]
+fn dynamic_all_of_should_fail_on_nonexistent_resource() {
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(&mut substate_store);
+    let (key0, address0) = test_runner.new_public_key_and_non_fungible_address();
+    let (key1, address1) = test_runner.new_public_key_and_non_fungible_address();
+    let (key2, address2) = test_runner.new_public_key_and_non_fungible_address();
+    let list = vec![address0, address1, address2];
+    let authorization = component_authorization! {
+        "get_secret" => all_of!(resource_list!(SborPath::from("0")))
+    };
+    let signers = vec![key0, key1, key2];
+
+    test_dynamic_authlist(&mut test_runner, list, authorization, signers, false);
 }
 
 #[test]
@@ -250,13 +259,7 @@ fn dynamic_min_n_of_should_allow_me_to_call_method() {
     };
     let signers = vec![key1, key2];
 
-    test_dynamic_authlist(
-        &mut test_runner,
-        list,
-        authorization,
-        signers,
-        true,
-    );
+    test_dynamic_authlist(&mut test_runner, list, authorization, signers, true);
 }
 
 #[test]
@@ -272,15 +275,24 @@ fn dynamic_all_of_should_allow_me_to_call_method() {
     };
     let signers = vec![key0, key1, key2];
 
-    test_dynamic_authlist(
-        &mut test_runner,
-        list,
-        authorization,
-        signers,
-        true,
-    );
+    test_dynamic_authlist(&mut test_runner, list, authorization, signers, true);
 }
 
+#[test]
+fn dynamic_any_of_should_allow_me_to_call_method() {
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(&mut substate_store);
+    let (_, address0) = test_runner.new_public_key_and_non_fungible_address();
+    let (key1, address1) = test_runner.new_public_key_and_non_fungible_address();
+    let (_, address2) = test_runner.new_public_key_and_non_fungible_address();
+    let list = vec![address0, address1, address2];
+    let authorization = component_authorization! {
+        "get_secret" => any_of!(SborPath::from("0"))
+    };
+    let signers = vec![key1];
+
+    test_dynamic_authlist(&mut test_runner, list, authorization, signers, true);
+}
 
 #[test]
 fn chess_should_not_allow_second_player_to_move_if_first_player_didnt_move() {
