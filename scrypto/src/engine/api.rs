@@ -1,7 +1,8 @@
 use sbor::*;
+use scrypto::prelude::ComponentAuthorization;
 
 use crate::engine::types::*;
-use crate::resource::{NonFungibleAddress, ProofRule};
+use crate::prelude::{NonFungibleAddress};
 use crate::rust::collections::BTreeSet;
 use crate::rust::collections::HashMap;
 use crate::rust::string::String;
@@ -185,7 +186,7 @@ pub struct CreateComponentInput {
     pub package_id: PackageId,
     pub blueprint_name: String,
     pub state: Vec<u8>,
-    pub sys_auth: HashMap<String, ProofRule>,
+    pub authorization: ComponentAuthorization,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
