@@ -34,4 +34,10 @@ pub const MAY_CHANGE_INDIVIDUAL_METADATA: u64 = resource_permissions!(1u32 << 5)
 pub const MAY_MANAGE_RESOURCE_FLAGS: u64 = resource_permissions!(1u32 << 6);
 
 /// All permissions.
-pub const ALL_PERMISSIONS: u64 = resource_permissions!(!0u32);
+pub const ALL_PERMISSIONS: u64 = MAY_TRANSFER
+    | MAY_BURN
+    | MAY_MINT
+    | MAY_RECALL
+    | MAY_CHANGE_SHARED_METADATA
+    | MAY_CHANGE_INDIVIDUAL_METADATA
+    | MAY_MANAGE_RESOURCE_FLAGS;
