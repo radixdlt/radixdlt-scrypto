@@ -44,7 +44,7 @@ pub enum Instruction {
 
     /// Asserts worktop contains resource by at least the given non-fungible IDs.
     AssertWorktopContainsByIds {
-        amount: Decimal,
+        ids: BTreeSet<NonFungibleId>,
         resource_def_id: ResourceDefId,
     },
 
@@ -57,6 +57,7 @@ pub enum Instruction {
     /// Drops all proofs in the auth zone
     ClearAuthZone,
 
+    // TODO: do we need `CreateProofFromWorktop`, to avoid taking and creating proof?
     /// Creates a proof from the auth zone
     CreateProofFromAuthZone { resource_def_id: ResourceDefId },
 
@@ -68,7 +69,7 @@ pub enum Instruction {
 
     /// Creates a proof from the auth zone, by the given non-fungible IDs.
     CreateProofFromAuthZoneByIds {
-        amount: Decimal,
+        ids: BTreeSet<NonFungibleId>,
         resource_def_id: ResourceDefId,
     },
 

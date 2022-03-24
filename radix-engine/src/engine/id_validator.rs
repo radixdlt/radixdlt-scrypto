@@ -18,8 +18,8 @@ pub enum ProofKind {
     VirtualProof,
     /// Bucket proof.
     BucketProof(BucketId),
-    /// Proof taken from auth zone.
-    RuntimeProof,
+    /// Proof taken or derived from auth zone.
+    AuthZoneProof,
 }
 
 pub struct IdValidator {
@@ -70,7 +70,7 @@ impl IdValidator {
                     return Err(IdValidatorError::BucketNotFound(*bucket_id));
                 }
             }
-            ProofKind::RuntimeProof | ProofKind::VirtualProof => {}
+            ProofKind::AuthZoneProof | ProofKind::VirtualProof => {}
         }
 
         let proof_id = self

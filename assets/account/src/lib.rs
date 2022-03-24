@@ -15,16 +15,6 @@ blueprint! {
             })
         }
 
-        pub fn with_bucket(withdraw_rule: ProofRule, bucket: Bucket) -> ComponentId {
-            let vaults = LazyMap::new();
-            vaults.insert(bucket.resource_def_id(), Vault::with_bucket(bucket));
-            Account {
-                vaults
-            }.instantiate_with_auth(component_authorization! {
-                "withdraw" => withdraw_rule
-            })
-        }
-
         /// Deposit a batch of buckets into this account
         pub fn deposit_batch(&mut self, buckets: Vec<Bucket>) {
             for bucket in buckets {
