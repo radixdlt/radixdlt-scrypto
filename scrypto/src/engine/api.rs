@@ -1,7 +1,8 @@
 use sbor::*;
+use scrypto::prelude::ComponentAuthorization;
 
 use crate::engine::types::*;
-use crate::resource::{NonFungibleAddress, ProofRule};
+use crate::prelude::{NonFungibleAddress};
 use crate::rust::collections::BTreeSet;
 use crate::rust::collections::HashMap;
 use crate::rust::string::String;
@@ -99,10 +100,6 @@ pub const GET_NON_FUNGIBLE_IDS_IN_BUCKET: u32 = 0x56;
 
 /// Create a bucket proof
 pub const CREATE_BUCKET_PROOF: u32 = 0x60;
-/// Create a bucket proof by amount
-pub const CREATE_BUCKET_PROOF_BY_AMOUNT: u32 = 0x61;
-/// Create a bucket proof by ids
-pub const CREATE_BUCKET_PROOF_BY_IDS: u32 = 0x62;
 /// Create a vault proof
 pub const CREATE_VAULT_PROOF: u32 = 0x63;
 /// Create a vault proof by amount
@@ -191,7 +188,7 @@ pub struct CreateComponentInput {
     pub package_id: PackageId,
     pub blueprint_name: String,
     pub state: Vec<u8>,
-    pub sys_auth: HashMap<String, ProofRule>,
+    pub authorization: ComponentAuthorization,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
@@ -575,28 +572,6 @@ pub struct CreateBucketProofInput {
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct CreateBucketProofOutput {
-    pub proof_id: ProofId,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct CreateBucketProofByAmountInput {
-    pub bucket_id: BucketId,
-    pub amount: Decimal,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct CreateBucketProofByAmountOutput {
-    pub proof_id: ProofId,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct CreateBucketProofByIdsInput {
-    pub bucket_id: BucketId,
-    pub ids: BTreeSet<NonFungibleId>,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct CreateBucketProofByIdsOutput {
     pub proof_id: ProofId,
 }
 

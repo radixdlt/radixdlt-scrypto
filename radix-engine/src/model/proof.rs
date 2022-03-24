@@ -48,14 +48,21 @@ impl Proof {
         restricted: bool,
         locked_total: AmountOrIds,
         locked_details: Vec<(Rc<RefCell<ResourceContainer>>, AmountOrIds)>,
-    ) -> Proof {
-        Self {
+    ) -> Result<Proof, ProofError> {
+        if match &locked_total {
+            AmountOrIds::Amount(amount) => amount.is_zero(),
+            AmountOrIds::Ids(ids) => ids.is_empty(),
+        } {
+            return Err(ProofError::EmptyProofNotAllowed);
+        }
+
+        Ok(Self {
             resource_def_id,
             resource_type,
             restricted,
             locked_total,
             locked_details,
-        }
+        })
     }
 
     pub fn clone(&self) -> Self {

@@ -54,29 +54,6 @@ impl Bucket {
         Proof(output.proof_id)
     }
 
-    /// Creates an ownership proof of this bucket, by amount.
-    pub fn create_proof_by_amount(&self, amount: Decimal) -> Proof {
-        let input = CreateBucketProofByAmountInput {
-            bucket_id: self.0,
-            amount,
-        };
-        let output: CreateBucketProofByAmountOutput =
-            call_engine(CREATE_BUCKET_PROOF_BY_AMOUNT, input);
-
-        Proof(output.proof_id)
-    }
-
-    /// Creates an ownership proof of this bucket, by non-fungible ID set.
-    pub fn create_proof_by_ids(&self, ids: &BTreeSet<NonFungibleId>) -> Proof {
-        let input = CreateBucketProofByIdsInput {
-            bucket_id: self.0,
-            ids: ids.clone(),
-        };
-        let output: CreateBucketProofByIdsOutput = call_engine(CREATE_BUCKET_PROOF_BY_IDS, input);
-
-        Proof(output.proof_id)
-    }
-
     /// Uses resources in this bucket as authorization for an operation.
     pub fn authorize<F: FnOnce() -> O, O>(&self, f: F) -> O {
         AuthZone::push(self.create_proof());

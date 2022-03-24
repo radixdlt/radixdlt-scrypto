@@ -60,14 +60,14 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                 fn instantiate(self) -> ::scrypto::component::ComponentId {
                     ::scrypto::component::component_system().instantiate_component(
                         ::scrypto::core::Process::package_id(),
-                        HashMap::new(),
+                        ::scrypto::resource::ComponentAuthorization::new(),
                         self
                     )
                 }
-                fn instantiate_with_auth(self, sys_auth: HashMap<String, ::scrypto::resource::ProofRule>) -> ::scrypto::component::ComponentId {
+                fn instantiate_with_auth(self, authorization: ::scrypto::resource::ComponentAuthorization) -> ::scrypto::component::ComponentId {
                     ::scrypto::component::component_system().instantiate_component(
                         ::scrypto::core::Process::package_id(),
-                        sys_auth,
+                        authorization,
                         self
                     )
                 }
@@ -559,14 +559,14 @@ mod tests {
                         fn instantiate(self) -> ::scrypto::component::ComponentId {
                             ::scrypto::component::component_system().instantiate_component(
                                 ::scrypto::core::Process::package_id(),
-                                HashMap::new(),
+                                ::scrypto::resource::ComponentAuthorization::new(),
                                 self
                             )
                         }
-                        fn instantiate_with_auth(self, sys_auth: HashMap<String, ::scrypto::resource::ProofRule>) -> ::scrypto::component::ComponentId {
+                        fn instantiate_with_auth(self, authorization: ::scrypto::resource::ComponentAuthorization) -> ::scrypto::component::ComponentId {
                             ::scrypto::component::component_system().instantiate_component(
                                 ::scrypto::core::Process::package_id(),
-                                sys_auth,
+                                authorization,
                                 self
                             )
                         }

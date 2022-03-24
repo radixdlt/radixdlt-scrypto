@@ -7,15 +7,12 @@ blueprint! {
     }
 
     impl CrossComponent {
-        pub fn create_component_with_auth(proof_rule: ProofRule) -> ComponentId {
+        pub fn create_component_with_auth(component_authorization: ComponentAuthorization) -> ComponentId {
             Self {
                 secret: "Secret".to_owned(),
                 auth_vault: None,
             }
-            .instantiate_with_auth(HashMap::from([(
-                "get_component_state".to_string(),
-                proof_rule,
-            )]))
+            .instantiate_with_auth(component_authorization)
         }
 
         pub fn create_component() -> ComponentId {

@@ -381,7 +381,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .buckets
             .get_mut(&bucket_id)
             .ok_or(RuntimeError::BucketNotFound(bucket_id))?;
-        let new_proof = bucket.create_proof().map_err(RuntimeError::BucketError)?;
+        let new_proof = bucket.create_proof().map_err(RuntimeError::ProofError)?;
         self.proofs.insert(new_proof_id, new_proof);
 
         Ok(new_proof_id)
@@ -401,7 +401,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .ok_or(RuntimeError::BucketNotFound(bucket_id))?;
         let new_proof = bucket
             .create_proof_by_amount(amount)
-            .map_err(RuntimeError::BucketError)?;
+            .map_err(RuntimeError::ProofError)?;
         self.proofs.insert(new_proof_id, new_proof);
 
         Ok(new_proof_id)
@@ -421,7 +421,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .ok_or(RuntimeError::BucketNotFound(bucket_id))?;
         let new_proof = bucket
             .create_proof_by_ids(ids)
-            .map_err(RuntimeError::BucketError)?;
+            .map_err(RuntimeError::ProofError)?;
         self.proofs.insert(new_proof_id, new_proof);
 
         Ok(new_proof_id)
@@ -433,7 +433,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
         let new_proof_id = self.new_proof_id()?;
         let vault = self.get_local_vault(&vault_id)?;
-        let new_proof = vault.create_proof().map_err(RuntimeError::VaultError)?;
+        let new_proof = vault.create_proof().map_err(RuntimeError::ProofError)?;
         self.proofs.insert(new_proof_id, new_proof);
 
         Ok(new_proof_id)
@@ -450,7 +450,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let vault = self.get_local_vault(&vault_id)?;
         let new_proof = vault
             .create_proof_by_amount(amount)
-            .map_err(RuntimeError::VaultError)?;
+            .map_err(RuntimeError::ProofError)?;
         self.proofs.insert(new_proof_id, new_proof);
 
         Ok(new_proof_id)
@@ -467,7 +467,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let vault = self.get_local_vault(&vault_id)?;
         let new_proof = vault
             .create_proof_by_ids(ids)
-            .map_err(RuntimeError::VaultError)?;
+            .map_err(RuntimeError::ProofError)?;
         self.proofs.insert(new_proof_id, new_proof);
 
         Ok(new_proof_id)
@@ -571,7 +571,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         proof_id: ProofId,
         mut bucket: Bucket,
     ) -> Result<(), RuntimeError> {
-        let proof = bucket.create_proof().map_err(RuntimeError::BucketError)?;
+        let proof = bucket.create_proof().map_err(RuntimeError::ProofError)?;
         self.proofs.insert(proof_id, proof);
         Ok(())
     }
@@ -1248,7 +1248,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let data = Self::process_entry_data(&input.state)?;
         let new_objects = wasm_process.process_owned_objects.take(data)?;
         let sys_auth: HashMap<String, MethodAuthorization> = input
-            .sys_auth
+            .authorization
+            .to_map()
             .into_iter()
             .map(|(name, proof_rule)| (name, MethodAuthorization::Protected(proof_rule)))
             .collect();
@@ -2015,24 +2016,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         })
     }
 
-    fn handle_create_bucket_proof_by_amount(
-        &mut self,
-        input: CreateBucketProofByAmountInput,
-    ) -> Result<CreateBucketProofByAmountOutput, RuntimeError> {
-        Ok(CreateBucketProofByAmountOutput {
-            proof_id: self.create_bucket_proof_by_amount(input.bucket_id, input.amount)?,
-        })
-    }
-
-    fn handle_create_bucket_proof_by_ids(
-        &mut self,
-        input: CreateBucketProofByIdsInput,
-    ) -> Result<CreateBucketProofByIdsOutput, RuntimeError> {
-        Ok(CreateBucketProofByIdsOutput {
-            proof_id: self.create_bucket_proof_by_ids(input.bucket_id, &input.ids)?,
-        })
-    }
-
     fn handle_create_vault_proof(
         &mut self,
         input: CreateVaultProofInput,
@@ -2285,12 +2268,6 @@ impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
                     }
 
                     CREATE_BUCKET_PROOF => self.handle(args, Self::handle_create_bucket_proof),
-                    CREATE_BUCKET_PROOF_BY_AMOUNT => {
-                        self.handle(args, Self::handle_create_bucket_proof_by_amount)
-                    }
-                    CREATE_BUCKET_PROOF_BY_IDS => {
-                        self.handle(args, Self::handle_create_bucket_proof_by_ids)
-                    }
                     CREATE_VAULT_PROOF => self.handle(args, Self::handle_create_vault_proof),
                     CREATE_VAULT_PROOF_BY_AMOUNT => {
                         self.handle(args, Self::handle_create_vault_proof_by_amount)

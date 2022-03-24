@@ -20,8 +20,6 @@ pub enum ResourceContainerError {
     NonFungibleOperationNotAllowed,
     /// Resource container is locked because there exists proof(s).
     ContainerLocked,
-    // Can't generate zero-amount or empty non-fungible set proofs.
-    CantCreateEmptyProof,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
