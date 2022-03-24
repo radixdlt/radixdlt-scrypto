@@ -110,15 +110,15 @@ impl Proof {
             .collect();
 
         // calculate the max locked amount (by the input proofs) in each container
-        let mut allowance = HashMap::<ProofSourceId, Decimal>::new();
+        let mut max = HashMap::<ProofSourceId, Decimal>::new();
         for proof in &proofs {
             match proof {
                 Proof::Fungible { sources, .. } => {
                     for (source_id, (_, amount)) in sources {
-                        if let Some(existing) = allowance.get_mut(source_id) {
+                        if let Some(existing) = max.get_mut(source_id) {
                             *existing = Decimal::max(*existing, amount.clone());
                         } else {
-                            allowance.insert(source_id.clone(), amount.clone());
+                            max.insert(source_id.clone(), amount.clone());
                         }
                     }
                 }
@@ -126,13 +126,13 @@ impl Proof {
             }
         }
 
-        // check if the allowance satisfied the requested amount
-        let max = allowance
+        // check if the max satisfied the requested amount
+        let max_sum = max
             .values()
             .cloned()
             .reduce(|a, b| a + b)
             .unwrap_or_default();
-        if total_amount > max {
+        if total_amount > max_sum {
             return Err(ProofError::InsufficientBaseProofs);
         }
 
@@ -140,7 +140,7 @@ impl Proof {
         //
         // This is not an efficient way of producing proofs, in terms of number of state updates
         // to the resource containers. However, this is the simplest to explain as no
-        // resource container selection algorithm is required. All the ref count increases by 1.
+        // resource container selection algorithm is required. All the ref counts increase by 1.
         //
         // If this turns to be a performance bottleneck, should start with containers where the
         // largest amount has been locked, and only lock the requested amount.
@@ -187,16 +187,16 @@ impl Proof {
             .filter(|p| p.resource_def_id() == resource_def_id && !p.is_restricted())
             .collect();
 
-        // calculate the max locked amount (by the input proofs) in each container
-        let mut allowance = HashMap::<ProofSourceId, BTreeSet<NonFungibleId>>::new();
+        // calculate the max locked id set (by the input proofs) in each container
+        let mut max = HashMap::<ProofSourceId, BTreeSet<NonFungibleId>>::new();
         for proof in &proofs {
             match proof {
                 Proof::NonFungible { sources, .. } => {
                     for (source_id, (_, ids)) in sources {
-                        if let Some(ids) = allowance.get_mut(source_id) {
+                        if let Some(ids) = max.get_mut(source_id) {
                             ids.extend(ids.clone());
                         } else {
-                            allowance.insert(source_id.clone(), ids.clone());
+                            max.insert(source_id.clone(), ids.clone());
                         }
                     }
                 }
@@ -204,12 +204,12 @@ impl Proof {
             }
         }
 
-        // check if the allowance satisfied the requested amount
-        let mut max = BTreeSet::<NonFungibleId>::new();
-        for (_, value) in allowance {
-            max.extend(value);
+        // check if the max satisfied the requested amount
+        let mut max_sum = BTreeSet::<NonFungibleId>::new();
+        for (_, value) in max {
+            max_sum.extend(value);
         }
-        if !max.is_superset(&total_ids) {
+        if !max_sum.is_superset(&total_ids) {
             return Err(ProofError::InsufficientBaseProofs);
         }
 
