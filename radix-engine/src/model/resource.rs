@@ -8,24 +8,26 @@ use scrypto::rust::string::ToString;
 /// Represents an error when manipulating resources in a container.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ResourceContainerError {
-    /// Resource addresses do not match
+    /// Resource addresses do not match.
     ResourceAddressNotMatching,
-    /// The amount is invalid, according to the resource divisibility
+    /// The amount is invalid, according to the resource divisibility.
     InvalidAmount(Decimal, u8),
-    /// The balance is not enough
+    /// The balance is not enough.
     InsufficientBalance,
-    /// Fungible operation on non-fungible resource is not allowed
+    /// Fungible operation on non-fungible resource is not allowed.
     FungibleOperationNotAllowed,
-    /// Non-fungible operation on fungible resource is not allowed
+    /// Non-fungible operation on fungible resource is not allowed.
     NonFungibleOperationNotAllowed,
+    /// Resource container is locked because there exists proof(s).
+    ContainerLocked,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub enum ResourceContainer {
     Fungible {
-        /// The resource definition id
+        /// The resource definition id.
         resource_def_id: ResourceDefId,
-        /// The resource divisibility
+        /// The resource divisibility.
         divisibility: u8,
         /// The locked amounts and the corresponding times of being locked.
         locked_amounts: BTreeMap<Decimal, usize>,
@@ -33,7 +35,7 @@ pub enum ResourceContainer {
         liquid_amount: Decimal,
     },
     NonFungible {
-        /// The resource definition id
+        /// The resource definition id.
         resource_def_id: ResourceDefId,
         /// The locked non-fungible ids and the corresponding times of being locked.
         locked_ids: HashMap<NonFungibleId, usize>,
@@ -138,6 +140,10 @@ impl ResourceContainer {
 
     pub fn lock_amount(&mut self, amount: Decimal) -> Result<(), ResourceContainerError> {
         // TODO do we allow locking non-fungibles in a fungible way?
+
+        // check amount granularity
+        let divisibility = self.resource_type().divisibility();
+        Self::check_amount(amount, divisibility)?;
 
         match self {
             Self::Fungible {

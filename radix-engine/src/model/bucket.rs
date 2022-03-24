@@ -1,17 +1,10 @@
 use scrypto::engine::types::*;
-use scrypto::prelude::NonFungibleAddress;
 use scrypto::rust::cell::{Ref, RefCell, RefMut};
 use scrypto::rust::collections::BTreeSet;
 use scrypto::rust::rc::Rc;
+use scrypto::rust::vec;
 
-use crate::model::{ResourceContainer, ResourceContainerError};
-
-/// Represents an error when accessing a bucket.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum BucketError {
-    ResourceContainerError(ResourceContainerError),
-    ResourceContainerLocked,
-}
+use crate::model::{AmountOrIds, Proof, ProofError, ResourceContainer, ResourceContainerError};
 
 /// A transient resource container.
 #[derive(Debug)]
@@ -26,46 +19,70 @@ impl Bucket {
         }
     }
 
-    pub fn put(&mut self, other: Bucket) -> Result<(), BucketError> {
-        self.borrow_container_mut()
-            .put(other.into_container()?)
-            .map_err(BucketError::ResourceContainerError)
+    pub fn put(&mut self, other: Bucket) -> Result<(), ResourceContainerError> {
+        self.borrow_container_mut().put(other.into_container()?)
     }
 
-    pub fn take(&mut self, amount: Decimal) -> Result<Bucket, BucketError> {
-        Ok(Bucket::new(
-            self.borrow_container_mut()
-                .take(amount)
-                .map_err(BucketError::ResourceContainerError)?,
-        ))
+    pub fn take(&mut self, amount: Decimal) -> Result<Bucket, ResourceContainerError> {
+        Ok(Bucket::new(self.borrow_container_mut().take(amount)?))
     }
 
-    pub fn take_non_fungible(&mut self, id: &NonFungibleId) -> Result<Bucket, BucketError> {
+    pub fn take_non_fungible(
+        &mut self,
+        id: &NonFungibleId,
+    ) -> Result<Bucket, ResourceContainerError> {
         self.take_non_fungibles(&BTreeSet::from([id.clone()]))
     }
 
     pub fn take_non_fungibles(
         &mut self,
         ids: &BTreeSet<NonFungibleId>,
-    ) -> Result<Bucket, BucketError> {
+    ) -> Result<Bucket, ResourceContainerError> {
         Ok(Bucket::new(
-            self.borrow_container_mut()
-                .take_non_fungibles(ids)
-                .map_err(BucketError::ResourceContainerError)?,
+            self.borrow_container_mut().take_non_fungibles(ids)?,
         ))
     }
 
-    pub fn contains_non_fungible_address(&self, non_fungible_address: &NonFungibleAddress) -> bool {
-        if self.resource_def_id() != non_fungible_address.resource_def_id() {
-            return false;
+    pub fn create_proof(&mut self) -> Result<Proof, ProofError> {
+        match self.resource_type() {
+            ResourceType::Fungible { .. } => self.create_proof_by_amount(self.total_amount()),
+            ResourceType::NonFungible => self.create_proof_by_ids(&self.total_ids().unwrap()),
         }
+    }
 
-        match self.borrow_container().total_ids() {
-            Err(_) => false,
-            Ok(non_fungible_ids) => non_fungible_ids
-                .iter()
-                .any(|k| k.eq(&non_fungible_address.non_fungible_id())),
-        }
+    pub fn create_proof_by_amount(&mut self, amount: Decimal) -> Result<Proof, ProofError> {
+        // lock the specified amount
+        self.borrow_container_mut()
+            .lock_amount(amount)
+            .map_err(ProofError::ResourceContainerError)?;
+
+        // produce proof
+        Proof::new(
+            self.resource_def_id(),
+            self.resource_type(),
+            false,
+            AmountOrIds::Amount(amount),
+            vec![(self.container.clone(), AmountOrIds::Amount(amount))],
+        )
+    }
+
+    pub fn create_proof_by_ids(
+        &mut self,
+        ids: &BTreeSet<NonFungibleId>,
+    ) -> Result<Proof, ProofError> {
+        // lock the specified id set
+        self.borrow_container_mut()
+            .lock_ids(ids)
+            .map_err(ProofError::ResourceContainerError)?;
+
+        // produce proof
+        Proof::new(
+            self.resource_def_id(),
+            self.resource_type(),
+            false,
+            AmountOrIds::Ids(ids.clone()),
+            vec![(self.container.clone(), AmountOrIds::Ids(ids.clone()))],
+        )
     }
 
     pub fn resource_def_id(&self) -> ResourceDefId {
@@ -80,10 +97,8 @@ impl Bucket {
         self.borrow_container().total_amount()
     }
 
-    pub fn total_ids(&self) -> Result<BTreeSet<NonFungibleId>, BucketError> {
-        self.borrow_container()
-            .total_ids()
-            .map_err(BucketError::ResourceContainerError)
+    pub fn total_ids(&self) -> Result<BTreeSet<NonFungibleId>, ResourceContainerError> {
+        self.borrow_container().total_ids()
     }
 
     pub fn is_locked(&self) -> bool {
@@ -94,13 +109,9 @@ impl Bucket {
         self.borrow_container().is_empty()
     }
 
-    pub fn create_reference_for_proof(&self) -> Rc<RefCell<ResourceContainer>> {
-        self.container.clone()
-    }
-
-    pub fn into_container(self) -> Result<ResourceContainer, BucketError> {
+    pub fn into_container(self) -> Result<ResourceContainer, ResourceContainerError> {
         Rc::try_unwrap(self.container)
-            .map_err(|_| BucketError::ResourceContainerLocked)
+            .map_err(|_| ResourceContainerError::ContainerLocked)
             .map(|c| c.into_inner())
     }
 

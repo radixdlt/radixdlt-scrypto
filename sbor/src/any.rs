@@ -27,7 +27,6 @@ pub enum Value {
     Enum(u8, Fields),
 
     Option(Box<Option<Value>>),
-    Box(Box<Value>),
     Array(u8, Vec<Value>),
     Tuple(Vec<Value>),
     Result(Box<Result<Value, Value>>),
@@ -96,12 +95,6 @@ pub fn encode_any(ty_ctx: Option<u8>, value: &Value, enc: &mut Encoder) {
                     encode_any(None, x, enc);
                 }
             }
-        }
-        Value::Box(v) => {
-            if ty_ctx.is_none() {
-                enc.write_type(TYPE_BOX);
-            }
-            encode_any(None, v, enc);
         }
         Value::Array(ty, elements) => {
             if ty_ctx.is_none() {
@@ -285,7 +278,6 @@ fn decode_next(ty_ctx: Option<u8>, dec: &mut Decoder) -> Result<Value, DecodeErr
                 _ => Err(DecodeError::InvalidIndex(index)),
             }
         }
-        TYPE_BOX => Ok(Value::Box(Box::new(decode_next(None, dec)?))),
         TYPE_ARRAY => {
             // element type
             let ele_ty = dec.read_type()?;
@@ -446,9 +438,6 @@ where
                 traverse_any(x, visitor)?;
             }
         },
-        Value::Box(v) => {
-            traverse_any(v, visitor)?;
-        }
         Value::Array(_, elements) => {
             for e in elements {
                 traverse_any(e, visitor)?;
@@ -548,7 +537,6 @@ mod tests {
         l: u128,
         m: String,
         n: Option<u32>,
-        o: Box<u32>,
         p: [u32; 3],
         q: (u32, u32),
         r: TestStruct,
@@ -588,7 +576,6 @@ mod tests {
             l: 10,
             m: String::from("abc"),
             n: Some(1),
-            o: Box::new(1),
             p: [1, 2, 3],
             q: (1, 2),
             r: TestStruct { x: 1 },
@@ -620,7 +607,6 @@ mod tests {
                 Value::U128(10),
                 Value::String(String::from("abc")),
                 Value::Option(Box::new(Some(Value::U32(1)))),
-                Value::Box(Box::new(Value::U32(1))),
                 Value::Array(TYPE_U32, vec![Value::U32(1), Value::U32(2), Value::U32(3),]),
                 Value::Tuple(vec![Value::U32(1), Value::U32(2),]),
                 Value::Struct(Fields::Named(vec![Value::U32(1)])),

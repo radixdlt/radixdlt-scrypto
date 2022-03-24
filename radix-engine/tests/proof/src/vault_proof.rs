@@ -25,6 +25,38 @@ blueprint! {
             proof.drop();
         }
 
+        pub fn create_clone_drop_vault_proof_by_amount(
+            &self,
+            total_amount: Decimal,
+            proof_amount: Decimal,
+        ) {
+            let proof = self.vault.create_proof_by_amount(proof_amount);
+            let clone = proof.clone();
+
+            assert_eq!(self.vault.amount(), total_amount);
+            assert_eq!(proof.amount(), proof_amount);
+            assert_eq!(clone.amount(), proof_amount);
+
+            clone.drop();
+            proof.drop();
+        }
+
+        pub fn create_clone_drop_vault_proof_by_ids(
+            &self,
+            total_ids: BTreeSet<NonFungibleId>,
+            proof_ids: BTreeSet<NonFungibleId>,
+        ) {
+            let proof = self.vault.create_proof_by_ids(&proof_ids);
+            let clone = proof.clone();
+
+            assert_eq!(self.vault.get_non_fungible_ids(), total_ids);
+            assert_eq!(proof.get_non_fungible_ids(), proof_ids);
+            assert_eq!(clone.get_non_fungible_ids(), proof_ids);
+
+            clone.drop();
+            proof.drop();
+        }
+
         pub fn use_vault_proof_for_auth(&self, to_burn: Bucket) {
             self.vault.authorize(|| {
                 to_burn.burn();
