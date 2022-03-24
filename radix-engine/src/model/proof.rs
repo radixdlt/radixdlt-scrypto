@@ -92,9 +92,24 @@ impl Proof {
         })
     }
 
-    pub fn create_proof_by_amount(
+    pub fn compose(
         proofs: &[Proof],
-        total_amount: Decimal,
+        resource_def_id: ResourceDefId,
+        resource_type: ResourceType,
+    ) -> Result<Proof, ProofError> {
+        match resource_type {
+            ResourceType::Fungible { .. } => {
+                Self::compose_by_amount(proofs, None, resource_def_id, resource_type)
+            }
+            ResourceType::NonFungible => {
+                Self::compose_by_ids(proofs, None, resource_def_id, resource_type)
+            }
+        }
+    }
+
+    pub fn compose_by_amount(
+        proofs: &[Proof],
+        total_amount: Option<Decimal>,
         resource_def_id: ResourceDefId,
         resource_type: ResourceType,
     ) -> Result<Proof, ProofError> {
@@ -132,6 +147,7 @@ impl Proof {
             .cloned()
             .reduce(|a, b| a + b)
             .unwrap_or_default();
+        let total_amount = total_amount.unwrap_or(max_sum.clone());
         if total_amount > max_sum {
             return Err(ProofError::InsufficientBaseProofs);
         }
@@ -172,7 +188,7 @@ impl Proof {
 
     pub fn compose_by_ids(
         proofs: &[Proof],
-        total_ids: BTreeSet<NonFungibleId>,
+        total_ids: Option<&BTreeSet<NonFungibleId>>,
         resource_def_id: ResourceDefId,
         resource_type: ResourceType,
     ) -> Result<Proof, ProofError> {
@@ -209,6 +225,7 @@ impl Proof {
         for (_, value) in max {
             max_sum.extend(value);
         }
+        let total_ids = total_ids.unwrap_or(&max_sum);
         if !max_sum.is_superset(&total_ids) {
             return Err(ProofError::InsufficientBaseProofs);
         }
@@ -233,7 +250,7 @@ impl Proof {
         }
 
         // issue a new proof
-        Proof::new_non_fungible(resource_def_id, false, total_ids, new_sources)
+        Proof::new_non_fungible(resource_def_id, false, total_ids.clone(), new_sources)
     }
 
     pub fn clone(&self) -> Self {

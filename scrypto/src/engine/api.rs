@@ -607,6 +607,38 @@ pub struct CreateVaultProofByIdsOutput {
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
+pub struct CreateAuthZoneProofInput {
+    pub resource_def_id: ResourceDefId,
+}
+
+#[derive(Debug, TypeId, Encode, Decode)]
+pub struct CreateAuthZoneProofOutput {
+    pub proof_id: ProofId,
+}
+
+#[derive(Debug, TypeId, Encode, Decode)]
+pub struct CreateAuthZoneProofByAmountInput {
+    pub resource_def_id: ResourceDefId,
+    pub amount: Decimal,
+}
+
+#[derive(Debug, TypeId, Encode, Decode)]
+pub struct CreateAuthZoneProofByAmountOutput {
+    pub proof_id: ProofId,
+}
+
+#[derive(Debug, TypeId, Encode, Decode)]
+pub struct CreateAuthZoneProofByIdsInput {
+    pub resource_def_id: ResourceDefId,
+    pub ids: BTreeSet<NonFungibleId>,
+}
+
+#[derive(Debug, TypeId, Encode, Decode)]
+pub struct CreateAuthZoneProofByIdsOutput {
+    pub proof_id: ProofId,
+}
+
+#[derive(Debug, TypeId, Encode, Decode)]
 pub struct DropProofInput {
     pub proof_id: ProofId,
 }
