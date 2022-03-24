@@ -98,17 +98,20 @@ impl Proof {
         resource_def_id: ResourceDefId,
         resource_type: ResourceType,
     ) -> Result<Proof, ProofError> {
+        // check resource type
         if matches!(resource_type, ResourceType::NonFungible) {
             return Err(ProofError::FungibleOperationNotAllowed);
         }
 
+        // filter proofs by resource def id and restricted flag
+        let proofs: Vec<&Proof> = proofs
+            .iter()
+            .filter(|p| p.resource_def_id() == resource_def_id && !p.is_restricted())
+            .collect();
+
         // calculate the max locked amount (by the input proofs) in each container
         let mut allowance = HashMap::<ProofSourceId, Decimal>::new();
-        for proof in proofs {
-            if proof.resource_def_id() != resource_def_id || proof.is_restricted() {
-                continue;
-            }
-
+        for proof in &proofs {
             match proof {
                 Proof::Fungible { sources, .. } => {
                     for (source_id, (_, amount)) in sources {
@@ -133,7 +136,7 @@ impl Proof {
             return Err(ProofError::InsufficientBaseProofs);
         }
 
-        // lock all relevant containers
+        // lock all relevant resources
         //
         // This is not an efficient way of producing proofs, in terms of number of state updates
         // to the resource containers. However, this is the simplest to explain as no
@@ -142,12 +145,12 @@ impl Proof {
         // If this turns to be a performance bottleneck, should start with containers where the
         // largest amount has been locked, and only lock the requested amount.
         //
+        // Another consideration is that this may not be user expected behavior. Because we're locking
+        // all the resources, the `total_amount` may be less than the max sum of the locked resources.
+        // When a composite proof is used for a second composite proof, the `total_amount` is not
+        // respected, all the underlying resource constraints become visible.
         let mut new_sources = HashMap::new();
-        for proof in proofs {
-            if proof.resource_def_id() != resource_def_id || proof.is_restricted() {
-                continue;
-            }
-
+        for proof in &proofs {
             match proof {
                 Proof::Fungible { sources, .. } => {
                     for (source_id, (container, amount)) in sources {
@@ -155,7 +158,7 @@ impl Proof {
                             .borrow_mut()
                             .lock_amount(amount.clone())
                             .map_err(ProofError::ResourceContainerError)
-                            .expect("Should always be able to lock the same amount");
+                            .expect("Re-locking should always succeed");
                         new_sources.insert(source_id.clone(), (container.clone(), amount.clone()));
                     }
                 }
@@ -173,17 +176,20 @@ impl Proof {
         resource_def_id: ResourceDefId,
         resource_type: ResourceType,
     ) -> Result<Proof, ProofError> {
+        // check resource type
         if matches!(resource_type, ResourceType::Fungible { .. }) {
             return Err(ProofError::NonFungibleOperationNotAllowed);
         }
 
+        // filter proofs by resource def id and restricted flag
+        let proofs: Vec<&Proof> = proofs
+            .iter()
+            .filter(|p| p.resource_def_id() == resource_def_id && !p.is_restricted())
+            .collect();
+
         // calculate the max locked amount (by the input proofs) in each container
         let mut allowance = HashMap::<ProofSourceId, BTreeSet<NonFungibleId>>::new();
-        for proof in proofs {
-            if proof.resource_def_id() != resource_def_id || proof.is_restricted() {
-                continue;
-            }
-
+        for proof in &proofs {
             match proof {
                 Proof::NonFungible { sources, .. } => {
                     for (source_id, (_, ids)) in sources {
@@ -207,16 +213,10 @@ impl Proof {
             return Err(ProofError::InsufficientBaseProofs);
         }
 
-        // lock all relevant resources
-        //
+        // lock all relevant resources.
         // See `compose_by_amount` for performance notes.
-        //
         let mut new_sources = HashMap::new();
-        for proof in proofs {
-            if proof.resource_def_id() != resource_def_id || proof.is_restricted() {
-                continue;
-            }
-
+        for proof in &proofs {
             match proof {
                 Proof::NonFungible { sources, .. } => {
                     for (source_id, (container, ids)) in sources {
@@ -224,7 +224,7 @@ impl Proof {
                             .borrow_mut()
                             .lock_ids(ids)
                             .map_err(ProofError::ResourceContainerError)
-                            .expect("Should always be able to lock the same amount");
+                            .expect("Re-locking should always succeed");
                         new_sources.insert(source_id.clone(), (container.clone(), ids.clone()));
                     }
                 }
@@ -248,7 +248,7 @@ impl Proof {
                     container
                         .borrow_mut()
                         .lock_amount(amount.clone())
-                        .expect("Cloning should always be possible");
+                        .expect("Cloning should always succeed");
                 }
 
                 Self::Fungible {
@@ -268,7 +268,7 @@ impl Proof {
                     container
                         .borrow_mut()
                         .lock_ids(ids)
-                        .expect("Cloning should always be possible");
+                        .expect("Cloning should always succeed");
                 }
 
                 Self::NonFungible {
@@ -288,7 +288,7 @@ impl Proof {
                     container
                         .borrow_mut()
                         .unlock_amount(amount.clone())
-                        .expect("Unlocking should always be possible");
+                        .expect("Unlocking should always succeed");
                 }
             }
             Self::NonFungible { sources, .. } => {
@@ -296,7 +296,7 @@ impl Proof {
                     container
                         .borrow_mut()
                         .unlock_ids(ids)
-                        .expect("Unlocking should always be possible");
+                        .expect("Unlocking should always succeed");
                 }
             }
         }
