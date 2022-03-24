@@ -237,11 +237,19 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
             }
         }
 
+        // drop all dangling proofs
+        error = error.or_else(|| match proc.drop_all_proofs() {
+            Ok(_) => None,
+            Err(e) => Some(e),
+        });
+
         // check resource
         error = error.or_else(|| match proc.check_resource() {
             Ok(_) => None,
             Err(e) => Some(e),
         });
+
+        // prepare data for receipts
         let new_package_ids = track.new_package_ids();
         let new_component_ids = track.new_component_ids();
         let new_resource_def_ids = track.new_resource_def_ids();

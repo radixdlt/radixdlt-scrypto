@@ -54,9 +54,6 @@ pub enum ProofError {
 }
 
 impl Proof {
-    // TODO: proof auto drop
-    // TODO: thorough test partial/full/composite proofs
-
     pub fn new_fungible(
         resource_def_id: ResourceDefId,
         restricted: bool,

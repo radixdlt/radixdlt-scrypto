@@ -575,6 +575,26 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         Ok(())
     }
 
+    /// Drops all proofs owned by this process.
+    pub fn drop_all_proofs(&mut self) -> Result<(), RuntimeError> {
+        // named proofs
+        let proof_ids: Vec<ProofId> = self.proofs.keys().cloned().collect();
+        for proof_id in proof_ids {
+            self.drop_proof(proof_id)?;
+        }
+
+        // proofs in auth zone
+        loop {
+            if let Some(proof) = self.auth_zone.pop() {
+                proof.drop();
+            } else {
+                break;
+            }
+        }
+
+        Ok(())
+    }
+
     /// (Transaction ONLY) Calls a method.
     pub fn call_method_with_all_resources(
         &mut self,
@@ -872,17 +892,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let result = self.call(invocation);
         re_debug!(self, "Call abi ended");
         result
-    }
-
-    /// Drops all proofs owned by this process.
-    pub fn drop_all_proofs(&mut self) -> Result<(), RuntimeError> {
-        let proof_ids: Vec<ProofId> = self.proofs.keys().cloned().collect();
-        for proof_id in proof_ids {
-            self.proofs
-                .remove(&proof_id)
-                .ok_or(RuntimeError::ProofNotFound(proof_id))?;
-        }
-        Ok(())
     }
 
     /// Checks resource leak.

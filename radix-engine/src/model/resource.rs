@@ -83,7 +83,7 @@ impl ResourceContainer {
         // update liquidity
         match self {
             Self::Fungible { liquid_amount, .. } => {
-                *liquid_amount = other.liquid_amount();
+                *liquid_amount += other.liquid_amount();
             }
             Self::NonFungible { liquid_ids, .. } => {
                 liquid_ids.extend(other.liquid_ids()?);
