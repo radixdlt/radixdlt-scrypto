@@ -1,6 +1,7 @@
 #[rustfmt::skip]
 pub mod test_runner;
 
+use scrypto::min_n_of;
 use crate::test_runner::TestRunner;
 use radix_engine::errors::RuntimeError;
 use radix_engine::ledger::InMemorySubstateStore;
@@ -169,6 +170,45 @@ fn dynamic_auth_should_allow_me_to_call_method_when_change_auth() {
         .build(vec![other_key])
         .unwrap();
     let receipt = test_runner.run(transaction3);
+
+    // Assert
+    receipt.result.expect("Should be okay.");
+}
+
+#[test]
+fn dynamic_authlist_should_allow_me_to_call_method() {
+    // Arrange
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(&mut substate_store);
+    let (_, address0) = test_runner.new_public_key_and_non_fungible_address();
+    let (key1, address1) = test_runner.new_public_key_and_non_fungible_address();
+    let (key2, address2) = test_runner.new_public_key_and_non_fungible_address();
+    let auth = vec![address0, address1, address2];
+    let package = test_runner.publish_package("component");
+    let authorization = component_authorization! {
+        "get_secret" => min_n_of!(2, SborPath::from("0"))
+    };
+    let transaction1 = test_runner
+        .new_transaction_builder()
+        .call_function(
+            package,
+            "AuthListComponent",
+            "create_component",
+            vec![scrypto_encode(&auth), scrypto_encode(&authorization)],
+        )
+        .build(vec![])
+        .unwrap();
+    let receipt0 = test_runner.run(transaction1);
+    receipt0.result.expect("Should be okay.");
+    let component = receipt0.new_component_ids[0];
+
+    // Act
+    let transaction2 = test_runner
+        .new_transaction_builder()
+        .call_method(component, "get_secret", vec![])
+        .build(vec![key1, key2])
+        .unwrap();
+    let receipt = test_runner.run(transaction2);
 
     // Assert
     receipt.result.expect("Should be okay.");

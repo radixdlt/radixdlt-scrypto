@@ -68,6 +68,12 @@ pub enum ProofRuleResourceList {
     FromComponent(SborPath),
 }
 
+impl From<SborPath> for ProofRuleResourceList {
+    fn from(path: SborPath) -> Self {
+        ProofRuleResourceList::FromComponent(path)
+    }
+}
+
 /// Authorization Rule
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Describe, TypeId, Encode, Decode)]
 pub enum ProofRule {
@@ -124,9 +130,12 @@ macro_rules! all_of {
 
 #[macro_export]
 macro_rules! min_n_of {
-    ($count:expr, $($resource:expr),+) => ({
-        ::scrypto::resource::ProofRule::CountOf($count, resource_list!($($resource),+))
-    })
+    ($count:expr, $list:expr) => ({
+        ::scrypto::resource::ProofRule::CountOf($count, $list.into())
+    });
+    ($count:expr, $left:expr, $($right:expr),+) => ({
+        ::scrypto::resource::ProofRule::CountOf($count, resource_list!($left, $($right),+))
+    });
 }
 
 #[macro_export]
