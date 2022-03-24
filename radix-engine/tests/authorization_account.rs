@@ -6,7 +6,7 @@ use radix_engine::errors::RuntimeError;
 use radix_engine::ledger::InMemorySubstateStore;
 use radix_engine::transaction::*;
 use scrypto::prelude::*;
-use scrypto::{all_of, min_amount_of, any_of, min_n_of, resource_list};
+use scrypto::{all_of, any_of, min_amount_of, min_n_of, resource_list};
 
 #[test]
 fn can_withdraw_from_my_1_of_2_account_with_key0_sign() {

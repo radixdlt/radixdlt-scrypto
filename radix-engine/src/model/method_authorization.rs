@@ -17,12 +17,11 @@ impl HardProofRuleResource {
         match self {
             HardProofRuleResource::NonFungible(non_fungible_address) => {
                 let proof_resource_def_id = proof.resource_def_id();
-                proof_resource_def_id == non_fungible_address.resource_def_id() && match proof.total_ids() {
-                    Ok(ids) => {
-                        ids.contains(&non_fungible_address.non_fungible_id())
+                proof_resource_def_id == non_fungible_address.resource_def_id()
+                    && match proof.total_ids() {
+                        Ok(ids) => ids.contains(&non_fungible_address.non_fungible_id()),
+                        Err(_) => false,
                     }
-                    Err(_) => false,
-                }
             }
             HardProofRuleResource::Resource(resource_def_id) => {
                 let proof_resource_def_id = proof.resource_def_id();
@@ -33,7 +32,10 @@ impl HardProofRuleResource {
 
     pub fn check_has_amount(&self, amount: Decimal, proofs_vector: &[&[Proof]]) -> bool {
         for proofs in proofs_vector {
-            if proofs.iter().any(|p| self.proof_matches(p) && p.total_amount() >= amount) {
+            if proofs
+                .iter()
+                .any(|p| self.proof_matches(p) && p.total_amount() >= amount)
+            {
                 return true;
             }
         }

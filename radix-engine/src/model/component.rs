@@ -3,7 +3,9 @@ use crate::model::{MethodAuthorization, ValidatedData};
 use sbor::any::{Fields, Value};
 use sbor::*;
 use scrypto::engine::types::*;
-use scrypto::resource::{ProofRule, NonFungibleAddress, ProofRuleResource, ProofRuleResourceList, SborRelPath};
+use scrypto::resource::{
+    NonFungibleAddress, ProofRule, ProofRuleResource, ProofRuleResourceList, SborRelPath,
+};
 use scrypto::rust::collections::*;
 use scrypto::rust::string::String;
 use scrypto::rust::vec;
@@ -60,7 +62,10 @@ impl Component {
         }
     }
 
-    fn soft_to_hard_resource_list(list: &ProofRuleResourceList, dom: &Value) -> Vec<HardProofRuleResource> {
+    fn soft_to_hard_resource_list(
+        list: &ProofRuleResourceList,
+        dom: &Value,
+    ) -> Vec<HardProofRuleResource> {
         match list {
             ProofRuleResourceList::StaticList(resources) => {
                 let mut hard_resources = Vec::new();
@@ -75,47 +80,66 @@ impl Component {
                 match Self::get_from_value(path.rel_path(), dom) {
                     Some(Value::Vec(type_id, values)) => {
                         match CustomType::from_id(*type_id).unwrap() {
-                            CustomType::ResourceDefId => {
-                                values.iter().map(|v| {
+                            CustomType::ResourceDefId => values
+                                .iter()
+                                .map(|v| {
                                     if let Value::Custom(_, bytes) = v {
-                                        return ResourceDefId::try_from(bytes.as_slice()).unwrap().into();
+                                        return ResourceDefId::try_from(bytes.as_slice())
+                                            .unwrap()
+                                            .into();
                                     }
                                     panic!("Unexpected type");
-                                }).collect()
-                            },
-                            CustomType::NonFungibleAddress => {
-                                values.iter().map(|v| {
+                                })
+                                .collect(),
+                            CustomType::NonFungibleAddress => values
+                                .iter()
+                                .map(|v| {
                                     if let Value::Custom(_, bytes) = v {
-                                        return NonFungibleAddress::try_from(bytes.as_slice()).unwrap().into();
+                                        return NonFungibleAddress::try_from(bytes.as_slice())
+                                            .unwrap()
+                                            .into();
                                     }
                                     panic!("Unexpected type");
-                                }).collect()
-                            },
-                            _ => vec![]
+                                })
+                                .collect(),
+                            _ => vec![],
                         }
                     }
-                    _ => vec![]
+                    _ => vec![],
                 }
             }
         }
     }
 
-    fn soft_to_hard_resource(proof_rule_resource: &ProofRuleResource, dom: &Value) -> Option<HardProofRuleResource> {
+    fn soft_to_hard_resource(
+        proof_rule_resource: &ProofRuleResource,
+        dom: &Value,
+    ) -> Option<HardProofRuleResource> {
         match proof_rule_resource {
             ProofRuleResource::FromComponent(path) => {
                 match Self::get_from_value(path.rel_path(), dom) {
                     Some(Value::Custom(type_id, bytes)) => {
                         match CustomType::from_id(*type_id).unwrap() {
-                            CustomType::ResourceDefId => Option::Some(ResourceDefId::try_from(bytes.as_slice()).unwrap().into()),
-                            CustomType::NonFungibleAddress => Option::Some(NonFungibleAddress::try_from(bytes.as_slice()).unwrap().into()),
-                            _ => Option::None
+                            CustomType::ResourceDefId => Option::Some(
+                                ResourceDefId::try_from(bytes.as_slice()).unwrap().into(),
+                            ),
+                            CustomType::NonFungibleAddress => Option::Some(
+                                NonFungibleAddress::try_from(bytes.as_slice())
+                                    .unwrap()
+                                    .into(),
+                            ),
+                            _ => Option::None,
                         }
                     }
-                    _ => Option::None
+                    _ => Option::None,
                 }
-            },
-            ProofRuleResource::NonFungible(non_fungible_address) => Some(HardProofRuleResource::NonFungible(non_fungible_address.clone())),
-            ProofRuleResource::Resource(resource_def_id) => Some(HardProofRuleResource::Resource(resource_def_id.clone())),
+            }
+            ProofRuleResource::NonFungible(non_fungible_address) => Some(
+                HardProofRuleResource::NonFungible(non_fungible_address.clone()),
+            ),
+            ProofRuleResource::Resource(resource_def_id) => {
+                Some(HardProofRuleResource::Resource(resource_def_id.clone()))
+            }
         }
     }
 

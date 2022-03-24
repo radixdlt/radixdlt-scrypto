@@ -29,7 +29,10 @@ impl<'a> SborRelPath<'a> {
 
 impl From<&str> for SborPath {
     fn from(str: &str) -> Self {
-        let path: Vec<usize> = str.split('/').map(|s| s.parse::<usize>().unwrap()).collect();
+        let path: Vec<usize> = str
+            .split('/')
+            .map(|s| s.parse::<usize>().unwrap())
+            .collect();
         SborPath(path)
     }
 }
@@ -100,9 +103,9 @@ macro_rules! resource_list {
 
 #[macro_export]
 macro_rules! this {
-    ($resource:expr) => ({
+    ($resource:expr) => {{
         ::scrypto::resource::ProofRule::This($resource.into())
-    });
+    }};
 }
 
 #[macro_export]
