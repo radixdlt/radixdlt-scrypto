@@ -1,6 +1,7 @@
 use crate::resource::*;
 use crate::rust::vec;
 use crate::rust::vec::Vec;
+use sbor::path::SborRelPath;
 use sbor::*;
 use scrypto::math::Decimal;
 
@@ -9,21 +10,7 @@ pub struct SborPath(Vec<usize>);
 
 impl SborPath {
     pub fn rel_path(&self) -> SborRelPath {
-        SborRelPath(&self.0)
-    }
-}
-
-pub struct SborRelPath<'a>(&'a [usize]);
-
-impl<'a> SborRelPath<'a> {
-    pub fn is_empty(&self) -> bool {
-        self.0.is_empty()
-    }
-
-    pub fn pop(&self) -> (usize, Self) {
-        let (index_slice, extended_path) = self.0.split_at(1);
-        let index = index_slice[0];
-        (index, SborRelPath(extended_path))
+        SborRelPath::new(&self.0)
     }
 }
 
