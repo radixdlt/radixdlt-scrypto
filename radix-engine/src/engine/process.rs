@@ -851,6 +851,76 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         println!("{}[{:5}] {}", "  ".repeat(self.depth), l, m);
     }
 
+    fn mint_resource(
+        &mut self,
+        resource_def_id: ResourceDefId,
+        mint_params: MintParams,
+    ) -> Result<ResourceContainer, RuntimeError> {
+        let resource_def = self
+            .track
+            .get_resource_def_mut(&resource_def_id)
+            .ok_or(RuntimeError::ResourceDefNotFound(resource_def_id))?;
+
+        if !mint_params.is_same_type(&resource_def.resource_type()) {
+            return Err(RuntimeError::InvalidMintParams);
+        }
+
+        match mint_params {
+            MintParams::Fungible { amount } => {
+                // Notify resource manager
+                resource_def.mint(amount);
+
+                // Allocate fungible
+                Ok(ResourceContainer::new_fungible(
+                    resource_def_id,
+                    resource_def.resource_type().divisibility(),
+                    amount,
+                ))
+            }
+            MintParams::NonFungible { entries } => {
+                // Notify resource manager
+                resource_def.mint(entries.len().into());
+
+                // Allocate non-fungibles
+                let mut ids = BTreeSet::new();
+                for (id, data) in entries {
+                    let non_fungible_address = NonFungibleAddress::new(resource_def_id, id.clone());
+                    if self.track.get_non_fungible(&non_fungible_address).is_some() {
+                        return Err(RuntimeError::NonFungibleAlreadyExists(non_fungible_address));
+                    }
+
+                    let immutable_data = self.process_non_fungible_data(&data.0)?;
+                    let mutable_data = self.process_non_fungible_data(&data.1)?;
+
+                    self.track.put_non_fungible(
+                        non_fungible_address,
+                        NonFungible::new(immutable_data.raw, mutable_data.raw),
+                    );
+                    ids.insert(id);
+                }
+
+                Ok(ResourceContainer::new_non_fungible(resource_def_id, ids))
+            }
+        }
+    }
+
+    fn burn_resource(&mut self, resource: ResourceContainer) -> Result<(), RuntimeError> {
+        let resource_def_id = resource.resource_def_id();
+        let resource_def = self
+            .track
+            .get_resource_def_mut(&resource_def_id)
+            .ok_or(RuntimeError::ResourceDefNotFound(resource_def_id))?;
+
+        // Notify resource manager
+        resource_def.burn(resource.total_amount());
+
+        if matches!(resource.resource_type(), ResourceType::NonFungible) {
+            // FIXME: remove the non-fungibles from the state
+        }
+
+        Ok(())
+    }
+
     fn process_call_data(&mut self, validated: &ValidatedData) -> Result<(), RuntimeError> {
         if !validated.lazy_map_ids.is_empty() {
             return Err(RuntimeError::LazyMapNotAllowed);
@@ -1411,59 +1481,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         Ok(PutLazyMapEntryOutput {})
     }
 
-    fn allocate_resource(
-        &mut self,
-        resource_def_id: ResourceDefId,
-        mint_params: MintParams,
-    ) -> Result<ResourceContainer, RuntimeError> {
-        let resource_def = self
-            .track
-            .get_resource_def_mut(&resource_def_id)
-            .ok_or(RuntimeError::ResourceDefNotFound(resource_def_id))?;
-
-        if !mint_params.is_same_type(&resource_def.resource_type()) {
-            return Err(RuntimeError::InvalidMintParams);
-        }
-
-        match mint_params {
-            MintParams::Fungible { amount } => {
-                // Notify resource manager
-                resource_def.mint(amount);
-
-                // Allocate fungible
-                Ok(ResourceContainer::new_fungible(
-                    resource_def_id,
-                    resource_def.resource_type().divisibility(),
-                    amount,
-                ))
-            }
-            MintParams::NonFungible { entries } => {
-                // Notify resource manager
-                resource_def.mint(entries.len().into());
-
-                // Allocate non-fungibles
-                let mut ids = BTreeSet::new();
-                for (id, data) in entries {
-                    let non_fungible_address = NonFungibleAddress::new(resource_def_id, id.clone());
-                    if self.track.get_non_fungible(&non_fungible_address).is_some() {
-                        return Err(RuntimeError::NonFungibleAlreadyExists(non_fungible_address));
-                    }
-
-                    let immutable_data = self.process_non_fungible_data(&data.0)?;
-                    let mutable_data = self.process_non_fungible_data(&data.1)?;
-
-                    self.track.put_non_fungible(
-                        non_fungible_address,
-                        NonFungible::new(immutable_data.raw, mutable_data.raw),
-                    );
-                    ids.insert(id);
-                }
-
-                Ok(ResourceContainer::new_non_fungible(resource_def_id, ids))
-            }
-        }
-    }
-
     fn handle_create_resource(
         &mut self,
         input: CreateResourceInput,
@@ -1481,7 +1498,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         re_debug!(self, "New resource definition: {}", resource_def_id);
 
         let bucket_id = if let Some(mint_params) = input.mint_params {
-            let bucket = Bucket::new(self.allocate_resource(resource_def_id, mint_params)?);
+            let bucket = Bucket::new(self.mint_resource(resource_def_id, mint_params)?);
             let bucket_id = self.new_bucket_id()?;
             self.buckets.insert(bucket_id, bucket);
             Some(bucket_id)
@@ -1781,7 +1798,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         self.check_resource_auth(&input.resource_def_id, "mint")?;
 
         // wrap resource into a bucket
-        let bucket = Bucket::new(self.allocate_resource(input.resource_def_id, input.mint_params)?);
+        let bucket = Bucket::new(self.mint_resource(input.resource_def_id, input.mint_params)?);
         let bucket_id = self.new_bucket_id()?;
         self.buckets.insert(bucket_id, bucket);
 
@@ -1799,16 +1816,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .ok_or(RuntimeError::BucketNotFound(input.bucket_id))?;
         self.check_resource_auth(&bucket.resource_def_id(), "burn")?;
 
-        // Burn
-        let resource_def = self
-            .track
-            .get_resource_def_mut(&bucket.resource_def_id())
-            .ok_or(RuntimeError::ResourceDefNotFound(bucket.resource_def_id()))?;
-
-        if bucket.is_locked() {
-            return Err(RuntimeError::CantBurnLockedBucket);
-        }
-        resource_def.burn(bucket.total_amount());
+        self.burn_resource(bucket.into_container().map_err(RuntimeError::BucketError)?)?;
 
         Ok(BurnResourceOutput {})
     }
