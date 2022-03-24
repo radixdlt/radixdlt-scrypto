@@ -7,8 +7,11 @@ use crate::resim::*;
 /// Transfer resource to another account
 #[derive(Parser, Debug)]
 pub struct Transfer {
-    /// The resource to transfer, e.g. "amount,resource_def_id" or "#non_fungible_id1,#non_fungible_id2,resource_def_id"
-    resource: ResourceSpecifier,
+    /// The amount to transfer.
+    amount: Decimal,
+
+    /// The resource definition id.
+    resource_def_id: ResourceDefId,
 
     /// The recipient component ID.
     recipient: ComponentId,
@@ -33,7 +36,7 @@ impl Transfer {
         let default_account = get_default_account()?;
         let default_signers = get_default_signers()?;
         let transaction = TransactionBuilder::new(&executor)
-            .withdraw_from_account(&self.resource, default_account)
+            .withdraw_from_account_by_amount(self.amount, self.resource_def_id, default_account)
             .call_method_with_all_resources(self.recipient, "deposit_batch")
             .build(self.signers.clone().unwrap_or(default_signers))
             .map_err(Error::TransactionConstructionError)?;
