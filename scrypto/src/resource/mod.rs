@@ -1,6 +1,6 @@
 mod auth_zone;
-mod bucket;
 mod authorization;
+mod bucket;
 mod mint_params;
 mod non_fungible;
 mod non_fungible_address;
@@ -20,8 +20,8 @@ pub mod resource_flags;
 pub mod resource_permissions;
 
 pub use auth_zone::AuthZone;
-pub use bucket::{Bucket, ParseBucketError};
 pub use authorization::ComponentAuthorization;
+pub use bucket::{Bucket, ParseBucketError};
 pub use mint_params::MintParams;
 pub use non_fungible::NonFungible;
 pub use non_fungible_address::{NonFungibleAddress, ParseNonFungibleAddressError};

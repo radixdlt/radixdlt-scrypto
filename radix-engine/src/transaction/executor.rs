@@ -206,12 +206,12 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
                 ValidatedInstruction::ReturnToWorktop { bucket_id } => {
                     proc.return_to_worktop(bucket_id)
                 }
-                ValidatedInstruction::AssertWorktopContains { resource_def_id } => todo!(),
-                ValidatedInstruction::AssertWorktopContainsByAmount {
+                ValidatedInstruction::AssertWorktop { resource_def_id } => todo!(),
+                ValidatedInstruction::AssertWorktopByAmount {
                     amount,
                     resource_def_id,
-                } => proc.assert_worktop_contains(amount, resource_def_id),
-                ValidatedInstruction::AssertWorktopContainsByIds {
+                } => proc.assert_worktop(amount, resource_def_id),
+                ValidatedInstruction::AssertWorktopByIds {
                     ids,
                     resource_def_id,
                 } => todo!(),

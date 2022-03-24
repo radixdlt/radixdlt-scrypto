@@ -323,7 +323,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     }
 
     // (Transaction ONLY) Assert worktop contains at least this amount.
-    pub fn assert_worktop_contains(
+    pub fn assert_worktop(
         &mut self,
         amount: Decimal,
         resource_def_id: ResourceDefId,

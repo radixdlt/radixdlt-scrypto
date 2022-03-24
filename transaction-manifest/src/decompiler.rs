@@ -72,31 +72,31 @@ pub fn decompile(tx: &Transaction) -> Result<String, DecompileError> {
                         .unwrap_or(format!("{}u32", bucket_id))
                 ));
             }
-            Instruction::AssertWorktopContains { resource_def_id } => {
+            Instruction::AssertWorktop { resource_def_id } => {
                 buf.push_str(&format!(
-                    "ASSERT_WORKTOP_CONTAINS ResourceDefId(\"{}\");\n",
+                    "ASSERT_WORKTOP ResourceDefId(\"{}\");\n",
                     resource_def_id
                 ));
             }
-            Instruction::AssertWorktopContainsByAmount {
+            Instruction::AssertWorktopByAmount {
                 amount,
                 resource_def_id,
             } => {
                 buf.push_str(&format!(
-                    "ASSERT_WORKTOP_CONTAINS_BY_AMOUNT Decimal(\"{}\") ResourceDefId(\"{}\");\n",
+                    "ASSERT_WORKTOP_BY_AMOUNT Decimal(\"{}\") ResourceDefId(\"{}\");\n",
                     amount, resource_def_id
                 ));
             }
-            Instruction::AssertWorktopContainsByIds {
+            Instruction::AssertWorktopByIds {
                 ids,
                 resource_def_id,
             } => {
                 buf.push_str(&format!(
-                    "ASSERT_WORKTOP_CONTAINS_BY_IDS TreeSet<NonFungibleId>({}) ResourceDefId(\"{}\");\n",
+                    "ASSERT_WORKTOP_BY_IDS TreeSet<NonFungibleId>({}) ResourceDefId(\"{}\");\n",
                     ids.iter()
-                    .map(|k| format!("NonFungibleId(\"{}\")", k))
-                    .collect::<Vec<String>>()
-                    .join(", "),
+                        .map(|k| format!("NonFungibleId(\"{}\")", k))
+                        .collect::<Vec<String>>()
+                        .join(", "),
                     resource_def_id
                 ));
             }
