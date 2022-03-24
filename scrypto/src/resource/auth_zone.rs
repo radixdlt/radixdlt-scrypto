@@ -44,12 +44,12 @@ impl AuthZone {
     }
 
     pub fn create_proof_by_ids(
-        ids: BTreeSet<NonFungibleId>,
+        ids: &BTreeSet<NonFungibleId>,
         resource_def_id: ResourceDefId,
     ) -> Proof {
         let input = CreateAuthZoneProofByIdsInput {
             resource_def_id,
-            ids,
+            ids: ids.clone(),
         };
         let output: CreateAuthZoneProofByIdsOutput =
             call_engine(CREATE_AUTH_ZONE_PROOF_BY_IDS, input);

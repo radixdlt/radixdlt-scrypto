@@ -70,5 +70,46 @@ blueprint! {
         pub fn receive_proof_and_move_to_auth_zone(proof: Proof) {
             AuthZone::push(proof); // should fail here
         }
+
+        pub fn compose_vault_and_bucket_proof(&mut self, bucket: Bucket) {
+            self.vault.authorize(|| {
+                bucket.authorize(|| {
+                    let proof = AuthZone::create_proof(bucket.resource_def_id());
+                    assert_eq!(proof.amount(), self.vault.amount() + bucket.amount());
+                    proof.drop();
+                })
+            });
+            self.vault.put(bucket);
+        }
+
+        pub fn compose_vault_and_bucket_proof_by_amount(
+            &mut self,
+            bucket: Bucket,
+            amount: Decimal,
+        ) {
+            self.vault.authorize(|| {
+                bucket.authorize(|| {
+                    let proof = AuthZone::create_proof_by_amount(amount, bucket.resource_def_id());
+                    assert_eq!(proof.amount(), amount);
+                    proof.drop();
+                })
+            });
+            self.vault.put(bucket);
+        }
+
+        pub fn compose_vault_and_bucket_proof_by_ids(
+            &mut self,
+            bucket: Bucket,
+            ids: BTreeSet<NonFungibleId>,
+        ) {
+            self.vault.authorize(|| {
+                bucket.authorize(|| {
+                    let proof = AuthZone::create_proof_by_ids(&ids, bucket.resource_def_id());
+                    assert_eq!(proof.get_non_fungible_ids(), ids);
+                    proof.drop();
+                })
+            });
+            self.vault.put(bucket);
+        }
     }
 }
