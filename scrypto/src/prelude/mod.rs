@@ -7,7 +7,7 @@ pub use crate::math::*;
 pub use crate::misc::*;
 pub use crate::resource::*;
 pub use crate::{
-    all_of, any_of, args, auth, bdec, blueprint, compile_package, component,
+    all_of, any_of, args, bdec, blueprint, compile_package, component,
     component_authorization, debug, dec, error, import, include_package, info, min_amount_of,
     min_n_of, package, resource_def, resource_list, this, trace, warn, Decode, Describe, Encode,
     NonFungibleData, TypeId,

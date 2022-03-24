@@ -15,18 +15,11 @@ use crate::model::MethodAuthorization;
 /// Represents an error when accessing a bucket.
 #[derive(Debug, Clone, PartialEq)]
 pub enum ResourceDefError {
-    OperationNotAllowed,
-    PermissionNotAllowed,
     InvalidDivisibility,
     InvalidAmount(Decimal),
     InvalidResourceFlags(u64),
     InvalidResourcePermission(u64),
-    InvalidFlagUpdate {
-        flags: u64,
-        mutable_flags: u64,
-        new_flags: u64,
-        new_mutable_flags: u64,
-    },
+    FlagsLocked,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
@@ -98,7 +91,7 @@ pub const PERMISSION_MAP: [(u64, &[&str]); 6] = [
     (MAY_TRANSFER, &["take_from_vault"]),
     (
         MAY_MANAGE_RESOURCE_FLAGS,
-        &["update_flags", "update_mutable_flags"],
+        &["enable_flags", "disable_flags", "lock_flags"],
     ),
     (MAY_CHANGE_SHARED_METADATA, &["update_metadata"]),
     (
@@ -137,11 +130,15 @@ impl ResourceDef {
             MethodState::new(AlwaysTrue, IsSet(RESTRICTED_TRANSFER)),
         );
         method_states.insert(
-            "update_flags".to_string(),
+            "enable_flags".to_string(),
             MethodState::new(AlwaysTrue, AlwaysTrue),
         );
         method_states.insert(
-            "update_mutable_flags".to_string(),
+            "disable_flags".to_string(),
+            MethodState::new(AlwaysTrue, AlwaysTrue),
+        );
+        method_states.insert(
+            "lock_flags".to_string(),
             MethodState::new(AlwaysTrue, AlwaysTrue),
         );
         method_states.insert(
@@ -236,26 +233,6 @@ impl ResourceDef {
         self.total_supply -= amount;
     }
 
-    pub fn update_mutable_flags(&mut self, new_mutable_flags: u64) -> Result<(), ResourceDefError> {
-        let changed = self.mutable_flags ^ new_mutable_flags;
-
-        if !resource_flags_are_valid(changed) {
-            return Err(ResourceDefError::InvalidResourceFlags(changed));
-        }
-
-        if self.mutable_flags | changed != self.mutable_flags {
-            return Err(ResourceDefError::InvalidFlagUpdate {
-                flags: self.flags,
-                mutable_flags: self.mutable_flags,
-                new_flags: self.flags,
-                new_mutable_flags: new_mutable_flags,
-            });
-        }
-        self.mutable_flags = new_mutable_flags;
-
-        Ok(())
-    }
-
     pub fn update_metadata(
         &mut self,
         new_metadata: HashMap<String, String>,
@@ -265,22 +242,41 @@ impl ResourceDef {
         Ok(())
     }
 
-    pub fn update_flags(&mut self, new_flags: u64) -> Result<(), ResourceDefError> {
-        let changed = self.flags ^ new_flags;
-
-        if !resource_flags_are_valid(changed) {
-            return Err(ResourceDefError::InvalidResourceFlags(changed));
+    pub fn enable_flags(&mut self, flags: u64) -> Result<(), ResourceDefError> {
+        if !resource_flags_are_valid(flags) {
+            return Err(ResourceDefError::InvalidResourceFlags(flags));
         }
 
-        if self.mutable_flags | changed != self.mutable_flags {
-            return Err(ResourceDefError::InvalidFlagUpdate {
-                flags: self.flags,
-                mutable_flags: self.mutable_flags,
-                new_flags,
-                new_mutable_flags: self.mutable_flags,
-            });
+        if self.mutable_flags | flags != self.mutable_flags {
+            return Err(ResourceDefError::FlagsLocked);
         }
-        self.flags = new_flags;
+        self.flags |= flags;
+
+        Ok(())
+    }
+
+    pub fn disable_flags(&mut self, flags: u64) -> Result<(), ResourceDefError> {
+        if !resource_flags_are_valid(flags) {
+            return Err(ResourceDefError::InvalidResourceFlags(flags));
+        }
+
+        if self.mutable_flags | flags != self.mutable_flags {
+            return Err(ResourceDefError::FlagsLocked);
+        }
+        self.flags &= !flags;
+
+        Ok(())
+    }
+
+    pub fn lock_flags(&mut self, flags: u64) -> Result<(), ResourceDefError> {
+        if !resource_flags_are_valid(flags) {
+            return Err(ResourceDefError::InvalidResourceFlags(flags));
+        }
+
+        if self.mutable_flags | flags != self.mutable_flags {
+            return Err(ResourceDefError::FlagsLocked);
+        }
+        self.mutable_flags &= !flags;
 
         Ok(())
     }
