@@ -1,10 +1,10 @@
 #[rustfmt::skip]
 pub mod test_runner;
 
-use scrypto::min_n_of;
 use crate::test_runner::TestRunner;
 use radix_engine::errors::RuntimeError;
 use radix_engine::ledger::InMemorySubstateStore;
+use scrypto::min_n_of;
 use scrypto::prelude::*;
 
 #[test]
@@ -175,26 +175,22 @@ fn dynamic_auth_should_allow_me_to_call_method_when_change_auth() {
     receipt.result.expect("Should be okay.");
 }
 
-#[test]
-fn dynamic_authlist_should_allow_me_to_call_method() {
+fn test_dynamic_authlist(
+    test_runner: &mut TestRunner,
+    list: Vec<NonFungibleAddress>,
+    authorization: ComponentAuthorization,
+    signers: Vec<EcdsaPublicKey>,
+    should_succeed: bool,
+) {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(&mut substate_store);
-    let (_, address0) = test_runner.new_public_key_and_non_fungible_address();
-    let (key1, address1) = test_runner.new_public_key_and_non_fungible_address();
-    let (key2, address2) = test_runner.new_public_key_and_non_fungible_address();
-    let auth = vec![address0, address1, address2];
     let package = test_runner.publish_package("component");
-    let authorization = component_authorization! {
-        "get_secret" => min_n_of!(2, SborPath::from("0"))
-    };
     let transaction1 = test_runner
         .new_transaction_builder()
         .call_function(
             package,
             "AuthListComponent",
             "create_component",
-            vec![scrypto_encode(&auth), scrypto_encode(&authorization)],
+            vec![scrypto_encode(&list), scrypto_encode(&authorization)],
         )
         .build(vec![])
         .unwrap();
@@ -206,13 +202,85 @@ fn dynamic_authlist_should_allow_me_to_call_method() {
     let transaction2 = test_runner
         .new_transaction_builder()
         .call_method(component, "get_secret", vec![])
-        .build(vec![key1, key2])
+        .build(signers)
         .unwrap();
     let receipt = test_runner.run(transaction2);
 
     // Assert
-    receipt.result.expect("Should be okay.");
+    if should_succeed {
+        receipt.result.expect("Should be okay.");
+    } else {
+        let error = receipt.result.expect_err("Should be an error.");
+        assert_eq!(error, RuntimeError::NotAuthorized);
+    }
 }
+
+#[test]
+fn dynamic_this_should_fail_on_dynamic_list() {
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(&mut substate_store);
+    let (key0, address0) = test_runner.new_public_key_and_non_fungible_address();
+    let (key1, address1) = test_runner.new_public_key_and_non_fungible_address();
+    let (key2, address2) = test_runner.new_public_key_and_non_fungible_address();
+    let list = vec![address0, address1, address2];
+    let authorization = component_authorization! {
+        "get_secret" => this!(SborPath::from("0"))
+    };
+    let signers = vec![key0, key1, key2];
+
+    test_dynamic_authlist(
+        &mut test_runner,
+        list,
+        authorization,
+        signers,
+        false,
+    );
+}
+
+#[test]
+fn dynamic_min_n_of_should_allow_me_to_call_method() {
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(&mut substate_store);
+    let (_, address0) = test_runner.new_public_key_and_non_fungible_address();
+    let (key1, address1) = test_runner.new_public_key_and_non_fungible_address();
+    let (key2, address2) = test_runner.new_public_key_and_non_fungible_address();
+    let list = vec![address0, address1, address2];
+    let authorization = component_authorization! {
+        "get_secret" => min_n_of!(2, SborPath::from("0"))
+    };
+    let signers = vec![key1, key2];
+
+    test_dynamic_authlist(
+        &mut test_runner,
+        list,
+        authorization,
+        signers,
+        true,
+    );
+}
+
+#[test]
+fn dynamic_all_of_should_allow_me_to_call_method() {
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(&mut substate_store);
+    let (key0, address0) = test_runner.new_public_key_and_non_fungible_address();
+    let (key1, address1) = test_runner.new_public_key_and_non_fungible_address();
+    let (key2, address2) = test_runner.new_public_key_and_non_fungible_address();
+    let list = vec![address0, address1, address2];
+    let authorization = component_authorization! {
+        "get_secret" => all_of!(SborPath::from("0"))
+    };
+    let signers = vec![key0, key1, key2];
+
+    test_dynamic_authlist(
+        &mut test_runner,
+        list,
+        authorization,
+        signers,
+        true,
+    );
+}
+
 
 #[test]
 fn chess_should_not_allow_second_player_to_move_if_first_player_didnt_move() {

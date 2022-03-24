@@ -123,8 +123,11 @@ macro_rules! any_of {
 
 #[macro_export]
 macro_rules! all_of {
-    ($($resource:expr),*) => ({
-        ::scrypto::resource::ProofRule::AllOf(resource_list!($($resource),+))
+    ($list:expr) => ({
+        ::scrypto::resource::ProofRule::AllOf($list.into())
+    });
+    ($left:expr, $($right:expr),+) => ({
+        ::scrypto::resource::ProofRule::AllOf(resource_list!($left, $($right),+))
     });
 }
 

@@ -70,9 +70,8 @@ impl Component {
             ProofRuleResourceList::StaticList(resources) => {
                 let mut hard_resources = Vec::new();
                 for soft_resource in resources {
-                    if let Some(resource) = Self::soft_to_hard_resource(soft_resource, dom) {
-                        hard_resources.push(resource);
-                    }
+                    let resource = Self::soft_to_hard_resource(soft_resource, dom);
+                    hard_resources.push(resource);
                 }
                 hard_resources
             }
@@ -114,31 +113,31 @@ impl Component {
     fn soft_to_hard_resource(
         proof_rule_resource: &ProofRuleResource,
         dom: &Value,
-    ) -> Option<HardProofRuleResource> {
+    ) -> HardProofRuleResource {
         match proof_rule_resource {
             ProofRuleResource::FromComponent(path) => {
                 match Self::get_from_value(path.rel_path(), dom) {
                     Some(Value::Custom(type_id, bytes)) => {
                         match CustomType::from_id(*type_id).unwrap() {
-                            CustomType::ResourceDefId => Option::Some(
-                                ResourceDefId::try_from(bytes.as_slice()).unwrap().into(),
-                            ),
-                            CustomType::NonFungibleAddress => Option::Some(
+                            CustomType::ResourceDefId => {
+                                ResourceDefId::try_from(bytes.as_slice()).unwrap().into()
+                            }
+                            CustomType::NonFungibleAddress => {
                                 NonFungibleAddress::try_from(bytes.as_slice())
                                     .unwrap()
-                                    .into(),
-                            ),
-                            _ => Option::None,
+                                    .into()
+                            }
+                            _ => HardProofRuleResource::SoftResourceNotFound,
                         }
                     }
-                    _ => Option::None,
+                    _ => HardProofRuleResource::SoftResourceNotFound,
                 }
             }
-            ProofRuleResource::NonFungible(non_fungible_address) => Some(
-                HardProofRuleResource::NonFungible(non_fungible_address.clone()),
-            ),
+            ProofRuleResource::NonFungible(non_fungible_address) => {
+                HardProofRuleResource::NonFungible(non_fungible_address.clone())
+            }
             ProofRuleResource::Resource(resource_def_id) => {
-                Some(HardProofRuleResource::Resource(resource_def_id.clone()))
+                HardProofRuleResource::Resource(resource_def_id.clone())
             }
         }
     }
@@ -146,16 +145,12 @@ impl Component {
     fn soft_to_hard_rule(proof_rule: &ProofRule, dom: &Value) -> HardProofRule {
         match proof_rule {
             ProofRule::This(proof_rule_resource) => {
-                match Self::soft_to_hard_resource(proof_rule_resource, dom) {
-                    Some(resource) => HardProofRule::This(resource),
-                    None => HardProofRule::AnyOf(vec![]),
-                }
+                let resource = Self::soft_to_hard_resource(proof_rule_resource, dom);
+                HardProofRule::This(resource)
             }
             ProofRule::AmountOf(amount, proof_rule_resource) => {
-                match Self::soft_to_hard_resource(proof_rule_resource, dom) {
-                    Some(resource) => HardProofRule::SomeOfResource(*amount, resource),
-                    None => HardProofRule::AnyOf(vec![]),
-                }
+                let resource = Self::soft_to_hard_resource(proof_rule_resource, dom);
+                HardProofRule::SomeOfResource(*amount, resource)
             }
             ProofRule::AllOf(resources) => {
                 let hard_resources = Self::soft_to_hard_resource_list(resources, dom);

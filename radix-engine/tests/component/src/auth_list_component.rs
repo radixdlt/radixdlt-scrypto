@@ -6,7 +6,10 @@ blueprint! {
     }
 
     impl AuthListComponent {
-        pub fn create_component(auth: Vec<NonFungibleAddress>, authorization: ComponentAuthorization) -> ComponentId {
+        pub fn create_component(
+            auth: Vec<NonFungibleAddress>,
+            authorization: ComponentAuthorization,
+        ) -> ComponentId {
             Self { auth }.instantiate_with_auth(authorization)
         }
 
@@ -17,6 +20,5 @@ blueprint! {
         pub fn get_secret(&self) -> String {
             "Secret".to_owned()
         }
-
     }
 }

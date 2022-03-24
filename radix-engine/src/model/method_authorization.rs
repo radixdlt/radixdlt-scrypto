@@ -10,6 +10,7 @@ use scrypto::rust::vec::Vec;
 pub enum HardProofRuleResource {
     NonFungible(NonFungibleAddress),
     Resource(ResourceDefId),
+    SoftResourceNotFound,
 }
 
 impl HardProofRuleResource {
@@ -27,6 +28,7 @@ impl HardProofRuleResource {
                 let proof_resource_def_id = proof.resource_def_id();
                 proof_resource_def_id == *resource_def_id
             }
+            HardProofRuleResource::SoftResourceNotFound => false,
         }
     }
 
