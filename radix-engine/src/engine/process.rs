@@ -555,14 +555,12 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         result
     }
 
-    /// (Transaction ONLY) Publishes a package.
-    pub fn publish_package(&mut self, code: Vec<u8>) -> Result<ValidatedData, RuntimeError> {
+    pub fn publish_package(&mut self, code: Vec<u8>) -> Result<PackageId, RuntimeError> {
         re_debug!(self, "(Transaction) Publishing a package");
 
         validate_module(&code).map_err(RuntimeError::WasmValidationError)?;
         let package_id = self.track.create_package(Package::new(code));
-
-        Ok(ValidatedData::from_slice(&scrypto_encode(&package_id)).unwrap())
+        Ok(package_id)
     }
 
     /// (SYSTEM ONLY)  Creates a proof which references a virtual bucket
@@ -1102,10 +1100,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         input: PublishPackageInput,
     ) -> Result<PublishPackageOutput, RuntimeError> {
-        validate_module(&input.code).map_err(RuntimeError::WasmValidationError)?;
-
-        let package_id = self.track.create_package(Package::new(input.code));
-
+        let package_id = self.publish_package(input.code)?;
         Ok(PublishPackageOutput { package_id })
     }
 

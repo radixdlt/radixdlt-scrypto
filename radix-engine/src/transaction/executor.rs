@@ -6,6 +6,7 @@ use scrypto::rust::string::ToString;
 use scrypto::rust::vec;
 use scrypto::rust::vec::Vec;
 use scrypto::{abi, any_of};
+use scrypto::buffer::scrypto_encode;
 
 use crate::engine::*;
 use crate::errors::*;
@@ -224,7 +225,9 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
                     component_id,
                     method,
                 } => proc.call_method_with_all_resources(component_id, &method),
-                ValidatedInstruction::PublishPackage { code } => proc.publish_package(code),
+                ValidatedInstruction::PublishPackage { code } => proc
+                    .publish_package(code)
+                    .map(|package_id| ValidatedData::from_slice(&scrypto_encode(&package_id)).unwrap()),
             };
             match result {
                 Ok(data) => {
