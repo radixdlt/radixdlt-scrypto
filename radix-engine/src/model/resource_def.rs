@@ -1,4 +1,4 @@
-use crate::model::method_authorization::HardProofRule;
+use crate::model::method_authorization::{HardProofRule, HardProofRuleResourceList};
 use sbor::*;
 use scrypto::engine::types::*;
 use scrypto::prelude::ToString;
@@ -166,13 +166,17 @@ impl ResourceDef {
                             mem::replace(&mut method_state.auth, MethodAuthorization::Public);
                         method_state.auth = match cur_rule {
                             MethodAuthorization::Public => {
-                                MethodAuthorization::Protected(HardProofRule::AnyOf(vec![
-                                    resource_def_id.into(),
-                                ]))
+                                MethodAuthorization::Protected(HardProofRule::AnyOf(
+                                    HardProofRuleResourceList::List(vec![resource_def_id.into()]),
+                                ))
                             }
-                            MethodAuthorization::Protected(HardProofRule::AnyOf(mut resources)) => {
+                            MethodAuthorization::Protected(HardProofRule::AnyOf(
+                                HardProofRuleResourceList::List(mut resources),
+                            )) => {
                                 resources.push(resource_def_id.into());
-                                MethodAuthorization::Protected(HardProofRule::AnyOf(resources))
+                                MethodAuthorization::Protected(HardProofRule::AnyOf(
+                                    HardProofRuleResourceList::List(resources),
+                                ))
                             }
                             _ => panic!("Should never get here."),
                         };

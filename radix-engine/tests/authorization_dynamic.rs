@@ -182,9 +182,17 @@ fn test_dynamic_authlist(
 ) {
     let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(&mut substate_store);
-    let key_and_addresses: Vec<(EcdsaPublicKey, NonFungibleAddress)> = (0..list_size).map(|_| test_runner.new_public_key_and_non_fungible_address()).collect();
-    let list: Vec<NonFungibleAddress> = key_and_addresses.iter().map(|(_, addr)| addr.clone()).collect();
-    let key_signers = signers.iter().map(|index| key_and_addresses.get(*index).unwrap().0).collect();
+    let key_and_addresses: Vec<(EcdsaPublicKey, NonFungibleAddress)> = (0..list_size)
+        .map(|_| test_runner.new_public_key_and_non_fungible_address())
+        .collect();
+    let list: Vec<NonFungibleAddress> = key_and_addresses
+        .iter()
+        .map(|(_, addr)| addr.clone())
+        .collect();
+    let key_signers = signers
+        .iter()
+        .map(|index| key_and_addresses.get(*index).unwrap().0)
+        .collect();
     let authorization = component_authorization! {
         "get_secret" => rule
     };
@@ -229,7 +237,12 @@ fn dynamic_this_should_fail_on_dynamic_list() {
 
 #[test]
 fn dynamic_all_of_should_fail_on_nonexistent_resource() {
-    test_dynamic_authlist(3, all_of!(resource_list!(SborPath::from("0"))), &[0, 1, 2], false);
+    test_dynamic_authlist(
+        3,
+        all_of!(resource_list!(SborPath::from("0"))),
+        &[0, 1, 2],
+        false,
+    );
 }
 
 #[test]

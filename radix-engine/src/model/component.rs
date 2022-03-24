@@ -1,4 +1,6 @@
-use crate::model::method_authorization::{HardProofRule, HardProofRuleResource};
+use crate::model::method_authorization::{
+    HardProofRule, HardProofRuleResource, HardProofRuleResourceList,
+};
 use crate::model::{MethodAuthorization, ValidatedData};
 use sbor::any::{Fields, Value};
 use sbor::*;
@@ -8,7 +10,6 @@ use scrypto::resource::{
 };
 use scrypto::rust::collections::*;
 use scrypto::rust::string::String;
-use scrypto::rust::vec;
 use scrypto::rust::vec::Vec;
 use scrypto::types::CustomType;
 
@@ -65,7 +66,7 @@ impl Component {
     fn soft_to_hard_resource_list(
         list: &ProofRuleResourceList,
         dom: &Value,
-    ) -> Vec<HardProofRuleResource> {
+    ) -> HardProofRuleResourceList {
         match list {
             ProofRuleResourceList::StaticList(resources) => {
                 let mut hard_resources = Vec::new();
@@ -73,38 +74,42 @@ impl Component {
                     let resource = Self::soft_to_hard_resource(soft_resource, dom);
                     hard_resources.push(resource);
                 }
-                hard_resources
+                HardProofRuleResourceList::List(hard_resources)
             }
             ProofRuleResourceList::FromComponent(path) => {
                 match Self::get_from_value(path.rel_path(), dom) {
                     Some(Value::Vec(type_id, values)) => {
                         match CustomType::from_id(*type_id).unwrap() {
-                            CustomType::ResourceDefId => values
-                                .iter()
-                                .map(|v| {
-                                    if let Value::Custom(_, bytes) = v {
-                                        return ResourceDefId::try_from(bytes.as_slice())
-                                            .unwrap()
-                                            .into();
-                                    }
-                                    panic!("Unexpected type");
-                                })
-                                .collect(),
-                            CustomType::NonFungibleAddress => values
-                                .iter()
-                                .map(|v| {
-                                    if let Value::Custom(_, bytes) = v {
-                                        return NonFungibleAddress::try_from(bytes.as_slice())
-                                            .unwrap()
-                                            .into();
-                                    }
-                                    panic!("Unexpected type");
-                                })
-                                .collect(),
-                            _ => vec![],
+                            CustomType::ResourceDefId => HardProofRuleResourceList::List(
+                                values
+                                    .iter()
+                                    .map(|v| {
+                                        if let Value::Custom(_, bytes) = v {
+                                            return ResourceDefId::try_from(bytes.as_slice())
+                                                .unwrap()
+                                                .into();
+                                        }
+                                        panic!("Unexpected type");
+                                    })
+                                    .collect(),
+                            ),
+                            CustomType::NonFungibleAddress => HardProofRuleResourceList::List(
+                                values
+                                    .iter()
+                                    .map(|v| {
+                                        if let Value::Custom(_, bytes) = v {
+                                            return NonFungibleAddress::try_from(bytes.as_slice())
+                                                .unwrap()
+                                                .into();
+                                        }
+                                        panic!("Unexpected type");
+                                    })
+                                    .collect(),
+                            ),
+                            _ => HardProofRuleResourceList::SoftResourceListNotFound,
                         }
                     }
-                    _ => vec![],
+                    _ => HardProofRuleResourceList::SoftResourceListNotFound,
                 }
             }
         }
