@@ -322,17 +322,40 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     // (Transaction ONLY) Assert worktop contains at least this amount.
     pub fn assert_worktop(
         &mut self,
+        resource_def_id: ResourceDefId,
+    ) -> Result<ValidatedData, RuntimeError> {
+        if self.worktop.total_amount(resource_def_id).is_zero() {
+            Err(RuntimeError::AssertionFailed)
+        } else {
+            Ok(ValidatedData::from_value(&()))
+        }
+    }
+
+    // (Transaction ONLY) Assert worktop contains at least this amount.
+    pub fn assert_worktop_by_amount(
+        &mut self,
         amount: Decimal,
         resource_def_id: ResourceDefId,
     ) -> Result<ValidatedData, RuntimeError> {
-        re_debug!(
-            self,
-            "(Transaction) Asserting worktop contains: amount = {}, resource_def_id = {}",
-            amount,
-            resource_def_id
-        );
+        if self.worktop.total_amount(resource_def_id) < amount {
+            Err(RuntimeError::AssertionFailed)
+        } else {
+            Ok(ValidatedData::from_value(&()))
+        }
+    }
 
-        if !self.worktop.contains(amount, resource_def_id) {
+    // (Transaction ONLY) Assert worktop contains at least this amount.
+    pub fn assert_worktop_by_ids(
+        &mut self,
+        ids: &BTreeSet<NonFungibleId>,
+        resource_def_id: ResourceDefId,
+    ) -> Result<ValidatedData, RuntimeError> {
+        if !self
+            .worktop
+            .total_ids(resource_def_id)
+            .map_err(RuntimeError::WorktopError)?
+            .is_superset(ids)
+        {
             Err(RuntimeError::AssertionFailed)
         } else {
             Ok(ValidatedData::from_value(&()))

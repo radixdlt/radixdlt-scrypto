@@ -666,7 +666,12 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         resource_def_id: ResourceDefId,
         account: ComponentId,
     ) -> &mut Self {
-        todo!()
+        self.add_instruction(Instruction::CallMethod {
+            component_id: account,
+            method: "withdraw".to_owned(),
+            args: vec![scrypto_encode(&resource_def_id)],
+        })
+        .0
     }
 
     /// Withdraws resource from an account.
@@ -676,10 +681,9 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         resource_def_id: ResourceDefId,
         account: ComponentId,
     ) -> &mut Self {
-        // TODO: rename
         self.add_instruction(Instruction::CallMethod {
             component_id: account,
-            method: "withdraw".to_owned(),
+            method: "withdraw_by_amount".to_owned(),
             args: vec![scrypto_encode(&amount), scrypto_encode(&resource_def_id)],
         })
         .0
@@ -692,10 +696,9 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         resource_def_id: ResourceDefId,
         account: ComponentId,
     ) -> &mut Self {
-        // TODO: rename
         self.add_instruction(Instruction::CallMethod {
             component_id: account,
-            method: "withdraw_non_fungibles".to_owned(),
+            method: "withdraw_by_ids".to_owned(),
             args: vec![scrypto_encode(ids), scrypto_encode(&resource_def_id)],
         })
         .0
@@ -722,7 +725,12 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         resource_def_id: ResourceDefId,
         account: ComponentId,
     ) -> &mut Self {
-        todo!()
+        self.add_instruction(Instruction::CallMethod {
+            component_id: account,
+            method: "create_proof_by_amount".to_owned(),
+            args: vec![scrypto_encode(&amount), scrypto_encode(&resource_def_id)],
+        })
+        .0
     }
 
     /// Creates resource proof from an account.
@@ -732,7 +740,12 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         resource_def_id: ResourceDefId,
         account: ComponentId,
     ) -> &mut Self {
-        todo!()
+        self.add_instruction(Instruction::CallMethod {
+            component_id: account,
+            method: "create_proof_by_ids".to_owned(),
+            args: vec![scrypto_encode(ids), scrypto_encode(&resource_def_id)],
+        })
+        .0
     }
 
     //===============================
