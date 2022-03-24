@@ -1,8 +1,7 @@
 use crate::buffer::*;
 use crate::component::*;
 use crate::engine::{api::*, call_engine};
-use crate::prelude::ProofRule;
-use crate::prelude::String;
+use crate::prelude::{ComponentAuthorization};
 use crate::rust::borrow::ToOwned;
 use crate::rust::collections::*;
 
@@ -56,14 +55,14 @@ impl ComponentSystem {
     pub fn instantiate_component<T: ComponentState>(
         &mut self,
         package_id: PackageId,
-        sys_auth: HashMap<String, ProofRule>,
+        authorization: ComponentAuthorization,
         state: T,
     ) -> ComponentId {
         let input = CreateComponentInput {
             package_id,
             blueprint_name: T::blueprint_name().to_owned(),
             state: scrypto_encode(&state),
-            sys_auth,
+            authorization,
         };
         let output: CreateComponentOutput = call_engine(CREATE_COMPONENT, input);
 
