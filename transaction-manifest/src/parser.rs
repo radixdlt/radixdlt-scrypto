@@ -69,15 +69,15 @@ impl Parser {
         let token = self.advance()?;
         let instruction = match token.kind {
             TokenKind::TakeFromWorktop => Instruction::TakeFromWorktop {
+                resource_def_id: self.parse_value()?,
+                new_bucket: self.parse_value()?,
+            },
+            TokenKind::TakeFromWorktopByAmount => Instruction::TakeFromWorktopByAmount {
                 amount: self.parse_value()?,
                 resource_def_id: self.parse_value()?,
                 new_bucket: self.parse_value()?,
             },
-            TokenKind::TakeAllFromWorktop => Instruction::TakeAllFromWorktop {
-                resource_def_id: self.parse_value()?,
-                new_bucket: self.parse_value()?,
-            },
-            TokenKind::TakeNonFungiblesFromWorktop => Instruction::TakeNonFungiblesFromWorktop {
+            TokenKind::TakeFromWorktopByIds => Instruction::TakeFromWorktopByIds {
                 ids: self.parse_value()?,
                 resource_def_id: self.parse_value()?,
                 new_bucket: self.parse_value()?,
@@ -86,16 +86,42 @@ impl Parser {
                 bucket: self.parse_value()?,
             },
             TokenKind::AssertWorktopContains => Instruction::AssertWorktopContains {
-                amount: self.parse_value()?,
                 resource_def_id: self.parse_value()?,
             },
-            TokenKind::PopFromAuthZone => Instruction::PopFromAuthZone {
+            TokenKind::AssertWorktopContainsByAmount => {
+                Instruction::AssertWorktopContainsByAmount {
+                    amount: self.parse_value()?,
+                    resource_def_id: self.parse_value()?,
+                }
+            }
+            TokenKind::AssertWorktopContainsByIds => Instruction::AssertWorktopContainsByIds {
+                ids: self.parse_value()?,
+                resource_def_id: self.parse_value()?,
+            },
+            TokenKind::TakeFromAuthZone => Instruction::TakeFromAuthZone {
                 new_proof: self.parse_value()?,
             },
-            TokenKind::PushOntoAuthZone => Instruction::PushOntoAuthZone {
+            TokenKind::ReturnToAuthZone => Instruction::ReturnToAuthZone {
                 proof: self.parse_value()?,
             },
-            TokenKind::CreateBucketProof => Instruction::CreateBucketProof {
+            TokenKind::ClearAuthZone => Instruction::ClearAuthZone,
+            TokenKind::CreateProofFromAuthZone => Instruction::CreateProofFromAuthZone {
+                resource_def_id: self.parse_value()?,
+                new_proof: self.parse_value()?,
+            },
+            TokenKind::CreateProofFromAuthZoneByAmount => {
+                Instruction::CreateProofFromAuthZoneByAmount {
+                    amount: self.parse_value()?,
+                    resource_def_id: self.parse_value()?,
+                    new_proof: self.parse_value()?,
+                }
+            }
+            TokenKind::CreateProofFromAuthZoneByIds => Instruction::CreateProofFromAuthZoneByIds {
+                ids: self.parse_value()?,
+                resource_def_id: self.parse_value()?,
+                new_proof: self.parse_value()?,
+            },
+            TokenKind::CreateProofFromBucket => Instruction::CreateProofFromBucket {
                 bucket: self.parse_value()?,
                 new_proof: self.parse_value()?,
             },
@@ -665,9 +691,19 @@ mod tests {
     #[test]
     fn test_transaction() {
         parse_instruction_ok!(
-            r#"TAKE_FROM_WORKTOP  Decimal("1.0")  ResourceDefId("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d")  Bucket("xrd_bucket");"#,
+            r#"TAKE_FROM_WORKTOP_BY_AMOUNT  Decimal("1.0")  ResourceDefId("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d")  Bucket("xrd_bucket");"#,
+            Instruction::TakeFromWorktopByAmount {
+                amount: Value::Decimal(Value::String("1.0".into()).into()),
+                resource_def_id: Value::ResourceDefId(
+                    Value::String("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d".into())
+                        .into()
+                ),
+                new_bucket: Value::Bucket(Value::String("xrd_bucket".into()).into()),
+            }
+        );
+        parse_instruction_ok!(
+            r#"TAKE_FROM_WORKTOP  ResourceDefId("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d")  Bucket("xrd_bucket");"#,
             Instruction::TakeFromWorktop {
-                amount: Value::Decimal(Value::String("1.0".into()).into()),
                 resource_def_id: Value::ResourceDefId(
                     Value::String("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d".into())
                         .into()
@@ -676,18 +712,8 @@ mod tests {
             }
         );
         parse_instruction_ok!(
-            r#"TAKE_ALL_FROM_WORKTOP  ResourceDefId("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d")  Bucket("xrd_bucket");"#,
-            Instruction::TakeAllFromWorktop {
-                resource_def_id: Value::ResourceDefId(
-                    Value::String("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d".into())
-                        .into()
-                ),
-                new_bucket: Value::Bucket(Value::String("xrd_bucket".into()).into()),
-            }
-        );
-        parse_instruction_ok!(
-            r#"ASSERT_WORKTOP_CONTAINS  Decimal("1.0")  ResourceDefId("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d");"#,
-            Instruction::AssertWorktopContains {
+            r#"ASSERT_WORKTOP_CONTAINS_BY_AMOUNT  Decimal("1.0")  ResourceDefId("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d");"#,
+            Instruction::AssertWorktopContainsByAmount {
                 amount: Value::Decimal(Value::String("1.0".into()).into()),
                 resource_def_id: Value::ResourceDefId(
                     Value::String("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d".into())
@@ -696,8 +722,8 @@ mod tests {
             }
         );
         parse_instruction_ok!(
-            r#"CREATE_BUCKET_PROOF  Bucket("xrd_bucket")  Proof("admin_auth");"#,
-            Instruction::CreateBucketProof {
+            r#"CREATE_PROOF_FROM_BUCKET  Bucket("xrd_bucket")  Proof("admin_auth");"#,
+            Instruction::CreateProofFromBucket {
                 bucket: Value::Bucket(Value::String("xrd_bucket".into()).into()),
                 new_proof: Value::Proof(Value::String("admin_auth".into()).into()),
             }

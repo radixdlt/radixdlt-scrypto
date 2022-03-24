@@ -118,7 +118,6 @@ pub fn generate_instruction(
 ) -> Result<Instruction, GeneratorError> {
     Ok(match instruction {
         ast::Instruction::TakeFromWorktop {
-            amount,
             resource_def_id,
             new_bucket,
         } => {
@@ -128,11 +127,11 @@ pub fn generate_instruction(
             declare_bucket(new_bucket, resolver, bucket_id)?;
 
             Instruction::TakeFromWorktop {
-                amount: generate_decimal(amount)?,
                 resource_def_id: generate_resource_def_id(resource_def_id)?,
             }
         }
-        ast::Instruction::TakeAllFromWorktop {
+        ast::Instruction::TakeFromWorktopByAmount {
+            amount,
             resource_def_id,
             new_bucket,
         } => {
@@ -141,11 +140,12 @@ pub fn generate_instruction(
                 .map_err(GeneratorError::IdValidatorError)?;
             declare_bucket(new_bucket, resolver, bucket_id)?;
 
-            Instruction::TakeAllFromWorktop {
+            Instruction::TakeFromWorktopByAmount {
+                amount: generate_decimal(amount)?,
                 resource_def_id: generate_resource_def_id(resource_def_id)?,
             }
         }
-        ast::Instruction::TakeNonFungiblesFromWorktop {
+        ast::Instruction::TakeFromWorktopByIds {
             ids,
             resource_def_id,
             new_bucket,
@@ -155,7 +155,7 @@ pub fn generate_instruction(
                 .map_err(GeneratorError::IdValidatorError)?;
             declare_bucket(new_bucket, resolver, bucket_id)?;
 
-            Instruction::TakeNonFungiblesFromWorktop {
+            Instruction::TakeFromWorktopByIds {
                 ids: generate_non_fungible_ids(ids)?,
                 resource_def_id: generate_resource_def_id(resource_def_id)?,
             }
@@ -167,36 +167,96 @@ pub fn generate_instruction(
                 .map_err(GeneratorError::IdValidatorError)?;
             Instruction::ReturnToWorktop { bucket_id }
         }
-        ast::Instruction::AssertWorktopContains {
+        ast::Instruction::AssertWorktopContains { resource_def_id } => {
+            Instruction::AssertWorktopContains {
+                resource_def_id: generate_resource_def_id(resource_def_id)?,
+            }
+        }
+        ast::Instruction::AssertWorktopContainsByAmount {
             amount,
             resource_def_id,
-        } => Instruction::AssertWorktopContains {
+        } => Instruction::AssertWorktopContainsByAmount {
             amount: generate_decimal(amount)?,
             resource_def_id: generate_resource_def_id(resource_def_id)?,
         },
-        ast::Instruction::PopFromAuthZone { new_proof } => {
+        ast::Instruction::AssertWorktopContainsByIds {
+            ids,
+            resource_def_id,
+        } => Instruction::AssertWorktopContainsByIds {
+            ids: generate_non_fungible_ids(ids)?,
+            resource_def_id: generate_resource_def_id(resource_def_id)?,
+        },
+        ast::Instruction::TakeFromAuthZone { new_proof } => {
             let proof_id = id_validator
-                .new_proof(ProofKind::RuntimeProof)
+                .new_proof(ProofKind::AuthZoneProof)
                 .map_err(GeneratorError::IdValidatorError)?;
             declare_proof(new_proof, resolver, proof_id)?;
 
-            Instruction::PopFromAuthZone
+            Instruction::TakeFromAuthZone
         }
-        ast::Instruction::PushOntoAuthZone { proof } => {
+        ast::Instruction::ReturnToAuthZone { proof } => {
             let proof_id = generate_proof(proof, resolver)?;
             id_validator
                 .drop_proof(proof_id)
                 .map_err(GeneratorError::IdValidatorError)?;
-            Instruction::PushOntoAuthZone { proof_id }
+            Instruction::ReturnToAuthZone { proof_id }
         }
-        ast::Instruction::CreateBucketProof { bucket, new_proof } => {
+        ast::Instruction::ClearAuthZone => Instruction::ClearAuthZone,
+
+        ast::Instruction::CreateProofFromAuthZone {
+            resource_def_id,
+            new_proof,
+        } => {
+            let resource_def_id = generate_resource_def_id(resource_def_id)?;
+            let proof_id = id_validator
+                .new_proof(ProofKind::AuthZoneProof)
+                .map_err(GeneratorError::IdValidatorError)?;
+            declare_proof(new_proof, resolver, proof_id)?;
+
+            Instruction::CreateProofFromAuthZone { resource_def_id }
+        }
+        ast::Instruction::CreateProofFromAuthZoneByAmount {
+            amount,
+            resource_def_id,
+            new_proof,
+        } => {
+            let amount = generate_decimal(amount)?;
+            let resource_def_id = generate_resource_def_id(resource_def_id)?;
+            let proof_id = id_validator
+                .new_proof(ProofKind::AuthZoneProof)
+                .map_err(GeneratorError::IdValidatorError)?;
+            declare_proof(new_proof, resolver, proof_id)?;
+
+            Instruction::CreateProofFromAuthZoneByAmount {
+                amount,
+                resource_def_id,
+            }
+        }
+        ast::Instruction::CreateProofFromAuthZoneByIds {
+            ids,
+            resource_def_id,
+            new_proof,
+        } => {
+            let ids = generate_non_fungible_ids(ids)?;
+            let resource_def_id = generate_resource_def_id(resource_def_id)?;
+            let proof_id = id_validator
+                .new_proof(ProofKind::AuthZoneProof)
+                .map_err(GeneratorError::IdValidatorError)?;
+            declare_proof(new_proof, resolver, proof_id)?;
+
+            Instruction::CreateProofFromAuthZoneByIds {
+                ids,
+                resource_def_id,
+            }
+        }
+        ast::Instruction::CreateProofFromBucket { bucket, new_proof } => {
             let bucket_id = generate_bucket(bucket, resolver)?;
             let proof_id = id_validator
                 .new_proof(ProofKind::BucketProof(bucket_id))
                 .map_err(GeneratorError::IdValidatorError)?;
             declare_proof(new_proof, resolver, proof_id)?;
 
-            Instruction::CreateBucketProof { bucket_id }
+            Instruction::CreateProofFromBucket { bucket_id }
         }
         ast::Instruction::CloneProof { proof, new_proof } => {
             let proof_id = generate_proof(proof, resolver)?;
@@ -854,8 +914,8 @@ mod tests {
     #[test]
     fn test_instructions() {
         generate_instruction_ok!(
-            r#"TAKE_FROM_WORKTOP  Decimal("1.0")  ResourceDefId("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d")  Bucket("xrd_bucket");"#,
-            Instruction::TakeFromWorktop {
+            r#"TAKE_FROM_WORKTOP_BY_AMOUNT  Decimal("1.0")  ResourceDefId("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d")  Bucket("xrd_bucket");"#,
+            Instruction::TakeFromWorktopByAmount {
                 amount: Decimal::from(1),
                 resource_def_id: ResourceDefId::from_str(
                     "03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d"
@@ -864,8 +924,8 @@ mod tests {
             }
         );
         generate_instruction_ok!(
-            r#"TAKE_ALL_FROM_WORKTOP  ResourceDefId("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d")  Bucket("xrd_bucket");"#,
-            Instruction::TakeAllFromWorktop {
+            r#"TAKE_FROM_WORKTOP  ResourceDefId("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d")  Bucket("xrd_bucket");"#,
+            Instruction::TakeFromWorktop {
                 resource_def_id: ResourceDefId::from_str(
                     "03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d"
                 )
@@ -873,8 +933,8 @@ mod tests {
             }
         );
         generate_instruction_ok!(
-            r#"ASSERT_WORKTOP_CONTAINS  Decimal("1.0")  ResourceDefId("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d");"#,
-            Instruction::AssertWorktopContains {
+            r#"ASSERT_WORKTOP_CONTAINS_BY_AMOUNT  Decimal("1.0")  ResourceDefId("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d");"#,
+            Instruction::AssertWorktopContainsByAmount {
                 amount: Decimal::from(1),
                 resource_def_id: ResourceDefId::from_str(
                     "03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d"
@@ -961,7 +1021,7 @@ mod tests {
                             scrypto_encode(&scrypto::resource::Proof(1)),
                         ]
                     },
-                    Instruction::TakeFromWorktop {
+                    Instruction::TakeFromWorktopByAmount {
                         amount: Decimal::from(2),
                         resource_def_id: ResourceDefId::from_str(
                             "030000000000000000000000000000000000000000000000000004"
@@ -976,34 +1036,34 @@ mod tests {
                         method: "buy_gumball".into(),
                         args: vec![scrypto_encode(&scrypto::resource::Bucket(512)),]
                     },
-                    Instruction::AssertWorktopContains {
+                    Instruction::AssertWorktopContainsByAmount {
                         amount: Decimal::from(3),
                         resource_def_id: ResourceDefId::from_str(
                             "030000000000000000000000000000000000000000000000000004"
                         )
                         .unwrap(),
                     },
-                    Instruction::AssertWorktopContains {
+                    Instruction::AssertWorktopContainsByAmount {
                         amount: Decimal::from(1),
                         resource_def_id: ResourceDefId::from_str(
                             "03aedb7960d1f87dc25138f4cd101da6c98d57323478d53c5fb951"
                         )
                         .unwrap(),
                     },
-                    Instruction::TakeAllFromWorktop {
+                    Instruction::TakeFromWorktop {
                         resource_def_id: ResourceDefId::from_str(
                             "030000000000000000000000000000000000000000000000000004"
                         )
                         .unwrap(),
                     },
-                    Instruction::CreateBucketProof { bucket_id: 513 },
+                    Instruction::CreateProofFromBucket { bucket_id: 513 },
                     Instruction::CloneProof { proof_id: 514 },
                     Instruction::DropProof { proof_id: 514 },
-                    Instruction::PushOntoAuthZone { proof_id: 515 },
-                    Instruction::PopFromAuthZone,
+                    Instruction::ReturnToAuthZone { proof_id: 515 },
+                    Instruction::TakeFromAuthZone,
                     Instruction::DropProof { proof_id: 516 },
                     Instruction::ReturnToWorktop { bucket_id: 513 },
-                    Instruction::TakeNonFungiblesFromWorktop {
+                    Instruction::TakeFromWorktopByIds {
                         ids: BTreeSet::from([
                             NonFungibleId::from_str("11").unwrap(),
                             NonFungibleId::from_str("22").unwrap(),

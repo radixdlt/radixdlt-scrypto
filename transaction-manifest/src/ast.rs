@@ -6,17 +6,17 @@ pub struct Transaction {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Instruction {
     TakeFromWorktop {
+        resource_def_id: Value,
+        new_bucket: Value,
+    },
+
+    TakeFromWorktopByAmount {
         amount: Value,
         resource_def_id: Value,
         new_bucket: Value,
     },
 
-    TakeAllFromWorktop {
-        resource_def_id: Value,
-        new_bucket: Value,
-    },
-
-    TakeNonFungiblesFromWorktop {
+    TakeFromWorktopByIds {
         ids: Value,
         resource_def_id: Value,
         new_bucket: Value,
@@ -27,19 +27,47 @@ pub enum Instruction {
     },
 
     AssertWorktopContains {
+        resource_def_id: Value,
+    },
+
+    AssertWorktopContainsByAmount {
         amount: Value,
         resource_def_id: Value,
     },
 
-    PopFromAuthZone {
+    AssertWorktopContainsByIds {
+        ids: Value,
+        resource_def_id: Value,
+    },
+
+    TakeFromAuthZone {
         new_proof: Value,
     },
 
-    PushOntoAuthZone {
+    ReturnToAuthZone {
         proof: Value,
     },
 
-    CreateBucketProof {
+    ClearAuthZone,
+
+    CreateProofFromAuthZone {
+        resource_def_id: Value,
+        new_proof: Value,
+    },
+
+    CreateProofFromAuthZoneByAmount {
+        amount: Value,
+        resource_def_id: Value,
+        new_proof: Value,
+    },
+
+    CreateProofFromAuthZoneByIds {
+        ids: Value,
+        resource_def_id: Value,
+        new_proof: Value,
+    },
+
+    CreateProofFromBucket {
         bucket: Value,
         new_proof: Value,
     },
