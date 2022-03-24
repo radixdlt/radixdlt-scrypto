@@ -302,10 +302,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     }
 
     // (Transaction ONLY) Returns resource back to worktop.
-    pub fn return_to_worktop(
-        &mut self,
-        bucket_id: BucketId,
-    ) -> Result<ValidatedData, RuntimeError> {
+    pub fn add_to_worktop(&mut self, bucket_id: BucketId) -> Result<ValidatedData, RuntimeError> {
         re_debug!(
             self,
             "(Transaction) Returning to worktop: bucket_id = {}",

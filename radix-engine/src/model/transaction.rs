@@ -31,7 +31,7 @@ pub enum Instruction {
     },
 
     /// Returns a bucket of resource to worktop.
-    ReturnToWorktop { bucket_id: BucketId },
+    AddToWorktop { bucket_id: BucketId },
 
     /// Asserts worktop contains resource.
     AssertWorktop { resource_def_id: ResourceDefId },
@@ -52,7 +52,7 @@ pub enum Instruction {
     TakeFromAuthZone,
 
     /// Adds a proof to the auth zone.
-    ReturnToAuthZone { proof_id: ProofId },
+    AddToAuthZone { proof_id: ProofId },
 
     /// Drops all proofs in the auth zone
     ClearAuthZone,
@@ -134,7 +134,7 @@ pub enum ValidatedInstruction {
         ids: BTreeSet<NonFungibleId>,
         resource_def_id: ResourceDefId,
     },
-    ReturnToWorktop {
+    AddToWorktop {
         bucket_id: BucketId,
     },
     AssertWorktop {
@@ -149,7 +149,7 @@ pub enum ValidatedInstruction {
         resource_def_id: ResourceDefId,
     },
     TakeFromAuthZone,
-    ReturnToAuthZone {
+    AddToAuthZone {
         proof_id: ProofId,
     },
     ClearAuthZone,

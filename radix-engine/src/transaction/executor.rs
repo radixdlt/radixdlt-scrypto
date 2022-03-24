@@ -203,9 +203,7 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
                     .map(|bucket_id| {
                         ValidatedData::from_value(&scrypto::resource::Bucket(bucket_id))
                     }),
-                ValidatedInstruction::ReturnToWorktop { bucket_id } => {
-                    proc.return_to_worktop(bucket_id)
-                }
+                ValidatedInstruction::AddToWorktop { bucket_id } => proc.add_to_worktop(bucket_id),
                 ValidatedInstruction::AssertWorktop { resource_def_id } => todo!(),
                 ValidatedInstruction::AssertWorktopByAmount {
                     amount,
@@ -219,7 +217,7 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
                     .pop_from_auth_zone()
                     .map(|proof_id| ValidatedData::from_value(&scrypto::resource::Proof(proof_id))),
                 ValidatedInstruction::ClearAuthZone => todo!(),
-                ValidatedInstruction::ReturnToAuthZone { proof_id } => proc
+                ValidatedInstruction::AddToAuthZone { proof_id } => proc
                     .push_onto_auth_zone(proof_id)
                     .map(|_| ValidatedData::from_value(&())),
                 ValidatedInstruction::CreateProofFromAuthZone { .. } => todo!(),

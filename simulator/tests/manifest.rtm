@@ -10,9 +10,9 @@ TAKE_FROM_WORKTOP ResourceDefId("03000000000000000000000000000000000000000000000
 CREATE_PROOF_FROM_BUCKET Bucket("remaining_xrd") Proof("proof1");
 CLONE_PROOF Proof("proof1") Proof("proof2");
 DROP_PROOF Proof("proof1");
-RETURN_TO_AUTH_ZONE Proof("proof2");
+ADD_TO_AUTH_ZONE Proof("proof2");
 TAKE_FROM_AUTH_ZONE Proof("proof3");
 DROP_PROOF  Proof("proof3");
-RETURN_TO_WORKTOP Bucket("remaining_xrd");
+ADD_TO_WORKTOP Bucket("remaining_xrd");
 
 CALL_METHOD_WITH_ALL_RESOURCES ComponentId("0293c502780e23621475989d707cd8128e4506362e5fed6ac0c00a") "deposit_batch";

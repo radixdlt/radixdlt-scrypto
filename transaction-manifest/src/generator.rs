@@ -160,12 +160,12 @@ pub fn generate_instruction(
                 resource_def_id: generate_resource_def_id(resource_def_id)?,
             }
         }
-        ast::Instruction::ReturnToWorktop { bucket } => {
+        ast::Instruction::AddToWorktop { bucket } => {
             let bucket_id = generate_bucket(bucket, resolver)?;
             id_validator
                 .drop_bucket(bucket_id)
                 .map_err(GeneratorError::IdValidatorError)?;
-            Instruction::ReturnToWorktop { bucket_id }
+            Instruction::AddToWorktop { bucket_id }
         }
         ast::Instruction::AssertWorktop { resource_def_id } => Instruction::AssertWorktop {
             resource_def_id: generate_resource_def_id(resource_def_id)?,
@@ -192,12 +192,12 @@ pub fn generate_instruction(
 
             Instruction::TakeFromAuthZone
         }
-        ast::Instruction::ReturnToAuthZone { proof } => {
+        ast::Instruction::AddToAuthZone { proof } => {
             let proof_id = generate_proof(proof, resolver)?;
             id_validator
                 .drop_proof(proof_id)
                 .map_err(GeneratorError::IdValidatorError)?;
-            Instruction::ReturnToAuthZone { proof_id }
+            Instruction::AddToAuthZone { proof_id }
         }
         ast::Instruction::ClearAuthZone => Instruction::ClearAuthZone,
 
@@ -1057,10 +1057,10 @@ mod tests {
                     Instruction::CreateProofFromBucket { bucket_id: 513 },
                     Instruction::CloneProof { proof_id: 514 },
                     Instruction::DropProof { proof_id: 514 },
-                    Instruction::ReturnToAuthZone { proof_id: 515 },
+                    Instruction::AddToAuthZone { proof_id: 515 },
                     Instruction::TakeFromAuthZone,
                     Instruction::DropProof { proof_id: 516 },
-                    Instruction::ReturnToWorktop { bucket_id: 513 },
+                    Instruction::AddToWorktop { bucket_id: 513 },
                     Instruction::TakeFromWorktopByIds {
                         ids: BTreeSet::from([
                             NonFungibleId::from_str("11").unwrap(),

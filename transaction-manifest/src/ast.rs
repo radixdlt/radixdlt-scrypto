@@ -22,7 +22,7 @@ pub enum Instruction {
         new_bucket: Value,
     },
 
-    ReturnToWorktop {
+    AddToWorktop {
         bucket: Value,
     },
 
@@ -44,7 +44,7 @@ pub enum Instruction {
         new_proof: Value,
     },
 
-    ReturnToAuthZone {
+    AddToAuthZone {
         proof: Value,
     },
 

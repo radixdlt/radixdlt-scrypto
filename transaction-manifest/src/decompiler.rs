@@ -60,12 +60,12 @@ pub fn decompile(tx: &Transaction) -> Result<String, DecompileError> {
                     resource_def_id, name
                 ));
             }
-            Instruction::ReturnToWorktop { bucket_id } => {
+            Instruction::AddToWorktop { bucket_id } => {
                 id_validator
                     .drop_bucket(bucket_id)
                     .map_err(DecompileError::IdValidatorError)?;
                 buf.push_str(&format!(
-                    "RETURN_TO_WORKTOP Bucket({});\n",
+                    "ADD_TO_WORKTOP Bucket({});\n",
                     buckets
                         .get(&bucket_id)
                         .map(|name| format!("\"{}\"", name))
@@ -108,12 +108,12 @@ pub fn decompile(tx: &Transaction) -> Result<String, DecompileError> {
                 proofs.insert(proof_id, name.clone());
                 buf.push_str(&format!("TAKE_FROM_AUTH_ZONE Proof(\"{}\");\n", name));
             }
-            Instruction::ReturnToAuthZone { proof_id } => {
+            Instruction::AddToAuthZone { proof_id } => {
                 id_validator
                     .drop_proof(proof_id)
                     .map_err(DecompileError::IdValidatorError)?;
                 buf.push_str(&format!(
-                    "RETURN_TO_AUTH_ZONE Proof({});\n",
+                    "ADD_TO_AUTH_ZONE Proof({});\n",
                     proofs
                         .get(&proof_id)
                         .map(|name| format!("\"{}\"", name))

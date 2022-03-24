@@ -9,10 +9,10 @@ TAKE_FROM_WORKTOP ResourceDefId("03000000000000000000000000000000000000000000000
 CREATE_PROOF_FROM_BUCKET  Bucket("remaining_xrd")  Proof("proof1");
 CLONE_PROOF  Proof("proof1")  Proof("proof2");
 DROP_PROOF  Proof("proof1");
-RETURN_TO_AUTH_ZONE Proof("proof2");
+ADD_TO_AUTH_ZONE Proof("proof2");
 TAKE_FROM_AUTH_ZONE Proof("proof3");
 DROP_PROOF  Proof("proof3");
-RETURN_TO_WORKTOP  Bucket("remaining_xrd");
+ADD_TO_WORKTOP  Bucket("remaining_xrd");
 
 TAKE_FROM_WORKTOP_BY_IDS TreeSet<NonFungibleId>(NonFungibleId("11"), NonFungibleId("22")) ResourceDefId("030000000000000000000000000000000000000000000000000004")  Bucket("nfts");
 
