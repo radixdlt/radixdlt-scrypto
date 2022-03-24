@@ -243,6 +243,11 @@ fn dynamic_min_n_of_should_fail_if_not_signed_enough() {
 }
 
 #[test]
+fn dynamic_min_n_of_should_fail_if_path_does_not_exist() {
+    test_dynamic_authlist(3, min_n_of!(1, SborPath::from("1")), &[0, 1], false);
+}
+
+#[test]
 fn dynamic_all_of_should_allow_me_to_call_method() {
     test_dynamic_authlist(3, all_of!(SborPath::from("0")), &[0, 1, 2], true);
 }
@@ -253,8 +258,18 @@ fn dynamic_all_of_should_fail_if_not_signed_enough() {
 }
 
 #[test]
+fn dynamic_all_of_should_fail_if_path_does_not_exist() {
+    test_dynamic_authlist(3, all_of!(SborPath::from("1")), &[0, 1], false);
+}
+
+#[test]
 fn dynamic_any_of_should_allow_me_to_call_method() {
     test_dynamic_authlist(3, any_of!(SborPath::from("0")), &[1], true);
+}
+
+#[test]
+fn dynamic_any_of_should_fail_if_path_does_not_exist() {
+    test_dynamic_authlist(3, any_of!(SborPath::from("1")), &[0, 1], false);
 }
 
 #[test]
