@@ -146,32 +146,32 @@ impl ResourceDef {
 
     /// Turns on feature flags.
     pub fn enable_flags(&self, flags: u64) {
-        let input = UpdateResourceFlagsInput {
+        let input = EnableFlagsInput {
             resource_def_id: self.0,
-            new_flags: self.flags() | flags,
+            flags,
         };
-        let _output: UpdateResourceFlagsOutput = call_engine(UPDATE_RESOURCE_FLAGS, input);
+        let _output: EnableFlagsOutput = call_engine(ENABLE_FLAGS, input);
     }
 
     /// Turns off feature flags.
     pub fn disable_flags(&self, flags: u64) {
-        let input = UpdateResourceFlagsInput {
+        let input = DisableFlagsInput {
             resource_def_id: self.0,
-            new_flags: self.flags() & !flags,
+            flags,
         };
-        let _output: UpdateResourceFlagsOutput = call_engine(UPDATE_RESOURCE_FLAGS, input);
+        let _output: DisableFlagsOutput = call_engine(DISABLE_FLAGS, input);
     }
 
     /// Locks feature flag settings.
     pub fn lock_flags(&self, flags: u64) {
-        let input = UpdateResourceMutableFlagsInput {
+        let input = LockFlagsInput {
             resource_def_id: self.0,
-            new_mutable_flags: self.flags() & !flags,
+            flags,
         };
-        let _output: UpdateResourceMutableFlagsOutput =
-            call_engine(UPDATE_RESOURCE_MUTABLE_FLAGS, input);
+        let _output: LockFlagsOutput = call_engine(LOCK_FLAGS, input);
     }
 
+    /// Updates the resource metadata
     pub fn update_metadata(&self, new_metadata: HashMap<String, String>) {
         let input = UpdateResourceMetadataInput {
             resource_def_id: self.0,

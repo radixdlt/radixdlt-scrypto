@@ -1,6 +1,6 @@
 use radix_engine::errors::RuntimeError;
 use radix_engine::ledger::*;
-use radix_engine::model::ResourceDefError::InvalidFlagUpdate;
+use radix_engine::model::ResourceDefError::FlagsLocked;
 use radix_engine::model::{ResourceContainerError, ResourceDefError};
 use radix_engine::transaction::*;
 use scrypto::prelude::*;
@@ -89,15 +89,7 @@ fn update_feature_flags_should_fail() {
 
     // Assert
     let runtime_error = receipt.result.expect_err("Should be runtime error");
-    assert_eq!(
-        runtime_error,
-        RuntimeError::ResourceDefError(InvalidFlagUpdate {
-            flags: 0,
-            mutable_flags: 0,
-            new_flags: MINTABLE,
-            new_mutable_flags: 0,
-        })
-    );
+    assert_eq!(runtime_error, RuntimeError::ResourceDefError(FlagsLocked));
 }
 
 #[test]

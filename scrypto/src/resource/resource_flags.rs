@@ -34,4 +34,10 @@ pub const SHARED_METADATA_MUTABLE: u64 = resource_flags!(1u32 << 5);
 pub const INDIVIDUAL_METADATA_MUTABLE: u64 = resource_flags!(1u32 << 6);
 
 /// All resources flags.
-pub const ALL_FLAGS: u64 = resource_flags!(!0u32);
+pub const ALL_FLAGS: u64 = RESTRICTED_TRANSFER
+    | BURNABLE
+    | FREELY_BURNABLE
+    | MINTABLE
+    | RECALLABLE
+    | SHARED_METADATA_MUTABLE
+    | INDIVIDUAL_METADATA_MUTABLE;
