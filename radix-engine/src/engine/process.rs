@@ -1,5 +1,6 @@
 use colored::*;
 use sbor::*;
+use scrypto::abi;
 use scrypto::buffer::*;
 use scrypto::engine::api::*;
 use scrypto::engine::types::*;
@@ -9,6 +10,7 @@ use scrypto::rust::collections::*;
 use scrypto::rust::fmt;
 use scrypto::rust::format;
 use scrypto::rust::string::String;
+use scrypto::rust::string::ToString;
 use scrypto::rust::vec;
 use scrypto::rust::vec::Vec;
 use wasmi::*;
@@ -603,9 +605,17 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 Actor::Blueprint(..) => Ok(InterpreterState::Blueprint),
                 Actor::Component(component_id) => {
                     let component = self.track.get_component(component_id.clone()).unwrap();
+                    let blueprint_name = component.blueprint_name().to_string();
+                    let package_id = component.package_id();
+                    let output: (Type, Vec<abi::Function>, Vec<abi::Method>) =
+                        self.call_abi(package_id, &blueprint_name).and_then(|rtn| {
+                            scrypto_decode(&rtn.raw).map_err(RuntimeError::AbiValidationError)
+                        })?;
+                    let component = self.track.get_component(component_id.clone()).unwrap();
 
                     // Auth check
-                    let (data, method_auth) = component.initialize_method(&invocation.function);
+                    let (data, method_auth) =
+                        component.initialize_method(&output.0, &invocation.function);
                     method_auth.check(&[self.caller_auth_zone])?;
 
                     let initial_loaded_object_refs = ComponentObjectRefs {

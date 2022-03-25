@@ -50,12 +50,8 @@ fn test_simple_abi() {
                 "fields":{
                     "named":[
                         [
-                            "component_id",
-                            {
-                                "generics": [],
-                                "name": "ComponentId",
-                                "type": "Custom"
-                            }
+                            "state",
+                            { "type":"U32" }
                         ]
                     ],
                     "type":"Named"

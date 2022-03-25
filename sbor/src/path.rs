@@ -1,5 +1,18 @@
 use crate::any::Fields;
 use crate::any::Value;
+use crate::rust::vec::Vec;
+
+pub struct SborFullPath(Vec<usize>);
+
+impl SborFullPath {
+    pub fn new(path: Vec<usize>) -> Self {
+        SborFullPath(path)
+    }
+
+    pub fn to_rel_path(&self) -> SborRelPath {
+        SborRelPath(&self.0)
+    }
+}
 
 pub struct SborRelPath<'a>(&'a [usize]);
 

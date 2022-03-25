@@ -122,7 +122,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
 
             let functions: Vec<Function> = vec![ #(#abi_functions),* ];
             let methods: Vec<Method> = vec![ #(#abi_methods),* ];
-            let schema: Type = #bp_ident::describe();
+            let schema: Type = blueprint::#bp_ident::describe();
             let output = (schema, functions, methods);
 
             // serialize the output
@@ -464,7 +464,7 @@ fn generate_stubs(bp_ident: &Ident, items: &[ImplItem]) -> Result<TokenStream> {
     }
 
     let output = quote! {
-        #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
+        #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode)]
         pub struct #bp_ident {
             component_id: ::scrypto::component::ComponentId,
         }
@@ -617,12 +617,12 @@ mod tests {
                         ],
                         output: <u32>::describe(),
                     }];
-                    let schema: Type = Test::describe();
+                    let schema: Type = blueprint::Test::describe();
                     let output = (schema, functions, methods);
                     let output_bytes = ::scrypto::buffer::scrypto_encode_for_radix_engine(&output);
                     ::scrypto::buffer::scrypto_wrap(output_bytes)
                 }
-                #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
+                #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode)]
                 pub struct Test {
                     component_id: ::scrypto::component::ComponentId,
                 }

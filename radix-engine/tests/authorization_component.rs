@@ -3,8 +3,7 @@ pub mod test_runner;
 
 use crate::test_runner::TestRunner;
 use radix_engine::errors::RuntimeError;
-use radix_engine::ledger::{InMemorySubstateStore, SubstateStore};
-use radix_engine::model::{Component, HardProofRule, MethodAuthorization};
+use radix_engine::ledger::InMemorySubstateStore;
 use radix_engine::transaction::*;
 use scrypto::prelude::*;
 
@@ -60,14 +59,6 @@ fn cannot_make_cross_component_call_without_authorization() {
     // Assert
     let runtime_error = receipt.result.expect_err("Should be error");
     assert_eq!(runtime_error, RuntimeError::NotAuthorized);
-    let component_state: Component = substate_store
-        .get_decoded_substate(&secured_component)
-        .map(|(c, _)| c)
-        .unwrap();
-    assert_eq!(
-        component_state.initialize_method("get_component_state").1,
-        MethodAuthorization::Protected(HardProofRule::This(auth_address.into()))
-    );
 }
 
 #[test]
@@ -131,12 +122,4 @@ fn can_make_cross_component_call_with_authorization() {
 
     // Assert
     assert!(receipt.result.is_ok());
-    let component_state: Component = substate_store
-        .get_decoded_substate(&secured_component)
-        .map(|(c, _)| c)
-        .unwrap();
-    assert_eq!(
-        component_state.initialize_method("get_component_state").1,
-        MethodAuthorization::Protected(HardProofRule::This(auth_address.into()))
-    );
 }
