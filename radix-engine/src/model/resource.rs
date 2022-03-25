@@ -83,7 +83,7 @@ impl ResourceContainer {
         // update liquidity
         match self {
             Self::Fungible { liquid_amount, .. } => {
-                *liquid_amount = other.liquid_amount();
+                *liquid_amount += other.liquid_amount();
             }
             Self::NonFungible { liquid_ids, .. } => {
                 liquid_ids.extend(other.liquid_ids()?);
@@ -136,6 +136,10 @@ impl ResourceContainer {
                 Ok(Self::new_non_fungible(self.resource_def_id(), ids.clone()))
             }
         }
+    }
+
+    pub fn take_all(&mut self) -> Result<Self, ResourceContainerError> {
+        self.take(self.liquid_amount())
     }
 
     pub fn lock_amount(&mut self, amount: Decimal) -> Result<(), ResourceContainerError> {

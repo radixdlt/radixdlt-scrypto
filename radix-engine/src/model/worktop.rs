@@ -66,8 +66,11 @@ impl Worktop {
         &mut self,
         resource_def_id: ResourceDefId,
     ) -> Result<Option<Bucket>, ResourceContainerError> {
-        self.take_container(resource_def_id)
-            .map(|o| o.map(Bucket::new))
+        if let Some(mut container) = self.borrow_container_mut(resource_def_id) {
+            Ok(Some(Bucket::new(container.take_all()?)))
+        } else {
+            Ok(None)
+        }
     }
 
     pub fn resource_def_ids(&self) -> Vec<ResourceDefId> {
@@ -122,21 +125,6 @@ impl Worktop {
         self.containers
             .get(&resource_def_id)
             .map(|c| c.borrow_mut())
-    }
-
-    fn take_container(
-        &mut self,
-        resource_def_id: ResourceDefId,
-    ) -> Result<Option<ResourceContainer>, ResourceContainerError> {
-        if let Some(c) = self.containers.remove(&resource_def_id) {
-            Ok(Some(
-                Rc::try_unwrap(c)
-                    .map_err(|_| ResourceContainerError::ContainerLocked)?
-                    .into_inner(),
-            ))
-        } else {
-            Ok(None)
-        }
     }
 
     // Note that this method overwrites existing container if any

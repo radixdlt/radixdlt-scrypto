@@ -381,7 +381,9 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .buckets
             .get_mut(&bucket_id)
             .ok_or(RuntimeError::BucketNotFound(bucket_id))?;
-        let new_proof = bucket.create_proof().map_err(RuntimeError::ProofError)?;
+        let new_proof = bucket
+            .create_proof(ProofSourceId::Bucket(bucket_id))
+            .map_err(RuntimeError::ProofError)?;
         self.proofs.insert(new_proof_id, new_proof);
 
         Ok(new_proof_id)
@@ -400,7 +402,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .get_mut(&bucket_id)
             .ok_or(RuntimeError::BucketNotFound(bucket_id))?;
         let new_proof = bucket
-            .create_proof_by_amount(amount)
+            .create_proof_by_amount(amount, ProofSourceId::Bucket(bucket_id))
             .map_err(RuntimeError::ProofError)?;
         self.proofs.insert(new_proof_id, new_proof);
 
@@ -412,7 +414,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         bucket_id: BucketId,
         ids: &BTreeSet<NonFungibleId>,
     ) -> Result<ProofId, RuntimeError> {
-        re_debug!(self, "Creating proof: bucket_id = {}", bucket_id);
+        re_debug!(self, "Creating bucket proof: bucket_id = {}", bucket_id);
 
         let new_proof_id = self.new_proof_id()?;
         let bucket = self
@@ -420,7 +422,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .get_mut(&bucket_id)
             .ok_or(RuntimeError::BucketNotFound(bucket_id))?;
         let new_proof = bucket
-            .create_proof_by_ids(ids)
+            .create_proof_by_ids(ids, ProofSourceId::Bucket(bucket_id))
             .map_err(RuntimeError::ProofError)?;
         self.proofs.insert(new_proof_id, new_proof);
 
@@ -429,11 +431,13 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
     // Creates a vault proof.
     pub fn create_vault_proof(&mut self, vault_id: VaultId) -> Result<ProofId, RuntimeError> {
-        re_debug!(self, "Creating proof: vault_id = {:?}", vault_id);
+        re_debug!(self, "Creating vault proof: vault_id = {:?}", vault_id);
 
         let new_proof_id = self.new_proof_id()?;
         let vault = self.get_local_vault(&vault_id)?;
-        let new_proof = vault.create_proof().map_err(RuntimeError::ProofError)?;
+        let new_proof = vault
+            .create_proof(ProofSourceId::Vault(vault_id))
+            .map_err(RuntimeError::ProofError)?;
         self.proofs.insert(new_proof_id, new_proof);
 
         Ok(new_proof_id)
@@ -444,12 +448,12 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         vault_id: VaultId,
         amount: Decimal,
     ) -> Result<ProofId, RuntimeError> {
-        re_debug!(self, "Creating proof: vault_id = {:?}", vault_id);
+        re_debug!(self, "Creating vault proof: vault_id = {:?}", vault_id);
 
         let new_proof_id = self.new_proof_id()?;
         let vault = self.get_local_vault(&vault_id)?;
         let new_proof = vault
-            .create_proof_by_amount(amount)
+            .create_proof_by_amount(amount, ProofSourceId::Vault(vault_id))
             .map_err(RuntimeError::ProofError)?;
         self.proofs.insert(new_proof_id, new_proof);
 
@@ -461,13 +465,82 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         vault_id: VaultId,
         ids: &BTreeSet<NonFungibleId>,
     ) -> Result<ProofId, RuntimeError> {
-        re_debug!(self, "Creating proof: vault_id = {:?}", vault_id);
+        re_debug!(self, "Creating vault proof: vault_id = {:?}", vault_id);
 
         let new_proof_id = self.new_proof_id()?;
         let vault = self.get_local_vault(&vault_id)?;
         let new_proof = vault
-            .create_proof_by_ids(ids)
+            .create_proof_by_ids(ids, ProofSourceId::Vault(vault_id))
             .map_err(RuntimeError::ProofError)?;
+        self.proofs.insert(new_proof_id, new_proof);
+
+        Ok(new_proof_id)
+    }
+
+    // Creates a auth zone proof for all of the specified resource.
+    pub fn create_auth_zone_proof(
+        &mut self,
+        resource_def_id: ResourceDefId,
+    ) -> Result<ProofId, RuntimeError> {
+        re_debug!(self, "Creating auth zone proof: ALL, {}", resource_def_id);
+
+        let resource_def = self
+            .track
+            .get_resource_def(&resource_def_id)
+            .ok_or(RuntimeError::ResourceDefNotFound(resource_def_id))?;
+        let resource_type = resource_def.resource_type();
+
+        let new_proof_id = self.new_proof_id()?;
+        let new_proof = Proof::compose(&self.auth_zone, resource_def_id, resource_type)
+            .map_err(RuntimeError::ProofError)?;
+        self.proofs.insert(new_proof_id, new_proof);
+
+        Ok(new_proof_id)
+    }
+
+    pub fn create_auth_zone_proof_by_amount(
+        &mut self,
+        amount: Decimal,
+        resource_def_id: ResourceDefId,
+    ) -> Result<ProofId, RuntimeError> {
+        re_debug!(self, "Creating proof: {}, {}", amount, resource_def_id);
+
+        let resource_def = self
+            .track
+            .get_resource_def(&resource_def_id)
+            .ok_or(RuntimeError::ResourceDefNotFound(resource_def_id))?;
+        let resource_type = resource_def.resource_type();
+
+        let new_proof_id = self.new_proof_id()?;
+        let new_proof = Proof::compose_by_amount(
+            &self.auth_zone,
+            Some(amount),
+            resource_def_id,
+            resource_type,
+        )
+        .map_err(RuntimeError::ProofError)?;
+        self.proofs.insert(new_proof_id, new_proof);
+
+        Ok(new_proof_id)
+    }
+
+    pub fn create_auth_zone_proof_by_ids(
+        &mut self,
+        ids: &BTreeSet<NonFungibleId>,
+        resource_def_id: ResourceDefId,
+    ) -> Result<ProofId, RuntimeError> {
+        re_debug!(self, "Creating proof: {:?}, {}", ids, resource_def_id);
+
+        let resource_def = self
+            .track
+            .get_resource_def(&resource_def_id)
+            .ok_or(RuntimeError::ResourceDefNotFound(resource_def_id))?;
+        let resource_type = resource_def.resource_type();
+
+        let new_proof_id = self.new_proof_id()?;
+        let new_proof =
+            Proof::compose_by_ids(&self.auth_zone, Some(ids), resource_def_id, resource_type)
+                .map_err(RuntimeError::ProofError)?;
         self.proofs.insert(new_proof_id, new_proof);
 
         Ok(new_proof_id)
@@ -498,6 +571,26 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .ok_or(RuntimeError::ProofNotFound(proof_id))?;
 
         proof.drop();
+
+        Ok(())
+    }
+
+    /// Drops all proofs owned by this process.
+    pub fn drop_all_proofs(&mut self) -> Result<(), RuntimeError> {
+        // named proofs
+        let proof_ids: Vec<ProofId> = self.proofs.keys().cloned().collect();
+        for proof_id in proof_ids {
+            self.drop_proof(proof_id)?;
+        }
+
+        // proofs in auth zone
+        loop {
+            if let Some(proof) = self.auth_zone.pop() {
+                proof.drop();
+            } else {
+                break;
+            }
+        }
 
         Ok(())
     }
@@ -568,10 +661,13 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     /// (SYSTEM ONLY)  Creates a proof which references a virtual bucket
     pub fn create_virtual_proof(
         &mut self,
+        bucket_id: BucketId,
         proof_id: ProofId,
         mut bucket: Bucket,
     ) -> Result<(), RuntimeError> {
-        let proof = bucket.create_proof().map_err(RuntimeError::ProofError)?;
+        let proof = bucket
+            .create_proof(ProofSourceId::Bucket(bucket_id))
+            .map_err(RuntimeError::ProofError)?;
         self.proofs.insert(proof_id, proof);
         Ok(())
     }
@@ -796,17 +892,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let result = self.call(invocation);
         re_debug!(self, "Call abi ended");
         result
-    }
-
-    /// Drops all proofs owned by this process.
-    pub fn drop_all_proofs(&mut self) -> Result<(), RuntimeError> {
-        let proof_ids: Vec<ProofId> = self.proofs.keys().cloned().collect();
-        for proof_id in proof_ids {
-            self.proofs
-                .remove(&proof_id)
-                .ok_or(RuntimeError::ProofNotFound(proof_id))?;
-        }
-        Ok(())
     }
 
     /// Checks resource leak.
@@ -2043,6 +2128,33 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         })
     }
 
+    fn handle_create_auth_zone_proof(
+        &mut self,
+        input: CreateAuthZoneProofInput,
+    ) -> Result<CreateAuthZoneProofOutput, RuntimeError> {
+        Ok(CreateAuthZoneProofOutput {
+            proof_id: self.create_auth_zone_proof(input.resource_def_id)?,
+        })
+    }
+
+    fn handle_create_auth_zone_proof_by_amount(
+        &mut self,
+        input: CreateAuthZoneProofByAmountInput,
+    ) -> Result<CreateAuthZoneProofByAmountOutput, RuntimeError> {
+        Ok(CreateAuthZoneProofByAmountOutput {
+            proof_id: self.create_auth_zone_proof_by_amount(input.amount, input.resource_def_id)?,
+        })
+    }
+
+    fn handle_create_auth_zone_proof_by_ids(
+        &mut self,
+        input: CreateAuthZoneProofByIdsInput,
+    ) -> Result<CreateAuthZoneProofByIdsOutput, RuntimeError> {
+        Ok(CreateAuthZoneProofByIdsOutput {
+            proof_id: self.create_auth_zone_proof_by_ids(&input.ids, input.resource_def_id)?,
+        })
+    }
+
     fn handle_drop_proof(
         &mut self,
         input: DropProofInput,
@@ -2274,6 +2386,15 @@ impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
                     }
                     CREATE_VAULT_PROOF_BY_IDS => {
                         self.handle(args, Self::handle_create_vault_proof_by_ids)
+                    }
+                    CREATE_AUTH_ZONE_PROOF => {
+                        self.handle(args, Self::handle_create_auth_zone_proof)
+                    }
+                    CREATE_AUTH_ZONE_PROOF_BY_AMOUNT => {
+                        self.handle(args, Self::handle_create_auth_zone_proof_by_amount)
+                    }
+                    CREATE_AUTH_ZONE_PROOF_BY_IDS => {
+                        self.handle(args, Self::handle_create_auth_zone_proof_by_ids)
                     }
                     DROP_PROOF => self.handle(args, Self::handle_drop_proof),
                     GET_PROOF_AMOUNT => self.handle(args, Self::handle_get_proof_amount),

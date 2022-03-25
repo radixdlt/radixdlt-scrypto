@@ -2,11 +2,11 @@ use sbor::*;
 use scrypto::engine::types::*;
 use scrypto::rust::cell::{Ref, RefCell, RefMut};
 use scrypto::rust::collections::BTreeSet;
+use scrypto::rust::collections::HashMap;
 use scrypto::rust::rc::Rc;
-use scrypto::rust::vec;
 
 use crate::model::{
-    AmountOrIds, Bucket, Proof, ProofError, ResourceContainer, ResourceContainerError,
+    Bucket, Proof, ProofError, ProofSourceId, ResourceContainer, ResourceContainerError,
 };
 /// A persistent resource container.
 #[derive(Debug, TypeId, Encode, Decode)]
@@ -45,32 +45,37 @@ impl Vault {
         ))
     }
 
-    pub fn create_proof(&mut self) -> Result<Proof, ProofError> {
+    pub fn create_proof(&mut self, proof_source_id: ProofSourceId) -> Result<Proof, ProofError> {
         match self.resource_type() {
-            ResourceType::Fungible { .. } => self.create_proof_by_amount(self.total_amount()),
-            ResourceType::NonFungible => self.create_proof_by_ids(&self.total_ids().unwrap()),
+            ResourceType::Fungible { .. } => {
+                self.create_proof_by_amount(self.total_amount(), proof_source_id)
+            }
+            ResourceType::NonFungible => {
+                self.create_proof_by_ids(&self.total_ids().unwrap(), proof_source_id)
+            }
         }
     }
 
-    pub fn create_proof_by_amount(&mut self, amount: Decimal) -> Result<Proof, ProofError> {
+    pub fn create_proof_by_amount(
+        &mut self,
+        amount: Decimal,
+        proof_source_id: ProofSourceId,
+    ) -> Result<Proof, ProofError> {
         // lock the specified amount
         self.borrow_container_mut()
             .lock_amount(amount)
             .map_err(ProofError::ResourceContainerError)?;
 
         // produce proof
-        Proof::new(
-            self.resource_def_id(),
-            self.resource_type(),
-            false,
-            AmountOrIds::Amount(amount),
-            vec![(self.container.clone(), AmountOrIds::Amount(amount))],
-        )
+        let mut sources = HashMap::new();
+        sources.insert(proof_source_id, (self.container.clone(), amount.clone()));
+        Proof::new_fungible(self.resource_def_id(), false, amount.clone(), sources)
     }
 
     pub fn create_proof_by_ids(
         &mut self,
         ids: &BTreeSet<NonFungibleId>,
+        proof_source_id: ProofSourceId,
     ) -> Result<Proof, ProofError> {
         // lock the specified id set
         self.borrow_container_mut()
@@ -78,13 +83,9 @@ impl Vault {
             .map_err(ProofError::ResourceContainerError)?;
 
         // produce proof
-        Proof::new(
-            self.resource_def_id(),
-            self.resource_type(),
-            false,
-            AmountOrIds::Ids(ids.clone()),
-            vec![(self.container.clone(), AmountOrIds::Ids(ids.clone()))],
-        )
+        let mut sources = HashMap::new();
+        sources.insert(proof_source_id, (self.container.clone(), ids.clone()));
+        Proof::new_non_fungible(self.resource_def_id(), false, ids.clone(), sources)
     }
 
     pub fn resource_def_id(&self) -> ResourceDefId {
