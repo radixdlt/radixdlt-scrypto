@@ -34,50 +34,68 @@ impl FromStr for SborPath {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Describe, TypeId, Encode, Decode)]
-pub enum ProofRuleResource {
-    NonFungible(NonFungibleAddress),
-    Resource(ResourceDefId),
-    FromComponent(SborPath),
+pub enum SoftResource {
+    Static(ResourceDefId),
+    Dynamic(SborPath),
 }
 
-impl From<NonFungibleAddress> for ProofRuleResource {
-    fn from(non_fungible_address: NonFungibleAddress) -> Self {
-        ProofRuleResource::NonFungible(non_fungible_address)
-    }
-}
-
-impl From<ResourceDefId> for ProofRuleResource {
+impl From<ResourceDefId> for SoftResource {
     fn from(resource_def_id: ResourceDefId) -> Self {
-        ProofRuleResource::Resource(resource_def_id)
+        SoftResource::Static(resource_def_id)
     }
 }
 
-impl From<SborPath> for ProofRuleResource {
+impl From<SborPath> for SoftResource {
     fn from(path: SborPath) -> Self {
-        ProofRuleResource::FromComponent(path)
+        SoftResource::Dynamic(path)
     }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Describe, TypeId, Encode, Decode)]
-pub enum ProofRuleResourceList {
-    StaticList(Vec<ProofRuleResource>),
-    FromComponent(SborPath),
+pub enum SoftResourceOrNonFungible {
+    StaticNonFungible(NonFungibleAddress),
+    StaticResource(ResourceDefId),
+    Dynamic(SborPath),
 }
 
-impl From<SborPath> for ProofRuleResourceList {
+impl From<NonFungibleAddress> for SoftResourceOrNonFungible {
+    fn from(non_fungible_address: NonFungibleAddress) -> Self {
+        SoftResourceOrNonFungible::StaticNonFungible(non_fungible_address)
+    }
+}
+
+impl From<ResourceDefId> for SoftResourceOrNonFungible {
+    fn from(resource_def_id: ResourceDefId) -> Self {
+        SoftResourceOrNonFungible::StaticResource(resource_def_id)
+    }
+}
+
+impl From<SborPath> for SoftResourceOrNonFungible {
     fn from(path: SborPath) -> Self {
-        ProofRuleResourceList::FromComponent(path)
+        SoftResourceOrNonFungible::Dynamic(path)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Describe, TypeId, Encode, Decode)]
+pub enum SoftResourceOrNonFungibleList {
+    Static(Vec<SoftResourceOrNonFungible>),
+    Dynamic(SborPath),
+}
+
+impl From<SborPath> for SoftResourceOrNonFungibleList {
+    fn from(path: SborPath) -> Self {
+        SoftResourceOrNonFungibleList::Dynamic(path)
     }
 }
 
 /// Authorization Rule
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Describe, TypeId, Encode, Decode)]
 pub enum ProofRule {
-    This(ProofRuleResource),
-    AmountOf(Decimal, ProofRuleResource),
-    CountOf(u8, ProofRuleResourceList),
-    AllOf(ProofRuleResourceList),
-    AnyOf(ProofRuleResourceList),
+    This(SoftResourceOrNonFungible),
+    AmountOf(Decimal, SoftResource),
+    CountOf(u8, SoftResourceOrNonFungibleList),
+    AllOf(SoftResourceOrNonFungibleList),
+    AnyOf(SoftResourceOrNonFungibleList),
 }
 
 impl From<NonFungibleAddress> for ProofRule {
@@ -95,11 +113,11 @@ impl From<ResourceDefId> for ProofRule {
 #[macro_export]
 macro_rules! resource_list {
   ($($resource: expr),*) => ({
-      let mut list: Vec<::scrypto::resource::ProofRuleResource> = Vec::new();
+      let mut list: Vec<::scrypto::resource::SoftResourceOrNonFungible> = Vec::new();
       $(
         list.push($resource.into());
       )*
-      ::scrypto::resource::ProofRuleResourceList::StaticList(list)
+      ::scrypto::resource::SoftResourceOrNonFungibleList::Static(list)
   });
 }
 
