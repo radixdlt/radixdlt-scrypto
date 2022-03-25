@@ -667,7 +667,10 @@ mod tests {
             r#"Enum(0u8}"#,
             ParserError::UnexpectedToken(Token {
                 kind: TokenKind::CloseCurlyBrace,
-                span: Span { start: 8, end: 9 }
+                span: Span {
+                    start: (1, 10),
+                    end: (1, 10)
+                }
             })
         );
         parse_value_error!(
