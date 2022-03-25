@@ -7,16 +7,16 @@ use scrypto::prelude::{NonFungibleAddress, ResourceDefId};
 use scrypto::rust::vec::Vec;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, TypeId, Encode, Decode)]
-pub enum HardProofRuleResource {
+pub enum HardResourceOrNonFungible {
     NonFungible(NonFungibleAddress),
     Resource(ResourceDefId),
     SoftResourceNotFound,
 }
 
-impl HardProofRuleResource {
+impl HardResourceOrNonFungible {
     pub fn proof_matches(&self, proof: &Proof) -> bool {
         match self {
-            HardProofRuleResource::NonFungible(non_fungible_address) => {
+            HardResourceOrNonFungible::NonFungible(non_fungible_address) => {
                 let proof_resource_def_id = proof.resource_def_id();
                 proof_resource_def_id == non_fungible_address.resource_def_id()
                     && match proof.total_ids() {
@@ -24,16 +24,17 @@ impl HardProofRuleResource {
                         Err(_) => false,
                     }
             }
-            HardProofRuleResource::Resource(resource_def_id) => {
+            HardResourceOrNonFungible::Resource(resource_def_id) => {
                 let proof_resource_def_id = proof.resource_def_id();
                 proof_resource_def_id == *resource_def_id
             }
-            HardProofRuleResource::SoftResourceNotFound => false,
+            HardResourceOrNonFungible::SoftResourceNotFound => false,
         }
     }
 
     pub fn check_has_amount(&self, amount: Decimal, proofs_vector: &[&[Proof]]) -> bool {
         for proofs in proofs_vector {
+            // FIXME: Need to check the composite max amount rather than just each proof individually
             if proofs
                 .iter()
                 .any(|p| self.proof_matches(p) && p.total_amount() >= amount)
@@ -56,28 +57,28 @@ impl HardProofRuleResource {
     }
 }
 
-impl From<NonFungibleAddress> for HardProofRuleResource {
+impl From<NonFungibleAddress> for HardResourceOrNonFungible {
     fn from(non_fungible_address: NonFungibleAddress) -> Self {
-        HardProofRuleResource::NonFungible(non_fungible_address)
+        HardResourceOrNonFungible::NonFungible(non_fungible_address)
     }
 }
 
-impl From<ResourceDefId> for HardProofRuleResource {
+impl From<ResourceDefId> for HardResourceOrNonFungible {
     fn from(resource_def_id: ResourceDefId) -> Self {
-        HardProofRuleResource::Resource(resource_def_id)
+        HardResourceOrNonFungible::Resource(resource_def_id)
     }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, TypeId, Encode, Decode)]
 pub enum HardProofRuleResourceList {
-    List(Vec<HardProofRuleResource>),
+    List(Vec<HardResourceOrNonFungible>),
     SoftResourceListNotFound,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, TypeId, Encode, Decode)]
 pub enum HardProofRule {
-    This(HardProofRuleResource),
-    SomeOfResource(Decimal, HardProofRuleResource),
+    This(HardResourceOrNonFungible),
+    SomeOfResource(Decimal, HardResourceOrNonFungible),
     AllOf(HardProofRuleResourceList),
     AnyOf(HardProofRuleResourceList),
     CountOf(u8, HardProofRuleResourceList),

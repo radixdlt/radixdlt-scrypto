@@ -15,7 +15,7 @@ mod worktop;
 pub use bucket::Bucket;
 pub use component::Component;
 pub use data::{format_value, ValidatedData};
-pub use method_authorization::{HardProofRule, HardProofRuleResource, MethodAuthorization};
+pub use method_authorization::{HardProofRule, HardResourceOrNonFungible, MethodAuthorization};
 pub use non_fungible::NonFungible;
 pub use package::Package;
 pub use proof::*;

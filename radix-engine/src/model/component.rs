@@ -1,11 +1,12 @@
 use crate::model::method_authorization::{
-    HardProofRule, HardProofRuleResource, HardProofRuleResourceList,
+    HardProofRule, HardResourceOrNonFungible, HardProofRuleResourceList,
 };
 use crate::model::{MethodAuthorization, ValidatedData};
 use sbor::any::Value;
 use sbor::*;
 use scrypto::engine::types::*;
-use scrypto::resource::{NonFungibleAddress, ProofRule, ProofRuleResource, ProofRuleResourceList};
+use scrypto::prelude::SoftResource;
+use scrypto::resource::{NonFungibleAddress, ProofRule, SoftResourceOrNonFungible, SoftResourceOrNonFungibleList};
 use scrypto::rust::collections::*;
 use scrypto::rust::string::String;
 use scrypto::rust::vec::Vec;
@@ -37,19 +38,19 @@ impl Component {
 
     fn soft_to_hard_resource_list(
         schema: &Type,
-        list: &ProofRuleResourceList,
+        list: &SoftResourceOrNonFungibleList,
         dom: &Value,
     ) -> HardProofRuleResourceList {
         match list {
-            ProofRuleResourceList::StaticList(resources) => {
+            SoftResourceOrNonFungibleList::Static(resources) => {
                 let mut hard_resources = Vec::new();
                 for soft_resource in resources {
-                    let resource = Self::soft_to_hard_resource(schema, soft_resource, dom);
+                    let resource = Self::soft_to_hard_resource_or_non_fungible(schema, soft_resource, dom);
                     hard_resources.push(resource);
                 }
                 HardProofRuleResourceList::List(hard_resources)
             }
-            ProofRuleResourceList::FromComponent(path) => {
+            SoftResourceOrNonFungibleList::Dynamic(path) => {
                 let rel_path = path.rel_path(schema);
                 if let None = rel_path {
                     return HardProofRuleResourceList::SoftResourceListNotFound;
@@ -95,14 +96,43 @@ impl Component {
 
     fn soft_to_hard_resource(
         schema: &Type,
-        proof_rule_resource: &ProofRuleResource,
+        soft_resource: &SoftResource,
         dom: &Value,
-    ) -> HardProofRuleResource {
-        match proof_rule_resource {
-            ProofRuleResource::FromComponent(path) => {
+    ) -> HardResourceOrNonFungible {
+        match soft_resource {
+            SoftResource::Dynamic(path) => {
                 let rel_path = path.rel_path(schema);
                 if let None = rel_path {
-                    return HardProofRuleResource::SoftResourceNotFound;
+                    return HardResourceOrNonFungible::SoftResourceNotFound;
+                }
+                match rel_path.unwrap().to_rel_path().get_from(dom) {
+                    Some(Value::Custom(type_id, bytes)) => {
+                        match CustomType::from_id(*type_id).unwrap() {
+                            CustomType::ResourceDefId => {
+                                ResourceDefId::try_from(bytes.as_slice()).unwrap().into()
+                            }
+                            _ => HardResourceOrNonFungible::SoftResourceNotFound,
+                        }
+                    }
+                    _ => HardResourceOrNonFungible::SoftResourceNotFound,
+                }
+            },
+            SoftResource::Static(resource_def_id) => {
+                HardResourceOrNonFungible::Resource(resource_def_id.clone())
+            }
+        }
+    }
+
+    fn soft_to_hard_resource_or_non_fungible(
+        schema: &Type,
+        proof_rule_resource: &SoftResourceOrNonFungible,
+        dom: &Value,
+    ) -> HardResourceOrNonFungible {
+        match proof_rule_resource {
+            SoftResourceOrNonFungible::Dynamic(path) => {
+                let rel_path = path.rel_path(schema);
+                if let None = rel_path {
+                    return HardResourceOrNonFungible::SoftResourceNotFound;
                 }
                 match rel_path.unwrap().to_rel_path().get_from(dom) {
                     Some(Value::Custom(type_id, bytes)) => {
@@ -115,29 +145,29 @@ impl Component {
                                     .unwrap()
                                     .into()
                             }
-                            _ => HardProofRuleResource::SoftResourceNotFound,
+                            _ => HardResourceOrNonFungible::SoftResourceNotFound,
                         }
                     }
-                    _ => HardProofRuleResource::SoftResourceNotFound,
+                    _ => HardResourceOrNonFungible::SoftResourceNotFound,
                 }
             }
-            ProofRuleResource::NonFungible(non_fungible_address) => {
-                HardProofRuleResource::NonFungible(non_fungible_address.clone())
+            SoftResourceOrNonFungible::StaticNonFungible(non_fungible_address) => {
+                HardResourceOrNonFungible::NonFungible(non_fungible_address.clone())
             }
-            ProofRuleResource::Resource(resource_def_id) => {
-                HardProofRuleResource::Resource(resource_def_id.clone())
+            SoftResourceOrNonFungible::StaticResource(resource_def_id) => {
+                HardResourceOrNonFungible::Resource(resource_def_id.clone())
             }
         }
     }
 
     fn soft_to_hard_rule(schema: &Type, proof_rule: &ProofRule, dom: &Value) -> HardProofRule {
         match proof_rule {
-            ProofRule::This(proof_rule_resource) => {
-                let resource = Self::soft_to_hard_resource(schema, proof_rule_resource, dom);
+            ProofRule::This(soft_resource_or_non_fungible) => {
+                let resource = Self::soft_to_hard_resource_or_non_fungible(schema, soft_resource_or_non_fungible, dom);
                 HardProofRule::This(resource)
             }
-            ProofRule::AmountOf(amount, proof_rule_resource) => {
-                let resource = Self::soft_to_hard_resource(schema, proof_rule_resource, dom);
+            ProofRule::AmountOf(amount, soft_resource) => {
+                let resource = Self::soft_to_hard_resource(schema, soft_resource, dom);
                 HardProofRule::SomeOfResource(*amount, resource)
             }
             ProofRule::AllOf(resources) => {
