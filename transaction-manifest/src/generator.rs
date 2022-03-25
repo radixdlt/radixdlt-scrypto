@@ -980,7 +980,7 @@ mod tests {
 
     #[test]
     fn test_transaction() {
-        let tx = include_str!("../examples/call.rtm");
+        let tx = include_str!("../examples/complex.rtm");
         let code = vec![
             0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00, 0x04, 0x05, 0x01, 0x70, 0x01, 0x01,
             0x01, 0x05, 0x03, 0x01, 0x00, 0x10, 0x06, 0x19, 0x03, 0x7f, 0x01, 0x41, 0x80, 0x80,
@@ -1002,12 +1002,13 @@ mod tests {
             crate::compile(tx).unwrap(),
             Transaction {
                 instructions: vec![
+                    Instruction::CloneProof { proof_id: 1 },
                     Instruction::CallMethod {
                         component_id: ComponentId::from_str(
                             "02d43f479e9b2beb9df98bc3888344fc25eda181e8f710ce1bf1de".into()
                         )
                         .unwrap(),
-                        method: "withdraw".into(),
+                        method: "withdraw_by_amount".into(),
                         args: vec![
                             scrypto_encode(&Decimal::from(5u32)),
                             scrypto_encode(
@@ -1032,7 +1033,7 @@ mod tests {
                         )
                         .unwrap(),
                         method: "buy_gumball".into(),
-                        args: vec![scrypto_encode(&scrypto::resource::Bucket(512)),]
+                        args: vec![scrypto_encode(&scrypto::resource::Bucket(513)),]
                     },
                     Instruction::AssertWorktopByAmount {
                         amount: Decimal::from(3),
@@ -1041,8 +1042,7 @@ mod tests {
                         )
                         .unwrap(),
                     },
-                    Instruction::AssertWorktopByAmount {
-                        amount: Decimal::from(1),
+                    Instruction::AssertWorktop {
                         resource_def_id: ResourceDefId::from_str(
                             "03aedb7960d1f87dc25138f4cd101da6c98d57323478d53c5fb951"
                         )
@@ -1054,13 +1054,30 @@ mod tests {
                         )
                         .unwrap(),
                     },
-                    Instruction::CreateProofFromBucket { bucket_id: 513 },
-                    Instruction::CloneProof { proof_id: 514 },
-                    Instruction::DropProof { proof_id: 514 },
-                    Instruction::AddToAuthZone { proof_id: 515 },
-                    Instruction::TakeFromAuthZone,
+                    Instruction::CreateProofFromBucket { bucket_id: 514 },
+                    Instruction::CloneProof { proof_id: 515 },
+                    Instruction::DropProof { proof_id: 515 },
                     Instruction::DropProof { proof_id: 516 },
-                    Instruction::AddToWorktop { bucket_id: 513 },
+                    Instruction::CallMethod {
+                        component_id: ComponentId::from_str(
+                            "02d43f479e9b2beb9df98bc3888344fc25eda181e8f710ce1bf1de".into()
+                        )
+                        .unwrap(),
+                        method: "create_proof_by_amount".into(),
+                        args: vec![
+                            scrypto_encode(&Decimal::from(5u32)),
+                            scrypto_encode(
+                                &ResourceDefId::from_str(
+                                    "030000000000000000000000000000000000000000000000000004"
+                                )
+                                .unwrap()
+                            ),
+                            scrypto_encode(&scrypto::resource::Proof(512)),
+                        ]
+                    },
+                    Instruction::TakeFromAuthZone,
+                    Instruction::DropProof { proof_id: 517 },
+                    Instruction::AddToWorktop { bucket_id: 514 },
                     Instruction::TakeFromWorktopByIds {
                         ids: BTreeSet::from([
                             NonFungibleId::from_str("11").unwrap(),

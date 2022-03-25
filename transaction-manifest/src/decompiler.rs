@@ -281,7 +281,7 @@ mod tests {
 
     #[test]
     fn test_decompile() {
-        let tx = compile(include_str!("../examples/call.rtm")).unwrap();
+        let tx = compile(include_str!("../examples/complex.rtm")).unwrap();
 
         let manifest = &decompile(&tx).unwrap();
         println!("{}", manifest);
