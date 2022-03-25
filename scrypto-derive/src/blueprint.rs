@@ -46,7 +46,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
         mod blueprint {
             use super::*;
 
-            #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode)]
+            #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
             pub struct #bp_ident #bp_fields #bp_semi_token
 
             impl #bp_ident {
@@ -114,7 +114,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
     let output_abi = quote! {
         #[no_mangle]
         pub extern "C" fn #abi_ident() -> *mut u8 {
-            use ::sbor::Describe;
+            use ::sbor::{Describe, Type};
             use ::scrypto::abi::{Function, Method};
             use ::scrypto::rust::borrow::ToOwned;
             use ::scrypto::rust::vec;
@@ -122,7 +122,8 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
 
             let functions: Vec<Function> = vec![ #(#abi_functions),* ];
             let methods: Vec<Method> = vec![ #(#abi_methods),* ];
-            let output = (functions, methods);
+            let schema: Type = #bp_ident::describe();
+            let output = (schema, functions, methods);
 
             // serialize the output
             let output_bytes = ::scrypto::buffer::scrypto_encode_for_radix_engine(&output);
@@ -463,7 +464,7 @@ fn generate_stubs(bp_ident: &Ident, items: &[ImplItem]) -> Result<TokenStream> {
     }
 
     let output = quote! {
-        #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode)]
+        #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
         pub struct #bp_ident {
             component_id: ::scrypto::component::ComponentId,
         }
@@ -539,7 +540,7 @@ mod tests {
                 mod blueprint {
                     use super::*;
 
-                    #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode)]
+                    #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
                     pub struct Test {
                         a: u32,
                         admin: ResourceDef
@@ -602,7 +603,7 @@ mod tests {
                 }
                 #[no_mangle]
                 pub extern "C" fn Test_abi() -> *mut u8 {
-                    use ::sbor::Describe;
+                    use ::sbor::{Describe, Type};
                     use ::scrypto::abi::{Function, Method};
                     use ::scrypto::rust::borrow::ToOwned;
                     use ::scrypto::rust::vec;
@@ -616,11 +617,12 @@ mod tests {
                         ],
                         output: <u32>::describe(),
                     }];
-                    let output = (functions, methods);
+                    let schema: Type = Test::describe();
+                    let output = (schema, functions, methods);
                     let output_bytes = ::scrypto::buffer::scrypto_encode_for_radix_engine(&output);
                     ::scrypto::buffer::scrypto_wrap(output_bytes)
                 }
-                #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode)]
+                #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
                 pub struct Test {
                     component_id: ::scrypto::component::ComponentId,
                 }

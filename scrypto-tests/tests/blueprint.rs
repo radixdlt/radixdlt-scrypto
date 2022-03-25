@@ -1,5 +1,6 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
+use sbor::Type;
 use scrypto::abi;
 use scrypto::buffer::*;
 use scrypto::prelude::*;
@@ -39,12 +40,29 @@ fn assert_json_eq<T: Serialize>(actual: T, expected: Value) {
 #[test]
 fn test_simple_abi() {
     let ptr = Simple_abi();
-    let abi: (Vec<abi::Function>, Vec<abi::Method>) =
+    let abi: (Type, Vec<abi::Function>, Vec<abi::Method>) =
         unsafe { scrypto_consume(ptr, |slice| scrypto_decode(slice).unwrap()) };
 
     assert_json_eq(
         abi,
         json!([
+            {
+                "fields":{
+                    "named":[
+                        [
+                            "component_id",
+                            {
+                                "generics": [],
+                                "name": "ComponentId",
+                                "type": "Custom"
+                            }
+                        ]
+                    ],
+                    "type":"Named"
+                },
+                "name":"Simple",
+                "type":"Struct"
+            },
             [
                 {
                     "name": "new",
