@@ -219,7 +219,7 @@ fn can_create_proof_from_account_and_pass_on() {
     let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(&mut substate_store);
     let (key, account) = test_runner.new_public_key_with_account();
-    let resource_def_id = test_runner.create_non_fungible_resource(account);
+    let resource_def_id = test_runner.create_fungible_resource(100.into(), account);
     let package_id = test_runner.publish_package("proof");
 
     // Act
@@ -247,7 +247,7 @@ fn cant_move_restricted_proof() {
     let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(&mut substate_store);
     let (key, account) = test_runner.new_public_key_with_account();
-    let resource_def_id = test_runner.create_non_fungible_resource(account);
+    let resource_def_id = test_runner.create_fungible_resource(100.into(), account);
     let package_id = test_runner.publish_package("proof");
 
     // Act
