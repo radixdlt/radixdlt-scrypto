@@ -110,8 +110,8 @@ pub enum Instruction {
     /// Publishes a package.
     PublishPackage { code: Vec<u8> },
 
-    /// Marks the end of transaction from signatures.
-    /// TODO: replace public key from signature.
+    /// Marks the end of transaction with signatures.
+    /// TODO: replace public key with signature.
     End { signatures: Vec<EcdsaPublicKey> },
 }
 

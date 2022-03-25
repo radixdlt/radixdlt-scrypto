@@ -595,15 +595,15 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         Ok(())
     }
 
-    /// Drops all proofs owned by this process.
-    pub fn drop_all_proofs(&mut self) -> Result<(), RuntimeError> {
-        // named proofs
+    pub fn drop_all_named_proofs(&mut self) -> Result<(), RuntimeError> {
         let proof_ids: Vec<ProofId> = self.proofs.keys().cloned().collect();
         for proof_id in proof_ids {
             self.drop_proof(proof_id)?;
         }
+        Ok(())
+    }
 
-        // proofs in auth zone
+    pub fn drop_all_auth_zone_proofs(&mut self) -> Result<(), RuntimeError> {
         loop {
             if let Some(proof) = self.auth_zone.pop() {
                 proof.drop();
@@ -611,8 +611,13 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 break;
             }
         }
-
         Ok(())
+    }
+
+    /// Drops all proofs owned by this process.
+    pub fn drop_all_proofs(&mut self) -> Result<(), RuntimeError> {
+        self.drop_all_named_proofs()?;
+        self.drop_all_auth_zone_proofs()
     }
 
     /// (Transaction ONLY) Calls a method.

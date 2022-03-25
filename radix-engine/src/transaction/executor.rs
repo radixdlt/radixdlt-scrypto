@@ -218,7 +218,9 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
                 ValidatedInstruction::TakeFromAuthZone {} => proc
                     .pop_from_auth_zone()
                     .map(|proof_id| ValidatedData::from_value(&scrypto::resource::Proof(proof_id))),
-                ValidatedInstruction::ClearAuthZone => todo!("Clear auth zone"),
+                ValidatedInstruction::ClearAuthZone => proc
+                    .drop_all_auth_zone_proofs()
+                    .map(|_| ValidatedData::from_value(&())),
                 ValidatedInstruction::AddToAuthZone { proof_id } => proc
                     .push_onto_auth_zone(proof_id)
                     .map(|_| ValidatedData::from_value(&())),
