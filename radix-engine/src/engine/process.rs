@@ -703,10 +703,13 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     let component = self.track.get_component(component_id.clone()).unwrap();
 
                     // Auth check
-                    let method_auth = component.get_auth(&invocation.function);
+                    let (data, method_auth) = component.initialize_method(&invocation.function);
                     method_auth.check(&[self.caller_auth_zone])?;
-                    let initial_loaded_object_refs =
-                        Self::process_entry_data(component.state()).unwrap();
+
+                    let initial_loaded_object_refs = ComponentObjectRefs {
+                        vault_ids: data.vault_ids.into_iter().collect(),
+                        lazy_map_ids: data.lazy_map_ids.into_iter().collect(),
+                    };
                     let state = component.state().to_vec();
                     let component = InterpreterState::Component {
                         state,
@@ -1332,16 +1335,11 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
         let data = Self::process_entry_data(&input.state)?;
         let new_objects = wasm_process.process_owned_objects.take(data)?;
-        let sys_auth: HashMap<String, MethodAuthorization> = input
-            .authorization
-            .to_map()
-            .into_iter()
-            .map(|(name, proof_rule)| (name, MethodAuthorization::Protected(proof_rule)))
-            .collect();
+        let authorization = input.authorization.to_map();
         let component = Component::new(
             wasm_process.vm.invocation.package_id,
             input.blueprint_name,
-            sys_auth,
+            authorization,
             input.state,
         );
         let component_id = self.track.create_component(component);

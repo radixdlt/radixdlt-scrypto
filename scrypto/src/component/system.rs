@@ -1,7 +1,7 @@
 use crate::buffer::*;
 use crate::component::*;
 use crate::engine::{api::*, call_engine};
-use crate::prelude::{ComponentAuthorization};
+use crate::prelude::ComponentAuthorization;
 use crate::rust::borrow::ToOwned;
 use crate::rust::collections::*;
 
