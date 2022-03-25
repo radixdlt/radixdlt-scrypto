@@ -117,7 +117,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         then(builder, bucket_id.unwrap())
     }
 
-    /// Takes resource from worktop.
+    /// Takes resource from worktop, by amount.
     pub fn take_from_worktop_by_amount<F>(
         &mut self,
         amount: Decimal,
@@ -134,7 +134,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         then(builder, bucket_id.unwrap())
     }
 
-    /// Takes resource from worktop.
+    /// Takes resource from worktop, by non-fungible ids.
     pub fn take_from_worktop_by_ids<F>(
         &mut self,
         ids: &BTreeSet<NonFungibleId>,
@@ -151,7 +151,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         then(builder, bucket_id.unwrap())
     }
 
-    /// Takes resource from worktop.
+    /// Adds a bucket of resource to worktop.
     pub fn return_to_worktop(&mut self, bucket_id: BucketId) -> &mut Self {
         self.add_instruction(Instruction::ReturnToWorktop { bucket_id })
             .0

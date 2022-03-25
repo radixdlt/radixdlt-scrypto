@@ -57,7 +57,7 @@ pub enum Instruction {
     /// Drops all proofs in the auth zone
     ClearAuthZone,
 
-    // TODO: do we need `CreateProofFromWorktop`, to avoid taking and creating proof?
+    // TODO: do we need `CreateProofFromWorktop`, to avoid taking resource out and then creating proof?
     /// Creates a proof from the auth zone
     CreateProofFromAuthZone { resource_def_id: ResourceDefId },
 
