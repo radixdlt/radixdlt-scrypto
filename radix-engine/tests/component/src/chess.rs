@@ -8,7 +8,7 @@ blueprint! {
     impl Chess {
         pub fn create_game(players: [NonFungibleAddress; 2]) -> ComponentId {
             Self { players }.instantiate_with_auth(component_authorization! {
-                "make_move" => this!(SborPath::new().field("players").index(0)),
+                "make_move" => this!(SchemaPath::new().field("players").index(0)),
             })
         }
 

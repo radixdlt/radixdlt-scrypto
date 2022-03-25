@@ -1,88 +1,13 @@
-use crate::resource::proof_rule::SchemaSubPath::{Field, Index};
 use crate::resource::*;
-use crate::rust::string::String;
-use crate::rust::string::ToString;
 use crate::rust::vec;
 use crate::rust::vec::Vec;
-use sbor::describe::Fields;
-use sbor::path::SborFullPath;
 use sbor::*;
 use scrypto::math::Decimal;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Describe, TypeId, Encode, Decode)]
-pub enum SchemaSubPath {
-    Index(usize),
-    Field(String),
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Describe, TypeId, Encode, Decode)]
-pub struct SborPath(Vec<SchemaSubPath>);
-
-impl SborPath {
-    pub fn new() -> Self {
-        SborPath(vec![])
-    }
-
-    pub fn field(mut self, field: &str) -> Self {
-        self.0.push(Field(field.to_string()));
-        self
-    }
-
-    pub fn index(mut self, index: usize) -> Self {
-        self.0.push(Index(index));
-        self
-    }
-
-    pub fn rel_path(&self, schema: &Type) -> Option<SborFullPath> {
-        let length = self.0.len();
-        let mut cur_type = schema;
-        let mut sbor_path: Vec<usize> = vec![];
-
-        for i in 0..length {
-            match self.0.get(i).unwrap() {
-                Index(index) => match cur_type {
-                    Type::Vec { element } => {
-                        cur_type = element.as_ref();
-                        sbor_path.push(*index);
-                    }
-                    Type::Array { element, length: _ } => {
-                        cur_type = element.as_ref();
-                        sbor_path.push(*index);
-                    }
-                    _ => return Option::None,
-                },
-                Field(field) => {
-                    if let Type::Struct { name: _, fields } = cur_type {
-                        match fields {
-                            Fields::Named { named } => {
-                                if let Some(index) = named
-                                    .iter()
-                                    .position(|(field_name, _)| field_name.eq(field))
-                                {
-                                    let (_, next_type) = named.get(index).unwrap();
-                                    cur_type = next_type;
-                                    sbor_path.push(index);
-                                } else {
-                                    return Option::None;
-                                }
-                            }
-                            _ => return Option::None,
-                        }
-                    } else {
-                        return Option::None;
-                    }
-                }
-            }
-        }
-
-        Option::Some(SborFullPath::new(sbor_path))
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Describe, TypeId, Encode, Decode)]
 pub enum SoftResource {
     Static(ResourceDefId),
-    Dynamic(SborPath),
+    Dynamic(SchemaPath),
 }
 
 impl From<ResourceDefId> for SoftResource {
@@ -91,8 +16,8 @@ impl From<ResourceDefId> for SoftResource {
     }
 }
 
-impl From<SborPath> for SoftResource {
-    fn from(path: SborPath) -> Self {
+impl From<SchemaPath> for SoftResource {
+    fn from(path: SchemaPath) -> Self {
         SoftResource::Dynamic(path)
     }
 }
@@ -101,7 +26,7 @@ impl From<SborPath> for SoftResource {
 pub enum SoftResourceOrNonFungible {
     StaticNonFungible(NonFungibleAddress),
     StaticResource(ResourceDefId),
-    Dynamic(SborPath),
+    Dynamic(SchemaPath),
 }
 
 impl From<NonFungibleAddress> for SoftResourceOrNonFungible {
@@ -116,8 +41,8 @@ impl From<ResourceDefId> for SoftResourceOrNonFungible {
     }
 }
 
-impl From<SborPath> for SoftResourceOrNonFungible {
-    fn from(path: SborPath) -> Self {
+impl From<SchemaPath> for SoftResourceOrNonFungible {
+    fn from(path: SchemaPath) -> Self {
         SoftResourceOrNonFungible::Dynamic(path)
     }
 }
@@ -125,11 +50,11 @@ impl From<SborPath> for SoftResourceOrNonFungible {
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Describe, TypeId, Encode, Decode)]
 pub enum SoftResourceOrNonFungibleList {
     Static(Vec<SoftResourceOrNonFungible>),
-    Dynamic(SborPath),
+    Dynamic(SchemaPath),
 }
 
-impl From<SborPath> for SoftResourceOrNonFungibleList {
-    fn from(path: SborPath) -> Self {
+impl From<SchemaPath> for SoftResourceOrNonFungibleList {
+    fn from(path: SchemaPath) -> Self {
         SoftResourceOrNonFungibleList::Dynamic(path)
     }
 }

@@ -51,7 +51,7 @@ impl Component {
                 HardProofRuleResourceList::List(hard_resources)
             }
             SoftResourceOrNonFungibleList::Dynamic(path) => {
-                let rel_path = path.rel_path(schema);
+                let rel_path = path.to_sbor_path(schema);
                 if let None = rel_path {
                     return HardProofRuleResourceList::SoftResourceListNotFound;
                 }
@@ -101,7 +101,7 @@ impl Component {
     ) -> HardResourceOrNonFungible {
         match soft_resource {
             SoftResource::Dynamic(path) => {
-                let rel_path = path.rel_path(schema);
+                let rel_path = path.to_sbor_path(schema);
                 if let None = rel_path {
                     return HardResourceOrNonFungible::SoftResourceNotFound;
                 }
@@ -130,7 +130,7 @@ impl Component {
     ) -> HardResourceOrNonFungible {
         match proof_rule_resource {
             SoftResourceOrNonFungible::Dynamic(path) => {
-                let rel_path = path.rel_path(schema);
+                let rel_path = path.to_sbor_path(schema);
                 if let None = rel_path {
                     return HardResourceOrNonFungible::SoftResourceNotFound;
                 }
