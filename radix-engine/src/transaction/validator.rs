@@ -51,23 +51,23 @@ pub fn validate_transaction(
                     .map_err(TransactionValidationError::IdValidatorError)?;
                 instructions.push(ValidatedInstruction::ReturnToWorktop { bucket_id });
             }
-            Instruction::AssertWorktop { resource_def_id } => {
-                instructions.push(ValidatedInstruction::AssertWorktop { resource_def_id });
+            Instruction::AssertWorktopContains { resource_def_id } => {
+                instructions.push(ValidatedInstruction::AssertWorktopContains { resource_def_id });
             }
-            Instruction::AssertWorktopByAmount {
+            Instruction::AssertWorktopContainsByAmount {
                 amount,
                 resource_def_id,
             } => {
-                instructions.push(ValidatedInstruction::AssertWorktopByAmount {
+                instructions.push(ValidatedInstruction::AssertWorktopContainsByAmount {
                     amount,
                     resource_def_id,
                 });
             }
-            Instruction::AssertWorktopByIds {
+            Instruction::AssertWorktopContainsByIds {
                 ids,
                 resource_def_id,
             } => {
-                instructions.push(ValidatedInstruction::AssertWorktopByIds {
+                instructions.push(ValidatedInstruction::AssertWorktopContainsByIds {
                     ids,
                     resource_def_id,
                 });

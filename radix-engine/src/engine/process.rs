@@ -323,7 +323,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     }
 
     // (Transaction ONLY) Assert worktop contains at least this amount.
-    pub fn assert_worktop(
+    pub fn assert_worktop_contains(
         &mut self,
         resource_def_id: ResourceDefId,
     ) -> Result<ValidatedData, RuntimeError> {
@@ -335,7 +335,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     }
 
     // (Transaction ONLY) Assert worktop contains at least this amount.
-    pub fn assert_worktop_by_amount(
+    pub fn assert_worktop_contains_by_amount(
         &mut self,
         amount: Decimal,
         resource_def_id: ResourceDefId,
@@ -348,7 +348,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     }
 
     // (Transaction ONLY) Assert worktop contains at least this amount.
-    pub fn assert_worktop_by_ids(
+    pub fn assert_worktop_contains_by_ids(
         &mut self,
         ids: &BTreeSet<NonFungibleId>,
         resource_def_id: ResourceDefId,

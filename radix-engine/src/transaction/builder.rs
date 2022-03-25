@@ -60,9 +60,9 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
             Instruction::ReturnToWorktop { bucket_id } => {
                 self.id_validator.drop_bucket(bucket_id).unwrap();
             }
-            Instruction::AssertWorktop { .. }
-            | Instruction::AssertWorktopByAmount { .. }
-            | Instruction::AssertWorktopByIds { .. } => {}
+            Instruction::AssertWorktopContains { .. }
+            | Instruction::AssertWorktopContainsByAmount { .. }
+            | Instruction::AssertWorktopContainsByIds { .. } => {}
             Instruction::TakeFromAuthZone { .. } => {
                 new_proof_id = Some(
                     self.id_validator
@@ -158,18 +158,18 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     }
 
     /// Asserts that worktop contains resource.
-    pub fn assert_worktop(&mut self, resource_def_id: ResourceDefId) -> &mut Self {
-        self.add_instruction(Instruction::AssertWorktop { resource_def_id })
+    pub fn assert_worktop_contains(&mut self, resource_def_id: ResourceDefId) -> &mut Self {
+        self.add_instruction(Instruction::AssertWorktopContains { resource_def_id })
             .0
     }
 
     /// Asserts that worktop contains resource.
-    pub fn assert_worktop_by_amount(
+    pub fn assert_worktop_contains_by_amount(
         &mut self,
         amount: Decimal,
         resource_def_id: ResourceDefId,
     ) -> &mut Self {
-        self.add_instruction(Instruction::AssertWorktopByAmount {
+        self.add_instruction(Instruction::AssertWorktopContainsByAmount {
             amount,
             resource_def_id,
         })
@@ -177,12 +177,12 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     }
 
     /// Asserts that worktop contains resource.
-    pub fn assert_worktop_by_ids(
+    pub fn assert_worktop_contains_by_ids(
         &mut self,
         ids: &BTreeSet<NonFungibleId>,
         resource_def_id: ResourceDefId,
     ) -> &mut Self {
-        self.add_instruction(Instruction::AssertWorktopByIds {
+        self.add_instruction(Instruction::AssertWorktopContainsByIds {
             ids: ids.clone(),
             resource_def_id,
         })

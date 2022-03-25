@@ -167,20 +167,22 @@ pub fn generate_instruction(
                 .map_err(GeneratorError::IdValidatorError)?;
             Instruction::ReturnToWorktop { bucket_id }
         }
-        ast::Instruction::AssertWorktop { resource_def_id } => Instruction::AssertWorktop {
-            resource_def_id: generate_resource_def_id(resource_def_id)?,
-        },
-        ast::Instruction::AssertWorktopByAmount {
+        ast::Instruction::AssertWorktopContains { resource_def_id } => {
+            Instruction::AssertWorktopContains {
+                resource_def_id: generate_resource_def_id(resource_def_id)?,
+            }
+        }
+        ast::Instruction::AssertWorktopContainsByAmount {
             amount,
             resource_def_id,
-        } => Instruction::AssertWorktopByAmount {
+        } => Instruction::AssertWorktopContainsByAmount {
             amount: generate_decimal(amount)?,
             resource_def_id: generate_resource_def_id(resource_def_id)?,
         },
-        ast::Instruction::AssertWorktopByIds {
+        ast::Instruction::AssertWorktopContainsByIds {
             ids,
             resource_def_id,
-        } => Instruction::AssertWorktopByIds {
+        } => Instruction::AssertWorktopContainsByIds {
             ids: generate_non_fungible_ids(ids)?,
             resource_def_id: generate_resource_def_id(resource_def_id)?,
         },
@@ -931,8 +933,8 @@ mod tests {
             }
         );
         generate_instruction_ok!(
-            r#"ASSERT_WORKTOP_BY_AMOUNT  Decimal("1.0")  ResourceDefId("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d");"#,
-            Instruction::AssertWorktopByAmount {
+            r#"ASSERT_WORKTOP_CONTAINS_BY_AMOUNT  Decimal("1.0")  ResourceDefId("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d");"#,
+            Instruction::AssertWorktopContainsByAmount {
                 amount: Decimal::from(1),
                 resource_def_id: ResourceDefId::from_str(
                     "03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d"
@@ -1033,14 +1035,14 @@ mod tests {
                         method: "buy_gumball".into(),
                         args: vec![scrypto_encode(&scrypto::resource::Bucket(512)),]
                     },
-                    Instruction::AssertWorktopByAmount {
+                    Instruction::AssertWorktopContainsByAmount {
                         amount: Decimal::from(3),
                         resource_def_id: ResourceDefId::from_str(
                             "030000000000000000000000000000000000000000000000000004"
                         )
                         .unwrap(),
                     },
-                    Instruction::AssertWorktop {
+                    Instruction::AssertWorktopContains {
                         resource_def_id: ResourceDefId::from_str(
                             "03aedb7960d1f87dc25138f4cd101da6c98d57323478d53c5fb951"
                         )

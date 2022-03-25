@@ -85,14 +85,16 @@ impl Parser {
             TokenKind::ReturnToWorktop => Instruction::ReturnToWorktop {
                 bucket: self.parse_value()?,
             },
-            TokenKind::AssertWorktop => Instruction::AssertWorktop {
+            TokenKind::AssertWorktopContains => Instruction::AssertWorktopContains {
                 resource_def_id: self.parse_value()?,
             },
-            TokenKind::AssertWorktopByAmount => Instruction::AssertWorktopByAmount {
-                amount: self.parse_value()?,
-                resource_def_id: self.parse_value()?,
-            },
-            TokenKind::AssertWorktopByIds => Instruction::AssertWorktopByIds {
+            TokenKind::AssertWorktopContainsByAmount => {
+                Instruction::AssertWorktopContainsByAmount {
+                    amount: self.parse_value()?,
+                    resource_def_id: self.parse_value()?,
+                }
+            }
+            TokenKind::AssertWorktopContainsByIds => Instruction::AssertWorktopContainsByIds {
                 ids: self.parse_value()?,
                 resource_def_id: self.parse_value()?,
             },
@@ -713,8 +715,8 @@ mod tests {
             }
         );
         parse_instruction_ok!(
-            r#"ASSERT_WORKTOP_BY_AMOUNT  Decimal("1.0")  ResourceDefId("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d");"#,
-            Instruction::AssertWorktopByAmount {
+            r#"ASSERT_WORKTOP_CONTAINS_BY_AMOUNT  Decimal("1.0")  ResourceDefId("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d");"#,
+            Instruction::AssertWorktopContainsByAmount {
                 amount: Value::Decimal(Value::String("1.0".into()).into()),
                 resource_def_id: Value::ResourceDefId(
                     Value::String("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d".into())

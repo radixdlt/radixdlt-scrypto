@@ -192,17 +192,17 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
                 ValidatedInstruction::ReturnToWorktop { bucket_id } => {
                     proc.return_to_worktop(bucket_id)
                 }
-                ValidatedInstruction::AssertWorktop { resource_def_id } => {
-                    proc.assert_worktop(resource_def_id)
+                ValidatedInstruction::AssertWorktopContains { resource_def_id } => {
+                    proc.assert_worktop_contains(resource_def_id)
                 }
-                ValidatedInstruction::AssertWorktopByAmount {
+                ValidatedInstruction::AssertWorktopContainsByAmount {
                     amount,
                     resource_def_id,
-                } => proc.assert_worktop_by_amount(amount, resource_def_id),
-                ValidatedInstruction::AssertWorktopByIds {
+                } => proc.assert_worktop_contains_by_amount(amount, resource_def_id),
+                ValidatedInstruction::AssertWorktopContainsByIds {
                     ids,
                     resource_def_id,
-                } => proc.assert_worktop_by_ids(&ids, resource_def_id),
+                } => proc.assert_worktop_contains_by_ids(&ids, resource_def_id),
                 ValidatedInstruction::TakeFromAuthZone {} => proc
                     .take_from_auth_zone()
                     .map(|proof_id| ValidatedData::from_value(&scrypto::resource::Proof(proof_id))),

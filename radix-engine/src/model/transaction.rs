@@ -34,16 +34,16 @@ pub enum Instruction {
     ReturnToWorktop { bucket_id: BucketId },
 
     /// Asserts worktop contains resource.
-    AssertWorktop { resource_def_id: ResourceDefId },
+    AssertWorktopContains { resource_def_id: ResourceDefId },
 
     /// Asserts worktop contains resource by at least the given amount.
-    AssertWorktopByAmount {
+    AssertWorktopContainsByAmount {
         amount: Decimal,
         resource_def_id: ResourceDefId,
     },
 
     /// Asserts worktop contains resource by at least the given non-fungible IDs.
-    AssertWorktopByIds {
+    AssertWorktopContainsByIds {
         ids: BTreeSet<NonFungibleId>,
         resource_def_id: ResourceDefId,
     },
@@ -137,14 +137,14 @@ pub enum ValidatedInstruction {
     ReturnToWorktop {
         bucket_id: BucketId,
     },
-    AssertWorktop {
+    AssertWorktopContains {
         resource_def_id: ResourceDefId,
     },
-    AssertWorktopByAmount {
+    AssertWorktopContainsByAmount {
         amount: Decimal,
         resource_def_id: ResourceDefId,
     },
-    AssertWorktopByIds {
+    AssertWorktopContainsByIds {
         ids: BTreeSet<NonFungibleId>,
         resource_def_id: ResourceDefId,
     },

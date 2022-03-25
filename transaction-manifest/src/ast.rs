@@ -26,16 +26,16 @@ pub enum Instruction {
         bucket: Value,
     },
 
-    AssertWorktop {
+    AssertWorktopContains {
         resource_def_id: Value,
     },
 
-    AssertWorktopByAmount {
+    AssertWorktopContainsByAmount {
         amount: Value,
         resource_def_id: Value,
     },
 
-    AssertWorktopByIds {
+    AssertWorktopContainsByIds {
         ids: Value,
         resource_def_id: Value,
     },
