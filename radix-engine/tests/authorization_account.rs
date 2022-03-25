@@ -4,7 +4,6 @@ pub mod test_runner;
 use crate::test_runner::TestRunner;
 use radix_engine::errors::RuntimeError;
 use radix_engine::ledger::InMemorySubstateStore;
-use radix_engine::transaction::*;
 use scrypto::prelude::*;
 use scrypto::{all_of, amount_of, any_of, min_n_of};
 
@@ -22,10 +21,7 @@ fn can_withdraw_from_my_1_of_2_account_with_key0_sign() {
     // Act
     let transaction = test_runner
         .new_transaction_builder()
-        .withdraw_from_account(
-            &ResourceSpecifier::Amount(Decimal(100), RADIX_TOKEN),
-            account,
-        )
+        .withdraw_from_account(RADIX_TOKEN, account)
         .call_method_with_all_resources(other_account, "deposit_batch")
         .build(vec![key0])
         .unwrap();
@@ -49,10 +45,7 @@ fn can_withdraw_from_my_1_of_2_account_with_key1_sign() {
     // Act
     let transaction = test_runner
         .new_transaction_builder()
-        .withdraw_from_account(
-            &ResourceSpecifier::Amount(Decimal(100), RADIX_TOKEN),
-            account,
-        )
+        .withdraw_from_account(RADIX_TOKEN, account)
         .call_method_with_all_resources(other_account, "deposit_batch")
         .build(vec![key1])
         .unwrap();
@@ -76,10 +69,7 @@ fn can_withdraw_from_my_2_of_2_account_with_both_signatures() {
     // Act
     let transaction = test_runner
         .new_transaction_builder()
-        .withdraw_from_account(
-            &ResourceSpecifier::Amount(Decimal(100), RADIX_TOKEN),
-            account,
-        )
+        .withdraw_from_account(RADIX_TOKEN, account)
         .call_method_with_all_resources(other_account, "deposit_batch")
         .build(vec![key0, key1])
         .unwrap();
@@ -103,10 +93,7 @@ fn cannot_withdraw_from_my_2_of_2_account_with_single_signature() {
     // Act
     let transaction = test_runner
         .new_transaction_builder()
-        .withdraw_from_account(
-            &ResourceSpecifier::Amount(Decimal(100), RADIX_TOKEN),
-            account,
-        )
+        .withdraw_from_account(RADIX_TOKEN, account)
         .call_method_with_all_resources(other_account, "deposit_batch")
         .build(vec![key1])
         .unwrap();
@@ -137,10 +124,7 @@ fn can_withdraw_from_my_2_of_3_account_with_2_signatures() {
     // Act
     let transaction = test_runner
         .new_transaction_builder()
-        .withdraw_from_account(
-            &ResourceSpecifier::Amount(Decimal(100), RADIX_TOKEN),
-            account,
-        )
+        .withdraw_from_account(RADIX_TOKEN, account)
         .call_method_with_all_resources(other_account, "deposit_batch")
         .build(vec![key1, key2])
         .unwrap();
@@ -163,21 +147,15 @@ fn can_withdraw_from_my_any_xrd_auth_account_with_no_signature() {
     let transaction = test_runner
         .new_transaction_builder()
         .call_method(SYSTEM_COMPONENT, "free_xrd", vec![])
-        .take_from_worktop(
-            &ResourceSpecifier::Amount(Decimal(1), RADIX_TOKEN),
-            |builder, bucket_id| {
-                builder.create_bucket_proof(bucket_id, |builder, proof_id| {
-                    builder.push_onto_auth_zone(proof_id);
-                    builder.withdraw_from_account(
-                        &ResourceSpecifier::Amount(Decimal(100), RADIX_TOKEN),
-                        account,
-                    );
-                    builder.pop_from_auth_zone(|builder, proof_id| builder.drop_proof(proof_id));
-                    builder
-                });
+        .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
+            builder.create_proof_from_bucket(bucket_id, |builder, proof_id| {
+                builder.add_to_auth_zone(proof_id);
+                builder.withdraw_from_account(RADIX_TOKEN, account);
+                builder.take_from_auth_zone(|builder, proof_id| builder.drop_proof(proof_id));
                 builder
-            },
-        )
+            });
+            builder
+        })
         .call_method_with_all_resources(other_account, "deposit_batch")
         .build(vec![])
         .unwrap();
@@ -200,21 +178,15 @@ fn can_withdraw_from_my_any_xrd_auth_account_with_right_amount_of_proof() {
     let transaction = test_runner
         .new_transaction_builder()
         .call_method(SYSTEM_COMPONENT, "free_xrd", vec![])
-        .take_from_worktop(
-            &ResourceSpecifier::Amount(Decimal(1), RADIX_TOKEN),
-            |builder, bucket_id| {
-                builder.create_bucket_proof(bucket_id, |builder, proof_id| {
-                    builder.push_onto_auth_zone(proof_id);
-                    builder.withdraw_from_account(
-                        &ResourceSpecifier::Amount(Decimal(100), RADIX_TOKEN),
-                        account,
-                    );
-                    builder.pop_from_auth_zone(|builder, proof_id| builder.drop_proof(proof_id));
-                    builder
-                });
+        .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
+            builder.create_proof_from_bucket(bucket_id, |builder, proof_id| {
+                builder.add_to_auth_zone(proof_id);
+                builder.withdraw_from_account(RADIX_TOKEN, account);
+                builder.take_from_auth_zone(|builder, proof_id| builder.drop_proof(proof_id));
                 builder
-            },
-        )
+            });
+            builder
+        })
         .call_method_with_all_resources(other_account, "deposit_batch")
         .build(vec![])
         .unwrap();
@@ -237,21 +209,15 @@ fn cannot_withdraw_from_my_any_xrd_auth_account_with_less_than_amount_of_proof()
     let transaction = test_runner
         .new_transaction_builder()
         .call_method(SYSTEM_COMPONENT, "free_xrd", vec![])
-        .take_from_worktop(
-            &ResourceSpecifier::Amount(Decimal::from("0.9"), RADIX_TOKEN),
-            |builder, bucket_id| {
-                builder.create_bucket_proof(bucket_id, |builder, proof_id| {
-                    builder.push_onto_auth_zone(proof_id);
-                    builder.withdraw_from_account(
-                        &ResourceSpecifier::Amount(Decimal::from(100), RADIX_TOKEN),
-                        account,
-                    );
-                    builder.pop_from_auth_zone(|builder, proof_id| builder.drop_proof(proof_id));
-                    builder
-                });
+        .take_from_worktop_by_amount(Decimal::from("0.9"), RADIX_TOKEN, |builder, bucket_id| {
+            builder.create_proof_from_bucket(bucket_id, |builder, proof_id| {
+                builder.add_to_auth_zone(proof_id);
+                builder.withdraw_from_account(RADIX_TOKEN, account);
+                builder.take_from_auth_zone(|builder, proof_id| builder.drop_proof(proof_id));
                 builder
-            },
-        )
+            });
+            builder
+        })
         .call_method_with_all_resources(other_account, "deposit_batch")
         .build(vec![])
         .unwrap();
