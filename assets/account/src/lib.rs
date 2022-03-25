@@ -18,10 +18,7 @@ blueprint! {
         pub fn new_with_resource(withdraw_rule: ProofRule, bucket: Bucket) -> ComponentId {
             let vaults = LazyMap::new();
             vaults.insert(bucket.resource_def_id(), Vault::with_bucket(bucket));
-            Account {
-                vaults,
-            }
-            .instantiate_with_auth(component_authorization! {
+            Account { vaults }.instantiate_with_auth(component_authorization! {
                 "withdraw" => withdraw_rule
             })
         }
