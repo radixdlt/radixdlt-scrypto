@@ -52,7 +52,7 @@ fn can_withdraw_restricted_transfer_from_my_account_with_auth() {
             auth_resource_def_id,
             |builder, bucket_id| {
                 builder.create_proof_from_bucket(bucket_id, |builder, proof_id| {
-                    builder.add_to_auth_zone(proof_id)
+                    builder.move_to_auth_zone(proof_id)
                 })
             },
         )

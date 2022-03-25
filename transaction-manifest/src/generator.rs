@@ -160,12 +160,12 @@ pub fn generate_instruction(
                 resource_def_id: generate_resource_def_id(resource_def_id)?,
             }
         }
-        ast::Instruction::AddToWorktop { bucket } => {
+        ast::Instruction::ReturnToWorktop { bucket } => {
             let bucket_id = generate_bucket(bucket, resolver)?;
             id_validator
                 .drop_bucket(bucket_id)
                 .map_err(GeneratorError::IdValidatorError)?;
-            Instruction::AddToWorktop { bucket_id }
+            Instruction::ReturnToWorktop { bucket_id }
         }
         ast::Instruction::AssertWorktop { resource_def_id } => Instruction::AssertWorktop {
             resource_def_id: generate_resource_def_id(resource_def_id)?,
@@ -192,12 +192,12 @@ pub fn generate_instruction(
 
             Instruction::TakeFromAuthZone
         }
-        ast::Instruction::AddToAuthZone { proof } => {
+        ast::Instruction::MoveToAuthZone { proof } => {
             let proof_id = generate_proof(proof, resolver)?;
             id_validator
                 .drop_proof(proof_id)
                 .map_err(GeneratorError::IdValidatorError)?;
-            Instruction::AddToAuthZone { proof_id }
+            Instruction::MoveToAuthZone { proof_id }
         }
         ast::Instruction::ClearAuthZone => Instruction::ClearAuthZone,
 
@@ -956,14 +956,14 @@ mod tests {
             }
         );
         generate_instruction_ok!(
-            r#"CALL_METHOD  ComponentId("0292566c83de7fd6b04fcc92b5e04b03228ccff040785673278ef1")  "refill"  Proof(1u32);"#,
+            r#"CALL_METHOD  ComponentId("0292566c83de7fd6b04fcc92b5e04b03228ccff040785673278ef1")  "refill";"#,
             Instruction::CallMethod {
                 component_id: ComponentId::from_str(
                     "0292566c83de7fd6b04fcc92b5e04b03228ccff040785673278ef1".into()
                 )
                 .unwrap(),
                 method: "refill".into(),
-                args: vec![scrypto_encode(&scrypto::resource::Proof(1))]
+                args: vec![]
             }
         );
         generate_instruction_ok!(
@@ -1002,7 +1002,6 @@ mod tests {
             crate::compile(tx).unwrap(),
             Transaction {
                 instructions: vec![
-                    Instruction::CloneProof { proof_id: 1 },
                     Instruction::CallMethod {
                         component_id: ComponentId::from_str(
                             "02d43f479e9b2beb9df98bc3888344fc25eda181e8f710ce1bf1de".into()
@@ -1017,7 +1016,6 @@ mod tests {
                                 )
                                 .unwrap()
                             ),
-                            scrypto_encode(&scrypto::resource::Proof(1)),
                         ]
                     },
                     Instruction::TakeFromWorktopByAmount {
@@ -1033,7 +1031,7 @@ mod tests {
                         )
                         .unwrap(),
                         method: "buy_gumball".into(),
-                        args: vec![scrypto_encode(&scrypto::resource::Bucket(513)),]
+                        args: vec![scrypto_encode(&scrypto::resource::Bucket(512)),]
                     },
                     Instruction::AssertWorktopByAmount {
                         amount: Decimal::from(3),
@@ -1054,10 +1052,10 @@ mod tests {
                         )
                         .unwrap(),
                     },
-                    Instruction::CreateProofFromBucket { bucket_id: 514 },
-                    Instruction::CloneProof { proof_id: 515 },
+                    Instruction::CreateProofFromBucket { bucket_id: 513 },
+                    Instruction::CloneProof { proof_id: 514 },
+                    Instruction::DropProof { proof_id: 514 },
                     Instruction::DropProof { proof_id: 515 },
-                    Instruction::DropProof { proof_id: 516 },
                     Instruction::CallMethod {
                         component_id: ComponentId::from_str(
                             "02d43f479e9b2beb9df98bc3888344fc25eda181e8f710ce1bf1de".into()
@@ -1072,12 +1070,11 @@ mod tests {
                                 )
                                 .unwrap()
                             ),
-                            scrypto_encode(&scrypto::resource::Proof(512)),
                         ]
                     },
                     Instruction::TakeFromAuthZone,
-                    Instruction::DropProof { proof_id: 517 },
-                    Instruction::AddToWorktop { bucket_id: 514 },
+                    Instruction::DropProof { proof_id: 516 },
+                    Instruction::ReturnToWorktop { bucket_id: 513 },
                     Instruction::TakeFromWorktopByIds {
                         ids: BTreeSet::from([
                             NonFungibleId::from_str("11").unwrap(),

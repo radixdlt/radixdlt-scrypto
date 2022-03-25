@@ -82,7 +82,7 @@ impl Parser {
                 resource_def_id: self.parse_value()?,
                 new_bucket: self.parse_value()?,
             },
-            TokenKind::AddToWorktop => Instruction::AddToWorktop {
+            TokenKind::ReturnToWorktop => Instruction::ReturnToWorktop {
                 bucket: self.parse_value()?,
             },
             TokenKind::AssertWorktop => Instruction::AssertWorktop {
@@ -99,7 +99,7 @@ impl Parser {
             TokenKind::TakeFromAuthZone => Instruction::TakeFromAuthZone {
                 new_proof: self.parse_value()?,
             },
-            TokenKind::AddToAuthZone => Instruction::AddToAuthZone {
+            TokenKind::MoveToAuthZone => Instruction::MoveToAuthZone {
                 proof: self.parse_value()?,
             },
             TokenKind::ClearAuthZone => Instruction::ClearAuthZone,

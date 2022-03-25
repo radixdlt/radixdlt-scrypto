@@ -45,11 +45,11 @@ pub fn validate_transaction(
                     resource_def_id,
                 });
             }
-            Instruction::AddToWorktop { bucket_id } => {
+            Instruction::ReturnToWorktop { bucket_id } => {
                 id_validator
                     .drop_bucket(bucket_id)
                     .map_err(TransactionValidationError::IdValidatorError)?;
-                instructions.push(ValidatedInstruction::AddToWorktop { bucket_id });
+                instructions.push(ValidatedInstruction::ReturnToWorktop { bucket_id });
             }
             Instruction::AssertWorktop { resource_def_id } => {
                 instructions.push(ValidatedInstruction::AssertWorktop { resource_def_id });
@@ -78,11 +78,11 @@ pub fn validate_transaction(
                     .map_err(TransactionValidationError::IdValidatorError)?;
                 instructions.push(ValidatedInstruction::TakeFromAuthZone);
             }
-            Instruction::AddToAuthZone { proof_id } => {
+            Instruction::MoveToAuthZone { proof_id } => {
                 id_validator
                     .drop_proof(proof_id)
                     .map_err(TransactionValidationError::IdValidatorError)?;
-                instructions.push(ValidatedInstruction::AddToAuthZone { proof_id });
+                instructions.push(ValidatedInstruction::MoveToAuthZone { proof_id });
             }
             Instruction::ClearAuthZone => {
                 instructions.push(ValidatedInstruction::ClearAuthZone);

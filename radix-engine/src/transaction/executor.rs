@@ -189,7 +189,9 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
                     .map(|bucket_id| {
                         ValidatedData::from_value(&scrypto::resource::Bucket(bucket_id))
                     }),
-                ValidatedInstruction::AddToWorktop { bucket_id } => proc.add_to_worktop(bucket_id),
+                ValidatedInstruction::ReturnToWorktop { bucket_id } => {
+                    proc.return_to_worktop(bucket_id)
+                }
                 ValidatedInstruction::AssertWorktop { resource_def_id } => {
                     proc.assert_worktop(resource_def_id)
                 }
@@ -202,13 +204,13 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
                     resource_def_id,
                 } => proc.assert_worktop_by_ids(&ids, resource_def_id),
                 ValidatedInstruction::TakeFromAuthZone {} => proc
-                    .pop_from_auth_zone()
+                    .take_from_auth_zone()
                     .map(|proof_id| ValidatedData::from_value(&scrypto::resource::Proof(proof_id))),
                 ValidatedInstruction::ClearAuthZone => proc
                     .drop_all_auth_zone_proofs()
                     .map(|_| ValidatedData::from_value(&())),
-                ValidatedInstruction::AddToAuthZone { proof_id } => proc
-                    .push_onto_auth_zone(proof_id)
+                ValidatedInstruction::MoveToAuthZone { proof_id } => proc
+                    .move_to_auth_zone(proof_id)
                     .map(|_| ValidatedData::from_value(&())),
                 ValidatedInstruction::CreateProofFromAuthZone { resource_def_id } => proc
                     .create_auth_zone_proof(resource_def_id)

@@ -302,7 +302,10 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     }
 
     // (Transaction ONLY) Returns resource back to worktop.
-    pub fn add_to_worktop(&mut self, bucket_id: BucketId) -> Result<ValidatedData, RuntimeError> {
+    pub fn return_to_worktop(
+        &mut self,
+        bucket_id: BucketId,
+    ) -> Result<ValidatedData, RuntimeError> {
         re_debug!(
             self,
             "(Transaction) Returning to worktop: bucket_id = {}",
@@ -363,7 +366,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     }
 
     // Takes a proof from the auth zone.
-    pub fn pop_from_auth_zone(&mut self) -> Result<ProofId, RuntimeError> {
+    pub fn take_from_auth_zone(&mut self) -> Result<ProofId, RuntimeError> {
         re_debug!(self, "Popping from auth zone");
         if self.auth_zone.is_empty() {
             return Err(RuntimeError::EmptyAuthZone);
@@ -376,7 +379,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     }
 
     // Puts a proof onto the auth zone.
-    pub fn push_onto_auth_zone(&mut self, proof_id: ProofId) -> Result<(), RuntimeError> {
+    pub fn move_to_auth_zone(&mut self, proof_id: ProofId) -> Result<(), RuntimeError> {
         re_debug!(self, "Pushing onto auth zone: proof_id = {}", proof_id);
 
         let proof = self
@@ -2244,20 +2247,20 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         })
     }
 
-    fn handle_push_onto_auth_zone(
+    fn handle_move_to_auth_zone(
         &mut self,
-        input: PushOntoAuthZoneInput,
-    ) -> Result<PushOntoAuthZoneOutput, RuntimeError> {
-        self.push_onto_auth_zone(input.proof_id)
-            .map(|_| PushOntoAuthZoneOutput {})
+        input: MoveToAuthZoneInput,
+    ) -> Result<MoveToAuthZoneOutput, RuntimeError> {
+        self.move_to_auth_zone(input.proof_id)
+            .map(|_| MoveToAuthZoneOutput {})
     }
 
-    fn handle_pop_from_auth_zone(
+    fn handle_take_from_auth_zone(
         &mut self,
-        _input: PopFromAuthZoneInput,
-    ) -> Result<PopFromAuthZoneOutput, RuntimeError> {
-        self.pop_from_auth_zone()
-            .map(|proof_id| PopFromAuthZoneOutput { proof_id })
+        _input: TakeFromAuthZoneInput,
+    ) -> Result<TakeFromAuthZoneOutput, RuntimeError> {
+        self.take_from_auth_zone()
+            .map(|proof_id| TakeFromAuthZoneOutput { proof_id })
     }
 
     fn handle_emit_log(&mut self, input: EmitLogInput) -> Result<EmitLogOutput, RuntimeError> {
@@ -2430,8 +2433,8 @@ impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
                         self.handle(args, Self::handle_get_non_fungible_ids_in_proof)
                     }
                     CLONE_PROOF => self.handle(args, Self::handle_clone_proof),
-                    PUSH_ONTO_AUTH_ZONE => self.handle(args, Self::handle_push_onto_auth_zone),
-                    POP_FROM_AUTH_ZONE => self.handle(args, Self::handle_pop_from_auth_zone),
+                    MOVE_TO_AUTH_ZONE => self.handle(args, Self::handle_move_to_auth_zone),
+                    TAKE_FROM_AUTH_ZONE => self.handle(args, Self::handle_take_from_auth_zone),
 
                     EMIT_LOG => self.handle(args, Self::handle_emit_log),
                     GET_CALL_DATA => self.handle(args, Self::handle_get_call_data),

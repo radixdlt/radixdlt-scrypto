@@ -30,12 +30,10 @@ pub struct IdValidator {
 
 impl IdValidator {
     pub fn new() -> Self {
-        let mut proof_ids = HashMap::new();
-        proof_ids.insert(ECDSA_TOKEN_PROOF_ID, ProofKind::VirtualProof);
         Self {
             id_allocator: IdAllocator::new(IdSpace::Transaction),
             bucket_ids: HashMap::new(),
-            proof_ids,
+            proof_ids: HashMap::new(),
         }
     }
 

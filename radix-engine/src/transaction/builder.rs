@@ -57,7 +57,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
             | Instruction::TakeFromWorktopByIds { .. } => {
                 new_bucket_id = Some(self.id_validator.new_bucket().unwrap());
             }
-            Instruction::AddToWorktop { bucket_id } => {
+            Instruction::ReturnToWorktop { bucket_id } => {
                 self.id_validator.drop_bucket(bucket_id).unwrap();
             }
             Instruction::AssertWorktop { .. }
@@ -70,7 +70,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                         .unwrap(),
                 );
             }
-            Instruction::AddToAuthZone { proof_id } => {
+            Instruction::MoveToAuthZone { proof_id } => {
                 self.id_validator.drop_proof(proof_id).unwrap();
             }
             Instruction::ClearAuthZone => {}
@@ -152,8 +152,8 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     }
 
     /// Takes resource from worktop.
-    pub fn add_to_worktop(&mut self, bucket_id: BucketId) -> &mut Self {
-        self.add_instruction(Instruction::AddToWorktop { bucket_id })
+    pub fn return_to_worktop(&mut self, bucket_id: BucketId) -> &mut Self {
+        self.add_instruction(Instruction::ReturnToWorktop { bucket_id })
             .0
     }
 
@@ -197,8 +197,8 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         then(builder, proof_id.unwrap())
     }
 
-    pub fn add_to_auth_zone(&mut self, proof_id: ProofId) -> &mut Self {
-        self.add_instruction(Instruction::AddToAuthZone { proof_id });
+    pub fn move_to_auth_zone(&mut self, proof_id: ProofId) -> &mut Self {
+        self.add_instruction(Instruction::MoveToAuthZone { proof_id });
         self
     }
 
@@ -538,7 +538,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     ) -> &mut Self {
         self.take_from_worktop(minter_resource_def_id, |builder, bucket_id| {
             builder.create_proof_from_bucket(bucket_id, |builder, proof_id| {
-                builder.add_to_auth_zone(proof_id);
+                builder.move_to_auth_zone(proof_id);
                 builder.add_instruction(Instruction::CallFunction {
                     package_id: SYSTEM_PACKAGE,
                     blueprint_name: "System".to_owned(),
