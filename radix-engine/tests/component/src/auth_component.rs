@@ -9,7 +9,6 @@ blueprint! {
         pub fn create_component(some_non_fungible: NonFungibleAddress) -> ComponentId {
             Self { some_non_fungible }.instantiate_with_auth(component_authorization! {
                 "get_secret" => this!(SborPath::from_str("0").unwrap()),
-                "update_auth" => this!(SborPath::from_str("0").unwrap()),
             })
         }
 
