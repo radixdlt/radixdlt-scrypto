@@ -575,6 +575,24 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         .0
     }
 
+    /// Creates an account with some initial resource.
+    pub fn new_account_with_resource(
+        &mut self,
+        withdraw_auth: &ProofRule,
+        bucket_id: BucketId,
+    ) -> &mut Self {
+        self.add_instruction(Instruction::CallFunction {
+            package_id: ACCOUNT_PACKAGE,
+            blueprint_name: "Account".to_owned(),
+            function: "new_with_resource".to_owned(),
+            args: vec![
+                scrypto_encode(withdraw_auth),
+                scrypto_encode(&scrypto::resource::Bucket(bucket_id)),
+            ],
+        })
+        .0
+    }
+
     /// Withdraws resource from an account.
     pub fn withdraw_from_account(
         &mut self,

@@ -1,4 +1,3 @@
-use scrypto::buffer::scrypto_encode;
 use scrypto::crypto::sha256;
 use scrypto::engine::types::*;
 use scrypto::prelude::NonFungibleAddress;
@@ -85,30 +84,17 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
 
     /// Creates an account with 1,000,000 XRD in balance.
     pub fn new_account(&mut self, withdraw_auth: &ProofRule) -> ComponentId {
-        let account = self
-            .run(
-                TransactionBuilder::new(self)
-                    .new_account(withdraw_auth)
-                    .build(Vec::new())
-                    .unwrap(),
-            )
-            .unwrap()
-            .new_component_ids[0];
-
         self.run(
             TransactionBuilder::new(self)
-                .call_method(
-                    SYSTEM_COMPONENT,
-                    "free_xrd",
-                    vec![scrypto_encode(&Decimal::from(1_000_000))],
-                )
-                .call_method_with_all_resources(account, "deposit_batch")
+                .call_method(SYSTEM_COMPONENT, "free_xrd", vec![])
+                .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
+                    builder.new_account_with_resource(withdraw_auth, bucket_id)
+                })
                 .build(Vec::new())
                 .unwrap(),
         )
-        .unwrap();
-
-        account
+        .unwrap()
+        .new_component_ids[0]
     }
 
     /// Creates a new public key and account associated with it
