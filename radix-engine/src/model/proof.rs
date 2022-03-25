@@ -90,6 +90,8 @@ impl Proof {
         })
     }
 
+    /// Creates a composite proof from proofs. This method will create the max possible
+    /// proof of resources.
     pub fn compose(
         proofs: &[Proof],
         resource_def_id: ResourceDefId,
@@ -111,6 +113,8 @@ impl Proof {
         resource_def_id: ResourceDefId,
         resource_type: ResourceType,
     ) -> Result<Proof, ProofError> {
+        // TODO: support creating proofs of some amount from non-fungibles
+
         // check resource type
         if matches!(resource_type, ResourceType::NonFungible) {
             return Err(ProofError::FungibleOperationNotAllowed);
@@ -251,6 +255,10 @@ impl Proof {
         Proof::new_non_fungible(resource_def_id, false, total_ids.clone(), new_sources)
     }
 
+    /// Makes a clone of this proof.
+    ///
+    /// Note that cloning a proof will update the ref count of the locked
+    /// resources in the source containers.
     pub fn clone(&self) -> Self {
         match self {
             Self::Fungible {

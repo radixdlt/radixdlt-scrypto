@@ -477,7 +477,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         Ok(new_proof_id)
     }
 
-    // Creates a auth zone proof.
+    // Creates a auth zone proof for all of the specified resource.
     pub fn create_auth_zone_proof(
         &mut self,
         resource_def_id: ResourceDefId,
