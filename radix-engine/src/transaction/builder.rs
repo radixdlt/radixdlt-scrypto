@@ -15,95 +15,10 @@ use scrypto::rust::collections::*;
 use scrypto::rust::fmt;
 use scrypto::rust::str::FromStr;
 use scrypto::rust::string::String;
+use scrypto::rust::string::ToString;
 use scrypto::rust::vec;
 use scrypto::rust::vec::Vec;
 use scrypto::types::*;
-
-/// Specify how much resource to be used for creating buckets.
-///
-/// NOTE: this type is being deprecated; it's only used by resim to parse
-/// arguments based on blueprint ABI.
-///
-#[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub enum ResourceSpecifier {
-    Amount(Decimal, ResourceDefId),
-
-    Ids(BTreeSet<NonFungibleId>, ResourceDefId),
-
-    All(ResourceDefId),
-}
-
-/// Represents an error when parsing `Resource` from string.
-#[derive(Debug, Clone, Eq, PartialEq)]
-pub enum ParseResourceSpecifierError {
-    MissingResourceDefId,
-    InvalidAmount,
-    InvalidNonFungibleId,
-    InvalidResourceDefId,
-}
-
-impl fmt::Display for ParseResourceSpecifierError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:?}", self)
-    }
-}
-
-#[cfg(not(feature = "alloc"))]
-impl std::error::Error for ParseResourceSpecifierError {}
-
-impl FromStr for ResourceSpecifier {
-    type Err = ParseResourceSpecifierError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let tokens: Vec<&str> = s.trim().split(',').collect();
-
-        if tokens.len() >= 2 {
-            let resource_def_id = tokens
-                .last()
-                .unwrap()
-                .parse::<ResourceDefId>()
-                .map_err(|_| ParseResourceSpecifierError::InvalidResourceDefId)?;
-            if tokens[0].starts_with('#') {
-                let mut ids = BTreeSet::<NonFungibleId>::new();
-                for key in &tokens[..tokens.len() - 1] {
-                    if key.starts_with('#') {
-                        ids.insert(
-                            key[1..]
-                                .parse()
-                                .map_err(|_| ParseResourceSpecifierError::InvalidNonFungibleId)?,
-                        );
-                    } else {
-                        return Err(ParseResourceSpecifierError::InvalidNonFungibleId);
-                    }
-                }
-                Ok(ResourceSpecifier::Ids(ids, resource_def_id))
-            } else {
-                if tokens.len() == 2 {
-                    Ok(ResourceSpecifier::Amount(
-                        tokens[0]
-                            .parse()
-                            .map_err(|_| ParseResourceSpecifierError::InvalidAmount)?,
-                        resource_def_id,
-                    ))
-                } else {
-                    Err(ParseResourceSpecifierError::InvalidAmount)
-                }
-            }
-        } else {
-            Err(ParseResourceSpecifierError::MissingResourceDefId)
-        }
-    }
-}
-
-impl ResourceSpecifier {
-    pub fn resource_def_id(&self) -> ResourceDefId {
-        match self {
-            Self::Amount(_, resource_def_id)
-            | Self::Ids(_, resource_def_id)
-            | Self::All(resource_def_id) => *resource_def_id,
-        }
-    }
-}
 
 /// Utility for building transaction.
 pub struct TransactionBuilder<'a, A: AbiProvider> {
@@ -885,16 +800,9 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                 Ok(scrypto_encode(&value))
             }
             CustomType::Bucket => {
-                let resource_specifier = parse_resource_specifier(i, ty, arg)?;
+                let resource_specifier = parse_resource_specifier(arg)
+                    .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
                 let bucket_id = match resource_specifier {
-                    ResourceSpecifier::All(resource_def_id) => {
-                        if let Some(account) = account {
-                            self.withdraw_from_account(resource_def_id, account);
-                        }
-                        self.add_instruction(Instruction::TakeFromWorktop { resource_def_id })
-                            .1
-                            .unwrap()
-                    }
                     ResourceSpecifier::Amount(amount, resource_def_id) => {
                         if let Some(account) = account {
                             self.withdraw_from_account_by_amount(amount, resource_def_id, account);
@@ -921,18 +829,9 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                 Ok(scrypto_encode(&scrypto::resource::Bucket(bucket_id)))
             }
             CustomType::Proof => {
-                let resource_specifier = parse_resource_specifier(i, ty, arg)?;
+                let resource_specifier = parse_resource_specifier(arg)
+                    .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
                 let proof_id = match resource_specifier {
-                    ResourceSpecifier::All(resource_def_id) => {
-                        if let Some(account) = account {
-                            self.create_proof_from_account(resource_def_id, account);
-                            self.add_instruction(Instruction::TakeFromAuthZone)
-                                .2
-                                .unwrap()
-                        } else {
-                            todo!("Take from worktop and create proof")
-                        }
-                    }
                     ResourceSpecifier::Amount(amount, resource_def_id) => {
                         if let Some(account) = account {
                             self.create_proof_from_account_by_amount(
@@ -965,11 +864,51 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     }
 }
 
-fn parse_resource_specifier(
-    i: usize,
-    ty: &Type,
-    arg: &str,
-) -> Result<ResourceSpecifier, BuildArgsError> {
-    ResourceSpecifier::from_str(arg)
-        .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))
+enum ResourceSpecifier {
+    Amount(Decimal, ResourceDefId),
+    Ids(BTreeSet<NonFungibleId>, ResourceDefId),
+}
+
+enum ParseResourceSpecifierError {
+    IncompleteResourceSpecifier,
+    InvalidResourceDefId(String),
+    InvalidAmount(String),
+    InvalidNonFungibleId(String),
+    MoreThanOneAmountSpecified,
+}
+
+fn parse_resource_specifier(input: &str) -> Result<ResourceSpecifier, ParseResourceSpecifierError> {
+    let tokens: Vec<&str> = input.trim().split(',').map(|s| s.trim()).collect();
+
+    // check length
+    if tokens.len() < 2 {
+        return Err(ParseResourceSpecifierError::IncompleteResourceSpecifier);
+    }
+
+    // parse resource definition id
+    let token = tokens[tokens.len() - 1];
+    let resource_def_id = token
+        .parse::<ResourceDefId>()
+        .map_err(|_| ParseResourceSpecifierError::InvalidResourceDefId(token.to_owned()))?;
+
+    // parse non-fungible ids or amount
+    if tokens[0].starts_with('#') {
+        let mut ids = BTreeSet::<NonFungibleId>::new();
+        for id in &tokens[..tokens.len() - 1] {
+            ids.insert(
+                id[1..].parse().map_err(|_| {
+                    ParseResourceSpecifierError::InvalidNonFungibleId(id.to_string())
+                })?,
+            );
+        }
+        Ok(ResourceSpecifier::Ids(ids, resource_def_id))
+    } else {
+        if tokens.len() != 2 {
+            return Err(ParseResourceSpecifierError::MoreThanOneAmountSpecified);
+        }
+        let amount: Decimal = tokens[0]
+            .parse()
+            .map_err(|_| ParseResourceSpecifierError::InvalidAmount(tokens[0].to_owned()))?;
+        Ok(ResourceSpecifier::Amount(amount, resource_def_id))
+    }
 }
