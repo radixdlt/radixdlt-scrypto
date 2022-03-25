@@ -1,5 +1,5 @@
 use crate::model::method_authorization::{
-    HardProofRule, HardProofRuleResource, HardProofRuleResourceList,
+    HardProofRule, HardResourceOrNonFungible, HardProofRuleResourceList,
 };
 use crate::model::{MethodAuthorization, ValidatedData};
 use sbor::any::Value;
@@ -87,7 +87,7 @@ impl Component {
     fn soft_to_hard_resource(
         soft_resource: &SoftResource,
         dom: &Value,
-    ) -> HardProofRuleResource {
+    ) -> HardResourceOrNonFungible {
         match soft_resource {
             SoftResource::Dynamic(path) => match path.rel_path().get_from(dom) {
                 Some(Value::Custom(type_id, bytes)) => {
@@ -95,13 +95,13 @@ impl Component {
                         CustomType::ResourceDefId => {
                             ResourceDefId::try_from(bytes.as_slice()).unwrap().into()
                         }
-                        _ => HardProofRuleResource::SoftResourceNotFound,
+                        _ => HardResourceOrNonFungible::SoftResourceNotFound,
                     }
                 }
-                _ => HardProofRuleResource::SoftResourceNotFound,
+                _ => HardResourceOrNonFungible::SoftResourceNotFound,
             },
             SoftResource::Static(resource_def_id) => {
-                HardProofRuleResource::Resource(resource_def_id.clone())
+                HardResourceOrNonFungible::Resource(resource_def_id.clone())
             }
         }
     }
@@ -109,7 +109,7 @@ impl Component {
     fn soft_to_hard_resource_or_non_fungible(
         proof_rule_resource: &SoftResourceOrNonFungible,
         dom: &Value,
-    ) -> HardProofRuleResource {
+    ) -> HardResourceOrNonFungible {
         match proof_rule_resource {
             SoftResourceOrNonFungible::Dynamic(path) => match path.rel_path().get_from(dom) {
                 Some(Value::Custom(type_id, bytes)) => {
@@ -122,16 +122,16 @@ impl Component {
                                 .unwrap()
                                 .into()
                         }
-                        _ => HardProofRuleResource::SoftResourceNotFound,
+                        _ => HardResourceOrNonFungible::SoftResourceNotFound,
                     }
                 }
-                _ => HardProofRuleResource::SoftResourceNotFound,
+                _ => HardResourceOrNonFungible::SoftResourceNotFound,
             },
             SoftResourceOrNonFungible::StaticNonFungible(non_fungible_address) => {
-                HardProofRuleResource::NonFungible(non_fungible_address.clone())
+                HardResourceOrNonFungible::NonFungible(non_fungible_address.clone())
             }
             SoftResourceOrNonFungible::StaticResource(resource_def_id) => {
-                HardProofRuleResource::Resource(resource_def_id.clone())
+                HardResourceOrNonFungible::Resource(resource_def_id.clone())
             }
         }
     }
