@@ -13,6 +13,8 @@ pub mod decode;
 pub mod describe;
 /// SBOR encoding.
 pub mod encode;
+/// SBOR paths.
+pub mod path;
 /// A facade of Rust types.
 pub mod rust;
 /// SBOR type ids.

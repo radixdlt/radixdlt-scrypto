@@ -4,9 +4,8 @@ pub mod test_runner;
 use crate::test_runner::TestRunner;
 use radix_engine::errors::RuntimeError;
 use radix_engine::ledger::{InMemorySubstateStore, SubstateStore};
-use radix_engine::model::{Component, MethodAuthorization};
+use radix_engine::model::{Component, HardProofRule, MethodAuthorization};
 use radix_engine::transaction::*;
-use scrypto::{any_of, component_authorization};
 use scrypto::prelude::*;
 
 #[test]
@@ -19,7 +18,7 @@ fn cannot_make_cross_component_call_without_authorization() {
     let auth_id = NonFungibleId::from(1);
     let auth_address = NonFungibleAddress::new(auth, auth_id);
     let method_authorization = component_authorization! {
-        "get_component_state" => any_of!(auth_address.clone())
+        "get_component_state" => this!(auth_address.clone())
     };
 
     let package_id = test_runner.publish_package("component");
@@ -66,8 +65,8 @@ fn cannot_make_cross_component_call_without_authorization() {
         .map(|(c, _)| c)
         .unwrap();
     assert_eq!(
-        component_state.get_auth("get_component_state"),
-        &MethodAuthorization::Protected(ProofRule::NonFungible(auth_address))
+        component_state.initialize_method("get_component_state").1,
+        MethodAuthorization::Protected(HardProofRule::This(auth_address.into()))
     );
 }
 
@@ -81,7 +80,7 @@ fn can_make_cross_component_call_with_authorization() {
     let auth_id = NonFungibleId::from(1);
     let auth_address = NonFungibleAddress::new(auth, auth_id.clone());
     let method_authorization = component_authorization! {
-        "get_component_state" => any_of!(auth_address.clone())
+        "get_component_state" => this!(auth_address.clone())
     };
 
     let package_id = test_runner.publish_package("component");
@@ -137,7 +136,7 @@ fn can_make_cross_component_call_with_authorization() {
         .map(|(c, _)| c)
         .unwrap();
     assert_eq!(
-        component_state.get_auth("get_component_state"),
-        &MethodAuthorization::Protected(ProofRule::NonFungible(auth_address))
+        component_state.initialize_method("get_component_state").1,
+        MethodAuthorization::Protected(HardProofRule::This(auth_address.into()))
     );
 }

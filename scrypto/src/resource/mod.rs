@@ -1,6 +1,6 @@
 mod auth_zone;
-mod bucket;
 mod authorization;
+mod bucket;
 mod mint_params;
 mod non_fungible;
 mod non_fungible_address;
@@ -20,15 +20,15 @@ pub mod resource_flags;
 pub mod resource_permissions;
 
 pub use auth_zone::AuthZone;
-pub use bucket::{Bucket, ParseBucketError};
 pub use authorization::ComponentAuthorization;
+pub use bucket::{Bucket, ParseBucketError};
 pub use mint_params::MintParams;
 pub use non_fungible::NonFungible;
 pub use non_fungible_address::{NonFungibleAddress, ParseNonFungibleAddressError};
 pub use non_fungible_data::NonFungibleData;
 pub use non_fungible_id::{NonFungibleId, ParseNonFungibleIdError};
 pub use proof::{ParseProofError, Proof};
-pub use proof_rule::ProofRule;
+pub use proof_rule::{ProofRule, ProofRuleResource, ProofRuleResourceList, SborPath};
 pub use resource_builder::{ResourceBuilder, DIVISIBILITY_MAXIMUM, DIVISIBILITY_NONE};
 pub use resource_def::{ParseResourceDefIdError, ResourceDef, ResourceDefId};
 pub use resource_flags::*;
