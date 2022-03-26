@@ -2,25 +2,22 @@ use crate::any::Fields;
 use crate::any::Value;
 use crate::rust::vec::Vec;
 
-pub struct SborFullPath(Vec<usize>);
+pub struct SborPath(Vec<usize>);
 
-impl SborFullPath {
+impl SborPath {
     pub fn new(path: Vec<usize>) -> Self {
-        SborFullPath(path)
+        SborPath(path)
     }
 
-    pub fn to_rel_path(&self) -> SborRelPath {
-        SborRelPath(&self.0)
+    pub fn get_from_value<'a>(&'a self, value: &'a Value) -> Option<&'a Value> {
+        let rel_path = SborRelPath(&self.0);
+        rel_path.get_from(value)
     }
 }
 
-pub struct SborRelPath<'a>(&'a [usize]);
+struct SborRelPath<'a>(&'a [usize]);
 
 impl<'a> SborRelPath<'a> {
-    pub fn new(path: &'a [usize]) -> Self {
-        SborRelPath(path)
-    }
-
     fn is_empty(&self) -> bool {
         self.0.is_empty()
     }
@@ -45,7 +42,7 @@ impl<'a> SborRelPath<'a> {
         }
     }
 
-    pub fn get_from(self, value: &'a Value) -> Option<&'a Value> {
+    fn get_from(self, value: &'a Value) -> Option<&'a Value> {
         if self.is_empty() {
             return Option::Some(value);
         }

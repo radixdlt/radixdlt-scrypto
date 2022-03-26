@@ -50,13 +50,13 @@ impl Component {
                 }
                 HardProofRuleResourceList::List(hard_resources)
             }
-            SoftResourceOrNonFungibleList::Dynamic(path) => {
-                let rel_path = path.to_sbor_path(schema);
-                if let None = rel_path {
+            SoftResourceOrNonFungibleList::Dynamic(schema_path) => {
+                let sbor_path = schema_path.to_sbor_path(schema);
+                if let None = sbor_path {
                     return HardProofRuleResourceList::SoftResourceListNotFound;
                 }
 
-                match rel_path.unwrap().to_rel_path().get_from(dom) {
+                match sbor_path.unwrap().get_from_value(dom) {
                     Some(Value::Vec(type_id, values)) => {
                         match CustomType::from_id(*type_id).unwrap() {
                             CustomType::ResourceDefId => HardProofRuleResourceList::List(
@@ -100,12 +100,12 @@ impl Component {
         dom: &Value,
     ) -> HardResourceOrNonFungible {
         match soft_resource {
-            SoftResource::Dynamic(path) => {
-                let rel_path = path.to_sbor_path(schema);
-                if let None = rel_path {
+            SoftResource::Dynamic(schema_path) => {
+                let sbor_path = schema_path.to_sbor_path(schema);
+                if let None = sbor_path {
                     return HardResourceOrNonFungible::SoftResourceNotFound;
                 }
-                match rel_path.unwrap().to_rel_path().get_from(dom) {
+                match sbor_path.unwrap().get_from_value(dom) {
                     Some(Value::Custom(type_id, bytes)) => {
                         match CustomType::from_id(*type_id).unwrap() {
                             CustomType::ResourceDefId => {
@@ -129,12 +129,12 @@ impl Component {
         dom: &Value,
     ) -> HardResourceOrNonFungible {
         match proof_rule_resource {
-            SoftResourceOrNonFungible::Dynamic(path) => {
-                let rel_path = path.to_sbor_path(schema);
-                if let None = rel_path {
+            SoftResourceOrNonFungible::Dynamic(schema_path) => {
+                let sbor_path = schema_path.to_sbor_path(schema);
+                if let None = sbor_path {
                     return HardResourceOrNonFungible::SoftResourceNotFound;
                 }
-                match rel_path.unwrap().to_rel_path().get_from(dom) {
+                match sbor_path.unwrap().get_from_value(dom) {
                     Some(Value::Custom(type_id, bytes)) => {
                         match CustomType::from_id(*type_id).unwrap() {
                             CustomType::ResourceDefId => {

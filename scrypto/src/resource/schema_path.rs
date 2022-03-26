@@ -3,7 +3,7 @@ use crate::rust::string::ToString;
 use crate::rust::vec;
 use crate::rust::vec::Vec;
 use sbor::describe::Fields;
-use sbor::path::SborFullPath;
+use sbor::path::SborPath;
 use sbor::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Describe, TypeId, Encode, Decode)]
@@ -30,7 +30,7 @@ impl SchemaPath {
         self
     }
 
-    pub fn to_sbor_path(&self, schema: &Type) -> Option<SborFullPath> {
+    pub fn to_sbor_path(&self, schema: &Type) -> Option<SborPath> {
         let length = self.0.len();
         let mut cur_type = schema;
         let mut sbor_path: Vec<usize> = vec![];
@@ -72,6 +72,6 @@ impl SchemaPath {
             }
         }
 
-        Option::Some(SborFullPath::new(sbor_path))
+        Option::Some(SborPath::new(sbor_path))
     }
 }
