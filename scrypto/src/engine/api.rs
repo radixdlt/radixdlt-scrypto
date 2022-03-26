@@ -185,7 +185,6 @@ pub struct CallMethodOutput {
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct CreateComponentInput {
-    pub package_id: PackageId,
     pub blueprint_name: String,
     pub state: Vec<u8>,
     pub authorization: ComponentAuthorization,

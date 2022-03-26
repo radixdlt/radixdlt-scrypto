@@ -7,11 +7,12 @@ use sbor::path::SborPath;
 use sbor::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Describe, TypeId, Encode, Decode)]
-pub enum SchemaSubPath {
+enum SchemaSubPath {
     Index(usize),
     Field(String),
 }
 
+/// Describes a value located in some sbor given a schema for that sbor
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Describe, TypeId, Encode, Decode)]
 pub struct SchemaPath(Vec<SchemaSubPath>);
 

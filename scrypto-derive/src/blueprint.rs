@@ -59,14 +59,12 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                 }
                 fn instantiate(self) -> ::scrypto::component::ComponentId {
                     ::scrypto::component::component_system().instantiate_component(
-                        ::scrypto::core::Process::package_id(),
                         ::scrypto::resource::ComponentAuthorization::new(),
                         self
                     )
                 }
                 fn instantiate_with_auth(self, authorization: ::scrypto::resource::ComponentAuthorization) -> ::scrypto::component::ComponentId {
                     ::scrypto::component::component_system().instantiate_component(
-                        ::scrypto::core::Process::package_id(),
                         authorization,
                         self
                     )
@@ -559,14 +557,12 @@ mod tests {
                         }
                         fn instantiate(self) -> ::scrypto::component::ComponentId {
                             ::scrypto::component::component_system().instantiate_component(
-                                ::scrypto::core::Process::package_id(),
                                 ::scrypto::resource::ComponentAuthorization::new(),
                                 self
                             )
                         }
                         fn instantiate_with_auth(self, authorization: ::scrypto::resource::ComponentAuthorization) -> ::scrypto::component::ComponentId {
                             ::scrypto::component::component_system().instantiate_component(
-                                ::scrypto::core::Process::package_id(),
                                 authorization,
                                 self
                             )
