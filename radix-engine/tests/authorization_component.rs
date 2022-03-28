@@ -5,9 +5,7 @@ use crate::test_runner::TestRunner;
 use radix_engine::errors::RuntimeError;
 use radix_engine::ledger::{InMemorySubstateStore, SubstateStore};
 use radix_engine::model::{Component, HardProofRule, MethodAuthorization};
-use radix_engine::transaction::*;
 use scrypto::prelude::*;
-use scrypto::{any_of, component_authorization};
 
 #[test]
 fn cannot_make_cross_component_call_without_authorization() {

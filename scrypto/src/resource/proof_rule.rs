@@ -1,5 +1,5 @@
-use crate::rust::str::FromStr;
 use crate::resource::*;
+use crate::rust::str::FromStr;
 use crate::rust::vec;
 use crate::rust::vec::Vec;
 use sbor::path::SborRelPath;
@@ -17,19 +17,17 @@ impl SborPath {
 
 #[derive(Debug)]
 pub enum ParseSborPathError {
-    InvalidPath
+    InvalidPath,
 }
 
 impl FromStr for SborPath {
     type Err = ParseSborPathError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let path: Result<Vec<usize>, _> = s
-            .split('/')
-            .map(|s| s.parse::<usize>())
-            .collect();
+        let path: Result<Vec<usize>, _> = s.split('/').map(|s| s.parse::<usize>()).collect();
 
-        path.map(|p| SborPath(p)).map_err(|_| ParseSborPathError::InvalidPath)
+        path.map(|p| SborPath(p))
+            .map_err(|_| ParseSborPathError::InvalidPath)
     }
 }
 
