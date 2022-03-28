@@ -76,7 +76,13 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
             Instruction::ClearAuthZone => {}
             Instruction::CreateProofFromAuthZone { .. }
             | Instruction::CreateProofFromAuthZoneByAmount { .. }
-            | Instruction::CreateProofFromAuthZoneByIds { .. } => {}
+            | Instruction::CreateProofFromAuthZoneByIds { .. } => {
+                new_proof_id = Some(
+                    self.id_validator
+                        .new_proof(ProofKind::AuthZoneProof)
+                        .unwrap(),
+                );
+            }
             Instruction::CreateProofFromBucket { bucket_id } => {
                 new_proof_id = Some(
                     self.id_validator
