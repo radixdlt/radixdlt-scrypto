@@ -3,6 +3,7 @@ use scrypto::rust::cell::RefCell;
 use scrypto::rust::collections::BTreeSet;
 use scrypto::rust::collections::HashMap;
 use scrypto::rust::rc::Rc;
+use scrypto::rust::string::ToString;
 use scrypto::rust::vec::Vec;
 
 use crate::model::{
@@ -146,7 +147,58 @@ impl Proof {
         resource_def_id: ResourceDefId,
         resource_type: ResourceType,
     ) -> Result<Proof, ProofError> {
-        todo!("Re-implement")
+        let (total_locked, mut per_container) =
+            Self::compute_total_locked(proofs, resource_def_id, resource_type);
+
+        match total_locked {
+            LockedAmountOrIds::Amount(locked_amount) => {
+                if amount > locked_amount {
+                    return Err(ProofError::InsufficientBaseProofs);
+                }
+
+                // Locked the max (or needed) amount from the containers, in the order that the containers were referenced.
+                // TODO: observe the performance/feedback of this container selection algorithm and decide next steps
+                let mut evidence = HashMap::new();
+                let mut remaining = amount.clone();
+                'outer: for proof in proofs {
+                    for (container_id, (container, _)) in &proof.evidence {
+                        if remaining.is_zero() {
+                            break 'outer;
+                        }
+
+                        if let Some(quota) = per_container.remove(container_id) {
+                            let amount = Decimal::min(remaining, quota.amount());
+                            container
+                                .borrow_mut()
+                                .lock_by_amount(amount)
+                                .map_err(ProofError::ResourceContainerError)?;
+                            remaining -= amount;
+                            evidence.insert(
+                                container_id.clone(),
+                                (container.clone(), LockedAmountOrIds::Amount(amount)),
+                            );
+                        }
+                    }
+                }
+
+                Proof::new(
+                    resource_def_id,
+                    resource_type,
+                    false,
+                    LockedAmountOrIds::Amount(amount),
+                    evidence,
+                )
+            }
+            LockedAmountOrIds::Ids(locked_ids) => {
+                if amount > locked_ids.len().into() {
+                    Err(ProofError::InsufficientBaseProofs)
+                } else {
+                    let n: usize = amount.to_string().parse().unwrap();
+                    let ids: BTreeSet<NonFungibleId> = locked_ids.iter().cloned().take(n).collect();
+                    Self::compose_by_ids(proofs, &ids, resource_def_id, resource_type)
+                }
+            }
+        }
     }
 
     pub fn compose_by_ids(
@@ -155,7 +207,55 @@ impl Proof {
         resource_def_id: ResourceDefId,
         resource_type: ResourceType,
     ) -> Result<Proof, ProofError> {
-        todo!("Re-implement")
+        let (total_locked, mut per_container) =
+            Self::compute_total_locked(proofs, resource_def_id, resource_type);
+
+        match total_locked {
+            LockedAmountOrIds::Amount(_) => Err(ProofError::NonFungibleOperationNotAllowed),
+            LockedAmountOrIds::Ids(locked_ids) => {
+                if !locked_ids.is_superset(ids) {
+                    return Err(ProofError::InsufficientBaseProofs);
+                }
+
+                // Locked the max (or needed) ids from the containers, in the order that the containers were referenced.
+                // TODO: observe the performance/feedback of this container selection algorithm and decide next steps
+                let mut evidence = HashMap::new();
+                let mut remaining = ids.clone();
+                'outer: for proof in proofs {
+                    for (container_id, (container, _)) in &proof.evidence {
+                        if remaining.is_empty() {
+                            break 'outer;
+                        }
+
+                        if let Some(quota) = per_container.remove(container_id) {
+                            let ids = remaining
+                                .intersection(&quota.ids().unwrap())
+                                .cloned()
+                                .collect();
+                            container
+                                .borrow_mut()
+                                .lock_by_ids(&ids)
+                                .map_err(ProofError::ResourceContainerError)?;
+                            for id in &ids {
+                                remaining.remove(id);
+                            }
+                            evidence.insert(
+                                container_id.clone(),
+                                (container.clone(), LockedAmountOrIds::Ids(ids)),
+                            );
+                        }
+                    }
+                }
+
+                Proof::new(
+                    resource_def_id,
+                    resource_type,
+                    false,
+                    LockedAmountOrIds::Ids(ids.clone()),
+                    evidence,
+                )
+            }
+        }
     }
 
     /// Makes a clone of this proof.
@@ -163,8 +263,8 @@ impl Proof {
     /// Note that cloning a proof will update the ref count of the locked
     /// resources in the source containers.
     pub fn clone(&self) -> Self {
-        for (_, (container, evidence)) in &self.evidence {
-            match evidence {
+        for (_, (container, locked_amount_or_ids)) in &self.evidence {
+            match locked_amount_or_ids {
                 LockedAmountOrIds::Amount(amount) => {
                     container
                         .borrow_mut()
@@ -189,8 +289,8 @@ impl Proof {
     }
 
     pub fn drop(self) {
-        for (_, (container, evidence)) in self.evidence {
-            container.borrow_mut().unlock(evidence);
+        for (_, (container, locked_amount_or_ids)) in self.evidence {
+            container.borrow_mut().unlock(locked_amount_or_ids);
         }
     }
 
