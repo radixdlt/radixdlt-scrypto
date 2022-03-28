@@ -1,11 +1,13 @@
+use crate::model::method_authorization::{HardProofRule, HardProofRuleResourceList};
 use sbor::*;
 use scrypto::engine::types::*;
-use scrypto::prelude::{ProofRule, ToString};
+use scrypto::prelude::ToString;
 use scrypto::resource::resource_flags::*;
 use scrypto::resource::resource_permissions::*;
 use scrypto::rust::collections::HashMap;
 use scrypto::rust::mem;
 use scrypto::rust::string::String;
+use scrypto::rust::vec;
 
 use crate::model::resource_def::FlagCondition::{AlwaysTrue, IsNotSet, IsSet};
 use crate::model::MethodAuthorization;
@@ -159,11 +161,19 @@ impl ResourceDef {
                         let method_state = method_states.get_mut(*method).unwrap();
                         let cur_rule =
                             mem::replace(&mut method_state.auth, MethodAuthorization::Public);
-                        let new_rule = ProofRule::AnyOfResource(resource_def_id);
                         method_state.auth = match cur_rule {
-                            MethodAuthorization::Public => MethodAuthorization::Protected(new_rule),
-                            MethodAuthorization::Protected(rule) => {
-                                MethodAuthorization::Protected(rule.or(new_rule))
+                            MethodAuthorization::Public => {
+                                MethodAuthorization::Protected(HardProofRule::AnyOf(
+                                    HardProofRuleResourceList::List(vec![resource_def_id.into()]),
+                                ))
+                            }
+                            MethodAuthorization::Protected(HardProofRule::AnyOf(
+                                HardProofRuleResourceList::List(mut resources),
+                            )) => {
+                                resources.push(resource_def_id.into());
+                                MethodAuthorization::Protected(HardProofRule::AnyOf(
+                                    HardProofRuleResourceList::List(resources),
+                                ))
                             }
                             _ => panic!("Should never get here."),
                         };

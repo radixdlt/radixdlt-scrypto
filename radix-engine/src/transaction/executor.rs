@@ -5,7 +5,7 @@ use scrypto::resource::ProofRule;
 use scrypto::rust::string::ToString;
 use scrypto::rust::vec;
 use scrypto::rust::vec::Vec;
-use scrypto::{abi, any_of};
+use scrypto::{abi, this};
 
 use crate::engine::*;
 use crate::errors::*;
@@ -102,7 +102,7 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
         let key = self.new_public_key();
         let id = NonFungibleId::new(key.to_vec());
         let auth_address = NonFungibleAddress::new(ECDSA_TOKEN, id);
-        let withdraw_auth = any_of!(auth_address);
+        let withdraw_auth = this!(auth_address);
         let account = self.new_account(&withdraw_auth);
         (key, account)
     }
