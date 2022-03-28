@@ -24,7 +24,9 @@ impl Bucket {
     }
 
     pub fn take(&mut self, amount: Decimal) -> Result<Bucket, ResourceContainerError> {
-        Ok(Bucket::new(self.borrow_container_mut().take(amount)?))
+        Ok(Bucket::new(
+            self.borrow_container_mut().take_by_amount(amount)?,
+        ))
     }
 
     pub fn take_non_fungible(
@@ -38,9 +40,7 @@ impl Bucket {
         &mut self,
         ids: &BTreeSet<NonFungibleId>,
     ) -> Result<Bucket, ResourceContainerError> {
-        Ok(Bucket::new(
-            self.borrow_container_mut().take_non_fungibles(ids)?,
-        ))
+        Ok(Bucket::new(self.borrow_container_mut().take_by_ids(ids)?))
     }
 
     pub fn create_proof(&mut self, proof_source_id: ProofSourceId) -> Result<Proof, ProofError> {
@@ -61,7 +61,7 @@ impl Bucket {
     ) -> Result<Proof, ProofError> {
         // lock the specified amount
         self.borrow_container_mut()
-            .lock_amount(amount)
+            .lock_by_amount(amount)
             .map_err(ProofError::ResourceContainerError)?;
 
         // produce proof
@@ -77,7 +77,7 @@ impl Bucket {
     ) -> Result<Proof, ProofError> {
         // lock the specified id set
         self.borrow_container_mut()
-            .lock_ids(ids)
+            .lock_by_ids(ids)
             .map_err(ProofError::ResourceContainerError)?;
 
         // produce proof
