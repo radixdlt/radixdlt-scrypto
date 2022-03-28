@@ -5,7 +5,9 @@ use scrypto::rust::collections::HashMap;
 use scrypto::rust::rc::Rc;
 use scrypto::rust::vec::Vec;
 
-use crate::model::{LockedAmountOrIds, ResourceContainer, ResourceContainerError};
+use crate::model::{
+    LockedAmountOrIds, ResourceContainer, ResourceContainerError, ResourceContainerId,
+};
 
 #[derive(Debug)]
 pub struct Proof {
@@ -15,16 +17,10 @@ pub struct Proof {
     resource_type: ResourceType,
     /// Whether movement of this proof is restricted.
     restricted: bool,
-    /// The locked amounts or non-fungible ids of the resource.
-    locked_amount_or_ids:
-        HashMap<ProofSourceId, (Rc<RefCell<ResourceContainer>>, LockedAmountOrIds)>,
-}
-
-#[derive(Debug, Clone, Hash, Eq, PartialEq)]
-pub enum ProofSourceId {
-    Bucket(BucketId),
-    Vault(VaultId),
-    Worktop(u32, ResourceDefId),
+    /// The total locked amount or non-fungible ids.
+    total_locked: LockedAmountOrIds,
+    /// The supporting containers.
+    evidence: HashMap<ResourceContainerId, (Rc<RefCell<ResourceContainer>>, LockedAmountOrIds)>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -46,75 +42,83 @@ impl Proof {
         resource_def_id: ResourceDefId,
         resource_type: ResourceType,
         restricted: bool,
-        locked_amount_or_ids: HashMap<
-            ProofSourceId,
-            (Rc<RefCell<ResourceContainer>>, LockedAmountOrIds),
-        >,
+        total_locked: LockedAmountOrIds,
+        evidence: HashMap<ResourceContainerId, (Rc<RefCell<ResourceContainer>>, LockedAmountOrIds)>,
     ) -> Result<Proof, ProofError> {
-        let proofs = vec![Self {
-            resource_def_id,
-            resource_type,
-            restricted,
-            locked_amount_or_ids,
-        }];
-
-        if Self::compute_max_locked(&proofs, resource_def_id, resource_type).is_empty() {
+        if total_locked.is_empty() {
             return Err(ProofError::EmptyProofNotAllowed);
         }
 
-        Ok(proofs.into_iter().next().unwrap())
+        Ok(Self {
+            resource_def_id,
+            resource_type,
+            restricted,
+            total_locked,
+            evidence,
+        })
     }
 
-    /// Computes the max amount or IDs of locked resource.
-    pub fn compute_max_locked(
+    /// Computes the locked amount or non-fungible IDs, in total and per resource container.
+    pub fn compute_total_locked(
         proofs: &[Proof],
         resource_def_id: ResourceDefId,
         resource_type: ResourceType,
-    ) -> LockedAmountOrIds {
+    ) -> (
+        LockedAmountOrIds,
+        HashMap<ResourceContainerId, LockedAmountOrIds>,
+    ) {
         // filter proofs by resource def id and restricted flag
         let proofs: Vec<&Proof> = proofs
             .iter()
             .filter(|p| p.resource_def_id() == resource_def_id && !p.is_restricted())
             .collect();
 
-        // calculate the max locked amount (or ids) in each container
+        // calculate the max locked amount (or ids) of each container
         match resource_type {
             ResourceType::Fungible { .. } => {
-                let mut max = HashMap::<ProofSourceId, Decimal>::new();
+                let mut max = HashMap::<ResourceContainerId, Decimal>::new();
                 for proof in &proofs {
-                    for (source_id, (_, locked_amount_or_ids)) in &proof.locked_amount_or_ids {
+                    for (container_id, (_, locked_amount_or_ids)) in &proof.evidence {
                         let new_amount = locked_amount_or_ids.amount();
-                        if let Some(existing) = max.get_mut(&source_id) {
+                        if let Some(existing) = max.get_mut(&container_id) {
                             *existing = Decimal::max(*existing, new_amount);
                         } else {
-                            max.insert(source_id.clone(), new_amount);
+                            max.insert(container_id.clone(), new_amount);
                         }
                     }
                 }
-                let max_sum = max
+                let total = max
                     .values()
                     .cloned()
                     .reduce(|a, b| a + b)
                     .unwrap_or_default();
-                LockedAmountOrIds::Amount(max_sum)
+                let per_container = max
+                    .into_iter()
+                    .map(|(k, v)| (k, LockedAmountOrIds::Amount(v)))
+                    .collect();
+                (LockedAmountOrIds::Amount(total), per_container)
             }
             ResourceType::NonFungible => {
-                let mut max = HashMap::<ProofSourceId, BTreeSet<NonFungibleId>>::new();
+                let mut max = HashMap::<ResourceContainerId, BTreeSet<NonFungibleId>>::new();
                 for proof in &proofs {
-                    for (source_id, (_, locked_amount_or_ids)) in &proof.locked_amount_or_ids {
-                        let new_ids = locked_amount_or_ids.ids();
-                        if let Some(ids) = max.get_mut(&source_id) {
+                    for (container_id, (_, locked_amount_or_ids)) in &proof.evidence {
+                        let new_ids = locked_amount_or_ids.ids().unwrap();
+                        if let Some(ids) = max.get_mut(&container_id) {
                             ids.extend(new_ids);
                         } else {
-                            max.insert(source_id.clone(), new_ids);
+                            max.insert(container_id.clone(), new_ids);
                         }
                     }
                 }
-                let mut max_sum = BTreeSet::<NonFungibleId>::new();
-                for (_, value) in max {
-                    max_sum.extend(value);
+                let mut total = BTreeSet::<NonFungibleId>::new();
+                for value in max.values() {
+                    total.extend(value.clone());
                 }
-                LockedAmountOrIds::Ids(max_sum)
+                let per_container = max
+                    .into_iter()
+                    .map(|(k, v)| (k, LockedAmountOrIds::Ids(v)))
+                    .collect();
+                (LockedAmountOrIds::Ids(total), per_container)
             }
         }
     }
@@ -125,8 +129,8 @@ impl Proof {
         resource_def_id: ResourceDefId,
         resource_type: ResourceType,
     ) -> Result<Proof, ProofError> {
-        let max = Self::compute_max_locked(proofs, resource_def_id, resource_type);
-        match max {
+        let (total, _) = Self::compute_total_locked(proofs, resource_def_id, resource_type);
+        match total {
             LockedAmountOrIds::Amount(amount) => {
                 Self::compose_by_amount(proofs, amount, resource_def_id, resource_type)
             }
@@ -159,8 +163,8 @@ impl Proof {
     /// Note that cloning a proof will update the ref count of the locked
     /// resources in the source containers.
     pub fn clone(&self) -> Self {
-        for (_, (container, locked_amount_or_ids)) in &self.locked_amount_or_ids {
-            match locked_amount_or_ids {
+        for (_, (container, evidence)) in &self.evidence {
+            match evidence {
                 LockedAmountOrIds::Amount(amount) => {
                     container
                         .borrow_mut()
@@ -179,13 +183,14 @@ impl Proof {
             resource_def_id: self.resource_def_id.clone(),
             resource_type: self.resource_type.clone(),
             restricted: self.restricted,
-            locked_amount_or_ids: self.locked_amount_or_ids.clone(),
+            total_locked: self.total_locked.clone(),
+            evidence: self.evidence.clone(),
         }
     }
 
     pub fn drop(self) {
-        for (_, (container, locked_amount_or_ids)) in self.locked_amount_or_ids {
-            container.borrow_mut().unlock(locked_amount_or_ids);
+        for (_, (container, evidence)) in self.evidence {
+            container.borrow_mut().unlock(evidence);
         }
     }
 
@@ -198,11 +203,13 @@ impl Proof {
     }
 
     pub fn total_amount(&self) -> Decimal {
-        todo!()
+        self.total_locked.amount()
     }
 
     pub fn total_ids(&self) -> Result<BTreeSet<NonFungibleId>, ProofError> {
-        todo!()
+        self.total_locked
+            .ids()
+            .map_err(|_| ProofError::NonFungibleOperationNotAllowed)
     }
 
     pub fn is_restricted(&self) -> bool {

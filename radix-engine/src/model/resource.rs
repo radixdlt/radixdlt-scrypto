@@ -53,6 +53,13 @@ pub enum LockedAmountOrIds {
     Ids(BTreeSet<NonFungibleId>),
 }
 
+#[derive(Debug, Clone, Hash, Eq, PartialEq)]
+pub enum ResourceContainerId {
+    Bucket(BucketId),
+    Vault(VaultId),
+    Worktop(u32, ResourceDefId),
+}
+
 impl LockedAmountOrIds {
     pub fn is_empty(&self) -> bool {
         self.amount().is_zero()
@@ -65,10 +72,10 @@ impl LockedAmountOrIds {
         }
     }
 
-    pub fn ids(&self) -> BTreeSet<NonFungibleId> {
+    pub fn ids(&self) -> Result<BTreeSet<NonFungibleId>, ()> {
         match self {
-            Self::Amount(_) => panic!("Attempted to read non-fungible IDs from amount"),
-            Self::Ids(ids) => ids.clone(),
+            Self::Amount(_) => Err(()),
+            Self::Ids(ids) => Ok(ids.clone()),
         }
     }
 }
