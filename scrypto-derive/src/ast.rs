@@ -1,7 +1,5 @@
 use syn::parse::{Parse, ParseStream};
-use syn::punctuated::Punctuated;
-use syn::token::Comma;
-use syn::{ItemImpl, ItemStruct, Path, Result};
+use syn::{ItemImpl, ItemStruct, Result};
 
 /// Represents the AST of blueprint.
 pub struct Blueprint {
@@ -14,19 +12,6 @@ impl Parse for Blueprint {
         Ok(Self {
             structure: input.parse()?,
             implementation: input.parse()?,
-        })
-    }
-}
-
-/// Represents the AST of allowed badges for authorization.
-pub struct Auth {
-    pub allowed: Punctuated<Path, Comma>,
-}
-
-impl Parse for Auth {
-    fn parse(input: ParseStream) -> Result<Self> {
-        Ok(Self {
-            allowed: Punctuated::parse_terminated(input)?,
         })
     }
 }
