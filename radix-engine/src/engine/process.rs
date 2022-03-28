@@ -535,13 +535,9 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let resource_type = resource_def.resource_type();
 
         let new_proof_id = self.new_proof_id()?;
-        let new_proof = Proof::compose_by_amount(
-            &self.auth_zone,
-            Some(amount),
-            resource_def_id,
-            resource_type,
-        )
-        .map_err(RuntimeError::ProofError)?;
+        let new_proof =
+            Proof::compose_by_amount(&self.auth_zone, amount, resource_def_id, resource_type)
+                .map_err(RuntimeError::ProofError)?;
         self.proofs.insert(new_proof_id, new_proof);
 
         Ok(new_proof_id)
@@ -561,9 +557,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let resource_type = resource_def.resource_type();
 
         let new_proof_id = self.new_proof_id()?;
-        let new_proof =
-            Proof::compose_by_ids(&self.auth_zone, Some(ids), resource_def_id, resource_type)
-                .map_err(RuntimeError::ProofError)?;
+        let new_proof = Proof::compose_by_ids(&self.auth_zone, ids, resource_def_id, resource_type)
+            .map_err(RuntimeError::ProofError)?;
         self.proofs.insert(new_proof_id, new_proof);
 
         Ok(new_proof_id)

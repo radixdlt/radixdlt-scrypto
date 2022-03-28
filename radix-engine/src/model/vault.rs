@@ -62,14 +62,18 @@ impl Vault {
         proof_source_id: ProofSourceId,
     ) -> Result<Proof, ProofError> {
         // lock the specified amount
-        self.borrow_container_mut()
+        let locked_amount_or_ids = self
+            .borrow_container_mut()
             .lock_by_amount(amount)
             .map_err(ProofError::ResourceContainerError)?;
 
         // produce proof
-        let mut sources = HashMap::new();
-        sources.insert(proof_source_id, (self.container.clone(), amount.clone()));
-        Proof::new_fungible(self.resource_def_id(), false, amount.clone(), sources)
+        let mut map = HashMap::new();
+        map.insert(
+            proof_source_id,
+            (self.container.clone(), locked_amount_or_ids),
+        );
+        Proof::new(self.resource_def_id(), self.resource_type(), false, map)
     }
 
     pub fn create_proof_by_ids(
@@ -78,14 +82,18 @@ impl Vault {
         proof_source_id: ProofSourceId,
     ) -> Result<Proof, ProofError> {
         // lock the specified id set
-        self.borrow_container_mut()
+        let locked_amount_or_ids = self
+            .borrow_container_mut()
             .lock_by_ids(ids)
             .map_err(ProofError::ResourceContainerError)?;
 
         // produce proof
-        let mut sources = HashMap::new();
-        sources.insert(proof_source_id, (self.container.clone(), ids.clone()));
-        Proof::new_non_fungible(self.resource_def_id(), false, ids.clone(), sources)
+        let mut map = HashMap::new();
+        map.insert(
+            proof_source_id,
+            (self.container.clone(), locked_amount_or_ids),
+        );
+        Proof::new(self.resource_def_id(), self.resource_type(), false, map)
     }
 
     pub fn resource_def_id(&self) -> ResourceDefId {
