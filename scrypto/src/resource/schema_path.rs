@@ -32,12 +32,11 @@ impl SchemaPath {
     }
 
     pub fn to_sbor_path(&self, schema: &Type) -> Option<SborPath> {
-        let length = self.0.len();
         let mut cur_type = schema;
         let mut sbor_path: Vec<usize> = vec![];
 
-        for i in 0..length {
-            match self.0.get(i).unwrap() {
+        for sub_path in &self.0 {
+            match sub_path {
                 SchemaSubPath::Index(index) => match cur_type {
                     Type::Vec { element } => {
                         cur_type = element.as_ref();
