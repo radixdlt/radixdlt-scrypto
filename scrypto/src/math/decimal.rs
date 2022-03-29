@@ -165,6 +165,7 @@ fn big_int_to_decimal(v: BigInt) -> Decimal {
 impl<T: Into<Decimal>> Mul<T> for Decimal {
     type Output = Decimal;
 
+    /// This operation rounds towards zero, truncating any fractional part beyond 10^-18.
     fn mul(self, other: T) -> Self::Output {
         let a = BigInt::from(self.0);
         let b = BigInt::from(other.into().0);

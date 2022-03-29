@@ -68,7 +68,6 @@ pub enum CustomType {
 
     // math
     Decimal,
-    BigDecimal,
 
     // resource,
     Bucket,
@@ -79,13 +78,12 @@ pub enum CustomType {
     ResourceDefId,
 }
 
-const MAPPING: [(CustomType, u8, &str); 12] = [
+const MAPPING: [(CustomType, u8, &str); 11] = [
     (CustomType::PackageId, 0x80, "PackageId"),
     (CustomType::ComponentId, 0x81, "ComponentId"),
     (CustomType::LazyMap, 0x82, "LazyMap"),
     (CustomType::Hash, 0x90, "Hash"),
     (CustomType::Decimal, 0xa1, "Decimal"),
-    (CustomType::BigDecimal, 0xa2, "BigDecimal"),
     (CustomType::Bucket, 0xb1, "Bucket"),
     (CustomType::Proof, 0xb2, "Proof"),
     (CustomType::Vault, 0xb3, "Vault"),
@@ -137,7 +135,6 @@ pub enum CustomValueValidatorError {
     DecodeError(DecodeError),
     InvalidTypeId(u8),
     InvalidDecimal(ParseDecimalError),
-    InvalidBigDecimal(ParseBigDecimalError),
     InvalidPackageId(ParsePackageIdError),
     InvalidComponentId(ParseComponentIdError),
     InvalidResourceDefId(ParseResourceDefIdError),
@@ -184,9 +181,6 @@ impl CustomValueVisitor for CustomValueValidator {
             CustomType::Decimal => {
                 Decimal::try_from(data).map_err(CustomValueValidatorError::InvalidDecimal)?;
             }
-            CustomType::BigDecimal => {
-                BigDecimal::try_from(data).map_err(CustomValueValidatorError::InvalidBigDecimal)?;
-            }
             CustomType::Bucket => {
                 self.buckets.push(
                     Bucket::try_from(data).map_err(CustomValueValidatorError::InvalidBucket)?,
@@ -232,9 +226,6 @@ impl CustomValueFormatter {
     ) -> String {
         match CustomType::from_id(type_id).unwrap() {
             CustomType::Decimal => format!("Decimal(\"{}\")", Decimal::try_from(data).unwrap()),
-            CustomType::BigDecimal => {
-                format!("BigDecimal(\"{}\")", BigDecimal::try_from(data).unwrap())
-            }
             CustomType::PackageId => {
                 format!("PackageId(\"{}\")", PackageId::try_from(data).unwrap())
             }

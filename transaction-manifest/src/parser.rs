@@ -202,7 +202,6 @@ impl Parser {
             TokenKind::HashSet => self.parse_hash_set(),
             TokenKind::HashMap => self.parse_hash_map(),
             TokenKind::Decimal
-            | TokenKind::BigDecimal
             | TokenKind::PackageId
             | TokenKind::ComponentId
             | TokenKind::ResourceDefId
@@ -375,7 +374,6 @@ impl Parser {
         let token = self.advance()?;
         match token.kind {
             TokenKind::Decimal => Ok(Value::Decimal(self.parse_values_one()?.into())),
-            TokenKind::BigDecimal => Ok(Value::BigDecimal(self.parse_values_one()?.into())),
             TokenKind::PackageId => Ok(Value::PackageId(self.parse_values_one()?.into())),
             TokenKind::ComponentId => Ok(Value::ComponentId(self.parse_values_one()?.into())),
             TokenKind::ResourceDefId => Ok(Value::ResourceDefId(self.parse_values_one()?.into())),
@@ -467,7 +465,6 @@ impl Parser {
             TokenKind::HashSet => Ok(Type::HashSet),
             TokenKind::HashMap => Ok(Type::HashMap),
             TokenKind::Decimal => Ok(Type::Decimal),
-            TokenKind::BigDecimal => Ok(Type::BigDecimal),
             TokenKind::PackageId => Ok(Type::PackageId),
             TokenKind::ComponentId => Ok(Type::ComponentId),
             TokenKind::ResourceDefId => Ok(Type::ResourceDefId),

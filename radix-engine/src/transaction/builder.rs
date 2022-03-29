@@ -787,12 +787,6 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                     .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
                 Ok(scrypto_encode(&value))
             }
-            CustomType::BigDecimal => {
-                let value = arg
-                    .parse::<BigDecimal>()
-                    .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
-                Ok(scrypto_encode(&value))
-            }
             CustomType::PackageId => {
                 let value = arg
                     .parse::<PackageId>()
