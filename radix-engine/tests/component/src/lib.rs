@@ -1,3 +1,5 @@
+use scrypto::prelude::*;
+
 pub mod auth_component;
 pub mod auth_list_component;
 pub mod chess;

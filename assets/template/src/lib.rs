@@ -33,3 +33,5 @@ blueprint! {
         }
     }
 }
+
+package_init!("Hello");

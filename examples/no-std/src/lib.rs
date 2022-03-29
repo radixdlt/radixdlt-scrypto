@@ -32,3 +32,5 @@ blueprint! {
         }
     }
 }
+
+package_init!("NoStd");
