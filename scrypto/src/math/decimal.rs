@@ -12,15 +12,11 @@ use crate::rust::string::ToString;
 use crate::rust::vec::Vec;
 use crate::types::*;
 
-/// The universal precision used by `Decimal`.
-pub const PRECISION: i128 = 10i128.pow(18);
-
-/// Represents a **signed**, **bounded** fixed-point decimal, where the precision is 10^-18.
+/// `Decimal` represents a 128 bit representation of a fixed-scale decimal number.
+/// The finite set of values are of the form `m / 10^18`, where `m` is
+/// an integer such that `-2^127 <= m < 2^127`.
 ///
-/// Panic when there is an overflow.
-///
-/// FIXME prevent RE from panicking caused by arithmetic overflow.
-///
+/// Unless otherwise specified, all operations will panic if underflow/overflow.
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Decimal(pub i128);
 
@@ -36,6 +32,9 @@ impl Decimal {
 
     /// The max value of `Decimal`.
     pub const MAX: Self = Self(i128::MAX);
+
+    /// The fixed scale used by `Decimal`.
+    pub const SCALE: u32 = 18;
 
     /// Returns `Decimal` of 0.
     pub fn zero() -> Self {
@@ -72,7 +71,7 @@ macro_rules! from_int {
     ($type:ident) => {
         impl From<$type> for Decimal {
             fn from(val: $type) -> Self {
-                Self((val as i128) * PRECISION)
+                Self((val as i128) * 10i128.pow(Self::SCALE))
             }
         }
     };
@@ -165,11 +164,10 @@ fn big_int_to_decimal(v: BigInt) -> Decimal {
 impl<T: Into<Decimal>> Mul<T> for Decimal {
     type Output = Decimal;
 
-    /// This operation rounds towards zero, truncating any fractional part beyond 10^-18.
     fn mul(self, other: T) -> Self::Output {
         let a = BigInt::from(self.0);
         let b = BigInt::from(other.into().0);
-        let c = a * b / PRECISION;
+        let c = a * b / 10i128.pow(Self::SCALE);
         big_int_to_decimal(c)
     }
 }
@@ -180,7 +178,7 @@ impl<T: Into<Decimal>> Div<T> for Decimal {
     fn div(self, other: T) -> Self::Output {
         let a = BigInt::from(self.0);
         let b = BigInt::from(other.into().0);
-        let c = a * PRECISION / b;
+        let c = a * 10i128.pow(Self::SCALE) / b;
         big_int_to_decimal(c)
     }
 }

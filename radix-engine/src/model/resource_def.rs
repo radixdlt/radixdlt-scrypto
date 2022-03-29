@@ -284,7 +284,7 @@ impl ResourceDef {
     pub fn check_amount(&self, amount: Decimal) -> Result<(), ResourceDefError> {
         let divisibility = self.resource_type.divisibility();
 
-        if !amount.is_negative() && amount.0 % 10i128.pow((18 - divisibility).into()) != 0.into() {
+        if amount.is_negative() || amount.0 % 10i128.pow((18 - divisibility).into()) != 0.into() {
             Err(ResourceDefError::InvalidAmount(amount))
         } else {
             Ok(())
