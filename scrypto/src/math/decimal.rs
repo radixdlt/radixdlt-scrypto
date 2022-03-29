@@ -36,14 +36,18 @@ impl Decimal {
     /// The fixed scale used by `Decimal`.
     pub const SCALE: u32 = 18;
 
+    pub const ZERO: Self = Self(0i128);
+
+    pub const ONE: Self = Self(10i128.pow(Self::SCALE));
+
     /// Returns `Decimal` of 0.
     pub fn zero() -> Self {
-        0.into()
+        Self::ZERO
     }
 
     /// Returns `Decimal` of 1.
     pub fn one() -> Self {
-        1.into()
+        Self::ONE
     }
 
     /// Whether this decimal is zero.
@@ -65,13 +69,39 @@ impl Decimal {
     pub fn abs(&self) -> Decimal {
         Decimal(self.0.abs())
     }
+
+    /// Returns the largest integer that is equal to or less than this number.
+    pub fn floor(&self) -> Self {
+        if self.0 % Self::ONE.0 == 0 {
+            return self.clone();
+        }
+
+        if self.is_negative() {
+            Self((self.0 / Self::ONE.0 - 1) * Self::ONE.0)
+        } else {
+            Self(self.0 / Self::ONE.0 * Self::ONE.0)
+        }
+    }
+
+    /// Returns the smallest integer that is equal to or greater than this number.
+    pub fn ceil(&self) -> Self {
+        if self.0 % Self::ONE.0 == 0 {
+            return self.clone();
+        }
+
+        if self.is_negative() {
+            Self(self.0 / Self::ONE.0 * Self::ONE.0)
+        } else {
+            Self((self.0 / Self::ONE.0 + 1) * Self::ONE.0)
+        }
+    }
 }
 
 macro_rules! from_int {
     ($type:ident) => {
         impl From<$type> for Decimal {
             fn from(val: $type) -> Self {
-                Self((val as i128) * 10i128.pow(Self::SCALE))
+                Self((val as i128) * Self::ONE.0)
             }
         }
     };
@@ -167,7 +197,7 @@ impl<T: Into<Decimal>> Mul<T> for Decimal {
     fn mul(self, other: T) -> Self::Output {
         let a = BigInt::from(self.0);
         let b = BigInt::from(other.into().0);
-        let c = a * b / 10i128.pow(Self::SCALE);
+        let c = a * b / Self::ONE.0;
         big_int_to_decimal(c)
     }
 }
@@ -178,7 +208,7 @@ impl<T: Into<Decimal>> Div<T> for Decimal {
     fn div(self, other: T) -> Self::Output {
         let a = BigInt::from(self.0);
         let b = BigInt::from(other.into().0);
-        let c = a * 10i128.pow(Self::SCALE) / b;
+        let c = a * Self::ONE.0 / b;
         big_int_to_decimal(c)
     }
 }
@@ -530,5 +560,41 @@ mod tests {
     fn test_overflow() {
         // u32::MAX + 1
         dec!(1, 4_294_967_296i128); // use explicit type to defer error to runtime
+    }
+
+    #[test]
+    fn test_floor() {
+        assert_eq!(Decimal::MAX.floor().to_string(), "170141183460469231731");
+        assert_eq!(dec!("1.2").floor().to_string(), "1");
+        assert_eq!(dec!("1.0").floor().to_string(), "1");
+        assert_eq!(dec!("0.9").floor().to_string(), "0");
+        assert_eq!(dec!("0").floor().to_string(), "0");
+        assert_eq!(dec!("-0.1").floor().to_string(), "-1");
+        assert_eq!(dec!("-1").floor().to_string(), "-1");
+        assert_eq!(dec!("-5.2").floor().to_string(), "-6");
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_floor_overflow() {
+        Decimal::MIN.floor();
+    }
+
+    #[test]
+    fn test_ceil() {
+        assert_eq!(dec!("1.2").ceil().to_string(), "2");
+        assert_eq!(dec!("1.0").ceil().to_string(), "1");
+        assert_eq!(dec!("0.9").ceil().to_string(), "1");
+        assert_eq!(dec!("0").ceil().to_string(), "0");
+        assert_eq!(dec!("-0.1").ceil().to_string(), "0");
+        assert_eq!(dec!("-1").ceil().to_string(), "-1");
+        assert_eq!(dec!("-5.2").ceil().to_string(), "-5");
+        assert_eq!(Decimal::MIN.ceil().to_string(), "-170141183460469231731");
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_ceil_overflow() {
+        Decimal::MAX.ceil();
     }
 }
