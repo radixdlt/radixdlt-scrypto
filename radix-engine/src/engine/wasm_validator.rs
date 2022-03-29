@@ -1,3 +1,7 @@
+use scrypto::buffer::scrypto_decode;
+use scrypto::rust::vec;
+use scrypto::rust::vec::Vec;
+use scrypto::rust::string::String;
 use wasmi::*;
 
 use crate::engine::*;
@@ -9,7 +13,7 @@ pub fn parse_module(code: &[u8]) -> Result<Module, WasmValidationError> {
 }
 
 /// Validates a WASM module.
-pub fn validate_module(code: &[u8]) -> Result<(), WasmValidationError> {
+pub fn initialize_package(code: &[u8]) -> Result<Vec<String>, WasmValidationError> {
     // Parse
     let parsed = parse_module(code)?;
 
@@ -32,13 +36,29 @@ pub fn validate_module(code: &[u8]) -> Result<(), WasmValidationError> {
     let module = instance.assert_no_start();
 
     // Check memory export
-    match module.export_by_name("memory") {
-        Some(ExternVal::Memory(_)) => {}
+    let memory = match module.export_by_name("memory") {
+        Some(ExternVal::Memory(mem)) => mem,
         _ => return Err(WasmValidationError::NoValidMemoryExport)
+    };
+
+    let rtn = module.invoke_export("package_init", &[], &mut NopExternals)
+        .map_err(|e| WasmValidationError::NoPackageInitExport(e.into()))?
+        .ok_or(WasmValidationError::InvalidPackageInit)?;
+
+    match rtn {
+        RuntimeValue::I32(ptr) => {
+            let len: u32 = memory
+                .get_value(ptr as u32)
+                .map_err(|_| WasmValidationError::InvalidPackageInit)?;
+
+            // SECURITY: meter before allocating memory
+            let mut data = vec![0u8; len as usize];
+            memory
+                .get_into((ptr + 4) as u32, &mut data)
+                .map_err(|_| WasmValidationError::InvalidPackageInit)?;
+
+            scrypto_decode(&data).map_err(|_| WasmValidationError::InvalidPackageInit)
+        }
+        _ => Err(WasmValidationError::InvalidPackageInit)
     }
-
-    module.invoke_export("package_init", &[], &mut NopExternals)
-        .map_err(|e| WasmValidationError::NoPackageInitExport(e.into()))?;
-
-    Ok(())
 }

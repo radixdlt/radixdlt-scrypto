@@ -58,6 +58,7 @@ pub enum WasmValidationError {
     /// The wasm module does not have memory export.
     NoValidMemoryExport,
     NoPackageInitExport(WasmiError),
+    InvalidPackageInit,
 }
 
 /// Represents an error when parsing a value from a byte array.

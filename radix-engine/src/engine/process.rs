@@ -677,9 +677,9 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     }
 
     pub fn publish_package(&mut self, code: Vec<u8>) -> Result<PackageId, RuntimeError> {
-        re_debug!(self, "(Transaction) Publishing a package");
+        re_debug!(self, "Publishing a package");
 
-        validate_module(&code).map_err(RuntimeError::WasmValidationError)?;
+        let _ = initialize_package(&code).map_err(RuntimeError::WasmValidationError)?;
         let package_id = self.track.create_package(Package::new(code));
         Ok(package_id)
     }
