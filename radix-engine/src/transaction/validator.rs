@@ -15,32 +15,32 @@ pub fn validate_transaction(
     let mut id_validator = IdValidator::new();
     for (i, inst) in transaction.instructions.iter().enumerate() {
         match inst.clone() {
-            Instruction::TakeFromWorktop {
+            Instruction::TakeFromWorktop { resource_def_id } => {
+                id_validator
+                    .new_bucket()
+                    .map_err(TransactionValidationError::IdValidatorError)?;
+                instructions.push(ValidatedInstruction::TakeFromWorktop { resource_def_id });
+            }
+            Instruction::TakeFromWorktopByAmount {
                 amount,
                 resource_def_id,
             } => {
                 id_validator
                     .new_bucket()
                     .map_err(TransactionValidationError::IdValidatorError)?;
-                instructions.push(ValidatedInstruction::TakeFromWorktop {
+                instructions.push(ValidatedInstruction::TakeFromWorktopByAmount {
                     amount,
                     resource_def_id,
                 });
             }
-            Instruction::TakeAllFromWorktop { resource_def_id } => {
-                id_validator
-                    .new_bucket()
-                    .map_err(TransactionValidationError::IdValidatorError)?;
-                instructions.push(ValidatedInstruction::TakeAllFromWorktop { resource_def_id });
-            }
-            Instruction::TakeNonFungiblesFromWorktop {
+            Instruction::TakeFromWorktopByIds {
                 ids,
                 resource_def_id,
             } => {
                 id_validator
                     .new_bucket()
                     .map_err(TransactionValidationError::IdValidatorError)?;
-                instructions.push(ValidatedInstruction::TakeNonFungiblesFromWorktop {
+                instructions.push(ValidatedInstruction::TakeFromWorktopByIds {
                     ids,
                     resource_def_id,
                 });
@@ -51,32 +51,78 @@ pub fn validate_transaction(
                     .map_err(TransactionValidationError::IdValidatorError)?;
                 instructions.push(ValidatedInstruction::ReturnToWorktop { bucket_id });
             }
-            Instruction::AssertWorktopContains {
+            Instruction::AssertWorktopContains { resource_def_id } => {
+                instructions.push(ValidatedInstruction::AssertWorktopContains { resource_def_id });
+            }
+            Instruction::AssertWorktopContainsByAmount {
                 amount,
                 resource_def_id,
             } => {
-                instructions.push(ValidatedInstruction::AssertWorktopContains {
+                instructions.push(ValidatedInstruction::AssertWorktopContainsByAmount {
                     amount,
                     resource_def_id,
                 });
             }
-            Instruction::PopFromAuthZone => {
-                id_validator
-                    .new_proof(ProofKind::RuntimeProof)
-                    .map_err(TransactionValidationError::IdValidatorError)?;
-                instructions.push(ValidatedInstruction::PopFromAuthZone);
+            Instruction::AssertWorktopContainsByIds {
+                ids,
+                resource_def_id,
+            } => {
+                instructions.push(ValidatedInstruction::AssertWorktopContainsByIds {
+                    ids,
+                    resource_def_id,
+                });
             }
-            Instruction::PushOntoAuthZone { proof_id } => {
+            Instruction::TakeFromAuthZone => {
+                id_validator
+                    .new_proof(ProofKind::AuthZoneProof)
+                    .map_err(TransactionValidationError::IdValidatorError)?;
+                instructions.push(ValidatedInstruction::TakeFromAuthZone);
+            }
+            Instruction::MoveToAuthZone { proof_id } => {
                 id_validator
                     .drop_proof(proof_id)
                     .map_err(TransactionValidationError::IdValidatorError)?;
-                instructions.push(ValidatedInstruction::PushOntoAuthZone { proof_id });
+                instructions.push(ValidatedInstruction::MoveToAuthZone { proof_id });
             }
-            Instruction::CreateBucketProof { bucket_id } => {
+            Instruction::ClearAuthZone => {
+                instructions.push(ValidatedInstruction::ClearAuthZone);
+            }
+            Instruction::CreateProofFromAuthZone { resource_def_id } => {
+                id_validator
+                    .new_proof(ProofKind::AuthZoneProof)
+                    .map_err(TransactionValidationError::IdValidatorError)?;
+                instructions
+                    .push(ValidatedInstruction::CreateProofFromAuthZone { resource_def_id });
+            }
+            Instruction::CreateProofFromAuthZoneByAmount {
+                amount,
+                resource_def_id,
+            } => {
+                id_validator
+                    .new_proof(ProofKind::AuthZoneProof)
+                    .map_err(TransactionValidationError::IdValidatorError)?;
+                instructions.push(ValidatedInstruction::CreateProofFromAuthZoneByAmount {
+                    amount,
+                    resource_def_id,
+                });
+            }
+            Instruction::CreateProofFromAuthZoneByIds {
+                ids,
+                resource_def_id,
+            } => {
+                id_validator
+                    .new_proof(ProofKind::AuthZoneProof)
+                    .map_err(TransactionValidationError::IdValidatorError)?;
+                instructions.push(ValidatedInstruction::CreateProofFromAuthZoneByIds {
+                    ids,
+                    resource_def_id,
+                });
+            }
+            Instruction::CreateProofFromBucket { bucket_id } => {
                 id_validator
                     .new_proof(ProofKind::BucketProof(bucket_id))
                     .map_err(TransactionValidationError::IdValidatorError)?;
-                instructions.push(ValidatedInstruction::CreateBucketProof { bucket_id });
+                instructions.push(ValidatedInstruction::CreateProofFromBucket { bucket_id });
             }
             Instruction::CloneProof { proof_id } => {
                 id_validator

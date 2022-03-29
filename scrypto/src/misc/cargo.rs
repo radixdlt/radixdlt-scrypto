@@ -4,11 +4,14 @@ use std::process::Command;
 
 pub fn compile_package<P: AsRef<Path>, S: AsRef<str>>(package_dir: P, wasm_name: S) -> Vec<u8> {
     // build
-    Command::new("cargo")
+    let status = Command::new("cargo")
         .current_dir(package_dir.as_ref())
         .args(["build", "--target", "wasm32-unknown-unknown", "--release"])
         .status()
         .unwrap();
+    if !status.success() {
+        panic!("Failed to compile package: {:?}", package_dir.as_ref());
+    }
 
     // path of the wasm executable
     let mut path = PathBuf::from(package_dir.as_ref());

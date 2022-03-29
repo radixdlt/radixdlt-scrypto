@@ -15,94 +15,10 @@ use scrypto::rust::collections::*;
 use scrypto::rust::fmt;
 use scrypto::rust::str::FromStr;
 use scrypto::rust::string::String;
+use scrypto::rust::string::ToString;
 use scrypto::rust::vec;
 use scrypto::rust::vec::Vec;
 use scrypto::types::*;
-
-/// Specify how much resource to be used for creating buckets.
-///
-/// THIS IS USED BY TRANSACTION BUILDER ONLY!
-///
-#[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub enum ResourceSpecifier {
-    Amount(Decimal, ResourceDefId),
-
-    Ids(BTreeSet<NonFungibleId>, ResourceDefId),
-
-    All(ResourceDefId),
-}
-
-/// Represents an error when parsing `Resource` from string.
-#[derive(Debug, Clone, Eq, PartialEq)]
-pub enum ParseResourceSpecifierError {
-    MissingResourceDefId,
-    InvalidAmount,
-    InvalidNonFungibleId,
-    InvalidResourceDefId,
-}
-
-impl fmt::Display for ParseResourceSpecifierError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:?}", self)
-    }
-}
-
-#[cfg(not(feature = "alloc"))]
-impl std::error::Error for ParseResourceSpecifierError {}
-
-impl FromStr for ResourceSpecifier {
-    type Err = ParseResourceSpecifierError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let tokens: Vec<&str> = s.trim().split(',').collect();
-
-        if tokens.len() >= 2 {
-            let resource_def_id = tokens
-                .last()
-                .unwrap()
-                .parse::<ResourceDefId>()
-                .map_err(|_| ParseResourceSpecifierError::InvalidResourceDefId)?;
-            if tokens[0].starts_with('#') {
-                let mut ids = BTreeSet::<NonFungibleId>::new();
-                for key in &tokens[..tokens.len() - 1] {
-                    if key.starts_with('#') {
-                        ids.insert(
-                            key[1..]
-                                .parse()
-                                .map_err(|_| ParseResourceSpecifierError::InvalidNonFungibleId)?,
-                        );
-                    } else {
-                        return Err(ParseResourceSpecifierError::InvalidNonFungibleId);
-                    }
-                }
-                Ok(ResourceSpecifier::Ids(ids, resource_def_id))
-            } else {
-                if tokens.len() == 2 {
-                    Ok(ResourceSpecifier::Amount(
-                        tokens[0]
-                            .parse()
-                            .map_err(|_| ParseResourceSpecifierError::InvalidAmount)?,
-                        resource_def_id,
-                    ))
-                } else {
-                    Err(ParseResourceSpecifierError::InvalidAmount)
-                }
-            }
-        } else {
-            Err(ParseResourceSpecifierError::MissingResourceDefId)
-        }
-    }
-}
-
-impl ResourceSpecifier {
-    pub fn resource_def_id(&self) -> ResourceDefId {
-        match self {
-            Self::Amount(_, resource_def_id)
-            | Self::Ids(_, resource_def_id)
-            | Self::All(resource_def_id) => *resource_def_id,
-        }
-    }
-}
 
 /// Utility for building transaction.
 pub struct TransactionBuilder<'a, A: AbiProvider> {
@@ -136,30 +52,32 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         let mut new_proof_id: Option<ProofId> = None;
 
         match inst.clone() {
-            Instruction::TakeFromWorktop { .. } => {
-                new_bucket_id = Some(self.id_validator.new_bucket().unwrap());
-            }
-            Instruction::TakeAllFromWorktop { .. } => {
-                new_bucket_id = Some(self.id_validator.new_bucket().unwrap());
-            }
-            Instruction::TakeNonFungiblesFromWorktop { .. } => {
+            Instruction::TakeFromWorktop { .. }
+            | Instruction::TakeFromWorktopByAmount { .. }
+            | Instruction::TakeFromWorktopByIds { .. } => {
                 new_bucket_id = Some(self.id_validator.new_bucket().unwrap());
             }
             Instruction::ReturnToWorktop { bucket_id } => {
                 self.id_validator.drop_bucket(bucket_id).unwrap();
             }
-            Instruction::AssertWorktopContains { .. } => {}
-            Instruction::PopFromAuthZone { .. } => {
+            Instruction::AssertWorktopContains { .. }
+            | Instruction::AssertWorktopContainsByAmount { .. }
+            | Instruction::AssertWorktopContainsByIds { .. } => {}
+            Instruction::TakeFromAuthZone { .. } => {
                 new_proof_id = Some(
                     self.id_validator
-                        .new_proof(ProofKind::RuntimeProof)
+                        .new_proof(ProofKind::AuthZoneProof)
                         .unwrap(),
                 );
             }
-            Instruction::PushOntoAuthZone { proof_id } => {
+            Instruction::MoveToAuthZone { proof_id } => {
                 self.id_validator.drop_proof(proof_id).unwrap();
             }
-            Instruction::CreateBucketProof { bucket_id } => {
+            Instruction::ClearAuthZone => {}
+            Instruction::CreateProofFromAuthZone { .. }
+            | Instruction::CreateProofFromAuthZoneByAmount { .. }
+            | Instruction::CreateProofFromAuthZoneByIds { .. } => {}
+            Instruction::CreateProofFromBucket { bucket_id } => {
                 new_proof_id = Some(
                     self.id_validator
                         .new_proof(ProofKind::BucketProof(bucket_id))
@@ -189,62 +107,154 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         (self, new_bucket_id, new_proof_id)
     }
 
-    /// Takes resources from worktop.
-    pub fn take_from_worktop<F>(&mut self, resource: &ResourceSpecifier, then: F) -> &mut Self
+    /// Takes resource from worktop.
+    pub fn take_from_worktop<F>(&mut self, resource_def_id: ResourceDefId, then: F) -> &mut Self
     where
         F: FnOnce(&mut Self, BucketId) -> &mut Self,
     {
-        let (builder, bucket_id, _) = self.add_instruction(match resource.clone() {
-            ResourceSpecifier::Amount(amount, resource_def_id) => Instruction::TakeFromWorktop {
-                amount,
-                resource_def_id,
-            },
-            ResourceSpecifier::Ids(ids, resource_def_id) => {
-                Instruction::TakeNonFungiblesFromWorktop {
-                    ids,
-                    resource_def_id,
-                }
-            }
-            ResourceSpecifier::All(resource_def_id) => {
-                Instruction::TakeAllFromWorktop { resource_def_id }
-            }
+        let (builder, bucket_id, _) =
+            self.add_instruction(Instruction::TakeFromWorktop { resource_def_id });
+        then(builder, bucket_id.unwrap())
+    }
+
+    /// Takes resource from worktop, by amount.
+    pub fn take_from_worktop_by_amount<F>(
+        &mut self,
+        amount: Decimal,
+        resource_def_id: ResourceDefId,
+        then: F,
+    ) -> &mut Self
+    where
+        F: FnOnce(&mut Self, BucketId) -> &mut Self,
+    {
+        let (builder, bucket_id, _) = self.add_instruction(Instruction::TakeFromWorktopByAmount {
+            amount,
+            resource_def_id,
         });
         then(builder, bucket_id.unwrap())
     }
 
-    /// Asserts that worktop contains at least this amount of resource.
-    pub fn assert_worktop_contains(
+    /// Takes resource from worktop, by non-fungible ids.
+    pub fn take_from_worktop_by_ids<F>(
+        &mut self,
+        ids: &BTreeSet<NonFungibleId>,
+        resource_def_id: ResourceDefId,
+        then: F,
+    ) -> &mut Self
+    where
+        F: FnOnce(&mut Self, BucketId) -> &mut Self,
+    {
+        let (builder, bucket_id, _) = self.add_instruction(Instruction::TakeFromWorktopByIds {
+            ids: ids.clone(),
+            resource_def_id,
+        });
+        then(builder, bucket_id.unwrap())
+    }
+
+    /// Adds a bucket of resource to worktop.
+    pub fn return_to_worktop(&mut self, bucket_id: BucketId) -> &mut Self {
+        self.add_instruction(Instruction::ReturnToWorktop { bucket_id })
+            .0
+    }
+
+    /// Asserts that worktop contains resource.
+    pub fn assert_worktop_contains(&mut self, resource_def_id: ResourceDefId) -> &mut Self {
+        self.add_instruction(Instruction::AssertWorktopContains { resource_def_id })
+            .0
+    }
+
+    /// Asserts that worktop contains resource.
+    pub fn assert_worktop_contains_by_amount(
         &mut self,
         amount: Decimal,
         resource_def_id: ResourceDefId,
     ) -> &mut Self {
-        self.add_instruction(Instruction::AssertWorktopContains {
+        self.add_instruction(Instruction::AssertWorktopContainsByAmount {
             amount,
             resource_def_id,
         })
         .0
     }
 
-    /// Creates a proof.
-    pub fn create_bucket_proof<F>(&mut self, bucket_id: BucketId, then: F) -> &mut Self
+    /// Asserts that worktop contains resource.
+    pub fn assert_worktop_contains_by_ids(
+        &mut self,
+        ids: &BTreeSet<NonFungibleId>,
+        resource_def_id: ResourceDefId,
+    ) -> &mut Self {
+        self.add_instruction(Instruction::AssertWorktopContainsByIds {
+            ids: ids.clone(),
+            resource_def_id,
+        })
+        .0
+    }
+
+    pub fn take_from_auth_zone<F>(&mut self, then: F) -> &mut Self
+    where
+        F: FnOnce(&mut Self, ProofId) -> &mut Self,
+    {
+        let (builder, _, proof_id) = self.add_instruction(Instruction::TakeFromAuthZone {});
+        then(builder, proof_id.unwrap())
+    }
+
+    pub fn move_to_auth_zone(&mut self, proof_id: ProofId) -> &mut Self {
+        self.add_instruction(Instruction::MoveToAuthZone { proof_id });
+        self
+    }
+
+    pub fn create_proof_from_auth_zone<F>(
+        &mut self,
+        resource_def_id: ResourceDefId,
+        then: F,
+    ) -> &mut Self
     where
         F: FnOnce(&mut Self, ProofId) -> &mut Self,
     {
         let (builder, _, proof_id) =
-            self.add_instruction(Instruction::CreateBucketProof { bucket_id });
+            self.add_instruction(Instruction::CreateProofFromAuthZone { resource_def_id });
         then(builder, proof_id.unwrap())
     }
 
-    pub fn push_onto_auth_zone(&mut self, proof_id: ProofId) -> &mut Self {
-        self.add_instruction(Instruction::PushOntoAuthZone { proof_id });
-        self
-    }
-
-    pub fn pop_from_auth_zone<F>(&mut self, then: F) -> &mut Self
+    pub fn create_proof_from_auth_zone_by_amount<F>(
+        &mut self,
+        amount: Decimal,
+        resource_def_id: ResourceDefId,
+        then: F,
+    ) -> &mut Self
     where
         F: FnOnce(&mut Self, ProofId) -> &mut Self,
     {
-        let (builder, _, proof_id) = self.add_instruction(Instruction::PopFromAuthZone {});
+        let (builder, _, proof_id) =
+            self.add_instruction(Instruction::CreateProofFromAuthZoneByAmount {
+                amount,
+                resource_def_id,
+            });
+        then(builder, proof_id.unwrap())
+    }
+
+    pub fn create_proof_from_auth_zone_by_ids<F>(
+        &mut self,
+        ids: &BTreeSet<NonFungibleId>,
+        resource_def_id: ResourceDefId,
+        then: F,
+    ) -> &mut Self
+    where
+        F: FnOnce(&mut Self, ProofId) -> &mut Self,
+    {
+        let (builder, _, proof_id) =
+            self.add_instruction(Instruction::CreateProofFromAuthZoneByIds {
+                ids: ids.clone(),
+                resource_def_id,
+            });
+        then(builder, proof_id.unwrap())
+    }
+
+    pub fn create_proof_from_bucket<F>(&mut self, bucket_id: BucketId, then: F) -> &mut Self
+    where
+        F: FnOnce(&mut Self, ProofId) -> &mut Self,
+    {
+        let (builder, _, proof_id) =
+            self.add_instruction(Instruction::CreateProofFromBucket { bucket_id });
         then(builder, proof_id.unwrap())
     }
 
@@ -306,7 +316,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
             })
             .and_then(|abi| Self::find_function_abi(&abi, function))
             .and_then(|f| {
-                self.prepare_args(&f.inputs, args, account)
+                self.parse_args(&f.inputs, args, account)
                     .map_err(|e| BuildTransactionError::FailedToBuildArgs(e))
             });
 
@@ -361,7 +371,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
             })
             .and_then(|abi| Self::find_method_abi(&abi, method))
             .and_then(|m| {
-                self.prepare_args(&m.inputs, args, account)
+                self.parse_args(&m.inputs, args, account)
                     .map_err(|e| BuildTransactionError::FailedToBuildArgs(e))
             });
 
@@ -395,6 +405,14 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         .0
     }
 
+    /// Publishes a package.
+    pub fn publish_package(&mut self, code: &[u8]) -> &mut Self {
+        self.add_instruction(Instruction::PublishPackage {
+            code: code.to_vec(),
+        })
+        .0
+    }
+
     /// Builds a transaction.
     pub fn build(
         &mut self,
@@ -411,23 +429,6 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         });
 
         Ok(Transaction { instructions: v })
-    }
-
-    /// Publishes a package.
-    pub fn publish_package(&mut self, code: &[u8]) -> &mut Self {
-        self.add_instruction(Instruction::PublishPackage {
-            code: code.to_vec(),
-        })
-        .0
-    }
-
-    fn single_authority(
-        resource_def_id: ResourceDefId,
-        permission: u64,
-    ) -> HashMap<ResourceDefId, u64> {
-        let mut map = HashMap::new();
-        map.insert(resource_def_id, permission);
-        map
     }
 
     /// Creates a token resource with mutable supply.
@@ -535,26 +536,23 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         resource_def_id: ResourceDefId,
         minter_resource_def_id: ResourceDefId,
     ) -> &mut Self {
-        self.take_from_worktop(
-            &ResourceSpecifier::Amount(1.into(), minter_resource_def_id),
-            |builder, bucket_id| {
-                builder.create_bucket_proof(bucket_id, |builder, proof_id| {
-                    builder.push_onto_auth_zone(proof_id);
-                    builder.add_instruction(Instruction::CallFunction {
-                        package_id: SYSTEM_PACKAGE,
-                        blueprint_name: "System".to_owned(),
-                        function: "mint".to_owned(),
-                        args: vec![scrypto_encode(&amount), scrypto_encode(&resource_def_id)],
-                    });
-                    builder.pop_from_auth_zone(|builder, proof_id| builder.drop_proof(proof_id))
-                })
-            },
-        )
+        self.take_from_worktop(minter_resource_def_id, |builder, bucket_id| {
+            builder.create_proof_from_bucket(bucket_id, |builder, proof_id| {
+                builder.move_to_auth_zone(proof_id);
+                builder.add_instruction(Instruction::CallFunction {
+                    package_id: SYSTEM_PACKAGE,
+                    blueprint_name: "System".to_owned(),
+                    function: "mint".to_owned(),
+                    args: vec![scrypto_encode(&amount), scrypto_encode(&resource_def_id)],
+                });
+                builder.take_from_auth_zone(|builder, proof_id| builder.drop_proof(proof_id))
+            })
+        })
     }
 
     /// Burns a resource.
-    pub fn burn(&mut self, resource: &ResourceSpecifier) -> &mut Self {
-        self.take_from_worktop(resource, |builder, bucket_id| {
+    pub fn burn(&mut self, amount: Decimal, resource_def_id: ResourceDefId) -> &mut Self {
+        self.take_from_worktop_by_amount(amount, resource_def_id, |builder, bucket_id| {
             builder
                 .add_instruction(Instruction::CallFunction {
                     package_id: SYSTEM_PACKAGE,
@@ -577,54 +575,66 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         .0
     }
 
-    /// Creates an account with resource taken from transaction worktop.
-    ///
-    /// Note: you need to make sure the worktop contains the required resource to avoid runtime error.
+    /// Creates an account with some initial resource.
     pub fn new_account_with_resource(
         &mut self,
         withdraw_auth: &ProofRule,
-        resource: &ResourceSpecifier,
+        bucket_id: BucketId,
     ) -> &mut Self {
-        self.take_from_worktop(resource, |builder, bucket_id| {
-            builder
-                .add_instruction(Instruction::CallFunction {
-                    package_id: ACCOUNT_PACKAGE,
-                    blueprint_name: "Account".to_owned(),
-                    function: "with_bucket".to_owned(),
-                    args: vec![
-                        scrypto_encode(withdraw_auth),
-                        scrypto_encode(&scrypto::resource::Bucket(bucket_id)),
-                    ],
-                })
-                .0
+        self.add_instruction(Instruction::CallFunction {
+            package_id: ACCOUNT_PACKAGE,
+            blueprint_name: "Account".to_owned(),
+            function: "new_with_resource".to_owned(),
+            args: vec![
+                scrypto_encode(withdraw_auth),
+                scrypto_encode(&scrypto::resource::Bucket(bucket_id)),
+            ],
         })
+        .0
     }
 
     /// Withdraws resource from an account.
     pub fn withdraw_from_account(
         &mut self,
-        resource: &ResourceSpecifier,
+        resource_def_id: ResourceDefId,
         account: ComponentId,
     ) -> &mut Self {
-        match resource {
-            ResourceSpecifier::Amount(amount, resource_def_id) => {
-                self.add_instruction(Instruction::CallMethod {
-                    component_id: account,
-                    method: "withdraw".to_owned(),
-                    args: vec![scrypto_encode(amount), scrypto_encode(resource_def_id)],
-                })
-                .0
-            }
-            ResourceSpecifier::Ids(ids, resource_def_id) => {
-                self.add_instruction(Instruction::CallMethod {
-                    component_id: account,
-                    method: "withdraw_non_fungibles".to_owned(),
-                    args: vec![scrypto_encode(ids), scrypto_encode(resource_def_id)],
-                })
-                .0
-            }
-            ResourceSpecifier::All(_) => panic!("Withdrawing all from account is not supported!"),
-        }
+        self.add_instruction(Instruction::CallMethod {
+            component_id: account,
+            method: "withdraw".to_owned(),
+            args: vec![scrypto_encode(&resource_def_id)],
+        })
+        .0
+    }
+
+    /// Withdraws resource from an account.
+    pub fn withdraw_from_account_by_amount(
+        &mut self,
+        amount: Decimal,
+        resource_def_id: ResourceDefId,
+        account: ComponentId,
+    ) -> &mut Self {
+        self.add_instruction(Instruction::CallMethod {
+            component_id: account,
+            method: "withdraw_by_amount".to_owned(),
+            args: vec![scrypto_encode(&amount), scrypto_encode(&resource_def_id)],
+        })
+        .0
+    }
+
+    /// Withdraws resource from an account.
+    pub fn withdraw_from_account_by_ids(
+        &mut self,
+        ids: &BTreeSet<NonFungibleId>,
+        resource_def_id: ResourceDefId,
+        account: ComponentId,
+    ) -> &mut Self {
+        self.add_instruction(Instruction::CallMethod {
+            component_id: account,
+            method: "withdraw_by_ids".to_owned(),
+            args: vec![scrypto_encode(ids), scrypto_encode(&resource_def_id)],
+        })
+        .0
     }
 
     /// Creates resource proof from an account.
@@ -641,9 +651,48 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         .0
     }
 
+    /// Creates resource proof from an account.
+    pub fn create_proof_from_account_by_amount(
+        &mut self,
+        amount: Decimal,
+        resource_def_id: ResourceDefId,
+        account: ComponentId,
+    ) -> &mut Self {
+        self.add_instruction(Instruction::CallMethod {
+            component_id: account,
+            method: "create_proof_by_amount".to_owned(),
+            args: vec![scrypto_encode(&amount), scrypto_encode(&resource_def_id)],
+        })
+        .0
+    }
+
+    /// Creates resource proof from an account.
+    pub fn create_proof_from_account_by_ids(
+        &mut self,
+        ids: &BTreeSet<NonFungibleId>,
+        resource_def_id: ResourceDefId,
+        account: ComponentId,
+    ) -> &mut Self {
+        self.add_instruction(Instruction::CallMethod {
+            component_id: account,
+            method: "create_proof_by_ids".to_owned(),
+            args: vec![scrypto_encode(ids), scrypto_encode(&resource_def_id)],
+        })
+        .0
+    }
+
     //===============================
     // private methods below
     //===============================
+
+    fn single_authority(
+        resource_def_id: ResourceDefId,
+        permission: u64,
+    ) -> HashMap<ResourceDefId, u64> {
+        let mut map = HashMap::new();
+        map.insert(resource_def_id, permission);
+        map
+    }
 
     fn find_function_abi(
         abi: &abi::Blueprint,
@@ -667,7 +716,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
             .ok_or_else(|| BuildTransactionError::MethodNotFound(method.to_owned()))
     }
 
-    fn prepare_args(
+    fn parse_args(
         &mut self,
         types: &[Type],
         args: Vec<String>,
@@ -680,19 +729,19 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                 .get(i)
                 .ok_or_else(|| BuildArgsError::MissingArgument(i, t.clone()))?;
             let res = match t {
-                Type::Bool => self.prepare_basic_ty::<bool>(i, t, arg),
-                Type::I8 => self.prepare_basic_ty::<i8>(i, t, arg),
-                Type::I16 => self.prepare_basic_ty::<i16>(i, t, arg),
-                Type::I32 => self.prepare_basic_ty::<i32>(i, t, arg),
-                Type::I64 => self.prepare_basic_ty::<i64>(i, t, arg),
-                Type::I128 => self.prepare_basic_ty::<i128>(i, t, arg),
-                Type::U8 => self.prepare_basic_ty::<u8>(i, t, arg),
-                Type::U16 => self.prepare_basic_ty::<u16>(i, t, arg),
-                Type::U32 => self.prepare_basic_ty::<u32>(i, t, arg),
-                Type::U64 => self.prepare_basic_ty::<u64>(i, t, arg),
-                Type::U128 => self.prepare_basic_ty::<u128>(i, t, arg),
-                Type::String => self.prepare_basic_ty::<String>(i, t, arg),
-                Type::Custom { name, .. } => self.prepare_custom_ty(i, t, arg, name, account),
+                Type::Bool => self.parse_basic_ty::<bool>(i, t, arg),
+                Type::I8 => self.parse_basic_ty::<i8>(i, t, arg),
+                Type::I16 => self.parse_basic_ty::<i16>(i, t, arg),
+                Type::I32 => self.parse_basic_ty::<i32>(i, t, arg),
+                Type::I64 => self.parse_basic_ty::<i64>(i, t, arg),
+                Type::I128 => self.parse_basic_ty::<i128>(i, t, arg),
+                Type::U8 => self.parse_basic_ty::<u8>(i, t, arg),
+                Type::U16 => self.parse_basic_ty::<u16>(i, t, arg),
+                Type::U32 => self.parse_basic_ty::<u32>(i, t, arg),
+                Type::U64 => self.parse_basic_ty::<u64>(i, t, arg),
+                Type::U128 => self.parse_basic_ty::<u128>(i, t, arg),
+                Type::String => self.parse_basic_ty::<String>(i, t, arg),
+                Type::Custom { name, .. } => self.parse_custom_ty(i, t, arg, name, account),
                 _ => Err(BuildArgsError::UnsupportedType(i, t.clone())),
             };
             encoded.push(res?);
@@ -701,7 +750,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         Ok(encoded)
     }
 
-    fn prepare_basic_ty<T>(
+    fn parse_basic_ty<T>(
         &mut self,
         i: usize,
         ty: &Type,
@@ -717,7 +766,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         Ok(scrypto_encode(&value))
     }
 
-    fn prepare_custom_ty(
+    fn parse_custom_ty(
         &mut self,
         i: usize,
         ty: &Type,
@@ -769,46 +818,115 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                 Ok(scrypto_encode(&value))
             }
             CustomType::Bucket => {
-                let resource_specifier = parse_resource_specifier(i, ty, arg)?;
-
-                if let Some(account) = account {
-                    self.withdraw_from_account(&resource_specifier, account);
-                }
-                let mut created_bucket_id = None;
-                self.take_from_worktop(&resource_specifier, |builder, bucket_id| {
-                    created_bucket_id = Some(bucket_id);
-                    builder
-                });
-                Ok(scrypto_encode(&scrypto::resource::Bucket(
-                    created_bucket_id.unwrap(),
-                )))
+                let resource_specifier = parse_resource_specifier(arg)
+                    .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
+                let bucket_id = match resource_specifier {
+                    ResourceSpecifier::Amount(amount, resource_def_id) => {
+                        if let Some(account) = account {
+                            self.withdraw_from_account_by_amount(amount, resource_def_id, account);
+                        }
+                        self.add_instruction(Instruction::TakeFromWorktopByAmount {
+                            amount,
+                            resource_def_id,
+                        })
+                        .1
+                        .unwrap()
+                    }
+                    ResourceSpecifier::Ids(ids, resource_def_id) => {
+                        if let Some(account) = account {
+                            self.withdraw_from_account_by_ids(&ids, resource_def_id, account);
+                        }
+                        self.add_instruction(Instruction::TakeFromWorktopByIds {
+                            ids,
+                            resource_def_id,
+                        })
+                        .1
+                        .unwrap()
+                    }
+                };
+                Ok(scrypto_encode(&scrypto::resource::Bucket(bucket_id)))
             }
             CustomType::Proof => {
-                let resource_specifier = parse_resource_specifier(i, ty, arg)?;
-                if let Some(account) = account {
-                    self.create_proof_from_account(resource_specifier.resource_def_id(), account);
-                } else {
-                    // TODO: create proof from auth zone OR worktop?
-                }
-                let mut created_proof_id = None;
-                self.pop_from_auth_zone(|builder, proof_id| {
-                    created_proof_id = Some(proof_id);
-                    builder
-                });
-                Ok(scrypto_encode(&scrypto::resource::Proof(
-                    created_proof_id.unwrap(),
-                )))
+                let resource_specifier = parse_resource_specifier(arg)
+                    .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
+                let proof_id = match resource_specifier {
+                    ResourceSpecifier::Amount(amount, resource_def_id) => {
+                        if let Some(account) = account {
+                            self.create_proof_from_account_by_amount(
+                                amount,
+                                resource_def_id,
+                                account,
+                            );
+                            self.add_instruction(Instruction::TakeFromAuthZone)
+                                .2
+                                .unwrap()
+                        } else {
+                            todo!("Take from worktop and create proof")
+                        }
+                    }
+                    ResourceSpecifier::Ids(ids, resource_def_id) => {
+                        if let Some(account) = account {
+                            self.create_proof_from_account_by_ids(&ids, resource_def_id, account);
+                            self.add_instruction(Instruction::TakeFromAuthZone)
+                                .2
+                                .unwrap()
+                        } else {
+                            todo!("Take from worktop and create proof")
+                        }
+                    }
+                };
+                Ok(scrypto_encode(&scrypto::resource::Proof(proof_id)))
             }
             _ => Err(BuildArgsError::UnsupportedType(i, ty.clone())),
         }
     }
 }
 
-fn parse_resource_specifier(
-    i: usize,
-    ty: &Type,
-    arg: &str,
-) -> Result<ResourceSpecifier, BuildArgsError> {
-    ResourceSpecifier::from_str(arg)
-        .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))
+enum ResourceSpecifier {
+    Amount(Decimal, ResourceDefId),
+    Ids(BTreeSet<NonFungibleId>, ResourceDefId),
+}
+
+enum ParseResourceSpecifierError {
+    IncompleteResourceSpecifier,
+    InvalidResourceDefId(String),
+    InvalidAmount(String),
+    InvalidNonFungibleId(String),
+    MoreThanOneAmountSpecified,
+}
+
+fn parse_resource_specifier(input: &str) -> Result<ResourceSpecifier, ParseResourceSpecifierError> {
+    let tokens: Vec<&str> = input.trim().split(',').map(|s| s.trim()).collect();
+
+    // check length
+    if tokens.len() < 2 {
+        return Err(ParseResourceSpecifierError::IncompleteResourceSpecifier);
+    }
+
+    // parse resource definition id
+    let token = tokens[tokens.len() - 1];
+    let resource_def_id = token
+        .parse::<ResourceDefId>()
+        .map_err(|_| ParseResourceSpecifierError::InvalidResourceDefId(token.to_owned()))?;
+
+    // parse non-fungible ids or amount
+    if tokens[0].starts_with('#') {
+        let mut ids = BTreeSet::<NonFungibleId>::new();
+        for id in &tokens[..tokens.len() - 1] {
+            ids.insert(
+                id[1..].parse().map_err(|_| {
+                    ParseResourceSpecifierError::InvalidNonFungibleId(id.to_string())
+                })?,
+            );
+        }
+        Ok(ResourceSpecifier::Ids(ids, resource_def_id))
+    } else {
+        if tokens.len() != 2 {
+            return Err(ParseResourceSpecifierError::MoreThanOneAmountSpecified);
+        }
+        let amount: Decimal = tokens[0]
+            .parse()
+            .map_err(|_| ParseResourceSpecifierError::InvalidAmount(tokens[0].to_owned()))?;
+        Ok(ResourceSpecifier::Amount(amount, resource_def_id))
+    }
 }
