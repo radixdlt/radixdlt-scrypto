@@ -135,8 +135,7 @@ impl Decimal {
                     Self((self.0 / divisor + 1) * divisor)
                 }
             }
-            RoundingMode::TowardsNearestAndHalfTowardsZero
-            | RoundingMode::TowardsNearestAndHalfAwayFromZero => {
+            RoundingMode::TowardsNearestAndHalfTowardsZero => {
                 if self.0 % divisor == 0 {
                     self.clone()
                 } else {
@@ -147,17 +146,23 @@ impl Decimal {
                         } else {
                             Self((self.0 / divisor + 1) * divisor)
                         }
-                    } else if digit < 5 {
+                    } else {
+                        Self(self.0 / divisor * divisor)
+                    }
+                }
+            }
+            RoundingMode::TowardsNearestAndHalfAwayFromZero => {
+                if self.0 % divisor == 0 {
+                    self.clone()
+                } else {
+                    let digit = (self.0 / (divisor / 10) % 10).abs();
+                    if digit < 5 {
                         Self(self.0 / divisor * divisor)
                     } else {
-                        if matches!(mode, RoundingMode::TowardsNearestAndHalfTowardsZero) {
-                            Self(self.0 / divisor * divisor)
+                        if self.is_negative() {
+                            Self((self.0 / divisor - 1) * divisor)
                         } else {
-                            if self.is_negative() {
-                                Self((self.0 / divisor - 1) * divisor)
-                            } else {
-                                Self((self.0 / divisor + 1) * divisor)
-                            }
+                            Self((self.0 / divisor + 1) * divisor)
                         }
                     }
                 }
