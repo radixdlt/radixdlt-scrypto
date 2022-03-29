@@ -251,7 +251,9 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
                     component_id,
                     method,
                 } => proc.call_method_with_all_resources(component_id, &method),
-                ValidatedInstruction::PublishPackage { code } => proc.publish_package(code),
+                ValidatedInstruction::PublishPackage { code } => proc
+                    .publish_package(code)
+                    .map(|package_id| ValidatedData::from_value(&package_id)),
             };
             match result {
                 Ok(data) => {

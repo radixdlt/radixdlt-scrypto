@@ -1,4 +1,3 @@
-use crate::component;
 use crate::component::*;
 use crate::core::*;
 use crate::engine::{api::*, call_engine};
@@ -21,8 +20,7 @@ impl Process {
     /// Returns the package ID.
     pub fn package_id() -> PackageId {
         match Self::actor() {
-            Actor::Blueprint(package_id, _) => package_id,
-            Actor::Component(component_id) => component!(component_id).package_id(),
+            Actor::Blueprint(package_id, _) | Actor::Component(package_id, _, _) => package_id,
         }
     }
 

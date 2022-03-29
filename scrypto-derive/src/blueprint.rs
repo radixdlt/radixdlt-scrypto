@@ -46,7 +46,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
         mod blueprint {
             use super::*;
 
-            #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode)]
+            #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
             pub struct #bp_ident #bp_fields #bp_semi_token
 
             impl #bp_ident {
@@ -59,14 +59,12 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                 }
                 fn instantiate(self) -> ::scrypto::component::ComponentId {
                     ::scrypto::component::component_system().instantiate_component(
-                        ::scrypto::core::Process::package_id(),
                         ::scrypto::resource::ComponentAuthorization::new(),
                         self
                     )
                 }
                 fn instantiate_with_auth(self, authorization: ::scrypto::resource::ComponentAuthorization) -> ::scrypto::component::ComponentId {
                     ::scrypto::component::component_system().instantiate_component(
-                        ::scrypto::core::Process::package_id(),
                         authorization,
                         self
                     )
@@ -114,7 +112,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
     let output_abi = quote! {
         #[no_mangle]
         pub extern "C" fn #abi_ident() -> *mut u8 {
-            use ::sbor::Describe;
+            use ::sbor::{Describe, Type};
             use ::scrypto::abi::{Function, Method};
             use ::scrypto::rust::borrow::ToOwned;
             use ::scrypto::rust::vec;
@@ -122,7 +120,8 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
 
             let functions: Vec<Function> = vec![ #(#abi_functions),* ];
             let methods: Vec<Method> = vec![ #(#abi_methods),* ];
-            let output = (functions, methods);
+            let schema: Type = blueprint::#bp_ident::describe();
+            let output = (schema, functions, methods);
 
             // serialize the output
             let output_bytes = ::scrypto::buffer::scrypto_encode_for_radix_engine(&output);
@@ -539,7 +538,7 @@ mod tests {
                 mod blueprint {
                     use super::*;
 
-                    #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode)]
+                    #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
                     pub struct Test {
                         a: u32,
                         admin: ResourceDef
@@ -558,14 +557,12 @@ mod tests {
                         }
                         fn instantiate(self) -> ::scrypto::component::ComponentId {
                             ::scrypto::component::component_system().instantiate_component(
-                                ::scrypto::core::Process::package_id(),
                                 ::scrypto::resource::ComponentAuthorization::new(),
                                 self
                             )
                         }
                         fn instantiate_with_auth(self, authorization: ::scrypto::resource::ComponentAuthorization) -> ::scrypto::component::ComponentId {
                             ::scrypto::component::component_system().instantiate_component(
-                                ::scrypto::core::Process::package_id(),
                                 authorization,
                                 self
                             )
@@ -602,7 +599,7 @@ mod tests {
                 }
                 #[no_mangle]
                 pub extern "C" fn Test_abi() -> *mut u8 {
-                    use ::sbor::Describe;
+                    use ::sbor::{Describe, Type};
                     use ::scrypto::abi::{Function, Method};
                     use ::scrypto::rust::borrow::ToOwned;
                     use ::scrypto::rust::vec;
@@ -616,7 +613,8 @@ mod tests {
                         ],
                         output: <u32>::describe(),
                     }];
-                    let output = (functions, methods);
+                    let schema: Type = blueprint::Test::describe();
+                    let output = (schema, functions, methods);
                     let output_bytes = ::scrypto::buffer::scrypto_encode_for_radix_engine(&output);
                     ::scrypto::buffer::scrypto_wrap(output_bytes)
                 }

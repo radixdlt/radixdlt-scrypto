@@ -11,6 +11,7 @@ mod proof_rule;
 mod resource_builder;
 mod resource_def;
 mod resource_type;
+mod schema_path;
 mod system;
 mod vault;
 
@@ -29,12 +30,13 @@ pub use non_fungible_data::NonFungibleData;
 pub use non_fungible_id::{NonFungibleId, ParseNonFungibleIdError};
 pub use proof::{ParseProofError, Proof};
 pub use proof_rule::{
-    ProofRule, SborPath, SoftResource, SoftResourceOrNonFungible, SoftResourceOrNonFungibleList,
+    ProofRule, SoftResource, SoftResourceOrNonFungible, SoftResourceOrNonFungibleList,
 };
 pub use resource_builder::{ResourceBuilder, DIVISIBILITY_MAXIMUM, DIVISIBILITY_NONE};
 pub use resource_def::{ParseResourceDefIdError, ResourceDef, ResourceDefId};
 pub use resource_flags::*;
 pub use resource_permissions::*;
 pub use resource_type::ResourceType;
+pub use schema_path::SchemaPath;
 pub use system::{init_resource_system, resource_system, ResourceSystem};
 pub use vault::{ParseVaultError, Vault};
