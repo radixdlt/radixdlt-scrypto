@@ -5,6 +5,7 @@ use scrypto::engine::types::*;
 use scrypto::rust::borrow::ToOwned;
 use scrypto::rust::collections::*;
 use scrypto::rust::vec::Vec;
+use crate::engine::initialize_package;
 
 use crate::model::*;
 
@@ -122,13 +123,11 @@ pub trait SubstateStore {
             .map(|(package, _)| package);
         if package.is_none() {
             // System package
-            let system_package =
-                Package::new(include_bytes!("../../../assets/system.wasm").to_vec());
+            let system_package = initialize_package(include_bytes!("../../../assets/system.wasm").to_vec()).unwrap();
             self.put_encoded_substate(&SYSTEM_PACKAGE, &system_package, self.get_nonce());
 
             // Account package
-            let account_package =
-                Package::new(include_bytes!("../../../assets/account.wasm").to_vec());
+            let account_package = initialize_package(include_bytes!("../../../assets/account.wasm").to_vec()).unwrap();
             self.put_encoded_substate(&ACCOUNT_PACKAGE, &account_package, self.get_nonce());
 
             // Radix token resource definition

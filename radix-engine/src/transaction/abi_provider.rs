@@ -4,7 +4,9 @@ use scrypto::buffer::*;
 use scrypto::crypto::sha256;
 use scrypto::engine::types::*;
 use scrypto::rust::borrow::ToOwned;
+use scrypto::rust::string::String;
 use scrypto::rust::string::ToString;
+use scrypto::rust::vec;
 use scrypto::rust::vec::Vec;
 
 use crate::engine::*;
@@ -42,10 +44,10 @@ impl BasicAbiProvider {
         }
     }
 
-    pub fn with_package(&mut self, package_id: PackageId, code: Vec<u8>) -> &mut Self {
+    pub fn with_package(&mut self, package_id: PackageId, code: Vec<u8>, blueprint_name: String) -> &mut Self {
         self.substate_store.put_encoded_substate(
             &package_id,
-            &Package::new(code),
+            &Package::new(vec![blueprint_name], code),
             self.substate_store.get_nonce(),
         );
         self

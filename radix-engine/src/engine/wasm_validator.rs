@@ -1,11 +1,11 @@
 use scrypto::buffer::scrypto_decode;
 use scrypto::rust::vec;
 use scrypto::rust::vec::Vec;
-use scrypto::rust::string::String;
 use wasmi::*;
 
 use crate::engine::*;
 use crate::errors::*;
+use crate::model::Package;
 
 /// Parses a WASM module.
 pub fn parse_module(code: &[u8]) -> Result<Module, WasmValidationError> {
@@ -13,9 +13,9 @@ pub fn parse_module(code: &[u8]) -> Result<Module, WasmValidationError> {
 }
 
 /// Validates a WASM module.
-pub fn initialize_package(code: &[u8]) -> Result<Vec<String>, WasmValidationError> {
+pub fn initialize_package(code: Vec<u8>) -> Result<Package, WasmValidationError> {
     // Parse
-    let parsed = parse_module(code)?;
+    let parsed = parse_module(&code)?;
 
     // check floating point
     parsed
@@ -45,7 +45,7 @@ pub fn initialize_package(code: &[u8]) -> Result<Vec<String>, WasmValidationErro
         .map_err(|e| WasmValidationError::NoPackageInitExport(e.into()))?
         .ok_or(WasmValidationError::InvalidPackageInit)?;
 
-    match rtn {
+    let blueprints = match rtn {
         RuntimeValue::I32(ptr) => {
             let len: u32 = memory
                 .get_value(ptr as u32)
@@ -60,5 +60,7 @@ pub fn initialize_package(code: &[u8]) -> Result<Vec<String>, WasmValidationErro
             scrypto_decode(&data).map_err(|_| WasmValidationError::InvalidPackageInit)
         }
         _ => Err(WasmValidationError::InvalidPackageInit)
-    }
+    }?;
+
+    Ok(Package::new(blueprints, code))
 }

@@ -679,8 +679,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     pub fn publish_package(&mut self, code: Vec<u8>) -> Result<PackageId, RuntimeError> {
         re_debug!(self, "Publishing a package");
 
-        let _ = initialize_package(&code).map_err(RuntimeError::WasmValidationError)?;
-        let package_id = self.track.create_package(Package::new(code));
+        let package = initialize_package(code).map_err(RuntimeError::WasmValidationError)?;
+        let package_id = self.track.create_package(package);
         Ok(package_id)
     }
 
@@ -709,8 +709,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             invocation.export_name
         );
 
-        let (package_id, interpreter_state) = match invocation.actor {
-            Actor::Blueprint(package_id, ..) => Ok((package_id, InterpreterState::Blueprint)),
+        let (package_id, blueprint_name, interpreter_state) = match invocation.actor {
+            Actor::Blueprint(package_id, ref blueprint_name) => Ok((package_id, blueprint_name.clone(), InterpreterState::Blueprint)),
             Actor::Component(package_id, ref blueprint_name, component_id) => {
                 // Retrieve schema
                 // TODO: Remove this call into the abi
@@ -737,15 +737,17 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     initial_loaded_object_refs,
                     additional_object_refs: ComponentObjectRefs::new(),
                 };
-                Ok((package_id, component))
+                Ok((package_id, blueprint_name.clone(), component))
             }
         }?;
 
-        // Load the code
-        let (module, memory) = self
-            .track
-            .load_module(package_id)
-            .ok_or(RuntimeError::PackageNotFound(package_id))?;
+        let package = self.track.get_package(package_id).ok_or(RuntimeError::PackageNotFound(package_id))?;
+        let (module, memory) = package.load_blueprint(blueprint_name).map_err(|e| {
+            match e {
+                PackageError::BlueprintNotFound(blueprint_name) => RuntimeError::BlueprintNotFound(blueprint_name, package_id)
+            }
+        })?;
+
         let vm = Interpreter {
             invocation: invocation.clone(),
             module: module.clone(),

@@ -32,7 +32,7 @@ impl<'l, L: SubstateStore> AbiProvider for TransactionExecutor<'l, L> {
             .ok_or(RuntimeError::PackageNotFound(package_id))?;
 
         BasicAbiProvider::new(self.trace)
-            .with_package(package_id, package.code().to_vec())
+            .with_package(package_id, package.code().to_vec(), blueprint_name.to_string())
             .export_abi(package_id, blueprint_name)
     }
 
@@ -51,7 +51,7 @@ impl<'l, L: SubstateStore> AbiProvider for TransactionExecutor<'l, L> {
             .map(|(package, _)| package)
             .unwrap();
         BasicAbiProvider::new(self.trace)
-            .with_package(component.package_id(), package.code().to_vec())
+            .with_package(component.package_id(), package.code().to_vec(), component.blueprint_name().to_string())
             .export_abi(component.package_id(), component.blueprint_name())
     }
 }
@@ -84,7 +84,7 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
 
     /// Creates an account with 1,000,000 XRD in balance.
     pub fn new_account(&mut self, withdraw_auth: &ProofRule) -> ComponentId {
-        self.run(
+        let receipt = self.run(
             TransactionBuilder::new(self)
                 .call_method(SYSTEM_COMPONENT, "free_xrd", vec![])
                 .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
@@ -93,8 +93,10 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
                 .build(Vec::new())
                 .unwrap(),
         )
-        .unwrap()
-        .new_component_ids[0]
+        .unwrap();
+
+        receipt.result.expect("Should be okay");
+        receipt.new_component_ids[0]
     }
 
     /// Creates a new public key and account associated with it
@@ -126,13 +128,14 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
     }
 
     /// Overwrites a package.
-    pub fn overwrite_package(&mut self, package_id: PackageId, code: &[u8]) {
-        let package = Package::new(code.to_vec());
+    pub fn overwrite_package(&mut self, package_id: PackageId, code: Vec<u8>) -> Result<(), WasmValidationError> {
+        let package = initialize_package(code)?;
         self.substate_store.put_encoded_substate(
             &package_id,
             &package,
             self.substate_store.get_nonce(),
         );
+        Ok(())
     }
 
     /// This is a convenience method that validates and runs a transaction in one shot.

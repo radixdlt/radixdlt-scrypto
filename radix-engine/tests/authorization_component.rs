@@ -31,7 +31,7 @@ fn cannot_make_cross_component_call_without_authorization() {
         .build(vec![])
         .unwrap();
     let receipt = test_runner.run(transaction);
-    assert!(receipt.result.is_ok());
+    receipt.result.expect("Should be okay");
     let secured_component = receipt.new_component_ids[0];
 
     let transaction = test_runner
@@ -85,7 +85,7 @@ fn can_make_cross_component_call_with_authorization() {
         .build(vec![])
         .unwrap();
     let receipt = test_runner.run(transaction);
-    assert!(receipt.result.is_ok());
+    receipt.result.expect("Should be okay");
     let secured_component = receipt.new_component_ids[0];
 
     let transaction = test_runner
