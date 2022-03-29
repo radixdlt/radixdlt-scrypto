@@ -66,22 +66,6 @@ impl Decimal {
     pub fn abs(&self) -> Decimal {
         Decimal(self.0.abs())
     }
-
-    pub fn max(a: Self, b: Self) -> Self {
-        if a >= b {
-            a
-        } else {
-            b
-        }
-    }
-
-    pub fn min(a: Self, b: Self) -> Self {
-        if a <= b {
-            a
-        } else {
-            b
-        }
-    }
 }
 
 macro_rules! from_int {
