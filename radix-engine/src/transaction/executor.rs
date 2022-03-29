@@ -87,7 +87,9 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
         self.run(
             TransactionBuilder::new(self)
                 .call_method(SYSTEM_COMPONENT, "free_xrd", vec![])
-                .new_account_with_resource(withdraw_auth, &ResourceSpecifier::All(RADIX_TOKEN))
+                .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
+                    builder.new_account_with_resource(withdraw_auth, bucket_id)
+                })
                 .build(Vec::new())
                 .unwrap(),
         )
@@ -166,7 +168,12 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
         let mut outputs = vec![];
         for inst in transaction.clone().instructions {
             let result = match inst {
-                ValidatedInstruction::TakeFromWorktop {
+                ValidatedInstruction::TakeFromWorktop { resource_def_id } => proc
+                    .take_all_from_worktop(resource_def_id)
+                    .map(|bucket_id| {
+                        ValidatedData::from_value(&scrypto::resource::Bucket(bucket_id))
+                    }),
+                ValidatedInstruction::TakeFromWorktopByAmount {
                     amount,
                     resource_def_id,
                 } => proc
@@ -174,12 +181,7 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
                     .map(|bucket_id| {
                         ValidatedData::from_value(&scrypto::resource::Bucket(bucket_id))
                     }),
-                ValidatedInstruction::TakeAllFromWorktop { resource_def_id } => proc
-                    .take_all_from_worktop(resource_def_id)
-                    .map(|bucket_id| {
-                        ValidatedData::from_value(&scrypto::resource::Bucket(bucket_id))
-                    }),
-                ValidatedInstruction::TakeNonFungiblesFromWorktop {
+                ValidatedInstruction::TakeFromWorktopByIds {
                     ids,
                     resource_def_id,
                 } => proc
@@ -190,17 +192,42 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
                 ValidatedInstruction::ReturnToWorktop { bucket_id } => {
                     proc.return_to_worktop(bucket_id)
                 }
-                ValidatedInstruction::PopFromAuthZone {} => proc
-                    .pop_from_auth_zone()
-                    .map(|proof_id| ValidatedData::from_value(&scrypto::resource::Proof(proof_id))),
-                ValidatedInstruction::PushOntoAuthZone { proof_id } => proc
-                    .push_onto_auth_zone(proof_id)
-                    .map(|_| ValidatedData::from_value(&())),
-                ValidatedInstruction::AssertWorktopContains {
+                ValidatedInstruction::AssertWorktopContains { resource_def_id } => {
+                    proc.assert_worktop_contains(resource_def_id)
+                }
+                ValidatedInstruction::AssertWorktopContainsByAmount {
                     amount,
                     resource_def_id,
-                } => proc.assert_worktop_contains(amount, resource_def_id),
-                ValidatedInstruction::CreateBucketProof { bucket_id } => proc
+                } => proc.assert_worktop_contains_by_amount(amount, resource_def_id),
+                ValidatedInstruction::AssertWorktopContainsByIds {
+                    ids,
+                    resource_def_id,
+                } => proc.assert_worktop_contains_by_ids(&ids, resource_def_id),
+                ValidatedInstruction::TakeFromAuthZone {} => proc
+                    .take_from_auth_zone()
+                    .map(|proof_id| ValidatedData::from_value(&scrypto::resource::Proof(proof_id))),
+                ValidatedInstruction::ClearAuthZone => proc
+                    .drop_all_auth_zone_proofs()
+                    .map(|_| ValidatedData::from_value(&())),
+                ValidatedInstruction::MoveToAuthZone { proof_id } => proc
+                    .move_to_auth_zone(proof_id)
+                    .map(|_| ValidatedData::from_value(&())),
+                ValidatedInstruction::CreateProofFromAuthZone { resource_def_id } => proc
+                    .create_auth_zone_proof(resource_def_id)
+                    .map(|proof_id| ValidatedData::from_value(&scrypto::resource::Proof(proof_id))),
+                ValidatedInstruction::CreateProofFromAuthZoneByAmount {
+                    amount,
+                    resource_def_id,
+                } => proc
+                    .create_auth_zone_proof_by_amount(amount, resource_def_id)
+                    .map(|proof_id| ValidatedData::from_value(&scrypto::resource::Proof(proof_id))),
+                ValidatedInstruction::CreateProofFromAuthZoneByIds {
+                    ids,
+                    resource_def_id,
+                } => proc
+                    .create_auth_zone_proof_by_ids(&ids, resource_def_id)
+                    .map(|proof_id| ValidatedData::from_value(&scrypto::resource::Proof(proof_id))),
+                ValidatedInstruction::CreateProofFromBucket { bucket_id } => proc
                     .create_bucket_proof(bucket_id)
                     .map(|proof_id| ValidatedData::from_value(&scrypto::resource::Proof(proof_id))),
                 ValidatedInstruction::CloneProof { proof_id } => proc

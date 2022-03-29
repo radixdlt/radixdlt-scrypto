@@ -6,7 +6,13 @@ use radix_engine::errors::RuntimeError;
 use radix_engine::ledger::InMemorySubstateStore;
 use scrypto::prelude::*;
 
-fn test_dynamic_auth(num_keys: usize, initial_auth: usize, update_auth: Option<usize>, signers: &[usize], should_succeed: bool) {
+fn test_dynamic_auth(
+    num_keys: usize,
+    initial_auth: usize,
+    update_auth: Option<usize>,
+    signers: &[usize],
+    should_succeed: bool,
+) {
     // Arrange
     let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(&mut substate_store);
@@ -29,7 +35,7 @@ fn test_dynamic_auth(num_keys: usize, initial_auth: usize, update_auth: Option<u
             package,
             "AuthComponent",
             "create_component",
-            vec!(scrypto_encode(addresses.get(initial_auth).unwrap()))
+            vec![scrypto_encode(addresses.get(initial_auth).unwrap())],
         )
         .build(vec![])
         .unwrap();
@@ -47,10 +53,7 @@ fn test_dynamic_auth(num_keys: usize, initial_auth: usize, update_auth: Option<u
             )
             .build(vec![])
             .unwrap();
-        test_runner
-            .run(update_txn)
-            .result
-            .expect("Should be okay.");
+        test_runner.run(update_txn).result.expect("Should be okay.");
     }
 
     // Act
@@ -146,10 +149,14 @@ fn dynamic_auth_should_allow_me_to_call_method_when_change_auth() {
     test_dynamic_auth(2, 0, Some(1), &[1], true);
 }
 
-
 #[test]
 fn dynamic_this_should_fail_on_dynamic_list() {
-    test_dynamic_authlist(3, this!(SborPath::from_str("0").unwrap()), &[0, 1, 2], false);
+    test_dynamic_authlist(
+        3,
+        this!(SborPath::from_str("0").unwrap()),
+        &[0, 1, 2],
+        false,
+    );
 }
 
 #[test]
@@ -164,22 +171,42 @@ fn dynamic_all_of_should_fail_on_nonexistent_resource() {
 
 #[test]
 fn dynamic_min_n_of_should_allow_me_to_call_method() {
-    test_dynamic_authlist(3, min_n_of!(2, SborPath::from_str("0").unwrap()), &[0, 1], true);
+    test_dynamic_authlist(
+        3,
+        min_n_of!(2, SborPath::from_str("0").unwrap()),
+        &[0, 1],
+        true,
+    );
 }
 
 #[test]
 fn dynamic_min_n_of_should_fail_if_not_signed_enough() {
-    test_dynamic_authlist(3, min_n_of!(2, SborPath::from_str("0").unwrap()), &[0], false);
+    test_dynamic_authlist(
+        3,
+        min_n_of!(2, SborPath::from_str("0").unwrap()),
+        &[0],
+        false,
+    );
 }
 
 #[test]
 fn dynamic_min_n_of_should_fail_if_path_does_not_exist() {
-    test_dynamic_authlist(3, min_n_of!(1, SborPath::from_str("1").unwrap()), &[0, 1], false);
+    test_dynamic_authlist(
+        3,
+        min_n_of!(1, SborPath::from_str("1").unwrap()),
+        &[0, 1],
+        false,
+    );
 }
 
 #[test]
 fn dynamic_all_of_should_allow_me_to_call_method() {
-    test_dynamic_authlist(3, all_of!(SborPath::from_str("0").unwrap()), &[0, 1, 2], true);
+    test_dynamic_authlist(
+        3,
+        all_of!(SborPath::from_str("0").unwrap()),
+        &[0, 1, 2],
+        true,
+    );
 }
 
 #[test]

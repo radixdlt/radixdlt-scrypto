@@ -13,14 +13,14 @@ pub struct AuthZone {}
 impl AuthZone {
     /// Pushes a proof to the auth zone.
     pub fn push(proof: Proof) {
-        let input = PushOntoAuthZoneInput { proof_id: proof.0 };
-        let _: PushOntoAuthZoneOutput = call_engine(PUSH_ONTO_AUTH_ZONE, input);
+        let input = MoveToAuthZoneInput { proof_id: proof.0 };
+        let _: MoveToAuthZoneOutput = call_engine(MOVE_TO_AUTH_ZONE, input);
     }
 
     /// Pops the most recently added proof from the auth zone.
     pub fn pop() -> Proof {
-        let input = PopFromAuthZoneInput {};
-        let output: PopFromAuthZoneOutput = call_engine(POP_FROM_AUTH_ZONE, input);
+        let input = TakeFromAuthZoneInput {};
+        let output: TakeFromAuthZoneOutput = call_engine(TAKE_FROM_AUTH_ZONE, input);
 
         Proof(output.proof_id.into())
     }

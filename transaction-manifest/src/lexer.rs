@@ -3,9 +3,9 @@ use std::str::FromStr;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Span {
     /// The start of the span, inclusive
-    pub start: usize,
-    /// The end of the span, exclusive
-    pub end: usize,
+    pub start: (usize, usize),
+    /// The end of the span, inclusive
+    pub end: (usize, usize),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -81,13 +81,19 @@ pub enum TokenKind {
 
     /* Instructions */
     TakeFromWorktop,
-    TakeAllFromWorktop,
-    TakeNonFungiblesFromWorktop,
+    TakeFromWorktopByAmount,
+    TakeFromWorktopByIds,
     ReturnToWorktop,
     AssertWorktopContains,
-    PopFromAuthZone,
-    PushOntoAuthZone,
-    CreateBucketProof,
+    AssertWorktopContainsByAmount,
+    AssertWorktopContainsByIds,
+    TakeFromAuthZone,
+    MoveToAuthZone,
+    ClearAuthZone,
+    CreateProofFromAuthZone,
+    CreateProofFromAuthZoneByAmount,
+    CreateProofFromAuthZoneByIds,
+    CreateProofFromBucket,
     CloneProof,
     DropProof,
     CallFunction,
@@ -394,13 +400,21 @@ impl Lexer {
             "Blob" => Ok(TokenKind::Blob),
 
             "TAKE_FROM_WORKTOP" => Ok(TokenKind::TakeFromWorktop),
-            "TAKE_ALL_FROM_WORKTOP" => Ok(TokenKind::TakeAllFromWorktop),
-            "TAKE_NON_FUNGIBLES_FROM_WORKTOP" => Ok(TokenKind::TakeNonFungiblesFromWorktop),
+            "TAKE_FROM_WORKTOP_BY_AMOUNT" => Ok(TokenKind::TakeFromWorktopByAmount),
+            "TAKE_FROM_WORKTOP_BY_IDS" => Ok(TokenKind::TakeFromWorktopByIds),
             "RETURN_TO_WORKTOP" => Ok(TokenKind::ReturnToWorktop),
             "ASSERT_WORKTOP_CONTAINS" => Ok(TokenKind::AssertWorktopContains),
-            "POP_FROM_AUTH_ZONE" => Ok(TokenKind::PopFromAuthZone),
-            "PUSH_ONTO_AUTH_ZONE" => Ok(TokenKind::PushOntoAuthZone),
-            "CREATE_BUCKET_PROOF" => Ok(TokenKind::CreateBucketProof),
+            "ASSERT_WORKTOP_CONTAINS_BY_AMOUNT" => Ok(TokenKind::AssertWorktopContainsByAmount),
+            "ASSERT_WORKTOP_CONTAINS_BY_IDS" => Ok(TokenKind::AssertWorktopContainsByIds),
+            "TAKE_FROM_AUTH_ZONE" => Ok(TokenKind::TakeFromAuthZone),
+            "MOVE_TO_AUTH_ZONE" => Ok(TokenKind::MoveToAuthZone),
+            "CLEAR_AUTH_ZONE" => Ok(TokenKind::ClearAuthZone),
+            "CREATE_PROOF_FROM_AUTH_ZONE" => Ok(TokenKind::CreateProofFromAuthZone),
+            "CREATE_PROOF_FROM_AUTH_ZONE_BY_AMOUNT" => {
+                Ok(TokenKind::CreateProofFromAuthZoneByAmount)
+            }
+            "CREATE_PROOF_FROM_AUTH_ZONE_BY_IDS" => Ok(TokenKind::CreateProofFromAuthZoneByIds),
+            "CREATE_PROOF_FROM_BUCKET" => Ok(TokenKind::CreateProofFromBucket),
             "CLONE_PROOF" => Ok(TokenKind::CloneProof),
             "DROP_PROOF" => Ok(TokenKind::DropProof),
             "CALL_FUNCTION" => Ok(TokenKind::CallFunction),
@@ -433,12 +447,27 @@ impl Lexer {
         Ok(self.new_token(token_kind, start))
     }
 
+    fn index_to_coordinate(&self, index_inclusive: usize) -> (usize, usize) {
+        // better to track this dynamically, instead of computing for each token
+        let mut row = 1;
+        let mut col = 1;
+        for i in 0..index_inclusive + 1 {
+            if self.text[i] == '\n' {
+                row += 1;
+                col = 1;
+            } else {
+                col += 1;
+            }
+        }
+        (row, col)
+    }
+
     fn new_token(&self, kind: TokenKind, start: usize) -> Token {
         Token {
             kind,
             span: Span {
-                start,
-                end: self.current,
+                start: self.index_to_coordinate(start),
+                end: self.index_to_coordinate(self.current - 1),
             },
         }
     }

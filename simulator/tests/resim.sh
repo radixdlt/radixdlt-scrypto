@@ -22,7 +22,7 @@ token_resource_def=`$resim new-token-mutable $minter_badge | tee /dev/tty | awk 
 
 # Test - mint and transfer
 $resim mint 777 $token_resource_def $minter_badge --signers $account_public_key
-$resim transfer 111,$token_resource_def $account2 --signers $account_public_key
+$resim transfer 111 $token_resource_def $account2 --signers $account_public_key
 
 # Test - publish, call-funciton and call-method
 package=`$resim publish ../examples/hello-world | tee /dev/tty | awk '/Package:/ {print $NF}'`

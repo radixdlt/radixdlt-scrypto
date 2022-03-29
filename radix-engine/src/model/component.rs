@@ -1,12 +1,14 @@
 use crate::model::method_authorization::{
-    HardProofRule, HardResourceOrNonFungible, HardProofRuleResourceList,
+    HardProofRule, HardProofRuleResourceList, HardResourceOrNonFungible,
 };
 use crate::model::{MethodAuthorization, ValidatedData};
 use sbor::any::Value;
 use sbor::*;
 use scrypto::engine::types::*;
 use scrypto::prelude::SoftResource;
-use scrypto::resource::{NonFungibleAddress, ProofRule, SoftResourceOrNonFungible, SoftResourceOrNonFungibleList};
+use scrypto::resource::{
+    NonFungibleAddress, ProofRule, SoftResourceOrNonFungible, SoftResourceOrNonFungibleList,
+};
 use scrypto::rust::collections::*;
 use scrypto::rust::string::String;
 use scrypto::rust::vec::Vec;
@@ -139,7 +141,8 @@ impl Component {
     fn soft_to_hard_rule(proof_rule: &ProofRule, dom: &Value) -> HardProofRule {
         match proof_rule {
             ProofRule::This(soft_resource_or_non_fungible) => {
-                let resource = Self::soft_to_hard_resource_or_non_fungible(soft_resource_or_non_fungible, dom);
+                let resource =
+                    Self::soft_to_hard_resource_or_non_fungible(soft_resource_or_non_fungible, dom);
                 HardProofRule::This(resource)
             }
             ProofRule::AmountOf(amount, soft_resource) => {

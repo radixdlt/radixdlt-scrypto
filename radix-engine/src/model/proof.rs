@@ -174,7 +174,7 @@ impl Proof {
                     for (source_id, (container, amount)) in sources {
                         container
                             .borrow_mut()
-                            .lock_amount(amount.clone())
+                            .lock_by_amount(amount.clone())
                             .map_err(ProofError::ResourceContainerError)
                             .expect("Re-locking should always succeed");
                         new_sources.insert(source_id.clone(), (container.clone(), amount.clone()));
@@ -241,7 +241,7 @@ impl Proof {
                     for (source_id, (container, ids)) in sources {
                         container
                             .borrow_mut()
-                            .lock_ids(ids)
+                            .lock_by_ids(ids)
                             .map_err(ProofError::ResourceContainerError)
                             .expect("Re-locking should always succeed");
                         new_sources.insert(source_id.clone(), (container.clone(), ids.clone()));
@@ -270,7 +270,7 @@ impl Proof {
                 for (container, amount) in sources.values() {
                     container
                         .borrow_mut()
-                        .lock_amount(amount.clone())
+                        .lock_by_amount(amount.clone())
                         .expect("Cloning should always succeed");
                 }
 
@@ -290,7 +290,7 @@ impl Proof {
                 for (container, ids) in sources.values() {
                     container
                         .borrow_mut()
-                        .lock_ids(ids)
+                        .lock_by_ids(ids)
                         .expect("Cloning should always succeed");
                 }
 
@@ -310,7 +310,7 @@ impl Proof {
                 for (container, amount) in sources.values() {
                     container
                         .borrow_mut()
-                        .unlock_amount(amount.clone())
+                        .unlock_by_amount(amount.clone())
                         .expect("Unlocking should always succeed");
                 }
             }
@@ -318,7 +318,7 @@ impl Proof {
                 for (container, ids) in sources.values() {
                     container
                         .borrow_mut()
-                        .unlock_ids(ids)
+                        .unlock_by_ids(ids)
                         .expect("Unlocking should always succeed");
                 }
             }

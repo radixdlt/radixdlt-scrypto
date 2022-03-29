@@ -4,7 +4,6 @@ pub mod test_runner;
 use crate::test_runner::TestRunner;
 use radix_engine::errors::RuntimeError;
 use radix_engine::ledger::InMemorySubstateStore;
-use radix_engine::transaction::ResourceSpecifier;
 use scrypto::prelude::*;
 
 #[test]
@@ -220,7 +219,7 @@ fn can_create_proof_from_account_and_pass_on() {
     let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(&mut substate_store);
     let (key, account) = test_runner.new_public_key_with_account();
-    let resource_def_id = test_runner.create_non_fungible_resource(account);
+    let resource_def_id = test_runner.create_fungible_resource(100.into(), account);
     let package_id = test_runner.publish_package("proof");
 
     // Act
@@ -248,7 +247,7 @@ fn cant_move_restricted_proof() {
     let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(&mut substate_store);
     let (key, account) = test_runner.new_public_key_with_account();
-    let resource_def_id = test_runner.create_non_fungible_resource(account);
+    let resource_def_id = test_runner.create_fungible_resource(100.into(), account);
     let package_id = test_runner.publish_package("proof");
 
     // Act
@@ -293,20 +292,14 @@ fn can_compose_bucket_and_vault_proof() {
     // Act
     let transaction = test_runner
         .new_transaction_builder()
-        .withdraw_from_account(
-            &ResourceSpecifier::Amount(99.into(), resource_def_id),
-            account,
-        )
-        .take_from_worktop(
-            &ResourceSpecifier::Amount(99.into(), resource_def_id),
-            |builder, bucket_id| {
-                builder.call_method(
-                    component_id,
-                    "compose_vault_and_bucket_proof",
-                    args![Bucket(bucket_id)],
-                )
-            },
-        )
+        .withdraw_from_account_by_amount(99.into(), resource_def_id, account)
+        .take_from_worktop_by_amount(99.into(), resource_def_id, |builder, bucket_id| {
+            builder.call_method(
+                component_id,
+                "compose_vault_and_bucket_proof",
+                args![Bucket(bucket_id)],
+            )
+        })
         .build(vec![key])
         .unwrap();
     let receipt = test_runner.run(transaction);
@@ -336,20 +329,14 @@ fn can_compose_bucket_and_vault_proof_by_amount() {
     // Act
     let transaction = test_runner
         .new_transaction_builder()
-        .withdraw_from_account(
-            &ResourceSpecifier::Amount(99.into(), resource_def_id),
-            account,
-        )
-        .take_from_worktop(
-            &ResourceSpecifier::Amount(99.into(), resource_def_id),
-            |builder, bucket_id| {
-                builder.call_method(
-                    component_id,
-                    "compose_vault_and_bucket_proof_by_amount",
-                    args![Bucket(bucket_id), Decimal::from(2)],
-                )
-            },
-        )
+        .withdraw_from_account_by_amount(99.into(), resource_def_id, account)
+        .take_from_worktop_by_amount(99.into(), resource_def_id, |builder, bucket_id| {
+            builder.call_method(
+                component_id,
+                "compose_vault_and_bucket_proof_by_amount",
+                args![Bucket(bucket_id), Decimal::from(2)],
+            )
+        })
         .build(vec![key])
         .unwrap();
     let receipt = test_runner.run(transaction);
@@ -379,18 +366,14 @@ fn can_compose_bucket_and_vault_proof_by_ids() {
     // Act
     let transaction = test_runner
         .new_transaction_builder()
-        .withdraw_from_account(
-            &ResourceSpecifier::Ids(
-                BTreeSet::from([NonFungibleId::from(2), NonFungibleId::from(3)]),
-                resource_def_id,
-            ),
+        .withdraw_from_account_by_ids(
+            &BTreeSet::from([NonFungibleId::from(2), NonFungibleId::from(3)]),
+            resource_def_id,
             account,
         )
-        .take_from_worktop(
-            &ResourceSpecifier::Ids(
-                BTreeSet::from([NonFungibleId::from(2), NonFungibleId::from(3)]),
-                resource_def_id,
-            ),
+        .take_from_worktop_by_ids(
+            &BTreeSet::from([NonFungibleId::from(2), NonFungibleId::from(3)]),
+            resource_def_id,
             |builder, bucket_id| {
                 builder.call_method(
                     component_id,

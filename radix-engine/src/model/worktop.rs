@@ -36,7 +36,7 @@ impl Worktop {
         resource_def_id: ResourceDefId,
     ) -> Result<Bucket, ResourceContainerError> {
         if let Some(mut container) = self.borrow_container_mut(resource_def_id) {
-            container.take(amount).map(Bucket::new)
+            container.take_by_amount(amount).map(Bucket::new)
         } else {
             Err(ResourceContainerError::InsufficientBalance)
         }
@@ -56,7 +56,7 @@ impl Worktop {
         resource_def_id: ResourceDefId,
     ) -> Result<Bucket, ResourceContainerError> {
         if let Some(mut container) = self.borrow_container_mut(resource_def_id) {
-            container.take_non_fungibles(ids).map(Bucket::new)
+            container.take_by_ids(ids).map(Bucket::new)
         } else {
             Err(ResourceContainerError::InsufficientBalance)
         }
@@ -67,7 +67,7 @@ impl Worktop {
         resource_def_id: ResourceDefId,
     ) -> Result<Option<Bucket>, ResourceContainerError> {
         if let Some(mut container) = self.borrow_container_mut(resource_def_id) {
-            Ok(Some(Bucket::new(container.take_all()?)))
+            Ok(Some(Bucket::new(container.take_all_liquid()?)))
         } else {
             Ok(None)
         }
@@ -77,11 +77,22 @@ impl Worktop {
         self.containers.keys().cloned().collect()
     }
 
-    pub fn contains(&self, amount: Decimal, resource_def_id: ResourceDefId) -> bool {
+    pub fn total_amount(&self, resource_def_id: ResourceDefId) -> Decimal {
         if let Some(container) = self.borrow_container(resource_def_id) {
-            container.total_amount() >= amount
+            container.total_amount()
         } else {
-            false
+            Decimal::zero()
+        }
+    }
+
+    pub fn total_ids(
+        &self,
+        resource_def_id: ResourceDefId,
+    ) -> Result<BTreeSet<NonFungibleId>, ResourceContainerError> {
+        if let Some(container) = self.borrow_container(resource_def_id) {
+            container.total_ids()
+        } else {
+            Ok(BTreeSet::new())
         }
     }
 

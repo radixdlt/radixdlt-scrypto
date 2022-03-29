@@ -92,7 +92,7 @@ impl ResourceContainer {
         Ok(())
     }
 
-    pub fn take(&mut self, amount: Decimal) -> Result<Self, ResourceContainerError> {
+    pub fn take_by_amount(&mut self, amount: Decimal) -> Result<Self, ResourceContainerError> {
         // check amount granularity
         let divisibility = self.resource_type().divisibility();
         Self::check_amount(amount, divisibility)?;
@@ -121,7 +121,7 @@ impl ResourceContainer {
         }
     }
 
-    pub fn take_non_fungibles(
+    pub fn take_by_ids(
         &mut self,
         ids: &BTreeSet<NonFungibleId>,
     ) -> Result<Self, ResourceContainerError> {
@@ -138,11 +138,11 @@ impl ResourceContainer {
         }
     }
 
-    pub fn take_all(&mut self) -> Result<Self, ResourceContainerError> {
-        self.take(self.liquid_amount())
+    pub fn take_all_liquid(&mut self) -> Result<Self, ResourceContainerError> {
+        self.take_by_amount(self.liquid_amount())
     }
 
-    pub fn lock_amount(&mut self, amount: Decimal) -> Result<(), ResourceContainerError> {
+    pub fn lock_by_amount(&mut self, amount: Decimal) -> Result<(), ResourceContainerError> {
         // TODO do we allow locking non-fungibles in a fungible way?
 
         // check amount granularity
@@ -176,7 +176,7 @@ impl ResourceContainer {
         }
     }
 
-    pub fn lock_ids(
+    pub fn lock_by_ids(
         &mut self,
         ids: &BTreeSet<NonFungibleId>,
     ) -> Result<(), ResourceContainerError> {
@@ -209,7 +209,7 @@ impl ResourceContainer {
         map.keys().cloned().max().unwrap_or(Decimal::zero())
     }
 
-    pub fn unlock_amount(&mut self, amount: Decimal) -> Result<(), ResourceContainerError> {
+    pub fn unlock_by_amount(&mut self, amount: Decimal) -> Result<(), ResourceContainerError> {
         // TODO do we allow locking non-fungibles in a fungible way?
 
         match self {
@@ -234,7 +234,7 @@ impl ResourceContainer {
         }
     }
 
-    pub fn unlock_ids(
+    pub fn unlock_by_ids(
         &mut self,
         ids: &BTreeSet<NonFungibleId>,
     ) -> Result<(), ResourceContainerError> {

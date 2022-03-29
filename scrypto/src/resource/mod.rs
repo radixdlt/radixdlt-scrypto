@@ -28,7 +28,9 @@ pub use non_fungible_address::{NonFungibleAddress, ParseNonFungibleAddressError}
 pub use non_fungible_data::NonFungibleData;
 pub use non_fungible_id::{NonFungibleId, ParseNonFungibleIdError};
 pub use proof::{ParseProofError, Proof};
-pub use proof_rule::{ProofRule, SoftResource, SoftResourceOrNonFungible, SoftResourceOrNonFungibleList, SborPath};
+pub use proof_rule::{
+    ProofRule, SborPath, SoftResource, SoftResourceOrNonFungible, SoftResourceOrNonFungibleList,
+};
 pub use resource_builder::{ResourceBuilder, DIVISIBILITY_MAXIMUM, DIVISIBILITY_NONE};
 pub use resource_def::{ParseResourceDefIdError, ResourceDef, ResourceDefId};
 pub use resource_flags::*;
