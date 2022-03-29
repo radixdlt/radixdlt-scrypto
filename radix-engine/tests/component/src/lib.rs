@@ -4,3 +4,5 @@ pub mod chess;
 pub mod component;
 pub mod cross_component;
 pub mod package;
+
+package_init!("AuthComponent");

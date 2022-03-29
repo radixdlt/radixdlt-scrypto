@@ -8,11 +8,45 @@ use wasmi::*;
 use crate::engine::*;
 use crate::model::*;
 
+#[derive(Debug, PartialEq, Clone)]
+pub enum WasmiError {
+    Validation(String),
+    Instantiation(String),
+    /// Function-level error.
+    Function(String),
+    /// Table-level error.
+    Table(String),
+    /// Memory-level error.
+    Memory(String),
+    /// Global-level error.
+    Global(String),
+    /// Value-level error.
+    Value(String),
+    Trap,
+    Host,
+}
+
+impl From<wasmi::Error> for WasmiError {
+    fn from(e: Error) -> Self {
+        match e {
+            Error::Validation(e) => WasmiError::Validation(e),
+            Error::Instantiation(e) => WasmiError::Instantiation(e),
+            Error::Function(e) => WasmiError::Function(e),
+            Error::Table(e) => WasmiError::Table(e),
+            Error::Memory(e) => WasmiError::Memory(e),
+            Error::Global(e) => WasmiError::Global(e),
+            Error::Value(e) => WasmiError::Value(e),
+            Error::Trap(_) => WasmiError::Trap,
+            Error::Host(_) => WasmiError::Host,
+        }
+    }
+}
+
 /// Represents an error when validating a WASM file.
 #[derive(Debug, PartialEq, Clone)]
 pub enum WasmValidationError {
     /// The wasm module is invalid.
-    InvalidModule(),
+    InvalidModule,
 
     /// The wasm module contains a start function.
     StartFunctionNotAllowed,
@@ -22,6 +56,7 @@ pub enum WasmValidationError {
 
     /// The wasm module does not have memory export.
     NoValidMemoryExport,
+    NoPackageInitExport(WasmiError),
 }
 
 /// Represents an error when parsing a value from a byte array.

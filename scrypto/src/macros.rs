@@ -153,3 +153,22 @@ macro_rules! include_package {
         ))
     };
 }
+
+
+#[macro_export]
+macro_rules! package_init {
+  ($($blueprint: expr),*) => (
+         #[no_mangle]
+          pub extern "C" fn package_init() -> *mut u8 {
+              let mut output: Vec<String> = Vec::new();
+              $(
+                  output.push($blueprint.to_string());
+              )*
+              // serialize the output
+              let output_bytes = ::scrypto::buffer::scrypto_encode_for_radix_engine(&output);
+
+              // return the output wrapped in a radix-style buffer
+              ::scrypto::buffer::scrypto_wrap(output_bytes)
+          }
+  )
+}

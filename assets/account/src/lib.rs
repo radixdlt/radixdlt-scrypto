@@ -90,3 +90,5 @@ blueprint! {
         }
     }
 }
+
+package_init!("Account");
