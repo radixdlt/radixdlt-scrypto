@@ -1,7 +1,7 @@
-use sbor::*;
 use crate::any::Fields;
 use crate::any::Value;
 use crate::rust::vec::Vec;
+use sbor::*;
 
 /// A series of indexes which describes some value in the sbor tree
 pub struct SborPath(Vec<usize>);

@@ -47,7 +47,8 @@ impl Component {
             SoftResourceOrNonFungibleList::Static(resources) => {
                 let mut hard_resources = Vec::new();
                 for soft_resource in resources {
-                    let resource = Self::soft_to_hard_resource_or_non_fungible(schema, soft_resource, dom);
+                    let resource =
+                        Self::soft_to_hard_resource_or_non_fungible(schema, soft_resource, dom);
                     hard_resources.push(resource);
                 }
                 HardProofRuleResourceList::List(hard_resources)
@@ -118,7 +119,7 @@ impl Component {
                     }
                     _ => HardResourceOrNonFungible::SoftResourceNotFound,
                 }
-            },
+            }
             SoftResource::Static(resource_def_id) => {
                 HardResourceOrNonFungible::Resource(resource_def_id.clone())
             }
@@ -165,8 +166,11 @@ impl Component {
     fn soft_to_hard_rule(schema: &Type, proof_rule: &ProofRule, dom: &Value) -> HardProofRule {
         match proof_rule {
             ProofRule::This(soft_resource_or_non_fungible) => {
-                let resource =
-                    Self::soft_to_hard_resource_or_non_fungible(schema, soft_resource_or_non_fungible, dom);
+                let resource = Self::soft_to_hard_resource_or_non_fungible(
+                    schema,
+                    soft_resource_or_non_fungible,
+                    dom,
+                );
                 HardProofRule::This(resource)
             }
             ProofRule::AmountOf(amount, soft_resource) => {

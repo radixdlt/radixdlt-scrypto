@@ -714,7 +714,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             Actor::Component(package_id, ref blueprint_name, component_id) => {
                 // Retrieve schema
                 // TODO: Remove this call into the abi
-                let (schema,_,_): (Type, Vec<abi::Function>, Vec<abi::Method>) =
+                let (schema, _, _): (Type, Vec<abi::Function>, Vec<abi::Method>) =
                     self.call_abi(package_id, &blueprint_name).and_then(|rtn| {
                         scrypto_decode(&rtn.raw).map_err(RuntimeError::AbiValidationError)
                     })?;
@@ -830,7 +830,11 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         args_with_self.extend(args);
 
         Ok(Invocation {
-            actor: Actor::Component(component.package_id(), component.blueprint_name().to_owned(), component_id),
+            actor: Actor::Component(
+                component.package_id(),
+                component.blueprint_name().to_owned(),
+                component_id,
+            ),
             export_name: format!("{}_main", component.blueprint_name()),
             function: method.to_owned(),
             args: args_with_self,
@@ -1367,14 +1371,10 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let new_objects = wasm_process.process_owned_objects.take(data)?;
         let authorization = input.authorization.to_map();
         let package_id = match wasm_process.vm.invocation.actor {
-            Actor::Blueprint(package_id, ..) | Actor::Component(package_id, ..) => package_id
+            Actor::Blueprint(package_id, ..) | Actor::Component(package_id, ..) => package_id,
         };
-        let component = Component::new(
-            package_id,
-            input.blueprint_name,
-            authorization,
-            input.state,
-        );
+        let component =
+            Component::new(package_id, input.blueprint_name, authorization, input.state);
         let component_id = self.track.create_component(component);
         self.track
             .insert_objects_into_component(new_objects, component_id);

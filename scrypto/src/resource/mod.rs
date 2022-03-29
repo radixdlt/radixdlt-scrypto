@@ -30,13 +30,13 @@ pub use non_fungible_data::NonFungibleData;
 pub use non_fungible_id::{NonFungibleId, ParseNonFungibleIdError};
 pub use proof::{ParseProofError, Proof};
 pub use proof_rule::{
-    ProofRule, SoftResource, SoftResourceOrNonFungible, SoftResourceOrNonFungibleList
+    ProofRule, SoftResource, SoftResourceOrNonFungible, SoftResourceOrNonFungibleList,
 };
-pub use schema_path::{SchemaPath};
 pub use resource_builder::{ResourceBuilder, DIVISIBILITY_MAXIMUM, DIVISIBILITY_NONE};
 pub use resource_def::{ParseResourceDefIdError, ResourceDef, ResourceDefId};
 pub use resource_flags::*;
 pub use resource_permissions::*;
 pub use resource_type::ResourceType;
+pub use schema_path::SchemaPath;
 pub use system::{init_resource_system, resource_system, ResourceSystem};
 pub use vault::{ParseVaultError, Vault};
