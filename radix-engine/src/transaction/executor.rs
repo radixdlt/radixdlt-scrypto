@@ -32,7 +32,7 @@ impl<'l, L: SubstateStore> AbiProvider for TransactionExecutor<'l, L> {
             .ok_or(RuntimeError::PackageNotFound(package_id))?;
 
         BasicAbiProvider::new(self.trace)
-            .with_package(package_id, package.code().to_vec(), blueprint_name.to_string())
+            .with_package(&package_id, package)
             .export_abi(package_id, blueprint_name)
     }
 
@@ -51,7 +51,7 @@ impl<'l, L: SubstateStore> AbiProvider for TransactionExecutor<'l, L> {
             .map(|(package, _)| package)
             .unwrap();
         BasicAbiProvider::new(self.trace)
-            .with_package(component.package_id(), package.code().to_vec(), component.blueprint_name().to_string())
+            .with_package(&component.package_id(), package)
             .export_abi(component.package_id(), component.blueprint_name())
     }
 }
@@ -129,7 +129,7 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
 
     /// Overwrites a package.
     pub fn overwrite_package(&mut self, package_id: PackageId, code: Vec<u8>) -> Result<(), WasmValidationError> {
-        let package = initialize_package(code)?;
+        let package = Package::new(code)?;
         self.substate_store.put_encoded_substate(
             &package_id,
             &package,
