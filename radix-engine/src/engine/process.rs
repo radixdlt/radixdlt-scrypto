@@ -978,6 +978,12 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
         match mint_params {
             MintParams::Fungible { amount } => {
+                // It takes `1,701,411,835` mint operations to reach `Decimal::MAX`,
+                // which will be impossible with metering.
+                if amount > 100_000_000_000i128.into() {
+                    return Err(RuntimeError::MaxMintAmountExceeded);
+                }
+
                 // Notify resource manager
                 resource_def.mint(amount);
 
