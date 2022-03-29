@@ -3,8 +3,9 @@ pub mod test_runner;
 
 use crate::test_runner::TestRunner;
 use radix_engine::errors::RuntimeError;
-use radix_engine::ledger::InMemorySubstateStore;
+use radix_engine::ledger::{InMemorySubstateStore, SubstateStore};
 use radix_engine::transaction::*;
+use radix_engine::model::{Component, HardProofRule, MethodAuthorization};
 use scrypto::prelude::*;
 
 #[test]
@@ -98,10 +99,9 @@ fn can_make_cross_component_call_with_authorization() {
     assert!(receipt.result.is_ok());
     let my_component = receipt.new_component_ids[0];
 
-    let auth_amount = ResourceSpecifier::Ids(BTreeSet::from([auth_id.clone()]), auth);
     let transaction = test_runner
         .new_transaction_builder()
-        .withdraw_from_account(&auth_amount, account)
+        .withdraw_from_account_by_ids(&BTreeSet::from([auth_id.clone()]), auth, account)
         .call_method_with_all_resources(my_component, "put_auth")
         .build(vec![])
         .unwrap();

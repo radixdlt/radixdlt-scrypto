@@ -15,38 +15,66 @@ pub struct Transaction {
 /// Represents an unvalidated instruction in transaction
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
 pub enum Instruction {
-    /// Takes fixed amount resource from worktop.
-    TakeFromWorktop {
+    /// Takes resource from worktop.
+    TakeFromWorktop { resource_def_id: ResourceDefId },
+
+    /// Takes resource from worktop by the given amount.
+    TakeFromWorktopByAmount {
         amount: Decimal,
         resource_def_id: ResourceDefId,
     },
 
-    /// Takes all of a given resource from worktop.
-    TakeAllFromWorktop { resource_def_id: ResourceDefId },
-
-    /// Takes non-fungibles from worktop.
-    TakeNonFungiblesFromWorktop {
+    /// Takes resource from worktop by the given non-fungible IDs.
+    TakeFromWorktopByIds {
         ids: BTreeSet<NonFungibleId>,
         resource_def_id: ResourceDefId,
     },
 
-    /// Returns resource to worktop.
+    /// Returns a bucket of resource to worktop.
     ReturnToWorktop { bucket_id: BucketId },
 
-    /// Asserts worktop contains at least this amount.
-    AssertWorktopContains {
+    /// Asserts worktop contains resource.
+    AssertWorktopContains { resource_def_id: ResourceDefId },
+
+    /// Asserts worktop contains resource by at least the given amount.
+    AssertWorktopContainsByAmount {
         amount: Decimal,
         resource_def_id: ResourceDefId,
     },
 
-    /// Takes from the auth zone.
-    PopFromAuthZone,
+    /// Asserts worktop contains resource by at least the given non-fungible IDs.
+    AssertWorktopContainsByIds {
+        ids: BTreeSet<NonFungibleId>,
+        resource_def_id: ResourceDefId,
+    },
 
-    /// Put a proof on the auth zone.
-    PushOntoAuthZone { proof_id: ProofId },
+    /// Takes the last proof from the auth zone.
+    TakeFromAuthZone,
 
-    /// Creates a proof.
-    CreateBucketProof { bucket_id: BucketId },
+    /// Adds a proof to the auth zone.
+    MoveToAuthZone { proof_id: ProofId },
+
+    /// Drops all proofs in the auth zone
+    ClearAuthZone,
+
+    // TODO: do we need `CreateProofFromWorktop`, to avoid taking resource out and then creating proof?
+    /// Creates a proof from the auth zone
+    CreateProofFromAuthZone { resource_def_id: ResourceDefId },
+
+    /// Creates a proof from the auth zone, by the given amount
+    CreateProofFromAuthZoneByAmount {
+        amount: Decimal,
+        resource_def_id: ResourceDefId,
+    },
+
+    /// Creates a proof from the auth zone, by the given non-fungible IDs.
+    CreateProofFromAuthZoneByIds {
+        ids: BTreeSet<NonFungibleId>,
+        resource_def_id: ResourceDefId,
+    },
+
+    /// Creates a proof from a bucket.
+    CreateProofFromBucket { bucket_id: BucketId },
 
     /// Clones a proof.
     CloneProof { proof_id: ProofId },
@@ -73,7 +101,7 @@ pub enum Instruction {
         args: Vec<Vec<u8>>,
     },
 
-    /// With method with all resources from transaction context.
+    /// Calls a component method with all resources owned by the transaction.
     CallMethodWithAllResources {
         component_id: ComponentId,
         method: String,
@@ -96,13 +124,13 @@ pub struct ValidatedTransaction {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ValidatedInstruction {
     TakeFromWorktop {
+        resource_def_id: ResourceDefId,
+    },
+    TakeFromWorktopByAmount {
         amount: Decimal,
         resource_def_id: ResourceDefId,
     },
-    TakeAllFromWorktop {
-        resource_def_id: ResourceDefId,
-    },
-    TakeNonFungiblesFromWorktop {
+    TakeFromWorktopByIds {
         ids: BTreeSet<NonFungibleId>,
         resource_def_id: ResourceDefId,
     },
@@ -110,14 +138,33 @@ pub enum ValidatedInstruction {
         bucket_id: BucketId,
     },
     AssertWorktopContains {
+        resource_def_id: ResourceDefId,
+    },
+    AssertWorktopContainsByAmount {
         amount: Decimal,
         resource_def_id: ResourceDefId,
     },
-    PopFromAuthZone,
-    PushOntoAuthZone {
+    AssertWorktopContainsByIds {
+        ids: BTreeSet<NonFungibleId>,
+        resource_def_id: ResourceDefId,
+    },
+    TakeFromAuthZone,
+    MoveToAuthZone {
         proof_id: ProofId,
     },
-    CreateBucketProof {
+    ClearAuthZone,
+    CreateProofFromAuthZone {
+        resource_def_id: ResourceDefId,
+    },
+    CreateProofFromAuthZoneByAmount {
+        amount: Decimal,
+        resource_def_id: ResourceDefId,
+    },
+    CreateProofFromAuthZoneByIds {
+        ids: BTreeSet<NonFungibleId>,
+        resource_def_id: ResourceDefId,
+    },
+    CreateProofFromBucket {
         bucket_id: BucketId,
     },
     CloneProof {

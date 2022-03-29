@@ -18,8 +18,8 @@ pub enum ProofKind {
     VirtualProof,
     /// Bucket proof.
     BucketProof(BucketId),
-    /// Proof taken from auth zone.
-    RuntimeProof,
+    /// Proof taken or derived from auth zone.
+    AuthZoneProof,
 }
 
 pub struct IdValidator {
@@ -30,12 +30,10 @@ pub struct IdValidator {
 
 impl IdValidator {
     pub fn new() -> Self {
-        let mut proof_ids = HashMap::new();
-        proof_ids.insert(ECDSA_TOKEN_PROOF_ID, ProofKind::VirtualProof);
         Self {
             id_allocator: IdAllocator::new(IdSpace::Transaction),
             bucket_ids: HashMap::new(),
-            proof_ids,
+            proof_ids: HashMap::new(),
         }
     }
 
@@ -70,7 +68,7 @@ impl IdValidator {
                     return Err(IdValidatorError::BucketNotFound(*bucket_id));
                 }
             }
-            ProofKind::RuntimeProof | ProofKind::VirtualProof => {}
+            ProofKind::AuthZoneProof | ProofKind::VirtualProof => {}
         }
 
         let proof_id = self

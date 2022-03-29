@@ -128,10 +128,19 @@ impl<'l> TestRunner<'l> {
         receipt.new_resource_def_ids[0]
     }
 
-    pub fn create_fungible_resource(&mut self, account: ComponentId) -> ResourceDefId {
+    pub fn create_fungible_resource(
+        &mut self,
+        amount: Decimal,
+        account: ComponentId,
+    ) -> ResourceDefId {
         let package = self.publish_package("resource_creator");
         let transaction = TransactionBuilder::new(&self.executor)
-            .call_function(package, "ResourceCreator", "create_fungible_fixed", vec![])
+            .call_function(
+                package,
+                "ResourceCreator",
+                "create_fungible_fixed",
+                args![amount],
+            )
             .call_method_with_all_resources(account, "deposit_batch")
             .build(vec![])
             .unwrap();

@@ -123,9 +123,9 @@ pub const GET_PROOF_RESOURCE_DEF_ID: u32 = 0x6C;
 /// Get the non-fungible ids in the proof
 pub const GET_NON_FUNGIBLE_IDS_IN_PROOF: u32 = 0x6D;
 /// Push a proof onto auth zone
-pub const PUSH_ONTO_AUTH_ZONE: u32 = 0x6E;
+pub const MOVE_TO_AUTH_ZONE: u32 = 0x6E;
 /// Pop a proof from auth zone
-pub const POP_FROM_AUTH_ZONE: u32 = 0x6F;
+pub const TAKE_FROM_AUTH_ZONE: u32 = 0x6F;
 
 /// Log a message
 pub const EMIT_LOG: u32 = 0xf0;
@@ -607,6 +607,38 @@ pub struct CreateVaultProofByIdsOutput {
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
+pub struct CreateAuthZoneProofInput {
+    pub resource_def_id: ResourceDefId,
+}
+
+#[derive(Debug, TypeId, Encode, Decode)]
+pub struct CreateAuthZoneProofOutput {
+    pub proof_id: ProofId,
+}
+
+#[derive(Debug, TypeId, Encode, Decode)]
+pub struct CreateAuthZoneProofByAmountInput {
+    pub resource_def_id: ResourceDefId,
+    pub amount: Decimal,
+}
+
+#[derive(Debug, TypeId, Encode, Decode)]
+pub struct CreateAuthZoneProofByAmountOutput {
+    pub proof_id: ProofId,
+}
+
+#[derive(Debug, TypeId, Encode, Decode)]
+pub struct CreateAuthZoneProofByIdsInput {
+    pub resource_def_id: ResourceDefId,
+    pub ids: BTreeSet<NonFungibleId>,
+}
+
+#[derive(Debug, TypeId, Encode, Decode)]
+pub struct CreateAuthZoneProofByIdsOutput {
+    pub proof_id: ProofId,
+}
+
+#[derive(Debug, TypeId, Encode, Decode)]
 pub struct DropProofInput {
     pub proof_id: ProofId,
 }
@@ -655,18 +687,18 @@ pub struct CloneProofOutput {
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct PushOntoAuthZoneInput {
+pub struct MoveToAuthZoneInput {
     pub proof_id: ProofId,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct PushOntoAuthZoneOutput {}
+pub struct MoveToAuthZoneOutput {}
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct PopFromAuthZoneInput {}
+pub struct TakeFromAuthZoneInput {}
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct PopFromAuthZoneOutput {
+pub struct TakeFromAuthZoneOutput {
     pub proof_id: ProofId,
 }
 
