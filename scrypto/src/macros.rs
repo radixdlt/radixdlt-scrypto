@@ -160,6 +160,9 @@ macro_rules! package_init {
   ($($blueprint: expr),*) => (
          #[no_mangle]
           pub extern "C" fn package_init() -> *mut u8 {
+              use ::scrypto::rust::string::String;
+              use ::scrypto::rust::collections::HashMap;
+
               let mut blueprints: HashMap<String, ::sbor::Type> = HashMap::new();
 
               $(
