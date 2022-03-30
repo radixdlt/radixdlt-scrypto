@@ -719,23 +719,24 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 let (module, memory) =
                     package
                         .load_for_function_call(&blueprint_name)
-                        .map_err(|_| {
-                            RuntimeError::BlueprintNotFound(
+                        .map_err(|e| match e {
+                            PackageError::BlueprintNotFound => RuntimeError::BlueprintNotFound(
                                 invocation.package_id,
                                 blueprint_name.clone(),
-                            )
+                            ),
                         })?;
 
                 Ok((module, memory, InterpreterState::Blueprint))
             }
             Actor::Component(ref blueprint_name, component_id) => {
                 // Retrieve schema
-                let (schema, module, memory) =
-                    package.load_for_method_call(&blueprint_name).map_err(|_| {
-                        RuntimeError::BlueprintNotFound(
+                let (schema, module, memory) = package
+                    .load_for_method_call(&blueprint_name)
+                    .map_err(|e| match e {
+                        PackageError::BlueprintNotFound => RuntimeError::BlueprintNotFound(
                             invocation.package_id,
                             blueprint_name.clone(),
-                        )
+                        ),
                     })?;
                 // TODO: Remove clone
                 let schema = schema.clone();

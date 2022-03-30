@@ -226,10 +226,7 @@ pub enum RuntimeError {
     UnsupportedMethod,
 
     /// Index out of bounds.
-    IndexOutOfBounds {
-        index: usize,
-        max: usize,
-    },
+    IndexOutOfBounds { index: usize, max: usize },
 
     /// Mint parameters are invalid
     InvalidMintParams,
