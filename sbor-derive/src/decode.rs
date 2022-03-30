@@ -20,9 +20,9 @@ pub fn handle_decode(input: TokenStream) -> Result<TokenStream> {
     let output = match data {
         Data::Struct(s) => match s.fields {
             syn::Fields::Named(FieldsNamed { named, .. }) => {
-                // ns: not skipped
+                // ns: not skipped, s: skipped
                 let ns: Vec<&Field> = named.iter().filter(|f| !is_skipped(f)).collect();
-                let ns_n = Index::from(ns.len());
+                let ns_len = Index::from(ns.len());
                 let ns_ids = ns.iter().map(|f| &f.ident);
                 let ns_types = ns.iter().map(|f| &f.ty);
                 let s: Vec<&Field> = named.iter().filter(|f| is_skipped(f)).collect();
@@ -32,11 +32,7 @@ pub fn handle_decode(input: TokenStream) -> Result<TokenStream> {
                     impl ::sbor::Decode for #ident {
                         fn decode_value(decoder: &mut ::sbor::Decoder) -> Result<Self, ::sbor::DecodeError> {
                             use ::sbor::{self, Decode};
-                            let index = decoder.read_u8()?;
-                            if index != ::sbor::type_id::FIELDS_TYPE_NAMED {
-                                return Err(::sbor::DecodeError::InvalidIndex(index));
-                            }
-                            decoder.check_len(#ns_n)?;
+                            decoder.check_len(#ns_len)?;
                             Ok(Self {
                                 #(#ns_ids: <#ns_types>::decode(decoder)?,)*
                                 #(#s_ids: <#s_types>::default()),*
@@ -46,27 +42,23 @@ pub fn handle_decode(input: TokenStream) -> Result<TokenStream> {
                 }
             }
             syn::Fields::Unnamed(FieldsUnnamed { unnamed, .. }) => {
-                let mut all_exprs = Vec::<Expr>::new();
+                let mut fields = Vec::<Expr>::new();
                 for f in &unnamed {
                     let ty = &f.ty;
                     if is_skipped(f) {
-                        all_exprs.push(parse_quote! {<#ty>::default()})
+                        fields.push(parse_quote! {<#ty>::default()})
                     } else {
-                        all_exprs.push(parse_quote! {<#ty>::decode(decoder)?})
+                        fields.push(parse_quote! {<#ty>::decode(decoder)?})
                     }
                 }
-                let ns_n = Index::from(unnamed.iter().filter(|f| !is_skipped(f)).count());
+                let ns_len = Index::from(unnamed.iter().filter(|f| !is_skipped(f)).count());
                 quote! {
                     impl ::sbor::Decode for #ident {
                         fn decode_value(decoder: &mut ::sbor::Decoder) -> Result<Self, ::sbor::DecodeError> {
                             use ::sbor::{self, Decode};
-                            let index = decoder.read_u8()?;
-                            if index != ::sbor::type_id::FIELDS_TYPE_UNNAMED {
-                                return Err(::sbor::DecodeError::InvalidIndex(index));
-                            }
-                            decoder.check_len(#ns_n)?;
+                            decoder.check_len(#ns_len)?;
                             Ok(Self (
-                                #(#all_exprs,)*
+                                #(#fields,)*
                             ))
                         }
                     }
@@ -76,10 +68,7 @@ pub fn handle_decode(input: TokenStream) -> Result<TokenStream> {
                 quote! {
                     impl ::sbor::Decode for #ident {
                         fn decode_value(decoder: &mut ::sbor::Decoder) -> Result<Self, ::sbor::DecodeError> {
-                            let index = decoder.read_u8()?;
-                            if index != ::sbor::type_id::FIELDS_TYPE_UNIT {
-                                return Err(::sbor::DecodeError::InvalidIndex(index));
-                            }
+                            decoder.check_len(0)?;
                             Ok(Self {})
                         }
                     }
@@ -93,7 +82,7 @@ pub fn handle_decode(input: TokenStream) -> Result<TokenStream> {
                 match &v.fields {
                     syn::Fields::Named(FieldsNamed { named, .. }) => {
                         let ns: Vec<&Field> = named.iter().filter(|f| !is_skipped(f)).collect();
-                        let ns_n = Index::from(ns.len());
+                        let ns_len = Index::from(ns.len());
                         let ns_ids = ns.iter().map(|f| &f.ident);
                         let ns_types = ns.iter().map(|f| &f.ty);
                         let s: Vec<&Field> = named.iter().filter(|f| is_skipped(f)).collect();
@@ -101,12 +90,7 @@ pub fn handle_decode(input: TokenStream) -> Result<TokenStream> {
                         let s_types = s.iter().map(|f| &f.ty);
                         quote! {
                             #v_ith => {
-                                let index = decoder.read_u8()?;
-                                if index != ::sbor::type_id::FIELDS_TYPE_NAMED {
-                                    return Err(::sbor::DecodeError::InvalidIndex(index));
-                                }
-                                decoder.check_len(#ns_n)?;
-
+                                decoder.check_len(#ns_len)?;
                                 Ok(Self::#v_id {
                                     #(#ns_ids: <#ns_types>::decode(decoder)?,)*
                                     #(#s_ids: <#s_types>::default(),)*
@@ -115,26 +99,21 @@ pub fn handle_decode(input: TokenStream) -> Result<TokenStream> {
                         }
                     }
                     syn::Fields::Unnamed(FieldsUnnamed { unnamed, .. }) => {
-                        let mut all_exprs = Vec::<Expr>::new();
+                        let mut fields = Vec::<Expr>::new();
                         for f in unnamed {
                             let ty = &f.ty;
                             if is_skipped(f) {
-                                all_exprs.push(parse_quote! {<#ty>::default()})
+                                fields.push(parse_quote! {<#ty>::default()})
                             } else {
-                                all_exprs.push(parse_quote! {<#ty>::decode(decoder)?})
+                                fields.push(parse_quote! {<#ty>::decode(decoder)?})
                             }
                         }
-                        let ns_n = Index::from(unnamed.iter().filter(|f| !is_skipped(f)).count());
+                        let ns_len = Index::from(unnamed.iter().filter(|f| !is_skipped(f)).count());
                         quote! {
                             #v_ith => {
-                                let index = decoder.read_u8()?;
-                                if index != ::sbor::type_id::FIELDS_TYPE_UNNAMED {
-                                    return Err(::sbor::DecodeError::InvalidIndex(index));
-                                }
-                                decoder.check_len(#ns_n)?;
-
+                                decoder.check_len(#ns_len)?;
                                 Ok(Self::#v_id (
-                                    #(#all_exprs),*
+                                    #(#fields),*
                                 ))
                             }
                         }
@@ -142,10 +121,7 @@ pub fn handle_decode(input: TokenStream) -> Result<TokenStream> {
                     syn::Fields::Unit => {
                         quote! {
                             #v_ith => {
-                                let index = decoder.read_u8()?;
-                                if index != ::sbor::type_id::FIELDS_TYPE_UNIT {
-                                    return Err(::sbor::DecodeError::InvalidIndex(index));
-                                }
+                                decoder.check_len(0)?;
                                 Ok(Self::#v_id)
                             }
                         }
@@ -202,10 +178,6 @@ mod tests {
                 impl ::sbor::Decode for Test {
                     fn decode_value(decoder: &mut ::sbor::Decoder) -> Result<Self, ::sbor::DecodeError> {
                         use ::sbor::{self, Decode};
-                        let index = decoder.read_u8()?;
-                        if index != ::sbor::type_id::FIELDS_TYPE_NAMED {
-                            return Err(::sbor::DecodeError::InvalidIndex(index));
-                        }
                         decoder.check_len(1)?;
                         Ok(Self {
                             a: <u32>::decode(decoder)?,
@@ -231,25 +203,14 @@ mod tests {
                         let index = decoder.read_u8()?;
                         match index {
                             0u8 => {
-                                let index = decoder.read_u8()?;
-                                if index != ::sbor::type_id::FIELDS_TYPE_UNIT {
-                                    return Err(::sbor::DecodeError::InvalidIndex(index));
-                                }
+                                decoder.check_len(0)?;
                                 Ok(Self::A)
                             },
                             1u8 => {
-                                let index = decoder.read_u8()?;
-                                if index != ::sbor::type_id::FIELDS_TYPE_UNNAMED {
-                                    return Err(::sbor::DecodeError::InvalidIndex(index));
-                                }
                                 decoder.check_len(1)?;
                                 Ok(Self::B(<u32>::decode(decoder)?))
                             },
                             2u8 => {
-                                let index = decoder.read_u8()?;
-                                if index != ::sbor::type_id::FIELDS_TYPE_NAMED {
-                                    return Err(::sbor::DecodeError::InvalidIndex(index));
-                                }
                                 decoder.check_len(1)?;
                                 Ok(Self::C {
                                     x: <u8>::decode(decoder)?,

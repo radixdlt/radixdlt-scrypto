@@ -22,36 +22,32 @@ pub fn handle_encode(input: TokenStream) -> Result<TokenStream> {
             syn::Fields::Named(FieldsNamed { named, .. }) => {
                 // ns: not skipped
                 let ns: Vec<&Field> = named.iter().filter(|f| !is_skipped(f)).collect();
-                let ns_n = Index::from(ns.len());
                 let ns_ids = ns.iter().map(|f| &f.ident);
+                let ns_len = Index::from(ns_ids.len());
                 quote! {
                     impl ::sbor::Encode for #ident {
                         fn encode_value(&self, encoder: &mut ::sbor::Encoder) {
                             use ::sbor::{self, Encode};
-                            encoder.write_u8(::sbor::type_id::FIELDS_TYPE_NAMED);
-                            encoder.write_len(#ns_n);
-                            #(
-                                self.#ns_ids.encode(encoder);
-                            )*
+                            encoder.write_len(#ns_len);
+                            #(self.#ns_ids.encode(encoder);)*
                         }
                     }
                 }
             }
             syn::Fields::Unnamed(FieldsUnnamed { unnamed, .. }) => {
-                let mut ns_idx = Vec::new();
+                let mut ns_indices = Vec::new();
                 for (i, f) in unnamed.iter().enumerate() {
                     if !is_skipped(f) {
-                        ns_idx.push(Index::from(i));
+                        ns_indices.push(Index::from(i));
                     }
                 }
-                let ns_n = Index::from(ns_idx.len());
+                let ns_len = Index::from(ns_indices.len());
                 quote! {
                     impl ::sbor::Encode for #ident {
                         fn encode_value(&self, encoder: &mut ::sbor::Encoder) {
                             use ::sbor::{self, Encode};
-                            encoder.write_u8(::sbor::type_id::FIELDS_TYPE_UNNAMED);
-                            encoder.write_len(#ns_n);
-                            #(self.#ns_idx.encode(encoder);)*
+                            encoder.write_len(#ns_len);
+                            #(self.#ns_indices.encode(encoder);)*
                         }
                     }
                 }
@@ -60,7 +56,7 @@ pub fn handle_encode(input: TokenStream) -> Result<TokenStream> {
                 quote! {
                     impl ::sbor::Encode for #ident {
                         fn encode_value(&self, encoder: &mut ::sbor::Encoder) {
-                            encoder.write_u8(::sbor::type_id::FIELDS_TYPE_UNIT);
+                            encoder.write_len(0);
                         }
                     }
                 }
@@ -75,32 +71,28 @@ pub fn handle_encode(input: TokenStream) -> Result<TokenStream> {
                         let ns: Vec<&Field> = named.iter().filter(|f| !is_skipped(f)).collect();
                         let ns_ids = ns.iter().map(|f| &f.ident);
                         let ns_ids2 = ns.iter().map(|f| &f.ident);
-                        let ns_n = Index::from(ns.len());
+                        let ns_len = Index::from(ns.len());
                         quote! {
                             Self::#v_id {#(#ns_ids,)* ..} => {
                                 encoder.write_u8(#v_ith);
-                                encoder.write_u8(::sbor::type_id::FIELDS_TYPE_NAMED);
-                                encoder.write_len(#ns_n);
-                                #(
-                                    #ns_ids2.encode(encoder);
-                                )*
+                                encoder.write_len(#ns_len);
+                                #(#ns_ids2.encode(encoder);)*
                             }
                         }
                     }
                     syn::Fields::Unnamed(FieldsUnnamed { unnamed, .. }) => {
-                        let all_args = (0..unnamed.len()).map(|i| format_ident!("a{}", i));
+                        let args = (0..unnamed.len()).map(|i| format_ident!("a{}", i));
                         let mut ns_args = Vec::<Ident>::new();
                         for (i, f) in unnamed.iter().enumerate() {
                             if !is_skipped(f) {
                                 ns_args.push(format_ident!("a{}", i));
                             }
                         }
-                        let ns_n = Index::from(ns_args.len());
+                        let ns_len = Index::from(ns_args.len());
                         quote! {
-                            Self::#v_id (#(#all_args),*) => {
+                            Self::#v_id (#(#args),*) => {
                                 encoder.write_u8(#v_ith);
-                                encoder.write_u8(::sbor::type_id::FIELDS_TYPE_UNNAMED);
-                                encoder.write_len(#ns_n);
+                                encoder.write_len(#ns_len);
                                 #(#ns_args.encode(encoder);)*
                             }
                         }
@@ -109,7 +101,7 @@ pub fn handle_encode(input: TokenStream) -> Result<TokenStream> {
                         quote! {
                             Self::#v_id => {
                                 encoder.write_u8(#v_ith);
-                                encoder.write_u8(::sbor::type_id::FIELDS_TYPE_UNIT);
+                                encoder.write_len(0);
                             }
                         }
                     }
@@ -162,7 +154,6 @@ mod tests {
                 impl ::sbor::Encode for Test {
                     fn encode_value(&self, encoder: &mut ::sbor::Encoder) {
                         use ::sbor::{self, Encode};
-                        encoder.write_u8(::sbor::type_id::FIELDS_TYPE_NAMED);
                         encoder.write_len(1);
                         self.a.encode(encoder);
                     }
@@ -185,17 +176,15 @@ mod tests {
                         match self {
                             Self::A => {
                                 encoder.write_u8(0);
-                                encoder.write_u8(::sbor::type_id::FIELDS_TYPE_UNIT);
+                                encoder.write_len(0);
                             }
                             Self::B(a0) => {
                                 encoder.write_u8(1);
-                                encoder.write_u8(::sbor::type_id::FIELDS_TYPE_UNNAMED);
                                 encoder.write_len(1);
                                 a0.encode(encoder);
                             }
                             Self::C { x, .. } => {
                                 encoder.write_u8(2);
-                                encoder.write_u8(::sbor::type_id::FIELDS_TYPE_NAMED);
                                 encoder.write_len(1);
                                 x.encode(encoder);
                             }

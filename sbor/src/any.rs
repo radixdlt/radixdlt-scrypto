@@ -23,8 +23,8 @@ pub enum Value {
     U128(u128),
     String(String),
 
-    Struct(Fields),
-    Enum(u8, Fields),
+    Struct(Vec<Value>),
+    Enum(u8, Vec<Value>),
 
     Option(Box<Option<Value>>),
     Array(u8, Vec<Value>),
@@ -38,16 +38,6 @@ pub enum Value {
     HashMap(u8, u8, Vec<Value>),
 
     Custom(u8, Vec<u8>),
-}
-
-/// Represents the fields of a struct or enum variant.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Fields {
-    Named(Vec<Value>),
-
-    Unnamed(Vec<Value>),
-
-    Unit,
 }
 
 /// Encodes any SBOR value into byte array.
@@ -72,14 +62,20 @@ pub fn encode_any(ty_ctx: Option<u8>, value: &Value, enc: &mut Encoder) {
             if ty_ctx.is_none() {
                 enc.write_type(TYPE_STRUCT);
             }
-            encode_fields(fields, enc);
+            enc.write_len(fields.len());
+            for field in fields {
+                encode_any(None, field, enc);
+            }
         }
         Value::Enum(index, fields) => {
             if ty_ctx.is_none() {
                 enc.write_type(TYPE_ENUM);
             }
             enc.write_u8(*index);
-            encode_fields(fields, enc);
+            enc.write_len(fields.len());
+            for field in fields {
+                encode_any(None, field, enc);
+            }
         }
         // composite types
         Value::Option(v) => {
@@ -196,28 +192,6 @@ pub fn encode_any(ty_ctx: Option<u8>, value: &Value, enc: &mut Encoder) {
     }
 }
 
-fn encode_fields(fields: &Fields, enc: &mut Encoder) {
-    match fields {
-        Fields::Named(named) => {
-            enc.write_u8(FIELDS_TYPE_NAMED);
-            enc.write_len(named.len());
-            for e in named {
-                encode_any(None, e, enc);
-            }
-        }
-        Fields::Unnamed(unnamed) => {
-            enc.write_u8(FIELDS_TYPE_UNNAMED);
-            enc.write_len(unnamed.len());
-            for e in unnamed {
-                encode_any(None, e, enc);
-            }
-        }
-        Fields::Unit => {
-            enc.write_u8(FIELDS_TYPE_UNIT);
-        }
-    }
-}
-
 fn encode_basic<T: Encode>(ty_ctx: Option<u8>, t: u8, v: &T, enc: &mut Encoder) {
     if ty_ctx.is_none() {
         enc.write_type(t);
@@ -256,15 +230,25 @@ fn decode_next(ty_ctx: Option<u8>, dec: &mut Decoder) -> Result<Value, DecodeErr
         TYPE_STRING => Ok(Value::String(<String>::decode_value(dec)?)),
         // struct & enum
         TYPE_STRUCT => {
+            // number of fields
+            let len = dec.read_len()?;
             // fields
-            let fields = decode_fields(dec)?;
+            let mut fields = Vec::new();
+            for _ in 0..len {
+                fields.push(decode_next(None, dec)?);
+            }
             Ok(Value::Struct(fields))
         }
         TYPE_ENUM => {
             // index
             let index = dec.read_u8()?;
+            // number of fields
+            let len = dec.read_len()?;
             // fields
-            let fields = decode_fields(dec)?;
+            let mut fields = Vec::new();
+            for _ in 0..len {
+                fields.push(decode_next(None, dec)?);
+            }
             Ok(Value::Enum(index, fields))
         }
         // composite types
@@ -374,37 +358,6 @@ fn decode_next(ty_ctx: Option<u8>, dec: &mut Decoder) -> Result<Value, DecodeErr
     }
 }
 
-fn decode_fields(dec: &mut Decoder) -> Result<Fields, DecodeError> {
-    let ty = dec.read_type()?;
-    match ty {
-        FIELDS_TYPE_NAMED => {
-            //length
-            let len = dec.read_len()?;
-            // named fields
-            let mut named = Vec::new();
-            for _ in 0..len {
-                named.push(decode_next(None, dec)?);
-            }
-            Ok(Fields::Named(named))
-        }
-        FIELDS_TYPE_UNNAMED => {
-            //length
-            let len = dec.read_len()?;
-            // named fields
-            let mut unnamed = Vec::new();
-            for _ in 0..len {
-                unnamed.push(decode_next(None, dec)?);
-            }
-            Ok(Fields::Unnamed(unnamed))
-        }
-        FIELDS_TYPE_UNIT => Ok(Fields::Unit),
-        _ => Err(DecodeError::InvalidType {
-            expected: None,
-            actual: ty,
-        }),
-    }
-}
-
 pub fn traverse_any<V, E>(value: &Value, visitor: &mut V) -> Result<(), E>
 where
     V: CustomValueVisitor<Err = E>,
@@ -425,11 +378,10 @@ where
         | Value::U128(_)
         | Value::String(_) => {}
         // struct & enum
-        Value::Struct(fields) => {
-            traverse_fields(fields, visitor)?;
-        }
-        Value::Enum(_index, fields) => {
-            traverse_fields(fields, visitor)?;
+        Value::Struct(fields) | Value::Enum(_, fields) => {
+            for field in fields {
+                traverse_any(field, visitor)?;
+            }
         }
         // composite types
         Value::Option(v) => match v.borrow() {
@@ -469,26 +421,6 @@ where
         }
     }
 
-    Ok(())
-}
-
-pub fn traverse_fields<V, E>(fields: &Fields, visitor: &mut V) -> Result<(), E>
-where
-    V: CustomValueVisitor<Err = E>,
-{
-    match fields {
-        Fields::Named(named) => {
-            for e in named {
-                traverse_any(e, visitor)?;
-            }
-        }
-        Fields::Unnamed(unnamed) => {
-            for e in unnamed {
-                traverse_any(e, visitor)?;
-            }
-        }
-        Fields::Unit => {}
-    };
     Ok(())
 }
 
@@ -592,7 +524,7 @@ mod tests {
         let value = decode_any(&bytes).unwrap();
 
         assert_eq!(
-            Value::Struct(Fields::Named(vec![
+            Value::Struct(vec![
                 Value::Unit,
                 Value::Bool(true),
                 Value::I8(1),
@@ -609,16 +541,16 @@ mod tests {
                 Value::Option(Box::new(Some(Value::U32(1)))),
                 Value::Array(TYPE_U32, vec![Value::U32(1), Value::U32(2), Value::U32(3),]),
                 Value::Tuple(vec![Value::U32(1), Value::U32(2),]),
-                Value::Struct(Fields::Named(vec![Value::U32(1)])),
-                Value::Enum(0, Fields::Named(vec![Value::U32(1)])),
-                Value::Enum(1, Fields::Unnamed(vec![Value::U32(2)])),
-                Value::Enum(2, Fields::Unit),
+                Value::Struct(vec![Value::U32(1)]),
+                Value::Enum(0, vec![Value::U32(1)]),
+                Value::Enum(1, vec![Value::U32(2)]),
+                Value::Enum(2, vec![]),
                 Value::Vec(TYPE_U32, vec![Value::U32(1), Value::U32(2),]),
                 Value::TreeSet(TYPE_U32, vec![Value::U32(1)]),
                 Value::HashSet(TYPE_U32, vec![Value::U32(2)]),
                 Value::TreeMap(TYPE_U32, TYPE_U32, vec![Value::U32(1), Value::U32(2)]),
                 Value::HashMap(TYPE_U32, TYPE_U32, vec![Value::U32(1), Value::U32(2)])
-            ])),
+            ]),
             value
         );
 

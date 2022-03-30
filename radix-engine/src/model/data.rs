@@ -92,15 +92,14 @@ pub fn format_value(
         Value::String(v) => format!("\"{}\"", v),
         // struct & enum
         Value::Struct(fields) => {
-            format!("Struct({})", format_fields(fields, bucket_ids, proof_ids))
+            format!("Struct({})", format_elements(fields, bucket_ids, proof_ids))
         }
         Value::Enum(index, fields) => {
-            let fields = format_fields(fields, bucket_ids, proof_ids);
             format!(
                 "Enum({}u8{}{})",
                 index,
                 if fields.is_empty() { "" } else { ", " },
-                fields
+                format_elements(fields, bucket_ids, proof_ids)
             )
         }
         // rust types
@@ -195,22 +194,6 @@ pub fn format_kind(kind: u8) -> String {
         _ => panic!("Illegal state"),
     }
     .to_string()
-}
-
-pub fn format_fields(
-    fields: &Fields,
-    bucket_ids: &HashMap<BucketId, String>,
-    proof_ids: &HashMap<ProofId, String>,
-) -> String {
-    match fields {
-        Fields::Named(named) => {
-            format!("{{{}}}", format_elements(named, bucket_ids, proof_ids))
-        }
-        Fields::Unnamed(unnamed) => {
-            format!("({})", format_elements(unnamed, bucket_ids, proof_ids))
-        }
-        Fields::Unit => "".into(),
-    }
 }
 
 pub fn format_elements(
