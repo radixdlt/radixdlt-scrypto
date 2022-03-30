@@ -7,7 +7,7 @@ mod utils;
 use proc_macro::TokenStream;
 
 /// Derive code that describes this data structure.
-/// 
+///
 /// Note that this derive doesn't work with recursive type, such as
 /// ```ignore
 /// struct A {

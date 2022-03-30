@@ -5,8 +5,11 @@ blueprint! {
 
     impl ResourceTest {
         pub fn create_fungible() -> (Bucket, ResourceDefId) {
-            let badge = ResourceBuilder::new_fungible(DIVISIBILITY_NONE).initial_supply_fungible(1);
-            let token_resource_def = ResourceBuilder::new_fungible(DIVISIBILITY_MAXIMUM)
+            let badge = ResourceBuilder::new_fungible()
+                .divisibility(DIVISIBILITY_NONE)
+                .initial_supply(1);
+            let token_resource_def = ResourceBuilder::new_fungible()
+                .divisibility(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "TestToken")
                 .flags(MINTABLE | BURNABLE)
                 .badge(badge.resource_def_id(), MAY_MINT | MAY_BURN)
@@ -15,13 +18,15 @@ blueprint! {
         }
 
         pub fn create_fungible_should_fail() -> (Bucket, Bucket) {
-            let mut bucket =
-                ResourceBuilder::new_fungible(DIVISIBILITY_NONE).initial_supply_fungible(1);
+            let mut bucket = ResourceBuilder::new_fungible()
+                .divisibility(DIVISIBILITY_NONE)
+                .initial_supply(1);
             (bucket.take(Decimal::from_str("0.1").unwrap()), bucket)
         }
 
         pub fn create_fungible_wrong_resource_flags_should_fail() -> ResourceDefId {
-            let token_resource_def = ResourceBuilder::new_fungible(DIVISIBILITY_MAXIMUM)
+            let token_resource_def = ResourceBuilder::new_fungible()
+                .divisibility(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "TestToken")
                 .flags(MAY_MINT | BURNABLE)
                 .no_initial_supply();
@@ -29,7 +34,8 @@ blueprint! {
         }
 
         pub fn create_fungible_wrong_mutable_flags_should_fail() -> ResourceDefId {
-            let token_resource_def = ResourceBuilder::new_fungible(DIVISIBILITY_MAXIMUM)
+            let token_resource_def = ResourceBuilder::new_fungible()
+                .divisibility(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "TestToken")
                 .flags(MINTABLE | BURNABLE)
                 .mutable_flags(MAY_MINT)
@@ -38,8 +44,11 @@ blueprint! {
         }
 
         pub fn create_fungible_wrong_resource_permissions_should_fail() -> (Bucket, ResourceDefId) {
-            let badge = ResourceBuilder::new_fungible(DIVISIBILITY_NONE).initial_supply_fungible(1);
-            let token_resource_def = ResourceBuilder::new_fungible(DIVISIBILITY_MAXIMUM)
+            let badge = ResourceBuilder::new_fungible()
+                .divisibility(DIVISIBILITY_NONE)
+                .initial_supply(1);
+            let token_resource_def = ResourceBuilder::new_fungible()
+                .divisibility(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "TestToken")
                 .flags(MINTABLE | BURNABLE)
                 .badge(badge.resource_def_id(), MINTABLE | MAY_BURN)
@@ -70,16 +79,18 @@ blueprint! {
         }
 
         pub fn update_feature_flags() -> Bucket {
-            let badge = ResourceBuilder::new_fungible(DIVISIBILITY_NONE).initial_supply_fungible(1);
-            let token_resource_def =
-                resource_def!(ResourceBuilder::new_fungible(DIVISIBILITY_MAXIMUM)
-                    .metadata("name", "TestToken")
-                    .mutable_flags(MINTABLE)
-                    .badge(
-                        badge.resource_def_id(),
-                        MAY_MANAGE_RESOURCE_FLAGS | MAY_MINT,
-                    )
-                    .no_initial_supply());
+            let badge = ResourceBuilder::new_fungible()
+                .divisibility(DIVISIBILITY_NONE)
+                .initial_supply(1);
+            let token_resource_def = resource_def!(ResourceBuilder::new_fungible()
+                .divisibility(DIVISIBILITY_MAXIMUM)
+                .metadata("name", "TestToken")
+                .mutable_flags(MINTABLE)
+                .badge(
+                    badge.resource_def_id(),
+                    MAY_MANAGE_RESOURCE_FLAGS | MAY_MINT,
+                )
+                .no_initial_supply());
 
             badge.authorize(|| {
                 token_resource_def.enable_flags(MINTABLE);
@@ -99,28 +110,32 @@ blueprint! {
         }
 
         pub fn update_feature_flags_should_fail() -> Bucket {
-            let badge = ResourceBuilder::new_fungible(DIVISIBILITY_NONE).initial_supply_fungible(1);
-            let token_resource_def =
-                resource_def!(ResourceBuilder::new_fungible(DIVISIBILITY_MAXIMUM)
-                    .metadata("name", "TestToken")
-                    .badge(
-                        badge.resource_def_id(),
-                        MAY_MANAGE_RESOURCE_FLAGS | MAY_MINT,
-                    )
-                    .no_initial_supply());
+            let badge = ResourceBuilder::new_fungible()
+                .divisibility(DIVISIBILITY_NONE)
+                .initial_supply(1);
+            let token_resource_def = resource_def!(ResourceBuilder::new_fungible()
+                .divisibility(DIVISIBILITY_MAXIMUM)
+                .metadata("name", "TestToken")
+                .badge(
+                    badge.resource_def_id(),
+                    MAY_MANAGE_RESOURCE_FLAGS | MAY_MINT,
+                )
+                .no_initial_supply());
 
             badge.authorize(|| token_resource_def.enable_flags(MINTABLE));
             badge
         }
 
         pub fn update_resource_metadata() -> Bucket {
-            let badge = ResourceBuilder::new_fungible(DIVISIBILITY_NONE).initial_supply_fungible(1);
-            let token_resource_def =
-                resource_def!(ResourceBuilder::new_fungible(DIVISIBILITY_MAXIMUM)
-                    .metadata("name", "TestToken")
-                    .flags(SHARED_METADATA_MUTABLE)
-                    .badge(badge.resource_def_id(), MAY_CHANGE_SHARED_METADATA)
-                    .no_initial_supply());
+            let badge = ResourceBuilder::new_fungible()
+                .divisibility(DIVISIBILITY_NONE)
+                .initial_supply(1);
+            let token_resource_def = resource_def!(ResourceBuilder::new_fungible()
+                .divisibility(DIVISIBILITY_MAXIMUM)
+                .metadata("name", "TestToken")
+                .flags(SHARED_METADATA_MUTABLE)
+                .badge(badge.resource_def_id(), MAY_CHANGE_SHARED_METADATA)
+                .no_initial_supply());
 
             let mut new_metadata = HashMap::new();
             new_metadata.insert("a".to_owned(), "b".to_owned());
