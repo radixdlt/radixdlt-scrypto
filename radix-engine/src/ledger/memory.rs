@@ -67,11 +67,9 @@ impl SubstateStore for InMemorySubstateStore {
         self.current_epoch = epoch;
     }
 
-    fn get_nonce(&self) -> u64 {
-        self.nonce
-    }
-
-    fn increase_nonce(&mut self) {
+    fn next_nonce(&mut self) -> u64 {
+        let nonce = self.nonce;
         self.nonce += 1;
+        nonce
     }
 }

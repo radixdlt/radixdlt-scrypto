@@ -11,7 +11,7 @@ use crate::resim::*;
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct Configs {
     pub default_account: ComponentId,
-    pub default_signers: Vec<EcdsaPublicKey>,
+    pub default_signers: &[EcdsaPrivateKey],
 }
 
 /// Returns the data directory.

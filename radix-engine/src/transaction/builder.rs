@@ -5,6 +5,7 @@ use sbor::describe::*;
 use sbor::*;
 use scrypto::abi;
 use scrypto::buffer::*;
+use scrypto::crypto::*;
 use scrypto::engine::types::*;
 use scrypto::resource::resource_flags::*;
 use scrypto::resource::resource_permissions::*;
@@ -105,7 +106,9 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
             Instruction::CallMethodWithAllResources { .. } => {
                 self.id_validator.move_all_resources().unwrap();
             }
-            Instruction::PublishPackage { .. } | Instruction::End { .. } => {}
+            Instruction::PublishPackage { .. }
+            | Instruction::IntendedSigners { .. }
+            | Instruction::End { .. } => {}
         }
 
         self.instructions.push(inst);
@@ -421,20 +424,33 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
 
     /// Builds a transaction.
     pub fn build(
-        &mut self,
-        signers: Vec<EcdsaPublicKey>,
+        &self,
+        intended_signers: Vec<EcdsaPublicKey>,
+        nonce: u64,
     ) -> Result<Transaction, BuildTransactionError> {
         if !self.errors.is_empty() {
             return Err(self.errors[0].clone());
         }
 
-        let mut v = Vec::new();
-        v.extend(self.instructions.clone());
-        v.push(Instruction::End {
-            signatures: signers, // TODO sign
+        let mut instructions = self.instructions.clone();
+        instructions.push(Instruction::IntendedSigners {
+            signers: intended_signers,
+            nonce,
         });
 
-        Ok(Transaction { instructions: v })
+        Ok(Transaction { instructions })
+    }
+
+    /// Builds a transaction and signs it.
+    pub fn build_and_sign(
+        &self,
+        intended_signers: Vec<EcdsaPublicKey>,
+        nonce: u64,
+        private_keys: &[EcdsaPrivateKey],
+    ) -> Result<Transaction, BuildTransactionError> {
+        let mut transaction = self.build(intended_signers, nonce)?;
+        transaction.sign(private_keys);
+        Ok(transaction)
     }
 
     /// Creates a token resource with mutable supply.

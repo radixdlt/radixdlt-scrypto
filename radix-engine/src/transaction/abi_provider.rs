@@ -42,11 +42,11 @@ impl BasicAbiProvider {
     }
 
     pub fn with_package(&mut self, package_id: PackageId, code: Vec<u8>) -> &mut Self {
-        self.substate_store.put_encoded_substate(
-            &package_id,
-            &Package::new(code),
-            self.substate_store.get_nonce(),
-        );
+        let tx_hash = sha256(self.substate_store.next_nonce().to_le_bytes());
+        let mut id_gen = SubstateIdGenerator::new(tx_hash);
+
+        self.substate_store
+            .put_encoded_substate(&package_id, &Package::new(code), id_gen.next());
         self
     }
 }

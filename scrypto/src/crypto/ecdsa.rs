@@ -37,7 +37,7 @@ impl EcdsaPrivateKey {
         EcdsaPublicKey(bytes)
     }
 
-    pub fn sign(&self, hash: Hash) -> EcdsaSignature {
+    pub fn sign(&self, hash: &Hash) -> EcdsaSignature {
         // TODO replace with real implementation once signature algorithm is decided.
         let mut bytes = [0u8; ECDSA_SIGNATURE_LENGTH];
         (&mut bytes[0..ECDSA_PUBLIC_KEY_LENGTH]).copy_from_slice(&self.public_key().0);
@@ -48,7 +48,7 @@ impl EcdsaPrivateKey {
 }
 
 impl EcdsaSignature {
-    pub fn validate(&self, _hash: Hash) -> Result<EcdsaPublicKey, SignatureValidationError> {
+    pub fn validate(&self, _hash: &Hash) -> Result<EcdsaPublicKey, SignatureValidationError> {
         // TODO replace with real implementation once signature algorithm is decided.
         let mut bytes = [0u8; ECDSA_PUBLIC_KEY_LENGTH];
         (&mut bytes).copy_from_slice(&self.0[0..ECDSA_PUBLIC_KEY_LENGTH]);
