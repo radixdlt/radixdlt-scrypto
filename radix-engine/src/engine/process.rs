@@ -1235,8 +1235,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             return Err(RuntimeError::MemoryAccessError);
         }
 
-        ValidatedData::from_slice(&buffer[range])
-            .map_err(RuntimeError::DataValidationError)
+        ValidatedData::from_slice(&buffer[range]).map_err(RuntimeError::DataValidationError)
     }
 
     /// Handles a system call.

@@ -2,8 +2,8 @@
 pub mod test_runner;
 
 use crate::test_runner::TestRunner;
-use radix_engine::errors::WasmValidationError::NoValidMemoryExport;
 use radix_engine::errors::RuntimeError;
+use radix_engine::errors::WasmValidationError::NoValidMemoryExport;
 use radix_engine::ledger::InMemorySubstateStore;
 use scrypto::prelude::*;
 
@@ -40,7 +40,7 @@ fn missing_memory_should_cause_error() {
 }
 
 #[test]
-fn large_len_return_should_cause_memory_access_error() {
+fn large_return_len_should_cause_memory_access_error() {
     // Arrange
     let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(&mut substate_store);
@@ -49,7 +49,7 @@ fn large_len_return_should_cause_memory_access_error() {
     // Act
     let transaction = test_runner
         .new_transaction_builder()
-        .call_function(package, "Package", "something", vec![])
+        .call_function(package, "LargeReturnSize", "something", vec![])
         .build(vec![])
         .unwrap();
     let receipt = test_runner.run(transaction);
@@ -57,4 +57,46 @@ fn large_len_return_should_cause_memory_access_error() {
     // Assert
     let error = receipt.result.expect_err("Should be an error.");
     assert_eq!(error, RuntimeError::MemoryAccessError);
+}
+
+#[test]
+fn overflow_return_len_should_cause_memory_access_error() {
+    // Arrange
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(&mut substate_store);
+    let package = test_runner.publish_package("package");
+
+    // Act
+    let transaction = test_runner
+        .new_transaction_builder()
+        .call_function(package, "MaxReturnSize", "something", vec![])
+        .build(vec![])
+        .unwrap();
+    let receipt = test_runner.run(transaction);
+
+    // Assert
+    let error = receipt.result.expect_err("Should be an error.");
+    assert_eq!(error, RuntimeError::MemoryAccessError);
+}
+
+#[test]
+fn zero_return_len_should_cause_data_validation_error() {
+    // Arrange
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(&mut substate_store);
+    let package = test_runner.publish_package("package");
+
+    // Act
+    let transaction = test_runner
+        .new_transaction_builder()
+        .call_function(package, "ZeroReturnSize", "something", vec![])
+        .build(vec![])
+        .unwrap();
+    let receipt = test_runner.run(transaction);
+
+    // Assert
+    let error = receipt.result.expect_err("Should be an error.");
+    if !matches!(error, RuntimeError::DataValidationError(_)) {
+        panic!("{} should be data validation error", error);
+    }
 }
