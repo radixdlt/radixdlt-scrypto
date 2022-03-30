@@ -15,9 +15,6 @@ use crate::types::*;
 
 /// Represents the state of a component.
 pub trait ComponentState: Encode + Decode {
-    /// Returns the blueprint name.
-    fn blueprint_name() -> &'static str;
-
     /// Instantiates a component from this data structure.
     fn instantiate(self) -> ComponentId;
 

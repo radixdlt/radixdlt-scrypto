@@ -54,11 +54,12 @@ impl ComponentSystem {
     /// Instantiates a component.
     pub fn instantiate_component<T: ComponentState>(
         &mut self,
+        blueprint_name: &str,
         authorization: ComponentAuthorization,
         state: T,
     ) -> ComponentId {
         let input = CreateComponentInput {
-            blueprint_name: T::blueprint_name().to_owned(),
+            blueprint_name: blueprint_name.to_owned(),
             state: scrypto_encode(&state),
             authorization,
         };
