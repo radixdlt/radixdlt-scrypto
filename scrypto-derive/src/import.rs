@@ -321,11 +321,14 @@ fn get_native_type(ty: &des::Type) -> Result<(Type, Vec<Item>)> {
                 "ComponentId" => "::scrypto::component::ComponentId",
                 "LazyMap" => "::scrypto::component::LazyMap",
                 "Hash" => "::scrypto::crypto::Hash",
+                "EcdsaPublicKey" => "::scrypto::crypto::EcdsaPublicKey",
+                "EcdsaSignature" => "::scrypto::crypto::EcdsaSignature",
                 "Decimal" => "::scrypto::math::Decimal",
                 "Bucket" => "::scrypto::resource::Bucket",
                 "Proof" => "::scrypto::resource::Proof",
                 "Vault" => "::scrypto::resource::Vault",
                 "NonFungibleId" => "::scrypto::resource::NonFungibleId",
+                "NonFungibleAddress" => "::scrypto::resource::NonFungibleAddress",
                 "ResourceDefId" => "::scrypto::resource::ResourceDefId",
                 _ => {
                     return Err(Error::new(

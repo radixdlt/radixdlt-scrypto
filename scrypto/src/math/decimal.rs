@@ -1,7 +1,7 @@
 use core::ops::*;
 use num_bigint::BigInt;
 use num_traits::Signed;
-use sbor::{describe::Type, *};
+use sbor::*;
 
 use crate::misc::*;
 use crate::rust::convert::TryFrom;

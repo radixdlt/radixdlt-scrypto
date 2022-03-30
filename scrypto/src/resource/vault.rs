@@ -1,4 +1,4 @@
-use sbor::{describe::Type, *};
+use sbor::*;
 
 use crate::crypto::*;
 use crate::engine::{api::*, call_engine, types::VaultId};
