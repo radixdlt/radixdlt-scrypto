@@ -1,8 +1,8 @@
 use sbor::*;
 use scrypto::engine::types::*;
 use scrypto::prelude::NonFungibleAddress;
-use scrypto::rust::string::String;
 use scrypto::rust::fmt;
+use scrypto::rust::string::String;
 use scrypto::types::*;
 use wasmi::*;
 
@@ -220,7 +220,10 @@ pub enum RuntimeError {
     UnsupportedMethod,
 
     /// Index out of bounds.
-    IndexOutOfBounds { index: usize, max: usize },
+    IndexOutOfBounds {
+        index: usize,
+        max: usize,
+    },
 
     /// Mint parameters are invalid
     InvalidMintParams,

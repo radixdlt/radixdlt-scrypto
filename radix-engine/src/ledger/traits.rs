@@ -122,11 +122,13 @@ pub trait SubstateStore {
             .map(|(package, _)| package);
         if package.is_none() {
             // System package
-            let system_package = Package::new(include_bytes!("../../../assets/system.wasm").to_vec()).unwrap();
+            let system_package =
+                Package::new(include_bytes!("../../../assets/system.wasm").to_vec()).unwrap();
             self.put_encoded_substate(&SYSTEM_PACKAGE, &system_package, self.get_nonce());
 
             // Account package
-            let account_package = Package::new(include_bytes!("../../../assets/account.wasm").to_vec()).unwrap();
+            let account_package =
+                Package::new(include_bytes!("../../../assets/account.wasm").to_vec()).unwrap();
             self.put_encoded_substate(&ACCOUNT_PACKAGE, &account_package, self.get_nonce());
 
             // Radix token resource definition

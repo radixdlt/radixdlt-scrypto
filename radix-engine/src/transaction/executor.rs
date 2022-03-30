@@ -84,16 +84,17 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
 
     /// Creates an account with 1,000,000 XRD in balance.
     pub fn new_account(&mut self, withdraw_auth: &ProofRule) -> ComponentId {
-        let receipt = self.run(
-            TransactionBuilder::new(self)
-                .call_method(SYSTEM_COMPONENT, "free_xrd", vec![])
-                .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
-                    builder.new_account_with_resource(withdraw_auth, bucket_id)
-                })
-                .build(Vec::new())
-                .unwrap(),
-        )
-        .unwrap();
+        let receipt = self
+            .run(
+                TransactionBuilder::new(self)
+                    .call_method(SYSTEM_COMPONENT, "free_xrd", vec![])
+                    .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
+                        builder.new_account_with_resource(withdraw_auth, bucket_id)
+                    })
+                    .build(Vec::new())
+                    .unwrap(),
+            )
+            .unwrap();
 
         receipt.result.expect("Should be okay");
         receipt.new_component_ids[0]
@@ -128,7 +129,11 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
     }
 
     /// Overwrites a package.
-    pub fn overwrite_package(&mut self, package_id: PackageId, code: Vec<u8>) -> Result<(), WasmValidationError> {
+    pub fn overwrite_package(
+        &mut self,
+        package_id: PackageId,
+        code: Vec<u8>,
+    ) -> Result<(), WasmValidationError> {
         let package = Package::new(code)?;
         self.substate_store.put_encoded_substate(
             &package_id,

@@ -710,7 +710,11 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         );
 
         let (package_id, blueprint_name, interpreter_state) = match invocation.actor {
-            Actor::Blueprint(package_id, ref blueprint_name) => Ok((package_id, blueprint_name.clone(), InterpreterState::Blueprint)),
+            Actor::Blueprint(package_id, ref blueprint_name) => Ok((
+                package_id,
+                blueprint_name.clone(),
+                InterpreterState::Blueprint,
+            )),
             Actor::Component(package_id, ref blueprint_name, component_id) => {
                 // Retrieve schema
                 // TODO: Remove this call into the abi
@@ -741,12 +745,17 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             }
         }?;
 
-        let package = self.track.get_package(package_id).ok_or(RuntimeError::PackageNotFound(package_id))?;
-        let (module, memory) = package.load_blueprint(blueprint_name).map_err(|e| {
-            match e {
-                PackageError::BlueprintNotFound(blueprint_name) => RuntimeError::BlueprintNotFound(blueprint_name, package_id)
-            }
-        })?;
+        let package = self
+            .track
+            .get_package(package_id)
+            .ok_or(RuntimeError::PackageNotFound(package_id))?;
+        let (module, memory) = package
+            .load_blueprint(blueprint_name)
+            .map_err(|e| match e {
+                PackageError::BlueprintNotFound(blueprint_name) => {
+                    RuntimeError::BlueprintNotFound(blueprint_name, package_id)
+                }
+            })?;
 
         let vm = Interpreter {
             invocation: invocation.clone(),
