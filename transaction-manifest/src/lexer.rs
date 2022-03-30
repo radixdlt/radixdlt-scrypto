@@ -66,8 +66,6 @@ pub enum TokenKind {
     Err,
 
     /* Punctuations */
-    OpenCurlyBrace,
-    CloseCurlyBrace,
     OpenParenthesis,
     CloseParenthesis,
     LessThan,
@@ -429,8 +427,6 @@ impl Lexer {
         let start = self.current;
 
         let token_kind = match self.advance()? {
-            '{' => TokenKind::OpenCurlyBrace,
-            '}' => TokenKind::CloseCurlyBrace,
             '(' => TokenKind::OpenParenthesis,
             ')' => TokenKind::CloseParenthesis,
             '<' => TokenKind::LessThan,
