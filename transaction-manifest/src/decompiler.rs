@@ -267,7 +267,9 @@ pub fn decompile(tx: &Transaction) -> Result<String, DecompileError> {
                     base64::encode(&code)
                 ));
             }
-            Instruction::End { .. } => {}
+            Instruction::IntendedSigners { .. } | Instruction::End { .. } => {
+                // TODO: add support for this
+            }
         }
     }
 

@@ -15,7 +15,7 @@ fn create_non_fungible_mutable() {
     // Arrange
     let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(&mut substate_store);
-    let (_, account) = test_runner.new_public_key_with_account();
+    let (_, _, account) = test_runner.new_account();
     let package = test_runner.publish_package("non_fungible");
 
     // Act
@@ -28,9 +28,9 @@ fn create_non_fungible_mutable() {
             vec![],
         )
         .call_method_with_all_resources(account, "deposit_batch")
-        .build(vec![])
+        .build_and_sign(vec![], vec![])
         .unwrap();
-    let receipt = test_runner.run(transaction);
+    let receipt = test_runner.validate_and_execute(&transaction);
 
     // Assert
     assert!(receipt.result.is_ok());
@@ -40,7 +40,7 @@ fn create_non_fungible_mutable() {
 fn test_non_fungible() {
     let mut ledger = InMemorySubstateStore::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, true);
-    let (key, account) = executor.new_public_key_with_account();
+    let (pk, sk, account) = executor.new_account();
     let package = executor.publish_package(&compile("non_fungible")).unwrap();
 
     let transaction = TransactionBuilder::new(&executor)
@@ -72,9 +72,9 @@ fn test_non_fungible() {
             vec![],
         )
         .call_method_with_all_resources(account, "deposit_batch")
-        .build(vec![key])
+        .build_and_sign(vec![pk], vec![sk])
         .unwrap();
-    let receipt = executor.run(transaction).unwrap();
+    let receipt = executor.validate_and_execute(&transaction).unwrap();
     println!("{:?}", receipt);
     assert!(receipt.result.is_ok());
 }

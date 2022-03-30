@@ -11,8 +11,8 @@ fn cannot_withdraw_restricted_transfer_from_my_account_with_no_auth() {
     // Arrange
     let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(&mut substate_store);
-    let (key, account) = test_runner.new_public_key_with_account();
-    let (_, other_account) = test_runner.new_public_key_with_account();
+    let (pk, sk, account) = test_runner.new_account();
+    let (_, _, other_account) = test_runner.new_account();
     let (_, token_resource_def_id) = test_runner.create_restricted_transfer_token(account);
 
     // Act
@@ -20,9 +20,9 @@ fn cannot_withdraw_restricted_transfer_from_my_account_with_no_auth() {
         .new_transaction_builder()
         .withdraw_from_account_by_amount(Decimal::one(), token_resource_def_id, account)
         .call_method_with_all_resources(other_account, "deposit_batch")
-        .build(vec![key])
+        .build_and_sign(vec![pk], vec![sk])
         .unwrap();
-    let receipt = test_runner.run(transaction);
+    let receipt = test_runner.validate_and_execute(&transaction);
 
     // Assert
     let err = receipt.result.expect_err("Should be a runtime error");
@@ -34,8 +34,8 @@ fn can_withdraw_restricted_transfer_from_my_account_with_auth() {
     // Arrange
     let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(&mut substate_store);
-    let (key, account) = test_runner.new_public_key_with_account();
-    let (_, other_account) = test_runner.new_public_key_with_account();
+    let (pk, sk, account) = test_runner.new_account();
+    let (_, _, other_account) = test_runner.new_account();
     let (auth_resource_def_id, token_resource_def_id) =
         test_runner.create_restricted_transfer_token(account);
 
@@ -59,9 +59,9 @@ fn can_withdraw_restricted_transfer_from_my_account_with_auth() {
         .withdraw_from_account_by_amount(Decimal::one(), token_resource_def_id, account)
         .take_from_auth_zone(|builder, proof_id| builder.drop_proof(proof_id))
         .call_method_with_all_resources(other_account, "deposit_batch")
-        .build(vec![key])
+        .build_and_sign(vec![pk], vec![sk])
         .unwrap();
-    let receipt = test_runner.run(transaction);
+    let receipt = test_runner.validate_and_execute(&transaction);
 
     // Assert
     assert!(receipt.result.is_ok());

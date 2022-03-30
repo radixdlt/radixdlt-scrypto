@@ -11,20 +11,20 @@ fn can_withdraw_from_my_1_of_2_account_with_key0_sign() {
     // Arrange
     let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(&mut substate_store);
-    let (key0, auth0) = test_runner.new_public_key_and_non_fungible_address();
-    let (_, auth1) = test_runner.new_public_key_and_non_fungible_address();
+    let (pk0, sk0, auth0) = test_runner.new_key_pair_with_pk_address();
+    let (_, _, auth1) = test_runner.new_key_pair_with_pk_address();
     let auth_1_of_2 = any_of!(auth0, auth1);
-    let account = test_runner.new_account(&auth_1_of_2);
-    let (_, other_account) = test_runner.new_public_key_with_account();
+    let account = test_runner.new_account_with_auth_rule(&auth_1_of_2);
+    let (_, _, other_account) = test_runner.new_account();
 
     // Act
     let transaction = test_runner
         .new_transaction_builder()
         .withdraw_from_account(RADIX_TOKEN, account)
         .call_method_with_all_resources(other_account, "deposit_batch")
-        .build(vec![key0])
+        .build_and_sign(vec![pk0], vec![sk0])
         .unwrap();
-    let receipt = test_runner.run(transaction);
+    let receipt = test_runner.validate_and_execute(&transaction);
 
     // Assert
     assert!(receipt.result.is_ok());
@@ -35,20 +35,20 @@ fn can_withdraw_from_my_1_of_2_account_with_key1_sign() {
     // Arrange
     let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(&mut substate_store);
-    let (_, non_fungible_address0) = test_runner.new_public_key_and_non_fungible_address();
-    let (key1, non_fungible_address1) = test_runner.new_public_key_and_non_fungible_address();
+    let (_, _, non_fungible_address0) = test_runner.new_key_pair_with_pk_address();
+    let (pk1, sk1, non_fungible_address1) = test_runner.new_key_pair_with_pk_address();
     let auth_1_of_2 = any_of!(non_fungible_address0, non_fungible_address1);
-    let account = test_runner.new_account(&auth_1_of_2);
-    let (_, other_account) = test_runner.new_public_key_with_account();
+    let account = test_runner.new_account_with_auth_rule(&auth_1_of_2);
+    let (_, _, other_account) = test_runner.new_account();
 
     // Act
     let transaction = test_runner
         .new_transaction_builder()
         .withdraw_from_account(RADIX_TOKEN, account)
         .call_method_with_all_resources(other_account, "deposit_batch")
-        .build(vec![key1])
+        .build_and_sign(vec![pk1], vec![sk1])
         .unwrap();
-    let receipt = test_runner.run(transaction);
+    let receipt = test_runner.validate_and_execute(&transaction);
 
     // Assert
     assert!(receipt.result.is_ok());
@@ -59,20 +59,20 @@ fn can_withdraw_from_my_2_of_2_account_with_both_signatures() {
     // Arrange
     let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(&mut substate_store);
-    let (key0, non_fungible_address0) = test_runner.new_public_key_and_non_fungible_address();
-    let (key1, non_fungible_address1) = test_runner.new_public_key_and_non_fungible_address();
+    let (pk0, sk0, non_fungible_address0) = test_runner.new_key_pair_with_pk_address();
+    let (pk1, sk1, non_fungible_address1) = test_runner.new_key_pair_with_pk_address();
     let auth_2_of_2 = all_of!(non_fungible_address0, non_fungible_address1);
-    let account = test_runner.new_account(&auth_2_of_2);
-    let (_, other_account) = test_runner.new_public_key_with_account();
+    let account = test_runner.new_account_with_auth_rule(&auth_2_of_2);
+    let (_, _, other_account) = test_runner.new_account();
 
     // Act
     let transaction = test_runner
         .new_transaction_builder()
         .withdraw_from_account(RADIX_TOKEN, account)
         .call_method_with_all_resources(other_account, "deposit_batch")
-        .build(vec![key0, key1])
+        .build_and_sign(vec![pk0, pk1], vec![sk0, sk1])
         .unwrap();
-    let receipt = test_runner.run(transaction);
+    let receipt = test_runner.validate_and_execute(&transaction);
 
     // Assert
     assert!(receipt.result.is_ok());
@@ -83,20 +83,20 @@ fn cannot_withdraw_from_my_2_of_2_account_with_single_signature() {
     // Arrange
     let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(&mut substate_store);
-    let (_, non_fungible_address0) = test_runner.new_public_key_and_non_fungible_address();
-    let (key1, non_fungible_address1) = test_runner.new_public_key_and_non_fungible_address();
+    let (_, _, non_fungible_address0) = test_runner.new_key_pair_with_pk_address();
+    let (pk1, sk1, non_fungible_address1) = test_runner.new_key_pair_with_pk_address();
     let auth_2_of_2 = all_of!(non_fungible_address0, non_fungible_address1);
-    let account = test_runner.new_account(&auth_2_of_2);
-    let (_, other_account) = test_runner.new_public_key_with_account();
+    let account = test_runner.new_account_with_auth_rule(&auth_2_of_2);
+    let (_, _, other_account) = test_runner.new_account();
 
     // Act
     let transaction = test_runner
         .new_transaction_builder()
         .withdraw_from_account(RADIX_TOKEN, account)
         .call_method_with_all_resources(other_account, "deposit_batch")
-        .build(vec![key1])
+        .build_and_sign(vec![pk1], vec![sk1])
         .unwrap();
-    let receipt = test_runner.run(transaction);
+    let receipt = test_runner.validate_and_execute(&transaction);
 
     // Assert
     let error = receipt.result.expect_err("Should be an error");
@@ -108,26 +108,26 @@ fn can_withdraw_from_my_2_of_3_account_with_2_signatures() {
     // Arrange
     let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(&mut substate_store);
-    let (_, non_fungible_address0) = test_runner.new_public_key_and_non_fungible_address();
-    let (key1, non_fungible_address1) = test_runner.new_public_key_and_non_fungible_address();
-    let (key2, non_fungible_address2) = test_runner.new_public_key_and_non_fungible_address();
+    let (_, _, non_fungible_address0) = test_runner.new_key_pair_with_pk_address();
+    let (pk1, sk1, non_fungible_address1) = test_runner.new_key_pair_with_pk_address();
+    let (pk2, sk2, non_fungible_address2) = test_runner.new_key_pair_with_pk_address();
     let auth_2_of_3 = min_n_of!(
         2,
         non_fungible_address0,
         non_fungible_address1,
         non_fungible_address2
     );
-    let account = test_runner.new_account(&auth_2_of_3);
-    let (_, other_account) = test_runner.new_public_key_with_account();
+    let account = test_runner.new_account_with_auth_rule(&auth_2_of_3);
+    let (_, _, other_account) = test_runner.new_account();
 
     // Act
     let transaction = test_runner
         .new_transaction_builder()
         .withdraw_from_account(RADIX_TOKEN, account)
         .call_method_with_all_resources(other_account, "deposit_batch")
-        .build(vec![key1, key2])
+        .build_and_sign(vec![pk1, pk2], vec![sk1, sk2])
         .unwrap();
-    let receipt = test_runner.run(transaction);
+    let receipt = test_runner.validate_and_execute(&transaction);
 
     // Assert
     receipt.result.expect("Should be okay");
@@ -139,8 +139,8 @@ fn can_withdraw_from_my_any_xrd_auth_account_with_no_signature() {
     let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(&mut substate_store);
     let xrd_auth = this!(RADIX_TOKEN);
-    let account = test_runner.new_account(&xrd_auth);
-    let (_, other_account) = test_runner.new_public_key_with_account();
+    let account = test_runner.new_account_with_auth_rule(&xrd_auth);
+    let (_, _, other_account) = test_runner.new_account();
 
     // Act
     let transaction = test_runner
@@ -156,9 +156,9 @@ fn can_withdraw_from_my_any_xrd_auth_account_with_no_signature() {
             builder
         })
         .call_method_with_all_resources(other_account, "deposit_batch")
-        .build(vec![])
+        .build_and_sign(vec![], vec![])
         .unwrap();
-    let receipt = test_runner.run(transaction);
+    let receipt = test_runner.validate_and_execute(&transaction);
 
     // Assert
     assert!(receipt.result.is_ok());
@@ -170,8 +170,8 @@ fn can_withdraw_from_my_any_xrd_auth_account_with_right_amount_of_proof() {
     let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(&mut substate_store);
     let xrd_auth = min_amount_of!(Decimal(1), RADIX_TOKEN);
-    let account = test_runner.new_account(&xrd_auth);
-    let (_, other_account) = test_runner.new_public_key_with_account();
+    let account = test_runner.new_account_with_auth_rule(&xrd_auth);
+    let (_, _, other_account) = test_runner.new_account();
 
     // Act
     let transaction = test_runner
@@ -187,9 +187,9 @@ fn can_withdraw_from_my_any_xrd_auth_account_with_right_amount_of_proof() {
             builder
         })
         .call_method_with_all_resources(other_account, "deposit_batch")
-        .build(vec![])
+        .build_and_sign(vec![], vec![])
         .unwrap();
-    let receipt = test_runner.run(transaction);
+    let receipt = test_runner.validate_and_execute(&transaction);
 
     // Assert
     assert!(receipt.result.is_ok());
@@ -201,8 +201,8 @@ fn cannot_withdraw_from_my_any_xrd_auth_account_with_less_than_amount_of_proof()
     let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(&mut substate_store);
     let xrd_auth = min_amount_of!(Decimal::from(1), RADIX_TOKEN);
-    let account = test_runner.new_account(&xrd_auth);
-    let (_, other_account) = test_runner.new_public_key_with_account();
+    let account = test_runner.new_account_with_auth_rule(&xrd_auth);
+    let (_, _, other_account) = test_runner.new_account();
 
     // Act
     let transaction = test_runner
@@ -218,9 +218,9 @@ fn cannot_withdraw_from_my_any_xrd_auth_account_with_less_than_amount_of_proof()
             builder
         })
         .call_method_with_all_resources(other_account, "deposit_batch")
-        .build(vec![])
+        .build_and_sign(vec![], vec![])
         .unwrap();
-    let receipt = test_runner.run(transaction);
+    let receipt = test_runner.validate_and_execute(&transaction);
 
     // Assert
     let error = receipt.result.expect_err("Should be an error");

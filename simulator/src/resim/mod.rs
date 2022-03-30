@@ -117,7 +117,7 @@ pub fn process_transaction<L: SubstateStore>(
         }
         None => {
             let receipt = executor
-                .run(transaction)
+                .validate_and_execute(&transaction)
                 .map_err(Error::TransactionValidationError)?;
             println!("{:?}", receipt);
             receipt.result.map_err(Error::TransactionExecutionError)

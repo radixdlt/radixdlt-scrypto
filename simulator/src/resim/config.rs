@@ -11,7 +11,8 @@ use crate::resim::*;
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct Configs {
     pub default_account: ComponentId,
-    pub default_signers: &[EcdsaPrivateKey],
+    pub default_public_key: EcdsaPublicKey,
+    pub default_private_key: EcdsaPrivateKey,
 }
 
 /// Returns the data directory.
@@ -54,8 +55,11 @@ pub fn get_default_account() -> Result<ComponentId, Error> {
         .map(|config| config.default_account)
 }
 
-pub fn get_default_signers() -> Result<Vec<EcdsaPublicKey>, Error> {
-    get_configs()?
-        .ok_or(Error::NoDefaultAccount)
-        .map(|config| config.default_signers)
+pub fn get_default_signers() -> Result<(Vec<EcdsaPublicKey>, Vec<EcdsaPrivateKey>), Error> {
+    get_configs()?.ok_or(Error::NoDefaultAccount).map(|config| {
+        (
+            vec![config.default_public_key],
+            vec![config.default_private_key],
+        )
+    })
 }

@@ -215,6 +215,7 @@ pub trait SubstateStore {
 
     // TODO: redefine what nonce is and how it's updated
     // For now, we bump nonce only when a transaction has been committed
+    // or when an account is created (for testing).
 
     fn get_nonce(&self) -> u64;
 

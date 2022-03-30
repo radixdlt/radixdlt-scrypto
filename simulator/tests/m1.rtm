@@ -1,0 +1,5 @@
+# Prepare - instantiate a `Hello` component
+CALL_FUNCTION PackageId("01a921f0713b5c8313115437225a358571f12e8e755e10779fe89a") "Hello" "instantiate_hello";
+
+# Clean up - deposit resources
+CALL_METHOD_WITH_ALL_RESOURCES ComponentId("02f1b232360a3452d23f4bdc590a859b11f7a16171863c2709cf39") "deposit_batch";

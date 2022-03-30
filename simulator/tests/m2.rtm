@@ -1,0 +1,33 @@
+# Prepare - grab token from the `Hello` component
+CALL_METHOD ComponentId("02e7efc37d1c54a6badf2b208f73e5eea189032d88976eeb7b3cb8") "free_token";
+
+# Test - assertions
+ASSERT_WORKTOP_CONTAINS ResourceDefId("0375189ffe1761ff54a5c5052965db26728b792c8cc3e1d50b04a5");
+ASSERT_WORKTOP_CONTAINS_BY_AMOUNT Decimal("1.0") ResourceDefId("0375189ffe1761ff54a5c5052965db26728b792c8cc3e1d50b04a5");
+
+# Test - worktop
+TAKE_FROM_WORKTOP ResourceDefId("0375189ffe1761ff54a5c5052965db26728b792c8cc3e1d50b04a5") Bucket("bucket1");
+RETURN_TO_WORKTOP Bucket("bucket1");
+TAKE_FROM_WORKTOP_BY_AMOUNT Decimal("1.0") ResourceDefId("0375189ffe1761ff54a5c5052965db26728b792c8cc3e1d50b04a5") Bucket("bucket2");
+RETURN_TO_WORKTOP Bucket("bucket2");
+
+# Test - auth zone
+CALL_METHOD ComponentId("02f1b232360a3452d23f4bdc590a859b11f7a16171863c2709cf39") "create_proof_by_amount" Decimal("5.0") ResourceDefId("030000000000000000000000000000000000000000000000000004");
+CREATE_PROOF_FROM_AUTH_ZONE ResourceDefId("030000000000000000000000000000000000000000000000000004") Proof("proof1");
+CREATE_PROOF_FROM_AUTH_ZONE_BY_AMOUNT Decimal("2.0") ResourceDefId("030000000000000000000000000000000000000000000000000004") Proof("proof2");
+CLONE_PROOF Proof("proof2") Proof("proof3");
+DROP_PROOF Proof("proof1");
+DROP_PROOF Proof("proof2");
+DROP_PROOF Proof("proof3");
+CLEAR_AUTH_ZONE;
+
+# Test - bucket proof
+CALL_METHOD ComponentId("02f1b232360a3452d23f4bdc590a859b11f7a16171863c2709cf39") "withdraw_by_amount" Decimal("5.0") ResourceDefId("030000000000000000000000000000000000000000000000000004");
+TAKE_FROM_WORKTOP ResourceDefId("030000000000000000000000000000000000000000000000000004") Bucket("xrd");
+CREATE_PROOF_FROM_BUCKET Bucket("xrd") Proof("proof4");
+CLONE_PROOF Proof("proof4") Proof("proof5");
+DROP_PROOF Proof("proof4");
+DROP_PROOF Proof("proof5");
+
+# Clean up - deposit resources
+CALL_METHOD_WITH_ALL_RESOURCES ComponentId("02f1b232360a3452d23f4bdc590a859b11f7a16171863c2709cf39") "deposit_batch";

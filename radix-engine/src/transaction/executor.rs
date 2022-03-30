@@ -80,9 +80,12 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
         self.substate_store
     }
 
-    /// Generates a new private key.
-    pub fn new_private_key(&mut self) -> EcdsaPrivateKey {
-        EcdsaPrivateKey(sha256(self.substate_store.get_nonce().to_le_bytes()).0)
+    /// Generates a new key pair.
+    pub fn new_key_pair(&mut self) -> (EcdsaPublicKey, EcdsaPrivateKey) {
+        let private_key =
+            EcdsaPrivateKey(sha256(self.substate_store.get_and_increase_nonce().to_le_bytes()).0);
+        let public_key = private_key.public_key();
+        (public_key, private_key)
     }
 
     /// Creates an account with 1,000,000 XRD in balance.
@@ -100,10 +103,9 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
         .new_component_ids[0]
     }
 
-    /// Creates a new private key and an account which can be accessed using the private key.
+    /// Creates a new key and an account which can be accessed using the key.
     pub fn new_account(&mut self) -> (EcdsaPublicKey, EcdsaPrivateKey, ComponentId) {
-        let private_key = self.new_private_key();
-        let public_key = private_key.public_key();
+        let (public_key, private_key) = self.new_key_pair();
         let id = NonFungibleId::new(public_key.to_vec());
         let auth_address = NonFungibleAddress::new(ECDSA_TOKEN, id);
         let withdraw_auth = this!(auth_address);
@@ -291,6 +293,7 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
         // commit state updates
         let commit_receipt = if error.is_none() {
             let receipt = track.commit();
+            self.substate_store.increase_nonce();
             Some(receipt)
         } else {
             None

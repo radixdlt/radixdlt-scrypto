@@ -9,9 +9,8 @@ resim="cargo run --bin resim $@ --"
 
 # Create test accounts and public keys
 $resim reset
-temp=`$resim new-account | tee /dev/tty | awk '/Account component ID:|Public key:/ {print $NF}'`
+temp=`$resim new-account | tee /dev/tty | awk '/Account component ID:/ {print $NF}'`
 account=`echo $temp | cut -d " " -f1`
-account_public_key=`echo $temp | cut -d " " -f2`
 account2=`$resim new-account | tee /dev/tty | awk '/Account component ID:/ {print $NF}'`
 
 # Test - create fixed supply badge
@@ -21,8 +20,8 @@ minter_badge=`$resim new-badge-fixed 1 --name 'MintBadge' | tee /dev/tty | awk '
 token_resource_def=`$resim new-token-mutable $minter_badge | tee /dev/tty | awk '/ResourceDef:/ {print $NF}'`
 
 # Test - mint and transfer
-$resim mint 777 $token_resource_def $minter_badge --signers $account_public_key
-$resim transfer 111 $token_resource_def $account2 --signers $account_public_key
+$resim mint 777 $token_resource_def $minter_badge
+$resim transfer 111 $token_resource_def $account2
 
 # Test - publish, call-funciton and call-method
 package=`$resim publish ../examples/hello-world | tee /dev/tty | awk '/Package:/ {print $NF}'`
