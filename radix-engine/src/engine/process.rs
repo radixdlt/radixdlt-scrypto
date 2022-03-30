@@ -775,8 +775,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         // move resource based on return data
         let output = match rtn {
             RuntimeValue::I32(ptr) => {
-                let data = ValidatedData::from_slice(&self.read_bytes(ptr)?)
-                    .map_err(RuntimeError::DataValidationError)?;
+                let data = self.read_return_value(ptr as u32)?;
                 self.process_return_data(&data)?;
                 data
             }
@@ -1215,36 +1214,28 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         Err(RuntimeError::MemoryAllocError)
     }
 
-    /// Read a byte array from wasm instance.
-    fn read_bytes(&mut self, ptr: i32) -> Result<Vec<u8>, RuntimeError> {
+    fn read_return_value(&mut self, ptr: u32) -> Result<ValidatedData, RuntimeError> {
         let wasm_process = self.wasm_process_state.as_ref().unwrap();
         // read length
         let len: u32 = wasm_process
             .vm
             .memory
-            .get_value(ptr as u32)
+            .get_value(ptr)
             .map_err(|_| RuntimeError::MemoryAccessError)?;
 
-        // SECURITY: meter before allocating memory
-        let mut data = vec![0u8; len as usize];
-        wasm_process
-            .vm
-            .memory
-            .get_into((ptr + 4) as u32, &mut data)
-            .map_err(|_| RuntimeError::MemoryAccessError)?;
+        let start = ptr.checked_add(4).ok_or(RuntimeError::MemoryAccessError)?;
+        let end = start
+            .checked_add(len)
+            .ok_or(RuntimeError::MemoryAccessError)?;
+        let range = start as usize..end as usize;
+        let direct = wasm_process.vm.memory.direct_access();
+        let buffer = direct.as_ref();
 
-        // free the buffer
-        wasm_process
-            .vm
-            .module
-            .invoke_export(
-                "scrypto_free",
-                &[RuntimeValue::I32(ptr as i32)],
-                &mut NopExternals,
-            )
-            .map_err(|_| RuntimeError::MemoryAccessError)?;
+        if end > buffer.len().try_into().unwrap() {
+            return Err(RuntimeError::MemoryAccessError);
+        }
 
-        Ok(data.to_vec())
+        ValidatedData::from_slice(&buffer[range]).map_err(RuntimeError::DataValidationError)
     }
 
     /// Handles a system call.
