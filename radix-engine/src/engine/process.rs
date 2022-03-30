@@ -1229,8 +1229,13 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .ok_or(RuntimeError::MemoryAccessError)?;
         let range = start as usize..end as usize;
         let direct = wasm_process.vm.memory.direct_access();
+        let buffer = direct.as_ref();
 
-        ValidatedData::from_slice(&direct.as_ref()[range])
+        if end > buffer.len().try_into().unwrap() {
+            return Err(RuntimeError::MemoryAccessError);
+        }
+
+        ValidatedData::from_slice(&buffer[range])
             .map_err(RuntimeError::DataValidationError)
     }
 
