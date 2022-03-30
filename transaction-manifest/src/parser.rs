@@ -1,4 +1,4 @@
-use crate::ast::{Fields, Instruction, Transaction, Type, Value};
+use crate::ast::{Instruction, Transaction, Type, Value};
 use crate::lexer::{Token, TokenKind};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
