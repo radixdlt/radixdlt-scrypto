@@ -19,9 +19,9 @@ impl Process {
 
     /// Returns the package ID.
     pub fn package_id() -> PackageId {
-        match Self::actor() {
-            Actor::Blueprint(package_id, _) | Actor::Component(package_id, _, _) => package_id,
-        }
+        let input = GetActorInput {};
+        let output: GetActorOutput = call_engine(GET_ACTOR, input);
+        output.package_id
     }
 
     /// Generates a UUID.

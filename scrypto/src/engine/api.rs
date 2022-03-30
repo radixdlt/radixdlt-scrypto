@@ -757,4 +757,5 @@ pub struct GetActorInput {}
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct GetActorOutput {
     pub actor: Actor,
+    pub package_id: PackageId,
 }

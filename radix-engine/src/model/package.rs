@@ -1,4 +1,4 @@
-use crate::engine::{instantiate_module, EnvModuleResolver};
+use crate::engine::EnvModuleResolver;
 use crate::errors::WasmValidationError;
 use sbor::*;
 use scrypto::buffer::scrypto_decode;
@@ -19,14 +19,10 @@ pub struct Package {
 }
 
 pub enum PackageError {
-    BlueprintNotFound(String),
+    BlueprintNotFound,
 }
 
 impl Package {
-    fn parse_module(code: &[u8]) -> Result<Module, WasmValidationError> {
-        Module::from_buffer(code).map_err(|_| WasmValidationError::InvalidModule)
-    }
-
     /// Validates and creates a package
     pub fn new(code: Vec<u8>) -> Result<Self, WasmValidationError> {
         // Parse
@@ -85,16 +81,50 @@ impl Package {
         &self.code
     }
 
-    pub fn load_blueprint(
+    pub fn load_for_method_call(
         &self,
-        blueprint_name: String,
+        blueprint_name: &str,
+    ) -> Result<(&Type, ModuleRef, MemoryRef), PackageError> {
+        let blueprint_type = self
+            .blueprints
+            .get(blueprint_name)
+            .ok_or(PackageError::BlueprintNotFound)?;
+        let module = Self::parse_module(&self.code).unwrap();
+        let (module_ref, memory_ref) = Self::instantiate_module(&module).unwrap();
+        Ok((blueprint_type, module_ref, memory_ref))
+    }
+
+    pub fn load_for_function_call(
+        &self,
+        blueprint_name: &str,
     ) -> Result<(ModuleRef, MemoryRef), PackageError> {
-        if !self.blueprints.contains_key(&blueprint_name) {
-            return Err(PackageError::BlueprintNotFound(blueprint_name));
+        if !self.blueprints.contains_key(blueprint_name) {
+            return Err(PackageError::BlueprintNotFound);
         }
 
         let module = Self::parse_module(&self.code).unwrap();
-        let inst = instantiate_module(&module).unwrap();
+        let inst = Self::instantiate_module(&module).unwrap();
         Ok(inst)
+    }
+
+    fn parse_module(code: &[u8]) -> Result<Module, WasmValidationError> {
+        Module::from_buffer(code).map_err(|_| WasmValidationError::InvalidModule)
+    }
+
+    fn instantiate_module(module: &Module) -> Result<(ModuleRef, MemoryRef), WasmValidationError> {
+        // Instantiate
+        let instance = ModuleInstance::new(
+            module,
+            &ImportsBuilder::new().with_resolver("env", &EnvModuleResolver),
+        )
+        .map_err(|_| WasmValidationError::InvalidModule)?
+        .assert_no_start();
+
+        // Find memory export
+        if let Some(ExternVal::Memory(memory)) = instance.export_by_name("memory") {
+            Ok((instance, memory))
+        } else {
+            Err(WasmValidationError::NoValidMemoryExport)
+        }
     }
 }

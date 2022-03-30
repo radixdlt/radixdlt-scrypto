@@ -124,7 +124,7 @@ pub enum RuntimeError {
     /// Package does not exist.
     PackageNotFound(PackageId),
 
-    BlueprintNotFound(String, PackageId),
+    BlueprintNotFound(PackageId, String),
 
     /// System call not allowed in given context.
     IllegalSystemCall,
