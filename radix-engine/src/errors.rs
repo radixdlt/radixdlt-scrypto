@@ -9,9 +9,13 @@ use wasmi::*;
 use crate::engine::*;
 use crate::model::*;
 
+/// Error coming from WASMI module which maps to wasmi:Error but is cloneable
 #[derive(Debug, PartialEq, Clone)]
 pub enum WasmiError {
+    /// Module validation error. Might occur only at load time.
     Validation(String),
+    /// Error while instantiating a module. Might occur when provided
+    /// with incorrect exports (i.e. linkage failure).
     Instantiation(String),
     /// Function-level error.
     Function(String),
@@ -23,7 +27,9 @@ pub enum WasmiError {
     Global(String),
     /// Value-level error.
     Value(String),
+    /// Trap.
     Trap,
+    /// Custom embedder error.
     Host,
 }
 
@@ -48,16 +54,15 @@ impl From<wasmi::Error> for WasmiError {
 pub enum WasmValidationError {
     /// The wasm module is invalid.
     InvalidModule,
-
     /// The wasm module contains a start function.
     StartFunctionNotAllowed,
-
     /// The wasm module uses float points.
     FloatingPointNotAllowed,
-
     /// The wasm module does not have memory export.
     NoValidMemoryExport,
+    /// package_init function does not exist in module
     NoPackageInitExport(WasmiError),
+    /// package_init function is not the correct interface
     InvalidPackageInit,
 }
 
@@ -124,6 +129,7 @@ pub enum RuntimeError {
     /// Package does not exist.
     PackageNotFound(PackageId),
 
+    /// Blueprint does not exist.
     BlueprintNotFound(PackageId, String),
 
     /// System call not allowed in given context.

@@ -154,6 +154,7 @@ macro_rules! include_package {
     };
 }
 
+/// Exports the given blueprints into this package.
 #[macro_export]
 macro_rules! package_init {
   ($($blueprint: expr),*) => (
