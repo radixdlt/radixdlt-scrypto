@@ -33,4 +33,4 @@ blueprint! {
     }
 }
 
-package_init!("NoStd");
+package_init!(blueprint::NoStd::describe());

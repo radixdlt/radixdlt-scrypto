@@ -140,4 +140,4 @@ blueprint! {
     }
 }
 
-package_init!("Account");
+package_init!(blueprint::Account::describe());

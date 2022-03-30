@@ -159,4 +159,4 @@ blueprint! {
     }
 }
 
-package_init!("NonFungibleTest");
+package_init!(blueprint::NonFungibleTest::describe());

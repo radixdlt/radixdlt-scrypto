@@ -134,4 +134,4 @@ blueprint! {
     }
 }
 
-package_init!("ResourceTest");
+package_init!(blueprint::ResourceTest::describe());

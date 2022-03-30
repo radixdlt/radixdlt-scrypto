@@ -43,7 +43,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
     }
 
     let output_mod = quote! {
-        mod blueprint {
+        pub mod blueprint {
             use super::*;
 
             #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
@@ -535,7 +535,7 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                mod blueprint {
+                pub mod blueprint {
                     use super::*;
 
                     #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]

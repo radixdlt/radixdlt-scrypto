@@ -154,18 +154,23 @@ macro_rules! include_package {
     };
 }
 
-
 #[macro_export]
 macro_rules! package_init {
   ($($blueprint: expr),*) => (
          #[no_mangle]
           pub extern "C" fn package_init() -> *mut u8 {
-              let mut output: Vec<String> = Vec::new();
+              let mut blueprints: HashMap<String, ::sbor::Type> = HashMap::new();
+
               $(
-                  output.push($blueprint.to_string());
+                  let blueprint_type = $blueprint;
+                  let name = match &blueprint_type {
+                      ::sbor::Type::Struct { name, fields: _ } => name.clone(),
+                      _ => panic!("Blueprint must be a struct.")
+                  };
+                  blueprints.insert(name, blueprint_type);
               )*
               // serialize the output
-              let output_bytes = ::scrypto::buffer::scrypto_encode_for_radix_engine(&output);
+              let output_bytes = ::scrypto::buffer::scrypto_encode_for_radix_engine(&blueprints);
 
               // return the output wrapped in a radix-style buffer
               ::scrypto::buffer::scrypto_wrap(output_bytes)

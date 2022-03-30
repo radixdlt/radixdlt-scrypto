@@ -34,4 +34,4 @@ blueprint! {
     }
 }
 
-package_init!("Hello");
+package_init!(blueprint::Hello::describe());

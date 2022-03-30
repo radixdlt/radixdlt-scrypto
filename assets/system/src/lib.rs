@@ -48,4 +48,4 @@ blueprint! {
     }
 }
 
-package_init!("System");
+package_init!(blueprint::System::describe());

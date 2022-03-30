@@ -1,5 +1,6 @@
 use sbor::*;
 use scrypto::buffer::scrypto_decode;
+use scrypto::prelude::HashMap;
 use scrypto::rust::vec;
 use scrypto::rust::vec::Vec;
 use scrypto::rust::string::String;
@@ -11,7 +12,7 @@ use crate::errors::WasmValidationError;
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct Package {
     code: Vec<u8>,
-    blueprints: Vec<String>,
+    blueprints: HashMap<String, Type>,
 }
 
 pub enum PackageError {
@@ -83,7 +84,7 @@ impl Package {
     }
 
     pub fn load_blueprint(&self, blueprint_name: String) -> Result<(ModuleRef, MemoryRef), PackageError> {
-        if !self.blueprints.iter().any(|s| s.eq(&blueprint_name)) {
+        if !self.blueprints.contains_key(&blueprint_name) {
             return Err(PackageError::BlueprintNotFound(blueprint_name));
         }
 
