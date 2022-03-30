@@ -19,6 +19,12 @@ pub struct TransactionExecutor<'l, L: SubstateStore> {
     trace: bool,
 }
 
+impl<'l, L: SubstateStore> NonceProvider for TransactionExecutor<'l, L> {
+    fn get_nonce(&self, _intended_signers: &[EcdsaPublicKey]) -> u64 {
+        self.substate_store.get_nonce()
+    }
+}
+
 impl<'l, L: SubstateStore> AbiProvider for TransactionExecutor<'l, L> {
     fn export_abi(
         &self,
@@ -76,19 +82,18 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
 
     /// Generates a new private key.
     pub fn new_private_key(&mut self) -> EcdsaPrivateKey {
-        EcdsaPrivateKey(sha256(self.substate_store.next_nonce().to_le_bytes()).0)
+        EcdsaPrivateKey(sha256(self.substate_store.get_nonce().to_le_bytes()).0)
     }
 
     /// Creates an account with 1,000,000 XRD in balance.
     pub fn new_account_with_auth_rule(&mut self, withdraw_auth: &ProofRule) -> ComponentId {
-        let tx_nonce = self.substate_store.next_nonce();
         self.validate_and_execute(
             &TransactionBuilder::new(self)
                 .call_method(SYSTEM_COMPONENT, "free_xrd", vec![])
                 .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
                     builder.new_account_with_resource(withdraw_auth, bucket_id)
                 })
-                .build(Vec::new(), tx_nonce)
+                .build_and_sign(vec![], vec![])
                 .unwrap(),
         )
         .unwrap()
@@ -96,24 +101,23 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
     }
 
     /// Creates a new private key and an account which can be accessed using the private key.
-    pub fn new_account(&mut self) -> (EcdsaPrivateKey, EcdsaPublicKey, ComponentId) {
+    pub fn new_account(&mut self) -> (EcdsaPublicKey, EcdsaPrivateKey, ComponentId) {
         let private_key = self.new_private_key();
         let public_key = private_key.public_key();
         let id = NonFungibleId::new(public_key.to_vec());
         let auth_address = NonFungibleAddress::new(ECDSA_TOKEN, id);
         let withdraw_auth = this!(auth_address);
         let account = self.new_account_with_auth_rule(&withdraw_auth);
-        (private_key, public_key, account)
+        (public_key, private_key, account)
     }
 
     /// Publishes a package.
     pub fn publish_package<T: AsRef<[u8]>>(&mut self, code: T) -> Result<PackageId, RuntimeError> {
-        let tx_nonce = self.substate_store.next_nonce();
         let receipt = self
             .validate_and_execute(
                 &TransactionBuilder::new(self)
                     .publish_package(code.as_ref())
-                    .build(Vec::new(), tx_nonce)
+                    .build_and_sign(vec![], vec![])
                     .unwrap(),
             )
             .unwrap();
@@ -127,7 +131,7 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
 
     /// Overwrites a package.
     pub fn overwrite_package(&mut self, package_id: PackageId, code: &[u8]) {
-        let tx_hash = sha256(self.substate_store.next_nonce().to_le_bytes());
+        let tx_hash = sha256(self.substate_store.get_and_increase_nonce().to_le_bytes());
         let mut id_gen = SubstateIdGenerator::new(tx_hash);
 
         let package = Package::new(code.to_vec());

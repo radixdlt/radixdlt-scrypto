@@ -22,9 +22,9 @@ use scrypto::rust::vec::Vec;
 use scrypto::types::*;
 
 /// Utility for building transaction.
-pub struct TransactionBuilder<'a, A: AbiProvider> {
-    /// ABI provider for constructing arguments
-    abi_provider: &'a A,
+pub struct TransactionBuilder<'a, A: AbiProvider + NonceProvider> {
+    /// ABI and nonce provider
+    abi_nonce_provider: &'a A,
     /// ID validator for calculating transaction object id
     id_validator: IdValidator,
     /// Instructions generated.
@@ -33,11 +33,11 @@ pub struct TransactionBuilder<'a, A: AbiProvider> {
     errors: Vec<BuildTransactionError>,
 }
 
-impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
+impl<'a, A: AbiProvider + NonceProvider> TransactionBuilder<'a, A> {
     /// Starts a new transaction builder.
-    pub fn new(abi_provider: &'a A) -> Self {
+    pub fn new(abi_nonce_provider: &'a A) -> Self {
         Self {
-            abi_provider,
+            abi_nonce_provider,
             id_validator: IdValidator::new(),
             instructions: Vec::new(),
             errors: Vec::new(),
@@ -313,7 +313,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         account: Option<ComponentId>,
     ) -> &mut Self {
         let result = self
-            .abi_provider
+            .abi_nonce_provider
             .export_abi(package_id, blueprint_name)
             .map_err(|e| {
                 BuildTransactionError::FailedToExportFunctionAbi(
@@ -373,7 +373,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         account: Option<ComponentId>,
     ) -> &mut Self {
         let result = self
-            .abi_provider
+            .abi_nonce_provider
             .export_abi_component(component_id)
             .map_err(|_| {
                 BuildTransactionError::FailedToExportMethodAbi(component_id, method.to_owned())
@@ -423,10 +423,9 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     }
 
     /// Builds a transaction.
-    pub fn build(
+    pub fn build<PK: AsRef<[EcdsaPublicKey]>>(
         &self,
-        intended_signers: Vec<EcdsaPublicKey>,
-        nonce: u64,
+        intended_signers: PK,
     ) -> Result<Transaction, BuildTransactionError> {
         if !self.errors.is_empty() {
             return Err(self.errors[0].clone());
@@ -434,22 +433,21 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
 
         let mut instructions = self.instructions.clone();
         instructions.push(Instruction::IntendedSigners {
-            signers: intended_signers,
-            nonce,
+            signers: intended_signers.as_ref().to_vec(),
+            nonce: self.abi_nonce_provider.get_nonce(intended_signers.as_ref()),
         });
 
         Ok(Transaction { instructions })
     }
 
     /// Builds a transaction and signs it.
-    pub fn build_and_sign(
+    pub fn build_and_sign<PK: AsRef<[EcdsaPublicKey]>, SK: AsRef<[EcdsaPrivateKey]>>(
         &self,
-        intended_signers: Vec<EcdsaPublicKey>,
-        nonce: u64,
-        private_keys: &[EcdsaPrivateKey],
+        intended_signers: PK,
+        private_keys: SK,
     ) -> Result<Transaction, BuildTransactionError> {
-        let mut transaction = self.build(intended_signers, nonce)?;
-        transaction.sign(private_keys);
+        let mut transaction = self.build(intended_signers)?;
+        transaction.sign(private_keys.as_ref());
         Ok(transaction)
     }
 

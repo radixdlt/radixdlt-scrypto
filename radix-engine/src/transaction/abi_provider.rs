@@ -27,6 +27,22 @@ pub trait AbiProvider {
     ) -> Result<abi::Blueprint, RuntimeError>;
 }
 
+/// An interface for exporting the ABI of a blueprint.
+pub trait NonceProvider {
+    /// Exports the ABI of a blueprint.
+    fn export_abi(
+        &self,
+        package_id: PackageId,
+        blueprint_name: &str,
+    ) -> Result<abi::Blueprint, RuntimeError>;
+
+    /// Exports the ABI of the blueprint, from which the given component is instantiated.
+    fn export_abi_component(
+        &self,
+        component_id: ComponentId,
+    ) -> Result<abi::Blueprint, RuntimeError>;
+}
+
 /// Provides ABIs for blueprints either installed during bootstrap or added manually.
 pub struct BasicAbiProvider {
     substate_store: InMemorySubstateStore,
@@ -42,7 +58,7 @@ impl BasicAbiProvider {
     }
 
     pub fn with_package(&mut self, package_id: PackageId, code: Vec<u8>) -> &mut Self {
-        let tx_hash = sha256(self.substate_store.next_nonce().to_le_bytes());
+        let tx_hash = sha256(self.substate_store.get_and_increase_nonce().to_le_bytes());
         let mut id_gen = SubstateIdGenerator::new(tx_hash);
 
         self.substate_store

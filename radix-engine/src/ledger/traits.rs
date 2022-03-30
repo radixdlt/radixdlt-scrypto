@@ -141,7 +141,7 @@ pub trait SubstateStore {
     }
 
     fn bootstrap(&mut self) {
-        let tx_hash = sha256(self.next_nonce().to_le_bytes());
+        let tx_hash = sha256(self.get_and_increase_nonce().to_le_bytes());
         let mut id_gen = SubstateIdGenerator::new(tx_hash);
 
         let package: Option<Package> = self
@@ -214,5 +214,15 @@ pub trait SubstateStore {
     fn set_epoch(&mut self, epoch: u64);
 
     // TODO: redefine what nonce is and how it's updated
-    fn next_nonce(&mut self) -> u64;
+    // For now, we bump nonce only when a transaction has been committed
+
+    fn get_nonce(&self) -> u64;
+
+    fn increase_nonce(&mut self);
+
+    fn get_and_increase_nonce(&mut self) -> u64 {
+        let nonce = self.get_nonce();
+        self.increase_nonce();
+        nonce
+    }
 }
