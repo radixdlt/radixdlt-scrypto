@@ -21,7 +21,7 @@ pub struct EcdsaPublicKey(pub [u8; ECDSA_PUBLIC_KEY_LENGTH]);
 
 /// Represents an ECDSA signature.
 #[derive(Clone, Copy, PartialEq, Eq)]
-pub struct EcdsaSignature([u8; ECDSA_SIGNATURE_LENGTH]);
+pub struct EcdsaSignature(pub [u8; ECDSA_SIGNATURE_LENGTH]);
 
 /// Represents an error ocurred when validating a signature.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -40,16 +40,19 @@ impl EcdsaPrivateKey {
     pub fn sign(&self, hash: Hash) -> EcdsaSignature {
         // TODO replace with real implementation once signature algorithm is decided.
         let mut bytes = [0u8; ECDSA_SIGNATURE_LENGTH];
-        (&mut bytes[0..HASH_LENGTH]).copy_from_slice(&hash.0);
-        (&mut bytes[HASH_LENGTH..HASH_LENGTH + ECDSA_PRIVATE_KEY_LENGTH]).copy_from_slice(&self.0);
-        EcdsaSignature::new(bytes).unwrap()
+        (&mut bytes[0..ECDSA_PUBLIC_KEY_LENGTH]).copy_from_slice(&self.public_key().0);
+        (&mut bytes[ECDSA_PUBLIC_KEY_LENGTH..ECDSA_PUBLIC_KEY_LENGTH + HASH_LENGTH])
+            .copy_from_slice(&hash.0);
+        EcdsaSignature(bytes)
     }
 }
 
 impl EcdsaSignature {
-    pub fn new(raw: [u8; ECDSA_SIGNATURE_LENGTH]) -> Result<Self, SignatureValidationError> {
+    pub fn validate(&self, _hash: Hash) -> Result<EcdsaPublicKey, SignatureValidationError> {
         // TODO replace with real implementation once signature algorithm is decided.
-        Ok(Self(raw))
+        let mut bytes = [0u8; ECDSA_PUBLIC_KEY_LENGTH];
+        (&mut bytes).copy_from_slice(&self.0[0..ECDSA_PUBLIC_KEY_LENGTH]);
+        Ok(EcdsaPublicKey(bytes))
     }
 }
 
