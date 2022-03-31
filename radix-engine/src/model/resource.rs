@@ -44,7 +44,7 @@ pub enum ResourceContainer {
     },
 }
 
-/// The the locked amount of non-fungible IDs.
+/// The locked amount or non-fungible IDs.
 ///
 /// Invariant: always consistent with resource fungibility.
 #[derive(Debug, Clone)]
