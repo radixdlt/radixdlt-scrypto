@@ -7,10 +7,12 @@ blueprint! {
 
     impl Account {
         pub fn new(withdraw_rule: ProofRule) -> ComponentId {
-            Self { vaults: LazyMap::new(), }
-                .instantiate()
-                .auth("withdraw", withdraw_rule)
-                .globalize()
+            Self {
+                vaults: LazyMap::new(),
+            }
+            .instantiate()
+            .auth("withdraw", withdraw_rule)
+            .globalize()
         }
 
         pub fn new_with_resource(withdraw_rule: ProofRule, bucket: Bucket) -> ComponentId {

@@ -13,7 +13,8 @@ fn can_withdraw_from_my_1_of_2_account_with_key0_sign() {
     let mut test_runner = TestRunner::new(&mut substate_store);
     let (key0, auth0) = test_runner.new_public_key_and_non_fungible_address();
     let (_, auth1) = test_runner.new_public_key_and_non_fungible_address();
-    let auth_1_of_2 = require_any_of!(auth0, auth1);
+    let auth_addresses = vec![auth0, auth1];
+    let auth_1_of_2 = require_any_of!(auth_addresses);
     let account = test_runner.new_account(&auth_1_of_2);
     let (_, other_account) = test_runner.new_public_key_with_account();
 
@@ -37,7 +38,8 @@ fn can_withdraw_from_my_1_of_2_account_with_key1_sign() {
     let mut test_runner = TestRunner::new(&mut substate_store);
     let (_, non_fungible_address0) = test_runner.new_public_key_and_non_fungible_address();
     let (key1, non_fungible_address1) = test_runner.new_public_key_and_non_fungible_address();
-    let auth_1_of_2 = require_any_of!(non_fungible_address0, non_fungible_address1);
+    let auth_addresses = vec![non_fungible_address0, non_fungible_address1];
+    let auth_1_of_2 = require_any_of!(auth_addresses);
     let account = test_runner.new_account(&auth_1_of_2);
     let (_, other_account) = test_runner.new_public_key_with_account();
 
@@ -61,7 +63,8 @@ fn can_withdraw_from_my_2_of_2_account_with_both_signatures() {
     let mut test_runner = TestRunner::new(&mut substate_store);
     let (key0, non_fungible_address0) = test_runner.new_public_key_and_non_fungible_address();
     let (key1, non_fungible_address1) = test_runner.new_public_key_and_non_fungible_address();
-    let auth_2_of_2 = require_all_of!(non_fungible_address0, non_fungible_address1);
+    let auth_addresses = vec![non_fungible_address0, non_fungible_address1];
+    let auth_2_of_2 = require_all_of!(auth_addresses);
     let account = test_runner.new_account(&auth_2_of_2);
     let (_, other_account) = test_runner.new_public_key_with_account();
 
@@ -85,7 +88,8 @@ fn cannot_withdraw_from_my_2_of_2_account_with_single_signature() {
     let mut test_runner = TestRunner::new(&mut substate_store);
     let (_, non_fungible_address0) = test_runner.new_public_key_and_non_fungible_address();
     let (key1, non_fungible_address1) = test_runner.new_public_key_and_non_fungible_address();
-    let auth_2_of_2 = require_all_of!(non_fungible_address0, non_fungible_address1);
+    let auth_addresses = vec![non_fungible_address0, non_fungible_address1];
+    let auth_2_of_2 = require_all_of!(auth_addresses);
     let account = test_runner.new_account(&auth_2_of_2);
     let (_, other_account) = test_runner.new_public_key_with_account();
 
@@ -111,12 +115,12 @@ fn can_withdraw_from_my_2_of_3_account_with_2_signatures() {
     let (_, non_fungible_address0) = test_runner.new_public_key_and_non_fungible_address();
     let (key1, non_fungible_address1) = test_runner.new_public_key_and_non_fungible_address();
     let (key2, non_fungible_address2) = test_runner.new_public_key_and_non_fungible_address();
-    let auth_2_of_3 = require_n_of!(
-        2,
+    let auth_addresses = vec![
         non_fungible_address0,
         non_fungible_address1,
-        non_fungible_address2
-    );
+        non_fungible_address2,
+    ];
+    let auth_2_of_3 = require_n_of!(2, auth_addresses);
     let account = test_runner.new_account(&auth_2_of_3);
     let (_, other_account) = test_runner.new_public_key_with_account();
 

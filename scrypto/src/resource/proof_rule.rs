@@ -59,6 +59,15 @@ impl From<SchemaPath> for SoftResourceOrNonFungibleList {
     }
 }
 
+impl<T> From<Vec<T>> for SoftResourceOrNonFungibleList
+where
+    T: Into<SoftResourceOrNonFungible>,
+{
+    fn from(addresses: Vec<T>) -> Self {
+        SoftResourceOrNonFungibleList::Static(addresses.into_iter().map(|a| a.into()).collect())
+    }
+}
+
 /// Authorization Rule
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Describe, TypeId, Encode, Decode)]
 pub enum ProofRule {
@@ -101,32 +110,23 @@ macro_rules! require {
 
 #[macro_export]
 macro_rules! require_any_of {
-    ($list:expr) => ({
+    ($list:expr) => {{
         ::scrypto::resource::ProofRule::AnyOf($list.into())
-    });
-    ($left:expr, $($right:expr),+) => ({
-        ::scrypto::resource::ProofRule::AnyOf(resource_list!($left, $($right),+))
-    });
+    }};
 }
 
 #[macro_export]
 macro_rules! require_all_of {
-    ($list:expr) => ({
+    ($list:expr) => {{
         ::scrypto::resource::ProofRule::AllOf($list.into())
-    });
-    ($left:expr, $($right:expr),+) => ({
-        ::scrypto::resource::ProofRule::AllOf(resource_list!($left, $($right),+))
-    });
+    }};
 }
 
 #[macro_export]
 macro_rules! require_n_of {
-    ($count:expr, $list:expr) => ({
+    ($count:expr, $list:expr) => {{
         ::scrypto::resource::ProofRule::CountOf($count, $list.into())
-    });
-    ($count:expr, $left:expr, $($right:expr),+) => ({
-        ::scrypto::resource::ProofRule::CountOf($count, resource_list!($left, $($right),+))
-    });
+    }};
 }
 
 #[macro_export]

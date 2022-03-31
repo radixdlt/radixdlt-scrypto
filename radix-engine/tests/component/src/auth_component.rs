@@ -10,7 +10,8 @@ blueprint! {
             Self { some_non_fungible }
                 .instantiate()
                 .auth(
-                    "get_secret", require!(SchemaPath::new().field("some_non_fungible"))
+                    "get_secret",
+                    require!(SchemaPath::new().field("some_non_fungible")),
                 )
                 .globalize()
         }
