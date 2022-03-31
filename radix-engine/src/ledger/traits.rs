@@ -123,12 +123,12 @@ pub trait SubstateStore {
         if package.is_none() {
             // System package
             let system_package =
-                Package::new(include_bytes!("../../../assets/system.wasm").to_vec());
+                Package::new(include_bytes!("../../../assets/system.wasm").to_vec()).unwrap();
             self.put_encoded_substate(&SYSTEM_PACKAGE, &system_package, self.get_nonce());
 
             // Account package
             let account_package =
-                Package::new(include_bytes!("../../../assets/account.wasm").to_vec());
+                Package::new(include_bytes!("../../../assets/account.wasm").to_vec()).unwrap();
             self.put_encoded_substate(&ACCOUNT_PACKAGE, &account_package, self.get_nonce());
 
             // Radix token resource definition
@@ -146,7 +146,10 @@ pub trait SubstateStore {
                 HashMap::new(),
             )
             .unwrap();
-            xrd.mint(XRD_MAX_SUPPLY.into());
+            xrd.mint(&MintParams::Fungible {
+                amount: XRD_MAX_SUPPLY.into(),
+            })
+            .unwrap();
             self.put_encoded_substate(&RADIX_TOKEN, &xrd, self.get_nonce());
 
             let ecdsa_token = ResourceDef::new(
