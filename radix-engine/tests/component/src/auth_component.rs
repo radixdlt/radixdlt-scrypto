@@ -7,12 +7,12 @@ blueprint! {
 
     impl AuthComponent {
         pub fn create_component(some_non_fungible: NonFungibleAddress) -> ComponentId {
-            let mut component = Self { some_non_fungible }.instantiate();
-            component.auth(
-                "get_secret",
-                some_of!(SchemaPath::new().field("some_non_fungible")),
-            );
-            component.globalize()
+            Self { some_non_fungible }
+                .instantiate()
+                .auth(
+                    "get_secret", require!(SchemaPath::new().field("some_non_fungible"))
+                )
+                .globalize()
         }
 
         pub fn get_secret(&self) -> String {

@@ -62,7 +62,7 @@ impl From<SchemaPath> for SoftResourceOrNonFungibleList {
 /// Authorization Rule
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Describe, TypeId, Encode, Decode)]
 pub enum ProofRule {
-    SomeOf(SoftResourceOrNonFungible),
+    Require(SoftResourceOrNonFungible),
     AmountOf(Decimal, SoftResource),
     CountOf(u8, SoftResourceOrNonFungibleList),
     AllOf(SoftResourceOrNonFungibleList),
@@ -71,13 +71,13 @@ pub enum ProofRule {
 
 impl From<NonFungibleAddress> for ProofRule {
     fn from(non_fungible_address: NonFungibleAddress) -> Self {
-        ProofRule::SomeOf(non_fungible_address.into())
+        ProofRule::Require(non_fungible_address.into())
     }
 }
 
 impl From<ResourceDefId> for ProofRule {
     fn from(resource_def_id: ResourceDefId) -> Self {
-        ProofRule::SomeOf(resource_def_id.into())
+        ProofRule::Require(resource_def_id.into())
     }
 }
 
@@ -93,14 +93,14 @@ macro_rules! resource_list {
 }
 
 #[macro_export]
-macro_rules! some_of {
+macro_rules! require {
     ($resource:expr) => {{
-        ::scrypto::resource::ProofRule::SomeOf($resource.into())
+        ::scrypto::resource::ProofRule::Require($resource.into())
     }};
 }
 
 #[macro_export]
-macro_rules! any_of {
+macro_rules! require_any_of {
     ($list:expr) => ({
         ::scrypto::resource::ProofRule::AnyOf($list.into())
     });
@@ -110,7 +110,7 @@ macro_rules! any_of {
 }
 
 #[macro_export]
-macro_rules! all_of {
+macro_rules! require_all_of {
     ($list:expr) => ({
         ::scrypto::resource::ProofRule::AllOf($list.into())
     });
@@ -120,7 +120,7 @@ macro_rules! all_of {
 }
 
 #[macro_export]
-macro_rules! min_n_of {
+macro_rules! require_n_of {
     ($count:expr, $list:expr) => ({
         ::scrypto::resource::ProofRule::CountOf($count, $list.into())
     });
@@ -130,7 +130,7 @@ macro_rules! min_n_of {
 }
 
 #[macro_export]
-macro_rules! min_amount_of {
+macro_rules! require_amount {
     ($amount:expr, $resource:expr) => {
         ProofRule::AmountOf($amount, $resource.into())
     };

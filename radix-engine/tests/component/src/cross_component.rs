@@ -15,7 +15,8 @@ blueprint! {
                 auth_vault: None,
             }
             .instantiate()
-            .globalize_with_auth(component_authorization)
+            .set_auth_interface(component_authorization)
+            .globalize()
         }
 
         pub fn create_component() -> ComponentId {

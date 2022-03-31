@@ -17,9 +17,7 @@ blueprint! {
             Self {
                 test_vault: Vault::with_bucket(Self::create_test_token(1000)),
                 secret: "Secret".to_owned(),
-            }
-            .instantiate()
-            .globalize()
+            }.instantiate().globalize()
         }
 
         pub fn get_component_info(component_id: ComponentId) -> (PackageId, String) {

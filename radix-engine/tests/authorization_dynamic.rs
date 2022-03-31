@@ -153,7 +153,7 @@ fn dynamic_auth_should_allow_me_to_call_method_when_change_auth() {
 fn dynamic_this_should_fail_on_dynamic_list() {
     test_dynamic_authlist(
         3,
-        some_of!(SchemaPath::new().field("auth")),
+        require!(SchemaPath::new().field("auth")),
         &[0, 1, 2],
         false,
     );
@@ -163,7 +163,7 @@ fn dynamic_this_should_fail_on_dynamic_list() {
 fn dynamic_all_of_should_fail_on_nonexistent_resource() {
     test_dynamic_authlist(
         3,
-        all_of!(resource_list!(SchemaPath::new().field("does_not_exist"))),
+        require_all_of!(resource_list!(SchemaPath::new().field("does_not_exist"))),
         &[0, 1, 2],
         false,
     );
@@ -173,7 +173,7 @@ fn dynamic_all_of_should_fail_on_nonexistent_resource() {
 fn dynamic_min_n_of_should_allow_me_to_call_method() {
     test_dynamic_authlist(
         3,
-        min_n_of!(2, SchemaPath::new().field("auth")),
+        require_n_of!(2, SchemaPath::new().field("auth")),
         &[0, 1],
         true,
     );
@@ -183,7 +183,7 @@ fn dynamic_min_n_of_should_allow_me_to_call_method() {
 fn dynamic_min_n_of_should_fail_if_not_signed_enough() {
     test_dynamic_authlist(
         3,
-        min_n_of!(2, SchemaPath::new().field("auth")),
+        require_n_of!(2, SchemaPath::new().field("auth")),
         &[0],
         false,
     );
@@ -193,7 +193,7 @@ fn dynamic_min_n_of_should_fail_if_not_signed_enough() {
 fn dynamic_min_n_of_should_fail_if_path_does_not_exist() {
     test_dynamic_authlist(
         3,
-        min_n_of!(1, SchemaPath::new().field("does_not_exist")),
+        require_n_of!(1, SchemaPath::new().field("does_not_exist")),
         &[0, 1],
         false,
     );
@@ -203,7 +203,7 @@ fn dynamic_min_n_of_should_fail_if_path_does_not_exist() {
 fn dynamic_all_of_should_allow_me_to_call_method() {
     test_dynamic_authlist(
         3,
-        all_of!(SchemaPath::new().field("auth")),
+        require_all_of!(SchemaPath::new().field("auth")),
         &[0, 1, 2],
         true,
     );
@@ -211,14 +211,14 @@ fn dynamic_all_of_should_allow_me_to_call_method() {
 
 #[test]
 fn dynamic_all_of_should_fail_if_not_signed_enough() {
-    test_dynamic_authlist(3, all_of!(SchemaPath::new().field("auth")), &[0, 1], false);
+    test_dynamic_authlist(3, require_all_of!(SchemaPath::new().field("auth")), &[0, 1], false);
 }
 
 #[test]
 fn dynamic_all_of_should_fail_if_path_does_not_exist() {
     test_dynamic_authlist(
         3,
-        all_of!(SchemaPath::new().field("does_not_exist")),
+        require_all_of!(SchemaPath::new().field("does_not_exist")),
         &[0, 1],
         false,
     );
@@ -226,14 +226,14 @@ fn dynamic_all_of_should_fail_if_path_does_not_exist() {
 
 #[test]
 fn dynamic_any_of_should_allow_me_to_call_method() {
-    test_dynamic_authlist(3, any_of!(SchemaPath::new().field("auth")), &[1], true);
+    test_dynamic_authlist(3, require_any_of!(SchemaPath::new().field("auth")), &[1], true);
 }
 
 #[test]
 fn dynamic_any_of_should_fail_if_path_does_not_exist() {
     test_dynamic_authlist(
         3,
-        any_of!(SchemaPath::new().field("does_not_exist")),
+        require_any_of!(SchemaPath::new().field("does_not_exist")),
         &[0, 1],
         false,
     );
