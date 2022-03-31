@@ -60,8 +60,8 @@ blueprint! {
                 ])
         }
 
-        pub fn create_fungible_fixed(amount: Decimal) -> Bucket {
-            ResourceBuilder::new_fungible(DIVISIBILITY_MAXIMUM)
+        pub fn create_fungible_fixed(amount: Decimal, divisibility: u8) -> Bucket {
+            ResourceBuilder::new_fungible(divisibility)
                 .metadata("name", "SUPER TOKEN")
                 .initial_supply_fungible(amount)
         }

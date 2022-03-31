@@ -136,7 +136,6 @@ pub enum Type {
 
     /* Custom types */
     Decimal,
-    BigDecimal,
     PackageId,
     ComponentId,
     ResourceDefId,
@@ -178,7 +177,6 @@ pub enum Value {
     HashMap(Type, Type, Vec<Value>),
 
     Decimal(Box<Value>),
-    BigDecimal(Box<Value>),
     PackageId(Box<Value>),
     ComponentId(Box<Value>),
     ResourceDefId(Box<Value>),
@@ -227,7 +225,6 @@ impl Value {
             Value::HashSet(_, _) => Type::HashSet,
             Value::HashMap(_, _, _) => Type::HashMap,
             Value::Decimal(_) => Type::Decimal,
-            Value::BigDecimal(_) => Type::BigDecimal,
             Value::PackageId(_) => Type::PackageId,
             Value::ComponentId(_) => Type::ComponentId,
             Value::ResourceDefId(_) => Type::ResourceDefId,

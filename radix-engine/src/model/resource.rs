@@ -385,7 +385,7 @@ impl ResourceContainer {
     }
 
     fn check_amount(amount: Decimal, divisibility: u8) -> Result<(), ResourceContainerError> {
-        if !amount.is_negative() && amount.0 % 10i128.pow((18 - divisibility).into()) != 0.into() {
+        if amount.is_negative() || amount.0 % 10i128.pow((18 - divisibility).into()) != 0.into() {
             Err(ResourceContainerError::InvalidAmount(amount, divisibility))
         } else {
             Ok(())

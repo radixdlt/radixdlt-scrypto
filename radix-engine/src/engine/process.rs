@@ -996,15 +996,13 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .get_resource_def_mut(&resource_def_id)
             .ok_or(RuntimeError::ResourceDefNotFound(resource_def_id))?;
 
-        if !mint_params.is_same_type(&resource_def.resource_type()) {
-            return Err(RuntimeError::InvalidMintParams);
-        }
+        // Notify resource manager
+        resource_def
+            .mint(&mint_params)
+            .map_err(RuntimeError::ResourceDefError)?;
 
         match mint_params {
             MintParams::Fungible { amount } => {
-                // Notify resource manager
-                resource_def.mint(amount);
-
                 // Allocate fungible
                 Ok(ResourceContainer::new_fungible(
                     resource_def_id,
@@ -1013,9 +1011,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 ))
             }
             MintParams::NonFungible { entries } => {
-                // Notify resource manager
-                resource_def.mint(entries.len().into());
-
                 // Allocate non-fungibles
                 let mut ids = BTreeSet::new();
                 for (id, data) in entries {

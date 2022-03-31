@@ -7,10 +7,10 @@ pub use crate::math::*;
 pub use crate::misc::*;
 pub use crate::resource::*;
 pub use crate::{
-    all_of, any_of, args, bdec, blueprint, compile_package, component, component_authorization,
-    debug, dec, error, import, include_package, info, min_amount_of, min_n_of, package,
-    package_init, resource_def, resource_list, this, trace, warn, Decode, Describe, Encode,
-    NonFungibleData, TypeId,
+    all_of, any_of, args, blueprint, compile_package, component, component_authorization, debug,
+    dec, error, import, include_package, info, min_amount_of, min_n_of, package, package_init,
+    resource_def, resource_list, this, trace, warn, Decode, Describe, Encode, NonFungibleData,
+    TypeId,
 };
 
 pub use crate::rust::borrow::ToOwned;

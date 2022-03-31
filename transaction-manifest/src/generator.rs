@@ -24,7 +24,6 @@ pub enum GeneratorError {
     InvalidComponentId(String),
     InvalidResourceDefId(String),
     InvalidDecimal(String),
-    InvalidBigDecimal(String),
     InvalidHash(String),
     InvalidLazyMapId(String),
     InvalidVaultId(String),
@@ -405,18 +404,6 @@ fn generate_decimal(value: &ast::Value) -> Result<Decimal, GeneratorError> {
     }
 }
 
-fn generate_big_decimal(value: &ast::Value) -> Result<BigDecimal, GeneratorError> {
-    match value {
-        ast::Value::BigDecimal(inner) => match &**inner {
-            ast::Value::String(s) => {
-                BigDecimal::from_str(s).map_err(|_| GeneratorError::InvalidBigDecimal(s.into()))
-            }
-            v @ _ => invalid_type!(v, ast::Type::String),
-        },
-        v @ _ => invalid_type!(v, ast::Type::BigDecimal),
-    }
-}
-
 fn generate_package_id(value: &ast::Value) -> Result<PackageId, GeneratorError> {
     match value {
         ast::Value::PackageId(inner) => match &**inner {
@@ -635,8 +622,6 @@ fn generate_value(
         ast::Value::Decimal(_) => {
             generate_decimal(value).map(|v| Value::Custom(CustomType::Decimal.id(), v.to_vec()))
         }
-        ast::Value::BigDecimal(_) => generate_big_decimal(value)
-            .map(|v| Value::Custom(CustomType::BigDecimal.id(), v.to_vec())),
         ast::Value::PackageId(_) => generate_package_id(value)
             .map(|v| Value::Custom(CustomType::PackageId.id(), v.to_vec())),
         ast::Value::ComponentId(_) => generate_component_id(value)
@@ -744,7 +729,6 @@ fn generate_type(ty: &ast::Type) -> u8 {
         ast::Type::HashSet => TYPE_HASH_SET,
         ast::Type::HashMap => TYPE_HASH_MAP,
         ast::Type::Decimal => CustomType::Decimal.id(),
-        ast::Type::BigDecimal => CustomType::BigDecimal.id(),
         ast::Type::PackageId => CustomType::PackageId.id(),
         ast::Type::ComponentId => CustomType::ComponentId.id(),
         ast::Type::ResourceDefId => CustomType::ResourceDefId.id(),
@@ -823,15 +807,11 @@ mod tests {
             ]))
         );
         generate_value_ok!(
-            r#"Struct((Decimal("1.0"), BigDecimal("2.0"), Hash("aa37f5a71083a9aa044fb936678bfd74f848e930d2de482a49a73540ea72aa5c")))"#,
+            r#"Struct((Decimal("1.0"), Hash("aa37f5a71083a9aa044fb936678bfd74f848e930d2de482a49a73540ea72aa5c")))"#,
             Value::Struct(Fields::Unnamed(vec![
                 Value::Custom(
                     CustomType::Decimal.id(),
                     Decimal::from_str("1.0").unwrap().to_vec()
-                ),
-                Value::Custom(
-                    CustomType::BigDecimal.id(),
-                    BigDecimal::from_str("2.0").unwrap().to_vec()
                 ),
                 Value::Custom(
                     CustomType::Hash.id(),
