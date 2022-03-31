@@ -17,11 +17,11 @@ account2=`$resim new-account | tee /dev/tty | awk '/Account component ID:/ {prin
 minter_badge=`$resim new-badge-fixed 1 --name 'MintBadge' | tee /dev/tty | awk '/ResourceDef:/ {print $NF}'`
 
 # Test - create mutable supply token
-token_resource_def=`$resim new-token-mutable $minter_badge | tee /dev/tty | awk '/ResourceDef:/ {print $NF}'`
+token_address=`$resim new-token-mutable $minter_badge | tee /dev/tty | awk '/ResourceDef:/ {print $NF}'`
 
 # Test - mint and transfer
-$resim mint 777 $token_resource_def $minter_badge
-$resim transfer 111 $token_resource_def $account2
+$resim mint 777 $token_address $minter_badge
+$resim transfer 111 $token_address $account2
 
 # Test - publish, call-funciton and call-method
 package=`$resim publish ../examples/hello-world | tee /dev/tty | awk '/Package:/ {print $NF}'`
@@ -36,6 +36,7 @@ $resim show $package
 $resim show $component
 $resim show $account
 $resim show $account2
+$resim show $token_address
 
 # Test - output manifest
 $resim new-badge-fixed 1 --name 'MintBadge' --manifest ./target/temp.rtm
