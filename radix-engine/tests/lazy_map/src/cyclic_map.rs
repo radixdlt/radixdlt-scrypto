@@ -25,7 +25,7 @@ blueprint! {
             };
             let _: PutLazyMapEntryOutput = call_engine(PUT_LAZY_MAP_ENTRY, input);
 
-            CyclicMap { maps: map0 }.globalize_noauth()
+            CyclicMap { maps: map0 }.instantiate().globalize()
         }
 
         pub fn new_self_cyclic() -> ComponentId {
@@ -42,7 +42,7 @@ blueprint! {
             };
             let _: PutLazyMapEntryOutput = call_engine(PUT_LAZY_MAP_ENTRY, input);
 
-            CyclicMap { maps: map0 }.globalize_noauth()
+            CyclicMap { maps: map0 }.instantiate().globalize()
         }
     }
 }

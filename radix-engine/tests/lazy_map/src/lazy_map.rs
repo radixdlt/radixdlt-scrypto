@@ -25,7 +25,8 @@ blueprint! {
                 vector,
                 lazy_maps,
             }
-            .globalize_noauth()
+            .instantiate()
+            .globalize()
         }
 
         pub fn new_lazy_map_into_lazy_map() -> ComponentId {
@@ -38,7 +39,8 @@ blueprint! {
                 vector,
                 lazy_maps,
             }
-            .globalize_noauth()
+            .instantiate()
+            .globalize()
         }
 
         pub fn new_lazy_map_into_map_then_get() -> ComponentId {
@@ -52,7 +54,8 @@ blueprint! {
                 vector: Vec::new(),
                 lazy_maps,
             }
-            .globalize_noauth()
+            .instantiate()
+            .globalize()
         }
 
         pub fn overwrite_lazy_map(&mut self) -> () {
@@ -68,7 +71,8 @@ blueprint! {
                 vector: Vec::new(),
                 lazy_maps,
             }
-            .globalize_noauth()
+            .instantiate()
+            .globalize()
         }
 
         pub fn new_lazy_map_with_put() -> ComponentId {
@@ -80,7 +84,8 @@ blueprint! {
                 vector: Vec::new(),
                 lazy_maps,
             }
-            .globalize_noauth()
+            .instantiate()
+            .globalize()
         }
 
         pub fn clear_vector(&mut self) -> () {

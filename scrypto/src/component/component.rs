@@ -49,8 +49,6 @@ pub trait ComponentState: Encode + Decode {
     /// Instantiates a component from this data structure.
     fn instantiate(self) -> LocalComponent;
 
-    fn globalize_noauth(self) -> ComponentId;
-
     /// Instantiates a component from this data structure along with authorization rules
     fn globalize_auth(self, authorization: ComponentAuthorization) -> ComponentId;
 }

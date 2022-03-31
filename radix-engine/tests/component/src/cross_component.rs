@@ -22,7 +22,8 @@ blueprint! {
                 secret: "Secret".to_owned(),
                 auth_vault: None,
             }
-            .globalize_noauth()
+            .instantiate()
+            .globalize()
         }
 
         pub fn put_auth(&mut self, mut auth_bucket: Vec<Bucket>) {

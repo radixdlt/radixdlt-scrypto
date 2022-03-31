@@ -15,7 +15,9 @@ blueprint! {
         pub fn new() -> ComponentId {
             Self {
                 state: 0
-            }.globalize_noauth()
+            }
+            .instantiate()
+            .globalize()
         }
 
         pub fn get_state(&self) -> u32 {
