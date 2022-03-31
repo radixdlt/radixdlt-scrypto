@@ -138,7 +138,7 @@ fn can_withdraw_from_my_any_xrd_auth_account_with_no_signature() {
     // Arrange
     let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(&mut substate_store);
-    let xrd_auth = this!(RADIX_TOKEN);
+    let xrd_auth = some_of!(RADIX_TOKEN);
     let account = test_runner.new_account(&xrd_auth);
     let (_, other_account) = test_runner.new_public_key_with_account();
 

@@ -165,7 +165,7 @@ impl Component {
 
     fn soft_to_hard_rule(schema: &Type, proof_rule: &ProofRule, dom: &Value) -> HardProofRule {
         match proof_rule {
-            ProofRule::This(soft_resource_or_non_fungible) => {
+            ProofRule::SomeOf(soft_resource_or_non_fungible) => {
                 let resource = Self::soft_to_hard_resource_or_non_fungible(
                     schema,
                     soft_resource_or_non_fungible,

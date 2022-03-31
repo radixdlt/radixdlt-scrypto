@@ -62,7 +62,7 @@ impl From<SchemaPath> for SoftResourceOrNonFungibleList {
 /// Authorization Rule
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Describe, TypeId, Encode, Decode)]
 pub enum ProofRule {
-    This(SoftResourceOrNonFungible),
+    SomeOf(SoftResourceOrNonFungible),
     AmountOf(Decimal, SoftResource),
     CountOf(u8, SoftResourceOrNonFungibleList),
     AllOf(SoftResourceOrNonFungibleList),
@@ -71,13 +71,13 @@ pub enum ProofRule {
 
 impl From<NonFungibleAddress> for ProofRule {
     fn from(non_fungible_address: NonFungibleAddress) -> Self {
-        ProofRule::This(non_fungible_address.into())
+        ProofRule::SomeOf(non_fungible_address.into())
     }
 }
 
 impl From<ResourceDefId> for ProofRule {
     fn from(resource_def_id: ResourceDefId) -> Self {
-        ProofRule::This(resource_def_id.into())
+        ProofRule::SomeOf(resource_def_id.into())
     }
 }
 
@@ -93,9 +93,9 @@ macro_rules! resource_list {
 }
 
 #[macro_export]
-macro_rules! this {
+macro_rules! some_of {
     ($resource:expr) => {{
-        ::scrypto::resource::ProofRule::This($resource.into())
+        ::scrypto::resource::ProofRule::SomeOf($resource.into())
     }};
 }
 
