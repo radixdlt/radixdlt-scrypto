@@ -67,6 +67,18 @@ impl ComponentSystem {
 
         output.component_id
     }
+
+    /// Instantiates a component.
+    pub fn to_component_state_with_auth<T: ComponentState>(
+        &self,
+        blueprint_name: &str,
+        state: T,
+    ) -> ComponentStateWithAuth {
+        ComponentStateWithAuth::new(
+            blueprint_name.to_owned(),
+            scrypto_encode(&state),
+        )
+    }
 }
 
 static mut COMPONENT_SYSTEM: Option<ComponentSystem> = None;

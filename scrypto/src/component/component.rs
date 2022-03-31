@@ -5,13 +5,44 @@ use crate::component::*;
 use crate::core::*;
 use crate::engine::{api::*, call_engine};
 use crate::misc::*;
-use crate::resource::ComponentAuthorization;
+use crate::resource::{ComponentAuthorization, ProofRule};
 use crate::rust::borrow::ToOwned;
 use crate::rust::fmt;
 use crate::rust::str::FromStr;
 use crate::rust::string::String;
 use crate::rust::vec::Vec;
 use crate::types::*;
+
+pub struct ComponentStateWithAuth {
+    blueprint_name: String,
+    state: Vec<u8>,
+    authorization: ComponentAuthorization,
+}
+
+impl ComponentStateWithAuth {
+    pub fn new(blueprint_name: String, state: Vec<u8>) -> Self {
+        Self {
+            blueprint_name,
+            state,
+            authorization: ComponentAuthorization::new(),
+        }
+    }
+
+    pub fn add_auth(mut self, method_name: &str, proof_rule: ProofRule) -> Self {
+        self.authorization.insert(method_name, proof_rule);
+        self
+    }
+
+    pub fn instantiate(self) -> ComponentId {
+        let input = CreateComponentInput {
+            blueprint_name: self.blueprint_name,
+            state: self.state,
+            authorization: self.authorization,
+        };
+        let output: CreateComponentOutput = call_engine(CREATE_COMPONENT, input);
+        output.component_id
+    }
+}
 
 /// Represents the state of a component.
 pub trait ComponentState: Encode + Decode {
@@ -20,6 +51,8 @@ pub trait ComponentState: Encode + Decode {
 
     /// Instantiates a component from this data structure along with authorization rules
     fn instantiate_with_auth(self, authorization: ComponentAuthorization) -> ComponentId;
+
+    fn add_auth(self, method_name: &str, proof_rule: ProofRule) -> ComponentStateWithAuth;
 }
 
 /// An instance of a blueprint, which lives in the ledger state.

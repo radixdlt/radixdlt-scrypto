@@ -68,6 +68,12 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                         self
                     )
                 }
+                fn add_auth(self, method_name: &str, proof_rule: ::scrypto::resource::ProofRule) -> ::scrypto::component::ComponentStateWithAuth {
+                    ::scrypto::component::component_system().to_component_state_with_auth(
+                        #bp_name,
+                        self
+                    ).add_auth(method_name, proof_rule)
+                }
             }
         }
     };
@@ -562,6 +568,12 @@ mod tests {
                                 authorization,
                                 self
                             )
+                        }
+                        fn add_auth(self, method_name: &str, proof_rule: ::scrypto::resource::ProofRule) -> ::scrypto::component::ComponentStateWithAuth {
+                            ::scrypto::component::component_system().to_component_state_with_auth(
+                                "Test",
+                                self
+                            ).add_auth(method_name, proof_rule)
                         }
                     }
                 }
