@@ -22,7 +22,7 @@ pub mod type_id;
 
 pub use any::{decode_any, encode_any};
 pub use decode::{Decode, DecodeError, Decoder};
-pub use describe::Describe;
+pub use describe::{Describe, Type};
 pub use encode::{Encode, Encoder};
 pub use type_id::TypeId;
 

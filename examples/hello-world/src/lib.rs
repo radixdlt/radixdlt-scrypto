@@ -36,3 +36,5 @@ blueprint! {
         }
     }
 }
+
+package_init!(blueprint::Hello::describe());

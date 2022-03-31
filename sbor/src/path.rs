@@ -1,13 +1,26 @@
 use crate::any::Fields;
 use crate::any::Value;
+use crate::rust::vec::Vec;
+use sbor::*;
 
-pub struct SborRelPath<'a>(&'a [usize]);
+/// A series of indexes which describes some value in the sbor tree
+pub struct SborPath(Vec<usize>);
 
-impl<'a> SborRelPath<'a> {
-    pub fn new(path: &'a [usize]) -> Self {
-        SborRelPath(path)
+impl SborPath {
+    pub fn new(path: Vec<usize>) -> Self {
+        SborPath(path)
     }
 
+    pub fn get_from_value<'a>(&'a self, value: &'a Value) -> Option<&'a Value> {
+        let rel_path = SborValueRetriever(&self.0);
+        rel_path.get_from(value)
+    }
+}
+
+/// Helper structure which helps in retrieving a value given a root value and sbor path
+struct SborValueRetriever<'a>(&'a [usize]);
+
+impl<'a> SborValueRetriever<'a> {
     fn is_empty(&self) -> bool {
         self.0.is_empty()
     }
@@ -15,7 +28,7 @@ impl<'a> SborRelPath<'a> {
     fn pop(&self) -> (usize, Self) {
         let (index_slice, extended_path) = self.0.split_at(1);
         let index = index_slice[0];
-        (index, SborRelPath(extended_path))
+        (index, SborValueRetriever(extended_path))
     }
 
     fn get_from_vector(&self, values: &'a [Value]) -> Option<&'a Value> {
@@ -32,7 +45,7 @@ impl<'a> SborRelPath<'a> {
         }
     }
 
-    pub fn get_from(self, value: &'a Value) -> Option<&'a Value> {
+    fn get_from(self, value: &'a Value) -> Option<&'a Value> {
         if self.is_empty() {
             return Option::Some(value);
         }

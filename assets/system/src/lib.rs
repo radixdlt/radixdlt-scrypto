@@ -47,3 +47,5 @@ blueprint! {
         }
     }
 }
+
+package_init!(blueprint::System::describe());

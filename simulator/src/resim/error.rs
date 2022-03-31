@@ -24,6 +24,8 @@ pub enum Error {
 
     CargoError(CargoExecutionError),
 
+    PackageValidationError(WasmValidationError),
+
     TransactionConstructionError(BuildTransactionError),
 
     TransactionValidationError(TransactionValidationError),
