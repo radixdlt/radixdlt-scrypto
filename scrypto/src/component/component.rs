@@ -13,13 +13,13 @@ use crate::rust::string::String;
 use crate::rust::vec::Vec;
 use crate::types::*;
 
-pub struct ComponentStateWithAuth {
+pub struct LocalComponent {
     blueprint_name: String,
     state: Vec<u8>,
     authorization: ComponentAuthorization,
 }
 
-impl ComponentStateWithAuth {
+impl LocalComponent {
     pub fn new(blueprint_name: String, state: Vec<u8>) -> Self {
         Self {
             blueprint_name,
@@ -51,8 +51,6 @@ pub trait ComponentState: Encode + Decode {
 
     /// Instantiates a component from this data structure along with authorization rules
     fn globalize_auth(self, authorization: ComponentAuthorization) -> ComponentId;
-
-    fn to_component(self) -> ComponentStateWithAuth;
 }
 
 /// An instance of a blueprint, which lives in the ledger state.

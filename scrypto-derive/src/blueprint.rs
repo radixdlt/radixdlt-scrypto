@@ -53,6 +53,15 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                 #(#bp_items)*
             }
 
+            impl Into<::scrypto::component::LocalComponent> for #bp_ident {
+                fn into(self) -> LocalComponent {
+                    ::scrypto::component::component_system().to_component_state_with_auth(
+                        #bp_name,
+                        self
+                    )
+                }
+            }
+
             impl ::scrypto::component::ComponentState for #bp_ident {
                 fn globalize_noauth(self) -> ::scrypto::component::ComponentId {
                     ::scrypto::component::component_system().instantiate_component(
@@ -65,12 +74,6 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                     ::scrypto::component::component_system().instantiate_component(
                         #bp_name,
                         authorization,
-                        self
-                    )
-                }
-                fn to_component(self) -> ::scrypto::component::ComponentStateWithAuth {
-                    ::scrypto::component::component_system().to_component_state_with_auth(
-                        #bp_name,
                         self
                     )
                 }
@@ -554,6 +557,15 @@ mod tests {
                         }
                     }
 
+                    impl Into<::scrypto::component::LocalComponent> for Test {
+                        fn into(self) -> LocalComponent {
+                            ::scrypto::component::component_system().to_component_state_with_auth(
+                                "Test",
+                                self
+                            )
+                        }
+                    }
+
                     impl ::scrypto::component::ComponentState for Test {
                         fn globalize_noauth(self) -> ::scrypto::component::ComponentId {
                             ::scrypto::component::component_system().instantiate_component(
@@ -566,12 +578,6 @@ mod tests {
                             ::scrypto::component::component_system().instantiate_component(
                                 "Test",
                                 authorization,
-                                self
-                            )
-                        }
-                        fn to_component(self) -> ::scrypto::component::ComponentStateWithAuth {
-                            ::scrypto::component::component_system().to_component_state_with_auth(
-                                "Test",
                                 self
                             )
                         }

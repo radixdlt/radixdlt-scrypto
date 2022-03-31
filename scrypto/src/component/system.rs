@@ -73,8 +73,8 @@ impl ComponentSystem {
         &self,
         blueprint_name: &str,
         state: T,
-    ) -> ComponentStateWithAuth {
-        ComponentStateWithAuth::new(
+    ) -> LocalComponent {
+        LocalComponent::new(
             blueprint_name.to_owned(),
             scrypto_encode(&state),
         )
