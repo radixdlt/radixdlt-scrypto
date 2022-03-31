@@ -28,12 +28,12 @@ impl ComponentStateWithAuth {
         }
     }
 
-    pub fn add_auth(mut self, method_name: &str, proof_rule: ProofRule) -> Self {
+    pub fn auth(&mut self, method_name: &str, proof_rule: ProofRule) -> &Self {
         self.authorization.insert(method_name, proof_rule);
         self
     }
 
-    pub fn instantiate(self) -> ComponentId {
+    pub fn globalize(self) -> ComponentId {
         let input = CreateComponentInput {
             blueprint_name: self.blueprint_name,
             state: self.state,
@@ -47,12 +47,12 @@ impl ComponentStateWithAuth {
 /// Represents the state of a component.
 pub trait ComponentState: Encode + Decode {
     /// Instantiates a component from this data structure.
-    fn instantiate(self) -> ComponentId;
+    fn globalize_noauth(self) -> ComponentId;
 
     /// Instantiates a component from this data structure along with authorization rules
-    fn instantiate_with_auth(self, authorization: ComponentAuthorization) -> ComponentId;
+    fn globalize_auth(self, authorization: ComponentAuthorization) -> ComponentId;
 
-    fn add_auth(self, method_name: &str, proof_rule: ProofRule) -> ComponentStateWithAuth;
+    fn to_component(self) -> ComponentStateWithAuth;
 }
 
 /// An instance of a blueprint, which lives in the ledger state.

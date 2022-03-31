@@ -12,7 +12,7 @@ blueprint! {
                 vault: Option::Some(Vault((Transaction::transaction_hash(), 1025))),
                 vaults: LazyMap::new(),
             }
-            .instantiate()
+            .globalize_noauth()
         }
 
         pub fn new() -> ComponentId {
@@ -20,7 +20,7 @@ blueprint! {
                 vault: Option::None,
                 vaults: LazyMap::new(),
             }
-            .instantiate()
+            .globalize_noauth()
         }
 
         pub fn create_non_existent_vault(&mut self) {
@@ -34,7 +34,7 @@ blueprint! {
                 vault: Option::None,
                 vaults,
             }
-            .instantiate()
+            .globalize_noauth()
         }
 
         pub fn create_non_existent_vault_in_lazy_map(&mut self) {

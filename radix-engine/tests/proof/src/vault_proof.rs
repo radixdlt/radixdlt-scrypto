@@ -10,7 +10,7 @@ blueprint! {
             Self {
                 vault: Vault::with_bucket(bucket),
             }
-            .instantiate()
+            .globalize_noauth()
         }
 
         pub fn create_clone_drop_vault_proof(&self, amount: Decimal) {

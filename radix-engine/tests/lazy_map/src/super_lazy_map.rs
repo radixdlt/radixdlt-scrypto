@@ -20,7 +20,7 @@ blueprint! {
             let map3 = map2.get(&3u32).unwrap();
             map3.insert(4u32, map4);
 
-            SuperLazyMap { maps: map0 }.instantiate()
+            SuperLazyMap { maps: map0 }.globalize_noauth()
         }
     }
 }

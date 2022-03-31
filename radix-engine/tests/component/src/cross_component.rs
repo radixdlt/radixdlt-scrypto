@@ -14,7 +14,7 @@ blueprint! {
                 secret: "Secret".to_owned(),
                 auth_vault: None,
             }
-            .instantiate_with_auth(component_authorization)
+            .globalize_auth(component_authorization)
         }
 
         pub fn create_component() -> ComponentId {
@@ -22,7 +22,7 @@ blueprint! {
                 secret: "Secret".to_owned(),
                 auth_vault: None,
             }
-            .instantiate()
+            .globalize_noauth()
         }
 
         pub fn put_auth(&mut self, mut auth_bucket: Vec<Bucket>) {

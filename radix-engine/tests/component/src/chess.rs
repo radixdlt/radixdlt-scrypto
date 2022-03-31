@@ -7,9 +7,9 @@ blueprint! {
 
     impl Chess {
         pub fn create_game(players: [NonFungibleAddress; 2]) -> ComponentId {
-            Self { players }
-                .add_auth("make_move", this!(SchemaPath::new().field("players").index(0)))
-                .instantiate()
+            let mut component = Self { players }.to_component();
+            component.auth("make_move", this!(SchemaPath::new().field("players").index(0)));
+            component.globalize()
         }
 
         pub fn make_move(&mut self) {

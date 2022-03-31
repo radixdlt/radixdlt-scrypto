@@ -36,7 +36,7 @@ blueprint! {
                 vaults,
                 vault_vector,
             }
-            .instantiate()
+            .globalize_noauth()
         }
 
         pub fn invalid_double_ownership_of_vault() -> ComponentId {
@@ -53,7 +53,7 @@ blueprint! {
                 vaults,
                 vault_vector,
             }
-            .instantiate()
+            .globalize_noauth()
         }
 
         pub fn new_vault_into_map_then_get() -> ComponentId {
@@ -70,7 +70,7 @@ blueprint! {
                 vaults,
                 vault_vector,
             }
-            .instantiate()
+            .globalize_noauth()
         }
 
         pub fn overwrite_vault_in_map(&mut self) -> () {
@@ -90,7 +90,7 @@ blueprint! {
                 vaults,
                 vault_vector,
             }
-            .instantiate()
+            .globalize_noauth()
         }
 
         pub fn clear_vector(&mut self) -> () {
@@ -114,7 +114,7 @@ blueprint! {
                 vaults,
                 vault_vector,
             }
-            .instantiate()
+            .globalize_noauth()
         }
 
         fn create_non_fungible_vault() -> Vault {
@@ -135,7 +135,7 @@ blueprint! {
                 vaults,
                 vault_vector,
             }
-            .instantiate()
+            .globalize_noauth()
         }
 
         pub fn new_vault_with_get_non_fungible_ids() -> ComponentId {
@@ -148,7 +148,7 @@ blueprint! {
                 vaults,
                 vault_vector,
             }
-            .instantiate()
+            .globalize_noauth()
         }
 
         pub fn new_vault_with_get_amount() -> ComponentId {
@@ -161,7 +161,7 @@ blueprint! {
                 vaults,
                 vault_vector,
             }
-            .instantiate()
+            .globalize_noauth()
         }
 
         pub fn new_vault_with_get_resource_def() -> ComponentId {
@@ -174,7 +174,7 @@ blueprint! {
                 vaults,
                 vault_vector,
             }
-            .instantiate()
+            .globalize_noauth()
         }
     }
 }

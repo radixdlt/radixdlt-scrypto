@@ -7,19 +7,18 @@ blueprint! {
 
     impl Account {
         pub fn new(withdraw_rule: ProofRule) -> ComponentId {
-            Account {
-                vaults: LazyMap::new(),
-            }
-            .add_auth("withdraw", withdraw_rule)
-            .instantiate()
+            let mut component = Self { vaults: LazyMap::new() }.to_component();
+            component.auth("withdraw", withdraw_rule);
+            component.globalize()
         }
 
         pub fn new_with_resource(withdraw_rule: ProofRule, bucket: Bucket) -> ComponentId {
             let vaults = LazyMap::new();
             vaults.insert(bucket.resource_def_id(), Vault::with_bucket(bucket));
-            Account { vaults }
-                .add_auth("withdraw", withdraw_rule)
-                .instantiate()
+
+            let mut component = Self { vaults }.to_component();
+            component.auth("withdraw", withdraw_rule);
+            component.globalize()
         }
 
         /// Deposits resource into this account.

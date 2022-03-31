@@ -54,25 +54,25 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
             }
 
             impl ::scrypto::component::ComponentState for #bp_ident {
-                fn instantiate(self) -> ::scrypto::component::ComponentId {
+                fn globalize_noauth(self) -> ::scrypto::component::ComponentId {
                     ::scrypto::component::component_system().instantiate_component(
                         #bp_name,
                         ::scrypto::resource::ComponentAuthorization::new(),
                         self
                     )
                 }
-                fn instantiate_with_auth(self, authorization: ::scrypto::resource::ComponentAuthorization) -> ::scrypto::component::ComponentId {
+                fn globalize_auth(self, authorization: ::scrypto::resource::ComponentAuthorization) -> ::scrypto::component::ComponentId {
                     ::scrypto::component::component_system().instantiate_component(
                         #bp_name,
                         authorization,
                         self
                     )
                 }
-                fn add_auth(self, method_name: &str, proof_rule: ::scrypto::resource::ProofRule) -> ::scrypto::component::ComponentStateWithAuth {
+                fn to_component(self) -> ::scrypto::component::ComponentStateWithAuth {
                     ::scrypto::component::component_system().to_component_state_with_auth(
                         #bp_name,
                         self
-                    ).add_auth(method_name, proof_rule)
+                    )
                 }
             }
         }
@@ -555,25 +555,25 @@ mod tests {
                     }
 
                     impl ::scrypto::component::ComponentState for Test {
-                        fn instantiate(self) -> ::scrypto::component::ComponentId {
+                        fn globalize_noauth(self) -> ::scrypto::component::ComponentId {
                             ::scrypto::component::component_system().instantiate_component(
                                 "Test",
                                 ::scrypto::resource::ComponentAuthorization::new(),
                                 self
                             )
                         }
-                        fn instantiate_with_auth(self, authorization: ::scrypto::resource::ComponentAuthorization) -> ::scrypto::component::ComponentId {
+                        fn globalize_auth(self, authorization: ::scrypto::resource::ComponentAuthorization) -> ::scrypto::component::ComponentId {
                             ::scrypto::component::component_system().instantiate_component(
                                 "Test",
                                 authorization,
                                 self
                             )
                         }
-                        fn add_auth(self, method_name: &str, proof_rule: ::scrypto::resource::ProofRule) -> ::scrypto::component::ComponentStateWithAuth {
+                        fn to_component(self) -> ::scrypto::component::ComponentStateWithAuth {
                             ::scrypto::component::component_system().to_component_state_with_auth(
                                 "Test",
                                 self
-                            ).add_auth(method_name, proof_rule)
+                            )
                         }
                     }
                 }
