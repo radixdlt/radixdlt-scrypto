@@ -5,6 +5,7 @@ use scrypto::engine::types::*;
 use scrypto::prelude::NonFungibleAddress;
 use scrypto::resource::ProofRule;
 use scrypto::rust::vec;
+use scrypto::rust::vec::Vec;
 use scrypto::{abi, this};
 
 use crate::engine::*;
