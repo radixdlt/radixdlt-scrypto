@@ -60,13 +60,6 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                         self
                     )
                 }
-                fn globalize_auth(self, authorization: ::scrypto::resource::ComponentAuthorization) -> ::scrypto::component::ComponentId {
-                    ::scrypto::component::component_system().instantiate_component(
-                        #bp_name,
-                        authorization,
-                        self
-                    )
-                }
             }
         }
     };
@@ -551,13 +544,6 @@ mod tests {
                         fn instantiate(self) -> ::scrypto::component::LocalComponent {
                             ::scrypto::component::component_system().to_component_state_with_auth(
                                 "Test",
-                                self
-                            )
-                        }
-                        fn globalize_auth(self, authorization: ::scrypto::resource::ComponentAuthorization) -> ::scrypto::component::ComponentId {
-                            ::scrypto::component::component_system().instantiate_component(
-                                "Test",
-                                authorization,
                                 self
                             )
                         }

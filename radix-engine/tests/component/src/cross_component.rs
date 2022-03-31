@@ -14,7 +14,8 @@ blueprint! {
                 secret: "Secret".to_owned(),
                 auth_vault: None,
             }
-            .globalize_auth(component_authorization)
+            .instantiate()
+            .globalize_with_auth(component_authorization)
         }
 
         pub fn create_component() -> ComponentId {

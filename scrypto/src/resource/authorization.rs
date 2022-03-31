@@ -14,6 +14,10 @@ impl ComponentAuthorization {
         ComponentAuthorization(HashMap::new())
     }
 
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
+
     pub fn insert(&mut self, method_name: &str, proof_rule: ProofRule) {
         self.0.insert(method_name.to_string(), proof_rule);
     }

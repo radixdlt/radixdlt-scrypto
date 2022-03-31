@@ -33,6 +33,20 @@ impl LocalComponent {
         self
     }
 
+    pub fn globalize_with_auth(self, authorization: ComponentAuthorization) -> ComponentId {
+        if !self.authorization.is_empty() {
+            panic!("Cannot overwrite authorization");
+        }
+
+        let input = CreateComponentInput {
+            blueprint_name: self.blueprint_name,
+            state: self.state,
+            authorization,
+        };
+        let output: CreateComponentOutput = call_engine(CREATE_COMPONENT, input);
+        output.component_id
+    }
+
     pub fn globalize(self) -> ComponentId {
         let input = CreateComponentInput {
             blueprint_name: self.blueprint_name,
@@ -48,9 +62,6 @@ impl LocalComponent {
 pub trait ComponentState: Encode + Decode {
     /// Instantiates a component from this data structure.
     fn instantiate(self) -> LocalComponent;
-
-    /// Instantiates a component from this data structure along with authorization rules
-    fn globalize_auth(self, authorization: ComponentAuthorization) -> ComponentId;
 }
 
 /// An instance of a blueprint, which lives in the ledger state.
