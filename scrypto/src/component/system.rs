@@ -74,10 +74,7 @@ impl ComponentSystem {
         blueprint_name: &str,
         state: T,
     ) -> LocalComponent {
-        LocalComponent::new(
-            blueprint_name.to_owned(),
-            scrypto_encode(&state),
-        )
+        LocalComponent::new(blueprint_name.to_owned(), scrypto_encode(&state))
     }
 }
 

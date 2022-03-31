@@ -7,7 +7,10 @@ blueprint! {
 
     impl Account {
         pub fn new(withdraw_rule: ProofRule) -> ComponentId {
-            let mut component: LocalComponent = Self { vaults: LazyMap::new() }.into();
+            let mut component: LocalComponent = Self {
+                vaults: LazyMap::new(),
+            }
+            .into();
             component.auth("withdraw", withdraw_rule);
             component.globalize()
         }

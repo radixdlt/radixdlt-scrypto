@@ -90,7 +90,7 @@ fn invalid_package_init_should_cause_error() {
             )
             "#,
     )
-        .expect("failed to parse wat");
+    .expect("failed to parse wat");
     let transaction = test_runner
         .new_transaction_builder()
         .publish_package(&code)

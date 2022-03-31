@@ -1,6 +1,6 @@
-use scrypto::prelude::*;
-use sbor::Type;
 use sbor::describe::Fields;
+use sbor::Type;
+use scrypto::prelude::*;
 
 static mut LARGE: [u8; 4] = (u32::MAX / 2).to_le_bytes();
 static mut MAX: [u8; 4] = u32::MAX.to_le_bytes();
@@ -24,9 +24,27 @@ pub extern "C" fn ZeroReturnSize_main() -> *mut u8 {
 #[no_mangle]
 pub extern "C" fn package_init() -> *mut u8 {
     let mut blueprints: HashMap<String, Type> = HashMap::new();
-    blueprints.insert("LargeReturnSize".to_string(), Type::Struct { name: "LargeReturnSize".to_string(), fields: Fields::Unit });
-    blueprints.insert("MaxReturnSize".to_string(), Type::Struct { name: "MaxReturnSize".to_string(), fields: Fields::Unit });
-    blueprints.insert("ZeroReturnSize".to_string(), Type::Struct { name: "ZeroReturnSize".to_string(), fields: Fields::Unit });
+    blueprints.insert(
+        "LargeReturnSize".to_string(),
+        Type::Struct {
+            name: "LargeReturnSize".to_string(),
+            fields: Fields::Unit,
+        },
+    );
+    blueprints.insert(
+        "MaxReturnSize".to_string(),
+        Type::Struct {
+            name: "MaxReturnSize".to_string(),
+            fields: Fields::Unit,
+        },
+    );
+    blueprints.insert(
+        "ZeroReturnSize".to_string(),
+        Type::Struct {
+            name: "ZeroReturnSize".to_string(),
+            fields: Fields::Unit,
+        },
+    );
 
     // serialize the output
     let output_bytes = ::scrypto::buffer::scrypto_encode_for_radix_engine(&blueprints);

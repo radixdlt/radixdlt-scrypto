@@ -151,7 +151,12 @@ fn dynamic_auth_should_allow_me_to_call_method_when_change_auth() {
 
 #[test]
 fn dynamic_this_should_fail_on_dynamic_list() {
-    test_dynamic_authlist(3, some_of!(SchemaPath::new().field("auth")), &[0, 1, 2], false);
+    test_dynamic_authlist(
+        3,
+        some_of!(SchemaPath::new().field("auth")),
+        &[0, 1, 2],
+        false,
+    );
 }
 
 #[test]
