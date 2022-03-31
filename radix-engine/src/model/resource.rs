@@ -44,6 +44,42 @@ pub enum ResourceContainer {
     },
 }
 
+/// The locked amount or non-fungible IDs.
+///
+/// Invariant: always consistent with resource fungibility.
+#[derive(Debug, Clone)]
+pub enum LockedAmountOrIds {
+    Amount(Decimal),
+    Ids(BTreeSet<NonFungibleId>),
+}
+
+#[derive(Debug, Clone, Hash, Eq, PartialEq)]
+pub enum ResourceContainerId {
+    Bucket(BucketId),
+    Vault(VaultId),
+    Worktop(u32, ResourceDefId),
+}
+
+impl LockedAmountOrIds {
+    pub fn is_empty(&self) -> bool {
+        self.amount().is_zero()
+    }
+
+    pub fn amount(&self) -> Decimal {
+        match self {
+            Self::Amount(amount) => amount.clone(),
+            Self::Ids(ids) => ids.len().into(),
+        }
+    }
+
+    pub fn ids(&self) -> Result<BTreeSet<NonFungibleId>, ()> {
+        match self {
+            Self::Amount(_) => Err(()),
+            Self::Ids(ids) => Ok(ids.clone()),
+        }
+    }
+}
+
 impl ResourceContainer {
     pub fn new_fungible(resource_def_id: ResourceDefId, divisibility: u8, amount: Decimal) -> Self {
         Self::Fungible {
@@ -111,12 +147,12 @@ impl ResourceContainer {
                 ))
             }
             Self::NonFungible { liquid_ids, .. } => {
+                if Decimal::from(liquid_ids.len()) < amount {
+                    return Err(ResourceContainerError::InsufficientBalance);
+                }
                 let n: usize = amount.to_string().parse().unwrap();
-                let taken: BTreeSet<NonFungibleId> = liquid_ids.iter().cloned().take(n).collect();
-                taken.iter().for_each(|key| {
-                    liquid_ids.remove(key);
-                });
-                Ok(Self::new_non_fungible(self.resource_def_id(), taken))
+                let ids: BTreeSet<NonFungibleId> = liquid_ids.iter().cloned().take(n).collect();
+                self.take_by_ids(&ids)
             }
         }
     }
@@ -142,9 +178,10 @@ impl ResourceContainer {
         self.take_by_amount(self.liquid_amount())
     }
 
-    pub fn lock_by_amount(&mut self, amount: Decimal) -> Result<(), ResourceContainerError> {
-        // TODO do we allow locking non-fungibles in a fungible way?
-
+    pub fn lock_by_amount(
+        &mut self,
+        amount: Decimal,
+    ) -> Result<LockedAmountOrIds, ResourceContainerError> {
         // check amount granularity
         let divisibility = self.resource_type().divisibility();
         Self::check_amount(amount, divisibility)?;
@@ -170,16 +207,32 @@ impl ResourceContainer {
                     locked_amounts.get(&amount).cloned().unwrap_or(0) + 1,
                 );
 
-                Ok(())
+                Ok(LockedAmountOrIds::Amount(amount))
             }
-            Self::NonFungible { .. } => Err(ResourceContainerError::FungibleOperationNotAllowed),
+            Self::NonFungible {
+                locked_ids,
+                liquid_ids,
+                ..
+            } => {
+                if Decimal::from(locked_ids.len() + liquid_ids.len()) < amount {
+                    return Err(ResourceContainerError::InsufficientBalance);
+                }
+
+                let n: usize = amount.to_string().parse().unwrap();
+                let mut ids: BTreeSet<NonFungibleId> = locked_ids.keys().cloned().take(n).collect();
+                if ids.len() < n {
+                    ids.extend(liquid_ids.iter().cloned().take(n - ids.len()));
+                }
+
+                self.lock_by_ids(&ids)
+            }
         }
     }
 
     pub fn lock_by_ids(
         &mut self,
         ids: &BTreeSet<NonFungibleId>,
-    ) -> Result<(), ResourceContainerError> {
+    ) -> Result<LockedAmountOrIds, ResourceContainerError> {
         match self {
             Self::NonFungible {
                 locked_ids,
@@ -198,7 +251,7 @@ impl ResourceContainer {
                     }
                 }
 
-                Ok(())
+                Ok(LockedAmountOrIds::Ids(ids.clone()))
             }
             Self::Fungible { .. } => Err(ResourceContainerError::NonFungibleOperationNotAllowed),
         }
@@ -209,55 +262,51 @@ impl ResourceContainer {
         map.keys().cloned().max().unwrap_or(Decimal::zero())
     }
 
-    pub fn unlock_by_amount(&mut self, amount: Decimal) -> Result<(), ResourceContainerError> {
-        // TODO do we allow locking non-fungibles in a fungible way?
-
-        match self {
-            Self::Fungible {
-                locked_amounts,
-                liquid_amount,
-                ..
-            } => {
-                let max_locked = Self::largest_key(locked_amounts);
-                let count = locked_amounts
-                    .remove(&amount)
-                    .expect("Amount not locked in the container");
-                if count > 1 {
-                    locked_amounts.insert(amount, count - 1);
-                } else {
-                    let new_max_locked = Self::largest_key(locked_amounts);
-                    *liquid_amount += max_locked - new_max_locked;
-                }
-                Ok(())
-            }
-            Self::NonFungible { .. } => Err(ResourceContainerError::FungibleOperationNotAllowed),
-        }
-    }
-
-    pub fn unlock_by_ids(
-        &mut self,
-        ids: &BTreeSet<NonFungibleId>,
-    ) -> Result<(), ResourceContainerError> {
-        match self {
-            Self::NonFungible {
-                locked_ids,
-                liquid_ids,
-                ..
-            } => {
-                for id in ids {
-                    if let Some(cnt) = locked_ids.remove(id) {
-                        if cnt > 1 {
-                            locked_ids.insert(id.clone(), cnt - 1);
-                        } else {
-                            liquid_ids.insert(id.clone());
-                        }
+    pub fn unlock(&mut self, resource: LockedAmountOrIds) {
+        match resource {
+            LockedAmountOrIds::Amount(amount) => match self {
+                Self::Fungible {
+                    locked_amounts,
+                    liquid_amount,
+                    ..
+                } => {
+                    let max_locked = Self::largest_key(locked_amounts);
+                    let count = locked_amounts
+                        .remove(&amount)
+                        .expect("Attempted to unlock an amount that is not locked in container");
+                    if count > 1 {
+                        locked_amounts.insert(amount, count - 1);
                     } else {
-                        panic!("Non-fungible not locked in the container: id = {}", id);
+                        let new_max_locked = Self::largest_key(locked_amounts);
+                        *liquid_amount += max_locked - new_max_locked;
                     }
                 }
-                Ok(())
-            }
-            Self::Fungible { .. } => Err(ResourceContainerError::NonFungibleOperationNotAllowed),
+                Self::NonFungible { .. } => {
+                    panic!("Attempted to unlock amount of non-fungible resource")
+                }
+            },
+            LockedAmountOrIds::Ids(ids) => match self {
+                Self::NonFungible {
+                    locked_ids,
+                    liquid_ids,
+                    ..
+                } => {
+                    for id in ids {
+                        if let Some(cnt) = locked_ids.remove(&id) {
+                            if cnt > 1 {
+                                locked_ids.insert(id, cnt - 1);
+                            } else {
+                                liquid_ids.insert(id);
+                            }
+                        } else {
+                            panic!("Attempted to unlock a non-fungible that is not locked in container");
+                        }
+                    }
+                }
+                Self::Fungible { .. } => {
+                    panic!("Attempted to unlock non-fungibles of fungible resource")
+                }
+            },
         }
     }
 

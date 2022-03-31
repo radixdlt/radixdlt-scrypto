@@ -393,3 +393,84 @@ fn can_compose_bucket_and_vault_proof_by_ids() {
     // Assert
     assert!(receipt.result.is_ok());
 }
+
+#[test]
+fn can_create_vault_proof_by_amount_from_non_fungibles() {
+    // Arrange
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(&mut substate_store);
+    let (key, account) = test_runner.new_public_key_with_account();
+    let resource_def_id = test_runner.create_non_fungible_resource(account);
+    let package_id = test_runner.publish_package("proof");
+    let component_id = test_runner.instantiate_component(
+        package_id,
+        "VaultProof",
+        "new",
+        vec![format!("3,{}", resource_def_id)],
+        account,
+        key,
+    );
+
+    // Act
+    let transaction = test_runner
+        .new_transaction_builder()
+        .call_method(
+            component_id,
+            "create_clone_drop_vault_proof_by_amount",
+            args![Decimal::from(3), Decimal::from(1)],
+        )
+        .build(vec![])
+        .unwrap();
+    let receipt = test_runner.run(transaction);
+    println!("{:?}", receipt);
+
+    // Assert
+    assert!(receipt.result.is_ok());
+}
+
+#[test]
+fn can_create_auth_zone_proof_by_amount_from_non_fungibles() {
+    // Arrange
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(&mut substate_store);
+    let (key, account) = test_runner.new_public_key_with_account();
+    let resource_def_id = test_runner.create_non_fungible_resource(account);
+    let package_id = test_runner.publish_package("proof");
+
+    // Act
+    let transaction = test_runner
+        .new_transaction_builder()
+        .create_proof_from_account_by_ids(
+            &BTreeSet::from([NonFungibleId::from(1), NonFungibleId::from(2)]),
+            resource_def_id,
+            account,
+        )
+        .create_proof_from_account_by_ids(
+            &BTreeSet::from([NonFungibleId::from(3)]),
+            resource_def_id,
+            account,
+        )
+        .create_proof_from_auth_zone_by_ids(
+            &BTreeSet::from([NonFungibleId::from(2), NonFungibleId::from(3)]),
+            resource_def_id,
+            |builder, proof_id| {
+                builder.call_function(
+                    package_id,
+                    "Receiver",
+                    "assert_ids",
+                    args!(
+                        Proof(proof_id),
+                        BTreeSet::from([NonFungibleId::from(2), NonFungibleId::from(3)]),
+                        resource_def_id
+                    ),
+                )
+            },
+        )
+        .build(vec![key])
+        .unwrap();
+    let receipt = test_runner.run(transaction);
+    println!("{:?}", receipt);
+
+    // Assert
+    assert!(receipt.result.is_ok());
+}
