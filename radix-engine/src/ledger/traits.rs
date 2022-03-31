@@ -146,7 +146,10 @@ pub trait SubstateStore {
                 HashMap::new(),
             )
             .unwrap();
-            xrd.mint(XRD_MAX_SUPPLY.into());
+            xrd.mint(&MintParams::Fungible {
+                amount: XRD_MAX_SUPPLY.into(),
+            })
+            .unwrap();
             self.put_encoded_substate(&RADIX_TOKEN, &xrd, self.get_nonce());
 
             let ecdsa_token = ResourceDef::new(

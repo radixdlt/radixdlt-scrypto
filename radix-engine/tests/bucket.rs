@@ -55,6 +55,7 @@ fn test_bucket_of_badges() {
 
 #[test]
 fn test_take_with_invalid_granularity() {
+    // Arrange
     let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(&mut substate_store);
     let (key, account) = test_runner.new_public_key_with_account();
@@ -87,6 +88,7 @@ fn test_take_with_invalid_granularity() {
 
 #[test]
 fn test_take_with_negative_amount() {
+    // Arrange
     let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(&mut substate_store);
     let (key, account) = test_runner.new_public_key_with_account();

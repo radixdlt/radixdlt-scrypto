@@ -228,12 +228,6 @@ pub enum RuntimeError {
     /// Index out of bounds.
     IndexOutOfBounds { index: usize, max: usize },
 
-    /// Mint parameters are invalid.
-    InvalidMintParams,
-
-    /// Attempted to mint more than the max allowed.
-    MaxMintAmountExceeded,
-
     /// Can't move a locked bucket.
     CantMoveLockedBucket,
 
