@@ -1,4 +1,3 @@
-use crate::component;
 use crate::component::*;
 use crate::core::*;
 use crate::engine::{api::*, call_engine};
@@ -20,10 +19,9 @@ impl Process {
 
     /// Returns the package ID.
     pub fn package_id() -> PackageId {
-        match Self::actor() {
-            Actor::Blueprint(package_id, _) => package_id,
-            Actor::Component(component_id) => component!(component_id).package_id(),
-        }
+        let input = GetActorInput {};
+        let output: GetActorOutput = call_engine(GET_ACTOR, input);
+        output.package_id
     }
 
     /// Generates a UUID.

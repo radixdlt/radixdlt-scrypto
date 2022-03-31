@@ -103,7 +103,7 @@ blueprint! {
         }
 
         /// Create proof of resource.
-        /// 
+        ///
         /// A runtime error is raised if the amount is zero or there isn't enough
         /// balance to cover the amount.
         pub fn create_proof_by_amount(
@@ -121,8 +121,8 @@ blueprint! {
         }
 
         /// Create proof of resource.
-        /// 
-        /// A runtime error is raised if the non-fungible ID set is empty or not 
+        ///
+        /// A runtime error is raised if the non-fungible ID set is empty or not
         /// available in this account.
         pub fn create_proof_by_ids(
             &self,
@@ -139,3 +139,5 @@ blueprint! {
         }
     }
 }
+
+package_init!(blueprint::Account::describe());

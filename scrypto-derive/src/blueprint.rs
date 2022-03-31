@@ -43,10 +43,10 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
     }
 
     let output_mod = quote! {
-        mod blueprint {
+        pub mod blueprint {
             use super::*;
 
-            #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode)]
+            #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
             pub struct #bp_ident #bp_fields #bp_semi_token
 
             impl #bp_ident {
@@ -59,14 +59,12 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                 }
                 fn instantiate(self) -> ::scrypto::component::ComponentId {
                     ::scrypto::component::component_system().instantiate_component(
-                        ::scrypto::core::Process::package_id(),
                         ::scrypto::resource::ComponentAuthorization::new(),
                         self
                     )
                 }
                 fn instantiate_with_auth(self, authorization: ::scrypto::resource::ComponentAuthorization) -> ::scrypto::component::ComponentId {
                     ::scrypto::component::component_system().instantiate_component(
-                        ::scrypto::core::Process::package_id(),
                         authorization,
                         self
                     )
@@ -114,7 +112,6 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
     let output_abi = quote! {
         #[no_mangle]
         pub extern "C" fn #abi_ident() -> *mut u8 {
-            use ::sbor::Describe;
             use ::scrypto::abi::{Function, Method};
             use ::scrypto::rust::borrow::ToOwned;
             use ::scrypto::rust::vec;
@@ -536,10 +533,10 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                mod blueprint {
+                pub mod blueprint {
                     use super::*;
 
-                    #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode)]
+                    #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
                     pub struct Test {
                         a: u32,
                         admin: ResourceDef
@@ -558,14 +555,12 @@ mod tests {
                         }
                         fn instantiate(self) -> ::scrypto::component::ComponentId {
                             ::scrypto::component::component_system().instantiate_component(
-                                ::scrypto::core::Process::package_id(),
                                 ::scrypto::resource::ComponentAuthorization::new(),
                                 self
                             )
                         }
                         fn instantiate_with_auth(self, authorization: ::scrypto::resource::ComponentAuthorization) -> ::scrypto::component::ComponentId {
                             ::scrypto::component::component_system().instantiate_component(
-                                ::scrypto::core::Process::package_id(),
                                 authorization,
                                 self
                             )
@@ -602,7 +597,6 @@ mod tests {
                 }
                 #[no_mangle]
                 pub extern "C" fn Test_abi() -> *mut u8 {
-                    use ::sbor::Describe;
                     use ::scrypto::abi::{Function, Method};
                     use ::scrypto::rust::borrow::ToOwned;
                     use ::scrypto::rust::vec;

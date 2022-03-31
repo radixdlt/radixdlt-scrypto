@@ -41,10 +41,10 @@ impl BasicAbiProvider {
         }
     }
 
-    pub fn with_package(&mut self, package_id: PackageId, code: Vec<u8>) -> &mut Self {
+    pub fn with_package(&mut self, package_id: &PackageId, package: Package) -> &mut Self {
         self.substate_store.put_encoded_substate(
-            &package_id,
-            &Package::new(code),
+            package_id,
+            &package,
             self.substate_store.get_nonce(),
         );
         self

@@ -671,14 +671,12 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         result
     }
 
-    /// (Transaction ONLY) Publishes a package.
-    pub fn publish_package(&mut self, code: Vec<u8>) -> Result<ValidatedData, RuntimeError> {
-        re_debug!(self, "(Transaction) Publishing a package");
+    pub fn publish_package(&mut self, code: Vec<u8>) -> Result<PackageId, RuntimeError> {
+        re_debug!(self, "Publishing a package");
 
-        validate_module(&code).map_err(RuntimeError::WasmValidationError)?;
-        let package_id = self.track.create_package(Package::new(code));
-
-        Ok(ValidatedData::from_slice(&scrypto_encode(&package_id)).unwrap())
+        let package = Package::new(code).map_err(RuntimeError::WasmValidationError)?;
+        let package_id = self.track.create_package(package);
+        Ok(package_id)
     }
 
     /// (SYSTEM ONLY)  Creates a proof which references a virtual bucket
@@ -701,16 +699,65 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let now = std::time::Instant::now();
         re_info!(
             self,
-            "Run started: package = {}, export = {}",
-            invocation.package_id,
+            "Run started: actor = {:?}, export = {}",
+            invocation.actor,
             invocation.export_name
         );
 
-        // Load the code
-        let (module, memory) = self
+        let package = self
             .track
-            .load_module(invocation.package_id)
+            .get_package(invocation.package_id)
             .ok_or(RuntimeError::PackageNotFound(invocation.package_id))?;
+
+        let (module, memory, interpreter_state) = match invocation.actor {
+            Actor::Blueprint(ref blueprint_name) => {
+                let (module, memory) =
+                    package
+                        .load_for_function_call(&blueprint_name)
+                        .map_err(|e| match e {
+                            PackageError::BlueprintNotFound => RuntimeError::BlueprintNotFound(
+                                invocation.package_id,
+                                blueprint_name.clone(),
+                            ),
+                        })?;
+
+                Ok((module, memory, InterpreterState::Blueprint))
+            }
+            Actor::Component(ref blueprint_name, component_id) => {
+                // Retrieve schema
+                let (schema, module, memory) = package
+                    .load_for_method_call(&blueprint_name)
+                    .map_err(|e| match e {
+                        PackageError::BlueprintNotFound => RuntimeError::BlueprintNotFound(
+                            invocation.package_id,
+                            blueprint_name.clone(),
+                        ),
+                    })?;
+                // TODO: Remove clone
+                let schema = schema.clone();
+
+                // Auth check
+                let component = self.track.get_component(component_id.clone()).unwrap();
+                let (data, method_auth) =
+                    component.initialize_method(&schema, &invocation.function);
+                method_auth.check(&[self.caller_auth_zone])?;
+
+                // Load state
+                let initial_loaded_object_refs = ComponentObjectRefs {
+                    vault_ids: data.vault_ids.into_iter().collect(),
+                    lazy_map_ids: data.lazy_map_ids.into_iter().collect(),
+                };
+                let state = component.state().to_vec();
+                let component = InterpreterState::Component {
+                    state,
+                    component_id,
+                    initial_loaded_object_refs,
+                    additional_object_refs: ComponentObjectRefs::new(),
+                };
+                Ok((module, memory, component))
+            }
+        }?;
+
         let vm = Interpreter {
             invocation: invocation.clone(),
             module: module.clone(),
@@ -720,29 +767,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             depth: self.depth,
             trace: self.trace,
             vm,
-            interpreter_state: match invocation.actor {
-                Actor::Blueprint(..) => Ok(InterpreterState::Blueprint),
-                Actor::Component(component_id) => {
-                    let component = self.track.get_component(component_id.clone()).unwrap();
-
-                    // Auth check
-                    let (data, method_auth) = component.initialize_method(&invocation.function);
-                    method_auth.check(&[self.caller_auth_zone])?;
-
-                    let initial_loaded_object_refs = ComponentObjectRefs {
-                        vault_ids: data.vault_ids.into_iter().collect(),
-                        lazy_map_ids: data.lazy_map_ids.into_iter().collect(),
-                    };
-                    let state = component.state().to_vec();
-                    let component = InterpreterState::Component {
-                        state,
-                        component_id,
-                        initial_loaded_object_refs,
-                        additional_object_refs: ComponentObjectRefs::new(),
-                    };
-                    Ok(component)
-                }
-            }?,
+            interpreter_state,
             process_owned_objects: ComponentObjects::new(),
         });
 
@@ -762,8 +787,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         // move resource based on return data
         let output = match rtn {
             RuntimeValue::I32(ptr) => {
-                let data = ValidatedData::from_slice(&self.read_bytes(ptr)?)
-                    .map_err(RuntimeError::DataValidationError)?;
+                let data = self.read_return_value(ptr as u32)?;
                 self.process_return_data(&data)?;
                 data
             }
@@ -793,8 +817,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         args: Vec<ValidatedData>,
     ) -> Result<Invocation, RuntimeError> {
         Ok(Invocation {
-            actor: Actor::Blueprint(package_id, blueprint_name.to_owned()),
-            package_id: package_id,
+            actor: Actor::Blueprint(blueprint_name.to_owned()),
+            package_id,
             export_name: format!("{}_main", blueprint_name),
             function: function.to_owned(),
             args,
@@ -818,7 +842,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         args_with_self.extend(args);
 
         Ok(Invocation {
-            actor: Actor::Component(component_id),
+            actor: Actor::Component(component.blueprint_name().to_owned(), component_id),
             package_id: component.package_id(),
             export_name: format!("{}_main", component.blueprint_name()),
             function: method.to_owned(),
@@ -833,8 +857,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         blueprint_name: &str,
     ) -> Result<Invocation, RuntimeError> {
         Ok(Invocation {
-            actor: Actor::Blueprint(package_id, blueprint_name.to_owned()),
-            package_id: package_id,
+            actor: Actor::Blueprint(blueprint_name.to_owned()),
+            package_id,
             export_name: format!("{}_abi", blueprint_name),
             function: String::new(),
             args: Vec::new(),
@@ -1201,36 +1225,28 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         Err(RuntimeError::MemoryAllocError)
     }
 
-    /// Read a byte array from wasm instance.
-    fn read_bytes(&mut self, ptr: i32) -> Result<Vec<u8>, RuntimeError> {
+    fn read_return_value(&mut self, ptr: u32) -> Result<ValidatedData, RuntimeError> {
         let wasm_process = self.wasm_process_state.as_ref().unwrap();
         // read length
         let len: u32 = wasm_process
             .vm
             .memory
-            .get_value(ptr as u32)
+            .get_value(ptr)
             .map_err(|_| RuntimeError::MemoryAccessError)?;
 
-        // SECURITY: meter before allocating memory
-        let mut data = vec![0u8; len as usize];
-        wasm_process
-            .vm
-            .memory
-            .get_into((ptr + 4) as u32, &mut data)
-            .map_err(|_| RuntimeError::MemoryAccessError)?;
+        let start = ptr.checked_add(4).ok_or(RuntimeError::MemoryAccessError)?;
+        let end = start
+            .checked_add(len)
+            .ok_or(RuntimeError::MemoryAccessError)?;
+        let range = start as usize..end as usize;
+        let direct = wasm_process.vm.memory.direct_access();
+        let buffer = direct.as_ref();
 
-        // free the buffer
-        wasm_process
-            .vm
-            .module
-            .invoke_export(
-                "scrypto_free",
-                &[RuntimeValue::I32(ptr as i32)],
-                &mut NopExternals,
-            )
-            .map_err(|_| RuntimeError::MemoryAccessError)?;
+        if end > buffer.len().try_into().unwrap() {
+            return Err(RuntimeError::MemoryAccessError);
+        }
 
-        Ok(data.to_vec())
+        ValidatedData::from_slice(&buffer[range]).map_err(RuntimeError::DataValidationError)
     }
 
     /// Handles a system call.
@@ -1283,10 +1299,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         input: PublishPackageInput,
     ) -> Result<PublishPackageOutput, RuntimeError> {
-        validate_module(&input.code).map_err(RuntimeError::WasmValidationError)?;
-
-        let package_id = self.track.create_package(Package::new(input.code));
-
+        let package_id = self.publish_package(input.code)?;
         Ok(PublishPackageOutput { package_id })
     }
 
@@ -1359,12 +1372,9 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let data = Self::process_entry_data(&input.state)?;
         let new_objects = wasm_process.process_owned_objects.take(data)?;
         let authorization = input.authorization.to_map();
-        let component = Component::new(
-            wasm_process.vm.invocation.package_id,
-            input.blueprint_name,
-            authorization,
-            input.state,
-        );
+        let package_id = wasm_process.vm.invocation.package_id;
+        let component =
+            Component::new(package_id, input.blueprint_name, authorization, input.state);
         let component_id = self.track.create_component(component);
         self.track
             .insert_objects_into_component(new_objects, component_id);
@@ -2317,6 +2327,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .ok_or(RuntimeError::InterpreterNotStarted)?;
         Ok(GetActorOutput {
             actor: wasm_process.vm.invocation.actor.clone(),
+            package_id: wasm_process.vm.invocation.package_id,
         })
     }
 

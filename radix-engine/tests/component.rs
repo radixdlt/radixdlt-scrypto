@@ -2,6 +2,7 @@
 pub mod test_runner;
 
 use crate::test_runner::TestRunner;
+use radix_engine::errors::RuntimeError;
 use radix_engine::ledger::InMemorySubstateStore;
 use scrypto::prelude::*;
 
@@ -55,4 +56,32 @@ fn test_component() {
         .unwrap();
     let receipt2 = test_runner.run(transaction2);
     assert!(receipt2.result.is_ok());
+}
+
+#[test]
+fn invalid_blueprint_name_should_cause_error() {
+    // Arrange
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(&mut substate_store);
+    let package_id = test_runner.publish_package("component");
+
+    // Act
+    let transaction = test_runner
+        .new_transaction_builder()
+        .call_function(
+            package_id,
+            "NonExistentBlueprint",
+            "create_component",
+            vec![],
+        )
+        .build(vec![])
+        .unwrap();
+    let receipt = test_runner.run(transaction);
+
+    // Assert
+    let error = receipt.result.expect_err("Should be an error.");
+    assert_eq!(
+        error,
+        RuntimeError::BlueprintNotFound(package_id, "NonExistentBlueprint".to_string())
+    );
 }
