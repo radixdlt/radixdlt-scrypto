@@ -17,7 +17,7 @@ pub use component::Component;
 pub use data::{format_value, ValidatedData};
 pub use method_authorization::{HardProofRule, HardResourceOrNonFungible, MethodAuthorization};
 pub use non_fungible::NonFungible;
-pub use package::Package;
+pub use package::{Package, PackageError};
 pub use proof::*;
 pub use receipt::Receipt;
 pub use resource::*;

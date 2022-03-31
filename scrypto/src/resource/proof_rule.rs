@@ -1,40 +1,13 @@
 use crate::resource::*;
-use crate::rust::str::FromStr;
 use crate::rust::vec;
 use crate::rust::vec::Vec;
-use sbor::path::SborRelPath;
 use sbor::*;
 use scrypto::math::Decimal;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Describe, TypeId, Encode, Decode)]
-pub struct SborPath(Vec<usize>);
-
-impl SborPath {
-    pub fn rel_path(&self) -> SborRelPath {
-        SborRelPath::new(&self.0)
-    }
-}
-
-#[derive(Debug)]
-pub enum ParseSborPathError {
-    InvalidPath,
-}
-
-impl FromStr for SborPath {
-    type Err = ParseSborPathError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let path: Result<Vec<usize>, _> = s.split('/').map(|s| s.parse::<usize>()).collect();
-
-        path.map(|p| SborPath(p))
-            .map_err(|_| ParseSborPathError::InvalidPath)
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Describe, TypeId, Encode, Decode)]
 pub enum SoftResource {
     Static(ResourceDefId),
-    Dynamic(SborPath),
+    Dynamic(SchemaPath),
 }
 
 impl From<ResourceDefId> for SoftResource {
@@ -43,8 +16,8 @@ impl From<ResourceDefId> for SoftResource {
     }
 }
 
-impl From<SborPath> for SoftResource {
-    fn from(path: SborPath) -> Self {
+impl From<SchemaPath> for SoftResource {
+    fn from(path: SchemaPath) -> Self {
         SoftResource::Dynamic(path)
     }
 }
@@ -53,7 +26,7 @@ impl From<SborPath> for SoftResource {
 pub enum SoftResourceOrNonFungible {
     StaticNonFungible(NonFungibleAddress),
     StaticResource(ResourceDefId),
-    Dynamic(SborPath),
+    Dynamic(SchemaPath),
 }
 
 impl From<NonFungibleAddress> for SoftResourceOrNonFungible {
@@ -68,8 +41,8 @@ impl From<ResourceDefId> for SoftResourceOrNonFungible {
     }
 }
 
-impl From<SborPath> for SoftResourceOrNonFungible {
-    fn from(path: SborPath) -> Self {
+impl From<SchemaPath> for SoftResourceOrNonFungible {
+    fn from(path: SchemaPath) -> Self {
         SoftResourceOrNonFungible::Dynamic(path)
     }
 }
@@ -77,11 +50,11 @@ impl From<SborPath> for SoftResourceOrNonFungible {
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Describe, TypeId, Encode, Decode)]
 pub enum SoftResourceOrNonFungibleList {
     Static(Vec<SoftResourceOrNonFungible>),
-    Dynamic(SborPath),
+    Dynamic(SchemaPath),
 }
 
-impl From<SborPath> for SoftResourceOrNonFungibleList {
-    fn from(path: SborPath) -> Self {
+impl From<SchemaPath> for SoftResourceOrNonFungibleList {
+    fn from(path: SchemaPath) -> Self {
         SoftResourceOrNonFungibleList::Dynamic(path)
     }
 }

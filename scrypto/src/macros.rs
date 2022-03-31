@@ -153,3 +153,31 @@ macro_rules! include_package {
         ))
     };
 }
+
+/// Exports the given blueprints into this package.
+#[macro_export]
+macro_rules! package_init {
+  ($($blueprint: expr),*) => (
+         #[no_mangle]
+          pub extern "C" fn package_init() -> *mut u8 {
+              use ::scrypto::rust::string::String;
+              use ::scrypto::rust::collections::HashMap;
+
+              let mut blueprints: HashMap<String, ::sbor::Type> = HashMap::new();
+
+              $(
+                  let blueprint_type = $blueprint;
+                  let name = match &blueprint_type {
+                      ::sbor::Type::Struct { name, fields: _ } => name.clone(),
+                      _ => panic!("Blueprint must be a struct.")
+                  };
+                  blueprints.insert(name, blueprint_type);
+              )*
+              // serialize the output
+              let output_bytes = ::scrypto::buffer::scrypto_encode_for_radix_engine(&blueprints);
+
+              // return the output wrapped in a radix-style buffer
+              ::scrypto::buffer::scrypto_wrap(output_bytes)
+          }
+  )
+}
