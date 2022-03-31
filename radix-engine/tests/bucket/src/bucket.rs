@@ -78,5 +78,10 @@ blueprint! {
             bucket2.burn();
             vec![badge]
         }
+
+        pub fn take_from_bucket(mut bucket: Bucket, amount: Decimal) -> (Bucket, Bucket) {
+            let x = bucket.take(amount);
+            (bucket, x)
+        }
     }
 }

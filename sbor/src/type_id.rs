@@ -43,9 +43,6 @@ pub const OPTION_TYPE_NONE: u8 = 0x00;
 pub const OPTION_TYPE_SOME: u8 = 0x01;
 pub const RESULT_TYPE_OK: u8 = 0x00;
 pub const RESULT_TYPE_ERR: u8 = 0x01;
-pub const FIELDS_TYPE_NAMED: u8 = 0x12;
-pub const FIELDS_TYPE_UNNAMED: u8 = 0x13;
-pub const FIELDS_TYPE_UNIT: u8 = 0x14;
 
 /// A SBOR type ID.
 pub trait TypeId {

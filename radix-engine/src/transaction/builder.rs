@@ -76,7 +76,13 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
             Instruction::ClearAuthZone => {}
             Instruction::CreateProofFromAuthZone { .. }
             | Instruction::CreateProofFromAuthZoneByAmount { .. }
-            | Instruction::CreateProofFromAuthZoneByIds { .. } => {}
+            | Instruction::CreateProofFromAuthZoneByIds { .. } => {
+                new_proof_id = Some(
+                    self.id_validator
+                        .new_proof(ProofKind::AuthZoneProof)
+                        .unwrap(),
+                );
+            }
             Instruction::CreateProofFromBucket { bucket_id } => {
                 new_proof_id = Some(
                     self.id_validator
@@ -778,12 +784,6 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
             CustomType::Decimal => {
                 let value = arg
                     .parse::<Decimal>()
-                    .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
-                Ok(scrypto_encode(&value))
-            }
-            CustomType::BigDecimal => {
-                let value = arg
-                    .parse::<BigDecimal>()
                     .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
                 Ok(scrypto_encode(&value))
             }

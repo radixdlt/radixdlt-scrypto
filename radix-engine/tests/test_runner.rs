@@ -131,6 +131,7 @@ impl<'l> TestRunner<'l> {
     pub fn create_fungible_resource(
         &mut self,
         amount: Decimal,
+        divisibility: u8,
         account: ComponentId,
     ) -> ResourceDefId {
         let package = self.publish_package("resource_creator");
@@ -139,7 +140,7 @@ impl<'l> TestRunner<'l> {
                 package,
                 "ResourceCreator",
                 "create_fungible_fixed",
-                args![amount],
+                args![amount, divisibility],
             )
             .call_method_with_all_resources(account, "deposit_batch")
             .build(vec![])

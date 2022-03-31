@@ -28,17 +28,15 @@ fn test_decode_struct() {
     #[rustfmt::skip]
     let bytes = vec![
         16, // struct type
-        18, // fields type
         1, 0, 0, 0, // number of fields
         9, 3, 0, 0, 0, // field value
         
         16,  // struct type
-        19,  // fields type
         1, 0, 0, 0,  // number of fields
         9, 3, 0, 0, 0,  // field value
         
         16, // struct type
-        20 // fields type
+        0, 0, 0, 0,  // number of fields
     ];
 
     let mut decoder = Decoder::with_type(&bytes);
@@ -56,21 +54,19 @@ fn test_decode_enum() {
     #[rustfmt::skip]
     let bytes = vec![
         17, // enum type
-        0, // enum index
-        18, // fields type
+        0, // enum index 
         2, 0, 0, 0,  // number of fields
         9, 2, 0, 0, 0, // field value
         9, 3, 0, 0, 0,  // field value
 
         17, // enum type
-        1,  // enum index
-        19, // fields type
+        1,  // enum index 
         1, 0, 0, 0, // number of fields
         9, 1, 0, 0, 0, // field value
         
         17, // enum type
         2,  // enum index
-        20  // fields type
+        0, 0, 0, 0,  // number of fields
     ];
 
     let mut decoder = Decoder::with_type(&bytes);

@@ -405,7 +405,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .get_mut(&bucket_id)
             .ok_or(RuntimeError::BucketNotFound(bucket_id))?;
         let new_proof = bucket
-            .create_proof(ProofSourceId::Bucket(bucket_id))
+            .create_proof(ResourceContainerId::Bucket(bucket_id))
             .map_err(RuntimeError::ProofError)?;
         self.proofs.insert(new_proof_id, new_proof);
 
@@ -425,7 +425,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .get_mut(&bucket_id)
             .ok_or(RuntimeError::BucketNotFound(bucket_id))?;
         let new_proof = bucket
-            .create_proof_by_amount(amount, ProofSourceId::Bucket(bucket_id))
+            .create_proof_by_amount(amount, ResourceContainerId::Bucket(bucket_id))
             .map_err(RuntimeError::ProofError)?;
         self.proofs.insert(new_proof_id, new_proof);
 
@@ -445,7 +445,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .get_mut(&bucket_id)
             .ok_or(RuntimeError::BucketNotFound(bucket_id))?;
         let new_proof = bucket
-            .create_proof_by_ids(ids, ProofSourceId::Bucket(bucket_id))
+            .create_proof_by_ids(ids, ResourceContainerId::Bucket(bucket_id))
             .map_err(RuntimeError::ProofError)?;
         self.proofs.insert(new_proof_id, new_proof);
 
@@ -459,7 +459,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let new_proof_id = self.new_proof_id()?;
         let vault = self.get_local_vault(&vault_id)?;
         let new_proof = vault
-            .create_proof(ProofSourceId::Vault(vault_id))
+            .create_proof(ResourceContainerId::Vault(vault_id))
             .map_err(RuntimeError::ProofError)?;
         self.proofs.insert(new_proof_id, new_proof);
 
@@ -476,7 +476,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let new_proof_id = self.new_proof_id()?;
         let vault = self.get_local_vault(&vault_id)?;
         let new_proof = vault
-            .create_proof_by_amount(amount, ProofSourceId::Vault(vault_id))
+            .create_proof_by_amount(amount, ResourceContainerId::Vault(vault_id))
             .map_err(RuntimeError::ProofError)?;
         self.proofs.insert(new_proof_id, new_proof);
 
@@ -493,7 +493,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let new_proof_id = self.new_proof_id()?;
         let vault = self.get_local_vault(&vault_id)?;
         let new_proof = vault
-            .create_proof_by_ids(ids, ProofSourceId::Vault(vault_id))
+            .create_proof_by_ids(ids, ResourceContainerId::Vault(vault_id))
             .map_err(RuntimeError::ProofError)?;
         self.proofs.insert(new_proof_id, new_proof);
 
@@ -535,13 +535,9 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let resource_type = resource_def.resource_type();
 
         let new_proof_id = self.new_proof_id()?;
-        let new_proof = Proof::compose_by_amount(
-            &self.auth_zone,
-            Some(amount),
-            resource_def_id,
-            resource_type,
-        )
-        .map_err(RuntimeError::ProofError)?;
+        let new_proof =
+            Proof::compose_by_amount(&self.auth_zone, amount, resource_def_id, resource_type)
+                .map_err(RuntimeError::ProofError)?;
         self.proofs.insert(new_proof_id, new_proof);
 
         Ok(new_proof_id)
@@ -561,9 +557,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let resource_type = resource_def.resource_type();
 
         let new_proof_id = self.new_proof_id()?;
-        let new_proof =
-            Proof::compose_by_ids(&self.auth_zone, Some(ids), resource_def_id, resource_type)
-                .map_err(RuntimeError::ProofError)?;
+        let new_proof = Proof::compose_by_ids(&self.auth_zone, ids, resource_def_id, resource_type)
+            .map_err(RuntimeError::ProofError)?;
         self.proofs.insert(new_proof_id, new_proof);
 
         Ok(new_proof_id)
@@ -692,7 +687,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         mut bucket: Bucket,
     ) -> Result<(), RuntimeError> {
         let proof = bucket
-            .create_proof(ProofSourceId::Bucket(bucket_id))
+            .create_proof(ResourceContainerId::Bucket(bucket_id))
             .map_err(RuntimeError::ProofError)?;
         self.proofs.insert(proof_id, proof);
         Ok(())
@@ -1001,15 +996,13 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .get_resource_def_mut(&resource_def_id)
             .ok_or(RuntimeError::ResourceDefNotFound(resource_def_id))?;
 
-        if !mint_params.is_same_type(&resource_def.resource_type()) {
-            return Err(RuntimeError::InvalidMintParams);
-        }
+        // Notify resource manager
+        resource_def
+            .mint(&mint_params)
+            .map_err(RuntimeError::ResourceDefError)?;
 
         match mint_params {
             MintParams::Fungible { amount } => {
-                // Notify resource manager
-                resource_def.mint(amount);
-
                 // Allocate fungible
                 Ok(ResourceContainer::new_fungible(
                     resource_def_id,
@@ -1018,9 +1011,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 ))
             }
             MintParams::NonFungible { entries } => {
-                // Notify resource manager
-                resource_def.mint(entries.len().into());
-
                 // Allocate non-fungibles
                 let mut ids = BTreeSet::new();
                 for (id, data) in entries {

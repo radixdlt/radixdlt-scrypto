@@ -51,7 +51,6 @@ pub enum TokenKind {
     HashSet,
     HashMap,
     Decimal,
-    BigDecimal,
     PackageId,
     ComponentId,
     ResourceDefId,
@@ -67,8 +66,6 @@ pub enum TokenKind {
     Err,
 
     /* Punctuations */
-    OpenCurlyBrace,
-    CloseCurlyBrace,
     OpenParenthesis,
     CloseParenthesis,
     LessThan,
@@ -383,7 +380,6 @@ impl Lexer {
             "HashSet" => Ok(TokenKind::HashSet),
             "HashMap" => Ok(TokenKind::HashMap),
             "Decimal" => Ok(TokenKind::Decimal),
-            "BigDecimal" => Ok(TokenKind::BigDecimal),
             "PackageId" => Ok(TokenKind::PackageId),
             "ComponentId" => Ok(TokenKind::ComponentId),
             "ResourceDefId" => Ok(TokenKind::ResourceDefId),
@@ -431,8 +427,6 @@ impl Lexer {
         let start = self.current;
 
         let token_kind = match self.advance()? {
-            '{' => TokenKind::OpenCurlyBrace,
-            '}' => TokenKind::CloseCurlyBrace,
             '(' => TokenKind::OpenParenthesis,
             ')' => TokenKind::CloseParenthesis,
             '<' => TokenKind::LessThan,

@@ -37,10 +37,19 @@ impl MintParams {
         Self::NonFungible { entries: encoded }
     }
 
-    pub fn is_same_type(&self, resource_type: &ResourceType) -> bool {
+    pub fn matches_type(&self, resource_type: &ResourceType) -> bool {
         match self {
-            Self::Fungible { .. } => matches!(resource_type, ResourceType::Fungible { .. }),
+            Self::Fungible { .. } => {
+                matches!(resource_type, ResourceType::Fungible { .. })
+            }
             Self::NonFungible { .. } => matches!(resource_type, ResourceType::NonFungible),
+        }
+    }
+
+    pub fn amount(&self) -> Decimal {
+        match self {
+            Self::Fungible { amount } => amount.clone(),
+            Self::NonFungible { entries } => entries.len().into(),
         }
     }
 }

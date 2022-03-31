@@ -7,7 +7,6 @@ pub use crate::core::Actor;
 pub use crate::core::Level;
 pub use crate::crypto::EcdsaPublicKey;
 pub use crate::crypto::Hash;
-pub use crate::math::BigDecimal;
 pub use crate::math::Decimal;
 pub use crate::resource::MintParams;
 pub use crate::resource::NonFungibleAddress;

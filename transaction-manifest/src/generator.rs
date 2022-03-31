@@ -1,7 +1,7 @@
 use crate::ast;
 use radix_engine::engine::*;
 use radix_engine::model::*;
-use sbor::any::{encode_any, Fields, Value};
+use sbor::any::{encode_any, Value};
 use sbor::type_id::*;
 use sbor::Encoder;
 use scrypto::engine::types::*;
@@ -24,7 +24,6 @@ pub enum GeneratorError {
     InvalidComponentId(String),
     InvalidResourceDefId(String),
     InvalidDecimal(String),
-    InvalidBigDecimal(String),
     InvalidHash(String),
     InvalidLazyMapId(String),
     InvalidVaultId(String),
@@ -405,18 +404,6 @@ fn generate_decimal(value: &ast::Value) -> Result<Decimal, GeneratorError> {
     }
 }
 
-fn generate_big_decimal(value: &ast::Value) -> Result<BigDecimal, GeneratorError> {
-    match value {
-        ast::Value::BigDecimal(inner) => match &**inner {
-            ast::Value::String(s) => {
-                BigDecimal::from_str(s).map_err(|_| GeneratorError::InvalidBigDecimal(s.into()))
-            }
-            v @ _ => invalid_type!(v, ast::Type::String),
-        },
-        v @ _ => invalid_type!(v, ast::Type::BigDecimal),
-    }
-}
-
 fn generate_package_id(value: &ast::Value) -> Result<PackageId, GeneratorError> {
     match value {
         ast::Value::PackageId(inner) => match &**inner {
@@ -585,10 +572,13 @@ fn generate_value(
         ast::Value::U64(v) => Ok(Value::U64(*v)),
         ast::Value::U128(v) => Ok(Value::U128(*v)),
         ast::Value::String(v) => Ok(Value::String(v.clone())),
-        ast::Value::Struct(fields) => Ok(Value::Struct(generate_fields(fields, resolver)?)),
-        ast::Value::Enum(index, fields) => {
-            Ok(Value::Enum(*index, generate_fields(fields, resolver)?))
+        ast::Value::Struct(fields) => {
+            Ok(Value::Struct(generate_singletons(fields, None, resolver)?))
         }
+        ast::Value::Enum(index, fields) => Ok(Value::Enum(
+            *index,
+            generate_singletons(fields, None, resolver)?,
+        )),
         ast::Value::Option(v) => match &**v {
             Some(inner) => Ok(Value::Option(
                 Some(generate_value(inner, None, resolver)?).into(),
@@ -635,8 +625,6 @@ fn generate_value(
         ast::Value::Decimal(_) => {
             generate_decimal(value).map(|v| Value::Custom(CustomType::Decimal.id(), v.to_vec()))
         }
-        ast::Value::BigDecimal(_) => generate_big_decimal(value)
-            .map(|v| Value::Custom(CustomType::BigDecimal.id(), v.to_vec())),
         ast::Value::PackageId(_) => generate_package_id(value)
             .map(|v| Value::Custom(CustomType::PackageId.id(), v.to_vec())),
         ast::Value::ComponentId(_) => generate_component_id(value)
@@ -666,21 +654,6 @@ fn generate_value(
             }
             v @ _ => invalid_type!(v, ast::Type::Blob),
         },
-    }
-}
-
-fn generate_fields(
-    value: &ast::Fields,
-    resolver: &mut NameResolver,
-) -> Result<Fields, GeneratorError> {
-    match value {
-        ast::Fields::Named(fields) => {
-            Ok(Fields::Named(generate_singletons(fields, None, resolver)?))
-        }
-        ast::Fields::Unnamed(fields) => Ok(Fields::Unnamed(generate_singletons(
-            fields, None, resolver,
-        )?)),
-        ast::Fields::Unit => Ok(Fields::Unit),
     }
 }
 
@@ -744,7 +717,6 @@ fn generate_type(ty: &ast::Type) -> u8 {
         ast::Type::HashSet => TYPE_HASH_SET,
         ast::Type::HashMap => TYPE_HASH_MAP,
         ast::Type::Decimal => CustomType::Decimal.id(),
-        ast::Type::BigDecimal => CustomType::BigDecimal.id(),
         ast::Type::PackageId => CustomType::PackageId.id(),
         ast::Type::ComponentId => CustomType::ComponentId.id(),
         ast::Type::ResourceDefId => CustomType::ResourceDefId.id(),
@@ -812,26 +784,22 @@ mod tests {
         generate_value_ok!(r#"1u8"#, Value::U8(1));
         generate_value_ok!(r#"1u128"#, Value::U128(1));
         generate_value_ok!(
-            r#"Struct({Bucket(1u32), Proof(2u32), "bar"})"#,
-            Value::Struct(Fields::Named(vec![
+            r#"Struct(Bucket(1u32), Proof(2u32), "bar")"#,
+            Value::Struct(vec![
                 Value::Custom(
                     CustomType::Bucket.id(),
                     scrypto::resource::Bucket(1).to_vec()
                 ),
                 Value::Custom(CustomType::Proof.id(), scrypto::resource::Proof(2).to_vec()),
                 Value::String("bar".into())
-            ]))
+            ])
         );
         generate_value_ok!(
-            r#"Struct((Decimal("1.0"), BigDecimal("2.0"), Hash("aa37f5a71083a9aa044fb936678bfd74f848e930d2de482a49a73540ea72aa5c")))"#,
-            Value::Struct(Fields::Unnamed(vec![
+            r#"Struct(Decimal("1.0"), Hash("aa37f5a71083a9aa044fb936678bfd74f848e930d2de482a49a73540ea72aa5c"))"#,
+            Value::Struct(vec![
                 Value::Custom(
                     CustomType::Decimal.id(),
                     Decimal::from_str("1.0").unwrap().to_vec()
-                ),
-                Value::Custom(
-                    CustomType::BigDecimal.id(),
-                    BigDecimal::from_str("2.0").unwrap().to_vec()
                 ),
                 Value::Custom(
                     CustomType::Hash.id(),
@@ -841,12 +809,14 @@ mod tests {
                     .unwrap()
                     .to_vec()
                 ),
-            ]))
+            ])
         );
-        generate_value_ok!(r#"Struct()"#, Value::Struct(Fields::Unit));
-        generate_value_ok!(r#"Enum(0u8, {})"#, Value::Enum(0, Fields::Named(vec![])));
-        generate_value_ok!(r#"Enum(1u8, ())"#, Value::Enum(1, Fields::Unnamed(vec![])));
-        generate_value_ok!(r#"Enum(2u8)"#, Value::Enum(2, Fields::Unit));
+        generate_value_ok!(r#"Struct()"#, Value::Struct(vec![]));
+        generate_value_ok!(
+            r#"Enum(0u8, "abc")"#,
+            Value::Enum(0, vec![Value::String("abc".to_owned())])
+        );
+        generate_value_ok!(r#"Enum(2u8)"#, Value::Enum(2, vec![]));
         generate_value_ok!(
             r#"Array<Option>(Some(1u64), None)"#,
             Value::Array(

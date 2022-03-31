@@ -1,4 +1,10 @@
+#[rustfmt::skip]
+pub mod test_runner;
+
+use crate::test_runner::TestRunner;
+use radix_engine::errors::*;
 use radix_engine::ledger::*;
+use radix_engine::model::ResourceContainerError;
 use radix_engine::transaction::*;
 use scrypto::prelude::*;
 
@@ -45,4 +51,70 @@ fn test_bucket_of_badges() {
         .unwrap();
     let receipt = executor.run(transaction).unwrap();
     assert!(receipt.result.is_ok());
+}
+
+#[test]
+fn test_take_with_invalid_granularity() {
+    // Arrange
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(&mut substate_store);
+    let (key, account) = test_runner.new_public_key_with_account();
+    let resource_def_id = test_runner.create_fungible_resource(100.into(), 2, account);
+    let package_id = test_runner.publish_package("bucket");
+
+    // Act
+    let transaction = test_runner
+        .new_transaction_builder()
+        .parse_args_and_call_function(
+            package_id,
+            "BucketTest",
+            "take_from_bucket",
+            vec![format!("100,{}", resource_def_id), "1.123".to_owned()],
+            Some(account),
+        )
+        .build(vec![key])
+        .unwrap();
+    let receipt = test_runner.run(transaction);
+    println!("{:?}", receipt);
+
+    // Assert
+    assert_eq!(
+        receipt.result,
+        Err(RuntimeError::BucketError(
+            ResourceContainerError::InvalidAmount(dec!("1.123"), 2)
+        ))
+    );
+}
+
+#[test]
+fn test_take_with_negative_amount() {
+    // Arrange
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(&mut substate_store);
+    let (key, account) = test_runner.new_public_key_with_account();
+    let resource_def_id = test_runner.create_fungible_resource(100.into(), 2, account);
+    let package_id = test_runner.publish_package("bucket");
+
+    // Act
+    let transaction = test_runner
+        .new_transaction_builder()
+        .parse_args_and_call_function(
+            package_id,
+            "BucketTest",
+            "take_from_bucket",
+            vec![format!("100,{}", resource_def_id), "-2".to_owned()],
+            Some(account),
+        )
+        .build(vec![key])
+        .unwrap();
+    let receipt = test_runner.run(transaction);
+    println!("{:?}", receipt);
+
+    // Assert
+    assert_eq!(
+        receipt.result,
+        Err(RuntimeError::BucketError(
+            ResourceContainerError::InvalidAmount(dec!("-2"), 2)
+        ))
+    );
 }

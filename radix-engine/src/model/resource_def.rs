@@ -16,10 +16,12 @@ use crate::model::MethodAuthorization;
 #[derive(Debug, Clone, PartialEq)]
 pub enum ResourceDefError {
     InvalidDivisibility,
-    InvalidAmount(Decimal),
+    InvalidAmount(Decimal, u8),
     InvalidResourceFlags(u64),
     InvalidResourcePermission(u64),
     FlagsLocked,
+    ResourceTypeDoesNotMatch,
+    MaxMintAmountExceeded,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
@@ -225,8 +227,24 @@ impl ResourceDef {
         self.flags() & flag == flag
     }
 
-    pub fn mint(&mut self, amount: Decimal) {
+    pub fn mint(&mut self, mint_params: &MintParams) -> Result<(), ResourceDefError> {
+        // check resource type
+        if !mint_params.matches_type(&self.resource_type) {
+            return Err(ResourceDefError::ResourceTypeDoesNotMatch);
+        }
+
+        // check amount
+        let amount = mint_params.amount();
+        self.check_amount(amount)?;
+
+        // It takes `1,701,411,835` mint operations to reach `Decimal::MAX`,
+        // which will be impossible with metering.
+        if amount > 100_000_000_000i128.into() {
+            return Err(ResourceDefError::MaxMintAmountExceeded);
+        }
+
         self.total_supply += amount;
+        Ok(())
     }
 
     pub fn burn(&mut self, amount: Decimal) {
@@ -284,8 +302,8 @@ impl ResourceDef {
     pub fn check_amount(&self, amount: Decimal) -> Result<(), ResourceDefError> {
         let divisibility = self.resource_type.divisibility();
 
-        if !amount.is_negative() && amount.0 % 10i128.pow((18 - divisibility).into()) != 0.into() {
-            Err(ResourceDefError::InvalidAmount(amount))
+        if amount.is_negative() || amount.0 % 10i128.pow((18 - divisibility).into()) != 0.into() {
+            Err(ResourceDefError::InvalidAmount(amount, divisibility))
         } else {
             Ok(())
         }

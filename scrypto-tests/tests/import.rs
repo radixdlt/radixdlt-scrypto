@@ -31,11 +31,6 @@ r#"
                 },
                 {
                     "type": "Custom",
-                    "name": "BigDecimal",
-                    "generics": []
-                },
-                {
-                    "type": "Custom",
                     "name": "PackageId",
                     "generics": []
                 },
